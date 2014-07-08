@@ -1,55 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993AbaGHNUD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:20:03 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:40757 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754376AbaGHNUA (ORCPT
+	id S1754931AbaGHNUq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:20:46 -0400
+Received: from w-smtp-out-7.wedos.net ([46.28.106.5]:50233 "EHLO
+	we2-f167.wedos.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754254AbaGHNUo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:20:00 -0400
-Date: Tue, 8 Jul 2014 06:19:54 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH RFC tip/core/rcu] Parallelize and economize NOCB kthread
- wakeups
-Message-ID: <20140708131954.GE4603@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140627142038.GA22942@linux.vnet.ibm.com>
- <20140702123412.GD19379@twins.programming.kicks-ass.net>
- <20140702153915.GQ4603@linux.vnet.ibm.com>
- <20140702160412.GO19379@twins.programming.kicks-ass.net>
- <20140702170838.GS4603@linux.vnet.ibm.com>
- <20140702172600.GR19379@twins.programming.kicks-ass.net>
- <20140702175501.GW4603@linux.vnet.ibm.com>
- <20140703095009.GN3935@laptop>
+	Tue, 8 Jul 2014 09:20:44 -0400
+Date: Tue, 8 Jul 2014 15:20:10 +0200
+From: Josef Gajdusek <atx@atx.name>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        gregkh@linuxfoundation.org, pmeerw@pmeerw.net,
+        linux-kernel@vger.kernel.org, jic23@kernel.org
+Subject: Re: [PATCH v2 2/5] staging:iio:hmc5843: Split hmc5843.c to multiple
+ files
+Message-ID: <20140708132010.GA14393@dashie>
+References: <20140707203326.GB10383@dashie>
+ <20140707203636.GD10383@dashie>
+ <20140708082351.GE25880@mwanda>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140703095009.GN3935@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070813-0928-0000-0000-00000333B420
+In-Reply-To: <20140708082351.GE25880@mwanda>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 03, 2014 at 11:50:09AM +0200, Peter Zijlstra wrote:
-> On Wed, Jul 02, 2014 at 10:55:01AM -0700, Paul E. McKenney wrote:
-> > Name me one thing that isn't annoying.  ;-)
+On Tue, Jul 08, 2014 at 11:23:51AM +0300, Dan Carpenter wrote:
+> When you compare the old and new versions of hmc5843_read_raw() then it
+> appears there is a bug fix or something which hasn't been documentented
+> in the changelog.
 > 
-> A cold beverage on a warm day :-)
+> > -static int hmc5843_read_raw(struct iio_dev *indio_dev,
+> > -			    struct iio_chan_spec const *chan,
+> > -			    int *val, int *val2, long mask)
+> > -{
+> > -	struct hmc5843_data *data = iio_priv(indio_dev);
+> > -	int rval;
+> > -	int ret;
+> > -
+> > -	switch (mask) {
+> > -	case IIO_CHAN_INFO_RAW:
+> > -		return hmc5843_read_measurement(data, chan->scan_index, val);
+> > -	case IIO_CHAN_INFO_SCALE:
+> > -		ret = regmap_read(data->regmap, HMC5843_CONFIG_REG_B, &rval);
+> > -		if (ret < 0)
+> > -			return ret;
+> > -		*val = 0;
+> > -		*val2 = data->variant->regval_to_nanoscale[rval >> HMC5843_RANGE_GAIN_OFFSET];
+> > -		return IIO_VAL_INT_PLUS_NANO;
+> > -	case IIO_CHAN_INFO_SAMP_FREQ:
+> > -		ret = regmap_read(data->regmap, HMC5843_CONFIG_REG_A, &rval);
+> > -		if (ret < 0)
+> > -			return ret;
+> > -		rval &= HMC5843_RATE_MASK;
+>                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+> HMC5843_RATE_MASK is 0x1c.
+> 
+> > -		*val = data->variant->regval_to_samp_freq[rval][0];
+> > -		*val2 = data->variant->regval_to_samp_freq[rval][1];
+> > -		return IIO_VAL_INT_PLUS_MICRO;
+> > -	}
+> > -	return -EINVAL;
+> > -}
+> 
+> > +static int hmc5843_read_raw(struct iio_dev *indio_dev,
+> > +			    struct iio_chan_spec const *chan,
+> > +			    int *val, int *val2, long mask)
+> > +{
+> > +	struct hmc5843_data *data = iio_priv(indio_dev);
+> > +	int rval;
+> > +	int ret;
+> > +
+> > +	switch (mask) {
+> > +	case IIO_CHAN_INFO_RAW:
+> > +		return hmc5843_read_measurement(data, chan->scan_index, val);
+> > +	case IIO_CHAN_INFO_SCALE:
+> > +		ret = regmap_read(data->regmap, HMC5843_CONFIG_REG_B, &rval);
+> > +		if (ret < 0)
+> > +			return ret;
+> > +		rval >>= HMC5843_RANGE_GAIN_OFFSET;
+> > +		*val = 0;
+> > +		*val2 = data->variant->regval_to_nanoscale[rval];
+> > +		return IIO_VAL_INT_PLUS_NANO;
+> > +	case IIO_CHAN_INFO_SAMP_FREQ:
+> > +		ret = regmap_read(data->regmap, HMC5843_CONFIG_REG_A, &rval);
+> > +		if (ret < 0)
+> > +			return ret;
+> > +		rval >>= HMC5843_RATE_OFFSET;
+>                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> HMC5843_RATE_OFFSET is 0x02.
+> 
+> > +		*val = data->variant->regval_to_samp_freq[rval][0];
+> > +		*val2 = data->variant->regval_to_samp_freq[rval][1];
+> > +		return IIO_VAL_INT_PLUS_MICRO;
+> > +	}
+> > +	return -EINVAL;
+> > +}
+> 
+> Ideally this patch would be a straight move and no code changes.
+> 
+> regards,
+> dan carpenter
 
-Fair point...  Not clear how to work that into the RCU implementation,
-though.  I suppose I could add comments instructing the reader to consume
-a cold beverage.  Or I could consume a cold beverage while working on
-RCU.  ;-)
-
-							Thanx, Paul
-
+It seems I forgot to change the first commit when I discovered this
+bug. I will resend fixed version within few minutes.
