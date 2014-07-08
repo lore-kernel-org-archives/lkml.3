@@ -1,120 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004AbaGHRAV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 13:00:21 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:42336 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753139AbaGHRAS (ORCPT
+	id S1754629AbaGHRBN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 13:01:13 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:58834 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753085AbaGHRBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 13:00:18 -0400
+	Tue, 8 Jul 2014 13:01:11 -0400
+Date: Tue, 8 Jul 2014 10:01:07 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fixes for 3.16-rc5
+Message-ID: <20140708170107.GA13973@roeck-us.net>
 MIME-Version: 1.0
-In-Reply-To: <1404772701-8804-6-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20140707223756.GA7187@linux.vnet.ibm.com> <1404772701-8804-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1404772701-8804-6-git-send-email-paulmck@linux.vnet.ibm.com>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Tue, 8 Jul 2014 12:59:46 -0400
-Message-ID: <CAJhHMCBnctjpo1Kdi71-6mEiTEnBfOhMTZC1gTsEx42z-UL=Bw@mail.gmail.com>
-Subject: Re: [PATCH tip/core/rcu 06/17] rcu: Eliminate read-modify-write
- ACCESS_ONCE() calls
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, mingo@kernel.org,
-        laijs@cn.fujitsu.com, Dipankar Sarma <dipankar@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Josh Triplett <josh@joshtriplett.org>, niv@us.ibm.com,
-        tglx@linutronix.de, Peter Zijlstra <peterz@infradead.org>,
-        rostedt@goodmis.org, dhowells@redhat.com,
-        Eric Dumazet <edumazet@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PEIAKu/WMn1b1Hv9"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
 
-On Mon, Jul 7, 2014 at 6:38 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
->
-> RCU contains code of the following forms:
->
->         ACCESS_ONCE(x)++;
->         ACCESS_ONCE(x) += y;
->         ACCESS_ONCE(x) -= y;
->
-> Now these constructs do operate correctly, but they really result in a
-> pair of volatile accesses, one to do the load and another to do the store.
-> This can be confusing, as the casual reader might well assume that (for
-> example) gcc might generate a memory-to-memory add instruction for each
-> of these three cases.  In fact, gcc will do no such thing.  Also, there
-> is a good chance that the kernel will move to separate load and store
-> variants of ACCESS_ONCE(), and constructs like the above could easily
-> confuse both people and scripts attempting to make that sort of change.
-> Finally, most of RCU's read-modify-write uses of ACCESS_ONCE() really
-> only need the store to be volatile, so that the read-modify-write form
-> might be misleading.
->
-> This commit therefore changes the above forms in RCU so that each instance
-> of ACCESS_ONCE() either does a load or a store, but not both.  In a few
-> cases, ACCESS_ONCE() was not critical, for example, for maintaining
-> statisitics.  In these cases, ACCESS_ONCE() has been dispensed with
-> entirely.
->
+--PEIAKu/WMn1b1Hv9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Is there any reason why |=, &= cannot be replaced similarly? Also
-there are a few more in tree_plugin.h. Please find patch below:
+Hi Linus,
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
----
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index dac6d20..f500395 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -1700,7 +1700,7 @@ static int rcu_gp_fqs(struct rcu_state *rsp, int
-fqs_state_in)
-        if (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) {
-                raw_spin_lock_irq(&rnp->lock);
-                smp_mb__after_unlock_lock();
--               ACCESS_ONCE(rsp->gp_flags) &= ~RCU_GP_FLAG_FQS;
-+               ACCESS_ONCE(rsp->gp_flags) = rsp->gp_flags & ~RCU_GP_FLAG_FQS;
-                raw_spin_unlock_irq(&rnp->lock);
-        }
-        return fqs_state;
-@@ -2514,7 +2514,7 @@ static void force_quiescent_state(struct rcu_state *rsp)
-                raw_spin_unlock_irqrestore(&rnp_old->lock, flags);
-                return;  /* Someone beat us to it. */
-        }
--       ACCESS_ONCE(rsp->gp_flags) |= RCU_GP_FLAG_FQS;
-+       ACCESS_ONCE(rsp->gp_flags) = rsp->gp_flags | RCU_GP_FLAG_FQS;
-        raw_spin_unlock_irqrestore(&rnp_old->lock, flags);
-        wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
- }
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 1a4ab26..752d382 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -897,7 +897,8 @@ void synchronize_rcu_expedited(void)
+Please pull hwmon fixes for Linux 3.16-rc5 from signed tag:
 
-        /* Clean up and exit. */
-        smp_mb(); /* ensure expedited GP seen before counter increment. */
--       ACCESS_ONCE(sync_rcu_preempt_exp_count)++;
-+       ACCESS_ONCE(sync_rcu_preempt_exp_count) =
-+                                       sync_rcu_preempt_exp_count + 1;
- unlock_mb_ret:
-        mutex_unlock(&sync_rcu_preempt_exp_mutex);
- mb_ret:
-@@ -2307,8 +2308,9 @@ static int rcu_nocb_kthread(void *arg)
-                        list = next;
-                }
-                trace_rcu_batch_end(rdp->rsp->name, c, !!list, 0, 0, 1);
--               ACCESS_ONCE(rdp->nocb_p_count) -= c;
--               ACCESS_ONCE(rdp->nocb_p_count_lazy) -= cl;
-+               ACCESS_ONCE(rdp->nocb_p_count) = rdp->nocb_p_count - c;
-+               ACCESS_ONCE(rdp->nocb_p_count_lazy) =
-+                                               rdp->nocb_p_count_lazy - cl;
-                rdp->n_nocbs_invoked += c;
-        }
-        return 0;
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
 
--- 
-Pranith
+Thanks,
+Guenter
+------
+
+The following changes since commit 4c834452aad01531db949414f94f817a86348d59:
+
+  Linux 3.16-rc3 (2014-06-29 14:11:36 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
+
+for you to fetch changes up to 7fe7381cbdadf16792e733789983690b3fa82880:
+
+  hwmon: (adc128d818) Drop write support on inX_input attributes (2014-07-07 09:48:23 -0700)
+
+----------------------------------------------------------------
+Fix a number of zero-day bugs, mostly found with module test scripts.
+Nothing major, but potentially annoying and worthwhile to fix.
+
+----------------------------------------------------------------
+Axel Lin (3):
+      hwmon: (amc6821) Fix permissions for temp2_input
+      hwmon: (adm1029) Ensure the fan_div cache is updated in set_fan_div
+      hwmon: (adm1021) Fix cache problem when writing temperature limits
+
+Guenter Roeck (3):
+      hwmon: (adm1031) Fix writes to limit registers
+      hwmon: (emc2103) Clamp limits instead of bailing out
+      hwmon: (adc128d818) Drop write support on inX_input attributes
+
+Naveen Krishna Chatradhi (1):
+      hwmon: (ntc_thermistor) Correct information printed during probe
+
+ drivers/hwmon/adc128d818.c     | 28 ++++++++++++++--------------
+ drivers/hwmon/adm1021.c        | 14 ++++++++------
+ drivers/hwmon/adm1029.c        |  3 +++
+ drivers/hwmon/adm1031.c        |  8 +++++---
+ drivers/hwmon/amc6821.c        |  2 +-
+ drivers/hwmon/emc2103.c        | 15 +++++----------
+ drivers/hwmon/ntc_thermistor.c |  2 +-
+ 7 files changed, 37 insertions(+), 35 deletions(-)
+
+--PEIAKu/WMn1b1Hv9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTvCPTAAoJEMsfJm/On5mB5XIP+wRlGvJ1agEHIHMTGyRMT8DU
+YQgw4WGE2RZhGmlUePz973GVBFd5xt3kNUii4EN5vXtYN4uJzXjAqie/xboWdzD2
+deg37OE6cGNzsTiUtF8Xeoec3P6bp6hy3XSO5MFldTVJ0q+rGNeidE7ekzOD/IHH
+O7488rdfMgj5ufmPib933P0YQTq9JdXYczCNEp6OT3tsUIpWBU8UenYHqMhfWJus
+UDbBpTglJv6WvmTK6MJ0tE5vX/mE1ttQBTzxvhCXM+20Qv7aoW5qHx8/9Q2oLJ12
+VKcDGNoQuIIfmKLBw08Wu7o63nm9Pp0+4Z8x8j/X+H0TgaYZYwarmAvFbUO00lsT
+djrzAoPoKpIQFB8XZFWD8skOAtxwRERD//LvZQBiv+Uwbe7R4AJFpBvOT2Z5afqI
+ksWu8Pi78mpwS6HLczk0/pVJ7AzStNkFC2WswIde6OpFbXs+gYHEQB18quGpY03V
+jo0SbHzhQTv8tcjhefzAtnv6ZnBmixtymLe+52MR5z5nGa/jPKWMCKmwSqMXumo/
+lqj5SMKXcaoaUMm4QbMHLBRVPv5wFw9Wbfd89POUnDmGnYlBZb9OXu6PUQY7MQKp
+JWbwzTtq4ej3U39K9QfRoXIehysE23HlQscJfP978J5qjoLkq6FVeu2TbNLjtn8D
+s6r3Glb8KqVH8Qcj7Ejh
+=0nLk
+-----END PGP SIGNATURE-----
+
+--PEIAKu/WMn1b1Hv9--
