@@ -1,52 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415AbaGHH0S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 03:26:18 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:43116 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752253AbaGHH0H (ORCPT
+	id S1753434AbaGHH1P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 03:27:15 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:65268 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752058AbaGHH1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 03:26:07 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-m68k@vger.kernel.org
-Cc: Andreas Schwab <schwab@linux-m68k.org>, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] m68k: Fix boot regression on machines with RAM at non-zero
-Date: Tue,  8 Jul 2014 09:25:58 +0200
-Message-Id: <1404804358-30299-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.9.1
+	Tue, 8 Jul 2014 03:27:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <1403799441-20362-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1403799441-20362-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Date: Tue, 8 Jul 2014 09:27:13 +0200
+Message-ID: <CACRpkdaa=1Y-XiOaf_e1OjMFkOdJ4SJbJGDEUu-e4puzvr+opA@mail.gmail.com>
+Subject: Re: [PATCH] gpio: gpio-twl4030.c: Cleaning up null pointer checks
+ that could never happen
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My enhancement to store the initial mapping size for later reuse in commit
-486df8bc4627bdfc032d11bedcd056cc5343ee62 ("m68k: Increase initial mapping
-to 8 or 16 MiB if possible") broke booting on machines where RAM doesn't
-start at address zero.
+On Thu, Jun 26, 2014 at 6:17 PM, Rickard Strandqvist
+<rickard_strandqvist@spectrumdigital.se> wrote:
 
-Use pc-relative addressing to fix this.
+> Removal of null pointer checks that could never happen
+>
+> This was found using a static code analysis program called cppcheck
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 
-Reported-by: Andreas Schwab <schwab@linux-m68k.org>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Tested-by: Andreas Schwab <schwab@linux-m68k.org>
----
- arch/m68k/kernel/head.S | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+That's correct. Patch applied!
 
-diff --git a/arch/m68k/kernel/head.S b/arch/m68k/kernel/head.S
-index dbb118e1a4e0..a54788458ca3 100644
---- a/arch/m68k/kernel/head.S
-+++ b/arch/m68k/kernel/head.S
-@@ -921,7 +921,8 @@ L(nocon):
- 	jls	1f
- 	lsrl	#1,%d1
- 1:
--	movel	%d1,m68k_init_mapped_size
-+	lea	%pc@(m68k_init_mapped_size),%a0
-+	movel	%d1,%a0@
- 	mmu_map	#PAGE_OFFSET,%pc@(L(phys_kernel_start)),%d1,\
- 		%pc@(m68k_supervisor_cachemode)
- 
--- 
-1.9.1
-
+Yours,
+Linus Walleij
