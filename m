@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508AbaGHMJc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 08:09:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50595 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754250AbaGHMJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 08:09:31 -0400
-Message-ID: <53BBDF78.40708@suse.cz>
-Date: Tue, 08 Jul 2014 14:09:28 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754438AbaGHMMc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 08:12:32 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:34034 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774AbaGHMMa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 08:12:30 -0400
+Date: Tue, 8 Jul 2014 05:12:29 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Steven Stewart-Gallus <sstewartgallus00@mylangara.bc.ca>
+Cc: linux-kernel@vger.kernel.org, Jeff Layton <jlayton@poochiereds.net>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
+        Andy Lutomirski <luto@amacapital.net>, linux-man@vger.kernel.org
+Subject: Re: [PATCH 1/1] include/uapi: Define AT_FDNODIR constant as future
+ guarantee
+Message-ID: <20140708121229.GA21107@infradead.org>
+References: <fb469d6277ef.53b85737@langara.bc.ca>
 MIME-Version: 1.0
-To: Torsten Kaiser <just.for.lkml@googlemail.com>,
-        Ronald <ronald645@gmail.com>
-CC: linux-kbuild@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Regression: firmware: Simplify directory creation + b43 = fails
- to build
-References: <CAF1_xX2oeG0YCLaLZR9ZUY2qiD0-sVB6L10dZppnae7iZV_U3g@mail.gmail.com>	<53A1A354.7030107@suse.cz>	<CAF1_xX38AWEK5sW8v_RrL=HzAg7JRNyCzgKNuZFzCGV4y2O7Og@mail.gmail.com> <CAPVoSvSmzRWSJeR9dyBO0qS6-9SWA_d-CjGuQeULGS_MRUY77w@mail.gmail.com>
-In-Reply-To: <CAPVoSvSmzRWSJeR9dyBO0qS6-9SWA_d-CjGuQeULGS_MRUY77w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <fb469d6277ef.53b85737@langara.bc.ca>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-07-07 21:02, Torsten Kaiser wrote:
-> On Wed, Jun 18, 2014 at 6:25 PM, Ronald <ronald645@gmail.com> wrote:
->> From my .config
->>
->>  ==> cat /usr/src/config | grep -i b43
->> CONFIG_EXTRA_FIRMWARE="b43/ucode5.fw b43/b0g0initvals5.fw
->> b43/b0g0bsinitvals5.fw b43/pcm5.fw"
->> ... snip ...
+On Sat, Jul 05, 2014 at 07:51:19PM +0000, Steven Stewart-Gallus wrote:
+> From: Steven Stewart-Gallus <sstewartgallus00@mylangara.bc.ca
 > 
-> That might be rather later, but I seem to have the same problem:
->   CHK     kernel/config_data.h
->   MK_FW   firmware/amd-ucode/microcode_amd.bin.gen.S
-> /bin/sh: firmware/amd-ucode/microcode_amd.bin.gen.S: No such file or directory
-> [...]
-> The directory firmware/amd-ucode does not exist in the kernel source
-> tree, but my .config seems to need it:
-> CONFIG_EXTRA_FIRMWARE="radeon/R700_rlc.bin radeon/RV710_uvd.bin
-> radeon/RV730_smc.bin amd-ucode/microcode_amd.bin"
-> CONFIG_EXTRA_FIRMWARE_DIR="/lib/firmware"
+> This constant means that in the far future it might be possible to
+> define other AT_FD* constants.
 > 
-> Just doing a "mkdir firmware/amd-ucode" lets the build continue and I
-> get a working 3.16 kernel.
+> Signed-off-by: Steven Stewart-Gallus <sstewartgallus00@mylangara.bc.ca>
+> ---
 > 
-> With 3.15 and earlier I never had a problem with this, but 3.16-rc4
-> just failed with above message.
-> 
-> Do you need my full .config or any other information about my system?
+> This is my first kernel patch but this is really trivial so I hope I'm doing
+> this right.
 
-That's not needed, I can reproduce the failure now as well.
+Almost.  For one you really should explain what the flag does,
+especially if it's not actually use.
 
-Michal
+It took me a while that you're trying to document the way Linux
+currently behaves for the cases where the dfd argument to the various
+*at is neither a valid file descriptor nor the magic AT_FDCWD constant.
+
+Posix says that openat with an absolute path is equivalent to open, so
+the only strictly allowed other flags would those that allow some form
+of relative path, but treat it differently than the currently possible
+options.  I can't really think of a good way to do that, although we
+recently had a case where a different AT_* value would be useful, even
+if not fully conforming to that Posix wording.
+
+Your explanation of what this constant does should also go into the man
+page, so in addition to the kernel patch you should also propose a patch
+to the man page documenting it.
+
+Also I don't think AT_FDNODIR is a good choice of name, AT_ABSOLUTE
+would be a lot more descriptive.
+
