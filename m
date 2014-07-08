@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754921AbaGHWjS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 18:39:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23487 "EHLO mx1.redhat.com"
+	id S1753402AbaGHWkk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 18:40:40 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:54666 "EHLO mail.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751987AbaGHWjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 18:39:17 -0400
-Date: Tue, 8 Jul 2014 18:39:13 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: "xinhui.pan" <xinhuix.pan@intel.com>
-cc: linux-kernel@vger.kernel.org, agk@redhat.com, snitzer@redhat.com,
-        dm-devel@redhat.com, "Liu, ShuoX" <shuox.liu@intel.com>,
-        yanmin_zhang@linux.intel.com
-Subject: Re: [dm-devel] [PATCH] md/dm-ioctl.c: optimize memory allocation in
- copy_params
-In-Reply-To: <53B68068.2060102@intel.com>
-Message-ID: <alpine.LRH.2.02.1407081831510.27831@file01.intranet.prod.int.rdu2.redhat.com>
-References: <53B68068.2060102@intel.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1751434AbaGHWki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 18:40:38 -0400
+Message-ID: <53BC7360.6050000@ispras.ru>
+Date: Tue, 08 Jul 2014 18:40:32 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: David Miller <davem@davemloft.net>
+CC: kevin.curtis@farsite.co.uk, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: Re: [PATCH] farsync: fix invalid memory accesses in fst_add_one()
+ and fst_init_card()
+References: <1404516950-17900-1-git-send-email-khoroshilov@ispras.ru> <20140708.152057.490185410038470309.davem@davemloft.net>
+In-Reply-To: <20140708.152057.490185410038470309.davem@davemloft.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On 08.07.2014 18:20, David Miller wrote:
+> From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+> Date: Sat,  5 Jul 2014 03:35:50 +0400
+>
+>> -                }
+>> +			card->nports = i;
+>> +			return (card->nports == 0) ? err : 0;
+>> +		}
+> I don't think this is the right thing to do.
+>
+> This will cause the caller to not free the IRQ or any of the
+> other resources.
+My understanding of the existing code is to proceed if at least one port
+is available.
+So I return error code if no ports available at all, otherwise
+initialization continues and can succeed.
+If something else goes wrong, all resources are deallocated.
 
-I don't really know what is the purpose of this patch. In existing device 
-mapper code, if kmalloc fails, the allocation is retried with __vmalloc. 
-So there is no need to avoid kmalloc aritifically.
+Do you suggest to return error code unconditionally?
 
-kmalloc doesn't cause memory fragmentation. If the memory is too 
-fragmented, kmalloc fails. If it isn't, it succeeds. But it doesn't cause 
-memory being fragmented.
+--
+Alexey
 
-If you have some other driver that fails because of large kmalloc failure, 
-you should fix it to use scatter-gather DMA or (if the hardware can't do 
-it) preallocate the memory when the driver is loaded.
-
-Mikulas
-
-
-
-On Fri, 4 Jul 2014, xinhui.pan wrote:
-
-> KMALLOC_MAX_SIZE is too big, it easily cause memory fragmented and low memory when param_kernel->data_size
-> is also big. That's not nice. So use vmalloc instead of kmalloc when size is larger than (PAGE_SIZE << 2).
-> There are other drivers using kmalloc to gain a big size memory. And that cause our devices to hit hang and
-> many worse issues. We don't benefit much when using kmalloc in such scenario.
-> 
-> Signed-off-by: xinhui.pan <xinhuiX.pan@intel.com>
-> Signed-off-by: yanmin.zhang <yanmin_zhang@linux.intel.com>
-> ---
->  drivers/md/dm-ioctl.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/md/dm-ioctl.c b/drivers/md/dm-ioctl.c
-> index 5152142..31c3af9 100644
-> --- a/drivers/md/dm-ioctl.c
-> +++ b/drivers/md/dm-ioctl.c
-> @@ -1709,7 +1709,7 @@ static int copy_params(struct dm_ioctl __user *user, struct dm_ioctl *param_kern
->          * Use kmalloc() rather than vmalloc() when we can.
->          */
->         dmi = NULL;
-> -       if (param_kernel->data_size <= KMALLOC_MAX_SIZE) {
-> +       if (param_kernel->data_size <= (PAGE_SIZE << 2)) {
->                 dmi = kmalloc(param_kernel->data_size, GFP_NOIO | __GFP_NORETRY | __GFP_NOMEMALLOC | __GFP_NOWARN);
->                 if (dmi)
->                         *param_flags |= DM_PARAMS_KMALLOC;
-> -- 
-> 1.7.9.5
-> 
-> --
-> dm-devel mailing list
-> dm-devel@redhat.com
-> https://www.redhat.com/mailman/listinfo/dm-devel
-> 
