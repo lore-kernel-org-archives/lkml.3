@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756300AbaGHTYd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:24:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54194 "EHLO
+	id S1756278AbaGHTYa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:24:30 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54206 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755714AbaGHTIl (ORCPT
+	by vger.kernel.org with ESMTP id S1755717AbaGHTIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:08:41 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David Woodhouse" <David.Woodhouse@intel.com>,
-        "David Woodhouse" <dwmw2@infradead.org>
+CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>,
+        "Jaroslav Kysela" <perex@perex.cz>,
+        "Lars-Peter Clausen" <lars@metafoo.de>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.164545206@decadent.org.uk>
+Message-ID: <lsq.1404846110.924949232@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 119/125] iommu/vt-d: Fix missing IOTLB flush in
- intel_iommu_unmap()
+Subject: [PATCH 3.2 084/125] ALSA: control: Fix replacing user controls
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,57 +32,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Woodhouse <dwmw2@infradead.org>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-Part of commit ea8ea460c9ace60bbb5ac6e5521d637d5c15293d upstream.
+commit 82262a46627bebb0febcc26664746c25cef08563 upstream.
 
-This missing IOTLB flush was added as a minor, inconsequential bug-fix
-in commit ea8ea460c ("iommu/vt-d: Clean up and fix page table clear/free
-behaviour") in 3.15. It wasn't originally intended for -stable but a
-couple of users have reported issues which turn out to be fixed by
-adding the missing flush.
+There are two issues with the current implementation for replacing user
+controls. The first is that the code does not check if the control is actually a
+user control and neither does it check if the control is owned by the process
+that tries to remove it. That allows userspace applications to remove arbitrary
+controls, which can cause a user after free if a for example a driver does not
+expect a control to be removed from under its feed.
 
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - Use &dmar_domain->iommu_bmp, as it is a single word not an array]
+The second issue is that on one hand when a control is replaced the
+user_ctl_count limit is not checked and on the other hand the user_ctl_count is
+increased (even though the number of user controls does not change). This allows
+userspace, once the user_ctl_count limit as been reached, to repeatedly replace
+a control until user_ctl_count overflows. Once that happens new controls can be
+added effectively bypassing the user_ctl_count limit.
+
+Both issues can be fixed by instead of open-coding the removal of the control
+that is to be replaced to use snd_ctl_remove_user_ctl(). This function does
+proper permission checks as well as decrements user_ctl_count after the control
+has been removed.
+
+Note that by using snd_ctl_remove_user_ctl() the check which returns -EBUSY at
+beginning of the function if the control already exists is removed. This is not
+a problem though since the check is quite useless, because the lock that is
+protecting the control list is released between the check and before adding the
+new control to the list, which means that it is possible that a different
+control with the same settings is added to the list after the check. Luckily
+there is another check that is done while holding the lock in snd_ctl_add(), so
+we'll rely on that to make sure that the same control is not added twice.
+
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Jaroslav Kysela <perex@perex.cz>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/iommu/intel-iommu.c | 18 +++++++++++++++++-
- 1 file changed, 17 insertions(+), 1 deletion(-)
+ sound/core/control.c | 25 +++++++++----------------
+ 1 file changed, 9 insertions(+), 16 deletions(-)
 
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -4070,7 +4070,7 @@ static int intel_iommu_unmap(struct iomm
- {
- 	struct dmar_domain *dmar_domain = domain->priv;
- 	size_t size = PAGE_SIZE << gfp_order;
--	int order;
-+	int order, iommu_id;
+--- a/sound/core/control.c
++++ b/sound/core/control.c
+@@ -1151,8 +1151,6 @@ static int snd_ctl_elem_add(struct snd_c
+ 	struct user_element *ue;
+ 	int idx, err;
  
- 	order = dma_pte_clear_range(dmar_domain, iova >> VTD_PAGE_SHIFT,
- 			    (iova + size - 1) >> VTD_PAGE_SHIFT);
-@@ -4078,6 +4078,22 @@ static int intel_iommu_unmap(struct iomm
- 	if (dmar_domain->max_addr == iova + size)
- 		dmar_domain->max_addr = iova;
- 
-+	for_each_set_bit(iommu_id, &dmar_domain->iommu_bmp, g_num_of_iommus) {
-+		struct intel_iommu *iommu = g_iommus[iommu_id];
-+		int num, ndomains;
+-	if (!replace && card->user_ctl_count >= MAX_USER_CONTROLS)
+-		return -ENOMEM;
+ 	if (info->count < 1)
+ 		return -EINVAL;
+ 	access = info->access == 0 ? SNDRV_CTL_ELEM_ACCESS_READWRITE :
+@@ -1161,21 +1159,16 @@ static int snd_ctl_elem_add(struct snd_c
+ 				 SNDRV_CTL_ELEM_ACCESS_TLV_READWRITE));
+ 	info->id.numid = 0;
+ 	memset(&kctl, 0, sizeof(kctl));
+-	down_write(&card->controls_rwsem);
+-	_kctl = snd_ctl_find_id(card, &info->id);
+-	err = 0;
+-	if (_kctl) {
+-		if (replace)
+-			err = snd_ctl_remove(card, _kctl);
+-		else
+-			err = -EBUSY;
+-	} else {
+-		if (replace)
+-			err = -ENOENT;
 +
-+		/*
-+		 * find bit position of dmar_domain
-+		 */
-+		ndomains = cap_ndoms(iommu->cap);
-+		for_each_set_bit(num, iommu->domain_ids, ndomains) {
-+			if (iommu->domains[num] == dmar_domain)
-+				iommu_flush_iotlb_psi(iommu, num,
-+						      iova >> VTD_PAGE_SHIFT,
-+						      1 << order, 0);
-+		}
-+	}
++	if (replace) {
++		err = snd_ctl_remove_user_ctl(file, &info->id);
++		if (err)
++			return err;
+ 	}
+-	up_write(&card->controls_rwsem);
+-	if (err < 0)
+-		return err;
 +
- 	return order;
- }
- 
++	if (card->user_ctl_count >= MAX_USER_CONTROLS)
++		return -ENOMEM;
++
+ 	memcpy(&kctl.id, &info->id, sizeof(info->id));
+ 	kctl.count = info->owner ? info->owner : 1;
+ 	access |= SNDRV_CTL_ELEM_ACCESS_USER;
 
