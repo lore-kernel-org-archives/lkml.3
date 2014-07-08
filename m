@@ -1,110 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754365AbaGHNj2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:39:28 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52942 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753556AbaGHNjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:39:25 -0400
-Date: Tue, 8 Jul 2014 08:39:12 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Keerthy <j-keerthy@ti.com>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <mark.rutland@arm.com>,
-        <galak@codeaurora.org>, <robh+dt@kernel.org>, <linux@arm.linux.org.uk>,
-        <balbi@ti.com>, <tony@atomide.com>, <kishon@ti.com>,
-        <broonie@kernel.org>
-Subject: Re: [PATCH v2 6/7] regulator: tps65218: Add get_voltage ops for
- dcdc5 and dcdc6
-Message-ID: <20140708133912.GH25811@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1404814597-4404-1-git-send-email-j-keerthy@ti.com>
- <1404814597-4404-7-git-send-email-j-keerthy@ti.com>
+	id S1754463AbaGHNjn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:39:43 -0400
+Received: from w-smtp-out-7.wedos.net ([46.28.106.5]:40248 "EHLO
+	we2-f167.wedos.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754405AbaGHNjm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 09:39:42 -0400
+Date: Tue, 8 Jul 2014 15:39:37 +0200
+From: Josef Gajdusek <atx@atalax.net>
+To: linux-iio@vger.kernel.org
+Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org, jic23@kernel.org,
+        linux-kernel@vger.kernel.org, pmeerw@pmeerw.net,
+        dan.carpenter@oracle.com
+Subject: [PATCH v3 3/5] staging:iio:hmc5843: register <-> value arrays now
+ can have different lengths
+Message-ID: <20140708133936.GE14393@dashie>
+References: <20140708133711.GB14393@dashie>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3ecMC0kzqsE2ddMN"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1404814597-4404-7-git-send-email-j-keerthy@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140708133711.GB14393@dashie>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---3ecMC0kzqsE2ddMN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Changed structure of struct hmc5843_chip_info to include length of translation
+arrays. Code previously using #defined constant has been changed accordingly.
+This allows to integrate devices which do have different amounts of available
+rates/scales.
 
-On Tue, Jul 08, 2014 at 03:46:36PM +0530, Keerthy wrote:
-> Add get_voltage ops for dcdc5 and dcdc6. Both dcdc5 and 6 are fixed regul=
-ators
-> and hence return min_uV (or max_uV).
->=20
-> Signed-off-by: Keerthy <j-keerthy@ti.com>
+Signed-off-by: Josef Gajdusek <atx@atx.name>
+---
+ drivers/staging/iio/magnetometer/hmc5843_core.c | 34 +++++++++++++++++--------
+ 1 file changed, 23 insertions(+), 11 deletions(-)
 
-Reviewed-by: Felipe Balbi <balbi@ti.com>
+diff --git a/drivers/staging/iio/magnetometer/hmc5843_core.c b/drivers/staging/iio/magnetometer/hmc5843_core.c
+index d9695e3..e3a6b2e 100644
+--- a/drivers/staging/iio/magnetometer/hmc5843_core.c
++++ b/drivers/staging/iio/magnetometer/hmc5843_core.c
+@@ -39,7 +39,6 @@
+  */
+ #define HMC5843_RANGE_GAIN_OFFSET		0x05
+ #define HMC5843_RANGE_GAIN_DEFAULT		0x01
+-#define HMC5843_RANGE_GAINS			8
+ #define HMC5843_RANGE_GAIN_MASK		0xe0
+ 
+ /* Device status */
+@@ -59,7 +58,6 @@
+  */
+ #define HMC5843_RATE_OFFSET			0x02
+ #define HMC5843_RATE_DEFAULT			0x04
+-#define HMC5843_RATES				7
+ #define HMC5843_RATE_MASK		0x1c
+ 
+ /* Device measurement configuration */
+@@ -69,15 +67,15 @@
+ #define HMC5843_MEAS_CONF_MASK			0x03
+ 
+ /* Scaling factors: 10000000/Gain */
+-static const int hmc5843_regval_to_nanoscale[HMC5843_RANGE_GAINS] = {
++static const int hmc5843_regval_to_nanoscale[] = {
+ 	6173, 7692, 10309, 12821, 18868, 21739, 25641, 35714
+ };
+ 
+-static const int hmc5883_regval_to_nanoscale[HMC5843_RANGE_GAINS] = {
++static const int hmc5883_regval_to_nanoscale[] = {
+ 	7812, 9766, 13021, 16287, 24096, 27701, 32573, 45662
+ };
+ 
+-static const int hmc5883l_regval_to_nanoscale[HMC5843_RANGE_GAINS] = {
++static const int hmc5883l_regval_to_nanoscale[] = {
+ 	7299, 9174, 12195, 15152, 22727, 25641, 30303, 43478
+ };
+ 
+@@ -94,11 +92,11 @@ static const int hmc5883l_regval_to_nanoscale[HMC5843_RANGE_GAINS] = {
+  * 6		| 50			| 75
+  * 7		| Not used		| Not used
+  */
+-static const int hmc5843_regval_to_samp_freq[7][2] = {
++static const int hmc5843_regval_to_samp_freq[][2] = {
+ 	{0, 500000}, {1, 0}, {2, 0}, {5, 0}, {10, 0}, {20, 0}, {50, 0}
+ };
+ 
+-static const int hmc5883_regval_to_samp_freq[7][2] = {
++static const int hmc5883_regval_to_samp_freq[][2] = {
+ 	{0, 750000}, {1, 500000}, {3, 0}, {7, 500000}, {15, 0}, {30, 0},
+ 	{75, 0}
+ };
+@@ -107,7 +105,9 @@ static const int hmc5883_regval_to_samp_freq[7][2] = {
+ struct hmc5843_chip_info {
+ 	const struct iio_chan_spec *channels;
+ 	const int (*regval_to_samp_freq)[2];
++	const int n_regval_to_samp_freq;
+ 	const int *regval_to_nanoscale;
++	const int n_regval_to_nanoscale;
+ };
+ 
+ /* The lower two bits contain the current conversion mode */
+@@ -248,7 +248,7 @@ static ssize_t hmc5843_show_samp_freq_avail(struct device *dev,
+ 	size_t len = 0;
+ 	int i;
+ 
+-	for (i = 0; i < HMC5843_RATES; i++)
++	for (i = 0; i < data->variant->n_regval_to_samp_freq; i++)
+ 		len += scnprintf(buf + len, PAGE_SIZE - len,
+ 			"%d.%d ", data->variant->regval_to_samp_freq[i][0],
+ 			data->variant->regval_to_samp_freq[i][1]);
+@@ -278,7 +278,7 @@ static int hmc5843_get_samp_freq_index(struct hmc5843_data *data,
+ {
+ 	int i;
+ 
+-	for (i = 0; i < HMC5843_RATES; i++)
++	for (i = 0; i < data->variant->n_regval_to_samp_freq; i++)
+ 		if (val == data->variant->regval_to_samp_freq[i][0] &&
+ 			val2 == data->variant->regval_to_samp_freq[i][1])
+ 			return i;
+@@ -307,7 +307,7 @@ static ssize_t hmc5843_show_scale_avail(struct device *dev,
+ 	size_t len = 0;
+ 	int i;
+ 
+-	for (i = 0; i < HMC5843_RANGE_GAINS; i++)
++	for (i = 0; i < data->variant->n_regval_to_nanoscale; i++)
+ 		len += scnprintf(buf + len, PAGE_SIZE - len,
+ 			"0.%09d ", data->variant->regval_to_nanoscale[i]);
+ 
+@@ -327,7 +327,7 @@ static int hmc5843_get_scale_index(struct hmc5843_data *data, int val, int val2)
+ 	if (val != 0)
+ 		return -EINVAL;
+ 
+-	for (i = 0; i < HMC5843_RANGE_GAINS; i++)
++	for (i = 0; i < data->variant->n_regval_to_nanoscale; i++)
+ 		if (val2 == data->variant->regval_to_nanoscale[i])
+ 			return i;
+ 
+@@ -480,17 +480,29 @@ static const struct hmc5843_chip_info hmc5843_chip_info_tbl[] = {
+ 	[HMC5843_ID] = {
+ 		.channels = hmc5843_channels,
+ 		.regval_to_samp_freq = hmc5843_regval_to_samp_freq,
++		.n_regval_to_samp_freq =
++				ARRAY_SIZE(hmc5843_regval_to_samp_freq),
+ 		.regval_to_nanoscale = hmc5843_regval_to_nanoscale,
++		.n_regval_to_nanoscale =
++				ARRAY_SIZE(hmc5843_regval_to_nanoscale),
+ 	},
+ 	[HMC5883_ID] = {
+ 		.channels = hmc5883_channels,
+ 		.regval_to_samp_freq = hmc5883_regval_to_samp_freq,
++		.n_regval_to_samp_freq =
++				ARRAY_SIZE(hmc5883_regval_to_samp_freq),
+ 		.regval_to_nanoscale = hmc5883_regval_to_nanoscale,
++		.n_regval_to_nanoscale =
++				ARRAY_SIZE(hmc5883_regval_to_nanoscale),
+ 	},
+ 	[HMC5883L_ID] = {
+ 		.channels = hmc5883_channels,
+ 		.regval_to_samp_freq = hmc5883_regval_to_samp_freq,
++		.n_regval_to_samp_freq =
++				ARRAY_SIZE(hmc5883_regval_to_samp_freq),
+ 		.regval_to_nanoscale = hmc5883l_regval_to_nanoscale,
++		.n_regval_to_nanoscale =
++				ARRAY_SIZE(hmc5883l_regval_to_nanoscale),
+ 	},
+ };
+ 
+-- 
+1.8.5.5
 
-> ---
->  drivers/regulator/tps65218-regulator.c |    9 +++++++++
->  1 file changed, 9 insertions(+)
->=20
-> diff --git a/drivers/regulator/tps65218-regulator.c b/drivers/regulator/t=
-ps65218-regulator.c
-> index 9effe48..700c652 100644
-> --- a/drivers/regulator/tps65218-regulator.c
-> +++ b/drivers/regulator/tps65218-regulator.c
-> @@ -151,6 +151,14 @@ static int tps65218_pmic_disable(struct regulator_de=
-v *dev)
->  				   dev->desc->enable_mask, TPS65218_PROTECT_L1);
->  }
-> =20
-> +static int tps65218_pmic_dcdc56_get_voltage(struct regulator_dev *dev)
-> +{
-> +	struct tps65218 *tps =3D rdev_get_drvdata(dev);
-> +	unsigned int rid =3D rdev_get_id(dev);
-> +
-> +	return tps->info[rid]->min_uV;
-> +}
-> +
->  /* Operations permitted on DCDC1, DCDC2 */
->  static struct regulator_ops tps65218_dcdc12_ops =3D {
->  	.is_enabled		=3D regulator_is_enabled_regmap,
-> @@ -179,6 +187,7 @@ static struct regulator_ops tps65218_dcdc56_pmic_ops =
-=3D {
->  	.is_enabled		=3D regulator_is_enabled_regmap,
->  	.enable			=3D tps65218_pmic_enable,
->  	.disable		=3D tps65218_pmic_disable,
-> +	.get_voltage		=3D tps65218_pmic_dcdc56_get_voltage,
->  };
-> =20
->  static const struct regulator_desc regulators[] =3D {
-> --=20
-> 1.7.9.5
->=20
-
---=20
-balbi
-
---3ecMC0kzqsE2ddMN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTu/SAAAoJEIaOsuA1yqREUeoP/iDIo5ifmVx0iAgw93HQDAsg
-18fDBGYwHDUDnn2zmuMoRk28ozSzJBx8w6PdN3FQ0h3gWX6thA3yPT+HrMOUAr3t
-T0/oFxNk6zmqy60/q9mbK0p0y+QE2fu3qEDX70FjPWyOqsUg4GhNtZ+bc1O+GjN9
-LEjlrhZNHr6XOZnKIniRvEsaHgnytuv5XJg5deHHkuvFAgOCUIeRzJW1g1FabotQ
-E2kxCsoziz2yeBBY/mzr/acimBclIWlq6Yk2x1OLataGOQVL3wrPRySBZnM0rHik
-fq3PTusTP5+7LKLKqak2ISWEz/ynhvj5QY2l+IM/VIg/ulrwXvSiZdk+Bz3dt3o0
-bf9OUAOL1KsWROmy9bsX8lP7shLpFBXAwUzKKV8uaALINuh97ckADceJNFgkKp0A
-6ivUYr5/2LakiF5Ge36TyA9Qt8JEB+JayiePgTXn5nwNO8NpzUgl/dqvOE//wxsW
-DuGJmJnRRYakPHS87m55vca7nmr8qxI2uKw7zfWDCIbOFYfXgKqtwSsl7atncXrY
-cnmifoB0Zr5rd9dKcMSZ8P8J1T79ZFbiZr6nSIXWiO6vJ5yT8wSl6tHDrZm4Mhhb
-f4K1spwT+jr+HWgFRVkCF2aYJFJTVzU1UbgyMoGDN64syRAnRYP3aOeCM434BzqG
-U3j+glVT0gyynRODJBXg
-=U0kp
------END PGP SIGNATURE-----
-
---3ecMC0kzqsE2ddMN--
