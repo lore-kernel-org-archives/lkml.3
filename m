@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753755AbaGHIKL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 04:10:11 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35414 "EHLO
+	id S1753709AbaGHIKJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 04:10:09 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35405 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753642AbaGHIKF (ORCPT
+	with ESMTP id S1753186AbaGHIKF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 04:10:05 -0400
-Date: Tue, 8 Jul 2014 10:06:36 +0200
+Date: Tue, 8 Jul 2014 10:05:35 +0200
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: linux@maxim.org.za, Nicolas FERRE <nicolas.ferre@atmel.com>,
-        dwmw2@infradead.org, dbaryshkov@gmail.com, devicetree@vger.kernel.org,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        linux-kernel@vger.kernel.org,
-        Boris Brezillon <boris@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 09/18] AT91: Call at91_register_devices in the board files
-Message-ID: <20140708080636.GK13423@lukather>
-References: <1404396906-25194-1-git-send-email-maxime.ripard@free-electrons.com>
- <1404396906-25194-15-git-send-email-maxime.ripard@free-electrons.com>
- <D103F102-4B04-4CC6-8F20-58CEB0EC8E36@jcrosoft.com>
- <20140703145222.GE31996@lukather>
- <20140707184239.GI9558@ns203013.ovh.net>
+To: Philipp Zabel <p.zabel@pengutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Houcheng Lin <houcheng@gmail.com>, Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Stephen Gallimore <stephen.gallimore@st.com>,
+        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>, sre@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Vikas Sajjan <vikas.sajjan@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH v3] reset: Add a defer reset object to send board
+ specific reset
+Message-ID: <20140708080535.GJ13423@lukather>
+References: <1403098673-3058-1-git-send-email-houcheng@gmail.com>
+ <CACRpkdYfu8HmVCkn9JFh+YP5OPdr8o9nTfoCnkJ7SSpGoenQUg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="iSeZnk6FyAS3EJ1y"
+	protocol="application/pgp-signature"; boundary="T4IYkFBVPN84tP7K"
 Content-Disposition: inline
-In-Reply-To: <20140707184239.GI9558@ns203013.ovh.net>
+In-Reply-To: <CACRpkdYfu8HmVCkn9JFh+YP5OPdr8o9nTfoCnkJ7SSpGoenQUg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---iSeZnk6FyAS3EJ1y
+--T4IYkFBVPN84tP7K
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jul 07, 2014 at 08:42:39PM +0200, Jean-Christophe PLAGNIOL-VILLARD =
-wrote:
-> On 16:52 Thu 03 Jul     , Maxime Ripard wrote:
-> > Hi,
-> >=20
-> > On Thu, Jul 03, 2014 at 10:29:58PM +0800, Jean-Christophe PLAGNIOL-VILL=
-ARD wrote:
-> > > no do this at SoC level
-> >=20
-> > Since it has to be done at init_machine, I don't see any other easy
-> > way to do this at the SoC level.
-> >=20
-> > What is your suggestion?
+On Tue, Jul 08, 2014 at 09:52:03AM +0200, Linus Walleij wrote:
+> On Wed, Jun 18, 2014 at 3:37 PM, Houcheng Lin <houcheng@gmail.com> wrote:
 >=20
-> do it earlier as there is not driver it will not change anything
+> > The Problem
+> > -----------
+> > The reset signal on a hardware board is send either:
+> >     - during machine initialization
+> >     - during bus master's initialization
+>=20
+> I just thought about this a bit, since there isn't already a generic GPIO
+> reset driver, just call this drivers/reset/reset-gpio.c and make the
+> ability to deferral just a configuration detail of the GPIO reset driver.
 
-My question remains. When should I do so?
+Philipp has been working on one for quite some time. See
+http://www.spinics.net/lists/arm-kernel/msg321927.html
 
-at91_initialize is too early to register any devices.
+However, it seems to progress slowly, and we don't seem to be able to
+reach a consensus here.
+
+If you ask me, having to set a few extra properties like this just
+advocates for a regular reset driver and DT node for the reset GPIO,
+but I'm pretty sure Philipp will feel otherwise :)
 
 Maxime
 
@@ -67,26 +77,26 @@ Maxime Ripard, Free Electrons
 Embedded Linux, Kernel and Android engineering
 http://free-electrons.com
 
---iSeZnk6FyAS3EJ1y
+--T4IYkFBVPN84tP7K
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTu6aMAAoJEBx+YmzsjxAgXd8P/3/sIr09/dBiiK9YXylAr1Rc
-N4FXt3EYOlWoHJfHYELtKyWS8+SCFZD4MWaKwGhSPA5VZB5LlDnrLNE0HrvmvFgC
-k0HIb8Qlt0A0tU7WbArMsyYtspRdDTJIxZFp2wxiu8PwazqouDMG29PHpYYbaHw9
-JvUKpBh/xCnSL2wAq10UPillTbUuxuFpd8CdFiYmq+/LoFhypDp8q29bBKAvZ0ud
-qymON7Xqop0IqGJpL6xFOD/y1qCvuGbYWSHfzNhotPfp5dnrOa1MEnOF6QdPTKS8
-4vaLV9umV7o9val0cno1dFrhsH1N1qo52WG07Hm7+fwpMtcgGkNvIToZurwGFheb
-yt2sYJx0knVYUAMPa4ome1n2Z8FJgDpBR/4jR+IVfnqU96ArylqsdWW4ZLm95SQL
-QSrtPZrvhaPSxdugx0Zdvj4QD/sqpijrpBbYACIwHrjWUHU0S9AhY/T24yd7V5t0
-9Cz/73gKGDTfJvIfMvSJ/q2BBMK6Gdtcg7TK5iaMP8cElmdj4NdS0EGaZiYzUB2i
-SdFUIthbZA8QzWD5jAgKirZgr4ZZJkQH0B02eVKmFMp5h4ciefTpB3PM2TnZAWlP
-BIrJ9lppmvGC9uhLlBjREe5W2FIiFvkNSU7Wz6+E49uv2HW+F8+m7/2momn0//M9
-FdDuQ01C59znuiHS+L8h
-=+BdI
+iQIcBAEBAgAGBQJTu6ZPAAoJEBx+YmzsjxAgsVEP/jTiyBvmg4EDVfiUjYQ6CJI/
+iK+oL952MyOFEfIB+662u22IjLHeQnYwMRTpbPv9IbTh/HDu+q+Z4qTdF+zstu8L
+VndbS5gNNU5IGwOLkru4w4jhQ0eCy0ZzOqaE2CkVG1Fa/ogVEi6WJZX2Cfjsu9JA
+MVuOMfFJf+gKSPoFl7uMhF4hCwI5cipNwoQ6z/gWHJVfShO+6rm3yoN+qRjIb9kx
++bbZCi2tQcG0vFYNDKRfsWed13oLKs8TvniT0EIepzcEUA7XhfjP33JAU+WR9chI
+baWQnr3RMymDQwKg5Ow0w7QQJcmA86R9Q1QdaqTSIFbnuyNCumCgYwmovfOYmL+g
+PTzwrGEhaGpD9O6LRiEj36ylkBCyCEg+f23SB2hqWDoajEUVgBD9AOfw3K0V95HN
+2v1DvAk6RVjmJSijsewCiJtc0ox3sPpOckWMU5wRxzPcAJkMRCBaeWt/x7VMVsNF
+Le2gJ9GDGzjvXott9/SHsWi0z32XyKu2+s6oOAgnTFOj4T4y+YgbQgVAnyLk/saX
+y4ivnSswImRPgGT8toGoDpCOZhTgWSu1LtCA+haDoF8iPrFBMqCwoU7RGxTiESV8
+nKm2SEd0DVvbTK5Y6ZReXqHn1DFMJbZACRnRmb8KumH0sSfGmRJkZGod5L7wRp5y
+CGN+4XQN7Z0tcxh0YLiY
+=nk3n
 -----END PGP SIGNATURE-----
 
---iSeZnk6FyAS3EJ1y--
+--T4IYkFBVPN84tP7K--
