@@ -1,58 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849AbaGHRFj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 13:05:39 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:40117 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753747AbaGHRFh (ORCPT
+	id S1754105AbaGHRLr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 13:11:47 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:21600 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752936AbaGHRLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 13:05:37 -0400
-Date: Tue, 8 Jul 2014 19:05:33 +0200
-From: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        sebastian.hesselbarth@gmail.com, kishon@ti.com,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v9 3/7] ata: libahci: allow to use multiple PHYs
-Message-ID: <20140708170533.GB16148@kwain>
-References: <1404728173-20263-1-git-send-email-antoine.tenart@free-electrons.com>
- <1404728173-20263-4-git-send-email-antoine.tenart@free-electrons.com>
- <20140708134203.GD4979@htj.dyndns.org>
+	Tue, 8 Jul 2014 13:11:46 -0400
+Message-ID: <53BC2649.7080109@atmel.com>
+Date: Tue, 8 Jul 2014 19:11:37 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140708134203.GD4979@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Gregory Hermant <gregory.hermant@calao-systems.com>,
+        Joachim Eastwood <manabian@gmail.com>,
+        Fabio Porcedda <fabio.porcedda@gmail.com>,
+        Jiri Prchal <jiri.prchal@aksignal.cz>,
+        Tim Schendekehl <tim.schendekehl@egnite.de>,
+        "Gael Portay" <g.portay@overkiz.com>,
+        Rodolfo Giometti <giometti@linux.it>
+Subject: Re: [PATCHv2 00/32] ARM: at91: Switch remaining SoCs and boards to
+ CCF
+References: <1404764629-29136-1-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1404764629-29136-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 08, 2014 at 09:42:03AM -0400, Tejun Heo wrote:
-> One more thing.
+On 07/07/2014 22:23, Alexandre Belloni :
+> This patch set adds support for the common clock framwork to the remaining atml
+> SoCs: at91rm9200, at91sam9260, at91sam9263, at91sam9g45.
 > 
-> On Mon, Jul 07, 2014 at 12:16:09PM +0200, Antoine Ténart wrote:
-> > This introduce a new way of defining SATA ports in the device tree, with
-> > one port per sub-node. This as the advantage of allowing a per port
-> > configuration. Because some ports may be accessible but disabled in the
-> > device tree, the default port_map is computed automatically when using
-> > this.
+> It also defines the necessary main crystal and slow crystal frequencies.
 > 
-> Any chance the old one phy config can be moved over to this scheme so
-> that we don't have to carry two separate mechanisms?
+> I couldn't find datasheets for the following boards:
+>  - mpa1600
+>  - ge863-pro3
+>  - animeo_ip
+>  - tny_a9260
+> 
+> For those, I assumed the 32kHz crystal is present on the board as this is the
+> most common implementation (only one board doesn't have it). Please correct me
+> if this is wrong.
+> 
+> I could not test at91rm9200 as I don't own any board with that chip.
 
-That would break the DT ABI.
+It seems okay and I am looking forward to see these board converted:
+Nice job!
 
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-Antoine
+BTW, can you send me pull-requests for the 3.17 material? It can be even
+more convenient for me to organize series and dependancis for pushing
+upstream. It seems that we have quite a few "cleanup" patches for this
+development cycle.
+
+Best regards,
+
+> Changes in v2:
+>  - Drop patch 3 that has been taken in the clock tree
+>  - rename tcb*_clk in tc*_clk for rm9200 an sam9260
+>  - rename tc0_clk in tcb_clk for sam9263
+> 
+> Cc: Douglas Gilbert <dgilbert@interlog.com>
+> Cc: Gregory Hermant <gregory.hermant@calao-systems.com>
+> Cc: Joachim Eastwood <manabian@gmail.com>
+> Cc: Fabio Porcedda <fabio.porcedda@gmail.com>
+> Cc: Jiri Prchal <jiri.prchal@aksignal.cz>
+> Cc: Tim Schendekehl <tim.schendekehl@egnite.de>
+> Cc: Gael Portay <g.portay@overkiz.com>
+> Cc: Rodolfo Giometti <giometti@linux.it>
+> 
+> Alexandre Belloni (33):
+> Alexandre Belloni (32):
+>   Documentation: dt: document all the atmel pmc compatibles
+>   ARM: at91/dt: ariag25: define crystals frequencies
+>   ARM: at91: prepare common clk transition for rm9200
+>   ARM: at91/dt: rm9200: define clocks
+>   ARM: at91: move at91rm9200 SoC to the CCF
+>   ARM: at91/dt: at91rm9200ek: define crystals frequencies
+>   ARM: at91: prepare common clk transition for sam9260
+>   ARM: at91/dt: sam9260: define clocks
+>   ARM: at91/dt: sam9g20: define clocks
+>   ARM: at91: move at91sam9260 SoCs to the CCF
+>   ARM: at91/dt: at91sam9g20ek: define crystals frequencies
+>   ARM: at91/dt: foxg20: define crystals frequencies
+>   ARM: at91/dt: usb_a9260: define crystals frequencies
+>   ARM: at91/dt: tny_a9260: define crystals frequencies
+>   ARM: at91/dt: qil_a9260: define crystals frequencies
+>   ARM: at91/dt: mpa1600: define crytals frequencies
+>   ARM: at91/dt: ge863-pro3: define crystals frequencies
+>   ARM: at91/dt: ethernut5: define crystals frequencies
+>   ARM: at91/dt: animeo_ip: define crystals frequencies
+>   ARM: at91/dt: kizbox: define main crystal frequency
+>   ARM: at91: prepare common clk transition for sam9g45
+>   ARM: at91/dt: sam9g45: define clocks
+>   ARM: at91: move at91sam9g45 SoC to the CCF
+>   ARM: at91/dt: sam9m10g45ek: define crystals frequencies
+>   ARM: at91/dt: pm9g45: crystals frequencies
+>   ARM: at91/dt: cosino define crystals frequencies
+>   ARM: at91: prepare common clk transition for sam9263
+>   ARM: at91/dt: sam9263: define clocks
+>   ARM: at91: move at91sam9263 SoC to the CCF
+>   ARM: at91/dt: sam9263ek: define crystals frequencies
+>   ARM: at91/dt: tny_a9263: define crystals frequencies
+>   ARM: at91/dt: usb_a9263: define crystals frequencies
+> 
+>  .../devicetree/bindings/arm/atmel-pmc.txt          |   5 +-
+>  arch/arm/boot/dts/animeo_ip.dts                    |   8 +
+>  arch/arm/boot/dts/at91-ariag25.dts                 |   8 +
+>  arch/arm/boot/dts/at91-cosino.dtsi                 |   8 +
+>  arch/arm/boot/dts/at91-foxg20.dts                  |   8 +
+>  arch/arm/boot/dts/at91-qil_a9260.dts               |   8 +
+>  arch/arm/boot/dts/at91rm9200.dtsi                  | 304 ++++++++++++++++++
+>  arch/arm/boot/dts/at91rm9200ek.dts                 |   8 +
+>  arch/arm/boot/dts/at91sam9260.dtsi                 | 314 ++++++++++++++++++-
+>  arch/arm/boot/dts/at91sam9263.dtsi                 | 311 +++++++++++++++++++
+>  arch/arm/boot/dts/at91sam9263ek.dts                |   8 +
+>  arch/arm/boot/dts/at91sam9g20.dtsi                 |  24 ++
+>  arch/arm/boot/dts/at91sam9g20ek_common.dtsi        |   8 +
+>  arch/arm/boot/dts/at91sam9g45.dtsi                 | 340 ++++++++++++++++++++-
+>  arch/arm/boot/dts/at91sam9m10g45ek.dts             |   8 +
+>  arch/arm/boot/dts/ethernut5.dts                    |  10 +
+>  arch/arm/boot/dts/ge863-pro3.dtsi                  |   8 +
+>  arch/arm/boot/dts/kizbox.dts                       |   4 +
+>  arch/arm/boot/dts/mpa1600.dts                      |   8 +
+>  arch/arm/boot/dts/pm9g45.dts                       |   8 +
+>  arch/arm/boot/dts/tny_a9260_common.dtsi            |   8 +
+>  arch/arm/boot/dts/tny_a9263.dts                    |   8 +
+>  arch/arm/boot/dts/usb_a9260_common.dtsi            |   8 +
+>  arch/arm/boot/dts/usb_a9263.dts                    |   8 +
+>  arch/arm/mach-at91/Kconfig                         |   4 -
+>  arch/arm/mach-at91/at91rm9200.c                    |   6 +-
+>  arch/arm/mach-at91/at91sam9260.c                   |   6 +-
+>  arch/arm/mach-at91/at91sam9263.c                   |   6 +-
+>  arch/arm/mach-at91/at91sam9g45.c                   |   6 +-
+>  29 files changed, 1457 insertions(+), 11 deletions(-)
+> 
+
 
 -- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Nicolas Ferre
