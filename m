@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689AbaGHFtU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 01:49:20 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:44926 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752471AbaGHFtS (ORCPT
+	id S1752849AbaGHFth (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 01:49:37 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:40511 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752058AbaGHFtf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 01:49:18 -0400
-Message-ID: <53BB8659.8020500@redhat.com>
-Date: Tue, 08 Jul 2014 07:49:13 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 8 Jul 2014 01:49:35 -0400
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-CC: Bandan Das <bsd@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>,
-        Gleb Natapov <gleb@kernel.org>, Hu Robert <robert.hu@intel.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1 since
- race
-References: <1404284054-51863-1-git-send-email-wanpeng.li@linux.intel.com> <53B3CA6A.4050902@siemens.com> <jpgy4wb9g5t.fsf@redhat.com> <20140704061701.GB3453@kernel> <jpg1ttyhtqw.fsf@redhat.com> <20140707084605.GA2904@kernel> <53BA9A91.7090202@redhat.com> <20140707233837.GA6075@kernel>
-In-Reply-To: <20140707233837.GA6075@kernel>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140707112257.GA12549@ravnborg.org>
+References: <CANeU7Q=a82YmUE49uZ1sOxZn0KGLuktSXuj7YsmUb=wXQEpPXA@mail.gmail.com>
+	<CANeU7QmT=vzOGd6bBdkr-kNkt7yfzCWQF5QujiwV7Q8Q9hZw=w@mail.gmail.com>
+	<20140707112257.GA12549@ravnborg.org>
+Date: Mon, 7 Jul 2014 22:49:34 -0700
+X-Google-Sender-Auth: Zz3FcGOIpHmnFteOif-mBI0oZAE
+Message-ID: <CANeU7QmKtQ=KVEUM=5pMi7Rko3O3MEPB8w7Biw-r=jFtpH4_dg@mail.gmail.com>
+Subject: Re: [PATCH] sparse: Add CLOG option for saving warning
+From: Christopher Li <sparse@chrisli.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-Sparse <linux-sparse@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 08/07/2014 01:38, Wanpeng Li ha scritto:
-> On Mon, Jul 07, 2014 at 03:03:13PM +0200, Paolo Bonzini wrote:
->> Il 07/07/2014 10:46, Wanpeng Li ha scritto:
->>> Hi Paolo,
->>>
->>> Is it ok for you to apply this patch and then more effort should be taken
->>> to figure out the other bug which don't have any relationship with the race
->>> that this patch fixed?
+On Mon, Jul 7, 2014 at 4:22 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
+
+>> > Typical usage:
+>> >
+>> > make -j8 C=2 CLOG=<logname>
 >>
->> Which patch?  Yours or Bandan's?
+> We do not need this kind of special handling of outputs from gcc.
+> For sparse you just do a run with C=2 then you have it.
 >
-> Please wait, a patch which fix the hang will be submitted soon.
+> In other words - this looks like overkill for somethign thas is achievable
+> with simpler means.
 
-This is a regression, so I think the right thing to do is to apply 
-Bandan's patch to 3.16 and yours to 3.17.
+I am aware of the C=2 flag. However, it does not provide consistent result
+with "make -jn" flag.
 
-Paolo
+Please consider that the gcc case is different. The kernel source is usually
+clean of gcc warnings. If there is an error with gcc, the build process
+stops. It is different with sparse. The primary goal of running sparse in
+kernel build is to see those warning. Also sparse is a lot noisier than gcc
+in the kernel build, so there is a need with logging which is not present
+with gcc.
 
+With this patch, here is a normal test procedure for me to see the impact of a
+sparse change on kernel build:
+
+$ make -j8 C=2 CLOG=std
+
+# apply sparse change and make sparse
+
+$ make -j8 C=2 CLOG=std-exp
+
+$ find -name ".*.std.sparse" | while read -r file; do diff -du $file
+${file/std.sparse/std-exp.
+sparse} ; done > /tmp/sparse-diff
+
+
+Without the CLOG= option, the only way to get similar diff
+result is disable "-jn" option. Which make the test process painfully
+slow.
+
+I agree if I don't use "make -jn" flags, using C=2 is good enough.
+However, what is your suggestion if I do want to use "make -jn" for
+sparse checking in the previous mentioned usage case?
+
+Thanks
+
+Chris
