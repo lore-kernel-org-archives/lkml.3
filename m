@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754303AbaGHQhm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 12:37:42 -0400
-Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:19110 "EHLO
-	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752883AbaGHQhl (ORCPT
+	id S1754066AbaGHQjf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 12:39:35 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:27863 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581AbaGHQjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 12:37:41 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: At4OAIcdvFNXQDwH/2dsb2JhbABZgw6tGwUBAQEBAQEFAW4BmVmBGBd1hQOBAhg3iC4DFQHDWA2GFIV6hx6BRmQdhC0FmHaCAI14hhSDRTuBMQ
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-input@vger.kernel.org
-Subject: [PATCH 1/1] input: remove unnecessary break after goto
-Date: Tue,  8 Jul 2014 18:37:36 +0200
-Message-Id: <1404837456-7321-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Tue, 8 Jul 2014 12:39:33 -0400
+Message-ID: <53BC1EBD.3030306@atmel.com>
+Date: Tue, 8 Jul 2014 18:39:25 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv2 0/6] Add a driver for the atmel ram controller
+References: <1404836476-23787-1-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1404836476-23787-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-input@vger.kernel.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/input/misc/keyspan_remote.c | 1 -
- 1 file changed, 1 deletion(-)
+On 08/07/2014 18:21, Alexandre Belloni :
+> The atmel ram controller needs one or more clocks to work. For now the
+> CLK_IGNORE_UNUSED flag is used on those clocks. This patch set introduce a
+> driver that will take care of taking those clocks.
+> 
+> The final goal is also to move the ioremap done in mach-at91 to that driver with
+> a proper power management driver.
 
-diff --git a/drivers/input/misc/keyspan_remote.c b/drivers/input/misc/keyspan_remote.c
-index 01f3b5b..a3fe4a9 100644
---- a/drivers/input/misc/keyspan_remote.c
-+++ b/drivers/input/misc/keyspan_remote.c
-@@ -392,7 +392,6 @@ static void keyspan_irq_recv(struct urb *urb)
- 
- 	default:
- 		goto resubmit;
--		break;
- 	}
- 
- 	if (debug)
+Yes, okay for that series:
+
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+
+> Changes in v2:
+>  - use ATMEL_SDRAMC instead of ATMEL_RAMC
+>  - use "atmel,sama5d3-ddramc" instead of "atmel,sama5d3-mpddramc"
+>  - not getting mpddrck is now an error
+>  - handle "atmel,sama5d3-ddramc" in mach-at91/setup.c
+> 
+> Alexandre Belloni (6):
+>   ARM: at91: Add new binding for sama5d3-ddramc
+>   memory: add a driver for atmel ram controllers
+>   ARM: at91: select ATMEL_SDRAMC when using OF
+>   ARM: at91/dt: sama5d3: define mpddr clock and ramc clocks
+>   ARM: at91/dt: at91sam9: use ddrck in ramc
+>   clk: at91: remove the useless CLK_IGNORE_UNUSED flag
+> 
+>  .../devicetree/bindings/arm/atmel-at91.txt         |  1 +
+>  arch/arm/boot/dts/at91sam9n12.dtsi                 |  2 +
+>  arch/arm/boot/dts/at91sam9x5.dtsi                  |  2 +
+>  arch/arm/boot/dts/sama5d3.dtsi                     |  9 +-
+>  arch/arm/mach-at91/Kconfig                         |  4 +
+>  arch/arm/mach-at91/setup.c                         |  1 +
+>  drivers/clk/at91/clk-system.c                      |  8 +-
+>  drivers/memory/Kconfig                             | 10 +++
+>  drivers/memory/Makefile                            |  1 +
+>  drivers/memory/atmel-sdramc.c                      | 98 ++++++++++++++++++++++
+>  10 files changed, 128 insertions(+), 8 deletions(-)
+>  create mode 100644 drivers/memory/atmel-sdramc.c
+> 
+
+
 -- 
-1.8.4.5
-
+Nicolas Ferre
