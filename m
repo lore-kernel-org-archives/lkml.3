@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755033AbaGHAPg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:15:36 -0400
+	id S1755166AbaGHAPy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:15:54 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:56384 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754163AbaGHADO (ORCPT
+	with ESMTP id S1753010AbaGHADN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 20:03:14 -0400
+	Mon, 7 Jul 2014 20:03:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.4 14/44] drm/radeon/atom: fix dithering on certain panels
-Date: Mon,  7 Jul 2014 17:07:04 -0700
-Message-Id: <20140707235859.064113209@linuxfoundation.org>
+Subject: [PATCH 3.4 12/44] drm/radeon: only apply hdmi bpc pll flags when encoder mode is hdmi
+Date: Mon,  7 Jul 2014 17:07:02 -0700
+Message-Id: <20140707235859.007747969@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235858.652771077@linuxfoundation.org>
 References: <20140707235858.652771077@linuxfoundation.org>
@@ -30,36 +30,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 642528355c694f5ed68f6bff9ff520326a249f99 upstream.
+commit 7d5ab3009a8ca777174f6f469277b3922d56fd4b upstream.
 
-We need to specify the encoder mode as LVDS for eDP
-when using the Crtc_Source atom table in order to properly
-set up the FMT hardware.
-
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=73911
+May fix display issues with non-HDMI displays.
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_encoders.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c |   48 +++++++++++++++++----------------
+ 1 file changed, 26 insertions(+), 22 deletions(-)
 
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -1666,8 +1666,11 @@ atombios_set_encoder_crtc_source(struct
- 					args.v2.ucEncodeMode = ATOM_ENCODER_MODE_CRT;
- 				else
- 					args.v2.ucEncodeMode = atombios_get_encoder_mode(encoder);
--			} else
-+			} else if (radeon_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT)) {
-+				args.v2.ucEncodeMode = ATOM_ENCODER_MODE_LVDS;
-+			} else {
- 				args.v2.ucEncodeMode = atombios_get_encoder_mode(encoder);
-+			}
- 			switch (radeon_encoder->encoder_id) {
- 			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
- 			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -863,14 +863,16 @@ static void atombios_crtc_program_pll(st
+ 			args.v5.ucMiscInfo = 0; /* HDMI depth, etc. */
+ 			if (ss_enabled && (ss->type & ATOM_EXTERNAL_SS_MASK))
+ 				args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_REF_DIV_SRC;
+-			switch (bpc) {
+-			case 8:
+-			default:
+-				args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_HDMI_24BPP;
+-				break;
+-			case 10:
+-				args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_HDMI_30BPP;
+-				break;
++			if (encoder_mode == ATOM_ENCODER_MODE_HDMI) {
++				switch (bpc) {
++				case 8:
++				default:
++					args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_HDMI_24BPP;
++					break;
++				case 10:
++					args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_HDMI_30BPP;
++					break;
++				}
+ 			}
+ 			args.v5.ucTransmitterID = encoder_id;
+ 			args.v5.ucEncoderMode = encoder_mode;
+@@ -885,20 +887,22 @@ static void atombios_crtc_program_pll(st
+ 			args.v6.ucMiscInfo = 0; /* HDMI depth, etc. */
+ 			if (ss_enabled && (ss->type & ATOM_EXTERNAL_SS_MASK))
+ 				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_REF_DIV_SRC;
+-			switch (bpc) {
+-			case 8:
+-			default:
+-				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_24BPP;
+-				break;
+-			case 10:
+-				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_30BPP;
+-				break;
+-			case 12:
+-				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_36BPP;
+-				break;
+-			case 16:
+-				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_48BPP;
+-				break;
++			if (encoder_mode == ATOM_ENCODER_MODE_HDMI) {
++				switch (bpc) {
++				case 8:
++				default:
++					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_24BPP;
++					break;
++				case 10:
++					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_30BPP;
++					break;
++				case 12:
++					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_36BPP;
++					break;
++				case 16:
++					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_48BPP;
++					break;
++				}
+ 			}
+ 			args.v6.ucTransmitterID = encoder_id;
+ 			args.v6.ucEncoderMode = encoder_mode;
 
 
