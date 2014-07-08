@@ -1,44 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855AbaGHIVV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 04:21:21 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:58032 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753216AbaGHIVR (ORCPT
+	id S1753219AbaGHIYR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 04:24:17 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:20951 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751834AbaGHIYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 04:21:17 -0400
+	Tue, 8 Jul 2014 04:24:14 -0400
+Date: Tue, 8 Jul 2014 11:23:51 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Josef Gajdusek <atx@atalax.net>
+Cc: linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        gregkh@linuxfoundation.org, pmeerw@pmeerw.net,
+        linux-kernel@vger.kernel.org, jic23@kernel.org
+Subject: Re: [PATCH v2 2/5] staging:iio:hmc5843: Split hmc5843.c to multiple
+ files
+Message-ID: <20140708082351.GE25880@mwanda>
+References: <20140707203326.GB10383@dashie>
+ <20140707203636.GD10383@dashie>
 MIME-Version: 1.0
-In-Reply-To: <1404193516-4384-3-git-send-email-acourbot@nvidia.com>
-References: <1404193516-4384-1-git-send-email-acourbot@nvidia.com>
-	<1404193516-4384-3-git-send-email-acourbot@nvidia.com>
-Date: Tue, 8 Jul 2014 10:21:17 +0200
-Message-ID: <CACRpkdaRReCWObTBP-ujiM-R9Js2y+L6RFtAfw6AP1cwx1hrHA@mail.gmail.com>
-Subject: Re: [RFC 2/3] gpio: move sysfs support to its own file
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140707203636.GD10383@dashie>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 1, 2014 at 7:45 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+When you compare the old and new versions of hmc5843_read_raw() then it
+appears there is a bug fix or something which hasn't been documentented
+in the changelog.
 
-> sysfs support is currently entangled within the core GPIO support, while
-> it should relly just be a (privileged) user of the integer GPIO API.
-> This patch is a first step towards making the gpiolib code more readable
-> by splitting it into logical parts.
->
-> Move all sysfs support to their own source file, and share static
-> members of gpiolib that need to be in the private gpiolib.h file. In
-> the future we will want to put some of them back into gpiolib.c, but this
-> first patch let us at least identify them.
->
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> -static int hmc5843_read_raw(struct iio_dev *indio_dev,
+> -			    struct iio_chan_spec const *chan,
+> -			    int *val, int *val2, long mask)
+> -{
+> -	struct hmc5843_data *data = iio_priv(indio_dev);
+> -	int rval;
+> -	int ret;
+> -
+> -	switch (mask) {
+> -	case IIO_CHAN_INFO_RAW:
+> -		return hmc5843_read_measurement(data, chan->scan_index, val);
+> -	case IIO_CHAN_INFO_SCALE:
+> -		ret = regmap_read(data->regmap, HMC5843_CONFIG_REG_B, &rval);
+> -		if (ret < 0)
+> -			return ret;
+> -		*val = 0;
+> -		*val2 = data->variant->regval_to_nanoscale[rval >> HMC5843_RANGE_GAIN_OFFSET];
+> -		return IIO_VAL_INT_PLUS_NANO;
+> -	case IIO_CHAN_INFO_SAMP_FREQ:
+> -		ret = regmap_read(data->regmap, HMC5843_CONFIG_REG_A, &rval);
+> -		if (ret < 0)
+> -			return ret;
+> -		rval &= HMC5843_RATE_MASK;
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
+HMC5843_RATE_MASK is 0x1c.
 
-Patch applied. We really need to make refactorings like this
-so thanks a lot.
+> -		*val = data->variant->regval_to_samp_freq[rval][0];
+> -		*val2 = data->variant->regval_to_samp_freq[rval][1];
+> -		return IIO_VAL_INT_PLUS_MICRO;
+> -	}
+> -	return -EINVAL;
+> -}
 
-Yours,
-Linus Walleij
+> +static int hmc5843_read_raw(struct iio_dev *indio_dev,
+> +			    struct iio_chan_spec const *chan,
+> +			    int *val, int *val2, long mask)
+> +{
+> +	struct hmc5843_data *data = iio_priv(indio_dev);
+> +	int rval;
+> +	int ret;
+> +
+> +	switch (mask) {
+> +	case IIO_CHAN_INFO_RAW:
+> +		return hmc5843_read_measurement(data, chan->scan_index, val);
+> +	case IIO_CHAN_INFO_SCALE:
+> +		ret = regmap_read(data->regmap, HMC5843_CONFIG_REG_B, &rval);
+> +		if (ret < 0)
+> +			return ret;
+> +		rval >>= HMC5843_RANGE_GAIN_OFFSET;
+> +		*val = 0;
+> +		*val2 = data->variant->regval_to_nanoscale[rval];
+> +		return IIO_VAL_INT_PLUS_NANO;
+> +	case IIO_CHAN_INFO_SAMP_FREQ:
+> +		ret = regmap_read(data->regmap, HMC5843_CONFIG_REG_A, &rval);
+> +		if (ret < 0)
+> +			return ret;
+> +		rval >>= HMC5843_RATE_OFFSET;
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+HMC5843_RATE_OFFSET is 0x02.
+
+> +		*val = data->variant->regval_to_samp_freq[rval][0];
+> +		*val2 = data->variant->regval_to_samp_freq[rval][1];
+> +		return IIO_VAL_INT_PLUS_MICRO;
+> +	}
+> +	return -EINVAL;
+> +}
+
+Ideally this patch would be a straight move and no code changes.
+
+regards,
+dan carpenter
