@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934AbaGHCfI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 22:35:08 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:48359 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300AbaGHCfG (ORCPT
+	id S1753074AbaGHCke (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 22:40:34 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:29452 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752386AbaGHCkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 22:35:06 -0400
-Date: Mon, 07 Jul 2014 19:35:05 -0700 (PDT)
-Message-Id: <20140707.193505.345276817146527821.davem@davemloft.net>
-To: decot@googlers.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, edumazet@google.com, amwang@redhat.com,
-        antonio@meshcoding.com, jpirko@redhat.com
-Subject: Re: [PATCH net-next v1 2/2] netpoll: avoid reference leaks
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <f98ccbfee35a7ab7f9499ede9b34e6b1120d88f1.1404172155.git.decot@googlers.com>
-References: <0f692012238337f2c40893319830ae042523ce18.1404172155.git.decot@googlers.com>
-	<cover.1404172155.git.decot@googlers.com>
-	<f98ccbfee35a7ab7f9499ede9b34e6b1120d88f1.1404172155.git.decot@googlers.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Mon, 7 Jul 2014 22:40:33 -0400
+Message-ID: <53BB5A13.1070305@huawei.com>
+Date: Tue, 8 Jul 2014 10:40:19 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "xiaofeng.yan" <xiaofeng.yan@huawei.com>
+CC: Peter Zijlstra <peterz@infradead.org>, <mingo@redhat.com>,
+        <linux-kernel@vger.kernel.org>, <xiaofeng.yan2012@gmail.com>,
+        Juri Lelli <juri.lelli@gmail.com>
+Subject: Re: [PATCH] sched/rt: overrun could happen in start_hrtick_dl
+References: <1404475341-22536-1-git-send-email-xiaofeng.yan@huawei.com> <20140707084150.GC19379@twins.programming.kicks-ass.net> <53BB4510.5090704@huawei.com>
+In-Reply-To: <53BB4510.5090704@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 07 Jul 2014 19:35:06 -0700 (PDT)
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Decotigny <decot@googlers.com>
-Date: Mon, 30 Jun 2014 16:50:10 -0700
+On 2014/7/8 9:10, xiaofeng.yan wrote:
+> On 2014/7/7 16:41, Peter Zijlstra wrote:
+>> On Fri, Jul 04, 2014 at 12:02:21PM +0000, xiaofeng.yan wrote:
+>>> It could be wrong for the precision of runtime and deadline
+>>> when the precision is within microsecond level. For example:
+>>> Task runtime deadline period
+>>>   P1   200us   500us   500us
+>>>
+>>> This case need enbale HRTICK feature by the next command
+>>> PC#echo "HRTICK" > /sys/kernel/debug/sched_features
+>>> PC#./schedtool -E -t 200000:500000 -e ./test&
+>>> PC#trace-cmd record -e sched_switch
+>> Are you actually using HRTICK ?
+> yes, If HRTICK is close , then all of runtime and deadline will be wrong.
 
-> This ensures that the ndo_netpoll_cleanup callback is called for every
-> device that provides one. Otherwise there is a risk of reference leak
-> with bonding for example, which depends on this callback to cleanup
-> the slaves' references to netpoll info.
-> 
-> Tested:
->   see patch "netpoll: fix use after free"
-> 
-> Signed-off-by: David Decotigny <decot@googlers.com>
+I think what peter meant is, do you use HRTICK in products or
+just use it for testing/experiment?
 
-I definitely don't understand this.
-
-Why would we call the cleanup function of an object before it's
-reference count hits zero?  It is exactly the act of reaching a
-zero refcount which should trigger invoking the cleanup callback.
-
-If a refcount is being released in another location without checking
-if it hits zero and invoking the cleanup if so, _THAT_ is the bug.
