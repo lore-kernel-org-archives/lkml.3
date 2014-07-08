@@ -1,89 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754905AbaGHWNk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 18:13:40 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:51140 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269AbaGHWNj (ORCPT
+	id S1752536AbaGHWOv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 18:14:51 -0400
+Received: from mail-yh0-f73.google.com ([209.85.213.73]:42177 "EHLO
+	mail-yh0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947AbaGHWOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 18:13:39 -0400
-Date: Wed, 9 Jul 2014 02:13:36 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
-        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [RFC 2/2] prctl: PR_SET_MM -- Introduce PR_SET_MM_MAP operation
-Message-ID: <20140708221336.GL17860@moon.sw.swsoft.com>
-References: <20140703143318.568554771@openvz.org>
- <20140703151102.842945837@openvz.org>
- <20140708190849.GC17860@moon.sw.swsoft.com>
- <20140708143830.ea078ef01e1d7d31276edbcd@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140708143830.ea078ef01e1d7d31276edbcd@linux-foundation.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 8 Jul 2014 18:14:49 -0400
+From: David Decotigny <decot@googlers.com>
+To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Eric Dumazet <edumazet@google.com>, Cong Wang <amwang@redhat.com>,
+        David Decotigny <decot@googlers.com>,
+        Antonio Quartulli <antonio@meshcoding.com>,
+        Jiri Pirko <jpirko@redhat.com>
+Subject: [PATCH net-next v2] netpoll: fix use after free
+Date: Tue,  8 Jul 2014 15:14:41 -0700
+Message-Id: <96b940137a50e5c387687bb4f57de8b0435a653f.1404857349.git.decot@googlers.com>
+X-Mailer: git-send-email 2.0.0.526.g5318336
+In-Reply-To: <cover.1404857349.git.decot@googlers.com>
+References: <cover.1404857349.git.decot@googlers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 08, 2014 at 02:38:30PM -0700, Andrew Morton wrote:
-> On Tue, 8 Jul 2014 23:08:49 +0400 Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> 
-> > Ping. Guys, any commens please?
-> 
-> Well, allowing a process to modify pretty deep internals like this is
-> always scary from a security point of view, and now we're removing
-> CAP_SYS_RESOURCE protections.  Yikes.  Convince me we aren't handing
-> out root here.
-> 
-> The changelog doesn't make it clear (to me) why this is actually being
-> done.  criu runs unprivileged?  What's the requirement here?
+After a bonding master reclaims the netpoll info struct, slaves could
+still hold a pointer to the reclaimed data. This patch fixes it: as
+soon as netpoll_async_cleanup is called for a slave (eg. when
+un-enslaved), we make sure that this slave doesn't point to the data.
 
-It comes from user-ns, we are almost ready to support c/r for user
-namespaces and faced a problem -- when we create new user-namespace
-we loose CAP_SYS_RESOURCE bit and criu fails to proceed. Andrew
-Vagin was implementing user-ns in criu and as far as I remember
-there were a talk with Eric which (again if my memory doesn't
-betray me) end up in -- guys, simply do proper check for values
-you read from user space instead of relying on CAP_SYS_RESOURCE.
-Erik, am I right?
+Signed-off-by: David Decotigny <decot@googlers.com>
+---
 
-Probably I should walk over _every_ member we're modifying
-explaning where exactly is used in kernel.
+Tested:
+  One way to reproduce the panic is with netconsole: with the script
+  below run in a loop without this patch. Same procedure with this
+  patch can run without panic.
+    CONFIG_NETCONSOLE=m
+    CONFIG_NETCONSOLE_DYNAMIC=y
+  Then run in a loop (dual port NIC makes it easier to crash):
+    ifconfig eth0 192.168.42.4 up
+    ifconfig eth1 192.168.56.4 up
+    sleep 10
+    modprobe -r netconsole
+    modprobe -r bonding
+    modprobe netconsole
+    modprobe bonding mode=4
+    echo +bond0 > /sys/class/net/bonding_masters
+    ifconfig bond0 192.168.56.3 up
+    mkdir /sys/kernel/config/netconsole/blah
+    echo 0 > /sys/kernel/config/netconsole/blah/enabled
+    echo bond0 > /sys/kernel/config/netconsole/blah/dev_name
+    echo 192.168.56.42 > /sys/kernel/config/netconsole/blah/remote_ip
+    echo 1 > /sys/kernel/config/netconsole/blah/enabled
+    # npinfo refcnt ->1
+    ifenslave bond0 eth1
+    # npinfo refcnt ->2
+    ifenslave bond0 eth0
+    # (this should be optional, preventing ndo_cleanup_nepoll below)
+    # npinfo refcnt ->3
+    sleep 3
+    ifenslave -d bond0 eth1
+    # npinfo refcnt ->2, eth1 keeps ptr to npinfo reclaimed later => garbage
+    sleep 1
+    echo -bond0 > /sys/class/net/bonding_masters
+    # netpoll_cleanup(bond0) + dec(refcnt)
+    # (should be optional: becomes -> 1 (aka. != 0)
+    #                      ==> do not call ndo_cleanup_nepoll)
+    # try to increase chance of writing garbage onto npinfo:
+    ls -lR / 2>&1 | tail -30
+    echo +bond0 > /sys/class/net/bonding_masters
+    ifconfig bond0 192.168.56.3 up
+    ifenslave bond0 eth1
+    # dev_open() called --> netpoll_rx_disable() + npinfo is garbage
+    #    -> down(&ni->dev_lock);
 
-Still the good news about all this members we modify -- they are used
-for statistics mostly except brk/stack related members but they
-are checked very carefully to not exceed the limits (if the
-limits are set).
+diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+index e33937f..907fb5e 100644
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -822,7 +822,8 @@ void __netpoll_cleanup(struct netpoll *np)
+ 
+ 		RCU_INIT_POINTER(np->dev->npinfo, NULL);
+ 		call_rcu_bh(&npinfo->rcu, rcu_cleanup_netpoll_info);
+-	}
++	} else
++		RCU_INIT_POINTER(np->dev->npinfo, NULL);
+ }
+ EXPORT_SYMBOL_GPL(__netpoll_cleanup);
+ 
+-- 
+2.0.0.526.g5318336
 
-> struct prctl_mm_map could do with a nice comment explaining its role in
-> the world.
-
-ok, i'll update
-
-> I'm not seeing a coherent description of the proposed userspace
-> interface.  We'll eventually want to update the prctl manpage for this,
-> so how about laying out all the needed details now, at patch review
-> time so we can see what is proposed.
-
-Sure, I'll write more descriptive comment since original "It takes
-a pointer of prctl_mm_map structure which carries all members to be
-updated" is too short.
-
-> 
-> Why isn't the newly-added code under #ifdef CONFIG_CHECKPOINT_RESTORE?
-
-Initially all prctl set-mm opcodes were CONFIG_CHECKPOINT_RESTORE
-guarded but then assumed that such modification might be
-needed not only for criu but other tools as well and this #ifdef
-were dropped off. Now new PR_SET_MM_MAP is a part of old
-interface so I'm not sure if it should be CONFIGed. That
-said it is not a problem to wrap it but looks unreasonable
-in this particular case.
