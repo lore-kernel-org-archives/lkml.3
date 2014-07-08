@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896AbaGHGTM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 02:19:12 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:52838 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670AbaGHGTL (ORCPT
+	id S1752957AbaGHGVy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 02:21:54 -0400
+Received: from router.aksignal.cz ([188.175.113.102]:57562 "EHLO
+	router.aksignal.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752175AbaGHGVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 02:19:11 -0400
+	Tue, 8 Jul 2014 02:21:52 -0400
+X-Greylist: delayed 618 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Jul 2014 02:21:52 EDT
+Message-ID: <53BB8B91.8020501@aksignal.cz>
+Date: Tue, 08 Jul 2014 08:11:29 +0200
+From: =?UTF-8?B?SmnFmcOtIFByY2hhbA==?= <jiri.prchal@aksignal.cz>
+Reply-To: jiri.prchal@aksignal.cz
+Organization: AK signal Brno
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20140708051916.GB26257@dragon>
-References: <1404500590-21712-1-git-send-email-fabf@skynet.be>
-	<20140707055521.GM30239@dragon>
-	<CAK5sBcE2xxb1NGegn1L_CFH27vzx8kLg06u9fVTo6SZk8_6qJQ@mail.gmail.com>
-	<20140708051916.GB26257@dragon>
-Date: Tue, 8 Jul 2014 11:49:09 +0530
-Message-ID: <CAK5sBcEfL2oXBW+fiNwMeTxeBckmxtjQL52+-OXwj2nrMvhy4A@mail.gmail.com>
-Subject: Re: [PATCH 1/1] ARM: imx: use PTR_ERR_OR_ZERO
-From: Sachin Kamat <spk.linux@gmail.com>
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: Fabian Frederick <fabf@skynet.be>,
-        open list <linux-kernel@vger.kernel.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Fabio Porcedda <fabio.porcedda@gmail.com>
+Subject: Re: [PATCHv2 17/32] ARM: at91/dt: ge863-pro3: define crystals frequencies
+References: <1404764629-29136-1-git-send-email-alexandre.belloni@free-electrons.com> <1404764629-29136-18-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1404764629-29136-18-git-send-email-alexandre.belloni@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 8, 2014 at 10:49 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
-> On Tue, Jul 08, 2014 at 09:18:56AM +0530, Sachin Kamat wrote:
->> Hi Shawn,
->>
->> On Mon, Jul 7, 2014 at 11:25 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
->> > On Fri, Jul 04, 2014 at 09:03:10PM +0200, Fabian Frederick wrote:
->> >> replace IS_ERR/PTR_ERR
->> >>
->> >> Cc: Shawn Guo <shawn.guo@freescale.com>
->> >> Cc: Sascha Hauer <kernel@pengutronix.de>
->> >> Cc: linux-arm-kernel@lists.infradead.org
->> >> Signed-off-by: Fabian Frederick <fabf@skynet.be>
->> >
->> > Applied, thanks.
->>
->>
->> I had sent a similar series [1] in May which you rejected. Just
->> curious if something
->> changed between then and now?
->
-> The main difference is this is the second attempt from a different
-> person to "clean up" the code.  I'm still not fond of the change, but
-> I'm getting tied to tell people about that, so just applied the change,
-> since after all it at least gives some good diffstat.
->
-> I would prefer Fabian's patch over yours because it's really good
-> enough to have one patch than 5 patches in a series to do the change for
-> IMX platform.
+Hi,
+the slow crystal is not on the module "ge863-pro3", but it's usually on application board. So I think this clock should 
+be in board dts.
 
-Doesn't really matter whose patches are in. I was just curious to know
-the change
-in logic at this point of time. Thanks for clarification.
-
--- 
-Regards,
-Sachin.
+Dne 7.7.2014 22:23, Alexandre Belloni napsal(a):
+> Define Telit GE863-PRO3, AK signal CDU and Telit EVK-PRO3 main and slow
+> crystals frequencies.
+>
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> Cc: Fabio Porcedda <fabio.porcedda@gmail.com>
+> Cc: Jiri Prchal <jiri.prchal@aksignal.cz>
+> ---
+>   arch/arm/boot/dts/ge863-pro3.dtsi | 8 ++++++++
+>   1 file changed, 8 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/ge863-pro3.dtsi b/arch/arm/boot/dts/ge863-pro3.dtsi
+> index 230099bb31c8..a32fdbefbbd9 100644
+> --- a/arch/arm/boot/dts/ge863-pro3.dtsi
+> +++ b/arch/arm/boot/dts/ge863-pro3.dtsi
+> @@ -19,6 +19,14 @@
+>   			compatible = "atmel,osc", "fixed-clock";
+>   			clock-frequency = <6000000>;
+>   		};
+> +
+> +		slow_xtal {
+> +			clock-frequency = <32768>;
+> +		};
+> +
+> +		main_xtal {
+> +			clock-frequency = <6000000>;
+> +		};
+>   	};
+>
+>   	ahb {
+>
