@@ -1,84 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604AbaGHXu7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 19:50:59 -0400
-Received: from mail-bn1blp0182.outbound.protection.outlook.com ([207.46.163.182]:35998
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751104AbaGHXu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 19:50:58 -0400
-Date: Tue, 8 Jul 2014 16:50:53 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: timers & suspend
-References: <f270ad9c-9906-445d-9e9a-4d3618787455@BY2FFO11FD039.protection.gbl>
+	id S1753908AbaGHXwt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 19:52:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33226 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751151AbaGHXwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 19:52:47 -0400
+Date: Wed, 9 Jul 2014 01:52:44 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Takashi Iwai <tiwai@suse.de>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, chunkeey@googlemail.com,
+        leedom@chelsio.com, cocci@systeme.lip6.fr, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        linux-firmware@kernel.org
+Subject: Re: [PATCH 0/3] drivers: expand usage of request_firmware_direct()
+Message-ID: <20140708235244.GS27687@wotan.suse.de>
+References: <1403649583-12707-1-git-send-email-mcgrof@do-not-panic.com> <s5hmwczve4i.wl%tiwai@suse.de> <20140708222536.GA7745@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <f270ad9c-9906-445d-9e9a-4d3618787455@BY2FFO11FD039.protection.gbl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <2489e9cb-51c2-4901-9ab5-c952877d8a9d@BL2FFO11FD057.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(24454002)(51704005)(377424004)(199002)(189002)(104016002)(107046002)(85306003)(33646001)(77982001)(47776003)(20776003)(46102001)(106466001)(50466002)(64706001)(74316001)(83506001)(87936001)(50986999)(79102001)(85202003)(86362001)(31966008)(81342001)(102836001)(74502001)(85182001)(74662001)(76176999)(81542001)(54356999)(44976005)(83322001)(80022001)(21056001)(6806004)(70736001)(99396002)(92726001)(85852003)(77096002)(76482001)(53416004)(95666004)(4396001)(31696002)(92566001)(1496007)(23676002)(83072002)(107986001)(23106004);DIR:OUT;SFP:;SCL:1;SRVR:BL2FFO11HUB049;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
-X-OriginatorOrg: xilinx.onmicrosoft.com
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0266491E90
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
+In-Reply-To: <20140708222536.GA7745@kroah.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let me extend the audience a bit.
-
-On Mon, 2014-06-30 at 11:39AM -0700, Sören Brinkmann wrote:
-> Hi,
+On Tue, Jul 08, 2014 at 03:25:36PM -0700, Greg KH wrote:
+> On Thu, Jun 26, 2014 at 06:18:05PM +0200, Takashi Iwai wrote:
+> > At Tue, 24 Jun 2014 15:39:40 -0700,
+> > Luis R. Rodriguez wrote:
+> > > 
+> > > From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> > > 
+> > > Takashi added request_firmware_direct() via bba3a87e9 through v3.14-rc1
+> > > which avoids the unnecessary delay introduced by using the udev firmware
+> > > loader in case the first try failed when loading we know loading "firmware"
+> > > is optional. The first use case was for microcode update but if drivers are
+> > > using it for optional configuration updates, custom EEPROMs, and other
+> > > junk other than firmware that should apply as well as good use cases,
+> > > specially if the driver already had a first phase in which it loaded
+> > > the first required firmware. While reviewing one driver I figured it'd
+> > > be best to try to give formalizing a check with SmPL. This isn't perfect
+> > > it had 1 false possitive drivers/fmc/fmc-fakedev.c on the entire kernel
+> > > run but my hope is this can be extended a bit more to build more
+> > > confidence, and then perhaps stuff it as a coccicheck.
+> > > 
+> > > I suppose this will not be required once and if we remove
+> > > CONFIG_FW_LOADER_USER_HELPER. Is that ever going away for good? I know
+> > > there was a recent attempt to remove the udev loader support but
+> > > it was unclear if the special alternative helper support would be
+> > > removed upstream from the kernel.
+> > 
+> > Actually a few weeks ago I sent a patch to make request_firmware()
+> > with usermode helper explicitly to be used by some drivers (like
+> > dell-rbu).  I hope Greg took it for 3.17.  Once when this patch is in,
+> > distros can turn off the usermode helper fallback gracefully, so no
+> > ugly timeout issue shouldn't happen.
 > 
-> I'm currently working on suspend for Zynq and try to track down some
-> spurious wakes. It looks like the spurious wakes are caused by timers,
-> hence I was wondering whether there are any special requirements for
-> timer drivers when it comes to suspend support or if I just missed
-> something.
-> 
-> Zynq sets the 'IRQCHIP_MASK_ON_SUSPEND' flag, which should mask all
-> interrupts but the wake source. Reading through kernel/irq/pm.c
-> indicates, that timer interrupts get some special treatment though.
-> Therefore I implemented some suspend/resume callbacks for the
-> cadence_ttc which disable and clear the timer's interrupts when going
-> into suspend. That seems to mitigate the issue quite a bit, but I still
-> saw spurious wakes - just a lot less often.
-> Digging a little deeper revealed, the spurious wakes are caused by the
-> ARM's smp_twd timer now. Given that that driver is probably used by a few
-> more ARM platforms, I get the feeling that I'm missing something.
-> 
-> It's probably worth mentioning that the suspend state in Zynq does not
-> power off the CPU cores. It just asserts the resets on secondary cores
-> and the primary one waits in wfi.
+> That patch is now merged, so this series should not be needed anymore,
+> right?
 
-I think I found the issue. When going into suspend, all device
-interrupts get disabled, but timers are kept running until very late.
-Then in kernel/power/suspend.c:
- - arch_suspend_disable_irqs() disables interrupts (locally)
- - syscore_suspend is called, which disables timers through
-   tick_suspend()
+Now that it is merged, and another patch I posted which you also merged about
+printing differences, the main difference between request_firmware() and
+request_firmware_direct() for distributions that did not enable the fw
+loader helper is just a printk. That's all. While the difference is minor
+this series addresses a few drivers that we know have firmware that is
+optional, so a printk is indeed not really needed as otherwise it can confuse
+users in terms of expectations. The SmPL grammar for this series could
+likely be expanded to cover other uses cases but obviously this is not
+critical and at best best effort. For distributions that stay in the stone age
+and do not disable the fw loader helper this will speed up boot for a few use
+cases. This series still applies then.
 
-I think what happens is: The interrupts get disabled locally, but the
-timers are still running and generating interrupts.
-Such an interrupt happens and stays pending since interrupts are already
-disabled and no longer handled.
-Then, since Zynq does not power off but only goes into wfi, it
-immediately resumes due to a pending timer IRQ.
+Whether or not its required or optional for firmware to be loaded for a driver
+is an example small difference in specifications that I expect drivers /
+subsystems to be able to make, I suspect the differences might grow in the
+future so I rather keep these requirements well annonated for now. Another
+example difference I am looking into is whether or not firmware should be
+digitally signed. While it may be questionable whether or not this is needed
+for actual firmware that runs on microprocessors some subsystems might want to
+use this to abandon other udev helpers which simply throw data over, one of
+which I am looking into replacing is CRDA for the regulatory database. We
+recently ran into some snags when the internal regdb is used and we use a
+parser, having the ability to load it directly using request_firmware_direct()
+with digital signature support as an option would enable us to simplify how the
+redb is used/parsed on both embedded and non-embedded systems.
 
-Especially with the TTC this can happen quite often since it is only
-16 bit wide. But I also see spurious wakes caused by the twd.
-
-Does that sound like a possible scenario?
-
-	Sören
+  Luis
