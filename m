@@ -1,118 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312AbaGHIEF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 04:04:05 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:52270 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752691AbaGHID7 (ORCPT
+	id S1753424AbaGHIGI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 04:06:08 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:38184 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135AbaGHIGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 04:03:59 -0400
-Date: Tue, 8 Jul 2014 09:36:19 +0200
-From: Mark Brown <broonie@kernel.org>
-To: James Ban <james.ban.opensource@diasemi.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        Support Opensource <support.opensource@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
-Message-ID: <20140708073619.GO30458@sirena.org.uk>
-References: <201407030730.s637UuCh011846@krsrvapps-01.diasemi.com>
+	Tue, 8 Jul 2014 04:06:05 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="E+IgQzR66AIOcbjA"
-Content-Disposition: inline
-In-Reply-To: <201407030730.s637UuCh011846@krsrvapps-01.diasemi.com>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 82.127.83.212
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V4] regulator: DA9211 : new regulator driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140707182316.GA7252@kernel.org>
+References: <1404423780-24026-1-git-send-email-acme@kernel.org>
+ <20140703214811.GC11267@kernel.org> <878uo94ia9.fsf@sejong.aot.lge.com> <20140707182316.GA7252@kernel.org>
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Tue, 8 Jul 2014 17:05:44 +0900
+X-Google-Sender-Auth: tAe9fQwv6SeDsBv3n3gTfy_EfHo
+Message-ID: <CAM9d7cjDNFDarYFLRXbO0o_HLJjU2FzPLc4vwuvOdyJoxB6jrQ@mail.gmail.com>
+Subject: Re: [RFC PATCHES 0/7] Add support for showing headers in the hist browser.
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 8, 2014 at 3:23 AM, Arnaldo Carvalho de Melo
+<acme@kernel.org> wrote:
+> Em Fri, Jul 04, 2014 at 05:53:02PM +0900, Namhyung Kim escreveu:
+>> you ;-) ).  But I also think it needs to fix column/header alignment
+>> first, hmm...
+>
+> This one liner should do the trick, i.e. left justify it.
 
---E+IgQzR66AIOcbjA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yes, but it needs some more tweaks.  I'll try to fix it soon..
 
-On Thu, Jul 03, 2014 at 04:29:03PM +0900, James Ban wrote:
+Thanks,
+Namhyung
 
-This is greatly improved, thanks, however there are still a few issues
-which should be addressed:
 
-> +static irqreturn_t da9211_irq_handler(int irq, void *data)
-> +{
-> +	struct da9211 *chip = data;
-> +	int reg_val, ret;
-> +
-> +	ret = regmap_read(chip->regmap, DA9211_REG_EVENT_B, &reg_val);
-> +	if (ret < 0)
-> +		goto error_i2c;
-> +
-> +	if (reg_val & DA9211_E_OV_CURR_A) {
-
-> +	if (reg_val & DA9211_E_OV_CURR_B) {
-
-> +
-> +	return IRQ_HANDLED;
-
-This is buggy - the driver should only return IRQ_HANDLED if it handled
-the interrupt somehow, otherwise it should return IRQ_NONE and let the
-interrupt core handle things.  This is especially important since the
-device appears to require that interrupts are explicitly acknoweldged so
-if something is flagged but not handled the interrupt will just sit
-constantly asserted.
-
-> +static int da9211_regulator_init(struct da9211 *chip)
-> +{
-> +	struct regulator_config config = { };
-> +	int i, ret;
-> +	unsigned int data;
-> +
-> +	ret = regmap_update_bits(chip->regmap, DA9211_REG_PAGE_CON,
-> +			DA9211_REG_PAGE_MASK, DA9211_REG_PAGE2);
-> +	if (ret < 0) {
-> +		dev_err(chip->dev, "Failed to update PAGE reg: %d\n", ret);
-> +		goto err;
-> +	}
-
-It would be better to model the paging in the register map in the regmap
-- the API has support for this, it's going to be more robust to use it.
-
-> +		dev_info(chip->dev, "# IRQ configured [%d]\n", chip->chip_irq);
-
-> +	for (i = 0; i < chip->num_regulator; i++)
-> +		regulator_unregister(chip->rdev[i]);
-
-Use devm_regulator_register().
-
-> +	if (chip->chip_irq != 0)
-> +		free_irq(chip->chip_irq, chip);
-
-devm_request_threaded_irq().
-
---E+IgQzR66AIOcbjA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTu59qAAoJELSic+t+oim9mNsP/jZa1qJwOirrpaJSowjCWH4F
-X5HqIiJg208ofAQsfgD6KdZAiL7oLBWcrMPoZZh0xV58AQ5tn4sbm/EoOvMHVc9p
-N7I+FttlFp+Lvs0WF7a52oqZ37xt/71jSQ5jH/sT13z5bZjSY7S16x65ouGlmIwS
-V0DNDwJhDpmUkEHbIUjAgSBUDxdLpFR9VaZEn3E1DIdr5z4us7mV7NK0+4MS0fSZ
-tJlObhvZntI4KK+D4YFqOpryvz+KpNeV2i75nHO341ftuWILtiL7GSLyL6nMak6b
-2FhBl75ZNlaS/5tnUxdqNeY7ARytcyEGeKRnUHUWkVLCHjn2eMH7SiN/SJ0jVyHS
-PseZpyTKAZhHtNwA6dC+6Z8Ge8gKi2FyzsVodAm/sqmxmBR2AZAQgvZxKH0BG0ue
-aVqhwNnc/yMSbhMly5qB/uwYku7nEsj8f8B9eOCD4TCPe55vShPpu3hMIbstfYvz
-zHWxpPNSoowvXG6JBlBcozggTTwyQGD08+neLQ6sG+mPeQthVBXSSUrD0e5DmidC
-5V8kLPZBBKADzeMJ93rV/cMHouY7tieWRW+Jh2LQYihLwByT66J4kmjbwzDvSmYE
-d7zVPfBu9nYPe+EGAOqFwasECYzIWfCr2u/PheVHQARuSn7sVmSnTQzwzxdglXxL
-oGpuqpXzaULhcKwZQTNm
-=rS9D
------END PGP SIGNATURE-----
-
---E+IgQzR66AIOcbjA--
+>
+> - Arnaldo
+>
+> diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+> index 1ec57dd82284..14e5a039bc45 100644
+> --- a/tools/perf/util/sort.c
+> +++ b/tools/perf/util/sort.c
+> @@ -1215,7 +1215,7 @@ static int __sort__hpp_header(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
+>         hse = container_of(fmt, struct hpp_sort_entry, hpp);
+>         len = hists__col_len(&evsel->hists, hse->se->se_width_idx);
+>
+> -       return scnprintf(hpp->buf, hpp->size, "%*s", len, hse->se->se_header);
+> +       return scnprintf(hpp->buf, hpp->size, "%-*s", len, hse->se->se_header);
+>  }
+>
+>  static int __sort__hpp_width(struct perf_hpp_fmt *fmt,
