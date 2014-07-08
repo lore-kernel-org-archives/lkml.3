@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523AbaGHHax (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 03:30:53 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:13779 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752753AbaGHHav (ORCPT
+	id S1753530AbaGHHcE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 03:32:04 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:65429 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752753AbaGHHcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 03:30:51 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 08 Jul 2014 00:20:07 -0700
-From: Mikko Perttunen <mperttunen@nvidia.com>
-To: <abrestic@chromium.org>, <pdeschrijver@nvidia.com>,
-        <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>
-CC: <tj@kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        <linux-ide@vger.kernel.org>, Mikko Perttunen <mperttunen@nvidia.com>
-Subject: [PATCH] clk: tegra: Use XUSB-compatible SATA PLL sequence
-Date: Tue, 8 Jul 2014 10:30:15 +0300
-Message-ID: <1404804615-23587-1-git-send-email-mperttunen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <CAL1qeaHo_HEoXoCQjQuqux_BNPtz4BtOnrYTa4=vcNQCYxiDSg@mail.gmail.com>
-References: <CAL1qeaHo_HEoXoCQjQuqux_BNPtz4BtOnrYTa4=vcNQCYxiDSg@mail.gmail.com>
-X-NVConfidentiality: public
+	Tue, 8 Jul 2014 03:32:01 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH V8 0/9] PCI: Add SPEAr13xx PCie support
+Date: Tue, 8 Jul 2014 09:31:47 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: Mohit KUMAR DCG <Mohit.KUMAR@st.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Pratyush ANAND <pratyush.anand@st.com>,
+        "'Bjorn Helgaas' (bhelgaas@google.com)" <bhelgaas@google.com>,
+        "spear-devel" <spear-devel@list.st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Mark Nicholson <mark@nicholnet.com>
+References: <cover.1397555158.git.mohit.kumar@st.com> <2CC2A0A4A178534D93D5159BF3BCB661A17A3E4639@EAPEX1MAIL1.st.com> <CAOh2x=naoa8a1v7Pk+Qv-Fha34ezp6OqBXVwsh_p=guCZgXFrA@mail.gmail.com>
+In-Reply-To: <CAOh2x=naoa8a1v7Pk+Qv-Fha34ezp6OqBXVwsh_p=guCZgXFrA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201407080931.47673.arnd@arndb.de>
+X-Provags-ID: V02:K0:/atABold5FLTLNp74I/d0nxxFn+rrGljsy88kVUo9oo
+ Mkwa7dx62rPqclOZbrwJmPj1vOK9NwhJIhgkuY9iv3jO9hO3m+
+ zQx+FaxlTYoY8Xabsz4/0UBjj52gn/za1QXafOR26AvwZfJknX
+ Hi1ytYY8hMwpnkA1c6SP26uXVtxJsB52ArMgmPKgMATf7DESJH
+ 8zbTTzbGtxQMad7gm8v+/bQRwBeaW7K7vXLGvmVOLOvli4XxWM
+ hbry6Jc5PDQ04z9hBZ/DjU3SgqtZmfUDqR1Q5mGAYFc1Uaokkq
+ DgRNXb9I7ZFJ0dJRv1Ljf0bFPn+L3SPlS0SEzOVA2ojDSrAWhu
+ sx7/Qtj1vM1vvXYhuS7qDK5AmLIw5QP7C9FB2AoWX
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use a sequence for enabling hardware control of the SATA PLL
-that works both when using the SATA lane with SATA and when
-using it with XUSB.
+On Tuesday 08 July 2014, Viresh Kumar wrote:
+> On Tue, Jul 8, 2014 at 10:54 AM, Mohit KUMAR DCG <Mohit.KUMAR@st.com> wrote:
+> > Pls find attached patches to push through your repo.  These are rebased over the top
+> >  of 3.16-rc3.
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/vireshk/linux.git
+> spear/pcie-support-v8
 
-Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
----
-Andrew: yes, it does :)
-Peter: Feel free to squash if that works for you.
+I'm currently at the Linaro sprint in Le Mans, so Olof is doing all the arm-soc merges.
+Mohit or Pratyush, please send a formal pull request (using "git request-pull") to
+arm@kernel.org with Cc to everyone on Cc here so Olof can pick it up.
 
- drivers/clk/tegra/clk-pll.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+Please also include a description of the overall series and the reasons why we decided
+to merge it through arm-soc in the pull request email. Thanks!
 
-diff --git a/drivers/clk/tegra/clk-pll.c b/drivers/clk/tegra/clk-pll.c
-index f070c36..c7c6d8f 100644
---- a/drivers/clk/tegra/clk-pll.c
-+++ b/drivers/clk/tegra/clk-pll.c
-@@ -112,6 +112,9 @@
- 
- #define SATA_PLL_CFG0		0x490
- #define SATA_PLL_CFG0_PADPLL_RESET_SWCTL	BIT(0)
-+#define SATA_PLL_CFG0_PADPLL_USE_LOCKDET	BIT(2)
-+#define SATA_PLL_CFG0_SEQ_ENABLE		BIT(24)
-+#define SATA_PLL_CFG0_SEQ_START_STATE		BIT(25)
- 
- #define PLLE_MISC_PLLE_PTS	BIT(8)
- #define PLLE_MISC_IDDQ_SW_VALUE	BIT(13)
-@@ -1367,6 +1370,14 @@ static int clk_plle_tegra114_enable(struct clk_hw *hw)
- 	/* Enable hw control of SATA pll */
- 	val = pll_readl(SATA_PLL_CFG0, pll);
- 	val &= ~SATA_PLL_CFG0_PADPLL_RESET_SWCTL;
-+	val |= SATA_PLL_CFG0_PADPLL_USE_LOCKDET;
-+	val |= SATA_PLL_CFG0_SEQ_START_STATE;
-+	pll_writel(val, SATA_PLL_CFG0, pll);
-+
-+	udelay(1);
-+
-+	val = pll_readl(SATA_PLL_CFG0, pll);
-+	val |= SATA_PLL_CFG0_SEQ_ENABLE;
- 	pll_writel(val, SATA_PLL_CFG0, pll);
- 
- out:
--- 
-1.8.1.5
-
+	Arnd
