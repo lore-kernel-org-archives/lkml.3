@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198AbaGHUxW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 16:53:22 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:31568 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751080AbaGHUxR (ORCPT
+	id S1754377AbaGHUyw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 16:54:52 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:63379 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752912AbaGHUyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 16:53:17 -0400
-Date: Tue, 8 Jul 2014 22:52:15 +0200
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-efi@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xenproject.org, andrew.cooper3@citrix.com,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        eshelton@pobox.com, fenghua.yu@intel.com, hpa@zytor.com,
-        ian.campbell@citrix.com, jbeulich@suse.com, jeremy@goop.org,
-        konrad.wilk@oracle.com, matt.fleming@intel.com, mingo@redhat.com,
-        mjg59@srcf.ucam.org, stefano.stabellini@eu.citrix.com,
-        tglx@linutronix.de, tony.luck@intel.com
-Subject: Re: [PATCH v7 00/10] xen: Add EFI support
-Message-ID: <20140708205215.GC3474@olila.local.net-space.pl>
-References: <1404150784-27921-1-git-send-email-daniel.kiper@oracle.com>
- <20140707194914.GA27474@console-pimps.org>
+	Tue, 8 Jul 2014 16:54:51 -0400
+Date: Wed, 9 Jul 2014 00:54:48 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [PATCH] mm: Don't forget to set softdirty on file mapped fault
+Message-ID: <20140708205448.GH17860@moon.sw.swsoft.com>
+References: <20140708192151.GD17860@moon.sw.swsoft.com>
+ <20140708131920.2a857d573e8cc89780c9fa1c@linux-foundation.org>
+ <20140708204017.GG17860@moon.sw.swsoft.com>
+ <20140708134511.4a32b7400a952541a31e9078@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140707194914.GA27474@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <20140708134511.4a32b7400a952541a31e9078@linux-foundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 07, 2014 at 08:49:14PM +0100, Matt Fleming wrote:
-> On Mon, 30 Jun, at 07:52:54PM, Daniel Kiper wrote:
-> > Hey,
-> >
-> > This patch series adds EFI support for Xen dom0 guests.
-> > It is based on Jan Beulich and Tang Liang work. I was
-> > trying to take into account all previous comments,
-> > however, if I missed something sorry for that.
-> >
-> > Daniel
-> >
-> >  arch/ia64/include/asm/io.h       |    1 +
-> >  arch/x86/kernel/setup.c          |    4 +-
-> >  arch/x86/platform/efi/efi.c      |  106 ++++++++++--------------
-> >  arch/x86/xen/enlighten.c         |   15 ++++
-> >  drivers/firmware/efi/efi.c       |   25 +++---
-> >  drivers/xen/Kconfig              |    4 +
-> >  drivers/xen/Makefile             |    3 +
-> >  drivers/xen/efi.c                |  368 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/efi.h              |    4 +-
-> >  include/xen/interface/platform.h |  123 ++++++++++++++++++++++++++++
-> >  include/xen/xen-ops.h            |   11 +++
-> >  11 files changed, 587 insertions(+), 77 deletions(-)
-> >
-> > Daniel Kiper (10):
-> >       arch/ia64: Define early_memunmap()
-> >       efi: Use early_mem*() instead of early_io*()
-> >       arch/x86: Do not access EFI memory map if it is not available
-> >       efi: Introduce EFI_PARAVIRT flag
-> >       arch/x86: Remove redundant set_bit(EFI_SYSTEM_TABLES) call
-> >       arch/x86: Remove redundant set_bit(EFI_MEMMAP) call
-> >       xen: Define EFI related stuff
-> >       xen: Put EFI machinery in place
-> >       arch/x86: Replace plain strings with constants
-> >       arch/x86: Remove efi_set_rtc_mmss()
->
-> Thanks Daniel.
->
-> I've included Stefano's Acks where they were given and queued this up
-> for v3.17 in the EFI 'next' branch at,
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git
+On Tue, Jul 08, 2014 at 01:45:11PM -0700, Andrew Morton wrote:
+> 
+> The user doesn't know or care about pte bits.
+> 
+> What actually *happens*?  Does criu migration hang?  Does it lose data?
+> Does it take longer?
 
-Great! Thanks a lot.
+Ah, I see. Yes, the softdirty bit might be lost that usespace program
+won't see that a page was modified. So data lose is possible.
 
-Daniel
+> IOW, what would an end-user's bug report look like?
+> 
+> It's important to think this way because a year from now some person
+> we've never heard of may be looking at a user's bug report and
+> wondering whether backporting this patch will fix it.  Amongst other
+> reasons.
+
+Here is updated changelog, sounds better?
+---
+
+In case if page fault happend on dirty filemapping the newly created pte
+may loose softdirty bit thus if a userspace program is tracking memory
+changes with help of a memory tracker (CONFIG_MEM_SOFT_DIRTY) it might
+miss modification of a memory page (which in worts case may lead to
+data inconsistency).
