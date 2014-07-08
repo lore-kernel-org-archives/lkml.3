@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754169AbaGHJ2D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 05:28:03 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:54058 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752526AbaGHJ16 (ORCPT
+	id S1754186AbaGHJ2S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 05:28:18 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:57222 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753141AbaGHJ2M convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 05:27:58 -0400
+	Tue, 8 Jul 2014 05:28:12 -0400
+Date: Tue, 8 Jul 2014 10:28:07 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Yuyang Du <yuyang.du@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
+        "pjt@google.com" <pjt@google.com>
+Subject: Re: [RFCv2 PATCH 00/23] sched: Energy cost model for energy-aware
+ scheduling
+Message-ID: <20140708092807.GC4485@e103687>
+References: <1404404770-323-1-git-send-email-morten.rasmussen@arm.com>
+ <20140703231950.GA4881@intel.com>
+ <20140704110612.GA6120@e103034-lin>
+ <20140706190523.GA12113@intel.com>
+ <20140707141627.GB4485@e103687>
+ <20140708002343.GC25653@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20140707152309.GH4939@tarshish>
-References: <1403091577-10232-1-git-send-email-harinik@xilinx.com>
-	<5cc8b89b-20ff-4fa9-92dd-bb2f6d3512d8@BY2FFO11FD030.protection.gbl>
-	<CACRpkdb1M3-hrSKLKWz21LCJ1sMvsq5E-aqkpmVhy0NwOS5HhA@mail.gmail.com>
-	<20140707152309.GH4939@tarshish>
-Date: Tue, 8 Jul 2014 11:27:57 +0200
-Message-ID: <CACRpkdY+3hy5iw=uRdmu665NWsoGacTMgjUq97219kEcfn7Dqw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] gpio: Add driver for Zynq GPIO controller
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Baruch Siach <baruch@tkos.co.il>
-Cc: =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Harini Katakam <harinik@xilinx.com>, Pawel Moll <pawel.moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Harini Katakam <harinikatakamlinux@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Harini Katakam <harini.katakam@xilinx.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20140708002343.GC25653@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 08 Jul 2014 09:28:08.0391 (UTC) FILETIME=[EDDF6D70:01CF9A8E]
+X-MC-Unique: 114070810281006601
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 7, 2014 at 5:23 PM, Baruch Siach <baruch@tkos.co.il> wrote:
-> On Mon, Jul 07, 2014 at 04:51:56PM +0200, Linus Walleij wrote:
+On Tue, Jul 08, 2014 at 01:23:43AM +0100, Yuyang Du wrote:
+> Hi Morten,
+> 
+> On Mon, Jul 07, 2014 at 03:16:27PM +0100, Morten Rasmussen wrote:
+> 
+> > Could you elaborate on what you mean by 'a general statement'?
+> 
+> The general statement is: higher freq, more cap, and more power. More specific
+> numbers are not needed, as they are just instances of this general statement.
 
->> This needs someone to step in and provide a replacement, my preferred
->> mechanism would be a /dev/gpiochip0/... hierarchy using char devices.
->
-> I really like the ability to control GPIOs from shell, both interactively and
-> scripted. I find it useful for quick hardware level debugging,
+I think I understand now. While that statement might be true for SMP
+systems, it doesn't tell you the cost of chosing a higher frequency. If
+you are optimizing for energy, you really care about energy per work (~
+energy/instruction). The additional cost of going to a higher capacity
+state very platform dependent. At least on typical modern ARM platforms,
+the highest states are significantly more expensive to use, so you don't
+want to use them unless you really have to.
 
-I would be happy to carry it in the unstable-ABI debugfs for sure.
-It's the supported ABI that bothers me.
+If we don't have any energy cost information, we can't make an informed
+decision whether it worth running faster (race-to-idle or consolidating
+tasks on fewer cpus) or using more cpus (if that is possible).
+ 
+> > cpu_power doesn't tell you anything about energy-efficiency. There is no
+> > link with frequency scaling.
+> 
+> In general, more cpu_power, more freq, less energy-efficiency, as you said sometime ago.
 
-> and for boot
-> time scripting (mainly in initramfs).
+Not in general :) For big.LITTLE it may be more energy efficient to run
+a little cpu at a high frequency instead of using a big cpu at a low
+frequency. For multi-cluster/package SMP it is not straight forward
+either as it is more expensive to run the first cpu in a large power
+domain than the additional cpus.
 
-What is the usecase here?
+> 
+> > No representation of power domains.
+> 
+> Represented by CPU topology?
 
-> Do you intend to preserve this
-> capability in the future? Will I need a special utility (or Busybox applet) to
-> do this with char device ioctl?
+Not really. The sched_domain hierarchy represents the cache hierarhcy
+(and nodes for NUMA), but you don't necessarily have a power domains at
+the same levels. But yes, the sched_domain hierarchy can be used for
+this purpose as well if we attach the necessary power domain information
+to it. That is basically what we do in this patch set.
 
-It is ABI so we have to preserve it. But sometimes people come with
-new zuper-complex userspace usecases and want to add this or
-that crazy ABI to do stuff in userspace that the kernel can do better.
-And all that I intend to just NACK.
+Morten
 
-Yours,
-Linus Walleij
