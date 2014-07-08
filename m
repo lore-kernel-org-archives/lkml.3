@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968AbaGHPIJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 11:08:09 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:26041 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753716AbaGHPIE (ORCPT
+	id S1753764AbaGHPLh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 11:11:37 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:46289 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707AbaGHPLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 11:08:04 -0400
-Date: Tue, 8 Jul 2014 11:08:01 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] modules: Fix build error in moduleloader.h
-Message-ID: <20140708110801.14fc703b@gandalf.local.home>
-In-Reply-To: <87wqbo7n6u.fsf@rustcorp.com.au>
-References: <20140703092121.082e0366@gandalf.local.home>
-	<87wqbo7n6u.fsf@rustcorp.com.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Tue, 8 Jul 2014 11:11:36 -0400
+Date: Tue, 8 Jul 2014 18:11:10 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Levente Kurusa <lkurusa@redhat.com>
+Cc: Andrey Utkin <andrey.krieger.utkin@gmail.com>,
+        OSUOSL Drivers <devel@driverdev.osuosl.org>,
+        Lisa Nguyen <lisa@xenapiadmin.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>, prabhakar.csengg@gmail.com,
+        Linux Media <linux-media@vger.kernel.org>,
+        Archana Kumari <archanakumari959@gmail.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: Re: [PATCH] [media] davinci-vpfe: Fix retcode check
+Message-ID: <20140708151110.GQ25880@mwanda>
+References: <1404828488-7649-1-git-send-email-andrey.krieger.utkin@gmail.com>
+ <CAAsK9AFfn45wyQFsOiCAZXZjXfyPLhz3FxyBO5P_q_48s9ce_g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAsK9AFfn45wyQFsOiCAZXZjXfyPLhz3FxyBO5P_q_48s9ce_g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 08 Jul 2014 09:10:09 +0930
-Rusty Russell <rusty@rustcorp.com.au> wrote:
- 
-> Subject: modules: Fix build error in moduleloader.h
+On Tue, Jul 08, 2014 at 04:32:57PM +0200, Levente Kurusa wrote:
+> 2014-07-08 16:08 GMT+02:00 Andrey Utkin <andrey.krieger.utkin@gmail.com>:
+> > Use signed type to check correctly for negative error code. The issue
+> > was reported with static analyser:
+> >
+> > [linux-3.13/drivers/staging/media/davinci_vpfe/dm365_ipipe_hw.c:270]:
+> > (style) A pointer can not be negative so it is either pointless or an
+> > error to check if it is.
+> >
+> > Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=69071
+> > Reported-by: David Binderman <dcb314@hotmail.com>
+> > Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 > 
-> Fengguang Wu's build bot detected that if moduleloader.h is included in
-> a C file (used by ftrace and kprobes to access module_alloc() when
-> available), that it can fail to build if CONFIG_MODULES and
-> CONFIG_MODULES_USE_ELF_REL is not defined.
-> 
-> This is because there's a printk() that dereferences struct module to
-> print the name of the module. But as struct module does not exist when
-> CONFIG_MODULES is not defined we get this error:
-> 
->    include/linux/moduleloader.h: In function 'apply_relocate':
-> >> include/linux/moduleloader.h:48:63: error: dereferencing pointer to
-> >> incomplete type  
->      printk(KERN_ERR "module %s: REL relocation unsupported\n", me->name);
-> 								  ^
-> Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> Based-on-the-true-story-by: Steven Rostedt <rostedt@goodmis.org>
+> Hmm, while it is true that get_ipipe_mode returns an int, but
+> the consequent call to regw_ip takes an u32 as its second
+> argument. Did it cause a build warning for you?
 
-Confirms-rustys-story-ends-the-same-by: Steven Rostedt <rostedt@goodmis.org>
+It won't cause a compile warning.
 
--- Steve
+> (Can't really
+> check since I don't have ARM cross compilers close-by)
 
+Make a small test program and test.
 
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> 
+regards,
+dan carpenter
+
