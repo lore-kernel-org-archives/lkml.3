@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932282AbaGHTEv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:04:51 -0400
-Received: from mail.kernel.org ([198.145.19.201]:58324 "EHLO mail.kernel.org"
+	id S932303AbaGHTFQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:05:16 -0400
+Received: from mail.kernel.org ([198.145.19.201]:58255 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932226AbaGHTEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:04:23 -0400
+	id S932198AbaGHTEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 15:04:15 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org,
-        Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 15/16] perf trace: Add pagefault statistics
-Date: Tue,  8 Jul 2014 16:03:03 -0300
-Message-Id: <1404846184-20075-16-git-send-email-acme@kernel.org>
+Subject: [PATCH 13/16] perf tools: Convert open coded equivalents to asprintf()
+Date: Tue,  8 Jul 2014 16:03:01 -0300
+Message-Id: <1404846184-20075-14-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1404846184-20075-1-git-send-email-acme@kernel.org>
 References: <1404846184-20075-1-git-send-email-acme@kernel.org>
@@ -24,87 +22,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-'perf trace' can show summary of events using -S option. This commit
-also reports number of major/minor pagefault events in this summary.
+The following snippet
+	V = malloc(S);
+	if (!V) { }
+	sprintf(V, ...)
 
-$ perf trace -s --pf all -- sleep 1
+Can be easily changed to a one line:
 
- Summary of events:
+	if (asprintf(&V, ...) < 0) { }
 
- sleep (18604), 275 events, 99.6%, 197 minfaults, 0.000 msec
-
-   syscall            calls      min       avg       max      stddev
-                               (msec)    (msec)    (msec)        (%)
-   --------------- -------- --------- --------- ---------     ------
-   read                   2     0.000     0.001     0.002    100.00%
-   open                   3     0.004     0.005     0.007     21.13%
-   close                  3     0.001     0.001     0.001      1.37%
-   fstat                  3     0.001     0.002     0.002     10.66%
-   mmap                   8     0.002     0.004     0.006     10.69%
-   mprotect               4     0.003     0.005     0.008     24.68%
-   munmap                 1     0.005     0.005     0.005      0.00%
-   brk                    3     0.001     0.002     0.003     28.08%
-   access                 3     0.002     0.003     0.005     24.48%
-   nanosleep              1  1000.747  1000.747  1000.747      0.00%
-   execve                 8     0.000     0.033     0.246     91.00%
-   arch_prctl             1     0.001     0.001     0.001      0.00%
-
-Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1404842716-19190-1-git-send-email-stfomichev@yandex-team.ru
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Link: http://lkml.kernel.org/r/1404474229-15272-1-git-send-email-andriy.shevchenko@linux.intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ tools/perf/util/trace-event-info.c | 12 +++---------
+ tools/perf/util/util.c             |  9 ++-------
+ 2 files changed, 5 insertions(+), 16 deletions(-)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index dc7a694b61fe..b94dffc5fa85 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -1133,6 +1133,7 @@ struct thread_trace {
- 	u64		  exit_time;
- 	bool		  entry_pending;
- 	unsigned long	  nr_events;
-+	unsigned long	  pfmaj, pfmin;
- 	char		  *entry_str;
- 	double		  runtime_ms;
- 	struct {
-@@ -1804,8 +1805,20 @@ static int trace__pgfault(struct trace *trace,
- 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
- 	struct addr_location al;
- 	char map_type = 'd';
-+	struct thread_trace *ttrace;
+diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+index 7e6fcfe8b438..c3bba883f5c3 100644
+--- a/tools/perf/util/trace-event-info.c
++++ b/tools/perf/util/trace-event-info.c
+@@ -191,12 +191,10 @@ static int copy_event_system(const char *sys, struct tracepoint_path *tps)
+ 		    strcmp(dent->d_name, "..") == 0 ||
+ 		    !name_in_tp_list(dent->d_name, tps))
+ 			continue;
+-		format = malloc(strlen(sys) + strlen(dent->d_name) + 10);
+-		if (!format) {
++		if (asprintf(&format, "%s/%s/format", sys, dent->d_name) < 0) {
+ 			err = -ENOMEM;
+ 			goto out;
+ 		}
+-		sprintf(format, "%s/%s/format", sys, dent->d_name);
+ 		ret = stat(format, &st);
+ 		free(format);
+ 		if (ret < 0)
+@@ -217,12 +215,10 @@ static int copy_event_system(const char *sys, struct tracepoint_path *tps)
+ 		    strcmp(dent->d_name, "..") == 0 ||
+ 		    !name_in_tp_list(dent->d_name, tps))
+ 			continue;
+-		format = malloc(strlen(sys) + strlen(dent->d_name) + 10);
+-		if (!format) {
++		if (asprintf(&format, "%s/%s/format", sys, dent->d_name) < 0) {
+ 			err = -ENOMEM;
+ 			goto out;
+ 		}
+-		sprintf(format, "%s/%s/format", sys, dent->d_name);
+ 		ret = stat(format, &st);
  
- 	thread = machine__findnew_thread(trace->host, sample->pid, sample->tid);
-+	ttrace = thread__trace(thread, trace->output);
-+	if (ttrace == NULL)
-+		return -1;
-+
-+	if (evsel->attr.config == PERF_COUNT_SW_PAGE_FAULTS_MAJ)
-+		ttrace->pfmaj++;
-+	else
-+		ttrace->pfmin++;
-+
-+	if (trace->summary_only)
-+		return 0;
+ 		if (ret >= 0) {
+@@ -317,12 +313,10 @@ static int record_event_files(struct tracepoint_path *tps)
+ 		    strcmp(dent->d_name, "ftrace") == 0 ||
+ 		    !system_in_tp_list(dent->d_name, tps))
+ 			continue;
+-		sys = malloc(strlen(path) + strlen(dent->d_name) + 2);
+-		if (!sys) {
++		if (asprintf(&sys, "%s/%s", path, dent->d_name) < 0) {
+ 			err = -ENOMEM;
+ 			goto out;
+ 		}
+-		sprintf(sys, "%s/%s", path, dent->d_name);
+ 		ret = stat(sys, &st);
+ 		if (ret >= 0) {
+ 			ssize_t size = strlen(dent->d_name) + 1;
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 95aefa78bb07..e4132aeeb780 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -333,12 +333,9 @@ const char *find_tracing_dir(void)
+ 	if (!debugfs)
+ 		return NULL;
  
- 	thread__find_addr_location(thread, trace->host, cpumode, MAP__FUNCTION,
- 			      sample->ip, &al);
-@@ -2346,6 +2359,10 @@ static int trace__fprintf_one_thread(struct thread *thread, void *priv)
- 	printed += fprintf(fp, " %s (%d), ", thread__comm_str(thread), thread->tid);
- 	printed += fprintf(fp, "%lu events, ", ttrace->nr_events);
- 	printed += fprintf(fp, "%.1f%%", ratio);
-+	if (ttrace->pfmaj)
-+		printed += fprintf(fp, ", %lu majfaults", ttrace->pfmaj);
-+	if (ttrace->pfmin)
-+		printed += fprintf(fp, ", %lu minfaults", ttrace->pfmin);
- 	printed += fprintf(fp, ", %.3f msec\n", ttrace->runtime_ms);
- 	printed += thread__dump_stats(ttrace, trace, fp);
+-	tracing = malloc(strlen(debugfs) + 9);
+-	if (!tracing)
++	if (asprintf(&tracing, "%s/tracing", debugfs) < 0)
+ 		return NULL;
+ 
+-	sprintf(tracing, "%s/tracing", debugfs);
+-
+ 	tracing_found = 1;
+ 	return tracing;
+ }
+@@ -352,11 +349,9 @@ char *get_tracing_file(const char *name)
+ 	if (!tracing)
+ 		return NULL;
+ 
+-	file = malloc(strlen(tracing) + strlen(name) + 2);
+-	if (!file)
++	if (asprintf(&file, "%s/%s", tracing, name) < 0)
+ 		return NULL;
+ 
+-	sprintf(file, "%s/%s", tracing, name);
+ 	return file;
+ }
  
 -- 
 1.9.3
