@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939AbaGHIMT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 04:12:19 -0400
-Received: from mga02.intel.com ([134.134.136.20]:61592 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753910AbaGHIMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 04:12:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,624,1400050800"; 
-   d="scan'208";a="569831221"
-Date: Tue, 8 Jul 2014 08:08:40 +0800
-From: Yuyang Du <yuyang.du@intel.com>
-To: bsegall@google.com
-Cc: Peter Zijlstra <peterz@infradead.org>, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com,
-        arjan.van.de.ven@intel.com, len.brown@intel.com, alan.cox@intel.com,
-        mark.gross@intel.com, pjt@google.com, fengguang.wu@intel.com
-Subject: Re: [PATCH 2/2] sched: Rewrite per entity runnable load average
- tracking
-Message-ID: <20140708000840.GB25653@intel.com>
-References: <1404268256-3019-1-git-send-email-yuyang.du@intel.com>
- <1404268256-3019-2-git-send-email-yuyang.du@intel.com>
- <20140707104646.GK6758@twins.programming.kicks-ass.net>
- <xm26r41wyfgc.fsf@sword-of-the-dawn.mtv.corp.google.com>
+	id S1753439AbaGHIOx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 04:14:53 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:52304 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649AbaGHIOu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 04:14:50 -0400
+Date: Tue, 8 Jul 2014 09:52:47 +0200
+From: Mark Brown <broonie@kernel.org>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Message-ID: <20140708075247.GP30458@sirena.org.uk>
+References: <1404745893-6379-1-git-send-email-iivanov@mm-sol.com>
+ <1404745893-6379-2-git-send-email-iivanov@mm-sol.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="iq/fWD14IMVFWBCD"
 Content-Disposition: inline
-In-Reply-To: <xm26r41wyfgc.fsf@sword-of-the-dawn.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1404745893-6379-2-git-send-email-iivanov@mm-sol.com>
+X-Cookie: You look tired.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 82.127.83.212
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/4] pinctrl: qpnp: Qualcomm PMIC pin controller driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, Ben,
 
-On Mon, Jul 07, 2014 at 03:25:07PM -0700, bsegall@google.com wrote:
-> 
-> Yeah, while this is technically limited to 1/us (per cpu), it is still
-> much higher - the replaced code would do updates generally only on
-> period overflow (1ms) and even then only with nontrivial delta.
->
+--iq/fWD14IMVFWBCD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Will update it in "batch" mode as I replied to Peter. Whether or not set
-up a threshold to not update trivial delta, will see.
+On Mon, Jul 07, 2014 at 06:11:30PM +0300, Ivan T. Ivanov wrote:
 
-> Also something to note is that cfs_rq->load_avg just takes samples of
-> load.weight every 1us, which seems unfortunate. We thought this was ok
-> for p->se.load.weight, because it isn't really likely for userspace to
-> be calling nice(2) all the time, but wake/sleeps are more frequent,
-> particularly on newer cpus. Still, it might not be /that/ bad.
+> +struct qpnp_pindesc {
+> +	u16 offset;		/* address offset in SPMI device */
+> +	u32 index;		/* offset from GPIO info base */
+> +	u8 type;		/* peripheral hardware type */
+> +	u8 subtype;		/* peripheral hardware subtype */
+> +	u8 major;		/* digital major version */
+> +	u8 num_regs;		/* control register count */
+> +	u8 cache[QPNP_NUM_CTL_REGS]; /* control register cache */
+> +};
 
-The sampling of cfs_rq->load.weight should be equivalent to the current
-code in that at the end of day cfs_rq->load.weight worth of runnable would 
-contribute to runnable_load_avg/blocked_load_avg for both the current and
-the rewrite.
- 
-> Also, as a nitpick/annoyance this does a lot of
->  if (entity_is_task(se)) __update_load_avg(... se ...)
->  __update_load_avg(... cfs_rq_of(se) ...)
-> which is just a waste of the avg struct on every group se, and all it
-> buys you is the ability to not have a separate rq->avg struct (removed
-> by patch 1) instead of rq->cfs.avg.
+The device uses a regmap, why do you also need to open code a register
+cache here?
 
-I actually struggled on this issue. As we only need a sched_avg for task (not
-entity), and a sched_avg for cfs_rq, I planned to move entity avg to task. Good?
+--iq/fWD14IMVFWBCD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-So left are the migrate_task_rq_fair() not holding lock issue and cfs_rq->avg.load_avg
-overflow issue. I need some time to study them.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Overall, I think none of these issues are originally caused by combination/split
-of runnable and blocked. It is just a matter of how synchronized we want to be
-(this rewrite is the most synchronized), and the workaround I need to borrow from the
-current codes. 
+iQIcBAEBAgAGBQJTu6NMAAoJELSic+t+oim9saIP/0oLJNJPxAmPXzslNwnalws1
+dH6/C01z73n6Ly8bMLB5ClNOO8257cYBDnTc8Rl6Mfcg7IfWUm8JgDs7mmY2Fudc
+poGjYZvQo54FEbq7Bqtrg/TzsG7sWIoW6KtldO5DShEGrVeiegrkeKcahpPp9UJq
+r7/sJXe/jVeXzh/bkhuqWkIt7C+7LMJ4VsoMLeoddcDoPE1magXMQIDHnTeja43H
+qFnq4U6qMUEe84PKC3zFYaUstaq6O9AGzZIUOvdSDw7PNsuWMopOxJBiqnvaf8Sa
+34CIFocHmHiQDxo9j28+R22MjSnqI6fwNsRne9b0aQGcBBHubI7erUOBFtsTtYaQ
+jACm/srVFRPMq9f4L05b4GI8sp9szW+0wjYBPNWTdAze5cLeeoYAMVaEnqZbcE+9
+PBfiekB5Ohj8yaeQBu2I8DSxkXzQbfX5eK8bQ5y1qJf+qOHGwLIv+GQxD1aOcuAo
+ifV5YvZtwRptn3eKTjbcCxnJuF4w4qd36ZXhop676WgnRGRAGEKxD5unbTPTFSqy
+oB6uZdUymUrQg5fJHXUsdFzMavRTqOQOWnwhttbwsGjkhY1SdLHLdiwozz7w4W8+
+wl9qstyMXezvvc8GR3A5qlyuIm0Fu+f9FPWkQLVaLomlYN/f40fGacySKD02UKhj
+TYGrx9U/LjbQAwMfH4EY
+=7nrv
+-----END PGP SIGNATURE-----
 
-Yuyang
+--iq/fWD14IMVFWBCD--
