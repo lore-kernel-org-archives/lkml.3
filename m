@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755707AbaGHTq5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:46:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54058 "EHLO
+	id S932685AbaGHTqz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:46:55 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54056 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755659AbaGHTIi (ORCPT
+	by vger.kernel.org with ESMTP id S1755660AbaGHTIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:08:38 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -14,12 +14,12 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Michal Schmidt" <mschmidt@redhat.com>
+        "Eric Dumazet" <edumazet@google.com>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.982764840@decadent.org.uk>
+Message-ID: <lsq.1404846110.110773631@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 110/125] netlink: rate-limit leftover bytes warning
- and print  process name
+Subject: [PATCH 3.2 112/125] net: fix inet_getid() and ipv6_select_ident()
+ bugs
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,44 +32,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Schmidt <mschmidt@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit bfc5184b69cf9eeb286137640351c650c27f118a ]
+[ Upstream commit 39c36094d78c39e038c1e499b2364e13bce36f54 ]
 
-Any process is able to send netlink messages with leftover bytes.
-Make the warning rate-limited to prevent too much log spam.
+I noticed we were sending wrong IPv4 ID in TCP flows when MTU discovery
+is disabled.
+Note how GSO/TSO packets do not have monotonically incrementing ID.
 
-The warning is supposed to help find userspace bugs, so print the
-triggering command name to implicate the buggy program.
+06:37:41.575531 IP (id 14227, proto: TCP (6), length: 4396)
+06:37:41.575534 IP (id 14272, proto: TCP (6), length: 65212)
+06:37:41.575544 IP (id 14312, proto: TCP (6), length: 57972)
+06:37:41.575678 IP (id 14317, proto: TCP (6), length: 7292)
+06:37:41.575683 IP (id 14361, proto: TCP (6), length: 63764)
 
-[v2: Use pr_warn_ratelimited instead of printk_ratelimited.]
+It appears I introduced this bug in linux-3.1.
 
-Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
+inet_getid() must return the old value of peer->ip_id_count,
+not the new one.
+
+Lets revert this part, and remove the prevention of
+a null identification field in IPv6 Fragment Extension Header,
+which is dubious and not even done properly.
+
+Fixes: 87c48fa3b463 ("ipv6: make fragment identifications less predictable")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- lib/nlattr.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ include/net/inetpeer.h |  9 +--------
+ net/ipv6/ip6_output.c  | 11 +++--------
+ 2 files changed, 4 insertions(+), 16 deletions(-)
 
---- a/lib/nlattr.c
-+++ b/lib/nlattr.c
-@@ -12,6 +12,7 @@
- #include <linux/netdevice.h>
- #include <linux/skbuff.h>
- #include <linux/string.h>
-+#include <linux/ratelimit.h>
- #include <linux/types.h>
- #include <net/netlink.h>
+--- a/include/net/inetpeer.h
++++ b/include/net/inetpeer.h
+@@ -115,16 +115,9 @@ static inline void inet_peer_refcheck(co
+ /* can be called with or without local BH being disabled */
+ static inline int inet_getid(struct inet_peer *p, int more)
+ {
+-	int old, new;
+ 	more++;
+ 	inet_peer_refcheck(p);
+-	do {
+-		old = atomic_read(&p->ip_id_count);
+-		new = old + more;
+-		if (!new)
+-			new = 1;
+-	} while (atomic_cmpxchg(&p->ip_id_count, old, new) != old);
+-	return new;
++	return atomic_add_return(more, &p->ip_id_count) - more;
+ }
  
-@@ -197,8 +198,8 @@ int nla_parse(struct nlattr **tb, int ma
+ #endif /* _NET_INETPEER_H */
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -612,7 +612,7 @@ int ip6_find_1stfragopt(struct sk_buff *
+ void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt)
+ {
+ 	static atomic_t ipv6_fragmentation_id;
+-	int old, new;
++	int ident;
+ 
+ 	if (rt && !(rt->dst.flags & DST_NOPEER)) {
+ 		struct inet_peer *peer;
+@@ -625,13 +625,8 @@ void ipv6_select_ident(struct frag_hdr *
+ 			return;
+ 		}
  	}
+-	do {
+-		old = atomic_read(&ipv6_fragmentation_id);
+-		new = old + 1;
+-		if (!new)
+-			new = 1;
+-	} while (atomic_cmpxchg(&ipv6_fragmentation_id, old, new) != old);
+-	fhdr->identification = htonl(new);
++	ident = atomic_inc_return(&ipv6_fragmentation_id);
++	fhdr->identification = htonl(ident);
+ }
  
- 	if (unlikely(rem > 0))
--		printk(KERN_WARNING "netlink: %d bytes leftover after parsing "
--		       "attributes.\n", rem);
-+		pr_warn_ratelimited("netlink: %d bytes leftover after parsing attributes in process `%s'.\n",
-+				    rem, current->comm);
- 
- 	err = 0;
- errout:
+ int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
 
