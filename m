@@ -1,34 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756502AbaGHBKZ (ORCPT <rfc822;w@1wt.eu>);
+	id S1756518AbaGHBKa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:10:30 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:49610 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756498AbaGHBKZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 21:10:25 -0400
-Received: from mail.univers.su ([89.105.137.51]:47902 "EHLO univers.su"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754578AbaGHBKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 21:10:24 -0400
-X-Greylist: delayed 5805 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Jul 2014 21:10:23 EDT
-To: undisclosed-recipients:;
-Subject: Kredit-Angebot
-X-PHP-Script: mail.univers.su/index.php for 81.94.201.82, 81.94.201.82
+X-Originating-IP: 108.223.40.66
+Message-ID: <53BB44FC.7070501@roeck-us.net>
+Date: Mon, 07 Jul 2014 18:10:20 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 8bit
-Date: Tue, 08 Jul 2014 00:12:28 +0100
-From: ROYAL ASSURED LOAN <info@royalworld.com>
-Reply-To: <choulee75@yahoo.com.hk>
-Mail-Reply-To: <choulee75@yahoo.com.hk>
-Message-ID: <0ee68155d7ef737f39533da67bb7adee@univers.su>
-User-Agent: RoundCube Webmail/0.7.1
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Wim Van Sebroeck <wim@iguana.be>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonas Jensen <jonas.jensen@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/7] kernel: Add support for restart notifier call
+ chain
+References: <1404689900-27421-1-git-send-email-linux@roeck-us.net>	<1404689900-27421-2-git-send-email-linux@roeck-us.net> <20140707141454.3ca1e2fc2e6a4c985d7d2f35@linux-foundation.org>
+In-Reply-To: <20140707141454.3ca1e2fc2e6a4c985d7d2f35@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/07/2014 02:14 PM, Andrew Morton wrote:
+> On Sun,  6 Jul 2014 16:38:14 -0700 Guenter Roeck <linux@roeck-us.net> wrote:
+>
+>> Various drivers implement architecture and/or device specific means
+>> to restart (reset) the system. Various mechanisms have been implemented
+>> to support those schemes. The best known mechanism is arm_pm_restart,
+>> which is a function pointer to be set either from platform specific code
+>> or from drivers. Another mechanism is to use hardware watchdogs to issue
+>> a reset; this mechanism is used if there is no other method available
+>> to reset a board or system. Two examples are alim7101_wdt, which currently
+>> uses the reboot notifier to trigger a reset, and moxart_wdt, which registers
+>> the arm_pm_restart function.
+>>
+>> The existing mechanisms have a number of drawbacks. Typically only one scheme
+>> to restart the system is supported (at least if arm_pm_restart is used).
+>> At least in theory there can be mutliple means to restart the system, some of
+>> which may be less desirable (for example one mechanism may only reset the CPU,
+>> while another may reset the entire system). Using arm_pm_restart can also be
+>> racy if the function pointer is set from a driver, as the driver may be in
+>> the process of being unloaded when arm_pm_restart is called.
+>> Using the reboot notifier is always racy, as it is unknown if and when
+>> other functions using the reboot notifier have completed execution
+>> by the time the watchdog fires.
+>>
+>> To solve the problem, introduce a system restart notifier. This notifier
+>> is expected to be called from the architecture specific machine_restart()
+>> function. Drivers providing system restart functionality (such as the watchdog
+>> drivers mentioned above) are expected to register with this notifier.
+>
+> It all looks sane to my unfamiliar eye.
+>
+>>   /*
+>> + *	Notifier list for kernel code which wants to be called
+>> + *	to restart the system.
+>> + */
+>
+> hm, is this all we have to say?
+>
+>> --- a/kernel/reboot.c
+>> +++ b/kernel/reboot.c
+>> @@ -104,6 +104,38 @@ int unregister_reboot_notifier(struct notifier_block *nb)
+>>   }
+>>   EXPORT_SYMBOL(unregister_reboot_notifier);
+>>
+>> +/**
+>> + *	register_restart_notifier - Register function to be called to reset
+>> + *				    the system
+>> + *	@nb: Info about notifier function to be called
+>> + *
+>> + *	Registers a function with the list of functions
+>> + *	to be called to restart the system.
+>> + *
+>> + *	Currently always returns zero, as blocking_notifier_chain_register()
+>> + *	always returns zero.
+>> + */
+>
+> This would be a good place to describe what those notifier callbacks
+> actually do.  Why they exist, what their role is, under what
+> circumstances they are called, what values they should return, etc.
+>
+
+Makes sense. Done.
+
+Guenter
 
 
--- 
-Wir bieten privaten und gewerblichen Darlehen ohne Sicherheiten (nur 
-Identifikation) bei 3% Zinssatz, ab € 10.000 bis € 90.000.000 in 1 Jahr 
-bis 20 Jahren Laufzeit überall in der Welt.
-
-Anna.
