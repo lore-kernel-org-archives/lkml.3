@@ -1,97 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932136AbaGHR6c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 13:58:32 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54856 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755311AbaGHR5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 13:57:04 -0400
-From: konrad@kernel.org
-To: xen-devel@lists.xenproject.org, david.vrabel@citrix.com,
-        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v3 3/7] xen/pciback: Move the FLR code to a function.
-Date: Tue,  8 Jul 2014 14:58:25 -0400
-Message-Id: <1404845909-13563-4-git-send-email-konrad@kernel.org>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1404845909-13563-1-git-send-email-konrad@kernel.org>
-References: <1404845909-13563-1-git-send-email-konrad@kernel.org>
+	id S932161AbaGHR7L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 13:59:11 -0400
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:34680 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754897AbaGHR7J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 13:59:09 -0400
+X-Originating-IP: 173.246.103.110
+Date: Tue, 8 Jul 2014 10:58:55 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 3/3] rcu: Update RCU maintainership
+Message-ID: <20140708175855.GA2927@jtriplet-mobl1>
+References: <20140707224146.GA9118@linux.vnet.ibm.com>
+ <1404772924-9423-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1404772924-9423-3-git-send-email-paulmck@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404772924-9423-3-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+On Mon, Jul 07, 2014 at 03:42:04PM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> 
+> Drop Dipankar Sarma at his request (https://lkml.org/lkml/2014/6/2/628),
+> add Josh Triplett based on long-term review, contributions, and
+> agreement to take on this role (https://lkml.org/lkml/2014/6/2/554).
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Moving the bulk of the code its own function to aid
-in making the 'xen/pciback: implement PCI reset slot
-or bus with 'do_flr' SysFS attribute' easier.
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/xen/xen-pciback/pci_stub.c |   42 ++++++++++++++++++++++-------------
- 1 files changed, 26 insertions(+), 16 deletions(-)
+Does it make sense to keep separate entries for each of these, at this
+point, or should we just merge all of them into the main "READ-COPY
+UPDATE (RCU)" entry?
 
-diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
-index b1fb099..03badac 100644
---- a/drivers/xen/xen-pciback/pci_stub.c
-+++ b/drivers/xen/xen-pciback/pci_stub.c
-@@ -242,6 +242,31 @@ struct pci_dev *pcistub_get_pci_dev(struct xen_pcibk_device *pdev,
- 	return found_dev;
- }
- 
-+static void pcistub_reset_pci_dev(struct pci_dev *dev)
-+{
-+	/* This is OK - we are running from workqueue context
-+	 * and want to inhibit the user from fiddling with 'reset'
-+	 */
-+
-+	dev_dbg(&dev->dev, "resetting (FLR, D3, etc) the device\n");
-+	/* We might be holding the PCI lock (see comment at the top of the
-+	 * function) - as such try lock and if we can't then don't worry -
-+	 * as either:
-+	 *  - we are 'unbind' in which case 'pcistub_device_release' gets
-+	 *    called which does the locked version of this.
-+	 *  - the toolstack has the smarts to do it and has done the
-+	 *    reset on SysFS before assigning this device to another guest.
-+	 */
-+	pci_try_reset_function(dev);
-+	pci_restore_state(dev);
-+
-+	/* This disables the device. */
-+	xen_pcibk_reset_device(dev);
-+
-+	/* And cleanup up our emulated fields. */
-+	xen_pcibk_config_reset_dev(dev);
-+}
-+
- /*
-  * Called when:
-  *  - XenBus state has been reconfigure (pci unplug). See xen_pcibk_remove_device
-@@ -276,23 +301,8 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
- 	/* Cleanup our device
- 	 * (so it's ready for the next domain)
- 	 */
-+	pcistub_reset_pci_dev(dev);
- 
--	/* We might be holding the PCI lock (see comment at the top of the
--	 * function) - as such try lock and if we can't then don't worry -
--	 * as either:
--	 *  - we are 'unbind' in which case 'pcistub_device_release' gets
--	 *    called which does the locked version of this.
--	 *  - the toolstack has the smarts to do it and has done the
--	 *    reset on SysFS before assigning this device to another guest.
--	 */
--	pci_try_reset_function(dev);
--	pci_restore_state(dev);
--
--	/* This disables the device. */
--	xen_pcibk_reset_device(dev);
--
--	/* And cleanup up our emulated fields. */
--	xen_pcibk_config_reset_dev(dev);
- 	xen_pcibk_config_free_dyn_fields(dev);
- 
- 	xen_unregister_device_domain_owner(dev);
--- 
-1.7.7.6
-
+>  MAINTAINERS | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 92f2bf91eec1..922661d17083 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -7405,6 +7405,7 @@ F:	kernel/rcu/torture.c
+>  
+>  RCUTORTURE TEST FRAMEWORK
+>  M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> +M:	Josh Triplett <josh@joshtriplett.org>
+>  R:	Steven Rostedt <rostedt@goodmis.org>
+>  R:	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+>  R:	Lai Jiangshan <laijs@cn.fujitsu.com>
+> @@ -7430,8 +7431,8 @@ S:	Supported
+>  F:	net/rds/
+>  
+>  READ-COPY UPDATE (RCU)
+> -M:	Dipankar Sarma <dipankar@in.ibm.com>
+>  M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> +M:	Josh Triplett <josh@joshtriplett.org>
+>  R:	Steven Rostedt <rostedt@goodmis.org>
+>  R:	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+>  R:	Lai Jiangshan <laijs@cn.fujitsu.com>
+> @@ -8214,6 +8215,7 @@ F:	mm/sl?b.c
+>  SLEEPABLE READ-COPY UPDATE (SRCU)
+>  M:	Lai Jiangshan <laijs@cn.fujitsu.com>
+>  M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> +M:	Josh Triplett <josh@joshtriplett.org>
+>  R:	Steven Rostedt <rostedt@goodmis.org>
+>  R:	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+>  L:	linux-kernel@vger.kernel.org
+> -- 
+> 1.8.1.5
+> 
