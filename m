@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756943AbaGHTmU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:42:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54100 "EHLO
+	id S1756974AbaGHTm0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:42:26 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54073 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755679AbaGHTIj (ORCPT
+	by vger.kernel.org with ESMTP id S1755675AbaGHTIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:08:39 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,16 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Marcel Holtmann" <marcel@holtmann.org>,
-        "Huang Shijie" <b32955@freescale.com>,
-        "Andreas =?UTF-8?Q?Bie=C3=9Fmann?=" <andreas@biessmann.de>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Felipe Balbi" <balbi@ti.com>,
-        "Peter Hurley" <peter@hurleysoftware.com>
+CC: akpm@linux-foundation.org, "Simon Wood" <simon@mungewell.org>,
+        "Benjamin Tissoires" <benjamin.tissoires@redhat.com>,
+        "Kees Cook" <keescook@chromium.org>, "Jiri Kosina" <jkosina@suse.cz>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.710528137@decadent.org.uk>
+Message-ID: <lsq.1404846110.454359113@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 002/125] bluetooth: hci_ldisc: fix deadlock condition
+Subject: [PATCH 3.2 007/125] HID: core: fix validation of report id 0
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,101 +32,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit da64c27d3c93ee9f89956b9de86c4127eb244494 upstream.
+commit 1b15d2e5b8077670b1e6a33250a0d9577efff4a5 upstream.
 
-LDISCs shouldn't call tty->ops->write() from within
-->write_wakeup().
+Some drivers use the first HID report in the list instead of using an
+index. In these cases, validation uses ID 0, which was supposed to mean
+"first known report". This fixes the problem, which was causing at least
+the lgff family of devices to stop working since hid_validate_values
+was being called with ID 0, but the devices used single numbered IDs
+for their reports:
 
-->write_wakeup() is called with port lock taken and
-IRQs disabled, tty->ops->write() will try to acquire
-the same port lock and we will deadlock.
+0x05, 0x01,         /*  Usage Page (Desktop),                   */
+0x09, 0x05,         /*  Usage (Gamepad),                        */
+0xA1, 0x01,         /*  Collection (Application),               */
+0xA1, 0x02,         /*      Collection (Logical),               */
+0x85, 0x01,         /*          Report ID (1),                  */
+...
 
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
-Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
-Reported-by: Huang Shijie <b32955@freescale.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Tested-by: Andreas Bießmann <andreas@biessmann.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust context, indentation]
+Reported-by: Simon Wood <simon@mungewell.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/bluetooth/hci_ldisc.c | 24 +++++++++++++++++++-----
- drivers/bluetooth/hci_uart.h  |  1 +
- 2 files changed, 20 insertions(+), 5 deletions(-)
+ drivers/hid/hid-core.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/drivers/bluetooth/hci_ldisc.c
-+++ b/drivers/bluetooth/hci_ldisc.c
-@@ -120,10 +120,6 @@ static inline struct sk_buff *hci_uart_d
- 
- int hci_uart_tx_wakeup(struct hci_uart *hu)
- {
--	struct tty_struct *tty = hu->tty;
--	struct hci_dev *hdev = hu->hdev;
--	struct sk_buff *skb;
--
- 	if (test_and_set_bit(HCI_UART_SENDING, &hu->tx_state)) {
- 		set_bit(HCI_UART_TX_WAKEUP, &hu->tx_state);
- 		return 0;
-@@ -131,6 +127,22 @@ int hci_uart_tx_wakeup(struct hci_uart *
- 
- 	BT_DBG("");
- 
-+	schedule_work(&hu->write_work);
-+
-+	return 0;
-+}
-+
-+static void hci_uart_write_work(struct work_struct *work)
-+{
-+	struct hci_uart *hu = container_of(work, struct hci_uart, write_work);
-+	struct tty_struct *tty = hu->tty;
-+	struct hci_dev *hdev = hu->hdev;
-+	struct sk_buff *skb;
-+
-+	/* REVISIT: should we cope with bad skbs or ->write() returning
-+	 * and error value ?
-+	 */
-+
- restart:
- 	clear_bit(HCI_UART_TX_WAKEUP, &hu->tx_state);
- 
-@@ -155,7 +167,6 @@ restart:
- 		goto restart;
- 
- 	clear_bit(HCI_UART_SENDING, &hu->tx_state);
--	return 0;
- }
- 
- /* ------- Interface to HCI layer ------ */
-@@ -274,6 +285,8 @@ static int hci_uart_tty_open(struct tty_
- 	hu->tty = tty;
- 	tty->receive_room = 65536;
- 
-+	INIT_WORK(&hu->write_work, hci_uart_write_work);
-+
- 	spin_lock_init(&hu->rx_lock);
- 
- 	/* Flush any pending characters in the driver and line discipline. */
-@@ -308,6 +321,8 @@ static void hci_uart_tty_close(struct tt
- 		if (hdev)
- 			hci_uart_close(hdev);
- 
-+		cancel_work_sync(&hu->write_work);
-+
- 		if (test_and_clear_bit(HCI_UART_PROTO_SET, &hu->flags)) {
- 			if (hdev) {
- 				hci_unregister_dev(hdev);
---- a/drivers/bluetooth/hci_uart.h
-+++ b/drivers/bluetooth/hci_uart.h
-@@ -64,6 +64,8 @@ struct hci_uart {
- 	unsigned long		flags;
- 	unsigned long		hdev_flags;
- 
-+	struct work_struct	write_work;
-+
- 	struct hci_uart_proto	*proto;
- 	void			*priv;
- 
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -754,7 +754,17 @@ struct hid_report *hid_validate_values(s
+ 	 * ->numbered being checked, which may not always be the case when
+ 	 * drivers go to access report values.
+ 	 */
+-	report = hid->report_enum[type].report_id_hash[id];
++	if (id == 0) {
++		/*
++		 * Validating on id 0 means we should examine the first
++		 * report in the list.
++		 */
++		report = list_entry(
++				hid->report_enum[type].report_list.next,
++				struct hid_report, list);
++	} else {
++		report = hid->report_enum[type].report_id_hash[id];
++	}
+ 	if (!report) {
+ 		hid_err(hid, "missing %s %u\n", hid_report_names[type], id);
+ 		return NULL;
 
