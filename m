@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755823AbaGHTTV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:19:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54307 "EHLO
+	id S932637AbaGHTT3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:19:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54239 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755747AbaGHTIm (ORCPT
+	by vger.kernel.org with ESMTP id S1755731AbaGHTIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:08:42 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "NeilBrown" <neilb@suse.de>
+CC: akpm@linux-foundation.org, "Gabor Juhos" <juhosg@openwrt.org>,
+        "Wim Van Sebroeck" <wim@iguana.be>,
+        "Guenter Roeck" <linux@roeck-us.net>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.285685556@decadent.org.uk>
+Message-ID: <lsq.1404846110.265133886@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 044/125] md: always set MD_RECOVERY_INTR when aborting
- a reshape or other "resync".
+Subject: [PATCH 3.2 074/125] watchdog: ath79_wdt: avoid spurious restarts
+ on AR934x
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,43 +33,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Gabor Juhos <juhosg@openwrt.org>
 
-commit 3991b31ea072b070081ca3bfa860a077eda67de5 upstream.
+commit 23afeb613ec0e10aecfae7838a14d485db62ac52 upstream.
 
-If mddev->ro is set, md_to_sync will (correctly) abort.
-However in that case MD_RECOVERY_INTR isn't set.
+On some AR934x based systems, where the frequency of
+the AHB bus is relatively high, the built-in watchdog
+causes a spurious restart when it gets enabled.
 
-If a RESHAPE had been requested, then ->finish_reshape() will be
-called and it will think the reshape was successful even though
-nothing happened.
+The possible cause of these restarts is that the timeout
+value written into the TIMER register does not reaches
+the hardware in time.
 
-Normally a resync will not be requested if ->ro is set, but if an
-array is stopped while a reshape is on-going, then when the array is
-started, the reshape will be restarted.  If the array is also set
-read-only at this point, the reshape will instantly appear to success,
-resulting in data corruption.
+Add an explicit delay into the ath79_wdt_enable function
+to avoid the spurious restarts.
 
-Consequently, this patch is suitable for any -stable kernel.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/md.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/watchdog/ath79_wdt.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -7035,8 +7035,10 @@ void md_do_sync(struct mddev *mddev)
- 	/* just incase thread restarts... */
- 	if (test_bit(MD_RECOVERY_DONE, &mddev->recovery))
- 		return;
--	if (mddev->ro) /* never try to sync a read-only array */
-+	if (mddev->ro) {/* never try to sync a read-only array */
-+		set_bit(MD_RECOVERY_INTR, &mddev->recovery);
- 		return;
-+	}
+--- a/drivers/watchdog/ath79_wdt.c
++++ b/drivers/watchdog/ath79_wdt.c
+@@ -18,6 +18,7 @@
+  */
  
- 	if (test_bit(MD_RECOVERY_SYNC, &mddev->recovery)) {
- 		if (test_bit(MD_RECOVERY_CHECK, &mddev->recovery))
+ #include <linux/bitops.h>
++#include <linux/delay.h>
+ #include <linux/errno.h>
+ #include <linux/fs.h>
+ #include <linux/init.h>
+@@ -73,6 +74,15 @@ static inline void ath79_wdt_keepalive(v
+ static inline void ath79_wdt_enable(void)
+ {
+ 	ath79_wdt_keepalive();
++
++	/*
++	 * Updating the TIMER register requires a few microseconds
++	 * on the AR934x SoCs at least. Use a small delay to ensure
++	 * that the TIMER register is updated within the hardware
++	 * before enabling the watchdog.
++	 */
++	udelay(2);
++
+ 	ath79_reset_wr(AR71XX_RESET_REG_WDOG_CTRL, WDOG_CTRL_ACTION_FCR);
+ }
+ 
 
