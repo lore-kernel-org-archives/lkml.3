@@ -1,110 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757100AbaGHTuW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:50:22 -0400
-Received: from mail.kernel.org ([198.145.19.201]:58129 "EHLO mail.kernel.org"
+	id S1757110AbaGHTvA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:51:00 -0400
+Received: from mail.kernel.org ([198.145.19.201]:34551 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755199AbaGHTD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:03:59 -0400
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 09/16] perf kvm: Introduce HAVE_KVM_STAT_SUPPORT flag
-Date: Tue,  8 Jul 2014 16:02:57 -0300
-Message-Id: <1404846184-20075-10-git-send-email-acme@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1404846184-20075-1-git-send-email-acme@kernel.org>
-References: <1404846184-20075-1-git-send-email-acme@kernel.org>
+	id S1756339AbaGHTu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 15:50:57 -0400
+From: konrad@kernel.org
+To: xen-devel@lists.xenproject.org, david.vrabel@citrix.com,
+        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH v2] xen: Introduce 'xen_nopv' to disable PV extensions for HVM guests.
+Date: Tue,  8 Jul 2014 16:52:25 -0400
+Message-Id: <1404852745-25187-1-git-send-email-konrad@kernel.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-kvm stat support is currently conditional on i386/x86_64. Let's abstract
-this into a HAVE_KVM_STAT_SUPPORT flag, so that other architectures can
-support kvm stat as well.
+By default when CONFIG_XEN and CONFIG_XEN_PVHVM kernels are
+run, they will enable the PV extensions (drivers, interrupts, timers,
+etc) - which is perfect.
 
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-Reviewed-by: David Ahern <dsahern@gmail.com>
-Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Acked-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1404395992-17095-2-git-send-email-yarygin@linux.vnet.ibm.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+However, in some cases (kexec not fully wokring, benchmarking)
+we want to disable Xen PV extensions. As such introduce the
+'xen_nopv' parameter that will do it.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- tools/perf/arch/x86/Makefile | 1 +
- tools/perf/builtin-kvm.c     | 6 +++---
- tools/perf/config/Makefile   | 4 ++++
- 3 files changed, 8 insertions(+), 3 deletions(-)
+[v2: s/off/xen_nopv/ per Boris Ostrovsky recommendation.]
+---
+ Documentation/kernel-parameters.txt |    4 ++++
+ arch/x86/xen/enlighten.c            |   13 +++++++++++++
+ 2 files changed, 17 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/arch/x86/Makefile b/tools/perf/arch/x86/Makefile
-index 1641542e3636..d3939014a877 100644
---- a/tools/perf/arch/x86/Makefile
-+++ b/tools/perf/arch/x86/Makefile
-@@ -15,3 +15,4 @@ endif
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/tsc.o
- LIB_H += arch/$(ARCH)/util/tsc.h
-+HAVE_KVM_STAT_SUPPORT := 1
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 0f1e5a2f6ad7..214ec0e7492b 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -29,7 +29,7 @@
- #include <pthread.h>
- #include <math.h>
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index c1b9aa8..5dcfa6e 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -3691,6 +3691,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			Disables the ticketlock slowpath using Xen PV
+ 			optimizations.
  
--#if defined(__i386__) || defined(__x86_64__)
-+#ifdef HAVE_KVM_STAT_SUPPORT
- #include <asm/svm.h>
- #include <asm/vmx.h>
- #include <asm/kvm.h>
-@@ -1609,7 +1609,7 @@ static int kvm_cmd_stat(const char *file_name, int argc, const char **argv)
- perf_stat:
- 	return cmd_stat(argc, argv, NULL);
- }
--#endif
-+#endif /* HAVE_KVM_STAT_SUPPORT */
- 
- static int __cmd_record(const char *file_name, int argc, const char **argv)
- {
-@@ -1726,7 +1726,7 @@ int cmd_kvm(int argc, const char **argv, const char *prefix __maybe_unused)
- 		return cmd_top(argc, argv, NULL);
- 	else if (!strncmp(argv[0], "buildid-list", 12))
- 		return __cmd_buildid_list(file_name, argc, argv);
--#if defined(__i386__) || defined(__x86_64__)
-+#ifdef HAVE_KVM_STAT_SUPPORT
- 	else if (!strncmp(argv[0], "stat", 4))
- 		return kvm_cmd_stat(file_name, argc, argv);
- #endif
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 346bdb617544..b7f42d577c4e 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -594,6 +594,10 @@ ifndef NO_LIBNUMA
-   endif
- endif
- 
-+ifdef HAVE_KVM_STAT_SUPPORT
-+    CFLAGS += -DHAVE_KVM_STAT_SUPPORT
-+endif
++	xen_nopv	[X86,XEN]
++			Disables the PV optimizations forcing the guest to run
++			as generic HVM guest with no PV drivers.
 +
- # Among the variables below, these:
- #   perfexecdir
- #   template_dir
+ 	xirc2ps_cs=	[NET,PCMCIA]
+ 			Format:
+ 			<irq>,<irq_mask>,<io>,<full_duplex>,<do_sound>,<lockup_hack>[,<irq2>[,<irq3>[,<irq4>]]]
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index e220197..7aa59ef 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1930,10 +1930,21 @@ static void __init xen_hvm_guest_init(void)
+ #endif
+ }
+ 
++static bool xen_nopv = false;
++static __init int xen_parse_nopv(char *arg)
++{
++       xen_nopv = true;
++       return 0;
++}
++early_param("xen_nopv", xen_parse_nopv);
++
+ static uint32_t __init xen_hvm_platform(void)
+ {
+ 	uint32_t eax, ebx, ecx, edx, base;
+ 
++	if (xen_nopv)
++		return 0;
++
+ 	if (xen_pv_domain())
+ 		return 0;
+ 
+@@ -1953,6 +1964,8 @@ static uint32_t __init xen_hvm_platform(void)
+ 
+ bool xen_hvm_need_lapic(void)
+ {
++	if (xen_nopv)
++		return false;
+ 	if (xen_pv_domain())
+ 		return false;
+ 	if (!xen_hvm_domain())
 -- 
-1.9.3
+1.7.7.6
 
