@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283AbaGHPyX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 11:54:23 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33498 "EHLO mail.skyhub.de"
+	id S1754560AbaGHPzA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 11:55:00 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:60095 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753531AbaGHPyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 11:54:21 -0400
-Date: Tue, 8 Jul 2014 17:54:14 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com, hpa@zytor.com,
-        mjg59@srcf.ucam.org, greg@kroah.com, dyoung@redhat.com,
-        chaowang@redhat.com, bhe@redhat.com, akpm@linux-foundation.org,
-        dhowells@redhat.com, pjones@redhat.com,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC PATCH 0/9] kexec: Verify signature of PE signed bzImage
-Message-ID: <20140708155414.GE27659@pd.tnic>
-References: <1404421641-12691-1-git-send-email-vgoyal@redhat.com>
- <20140704145118.GD3340@pd.tnic>
- <20140705030134.GA18508@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140705030134.GA18508@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753887AbaGHPy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 11:54:58 -0400
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+To: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+Cc: Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Stanimir Varbanov <svarbanov@mm-sol.com>
+Subject: [PATCH 0/3] Support for Qualcomm QPNP PMIC's
+Date: Tue,  8 Jul 2014 18:54:26 +0300
+Message-Id: <1404834869-23049-1-git-send-email-svarbanov@mm-sol.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 04, 2014 at 11:01:34PM -0400, Vivek Goyal wrote:
-> Given that this time we have a new use case, I am hoping that idea of
-> parsing PE and verifying signature is more acceptable.
+Hello to all,
 
-Maybe.
+Here is patch set which adds Qualcomm QPNP PMIC's support.
+I've removed RFC tag and sending as regular set hoping that
+this time more comments will come out. The link to the RFCv2
+at [1].
 
-In any case, I still think that you should post the full patch set and
-not refer to some repo so that people can take a look at the whole
-thing.
+The first patch in the set implements an *of* based parsing of
+PMIC peripheral resources and adding mfd cell for it.
+The devicetree node should contain a compatible and reg
+proparties. The intention was to keep things simple and similar
+to the other mfd drivers. 
 
-I'll fiddle them out now from David's branch but please add them to your
-next submission.
+The second patch adds binding document for qpnp-spmi.
 
--- 
-Regards/Gruss,
-    Boris.
+The third patch describes the devicetree binding of the slave
+devices attached to the SPMI interface. 
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Comments are welcome.
+
+regards,
+Stan
+
+[1] https://lkml.org/lkml/2014/7/3/443
+
+Ivan T. Ivanov (2):
+  mfd: qpnp-spmi: document DT bindings for Qualcomm QPNP PMICs
+  dt: qcom: msm8974: add qpnp-spmi device nodes
+
+Josh Cartwright (1):
+  mfd: qpnp-spmi: add support for Qualcomm QPNP PMICs
+
+ .../devicetree/bindings/qpnp/qcom,qpnp-spmi.txt    |   53 +++++++
+ arch/arm/boot/dts/qcom-msm8974.dtsi                |   45 ++++++
+ drivers/mfd/Kconfig                                |   15 ++
+ drivers/mfd/Makefile                               |    1 +
+ drivers/mfd/qpnp-spmi.c                            |  145 ++++++++++++++++++++
+ 5 files changed, 259 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/qpnp/qcom,qpnp-spmi.txt
+ create mode 100644 drivers/mfd/qpnp-spmi.c
+
