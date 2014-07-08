@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932605AbaGHToa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:44:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54074 "EHLO
+	id S932585AbaGHTo2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:44:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54076 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755669AbaGHTIi (ORCPT
+	by vger.kernel.org with ESMTP id S1755672AbaGHTIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:08:38 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Johannes Berg" <johannes.berg@intel.com>,
-        "=?UTF-8?q?Krzysztof=20Ha=C5=82asa?=" <khalasa@piap.pl>
+CC: akpm@linux-foundation.org, "Nicholas Bellinger" <nab@linux-iscsi.org>,
+        "Jorge Daniel Sequeira Matias" <jdsm@tecnico.ulisboa.pt>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.26812079@decadent.org.uk>
+Message-ID: <lsq.1404846110.610641042@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 016/125] mac80211: fix IBSS join by initializing
- last_scan_completed
+Subject: [PATCH 3.2 116/125] target: Explicitly clear ramdisk_mcp backend
+ pages
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,31 +32,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Hałasa <khalasa@piap.pl>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit c7d37a66e345df2fdf1aa7b2c9a6d3d53846ca5b upstream.
+Part of commit 4442dc8a92b8f9ad8ee9e7f8438f4c04c03a22dc upstream.
 
-Without this fix, freshly rebooted Linux creates a new IBSS
-instead of joining an existing one. Only when jiffies counter
-overflows after 5 minutes the IBSS can be successfully joined.
+This patch changes rd_allocate_sgl_table() to explicitly clear
+ramdisk_mcp backend memory pages by passing __GFP_ZERO into
+alloc_pages().
 
-Signed-off-by: Krzysztof Hałasa <khalasa@piap.pl>
-[edit commit message slightly]
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[bwh: Backported to 3.2: adjust context]
+This addresses a potential security issue where reading from a
+ramdisk_mcp could return sensitive information, and follows what
+>= v3.15 does to explicitly clear ramdisk_mcp memory at backend
+device initialization time.
+
+Reported-by: Jorge Daniel Sequeira Matias <jdsm@tecnico.ulisboa.pt>
+Cc: Jorge Daniel Sequeira Matias <jdsm@tecnico.ulisboa.pt>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/mac80211/ibss.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/target/target_core_rd.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/mac80211/ibss.c
-+++ b/net/mac80211/ibss.c
-@@ -914,6 +914,7 @@ int ieee80211_ibss_join(struct ieee80211
+--- a/drivers/target/target_core_rd.c
++++ b/drivers/target/target_core_rd.c
+@@ -179,7 +179,7 @@ static int rd_build_device_space(struct
+ 						- 1;
  
- 	sdata->u.ibss.privacy = params->privacy;
- 	sdata->u.ibss.basic_rates = params->basic_rates;
-+	sdata->u.ibss.last_scan_completed = jiffies;
- 	memcpy(sdata->vif.bss_conf.mcast_rate, params->mcast_rate,
- 	       sizeof(params->mcast_rate));
- 
+ 		for (j = 0; j < sg_per_table; j++) {
+-			pg = alloc_pages(GFP_KERNEL, 0);
++			pg = alloc_pages(GFP_KERNEL | __GFP_ZERO, 0);
+ 			if (!pg) {
+ 				pr_err("Unable to allocate scatterlist"
+ 					" pages for struct rd_dev_sg_table\n");
 
