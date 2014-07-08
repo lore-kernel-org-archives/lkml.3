@@ -1,47 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028AbaGHRZX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 13:25:23 -0400
-Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:39396 "EHLO
-	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754852AbaGHRZV (ORCPT
+	id S1755136AbaGHR1w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 13:27:52 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:29765 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753853AbaGHR1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 13:25:21 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: At4OAIQovFNXQDwH/2dsb2JhbABZgw6tHwUBAQEBAQEFAW4BmVmBGBd1hDFSgRo3iEYByDMXhXqIZGQdhC0FhGkDlgqUDINFO4Ex
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org
-Subject: [PATCH 1/1] xc2028: remove unnecessary break after goto
-Date: Tue,  8 Jul 2014 19:25:17 +0200
-Message-Id: <1404840317-29960-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Tue, 8 Jul 2014 13:27:51 -0400
+Date: Tue, 8 Jul 2014 11:01:04 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+Cc: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xenproject.org
+Subject: Re: [Xen-devel] [PATCH net-next v2] xen-netback: Adding debugfs
+ "io_ring_qX" files
+Message-ID: <20140708150104.GA2863@laptop.dumpdata.com>
+References: <1404330830-24504-1-git-send-email-zoltan.kiss@citrix.com>
+ <20140702200252.GA17294@laptop.dumpdata.com>
+ <53BC014E.5090600@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53BC014E.5090600@citrix.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: linux-media@vger.kernel.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/media/tuners/tuner-xc2028.c | 1 -
- 1 file changed, 1 deletion(-)
+On Tue, Jul 08, 2014 at 03:33:50PM +0100, Zoltan Kiss wrote:
+> On 02/07/14 21:02, Konrad Rzeszutek Wilk wrote:
+> >On Wed, Jul 02, 2014 at 08:53:50PM +0100, Zoltan Kiss wrote:
+> >>+static ssize_t
+> >>+xenvif_write_io_ring(struct file *filp, const char __user *buf, size_t count,
+> >>+		     loff_t *ppos)
+> >>+{
+> >>+	struct xenvif_queue *queue =
+> >>+		((struct seq_file *)filp->private_data)->private;
+> >>+	int len;
+> >>+	char write[sizeof("kick")];
+> >
+> ><blinks>
+> >>+
+> >>+	/* don't allow partial writes and check the length */
+> >>+	if (*ppos != 0)
+> >>+		return 0;
+> >>+	if (count < sizeof("kick") - 1)
+> >
+> >Um, could you just use a #define please?
+> OK
+> 
+> >
+> >>+		return -ENOSPC;
+> >>+
+> >>+	len = simple_write_to_buffer(write,
+> >>+				     sizeof(write),
+> >>+				     ppos,
+> >>+				     buf,
+> >>+				     count);
+> >>+	if (len < 0)
+> >>+		return len;
+> >>+
+> >>+	if (!strncmp(write, "kick", sizeof("kick") - 1))
+> >>+		xenvif_interrupt(0, (void *)queue);
+> >>+	else
+> >>+		pr_warn("Unknown command to io_ring. Available: kick\n");
+> >
+> >It is 'io_ring_q%d'?
+> Yes
+> 
+> >Why don't you split that back out to the user
+> >instead of the console?
+> How do you mean? Printing it into buf? I don't think the user cares about
+> its content after doing the write syscall. More importantly, I don't know if
+> that buffer is big enough to hold the message.
 
-diff --git a/drivers/media/tuners/tuner-xc2028.c b/drivers/media/tuners/tuner-xc2028.c
-index 6ef93ee..565eeeb 100644
---- a/drivers/media/tuners/tuner-xc2028.c
-+++ b/drivers/media/tuners/tuner-xc2028.c
-@@ -1489,7 +1489,6 @@ struct dvb_frontend *xc2028_attach(struct dvb_frontend *fe,
- 	case 0:
- 		/* memory allocation failure */
- 		goto fail;
--		break;
- 	case 1:
- 		/* new tuner instance */
- 		priv->ctrl.max_len = 13;
--- 
-1.8.4.5
+Isn't it 4K? 
 
+Either way I think you need to do 'count = -EINVAL' here.
