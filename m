@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755157AbaGHQXy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 12:23:54 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:39689 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753405AbaGHQV0 (ORCPT
+	id S1753157AbaGHQ10 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 12:27:26 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:35182 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006AbaGHQ1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 12:21:26 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv2 1/6] ARM: at91: Add new binding for sama5d3-ddramc
-Date: Tue,  8 Jul 2014 18:21:11 +0200
-Message-Id: <1404836476-23787-2-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1404836476-23787-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1404836476-23787-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Tue, 8 Jul 2014 12:27:25 -0400
+X-IronPort-AV: E=Sophos;i="5.01,625,1400025600"; 
+   d="scan'208";a="150888428"
+Message-ID: <53BC1B96.3070101@citrix.com>
+Date: Tue, 8 Jul 2014 17:25:58 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Vitaly Kuznetsov <vkuznets@redhat.com>
+CC: <xen-devel@lists.xenproject.org>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        <linux-kernel@vger.kernel.org>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [Xen-devel] [PATCH] mmap_vmcore: skip non-ram pages reported
+ by hypervisors
+References: <1404745549-16023-1-git-send-email-vkuznets@redhat.com> <20140707133301.dfcc078f416efeb1ada72da9@linux-foundation.org>
+In-Reply-To: <20140707133301.dfcc078f416efeb1ada72da9@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The IP for the SDRAM controller found on sama5d3 SoCs is different from the g45
-one. Introduce a new compatible string to reflect that.
+On 07/07/14 21:33, Andrew Morton wrote:
+> On Mon,  7 Jul 2014 17:05:49 +0200 Vitaly Kuznetsov <vkuznets@redhat.com> wrote:
+> 
+>> we have a special check in read_vmcore() handler to check if the page was
+>> reported as ram or not by the hypervisor (pfn_is_ram()). However, when
+>> vmcore is read with mmap() no such check is performed. That can lead to
+>> unpredictable results, e.g. when running Xen PVHVM guest memcpy() after
+>> mmap() on /proc/vmcore will hang processing HVMMEM_mmio_dm pages creating
+>> enormous load in both DomU and Dom0.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- Documentation/devicetree/bindings/arm/atmel-at91.txt | 1 +
- arch/arm/mach-at91/setup.c                           | 1 +
- 2 files changed, 2 insertions(+)
+Does make forward progress though?  Or is it ending up in a repeatedly
+retrying the same instruction?
 
-diff --git a/Documentation/devicetree/bindings/arm/atmel-at91.txt b/Documentation/devicetree/bindings/arm/atmel-at91.txt
-index 16f60b41c147..54dc3aefb12a 100644
---- a/Documentation/devicetree/bindings/arm/atmel-at91.txt
-+++ b/Documentation/devicetree/bindings/arm/atmel-at91.txt
-@@ -61,6 +61,7 @@ RAMC SDRAM/DDR Controller required properties:
- - compatible: Should be "atmel,at91rm9200-sdramc",
- 			"atmel,at91sam9260-sdramc",
- 			"atmel,at91sam9g45-ddramc",
-+			"atmel,sama5d3-ddramc",
- - reg: Should contain registers location and length
-   For at91sam9263 and at91sam9g45 you must specify 2 entries.
- 
-diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
-index f7a07a58ebb6..faff1eae3e65 100644
---- a/arch/arm/mach-at91/setup.c
-+++ b/arch/arm/mach-at91/setup.c
-@@ -384,6 +384,7 @@ static struct of_device_id ramc_ids[] = {
- 	{ .compatible = "atmel,at91rm9200-sdramc", .data = at91rm9200_standby },
- 	{ .compatible = "atmel,at91sam9260-sdramc", .data = at91sam9_sdram_standby },
- 	{ .compatible = "atmel,at91sam9g45-ddramc", .data = at91_ddr_standby },
-+	{ .compatible = "atmel,sama5d3-ddramc", .data = at91_ddr_standby },
- 	{ /*sentinel*/ }
- };
- 
--- 
-1.9.1
+Is it failing on a ballooned page in a RAM region? Or is mapping non-RAM
+regions as well?
 
+>> Fix the issue by mapping each non-ram page to the zero page. Keep direct
+>> path with remap_oldmem_pfn_range() to avoid looping through all pages on
+>> bare metal.
+>>
+>> The issue can also be solved by overriding remap_oldmem_pfn_range() in
+>> xen-specific code, as remap_oldmem_pfn_range() was been designed for.
+>> That, however, would involve non-obvious xen code path for all x86 builds
+>> with CONFIG_XEN_PVHVM=y and would prevent all other hypervisor-specific
+>> code on x86 arch from doing the same override.
+
+The oldmem_pfn_is_ram() is Xen-specific but this problem (ballooned
+pages) must be common to KVM.  How does KVM handle this?
+
+David
