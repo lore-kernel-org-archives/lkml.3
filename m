@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756728AbaGHT37 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:29:59 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54177 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755698AbaGHTIk (ORCPT
+	id S932492AbaGHTb3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:31:29 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:8870 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932284AbaGHTbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:08:40 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>,
-        "Jaroslav Kysela" <perex@perex.cz>,
-        "Lars-Peter Clausen" <lars@metafoo.de>
-Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.971401728@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 086/125] ALSA: control: Handle numid overflow
-In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Tue, 8 Jul 2014 15:31:24 -0400
+X-AuditID: cbfec37d-b7fbf6d000005712-48-53bc470ccb37
+Message-id: <53BC4709.7000907@samsung.com>
+Date: Tue, 08 Jul 2014 13:31:21 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, stable@vger.kernel.org,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH 3.14 00/94] 3.14.12-stable review
+References: <20140707235756.780319003@linuxfoundation.org>
+In-reply-to: <20140707235756.780319003@linuxfoundation.org>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.134.209]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLLMWRmVeSWpSXmKPExsVy+t9hX10e9z3BBvM3clrMWb+GzaJ58Xo2
+	i8u75rBZPFl4hsli6qkJLBYLNj5itHjU95bdgd1j56y77B4nZvxm8dg/dw2Q+72B3ePzJrkA
+	1igum5TUnMyy1CJ9uwSujJ7dF9gKjrFV3JxxgLmBcSZrFyMHh4SAicS+l1JdjJxAppjEhXvr
+	2boYuTiEBJYxSux+9oUNJCEk0Mskce9MJERiG6PE3h1PmEASvAJaEk23e8CKWARUJXZ27WIG
+	sdkE1CU+v97BDtEsJ9G0ZDVYXFQgQuJA3zNWiF5BiR+T77GA2CICwRJrvy5kBFnALLCKUeL6
+	5eVgQ4UFTCXmXVjMAnKpkICVxI6lYSAmp4C1xP21mSAVzAJmEo9a1jFD2PISm9e8ZYZYqyzx
+	5/IpJojHlCUmNt5mmcAoMgvJ5llI2mchaV/AyLyKUay0OLmgOCk9tcJErzgxt7g0L10vOT93
+	EyMkimp3MN7/anOIUYCDUYmH9wTnnmAh1sSy4srcQ4wSHMxKIrzLBYFCvCmJlVWpRfnxRaU5
+	qcWHGJk4OKUaGGeIGwYvcp/Ix/r0oF7u/WeBv189m9C33DS6Xixo4/bSWWkTStcbR8cXlv55
+	7+j+SudwSaT+IudUASHdxScX3lAPcpApiRNseXg2kaFsfYrazLiToR9MIrLYvSv7nt19uvHY
+	/Z3b1CwfK4Q/CH5Q+M14po98ef99rsvr/x+4f+vetabOxRNtypRYijMSDbWYi4oTAQRlexaA	AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.61-rc1 review patch.  If anyone has any objections, please let me know.
+On 07/07/2014 05:56 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.14.12 release.
+> There are 94 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Wed Jul  9 23:57:44 UTC 2014.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.12-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
-------------------
+Compiled and booted on my test system. No demsg regressions.
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+-- Shuah
 
-commit ac902c112d90a89e59916f751c2745f4dbdbb4bd upstream.
-
-Each control gets automatically assigned its numids when the control is created.
-The allocation is done by incrementing the numid by the amount of allocated
-numids per allocation. This means that excessive creation and destruction of
-controls (e.g. via SNDRV_CTL_IOCTL_ELEM_ADD/REMOVE) can cause the id to
-eventually overflow. Currently when this happens for the control that caused the
-overflow kctl->id.numid + kctl->count will also over flow causing it to be
-smaller than kctl->id.numid. Most of the code assumes that this is something
-that can not happen, so we need to make sure that it won't happen
-
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Jaroslav Kysela <perex@perex.cz>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- sound/core/control.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
---- a/sound/core/control.c
-+++ b/sound/core/control.c
-@@ -288,6 +288,10 @@ static bool snd_ctl_remove_numid_conflic
- {
- 	struct snd_kcontrol *kctl;
- 
-+	/* Make sure that the ids assigned to the control do not wrap around */
-+	if (card->last_numid >= UINT_MAX - count)
-+		card->last_numid = 0;
-+
- 	list_for_each_entry(kctl, &card->controls, list) {
- 		if (kctl->id.numid < card->last_numid + 1 + count &&
- 		    kctl->id.numid + kctl->count > card->last_numid + 1) {
-
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
