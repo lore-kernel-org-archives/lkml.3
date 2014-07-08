@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932232AbaGHTNl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:13:41 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54358 "EHLO
+	id S932197AbaGHTNj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:13:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54286 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755771AbaGHTIm (ORCPT
+	by vger.kernel.org with ESMTP id S1755775AbaGHTIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:08:42 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Johan Hovold" <jhovold@gmail.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+CC: akpm@linux-foundation.org,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Tejun Heo" <tj@kernel.org>, "Lai Jiangshan" <laijs@cn.fujitsu.com>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.736035028@decadent.org.uk>
+Message-ID: <lsq.1404846110.258258435@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 027/125] USB: sierra: fix remote wakeup
+Subject: [PATCH 3.2 066/125] idr: fix overflow bug during maximum ID
+ calculation at maximum height
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,69 +33,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 80cc0fcbdaeaf10d04ba27779a2d7ceb73d2717a upstream.
+commit 3afb69cb5572b3c8c898c00880803cf1a49852c4 upstream.
 
-Make sure that needs_remote_wake up is always set when there are open
-ports.
+idr_replace() open-codes the logic to calculate the maximum valid ID
+given the height of the idr tree; unfortunately, the open-coded logic
+doesn't account for the fact that the top layer may have unused slots
+and over-shifts the limit to zero when the tree is at its maximum
+height.
 
-Currently close() would unconditionally set needs_remote_wakeup to 0
-even though there might still be open ports. This could lead to blocked
-input and possibly dropped data on devices that do not support remote
-wakeup (and which must therefore not be runtime suspended while open).
+The following test code shows it fails to replace the value for
+id=((1<<27)+42):
 
-Add an open_ports counter (protected by the susp_lock) and only clear
-needs_remote_wakeup when the last port is closed.
+  static void test5(void)
+  {
+        int id;
+        DEFINE_IDR(test_idr);
+  #define TEST5_START ((1<<27)+42) /* use the highest layer */
 
-Fixes: e6929a9020ac ("USB: support for autosuspend in sierra while
-online")
+        printk(KERN_INFO "Start test5\n");
+        id = idr_alloc(&test_idr, (void *)1, TEST5_START, 0, GFP_KERNEL);
+        BUG_ON(id != TEST5_START);
+        TEST_BUG_ON(idr_replace(&test_idr, (void *)2, TEST5_START) != (void *)1);
+        idr_destroy(&test_idr);
+        printk(KERN_INFO "End of test5\n");
+  }
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust indentation]
+Fix the bug by using idr_max() which correctly takes into account the
+maximum allowed shift.
+
+sub_alloc() shares the same problem and may incorrectly fail with
+-EAGAIN; however, this bug doesn't affect correct operation because
+idr_get_empty_slot(), which already uses idr_max(), retries with the
+increased @id in such cases.
+
+[tj@kernel.org: Updated patch description.]
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/sierra.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ lib/idr.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -59,6 +59,7 @@ struct sierra_intf_private {
- 	spinlock_t susp_lock;
- 	unsigned int suspended:1;
- 	int in_flight;
-+	unsigned int open_ports;
- };
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -167,7 +167,7 @@ static int sub_alloc(struct idr *idp, in
+ 			id = (id | ((1 << (IDR_BITS * l)) - 1)) + 1;
  
- static int sierra_set_power_state(struct usb_device *udev, __u16 swiState)
-@@ -814,7 +815,6 @@ static void sierra_close(struct usb_seri
- 	if (serial->dev) {
- 		mutex_lock(&serial->disc_mutex);
- 		if (!serial->disconnected) {
--			serial->interface->needs_remote_wakeup = 0;
- 			/* odd error handling due to pm counters */
- 			if (!usb_autopm_get_interface(serial->interface))
- 				sierra_send_setup(port);
-@@ -825,6 +825,8 @@ static void sierra_close(struct usb_seri
- 		mutex_unlock(&serial->disc_mutex);
- 		spin_lock_irq(&intfdata->susp_lock);
- 		portdata->opened = 0;
-+		if (--intfdata->open_ports == 0)
-+			serial->interface->needs_remote_wakeup = 0;
- 		spin_unlock_irq(&intfdata->susp_lock);
+ 			/* if already at the top layer, we need to grow */
+-			if (id >= 1 << (idp->layers * IDR_BITS)) {
++			if (id > idr_max(idp->layers)) {
+ 				*starting_id = id;
+ 				return IDR_NEED_TO_GROW;
+ 			}
+@@ -672,14 +672,12 @@ void *idr_replace(struct idr *idp, void
+ 	if (!p)
+ 		return ERR_PTR(-EINVAL);
  
- 		for (;;) {
-@@ -885,9 +887,10 @@ static int sierra_open(struct tty_struct
+-	n = (p->layer+1) * IDR_BITS;
+-
+ 	id &= MAX_ID_MASK;
  
- 	sierra_send_setup(port);
+-	if (id >= (1 << n))
++	if (id > idr_max(p->layer + 1))
+ 		return ERR_PTR(-EINVAL);
  
--	serial->interface->needs_remote_wakeup = 1;
- 	spin_lock_irq(&intfdata->susp_lock);
- 	portdata->opened = 1;
-+	if (++intfdata->open_ports == 1)
-+		serial->interface->needs_remote_wakeup = 1;
- 	spin_unlock_irq(&intfdata->susp_lock);
- 	usb_autopm_put_interface(serial->interface);
- 
+-	n -= IDR_BITS;
++	n = p->layer * IDR_BITS;
+ 	while ((n > 0) && p) {
+ 		p = p->ary[(id >> n) & IDR_MASK];
+ 		n -= IDR_BITS;
 
