@@ -1,88 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996AbaGHUA1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 16:00:27 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:36666 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753716AbaGHUAZ (ORCPT
+	id S1754125AbaGHUD5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 16:03:57 -0400
+Received: from mail-bn1blp0186.outbound.protection.outlook.com ([207.46.163.186]:24312
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754005AbaGHUD4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 16:00:25 -0400
-Message-ID: <53BC4DD7.20906@codeaurora.org>
-Date: Tue, 08 Jul 2014 13:00:23 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Tue, 8 Jul 2014 16:03:56 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Richard Weinberger <richard@nod.at>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+CC: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] hyperv: Add netpoll support
+Thread-Topic: [PATCH] hyperv: Add netpoll support
+Thread-Index: AQHPmo+Sem0p3ifQZUi3cyqbFGXcHpuWd56AgAALCICAABbIkA==
+Date: Tue, 8 Jul 2014 20:03:45 +0000
+Message-ID: <b2835410139848be8811403e3d7fa708@BY2PR03MB299.namprd03.prod.outlook.com>
+References: <1404811947-5174-1-git-send-email-richard@nod.at>
+ <9fb91c2ee32a4a59a2bec54043a6b9fd@BY2PR03MB299.namprd03.prod.outlook.com>
+ <53BC3AC5.6000203@nod.at>
+In-Reply-To: <53BC3AC5.6000203@nod.at>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [131.107.174.21]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:
+x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+x-forefront-prvs: 0266491E90
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(199002)(51704005)(189002)(13464003)(377454003)(129404003)(80022001)(101416001)(64706001)(106116001)(4396001)(83072002)(76576001)(33646001)(86362001)(19580395003)(87936001)(1511001)(106356001)(92566001)(2656002)(54356999)(31966008)(46102001)(99396002)(19580405001)(76176999)(83322001)(50986999)(99286002)(81342001)(95666004)(76482001)(105586002)(74316001)(74502001)(85306003)(81542001)(107046002)(20776003)(85852003)(79102001)(74662001)(21056001)(77982001)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB299;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: a case for a common efuse API?
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On MSM chips we have some efuses (called qfprom) where we store things
-like calibration data, speed bins, etc. We need to read out data from
-the efuses in various drivers like the cpufreq, thermal, etc. This
-essentially boils down to a bunch of readls on the efuse from a handful
-of different drivers. In devicetree this looks a little odd because
-these drivers end up having an extra reg property (or two) that points
-to a register in the efuse and some length, i.e you see this:
-
-	thermal-sensor@34000 {
-		compatible = "sensor";
-		reg = <0x34000 0x1000>, <0x10018 0xc>;
-		reg-names = "sensor", "efuse_calib";
-	}
 
 
-I imagine in DT we want something more like this:
+> -----Original Message-----
+> From: Richard Weinberger [mailto:richard@nod.at]
+> Sent: Tuesday, July 8, 2014 11:39 AM
+> To: KY Srinivasan; Haiyang Zhang
+> Cc: devel@linuxdriverproject.org; netdev@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH] hyperv: Add netpoll support
+> 
+> Am 08.07.2014 20:01, schrieb KY Srinivasan:
+> >
+> >
+> >> -----Original Message-----
+> >> From: Richard Weinberger [mailto:richard@nod.at]
+> >> Sent: Tuesday, July 8, 2014 2:32 AM
+> >> To: KY Srinivasan; Haiyang Zhang
+> >> Cc: devel@linuxdriverproject.org; netdev@vger.kernel.org; linux-
+> >> kernel@vger.kernel.org; Richard Weinberger
+> >> Subject: [PATCH] hyperv: Add netpoll support
+> >>
+> >> In order to have at least a netconsole to debug kernel issues on
+> >> Windows Azure this patch implements netpoll support.
+> >> Sending packets is easy, netvsc_start_xmit() does already everything
+> >> needed.
+> >> To receive we need to trigger the channel callback which is usally
+> >> called via tasklet_schedule().
+> >>
+> >> Signed-off-by: Richard Weinberger <richard@nod.at>
+> >> ---
+> >>  drivers/net/hyperv/netvsc_drv.c | 14 ++++++++++++++
+> >>  1 file changed, 14 insertions(+)
+> >>
+> >> diff --git a/drivers/net/hyperv/netvsc_drv.c
+> >> b/drivers/net/hyperv/netvsc_drv.c index 4fd71b7..367b71e 100644
+> >> --- a/drivers/net/hyperv/netvsc_drv.c
+> >> +++ b/drivers/net/hyperv/netvsc_drv.c
+> >> @@ -736,6 +736,17 @@ static int netvsc_set_mac_addr(struct net_device
+> >> *ndev, void *p)
+> >>  	return err;
+> >>  }
+> >>
+> >> +#ifdef CONFIG_NET_POLL_CONTROLLER
+> >> +static void netvsc_poll_controller(struct net_device *net) {
+> >> +	struct net_device_context *net_device_ctx = netdev_priv(net);
+> >> +	struct hv_device *dev = net_device_ctx->device_ctx;
+> >> +
+> >> +	local_bh_disable();
+> >> +	netvsc_channel_cb(dev->channel);
+> >> +	local_bh_enable();
+> >> +}
+> >> +#endif
+> >
+> > Each channel is bound to a specific VCPU in the guest and the channel
+> > callback is expected to be delivered on the VCPU the channel is bound to.
+> This code is not satisfying that requirement.
+> 
+> But struct hv_device has only one channel attribute. How does this work with
+> multiple VCPUs?
+> 
+> Anyways, what solution to you propose?
 
-	efuse: efuse@10000 {
-		compatible = "efuse";
-		reg = <0x10000 0x1000>;
-	}
+The VCPU the channel is bound to is available in the channel state. You could use the following code
+Fragment to ensure that the call is made on the "right" cpu:
 
-	thermal-sensor@34000 {
-		compatible = "sensor";
-		reg = <0x34000 0x1000>;
-		efuse = <&efuse 0x18>;
-	}
+smp_call_function_single(dev->channel->target_cpu,
+                                         netvsc_channel_cb, dev->channel, true);
 
+Hope this helps.
 
-Where we can point to the efuse and give an address offset. From code we
-could then call some efuse_read() function to read the sensor's
-calibration data.
-
-It's been suggested that we use syscon for this, but I wonder if that is
-the right thing to do. With a syscon you're usually writing some
-registers that got lumped together with other registers that aren't
-directly related to your driver. It doesn't seem like syscon is made for
-reading fuses or other things like eeproms. Maybe I'm wrong though.
-
-Using syscon would probably work if we could add a way to point to
-offsets within the syscon node (the 0x18 part in the example). In my
-specific use-case the calibration data may have different offsets
-depending on which SoC the hardware is instantiated in so we could also
-make syscon work if the compatible field for the sensor node indicates
-which SoC it is.
-
-I added Tegra folks because I see that on Tegra this hardware is exposed
-via an SoC specific API, tegra_fuse_readl(), and an associated driver in
-drivers/misc/fuse/tegra/. Unfortunately I don't see any users of the API
-outside of the speedo code in the same directory and the sysfs bin
-attribute that may or may not be in use by some userspace code.
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+K. Y
