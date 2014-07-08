@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212AbaGHWpo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 18:45:44 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:26532 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751190AbaGHWpj (ORCPT
+	id S1751404AbaGHWrX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 18:47:23 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:46507 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082AbaGHWrW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 18:45:39 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19U0OGeUR1RkO3pRxha5VxG6yRQa/+cNbA=
-X-DKIM: OpenDKIM Filter v2.0.1 titan AEE285A5D14
-Date: Tue, 8 Jul 2014 18:45:35 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Feng Kan <fkan@apm.com>
-Cc: tglx@linutronix.de, marc.zyngier@arm.com, linux-kernel@vger.kernel.org,
-        patches@apm.com
-Subject: Re: [PATCH V3 0/2] irqchip: gic: Add support for GIC v2 bypass
- disable
-Message-ID: <20140708224535.GJ13433@titan.lakedaemon.net>
-References: <1404335939-31754-1-git-send-email-fkan@apm.com>
+	Tue, 8 Jul 2014 18:47:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404335939-31754-1-git-send-email-fkan@apm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140708223506.GG4603@linux.vnet.ibm.com>
+References: <1402519183-12752-1-git-send-email-bobby.prani@gmail.com>
+ <1402519183-12752-6-git-send-email-bobby.prani@gmail.com> <20140611214752.GC16940@cloud>
+ <20140708223506.GG4603@linux.vnet.ibm.com>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Tue, 8 Jul 2014 18:46:50 -0400
+Message-ID: <CAJhHMCAkpFh+cpQA1R6Ar41K7GHgPKMMCs9DAqxMu0vJvHw3EA@mail.gmail.com>
+Subject: Re: [RFC PATCH 5/5] kernel/rcu/rcutorture.c:185 fix a sparse warning
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Josh Triplett <josh@joshtriplett.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Feng,
+On Tue, Jul 8, 2014 at 6:35 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Wed, Jun 11, 2014 at 02:47:52PM -0700, josh@joshtriplett.org wrote:
+>> On Wed, Jun 11, 2014 at 04:39:43PM -0400, Pranith Kumar wrote:
+>> > fix the following sparse warning
+>> >
+>> > kernel/rcu/rcutorture.c:185:1: warning: symbol 'boost_mutex' was not declared. Should it be static?
+>> >
+>> > by marking boost_mutex as a static mutex
+>> >
+>> > Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+>>
+>> Please preserve the comment alignment (by deleting a tab).  With that
+>> fixed:
+>> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+>
+> Queued for 3.18.
+>
+> But Pranith, next time Josh gives you a review comment, could you please
+> respond with the appropriate update?
+>
 
-On Wed, Jul 02, 2014 at 02:18:57PM -0700, Feng Kan wrote:
-> This patch series cleans up hex number in the gic driver and then adds
-> the code to preserve GIC v2 bypass disable bits in the GIC driver.
-> 
-> V3 Change: remove incorrect Signoff by 
-> 
-> V2 Change:
-> 	seem my send email was not working correctly, resending this with
->         rebase pull.
-> 	- had to pull HaoJian's change out of arm-gic.h to keep consistency.
-> 	- replace GIC defines as noted by Marc
-> 	- remove GIC_CPU_DISABLE since it no longer used.
-> 	- fix gic_cpu_if_down as noted by Marc
-> 
-> Feng Kan (2):
->   irqchip: gic: replace hex numbers with defines.
->   irqchip: gic: preserve gic V2 bypass bits in cpu ctrl register
-> 
->  drivers/irqchip/irq-gic.c       | 83 +++++++++++++++++++++++++++++++----------
->  include/linux/irqchip/arm-gic.h |  2 -
->  2 files changed, 63 insertions(+), 22 deletions(-)
+I was away from my work desktop for the past few days. I actually sent
+a fixed patch 10 min ago, but in a new series.
 
-I'm collecting all of the various changes to the gic driver into a
-single branch:
+Sorry for missing this, I will drop an update promptly next time.
 
-  git://git.infradead.org/users/jcooper/linux.git irqchip/gic
 
-Please rebase your changes an top of that and resend.
-
-thx,
-
-Jason.
+-- 
+Pranith
