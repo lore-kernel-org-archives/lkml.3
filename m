@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545AbaGHL7r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 07:59:47 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:18967 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754469AbaGHL7o (ORCPT
+	id S1754574AbaGHL75 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 07:59:57 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:36778 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754469AbaGHL7w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 07:59:44 -0400
-X-AuditID: cbfee690-b7fb56d000003439-79-53bbdd2e34ba
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Kishon Vijay Abraham I'" <kishon@ti.com>
-Cc: linux-kernel@vger.kernel.org, "'Vivek Gautam'" <gautam.vivek@samsung.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH RESEND] phy: exynos5-usbdrd: Make local functions static
-Date: Tue, 08 Jul 2014 20:59:42 +0900
-Message-id: <000c01cf9aa4$1a499e20$4edcda60$%han@samsung.com>
+	Tue, 8 Jul 2014 07:59:52 -0400
+X-AuditID: cbfee68f-b7fef6d000003970-08-53bbdd36957e
+From: Namjae Jeon <namjae.jeon@samsung.com>
+To: Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-ext4 <linux-ext4@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        =?iso-8859-2?Q?Luk=E1=B9_Czerner?= <lczerner@redhat.com>,
+        Brian Foster <bfoster@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Ashish Sangwan <a.sangwan@samsung.com>, xfs@oss.sgi.com
+Subject: [PATCH 2/3] xfs: Add support IOC_MOV_DATA ioctl
+Date: Tue, 08 Jul 2014 20:59:49 +0900
+Message-id: <003f01cf9aa4$1e9e5240$5bdaf6c0$@samsung.com>
 MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
+Content-type: text/plain; charset=iso-8859-2
 Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac+apBozXlCJ9eywRuu55TqSpf0eeQ==
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac+aotzQmzVVwwQQRe6D1N7Gugu0PQ==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsVy+t8zY129u7uDDbo/G1i0XTnIbnF54SVW
-	iwtPe9gsLu+aw+bA4tG3ZRWjx/Eb25k8Pm+SC2CO4rJJSc3JLEst0rdL4MqY+eI/Y8FHror/
-	3afYGhhncHYxcnBICJhIrP+X0sXICWSKSVy4t56ti5GLQ0hgGaNE69fZTDA1kw7GQcQXMUo8
-	v3uDFcL5zSgxu/MRO0g3m4CaxJcvh8FsEQEdiYWn1zOD2MwChRLHel6zgwwSFvCQOLzQDSTM
-	IqAq8W/NBlYQm1fAVmLi1JssELagxI/J91ggWrUk1u88zgRhy0tsXvOWGeIedYlHf3UhNulJ
-	3JncxgpRIiKx78U7RpDTJARWsUss2/KDEWKXgMS3yYdYIHplJTYdYIb4V1Li4IobLBMYxWYh
-	2TwLyeZZSDbPQrJiASPLKkbR1ILkguKk9CITveLE3OLSvHS95PzcTYyQuJqwg/HeAetDjMlA
-	6ycyS4km5wPjMq8k3tDYzMjC1MTU2Mjc0ow0YSVxXrVHSUFCAumJJanZqakFqUXxRaU5qcWH
-	GJk4OKUaGCe4xewuPWvyTXf5Mybu+Em658K7/0VcSq6ttnm2S9xN80qlunSQ1z+2B9t8Nmkn
-	RCQfTlvhs/qG3MtzxyuKTQoSpl12z6vLq3ilJfDsyDHV35KJAftiFqZvCHQwbdr1fv+lX42d
-	4VznPkwNmfLa/EgXW/0h6wdsZ2YtmMDg/UtUaPELO9Pa80osxRmJhlrMRcWJAHiUQtzBAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHIsWRmVeSWpSXmKPExsVy+t9jAV29u7uDDU7s17Fou3KQ3eLywkus
-	Fhee9rBZXN41h82BxaNvyypGj+M3tjN5fN4kF8Ac1cBok5GamJJapJCal5yfkpmXbqvkHRzv
-	HG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0TkmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Su
-	b0gQXI+RARpIWMeYMfPFf8aCj1wV/7tPsTUwzuDsYuTgkBAwkZh0MK6LkRPIFJO4cG89Wxcj
-	F4eQwCJGied3b7BCOL8ZJWZ3PmIHqWITUJP48uUwmC0ioCOx8PR6ZhCbWaBQ4ljPa3aQocIC
-	HhKHF7qBhFkEVCX+rdnACmLzCthKTJx6kwXCFpT4MfkeC0SrlsT6nceZIGx5ic1r3jJD3KYu
-	8eivLsQmPYk7k9tYIUpEJPa9eMc4gVFgFpJJs5BMmoVk0iwkLQsYWVYxiqYWJBcUJ6XnGuoV
-	J+YWl+al6yXn525iBMftM6kdjCsbLA4xCnAwKvHwrji4K1iINbGsuDL3EKMEB7OSCO+XU7uD
-	hXhTEiurUovy44tKc1KLDzGaAj06kVlKNDkfmFLySuINjU3MjCyNzCyMTMzNlcR5D7RaBwoJ
-	pCeWpGanphakFsH0MXFwSjUw8k+QUS645LZxyWYRdx9r0+eXH7o/6+Mvj7vkt0/O6u/6JoYm
-	S1aTGeaNF/7e0kiakBHXOOuc3IfikmjhEPUVf724mdx/STM2NTtP476pM1dYuVetd7H8xu9z
-	/oSGr82/XKr65sT6n85BEw4f/TF7R3r7v5L3e0ydVi6WiNp71+3pE66LibKvlViKMxINtZiL
-	ihMB5xw7bPECAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHIsWRmVeSWpSXmKPExsWyRsSkQNfs7u5gg85dyhZLJ15itnj3ucpi
+	y7F7jBanJyxislj2YDOLxcx5d9gs9uw9yWJxedccNovWnp/sFov6bjE6cHmcWiThsXmFlkfT
+	maPMHqsvbGX0eL/vKptH35ZVjB6fN8kFsEdx2aSk5mSWpRbp2yVwZfz7/pWl4Gdhxd/3e1gb
+	GF9HdTFyckgImEjs/PaJFcIWk7hwbz1bFyMXh5DAUkaJ23NesMIUHdzVCJVYxCix9e1cFgjn
+	L6PEneZJQBkODjYBbYk/W0RBGkQEXCXm3f3OCFLDLLCWSeLUzM+MIDXCAhYSJzZmgtSwCKhK
+	PNz+A2wBr4ClxMF9b6BsQYkfk++xgJQzC+hIfJ0UARJmFpCX2LzmLTPEPQoSO86+ZoRYpSfx
+	et9BFogaEYl9L96BrZUQ+Mou8fn8MjaIXQIS3yYfApspISArsekA1BxJiYMrbrBMYBSbhWTz
+	LITNs5BsnoVkwwJGllWMoqkFyQXFSelFxnrFibnFpXnpesn5uZsYgXF7+t+z/h2Mdw9YH2JM
+	Bto+kVlKNDkfGPd5JfGGxmZGFqYmpsZG5pZmpAkrifPef5gUJCSQnliSmp2aWpBaFF9UmpNa
+	fIiRiYNTqoEx/bnERgX7n6s4stY/L8vecXpxEPvKddPj3JMLT5in5//dfXxeQ/kBnxCr6Tee
+	mNQ9nL+ae0UlZ/LbB7ddu2rVdhq26ew948V7b/+0dYX/TE4bbTwmHdsrfD9Wxf1f325ryVmm
+	CTX+v/2ZNz77ujxYlOHU7keaV+1s+8s267v6uBc2JNw2fhWqxFKckWioxVxUnAgA6ZOZWPEC	AAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+xgK7Z3d3BBj/niVssnXiJ2eLd5yqL
+	LcfuMVqcnrCIyWLZg80sFjPn3WGz2LP3JIvF5V1z2Cxae36yWyzqu8XowOVxapGEx+YVWh5N
+	Z44ye6y+sJXR4/2+q2wefVtWMXp83iQXwB7VwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pm
+	YKhraGlhrqSQl5ibaqvk4hOg65aZA3SdkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4
+	HiMDNJCwhjHj3/evLAU/Cyv+vt/D2sD4OqqLkZNDQsBE4uCuRjYIW0ziwr31QDYXh5DAIkaJ
+	rW/nskA4fxkl7jRPAspwcLAJaEv82SIK0iAi4Cox7+53RpAaZoG1TBKnZn5mBKkRFrCQOLEx
+	E6SGRUBV4uH2H6wgNq+ApcTBfW+gbEGJH5PvsYCUMwvoSHydFAESZhaQl9i85i0zxD0KEjvO
+	vmaEWKUn8XrfQRaIGhGJfS/eMU5gFJiFZNIshEmzkEyahaRjASPLKkbR1ILkguKk9FwjveLE
+	3OLSvHS95PzcTYzgpPBMegfjqgaLQ4wCHIxKPLwrDu4KFmJNLCuuzD3EKMHBrCTC++XU7mAh
+	3pTEyqrUovz4otKc1OJDjKZAf05klhJNzgcmrLySeENjEzMjSyNzQwsjY3Mlcd6DrdaBQgLp
+	iSWp2ampBalFMH1MHJxSDYztr8Uy+iuatVYkHTw8J2VT+YTjRYnL3mnHLpozSXRJ8vKJgofE
+	uCryjfuu/1xyqPXIi5jrs/x/9HouZHT86+P7ReF01pPnfz77nlF4e9T0c36ayuQ0vsPHZBgN
+	d7851bZT59Hli/I73zNu5KxYU7fNWvjC3p5kuU6HAyq3ZCaZh81X/ecefPO/EktxRqKhFnNR
+	cSIAI2yyEiADAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -52,44 +58,489 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make local functions static, because these are used only in this
-file.
+This patch implements fs ioctl's IOC_MOV_DATA for XFS.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+The semantics of this ioctl are:
+1) Like collapse range, offsets and length should be file system block size
+   aligned.
+2) In the receiver file, atleast length size hole should be present at
+   receiver_offset
+3) It does not change file size of any of donor or receiver file.
+4) It leaves a hole at the place from where blocks are moved out in donor file.
+5) Both (donor_offset + length) and (receiver_offset + length) should be within
+   size of donor file and receiver file respectively.
+   Only unwritten extents resides beyond file size and it does not make sense
+   to transfer unwritten extents, leave apart the security issues it may raise.
+6) If the range to be transfered from donor file contain any holes, they are
+   replicated as it is in receiver file. It mean holes are preserved and
+   the length of hole will be added to moved_len signifying that the hole range
+   is succesfully transfered.
+
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
 ---
- drivers/phy/phy-exynos5-usbdrd.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/xfs/libxfs/xfs_bmap.c | 148 ++++++++++++++++++++++++++++
+ fs/xfs/libxfs/xfs_bmap.h |   4 +
+ fs/xfs/xfs_bmap_util.c   | 251 +++++++++++++++++++++++++++++++++++++++++++++++
+ fs/xfs/xfs_bmap_util.h   |   3 +
+ fs/xfs/xfs_iops.c        |   1 +
+ 5 files changed, 407 insertions(+)
 
-diff --git a/drivers/phy/phy-exynos5-usbdrd.c b/drivers/phy/phy-exynos5-usbdrd.c
-index 76d862b..205159d 100644
---- a/drivers/phy/phy-exynos5-usbdrd.c
-+++ b/drivers/phy/phy-exynos5-usbdrd.c
-@@ -506,7 +506,7 @@ static struct phy_ops exynos5_usbdrd_phy_ops = {
- 	.owner		= THIS_MODULE,
+diff --git a/fs/xfs/libxfs/xfs_bmap.c b/fs/xfs/libxfs/xfs_bmap.c
+index 3dee150..c2ae99e 100644
+--- a/fs/xfs/libxfs/xfs_bmap.c
++++ b/fs/xfs/libxfs/xfs_bmap.c
+@@ -5982,3 +5982,151 @@ del_cursor:
+ 	xfs_trans_log_inode(tp, ip, logflags);
+ 	return error;
+ }
++/*
++ * Move an extent record pointed by got and whose extent number is stored in
++ * donor_ext from donor inode dip to receiver inode rip.
++ * Extent will be moved at roffset_fsb inside receiver inode.
++ * Caller of this function must make sure there is atleast got->br_blockcount
++ * size hole at roffset_fsb.
++ */
++int xfs_move_extent(
++	struct xfs_trans	*tp,
++	xfs_inode_t		*dip,
++	xfs_inode_t		*rip,
++	xfs_extnum_t		donor_ext,
++	struct xfs_bmbt_irec	*got,
++	xfs_fileoff_t		roffset_fsb,
++	xfs_fsblock_t		*dfirstblock,
++	struct xfs_bmap_free	*dflist,
++	xfs_fsblock_t		*rfirstblock,
++	struct xfs_bmap_free	*rflist)
++
++{
++	struct xfs_mount		*mp = dip->i_mount;
++	struct xfs_bmbt_rec_host	*gotp;
++	struct xfs_btree_cur		*dcur;
++	struct xfs_btree_cur		*rcur;
++	xfs_ifork_t			*difp;
++	xfs_ifork_t			*rifp;
++	xfs_extnum_t			idx;
++	int                             i;
++	int                             dlogflags;
++	int                             rlogflags;
++	int                             tmp_logflags;
++	int				error;
++	int				whichfork = XFS_DATA_FORK;
++	struct xfs_bmalloca		bma = { NULL };
++
++	if (unlikely(XFS_TEST_ERROR(
++	    (XFS_IFORK_FORMAT(dip, whichfork) != XFS_DINODE_FMT_EXTENTS &&
++	     XFS_IFORK_FORMAT(dip, whichfork) != XFS_DINODE_FMT_BTREE),
++	     mp, XFS_ERRTAG_BMAPIFORMAT, XFS_RANDOM_BMAPIFORMAT))) {
++		XFS_ERROR_REPORT("xfs_move_extent",
++				XFS_ERRLEVEL_LOW, mp);
++		return -EFSCORRUPTED;
++	}
++
++	if (unlikely(XFS_TEST_ERROR(
++	    (XFS_IFORK_FORMAT(rip, whichfork) != XFS_DINODE_FMT_EXTENTS &&
++	     XFS_IFORK_FORMAT(rip, whichfork) != XFS_DINODE_FMT_BTREE),
++	     mp, XFS_ERRTAG_BMAPIFORMAT, XFS_RANDOM_BMAPIFORMAT))) {
++		XFS_ERROR_REPORT("xfs_move_extent",
++				XFS_ERRLEVEL_LOW, mp);
++		return -EFSCORRUPTED;
++	}
++
++	if (XFS_FORCED_SHUTDOWN(mp))
++		return -EIO;
++
++	dlogflags = XFS_ILOG_CORE;
++	difp = XFS_IFORK_PTR(dip, whichfork);
++
++	if (difp->if_flags & XFS_IFBROOT) {
++		dcur = xfs_bmbt_init_cursor(mp, tp, dip, whichfork);
++		dcur->bc_private.b.firstblock = *dfirstblock;
++		dcur->bc_private.b.flist = dflist;
++		dcur->bc_private.b.flags = 0;
++	} else {
++		dcur = NULL;
++		dlogflags |= XFS_ILOG_DEXT;
++	}
++
++	rlogflags = XFS_ILOG_CORE;
++	rifp = XFS_IFORK_PTR(rip, whichfork);
++
++	if (rifp->if_flags & XFS_IFBROOT) {
++		rcur = xfs_bmbt_init_cursor(mp, tp, rip, whichfork);
++		rcur->bc_private.b.firstblock = *rfirstblock;
++		rcur->bc_private.b.flist = rflist;
++		rcur->bc_private.b.flags = 0;
++	} else {
++		rcur = NULL;
++		rlogflags |= XFS_ILOG_DEXT;
++	}
++
++	if (dcur) {
++		error = xfs_bmbt_lookup_eq(dcur,
++					   got->br_startoff,
++					   got->br_startblock,
++					   got->br_blockcount,
++					   &i);
++		if (error)
++			goto del_cursor;
++		XFS_WANT_CORRUPTED_GOTO(i == 1, del_cursor);
++	}
++
++	gotp = xfs_iext_bno_to_ext(rifp, roffset_fsb, &idx);
++
++	/* Initialize bma */
++	bma.tp = tp;
++	bma.ip = rip;
++	bma.flist = rflist;
++	bma.firstblock = rfirstblock;
++	bma.cur = rcur;
++	bma.got.br_startoff = roffset_fsb;
++	bma.got.br_startblock = got->br_startblock;
++	bma.got.br_blockcount = got->br_blockcount;
++	bma.got.br_state = got->br_state;
++	bma.idx = idx;
++
++	error = xfs_bmap_add_extent_hole_real(&bma, whichfork);
++	if (error)
++		goto del_cursor;
++	rlogflags |= bma.logflags;
++	rip->i_d.di_nblocks += got->br_blockcount;
++
++	xfs_iext_remove(dip, donor_ext, 1, 0);
++	if (dcur) {
++		error = xfs_btree_delete(dcur, &i);
++		if (error)
++			goto del_cursor;
++		XFS_WANT_CORRUPTED_GOTO(i == 1, del_cursor);
++	}
++	XFS_IFORK_NEXT_SET(dip, whichfork,
++			   XFS_IFORK_NEXTENTS(dip, whichfork) - 1);
++	dip->i_d.di_nblocks -= got->br_blockcount;
++
++	if (xfs_bmap_wants_extents(dip, whichfork)) {
++		ASSERT(dcur != NULL);
++		error = xfs_bmap_btree_to_extents(tp, dip, dcur, &tmp_logflags,
++				whichfork);
++		dlogflags |= tmp_logflags;
++	}
++
++del_cursor:
++	if (dcur) {
++		dcur->bc_private.b.allocated = 0;
++		xfs_btree_del_cursor(dcur,
++				error ? XFS_BTREE_ERROR : XFS_BTREE_NOERROR);
++	}
++	xfs_trans_log_inode(tp, dip, dlogflags);
++
++	if (rcur) {
++		rcur->bc_private.b.allocated = 0;
++		xfs_btree_del_cursor(rcur,
++				error ? XFS_BTREE_ERROR : XFS_BTREE_NOERROR);
++	}
++	xfs_trans_log_inode(tp, rip, rlogflags);
++
++	return error;
++}
+diff --git a/fs/xfs/libxfs/xfs_bmap.h b/fs/xfs/libxfs/xfs_bmap.h
+index af05899..ebfe584 100644
+--- a/fs/xfs/libxfs/xfs_bmap.h
++++ b/fs/xfs/libxfs/xfs_bmap.h
+@@ -191,5 +191,9 @@ int	xfs_bmap_shift_extents_right(struct xfs_trans *tp, struct xfs_inode *ip,
+ 		xfs_extnum_t *current_ext, xfs_extnum_t end_ext,
+ 		xfs_fsblock_t *firstblock, struct xfs_bmap_free *flist,
+ 		int num_exts);
++int	xfs_move_extent(struct xfs_trans *, xfs_inode_t *, xfs_inode_t *,
++		xfs_extnum_t, struct xfs_bmbt_irec *, xfs_fileoff_t,
++		xfs_fsblock_t *, struct xfs_bmap_free *, xfs_fsblock_t *,
++		struct xfs_bmap_free *);
+ 
+ #endif	/* __XFS_BMAP_H__ */
+diff --git a/fs/xfs/xfs_bmap_util.c b/fs/xfs/xfs_bmap_util.c
+index 3c05843..c004b25 100644
+--- a/fs/xfs/xfs_bmap_util.c
++++ b/fs/xfs/xfs_bmap_util.c
+@@ -2071,3 +2071,254 @@ out_trans_cancel:
+ 	xfs_trans_cancel(tp, 0);
+ 	goto out_unlock;
+ }
++
++/*
++ * Compute and return the size of hole, if present, @offset_fsb.
++ * The hole size is distance between offset_fsb and till we reach the next
++ * allocated extent. If next extent is beyond isize, the size is computed
++ * till isize.
++ */
++int
++xfs_compute_hole_size(
++	xfs_inode_t		*ip,
++	xfs_fileoff_t		offset_fsb,
++	struct xfs_trans	*tp,
++	xfs_fileoff_t		*count)
++{
++	struct xfs_ifork		*ifp;
++	struct xfs_bmbt_rec_host	*gotp;
++	struct xfs_bmbt_irec		got;
++	xfs_extnum_t			current_ext;
++	xfs_fileoff_t			isize_fsb;
++	int				error = 0;
++
++	*count = 0;
++	isize_fsb = XFS_B_TO_FSB(ip->i_mount, VFS_I(ip)->i_size);
++	ASSERT(isize_fsb > offset_fsb);
++
++	ifp = XFS_IFORK_PTR(ip, XFS_DATA_FORK);
++	if (!(ifp->if_flags & XFS_IFEXTENTS)) {
++		error = xfs_iread_extents(tp, ip, XFS_DATA_FORK);
++		if (error)
++			return error;
++	}
++
++	gotp = xfs_iext_bno_to_ext(ifp, offset_fsb, &current_ext);
++	if (gotp) {
++		xfs_bmbt_get_all(gotp, &got);
++		if (got.br_startoff != offset_fsb) {
++			ASSERT(got.br_startoff > offset_fsb);
++			*count = (isize_fsb > got.br_startoff) ?
++				 (got.br_startoff - offset_fsb) :
++				 (isize_fsb - offset_fsb);
++		}
++	} else
++		*count = isize_fsb - offset_fsb;
++
++	return error;
++}
++
++int
++xfs_vn_move_data(
++	struct inode	*donor,
++	struct inode	*receiver,
++	loff_t		doffset,
++	loff_t		roffset,
++	loff_t		len,
++	loff_t		*moved_len)
++{
++	struct xfs_mount		*mp;
++	struct xfs_ifork		*ifp;
++	struct xfs_trans		*tp;
++	struct xfs_bmbt_rec_host	*gotp;
++	struct xfs_bmbt_irec		got;
++	struct xfs_bmap_free		dfree_list;
++	struct xfs_bmap_free		rfree_list;
++	xfs_inode_t			*dip;
++	xfs_inode_t			*rip;
++	xfs_extnum_t			split_ext;
++	xfs_extnum_t			dcurrent_ext = 0;
++	xfs_fsblock_t			dfirstblock;
++	xfs_fsblock_t			rfirstblock;
++	xfs_fileoff_t			dcurrent_fsb;
++	xfs_fileoff_t			rcurrent_fsb;
++	xfs_fileoff_t			len_fsb;
++	xfs_fileoff_t			moved_blocks = 0;
++	xfs_fileoff_t			hole_blkcnt = 0;
++	xfs_off_t			pg_start;
++	int				committed;
++	int				error;
++	unsigned			mask = (1 << donor->i_blkbits) - 1;
++
++	dip = XFS_I(donor);
++	rip = XFS_I(receiver);
++	mp = dip->i_mount;
++
++	if (XFS_FORCED_SHUTDOWN(dip->i_mount))
++		return -EIO;
++
++	xfs_lock_two_inodes(dip, rip, XFS_IOLOCK_EXCL);
++
++	if (doffset + len > donor->i_size || roffset + len > receiver->i_size) {
++		error = EINVAL;
++		goto out;
++	}
++
++	if (doffset & mask || roffset & mask || len & mask) {
++		error = EINVAL;
++		goto out;
++	}
++
++	dcurrent_fsb = XFS_B_TO_FSB(mp, doffset);
++	rcurrent_fsb = XFS_B_TO_FSB(mp, roffset);
++	len_fsb = XFS_B_TO_FSB(mp, len);
++
++	pg_start = round_down(doffset, PAGE_SIZE);
++	error = -filemap_write_and_wait_range(donor->i_mapping, pg_start, -1);
++	if (error)
++		goto out;
++	truncate_pagecache_range(donor, pg_start, -1);
++
++	pg_start = round_down(roffset, PAGE_SIZE);
++	error = -filemap_write_and_wait_range(receiver->i_mapping,
++					     pg_start, -1);
++	if (error)
++		goto out;
++	truncate_pagecache_range(receiver, pg_start, -1);
++
++	error = xfs_qm_dqattach(dip, 0);
++	if (error)
++		goto out;
++
++	error = xfs_qm_dqattach(rip, 0);
++	if (error)
++		goto out;
++
++	error = xfs_bmap_split_extent(dip, dcurrent_fsb, &split_ext);
++	if (error)
++		goto out;
++
++	error = xfs_bmap_split_extent(dip, dcurrent_fsb + len_fsb,
++				      &split_ext);
++	if (error)
++		goto out;
++
++	ifp = XFS_IFORK_PTR(dip, XFS_DATA_FORK);
++
++	while (moved_blocks < len_fsb && !error) {
++		gotp = xfs_iext_bno_to_ext(ifp, dcurrent_fsb, &dcurrent_ext);
++		if (!gotp) {
++			/* No more data blocks left in donor */
++			moved_blocks = len_fsb;
++			break;
++		}
++
++		xfs_bmbt_get_all(gotp, &got);
++		if (dcurrent_fsb != got.br_startoff) {
++			if (dcurrent_fsb > got.br_startoff) {
++				error = -EFSCORRUPTED;
++				break;
++			}
++			hole_blkcnt = got.br_startoff - dcurrent_fsb;
++			dcurrent_fsb += hole_blkcnt;
++			rcurrent_fsb += hole_blkcnt;
++			moved_blocks += hole_blkcnt;
++			if (moved_blocks >= len_fsb) {
++				moved_blocks = len_fsb;
++				break;
++			}
++		}
++
++		tp = xfs_trans_alloc(mp, XFS_TRANS_DIOSTRAT);
++
++		/*
++		 * We would need to reserve permanent block for transaction.
++		 * This will come into picture when after shifting extent into
++		 * hole we found that adjacent extents can be merged which
++		 * may lead to freeing of a block during record update.
++		 */
++		error = xfs_trans_reserve(tp, &M_RES(mp)->tr_write,
++					  XFS_DIOSTRAT_SPACE_RES(mp, 0), 0);
++		if (error) {
++			xfs_trans_cancel(tp, 0);
++			break;
++		}
++
++		xfs_lock_two_inodes(dip, rip, XFS_ILOCK_EXCL);
++
++		error = xfs_trans_reserve_quota(tp, mp, dip->i_udquot,
++				dip->i_gdquot, dip->i_pdquot,
++				XFS_DIOSTRAT_SPACE_RES(mp, 0), 0,
++				XFS_QMOPT_RES_REGBLKS);
++		if (error)
++			goto error2;
++
++		error = xfs_trans_reserve_quota(tp, mp, rip->i_udquot,
++				rip->i_gdquot, rip->i_pdquot,
++				XFS_DIOSTRAT_SPACE_RES(mp, 0), 0,
++				XFS_QMOPT_RES_REGBLKS);
++		if (error)
++			goto error2;
++
++		xfs_trans_ijoin(tp, dip, 0);
++		xfs_trans_ijoin(tp, rip, 0);
++
++		xfs_bmap_init(&dfree_list, &dfirstblock);
++		xfs_bmap_init(&rfree_list, &rfirstblock);
++
++		/* compute the hole size in first iteration */
++		if (moved_blocks == hole_blkcnt) {
++			error = xfs_compute_hole_size(rip, rcurrent_fsb,
++						      tp, &hole_blkcnt);
++			if (error)
++				goto error0;
++			if (hole_blkcnt < len_fsb) {
++				error = EINVAL;
++				goto error0;
++			}
++		}
++
++		error = xfs_move_extent(tp, dip, rip, dcurrent_ext, &got,
++					rcurrent_fsb, &dfirstblock,
++					&dfree_list, &rfirstblock, &rfree_list);
++		if (error)
++			goto error0;
++
++		error = xfs_bmap_finish(&tp, &dfree_list, &committed);
++		if (error)
++			goto error0;
++
++		error = xfs_bmap_finish(&tp, &rfree_list, &committed);
++		if (error)
++			goto error1;
++
++		error = xfs_trans_commit(tp, 0);
++
++		if (!error) {
++			dcurrent_fsb += got.br_blockcount;
++			moved_blocks += got.br_blockcount;
++			rcurrent_fsb += got.br_blockcount;
++		}
++
++		xfs_iunlock(dip, XFS_ILOCK_EXCL);
++		xfs_iunlock(rip, XFS_ILOCK_EXCL);
++	}
++out:
++	*moved_len = moved_blocks << donor->i_blkbits;
++	xfs_iunlock(dip, XFS_IOLOCK_EXCL);
++	xfs_iunlock(rip, XFS_IOLOCK_EXCL);
++	return -error;
++
++error0:
++	xfs_bmap_cancel(&dfree_list);
++error1:
++	xfs_bmap_cancel(&rfree_list);
++error2:
++	xfs_trans_cancel(tp, XFS_TRANS_RELEASE_LOG_RES | XFS_TRANS_ABORT);
++	xfs_iunlock(dip, XFS_ILOCK_EXCL);
++	xfs_iunlock(rip, XFS_ILOCK_EXCL);
++	xfs_iunlock(dip, XFS_IOLOCK_EXCL);
++	xfs_iunlock(rip, XFS_IOLOCK_EXCL);
++	*moved_len = moved_blocks << donor->i_blkbits;
++	return -error;
++}
+diff --git a/fs/xfs/xfs_bmap_util.h b/fs/xfs/xfs_bmap_util.h
+index 9a18a4b..b2ae123 100644
+--- a/fs/xfs/xfs_bmap_util.h
++++ b/fs/xfs/xfs_bmap_util.h
+@@ -104,6 +104,9 @@ int	xfs_collapse_file_space(struct xfs_inode *, xfs_off_t offset,
+ 				xfs_off_t len);
+ int	xfs_insert_file_space(struct xfs_inode *, xfs_off_t offset,
+ 				xfs_off_t len);
++int	xfs_vn_move_data(struct inode *donor, struct inode *receiver,
++			 loff_t doffset, loff_t roffset, loff_t len,
++			 loff_t *moved_len);
+ 
+ /* EOF block manipulation functions */
+ bool	xfs_can_free_eofblocks(struct xfs_inode *ip, bool force);
+diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
+index d75621a..63c1621 100644
+--- a/fs/xfs/xfs_iops.c
++++ b/fs/xfs/xfs_iops.c
+@@ -1100,6 +1100,7 @@ static const struct inode_operations xfs_inode_operations = {
+ 	.listxattr		= xfs_vn_listxattr,
+ 	.fiemap			= xfs_vn_fiemap,
+ 	.update_time		= xfs_vn_update_time,
++	.mov_data		= xfs_vn_move_data,
  };
  
--const struct exynos5_usbdrd_phy_config phy_cfg_exynos5[] = {
-+static const struct exynos5_usbdrd_phy_config phy_cfg_exynos5[] = {
- 	{
- 		.id		= EXYNOS5_DRDPHY_UTMI,
- 		.phy_isol	= exynos5_usbdrd_phy_isol,
-@@ -521,13 +521,13 @@ const struct exynos5_usbdrd_phy_config phy_cfg_exynos5[] = {
- 	},
- };
- 
--const struct exynos5_usbdrd_phy_drvdata exynos5420_usbdrd_phy = {
-+static const struct exynos5_usbdrd_phy_drvdata exynos5420_usbdrd_phy = {
- 	.phy_cfg		= phy_cfg_exynos5,
- 	.pmu_offset_usbdrd0_phy	= EXYNOS5_USBDRD_PHY_CONTROL,
- 	.pmu_offset_usbdrd1_phy	= EXYNOS5420_USBDRD1_PHY_CONTROL,
- };
- 
--const struct exynos5_usbdrd_phy_drvdata exynos5250_usbdrd_phy = {
-+static const struct exynos5_usbdrd_phy_drvdata exynos5250_usbdrd_phy = {
- 	.phy_cfg		= phy_cfg_exynos5,
- 	.pmu_offset_usbdrd0_phy	= EXYNOS5_USBDRD_PHY_CONTROL,
- };
+ static const struct inode_operations xfs_dir_inode_operations = {
 -- 
-1.7.10.4
-
+1.7.11-rc0
 
