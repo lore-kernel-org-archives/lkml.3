@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755558AbaGHTNQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:13:16 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54278 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755777AbaGHTIn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755789AbaGHTIn (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 8 Jul 2014 15:08:43 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54040 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755651AbaGHTIi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 15:08:38 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Alex Deucher" <alexander.deucher@amd.com>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Michael S. Tsirkin" <mst@redhat.com>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.21294403@decadent.org.uk>
+Message-ID: <lsq.1404846110.947781667@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 056/125] drm/radeon: only apply hdmi bpc pll flags
- when encoder mode is hdmi
+Subject: [PATCH 3.2 124/125] skbuff: export skb_copy_ubufs
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,80 +31,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-commit 7d5ab3009a8ca777174f6f469277b3922d56fd4b upstream.
+commit dcc0fb782b3a6e2abfeaaeb45dd88ed09596be0f upstream.
 
-May fix display issues with non-HDMI displays.
+Export skb_copy_ubufs so that modules can orphan frags.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/radeon/atombios_crtc.c | 48 ++++++++++++++++++----------------
- 1 file changed, 26 insertions(+), 22 deletions(-)
+ net/core/skbuff.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/atombios_crtc.c
-+++ b/drivers/gpu/drm/radeon/atombios_crtc.c
-@@ -830,14 +830,16 @@ static void atombios_crtc_program_pll(st
- 			args.v5.ucMiscInfo = 0; /* HDMI depth, etc. */
- 			if (ss_enabled && (ss->type & ATOM_EXTERNAL_SS_MASK))
- 				args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_REF_DIV_SRC;
--			switch (bpc) {
--			case 8:
--			default:
--				args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_HDMI_24BPP;
--				break;
--			case 10:
--				args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_HDMI_30BPP;
--				break;
-+			if (encoder_mode == ATOM_ENCODER_MODE_HDMI) {
-+				switch (bpc) {
-+				case 8:
-+				default:
-+					args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_HDMI_24BPP;
-+					break;
-+				case 10:
-+					args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_HDMI_30BPP;
-+					break;
-+				}
- 			}
- 			args.v5.ucTransmitterID = encoder_id;
- 			args.v5.ucEncoderMode = encoder_mode;
-@@ -852,20 +854,22 @@ static void atombios_crtc_program_pll(st
- 			args.v6.ucMiscInfo = 0; /* HDMI depth, etc. */
- 			if (ss_enabled && (ss->type & ATOM_EXTERNAL_SS_MASK))
- 				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_REF_DIV_SRC;
--			switch (bpc) {
--			case 8:
--			default:
--				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_24BPP;
--				break;
--			case 10:
--				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_30BPP;
--				break;
--			case 12:
--				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_36BPP;
--				break;
--			case 16:
--				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_48BPP;
--				break;
-+			if (encoder_mode == ATOM_ENCODER_MODE_HDMI) {
-+				switch (bpc) {
-+				case 8:
-+				default:
-+					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_24BPP;
-+					break;
-+				case 10:
-+					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_30BPP;
-+					break;
-+				case 12:
-+					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_36BPP;
-+					break;
-+				case 16:
-+					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_48BPP;
-+					break;
-+				}
- 			}
- 			args.v6.ucTransmitterID = encoder_id;
- 			args.v6.ucEncoderMode = encoder_mode;
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -655,7 +655,7 @@ int skb_copy_ubufs(struct sk_buff *skb,
+ 	skb_shinfo(skb)->tx_flags &= ~SKBTX_DEV_ZEROCOPY;
+ 	return 0;
+ }
+-
++EXPORT_SYMBOL_GPL(skb_copy_ubufs);
+ 
+ /**
+  *	skb_clone	-	duplicate an sk_buff
 
