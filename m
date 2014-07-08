@@ -1,84 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754944AbaGHNC3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:02:29 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:29969 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754524AbaGHNAm (ORCPT
+	id S1754978AbaGHNCz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:02:55 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:40185 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754556AbaGHNCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:00:42 -0400
-X-IronPort-AV: E=Sophos;i="5.00,856,1396972800"; 
-   d="scan'208";a="32994962"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: <gleb@kernel.org>, <mtosatti@redhat.com>, <nadav.amit@gmail.com>
-CC: <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
-        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>
-Subject: [PATCH v2 2/5] kvm: Use APIC_DEFAULT_PHYS_BASE macro as the apic access page address.
-Date: Tue, 8 Jul 2014 21:01:29 +0800
-Message-ID: <1404824492-30095-3-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1404824492-30095-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1404824492-30095-1-git-send-email-tangchen@cn.fujitsu.com>
+	Tue, 8 Jul 2014 09:02:54 -0400
+Date: Tue, 8 Jul 2014 15:02:39 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Sasha Levin <sasha.levin@oracle.com>,
+        Peter Hurley <peter@hurleysoftware.com>, pmladek@suse.cz,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jet Chen <jet.chen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: console: lockup on boot
+Message-ID: <20140708130239.GF6758@twins.programming.kicks-ass.net>
+References: <53888E76.5040101@hurleysoftware.com>
+ <20140530140757.GC2419@quack.suse.cz>
+ <53921116.5050804@oracle.com>
+ <53972B5C.5020605@hurleysoftware.com>
+ <53986DFB.9030006@oracle.com>
+ <20140611203436.GD9511@quack.suse.cz>
+ <20140611213111.GE9511@quack.suse.cz>
+ <53991958.4070106@oracle.com>
+ <20140612082645.GF9511@quack.suse.cz>
+ <1402563262.5171.2.camel@marge.simpson.net>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.99]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+f314sPv49h+UVDy"
+Content-Disposition: inline
+In-Reply-To: <1402563262.5171.2.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have APIC_DEFAULT_PHYS_BASE defined as 0xfee00000, which is also the address of
-apic access page. So use this macro.
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
----
- arch/x86/kvm/svm.c | 3 ++-
- arch/x86/kvm/vmx.c | 6 +++---
- 2 files changed, 5 insertions(+), 4 deletions(-)
+--+f314sPv49h+UVDy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index ec8366c..576b525 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -1257,7 +1257,8 @@ static struct kvm_vcpu *svm_create_vcpu(struct kvm *kvm, unsigned int id)
- 	svm->asid_generation = 0;
- 	init_vmcb(svm);
- 
--	svm->vcpu.arch.apic_base = 0xfee00000 | MSR_IA32_APICBASE_ENABLE;
-+	svm->vcpu.arch.apic_base = APIC_DEFAULT_PHYS_BASE |
-+				   MSR_IA32_APICBASE_ENABLE;
- 	if (kvm_vcpu_is_bsp(&svm->vcpu))
- 		svm->vcpu.arch.apic_base |= MSR_IA32_APICBASE_BSP;
- 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 801332e..0e1117c 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -3982,13 +3982,13 @@ static int alloc_apic_access_page(struct kvm *kvm)
- 		goto out;
- 	kvm_userspace_mem.slot = APIC_ACCESS_PAGE_PRIVATE_MEMSLOT;
- 	kvm_userspace_mem.flags = 0;
--	kvm_userspace_mem.guest_phys_addr = 0xfee00000ULL;
-+	kvm_userspace_mem.guest_phys_addr = APIC_DEFAULT_PHYS_BASE;
- 	kvm_userspace_mem.memory_size = PAGE_SIZE;
- 	r = __kvm_set_memory_region(kvm, &kvm_userspace_mem);
- 	if (r)
- 		goto out;
- 
--	page = gfn_to_page(kvm, 0xfee00);
-+	page = gfn_to_page(kvm, APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT);
- 	if (is_error_page(page)) {
- 		r = -EFAULT;
- 		goto out;
-@@ -4460,7 +4460,7 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
- 
- 	vmx->vcpu.arch.regs[VCPU_REGS_RDX] = get_rdx_init_val();
- 	kvm_set_cr8(&vmx->vcpu, 0);
--	apic_base_msr.data = 0xfee00000 | MSR_IA32_APICBASE_ENABLE;
-+	apic_base_msr.data = APIC_DEFAULT_PHYS_BASE | MSR_IA32_APICBASE_ENABLE;
- 	if (kvm_vcpu_is_bsp(&vmx->vcpu))
- 		apic_base_msr.data |= MSR_IA32_APICBASE_BSP;
- 	apic_base_msr.host_initiated = true;
--- 
-1.8.3.1
+On Thu, Jun 12, 2014 at 10:54:22AM +0200, Mike Galbraith wrote:
+> On Thu, 2014-06-12 at 10:26 +0200, Jan Kara wrote:=20
+> > On Wed 11-06-14 23:07:04, Sasha Levin wrote:
+>=20
+> > > The first patch fixed it (I assumed that there's no need to try the s=
+econd).
+> >   Good. So that shows that it is the increased lockdep coverage which is
+> > causing problems - with my patch, lockdep is able to identify some prob=
+lem
+> > because console drivers are now called with lockdep enabled. But because
+> > the problem was found in some difficult context, lockdep just hung the
+> > machine when trying to report it... Sadly the stacktraces you posted do=
+n't
+> > tell us what lockdep found.
+> >=20
+> > Adding Peter Zijlstra to CC. Peter, any idea how lockdep could report
+> > problems when holding logbuf_lock? One possibility would be to extend
+> > logbuf_cpu recursion logic to every holder of logbuf_lock. That will at
+> > least avoid the spinlock recursion killing the machine but we won't be =
+able
+> > to see what lockdep found...
+>=20
+> Could tell lockdep to use trace_printk().
 
+lkml.kernel.org/r/20111221111143.401184003@chello.nl
+
+
+
+--+f314sPv49h+UVDy
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTu+vvAAoJEHZH4aRLwOS6s1oP/0L+erAv/iO6E+Cr/bx7phEQ
+hjTh2jxEeZbbRYsC76YhKZk/OUv8L6pCrU3LuHMcvdleiu5ie0CGhC0RGdZsYtqE
+cJM9UOXne6jiqWFDN72noAJe7HL6Pq9RZ8mQbhh/heVTu7s50f3cJb5iq6F1ioVU
+ulISl5fJ6y8gimwcljqRBsnqIH1R4G54vFRkEzXFmFi4gsyFFJI3EW13IPAJyOL2
+Ffdz1qYHPwjYfL0WPa+I8ZBD0ZGy7UpoIlMAx8B107qjH8/E0ITioUyAAenWW+3F
+2xA3cFiWZ3/bZ3gOxGy4HI67HErddJPxQIpxEWhtcibnZRrlbqrNQyuuSWrzGsAf
+YlysRa82RzJCKMKZ0mQ3ZUsh8s/1IgWqLJQVhZ6Sx/e16fwVLou5/cTkKctvLmZ6
+uXoaPzFNXzmiHYGWlKQHS3dVtR7h5Iqg1Zsn5vAc7KnpUp6iA1oQIWUcKQ6OJKeD
+N/RHc2vsBPlytV6wSaOrEn67hO+50tgNXlj6YFpvfJ8lqINOWHdyfTPmJ+r38yiy
+gJQiRB2nt+Nc3Ot7K7pnVCuvKOsbdtF+Yy2R+NXtdeoYyCxLS06F50sAF/fqjoiC
+c/Rr5BEDwGBlJ4Kf7DJ2zVVZecaxGspy2eC05htZovV0HqTnmFJ1coJf/wUEyQT5
++WJUj/FaL+wzCzZfbGrQ
+=T22Z
+-----END PGP SIGNATURE-----
+
+--+f314sPv49h+UVDy--
