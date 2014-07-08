@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904AbaGHI6A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 04:58:00 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55845 "EHLO arroyo.ext.ti.com"
+	id S1753976AbaGHI6r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 04:58:47 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56990 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753634AbaGHI54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 04:57:56 -0400
+	id S1753638AbaGHI5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 04:57:54 -0400
 From: Mugunthan V N <mugunthanvnm@ti.com>
 To: <netdev@vger.kernel.org>
 CC: <davem@davemloft.net>, <linux-api@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Mugunthan V N <mugunthanvnm@ti.com>
-Subject: [net-next PATCH 3/3] drivers: net: cpsw: Add support for multicast/boradcast rate limit
-Date: Tue, 8 Jul 2014 14:27:41 +0530
-Message-ID: <1404809861-7040-4-git-send-email-mugunthanvnm@ti.com>
+Subject: [net-next PATCH 2/3] drivers: net: cpsw: remove redundancy check
+Date: Tue, 8 Jul 2014 14:27:40 +0530
+Message-ID: <1404809861-7040-3-git-send-email-mugunthanvnm@ti.com>
 X-Mailer: git-send-email 2.0.0.390.gcb682f8
 In-Reply-To: <1404809861-7040-1-git-send-email-mugunthanvnm@ti.com>
 References: <1404809861-7040-1-git-send-email-mugunthanvnm@ti.com>
@@ -22,128 +22,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for multicast/boradcast rate limit feature via ethtool coalesce.
+In cpsw_set_coalesce, rx_coalesce_usecs is already checked before
+calling this function, so removing redundancy check.
 
 Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
 ---
- drivers/net/ethernet/ti/cpsw.c | 80 ++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 78 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/ti/cpsw.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
 diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
-index a6117e6..2a984e6 100644
+index b988d16..a6117e6 100644
 --- a/drivers/net/ethernet/ti/cpsw.c
 +++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -403,6 +403,8 @@ struct cpsw_priv {
- 	bool irq_enabled;
- 	struct cpts *cpts;
- 	u32 emac_port;
-+	u32 rx_max_mcast;
-+	u32 rx_max_bcast;
- };
+@@ -884,9 +884,6 @@ static int cpsw_set_coalesce(struct net_device *ndev,
+ 	u32 addnl_dvdr = 1;
+ 	u32 coal_intvl = 0;
  
- struct cpsw_stats {
-@@ -871,11 +873,13 @@ static int cpsw_get_coalesce(struct net_device *ndev,
- 	struct cpsw_priv *priv = netdev_priv(ndev);
+-	if (!coal->rx_coalesce_usecs)
+-		return -EINVAL;
+-
+ 	coal_intvl = coal->rx_coalesce_usecs;
  
- 	coal->rx_coalesce_usecs = priv->coal_intvl;
-+	coal->rx_max_mcast = priv->rx_max_mcast;
-+	coal->rx_max_bcast = priv->rx_max_bcast;
- 	return 0;
- }
- 
--static int cpsw_set_coalesce(struct net_device *ndev,
--				struct ethtool_coalesce *coal)
-+static int cpsw_set_coalesce_usecs(struct net_device *ndev,
-+				   struct ethtool_coalesce *coal)
- {
- 	struct cpsw_priv *priv = netdev_priv(ndev);
- 	u32 int_ctrl;
-@@ -933,6 +937,74 @@ static int cpsw_set_coalesce(struct net_device *ndev,
- 	return 0;
- }
- 
-+static int cpsw_set_coalesce_mcast(struct net_device *ndev,
-+				   struct ethtool_coalesce *coal)
-+{
-+	struct cpsw_priv *priv = netdev_priv(ndev);
-+	int port;
-+
-+	priv->rx_max_mcast = coal->rx_max_mcast;
-+
-+	if (priv->data.dual_emac)
-+		port = priv->emac_port;
-+	else
-+		port = priv->data.active_slave;
-+
-+	cpsw_ale_control_set(priv->ale, port, ALE_PORT_MCAST_LIMIT,
-+			     coal->rx_max_mcast);
-+
-+	dev_dbg(priv->dev, "rx_max_mcast set to %d\n", priv->rx_max_mcast);
-+	return 0;
-+}
-+
-+static int cpsw_set_coalesce_bcast(struct net_device *ndev,
-+				   struct ethtool_coalesce *coal)
-+{
-+	struct cpsw_priv *priv = netdev_priv(ndev);
-+	int port;
-+
-+	priv->rx_max_bcast = coal->rx_max_bcast;
-+
-+	if (priv->data.dual_emac)
-+		port = priv->emac_port + 1;
-+	else
-+		port = priv->data.active_slave + 1;
-+
-+	cpsw_ale_control_set(priv->ale, port, ALE_PORT_BCAST_LIMIT,
-+			     coal->rx_max_bcast);
-+
-+	dev_dbg(priv->dev, "rx_max_mcast set to %d\n", priv->rx_max_bcast);
-+	return 0;
-+}
-+
-+static int cpsw_set_coalesce(struct net_device *ndev,
-+			     struct ethtool_coalesce *coal)
-+{
-+	int ret = -EINVAL;
-+
-+	if (coal->rx_coalesce_usecs) {
-+		ret = cpsw_set_coalesce_usecs(ndev, coal);
-+		if (ret) {
-+			dev_err(&ndev->dev, "set rx-usecs failed\n");
-+			return ret;
-+		}
-+	}
-+
-+	ret = cpsw_set_coalesce_mcast(ndev, coal);
-+	if (ret) {
-+		dev_err(&ndev->dev, "set coalesce rx-max-mcast failed\n");
-+		return ret;
-+	}
-+
-+	ret = cpsw_set_coalesce_bcast(ndev, coal);
-+	if (ret) {
-+		dev_err(&ndev->dev, "set coalesce rx-max-bcast failed\n");
-+		return ret;
-+	}
-+
-+	return ret;
-+}
-+
- static int cpsw_get_sset_count(struct net_device *ndev, int sset)
- {
- 	switch (sset) {
-@@ -1227,6 +1299,10 @@ static int cpsw_ndo_open(struct net_device *ndev)
- 		/* enable statistics collection only on all ports */
- 		__raw_writel(0x7, &priv->regs->stat_port_en);
- 
-+		/* Enable rate limit feature in the switch for rx only */
-+		cpsw_ale_control_set(priv->ale, 0, ALE_RATE_LIMIT, 1);
-+		cpsw_ale_control_set(priv->ale, 0, ALE_RATE_LIMIT_TX, 0);
-+
- 		if (WARN_ON(!priv->data.rx_descs))
- 			priv->data.rx_descs = 128;
- 
+ 	int_ctrl =  readl(&priv->wr_regs->int_control);
 -- 
 2.0.0.390.gcb682f8
 
