@@ -1,96 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932594AbaGHTRR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:17:17 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54335 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755753AbaGHTIm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:08:42 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	id S1755536AbaGHTRp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:17:45 -0400
+Received: from cernmx13.cern.ch ([188.184.36.46]:33164 "EHLO CERNMX13.cern.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932580AbaGHTRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 15:17:16 -0400
+From: Federico Vaga <federico.vaga@cern.ch>
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <michel.arruat@cern.ch>
+Subject: Re: PCIe bus enumeration
+Date: Tue, 8 Jul 2014 21:20:59 +0200
+Message-ID: <3107266.EcOOcRPPM0@harkonnen>
+Organization: CERN
+User-Agent: KMail/4.12.5 (Linux/3.14.9-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <CAErSpo5ixtc=n0f56=QvtxYnXumZiao6NMgBVAWpcJH4f7QA4g@mail.gmail.com>
+References: <280883016.9onmf0miLq@pcbe13110.cern.ch> <5283004.YemU4lhtKD@pcbe13110.cern.ch> <CAErSpo5ixtc=n0f56=QvtxYnXumZiao6NMgBVAWpcJH4f7QA4g@mail.gmail.com>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Cornelia Huck" <cornelia.huck@de.ibm.com>,
-        "Martin Schwidefsky" <schwidefsky@de.ibm.com>,
-        "Sebastian Ott" <sebott@linux.vnet.ibm.com>,
-        "Christian Borntraeger" <borntraeger@de.ibm.com>,
-        "Heiko Carstens" <heiko.carstens@de.ibm.com>
-Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.859778775@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 045/125] s390/lowcore: reserve 96 bytes for IRB in lowcore
-In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [81.65.79.216]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.61-rc1 review patch.  If anyone has any objections, please let me know.
+On Tuesday 08 July 2014 12:23:39 Bjorn Helgaas wrote:
+> On Tue, Jul 8, 2014 at 1:15 AM, Federico Vaga 
+<federico.vaga@cern.ch> wrote:
+> >> > So, It looks like that some BIOS disable the bridge when there
+> >> > is
+> >> > nothing behind it. Why? Power save? :/
+> >> 
+> >> Could be power savings, or possibly to conserve bus numbers,
+> >> which
+> >> are a limited resource.
+> > 
+> > what is the maximum number of buses?
+> 
+> 256.
 
-------------------
+Well, it is not a small number. I will ask directly to the company who 
+sell this crate and ask them what is going on in the BIOS
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+> > At this point I'm a little bit confused about the definition "slot
+> > numbers" :) You mean the 22, 25, ...
+> 
+> Right.  Bus numbers are under software control, to some degree (as a
+> general rule, an x86 BIOS assigns them and Linux leaves them alone,
+> but they *can* be changed so they aren't a good thing to rely on).
+> The bus number of a root bus is usually determined by hardware or
+> by an arch-specific host bridge driver.  The bus number below a
+> PCI-PCI bridge is determined by the bridge's "secondary bus number"
+> register, which software can change.
+> 
+> Slot numbers are based on the Physical Slot Number in the PCIe Slot
+> Capability register.  This is set by some hardware mechanism such as
+> pin strapping or a serial EEPROM.  Software can't change it, so you
+> can rely on it to be constant.  (There's also a mechanism for
+> getting a slot number from ACPI, but that should also return a
+> constant value).  The problem is that I don't think the Linux slot
+> number support is very good, so I'm sure there's plenty of stuff
+> that we *should* be able to do that we can't do *yet*.
 
-commit 993072ee67aa179c48c85eb19869804e68887d86 upstream.
+Mh, I understand. Let's say that I have time to spend on this problem 
+(I do not know) and contributing to the PCI subsystem. How many 
+differences are there between 3.2, 3.6, 3.16/next? We are using 
+3.2/3.6 at the moment, but probably you should expect that it will 
+work on the last version :)
 
-The IRB might be 96 bytes if the extended-I/O-measurement facility is
-used. This feature is currently not used by Linux, but struct irb
-already has the emw defined. So let's make the irb in lowcore match the
-size of the internal data structure to be future proof.
-We also have to add a pad, to correctly align the paste.
-
-The bigger irb field also circumvents a bug in some QEMU versions that
-always write the emw field on test subchannel and therefore destroy the
-paste definitions of this CPU. Running under these QEMU version broke
-some timing functions in the VDSO and all users of these functions,
-e.g. some JREs.
-
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
-[bwh: Backported to 3.2: offsets of the affected fields in the 64-bit version
- of struct _lowcore are 128 bytes smaller]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- arch/s390/include/asm/lowcore.h | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
-
---- a/arch/s390/include/asm/lowcore.h
-+++ b/arch/s390/include/asm/lowcore.h
-@@ -140,9 +140,9 @@ struct _lowcore {
- 	__u8	pad_0x02e8[0x0300-0x02e8];	/* 0x02e8 */
- 
- 	/* Interrupt response block */
--	__u8	irb[64];			/* 0x0300 */
-+	__u8	irb[96];			/* 0x0300 */
- 
--	__u8	pad_0x0340[0x0e00-0x0340];	/* 0x0340 */
-+	__u8	pad_0x0360[0x0e00-0x0360];	/* 0x0360 */
- 
- 	/*
- 	 * 0xe00 contains the address of the IPL Parameter Information
-@@ -274,12 +274,13 @@ struct _lowcore {
- 	__u64	cmf_hpp;			/* 0x0378 */
- 
- 	/* Interrupt response block. */
--	__u8	irb[64];			/* 0x0380 */
-+	__u8	irb[96];			/* 0x0380 */
-+	__u8	pad_0x03e0[0x0400-0x03e0];	/* 0x03e0 */
- 
- 	/* Per cpu primary space access list */
--	__u32	paste[16];			/* 0x03c0 */
-+	__u32	paste[16];			/* 0x0400 */
- 
--	__u8	pad_0x0400[0x0e00-0x0400];	/* 0x0400 */
-+	__u8	pad_0x0440[0x0e00-0x0440];	/* 0x0440 */
- 
- 	/*
- 	 * 0xe00 contains the address of the IPL Parameter Information
-
+-- 
+Federico Vaga
