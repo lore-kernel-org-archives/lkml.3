@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592AbaGHQM5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 12:12:57 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:35676 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751656AbaGHQM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 12:12:56 -0400
-Date: Tue, 8 Jul 2014 18:12:50 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com, hpa@zytor.com,
-        mjg59@srcf.ucam.org, greg@kroah.com, dyoung@redhat.com,
-        chaowang@redhat.com, bhe@redhat.com, akpm@linux-foundation.org,
-        dhowells@redhat.com, pjones@redhat.com,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC PATCH 0/9] kexec: Verify signature of PE signed bzImage
-Message-ID: <20140708161250.GF27659@pd.tnic>
-References: <1404421641-12691-1-git-send-email-vgoyal@redhat.com>
- <20140704145118.GD3340@pd.tnic>
- <20140705030134.GA18508@redhat.com>
- <20140708155414.GE27659@pd.tnic>
- <20140708160720.GA13135@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140708160720.GA13135@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754048AbaGHQV1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 12:21:27 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:39684 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753186AbaGHQVZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 12:21:25 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 0/6] Add a driver for the atmel ram controller
+Date: Tue,  8 Jul 2014 18:21:10 +0200
+Message-Id: <1404836476-23787-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 08, 2014 at 12:07:20PM -0400, Vivek Goyal wrote:
-> So may be I can refer to above post in my next posting. Will that work?
+The atmel ram controller needs one or more clocks to work. For now the
+CLK_IGNORE_UNUSED flag is used on those clocks. This patch set introduce a
+driver that will take care of taking those clocks.
 
-Sure, someone needed to post them for review. :)
+The final goal is also to move the ioremap done in mach-at91 to that driver with
+a proper power management driver.
+
+Changes in v2:
+ - use ATMEL_SDRAMC instead of ATMEL_RAMC
+ - use "atmel,sama5d3-ddramc" instead of "atmel,sama5d3-mpddramc"
+ - not getting mpddrck is now an error
+ - handle "atmel,sama5d3-ddramc" in mach-at91/setup.c
+
+Alexandre Belloni (6):
+  ARM: at91: Add new binding for sama5d3-ddramc
+  memory: add a driver for atmel ram controllers
+  ARM: at91: select ATMEL_SDRAMC when using OF
+  ARM: at91/dt: sama5d3: define mpddr clock and ramc clocks
+  ARM: at91/dt: at91sam9: use ddrck in ramc
+  clk: at91: remove the useless CLK_IGNORE_UNUSED flag
+
+ .../devicetree/bindings/arm/atmel-at91.txt         |  1 +
+ arch/arm/boot/dts/at91sam9n12.dtsi                 |  2 +
+ arch/arm/boot/dts/at91sam9x5.dtsi                  |  2 +
+ arch/arm/boot/dts/sama5d3.dtsi                     |  9 +-
+ arch/arm/mach-at91/Kconfig                         |  4 +
+ arch/arm/mach-at91/setup.c                         |  1 +
+ drivers/clk/at91/clk-system.c                      |  8 +-
+ drivers/memory/Kconfig                             | 10 +++
+ drivers/memory/Makefile                            |  1 +
+ drivers/memory/atmel-sdramc.c                      | 98 ++++++++++++++++++++++
+ 10 files changed, 128 insertions(+), 8 deletions(-)
+ create mode 100644 drivers/memory/atmel-sdramc.c
 
 -- 
-Regards/Gruss,
-    Boris.
+1.9.1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
