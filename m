@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807AbaGHQ1b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 12:27:31 -0400
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:4814 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751006AbaGHQ12 (ORCPT
+	id S1754213AbaGHQ3G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 12:29:06 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:62823 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271AbaGHQ3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 12:27:28 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: At4OALAavFNXQDwH/2dsb2JhbABZgw6tGgUBAQEBAQEFAW4BmVmBGBd1hDFSgRo3iEYByXeFeohkZB2ELQWEaQOWCpQMg0U7gTE
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jingoo Han <jg1.han@samsung.com>, linux-fbdev@vger.kernel.org
-Subject: [PATCH 1/1] video: vermilion: remove unnecessary break after goto
-Date: Tue,  8 Jul 2014 18:27:18 +0200
-Message-Id: <1404836838-6953-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Tue, 8 Jul 2014 12:29:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <539FBD10.6080909@roeck-us.net>
+References: <1402770860-4504-1-git-send-email-xerofoify@gmail.com>
+	<539FBD10.6080909@roeck-us.net>
+Date: Tue, 8 Jul 2014 12:29:03 -0400
+Message-ID: <CAPDOMVg-kAuQE_9G0yxKMwTs45gVsiQVfSxRwqtjqm2ROozcpw@mail.gmail.com>
+Subject: Fwd: [PATCH] Fix comments in rbtree.c
+From: Nick Krause <xerofoify@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>, cody@linux.vnet.ibm.com
+Cc: Andrew Morton <akpm@linux-foundation.org>, sjenning@linux.vnet.ibm.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Jingoo Han <jg1.han@samsung.com>
-Cc: linux-fbdev@vger.kernel.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/video/fbdev/vermilion/vermilion.c | 1 -
- 1 file changed, 1 deletion(-)
+From: Guenter Roeck  wrote on Mon, Jun 16, 2014 at 11:59 PM
+Subject: Re: [PATCH] Fix comments in rbtree.c
+To: Nick <xerofoify@gmail.com>, cody@linux.vnet.ibm.com
+Cc: akpm@linux-foundation.org, sjenning@linux.vnet.ibm.com,
+linux-kernel@vger.kernel.org
 
-diff --git a/drivers/video/fbdev/vermilion/vermilion.c b/drivers/video/fbdev/vermilion/vermilion.c
-index 048a666..5f930ae 100644
---- a/drivers/video/fbdev/vermilion/vermilion.c
-+++ b/drivers/video/fbdev/vermilion/vermilion.c
-@@ -481,7 +481,6 @@ static int vml_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	default:
- 		err = -ENODEV;
- 		goto out_err_1;
--		break;
- 	}
- 
- 	info = &vinfo->info;
--- 
-1.8.4.5
 
+On 06/14/2014 11:34 AM, Nick wrote:
+>
+> Signed-off-by: Nick <xerofoify@gmail.com>
+> ---
+>   lib/rbtree.c | 3 +--
+>   1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> diff --git a/lib/rbtree.c b/lib/rbtree.c
+> index 65f4eff..c66370c 100644
+> --- a/lib/rbtree.c
+> +++ b/lib/rbtree.c
+> @@ -101,11 +101,10 @@ __rb_insert(struct rb_node *node, struct rb_root *root,
+>                                  *      / \          / \
+>                                  *     p   u  -->   P   U
+>                                  *    /            /
+> -                                *   n            N
+> +                                *   n            n
+
+
+You'll need a lengthy explanation here. What makes you think that the comment
+is wrong ?
+
+Guenter
+
+
+This seems right as  of rereading my patch I sent to you. You can drop
+this patch.
+Cheers Nick
