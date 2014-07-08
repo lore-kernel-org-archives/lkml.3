@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756714AbaGHT36 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:29:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54182 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755699AbaGHTIk (ORCPT
+	id S1755818AbaGHTbz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:31:55 -0400
+Received: from mailout3.w2.samsung.com ([211.189.100.13]:23238 "EHLO
+	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932284AbaGHTbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:08:40 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "John W. Linville" <linville@tuxdriver.com>,
-        "Aaro Koskinen" <aaro.koskinen@iki.fi>,
-        "=?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?=" <zajec5@gmail.com>
-Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.823824936@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 091/125] b43: fix frequency reported on G-PHY with
- /new/ firmware
-In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Tue, 8 Jul 2014 15:31:53 -0400
+X-AuditID: cbfec37a-b7f206d000005572-3f-53bc4727c82c
+Message-id: <53BC4725.4010801@samsung.com>
+Date: Tue, 08 Jul 2014 13:31:49 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, stable@vger.kernel.org,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH 3.10 00/53] 3.10.48-stable review
+References: <20140707235829.281783607@linuxfoundation.org>
+In-reply-to: <20140707235829.281783607@linuxfoundation.org>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.134.209]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsVy+t9hX10N9z3BBsv1LeasX8Nm0bx4PZvF
+	5V1z2CyeLDzDZDH11AQWiwUbHzFaPOp7y+7A7rFz1l12jxMzfrN47J+7Bsj93sDu8XmTXABr
+	FJdNSmpOZllqkb5dAlfGsc4HTAXH2Cou/JzD0sA4k7WLkZNDQsBE4uiB80wQtpjEhXvr2boY
+	uTiEBJYxSqx7+pUVwullklhwfS0zhLONUWLvpnmMIC28AloSH26vYgexWQRUJU79bWMGsdkE
+	1CU+v94BFhcSkJNoWrIaLC4qECFxoO8ZK0SvoMSPyfdYQGwRgWCJtV8XMoIsYBZYxShx/fJy
+	NpCEsICpxK+Pc5khBllJ3Lh3CqyBU8BaYufif2A1zAJmEo9a1jFD2PISm9e8hapXlvhz+RTU
+	b8oSExtvs0xgFJmFZPcsJO2zkLQvYGRexShWWpxcUJyUnlphqFecmFtcmpeul5yfu4kREktV
+	OxjvfLU5xCjAwajEw6vIsydYiDWxrLgy9xCjBAezkgjvckGgEG9KYmVValF+fFFpTmrxIUYm
+	Dk6pBkYGy6sp7dOM2D4vKCiY1vrb9/ekOsXslhXyZhfVayuTmafwrjfbPnM/N3f9FvcnSUyt
+	wid5m37GVfFrxv+b81dZf07AJjGJ1+VM5pUf/XVaNUUNjwQvlVBWS7tWxnZiwk8jqZKayz+m
+	iVr827hX6l99hPlTx5y0h272lVUbqnerJqw513FXQYmlOCPRUIu5qDgRADdtRreDAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.61-rc1 review patch.  If anyone has any objections, please let me know.
+On 07/07/2014 05:57 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.48 release.
+> There are 53 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Wed Jul  9 23:58:20 UTC 2014.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.48-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
-------------------
+Compiled and booted on my test system. No demsg regressions.
 
-From: Rafał Miłecki <zajec5@gmail.com>
+-- Shuah
 
-commit 2fc68eb122c7ea6cd5be1fe7d6650c0beb2f4f40 upstream.
-
-Support for firmware rev 508+ was added years ago, but we never noticed
-it reports channel in a different way for G-PHY devices. Instead of
-offset from 2400 MHz it simply passes channel id (AKA hw_value).
-
-So far it was (most probably) affecting monitor mode users only, but
-the following recent commit made it noticeable for quite everybody:
-
-commit 3afc2167f60a327a2c1e1e2600ef209a3c2b75b7
-Author: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Date:   Tue Mar 4 16:50:13 2014 +0200
-
-    cfg80211/mac80211: ignore signal if the frame was heard on wrong channel
-
-Reported-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
-Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/net/wireless/b43/xmit.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
-
---- a/drivers/net/wireless/b43/xmit.c
-+++ b/drivers/net/wireless/b43/xmit.c
-@@ -808,9 +808,13 @@ void b43_rx(struct b43_wldev *dev, struc
- 		break;
- 	case B43_PHYTYPE_G:
- 		status.band = IEEE80211_BAND_2GHZ;
--		/* chanid is the radio channel cookie value as used
--		 * to tune the radio. */
--		status.freq = chanid + 2400;
-+		/* Somewhere between 478.104 and 508.1084 firmware for G-PHY
-+		 * has been modified to be compatible with N-PHY and others.
-+		 */
-+		if (dev->fw.rev >= 508)
-+			status.freq = ieee80211_channel_to_frequency(chanid, status.band);
-+		else
-+			status.freq = chanid + 2400;
- 		break;
- 	case B43_PHYTYPE_N:
- 	case B43_PHYTYPE_LP:
-
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
