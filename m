@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756637AbaGHT3u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:29:50 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54188 "EHLO
+	id S1756617AbaGHT3s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:29:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54201 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755700AbaGHTIk (ORCPT
+	by vger.kernel.org with ESMTP id S1755708AbaGHTIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:08:40 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,16 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>,
-        "Minchan Kim" <minchan.kim@gmail.com>,
-        "Christoph Lameter" <cl@linux.com>, "Hugh Dickins" <hughd@google.com>,
-        "Naoya Horiguchi" <n-horiguchi@ah.jp.nec.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>
+CC: akpm@linux-foundation.org, "Roland Dreier" <roland@purestorage.com>,
+        "Bart Van Assche" <bvanassche@acm.org>,
+        "Sagi Grimberg" <sagig@mellanox.com>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.431506873@decadent.org.uk>
+Message-ID: <lsq.1404846110.291596992@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 099/125] mm: fix crashes from mbind() merging vmas
+Subject: [PATCH 3.2 008/125] IB/srp: Fix a sporadic crash triggered by
+ cable pulling
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,147 +33,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit d05f0cdcbe6388723f1900c549b4850360545201 upstream.
+commit 024ca90151f5e4296d30f72c13ff9a075e23c9ec upstream.
 
-In v2.6.34 commit 9d8cebd4bcd7 ("mm: fix mbind vma merge problem")
-introduced vma merging to mbind(), but it should have also changed the
-convention of passing start vma from queue_pages_range() (formerly
-check_range()) to new_vma_page(): vma merging may have already freed
-that structure, resulting in BUG at mm/mempolicy.c:1738 and probably
-worse crashes.
+Avoid that the loops that iterate over the request ring can encounter
+a pointer to a SCSI command in req->scmnd that is no longer associated
+with that request. If the function srp_unmap_data() is invoked twice
+for a SCSI command that is not in flight then that would cause
+ib_fmr_pool_unmap() to be invoked with an invalid pointer as argument,
+resulting in a kernel oops.
 
-Fixes: 9d8cebd4bcd7 ("mm: fix mbind vma merge problem")
-Reported-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Tested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Acked-by: Christoph Lameter <cl@linux.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2:
- - Adjust context
- - Keep the same arguments to migrate_pages() except for private=start]
+Reported-by: Sagi Grimberg <sagig@mellanox.com>
+Reference: http://thread.gmane.org/gmane.linux.drivers.rdma/19068/focus=19069
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/mempolicy.c | 46 ++++++++++++++++++++--------------------------
- 1 file changed, 20 insertions(+), 26 deletions(-)
+ drivers/infiniband/ulp/srp/ib_srp.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -566,24 +566,23 @@ static inline int check_pgd_range(struct
-  * If pagelist != NULL then isolate pages from the LRU and
-  * put them on the pagelist.
-  */
--static struct vm_area_struct *
-+static int
- check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
- 		const nodemask_t *nodes, unsigned long flags, void *private)
- {
--	int err;
--	struct vm_area_struct *first, *vma, *prev;
--
-+	int err = 0;
-+	struct vm_area_struct *vma, *prev;
+--- a/drivers/infiniband/ulp/srp/ib_srp.c
++++ b/drivers/infiniband/ulp/srp/ib_srp.c
+@@ -1353,6 +1353,12 @@ err_unmap:
+ err_iu:
+ 	srp_put_tx_iu(target, iu, SRP_IU_CMD);
  
--	first = find_vma(mm, start);
--	if (!first)
--		return ERR_PTR(-EFAULT);
-+	vma = find_vma(mm, start);
-+	if (!vma)
-+		return -EFAULT;
- 	prev = NULL;
--	for (vma = first; vma && vma->vm_start < end; vma = vma->vm_next) {
-+	for (; vma && vma->vm_start < end; vma = vma->vm_next) {
- 		if (!(flags & MPOL_MF_DISCONTIG_OK)) {
- 			if (!vma->vm_next && vma->vm_end < end)
--				return ERR_PTR(-EFAULT);
-+				return -EFAULT;
- 			if (prev && prev->vm_end < vma->vm_start)
--				return ERR_PTR(-EFAULT);
-+				return -EFAULT;
- 		}
- 		if (!is_vm_hugetlb_page(vma) &&
- 		    ((flags & MPOL_MF_STRICT) ||
-@@ -597,14 +596,12 @@ check_range(struct mm_struct *mm, unsign
- 				start = vma->vm_start;
- 			err = check_pgd_range(vma, start, endvma, nodes,
- 						flags, private);
--			if (err) {
--				first = ERR_PTR(err);
-+			if (err)
- 				break;
--			}
- 		}
- 		prev = vma;
- 	}
--	return first;
-+	return err;
- }
++	/*
++	 * Avoid that the loops that iterate over the request ring can
++	 * encounter a dangling SCSI command pointer.
++	 */
++	req->scmnd = NULL;
++
+ 	spin_lock_irqsave(&target->lock, flags);
+ 	list_add(&req->list, &target->free_reqs);
  
- /*
-@@ -1060,16 +1057,17 @@ out:
- 
- /*
-  * Allocate a new page for page migration based on vma policy.
-- * Start assuming that page is mapped by vma pointed to by @private.
-+ * Start by assuming the page is mapped by the same vma as contains @start.
-  * Search forward from there, if not.  N.B., this assumes that the
-  * list of pages handed to migrate_pages()--which is how we get here--
-  * is in virtual address order.
-  */
--static struct page *new_vma_page(struct page *page, unsigned long private, int **x)
-+static struct page *new_page(struct page *page, unsigned long start, int **x)
- {
--	struct vm_area_struct *vma = (struct vm_area_struct *)private;
-+	struct vm_area_struct *vma;
- 	unsigned long uninitialized_var(address);
- 
-+	vma = find_vma(current->mm, start);
- 	while (vma) {
- 		address = page_address_in_vma(page, vma);
- 		if (address != -EFAULT)
-@@ -1095,7 +1093,7 @@ int do_migrate_pages(struct mm_struct *m
- 	return -ENOSYS;
- }
- 
--static struct page *new_vma_page(struct page *page, unsigned long private, int **x)
-+static struct page *new_page(struct page *page, unsigned long start, int **x)
- {
- 	return NULL;
- }
-@@ -1105,7 +1103,6 @@ static long do_mbind(unsigned long start
- 		     unsigned short mode, unsigned short mode_flags,
- 		     nodemask_t *nmask, unsigned long flags)
- {
--	struct vm_area_struct *vma;
- 	struct mm_struct *mm = current->mm;
- 	struct mempolicy *new;
- 	unsigned long end;
-@@ -1169,19 +1166,16 @@ static long do_mbind(unsigned long start
- 	if (err)
- 		goto mpol_out;
- 
--	vma = check_range(mm, start, end, nmask,
-+	err = check_range(mm, start, end, nmask,
- 			  flags | MPOL_MF_INVERT, &pagelist);
--
--	err = PTR_ERR(vma);
--	if (!IS_ERR(vma)) {
-+	if (!err) {
- 		int nr_failed = 0;
- 
- 		err = mbind_range(mm, start, end, new);
- 
- 		if (!list_empty(&pagelist)) {
--			nr_failed = migrate_pages(&pagelist, new_vma_page,
--						(unsigned long)vma,
--						false, true);
-+			nr_failed = migrate_pages(&pagelist, new_page,
-+						start, false, true);
- 			if (nr_failed)
- 				putback_lru_pages(&pagelist);
- 		}
 
