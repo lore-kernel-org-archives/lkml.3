@@ -1,542 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755304AbaGHA2q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:28:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55955 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753933AbaGGXyw (ORCPT
+	id S1755129AbaGHA3G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:29:06 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:51644 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755038AbaGHA2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:52 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ivan <athlon_@mail.ru>, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 3.14 80/94] serial: Fix IGNBRK handling
-Date: Mon,  7 Jul 2014 16:58:10 -0700
-Message-Id: <20140707235759.136530525@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
-References: <20140707235756.780319003@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Mon, 7 Jul 2014 20:28:43 -0400
 MIME-Version: 1.0
+In-Reply-To: <1404772661-15527-1-git-send-email-andi@firstfloor.org>
+References: <1404772661-15527-1-git-send-email-andi@firstfloor.org>
+Date: Tue, 8 Jul 2014 02:28:43 +0200
+Message-ID: <CABPqkBSXrfPS=jeXDuXQjD1N2r4ru6t2_r+1Yz40GVxGQ5nQ8A@mail.gmail.com>
+Subject: Re: [PATCH 1/2] perf, x86: Revamp PEBS event selection v2
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jul 8, 2014 at 12:37 AM, Andi Kleen <andi@firstfloor.org> wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+>
+> The basic idea is that it does not make sense to list all PEBS
+> events individually. The list is very long, sometimes outdated
+> and the hardware doesn't need it. If an event does not support
+> PEBS it will just not count, there is no security issue.
+>
+> This vastly simplifies the PEBS event selection. It also
+> speeds up the scheduling because the scheduler doesn't
+> have to walk as many constraints.
+>
+> Bugs fixed:
+> - We do not allow setting forbidden flags with PEBS anymore
+> (SDM 18.9.4), except for the special cycle event.
+> This is done using a new constraint macro that also
+> matches on the event flags.
+> - We now allow DataLA on all Haswell events, not just
+> a small subset. In general all PEBS events that tag memory
+> accesses support DataLA on Haswell. Otherwise the reported
+> address is just zero. This allows address profiling
+> on vastly more events.
+> - We did not allow all PEBS events on Haswell:
+> We were missing some valid subevents in d1-d2 (MEM_LOAD_UOPS_RETIRED.*,
+> MEM_LOAD_UOPS_RETIRED_L3_HIT_RETIRED.*)
+>
+> This includes the changes proposed by Stephane earlier and obsoletes
+> his patchkit (except for some changes on pre Sandy Bridge/Silvermont
+> CPUs)
+>
+> I only did Sandy Bridge and Silvermont and later so far, mostly because these
+> are the parts I could directly confirm the hardware behavior with hardware
+> architects. Also I do not believe the older CPUs have any
+> missing events in their PEBS list, so there's no pressing
+> need to change them.
+>
+> I did not implement the flag proposed by Peter to allow
+> setting forbidden flags. If really needed this could
+> be implemented on to of this patch.
+>
+> Cc: eranian@google.com
+> v2: Fix broken store events on SNB/IVB (Stephane Eranian)
+> Update description.
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  arch/x86/include/asm/perf_event.h         |  8 +++
+>  arch/x86/kernel/cpu/perf_event.h          | 18 +++++--
+>  arch/x86/kernel/cpu/perf_event_intel_ds.c | 88 +++++++------------------------
+>  3 files changed, 39 insertions(+), 75 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
+> index 8249df4..8dfc9fd 100644
+> --- a/arch/x86/include/asm/perf_event.h
+> +++ b/arch/x86/include/asm/perf_event.h
+> @@ -51,6 +51,14 @@
+>          ARCH_PERFMON_EVENTSEL_EDGE  |  \
+>          ARCH_PERFMON_EVENTSEL_INV   |  \
+>          ARCH_PERFMON_EVENTSEL_CMASK)
+> +#define X86_ALL_EVENT_FLAGS                    \
+> +       (ARCH_PERFMON_EVENTSEL_EDGE |           \
+> +        ARCH_PERFMON_EVENTSEL_INV |            \
+> +        ARCH_PERFMON_EVENTSEL_CMASK |          \
+> +        ARCH_PERFMON_EVENTSEL_ANY |            \
+> +        ARCH_PERFMON_EVENTSEL_PIN_CONTROL |    \
+> +        HSW_IN_TX |                            \
+> +        HSW_IN_TX_CHECKPOINTED)
+>  #define AMD64_RAW_EVENT_MASK           \
+>         (X86_RAW_EVENT_MASK          |  \
+>          AMD64_EVENTSEL_EVENT)
+> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+> index a22a34e9..70273e8 100644
+> --- a/arch/x86/kernel/cpu/perf_event.h
+> +++ b/arch/x86/kernel/cpu/perf_event.h
+> @@ -262,16 +262,24 @@ struct cpu_hw_events {
+>         EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
+>
+>  #define INTEL_PLD_CONSTRAINT(c, n)     \
+> -       __EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
+> +       __EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS, \
+>                            HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_LDLAT)
+>
+>  #define INTEL_PST_CONSTRAINT(c, n)     \
+> -       __EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
+> +       __EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS, \
+>                           HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_ST)
+>
+> -/* DataLA version of store sampling without extra enable bit. */
+> -#define INTEL_PST_HSW_CONSTRAINT(c, n) \
+> -       __EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
+> +/* Event constraint, but match on all event flags too. */
+> +#define INTEL_FLAGS_EVENT_CONSTRAINT(c, n) \
+> +       EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS)
+> +
+> +/* Check only flags, but allow all event/umask */
+> +#define INTEL_ALL_EVENT_CONSTRAINT(flags, n)   \
+> +       EVENT_CONSTRAINT(flags, n, X86_ALL_EVENT_FLAGS)
+> +
+The first argument is not flags but rather 'code'. This is confusing
+otherwise.
 
-------------------
+> +/* Same as above, but enable DataLA */
+> +#define INTEL_ALL_EVENT_CONSTRAINT_DATALA(flags, n) \
+> +       __EVENT_CONSTRAINT(flags, n, X86_ALL_EVENT_FLAGS, \
+>                           HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_ST_HSW)
+>
+>  /*
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> index 980970c..0e22ce6 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> @@ -567,28 +567,10 @@ struct event_constraint intel_atom_pebs_event_constraints[] = {
+>  };
+>
+>  struct event_constraint intel_slm_pebs_event_constraints[] = {
+> -       INTEL_UEVENT_CONSTRAINT(0x0103, 0x1), /* REHABQ.LD_BLOCK_ST_FORWARD_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0x0803, 0x1), /* REHABQ.LD_SPLITS_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0x0204, 0x1), /* MEM_UOPS_RETIRED.L2_HIT_LOADS_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0x0404, 0x1), /* MEM_UOPS_RETIRED.L2_MISS_LOADS_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0x0804, 0x1), /* MEM_UOPS_RETIRED.DTLB_MISS_LOADS_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0x2004, 0x1), /* MEM_UOPS_RETIRED.HITM_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0x00c0, 0x1), /* INST_RETIRED.ANY_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0x00c4, 0x1), /* BR_INST_RETIRED.ALL_BRANCHES_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0x7ec4, 0x1), /* BR_INST_RETIRED.JCC_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0xbfc4, 0x1), /* BR_INST_RETIRED.FAR_BRANCH_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0xebc4, 0x1), /* BR_INST_RETIRED.NON_RETURN_IND_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0xf7c4, 0x1), /* BR_INST_RETIRED.RETURN_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0xf9c4, 0x1), /* BR_INST_RETIRED.CALL_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0xfbc4, 0x1), /* BR_INST_RETIRED.IND_CALL_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0xfdc4, 0x1), /* BR_INST_RETIRED.REL_CALL_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0xfec4, 0x1), /* BR_INST_RETIRED.TAKEN_JCC_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0x00c5, 0x1), /* BR_INST_MISP_RETIRED.ALL_BRANCHES_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0x7ec5, 0x1), /* BR_INST_MISP_RETIRED.JCC_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0xebc5, 0x1), /* BR_INST_MISP_RETIRED.NON_RETURN_IND_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0xf7c5, 0x1), /* BR_INST_MISP_RETIRED.RETURN_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0xfbc5, 0x1), /* BR_INST_MISP_RETIRED.IND_CALL_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0xfec5, 0x1), /* BR_INST_MISP_RETIRED.TAKEN_JCC_PS */
+> +       /* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
+> +       INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
+> +       /* Allow all events as PEBS with no flags */
+> +       INTEL_ALL_EVENT_CONSTRAINT(0xffff, 0x1),
 
-From: Peter Hurley <peter@hurleysoftware.com>
+       ^^^^^ that does not work!
+As I said before, you need to pass 0x0 here to catch all non-pebs events.
 
-commit ef8b9ddcb45fa3b1e11acd72be2398001e807d14 upstream.
+>         EVENT_CONSTRAINT_END
+>  };
+>
+> @@ -624,68 +606,34 @@ struct event_constraint intel_westmere_pebs_event_constraints[] = {
+>
+>  struct event_constraint intel_snb_pebs_event_constraints[] = {
+>         INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
+> -       INTEL_UEVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
+> -       INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
+> -       INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
+> -       INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
+>         INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
+>         INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
+> -       INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
+> -       INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
+> -       INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
+> -       INTEL_EVENT_CONSTRAINT(0xd3, 0xf),    /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
+> -       INTEL_UEVENT_CONSTRAINT(0x02d4, 0xf), /* MEM_LOAD_UOPS_MISC_RETIRED.LLC_MISS */
+> +       /* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
+> +       INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
+> +       /* Allow all events as PEBS with no flags */
+> +       INTEL_ALL_EVENT_CONSTRAINT(0xffff, 0xf),
+Ditto here.
 
-If IGNBRK is set without either BRKINT or PARMRK set, some uart
-drivers send a 0x00 byte for BREAK without the TTYBREAK flag to the
-line discipline, when it should send either nothing or the TTYBREAK flag
-set. This happens because the read_status_mask masks out the BI
-condition, which uart_insert_char() then interprets as a normal 0x00 byte.
+>         EVENT_CONSTRAINT_END
+>  };
+>
+>  struct event_constraint intel_ivb_pebs_event_constraints[] = {
+>          INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
+> -        INTEL_UEVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
+> -        INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
+> -        INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
+> -        INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
+>          INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
+>         INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
+> -        INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
+> -        INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
+> -        INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
+> -        INTEL_EVENT_CONSTRAINT(0xd3, 0xf),    /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
+> +       /* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
+> +       INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
+> +       /* Allow all events as PEBS with no flags */
+> +       INTEL_ALL_EVENT_CONSTRAINT(0xffff, 0xf),
+Ditto here.
+>          EVENT_CONSTRAINT_END
+>  };
+>
+>  struct event_constraint intel_hsw_pebs_event_constraints[] = {
+>         INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
+> -       INTEL_PST_HSW_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
+> -       INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
+> -       INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
+> -       INTEL_UEVENT_CONSTRAINT(0x01c5, 0xf), /* BR_MISP_RETIRED.CONDITIONAL */
+> -       INTEL_UEVENT_CONSTRAINT(0x04c5, 0xf), /* BR_MISP_RETIRED.ALL_BRANCHES */
+> -       INTEL_UEVENT_CONSTRAINT(0x20c5, 0xf), /* BR_MISP_RETIRED.NEAR_TAKEN */
+> -       INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.* */
+> -       /* MEM_UOPS_RETIRED.STLB_MISS_LOADS */
+> -       INTEL_UEVENT_CONSTRAINT(0x11d0, 0xf),
+> -       /* MEM_UOPS_RETIRED.STLB_MISS_STORES */
+> -       INTEL_UEVENT_CONSTRAINT(0x12d0, 0xf),
+> -       INTEL_UEVENT_CONSTRAINT(0x21d0, 0xf), /* MEM_UOPS_RETIRED.LOCK_LOADS */
+> -       INTEL_UEVENT_CONSTRAINT(0x41d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_LOADS */
+> -       /* MEM_UOPS_RETIRED.SPLIT_STORES */
+> -       INTEL_UEVENT_CONSTRAINT(0x42d0, 0xf),
+> -       INTEL_UEVENT_CONSTRAINT(0x81d0, 0xf), /* MEM_UOPS_RETIRED.ALL_LOADS */
+> -       INTEL_PST_HSW_CONSTRAINT(0x82d0, 0xf), /* MEM_UOPS_RETIRED.ALL_STORES */
+> -       INTEL_UEVENT_CONSTRAINT(0x01d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L1_HIT */
+> -       INTEL_UEVENT_CONSTRAINT(0x02d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L2_HIT */
+> -       INTEL_UEVENT_CONSTRAINT(0x04d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L3_HIT */
+> -       /* MEM_LOAD_UOPS_RETIRED.HIT_LFB */
+> -       INTEL_UEVENT_CONSTRAINT(0x40d1, 0xf),
+> -       /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_MISS */
+> -       INTEL_UEVENT_CONSTRAINT(0x01d2, 0xf),
+> -       /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HIT */
+> -       INTEL_UEVENT_CONSTRAINT(0x02d2, 0xf),
+> -       /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.LOCAL_DRAM */
+> -       INTEL_UEVENT_CONSTRAINT(0x01d3, 0xf),
+> -       INTEL_UEVENT_CONSTRAINT(0x04c8, 0xf), /* HLE_RETIRED.Abort */
+> -       INTEL_UEVENT_CONSTRAINT(0x04c9, 0xf), /* RTM_RETIRED.Abort */
+> -
+> +       INTEL_PLD_CONSTRAINT(0x01cd, 0xf),    /* MEM_TRANS_RETIRED.* */
+> +       /* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
+> +       INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
+> +       /* Allow all events as PEBS with no flags */
+> +       /* We allow DATALA for all PEBS events, will be 0 if not supported */
+> +       INTEL_ALL_EVENT_CONSTRAINT_DATALA(0, 0xf),
 
-SUS v3 is clear regarding the meaning of IGNBRK; Section 11.2.2, General
-Terminal Interface - Input Modes, states:
-  "If IGNBRK is set, a break condition detected on input shall be ignored;
-   that is, not put on the input queue and therefore not read by any
-   process."
+I think you allow for all events, not just PEBS events.
 
-Fix read_status_mask to include the BI bit if IGNBRK is set; the
-lsr status retains the BI bit if a BREAK is recv'd, which is
-subsequently ignored in uart_insert_char() when masked with the
-ignore_status_mask.
-
-Affected drivers:
-8250 - all
-serial_txx9
-mfd
-amba-pl010
-amba-pl011
-atmel_serial
-bfin_uart
-dz
-ip22zilog
-max310x
-mxs-auart
-netx-serial
-pnx8xxx_uart
-pxa
-sb1250-duart
-sccnxp
-serial_ks8695
-sirfsoc_uart
-st-asc
-vr41xx_siu
-zs
-sunzilog
-fsl_lpuart
-sunsab
-ucc_uart
-bcm63xx_uart
-sunsu
-efm32-uart
-pmac_zilog
-mpsc
-msm_serial
-m32r_sio
-
-Unaffected drivers:
-omap-serial
-rp2
-sa1100
-imx
-icom
-
-Annotated for fixes:
-altera_uart
-mcf
-
-Drivers without break detection:
-21285
-xilinx-uartps
-altera_jtaguart
-apbuart
-arc-uart
-clps711x
-max3100
-uartlite
-msm_serial_hs
-nwpserial
-lantiq
-vt8500_serial
-
-Unknown:
-samsung
-mpc52xx_uart
-bfin_sport_uart
-cpm_uart/core
-
-Fixes: Bugzilla #71651, '8250_core.c incorrectly handles IGNBRK flag'
-Reported-by: Ivan <athlon_@mail.ru>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/tty/serial/8250/8250_core.c |    2 +-
- drivers/tty/serial/altera_uart.c    |    6 ++++++
- drivers/tty/serial/amba-pl010.c     |    2 +-
- drivers/tty/serial/amba-pl011.c     |    2 +-
- drivers/tty/serial/atmel_serial.c   |    2 +-
- drivers/tty/serial/bcm63xx_uart.c   |    2 +-
- drivers/tty/serial/bfin_uart.c      |    2 +-
- drivers/tty/serial/dz.c             |    2 +-
- drivers/tty/serial/efm32-uart.c     |    2 +-
- drivers/tty/serial/fsl_lpuart.c     |    2 +-
- drivers/tty/serial/ip22zilog.c      |    2 +-
- drivers/tty/serial/m32r_sio.c       |    2 +-
- drivers/tty/serial/max310x.c        |    2 +-
- drivers/tty/serial/mcf.c            |    6 ++++++
- drivers/tty/serial/mfd.c            |    2 +-
- drivers/tty/serial/mpsc.c           |    2 +-
- drivers/tty/serial/msm_serial.c     |    2 +-
- drivers/tty/serial/mxs-auart.c      |    2 +-
- drivers/tty/serial/netx-serial.c    |    2 +-
- drivers/tty/serial/pmac_zilog.c     |    2 +-
- drivers/tty/serial/pnx8xxx_uart.c   |    2 +-
- drivers/tty/serial/pxa.c            |    2 +-
- drivers/tty/serial/sb1250-duart.c   |    2 +-
- drivers/tty/serial/sccnxp.c         |    2 +-
- drivers/tty/serial/serial_ks8695.c  |    2 +-
- drivers/tty/serial/serial_txx9.c    |    2 +-
- drivers/tty/serial/sirfsoc_uart.c   |    2 +-
- drivers/tty/serial/st-asc.c         |    2 +-
- drivers/tty/serial/sunsab.c         |    2 +-
- drivers/tty/serial/sunsu.c          |    2 +-
- drivers/tty/serial/sunzilog.c       |    2 +-
- drivers/tty/serial/ucc_uart.c       |    2 +-
- drivers/tty/serial/vr41xx_siu.c     |    2 +-
- drivers/tty/serial/zs.c             |    2 +-
- 34 files changed, 44 insertions(+), 32 deletions(-)
-
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -2356,7 +2356,7 @@ serial8250_do_set_termios(struct uart_po
- 	port->read_status_mask = UART_LSR_OE | UART_LSR_THRE | UART_LSR_DR;
- 	if (termios->c_iflag & INPCK)
- 		port->read_status_mask |= UART_LSR_FE | UART_LSR_PE;
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		port->read_status_mask |= UART_LSR_BI;
- 
- 	/*
---- a/drivers/tty/serial/altera_uart.c
-+++ b/drivers/tty/serial/altera_uart.c
-@@ -185,6 +185,12 @@ static void altera_uart_set_termios(stru
- 	uart_update_timeout(port, termios->c_cflag, baud);
- 	altera_uart_writel(port, baudclk, ALTERA_UART_DIVISOR_REG);
- 	spin_unlock_irqrestore(&port->lock, flags);
-+
-+	/*
-+	 * FIXME: port->read_status_mask and port->ignore_status_mask
-+	 * need to be initialized based on termios settings for
-+	 * INPCK, IGNBRK, IGNPAR, PARMRK, BRKINT
-+	 */
- }
- 
- static void altera_uart_rx_chars(struct altera_uart *pp)
---- a/drivers/tty/serial/amba-pl010.c
-+++ b/drivers/tty/serial/amba-pl010.c
-@@ -420,7 +420,7 @@ pl010_set_termios(struct uart_port *port
- 	uap->port.read_status_mask = UART01x_RSR_OE;
- 	if (termios->c_iflag & INPCK)
- 		uap->port.read_status_mask |= UART01x_RSR_FE | UART01x_RSR_PE;
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		uap->port.read_status_mask |= UART01x_RSR_BE;
- 
- 	/*
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -1744,7 +1744,7 @@ pl011_set_termios(struct uart_port *port
- 	port->read_status_mask = UART011_DR_OE | 255;
- 	if (termios->c_iflag & INPCK)
- 		port->read_status_mask |= UART011_DR_FE | UART011_DR_PE;
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		port->read_status_mask |= UART011_DR_BE;
- 
- 	/*
---- a/drivers/tty/serial/atmel_serial.c
-+++ b/drivers/tty/serial/atmel_serial.c
-@@ -1811,7 +1811,7 @@ static void atmel_set_termios(struct uar
- 	port->read_status_mask = ATMEL_US_OVRE;
- 	if (termios->c_iflag & INPCK)
- 		port->read_status_mask |= (ATMEL_US_FRAME | ATMEL_US_PARE);
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		port->read_status_mask |= ATMEL_US_RXBRK;
- 
- 	if (atmel_use_pdc_rx(port))
---- a/drivers/tty/serial/bcm63xx_uart.c
-+++ b/drivers/tty/serial/bcm63xx_uart.c
-@@ -565,7 +565,7 @@ static void bcm_uart_set_termios(struct
- 		port->read_status_mask |= UART_FIFO_FRAMEERR_MASK;
- 		port->read_status_mask |= UART_FIFO_PARERR_MASK;
- 	}
--	if (new->c_iflag & (BRKINT))
-+	if (new->c_iflag & (IGNBRK | BRKINT))
- 		port->read_status_mask |= UART_FIFO_BRKDET_MASK;
- 
- 	port->ignore_status_mask = 0;
---- a/drivers/tty/serial/bfin_uart.c
-+++ b/drivers/tty/serial/bfin_uart.c
-@@ -833,7 +833,7 @@ bfin_serial_set_termios(struct uart_port
- 	port->read_status_mask = OE;
- 	if (termios->c_iflag & INPCK)
- 		port->read_status_mask |= (FE | PE);
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		port->read_status_mask |= BI;
- 
- 	/*
---- a/drivers/tty/serial/dz.c
-+++ b/drivers/tty/serial/dz.c
-@@ -625,7 +625,7 @@ static void dz_set_termios(struct uart_p
- 	dport->port.read_status_mask = DZ_OERR;
- 	if (termios->c_iflag & INPCK)
- 		dport->port.read_status_mask |= DZ_FERR | DZ_PERR;
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		dport->port.read_status_mask |= DZ_BREAK;
- 
- 	/* characters to ignore */
---- a/drivers/tty/serial/efm32-uart.c
-+++ b/drivers/tty/serial/efm32-uart.c
-@@ -407,7 +407,7 @@ static void efm32_uart_set_termios(struc
- 	if (new->c_iflag & INPCK)
- 		port->read_status_mask |=
- 			UARTn_RXDATAX_FERR | UARTn_RXDATAX_PERR;
--	if (new->c_iflag & (BRKINT | PARMRK))
-+	if (new->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		port->read_status_mask |= SW_UARTn_RXDATAX_BERR;
- 
- 	port->ignore_status_mask = 0;
---- a/drivers/tty/serial/fsl_lpuart.c
-+++ b/drivers/tty/serial/fsl_lpuart.c
-@@ -496,7 +496,7 @@ lpuart_set_termios(struct uart_port *por
- 	sport->port.read_status_mask = 0;
- 	if (termios->c_iflag & INPCK)
- 		sport->port.read_status_mask |=	(UARTSR1_FE | UARTSR1_PE);
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		sport->port.read_status_mask |= UARTSR1_FE;
- 
- 	/* characters to ignore */
---- a/drivers/tty/serial/ip22zilog.c
-+++ b/drivers/tty/serial/ip22zilog.c
-@@ -850,7 +850,7 @@ ip22zilog_convert_to_zs(struct uart_ip22
- 	up->port.read_status_mask = Rx_OVR;
- 	if (iflag & INPCK)
- 		up->port.read_status_mask |= CRC_ERR | PAR_ERR;
--	if (iflag & (BRKINT | PARMRK))
-+	if (iflag & (IGNBRK | BRKINT | PARMRK))
- 		up->port.read_status_mask |= BRK_ABRT;
- 
- 	up->port.ignore_status_mask = 0;
---- a/drivers/tty/serial/m32r_sio.c
-+++ b/drivers/tty/serial/m32r_sio.c
-@@ -737,7 +737,7 @@ static void m32r_sio_set_termios(struct
- 	up->port.read_status_mask = UART_LSR_OE | UART_LSR_THRE | UART_LSR_DR;
- 	if (termios->c_iflag & INPCK)
- 		up->port.read_status_mask |= UART_LSR_FE | UART_LSR_PE;
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		up->port.read_status_mask |= UART_LSR_BI;
- 
- 	/*
---- a/drivers/tty/serial/max310x.c
-+++ b/drivers/tty/serial/max310x.c
-@@ -842,7 +842,7 @@ static void max310x_set_termios(struct u
- 	if (termios->c_iflag & INPCK)
- 		port->read_status_mask |= MAX310X_LSR_RXPAR_BIT |
- 					  MAX310X_LSR_FRERR_BIT;
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		port->read_status_mask |= MAX310X_LSR_RXBRK_BIT;
- 
- 	/* Set status ignore mask */
---- a/drivers/tty/serial/mcf.c
-+++ b/drivers/tty/serial/mcf.c
-@@ -248,6 +248,12 @@ static void mcf_set_termios(struct uart_
- 		mr1 |= MCFUART_MR1_PARITYNONE;
- 	}
- 
-+	/*
-+	 * FIXME: port->read_status_mask and port->ignore_status_mask
-+	 * need to be initialized based on termios settings for
-+	 * INPCK, IGNBRK, IGNPAR, PARMRK, BRKINT
-+	 */
-+
- 	if (termios->c_cflag & CSTOPB)
- 		mr2 |= MCFUART_MR2_STOP2;
- 	else
---- a/drivers/tty/serial/mfd.c
-+++ b/drivers/tty/serial/mfd.c
-@@ -977,7 +977,7 @@ serial_hsu_set_termios(struct uart_port
- 	up->port.read_status_mask = UART_LSR_OE | UART_LSR_THRE | UART_LSR_DR;
- 	if (termios->c_iflag & INPCK)
- 		up->port.read_status_mask |= UART_LSR_FE | UART_LSR_PE;
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		up->port.read_status_mask |= UART_LSR_BI;
- 
- 	/* Characters to ignore */
---- a/drivers/tty/serial/mpsc.c
-+++ b/drivers/tty/serial/mpsc.c
-@@ -1458,7 +1458,7 @@ static void mpsc_set_termios(struct uart
- 		pi->port.read_status_mask |= SDMA_DESC_CMDSTAT_PE
- 			| SDMA_DESC_CMDSTAT_FR;
- 
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		pi->port.read_status_mask |= SDMA_DESC_CMDSTAT_BR;
- 
- 	/* Characters/events to ignore */
---- a/drivers/tty/serial/msm_serial.c
-+++ b/drivers/tty/serial/msm_serial.c
-@@ -570,7 +570,7 @@ static void msm_set_termios(struct uart_
- 	port->read_status_mask = 0;
- 	if (termios->c_iflag & INPCK)
- 		port->read_status_mask |= UART_SR_PAR_FRAME_ERR;
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		port->read_status_mask |= UART_SR_RX_BREAK;
- 
- 	uart_update_timeout(port, termios->c_cflag, baud);
---- a/drivers/tty/serial/mxs-auart.c
-+++ b/drivers/tty/serial/mxs-auart.c
-@@ -604,7 +604,7 @@ static void mxs_auart_settermios(struct
- 
- 	if (termios->c_iflag & INPCK)
- 		u->read_status_mask |= AUART_STAT_PERR;
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		u->read_status_mask |= AUART_STAT_BERR;
- 
- 	/*
---- a/drivers/tty/serial/netx-serial.c
-+++ b/drivers/tty/serial/netx-serial.c
-@@ -419,7 +419,7 @@ netx_set_termios(struct uart_port *port,
- 	}
- 
- 	port->read_status_mask = 0;
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		port->read_status_mask |= SR_BE;
- 	if (termios->c_iflag & INPCK)
- 		port->read_status_mask |= SR_PE | SR_FE;
---- a/drivers/tty/serial/pmac_zilog.c
-+++ b/drivers/tty/serial/pmac_zilog.c
-@@ -1092,7 +1092,7 @@ static void pmz_convert_to_zs(struct uar
- 	uap->port.read_status_mask = Rx_OVR;
- 	if (iflag & INPCK)
- 		uap->port.read_status_mask |= CRC_ERR | PAR_ERR;
--	if (iflag & (BRKINT | PARMRK))
-+	if (iflag & (IGNBRK | BRKINT | PARMRK))
- 		uap->port.read_status_mask |= BRK_ABRT;
- 
- 	uap->port.ignore_status_mask = 0;
---- a/drivers/tty/serial/pnx8xxx_uart.c
-+++ b/drivers/tty/serial/pnx8xxx_uart.c
-@@ -477,7 +477,7 @@ pnx8xxx_set_termios(struct uart_port *po
- 		sport->port.read_status_mask |=
- 			FIFO_TO_SM(PNX8XXX_UART_FIFO_RXFE) |
- 			FIFO_TO_SM(PNX8XXX_UART_FIFO_RXPAR);
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		sport->port.read_status_mask |=
- 			ISTAT_TO_SM(PNX8XXX_UART_INT_BREAK);
- 
---- a/drivers/tty/serial/pxa.c
-+++ b/drivers/tty/serial/pxa.c
-@@ -492,7 +492,7 @@ serial_pxa_set_termios(struct uart_port
- 	up->port.read_status_mask = UART_LSR_OE | UART_LSR_THRE | UART_LSR_DR;
- 	if (termios->c_iflag & INPCK)
- 		up->port.read_status_mask |= UART_LSR_FE | UART_LSR_PE;
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		up->port.read_status_mask |= UART_LSR_BI;
- 
- 	/*
---- a/drivers/tty/serial/sb1250-duart.c
-+++ b/drivers/tty/serial/sb1250-duart.c
-@@ -596,7 +596,7 @@ static void sbd_set_termios(struct uart_
- 	if (termios->c_iflag & INPCK)
- 		uport->read_status_mask |= M_DUART_FRM_ERR |
- 					   M_DUART_PARITY_ERR;
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		uport->read_status_mask |= M_DUART_RCVD_BRK;
- 
- 	uport->ignore_status_mask = 0;
---- a/drivers/tty/serial/sccnxp.c
-+++ b/drivers/tty/serial/sccnxp.c
-@@ -667,7 +667,7 @@ static void sccnxp_set_termios(struct ua
- 	port->read_status_mask = SR_OVR;
- 	if (termios->c_iflag & INPCK)
- 		port->read_status_mask |= SR_PE | SR_FE;
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		port->read_status_mask |= SR_BRK;
- 
- 	/* Set status ignore mask */
---- a/drivers/tty/serial/serial_ks8695.c
-+++ b/drivers/tty/serial/serial_ks8695.c
-@@ -437,7 +437,7 @@ static void ks8695uart_set_termios(struc
- 	port->read_status_mask = URLS_URROE;
- 	if (termios->c_iflag & INPCK)
- 		port->read_status_mask |= (URLS_URFE | URLS_URPE);
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		port->read_status_mask |= URLS_URBI;
- 
- 	/*
---- a/drivers/tty/serial/serial_txx9.c
-+++ b/drivers/tty/serial/serial_txx9.c
-@@ -702,7 +702,7 @@ serial_txx9_set_termios(struct uart_port
- 		TXX9_SIDISR_TDIS | TXX9_SIDISR_RDIS;
- 	if (termios->c_iflag & INPCK)
- 		up->port.read_status_mask |= TXX9_SIDISR_UFER | TXX9_SIDISR_UPER;
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		up->port.read_status_mask |= TXX9_SIDISR_UBRK;
- 
- 	/*
---- a/drivers/tty/serial/sirfsoc_uart.c
-+++ b/drivers/tty/serial/sirfsoc_uart.c
-@@ -908,7 +908,7 @@ static void sirfsoc_uart_set_termios(str
- 		if (termios->c_iflag & INPCK)
- 			port->read_status_mask |= uint_en->sirfsoc_frm_err_en;
- 	}
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 			port->read_status_mask |= uint_en->sirfsoc_rxd_brk_en;
- 	if (sirfport->uart_reg->uart_type == SIRF_REAL_UART) {
- 		if (termios->c_iflag & IGNPAR)
---- a/drivers/tty/serial/st-asc.c
-+++ b/drivers/tty/serial/st-asc.c
-@@ -547,7 +547,7 @@ static void asc_set_termios(struct uart_
- 	ascport->port.read_status_mask = ASC_RXBUF_DUMMY_OE;
- 	if (termios->c_iflag & INPCK)
- 		ascport->port.read_status_mask |= ASC_RXBUF_FE | ASC_RXBUF_PE;
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		ascport->port.read_status_mask |= ASC_RXBUF_DUMMY_BE;
- 
- 	/*
---- a/drivers/tty/serial/sunsab.c
-+++ b/drivers/tty/serial/sunsab.c
-@@ -719,7 +719,7 @@ static void sunsab_convert_to_sab(struct
- 	if (iflag & INPCK)
- 		up->port.read_status_mask |= (SAB82532_ISR0_PERR |
- 					      SAB82532_ISR0_FERR);
--	if (iflag & (BRKINT | PARMRK))
-+	if (iflag & (IGNBRK | BRKINT | PARMRK))
- 		up->port.read_status_mask |= (SAB82532_ISR1_BRK << 8);
- 
- 	/*
---- a/drivers/tty/serial/sunsu.c
-+++ b/drivers/tty/serial/sunsu.c
-@@ -834,7 +834,7 @@ sunsu_change_speed(struct uart_port *por
- 	up->port.read_status_mask = UART_LSR_OE | UART_LSR_THRE | UART_LSR_DR;
- 	if (iflag & INPCK)
- 		up->port.read_status_mask |= UART_LSR_FE | UART_LSR_PE;
--	if (iflag & (BRKINT | PARMRK))
-+	if (iflag & (IGNBRK | BRKINT | PARMRK))
- 		up->port.read_status_mask |= UART_LSR_BI;
- 
- 	/*
---- a/drivers/tty/serial/sunzilog.c
-+++ b/drivers/tty/serial/sunzilog.c
-@@ -915,7 +915,7 @@ sunzilog_convert_to_zs(struct uart_sunzi
- 	up->port.read_status_mask = Rx_OVR;
- 	if (iflag & INPCK)
- 		up->port.read_status_mask |= CRC_ERR | PAR_ERR;
--	if (iflag & (BRKINT | PARMRK))
-+	if (iflag & (IGNBRK | BRKINT | PARMRK))
- 		up->port.read_status_mask |= BRK_ABRT;
- 
- 	up->port.ignore_status_mask = 0;
---- a/drivers/tty/serial/ucc_uart.c
-+++ b/drivers/tty/serial/ucc_uart.c
-@@ -936,7 +936,7 @@ static void qe_uart_set_termios(struct u
- 	port->read_status_mask = BD_SC_EMPTY | BD_SC_OV;
- 	if (termios->c_iflag & INPCK)
- 		port->read_status_mask |= BD_SC_FR | BD_SC_PR;
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		port->read_status_mask |= BD_SC_BR;
- 
- 	/*
---- a/drivers/tty/serial/vr41xx_siu.c
-+++ b/drivers/tty/serial/vr41xx_siu.c
-@@ -559,7 +559,7 @@ static void siu_set_termios(struct uart_
- 	port->read_status_mask = UART_LSR_THRE | UART_LSR_OE | UART_LSR_DR;
- 	if (c_iflag & INPCK)
- 		port->read_status_mask |= UART_LSR_FE | UART_LSR_PE;
--	if (c_iflag & (BRKINT | PARMRK))
-+	if (c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		port->read_status_mask |= UART_LSR_BI;
- 
- 	port->ignore_status_mask = 0;
---- a/drivers/tty/serial/zs.c
-+++ b/drivers/tty/serial/zs.c
-@@ -923,7 +923,7 @@ static void zs_set_termios(struct uart_p
- 	uport->read_status_mask = Rx_OVR;
- 	if (termios->c_iflag & INPCK)
- 		uport->read_status_mask |= FRM_ERR | PAR_ERR;
--	if (termios->c_iflag & (BRKINT | PARMRK))
-+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
- 		uport->read_status_mask |= Rx_BRK;
- 
- 	uport->ignore_status_mask = 0;
-
-
+>         EVENT_CONSTRAINT_END
+>  };
+>
+> --
+> 1.9.3
+>
