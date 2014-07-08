@@ -1,89 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754094AbaGHIaX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 04:30:23 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:65254 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753748AbaGHIaS (ORCPT
+	id S1753817AbaGHI0l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 04:26:41 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:12178 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753691AbaGHI0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 04:30:18 -0400
+	Tue, 8 Jul 2014 04:26:38 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 08 Jul 2014 01:15:54 -0700
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Ben Skeggs <bskeggs@redhat.com>, David Airlie <airlied@linux.ie>,
+        David Herrmann <dh.herrmann@gmail.com>, Lucas Stach <dev@lynxeye.de>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>
+CC: <nouveau@lists.freedesktop.org>, <dri-devel@lists.freedesktop.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH v4 2/6] drm/nouveau: map pages using DMA API on platform devices
+Date: Tue, 8 Jul 2014 17:25:57 +0900
+Message-ID: <1404807961-30530-3-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1404807961-30530-1-git-send-email-acourbot@nvidia.com>
+References: <1404807961-30530-1-git-send-email-acourbot@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-In-Reply-To: <53BBA9B4.7050609@nod.at>
-References: <20140705112238.16142.42735.stgit@zurg>
-	<20140707150523.cc671116bf366e8db73209c5@linux-foundation.org>
-	<CALYGNiMjL_GYqqkid4yQsubpnbydVXxTPnKW0GqJcg05x9zbHQ@mail.gmail.com>
-	<CAFLxGvzxvuizdHyjQ0SjUm8jJcj=w+qS5ut-u76Xo-m2sftvvw@mail.gmail.com>
-	<CALYGNiOTC8KOxWwRo+f=6JmtUYhJ=1cQNq-Us1BZbW85r4P+ug@mail.gmail.com>
-	<53BBA9B4.7050609@nod.at>
-Date: Tue, 8 Jul 2014 12:30:17 +0400
-Message-ID: <CALYGNiNSFoW6Z_1o3JfV-cCeay1QmTptrt4kWHVegkuw+-6A8A@mail.gmail.com>
-Subject: Re: [uml-devel] [PATCH] checkstack: use $UTS_MACHINE as target architecture
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        UML devel <user-mode-linux-devel@lists.sourceforge.net>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 8, 2014 at 12:20 PM, Richard Weinberger <richard@nod.at> wrote:
-> Am 08.07.2014 10:16, schrieb Konstantin Khlebnikov:
->> On Tue, Jul 8, 2014 at 12:01 PM, Richard Weinberger
->> <richard.weinberger@gmail.com> wrote:
->>> On Tue, Jul 8, 2014 at 7:48 AM, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
->>>> On Tue, Jul 8, 2014 at 2:05 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
->>>>> On Sat, 05 Jul 2014 15:22:38 +0400 Konstantin Khlebnikov <koct9i@gmail.com> wrote:
->>>>>
->>>>>> This fixes command # make checkstack for i386/x86_64.
->>>>>> Looks like $UTS_MACHINE is exactly what scripts/checkstack.pl needs.
->>>>>>
->>>>>> By default $UTS_MACHINE is equal to $ARCH, but some arch/${ARCH}/Makefile
->>>>>> overrides it. This patch updates it also in arch/x86/Makefile.um
->>>>>>
->>>>>> broken in ffee0de ("x86: Default to ARCH=x86 to avoid overriding CONFIG_64BIT")
->>>>>
->>>>> The changelog doesn't describe the bug which is being fixed.  It should
->>>>> do so please.  If there are any compiler/make error messages then those
->>>>> should be included.
->>>>>
->>>>
->>>> Oh, ok. checkstalk.pl needs either i386 or x86_64, x86 isn't enough.
->>>>
->>>> $ make checkstack
->>>> objdump -d vmlinux $(find . -name '*.ko') | \
->>>> perl /home/blind/src/linux-stable/scripts/checkstack.pl x86
->>>> wrong or unknown architecture "x86"
->>>
->>> And now we need ARCH, SUBARCH and UTS_MACHINE on UML? :-(
->>
->> Nope UTS_MACHINE is autodetected, see hunk Makefile.x86 in my patch.
->>
->> I thought about cleaning this part of UML.
->> For example we could move arch/x86/um into arch/um/x86 and use # make
->> ARCH=um/x86
->
-> No way. We moved the x86 stuff to arch/x86/ a few Years ago by design.
+page_to_phys() is not the correct way to obtain the DMA address of a
+buffer on a non-PCI system. Use the DMA API functions for this, which
+are portable and will allow us to use other DMA API functions for
+buffer synchronization.
 
-Ok, fine. We could leave it in arch/x86/um and use make ARCH=x86/um
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+ drivers/gpu/drm/nouveau/core/engine/device/base.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
->
->> after collecting this stuff together it woud be easier to get rid of
->> forever-broken parts.
->> As I see UML has been designed to work everywhere but SMP seem never worked
->> as well as any host os except of linux or other arch except x86.
->
-> Currently UML runs only on x86_32/64.
-> Adding/fixing SMP support should be doable.
+diff --git a/drivers/gpu/drm/nouveau/core/engine/device/base.c b/drivers/gpu/drm/nouveau/core/engine/device/base.c
+index 18c8c7245b73..e4e9e64988fe 100644
+--- a/drivers/gpu/drm/nouveau/core/engine/device/base.c
++++ b/drivers/gpu/drm/nouveau/core/engine/device/base.c
+@@ -489,7 +489,10 @@ nv_device_map_page(struct nouveau_device *device, struct page *page)
+ 		if (pci_dma_mapping_error(device->pdev, ret))
+ 			ret = 0;
+ 	} else {
+-		ret = page_to_phys(page);
++		ret = dma_map_page(&device->platformdev->dev, page, 0,
++				   PAGE_SIZE, DMA_BIDIRECTIONAL);
++		if (dma_mapping_error(&device->platformdev->dev, ret))
++			ret = 0;
+ 	}
+ 
+ 	return ret;
+@@ -501,6 +504,9 @@ nv_device_unmap_page(struct nouveau_device *device, dma_addr_t addr)
+ 	if (nv_device_is_pci(device))
+ 		pci_unmap_page(device->pdev, addr, PAGE_SIZE,
+ 			       PCI_DMA_BIDIRECTIONAL);
++	else
++		dma_unmap_page(&device->platformdev->dev, addr,
++			       PAGE_SIZE, DMA_BIDIRECTIONAL);
+ }
+ 
+ int
+-- 
+2.0.0
 
-This might be quite difficult on top of current ptrace-based design.
-I thought about running userspace in kvm context, this might be much
-faster than ptrace but requires indirect uaccess like for 4gb-split.
-But it's very unlikely that I'll find time for that.
-
->
-> Thanks,
-> //richard
