@@ -1,77 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849AbaGHFth (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 01:49:37 -0400
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:40511 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752058AbaGHFtf (ORCPT
+	id S1752987AbaGHFvE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 01:51:04 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:39499 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752269AbaGHFvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 01:49:35 -0400
+	Tue, 8 Jul 2014 01:51:03 -0400
+Message-ID: <53BB86C2.9040805@redhat.com>
+Date: Tue, 08 Jul 2014 07:50:58 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20140707112257.GA12549@ravnborg.org>
-References: <CANeU7Q=a82YmUE49uZ1sOxZn0KGLuktSXuj7YsmUb=wXQEpPXA@mail.gmail.com>
-	<CANeU7QmT=vzOGd6bBdkr-kNkt7yfzCWQF5QujiwV7Q8Q9hZw=w@mail.gmail.com>
-	<20140707112257.GA12549@ravnborg.org>
-Date: Mon, 7 Jul 2014 22:49:34 -0700
-X-Google-Sender-Auth: Zz3FcGOIpHmnFteOif-mBI0oZAE
-Message-ID: <CANeU7QmKtQ=KVEUM=5pMi7Rko3O3MEPB8w7Biw-r=jFtpH4_dg@mail.gmail.com>
-Subject: Re: [PATCH] sparse: Add CLOG option for saving warning
-From: Christopher Li <sparse@chrisli.org>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux-Sparse <linux-sparse@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Bandan Das <bsd@redhat.com>, kvm@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@kernel.org>
+Subject: Re: [PATCH] KVM: x86: Check for nested events if there is an injectable
+ interrupt
+References: <jpgd2dgfp5s.fsf@redhat.com>
+In-Reply-To: <jpgd2dgfp5s.fsf@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 7, 2014 at 4:22 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
-
->> > Typical usage:
->> >
->> > make -j8 C=2 CLOG=<logname>
->>
-> We do not need this kind of special handling of outputs from gcc.
-> For sparse you just do a run with C=2 then you have it.
+Il 08/07/2014 06:30, Bandan Das ha scritto:
 >
-> In other words - this looks like overkill for somethign thas is achievable
-> with simpler means.
+> With commit b6b8a1451fc40412c57d1 that introduced
+> vmx_check_nested_events, checks for injectable interrupts happen
+> at different points in time for L1 and L2 that could potentially
+> cause a race. The regression occurs because KVM_REQ_EVENT is always
+> set when nested_run_pending is set even if there's no pending interrupt.
+> Consequently, there could be a small window when check_nested_events
+> returns without exiting to L1, but an interrupt comes through soon
+> after and it incorrectly, gets injected to L2 by inject_pending_event
+> Fix this by adding a call to check for nested events too when a check
+> for injectable interrupt returns true
+>
+> Signed-off-by: Bandan Das <bsd@redhat.com>
+> ---
+>  arch/x86/kvm/x86.c | 13 +++++++++++++
+>  1 file changed, 13 insertions(+)
+>
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 73537ec..56327a6 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -5907,6 +5907,19 @@ static int inject_pending_event(struct kvm_vcpu *vcpu, bool req_int_win)
+>  			kvm_x86_ops->set_nmi(vcpu);
+>  		}
+>  	} else if (kvm_cpu_has_injectable_intr(vcpu)) {
+> +		/*
+> +		 * TODO/FIXME: We are calling check_nested_events again
+> +		 * here to avoid a race condition. We should really be
+> +		 * setting KVM_REQ_EVENT only on certain events
+> +		 * and not unconditionally.
+> +		 * See https://lkml.org/lkml/2014/7/2/60 for discussion
+> +		 * about this proposal and current concerns
+> +		 */
+> +		if (is_guest_mode(vcpu) && kvm_x86_ops->check_nested_events) {
+> +			r = kvm_x86_ops->check_nested_events(vcpu, req_int_win);
+> +			if (r != 0)
+> +				return r;
+> +		}
+>  		if (kvm_x86_ops->interrupt_allowed(vcpu)) {
+>  			kvm_queue_interrupt(vcpu, kvm_cpu_get_interrupt(vcpu),
+>  					    false);
+>
 
-I am aware of the C=2 flag. However, it does not provide consistent result
-with "make -jn" flag.
+I think this should be done for NMI as well.
 
-Please consider that the gcc case is different. The kernel source is usually
-clean of gcc warnings. If there is an error with gcc, the build process
-stops. It is different with sparse. The primary goal of running sparse in
-kernel build is to see those warning. Also sparse is a lot noisier than gcc
-in the kernel build, so there is a need with logging which is not present
-with gcc.
+Jan, what do you think?  Can you run Jailhouse through this patch?
 
-With this patch, here is a normal test procedure for me to see the impact of a
-sparse change on kernel build:
-
-$ make -j8 C=2 CLOG=std
-
-# apply sparse change and make sparse
-
-$ make -j8 C=2 CLOG=std-exp
-
-$ find -name ".*.std.sparse" | while read -r file; do diff -du $file
-${file/std.sparse/std-exp.
-sparse} ; done > /tmp/sparse-diff
-
-
-Without the CLOG= option, the only way to get similar diff
-result is disable "-jn" option. Which make the test process painfully
-slow.
-
-I agree if I don't use "make -jn" flags, using C=2 is good enough.
-However, what is your suggestion if I do want to use "make -jn" for
-sparse checking in the previous mentioned usage case?
-
-Thanks
-
-Chris
+Paolo
