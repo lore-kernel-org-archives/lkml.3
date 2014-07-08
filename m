@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756107AbaGHTW5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:22:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54245 "EHLO
+	id S1756078AbaGHTWz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:22:55 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54232 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755736AbaGHTIl (ORCPT
+	by vger.kernel.org with ESMTP id S1755728AbaGHTIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:08:41 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,17 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jan Kratochvil" <jan.kratochvil@redhat.com>,
-        "Matthew Dempsky" <mdempsky@chromium.org>,
+CC: akpm@linux-foundation.org, "Arnaldo Carvalho de Melo" <acme@kernel.org>,
+        "Vince Weaver" <vincent.weaver@maine.edu>,
+        "Peter Zijlstra" <peterz@infradead.org>,
         "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Roland McGrath" <mcgrathr@chromium.org>,
-        "Kees Cook" <keescook@chromium.org>,
-        "Julien Tinnes" <jln@chromium.org>, "Oleg Nesterov" <oleg@redhat.com>
+        "Ingo Molnar" <mingo@kernel.org>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.888246203@decadent.org.uk>
+Message-ID: <lsq.1404846110.452702510@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 065/125] ptrace: fix fork event messages across pid
- namespaces
+Subject: [PATCH 3.2 107/125] perf: Fix race in removing an event
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -36,119 +34,193 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Dempsky <mdempsky@chromium.org>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 4e52365f279564cef0ddd41db5237f0471381093 upstream.
+commit 46ce0fe97a6be7532ce6126bb26ce89fed81528c upstream.
 
-When tracing a process in another pid namespace, it's important for fork
-event messages to contain the child's pid as seen from the tracer's pid
-namespace, not the parent's.  Otherwise, the tracer won't be able to
-correlate the fork event with later SIGTRAP signals it receives from the
-child.
+When removing a (sibling) event we do:
 
-We still risk a race condition if a ptracer from a different pid
-namespace attaches after we compute the pid_t value.  However, sending a
-bogus fork event message in this unlikely scenario is still a vast
-improvement over the status quo where we always send bogus fork event
-messages to debuggers in a different pid namespace than the forking
-process.
+	raw_spin_lock_irq(&ctx->lock);
+	perf_group_detach(event);
+	raw_spin_unlock_irq(&ctx->lock);
 
-Signed-off-by: Matthew Dempsky <mdempsky@chromium.org>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Julien Tinnes <jln@chromium.org>
-Cc: Roland McGrath <mcgrathr@chromium.org>
-Cc: Jan Kratochvil <jan.kratochvil@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: adjust context]
+	<hole>
+
+	perf_remove_from_context(event);
+		raw_spin_lock_irq(&ctx->lock);
+		...
+		raw_spin_unlock_irq(&ctx->lock);
+
+Now, assuming the event is a sibling, it will be 'unreachable' for
+things like ctx_sched_out() because that iterates the
+groups->siblings, and we just unhooked the sibling.
+
+So, if during <hole> we get ctx_sched_out(), it will miss the event
+and not call event_sched_out() on it, leaving it programmed on the
+PMU.
+
+The subsequent perf_remove_from_context() call will find the ctx is
+inactive and only call list_del_event() to remove the event from all
+other lists.
+
+Hereafter we can proceed to free the event; while still programmed!
+
+Close this hole by moving perf_group_detach() inside the same
+ctx->lock region(s) perf_remove_from_context() has.
+
+The condition on inherited events only in __perf_event_exit_task() is
+likely complete crap because non-inherited events are part of groups
+too and we're tearing down just the same. But leave that for another
+patch.
+
+Most-likely-Fixes: e03a9a55b4e ("perf: Change close() semantics for group events")
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Tested-by: Vince Weaver <vincent.weaver@maine.edu>
+Much-staring-at-traces-by: Vince Weaver <vincent.weaver@maine.edu>
+Much-staring-at-traces-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20140505093124.GN17778@laptop.programming.kicks-ass.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+[bwh: Backported to 3.2: drop change in perf_pmu_migrate_context()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/ptrace.h | 32 ++++++++++++++++++++++++++++++++
- kernel/fork.c          | 10 +++++++---
- 2 files changed, 39 insertions(+), 3 deletions(-)
+ kernel/events/core.c | 47 ++++++++++++++++++++++++++---------------------
+ 1 file changed, 26 insertions(+), 21 deletions(-)
 
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -112,6 +112,7 @@
- 
- #include <linux/compiler.h>		/* For unlikely.  */
- #include <linux/sched.h>		/* For struct task_struct.  */
-+#include <linux/pid_namespace.h>	/* For task_active_pid_ns.  */
- 
- 
- extern long arch_ptrace(struct task_struct *child, long request,
-@@ -204,6 +205,37 @@ static inline void ptrace_event(int even
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1180,6 +1180,11 @@ group_sched_out(struct perf_event *group
+ 		cpuctx->exclusive = 0;
  }
  
- /**
-+ * ptrace_event_pid - possibly stop for a ptrace event notification
-+ * @event:	%PTRACE_EVENT_* value to report
-+ * @pid:	process identifier for %PTRACE_GETEVENTMSG to return
-+ *
-+ * Check whether @event is enabled and, if so, report @event and @pid
-+ * to the ptrace parent.  @pid is reported as the pid_t seen from the
-+ * the ptrace parent's pid namespace.
-+ *
-+ * Called without locks.
-+ */
-+static inline void ptrace_event_pid(int event, struct pid *pid)
-+{
-+	/*
-+	 * FIXME: There's a potential race if a ptracer in a different pid
-+	 * namespace than parent attaches between computing message below and
-+	 * when we acquire tasklist_lock in ptrace_stop().  If this happens,
-+	 * the ptracer will get a bogus pid from PTRACE_GETEVENTMSG.
-+	 */
-+	unsigned long message = 0;
-+	struct pid_namespace *ns;
++struct remove_event {
++	struct perf_event *event;
++	bool detach_group;
++};
 +
-+	rcu_read_lock();
-+	ns = task_active_pid_ns(rcu_dereference(current->parent));
-+	if (ns)
-+		message = pid_nr_ns(pid, ns);
-+	rcu_read_unlock();
-+
-+	ptrace_event(event, message);
-+}
-+
-+/**
-  * ptrace_init_task - initialize ptrace state for a new child
-  * @child:		new child task
-  * @ptrace:		true if child should be ptrace'd by parent's tracer
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1513,10 +1513,12 @@ long do_fork(unsigned long clone_flags,
- 	 */
- 	if (!IS_ERR(p)) {
- 		struct completion vfork;
-+		struct pid *pid;
+ /*
+  * Cross CPU call to remove a performance event
+  *
+@@ -1188,12 +1193,15 @@ group_sched_out(struct perf_event *group
+  */
+ static int __perf_remove_from_context(void *info)
+ {
+-	struct perf_event *event = info;
++	struct remove_event *re = info;
++	struct perf_event *event = re->event;
+ 	struct perf_event_context *ctx = event->ctx;
+ 	struct perf_cpu_context *cpuctx = __get_cpu_context(ctx);
  
- 		trace_sched_process_fork(current, p);
+ 	raw_spin_lock(&ctx->lock);
+ 	event_sched_out(event, cpuctx, ctx);
++	if (re->detach_group)
++		perf_group_detach(event);
+ 	list_del_event(event, ctx);
+ 	if (!ctx->nr_events && cpuctx->task_ctx == ctx) {
+ 		ctx->is_active = 0;
+@@ -1218,10 +1226,14 @@ static int __perf_remove_from_context(vo
+  * When called from perf_event_exit_task, it's OK because the
+  * context has been detached from its task.
+  */
+-static void perf_remove_from_context(struct perf_event *event)
++static void perf_remove_from_context(struct perf_event *event, bool detach_group)
+ {
+ 	struct perf_event_context *ctx = event->ctx;
+ 	struct task_struct *task = ctx->task;
++	struct remove_event re = {
++		.event = event,
++		.detach_group = detach_group,
++	};
  
--		nr = task_pid_vnr(p);
-+		pid = get_task_pid(p, PIDTYPE_PID);
-+		nr = pid_vnr(pid);
+ 	lockdep_assert_held(&ctx->mutex);
  
- 		if (clone_flags & CLONE_PARENT_SETTID)
- 			put_user(nr, parent_tidptr);
-@@ -1540,14 +1542,16 @@ long do_fork(unsigned long clone_flags,
- 
- 		/* forking complete and child started to run, tell ptracer */
- 		if (unlikely(trace))
--			ptrace_event(trace, nr);
-+			ptrace_event_pid(trace, pid);
- 
- 		if (clone_flags & CLONE_VFORK) {
- 			freezer_do_not_count();
- 			wait_for_completion(&vfork);
- 			freezer_count();
--			ptrace_event(PTRACE_EVENT_VFORK_DONE, nr);
-+			ptrace_event_pid(PTRACE_EVENT_VFORK_DONE, pid);
- 		}
-+
-+		put_pid(pid);
- 	} else {
- 		nr = PTR_ERR(p);
+@@ -1230,12 +1242,12 @@ static void perf_remove_from_context(str
+ 		 * Per cpu events are removed via an smp call and
+ 		 * the removal is always successful.
+ 		 */
+-		cpu_function_call(event->cpu, __perf_remove_from_context, event);
++		cpu_function_call(event->cpu, __perf_remove_from_context, &re);
+ 		return;
  	}
+ 
+ retry:
+-	if (!task_function_call(task, __perf_remove_from_context, event))
++	if (!task_function_call(task, __perf_remove_from_context, &re))
+ 		return;
+ 
+ 	raw_spin_lock_irq(&ctx->lock);
+@@ -1252,6 +1264,8 @@ retry:
+ 	 * Since the task isn't running, its safe to remove the event, us
+ 	 * holding the ctx->lock ensures the task won't get scheduled in.
+ 	 */
++	if (detach_group)
++		perf_group_detach(event);
+ 	list_del_event(event, ctx);
+ 	raw_spin_unlock_irq(&ctx->lock);
+ }
+@@ -3046,10 +3060,7 @@ int perf_event_release_kernel(struct per
+ 	 *     to trigger the AB-BA case.
+ 	 */
+ 	mutex_lock_nested(&ctx->mutex, SINGLE_DEPTH_NESTING);
+-	raw_spin_lock_irq(&ctx->lock);
+-	perf_group_detach(event);
+-	raw_spin_unlock_irq(&ctx->lock);
+-	perf_remove_from_context(event);
++	perf_remove_from_context(event, true);
+ 	mutex_unlock(&ctx->mutex);
+ 
+ 	free_event(event);
+@@ -6459,7 +6470,7 @@ SYSCALL_DEFINE5(perf_event_open,
+ 		struct perf_event_context *gctx = group_leader->ctx;
+ 
+ 		mutex_lock(&gctx->mutex);
+-		perf_remove_from_context(group_leader);
++		perf_remove_from_context(group_leader, false);
+ 
+ 		/*
+ 		 * Removing from the context ends up with disabled
+@@ -6469,7 +6480,7 @@ SYSCALL_DEFINE5(perf_event_open,
+ 		perf_event__state_init(group_leader);
+ 		list_for_each_entry(sibling, &group_leader->sibling_list,
+ 				    group_entry) {
+-			perf_remove_from_context(sibling);
++			perf_remove_from_context(sibling, false);
+ 			perf_event__state_init(sibling);
+ 			put_ctx(gctx);
+ 		}
+@@ -6622,13 +6633,7 @@ __perf_event_exit_task(struct perf_event
+ 			 struct perf_event_context *child_ctx,
+ 			 struct task_struct *child)
+ {
+-	if (child_event->parent) {
+-		raw_spin_lock_irq(&child_ctx->lock);
+-		perf_group_detach(child_event);
+-		raw_spin_unlock_irq(&child_ctx->lock);
+-	}
+-
+-	perf_remove_from_context(child_event);
++	perf_remove_from_context(child_event, !!child_event->parent);
+ 
+ 	/*
+ 	 * It can happen that the parent exits first, and has events
+@@ -7113,14 +7118,14 @@ static void perf_pmu_rotate_stop(struct
+ 
+ static void __perf_event_exit_context(void *__info)
+ {
++	struct remove_event re = { .detach_group = false };
+ 	struct perf_event_context *ctx = __info;
+-	struct perf_event *event;
+ 
+ 	perf_pmu_rotate_stop(ctx->pmu);
+ 
+ 	rcu_read_lock();
+-	list_for_each_entry_rcu(event, &ctx->event_list, event_entry)
+-		__perf_remove_from_context(event);
++	list_for_each_entry_rcu(re.event, &ctx->event_list, event_entry)
++		__perf_remove_from_context(&re);
+ 	rcu_read_unlock();
+ }
+ 
 
