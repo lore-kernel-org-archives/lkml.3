@@ -1,116 +1,317 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933AbaGHNhy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:37:54 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43076 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752836AbaGHNhv (ORCPT
+	id S1753953AbaGHNic (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:38:32 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:15625 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752753AbaGHNib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:37:51 -0400
-Date: Tue, 8 Jul 2014 08:37:38 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Keerthy <j-keerthy@ti.com>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <mark.rutland@arm.com>,
-        <galak@codeaurora.org>, <robh+dt@kernel.org>, <linux@arm.linux.org.uk>,
-        <balbi@ti.com>, <tony@atomide.com>, <kishon@ti.com>,
-        <broonie@kernel.org>
-Subject: Re: [PATCH v2 2/7] regulator: Add DT bindings for tps65218 PMIC
- regulators.
-Message-ID: <20140708133738.GD25811@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1404814597-4404-1-git-send-email-j-keerthy@ti.com>
- <1404814597-4404-3-git-send-email-j-keerthy@ti.com>
+	Tue, 8 Jul 2014 09:38:31 -0400
+Date: Tue, 8 Jul 2014 09:38:26 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jason Low <jason.low2@hp.com>
+Cc: peterz@infradead.org, torvalds@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, mingo@kernel.org, Waiman.Long@hp.com,
+        davidlohr@hp.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        riel@redhat.com, akpm@linux-foundation.org, hpa@zytor.com,
+        tim.c.chen@linux.intel.com, konrad.wilk@oracle.com, aswin@hp.com,
+        scott.norton@hp.com, chegu_vinod@hp.com
+Subject: Re: [PATCH 2/4] MCS spinlocks: Convert osq lock to atomic_t to
+ reduce overhead
+Message-ID: <20140708093826.32a734f3@gandalf.local.home>
+In-Reply-To: <1404759019-4268-3-git-send-email-jason.low2@hp.com>
+References: <1404759019-4268-1-git-send-email-jason.low2@hp.com>
+	<1404759019-4268-3-git-send-email-jason.low2@hp.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="C1iGAkRnbeBonpVg"
-Content-Disposition: inline
-In-Reply-To: <1404814597-4404-3-git-send-email-j-keerthy@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---C1iGAkRnbeBonpVg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon,  7 Jul 2014 11:50:17 -0700
+Jason Low <jason.low2@hp.com> wrote:
 
-On Tue, Jul 08, 2014 at 03:46:32PM +0530, Keerthy wrote:
-> Add DT bindings for tps65218 PMIC regulators.
->=20
-> Signed-off-by: Keerthy <j-keerthy@ti.com>
-
-Reviewed-by: Felipe Balbi <balbi@ti.com>
-
+> The cancellable MCS spinlock is currently used to queue threads that are
+> doing optimistic spinning. It uses per-cpu nodes, where a thread obtaining
+> the lock would access and queue the local node corresponding to the CPU that
+> it's running on. Currently, the cancellable MCS lock is implemented by using
+> pointers to these nodes.
+> 
+> In this patch, instead of operating on pointers to the per-cpu nodes, we
+> store the CPU numbers in which the per-cpu nodes correspond to in atomic_t.
+> A similar concept is used with the qspinlock.
+> 
+> By operating on the CPU # of the nodes using atomic_t instead of pointers
+> to those nodes, this can reduce the overhead of the cancellable MCS spinlock
+> by 32 bits (on 64 bit systems).
+> 
+> Signed-off-by: Jason Low <jason.low2@hp.com>
 > ---
->=20
-> Changes in V2:
->   * Added dcdc3, dcdc5, dcdc6 compatible properties.
->=20
->  .../devicetree/bindings/regulator/tps65218.txt     |   23 ++++++++++++++=
-++++++
->  1 file changed, 23 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/regulator/tps65218.=
-txt
->=20
-> diff --git a/Documentation/devicetree/bindings/regulator/tps65218.txt b/D=
-ocumentation/devicetree/bindings/regulator/tps65218.txt
+>  include/linux/mutex.h         |    4 +-
+>  include/linux/osq_lock.h      |   19 +++++++++++++++++
+>  include/linux/rwsem.h         |    7 ++---
+>  kernel/locking/mcs_spinlock.c |   44 ++++++++++++++++++++++++++++++++++------
+>  kernel/locking/mcs_spinlock.h |    5 ++-
+>  kernel/locking/mutex.c        |    2 +-
+>  kernel/locking/rwsem-xadd.c   |    2 +-
+>  7 files changed, 66 insertions(+), 17 deletions(-)
+>  create mode 100644 include/linux/osq_lock.h
+> 
+> diff --git a/include/linux/mutex.h b/include/linux/mutex.h
+> index 885f3f5..42aa9b9 100644
+> --- a/include/linux/mutex.h
+> +++ b/include/linux/mutex.h
+> @@ -17,6 +17,7 @@
+>  #include <linux/lockdep.h>
+>  #include <linux/atomic.h>
+>  #include <asm/processor.h>
+> +#include <linux/osq_lock.h>
+>  
+>  /*
+>   * Simple, straightforward mutexes with strict semantics:
+> @@ -46,7 +47,6 @@
+>   * - detects multi-task circular deadlocks and prints out all affected
+>   *   locks and tasks (and only those tasks)
+>   */
+> -struct optimistic_spin_node;
+>  struct mutex {
+>  	/* 1: unlocked, 0: locked, negative: locked, possible waiters */
+>  	atomic_t		count;
+> @@ -56,7 +56,7 @@ struct mutex {
+>  	struct task_struct	*owner;
+>  #endif
+>  #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+> -	struct optimistic_spin_node	*osq;	/* Spinner MCS lock */
+> +	struct optimistic_spin_queue osq; /* Spinner MCS lock */
+>  #endif
+>  #ifdef CONFIG_DEBUG_MUTEXES
+>  	const char 		*name;
+> diff --git a/include/linux/osq_lock.h b/include/linux/osq_lock.h
 > new file mode 100644
-> index 0000000..fccc1d2
+> index 0000000..b001682
 > --- /dev/null
-> +++ b/Documentation/devicetree/bindings/regulator/tps65218.txt
-> @@ -0,0 +1,23 @@
-> +TPS65218 family of regulators
+> +++ b/include/linux/osq_lock.h
+> @@ -0,0 +1,19 @@
+> +#ifndef __LINUX_OSQ_LOCK_H
+> +#define __LINUX_OSQ_LOCK_H
 > +
-> +Required properties:
-> +For tps65218 regulators/LDOs
-> +- compatible:
-> +  - "ti,tps65218-dcdc1" for DCDC1
-> +  - "ti,tps65218-dcdc2" for DCDC2
-> +  - "ti,tps65218-dcdc3" for DCDC3
-> +  - "ti,tps65218-dcdc4" for DCDC4
-> +  - "ti,tps65218-dcdc5" for DCDC5
-> +  - "ti,tps65218-dcdc6" for DCDC6
-> +  - "ti,tps65218-ldo1" for LDO1
+> +/*
+> + * An MCS like lock especially tailored for optimistic spinning for sleeping
+> + * lock implementations (mutex, rwsem, etc).
+> + */
 > +
-> +Optional properties:
-> +- Any optional property defined in bindings/regulator/regulator.txt
+> +#define OSQ_UNLOCKED_VAL (0)
 > +
-> +Example:
+> +struct optimistic_spin_queue {
+> +	/*
+> +	 * Stores an encoded value of the CPU # of the tail node in the queue.
+> +	 * If the queue is empty, then it's set to OSQ_UNLOCKED_VAL.
+> +	 */
+> +	atomic_t tail;
+> +};
 > +
-> +	xyz: regulator@0 {
-> +		compatible =3D "ti,tps65218-dcdc1";
-> +		regulator-min-microvolt  =3D <1000000>;
-> +		regulator-max-microvolt  =3D <3000000>;
-> +	};
-> --=20
-> 1.7.9.5
->=20
+> +#endif
+> diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+> index ba3f108..9fdcdd0 100644
+> --- a/include/linux/rwsem.h
+> +++ b/include/linux/rwsem.h
+> @@ -13,10 +13,9 @@
+>  #include <linux/kernel.h>
+>  #include <linux/list.h>
+>  #include <linux/spinlock.h>
+> -
+>  #include <linux/atomic.h>
+> +#include <linux/osq_lock.h>
+>  
+> -struct optimistic_spin_node;
+>  struct rw_semaphore;
+>  
+>  #ifdef CONFIG_RWSEM_GENERIC_SPINLOCK
+> @@ -33,7 +32,7 @@ struct rw_semaphore {
+>  	 * if the owner is running on the cpu.
+>  	 */
+>  	struct task_struct *owner;
+> -	struct optimistic_spin_node *osq; /* spinner MCS lock */
+> +	struct optimistic_spin_queue osq; /* spinner MCS lock */
+>  #endif
+>  #ifdef CONFIG_DEBUG_LOCK_ALLOC
+>  	struct lockdep_map	dep_map;
+> @@ -70,7 +69,7 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
+>  	  __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),	\
+>  	  LIST_HEAD_INIT((name).wait_list),		\
+>  	  NULL, /* owner */				\
+> -	  NULL /* mcs lock */                           \
+> +	  { ATOMIC_INIT(OSQ_UNLOCKED_VAL) } /* osq */   \
 
---=20
-balbi
+This should probably be a macro, similar to the __RWSEM_DEP_MAP_INIT()
+below.  Open coded inits are evil.
 
---C1iGAkRnbeBonpVg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+  OSQ_LOCK_INIT() ?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTu/QiAAoJEIaOsuA1yqRErmgQAIe5s2Rb5VRYdMN1OiQacf+b
-PqPhc2y8SccaHlIMFKewDeIxdxfS/j2oabHRrvDolO+tNOOIACIz3YMlkSJRsMEU
-69C0NLtX+5sNuSz5gXPRnTDt1vbeowvW9DZzZoEwsbQWAlRlTvPNbDIIPN5jVj68
-wkbSVt4sjVkg+fKr0OOxwjo1dzy6Jxk8WhM+Ch0Xw2YucdrKj5LX3825+DsmUOVF
-VRup95GAr2HQSaMmCtDjHSPg29bvpEnGITiMhcPF5SVMmTlRh6gBdzSxId8twbc8
-xPgBOGHkloJNyL/hu/82DoRZNXJBFT0Aw6lcKDrv92ZBCNJ4FTzqXIHBeHA5DcmT
-2O/aHW94qqrN8CpCba5jaUXpkeBb4m7kmTIsPLqFzvfBK7pKz8LapRxWB8GahylD
-OlsyoCmWazuNErTwlCbmZSDXUwWazU1Mrpb2sQA3xlGEL3+6s1LPpgcXWbvgN5PA
-vatV9cZm71w0MiFuDjD99XBHSekU9TPG4MhO6mYuVqFreLFEm/+Yx5H7TQ+Xtkud
-PxyvFaIxWY3NDJsbVuvVszBMtLFMtMrrW5QbPfLCCUAnXTJFkZHX0H7/wNH5/dYg
-ve6Cv27dMod2ytLY7+cSBRsrA7fYJRB/x9V97GKpegGSjzP+WDTeeLEMmnSGTOUl
-uJNDfnbOdJ8tJ6mVPx8n
-=5hYv
------END PGP SIGNATURE-----
+>  	  __RWSEM_DEP_MAP_INIT(name) }
+>  #else
+>  #define __RWSEM_INITIALIZER(name)			\
+> diff --git a/kernel/locking/mcs_spinlock.c b/kernel/locking/mcs_spinlock.c
+> index e9866f7..124a3bb 100644
+> --- a/kernel/locking/mcs_spinlock.c
+> +++ b/kernel/locking/mcs_spinlock.c
+> @@ -17,18 +17,43 @@
+>  static DEFINE_PER_CPU_SHARED_ALIGNED(struct optimistic_spin_node, osq_node);
+>  
+>  /*
+> + * We use the value 0 to represent "no CPU", thus the encoded value
+> + * will be the CPU number incremented by 1.
+> + */
+> +static inline int encode_cpu(int cpu_nr)
+> +{
+> +	return (cpu_nr + 1);
 
---C1iGAkRnbeBonpVg--
+return is not a function, remove the parenthesis (checkpatch should
+point that out to you too).
+
+> +}
+> +
+> +static inline struct optimistic_spin_node *decode_cpu(int encoded_cpu_val)
+> +{
+> +	int cpu_nr = encoded_cpu_val - 1;
+> +
+> +	return per_cpu_ptr(&osq_node, cpu_nr);
+> +}
+> +
+> +/*
+>   * Get a stable @node->next pointer, either for unlock() or unqueue() purposes.
+>   * Can return NULL in case we were the last queued and we updated @lock instead.
+>   */
+>  static inline struct optimistic_spin_node *
+> -osq_wait_next(struct optimistic_spin_node **lock,
+> +osq_wait_next(struct optimistic_spin_queue *lock,
+>  	      struct optimistic_spin_node *node,
+>  	      struct optimistic_spin_node *prev)
+>  {
+>  	struct optimistic_spin_node *next = NULL;
+> +	int curr = encode_cpu(smp_processor_id()), old;
+
+Add a second line for "int old". Having it after an initialization is
+weird and confusing.
+
+
+> +
+> +	/*
+> +	 * If there is a prev node in queue, then the 'old' value will be
+> +	 * the prev node's CPU #, else it's set to OSQ_UNLOCKED_VAL since if
+> +	 * we're currently last in queue, then the queue will then become empty.
+> +	 */
+> +	old = prev ? prev->cpu : OSQ_UNLOCKED_VAL;
+>  
+>  	for (;;) {
+> -		if (*lock == node && cmpxchg(lock, node, prev) == node) {
+> +		if (atomic_read(&lock->tail) == curr &&
+> +		    atomic_cmpxchg(&lock->tail, curr, old) == curr) {
+>  			/*
+>  			 * We were the last queued, we moved @lock back. @prev
+>  			 * will now observe @lock and will complete its
+> @@ -59,18 +84,22 @@ osq_wait_next(struct optimistic_spin_node **lock,
+>  	return next;
+>  }
+>  
+> -bool osq_lock(struct optimistic_spin_node **lock)
+> +bool osq_lock(struct optimistic_spin_queue *lock)
+>  {
+>  	struct optimistic_spin_node *node = this_cpu_ptr(&osq_node);
+>  	struct optimistic_spin_node *prev, *next;
+> +	int curr = encode_cpu(smp_processor_id()), old;
+
+Again, move old to its own line.
+
+>  
+>  	node->locked = 0;
+>  	node->next = NULL;
+> +	node->cpu = curr;
+>  
+> -	node->prev = prev = xchg(lock, node);
+> -	if (likely(prev == NULL))
+> +	old = atomic_xchg(&lock->tail, curr);
+> +	if (old == OSQ_UNLOCKED_VAL)
+>  		return true;
+>  
+> +	prev = decode_cpu(old);
+> +	node->prev = prev;
+>  	ACCESS_ONCE(prev->next) = node;
+>  
+>  	/*
+> @@ -149,15 +178,16 @@ unqueue:
+>  	return false;
+>  }
+>  
+> -void osq_unlock(struct optimistic_spin_node **lock)
+> +void osq_unlock(struct optimistic_spin_queue *lock)
+>  {
+>  	struct optimistic_spin_node *node = this_cpu_ptr(&osq_node);
+>  	struct optimistic_spin_node *next;
+> +	int curr = encode_cpu(smp_processor_id());
+>  
+>  	/*
+>  	 * Fast path for the uncontended case.
+>  	 */
+> -	if (likely(cmpxchg(lock, node, NULL) == node))
+> +	if (likely(atomic_cmpxchg(&lock->tail, curr, OSQ_UNLOCKED_VAL) == curr))
+>  		return;
+>  
+>  	/*
+> diff --git a/kernel/locking/mcs_spinlock.h b/kernel/locking/mcs_spinlock.h
+> index c99dc00..74356dc 100644
+> --- a/kernel/locking/mcs_spinlock.h
+> +++ b/kernel/locking/mcs_spinlock.h
+> @@ -121,9 +121,10 @@ void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
+>  struct optimistic_spin_node {
+>  	struct optimistic_spin_node *next, *prev;
+>  	int locked; /* 1 if lock acquired */
+> +	int cpu; /* encoded CPU # value */
+>  };
+>  
+> -extern bool osq_lock(struct optimistic_spin_node **lock);
+> -extern void osq_unlock(struct optimistic_spin_node **lock);
+> +extern bool osq_lock(struct optimistic_spin_queue *lock);
+> +extern void osq_unlock(struct optimistic_spin_queue *lock);
+>  
+>  #endif /* __LINUX_MCS_SPINLOCK_H */
+> diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
+> index bc73d33..d9b3139 100644
+> --- a/kernel/locking/mutex.c
+> +++ b/kernel/locking/mutex.c
+> @@ -60,7 +60,7 @@ __mutex_init(struct mutex *lock, const char *name, struct lock_class_key *key)
+>  	INIT_LIST_HEAD(&lock->wait_list);
+>  	mutex_clear_owner(lock);
+>  #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+> -	lock->osq = NULL;
+> +	atomic_set(&lock->osq.tail, OSQ_UNLOCKED_VAL);
+
+Probably should have a macro for this too.
+
+>  #endif
+>  
+>  	debug_mutex_init(lock, name, key);
+> diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
+> index dacc321..9416ddb 100644
+> --- a/kernel/locking/rwsem-xadd.c
+> +++ b/kernel/locking/rwsem-xadd.c
+> @@ -84,7 +84,7 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
+>  	INIT_LIST_HEAD(&sem->wait_list);
+>  #ifdef CONFIG_SMP
+>  	sem->owner = NULL;
+> -	sem->osq = NULL;
+> +	atomic_set(&sem->osq.tail, OSQ_UNLOCKED_VAL);
+
+And here.
+
+-- Steve
+
+>  #endif
+>  }
+>  
+
