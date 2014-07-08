@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060AbaGHNTo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:19:44 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:60818 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754565AbaGHNTm (ORCPT
+	id S1754993AbaGHNUD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:20:03 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:40757 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754376AbaGHNUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:19:42 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53BBEFE9.7030508@roeck-us.net>
-Date: Tue, 08 Jul 2014 06:19:37 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 8 Jul 2014 09:20:00 -0400
+Date: Tue, 8 Jul 2014 06:19:54 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH RFC tip/core/rcu] Parallelize and economize NOCB kthread
+ wakeups
+Message-ID: <20140708131954.GE4603@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140627142038.GA22942@linux.vnet.ibm.com>
+ <20140702123412.GD19379@twins.programming.kicks-ass.net>
+ <20140702153915.GQ4603@linux.vnet.ibm.com>
+ <20140702160412.GO19379@twins.programming.kicks-ass.net>
+ <20140702170838.GS4603@linux.vnet.ibm.com>
+ <20140702172600.GR19379@twins.programming.kicks-ass.net>
+ <20140702175501.GW4603@linux.vnet.ibm.com>
+ <20140703095009.GN3935@laptop>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.10 00/53] 3.10.48-stable review
-References: <20140707235829.281783607@linuxfoundation.org>
-In-Reply-To: <20140707235829.281783607@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140703095009.GN3935@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14070813-0928-0000-0000-00000333B420
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/2014 04:57 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.10.48 release.
-> There are 53 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Wed Jul  9 23:58:20 UTC 2014.
-> Anything received after that time might be too late.
->
+On Thu, Jul 03, 2014 at 11:50:09AM +0200, Peter Zijlstra wrote:
+> On Wed, Jul 02, 2014 at 10:55:01AM -0700, Paul E. McKenney wrote:
+> > Name me one thing that isn't annoying.  ;-)
+> 
+> A cold beverage on a warm day :-)
 
-Build results:
-	total: 138 pass: 137 fail: 1
-Failed builds:
-	score:defconfig
+Fair point...  Not clear how to work that into the RCU implementation,
+though.  I suppose I could add comments instructing the reader to consume
+a cold beverage.  Or I could consume a cold beverage while working on
+RCU.  ;-)
 
-Qemu tests all passed.
-
-This is an improvement over 3.10.47, as the unicore32 build now passes.
-
-Details are available at http://server.roeck-us.net:8010/builders.
-
-The following patches would fix the remaining build failure.
-
-ae49b83dca score: normalize global variables exported by vmlinux.lds
-1ed62ca648 Score: Implement the function csum_ipv6_magic
-5fbbf8a1a9 Score: The commit is for compiling successfully
-df9e4d1c39 Score: Modify the Makefile of Score, remove -mlong-calls for compiling
-
-Guenter
+							Thanx, Paul
 
