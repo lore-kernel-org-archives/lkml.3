@@ -1,92 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232AbaGHHlY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 03:41:24 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:45532 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753063AbaGHHlV (ORCPT
+	id S1753315AbaGHHmF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 03:42:05 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35231 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752260AbaGHHmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 03:41:21 -0400
+	Tue, 8 Jul 2014 03:42:03 -0400
+Date: Tue, 8 Jul 2014 09:41:49 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paolo Pisati <p.pisati@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
+        Jason Cooper <jason@lakedaemon.net>, Joerg Roedel <joro@8bytes.org>,
+        Hiroshi.DOYU@nokia.com, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: 3.16rc3 multiplatform, Armada 370 and IOMMU: unbootable kernel
+Message-ID: <20140708094149.0ad6ab13@free-electrons.com>
+In-Reply-To: <20140707233758.GA1456@arch.cereza>
+References: <20140703135146.GA6898@luxor.wired.org>
+	<53B5C61D.2060308@free-electrons.com>
+	<53B5CA26.7050405@free-electrons.com>
+	<1936558.QaAG1bYMuD@avalon>
+	<20140705150308.GA28791@arch.cereza>
+	<20140705205951.GB3678@kroah.com>
+	<20140707105818.GA1101@arch.cereza>
+	<20140707183002.GA5947@kroah.com>
+	<20140707233758.GA1456@arch.cereza>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <1403864931-4663-1-git-send-email-acourbot@nvidia.com>
-References: <1403864931-4663-1-git-send-email-acourbot@nvidia.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Tue, 8 Jul 2014 16:41:00 +0900
-Message-ID: <CAAVeFuLjPAu0Rfbx29dAKjo2bn2k049cQsue+67UwZu8edBEfg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] drm/nouveau/bar: add noncached ioremap property
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Ben Skeggs <bskeggs@redhat.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping Ben, how do these two patches look like?
+Dear Ezequiel Garcia,
 
-On Fri, Jun 27, 2014 at 7:28 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> Some BARs (like GK20A's) do not support being ioremapped write-combined.
-> Add a boolean property to the BAR structure and handle that case in the
-> Nouveau BO implementation.
->
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
->  drivers/gpu/drm/nouveau/core/include/subdev/bar.h |  3 +++
->  drivers/gpu/drm/nouveau/nouveau_bo.c              | 17 ++++++++++++-----
->  2 files changed, 15 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/gpu/drm/nouveau/core/include/subdev/bar.h b/drivers/gpu/drm/nouveau/core/include/subdev/bar.h
-> index 9faa98e67ad8..9002cbb6432b 100644
-> --- a/drivers/gpu/drm/nouveau/core/include/subdev/bar.h
-> +++ b/drivers/gpu/drm/nouveau/core/include/subdev/bar.h
-> @@ -20,6 +20,9 @@ struct nouveau_bar {
->                     u32 flags, struct nouveau_vma *);
->         void (*unmap)(struct nouveau_bar *, struct nouveau_vma *);
->         void (*flush)(struct nouveau_bar *);
-> +
-> +       /* whether the BAR supports to be ioremapped WC or should be uncached */
-> +       bool iomap_uncached;
+On Mon, 7 Jul 2014 20:37:58 -0300, Ezequiel Garcia wrote:
+
+> It seems bus_register_notifier() is been called for platform and pci devices
+> with the *same* notifier block. Haven't looked close enough, but you mentioned
+> that could cause trouble?
+> 
+> This patch fixes the issue here:
+> 
+> diff --git a/arch/arm/mach-mvebu/coherency.c b/arch/arm/mach-mvebu/coherency.c
+> index 477202f..2bdc323 100644
+> --- a/arch/arm/mach-mvebu/coherency.c
+> +++ b/arch/arm/mach-mvebu/coherency.c
+> @@ -292,6 +292,10 @@ static struct notifier_block mvebu_hwcc_nb = {
+>  	.notifier_call = mvebu_hwcc_notifier,
 >  };
->
->  static inline struct nouveau_bar *
-> diff --git a/drivers/gpu/drm/nouveau/nouveau_bo.c b/drivers/gpu/drm/nouveau/nouveau_bo.c
-> index b6dc85c614be..4db886f9f793 100644
-> --- a/drivers/gpu/drm/nouveau/nouveau_bo.c
-> +++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
-> @@ -500,18 +500,25 @@ nouveau_bo_init_mem_type(struct ttm_bo_device *bdev, uint32_t type,
->                 man->default_caching = TTM_PL_FLAG_CACHED;
->                 break;
->         case TTM_PL_VRAM:
-> +               man->flags = TTM_MEMTYPE_FLAG_FIXED |
-> +                            TTM_MEMTYPE_FLAG_MAPPABLE;
-> +               man->available_caching = TTM_PL_FLAG_UNCACHED |
-> +                                        TTM_PL_FLAG_WC;
-> +               man->default_caching = TTM_PL_FLAG_WC;
+>  
+> +static struct notifier_block mvebu_hwcc_pci_nb = {
+> +	.notifier_call = mvebu_hwcc_notifier,
+> +};
 > +
->                 if (nv_device(drm->device)->card_type >= NV_50) {
-> +                       /* Some BARs do not support being ioremapped WC */
-> +                       if (nouveau_bar(drm->device)->iomap_uncached) {
-> +                               man->available_caching = TTM_PL_FLAG_UNCACHED;
-> +                               man->default_caching = TTM_PL_FLAG_UNCACHED;
-> +                       }
-> +
->                         man->func = &nouveau_vram_manager;
->                         man->io_reserve_fastpath = false;
->                         man->use_io_reserve_lru = true;
->                 } else {
->                         man->func = &ttm_bo_manager_func;
->                 }
-> -               man->flags = TTM_MEMTYPE_FLAG_FIXED |
-> -                            TTM_MEMTYPE_FLAG_MAPPABLE;
-> -               man->available_caching = TTM_PL_FLAG_UNCACHED |
-> -                                        TTM_PL_FLAG_WC;
-> -               man->default_caching = TTM_PL_FLAG_WC;
->                 break;
->         case TTM_PL_TT:
->                 if (nv_device(drm->device)->card_type >= NV_50)
-> --
-> 2.0.0
->
+>  static void __init armada_370_coherency_init(struct device_node *np)
+>  {
+>  	struct resource res;
+> @@ -427,7 +431,7 @@ static int __init coherency_pci_init(void)
+>  {
+>  	if (coherency_available())
+>  		bus_register_notifier(&pci_bus_type,
+> -				       &mvebu_hwcc_nb);
+> +				       &mvebu_hwcc_pci_nb);
+>  	return 0;
+>  }
+>  
+> Paolo, can you apply it and confirm it fixes the problem?
+> 
+> Greg, can you confirm using the same notifier block pointer
+> for two different bus types makes the bus notifier go nuts?
+
+Looking at how notifier_chain_register() is implemented (which gets
+called by bus_register_notifier() ->
+blocking_notifier_chain_register()), I indeed don't see how a single
+'struct notifier_block' can be registered on multiple notifier chains,
+so I believe your patch is correct.
+
+Thanks for the investigation!
+
+Thomas
+-- 
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
