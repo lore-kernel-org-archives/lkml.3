@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554AbaGHPH7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 11:07:59 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:43229 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752034AbaGHPH6 (ORCPT
+	id S1753968AbaGHPIJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 11:08:09 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:26041 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753716AbaGHPIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 11:07:58 -0400
-Date: Tue, 8 Jul 2014 18:07:22 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        kernel-janitors@vger.kernel.org, gulsah.1004@gmail.com,
-        gregkh@linuxfoundation.org, linville@tuxdriver.com,
-        paulmck@linux.vnet.ibm.com, Larry.Finger@lwfinger.net
-Subject: Re: [PATCH] staging: rtl8192ee: Correct bitmask in comparsion
-Message-ID: <20140708150722.GP25880@mwanda>
-References: <1404827699-7295-1-git-send-email-andrey.krieger.utkin@gmail.com>
+	Tue, 8 Jul 2014 11:08:04 -0400
+Date: Tue, 8 Jul 2014 11:08:01 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH] modules: Fix build error in moduleloader.h
+Message-ID: <20140708110801.14fc703b@gandalf.local.home>
+In-Reply-To: <87wqbo7n6u.fsf@rustcorp.com.au>
+References: <20140703092121.082e0366@gandalf.local.home>
+	<87wqbo7n6u.fsf@rustcorp.com.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404827699-7295-1-git-send-email-andrey.krieger.utkin@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 08, 2014 at 04:54:59PM +0300, Andrey Utkin wrote:
-> The issue is discovered by static checker. The proposed change (0x000c0
-> -> 0x000c) is likely correct because:
-> 1. 16-bit `map` holds value coming from struct
-> ieee80211_vht_mcs_info.tx_mcs_map, which is described so: "TX MCS map 2
-> bits for each stream, total 8 streams". The changed code refers to case
-> of 2 TX streams, and 0x000c mask filters two bits related to the second
-> stream. Some codelines below 0x0003 mask is used to test first stream.
-> 2. Mask 0x000c is used 3 more times in that place.
-> 3. Specifying 5 digits of hex value is uncommon, especially while working
-> with `u16` variable. So likely the trailing zero is a typo.
+On Tue, 08 Jul 2014 09:10:09 +0930
+Rusty Russell <rusty@rustcorp.com.au> wrote:
+ 
+> Subject: modules: Fix build error in moduleloader.h
+> 
+> Fengguang Wu's build bot detected that if moduleloader.h is included in
+> a C file (used by ftrace and kprobes to access module_alloc() when
+> available), that it can fail to build if CONFIG_MODULES and
+> CONFIG_MODULES_USE_ELF_REL is not defined.
+> 
+> This is because there's a printk() that dereferences struct module to
+> print the name of the module. But as struct module does not exist when
+> CONFIG_MODULES is not defined we get this error:
+> 
+>    include/linux/moduleloader.h: In function 'apply_relocate':
+> >> include/linux/moduleloader.h:48:63: error: dereferencing pointer to
+> >> incomplete type  
+>      printk(KERN_ERR "module %s: REL relocation unsupported\n", me->name);
+> 								  ^
+> Reported-by: kbuild test robot <fengguang.wu@intel.com>
+> Based-on-the-true-story-by: Steven Rostedt <rostedt@goodmis.org>
 
-This changelog is perfect.  Thanks.
+Confirms-rustys-story-ends-the-same-by: Steven Rostedt <rostedt@goodmis.org>
 
-regards,
-dan carpenter
+-- Steve
 
+
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> 
