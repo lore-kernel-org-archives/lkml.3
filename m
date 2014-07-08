@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752172AbaGHFET (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 01:04:19 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:47891 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217AbaGHFES (ORCPT
+	id S1752480AbaGHFHv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 01:07:51 -0400
+Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:50581 "EHLO
+	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751236AbaGHFHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 01:04:18 -0400
-From: Nicholas Krause <xerofoify@gmail.com>
-To: benh@kernel.crashing.org
-Cc: paulus@samba.org, mahesh@linux.vnet.ibm.com, anton@samba.org,
-        agraf@suse.de, michael@ellerman.id.au, svaidy@linux.vnet.ibm.com,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: powerpc allyesconfig fix 
-Date: Tue,  8 Jul 2014 01:04:09 -0400
-Message-Id: <1404795849-25609-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Tue, 8 Jul 2014 01:07:50 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArMbAGx7u1NXQzVo/2dsb2JhbABZgw5SgXeBAak/AQEBAQEBBQFukhGHQAICAYEXF3WEAwEBAQMBAQI3HCMFCwgDDgouIQcRHgYTiC4DCQwBCMMKDYV9F4VwhwqCKAeEQwEEmApsgX8BgUiKBIIshhSDRTs
+Date: Tue, 8 Jul 2014 07:08:08 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: Sachin Kamat <spk.linux@gmail.com>
+Cc: Shawn Guo <shawn.guo@freescale.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/1] ARM: imx: use PTR_ERR_OR_ZERO
+Message-Id: <20140708070808.07c7f690e82c9bcf822f772e@skynet.be>
+In-Reply-To: <CAK5sBcE2xxb1NGegn1L_CFH27vzx8kLg06u9fVTo6SZk8_6qJQ@mail.gmail.com>
+References: <1404500590-21712-1-git-send-email-fabf@skynet.be>
+	<20140707055521.GM30239@dragon>
+	<CAK5sBcE2xxb1NGegn1L_CFH27vzx8kLg06u9fVTo6SZk8_6qJQ@mail.gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-powerpc:allmodconfig has been failing for some time with the following
-error.
+On Tue, 8 Jul 2014 09:18:56 +0530
+Sachin Kamat <spk.linux@gmail.com> wrote:
 
-arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
-arch/powerpc/kernel/exceptions-64s.S:1312: Error: attempt to move .org backwards
-make[1]: *** [arch/powerpc/kernel/head_64.o] Error 1
+> Hi Shawn,
+> 
+> On Mon, Jul 7, 2014 at 11:25 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
+> > On Fri, Jul 04, 2014 at 09:03:10PM +0200, Fabian Frederick wrote:
+> >> replace IS_ERR/PTR_ERR
+> >>
+> >> Cc: Shawn Guo <shawn.guo@freescale.com>
+> >> Cc: Sascha Hauer <kernel@pengutronix.de>
+> >> Cc: linux-arm-kernel@lists.infradead.org
+> >> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> >
+> > Applied, thanks.
+> 
+> 
+> I had sent a similar series [1] in May which you rejected. Just
+> curious if something
+> changed between then and now?
 
-A number of attempts to fix the problem by moving around code have been
-unsuccessful and resulted in failed builds for some configurations and
-the discovery of toolchain bugs.
+Hi Sachin,
 
-Fix the problem by disabling RELOCATABLE for COMPILE_TEST builds instead.
-While this is less than perfect, it avoids substantial code changes
-which would otherwise be necessary just to make COMPILE_TEST builds
-happy and might have undesired side effects.
+	I still don't see anything from you for those files in linux-next lately.
+If it was already in some other tree, you can remove my patch or update signed-off-by as it seems
+you made it before me :)
+ 
+Regards,
+Fabian
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- arch/powerpc/Kconfig | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index bd6dd6e..fefe7c8 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -414,7 +414,7 @@ config KEXEC
- config CRASH_DUMP
- 	bool "Build a kdump crash kernel"
- 	depends on PPC64 || 6xx || FSL_BOOKE || (44x && !SMP)
--	select RELOCATABLE if PPC64 || 44x || FSL_BOOKE
-+	select RELOCATABLE if (PPC64 && !COMPILE_TEST) || 44x || FSL_BOOKE
- 	help
- 	  Build a kernel suitable for use as a kdump capture kernel.
- 	  The same kernel binary can be used as production kernel and dump
-@@ -1017,6 +1017,7 @@ endmenu
- if PPC64
- config RELOCATABLE
- 	bool "Build a relocatable kernel"
-+	depends on !COMPILE_TEST
- 	select NONSTATIC_KERNEL
- 	help
- 	  This builds a kernel image that is capable of running anywhere
--- 
-1.9.1
-
-
-
+> 
+> [1] http://patchwork.ozlabs.org/patch/353653/
+> 
+> -- 
+> Regards,
+> Sachin.
