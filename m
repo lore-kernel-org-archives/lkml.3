@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488AbaGHUQj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 16:16:39 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:43043 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754345AbaGHUQh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754402AbaGHUQh (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 8 Jul 2014 16:16:37 -0400
-Date: Tue, 8 Jul 2014 22:16:30 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, nic_swsd@realtek.com
-Subject: Re: [PATCH net] r8169: disable L23
-Message-ID: <20140708201630.GA31885@electric-eye.fr.zoreil.com>
-References: <1394712342-15778-6-Taiwan-albertk@realtek.com>
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:64768 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754338AbaGHUQf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 16:16:35 -0400
+From: behanw@converseincode.com
+To: anurag19aggarwal@gmail.com, catalin.marinas@arm.com, charlebm@gmail.com,
+        dave.long@linaro.org, k.khlebnikov@samsung.com, linux@arm.linux.org.uk,
+        linyongting@gmail.com, Nikolay.Borisov@arm.com, tglx@linutronix.de,
+        u.kleine-koenig@pengutronix.de, will.deacon@arm.com
+Cc: behanw@converseincode.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, rabin@rab.in, rostedt@goodmis.org,
+        dwmw2@infradead.org
+Subject: [PATCH 0/6] LLVMLinux: Patches to enable the kernel to be compiled with clang/LLVM
+Date: Tue,  8 Jul 2014 13:16:10 -0700
+Message-Id: <1404850576-2006-1-git-send-email-behanw@converseincode.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394712342-15778-6-Taiwan-albertk@realtek.com>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hayes Wang <hayeswang@realtek.com> :
-> For RTL8411, RTL8111G, RTL8402, RTL8105, and RTL8106, the nic couldn't
-> leave the power saving mode of L23 for certain situation. This causes
-> the device lost for the system. Disable the L23 mode to avoid it.
+From: Behan Webster <behanw@converseincode.com>
 
-Ok with the patch as it exactly addresses the required hw_start methods
-to cover the aforementionned RTL8xyz range.
+The LLVMLinux project aims to fully build the Linux kernel using both gcc and
+clang (the C front end for the LLVM compiler infrastructure project). 
 
-Can you elaborate what L23 is or should the commit message be reworded
-as "Disable a (yet undocumented) power saving feature that randomly
-causes RTL8411, RTL8111G, RTL8402, RTL8105, and RTL8106 devices to be
-lost on some systems." ?
+Clang only supports global named registers for non-allocatable registers like
+the stack pointer. By centralizing the definition of current_stack_pointer, the
+use of named registers for ARM remains largely unchanged while working for both
+gcc and clang.
 
-If nobody really understands what the bug is nor what the specific
-circumstances that triggers it are, it would be nice to state it clearly.
-If not there is plenty of room to improve the description before it
-comes close to full disclosure.
+Behan Webster (6):
+  arm: LLVMLinux: Add global named register current_stack_pointer for
+    ARM
+  arm: LLVMLinux: Use current_stack_pointer to calculate pt_regs address
+  arm: LLVMLinux: Use current_stack_pointer for return_address
+  arm: LLVMLinux: Use current_stack_pointer in save_stack_trace_tsk
+  arm: LLVMLinux: Calculate current_thread_info from
+    current_stack_pointer
+  arm: LLVMLinux: Use current_stack_pointer in unwind_backtrace
+
+ arch/arm/include/asm/ptrace.h      | 5 ++---
+ arch/arm/include/asm/thread_info.h | 9 +++++++--
+ arch/arm/kernel/return_address.c   | 3 +--
+ arch/arm/kernel/stacktrace.c       | 4 +---
+ arch/arm/kernel/unwind.c           | 3 +--
+ 5 files changed, 12 insertions(+), 12 deletions(-)
 
 -- 
-Ueimor
+1.9.1
+
