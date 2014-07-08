@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932449AbaGHURV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 16:17:21 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932241AbaGHUQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 16:16:58 -0400
-Message-ID: <53BC51B4.4010703@nod.at>
-Date: Tue, 08 Jul 2014 22:16:52 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: KY Srinivasan <kys@microsoft.com>, Haiyang Zhang <haiyangz@microsoft.com>
-CC: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] hyperv: Add netpoll support
-References: <1404811947-5174-1-git-send-email-richard@nod.at> <9fb91c2ee32a4a59a2bec54043a6b9fd@BY2PR03MB299.namprd03.prod.outlook.com> <53BC3AC5.6000203@nod.at> <b2835410139848be8811403e3d7fa708@BY2PR03MB299.namprd03.prod.outlook.com>
-In-Reply-To: <b2835410139848be8811403e3d7fa708@BY2PR03MB299.namprd03.prod.outlook.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S932366AbaGHUQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 16:16:57 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:45673 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932241AbaGHUQy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 16:16:54 -0400
+From: behanw@converseincode.com
+To: anurag19aggarwal@gmail.com, catalin.marinas@arm.com, charlebm@gmail.com,
+        dave.long@linaro.org, k.khlebnikov@samsung.com, linux@arm.linux.org.uk,
+        linyongting@gmail.com, Nikolay.Borisov@arm.com, tglx@linutronix.de,
+        u.kleine-koenig@pengutronix.de, will.deacon@arm.com
+Cc: behanw@converseincode.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, rabin@rab.in, rostedt@goodmis.org,
+        dwmw2@infradead.org
+Subject: [PATCH 6/6] arm: LLVMLinux: Use current_stack_pointer in unwind_backtrace
+Date: Tue,  8 Jul 2014 13:16:16 -0700
+Message-Id: <1404850576-2006-7-git-send-email-behanw@converseincode.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404850576-2006-1-git-send-email-behanw@converseincode.com>
+References: <1404850576-2006-1-git-send-email-behanw@converseincode.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 08.07.2014 22:03, schrieb KY Srinivasan:
-> The VCPU the channel is bound to is available in the channel state. You could use the following code
-> Fragment to ensure that the call is made on the "right" cpu:
-> 
-> smp_call_function_single(dev->channel->target_cpu,
->                                          netvsc_channel_cb, dev->channel, true);
+From: Behan Webster <behanw@converseincode.com>
 
-This won't work as netpoll runs with IRQs disabled.
-->ndo_poll_controller() has to make sure that SKBs can be received and transmitted
-while IRQs are off. I thought calling the channel callback by hand would be enough
-to receive SKBs.
+Use the global current_stack_pointer to get the value of the stack pointer.
+This change supports being able to compile the kernel with both gcc and clang.
 
-Thanks,
-//richard
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+Reviewed-by: Jan-Simon M??ller <dl9pf@gmx.de>
+---
+ arch/arm/kernel/unwind.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/arch/arm/kernel/unwind.c b/arch/arm/kernel/unwind.c
+index e67682f..e20e8dc 100644
+--- a/arch/arm/kernel/unwind.c
++++ b/arch/arm/kernel/unwind.c
+@@ -471,7 +471,6 @@ int unwind_frame(struct stackframe *frame)
+ void unwind_backtrace(struct pt_regs *regs, struct task_struct *tsk)
+ {
+ 	struct stackframe frame;
+-	register unsigned long current_sp asm ("sp");
+ 
+ 	pr_debug("%s(regs = %p tsk = %p)\n", __func__, regs, tsk);
+ 
+@@ -487,7 +486,7 @@ void unwind_backtrace(struct pt_regs *regs, struct task_struct *tsk)
+ 			 ? regs->ARM_pc : regs->ARM_lr;
+ 	} else if (tsk == current) {
+ 		frame.fp = (unsigned long)__builtin_frame_address(0);
+-		frame.sp = current_sp;
++		frame.sp = current_stack_pointer;
+ 		frame.lr = (unsigned long)__builtin_return_address(0);
+ 		frame.pc = (unsigned long)unwind_backtrace;
+ 	} else {
+-- 
+1.9.1
+
