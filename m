@@ -1,224 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754282AbaGHBop (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:44:45 -0400
-Received: from 3.mo5.mail-out.ovh.net ([46.105.40.108]:37689 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752051AbaGHBoo (ORCPT
+	id S1753021AbaGHBxK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:53:10 -0400
+Received: from p02c12o142.mxlogic.net ([208.65.145.75]:35921 "EHLO
+	p02c12o142.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751656AbaGHBxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 21:44:44 -0400
-X-Greylist: delayed 24594 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Jul 2014 21:44:43 EDT
-Date: Mon, 7 Jul 2014 20:40:01 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        devicetree@vger.kernel.org, dbaryshkov@gmail.com,
-        Nicolas FERRE <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        Boris Brezillon <boris@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        dwmw2@infradead.org, linux@maxim.org.za,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 05/18] power: reset: Add AT91 reset driver
-Message-ID: <20140707184001.GH9558@ns203013.ovh.net>
-References: <1404396906-25194-1-git-send-email-maxime.ripard@free-electrons.com>
- <1404396906-25194-8-git-send-email-maxime.ripard@free-electrons.com>
- <F9547E0F-AB97-47E6-BA09-135EE4E1BC73@jcrosoft.com>
- <20140703145957.GH31996@lukather>
- <B425B925-B75E-4761-8CE6-9B12C5AC0469@jcrosoft.com>
- <20140704091443.545d1e08@bbrezillon>
- <20140704090645.GB13487@lukather>
+	Mon, 7 Jul 2014 21:53:07 -0400
+X-MXL-Hash: 53bb4f03193b8c6c-9e4562a6a78df3913a4df70fd9bb6af6cb6ba572
+X-MXL-Hash: 53bb4f0200dce21c-7ab885d9b0ae365840daf7ab5edce6c5ddb1e3c9
+Date: Mon, 7 Jul 2014 21:52:54 -0400
+From: Joe Lawrence <joe.lawrence@stratus.com>
+X-X-Sender: jlaw@jlaw-desktop.mno.stratus.com
+To: Joe Julian <joe@julianfamily.org>
+CC: Joe Lawrence <joe.lawrence@stratus.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: mpt2sas stuck installing
+In-Reply-To: <53B649A6.60501@julianfamily.org>
+Message-ID: <alpine.DEB.2.02.1407072149190.10980@jlaw-desktop.mno.stratus.com>
+References: <20140704013250.088477de@jlaw-desktop.mno.stratus.com> <53B649A6.60501@julianfamily.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140704090645.GB13487@lukather>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Ovh-Tracer-Id: 16796456285551635389
-X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejfedrvddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejfedrvddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Type: text/plain; charset="US-ASCII"
+X-Originating-IP: [134.111.199.152]
+X-AnalysisOut: [v=2.1 cv=OeEWD3jY c=1 sm=1 tr=0 a=o2bo05G+d1rlxuoNbFVhCw==]
+X-AnalysisOut: [:117 a=o2bo05G+d1rlxuoNbFVhCw==:17 a=nXGuE6rTyBAA:10 a=_KQ]
+X-AnalysisOut: [qW7t0BisA:10 a=CdzKgOd8jloA:10 a=BLceEmwcHowA:10 a=kj9zAlc]
+X-AnalysisOut: [Oel0A:10 a=uelBKuKpAAAA:8 a=YlVTAMxIAAAA:8 a=xe5O5S2I-XkTA]
+X-AnalysisOut: [AOPB8oA:9 a=CjuIK1q_8ugA:10]
+X-Spam: [F=0.5000000000; CM=0.500; MH=0.500(2014070726); S=0.200(2014051901)]
+X-MAIL-FROM: <joe.lawrence@stratus.com>
+X-SOURCE-IP: [134.111.1.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11:06 Fri 04 Jul     , Maxime Ripard wrote:
-> On Fri, Jul 04, 2014 at 09:14:43AM +0200, Boris BREZILLON wrote:
-> > On Fri, 4 Jul 2014 11:08:20 +0800
-> > Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com> wrote:
+On Fri, 4 Jul 2014, Joe Julian wrote:
+> On 07/03/2014 10:32 PM, Joe Lawrence wrote:
+> > On Thu, Jul 3 2014 Joe Julian wrote:
+> > > I have a knox enclosure with an unresponsive drive. When the mpt2sas
+> > > module is loaded the module loading process hangs. modprobe/insmod is
+> > > stuck and any further attempts to load modules also hang. By
+> > > blacklisting the module and loading it last, I can get the computer to
+> > > boot, but attempting to manually load the module will still hang. When I
+> > > shut down, I get the following:
+> > > 
+> > > [55473.508343] mpt2sas1: _config_request: timeout
+> > > [55474.510395] BUG: unable to handle kernel paging request at
+> > > ffffc90020ae0000
+> > > [55474.513048] IP: [<ffffffffa03c00f0>]
+> > > mpt2sas_base_get_iocstate+0x10/0x30 [mpt2sas]
+> > > [55474.525196] PGD 103f80c067 PUD 203f003067 PMD 1026dca067 PTE 0
+> > > [55474.526115] Oops: 0000 [#1] SMP
+> > > [55474.527837] Modules linked in: raid456 async_pq async_xor xor
+> > > async_memcpy async_raid6_recov raid6_pq async_tx ses enclosure mpt2sas
+> > > raid_class rdma_ucm ib_ucm rdma_cm iw_cm ib_addr ib_ipoib ib_cm ib_uverbs
+> > > ib_umad mlx4_en mlx4_ib(-) ib_sa ib_mad ib_core coretemp mlx4_core
+> > > kvm_intel kvm 8021q garp stp ghash_clmulni_intel llc aesni_intel
+> > > ablk_helper cryptd nfsd lrw aes_x86_64 xts psmouse gf128mul sb_edac
+> > > nfs_acl auth_rpcgss edac_core mei microcode serio_raw mac_hid lp lpc_ich
+> > > nfs fscache parport lockd sunrpc ext2 isci libsas ahci libahci e1000e
+> > > scsi_transport_sas [last unloaded: mlx4_core]
+> > > [55474.538831] CPU 2
+> > > [55474.539218] Pid: 3516, comm: scsi_eh_10 Not tainted 3.8.0-38-generic
+> > > #56~precise1-Ubuntu Quanta F03R /Winterfell
+> > > [55474.541004] RIP: 0010:[<ffffffffa03c00f0>] [<ffffffffa03c00f0>]
+> > > mpt2sas_base_get_iocstate+0x10/0x30 [mpt2sas]
+> > > [55474.542772] RSP: 0018:ffff881019a39ae8  EFLAGS: 00010246
+> > > [55474.543590] RAX: ffffc90020ae0000 RBX: ffff88100fd1e6b0 RCX:
+> > > 0000000000000000
+> > > [55474.546285] RDX: ffff881019a39fd8 RSI: 0000000000000001 RDI:
+> > > ffff88100fd1e6b0
+> > > [55474.548451] RBP: ffff881019a39ae8 R08: 0000000000000000 R09:
+> > > 0000000000000000
+> > > [55474.549585] R10: 00000000000007db R11: 00000000000007da R12:
+> > > 0000000000000001
+> > > [55474.550689] R13: ffff881019a39bbc R14: 000000000000ffff R15:
+> > > ffff881019a39c80
+> > > [55474.551791] FS:  0000000000000000(0000) GS:ffff88103fc40000(0000)
+> > > knlGS:0000000000000000
+> > > [55474.553044] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> > > [55474.553928] CR2: ffffc90020ae0000 CR3: 0000000001c0d000 CR4:
+> > > 00000000000407e0
+> > > [55474.555187] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+> > > 0000000000000000
+> > > [55474.557030] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+> > > 0000000000000400
+> > > [55474.558139] Process scsi_eh_10 (pid: 3516, threadinfo ffff881019a38000,
+> > > task ffff8810257b5d00)
+> > > [55474.560748] Stack:
+> > > [55474.561069]  ffff881019a39b98 ffffffffa03c183a 0000000000000006
+> > > 0000000000000006
+> > > [55474.562218]  ffff88100fd1eb00 ffff88100fd1eaf8 ffff88100fd1e6d0
+> > > 0000000000000000
+> > > [55474.563343]  ffff881019a30000 ffffffff8105b3ea ffff88100fd1ead8
+> > > 0000000000000000
+> > > [55474.564595] Call Trace:
+> > > [55474.565003]  [<ffffffffa03c183a>]
+> > > _config_request.constprop.5+0x15a/0x590 [mpt2sas]
+> > > [55474.568223]  [<ffffffff8105b3ea>] ? console_unlock+0x1a/0x30
+> > > [55474.569896]  [<ffffffffa03c2a3a>]
+> > > mpt2sas_config_get_expander_pg0+0x8a/0xf0 [mpt2sas]
+> > > [55474.571322]  [<ffffffffa03c589c>]
+> > > _scsih_search_responding_expanders+0x5c/0xe0 [mpt2sas]
+> > > [55474.572582]  [<ffffffffa03c4599>] ?
+> > > _scsih_search_responding_sas_devices+0xa9/0xc0 [mpt2sas]
+> > > [55474.573912]  [<ffffffffa03cd43e>]
+> > > mpt2sas_scsih_reset_handler+0xbe/0x1a0 [mpt2sas]
+> > > [55474.575191]  [<ffffffffa03bf91f>] _base_reset_handler+0x1f/0x40
+> > > [mpt2sas]
+> > > [55474.576250]  [<ffffffffa03c0d9e>]
+> > > mpt2sas_base_hard_reset_handler+0x1ae/0x1e0 [mpt2sas]
+> > > [55474.577500]  [<ffffffffa03c499c>] _scsih_host_reset+0x5c/0xb0 [mpt2sas]
+> > > [55474.578554]  [<ffffffff814ac2f3>] scsi_try_host_reset+0x53/0x110
+> > > [55474.579729]  [<ffffffff814adbbc>] scsi_eh_host_reset+0x4c/0x170
+> > > [55474.580764]  [<ffffffff814ae532>] scsi_eh_ready_devs+0x82/0xa0
+> > > [55474.581866]  [<ffffffff814aef2d>] scsi_unjam_host+0xed/0x1d0
+> > > [55474.584848]  [<ffffffff814af175>] scsi_error_handler+0x165/0x1c0
+> > > [55474.585984]  [<ffffffff814af010>] ? scsi_unjam_host+0x1d0/0x1d0
+> > > [55474.592375]  [<ffffffff8107f2e0>] kthread+0xc0/0xd0
+> > > [55474.594325]  [<ffffffff8107f220>] ? flush_kthread_worker+0xb0/0xb0
+> > > [55474.595654]  [<ffffffff816ff1ac>] ret_from_fork+0x7c/0xb0
+> > > [55474.598729]  [<ffffffff8107f220>] ? flush_kthread_worker+0xb0/0xb0
+> > > [55474.607501] Code: c7 c2 f8 7d 3d a0 48 c7 c7 52 ac 3d a0 31 c0 e8 f1 de
+> > > 31 e1 e9 f6 fe ff ff 66 90 66 66 66 66 90 55 48 8b 87 88 00 00 00 48 89 e5
+> > > <8b> 00 89 c2 81 e2 00 00 00 f0 85 f6 0f 45 c2 5d c3 66 66 66 66
+> > > [55474.611823] RIP  [<ffffffffa03c00f0>]
+> > > mpt2sas_base_get_iocstate+0x10/0x30 [mpt2sas]
+> > > [55474.613007]  RSP <ffff881019a39ae8>
+> > > [55474.613548] CR2: ffffc90020ae0000
+> > > [55474.614183] ---[ end trace a817d8e30eb9f07c ]---
+> > Hi Joe,
 > > 
-> > > 
-> > > On Jul 3, 2014, at 10:59 PM, Maxime Ripard <maxime.ripard@free-electrons.com> wrote:
-> > > 
-> > > > On Thu, Jul 03, 2014 at 10:39:08PM +0800, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> > > >>> +++ b/drivers/power/reset/at91-reset.c
-> > > >>> @@ -0,0 +1,202 @@
-> > > >>> +/*
-> > > >>> + * Atmel AT91 SAM9 SoCs reset code
-> > > >>> + *
-> > > >>> + * Copyright (C) 2014 Maxime Ripard
-> > > >>> + *
-> > > >>> + * Maxime Ripard <maxime.ripard@free-electrons.com>
-> > > >> 
-> > > >> you can not own the copyright as it’s basically a copy of other
-> > > >> people code
-> > > > 
-> > > > The previous names are missing, right.
-> > > > 
-> > > >>> + *
-> > > >>> + * This file is licensed under the terms of the GNU General Public
-> > > >>> + * License version 2.  This program is licensed "as is" without any
-> > > >>> + * warranty of any kind, whether express or implied.
-> > > >>> + */
-> > > >>> +
-> > > >>> +#include <linux/io.h>
-> > > >>> +#include <linux/module.h>
-> > > >>> +#include <linux/of_address.h>
-> > > >>> +#include <linux/platform_device.h>
-> > > >>> +#include <linux/reboot.h>
-> > > >>> +
-> > > >>> +#include <asm/system_misc.h>
-> > > >>> +
-> > > >>> +#include <mach/at91sam9_ddrsdr.h>
-> > > >>> +#include <mach/at91sam9_sdramc.h>
-> > > >>> +
-> > > >>> +#define AT91_RSTC_CR	0x00		/* Reset Controller Control Register */
-> > > >>> +#define	AT91_RSTC_PROCRST	BIT(0)		/* Processor Reset */
-> > > >>> +#define	AT91_RSTC_PERRST	BIT(2)		/* Peripheral Reset */
-> > > >>> +#define	AT91_RSTC_EXTRST	BIT(3)		/* External Reset */
-> > > >>> +#define	AT91_RSTC_KEY		(0xa5 << 24)	/* KEY Password */
-> > > >>> +
-> > > >>> +#define AT91_RSTC_SR	0x04		/* Reset Controller Status Register */
-> > > >>> +#define	AT91_RSTC_URSTS		BIT(0)		/* User Reset Status */
-> > > >>> +#define	AT91_RSTC_RSTTYP	GENMASK(10, 8)	/* Reset Type */
-> > > >>> +#define	AT91_RSTC_NRSTL		BIT(16)		/* NRST Pin Level */
-> > > >>> +#define	AT91_RSTC_SRCMP		BIT(17)		/* Software Reset Command in Progress */
-> > > >>> +
-> > > >>> +#define AT91_RSTC_MR	0x08		/* Reset Controller Mode Register */
-> > > >>> +#define	AT91_RSTC_URSTEN	BIT(0)		/* User Reset Enable */
-> > > >>> +#define	AT91_RSTC_URSTIEN	BIT(4)		/* User Reset Interrupt Enable */
-> > > >>> +#define	AT91_RSTC_ERSTL		GENMASK(11, 8)	/* External Reset Length */
-> > > >>> +
-> > > >>> +enum reset_type {
-> > > >>> +	RESET_TYPE_GENERAL	= 0,
-> > > >>> +	RESET_TYPE_WAKEUP	= 1,
-> > > >>> +	RESET_TYPE_WATCHDOG	= 2,
-> > > >>> +	RESET_TYPE_SOFTWARE	= 3,
-> > > >>> +	RESET_TYPE_USER		= 4,
-> > > >>> +};
-> > > >>> +
-> > > >>> +static void __iomem *at91_ramc_base[2], *at91_rstc_base;
-> > > >>> +
-> > > >>> +static void at91sam9_restart(enum reboot_mode mode, const char *cmd)
-> > > >>> +{
-> > > >>> +	asm volatile(
-> > > >>> +		".balign 32\n\t"
-> > > >>> +
-> > > >>> +		"str	%2, [%0, #" __stringify(AT91_SDRAMC_TR) "]\n\t"
-> > > >>> +		"str	%3, [%0, #" __stringify(AT91_SDRAMC_LPR) "]\n\t"
-> > > >>> +		"str	%4, [%1, #" __stringify(AT91_RSTC_CR) "]\n\t"
-> > > >>> +
-> > > >>> +		"b	.\n\t"
-> > > >>> +		:
-> > > >>> +		: "r" (at91_ramc_base[0]),
-> > > >>> +		  "r" (at91_rstc_base),
-> > > >>> +		  "r" (1),
-> > > >>> +		  "r" (AT91_SDRAMC_LPCB_POWER_DOWN),
-> > > >>> +		  "r" (AT91_RSTC_KEY | AT91_RSTC_PERRST | AT91_RSTC_PROCRST));
-> > > >>> +}
-> > > >>> +
-> > > >>> +static void at91sam9g45_restart(enum reboot_mode mode, const char *cmd)
-> > > >>> +{
-> > > >>> +	asm volatile(
-> > > >>> +		"cmp	%1, #0\n\t"
-> > > >>> +		"beq	1f\n\t"
-> > > >>> +
-> > > >>> +		"ldr	r0, [%1]\n\t"
-> > > >>> +		"cmp	r0, #0\n\t"
-> > > >>> +
-> > > >>> +		".balign 32\n\t"
-> > > >>> +
-> > > >>> +		"1:	str	%3, [%0, #" __stringify(AT91_DDRSDRC_RTR) "]\n\t"
-> > > >>> +		"	str	%4, [%0, #" __stringify(AT91_DDRSDRC_RTR) "]\n\t"
-> > > >>> +		"	strne	%3, [%1, #" __stringify(AT91_DDRSDRC_RTR) "]\n\t"
-> > > >>> +		"	strne	%4, [%1, #" __stringify(AT91_DDRSDRC_RTR) "]\n\t"
-> > > >>> +		"	str	%5, [%2, #" __stringify(AT91_RSTC_CR) "]\n\t"
-> > > >>> +
-> > > >>> +		"	b	.\n\t"
-> > > >>> +		:
-> > > >>> +		: "r" (at91_ramc_base[0]),
-> > > >>> +		  "r" (at91_ramc_base[1]),
-> > > >>> +		  "r" (at91_rstc_base),
-> > > >>> +		  "r" (1),
-> > > >>> +		  "r" (AT91_DDRSDRC_LPCB_POWER_DOWN),
-> > > >>> +		  "r" (AT91_RSTC_KEY | AT91_RSTC_PERRST | AT91_RSTC_PROCRST)
-> > > >>> +		: "r0");
-> > > >>> +}
-> > > >>> +
-> > > >> move this to an assembly file more easy to read than a C code
-> > > > 
-> > > > Nope. It's a pain to pass variable to an external assembly file, and
-> > > > this makes the use of global variable pretty much mandatory, which is
-> > > > definitely not great.
-> > > 
-> > > Not at all I did for the PM slow clock code just write a function and pas it as a parameter
-> > > you have 3
-> > > 
-> > > so basically you have to use the current and just pass at91_ramc_base[0], at91_ramc_base[1]
-> > > and at91_rstc_base
-> > > it’s 3 lignes of modification, if you have at91_ramc_base and at91_ramc_base same
-> > > 
+> > I was investigating a crash inside mpt2sas_base_get_iocstate just
+> > earlier today.  In my case, it appeared that ioc->chip had been cleared
+> > when mpt2sas_base_get_iocstate tried to reference through it.  This was
+> > with a newer kernel on RHEL7, but it also occured early in
+> > mpt2sas_base_get_iocstate and EAX held the bogo address.
 > > 
-> > Yes, retrieving function parameters from assembly code is not that
-> > complicated (the first 4 pointer values are accessible through r0-r3),
-> > but then you'll have to store your assembly file somewhere.
+> > A few follow up questions:
+> > 
+> > Do you happen to have kdump enabled?
+> > Were there any other interesting log messages after loading the driver?
+> > Is this crash easily reproducible?
+> > 
+> > Regards,
+> > 
+> > -- Joe
+> This was a production server, so no kdump enabled. There's no relevant log
+> messages.
 > 
-> Like I was saying, there's a strong preference for the inline
-> assembly...
+> I do have a staging environment I can test in, and yes, I think I can easily
+> repro this.
 
-inline is horrible to read and maintain NACK
+Any chance of posting the rest of the kernel log?  (Or at least those 
+lines containing "mpt2sas" ?
 
-keep it in an assembly file it's so easy to read and follow
+Thanks,
 
-and you just have to move the file existing to the driver/power
-
-Best Regards,
-J.
-> 
-> > Subsystem directories (drivers/xxx) are supposed to be architecture
-> > agnostics, and I'm not sure subsystem maintainers will accept these
-> > assembly files in their directory.
-> 
-> ... and I've told that some maintainers don't even want assembly files
-> in their maintainance area.
-> 
-> > ITOH, leaving these assembly files in arch/arm/mach-at91 will just
-> > spread the code over linux src tree and will definitely not help other
-> > people find out the relationship between these files.
-> 
-> Given that the end-goal is to remove most (if not all) of mach-at91,
-> it seems a bit backward to me.
-> 
-> > Regarding the readability concern, I think some comments could help
-> > understanding what's being done here.
-> 
-> Yep, I have been a bit too eager to send the patches, and forgot to
-> reintroduce the comments that were there in the first place.
-> 
-> Maxime
-> 
-> -- 
-> Maxime Ripard, Free Electrons
-> Embedded Linux, Kernel and Android engineering
-> http://free-electrons.com
-
-
+-- Joe
