@@ -1,55 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188AbaGHSDP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 14:03:15 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:18472 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755092AbaGHSDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 14:03:11 -0400
-X-IronPort-AV: E=Sophos;i="5.01,626,1400025600"; 
-   d="scan'208";a="150676002"
-Message-ID: <53BC324B.5090600@citrix.com>
-Date: Tue, 8 Jul 2014 19:02:51 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: <konrad@kernel.org>, <xen-devel@lists.xenproject.org>,
-        <boris.ostrovsky@oracle.com>, <linux-kernel@vger.kernel.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v3 4/7] xen/pciback: Implement PCI reset slot or bus with
- 'do_flr' SysFS attribute
-References: <1404845909-13563-1-git-send-email-konrad@kernel.org> <1404845909-13563-5-git-send-email-konrad@kernel.org>
-In-Reply-To: <1404845909-13563-5-git-send-email-konrad@kernel.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+	id S1755345AbaGHSFd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 14:05:33 -0400
+Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:52511 "EHLO
+	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755293AbaGHSF3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 14:05:29 -0400
+X-Yandex-Uniq: 78a35862-b5cc-4a76-93b4-d93f5edb43a2
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@kernel.org, dsahern@gmail.com, stfomichev@yandex-team.ru
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] perf trace: add pagefault statistics
+Date: Tue,  8 Jul 2014 22:05:16 +0400
+Message-Id: <1404842716-19190-1-git-send-email-stfomichev@yandex-team.ru>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/14 19:58, konrad@kernel.org wrote:
-> --- a/Documentation/ABI/testing/sysfs-driver-pciback
-> +++ b/Documentation/ABI/testing/sysfs-driver-pciback
-> @@ -82,3 +82,14 @@ Description:
->                  device is shared, enabled, or on a level interrupt line.
->                  Writing a string of DDDD:BB:DD.F will toggle the state.
->                  This is Domain:Bus:Device.Function where domain is optional.
-> +
-> +What:           /sys/bus/pci/drivers/pciback/do_flr
-> +Date:           July 2014
-> +KernelVersion:  3.16
-> +Contact:        xen-devel@lists.xenproject.org
-> +Description:
-> +                An option to slot or bus reset an PCI device owned by
-> +                Xen PCI backend. Writing a string of DDDD:BB:DD.F will cause
-> +                the driver to perform an slot or bus reset if the device
-> +                supports. It also checks to make sure that all of the devices
-> +                under the bridge are owned by Xen PCI backend.
+'perf trace' can show summary of events using -S option. This commit
+also reports number of major/minor pagefault events in this summary.
 
-Not sure I like this new interface.  I solved this by adding a new reset
-file that looked like the regular one the pci would have if it supported
-FLR.  I'm fairly sure I posted a series for this.  Was there a reason
-you didn't do this?
+$ perf trace -s --pf all -- sleep 1
 
-David
+ Summary of events:
+
+ sleep (18604), 275 events, 99.6%, 197 minfaults, 0.000 msec
+
+   syscall            calls      min       avg       max      stddev
+                               (msec)    (msec)    (msec)        (%)
+   --------------- -------- --------- --------- ---------     ------
+   read                   2     0.000     0.001     0.002    100.00%
+   open                   3     0.004     0.005     0.007     21.13%
+   close                  3     0.001     0.001     0.001      1.37%
+   fstat                  3     0.001     0.002     0.002     10.66%
+   mmap                   8     0.002     0.004     0.006     10.69%
+   mprotect               4     0.003     0.005     0.008     24.68%
+   munmap                 1     0.005     0.005     0.005      0.00%
+   brk                    3     0.001     0.002     0.003     28.08%
+   access                 3     0.002     0.003     0.005     24.48%
+   nanosleep              1  1000.747  1000.747  1000.747      0.00%
+   execve                 8     0.000     0.033     0.246     91.00%
+   arch_prctl             1     0.001     0.001     0.001      0.00%
+
+Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+---
+ tools/perf/builtin-trace.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index dc7a694b61fe..b94dffc5fa85 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -1133,6 +1133,7 @@ struct thread_trace {
+ 	u64		  exit_time;
+ 	bool		  entry_pending;
+ 	unsigned long	  nr_events;
++	unsigned long	  pfmaj, pfmin;
+ 	char		  *entry_str;
+ 	double		  runtime_ms;
+ 	struct {
+@@ -1804,8 +1805,20 @@ static int trace__pgfault(struct trace *trace,
+ 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 	struct addr_location al;
+ 	char map_type = 'd';
++	struct thread_trace *ttrace;
+ 
+ 	thread = machine__findnew_thread(trace->host, sample->pid, sample->tid);
++	ttrace = thread__trace(thread, trace->output);
++	if (ttrace == NULL)
++		return -1;
++
++	if (evsel->attr.config == PERF_COUNT_SW_PAGE_FAULTS_MAJ)
++		ttrace->pfmaj++;
++	else
++		ttrace->pfmin++;
++
++	if (trace->summary_only)
++		return 0;
+ 
+ 	thread__find_addr_location(thread, trace->host, cpumode, MAP__FUNCTION,
+ 			      sample->ip, &al);
+@@ -2346,6 +2359,10 @@ static int trace__fprintf_one_thread(struct thread *thread, void *priv)
+ 	printed += fprintf(fp, " %s (%d), ", thread__comm_str(thread), thread->tid);
+ 	printed += fprintf(fp, "%lu events, ", ttrace->nr_events);
+ 	printed += fprintf(fp, "%.1f%%", ratio);
++	if (ttrace->pfmaj)
++		printed += fprintf(fp, ", %lu majfaults", ttrace->pfmaj);
++	if (ttrace->pfmin)
++		printed += fprintf(fp, ", %lu minfaults", ttrace->pfmin);
+ 	printed += fprintf(fp, ", %.3f msec\n", ttrace->runtime_ms);
+ 	printed += thread__dump_stats(ttrace, trace, fp);
+ 
+-- 
+1.9.1
+
