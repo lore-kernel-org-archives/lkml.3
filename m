@@ -1,128 +1,343 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755259AbaGHRde (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 13:33:34 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:31696 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753882AbaGHRdc (ORCPT
+	id S1754864AbaGHRjr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 13:39:47 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:37860 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135AbaGHRjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 13:33:32 -0400
-Message-ID: <53BC2B64.8070502@atmel.com>
-Date: Tue, 8 Jul 2014 19:33:24 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 8 Jul 2014 13:39:46 -0400
+Date: Tue, 8 Jul 2014 13:39:34 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+Cc: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xenproject.org
+Subject: Re: [Xen-devel] [PATCH net-next v3] xen-netback: Adding debugfs
+ "io_ring_qX" files
+Message-ID: <20140708173934.GA6597@laptop.dumpdata.com>
+References: <1404837194-16726-1-git-send-email-zoltan.kiss@citrix.com>
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>, <linux@maxim.org.za>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <dwmw2@infradead.org>, <dbaryshkov@gmail.com>
-CC: Boris Brezillon <boris@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 01/18] power: reset: Add if statement isntead of multiple
- depends on
-References: <1404743131-24569-1-git-send-email-maxime.ripard@free-electrons.com> <1404743131-24569-2-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1404743131-24569-2-git-send-email-maxime.ripard@free-electrons.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404837194-16726-1-git-send-email-zoltan.kiss@citrix.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nit-pik: In subject: s/isntead/instead/
+. snip..
+>  typedef unsigned int pending_ring_idx_t;
+>  #define INVALID_PENDING_RING_IDX (~0U)
+> @@ -224,6 +225,10 @@ struct xenvif {
+>  	struct xenvif_queue *queues;
+>  	unsigned int num_queues; /* active queues, resource allocated */
+>  
+> +#ifdef CONFIG_DEBUG_FS
+> +	struct dentry *xenvif_dbg_root;
+> +#endif /* CONFIG_DEBUG_FS */
 
-On 07/07/2014 16:25, Maxime Ripard :
-> All the config option so far are depending on the POWER_RESET symbol
-> 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->  drivers/power/reset/Kconfig | 17 +++++++++--------
->  1 file changed, 9 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-> index bdcf5173e377..19d546c5edfa 100644
-> --- a/drivers/power/reset/Kconfig
-> +++ b/drivers/power/reset/Kconfig
-> @@ -6,15 +6,17 @@ menuconfig POWER_RESET
->  
->  	  Say Y here to enable board reset and power off
->  
-> +if POWER_RESET
+Usually those sort of comments are good when the code inside the #ifdef
+spans more than one page. I think you are on the safe side if you
+remove it :-)
+
 > +
->  config POWER_RESET_AS3722
->  	bool "ams AS3722 power-off driver"
-> -	depends on MFD_AS3722 && POWER_RESET
-> +	depends on MFD_AS3722
->  	help
->  	  This driver supports turning off board via a ams AS3722 power-off.
+>  	/* Miscellaneous private stuff. */
+>  	struct net_device *dev;
+>  };
+> @@ -297,10 +302,16 @@ static inline pending_ring_idx_t nr_pending_reqs(struct xenvif_queue *queue)
+>  /* Callback from stack when TX packet can be released */
+>  void xenvif_zerocopy_callback(struct ubuf_info *ubuf, bool zerocopy_success);
 >  
->  config POWER_RESET_AXXIA
->  	bool "LSI Axxia reset driver"
-> -	depends on POWER_RESET && ARCH_AXXIA
-> +	depends on ARCH_AXXIA
->  	help
->  	  This driver supports restart for Axxia SoC.
+> +irqreturn_t xenvif_interrupt(int irq, void *dev_id);
+> +
+>  extern bool separate_tx_rx_irq;
 >  
-> @@ -22,7 +24,7 @@ config POWER_RESET_AXXIA
+>  extern unsigned int rx_drain_timeout_msecs;
+>  extern unsigned int rx_drain_timeout_jiffies;
+>  extern unsigned int xenvif_max_queues;
 >  
->  config POWER_RESET_GPIO
->  	bool "GPIO power-off driver"
-> -	depends on OF_GPIO && POWER_RESET
-> +	depends on OF_GPIO
->  	help
->  	  This driver supports turning off your board via a GPIO line.
->  	  If your board needs a GPIO high/low to power down, say Y and
-> @@ -30,13 +32,13 @@ config POWER_RESET_GPIO
+> +#ifdef CONFIG_DEBUG_FS
+> +extern struct dentry *xen_netback_dbg_root;
+> +#endif /* CONFIG_DEBUG_FS */
+
+Ditto
+
+> +
+>  #endif /* __XEN_NETBACK__COMMON_H__ */
+> diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
+> index 9e97c7c..ef75b45 100644
+> --- a/drivers/net/xen-netback/interface.c
+> +++ b/drivers/net/xen-netback/interface.c
+> @@ -102,7 +102,7 @@ static irqreturn_t xenvif_rx_interrupt(int irq, void *dev_id)
+>  	return IRQ_HANDLED;
+>  }
 >  
->  config POWER_RESET_MSM
->  	bool "Qualcomm MSM power-off driver"
-> -	depends on POWER_RESET && ARCH_QCOM
-> +	depends on ARCH_QCOM
->  	help
->  	  Power off and restart support for Qualcomm boards.
+> -static irqreturn_t xenvif_interrupt(int irq, void *dev_id)
+> +irqreturn_t xenvif_interrupt(int irq, void *dev_id)
+>  {
+>  	xenvif_tx_interrupt(irq, dev_id);
+>  	xenvif_rx_interrupt(irq, dev_id);
+> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+> index 1844a47..77127ca 100644
+> --- a/drivers/net/xen-netback/netback.c
+> +++ b/drivers/net/xen-netback/netback.c
+> @@ -1987,6 +1987,13 @@ static int __init netback_init(void)
 >  
->  config POWER_RESET_QNAP
->  	bool "QNAP power-off driver"
-> -	depends on OF_GPIO && POWER_RESET && PLAT_ORION
-> +	depends on OF_GPIO && PLAT_ORION
->  	help
->  	  This driver supports turning off QNAP NAS devices by sending
->  	  commands to the microcontroller which controls the main power.
-> @@ -54,14 +56,13 @@ config POWER_RESET_RESTART
->  config POWER_RESET_SUN6I
->  	bool "Allwinner A31 SoC reset driver"
->  	depends on ARCH_SUNXI
-> -	depends on POWER_RESET
->  	help
->  	  Reboot support for the Allwinner A31 SoCs.
+>  	rx_drain_timeout_jiffies = msecs_to_jiffies(rx_drain_timeout_msecs);
 >  
->  config POWER_RESET_VEXPRESS
->  	bool "ARM Versatile Express power-off and reset driver"
->  	depends on ARM || ARM64
-> -	depends on POWER_RESET && VEXPRESS_CONFIG
-> +	depends on VEXPRESS_CONFIG
->  	help
->  	  Power off and reset support for the ARM Ltd. Versatile
->  	  Express boards.
-> @@ -69,7 +70,6 @@ config POWER_RESET_VEXPRESS
->  config POWER_RESET_XGENE
->  	bool "APM SoC X-Gene reset driver"
->  	depends on ARM64
-> -	depends on POWER_RESET
->  	help
->  	  Reboot support for the APM SoC X-Gene Eval boards.
+> +#ifdef CONFIG_DEBUG_FS
+> +	xen_netback_dbg_root = debugfs_create_dir("xen-netback", NULL);
+> +	if (IS_ERR_OR_NULL(xen_netback_dbg_root))
+> +		pr_warn("Init of debugfs returned %ld!\n",
+> +			PTR_ERR(xen_netback_dbg_root));
+> +#endif /* CONFIG_DEBUG_FS */
+> +
+>  	return 0;
 >  
-> @@ -80,3 +80,4 @@ config POWER_RESET_KEYSTONE
->  	help
->  	  Reboot support for the KEYSTONE SoCs.
+>  failed_init:
+> @@ -1997,6 +2004,10 @@ module_init(netback_init);
 >  
-> +endif
+>  static void __exit netback_fini(void)
+>  {
+> +#ifdef CONFIG_DEBUG_FS
+> +	if (!IS_ERR_OR_NULL(xen_netback_dbg_root))
+> +		debugfs_remove_recursive(xen_netback_dbg_root);
+> +#endif /* CONFIG_DEBUG_FS */
+>  	xenvif_xenbus_fini();
+>  }
+>  module_exit(netback_fini);
+> diff --git a/drivers/net/xen-netback/xenbus.c b/drivers/net/xen-netback/xenbus.c
+> index 3d85acd..03f9b08 100644
+> --- a/drivers/net/xen-netback/xenbus.c
+> +++ b/drivers/net/xen-netback/xenbus.c
+> @@ -44,6 +44,173 @@ static void unregister_hotplug_status_watch(struct backend_info *be);
+>  static void set_backend_state(struct backend_info *be,
+>  			      enum xenbus_state state);
+>  
+> +#ifdef CONFIG_DEBUG_FS
+> +struct dentry *xen_netback_dbg_root = NULL;
+> +
+> +static int xenvif_read_io_ring(struct seq_file *m, void *v)
+> +{
+> +	struct xenvif_queue *queue = m->private;
+> +	struct xen_netif_tx_back_ring *tx_ring = &queue->tx;
+> +	struct xen_netif_rx_back_ring *rx_ring = &queue->rx;
+> +
+> +	if (tx_ring->sring) {
+> +		struct xen_netif_tx_sring *sring = tx_ring->sring;
+> +
+> +		seq_printf(m, "Queue %d\nTX: nr_ents %u\n", queue->id,
+> +			   tx_ring->nr_ents);
+> +		seq_printf(m, "req prod %u (%d) cons %u (%d) event %u (%d)\n",
+> +			   sring->req_prod,
+> +			   sring->req_prod - sring->rsp_prod,
+> +			   tx_ring->req_cons,
+> +			   tx_ring->req_cons - sring->rsp_prod,
+> +			   sring->req_event,
+> +			   sring->req_event - sring->rsp_prod);
+> +		seq_printf(m, "rsp prod %u (base) pvt %u (%d) event %u (%d)\n",
+> +			   sring->rsp_prod,
+> +			   tx_ring->rsp_prod_pvt,
+> +			   tx_ring->rsp_prod_pvt - sring->rsp_prod,
+> +			   sring->rsp_event,
+> +			   sring->rsp_event - sring->rsp_prod);
+> +		seq_printf(m, "pending prod %u pending cons %u nr_pending_reqs %u\n",
+> +			   queue->pending_prod,
+> +			   queue->pending_cons,
+> +			   nr_pending_reqs(queue));
+> +		seq_printf(m, "dealloc prod %u dealloc cons %u dealloc_queue %u\n\n",
+> +			   queue->dealloc_prod,
+> +			   queue->dealloc_cons,
+> +			   queue->dealloc_prod - queue->dealloc_cons);
+> +	}
+> +
+> +	if (rx_ring->sring) {
+> +		struct xen_netif_rx_sring *sring = rx_ring->sring;
+> +
+> +		seq_printf(m, "RX: nr_ents %u\n", rx_ring->nr_ents);
+> +		seq_printf(m, "req prod %u (%d) cons %u (%d) event %u (%d)\n",
+> +			   sring->req_prod,
+> +			   sring->req_prod - sring->rsp_prod,
+> +			   rx_ring->req_cons,
+> +			   rx_ring->req_cons - sring->rsp_prod,
+> +			   sring->req_event,
+> +			   sring->req_event - sring->rsp_prod);
+> +		seq_printf(m, "rsp prod %u (base) pvt %u (%d) event %u (%d)\n\n",
+> +			   sring->rsp_prod,
+> +			   rx_ring->rsp_prod_pvt,
+> +			   rx_ring->rsp_prod_pvt - sring->rsp_prod,
+> +			   sring->rsp_event,
+> +			   sring->rsp_event - sring->rsp_prod);
+> +	}
+> +
+> +	seq_printf(m, "NAPI state: %lx NAPI weight: %d TX queue len %u\n"
+> +		   "Credit timer_pending: %d, credit: %lu, usec: %lu\n"
+> +		   "remaining: %lu, expires: %lu, now: %lu\n",
+> +		   queue->napi.state, queue->napi.weight,
+> +		   skb_queue_len(&queue->tx_queue),
+> +		   timer_pending(&queue->credit_timeout),
+> +		   queue->credit_bytes,
+> +		   queue->credit_usec,
+> +		   queue->remaining_credit,
+> +		   queue->credit_timeout.expires,
+> +		   jiffies);
+> +
+> +	return 0;
+> +}
+> +
+> +#define XENVIF_KICK_STR "kick"
+> +
+> +static ssize_t
+> +xenvif_write_io_ring(struct file *filp, const char __user *buf, size_t count,
+> +		     loff_t *ppos)
+> +{
+> +	struct xenvif_queue *queue =
+> +		((struct seq_file *)filp->private_data)->private;
+> +	int len;
+> +	char write[sizeof(XENVIF_KICK_STR)];
+> +
+> +	/* don't allow partial writes and check the length */
+> +	if (*ppos != 0)
+> +		return 0;
+> +	if (count < sizeof(XENVIF_KICK_STR) - 1)
+> +		return -ENOSPC;
+> +
+> +	len = simple_write_to_buffer(write,
+> +				     sizeof(write),
+> +				     ppos,
+> +				     buf,
+> +				     count);
+> +	if (len < 0)
+> +		return len;
+> +
+> +	if (!strncmp(write, XENVIF_KICK_STR, sizeof(XENVIF_KICK_STR) - 1))
+> +		xenvif_interrupt(0, (void *)queue);
+> +	else
+> +		pr_warn("Unknown command to io_ring_q%d. Available: kick\n",
+> +			queue->id);
+
+count = -EINVAL;
+
+
+> +	return count;
+> +}
+> +
+> +static int xenvif_dump_open(struct inode *inode, struct file *filp)
+> +{
+> +	int ret;
+> +	void *queue = NULL;
+> +
+> +	if (inode->i_private)
+> +		queue = inode->i_private;
+> +	ret = single_open(filp, xenvif_read_io_ring, queue);
+> +	filp->f_mode |= FMODE_PWRITE;
+> +	return ret;
+> +}
+> +
+> +static const struct file_operations xenvif_dbg_io_ring_ops_fops = {
+> +	.owner = THIS_MODULE,
+> +	.open = xenvif_dump_open,
+> +	.read = seq_read,
+> +	.llseek = seq_lseek,
+> +	.release = single_release,
+> +	.write = xenvif_write_io_ring,
+> +};
+> +
+> +static void xenvif_debugfs_addif(struct xenvif_queue *queue)
+> +{
+> +	struct dentry *pfile;
+> +	struct xenvif *vif = queue->vif;
+> +	int i;
+> +
+> +	if (!IS_ERR_OR_NULL(xen_netback_dbg_root))
+> +		return;
+
+I am curious to how you tested this patch, as my reading of
+the code above would imply that when xen_netback_dbg_root is
+initialized - we won't continue within this function?
+
+That '!' should be removed I think.
+> +
+> +	vif->xenvif_dbg_root = debugfs_create_dir(vif->dev->name,
+> +						  xen_netback_dbg_root);
+> +	if (!IS_ERR_OR_NULL(vif->xenvif_dbg_root)) {
+> +		for (i = 0; i < vif->num_queues; ++i) {
+> +			char filename[sizeof("io_ring_q") + 4];
+> +
+> +			snprintf(filename, sizeof(filename), "io_ring_q%d", i);
+> +			pfile = debugfs_create_file(filename,
+> +						    S_IRUSR | S_IWUSR,
+> +						    vif->xenvif_dbg_root,
+> +						    &vif->queues[i],
+> +						    &xenvif_dbg_io_ring_ops_fops);
+> +			if (IS_ERR_OR_NULL(pfile))
+> +				pr_warn("Creation of io_ring file returned %ld!\n",
+> +					PTR_ERR(pfile));
+> +		}
+> +	} else
+> +		netdev_warn(vif->dev,
+> +			    "Creation of vif debugfs dir returned %ld!\n",
+> +			    PTR_ERR(vif->xenvif_dbg_root));
+> +}
+> +
+> +static void xenvif_debugfs_delif(struct xenvif *vif)
+> +{
+> +	if (!IS_ERR_OR_NULL(xen_netback_dbg_root))
+
+Here that '!'  I think needs to go too.
+
+> +		return;
+> +
+> +	if (!IS_ERR_OR_NULL(vif->xenvif_dbg_root))
+> +		debugfs_remove_recursive(vif->xenvif_dbg_root);
+> +	vif->xenvif_dbg_root = NULL;
+> +}
+> +#endif /* CONFIG_DEBUG_FS */
+
+> +
+>  static int netback_remove(struct xenbus_device *dev)
+>  {
+>  	struct backend_info *be = dev_get_drvdata(&dev->dev);
+> @@ -246,8 +413,12 @@ static void backend_create_xenvif(struct backend_info *be)
+>  
+>  static void backend_disconnect(struct backend_info *be)
+>  {
+> -	if (be->vif)
+> +	if (be->vif) {
+> +#ifdef CONFIG_DEBUG_FS
+> +		xenvif_debugfs_delif(be->vif);
+> +#endif /* CONFIG_DEBUG_FS */
+
+Why don't you just leave it as it (without the #ifdef) and add an
+empty function for the #else CONFIG_DEBUG_FS like:
+
+#else
+static inline void xenvif_debugfs_addif(struct xenvif_queue *queue) {}
+static inline void xenvif_debugfs_delif(struct xenvif *vif) {}
+#endif
+
+?
+>  		xenvif_disconnect(be->vif);
+> +	}
+>  }
+>  
+>  static void backend_connect(struct backend_info *be)
+> @@ -560,6 +731,9 @@ static void connect(struct backend_info *be)
+>  			be->vif->num_queues = queue_index;
+>  			goto err;
+>  		}
+> +#ifdef CONFIG_DEBUG_FS
+> +		xenvif_debugfs_addif(queue);
+> +#endif /* CONFIG_DEBUG_FS */
+
+Ditto.
+>  	}
+>  
+>  	/* Initialisation completed, tell core driver the number of
 > 
-
-
--- 
-Nicolas Ferre
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
