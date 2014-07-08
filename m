@@ -1,115 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010AbaGHI1A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 04:27:00 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:35825 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753945AbaGHI04 (ORCPT
+	id S1754021AbaGHI1z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 04:27:55 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:12197 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753904AbaGHI0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 04:26:56 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s688QjFi021983, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <nic_swsd@realtek.com>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net] r8169: disable L23
-Date: Tue, 8 Jul 2014 16:26:10 +0800
-Message-ID: <1394712342-15778-6-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
+	Tue, 8 Jul 2014 04:26:48 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 08 Jul 2014 01:19:52 -0700
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Ben Skeggs <bskeggs@redhat.com>, David Airlie <airlied@linux.ie>,
+        David Herrmann <dh.herrmann@gmail.com>, Lucas Stach <dev@lynxeye.de>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>
+CC: <nouveau@lists.freedesktop.org>, <dri-devel@lists.freedesktop.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH v4 5/6] drm/nouveau: implement explicitly coherent BOs
+Date: Tue, 8 Jul 2014 17:26:00 +0900
+Message-ID: <1404807961-30530-6-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1404807961-30530-1-git-send-email-acourbot@nvidia.com>
+References: <1404807961-30530-1-git-send-email-acourbot@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For RTL8411, RTL8111G, RTL8402, RTL8105, and RTL8106, the nic couldn't
-leave the power saving mode of L23 for certain situation. This causes
-the device lost for the system. Disable the L23 mode to avoid it.
+Allow nouveau_bo_new() to recognize the TTM_PL_FLAG_UNCACHED flag, which
+means that we want the allocated BO to be perfectly coherent between the
+CPU and GPU. This is useful on non-coherent architectures for which we
+do not want to manually sync some rarely-accessed buffers: typically,
+fences and pushbuffers.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+A TTM BO allocated with the TTM_PL_FLAG_UNCACHED on a non-coherent
+architecture will be populated using the DMA API, and accesses to it
+performed using the coherent mapping performed by dma_alloc_coherent().
+
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 ---
- drivers/net/ethernet/realtek/r8169.c | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+ drivers/gpu/drm/nouveau/nouveau_bo.c | 76 ++++++++++++++++++++++++++++++++----
+ drivers/gpu/drm/nouveau/nouveau_bo.h |  1 +
+ 2 files changed, 69 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index be425ad..38144ee 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -538,6 +538,7 @@ enum rtl_register_content {
- 	MagicPacket	= (1 << 5),	/* Wake up when receives a Magic Packet */
- 	LinkUp		= (1 << 4),	/* Wake up when the cable connection is re-established */
- 	Jumbo_En0	= (1 << 2),	/* 8168 only. Reserved in the 8168b */
-+	Rdy_to_L23	= (1 << 1),	/* L23 Enable */
- 	Beacon_en	= (1 << 0),	/* 8168 only. Reserved in the 8168b */
+diff --git a/drivers/gpu/drm/nouveau/nouveau_bo.c b/drivers/gpu/drm/nouveau/nouveau_bo.c
+index 47e4e8886769..23a29adfabf0 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_bo.c
++++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
+@@ -219,6 +219,9 @@ nouveau_bo_new(struct drm_device *dev, int size, int align,
+ 	nvbo->tile_flags = tile_flags;
+ 	nvbo->bo.bdev = &drm->ttm.bdev;
  
- 	/* Config4 register */
-@@ -4897,6 +4898,21 @@ static void rtl_enable_clock_request(struct pci_dev *pdev)
- 				 PCI_EXP_LNKCTL_CLKREQ_EN);
++	if (!nv_device_is_cpu_coherent(nouveau_dev(dev)))
++		nvbo->force_coherent = flags & TTM_PL_FLAG_UNCACHED;
++
+ 	nvbo->page_shift = 12;
+ 	if (drm->client.base.vm) {
+ 		if (!(flags & TTM_PL_FLAG_TT) && size > 256 * 1024)
+@@ -289,8 +292,9 @@ void
+ nouveau_bo_placement_set(struct nouveau_bo *nvbo, uint32_t type, uint32_t busy)
+ {
+ 	struct ttm_placement *pl = &nvbo->placement;
+-	uint32_t flags = TTM_PL_MASK_CACHING |
+-		(nvbo->pin_refcnt ? TTM_PL_FLAG_NO_EVICT : 0);
++	uint32_t flags = (nvbo->force_coherent ? TTM_PL_FLAG_UNCACHED :
++						 TTM_PL_MASK_CACHING) |
++			 (nvbo->pin_refcnt ? TTM_PL_FLAG_NO_EVICT : 0);
+ 
+ 	pl->placement = nvbo->placements;
+ 	set_placement_list(nvbo->placements, &pl->num_placement,
+@@ -390,7 +394,14 @@ nouveau_bo_map(struct nouveau_bo *nvbo)
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = ttm_bo_kmap(&nvbo->bo, 0, nvbo->bo.mem.num_pages, &nvbo->kmap);
++	/*
++	 * TTM buffers allocated using the DMA API already have a mapping, let's
++	 * use it instead.
++	 */
++	if (!nvbo->force_coherent)
++		ret = ttm_bo_kmap(&nvbo->bo, 0, nvbo->bo.mem.num_pages,
++				  &nvbo->kmap);
++
+ 	ttm_bo_unreserve(&nvbo->bo);
+ 	return ret;
+ }
+@@ -398,7 +409,14 @@ nouveau_bo_map(struct nouveau_bo *nvbo)
+ void
+ nouveau_bo_unmap(struct nouveau_bo *nvbo)
+ {
+-	if (nvbo)
++	if (!nvbo)
++		return;
++
++	/*
++	 * TTM buffers allocated using the DMA API already had a coherent
++	 * mapping which we used, no need to unmap.
++	 */
++	if (!nvbo->force_coherent)
+ 		ttm_bo_kunmap(&nvbo->kmap);
  }
  
-+static void rtl_l23_enable(struct rtl8169_private *tp, bool enable)
+@@ -482,12 +500,36 @@ nouveau_bo_validate(struct nouveau_bo *nvbo, bool interruptible,
+ 	return 0;
+ }
+ 
++static inline void *
++_nouveau_bo_mem_index(struct nouveau_bo *nvbo, unsigned index, void *mem, u8 sz)
 +{
-+	void __iomem *ioaddr = tp->mmio_addr;
-+	u8 data;
++	struct ttm_dma_tt *dma_tt;
++	u8 *m = mem;
 +
-+	data = RTL_R8(Config3);
++	index *= sz;
 +
-+	if (enable)
-+		data |= Rdy_to_L23;
-+	else
-+		data &= ~Rdy_to_L23;
++	if (m) {
++		/* kmap'd address, return the corresponding offset */
++		m += index;
++	} else {
++		/* DMA-API mapping, lookup the right address */
++		dma_tt = (struct ttm_dma_tt *)nvbo->bo.ttm;
++		m = dma_tt->cpu_address[index / PAGE_SIZE];
++		m += index % PAGE_SIZE;
++	}
 +
-+	RTL_W8(Config3, data);
++	return m;
 +}
++#define nouveau_bo_mem_index(o, i, m) _nouveau_bo_mem_index(o, i, m, sizeof(*m))
 +
- #define R8168_CPCMD_QUIRK_MASK (\
- 	EnableBist | \
- 	Mac_dbgo_oe | \
-@@ -5246,6 +5262,7 @@ static void rtl_hw_start_8411(struct rtl8169_private *tp)
- 	};
- 
- 	rtl_hw_start_8168f(tp);
-+	rtl_l23_enable(tp, false);
- 
- 	rtl_ephy_init(tp, e_info_8168f_1, ARRAY_SIZE(e_info_8168f_1));
- 
-@@ -5284,6 +5301,8 @@ static void rtl_hw_start_8168g_1(struct rtl8169_private *tp)
- 
- 	rtl_w1w0_eri(tp, 0x2fc, ERIAR_MASK_0001, 0x01, 0x06, ERIAR_EXGMAC);
- 	rtl_w1w0_eri(tp, 0x1b0, ERIAR_MASK_0011, 0x0000, 0x1000, ERIAR_EXGMAC);
+ u16
+ nouveau_bo_rd16(struct nouveau_bo *nvbo, unsigned index)
+ {
+ 	bool is_iomem;
+ 	u16 *mem = ttm_kmap_obj_virtual(&nvbo->kmap, &is_iomem);
+-	mem = &mem[index];
 +
-+	rtl_l23_enable(tp, false);
- }
- 
- static void rtl_hw_start_8168g_2(struct rtl8169_private *tp)
-@@ -5536,6 +5555,8 @@ static void rtl_hw_start_8105e_1(struct rtl8169_private *tp)
- 	RTL_W8(DLLPR, RTL_R8(DLLPR) | PFM_EN);
- 
- 	rtl_ephy_init(tp, e_info_8105e_1, ARRAY_SIZE(e_info_8105e_1));
++	mem = nouveau_bo_mem_index(nvbo, index, mem);
 +
-+	rtl_l23_enable(tp, false);
- }
- 
- static void rtl_hw_start_8105e_2(struct rtl8169_private *tp)
-@@ -5571,6 +5592,8 @@ static void rtl_hw_start_8402(struct rtl8169_private *tp)
- 	rtl_eri_write(tp, 0xc0, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
- 	rtl_eri_write(tp, 0xb8, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
- 	rtl_w1w0_eri(tp, 0x0d4, ERIAR_MASK_0011, 0x0e00, 0xff00, ERIAR_EXGMAC);
+ 	if (is_iomem)
+ 		return ioread16_native((void __force __iomem *)mem);
+ 	else
+@@ -499,7 +541,9 @@ nouveau_bo_wr16(struct nouveau_bo *nvbo, unsigned index, u16 val)
+ {
+ 	bool is_iomem;
+ 	u16 *mem = ttm_kmap_obj_virtual(&nvbo->kmap, &is_iomem);
+-	mem = &mem[index];
 +
-+	rtl_l23_enable(tp, false);
- }
- 
- static void rtl_hw_start_8106(struct rtl8169_private *tp)
-@@ -5583,6 +5606,8 @@ static void rtl_hw_start_8106(struct rtl8169_private *tp)
- 	RTL_W32(MISC, (RTL_R32(MISC) | DISABLE_LAN_EN) & ~EARLY_TALLY_EN);
- 	RTL_W8(MCU, RTL_R8(MCU) | EN_NDP | EN_OOB_RESET);
- 	RTL_W8(DLLPR, RTL_R8(DLLPR) & ~PFM_EN);
++	mem = nouveau_bo_mem_index(nvbo, index, mem);
 +
-+	rtl_l23_enable(tp, false);
- }
+ 	if (is_iomem)
+ 		iowrite16_native(val, (void __force __iomem *)mem);
+ 	else
+@@ -511,7 +555,9 @@ nouveau_bo_rd32(struct nouveau_bo *nvbo, unsigned index)
+ {
+ 	bool is_iomem;
+ 	u32 *mem = ttm_kmap_obj_virtual(&nvbo->kmap, &is_iomem);
+-	mem = &mem[index];
++
++	mem = nouveau_bo_mem_index(nvbo, index, mem);
++
+ 	if (is_iomem)
+ 		return ioread32_native((void __force __iomem *)mem);
+ 	else
+@@ -523,7 +569,9 @@ nouveau_bo_wr32(struct nouveau_bo *nvbo, unsigned index, u32 val)
+ {
+ 	bool is_iomem;
+ 	u32 *mem = ttm_kmap_obj_virtual(&nvbo->kmap, &is_iomem);
+-	mem = &mem[index];
++
++	mem = nouveau_bo_mem_index(nvbo, index, mem);
++
+ 	if (is_iomem)
+ 		iowrite32_native(val, (void __force __iomem *)mem);
+ 	else
+@@ -1426,6 +1474,14 @@ nouveau_ttm_tt_populate(struct ttm_tt *ttm)
+ 	device = nv_device(drm->device);
+ 	dev = drm->dev;
  
- static void rtl_hw_start_8101(struct net_device *dev)
++	/*
++	 * Objects matching this condition have been marked as force_coherent,
++	 * so use the DMA API for them.
++	 */
++	if (!nv_device_is_cpu_coherent(device) &&
++	    ttm->caching_state == tt_uncached)
++		return ttm_dma_populate(ttm_dma, dev->dev);
++
+ #if __OS_HAS_AGP
+ 	if (drm->agp.stat == ENABLED) {
+ 		return ttm_agp_tt_populate(ttm);
+@@ -1476,6 +1532,10 @@ nouveau_ttm_tt_unpopulate(struct ttm_tt *ttm)
+ 	device = nv_device(drm->device);
+ 	dev = drm->dev;
+ 
++	if (!nv_device_is_cpu_coherent(device) &&
++	    ttm->caching_state == tt_uncached)
++		ttm_dma_unpopulate(ttm_dma, dev->dev);
++
+ #if __OS_HAS_AGP
+ 	if (drm->agp.stat == ENABLED) {
+ 		ttm_agp_tt_unpopulate(ttm);
+diff --git a/drivers/gpu/drm/nouveau/nouveau_bo.h b/drivers/gpu/drm/nouveau/nouveau_bo.h
+index fa42298d2dca..9a111b92fb34 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_bo.h
++++ b/drivers/gpu/drm/nouveau/nouveau_bo.h
+@@ -11,6 +11,7 @@ struct nouveau_bo {
+ 	u32 valid_domains;
+ 	u32 placements[3];
+ 	u32 busy_placements[3];
++	bool force_coherent;
+ 	struct ttm_bo_kmap_obj kmap;
+ 	struct list_head head;
+ 
 -- 
-1.9.3
+2.0.0
 
