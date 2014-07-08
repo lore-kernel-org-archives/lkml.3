@@ -1,385 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176AbaGHNQW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:16:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9377 "EHLO mx1.redhat.com"
+	id S1755213AbaGHNRZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:17:25 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:41496 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754743AbaGHNQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:16:17 -0400
-Subject: [PATCH7/7] PKCS#7: Provide a key type for testing PKCS#7
-From: David Howells <dhowells@redhat.com>
-To: keyrings@linux-nfs.org
-Cc: linux-security-module@vger.kernel.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 08 Jul 2014 14:15:52 +0100
-Message-ID: <20140708131552.28621.96323.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20140708131504.28621.61165.stgit@warthog.procyon.org.uk>
-References: <20140708131504.28621.61165.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.17-dirty
+	id S1755028AbaGHNRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 09:17:23 -0400
+From: Mugunthan V N <mugunthanvnm@ti.com>
+To: <linux-omap@vger.kernel.org>
+CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Mugunthan V N <mugunthanvnm@ti.com>,
+        Rajendra Nayak <rnayak@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, Paul Walmsley <paul@pwsan.com>
+Subject: [Re-send PATCH 1/1] arm: dra7xx: Add hwmod data for MDIO and CPSW
+Date: Tue, 8 Jul 2014 18:46:39 +0530
+Message-ID: <1404825399-10330-1-git-send-email-mugunthanvnm@ti.com>
+X-Mailer: git-send-email 2.0.0.390.gcb682f8
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide a key type for testing the PKCS#7 parser.  It is given a non-detached
-PKCS#7 message as payload:
+Adding hwmod data for CPSW and MDIO which is present in DRA7xx SoC
 
-	keyctl padd pkcs7_test a @s <stuff.pkcs7
-
-The PKCS#7 wrapper is validated against the trusted certificates available and
-then stripped off.  If successful, the key can be read, which will give the
-data content of the PKCS#7 message.
-
-A suitable message can be created by running make on the attached Makefile.
-This will produce a file called stuff.pkcs7 for test loading.  The key3.x509
-file should be put into the kernel source tree before it is built and
-converted to DER form:
-
-	openssl x509 -in .../pkcs7/key3.x509 -outform DER -out key3.x509
-
-###############################################################################
-#
-# Create a pkcs7 message and sign it twice
-#
-#	openssl x509 -text -inform PEM -noout -in key2.x509
-#
-###############################################################################
-stuff.pkcs7: stuff.txt key2.priv key2.x509 key4.priv key4.x509 certs
-	$(RM) $@
-	openssl smime -sign \
-		-signer key2.x509 \
-		-inkey key2.priv \
-		-signer key4.x509 \
-		-inkey key4.priv \
-		-in stuff.txt \
-		-certfile certs \
-		-out $@ -binary -outform DER -nodetach
-	openssl pkcs7 -inform DER -in stuff.pkcs7  -print_certs -noout
-	openssl asn1parse -inform DER -in stuff.pkcs7  -i >out
-
-stuff.txt:
-	echo "The quick red fox jumped over the lazy brown dog" >stuff.txt
-
-certs: key1.x509 key2.x509 key3.x509 key4.x509
-	cat key{1,3}.x509 >$@
-
-###############################################################################
-#
-# Generate a signed key
-#
-#	openssl x509 -text -inform PEM -noout -in key2.x509
-#
-###############################################################################
-key2.x509: key2.x509_unsigned key1.priv key1.x509
-	openssl x509 \
-		-req -in key2.x509_unsigned \
-		-out key2.x509 \
-		-extfile key2.genkey -extensions myexts \
-		-CA key1.x509 \
-		-CAkey key1.priv \
-		-CAcreateserial
-
-key2.priv key2.x509_unsigned: key2.genkey
-	openssl req -new -nodes -utf8 -sha1 -days 36500 \
-		-batch -outform PEM \
-		-config key2.genkey \
-		-keyout key2.priv \
-		-out key2.x509_unsigned
-
-key2.genkey:
-	@echo Generating X.509 key generation config
-	@echo  >$@ "[ req ]"
-	@echo >>$@ "default_bits = 4096"
-	@echo >>$@ "distinguished_name = req_distinguished_name"
-	@echo >>$@ "prompt = no"
-	@echo >>$@ "string_mask = utf8only"
-	@echo >>$@ "x509_extensions = myexts"
-	@echo >>$@
-	@echo >>$@ "[ req_distinguished_name ]"
-	@echo >>$@ "O = Magrathea"
-	@echo >>$@ "CN = PKCS7 key 2"
-	@echo >>$@ "emailAddress = slartibartfast@magrathea.h2g2"
-	@echo >>$@
-	@echo >>$@ "[ myexts ]"
-	@echo >>$@ "basicConstraints=critical,CA:FALSE"
-	@echo >>$@ "keyUsage=digitalSignature"
-	@echo >>$@ "subjectKeyIdentifier=hash"
-	@echo >>$@ "authorityKeyIdentifier=keyid"
-
-###############################################################################
-#
-# Generate a couple of signing keys
-#
-#	openssl x509 -text -inform PEM -noout -in key1.x509
-#
-###############################################################################
-key1.x509: key1.x509_unsigned key4.priv key4.x509
-	openssl x509 \
-		-req -in key1.x509_unsigned \
-		-out key1.x509 \
-		-extfile key1.genkey -extensions myexts \
-		-CA key4.x509 \
-		-CAkey key4.priv \
-		-CAcreateserial
-
-key1.priv key1.x509_unsigned: key1.genkey
-	openssl req -new -nodes -utf8 -sha1 -days 36500 \
-		-batch -outform PEM \
-		-config key1.genkey \
-		-keyout key1.priv \
-		-out key1.x509_unsigned
-
-key1.genkey:
-	@echo Generating X.509 key generation config
-	@echo  >$@ "[ req ]"
-	@echo >>$@ "default_bits = 4096"
-	@echo >>$@ "distinguished_name = req_distinguished_name"
-	@echo >>$@ "prompt = no"
-	@echo >>$@ "string_mask = utf8only"
-	@echo >>$@ "x509_extensions = myexts"
-	@echo >>$@
-	@echo >>$@ "[ req_distinguished_name ]"
-	@echo >>$@ "O = Magrathea"
-	@echo >>$@ "CN = PKCS7 key 1"
-	@echo >>$@ "emailAddress = slartibartfast@magrathea.h2g2"
-	@echo >>$@
-	@echo >>$@ "[ myexts ]"
-	@echo >>$@ "basicConstraints=critical,CA:TRUE"
-	@echo >>$@ "keyUsage=digitalSignature,keyCertSign"
-	@echo >>$@ "subjectKeyIdentifier=hash"
-	@echo >>$@ "authorityKeyIdentifier=keyid"
-
-###############################################################################
-#
-# Generate a signed key
-#
-#	openssl x509 -text -inform PEM -noout -in key4.x509
-#
-###############################################################################
-key4.x509: key4.x509_unsigned key3.priv key3.x509
-	openssl x509 \
-		-req -in key4.x509_unsigned \
-		-out key4.x509 \
-		-extfile key4.genkey -extensions myexts \
-		-CA key3.x509 \
-		-CAkey key3.priv \
-		-CAcreateserial
-
-key4.priv key4.x509_unsigned: key4.genkey
-	openssl req -new -nodes -utf8 -sha1 -days 36500 \
-		-batch -outform PEM \
-		-config key4.genkey \
-		-keyout key4.priv \
-		-out key4.x509_unsigned
-
-key4.genkey:
-	@echo Generating X.509 key generation config
-	@echo  >$@ "[ req ]"
-	@echo >>$@ "default_bits = 4096"
-	@echo >>$@ "distinguished_name = req_distinguished_name"
-	@echo >>$@ "prompt = no"
-	@echo >>$@ "string_mask = utf8only"
-	@echo >>$@ "x509_extensions = myexts"
-	@echo >>$@
-	@echo >>$@ "[ req_distinguished_name ]"
-	@echo >>$@ "O = Magrathea"
-	@echo >>$@ "CN = PKCS7 key 4"
-	@echo >>$@ "emailAddress = slartibartfast@magrathea.h2g2"
-	@echo >>$@
-	@echo >>$@ "[ myexts ]"
-	@echo >>$@ "basicConstraints=critical,CA:TRUE"
-	@echo >>$@ "keyUsage=digitalSignature,keyCertSign"
-	@echo >>$@ "subjectKeyIdentifier=hash"
-	@echo >>$@ "authorityKeyIdentifier=keyid"
-
-###############################################################################
-#
-# Generate a couple of signing keys
-#
-#	openssl x509 -text -inform PEM -noout -in key3.x509
-#
-###############################################################################
-key3.priv key3.x509: key3.genkey
-	openssl req -new -nodes -utf8 -sha1 -days 36500 \
-		-batch -x509 -outform PEM \
-		-config key3.genkey \
-		-keyout key3.priv \
-		-out key3.x509
-
-key3.genkey:
-	@echo Generating X.509 key generation config
-	@echo  >$@ "[ req ]"
-	@echo >>$@ "default_bits = 4096"
-	@echo >>$@ "distinguished_name = req_distinguished_name"
-	@echo >>$@ "prompt = no"
-	@echo >>$@ "string_mask = utf8only"
-	@echo >>$@ "x509_extensions = myexts"
-	@echo >>$@
-	@echo >>$@ "[ req_distinguished_name ]"
-	@echo >>$@ "O = Magrathea"
-	@echo >>$@ "CN = PKCS7 key 3"
-	@echo >>$@ "emailAddress = slartibartfast@magrathea.h2g2"
-	@echo >>$@
-	@echo >>$@ "[ myexts ]"
-	@echo >>$@ "basicConstraints=critical,CA:TRUE"
-	@echo >>$@ "keyUsage=digitalSignature,keyCertSign"
-	@echo >>$@ "subjectKeyIdentifier=hash"
-	@echo >>$@ "authorityKeyIdentifier=keyid"
-
-clean:
-	$(RM) *~
-	$(RM) key1.* key2.* key3.* key4.* stuff.* out certs
-
-Signed-off-by: David Howells <dhowells@redhat.com>
+Cc: Rajendra Nayak <rnayak@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
 ---
 
- crypto/asymmetric_keys/Kconfig          |   13 ++++
- crypto/asymmetric_keys/Makefile         |    7 ++
- crypto/asymmetric_keys/pkcs7_key_type.c |   97 +++++++++++++++++++++++++++++++
- 3 files changed, 117 insertions(+)
- create mode 100644 crypto/asymmetric_keys/pkcs7_key_type.c
+This patch was already send twice on 2013-10-18 and 2014-05-13. Adding
+more people in Cc to review the patch.
 
+---
+ arch/arm/mach-omap2/omap_hwmod_7xx_data.c | 65 +++++++++++++++++++++++++++++++
+ 1 file changed, 65 insertions(+)
 
-diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
-index a7cec9d..b6df198 100644
---- a/crypto/asymmetric_keys/Kconfig
-+++ b/crypto/asymmetric_keys/Kconfig
-@@ -46,4 +46,17 @@ config PKCS7_MESSAGE_PARSER
- 	  This option provides support for parsing PKCS#7 format messages for
- 	  signature data and provides the ability to verify the signature.
+diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+index 20b4398..45b5113 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+@@ -273,6 +273,56 @@ static struct omap_hwmod dra7xx_ctrl_module_wkup_hwmod = {
+ };
  
-+config PKCS7_TEST_KEY
-+	tristate "PKCS#7 testing key type"
-+	depends on PKCS7_MESSAGE_PARSER
-+	select SYSTEM_TRUSTED_KEYRING
-+	help
-+	  This option provides a type of key that can be loaded up from a
-+	  PKCS#7 message - provided the message is signed by a trusted key.  If
-+	  it is, the PKCS#7 wrapper is discarded and reading the key returns
-+	  just the payload.  If it isn't, adding the key will fail with an
-+	  error.
-+
-+	  This is intended for testing the PKCS#7 parser.
-+
- endif # ASYMMETRIC_KEY_TYPE
-diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
-index d63cb43..92d0e9a 100644
---- a/crypto/asymmetric_keys/Makefile
-+++ b/crypto/asymmetric_keys/Makefile
-@@ -40,3 +40,10 @@ $(obj)/pkcs7_parser.o: $(obj)/pkcs7-asn1.h
- $(obj)/pkcs7-asn1.o: $(obj)/pkcs7-asn1.c $(obj)/pkcs7-asn1.h
- 
- clean-files	+= pkcs7-asn1.c pkcs7-asn1.h
-+
-+#
-+# PKCS#7 parser testing key
-+#
-+obj-$(CONFIG_PKCS7_TEST_KEY) += pkcs7_test_key.o
-+pkcs7_test_key-y := \
-+	pkcs7_key_type.o
-diff --git a/crypto/asymmetric_keys/pkcs7_key_type.c b/crypto/asymmetric_keys/pkcs7_key_type.c
-new file mode 100644
-index 0000000..b1797d2
---- /dev/null
-+++ b/crypto/asymmetric_keys/pkcs7_key_type.c
-@@ -0,0 +1,97 @@
-+/* Testing module to load key from trusted PKCS#7 message
-+ *
-+ * Copyright (C) 2014 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
+ /*
++ * 'gmac' class
++ * cpsw/gmac sub system
 + */
++static struct omap_hwmod_class_sysconfig dra7xx_gmac_sysc = {
++	.rev_offs	= 0x0,
++	.sysc_offs	= 0x8,
++	.syss_offs	= 0x4,
++	.sysc_flags	= (SYSC_HAS_SIDLEMODE | SYSC_HAS_MIDLEMODE |
++			   SYSS_HAS_RESET_STATUS),
++	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | MSTANDBY_FORCE |
++			   MSTANDBY_NO),
++	.sysc_fields	= &omap_hwmod_sysc_type3,
++};
 +
-+#define pr_fmt(fmt) "PKCS7key: "fmt
-+#include <linux/key.h>
-+#include <linux/key-type.h>
-+#include <crypto/pkcs7.h>
-+#include <keys/user-type.h>
-+#include <keys/system_keyring.h>
-+#include "pkcs7_parser.h"
++static struct omap_hwmod_class dra7xx_gmac_hwmod_class = {
++	.name		= "gmac",
++	.sysc		= &dra7xx_gmac_sysc,
++};
 +
-+/*
-+ * Instantiate a PKCS#7 wrapped and validated key.
-+ */
-+int pkcs7_instantiate(struct key *key, struct key_preparsed_payload *prep)
-+{
-+	struct pkcs7_message *pkcs7;
-+	const void *data, *saved_prep_data;
-+	size_t datalen, saved_prep_datalen;
-+	bool trusted;
-+	int ret;
-+
-+	kenter("");
-+
-+	saved_prep_data = prep->data;
-+	saved_prep_datalen = prep->datalen;
-+	pkcs7 = pkcs7_parse_message(saved_prep_data, saved_prep_datalen);
-+	if (IS_ERR(pkcs7)) {
-+		ret = PTR_ERR(pkcs7);
-+		goto error;
-+	}
-+
-+	ret = pkcs7_verify(pkcs7);
-+	if (ret < 0)
-+		goto error_free;
-+
-+	ret = pkcs7_validate_trust(pkcs7, system_trusted_keyring, &trusted);
-+	if (ret < 0)
-+		goto error_free;
-+	if (!trusted)
-+		pr_warn("PKCS#7 message doesn't chain back to a trusted key\n");
-+
-+	ret = pkcs7_get_content_data(pkcs7, &data, &datalen, false);
-+	if (ret < 0)
-+		goto error_free;
-+
-+	prep->data = data;
-+	prep->datalen = datalen;
-+	ret = user_instantiate(key, prep);
-+	prep->data = saved_prep_data;
-+	prep->datalen = saved_prep_datalen;
-+
-+error_free:
-+	pkcs7_free_message(pkcs7);
-+error:
-+	kleave(" = %d", ret);
-+	return ret;
-+}
-+
-+/*
-+ * user defined keys take an arbitrary string as the description and an
-+ * arbitrary blob of data as the payload
-+ */
-+struct key_type key_type_pkcs7 = {
-+	.name			= "pkcs7_test",
-+	.def_lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
-+	.instantiate		= pkcs7_instantiate,
-+	.match			= user_match,
-+	.revoke			= user_revoke,
-+	.destroy		= user_destroy,
-+	.describe		= user_describe,
-+	.read			= user_read,
++static struct omap_hwmod dra7xx_gmac_hwmod = {
++	.name		= "gmac",
++	.class		= &dra7xx_gmac_hwmod_class,
++	.clkdm_name	= "gmac_clkdm",
++	.flags		= (HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY),
++	.main_clk	= "dpll_gmac_ck",
++	.mpu_rt_idx	= 1,
++	.prcm		= {
++		.omap4	= {
++			.clkctrl_offs	= DRA7XX_CM_GMAC_GMAC_CLKCTRL_OFFSET,
++			.context_offs	= DRA7XX_RM_GMAC_GMAC_CONTEXT_OFFSET,
++			.modulemode	= MODULEMODE_SWCTRL,
++		},
++	},
 +};
 +
 +/*
-+ * Module stuff
++ * 'mdio' class
 + */
-+static int __init pkcs7_key_init(void)
-+{
-+	return register_key_type(&key_type_pkcs7);
-+}
++static struct omap_hwmod_class dra7xx_mdio_hwmod_class = {
++	.name		= "davinci_mdio",
++};
 +
-+static void __exit pkcs7_key_cleanup(void)
-+{
-+	unregister_key_type(&key_type_pkcs7);
-+}
++static struct omap_hwmod dra7xx_mdio_hwmod = {
++	.name		= "davinci_mdio",
++	.class		= &dra7xx_mdio_hwmod_class,
++	.clkdm_name	= "gmac_clkdm",
++	.main_clk	= "dpll_gmac_ck",
++};
 +
-+module_init(pkcs7_key_init);
-+module_exit(pkcs7_key_cleanup);
++/*
+  * 'dcan' class
+  *
+  */
+@@ -1999,6 +2049,19 @@ static struct omap_hwmod_ocp_if dra7xx_l4_wkup__ctrl_module_wkup = {
+ 	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+ };
+ 
++static struct omap_hwmod_ocp_if dra7xx_l4_per2__cpgmac0 = {
++	.master		= &dra7xx_l4_per2_hwmod,
++	.slave		= &dra7xx_gmac_hwmod,
++	.clk		= "dpll_gmac_ck",
++	.user		= OCP_USER_MPU,
++};
++
++static struct omap_hwmod_ocp_if dra7xx_gmac__mdio = {
++	.master		= &dra7xx_gmac_hwmod,
++	.slave		= &dra7xx_mdio_hwmod,
++	.user		= OCP_USER_MPU,
++};
++
+ /* l4_wkup -> dcan1 */
+ static struct omap_hwmod_ocp_if dra7xx_l4_wkup__dcan1 = {
+ 	.master		= &dra7xx_l4_wkup_hwmod,
+@@ -2642,6 +2705,8 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
+ 	&dra7xx_l4_wkup__ctrl_module_wkup,
+ 	&dra7xx_l4_wkup__dcan1,
+ 	&dra7xx_l4_per2__dcan2,
++	&dra7xx_l4_per2__cpgmac0,
++	&dra7xx_gmac__mdio,
+ 	&dra7xx_l4_cfg__dma_system,
+ 	&dra7xx_l3_main_1__dss,
+ 	&dra7xx_l3_main_1__dispc,
+-- 
+2.0.0.390.gcb682f8
 
