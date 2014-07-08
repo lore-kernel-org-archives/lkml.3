@@ -1,98 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890AbaGHJWH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 05:22:07 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:57492 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834AbaGHJWE convert rfc822-to-8bit (ORCPT
+	id S1753943AbaGHJWY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 05:22:24 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:37834 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753473AbaGHJWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 05:22:04 -0400
+	Tue, 8 Jul 2014 05:22:21 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAPDOMVi=UQoEULy5wrcXuH2Dsk-Nf53uUa0aeMHOnPxU1Bpk7g@mail.gmail.com>
-References: <CAPDOMVgEgDt-mNL_Ee3uOBr2Wj-hEHY1sfDVpH3TiKMKB3B-CQ@mail.gmail.com>
-	<CAPDOMVi=UQoEULy5wrcXuH2Dsk-Nf53uUa0aeMHOnPxU1Bpk7g@mail.gmail.com>
-Date: Tue, 8 Jul 2014 17:22:03 +0800
-Message-ID: <CAMk6uBntkU7yXA8ddgxMeBv1N8qc8cUN5PWwepBOU46y+3ydRg@mail.gmail.com>
-Subject: Re: adi-buildroot-devel@lists.sourceforge.net linux-kernel@vger.kernel.org
-From: Steven Miao <realmz6@gmail.com>
-To: Nick Krause <xerofoify@gmail.com>
-Cc: bfin <adi-buildroot-devel@lists.sourceforge.ne>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <53BBB677.2010401@nod.at>
+References: <20140705112238.16142.42735.stgit@zurg>
+	<20140707150523.cc671116bf366e8db73209c5@linux-foundation.org>
+	<CALYGNiMjL_GYqqkid4yQsubpnbydVXxTPnKW0GqJcg05x9zbHQ@mail.gmail.com>
+	<CAFLxGvzxvuizdHyjQ0SjUm8jJcj=w+qS5ut-u76Xo-m2sftvvw@mail.gmail.com>
+	<CALYGNiOTC8KOxWwRo+f=6JmtUYhJ=1cQNq-Us1BZbW85r4P+ug@mail.gmail.com>
+	<53BBA9B4.7050609@nod.at>
+	<CALYGNiNSFoW6Z_1o3JfV-cCeay1QmTptrt4kWHVegkuw+-6A8A@mail.gmail.com>
+	<53BBACF4.4070800@nod.at>
+	<CALYGNiND3xk4DGkM_RYApmX7BMkg=cKX2gUpyyOry0ny_DVrkA@mail.gmail.com>
+	<53BBB0F2.20109@nod.at>
+	<CALYGNiPakwGquDk9MVGeSrx4RmUOg21=_Zcw097Z5sGTsP=Cwg@mail.gmail.com>
+	<53BBB4AF.1080507@nod.at>
+	<CAMuHMdXczkVGAejZ2RnsdXYvTq-8eZAhheR-ygXmXKMmh9VsEA@mail.gmail.com>
+	<53BBB677.2010401@nod.at>
+Date: Tue, 8 Jul 2014 11:22:19 +0200
+X-Google-Sender-Auth: Sw5U_eiq30Mrk1AUrf_VgVWKwJ8
+Message-ID: <CAMuHMdVFh8N0Y3bMj8JomkXrYDBu5HkvL_FxU_et9QeShvztMg@mail.gmail.com>
+Subject: Re: [uml-devel] [PATCH] checkstack: use $UTS_MACHINE as target architecture
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: Konstantin Khlebnikov <koct9i@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        UML devel <user-mode-linux-devel@lists.sourceforge.net>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nick,
+On Tue, Jul 8, 2014 at 11:14 AM, Richard Weinberger <richard@nod.at> wrote:
+>> And that you don't need root permissions to run it.
+>
+> You can use KVM also without being root.
+> It depends on the rights of /dev/kvm.
 
-Thanks, I'll fix these build fails.
+Which are controlled by... root.
 
-On Tue, Jul 8, 2014 at 10:34 AM, Nick Krause <xerofoify@gmail.com> wrote:
-> ---------- Forwarded message ----------
-> From: Nick Krause <xerofoify@gmail.com>
-> Date: Mon, Jul 7, 2014 at 10:27 PM
-> Subject: adi-buildroot-devel@lists.sourceforge.net linux-kernel@vger.kernel.org
-> To: realmz6@gmail.com
->
->
-> Hey guys ,
-> Since the errors I get for BF561-ACVILON_defconfig not compiling link
-> to a failure
-> in a fileyou guys maintain I am sending you this email.Below my message are the
-> errors that make this build fail in order to help you create a patch
-> for  these errors.
-> Cheer Nick
-> arch/blackfin/mach-bf561/boards/acvilon.c: In function
-> ‘bfin_plat_nand_dev_ready’:
-> arch/blackfin/mach-bf561/boards/acvilon.c:283:2: error: implicit
-> declaration of function ‘gpio_get_value’
-> [-Werror=implicit-function-declaration]
->   return gpio_get_value(BFIN_NAND_PLAT_READY);
->   ^
-> arch/blackfin/mach-bf561/boards/acvilon.c: In function ‘bfin_plat_nand_init’:
-> arch/blackfin/mach-bf561/boards/acvilon.c:318:2: error: implicit
-> declaration of function ‘gpio_request’
-> [-Werror=implicit-function-declaration]
->   gpio_request(BFIN_NAND_PLAT_READY, "bfin_nand_plat");
->   ^
-> cc1: some warnings being treated as errors
-> make[1]: *** [arch/blackfin/mach-bf561/boards/acvilon.o] Error 1
-> make: *** [arch/blackfin/mach-bf561/boards] Error 2
-> make: *** Waiting for unfinished jobs....
->
-> Hey Steve
-> Below are the logs for the other the failures related to blackfin
-> buids. I didn't realize that you maintained most blackfin boards
-> Cheers Nick
->
->  BlackStamp_defconfig
-> arch/blackfin/mach-bf533/boards/blackstamp.c:478:2: error: implicit
-> declaration of function ‘gpio_request’
-> [-Werror=implicit-function-declaration]
->   ret = gpio_request(GPIO_PF0, "enet_cpld");
->   ^
-> arch/blackfin/mach-bf533/boards/blackstamp.c:480:3: error: implicit
-> declaration of function ‘gpio_direction_output’
-> [-Werror=implicit-function-declaration]
->    gpio_direction_output(GPIO_PF0, 1);
->    ^
-> arch/blackfin/mach-bf533/boards/blackstamp.c:481:3: error: implicit
-> declaration of function ‘gpio_free’
-> [-Werror=implicit-function-declaration]
->    gpio_free(GPIO_PF0);
->    ^
-> cc1: some warnings being treated as errors
-> make[1]: *** [arch/blackfin/mach-bf533/boards/blackstamp.o] Error 1
-> make: *** [arch/blackfin/mach-bf533/boards] Error 2
-> make: *** Waiting for unfinished jobs....
->
->
-> TCM-BF518_defconfig
-> UIMAGE  arch/blackfin/boot/uImage.lzma
-> "mkimage" command not found - U-Boot images will not be built
-You should install u-boot-tools to get mkimage.
-> make[1]: *** [arch/blackfin/boot/uImage.lzma] Error 1
-> make: *** [uImage] Error 2
+Gr{oetje,eeting}s,
 
--steven
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
