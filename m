@@ -1,71 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639AbaGHJTe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 05:19:34 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51130 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752603AbaGHJTb (ORCPT
+	id S1753856AbaGHJUb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 05:20:31 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:34200 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753050AbaGHJU3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 05:19:31 -0400
-Message-ID: <53BBB746.1000201@arm.com>
-Date: Tue, 08 Jul 2014 10:17:58 +0100
-From: Andrew Jackson <Andrew.Jackson@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 8 Jul 2014 05:20:29 -0400
 MIME-Version: 1.0
-To: Jean-Francois Moine <moinejf@free.fr>, Mark Brown <broonie@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Clark <robdclark@gmail.com>, Dave Airlie <airlied@gmail.com>,
+In-Reply-To: <20140708094149.0ad6ab13@free-electrons.com>
+References: <20140703135146.GA6898@luxor.wired.org>
+	<53B5C61D.2060308@free-electrons.com>
+	<53B5CA26.7050405@free-electrons.com>
+	<1936558.QaAG1bYMuD@avalon>
+	<20140705150308.GA28791@arch.cereza>
+	<20140705205951.GB3678@kroah.com>
+	<20140707105818.GA1101@arch.cereza>
+	<20140707183002.GA5947@kroah.com>
+	<20140707233758.GA1456@arch.cereza>
+	<20140708094149.0ad6ab13@free-electrons.com>
+Date: Tue, 8 Jul 2014 11:20:28 +0200
+Message-ID: <CAMmgNdY-BZvGQL=1_7ANgSbV0TJfcqFRXgmLgyYCk+nAnNkT7w@mail.gmail.com>
+Subject: Re: 3.16rc3 multiplatform, Armada 370 and IOMMU: unbootable kernel
+From: Paolo Pisati <p.pisati@gmail.com>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Joerg Roedel <joro@8bytes.org>, Hiroshi.DOYU@nokia.com,
+        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [alsa-devel] [PATCH v2] ASoC: tda998x: add a codec to the HDMI
- transmitter
-References: <20140704091733.10258cfe@armhf>
-In-Reply-To: <20140704091733.10258cfe@armhf>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/14 08:17, Jean-Francois Moine wrote:
-> This patch adds a CODEC function to the NXP TDA998x HDMI transmitter.
-> 
-> The CODEC handles both I2S and S/PDIF input and does dynamic input
-> switch in the TDA998x I2C driver on start/stop audio streaming.
-> 
-> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
-> ---
+On Tue, Jul 8, 2014 at 9:41 AM, Thomas Petazzoni
+<thomas.petazzoni@free-electrons.com> wrote:
+> Dear Ezequiel Garcia,
+>
+> On Mon, 7 Jul 2014 20:37:58 -0300, Ezequiel Garcia wrote:
+>
+>> It seems bus_register_notifier() is been called for platform and pci devices
+>> with the *same* notifier block. Haven't looked close enough, but you mentioned
+>> that could cause trouble?
+>>
+>> This patch fixes the issue here:
+>>
+>> diff --git a/arch/arm/mach-mvebu/coherency.c b/arch/arm/mach-mvebu/coherency.c
+>> index 477202f..2bdc323 100644
+>> --- a/arch/arm/mach-mvebu/coherency.c
+>> +++ b/arch/arm/mach-mvebu/coherency.c
+>> @@ -292,6 +292,10 @@ static struct notifier_block mvebu_hwcc_nb = {
+>>       .notifier_call = mvebu_hwcc_notifier,
+>>  };
+>>
+>> +static struct notifier_block mvebu_hwcc_pci_nb = {
+>> +     .notifier_call = mvebu_hwcc_notifier,
+>> +};
+>> +
+>>  static void __init armada_370_coherency_init(struct device_node *np)
+>>  {
+>>       struct resource res;
+>> @@ -427,7 +431,7 @@ static int __init coherency_pci_init(void)
+>>  {
+>>       if (coherency_available())
+>>               bus_register_notifier(&pci_bus_type,
+>> -                                    &mvebu_hwcc_nb);
+>> +                                    &mvebu_hwcc_pci_nb);
+>>       return 0;
+>>  }
+>>
+>> Paolo, can you apply it and confirm it fixes the problem?
+>>
+>> Greg, can you confirm using the same notifier block pointer
+>> for two different bus types makes the bus notifier go nuts?
+>
+> Looking at how notifier_chain_register() is implemented (which gets
+> called by bus_register_notifier() ->
+> blocking_notifier_chain_register()), I indeed don't see how a single
+> 'struct notifier_block' can be registered on multiple notifier chains,
+> so I believe your patch is correct.
+>
 
-[snip]
+yes, i confim this patch fixes my issue, thanks!
 
-> +++ b/drivers/gpu/drm/i2c/tda998x_codec.c
-
-[snip]
-
-> +static int tda_startup(struct snd_pcm_substream *substream,
-> +                       struct snd_soc_dai *dai)
-> +{
-> +       struct tda998x_priv *priv = snd_soc_codec_get_drvdata(dai->codec);
-> +       u8 *eld = priv->eld;
-> +       struct snd_pcm_runtime *runtime = substream->runtime;
-> +       u8 *sad;
-> +       int sad_count;
-> +       unsigned eld_ver, mnl, rate_mask;
-> +       unsigned max_channels, fmt;
-> +       u64 formats;
-> +       struct snd_pcm_hw_constraint_list *rate_constraints =
-> +                       &priv->rate_constraints;
-> +       static const u32 hdmi_rates[] = {
-> +               32000, 44100, 48000, 88200, 9600, 176400, 192000
-> +       };
-> +
-
-Shouldn't this be 96000, not 9600?  Assuming that the table is ordered in terms of increasing frequencies.
-
-    Andrew
-
+-- 
+bye,
+p.
