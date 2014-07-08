@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927AbaGHTgE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:36:04 -0400
+	id S1756049AbaGHTgf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:36:35 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54778 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755856AbaGHTe2 (ORCPT
+	by vger.kernel.org with ESMTP id S1754200AbaGHTeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:34:28 -0400
+	Tue, 8 Jul 2014 15:34:24 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Johan Hovold" <jhovold@gmail.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+CC: akpm@linux-foundation.org, "Anton Blanchard" <anton@samba.org>,
+        "Michael Neuling" <mikey@neuling.org>,
+        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.491512896@decadent.org.uk>
+Message-ID: <lsq.1404846110.449655037@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 037/125] USB: cdc-acm: fix runtime PM for control messages
+Subject: [PATCH 3.2 075/125] powerpc: Don't setup CPUs with bad status
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,48 +32,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Michael Neuling <mikey@neuling.org>
 
-commit bae3f4c53585e9a170da9436e0f06919874bda9a upstream.
+commit 59a53afe70fd530040bdc69581f03d880157f15a upstream.
 
-Fix runtime PM handling of control messages by adding the required PM
-counter operations.
+OPAL will mark a CPU that is guarded as "bad" in the status property of the CPU
+node.
 
-Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
-that support remote wakeup")
+Unfortunatley Linux doesn't check this property and will put the bad CPU in the
+present map.  This has caused hangs on booting when we try to unsplit the core.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+This patch checks the CPU is avaliable via this status property before putting
+it in the present map.
+
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Tested-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/class/cdc-acm.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ arch/powerpc/kernel/setup-common.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -72,13 +72,23 @@ static const struct tty_port_operations
- static int acm_ctrl_msg(struct acm *acm, int request, int value,
- 							void *buf, int len)
- {
--	int retval = usb_control_msg(acm->dev, usb_sndctrlpipe(acm->dev, 0),
-+	int retval;
-+
-+	retval = usb_autopm_get_interface(acm->control);
-+	if (retval)
-+		return retval;
-+
-+	retval = usb_control_msg(acm->dev, usb_sndctrlpipe(acm->dev, 0),
- 		request, USB_RT_ACM, value,
- 		acm->control->altsetting[0].desc.bInterfaceNumber,
- 		buf, len, 5000);
-+
- 	dev_dbg(&acm->control->dev,
- 			"%s - rq 0x%02x, val %#x, len %#x, result %d\n",
- 			__func__, request, value, len, retval);
-+
-+	usb_autopm_put_interface(acm->control);
-+
- 	return retval < 0 ? retval : 0;
- }
- 
+--- a/arch/powerpc/kernel/setup-common.c
++++ b/arch/powerpc/kernel/setup-common.c
+@@ -449,7 +449,7 @@ void __init smp_setup_cpu_maps(void)
+ 		for (j = 0; j < nthreads && cpu < nr_cpu_ids; j++) {
+ 			DBG("    thread %d -> cpu %d (hard id %d)\n",
+ 			    j, cpu, intserv[j]);
+-			set_cpu_present(cpu, true);
++			set_cpu_present(cpu, of_device_is_available(dn));
+ 			set_hard_smp_processor_id(cpu, intserv[j]);
+ 			set_cpu_possible(cpu, true);
+ 			cpu++;
 
