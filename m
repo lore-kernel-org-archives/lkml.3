@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281AbaGHWe5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 18:34:57 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:42280 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751163AbaGHWe4 (ORCPT
+	id S1754847AbaGHWfO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 18:35:14 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:41075 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754539AbaGHWfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 18:34:56 -0400
-Message-ID: <53BC7210.1000305@gmail.com>
-Date: Tue, 08 Jul 2014 17:34:56 -0500
-From: Stuart Hayes <stuart.w.hayes@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Tue, 8 Jul 2014 18:35:12 -0400
+Date: Tue, 8 Jul 2014 15:35:06 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: josh@joshtriplett.org
+Cc: Pranith Kumar <bobby.prani@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 5/5] kernel/rcu/rcutorture.c:185 fix a sparse warning
+Message-ID: <20140708223506.GG4603@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1402519183-12752-1-git-send-email-bobby.prani@gmail.com>
+ <1402519183-12752-6-git-send-email-bobby.prani@gmail.com>
+ <20140611214752.GC16940@cloud>
 MIME-Version: 1.0
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
-CC: linux-kernel@vger.kernel.org, matt.fleming@intel.com, bp@suse.de
-Subject: Re: [PATCH] x86: Configure NX support earlier in setup_arch
-References: <53B4B627.8060903@gmail.com>
-In-Reply-To: <53B4B627.8060903@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140611214752.GC16940@cloud>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14070822-9332-0000-0000-000001513368
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/2/2014 8:47 PM, Stuart Hayes wrote:
-
-> A page fault can crash the kernel very early if an NX bit is set in a
-> page table entry, if the CPU doesn't support NX (or if NX support is
-> disabled in the CPU).  Move the call to x86_configure_nx() earlier
-> than parse_setup_data(), since that calls early_memremap().
+On Wed, Jun 11, 2014 at 02:47:52PM -0700, josh@joshtriplett.org wrote:
+> On Wed, Jun 11, 2014 at 04:39:43PM -0400, Pranith Kumar wrote:
+> > fix the following sparse warning
+> > 
+> > kernel/rcu/rcutorture.c:185:1: warning: symbol 'boost_mutex' was not declared. Should it be static?
+> > 
+> > by marking boost_mutex as a static mutex
+> > 
+> > Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 > 
-> Signed-off-by: Stuart Hayes <stuart.w.hayes@gmail.com>
-> ---
+> Please preserve the comment alignment (by deleting a tab).  With that
+> fixed:
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+
+Queued for 3.18.
+
+But Pranith, next time Josh gives you a review comment, could you please
+respond with the appropriate update?
+
+							Thanx, Paul
+
+> >  kernel/rcu/rcutorture.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
+> > index 7fa34f8..1cd4b2d 100644
+> > --- a/kernel/rcu/rcutorture.c
+> > +++ b/kernel/rcu/rcutorture.c
+> > @@ -182,7 +182,7 @@ static u64 notrace rcu_trace_clock_local(void)
+> >  #endif /* #else #ifdef CONFIG_RCU_TRACE */
+> >  
+> >  static unsigned long boost_starttime;	/* jiffies of next boost test start. */
+> > -DEFINE_MUTEX(boost_mutex);		/* protect setting boost_starttime */
+> > +static DEFINE_MUTEX(boost_mutex);		/* protect setting boost_starttime */
+> >  					/*  and boost task create/destroy. */
+> >  static atomic_t barrier_cbs_count;	/* Barrier callbacks registered. */
+> >  static bool barrier_phase;		/* Test phase. */
+> > -- 
+> > 1.9.1
+> > 
 > 
-> --- linux-3.16-rc3/arch/x86/kernel/setup.c.orig	2014-07-02 12:14:50.196308719 -0400
-> +++ linux-3.16-rc3/arch/x86/kernel/setup.c	2014-07-02 12:11:11.240301228 -0400
-> @@ -940,6 +940,17 @@ void __init setup_arch(char **cmdline_p)
->  
->  	iomem_resource.end = (1ULL << boot_cpu_data.x86_phys_bits) - 1;
->  	setup_memory_map();
-> +
-> +	/*
-> +	 * x86_configure_nx() is called before parse_setup_data() to detect
-> +	 * whether hardware doesn't support NX (so that parse_setup_data()
-> +	 * can safely call early_memremap() without setting the XD bit in
-> +	 * the PTE, which can cause an unrecoverable page fault). It may
-> +	 * then be called again from within noexec_setup() during parsing
-> +	 * early parameters to honor the respective command line option.
-> +	 */
-> +	x86_configure_nx();
-> +
->  	parse_setup_data();
->  
->  	copy_edd();
-> @@ -974,15 +985,6 @@ void __init setup_arch(char **cmdline_p)
->  	strlcpy(command_line, boot_command_line, COMMAND_LINE_SIZE);
->  	*cmdline_p = command_line;
->  
-> -	/*
-> -	 * x86_configure_nx() is called before parse_early_param() to detect
-> -	 * whether hardware doesn't support NX (so that the early EHCI debug
-> -	 * console setup can safely call set_fixmap()). It may then be called
-> -	 * again from within noexec_setup() during parsing early parameters
-> -	 * to honor the respective command line option.
-> -	 */
-> -	x86_configure_nx();
-> -
->  	parse_early_param();
->  
->  	x86_report_nx();
-
-
-I haven't received any responses... is there a problem with the patch?  Also CCing a couple people.
 
