@@ -1,90 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932175AbaGHSBv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 14:01:51 -0400
-Received: from mail-by2lp0243.outbound.protection.outlook.com ([207.46.163.243]:6417
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752746AbaGHSBu convert rfc822-to-8bit (ORCPT
+	id S1755050AbaGHSDF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 14:03:05 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:47359 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753977AbaGHSDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 14:01:50 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Richard Weinberger <richard@nod.at>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-CC: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] hyperv: Add netpoll support
-Thread-Topic: [PATCH] hyperv: Add netpoll support
-Thread-Index: AQHPmo+Sem0p3ifQZUi3cyqbFGXcHpuWd56A
-Date: Tue, 8 Jul 2014 18:01:47 +0000
-Message-ID: <9fb91c2ee32a4a59a2bec54043a6b9fd@BY2PR03MB299.namprd03.prod.outlook.com>
-References: <1404811947-5174-1-git-send-email-richard@nod.at>
-In-Reply-To: <1404811947-5174-1-git-send-email-richard@nod.at>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [131.107.160.21]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:
-x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-x-forefront-prvs: 0266491E90
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(51704005)(13464003)(377454003)(199002)(189002)(81542001)(92566001)(76482001)(79102001)(21056001)(76176999)(85852003)(74316001)(19580395003)(99396002)(105586002)(99286002)(86362001)(64706001)(1511001)(46102001)(106356001)(83322001)(19580405001)(83072002)(107046002)(74502001)(31966008)(76576001)(85306003)(4396001)(77982001)(81342001)(50986999)(87936001)(80022001)(54356999)(95666004)(2656002)(101416001)(74662001)(20776003)(33646001)(106116001)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB300;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 8 Jul 2014 14:03:03 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
+In-Reply-To: <1404823639-6496-1-git-send-email-mmarek@suse.cz>
+References: <CAPVoSvSmzRWSJeR9dyBO0qS6-9SWA_d-CjGuQeULGS_MRUY77w@mail.gmail.com>
+	<1404823639-6496-1-git-send-email-mmarek@suse.cz>
+Date: Tue, 8 Jul 2014 20:03:01 +0200
+Message-ID: <CAPVoSvTSbSrEza+25oW4V2iqVMfKsgTbCxHgwA81kD4D1FYRQQ@mail.gmail.com>
+Subject: Re: [PATCH] firmware: Create directories for external firmware
+From: Torsten Kaiser <just.for.lkml@googlemail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Ronald <ronald645@gmail.com>, linux-kbuild@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Richard Weinberger [mailto:richard@nod.at]
-> Sent: Tuesday, July 8, 2014 2:32 AM
-> To: KY Srinivasan; Haiyang Zhang
-> Cc: devel@linuxdriverproject.org; netdev@vger.kernel.org; linux-
-> kernel@vger.kernel.org; Richard Weinberger
-> Subject: [PATCH] hyperv: Add netpoll support
-> 
-> In order to have at least a netconsole to debug kernel issues on Windows
-> Azure this patch implements netpoll support.
-> Sending packets is easy, netvsc_start_xmit() does already everything
-> needed.
-> To receive we need to trigger the channel callback which is usally called via
-> tasklet_schedule().
-> 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
+On Tue, Jul 8, 2014 at 2:47 PM, Michal Marek <mmarek@suse.cz> wrote:
+> Commit 5180d5f4 ("firmware: Simplify directory creation") broke
+> including firmware specified in CONFIG_EXTRA_FIRMWARE:
+>
+>   MK_FW   firmware/amd-ucode/microcode_amd.bin.gen.S
+> /bin/sh: firmware/amd-ucode/microcode_amd.bin.gen.S: No such file or directory
+> ...
+> firmware/Makefile:185: recipe for target
+> 'firmware/amd-ucode/microcode_amd.bin.gen.S' failed
+>
+> It works with O= builds, because the directory is created by
+> Makefile.build. Create the directory in firmware/Makefile in non-O
+> builds.
+>
+> Reported-by: Ronald <ronald645@gmail.com>
+> Reported-by: Torsten Kaiser <just.for.lkml@googlemail.com>
+> Signed-off-by: Michal Marek <mmarek@suse.cz>
 > ---
->  drivers/net/hyperv/netvsc_drv.c | 14 ++++++++++++++
->  1 file changed, 14 insertions(+)
-> 
-> diff --git a/drivers/net/hyperv/netvsc_drv.c
-> b/drivers/net/hyperv/netvsc_drv.c index 4fd71b7..367b71e 100644
-> --- a/drivers/net/hyperv/netvsc_drv.c
-> +++ b/drivers/net/hyperv/netvsc_drv.c
-> @@ -736,6 +736,17 @@ static int netvsc_set_mac_addr(struct net_device
-> *ndev, void *p)
->  	return err;
->  }
-> 
-> +#ifdef CONFIG_NET_POLL_CONTROLLER
-> +static void netvsc_poll_controller(struct net_device *net) {
-> +	struct net_device_context *net_device_ctx = netdev_priv(net);
-> +	struct hv_device *dev = net_device_ctx->device_ctx;
+>
+> Can you try this patch?
+
+Works fine for me.
+
+Thanks for the quick patch!
+
+Torsten
+
+> Ronald, can you tell me your full name for the Reported-by: line?
+>
+> Thanks.
+> ---
+>
+>  firmware/Makefile | 6 ++++++
+>  1 file changed, 6 insertions(+)
+>
+> diff --git a/firmware/Makefile b/firmware/Makefile
+> index 5747417..0862d34 100644
+> --- a/firmware/Makefile
+> +++ b/firmware/Makefile
+> @@ -219,6 +219,12 @@ $(obj)/%.fw: $(obj)/%.H16 $(ihex2fw_dep)
+>  obj-y                           += $(patsubst %,%.gen.o, $(fw-external-y))
+>  obj-$(CONFIG_FIRMWARE_IN_KERNEL) += $(patsubst %,%.gen.o, $(fw-shipped-y))
+>
+> +ifeq ($(KBUILD_SRC),)
+> +# Makefile.build only creates subdirectories for O= builds, but external
+> +# firmware might live outside the kernel source tree
+> +_dummy := $(foreach d,$(addprefix $(obj)/,$(dir $(fw-external-y))), $(shell [ -d $(d) ] || mkdir -p $(d)))
+> +endif
 > +
-> +	local_bh_disable();
-> +	netvsc_channel_cb(dev->channel);
-> +	local_bh_enable();
-> +}
-> +#endif
-
-Each channel is bound to a specific VCPU in the guest and the channel callback is expected to be delivered on
-the VCPU the channel is bound to. This code is not satisfying that requirement.
-
-Regards,
-
-K. Y
-
+>  # Remove .S files and binaries created from ihex
+>  # (during 'make clean' .config isn't included so they're all in $(fw-shipped-))
+>  targets := $(fw-shipped-) $(patsubst $(obj)/%,%, \
+> --
+> 1.8.4.5
+>
