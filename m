@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756762AbaGHTee (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:34:34 -0400
+	id S1756750AbaGHTea (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:34:30 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54778 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756749AbaGHTeb (ORCPT
+	by vger.kernel.org with ESMTP id S1756088AbaGHTe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:34:31 -0400
+	Tue, 8 Jul 2014 15:34:26 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Johan Hovold" <jhovold@gmail.com>, "Zhang, Qi1" <qi1.zhang@intel.com>,
-        "xiao jin" <jin.xiao@intel.com>,
-        "David Cohen" <david.a.cohen@linux.intel.com>
+CC: akpm@linux-foundation.org, "Roland Dreier" <roland@purestorage.com>,
+        "Yann Droneaud" <ydroneaud@opteya.com>,
+        "Dan Carpenter" <dan.carpenter@oracle.com>,
+        "Steve Wise" <swise@opengridcomputing.com>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.268045704@decadent.org.uk>
+Message-ID: <lsq.1404846110.947114285@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 030/125] USB: usb_wwan: fix race between write and resume
+Subject: [PATCH 3.2 051/125] RDMA/cxgb4: Add missing padding at end of
+ struct c4iw_create_cq_resp
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,65 +34,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: xiao jin <jin.xiao@intel.com>
+From: Yann Droneaud <ydroneaud@opteya.com>
 
-commit d9e93c08d8d985e5ef89436ebc9f4aad7e31559f upstream.
+commit b6f04d3d21458818073a2f5af5339f958864bf71 upstream.
 
-We find a race between write and resume. usb_wwan_resume run play_delayed()
-and spin_unlock, but intfdata->suspended still is not set to zero.
-At this time usb_wwan_write is called and anchor the urb to delay
-list. Then resume keep running but the delayed urb have no chance
-to be commit until next resume. If the time of next resume is far
-away, tty will be blocked in tty_wait_until_sent during time. The
-race also can lead to writes being reordered.
+The i386 ABI disagrees with most other ABIs regarding alignment of
+data types larger than 4 bytes: on most ABIs a padding must be added
+at end of the structures, while it is not required on i386.
 
-This patch put play_Delayed and intfdata->suspended together in the
-spinlock, it's to avoid the write race during resume.
+So for most ABI struct c4iw_create_cq_resp gets implicitly padded
+to be aligned on a 8 bytes multiple, while for i386, such padding
+is not added.
 
-Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
-option driver")
+The tool pahole can be used to find such implicit padding:
 
-Signed-off-by: xiao jin <jin.xiao@intel.com>
-Signed-off-by: Zhang, Qi1 <qi1.zhang@intel.com>
-Reviewed-by: David Cohen <david.a.cohen@linux.intel.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: there's no need to check for portdata == NULL]
+  $ pahole --anon_include \
+           --nested_anon_include \
+           --recursive \
+           --class_name c4iw_create_cq_resp \
+           drivers/infiniband/hw/cxgb4/iw_cxgb4.o
+
+Then, structure layout can be compared between i386 and x86_64:
+
+# +++ obj-i386/drivers/infiniband/hw/cxgb4/iw_cxgb4.o.pahole.txt   2014-03-28 11:43:05.547432195 +0100
+# --- obj-x86_64/drivers/infiniband/hw/cxgb4/iw_cxgb4.o.pahole.txt 2014-03-28 10:55:10.990133017 +0100
+  @@ -14,9 +13,8 @@ struct c4iw_create_cq_resp {
+          __u32                      size;                 /*    28     4 */
+          __u32                      qid_mask;             /*    32     4 */
+
+  -       /* size: 36, cachelines: 1, members: 6 */
+  -       /* last cacheline: 36 bytes */
+  +       /* size: 40, cachelines: 1, members: 6 */
+  +       /* padding: 4 */
+  +       /* last cacheline: 40 bytes */
+   };
+
+This ABI disagreement will make an x86_64 kernel try to write past the
+buffer provided by an i386 binary.
+
+When boundary check will be implemented, the x86_64 kernel will refuse
+to write past the i386 userspace provided buffer and the uverbs will
+fail.
+
+If the structure is on a page boundary and the next page is not
+mapped, ib_copy_to_udata() will fail and the uverb will fail.
+
+This patch adds an explicit padding at end of structure
+c4iw_create_cq_resp, and, like 92b0ca7cb149 ("IB/mlx5: Fix stack info
+leak in mlx5_ib_alloc_ucontext()"), makes function c4iw_create_cq()
+not writting this padding field to userspace. This way, x86_64 kernel
+will be able to write struct c4iw_create_cq_resp as expected by
+unpatched and patched i386 libcxgb4.
+
+Link: http://marc.info/?i=cover.1399309513.git.ydroneaud@opteya.com
+Fixes: cfdda9d764362 ("RDMA/cxgb4: Add driver for Chelsio T4 RNIC")
+Fixes: e24a72a3302a6 ("RDMA/cxgb4: Fix four byte info leak in c4iw_create_cq()")
+Cc: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Acked-by: Steve Wise <swise@opengridcomputing.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/usb_wwan.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ drivers/infiniband/hw/cxgb4/cq.c   | 4 ++--
+ drivers/infiniband/hw/cxgb4/user.h | 1 +
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -731,17 +731,15 @@ int usb_wwan_resume(struct usb_serial *s
- 		}
- 	}
+--- a/drivers/infiniband/hw/cxgb4/cq.c
++++ b/drivers/infiniband/hw/cxgb4/cq.c
+@@ -833,7 +833,6 @@ struct ib_cq *c4iw_create_cq(struct ib_d
+ 		if (!mm2)
+ 			goto err4;
  
-+	spin_lock_irq(&intfdata->susp_lock);
- 	for (i = 0; i < serial->num_ports; i++) {
- 		/* walk all ports */
- 		port = serial->port[i];
- 		portdata = usb_get_serial_port_data(port);
+-		memset(&uresp, 0, sizeof(uresp));
+ 		uresp.qid_mask = rhp->rdev.cqmask;
+ 		uresp.cqid = chp->cq.cqid;
+ 		uresp.size = chp->cq.size;
+@@ -844,7 +843,8 @@ struct ib_cq *c4iw_create_cq(struct ib_d
+ 		uresp.gts_key = ucontext->key;
+ 		ucontext->key += PAGE_SIZE;
+ 		spin_unlock(&ucontext->mmap_lock);
+-		ret = ib_copy_to_udata(udata, &uresp, sizeof uresp);
++		ret = ib_copy_to_udata(udata, &uresp,
++				       sizeof(uresp) - sizeof(uresp.reserved));
+ 		if (ret)
+ 			goto err5;
  
- 		/* skip closed ports */
--		spin_lock_irq(&intfdata->susp_lock);
--		if (!portdata->opened) {
--			spin_unlock_irq(&intfdata->susp_lock);
-+		if (!portdata->opened)
- 			continue;
--		}
+--- a/drivers/infiniband/hw/cxgb4/user.h
++++ b/drivers/infiniband/hw/cxgb4/user.h
+@@ -48,6 +48,7 @@ struct c4iw_create_cq_resp {
+ 	__u32 cqid;
+ 	__u32 size;
+ 	__u32 qid_mask;
++	__u32 reserved; /* explicit padding (optional for i386) */
+ };
  
- 		for (j = 0; j < N_IN_URB; j++) {
- 			urb = portdata->in_urbs[j];
-@@ -754,9 +752,7 @@ int usb_wwan_resume(struct usb_serial *s
- 			}
- 		}
- 		play_delayed(port);
--		spin_unlock_irq(&intfdata->susp_lock);
- 	}
--	spin_lock_irq(&intfdata->susp_lock);
- 	intfdata->suspended = 0;
- 	spin_unlock_irq(&intfdata->susp_lock);
- err_out:
+ 
 
