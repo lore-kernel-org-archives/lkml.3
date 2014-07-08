@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627AbaGHOwB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 10:52:01 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:51468 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707AbaGHOv7 (ORCPT
+	id S1753995AbaGHOwf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 10:52:35 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:63207 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753401AbaGHOwc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 10:51:59 -0400
-Date: Tue, 8 Jul 2014 16:51:47 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: mm/sched/net: BUG when running simple code
-Message-ID: <20140708145147.GH6758@twins.programming.kicks-ass.net>
-References: <539A6850.4090408@oracle.com>
+	Tue, 8 Jul 2014 10:52:32 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="D3uGefx/nfj0hkMF"
-Content-Disposition: inline
-In-Reply-To: <539A6850.4090408@oracle.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140708143912.GA3436@kroah.com>
+References: <20140701103432.12718.82795.stgit@patser> <20140702053758.GA7578@kroah.com>
+ <CAKMK7uHZQjQ2m7KE22kTRVs-NtGguHREk24pSJiLbN7EoQLZ=g@mail.gmail.com>
+ <20140707173052.GA8693@kroah.com> <20140708134427.GG17271@phenom.ffwll.local> <20140708143912.GA3436@kroah.com>
+From: Sumit Semwal <sumit.semwal@linaro.org>
+Date: Tue, 8 Jul 2014 20:22:11 +0530
+Message-ID: <CAO_48GHwJ4EuCKgLmZhEaEQqS9e7EVZP3hsivhRwLCNFhzAQVA@mail.gmail.com>
+Subject: Re: [PATCH v2 0/9] Updated fence patch series
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        "open list:GENERIC INCLUDE/A..." <linux-arch@vger.kernel.org>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "Clark, Rob" <robdclark@gmail.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Colin Cross <ccross@google.com>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 8 July 2014 20:09, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Tue, Jul 08, 2014 at 03:44:27PM +0200, Daniel Vetter wrote:
+>> On Mon, Jul 07, 2014 at 10:30:52AM -0700, Greg KH wrote:
+>> > On Mon, Jul 07, 2014 at 03:23:17PM +0200, Daniel Vetter wrote:
+>> > > On Wed, Jul 2, 2014 at 7:37 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> > > >> Android can expose fences to userspace. It's possible to make the new fence
+>> > > >> mechanism expose the same fences to userspace by changing sync_fence_create
+>> > > >> to take a struct fence instead of a struct sync_pt. No other change is needed,
+>> > > >> because only the fence parts of struct sync_pt are used. But because the
+>> > > >> userspace fences are a separate problem and I haven't really looked at it yet
+>> > > >> I feel it should stay in staging, for now.
+>> > > >
+>> > > > Ok, that's reasonable.
+>> > > >
+>> > > > At first glance, this all looks "sane" to me, any objection from anyone
+>> > > > if I merge this through my driver-core tree for 3.17?
+>> > >
+>> > > Ack from my side fwiw.
+>> >
+>> > Thanks, I'll queue it up later today.
+>>
+>> btw should we add you as a (co)maintainer for driver/core/dma-buf since
+>> you seem to want to keep a closer tab on what the insane gfx folks are up
+>> to in there?
+>
+> Sure, why not, what's one more maintainership...
+>
+> Oh, does that mean you want me to be the one collecting the patches and
+> forwarding them on to Linus?  If so, that's fine, I can easily do that
+> as well due to my infrastructure being set up for it.
+>
+If you're ok, I could continue to do the collecting / forwarding
+business - I guess Daniel meant more from the 'not miss patches that
+need review'!
 
---D3uGefx/nfj0hkMF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Upto you!
+> thanks,
+>
+> greg k-h
+Thanks and best regards,
+~Sumit
 
-On Thu, Jun 12, 2014 at 10:56:16PM -0400, Sasha Levin wrote:
-> Hi all,
->=20
-> Okay, I'm really lost. I got the following when fuzzing, and can't really=
- explain what's
-> going on. It seems that we get a "unable to handle kernel paging request"=
- when running
-> rather simple code, and I can't figure out how it would cause it.
->=20
 
-Are you running on AMD hardware? If so; check out this thread:
+-- 
+Thanks and regards,
 
-  http://marc.info/?i=3D53B02CEB.7010607@web.de
-
---D3uGefx/nfj0hkMF
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTvAWDAAoJEHZH4aRLwOS6VnEP/05c2sj5PFztHzQWIEtZ7xo7
-C9fdGJntcS00lx8pqS8e2wL8j5lk3LJZiJppgtH1xNXVGIKFE03vTgt+K+W6WFtA
-KHZhFlarHk73JEZhFD1aCcqUC9mqfY6vOgy3FuluQg029OnAxSQQ52xDEiiYPODx
-9VugzaxExZmWk0ke13szomqq8adbwjYCc5pWUIPNf1QbdUhj/w5X05ppDoNqz4TP
-mLAgu7aLkYW0HaXgk3Qi0nUKcbHrQ+iBB8qmifWNw3oVMW9dsrJ3DQdYFK74EfE3
-89o8kd9TxjInToggT3dFKYJNHISikolaGVFr5lfVOeOLJkegobA9eCwgVZ8vrjO4
-QNt6Mu9dkYO0ZpyC/7VJZl02uILeMtKEPU3lcn8EKPAlb9UUsBrPEoI2m5e/my7F
-uA6cEATo5wOzUtg9XDn3kLgSkQfXMGWCIArD/NhCiRU7rbUFic5kd22oK+I8CS7v
-O7dp1cyU1Aged1nO4TOwUsj/OcWFbM9CHXUKDqs5on42YrQakagViUi4i8Zi2P9i
-JDxZIaNlLQsEz39imnXM70AMRXoPoOdxgZlIZz2Bxc+R/QT6eYyYC+NK8vjLuNGV
-Jo7vjWlKWQ5UqlIyZQ1z7zl5sDvEXe/URXwXvnyKChsP23IW8H0KG0Wax0TZUU75
-iqT2wd/0IfSQmpBzaX2G
-=yYJn
------END PGP SIGNATURE-----
-
---D3uGefx/nfj0hkMF--
+Sumit Semwal
+Graphics Engineer - Graphics working group
+Linaro.org │ Open source software for ARM SoCs
