@@ -1,81 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755118AbaGHNIn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:08:43 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:53549 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754876AbaGHNIl (ORCPT
+	id S1754862AbaGHNKH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:10:07 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54693 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754266AbaGHNKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:08:41 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 2/2] ACPI/Wakup: Enable button wakeup GPEs if these GPEs have associated GPE methods.
-Date: Tue, 08 Jul 2014 15:26:45 +0200
-Message-ID: <3011365.oYtXFx0LHa@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1404802679-24019-2-git-send-email-tianyu.lan@intel.com>
-References: <1404802679-24019-1-git-send-email-tianyu.lan@intel.com> <1404802679-24019-2-git-send-email-tianyu.lan@intel.com>
+	Tue, 8 Jul 2014 09:10:06 -0400
+Date: Tue, 8 Jul 2014 15:09:58 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stefan Bader <stefan.bader@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: fs/stat: Reduce memory requirements for stat_open
+Message-ID: <20140708130958.GG6758@twins.programming.kicks-ass.net>
+References: <1402578017-16637-1-git-send-email-stefan.bader@canonical.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0mrGdROycKaeLXMw"
+Content-Disposition: inline
+In-Reply-To: <1402578017-16637-1-git-send-email-stefan.bader@canonical.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 08, 2014 02:57:58 PM Lan Tianyu wrote:
-> The button wakeup GPEs are enabled unconditionally in the current world by
-> commit 2a5d24(ACPI / Wakeup: Enable button GPEs unconditionally during
-> initialization). Because button's GPE methods needs to be run to clear
-> GPE status on some machines when there is GPE interrupt. If not, it will
-> cause machines resume immediately after being suspended since GPE status
-> isn't cleared correctly.
-> 
-> But if there is no GPE method for button wakeup GPE, these GPEs should not
-> be enabled since nothing needs to be done when they are triggered and this
-> also causes LID GPE storm on Lenovo Ideapad y560p.
-> 
-> This patch is to check Button GPE method and enable it if there is associated
-> GPE method.
 
-Part of the problem is that we call acpi_setup_gpe_for_wake() for buttons too
-and it sets ACPI_GPE_DISPATCH_NOTIFY unconditionally.  While we could address
-this the way you're proposing, it seems a bit less than straightforward so to
-speak.
+--0mrGdROycKaeLXMw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Let me think more about how to address that.
+On Thu, Jun 12, 2014 at 03:00:17PM +0200, Stefan Bader wrote:
+> When reading from /proc/stat we allocate a large buffer to maximise
+> the chances of the results being from a single run and thus internally
+> consistent.  This currently is sized at 128 * num_possible_cpus() which,
+> in the face of kernels sized to handle large configurations (256 cpus
+> plus), results in the buffer being an order-4 allocation or more.
+> When system memory becomes fragmented these cannot be guarenteed, leading
+> to read failures due to allocation failures.
 
-> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=61051
-> Reported-by: James Tocknell<aragilar@gmail.com>
-> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-> ---
->  drivers/acpi/wakeup.c | 11 ++++++++---
->  1 file changed, 8 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/acpi/wakeup.c b/drivers/acpi/wakeup.c
-> index 1638401..5b20ae4 100644
-> --- a/drivers/acpi/wakeup.c
-> +++ b/drivers/acpi/wakeup.c
-> @@ -86,9 +86,14 @@ int __init acpi_wakeup_device_init(void)
->  						       struct acpi_device,
->  						       wakeup_list);
->  		if (device_can_wakeup(&dev->dev)) {
-> -			/* Button GPEs are supposed to be always enabled. */
-> -			acpi_enable_gpe(dev->wakeup.gpe_device,
-> -					dev->wakeup.gpe_number);
-> +			/*
-> +			 * Button GPEs are supposed to be always enabled if
-> +			 * they have associated GPE methods.
-> +			 */
-> +			if (ACPI_SUCCESS(acpi_check_gpe_method(
-> +			    dev->wakeup.gpe_device, dev->wakeup.gpe_number)))
-> +				acpi_enable_gpe(dev->wakeup.gpe_device,
-> +						dev->wakeup.gpe_number);
->  			device_set_wakeup_enable(&dev->dev, true);
->  		}
->  	}
-> 
+> @@ -184,7 +184,7 @@ static int show_stat(struct seq_file *p, void *v)
+> =20
+>  static int stat_open(struct inode *inode, struct file *file)
+>  {
+> -	size_t size =3D 1024 + 128 * num_possible_cpus();
+> +	size_t size =3D 1024 + 128 * num_online_cpus();
+>  	char *buf;
+>  	struct seq_file *m;
+>  	int res;
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Old thread, and already solved in the meantime, but note that
+CONFIG_NR_CPUS _should_ have no reflection on num_possible_cpus().
+
+The arch (x86 does) should detect at boot time the max possible CPUs the
+actual hardware supports and put num_possible_cpus() to that number. So
+your typical laptop will mostly have num_possible_cpus() <=3D 4, even
+though CONFIG_NR_CPUS could be 4k.
+
+Of course, if you actually do put 256+ cpus in your system, well, then
+the difference between possible and online isn't going to help either.
+
+If on the other hand your 'board' reports it can hold 256 CPUs while in
+fact it cannot, go kick your vendor in the nuts.
+
+--0mrGdROycKaeLXMw
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTu+2mAAoJEHZH4aRLwOS688YP/jJg21XzmYEgZRU9HwyeraVn
+LPMZJq3KD51u0A5Po5nRhHcZaR0KrUuRHM7f9fVI+XD/e7gEJ8UCiKwyEhXbbnql
+E2EWOjDCIWwFBUWOCyVd0CUyEax5JYH9mJW2tvy9iAysSvds2LA0qTlNwfHZNAdb
+WssVjQo7rK4hGQS7IIwH/JUXve95fjMbkv8BwW/1tzED8/v7brN2JmgJnXN3C6p/
+84OEC2pChUobzRDy12L2PK99BEoMUrG8EAPnpQ7tXKSP9q957KmnnTg13my3shAB
+48yt7+yZHR4MdpdwVW06Yv3xE3uHWo7rx56kyWZuHyL7oYqJh+AXlaPZo3U/oz/f
+0EYyF68X94EsRVW1r11LCVvoFrTOnG9E19sBFUpKOyhyJgPYQYw2Uj+zapBwfz4+
+8j5D9Ydv8C+u4hnEU/OJWXiZaVO5/Ap/biBu0aXjYTB8/C21jaVwKznPRFE6LAnN
+ztEyxrm7QmtmIfOEfojNtQ0+IeMPwDKyCFDtjVoDP/GQQdG9d6A2wraG/KlX5sSZ
+HiKMoGnxsvux46NSELY/SaIwOy0kHbNMvaTLnKWEOvar5XMr1J/5j0qcZd30ar/q
+zQC/3RhbtszAhR9Xh+CuEkyJO6jtFr33dqsRh7ZNc51JkMU4jE6DCnGZqlmm9FrF
+ok9FynPJHepH6nh6n6o1
+=aUzr
+-----END PGP SIGNATURE-----
+
+--0mrGdROycKaeLXMw--
