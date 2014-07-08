@@ -1,290 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755241AbaGHRc2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 13:32:28 -0400
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:61034 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755202AbaGHRc0 (ORCPT
+	id S1755259AbaGHRde (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 13:33:34 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:31696 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753882AbaGHRdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 13:32:26 -0400
+	Tue, 8 Jul 2014 13:33:32 -0400
+Message-ID: <53BC2B64.8070502@atmel.com>
+Date: Tue, 8 Jul 2014 19:33:24 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Date: Tue, 8 Jul 2014 11:32:25 -0600
-Message-ID: <CAHKv19CfiaQoJwapmG7pDXQPmsGb3kM=wTz+dNp0fn67Mc_tRA@mail.gmail.com>
-Subject: [PATCH RESEND] ARM: dts: Restructure imx6qdl-wandboard.dtsi for new
- rev C1 board.
-From: George Joseph <george.joseph@fairview5.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Maxime Ripard <maxime.ripard@free-electrons.com>, <linux@maxim.org.za>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <dwmw2@infradead.org>, <dbaryshkov@gmail.com>
+CC: Boris Brezillon <boris@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 01/18] power: reset: Add if statement isntead of multiple
+ depends on
+References: <1404743131-24569-1-git-send-email-maxime.ripard@free-electrons.com> <1404743131-24569-2-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1404743131-24569-2-git-send-email-maxime.ripard@free-electrons.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The rev C1 Wandboard uses the Broadcom 4330 for WiFi and Bluetooth instead of
-the 4329.  This changes the PADS assigned for the control lines.  Another
-side effect of the change is that on the rev C1 board, usdhc driver can't
-detect the chip presence correctly so usdhc2 now needs its 'non-removeable'
-property removed.
+Nit-pik: In subject: s/isntead/instead/
 
-So that rev B1 and earlier can continue to work, this patch splits the
-board-specific definitions from imx6qdl-wandboard.dtsi into
-imx6qdl-wandboard-revb1.dtsi and imx6qdl-wandboard-revc1.dtsi.  The new files
-include the original base imx6qdl-wandboard.dtsi which retains the common
-definitions.
+On 07/07/2014 16:25, Maxime Ripard :
+> All the config option so far are depending on the POWER_RESET symbol
+> 
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> ---
+>  drivers/power/reset/Kconfig | 17 +++++++++--------
+>  1 file changed, 9 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
+> index bdcf5173e377..19d546c5edfa 100644
+> --- a/drivers/power/reset/Kconfig
+> +++ b/drivers/power/reset/Kconfig
+> @@ -6,15 +6,17 @@ menuconfig POWER_RESET
+>  
+>  	  Say Y here to enable board reset and power off
+>  
+> +if POWER_RESET
+> +
+>  config POWER_RESET_AS3722
+>  	bool "ams AS3722 power-off driver"
+> -	depends on MFD_AS3722 && POWER_RESET
+> +	depends on MFD_AS3722
+>  	help
+>  	  This driver supports turning off board via a ams AS3722 power-off.
+>  
+>  config POWER_RESET_AXXIA
+>  	bool "LSI Axxia reset driver"
+> -	depends on POWER_RESET && ARCH_AXXIA
+> +	depends on ARCH_AXXIA
+>  	help
+>  	  This driver supports restart for Axxia SoC.
+>  
+> @@ -22,7 +24,7 @@ config POWER_RESET_AXXIA
+>  
+>  config POWER_RESET_GPIO
+>  	bool "GPIO power-off driver"
+> -	depends on OF_GPIO && POWER_RESET
+> +	depends on OF_GPIO
+>  	help
+>  	  This driver supports turning off your board via a GPIO line.
+>  	  If your board needs a GPIO high/low to power down, say Y and
+> @@ -30,13 +32,13 @@ config POWER_RESET_GPIO
+>  
+>  config POWER_RESET_MSM
+>  	bool "Qualcomm MSM power-off driver"
+> -	depends on POWER_RESET && ARCH_QCOM
+> +	depends on ARCH_QCOM
+>  	help
+>  	  Power off and restart support for Qualcomm boards.
+>  
+>  config POWER_RESET_QNAP
+>  	bool "QNAP power-off driver"
+> -	depends on OF_GPIO && POWER_RESET && PLAT_ORION
+> +	depends on OF_GPIO && PLAT_ORION
+>  	help
+>  	  This driver supports turning off QNAP NAS devices by sending
+>  	  commands to the microcontroller which controls the main power.
+> @@ -54,14 +56,13 @@ config POWER_RESET_RESTART
+>  config POWER_RESET_SUN6I
+>  	bool "Allwinner A31 SoC reset driver"
+>  	depends on ARCH_SUNXI
+> -	depends on POWER_RESET
+>  	help
+>  	  Reboot support for the Allwinner A31 SoCs.
+>  
+>  config POWER_RESET_VEXPRESS
+>  	bool "ARM Versatile Express power-off and reset driver"
+>  	depends on ARM || ARM64
+> -	depends on POWER_RESET && VEXPRESS_CONFIG
+> +	depends on VEXPRESS_CONFIG
+>  	help
+>  	  Power off and reset support for the ARM Ltd. Versatile
+>  	  Express boards.
+> @@ -69,7 +70,6 @@ config POWER_RESET_VEXPRESS
+>  config POWER_RESET_XGENE
+>  	bool "APM SoC X-Gene reset driver"
+>  	depends on ARM64
+> -	depends on POWER_RESET
+>  	help
+>  	  Reboot support for the APM SoC X-Gene Eval boards.
+>  
+> @@ -80,3 +80,4 @@ config POWER_RESET_KEYSTONE
+>  	help
+>  	  Reboot support for the KEYSTONE SoCs.
+>  
+> +endif
+> 
 
-The existing imx6dl-wandboard.dts includes imx6qdl-wandboard-revc1.dtsi and
-imx6dl-wandboard-revb1.dts (new) includes imx6qdl-wandboard-revb1.dtsi.
-This makes the rev C1 board the new default.  The same pattern is used for
-imx6q-wandboard.dts.
 
-So, from U-Boot on a WB-Quad you use imxq-wandboard-revb1.dtb for the older B1
-board and imxq-wandboard.dtb for the current rev C1 board.
-
-Signed-off-by: George Joseph <george.joseph@fairview5.com>
----
-Forgot to actually set the PAD flags to something other than 0x8000000.
----
- arch/arm/boot/dts/imx6dl-wandboard-revb1.dts   | 22 ++++++++++++++
- arch/arm/boot/dts/imx6dl-wandboard.dts         |  2 +-
- arch/arm/boot/dts/imx6q-wandboard-revb1.dts    | 26 ++++++++++++++++
- arch/arm/boot/dts/imx6q-wandboard.dts          |  2 +-
- arch/arm/boot/dts/imx6qdl-wandboard-revb1.dtsi | 42 ++++++++++++++++++++++++++
- arch/arm/boot/dts/imx6qdl-wandboard-revc1.dtsi | 41 +++++++++++++++++++++++++
- arch/arm/boot/dts/imx6qdl-wandboard.dtsi       | 21 -------------
- 7 files changed, 133 insertions(+), 23 deletions(-)
-
-diff --git a/arch/arm/boot/dts/imx6dl-wandboard-revb1.dts
-b/arch/arm/boot/dts/imx6dl-wandboard-revb1.dts
-new file mode 100644
-index 0000000..f607d4f
---- /dev/null
-+++ b/arch/arm/boot/dts/imx6dl-wandboard-revb1.dts
-@@ -0,0 +1,22 @@
-+/*
-+ * Copyright 2013 Freescale Semiconductor, Inc.
-+ *
-+ * Author: Fabio Estevam <fabio.estevam@freescale.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+/dts-v1/;
-+#include "imx6dl.dtsi"
-+#include "imx6qdl-wandboard-revb1.dtsi"
-+
-+/ {
-+ model = "Wandboard i.MX6 Dual Lite Board";
-+ compatible = "wand,imx6dl-wandboard", "fsl,imx6dl";
-+
-+ memory {
-+ reg = <0x10000000 0x40000000>;
-+ };
-+};
-diff --git a/arch/arm/boot/dts/imx6dl-wandboard.dts
-b/arch/arm/boot/dts/imx6dl-wandboard.dts
-index e672891..bbb6167 100644
---- a/arch/arm/boot/dts/imx6dl-wandboard.dts
-+++ b/arch/arm/boot/dts/imx6dl-wandboard.dts
-@@ -10,7 +10,7 @@
-  */
- /dts-v1/;
- #include "imx6dl.dtsi"
--#include "imx6qdl-wandboard.dtsi"
-+#include "imx6qdl-wandboard-revc1.dtsi"
-
- / {
-  model = "Wandboard i.MX6 Dual Lite Board";
-diff --git a/arch/arm/boot/dts/imx6q-wandboard-revb1.dts
-b/arch/arm/boot/dts/imx6q-wandboard-revb1.dts
-new file mode 100644
-index 0000000..20bf3c2
---- /dev/null
-+++ b/arch/arm/boot/dts/imx6q-wandboard-revb1.dts
-@@ -0,0 +1,26 @@
-+/*
-+ * Copyright 2013 Freescale Semiconductor, Inc.
-+ *
-+ * Author: Fabio Estevam <fabio.estevam@freescale.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+/dts-v1/;
-+#include "imx6q.dtsi"
-+#include "imx6qdl-wandboard-revb1.dtsi"
-+
-+/ {
-+ model = "Wandboard i.MX6 Quad Board";
-+ compatible = "wand,imx6q-wandboard", "fsl,imx6q";
-+
-+ memory {
-+ reg = <0x10000000 0x80000000>;
-+ };
-+};
-+
-+&sata {
-+ status = "okay";
-+};
-diff --git a/arch/arm/boot/dts/imx6q-wandboard.dts
-b/arch/arm/boot/dts/imx6q-wandboard.dts
-index 36be17f..4a8a6ee 100644
---- a/arch/arm/boot/dts/imx6q-wandboard.dts
-+++ b/arch/arm/boot/dts/imx6q-wandboard.dts
-@@ -10,7 +10,7 @@
-  */
- /dts-v1/;
- #include "imx6q.dtsi"
--#include "imx6qdl-wandboard.dtsi"
-+#include "imx6qdl-wandboard-revc1.dtsi"
-
- / {
-  model = "Wandboard i.MX6 Quad Board";
-diff --git a/arch/arm/boot/dts/imx6qdl-wandboard-revb1.dtsi
-b/arch/arm/boot/dts/imx6qdl-wandboard-revb1.dtsi
-new file mode 100644
-index 0000000..ef7fa62
---- /dev/null
-+++ b/arch/arm/boot/dts/imx6qdl-wandboard-revb1.dtsi
-@@ -0,0 +1,42 @@
-+/*
-+ * Copyright 2013 Freescale Semiconductor, Inc.
-+ *
-+ * Author: Fabio Estevam <fabio.estevam@freescale.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include "imx6qdl-wandboard.dtsi"
-+
-+&iomuxc {
-+ pinctrl-0 = <&pinctrl_hog>;
-+
-+ imx6qdl-wandboard {
-+ pinctrl_hog: hoggrp {
-+ fsl,pins = <
-+ MX6QDL_PAD_GPIO_0__CCM_CLKO1 0x130b0 /* GPIO_0_CLKO */
-+ MX6QDL_PAD_GPIO_2__GPIO1_IO02 0x80000000 /* uSDHC1 CD */
-+ MX6QDL_PAD_EIM_DA9__GPIO3_IO09 0x80000000 /* uSDHC3 CD */
-+ MX6QDL_PAD_EIM_EB1__GPIO2_IO29 0x0f0b0 /* WL_REF_ON */
-+ MX6QDL_PAD_EIM_A25__GPIO5_IO02 0x0f0b0 /* WL_RST_N */
-+ MX6QDL_PAD_ENET_RXD1__GPIO1_IO26 0x000b0 /* WL_REG_ON */
-+ MX6QDL_PAD_ENET_TXD1__GPIO1_IO29 0x80000000 /* WL_HOST_WAKE */
-+ MX6QDL_PAD_ENET_TXD0__GPIO1_IO30 0x80000000 /* WL_WAKE */
-+ MX6QDL_PAD_EIM_D29__GPIO3_IO29 0x80000000 /* RGMII_nRST */
-+ MX6QDL_PAD_EIM_DA13__GPIO3_IO13 0x80000000 /* BT_ON */
-+ MX6QDL_PAD_EIM_DA14__GPIO3_IO14 0x80000000 /* BT_WAKE */
-+ MX6QDL_PAD_EIM_DA15__GPIO3_IO15 0x80000000 /* BT_HOST_WAKE */
-+ >;
-+ };
-+ };
-+};
-+
-+&usdhc2 {
-+ pinctrl-names = "default";
-+ pinctrl-0 = <&pinctrl_usdhc2>;
-+ non-removable;
-+ status = "okay";
-+};
-diff --git a/arch/arm/boot/dts/imx6qdl-wandboard-revc1.dtsi
-b/arch/arm/boot/dts/imx6qdl-wandboard-revc1.dtsi
-new file mode 100644
-index 0000000..8d893a7
---- /dev/null
-+++ b/arch/arm/boot/dts/imx6qdl-wandboard-revc1.dtsi
-@@ -0,0 +1,41 @@
-+/*
-+ * Copyright 2013 Freescale Semiconductor, Inc.
-+ *
-+ * Author: Fabio Estevam <fabio.estevam@freescale.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include "imx6qdl-wandboard.dtsi"
-+
-+&iomuxc {
-+ pinctrl-0 = <&pinctrl_hog>;
-+
-+ imx6qdl-wandboard {
-+ pinctrl_hog: hoggrp {
-+ fsl,pins = <
-+ MX6QDL_PAD_GPIO_0__CCM_CLKO1 0x130b0 /* GPIO_0_CLKO */
-+ MX6QDL_PAD_GPIO_2__GPIO1_IO02 0x80000000 /* uSDHC1 CD */
-+ MX6QDL_PAD_EIM_DA9__GPIO3_IO09 0x80000000 /* uSDHC3 CD */
-+ MX6QDL_PAD_CSI0_DAT14__GPIO6_IO00 0x0f0b0 /* WIFI_ON (reset, active low) */
-+ MX6QDL_PAD_ENET_RXD1__GPIO1_IO26 0x000b0 /* WL_REG_ON (unused) */
-+ MX6QDL_PAD_ENET_TXD1__GPIO1_IO29 0x80000000 /* WL_HOST_WAKE, input */
-+ MX6QDL_PAD_CSI0_DAT13__GPIO5_IO31 0x0f0b0 /* GPIO5_IO31 (Wifi Power Enable) */
-+ MX6QDL_PAD_ENET_TXD0__GPIO1_IO30 0x80000000 /* WL_WAKE (unused) */
-+ MX6QDL_PAD_CSI0_VSYNC__GPIO5_IO21 0x80000000 /* BT_ON */
-+ MX6QDL_PAD_CSI0_DAT12__GPIO5_IO30 0x80000000 /* BT_WAKE */
-+ MX6QDL_PAD_CSI0_DATA_EN__GPIO5_IO20 0x80000000 /* BT_HOST_WAKE */
-+ MX6QDL_PAD_EIM_D29__GPIO3_IO29 0x80000000 /* RGMII_nRST */
-+ >;
-+ };
-+ };
-+};
-+
-+&usdhc2 {
-+ pinctrl-names = "default";
-+ pinctrl-0 = <&pinctrl_usdhc2>;
-+ status = "okay";
-+};
-diff --git a/arch/arm/boot/dts/imx6qdl-wandboard.dtsi
-b/arch/arm/boot/dts/imx6qdl-wandboard.dtsi
-index bdfdf89..2aa9fbf 100644
---- a/arch/arm/boot/dts/imx6qdl-wandboard.dtsi
-+++ b/arch/arm/boot/dts/imx6qdl-wandboard.dtsi
-@@ -79,22 +79,8 @@
-
- &iomuxc {
-  pinctrl-names = "default";
-- pinctrl-0 = <&pinctrl_hog>;
-
-  imx6qdl-wandboard {
-- pinctrl_hog: hoggrp {
-- fsl,pins = <
-- MX6QDL_PAD_GPIO_0__CCM_CLKO1 0x130b0
-- MX6QDL_PAD_GPIO_2__GPIO1_IO02 0x80000000
-- MX6QDL_PAD_EIM_DA9__GPIO3_IO09 0x80000000
-- MX6QDL_PAD_EIM_EB1__GPIO2_IO29   0x80000000 /* WL_REF_ON */
-- MX6QDL_PAD_EIM_A25__GPIO5_IO02   0x80000000 /* WL_RST_N */
-- MX6QDL_PAD_ENET_RXD1__GPIO1_IO26 0x80000000 /* WL_REG_ON */
-- MX6QDL_PAD_ENET_TXD1__GPIO1_IO29 0x80000000 /* WL_HOST_WAKE */
-- MX6QDL_PAD_ENET_TXD0__GPIO1_IO30 0x80000000 /* WL_WAKE */
-- MX6QDL_PAD_EIM_D29__GPIO3_IO29   0x80000000
-- >;
-- };
-
-  pinctrl_audmux: audmuxgrp {
-  fsl,pins = <
-@@ -250,13 +236,6 @@
-  status = "okay";
- };
-
--&usdhc2 {
-- pinctrl-names = "default";
-- pinctrl-0 = <&pinctrl_usdhc2>;
-- non-removable;
-- status = "okay";
--};
--
- &usdhc3 {
-  pinctrl-names = "default";
-  pinctrl-0 = <&pinctrl_usdhc3>;
+-- 
+Nicolas Ferre
