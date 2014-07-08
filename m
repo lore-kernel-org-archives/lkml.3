@@ -1,95 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754978AbaGHNCz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:02:55 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:40185 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754556AbaGHNCy (ORCPT
+	id S1754997AbaGHNFO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:05:14 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:43535 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754600AbaGHNFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:02:54 -0400
-Date: Tue, 8 Jul 2014 15:02:39 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Sasha Levin <sasha.levin@oracle.com>,
-        Peter Hurley <peter@hurleysoftware.com>, pmladek@suse.cz,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jet Chen <jet.chen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: console: lockup on boot
-Message-ID: <20140708130239.GF6758@twins.programming.kicks-ass.net>
-References: <53888E76.5040101@hurleysoftware.com>
- <20140530140757.GC2419@quack.suse.cz>
- <53921116.5050804@oracle.com>
- <53972B5C.5020605@hurleysoftware.com>
- <53986DFB.9030006@oracle.com>
- <20140611203436.GD9511@quack.suse.cz>
- <20140611213111.GE9511@quack.suse.cz>
- <53991958.4070106@oracle.com>
- <20140612082645.GF9511@quack.suse.cz>
- <1402563262.5171.2.camel@marge.simpson.net>
+	Tue, 8 Jul 2014 09:05:07 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+f314sPv49h+UVDy"
-Content-Disposition: inline
-In-Reply-To: <1402563262.5171.2.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140708125138.GA4749@infradead.org>
+References: <1404124096-21445-1-git-send-email-drysdale@google.com>
+ <1404124096-21445-2-git-send-email-drysdale@google.com> <CALCETrU=HLmw9n-DxPkFV1xP5wtzQ7-YF3-uao6YiGZODA9kdw@mail.gmail.com>
+ <20140630154928.GB10375@google.com> <CALCETrWJ-rqDo8OvSZWPUt1806gObNtwVHvC4M6kfQgvd3Eg9w@mail.gmail.com>
+ <20140708120702.GB30459@infradead.org> <CAD=T17FQEZV+iy91wQAvAdd0PW2tsfjpU7atp-xeatm5sEGz5Q@mail.gmail.com>
+ <20140708125138.GA4749@infradead.org>
+From: Meredydd Luff <meredydd@senatehouse.org>
+Date: Tue, 8 Jul 2014 14:04:45 +0100
+Message-ID: <CAD=T17FcSKCkEwGMDtcss0Ye-EwuW4Gd2bmXiVj0YV2JG3xeWQ@mail.gmail.com>
+Subject: Re: [PATCH 01/11] fs: add O_BENEATH_ONLY flag to openat(2)
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        David Drysdale <drysdale@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-man <linux-man@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 8 July 2014 13:51, Christoph Hellwig <hch@infradead.org> wrote:
+> Yeah, it won't work for an explicit directory - I was thinking of
+> working relative to $CWD.
 
---+f314sPv49h+UVDy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I think that would sacrifice far too much flexibility. Even without
+Capsicum, it would be worthwhile to be able to wire up a static
+seccomp-bpf filter to enforce constraints such as "you can open files
+under fd#5 for reading, but you can only write to files under fd#6,
+and you can't do any global lookups."
 
-On Thu, Jun 12, 2014 at 10:54:22AM +0200, Mike Galbraith wrote:
-> On Thu, 2014-06-12 at 10:26 +0200, Jan Kara wrote:=20
-> > On Wed 11-06-14 23:07:04, Sasha Levin wrote:
->=20
-> > > The first patch fixed it (I assumed that there's no need to try the s=
-econd).
-> >   Good. So that shows that it is the increased lockdep coverage which is
-> > causing problems - with my patch, lockdep is able to identify some prob=
-lem
-> > because console drivers are now called with lockdep enabled. But because
-> > the problem was found in some difficult context, lockdep just hung the
-> > machine when trying to report it... Sadly the stacktraces you posted do=
-n't
-> > tell us what lockdep found.
-> >=20
-> > Adding Peter Zijlstra to CC. Peter, any idea how lockdep could report
-> > problems when holding logbuf_lock? One possibility would be to extend
-> > logbuf_cpu recursion logic to every holder of logbuf_lock. That will at
-> > least avoid the spinlock recursion killing the machine but we won't be =
-able
-> > to see what lockdep found...
->=20
-> Could tell lockdep to use trace_printk().
-
-lkml.kernel.org/r/20111221111143.401184003@chello.nl
-
-
-
---+f314sPv49h+UVDy
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTu+vvAAoJEHZH4aRLwOS6s1oP/0L+erAv/iO6E+Cr/bx7phEQ
-hjTh2jxEeZbbRYsC76YhKZk/OUv8L6pCrU3LuHMcvdleiu5ie0CGhC0RGdZsYtqE
-cJM9UOXne6jiqWFDN72noAJe7HL6Pq9RZ8mQbhh/heVTu7s50f3cJb5iq6F1ioVU
-ulISl5fJ6y8gimwcljqRBsnqIH1R4G54vFRkEzXFmFi4gsyFFJI3EW13IPAJyOL2
-Ffdz1qYHPwjYfL0WPa+I8ZBD0ZGy7UpoIlMAx8B107qjH8/E0ITioUyAAenWW+3F
-2xA3cFiWZ3/bZ3gOxGy4HI67HErddJPxQIpxEWhtcibnZRrlbqrNQyuuSWrzGsAf
-YlysRa82RzJCKMKZ0mQ3ZUsh8s/1IgWqLJQVhZ6Sx/e16fwVLou5/cTkKctvLmZ6
-uXoaPzFNXzmiHYGWlKQHS3dVtR7h5Iqg1Zsn5vAc7KnpUp6iA1oQIWUcKQ6OJKeD
-N/RHc2vsBPlytV6wSaOrEn67hO+50tgNXlj6YFpvfJ8lqINOWHdyfTPmJ+r38yiy
-gJQiRB2nt+Nc3Ot7K7pnVCuvKOsbdtF+Yy2R+NXtdeoYyCxLS06F50sAF/fqjoiC
-c/Rr5BEDwGBlJ4Kf7DJ2zVVZecaxGspy2eC05htZovV0HqTnmFJ1coJf/wUEyQT5
-+WJUj/FaL+wzCzZfbGrQ
-=T22Z
------END PGP SIGNATURE-----
-
---+f314sPv49h+UVDy--
+Meredydd
