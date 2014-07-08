@@ -1,156 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115AbaGHTMP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:12:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44711 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755386AbaGHTMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:12:07 -0400
-Date: Tue, 8 Jul 2014 15:11:59 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Vitaly Kuznetsov <vkuznets@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmap_vmcore: skip non-ram pages reported by hypervisors
-Message-ID: <20140708191159.GA17746@redhat.com>
-References: <1404745549-16023-1-git-send-email-vkuznets@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1756037AbaGHTLN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:11:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54564 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755821AbaGHTIr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 15:08:47 -0400
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
-In-Reply-To: <1404745549-16023-1-git-send-email-vkuznets@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Wolfgang Grandegger" <wg@grandegger.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Austin Schuh" <austin@peloton-tech.com>,
+        "Till Straumann" <strauman@slac.stanford.edu>,
+        "Marc Kleine-Budde" <mkl@pengutronix.de>,
+        "Oliver Hartkopp" <socketcan@hartkopp.net>, linux-can@vger.kernel.org,
+        "Pavel Pisa" <pisa@cmp.felk.cvut.cz>
+Date: Tue, 08 Jul 2014 20:01:50 +0100
+Message-ID: <lsq.1404846110.451812438@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 003/125] genirq: Sanitize spurious interrupt detection
+ of threaded irqs
+In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 07, 2014 at 05:05:49PM +0200, Vitaly Kuznetsov wrote:
-> we have a special check in read_vmcore() handler to check if the page was
-> reported as ram or not by the hypervisor (pfn_is_ram()).
+3.2.61-rc1 review patch.  If anyone has any objections, please let me know.
 
-I am wondering if this name pfn_is_ram() appropriate for what we are 
-doing. So IIUC, a balooned memory is also RAM just that it has not 
-been allocated yet. That means we can safely assume that there is no
-data and can safely fill it with zeros?
+------------------
 
-If yes, then page_is_zero_filled() might be a more approprate name.
+From: Thomas Gleixner <tglx@linutronix.de>
 
-Also I am wondering why it was not done as part of copy_oldmem_page()
-so that respective arch could hide all the details.
+commit 1e77d0a1ed7417d2a5a52a7b8d32aea1833faa6c upstream.
 
-> However, when
-> vmcore is read with mmap() no such check is performed. That can lead to
-> unpredictable results, e.g. when running Xen PVHVM guest memcpy() after
-> mmap() on /proc/vmcore will hang processing HVMMEM_mmio_dm pages creating
-> enormous load in both DomU and Dom0.
-> 
-> Fix the issue by mapping each non-ram page to the zero page. Keep direct
-> path with remap_oldmem_pfn_range() to avoid looping through all pages on
-> bare metal.
-> 
-> The issue can also be solved by overriding remap_oldmem_pfn_range() in
-> xen-specific code, as remap_oldmem_pfn_range() was been designed for.
-> That, however, would involve non-obvious xen code path for all x86 builds
-> with CONFIG_XEN_PVHVM=y and would prevent all other hypervisor-specific
-> code on x86 arch from doing the same override.
+Till reported that the spurious interrupt detection of threaded
+interrupts is broken in two ways:
 
-I am not sure I understand this part. So what is "all other hypervisor
-specic" code which will like to do this. And will that code is compiled
-at the same time as CONFIG_XEN_PVHVM?
+- note_interrupt() is called for each action thread of a shared
+  interrupt line. That's wrong as we are only interested whether none
+  of the device drivers felt responsible for the interrupt, but by
+  calling multiple times for a single interrupt line we account
+  IRQ_NONE even if one of the drivers felt responsible.
 
-> 
-> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
-> ---
->  fs/proc/vmcore.c | 68 +++++++++++++++++++++++++++++++++++++++++++++++++++-----
->  1 file changed, 62 insertions(+), 6 deletions(-)
-> 
-> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-> index 382aa89..2716e19 100644
-> --- a/fs/proc/vmcore.c
-> +++ b/fs/proc/vmcore.c
-> @@ -328,6 +328,46 @@ static inline char *alloc_elfnotes_buf(size_t notes_sz)
->   * virtually contiguous user-space in ELF layout.
->   */
->  #ifdef CONFIG_MMU
-> +static u64 remap_oldmem_pfn_checked(struct vm_area_struct *vma, u64 len,
-> +				    unsigned long pfn, unsigned long page_count)
-> +{
-> +	unsigned long pos;
-> +	size_t size;
-> +	unsigned long vma_addr;
-> +	unsigned long emptypage_pfn = __pa(empty_zero_page) >> PAGE_SHIFT;
-> +
-> +	for (pos = pfn; (pos - pfn) <= page_count; pos++) {
-> +		if (!pfn_is_ram(pos) || (pos - pfn) == page_count) {
-> +			/* we hit a page which is not ram or reached the end */
-> +			if (pos - pfn > 0) {
-> +				/* remapping continuous region */
-> +				size = (pos - pfn) << PAGE_SHIFT;
-> +				vma_addr = vma->vm_start + len;
-> +				if (remap_oldmem_pfn_range(vma, vma_addr,
-> +							   pfn, size,
-> +							   vma->vm_page_prot))
-> +					return len;
-> +				len += size;
-> +				page_count -= (pos - pfn);
-> +			}
-> +			if (page_count > 0) {
-> +				/* we hit a page which is not ram, replacing
-> +				   with an empty one */
-> +				vma_addr = vma->vm_start + len;
-> +				if (remap_oldmem_pfn_range(vma, vma_addr,
-> +							   emptypage_pfn,
-> +							   PAGE_SIZE,
-> +							   vma->vm_page_prot))
-> +					return len;
-> +				len += PAGE_SIZE;
-> +				pfn = pos + 1;
-> +				page_count--;
-> +			}
-> +		}
-> +	}
-> +	return len;
-> +}
-> +
->  static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
->  {
->  	size_t size = vma->vm_end - vma->vm_start;
-> @@ -383,17 +423,33 @@ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
->  
->  	list_for_each_entry(m, &vmcore_list, list) {
->  		if (start < m->offset + m->size) {
-> -			u64 paddr = 0;
-> +			u64 paddr = 0, original_len;
-> +			unsigned long pfn, page_count;
->  
->  			tsz = min_t(size_t, m->offset + m->size - start, size);
->  			paddr = m->paddr + start - m->offset;
-> -			if (remap_oldmem_pfn_range(vma, vma->vm_start + len,
-> -						   paddr >> PAGE_SHIFT, tsz,
-> -						   vma->vm_page_prot))
-> -				goto fail;
-> +
-> +			/* check if oldmem_pfn_is_ram was registered to avoid
-> +			   looping over all pages without a reason */
-> +			if (oldmem_pfn_is_ram) {
-> +				pfn = paddr >> PAGE_SHIFT;
-> +				page_count = tsz >> PAGE_SHIFT;
-> +				original_len = len;
-> +				len = remap_oldmem_pfn_checked(vma, len, pfn,
-> +							       page_count);
-> +				if (len != original_len + tsz)
-> +					goto fail;
-> +			} else {
-> +				if (remap_oldmem_pfn_range(vma,
-> +							   vma->vm_start + len,
-> +							   paddr >> PAGE_SHIFT,
-> +							   tsz,
-> +							   vma->vm_page_prot))
-> +					goto fail;
+- note_interrupt() when called from the thread handler is not
+  serialized. That leaves the members of irq_desc which are used for
+  the spurious detection unprotected.
 
-Why are we defining both remap_oldmem_pfn_checked()? Can't we just
-modify remap_oldmem_pfn_range() to *always* check for if
-pfn_is_zero_filled() and map accordingly.
+To solve this we need to defer the spurious detection of a threaded
+interrupt to the next hardware interrupt context where we have
+implicit serialization.
 
-Thanks
-Vivek
+If note_interrupt is called with action_ret == IRQ_WAKE_THREAD, we
+check whether the previous interrupt requested a deferred check. If
+not, we request a deferred check for the next hardware interrupt and
+return.
+
+If set, we check whether one of the interrupt threads signaled
+success. Depending on this information we feed the result into the
+spurious detector.
+
+If one primary handler of a shared interrupt returns IRQ_HANDLED we
+disable the deferred check of irq threads on the same line, as we have
+found at least one device driver who cared.
+
+Reported-by: Till Straumann <strauman@slac.stanford.edu>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Tested-by: Austin Schuh <austin@peloton-tech.com>
+Cc: Oliver Hartkopp <socketcan@hartkopp.net>
+Cc: Wolfgang Grandegger <wg@grandegger.com>
+Cc: Pavel Pisa <pisa@cmp.felk.cvut.cz>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: linux-can@vger.kernel.org
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1303071450130.22263@ionos
+[bwh: Backported to 3.2: adjust context, indentation]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ include/linux/irqdesc.h |   4 ++
+ kernel/irq/manage.c     |   4 +-
+ kernel/irq/spurious.c   | 106 ++++++++++++++++++++++++++++++++++++++++++++++--
+ 3 files changed, 108 insertions(+), 6 deletions(-)
+
+--- a/include/linux/irqdesc.h
++++ b/include/linux/irqdesc.h
+@@ -27,6 +27,8 @@ struct module;
+  * @irq_count:		stats field to detect stalled irqs
+  * @last_unhandled:	aging timer for unhandled count
+  * @irqs_unhandled:	stats field for spurious unhandled interrupts
++ * @threads_handled:	stats field for deferred spurious detection of threaded handlers
++ * @threads_handled_last: comparator field for deferred spurious detection of theraded handlers
+  * @lock:		locking for SMP
+  * @affinity_hint:	hint to user space for preferred irq affinity
+  * @affinity_notify:	context for notification of affinity changes
+@@ -53,6 +55,8 @@ struct irq_desc {
+ 	unsigned int		irq_count;	/* For detecting broken IRQs */
+ 	unsigned long		last_unhandled;	/* Aging timer for unhandled count */
+ 	unsigned int		irqs_unhandled;
++	atomic_t		threads_handled;
++	int			threads_handled_last;
+ 	raw_spinlock_t		lock;
+ 	struct cpumask		*percpu_enabled;
+ #ifdef CONFIG_SMP
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -813,8 +813,8 @@ static int irq_thread(void *data)
+ 
+ 			raw_spin_unlock_irq(&desc->lock);
+ 			action_ret = handler_fn(desc, action);
+-			if (!noirqdebug)
+-				note_interrupt(action->irq, desc, action_ret);
++			if (action_ret == IRQ_HANDLED)
++				atomic_inc(&desc->threads_handled);
+ 		}
+ 
+ 		wake = atomic_dec_and_test(&desc->threads_active);
+--- a/kernel/irq/spurious.c
++++ b/kernel/irq/spurious.c
+@@ -265,21 +265,119 @@ try_misrouted_irq(unsigned int irq, stru
+ 	return action && (action->flags & IRQF_IRQPOLL);
+ }
+ 
++#define SPURIOUS_DEFERRED	0x80000000
++
+ void note_interrupt(unsigned int irq, struct irq_desc *desc,
+ 		    irqreturn_t action_ret)
+ {
+ 	if (desc->istate & IRQS_POLL_INPROGRESS)
+ 		return;
+ 
+-	/* we get here again via the threaded handler */
+-	if (action_ret == IRQ_WAKE_THREAD)
+-		return;
+-
+ 	if (bad_action_ret(action_ret)) {
+ 		report_bad_irq(irq, desc, action_ret);
+ 		return;
+ 	}
+ 
++	/*
++	 * We cannot call note_interrupt from the threaded handler
++	 * because we need to look at the compound of all handlers
++	 * (primary and threaded). Aside of that in the threaded
++	 * shared case we have no serialization against an incoming
++	 * hardware interrupt while we are dealing with a threaded
++	 * result.
++	 *
++	 * So in case a thread is woken, we just note the fact and
++	 * defer the analysis to the next hardware interrupt.
++	 *
++	 * The threaded handlers store whether they sucessfully
++	 * handled an interrupt and we check whether that number
++	 * changed versus the last invocation.
++	 *
++	 * We could handle all interrupts with the delayed by one
++	 * mechanism, but for the non forced threaded case we'd just
++	 * add pointless overhead to the straight hardirq interrupts
++	 * for the sake of a few lines less code.
++	 */
++	if (action_ret & IRQ_WAKE_THREAD) {
++		/*
++		 * There is a thread woken. Check whether one of the
++		 * shared primary handlers returned IRQ_HANDLED. If
++		 * not we defer the spurious detection to the next
++		 * interrupt.
++		 */
++		if (action_ret == IRQ_WAKE_THREAD) {
++			int handled;
++			/*
++			 * We use bit 31 of thread_handled_last to
++			 * denote the deferred spurious detection
++			 * active. No locking necessary as
++			 * thread_handled_last is only accessed here
++			 * and we have the guarantee that hard
++			 * interrupts are not reentrant.
++			 */
++			if (!(desc->threads_handled_last & SPURIOUS_DEFERRED)) {
++				desc->threads_handled_last |= SPURIOUS_DEFERRED;
++				return;
++			}
++			/*
++			 * Check whether one of the threaded handlers
++			 * returned IRQ_HANDLED since the last
++			 * interrupt happened.
++			 *
++			 * For simplicity we just set bit 31, as it is
++			 * set in threads_handled_last as well. So we
++			 * avoid extra masking. And we really do not
++			 * care about the high bits of the handled
++			 * count. We just care about the count being
++			 * different than the one we saw before.
++			 */
++			handled = atomic_read(&desc->threads_handled);
++			handled |= SPURIOUS_DEFERRED;
++			if (handled != desc->threads_handled_last) {
++				action_ret = IRQ_HANDLED;
++				/*
++				 * Note: We keep the SPURIOUS_DEFERRED
++				 * bit set. We are handling the
++				 * previous invocation right now.
++				 * Keep it for the current one, so the
++				 * next hardware interrupt will
++				 * account for it.
++				 */
++				desc->threads_handled_last = handled;
++			} else {
++				/*
++				 * None of the threaded handlers felt
++				 * responsible for the last interrupt
++				 *
++				 * We keep the SPURIOUS_DEFERRED bit
++				 * set in threads_handled_last as we
++				 * need to account for the current
++				 * interrupt as well.
++				 */
++				action_ret = IRQ_NONE;
++			}
++		} else {
++			/*
++			 * One of the primary handlers returned
++			 * IRQ_HANDLED. So we don't care about the
++			 * threaded handlers on the same line. Clear
++			 * the deferred detection bit.
++			 *
++			 * In theory we could/should check whether the
++			 * deferred bit is set and take the result of
++			 * the previous run into account here as
++			 * well. But it's really not worth the
++			 * trouble. If every other interrupt is
++			 * handled we never trigger the spurious
++			 * detector. And if this is just the one out
++			 * of 100k unhandled ones which is handled
++			 * then we merily delay the spurious detection
++			 * by one hard interrupt. Not a real problem.
++			 */
++			desc->threads_handled_last &= ~SPURIOUS_DEFERRED;
++		}
++	}
++
+ 	if (unlikely(action_ret == IRQ_NONE)) {
+ 		/*
+ 		 * If we are seeing only the odd spurious IRQ caused by
+
