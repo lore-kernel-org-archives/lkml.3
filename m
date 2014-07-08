@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753642AbaGIAgL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 20:36:11 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36071 "EHLO mga11.intel.com"
+	id S1752062AbaGIAfo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 20:35:44 -0400
+Received: from ozlabs.org ([103.22.144.67]:45483 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752158AbaGIAfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 20:35:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,629,1400050800"; 
-   d="scan'208";a="566994985"
-Message-ID: <53BC8DDC.5080705@linux.intel.com>
-Date: Tue, 08 Jul 2014 17:33:32 -0700
-From: eric ernst <eric.ernst@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751151AbaGIAfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 20:35:41 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [PATCH] scripts/mod/modpost.c: Fix bug in number_prefix
+In-Reply-To: <8761jooaw2.fsf@rasmusvillemoes.dk>
+References: <1403685999-31013-1-git-send-email-linux@rasmusvillemoes.dk> <53AADC30.7080401@windriver.com> <8761jooaw2.fsf@rasmusvillemoes.dk>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Wed, 09 Jul 2014 09:28:43 +0930
+Message-ID: <87d2df768c.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Gross <mark.gross@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: Re: [PATCH v4 1/1] pinctrl: baytrail: Warn if direct IRQ GPIO set
- to output
-References: <CACRpkdbU-d7Gdji2fJr4h7bC58d63E_CAVeSHZm3ARuut1UFKQ@mail.gmail.com>	<1402596380-18783-1-git-send-email-eric.ernst@linux.intel.com> <CACRpkdbBsP-_K4Y2MS17EuzZeho6uYKqRPHPPL0-KDAamsdxvQ@mail.gmail.com>
-In-Reply-To: <CACRpkdbBsP-_K4Y2MS17EuzZeho6uYKqRPHPPL0-KDAamsdxvQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mea culpa - thanks Linus.  I saw a note from kbuild test
-robot indicating an issue, but given your response, I am
-assuming it was from your first build attempt.  Thanks.
+Rasmus Villemoes <linux@rasmusvillemoes.dk> writes:
+> Paul Gortmaker <paul.gortmaker@windriver.com> writes:
+>
+>> On 14-06-25 04:46 AM, Rasmus Villemoes wrote:
+>>> The function number_prefix() can currently only return 1 if its
+>>> argument is the empty string: If line 3 is reached and *sym (now the
+>>> second character in the argument) is not '.', 0 is returned. However,
+>>> if that character is '.', the first assignment to c is that same '.',
+>>> which obviously fails to be a digit.
+>>
+>> I'd suggest you expand the commit log to actually list the end-user
+>> visible symptom and the use case that this actually fixes, since it
+>> isn't obvious to me at all.
+>
+> Sorry, it isn't obvious to me either. I just stumbled on it reading the
+> code; the rest of modpost.c is too deep magic for me.
 
-On 14-07-07 02:14 PM, Linus Walleij wrote:
-> On Thu, Jun 12, 2014 at 8:06 PM,  <eric.ernst@linux.intel.com> wrote:
->
->> +       WARN(readl(conf_reg) & BYT_DIRECT_IRQ_EN,
->> +               "Potential Error: Setting GPIO with direct_irq_en to output");
-> Hm in the v4 version you somehow managed to drop the definition
-> of BYT_DIRECT_IRQ_EN...
->
-> I patched it back in. Let's hope it compiles now.
->
-> Yours,
-> Linus Walleij
+The function is horribly mis-named which doesn't help ("number_postfix"
+would be closer).
 
+And yes, it's completely broken.
+
+Sam, this never worked, and was clearly never tested.  Seems like we
+should just rip out the '$' postfix then, or are you aware of platforms
+which have been ignoring modpost complaints since 2008?
+
+Cheers,
+Rusty.
