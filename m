@@ -1,86 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074AbaGHJYS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 05:24:18 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:65171 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753127AbaGHJYR (ORCPT
+	id S1754104AbaGHJYW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 05:24:22 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:56113 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754031AbaGHJYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 05:24:17 -0400
-From: "xiaofeng.yan" <xiaofeng.yan@huawei.com>
-To: <mingo@redhat.com>, <peterz@infradead.org>, <juri.lelli@gmail.com>,
-        <linux-kernel@vger.kernel.org>
-CC: <xiaofeng.yan2012@gmail.com>, "xiaofeng.yan" <xiaofeng.yan@huawei.com>
-Subject: [PATCH] sched/deadline: overrun could happen in start_hrtick_dl
-Date: Tue, 8 Jul 2014 09:06:51 +0000
-Message-ID: <1404810411-27496-1-git-send-email-xiaofeng.yan@huawei.com>
-X-Mailer: git-send-email 1.8.3.4
+	Tue, 8 Jul 2014 05:24:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.241]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020208.53BBB8BF.0097,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: ac0e6bbaa8fd4d09002b39c4e5506a48
+In-Reply-To: <1404803213-10653-1-git-send-email-zlim.lnx@gmail.com>
+References: <1404803213-10653-1-git-send-email-zlim.lnx@gmail.com>
+Date: Tue, 8 Jul 2014 02:24:17 -0700
+Message-ID: <CAMEtUuydrYMGdg2zNDYX4vKL0_-reF+yOPKx5hpUvy4guuVeBg@mail.gmail.com>
+Subject: Re: [PATCH RFCv2] arm64: eBPF JIT compiler
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Zi Shen Lim <zlim.lnx@gmail.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Network Development <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It could be wrong for the precision of runtime and deadline
-when the precision is within microsecond level. For example:
-Task runtime deadline period
- P1   200us   500us   500us
+On Tue, Jul 8, 2014 at 12:06 AM, Zi Shen Lim <zlim.lnx@gmail.com> wrote:
+> The JIT compiler emits A64 instructions. It supports eBPF only.
+> Legacy BPF is supported thanks to conversion by BPF core.
+>
+> JIT is enabled in the same way as for other architectures:
+>
+>         echo 1 > /proc/sys/net/core/bpf_jit_enable
+>
+> Or for additional compiler output:
+>
+>         echo 2 > /proc/sys/net/core/bpf_jit_enable
+>
+> See Documentation/networking/filter.txt for more information.
+>
+> The implementation passes all 57 tests in lib/test_bpf.c
+> on ARMv8 Foundation Model :)
+>
+> Signed-off-by: Zi Shen Lim <zlim.lnx@gmail.com>
+>
+> ---
+> RFCv1->RFCv2:
+>
+>   Addressed review comments from Alexei:
+>   - use core-$(CONFIG_NET)
+>   - use GENMASK
+>   - lower-case function names in header file
+>   - drop LD_ABS+DW and LD_IND+DW, which do not exist in eBPF yet
+>   - use pr_xxx_once() to prevent spamming logs
+>   - clarify 16B stack alignment requirement
+>   - drop usage of EMIT macro which was saving just one argument,
+>     turns out having additional argument wasn't too much of an eyesore
+>
+>   Also, per discussion with Alexei, and additional suggestion from
+>   Daniel:
+>   - moved load_pointer() from net/core/filter.c into filter.h
+>     as bpf_load_pointer()
+>   which is done as a separate preparatory patch. [1]
+>
+> [1] http://patchwork.ozlabs.org/patch/366906/
 
-This case need enbale HRTICK feature by the next command
-PC#echo "HRTICK" > /sys/kernel/debug/sched_features
-PC#trace-cmd record -e sched_switch &
-PC#./schedtool -E -t 200000:500000 -e ./test
+Just to clarify. This patch is on top of [1]
 
-Some of runtime and deadline run with millisecond level by
-reading kernershark. Some pieces of trace.dat are as follows:
-(remove some irrelevant information)
-<idle>-0   157.603157: sched_switch: :R ==> 2481:4294967295: test
-test-2481  157.603203: sched_switch:  2481:R ==> 0:120: swapper/2
-<idle>-0   157.605657: sched_switch:  :R ==> 2481:4294967295: test
-test-2481  157.608183: sched_switch:  2481:R ==> 2483:120: trace-cmd
-trace-cmd-2483 157.609656: sched_switch:2483:R==>2481:4294967295: test
+> +       /* R0 = ntohx(*(size *)(((struct sk_buff *)R6)->data + src + imm)) */
+> +       case BPF_LD | BPF_IND | BPF_W:
+> +       case BPF_LD | BPF_IND | BPF_H:
+> +       case BPF_LD | BPF_IND | BPF_B:
+> +       {
+> +               const u8 r0 = bpf2a64[BPF_REG_0]; /* r0 = return value */
+> +               const u8 r6 = bpf2a64[BPF_REG_6]; /* r6 = pointer to sk_buff */
+> +               const u8 fp = bpf2a64[BPF_REG_FP];
+> +               const u8 r1 = bpf2a64[BPF_REG_1]; /* r1: struct sk_buff *skb */
+> +               const u8 r2 = bpf2a64[BPF_REG_2]; /* r2: int k */
+> +               const u8 r3 = bpf2a64[BPF_REG_3]; /* r3: unsigned int size */
+> +               const u8 r4 = bpf2a64[BPF_REG_4]; /* r4: void *buffer */
+> +               const u8 r5 = bpf2a64[BPF_REG_5]; /* r5: void *(*func)(...) */
+> +               int size;
+> +
+> +               emit(A64_MOV(1, r1, r6), ctx);
+> +               emit_a64_mov_i(0, r2, imm, ctx);
+> +               if (BPF_MODE(code) == BPF_IND)
+> +                       emit(A64_ADD(0, r2, r2, src), ctx);
+> +               switch (BPF_SIZE(code)) {
+> +               case BPF_W:
+> +                       size = 4;
+> +                       break;
+> +               case BPF_H:
+> +                       size = 2;
+> +                       break;
+> +               case BPF_B:
+> +                       size = 1;
+> +                       break;
+> +               default:
+> +                       return -EINVAL;
+> +               }
+> +               emit_a64_mov_i64(r3, size, ctx);
+> +               emit(A64_ADD_I(1, r4, fp, MAX_BPF_STACK), ctx);
+> +               emit_a64_mov_i64(r5, (unsigned long)bpf_load_pointer, ctx);
+> +               emit(A64_PUSH(A64_FP, A64_LR, A64_SP), ctx);
+> +               emit(A64_MOV(1, A64_FP, A64_SP), ctx);
+> +               emit(A64_BLR(r5), ctx);
+> +               emit(A64_MOV(1, r0, A64_R(0)), ctx);
+> +               emit(A64_POP(A64_FP, A64_LR, A64_SP), ctx);
+> +
+> +               jmp_offset = epilogue_offset(ctx);
+> +               check_imm19(jmp_offset);
+> +               emit(A64_CBZ(1, r0, jmp_offset), ctx);
+> +               emit(A64_MOV(1, r5, r0), ctx);
+> +               switch (BPF_SIZE(code)) {
+> +               case BPF_W:
+> +                       emit(A64_LDR32(r0, r5, A64_ZR), ctx);
+> +#ifndef CONFIG_CPU_BIG_ENDIAN
+> +                       emit(A64_REV32(0, r0, r0), ctx);
+> +#endif
+> +                       break;
+> +               case BPF_H:
+> +                       emit(A64_LDRH(r0, r5, A64_ZR), ctx);
+> +#ifndef CONFIG_CPU_BIG_ENDIAN
+> +                       emit(A64_REV16(0, r0, r0), ctx);
+> +#endif
+> +                       break;
+> +               case BPF_B:
+> +                       emit(A64_LDRB(r0, r5, A64_ZR), ctx);
+> +                       break;
+> +               case BPF_DW:
 
-We can get the runtime from the information at some point.
-runtime = 157.605657 - 157.608183
-runtime = 0.002526(2.526ms)
-The correct runtime should be less than or equal to 200us at some point.
+this case can be removed too.
 
-The problem is caused by a conditional judgment "delta > 10000".
-Because no hrtimer start up to control the runtime when runtime is less than 10us.
-So the process will continue to run until tick-period coming.
-For fixing this problem, Let delta is equal to 10us when it is less than 10us.
-So the hrtimer will start up to control the end of process.
+Acked-by: Alexei Starovoitov <ast@plumgrid.com>
 
-Signed-off-by: Xiaofeng Yan <xiaofeng.yan@huawei.com>
----
- kernel/sched/deadline.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+Great work. Thanks.
 
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index fc4f98b1..51e6b0e 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -997,10 +997,8 @@ static void check_preempt_curr_dl(struct rq *rq, struct task_struct *p,
- #ifdef CONFIG_SCHED_HRTICK
- static void start_hrtick_dl(struct rq *rq, struct task_struct *p)
- {
--	s64 delta = p->dl.dl_runtime - p->dl.runtime;
--
--	if (delta > 10000)
--		hrtick_start(rq, p->dl.runtime);
-+	s64 delta = max_t(s64, 10000LL, p->dl.runtime);
-+	hrtick_start(rq, delta);
- }
- #endif
- 
--- 
-1.7.9.5
-
+> +                       emit(A64_LDR64(r0, r5, A64_ZR), ctx);
+> +#ifndef CONFIG_CPU_BIG_ENDIAN
+> +                       emit(A64_REV64(r0, r0), ctx);
+> +#endif
+> +                       break;
+> +               }
+> +               break;
+> +       }
