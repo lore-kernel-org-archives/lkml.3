@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101AbaGHAOu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:14:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56387 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754400AbaGHADP (ORCPT
+	id S1755120AbaGHAPH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:15:07 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:46230 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754489AbaGHAOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 20:03:15 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christopher Friedt <chrisfriedt@gmail.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Jakob Bornecrantz <jakob@vmware.com>
-Subject: [PATCH 3.4 15/44] drm/vmwgfx: Fix incorrect write to read-only register v2:
-Date: Mon,  7 Jul 2014 17:07:05 -0700
-Message-Id: <20140707235859.109815884@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140707235858.652771077@linuxfoundation.org>
-References: <20140707235858.652771077@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Mon, 7 Jul 2014 20:14:49 -0400
+X-Originating-IP: 173.246.103.110
+Date: Mon, 7 Jul 2014 17:14:35 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 0/4] Documentation changes for 3.17
+Message-ID: <20140708001435.GC19213@jtriplet-mobl1>
+References: <20140707222345.GA6320@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140707222345.GA6320@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Jul 07, 2014 at 03:23:45PM -0700, Paul E. McKenney wrote:
+> Hello!
+> 
+> This series provides a few documentation updates:
+> 
+> 1.	Clarify that if there is nothing awakened, then there is no
+> 	memory barrier.
+> 
+> 2.	Fix broken RTFP URL, courtesy of Pranith Kumar.
+> 
+> 3.	Add acquire/release barrier to memory-barrier pairing rules.
+> 
+> 4.	Add pointer to percpu-ref in rcuref.txt documentation.
 
-------------------
+For all four:
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
-
-commit 4e578080ed3262ed2c3985868539bc66218d25c0 upstream.
-
-Commit "drm/vmwgfx: correct fb_fix_screeninfo.line_length", while fixing a
-vmwgfx fbdev bug, also writes the pitch to a supposedly read-only register:
-SVGA_REG_BYTES_PER_LINE, while it should be (and also in fact is) written to
-SVGA_REG_PITCHLOCK.
-
-This patch is Cc'd stable because of the unknown effects writing to this
-register might have, particularly on older device versions.
-
-v2: Updated log message.
-
-Cc: Christopher Friedt <chrisfriedt@gmail.com>
-Tested-by: Christopher Friedt <chrisfriedt@gmail.com>
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/gpu/drm/vmwgfx/vmwgfx_fb.c |    1 -
- 1 file changed, 1 deletion(-)
-
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_fb.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fb.c
-@@ -179,7 +179,6 @@ static int vmw_fb_set_par(struct fb_info
- 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_POSITION_Y, info->var.yoffset);
- 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_WIDTH, info->var.xres);
- 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_HEIGHT, info->var.yres);
--		vmw_write(vmw_priv, SVGA_REG_BYTES_PER_LINE, info->fix.line_length);
- 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_ID, SVGA_ID_INVALID);
- 	}
- 
-
-
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
