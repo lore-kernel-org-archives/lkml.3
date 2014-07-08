@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733AbaGHEug (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 00:50:36 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:60709 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751610AbaGHEue (ORCPT
+	id S1752805AbaGHEvA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 00:51:00 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:59160 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751610AbaGHEu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 00:50:34 -0400
+	Tue, 8 Jul 2014 00:50:59 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53BB78B2.1020401@roeck-us.net>
+Date: Mon, 07 Jul 2014 21:50:58 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <CAKohpomNv_xvcmx03pb8nj=3O33Qt-2Dj2B1q3U46mv5EBtUjA@mail.gmail.com>
-References: <cover.1404231535.git.viresh.kumar@linaro.org>
-	<CAKohpomRttWnCBGEpR3cVsGYniJSnjWUnvtbg21AiYyrUnDjGw@mail.gmail.com>
-	<53B4B0B3.9080000@codeaurora.org>
-	<CAKohponRv6+rzJnO4cYFhXn6On1+4-KoxFSA2iU_nz130gvsug@mail.gmail.com>
-	<20140703221609.11380.6884@quantum>
-	<CAKohpomNv_xvcmx03pb8nj=3O33Qt-2Dj2B1q3U46mv5EBtUjA@mail.gmail.com>
-Date: Tue, 8 Jul 2014 10:20:33 +0530
-Message-ID: <CAKohpo=Z5gEHOC5q40q8dfQfoNP5-WyhjG1arV99zJiG2c+6Xg@mail.gmail.com>
-Subject: Re: [PATCH 00/14] cpufreq: cpu0: Extend support beyond CPU0, V2
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Sachin Kamat <spk.linux@gmail.com>,
-        Thomas P Abraham <thomas.ab@samsung.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, Tomasz Figa <t.figa@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Rob Herring <rob.herring@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Simon Horman <horms@verge.net.au>
-Content-Type: text/plain; charset=UTF-8
+To: Nick Krause <xerofoify@gmail.com>, Greg KH <gregkh@linuxfoundation.org>
+CC: jslaby@suse.cz,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Fwd: shx3_defconfig Fails
+References: <CAPDOMVjMpU4g5oPNHQYP2q6M-B7dxh1wPO3Nf4f=idCQcM8bfA@mail.gmail.com>	<20140708033251.GA18777@kroah.com>	<53BB6CF4.5010600@roeck-us.net> <CAPDOMVg+HGpvVYw1VAvaMFK7eXwKh-qZZfObzgzLCFtmQV3B2w@mail.gmail.com>
+In-Reply-To: <CAPDOMVg+HGpvVYw1VAvaMFK7eXwKh-qZZfObzgzLCFtmQV3B2w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 July 2014 09:51, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> Yeah, having something like what you suggested from DT is the perfect
-> solution to get over this. The only reason why I am not touching that here
-> is to not delay other patches just because of that.
+On 07/07/2014 09:29 PM, Nick Krause wrote:
+> Guenter Roeck  work on Tue, Jul 8, 2014 at 12:00 AM
+> Subject: Re: shx3_defconfig Fails
 >
-> There are separate threads going on for that and probably somebody
-> else was trying to push for that.
+> On 07/07/2014 08:32 PM, Greg KH wrote:
+>>
+>> On Mon, Jul 07, 2014 at 11:04:23PM -0400, Nick Krause wrote:
+>>>
+>>> Hey Greg and others,
+>>> The build, shx3_defconfig seems to be failing.
+>>
+>>
+>> In what kernel version?
+>>
+>> Has it ever worked?
+>>
+>> Why not ask the maintainer of that arch about it?  I doubt many people
+>> ever use defconfig files anymore...
+>>
 >
-> That's it, nothing more. I would definitely like to use those bindings instead
->  of the crazy routines we are trying here, once that is finalized :)
+> Works in mainline for me. And, for the record, I use lots of defconfig files
+> (144 or so of them) for my build tests, so there is at least one user :-)
+>
+> Cheers,
+> Guenter
+>
+> Still fails in the the same way. I am using the latest git tree.
+> Cheers Nick
+>
 
-Do we have some kind of agreement for this temporary solution? Anyways
-I will kick the other thread again to resolve the bindings soon.
+ From your other errors I start wondering if you use dash or some other non-bash
+shell and some dash-incompatibility creeped into the kernel build (again).
 
-@Stephen: Do you still want find_rate_changer() stuff in this series only
-and or this can go into 3.17 without anymore changes and lets finalize
-the bindings Mike suggested and then update this code?
+Guenter
 
---
-viresh
