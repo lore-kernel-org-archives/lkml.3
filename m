@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756872AbaGHTjg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:39:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54113 "EHLO
+	id S1756858AbaGHTjf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:39:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54106 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755683AbaGHTIj (ORCPT
+	by vger.kernel.org with ESMTP id S1755681AbaGHTIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:08:39 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Ben Collins" <ben.c@servergy.com>,
-        "Sumit Saxena" <sumit.saxena@lsi.com>,
-        "James Bottomley" <JBottomley@Parallels.com>
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Don A. Bailey" <donb@securitymouse.com>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.166439967@decadent.org.uk>
+Message-ID: <lsq.1404846110.471448759@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 118/125] [SCSI] megaraid: Use resource_size_t for PCI
- resources, not long
+Subject: [PATCH 3.2 095/125] lzo: properly check for overruns
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,59 +32,177 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Collins <ben.c@servergy.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit 11f8a7b31f2140b0dc164bb484281235ffbe51d3 upstream.
+commit 206a81c18401c0cde6e579164f752c4b147324ce upstream.
 
-The assumption that sizeof(long) >= sizeof(resource_size_t) can lead to
-truncation of the PCI resource address, meaning this driver didn't work
-on 32-bit systems with 64-bit PCI adressing ranges.
+The lzo decompressor can, if given some really crazy data, possibly
+overrun some variable types.  Modify the checking logic to properly
+detect overruns before they happen.
 
-Signed-off-by: Ben Collins <ben.c@servergy.com>
-Acked-by: Sumit Saxena <sumit.saxena@lsi.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-[bwh: Backported to 3.2: adjust context]
+Reported-by: "Don A. Bailey" <donb@securitymouse.com>
+Tested-by: "Don A. Bailey" <donb@securitymouse.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/megaraid/megaraid_sas.h      | 1 -
- drivers/scsi/megaraid/megaraid_sas_base.c | 5 +++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ lib/lzo/lzo1x_decompress_safe.c | 62 +++++++++++++++++++++++++++--------------
+ 1 file changed, 41 insertions(+), 21 deletions(-)
 
---- a/drivers/scsi/megaraid/megaraid_sas.h
-+++ b/drivers/scsi/megaraid/megaraid_sas.h
-@@ -1295,7 +1295,6 @@ struct megasas_instance {
- 	u32 *reply_queue;
- 	dma_addr_t reply_queue_h;
+--- a/lib/lzo/lzo1x_decompress_safe.c
++++ b/lib/lzo/lzo1x_decompress_safe.c
+@@ -19,11 +19,31 @@
+ #include <linux/lzo.h>
+ #include "lzodefs.h"
  
--	unsigned long base_addr;
- 	struct megasas_register_set __iomem *reg_set;
+-#define HAVE_IP(x)      ((size_t)(ip_end - ip) >= (size_t)(x))
+-#define HAVE_OP(x)      ((size_t)(op_end - op) >= (size_t)(x))
+-#define NEED_IP(x)      if (!HAVE_IP(x)) goto input_overrun
+-#define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
+-#define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
++#define HAVE_IP(t, x)					\
++	(((size_t)(ip_end - ip) >= (size_t)(t + x)) &&	\
++	 (((t + x) >= t) && ((t + x) >= x)))
++
++#define HAVE_OP(t, x)					\
++	(((size_t)(op_end - op) >= (size_t)(t + x)) &&	\
++	 (((t + x) >= t) && ((t + x) >= x)))
++
++#define NEED_IP(t, x)					\
++	do {						\
++		if (!HAVE_IP(t, x))			\
++			goto input_overrun;		\
++	} while (0)
++
++#define NEED_OP(t, x)					\
++	do {						\
++		if (!HAVE_OP(t, x))			\
++			goto output_overrun;		\
++	} while (0)
++
++#define TEST_LB(m_pos)					\
++	do {						\
++		if ((m_pos) < out)			\
++			goto lookbehind_overrun;	\
++	} while (0)
  
- 	struct megasas_pd_list          pd_list[MEGASAS_MAX_PD];
---- a/drivers/scsi/megaraid/megaraid_sas_base.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-@@ -3499,6 +3499,7 @@ static int megasas_init_fw(struct megasa
- 	u32 max_sectors_1;
- 	u32 max_sectors_2;
- 	u32 tmp_sectors, msix_enable;
-+	resource_size_t base_addr;
- 	struct megasas_register_set __iomem *reg_set;
- 	struct megasas_ctrl_info *ctrl_info;
- 	unsigned long bar_list;
-@@ -3507,14 +3508,14 @@ static int megasas_init_fw(struct megasa
- 	/* Find first memory bar */
- 	bar_list = pci_select_bars(instance->pdev, IORESOURCE_MEM);
- 	instance->bar = find_first_bit(&bar_list, sizeof(unsigned long));
--	instance->base_addr = pci_resource_start(instance->pdev, instance->bar);
- 	if (pci_request_selected_regions(instance->pdev, instance->bar,
- 					 "megasas: LSI")) {
- 		printk(KERN_DEBUG "megasas: IO memory region busy!\n");
- 		return -EBUSY;
- 	}
- 
--	instance->reg_set = ioremap_nocache(instance->base_addr, 8192);
-+	base_addr = pci_resource_start(instance->pdev, instance->bar);
-+	instance->reg_set = ioremap_nocache(base_addr, 8192);
- 
- 	if (!instance->reg_set) {
- 		printk(KERN_DEBUG "megasas: Failed to map IO mem\n");
+ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
+ 			  unsigned char *out, size_t *out_len)
+@@ -58,14 +78,14 @@ int lzo1x_decompress_safe(const unsigned
+ 					while (unlikely(*ip == 0)) {
+ 						t += 255;
+ 						ip++;
+-						NEED_IP(1);
++						NEED_IP(1, 0);
+ 					}
+ 					t += 15 + *ip++;
+ 				}
+ 				t += 3;
+ copy_literal_run:
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+-				if (likely(HAVE_IP(t + 15) && HAVE_OP(t + 15))) {
++				if (likely(HAVE_IP(t, 15) && HAVE_OP(t, 15))) {
+ 					const unsigned char *ie = ip + t;
+ 					unsigned char *oe = op + t;
+ 					do {
+@@ -81,8 +101,8 @@ copy_literal_run:
+ 				} else
+ #endif
+ 				{
+-					NEED_OP(t);
+-					NEED_IP(t + 3);
++					NEED_OP(t, 0);
++					NEED_IP(t, 3);
+ 					do {
+ 						*op++ = *ip++;
+ 					} while (--t > 0);
+@@ -95,7 +115,7 @@ copy_literal_run:
+ 				m_pos -= t >> 2;
+ 				m_pos -= *ip++ << 2;
+ 				TEST_LB(m_pos);
+-				NEED_OP(2);
++				NEED_OP(2, 0);
+ 				op[0] = m_pos[0];
+ 				op[1] = m_pos[1];
+ 				op += 2;
+@@ -119,10 +139,10 @@ copy_literal_run:
+ 				while (unlikely(*ip == 0)) {
+ 					t += 255;
+ 					ip++;
+-					NEED_IP(1);
++					NEED_IP(1, 0);
+ 				}
+ 				t += 31 + *ip++;
+-				NEED_IP(2);
++				NEED_IP(2, 0);
+ 			}
+ 			m_pos = op - 1;
+ 			next = get_unaligned_le16(ip);
+@@ -137,10 +157,10 @@ copy_literal_run:
+ 				while (unlikely(*ip == 0)) {
+ 					t += 255;
+ 					ip++;
+-					NEED_IP(1);
++					NEED_IP(1, 0);
+ 				}
+ 				t += 7 + *ip++;
+-				NEED_IP(2);
++				NEED_IP(2, 0);
+ 			}
+ 			next = get_unaligned_le16(ip);
+ 			ip += 2;
+@@ -154,7 +174,7 @@ copy_literal_run:
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+ 		if (op - m_pos >= 8) {
+ 			unsigned char *oe = op + t;
+-			if (likely(HAVE_OP(t + 15))) {
++			if (likely(HAVE_OP(t, 15))) {
+ 				do {
+ 					COPY8(op, m_pos);
+ 					op += 8;
+@@ -164,7 +184,7 @@ copy_literal_run:
+ 					m_pos += 8;
+ 				} while (op < oe);
+ 				op = oe;
+-				if (HAVE_IP(6)) {
++				if (HAVE_IP(6, 0)) {
+ 					state = next;
+ 					COPY4(op, ip);
+ 					op += next;
+@@ -172,7 +192,7 @@ copy_literal_run:
+ 					continue;
+ 				}
+ 			} else {
+-				NEED_OP(t);
++				NEED_OP(t, 0);
+ 				do {
+ 					*op++ = *m_pos++;
+ 				} while (op < oe);
+@@ -181,7 +201,7 @@ copy_literal_run:
+ #endif
+ 		{
+ 			unsigned char *oe = op + t;
+-			NEED_OP(t);
++			NEED_OP(t, 0);
+ 			op[0] = m_pos[0];
+ 			op[1] = m_pos[1];
+ 			op += 2;
+@@ -194,15 +214,15 @@ match_next:
+ 		state = next;
+ 		t = next;
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+-		if (likely(HAVE_IP(6) && HAVE_OP(4))) {
++		if (likely(HAVE_IP(6, 0) && HAVE_OP(4, 0))) {
+ 			COPY4(op, ip);
+ 			op += t;
+ 			ip += t;
+ 		} else
+ #endif
+ 		{
+-			NEED_IP(t + 3);
+-			NEED_OP(t);
++			NEED_IP(t, 3);
++			NEED_OP(t, 0);
+ 			while (t > 0) {
+ 				*op++ = *ip++;
+ 				t--;
 
