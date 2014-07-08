@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756290AbaGHTla (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:41:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54116 "EHLO
+	id S1756221AbaGHTl3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:41:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54117 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755684AbaGHTIj (ORCPT
+	by vger.kernel.org with ESMTP id S1755686AbaGHTIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:08:39 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "James Hogan" <james.hogan@imgtec.com>,
-        "Ralf Baechle" <ralf@linux-mips.org>,
-        "Markos Chandras" <markos.chandras@imgtec.com>,
-        linux-mips@linux-mips.org
+CC: akpm@linux-foundation.org, "Roland Dreier" <roland@purestorage.com>,
+        "Wei Yang" <weiyang@linux.vnet.ibm.com>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.10255393@decadent.org.uk>
+Message-ID: <lsq.1404846110.686313675@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 102/125] MIPS: MSC: Prevent out-of-bounds writes to
- MIPS SC ioremap'd region
+Subject: [PATCH 3.2 114/125] mlx4_core: Stash PCI ID driver_data in
+ mlx4_priv  structure
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,49 +32,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markos Chandras <markos.chandras@imgtec.com>
+From: Wei Yang <weiyang@linux.vnet.ibm.com>
 
-commit ab6c15bc6620ebe220970cc040b29bcb2757f373 upstream.
+[ No upstream commit, this is a cherry picked backport enabler. ]
 
-Previously, the lower limit for the MIPS SC initialization loop was
-set incorrectly allowing one extra loop leading to writes
-beyond the MSC ioremap'd space. More precisely, the value of the 'imp'
-in the last loop increased beyond the msc_irqmap_t boundaries and
-as a result of which, the 'n' variable was loaded with an incorrect
-value. This value was used later on to calculate the offset in the
-MSC01_IC_SUP which led to random crashes like the following one:
+That way we can check flags later on, when we've finished with the
+pci_device_id structure.
 
-CPU 0 Unable to handle kernel paging request at virtual address e75c0200,
-epc == 8058dba4, ra == 8058db90
-[...]
-Call Trace:
-[<8058dba4>] init_msc_irqs+0x104/0x154
-[<8058b5bc>] arch_init_irq+0xd8/0x154
-[<805897b0>] start_kernel+0x220/0x36c
+This is a backport.
 
-Kernel panic - not syncing: Attempted to kill the idle task!
-
-This patch fixes the problem
-
-Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
-Reviewed-by: James Hogan <james.hogan@imgtec.com>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/7118/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/mips/kernel/irq-msc01.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/mellanox/mlx4/main.c | 12 +++++++++---
+ drivers/net/ethernet/mellanox/mlx4/mlx4.h |  2 ++
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
---- a/arch/mips/kernel/irq-msc01.c
-+++ b/arch/mips/kernel/irq-msc01.c
-@@ -131,7 +131,7 @@ void __init init_msc_irqs(unsigned long
+--- a/drivers/net/ethernet/mellanox/mlx4/main.c
++++ b/drivers/net/ethernet/mellanox/mlx4/main.c
+@@ -1220,7 +1220,7 @@ static void mlx4_clear_steering(struct m
+ 	kfree(priv->steer);
+ }
  
- 	board_bind_eic_interrupt = &msc_bind_eic_interrupt;
+-static int __mlx4_init_one(struct pci_dev *pdev, const struct pci_device_id *id)
++static int __mlx4_init_one(struct pci_dev *pdev, int pci_dev_data)
+ {
+ 	struct mlx4_priv *priv;
+ 	struct mlx4_dev *dev;
+@@ -1362,6 +1362,7 @@ static int __mlx4_init_one(struct pci_de
+ 	mlx4_sense_init(dev);
+ 	mlx4_start_sense(dev);
  
--	for (; nirq >= 0; nirq--, imp++) {
-+	for (; nirq > 0; nirq--, imp++) {
- 		int n = imp->im_irq;
++	priv->pci_dev_data = pci_dev_data;
+ 	pci_set_drvdata(pdev, dev);
  
- 		switch (imp->im_type) {
+ 	return 0;
+@@ -1414,7 +1415,7 @@ static int __devinit mlx4_init_one(struc
+ {
+ 	printk_once(KERN_INFO "%s", mlx4_version);
+ 
+-	return __mlx4_init_one(pdev, id);
++	return __mlx4_init_one(pdev, id->driver_data);
+ }
+ 
+ static void mlx4_remove_one(struct pci_dev *pdev)
+@@ -1463,8 +1464,13 @@ static void mlx4_remove_one(struct pci_d
+ 
+ int mlx4_restart_one(struct pci_dev *pdev)
+ {
++	struct mlx4_dev  *dev  = pci_get_drvdata(pdev);
++	struct mlx4_priv *priv = mlx4_priv(dev);
++	int               pci_dev_data;
++
++	pci_dev_data = priv->pci_dev_data;
+ 	mlx4_remove_one(pdev);
+-	return __mlx4_init_one(pdev, NULL);
++	return __mlx4_init_one(pdev, pci_dev_data);
+ }
+ 
+ static DEFINE_PCI_DEVICE_TABLE(mlx4_pci_table) = {
+--- a/drivers/net/ethernet/mellanox/mlx4/mlx4.h
++++ b/drivers/net/ethernet/mellanox/mlx4/mlx4.h
+@@ -328,6 +328,8 @@ struct mlx4_priv {
+ 	struct list_head	ctx_list;
+ 	spinlock_t		ctx_lock;
+ 
++	int                     pci_dev_data;
++
+ 	struct list_head        pgdir_list;
+ 	struct mutex            pgdir_mutex;
+ 
 
