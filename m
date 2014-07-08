@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150AbaGHKX0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 06:23:26 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51192 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753063AbaGHKXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 06:23:25 -0400
-From: Keerthy <j-keerthy@ti.com>
-To: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-CC: <mark.rutland@arm.com>, <galak@codeaurora.org>, <robh+dt@kernel.org>,
-        <linux@arm.linux.org.uk>, <balbi@ti.com>, <tony@atomide.com>,
-        <kishon@ti.com>, <broonie@kernel.org>, Keerthy <j-keerthy@ti.com>
-Subject: [PATCH v2 0/7] ARM: dts: AM43x: Add devcice tree nodes
-Date: Tue, 8 Jul 2014 15:46:30 +0530
-Message-ID: <1404814597-4404-1-git-send-email-j-keerthy@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753986AbaGHK2i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 06:28:38 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:20447 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752753AbaGHK2h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 06:28:37 -0400
+Date: Tue, 8 Jul 2014 13:28:30 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Cheng-Wei Lee <lee.rhapsody@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sherif Shehab Aldin <shehabaldin.sherif@gmail.com>,
+        Avinash Kumar <avi.kp.137@gmail.com>,
+        Peter Senna Tschudin <peter.senna@gmail.com>,
+        devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] staging: wlan-ng/hfa384x_usb.c: add blank line after
+ declarations
+Message-ID: <20140708102830.GK25880@mwanda>
+References: <CAJKoSVTzYbuzmh6NOpXZ8hd5B_X3fWoik_w9AQJ=0RaCo40rBA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJKoSVTzYbuzmh6NOpXZ8hd5B_X3fWoik_w9AQJ=0RaCo40rBA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch series adds the device tree nodes and the corresponding
-documentation. The series also enabled tps65218 config options
-in the omap2plus_defconfig.
+On Wed, Jun 25, 2014 at 11:25:33PM +0800, Cheng-Wei Lee wrote:
+> This patch fixes the following checkpatch.pl issues in hfa384x_usb.c:
+> WARNING: Missing a blank line after declarations
+> 
+> Signed-off-by: Quentin Lee <lee.rhapsody@gmail.com>
+> ---
+>  drivers/staging/wlan-ng/hfa384x_usb.c |    4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
+> 
+> diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c
+> b/drivers/staging/wlan-ng/hfa384x_usb.c
+> index 07cee56..99e2f2d 100644
+> --- a/drivers/staging/wlan-ng/hfa384x_usb.c
+> +++ b/drivers/staging/wlan-ng/hfa384x_usb.c
+> @@ -3533,7 +3533,7 @@ static void hfa384x_usbin_rx(wlandevice_t
+> *wlandev, struct sk_buff *skb)
+>  	}
+> 
+>  done:
+> -	return;
+> +	pr_debug("hfa384x_usbin_rx: done\n");
 
-The series is boot tested on both AM43x-epos-evm and AM437x-gp-evm.
+Don't add this stuff.  Just delete the useless label.
 
-Keerthy (7):
-  mfd: Add DT bindings for tps65218 PMIC
-  regulator: Add DT bindings for tps65218 PMIC regulators.
-  ARM: dts: AM43x: Add TPS65218 device tree nodes
-  ARM: dts: AM437x: Fix i2c nodes indentation
-  ARM: dts: AM437x: Add TPS65218 device tree nodes
-  regulator: tps65218: Add get_voltage ops for dcdc5 and dcdc6
-  ARM: configs: omap2plus_defconfig: enable TPS65218 configs
-
- Documentation/devicetree/bindings/mfd/tps65218.txt |   89 ++++++++++++++++++++
- .../devicetree/bindings/regulator/tps65218.txt     |   23 +++++
- arch/arm/boot/dts/am437x-gp-evm.dts                |   71 ++++++++++++++--
- arch/arm/boot/dts/am43x-epos-evm.dts               |   59 +++++++++++++
- arch/arm/configs/omap2plus_defconfig               |    2 +
- drivers/regulator/tps65218-regulator.c             |    9 ++
- 6 files changed, 246 insertions(+), 7 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/tps65218.txt
- create mode 100644 Documentation/devicetree/bindings/regulator/tps65218.txt
-
--- 
-1.7.9.5
+regards,
+dan carpenter
 
