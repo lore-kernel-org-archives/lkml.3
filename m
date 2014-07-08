@@ -1,44 +1,401 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747AbaGHXWH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 19:22:07 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:55019 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751296AbaGHXWF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 19:22:05 -0400
-Date: Tue, 08 Jul 2014 16:22:04 -0700 (PDT)
-Message-Id: <20140708.162204.1648218023530822781.davem@davemloft.net>
-To: himangi774@gmail.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
-Subject: Re: [PATCH] iaf_packet: use BUG_ON
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140708222023.GA11829@himangi-Dell>
-References: <20140708222023.GA11829@himangi-Dell>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 08 Jul 2014 16:22:04 -0700 (PDT)
+	id S1754788AbaGHXYz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 19:24:55 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:45310 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751074AbaGHXYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 19:24:52 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        =?utf-8?B?ZWRkaWUo6JSh5p6rKQ==?= <cf@rock-chips.com>,
+        huangtao@rock-chips.com
+Subject: [PATCH 1/2] iio: adc: add driver for Rockchip saradc
+Date: Wed, 09 Jul 2014 01:26:13 +0200
+Message-ID: <2959154.xc8BQActsn@diego>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Himangi Saraogi <himangi774@gmail.com>
-Date: Wed, 9 Jul 2014 03:50:23 +0530
+The ADC is a 3-channel signal-ended 10-bit Successive Approximation
+Register (SAR) A/D Converter. It uses the supply and ground as it reference
+and converts the analog input signal into 10-bit binary digital codes.
 
-> Use BUG_ON(x) rather than if(x) BUG();
-> 
-> The semantic patch that fixes this problem is as follows:
-> 
-> // <smpl>
-> @@ identifier x; @@
-> -if (x) BUG();
-> +BUG_ON(x);
-> // </smpl>
-> 
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+---
+ drivers/iio/adc/Kconfig           |  10 ++
+ drivers/iio/adc/Makefile          |   1 +
+ drivers/iio/adc/rockchip_saradc.c | 317 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 328 insertions(+)
+ create mode 100644 drivers/iio/adc/rockchip_saradc.c
 
-Please repost this with a proper subject line, correcting "iaf_packet".
+diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
+index a80d236..5d36bdb 100644
+--- a/drivers/iio/adc/Kconfig
++++ b/drivers/iio/adc/Kconfig
+@@ -187,6 +187,16 @@ config NAU7802
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called nau7802.
+ 
++config ROCKCHIP_SARADC
++	tristate "Rockchip SARADC driver"
++	depends on ARCH_ROCKCHIP || (OF && COMPILE_TEST)
++	help
++	  Say yes here to build support for the SARADC found in SoCs from
++	  Rockchip.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called rockchip_saradc.
++
+ config TI_ADC081C
+ 	tristate "Texas Instruments ADC081C021/027"
+ 	depends on I2C
+diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
+index 9d60f2d..8e2932d 100644
+--- a/drivers/iio/adc/Makefile
++++ b/drivers/iio/adc/Makefile
+@@ -20,6 +20,7 @@ obj-$(CONFIG_MCP320X) += mcp320x.o
+ obj-$(CONFIG_MCP3422) += mcp3422.o
+ obj-$(CONFIG_MEN_Z188_ADC) += men_z188_adc.o
+ obj-$(CONFIG_NAU7802) += nau7802.o
++obj-$(CONFIG_ROCKCHIP_SARADC) += rockchip_saradc.o
+ obj-$(CONFIG_TI_ADC081C) += ti-adc081c.o
+ obj-$(CONFIG_TI_AM335X_ADC) += ti_am335x_adc.o
+ obj-$(CONFIG_TWL4030_MADC) += twl4030-madc.o
+diff --git a/drivers/iio/adc/rockchip_saradc.c b/drivers/iio/adc/rockchip_saradc.c
+new file mode 100644
+index 0000000..dc4029d
+--- /dev/null
++++ b/drivers/iio/adc/rockchip_saradc.c
+@@ -0,0 +1,317 @@
++/*
++ * Rockchip Successive Approximation Register (SAR) A/D Converter
++ * Copyright (C) 2014 ROCKCHIP, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/clk.h>
++#include <linux/completion.h>
++#include <linux/regulator/consumer.h>
++#include <linux/iio/iio.h>
++
++#define SARADC_DATA			0x00
++#define SARADC_DATA_MASK		0x3ff
++
++#define SARADC_STAS			0x04
++#define SARADC_STAS_BUSY		BIT(0)
++
++#define SARADC_CTRL			0x08
++#define SARADC_CTRL_IRQ_STATUS		BIT(6)
++#define SARADC_CTRL_IRQ_ENABLE		BIT(5)
++#define SARADC_CTRL_POWER_CTRL		BIT(3)
++#define SARADC_CTRL_CHN_MASK		0x7
++
++#define SARADC_DLY_PU_SOC		0x0c
++#define SARADC_DLY_PU_SOC_MASK		0x3f
++
++#define SARADC_BITS			10
++#define SARADC_TIMEOUT			(msecs_to_jiffies(100))
++
++struct rockchip_saradc {
++	void __iomem		*regs;
++	struct clk		*pclk;
++	struct clk		*clk;
++	struct completion	completion;
++	struct regulator	*vref;
++	int			vref_mv;
++	u32			last_val;
++};
++
++static int rockchip_saradc_read_raw(struct iio_dev *indio_dev,
++				    struct iio_chan_spec const *chan,
++				    int *val, int *val2, long mask)
++{
++	struct rockchip_saradc *info = iio_priv(indio_dev);
++
++	switch (mask) {
++	case IIO_CHAN_INFO_RAW:
++		mutex_lock(&indio_dev->mlock);
++
++		/* Select the channel to be used and Trigger conversion */
++		writel_relaxed(0x08, info->regs + SARADC_DLY_PU_SOC);
++		writel(SARADC_CTRL_POWER_CTRL
++				| (chan->channel & SARADC_CTRL_CHN_MASK)
++				| SARADC_CTRL_IRQ_ENABLE,
++		       info->regs + SARADC_CTRL);
++
++		if (!wait_for_completion_timeout(&info->completion,
++						 SARADC_TIMEOUT)) {
++			writel_relaxed(0, info->regs + SARADC_CTRL);
++			mutex_unlock(&indio_dev->mlock);
++			return -ETIMEDOUT;
++		}
++
++		*val = info->last_val;
++		mutex_unlock(&indio_dev->mlock);
++		return IIO_VAL_INT;
++	case IIO_CHAN_INFO_SCALE:
++		*val = info->vref_mv;
++		*val2 = SARADC_BITS;
++		return IIO_VAL_FRACTIONAL_LOG2;
++	default:
++		break;
++	}
++	return -EINVAL;
++}
++
++static irqreturn_t rockchip_saradc_isr(int irq, void *dev_id)
++{
++	struct rockchip_saradc *info = (struct rockchip_saradc *)dev_id;
++
++	/* Read value */
++	info->last_val = readl_relaxed(info->regs + SARADC_DATA);
++	info->last_val &= SARADC_DATA_MASK;
++
++	/* clear irq & power down adc*/
++	writel_relaxed(0, info->regs + SARADC_CTRL);
++
++	complete(&info->completion);
++
++	return IRQ_HANDLED;
++}
++
++static const struct iio_info rockchip_saradc_iio_info = {
++	.read_raw = rockchip_saradc_read_raw,
++	.driver_module = THIS_MODULE,
++};
++
++#define ADC_CHANNEL(_index, _id) {			\
++	.type = IIO_VOLTAGE,				\
++	.indexed = 1,					\
++	.channel = _index,				\
++	.address = _index,				\
++	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),	\
++	.datasheet_name = _id,				\
++}
++
++static const struct iio_chan_spec rockchip_saradc_iio_channels[] = {
++	ADC_CHANNEL(0, "adc0"),
++	ADC_CHANNEL(1, "adc1"),
++	ADC_CHANNEL(2, "adc2"),
++};
++
++static int rockchip_saradc_probe(struct platform_device *pdev)
++{
++	struct rockchip_saradc *info = NULL;
++	struct device_node *np = pdev->dev.of_node;
++	struct iio_dev *indio_dev = NULL;
++	struct resource	*mem;
++	int ret = -ENODEV;
++	int irq;
++	u32 rate;
++
++	if (!np)
++		return ret;
++
++	indio_dev = devm_iio_device_alloc(&pdev->dev, sizeof(*info));
++	if (!indio_dev) {
++		dev_err(&pdev->dev, "failed allocating iio device\n");
++		return -ENOMEM;
++	}
++	info = iio_priv(indio_dev);
++
++	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	info->regs = devm_request_and_ioremap(&pdev->dev, mem);
++	if (!info->regs)
++		return -ENOMEM;
++
++	irq = platform_get_irq(pdev, 0);
++	if (irq < 0) {
++		dev_err(&pdev->dev, "no irq resource?\n");
++		return irq;
++	}
++
++	ret = devm_request_irq(&pdev->dev, irq, rockchip_saradc_isr,
++					0, dev_name(&pdev->dev), info);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "failed requesting irq, %d\n", ret);
++		return ret;
++	}
++
++	init_completion(&info->completion);
++
++	info->pclk = devm_clk_get(&pdev->dev, "apb_pclk");
++	if (IS_ERR(info->pclk)) {
++		dev_err(&pdev->dev, "failed to get pclk\n");
++		return PTR_ERR(info->pclk);
++	}
++
++	info->clk = devm_clk_get(&pdev->dev, "saradc");
++	if (IS_ERR(info->clk)) {
++		dev_err(&pdev->dev, "failed to get adc clock\n");
++		return PTR_ERR(info->clk);
++	}
++
++	info->vref = devm_regulator_get(&pdev->dev, "vref");
++	if (IS_ERR(info->vref)) {
++		dev_err(&pdev->dev, "failed to get regulator, %ld\n",
++			PTR_ERR(info->vref));
++		return PTR_ERR(info->vref);
++	}
++
++	/* use a default of 1MHz for the converter clock */
++	if (of_property_read_u32(np, "clock-frequency", &rate))
++		rate = 1000000;
++
++	ret = clk_set_rate(info->clk, rate);
++	if (ret) {
++		dev_err(&pdev->dev, "failed to set adc clk rate, %d\n", ret);
++		return ret;
++	}
++
++	ret = regulator_enable(info->vref);
++	if (ret) {
++		dev_err(&pdev->dev, "failed to enable vref regulator\n");
++		return ret;
++	}
++
++	info->vref_mv = regulator_get_voltage(info->vref);
++	if (info->vref_mv < 0) {
++		dev_err(&pdev->dev, "failed to get regulator voltage, %d\n",
++			info->vref_mv);
++		ret = info->vref_mv;
++		goto err_reg_voltage;
++	}
++	info->vref_mv /= 1000;
++
++	ret = clk_prepare_enable(info->pclk);
++	if (ret) {
++		dev_err(&pdev->dev, "failed to enable pclk\n");
++		goto err_reg_voltage;
++	}
++
++	ret = clk_prepare_enable(info->clk);
++	if (ret) {
++		dev_err(&pdev->dev, "failed to enable converter clock\n");
++		goto err_pclk;
++	}
++
++	platform_set_drvdata(pdev, indio_dev);
++
++	indio_dev->name = dev_name(&pdev->dev);
++	indio_dev->dev.parent = &pdev->dev;
++	indio_dev->dev.of_node = pdev->dev.of_node;
++	indio_dev->info = &rockchip_saradc_iio_info;
++	indio_dev->modes = INDIO_DIRECT_MODE;
++
++	indio_dev->channels = rockchip_saradc_iio_channels;
++	indio_dev->num_channels = ARRAY_SIZE(rockchip_saradc_iio_channels);
++
++	ret = iio_device_register(indio_dev);
++	if (ret)
++		goto err_clk;
++
++	return 0;
++
++err_clk:
++	clk_disable_unprepare(info->clk);
++err_pclk:
++	clk_disable_unprepare(info->pclk);
++err_reg_voltage:
++	regulator_disable(info->vref);
++	return ret;
++}
++
++static int rockchip_saradc_remove(struct platform_device *pdev)
++{
++	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
++	struct rockchip_saradc *info = iio_priv(indio_dev);
++
++	iio_device_unregister(indio_dev);
++	clk_disable_unprepare(info->clk);
++	clk_disable_unprepare(info->pclk);
++	regulator_disable(info->vref);
++
++	return 0;
++}
++
++#ifdef CONFIG_PM_SLEEP
++static int rockchip_saradc_suspend(struct device *dev)
++{
++	struct iio_dev *indio_dev = dev_get_drvdata(dev);
++	struct rockchip_saradc *info = iio_priv(indio_dev);
++
++	clk_disable_unprepare(info->clk);
++	clk_disable_unprepare(info->pclk);
++	regulator_disable(info->vref);
++
++	return 0;
++}
++
++static int rockchip_saradc_resume(struct device *dev)
++{
++	struct iio_dev *indio_dev = dev_get_drvdata(dev);
++	struct rockchip_saradc *info = iio_priv(indio_dev);
++	int ret;
++
++	ret = regulator_enable(info->vref);
++	if (ret)
++		return ret;
++
++	ret = clk_prepare_enable(info->pclk);
++	if (ret)
++		return ret;
++
++	ret = clk_prepare_enable(info->clk);
++	if (ret)
++		return ret;
++
++	return ret;
++}
++#endif
++
++static SIMPLE_DEV_PM_OPS(rockchip_saradc_pm_ops,
++			 rockchip_saradc_suspend, rockchip_saradc_resume);
++
++static const struct of_device_id rockchip_saradc_match[] = {
++	{ .compatible = "rockchip,saradc" },
++	{},
++};
++MODULE_DEVICE_TABLE(of, rockchip_saradc_match);
++
++static struct platform_driver rockchip_saradc_driver = {
++	.probe		= rockchip_saradc_probe,
++	.remove		= rockchip_saradc_remove,
++	.driver		= {
++		.name	= "rockchip-saradc",
++		.owner	= THIS_MODULE,
++		.of_match_table = rockchip_saradc_match,
++		.pm	= &rockchip_saradc_pm_ops,
++	},
++};
++
++module_platform_driver(rockchip_saradc_driver);
+-- 
+1.9.0
+
 
