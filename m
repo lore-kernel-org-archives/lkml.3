@@ -1,260 +1,476 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516AbaGHMUg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 08:20:36 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:11080 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754242AbaGHMUe (ORCPT
+	id S1754593AbaGHMVV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 08:21:21 -0400
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:46616 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754371AbaGHMVT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 08:20:34 -0400
-X-AuditID: cbfee68d-b7fd46d000005f36-e9-53bbe20f0b1d
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Murali Karicheri'" <m-karicheri2@ti.com>,
-        "'Mohit KUMAR DCG'" <Mohit.KUMAR@st.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        "'Santosh Shilimkar'" <santosh.shilimkar@ti.com>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Grant Likely'" <grant.likely@linaro.org>,
-        "'Rob Herring'" <robh+dt@kernel.org>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "'Pratyush ANAND'" <pratyush.anand@st.com>,
-        "'Richard Zhu'" <r65037@freescale.com>,
-        "'Kishon Vijay Abraham I'" <kishon@ti.com>,
-        "'Marek Vasut'" <marex@denx.de>, "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Pawel Moll'" <pawel.moll@arm.com>,
-        "'Mark Rutland'" <mark.rutland@arm.com>,
-        "'Ian Campbell'" <ijc+devicetree@hellion.org.uk>,
-        "'Kumar Gala'" <galak@codeaurora.org>,
-        "'Randy Dunlap'" <rdunlap@infradead.org>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1404164720-11066-1-git-send-email-m-karicheri2@ti.com>
- <1404164720-11066-3-git-send-email-m-karicheri2@ti.com>
- <2CC2A0A4A178534D93D5159BF3BCB661A17A3E4291@EAPEX1MAIL1.st.com>
- <53BAD07C.2010302@ti.com>
-In-reply-to: <53BAD07C.2010302@ti.com>
-Subject: Re: [PATCH v3 2/5] PCI: designware: refactor MSI code to work with
- v3.65 dw hardware
-Date: Tue, 08 Jul 2014 21:20:30 +0900
-Message-id: <000e01cf9aa7$02425030$06c6f090$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac+aBB3ySCMOBZdSSuK0D9+VGJUjyQAorKdQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA5WSfSzUcRzH973fwz00/Dx/Y1HXIw157Nui9U/bb2ttqdZaa+nwC+Fcd5j+
-	KYlT5ikq7bJDSzl3MkcoMWHOKvKwYblZnYeKOxrCcIr71ebf/nt/P9/3+/t6f7cPD7P7TLjw
-	YsSJjFQsihOSAvzD+qSPl42h6eyhXzVCZC7o5KJnadHoR5sHKunoIVCesYxArWuNAPVMqQAa
-	KOsnUO9ENokG3hSTqFupI9HIgBXKzWklkVF+G6DyoT4Oqnm4AlB+URWOMvt3ozGFPTLpi3CU
-	0dzBRdO5Guy4E61RagCdfiebpFdXCgA9kJvDoZWKLpxeb8/j0KXaJFr1YoGkays8aW3lPZLW
-	D74l6dy6SkBPLDdjtG64gUPPa91O21wUBEcycTHJjNTn2BVBtP53Dlei809ZfDCFpQL9gSzA
-	50EqAL4vKSRY7QR7R6vJLCDg2VHPASyeN3D/mUxNKpy9eApgufIllz2sAlhStWSJk9Q+uLDQ
-	bkk4UOehIa2c2DRhlIGAn3oz/747AqB+yQw2XfyNxE+53KLtqTA42z6Bb2qc2gsnv+ktcysq
-	BM51GElW28LlwlGLB6M8YfVrHYfV7rBWY8KyAG+j635oMHuxJfxgT+YMwVocYMv3GbDZAVJP
-	+FAzd5dkWRRcLGzD2ewOqG3F2C9vh+8qhvF8ABVbyIotZMUWsmILohTglcCRkURIZOFRUl9v
-	mSheliSO8o5IiNcCdq9yGsFI69E2ELGBv4+5OEYkbOydODHM1z/IDwUGBPr7HT4S9H9jobNV
-	+NfwM3ZUlCiRiWUYCSMNkybFMbI2wOHxXVLBwatDuHrNteFmCqG27Q72sK5KdrvuXH9y27XB
-	yFu1k+S55WHaJw6l6nbVVb6q5zd7jjRecL00H9O3mH5Z3jHeYjzKiQ3oDCmats7oiiy7ERpa
-	OjZ7as9Mw7C75pGQUy9uj3q8ExedME0z3eWqRisYqzZ3h89r1eNfPOQqv49mIS6LFvl6YlKZ
-	6A87KSWKbQMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkk+LIzCtJLcpLzFFi42I5/e+xgC7fo93BBsd2G1v8nXSM3WJJU4bF
-	y0OaFvOPnGO16H+zkNXiwJ8djBbnXq1ktLi88BKrxYWnPWwWl3fNYbM4O+84m8Xty7wWfb0H
-	2CzetDUyWiy9fpHJYuPUX4wWE6avZbFov6Rs8XiWsMXbO9NZLFr3HmG3eN23htlBzGPNvDWM
-	Hi3NPWwev39NYvS43NfL5DFv1gkWj3+H+5k8Fmwq9Vi5/Aubx+YVWh6bVnWyedy5tofNo2/L
-	KkaPpz/2Mnscv7GdyePzJrkA/qgGRpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtz
-	JYW8xNxUWyUXnwBdt8wcoO+VFMoSc0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYR1
-	jBl3/veyFxw3rvg25RVzA+MdjS5GTg4JAROJt7tXskDYYhIX7q1n62Lk4hASWMQosXTeOnYI
-	5zejxPy131lBqtgE1CS+fDnMDmKLCIRJPGpaygpSxCzwiFXi/IV2qPbbjBJ3vv9lBKniBOr4
-	0NYGZgsLxEu8P/wUbB+LgKrEs+d3wOK8ArYSn468YYOwBSV+TL4HVsMsoCWxfudxJghbXmLz
-	mrfMXYwcQLeqSzz6qwtxhJHEufZ3rBAlIhL7XrxjnMAoNAvJpFlIJs1CMmkWkpYFjCyrGEVT
-	C5ILipPScw31ihNzi0vz0vWS83M3MYKT4TOpHYwrGywOMQpwMCrx8K44uCtYiDWxrLgy9xCj
-	BAezkgjvl1O7g4V4UxIrq1KL8uOLSnNSiw8xmgI9OpFZSjQ5H5io80riDY1NzIwsjcwsjEzM
-	zZXEeQ+0WgcKCaQnlqRmp6YWpBbB9DFxcEo1MJ6ZFHPI990LLr8L6f1BOzYIebr6fN/7cJaY
-	T9CTacZcqoULN9hYL14obHjC4sGx6nNVKvGCKZv65icU1s+/95Z9w6fClWt4OZ13fko/duCE
-	3OkDW1p+TtzarbxXIfCiNONynedaYnsf7vo9TVewvzJr1tON+3qVa+ScooNvq7C+POV9/OED
-	i7dKLMUZiYZazEXFiQBYK8OxnAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 8 Jul 2014 08:21:19 -0400
+Date: Tue, 8 Jul 2014 08:21:14 -0400
+From: Jeff Layton <jlayton@poochiereds.net>
+To: libc-alpha@sourceware.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Rich Felker <dalias@libc.org>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        samba-technical@lists.samba.org,
+        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
+        "Carlos O'Donell" <carlos@redhat.com>,
+        Stefan Metzmacher <metze@samba.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Boaz Harrosh <bharrosh@panasas.com>, "Alfred M. Szmidt" <ams@gnu.org>,
+        =?UTF-8?B?T25kxZllaiBCw61sa2E=?= <neleai@seznam.cz>
+Subject: Re: [PATCH resend #5] fcntl-linux.h: add new definitions and manual
+ updates for open file description locks
+Message-ID: <20140708082114.0056dfff@tlielax.poochiereds.net>
+In-Reply-To: <1404821817-14687-1-git-send-email-jlayton@primarydata.com>
+References: <1404821817-14687-1-git-send-email-jlayton@primarydata.com>
+X-Mailer: Claws Mail 3.10.0 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 08, 2014 1:53 AM, Murali Karicheri wrote:
-> On 07/07/2014 12:17 AM, Mohit KUMAR DCG wrote:
-> > On Tuesday, July 01, 2014 3:15 AM, Murali Karicheri wrote:
-> >>
-> >> Keystone PCI controller is based on v3.65 version of the DW PCI h/w that
-> >> implements MSI controller registers in application space compared to the
-> >> newer version. This requires updates to the DW core API to support the PCI
-> >> controller driver based on this old DW hardware. Add msi_irq_set()/clear()
-> >> API functions to allow Set/Clear MSI IRQ enable bit in the application register.
-> >> Also the old h/w uses MSI_IRQ register in application register space to raise
-> >> MSI IRQ to the RC from EP. Current code uses the standard mechanism as
-> >> per PCI spec. So add another API get_msi_data() to get the address of this
-> >> register so that common code can be re-used on old h/w.
-> >>
-> >> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
-> >>
-> >> CC: Santosh Shilimkar<santosh.shilimkar@ti.com>
-> >> CC: Russell King<linux@arm.linux.org.uk>
-> >> CC: Grant Likely<grant.likely@linaro.org>
-> >> CC: Rob Herring<robh+dt@kernel.org>
-> >> CC: Mohit Kumar<mohit.kumar@st.com>
-> >> CC: Jingoo Han<jg1.han@samsung.com>
-> >> CC: Bjorn Helgaas<bhelgaas@google.com>
-> >> CC: Pratyush Anand<pratyush.anand@st.com>
-> >> CC: Richard Zhu<r65037@freescale.com>
-> >> CC: Kishon Vijay Abraham I<kishon@ti.com>
-> >> CC: Marek Vasut<marex@denx.de>
-> >> CC: Arnd Bergmann<arnd@arndb.de>
-> >> CC: Pawel Moll<pawel.moll@arm.com>
-> >> CC: Mark Rutland<mark.rutland@arm.com>
-> >> CC: Ian Campbell<ijc+devicetree@hellion.org.uk>
-> >> CC: Kumar Gala<galak@codeaurora.org>
-> >> CC: Randy Dunlap<rdunlap@infradead.org>
-> >> CC: Grant Likely<grant.likely@linaro.org>
-> >> ---
-> >>   drivers/pci/host/pcie-designware.c |   50 ++++++++++++++++++++++++++-
-> >> ---------
-> >>   drivers/pci/host/pcie-designware.h |    3 +++
-> >>   2 files changed, 39 insertions(+), 14 deletions(-)
-> >>
-> >> diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-
-> >> designware.c
-> >> index d8f3af7..905941c 100644
-> >> --- a/drivers/pci/host/pcie-designware.c
-> >> +++ b/drivers/pci/host/pcie-designware.c
-> >> @@ -217,27 +217,47 @@ static int find_valid_pos0(struct pcie_port *pp, int
-> >> msgvec, int pos, int *pos0)
-> >>   	return 0;
-> >>   }
-> >>
-> >> +static void dw_pcie_msi_clear_irq(struct pcie_port *pp, int irq) {
-> >> +	unsigned int res, bit, val;
-> >> +
-> >> +	res = (irq / 32) * 12;
-> >> +	bit = irq % 32;
-> >> +	dw_pcie_rd_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res, 4,&val);
-> >> +	val&= ~(1<<  bit);
-> >> +	dw_pcie_wr_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res, 4, val); }
-> >> +
-> >>   static void clear_irq_range(struct pcie_port *pp, unsigned int irq_base,
-> >>   			    unsigned int nvec, unsigned int pos)  {
-> >> -	unsigned int i, res, bit, val;
-> >> +	unsigned int i;
-> >>
-> >>   	for (i = 0; i<  nvec; i++) {
-> >>   		irq_set_msi_desc_off(irq_base, i, NULL);
-> >>   		clear_bit(pos + i, pp->msi_irq_in_use);
-> >>   		/* Disable corresponding interrupt on MSI controller */
-> >> -		res = ((pos + i) / 32) * 12;
-> >> -		bit = (pos + i) % 32;
-> >> -		dw_pcie_rd_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res,
-> >> 4,&val);
-> >> -		val&= ~(1<<  bit);
-> >> -		dw_pcie_wr_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res,
-> >> 4, val);
-> >> +		if (pp->ops->msi_clear_irq)
-> >> +			pp->ops->msi_clear_irq(pp, pos + i);
-> >> +		else
-> >> +			dw_pcie_msi_clear_irq(pp, pos + i);
-> >>   	}
-> >>   }
-> >>
-> >> +static void dw_pcie_msi_set_irq(struct pcie_port *pp, int irq) {
-> >> +	unsigned int res, bit, val;
-> >> +
-> >> +	res = (irq / 32) * 12;
-> >> +	bit = irq % 32;
-> >> +	dw_pcie_rd_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res, 4,&val);
-> >> +	val |= 1<<  bit;
-> >> +	dw_pcie_wr_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res, 4, val); }
-> >> +
-> >>   static int assign_irq(int no_irqs, struct msi_desc *desc, int *pos)  {
-> >> -	int res, bit, irq, pos0, pos1, i;
-> >> -	u32 val;
-> >> +	int irq, pos0, pos1, i;
-> >>   	struct pcie_port *pp = sys_to_pcie(desc->dev->bus->sysdata);
-> >>
-> >>   	if (!pp) {
-> >> @@ -281,11 +301,10 @@ static int assign_irq(int no_irqs, struct msi_desc
-> >> *desc, int *pos)
-> >>   		}
-> >>   		set_bit(pos0 + i, pp->msi_irq_in_use);
-> >>   		/*Enable corresponding interrupt in MSI interrupt controller
-> >> */
-> >> -		res = ((pos0 + i) / 32) * 12;
-> >> -		bit = (pos0 + i) % 32;
-> >> -		dw_pcie_rd_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res,
-> >> 4,&val);
-> >> -		val |= 1<<  bit;
-> >> -		dw_pcie_wr_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res,
-> >> 4, val);
-> >> +		if (pp->ops->msi_set_irq)
-> >> +			pp->ops->msi_set_irq(pp, pos0 + i);
-> >> +		else
-> >> +			dw_pcie_msi_set_irq(pp, pos0 + i);
-> >>   	}
-> >>
-> >>   	*pos = pos0;
-> >> @@ -353,7 +372,10 @@ static int dw_msi_setup_irq(struct msi_chip *chip,
-> >> struct pci_dev *pdev,
-> >>   	 */
-> >>   	desc->msi_attrib.multiple = msgvec;
-> >>
-> >> -	msg.address_lo = virt_to_phys((void *)pp->msi_data);
-> >> +	if (pp->ops->get_msi_data)
-> >> +		msg.address_lo = pp->ops->get_msi_data(pp);
-> >> +	else
-> >> +		msg.address_lo = virt_to_phys((void *)pp->msi_data);
-> >>   	msg.address_hi = 0x0;
-> >>   	msg.data = pos;
-> >>   	write_msi_msg(irq,&msg);
-> >> diff --git a/drivers/pci/host/pcie-designware.h b/drivers/pci/host/pcie-
-> >> designware.h
-> >> index 8121901..387f69e 100644
-> >> --- a/drivers/pci/host/pcie-designware.h
-> >> +++ b/drivers/pci/host/pcie-designware.h
-> >> @@ -67,6 +67,9 @@ struct pcie_host_ops {
-> >>   			unsigned int devfn, int where, int size, u32 val);
-> >>   	int (*link_up)(struct pcie_port *pp);
-> >>   	void (*host_init)(struct pcie_port *pp);
-> >> +	void (*msi_set_irq)(struct pcie_port *pp, int irq);
-> >> +	void (*msi_clear_irq)(struct pcie_port *pp, int irq);
-> >> +	u32 (*get_msi_data)(struct pcie_port *pp);
-> >>   };
-> >>
-> >>   int dw_pcie_cfg_read(void __iomem *addr, int where, int size, u32 *val);
-> >
-> > - Now MSI specific dw code can be shared b/w old Synopsys controller (ver<  3.70)
-> > and newer controller that standardize the MSI settings inside design ware core itself.
-> >
-> > Jingoo,
-> >
-> > Pls let us know if you have any concern or comment over this.
-> >
-> > Acked-by: Mohit Kumar<mohit.kumar@st.com>
-> >
-> > Regards
-> > Mohit
-> >
-> >> --
-> >> 1.7.9.5
-> >
-> Mohit,
+On Tue,  8 Jul 2014 08:16:57 -0400
+Jeff Layton <jlayton@primarydata.com> wrote:
+
+> From: Jeff Layton <jlayton@poochiereds.net>
 > 
-> Thanks.
+> Open file description locks have been merged into the Linux kernel for
+> v3.15.  Add the appropriate command-value definitions and an update to
+> the manual that describes their usage.
 > 
-> Jingoo, could you provide your response or Ack?
 
-Acked-by: Jingoo Han <jg1.han@samsung.com>
+...and to follow up on this, I'm really getting quite exasperated. This
+patch has been done for several months now. There have been no review
+comments on it since Ondřej's comment about the changelog in late May.
+Michael K. merged the manpage patches months ago. The only remaining
+piece is for glibc to merge this patch. Why is it taking so long to get
+a simple header file and documentation patch merged?
 
-Best regards,
-Jingoo Han
-
+> ChangeLog:
 > 
-> Thanks
-> --
+> 2014-04-24  Jeff Layton  <jlayton@poochiereds.net>
+> 
+> 	[BZ#16839]
+> 	* manual/llio.texi: add section about open file description locks
+> 
+> 	* manual/examples/ofdlocks.c:
+> 	  example of open file description lock usage
+> 
+> 	* sysdeps/unix/sysv/linux/bits/fcntl-linux.h:
+> 	  (F_OFD_GETLK, F_OFD_SETLK, F_OFD_SETLKW): New macros.
+> ---
+>  manual/examples/ofdlocks.c                 |  77 +++++++++
+>  manual/llio.texi                           | 241 ++++++++++++++++++++++++++++-
+>  sysdeps/unix/sysv/linux/bits/fcntl-linux.h |  17 ++
+>  3 files changed, 332 insertions(+), 3 deletions(-)
+>  create mode 100644 manual/examples/ofdlocks.c
+> 
+> diff --git a/manual/examples/ofdlocks.c b/manual/examples/ofdlocks.c
+> new file mode 100644
+> index 000000000000..85e193cdabe6
+> --- /dev/null
+> +++ b/manual/examples/ofdlocks.c
+> @@ -0,0 +1,77 @@
+> +/* Open File Description Locks Usage Example
+> +   Copyright (C) 1991-2014 Free Software Foundation, Inc.
+> +
+> +   This program is free software; you can redistribute it and/or
+> +   modify it under the terms of the GNU General Public License
+> +   as published by the Free Software Foundation; either version 2
+> +   of the License, or (at your option) any later version.
+> +
+> +   This program is distributed in the hope that it will be useful,
+> +   but WITHOUT ANY WARRANTY; without even the implied warranty of
+> +   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> +   GNU General Public License for more details.
+> +
+> +   You should have received a copy of the GNU General Public License
+> +   along with this program; if not, see <http://www.gnu.org/licenses/>.
+> +*/
+> +
+> +#define _GNU_SOURCE
+> +#include <stdio.h>
+> +#include <sys/types.h>
+> +#include <sys/stat.h>
+> +#include <unistd.h>
+> +#include <fcntl.h>
+> +#include <pthread.h>
+> +
+> +#define FILENAME	"/tmp/foo"
+> +#define NUM_THREADS	3
+> +#define ITERATIONS	5
+> +
+> +void *
+> +thread_start (void *arg)
+> +{
+> +  int i, fd, len;
+> +  long tid = (long) arg;
+> +  char buf[256];
+> +  struct flock lck = {
+> +    .l_whence = SEEK_SET,
+> +    .l_start = 0,
+> +    .l_len = 1,
+> +  };
+> +
+> +  fd = open ("/tmp/foo", O_RDWR | O_CREAT, 0666);
+> +
+> +  for (i = 0; i < ITERATIONS; i++)
+> +    {
+> +      lck.l_type = F_WRLCK;
+> +      fcntl (fd, F_OFD_SETLKW, &lck);
+> +
+> +      len = sprintf (buf, "%d: tid=%ld fd=%d\n", i, tid, fd);
+> +
+> +      lseek (fd, 0, SEEK_END);
+> +      write (fd, buf, len);
+> +      fsync (fd);
+> +
+> +      lck.l_type = F_UNLCK;
+> +      fcntl (fd, F_OFD_SETLK, &lck);
+> +
+> +      /* sleep to ensure lock is yielded to another thread */
+> +      usleep (1);
+> +    }
+> +  pthread_exit (NULL);
+> +}
+> +
+> +int
+> +main (int argc, char **argv)
+> +{
+> +  long i;
+> +  pthread_t threads[NUM_THREADS];
+> +
+> +  truncate (FILENAME, 0);
+> +
+> +  for (i = 0; i < NUM_THREADS; i++)
+> +    pthread_create (&threads[i], NULL, thread_start, (void *) i);
+> +
+> +  pthread_exit (NULL);
+> +  return 0;
+> +}
+> diff --git a/manual/llio.texi b/manual/llio.texi
+> index 6f8adfc607d7..864060dc7140 100644
+> --- a/manual/llio.texi
+> +++ b/manual/llio.texi
+> @@ -57,6 +57,10 @@ directly.)
+>                                           flags associated with open files.
+>  * File Locks::                          Fcntl commands for implementing
+>                                           file locking.
+> +* Open File Description Locks::         Fcntl commands for implementing
+> +                                         open file description locking.
+> +* Open File Description Locks Example:: An example of open file description lock
+> +                                         usage
+>  * Interrupt Input::                     Getting an asynchronous signal when
+>                                           input arrives.
+>  * IOCTLs::                              Generic I/O Control operations.
+> @@ -2890,7 +2894,7 @@ Get flags associated with the open file.  @xref{File Status Flags}.
+>  Set flags associated with the open file.  @xref{File Status Flags}.
+>  
+>  @item F_GETLK
+> -Get a file lock.  @xref{File Locks}.
+> +Test a file lock.  @xref{File Locks}.
+>  
+>  @item F_SETLK
+>  Set or clear a file lock.  @xref{File Locks}.
+> @@ -2898,6 +2902,18 @@ Set or clear a file lock.  @xref{File Locks}.
+>  @item F_SETLKW
+>  Like @code{F_SETLK}, but wait for completion.  @xref{File Locks}.
+>  
+> +@item F_OFD_GETLK
+> +Test an open file description lock.  @xref{Open File Description Locks}.
+> +Specific to Linux.
+> +
+> +@item F_OFD_SETLK
+> +Set or clear an open file description lock.  @xref{Open File Description Locks}.
+> +Specific to Linux.
+> +
+> +@item F_OFD_SETLKW
+> +Like @code{F_OFD_SETLK}, but block until lock is acquired.
+> +@xref{Open File Description Locks}.  Specific to Linux.
+> +
+>  @item F_GETOWN
+>  Get process or process group ID to receive @code{SIGIO} signals.
+>  @xref{Interrupt Input}.
+> @@ -3576,6 +3592,10 @@ set_nonblock_flag (int desc, int value)
+>  
+>  @cindex file locks
+>  @cindex record locking
+> +This section describes record locks that are associated with the process.
+> +There is also a different type of record lock that is associated with the
+> +open file description instead of the process.  @xref{Open File Description Locks}.
+> +
+>  The remaining @code{fcntl} commands are used to support @dfn{record
+>  locking}, which permits multiple cooperating programs to prevent each
+>  other from simultaneously accessing parts of a file in error-prone
+> @@ -3641,7 +3661,10 @@ the file.
+>  @item pid_t l_pid
+>  This field is the process ID (@pxref{Process Creation Concepts}) of the
+>  process holding the lock.  It is filled in by calling @code{fcntl} with
+> -the @code{F_GETLK} command, but is ignored when making a lock.
+> +the @code{F_GETLK} command, but is ignored when making a lock.  If the
+> +conflicting lock is an open file description lock
+> +(@pxref{Open File Description Locks}), then this field will be set to
+> +@math{-1}.
+>  @end table
+>  @end deftp
+>  
+> @@ -3813,10 +3836,222 @@ that part of the file for writing.
+>  
+>  @c ??? This section could use an example program.
+>  
+> -Remember that file locks are only a @emph{voluntary} protocol for
+> +Remember that file locks are only an @emph{advisory} protocol for
+>  controlling access to a file.  There is still potential for access to
+>  the file by programs that don't use the lock protocol.
+>  
+> +@node Open File Description Locks
+> +@section Open File Description Locks
+> +
+> +In contrast to process-associated record locks (@pxref{File Locks}),
+> +open file description record locks are associated with an open file
+> +description rather than a process.
+> +
+> +Using @code{fcntl} to apply an open file description lock on a region that
+> +already has an existing open file description lock that was created via the
+> +same file descriptor will never cause a lock conflict.
+> +
+> +Open file description locks are also inherited by child processes across
+> +@code{fork}, or @code{clone} with @code{CLONE_FILES} set
+> +(@pxref{Creating a Process}), along with the file descriptor.
+> +
+> +It is important to distinguish between the open file @emph{description} (an
+> +instance of an open file, usually created by a call to @code{open}) and
+> +an open file @emph{descriptor}, which is a numeric value that refers to the
+> +open file description.  The locks described here are associated with the
+> +open file @emph{description} and not the open file @emph{descriptor}.
+> +
+> +Using @code{dup} (@pxref{Duplicating Descriptors}) to copy a file
+> +descriptor does not give you a new open file description, but rather copies a
+> +reference to an existing open file description and assigns it to a new
+> +file descriptor.  Thus, open file description locks set on a file
+> +descriptor cloned by @code{dup} will never conflict with open file
+> +description locks set on the original descriptor since they refer to the
+> +same open file description.  Depending on the range and type of lock
+> +involved, the original lock may be modified by a @code{F_OFD_SETLK} or
+> +@code{F_OFD_SETLKW} command in this situation however.
+> +
+> +Open file description locks always conflict with process-associated locks,
+> +even if acquired by the same process or on the same open file
+> +descriptor.
+> +
+> +Open file description locks use the same @code{struct flock} as
+> +process-associated locks as an argument (@pxref{File Locks}) and the
+> +macros for the @code{command} values are also declared in the header file
+> +@file{fcntl.h}. To use them, the macro @code{_GNU_SOURCE} must be
+> +defined prior to including any header file.
+> +
+> +In contrast to process-associated locks, any @code{struct flock} used as
+> +an argument to open file description lock commands must have the @code{l_pid}
+> +value set to @math{0}.  Also, when returning information about an
+> +open file description lock in a @code{F_GETLK} or @code{F_OFD_GETLK} request,
+> +the @code{l_pid} field in @code{struct flock} will be set to @math{-1}
+> +to indicate that the lock is not associated with a process.
+> +
+> +When the same @code{struct flock} is reused as an argument to a
+> +@code{F_OFD_SETLK} or @code{F_OFD_SETLKW} request after being used for an
+> +@code{F_OFD_GETLK} request, it is necessary to inspect and reset the
+> +@code{l_pid} field to @math{0}.
+> +
+> +@pindex fcntl.h.
+> +
+> +@deftypevr Macro int F_OFD_GETLK
+> +This macro is used as the @var{command} argument to @code{fcntl}, to
+> +specify that it should get information about a lock.  This command
+> +requires a third argument of type @w{@code{struct flock *}} to be passed
+> +to @code{fcntl}, so that the form of the call is:
+> +
+> +@smallexample
+> +fcntl (@var{filedes}, F_OFD_GETLK, @var{lockp})
+> +@end smallexample
+> +
+> +If there is a lock already in place that would block the lock described
+> +by the @var{lockp} argument, information about that lock is written to
+> +@code{*@var{lockp}}.  Existing locks are not reported if they are
+> +compatible with making a new lock as specified.  Thus, you should
+> +specify a lock type of @code{F_WRLCK} if you want to find out about both
+> +read and write locks, or @code{F_RDLCK} if you want to find out about
+> +write locks only.
+> +
+> +There might be more than one lock affecting the region specified by the
+> +@var{lockp} argument, but @code{fcntl} only returns information about
+> +one of them. Which lock is returned in this situation is undefined.
+> +
+> +The @code{l_whence} member of the @var{lockp} structure are set to
+> +@code{SEEK_SET} and the @code{l_start} and @code{l_len} fields are set
+> +to identify the locked region.
+> +
+> +If no conflicting lock exists, the only change to the @var{lockp} structure
+> +is to update the @code{l_type} field to the value @code{F_UNLCK}.
+> +
+> +The normal return value from @code{fcntl} with this command is either @math{0}
+> +on success or @math{-1}, which indicates an error. The following @code{errno}
+> +error conditions are defined for this command:
+> +
+> +@table @code
+> +@item EBADF
+> +The @var{filedes} argument is invalid.
+> +
+> +@item EINVAL
+> +Either the @var{lockp} argument doesn't specify valid lock information,
+> +the operating system kernel doesn't support open file description locks, or the file
+> +associated with @var{filedes} doesn't support locks.
+> +@end table
+> +@end deftypevr
+> +
+> +@comment fcntl.h
+> +@comment POSIX.1
+> +@deftypevr Macro int F_OFD_SETLK
+> +This macro is used as the @var{command} argument to @code{fcntl}, to
+> +specify that it should set or clear a lock.  This command requires a
+> +third argument of type @w{@code{struct flock *}} to be passed to
+> +@code{fcntl}, so that the form of the call is:
+> +
+> +@smallexample
+> +fcntl (@var{filedes}, F_OFD_SETLK, @var{lockp})
+> +@end smallexample
+> +
+> +If the open file already has a lock on any part of the
+> +region, the old lock on that part is replaced with the new lock.  You
+> +can remove a lock by specifying a lock type of @code{F_UNLCK}.
+> +
+> +If the lock cannot be set, @code{fcntl} returns immediately with a value
+> +of @math{-1}.  This command does not wait for other tasks
+> +to release locks.  If @code{fcntl} succeeds, it returns @math{0}.
+> +
+> +The following @code{errno} error conditions are defined for this
+> +command:
+> +
+> +@table @code
+> +@item EAGAIN
+> +The lock cannot be set because it is blocked by an existing lock on the
+> +file.
+> +
+> +@item EBADF
+> +Either: the @var{filedes} argument is invalid; you requested a read lock
+> +but the @var{filedes} is not open for read access; or, you requested a
+> +write lock but the @var{filedes} is not open for write access.
+> +
+> +@item EINVAL
+> +Either the @var{lockp} argument doesn't specify valid lock information,
+> +the operating system kernel doesn't support open file description locks, or the
+> +file associated with @var{filedes} doesn't support locks.
+> +
+> +@item ENOLCK
+> +The system has run out of file lock resources; there are already too
+> +many file locks in place.
+> +
+> +Well-designed file systems never report this error, because they have no
+> +limitation on the number of locks.  However, you must still take account
+> +of the possibility of this error, as it could result from network access
+> +to a file system on another machine.
+> +@end table
+> +@end deftypevr
+> +
+> +@comment fcntl.h
+> +@comment POSIX.1
+> +@deftypevr Macro int F_OFD_SETLKW
+> +This macro is used as the @var{command} argument to @code{fcntl}, to
+> +specify that it should set or clear a lock.  It is just like the
+> +@code{F_OFD_SETLK} command, but causes the process to wait until the request
+> +can be completed.
+> +
+> +This command requires a third argument of type @code{struct flock *}, as
+> +for the @code{F_OFD_SETLK} command.
+> +
+> +The @code{fcntl} return values and errors are the same as for the
+> +@code{F_OFD_SETLK} command, but these additional @code{errno} error conditions
+> +are defined for this command:
+> +
+> +@table @code
+> +@item EINTR
+> +The function was interrupted by a signal while it was waiting.
+> +@xref{Interrupted Primitives}.
+> +
+> +@end table
+> +@end deftypevr
+> +
+> +Open file description locks are useful in the same sorts of situations as
+> +process-associated locks. They can also be used to synchronize file
+> +access between threads within the same process by having each thread perform
+> +its own @code{open} of the file, to obtain its own open file description.
+> +
+> +Because open file description locks are automatically freed only upon
+> +closing the last file descriptor that refers to the open file
+> +description, this locking mechanism avoids the possibility that locks
+> +are inadvertently released due to a library routine opening and closing
+> +a file without the application being aware.
+> +
+> +As with process-associated locks, open file description locks are advisory.
+> +
+> +@node Open File Description Locks Example
+> +@section Open File Description Locks Example
+> +
+> +Here is an example of using open file description locks in a threaded
+> +program. If this program used process-associated locks, then it would be
+> +subject to data corruption because process-associated locks are shared
+> +by the threads inside a process, and thus cannot be used by one thread
+> +to lock out another thread in the same process.
+> +
+> +Proper error handling has been omitted in the following program for
+> +brevity.
+> +
+> +@smallexample
+> +@include ofdlocks.c.texi
+> +@end smallexample
+> +
+> +This example creates three threads each of which loops five times,
+> +appending to the file.  Access to the file is serialized via open file
+> +description locks. If we compile and run the above program, we'll end up
+> +with /tmp/foo that has 15 lines in it.
+> +
+> +If we, however, were to replace the @code{F_OFD_SETLK} and
+> +@code{F_OFD_SETLKW} commands with their process-associated lock
+> +equivalents, the locking essentially becomes a noop since it is all done
+> +within the context of the same process. That leads to data corruption
+> +(typically manifested as missing lines) as some threads race in and
+> +overwrite the data written by others.
+> +
+>  @node Interrupt Input
+>  @section Interrupt-Driven Input
+>  
+> diff --git a/sysdeps/unix/sysv/linux/bits/fcntl-linux.h b/sysdeps/unix/sysv/linux/bits/fcntl-linux.h
+> index 527eb5c8b5d9..b5b5d0fbfa4c 100644
+> --- a/sysdeps/unix/sysv/linux/bits/fcntl-linux.h
+> +++ b/sysdeps/unix/sysv/linux/bits/fcntl-linux.h
+> @@ -117,6 +117,23 @@
+>  # define F_SETLKW64	14	/* Set record locking info (blocking).	*/
+>  #endif
+>  
+> +/* open file description locks.
+> +
+> +   Usually record locks held by a process are released on *any* close and are
+> +   not inherited across a fork.
+> +
+> +   These cmd values will set locks that conflict with process-associated record
+> +   locks, but are "owned" by the opened file description, not the process.
+> +   This means that they are inherited across fork or clone with CLONE_FILES
+> +   like BSD (flock) locks, and they are only released automatically when the
+> +   last reference to the the file description against which they were acquired
+> +   is put. */
+> +#if __USE_GNU
+> +# define F_OFD_GETLK	36
+> +# define F_OFD_SETLK	37
+> +# define F_OFD_SETLKW	38
+> +#endif
+> +
+>  #ifdef __USE_LARGEFILE64
+>  # define O_LARGEFILE __O_LARGEFILE
+>  #endif
 
+
+-- 
+Jeff Layton <jlayton@poochiereds.net>
