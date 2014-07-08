@@ -1,141 +1,743 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189AbaGHLCg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 07:02:36 -0400
-Received: from TYO200.gate.nec.co.jp ([210.143.35.50]:56905 "EHLO
-	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753139AbaGHLCe convert rfc822-to-8bit (ORCPT
+	id S1754293AbaGHLCz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 07:02:55 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:37224 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753948AbaGHLCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 07:02:34 -0400
-X-Greylist: delayed 1920 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Jul 2014 07:02:34 EDT
-From: Junichi Nomura <j-nomura@ce.jp.nec.com>
-To: Mike Snitzer <snitzer@redhat.com>, Paul Mackerras <paulus@samba.org>
-CC: "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "bvanassche@acm.org" <bvanassche@acm.org>
-Subject: Re: Regression in 3.15 on POWER8 with multipath SCSI
-Thread-Topic: Regression in 3.15 on POWER8 with multipath SCSI
-Thread-Index: AQHPmpdSO1G1Y6CCYUGnzA1eamu97Q==
-Date: Tue, 8 Jul 2014 10:28:13 +0000
-Message-ID: <11AF7C027C4C02408624617A4986078401323542@BPXM12GP.gisp.nec.co.jp>
-References: <20140630103058.GA17747@iris.ozlabs.ibm.com>
- <20140701193907.GA15306@redhat.com>
-In-Reply-To: <20140701193907.GA15306@redhat.com>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.34.125.85]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-ID: <459D64762E434A4A97AED6B1302C1D28@gisp.nec.co.jp>
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 8 Jul 2014 07:02:53 -0400
+From: Harini Katakam <harinik@xilinx.com>
+To: linus.walleij@linaro.org, gnurou@gmail.com, grant.likely@linaro.org,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net
+Cc: michal.simek@xilinx.com, soren.brinkmann@xilinx.com,
+        linux-gpio@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, harinikatakamlinux@gmail.com,
+        Harini Katakam <harini.katakam@xilinx.com>,
+        Harini Katakam <harinik@xilinx.com>
+Subject: [PATCH v3 1/2] gpio: Add driver for Zynq GPIO controller
+Date: Tue,  8 Jul 2014 16:32:35 +0530
+Message-Id: <1404817356-21568-1-git-send-email-harinik@xilinx.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/14 04:39, Mike Snitzer wrote:
-> On Mon, Jun 30 2014 at  6:30am -0400,
-> Paul Mackerras <paulus@samba.org> wrote:
-> 
->> I have a machine on which 3.15 usually fails to boot, and 3.14 boots
->> every time.  The machine is a POWER8 2-socket server with 20 cores
->> (thus 160 CPUs), 128GB of RAM, and 7 SCSI disks connected via a
->> hardware-RAID-capable adapter which appears as two IPR controllers
->> which are both connected to each disk.  I am booting from a disk that
->> has Fedora 20 installed on it.
->>
->> After over two weeks of bisections, I can finally point to the commits
->> that cause the problems.  The culprits are:
->>
->> 3e9f1be1 dm mpath: remove process_queued_ios()
->> e8099177 dm mpath: push back requests instead of queueing
->> bcccff93 kobject: don't block for each kobject_uevent
->>
->> The interesting thing is that neither e8099177 nor bcccff93 cause
->> failures on their own, but with both commits in there are failures
->> where the system will fail to find /home on some occasions.
->>
->> With 3e9f1be1 included, the system appears to be prone to a deadlock
->> condition which typically causes the boot process to hang with this
->> message showing:
->>
->> A start job is running for Monitoring of LVM2 mirror...rogress polling
->>
->> (with a [***     ] thing before it where the asterisks move back and
->> forth).
->>
->> If I revert 63d832c3 ("dm mpath: really fix lockdep warning") ,
->> 4cdd2ad7 ("dm mpath: fix lock order inconsistency in
->> multipath_ioctl"), 3e9f1be1 and bcccff93, in that order, I get a
->> kernel that will boot every time.  The first two are later commits
->> that fix some problems with 3e9f1be1 (though not the problems I am
->> seeing).
->>
->> Can anyone see any reason why e8099177 and bcccff93 would interfere
->> with each other?
-> 
-> No, not seeing any obvious relation.
-> 
-> But even though you listed e8099177 as a culprit you didn't list it as a
-> commit you reverted.  Did you leave e8099177 simply because attempting
-> to revert it fails (if you don't first revert other dm-mpath.c commits)?
-> 
-> (btw, Bart Van Assche also has issues with commit e8099177 due to hangs
-> during cable pull testing of mpath devices -- Bart: curious to know if
-> your cable pull tests pass if you just revert bcccff93).
+From: Harini Katakam <harini.katakam@xilinx.com>
 
-It seems Bart's issue has gone with the attached patch:
-http://www.redhat.com/archives/dm-devel/2014-July/msg00035.html
-Could you try if it makes any difference on your issue?
+Add support for GPIO controller used by Xilinx Zynq.
 
-The problem is dm-mpath's state machine stall due to e8099177
-but ioctl to the device can kick the state machine running again.
-That might be related to why bcccff93 affects the reproducibility.
-Also, 3e9f1be1 integrates some codes into the one which is affected
-by this problem. So it makes sense why the problem becomes easier
-to occur with that.
+Signed-off-by: Harini Katakam <harinik@xilinx.com>
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
 
--
-Jun'ichi Nomura, NEC Corporation
+v3 changes:
+ - Use linux/gpio/driver.h instead of linux/gpio.h
+ - Make irq a local variable in probe
 
+v2 changes:
+ - convert to pm_runtime_force_(suspend|resume)
+ - add pm_runtime_set_active in probe()
+ - also (un)prepare clocks when they are dis-/enabled
+ - add some missing calls to pm_runtime_get()
+ - use pm_runtime_put() instead of sync variant
+ - remove gpio chip in driver remove()
+ - remove redundant type casts
+ - directly use IO helpers
+ - use BIT macro to set/clear bits
+ - migrate to GPIOLIB_IRQCHIP
 
-pg_ready() checks the current state of the multipath and may return
-false even if a new IO is needed to change the state.
+---
+ drivers/gpio/Kconfig     |    7 +
+ drivers/gpio/Makefile    |    1 +
+ drivers/gpio/gpio-zynq.c |  649 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 657 insertions(+)
+ create mode 100644 drivers/gpio/gpio-zynq.c
 
-OTOH, if multipath_busy() returns busy, a new IO will not be sent
-to multipath target and the state change won't happen. That results
-in lock up.
-
-The intent of multipath_busy() is to avoid unnecessary cycles of
-dequeue + request_fn + requeue if it is known that multipath device
-will requeue.
-
-Such situation would be:
-  - path group is being activated
-  - there is no path and the multipath is setup to requeue if no path
-
-This patch should fix the problem introduced as a part of this commit:
-  commit e809917735ebf1b9a56c24e877ce0d320baee2ec
-  dm mpath: push back requests instead of queueing
-
-diff --git a/drivers/md/dm-mpath.c b/drivers/md/dm-mpath.c
-index ebfa411..d58343e 100644
---- a/drivers/md/dm-mpath.c
-+++ b/drivers/md/dm-mpath.c
-@@ -1620,8 +1620,9 @@ static int multipath_busy(struct dm_target *ti)
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 4a1b511..bdeef02 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -340,6 +340,13 @@ config GPIO_XILINX
+ 	help
+ 	  Say yes here to support the Xilinx FPGA GPIO device
  
- 	spin_lock_irqsave(&m->lock, flags);
- 
--	/* pg_init in progress, requeue until done */
--	if (!pg_ready(m)) {
-+	/* pg_init in progress or no paths available */
-+	if (m->pg_init_in_progress ||
-+	    (!m->nr_valid_paths && m->queue_if_no_path)) {
- 		busy = 1;
- 		goto out;
- 	}
++config GPIO_ZYNQ
++	tristate "Xilinx Zynq GPIO support"
++	depends on ARCH_ZYNQ
++	select GPIOLIB_IRQCHIP
++	help
++	  Say yes here to support Xilinx Zynq GPIO controller.
++
+ config GPIO_XTENSA
+ 	bool "Xtensa GPIO32 support"
+ 	depends on XTENSA
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index d10f6a9..033fd7c 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -101,3 +101,4 @@ obj-$(CONFIG_GPIO_WM8994)	+= gpio-wm8994.o
+ obj-$(CONFIG_GPIO_XILINX)	+= gpio-xilinx.o
+ obj-$(CONFIG_GPIO_XTENSA)	+= gpio-xtensa.o
+ obj-$(CONFIG_GPIO_ZEVIO)	+= gpio-zevio.o
++obj-$(CONFIG_GPIO_ZYNQ)		+= gpio-zynq.o
+diff --git a/drivers/gpio/gpio-zynq.c b/drivers/gpio/gpio-zynq.c
+new file mode 100644
+index 0000000..c0c53fd
+--- /dev/null
++++ b/drivers/gpio/gpio-zynq.c
+@@ -0,0 +1,649 @@
++/*
++ * Xilinx Zynq GPIO device driver
++ *
++ * Copyright (C) 2009 - 2014 Xilinx, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify it under
++ * the terms of the GNU General Public License as published by the Free Software
++ * Foundation; either version 2 of the License, or (at your option) any later
++ * version.
++ */
++
++#include <linux/bitops.h>
++#include <linux/clk.h>
++#include <linux/gpio/driver.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/pm_runtime.h>
++
++#define DRIVER_NAME "zynq-gpio"
++
++/* Maximum banks */
++#define ZYNQ_GPIO_MAX_BANK	4
++
++#define ZYNQ_GPIO_BANK0_NGPIO	32
++#define ZYNQ_GPIO_BANK1_NGPIO	22
++#define ZYNQ_GPIO_BANK2_NGPIO	32
++#define ZYNQ_GPIO_BANK3_NGPIO	32
++
++#define ZYNQ_GPIO_NR_GPIOS	(ZYNQ_GPIO_BANK0_NGPIO + \
++				 ZYNQ_GPIO_BANK1_NGPIO + \
++				 ZYNQ_GPIO_BANK2_NGPIO + \
++				 ZYNQ_GPIO_BANK3_NGPIO)
++
++#define ZYNQ_GPIO_BANK0_PIN_MIN	0
++#define ZYNQ_GPIO_BANK0_PIN_MAX	(ZYNQ_GPIO_BANK0_PIN_MIN + \
++					ZYNQ_GPIO_BANK0_NGPIO - 1)
++#define ZYNQ_GPIO_BANK1_PIN_MIN	(ZYNQ_GPIO_BANK0_PIN_MAX + 1)
++#define ZYNQ_GPIO_BANK1_PIN_MAX	(ZYNQ_GPIO_BANK1_PIN_MIN + \
++					ZYNQ_GPIO_BANK1_NGPIO - 1)
++#define ZYNQ_GPIO_BANK2_PIN_MIN	(ZYNQ_GPIO_BANK1_PIN_MAX + 1)
++#define ZYNQ_GPIO_BANK2_PIN_MAX	(ZYNQ_GPIO_BANK2_PIN_MIN + \
++					ZYNQ_GPIO_BANK2_NGPIO - 1)
++#define ZYNQ_GPIO_BANK3_PIN_MIN	(ZYNQ_GPIO_BANK2_PIN_MAX + 1)
++#define ZYNQ_GPIO_BANK3_PIN_MAX	(ZYNQ_GPIO_BANK3_PIN_MIN + \
++					ZYNQ_GPIO_BANK3_NGPIO - 1)
++
++
++/* Register offsets for the GPIO device */
++/* LSW Mask & Data -WO */
++#define ZYNQ_GPIO_DATA_LSW_OFFSET(BANK)	(0x000 + (8 * BANK))
++/* MSW Mask & Data -WO */
++#define ZYNQ_GPIO_DATA_MSW_OFFSET(BANK)	(0x004 + (8 * BANK))
++/* Data Register-RW */
++#define ZYNQ_GPIO_DATA_RO_OFFSET(BANK)	(0x060 + (4 * BANK))
++/* Direction mode reg-RW */
++#define ZYNQ_GPIO_DIRM_OFFSET(BANK)	(0x204 + (0x40 * BANK))
++/* Output enable reg-RW */
++#define ZYNQ_GPIO_OUTEN_OFFSET(BANK)	(0x208 + (0x40 * BANK))
++/* Interrupt mask reg-RO */
++#define ZYNQ_GPIO_INTMASK_OFFSET(BANK)	(0x20C + (0x40 * BANK))
++/* Interrupt enable reg-WO */
++#define ZYNQ_GPIO_INTEN_OFFSET(BANK)	(0x210 + (0x40 * BANK))
++/* Interrupt disable reg-WO */
++#define ZYNQ_GPIO_INTDIS_OFFSET(BANK)	(0x214 + (0x40 * BANK))
++/* Interrupt status reg-RO */
++#define ZYNQ_GPIO_INTSTS_OFFSET(BANK)	(0x218 + (0x40 * BANK))
++/* Interrupt type reg-RW */
++#define ZYNQ_GPIO_INTTYPE_OFFSET(BANK)	(0x21C + (0x40 * BANK))
++/* Interrupt polarity reg-RW */
++#define ZYNQ_GPIO_INTPOL_OFFSET(BANK)	(0x220 + (0x40 * BANK))
++/* Interrupt on any, reg-RW */
++#define ZYNQ_GPIO_INTANY_OFFSET(BANK)	(0x224 + (0x40 * BANK))
++
++/* Disable all interrupts mask */
++#define ZYNQ_GPIO_IXR_DISABLE_ALL	0xFFFFFFFF
++
++/* Mid pin number of a bank */
++#define ZYNQ_GPIO_MID_PIN_NUM 16
++
++/* GPIO upper 16 bit mask */
++#define ZYNQ_GPIO_UPPER_MASK 0xFFFF0000
++
++/**
++ * struct zynq_gpio - gpio device private data structure
++ * @chip:	instance of the gpio_chip
++ * @base_addr:	base address of the GPIO device
++ * @clk:	clock resource for this controller
++ */
++struct zynq_gpio {
++	struct gpio_chip chip;
++	void __iomem *base_addr;
++	struct clk *clk;
++};
++
++/**
++ * zynq_gpio_get_bank_pin - Get the bank number and pin number within that bank
++ * for a given pin in the GPIO device
++ * @pin_num:	gpio pin number within the device
++ * @bank_num:	an output parameter used to return the bank number of the gpio
++ *		pin
++ * @bank_pin_num: an output parameter used to return pin number within a bank
++ *		  for the given gpio pin
++ *
++ * Returns the bank number and pin offset within the bank.
++ */
++static inline void zynq_gpio_get_bank_pin(unsigned int pin_num,
++					  unsigned int *bank_num,
++					  unsigned int *bank_pin_num)
++{
++	switch (pin_num) {
++	case ZYNQ_GPIO_BANK0_PIN_MIN ... ZYNQ_GPIO_BANK0_PIN_MAX:
++		*bank_num = 0;
++		*bank_pin_num = pin_num;
++		break;
++	case ZYNQ_GPIO_BANK1_PIN_MIN ... ZYNQ_GPIO_BANK1_PIN_MAX:
++		*bank_num = 1;
++		*bank_pin_num = pin_num - ZYNQ_GPIO_BANK1_PIN_MIN;
++		break;
++	case ZYNQ_GPIO_BANK2_PIN_MIN ... ZYNQ_GPIO_BANK2_PIN_MAX:
++		*bank_num = 2;
++		*bank_pin_num = pin_num - ZYNQ_GPIO_BANK2_PIN_MIN;
++		break;
++	case ZYNQ_GPIO_BANK3_PIN_MIN ... ZYNQ_GPIO_BANK3_PIN_MAX:
++		*bank_num = 3;
++		*bank_pin_num = pin_num - ZYNQ_GPIO_BANK3_PIN_MIN;
++		break;
++	default:
++		WARN(true, "invalid GPIO pin number: %u", pin_num);
++		*bank_num = 0;
++		*bank_pin_num = 0;
++		break;
++	}
++}
++
++/**
++ * zynq_gpio_get_value - Get the state of the specified pin of GPIO device
++ * @chip:	gpio_chip instance to be worked on
++ * @pin:	gpio pin number within the device
++ *
++ * This function reads the state of the specified pin of the GPIO device.
++ *
++ * Return: 0 if the pin is low, 1 if pin is high.
++ */
++static int zynq_gpio_get_value(struct gpio_chip *chip, unsigned int pin)
++{
++	u32 data;
++	unsigned int bank_num, bank_pin_num;
++	struct zynq_gpio *gpio = container_of(chip, struct zynq_gpio, chip);
++
++	zynq_gpio_get_bank_pin(pin, &bank_num, &bank_pin_num);
++
++	data = readl_relaxed(gpio->base_addr +
++			     ZYNQ_GPIO_DATA_RO_OFFSET(bank_num));
++
++	return (data >> bank_pin_num) & 1;
++}
++
++/**
++ * zynq_gpio_set_value - Modify the state of the pin with specified value
++ * @chip:	gpio_chip instance to be worked on
++ * @pin:	gpio pin number within the device
++ * @state:	value used to modify the state of the specified pin
++ *
++ * This function calculates the register offset (i.e to lower 16 bits or
++ * upper 16 bits) based on the given pin number and sets the state of a
++ * gpio pin to the specified value. The state is either 0 or non-zero.
++ */
++static void zynq_gpio_set_value(struct gpio_chip *chip, unsigned int pin,
++				int state)
++{
++	unsigned int reg_offset, bank_num, bank_pin_num;
++	struct zynq_gpio *gpio = container_of(chip, struct zynq_gpio, chip);
++
++	zynq_gpio_get_bank_pin(pin, &bank_num, &bank_pin_num);
++
++	if (bank_pin_num >= ZYNQ_GPIO_MID_PIN_NUM) {
++		/* only 16 data bits in bit maskable reg */
++		bank_pin_num -= ZYNQ_GPIO_MID_PIN_NUM;
++		reg_offset = ZYNQ_GPIO_DATA_MSW_OFFSET(bank_num);
++	} else {
++		reg_offset = ZYNQ_GPIO_DATA_LSW_OFFSET(bank_num);
++	}
++
++	/*
++	 * get the 32 bit value to be written to the mask/data register where
++	 * the upper 16 bits is the mask and lower 16 bits is the data
++	 */
++	state = !!state;
++	state = ~(1 << (bank_pin_num + ZYNQ_GPIO_MID_PIN_NUM)) &
++		((state << bank_pin_num) | ZYNQ_GPIO_UPPER_MASK);
++
++	writel_relaxed(state, gpio->base_addr + reg_offset);
++}
++
++/**
++ * zynq_gpio_dir_in - Set the direction of the specified GPIO pin as input
++ * @chip:	gpio_chip instance to be worked on
++ * @pin:	gpio pin number within the device
++ *
++ * This function uses the read-modify-write sequence to set the direction of
++ * the gpio pin as input.
++ *
++ * Return: 0 always
++ */
++static int zynq_gpio_dir_in(struct gpio_chip *chip, unsigned int pin)
++{
++	u32 reg;
++	unsigned int bank_num, bank_pin_num;
++	struct zynq_gpio *gpio = container_of(chip, struct zynq_gpio, chip);
++
++	zynq_gpio_get_bank_pin(pin, &bank_num, &bank_pin_num);
++
++	/* bank 0 pins 7 and 8 are special and cannot be used as inputs */
++	if (bank_num == 0 && (bank_pin_num == 7 || bank_pin_num == 8))
++		return -EINVAL;
++
++	/* clear the bit in direction mode reg to set the pin as input */
++	reg = readl_relaxed(gpio->base_addr + ZYNQ_GPIO_DIRM_OFFSET(bank_num));
++	reg &= ~BIT(bank_pin_num);
++	writel_relaxed(reg, gpio->base_addr + ZYNQ_GPIO_DIRM_OFFSET(bank_num));
++
++	return 0;
++}
++
++/**
++ * zynq_gpio_dir_out - Set the direction of the specified GPIO pin as output
++ * @chip:	gpio_chip instance to be worked on
++ * @pin:	gpio pin number within the device
++ * @state:	value to be written to specified pin
++ *
++ * This function sets the direction of specified GPIO pin as output, configures
++ * the Output Enable register for the pin and uses zynq_gpio_set to set
++ * the state of the pin to the value specified.
++ *
++ * Return: 0 always
++ */
++static int zynq_gpio_dir_out(struct gpio_chip *chip, unsigned int pin,
++			     int state)
++{
++	u32 reg;
++	unsigned int bank_num, bank_pin_num;
++	struct zynq_gpio *gpio = container_of(chip, struct zynq_gpio, chip);
++
++	zynq_gpio_get_bank_pin(pin, &bank_num, &bank_pin_num);
++
++	/* set the GPIO pin as output */
++	reg = readl_relaxed(gpio->base_addr + ZYNQ_GPIO_DIRM_OFFSET(bank_num));
++	reg |= BIT(bank_pin_num);
++	writel_relaxed(reg, gpio->base_addr + ZYNQ_GPIO_DIRM_OFFSET(bank_num));
++
++	/* configure the output enable reg for the pin */
++	reg = readl_relaxed(gpio->base_addr + ZYNQ_GPIO_OUTEN_OFFSET(bank_num));
++	reg |= BIT(bank_pin_num);
++	writel_relaxed(reg, gpio->base_addr + ZYNQ_GPIO_OUTEN_OFFSET(bank_num));
++
++	/* set the state of the pin */
++	zynq_gpio_set_value(chip, pin, state);
++	return 0;
++}
++
++/**
++ * zynq_gpio_irq_mask - Disable the interrupts for a gpio pin
++ * @irq_data:	per irq and chip data passed down to chip functions
++ *
++ * This function calculates gpio pin number from irq number and sets the
++ * bit in the Interrupt Disable register of the corresponding bank to disable
++ * interrupts for that pin.
++ */
++static void zynq_gpio_irq_mask(struct irq_data *irq_data)
++{
++	unsigned int device_pin_num, bank_num, bank_pin_num;
++	struct zynq_gpio *gpio = irq_data_get_irq_chip_data(irq_data);
++
++	device_pin_num = irq_data->hwirq;
++	zynq_gpio_get_bank_pin(device_pin_num, &bank_num, &bank_pin_num);
++	writel_relaxed(BIT(bank_pin_num),
++		       gpio->base_addr + ZYNQ_GPIO_INTDIS_OFFSET(bank_num));
++}
++
++/**
++ * zynq_gpio_irq_unmask - Enable the interrupts for a gpio pin
++ * @irq_data:	irq data containing irq number of gpio pin for the interrupt
++ *		to enable
++ *
++ * This function calculates the gpio pin number from irq number and sets the
++ * bit in the Interrupt Enable register of the corresponding bank to enable
++ * interrupts for that pin.
++ */
++static void zynq_gpio_irq_unmask(struct irq_data *irq_data)
++{
++	unsigned int device_pin_num, bank_num, bank_pin_num;
++	struct zynq_gpio *gpio = irq_data_get_irq_chip_data(irq_data);
++
++	device_pin_num = irq_data->hwirq;
++	zynq_gpio_get_bank_pin(device_pin_num, &bank_num, &bank_pin_num);
++	writel_relaxed(BIT(bank_pin_num),
++		       gpio->base_addr + ZYNQ_GPIO_INTEN_OFFSET(bank_num));
++}
++
++/**
++ * zynq_gpio_set_irq_type - Set the irq type for a gpio pin
++ * @irq_data:	irq data containing irq number of gpio pin
++ * @type:	interrupt type that is to be set for the gpio pin
++ *
++ * This function gets the gpio pin number and its bank from the gpio pin number
++ * and configures the INT_TYPE, INT_POLARITY and INT_ANY registers.
++ *
++ * Return: 0, negative error otherwise.
++ * TYPE-EDGE_RISING,  INT_TYPE - 1, INT_POLARITY - 1,  INT_ANY - 0;
++ * TYPE-EDGE_FALLING, INT_TYPE - 1, INT_POLARITY - 0,  INT_ANY - 0;
++ * TYPE-EDGE_BOTH,    INT_TYPE - 1, INT_POLARITY - NA, INT_ANY - 1;
++ * TYPE-LEVEL_HIGH,   INT_TYPE - 0, INT_POLARITY - 1,  INT_ANY - NA;
++ * TYPE-LEVEL_LOW,    INT_TYPE - 0, INT_POLARITY - 0,  INT_ANY - NA
++ */
++static int zynq_gpio_set_irq_type(struct irq_data *irq_data, unsigned int type)
++{
++	u32 int_type, int_pol, int_any;
++	unsigned int device_pin_num, bank_num, bank_pin_num;
++	struct zynq_gpio *gpio = irq_data_get_irq_chip_data(irq_data);
++
++	device_pin_num = irq_data->hwirq;
++	zynq_gpio_get_bank_pin(device_pin_num, &bank_num, &bank_pin_num);
++
++	int_type = readl_relaxed(gpio->base_addr +
++				 ZYNQ_GPIO_INTTYPE_OFFSET(bank_num));
++	int_pol = readl_relaxed(gpio->base_addr +
++				ZYNQ_GPIO_INTPOL_OFFSET(bank_num));
++	int_any = readl_relaxed(gpio->base_addr +
++				ZYNQ_GPIO_INTANY_OFFSET(bank_num));
++
++	/*
++	 * based on the type requested, configure the INT_TYPE, INT_POLARITY
++	 * and INT_ANY registers
++	 */
++	switch (type) {
++	case IRQ_TYPE_EDGE_RISING:
++		int_type |= BIT(bank_pin_num);
++		int_pol |= BIT(bank_pin_num);
++		int_any &= ~BIT(bank_pin_num);
++		break;
++	case IRQ_TYPE_EDGE_FALLING:
++		int_type |= BIT(bank_pin_num);
++		int_pol &= ~BIT(bank_pin_num);
++		int_any &= ~BIT(bank_pin_num);
++		break;
++	case IRQ_TYPE_EDGE_BOTH:
++		int_type |= BIT(bank_pin_num);
++		int_any |= BIT(bank_pin_num);
++		break;
++	case IRQ_TYPE_LEVEL_HIGH:
++		int_type &= ~BIT(bank_pin_num);
++		int_pol |= BIT(bank_pin_num);
++		break;
++	case IRQ_TYPE_LEVEL_LOW:
++		int_type &= ~BIT(bank_pin_num);
++		int_pol &= ~BIT(bank_pin_num);
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	writel_relaxed(int_type,
++		       gpio->base_addr + ZYNQ_GPIO_INTTYPE_OFFSET(bank_num));
++	writel_relaxed(int_pol,
++		       gpio->base_addr + ZYNQ_GPIO_INTPOL_OFFSET(bank_num));
++	writel_relaxed(int_any,
++		       gpio->base_addr + ZYNQ_GPIO_INTANY_OFFSET(bank_num));
++	return 0;
++}
++
++static int zynq_gpio_set_wake(struct irq_data *data, unsigned int on)
++{
++	if (on)
++		zynq_gpio_irq_unmask(data);
++	else
++		zynq_gpio_irq_mask(data);
++
++	return 0;
++}
++
++/* irq chip descriptor */
++static struct irq_chip zynq_gpio_irqchip = {
++	.name		= DRIVER_NAME,
++	.irq_mask	= zynq_gpio_irq_mask,
++	.irq_unmask	= zynq_gpio_irq_unmask,
++	.irq_set_type	= zynq_gpio_set_irq_type,
++	.irq_set_wake	= zynq_gpio_set_wake,
++};
++
++/**
++ * zynq_gpio_irqhandler - IRQ handler for the gpio banks of a gpio device
++ * @irq:	irq number of the gpio bank where interrupt has occurred
++ * @desc:	irq descriptor instance of the 'irq'
++ *
++ * This function reads the Interrupt Status Register of each bank to get the
++ * gpio pin number which has triggered an interrupt. It then acks the triggered
++ * interrupt and calls the pin specific handler set by the higher layer
++ * application for that pin.
++ * Note: A bug is reported if no handler is set for the gpio pin.
++ */
++static void zynq_gpio_irqhandler(unsigned int irq, struct irq_desc *desc)
++{
++	u32 int_sts, int_enb;
++	unsigned int bank_num;
++	struct zynq_gpio *gpio = irq_get_handler_data(irq);
++	struct irq_chip *irqchip = irq_desc_get_chip(desc);
++
++	chained_irq_enter(irqchip, desc);
++
++	for (bank_num = 0; bank_num < ZYNQ_GPIO_MAX_BANK; bank_num++) {
++		int_sts = readl_relaxed(gpio->base_addr +
++					ZYNQ_GPIO_INTSTS_OFFSET(bank_num));
++		int_enb = readl_relaxed(gpio->base_addr +
++					ZYNQ_GPIO_INTMASK_OFFSET(bank_num));
++		int_sts &= ~int_enb;
++		if (int_sts) {
++			int offset;
++			unsigned long pending = int_sts;
++
++			for_each_set_bit(offset, &pending, 32) {
++				unsigned int gpio_irq =
++					irq_find_mapping(gpio->chip.irqdomain,
++							offset);
++				generic_handle_irq(gpio_irq);
++			}
++
++			/* clear IRQ in HW */
++			writel_relaxed(int_sts, gpio->base_addr +
++					ZYNQ_GPIO_INTSTS_OFFSET(bank_num));
++		}
++	}
++
++	chained_irq_exit(irqchip, desc);
++}
++
++static int __maybe_unused zynq_gpio_suspend(struct device *dev)
++{
++	if (!device_may_wakeup(dev))
++		return pm_runtime_force_suspend(dev);
++
++	return 0;
++}
++
++static int __maybe_unused zynq_gpio_resume(struct device *dev)
++{
++	if (!device_may_wakeup(dev))
++		return pm_runtime_force_resume(dev);
++
++	return 0;
++}
++
++static int __maybe_unused zynq_gpio_runtime_suspend(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct zynq_gpio *gpio = platform_get_drvdata(pdev);
++
++	clk_disable_unprepare(gpio->clk);
++
++	return 0;
++}
++
++static int __maybe_unused zynq_gpio_runtime_resume(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct zynq_gpio *gpio = platform_get_drvdata(pdev);
++
++	return clk_prepare_enable(gpio->clk);
++}
++
++static int zynq_gpio_request(struct gpio_chip *chip, unsigned offset)
++{
++	int ret;
++
++	ret = pm_runtime_get_sync(chip->dev);
++
++	/*
++	 * If the device is already active pm_runtime_get() will return 1 on
++	 * success, but gpio_request still needs to return 0.
++	 */
++	return ret < 0 ? ret : 0;
++}
++
++static void zynq_gpio_free(struct gpio_chip *chip, unsigned offset)
++{
++	pm_runtime_put(chip->dev);
++}
++
++static const struct dev_pm_ops zynq_gpio_dev_pm_ops = {
++	SET_SYSTEM_SLEEP_PM_OPS(zynq_gpio_suspend, zynq_gpio_resume)
++	SET_PM_RUNTIME_PM_OPS(zynq_gpio_runtime_suspend,
++			zynq_gpio_runtime_resume, NULL)
++};
++
++/**
++ * zynq_gpio_probe - Initialization method for a zynq_gpio device
++ * @pdev:	platform device instance
++ *
++ * This function allocates memory resources for the gpio device and registers
++ * all the banks of the device. It will also set up interrupts for the gpio
++ * pins.
++ * Note: Interrupts are disabled for all the banks during initialization.
++ *
++ * Return: 0 on success, negative error otherwise.
++ */
++static int zynq_gpio_probe(struct platform_device *pdev)
++{
++	int ret, bank_num, irq;
++	struct zynq_gpio *gpio;
++	struct gpio_chip *chip;
++	struct resource *res;
++
++	gpio = devm_kzalloc(&pdev->dev, sizeof(*gpio), GFP_KERNEL);
++	if (!gpio)
++		return -ENOMEM;
++
++	platform_set_drvdata(pdev, gpio);
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	gpio->base_addr = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(gpio->base_addr))
++		return PTR_ERR(gpio->base_addr);
++
++	irq = platform_get_irq(pdev, 0);
++	if (irq < 0) {
++		dev_err(&pdev->dev, "invalid IRQ\n");
++		return irq;
++	}
++
++	/* configure the gpio chip */
++	chip = &gpio->chip;
++	chip->label = "zynq_gpio";
++	chip->owner = THIS_MODULE;
++	chip->dev = &pdev->dev;
++	chip->get = zynq_gpio_get_value;
++	chip->set = zynq_gpio_set_value;
++	chip->request = zynq_gpio_request;
++	chip->free = zynq_gpio_free;
++	chip->direction_input = zynq_gpio_dir_in;
++	chip->direction_output = zynq_gpio_dir_out;
++	chip->base = -1;
++	chip->ngpio = ZYNQ_GPIO_NR_GPIOS;
++
++	/* Enable GPIO clock */
++	gpio->clk = devm_clk_get(&pdev->dev, NULL);
++	if (IS_ERR(gpio->clk)) {
++		dev_err(&pdev->dev, "input clock not found.\n");
++		return PTR_ERR(gpio->clk);
++	}
++	ret = clk_prepare_enable(gpio->clk);
++	if (ret) {
++		dev_err(&pdev->dev, "Unable to enable clock.\n");
++		return ret;
++	}
++
++	/* report a bug if gpio chip registration fails */
++	ret = gpiochip_add(chip);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to add gpio chip\n");
++		goto err_disable_clk;
++	}
++
++	/* disable interrupts for all banks */
++	for (bank_num = 0; bank_num < ZYNQ_GPIO_MAX_BANK; bank_num++)
++		writel_relaxed(ZYNQ_GPIO_IXR_DISABLE_ALL, gpio->base_addr +
++			       ZYNQ_GPIO_INTDIS_OFFSET(bank_num));
++
++	ret = gpiochip_irqchip_add(chip, &zynq_gpio_irqchip, 0,
++				   handle_simple_irq, IRQ_TYPE_NONE);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to add irq chip\n");
++		goto err_rm_gpiochip;
++	}
++
++	gpiochip_set_chained_irqchip(chip, &zynq_gpio_irqchip, irq,
++				     zynq_gpio_irqhandler);
++
++	pm_runtime_set_active(&pdev->dev);
++	pm_runtime_enable(&pdev->dev);
++
++	device_set_wakeup_capable(&pdev->dev, 1);
++
++	return 0;
++
++err_rm_gpiochip:
++	if (gpiochip_remove(chip))
++		dev_err(&pdev->dev, "Failed to remove gpio chip\n");
++err_disable_clk:
++	clk_disable_unprepare(gpio->clk);
++
++	return ret;
++}
++
++/**
++ * zynq_gpio_remove - Driver removal function
++ * @pdev:	platform device instance
++ *
++ * Return: 0 always
++ */
++static int zynq_gpio_remove(struct platform_device *pdev)
++{
++	int ret;
++	struct zynq_gpio *gpio = platform_get_drvdata(pdev);
++
++	pm_runtime_get_sync(&pdev->dev);
++
++	ret = gpiochip_remove(&gpio->chip);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to remove gpio chip\n");
++		return ret;
++	}
++	clk_disable_unprepare(gpio->clk);
++	device_set_wakeup_capable(&pdev->dev, 0);
++	return 0;
++}
++
++static struct of_device_id zynq_gpio_of_match[] = {
++	{ .compatible = "xlnx,zynq-gpio-1.0", },
++	{ /* end of table */ }
++};
++MODULE_DEVICE_TABLE(of, zynq_gpio_of_match);
++
++static struct platform_driver zynq_gpio_driver = {
++	.driver	= {
++		.name = DRIVER_NAME,
++		.owner = THIS_MODULE,
++		.pm = &zynq_gpio_dev_pm_ops,
++		.of_match_table = zynq_gpio_of_match,
++	},
++	.probe = zynq_gpio_probe,
++	.remove = zynq_gpio_remove,
++};
++
++/**
++ * zynq_gpio_init - Initial driver registration call
++ *
++ * Return: value from platform_driver_register
++ */
++static int __init zynq_gpio_init(void)
++{
++	return platform_driver_register(&zynq_gpio_driver);
++}
++postcore_initcall(zynq_gpio_init);
++
++MODULE_AUTHOR("Xilinx Inc.");
++MODULE_DESCRIPTION("Zynq GPIO driver");
++MODULE_LICENSE("GPL");
+-- 
+1.7.9.5
+
