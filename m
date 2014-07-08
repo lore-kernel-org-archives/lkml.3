@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152AbaGHO4p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 10:56:45 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:20066 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752539AbaGHO4n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 10:56:43 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+2E/2vZo7rbbIKmvVwn2CqRT/bKsg+1Ik=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 6D2E45A5664
-Date: Tue, 8 Jul 2014 10:56:39 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Jon Loeliger <loeliger@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: Questions About a Semi-Soft irqchip Device
-Message-ID: <20140708145639.GD13433@titan.lakedaemon.net>
-References: <CAJgR-Bi2HX+aYVabaFLyu9QAnAS4RmQ7DvBtDHOawkfi08zycA@mail.gmail.com>
+	id S1754238AbaGHO5D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 10:57:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54055 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753643AbaGHO5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 10:57:01 -0400
+Date: Tue, 8 Jul 2014 16:56:57 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+cc: Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
+        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
+        LKP <lkp@01.org>, linux-kernel@vger.kernel.org
+Subject: Re: [workqueue] WARNING: CPU: 0 PID: 76 at drivers/block/floppy.c:968
+ schedule_bh()
+In-Reply-To: <20140708144632.GF4979@htj.dyndns.org>
+Message-ID: <alpine.LNX.2.00.1407081656290.1655@pobox.suse.cz>
+References: <20140708021149.GA12956@localhost> <20140708140430.GE4979@htj.dyndns.org> <20140708144632.GF4979@htj.dyndns.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJgR-Bi2HX+aYVabaFLyu9QAnAS4RmQ7DvBtDHOawkfi08zycA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jon,
+On Tue, 8 Jul 2014, Tejun Heo wrote:
 
-On Tue, Jul 08, 2014 at 09:02:14AM -0500, Jon Loeliger wrote:
-> My IP block provides software-assignable interrupts.  That
-> is, I have a large pool of interrupt sources, and a large pool
-> of interrupt bits in the controller, but they are not physically
-> tied together. Instead they are assigned by some driver as it
-> initializes and allocates resources.  This, I think, means that
-> I can not describe the interrupt  bindings in the DTS file.
+> > Hmmm... this is schedule_bh() in floppy.c complaining that the work
+> > item is already pending.  The cond_resched() addition by b22ce2785d97
+> > doesn't change the semantics around work item execution although it
+> > could have exposed an existing problem in the floppy driver.  I'll
+> > look into how this could happen.
+> 
+> It doesn't reproduce here and nothing really stands out to me.  It
+> probably involves floppy_work requeueing itself and something else
+> getting executed inbetween which wouldn't have happend before, but I
+> can't figure out what that could be and either can I follow the
+> control flow the driver. :)
+>
+> 
+> Jiri, any ideas?
 
-Please take a look at the crossbar driver.  It's had quite a bit of
-cleanup this cycle, so you may way to look at
+I will take a look. Could this be a bad bisect though due to this actually 
+being a race condition perhaps?
 
-  git://git.infradead.org/users/jcooper/linux.git irqchip/crossbar
-
-It sounds very similar.
-
-thx,
-
-Jason.
+-- 
+Jiri Kosina
+SUSE Labs
