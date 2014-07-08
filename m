@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932214AbaGHTEQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:04:16 -0400
-Received: from mail.kernel.org ([198.145.19.201]:58197 "EHLO mail.kernel.org"
+	id S1755511AbaGHTEJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:04:09 -0400
+Received: from mail.kernel.org ([198.145.19.201]:58148 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754949AbaGHTEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:04:11 -0400
+	id S1754949AbaGHTEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 15:04:04 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 12/16] perf tools: Allow to use cpuinfo on s390
-Date: Tue,  8 Jul 2014 16:03:00 -0300
-Message-Id: <1404846184-20075-13-git-send-email-acme@kernel.org>
+Subject: [PATCH 10/16] perf kvm: Simplify exit reasons tables definitions
+Date: Tue,  8 Jul 2014 16:02:58 -0300
+Message-Id: <1404846184-20075-11-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1404846184-20075-1-git-send-email-acme@kernel.org>
 References: <1404846184-20075-1-git-send-email-acme@kernel.org>
@@ -28,7 +28,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
 
-This patch defines CPUINFO_PROC for s390 and implements get_cpuid().
+The perf_kvm_stat struct keeps the size of a table of exit reasons in
+the field 'exit_reasons_size'.
+
+The field is initialized and then used by get_exit_reason() for serial
+access to the table, so that the calling function does not actually need
+to know table size.
+
+Usage of tables with 'end of sequence' marker simplifies the
+get_exit_reason() function.
+
+Also the patch introduces a define_exit_reasons_table, which makes it
+easier to define new tables.
 
 Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 Reviewed-by: David Ahern <dsahern@gmail.com>
@@ -40,70 +51,81 @@ Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/87ioneo7qh.wl%yarygin@linux.vnet.ibm.com
+Link: http://lkml.kernel.org/r/1404395992-17095-3-git-send-email-yarygin@linux.vnet.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/arch/s390/Makefile      |  1 +
- tools/perf/arch/s390/util/header.c | 28 ++++++++++++++++++++++++++++
- tools/perf/perf-sys.h              |  1 +
- 3 files changed, 30 insertions(+)
- create mode 100644 tools/perf/arch/s390/util/header.c
+ tools/perf/builtin-kvm.c | 27 ++++++++++++---------------
+ 1 file changed, 12 insertions(+), 15 deletions(-)
 
-diff --git a/tools/perf/arch/s390/Makefile b/tools/perf/arch/s390/Makefile
-index 15130b50dfe3..744e629797be 100644
---- a/tools/perf/arch/s390/Makefile
-+++ b/tools/perf/arch/s390/Makefile
-@@ -2,3 +2,4 @@ ifndef NO_DWARF
- PERF_HAVE_DWARF_REGS := 1
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
- endif
-+LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
-diff --git a/tools/perf/arch/s390/util/header.c b/tools/perf/arch/s390/util/header.c
-new file mode 100644
-index 000000000000..9fa6c3e5782c
---- /dev/null
-+++ b/tools/perf/arch/s390/util/header.c
-@@ -0,0 +1,28 @@
-+/*
-+ * Implementation of get_cpuid().
-+ *
-+ * Copyright 2014 IBM Corp.
-+ * Author(s): Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License (version 2 only)
-+ * as published by the Free Software Foundation.
-+ */
-+
-+#include <sys/types.h>
-+#include <unistd.h>
-+#include <stdio.h>
-+#include <string.h>
-+
-+#include "../../util/header.h"
-+
-+int get_cpuid(char *buffer, size_t sz)
-+{
-+	const char *cpuid = "IBM/S390";
-+
-+	if (strlen(cpuid) + 1 > sz)
-+		return -1;
-+
-+	strcpy(buffer, cpuid);
-+	return 0;
-+}
-diff --git a/tools/perf/perf-sys.h b/tools/perf/perf-sys.h
-index 5268a1481d23..937e4324ad94 100644
---- a/tools/perf/perf-sys.h
-+++ b/tools/perf/perf-sys.h
-@@ -54,6 +54,7 @@
- #define mb()		asm volatile("bcr 15,0" ::: "memory")
- #define wmb()		asm volatile("bcr 15,0" ::: "memory")
- #define rmb()		asm volatile("bcr 15,0" ::: "memory")
-+#define CPUINFO_PROC	"vendor_id"
- #endif
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 214ec0e7492b..75f354459005 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -99,7 +99,6 @@ struct perf_kvm_stat {
+ 	int trace_vcpu;
  
- #ifdef __sh__
+ 	struct exit_reasons_table *exit_reasons;
+-	int exit_reasons_size;
+ 	const char *exit_reasons_isa;
+ 
+ 	struct kvm_events_ops *events_ops;
+@@ -158,20 +157,19 @@ static bool exit_event_end(struct perf_evsel *evsel,
+ 	return kvm_entry_event(evsel);
+ }
+ 
+-static struct exit_reasons_table vmx_exit_reasons[] = {
+-	VMX_EXIT_REASONS
+-};
++#define define_exit_reasons_table(name, symbols)	\
++	static struct exit_reasons_table name[] = {	\
++		symbols, { -1, NULL }			\
++	}
+ 
+-static struct exit_reasons_table svm_exit_reasons[] = {
+-	SVM_EXIT_REASONS
+-};
++define_exit_reasons_table(vmx_exit_reasons, VMX_EXIT_REASONS);
++define_exit_reasons_table(svm_exit_reasons, SVM_EXIT_REASONS);
+ 
+-static const char *get_exit_reason(struct perf_kvm_stat *kvm, u64 exit_code)
++static const char *get_exit_reason(struct perf_kvm_stat *kvm,
++				   struct exit_reasons_table *tbl,
++				   u64 exit_code)
+ {
+-	int i = kvm->exit_reasons_size;
+-	struct exit_reasons_table *tbl = kvm->exit_reasons;
+-
+-	while (i--) {
++	while (tbl->reason != NULL) {
+ 		if (tbl->exit_code == exit_code)
+ 			return tbl->reason;
+ 		tbl++;
+@@ -186,7 +184,8 @@ static void exit_event_decode_key(struct perf_kvm_stat *kvm,
+ 				  struct event_key *key,
+ 				  char decode[20])
+ {
+-	const char *exit_reason = get_exit_reason(kvm, key->key);
++	const char *exit_reason = get_exit_reason(kvm, kvm->exit_reasons,
++						  key->key);
+ 
+ 	scnprintf(decode, 20, "%s", exit_reason);
+ }
+@@ -862,7 +861,6 @@ static int cpu_isa_config(struct perf_kvm_stat *kvm)
+ 
+ 	if (isa == 1) {
+ 		kvm->exit_reasons = vmx_exit_reasons;
+-		kvm->exit_reasons_size = ARRAY_SIZE(vmx_exit_reasons);
+ 		kvm->exit_reasons_isa = "VMX";
+ 	}
+ 
+@@ -1586,7 +1584,6 @@ static int kvm_cmd_stat(const char *file_name, int argc, const char **argv)
+ 		.sort_key	= "sample",
+ 
+ 		.exit_reasons = svm_exit_reasons,
+-		.exit_reasons_size = ARRAY_SIZE(svm_exit_reasons),
+ 		.exit_reasons_isa = "SVM",
+ 	};
+ 
 -- 
 1.9.3
 
