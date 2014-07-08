@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754875AbaGHAD0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:03:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56435 "EHLO
+	id S1754902AbaGHADb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:03:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56462 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752576AbaGHADT (ORCPT
+	with ESMTP id S1752421AbaGHAD2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 20:03:19 -0400
+	Mon, 7 Jul 2014 20:03:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Remski <mremski@mutualink.net>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.4 07/44] USB: ftdi_sio: fix null deref at port probe
-Date: Mon,  7 Jul 2014 17:06:57 -0700
-Message-Id: <20140707235858.867203032@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>, Ben Hutchings <ben@decadent.org.uk>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: [PATCH 3.4 32/44] staging: comedi: das08: Correct AI encoding for das08jr-16-ao
+Date: Mon,  7 Jul 2014 17:07:22 -0700
+Message-Id: <20140707235859.603141174@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235858.652771077@linuxfoundation.org>
 References: <20140707235858.652771077@linuxfoundation.org>
@@ -28,52 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit aea1ae8760314e072bf1b773521e9de5d5dda10d upstream.
+commit e6391a182865efc896cb2a8d79e07b7ac2f45b48 upstream.
 
-Fix NULL-pointer dereference when probing an interface with no
-endpoints.
+The element of `das08_boards[]` for the 'das08jr-16-ao' board has the
+`ai_encoding` member set to `das08_encode12`.  It should be set to
+`das08_encode16` same as the 'das08jr/16' board.  After all, this board
+has 16-bit AI resolution.
 
-These devices have two bulk endpoints per interface, but this avoids
-crashing the kernel if a user forces a non-FTDI device to be probed.
+The description of the A/D LSB register at offset 0 seems incorrect in
+the user manual "cio-das08jr-16-ao.pdf" as it implies that the AI
+resolution is only 12 bits.  The diagrams of the A/D LSB and MSB
+registers show 15 data bits and a sign bit, which matches what the
+software expects for the `das08_encode16` AI encoding method.
 
-Note that the iterator variable was made unsigned in order to avoid
-a maybe-uninitialized compiler warning for ep_desc after the loop.
-
-Fixes: 895f28badce9 ("USB: ftdi_sio: fix hi-speed device packet size
-calculation")
-
-Reported-by: Mike Remski <mremski@mutualink.net>
-Tested-by: Mike Remski <mremski@mutualink.net>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust indentation]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/staging/comedi/drivers/das08.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -1593,14 +1593,17 @@ static void ftdi_set_max_packet_size(str
- 	struct usb_device *udev = serial->dev;
- 
- 	struct usb_interface *interface = serial->interface;
--	struct usb_endpoint_descriptor *ep_desc = &interface->cur_altsetting->endpoint[1].desc;
-+	struct usb_endpoint_descriptor *ep_desc;
- 
- 	unsigned num_endpoints;
--	int i;
-+	unsigned i;
- 
- 	num_endpoints = interface->cur_altsetting->desc.bNumEndpoints;
- 	dev_info(&udev->dev, "Number of endpoints %d\n", num_endpoints);
- 
-+	if (!num_endpoints)
-+		return;
-+
- 	/* NOTE: some customers have programmed FT232R/FT245R devices
- 	 * with an endpoint size of 0 - not good.  In this case, we
- 	 * want to override the endpoint descriptor setting and use a
+--- a/drivers/staging/comedi/drivers/das08.c
++++ b/drivers/staging/comedi/drivers/das08.c
+@@ -385,7 +385,7 @@ static const struct das08_board_struct d
+ 	 .ai = das08_ai_rinsn,
+ 	 .ai_nbits = 16,
+ 	 .ai_pg = das08_pg_none,
+-	 .ai_encoding = das08_encode12,
++	 .ai_encoding = das08_encode16,
+ 	 .ao = das08jr_ao_winsn,
+ 	 .ao_nbits = 16,
+ 	 .di = das08jr_di_rbits,
 
 
