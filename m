@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178AbaGHIet (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 04:34:49 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:50810 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753199AbaGHIeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 04:34:46 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        Alexander Gordeev <agordeev@redhat.com>
-CC: "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Subject: RE: [PATCH 1/3] PCI/MSI: Add pci_enable_msi_partial()
-Thread-Topic: [PATCH 1/3] PCI/MSI: Add pci_enable_msi_partial()
-Thread-Index: AQHPljNB2YNqvD5cNkq3/QaNLPhjzpuOEsDAgAF8RoCABWaUgIAA63Pw
-Date: Tue, 8 Jul 2014 08:33:17 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1726E211@AcuExch.aculab.com>
-References: <cover.1402405331.git.agordeev@redhat.com>
- <4fef62a2e647a7c38e9f2a1ea4244b3506a85e2b.1402405331.git.agordeev@redhat.com>
- <20140702202201.GA28852@google.com>
- <063D6719AE5E284EB5DD2968C1650D6D1726BF4E@AcuExch.aculab.com>
- <20140704085816.GB12247@dhcp-26-207.brq.redhat.com>
- <CAErSpo7QWc35seoMhJA+H1_=MkKWYMdeYG=hT=i1v=iz8d5ezA@mail.gmail.com>
-In-Reply-To: <CAErSpo7QWc35seoMhJA+H1_=MkKWYMdeYG=hT=i1v=iz8d5ezA@mail.gmail.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+	id S1754194AbaGHIfD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 04:35:03 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:60599 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753576AbaGHIez (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 04:34:55 -0400
+Date: Tue, 8 Jul 2014 10:35:05 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, Pavel Machek <pavel@ucw.cz>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Meyer <thomas@m3y3r.de>
+Subject: Re: [Intel-gfx] Linux 3.16-rc2
+Message-ID: <20140708083505.GQ17271@phenom.ffwll.local>
+Mail-Followup-To: Jiri Kosina <jkosina@suse.cz>,
+	Chris Wilson <chris@chris-wilson.co.uk>,
+	Pavel Machek <pavel@ucw.cz>,
+	"intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Thomas Meyer <thomas@m3y3r.de>
+References: <871tuea7nz.fsf@intel.com>
+ <20140624115753.GD17674@nuc-i3427.alporthouse.com>
+ <1403612670.3091.10.camel@localhost.localdomain>
+ <20140624122737.GF17674@nuc-i3427.alporthouse.com>
+ <20140630100220.GA4934@xo-6d-61-c0.localdomain>
+ <20140630100925.GA18836@nuc-i3427.alporthouse.com>
+ <1404317921.3910.3.camel@localhost.localdomain>
+ <20140707151613.GG5821@phenom.ffwll.local>
+ <20140707160402.GA26405@nuc-i3427.alporthouse.com>
+ <alpine.LNX.2.00.1407080013030.1655@pobox.suse.cz>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1407080013030.1655@pobox.suse.cz>
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s688YsNq015294
 
-From: Bjorn Helgaas
-...
-> >> Even if you do that, you ought to write valid interrupt information
-> >> into the 4th slot (maybe replicating one of the earlier interrupts).
-> >> Then, if the device does raise the 'unexpected' interrupt you don't
-> >> get a write to a random kernel location.
-> >
-> > I might be missing something, but we are talking of MSI address space
-> > here, aren't we? I am not getting how we could end up with a 'write'
-> > to a random kernel location when a unclaimed MSI vector sent. We could
-> > only expect a spurious interrupt at worst, which is handled and reported.
+On Tue, Jul 08, 2014 at 12:15:31AM +0200, Jiri Kosina wrote:
+> On Mon, 7 Jul 2014, Chris Wilson wrote:
 > 
-> Yes, that's how I understand it.  With MSI, the OS specifies the a
-> single Message Address, e.g., a LAPIC address, and a single Message
-> Data value, e.g., a vector number that will be written to the LAPIC.
-> The device is permitted to modify some low-order bits of the Message
-> Data to send one of several vector numbers (the MME value tells the
-> device how many bits it can modify).
+> > > > this patch on top of v3.16-rc3-62-gd92a333 makes the resume from ram
+> > > > regression go away on my machine:
+> > > 
+> > > Hm, we could conditionalize this hack on IS_G4X ... Chris, thoughts?
+> > 
+> > As different machines favour different w/a, I think the issue is mostly
+> > timing related. It could be sequence of register writes, but we tried
+> > different orders early on. The next experiment I guess would be to
+> > insert small delays between each write to see if that helps. Or to write
+> > each register twice.
 > 
-> Bottom line, I think a spurious interrupt is the failure we'd expect
-> if a device used more vectors than the OS expects it to.
+> I actually tried to introduce rather large delays between individual 
+> I915_WRITE() calls in the ring initialization sequence a couple weeks ago 
+> already, but it resulted in complete machine lockup (which is worse than 
+> my usual symptoms) during resume. Therefore I probably lack the knowledge 
+> of internal workings of the HW that would allow me to guess what the 
+> reasonable timeout value should be.
 
-So you need to tell the device where to write in order to raise the
-'spurious interrupt'.
-
-	David
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Have you used msleep or udelay? The latter just spins the cpu and might be
+less dangerous.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
