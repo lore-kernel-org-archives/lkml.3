@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755905AbaGHTJS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:09:18 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54321 "EHLO
+	id S1755887AbaGHTJQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:09:16 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54312 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755723AbaGHTIq (ORCPT
+	by vger.kernel.org with ESMTP id S1755649AbaGHTIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:08:46 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -15,13 +15,12 @@ From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
         "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Alexej Starschenko" <starschenko@gmail.com>,
-        "Johan Hovold" <jhovold@gmail.com>
+        "Huang Rui" <ray.huang@amd.com>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.978006442@decadent.org.uk>
+Message-ID: <lsq.1404846110.331966687@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 041/125] USB: serial: option: add support for Novatel
- E371 PCIe card
+Subject: [PATCH 3.2 042/125] usb: usbtest: fix unlink write error with
+ pattern 1
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,56 +33,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexej Starschenko <starschenko@gmail.com>
+From: Huang Rui <ray.huang@amd.com>
 
-commit 8a61ba3a47ac39f660702aa66a172185dd605a86 upstream.
+commit e4d58f5dcb7d7be45df8def31881ebfae99c75da upstream.
 
-Adds product ID for the Novatel E371 PCI Express Mini Card.
+TEST 12 and TEST 24 unlinks the URB write request for N times. When
+host and gadget both initialize pattern 1 (mod 63) data series to
+transfer, the gadget side will complain the wrong data which is not
+expected.  Because in host side, usbtest doesn't fill the data buffer
+as mod 63 and this patch fixed it.
 
-$ lsusb
-Bus 001 Device 024: ID 1410:9011 Novatel Wireless
+[20285.488974] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
+[20285.489181] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Not Active
+[20285.489423] dwc3 dwc3.0.auto: ep1out-bulk: req ffff8800aa6cb480 dma aeb50800 length 512 last
+[20285.489727] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Start Transfer' params 00000000 a9eaf000 00000000
+[20285.490055] dwc3 dwc3.0.auto: Command Complete --> 0
+[20285.490281] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
+[20285.490492] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Active
+[20285.490713] dwc3 dwc3.0.auto: ep1out-bulk: endpoint busy
+[20285.490909] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Complete
+[20285.491117] dwc3 dwc3.0.auto: request ffff8800aa6cb480 from ep1out-bulk completed 512/512 ===> 0
+[20285.491431] zero gadget: bad OUT byte, buf[1] = 0
+[20285.491605] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Set Stall' params 00000000 00000000 00000000
+[20285.491915] dwc3 dwc3.0.auto: Command Complete --> 0
+[20285.492099] dwc3 dwc3.0.auto: queing request ffff8800aa6cb480 to ep1out-bulk length 512
+[20285.492387] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
+[20285.492595] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Not Active
+[20285.492830] dwc3 dwc3.0.auto: ep1out-bulk: req ffff8800aa6cb480 dma aeb51000 length 512 last
+[20285.493135] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Start Transfer' params 00000000 a9eaf000 00000000
+[20285.493465] dwc3 dwc3.0.auto: Command Complete --> 0
 
-$ usb-devices
-T:  Bus=01 Lev=01 Prnt=01 Port=03 Cnt=01 Dev#= 24 Spd=480 MxCh= 0
-D:  Ver= 2.00 Cls=ef(misc ) Sub=02 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=1410 ProdID=9011 Rev=00.03
-S:  Manufacturer=Novatel Wireless, Inc.
-S:  Product=Novatel Wireless HSPA
-S:  SerialNumber=012773002115811
-C:  #Ifs= 6 Cfg#= 1 Atr=e0 MxPwr=500mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 3 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 6 Alt= 0 #EPs= 1 Cls=02(commc) Sub=06 Prot=00 Driver=cdc_ether
-I:  If#= 7 Alt= 1 #EPs= 2 Cls=0a(data ) Sub=00 Prot=00 Driver=cdc_ether
-
-Tested with kernel 3.2.0.
-
-Signed-off-by: Alexej Starschenko <starschenko@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Huang Rui <ray.huang@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/option.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/misc/usbtest.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -161,6 +161,7 @@ static void option_instat_callback(struc
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED	0x9000
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED	0x9001
- #define NOVATELWIRELESS_PRODUCT_E362		0x9010
-+#define NOVATELWIRELESS_PRODUCT_E371		0x9011
- #define NOVATELWIRELESS_PRODUCT_G2		0xA010
- #define NOVATELWIRELESS_PRODUCT_MC551		0xB001
+--- a/drivers/usb/misc/usbtest.c
++++ b/drivers/usb/misc/usbtest.c
+@@ -1132,6 +1132,11 @@ static int unlink1(struct usbtest_dev *d
+ 	urb->context = &completion;
+ 	urb->complete = unlink1_callback;
  
-@@ -1025,6 +1026,7 @@ static const struct usb_device_id option
- 	/* Novatel Ovation MC551 a.k.a. Verizon USB551L */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC551, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_E362, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_E371, 0xff, 0xff, 0xff) },
++	if (usb_pipeout(urb->pipe)) {
++		simple_fill_buf(urb);
++		urb->transfer_flags |= URB_ZERO_PACKET;
++	}
++
+ 	/* keep the endpoint busy.  there are lots of hc/hcd-internal
+ 	 * states, and testing should get to all of them over time.
+ 	 *
+@@ -1262,6 +1267,11 @@ static int unlink_queued(struct usbtest_
+ 				unlink_queued_callback, &ctx);
+ 		ctx.urbs[i]->transfer_dma = buf_dma;
+ 		ctx.urbs[i]->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
++
++		if (usb_pipeout(ctx.urbs[i]->pipe)) {
++			simple_fill_buf(ctx.urbs[i]);
++			ctx.urbs[i]->transfer_flags |= URB_ZERO_PACKET;
++		}
+ 	}
  
- 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01) },
- 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01A) },
+ 	/* Submit all the URBs and then unlink URBs num - 4 and num - 2. */
 
