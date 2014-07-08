@@ -1,35 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473AbaGHSmc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 14:42:32 -0400
-Received: from mail.kernel.org ([198.145.19.201]:57033 "EHLO mail.kernel.org"
+	id S932092AbaGHSnk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 14:43:40 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:8739 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755162AbaGHSma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 14:42:30 -0400
-Date: Tue, 8 Jul 2014 15:42:25 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        dsahern@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf trace: add pagefault statistics
-Message-ID: <20140708184225.GC11917@kernel.org>
-References: <1404842716-19190-1-git-send-email-stfomichev@yandex-team.ru>
+	id S1755056AbaGHSnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 14:43:39 -0400
+X-IronPort-AV: E=Sophos;i="5.01,626,1400025600"; 
+   d="scan'208";a="150690629"
+Message-ID: <53BC3BC4.5010504@citrix.com>
+Date: Tue, 8 Jul 2014 19:43:16 +0100
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404842716-19190-1-git-send-email-stfomichev@yandex-team.ru>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xenproject.org>
+Subject: Re: [Xen-devel] [PATCH net-next v3] xen-netback: Adding debugfs "io_ring_qX"
+ files
+References: <1404837194-16726-1-git-send-email-zoltan.kiss@citrix.com> <20140708173934.GA6597@laptop.dumpdata.com>
+In-Reply-To: <20140708173934.GA6597@laptop.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Jul 08, 2014 at 10:05:16PM +0400, Stanislav Fomichev escreveu:
-> 'perf trace' can show summary of events using -S option. This commit
-> also reports number of major/minor pagefault events in this summary.
-> 
-> $ perf trace -s --pf all -- sleep 1
+On 08/07/14 18:39, Konrad Rzeszutek Wilk wrote:
 
-Thanks, applied.
+>
+>
+>> +	return count;
+>> +}
+>> +
+>> +static int xenvif_dump_open(struct inode *inode, struct file *filp)
+>> +{
+>> +	int ret;
+>> +	void *queue = NULL;
+>> +
+>> +	if (inode->i_private)
+>> +		queue = inode->i_private;
+>> +	ret = single_open(filp, xenvif_read_io_ring, queue);
+>> +	filp->f_mode |= FMODE_PWRITE;
+>> +	return ret;
+>> +}
+>> +
+>> +static const struct file_operations xenvif_dbg_io_ring_ops_fops = {
+>> +	.owner = THIS_MODULE,
+>> +	.open = xenvif_dump_open,
+>> +	.read = seq_read,
+>> +	.llseek = seq_lseek,
+>> +	.release = single_release,
+>> +	.write = xenvif_write_io_ring,
+>> +};
+>> +
+>> +static void xenvif_debugfs_addif(struct xenvif_queue *queue)
+>> +{
+>> +	struct dentry *pfile;
+>> +	struct xenvif *vif = queue->vif;
+>> +	int i;
+>> +
+>> +	if (!IS_ERR_OR_NULL(xen_netback_dbg_root))
+>> +		return;
+>
+> I am curious to how you tested this patch, as my reading of
+> the code above would imply that when xen_netback_dbg_root is
+> initialized - we won't continue within this function?
+Indeed, I've just copy-pasted that snippet you wrote in your prev mail 
+and I haven't tried it out, as it was a very small change. I'll fix it.
 
-- Arnaldo
+>> +
+>>   static int netback_remove(struct xenbus_device *dev)
+>>   {
+>>   	struct backend_info *be = dev_get_drvdata(&dev->dev);
+>> @@ -246,8 +413,12 @@ static void backend_create_xenvif(struct backend_info *be)
+>>
+>>   static void backend_disconnect(struct backend_info *be)
+>>   {
+>> -	if (be->vif)
+>> +	if (be->vif) {
+>> +#ifdef CONFIG_DEBUG_FS
+>> +		xenvif_debugfs_delif(be->vif);
+>> +#endif /* CONFIG_DEBUG_FS */
+>
+> Why don't you just leave it as it (without the #ifdef) and add an
+> empty function for the #else CONFIG_DEBUG_FS like:
+>
+> #else
+> static inline void xenvif_debugfs_addif(struct xenvif_queue *queue) {}
+> static inline void xenvif_debugfs_delif(struct xenvif *vif) {}
+> #endif
+It wouldn't change the end result, but from the code reader's point of 
+view the current way is a little bit better, as (s)he doesn't need to 
+check the declaration to realize it has effect only if that config 
+option is enabled.
+
