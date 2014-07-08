@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755113AbaGHQW5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 12:22:57 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:36203 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755050AbaGHQWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 12:22:54 -0400
+	id S1755143AbaGHQXF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 12:23:05 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33038 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755075AbaGHQW4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 12:22:56 -0400
 From: Suman Anna <s-anna@ti.com>
 To: Ohad Ben-Cohen <ohad@wizery.com>
 CC: Dave Gerlach <d-gerlach@ti.com>,
@@ -13,104 +14,214 @@ CC: Dave Gerlach <d-gerlach@ti.com>,
         <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, Suman Anna <s-anna@ti.com>,
         Robert Tivy <rtivy@ti.com>
-Subject: [PATCH 1/2] remoteproc: use a flag to detect the presence of IOMMU
-Date: Tue, 8 Jul 2014 11:22:00 -0500
-Message-ID: <1404836521-59637-2-git-send-email-s-anna@ti.com>
+Subject: [PATCH 2/2] remoteproc: add support to handle internal memories
+Date: Tue, 8 Jul 2014 11:22:01 -0500
+Message-ID: <1404836521-59637-3-git-send-email-s-anna@ti.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404836521-59637-1-git-send-email-s-anna@ti.com>
 References: <1404836521-59637-1-git-send-email-s-anna@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The remoteproc driver core currently relies on iommu_present() on
-the bus the device is on, to perform MMU management. However, this
-logic doesn't scale for multi-arch, especially for processors that
-do not have an IOMMU. Replace this logic instead by using a h/w
-capability flag for the presence of IOMMU in the rproc structure.
+A remote processor may need to load certain firmware sections into
+internal memories (eg: RAM at L1 or L2 levels) for performance or
+other reasons. Introduce a new resource type (RSC_INTMEM) and add
+an associated handler function to handle such memories. The handler
+creates a kernel mapping for the resource's 'pa' (physical address).
 
-The individual platform implementations are required to set this
-flag appropriately. The default setting is to not have an MMU.
+Note that no iommu mapping is performed for this resource, as the
+resource is primarily used to represent physical internal memories.
+If the internal memory region can only be accessed through an iommu,
+a devmem resource entry should be used instead.
 
-The OMAP remoteproc driver is updated while at this, to maintain
-the functionality with the IOMMU detection logic change in this
-patch.
-
-Cc: Sjur Brændeland <sjur.brandeland@stericsson.com>
-Cc: Robert Tivy <rtivy@ti.com>
+Signed-off-by: Robert Tivy <rtivy@ti.com>
 Signed-off-by: Suman Anna <s-anna@ti.com>
 ---
- drivers/remoteproc/omap_remoteproc.c |  6 ++++++
- drivers/remoteproc/remoteproc_core.c | 15 ++-------------
- include/linux/remoteproc.h           |  2 ++
- 3 files changed, 10 insertions(+), 13 deletions(-)
+ drivers/remoteproc/remoteproc_core.c | 85 +++++++++++++++++++++++++++++++++++-
+ include/linux/remoteproc.h           | 43 +++++++++++++++++-
+ 2 files changed, 126 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/remoteproc/omap_remoteproc.c b/drivers/remoteproc/omap_remoteproc.c
-index 5168972..858abf0 100644
---- a/drivers/remoteproc/omap_remoteproc.c
-+++ b/drivers/remoteproc/omap_remoteproc.c
-@@ -199,6 +199,12 @@ static int omap_rproc_probe(struct platform_device *pdev)
- 
- 	oproc = rproc->priv;
- 	oproc->rproc = rproc;
-+	/*
-+	 * All existing OMAP IPU and DSP processors do have an MMU, and
-+	 * are expected to use MMU, so this statement suffices.
-+	 * XXX: Replace this logic if and when a need arises.
-+	 */
-+	rproc->has_iommu = true;
- 
- 	platform_set_drvdata(pdev, rproc);
- 
 diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
-index 3cd85a6..11cdb11 100644
+index 11cdb11..e2bd869 100644
 --- a/drivers/remoteproc/remoteproc_core.c
 +++ b/drivers/remoteproc/remoteproc_core.c
-@@ -94,19 +94,8 @@ static int rproc_enable_iommu(struct rproc *rproc)
- 	struct device *dev = rproc->dev.parent;
- 	int ret;
+@@ -664,6 +664,84 @@ free_carv:
+ 	return ret;
+ }
  
--	/*
--	 * We currently use iommu_present() to decide if an IOMMU
--	 * setup is needed.
--	 *
--	 * This works for simple cases, but will easily fail with
--	 * platforms that do have an IOMMU, but not for this specific
--	 * rproc.
--	 *
--	 * This will be easily solved by introducing hw capabilities
--	 * that will be set by the remoteproc driver.
--	 */
--	if (!iommu_present(dev->bus)) {
--		dev_dbg(dev, "iommu not found\n");
-+	if (!rproc->has_iommu) {
-+		dev_dbg(dev, "iommu not present\n");
- 		return 0;
- 	}
- 
-diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
-index 9e7e745..78b8a9b 100644
---- a/include/linux/remoteproc.h
-+++ b/include/linux/remoteproc.h
-@@ -404,6 +404,7 @@ enum rproc_crash_type {
-  * @table_ptr: pointer to the resource table in effect
-  * @cached_table: copy of the resource table
-  * @table_csum: checksum of the resource table
-+ * @has_iommu: flag to indicate if remote processor is behind an MMU
-  */
- struct rproc {
- 	struct klist_node node;
-@@ -435,6 +436,7 @@ struct rproc {
- 	struct resource_table *table_ptr;
- 	struct resource_table *cached_table;
- 	u32 table_csum;
-+	bool has_iommu;
++/**
++ * rproc_handle_intmem() - handle internal memory resource entry
++ * @rproc: rproc handle
++ * @rsc: the intmem resource entry
++ * @offset: offset of the resource data in resource table
++ * @avail: size of available data (for image validation)
++ *
++ * This function will handle firmware requests for mapping a memory region
++ * internal to a remote processor into kernel. It neither allocates any
++ * physical pages, nor performs any iommu mapping, as this resource entry
++ * is primarily used for representing physical internal memories. If the
++ * internal memory region can only be accessed through an iommu, please
++ * use a devmem resource entry.
++ *
++ * These resource entries should be grouped near the carveout entries in
++ * the firmware's resource table, as other firmware entries might request
++ * placing other data objects inside these memory regions (e.g. data/code
++ * segments, trace resource entries, ...).
++ */
++static int rproc_handle_intmem(struct rproc *rproc, struct fw_rsc_intmem *rsc,
++			       int offset, int avail)
++{
++	struct rproc_mem_entry *intmem;
++	struct device *dev = &rproc->dev;
++	void *va;
++	int ret;
++
++	if (sizeof(*rsc) > avail) {
++		dev_err(dev, "intmem rsc is truncated\n");
++		return -EINVAL;
++	}
++
++	if (rsc->version != 1) {
++		dev_err(dev, "intmem rsc version %d is not supported\n",
++			rsc->version);
++		return -EINVAL;
++	}
++
++	if (rsc->reserved) {
++		dev_err(dev, "intmem rsc has non zero reserved bytes\n");
++		return -EINVAL;
++	}
++
++	dev_dbg(dev, "intmem rsc: da 0x%x, pa 0x%x, len 0x%x\n",
++		rsc->da, rsc->pa, rsc->len);
++
++	intmem = kzalloc(sizeof(*intmem), GFP_KERNEL);
++	if (!intmem) {
++		dev_err(dev, "kzalloc carveout failed\n");
++		return -ENOMEM;
++	}
++
++	va = (__force void *)ioremap_nocache(rsc->pa, rsc->len);
++	if (!va) {
++		dev_err(dev, "ioremap_nocache err: %d\n", rsc->len);
++		ret = -ENOMEM;
++		goto free_intmem;
++	}
++
++	dev_dbg(dev, "intmem mapped pa 0x%x of len 0x%x into kernel va %p\n",
++		rsc->pa, rsc->len, va);
++
++	intmem->va = va;
++	intmem->len = rsc->len;
++	intmem->dma = rsc->pa;
++	intmem->da = rsc->da;
++	intmem->priv = (void *)1;    /* prevents freeing */
++
++	/* reuse the rproc->carveouts list, so that loading is automatic */
++	list_add_tail(&intmem->node, &rproc->carveouts);
++
++	return 0;
++
++free_intmem:
++	kfree(intmem);
++	return ret;
++}
++
+ static int rproc_count_vrings(struct rproc *rproc, struct fw_rsc_vdev *rsc,
+ 			      int offset, int avail)
+ {
+@@ -681,6 +759,7 @@ static rproc_handle_resource_t rproc_loading_handlers[RSC_LAST] = {
+ 	[RSC_CARVEOUT] = (rproc_handle_resource_t)rproc_handle_carveout,
+ 	[RSC_DEVMEM] = (rproc_handle_resource_t)rproc_handle_devmem,
+ 	[RSC_TRACE] = (rproc_handle_resource_t)rproc_handle_trace,
++	[RSC_INTMEM] = (rproc_handle_resource_t)rproc_handle_intmem,
+ 	[RSC_VDEV] = NULL, /* VDEVs were handled upon registrarion */
  };
  
- /* we currently support only two vrings per rvdev */
+@@ -768,7 +847,11 @@ static void rproc_resource_cleanup(struct rproc *rproc)
+ 
+ 	/* clean up carveout allocations */
+ 	list_for_each_entry_safe(entry, tmp, &rproc->carveouts, node) {
+-		dma_free_coherent(dev->parent, entry->len, entry->va, entry->dma);
++		if (!entry->priv)
++			dma_free_coherent(dev->parent, entry->len, entry->va,
++					  entry->dma);
++		else
++			iounmap((__force void __iomem *)entry->va);
+ 		list_del(&entry->node);
+ 		kfree(entry);
+ 	}
+diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
+index 78b8a9b..2a25ee8 100644
+--- a/include/linux/remoteproc.h
++++ b/include/linux/remoteproc.h
+@@ -100,6 +100,7 @@ struct fw_rsc_hdr {
+  *		    the remote processor will be writing logs.
+  * @RSC_VDEV:       declare support for a virtio device, and serve as its
+  *		    virtio header.
++ * @RSC_INTMEM:     request to map into kernel an internal memory region.
+  * @RSC_LAST:       just keep this one at the end
+  *
+  * For more details regarding a specific resource type, please see its
+@@ -115,7 +116,8 @@ enum fw_resource_type {
+ 	RSC_DEVMEM	= 1,
+ 	RSC_TRACE	= 2,
+ 	RSC_VDEV	= 3,
+-	RSC_LAST	= 4,
++	RSC_INTMEM	= 4,
++	RSC_LAST	= 5,
+ };
+ 
+ #define FW_RSC_ADDR_ANY (0xFFFFFFFFFFFFFFFF)
+@@ -306,6 +308,45 @@ struct fw_rsc_vdev {
+ } __packed;
+ 
+ /**
++ * struct fw_rsc_intmem - internal memory publishing request
++ * @version: version for this resource type (must be one)
++ * @da: device address
++ * @pa: physical address
++ * @len: length (in bytes)
++ * @reserved: reserved (must be zero)
++ * @name: human-readable name of the region being published
++ *
++ * This resource entry allows a remote processor to publish an internal
++ * memory region to the host. This resource type allows a remote processor
++ * to publish the whole or just a portion of certain internal memories,
++ * while it owns and manages any unpublished portion (eg: a shared L1
++ * memory that can be split configured as RAM and/or cache). This is
++ * primarily provided to allow a host to load code/data into internal
++ * memories, the memory for which is neither allocated nor required to
++ * be mapped into an iommu.
++ *
++ * @da should specify the required address as accessible by the device
++ * without going through an iommu, @pa should specify the physical address
++ * for the region as seen on the bus, @len should specify the size of the
++ * memory region. As always, @name may (optionally) contain a human readable
++ * name of this mapping (mainly for debugging purposes). The @version field
++ * is added for future scalability, and should be 1 for now.
++ *
++ * Note: at this point we just "trust" these intmem entries to contain valid
++ * physical bus addresses. these are not currently intended to be managed
++ * as host-controlled heaps, as it is much better to do that from the remote
++ * processor side.
++ */
++struct fw_rsc_intmem {
++	u32 version;
++	u32 da;
++	u32 pa;
++	u32 len;
++	u32 reserved;
++	u8 name[32];
++} __packed;
++
++/**
+  * struct rproc_mem_entry - memory entry descriptor
+  * @va:	virtual address
+  * @dma: dma address
 -- 
 2.0.0
 
