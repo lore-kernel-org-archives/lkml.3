@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755867AbaGHTJO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:09:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54320 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755813AbaGHTIq (ORCPT
+	id S1756021AbaGHTLL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:11:11 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:35266 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755655AbaGHTIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:08:46 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Tue, 8 Jul 2014 15:08:52 -0400
+Date: Tue, 8 Jul 2014 23:08:49 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [RFC 2/2] prctl: PR_SET_MM -- Introduce PR_SET_MM_MAP operation
+Message-ID: <20140708190849.GC17860@moon.sw.swsoft.com>
+References: <20140703143318.568554771@openvz.org>
+ <20140703151102.842945837@openvz.org>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Nicholas Bellinger" <nab@linux-iscsi.org>,
-        "Tejas Vaykole" <tejas.vaykole@calsoftinc.com>
-Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.247314127@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 062/125] iscsi-target: Reject mutual authentication
- with reflected CHAP_C
-In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140703151102.842945837@openvz.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.61-rc1 review patch.  If anyone has any objections, please let me know.
+On Thu, Jul 03, 2014 at 06:33:20PM +0400, Cyrill Gorcunov wrote:
+> During development of c/r we've noticed that in case if we need to
+> support user namespaces we face a problem with capabilities in
+> prctl(PR_SET_MM, ...) call.
+> 
+> Current PR_SET_MM code forbids to modify fields if no CAP_SYS_RESOURCE
+> granted, but rather relies on one who use this interface is passing
+> more-less sane values (though the values must pass the basic validation
+> procedure).
+> 
+> It seems a better approach is to eliminate CAP_SYS_RESOURCE check but
+> provide all new values in one bundle, which would allow the kernel to make
+> more intensive test for sanity of values and same time allow us to
+> support checkpoint/restore of user namespaces.
+> 
+> Thus a new command (PR_SET_MM_MAP) introduced. It takes a pointer of
+> prctl_mm_map structure which carries all members to be updated.
+> 
+> Most intensive work is done in validate_prctl_map_locked helper,
+> because we need to make sure the values are valid. Thus we do
+> 
+>  - check the values are laying inside available user address space
+>  - stack, brk, command line arguments and evnironment variables
+>    must point to already existing VMA
+>  - values must be ordered (start < end)
+>  - if RLIMITs are defined don't allow to exceed it with new values
+> 
+> Since it uses prctl_set_mm_exe_file_locked helper, updating the
+> exe-file link is one-shot action for security reason.
+> 
+> I believe the old interface should be deprecated and ripped off
+> in a couple of kernel releases if noone against.
+> 
+> To test if new interface is implemented in the kernel one
+> can pass PR_SET_MM_MAP_SIZE opcode and the kernel returns
+> the size of currently supported struct prctl_mm_map.
+> 
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> Cc: Kees Cook <keescook@chromium.org>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Andrew Vagin <avagin@openvz.org>
+> Cc: Eric W. Biederman <ebiederm@xmission.com>
+> Cc: Serge Hallyn <serge.hallyn@canonical.com>
+> Cc: Pavel Emelyanov <xemul@parallels.com>
+> Cc: Vasiliy Kulikov <segoon@openwall.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Michael Kerrisk <mtk.manpages@gmail.com>
 
-------------------
-
-From: Nicholas Bellinger <nab@linux-iscsi.org>
-
-commit 1d2b60a5545942b1376cb48c1d55843d71e3a08f upstream.
-
-This patch adds an explicit check in chap_server_compute_md5() to ensure
-the CHAP_C value received from the initiator during mutual authentication
-does not match the original CHAP_C provided by the target.
-
-This is in line with RFC-3720, section 8.2.1:
-
-   Originators MUST NOT reuse the CHAP challenge sent by the Responder
-   for the other direction of a bidirectional authentication.
-   Responders MUST check for this condition and close the iSCSI TCP
-   connection if it occurs.
-
-Reported-by: Tejas Vaykole <tejas.vaykole@calsoftinc.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/target/iscsi/iscsi_target_auth.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
-
---- a/drivers/target/iscsi/iscsi_target_auth.c
-+++ b/drivers/target/iscsi/iscsi_target_auth.c
-@@ -337,6 +337,16 @@ static int chap_server_compute_md5(
- 		goto out;
- 	}
- 	/*
-+	 * During mutual authentication, the CHAP_C generated by the
-+	 * initiator must not match the original CHAP_C generated by
-+	 * the target.
-+	 */
-+	if (!memcmp(challenge_binhex, chap->challenge, CHAP_CHALLENGE_LENGTH)) {
-+		pr_err("initiator CHAP_C matches target CHAP_C, failing"
-+		       " login attempt\n");
-+		goto out;
-+	}
-+	/*
- 	 * Generate CHAP_N and CHAP_R for mutual authentication.
- 	 */
- 	tfm = crypto_alloc_hash("md5", 0, CRYPTO_ALG_ASYNC);
-
+Ping. Guys, any commens please?
