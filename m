@@ -1,151 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803AbaGHNlh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:41:37 -0400
-Received: from w-smtp-out-7.wedos.net ([46.28.106.5]:58720 "EHLO
-	we2-f167.wedos.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753796AbaGHNlg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:41:36 -0400
-Date: Tue, 8 Jul 2014 15:41:30 +0200
-From: Josef Gajdusek <atx@atalax.net>
-To: linux-iio@vger.kernel.org
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org, jic23@kernel.org,
-        linux-kernel@vger.kernel.org, pmeerw@pmeerw.net,
-        dan.carpenter@oracle.com
-Subject: [PATCH v3 4/5] staging:iio:hmc5843: Add support for i2c hmc5983
-Message-ID: <20140708134130.GF14393@dashie>
-References: <20140708133711.GB14393@dashie>
+	id S1754813AbaGHNlw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:41:52 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52770 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754076AbaGHNiv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 09:38:51 -0400
+Date: Tue, 8 Jul 2014 08:38:37 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Keerthy <j-keerthy@ti.com>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <mark.rutland@arm.com>,
+        <galak@codeaurora.org>, <robh+dt@kernel.org>, <linux@arm.linux.org.uk>,
+        <balbi@ti.com>, <tony@atomide.com>, <kishon@ti.com>,
+        <broonie@kernel.org>
+Subject: Re: [PATCH v2 4/7] ARM: dts: AM437x: Fix i2c nodes indentation
+Message-ID: <20140708133837.GF25811@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1404814597-4404-1-git-send-email-j-keerthy@ti.com>
+ <1404814597-4404-5-git-send-email-j-keerthy@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1Y7d0dPL928TPQbc"
 Content-Disposition: inline
-In-Reply-To: <20140708133711.GB14393@dashie>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1404814597-4404-5-git-send-email-j-keerthy@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the hmc5983 i2c interface.
-This chip is almost identical to the hmc5883. The difference being added
-temperature compensation, additional available sample rate (220Hz) and an SPI
-interface.
+--1Y7d0dPL928TPQbc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Josef Gajdusek <atx@atx.name>
----
- drivers/staging/iio/magnetometer/Kconfig        |  2 +-
- drivers/staging/iio/magnetometer/hmc5843.h      |  1 +
- drivers/staging/iio/magnetometer/hmc5843_core.c | 20 +++++++++++++++++---
- drivers/staging/iio/magnetometer/hmc5843_i2c.c  |  5 +++--
- 4 files changed, 22 insertions(+), 6 deletions(-)
+On Tue, Jul 08, 2014 at 03:46:34PM +0530, Keerthy wrote:
+> Fix i2c nodes indentation.
+>=20
+> Signed-off-by: Keerthy <j-keerthy@ti.com>
 
-diff --git a/drivers/staging/iio/magnetometer/Kconfig b/drivers/staging/iio/magnetometer/Kconfig
-index 28c2612..32c69c0 100644
---- a/drivers/staging/iio/magnetometer/Kconfig
-+++ b/drivers/staging/iio/magnetometer/Kconfig
-@@ -16,7 +16,7 @@ config SENSORS_HMC5843
- 	  This driver can also be compiled as a set of modules.
- 	  If so, these modules will be created:
- 	  - hmc5843_core (core functions)
--	  - hmc5843_i2c (support for HMC5843, HMC5883 and HMC5883L)
-+	  - hmc5843_i2c (support for HMC5843, HMC5883, HMC5883L and HMC5983)
- 
- config SENSORS_HMC5843_I2C
- 	tristate
-diff --git a/drivers/staging/iio/magnetometer/hmc5843.h b/drivers/staging/iio/magnetometer/hmc5843.h
-index 4e3cce3..c36041a 100644
---- a/drivers/staging/iio/magnetometer/hmc5843.h
-+++ b/drivers/staging/iio/magnetometer/hmc5843.h
-@@ -29,6 +29,7 @@ enum hmc5843_ids {
- 	HMC5843_ID,
- 	HMC5883_ID,
- 	HMC5883L_ID,
-+	HMC5983_ID,
- };
- 
- struct hmc5843_data {
-diff --git a/drivers/staging/iio/magnetometer/hmc5843_core.c b/drivers/staging/iio/magnetometer/hmc5843_core.c
-index e3a6b2e..c89ea54 100644
---- a/drivers/staging/iio/magnetometer/hmc5843_core.c
-+++ b/drivers/staging/iio/magnetometer/hmc5843_core.c
-@@ -101,6 +101,11 @@ static const int hmc5883_regval_to_samp_freq[][2] = {
- 	{75, 0}
- };
- 
-+static const int hmc5983_regval_to_samp_freq[][2] = {
-+	{0, 750000}, {1, 500000}, {3, 0}, {7, 500000}, {15, 0}, {30, 0},
-+	{75, 0}, {220, 0}
-+};
-+
- /* Describe chip variants */
- struct hmc5843_chip_info {
- 	const struct iio_chan_spec *channels;
-@@ -457,7 +462,7 @@ static const struct iio_chan_spec hmc5843_channels[] = {
- 	IIO_CHAN_SOFT_TIMESTAMP(3),
- };
- 
--/* Beware: Y and Z are exchanged on HMC5883 */
-+/* Beware: Y and Z are exchanged on HMC5883 and 5983 */
- static const struct iio_chan_spec hmc5883_channels[] = {
- 	HMC5843_CHANNEL(X, 0),
- 	HMC5843_CHANNEL(Z, 1),
-@@ -504,6 +509,15 @@ static const struct hmc5843_chip_info hmc5843_chip_info_tbl[] = {
- 		.n_regval_to_nanoscale =
- 				ARRAY_SIZE(hmc5883l_regval_to_nanoscale),
- 	},
-+	[HMC5983_ID] = {
-+		.channels = hmc5883_channels,
-+		.regval_to_samp_freq = hmc5983_regval_to_samp_freq,
-+		.n_regval_to_samp_freq =
-+				ARRAY_SIZE(hmc5983_regval_to_samp_freq),
-+		.regval_to_nanoscale = hmc5883l_regval_to_nanoscale,
-+		.n_regval_to_nanoscale =
-+				ARRAY_SIZE(hmc5883l_regval_to_nanoscale),
-+	}
- };
- 
- static int hmc5843_init(struct hmc5843_data *data)
-@@ -516,7 +530,7 @@ static int hmc5843_init(struct hmc5843_data *data)
- 	if (ret < 0)
- 		return ret;
- 	if (id[0] != 'H' || id[1] != '4' || id[2] != '3') {
--		dev_err(data->dev, "no HMC5843/5883/5883L sensor\n");
-+		dev_err(data->dev, "no HMC5843/5883/5883L/5983 sensor\n");
- 		return -ENODEV;
- 	}
- 
-@@ -606,5 +620,5 @@ int hmc5843_common_remove(struct iio_dev *indio_dev)
- EXPORT_SYMBOL(hmc5843_common_remove);
- 
- MODULE_AUTHOR("Shubhrajyoti Datta <shubhrajyoti@ti.com>");
--MODULE_DESCRIPTION("HMC5843/5883/5883L core driver");
-+MODULE_DESCRIPTION("HMC5843/5883/5883L/5983 core driver");
- MODULE_LICENSE("GPL");
-diff --git a/drivers/staging/iio/magnetometer/hmc5843_i2c.c b/drivers/staging/iio/magnetometer/hmc5843_i2c.c
-index b3c92d9..753c914 100644
---- a/drivers/staging/iio/magnetometer/hmc5843_i2c.c
-+++ b/drivers/staging/iio/magnetometer/hmc5843_i2c.c
-@@ -1,5 +1,5 @@
- /*
-- * i2c driver for hmc5843/5843/5883/5883l
-+ * i2c driver for hmc5843/5843/5883/5883l/5983
-  *
-  * Split from hmc5843.c
-  * Copyright (C) Josef Gajdusek <atx@atx.name>
-@@ -79,6 +79,7 @@ static const struct i2c_device_id hmc5843_id[] = {
- 	{ "hmc5843", HMC5843_ID },
- 	{ "hmc5883", HMC5883_ID },
- 	{ "hmc5883l", HMC5883L_ID },
-+	{ "hmc5983", HMC5983_ID },
- 	{ }
- };
- MODULE_DEVICE_TABLE(i2c, hmc5843_id);
-@@ -102,5 +103,5 @@ static struct i2c_driver hmc5843_driver = {
- module_i2c_driver(hmc5843_driver);
- 
- MODULE_AUTHOR("Josef Gajdusek <atx@atx.name>");
--MODULE_DESCRIPTION("HMC5843/5883/5883L i2c driver");
-+MODULE_DESCRIPTION("HMC5843/5883/5883L/5983 i2c driver");
- MODULE_LICENSE("GPL");
--- 
-1.8.5.5
+Reviewed-by: Felipe Balbi <balbi@ti.com>
 
+> ---
+>  arch/arm/boot/dts/am437x-gp-evm.dts |   13 ++++++-------
+>  1 file changed, 6 insertions(+), 7 deletions(-)
+>=20
+> diff --git a/arch/arm/boot/dts/am437x-gp-evm.dts b/arch/arm/boot/dts/am43=
+7x-gp-evm.dts
+> index 003766c..85ca430 100644
+> --- a/arch/arm/boot/dts/am437x-gp-evm.dts
+> +++ b/arch/arm/boot/dts/am437x-gp-evm.dts
+> @@ -257,16 +257,15 @@
+>  };
+> =20
+>  &i2c0 {
+> -        status =3D "okay";
+> -        pinctrl-names =3D "default";
+> -        pinctrl-0 =3D <&i2c0_pins>;
+> +	status =3D "okay";
+> +	pinctrl-names =3D "default";
+> +	pinctrl-0 =3D <&i2c0_pins>;
+>  };
+> =20
+>  &i2c1 {
+> -        status =3D "okay";
+> -        pinctrl-names =3D "default";
+> -        pinctrl-0 =3D <&i2c1_pins>;
+> -
+> +	status =3D "okay";
+> +	pinctrl-names =3D "default";
+> +	pinctrl-0 =3D <&i2c1_pins>;
+>  	pixcir_ts@5c {
+>  		compatible =3D "pixcir,pixcir_tangoc";
+>  		pinctrl-names =3D "default";
+> --=20
+> 1.7.9.5
+>=20
+
+--=20
+balbi
+
+--1Y7d0dPL928TPQbc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTu/RdAAoJEIaOsuA1yqRECTsP/2Lyn3PYaINT9bj7C6GKzsAy
+oBbf9bop2uOHTN/zsRRly1nKvCk2mjv7ljXbYX4a+iQ2z1bIKHMtbpF1HDqZUKKV
+OznZNIdPwpMdDm1vVk/c/MuBsczmYqfZ3LlxR+BNW3xi5kMQAsdcvDQk8MkCsOZs
+hd4RUtaeTMcCTPwZtyDpvGsbvf1rOwavncqKl5qDCDrNLLdZvS25ctjqYPMzaOlx
+E1TW/r3YAKSkiCkx/KiTVpamGXi9mWdMSzVEH2QLbCmzF0jjwf7qSC/amOL3/kAC
+DtJSBjPu3gBesAG5k/NAXWz4ltybHnHAWFIcFbcgQyXyWX09mrnSPPwdIT6ROeDR
+64E1hpKx1h0lUTe7sLccJMiOqerecHVIx5+VV0lZMqTZJ9JJa2nBpqFsuCr6f/HY
+0Usa49jsGiG4gqBdT53hWHWsg/DQ1jKBDHOfndMcBNT/2vcS9y+Q+YKdykcS3Y9I
+Nt9BP/hFypBpNHAVaPFlPawnS0WqQMJ24pbSFEf8LurISIPHX2c5NPuk4RvCiZsS
+v+LnNm4CdQJ7Dnl+177h/sDvMYiHB/8iYOBCleqYdVkTiMwTNg4MIGj5xahxMvIM
+fo5LSsP+NM1IY3kCExCuNU6DXSQV2G9G0Oe5sGcLAZ+N8w5KTmE/1zSY8xYSPi13
+BDxXrc8iLlx25E//XtCR
+=lLrm
+-----END PGP SIGNATURE-----
+
+--1Y7d0dPL928TPQbc--
