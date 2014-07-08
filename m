@@ -1,55 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751404AbaGHWrX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 18:47:23 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:46507 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082AbaGHWrW (ORCPT
+	id S1751897AbaGHWri (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 18:47:38 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:25855 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082AbaGHWrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 18:47:22 -0400
+	Tue, 8 Jul 2014 18:47:37 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/jZxa3hI7h4BOT9ad5NlASDr92pvmwteo=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 20F765A5D26
+Date: Tue, 8 Jul 2014 18:47:32 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Feng Kan <fkan@apm.com>
+Cc: tglx@linutronix.de, marc.zyngier@arm.com, linux-kernel@vger.kernel.org,
+        patches@apm.com
+Subject: Re: [PATCH V3 1/2] irqchip: gic: replace hex numbers with defines.
+Message-ID: <20140708224732.GK13433@titan.lakedaemon.net>
+References: <1404335939-31754-1-git-send-email-fkan@apm.com>
+ <1404335939-31754-2-git-send-email-fkan@apm.com>
 MIME-Version: 1.0
-In-Reply-To: <20140708223506.GG4603@linux.vnet.ibm.com>
-References: <1402519183-12752-1-git-send-email-bobby.prani@gmail.com>
- <1402519183-12752-6-git-send-email-bobby.prani@gmail.com> <20140611214752.GC16940@cloud>
- <20140708223506.GG4603@linux.vnet.ibm.com>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Tue, 8 Jul 2014 18:46:50 -0400
-Message-ID: <CAJhHMCAkpFh+cpQA1R6Ar41K7GHgPKMMCs9DAqxMu0vJvHw3EA@mail.gmail.com>
-Subject: Re: [RFC PATCH 5/5] kernel/rcu/rcutorture.c:185 fix a sparse warning
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Josh Triplett <josh@joshtriplett.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404335939-31754-2-git-send-email-fkan@apm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 8, 2014 at 6:35 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Wed, Jun 11, 2014 at 02:47:52PM -0700, josh@joshtriplett.org wrote:
->> On Wed, Jun 11, 2014 at 04:39:43PM -0400, Pranith Kumar wrote:
->> > fix the following sparse warning
->> >
->> > kernel/rcu/rcutorture.c:185:1: warning: symbol 'boost_mutex' was not declared. Should it be static?
->> >
->> > by marking boost_mutex as a static mutex
->> >
->> > Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
->>
->> Please preserve the comment alignment (by deleting a tab).  With that
->> fixed:
->> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
->
-> Queued for 3.18.
->
-> But Pranith, next time Josh gives you a review comment, could you please
-> respond with the appropriate update?
->
+Feng,
 
-I was away from my work desktop for the past few days. I actually sent
-a fixed patch 10 min ago, but in a new series.
+On Wed, Jul 02, 2014 at 02:18:58PM -0700, Feng Kan wrote:
+> This is to cleanup some hex numbers used in the code and replace
+> then with defines to make the code cleaner.
+> 
+> Signed-off-by: Feng Kan <fkan@apm.com>
+> Reviewed-by: Anup Patel <apatel@apm.com>
+> ---
+>  drivers/irqchip/irq-gic.c       | 62 ++++++++++++++++++++++++++++-------------
+>  include/linux/irqchip/arm-gic.h |  2 --
+>  2 files changed, 43 insertions(+), 21 deletions(-)
+> 
+> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+> index 7e11c9d..9ec3f4c 100644
+> --- a/drivers/irqchip/irq-gic.c
+> +++ b/drivers/irqchip/irq-gic.c
+> @@ -48,6 +48,23 @@
+>  
+>  #include "irqchip.h"
+>  
+> +#define GIC_DIST_ENABLE			0x1
+> +#define GIC_DIST_DISABLE		0x0
+> +#define GIC_DIST_INT_CLR_EN_32		0xffffffff
+> +#define GIC_DIST_INT_SET_EN_SGI		0x0000ffff
+> +#define GIC_DIST_INT_CLR_EN_PPI		0xffff0000
 
-Sorry for missing this, I will drop an update promptly next time.
+Please watch your whitespace here...
 
+> +#define GIC_DIST_INT_LVL_TRIGGER	0x0
+> +#define GIC_DIST_INT_DEF_PRI		0xa0
+> +#define GIC_DIST_INT_DEF_PRI_4		((GIC_DIST_INT_DEF_PRI << 24) |\
+> +					(GIC_DIST_INT_DEF_PRI << 16) |\
+> +					(GIC_DIST_INT_DEF_PRI << 8) |\
+> +					GIC_DIST_INT_DEF_PRI)
+> +
+> +#define GIC_CPU_ENABLE			0x1
 
--- 
-Pranith
+And here.
+
+I imagine quite a few of these magic numbers were cleaned up in Marc's
+series adding GICv3.  Please see my response to your coverletter.
+
+thx,
+
+Jason.
+
+> +#define GIC_CPU_INT_PRI_THRESHOLD	0xf0
+> +#define GIC_CPU_INT_SPURIOUS		1023
+> +#define GIC_CPU_INT_ID_MASK		0x3ff
+> +
+>  union gic_base {
+>  	void __iomem *common_base;
+>  	void __percpu * __iomem *percpu_base;
+> @@ -291,7 +308,7 @@ static void __exception_irq_entry gic_handle_irq(struct pt_regs *regs)
+>  
+>  	do {
+>  		irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
+> -		irqnr = irqstat & GICC_IAR_INT_ID_MASK;
+> +		irqnr = irqstat & GIC_CPU_INT_ID_MASK;
+>  
+>  		if (likely(irqnr > 15 && irqnr < 1021)) {
+>  			irqnr = irq_find_mapping(gic->domain, irqnr);
+> @@ -322,8 +339,8 @@ static void gic_handle_cascade_irq(unsigned int irq, struct irq_desc *desc)
+>  	status = readl_relaxed(gic_data_cpu_base(chip_data) + GIC_CPU_INTACK);
+>  	raw_spin_unlock(&irq_controller_lock);
+>  
+> -	gic_irq = (status & 0x3ff);
+> -	if (gic_irq == 1023)
+> +	gic_irq = (status & GIC_CPU_INT_ID_MASK);
+> +	if (gic_irq == GIC_CPU_INT_SPURIOUS)
+>  		goto out;
+>  
+>  	cascade_irq = irq_find_mapping(chip_data->domain, gic_irq);
+> @@ -384,13 +401,14 @@ static void __init gic_dist_init(struct gic_chip_data *gic)
+>  	unsigned int gic_irqs = gic->gic_irqs;
+>  	void __iomem *base = gic_data_dist_base(gic);
+>  
+> -	writel_relaxed(0, base + GIC_DIST_CTRL);
+> +	writel_relaxed(GIC_DIST_DISABLE, base + GIC_DIST_CTRL);
+>  
+>  	/*
+>  	 * Set all global interrupts to be level triggered, active low.
+>  	 */
+>  	for (i = 32; i < gic_irqs; i += 16)
+> -		writel_relaxed(0, base + GIC_DIST_CONFIG + i * 4 / 16);
+> +		writel_relaxed(GIC_DIST_INT_LVL_TRIGGER,
+> +				base + GIC_DIST_CONFIG + i * 4 / 16);
+>  
+>  	/*
+>  	 * Set all global interrupts to this CPU only.
+> @@ -405,16 +423,18 @@ static void __init gic_dist_init(struct gic_chip_data *gic)
+>  	 * Set priority on all global interrupts.
+>  	 */
+>  	for (i = 32; i < gic_irqs; i += 4)
+> -		writel_relaxed(0xa0a0a0a0, base + GIC_DIST_PRI + i * 4 / 4);
+> +		writel_relaxed(GIC_DIST_INT_DEF_PRI_4,
+> +					base + GIC_DIST_PRI + i * 4 / 4);
+>  
+>  	/*
+>  	 * Disable all interrupts.  Leave the PPI and SGIs alone
+>  	 * as these enables are banked registers.
+>  	 */
+>  	for (i = 32; i < gic_irqs; i += 32)
+> -		writel_relaxed(0xffffffff, base + GIC_DIST_ENABLE_CLEAR + i * 4 / 32);
+> +		writel_relaxed(GIC_DIST_INT_CLR_EN_32,
+> +				base + GIC_DIST_ENABLE_CLEAR + i * 4 / 32);
+>  
+> -	writel_relaxed(1, base + GIC_DIST_CTRL);
+> +	writel_relaxed(GIC_DIST_ENABLE, base + GIC_DIST_CTRL);
+>  }
+>  
+>  static void gic_cpu_init(struct gic_chip_data *gic)
+> @@ -443,17 +463,20 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+>  	 * Deal with the banked PPI and SGI interrupts - disable all
+>  	 * PPI interrupts, ensure all SGI interrupts are enabled.
+>  	 */
+> -	writel_relaxed(0xffff0000, dist_base + GIC_DIST_ENABLE_CLEAR);
+> -	writel_relaxed(0x0000ffff, dist_base + GIC_DIST_ENABLE_SET);
+> +	writel_relaxed(GIC_DIST_INT_CLR_EN_PPI,
+> +			dist_base + GIC_DIST_ENABLE_CLEAR);
+> +	writel_relaxed(GIC_DIST_INT_SET_EN_SGI,
+> +			dist_base + GIC_DIST_ENABLE_SET);
+>  
+>  	/*
+>  	 * Set priority on PPI and SGI interrupts
+>  	 */
+>  	for (i = 0; i < 32; i += 4)
+> -		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
+> +		writel_relaxed(GIC_DIST_INT_DEF_PRI_4,
+> +				dist_base + GIC_DIST_PRI + i * 4 / 4);
+>  
+> -	writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
+> -	writel_relaxed(1, base + GIC_CPU_CTRL);
+> +	writel_relaxed(GIC_CPU_INT_PRI_THRESHOLD, base + GIC_CPU_PRIMASK);
+> +	writel_relaxed(GIC_CPU_ENABLE, base + GIC_CPU_CTRL);
+>  }
+>  
+>  void gic_cpu_if_down(void)
+> @@ -519,14 +542,14 @@ static void gic_dist_restore(unsigned int gic_nr)
+>  	if (!dist_base)
+>  		return;
+>  
+> -	writel_relaxed(0, dist_base + GIC_DIST_CTRL);
+> +	writel_relaxed(GIC_DIST_DISABLE, dist_base + GIC_DIST_CTRL);
+>  
+>  	for (i = 0; i < DIV_ROUND_UP(gic_irqs, 16); i++)
+>  		writel_relaxed(gic_data[gic_nr].saved_spi_conf[i],
+>  			dist_base + GIC_DIST_CONFIG + i * 4);
+>  
+>  	for (i = 0; i < DIV_ROUND_UP(gic_irqs, 4); i++)
+> -		writel_relaxed(0xa0a0a0a0,
+> +		writel_relaxed(GIC_DIST_INT_DEF_PRI_4,
+>  			dist_base + GIC_DIST_PRI + i * 4);
+>  
+>  	for (i = 0; i < DIV_ROUND_UP(gic_irqs, 4); i++)
+> @@ -537,7 +560,7 @@ static void gic_dist_restore(unsigned int gic_nr)
+>  		writel_relaxed(gic_data[gic_nr].saved_spi_enable[i],
+>  			dist_base + GIC_DIST_ENABLE_SET + i * 4);
+>  
+> -	writel_relaxed(1, dist_base + GIC_DIST_CTRL);
+> +	writel_relaxed(GIC_DIST_ENABLE, dist_base + GIC_DIST_CTRL);
+>  }
+>  
+>  static void gic_cpu_save(unsigned int gic_nr)
+> @@ -591,10 +614,11 @@ static void gic_cpu_restore(unsigned int gic_nr)
+>  		writel_relaxed(ptr[i], dist_base + GIC_DIST_CONFIG + i * 4);
+>  
+>  	for (i = 0; i < DIV_ROUND_UP(32, 4); i++)
+> -		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
+> +		writel_relaxed(GIC_DIST_INT_DEF_PRI_4,
+> +					dist_base + GIC_DIST_PRI + i * 4);
+>  
+> -	writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
+> -	writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
+> +	writel_relaxed(GIC_CPU_INT_PRI_THRESHOLD, cpu_base + GIC_CPU_PRIMASK);
+> +	writel_relaxed(GIC_CPU_ENABLE, cpu_base + GIC_CPU_CTRL);
+>  }
+>  
+>  static int gic_notifier(struct notifier_block *self, unsigned long cmd,	void *v)
+> diff --git a/include/linux/irqchip/arm-gic.h b/include/linux/irqchip/arm-gic.h
+> index 45e2d8c..7ed92d0 100644
+> --- a/include/linux/irqchip/arm-gic.h
+> +++ b/include/linux/irqchip/arm-gic.h
+> @@ -21,8 +21,6 @@
+>  #define GIC_CPU_ACTIVEPRIO		0xd0
+>  #define GIC_CPU_IDENT			0xfc
+>  
+> -#define GICC_IAR_INT_ID_MASK		0x3ff
+> -
+>  #define GIC_DIST_CTRL			0x000
+>  #define GIC_DIST_CTR			0x004
+>  #define GIC_DIST_IGROUP			0x080
+> -- 
+> 1.9.1
+> 
