@@ -1,119 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571AbaGHIPN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 04:15:13 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35495 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751649AbaGHIPF (ORCPT
+	id S1753729AbaGHIP3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 04:15:29 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:37723 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753591AbaGHIP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 04:15:05 -0400
-Date: Tue, 8 Jul 2014 10:12:59 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        devicetree@vger.kernel.org, dbaryshkov@gmail.com,
-        Nicolas FERRE <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        Boris Brezillon <boris@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        dwmw2@infradead.org, linux@maxim.org.za,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 05/18] power: reset: Add AT91 reset driver
-Message-ID: <20140708081259.GM13423@lukather>
-References: <1404396906-25194-1-git-send-email-maxime.ripard@free-electrons.com>
- <1404396906-25194-8-git-send-email-maxime.ripard@free-electrons.com>
- <F9547E0F-AB97-47E6-BA09-135EE4E1BC73@jcrosoft.com>
- <20140703145957.GH31996@lukather>
- <B425B925-B75E-4761-8CE6-9B12C5AC0469@jcrosoft.com>
- <20140704091443.545d1e08@bbrezillon>
- <20140704090645.GB13487@lukather>
- <20140707184001.GH9558@ns203013.ovh.net>
- <20140708080814.GL13423@lukather>
+	Tue, 8 Jul 2014 04:15:27 -0400
+X-IronPort-AV: E=Sophos;i="5.01,624,1400018400"; 
+   d="scan'208";a="84090476"
+Date: Tue, 8 Jul 2014 10:15:20 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Mark Brown <broonie@kernel.org>
+cc: Julia Lawall <julia.lawall@lip6.fr>, Fabio Estevam <festevam@gmail.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Takashi Iwai <tiwai@suse.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Himangi Saraogi <himangi774@gmail.com>
+Subject: Re: [alsa-devel] [PATCH] ASoC: sgtl5000: Use devm_ functions
+In-Reply-To: <20140708080232.GQ30458@sirena.org.uk>
+Message-ID: <alpine.DEB.2.10.1407081012400.2347@hadrien>
+References: <20140706070800.GA2927@himangi-Dell> <20140707144832.GL30458@sirena.org.uk> <alpine.DEB.2.10.1407071655171.4757@hadrien> <CAOMZO5AiFCnfTzo4TyB5e5c+xiHQiHUbhRVY7z=AbjOWZDX3NA@mail.gmail.com> <alpine.DEB.2.10.1407071721270.4757@hadrien>
+ <20140708080232.GQ30458@sirena.org.uk>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+ARLBH93C7pgvpZY"
-Content-Disposition: inline
-In-Reply-To: <20140708080814.GL13423@lukather>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---+ARLBH93C7pgvpZY
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jul 08, 2014 at 10:08:14AM +0200, Maxime Ripard wrote:
-> On Mon, Jul 07, 2014 at 08:40:01PM +0200, Jean-Christophe PLAGNIOL-VILLAR=
-D wrote:
-> > > > > >> move this to an assembly file more easy to read than a C code
-> > > > > >=20
-> > > > > > Nope. It's a pain to pass variable to an external assembly file=
-, and
-> > > > > > this makes the use of global variable pretty much mandatory, wh=
-ich is
-> > > > > > definitely not great.
-> > > > >=20
-> > > > > Not at all I did for the PM slow clock code just write a function=
- and pas it as a parameter
-> > > > > you have 3
-> > > > >=20
-> > > > > so basically you have to use the current and just pass at91_ramc_=
-base[0], at91_ramc_base[1]
-> > > > > and at91_rstc_base
-> > > > > it=E2=80=99s 3 lignes of modification, if you have at91_ramc_base=
- and at91_ramc_base same
-> > > > >=20
-> > > >=20
-> > > > Yes, retrieving function parameters from assembly code is not that
-> > > > complicated (the first 4 pointer values are accessible through r0-r=
-3),
-> > > > but then you'll have to store your assembly file somewhere.
-> > >=20
-> > > Like I was saying, there's a strong preference for the inline
-> > > assembly...
-> >=20
-> > inline is horrible to read and maintain NACK
-> >=20
-> > keep it in an assembly file it's so easy to read and follow
-> >=20
-> > and you just have to move the file existing to the driver/power
->=20
-> Well, the whole rest of the kernel community feels otherwise.
+On Tue, 8 Jul 2014, Mark Brown wrote:
 
-Thinking a bit more about this, would using symbolic names instead of
-the indices in the inline assembly work for you?
+> On Mon, Jul 07, 2014 at 05:23:39PM +0200, Julia Lawall wrote:
+>
+> > There is documentation about what kinds of devm functions exist, but it is
+> > too bad that there is no documentation about where they can be used.
+> > Often there are several levels of function pointers involved, so it can be
+> > hard to figure out whether they can be used just by looking at the code.
+> > I have only taken the strategy of using them in kinds of functions where
+> > someone else has alreadyy figured out that they can be used.
+>
+> It should be fairly clear given what they do I'd have thought - the
+> devm_ functions tie the deallocation of a resource to the unbinding of
+> a driver from a device so they can only be used to replace things that
+> get cleaned up in a device model unbind path.  There's not usually a
+> great deal of indirection going on in those.
 
-Maxime
+It is completely clear what they do.  What is not clear is what device
+libraries are set up to call the freeing functions at what point.  For
+example, I know that that platform drivers are set up for this, but once I
+tried to find the lines of code that would justify that, but I could not.
+Perhaps I was not patient enough or missed something.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---+ARLBH93C7pgvpZY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTu6gLAAoJEBx+YmzsjxAgf0QP/3hpciXTIwKTwZkj074LbJV3
-jCmZnijx4A5r+tOThdNDWT9slr0YlAqJVeI5Ilt8iTz8jC0+CjQiyXOvfqtVYAf5
-YfglSy4KD4yuO26TKZdgturjKw0LhOxbuedIGx9N4x3xGapfHmVE+8IrVqojh8Vs
-fk6Ykmd8pHUxfxHEucndiilzhUy3UDphP+cyGqwSe8st4rbwHflrS/epBXuW8QSu
-V8jYw73AQ07vdGiNEjFelBUfOhYsiSFAx5unLfZEmE9bCHHBWN3yaL/fe/JIwtot
-2mbeLUk4yKXAKZQ6Jr8yc56+UgcqLVfGLUphERIQwqIXvDi0yHRFQBK/wB2ceL5W
-aWpvIERkeeXucwCdQGkWgjoCDumUr5EAy8dYceeRERWX53wNXsWRmcz63+n84YbT
-GoryBsDGok6OOGCRV99W/ofeewImHNwd38LI5dAR/veI0lwXu1qQqlrOxn7yPloR
-4FFRjdWWkIhUo+pIVrv7tl8QfLFQrOJBkb8DrNX40qmyrlsViEBfcK1cxi/75EF9
-+J4eEP0PRZG6Nka4pOQ0c+Ka5jsWL3d9gB6RzH/tifBrYW32pFAo/IUlWdYjwmNW
-3sGpvBc4Awa2y2HNUDXHsqXoLYIW/4Tt+vJBPtKxS1GN5BFimysHMhSLCZjPtxsQ
-I0TCuqYqEq+GcYApLPPH
-=vWRz
------END PGP SIGNATURE-----
-
---+ARLBH93C7pgvpZY--
+julia
