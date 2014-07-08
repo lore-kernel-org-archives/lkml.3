@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932091AbaGHANP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:13:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56387 "EHLO
+	id S1754911AbaGHANk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:13:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56401 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754794AbaGHADR (ORCPT
+	with ESMTP id S1754632AbaGHADQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 20:03:17 -0400
+	Mon, 7 Jul 2014 20:03:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        ShiChun Ma <masc2008@qq.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 3.4 02/44] xhci: correct burst count field for isoc transfers on 1.0 xhci hosts
-Date: Mon,  7 Jul 2014 17:06:52 -0700
-Message-Id: <20140707235858.724699812@linuxfoundation.org>
+        Syam Sidhardhan <s.syam@samsung.com>,
+        Gustavo Padovan <gustavo@padovan.org>
+Subject: [PATCH 3.4 17/44] Bluetooth: Remove unused hci_le_ltk_reply()
+Date: Mon,  7 Jul 2014 17:07:07 -0700
+Message-Id: <20140707235859.172858510@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235858.652771077@linuxfoundation.org>
 References: <20140707235858.652771077@linuxfoundation.org>
@@ -29,40 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Syam Sidhardhan <s.syam@samsung.com>
 
-commit 3213b151387df0b95f4eada104f68eb1c1409cb3 upstream.
+commit e10b9969f217c948c5523045f44eba4d3a758ff0 upstream.
 
-The transfer burst count (TBC) field in xhci 1.0 hosts should be set
-to the number of bursts needed to transfer all packets in a isoc TD.
-Supported values are 0-2 (1 to 3 bursts per service interval).
+In this API, we were using sizeof operator for an array
+given as function argument, which is invalid.
+However this API is not used anywhere.
 
-Formula for TBC calculation is given in xhci spec section 4.11.2.3:
-TBC = roundup( Transfer Descriptor Packet Count / Max Burst Size +1 ) - 1
-
-This patch should be applied to stable kernels since 3.0 that contain
-the commit 5cd43e33b9519143f06f507dd7cbee6b7a621885
-"xhci 1.0: Set transfer burst count field."
-
-Suggested-by: ShiChun Ma <masc2008@qq.com>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Syam Sidhardhan <s.syam@samsung.com>
+Signed-off-by: Gustavo Padovan <gustavo@padovan.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-ring.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/net/bluetooth/hci_core.h |    1 -
+ net/bluetooth/hci_conn.c         |   16 ----------------
+ 2 files changed, 17 deletions(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -3588,7 +3588,7 @@ static unsigned int xhci_get_burst_count
- 		return 0;
+--- a/include/net/bluetooth/hci_core.h
++++ b/include/net/bluetooth/hci_core.h
+@@ -1068,7 +1068,6 @@ void hci_le_conn_update(struct hci_conn
+ 					u16 latency, u16 to_multiplier);
+ void hci_le_start_enc(struct hci_conn *conn, __le16 ediv, __u8 rand[8],
+ 							__u8 ltk[16]);
+-void hci_le_ltk_reply(struct hci_conn *conn, u8 ltk[16]);
+ void hci_le_ltk_neg_reply(struct hci_conn *conn);
  
- 	max_burst = urb->ep->ss_ep_comp.bMaxBurst;
--	return roundup(total_packet_count, max_burst + 1) - 1;
-+	return DIV_ROUND_UP(total_packet_count, max_burst + 1) - 1;
+ int hci_do_inquiry(struct hci_dev *hdev, u8 length);
+--- a/net/bluetooth/hci_conn.c
++++ b/net/bluetooth/hci_conn.c
+@@ -224,22 +224,6 @@ void hci_le_start_enc(struct hci_conn *c
  }
+ EXPORT_SYMBOL(hci_le_start_enc);
  
- /*
+-void hci_le_ltk_reply(struct hci_conn *conn, u8 ltk[16])
+-{
+-	struct hci_dev *hdev = conn->hdev;
+-	struct hci_cp_le_ltk_reply cp;
+-
+-	BT_DBG("%p", conn);
+-
+-	memset(&cp, 0, sizeof(cp));
+-
+-	cp.handle = cpu_to_le16(conn->handle);
+-	memcpy(cp.ltk, ltk, sizeof(ltk));
+-
+-	hci_send_cmd(hdev, HCI_OP_LE_LTK_REPLY, sizeof(cp), &cp);
+-}
+-EXPORT_SYMBOL(hci_le_ltk_reply);
+-
+ void hci_le_ltk_neg_reply(struct hci_conn *conn)
+ {
+ 	struct hci_dev *hdev = conn->hdev;
 
 
