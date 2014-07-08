@@ -1,97 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751262AbaGHV25 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 17:28:57 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:52939 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750889AbaGHV24 (ORCPT
+	id S1751517AbaGHVaB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 17:30:01 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:34876 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056AbaGHV36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 17:28:56 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: "Li, Aubrey" <aubrey.li@linux.intel.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+	Tue, 8 Jul 2014 17:29:58 -0400
+Date: Tue, 8 Jul 2014 15:29:51 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] GPIO button wth wakeup attribute is supposed to wake the system up
-Date: Tue, 08 Jul 2014 23:47:01 +0200
-Message-ID: <1489151.dWxTTZlWzH@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140708211259.GA26792@core.coreip.homeip.net>
-References: <53A2340D.9030503@linux.intel.com> <2962778.H1VBlZAtS4@vostro.rjw.lan> <20140708211259.GA26792@core.coreip.homeip.net>
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 3/9] pci: Introduce pci_register_io_range() helper
+ function.
+Message-ID: <20140708212951.GA4555@google.com>
+References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
+ <1404240214-9804-4-git-send-email-Liviu.Dudau@arm.com>
+ <20140708001418.GB22939@google.com>
+ <201407080900.44882.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201407080900.44882.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 08, 2014 02:12:59 PM Dmitry Torokhov wrote:
-> On Tue, Jul 08, 2014 at 11:06:17PM +0200, Rafael J. Wysocki wrote:
-> > On Tuesday, July 08, 2014 01:45:30 PM Dmitry Torokhov wrote:
-> > > On Tue, Jul 08, 2014 at 10:52:52PM +0200, Rafael J. Wysocki wrote:
-> > > > On Thursday, June 19, 2014 08:51:25 AM Li, Aubrey wrote:
-> > > > > When the wakeup attribute is set, the GPIO button is capable of
-> > > > > waking up the system from sleep states, including the "freeze"
-> > > > > sleep state.  For that to work, its driver needs to pass the
-> > > > > IRQF_NO_SUSPEND flag to devm_request_any_context_irq(), or the
-> > > > > interrupt will be disabled by suspend_device_irqs() and the
-> > > > > system won't be woken up by it from the "freeze" sleep state.
-> > > > > 
-> > > > > The suspend_device_irqs() routine is a workaround for drivers
-> > > > > that mishandle interrupts triggered when the devices handled
-> > > > > by them are suspended, so it is safe to use IRQF_NO_SUSPEND in
-> > > > > all drivers that don't have that problem.
-> > > > > 
-> > > > > The affected/tested machines include Dell Venue 11 Pro and Asus T100TA.
-> > > > > 
-> > > > > Signed-off-by: Aubrey Li <aubrey.li@linux.intel.com>
-> > > > > Reviewed-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > 
-> > > > OK
-> > > > 
-> > > > Due to the lack of response (ie. no objections) and because the issue
-> > > > addressed by this patch is real, I'm queuing it up as a PM-related fix
-> > > > for 3.17.
-> > > 
-> > > Please do not. The response is till the same: board code should make sure
-> > > that enable_irq_wake() does the right thing and keeps interrupts enabled.
-> > 
-> > Which board code?  That's nothing like that for the platforms in question.
-> 
-> Then it needs to be written.
+On Tue, Jul 8, 2014 at 1:00 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 08 July 2014, Bjorn Helgaas wrote:
+>> On Tue, Jul 01, 2014 at 07:43:28PM +0100, Liviu Dudau wrote:
+>> > +static LIST_HEAD(io_range_list);
+>> > +
+>> > +/*
+>> > + * Record the PCI IO range (expressed as CPU physical address + size).
+>> > + * Return a negative value if an error has occured, zero otherwise
+>> > + */
+>> > +int __weak pci_register_io_range(phys_addr_t addr, resource_size_t size)
+>>
+>> I don't understand the interface here.  What's the mapping from CPU
+>> physical address to bus I/O port?  For example, I have the following
+>> machine in mind:
+>>
+>>   HWP0002:00: PCI Root Bridge (domain 0000 [bus 00-1b])
+>>   HWP0002:00: memory-mapped IO port space [mem 0xf8010000000-0xf8010000fff]
+>>   HWP0002:00: host bridge window [io  0x0000-0x0fff]
+>>
+>>   HWP0002:09: PCI Root Bridge (domain 0001 [bus 00-1b])
+>>   HWP0002:09: memory-mapped IO port space [mem 0xf8110000000-0xf8110000fff]
+>>   HWP0002:09: host bridge window [io  0x1000000-0x1000fff] (PCI address [0x0-0xfff])
+>>
+>> The CPU physical memory [mem 0xf8010000000-0xf8010000fff] is translated by
+>> the bridge to I/O ports 0x0000-0x0fff on PCI bus 0000:00.  Drivers use,
+>> e.g., "inb(0)" to access it.
+>>
+>> Similarly, [mem 0xf8110000000-0xf8110000fff] is translated by the second
+>> bridge to I/O ports 0x0000-0x0fff on PCI bus 0001:00.  Drivers use
+>> "inb(0x1000000)" to access it.
+>
+> I guess you are thinking of the IA64 model here where you keep the virtual
+> I/O port numbers in a per-bus lookup table that gets accessed for each
+> inb() call. I've thought about this some more, and I believe there are good
+> reasons for sticking with the model used on arm32 and powerpc for the
+> generic OF implementation.
+>
+> The idea is that there is a single virtual memory range for all I/O port
+> mappings and we use the MMU to do the translation rather than computing
+> it manually in the inb() implemnetation. The main advantage is that all
+> functions used in device drivers to (potentially) access I/O ports
+> become trivial this way, which helps for code size and in some cases
+> (e.g. SoC-internal registers with a low latency) it may even be performance
+> relevant.
 
-Well, excuse me, but I don't get it.  Why would I need to write any board code
-for an ACPI-based system?
+My example is from ia64, but I'm not advocating for the lookup table.
+The point is that the hardware works similarly (at least for dense ia64
+I/O port spaces) in terms of mapping CPU physical addresses to PCI I/O
+space.
 
-> > > It is wrong to patch drivers for this.
-> > 
-> > Why is it?  Only drivers know if they can handle incoming interrupts after
-> > having suspended their devices.
-> 
-> The driver correctly used enable_irq_wake() to indicate that interrupt should
-> be a wakeup source, the now the core/board needs to make sure the interrupt
-> gets delivered to the driver properly. We should not be patching every driver
-> that uses enable_irq_wake() with IRQF_NO_SUSPEND.
+I think my confusion is because your pci_register_io_range() and
+pci_addess_to_pci() implementations assume that every io_range starts at
+I/O port 0 on PCI (correct me if I'm wrong).  I suspect that's why you
+don't save the I/O port number in struct io_range.
 
-Interrupts that can wake up from the "freeze" sleep state need not be set up
-with enable_irq_wake() and the flag doesn't say "this is a wakeup interrupt".
-It says "do not suspend this interrupt, I can handle it after the device has
-been suspended" (as I said).
+Maybe that assumption is guaranteed by OF, but it doesn't hold for ACPI;
+ACPI can describe several I/O port apertures for a single bridge, each
+associated with a different CPU physical memory region.
 
-And if it is OK for a driver to set IRQF_SHARED, it is equally OK for it to
-set IRQF_NO_SUSPEND, because, in fact, those two flags are related.
+If my speculation here is correct, a comment to the effect that each
+io_range corresponds to a PCI I/O space range that starts at 0 might be
+enough.
 
-> If you look at the earlier patch discussion Tegra folks managed to implement
-> this behavior just fine.
+If you did add a PCI I/O port number argument to pci_register_io_range(),
+we might be able to make an ACPI-based implementation of it.  But I guess
+that could be done if/when anybody ever wants to do that.
 
-I'm not sure whose idea it was that IRQF_NO_SUSPEND was not to be set by drivers,
-but it is not a correct one.  I know why suspend_device_irqs() was introduced
-and I'm telling you this has nothing to do with setting up the IRQ chip to do
-system wakeup.
+>> Here's what these look like in /proc/iomem and /proc/ioports (note that
+>> there are two resource structs for each memory-mapped IO port space: one
+>> IORESOURCE_MEM for the memory-mapped area (used only by the host bridge
+>> driver), and one IORESOURCE_IO for the I/O port space (this becomes the
+>> parent of a region used by a regular device driver):
+>>
+>>   /proc/iomem:
+>>     PCI Bus 0000:00 I/O Ports 00000000-00000fff
+>>     PCI Bus 0001:00 I/O Ports 01000000-01000fff
 
-And please grep for IRQF_NO_SUSPEND to see how drivers generally use it.
+Oops, I forgot the actual physical memory addresses here, but you got
+the idea anyway.  It should have been something like this:
 
-Rafael
+  /proc/iomem:
+    f8010000000-f8010000fff PCI Bus 0000:00 I/O Ports 00000000-00000fff
+    f8110000000-f8110000fff PCI Bus 0001:00 I/O Ports 01000000-01000fff
 
+Bjorn
