@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418AbaGHOhM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 10:37:12 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:25058 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357AbaGHOhK convert rfc822-to-8bit (ORCPT
+	id S1753368AbaGHOjc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 10:39:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33263 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834AbaGHOj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 10:37:10 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+OAPAR65f5RFcIYft4djOUltWptuKTlYk=
-X-DKIM: OpenDKIM Filter v2.0.1 titan B5CCE5A554A
-Date: Tue, 8 Jul 2014 10:37:07 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Nick Krause <xerofoify@gmail.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Arm Compiler - Part 1 of Compiling Tests
-Message-ID: <20140708143707.GC13433@titan.lakedaemon.net>
-References: <CAPDOMVieG951+0chzvjmKTdpZf-fEB5mjUL9YK-rgqF3+O537w@mail.gmail.com>
- <20140707134637.GA31174@thunk.org>
- <CAPDOMVjEmVJJEd_LVpCkXC8qR7APTKeHNJQSQ5SFNuWj9BQuLA@mail.gmail.com>
+	Tue, 8 Jul 2014 10:39:29 -0400
+Date: Tue, 8 Jul 2014 07:39:12 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        "open list:GENERIC INCLUDE/A..." <linux-arch@vger.kernel.org>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "Clark, Rob" <robdclark@gmail.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Colin Cross <ccross@google.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Subject: Re: [PATCH v2 0/9] Updated fence patch series
+Message-ID: <20140708143912.GA3436@kroah.com>
+References: <20140701103432.12718.82795.stgit@patser>
+ <20140702053758.GA7578@kroah.com>
+ <CAKMK7uHZQjQ2m7KE22kTRVs-NtGguHREk24pSJiLbN7EoQLZ=g@mail.gmail.com>
+ <20140707173052.GA8693@kroah.com>
+ <20140708134427.GG17271@phenom.ffwll.local>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPDOMVjEmVJJEd_LVpCkXC8qR7APTKeHNJQSQ5SFNuWj9BQuLA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140708134427.GG17271@phenom.ffwll.local>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nick,
+On Tue, Jul 08, 2014 at 03:44:27PM +0200, Daniel Vetter wrote:
+> On Mon, Jul 07, 2014 at 10:30:52AM -0700, Greg KH wrote:
+> > On Mon, Jul 07, 2014 at 03:23:17PM +0200, Daniel Vetter wrote:
+> > > On Wed, Jul 2, 2014 at 7:37 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > > >> Android can expose fences to userspace. It's possible to make the new fence
+> > > >> mechanism expose the same fences to userspace by changing sync_fence_create
+> > > >> to take a struct fence instead of a struct sync_pt. No other change is needed,
+> > > >> because only the fence parts of struct sync_pt are used. But because the
+> > > >> userspace fences are a separate problem and I haven't really looked at it yet
+> > > >> I feel it should stay in staging, for now.
+> > > >
+> > > > Ok, that's reasonable.
+> > > >
+> > > > At first glance, this all looks "sane" to me, any objection from anyone
+> > > > if I merge this through my driver-core tree for 3.17?
+> > > 
+> > > Ack from my side fwiw.
+> > 
+> > Thanks, I'll queue it up later today.
+> 
+> btw should we add you as a (co)maintainer for driver/core/dma-buf since
+> you seem to want to keep a closer tab on what the insane gfx folks are up
+> to in there?
 
-Please don't top-post.  I've fixed it up ...
+Sure, why not, what's one more maintainership...
 
-On Mon, Jul 07, 2014 at 01:35:24PM -0400, Nick Krause wrote:
-> On Mon, Jul 7, 2014 at 9:46 AM, Theodore Ts'o <tytso@mit.edu> wrote:
-> > On Mon, Jul 07, 2014 at 01:22:13AM -0400, Nick Krause wrote:
-> >> Here are my logs of the builds attached  with warnings if they succeed
-> >> for now failing arm configs
-> >> according to the tests here,
-> >
-> > fs/direct-io.c: In function ‘__blockdev_direct_IO’:
-> > fs/direct-io.c:1011:12: warning: ‘to’ may be used uninitialized in this
-> > function [-Wmaybe-uninitialized]
-> >     u = (to - from) >> blkbits;
-> >
-> > OK, do you see why this is a false positive?  And why asking the
-> > thousands of people "in the commmunity" to all do exactly the same
-> > evaluation is a massive waste of time?
+Oh, does that mean you want me to be the one collecting the patches and
+forwarding them on to Linus?  If so, that's fine, I can easily do that
+as well due to my infrastructure being set up for it.
 
-I already sent a patch explaining it was a false-positive and silencing
-the warning:
+thanks,
 
-  http://www.gossamer-threads.com/lists/linux/kernel/1956499
-
-> In addition all the arm configs that were failing for linux next to
-> compile that didn't succeed are succeeded as of now. That seems useful
-> to tell the arm developers.
-
-We already have a buildbot running and automated boot testing.  The
-mailinglist is here:
-
-  http://lists.linaro.org/mailman/listinfo/kernel-build-reports
-
-Links to the reports are in the emails.  Please review and see if there
-is anything we're missing.  Please keep in mind this is a volunteer task
-for those currently running it.  Contributions would be much more
-appreciated than good ideas ;-)
-
-thx,
-
-Jason.
+greg k-h
