@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755302AbaGHNWY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:22:24 -0400
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:40333 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755275AbaGHNWU (ORCPT
+	id S1754878AbaGHNYW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:24:22 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:50729 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750867AbaGHNYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:22:20 -0400
-Date: Tue, 8 Jul 2014 09:22:16 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Mikko Perttunen <mperttunen@nvidia.com>
-Cc: swarren@wwwdotorg.org, thierry.reding@gmail.com, pdeschrijver@nvidia.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-ide@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: Re: [PATCH v2 6/7] ata: Add support for the Tegra124 SATA controller
-Message-ID: <20140708132216.GA4979@htj.dyndns.org>
-References: <1403101406-15439-1-git-send-email-mperttunen@nvidia.com>
- <1403101406-15439-7-git-send-email-mperttunen@nvidia.com>
+	Tue, 8 Jul 2014 09:24:20 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53BBF102.6000507@roeck-us.net>
+Date: Tue, 08 Jul 2014 06:24:18 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403101406-15439-7-git-send-email-mperttunen@nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.14 00/94] 3.14.12-stable review
+References: <20140707235756.780319003@linuxfoundation.org>
+In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing Hans)
+On 07/07/2014 04:56 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.14.12 release.
+> There are 94 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Wed Jul  9 23:57:44 UTC 2014.
+> Anything received after that time might be too late.
+>
 
-Hans, can you please review this patch?
+Build results:
+	total: 140 pass: 137 fail: 3
+Failed builds:
+	powerpc:allmodconfig (binutils 2.23)
+	powerpc:allmodconfig (binutils 2.24)
+	unicore32:defconfig
 
-On Wed, Jun 18, 2014 at 05:23:25PM +0300, Mikko Perttunen wrote:
-> +#define SATA_CONFIGURATION_0				0x180
-> +#define		SATA_CONFIGURATION_EN_FPCI		BIT(0)
+Qemu tests all passed.
 
-Let's just indent uniformly.  The new line should give enough visual
-hint on grouping.
+Results are as expected.
 
-> +struct tegra_ahci_priv {
-> +	struct platform_device *pdev;
-> +	void __iomem *sata_regs;
-> +	struct reset_control *sata_rst;
-> +	struct reset_control *sata_oob_rst;
-> +	struct reset_control *sata_cold_rst;
-> +	struct clk *sata_clk;
-> +	struct clk *sata_oob_clk;
-> +	struct clk *cml1_clk;
-> +	struct clk *plle_clk;
-> +	struct regulator_bulk_data supplies[5];
-> +	struct phy *padctl_phy;
-> +};
+Details are available at http://server.roeck-us.net:8010/builders.
 
-And please indent the declared fields uniformly too.
+For the unicore32 build to pass in this release, the following
+additional patches would be needed.
 
-Except for the above nitpicks, generally looks good to me but let's
-wait for Hans' review.
+73fa540618 drivers/rtc/rtc-puv3.c: remove "&dev->" for typo issue MIME-Version: 1.0
+c863810cef drivers/rtc/rtc-puv3.c: use dev_dbg() instead of dev_debug() for typo issue
 
-Thanks.
+A workaround patch to address the powerpc build failures is pending.
+I'll send you a note after it is available if Ben doesn't Cc: stable.
 
--- 
-tejun
+Guenter
+
