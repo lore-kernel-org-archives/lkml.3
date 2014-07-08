@@ -1,71 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713AbaGHAAz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:00:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55989 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754376AbaGGXzP (ORCPT
+	id S1754731AbaGHAA6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:00:58 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:47715 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752288AbaGHAA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:55:15 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chen Gang <gang.chen.5i5j@gmail.com>,
-        Xuetao Guan <gxt@mprc.pku.edu.cn>, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.10 51/53] arch/unicore32/mm/alignment.c: include "asm/pgtable.h" to avoid compiling error
-Date: Mon,  7 Jul 2014 16:58:36 -0700
-Message-Id: <20140707235830.827736415@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140707235829.281783607@linuxfoundation.org>
-References: <20140707235829.281783607@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Mon, 7 Jul 2014 20:00:56 -0400
+Date: Mon, 07 Jul 2014 17:00:55 -0700 (PDT)
+Message-Id: <20140707.170055.1999993887924074843.davem@davemloft.net>
+To: himangi774@gmail.com
+Cc: mareklindner@neomailbox.ch, sw@simonwunderlich.de, antonio@meshcoding.com,
+        b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
+Subject: Re: [PATCH] batman-adv: Use kasprintf
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140628183628.GA9946@himangi-Dell>
+References: <20140628183628.GA9946@himangi-Dell>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 07 Jul 2014 17:00:56 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+From: Himangi Saraogi <himangi774@gmail.com>
+Date: Sun, 29 Jun 2014 00:06:29 +0530
 
-------------------
+> kasprintf combines kmalloc and sprintf, and takes care of the size
+> calculation itself.
+> 
+> The semantic patch that makes this change is as follows:
+ ...
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-
-commit 1ff38c56cbd095c4c0dfa581a859ba3557830f78 upstream.
-
-Need include "asm/pgtable.h" to include "asm-generic/pgtable-nopmd.h",
-so can let 'pmd_t' defined. The related error with allmodconfig:
-
-    CC      arch/unicore32/mm/alignment.o
-  In file included from arch/unicore32/mm/alignment.c:24:
-  arch/unicore32/include/asm/tlbflush.h:135: error: expected .). before .*. token
-  arch/unicore32/include/asm/tlbflush.h:154: error: expected .). before .*. token
-  In file included from arch/unicore32/mm/alignment.c:27:
-  arch/unicore32/mm/mm.h:15: error: expected .=., .,., .;., .sm. or ._attribute__. before .*. token
-  arch/unicore32/mm/mm.h:20: error: expected .=., .,., .;., .sm. or ._attribute__. before .*. token
-  arch/unicore32/mm/mm.h:25: error: expected .=., .,., .;., .sm. or ._attribute__. before .*. token
-  make[1]: *** [arch/unicore32/mm/alignment.o] Error 1
-  make: *** [arch/unicore32/mm] Error 2
-
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-Acked-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
-Signed-off-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
-Cc: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/unicore32/mm/alignment.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/arch/unicore32/mm/alignment.c
-+++ b/arch/unicore32/mm/alignment.c
-@@ -21,6 +21,7 @@
- #include <linux/sched.h>
- #include <linux/uaccess.h>
- 
-+#include <asm/pgtable.h>
- #include <asm/tlbflush.h>
- #include <asm/unaligned.h>
- 
-
-
+Applied, thanks.
