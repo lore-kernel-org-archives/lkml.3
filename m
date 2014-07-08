@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932192AbaGHAJL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:09:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56466 "EHLO
+	id S932177AbaGHAJK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:09:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56476 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752576AbaGHAD2 (ORCPT
+	with ESMTP id S1754878AbaGHAD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 20:03:28 -0400
+	Mon, 7 Jul 2014 20:03:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Abbott <abbotti@mev.co.uk>, Ben Hutchings <ben@decadent.org.uk>,
+        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 3.4 33/44] staging: comedi: fix a race between do_cmd_ioctl() and read/write
-Date: Mon,  7 Jul 2014 17:07:23 -0700
-Message-Id: <20140707235859.631290823@linuxfoundation.org>
+Subject: [PATCH 3.4 34/44] staging: wlags49_h2: buffer overflow setting station name
+Date: Mon,  7 Jul 2014 17:07:24 -0700
+Message-Id: <20140707235859.660308049@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235858.652771077@linuxfoundation.org>
 References: <20140707235858.652771077@linuxfoundation.org>
@@ -29,141 +32,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 4b18f08be01a7b3c7b6df497137b6e3cb28adaa3 upstream.
+commit b5e2f339865fb443107e5b10603e53bbc92dc054 upstream.
 
-`do_cmd_ioctl()` is called with the comedi device's mutex locked to
-process the `COMEDI_CMD` ioctl to set up comedi's asynchronous command
-handling on a comedi subdevice.  `comedi_read()` and `comedi_write()`
-are the `read` and `write` handlers for the comedi device, but do not
-lock the mutex (for performance reasons, as some things can hold the
-mutex for quite a long time).
+We need to check the length parameter before doing the memcpy().  I've
+actually changed it to strlcpy() as well so that it's NUL terminated.
 
-There is a race condition if `comedi_read()` or `comedi_write()` is
-running at the same time and for the same file object and comedi
-subdevice as `do_cmd_ioctl()`.  `do_cmd_ioctl()` sets the subdevice's
-`busy` pointer to the file object way before it sets the `SRF_RUNNING` flag
-in the subdevice's `runflags` member.  `comedi_read() and
-`comedi_write()` check the subdevice's `busy` pointer is pointing to the
-current file object, then if the `SRF_RUNNING` flag is not set, will call
-`do_become_nonbusy()` to shut down the asyncronous command.  Bad things
-can happen if the asynchronous command is being shutdown and set up at
-the same time.
+You need CAP_NET_ADMIN to trigger these so it's not the end of the
+world.
 
-To prevent the race, don't set the `busy` pointer until
-after the `SRF_RUNNING` flag has been set.  Also, make sure the mutex is
-held in `comedi_read()` and `comedi_write()` while calling
-`do_become_nonbusy()` in order to avoid moving the race condition to a
-point within that function.
-
-Change some error handling `goto cleanup` statements in `do_cmd_ioctl()`
-to simple `return -ERRFOO` statements as a result of changing when the
-`busy` pointer is set.
-
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 [bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/comedi_fops.c |   25 +++++++++++++++----------
- 1 file changed, 15 insertions(+), 10 deletions(-)
+ drivers/staging/wlags49_h2/wl_priv.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -1078,22 +1078,19 @@ static int do_cmd_ioctl(struct comedi_de
- 		DPRINTK("subdevice busy\n");
- 		return -EBUSY;
- 	}
--	s->busy = file;
+--- a/drivers/staging/wlags49_h2/wl_priv.c
++++ b/drivers/staging/wlags49_h2/wl_priv.c
+@@ -570,6 +570,7 @@ int wvlan_uil_put_info( struct uilreq *u
+ 	ltv_t                   *pLtv;
+ 	bool_t                  ltvAllocated = FALSE;
+ 	ENCSTRCT                sEncryption;
++	size_t			len;
  
- 	/* make sure channel/gain list isn't too long */
- 	if (user_cmd.chanlist_len > s->len_chanlist) {
- 		DPRINTK("channel/gain list too long %u > %d\n",
- 			user_cmd.chanlist_len, s->len_chanlist);
--		ret = -EINVAL;
--		goto cleanup;
-+		return -EINVAL;
- 	}
+ #ifdef USE_WDS
+ 	hcf_16                  hcfPort  = HCF_PORT_0;
+@@ -686,7 +687,8 @@ int wvlan_uil_put_info( struct uilreq *u
+ 					break;
+ 				case CFG_CNF_OWN_NAME:
+ 					memset( lp->StationName, 0, sizeof( lp->StationName ));
+-					memcpy( (void *)lp->StationName, (void *)&pLtv->u.u8[2], (size_t)pLtv->u.u16[0]);
++					len = min_t(size_t, pLtv->u.u16[0], sizeof(lp->StationName));
++					strlcpy(lp->StationName, &pLtv->u.u8[2], len);
+ 					pLtv->u.u16[0] = CNV_INT_TO_LITTLE( pLtv->u.u16[0] );
+ 					break;
+ 				case CFG_CNF_LOAD_BALANCING:
+@@ -1800,6 +1802,7 @@ int wvlan_set_station_nickname(struct ne
+ {
+         struct wl_private *lp = wl_priv(dev);
+         unsigned long flags;
++	size_t len;
+         int         ret = 0;
+ 	/*------------------------------------------------------------------------*/
  
- 	/* make sure channel/gain list isn't too short */
- 	if (user_cmd.chanlist_len < 1) {
- 		DPRINTK("channel/gain list too short %u < 1\n",
- 			user_cmd.chanlist_len);
--		ret = -EINVAL;
--		goto cleanup;
-+		return -EINVAL;
- 	}
+@@ -1810,8 +1813,8 @@ int wvlan_set_station_nickname(struct ne
+         wl_lock(lp, &flags);
  
- 	async->cmd = user_cmd;
-@@ -1103,8 +1100,7 @@ static int do_cmd_ioctl(struct comedi_de
- 	    kmalloc(async->cmd.chanlist_len * sizeof(int), GFP_KERNEL);
- 	if (!async->cmd.chanlist) {
- 		DPRINTK("allocation failed\n");
--		ret = -ENOMEM;
--		goto cleanup;
-+		return -ENOMEM;
- 	}
+         memset( lp->StationName, 0, sizeof( lp->StationName ));
+-
+-        memcpy( lp->StationName, extra, wrqu->data.length);
++	len = min_t(size_t, wrqu->data.length, sizeof(lp->StationName));
++	strlcpy(lp->StationName, extra, len);
  
- 	if (copy_from_user(async->cmd.chanlist, user_cmd.chanlist,
-@@ -1156,6 +1152,9 @@ static int do_cmd_ioctl(struct comedi_de
- 
- 	comedi_set_subdevice_runflags(s, ~0, SRF_USER | SRF_RUNNING);
- 
-+	/* set s->busy _after_ setting SRF_RUNNING flag to avoid race with
-+	 * comedi_read() or comedi_write() */
-+	s->busy = file;
- 	ret = s->do_cmd(dev, s);
- 	if (ret == 0)
- 		return 0;
-@@ -1658,6 +1657,7 @@ static ssize_t comedi_write(struct file
- 
- 		if (!(comedi_get_subdevice_runflags(s) & SRF_RUNNING)) {
- 			if (count == 0) {
-+				mutex_lock(&dev->mutex);
- 				if (comedi_get_subdevice_runflags(s) &
- 					SRF_ERROR) {
- 					retval = -EPIPE;
-@@ -1665,6 +1665,7 @@ static ssize_t comedi_write(struct file
- 					retval = 0;
- 				}
- 				do_become_nonbusy(dev, s);
-+				mutex_unlock(&dev->mutex);
- 			}
- 			break;
- 		}
-@@ -1779,6 +1780,7 @@ static ssize_t comedi_read(struct file *
- 
- 		if (n == 0) {
- 			if (!(comedi_get_subdevice_runflags(s) & SRF_RUNNING)) {
-+				mutex_lock(&dev->mutex);
- 				do_become_nonbusy(dev, s);
- 				if (comedi_get_subdevice_runflags(s) &
- 				    SRF_ERROR) {
-@@ -1786,6 +1788,7 @@ static ssize_t comedi_read(struct file *
- 				} else {
- 					retval = 0;
- 				}
-+				mutex_unlock(&dev->mutex);
- 				break;
- 			}
- 			if (file->f_flags & O_NONBLOCK) {
-@@ -1823,9 +1826,11 @@ static ssize_t comedi_read(struct file *
- 		buf += n;
- 		break;		/* makes device work like a pipe */
- 	}
--	if (!(comedi_get_subdevice_runflags(s) & (SRF_ERROR | SRF_RUNNING)) &&
--	    async->buf_read_count - async->buf_write_count == 0) {
--		do_become_nonbusy(dev, s);
-+	if (!(comedi_get_subdevice_runflags(s) & (SRF_ERROR | SRF_RUNNING))) {
-+		mutex_lock(&dev->mutex);
-+		if (async->buf_read_count - async->buf_write_count == 0)
-+			do_become_nonbusy(dev, s);
-+		mutex_unlock(&dev->mutex);
- 	}
- 	set_current_state(TASK_RUNNING);
- 	remove_wait_queue(&async->wait_head, &wait);
+         /* Commit the adapter parameters */
+         wl_apply( lp );
 
 
