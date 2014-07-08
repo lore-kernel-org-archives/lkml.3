@@ -1,213 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308AbaGHGK2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 02:10:28 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:43141 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750927AbaGHGK1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 02:10:27 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Tue, 8 Jul 2014 15:10:28 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH v10 7/7] mm: Don't split THP page when syscall is called
-Message-ID: <20140708061028.GA32385@bbox>
-References: <1404694438-10272-1-git-send-email-minchan@kernel.org>
- <1404694438-10272-8-git-send-email-minchan@kernel.org>
- <20140707111303.GC23150@node.dhcp.inet.fi>
- <20140708013038.GD6076@bbox>
+	id S1752891AbaGHGNA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 02:13:00 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:41995 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751229AbaGHGM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 02:12:59 -0400
+Message-ID: <53BB8BDA.3020205@ti.com>
+Date: Tue, 8 Jul 2014 11:42:42 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140708013038.GD6076@bbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/8] phy: phy-samsung-usb2: Change phy power on/power
+ off sequence
+References: <1404715705-5041-1-git-send-email-kishon@ti.com> <1404715705-5041-4-git-send-email-kishon@ti.com> <20140708014442.GB13844@kroah.com>
+In-Reply-To: <20140708014442.GB13844@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 08, 2014 at 10:30:38AM +0900, Minchan Kim wrote:
-> On Mon, Jul 07, 2014 at 02:13:03PM +0300, Kirill A. Shutemov wrote:
-> > On Mon, Jul 07, 2014 at 09:53:58AM +0900, Minchan Kim wrote:
-> > > We don't need to split THP page when MADV_FREE syscall is
-> > > called. It could be done when VM decide really frees it so
-> > > we could reduce the number of THP split.
-> > > 
-> > > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > > ---
-> > >  include/linux/huge_mm.h |  3 +++
-> > >  mm/huge_memory.c        | 25 +++++++++++++++++++++++++
-> > >  mm/madvise.c            | 19 +++++++++++++++++--
-> > >  mm/rmap.c               |  4 ++++
-> > >  mm/vmscan.c             | 24 ++++++++++++++++--------
-> > >  5 files changed, 65 insertions(+), 10 deletions(-)
-> > > 
-> > > diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-> > > index 63579cb8d3dc..f0d37238cf8f 100644
-> > > --- a/include/linux/huge_mm.h
-> > > +++ b/include/linux/huge_mm.h
-> > > @@ -19,6 +19,9 @@ extern struct page *follow_trans_huge_pmd(struct vm_area_struct *vma,
-> > >  					  unsigned long addr,
-> > >  					  pmd_t *pmd,
-> > >  					  unsigned int flags);
-> > > +extern int madvise_free_pmd(struct mmu_gather *tlb,
-> > > +			struct vm_area_struct *vma,
-> > > +			pmd_t *pmd, unsigned long addr);
-> > >  extern int zap_huge_pmd(struct mmu_gather *tlb,
-> > >  			struct vm_area_struct *vma,
-> > >  			pmd_t *pmd, unsigned long addr);
-> > > diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> > > index 5d562a9fe931..2a70069dcfc0 100644
-> > > --- a/mm/huge_memory.c
-> > > +++ b/mm/huge_memory.c
-> > > @@ -1384,6 +1384,31 @@ out:
-> > >  	return 0;
-> > >  }
-> > >  
-> > > +int madvise_free_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
-> > > +		 pmd_t *pmd, unsigned long addr)
-> > > +{
-> > > +	spinlock_t *ptl;
-> > > +	int ret = 0;
-> > > +
-> > > +	if (__pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
-> > > +		pmd_t orig_pmd;
-> > > +		struct mm_struct *mm = vma->vm_mm;
-> > > +
-> > > +		/* No hugepage in swapcache */
-> > > +		VM_BUG_ON(PageSwapCache(pmd_page(orig_pmd)));
-> > 
-> > VM_BUG_ON_PAGE() ?
-> 
-> NP.
-> 
-> > 
-> > > +
-> > > +		orig_pmd = pmdp_get_and_clear(tlb->mm, addr, pmd);
-> > > +		orig_pmd = pmd_mkold(orig_pmd);
-> > > +		orig_pmd = pmd_mkclean(orig_pmd);
-> > > +
-> > > +		set_pmd_at(mm, addr, pmd, orig_pmd);
-> > > +		tlb_remove_pmd_tlb_entry(tlb, pmd, addr);
-> > > +		spin_unlock(ptl);
-> > > +		ret = 1;
-> > > +	}
-> > > +	return ret;
-> > > +}
-> > > +
-> > >  int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
-> > >  		 pmd_t *pmd, unsigned long addr)
-> > >  {
-> > > diff --git a/mm/madvise.c b/mm/madvise.c
-> > > index 372a25a8ea82..3c99919ee094 100644
-> > > --- a/mm/madvise.c
-> > > +++ b/mm/madvise.c
-> > > @@ -320,8 +320,23 @@ static inline unsigned long madvise_free_pmd_range(struct mmu_gather *tlb,
-> > >  		 * if the range covers.
-> > >  		 */
-> > >  		next = pmd_addr_end(addr, end);
-> > > -		if (pmd_trans_huge(*pmd))
-> > > -			split_huge_page_pmd(vma, addr, pmd);
-> > > +		if (pmd_trans_huge(*pmd)) {
-> > > +			if (next - addr != HPAGE_PMD_SIZE) {
-> > > +#ifdef CONFIG_DEBUG_VM
-> > > +				if (!rwsem_is_locked(&tlb->mm->mmap_sem)) {
-> > > +					pr_err("%s: mmap_sem is unlocked! addr=0x%lx end=0x%lx vma->vm_start=0x%lx vma->vm_end=0x%lx\n",
-> > > +						__func__, addr, end,
-> > > +						vma->vm_start,
-> > > +						vma->vm_end);
-> > > +					BUG();
-> > > +				}
-> > > +#endif
-> > > +				split_huge_page_pmd(vma, addr, pmd);
-> > > +			} else if (madvise_free_pmd(tlb, vma, pmd, addr))
-> > > +				goto next;
-> > > +			/* fall through */
-> > > +		}
-> > > +
-> > >  		/*
-> > >  		 * Here there can be other concurrent MADV_DONTNEED or
-> > >  		 * trans huge page faults running, and if the pmd is
-> > > diff --git a/mm/rmap.c b/mm/rmap.c
-> > > index ee495d84c8b3..3c415eb8b6f0 100644
-> > > --- a/mm/rmap.c
-> > > +++ b/mm/rmap.c
-> > > @@ -702,6 +702,10 @@ static int page_referenced_one(struct page *page, struct vm_area_struct *vma,
-> > >  		/* go ahead even if the pmd is pmd_trans_splitting() */
-> > >  		if (pmdp_clear_flush_young_notify(vma, address, pmd))
-> > >  			referenced++;
-> > > +
-> > > +		if (pmd_dirty(*pmd))
-> > > +			dirty++;
-> > > +
-> > >  		spin_unlock(ptl);
-> > >  	} else {
-> > >  		pte_t *pte;
-> > > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > > index f7a45600846f..4e15babf4414 100644
-> > > --- a/mm/vmscan.c
-> > > +++ b/mm/vmscan.c
-> > > @@ -971,15 +971,23 @@ static unsigned long shrink_page_list(struct list_head *page_list,
-> > >  		 * Anonymous process memory has backing store?
-> > >  		 * Try to allocate it some swap space here.
-> > >  		 */
-> > > -		if (PageAnon(page) && !PageSwapCache(page) && !freeable) {
-> > > -			if (!(sc->gfp_mask & __GFP_IO))
-> > > -				goto keep_locked;
-> > > -			if (!add_to_swap(page, page_list))
-> > > -				goto activate_locked;
-> > > -			may_enter_fs = 1;
-> > > +		if (PageAnon(page) && !PageSwapCache(page)) {
-> > > +			if (!freeable) {
-> > > +				if (!(sc->gfp_mask & __GFP_IO))
-> > > +					goto keep_locked;
-> > > +				if (!add_to_swap(page, page_list))
-> > > +					goto activate_locked;
-> > > +				may_enter_fs = 1;
-> > >  
-> > > -			/* Adding to swap updated mapping */
-> > > -			mapping = page_mapping(page);
-> > > +				/* Adding to swap updated mapping */
-> > > +				mapping = page_mapping(page);
-> > > +			} else {
-> > > +				if (unlikely(PageTransHuge(page))) {
-> > > +					if (unlikely(split_huge_page_to_list(
-> > > +						page, page_list)))
-> > > +						goto keep_locked;
-> > 
-> > Hm. It would be better to free the huge page without splitting. 
-> > It shouldn't be a big deal: walk over rmap and zap all pmds.
-> > Or I miss something?
-> 
-> Actually, I did but found no problem except CONFIG_DEBUG_VM but rollback
-> after peeking [1].
-> When I read the description in detail by your review, I think we can remove
-> BUG_ON(PageTransHuge(page)) in try_to_unmap and go with no split for lazyfree
-> page because they are not in swapcache any more so the assumption of [1] is
-> not valid. Will do it in next revision.
-> 
-> Thanks for the review, Kirill!
-> 
-> [1] thp: split_huge_page paging, 3f04f62f9
+Hi Greg,
 
-I just respin without this part because it needs more review but
-no enough time to me at the moment.
-Nontheless, I want to get review other parts from community.
+On Tuesday 08 July 2014 07:14 AM, Greg KH wrote:
+> On Mon, Jul 07, 2014 at 12:18:20PM +0530, Kishon Vijay Abraham I wrote:
+>> From: Kamil Debski <k.debski@samsung.com>
+>>
+>> The Exynos4412 USB 2.0 PHY hardware differs from the description provided
+>> in the documentation. Some register bits have different function. This
+>> patch fixes the defines of register bits and changes the way how phys are
+>> powered on and off.
+>>
+>> Signed-off-by: Kamil Debski <k.debski@samsung.com>
+>> Tested-by: Marek Szyprowski <m.szyprowski@samsung.com>
+>> Tested-by: Daniel Drake <drake@endlessm.com>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>> ---
+>>  drivers/phy/phy-exynos4x12-usb2.c |  112 +++++++++++++++++++++++++------------
+>>  drivers/phy/phy-exynos5250-usb2.c |    2 -
+>>  drivers/phy/phy-samsung-usb2.h    |    3 +-
+>>  3 files changed, 77 insertions(+), 40 deletions(-)
+>>
+> 
+> This doesn't look like a regression fix for 3.16-final, it looks like a
+> "new feature" to me :(
 
-It's like one of optimization so I think it shouldn't a party pooper.
-But finally I will have a time to see that.(ie, I just added some
-comment to make try_to_unmap be aware of THP freeing)
+This patch was primarily due to the incorrectly documented register bits in the
+manual. So thought this would qualify as fix and should be in 3.16.
 
-Thanks for the review!
-
--- 
-Kind regards,
-Minchan Kim
+Thanks
+Kishon
