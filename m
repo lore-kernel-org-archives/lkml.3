@@ -1,85 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810AbaGHRrz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 13:47:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34955 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427AbaGHRrx (ORCPT
+	id S1754964AbaGHRtI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 13:49:08 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:40369 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754833AbaGHRtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 13:47:53 -0400
-Date: Tue, 8 Jul 2014 10:52:17 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Sumit Semwal <sumit.semwal@linaro.org>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        "open list:GENERIC INCLUDE/A..." <linux-arch@vger.kernel.org>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "Clark, Rob" <robdclark@gmail.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Colin Cross <ccross@google.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Subject: Re: [PATCH v2 0/9] Updated fence patch series
-Message-ID: <20140708175217.GA11121@kroah.com>
-References: <20140701103432.12718.82795.stgit@patser>
- <20140702053758.GA7578@kroah.com>
- <CAKMK7uHZQjQ2m7KE22kTRVs-NtGguHREk24pSJiLbN7EoQLZ=g@mail.gmail.com>
- <20140707173052.GA8693@kroah.com>
- <20140708134427.GG17271@phenom.ffwll.local>
- <20140708143912.GA3436@kroah.com>
- <CAO_48GHwJ4EuCKgLmZhEaEQqS9e7EVZP3hsivhRwLCNFhzAQVA@mail.gmail.com>
+	Tue, 8 Jul 2014 13:49:05 -0400
+Date: Tue, 8 Jul 2014 19:49:00 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, kishon@ti.com,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>
+Subject: Re: [PATCH v9 3/7] ata: libahci: allow to use multiple PHYs
+Message-ID: <20140708174900.GC16148@kwain>
+References: <1404728173-20263-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1404728173-20263-4-git-send-email-antoine.tenart@free-electrons.com>
+ <20140708134000.GC4979@htj.dyndns.org>
+ <20140708170353.GA16148@kwain>
+ <20140708171817.GH4979@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CAO_48GHwJ4EuCKgLmZhEaEQqS9e7EVZP3hsivhRwLCNFhzAQVA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140708171817.GH4979@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 08, 2014 at 08:22:11PM +0530, Sumit Semwal wrote:
-> On 8 July 2014 20:09, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Tue, Jul 08, 2014 at 03:44:27PM +0200, Daniel Vetter wrote:
-> >> On Mon, Jul 07, 2014 at 10:30:52AM -0700, Greg KH wrote:
-> >> > On Mon, Jul 07, 2014 at 03:23:17PM +0200, Daniel Vetter wrote:
-> >> > > On Wed, Jul 2, 2014 at 7:37 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> > > >> Android can expose fences to userspace. It's possible to make the new fence
-> >> > > >> mechanism expose the same fences to userspace by changing sync_fence_create
-> >> > > >> to take a struct fence instead of a struct sync_pt. No other change is needed,
-> >> > > >> because only the fence parts of struct sync_pt are used. But because the
-> >> > > >> userspace fences are a separate problem and I haven't really looked at it yet
-> >> > > >> I feel it should stay in staging, for now.
-> >> > > >
-> >> > > > Ok, that's reasonable.
-> >> > > >
-> >> > > > At first glance, this all looks "sane" to me, any objection from anyone
-> >> > > > if I merge this through my driver-core tree for 3.17?
-> >> > >
-> >> > > Ack from my side fwiw.
-> >> >
-> >> > Thanks, I'll queue it up later today.
-> >>
-> >> btw should we add you as a (co)maintainer for driver/core/dma-buf since
-> >> you seem to want to keep a closer tab on what the insane gfx folks are up
-> >> to in there?
-> >
-> > Sure, why not, what's one more maintainership...
-> >
-> > Oh, does that mean you want me to be the one collecting the patches and
-> > forwarding them on to Linus?  If so, that's fine, I can easily do that
-> > as well due to my infrastructure being set up for it.
-> >
-> If you're ok, I could continue to do the collecting / forwarding
-> business - I guess Daniel meant more from the 'not miss patches that
-> need review'!
+On Tue, Jul 08, 2014 at 01:18:17PM -0400, Tejun Heo wrote:
+> Hello,
+> 
+> On Tue, Jul 08, 2014 at 07:03:53PM +0200, Antoine Ténart wrote:
+> > > So, hpriv->port is both input and output?  This is messy and can lead
+> > > to confusing failures and there now are multiple ways to modify
+> > > port_map.  If carrying this information through ahci_host_priv is
+> > > necessary, let's remove the direct params and introduce new input
+> > > fields to the struct.
+> > 
+> > We just use hpriv->port_map to check port_map is valid and describes
+> > available ports there.
+> > 
+> > hpriv->port_map is filed by the generic ahci_platform_get_resources()
+> > function when using the new bindings and not by the drivers. port_map is
+> > the input from the drivers.
+> 
+> So, yeah, it's being used both as input and output and we also have
+> the arguments which affect port_map, right?  It does seem confusing.
 
-Hey, I'm more than willing to have other people do the real work of
-collecting / forwarding :)
+I do see priv->port_map as being automatically set and then restricted
+if needed by the port_map input here. I don't see how that's confusing.
+The only modification is we restrict the port_map parameter to the set
+of available ports. The port_map argument affected priv->port_map before
+this patch.
 
-I'll just review stuff as it floats by, that's not enough of a role to
-put me in "MAINTAINERS" at all.
+> 
+> > Well, a had a review a week ago about in the PHY driver saying I should
+> > avoid using fixed sized arrays... And it was in a driver were we know
+> > the maximum number of PHY available.
+> > 
+> > I think in this case were the number of PHYs depends on the h/w, we should
+> > use a dynamically allocated array.
+> 
+> Well, so does clk.  Let's say clk is more restricted and phy can be
+> one or more per port and thus needs to be dynamic.  If so, shouldn't
+> we at least have some correlation between phys and ports?  It bothers
+> me that now libahci is carrying random number of resources that it has
+> no idea how to associate with the ports it manages.  What if later we
+> want to involve phy driver in power managing unoccupied ports?
 
-thanks,
+I see. This is a first (working) attempt to have a one node per port. I
+agree that would be nice to have a correlation between ports and PHYs.
+This can definitively be added when needed without changing the dt
+bindings as only the internal representation changes. This would also
+require to get all phys from the port nodes, which is again internal
+stuff.
 
-greg k-h
+Don't you think we can go by steps, and have a following up series for
+this when needed (like in a power managing series for unoccupied ports)?
+
+
+Antoine
+
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
