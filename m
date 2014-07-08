@@ -1,123 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505AbaGHW6B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 18:58:01 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:45421 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345AbaGHW57 convert rfc822-to-8bit (ORCPT
+	id S1753611AbaGHW6X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 18:58:23 -0400
+Received: from smtp-out-04.shaw.ca ([64.59.134.12]:5405 "EHLO
+	smtp-out-04.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172AbaGHW6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 18:57:59 -0400
-Date: Tue, 8 Jul 2014 23:57:55 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci <linux-pci@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 8/9] pci: Add support for creating a generic
- host_bridge from device tree
-Message-ID: <20140708225755.GE4980@e106497-lin.cambridge.arm.com>
-References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
- <1404240214-9804-9-git-send-email-Liviu.Dudau@arm.com>
- <20140708010103.GD22939@google.com>
- <20140708102940.GZ6501@e106497-lin.cambridge.arm.com>
- <20140708213305.GB4555@google.com>
- <20140708222738.GA4980@e106497-lin.cambridge.arm.com>
- <20140708223737.GA19512@google.com>
+	Tue, 8 Jul 2014 18:58:21 -0400
+X-Greylist: delayed 576 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Jul 2014 18:58:21 EDT
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=97kX/pcSDRzxCpZyrJZ+O3bQ3yje/MppWgySN1iIsrk= c=1 sm=1
+ a=vULbWnCzOkcA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
+ a=f/edn6q14DUxYFbwN4BeGQ==:17 a=20KFwNOVAAAA:8 a=gu6fZOg2AAAA:8
+ a=kn0y_Jr5trtkw_KoMmwA:9 a=CjuIK1q_8ugA:10 a=GC8p-B92FUEA:10
+ a=NWVoK91CQyQA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Date: Tue, 8 Jul 2014 17:48:43 -0500
+From: Trevor Cordes <trevor@tecnopolis.ca>
+To: linux-kernel@vger.kernel.org
+Subject: memory bug ever since 3.12, oom-killer invoked, computer freezes
+Message-ID: <20140708174843.046ed76a@pog.tecnopolis.ca>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; i686-redhat-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20140708223737.GA19512@google.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 08 Jul 2014 22:57:56.0000 (UTC) FILETIME=[0E583200:01CF9B00]
-X-MC-Unique: 114070823575605001
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 08, 2014 at 11:37:37PM +0100, Bjorn Helgaas wrote:
-> On Tue, Jul 08, 2014 at 11:27:38PM +0100, Liviu Dudau wrote:
-> > On Tue, Jul 08, 2014 at 10:33:05PM +0100, Bjorn Helgaas wrote:
-> > > On Tue, Jul 08, 2014 at 11:29:40AM +0100, Liviu Dudau wrote:
-> > > > On Tue, Jul 08, 2014 at 02:01:04AM +0100, Bjorn Helgaas wrote:
-> > > > > On Tue, Jul 01, 2014 at 07:43:33PM +0100, Liviu Dudau wrote:
-> > > > > > ...
-> > > > > > +int __weak pcibios_fixup_bridge_ranges(struct list_head *resources)
-> > > > > > +{
-> > > > > > +     return 0;
-> > > > > > +}
-> > > > > 
-> > > > > I'd wait to add this until there's a platform that needs to implement it.
-> > > > > Splitting it out will make this patch that much smaller and easier to
-> > > > > understand.
-> > > > 
-> > > > I need this as this is the default implementation (i.e. do nothing). Otherwise the
-> > > > link phase will give errors. 
-> > > 
-> > > I meant that you could remove the default implementation *and* the call of
-> > > it, since it currently does nothing.
-> > 
-> > True. But it looks like converting Will's pci-host-generic.c driver will make use of this.
-> 
-> I think we should move this part of the patch to the conversion of
-> that driver.  That will keep related changes grouped together, which 
-> makes them easier to review and easier to backport, e.g., to distro
-> kernels.
-> 
-> > > > > > diff --git a/include/linux/pci.h b/include/linux/pci.h
-> > > > > > index 7e7b939..556dc5f 100644
-> > > > > > --- a/include/linux/pci.h
-> > > > > > +++ b/include/linux/pci.h
-> > > > > > @@ -402,6 +402,7 @@ struct pci_host_bridge {
-> > > > > >       struct device dev;
-> > > > > >       struct pci_bus *bus;            /* root bus */
-> > > > > >       int domain_nr;
-> > > > > > +     resource_size_t io_base;        /* physical address for the start of I/O area */
-> > > > > 
-> > > > > I don't see where this is used yet.
-> > > > 
-> > > > It's used in pci_host_bridge_of_get_ranges() (earlier in this patch).
-> > > 
-> > > of_create_pci_host_bridge() fills in bridge->io_base, but I don't see
-> > > anything that ever *reads* bridge->io_base.
-> > 
-> > Ah, understood. It is used by the host bridge drivers to set their ATR registers to the
-> > correct CPU address values.
-> 
-> Same applies here.
+Excuse a novice on his first post to this list.  I have tried to obtain
+help elsewhere with no success.
 
-Except I have no idea which host bridge driver is going to be submitted first. There are
-at least a couple of public series for HB drivers based on my series plus the one I have yet
-to submit for my platform.
+I have been dealing with a bad kernel bug since 3.12 came out.  It is
+present in 3.12, 3.13 and 3.14 up to 3.14.8 (Fedora 19 kernel).
 
-Maybe an associated documentation patch that explains the intended use for io_base could
-persuade you on the value of keeping the io_base patch here?
+What happens is around the same time every day, using the buggy
+kernels, I get dozens of oom-killer messages over about 3-5 minutes,
+the system slows to a crawl instantly, and usually freezes (numlock no
+longer works, etc) within a few minutes.
 
-Best regards,
-Liviu
+Using 3.11, the system runs fine, there is no bug.
 
-> 
-> Bjorn
-> 
+I think I have isolated the trigger of the problem to a simple
+backup-helper script I run nightly at the same time.  I have come to
+this conclusion based on the fact I can run in 3.14 for many days with
+no problems if I disable my script from running.  As soon as I enable
+the script, the bug will hit the subsequent morning at the same time as
+usual.  Again, in 3.11 there is no bug even if my script is running.
 
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+I have made a RH bugzilla bug for this that contains even more detail:
+https://bugzilla.redhat.com/show_bug.cgi?id=1075185
 
+My script looks like this (simplified):
+#!/bin/perl
+$dirs="/ /mnt/peecee/DATA";
+$Ddest="/data/Bak/FindList";
+system "/bin/nice -n19 /usr/bin/ionice -c2 -n7 -t find $dirs -xdev -ls
+2>/dev/null > $Ddest/find-list";
+
+Notes: /mnt/peecee is a cifs share (old XP box).  $Ddest is an NFS
+mount on my file server.
+
+This script runs in about 1 min when nothing is cached, about 10s when
+everything is cached.
+
+I can run this script 200 times over and over again manually for
+testing (not via the usual cron) and it does NOT trigger the bug.  It
+is only when I enable this script via cron that the bug occurs.
+
+I have captured key /proc files at moments in time before/during the
+bug occurring, which may help figure out the problem.  I have attached
+those files to the bugzilla linked above.  I can post them here if
+required.  I can obtain more/finer results if required.  I can
+reproduce this bug "sort of on demand" by enabling my script to run the
+following morning.
+
+Known buggy kernels:
+3.14.8-100.fc19
+3.14.4-100.fc19
+3.13.9-100.fc19
+3.13.5-103.fc19
+3.12.9-201.fc19
+
+Known good kernel:
+3.11.10-200.fc19
+
+My kernels are all 32-bit, PAE.
+
+My / is md RAID1.  The disks are 15k UW-SCSI enterprise drives.  The
+controller is Adaptec AIC-7892A U160/m, a 29160 card I believe.  I am
+usually tainted with Nvidia video driver binary, but can untaint for
+purposes of testing.
+
+I wanted to bisect to help figure this out but cannot using Fedora
+tools due to bug in 32-bit python libraries.  I don't know how to
+bisect the vanilla kernel whilst still incorporating all Fedora tweaks
+without using Fedora tools.
+
+I did much googling and discovered this thread which sounds very much
+related to my problem, though not an exact duplicate:
+http://marc.info/?l=linux-mm&m=139267140606805&w=2
