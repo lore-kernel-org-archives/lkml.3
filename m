@@ -1,83 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824AbaGHRE0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 13:04:26 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:34706 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753747AbaGHREZ (ORCPT
+	id S1754642AbaGHRD6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 13:03:58 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:40100 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752883AbaGHRD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 13:04:25 -0400
-From: bsegall@google.com
-To: Yuyang Du <yuyang.du@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com,
-        arjan.van.de.ven@intel.com, len.brown@intel.com, alan.cox@intel.com,
-        mark.gross@intel.com, pjt@google.com, fengguang.wu@intel.com
-Subject: Re: [PATCH 2/2] sched: Rewrite per entity runnable load average tracking
-References: <1404268256-3019-1-git-send-email-yuyang.du@intel.com>
-	<1404268256-3019-2-git-send-email-yuyang.du@intel.com>
-	<20140707104646.GK6758@twins.programming.kicks-ass.net>
-	<xm26r41wyfgc.fsf@sword-of-the-dawn.mtv.corp.google.com>
-	<20140708000840.GB25653@intel.com>
-Date: Tue, 08 Jul 2014 10:04:22 -0700
-In-Reply-To: <20140708000840.GB25653@intel.com> (Yuyang Du's message of "Tue,
-	8 Jul 2014 08:08:40 +0800")
-Message-ID: <xm26k37nye7d.fsf@sword-of-the-dawn.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Tue, 8 Jul 2014 13:03:57 -0400
+Date: Tue, 8 Jul 2014 19:03:53 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, kishon@ti.com,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>
+Subject: Re: [PATCH v9 3/7] ata: libahci: allow to use multiple PHYs
+Message-ID: <20140708170353.GA16148@kwain>
+References: <1404728173-20263-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1404728173-20263-4-git-send-email-antoine.tenart@free-electrons.com>
+ <20140708134000.GC4979@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140708134000.GC4979@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yuyang Du <yuyang.du@intel.com> writes:
+Hello,
 
-> Thanks, Ben,
->
-> On Mon, Jul 07, 2014 at 03:25:07PM -0700, bsegall@google.com wrote:
->> Also something to note is that cfs_rq->load_avg just takes samples of
->> load.weight every 1us, which seems unfortunate. We thought this was ok
->> for p->se.load.weight, because it isn't really likely for userspace to
->> be calling nice(2) all the time, but wake/sleeps are more frequent,
->> particularly on newer cpus. Still, it might not be /that/ bad.
->
-> The sampling of cfs_rq->load.weight should be equivalent to the current
-> code in that at the end of day cfs_rq->load.weight worth of runnable would 
-> contribute to runnable_load_avg/blocked_load_avg for both the current and
-> the rewrite.
+On Tue, Jul 08, 2014 at 09:40:00AM -0400, Tejun Heo wrote:
+> (Cc'ing Hans.)
+> 
+> On Mon, Jul 07, 2014 at 12:16:09PM +0200, Antoine Ténart wrote:
+> > @@ -482,6 +482,13 @@ void ahci_save_initial_config(struct device *dev,
+> >  		port_map &= mask_port_map;
+> >  	}
+> >  
+> > +	/*
+> > +	 * If port_map was filled automatically when finding port sub-nodes,
+> > +	 * make sure we get the right set here.
+> > +	 */
+> > +	if (hpriv->port_map)
+> > +		port_map &= hpriv->port_map;
+> > +
+> 
+> So, hpriv->port is both input and output?  This is messy and can lead
+> to confusing failures and there now are multiple ways to modify
+> port_map.  If carrying this information through ahci_host_priv is
+> necessary, let's remove the direct params and introduce new input
+> fields to the struct.
 
-Yes, but the point is that it looks at load.weight when delta/1024 > 0
-and assumes that it has had that load.weight the entire time, when this
-might not actually be true. The largest error I can think of is if you
-have a very high weight task that tends to run for very short periods of
-time, you could end up losing their entire contribution to load. This
-may be acceptable, I'm not certain.
+We just use hpriv->port_map to check port_map is valid and describes
+available ports there.
 
->  
->> Also, as a nitpick/annoyance this does a lot of
->>  if (entity_is_task(se)) __update_load_avg(... se ...)
->>  __update_load_avg(... cfs_rq_of(se) ...)
->> which is just a waste of the avg struct on every group se, and all it
->> buys you is the ability to not have a separate rq->avg struct (removed
->> by patch 1) instead of rq->cfs.avg.
->
-> I actually struggled on this issue. As we only need a sched_avg for task (not
-> entity), and a sched_avg for cfs_rq, I planned to move entity avg to
-> task. Good?
+hpriv->port_map is filed by the generic ahci_platform_get_resources()
+function when using the new bindings and not by the drivers. port_map is
+the input from the drivers.
 
-Yeah, that can probably be done perfectly fine.
+> 
+> >  /**
+> > + * ahci_platform_enable_phys - Enable PHYs
+> > + * @hpriv: host private area to store config values
+> > + *
+> > + * This function enables all the PHYs found in hpriv->phys, if any.
+> > + * If a PHY fails to be enabled, it disables all the PHYs already
+> > + * enabled in reverse order and returns an error.
+> > + *
+> > + * RETURNS:
+> > + * 0 on success otherwise a negative error code
+> > + */
+> > +int ahci_platform_enable_phys(struct ahci_host_priv *hpriv)
+> > +{
+> > +	int i, rc = 0;
+> > +
+> > +	for (i = 0; i < hpriv->nphys; i++) {
+> > +		rc = phy_init(hpriv->phys[i]);
+> > +		if (rc)
+> > +			goto disable_phys;
+> > +
+> > +		rc = phy_power_on(hpriv->phys[i]);
+> > +		if (rc) {
+> > +			phy_exit(hpriv->phys[i]);
+> > +			goto disable_phys;
+> > +		}
+> > +	}
+> > +
+> > +	return 0;
+> > +
+> > +disable_phys:
+> > +	while (--i >= 0) {
+> > +		phy_power_off(hpriv->phys[i]);
+> > +		phy_exit(hpriv->phys[i]);
+> > +	}
+> > +	return rc;
+> > +}
+> > +EXPORT_SYMBOL_GPL(ahci_platform_enable_phys);
+> 
+> Do we need to make hpriv->phys[] dynamically allocated?  We already
+> have hpriv->clks[AHCI_MAX_CLKS] and it's unlikely that we're gonna
+> need more than several phys per host.  Let's go with a simpler fixed
+> array.
+> 
 
->
-> So left are the migrate_task_rq_fair() not holding lock issue and cfs_rq->avg.load_avg
-> overflow issue. I need some time to study them.
->
-> Overall, I think none of these issues are originally caused by combination/split
-> of runnable and blocked. It is just a matter of how synchronized we want to be
-> (this rewrite is the most synchronized), and the workaround I need to borrow from the
-> current codes.
+Well, a had a review a week ago about in the PHY driver saying I should
+avoid using fixed sized arrays... And it was in a driver were we know
+the maximum number of PHY available.
 
-If you can manage to find a to deal with the migration issue without it,
-that would be great, I'm just pretty sure that's why we did the split.
+I think in this case were the number of PHYs depends on the h/w, we should
+use a dynamically allocated array.
 
->
-> Yuyang
+
+Antoine
+
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
