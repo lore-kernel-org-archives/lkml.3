@@ -1,52 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888AbaGHNBC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:01:02 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:65519 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754867AbaGHNA7 (ORCPT
+	id S1754912AbaGHNBj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:01:39 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:60986 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754280AbaGHNBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:00:59 -0400
-Message-ID: <53BBEB84.50904@gmail.com>
-Date: Tue, 08 Jul 2014 15:00:52 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-To: Kishon Vijay Abraham I <kishon@ti.com>,
-        =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>,
-        tj@kernel.org
-CC: alexandre.belloni@free-electrons.com, thomas.petazzoni@free-electrons.com,
-        zmxu@marvell.com, jszhang@marvell.com,
-        linux-arm-kernel@lists.infradead.org, linux-ide@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v9 1/7] phy: add a driver for the Berlin SATA PHY
-References: <1404728173-20263-1-git-send-email-antoine.tenart@free-electrons.com> <1404728173-20263-2-git-send-email-antoine.tenart@free-electrons.com> <53BBE419.8080107@ti.com>
-In-Reply-To: <53BBE419.8080107@ti.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 8 Jul 2014 09:01:37 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: robert.moore@intel.com, lv.zheng@intel.com, rafael.j.wysocki@intel.com,
+        lenb@kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/2] ACPICA: Add acpi_check_gpe_method() to check GPE method
+Date: Tue, 08 Jul 2014 15:19:40 +0200
+Message-ID: <10899721.ERDUBaimNr@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1404802679-24019-1-git-send-email-tianyu.lan@intel.com>
+References: <1404802679-24019-1-git-send-email-tianyu.lan@intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2014 02:29 PM, Kishon Vijay Abraham I wrote:
-> On Monday 07 July 2014 03:46 PM, Antoine Ténart wrote:
->> The Berlin SoC has a two SATA ports. Add a PHY driver to handle them.
->>
->> The mode selection can let us think this PHY can be configured to fit
->> other purposes. But there are reasons to think the SATA mode will be
->> the only one usable: the PHY registers are only accessible indirectly
->> through two registers in the SATA range, the PHY seems to be integrated
->> and no information tells us the contrary. For these reasons, make the
->> driver a SATA PHY driver.
->
-> Thanks for doing multiple revisions of this. Looks good to be merged for me now.
+On Tuesday, July 08, 2014 02:57:57 PM Lan Tianyu wrote:
+> This patch is to expose acpi_check_gpe_method() to check whether there
+> is a GPE method for the given gpe. Enabling ACPI button devices' gpes
+> will depend on the new function's result.
+> 
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> ---
+>  drivers/acpi/acpica/evxface.c | 39 ++++++++++++++++++++++++++++++++++++++-
+>  include/acpi/acpixf.h         |  3 +++
+>  2 files changed, 41 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/acpi/acpica/evxface.c b/drivers/acpi/acpica/evxface.c
+> index 11e5803..0fcb248 100644
+> --- a/drivers/acpi/acpica/evxface.c
+> +++ b/drivers/acpi/acpica/evxface.c
+> @@ -717,6 +717,44 @@ ACPI_EXPORT_SYMBOL(acpi_remove_fixed_event_handler)
+>  
+>  /*******************************************************************************
+>   *
+> + * FUNCTION:    acpi_check_gpe_method
+> + *
+> + * PARAMETERS:  gpe_device      - Namespace node for the GPE (NULL for FADT
+> + *                                defined GPEs)
+> + *              gpe_number      - The event to remove a handler
+> + *
+> + * RETURN:      Status
+> + *
+> + * DESCRIPTION: Check whether the given GPE has associated event method.
+> + *
+> + ******************************************************************************/
+> +acpi_status
+> +acpi_check_gpe_method(acpi_handle gpe_device, u32 gpe_number)
 
-I'd like to see some Acked-by from Tejun on the AHCI patches first, but
-if he agrees, should I prepare a stable branch for each of us to pull
-their patches from?
+This should be a boolean routine (ie. returning 0 or 1) called something like
+acpi_gpe_has_method() that will return 1 if there's a method for the given GPE
+and 0 otherwise.
 
-AFAIKS, that would be 1+2 for you, 3-5 for Tejun, and the DT crap 6+7
-for me.
+> +{
+> +	struct acpi_gpe_event_info *gpe_event_info;
+> +	acpi_status status = AE_NOT_EXIST;
+> +	acpi_cpu_flags flags;
+> +
+> +	ACPI_FUNCTION_TRACE(acpi_check_gpe_method);
+> +
+> +	flags = acpi_os_acquire_lock(acpi_gbl_gpe_lock);
+> +	gpe_event_info = acpi_ev_get_gpe_event_info(gpe_device, gpe_number);
+> +	if (!gpe_event_info) {
+> +		status = AE_ERROR;
+> +		goto unlock_and_exit;
+> +	}
+> +
+> +	if (gpe_event_info->flags & ACPI_GPE_DISPATCH_METHOD)
+> +		status = AE_OK;
+> +
+> +unlock_and_exit:
+> +	acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
+> +	return status;
+> +}
+> +ACPI_EXPORT_SYMBOL(acpi_check_gpe_method)
+> +
+> +/*******************************************************************************
+> + *
+>   * FUNCTION:    acpi_install_gpe_handler
+>   *
+>   * PARAMETERS:  gpe_device      - Namespace node for the GPE (NULL for FADT
+> @@ -821,7 +859,6 @@ free_and_exit:
+>  	ACPI_FREE(handler);
+>  	goto unlock_and_exit;
+>  }
+> -
+>  ACPI_EXPORT_SYMBOL(acpi_install_gpe_handler)
+>  
+>  /*******************************************************************************
+> diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
+> index 35b525c..5b475c6 100644
+> --- a/include/acpi/acpixf.h
+> +++ b/include/acpi/acpixf.h
+> @@ -554,6 +554,9 @@ ACPI_HW_DEPENDENT_RETURN_STATUS(acpi_status
+>  							  address,
+>  							  void *context))
+>  ACPI_HW_DEPENDENT_RETURN_STATUS(acpi_status
+> +				acpi_check_gpe_method(acpi_handle gpe_device,
+> +							u32 gpe_number))
+> +ACPI_HW_DEPENDENT_RETURN_STATUS(acpi_status
+>  				 acpi_remove_gpe_handler(acpi_handle gpe_device,
+>  							 u32 gpe_number,
+>  							 acpi_gpe_handler
+> 
 
-Sebastian
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
