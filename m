@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361AbaGHNZw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:25:52 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:41038 "EHLO
+	id S932115AbaGHN0D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:26:03 -0400
+Received: from inca-roads.misterjones.org ([213.251.177.50]:39803 "EHLO
 	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755196AbaGHNZs (ORCPT
+	by vger.kernel.org with ESMTP id S932078AbaGHNZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:25:48 -0400
+	Tue, 8 Jul 2014 09:25:58 -0400
 From: Marc Zyngier <marc.zyngier@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: Russell King <linux@arm.linux.org.uk>,
@@ -22,9 +22,9 @@ Cc: Russell King <linux@arm.linux.org.uk>,
         Larry Bassel <larry.bassel@linaro.org>,
         Mark Rutland <mark.rutland@arm.com>,
         Sudeep Holla <sudeep.holla@arm.com>
-Subject: [PATCH 07/15] irqchip: mxs: convert to handle_domain_irq
-Date: Tue,  8 Jul 2014 14:10:30 +0100
-Message-Id: <1404825038-547-8-git-send-email-marc.zyngier@arm.com>
+Subject: [PATCH 12/15] irqchip: versatile-fpga: convert to handle_domain_irq
+Date: Tue,  8 Jul 2014 14:10:35 +0100
+Message-Id: <1404825038-547-13-git-send-email-marc.zyngier@arm.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404825038-547-1-git-send-email-marc.zyngier@arm.com>
 References: <1404825038-547-1-git-send-email-marc.zyngier@arm.com>
@@ -40,23 +40,22 @@ Use the new handle_domain_irq method to handle interrupts.
 
 Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
 ---
- drivers/irqchip/irq-mxs.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/irqchip/irq-versatile-fpga.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/irqchip/irq-mxs.c b/drivers/irqchip/irq-mxs.c
-index 4044ff2..e4acf1e 100644
---- a/drivers/irqchip/irq-mxs.c
-+++ b/drivers/irqchip/irq-mxs.c
-@@ -78,8 +78,7 @@ asmlinkage void __exception_irq_entry icoll_handle_irq(struct pt_regs *regs)
+diff --git a/drivers/irqchip/irq-versatile-fpga.c b/drivers/irqchip/irq-versatile-fpga.c
+index 3ae2bb8..73085b7 100644
+--- a/drivers/irqchip/irq-versatile-fpga.c
++++ b/drivers/irqchip/irq-versatile-fpga.c
+@@ -92,7 +92,7 @@ static int handle_one_fpga(struct fpga_irq_data *f, struct pt_regs *regs)
  
- 	irqnr = __raw_readl(icoll_base + HW_ICOLL_STAT_OFFSET);
- 	__raw_writel(irqnr, icoll_base + HW_ICOLL_VECTOR);
--	irqnr = irq_find_mapping(icoll_domain, irqnr);
--	handle_IRQ(irqnr, regs);
-+	handle_domain_irq(icoll_domain, irqnr, regs);
- }
+ 	while ((status  = readl(f->base + IRQ_STATUS))) {
+ 		irq = ffs(status) - 1;
+-		handle_IRQ(irq_find_mapping(f->domain, irq), regs);
++		handle_domain_irq(f->domain, irq, regs);
+ 		handled = 1;
+ 	}
  
- static int icoll_irq_domain_map(struct irq_domain *d, unsigned int virq,
 -- 
 2.0.0
 
