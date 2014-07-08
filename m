@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797AbaGHTj2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:39:28 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54140 "EHLO
+	id S1756361AbaGHTlc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:41:32 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54115 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755692AbaGHTIj (ORCPT
+	by vger.kernel.org with ESMTP id S1755682AbaGHTIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:08:39 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Christoph Lameter" <cl@linux.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Naoya Horiguchi" <n-horiguchi@ah.jp.nec.com>,
-        "Hugh Dickins" <hughd@google.com>
+CC: akpm@linux-foundation.org, linux-mips@linux-mips.org,
+        "Ralf Baechle" <ralf@linux-mips.org>,
+        "Alex Smith" <alex.smith@imgtec.com>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.587655673@decadent.org.uk>
+Message-ID: <lsq.1404846110.413289748@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 097/125] hugetlb: fix copy_hugetlb_page_range() to
- handle migration/hwpoisoned entry
+Subject: [PATCH 3.2 101/125] recordmcount/MIPS: Fix possible incorrect
+ mcount_loc table entries in modules
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,122 +33,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Alex Smith <alex.smith@imgtec.com>
 
-commit 4a705fef986231a3e7a6b1a6d3c37025f021f49f upstream.
+commit 91ad11d7cc6f4472ebf177a6252fbf0fd100d798 upstream.
 
-There's a race between fork() and hugepage migration, as a result we try
-to "dereference" a swap entry as a normal pte, causing kernel panic.
-The cause of the problem is that copy_hugetlb_page_range() can't handle
-"swap entry" family (migration entry and hwpoisoned entry) so let's fix
-it.
+On MIPS calls to _mcount in modules generate 2 instructions to load
+the _mcount address (and therefore 2 relocations). The mcount_loc
+table should only reference the first of these, so the second is
+filtered out by checking the relocation offset and ignoring ones that
+immediately follow the previous one seen.
 
-[akpm@linux-foundation.org: coding-style fixes]
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Cc: Christoph Lameter <cl@linux.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: adjust context]
+However if a module has an _mcount call at offset 0, the second
+relocation would not be filtered out due to old_r_offset == 0
+being taken to mean that the current relocation is the first one
+seen, and both would end up in the mcount_loc table.
+
+This results in ftrace_make_nop() patching both (adjacent)
+instructions to branches over the _mcount call sequence like so:
+
+  0xffffffffc08a8000:  04 00 00 10     b       0xffffffffc08a8014
+  0xffffffffc08a8004:  04 00 00 10     b       0xffffffffc08a8018
+  0xffffffffc08a8008:  2d 08 e0 03     move    at,ra
+  ...
+
+The second branch is in the delay slot of the first, which is
+defined to be unpredictable - on the platform on which this bug was
+encountered, it triggers a reserved instruction exception.
+
+Fix by initializing old_r_offset to ~0 and using that instead of 0
+to determine whether the current relocation is the first seen.
+
+Signed-off-by: Alex Smith <alex.smith@imgtec.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/7098/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/hugetlb.c | 71 ++++++++++++++++++++++++++++++++++++------------------------
- 1 file changed, 43 insertions(+), 28 deletions(-)
+ scripts/recordmcount.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2272,6 +2272,31 @@ static void set_huge_ptep_writable(struc
- 		update_mmu_cache(vma, address, ptep);
- }
+--- a/scripts/recordmcount.h
++++ b/scripts/recordmcount.h
+@@ -163,11 +163,11 @@ static int mcount_adjust = 0;
  
-+static int is_hugetlb_entry_migration(pte_t pte)
-+{
-+	swp_entry_t swp;
-+
-+	if (huge_pte_none(pte) || pte_present(pte))
-+		return 0;
-+	swp = pte_to_swp_entry(pte);
-+	if (non_swap_entry(swp) && is_migration_entry(swp))
-+		return 1;
-+	else
-+		return 0;
-+}
-+
-+static int is_hugetlb_entry_hwpoisoned(pte_t pte)
-+{
-+	swp_entry_t swp;
-+
-+	if (huge_pte_none(pte) || pte_present(pte))
-+		return 0;
-+	swp = pte_to_swp_entry(pte);
-+	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
-+		return 1;
-+	else
-+		return 0;
-+}
- 
- int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
- 			    struct vm_area_struct *vma)
-@@ -2299,10 +2324,26 @@ int copy_hugetlb_page_range(struct mm_st
- 
- 		spin_lock(&dst->page_table_lock);
- 		spin_lock_nested(&src->page_table_lock, SINGLE_DEPTH_NESTING);
--		if (!huge_pte_none(huge_ptep_get(src_pte))) {
-+		entry = huge_ptep_get(src_pte);
-+		if (huge_pte_none(entry)) { /* skip none entry */
-+			;
-+		} else if (unlikely(is_hugetlb_entry_migration(entry) ||
-+				    is_hugetlb_entry_hwpoisoned(entry))) {
-+			swp_entry_t swp_entry = pte_to_swp_entry(entry);
-+
-+			if (is_write_migration_entry(swp_entry) && cow) {
-+				/*
-+				 * COW mappings require pages in both
-+				 * parent and child to be set to read.
-+				 */
-+				make_migration_entry_read(&swp_entry);
-+				entry = swp_entry_to_pte(swp_entry);
-+				set_huge_pte_at(src, addr, src_pte, entry);
-+			}
-+			set_huge_pte_at(dst, addr, dst_pte, entry);
-+		} else {
- 			if (cow)
- 				huge_ptep_set_wrprotect(src, addr, src_pte);
--			entry = huge_ptep_get(src_pte);
- 			ptepage = pte_page(entry);
- 			get_page(ptepage);
- 			page_dup_rmap(ptepage);
-@@ -2317,32 +2358,6 @@ nomem:
- 	return -ENOMEM;
- }
- 
--static int is_hugetlb_entry_migration(pte_t pte)
--{
--	swp_entry_t swp;
--
--	if (huge_pte_none(pte) || pte_present(pte))
--		return 0;
--	swp = pte_to_swp_entry(pte);
--	if (non_swap_entry(swp) && is_migration_entry(swp))
--		return 1;
--	else
--		return 0;
--}
--
--static int is_hugetlb_entry_hwpoisoned(pte_t pte)
--{
--	swp_entry_t swp;
--
--	if (huge_pte_none(pte) || pte_present(pte))
--		return 0;
--	swp = pte_to_swp_entry(pte);
--	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
--		return 1;
--	else
--		return 0;
--}
--
- void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
- 			    unsigned long end, struct page *ref_page)
+ static int MIPS_is_fake_mcount(Elf_Rel const *rp)
  {
+-	static Elf_Addr old_r_offset;
++	static Elf_Addr old_r_offset = ~(Elf_Addr)0;
+ 	Elf_Addr current_r_offset = _w(rp->r_offset);
+ 	int is_fake;
+ 
+-	is_fake = old_r_offset &&
++	is_fake = (old_r_offset != ~(Elf_Addr)0) &&
+ 		(current_r_offset - old_r_offset == MIPS_FAKEMCOUNT_OFFSET);
+ 	old_r_offset = current_r_offset;
+ 
 
