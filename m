@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792AbaGHNAn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:00:43 -0400
+	id S1754817AbaGHNAs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:00:48 -0400
 Received: from cn.fujitsu.com ([59.151.112.132]:29969 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754440AbaGHNAk (ORCPT
+	with ESMTP id S1754254AbaGHNAp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:00:40 -0400
+	Tue, 8 Jul 2014 09:00:45 -0400
 X-IronPort-AV: E=Sophos;i="5.00,856,1396972800"; 
-   d="scan'208";a="32994959"
+   d="scan'208";a="32994964"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: <gleb@kernel.org>, <mtosatti@redhat.com>, <nadav.amit@gmail.com>
 CC: <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
         <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
         <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>
-Subject: [PATCH v2 1/5] kvm: Add gfn_to_page_no_pin() to translate gfn to page without pinning.
-Date: Tue, 8 Jul 2014 21:01:28 +0800
-Message-ID: <1404824492-30095-2-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v2 3/5] kvm, mem-hotplug: Do not pin ept identity pagetable in memory.
+Date: Tue, 8 Jul 2014 21:01:30 +0800
+Message-ID: <1404824492-30095-4-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1404824492-30095-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1404824492-30095-1-git-send-email-tangchen@cn.fujitsu.com>
@@ -27,59 +27,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gfn_to_page() will finally call hva_to_pfn() to get the pfn, and pin the page
-in memory by calling GUP functions. This function unpins the page.
+ept identity page is pinned in memory. As a result, it cannot be migrated/hot-removed.
 
-Will be used by the followed patches.
+Actually, this page is not necessary to be pinned. When it is migrated,
+mmu_notifier_invalidate_page() in try_to_unmap_one() will invalidate the ept
+entry so that the guest won't be able to access the page. And in the next ept
+violation, the new page will be found by ept violation handler.
+
+This patch just unpin the ept identity page because it is not necessary.
 
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- include/linux/kvm_host.h |  1 +
- virt/kvm/kvm_main.c      | 17 ++++++++++++++++-
- 2 files changed, 17 insertions(+), 1 deletion(-)
+ arch/x86/kvm/vmx.c | 3 ++-
+ arch/x86/kvm/x86.c | 2 --
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index ec4e3bd..7c58d9d 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -541,6 +541,7 @@ int gfn_to_page_many_atomic(struct kvm *kvm, gfn_t gfn, struct page **pages,
- 			    int nr_pages);
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 0e1117c..0918635e 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -4018,7 +4018,8 @@ static int alloc_identity_pagetable(struct kvm *kvm)
+ 	if (r)
+ 		goto out;
  
- struct page *gfn_to_page(struct kvm *kvm, gfn_t gfn);
-+struct page *gfn_to_page_no_pin(struct kvm *kvm, gfn_t gfn);
- unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn);
- unsigned long gfn_to_hva_prot(struct kvm *kvm, gfn_t gfn, bool *writable);
- unsigned long gfn_to_hva_memslot(struct kvm_memory_slot *slot, gfn_t gfn);
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 4b6c01b..6091849 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1371,9 +1371,24 @@ struct page *gfn_to_page(struct kvm *kvm, gfn_t gfn)
- 
- 	return kvm_pfn_to_page(pfn);
+-	page = gfn_to_page(kvm, kvm->arch.ept_identity_map_addr >> PAGE_SHIFT);
++	page = gfn_to_page_no_pin(kvm,
++				kvm->arch.ept_identity_map_addr >> PAGE_SHIFT);
+ 	if (is_error_page(page)) {
+ 		r = -EFAULT;
+ 		goto out;
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index f32a025..ffbe557 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -7177,8 +7177,6 @@ void kvm_arch_destroy_vm(struct kvm *kvm)
+ 	kvm_free_vcpus(kvm);
+ 	if (kvm->arch.apic_access_page)
+ 		put_page(kvm->arch.apic_access_page);
+-	if (kvm->arch.ept_identity_pagetable)
+-		put_page(kvm->arch.ept_identity_pagetable);
+ 	kfree(rcu_dereference_check(kvm->arch.apic_map, 1));
  }
--
- EXPORT_SYMBOL_GPL(gfn_to_page);
  
-+struct page *gfn_to_page_no_pin(struct kvm *kvm, gfn_t gfn)
-+{
-+	struct page *page = gfn_to_page(kvm, gfn);
-+
-+	/*
-+	 * gfn_to_page() will finally call hva_to_pfn() to get the pfn, and pin
-+	 * the page in memory by calling GUP functions. This function unpins
-+	 * the page.
-+	 */
-+	if (!is_error_page(page))
-+		put_page(page);
-+
-+	return page;
-+}
-+EXPORT_SYMBOL_GPL(gfn_to_page_no_pin);
-+
- void kvm_release_page_clean(struct page *page)
- {
- 	WARN_ON(is_error_page(page));
 -- 
 1.8.3.1
 
