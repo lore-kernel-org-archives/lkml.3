@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066AbaGHQjf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 12:39:35 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:27863 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751581AbaGHQjd (ORCPT
+	id S1753525AbaGHQn6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 12:43:58 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:49493 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751656AbaGHQn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 12:39:33 -0400
-Message-ID: <53BC1EBD.3030306@atmel.com>
-Date: Tue, 8 Jul 2014 18:39:25 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 8 Jul 2014 12:43:57 -0400
+Date: Tue, 8 Jul 2014 09:43:52 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Nick Krause <xerofoify@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        mahesh <mahesh@linux.vnet.ibm.com>, Alexander Graf <agraf@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Ellerman <michael@ellerman.id.au>, paulus@samba.org,
+        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: Fwd: powerpc allyesconfig fix
+Message-ID: <20140708164352.GA12935@roeck-us.net>
+References: <1404795849-25609-1-git-send-email-xerofoify@gmail.com>
+ <20140708160417.47fb4d7c@canb.auug.org.au>
+ <CAPDOMVitjYMkoLAbwf6oBJg+fpFdKLi+S4hTm6opD27DMC1NDw@mail.gmail.com>
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2 0/6] Add a driver for the atmel ram controller
-References: <1404836476-23787-1-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1404836476-23787-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPDOMVitjYMkoLAbwf6oBJg+fpFdKLi+S4hTm6opD27DMC1NDw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2014 18:21, Alexandre Belloni :
-> The atmel ram controller needs one or more clocks to work. For now the
-> CLK_IGNORE_UNUSED flag is used on those clocks. This patch set introduce a
-> driver that will take care of taking those clocks.
+On Tue, Jul 08, 2014 at 12:35:27PM -0400, Nick Krause wrote:
+> From: Stephen Rothwell wrote on Tue, Jul 8, 2014 at 2:04 AM
+> Subject: Re: powerpc allyesconfig fix
 > 
-> The final goal is also to move the ioremap done in mach-at91 to that driver with
-> a proper power management driver.
-
-Yes, okay for that series:
-
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-
-> Changes in v2:
->  - use ATMEL_SDRAMC instead of ATMEL_RAMC
->  - use "atmel,sama5d3-ddramc" instead of "atmel,sama5d3-mpddramc"
->  - not getting mpddrck is now an error
->  - handle "atmel,sama5d3-ddramc" in mach-at91/setup.c
+> Hi Nicholas,
 > 
-> Alexandre Belloni (6):
->   ARM: at91: Add new binding for sama5d3-ddramc
->   memory: add a driver for atmel ram controllers
->   ARM: at91: select ATMEL_SDRAMC when using OF
->   ARM: at91/dt: sama5d3: define mpddr clock and ramc clocks
->   ARM: at91/dt: at91sam9: use ddrck in ramc
->   clk: at91: remove the useless CLK_IGNORE_UNUSED flag
+> On Tue,  8 Jul 2014 01:04:09 -0400 Nicholas Krause <xerofoify@gmail.com> wrote:
+> >
+> > powerpc:allmodconfig has been failing for some time with the following
+> > error.
 > 
->  .../devicetree/bindings/arm/atmel-at91.txt         |  1 +
->  arch/arm/boot/dts/at91sam9n12.dtsi                 |  2 +
->  arch/arm/boot/dts/at91sam9x5.dtsi                  |  2 +
->  arch/arm/boot/dts/sama5d3.dtsi                     |  9 +-
->  arch/arm/mach-at91/Kconfig                         |  4 +
->  arch/arm/mach-at91/setup.c                         |  1 +
->  drivers/clk/at91/clk-system.c                      |  8 +-
->  drivers/memory/Kconfig                             | 10 +++
->  drivers/memory/Makefile                            |  1 +
->  drivers/memory/atmel-sdramc.c                      | 98 ++++++++++++++++++++++
->  10 files changed, 128 insertions(+), 8 deletions(-)
->  create mode 100644 drivers/memory/atmel-sdramc.c
+> This patch has already bee submitted directly by Guenter, however for
+> future reference:  when you submit someone else's patch, you should
+> include a From line as the first line of the email body containing their
+> email address and you should include a Signed-off-by line from yourself.
 > 
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> 
+> Hey Stephen,
+> Thanks for the heads up on submitting other people's patches. It would
+> be great if you can push this up into Linus's tree
+> for the next developer release.
 
+Ben already mentioned that he would pick it up.
 
--- 
-Nicolas Ferre
+Guenter
