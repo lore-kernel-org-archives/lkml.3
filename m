@@ -1,46 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110AbaGHWbN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 18:31:13 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:59872 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753786AbaGHWbM (ORCPT
+	id S1755272AbaGHWbQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 18:31:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37001 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753786AbaGHWbO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 18:31:12 -0400
-Message-ID: <53BC7130.1010105@gmail.com>
-Date: Tue, 08 Jul 2014 17:31:12 -0500
-From: Stuart Hayes <stuart.w.hayes@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
-CC: linux-kernel@vger.kernel.org, bpetkov@suse.com, matt.fleming@intel.com
-Subject: [PATCH] x86: Allow kernel_map_pages_in_pgd() to work when NX is disabled
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 8 Jul 2014 18:31:14 -0400
+Date: Tue, 8 Jul 2014 15:31:12 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: gregkh@linuxfoundation.org, keescook@chromium.org, michael@ellerman.id.au,
+        benh@kernel.crashing.org, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 linux-next] tools: selftests - create a separate
+ hotplug target for full range test
+Message-Id: <20140708153112.494e5f769f9ae9184fad66cd@linux-foundation.org>
+In-Reply-To: <1404316298-8870-1-git-send-email-shuah.kh@samsung.com>
+References: <1404316298-8870-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function kernel_map_pages_in_pgd() will not map pages if NX is
-disabled, which causes a lot of problems booting in EFI mode
-(efi_map_region() and other functions depend on this).  This patch
-just makes sure that the NX flag doesn't get set in the page tables
-if NX is disabled, rather than not mapping the pages at all.
+On Wed,  2 Jul 2014 09:51:38 -0600 Shuah Khan <shuah.kh@samsung.com> wrote:
 
-Signed-off-by: Stuart Hayes <stuart.w.hayes@gmail.com>
----
---- linux-3.16-rc3/arch/x86/mm/pageattr.c.orig	2014-07-02 12:04:49.244288159 -0400
-+++ linux-3.16-rc3/arch/x86/mm/pageattr.c	2014-07-02 12:05:55.808290437 -0400
-@@ -1862,10 +1862,7 @@ int kernel_map_pages_in_pgd(pgd_t *pgd,
- 		.flags = 0,
- 	};
- 
--	if (!(__supported_pte_mask & _PAGE_NX))
--		goto out;
--
--	if (!(page_flags & _PAGE_NX))
-+	if ((!(__supported_pte_mask & _PAGE_NX)) || !(page_flags & _PAGE_NX))
- 		cpa.mask_clr = __pgprot(_PAGE_NX);
- 
- 	cpa.mask_set = __pgprot(_PAGE_PRESENT | page_flags);
+> On some systems, hot-plug tests could hang forever waiting for cpu and
+> memory to be ready to be offlined. A special hot-plug target is created
+> to run full range of hot-plug tests. In default mode, hot-plug tests run
+> in safe mode with a limited scope. In limited mode, cpu-hotplug test is
+> run on a single cpu as opposed to all hotplug capable cpus, and memory
+> hotplug test is run on 2% of hotplug capable memory instead of 10%. In
+> addition to the above change, cpu-hotplug is chnged to change processor
+> affinity to cpu 0 so it doesn't impact itself while the test runs.
+> 
+> ...
+>
+> --- a/tools/testing/selftests/README.txt
+> +++ b/tools/testing/selftests/README.txt
+> @@ -4,8 +4,15 @@ The kernel contains a set of "self tests" under the tools/testing/selftests/
+>  directory. These are intended to be small unit tests to exercise individual
+>  code paths in the kernel.
+>  
+> -Running the selftests
+> -=====================
+> +On some systems, hot-plug tests could hang forever waiting for cpu and
+> +memory to be ready to be offlined. A special hot-plug target is created
+> +to run full range of hot-plug tests. In default mode, hot-plug tests run
+> +in safe mode with a limited scope. In limited mode, cpu-hotplug test is
+> +run on a single cpu as opposed to all hotplug capable cpus, and memory
+> +hotplug test is run on 2% of hotplug capable memory instead of 10%.
+> +
+> +Running the selftests (hotplug tests are run in limited mode)
+> +=============================================================
+>  
+>  To build the tests:
+>  
+> @@ -18,14 +25,26 @@ To run the tests:
+>  
+>  - note that some tests will require root privileges.
+>  
+> -
+> -To run only tests targetted for a single subsystem:
+> +To run only tests targeted for a single subsystem: (including
+> +hotplug targets in limited mode)
+>  
+>    $  make -C tools/testing/selftests TARGETS=cpu-hotplug run_tests
+>  
+>  See the top-level tools/testing/selftests/Makefile for the list of all possible
+>  targets.
+>  
+> +Running the full range hotplug selftests
+> +========================================
+> +
+> +To build the tests:
+> +
+> +  $ make -C tools/testing/selftests hotplug
+
+Well.  `make -C tools/testing/selftests' will build the hotplug tests,
+won't it?  We may as well *compile* everything by default..
+
+> 
+> ...
+>
 
