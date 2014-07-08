@@ -1,88 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114AbaGHO4G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 10:56:06 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:52957 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751709AbaGHO4D (ORCPT
+	id S1754152AbaGHO4p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 10:56:45 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:20066 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752539AbaGHO4n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 10:56:03 -0400
-Date: Tue, 8 Jul 2014 16:52:49 +0200
-From: Mark Brown <broonie@kernel.org>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Fabio Estevam <festevam@gmail.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Takashi Iwai <tiwai@suse.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Himangi Saraogi <himangi774@gmail.com>
-Message-ID: <20140708145249.GX30458@sirena.org.uk>
-References: <20140706070800.GA2927@himangi-Dell>
- <20140707144832.GL30458@sirena.org.uk>
- <alpine.DEB.2.10.1407071655171.4757@hadrien>
- <CAOMZO5AiFCnfTzo4TyB5e5c+xiHQiHUbhRVY7z=AbjOWZDX3NA@mail.gmail.com>
- <alpine.DEB.2.10.1407071721270.4757@hadrien>
- <20140708080232.GQ30458@sirena.org.uk>
- <alpine.DEB.2.10.1407081012400.2347@hadrien>
+	Tue, 8 Jul 2014 10:56:43 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+2E/2vZo7rbbIKmvVwn2CqRT/bKsg+1Ik=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 6D2E45A5664
+Date: Tue, 8 Jul 2014 10:56:39 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Jon Loeliger <loeliger@gmail.com>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: Questions About a Semi-Soft irqchip Device
+Message-ID: <20140708145639.GD13433@titan.lakedaemon.net>
+References: <CAJgR-Bi2HX+aYVabaFLyu9QAnAS4RmQ7DvBtDHOawkfi08zycA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4HoONH8zr3Mj5MZN"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1407081012400.2347@hadrien>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 82.127.83.212
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCH] ASoC: sgtl5000: Use devm_ functions
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <CAJgR-Bi2HX+aYVabaFLyu9QAnAS4RmQ7DvBtDHOawkfi08zycA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jon,
 
---4HoONH8zr3Mj5MZN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Tue, Jul 08, 2014 at 09:02:14AM -0500, Jon Loeliger wrote:
+> My IP block provides software-assignable interrupts.  That
+> is, I have a large pool of interrupt sources, and a large pool
+> of interrupt bits in the controller, but they are not physically
+> tied together. Instead they are assigned by some driver as it
+> initializes and allocates resources.  This, I think, means that
+> I can not describe the interrupt  bindings in the DTS file.
 
-On Tue, Jul 08, 2014 at 10:15:20AM +0200, Julia Lawall wrote:
-> On Tue, 8 Jul 2014, Mark Brown wrote:
+Please take a look at the crossbar driver.  It's had quite a bit of
+cleanup this cycle, so you may way to look at
 
-> > It should be fairly clear given what they do I'd have thought - the
-> > devm_ functions tie the deallocation of a resource to the unbinding of
-> > a driver from a device so they can only be used to replace things that
-> > get cleaned up in a device model unbind path.  There's not usually a
-> > great deal of indirection going on in those.
+  git://git.infradead.org/users/jcooper/linux.git irqchip/crossbar
 
-> It is completely clear what they do.  What is not clear is what device
-> libraries are set up to call the freeing functions at what point.  For
-> example, I know that that platform drivers are set up for this, but once I
-> tried to find the lines of code that would justify that, but I could not.
-> Perhaps I was not patient enough or missed something.
+It sounds very similar.
 
-All devices do this - it's done as part of the driver model core code so
-there is no need for individual buses to do anything.
+thx,
 
---4HoONH8zr3Mj5MZN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTvAW+AAoJELSic+t+oim9l4kP+gMyAI7aRB54VgUJHgGmKoiW
-LDPoVsZtHJwF/iMP8zI7ORoDOVu/wWazgVojBYqaRxbzTpL9sbUaA5ILFLuimBF4
-xm3FOQMBLmeujw28naIUNubqQN69USZKyXxMPKxvX8+1Ki4+S8HjhVZ7rsmdzJiD
-8YSuQoS20aq/9TOYFcTZncK5IbG3y2QgBYRx9Hwh1pFilrVIGWjejw/hBQgt2zb/
-W28gSpEjNkgz8rsHQNJEU/p0wRVyBjI+sFPmmkobz136I+o9ULbUbwhb2IXc8NVX
-RGpSeWYwPAtzWmhFh23uqr80MYK23UAYNiGmkh1npP0Hmaajaz0J2QCYXJtFp4tS
-U/RiynIeiayz4FqDeiLL0lF+7usAqlNYTBV2XlI7npgbtHYrYfx9nsmC0Ej6seKm
-HVn8Old8faRi7k/cVB7Rjx4q8t/oNalQgn19u1/6sPoM7qkBBpZWFJAjWigyXITU
-4tdVX7A2v3Hp0UgHeqGy8zThWcsmVfUl1GyXTh2pVbe52QZG8Tu6b4jk1wHW+d4i
-7aAfDUN1wjK+xgWVjlNrtlwXJiMHAGFsyIeOeOYD2uZ9x5UGPFak9+45SuUF3CGp
-QyW2sW4hXxLJ4E76YHZL9kCA9zn20M7KiYO5BmxzXozWMTTL8Ig150bF1mRNPxj4
-DgIHggUWlq9ZQo6ZrcQj
-=CReu
------END PGP SIGNATURE-----
-
---4HoONH8zr3Mj5MZN--
+Jason.
