@@ -1,61 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932499AbaGHTPs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:15:48 -0400
-Received: from vserver.eikelenboom.it ([84.200.39.61]:45776 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932357AbaGHTPp (ORCPT
+	id S932468AbaGHTP3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:15:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54357 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755764AbaGHTIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:15:45 -0400
-Date: Tue, 8 Jul 2014 21:15:40 +0200
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <819511949.20140708211540@eikelenboom.it>
-To: konrad@kernel.org
-CC: xen-devel@lists.xenproject.org, david.vrabel@citrix.com,
-        <boris.ostrovsky@oracle.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] Xen PCIbackend support for slot and bus reset (v3).
-In-Reply-To: <1404845909-13563-1-git-send-email-konrad@kernel.org>
-References: <1404845909-13563-1-git-send-email-konrad@kernel.org>
+	Tue, 8 Jul 2014 15:08:42 -0400
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Johan Hovold" <jhovold@gmail.com>
+Date: Tue, 08 Jul 2014 20:01:50 +0100
+Message-ID: <lsq.1404846110.910982806@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 033/125] USB: usb_wwan: fix potential blocked I/O
+ after resume
+In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.2.61-rc1 review patch.  If anyone has any objections, please let me know.
 
-Tuesday, July 8, 2014, 8:58:22 PM, you wrote:
+------------------
 
-> These patches had been posted in the past and had been reworked
-> to address reviews. The original concerns with the patches was
-> the complex logic of doing an workqueue (or thread) that would
-> do the FLR/bus/slot reset outside the PCI lock. That idea proved
-> buggy. The other idea of usurping the 'reset' SysFS didn't work
-> either - as the the generic code will complain loudly about this.
+From: Johan Hovold <jhovold@gmail.com>
 
-> The best so far mechanism is to use the 'xl' toolstack usage
-> of 'do_flr' and make that work in Xen pciback.
+commit fb7ad4f93d9f0f7d49beda32f5e7becb94b29a4d upstream.
 
->  Documentation/ABI/testing/sysfs-driver-pciback |   95 ++++++++++++++
->  drivers/xen/xen-pciback/pci_stub.c             |  163 +++++++++++++++++++-----
->  drivers/xen/xen-pciback/xenbus.c               |    2 +-
->  3 files changed, 224 insertions(+), 36 deletions(-)
+Keep trying to submit urbs rather than bail out on first read-urb
+submission error, which would also prevent I/O for any further ports
+from being resumed.
 
-> Konrad Rzeszutek Wilk (7):
->       xen-pciback: Document the various parameters and attributes in SysFS
->       xen/pciback: Don't deadlock when unbinding.
->       xen/pciback: Move the FLR code to a function.
->       xen/pciback: Implement PCI reset slot or bus with 'do_flr' SysFS attribute
->       xen/pciback: Include the domain id if removing the device whilst still in use
->       xen/pciback: Print out the domain owning the device.
->       xen/pciback: Remove tons of dereferences
+Instead keep an error count, for all types of failed submissions, and
+let USB core know that something went wrong.
 
-Could you push these to your kernel.org git tree ?
+Also make sure to always clear the suspended flag. Currently a failed
+read-urb submission would prevent cached writes as well as any
+subsequent writes from being submitted until next suspend-resume cycle,
+something which may not even necessarily happen.
 
---
-Sander
+Note that USB core currently only logs an error if an interface resume
+failed.
 
+Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
+option driver")
 
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/usb/serial/usb_wwan.c | 25 +++++++++++++++++--------
+ 1 file changed, 17 insertions(+), 8 deletions(-)
+
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -688,12 +688,12 @@ int usb_wwan_suspend(struct usb_serial *
+ }
+ EXPORT_SYMBOL(usb_wwan_suspend);
+ 
+-static void play_delayed(struct usb_serial_port *port)
++static int play_delayed(struct usb_serial_port *port)
+ {
+ 	struct usb_wwan_intf_private *data;
+ 	struct usb_wwan_port_private *portdata;
+ 	struct urb *urb;
+-	int err;
++	int err = 0;
+ 
+ 	portdata = usb_get_serial_port_data(port);
+ 	data = port->serial->private;
+@@ -710,6 +710,8 @@ static void play_delayed(struct usb_seri
+ 			break;
+ 		}
+ 	}
++
++	return err;
+ }
+ 
+ int usb_wwan_resume(struct usb_serial *serial)
+@@ -719,7 +721,8 @@ int usb_wwan_resume(struct usb_serial *s
+ 	struct usb_wwan_intf_private *intfdata = serial->private;
+ 	struct usb_wwan_port_private *portdata;
+ 	struct urb *urb;
+-	int err = 0;
++	int err;
++	int err_count = 0;
+ 
+ 	dbg("%s entered", __func__);
+ 	/* get the interrupt URBs resubmitted unconditionally */
+@@ -734,7 +737,7 @@ int usb_wwan_resume(struct usb_serial *s
+ 		if (err < 0) {
+ 			err("%s: Error %d for interrupt URB of port%d",
+ 			    __func__, err, i);
+-			goto err_out;
++			err_count++;
+ 		}
+ 	}
+ 
+@@ -748,22 +751,27 @@ int usb_wwan_resume(struct usb_serial *s
+ 		if (!portdata->opened)
+ 			continue;
+ 
++		err = play_delayed(port);
++		if (err)
++			err_count++;
++
+ 		for (j = 0; j < N_IN_URB; j++) {
+ 			urb = portdata->in_urbs[j];
+ 			err = usb_submit_urb(urb, GFP_ATOMIC);
+ 			if (err < 0) {
+ 				err("%s: Error %d for bulk URB %d",
+ 				    __func__, err, i);
+-				spin_unlock_irq(&intfdata->susp_lock);
+-				goto err_out;
++				err_count++;
+ 			}
+ 		}
+-		play_delayed(port);
+ 	}
+ 	intfdata->suspended = 0;
+ 	spin_unlock_irq(&intfdata->susp_lock);
+-err_out:
+-	return err;
++
++	if (err_count)
++		return -EIO;
++
++	return 0;
+ }
+ EXPORT_SYMBOL(usb_wwan_resume);
+ #endif
 
