@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624AbaGHMrb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 08:47:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51182 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753322AbaGHMra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 08:47:30 -0400
-From: Michal Marek <mmarek@suse.cz>
-To: Torsten Kaiser <just.for.lkml@googlemail.com>,
-        Ronald <ronald645@gmail.com>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] firmware: Create directories for external firmware
-Date: Tue,  8 Jul 2014 14:47:19 +0200
-Message-Id: <1404823639-6496-1-git-send-email-mmarek@suse.cz>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <CAPVoSvSmzRWSJeR9dyBO0qS6-9SWA_d-CjGuQeULGS_MRUY77w@mail.gmail.com>
-References: <CAPVoSvSmzRWSJeR9dyBO0qS6-9SWA_d-CjGuQeULGS_MRUY77w@mail.gmail.com>
+	id S1754678AbaGHMsv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 08:48:51 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:59965 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754455AbaGHMst (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 08:48:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140708120702.GB30459@infradead.org>
+References: <1404124096-21445-1-git-send-email-drysdale@google.com>
+ <1404124096-21445-2-git-send-email-drysdale@google.com> <CALCETrU=HLmw9n-DxPkFV1xP5wtzQ7-YF3-uao6YiGZODA9kdw@mail.gmail.com>
+ <20140630154928.GB10375@google.com> <CALCETrWJ-rqDo8OvSZWPUt1806gObNtwVHvC4M6kfQgvd3Eg9w@mail.gmail.com>
+ <20140708120702.GB30459@infradead.org>
+From: Meredydd Luff <meredydd@senatehouse.org>
+Date: Tue, 8 Jul 2014 13:48:27 +0100
+Message-ID: <CAD=T17FQEZV+iy91wQAvAdd0PW2tsfjpU7atp-xeatm5sEGz5Q@mail.gmail.com>
+Subject: Re: [PATCH 01/11] fs: add O_BENEATH_ONLY flag to openat(2)
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        David Drysdale <drysdale@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-man@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 5180d5f4 ("firmware: Simplify directory creation") broke
-including firmware specified in CONFIG_EXTRA_FIRMWARE:
+On 8 July 2014 13:07, Christoph Hellwig <hch@infradead.org> wrote:
+> There's two different AT_* namespaces.  The flags that most *at syscalls
+> has, and the the one for the dfd argument, which currently only contains
+> AT_FDCWD, although a new constant has recently been proposed to it.
+>
+> Having an AT_BENEATH magic value for the dfd argument certainly feels
+> elegant to me
 
-  MK_FW   firmware/amd-ucode/microcode_amd.bin.gen.S
-/bin/sh: firmware/amd-ucode/microcode_amd.bin.gen.S: No such file or directory
-...
-firmware/Makefile:185: recipe for target
-'firmware/amd-ucode/microcode_amd.bin.gen.S' failed
+How would that work? The directory beneath which openat is looking is
+conveyed in the dfd argument itself. If I'm understanding this right,
+you'd have to pass a different value for "open relative to fd#5" and
+"open relative to fd#5, but beneath it only", which doesn't sound
+hugely elegant to me.
 
-It works with O= builds, because the directory is created by
-Makefile.build. Create the directory in firmware/Makefile in non-O
-builds.
-
-Reported-by: Ronald <ronald645@gmail.com>
-Reported-by: Torsten Kaiser <just.for.lkml@googlemail.com>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
----
-
-Can you try this patch?
-
-Ronald, can you tell me your full name for the Reported-by: line?
-
-Thanks.
----
-
- firmware/Makefile | 6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/firmware/Makefile b/firmware/Makefile
-index 5747417..0862d34 100644
---- a/firmware/Makefile
-+++ b/firmware/Makefile
-@@ -219,6 +219,12 @@ $(obj)/%.fw: $(obj)/%.H16 $(ihex2fw_dep)
- obj-y				 += $(patsubst %,%.gen.o, $(fw-external-y))
- obj-$(CONFIG_FIRMWARE_IN_KERNEL) += $(patsubst %,%.gen.o, $(fw-shipped-y))
- 
-+ifeq ($(KBUILD_SRC),)
-+# Makefile.build only creates subdirectories for O= builds, but external
-+# firmware might live outside the kernel source tree
-+_dummy := $(foreach d,$(addprefix $(obj)/,$(dir $(fw-external-y))), $(shell [ -d $(d) ] || mkdir -p $(d)))
-+endif
-+
- # Remove .S files and binaries created from ihex
- # (during 'make clean' .config isn't included so they're all in $(fw-shipped-))
- targets := $(fw-shipped-) $(patsubst $(obj)/%,%, \
--- 
-1.8.4.5
-
+Meredydd
