@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102AbaGHKRJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 06:17:09 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:50579 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041AbaGHKRH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 06:17:07 -0400
-Date: Tue, 8 Jul 2014 13:16:53 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: James A Shackleford <shack@linux.com>
-Cc: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net,
-        florian.c.schilhabel@googlemail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 8/8] staging: rtl8712: remove inapplicable comment
-Message-ID: <20140708101653.GJ25880@mwanda>
-References: <1403664761-15728-1-git-send-email-shack@linux.com>
- <1403664761-15728-2-git-send-email-shack@linux.com>
- <1403664761-15728-3-git-send-email-shack@linux.com>
- <1403664761-15728-4-git-send-email-shack@linux.com>
- <1403664761-15728-5-git-send-email-shack@linux.com>
- <1403664761-15728-6-git-send-email-shack@linux.com>
- <1403664761-15728-7-git-send-email-shack@linux.com>
- <1403664761-15728-8-git-send-email-shack@linux.com>
+	id S1754133AbaGHKSv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 06:18:51 -0400
+Received: from mga01.intel.com ([192.55.52.88]:43973 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753139AbaGHKSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 06:18:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,625,1400050800"; 
+   d="scan'208";a="558763566"
+Date: Tue, 8 Jul 2014 18:18:41 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jet Chen <jet.chen@intel.com>,
+        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
+        LKP <lkp@01.org>, ZhaoLei <zhaolei@cn.fujitsu.com>
+Subject: Re: [timer] BUG: soft lockup - CPU#1 stuck for 23s! [swapper/0:1]
+Message-ID: <20140708101841.GA26073@localhost>
+References: <20140708034521.GD17142@localhost>
+ <alpine.DEB.2.10.1407081208060.4357@nanos>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403664761-15728-8-git-send-email-shack@linux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <alpine.DEB.2.10.1407081208060.4357@nanos>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 10:52:41PM -0400, James A Shackleford wrote:
-> Signed-off-by: James A Shackleford <shack@linux.com>
-> ---
->  drivers/staging/rtl8712/osdep_service.h |    5 -----
->  1 file changed, 5 deletions(-)
+On Tue, Jul 08, 2014 at 12:08:53PM +0200, Thomas Gleixner wrote:
+> On Tue, 8 Jul 2014, Fengguang Wu wrote:
 > 
-> diff --git a/drivers/staging/rtl8712/osdep_service.h b/drivers/staging/rtl8712/osdep_service.h
-> index 77b1443..3dfc473 100644
-> --- a/drivers/staging/rtl8712/osdep_service.h
-> +++ b/drivers/staging/rtl8712/osdep_service.h
-> @@ -95,11 +95,6 @@ static inline void _set_workitem(_workitem *pwork)
->  	#define BIT(x)	(1 << (x))
->  #endif
->  
-> -/*
-> -For the following list_xxx operations,
-> -caller must guarantee the atomic context.
-> -Otherwise, there will be racing condition.
-> -*/
->  static inline u32 _down_sema(struct semaphore *sema)
->  {
->  	if (down_interruptible(sema))
+> > Greetings,
+> > 
+> > 0day kernel testing robot got the below dmesg and the first bad commit is
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git master
+> > commit 1ead65812486cda65093683a99b8907a7242fa93
+> > Merge: b6d739e b97f029
+> > Author:     Linus Torvalds <torvalds@linux-foundation.org>
+> > AuthorDate: Tue Apr 1 11:00:07 2014 -0700
+> > Commit:     Linus Torvalds <torvalds@linux-foundation.org>
+> > CommitDate: Tue Apr 1 11:00:07 2014 -0700
+> 
+> That's not really helpful. It's a merge commit, so we'd need to drill
+> down the bisect into what got merged.
 
-This function sucks obviously just like the wrappers you deleted earlier.
+Yes, it is. We'll try to refine the bisect.
 
-Only one of the callers checks the return value.
-
-TODO-list: 2014-07-08: rtl8712: delete _down_sema().
-
-regards,
-dan carpenter
-
+Thanks,
+Fengguang
