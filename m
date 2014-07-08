@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932102AbaGHKX5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 06:23:57 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:51775 "EHLO comal.ext.ti.com"
+	id S932075AbaGHKXr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 06:23:47 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52517 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932077AbaGHKXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 06:23:55 -0400
+	id S1754299AbaGHKXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 06:23:45 -0400
 From: Keerthy <j-keerthy@ti.com>
 To: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>
 CC: <mark.rutland@arm.com>, <galak@codeaurora.org>, <robh+dt@kernel.org>,
         <linux@arm.linux.org.uk>, <balbi@ti.com>, <tony@atomide.com>,
         <kishon@ti.com>, <broonie@kernel.org>, Keerthy <j-keerthy@ti.com>
-Subject: [PATCH v2 7/7] ARM: configs: omap2plus_defconfig: enable TPS65218 configs
-Date: Tue, 8 Jul 2014 15:46:37 +0530
-Message-ID: <1404814597-4404-8-git-send-email-j-keerthy@ti.com>
+Subject: [PATCH v2 6/7] regulator: tps65218: Add get_voltage ops for dcdc5 and dcdc6
+Date: Tue, 8 Jul 2014 15:46:36 +0530
+Message-ID: <1404814597-4404-7-git-send-email-j-keerthy@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1404814597-4404-1-git-send-email-j-keerthy@ti.com>
 References: <1404814597-4404-1-git-send-email-j-keerthy@ti.com>
@@ -24,34 +24,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable TPS65218 config options.
+Add get_voltage ops for dcdc5 and dcdc6. Both dcdc5 and 6 are fixed regulators
+and hence return min_uV (or max_uV).
 
 Signed-off-by: Keerthy <j-keerthy@ti.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
 ---
- arch/arm/configs/omap2plus_defconfig |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/regulator/tps65218-regulator.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/arch/arm/configs/omap2plus_defconfig b/arch/arm/configs/omap2plus_defconfig
-index 536a137..f650f00 100644
---- a/arch/arm/configs/omap2plus_defconfig
-+++ b/arch/arm/configs/omap2plus_defconfig
-@@ -180,6 +180,7 @@ CONFIG_TWL4030_WATCHDOG=y
- CONFIG_MFD_SYSCON=y
- CONFIG_MFD_PALMAS=y
- CONFIG_MFD_TPS65217=y
-+CONFIG_MFD_TPS65218=y
- CONFIG_MFD_TPS65910=y
- CONFIG_TWL6040_CORE=y
- CONFIG_REGULATOR_FIXED_VOLTAGE=y
-@@ -188,6 +189,7 @@ CONFIG_REGULATOR_TI_ABB=y
- CONFIG_REGULATOR_TPS65023=y
- CONFIG_REGULATOR_TPS6507X=y
- CONFIG_REGULATOR_TPS65217=y
-+CONFIG_REGULATOR_TPS65218=y
- CONFIG_REGULATOR_TPS65910=y
- CONFIG_REGULATOR_TWL4030=y
- CONFIG_REGULATOR_PBIAS=y
+diff --git a/drivers/regulator/tps65218-regulator.c b/drivers/regulator/tps65218-regulator.c
+index 9effe48..700c652 100644
+--- a/drivers/regulator/tps65218-regulator.c
++++ b/drivers/regulator/tps65218-regulator.c
+@@ -151,6 +151,14 @@ static int tps65218_pmic_disable(struct regulator_dev *dev)
+ 				   dev->desc->enable_mask, TPS65218_PROTECT_L1);
+ }
+ 
++static int tps65218_pmic_dcdc56_get_voltage(struct regulator_dev *dev)
++{
++	struct tps65218 *tps = rdev_get_drvdata(dev);
++	unsigned int rid = rdev_get_id(dev);
++
++	return tps->info[rid]->min_uV;
++}
++
+ /* Operations permitted on DCDC1, DCDC2 */
+ static struct regulator_ops tps65218_dcdc12_ops = {
+ 	.is_enabled		= regulator_is_enabled_regmap,
+@@ -179,6 +187,7 @@ static struct regulator_ops tps65218_dcdc56_pmic_ops = {
+ 	.is_enabled		= regulator_is_enabled_regmap,
+ 	.enable			= tps65218_pmic_enable,
+ 	.disable		= tps65218_pmic_disable,
++	.get_voltage		= tps65218_pmic_dcdc56_get_voltage,
+ };
+ 
+ static const struct regulator_desc regulators[] = {
 -- 
 1.7.9.5
 
