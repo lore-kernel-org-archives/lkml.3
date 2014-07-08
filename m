@@ -1,96 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887AbaGHWsz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 18:48:55 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:48654 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753731AbaGHWsw convert rfc822-to-8bit (ORCPT
+	id S1753991AbaGHWtK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 18:49:10 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:33949 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753748AbaGHWsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 18:48:52 -0400
-Date: Tue, 8 Jul 2014 23:48:47 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci <linux-pci@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 6/9] pci: Introduce a domain number for
- pci_host_bridge.
-Message-ID: <20140708224847.GC4980@e106497-lin.cambridge.arm.com>
-References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
- <1404240214-9804-7-git-send-email-Liviu.Dudau@arm.com>
- <20140708005954.GC22939@google.com>
- <20140708104655.GC6501@e106497-lin.cambridge.arm.com>
- <CAErSpo75ovmGoeSHKJN0nckGDy-0gpn8kLPfHQ79CtcXxhPydw@mail.gmail.com>
+	Tue, 8 Jul 2014 18:48:53 -0400
+Date: Tue, 8 Jul 2014 15:48:49 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Josh Triplett <josh@joshtriplett.org>
+Subject: Re: [PATCH 0/9] rcu: trivial sparse and return type fixes for rcu
+Message-ID: <20140708224849.GH4603@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1404858378-23806-1-git-send-email-bobby.prani@gmail.com>
+ <CAJhHMCDUy_=LZWkhA5OU3WsfpyFwxwDJGT6rnqY3E6t=ZXQk3g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo75ovmGoeSHKJN0nckGDy-0gpn8kLPfHQ79CtcXxhPydw@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 08 Jul 2014 22:48:48.0569 (UTC) FILETIME=[C80CDA90:01CF9AFE]
-X-MC-Unique: 114070823485000201
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CAJhHMCDUy_=LZWkhA5OU3WsfpyFwxwDJGT6rnqY3E6t=ZXQk3g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14070822-8236-0000-0000-000003AEAEF8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 08, 2014 at 07:41:50PM +0100, Bjorn Helgaas wrote:
-> On Tue, Jul 8, 2014 at 4:46 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> > On Tue, Jul 08, 2014 at 01:59:54AM +0100, Bjorn Helgaas wrote:
+On Tue, Jul 08, 2014 at 06:32:03PM -0400, Pranith Kumar wrote:
+> This patch series contains trivial fixes for sparse warnings and using bool
+> types where appropriate instead of 0/1.
 > 
-> >> I wonder if it would help to make a weak pci_domain_nr() function that
-> >> returns "bridge->domain_nr".  Then each arch could individually drop its
-> >> pci_domain_nr() definition as it was converted, e.g., something like this:
-> >>
-> >>   - Convert every arch pci_domain_nr() from a #define to a non-inline
-> >>     function
-> >>   - Add bridge.domain_nr, initialized from pci_domain_nr()
-> >>   - Add a weak generic pci_domain_nr() that returns bridge.domain_nr
-> >>   - Add a way to create a host bridge in a specified domain, so we can
-> >>     initialize bridge.domain_nr without using pci_domain_nr()
-> >>   - Convert each arch to use the new creation mechanism and drop its
-> >>     pci_domain_nr() implementation
-> >
-> > I will try to propose a patch implementing this.
+> I can probably merge the return type changes into one commit if you think that
+> is appropriate.
+
+Queued for 3.18, with the exception of 3/9, which I fixed up and queued
+the earlier version.  I guess I should have waited a few minutes longer.  ;-)
+
+							Thanx, Paul
+
+> Pranith Kumar (9):
+>   rcu: fix sparse warning about rcu_batches_completed_preempt(
+> ) being
+>     non-static
+>   rcu: use bool type for return value in rcu_is_watching()
+>   rcu: Fix a sparse warning about boost_mutex being non-static
+>   rcu: return bool type in rcu_lockdep_current_cpu_online()
+>   rcu: return bool type for rcu_try_advance_all_cbs()
+>   rcu: use true/false for return in __call_rcu_nocb()
+>   rcu: use true/false for return in rcu_nocb_adopt_orphan_cbs()
+>   rcu: use false for return in __call_rcu_nocb()
+>   rcu: use bool return type in rcu_nocb_adopt_orphan_cbs()
 > 
-> I think this is more of an extra credit, cleanup sort of thing.  I
-> don't think it advances your primary goal of (I think) getting arm64
-> PCI support in.  So my advice is to not worry about unifying domain
-> handling until later.
-
-Getting arm64 supported *is* my main goal. But like you have stated in your
-review of v7, you wanted to see another architecture converted as a guarantee
-of "genericity" (for lack of a better word) for my patches. The one architecture
-I've set my eyes on is microblaze, and that one uses pci_scan_root_bus()
-rather than pci_create_root_bus() so I don't have any opportunity to pass the
-domain number or any additional info (like the sysdata pointer that we were
-talking about) to the pci_host_bridge structure unless I do this cleanup.
-
-Best regards,
-Liviu
-
-
+>  include/linux/rcupdate.h |  2 +-
+>  kernel/rcu/rcutorture.c  |  2 +-
+>  kernel/rcu/tree.c        |  2 +-
+>  kernel/rcu/tree_plugin.h | 16 ++++++++--------
+>  4 files changed, 11 insertions(+), 11 deletions(-)
 > 
-> Bjorn
-> 
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
 
