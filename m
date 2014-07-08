@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754234AbaGHUE4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 16:04:56 -0400
-Received: from smtprelay.synopsys.com ([198.182.44.111]:47243 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754138AbaGHUEy convert rfc822-to-8bit (ORCPT
+	id S932113AbaGHUFp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 16:05:45 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:52150 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754268AbaGHUFn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 16:04:54 -0400
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        "Dinh Nguyen (dinguyen@altera.com)" <dinguyen@altera.com>
-CC: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        "Robert Baldyga" <r.baldyga@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] usb: dwc2: remove incomplete DMA support from gadget
- code
-Thread-Topic: [PATCH] usb: dwc2: remove incomplete DMA support from gadget
- code
-Thread-Index: AQHPmrycS0FNgw5mhES6/ILZKpsVs5uWl/pw
-Date: Tue, 8 Jul 2014 20:04:47 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844BCBFA@US01WEMBX2.internal.synopsys.com>
-References: <2181126.aCTfeXMESu@amdc1032>
-In-Reply-To: <2181126.aCTfeXMESu@amdc1032>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.241]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 8 Jul 2014 16:05:43 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53BC4F15.9030608@roeck-us.net>
+Date: Tue, 08 Jul 2014 13:05:41 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
+To: Jean Delvare <jdelvare@suse.de>
+CC: Wolfram Sang <wsa@the-dreams.de>, Randy Dunlap <rdunlap@infradead.org>,
+        linux-i2c@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] i2c: stub: Add support for SMBus block commands
+References: <1404742983-27303-1-git-send-email-linux@roeck-us.net> <20140708215453.0677d3ed@endymion.delvare>
+In-Reply-To: <20140708215453.0677d3ed@endymion.delvare>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Bartlomiej Zolnierkiewicz [mailto:b.zolnierkie@samsung.com]
-> Sent: Tuesday, July 08, 2014 7:55 AM
-> 
-> The commit 5b7d70c6dbf2 ("USB: Gadget driver for Samsung HS/OtG
-> block") which added this driver also introduced the inactive DMA
-> support (due to hardware limitations of DMA buffers alignment).
-> It has been a dead code for over 5 years and should be removed.
-> 
-> We don't keep the unused/untested features in the kernel.  Such
-> code has a real maintainance cost (all other changes have to take
-> dead code into account), i.e. https://lkml.org/lkml/2014/5/6/461.
-> Also all the removed dead code is still accessible in the kernel
-> git repository and can be easily brought back if/when needed.
-> 
-> There should be no functional changes caused by this patch.
-> 
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Hi Jean,
 
-Hmm. I'd rather not apply this for the time being. Dinh Nguyen is
-working on a patch to combine the two dwc2 drivers into a dual-role
-driver. I suspect his platform will be able to use DMA. Also, once that
-is done, I plan to enable device-mode support for the Synopsys
-development platform, which also supports DMA.
+On 07/08/2014 12:54 PM, Jean Delvare wrote:
+> Hi Guenter,
+>
+> On Mon,  7 Jul 2014 07:23:03 -0700, Guenter Roeck wrote:
+>> SMBus block commands are different to I2C block commands since
+>> the returned data is not normally accessible with byte or word
+>> commands on other command offsets. Add linked list of 'block'
+>> commands to support those commands.
+>>
+>> Access mechanism is quite simple: Block commands must be written
+>> before they can be read. The first write selects the block length.
+>> Subsequent writes can be partial. Block read commands always return
+>> the number of bytes selected with the first write.
+>>
+>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+>> ---
+>> v2: Make new functionality only available on request via functionality
+>>      module parameter
+>>      Add more details about SMBus block mode support to documentation
+>>      Use correct sizeof() variable in devm_kzalloc
+>>      Use stub_find_block() only in SMBus block command itself.
+>>      Store first word of block data in chip->words[].
+>>      When writing block data and the written data is longer than
+>>      the first write, bail out with debug message indicating the reason
+>>      for the error.
+>
+> Looks good, thanks for the quick update.
+>
+> Reviewed-by: Jean Delvare <jdelvare@suse.de>
+>
+> Just one thing I have been thinking about while reviewing the updated
+> code... You decided to make the first SMBus block write select the
+> maximum block length, and you always use that for SMBus block reads.
+> However you accept partial writes. The fact that the order in which
+> writes are performed has an effect on which writes are accepted is
+> somewhat unexpected.
+>
+> Wouldn't it make more sense to accept all SMBus block writes,
+> regardless of the size (as long as it is within the limits of the SMBus
+> standard, of course)? Then the only thing left to decide is whether
+> SMBus block reads use the maximum size or the size of the most recent
+> SMBus block write.
+>
+> I suspect this would mimic the behavior of real chips better. What do
+> you think?
+>
 
-If none of this happens over the next couple of months, we can reconsider
-applying this patch. After all, the code has been there for 5 years, a
-couple more months won't hurt. Sound OK?
+Not really sure what the expected behavior is. My original code
+accepted all writes and returned the most recent write, including
+the most recent write length. I thought this was untypical, and that
+it would be more typical for the chip to return a fixed length.
+But ultimately I don't really know, and I am fine either way.
 
--- 
-Paul
+Guenter
 
