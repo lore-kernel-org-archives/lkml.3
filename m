@@ -1,72 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754473AbaGHB1d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:27:33 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:56743 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753579AbaGHB0g (ORCPT
+	id S1753903AbaGHBak (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:30:40 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48696 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752288AbaGHBai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 21:26:36 -0400
+	Mon, 7 Jul 2014 21:30:38 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Tue, 8 Jul 2014 10:30:38 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v10 7/7] mm: Don't split THP page when syscall is called
+Message-ID: <20140708013038.GD6076@bbox>
+References: <1404694438-10272-1-git-send-email-minchan@kernel.org>
+ <1404694438-10272-8-git-send-email-minchan@kernel.org>
+ <20140707111303.GC23150@node.dhcp.inet.fi>
 MIME-Version: 1.0
-In-Reply-To: <1403101406-15439-5-git-send-email-mperttunen@nvidia.com>
-References: <1403101406-15439-1-git-send-email-mperttunen@nvidia.com>
-	<1403101406-15439-5-git-send-email-mperttunen@nvidia.com>
-Date: Mon, 7 Jul 2014 18:26:33 -0700
-X-Google-Sender-Auth: s4Dm6r01WOFx1iR4yuIlCBitAiQ
-Message-ID: <CAL1qeaHo_HEoXoCQjQuqux_BNPtz4BtOnrYTa4=vcNQCYxiDSg@mail.gmail.com>
-Subject: Re: [PATCH v2 4/7] clk: tegra: Enable hardware control of SATA PLL
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Mikko Perttunen <mperttunen@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        linux-ide@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140707111303.GC23150@node.dhcp.inet.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 7:23 AM, Mikko Perttunen <mperttunen@nvidia.com> wrote:
-> This makes the SATA PLL be controlled by hardware instead of software.
-> This is required for working SATA support.
->
-> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
-> Acked-by: Stephen Warren <swarren@nvidia.com>
+On Mon, Jul 07, 2014 at 02:13:03PM +0300, Kirill A. Shutemov wrote:
+> On Mon, Jul 07, 2014 at 09:53:58AM +0900, Minchan Kim wrote:
+> > We don't need to split THP page when MADV_FREE syscall is
+> > called. It could be done when VM decide really frees it so
+> > we could reduce the number of THP split.
+> > 
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > ---
+> >  include/linux/huge_mm.h |  3 +++
+> >  mm/huge_memory.c        | 25 +++++++++++++++++++++++++
+> >  mm/madvise.c            | 19 +++++++++++++++++--
+> >  mm/rmap.c               |  4 ++++
+> >  mm/vmscan.c             | 24 ++++++++++++++++--------
+> >  5 files changed, 65 insertions(+), 10 deletions(-)
+> > 
+> > diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+> > index 63579cb8d3dc..f0d37238cf8f 100644
+> > --- a/include/linux/huge_mm.h
+> > +++ b/include/linux/huge_mm.h
+> > @@ -19,6 +19,9 @@ extern struct page *follow_trans_huge_pmd(struct vm_area_struct *vma,
+> >  					  unsigned long addr,
+> >  					  pmd_t *pmd,
+> >  					  unsigned int flags);
+> > +extern int madvise_free_pmd(struct mmu_gather *tlb,
+> > +			struct vm_area_struct *vma,
+> > +			pmd_t *pmd, unsigned long addr);
+> >  extern int zap_huge_pmd(struct mmu_gather *tlb,
+> >  			struct vm_area_struct *vma,
+> >  			pmd_t *pmd, unsigned long addr);
+> > diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> > index 5d562a9fe931..2a70069dcfc0 100644
+> > --- a/mm/huge_memory.c
+> > +++ b/mm/huge_memory.c
+> > @@ -1384,6 +1384,31 @@ out:
+> >  	return 0;
+> >  }
+> >  
+> > +int madvise_free_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
+> > +		 pmd_t *pmd, unsigned long addr)
+> > +{
+> > +	spinlock_t *ptl;
+> > +	int ret = 0;
+> > +
+> > +	if (__pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+> > +		pmd_t orig_pmd;
+> > +		struct mm_struct *mm = vma->vm_mm;
+> > +
+> > +		/* No hugepage in swapcache */
+> > +		VM_BUG_ON(PageSwapCache(pmd_page(orig_pmd)));
+> 
+> VM_BUG_ON_PAGE() ?
 
-I know Peter sent a pull request including this patch already, but I
-don't see it yet in Mike's tree, so perhaps it's possible to address
-my comment below (or else I'll include it in the next spin of my XUSB
-series.
+NP.
 
-> diff --git a/drivers/clk/tegra/clk-pll.c b/drivers/clk/tegra/clk-pll.c
+> 
+> > +
+> > +		orig_pmd = pmdp_get_and_clear(tlb->mm, addr, pmd);
+> > +		orig_pmd = pmd_mkold(orig_pmd);
+> > +		orig_pmd = pmd_mkclean(orig_pmd);
+> > +
+> > +		set_pmd_at(mm, addr, pmd, orig_pmd);
+> > +		tlb_remove_pmd_tlb_entry(tlb, pmd, addr);
+> > +		spin_unlock(ptl);
+> > +		ret = 1;
+> > +	}
+> > +	return ret;
+> > +}
+> > +
+> >  int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
+> >  		 pmd_t *pmd, unsigned long addr)
+> >  {
+> > diff --git a/mm/madvise.c b/mm/madvise.c
+> > index 372a25a8ea82..3c99919ee094 100644
+> > --- a/mm/madvise.c
+> > +++ b/mm/madvise.c
+> > @@ -320,8 +320,23 @@ static inline unsigned long madvise_free_pmd_range(struct mmu_gather *tlb,
+> >  		 * if the range covers.
+> >  		 */
+> >  		next = pmd_addr_end(addr, end);
+> > -		if (pmd_trans_huge(*pmd))
+> > -			split_huge_page_pmd(vma, addr, pmd);
+> > +		if (pmd_trans_huge(*pmd)) {
+> > +			if (next - addr != HPAGE_PMD_SIZE) {
+> > +#ifdef CONFIG_DEBUG_VM
+> > +				if (!rwsem_is_locked(&tlb->mm->mmap_sem)) {
+> > +					pr_err("%s: mmap_sem is unlocked! addr=0x%lx end=0x%lx vma->vm_start=0x%lx vma->vm_end=0x%lx\n",
+> > +						__func__, addr, end,
+> > +						vma->vm_start,
+> > +						vma->vm_end);
+> > +					BUG();
+> > +				}
+> > +#endif
+> > +				split_huge_page_pmd(vma, addr, pmd);
+> > +			} else if (madvise_free_pmd(tlb, vma, pmd, addr))
+> > +				goto next;
+> > +			/* fall through */
+> > +		}
+> > +
+> >  		/*
+> >  		 * Here there can be other concurrent MADV_DONTNEED or
+> >  		 * trans huge page faults running, and if the pmd is
+> > diff --git a/mm/rmap.c b/mm/rmap.c
+> > index ee495d84c8b3..3c415eb8b6f0 100644
+> > --- a/mm/rmap.c
+> > +++ b/mm/rmap.c
+> > @@ -702,6 +702,10 @@ static int page_referenced_one(struct page *page, struct vm_area_struct *vma,
+> >  		/* go ahead even if the pmd is pmd_trans_splitting() */
+> >  		if (pmdp_clear_flush_young_notify(vma, address, pmd))
+> >  			referenced++;
+> > +
+> > +		if (pmd_dirty(*pmd))
+> > +			dirty++;
+> > +
+> >  		spin_unlock(ptl);
+> >  	} else {
+> >  		pte_t *pte;
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index f7a45600846f..4e15babf4414 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -971,15 +971,23 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+> >  		 * Anonymous process memory has backing store?
+> >  		 * Try to allocate it some swap space here.
+> >  		 */
+> > -		if (PageAnon(page) && !PageSwapCache(page) && !freeable) {
+> > -			if (!(sc->gfp_mask & __GFP_IO))
+> > -				goto keep_locked;
+> > -			if (!add_to_swap(page, page_list))
+> > -				goto activate_locked;
+> > -			may_enter_fs = 1;
+> > +		if (PageAnon(page) && !PageSwapCache(page)) {
+> > +			if (!freeable) {
+> > +				if (!(sc->gfp_mask & __GFP_IO))
+> > +					goto keep_locked;
+> > +				if (!add_to_swap(page, page_list))
+> > +					goto activate_locked;
+> > +				may_enter_fs = 1;
+> >  
+> > -			/* Adding to swap updated mapping */
+> > -			mapping = page_mapping(page);
+> > +				/* Adding to swap updated mapping */
+> > +				mapping = page_mapping(page);
+> > +			} else {
+> > +				if (unlikely(PageTransHuge(page))) {
+> > +					if (unlikely(split_huge_page_to_list(
+> > +						page, page_list)))
+> > +						goto keep_locked;
+> 
+> Hm. It would be better to free the huge page without splitting. 
+> It shouldn't be a big deal: walk over rmap and zap all pmds.
+> Or I miss something?
 
-> @@ -1361,6 +1364,11 @@ static int clk_plle_tegra114_enable(struct clk_hw *hw)
->         val |= XUSBIO_PLL_CFG0_SEQ_ENABLE;
->         pll_writel(val, XUSBIO_PLL_CFG0, pll);
->
-> +       /* Enable hw control of SATA pll */
-> +       val = pll_readl(SATA_PLL_CFG0, pll);
-> +       val &= ~SATA_PLL_CFG0_PADPLL_RESET_SWCTL;
-> +       pll_writel(val, SATA_PLL_CFG0, pll);
-> +
+Actually, I did but found no problem except CONFIG_DEBUG_VM but rollback
+after peeking [1].
+When I read the description in detail by your review, I think we can remove
+BUG_ON(PageTransHuge(page)) in try_to_unmap and go with no split for lazyfree
+page because they are not in swapcache any more so the assumption of [1] is
+not valid. Will do it in next revision.
 
-Apparently the procedure for enabling the SATA PLL for XUSB (when the
-SATA lane is used) is slightly different.  Specifically, it would be:
+Thanks for the review, Kirill!
 
-val = pll_readl(SATA_PLL_CFG0, pll);
-val &= ~SATA_PLL_CFG0_PADPLL_RESET_SWCTL;
-val |= SATA_PLL_CFG0_PADPLL_USE_LOCKDET;
-val |= SATA_PLL_CFG0_SEQ_START_STATE;
-pll_writel(val, SATA_PLL_CFG0, pll);
+[1] thp: split_huge_page paging, 3f04f62f9
 
-udelay(1);
 
-val = pll_readl(SATA_PLL_CFG0, pll);
-val |= SATA_PLL_CFG0_SEQ_ENABLE;
-pll_writel(val, SATA_PLL_CFG0, pll);
+> 
+> > +				}
+> > +			}
+> >  		}
+> >  
+> >  		/*
+> > -- 
+> > 2.0.0
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-api" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> -- 
+>  Kirill A. Shutemov
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Do you know if this sequence also works when the SATA lane is used for SATA?
+-- 
+Kind regards,
+Minchan Kim
