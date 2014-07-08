@@ -1,191 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008AbaGHUxN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 16:53:13 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:26165 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751080AbaGHUxM convert rfc822-to-8bit (ORCPT
+	id S1754198AbaGHUxW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 16:53:22 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:31568 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751080AbaGHUxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 16:53:12 -0400
-From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-To: Christoph Hellwig <hch@lst.de>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 03/14] scsi: centralize command re-queueing in
- scsi_dispatch_fn
-Thread-Topic: [PATCH 03/14] scsi: centralize command re-queueing in
- scsi_dispatch_fn
-Thread-Index: AQHPkJWAh4U/D5MdT0O+KF1ZHaTb2JuWsF8g
-Date: Tue, 8 Jul 2014 20:51:30 +0000
-Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958B922D2@G9W0745.americas.hpqcorp.net>
-References: <1403715121-1201-1-git-send-email-hch@lst.de>
- <1403715121-1201-4-git-send-email-hch@lst.de>
-In-Reply-To: <1403715121-1201-4-git-send-email-hch@lst.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.37]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 8 Jul 2014 16:53:17 -0400
+Date: Tue, 8 Jul 2014 22:52:15 +0200
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-efi@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        xen-devel@lists.xenproject.org, andrew.cooper3@citrix.com,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        eshelton@pobox.com, fenghua.yu@intel.com, hpa@zytor.com,
+        ian.campbell@citrix.com, jbeulich@suse.com, jeremy@goop.org,
+        konrad.wilk@oracle.com, matt.fleming@intel.com, mingo@redhat.com,
+        mjg59@srcf.ucam.org, stefano.stabellini@eu.citrix.com,
+        tglx@linutronix.de, tony.luck@intel.com
+Subject: Re: [PATCH v7 00/10] xen: Add EFI support
+Message-ID: <20140708205215.GC3474@olila.local.net-space.pl>
+References: <1404150784-27921-1-git-send-email-daniel.kiper@oracle.com>
+ <20140707194914.GA27474@console-pimps.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140707194914.GA27474@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 07, 2014 at 08:49:14PM +0100, Matt Fleming wrote:
+> On Mon, 30 Jun, at 07:52:54PM, Daniel Kiper wrote:
+> > Hey,
+> >
+> > This patch series adds EFI support for Xen dom0 guests.
+> > It is based on Jan Beulich and Tang Liang work. I was
+> > trying to take into account all previous comments,
+> > however, if I missed something sorry for that.
+> >
+> > Daniel
+> >
+> >  arch/ia64/include/asm/io.h       |    1 +
+> >  arch/x86/kernel/setup.c          |    4 +-
+> >  arch/x86/platform/efi/efi.c      |  106 ++++++++++--------------
+> >  arch/x86/xen/enlighten.c         |   15 ++++
+> >  drivers/firmware/efi/efi.c       |   25 +++---
+> >  drivers/xen/Kconfig              |    4 +
+> >  drivers/xen/Makefile             |    3 +
+> >  drivers/xen/efi.c                |  368 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> >  include/linux/efi.h              |    4 +-
+> >  include/xen/interface/platform.h |  123 ++++++++++++++++++++++++++++
+> >  include/xen/xen-ops.h            |   11 +++
+> >  11 files changed, 587 insertions(+), 77 deletions(-)
+> >
+> > Daniel Kiper (10):
+> >       arch/ia64: Define early_memunmap()
+> >       efi: Use early_mem*() instead of early_io*()
+> >       arch/x86: Do not access EFI memory map if it is not available
+> >       efi: Introduce EFI_PARAVIRT flag
+> >       arch/x86: Remove redundant set_bit(EFI_SYSTEM_TABLES) call
+> >       arch/x86: Remove redundant set_bit(EFI_MEMMAP) call
+> >       xen: Define EFI related stuff
+> >       xen: Put EFI machinery in place
+> >       arch/x86: Replace plain strings with constants
+> >       arch/x86: Remove efi_set_rtc_mmss()
+>
+> Thanks Daniel.
+>
+> I've included Stefano's Acks where they were given and queued this up
+> for v3.17 in the EFI 'next' branch at,
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git
 
+Great! Thanks a lot.
 
-> -----Original Message-----
-> From: Christoph Hellwig [mailto:hch@lst.de]
-> Sent: Wednesday, 25 June, 2014 11:52 AM
-> To: James Bottomley
-> Cc: Jens Axboe; Bart Van Assche; Elliott, Robert (Server Storage); linux-
-> scsi@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: [PATCH 03/14] scsi: centralize command re-queueing in
-> scsi_dispatch_fn
-> 
-> Make sure we only have the logic for requeing commands in one place.
-> 
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
-> ---
->  drivers/scsi/scsi.c     |   35 ++++++++++++-----------------------
->  drivers/scsi/scsi_lib.c |    9 ++++++---
->  2 files changed, 18 insertions(+), 26 deletions(-)
-> 
-> diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-> index ce5b4e5..dcc43fd 100644
-> --- a/drivers/scsi/scsi.c
-> +++ b/drivers/scsi/scsi.c
-> @@ -648,9 +648,7 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
->  		 * returns an immediate error upwards, and signals
->  		 * that the device is no longer present */
->  		cmd->result = DID_NO_CONNECT << 16;
-> -		scsi_done(cmd);
-> -		/* return 0 (because the command has been processed) */
-> -		goto out;
-> +		goto done;
->  	}
-> 
->  	/* Check to see if the scsi lld made this device blocked. */
-> @@ -662,17 +660,9 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
->  		 * occur until the device transitions out of the
->  		 * suspend state.
->  		 */
-> -
-> -		scsi_queue_insert(cmd, SCSI_MLQUEUE_DEVICE_BUSY);
-> -
->  		SCSI_LOG_MLQUEUE(3, scmd_printk(KERN_INFO, cmd,
->  			"queuecommand : device blocked\n"));
-> -
-> -		/*
-> -		 * NOTE: rtn is still zero here because we don't need the
-> -		 * queue to be plugged on return (it's already stopped)
-> -		 */
-> -		goto out;
-> +		return SCSI_MLQUEUE_DEVICE_BUSY;
->  	}
-> 
->  	/*
-> @@ -696,20 +686,19 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
->  			       "cdb_size=%d host->max_cmd_len=%d\n",
->  			       cmd->cmd_len, cmd->device->host->max_cmd_len));
->  		cmd->result = (DID_ABORT << 16);
-> -
-> -		scsi_done(cmd);
-> -		goto out;
-> +		goto done;
->  	}
-> 
->  	if (unlikely(host->shost_state == SHOST_DEL)) {
->  		cmd->result = (DID_NO_CONNECT << 16);
-> -		scsi_done(cmd);
-> -	} else {
-> -		trace_scsi_dispatch_cmd_start(cmd);
-> -		cmd->scsi_done = scsi_done;
-> -		rtn = host->hostt->queuecommand(host, cmd);
-> +		goto done;
-> +
->  	}
-> 
-> +	trace_scsi_dispatch_cmd_start(cmd);
-> +
-> +	cmd->scsi_done = scsi_done;
-> +	rtn = host->hostt->queuecommand(host, cmd);
->  	if (rtn) {
->  		trace_scsi_dispatch_cmd_error(cmd, rtn);
->  		if (rtn != SCSI_MLQUEUE_DEVICE_BUSY &&
-> @@ -718,12 +707,12 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
-> 
->  		SCSI_LOG_MLQUEUE(3, scmd_printk(KERN_INFO, cmd,
->  			"queuecommand : request rejected\n"));
-> -
-> -		scsi_queue_insert(cmd, rtn);
->  	}
-> 
-> - out:
->  	return rtn;
-> + done:
-> +	scsi_done(cmd);
-> +	return 0;
->  }
-> 
-
-Related to the position of the trace_scsi_dispatch_cmd_start()
-call... this function does:
-
-1. check sdev_state - goto done
-2. check scsi_device_blocked() - return
-3. put LUN into CDB for ancient SCSI-1 devices
-4. scsi_log_send()
-5. check cmd_len - goto done
-6. check shost_state - goto done
-7. trace_scsi_dispatch_cmd_start()
-8. queuecommand()
-9. return
-10. done:
-	cmd->scsi_done(cmd)  [PATCH 04/14 upgrades it to this]
-	return 0;
-
-It's inconsistent for logging and tracing to occur after 
-different number of checks.
-
-In scsi_lib.c, both scsi_done() and scsi_mq_done() always call
-trace_scsi_dispatch_cmd_done(), so trace_scsi_dispatch_cmd_start()
-should be called before scsi_done() is called.  That way the
-trace will always have a submission to match each completion.
-
-That means trace should be called before the sdev_state check 
-(which calls scsi_done()).  
-
-I don't know about the scsi_device_blocked check (which just 
-returns).  Should the trace record multiple submissions with 
-one completion?  Maybe both trace_scsi_dispatch_cmd_start() 
-and trace_scsi_dispatch_cmd_done() should both be called?
-
-scsi_log_completion() is called by scsi_softirq_done() and
-scsi_times_out() but not by scsi_done() and scsi_mq_done(), so 
-scsi_log_send() should not be called unless all the checks 
-pass and an IO is really queued.
-
-That would lead to something like:
-1. check sdev_state - goto done
-2. check scsi_device_blocked() - return
-3. put LUN into CDB for ancient SCSI-1 devices
-5. check cmd_len - goto done
-6. check shost_state - goto done
-7a. scsi_log_send()
-7b. trace_scsi_dispatch_cmd_start()
-8. queuecommand()
-9. return
-10. done:
-	trace_scsi_dispatch_cmd_start()
-	cmd->scsi_done(cmd);
-	return 0;
-
----
-Rob Elliott    HP Server Storage
-
-
-
+Daniel
