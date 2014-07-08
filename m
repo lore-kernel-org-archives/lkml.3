@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607AbaGHD3T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 23:29:19 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:54264 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751170AbaGHD3S (ORCPT
+	id S1752834AbaGHDdL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 23:33:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57626 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751170AbaGHDdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 23:29:18 -0400
+	Mon, 7 Jul 2014 23:33:10 -0400
+Date: Mon, 7 Jul 2014 20:32:51 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Nick Krause <xerofoify@gmail.com>
+Cc: jslaby@suse.cz,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: shx3_defconfig Fails
+Message-ID: <20140708033251.GA18777@kroah.com>
+References: <CAPDOMVjMpU4g5oPNHQYP2q6M-B7dxh1wPO3Nf4f=idCQcM8bfA@mail.gmail.com>
 MIME-Version: 1.0
-Date: Mon, 7 Jul 2014 23:29:17 -0400
-Message-ID: <CAPDOMVgTrH3eu2kuNpTFbL=uidiFQGdJYxD-p_mxBjoYoPTdKQ@mail.gmail.com>
-Subject: sh -allyesconfig Fails
-From: Nick Krause <xerofoify@gmail.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPDOMVjMpU4g5oPNHQYP2q6M-B7dxh1wPO3Nf4f=idCQcM8bfA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey guys,
-sh    allyesconfig seems to still be failing. Below this message are
-the logs for this failing build.
-Cheers Nick
-scripts/kconfig/conf --silentoldconfig Kconfig
-  CHK     include/config/kernel.release
-  CHK     include/generated/uapi/linux/version.h
-<stdin>:1:0: error: cannot use atomic model soft-imask in user mode
-<stdin>:1:0: error: cannot use atomic model soft-imask in user mode
-./scripts/gcc-version.sh: line 31: printf: #: invalid number
-./scripts/gcc-version.sh: line 31: printf: #: invalid number
-<stdin>:1:0: error: cannot use atomic model soft-imask in user mode
-<stdin>:1:0: error: cannot use atomic model soft-imask in user mode
-./scripts/gcc-version.sh: line 31: printf: #: invalid number
-./scripts/gcc-version.sh: line 31: printf: #: invalid number
-/bin/sh: 1: [: 0001: unexpected operator
-<stdin>:1:0: error: cannot use atomic model soft-imask in user mode
-<stdin>:1:0: error: cannot use atomic model soft-imask in user mode
-./scripts/gcc-version.sh: line 31: printf: #: invalid number
-./scripts/gcc-version.sh: line 31: printf: #: invalid number
-/bin/sh: 1: [: 0001: unexpected operator
-  CHK     include/generated/utsrelease.h
-  CC      scripts/mod/empty.o
-scripts/mod/empty.c:1:0: error: cannot use atomic model soft-imask in user mode
- /* empty file to figure out endianness / word size */
- ^
-make[2]: *** [scripts/mod/empty.o] Error 1
-make[1]: *** [scripts/mod] Error 2
-make: *** [scripts] Error 2
-make: *** Waiting for unfinished jobs....
+On Mon, Jul 07, 2014 at 11:04:23PM -0400, Nick Krause wrote:
+> Hey Greg and others,
+> The build, shx3_defconfig seems to be failing.
+
+In what kernel version?
+
+Has it ever worked?
+
+Why not ask the maintainer of that arch about it?  I doubt many people
+ever use defconfig files anymore...
+
+thanks,
+
+greg k-h
