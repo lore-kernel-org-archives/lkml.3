@@ -1,113 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753793AbaGHIKN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 04:10:13 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35424 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753644AbaGHIKG (ORCPT
+	id S1753822AbaGHIKR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 04:10:17 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:55118 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753638AbaGHIKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 04:10:06 -0400
-Date: Tue, 8 Jul 2014 10:08:14 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        devicetree@vger.kernel.org, dbaryshkov@gmail.com,
-        Nicolas FERRE <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        Boris Brezillon <boris@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        dwmw2@infradead.org, linux@maxim.org.za,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 05/18] power: reset: Add AT91 reset driver
-Message-ID: <20140708080814.GL13423@lukather>
-References: <1404396906-25194-1-git-send-email-maxime.ripard@free-electrons.com>
- <1404396906-25194-8-git-send-email-maxime.ripard@free-electrons.com>
- <F9547E0F-AB97-47E6-BA09-135EE4E1BC73@jcrosoft.com>
- <20140703145957.GH31996@lukather>
- <B425B925-B75E-4761-8CE6-9B12C5AC0469@jcrosoft.com>
- <20140704091443.545d1e08@bbrezillon>
- <20140704090645.GB13487@lukather>
- <20140707184001.GH9558@ns203013.ovh.net>
+	Tue, 8 Jul 2014 04:10:03 -0400
+Date: Tue, 8 Jul 2014 10:10:12 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Ed Tomlinson <edt@aei.ca>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Dave Airlie <airlied@linux.ie>
+Subject: Re: [Intel-gfx] [PATCH 5/5] drm/i915: Kick out vga console
+Message-ID: <20140708081012.GN17271@phenom.ffwll.local>
+Mail-Followup-To: Ed Tomlinson <edt@aei.ca>,
+	Chris Wilson <chris@chris-wilson.co.uk>,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+	DRI Development <dri-devel@lists.freedesktop.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	David Herrmann <dh.herrmann@gmail.com>,
+	Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+	Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+	Jani Nikula <jani.nikula@linux.intel.com>,
+	Dave Airlie <airlied@linux.ie>
+References: <1401980308-5116-1-git-send-email-daniel.vetter@ffwll.ch>
+ <1974170.pJAPFfvtjC@grover>
+ <20140707122654.GQ5821@phenom.ffwll.local>
+ <2319392.n3fnJUhemF@grover>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Pz0BBB9QxoYXlT+x"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140707184001.GH9558@ns203013.ovh.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <2319392.n3fnJUhemF@grover>
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 07, 2014 at 10:53:16PM -0400, Ed Tomlinson wrote:
+> Hi Daniel,
+> 
+> The patch below also works.  You can use my Tested By for it.
 
---Pz0BBB9QxoYXlT+x
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks a lot for testing, patch submitted and should get forwarded asap.
+> 
+> Thanks
+> Ed Tomlinson <edtoml@gmail.com>
+> 
+> PS. I _really_ need to get a serial console working on my i7 box.
 
-On Mon, Jul 07, 2014 at 08:40:01PM +0200, Jean-Christophe PLAGNIOL-VILLARD =
-wrote:
-> > > > >> move this to an assembly file more easy to read than a C code
-> > > > >=20
-> > > > > Nope. It's a pain to pass variable to an external assembly file, =
-and
-> > > > > this makes the use of global variable pretty much mandatory, whic=
-h is
-> > > > > definitely not great.
-> > > >=20
-> > > > Not at all I did for the PM slow clock code just write a function a=
-nd pas it as a parameter
-> > > > you have 3
-> > > >=20
-> > > > so basically you have to use the current and just pass at91_ramc_ba=
-se[0], at91_ramc_base[1]
-> > > > and at91_rstc_base
-> > > > it=E2=80=99s 3 lignes of modification, if you have at91_ramc_base a=
-nd at91_ramc_base same
-> > > >=20
-> > >=20
-> > > Yes, retrieving function parameters from assembly code is not that
-> > > complicated (the first 4 pointer values are accessible through r0-r3),
-> > > but then you'll have to store your assembly file somewhere.
-> >=20
-> > Like I was saying, there's a strong preference for the inline
-> > assembly...
->=20
-> inline is horrible to read and maintain NACK
->=20
-> keep it in an assembly file it's so easy to read and follow
->=20
-> and you just have to move the file existing to the driver/power
+Usually this doesn't help a lot with gfx initialization issues since we do
+an awful lot of setup while holding the console_lock. Which prevents any
+dmesg output on any console :(
 
-Well, the whole rest of the kernel community feels otherwise.
+Cheers, Daniel
 
-Maxime
+> 
+> On Monday 07 July 2014 14:26:54 Daniel Vetter wrote:
+> > On Mon, Jul 07, 2014 at 06:45:49AM -0400, Ed Tomlinson wrote:
+> > > Daniel,
+> > > 
+> > > I am not quite sure I understand what you want me to test?
+> > > Do you want me to try it without:
+> > > 
+> > > > > +               if (ret == 0) {
+> > > > > +                       ret = do_unregister_con_driver(&vga_con);
+> > 
+> > Below the diff of what I mean.
+> > -Daniel
+> > 
+> > 
+> > diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+> > index 5e583a1838f8..bd8517151479 100644
+> > --- a/drivers/gpu/drm/i915/i915_dma.c
+> > +++ b/drivers/gpu/drm/i915/i915_dma.c
+> > @@ -1466,12 +1466,13 @@ static int i915_kick_out_vgacon(struct drm_i915_private *dev_priv)
+> >  #else
+> >  static int i915_kick_out_vgacon(struct drm_i915_private *dev_priv)
+> >  {
+> > -	int ret;
+> > +	int ret = 0;
+> >  
+> >  	DRM_INFO("Replacing VGA console driver\n");
+> >  
+> >  	console_lock();
+> > -	ret = do_take_over_console(&dummy_con, 0, MAX_NR_CONSOLES - 1, 1);
+> > +	if (con_is_bound(&vga_con))
+> > +		ret = do_take_over_console(&dummy_con, 0, MAX_NR_CONSOLES - 1, 1);
+> >  	if (ret == 0) {
+> >  		ret = do_unregister_con_driver(&vga_con);
+> >  
+> > 
+> 
+> _______________________________________________
+> Intel-gfx mailing list
+> Intel-gfx@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---Pz0BBB9QxoYXlT+x
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTu6buAAoJEBx+YmzsjxAgNwQP/1iLQ1rYI1+kyi6ZeWV4+ry9
-L1Occiv7/KyggCZ6kQ2QcApITn4j6iPkTH1hxXKJl0WeYuLFJn1Cy95SUj5VlOgE
-2JrUudQmU4XpyOYrKXSmXs0S6VBODfY9uaElxnKRJXeaFLQkB34h9dM7sCzGCTUo
-5Lm2jAAUVZD67HausPj2cF7UqNdyd10yyISZ/ztP1U14nKhIOCzrMJqlhouRKzm8
-zaLefg4fgmoFnW6KFAbEk4ZqKKtG6B5jTOgl7W3p/iM8ZjWZwp/StlW7cw7sTnsA
-8mb5V+XgMAzr0ayURObN6qyT4lUO14GRvnq9Er2fIFi+wTKAmANOc4kwmbgtwu+S
-r6ZPatgIkyUt4rJDSheXi7taaTqpI7JdEL5pKU8vFn7aAhusc085nVhnsoq6AhfV
-Ds6sU3a8xrtA7XoJtSKEdHTEvUtXNWlLZg99Ba5MIV0XCTl4c/CvshjcbfrpB4Si
-Ri4G3b4ZboBND9cNyFmdLhpNVJgDEDJBxVU1//dDLBK+8qzfn+wZM777/Nd8dy0V
-v0s4v/dW5oVZJBQABIVt1g91dPgfbjjejL28YA4drk88tm7UuApM88aqzM8z5Ag9
-CV2Ywp/LImyh1vH4dLIepqTaIlDuj3t2jTMOKrkozST47gRk29F2mOJCkQg+upob
-ehKqtiA0mFgq806e7XQq
-=0ofP
------END PGP SIGNATURE-----
-
---Pz0BBB9QxoYXlT+x--
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
