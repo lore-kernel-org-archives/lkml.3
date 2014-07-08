@@ -1,66 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785AbaGHUsO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 16:48:14 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:58632 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753816AbaGHUsN (ORCPT
+	id S1754008AbaGHUxN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 16:53:13 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:26165 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751080AbaGHUxM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 16:48:13 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: "Li, Aubrey" <aubrey.li@linux.intel.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] GPIO button wth wakeup attribute is supposed to wake the system up
-Date: Tue, 08 Jul 2014 23:06:17 +0200
-Message-ID: <2962778.H1VBlZAtS4@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140708204530.GA23908@core.coreip.homeip.net>
-References: <53A2340D.9030503@linux.intel.com> <13019301.98tkdHyOVf@vostro.rjw.lan> <20140708204530.GA23908@core.coreip.homeip.net>
+	Tue, 8 Jul 2014 16:53:12 -0400
+From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+To: Christoph Hellwig <hch@lst.de>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 03/14] scsi: centralize command re-queueing in
+ scsi_dispatch_fn
+Thread-Topic: [PATCH 03/14] scsi: centralize command re-queueing in
+ scsi_dispatch_fn
+Thread-Index: AQHPkJWAh4U/D5MdT0O+KF1ZHaTb2JuWsF8g
+Date: Tue, 8 Jul 2014 20:51:30 +0000
+Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958B922D2@G9W0745.americas.hpqcorp.net>
+References: <1403715121-1201-1-git-send-email-hch@lst.de>
+ <1403715121-1201-4-git-send-email-hch@lst.de>
+In-Reply-To: <1403715121-1201-4-git-send-email-hch@lst.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 08, 2014 01:45:30 PM Dmitry Torokhov wrote:
-> On Tue, Jul 08, 2014 at 10:52:52PM +0200, Rafael J. Wysocki wrote:
-> > On Thursday, June 19, 2014 08:51:25 AM Li, Aubrey wrote:
-> > > When the wakeup attribute is set, the GPIO button is capable of
-> > > waking up the system from sleep states, including the "freeze"
-> > > sleep state.  For that to work, its driver needs to pass the
-> > > IRQF_NO_SUSPEND flag to devm_request_any_context_irq(), or the
-> > > interrupt will be disabled by suspend_device_irqs() and the
-> > > system won't be woken up by it from the "freeze" sleep state.
-> > > 
-> > > The suspend_device_irqs() routine is a workaround for drivers
-> > > that mishandle interrupts triggered when the devices handled
-> > > by them are suspended, so it is safe to use IRQF_NO_SUSPEND in
-> > > all drivers that don't have that problem.
-> > > 
-> > > The affected/tested machines include Dell Venue 11 Pro and Asus T100TA.
-> > > 
-> > > Signed-off-by: Aubrey Li <aubrey.li@linux.intel.com>
-> > > Reviewed-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > OK
-> > 
-> > Due to the lack of response (ie. no objections) and because the issue
-> > addressed by this patch is real, I'm queuing it up as a PM-related fix
-> > for 3.17.
+
+
+> -----Original Message-----
+> From: Christoph Hellwig [mailto:hch@lst.de]
+> Sent: Wednesday, 25 June, 2014 11:52 AM
+> To: James Bottomley
+> Cc: Jens Axboe; Bart Van Assche; Elliott, Robert (Server Storage); linux-
+> scsi@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: [PATCH 03/14] scsi: centralize command re-queueing in
+> scsi_dispatch_fn
 > 
-> Please do not. The response is till the same: board code should make sure
-> that enable_irq_wake() does the right thing and keeps interrupts enabled.
+> Make sure we only have the logic for requeing commands in one place.
+> 
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
+> ---
+>  drivers/scsi/scsi.c     |   35 ++++++++++++-----------------------
+>  drivers/scsi/scsi_lib.c |    9 ++++++---
+>  2 files changed, 18 insertions(+), 26 deletions(-)
+> 
+> diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+> index ce5b4e5..dcc43fd 100644
+> --- a/drivers/scsi/scsi.c
+> +++ b/drivers/scsi/scsi.c
+> @@ -648,9 +648,7 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+>  		 * returns an immediate error upwards, and signals
+>  		 * that the device is no longer present */
+>  		cmd->result = DID_NO_CONNECT << 16;
+> -		scsi_done(cmd);
+> -		/* return 0 (because the command has been processed) */
+> -		goto out;
+> +		goto done;
+>  	}
+> 
+>  	/* Check to see if the scsi lld made this device blocked. */
+> @@ -662,17 +660,9 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+>  		 * occur until the device transitions out of the
+>  		 * suspend state.
+>  		 */
+> -
+> -		scsi_queue_insert(cmd, SCSI_MLQUEUE_DEVICE_BUSY);
+> -
+>  		SCSI_LOG_MLQUEUE(3, scmd_printk(KERN_INFO, cmd,
+>  			"queuecommand : device blocked\n"));
+> -
+> -		/*
+> -		 * NOTE: rtn is still zero here because we don't need the
+> -		 * queue to be plugged on return (it's already stopped)
+> -		 */
+> -		goto out;
+> +		return SCSI_MLQUEUE_DEVICE_BUSY;
+>  	}
+> 
+>  	/*
+> @@ -696,20 +686,19 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+>  			       "cdb_size=%d host->max_cmd_len=%d\n",
+>  			       cmd->cmd_len, cmd->device->host->max_cmd_len));
+>  		cmd->result = (DID_ABORT << 16);
+> -
+> -		scsi_done(cmd);
+> -		goto out;
+> +		goto done;
+>  	}
+> 
+>  	if (unlikely(host->shost_state == SHOST_DEL)) {
+>  		cmd->result = (DID_NO_CONNECT << 16);
+> -		scsi_done(cmd);
+> -	} else {
+> -		trace_scsi_dispatch_cmd_start(cmd);
+> -		cmd->scsi_done = scsi_done;
+> -		rtn = host->hostt->queuecommand(host, cmd);
+> +		goto done;
+> +
+>  	}
+> 
+> +	trace_scsi_dispatch_cmd_start(cmd);
+> +
+> +	cmd->scsi_done = scsi_done;
+> +	rtn = host->hostt->queuecommand(host, cmd);
+>  	if (rtn) {
+>  		trace_scsi_dispatch_cmd_error(cmd, rtn);
+>  		if (rtn != SCSI_MLQUEUE_DEVICE_BUSY &&
+> @@ -718,12 +707,12 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+> 
+>  		SCSI_LOG_MLQUEUE(3, scmd_printk(KERN_INFO, cmd,
+>  			"queuecommand : request rejected\n"));
+> -
+> -		scsi_queue_insert(cmd, rtn);
+>  	}
+> 
+> - out:
+>  	return rtn;
+> + done:
+> +	scsi_done(cmd);
+> +	return 0;
+>  }
+> 
 
-Which board code?  That's nothing like that for the platforms in question.
+Related to the position of the trace_scsi_dispatch_cmd_start()
+call... this function does:
 
-> It is wrong to patch drivers for this.
+1. check sdev_state - goto done
+2. check scsi_device_blocked() - return
+3. put LUN into CDB for ancient SCSI-1 devices
+4. scsi_log_send()
+5. check cmd_len - goto done
+6. check shost_state - goto done
+7. trace_scsi_dispatch_cmd_start()
+8. queuecommand()
+9. return
+10. done:
+	cmd->scsi_done(cmd)  [PATCH 04/14 upgrades it to this]
+	return 0;
 
-Why is it?  Only drivers know if they can handle incoming interrupts after
-having suspended their devices.
+It's inconsistent for logging and tracing to occur after 
+different number of checks.
 
-Rafael
+In scsi_lib.c, both scsi_done() and scsi_mq_done() always call
+trace_scsi_dispatch_cmd_done(), so trace_scsi_dispatch_cmd_start()
+should be called before scsi_done() is called.  That way the
+trace will always have a submission to match each completion.
+
+That means trace should be called before the sdev_state check 
+(which calls scsi_done()).  
+
+I don't know about the scsi_device_blocked check (which just 
+returns).  Should the trace record multiple submissions with 
+one completion?  Maybe both trace_scsi_dispatch_cmd_start() 
+and trace_scsi_dispatch_cmd_done() should both be called?
+
+scsi_log_completion() is called by scsi_softirq_done() and
+scsi_times_out() but not by scsi_done() and scsi_mq_done(), so 
+scsi_log_send() should not be called unless all the checks 
+pass and an IO is really queued.
+
+That would lead to something like:
+1. check sdev_state - goto done
+2. check scsi_device_blocked() - return
+3. put LUN into CDB for ancient SCSI-1 devices
+5. check cmd_len - goto done
+6. check shost_state - goto done
+7a. scsi_log_send()
+7b. trace_scsi_dispatch_cmd_start()
+8. queuecommand()
+9. return
+10. done:
+	trace_scsi_dispatch_cmd_start()
+	cmd->scsi_done(cmd);
+	return 0;
+
+---
+Rob Elliott    HP Server Storage
+
+
 
