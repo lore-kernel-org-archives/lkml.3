@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756829AbaGHTjc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:39:32 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54097 "EHLO
+	id S1756814AbaGHTjb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:39:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54135 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755690AbaGHTIj (ORCPT
+	by vger.kernel.org with ESMTP id S1755691AbaGHTIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:08:39 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Uwe Kleine-=?UTF-8?Q?K=C3=B6nig?=" <u.kleine-koenig@pengutronix.de>,
-        "Olof Johansson" <olof@lixom.net>, "Emil Goode" <emilgoode@gmail.com>,
-        "Shawn Guo" <shawn.guo@freescale.com>
+CC: akpm@linux-foundation.org, "Russell King" <rmk+kernel@arm.linux.org.uk>,
+        "Liu Hua" <sdu.liu@huawei.com>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.25017974@decadent.org.uk>
+Message-ID: <lsq.1404846110.674616034@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 011/125] ARM: imx: fix error handling in ipu device
- registration
+Subject: [PATCH 3.2 120/125] ARM: 8012/1: kdump: Avoid overflow when
+ converting pfn to physaddr
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,37 +32,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emil Goode <emilgoode@gmail.com>
+From: Liu Hua <sdu.liu@huawei.com>
 
-commit d1d70e5dc2cfa9047bb935c41ba808ebb8135696 upstream.
+commit 8fad87bca7ac9737e413ba5f1656f1114a8c314d upstream.
 
-If we fail to allocate struct platform_device pdev we
-dereference it after the goto label err.
+When we configure CONFIG_ARM_LPAE=y, pfn << PAGE_SHIFT will
+overflow if pfn >= 0x100000 in copy_oldmem_page.
+So use __pfn_to_phys for converting.
 
-This bug was found using coccinelle.
-
-Fixes: afa77ef (ARM: mx3: dynamically allocate "ipu-core" devices)
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
-Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Signed-off-by: Shawn Guo <shawn.guo@freescale.com>
-Signed-off-by: Olof Johansson <olof@lixom.net>
-[bwh: Backported to 3.2: adjust filename]
+Signed-off-by: Liu Hua <sdu.liu@huawei.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/plat-mxc/devices/platform-ipu-core.c | 2 +-
+ arch/arm/kernel/crash_dump.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/plat-mxc/devices/platform-ipu-core.c b/arch/arm/plat-mxc/devices/platform-ipu-core.c
-index fc4dd7c..6bd7c3f 100644
---- a/arch/arm/plat-mxc/devices/platform-ipu-core.c
-+++ b/arch/arm/plat-mxc/devices/platform-ipu-core.c
-@@ -77,7 +77,7 @@ struct platform_device *__init imx_alloc_mx3_camera(
+--- a/arch/arm/kernel/crash_dump.c
++++ b/arch/arm/kernel/crash_dump.c
+@@ -39,7 +39,7 @@ ssize_t copy_oldmem_page(unsigned long p
+ 	if (!csize)
+ 		return 0;
  
- 	pdev = platform_device_alloc("mx3-camera", 0);
- 	if (!pdev)
--		goto err;
-+		return ERR_PTR(-ENOMEM);
+-	vaddr = ioremap(pfn << PAGE_SHIFT, PAGE_SIZE);
++	vaddr = ioremap(__pfn_to_phys(pfn), PAGE_SIZE);
+ 	if (!vaddr)
+ 		return -ENOMEM;
  
- 	pdev->dev.dma_mask = kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
- 	if (!pdev->dev.dma_mask)
 
