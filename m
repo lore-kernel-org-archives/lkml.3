@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755282AbaGHNWU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:22:20 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:34396 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755004AbaGHNWS (ORCPT
+	id S1755302AbaGHNWY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:22:24 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:40333 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755275AbaGHNWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:22:18 -0400
-Date: Tue, 8 Jul 2014 21:21:47 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: joe@perches.com, dan.carpenter@oracle.com,
-        Stephen Rothwell <sfr@canb.auug.org.au>, fengguang.wu@intel.com,
-        Randy Dunlap <rdunlap@infradead.org>, linux-crypto@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rafael Aquini <aquini@redhat.com>, aris@redhat.com
-Subject: Re: [PATCH 0/6] DRBG: Rebasing unapplied patches
-Message-ID: <20140708132147.GD24110@gondor.apana.org.au>
-References: <2266932.bfVPMOTOeI@myon.chronox.de>
+	Tue, 8 Jul 2014 09:22:20 -0400
+Date: Tue, 8 Jul 2014 09:22:16 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Mikko Perttunen <mperttunen@nvidia.com>
+Cc: swarren@wwwdotorg.org, thierry.reding@gmail.com, pdeschrijver@nvidia.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-ide@vger.kernel.org,
+        Hans de Goede <hdegoede@redhat.com>
+Subject: Re: [PATCH v2 6/7] ata: Add support for the Tegra124 SATA controller
+Message-ID: <20140708132216.GA4979@htj.dyndns.org>
+References: <1403101406-15439-1-git-send-email-mperttunen@nvidia.com>
+ <1403101406-15439-7-git-send-email-mperttunen@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2266932.bfVPMOTOeI@myon.chronox.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1403101406-15439-7-git-send-email-mperttunen@nvidia.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 06, 2014 at 02:22:29AM +0200, Stephan Mueller wrote:
-> Hi,
-> 
-> This patchset superseeds the patch sets submitted with [1] and [2]. It
-> rebases all non-applied patches to the current Herbert Xu's
-> cryptodev-2.6 tree.
-> 
-> [1] https://lkml.org/lkml/2014/6/28/497
-> [2] https://lkml.org/lkml/2014/7/1/332
-> 
-> Stephan Mueller (6):
->   DRBG: cleanup of preprocessor macros
->   DRBG: Fix format string for debugging statements
->   DRBG: Call CTR DRBG DF function only once
->   DRBG: Select correct DRBG core for stdrng
->   DRBG: Mix a time stamp into DRBG state
->   DRBG: HMAC-SHA1 DRBG has crypto strength of 128 bits
+(cc'ing Hans)
 
-All applied.  Thanks Stephan!
+Hans, can you please review this patch?
+
+On Wed, Jun 18, 2014 at 05:23:25PM +0300, Mikko Perttunen wrote:
+> +#define SATA_CONFIGURATION_0				0x180
+> +#define		SATA_CONFIGURATION_EN_FPCI		BIT(0)
+
+Let's just indent uniformly.  The new line should give enough visual
+hint on grouping.
+
+> +struct tegra_ahci_priv {
+> +	struct platform_device *pdev;
+> +	void __iomem *sata_regs;
+> +	struct reset_control *sata_rst;
+> +	struct reset_control *sata_oob_rst;
+> +	struct reset_control *sata_cold_rst;
+> +	struct clk *sata_clk;
+> +	struct clk *sata_oob_clk;
+> +	struct clk *cml1_clk;
+> +	struct clk *plle_clk;
+> +	struct regulator_bulk_data supplies[5];
+> +	struct phy *padctl_phy;
+> +};
+
+And please indent the declared fields uniformly too.
+
+Except for the above nitpicks, generally looks good to me but let's
+wait for Hans' review.
+
+Thanks.
+
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+tejun
