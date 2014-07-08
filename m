@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630AbaGHVtq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 17:49:46 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:64877 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951AbaGHVtp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 17:49:45 -0400
-Date: Wed, 9 Jul 2014 00:49:43 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] proc: remove proc_tty_ldisc variable
-Message-ID: <20140708214943.GB2382@p183.telecom.by>
+	id S1753959AbaGHVuN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 17:50:13 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:53374 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751082AbaGHVuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 17:50:11 -0400
+Date: Tue, 8 Jul 2014 14:49:23 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org, namhyung@kernel.org,
+        acme@infradead.org
+Subject: Re: perf: Add support for full Intel event lists v7
+Message-ID: <20140708214923.GA18523@us.ibm.com>
+References: <1403910964-11017-1-git-send-email-andi@firstfloor.org>
+ <20140708184311.GA14707@us.ibm.com>
+ <20140708192833.GI18735@two.firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140708192833.GI18735@two.firstfloor.org>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14070821-5806-0000-0000-000025575AC2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-/proc/tty/ldisc appear to be unused as a directory and
-it had been always that way.
+Andi Kleen [andi@firstfloor.org] wrote:
+| Works for me with your input file:
+| 
+| % perf list --events-file t.json
+| ...
+|   pm_cyc                                             [Cycles completed]
+|   pm_inst_cmpl                                       [Instructions completed]
 
-But it is userspace visible thing.
+Ah, lower case. 
 
-Cowardly remove only in-kernel variable holding it.
+| 
+| > With the above events file, I get "invalid event" for 'PM_INST_CMPL:u'
+| 
+| It works in new style syntax, like
+| 
+| perf stat --events-file t.json  -e cpu/pm_inst_cmpl/u  ls
 
-Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
----
+Yes, thanks.
 
- fs/proc/proc_tty.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Sukadev
 
---- a/fs/proc/proc_tty.c
-+++ b/fs/proc/proc_tty.c
-@@ -18,7 +18,7 @@
- /*
-  * The /proc/tty directory inodes...
-  */
--static struct proc_dir_entry *proc_tty_ldisc, *proc_tty_driver;
-+static struct proc_dir_entry *proc_tty_driver;
- 
- /*
-  * This is the handler for /proc/tty/drivers
-@@ -176,7 +176,7 @@ void __init proc_tty_init(void)
- {
- 	if (!proc_mkdir("tty", NULL))
- 		return;
--	proc_tty_ldisc = proc_mkdir("tty/ldisc", NULL);
-+	proc_mkdir("tty/ldisc", NULL);
- 	/*
- 	 * /proc/tty/driver/serial reveals the exact character counts for
- 	 * serial links which is just too easy to abuse for inferring
