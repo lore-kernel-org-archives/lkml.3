@@ -1,39 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754446AbaGHWQM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 18:16:12 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:54640 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751965AbaGHWQK (ORCPT
+	id S1754796AbaGHWQn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 18:16:43 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:48854 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754590AbaGHWQm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 18:16:10 -0400
-Date: Tue, 08 Jul 2014 15:16:09 -0700 (PDT)
-Message-Id: <20140708.151609.2007775439986953108.davem@davemloft.net>
-To: decot@googlers.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, edumazet@google.com, amwang@redhat.com,
-        antonio@meshcoding.com, jpirko@redhat.com
-Subject: Re: [PATCH net-next v1 2/2] netpoll: avoid reference leaks
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAG88wWa9WTz4gwLHWAys1e96eWBgD+mcVW=hPh7a+b2ooJzBeQ@mail.gmail.com>
-References: <CAG88wWZ9GiqoOscqG4-ePOWo8bXgSTAQ6=6-tZPahMcxOvQMLg@mail.gmail.com>
-	<20140708.141708.2064358397103630362.davem@davemloft.net>
-	<CAG88wWa9WTz4gwLHWAys1e96eWBgD+mcVW=hPh7a+b2ooJzBeQ@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 08 Jul 2014 15:16:10 -0700 (PDT)
+	Tue, 8 Jul 2014 18:16:42 -0400
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
+        acme@redhat.com, namhyung@kernel.org
+Subject: [PATCH v1 0/4] perf: add ability to sample interrupted machine state
+Date: Wed,  9 Jul 2014 00:15:55 +0200
+Message-Id: <1404857759-25105-1-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Decotigny <decot@googlers.com>
-Date: Tue, 8 Jul 2014 14:50:24 -0700
 
-> In that case, that's what the original code does: dropping this patch 2/2.
-> 
-> Patch 1/2 "netpoll: fix use after free" is still needed to prevent
-> panics, though.
+This short patch series add the ability to sample the interrupted
+machine state for each hardware sample. This is useful to analyze
+the state after certain events, for instance for function value
+profiling after a call instruction.
 
-Please resubmit it then.
+The patch extends the interface with a new PERF_SAMPLE_REGS_INTR 
+smaple_type flag. The register to sample can be named in the
+sample_regs_intr bitmask for each event. The name and bit
+position for each register is architecture dependent and
+provided, just like for PERF_SAMPLE_REGS_USER by asm/perf_regs.h.
+
+The support is similar to PERF_SAMPLE_REGS_USER.
+
+On Intel x86, the series includes support for capturing the
+PEBS state as well. When precise sampling is used, the interrupted
+state is collect from the PEBS records, at least partially.
+The PEBS machine state is a subset of the machine state.
+
+The series provides access to this new feature in perf record
+with the -I option. It is possible to display the sampled
+register values using perf report -D.
+
+This patch series is the fundation for a future series adding
+function value profiling.
+
+Stephane Eranian (4):
+  perf: add ability to sample machine state on interrupt
+  perf/x86: add support for sampling PEBS machine state registers
+  perf tools: add core support for sampling intr machine state regs
+  perf record: add new -I option to sample interrupted machine state
+
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |   19 +++++++++++++
+ include/linux/perf_event.h                |    7 +++--
+ include/uapi/linux/perf_event.h           |   14 ++++++++-
+ kernel/events/core.c                      |   44 +++++++++++++++++++++++++++--
+ tools/perf/builtin-record.c               |    2 ++
+ tools/perf/perf.h                         |    1 +
+ tools/perf/util/event.h                   |    7 +++++
+ tools/perf/util/evsel.c                   |   23 ++++++++++++++-
+ tools/perf/util/session.c                 |   26 +++++++++++++++++
+ 9 files changed, 137 insertions(+), 6 deletions(-)
+
+
+-- 
+1.7.9.5
+
