@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753151AbaGHH6s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 03:58:48 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53692 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750927AbaGHH6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 03:58:46 -0400
-Date: Tue, 8 Jul 2014 00:58:43 -0700
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Changman Lee <cm224.lee@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: f2fs: Add f2fs_balance_fs for direct IO
-Message-ID: <20140708075843.GA59558@jmac>
-References: <1404711988-18264-1-git-send-email-ying.huang@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404711988-18264-1-git-send-email-ying.huang@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753382AbaGHH7B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 03:59:01 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35354 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753199AbaGHH67 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 03:58:59 -0400
+Date: Tue, 8 Jul 2014 09:58:55 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Lee Jones <lee.jones@linaro.org>, devicetree@vger.kernel.org,
+        Boris BREZILLON <b.brezillon.dev@gmail.com>, kernel@stlinux.com,
+        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        "Gupta, Pekon\"" <pekon@ti.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Subject: Re: [PATCH] mtd: nand: stm_nand_bch: add new driver
+Message-ID: <20140708095855.29c2fb87@bbrezillon>
+In-Reply-To: <20140707235222.GC7537@ld-irv-0074>
+References: <1401268805-26043-1-git-send-email-lee.jones@linaro.org>
+	<20140703002237.GM3599@ld-irv-0074>
+	<20140703100522.756f9715@bbrezillon>
+	<20140707235222.GC7537@ld-irv-0074>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Huang,
+Hi Brian,
 
-It occurs a merge conflict.
-Please check the patch.
+On Mon, 7 Jul 2014 16:52:22 -0700
+Brian Norris <computersforpeace@gmail.com> wrote:
 
-Anyway, IMO, it needs to place f2fs_balance_fs somewhere in get_data_block.
-
-Thanks,
-
-On Mon, Jul 07, 2014 at 01:46:28PM +0800, Huang Ying wrote:
-> Otherwise, if a large amount of direct IO writes were done, the
-> segment allocation may be failed because no enough segments are gced.
+> Hi Boris,
 > 
-> Signed-off-by: Huang, Ying <ying.huang@intel.com>
-> ---
->  fs/f2fs/data.c |    6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
+> On Thu, Jul 03, 2014 at 10:05:22AM +0200, Boris BREZILLON wrote:
+> > On Wed, 2 Jul 2014 17:22:37 -0700 Brian Norris <computersforpeace@gmail.com> wrote:
+> > > On Wed, May 28, 2014 at 10:20:05AM +0100, Lee Jones wrote:
+> > > > +
+> > > > +	nand_timing0: nand-timing {
+> > > > +		sig-setup	= <10>;
+> > > > +		sig-hold	= <10>;
+> > > > +		CE-deassert	= <0>;
+> > > > +		WE-to-RBn	= <100>;
+> > > > +		wr-on		= <10>;
+> > > > +		wr-off		= <30>;
+> > > > +		rd-on		= <10>;
+> > > > +		rd-off		= <30>;
+> > > > +		chip-delay	= <30>;		/* delay in us */
+> > > > +	};
+> > > 
+> > > You didn't document any of this node. And I don't think we want to
+> > > specify every single timing parameter in DT; it may make sense to use
+> > > Boris Brezillon's approach (I note this further down, in the driver
+> > > code) for mapping non-ONFI NAND timings into a compatible ONFI timing
+> > > mode. This will greatly simplify the bindings needed, since it's
+> > > standardized and auto-detectable in many cases.
+> > 
+> > 
+> > AFAIR, the NAND timing representation for non-ONFI chips question was
+> > left unanswered:
+> > 
+> > https://lkml.org/lkml/2014/5/20/581
+> > 
+> > I can definitely respin my NAND timings series, but I'd like to be sure
+> > this is how you want it done before doing so.
 > 
-> --- a/fs/f2fs/data.c
-> +++ b/fs/f2fs/data.c
-> @@ -1038,6 +1038,7 @@ static ssize_t f2fs_direct_IO(int rw, st
->  {
->  	struct file *file = iocb->ki_filp;
->  	struct inode *inode = file->f_mapping->host;
-> +	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
->  
->  	/* Let buffer I/O handle the inline data case. */
->  	if (f2fs_has_inline_data(inode))
-> @@ -1046,8 +1047,11 @@ static ssize_t f2fs_direct_IO(int rw, st
->  	if (check_direct_IO(inode, rw, iter, offset))
->  		return 0;
->  
-> +	if (rw == WRITE)
-> +		f2fs_balance_fs(sbi);
-> +
->  	/* clear fsync mark to recover these blocks */
-> -	fsync_mark_clear(F2FS_SB(inode->i_sb), inode->i_ino);
-> +	fsync_mark_clear(sbi, inode->i_ino);
->  
->  	return blockdev_direct_IO(rw, iocb, inode, iter, offset,
->  				  get_data_block);
+> Can we start by supporting ONFI-only (or ONFI-only, plus entries in
+> nand_flash_ids[]), and have nand_base provide the translation so drivers
+> can retrieve the info? Then we can begin supporting new drivers like
+> Lee's, and worry about the DT question separately.
+
+So, basically, I just send a new series with patch 1 and 2 from my sunxi
+NAND series [1] (including the fixes you suggested, of course), right ?
+
+[1] http://thread.gmane.org/gmane.comp.hardware.netbook.arm.sunxi/7977
+
+
 
 -- 
-Jaegeuk Kim
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
