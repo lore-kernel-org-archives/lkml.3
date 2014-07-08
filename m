@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753394AbaGHGEa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 02:04:30 -0400
-Received: from mga14.intel.com ([192.55.52.115]:47471 "EHLO mga14.intel.com"
+	id S1753428AbaGHGEd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 02:04:33 -0400
+Received: from ozlabs.org ([103.22.144.67]:49179 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752555AbaGHGE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 02:04:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,624,1400050800"; 
-   d="scan'208";a="558668947"
-From: Jenny TC <jenny.tc@intel.com>
-To: linux-kernel@vger.kernel.org, Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Pavel Machek <pavel@ucw.cz>, Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
-        Jenny TC <jenny.tc@intel.com>
-Subject: [PATCHv11 0/4] power_supply: Introduce power supply charging driver
-Date: Tue,  8 Jul 2014 11:34:17 +0530
-Message-Id: <1404799461-26345-1-git-send-email-jenny.tc@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752555AbaGHGEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 02:04:31 -0400
+Date: Tue, 8 Jul 2014 16:04:17 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Nicholas Krause <xerofoify@gmail.com>
+Cc: benh@kernel.crashing.org, mahesh@linux.vnet.ibm.com, agraf@suse.de,
+        linux-kernel@vger.kernel.org, michael@ellerman.id.au, paulus@samba.org,
+        anton@samba.org, linuxppc-dev@lists.ozlabs.org,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: Re: powerpc allyesconfig fix
+Message-ID: <20140708160417.47fb4d7c@canb.auug.org.au>
+In-Reply-To: <1404795849-25609-1-git-send-email-xerofoify@gmail.com>
+References: <1404795849-25609-1-git-send-email-xerofoify@gmail.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/O=XqCrweHOp8en2jl/Reuu1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v1: introduced feature as a framework within power supply class driver with
-	separate files for battid framework and charging framework
-v2: fixed review comments, moved macros and inline functions to power_supply.h
-v3: moved the feature as a separate driver, combined battid framework and
-	charging framework inside the power supply charging driver. Moved
-	charger specific properties to power_supply_charger.h and plugged the
-	driver with power supply subsystem using power_supply_notifier
-	introduced in my previous patch. Also a sample charger chip driver
-	(bq24261) patch added to give more idea on the psy charging driver
-	usage
-v4: Fixed review comments, no major design changes.
-v5: Fixed makefile inconsistencies, removed unused pdata callbacks
-v6: Fixed nested loops, commenting style
-v7: added kerneldocs for structs and minor fixes
-v8: used msecs_to_jiffies instead of HZ directly, modified Kconfig help text
-    for POWER_SUPPLY_CHARGING_ALGO_PSE
-v9: Removed string lookups, static cable initialization
-v10: Fixed bug in algorithm lookup
-v11: Few variable name changes for better readability
+--Sig_/O=XqCrweHOp8en2jl/Reuu1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Jenny TC (4):
-  power_supply: Add inlmt,iterm, min/max temp props
-  power_supply: Introduce generic psy charging driver
-  power_supply: Introduce PSE compliant algorithm
-  power_supply: bq24261 charger driver
+Hi Nicholas,
 
- Documentation/power/power_supply_charger.txt |  350 +++++++
- Documentation/power/power_supply_class.txt   |    6 +
- drivers/power/Kconfig                        |   33 +
- drivers/power/Makefile                       |    3 +
- drivers/power/bq24261_charger.c              | 1348 ++++++++++++++++++++++++++
- drivers/power/charging_algo_pse.c            |  202 ++++
- drivers/power/power_supply_charger.c         | 1016 +++++++++++++++++++
- drivers/power/power_supply_charger.h         |  226 +++++
- drivers/power/power_supply_core.c            |    3 +
- drivers/power/power_supply_sysfs.c           |    4 +
- include/linux/power/bq24261-charger.h        |   25 +
- include/linux/power/power_supply_charger.h   |  372 +++++++
- include/linux/power_supply.h                 |  165 ++++
- 13 files changed, 3753 insertions(+)
- create mode 100644 Documentation/power/power_supply_charger.txt
- create mode 100644 drivers/power/bq24261_charger.c
- create mode 100644 drivers/power/charging_algo_pse.c
- create mode 100644 drivers/power/power_supply_charger.c
- create mode 100644 drivers/power/power_supply_charger.h
- create mode 100644 include/linux/power/bq24261-charger.h
- create mode 100644 include/linux/power/power_supply_charger.h
+On Tue,  8 Jul 2014 01:04:09 -0400 Nicholas Krause <xerofoify@gmail.com> wr=
+ote:
+>
+> powerpc:allmodconfig has been failing for some time with the following
+> error.
 
--- 
-1.7.9.5
+This patch has already bee submitted directly by Guenter, however for
+future reference:  when you submit someone else's patch, you should
+include a From line as the first line of the email body containing their
+email address and you should include a Signed-off-by line from yourself.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/O=XqCrweHOp8en2jl/Reuu1
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTu4nmAAoJEMDTa8Ir7ZwV4mIQAI1fivBNbbXD5/n/4Q+zTrsW
+ZXJ/pBalXPut/JpnaXEacvfwKI0QFVhtxED5hPYj/OjxMfwsHdk7FFfcgujYnPkB
+uPl2yQNiEeJWKHDtjF6aNNO69ZuqTpLeYjWj8nrGtZWkdEtVdsiQCPZKI8Yi5JyV
+GMVSW8rwWAqdwSrArUHR8wmm/dgW9img1/wk5uhIgABvMjs0UnDhIp4M4iHPuNYK
+VIjzIHYO0BF2rteFiilfsIxGIE0Xy7q4n7XseKuZMt8me1IEItPHsyVAm9F9F/W4
+QjOkxSE3jnDVDH/TSprc0X8qILgiPtsu3GZFmRbVVnWHWWnWBqgjTnDp7+ozuZi9
+BmjqFkNi6GWGSAivTaKUpozKNwQg2xVTD/ykrXZmJHY6T47DuqQTQoASJ7vvUUQ2
+McUU0LR8iX/OsqyrHhZOfn4eTGjUn9hisi5ncOkYPRKZdU9cLfEKSx5tf26JCTfu
+QyP3n8Njynu3ZUSlKFNY7A//ktjOk6clzOkbr9dOWriWBGAoY3HgOyHcohTjXzc7
+odUC0jslztiY5zbo49NHA1rBCZDxx3IP00/ALIVHUGSrWANWA+pYP9PO0CTj7TUN
+qVc4j9YdaO24CxU8qmkdkSqaFdgAD1rSjXY/PO8iAdiAW1bJD3qZQ0Cbd0PjH9rE
+Y598N/14XgOAFLd8TC/C
+=z/pS
+-----END PGP SIGNATURE-----
+
+--Sig_/O=XqCrweHOp8en2jl/Reuu1--
