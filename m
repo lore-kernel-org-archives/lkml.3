@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808AbaGHADR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:03:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56373 "EHLO
+	id S932091AbaGHANP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:13:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56387 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752511AbaGHADM (ORCPT
+	with ESMTP id S1754794AbaGHADR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 20:03:12 -0400
+	Mon, 7 Jul 2014 20:03:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.4 01/44] ibmvscsi: Abort init sequence during error recovery
-Date: Mon,  7 Jul 2014 17:06:51 -0700
-Message-Id: <20140707235858.696249527@linuxfoundation.org>
+        ShiChun Ma <masc2008@qq.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 3.4 02/44] xhci: correct burst count field for isoc transfers on 1.0 xhci hosts
+Date: Mon,  7 Jul 2014 17:06:52 -0700
+Message-Id: <20140707235858.724699812@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235858.652771077@linuxfoundation.org>
 References: <20140707235858.652771077@linuxfoundation.org>
@@ -30,36 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian King <brking@linux.vnet.ibm.com>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit 9ee755974bea2f9880e517ec985dc9dede1b3a36 upstream.
+commit 3213b151387df0b95f4eada104f68eb1c1409cb3 upstream.
 
-If a CRQ reset is triggered for some reason while in the middle
-of performing VSCSI adapter initialization, we don't want to
-call the done function for the initialization MAD commands as
-this will only result in two threads attempting initialization
-at the same time, resulting in failures.
+The transfer burst count (TBC) field in xhci 1.0 hosts should be set
+to the number of bursts needed to transfer all packets in a isoc TD.
+Supported values are 0-2 (1 to 3 bursts per service interval).
 
-Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
-Acked-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Formula for TBC calculation is given in xhci spec section 4.11.2.3:
+TBC = roundup( Transfer Descriptor Packet Count / Max Burst Size +1 ) - 1
+
+This patch should be applied to stable kernels since 3.0 that contain
+the commit 5cd43e33b9519143f06f507dd7cbee6b7a621885
+"xhci 1.0: Set transfer burst count field."
+
+Suggested-by: ShiChun Ma <masc2008@qq.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/ibmvscsi/ibmvscsi.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/host/xhci-ring.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/scsi/ibmvscsi/ibmvscsi.c
-+++ b/drivers/scsi/ibmvscsi/ibmvscsi.c
-@@ -484,7 +484,8 @@ static void purge_requests(struct ibmvsc
- 				       evt->hostdata->dev);
- 			if (evt->cmnd_done)
- 				evt->cmnd_done(evt->cmnd);
--		} else if (evt->done)
-+		} else if (evt->done && evt->crq.format != VIOSRP_MAD_FORMAT &&
-+			   evt->iu.srp.login_req.opcode != SRP_LOGIN_REQ)
- 			evt->done(evt);
- 		free_event_struct(&evt->hostdata->pool, evt);
- 		spin_lock_irqsave(hostdata->host->host_lock, flags);
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -3588,7 +3588,7 @@ static unsigned int xhci_get_burst_count
+ 		return 0;
+ 
+ 	max_burst = urb->ep->ss_ep_comp.bMaxBurst;
+-	return roundup(total_packet_count, max_burst + 1) - 1;
++	return DIV_ROUND_UP(total_packet_count, max_burst + 1) - 1;
+ }
+ 
+ /*
 
 
