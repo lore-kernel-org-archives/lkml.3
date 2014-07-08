@@ -1,47 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686AbaGHC3r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 22:29:47 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:1360 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751806AbaGHC3q (ORCPT
+	id S1752769AbaGHCek (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 22:34:40 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:44636 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751610AbaGHCej convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 22:29:46 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 07 Jul 2014 19:19:02 -0700
-Message-ID: <53BB5797.1090105@nvidia.com>
-Date: Tue, 8 Jul 2014 11:29:43 +0900
-From: Alexandre Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 7 Jul 2014 22:34:39 -0400
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+In-Reply-To: <CAPDOMVgEgDt-mNL_Ee3uOBr2Wj-hEHY1sfDVpH3TiKMKB3B-CQ@mail.gmail.com>
+References: <CAPDOMVgEgDt-mNL_Ee3uOBr2Wj-hEHY1sfDVpH3TiKMKB3B-CQ@mail.gmail.com>
+Date: Mon, 7 Jul 2014 22:34:38 -0400
+Message-ID: <CAPDOMVi=UQoEULy5wrcXuH2Dsk-Nf53uUa0aeMHOnPxU1Bpk7g@mail.gmail.com>
+Subject: Fwd: adi-buildroot-devel@lists.sourceforge.net linux-kernel@vger.kernel.org
+From: Nick Krause <xerofoify@gmail.com>
+To: realmz6 <realmz6@gmail.com>
+Cc: adi-buildroot-devel@lists.sourceforge.ne,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH v2] power: poweroff: gpio: convert to use descriptors
-References: <1404729272-17873-1-git-send-email-linus.walleij@linaro.org>
-In-Reply-To: <1404729272-17873-1-git-send-email-linus.walleij@linaro.org>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/2014 07:34 PM, Linus Walleij wrote:
-> This switches the GPIO poweroff driver to use GPIO descriptors
-> rather than numeral GPIOs. We get rid of the specific inversion
-> handling as GPIO descriptors know if they are active low or
-> high and can assert the line properly, so we do not need to
-> check the flag OF_GPIO_ACTIVE_LOW returned from the old call
-> of_get_gpio_flags() anymore.
->
-> Also convert to use managed resources and use dev_* message
-> printing while we're at it.
+---------- Forwarded message ----------
+From: Nick Krause <xerofoify@gmail.com>
+Date: Mon, Jul 7, 2014 at 10:27 PM
+Subject: adi-buildroot-devel@lists.sourceforge.net linux-kernel@vger.kernel.org
+To: realmz6@gmail.com
 
-Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
 
- > 1 file changed, 19 insertions(+), 33 deletions(-)
+Hey guys ,
+Since the errors I get for BF561-ACVILON_defconfig not compiling link
+to a failure
+in a fileyou guys maintain I am sending you this email.Below my message are the
+errors that make this build fail in order to help you create a patch
+for  these errors.
+Cheer Nick
+arch/blackfin/mach-bf561/boards/acvilon.c: In function
+‘bfin_plat_nand_dev_ready’:
+arch/blackfin/mach-bf561/boards/acvilon.c:283:2: error: implicit
+declaration of function ‘gpio_get_value’
+[-Werror=implicit-function-declaration]
+  return gpio_get_value(BFIN_NAND_PLAT_READY);
+  ^
+arch/blackfin/mach-bf561/boards/acvilon.c: In function ‘bfin_plat_nand_init’:
+arch/blackfin/mach-bf561/boards/acvilon.c:318:2: error: implicit
+declaration of function ‘gpio_request’
+[-Werror=implicit-function-declaration]
+  gpio_request(BFIN_NAND_PLAT_READY, "bfin_nand_plat");
+  ^
+cc1: some warnings being treated as errors
+make[1]: *** [arch/blackfin/mach-bf561/boards/acvilon.o] Error 1
+make: *** [arch/blackfin/mach-bf561/boards] Error 2
+make: *** Waiting for unfinished jobs....
 
-This is what I like with these gpiod conversion patches.
+Hey Steve
+Below are the logs for the other the failures related to blackfin
+buids. I didn't realize that you maintained most blackfin boards
+Cheers Nick
+
+ BlackStamp_defconfig
+arch/blackfin/mach-bf533/boards/blackstamp.c:478:2: error: implicit
+declaration of function ‘gpio_request’
+[-Werror=implicit-function-declaration]
+  ret = gpio_request(GPIO_PF0, "enet_cpld");
+  ^
+arch/blackfin/mach-bf533/boards/blackstamp.c:480:3: error: implicit
+declaration of function ‘gpio_direction_output’
+[-Werror=implicit-function-declaration]
+   gpio_direction_output(GPIO_PF0, 1);
+   ^
+arch/blackfin/mach-bf533/boards/blackstamp.c:481:3: error: implicit
+declaration of function ‘gpio_free’
+[-Werror=implicit-function-declaration]
+   gpio_free(GPIO_PF0);
+   ^
+cc1: some warnings being treated as errors
+make[1]: *** [arch/blackfin/mach-bf533/boards/blackstamp.o] Error 1
+make: *** [arch/blackfin/mach-bf533/boards] Error 2
+make: *** Waiting for unfinished jobs....
+
+
+TCM-BF518_defconfig
+UIMAGE  arch/blackfin/boot/uImage.lzma
+"mkimage" command not found - U-Boot images will not be built
+make[1]: *** [arch/blackfin/boot/uImage.lzma] Error 1
+make: *** [uImage] Error 2
