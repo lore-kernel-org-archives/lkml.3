@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901AbaGHTVe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:21:34 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54289 "EHLO
+	id S1756162AbaGHTXC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:23:02 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54215 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755739AbaGHTIm (ORCPT
+	by vger.kernel.org with ESMTP id S1755720AbaGHTIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:08:42 -0400
+	Tue, 8 Jul 2014 15:08:41 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Tejun Heo" <tj@kernel.org>,
-        "=?UTF-8?q?J=C3=A9r=C3=B4me=20Carretero?=" <cJ-ko@zougloub.eu>
+CC: akpm@linux-foundation.org, "Philipp Wolfer" <ph.wolfer@gmail.com>,
+        "Hans de Goede" <hdegoede@redhat.com>,
+        "Dmitry Torokhov" <dmitry.torokhov@gmail.com>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.778563024@decadent.org.uk>
+Message-ID: <lsq.1404846110.303430243@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 057/125] ahci: Add Device ID for HighPoint RocketRaid 642L
+Subject: [PATCH 3.2 068/125] Input: elantech - don't set bit 1 of reg_10
+ when the no_hw_res quirk is set
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,34 +33,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jérôme Carretero <cJ-ko@zougloub.eu>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit d251836508fb26cd1a22b41381739835ee23728d upstream.
+commit fb4f8f568a9def02240ef9bf7aabd246dc63a081 upstream.
 
-This device normally comes with a proprietary driver, using a web GUI
-to configure RAID:
- http://www.highpoint-tech.com/USA_new/series_rr600-download.htm
-But thankfully it also works out of the box with the AHCI driver,
-being just a Marvell 88SE9235.
+The touchpad on the GIGABYTE U2442 not only stops communicating when we try
+to set bit 3 (enable real hardware resolution) of reg_10, but on some BIOS
+versions also when we set bit 1 (enable two finger mode auto correct).
 
-Devices 640L, 644L, 644LS should also be supported but not tested here.
+I've asked the original reporter of:
+https://bugzilla.kernel.org/show_bug.cgi?id=61151
 
-Signed-off-by: Jérôme Carretero <cJ-ko@zougloub.eu>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+To check that not setting bit 1 does not lead to any adverse effects on his
+model / BIOS revision, and it does not, so this commit fixes the touchpad
+not working on these versions by simply never setting bit 1 for laptop
+models with the no_hw_res quirk.
+
+Reported-and-tested-by: James Lademann <jwlademann@gmail.com>
+Tested-by: Philipp Wolfer <ph.wolfer@gmail.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/ata/ahci.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/input/mouse/elantech.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -458,6 +458,8 @@ static const struct pci_device_id ahci_p
- 	  .driver_data = board_ahci_yes_fbs },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9230),
- 	  .driver_data = board_ahci_yes_fbs },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_TTI, 0x0642),
-+	  .driver_data = board_ahci_yes_fbs },
+--- a/drivers/input/mouse/elantech.c
++++ b/drivers/input/mouse/elantech.c
+@@ -801,7 +801,7 @@ static int elantech_set_absolute_mode(st
+ 		if (etd->set_hw_resolution)
+ 			etd->reg_10 = 0x0b;
+ 		else
+-			etd->reg_10 = 0x03;
++			etd->reg_10 = 0x01;
  
- 	/* Promise */
- 	{ PCI_VDEVICE(PROMISE, 0x3f20), board_ahci },	/* PDC42819 */
+ 		if (elantech_write_reg(psmouse, 0x10, etd->reg_10))
+ 			rc = -1;
+@@ -1225,7 +1225,8 @@ static int elantech_reconnect(struct psm
+ }
+ 
+ /*
+- * Some hw_version 3 models go into error state when we try to set bit 3 of r10
++ * Some hw_version 3 models go into error state when we try to set
++ * bit 3 and/or bit 1 of r10.
+  */
+ static const struct dmi_system_id no_hw_res_dmi_table[] = {
+ #if defined(CONFIG_DMI) && defined(CONFIG_X86)
 
