@@ -1,101 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532AbaGHIrr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 04:47:47 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:57122 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751931AbaGHIro (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 04:47:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <53BBACF4.4070800@nod.at>
-References: <20140705112238.16142.42735.stgit@zurg>
-	<20140707150523.cc671116bf366e8db73209c5@linux-foundation.org>
-	<CALYGNiMjL_GYqqkid4yQsubpnbydVXxTPnKW0GqJcg05x9zbHQ@mail.gmail.com>
-	<CAFLxGvzxvuizdHyjQ0SjUm8jJcj=w+qS5ut-u76Xo-m2sftvvw@mail.gmail.com>
-	<CALYGNiOTC8KOxWwRo+f=6JmtUYhJ=1cQNq-Us1BZbW85r4P+ug@mail.gmail.com>
-	<53BBA9B4.7050609@nod.at>
-	<CALYGNiNSFoW6Z_1o3JfV-cCeay1QmTptrt4kWHVegkuw+-6A8A@mail.gmail.com>
-	<53BBACF4.4070800@nod.at>
-Date: Tue, 8 Jul 2014 12:47:44 +0400
-Message-ID: <CALYGNiND3xk4DGkM_RYApmX7BMkg=cKX2gUpyyOry0ny_DVrkA@mail.gmail.com>
-Subject: Re: [uml-devel] [PATCH] checkstack: use $UTS_MACHINE as target architecture
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        UML devel <user-mode-linux-devel@lists.sourceforge.net>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753375AbaGHIuK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 04:50:10 -0400
+Received: from mga03.intel.com ([143.182.124.21]:4348 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751834AbaGHIuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 04:50:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,624,1400050800"; 
+   d="scan'208";a="454374346"
+Message-ID: <1404809400.5102.90.camel@smile.fi.intel.com>
+Subject: Re: [PATCH v2 04/10] lib/vsprintf: add %*pE[achnops] format
+ specifier
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Joe Perches <joe@perches.com>
+Cc: "John W . Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>, devel@driverdev.osuosl.org,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Tue, 08 Jul 2014 11:50:00 +0300
+In-Reply-To: <1404750357.27043.78.camel@joe-AO725>
+References: <1404746512-12749-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1404746512-12749-5-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1404750357.27043.78.camel@joe-AO725>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 8, 2014 at 12:33 PM, Richard Weinberger <richard@nod.at> wrote:
-> Am 08.07.2014 10:30, schrieb Konstantin Khlebnikov:
->> On Tue, Jul 8, 2014 at 12:20 PM, Richard Weinberger <richard@nod.at> wrote:
->>> Am 08.07.2014 10:16, schrieb Konstantin Khlebnikov:
->>>> On Tue, Jul 8, 2014 at 12:01 PM, Richard Weinberger
->>>> <richard.weinberger@gmail.com> wrote:
->>>>> On Tue, Jul 8, 2014 at 7:48 AM, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
->>>>>> On Tue, Jul 8, 2014 at 2:05 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
->>>>>>> On Sat, 05 Jul 2014 15:22:38 +0400 Konstantin Khlebnikov <koct9i@gmail.com> wrote:
->>>>>>>
->>>>>>>> This fixes command # make checkstack for i386/x86_64.
->>>>>>>> Looks like $UTS_MACHINE is exactly what scripts/checkstack.pl needs.
->>>>>>>>
->>>>>>>> By default $UTS_MACHINE is equal to $ARCH, but some arch/${ARCH}/Makefile
->>>>>>>> overrides it. This patch updates it also in arch/x86/Makefile.um
->>>>>>>>
->>>>>>>> broken in ffee0de ("x86: Default to ARCH=x86 to avoid overriding CONFIG_64BIT")
->>>>>>>
->>>>>>> The changelog doesn't describe the bug which is being fixed.  It should
->>>>>>> do so please.  If there are any compiler/make error messages then those
->>>>>>> should be included.
->>>>>>>
->>>>>>
->>>>>> Oh, ok. checkstalk.pl needs either i386 or x86_64, x86 isn't enough.
->>>>>>
->>>>>> $ make checkstack
->>>>>> objdump -d vmlinux $(find . -name '*.ko') | \
->>>>>> perl /home/blind/src/linux-stable/scripts/checkstack.pl x86
->>>>>> wrong or unknown architecture "x86"
->>>>>
->>>>> And now we need ARCH, SUBARCH and UTS_MACHINE on UML? :-(
->>>>
->>>> Nope UTS_MACHINE is autodetected, see hunk Makefile.x86 in my patch.
->>>>
->>>> I thought about cleaning this part of UML.
->>>> For example we could move arch/x86/um into arch/um/x86 and use # make
->>>> ARCH=um/x86
->>>
->>> No way. We moved the x86 stuff to arch/x86/ a few Years ago by design.
->>
->> Ok, fine. We could leave it in arch/x86/um and use make ARCH=x86/um
->
-> I don't like this. Please keep ARCH=um as is.
->
->>>
->>>> after collecting this stuff together it woud be easier to get rid of
->>>> forever-broken parts.
->>>> As I see UML has been designed to work everywhere but SMP seem never worked
->>>> as well as any host os except of linux or other arch except x86.
->>>
->>> Currently UML runs only on x86_32/64.
->>> Adding/fixing SMP support should be doable.
->>
->> This might be quite difficult on top of current ptrace-based design.
->> I thought about running userspace in kvm context, this might be much
->> faster than ptrace but requires indirect uaccess like for 4gb-split.
->> But it's very unlikely that I'll find time for that.
->
-> Erm, UML is a systemcall emulator based on ptrace().
-> If you make it use any KVM backend there is 0 usecase for UML because we can just use qemu/kvmtool.
+On Mon, 2014-07-07 at 09:25 -0700, Joe Perches wrote:
+> [trivial notes]
 
-But kernel stays in userspace, so it could be easily debugged.
-It's like merge kvmtool+linux into one application.
+Thanks! Fixed locally, though am waiting for few more days if any other
+comment comes.
 
->
-> Thanks,
-> //richard
+> 
+> On Mon, 2014-07-07 at 18:21 +0300, Andy Shevchenko wrote:
+> > This allows user to print a given buffer as esaped string. The rules applied
+> 
+> as an escaped
+> 
+> > accordingly to the mix of the flags provided by additional format letters.
+> 
+> rules are applied according to an optional mix of flags
+> 
+> > For example, if the given buffer:
+> > 
+> > 	1b 62 20 5c 43 07 22 90 0d 5d
+> > 
+> > The result strings could be:
+> 
+> would be
+> 
+> > 	%*pE            "\eb \C\a"\220\r]"
+> 
+> Maybe say something about ssid's here.
+
+Mentioned in the printk-formats.txt part.
+
+> or maybe add an %*pES just for the ssid type.
+
+I gave a thought to it, and it seems to me we will increase complexity
+of the code to get none beneficial. The SSID in most cases has a
+variable-length, thus we will pass it anyway, what else could be differ
+here? Default set of flags?
+
+> 
+> > diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
+> []
+> > @@ -70,6 +70,34 @@ DMA addresses types dma_addr_t:
+> >  	For printing a dma_addr_t type which can vary based on build options,
+> >  	regardless of the width of the CPU data path. Passed by reference.
+> >  
+> > +Raw buffer as an escaped string:
+> > +
+> > +	%*pE[achnops]
+> > +
+> > +	For printing raw buffer as an escaped string. For the following buffer
+> > +
+> > +		1b 62 20 5c 43 07 22 90 0d 5d
+> > +
+> > +	few examples show how the conversion could be done (the result string
+> > +	without embraced quotes):
+> 
+> 'embraced' is a bit of an awkward word choice.  Maybe surrounding.
+> 
+> > +
+> > +		%*pE		"\eb \C\a"\220\r]"
+> 
+> Oh, the initial commit log comments above are really for this block
+
+Phrasing is a bit different, though I rephrased above sentence.
+
+> 
+> > +		%*pEhp		"\x1bb \C\x07"\x90\x0d]"
+> > +		%*pEa		"\e\142\040\\\103\a\042\220\r\135"
+> > +
+> > +	The converion rules are defined by combination of the following flags
+> 
+> conversion
+> 
+> > +	(see string_escape_mem() kernel documentation for the details):
+> > +		a - ESCAPE_ANY
+> > +		c - ESCAPE_SPECIAL
+> > +		h - ESCAPE_HEX
+> > +		n - ESCAPE_NULL
+> > +		o - ESCAPE_OCTAL
+> > +		p - ESCAPE_NP
+> > +		s - ESCAPE_SPACE
+> > +	By default ESCAPE_ANY_NP is used.
+> > +
+> > +	If field width is ommited the 1 byte only will be escaped.
+> 
+> omitted
+> 
+> 
+
+
+-- 
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
+
