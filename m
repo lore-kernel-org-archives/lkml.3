@@ -1,91 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523AbaGHMZd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 08:25:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3343 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754226AbaGHMZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 08:25:30 -0400
-Date: Tue, 8 Jul 2014 14:26:07 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        linux-s390@vger.kernel.org, "x86@kernel.org" <x86@kernel.org>,
-        xen-devel@lists.xenproject.org,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH 1/3] PCI/MSI: Add pci_enable_msi_partial()
-Message-ID: <20140708122606.GB6270@dhcp-26-207.brq.redhat.com>
-References: <cover.1402405331.git.agordeev@redhat.com>
- <4fef62a2e647a7c38e9f2a1ea4244b3506a85e2b.1402405331.git.agordeev@redhat.com>
- <20140702202201.GA28852@google.com>
- <20140704085741.GA12247@dhcp-26-207.brq.redhat.com>
- <CAErSpo6f6RXWv0DEtLBZX0jXoSUYJeWrSm7mubSJ_F-O7tQp6w@mail.gmail.com>
+	id S1754614AbaGHMZx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 08:25:53 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:44176 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754426AbaGHMZv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 08:25:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo6f6RXWv0DEtLBZX0jXoSUYJeWrSm7mubSJ_F-O7tQp6w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1403819615-9253-1-git-send-email-markus.mayer@linaro.org>
+References: <1403819615-9253-1-git-send-email-markus.mayer@linaro.org>
+Date: Tue, 8 Jul 2014 14:25:50 +0200
+Message-ID: <CAPDyKFrjQqu=SqmBdqR9pTKSF_RLN4wFNwyOO2Laex2ED6eJyA@mail.gmail.com>
+Subject: Re: [PATCH v5] mmc: sdhci: Replace host->mmc with mmc where possible
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Markus Mayer <markus.mayer@linaro.org>
+Cc: Chris Ball <chris@printf.net>, Tim Kryger <tim.kryger@gmail.com>,
+        Mike Looijmans <mike.looijmans@topic.nl>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Matt Porter <mporter@linaro.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 07, 2014 at 01:40:48PM -0600, Bjorn Helgaas wrote:
-> >> Can you quantify the benefit of this?  Can't a device already use
-> >> MSI-X to request exactly the number of vectors it can use?  (I know
-> >
-> > A Intel AHCI chipset requires 16 vectors written to MME while advertises
-> > (via AHCI registers) and uses only 6. Even attempt to init 8 vectors results
-> > in device's fallback to 1 (!).
-> 
-> Is the fact that it uses only 6 vectors documented in the public spec?
+On 26 June 2014 23:53, Markus Mayer <markus.mayer@linaro.org> wrote:
+> After the switch to the MMC core regulator infrastucture, we already
+> have a local "mmc" pointer in various functions. There is no longer a
+> need to access the data structure via host->mmc.
+>
+> Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
+> Reviewed-by: Matt Porter <mporter@linaro.org>
 
-Yes, it is documented in ICH specs.
+Thanks! Applied for next.
 
-> Is this a chipset erratum?  Are there newer versions of the chipset
-> that fix this, e.g., by requesting 8 vectors and using 6, or by also
-> supporting MSI-X?
+Kind regards
+Uffe
 
-No, this is not an erratum. The value of 8 vectors is reserved and could
-cause undefined results if used.
-
-> I know this conserves vector numbers.  What does that mean in real
-> user-visible terms?  Are there systems that won't boot because of this
-> issue, and this patch fixes them?  Does it enable bigger
-> configurations, e.g., more I/O devices, than before?
-
-Visibly, it ceases logging messages ('ahci 0000:00:1f.2: irq 107 for
-MSI/MSI-X') for IRQs that are not shown in /proc/interrupts later.
-
-No, it does not enable/fix any existing hardware issue I am aware of.
-It just saves a couple of interrupt vectors, as Michael put it (10/16
-to be precise). However, interrupt vectors space is pretty much scarce
-resource on x86 and a risk of exhausting the vectors (and introducing
-quota i.e) has already been raised AFAIR.
-
-> Do you know how Windows handles this?  Does it have a similar interface?
-
-Have no clue, TBH. Can try to investigate if you see it helpful.
-
-> As you can tell, I'm a little skeptical about this.  It's a fairly big
-> change, it affects the arch interface, it seems to be targeted for
-> only a single chipset (though it's widely used), and we already
-> support a standard solution (MSI-X, reducing the number of vectors
-> requested, or even operating with 1 vector).
-
-I also do not like the fact the arch interface is getting complicated,
-so I happily leave it to your judgement ;) Well, it is low-level and
-hidden from drivers at least.
-
-Thanks!
-
-> Bjorn
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+> ---
+>
+> This patch was posted before as part 2/2 of a series
+> (https://lkml.org/lkml/2014/6/13/449). Part 1/2 has since been
+> accepted.
+>
+> Please note that checkpatch still complains about the wrapped strings,
+> but issue is not introduced by this patch, nor is it confined to the
+> lines changed by this patch. (There are several other locations in
+> sdhci.c where strings are wrapped across lines.)
+>
+> Changes from v4:
+>   - Rebased on Ulf's current mmc-next branch.
+>
+>  drivers/mmc/host/sdhci.c | 30 +++++++++++++++---------------
+>  1 file changed, 15 insertions(+), 15 deletions(-)
+>
+> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> index 5cf4a86..26639bf 100644
+> --- a/drivers/mmc/host/sdhci.c
+> +++ b/drivers/mmc/host/sdhci.c
+> @@ -1228,7 +1228,7 @@ static void sdhci_set_power(struct sdhci_host *host, unsigned char mode,
+>
+>         if (!IS_ERR(mmc->supply.vmmc)) {
+>                 spin_unlock_irq(&host->lock);
+> -               mmc_regulator_set_ocr(host->mmc, mmc->supply.vmmc, vdd);
+> +               mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, vdd);
+>                 spin_lock_irq(&host->lock);
+>                 return;
+>         }
+> @@ -1450,7 +1450,7 @@ static void sdhci_do_set_ios(struct sdhci_host *host, struct mmc_ios *ios)
+>                 spin_unlock_irqrestore(&host->lock, flags);
+>                 if (!IS_ERR(mmc->supply.vmmc) &&
+>                     ios->power_mode == MMC_POWER_OFF)
+> -                       mmc_regulator_set_ocr(host->mmc, mmc->supply.vmmc, 0);
+> +                       mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, 0);
+>                 return;
+>         }
+>
+> @@ -1734,7 +1734,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
+>                                                     3600000);
+>                         if (ret) {
+>                                 pr_warning("%s: Switching to 3.3V signalling voltage "
+> -                                               " failed\n", mmc_hostname(host->mmc));
+> +                                               " failed\n", mmc_hostname(mmc));
+>                                 return -EIO;
+>                         }
+>                 }
+> @@ -1747,7 +1747,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
+>                         return 0;
+>
+>                 pr_warning("%s: 3.3V regulator output did not became stable\n",
+> -                               mmc_hostname(host->mmc));
+> +                               mmc_hostname(mmc));
+>
+>                 return -EAGAIN;
+>         case MMC_SIGNAL_VOLTAGE_180:
+> @@ -1756,7 +1756,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
+>                                         1700000, 1950000);
+>                         if (ret) {
+>                                 pr_warning("%s: Switching to 1.8V signalling voltage "
+> -                                               " failed\n", mmc_hostname(host->mmc));
+> +                                               " failed\n", mmc_hostname(mmc));
+>                                 return -EIO;
+>                         }
+>                 }
+> @@ -1777,7 +1777,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
+>                         return 0;
+>
+>                 pr_warning("%s: 1.8V regulator output did not became stable\n",
+> -                               mmc_hostname(host->mmc));
+> +                               mmc_hostname(mmc));
+>
+>                 return -EAGAIN;
+>         case MMC_SIGNAL_VOLTAGE_120:
+> @@ -1786,7 +1786,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
+>                                                     1300000);
+>                         if (ret) {
+>                                 pr_warning("%s: Switching to 1.2V signalling voltage "
+> -                                               " failed\n", mmc_hostname(host->mmc));
+> +                                               " failed\n", mmc_hostname(mmc));
+>                                 return -EIO;
+>                         }
+>                 }
+> @@ -2825,12 +2825,12 @@ int sdhci_add_host(struct sdhci_host *host)
+>                  * (128) and potentially one alignment transfer for
+>                  * each of those entries.
+>                  */
+> -               host->adma_desc = dma_alloc_coherent(mmc_dev(host->mmc),
+> +               host->adma_desc = dma_alloc_coherent(mmc_dev(mmc),
+>                                                      ADMA_SIZE, &host->adma_addr,
+>                                                      GFP_KERNEL);
+>                 host->align_buffer = kmalloc(128 * 4, GFP_KERNEL);
+>                 if (!host->adma_desc || !host->align_buffer) {
+> -                       dma_free_coherent(mmc_dev(host->mmc), ADMA_SIZE,
+> +                       dma_free_coherent(mmc_dev(mmc), ADMA_SIZE,
+>                                           host->adma_desc, host->adma_addr);
+>                         kfree(host->align_buffer);
+>                         pr_warning("%s: Unable to allocate ADMA "
+> @@ -2843,7 +2843,7 @@ int sdhci_add_host(struct sdhci_host *host)
+>                         pr_warning("%s: unable to allocate aligned ADMA descriptor\n",
+>                                    mmc_hostname(mmc));
+>                         host->flags &= ~SDHCI_USE_ADMA;
+> -                       dma_free_coherent(mmc_dev(host->mmc), ADMA_SIZE,
+> +                       dma_free_coherent(mmc_dev(mmc), ADMA_SIZE,
+>                                           host->adma_desc, host->adma_addr);
+>                         kfree(host->align_buffer);
+>                         host->adma_desc = NULL;
+> @@ -2858,7 +2858,7 @@ int sdhci_add_host(struct sdhci_host *host)
+>          */
+>         if (!(host->flags & (SDHCI_USE_SDMA | SDHCI_USE_ADMA))) {
+>                 host->dma_mask = DMA_BIT_MASK(64);
+> -               mmc_dev(host->mmc)->dma_mask = &host->dma_mask;
+> +               mmc_dev(mmc)->dma_mask = &host->dma_mask;
+>         }
+>
+>         if (host->version >= SDHCI_SPEC_300)
+> @@ -2964,7 +2964,7 @@ int sdhci_add_host(struct sdhci_host *host)
+>                 mmc->caps |= MMC_CAP_SD_HIGHSPEED | MMC_CAP_MMC_HIGHSPEED;
+>
+>         if ((host->quirks & SDHCI_QUIRK_BROKEN_CARD_DETECTION) &&
+> -           !(host->mmc->caps & MMC_CAP_NONREMOVABLE))
+> +           !(mmc->caps & MMC_CAP_NONREMOVABLE))
+>                 mmc->caps |= MMC_CAP_NEEDS_POLL;
+>
+>         /* If there are external regulators, get them */
+> @@ -3261,7 +3261,7 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
+>
+>                 if (host->mrq) {
+>                         pr_err("%s: Controller removed during "
+> -                               " transfer!\n", mmc_hostname(host->mmc));
+> +                               " transfer!\n", mmc_hostname(mmc));
+>
+>                         host->mrq->cmd->error = -ENOMEDIUM;
+>                         tasklet_schedule(&host->finish_tasklet);
+> @@ -3272,7 +3272,7 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
+>
+>         sdhci_disable_card_detection(host);
+>
+> -       mmc_remove_host(host->mmc);
+> +       mmc_remove_host(mmc);
+>
+>  #ifdef SDHCI_USE_LEDS_CLASS
+>         led_classdev_unregister(&host->led);
+> @@ -3296,7 +3296,7 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
+>                 regulator_disable(mmc->supply.vqmmc);
+>
+>         if (host->adma_desc)
+> -               dma_free_coherent(mmc_dev(host->mmc), ADMA_SIZE,
+> +               dma_free_coherent(mmc_dev(mmc), ADMA_SIZE,
+>                                   host->adma_desc, host->adma_addr);
+>         kfree(host->align_buffer);
+>
+> --
+> 1.9.1
+>
