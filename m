@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756214AbaGHTYV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:24:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54200 "EHLO
+	id S1756193AbaGHTYS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:24:18 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54168 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755707AbaGHTIl (ORCPT
+	by vger.kernel.org with ESMTP id S1755703AbaGHTIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:08:41 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "John W. Linville" <linville@tuxdriver.com>,
-        "Stanislaw Gruszka" <sgruszka@redhat.com>
+CC: akpm@linux-foundation.org, "Lars-Peter Clausen" <lars@metafoo.de>,
+        "Takashi Iwai" <tiwai@suse.de>, "Jaroslav Kysela" <perex@perex.cz>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.482120270@decadent.org.uk>
+Message-ID: <lsq.1404846110.999385095@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 090/125] rt2x00: disable TKIP on USB
+Subject: [PATCH 3.2 083/125] ALSA: control: Protect user controls against
+ concurrent access
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,54 +32,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 8edcb0ba0d56f5914eef11eda6db8bfe74eb9ca8 upstream.
+commit 07f4d9d74a04aa7c72c5dae0ef97565f28f17b92 upstream.
 
-On USB we can not get atomically TKIP key. We have to disable support
-for TKIP acceleration on USB hardware to avoid bug as showed bellow.
+The user-control put and get handlers as well as the tlv do not protect against
+concurrent access from multiple threads. Since the state of the control is not
+updated atomically it is possible that either two write operations or a write
+and a read operation race against each other. Both can lead to arbitrary memory
+disclosure. This patch introduces a new lock that protects user-controls from
+concurrent access. Since applications typically access controls sequentially
+than in parallel a single lock per card should be fine.
 
-[  860.827243] BUG: scheduling while atomic: hostapd/3397/0x00000002
-<snip>
-[  860.827280] Call Trace:
-[  860.827282]  [<ffffffff81682ea6>] dump_stack+0x4d/0x66
-[  860.827284]  [<ffffffff8167eb9b>] __schedule_bug+0x47/0x55
-[  860.827285]  [<ffffffff81685bb3>] __schedule+0x733/0x7b0
-[  860.827287]  [<ffffffff81685c59>] schedule+0x29/0x70
-[  860.827289]  [<ffffffff81684f8a>] schedule_timeout+0x15a/0x2b0
-[  860.827291]  [<ffffffff8105ac50>] ? ftrace_raw_event_tick_stop+0xc0/0xc0
-[  860.827294]  [<ffffffff810c13c2>] ? __module_text_address+0x12/0x70
-[  860.827296]  [<ffffffff81686823>] wait_for_completion_timeout+0xb3/0x140
-[  860.827298]  [<ffffffff81080fc0>] ? wake_up_state+0x20/0x20
-[  860.827301]  [<ffffffff814d5b3d>] usb_start_wait_urb+0x7d/0x150
-[  860.827303]  [<ffffffff814d5cd5>] usb_control_msg+0xc5/0x110
-[  860.827305]  [<ffffffffa02fb0c6>] rt2x00usb_vendor_request+0xc6/0x160  [rt2x00usb]
-[  860.827307]  [<ffffffffa02fb215>] rt2x00usb_vendor_req_buff_lock+0x75/0x150 [rt2x00usb]
-[  860.827309]  [<ffffffffa02fb393>] rt2x00usb_vendor_request_buff+0xa3/0xe0 [rt2x00usb]
-[  860.827311]  [<ffffffffa023d1a3>] rt2x00usb_register_multiread+0x33/0x40 [rt2800usb]
-[  860.827314]  [<ffffffffa05805f9>] rt2800_get_tkip_seq+0x39/0x50  [rt2800lib]
-[  860.827321]  [<ffffffffa0480f88>] ieee80211_get_key+0x218/0x2a0  [mac80211]
-[  860.827322]  [<ffffffff815cc68c>] ? __nlmsg_put+0x6c/0x80
-[  860.827329]  [<ffffffffa051b02e>] nl80211_get_key+0x22e/0x360 [cfg80211]
-
-Reported-and-tested-by: Peter Wu <lekensteyn@gmail.com>
-Reported-and-tested-by: Pontus Fuchs <pontus.fuchs@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Jaroslav Kysela <perex@perex.cz>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/rt2x00/rt2x00mac.c | 2 ++
- 1 file changed, 2 insertions(+)
+ include/sound/core.h |  2 ++
+ sound/core/control.c | 31 +++++++++++++++++++++++++------
+ sound/core/init.c    |  1 +
+ 3 files changed, 28 insertions(+), 6 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2x00mac.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
-@@ -517,6 +517,8 @@ int rt2x00mac_set_key(struct ieee80211_h
- 	crypto.cipher = rt2x00crypto_key_to_cipher(key);
- 	if (crypto.cipher == CIPHER_NONE)
- 		return -EOPNOTSUPP;
-+	if (crypto.cipher == CIPHER_TKIP && rt2x00_is_usb(rt2x00dev))
-+		return -EOPNOTSUPP;
+--- a/include/sound/core.h
++++ b/include/sound/core.h
+@@ -120,6 +120,8 @@ struct snd_card {
+ 	int user_ctl_count;		/* count of all user controls */
+ 	struct list_head controls;	/* all controls for this card */
+ 	struct list_head ctl_files;	/* active control files */
++	struct mutex user_ctl_lock;	/* protects user controls against
++					   concurrent access */
  
- 	crypto.cmd = cmd;
+ 	struct snd_info_entry *proc_root;	/* root for soundcard specific files */
+ 	struct snd_info_entry *proc_id;	/* the card id */
+--- a/sound/core/control.c
++++ b/sound/core/control.c
+@@ -988,6 +988,7 @@ static int snd_ctl_elem_unlock(struct sn
  
+ struct user_element {
+ 	struct snd_ctl_elem_info info;
++	struct snd_card *card;
+ 	void *elem_data;		/* element data */
+ 	unsigned long elem_data_size;	/* size of element data in bytes */
+ 	void *tlv_data;			/* TLV data */
+@@ -1031,7 +1032,9 @@ static int snd_ctl_elem_user_get(struct
+ {
+ 	struct user_element *ue = kcontrol->private_data;
+ 
++	mutex_lock(&ue->card->user_ctl_lock);
+ 	memcpy(&ucontrol->value, ue->elem_data, ue->elem_data_size);
++	mutex_unlock(&ue->card->user_ctl_lock);
+ 	return 0;
+ }
+ 
+@@ -1040,10 +1043,12 @@ static int snd_ctl_elem_user_put(struct
+ {
+ 	int change;
+ 	struct user_element *ue = kcontrol->private_data;
+-	
++
++	mutex_lock(&ue->card->user_ctl_lock);
+ 	change = memcmp(&ucontrol->value, ue->elem_data, ue->elem_data_size) != 0;
+ 	if (change)
+ 		memcpy(ue->elem_data, &ucontrol->value, ue->elem_data_size);
++	mutex_unlock(&ue->card->user_ctl_lock);
+ 	return change;
+ }
+ 
+@@ -1063,19 +1068,32 @@ static int snd_ctl_elem_user_tlv(struct
+ 		new_data = memdup_user(tlv, size);
+ 		if (IS_ERR(new_data))
+ 			return PTR_ERR(new_data);
++		mutex_lock(&ue->card->user_ctl_lock);
+ 		change = ue->tlv_data_size != size;
+ 		if (!change)
+ 			change = memcmp(ue->tlv_data, new_data, size);
+ 		kfree(ue->tlv_data);
+ 		ue->tlv_data = new_data;
+ 		ue->tlv_data_size = size;
++		mutex_unlock(&ue->card->user_ctl_lock);
+ 	} else {
+-		if (! ue->tlv_data_size || ! ue->tlv_data)
+-			return -ENXIO;
+-		if (size < ue->tlv_data_size)
+-			return -ENOSPC;
++		int ret = 0;
++
++		mutex_lock(&ue->card->user_ctl_lock);
++		if (!ue->tlv_data_size || !ue->tlv_data) {
++			ret = -ENXIO;
++			goto err_unlock;
++		}
++		if (size < ue->tlv_data_size) {
++			ret = -ENOSPC;
++			goto err_unlock;
++		}
+ 		if (copy_to_user(tlv, ue->tlv_data, ue->tlv_data_size))
+-			return -EFAULT;
++			ret = -EFAULT;
++err_unlock:
++		mutex_unlock(&ue->card->user_ctl_lock);
++		if (ret)
++			return ret;
+ 	}
+ 	return change;
+ }
+@@ -1207,6 +1225,7 @@ static int snd_ctl_elem_add(struct snd_c
+ 	ue = kzalloc(sizeof(struct user_element) + private_size, GFP_KERNEL);
+ 	if (ue == NULL)
+ 		return -ENOMEM;
++	ue->card = card;
+ 	ue->info = *info;
+ 	ue->info.access = 0;
+ 	ue->elem_data = (char *)ue + sizeof(*ue);
+--- a/sound/core/init.c
++++ b/sound/core/init.c
+@@ -207,6 +207,7 @@ int snd_card_create(int idx, const char
+ 	INIT_LIST_HEAD(&card->devices);
+ 	init_rwsem(&card->controls_rwsem);
+ 	rwlock_init(&card->ctl_files_rwlock);
++	mutex_init(&card->user_ctl_lock);
+ 	INIT_LIST_HEAD(&card->controls);
+ 	INIT_LIST_HEAD(&card->ctl_files);
+ 	spin_lock_init(&card->files_lock);
 
