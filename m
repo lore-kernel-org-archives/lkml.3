@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425AbaGHHxp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 03:53:45 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:64626 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617AbaGHHxi (ORCPT
+	id S1753475AbaGHHxu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 03:53:50 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:53664 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752617AbaGHHxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 03:53:38 -0400
-Date: Tue, 8 Jul 2014 08:53:32 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Maxime Coquelin <maxime.coquelin@st.com>
-Cc: Peter Griffin <peter.griffin@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        patrice.chotard@st.com, srinivas.kandagatla@gmail.com,
-        devicetree@vger.kernel.org, balbi@ti.com, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, peppe.cavallaro@st.com
-Subject: Re: [PATCH v2 3/3] MAINTAINERS: Add dwc3-st.c file to ARCH/STI
- architecture
-Message-ID: <20140708075332.GM6407@lee--X1>
-References: <1404541530-27856-1-git-send-email-peter.griffin@linaro.org>
- <1404541530-27856-4-git-send-email-peter.griffin@linaro.org>
- <53BBA075.9040204@st.com>
+	Tue, 8 Jul 2014 03:53:48 -0400
+Date: Tue, 8 Jul 2014 09:53:25 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 1/4] documentation: Clarify
+ wake-up/memory-barrier relationship
+Message-ID: <20140708075325.GL19379@twins.programming.kicks-ass.net>
+References: <20140707222345.GA6320@linux.vnet.ibm.com>
+ <1404771862-6904-1-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="i57Ucs80xkCVE1Ce"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53BBA075.9040204@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1404771862-6904-1-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 08 Jul 2014, Maxime Coquelin wrote:
-> On 07/05/2014 08:25 AM, Peter Griffin wrote:
-> >Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
-> 
-> Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
 
-Maxime,
-  Once Acked by Felipe, I think this should go in via your tree to
-avoid conflicts with other ARM/STI ARCHITECTURE additions.
+--i57Ucs80xkCVE1Ce
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> >---
-> >  MAINTAINERS | 1 +
-> >  1 file changed, 1 insertion(+)
-> >
-> >diff --git a/MAINTAINERS b/MAINTAINERS
-> >index 702ca10..269ad3b 100644
-> >--- a/MAINTAINERS
-> >+++ b/MAINTAINERS
-> >@@ -1325,6 +1325,7 @@ F:	drivers/pinctrl/pinctrl-st.c
-> >  F:	drivers/media/rc/st_rc.c
-> >  F:	drivers/i2c/busses/i2c-st.c
-> >  F:	drivers/tty/serial/st-asc.c
-> >+F:	drivers/usb/dwc3/dwc3-st.c
-> >
-> >  ARM/TECHNOLOGIC SYSTEMS TS7250 MACHINE SUPPORT
-> >  M:	Lennert Buytenhek <kernel@wantstofly.org>
-> >
+On Mon, Jul 07, 2014 at 03:24:19PM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+>=20
+> This commit adds an example demonstrating that if a wake_up() doesn't
+> actually wake something up, no memory ordering is provided.
+>=20
+> Reported-by: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Thanks,
+
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+
+--i57Ucs80xkCVE1Ce
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTu6N1AAoJEHZH4aRLwOS6izAP+gO3PP7cTZBe85Kue4cdvTP8
++deOR8dY5CQUUwiDdHnrl/H02R5tzZjDoy8hLZx5XmAheA5irSJPz62EJuhWnm0a
+pz92E1ozU8sKMwFX+2fyB1xEv2iL5zNTBU+VOJmOwz9u+WegWLTNxC5WCwjMxbaG
+amzRWWceyjPArsseuQfpGi5efOrRPPW8m0IVu8exuwfbq2Iud2uhEabEffUnHAd5
+LA26yx7l1fcuCZ3RqQ7CTLTfYUwG6Ci+xvHTgQ1OTf3rvsEEJXSzLm2tvISZeLRM
+tj4e7j9U62v/wddDaUS0/hoIpLTXsB1JO8xx+jaXXNvqFBjy4RQMeVu6E0C/XNmL
+zQRS4l2x2STznYsLLp5s9Axl59TDKeYK7+wmhx4ysKyhyWtBUr8jDix5ID/CZtbU
+47/gQk5Y2CRallK1Z0BwpyB0Qd9JuEoTGpnSNE7+ff+DaouaT4UpGNdI9+OExFF+
+RCquJJEww1F0nXMGsughEfbXdSfbwpznQISiYN0IBH3PaLP16p/Js7VHB/c+CpO+
+rpGKuQBFnqnENonh9p2cwXr/hxeOMwtX65PDQh10/FD8KCReHodT9hWWgLMnrnCI
+x1vgMS69eT5++Gm3gnTk+IvkFTHUXdYWgVuCU/pF64ypmThQmUocoB9LFleB6a7f
++sjudnJ8CFwxJBSGBx6l
+=Exn7
+-----END PGP SIGNATURE-----
+
+--i57Ucs80xkCVE1Ce--
