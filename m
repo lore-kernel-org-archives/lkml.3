@@ -1,99 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755887AbaGHTJQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:09:16 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54312 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755649AbaGHTIq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:08:46 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	id S1755929AbaGHTJs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:09:48 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:47624 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755908AbaGHTJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 15:09:46 -0400
+From: Felipe Balbi <balbi@ti.com>
+To: <broonie@kernel.org>, <lgirdwood@gmail.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Keerthy <j-keerthy@ti.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 1/3] regulators: tps65218: fix DCDC4 linear voltage range
+Date: Tue, 8 Jul 2014 14:09:12 -0500
+Message-ID: <1404846554-4095-1-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 2.0.0.390.gcb682f8
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Huang Rui" <ray.huang@amd.com>
-Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.331966687@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 042/125] usb: usbtest: fix unlink write error with
- pattern 1
-In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.61-rc1 review patch.  If anyone has any objections, please let me know.
+The second range of this particular regulator,
+starts at 1.60V, not as 1.55V as it was originally
+implied by code.
 
-------------------
-
-From: Huang Rui <ray.huang@amd.com>
-
-commit e4d58f5dcb7d7be45df8def31881ebfae99c75da upstream.
-
-TEST 12 and TEST 24 unlinks the URB write request for N times. When
-host and gadget both initialize pattern 1 (mod 63) data series to
-transfer, the gadget side will complain the wrong data which is not
-expected.  Because in host side, usbtest doesn't fill the data buffer
-as mod 63 and this patch fixed it.
-
-[20285.488974] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
-[20285.489181] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Not Active
-[20285.489423] dwc3 dwc3.0.auto: ep1out-bulk: req ffff8800aa6cb480 dma aeb50800 length 512 last
-[20285.489727] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Start Transfer' params 00000000 a9eaf000 00000000
-[20285.490055] dwc3 dwc3.0.auto: Command Complete --> 0
-[20285.490281] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
-[20285.490492] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Active
-[20285.490713] dwc3 dwc3.0.auto: ep1out-bulk: endpoint busy
-[20285.490909] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Complete
-[20285.491117] dwc3 dwc3.0.auto: request ffff8800aa6cb480 from ep1out-bulk completed 512/512 ===> 0
-[20285.491431] zero gadget: bad OUT byte, buf[1] = 0
-[20285.491605] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Set Stall' params 00000000 00000000 00000000
-[20285.491915] dwc3 dwc3.0.auto: Command Complete --> 0
-[20285.492099] dwc3 dwc3.0.auto: queing request ffff8800aa6cb480 to ep1out-bulk length 512
-[20285.492387] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
-[20285.492595] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Not Active
-[20285.492830] dwc3 dwc3.0.auto: ep1out-bulk: req ffff8800aa6cb480 dma aeb51000 length 512 last
-[20285.493135] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Start Transfer' params 00000000 a9eaf000 00000000
-[20285.493465] dwc3 dwc3.0.auto: Command Complete --> 0
-
-Signed-off-by: Huang Rui <ray.huang@amd.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/usb/misc/usbtest.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
 
---- a/drivers/usb/misc/usbtest.c
-+++ b/drivers/usb/misc/usbtest.c
-@@ -1132,6 +1132,11 @@ static int unlink1(struct usbtest_dev *d
- 	urb->context = &completion;
- 	urb->complete = unlink1_callback;
+based on datasheet only. Also boot tested on another,
+yet-to-be-released HW. A 50mV difference is probably
+not a big deal for any users of DCDC4 but it's still
+good to be correct.
+
+ drivers/regulator/tps65218-regulator.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/regulator/tps65218-regulator.c b/drivers/regulator/tps65218-regulator.c
+index 9effe48..8b7a0a9 100644
+--- a/drivers/regulator/tps65218-regulator.c
++++ b/drivers/regulator/tps65218-regulator.c
+@@ -68,7 +68,7 @@ static const struct regulator_linear_range ldo1_dcdc3_ranges[] = {
  
-+	if (usb_pipeout(urb->pipe)) {
-+		simple_fill_buf(urb);
-+		urb->transfer_flags |= URB_ZERO_PACKET;
-+	}
-+
- 	/* keep the endpoint busy.  there are lots of hc/hcd-internal
- 	 * states, and testing should get to all of them over time.
- 	 *
-@@ -1262,6 +1267,11 @@ static int unlink_queued(struct usbtest_
- 				unlink_queued_callback, &ctx);
- 		ctx.urbs[i]->transfer_dma = buf_dma;
- 		ctx.urbs[i]->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
-+
-+		if (usb_pipeout(ctx.urbs[i]->pipe)) {
-+			simple_fill_buf(ctx.urbs[i]);
-+			ctx.urbs[i]->transfer_flags |= URB_ZERO_PACKET;
-+		}
- 	}
+ static const struct regulator_linear_range dcdc4_ranges[] = {
+ 	REGULATOR_LINEAR_RANGE(1175000, 0x0, 0xf, 25000),
+-	REGULATOR_LINEAR_RANGE(1550000, 0x10, 0x34, 50000),
++	REGULATOR_LINEAR_RANGE(1600000, 0x10, 0x34, 50000),
+ };
  
- 	/* Submit all the URBs and then unlink URBs num - 4 and num - 2. */
+ static struct tps_info tps65218_pmic_regs[] = {
+-- 
+2.0.0.390.gcb682f8
 
