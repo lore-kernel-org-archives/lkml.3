@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754564AbaGHMEg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 08:04:36 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:53177 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752912AbaGHMEe (ORCPT
+	id S1754482AbaGHMHH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 08:07:07 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:59387 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750867AbaGHMHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 08:04:34 -0400
-Date: Tue, 8 Jul 2014 14:04:32 +0200
-From: Pavel Machek <pavel@denx.de>
-To: Borislav Petkov <bp@alien8.de>
-Cc: tthayer@altera.com, robherring2@gmail.com, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rob@landley.net, linux@arm.linux.org.uk,
-        dinguyen@altera.com, dougthompson@xmission.com,
-        grant.likely@linaro.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tthayer.linux@gmail.com, linux-arm-kernel@lists.infradead.org,
-        linux-edac@vger.kernel.org
-Subject: Re: [PATCHv7 3/3] edac: altera: Add EDAC support for Altera SoC
- SDRAM Controller.
-Message-ID: <20140708120432.GB8628@amd.pavel.ucw.cz>
-References: <1403730927-16163-1-git-send-email-tthayer@altera.com>
- <1403730927-16163-4-git-send-email-tthayer@altera.com>
- <20140708113109.GC8100@amd.pavel.ucw.cz>
- <20140708114227.GB27659@pd.tnic>
- <20140708115205.GA8628@amd.pavel.ucw.cz>
- <20140708115458.GC27659@pd.tnic>
+	Tue, 8 Jul 2014 08:07:04 -0400
+Date: Tue, 8 Jul 2014 05:07:02 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: David Drysdale <drysdale@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-man@vger.kernel.org
+Subject: Re: [PATCH 01/11] fs: add O_BENEATH_ONLY flag to openat(2)
+Message-ID: <20140708120702.GB30459@infradead.org>
+References: <1404124096-21445-1-git-send-email-drysdale@google.com>
+ <1404124096-21445-2-git-send-email-drysdale@google.com>
+ <CALCETrU=HLmw9n-DxPkFV1xP5wtzQ7-YF3-uao6YiGZODA9kdw@mail.gmail.com>
+ <20140630154928.GB10375@google.com>
+ <CALCETrWJ-rqDo8OvSZWPUt1806gObNtwVHvC4M6kfQgvd3Eg9w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140708115458.GC27659@pd.tnic>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CALCETrWJ-rqDo8OvSZWPUt1806gObNtwVHvC4M6kfQgvd3Eg9w@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2014-07-08 13:54:58, Borislav Petkov wrote:
-> On Tue, Jul 08, 2014 at 01:52:05PM +0200, Pavel Machek wrote:
-> > I'm not joking. Try to understand and verify the code above. You
-> > can't. The "descriptive macro names" are useless; all the code does is
-> > split register in pieces. With the numbers it would be  very obvious.
+On Mon, Jun 30, 2014 at 08:53:01AM -0700, Andy Lutomirski wrote:
+> > Wouldn't it need to be both O_BENEATH_ONLY (for openat()) and
+> > AT_BENEATH_ONLY (for other *at() functions), like O_NOFOLLOW and
+> > AT_SYMLINK_NOFOLLOW?  (I.e. aren't the AT_* flags in a different
+> > numbering space than O_* flags?)
+> >
+> > Or am I misunderstanding?
+> >
 > 
-> No, you need to fix the names not switch to naked numbers.
+> Ugh, you're probably right.  I wish openat had separate flags and
+> atflags arguments.  Oh well.
 
-Hiding numbers that are used just once into defines to put them out of
-sight does not really help readability.
+There's two different AT_* namespaces.  The flags that most *at syscalls
+has, and the the one for the dfd argument, which currently only contains
+AT_FDCWD, although a new constant has recently been proposed to it.
 
-Compare:
+Having an AT_BENEATH magic value for the dfd argument certainly feels
+elegant to me, but seems to be against the language for openat in Posix:
 
-+#define DRAMADDRW_COLBIT_MASK	0x001F
-+#define DRAMADDRW_COLBIT_LSB	0
-+#define DRAMADDRW_ROWBIT_MASK	0x02E0
-+#define DRAMADDRW_ROWBIT_LSB	5
-+#define DRAMADDRW_BANKBIT_MASK	0x1C00
-+#define DRAMADDRW_BANKBIT_LSB	10
-+#define DRAMADDRW_CSBIT_MASK	0xE000
-+#define DRAMADDRW_CSBIT_LSB	13
+"The openat() function shall be equivalent to the open() function except
+in the case where path specifies a relative path. In this case the file
+to be opened is determined relative to the directory associated with the
+file descriptor fd instead of the current working directory. If the file
+descriptor was opened without O_SEARCH, the function shall check whether
+directory searches are permitted using the current permissions of the
+directory underlying the file descriptor. If the file descriptor was
+opened with O_SEARCH, the function shall not perform the check.
 
-(Insert few screens of code so that you have to scroll or split
-window).
+The oflag parameter and the optional fourth parameter correspond exactly
+to the parameters of open().
 
-What information do the define names have? None, I already know how
-hardware registers work.
+If openat() is passed the special value AT_FDCWD in the fd parameter,
+the current working directory shall be used and the behavior shall be
+identical to a call to open()."
 
-+	col = (read_reg & DRAMADDRW_COLBIT_MASK) >>
-+	     DRAMADDRW_COLBIT_LSB;
-+	row = (read_reg & DRAMADDRW_ROWBIT_MASK) >>
-+	     	 DRAMADDRW_ROWBIT_LSB;
-+	bank = (read_reg & DRAMADDRW_BANKBIT_MASK) >>
-+		      DRAMADDRW_BANKBIT_LSB;
-+	cs = (read_reg & DRAMADDRW_CSBIT_MASK) >>
-+		      	 DRAMADDRW_CSBIT_LSB;
-
-Instead, we could have:
-
-	 col = read_reg & 0x001F;
-	 row = (read_reg & 0x02E0) >> 5;
-	 bank = (read_reg & 0x1C00) >> 10;
-	 cs = (read_reg & 0xE000) >> 13;
-
-All information is preserved, code is shorter and easier to understand.
-
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
