@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965AbaGHNOV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:14:21 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45662 "EHLO arroyo.ext.ti.com"
+	id S1754860AbaGHNPj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:15:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62336 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754831AbaGHNOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:14:18 -0400
-Message-ID: <53BBEE76.7090100@ti.com>
-Date: Tue, 8 Jul 2014 18:43:26 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754266AbaGHNPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 09:15:38 -0400
+Subject: [PATCH1/7] X.509: Export certificate parse and free functions
+From: David Howells <dhowells@redhat.com>
+To: keyrings@linux-nfs.org
+Cc: Kees Cook <keescook@chromium.org>, Josh Boyer <jwboyer@redhat.com>,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>
+Date: Tue, 08 Jul 2014 14:15:11 +0100
+Message-ID: <20140708131511.28621.24521.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20140708131504.28621.61165.stgit@warthog.procyon.org.uk>
+References: <20140708131504.28621.61165.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>,
-        <tj@kernel.org>
-CC: <alexandre.belloni@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <jszhang@marvell.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-ide@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v9 1/7] phy: add a driver for the Berlin SATA PHY
-References: <1404728173-20263-1-git-send-email-antoine.tenart@free-electrons.com> <1404728173-20263-2-git-send-email-antoine.tenart@free-electrons.com> <53BBE419.8080107@ti.com> <53BBEB84.50904@gmail.com>
-In-Reply-To: <53BBEB84.50904@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Export certificate parse and free functions for use by modules.
 
-On Tuesday 08 July 2014 06:30 PM, Sebastian Hesselbarth wrote:
-> On 07/08/2014 02:29 PM, Kishon Vijay Abraham I wrote:
->> On Monday 07 July 2014 03:46 PM, Antoine Ténart wrote:
->>> The Berlin SoC has a two SATA ports. Add a PHY driver to handle them.
->>>
->>> The mode selection can let us think this PHY can be configured to fit
->>> other purposes. But there are reasons to think the SATA mode will be
->>> the only one usable: the PHY registers are only accessible indirectly
->>> through two registers in the SATA range, the PHY seems to be integrated
->>> and no information tells us the contrary. For these reasons, make the
->>> driver a SATA PHY driver.
->>
->> Thanks for doing multiple revisions of this. Looks good to be merged for me now.
-> 
-> I'd like to see some Acked-by from Tejun on the AHCI patches first, but
-> if he agrees, should I prepare a stable branch for each of us to pull
-> their patches from?
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Reviewed-by: Kees Cook <keescook@chromium.org>
+Reviewed-by: Josh Boyer <jwboyer@redhat.com>
+---
 
-I don't think that's needed. As long as there are no build breaks, each of us
-should be able to take it independently.
-> 
-> AFAIKS, that would be 1+2 for you, 3-5 for Tejun, and the DT crap 6+7
-> for me.
+ crypto/asymmetric_keys/x509_cert_parser.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-right, I'll take 1 and 2 in my tree.
 
-Cheers
-Kishon
+diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
+index 4a8df29..ac72348 100644
+--- a/crypto/asymmetric_keys/x509_cert_parser.c
++++ b/crypto/asymmetric_keys/x509_cert_parser.c
+@@ -11,6 +11,7 @@
+ 
+ #define pr_fmt(fmt) "X.509: "fmt
+ #include <linux/kernel.h>
++#include <linux/export.h>
+ #include <linux/slab.h>
+ #include <linux/err.h>
+ #include <linux/oid_registry.h>
+@@ -52,6 +53,7 @@ void x509_free_certificate(struct x509_certificate *cert)
+ 		kfree(cert);
+ 	}
+ }
++EXPORT_SYMBOL_GPL(x509_free_certificate);
+ 
+ /*
+  * Parse an X.509 certificate
+@@ -97,6 +99,7 @@ error_no_ctx:
+ error_no_cert:
+ 	return ERR_PTR(ret);
+ }
++EXPORT_SYMBOL_GPL(x509_cert_parse);
+ 
+ /*
+  * Note an OID when we find one for later processing when we know how
+
