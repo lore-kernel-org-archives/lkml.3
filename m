@@ -1,115 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932332AbaGHBSp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:18:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55225 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752574AbaGGXxo (ORCPT
+	id S1753548AbaGHB01 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:26:27 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:16418 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752175AbaGHB00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:53:44 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Torben Hohn <torbenh@linutronix.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.15 014/122] usb: musb: Ensure that cppi41 timer gets armed on premature DMA TX irq
-Date: Mon,  7 Jul 2014 16:56:16 -0700
-Message-Id: <20140707235734.675542467@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
-References: <20140707235734.234226883@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Mon, 7 Jul 2014 21:26:26 -0400
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-arm-msm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
+Subject: [PATCH 0/3] Qualcomm pm8xxx gpio driver
+Date: Mon, 7 Jul 2014 18:26:22 -0700
+Message-ID: <1404782785-1824-1-git-send-email-bjorn.andersson@sonymobile.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+This is device tree bindings as well as a driver for the gpio blocks found in
+Qualcomm pm8018, pm8038, pm8058, pm8917 and pm8921 pmic chips.
 
-------------------
+The first patch extends the pm8921-core to expose a function to read out the
+"RT status" of an interrupt pin. This is the way input many input values are
+exposed in these set of pmics.
 
-From: Thomas Gleixner <tglx@linutronix.de>
+Bjorn Andersson (3):
+  mfd: pm8921: Expose pm8xxx_read_irq_status
+  pinctrl: Device tree bindings for Qualcomm pm8xxx gpio block
+  pinctrl: Introduce pinctrl driver for Qualcomm pm8xxx
 
-commit c58d80f523ffc15ef4d062fc7aeb03793fe39701 upstream.
+ .../bindings/pinctrl/qcom,pm8xxx-gpio.txt          |  230 ++++++
+ drivers/mfd/pm8921-core.c                          |   36 +
+ drivers/pinctrl/Kconfig                            |   11 +
+ drivers/pinctrl/Makefile                           |    1 +
+ drivers/pinctrl/pinctrl-pm8xxx-gpio.c              |  795 ++++++++++++++++++++
+ include/dt-bindings/pinctrl/qcom,pm8xxx-gpio.h     |   34 +
+ include/linux/mfd/pm8921-core.h                    |   32 +
+ 7 files changed, 1139 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/qcom,pm8xxx-gpio.txt
+ create mode 100644 drivers/pinctrl/pinctrl-pm8xxx-gpio.c
+ create mode 100644 include/dt-bindings/pinctrl/qcom,pm8xxx-gpio.h
+ create mode 100644 include/linux/mfd/pm8921-core.h
 
-Some TI chips raise the DMA complete interrupt before the actual
-transfer has been completed. The code tries to busy wait for a few
-microseconds and if that fails it arms an hrtimer to recheck. So far
-so good, but that has the following issue:
-
-CPU 0					CPU1
-
-start_next_transfer(RQ1);
-
-DMA interrupt
-  if (premature_irq(RQ1))
-    if (!hrtimer_active(timer))
-       hrtimer_start(timer);
-
-hrtimer expires
-  timer->state = CALLBACK_RUNNING;
-  timer->fn()
-    cppi41_recheck_tx_req()
-      complete_request(RQ1);
-      if (requests_pending())
-        start_next_transfer(RQ2);
-
-					DMA interrupt
-					  if (premature_irq(RQ2))
-					    if (!hrtimer_active(timer))
-					       hrtimer_start(timer);
-  timer->state = INACTIVE;
-
-The premature interrupt of request2 on CPU1 does not arm the timer and
-therefor the request completion never happens because it checks for
-!hrtimer_active(). hrtimer_active() evaluates:
-
-  timer->state != HRTIMER_STATE_INACTIVE
-
-which of course evaluates to true in the above case as timer->state is
-CALLBACK_RUNNING.
-
-That's clearly documented:
-
- * A timer is active, when it is enqueued into the rbtree or the
- * callback function is running or it's in the state of being migrated
- * to another cpu.
-
-But that's not what the code wants to check. The code wants to check
-whether the timer is queued, i.e. whether its armed and waiting for
-expiry.
-
-We have a helper function for this: hrtimer_is_queued(). This
-evaluates:
-
-  timer->state & HRTIMER_STATE_QUEUED
-
-So in the above case this evaluates to false and therefor forces the
-DMA interrupt on CPU1 to call hrtimer_start().
-
-Use hrtimer_is_queued() instead of hrtimer_active() and evrything is
-good.
-
-Reported-by: Torben Hohn <torbenh@linutronix.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/musb/musb_cppi41.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/usb/musb/musb_cppi41.c
-+++ b/drivers/usb/musb/musb_cppi41.c
-@@ -318,7 +318,7 @@ static void cppi41_dma_callback(void *pr
- 		}
- 		list_add_tail(&cppi41_channel->tx_check,
- 				&controller->early_tx_list);
--		if (!hrtimer_active(&controller->early_tx)) {
-+		if (!hrtimer_is_queued(&controller->early_tx)) {
- 			hrtimer_start_range_ns(&controller->early_tx,
- 				ktime_set(0, 140 * NSEC_PER_USEC),
- 				40 * NSEC_PER_USEC,
-
+-- 
+1.7.9.5
 
