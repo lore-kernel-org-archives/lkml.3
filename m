@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755031AbaGHNPr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:15:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25625 "EHLO mx1.redhat.com"
+	id S1755063AbaGHNP4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:15:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61496 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755004AbaGHNPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:15:43 -0400
-Subject: [PATCH2/7] PKCS#7: Implement a parser [RFC 2315]
+	id S1754565AbaGHNPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 09:15:53 -0400
+Subject: [PATCH3/7] PKCS#7: Digest the data in a signed-data message
 From: David Howells <dhowells@redhat.com>
 To: keyrings@linux-nfs.org
 Cc: linux-security-module@vger.kernel.org, kexec@lists.infradead.org,
         Kees Cook <keescook@chromium.org>, Vivek Goyal <vgoyal@redhat.com>,
         linux-kernel@vger.kernel.org
-Date: Tue, 08 Jul 2014 14:15:17 +0100
-Message-ID: <20140708131517.28621.72426.stgit@warthog.procyon.org.uk>
+Date: Tue, 08 Jul 2014 14:15:25 +0100
+Message-ID: <20140708131525.28621.25899.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20140708131504.28621.61165.stgit@warthog.procyon.org.uk>
 References: <20140708131504.28621.61165.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.17-dirty
@@ -24,207 +24,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement a parser for a PKCS#7 signed-data message as described in part of
-RFC 2315.
+Digest the data in a PKCS#7 signed-data message and attach to the
+public_key_signature struct contained in the pkcs7_message struct.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 Acked-by: Vivek Goyal <vgoyal@redhat.com>
 Reviewed-by: Kees Cook <keescook@chromium.org>
 ---
 
- crypto/asymmetric_keys/Kconfig        |    9 +
- crypto/asymmetric_keys/Makefile       |   13 +
- crypto/asymmetric_keys/pkcs7.asn1     |  127 +++++++++++
- crypto/asymmetric_keys/pkcs7_parser.c |  396 +++++++++++++++++++++++++++++++++
- crypto/asymmetric_keys/pkcs7_parser.h |   61 +++++
- include/crypto/pkcs7.h                |   23 ++
- include/linux/oid_registry.h          |    1 
- 7 files changed, 630 insertions(+)
- create mode 100644 crypto/asymmetric_keys/pkcs7.asn1
- create mode 100644 crypto/asymmetric_keys/pkcs7_parser.c
- create mode 100644 crypto/asymmetric_keys/pkcs7_parser.h
- create mode 100644 include/crypto/pkcs7.h
+ crypto/asymmetric_keys/Makefile       |    3 -
+ crypto/asymmetric_keys/pkcs7_verify.c |  173 +++++++++++++++++++++++++++++++++
+ 2 files changed, 175 insertions(+), 1 deletion(-)
+ create mode 100644 crypto/asymmetric_keys/pkcs7_verify.c
 
 
-diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
-index 03a6eb9..a7cec9d 100644
---- a/crypto/asymmetric_keys/Kconfig
-+++ b/crypto/asymmetric_keys/Kconfig
-@@ -37,4 +37,13 @@ config X509_CERTIFICATE_PARSER
- 	  data and provides the ability to instantiate a crypto key from a
- 	  public key packet found inside the certificate.
- 
-+config PKCS7_MESSAGE_PARSER
-+	tristate "PKCS#7 message parser"
-+	depends on X509_CERTIFICATE_PARSER
-+	select ASN1
-+	select OID_REGISTRY
-+	help
-+	  This option provides support for parsing PKCS#7 format messages for
-+	  signature data and provides the ability to verify the signature.
-+
- endif # ASYMMETRIC_KEY_TYPE
 diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
-index 0727204..59d8cad 100644
+index 59d8cad..b6b39e7 100644
 --- a/crypto/asymmetric_keys/Makefile
 +++ b/crypto/asymmetric_keys/Makefile
-@@ -25,3 +25,16 @@ $(obj)/x509_rsakey-asn1.o: $(obj)/x509_rsakey-asn1.c $(obj)/x509_rsakey-asn1.h
+@@ -32,7 +32,8 @@ clean-files	+= x509_rsakey-asn1.c x509_rsakey-asn1.h
+ obj-$(CONFIG_PKCS7_MESSAGE_PARSER) += pkcs7_message.o
+ pkcs7_message-y := \
+ 	pkcs7-asn1.o \
+-	pkcs7_parser.o
++	pkcs7_parser.o \
++	pkcs7_verify.o
  
- clean-files	+= x509-asn1.c x509-asn1.h
- clean-files	+= x509_rsakey-asn1.c x509_rsakey-asn1.h
-+
-+#
-+# PKCS#7 message handling
-+#
-+obj-$(CONFIG_PKCS7_MESSAGE_PARSER) += pkcs7_message.o
-+pkcs7_message-y := \
-+	pkcs7-asn1.o \
-+	pkcs7_parser.o
-+
-+$(obj)/pkcs7_parser.o: $(obj)/pkcs7-asn1.h
-+$(obj)/pkcs7-asn1.o: $(obj)/pkcs7-asn1.c $(obj)/pkcs7-asn1.h
-+
-+clean-files	+= pkcs7-asn1.c pkcs7-asn1.h
-diff --git a/crypto/asymmetric_keys/pkcs7.asn1 b/crypto/asymmetric_keys/pkcs7.asn1
+ $(obj)/pkcs7_parser.o: $(obj)/pkcs7-asn1.h
+ $(obj)/pkcs7-asn1.o: $(obj)/pkcs7-asn1.c $(obj)/pkcs7-asn1.h
+diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
 new file mode 100644
-index 0000000..a5a14ef
+index 0000000..0bb408a
 --- /dev/null
-+++ b/crypto/asymmetric_keys/pkcs7.asn1
-@@ -0,0 +1,127 @@
-+PKCS7ContentInfo ::= SEQUENCE {
-+	contentType	ContentType,
-+	content		[0] EXPLICIT SignedData OPTIONAL
-+}
-+
-+ContentType ::= OBJECT IDENTIFIER ({ pkcs7_note_OID })
-+
-+SignedData ::= SEQUENCE {
-+	version			INTEGER,
-+	digestAlgorithms	DigestAlgorithmIdentifiers,
-+	contentInfo		ContentInfo,
-+	certificates		CHOICE {
-+		certSet		[0] IMPLICIT ExtendedCertificatesAndCertificates,
-+		certSequence	[2] IMPLICIT Certificates
-+	} OPTIONAL ({ pkcs7_note_certificate_list }),
-+	crls CHOICE {
-+		crlSet		[1] IMPLICIT CertificateRevocationLists,
-+		crlSequence	[3] IMPLICIT CRLSequence
-+	} OPTIONAL,
-+	signerInfos		SignerInfos
-+}
-+
-+ContentInfo ::= SEQUENCE {
-+	contentType	ContentType,
-+	content		[0] EXPLICIT Data OPTIONAL
-+}
-+
-+Data ::= ANY ({ pkcs7_note_data })
-+
-+DigestAlgorithmIdentifiers ::= CHOICE {
-+	daSet			SET OF DigestAlgorithmIdentifier,
-+	daSequence		SEQUENCE OF DigestAlgorithmIdentifier
-+}
-+
-+DigestAlgorithmIdentifier ::= SEQUENCE {
-+	algorithm   OBJECT IDENTIFIER ({ pkcs7_note_OID }),
-+	parameters  ANY OPTIONAL
-+}
-+
-+--
-+-- Certificates and certificate lists
-+--
-+ExtendedCertificatesAndCertificates ::= SET OF ExtendedCertificateOrCertificate
-+
-+ExtendedCertificateOrCertificate ::= CHOICE {
-+  certificate		Certificate,				-- X.509
-+  extendedCertificate	[0] IMPLICIT ExtendedCertificate	-- PKCS#6
-+}
-+
-+ExtendedCertificate ::= Certificate -- cheating
-+
-+Certificates ::= SEQUENCE OF Certificate
-+
-+CertificateRevocationLists ::= SET OF CertificateList
-+
-+CertificateList ::= SEQUENCE OF Certificate -- This may be defined incorrectly
-+
-+CRLSequence ::= SEQUENCE OF CertificateList
-+
-+Certificate ::= ANY ({ pkcs7_extract_cert }) -- X.509
-+
-+--
-+-- Signer information
-+--
-+SignerInfos ::= CHOICE {
-+	siSet		SET OF SignerInfo,
-+	siSequence	SEQUENCE OF SignerInfo
-+}
-+
-+SignerInfo ::= SEQUENCE {
-+	version			INTEGER,
-+	issuerAndSerialNumber	IssuerAndSerialNumber,
-+	digestAlgorithm		DigestAlgorithmIdentifier ({ pkcs7_sig_note_digest_algo }),
-+	authenticatedAttributes	CHOICE {
-+		aaSet		[0] IMPLICIT SetOfAuthenticatedAttribute
-+					({ pkcs7_sig_note_set_of_authattrs }),
-+		aaSequence	[2] EXPLICIT SEQUENCE OF AuthenticatedAttribute
-+			-- Explicit because easier to compute digest on
-+			-- sequence of attributes and then reuse encoded
-+			-- sequence in aaSequence.
-+	} OPTIONAL,
-+	digestEncryptionAlgorithm
-+				DigestEncryptionAlgorithmIdentifier ({ pkcs7_sig_note_pkey_algo }),
-+	encryptedDigest		EncryptedDigest,
-+	unauthenticatedAttributes CHOICE {
-+		uaSet		[1] IMPLICIT SET OF UnauthenticatedAttribute,
-+		uaSequence	[3] IMPLICIT SEQUENCE OF UnauthenticatedAttribute
-+	} OPTIONAL
-+} ({ pkcs7_note_signed_info })
-+
-+IssuerAndSerialNumber ::= SEQUENCE {
-+	issuer			Name ({ pkcs7_sig_note_issuer }),
-+	serialNumber		CertificateSerialNumber ({ pkcs7_sig_note_serial })
-+}
-+
-+CertificateSerialNumber ::= INTEGER
-+
-+SetOfAuthenticatedAttribute ::= SET OF AuthenticatedAttribute
-+
-+AuthenticatedAttribute ::= SEQUENCE {
-+	type			OBJECT IDENTIFIER ({ pkcs7_note_OID }),
-+	values			SET OF ANY ({ pkcs7_sig_note_authenticated_attr })
-+}
-+
-+UnauthenticatedAttribute ::= SEQUENCE {
-+	type			OBJECT IDENTIFIER ({ pkcs7_note_OID }),
-+	values			SET OF ANY
-+}
-+
-+DigestEncryptionAlgorithmIdentifier ::= SEQUENCE {
-+	algorithm		OBJECT IDENTIFIER ({ pkcs7_note_OID }),
-+	parameters		ANY OPTIONAL
-+}
-+
-+EncryptedDigest ::= OCTET STRING ({ pkcs7_sig_note_signature })
-+
-+---
-+--- X.500 Name
-+---
-+Name ::= SEQUENCE OF RelativeDistinguishedName
-+
-+RelativeDistinguishedName ::= SET OF AttributeValueAssertion
-+
-+AttributeValueAssertion ::= SEQUENCE {
-+	attributeType		OBJECT IDENTIFIER ({ pkcs7_note_OID }),
-+	attributeValue		ANY
-+}
-diff --git a/crypto/asymmetric_keys/pkcs7_parser.c b/crypto/asymmetric_keys/pkcs7_parser.c
-new file mode 100644
-index 0000000..42e56aa
---- /dev/null
-+++ b/crypto/asymmetric_keys/pkcs7_parser.c
-@@ -0,0 +1,396 @@
-+/* PKCS#7 parser
++++ b/crypto/asymmetric_keys/pkcs7_verify.c
+@@ -0,0 +1,173 @@
++/* Verify the signature on a PKCS#7 message.
 + *
 + * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
 + * Written by David Howells (dhowells@redhat.com)
@@ -240,492 +74,161 @@ index 0000000..42e56aa
 +#include <linux/export.h>
 +#include <linux/slab.h>
 +#include <linux/err.h>
-+#include <linux/oid_registry.h>
++#include <linux/asn1.h>
++#include <crypto/hash.h>
 +#include "public_key.h"
 +#include "pkcs7_parser.h"
-+#include "pkcs7-asn1.h"
 +
-+struct pkcs7_parse_context {
-+	struct pkcs7_message	*msg;		/* Message being constructed */
-+	struct pkcs7_signed_info *sinfo;	/* SignedInfo being constructed */
-+	struct pkcs7_signed_info **ppsinfo;
-+	struct x509_certificate *certs;		/* Certificate cache */
-+	struct x509_certificate **ppcerts;
-+	unsigned long	data;			/* Start of data */
-+	enum OID	last_oid;		/* Last OID encountered */
-+	unsigned	x509_index;
-+	unsigned	sinfo_index;
-+};
-+
-+/**
-+ * pkcs7_free_message - Free a PKCS#7 message
-+ * @pkcs7: The PKCS#7 message to free
++/*
++ * Digest the relevant parts of the PKCS#7 data
 + */
-+void pkcs7_free_message(struct pkcs7_message *pkcs7)
++static int pkcs7_digest(struct pkcs7_message *pkcs7,
++			struct pkcs7_signed_info *sinfo)
 +{
-+	struct x509_certificate *cert;
-+	struct pkcs7_signed_info *sinfo;
++	struct crypto_shash *tfm;
++	struct shash_desc *desc;
++	size_t digest_size, desc_size;
++	void *digest;
++	int ret;
 +
-+	if (pkcs7) {
-+		while (pkcs7->certs) {
-+			cert = pkcs7->certs;
-+			pkcs7->certs = cert->next;
-+			x509_free_certificate(cert);
-+		}
-+		while (pkcs7->crl) {
-+			cert = pkcs7->crl;
-+			pkcs7->crl = cert->next;
-+			x509_free_certificate(cert);
-+		}
-+		while (pkcs7->signed_infos) {
-+			sinfo = pkcs7->signed_infos;
-+			pkcs7->signed_infos = sinfo->next;
-+			mpi_free(sinfo->sig.mpi[0]);
-+			kfree(sinfo->sig.digest);
-+			kfree(sinfo);
-+		}
-+		kfree(pkcs7);
-+	}
-+}
-+EXPORT_SYMBOL_GPL(pkcs7_free_message);
++	kenter(",%u,%u", sinfo->index, sinfo->sig.pkey_hash_algo);
 +
-+/**
-+ * pkcs7_parse_message - Parse a PKCS#7 message
-+ * @data: The raw binary ASN.1 encoded message to be parsed
-+ * @datalen: The size of the encoded message
-+ */
-+struct pkcs7_message *pkcs7_parse_message(const void *data, size_t datalen)
-+{
-+	struct pkcs7_parse_context *ctx;
-+	struct pkcs7_message *msg;
-+	long ret;
++	if (sinfo->sig.pkey_hash_algo >= PKEY_HASH__LAST ||
++	    !hash_algo_name[sinfo->sig.pkey_hash_algo])
++		return -ENOPKG;
++
++	/* Allocate the hashing algorithm we're going to need and find out how
++	 * big the hash operational data will be.
++	 */
++	tfm = crypto_alloc_shash(hash_algo_name[sinfo->sig.pkey_hash_algo],
++				 0, 0);
++	if (IS_ERR(tfm))
++		return (PTR_ERR(tfm) == -ENOENT) ? -ENOPKG : PTR_ERR(tfm);
++
++	desc_size = crypto_shash_descsize(tfm) + sizeof(*desc);
++	sinfo->sig.digest_size = digest_size = crypto_shash_digestsize(tfm);
 +
 +	ret = -ENOMEM;
-+	msg = kzalloc(sizeof(struct pkcs7_message), GFP_KERNEL);
-+	if (!msg)
-+		goto error_no_sig;
-+	ctx = kzalloc(sizeof(struct pkcs7_parse_context), GFP_KERNEL);
-+	if (!ctx)
-+		goto error_no_ctx;
-+	ctx->sinfo = kzalloc(sizeof(struct pkcs7_signed_info), GFP_KERNEL);
-+	if (!ctx->sinfo)
-+		goto error_no_sinfo;
++	digest = kzalloc(digest_size + desc_size, GFP_KERNEL);
++	if (!digest)
++		goto error_no_desc;
 +
-+	ctx->msg = msg;
-+	ctx->data = (unsigned long)data;
-+	ctx->ppcerts = &ctx->certs;
-+	ctx->ppsinfo = &ctx->msg->signed_infos;
++	desc = digest + digest_size;
++	desc->tfm   = tfm;
++	desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
 +
-+	/* Attempt to decode the signature */
-+	ret = asn1_ber_decoder(&pkcs7_decoder, ctx, data, datalen);
++	/* Digest the message [RFC2315 9.3] */
++	ret = crypto_shash_init(desc);
 +	if (ret < 0)
-+		goto error_decode;
++		goto error;
++	ret = crypto_shash_finup(desc, pkcs7->data, pkcs7->data_len, digest);
++	if (ret < 0)
++		goto error;
++	pr_devel("MsgDigest = [%*ph]\n", 8, digest);
 +
-+	while (ctx->certs) {
-+		struct x509_certificate *cert = ctx->certs;
-+		ctx->certs = cert->next;
-+		x509_free_certificate(cert);
++	/* However, if there are authenticated attributes, there must be a
++	 * message digest attribute amongst them which corresponds to the
++	 * digest we just calculated.
++	 */
++	if (sinfo->msgdigest) {
++		u8 tag;
++
++		if (sinfo->msgdigest_len != sinfo->sig.digest_size) {
++			pr_debug("Sig %u: Invalid digest size (%u)\n",
++				 sinfo->index, sinfo->msgdigest_len);
++			ret = -EBADMSG;
++			goto error;
++		}
++
++		if (memcmp(digest, sinfo->msgdigest, sinfo->msgdigest_len) != 0) {
++			pr_debug("Sig %u: Message digest doesn't match\n",
++				 sinfo->index);
++			ret = -EKEYREJECTED;
++			goto error;
++		}
++
++		/* We then calculate anew, using the authenticated attributes
++		 * as the contents of the digest instead.  Note that we need to
++		 * convert the attributes from a CONT.0 into a SET before we
++		 * hash it.
++		 */
++		memset(digest, 0, sinfo->sig.digest_size);
++
++		ret = crypto_shash_init(desc);
++		if (ret < 0)
++			goto error;
++		tag = ASN1_CONS_BIT | ASN1_SET;
++		ret = crypto_shash_update(desc, &tag, 1);
++		if (ret < 0)
++			goto error;
++		ret = crypto_shash_finup(desc, sinfo->authattrs,
++					 sinfo->authattrs_len, digest);
++		if (ret < 0)
++			goto error;
++		pr_devel("AADigest = [%*ph]\n", 8, digest);
 +	}
-+	mpi_free(ctx->sinfo->sig.mpi[0]);
-+	kfree(ctx->sinfo->sig.digest);
-+	kfree(ctx->sinfo);
-+	kfree(ctx);
-+	return msg;
 +
-+error_decode:
-+	mpi_free(ctx->sinfo->sig.mpi[0]);
-+	kfree(ctx->sinfo->sig.digest);
-+	kfree(ctx->sinfo);
-+error_no_sinfo:
-+	kfree(ctx);
-+error_no_ctx:
-+	pkcs7_free_message(msg);
-+error_no_sig:
-+	return ERR_PTR(ret);
++	sinfo->sig.digest = digest;
++	digest = NULL;
++
++error:
++	kfree(digest);
++error_no_desc:
++	crypto_free_shash(tfm);
++	kleave(" = %d", ret);
++	return ret;
 +}
-+EXPORT_SYMBOL_GPL(pkcs7_parse_message);
++
++/*
++/*
++ * Verify one signed information block from a PKCS#7 message.
++ */
++static int pkcs7_verify_one(struct pkcs7_message *pkcs7,
++			    struct pkcs7_signed_info *sinfo)
++{
++	int ret;
++
++	kenter(",%u", sinfo->index);
++
++	/* First of all, digest the data in the PKCS#7 message and the
++	 * signed information block
++	 */
++	ret = pkcs7_digest(pkcs7, sinfo);
++	if (ret < 0)
++		return ret;
++
++	return 0;
++}
 +
 +/**
-+ * pkcs7_get_content_data - Get access to the PKCS#7 content
-+ * @pkcs7: The preparsed PKCS#7 message to access
-+ * @_data: Place to return a pointer to the data
-+ * @_data_len: Place to return the data length
-+ * @want_wrapper: True if the ASN.1 object header should be included in the data
-+ *
-+ * Get access to the data content of the PKCS#7 message, including, optionally,
-+ * the header of the ASN.1 object that contains it.  Returns -ENODATA if the
-+ * data object was missing from the message.
++ * pkcs7_verify - Verify a PKCS#7 message
++ * @pkcs7: The PKCS#7 message to be verified
 + */
-+int pkcs7_get_content_data(const struct pkcs7_message *pkcs7,
-+			   const void **_data, size_t *_data_len,
-+			   bool want_wrapper)
++int pkcs7_verify(struct pkcs7_message *pkcs7)
 +{
-+	size_t wrapper;
-+
-+	if (!pkcs7->data)
-+		return -ENODATA;
-+
-+	wrapper = want_wrapper ? pkcs7->data_hdrlen : 0;
-+	*_data = pkcs7->data - wrapper;
-+	*_data_len = pkcs7->data_len + wrapper;
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(pkcs7_get_content_data);
-+
-+/*
-+ * Note an OID when we find one for later processing when we know how
-+ * to interpret it.
-+ */
-+int pkcs7_note_OID(void *context, size_t hdrlen,
-+		   unsigned char tag,
-+		   const void *value, size_t vlen)
-+{
-+	struct pkcs7_parse_context *ctx = context;
-+
-+	ctx->last_oid = look_up_OID(value, vlen);
-+	if (ctx->last_oid == OID__NR) {
-+		char buffer[50];
-+		sprint_oid(value, vlen, buffer, sizeof(buffer));
-+		printk("PKCS7: Unknown OID: [%lu] %s\n",
-+		       (unsigned long)value - ctx->data, buffer);
-+	}
-+	return 0;
-+}
-+
-+/*
-+ * Note the digest algorithm for the signature.
-+ */
-+int pkcs7_sig_note_digest_algo(void *context, size_t hdrlen,
-+			       unsigned char tag,
-+			       const void *value, size_t vlen)
-+{
-+	struct pkcs7_parse_context *ctx = context;
-+
-+	switch (ctx->last_oid) {
-+	case OID_md4:
-+		ctx->sinfo->sig.pkey_hash_algo = HASH_ALGO_MD4;
-+		break;
-+	case OID_md5:
-+		ctx->sinfo->sig.pkey_hash_algo = HASH_ALGO_MD5;
-+		break;
-+	case OID_sha1:
-+		ctx->sinfo->sig.pkey_hash_algo = HASH_ALGO_SHA1;
-+		break;
-+	case OID_sha256:
-+		ctx->sinfo->sig.pkey_hash_algo = HASH_ALGO_SHA256;
-+		break;
-+	default:
-+		printk("Unsupported digest algo: %u\n", ctx->last_oid);
-+		return -ENOPKG;
-+	}
-+	return 0;
-+}
-+
-+/*
-+ * Note the public key algorithm for the signature.
-+ */
-+int pkcs7_sig_note_pkey_algo(void *context, size_t hdrlen,
-+			     unsigned char tag,
-+			     const void *value, size_t vlen)
-+{
-+	struct pkcs7_parse_context *ctx = context;
-+
-+	switch (ctx->last_oid) {
-+	case OID_rsaEncryption:
-+		ctx->sinfo->sig.pkey_algo = PKEY_ALGO_RSA;
-+		break;
-+	default:
-+		printk("Unsupported pkey algo: %u\n", ctx->last_oid);
-+		return -ENOPKG;
-+	}
-+	return 0;
-+}
-+
-+/*
-+ * Extract a certificate and store it in the context.
-+ */
-+int pkcs7_extract_cert(void *context, size_t hdrlen,
-+		       unsigned char tag,
-+		       const void *value, size_t vlen)
-+{
-+	struct pkcs7_parse_context *ctx = context;
++	struct pkcs7_signed_info *sinfo;
 +	struct x509_certificate *x509;
++	int ret, n;
 +
-+	if (tag != ((ASN1_UNIV << 6) | ASN1_CONS_BIT | ASN1_SEQ)) {
-+		pr_debug("Cert began with tag %02x at %lu\n",
-+			 tag, (unsigned long)ctx - ctx->data);
-+		return -EBADMSG;
++	kenter("");
++
++	for (n = 0, x509 = pkcs7->certs; x509; x509 = x509->next, n++) {
++		ret = x509_get_sig_params(x509);
++		if (ret < 0)
++			return ret;
++		pr_debug("X.509[%u] %s\n", n, x509->authority);
 +	}
 +
-+	/* We have to correct for the header so that the X.509 parser can start
-+	 * from the beginning.  Note that since X.509 stipulates DER, there
-+	 * probably shouldn't be an EOC trailer - but it is in PKCS#7 (which
-+	 * stipulates BER).
-+	 */
-+	value -= hdrlen;
-+	vlen += hdrlen;
-+
-+	if (((u8*)value)[1] == 0x80)
-+		vlen += 2; /* Indefinite length - there should be an EOC */
-+
-+	x509 = x509_cert_parse(value, vlen);
-+	if (IS_ERR(x509))
-+		return PTR_ERR(x509);
-+
-+	pr_debug("Got cert for %s\n", x509->subject);
-+	pr_debug("- fingerprint %s\n", x509->fingerprint);
-+
-+	x509->index = ++ctx->x509_index;
-+	*ctx->ppcerts = x509;
-+	ctx->ppcerts = &x509->next;
-+	return 0;
-+}
-+
-+/*
-+ * Save the certificate list
-+ */
-+int pkcs7_note_certificate_list(void *context, size_t hdrlen,
-+				unsigned char tag,
-+				const void *value, size_t vlen)
-+{
-+	struct pkcs7_parse_context *ctx = context;
-+
-+	pr_devel("Got cert list (%02x)\n", tag);
-+
-+	*ctx->ppcerts = ctx->msg->certs;
-+	ctx->msg->certs = ctx->certs;
-+	ctx->certs = NULL;
-+	ctx->ppcerts = &ctx->certs;
-+	return 0;
-+}
-+
-+/*
-+ * Extract the data from the message and store that and its content type OID in
-+ * the context.
-+ */
-+int pkcs7_note_data(void *context, size_t hdrlen,
-+		    unsigned char tag,
-+		    const void *value, size_t vlen)
-+{
-+	struct pkcs7_parse_context *ctx = context;
-+
-+	pr_debug("Got data\n");
-+
-+	ctx->msg->data = value;
-+	ctx->msg->data_len = vlen;
-+	ctx->msg->data_hdrlen = hdrlen;
-+	ctx->msg->data_type = ctx->last_oid;
-+	return 0;
-+}
-+
-+/*
-+ * Parse authenticated attributes
-+ */
-+int pkcs7_sig_note_authenticated_attr(void *context, size_t hdrlen,
-+				      unsigned char tag,
-+				      const void *value, size_t vlen)
-+{
-+	struct pkcs7_parse_context *ctx = context;
-+
-+	pr_devel("AuthAttr: %02x %zu [%*ph]\n", tag, vlen, (unsigned)vlen, value);
-+
-+	switch (ctx->last_oid) {
-+	case OID_messageDigest:
-+		if (tag != ASN1_OTS)
-+			return -EBADMSG;
-+		ctx->sinfo->msgdigest = value;
-+		ctx->sinfo->msgdigest_len = vlen;
-+		return 0;
-+	default:
-+		return 0;
++	for (sinfo = pkcs7->signed_infos; sinfo; sinfo = sinfo->next) {
++		ret = pkcs7_verify_one(pkcs7, sinfo);
++		if (ret < 0) {
++			kleave(" = %d", ret);
++			return ret;
++		}
 +	}
-+}
 +
-+/*
-+ * Note the set of auth attributes for digestion purposes [RFC2315 9.3]
-+ */
-+int pkcs7_sig_note_set_of_authattrs(void *context, size_t hdrlen,
-+				    unsigned char tag,
-+				    const void *value, size_t vlen)
-+{
-+	struct pkcs7_parse_context *ctx = context;
-+
-+	/* We need to switch the 'CONT 0' to a 'SET OF' when we digest */
-+	ctx->sinfo->authattrs = value - (hdrlen - 1);
-+	ctx->sinfo->authattrs_len = vlen + (hdrlen - 1);
++	kleave(" = 0");
 +	return 0;
 +}
-+
-+/*
-+ * Note the issuing certificate serial number
-+ */
-+int pkcs7_sig_note_serial(void *context, size_t hdrlen,
-+			  unsigned char tag,
-+			  const void *value, size_t vlen)
-+{
-+	struct pkcs7_parse_context *ctx = context;
-+	ctx->sinfo->raw_serial = value;
-+	ctx->sinfo->raw_serial_size = vlen;
-+	return 0;
-+}
-+
-+/*
-+ * Note the issuer's name
-+ */
-+int pkcs7_sig_note_issuer(void *context, size_t hdrlen,
-+			  unsigned char tag,
-+			  const void *value, size_t vlen)
-+{
-+	struct pkcs7_parse_context *ctx = context;
-+	ctx->sinfo->raw_issuer = value;
-+	ctx->sinfo->raw_issuer_size = vlen;
-+	return 0;
-+}
-+
-+/*
-+ * Note the signature data
-+ */
-+int pkcs7_sig_note_signature(void *context, size_t hdrlen,
-+			     unsigned char tag,
-+			     const void *value, size_t vlen)
-+{
-+	struct pkcs7_parse_context *ctx = context;
-+	MPI mpi;
-+
-+	BUG_ON(ctx->sinfo->sig.pkey_algo != PKEY_ALGO_RSA);
-+
-+	mpi = mpi_read_raw_data(value, vlen);
-+	if (!mpi)
-+		return -ENOMEM;
-+
-+	ctx->sinfo->sig.mpi[0] = mpi;
-+	ctx->sinfo->sig.nr_mpi = 1;
-+	return 0;
-+}
-+
-+/*
-+ * Note a signature information block
-+ */
-+int pkcs7_note_signed_info(void *context, size_t hdrlen,
-+			   unsigned char tag,
-+			   const void *value, size_t vlen)
-+{
-+	struct pkcs7_parse_context *ctx = context;
-+
-+	ctx->sinfo->index = ++ctx->sinfo_index;
-+	*ctx->ppsinfo = ctx->sinfo;
-+	ctx->ppsinfo = &ctx->sinfo->next;
-+	ctx->sinfo = kzalloc(sizeof(struct pkcs7_signed_info), GFP_KERNEL);
-+	if (!ctx->sinfo)
-+		return -ENOMEM;
-+	return 0;
-+}
-diff --git a/crypto/asymmetric_keys/pkcs7_parser.h b/crypto/asymmetric_keys/pkcs7_parser.h
-new file mode 100644
-index 0000000..d25f4d1
---- /dev/null
-+++ b/crypto/asymmetric_keys/pkcs7_parser.h
-@@ -0,0 +1,61 @@
-+/* PKCS#7 crypto data parser internal definitions
-+ *
-+ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+
-+#include <linux/oid_registry.h>
-+#include <crypto/pkcs7.h>
-+#include "x509_parser.h"
-+
-+#define kenter(FMT, ...) \
-+	pr_devel("==> %s("FMT")\n", __func__, ##__VA_ARGS__)
-+#define kleave(FMT, ...) \
-+	pr_devel("<== %s()"FMT"\n", __func__, ##__VA_ARGS__)
-+
-+struct pkcs7_signed_info {
-+	struct pkcs7_signed_info *next;
-+	struct x509_certificate *signer; /* Signing certificate (in msg->certs) */
-+	unsigned index;
-+	bool trusted;
-+
-+	/* Message digest - the digest of the Content Data (or NULL) */
-+	const void	*msgdigest;
-+	unsigned	msgdigest_len;
-+
-+	/* Authenticated Attribute data (or NULL) */
-+	unsigned	authattrs_len;
-+	const void	*authattrs;
-+
-+	/* Issuing cert serial number and issuer's name */
-+	const void	*raw_serial;
-+	unsigned	raw_serial_size;
-+	unsigned	raw_issuer_size;
-+	const void	*raw_issuer;
-+
-+	/* Message signature.
-+	 *
-+	 * This contains the generated digest of _either_ the Content Data or
-+	 * the Authenticated Attributes [RFC2315 9.3].  If the latter, one of
-+	 * the attributes contains the digest of the the Content Data within
-+	 * it.
-+	 */
-+	struct public_key_signature sig;
-+};
-+
-+struct pkcs7_message {
-+	struct x509_certificate *certs;	/* Certificate list */
-+	struct x509_certificate *crl;	/* Revocation list */
-+	struct pkcs7_signed_info *signed_infos;
-+
-+	/* Content Data (or NULL) */
-+	enum OID	data_type;	/* Type of Data */
-+	size_t		data_len;	/* Length of Data */
-+	size_t		data_hdrlen;	/* Length of Data ASN.1 header */
-+	const void	*data;		/* Content Data (or 0) */
-+};
-diff --git a/include/crypto/pkcs7.h b/include/crypto/pkcs7.h
-new file mode 100644
-index 0000000..8f2628f
---- /dev/null
-+++ b/include/crypto/pkcs7.h
-@@ -0,0 +1,23 @@
-+/* PKCS#7 crypto data parser
-+ *
-+ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+
-+struct pkcs7_message;
-+
-+/*
-+ * pkcs7_parser.c
-+ */
-+extern struct pkcs7_message *pkcs7_parse_message(const void *data,
-+						 size_t datalen);
-+extern void pkcs7_free_message(struct pkcs7_message *pkcs7);
-+
-+extern int pkcs7_get_content_data(const struct pkcs7_message *pkcs7,
-+				  const void **_data, size_t *_datalen,
-+				  bool want_wrapper);
-diff --git a/include/linux/oid_registry.h b/include/linux/oid_registry.h
-index 6926db7..edeff85 100644
---- a/include/linux/oid_registry.h
-+++ b/include/linux/oid_registry.h
-@@ -55,6 +55,7 @@ enum OID {
- 	OID_certAuthInfoAccess,		/* 1.3.6.1.5.5.7.1.1 */
- 	OID_msOutlookExpress,		/* 1.3.6.1.4.1.311.16.4 */
- 	OID_sha1,			/* 1.3.14.3.2.26 */
-+	OID_sha256,			/* 2.16.840.1.101.3.4.2.1 */
- 
- 	/* Distinguished Name attribute IDs [RFC 2256] */
- 	OID_commonName,			/* 2.5.4.3 */
++EXPORT_SYMBOL_GPL(pkcs7_verify);
 
