@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668AbaGHMhR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 08:37:17 -0400
-Received: from gnurou.org ([207.192.72.5]:48211 "EHLO mail.gnurou.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754624AbaGHMhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 08:37:14 -0400
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Andrzej Hajda <a.hajda@samsung.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Terje Bergstrom <tbergstrom@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-tegra@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, gnurou@gmail.com,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH v3 2/4] drm/panel: Set non-continuous clock flag on supporting panels
-Date: Tue,  8 Jul 2014 21:32:12 +0900
-Message-Id: <1404822734-8603-3-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1404822734-8603-1-git-send-email-acourbot@nvidia.com>
-References: <1404822734-8603-1-git-send-email-acourbot@nvidia.com>
+	id S1754641AbaGHMjt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 08:39:49 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:51056 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774AbaGHMjs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 08:39:48 -0400
+Message-ID: <53BBE68C.3010000@gmail.com>
+Date: Tue, 08 Jul 2014 20:39:40 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: daniel.lezcano@linaro.org, tglx@linutronix.de
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Liqin Chen <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>
+Subject: [PATCH] drivers: clocksource: Kconfig: Let EM_TIMER_STI depend on
+ HAS_IOMEM
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The LG LD070WX3-SL01 and Panasonic VVX10F004B00 are DSI support
-non-continuous clock mode. Set the MIPI_DSI_CLOCK_NON_CONTINUOUS
-to their definition so host drivers become aware of this capability.
+In 'em_sti.c', it will call devm_ioremap_resource() which need
+HAS_IOMEM. So need let EM_TIMER_STI depend on HAS_IOMEM, too.
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+The related error (with allmodconfig under score):
+
+  LD      init/built-in.o
+em_sti.c:(.text.em_sti_probe+0x84): undefined reference to `devm_ioremap_resource'
+make: *** [vmlinux] Error 1
+
+
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
 ---
- drivers/gpu/drm/panel/panel-simple.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/clocksource/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/panel/panel-simple.c b/drivers/gpu/drm/panel/panel-simple.c
-index a251361..869a84e3 100644
---- a/drivers/gpu/drm/panel/panel-simple.c
-+++ b/drivers/gpu/drm/panel/panel-simple.c
-@@ -545,7 +545,7 @@ static const struct panel_desc_dsi lg_ld070wx3_sl01 = {
- 			.height = 151,
- 		},
- 	},
--	.flags = MIPI_DSI_MODE_VIDEO,
-+	.flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_CLOCK_NON_CONTINUOUS,
- 	.format = MIPI_DSI_FMT_RGB888,
- 	.lanes = 4,
- };
-@@ -599,7 +599,8 @@ static const struct panel_desc_dsi panasonic_vvx10f004b00 = {
- 			.height = 136,
- 		},
- 	},
--	.flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE,
-+	.flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE |
-+		 MIPI_DSI_CLOCK_NON_CONTINUOUS,
- 	.format = MIPI_DSI_FMT_RGB888,
- 	.lanes = 4,
- };
+diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+index 8ad1eac..ce372d6 100644
+--- a/drivers/clocksource/Kconfig
++++ b/drivers/clocksource/Kconfig
+@@ -190,7 +190,7 @@ config SH_TIMER_TMU
+ 
+ config EM_TIMER_STI
+ 	bool "Renesas STI timer driver" if COMPILE_TEST
+-	depends on GENERIC_CLOCKEVENTS
++	depends on GENERIC_CLOCKEVENTS && HAS_IOMEM
+ 	default SYS_SUPPORTS_EM_STI
+ 	help
+ 	  This enables build of a clocksource and clockevent driver for
 -- 
-2.0.0
-
+1.9.2.459.g68773ac
