@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932492AbaGHTb3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:31:29 -0400
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:8870 "EHLO
-	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932284AbaGHTbY (ORCPT
+	id S1756714AbaGHT36 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:29:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54182 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755699AbaGHTIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:31:24 -0400
-X-AuditID: cbfec37d-b7fbf6d000005712-48-53bc470ccb37
-Message-id: <53BC4709.7000907@samsung.com>
-Date: Tue, 08 Jul 2014 13:31:21 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, stable@vger.kernel.org,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH 3.14 00/94] 3.14.12-stable review
-References: <20140707235756.780319003@linuxfoundation.org>
-In-reply-to: <20140707235756.780319003@linuxfoundation.org>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.134.209]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLLMWRmVeSWpSXmKPExsVy+t9hX10e9z3BBvM3clrMWb+GzaJ58Xo2
-	i8u75rBZPFl4hsli6qkJLBYLNj5itHjU95bdgd1j56y77B4nZvxm8dg/dw2Q+72B3ePzJrkA
-	1igum5TUnMyy1CJ9uwSujJ7dF9gKjrFV3JxxgLmBcSZrFyMHh4SAicS+l1JdjJxAppjEhXvr
-	2boYuTiEBJYxSux+9oUNJCEk0Mskce9MJERiG6PE3h1PmEASvAJaEk23e8CKWARUJXZ27WIG
-	sdkE1CU+v97BDtEsJ9G0ZDVYXFQgQuJA3zNWiF5BiR+T77GA2CICwRJrvy5kBFnALLCKUeL6
-	5eVgQ4UFTCXmXVjMAnKpkICVxI6lYSAmp4C1xP21mSAVzAJmEo9a1jFD2PISm9e8ZYZYqyzx
-	5/IpJojHlCUmNt5mmcAoMgvJ5llI2mchaV/AyLyKUay0OLmgOCk9tcJErzgxt7g0L10vOT93
-	EyMkimp3MN7/anOIUYCDUYmH9wTnnmAh1sSy4srcQ4wSHMxKIrzLBYFCvCmJlVWpRfnxRaU5
-	qcWHGJk4OKUaGGeIGwYvcp/Ix/r0oF7u/WeBv189m9C33DS6Xixo4/bSWWkTStcbR8cXlv55
-	7+j+SudwSaT+IudUASHdxScX3lAPcpApiRNseXg2kaFsfYrazLiToR9MIrLYvSv7nt19uvHY
-	/Z3b1CwfK4Q/CH5Q+M14po98ef99rsvr/x+4f+vetabOxRNtypRYijMSDbWYi4oTAQRlexaA	AgAA
+	Tue, 8 Jul 2014 15:08:40 -0400
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "John W. Linville" <linville@tuxdriver.com>,
+        "Aaro Koskinen" <aaro.koskinen@iki.fi>,
+        "=?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?=" <zajec5@gmail.com>
+Date: Tue, 08 Jul 2014 20:01:50 +0100
+Message-ID: <lsq.1404846110.823824936@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 091/125] b43: fix frequency reported on G-PHY with
+ /new/ firmware
+In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/2014 05:56 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.14.12 release.
-> There are 94 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Wed Jul  9 23:57:44 UTC 2014.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.12-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
+3.2.61-rc1 review patch.  If anyone has any objections, please let me know.
 
-Compiled and booted on my test system. No demsg regressions.
+------------------
 
--- Shuah
+From: Rafał Miłecki <zajec5@gmail.com>
 
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+commit 2fc68eb122c7ea6cd5be1fe7d6650c0beb2f4f40 upstream.
+
+Support for firmware rev 508+ was added years ago, but we never noticed
+it reports channel in a different way for G-PHY devices. Instead of
+offset from 2400 MHz it simply passes channel id (AKA hw_value).
+
+So far it was (most probably) affecting monitor mode users only, but
+the following recent commit made it noticeable for quite everybody:
+
+commit 3afc2167f60a327a2c1e1e2600ef209a3c2b75b7
+Author: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Date:   Tue Mar 4 16:50:13 2014 +0200
+
+    cfg80211/mac80211: ignore signal if the frame was heard on wrong channel
+
+Reported-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/net/wireless/b43/xmit.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+--- a/drivers/net/wireless/b43/xmit.c
++++ b/drivers/net/wireless/b43/xmit.c
+@@ -808,9 +808,13 @@ void b43_rx(struct b43_wldev *dev, struc
+ 		break;
+ 	case B43_PHYTYPE_G:
+ 		status.band = IEEE80211_BAND_2GHZ;
+-		/* chanid is the radio channel cookie value as used
+-		 * to tune the radio. */
+-		status.freq = chanid + 2400;
++		/* Somewhere between 478.104 and 508.1084 firmware for G-PHY
++		 * has been modified to be compatible with N-PHY and others.
++		 */
++		if (dev->fw.rev >= 508)
++			status.freq = ieee80211_channel_to_frequency(chanid, status.band);
++		else
++			status.freq = chanid + 2400;
+ 		break;
+ 	case B43_PHYTYPE_N:
+ 	case B43_PHYTYPE_LP:
+
