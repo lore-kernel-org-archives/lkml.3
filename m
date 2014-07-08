@@ -1,117 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067AbaGHQog (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 12:44:36 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:26413 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753794AbaGHQof (ORCPT
+	id S1754265AbaGHQpb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 12:45:31 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:48541 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753618AbaGHQp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 12:44:35 -0400
-Message-ID: <1404837870.2448.9.camel@j-VirtualBox>
-Subject: Re: [PATCH 2/4] MCS spinlocks: Convert osq lock to atomic_t to
- reduce overhead
-From: Jason Low <jason.low2@hp.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: peterz@infradead.org, torvalds@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, mingo@kernel.org, Waiman.Long@hp.com,
-        davidlohr@hp.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        riel@redhat.com, akpm@linux-foundation.org, hpa@zytor.com,
-        tim.c.chen@linux.intel.com, konrad.wilk@oracle.com, aswin@hp.com,
-        scott.norton@hp.com, chegu_vinod@hp.com
-Date: Tue, 08 Jul 2014 09:44:30 -0700
-In-Reply-To: <20140708093826.32a734f3@gandalf.local.home>
-References: <1404759019-4268-1-git-send-email-jason.low2@hp.com>
-	 <1404759019-4268-3-git-send-email-jason.low2@hp.com>
-	 <20140708093826.32a734f3@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 8 Jul 2014 12:45:29 -0400
+Date: Tue, 8 Jul 2014 09:45:25 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Nick Krause <xerofoify@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Compile issues with se7206_defconfig
+Message-ID: <20140708164525.GB12935@roeck-us.net>
+References: <CAPDOMVid3nbw0-3n_5d8QF_c5uOosWyYRPtqW29ZUB9Ziz7F+Q@mail.gmail.com>
+ <53BB6D8F.70900@roeck-us.net>
+ <CAMuHMdVS79CpOiNkB60Vdrbe_ba=C=ONTFbsXbkcjJacSLaZYw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdVS79CpOiNkB60Vdrbe_ba=C=ONTFbsXbkcjJacSLaZYw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-08 at 09:38 -0400, Steven Rostedt wrote:
-> On Mon,  7 Jul 2014 11:50:17 -0700
-> Jason Low <jason.low2@hp.com> wrote:
-
-> >  #ifdef CONFIG_RWSEM_GENERIC_SPINLOCK
-> > @@ -33,7 +32,7 @@ struct rw_semaphore {
-> >  	 * if the owner is running on the cpu.
-> >  	 */
-> >  	struct task_struct *owner;
-> > -	struct optimistic_spin_node *osq; /* spinner MCS lock */
-> > +	struct optimistic_spin_queue osq; /* spinner MCS lock */
-> >  #endif
-> >  #ifdef CONFIG_DEBUG_LOCK_ALLOC
-> >  	struct lockdep_map	dep_map;
-> > @@ -70,7 +69,7 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
-> >  	  __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),	\
-> >  	  LIST_HEAD_INIT((name).wait_list),		\
-> >  	  NULL, /* owner */				\
-> > -	  NULL /* mcs lock */                           \
-> > +	  { ATOMIC_INIT(OSQ_UNLOCKED_VAL) } /* osq */   \
+On Tue, Jul 08, 2014 at 10:08:46AM +0200, Geert Uytterhoeven wrote:
+> On Tue, Jul 8, 2014 at 6:03 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+> > On 07/07/2014 07:56 PM, Nick Krause wrote:
+> >> There seems to me a build issue with this config. I will paste my logs
+> >> for this build below this message.
+> >> Cheers Nick
+> >> scripts/mod/empty.c:1:0: error: cannot use atomic model soft-imask in user
+> >> mode
+> >>   /* empty file to figure out endianness / word size */
+> >>   ^
+> >> make[2]: *** [scripts/mod/empty.o] Error 1
+> >> make[2]: *** Waiting for unfinished jobs....
+> >> make[1]: *** [scripts/mod] Error 2
+> >> make[1]: *** Waiting for unfinished jobs....
+> >>    CHK     include/generated/utsrelease.h
+> >>    UPD     include/generated/utsrelease.h
+> >>    Generating include/generated/machtypes.h
+> >>    CC      kernel/bounds.s
+> >> kernel/bounds.c:1:0: error: cannot use atomic model soft-imask in user
+> >> mode
+> >>   /*
+> >>   ^
+> >> make[1]: *** [kernel/bounds.s] Error 1
+> >> make: *** [prepare0] Error 2
+> >> make: *** Waiting for unfinished jobs....
+> >> make: *** [scripts] Error 2
+> >
+> > What kernel version ? I see a build failure in mainline, but it is
+> > different.
 > 
-> This should probably be a macro, similar to the __RWSEM_DEP_MAP_INIT()
-> below.  Open coded inits are evil.
+> Indeed.
 > 
->   OSQ_LOCK_INIT() ?
-
-I agree that we should use a macro here for the lock instead of directly
-initializing it. Same with using a macro instead of directly calling the
-atomic_sets in the later parts of this patch.
-
+> > net/built-in.o: In function `__sk_run_filter':
+> > filter.c:(.text+0x3156c): undefined reference to `__fpscr_values'
+> > filter.c:(.text+0x31760): undefined reference to `__fpscr_values'
+> > filter.c:(.text+0x31c8c): undefined reference to `__fpscr_values'
+> > filter.c:(.text+0x31f00): undefined reference to `__fpscr_values'
+> > filter.c:(.text+0x323b0): undefined reference to `__fpscr_values'
 > 
-> >  	  __RWSEM_DEP_MAP_INIT(name) }
-> >  #else
-> >  #define __RWSEM_INITIALIZER(name)			\
-> > diff --git a/kernel/locking/mcs_spinlock.c b/kernel/locking/mcs_spinlock.c
-> > index e9866f7..124a3bb 100644
-> > --- a/kernel/locking/mcs_spinlock.c
-> > +++ b/kernel/locking/mcs_spinlock.c
-> > @@ -17,18 +17,43 @@
-> >  static DEFINE_PER_CPU_SHARED_ALIGNED(struct optimistic_spin_node, osq_node);
-> >  
-> >  /*
-> > + * We use the value 0 to represent "no CPU", thus the encoded value
-> > + * will be the CPU number incremented by 1.
-> > + */
-> > +static inline int encode_cpu(int cpu_nr)
-> > +{
-> > +	return (cpu_nr + 1);
+> Toolchain issue: the compiler doesn't recognize the option to disable
+> the FPU, so it isn't passed, cfr.
+> www.spinics.net/lists/netdev/msg278300.html
 > 
-> return is not a function, remove the parenthesis (checkpatch should
-> point that out to you too).
 
-I ran checkpatch and it didn't seem to be an issue. I was using the
-parenthesis as "operator precedence" rather than a function call.
-However, those parenthesis aren't necessary so we can delete them
-anyway.
+Seems that similar problems were fixed earlier without requiring a toolchain
+change. What is different this time (besides the apparent difficulty to build a
+new toolchain) ? Or am I missing something ?
 
-> > +}
-> > +
-> > +static inline struct optimistic_spin_node *decode_cpu(int encoded_cpu_val)
-> > +{
-> > +	int cpu_nr = encoded_cpu_val - 1;
-> > +
-> > +	return per_cpu_ptr(&osq_node, cpu_nr);
-> > +}
-> > +
-> > +/*
-> >   * Get a stable @node->next pointer, either for unlock() or unqueue() purposes.
-> >   * Can return NULL in case we were the last queued and we updated @lock instead.
-> >   */
-> >  static inline struct optimistic_spin_node *
-> > -osq_wait_next(struct optimistic_spin_node **lock,
-> > +osq_wait_next(struct optimistic_spin_queue *lock,
-> >  	      struct optimistic_spin_node *node,
-> >  	      struct optimistic_spin_node *prev)
-> >  {
-> >  	struct optimistic_spin_node *next = NULL;
-> > +	int curr = encode_cpu(smp_processor_id()), old;
-> 
-> Add a second line for "int old". Having it after an initialization is
-> weird and confusing.
-
-Sure. Thanks!
-
+Thanks,
+Guenter
