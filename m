@@ -1,56 +1,286 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056AbaGHBkX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:40:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56997 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752880AbaGHBkT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753722AbaGHBkT (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 7 Jul 2014 21:40:19 -0400
-Date: Mon, 7 Jul 2014 18:44:42 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/8] phy: phy-samsung-usb2: Change phy power on/power off
- sequence
-Message-ID: <20140708014442.GB13844@kroah.com>
-References: <1404715705-5041-1-git-send-email-kishon@ti.com>
- <1404715705-5041-4-git-send-email-kishon@ti.com>
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:51940 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752880AbaGHBkR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 21:40:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404715705-5041-4-git-send-email-kishon@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Date: Mon, 7 Jul 2014 19:40:16 -0600
+Message-ID: <CAHKv19A+WcOqJxSe4EcO32ou+sk22=3jsxqby5gPP1v1Y2nUWA@mail.gmail.com>
+Subject: [PATCH RESEND] ARM: dts: Restructure imx6qdl-wandboard.dtsi for new
+ rev C1 board.
+From: George Joseph <george.joseph@fairview5.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 07, 2014 at 12:18:20PM +0530, Kishon Vijay Abraham I wrote:
-> From: Kamil Debski <k.debski@samsung.com>
-> 
-> The Exynos4412 USB 2.0 PHY hardware differs from the description provided
-> in the documentation. Some register bits have different function. This
-> patch fixes the defines of register bits and changes the way how phys are
-> powered on and off.
-> 
-> Signed-off-by: Kamil Debski <k.debski@samsung.com>
-> Tested-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> Tested-by: Daniel Drake <drake@endlessm.com>
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> ---
->  drivers/phy/phy-exynos4x12-usb2.c |  112 +++++++++++++++++++++++++------------
->  drivers/phy/phy-exynos5250-usb2.c |    2 -
->  drivers/phy/phy-samsung-usb2.h    |    3 +-
->  3 files changed, 77 insertions(+), 40 deletions(-)
-> 
+The rev C1 Wandboard uses the Broadcom 4330 for WiFi and Bluetooth instead of
+the 4329.  This changes the PADS assigned for the control lines.  Another
+side effect of the change is that on the rev C1 board, usdhc driver can't
+detect the chip presence correctly so usdhc2 now needs its 'non-removeable'
+property removed.
 
-This doesn't look like a regression fix for 3.16-final, it looks like a
-"new feature" to me :(
+So that rev B1 and earlier can continue to work, this patch splits the
+board-specific definitions from imx6qdl-wandboard.dtsi into
+imx6qdl-wandboard-revb1.dtsi and imx6qdl-wandboard-revc1.dtsi.  The new files
+include the original base imx6qdl-wandboard.dtsi which retains the common
+definitions.
 
-sorry, I can't take this pull request, want me to pick the individual
-patches instead?
+The existing imx6dl-wandboard.dts includes imx6qdl-wandboard-revc1.dtsi and
+imx6dl-wandboard-revb1.dts (new) includes imx6qdl-wandboard-revb1.dtsi.
+This makes the rev C1 board the new default.  The same pattern is used for
+imx6q-wandboard.dts.
 
+So, from U-Boot on a WB-Quad you use imxq-wandboard-revb1.dtb for the older B1
+board and imxq-wandboard.dtb for the current rev C1 board.
 
-thanks,
+Signed-off-by: George Joseph <george.joseph@fairview5.com>
+---
+ arch/arm/boot/dts/imx6dl-wandboard-revb1.dts   | 22 ++++++++++++++
+ arch/arm/boot/dts/imx6dl-wandboard.dts         |  2 +-
+ arch/arm/boot/dts/imx6q-wandboard-revb1.dts    | 26 ++++++++++++++++
+ arch/arm/boot/dts/imx6q-wandboard.dts          |  2 +-
+ arch/arm/boot/dts/imx6qdl-wandboard-revb1.dtsi | 39 ++++++++++++++++++++++++
+ arch/arm/boot/dts/imx6qdl-wandboard-revc1.dtsi | 41 ++++++++++++++++++++++++++
+ arch/arm/boot/dts/imx6qdl-wandboard.dtsi       | 21 -------------
+ 7 files changed, 130 insertions(+), 23 deletions(-)
 
-greg k-h
+diff --git a/arch/arm/boot/dts/imx6dl-wandboard-revb1.dts
+b/arch/arm/boot/dts/imx6dl-wandboard-revb1.dts
+new file mode 100644
+index 0000000..f607d4f
+--- /dev/null
++++ b/arch/arm/boot/dts/imx6dl-wandboard-revb1.dts
+@@ -0,0 +1,22 @@
++/*
++ * Copyright 2013 Freescale Semiconductor, Inc.
++ *
++ * Author: Fabio Estevam <fabio.estevam@freescale.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++/dts-v1/;
++#include "imx6dl.dtsi"
++#include "imx6qdl-wandboard-revb1.dtsi"
++
++/ {
++ model = "Wandboard i.MX6 Dual Lite Board";
++ compatible = "wand,imx6dl-wandboard", "fsl,imx6dl";
++
++ memory {
++ reg = <0x10000000 0x40000000>;
++ };
++};
+diff --git a/arch/arm/boot/dts/imx6dl-wandboard.dts
+b/arch/arm/boot/dts/imx6dl-wandboard.dts
+index e672891..bbb6167 100644
+--- a/arch/arm/boot/dts/imx6dl-wandboard.dts
++++ b/arch/arm/boot/dts/imx6dl-wandboard.dts
+@@ -10,7 +10,7 @@
+  */
+ /dts-v1/;
+ #include "imx6dl.dtsi"
+-#include "imx6qdl-wandboard.dtsi"
++#include "imx6qdl-wandboard-revc1.dtsi"
+
+ / {
+  model = "Wandboard i.MX6 Dual Lite Board";
+diff --git a/arch/arm/boot/dts/imx6q-wandboard-revb1.dts
+b/arch/arm/boot/dts/imx6q-wandboard-revb1.dts
+new file mode 100644
+index 0000000..20bf3c2
+--- /dev/null
++++ b/arch/arm/boot/dts/imx6q-wandboard-revb1.dts
+@@ -0,0 +1,26 @@
++/*
++ * Copyright 2013 Freescale Semiconductor, Inc.
++ *
++ * Author: Fabio Estevam <fabio.estevam@freescale.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++/dts-v1/;
++#include "imx6q.dtsi"
++#include "imx6qdl-wandboard-revb1.dtsi"
++
++/ {
++ model = "Wandboard i.MX6 Quad Board";
++ compatible = "wand,imx6q-wandboard", "fsl,imx6q";
++
++ memory {
++ reg = <0x10000000 0x80000000>;
++ };
++};
++
++&sata {
++ status = "okay";
++};
+diff --git a/arch/arm/boot/dts/imx6q-wandboard.dts
+b/arch/arm/boot/dts/imx6q-wandboard.dts
+index 36be17f..4a8a6ee 100644
+--- a/arch/arm/boot/dts/imx6q-wandboard.dts
++++ b/arch/arm/boot/dts/imx6q-wandboard.dts
+@@ -10,7 +10,7 @@
+  */
+ /dts-v1/;
+ #include "imx6q.dtsi"
+-#include "imx6qdl-wandboard.dtsi"
++#include "imx6qdl-wandboard-revc1.dtsi"
+
+ / {
+  model = "Wandboard i.MX6 Quad Board";
+diff --git a/arch/arm/boot/dts/imx6qdl-wandboard-revb1.dtsi
+b/arch/arm/boot/dts/imx6qdl-wandboard-revb1.dtsi
+new file mode 100644
+index 0000000..e44d982
+--- /dev/null
++++ b/arch/arm/boot/dts/imx6qdl-wandboard-revb1.dtsi
+@@ -0,0 +1,39 @@
++/*
++ * Copyright 2013 Freescale Semiconductor, Inc.
++ *
++ * Author: Fabio Estevam <fabio.estevam@freescale.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#include "imx6qdl-wandboard.dtsi"
++
++&iomuxc {
++ pinctrl-0 = <&pinctrl_hog>;
++
++ imx6qdl-wandboard {
++ pinctrl_hog: hoggrp {
++ fsl,pins = <
++ MX6QDL_PAD_GPIO_0__CCM_CLKO1 0x130b0 /* GPIO_0_CLKO */
++ MX6QDL_PAD_GPIO_2__GPIO1_IO02 0x80000000 /* uSDHC1 CD */
++ MX6QDL_PAD_EIM_DA9__GPIO3_IO09 0x80000000 /* uSDHC3 CD */
++ MX6QDL_PAD_EIM_EB1__GPIO2_IO29 0x80000000 /* WL_REF_ON */
++ MX6QDL_PAD_EIM_A25__GPIO5_IO02 0x80000000 /* WL_RST_N */
++ MX6QDL_PAD_ENET_RXD1__GPIO1_IO26 0x80000000 /* WL_REG_ON */
++ MX6QDL_PAD_ENET_TXD1__GPIO1_IO29 0x80000000 /* WL_HOST_WAKE */
++ MX6QDL_PAD_ENET_TXD0__GPIO1_IO30 0x80000000 /* WL_WAKE */
++ MX6QDL_PAD_EIM_D29__GPIO3_IO29 0x80000000 /* RGMII_nRST */
++ >;
++ };
++ };
++};
++
++&usdhc2 {
++ pinctrl-names = "default";
++ pinctrl-0 = <&pinctrl_usdhc2>;
++ non-removable;
++ status = "okay";
++};
+diff --git a/arch/arm/boot/dts/imx6qdl-wandboard-revc1.dtsi
+b/arch/arm/boot/dts/imx6qdl-wandboard-revc1.dtsi
+new file mode 100644
+index 0000000..1d9b1db
+--- /dev/null
++++ b/arch/arm/boot/dts/imx6qdl-wandboard-revc1.dtsi
+@@ -0,0 +1,41 @@
++/*
++ * Copyright 2013 Freescale Semiconductor, Inc.
++ *
++ * Author: Fabio Estevam <fabio.estevam@freescale.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#include "imx6qdl-wandboard.dtsi"
++
++&iomuxc {
++ pinctrl-0 = <&pinctrl_hog>;
++
++ imx6qdl-wandboard {
++ pinctrl_hog: hoggrp {
++ fsl,pins = <
++ MX6QDL_PAD_GPIO_0__CCM_CLKO1 0x130b0 /* GPIO_0_CLKO */
++ MX6QDL_PAD_GPIO_2__GPIO1_IO02 0x80000000 /* uSDHC1 CD */
++ MX6QDL_PAD_EIM_DA9__GPIO3_IO09 0x80000000 /* uSDHC3 CD */
++ MX6QDL_PAD_CSI0_DAT14__GPIO6_IO00 0x80000000 /* WIFI_ON (reset, active low) */
++ MX6QDL_PAD_ENET_RXD1__GPIO1_IO26 0x80000000 /* WL_REG_ON (unused) */
++ MX6QDL_PAD_ENET_TXD1__GPIO1_IO29 0x80000000 /* WL_HOST_WAKE, input */
++ MX6QDL_PAD_CSI0_DAT13__GPIO5_IO31 0x80000000 /* GPIO5_IO31 (Wifi
+Power Enable) */
++ MX6QDL_PAD_ENET_TXD0__GPIO1_IO30 0x80000000 /* WL_WAKE (unused) */
++ MX6QDL_PAD_CSI0_VSYNC__GPIO5_IO21 0x80000000 /* BT_ON */
++ MX6QDL_PAD_CSI0_DAT12__GPIO5_IO30 0x80000000 /* BT_WAKE */
++ MX6QDL_PAD_CSI0_DATA_EN__GPIO5_IO20 0x80000000 /* BT_HOST_WAKE */
++ MX6QDL_PAD_EIM_D29__GPIO3_IO29 0x80000000 /* RGMII_nRST */
++ >;
++ };
++ };
++};
++
++&usdhc2 {
++ pinctrl-names = "default";
++ pinctrl-0 = <&pinctrl_usdhc2>;
++ status = "okay";
++};
+diff --git a/arch/arm/boot/dts/imx6qdl-wandboard.dtsi
+b/arch/arm/boot/dts/imx6qdl-wandboard.dtsi
+index bdfdf89..2aa9fbf 100644
+--- a/arch/arm/boot/dts/imx6qdl-wandboard.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-wandboard.dtsi
+@@ -79,22 +79,8 @@
+
+ &iomuxc {
+  pinctrl-names = "default";
+- pinctrl-0 = <&pinctrl_hog>;
+
+  imx6qdl-wandboard {
+- pinctrl_hog: hoggrp {
+- fsl,pins = <
+- MX6QDL_PAD_GPIO_0__CCM_CLKO1 0x130b0
+- MX6QDL_PAD_GPIO_2__GPIO1_IO02 0x80000000
+- MX6QDL_PAD_EIM_DA9__GPIO3_IO09 0x80000000
+- MX6QDL_PAD_EIM_EB1__GPIO2_IO29   0x80000000 /* WL_REF_ON */
+- MX6QDL_PAD_EIM_A25__GPIO5_IO02   0x80000000 /* WL_RST_N */
+- MX6QDL_PAD_ENET_RXD1__GPIO1_IO26 0x80000000 /* WL_REG_ON */
+- MX6QDL_PAD_ENET_TXD1__GPIO1_IO29 0x80000000 /* WL_HOST_WAKE */
+- MX6QDL_PAD_ENET_TXD0__GPIO1_IO30 0x80000000 /* WL_WAKE */
+- MX6QDL_PAD_EIM_D29__GPIO3_IO29   0x80000000
+- >;
+- };
+
+  pinctrl_audmux: audmuxgrp {
+  fsl,pins = <
+@@ -250,13 +236,6 @@
+  status = "okay";
+ };
+
+-&usdhc2 {
+- pinctrl-names = "default";
+- pinctrl-0 = <&pinctrl_usdhc2>;
+- non-removable;
+- status = "okay";
+-};
+-
+ &usdhc3 {
+  pinctrl-names = "default";
+  pinctrl-0 = <&pinctrl_usdhc3>;
