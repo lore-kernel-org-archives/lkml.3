@@ -1,56 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276AbaGHLbO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 07:31:14 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52080 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753141AbaGHLbM (ORCPT
+	id S1754382AbaGHLcE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 07:32:04 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37154 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753413AbaGHLcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 07:31:12 -0400
-Date: Tue, 8 Jul 2014 13:31:09 +0200
-From: Pavel Machek <pavel@denx.de>
-To: tthayer@altera.com
-Cc: robherring2@gmail.com, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        linux@arm.linux.org.uk, dinguyen@altera.com, dougthompson@xmission.com,
-        grant.likely@linaro.org, bp@alien8.de, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tthayer.linux@gmail.com, linux-arm-kernel@lists.infradead.org,
-        linux-edac@vger.kernel.org
-Subject: Re: [PATCHv7 3/3] edac: altera: Add EDAC support for Altera SoC
- SDRAM Controller.
-Message-ID: <20140708113109.GC8100@amd.pavel.ucw.cz>
-References: <1403730927-16163-1-git-send-email-tthayer@altera.com>
- <1403730927-16163-4-git-send-email-tthayer@altera.com>
+	Tue, 8 Jul 2014 07:32:01 -0400
+Date: Tue, 8 Jul 2014 13:31:57 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: =?utf-8?B?SmnFmcOt?= Prchal <jiri.prchal@aksignal.cz>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Fabio Porcedda <fabio.porcedda@gmail.com>
+Subject: Re: [PATCHv2 17/32] ARM: at91/dt: ge863-pro3: define crystals
+ frequencies
+Message-ID: <20140708113157.GK3113@piout.net>
+References: <1404764629-29136-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1404764629-29136-18-git-send-email-alexandre.belloni@free-electrons.com>
+ <53BB8B91.8020501@aksignal.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1403730927-16163-4-git-send-email-tthayer@altera.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53BB8B91.8020501@aksignal.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +	read_reg = readl(mc_vbase + DRAMADDRW);
-> +
-> +	width = readl(mc_vbase + DRAMIFWIDTH);
-> +
-> +	col = (read_reg & DRAMADDRW_COLBIT_MASK) >>
-> +		DRAMADDRW_COLBIT_LSB;
-> +	row = (read_reg & DRAMADDRW_ROWBIT_MASK) >>
-> +		DRAMADDRW_ROWBIT_LSB;
-> +	bank = (read_reg & DRAMADDRW_BANKBIT_MASK) >>
-> +		DRAMADDRW_BANKBIT_LSB;
-> +	cs = (read_reg & DRAMADDRW_CSBIT_MASK) >>
-> +		DRAMADDRW_CSBIT_LSB;
+On 08/07/2014 at 08:11:29 +0200, Jiří Prchal wrote :
+> Hi,
+> the slow crystal is not on the module "ge863-pro3", but it's usually
+> on application board. So I think this clock should be in board dts.
+> 
 
-As I said, all the defines only make this harder to read. The code is
-pretty obvious if you put numbers in here...
+Right, I'll move the 32kHz crystal to the board dts.
 
-Plus I'd like an explanation/comment of how the error injection works.
+> Dne 7.7.2014 22:23, Alexandre Belloni napsal(a):
+> >Define Telit GE863-PRO3, AK signal CDU and Telit EVK-PRO3 main and slow
+> >crystals frequencies.
+> >
+> >Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> >Cc: Fabio Porcedda <fabio.porcedda@gmail.com>
+> >Cc: Jiri Prchal <jiri.prchal@aksignal.cz>
+> >---
+> >  arch/arm/boot/dts/ge863-pro3.dtsi | 8 ++++++++
+> >  1 file changed, 8 insertions(+)
+> >
+> >diff --git a/arch/arm/boot/dts/ge863-pro3.dtsi b/arch/arm/boot/dts/ge863-pro3.dtsi
+> >index 230099bb31c8..a32fdbefbbd9 100644
+> >--- a/arch/arm/boot/dts/ge863-pro3.dtsi
+> >+++ b/arch/arm/boot/dts/ge863-pro3.dtsi
+> >@@ -19,6 +19,14 @@
+> >  			compatible = "atmel,osc", "fixed-clock";
+> >  			clock-frequency = <6000000>;
+> >  		};
+> >+
+> >+		slow_xtal {
+> >+			clock-frequency = <32768>;
+> >+		};
+> >+
+> >+		main_xtal {
+> >+			clock-frequency = <6000000>;
+> >+		};
+> >  	};
+> >
+> >  	ahb {
+> >
 
-Thanks,
-									Pavel
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
