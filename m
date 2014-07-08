@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753054AbaGHGDw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 02:03:52 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:36622 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752932AbaGHGDu (ORCPT
+	id S1753719AbaGHGH6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 02:07:58 -0400
+Received: from mga03.intel.com ([143.182.124.21]:9862 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753335AbaGHGH4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 02:03:50 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Minchan Kim <minchan@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
-Subject: [PATCH v11 2/7] x86: add pmd_[dirty|mkclean] for THP
-Date: Tue,  8 Jul 2014 15:03:39 +0900
-Message-Id: <1404799424-1120-3-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1404799424-1120-1-git-send-email-minchan@kernel.org>
-References: <1404799424-1120-1-git-send-email-minchan@kernel.org>
+	Tue, 8 Jul 2014 02:07:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,624,1400050800"; 
+   d="scan'208";a="454314380"
+From: "Tc, Jenny" <jenny.tc@intel.com>
+To: Sebastian Reichel <sre@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Dmitry Eremin-Solenikov" <dbaryshkov@gmail.com>,
+        Pavel Machek <pavel@ucw.cz>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "David Cohen" <david.a.cohen@linux.intel.com>,
+        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+Subject: RE: [PATCH 3/4] power_supply: Introduce PSE compliant algorithm
+Thread-Topic: [PATCH 3/4] power_supply: Introduce PSE compliant algorithm
+Thread-Index: AQHPlEmiwCL4psBg3UmQFWJgLR5uO5uOGRuAgAejXIA=
+Date: Tue, 8 Jul 2014 06:07:29 +0000
+Message-ID: <20ADAB092842284E95860F279283C56422F95A3E@BGSMSX104.gar.corp.intel.com>
+References: <1404122155-12369-1-git-send-email-jenny.tc@intel.com>
+ <1404122155-12369-4-git-send-email-jenny.tc@intel.com>
+ <20140703145617.GA23309@earth.universe>
+In-Reply-To: <20140703145617.GA23309@earth.universe>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MADV_FREE needs pmd_dirty and pmd_mkclean for detecting recent
-overwrite of the contents since MADV_FREE syscall is called for
-THP page.
+> > +static int get_tempzone(struct psy_pse_chrg_prof *pse_mod_bprof,
+> > +		int temp)
+> > +{
+> > +	int i = 0;
+> > +	int temp_range_cnt;
+> > +
+> > +	temp_range_cnt =  min_t(u16, pse_mod_bprof->temp_mon_ranges,
+> > +					BATT_TEMP_NR_RNG);
+> > +	if ((temp < pse_mod_bprof->temp_low_lim) ||
+> > +		(temp > pse_mod_bprof->temp_mon_range[0].temp_up_lim))
+> > +		return -EINVAL;
+> > +
+> > +	for (i = 0; i < temp_range_cnt; ++i)
+> > +		if (temp > pse_mod_bprof->temp_mon_range[i].temp_up_lim)
+> > +			break;
+> > +	return i-1;
+> > +}
+> 
+> pse_mod_bprof->temp_mon_ranges > BATT_TEMP_NR_RNG is not allowed, so I
+> suggest to print an error and return some error code.
+> 
+min_t takes care of the upper bound. The algorithm process BATT_TEMP_NR_RNG
+even if the actual number of zones are greater than this. 
+Agree to other comments
 
-This patch adds pmd_dirty and pmd_mkclean for THP page MADV_FREE
-support.
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- arch/x86/include/asm/pgtable.h | 10 ++++++++++
- 1 file changed, 10 insertions(+)
-
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index 0ec056012618..329865799653 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -104,6 +104,11 @@ static inline int pmd_young(pmd_t pmd)
- 	return pmd_flags(pmd) & _PAGE_ACCESSED;
- }
- 
-+static inline int pmd_dirty(pmd_t pmd)
-+{
-+	return pmd_flags(pmd) & _PAGE_DIRTY;
-+}
-+
- static inline int pte_write(pte_t pte)
- {
- 	return pte_flags(pte) & _PAGE_RW;
-@@ -267,6 +272,11 @@ static inline pmd_t pmd_mkold(pmd_t pmd)
- 	return pmd_clear_flags(pmd, _PAGE_ACCESSED);
- }
- 
-+static inline pmd_t pmd_mkclean(pmd_t pmd)
-+{
-+	return pmd_clear_flags(pmd, _PAGE_DIRTY);
-+}
-+
- static inline pmd_t pmd_wrprotect(pmd_t pmd)
- {
- 	return pmd_clear_flags(pmd, _PAGE_RW);
--- 
-2.0.0
-
+-Jenny
