@@ -1,101 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600AbaGHIJV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 04:09:21 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53484 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753554AbaGHIJR (ORCPT
+	id S1753793AbaGHIKN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 04:10:13 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35424 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753644AbaGHIKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 04:09:17 -0400
-Date: Tue, 8 Jul 2014 10:09:08 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu, joe@perches.com
-Subject: Re: [PATCH tip/core/rcu 2/3] rcu: Add designated reviewers for RCU
-Message-ID: <20140708080908.GN19379@twins.programming.kicks-ass.net>
-References: <20140707224146.GA9118@linux.vnet.ibm.com>
- <1404772924-9423-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1404772924-9423-2-git-send-email-paulmck@linux.vnet.ibm.com>
+	Tue, 8 Jul 2014 04:10:06 -0400
+Date: Tue, 8 Jul 2014 10:08:14 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        devicetree@vger.kernel.org, dbaryshkov@gmail.com,
+        Nicolas FERRE <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        Boris Brezillon <boris@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        dwmw2@infradead.org, linux@maxim.org.za,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 05/18] power: reset: Add AT91 reset driver
+Message-ID: <20140708080814.GL13423@lukather>
+References: <1404396906-25194-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1404396906-25194-8-git-send-email-maxime.ripard@free-electrons.com>
+ <F9547E0F-AB97-47E6-BA09-135EE4E1BC73@jcrosoft.com>
+ <20140703145957.GH31996@lukather>
+ <B425B925-B75E-4761-8CE6-9B12C5AC0469@jcrosoft.com>
+ <20140704091443.545d1e08@bbrezillon>
+ <20140704090645.GB13487@lukather>
+ <20140707184001.GH9558@ns203013.ovh.net>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="n8rALO501tkk3VWH"
+	protocol="application/pgp-signature"; boundary="Pz0BBB9QxoYXlT+x"
 Content-Disposition: inline
-In-Reply-To: <1404772924-9423-2-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140707184001.GH9558@ns203013.ovh.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---n8rALO501tkk3VWH
-Content-Type: text/plain; charset=us-ascii
+--Pz0BBB9QxoYXlT+x
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jul 07, 2014 at 03:42:03PM -0700, Paul E. McKenney wrote:
->  MAINTAINERS | 8 ++++++++
->  1 file changed, 8 insertions(+)
+On Mon, Jul 07, 2014 at 08:40:01PM +0200, Jean-Christophe PLAGNIOL-VILLARD =
+wrote:
+> > > > >> move this to an assembly file more easy to read than a C code
+> > > > >=20
+> > > > > Nope. It's a pain to pass variable to an external assembly file, =
+and
+> > > > > this makes the use of global variable pretty much mandatory, whic=
+h is
+> > > > > definitely not great.
+> > > >=20
+> > > > Not at all I did for the PM slow clock code just write a function a=
+nd pas it as a parameter
+> > > > you have 3
+> > > >=20
+> > > > so basically you have to use the current and just pass at91_ramc_ba=
+se[0], at91_ramc_base[1]
+> > > > and at91_rstc_base
+> > > > it=E2=80=99s 3 lignes of modification, if you have at91_ramc_base a=
+nd at91_ramc_base same
+> > > >=20
+> > >=20
+> > > Yes, retrieving function parameters from assembly code is not that
+> > > complicated (the first 4 pointer values are accessible through r0-r3),
+> > > but then you'll have to store your assembly file somewhere.
+> >=20
+> > Like I was saying, there's a strong preference for the inline
+> > assembly...
 >=20
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 1814075c0e74..92f2bf91eec1 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -7405,6 +7405,9 @@ F:	kernel/rcu/torture.c
-> =20
->  RCUTORTURE TEST FRAMEWORK
->  M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> +R:	Steven Rostedt <rostedt@goodmis.org>
-> +R:	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> +R:	Lai Jiangshan <laijs@cn.fujitsu.com>
->  L:	linux-kernel@vger.kernel.org
->  S:	Supported
->  T:	git git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.g=
-it
+> inline is horrible to read and maintain NACK
+>=20
+> keep it in an assembly file it's so easy to read and follow
+>=20
+> and you just have to move the file existing to the driver/power
 
-OK,.. so if we're going to do this can we talk about the syntax here.
+Well, the whole rest of the kernel community feels otherwise.
 
-I would like to also use this for SCHED and PERF, but since both are
-rather big I would like to be able to subdivide things. Now I could of
-course go create many MAINTAINER sections, but that feels artificial.
+Maxime
 
-So I would like to be able to write:
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-SCHEDULER:
-=2E..
-R:   Steven Rostedt <rostedt@goodmis.org> (kernel/sched/rt.c)
-R:   Juri Lelli <juri.lelli@gmail.com>    (kernel/sched/deadline.c)
-
-or something like that. And here I've already done concessions in that
-the above is machine readable. Ideally I'd be able to say things like:
-'for sched and numa related things' add 'rik and mel'.
-
-Hmm, maybe we can look at the patch subject tag like: sched/numa or
-sched/rt or sched/deadline etc.. instead of the files touched.
-
---n8rALO501tkk3VWH
-Content-Type: application/pgp-signature
+--Pz0BBB9QxoYXlT+x
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTu6ckAAoJEHZH4aRLwOS6jKQP/3MjOjpPXcHN5MkJe9DuAfRf
-pfp3v5bh8XE2draCzW1SvRQ+q+QkTfg9jpl8pBr3Yhqcm8C5DAs0cticytWG68Wh
-Ly7DHlWyTk4JikGWOVhJ6BxY26U8ZNtB7wNw+QxFrIJxx6k0kXqhFs/h8EdX3i64
-0z5jq/D6grZTp3L8gxrAK5ir13ZdTaLlXPkisPj1KK+Y3r5hlt6xeC57gmrJ0zGP
-FvgVLSBtSVNI3BQ1+4iQSqr1wsxQdngi/4bvHJeWVQCeFWz/cdimHKExKqLheeSA
-WhwM6h4pIHcLDqywSEsvCIeBbAkUl2umDFF7u5HppO32ywftvYLtw0alAjTIhfIM
-/zYmmNelQ+OlmOoKOqot/b495eE6UMTZILYlcY0acbMA8xrnTa1j2eE2fX/R/luR
-TQekCWwSE+46tJ/F/H+OZeCoiMX1toE2VOz8GMJ5OinEKltyXUWxrEcmK/GMCiLK
-65K7c3kC4KBKkh0LpnW5xrsaUhuAhLrWjts2eu6Ws+3jHxjZDIkY+ufXqRBUXbau
-apWIgPJijNeBK4DEI89oz8ZLqPfqzy+WWJPJX/UtZ8fWJu7BGIPhnS3oCPrXNE5l
-uzXB80DgrNxM6DxLR8IE2I5gWqSX3ihZ5s2tj0kRFQcxurat5zEsoxRLT/IVYmyi
-BFd8t1CKC6/fB88uI2Xu
-=f5TK
+iQIcBAEBAgAGBQJTu6buAAoJEBx+YmzsjxAgNwQP/1iLQ1rYI1+kyi6ZeWV4+ry9
+L1Occiv7/KyggCZ6kQ2QcApITn4j6iPkTH1hxXKJl0WeYuLFJn1Cy95SUj5VlOgE
+2JrUudQmU4XpyOYrKXSmXs0S6VBODfY9uaElxnKRJXeaFLQkB34h9dM7sCzGCTUo
+5Lm2jAAUVZD67HausPj2cF7UqNdyd10yyISZ/ztP1U14nKhIOCzrMJqlhouRKzm8
+zaLefg4fgmoFnW6KFAbEk4ZqKKtG6B5jTOgl7W3p/iM8ZjWZwp/StlW7cw7sTnsA
+8mb5V+XgMAzr0ayURObN6qyT4lUO14GRvnq9Er2fIFi+wTKAmANOc4kwmbgtwu+S
+r6ZPatgIkyUt4rJDSheXi7taaTqpI7JdEL5pKU8vFn7aAhusc085nVhnsoq6AhfV
+Ds6sU3a8xrtA7XoJtSKEdHTEvUtXNWlLZg99Ba5MIV0XCTl4c/CvshjcbfrpB4Si
+Ri4G3b4ZboBND9cNyFmdLhpNVJgDEDJBxVU1//dDLBK+8qzfn+wZM777/Nd8dy0V
+v0s4v/dW5oVZJBQABIVt1g91dPgfbjjejL28YA4drk88tm7UuApM88aqzM8z5Ag9
+CV2Ywp/LImyh1vH4dLIepqTaIlDuj3t2jTMOKrkozST47gRk29F2mOJCkQg+upob
+ehKqtiA0mFgq806e7XQq
+=0ofP
 -----END PGP SIGNATURE-----
 
---n8rALO501tkk3VWH--
+--Pz0BBB9QxoYXlT+x--
