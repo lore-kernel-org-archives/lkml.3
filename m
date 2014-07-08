@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145AbaGHKI6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 06:08:58 -0400
-Received: from www.linutronix.de ([62.245.132.108]:54704 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753465AbaGHKI4 (ORCPT
+	id S1754115AbaGHKK7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 06:10:59 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:34072 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815AbaGHKK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 06:08:56 -0400
-Date: Tue, 8 Jul 2014 12:08:53 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Fengguang Wu <fengguang.wu@intel.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Jet Chen <jet.chen@intel.com>,
-        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
-        LKP <lkp@01.org>
-Subject: Re: [timer] BUG: soft lockup - CPU#1 stuck for 23s! [swapper/0:1]
-In-Reply-To: <20140708034521.GD17142@localhost>
-Message-ID: <alpine.DEB.2.10.1407081208060.4357@nanos>
-References: <20140708034521.GD17142@localhost>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Tue, 8 Jul 2014 06:10:58 -0400
+Date: Tue, 8 Jul 2014 12:10:50 +0200
+From: Simon Horman <horms@verge.net.au>
+To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, Linux-SH <linux-sh@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] dma: rcar-audmapp: add DT support
+Message-ID: <20140708101048.GA7924@verge.net.au>
+References: <87tx7iy4ot.wl%kuninori.morimoto.gx@renesas.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87tx7iy4ot.wl%kuninori.morimoto.gx@renesas.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Jul 2014, Fengguang Wu wrote:
+Hi Morimoto-san,
 
-> Greetings,
+in order to try and create a smoother path for changes in this area to land
+I have pushed them to the rcar-audmapp-for-v3.17 branch of my renesas tree
+on kernel.org. It is merged into the devel and next branches of that tree
+and should appear in linux-next in the near future.
+
+My intention is to send a pull-request for this branch once it has sat
+in next for a short time. I hope that this approach is useful to all parties.
+
+On Wed, Jun 18, 2014 at 01:58:41AM -0700, Kuninori Morimoto wrote:
 > 
-> 0day kernel testing robot got the below dmesg and the first bad commit is
+> Hi Vinod
 > 
-> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git master
-> commit 1ead65812486cda65093683a99b8907a7242fa93
-> Merge: b6d739e b97f029
-> Author:     Linus Torvalds <torvalds@linux-foundation.org>
-> AuthorDate: Tue Apr 1 11:00:07 2014 -0700
-> Commit:     Linus Torvalds <torvalds@linux-foundation.org>
-> CommitDate: Tue Apr 1 11:00:07 2014 -0700
-
-That's not really helpful. It's a merge commit, so we'd need to drill
-down the bisect into what got merged.
-
-Thanks,
-
-	tglx
+> These patches add DT support to Renesas Audio DMAC peri peri driver.
+> 
+> Kuninori Morimoto (3):
+>       dma: rcar-audmapp: enable .set_slave
+>       dma: rcar-audmapp: don't keep audmapp_slave_config for each channeles
+>       dma: rcar-audmapp: add DT support
+> 
+>  .../devicetree/bindings/dma/rcar-audmapp.txt       |   30 ++++++
+>  drivers/dma/sh/rcar-audmapp.c                      |  113 ++++++++++++++------
+>  2 files changed, 113 insertions(+), 30 deletions(-)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
