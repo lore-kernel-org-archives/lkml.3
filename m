@@ -1,25 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756322AbaGHTi1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:38:27 -0400
+	id S1756774AbaGHTir (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:38:47 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54778 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755182AbaGHTeO (ORCPT
+	by vger.kernel.org with ESMTP id S932567AbaGHTeK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:34:14 -0400
+	Tue, 8 Jul 2014 15:34:10 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Chris Wilson" <chris@chris-wilson.co.uk>,
-        "Daniel Vetter" <daniel.vetter@ffwll.ch>
+CC: akpm@linux-foundation.org, "Nicolas Ferre" <nicolas.ferre@atmel.com>,
+        "Boris BREZILLON" <boris.brezillon@free-electrons.com>,
+        "Andrew Victor" <linux@maxim.org.za>,
+        "Bryan Evenson" <bevenson@melinkcorp.com>,
+        "Alessandro Zummo" <a.zummo@towertech.it>,
+        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.968689236@decadent.org.uk>
+Message-ID: <lsq.1404846110.619006759@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 017/125] drm/i915: s/DRM_ERROR/DRM_DEBUG in
- i915_gem_execbuffer.c
+Subject: [PATCH 3.2 064/125] rtc: rtc-at91rm9200: fix infinite wait for
+ ACKUPD irq
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,239 +37,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 
-commit ff240199b6a3b0bec5ae9b6d26403dad38e8cb19 upstream.
+commit 2fe121e1f5aa3bf31b418a9790db6c400e922291 upstream.
 
-These are all user-trigerable, so tune down their loudness a notch.
-For some of these we have i-g-t tests (because they prevent
-newly-discovered bugs), without this patches running the test suite
-leaves behind a dirty dmesg.
+The rtc user must wait at least 1 sec between each time/calandar update
+(see atmel's datasheet chapter "Updating Time/Calendar").
 
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Backported to 3.2: adjust context]
+Use the 1Hz interrupt to update the at91_rtc_upd_rdy flag and wait for
+the at91_rtc_wait_upd_rdy event if the rtc is not ready.
+
+This patch fixes a deadlock in an uninterruptible wait when the RTC is
+updated more than once every second.  AFAICT the bug is here from the
+beginning, but I think we should at least backport this fix to 3.10 and
+the following longterm and stable releases.
+
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
+Tested-by: Bryan Evenson <bevenson@melinkcorp.com>
+Cc: Andrew Victor <linux@maxim.org.za>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - at91_rtc_write() is called at91_sys_write()
+ - Use at91_sys_write() directly instead of the missing
+   at91_rtc_write_ier() and at91_rtc_write_idr()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/i915_gem_execbuffer.c | 50 +++++++++++++++---------------
- 1 file changed, 25 insertions(+), 25 deletions(-)
+ drivers/rtc/rtc-at91rm9200.c | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-+++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-@@ -287,14 +287,14 @@ i915_gem_execbuffer_relocate_entry(struc
- 	 * exec_object list, so it should have a GTT space bound by now.
- 	 */
- 	if (unlikely(target_offset == 0)) {
--		DRM_ERROR("No GTT space found for object %d\n",
-+		DRM_DEBUG("No GTT space found for object %d\n",
- 			  reloc->target_handle);
- 		return ret;
+--- a/drivers/rtc/rtc-at91rm9200.c
++++ b/drivers/rtc/rtc-at91rm9200.c
+@@ -36,6 +36,7 @@
+ #define AT91_RTC_EPOCH		1900UL	/* just like arch/arm/common/rtctime.c */
+ 
+ static DECLARE_COMPLETION(at91_rtc_updated);
++static DECLARE_COMPLETION(at91_rtc_upd_rdy);
+ static unsigned int at91_alarm_year = AT91_RTC_EPOCH;
+ 
+ /*
+@@ -97,6 +98,8 @@ static int at91_rtc_settime(struct devic
+ 		1900 + tm->tm_year, tm->tm_mon, tm->tm_mday,
+ 		tm->tm_hour, tm->tm_min, tm->tm_sec);
+ 
++	wait_for_completion(&at91_rtc_upd_rdy);
++
+ 	/* Stop Time/Calendar from counting */
+ 	cr = at91_sys_read(AT91_RTC_CR);
+ 	at91_sys_write(AT91_RTC_CR, cr | AT91_RTC_UPDCAL | AT91_RTC_UPDTIM);
+@@ -119,7 +122,9 @@ static int at91_rtc_settime(struct devic
+ 
+ 	/* Restart Time/Calendar */
+ 	cr = at91_sys_read(AT91_RTC_CR);
++	at91_sys_write(AT91_RTC_SCCR, AT91_RTC_SECEV);
+ 	at91_sys_write(AT91_RTC_CR, cr & ~(AT91_RTC_UPDCAL | AT91_RTC_UPDTIM));
++	at91_sys_write(AT91_RTC_IER, AT91_RTC_SECEV);
+ 
+ 	return 0;
+ }
+@@ -226,8 +231,10 @@ static irqreturn_t at91_rtc_interrupt(in
+ 	if (rtsr) {		/* this interrupt is shared!  Is it ours? */
+ 		if (rtsr & AT91_RTC_ALARM)
+ 			events |= (RTC_AF | RTC_IRQF);
+-		if (rtsr & AT91_RTC_SECEV)
+-			events |= (RTC_UF | RTC_IRQF);
++		if (rtsr & AT91_RTC_SECEV) {
++			complete(&at91_rtc_upd_rdy);
++			at91_sys_write(AT91_RTC_IDR, AT91_RTC_SECEV);
++		}
+ 		if (rtsr & AT91_RTC_ACKUPD)
+ 			complete(&at91_rtc_updated);
+ 
+@@ -291,6 +298,11 @@ static int __init at91_rtc_probe(struct
  	}
+ 	platform_set_drvdata(pdev, rtc);
  
- 	/* Validate that the target is in a valid r/w GPU domain */
- 	if (unlikely(reloc->write_domain & (reloc->write_domain - 1))) {
--		DRM_ERROR("reloc with multiple write domains: "
-+		DRM_DEBUG("reloc with multiple write domains: "
- 			  "obj %p target %d offset %d "
- 			  "read %08x write %08x",
- 			  obj, reloc->target_handle,
-@@ -304,7 +304,7 @@ i915_gem_execbuffer_relocate_entry(struc
- 		return ret;
- 	}
- 	if (unlikely((reloc->write_domain | reloc->read_domains) & I915_GEM_DOMAIN_CPU)) {
--		DRM_ERROR("reloc with read/write CPU domains: "
-+		DRM_DEBUG("reloc with read/write CPU domains: "
- 			  "obj %p target %d offset %d "
- 			  "read %08x write %08x",
- 			  obj, reloc->target_handle,
-@@ -315,7 +315,7 @@ i915_gem_execbuffer_relocate_entry(struc
- 	}
- 	if (unlikely(reloc->write_domain && target_obj->pending_write_domain &&
- 		     reloc->write_domain != target_obj->pending_write_domain)) {
--		DRM_ERROR("Write domain conflict: "
-+		DRM_DEBUG("Write domain conflict: "
- 			  "obj %p target %d offset %d "
- 			  "new %08x old %08x\n",
- 			  obj, reloc->target_handle,
-@@ -336,7 +336,7 @@ i915_gem_execbuffer_relocate_entry(struc
- 
- 	/* Check that the relocation address is valid... */
- 	if (unlikely(reloc->offset > obj->base.size - 4)) {
--		DRM_ERROR("Relocation beyond object bounds: "
-+		DRM_DEBUG("Relocation beyond object bounds: "
- 			  "obj %p target %d offset %d size %d.\n",
- 			  obj, reloc->target_handle,
- 			  (int) reloc->offset,
-@@ -344,7 +344,7 @@ i915_gem_execbuffer_relocate_entry(struc
- 		return ret;
- 	}
- 	if (unlikely(reloc->offset & 3)) {
--		DRM_ERROR("Relocation not 4-byte aligned: "
-+		DRM_DEBUG("Relocation not 4-byte aligned: "
- 			  "obj %p target %d offset %d.\n",
- 			  obj, reloc->target_handle,
- 			  (int) reloc->offset);
-@@ -704,7 +704,7 @@ i915_gem_execbuffer_relocate_slow(struct
- 		obj = to_intel_bo(drm_gem_object_lookup(dev, file,
- 							exec[i].handle));
- 		if (&obj->base == NULL) {
--			DRM_ERROR("Invalid object handle %d at index %d\n",
-+			DRM_DEBUG("Invalid object handle %d at index %d\n",
- 				   exec[i].handle, i);
- 			ret = -ENOENT;
- 			goto err;
-@@ -1015,7 +1015,7 @@ i915_gem_do_execbuffer(struct drm_device
- 	int ret, mode, i;
- 
- 	if (!i915_gem_check_execbuffer(args)) {
--		DRM_ERROR("execbuf with invalid offset/length\n");
-+		DRM_DEBUG("execbuf with invalid offset/length\n");
- 		return -EINVAL;
- 	}
- 
-@@ -1030,20 +1030,20 @@ i915_gem_do_execbuffer(struct drm_device
- 		break;
- 	case I915_EXEC_BSD:
- 		if (!HAS_BSD(dev)) {
--			DRM_ERROR("execbuf with invalid ring (BSD)\n");
-+			DRM_DEBUG("execbuf with invalid ring (BSD)\n");
- 			return -EINVAL;
- 		}
- 		ring = &dev_priv->ring[VCS];
- 		break;
- 	case I915_EXEC_BLT:
- 		if (!HAS_BLT(dev)) {
--			DRM_ERROR("execbuf with invalid ring (BLT)\n");
-+			DRM_DEBUG("execbuf with invalid ring (BLT)\n");
- 			return -EINVAL;
- 		}
- 		ring = &dev_priv->ring[BCS];
- 		break;
- 	default:
--		DRM_ERROR("execbuf with unknown ring: %d\n",
-+		DRM_DEBUG("execbuf with unknown ring: %d\n",
- 			  (int)(args->flags & I915_EXEC_RING_MASK));
- 		return -EINVAL;
- 	}
-@@ -1069,18 +1069,18 @@ i915_gem_do_execbuffer(struct drm_device
- 		}
- 		break;
- 	default:
--		DRM_ERROR("execbuf with unknown constants: %d\n", mode);
-+		DRM_DEBUG("execbuf with unknown constants: %d\n", mode);
- 		return -EINVAL;
- 	}
- 
- 	if (args->buffer_count < 1) {
--		DRM_ERROR("execbuf with %d buffers\n", args->buffer_count);
-+		DRM_DEBUG("execbuf with %d buffers\n", args->buffer_count);
- 		return -EINVAL;
- 	}
- 
- 	if (args->num_cliprects != 0) {
- 		if (ring != &dev_priv->ring[RCS]) {
--			DRM_ERROR("clip rectangles are only valid with the render ring\n");
-+			DRM_DEBUG("clip rectangles are only valid with the render ring\n");
- 			return -EINVAL;
- 		}
- 
-@@ -1130,7 +1130,7 @@ i915_gem_do_execbuffer(struct drm_device
- 		obj = to_intel_bo(drm_gem_object_lookup(dev, file,
- 							exec[i].handle));
- 		if (&obj->base == NULL) {
--			DRM_ERROR("Invalid object handle %d at index %d\n",
-+			DRM_DEBUG("Invalid object handle %d at index %d\n",
- 				   exec[i].handle, i);
- 			/* prevent error path from reading uninitialized data */
- 			ret = -ENOENT;
-@@ -1138,7 +1138,7 @@ i915_gem_do_execbuffer(struct drm_device
- 		}
- 
- 		if (!list_empty(&obj->exec_list)) {
--			DRM_ERROR("Object %p [handle %d, index %d] appears more than once in object list\n",
-+			DRM_DEBUG("Object %p [handle %d, index %d] appears more than once in object list\n",
- 				   obj, exec[i].handle, i);
- 			ret = -EINVAL;
- 			goto err;
-@@ -1176,7 +1176,7 @@ i915_gem_do_execbuffer(struct drm_device
- 
- 	/* Set the pending read domains for the batch buffer to COMMAND */
- 	if (batch_obj->base.pending_write_domain) {
--		DRM_ERROR("Attempting to use self-modifying batch buffer\n");
-+		DRM_DEBUG("Attempting to use self-modifying batch buffer\n");
- 		ret = -EINVAL;
- 		goto err;
- 	}
-@@ -1275,7 +1275,7 @@ i915_gem_execbuffer(struct drm_device *d
- 	int ret, i;
- 
- 	if (args->buffer_count < 1) {
--		DRM_ERROR("execbuf with %d buffers\n", args->buffer_count);
-+		DRM_DEBUG("execbuf with %d buffers\n", args->buffer_count);
- 		return -EINVAL;
- 	}
- 
-@@ -1283,7 +1283,7 @@ i915_gem_execbuffer(struct drm_device *d
- 	exec_list = drm_malloc_ab(sizeof(*exec_list), args->buffer_count);
- 	exec2_list = drm_malloc_ab(sizeof(*exec2_list), args->buffer_count);
- 	if (exec_list == NULL || exec2_list == NULL) {
--		DRM_ERROR("Failed to allocate exec list for %d buffers\n",
-+		DRM_DEBUG("Failed to allocate exec list for %d buffers\n",
- 			  args->buffer_count);
- 		drm_free_large(exec_list);
- 		drm_free_large(exec2_list);
-@@ -1294,7 +1294,7 @@ i915_gem_execbuffer(struct drm_device *d
- 			     (uintptr_t) args->buffers_ptr,
- 			     sizeof(*exec_list) * args->buffer_count);
- 	if (ret != 0) {
--		DRM_ERROR("copy %d exec entries failed %d\n",
-+		DRM_DEBUG("copy %d exec entries failed %d\n",
- 			  args->buffer_count, ret);
- 		drm_free_large(exec_list);
- 		drm_free_large(exec2_list);
-@@ -1335,7 +1335,7 @@ i915_gem_execbuffer(struct drm_device *d
- 				   sizeof(*exec_list) * args->buffer_count);
- 		if (ret) {
- 			ret = -EFAULT;
--			DRM_ERROR("failed to copy %d exec entries "
-+			DRM_DEBUG("failed to copy %d exec entries "
- 				  "back to user (%d)\n",
- 				  args->buffer_count, ret);
- 		}
-@@ -1356,7 +1356,7 @@ i915_gem_execbuffer2(struct drm_device *
- 
- 	if (args->buffer_count < 1 ||
- 	    args->buffer_count > UINT_MAX / sizeof(*exec2_list)) {
--		DRM_ERROR("execbuf2 with %d buffers\n", args->buffer_count);
-+		DRM_DEBUG("execbuf2 with %d buffers\n", args->buffer_count);
- 		return -EINVAL;
- 	}
- 
-@@ -1366,7 +1366,7 @@ i915_gem_execbuffer2(struct drm_device *
- 		exec2_list = drm_malloc_ab(sizeof(*exec2_list),
- 					   args->buffer_count);
- 	if (exec2_list == NULL) {
--		DRM_ERROR("Failed to allocate exec list for %d buffers\n",
-+		DRM_DEBUG("Failed to allocate exec list for %d buffers\n",
- 			  args->buffer_count);
- 		return -ENOMEM;
- 	}
-@@ -1375,7 +1375,7 @@ i915_gem_execbuffer2(struct drm_device *
- 			     (uintptr_t) args->buffers_ptr,
- 			     sizeof(*exec2_list) * args->buffer_count);
- 	if (ret != 0) {
--		DRM_ERROR("copy %d exec entries failed %d\n",
-+		DRM_DEBUG("copy %d exec entries failed %d\n",
- 			  args->buffer_count, ret);
- 		drm_free_large(exec2_list);
- 		return -EFAULT;
-@@ -1390,7 +1390,7 @@ i915_gem_execbuffer2(struct drm_device *
- 				   sizeof(*exec2_list) * args->buffer_count);
- 		if (ret) {
- 			ret = -EFAULT;
--			DRM_ERROR("failed to copy %d exec entries "
-+			DRM_DEBUG("failed to copy %d exec entries "
- 				  "back to user (%d)\n",
- 				  args->buffer_count, ret);
- 		}
++	/* enable SECEV interrupt in order to initialize at91_rtc_upd_rdy
++	 * completion.
++	 */
++	at91_sys_write(AT91_RTC_IER, AT91_RTC_SECEV);
++
+ 	printk(KERN_INFO "AT91 Real Time Clock driver.\n");
+ 	return 0;
+ }
 
