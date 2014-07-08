@@ -1,85 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932322AbaGHAXZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:23:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55989 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754226AbaGGXy7 (ORCPT
+	id S932343AbaGHAXf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:23:35 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:47819 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754253AbaGHAXb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:59 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 94/94] sym53c8xx_2: Set DID_REQUEUE return code when aborting squeue
-Date: Mon,  7 Jul 2014 16:58:24 -0700
-Message-Id: <20140707235759.533259498@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
-References: <20140707235756.780319003@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Mon, 7 Jul 2014 20:23:31 -0400
+Date: Mon, 07 Jul 2014 17:23:29 -0700 (PDT)
+Message-Id: <20140707.172329.1811708260574978031.davem@davemloft.net>
+To: edward.allcutt@openmarket.com
+Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipv4: icmp: Fix pMTU handling for rare case
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1404141362-21015-1-git-send-email-edward.allcutt@openmarket.com>
+References: <1404141362-21015-1-git-send-email-edward.allcutt@openmarket.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 07 Jul 2014 17:23:30 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+From: Edward Allcutt <edward.allcutt@openmarket.com>
+Date: Mon, 30 Jun 2014 16:16:02 +0100
 
-------------------
+> Some older router implementations still send Fragmentation Needed
+> errors with the Next-Hop MTU field set to zero. This is explicitly
+> described as an eventuality that hosts must deal with by the
+> standard (RFC 1191) since older standards specified that those
+> bits must be zero.
+> 
+> Linux had a generic (for all of IPv4) implementation of the algorithm
+> described in the RFC for searching a list of MTU plateaus for a good
+> value. Commit 46517008e116 ("ipv4: Kill ip_rt_frag_needed().")
+> removed this as part of the changes to remove the routing cache.
+> Subsequently any Fragmentation Needed packet with a zero Next-Hop
+> MTU has been discarded without being passed to the per-protocol
+> handlers or notifying userspace for raw sockets.
+> 
+> When there is a router which does not implement RFC 1191 on an
+> MTU limited path then this results in stalled connections since
+> large packets are discarded and the local protocols are not
+> notified so they never attempt to lower the pMTU.
+> 
+> One example I have seen is an OpenBSD router terminating IPSec
+> tunnels. It's worth pointing out that this case is distinct from
+> the BSD 4.2 bug which incorrectly calculated the Next-Hop MTU
+> since the commit in question dismissed that as a valid concern.
+> 
+> All of the per-protocols handlers implement the simple approach from
+> RFC 1191 of immediately falling back to the minimum value. Although
+> this is sub-optimal it is vastly preferable to connections hanging
+> indefinitely.
+> 
+> Remove the Next-Hop MTU != 0 check and allow such packets
+> to follow the normal path.
+> 
+> Fixes: 46517008e116 ("ipv4: Kill ip_rt_frag_needed().")
+> Signed-off-by: Edward Allcutt <edward.allcutt@openmarket.com>
 
-From: Mikulas Patocka <mpatocka@redhat.com>
-
-commit fd1232b214af43a973443aec6a2808f16ee5bf70 upstream.
-
-This patch fixes I/O errors with the sym53c8xx_2 driver when the disk
-returns QUEUE FULL status.
-
-When the controller encounters an error (including QUEUE FULL or BUSY
-status), it aborts all not yet submitted requests in the function
-sym_dequeue_from_squeue.
-
-This function aborts them with DID_SOFT_ERROR.
-
-If the disk has full tag queue, the request that caused the overflow is
-aborted with QUEUE FULL status (and the scsi midlayer properly retries
-it until it is accepted by the disk), but the sym53c8xx_2 driver aborts
-the following requests with DID_SOFT_ERROR --- for them, the midlayer
-does just a few retries and then signals the error up to sd.
-
-The result is that disk returning QUEUE FULL causes request failures.
-
-The error was reproduced on 53c895 with COMPAQ BD03685A24 disk
-(rebranded ST336607LC) with command queue 48 or 64 tags.  The disk has
-64 tags, but under some access patterns it return QUEUE FULL when there
-are less than 64 pending tags.  The SCSI specification allows returning
-QUEUE FULL anytime and it is up to the host to retry.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Matthew Wilcox <matthew@wil.cx>
-Cc: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/scsi/sym53c8xx_2/sym_hipd.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
---- a/drivers/scsi/sym53c8xx_2/sym_hipd.c
-+++ b/drivers/scsi/sym53c8xx_2/sym_hipd.c
-@@ -3000,7 +3000,11 @@ sym_dequeue_from_squeue(struct sym_hcb *
- 		if ((target == -1 || cp->target == target) &&
- 		    (lun    == -1 || cp->lun    == lun)    &&
- 		    (task   == -1 || cp->tag    == task)) {
-+#ifdef SYM_OPT_HANDLE_DEVICE_QUEUEING
- 			sym_set_cam_status(cp->cmd, DID_SOFT_ERROR);
-+#else
-+			sym_set_cam_status(cp->cmd, DID_REQUEUE);
-+#endif
- 			sym_remque(&cp->link_ccbq);
- 			sym_insque_tail(&cp->link_ccbq, &np->comp_ccbq);
- 		}
-
-
+Applied and queued up for -stable, thanks.
