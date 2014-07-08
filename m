@@ -1,101 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629AbaGHRBN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 13:01:13 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:58834 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085AbaGHRBL (ORCPT
+	id S1754824AbaGHRE0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 13:04:26 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:34706 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753747AbaGHREZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 13:01:11 -0400
-Date: Tue, 8 Jul 2014 10:01:07 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 3.16-rc5
-Message-ID: <20140708170107.GA13973@roeck-us.net>
+	Tue, 8 Jul 2014 13:04:25 -0400
+From: bsegall@google.com
+To: Yuyang Du <yuyang.du@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com,
+        arjan.van.de.ven@intel.com, len.brown@intel.com, alan.cox@intel.com,
+        mark.gross@intel.com, pjt@google.com, fengguang.wu@intel.com
+Subject: Re: [PATCH 2/2] sched: Rewrite per entity runnable load average tracking
+References: <1404268256-3019-1-git-send-email-yuyang.du@intel.com>
+	<1404268256-3019-2-git-send-email-yuyang.du@intel.com>
+	<20140707104646.GK6758@twins.programming.kicks-ass.net>
+	<xm26r41wyfgc.fsf@sword-of-the-dawn.mtv.corp.google.com>
+	<20140708000840.GB25653@intel.com>
+Date: Tue, 08 Jul 2014 10:04:22 -0700
+In-Reply-To: <20140708000840.GB25653@intel.com> (Yuyang Du's message of "Tue,
+	8 Jul 2014 08:08:40 +0800")
+Message-ID: <xm26k37nye7d.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PEIAKu/WMn1b1Hv9"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Yuyang Du <yuyang.du@intel.com> writes:
 
---PEIAKu/WMn1b1Hv9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> Thanks, Ben,
+>
+> On Mon, Jul 07, 2014 at 03:25:07PM -0700, bsegall@google.com wrote:
+>> Also something to note is that cfs_rq->load_avg just takes samples of
+>> load.weight every 1us, which seems unfortunate. We thought this was ok
+>> for p->se.load.weight, because it isn't really likely for userspace to
+>> be calling nice(2) all the time, but wake/sleeps are more frequent,
+>> particularly on newer cpus. Still, it might not be /that/ bad.
+>
+> The sampling of cfs_rq->load.weight should be equivalent to the current
+> code in that at the end of day cfs_rq->load.weight worth of runnable would 
+> contribute to runnable_load_avg/blocked_load_avg for both the current and
+> the rewrite.
 
-Hi Linus,
+Yes, but the point is that it looks at load.weight when delta/1024 > 0
+and assumes that it has had that load.weight the entire time, when this
+might not actually be true. The largest error I can think of is if you
+have a very high weight task that tends to run for very short periods of
+time, you could end up losing their entire contribution to load. This
+may be acceptable, I'm not certain.
 
-Please pull hwmon fixes for Linux 3.16-rc5 from signed tag:
+>  
+>> Also, as a nitpick/annoyance this does a lot of
+>>  if (entity_is_task(se)) __update_load_avg(... se ...)
+>>  __update_load_avg(... cfs_rq_of(se) ...)
+>> which is just a waste of the avg struct on every group se, and all it
+>> buys you is the ability to not have a separate rq->avg struct (removed
+>> by patch 1) instead of rq->cfs.avg.
+>
+> I actually struggled on this issue. As we only need a sched_avg for task (not
+> entity), and a sched_avg for cfs_rq, I planned to move entity avg to
+> task. Good?
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+Yeah, that can probably be done perfectly fine.
 
-Thanks,
-Guenter
-------
+>
+> So left are the migrate_task_rq_fair() not holding lock issue and cfs_rq->avg.load_avg
+> overflow issue. I need some time to study them.
+>
+> Overall, I think none of these issues are originally caused by combination/split
+> of runnable and blocked. It is just a matter of how synchronized we want to be
+> (this rewrite is the most synchronized), and the workaround I need to borrow from the
+> current codes.
 
-The following changes since commit 4c834452aad01531db949414f94f817a86348d59:
+If you can manage to find a to deal with the migration issue without it,
+that would be great, I'm just pretty sure that's why we did the split.
 
-  Linux 3.16-rc3 (2014-06-29 14:11:36 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
-
-for you to fetch changes up to 7fe7381cbdadf16792e733789983690b3fa82880:
-
-  hwmon: (adc128d818) Drop write support on inX_input attributes (2014-07-07 09:48:23 -0700)
-
-----------------------------------------------------------------
-Fix a number of zero-day bugs, mostly found with module test scripts.
-Nothing major, but potentially annoying and worthwhile to fix.
-
-----------------------------------------------------------------
-Axel Lin (3):
-      hwmon: (amc6821) Fix permissions for temp2_input
-      hwmon: (adm1029) Ensure the fan_div cache is updated in set_fan_div
-      hwmon: (adm1021) Fix cache problem when writing temperature limits
-
-Guenter Roeck (3):
-      hwmon: (adm1031) Fix writes to limit registers
-      hwmon: (emc2103) Clamp limits instead of bailing out
-      hwmon: (adc128d818) Drop write support on inX_input attributes
-
-Naveen Krishna Chatradhi (1):
-      hwmon: (ntc_thermistor) Correct information printed during probe
-
- drivers/hwmon/adc128d818.c     | 28 ++++++++++++++--------------
- drivers/hwmon/adm1021.c        | 14 ++++++++------
- drivers/hwmon/adm1029.c        |  3 +++
- drivers/hwmon/adm1031.c        |  8 +++++---
- drivers/hwmon/amc6821.c        |  2 +-
- drivers/hwmon/emc2103.c        | 15 +++++----------
- drivers/hwmon/ntc_thermistor.c |  2 +-
- 7 files changed, 37 insertions(+), 35 deletions(-)
-
---PEIAKu/WMn1b1Hv9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTvCPTAAoJEMsfJm/On5mB5XIP+wRlGvJ1agEHIHMTGyRMT8DU
-YQgw4WGE2RZhGmlUePz973GVBFd5xt3kNUii4EN5vXtYN4uJzXjAqie/xboWdzD2
-deg37OE6cGNzsTiUtF8Xeoec3P6bp6hy3XSO5MFldTVJ0q+rGNeidE7ekzOD/IHH
-O7488rdfMgj5ufmPib933P0YQTq9JdXYczCNEp6OT3tsUIpWBU8UenYHqMhfWJus
-UDbBpTglJv6WvmTK6MJ0tE5vX/mE1ttQBTzxvhCXM+20Qv7aoW5qHx8/9Q2oLJ12
-VKcDGNoQuIIfmKLBw08Wu7o63nm9Pp0+4Z8x8j/X+H0TgaYZYwarmAvFbUO00lsT
-djrzAoPoKpIQFB8XZFWD8skOAtxwRERD//LvZQBiv+Uwbe7R4AJFpBvOT2Z5afqI
-ksWu8Pi78mpwS6HLczk0/pVJ7AzStNkFC2WswIde6OpFbXs+gYHEQB18quGpY03V
-jo0SbHzhQTv8tcjhefzAtnv6ZnBmixtymLe+52MR5z5nGa/jPKWMCKmwSqMXumo/
-lqj5SMKXcaoaUMm4QbMHLBRVPv5wFw9Wbfd89POUnDmGnYlBZb9OXu6PUQY7MQKp
-JWbwzTtq4ej3U39K9QfRoXIehysE23HlQscJfP978J5qjoLkq6FVeu2TbNLjtn8D
-s6r3Glb8KqVH8Qcj7Ejh
-=0nLk
------END PGP SIGNATURE-----
-
---PEIAKu/WMn1b1Hv9--
+>
+> Yuyang
