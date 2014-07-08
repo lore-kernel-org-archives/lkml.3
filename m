@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830AbaGHXZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 19:25:27 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:45340 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751450AbaGHXZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 19:25:25 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        =?utf-8?B?ZWRkaWUo6JSh5p6rKQ==?= <cf@rock-chips.com>,
-        huangtao@rock-chips.com
-Subject: [PATCH 2/2] dt-bindings: document Rockchip saradc
-Date: Wed, 09 Jul 2014 01:26:46 +0200
-Message-ID: <3591595.sBj6Zqo42A@diego>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <2959154.xc8BQActsn@diego>
-References: <2959154.xc8BQActsn@diego>
+	id S1754023AbaGHX2j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 19:28:39 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:37429 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344AbaGHX2h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 19:28:37 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <8119752.rPOQIYa4Af@avalon>
+References: <539FDC4F.4030000@redhat.com> <1403016348-10129-1-git-send-email-vpalatin@chromium.org>
+ <CACHYQ-rSk6etrX8RXF4w7aA_LJ9nzGtfJMOjhBOg49BZ4gaWgw@mail.gmail.com> <8119752.rPOQIYa4Af@avalon>
+From: Vincent Palatin <vpalatin@chromium.org>
+Date: Tue, 8 Jul 2014 16:28:16 -0700
+X-Google-Sender-Auth: t3vHMRYxq2QJTE-NlRDSDdUo3u4
+Message-ID: <CAP_ceTxk=OE3UVhNKk+WV7EG3E9Z0cOH4tZBU210Awa15OOjgw@mail.gmail.com>
+Subject: Re: [PATCH v2] V4L: uvcvideo: Add support for relative pan/tilt controls
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Pawel Osciak <posciak@chromium.org>, Hans de Goede <hdegoede@redhat.com>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olofj@chromium.org>, Zach Kuznia <zork@chromium.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This add the necessary binding documentation for the saradc found in all recent
-processors from Rockchip.
+On Wed, Jun 25, 2014 at 2:54 AM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> Hi Pawel,
+>
+> On Wednesday 25 June 2014 11:46:24 Pawel Osciak wrote:
+>> On Tue, Jun 17, 2014 at 11:45 PM, Vincent Palatin wrote:
+>> > Map V4L2_CID_TILT_RELATIVE and V4L2_CID_PAN_RELATIVE to the standard UVC
+>> > CT_PANTILT_RELATIVE_CONTROL terminal control request.
+>> >
+>> > Tested by plugging a Logitech ConferenceCam C3000e USB camera
+>> > and controlling pan/tilt from the userspace using the VIDIOC_S_CTRL ioctl.
+>> > Verified that it can pan and tilt at the same time in both directions.
+>> >
+>> > Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
+>> >
+>> > Change-Id: I7b70b228e5c0126683f5f0be34ffd2807f5783dc
+>> > ---
+>> >
+>> > Changes
+>> > v2: fix control request name in description.
+>>
+>> The patch looks good, but I have a more general comment for everyone to
+>> consider. This doesn't match the expected functionality of
+>> controls V4L2_CID_PAN/TILT_RELATIVE. This is basically an on/off switch for
+>> pan/tilt, which once enabled will keep going until turned off (or I'm
+>> guessing until the maximum pan/tilt is reached), while the controls are
+>> supposed to expose an ability to turn the camera by a specified amount.
+>> Here the amount will also be ignored...
+>
+> I agree with you here, and this mismatch between the V4L and UVC controls is
+> the reason why I haven't implemented relative pan/tilt support.
+>
+>> Given that this is a standard UVC control, perhaps we need new V4L2
+>> controls for it, as I'm assuming we can't change the meaning of existing
+>> controls?
+>
+> We could extend the meaning of the controls to cover the UVC behaviour in a
+> device-specific fashion, but that would be confusing for applications, so new
+> controls might be a better idea.
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
----
- .../bindings/iio/adc/rockchip-saradc.txt           | 28 ++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
+Ok, I will add another patch to create new V4L2_CID_PAN_SPEED /
+V4L2_CID_TILT_SPEED controls.
 
-diff --git a/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt b/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
-new file mode 100644
-index 0000000..603ac9c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
-@@ -0,0 +1,28 @@
-+Rockhip Successive Approximation Register (SAR) A/D Converter bindings
-+
-+Required properties:
-+- compatible: Should be "rockchip,saradc"
-+- reg: physical base address of the controller and length of memory mapped
-+       region.
-+- interrupts: The interrupt number to the cpu. The interrupt specifier format
-+              depends on the interrupt controller.
-+- clocks: Must contain an entry for each entry in clock-names.
-+- clock-names: Shall be "saradc" for the converter-clock, and "apb_pclk" for
-+               the peripheral clock.
-+- vref-supply: The regulator supply ADC refrence voltage.
-+- #io-channel-cells: Should be 1, see ../iio-bindings.txt
-+
-+Optional properties :
-+- clock-frequency : converter frequency in Hz. If omitted, 1MHz is used.
-+
-+Example:
-+	saradc: saradc@2006c000 {
-+		compatible = "rockchip,saradc";
-+		reg = <0x2006c000 0x100>;
-+		interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&cru SCLK_SARADC>, <&cru PCLK_SARADC>;
-+		clock-names = "saradc", "apb_pclk";
-+		#io-channel-cells = <1>;
-+		vref-supply = <&vcc18>;
-+		clock-frequency = <1000000>;
-+	};
 -- 
-1.9.0
-
-
+Vincent
