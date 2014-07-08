@@ -1,96 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964AbaGHRtI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 13:49:08 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:40369 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754833AbaGHRtF (ORCPT
+	id S1754863AbaGHRxm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 13:53:42 -0400
+Received: from smtprelay0135.hostedemail.com ([216.40.44.135]:37064 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753747AbaGHRxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 13:49:05 -0400
-Date: Tue, 8 Jul 2014 19:49:00 +0200
-From: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        sebastian.hesselbarth@gmail.com, kishon@ti.com,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>
-Subject: Re: [PATCH v9 3/7] ata: libahci: allow to use multiple PHYs
-Message-ID: <20140708174900.GC16148@kwain>
-References: <1404728173-20263-1-git-send-email-antoine.tenart@free-electrons.com>
- <1404728173-20263-4-git-send-email-antoine.tenart@free-electrons.com>
- <20140708134000.GC4979@htj.dyndns.org>
- <20140708170353.GA16148@kwain>
- <20140708171817.GH4979@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140708171817.GH4979@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 8 Jul 2014 13:53:40 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:69:355:379:541:982:988:989:1260:1345:1437:1534:1541:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3352:3653:3865:3867:3868:3870:3871:3872:3874:4250:5007:6261:7688:10004:10026:10848:11658:11914:12043:12291:12517:12519:12679:12683:13161:13229:13311:13357:14095:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: shape67_29e52fdefd30
+X-Filterd-Recvd-Size: 2166
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] checkpatch: Add ability to insert/delete lines
+Date: Tue,  8 Jul 2014 10:53:34 -0700
+Message-Id: <cover.1404840958.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 08, 2014 at 01:18:17PM -0400, Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, Jul 08, 2014 at 07:03:53PM +0200, Antoine Ténart wrote:
-> > > So, hpriv->port is both input and output?  This is messy and can lead
-> > > to confusing failures and there now are multiple ways to modify
-> > > port_map.  If carrying this information through ahci_host_priv is
-> > > necessary, let's remove the direct params and introduce new input
-> > > fields to the struct.
-> > 
-> > We just use hpriv->port_map to check port_map is valid and describes
-> > available ports there.
-> > 
-> > hpriv->port_map is filed by the generic ahci_platform_get_resources()
-> > function when using the new bindings and not by the drivers. port_map is
-> > the input from the drivers.
-> 
-> So, yeah, it's being used both as input and output and we also have
-> the arguments which affect port_map, right?  It does seem confusing.
+Creating patches for files or modifying existing patches can be a bit
+easier when lines need to be added or deleted.
 
-I do see priv->port_map as being automatically set and then restricted
-if needed by the port_map input here. I don't see how that's confusing.
-The only modification is we restrict the port_map parameter to the set
-of available ports. The port_map argument affected priv->port_map before
-this patch.
+Here's a start at that.
 
-> 
-> > Well, a had a review a week ago about in the PHY driver saying I should
-> > avoid using fixed sized arrays... And it was in a driver were we know
-> > the maximum number of PHY available.
-> > 
-> > I think in this case were the number of PHYs depends on the h/w, we should
-> > use a dynamically allocated array.
-> 
-> Well, so does clk.  Let's say clk is more restricted and phy can be
-> one or more per port and thus needs to be dynamic.  If so, shouldn't
-> we at least have some correlation between phys and ports?  It bothers
-> me that now libahci is carrying random number of resources that it has
-> no idea how to associate with the ports it manages.  What if later we
-> want to involve phy driver in power managing unoccupied ports?
+There are still false positives for things like
 
-I see. This is a first (working) attempt to have a one node per port. I
-agree that would be nice to have a correlation between ports and PHYs.
-This can definitively be added when needed without changing the dt
-bindings as only the internal representation changes. This would also
-require to get all phys from the port nodes, which is again internal
-stuff.
+For example, this can be useful for staging where blank lines after
+declarations are desired.
 
-Don't you think we can go by steps, and have a following up series for
-this when needed (like in a power managing series for unoccupied ports)?
+For instance: (using --strict also enables multiple blank line removals)
 
+for a single file:
 
-Antoine
+$ ./scripts/checkpatch.pl -f --fix-inplace --strict --types=line_spacing \
+  drivers/staging/android/binder.c
+$ git diff --shortstat drivers/staging/android/binder.c
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+for all files in drivers/staging:
+
+$ git ls-files "drivers/staging/*.[ch]" | \
+  xargs ./scripts/checkpatch.pl -f --fix-inplace --strict --types=line_spacing
+$ git diff --shortstat drivers/staging/
+ 1028 files changed, 2513 insertions(+), 3540 deletions(-)
+
+There are still some false positives like:
+
+drivers/staging/ced1401/use14_ioc.h where an old Microsoftism for FAR is used.
+The test adds an unnecessary blank line there.
+
+So, as ever, this is just a convenience function.
+Don't rely on it.
+  
+Joe Perches (2):
+  checkpatch: Add an index variable for fixed lines
+  checkpatch: Add ability to insert and delete lines to patch/file
+
+ scripts/checkpatch.pl | 255 +++++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 190 insertions(+), 65 deletions(-)
 
 -- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+1.8.1.2.459.gbcd45b4.dirty
+
