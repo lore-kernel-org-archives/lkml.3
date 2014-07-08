@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755045AbaGHAHo (ORCPT <rfc822;w@1wt.eu>);
+	id S1754616AbaGHAHo (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 7 Jul 2014 20:07:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56485 "EHLO
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56489 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754885AbaGHADa (ORCPT
+	with ESMTP id S1754888AbaGHADa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 20:03:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>,
+        Chen Gang <gang.chen@asianux.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Ben Hutchings <ben@decadent.org.uk>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 3.4 37/44] powerpc: Fix emulation of illegal instructions on PowerNV platform
-Date: Mon,  7 Jul 2014 17:07:27 -0700
-Message-Id: <20140707235859.750052364@linuxfoundation.org>
+Subject: [PATCH 3.4 38/44] powerpc/smp: Section mismatch from smp_release_cpus to __initdata spinning_secondaries
+Date: Mon,  7 Jul 2014 17:07:28 -0700
+Message-Id: <20140707235859.778543954@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235858.652771077@linuxfoundation.org>
 References: <20140707235858.652771077@linuxfoundation.org>
@@ -31,64 +31,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Mackerras <paulus@samba.org>
+From: Chen Gang <gang.chen@asianux.com>
 
-commit bf593907f7236e95698a76b7c7a2bbf8b1165327 upstream.
+commit 8246aca7058f3f2c2ae503081777965cd8df7b90 upstream.
 
-Normally, the kernel emulates a few instructions that are unimplemented
-on some processors (e.g. the old dcba instruction), or privileged (e.g.
-mfpvr).  The emulation of unimplemented instructions is currently not
-working on the PowerNV platform.  The reason is that on these machines,
-unimplemented and illegal instructions cause a hypervisor emulation
-assist interrupt, rather than a program interrupt as on older CPUs.
-Our vector for the emulation assist interrupt just calls
-program_check_exception() directly, without setting the bit in SRR1
-that indicates an illegal instruction interrupt.  This fixes it by
-making the emulation assist interrupt set that bit before calling
-program_check_interrupt().  With this, old programs that use no-longer
-implemented instructions such as dcba now work again.
+the smp_release_cpus is a normal funciton and called in normal environments,
+  but it calls the __initdata spinning_secondaries.
+  need modify spinning_secondaries to match smp_release_cpus.
 
-Signed-off-by: Paul Mackerras <paulus@samba.org>
+the related warning:
+  (the linker report boot_paca.33377, but it should be spinning_secondaries)
+
+-----------------------------------------------------------------------------
+
+WARNING: arch/powerpc/kernel/built-in.o(.text+0x23176): Section mismatch in reference from the function .smp_release_cpus() to the variable .init.data:boot_paca.33377
+The function .smp_release_cpus() references
+the variable __initdata boot_paca.33377.
+This is often because .smp_release_cpus lacks a __initdata
+annotation or the annotation of boot_paca.33377 is wrong.
+
+WARNING: arch/powerpc/kernel/built-in.o(.text+0x231fe): Section mismatch in reference from the function .smp_release_cpus() to the variable .init.data:boot_paca.33377
+The function .smp_release_cpus() references
+the variable __initdata boot_paca.33377.
+This is often because .smp_release_cpus lacks a __initdata
+annotation or the annotation of boot_paca.33377 is wrong.
+
+-----------------------------------------------------------------------------
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/exceptions-64s.S |    2 +-
- arch/powerpc/kernel/traps.c          |   10 ++++++++++
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ arch/powerpc/kernel/setup_64.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/exceptions-64s.S
-+++ b/arch/powerpc/kernel/exceptions-64s.S
-@@ -491,7 +491,7 @@ machine_check_common:
- 	STD_EXCEPTION_COMMON(0xb00, trap_0b, .unknown_exception)
- 	STD_EXCEPTION_COMMON(0xd00, single_step, .single_step_exception)
- 	STD_EXCEPTION_COMMON(0xe00, trap_0e, .unknown_exception)
--        STD_EXCEPTION_COMMON(0xe40, emulation_assist, .program_check_exception)
-+	STD_EXCEPTION_COMMON(0xe40, emulation_assist, .emulation_assist_interrupt)
-         STD_EXCEPTION_COMMON(0xe60, hmi_exception, .unknown_exception)
- 	STD_EXCEPTION_COMMON_ASYNC(0xf00, performance_monitor, .performance_monitor_exception)
- 	STD_EXCEPTION_COMMON(0x1300, instruction_breakpoint, .instruction_breakpoint_exception)
---- a/arch/powerpc/kernel/traps.c
-+++ b/arch/powerpc/kernel/traps.c
-@@ -1074,6 +1074,16 @@ void __kprobes program_check_exception(s
- 		_exception(SIGILL, regs, ILL_ILLOPC, regs->nip);
- }
+--- a/arch/powerpc/kernel/setup_64.c
++++ b/arch/powerpc/kernel/setup_64.c
+@@ -76,7 +76,7 @@
+ #endif
  
-+/*
-+ * This occurs when running in hypervisor mode on POWER6 or later
-+ * and an illegal instruction is encountered.
-+ */
-+void __kprobes emulation_assist_interrupt(struct pt_regs *regs)
-+{
-+	regs->msr |= REASON_ILLEGAL;
-+	program_check_exception(regs);
-+}
-+
- void alignment_exception(struct pt_regs *regs)
- {
- 	int sig, code, fixed = 0;
+ int boot_cpuid = 0;
+-int __initdata spinning_secondaries;
++int spinning_secondaries;
+ u64 ppc64_pft_size;
+ 
+ /* Pick defaults since we might want to patch instructions
 
 
