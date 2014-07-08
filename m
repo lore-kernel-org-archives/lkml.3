@@ -1,88 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106AbaGHJ3a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 05:29:30 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:60128 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753828AbaGHJ31 (ORCPT
+	id S1754223AbaGHJ3f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 05:29:35 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53840 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754154AbaGHJ3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 05:29:27 -0400
-Date: Tue, 8 Jul 2014 11:29:17 +0200
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: David Howells <dhowells@redhat.com>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>,
-        "J. R. Okajima" <hooanon05g@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robo Bot <apw@canonical.com>, Felix Fietkau <nbd@openwrt.org>,
-        Neil Brown <neilb@suse.de>, Jordi Pujol <jordipujolp@gmail.com>,
-        ezk@fsl.cs.sunysb.edu, "mszeredi@suse.cz" <mszeredi@suse.cz>
-Subject: Re: Overlayfs rename bug
-Message-ID: <20140708092848.GA26119@tucsk.piliscsaba.szeredi.hu>
-References: <11446.1401420931@jrobl>
- <7184.1401439773@warthog.procyon.org.uk>
- <CA+icZUV5P=fVwe_MJJHixwBOBoj7HoKSFuySLdS6AU5L++S=4g@mail.gmail.com>
- <15839.1401786056@warthog.procyon.org.uk>
- <CA+icZUUiirxYnoL7pg5TvFEy6pQ+5Q3CuJ0jonJMXTOwhT-LDw@mail.gmail.com>
- <CA+icZUU8BqGUoQdtuqt403NdCBnJnH1-k64bxTM0b_GSfQr1hQ@mail.gmail.com>
- <10013.1401791634@warthog.procyon.org.uk>
- <20140603132153.GA26512@tucsk.piliscsaba.szeredi.hu>
- <19281.1401809418@warthog.procyon.org.uk>
- <17091.1403628374@warthog.procyon.org.uk>
+	Tue, 8 Jul 2014 05:29:32 -0400
+Date: Tue, 8 Jul 2014 11:29:23 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: kan.liang@intel.com
+Cc: andi@firstfloor.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH V3 1/2] perf ignore LBR and offcore_rsp.
+Message-ID: <20140708092923.GC6758@twins.programming.kicks-ass.net>
+References: <1404740066-4374-1-git-send-email-kan.liang@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="R6pG8OF89Zv1WQ+4"
 Content-Disposition: inline
-In-Reply-To: <17091.1403628374@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1404740066-4374-1-git-send-email-kan.liang@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 05:46:14PM +0100, David Howells wrote:
 
-> strace shows:
-> 
-> 	rename("/mnt/a/foo104", "/mnt/a/foo105") = 0
-> 	lstat("/mnt/a/foo104", {st_mode=S_IFREG|0644, st_size=12, ...}) = 0
-> 
-> which shouldn't happen.
+--R6pG8OF89Zv1WQ+4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sorry for the delay.  Following patch fixes it and tests now run fine.
+On Mon, Jul 07, 2014 at 06:34:25AM -0700, kan.liang@intel.com wrote:
+> @@ -555,7 +577,11 @@ static inline void __x86_pmu_enable_event(struct hw_=
+perf_event *hwc,
+>  {
+>  	u64 disable_mask =3D __this_cpu_read(cpu_hw_events.perf_ctr_virt_mask);
+> =20
+> -	if (hwc->extra_reg.reg)
+> +	if (hwc->extra_reg.reg &&
+> +		((hwc->extra_reg.idx =3D=3D EXTRA_REG_RSP_0) ?
+> +			x86_pmu.extra_msr_access[0] : true) &&
+> +		((hwc->extra_reg.idx =3D=3D EXTRA_REG_RSP_1) ?
+> +			x86_pmu.extra_msr_access[1] : true))
+>  		wrmsrl(hwc->extra_reg.reg, hwc->extra_reg.config);
+>  	wrmsrl(hwc->config_base, (hwc->config | enable_mask) & ~disable_mask);
+>  }
 
-Problem was that copy-up didn't set opaque flag on non-dir.  The reason this has
-gone unnoticed is that the dentry on overlayfs was unhashed (to get rid of the
-unneeded lower dentry reference) so after a new lookup the opaque flag would be
-set correctly.  Rename, however, rehashed the copied up dentry and so old_opaque
-and the opaque flag on old would become out-of-sync.
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu=
+/perf_event_intel.c
+> index adb02aa..3d18765 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
 
-As a followup patch we could also unhash the copied dentry after the rename, but
-that's just an optimization.
+> +	/*
+> +	 * Access extra MSR may cause #GP under certain circumstances.
+> +	 * E.g. KVM doesn't support offcore event
+> +	 * Check all extra_regs here.
+> +	 */
+> +	if (x86_pmu.extra_regs) {
+> +		x86_pmu.extra_msr_access[0] =3D
+> +			check_msr(x86_pmu.extra_regs[EXTRA_REG_RSP_0].msr);
+> +
+> +		/* Not all platforms have EXTRA_REG_RSP_1 */
+> +		if (x86_pmu.extra_regs[EXTRA_REG_RSP_1].idx =3D=3D EXTRA_REG_RSP_1)
+> +			x86_pmu.extra_msr_access[1] =3D
+> +			check_msr(x86_pmu.extra_regs[EXTRA_REG_RSP_1].msr);
+> +		/*
+> +		 * If there is no EXTRA_REG_RSP_1 support,
+> +		 * just set the flag to be true.
+> +		 * So it is ignored at the runtime check.
+> +		 */
+> +		else
+> +			x86_pmu.extra_msr_access[1] =3D true;
+> +	}
 
-Thanks for the report and the great test suite!
+This too is wrong in many ways; there's more than 2 extra_msrs on many
+systems.
 
-Miklos
+And the place you check is abysmal, if we know at init time that we
+don't have those MSRs, WTF do you allow event creation that would use
+them, only to then misbehave?
 
+--R6pG8OF89Zv1WQ+4
+Content-Type: application/pgp-signature
 
-diff --git a/fs/overlayfs/copy_up.c b/fs/overlayfs/copy_up.c
-index 1670dbe..274c857 100644
---- a/fs/overlayfs/copy_up.c
-+++ b/fs/overlayfs/copy_up.c
-@@ -255,9 +255,13 @@ static int ovl_copy_up_locked(struct dentry *workdir, struct dentry *upperdir,
- 	 * Easiest way to get rid of the lower dentry reference is to
- 	 * drop this dentry.  This is neither needed nor possible for
- 	 * directories.
-+	 *
-+	 * Non-directores become opaque when copied up.
- 	 */
--	if (!S_ISDIR(stat->mode))
-+	if (!S_ISDIR(stat->mode)) {
-+		ovl_dentry_set_opaque(dentry, true);
- 		d_drop(dentry);
-+	}
- out:
- 	dput(upper);
- 	dput(newdentry);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTu7nyAAoJEHZH4aRLwOS6TZQP/RFX1Gr0YriYNpfowue5SgOg
+Kl90NjUWAmbLDYsksH9ale4O6P+bUmP22R7jStQ3f5rqmoBa5HKB9NXkEpvDKWiG
+K9IRrKZUUPcqjmp9UaZgBkJ8MKMWV7oPeWuvt41VWgVICQtGdSGYjo7iXdryLRNS
+E/xTLGQ0R8ZmBqJainoOQ/Letg9qhD0arVOawgh54BMRtEClucuwUDGAZiRKzGjg
+s9/Gvlht5GwsTFK/215sBbWqVsT1MdA9OPGIjVpWc3xCqqmTHeCJIG8C3gJo0PE1
+RPOZAEcev63dlbxqqcdu2uEnmHx9/9QfMkhH3+9dvXe7SU1hKpZZftBcPNaefTkn
+rgUvC4tV+h+TNfvXm0l07P1XyqKCuAzJ8qU5ERxIZkSePfPSoPojom3ZSyUdHTKl
+C2fWIkdtyxbyEo3UvLmH6D7HxOzHM8dlMqFhVKWGeZtZunpMIeZvNRp5lUNGj/qB
+qHK2Kb5WZauUd+ja3LxmfErtyAniHZ6OGeGKechmdDvQLL2VE/8V4HO3PIoZrLsh
+bL1TbQuxeS0VAHV4OGPYXUsnzu4Sm4qASvZ0abV+1qc8KF8VHj9bssLMI9z0/Q4e
+R1H4SNL08mpEsYSnFBAuL1ty9Sw4W0SygNXeoDLRNIVIbsjg7IrWcd617HTTUUJF
+R97Ab7FVuxOvhaQbX0Yp
+=8fTl
+-----END PGP SIGNATURE-----
+
+--R6pG8OF89Zv1WQ+4--
