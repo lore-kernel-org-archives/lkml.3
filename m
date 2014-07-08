@@ -1,74 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754482AbaGHMHH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 08:07:07 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:59387 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867AbaGHMHE (ORCPT
+	id S1754587AbaGHMHQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 08:07:16 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:46769 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753948AbaGHMHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 08:07:04 -0400
-Date: Tue, 8 Jul 2014 05:07:02 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: David Drysdale <drysdale@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-man@vger.kernel.org
-Subject: Re: [PATCH 01/11] fs: add O_BENEATH_ONLY flag to openat(2)
-Message-ID: <20140708120702.GB30459@infradead.org>
-References: <1404124096-21445-1-git-send-email-drysdale@google.com>
- <1404124096-21445-2-git-send-email-drysdale@google.com>
- <CALCETrU=HLmw9n-DxPkFV1xP5wtzQ7-YF3-uao6YiGZODA9kdw@mail.gmail.com>
- <20140630154928.GB10375@google.com>
- <CALCETrWJ-rqDo8OvSZWPUt1806gObNtwVHvC4M6kfQgvd3Eg9w@mail.gmail.com>
+	Tue, 8 Jul 2014 08:07:10 -0400
+Message-ID: <53BBDEE6.1080800@hitachi.com>
+Date: Tue, 08 Jul 2014 21:07:02 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrWJ-rqDo8OvSZWPUt1806gObNtwVHvC4M6kfQgvd3Eg9w@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@gmail.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
+        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-tip-commits@vger.kernel.org,
+        Michael Ellerman <mpe@ellerman.id.au>, akataria@vmware.com,
+        anil.s.keshavamurthy@intel.com,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        Kevin Hao <haokexin@gmail.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH v5 2/2] [BUGFIX] kprobes: Fix "Failed to find blacklist"
+ error on ia64 and ppc64
+References: <1404276081.7254.1.camel@concordia> <20140702070029.14689.18485.stgit@kbuild-fedora.novalocal>
+In-Reply-To: <20140702070029.14689.18485.stgit@kbuild-fedora.novalocal>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 08:53:01AM -0700, Andy Lutomirski wrote:
-> > Wouldn't it need to be both O_BENEATH_ONLY (for openat()) and
-> > AT_BENEATH_ONLY (for other *at() functions), like O_NOFOLLOW and
-> > AT_SYMLINK_NOFOLLOW?  (I.e. aren't the AT_* flags in a different
-> > numbering space than O_* flags?)
-> >
-> > Or am I misunderstanding?
-> >
+Ping?
+
+This patch can be applied without 1/2, and will fix ia64/ppc64 problem.
+
+Thank you,
+
+(2014/07/02 16:00), Masami Hiramatsu wrote:
+> On ia64 and ppc64, the function pointer does not point the
+> entry address of the function, but the address of function
+> discriptor (which contains the entry address and misc
+> data.) Since the kprobes passes the function pointer stored
+> by NOKPROBE_SYMBOL() to kallsyms_lookup_size_offset() for
+> initalizing its blacklist, it fails and reports many errors
+> as below.
 > 
-> Ugh, you're probably right.  I wish openat had separate flags and
-> atflags arguments.  Oh well.
+>   Failed to find blacklist 0001013168300000
+>   Failed to find blacklist 0001013000f0a000
+>   Failed to find blacklist 000101315f70a000
+>   Failed to find blacklist 000101324c80a000
+>   Failed to find blacklist 0001013063f0a000
+>   Failed to find blacklist 000101327800a000
+>   Failed to find blacklist 0001013277f0a000
+>   Failed to find blacklist 000101315a70a000
+>   Failed to find blacklist 0001013277e0a000
+>   Failed to find blacklist 000101305a20a000
+>   Failed to find blacklist 0001013277d0a000
+>   Failed to find blacklist 00010130bdc0a000
+>   Failed to find blacklist 00010130dc20a000
+>   Failed to find blacklist 000101309a00a000
+>   Failed to find blacklist 0001013277c0a000
+>   Failed to find blacklist 0001013277b0a000
+>   Failed to find blacklist 0001013277a0a000
+>   Failed to find blacklist 000101327790a000
+>   Failed to find blacklist 000101303140a000
+>   Failed to find blacklist 0001013a3280a000
+> 
+> To fix this bug, this introduces function_entry() macro to
+> retrieve the entry address from the given function pointer,
+> and uses for kallsyms_lookup_size_offset() while initializing
+> blacklist.
+> 
+> Changes in v5:
+>  - Use arch_deref_entry_point() instead of function_entry().
+> 
+> Changes in v4:
+>  - Add kernel_text_address() check for verifying the address.
+>  - Moved on the latest linus tree.
+> 
+> Changes in v3:
+>  - Fix a bug to get blacklist address based on function entry
+>    instead of function descriptor. (Suzuki's work, Thanks!)
+> 
+> Changes in V2:
+>  - Use function_entry() macro when lookin up symbols instead
+>    of storing it.
+>  - Update for the latest -next.
+> 
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Reported-by: Tony Luck <tony.luck@gmail.com>
+> Tested-by: Tony Luck <tony.luck@intel.com>
+> Cc: Michael Ellerman <mpe@ellerman.id.au>
+> Cc: Suzuki K. Poulose <suzuki@in.ibm.com>
+> Cc: Tony Luck <tony.luck@intel.com>
+> Cc: Fenghua Yu <fenghua.yu@intel.com>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> Cc: Kevin Hao <haokexin@gmail.com>
+> Cc: linux-ia64@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linuxppc-dev@lists.ozlabs.org
+> ---
+>  kernel/kprobes.c |   15 ++++++++++-----
+>  1 file changed, 10 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index 3214289..ec370cc 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -32,6 +32,7 @@
+>   *		<prasanna@in.ibm.com> added function-return probes.
+>   */
+>  #include <linux/kprobes.h>
+> +#include <linux/types.h>
+>  #include <linux/hash.h>
+>  #include <linux/init.h>
+>  #include <linux/slab.h>
+> @@ -2037,19 +2038,23 @@ static int __init populate_kprobe_blacklist(unsigned long *start,
+>  {
+>  	unsigned long *iter;
+>  	struct kprobe_blacklist_entry *ent;
+> -	unsigned long offset = 0, size = 0;
+> +	unsigned long entry, offset = 0, size = 0;
+>  
+>  	for (iter = start; iter < end; iter++) {
+> -		if (!kallsyms_lookup_size_offset(*iter, &size, &offset)) {
+> -			pr_err("Failed to find blacklist %p\n", (void *)*iter);
+> +		entry = arch_deref_entry_point((void *)*iter);
+> +
+> +		if (!kernel_text_address(entry) ||
+> +		    !kallsyms_lookup_size_offset(entry, &size, &offset)) {
+> +			pr_err("Failed to find blacklist at %p\n",
+> +				(void *)entry);
+>  			continue;
+>  		}
+>  
+>  		ent = kmalloc(sizeof(*ent), GFP_KERNEL);
+>  		if (!ent)
+>  			return -ENOMEM;
+> -		ent->start_addr = *iter;
+> -		ent->end_addr = *iter + size;
+> +		ent->start_addr = entry;
+> +		ent->end_addr = entry + size;
+>  		INIT_LIST_HEAD(&ent->list);
+>  		list_add_tail(&ent->list, &kprobe_blacklist);
+>  	}
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-There's two different AT_* namespaces.  The flags that most *at syscalls
-has, and the the one for the dfd argument, which currently only contains
-AT_FDCWD, although a new constant has recently been proposed to it.
 
-Having an AT_BENEATH magic value for the dfd argument certainly feels
-elegant to me, but seems to be against the language for openat in Posix:
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-"The openat() function shall be equivalent to the open() function except
-in the case where path specifies a relative path. In this case the file
-to be opened is determined relative to the directory associated with the
-file descriptor fd instead of the current working directory. If the file
-descriptor was opened without O_SEARCH, the function shall check whether
-directory searches are permitted using the current permissions of the
-directory underlying the file descriptor. If the file descriptor was
-opened with O_SEARCH, the function shall not perform the check.
-
-The oflag parameter and the optional fourth parameter correspond exactly
-to the parameters of open().
-
-If openat() is passed the special value AT_FDCWD in the fd parameter,
-the current working directory shall be used and the behavior shall be
-identical to a call to open()."
 
