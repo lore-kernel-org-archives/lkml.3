@@ -1,72 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795AbaGHNlG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:41:06 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:50990 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754300AbaGHNlC (ORCPT
+	id S1754803AbaGHNlh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:41:37 -0400
+Received: from w-smtp-out-7.wedos.net ([46.28.106.5]:58720 "EHLO
+	we2-f167.wedos.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753796AbaGHNlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:41:02 -0400
-Date: Tue, 8 Jul 2014 15:41:11 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Thomas Hellstrom <thellstrom@vmware.com>
-Cc: Masaru Nomura <massa.nomura@gmail.com>, airlied@linux.ie,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH 2/3] gpu: drm: Remove unnecessary parameter from
- drm_ht_remove_item()
-Message-ID: <20140708134111.GF17271@phenom.ffwll.local>
-Mail-Followup-To: Thomas Hellstrom <thellstrom@vmware.com>,
-	Masaru Nomura <massa.nomura@gmail.com>, airlied@linux.ie,
-	kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-	dri-devel@lists.freedesktop.org
-References: <1403646734-2838-1-git-send-email-massa.nomura@gmail.com>
- <1403646734-2838-3-git-send-email-massa.nomura@gmail.com>
- <20140708112442.GA17271@phenom.ffwll.local>
- <53BBD8BC.7040602@vmware.com>
+	Tue, 8 Jul 2014 09:41:36 -0400
+Date: Tue, 8 Jul 2014 15:41:30 +0200
+From: Josef Gajdusek <atx@atalax.net>
+To: linux-iio@vger.kernel.org
+Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org, jic23@kernel.org,
+        linux-kernel@vger.kernel.org, pmeerw@pmeerw.net,
+        dan.carpenter@oracle.com
+Subject: [PATCH v3 4/5] staging:iio:hmc5843: Add support for i2c hmc5983
+Message-ID: <20140708134130.GF14393@dashie>
+References: <20140708133711.GB14393@dashie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53BBD8BC.7040602@vmware.com>
-X-Operating-System: Linux phenom 3.15.0-rc3+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140708133711.GB14393@dashie>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 08, 2014 at 01:40:44PM +0200, Thomas Hellstrom wrote:
-> On 07/08/2014 01:24 PM, Daniel Vetter wrote:
-> > On Tue, Jun 24, 2014 at 10:52:13PM +0100, Masaru Nomura wrote:
-> >> removed drm_open_hash from drm_ht_remove_item() as the parameter is
-> >> not used within the function.
-> >>
-> >> Signed-off-by: Masaru Nomura <massa.nomura@gmail.com>
-> >> ---
-> >> Please review this patch carefully. The reason the parameter is passed
-> >> might be some historical one or clarity of which drm_open_hash
-> >> we remove an item from.
-> > Reasons for this are probably lost. On the patch:
-> >
-> > Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> 
-> Acked-by: Thomas Hellstrom <thellstrom@vmware.com>
-> 
-> >
-> > Aside: Imo we could/should just move all the users to directly employ the
-> > linux hashtab instead of partially reinventing the wheel here in drm.
-> > -Daniel
-> >
-> 
-> Actually, in this case, the wheel was invented in drm before it was made
-> generic :).
-> It's possible to utilize part of "hashtable.h" but I don't think the
-> code size gain
-> will be major...
+This patch adds support for the hmc5983 i2c interface.
+This chip is almost identical to the hmc5883. The difference being added
+temperature compensation, additional available sample rate (220Hz) and an SPI
+interface.
 
-Yeah, lots of work and little gain ;-) There needs to be a terribly boring
-and rainy day to get around to that ...
--Daniel
+Signed-off-by: Josef Gajdusek <atx@atx.name>
+---
+ drivers/staging/iio/magnetometer/Kconfig        |  2 +-
+ drivers/staging/iio/magnetometer/hmc5843.h      |  1 +
+ drivers/staging/iio/magnetometer/hmc5843_core.c | 20 +++++++++++++++++---
+ drivers/staging/iio/magnetometer/hmc5843_i2c.c  |  5 +++--
+ 4 files changed, 22 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/staging/iio/magnetometer/Kconfig b/drivers/staging/iio/magnetometer/Kconfig
+index 28c2612..32c69c0 100644
+--- a/drivers/staging/iio/magnetometer/Kconfig
++++ b/drivers/staging/iio/magnetometer/Kconfig
+@@ -16,7 +16,7 @@ config SENSORS_HMC5843
+ 	  This driver can also be compiled as a set of modules.
+ 	  If so, these modules will be created:
+ 	  - hmc5843_core (core functions)
+-	  - hmc5843_i2c (support for HMC5843, HMC5883 and HMC5883L)
++	  - hmc5843_i2c (support for HMC5843, HMC5883, HMC5883L and HMC5983)
+ 
+ config SENSORS_HMC5843_I2C
+ 	tristate
+diff --git a/drivers/staging/iio/magnetometer/hmc5843.h b/drivers/staging/iio/magnetometer/hmc5843.h
+index 4e3cce3..c36041a 100644
+--- a/drivers/staging/iio/magnetometer/hmc5843.h
++++ b/drivers/staging/iio/magnetometer/hmc5843.h
+@@ -29,6 +29,7 @@ enum hmc5843_ids {
+ 	HMC5843_ID,
+ 	HMC5883_ID,
+ 	HMC5883L_ID,
++	HMC5983_ID,
+ };
+ 
+ struct hmc5843_data {
+diff --git a/drivers/staging/iio/magnetometer/hmc5843_core.c b/drivers/staging/iio/magnetometer/hmc5843_core.c
+index e3a6b2e..c89ea54 100644
+--- a/drivers/staging/iio/magnetometer/hmc5843_core.c
++++ b/drivers/staging/iio/magnetometer/hmc5843_core.c
+@@ -101,6 +101,11 @@ static const int hmc5883_regval_to_samp_freq[][2] = {
+ 	{75, 0}
+ };
+ 
++static const int hmc5983_regval_to_samp_freq[][2] = {
++	{0, 750000}, {1, 500000}, {3, 0}, {7, 500000}, {15, 0}, {30, 0},
++	{75, 0}, {220, 0}
++};
++
+ /* Describe chip variants */
+ struct hmc5843_chip_info {
+ 	const struct iio_chan_spec *channels;
+@@ -457,7 +462,7 @@ static const struct iio_chan_spec hmc5843_channels[] = {
+ 	IIO_CHAN_SOFT_TIMESTAMP(3),
+ };
+ 
+-/* Beware: Y and Z are exchanged on HMC5883 */
++/* Beware: Y and Z are exchanged on HMC5883 and 5983 */
+ static const struct iio_chan_spec hmc5883_channels[] = {
+ 	HMC5843_CHANNEL(X, 0),
+ 	HMC5843_CHANNEL(Z, 1),
+@@ -504,6 +509,15 @@ static const struct hmc5843_chip_info hmc5843_chip_info_tbl[] = {
+ 		.n_regval_to_nanoscale =
+ 				ARRAY_SIZE(hmc5883l_regval_to_nanoscale),
+ 	},
++	[HMC5983_ID] = {
++		.channels = hmc5883_channels,
++		.regval_to_samp_freq = hmc5983_regval_to_samp_freq,
++		.n_regval_to_samp_freq =
++				ARRAY_SIZE(hmc5983_regval_to_samp_freq),
++		.regval_to_nanoscale = hmc5883l_regval_to_nanoscale,
++		.n_regval_to_nanoscale =
++				ARRAY_SIZE(hmc5883l_regval_to_nanoscale),
++	}
+ };
+ 
+ static int hmc5843_init(struct hmc5843_data *data)
+@@ -516,7 +530,7 @@ static int hmc5843_init(struct hmc5843_data *data)
+ 	if (ret < 0)
+ 		return ret;
+ 	if (id[0] != 'H' || id[1] != '4' || id[2] != '3') {
+-		dev_err(data->dev, "no HMC5843/5883/5883L sensor\n");
++		dev_err(data->dev, "no HMC5843/5883/5883L/5983 sensor\n");
+ 		return -ENODEV;
+ 	}
+ 
+@@ -606,5 +620,5 @@ int hmc5843_common_remove(struct iio_dev *indio_dev)
+ EXPORT_SYMBOL(hmc5843_common_remove);
+ 
+ MODULE_AUTHOR("Shubhrajyoti Datta <shubhrajyoti@ti.com>");
+-MODULE_DESCRIPTION("HMC5843/5883/5883L core driver");
++MODULE_DESCRIPTION("HMC5843/5883/5883L/5983 core driver");
+ MODULE_LICENSE("GPL");
+diff --git a/drivers/staging/iio/magnetometer/hmc5843_i2c.c b/drivers/staging/iio/magnetometer/hmc5843_i2c.c
+index b3c92d9..753c914 100644
+--- a/drivers/staging/iio/magnetometer/hmc5843_i2c.c
++++ b/drivers/staging/iio/magnetometer/hmc5843_i2c.c
+@@ -1,5 +1,5 @@
+ /*
+- * i2c driver for hmc5843/5843/5883/5883l
++ * i2c driver for hmc5843/5843/5883/5883l/5983
+  *
+  * Split from hmc5843.c
+  * Copyright (C) Josef Gajdusek <atx@atx.name>
+@@ -79,6 +79,7 @@ static const struct i2c_device_id hmc5843_id[] = {
+ 	{ "hmc5843", HMC5843_ID },
+ 	{ "hmc5883", HMC5883_ID },
+ 	{ "hmc5883l", HMC5883L_ID },
++	{ "hmc5983", HMC5983_ID },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, hmc5843_id);
+@@ -102,5 +103,5 @@ static struct i2c_driver hmc5843_driver = {
+ module_i2c_driver(hmc5843_driver);
+ 
+ MODULE_AUTHOR("Josef Gajdusek <atx@atx.name>");
+-MODULE_DESCRIPTION("HMC5843/5883/5883L i2c driver");
++MODULE_DESCRIPTION("HMC5843/5883/5883L/5983 i2c driver");
+ MODULE_LICENSE("GPL");
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.8.5.5
+
