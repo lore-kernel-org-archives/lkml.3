@@ -1,91 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173AbaGHIeC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 04:34:02 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65276 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753808AbaGHIeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 04:34:00 -0400
-Message-ID: <53BBACF4.4070800@nod.at>
-Date: Tue, 08 Jul 2014 10:33:56 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Konstantin Khlebnikov <koct9i@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
+	id S1754178AbaGHIet (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 04:34:49 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:50810 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753199AbaGHIeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 04:34:46 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        Alexander Gordeev <agordeev@redhat.com>
+CC: "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         "x86@kernel.org" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        UML devel <user-mode-linux-devel@lists.sourceforge.net>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Subject: Re: [uml-devel] [PATCH] checkstack: use $UTS_MACHINE as target architecture
-References: <20140705112238.16142.42735.stgit@zurg>	<20140707150523.cc671116bf366e8db73209c5@linux-foundation.org>	<CALYGNiMjL_GYqqkid4yQsubpnbydVXxTPnKW0GqJcg05x9zbHQ@mail.gmail.com>	<CAFLxGvzxvuizdHyjQ0SjUm8jJcj=w+qS5ut-u76Xo-m2sftvvw@mail.gmail.com>	<CALYGNiOTC8KOxWwRo+f=6JmtUYhJ=1cQNq-Us1BZbW85r4P+ug@mail.gmail.com>	<53BBA9B4.7050609@nod.at> <CALYGNiNSFoW6Z_1o3JfV-cCeay1QmTptrt4kWHVegkuw+-6A8A@mail.gmail.com>
-In-Reply-To: <CALYGNiNSFoW6Z_1o3JfV-cCeay1QmTptrt4kWHVegkuw+-6A8A@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Subject: RE: [PATCH 1/3] PCI/MSI: Add pci_enable_msi_partial()
+Thread-Topic: [PATCH 1/3] PCI/MSI: Add pci_enable_msi_partial()
+Thread-Index: AQHPljNB2YNqvD5cNkq3/QaNLPhjzpuOEsDAgAF8RoCABWaUgIAA63Pw
+Date: Tue, 8 Jul 2014 08:33:17 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1726E211@AcuExch.aculab.com>
+References: <cover.1402405331.git.agordeev@redhat.com>
+ <4fef62a2e647a7c38e9f2a1ea4244b3506a85e2b.1402405331.git.agordeev@redhat.com>
+ <20140702202201.GA28852@google.com>
+ <063D6719AE5E284EB5DD2968C1650D6D1726BF4E@AcuExch.aculab.com>
+ <20140704085816.GB12247@dhcp-26-207.brq.redhat.com>
+ <CAErSpo7QWc35seoMhJA+H1_=MkKWYMdeYG=hT=i1v=iz8d5ezA@mail.gmail.com>
+In-Reply-To: <CAErSpo7QWc35seoMhJA+H1_=MkKWYMdeYG=hT=i1v=iz8d5ezA@mail.gmail.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s688YsNq015294
 
-Am 08.07.2014 10:30, schrieb Konstantin Khlebnikov:
-> On Tue, Jul 8, 2014 at 12:20 PM, Richard Weinberger <richard@nod.at> wrote:
->> Am 08.07.2014 10:16, schrieb Konstantin Khlebnikov:
->>> On Tue, Jul 8, 2014 at 12:01 PM, Richard Weinberger
->>> <richard.weinberger@gmail.com> wrote:
->>>> On Tue, Jul 8, 2014 at 7:48 AM, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
->>>>> On Tue, Jul 8, 2014 at 2:05 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
->>>>>> On Sat, 05 Jul 2014 15:22:38 +0400 Konstantin Khlebnikov <koct9i@gmail.com> wrote:
->>>>>>
->>>>>>> This fixes command # make checkstack for i386/x86_64.
->>>>>>> Looks like $UTS_MACHINE is exactly what scripts/checkstack.pl needs.
->>>>>>>
->>>>>>> By default $UTS_MACHINE is equal to $ARCH, but some arch/${ARCH}/Makefile
->>>>>>> overrides it. This patch updates it also in arch/x86/Makefile.um
->>>>>>>
->>>>>>> broken in ffee0de ("x86: Default to ARCH=x86 to avoid overriding CONFIG_64BIT")
->>>>>>
->>>>>> The changelog doesn't describe the bug which is being fixed.  It should
->>>>>> do so please.  If there are any compiler/make error messages then those
->>>>>> should be included.
->>>>>>
->>>>>
->>>>> Oh, ok. checkstalk.pl needs either i386 or x86_64, x86 isn't enough.
->>>>>
->>>>> $ make checkstack
->>>>> objdump -d vmlinux $(find . -name '*.ko') | \
->>>>> perl /home/blind/src/linux-stable/scripts/checkstack.pl x86
->>>>> wrong or unknown architecture "x86"
->>>>
->>>> And now we need ARCH, SUBARCH and UTS_MACHINE on UML? :-(
->>>
->>> Nope UTS_MACHINE is autodetected, see hunk Makefile.x86 in my patch.
->>>
->>> I thought about cleaning this part of UML.
->>> For example we could move arch/x86/um into arch/um/x86 and use # make
->>> ARCH=um/x86
->>
->> No way. We moved the x86 stuff to arch/x86/ a few Years ago by design.
+From: Bjorn Helgaas
+...
+> >> Even if you do that, you ought to write valid interrupt information
+> >> into the 4th slot (maybe replicating one of the earlier interrupts).
+> >> Then, if the device does raise the 'unexpected' interrupt you don't
+> >> get a write to a random kernel location.
+> >
+> > I might be missing something, but we are talking of MSI address space
+> > here, aren't we? I am not getting how we could end up with a 'write'
+> > to a random kernel location when a unclaimed MSI vector sent. We could
+> > only expect a spurious interrupt at worst, which is handled and reported.
 > 
-> Ok, fine. We could leave it in arch/x86/um and use make ARCH=x86/um
-
-I don't like this. Please keep ARCH=um as is.
-
->>
->>> after collecting this stuff together it woud be easier to get rid of
->>> forever-broken parts.
->>> As I see UML has been designed to work everywhere but SMP seem never worked
->>> as well as any host os except of linux or other arch except x86.
->>
->> Currently UML runs only on x86_32/64.
->> Adding/fixing SMP support should be doable.
+> Yes, that's how I understand it.  With MSI, the OS specifies the a
+> single Message Address, e.g., a LAPIC address, and a single Message
+> Data value, e.g., a vector number that will be written to the LAPIC.
+> The device is permitted to modify some low-order bits of the Message
+> Data to send one of several vector numbers (the MME value tells the
+> device how many bits it can modify).
 > 
-> This might be quite difficult on top of current ptrace-based design.
-> I thought about running userspace in kvm context, this might be much
-> faster than ptrace but requires indirect uaccess like for 4gb-split.
-> But it's very unlikely that I'll find time for that.
+> Bottom line, I think a spurious interrupt is the failure we'd expect
+> if a device used more vectors than the OS expects it to.
 
-Erm, UML is a systemcall emulator based on ptrace().
-If you make it use any KVM backend there is 0 usecase for UML because we can just use qemu/kvmtool.
+So you need to tell the device where to write in order to raise the
+'spurious interrupt'.
 
-Thanks,
-//richard
+	David
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
