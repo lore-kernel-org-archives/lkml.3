@@ -1,95 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752404AbaGHFNk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 01:13:40 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:37953 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751229AbaGHFNj (ORCPT
+	id S1752606AbaGHFRF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 01:17:05 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:58269 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747AbaGHFRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 01:13:39 -0400
+	Tue, 8 Jul 2014 01:17:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAPDOMVjfuDmdkASHTdO9CdzZbHHoRi9ZY2VXLeb3=aPywhsfWw@mail.gmail.com>
-References: <CAPDOMVjMpU4g5oPNHQYP2q6M-B7dxh1wPO3Nf4f=idCQcM8bfA@mail.gmail.com>
-	<20140708033251.GA18777@kroah.com>
-	<53BB6CF4.5010600@roeck-us.net>
-	<CAPDOMVg+HGpvVYw1VAvaMFK7eXwKh-qZZfObzgzLCFtmQV3B2w@mail.gmail.com>
-	<53BB78B2.1020401@roeck-us.net>
-	<CAPDOMVhW1DrO+aGYLHNs1zy9BLvXU0KZg=dWrnLyPTgxneacsg@mail.gmail.com>
-	<CAPDOMVjfuDmdkASHTdO9CdzZbHHoRi9ZY2VXLeb3=aPywhsfWw@mail.gmail.com>
-Date: Tue, 8 Jul 2014 01:13:38 -0400
-Message-ID: <CAPDOMVjqT7P1BzPiTdThUNhTQk4T7ACY2Eymy5fThfLdL-Vb4A@mail.gmail.com>
-Subject: Fwd: Fwd: shx3_defconfig Fails
-From: Nick Krause <xerofoify@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>, Guenter Roeck <linux@roeck-us.net>
-Cc: jslaby@suse.cz,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 8 Jul 2014 01:17:02 -0400
+Message-ID: <CAGi9MxXckC4NrQudjSP3qKteV1Vo-gATmsiRTxRMp1DR1y_ONg@mail.gmail.com>
+Subject: Can I use DEVICE_INT_ATTR() so that probing and removing sysfs
+ enteries happens automatically?
+From: Jamie Risk <jamie@subject2risk.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jamie Risk <jamie@subject2risk.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----------- Forwarded message ----------
-From: Nick Krause <xerofoify@gmail.com>
-Date: Tue, Jul 8, 2014 at 1:11 AM
-Subject: Fwd: Fwd: shx3_defconfig Fails
-To: linux@roeck-us.net, gregkh@linuxfoundation.org
-Cc: slaby@suse.cz
+What is the proper way to use the 'DEVICE_(INT|ULONG|BOOL)_ATTR()'
+macros with a platform driver? Or, am I best using per attribute pairs
+of show/store functions?
 
+If I code my own 'show()' and 'store()' functions and use the
+'DEVICE_ATTR()' macros things work happily with an assignment of
+'struct attribute_group * attr_groups[];' to the 'struct
+device_driver' 'groups' field. i.e.
 
----------- Forwarded message ----------
-From: Nick Krause <xerofoify@gmail.com>
-Date: Tue, Jul 8, 2014 at 1:07 AM
-Subject: Fwd: Fwd: shx3_defconfig Fails
-To: linux@roeck-us.ne, Greg KH <gregkh@linuxfoundation.org>
-Cc: slaby@suse.cz, "slaby@suse.cz" <linux-kernel@vger.kernel.org>
+    static struct platform_driver platform = { /* ... */ .driver = {
+.groups = attr_groups, /* ... */ }, };
 
+If I use the 'DEVICE_INT_ATTR()' macro (for
+'device_(show|store)_int()' utility) the attribute appears in sysfs,
+but accesses cause an OOPs: 'device_show_int()' is called via
+'drv_attr_show()' with an inappropriate signature.
 
-From: Guenter Roeck  work Tue, Jul 8, 2014 at 12:50 AM
-Subject: Re: Fwd: shx3_defconfig Fails
-To: Nick Krause <xerofoify@gmail.com>, Greg KH <gregkh@linuxfoundation.org>
-Cc: jslaby@suse.cz, "linux-kernel@vger.kernel.org"
-<linux-kernel@vger.kernel.org>
+Whats a correct/corrected approach?
 
-
-On 07/07/2014 09:29 PM, Nick Krause wrote:
->
-> Guenter Roeck  work on Tue, Jul 8, 2014 at 12:00 AM
-> Subject: Re: shx3_defconfig Fails
->
-> On 07/07/2014 08:32 PM, Greg KH wrote:
->>
->>
->> On Mon, Jul 07, 2014 at 11:04:23PM -0400, Nick Krause wrote:
->>>
->>>
->>> Hey Greg and others,
->>> The build, shx3_defconfig seems to be failing.
->>
->>
->>
->> In what kernel version?
->>
->> Has it ever worked?
->>
->> Why not ask the maintainer of that arch about it?  I doubt many people
->> ever use defconfig files anymore...
->>
->
-> Works in mainline for me. And, for the record, I use lots of defconfig files
-> (144 or so of them) for my build tests, so there is at least one user :-)
->
-> Cheers,
-> Guenter
->
-> Still fails in the the same way. I am using the latest git tree.
-> Cheers Nick
->
-
->From your other errors I start wondering if you use dash or some other non-bash
-shell and some dash-incompatibility creeped into the kernel build (again).
-
-Guenter
-
-Hey Guenter,
-I seem to be using bash. Weird , maybe this is just my machine ,perhaps.
-Cheers Nick
+- Jamie
