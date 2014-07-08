@@ -1,117 +1,374 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754701AbaGHM2e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 08:28:34 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:52744 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754678AbaGHM2b (ORCPT
+	id S1754676AbaGHM2V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 08:28:21 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:35766 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754583AbaGHM2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 08:28:31 -0400
-Message-ID: <53BBE3D6.40307@ti.com>
-Date: Tue, 8 Jul 2014 17:58:06 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Nick Dyer <nick.dyer@itdev.co.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Yufeng Shen <miletus@google.com>, Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Peter Meerwald <pmeerw@pmeerw.net>,
-        Benson Leung <bleung@chromium.org>,
-        Olof Johansson <olofj@chromium.org>
-Subject: Re: [PATCH 00/15] atmel_mxt_ts - device tree, bootloader, etc
-References: <1404399697-26484-1-git-send-email-nick.dyer@itdev.co.uk> <53BA82A4.5070104@ti.com> <53BA86AB.8050603@itdev.co.uk>
-In-Reply-To: <53BA86AB.8050603@itdev.co.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Jul 2014 08:28:19 -0400
+From: Amit Daniel Kachhap <amit.daniel@samsung.com>
+To: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] regulator: s2mps11: Optimize the regulator description macro
+Date: Tue,  8 Jul 2014 17:58:00 +0530
+Message-Id: <1404822480-31525-3-git-send-email-amit.daniel@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404822480-31525-1-git-send-email-amit.daniel@samsung.com>
+References: <1404822480-31525-1-git-send-email-amit.daniel@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 07 July 2014 05:08 PM, Nick Dyer wrote:
-> On 07/07/14 12:21, Sekhar Nori wrote:
->> I was unable to get the touchscreen working on my board after applying 
->> just these patches. It does work correctly with your for-next branch so 
->> I guess I need to wait for you to post the rest of your patches too.
->>
->> Here are the relevant messages at boot. Full boot log is available here 
->> (in case you want to have a look): http://paste.ubuntu.com/7759703/
->>
->> [    2.315717] atmel_mxt_ts 0-004a: Direct firmware load failed with error -2
->> [    2.322949] atmel_mxt_ts 0-004a: Falling back to user helper
->> [    5.934924] atmel_mxt_ts 0-004a: Wait for completion timed out.
->> [    5.941237] atmel_mxt_ts 0-004a: Warning: Info CRC error - device=0x000000 file=0x8EE45C
->> [    7.294769] atmel_mxt_ts 0-004a: Wait for completion timed out.
->> [    7.300976] atmel_mxt_ts 0-004a: Resetting chip
->> [   10.574729] atmel_mxt_ts 0-004a: Wait for completion timed out.
->> [   10.581010] atmel_mxt_ts 0-004a: Error -110 updating config
->> [   10.626788] atmel_mxt_ts 0-004a: Family: 128 Variant: 1 Firmware V1.6.AB Objects: 17
->>
->> One key difference is that these patches try to load the config at 
->> probe where as with your -next branch that is avoided in the DT case. 
->> This is also missing the new update_cfg sysfs interface (which I guess 
->> you will post as follow-on patches).
->>
->> The wait_for_completion() times out because the interrupt never 
->> arrives. Even later when testing using evtest, I do not see interrupts 
->> coming. There are only two interrupts that arrive during boot and it 
->> stays that way. There is something going on with the way interrupts are 
->> handled. I havent debugged further yet. This problem is not there with 
->> your for-next branch.
-> 
-> Thanks for trying this, apologies that it didn't work.
-> 
-> Looking at it, I've a feeling that this is the solution for the issue you see:
-> https://github.com/ndyer/linux/commit/4e8f8d56361b09a2a
+This patch makes the regulator description macro take minimum and
+steps voltage as parameter. In this way many repeated macros can be
+removed. Now these macros are repeated only if the the LDO/BUCK ctrl
+registers have non-linear positions. The good thing is these ctrl registers
+are mostly linear so they are not passed as parameters.
 
-Okay, I rebased that patch onto this series, but it did not solve the 
-problem.
+This patch reduces the code size and also allow easy addition of more
+s2mpxxx PMIC drivers which differs a lot in minimum/step voltages.
 
-> 
-> Although, the fact that it says the device is reporting the Info CRC to be
-> 0x000000 is rather odd, as well.
+Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+---
+ drivers/regulator/s2mps11.c | 261 +++++++++++++++-----------------------------
+ 1 file changed, 86 insertions(+), 175 deletions(-)
 
-Thats because the device was not configured at factory (I was using the
-board for the first time). Once I run the kernel from your for-next branch,
-this messages disappear since I guess the configuration is successfully
-flashed by that kernel.
-
-> It would be useful if you could turn on all the debug in the driver and
-> re-test (#define DEBUG 1 at the top). However, if you don't have time, I
-> will try and reproduce on my test system.
-
-Here are the messages I see:
-
-[    2.257611] atmel_mxt_ts 0-004a: T5 Start:242 Size:9 Instances:1 Report IDs:0-0
-[    2.265261] atmel_mxt_ts 0-004a: T6 Start:251 Size:6 Instances:1 Report IDs:1-1
-[    2.272966] atmel_mxt_ts 0-004a: T38 Start:257 Size:8 Instances:1 Report IDs:0-0
-[    2.280726] atmel_mxt_ts 0-004a: T7 Start:265 Size:3 Instances:1 Report IDs:0-0
-[    2.288389] atmel_mxt_ts 0-004a: T8 Start:268 Size:8 Instances:1 Report IDs:0-0
-[    2.296045] atmel_mxt_ts 0-004a: T9 Start:276 Size:31 Instances:1 Report IDs:2-11
-[    2.303905] atmel_mxt_ts 0-004a: T15 Start:307 Size:11 Instances:1 Report IDs:12-12
-[    2.311935] atmel_mxt_ts 0-004a: T18 Start:318 Size:2 Instances:1 Report IDs:0-0
-[    2.319695] atmel_mxt_ts 0-004a: T19 Start:320 Size:16 Instances:1 Report IDs:13-13
-[    2.327723] atmel_mxt_ts 0-004a: T20 Start:336 Size:12 Instances:1 Report IDs:14-14
-[    2.335732] atmel_mxt_ts 0-004a: T22 Start:348 Size:17 Instances:1 Report IDs:15-15
-[    2.343761] atmel_mxt_ts 0-004a: T23 Start:365 Size:15 Instances:1 Report IDs:16-16
-[    2.351789] atmel_mxt_ts 0-004a: T24 Start:380 Size:19 Instances:1 Report IDs:17-20
-[    2.359812] atmel_mxt_ts 0-004a: T25 Start:399 Size:14 Instances:1 Report IDs:21-21
-[    2.367844] atmel_mxt_ts 0-004a: T27 Start:413 Size:7 Instances:1 Report IDs:22-22
-[    2.375763] atmel_mxt_ts 0-004a: T28 Start:420 Size:6 Instances:1 Report IDs:23-23
-[    2.383705] atmel_mxt_ts 0-004a: T37 Start:112 Size:130 Instances:1 Report IDs:0-0
-[    2.401277] atmel_mxt_ts 0-004a: T6 Config Checksum: 0x6BC1AB
-[    2.407301] atmel_mxt_ts 0-004a: T6 Status 0x90 RESET CAL
-[    2.413026] atmel_mxt_ts 0-004a: T6 Status 0x00 OK
-[    2.424854] atmel_mxt_ts 0-004a: Direct firmware load failed with error -2
-[    2.462113] atmel_mxt_ts 0-004a: Falling back to user helper
-[    5.698524] atmel_mxt_ts 0-004a: Initialized power cfg: ACTV 255, IDLE 32
-[    5.712014] atmel_mxt_ts 0-004a: Touchscreen size X799Y479
-[    5.742180] atmel_mxt_ts 0-004a: Family: 128 Variant: 1 Firmware V1.6.AB Objects: 17
-
-Full testing log here: http://paste.ubuntu.com/7765352/
-
-Thanks,
-Sekhar
+diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
+index 2098c3e..ea94f47 100644
+--- a/drivers/regulator/s2mps11.c
++++ b/drivers/regulator/s2mps11.c
+@@ -250,28 +250,14 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.set_ramp_delay		= s2mps11_set_ramp_delay,
+ };
+ 
+-#define regulator_desc_s2mps11_ldo1(num)	{	\
++#define regulator_desc_s2mps11_ldo(num, min, step) {	\
+ 	.name		= "LDO"#num,			\
+ 	.id		= S2MPS11_LDO##num,		\
+ 	.ops		= &s2mps11_ldo_ops,		\
+ 	.type		= REGULATOR_VOLTAGE,		\
+ 	.owner		= THIS_MODULE,			\
+-	.min_uV		= MIN_800_MV,			\
+-	.uV_step	= STEP_50_MV,			\
+-	.n_voltages	= S2MPS11_LDO_N_VOLTAGES,	\
+-	.vsel_reg	= S2MPS11_REG_L1CTRL + num - 1,	\
+-	.vsel_mask	= S2MPS11_LDO_VSEL_MASK,	\
+-	.enable_reg	= S2MPS11_REG_L1CTRL + num - 1,	\
+-	.enable_mask	= S2MPS11_ENABLE_MASK		\
+-}
+-#define regulator_desc_s2mps11_ldo2(num) {		\
+-	.name		= "LDO"#num,			\
+-	.id		= S2MPS11_LDO##num,		\
+-	.ops		= &s2mps11_ldo_ops,		\
+-	.type		= REGULATOR_VOLTAGE,		\
+-	.owner		= THIS_MODULE,			\
+-	.min_uV		= MIN_800_MV,			\
+-	.uV_step	= STEP_25_MV,			\
++	.min_uV		= min,				\
++	.uV_step	= step,				\
+ 	.n_voltages	= S2MPS11_LDO_N_VOLTAGES,	\
+ 	.vsel_reg	= S2MPS11_REG_L1CTRL + num - 1,	\
+ 	.vsel_mask	= S2MPS11_LDO_VSEL_MASK,	\
+@@ -311,14 +297,14 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.enable_mask	= S2MPS11_ENABLE_MASK			\
+ }
+ 
+-#define regulator_desc_s2mps11_buck6_8(num) {			\
++#define regulator_desc_s2mps11_buck6_10(num, min, step) {	\
+ 	.name		= "BUCK"#num,				\
+ 	.id		= S2MPS11_BUCK##num,			\
+ 	.ops		= &s2mps11_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= MIN_600_MV,				\
+-	.uV_step	= STEP_6_25_MV,				\
++	.min_uV		= min,					\
++	.uV_step	= step,					\
+ 	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPS11_REG_B6CTRL2 + (num - 6) * 2,	\
+@@ -327,87 +313,55 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.enable_mask	= S2MPS11_ENABLE_MASK			\
+ }
+ 
+-#define regulator_desc_s2mps11_buck9 {				\
+-	.name		= "BUCK9",				\
+-	.id		= S2MPS11_BUCK9,			\
+-	.ops		= &s2mps11_buck_ops,			\
+-	.type		= REGULATOR_VOLTAGE,			\
+-	.owner		= THIS_MODULE,				\
+-	.min_uV		= MIN_3000_MV,				\
+-	.uV_step	= STEP_25_MV,				\
+-	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
+-	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
+-	.vsel_reg	= S2MPS11_REG_B9CTRL2,			\
+-	.vsel_mask	= S2MPS11_BUCK_VSEL_MASK,		\
+-	.enable_reg	= S2MPS11_REG_B9CTRL1,			\
+-	.enable_mask	= S2MPS11_ENABLE_MASK			\
+-}
+-
+-#define regulator_desc_s2mps11_buck10 {				\
+-	.name		= "BUCK10",				\
+-	.id		= S2MPS11_BUCK10,			\
+-	.ops		= &s2mps11_buck_ops,			\
+-	.type		= REGULATOR_VOLTAGE,			\
+-	.owner		= THIS_MODULE,				\
+-	.min_uV		= MIN_750_MV,				\
+-	.uV_step	= STEP_12_5_MV,				\
+-	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
+-	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
+-	.vsel_reg	= S2MPS11_REG_B10CTRL2,			\
+-	.vsel_mask	= S2MPS11_BUCK_VSEL_MASK,		\
+-	.enable_reg	= S2MPS11_REG_B10CTRL1,			\
+-	.enable_mask	= S2MPS11_ENABLE_MASK			\
+-}
+-
+ static const struct regulator_desc s2mps11_regulators[] = {
+-	regulator_desc_s2mps11_ldo2(1),
+-	regulator_desc_s2mps11_ldo1(2),
+-	regulator_desc_s2mps11_ldo1(3),
+-	regulator_desc_s2mps11_ldo1(4),
+-	regulator_desc_s2mps11_ldo1(5),
+-	regulator_desc_s2mps11_ldo2(6),
+-	regulator_desc_s2mps11_ldo1(7),
+-	regulator_desc_s2mps11_ldo1(8),
+-	regulator_desc_s2mps11_ldo1(9),
+-	regulator_desc_s2mps11_ldo1(10),
+-	regulator_desc_s2mps11_ldo2(11),
+-	regulator_desc_s2mps11_ldo1(12),
+-	regulator_desc_s2mps11_ldo1(13),
+-	regulator_desc_s2mps11_ldo1(14),
+-	regulator_desc_s2mps11_ldo1(15),
+-	regulator_desc_s2mps11_ldo1(16),
+-	regulator_desc_s2mps11_ldo1(17),
+-	regulator_desc_s2mps11_ldo1(18),
+-	regulator_desc_s2mps11_ldo1(19),
+-	regulator_desc_s2mps11_ldo1(20),
+-	regulator_desc_s2mps11_ldo1(21),
+-	regulator_desc_s2mps11_ldo2(22),
+-	regulator_desc_s2mps11_ldo2(23),
+-	regulator_desc_s2mps11_ldo1(24),
+-	regulator_desc_s2mps11_ldo1(25),
+-	regulator_desc_s2mps11_ldo1(26),
+-	regulator_desc_s2mps11_ldo2(27),
+-	regulator_desc_s2mps11_ldo1(28),
+-	regulator_desc_s2mps11_ldo1(29),
+-	regulator_desc_s2mps11_ldo1(30),
+-	regulator_desc_s2mps11_ldo1(31),
+-	regulator_desc_s2mps11_ldo1(32),
+-	regulator_desc_s2mps11_ldo1(33),
+-	regulator_desc_s2mps11_ldo1(34),
+-	regulator_desc_s2mps11_ldo1(35),
+-	regulator_desc_s2mps11_ldo1(36),
+-	regulator_desc_s2mps11_ldo1(37),
+-	regulator_desc_s2mps11_ldo1(38),
++	regulator_desc_s2mps11_ldo(1, MIN_800_MV, STEP_25_MV),
++	regulator_desc_s2mps11_ldo(2, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(3, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(4, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(5, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(6, MIN_800_MV, STEP_25_MV),
++	regulator_desc_s2mps11_ldo(7, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(8, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(9, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(10, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(11, MIN_800_MV, STEP_25_MV),
++	regulator_desc_s2mps11_ldo(12, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(13, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(14, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(15, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(16, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(17, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(18, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(19, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(20, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(21, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(22, MIN_800_MV, STEP_25_MV),
++	regulator_desc_s2mps11_ldo(23, MIN_800_MV, STEP_25_MV),
++	regulator_desc_s2mps11_ldo(24, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(25, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(26, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(27, MIN_800_MV, STEP_25_MV),
++	regulator_desc_s2mps11_ldo(28, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(29, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(30, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(31, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(32, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(33, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(34, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(35, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(36, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(37, MIN_800_MV, STEP_50_MV),
++	regulator_desc_s2mps11_ldo(38, MIN_800_MV, STEP_50_MV),
+ 	regulator_desc_s2mps11_buck1_4(1),
+ 	regulator_desc_s2mps11_buck1_4(2),
+ 	regulator_desc_s2mps11_buck1_4(3),
+ 	regulator_desc_s2mps11_buck1_4(4),
+ 	regulator_desc_s2mps11_buck5,
+-	regulator_desc_s2mps11_buck6_8(6),
+-	regulator_desc_s2mps11_buck6_8(7),
+-	regulator_desc_s2mps11_buck6_8(8),
+-	regulator_desc_s2mps11_buck9,
+-	regulator_desc_s2mps11_buck10,
++	regulator_desc_s2mps11_buck6_10(6, MIN_600_MV, STEP_6_25_MV),
++	regulator_desc_s2mps11_buck6_10(7, MIN_600_MV, STEP_6_25_MV),
++	regulator_desc_s2mps11_buck6_10(8, MIN_600_MV, STEP_6_25_MV),
++	regulator_desc_s2mps11_buck6_10(9, MIN_3000_MV, STEP_25_MV),
++	regulator_desc_s2mps11_buck6_10(10, MIN_750_MV, STEP_12_5_MV),
+ };
+ 
+ static int s2mps14_regulator_enable(struct regulator_dev *rdev)
+@@ -467,56 +421,29 @@ static struct regulator_ops s2mps14_reg_ops = {
+ 	.set_suspend_disable	= s2mps14_regulator_set_suspend_disable,
+ };
+ 
+-#define regulator_desc_s2mps14_ldo1(num) {		\
+-	.name		= "LDO"#num,			\
+-	.id		= S2MPS14_LDO##num,		\
+-	.ops		= &s2mps14_reg_ops,		\
+-	.type		= REGULATOR_VOLTAGE,		\
+-	.owner		= THIS_MODULE,			\
+-	.min_uV		= MIN_800_MV,			\
+-	.uV_step	= STEP_25_MV,			\
+-	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
+-	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
+-	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
+-	.enable_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
+-	.enable_mask	= S2MPS14_ENABLE_MASK		\
+-}
+-#define regulator_desc_s2mps14_ldo2(num) {		\
+-	.name		= "LDO"#num,			\
+-	.id		= S2MPS14_LDO##num,		\
+-	.ops		= &s2mps14_reg_ops,		\
+-	.type		= REGULATOR_VOLTAGE,		\
+-	.owner		= THIS_MODULE,			\
+-	.min_uV		= MIN_1800_MV,			\
+-	.uV_step	= STEP_25_MV,			\
+-	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
+-	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
+-	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
+-	.enable_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
+-	.enable_mask	= S2MPS14_ENABLE_MASK		\
+-}
+-#define regulator_desc_s2mps14_ldo3(num) {		\
++#define regulator_desc_s2mps14_ldo(num, min, step) {	\
+ 	.name		= "LDO"#num,			\
+ 	.id		= S2MPS14_LDO##num,		\
+ 	.ops		= &s2mps14_reg_ops,		\
+ 	.type		= REGULATOR_VOLTAGE,		\
+ 	.owner		= THIS_MODULE,			\
+-	.min_uV		= MIN_800_MV,			\
+-	.uV_step	= STEP_12_5_MV,			\
++	.min_uV		= min,				\
++	.uV_step	= step,				\
+ 	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
+ 	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
+ 	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
+ 	.enable_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
+ 	.enable_mask	= S2MPS14_ENABLE_MASK		\
+ }
+-#define regulator_desc_s2mps14_buck1235(num) {			\
++
++#define regulator_desc_s2mps14_buck(num, min, step) {		\
+ 	.name		= "BUCK"#num,				\
+ 	.id		= S2MPS14_BUCK##num,			\
+ 	.ops		= &s2mps14_reg_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= MIN_600_MV,				\
+-	.uV_step	= STEP_6_25_MV,				\
++	.min_uV		= min,					\
++	.uV_step	= step,					\
+ 	.n_voltages	= S2MPS14_BUCK_N_VOLTAGES,		\
+ 	.linear_min_sel = S2MPS14_BUCK1235_START_SEL,		\
+ 	.ramp_delay	= S2MPS14_BUCK_RAMP_DELAY,		\
+@@ -525,54 +452,38 @@ static struct regulator_ops s2mps14_reg_ops = {
+ 	.enable_reg	= S2MPS14_REG_B1CTRL1 + (num - 1) * 2,	\
+ 	.enable_mask	= S2MPS14_ENABLE_MASK			\
+ }
+-#define regulator_desc_s2mps14_buck4(num) {			\
+-	.name		= "BUCK"#num,				\
+-	.id		= S2MPS14_BUCK##num,			\
+-	.ops		= &s2mps14_reg_ops,			\
+-	.type		= REGULATOR_VOLTAGE,			\
+-	.owner		= THIS_MODULE,				\
+-	.min_uV		= MIN_1400_MV,				\
+-	.uV_step	= STEP_12_5_MV,				\
+-	.n_voltages	= S2MPS14_BUCK_N_VOLTAGES,		\
+-	.linear_min_sel = S2MPS14_BUCK4_START_SEL,		\
+-	.ramp_delay	= S2MPS14_BUCK_RAMP_DELAY,		\
+-	.vsel_reg	= S2MPS14_REG_B1CTRL2 + (num - 1) * 2,	\
+-	.vsel_mask	= S2MPS14_BUCK_VSEL_MASK,		\
+-	.enable_reg	= S2MPS14_REG_B1CTRL1 + (num - 1) * 2,	\
+-	.enable_mask	= S2MPS14_ENABLE_MASK			\
+-}
+ 
+ static const struct regulator_desc s2mps14_regulators[] = {
+-	regulator_desc_s2mps14_ldo3(1),
+-	regulator_desc_s2mps14_ldo3(2),
+-	regulator_desc_s2mps14_ldo1(3),
+-	regulator_desc_s2mps14_ldo1(4),
+-	regulator_desc_s2mps14_ldo3(5),
+-	regulator_desc_s2mps14_ldo3(6),
+-	regulator_desc_s2mps14_ldo1(7),
+-	regulator_desc_s2mps14_ldo2(8),
+-	regulator_desc_s2mps14_ldo3(9),
+-	regulator_desc_s2mps14_ldo3(10),
+-	regulator_desc_s2mps14_ldo1(11),
+-	regulator_desc_s2mps14_ldo2(12),
+-	regulator_desc_s2mps14_ldo2(13),
+-	regulator_desc_s2mps14_ldo2(14),
+-	regulator_desc_s2mps14_ldo2(15),
+-	regulator_desc_s2mps14_ldo2(16),
+-	regulator_desc_s2mps14_ldo2(17),
+-	regulator_desc_s2mps14_ldo2(18),
+-	regulator_desc_s2mps14_ldo1(19),
+-	regulator_desc_s2mps14_ldo1(20),
+-	regulator_desc_s2mps14_ldo1(21),
+-	regulator_desc_s2mps14_ldo3(22),
+-	regulator_desc_s2mps14_ldo1(23),
+-	regulator_desc_s2mps14_ldo2(24),
+-	regulator_desc_s2mps14_ldo2(25),
+-	regulator_desc_s2mps14_buck1235(1),
+-	regulator_desc_s2mps14_buck1235(2),
+-	regulator_desc_s2mps14_buck1235(3),
+-	regulator_desc_s2mps14_buck4(4),
+-	regulator_desc_s2mps14_buck1235(5),
++	regulator_desc_s2mps14_ldo(1, MIN_800_MV, STEP_12_5_MV),
++	regulator_desc_s2mps14_ldo(2, MIN_800_MV, STEP_12_5_MV),
++	regulator_desc_s2mps14_ldo(3, MIN_800_MV, STEP_25_MV),
++	regulator_desc_s2mps14_ldo(4, MIN_800_MV, STEP_25_MV),
++	regulator_desc_s2mps14_ldo(5, MIN_800_MV, STEP_12_5_MV),
++	regulator_desc_s2mps14_ldo(6, MIN_800_MV, STEP_12_5_MV),
++	regulator_desc_s2mps14_ldo(7, MIN_800_MV, STEP_25_MV),
++	regulator_desc_s2mps14_ldo(8, MIN_1800_MV, STEP_25_MV),
++	regulator_desc_s2mps14_ldo(9, MIN_800_MV, STEP_12_5_MV),
++	regulator_desc_s2mps14_ldo(10, MIN_800_MV, STEP_12_5_MV),
++	regulator_desc_s2mps14_ldo(11, MIN_800_MV, STEP_25_MV),
++	regulator_desc_s2mps14_ldo(12, MIN_1800_MV, STEP_25_MV),
++	regulator_desc_s2mps14_ldo(13, MIN_1800_MV, STEP_25_MV),
++	regulator_desc_s2mps14_ldo(14, MIN_1800_MV, STEP_25_MV),
++	regulator_desc_s2mps14_ldo(15, MIN_1800_MV, STEP_25_MV),
++	regulator_desc_s2mps14_ldo(16, MIN_1800_MV, STEP_25_MV),
++	regulator_desc_s2mps14_ldo(17, MIN_1800_MV, STEP_25_MV),
++	regulator_desc_s2mps14_ldo(18, MIN_1800_MV, STEP_25_MV),
++	regulator_desc_s2mps14_ldo(19, MIN_800_MV, STEP_25_MV),
++	regulator_desc_s2mps14_ldo(20, MIN_800_MV, STEP_25_MV),
++	regulator_desc_s2mps14_ldo(21, MIN_800_MV, STEP_25_MV),
++	regulator_desc_s2mps14_ldo(22, MIN_800_MV, STEP_12_5_MV),
++	regulator_desc_s2mps14_ldo(23, MIN_800_MV, STEP_25_MV),
++	regulator_desc_s2mps14_ldo(24, MIN_1800_MV, STEP_25_MV),
++	regulator_desc_s2mps14_ldo(25, MIN_1800_MV, STEP_25_MV),
++	regulator_desc_s2mps14_buck(1, MIN_600_MV, STEP_6_25_MV),
++	regulator_desc_s2mps14_buck(2, MIN_600_MV, STEP_6_25_MV),
++	regulator_desc_s2mps14_buck(3, MIN_600_MV, STEP_6_25_MV),
++	regulator_desc_s2mps14_buck(4, MIN_1400_MV, STEP_12_5_MV),
++	regulator_desc_s2mps14_buck(5, MIN_600_MV, STEP_6_25_MV),
+ };
+ 
+ static int s2mps14_pmic_enable_ext_control(struct s2mps11_info *s2mps11,
+-- 
+1.9.1
 
