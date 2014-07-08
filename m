@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734AbaGHALk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:11:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56387 "EHLO
+	id S1754750AbaGHAL7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:11:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56407 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932066AbaGHADU (ORCPT
+	with ESMTP id S1754833AbaGHADU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 20:03:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Valentine Sinitsyn <valentine.sinitsyn@gmail.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.4 23/44] KVM: x86: preserve the high 32-bits of the PAT register
-Date: Mon,  7 Jul 2014 17:07:13 -0700
-Message-Id: <20140707235859.343430186@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.4 09/44] rt2x00: disable TKIP on USB
+Date: Mon,  7 Jul 2014 17:06:59 -0700
+Message-Id: <20140707235858.923422763@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235858.652771077@linuxfoundation.org>
 References: <20140707235858.652771077@linuxfoundation.org>
@@ -29,32 +29,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 7cb060a91c0efc5ff94f83c6df3ed705e143cdb9 upstream.
+commit 8edcb0ba0d56f5914eef11eda6db8bfe74eb9ca8 upstream.
 
-KVM does not really do much with the PAT, so this went unnoticed for a
-long time.  It is exposed however if you try to do rdmsr on the PAT
-register.
+On USB we can not get atomically TKIP key. We have to disable support
+for TKIP acceleration on USB hardware to avoid bug as showed bellow.
 
-Reported-by: Valentine Sinitsyn <valentine.sinitsyn@gmail.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+[  860.827243] BUG: scheduling while atomic: hostapd/3397/0x00000002
+<snip>
+[  860.827280] Call Trace:
+[  860.827282]  [<ffffffff81682ea6>] dump_stack+0x4d/0x66
+[  860.827284]  [<ffffffff8167eb9b>] __schedule_bug+0x47/0x55
+[  860.827285]  [<ffffffff81685bb3>] __schedule+0x733/0x7b0
+[  860.827287]  [<ffffffff81685c59>] schedule+0x29/0x70
+[  860.827289]  [<ffffffff81684f8a>] schedule_timeout+0x15a/0x2b0
+[  860.827291]  [<ffffffff8105ac50>] ? ftrace_raw_event_tick_stop+0xc0/0xc0
+[  860.827294]  [<ffffffff810c13c2>] ? __module_text_address+0x12/0x70
+[  860.827296]  [<ffffffff81686823>] wait_for_completion_timeout+0xb3/0x140
+[  860.827298]  [<ffffffff81080fc0>] ? wake_up_state+0x20/0x20
+[  860.827301]  [<ffffffff814d5b3d>] usb_start_wait_urb+0x7d/0x150
+[  860.827303]  [<ffffffff814d5cd5>] usb_control_msg+0xc5/0x110
+[  860.827305]  [<ffffffffa02fb0c6>] rt2x00usb_vendor_request+0xc6/0x160  [rt2x00usb]
+[  860.827307]  [<ffffffffa02fb215>] rt2x00usb_vendor_req_buff_lock+0x75/0x150 [rt2x00usb]
+[  860.827309]  [<ffffffffa02fb393>] rt2x00usb_vendor_request_buff+0xa3/0xe0 [rt2x00usb]
+[  860.827311]  [<ffffffffa023d1a3>] rt2x00usb_register_multiread+0x33/0x40 [rt2800usb]
+[  860.827314]  [<ffffffffa05805f9>] rt2800_get_tkip_seq+0x39/0x50  [rt2800lib]
+[  860.827321]  [<ffffffffa0480f88>] ieee80211_get_key+0x218/0x2a0  [mac80211]
+[  860.827322]  [<ffffffff815cc68c>] ? __nlmsg_put+0x6c/0x80
+[  860.827329]  [<ffffffffa051b02e>] nl80211_get_key+0x22e/0x360 [cfg80211]
+
+Reported-and-tested-by: Peter Wu <lekensteyn@gmail.com>
+Reported-and-tested-by: Pontus Fuchs <pontus.fuchs@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/kvm_host.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/rt2x00/rt2x00mac.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -436,7 +436,7 @@ struct kvm_vcpu_arch {
- 	bool nmi_injected;    /* Trying to inject an NMI this entry */
+--- a/drivers/net/wireless/rt2x00/rt2x00mac.c
++++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
+@@ -517,6 +517,8 @@ int rt2x00mac_set_key(struct ieee80211_h
+ 	crypto.cipher = rt2x00crypto_key_to_cipher(key);
+ 	if (crypto.cipher == CIPHER_NONE)
+ 		return -EOPNOTSUPP;
++	if (crypto.cipher == CIPHER_TKIP && rt2x00_is_usb(rt2x00dev))
++		return -EOPNOTSUPP;
  
- 	struct mtrr_state_type mtrr_state;
--	u32 pat;
-+	u64 pat;
+ 	crypto.cmd = cmd;
  
- 	int switch_db_regs;
- 	unsigned long db[KVM_NR_DB_REGS];
 
 
