@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755095AbaGHQF0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 12:05:26 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:63181 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755008AbaGHQFA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 12:05:00 -0400
+	id S1754585AbaGHQHn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 12:07:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27578 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752135AbaGHQHm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 12:07:42 -0400
+Date: Tue, 8 Jul 2014 12:07:20 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com, hpa@zytor.com,
+        mjg59@srcf.ucam.org, greg@kroah.com, dyoung@redhat.com,
+        chaowang@redhat.com, bhe@redhat.com, akpm@linux-foundation.org,
+        dhowells@redhat.com, pjones@redhat.com,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC PATCH 0/9] kexec: Verify signature of PE signed bzImage
+Message-ID: <20140708160720.GA13135@redhat.com>
+References: <1404421641-12691-1-git-send-email-vgoyal@redhat.com>
+ <20140704145118.GD3340@pd.tnic>
+ <20140705030134.GA18508@redhat.com>
+ <20140708155414.GE27659@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <1404469999-21147-1-git-send-email-tushar.b@samsung.com>
-References: <1404469999-21147-1-git-send-email-tushar.b@samsung.com>
-Date: Wed, 9 Jul 2014 01:04:59 +0900
-X-Google-Sender-Auth: 1Rs383kuyP3I_GxHW6Z4VwxEzps
-Message-ID: <CAAQKjZOO1BqN+=DNo4j8qDmF4mhmQWzhm-DdNcXSKNuNy0RQFw@mail.gmail.com>
-Subject: Re: [PATCH] drm/exynos: fimd: Keep power enabled during fimd_bind
-From: Inki Dae <inki.dae@samsung.com>
-To: Tushar Behera <tushar.b@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, kgene.kim@samsung.com,
-        sw0312.kim@samsung.com, kyungmin.park@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140708155414.GE27659@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for patch.
+On Tue, Jul 08, 2014 at 05:54:14PM +0200, Borislav Petkov wrote:
+> On Fri, Jul 04, 2014 at 11:01:34PM -0400, Vivek Goyal wrote:
+> > Given that this time we have a new use case, I am hoping that idea of
+> > parsing PE and verifying signature is more acceptable.
+> 
+> Maybe.
+> 
+> In any case, I still think that you should post the full patch set and
+> not refer to some repo so that people can take a look at the whole
+> thing.
+> 
 
-2014-07-04 19:33 GMT+09:00 Tushar Behera <tushar.b@samsung.com>:
-> Under some conditions (when IOMMU is enabled), fimd_bind() accesses
-> hardware registers and power-domain should be enabled during that time.
->
-> fimd_bind --> fimd_mgr_initialize --> fimd_clear_channel
->
-> If the power-domain is disabled by that time, we get a boot-time crash.
-> It would be better to keep power-domain enabled explicitly.
->
-> Unhandled fault: external abort on non-linefetch (0x1008) at 0xf0180034
-> Internal error: : 1008 [#1] PREEMPT SMP ARM
-> ...
-> PC is at fimd_bind+0x84/0x134
-> LR is at component_bind_all+0xb4/0x1d8
->
-> Signed-off-by: Tushar Behera <tushar.b@samsung.com>
-> ---
->  drivers/gpu/drm/exynos/exynos_drm_fimd.c |    4 ++++
->  1 file changed, 4 insertions(+)
->
-> diff --git a/drivers/gpu/drm/exynos/exynos_drm_fimd.c b/drivers/gpu/drm/exynos/exynos_drm_fimd.c
-> index 33161ad..34275fb 100644
-> --- a/drivers/gpu/drm/exynos/exynos_drm_fimd.c
-> +++ b/drivers/gpu/drm/exynos/exynos_drm_fimd.c
-> @@ -888,11 +888,15 @@ static int fimd_bind(struct device *dev, struct device *master, void *data)
->         struct fimd_context *ctx = fimd_manager.ctx;
->         struct drm_device *drm_dev = data;
->
-> +       pm_runtime_get_sync(dev);
-> +
+Is referring to other posting is fine?
 
-fimd driver has no runtime pm interfaces so pm_runtime_get_sync call
-will enable lcd0 power domain. So shouldn't fimd clock also be
-enabled?
+David Howells just posted PKCS7 patches on lkml.
 
->         fimd_mgr_initialize(&fimd_manager, drm_dev);
+https://lkml.org/lkml/2014/7/8/332
 
-And here would be good to call clk_disable_unprepare() and
-pm_runtime_put_sync(). Below codes don't access any fimd register. Or
-move these function calls into fimd_mgr_initialize().
+> I'll fiddle them out now from David's branch but please add them to your
+> next submission.
 
-Thanks,
-Inki Dae
+So may be I can refer to above post in my next posting. Will that work? As
+he is working on the those patches, I thought it would make sense if he
+does the posting and I simply refer to these patches.
 
->         exynos_drm_crtc_create(&fimd_manager);
->         if (ctx->display)
->                 exynos_drm_create_enc_conn(drm_dev, ctx->display);
->
-> +       pm_runtime_put_sync(dev);
-> +
->         return 0;
->
->  }
-> --
-> 1.7.9.5
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+Thanks
+Vivek
