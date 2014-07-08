@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991AbaGHSRi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 14:17:38 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:31579 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754289AbaGHSRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 14:17:37 -0400
-X-IronPort-AV: E=Sophos;i="5.01,626,1400025600"; 
-   d="scan'208";a="150681605"
-Message-ID: <53BC35BE.5040605@citrix.com>
-Date: Tue, 8 Jul 2014 19:17:34 +0100
-From: Andrew Cooper <andrew.cooper3@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
-MIME-Version: 1.0
-To: <konrad@kernel.org>, <xen-devel@lists.xenproject.org>,
-        <david.vrabel@citrix.com>, <boris.ostrovsky@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH v3 4/7] xen/pciback: Implement PCI reset slot
- or bus with 'do_flr' SysFS attribute
-References: <1404845909-13563-1-git-send-email-konrad@kernel.org> <1404845909-13563-5-git-send-email-konrad@kernel.org>
-In-Reply-To: <1404845909-13563-5-git-send-email-konrad@kernel.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.18]
-X-DLP: MIA1
+	id S1755173AbaGHSRs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 14:17:48 -0400
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:21945 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755051AbaGHSRq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 14:17:46 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: At4OAIA0vFNXQDwH/2dsb2JhbABagw6tHwUBAQEBAQEFAW4BmVmBGBd1hDFSgRo3iEYByDIXhXqIZGQdhC0FhGkDlgqUDINFO4Ex
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org
+Subject: [PATCH 1/1] xc5000: remove unnecessary break after goto
+Date: Tue,  8 Jul 2014 20:17:41 +0200
+Message-Id: <1404843461-17604-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/14 19:58, konrad@kernel.org wrote:
-> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->
-> The life-cycle of a PCI device in Xen pciback is complex
-> and is constrained by the PCI generic locking mechanism.
->
-> It starts with the device being binded to us - for which
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: linux-media@vger.kernel.org
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ drivers/media/tuners/xc5000.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-"being bound to us"
+diff --git a/drivers/media/tuners/xc5000.c b/drivers/media/tuners/xc5000.c
+index 2b3d514..f059ba2 100644
+--- a/drivers/media/tuners/xc5000.c
++++ b/drivers/media/tuners/xc5000.c
+@@ -1302,7 +1302,6 @@ struct dvb_frontend *xc5000_attach(struct dvb_frontend *fe,
+ 	switch (instance) {
+ 	case 0:
+ 		goto fail;
+-		break;
+ 	case 1:
+ 		/* new tuner instance */
+ 		priv->bandwidth = 6000000;
+-- 
+1.8.4.5
 
-~Andrew
