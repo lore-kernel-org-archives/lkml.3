@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756841AbaGHTje (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:39:34 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54125 "EHLO
+	id S1756829AbaGHTjc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:39:32 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54097 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755687AbaGHTIj (ORCPT
+	by vger.kernel.org with ESMTP id S1755690AbaGHTIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:08:39 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Marcel Holtmann" <marcel@holtmann.org>,
-        "Johan Hedberg" <johan.hedberg@intel.com>
+CC: akpm@linux-foundation.org,
+        "Uwe Kleine-=?UTF-8?Q?K=C3=B6nig?=" <u.kleine-koenig@pengutronix.de>,
+        "Olof Johansson" <olof@lixom.net>, "Emil Goode" <emilgoode@gmail.com>,
+        "Shawn Guo" <shawn.guo@freescale.com>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.136906955@decadent.org.uk>
+Message-ID: <lsq.1404846110.25017974@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 088/125] Bluetooth: Fix check for connection encryption
+Subject: [PATCH 3.2 011/125] ARM: imx: fix error handling in ipu device
+ registration
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,42 +34,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: Emil Goode <emilgoode@gmail.com>
 
-commit e694788d73efe139b24f78b036deb97fe57fa8cb upstream.
+commit d1d70e5dc2cfa9047bb935c41ba808ebb8135696 upstream.
 
-The conn->link_key variable tracks the type of link key in use. It is
-set whenever we respond to a link key request as well as when we get a
-link key notification event.
+If we fail to allocate struct platform_device pdev we
+dereference it after the goto label err.
 
-These two events do not however always guarantee that encryption is
-enabled: getting a link key request and responding to it may only mean
-that the remote side has requested authentication but not encryption. On
-the other hand, the encrypt change event is a certain guarantee that
-encryption is enabled. The real encryption state is already tracked in
-the conn->link_mode variable through the HCI_LM_ENCRYPT bit.
+This bug was found using coccinelle.
 
-This patch fixes a check for encryption in the hci_conn_auth function to
-use the proper conn->link_mode value and thereby eliminates the chance
-of a false positive result.
-
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
-[bwh: Backported to 3.2: adjust context]
+Fixes: afa77ef (ARM: mx3: dynamically allocate "ipu-core" devices)
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Signed-off-by: Shawn Guo <shawn.guo@freescale.com>
+Signed-off-by: Olof Johansson <olof@lixom.net>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/bluetooth/hci_conn.c | 2 +-
+ arch/arm/plat-mxc/devices/platform-ipu-core.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/bluetooth/hci_conn.c
-+++ b/net/bluetooth/hci_conn.c
-@@ -617,7 +617,7 @@ static int hci_conn_auth(struct hci_conn
- 		/* If we're already encrypted set the REAUTH_PEND flag,
- 		 * otherwise set the ENCRYPT_PEND.
- 		 */
--		if (conn->key_type != 0xff)
-+		if (conn->link_mode & HCI_LM_ENCRYPT)
- 			set_bit(HCI_CONN_REAUTH_PEND, &conn->pend);
- 		else
- 			set_bit(HCI_CONN_ENCRYPT_PEND, &conn->pend);
+diff --git a/arch/arm/plat-mxc/devices/platform-ipu-core.c b/arch/arm/plat-mxc/devices/platform-ipu-core.c
+index fc4dd7c..6bd7c3f 100644
+--- a/arch/arm/plat-mxc/devices/platform-ipu-core.c
++++ b/arch/arm/plat-mxc/devices/platform-ipu-core.c
+@@ -77,7 +77,7 @@ struct platform_device *__init imx_alloc_mx3_camera(
+ 
+ 	pdev = platform_device_alloc("mx3-camera", 0);
+ 	if (!pdev)
+-		goto err;
++		return ERR_PTR(-ENOMEM);
+ 
+ 	pdev->dev.dma_mask = kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
+ 	if (!pdev->dev.dma_mask)
 
