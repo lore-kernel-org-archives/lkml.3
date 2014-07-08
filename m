@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627AbaGHVPL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 17:15:11 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:33548 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753411AbaGHVPJ (ORCPT
+	id S1754626AbaGHVRL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 17:17:11 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:54277 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753809AbaGHVRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 17:15:09 -0400
-Date: Wed, 9 Jul 2014 01:15:06 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [PATCH] mm: Don't forget to set softdirty on file mapped fault
-Message-ID: <20140708211506.GI17860@moon.sw.swsoft.com>
-References: <20140708192151.GD17860@moon.sw.swsoft.com>
- <20140708131920.2a857d573e8cc89780c9fa1c@linux-foundation.org>
- <20140708204017.GG17860@moon.sw.swsoft.com>
- <20140708134511.4a32b7400a952541a31e9078@linux-foundation.org>
- <20140708205448.GH17860@moon.sw.swsoft.com>
- <20140708140501.6c293226bfd87e4dff7ef7fb@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140708140501.6c293226bfd87e4dff7ef7fb@linux-foundation.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 8 Jul 2014 17:17:09 -0400
+Date: Tue, 08 Jul 2014 14:17:08 -0700 (PDT)
+Message-Id: <20140708.141708.2064358397103630362.davem@davemloft.net>
+To: decot@googlers.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, edumazet@google.com, amwang@redhat.com,
+        antonio@meshcoding.com, jpirko@redhat.com
+Subject: Re: [PATCH net-next v1 2/2] netpoll: avoid reference leaks
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAG88wWZ9GiqoOscqG4-ePOWo8bXgSTAQ6=6-tZPahMcxOvQMLg@mail.gmail.com>
+References: <f98ccbfee35a7ab7f9499ede9b34e6b1120d88f1.1404172155.git.decot@googlers.com>
+	<20140707.193505.345276817146527821.davem@davemloft.net>
+	<CAG88wWZ9GiqoOscqG4-ePOWo8bXgSTAQ6=6-tZPahMcxOvQMLg@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 08 Jul 2014 14:17:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 08, 2014 at 02:05:01PM -0700, Andrew Morton wrote:
-> > 
-> > In case if page fault happend on dirty filemapping the newly created pte
-> > may loose softdirty bit thus if a userspace program is tracking memory
-> > changes with help of a memory tracker (CONFIG_MEM_SOFT_DIRTY) it might
-> > miss modification of a memory page (which in worts case may lead to
-> > data inconsistency).
-> 
-> Much better, thanks.
-> 
-> It's a rather gross-looking bug and data inconsistency sounds serious. 
-> Do you think a -stable backport is needed?
+From: David Decotigny <decot@googlers.com>
+Date: Tue, 8 Jul 2014 12:35:14 -0700
 
-It seems the memory tracker is not that widespread in userspace
-programs (I mean at the moment as far as I know only we use it
-intensively) so I don't consider it as critical but moving it
-into stable won't hurt. Still I fear in 3.16 the mm/memory.c
-code has been significantly reworked so this patch won't apply
-on its own. I can prepare a patch for 3.15 though, just say
-a word.
+> Thanks for the feedback. This patch results from manual inspection of
+> the code. I agree my commit description is abusive: in the case of
+> bonding, I think everything is fine, there should be no ref leak,
+> cleanup paths seem clean.
+> 
+> My point was to make things more predictable: ndo_netpoll_cleanup
+> called anyways to acknowledge actual loss of a ref to npinfo,
+> irrespective of whether it's the last ref or not. Without this patch,
+> calling ndo_netpoll_cleanup would depend on some timing behavior, hard
+> to predict, and users of the API have better be careful to reclaim the
+> refs manually anyways: as a consequence, not sure this callback is
+> actually required in its current inception.
+
+You've increased my confusion rather than decreased it.
+
+You fail to address the core issue in my feedback:
+
+	Whoever drops the refcount to zero must be the one to invoke
+	the cleanup function.
+
+Please address this concisely, and directly.
