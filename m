@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755158AbaGHWTP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 18:19:15 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:43569 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751080AbaGHWTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 18:19:14 -0400
-Date: Tue, 8 Jul 2014 18:19:06 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: akpm@linux-foundation.org, mhocko@suse.cz, cl@linux.com, glommer@gmail.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm 0/8] memcg: reparent kmem on css offline
-Message-ID: <20140708221906.GC29639@cmpxchg.org>
-References: <cover.1404733720.git.vdavydov@parallels.com>
- <20140707142506.GB1149@cmpxchg.org>
- <53BAD567.8060506@parallels.com>
+	id S1754572AbaGHWUb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 18:20:31 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:48875 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947AbaGHWU3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 18:20:29 -0400
+Date: Wed, 9 Jul 2014 03:50:23 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] iaf_packet: use BUG_ON
+Message-ID: <20140708222023.GA11829@himangi-Dell>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53BAD567.8060506@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 07, 2014 at 09:14:15PM +0400, Vladimir Davydov wrote:
-> 07.07.2014 18:25, Johannes Weiner:
-> >In addition, Tejun made offlined css iterable and split css_tryget()
-> >and css_tryget_online(), which would allow memcg to pin the css until
-> >the last charge is gone while continuing to iterate and reclaim it on
-> >hierarchical pressure, even after it was offlined.
-> 
-> One more question.
-> 
-> With reparenting enabled, the number of cgroups (lruvecs) that must be
-> iterated on global reclaim is bound by the number of live containers,
-> while w/o reparenting it's practically unbound, isn't it? Won't it be
-> the source of latency spikes?
+Use BUG_ON(x) rather than if(x) BUG();
 
-It might deteriorate a little bit, but it is a self-correcting problem
-as soon as memory pressure kicks.  Creating and destroying cgroups is
-serialized at a global level, so I would expect the cost of doing that
-at a high rate to become a problem before the csss become an issue for
-the reclaim scanner.
+The semantic patch that fixes this problem is as follows:
 
-At some point we will probably have to make the global reclaim cgroup
-walk in shrink_zone() intermittent, but I'm not aware of any problems
-with it so far.
+// <smpl>
+@@ identifier x; @@
+-if (x) BUG();
++BUG_ON(x);
+// </smpl>
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+To send to: "David S. Miller" <davem@davemloft.net>,netdev@vger.kernel.org,linux-kernel@vger.kernel.org
+ net/packet/af_packet.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index b85c67c..cda8552 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -551,8 +551,7 @@ static void prb_setup_retire_blk_timer(struct packet_sock *po, int tx_ring)
+ {
+ 	struct tpacket_kbdq_core *pkc;
+ 
+-	if (tx_ring)
+-		BUG();
++	BUG_ON(tx_ring);
+ 
+ 	pkc = tx_ring ? GET_PBDQC_FROM_RB(&po->tx_ring) :
+ 			GET_PBDQC_FROM_RB(&po->rx_ring);
+-- 
+1.9.1
+
