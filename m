@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754374AbaGHAKt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:10:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56407 "EHLO
+	id S1754532AbaGHALF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:11:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56387 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932074AbaGHADW (ORCPT
+	with ESMTP id S1752664AbaGHADV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 20:03:22 -0400
+	Mon, 7 Jul 2014 20:03:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nadav Amit <namit@cs.technion.ac.il>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.4 22/44] KVM: x86: Increase the number of fixed MTRR regs to 10
-Date: Mon,  7 Jul 2014 17:07:12 -0700
-Message-Id: <20140707235859.315158598@linuxfoundation.org>
+        Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.4 25/44] tools: ffs-test: fix header values endianess
+Date: Mon,  7 Jul 2014 17:07:15 -0700
+Message-Id: <20140707235859.399781859@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235858.652771077@linuxfoundation.org>
 References: <20140707235858.652771077@linuxfoundation.org>
@@ -29,33 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nadav Amit <namit@cs.technion.ac.il>
+From: Michal Nazarewicz <mina86@mina86.com>
 
-commit 682367c494869008eb89ef733f196e99415ae862 upstream.
+commit f35f71244da6e51db4e1f2c7e318581f498ececf upstream.
 
-Recent Intel CPUs have 10 variable range MTRRs. Since operating systems
-sometime make assumptions on CPUs while they ignore capability MSRs, it is
-better for KVM to be consistent with recent CPUs. Reporting more MTRRs than
-actually supported has no functional implications.
+It appears that no one ever run ffs-test on a big-endian machine,
+since it used cpu-endianess for fs_count and hs_count fields which
+should be in little-endian format.  Fix by wrapping the numbers in
+cpu_to_le32.
 
-Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/kvm_host.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/usb/ffs-test.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -102,7 +102,7 @@
- #define KVM_REFILL_PAGES 25
- #define KVM_MAX_CPUID_ENTRIES 80
- #define KVM_NR_FIXED_MTRR_REGION 88
--#define KVM_NR_VAR_MTRR 8
-+#define KVM_NR_VAR_MTRR 10
- 
- #define ASYNC_PF_PER_VCPU 64
- 
+--- a/tools/usb/ffs-test.c
++++ b/tools/usb/ffs-test.c
+@@ -116,8 +116,8 @@ static const struct {
+ 	.header = {
+ 		.magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC),
+ 		.length = cpu_to_le32(sizeof descriptors),
+-		.fs_count = 3,
+-		.hs_count = 3,
++		.fs_count = cpu_to_le32(3),
++		.hs_count = cpu_to_le32(3),
+ 	},
+ 	.fs_descs = {
+ 		.intf = {
 
 
