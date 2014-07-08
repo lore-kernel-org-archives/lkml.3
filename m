@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078AbaGHTWz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:22:55 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54232 "EHLO
+	id S1756248AbaGHTY1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:24:27 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54192 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755728AbaGHTIl (ORCPT
+	by vger.kernel.org with ESMTP id S1755713AbaGHTIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:08:41 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Arnaldo Carvalho de Melo" <acme@kernel.org>,
-        "Vince Weaver" <vincent.weaver@maine.edu>,
-        "Peter Zijlstra" <peterz@infradead.org>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Ingo Molnar" <mingo@kernel.org>
+CC: akpm@linux-foundation.org, "Laurence Withers" <lwithers@guralp.com>,
+        "hujianyang" <hujianyang@huawei.com>,
+        "Artem Bityutskiy" <artem.bityutskiy@linux.intel.com>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.452702510@decadent.org.uk>
+Message-ID: <lsq.1404846110.758430333@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 107/125] perf: Fix race in removing an event
+Subject: [PATCH 3.2 004/125] UBIFS: fix an mmap and fsync race condition
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,193 +32,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: hujianyang <hujianyang@huawei.com>
 
-commit 46ce0fe97a6be7532ce6126bb26ce89fed81528c upstream.
+commit 691a7c6f28ac90cccd0dbcf81348ea90b211bdd0 upstream.
 
-When removing a (sibling) event we do:
+There is a race condition in UBIFS:
 
-	raw_spin_lock_irq(&ctx->lock);
-	perf_group_detach(event);
-	raw_spin_unlock_irq(&ctx->lock);
+Thread A (mmap)                        Thread B (fsync)
 
-	<hole>
+->__do_fault                           ->write_cache_pages
+   -> ubifs_vm_page_mkwrite
+       -> budget_space
+       -> lock_page
+       -> release/convert_page_budget
+       -> SetPagePrivate
+       -> TestSetPageDirty
+       -> unlock_page
+                                       -> lock_page
+                                           -> TestClearPageDirty
+                                           -> ubifs_writepage
+                                               -> do_writepage
+                                                   -> release_budget
+                                                   -> ClearPagePrivate
+                                                   -> unlock_page
+   -> !(ret & VM_FAULT_LOCKED)
+   -> lock_page
+   -> set_page_dirty
+       -> ubifs_set_page_dirty
+           -> TestSetPageDirty (set page dirty without budgeting)
+   -> unlock_page
 
-	perf_remove_from_context(event);
-		raw_spin_lock_irq(&ctx->lock);
-		...
-		raw_spin_unlock_irq(&ctx->lock);
+This leads to situation where we have a diry page but no budget allocated for
+this page, so further write-back may fail with -ENOSPC.
 
-Now, assuming the event is a sibling, it will be 'unreachable' for
-things like ctx_sched_out() because that iterates the
-groups->siblings, and we just unhooked the sibling.
+In this fix we return from page_mkwrite without performing unlock_page. We
+return VM_FAULT_LOCKED instead. After doing this, the race above will not
+happen.
 
-So, if during <hole> we get ctx_sched_out(), it will miss the event
-and not call event_sched_out() on it, leaving it programmed on the
-PMU.
-
-The subsequent perf_remove_from_context() call will find the ctx is
-inactive and only call list_del_event() to remove the event from all
-other lists.
-
-Hereafter we can proceed to free the event; while still programmed!
-
-Close this hole by moving perf_group_detach() inside the same
-ctx->lock region(s) perf_remove_from_context() has.
-
-The condition on inherited events only in __perf_event_exit_task() is
-likely complete crap because non-inherited events are part of groups
-too and we're tearing down just the same. But leave that for another
-patch.
-
-Most-likely-Fixes: e03a9a55b4e ("perf: Change close() semantics for group events")
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
-Much-staring-at-traces-by: Vince Weaver <vincent.weaver@maine.edu>
-Much-staring-at-traces-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140505093124.GN17778@laptop.programming.kicks-ass.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-[bwh: Backported to 3.2: drop change in perf_pmu_migrate_context()]
+Signed-off-by: hujianyang <hujianyang@huawei.com>
+Tested-by: Laurence Withers <lwithers@guralp.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/events/core.c | 47 ++++++++++++++++++++++++++---------------------
- 1 file changed, 26 insertions(+), 21 deletions(-)
+ fs/ubifs/file.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1180,6 +1180,11 @@ group_sched_out(struct perf_event *group
- 		cpuctx->exclusive = 0;
- }
- 
-+struct remove_event {
-+	struct perf_event *event;
-+	bool detach_group;
-+};
-+
- /*
-  * Cross CPU call to remove a performance event
-  *
-@@ -1188,12 +1193,15 @@ group_sched_out(struct perf_event *group
-  */
- static int __perf_remove_from_context(void *info)
- {
--	struct perf_event *event = info;
-+	struct remove_event *re = info;
-+	struct perf_event *event = re->event;
- 	struct perf_event_context *ctx = event->ctx;
- 	struct perf_cpu_context *cpuctx = __get_cpu_context(ctx);
- 
- 	raw_spin_lock(&ctx->lock);
- 	event_sched_out(event, cpuctx, ctx);
-+	if (re->detach_group)
-+		perf_group_detach(event);
- 	list_del_event(event, ctx);
- 	if (!ctx->nr_events && cpuctx->task_ctx == ctx) {
- 		ctx->is_active = 0;
-@@ -1218,10 +1226,14 @@ static int __perf_remove_from_context(vo
-  * When called from perf_event_exit_task, it's OK because the
-  * context has been detached from its task.
-  */
--static void perf_remove_from_context(struct perf_event *event)
-+static void perf_remove_from_context(struct perf_event *event, bool detach_group)
- {
- 	struct perf_event_context *ctx = event->ctx;
- 	struct task_struct *task = ctx->task;
-+	struct remove_event re = {
-+		.event = event,
-+		.detach_group = detach_group,
-+	};
- 
- 	lockdep_assert_held(&ctx->mutex);
- 
-@@ -1230,12 +1242,12 @@ static void perf_remove_from_context(str
- 		 * Per cpu events are removed via an smp call and
- 		 * the removal is always successful.
- 		 */
--		cpu_function_call(event->cpu, __perf_remove_from_context, event);
-+		cpu_function_call(event->cpu, __perf_remove_from_context, &re);
- 		return;
+--- a/fs/ubifs/file.c
++++ b/fs/ubifs/file.c
+@@ -1522,8 +1522,7 @@ static int ubifs_vm_page_mkwrite(struct
+ 			ubifs_release_dirty_inode_budget(c, ui);
  	}
  
- retry:
--	if (!task_function_call(task, __perf_remove_from_context, event))
-+	if (!task_function_call(task, __perf_remove_from_context, &re))
- 		return;
+-	unlock_page(page);
+-	return 0;
++	return VM_FAULT_LOCKED;
  
- 	raw_spin_lock_irq(&ctx->lock);
-@@ -1252,6 +1264,8 @@ retry:
- 	 * Since the task isn't running, its safe to remove the event, us
- 	 * holding the ctx->lock ensures the task won't get scheduled in.
- 	 */
-+	if (detach_group)
-+		perf_group_detach(event);
- 	list_del_event(event, ctx);
- 	raw_spin_unlock_irq(&ctx->lock);
- }
-@@ -3046,10 +3060,7 @@ int perf_event_release_kernel(struct per
- 	 *     to trigger the AB-BA case.
- 	 */
- 	mutex_lock_nested(&ctx->mutex, SINGLE_DEPTH_NESTING);
--	raw_spin_lock_irq(&ctx->lock);
--	perf_group_detach(event);
--	raw_spin_unlock_irq(&ctx->lock);
--	perf_remove_from_context(event);
-+	perf_remove_from_context(event, true);
- 	mutex_unlock(&ctx->mutex);
- 
- 	free_event(event);
-@@ -6459,7 +6470,7 @@ SYSCALL_DEFINE5(perf_event_open,
- 		struct perf_event_context *gctx = group_leader->ctx;
- 
- 		mutex_lock(&gctx->mutex);
--		perf_remove_from_context(group_leader);
-+		perf_remove_from_context(group_leader, false);
- 
- 		/*
- 		 * Removing from the context ends up with disabled
-@@ -6469,7 +6480,7 @@ SYSCALL_DEFINE5(perf_event_open,
- 		perf_event__state_init(group_leader);
- 		list_for_each_entry(sibling, &group_leader->sibling_list,
- 				    group_entry) {
--			perf_remove_from_context(sibling);
-+			perf_remove_from_context(sibling, false);
- 			perf_event__state_init(sibling);
- 			put_ctx(gctx);
- 		}
-@@ -6622,13 +6633,7 @@ __perf_event_exit_task(struct perf_event
- 			 struct perf_event_context *child_ctx,
- 			 struct task_struct *child)
- {
--	if (child_event->parent) {
--		raw_spin_lock_irq(&child_ctx->lock);
--		perf_group_detach(child_event);
--		raw_spin_unlock_irq(&child_ctx->lock);
--	}
--
--	perf_remove_from_context(child_event);
-+	perf_remove_from_context(child_event, !!child_event->parent);
- 
- 	/*
- 	 * It can happen that the parent exits first, and has events
-@@ -7113,14 +7118,14 @@ static void perf_pmu_rotate_stop(struct
- 
- static void __perf_event_exit_context(void *__info)
- {
-+	struct remove_event re = { .detach_group = false };
- 	struct perf_event_context *ctx = __info;
--	struct perf_event *event;
- 
- 	perf_pmu_rotate_stop(ctx->pmu);
- 
- 	rcu_read_lock();
--	list_for_each_entry_rcu(event, &ctx->event_list, event_entry)
--		__perf_remove_from_context(event);
-+	list_for_each_entry_rcu(re.event, &ctx->event_list, event_entry)
-+		__perf_remove_from_context(&re);
- 	rcu_read_unlock();
- }
- 
+ out_unlock:
+ 	unlock_page(page);
 
