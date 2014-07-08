@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755953AbaGHTKE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:10:04 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:47628 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755910AbaGHTJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:09:47 -0400
-From: Felipe Balbi <balbi@ti.com>
-To: <broonie@kernel.org>, <lgirdwood@gmail.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Keerthy <j-keerthy@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3/3] regulators: tps65218: drop order dependency
-Date: Tue, 8 Jul 2014 14:09:14 -0500
-Message-ID: <1404846554-4095-3-git-send-email-balbi@ti.com>
-X-Mailer: git-send-email 2.0.0.390.gcb682f8
-In-Reply-To: <1404846554-4095-1-git-send-email-balbi@ti.com>
-References: <1404846554-4095-1-git-send-email-balbi@ti.com>
+	id S1755867AbaGHTJO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:09:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54320 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755813AbaGHTIq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 15:08:46 -0400
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-Content-Type: text/plain
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Nicholas Bellinger" <nab@linux-iscsi.org>,
+        "Tejas Vaykole" <tejas.vaykole@calsoftinc.com>
+Date: Tue, 08 Jul 2014 20:01:50 +0100
+Message-ID: <lsq.1404846110.247314127@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 062/125] iscsi-target: Reject mutual authentication
+ with reflected CHAP_C
+In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By just using GCC's array initialization extension, we
-can easily drop order dependency between tps65218_regulattors
-enumeration and tps65218_pmic_regs array.
+3.2.61-rc1 review patch.  If anyone has any objections, please let me know.
 
-Signed-of-by: Felipe Balbi <balbi@ti.com>
+------------------
+
+From: Nicholas Bellinger <nab@linux-iscsi.org>
+
+commit 1d2b60a5545942b1376cb48c1d55843d71e3a08f upstream.
+
+This patch adds an explicit check in chap_server_compute_md5() to ensure
+the CHAP_C value received from the initiator during mutual authentication
+does not match the original CHAP_C provided by the target.
+
+This is in line with RFC-3720, section 8.2.1:
+
+   Originators MUST NOT reuse the CHAP challenge sent by the Responder
+   for the other direction of a bidirectional authentication.
+   Responders MUST check for this condition and close the iSCSI TCP
+   connection if it occurs.
+
+Reported-by: Tejas Vaykole <tejas.vaykole@calsoftinc.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/regulator/tps65218-regulator.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/target/iscsi/iscsi_target_auth.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/drivers/regulator/tps65218-regulator.c b/drivers/regulator/tps65218-regulator.c
-index 7fc8b3a..b5dc314 100644
---- a/drivers/regulator/tps65218-regulator.c
-+++ b/drivers/regulator/tps65218-regulator.c
-@@ -49,7 +49,7 @@ enum tps65218_regulators { DCDC1, DCDC2, DCDC3, DCDC4, DCDC5, DCDC6, LDO1 };
- 	}							\
- 
- #define TPS65218_INFO(_id, _nm, _min, _max)	\
--	{						\
-+	[_id] = {					\
- 		.id		= _id,			\
- 		.name		= _nm,			\
- 		.min_uV		= _min,			\
-@@ -72,13 +72,13 @@ static const struct regulator_linear_range dcdc4_ranges[] = {
- };
- 
- static struct tps_info tps65218_pmic_regs[] = {
--	TPS65218_INFO(0, "DCDC1", 850000, 167500),
--	TPS65218_INFO(1, "DCDC2", 850000, 1675000),
--	TPS65218_INFO(2, "DCDC3", 900000, 3400000),
--	TPS65218_INFO(3, "DCDC4", 1175000, 3400000),
--	TPS65218_INFO(4, "DCDC5", 1000000, 1000000),
--	TPS65218_INFO(5, "DCDC6", 1800000, 1800000),
--	TPS65218_INFO(6, "LDO1", 900000, 3400000),
-+	TPS65218_INFO(DCDC1, "DCDC1", 850000, 167500),
-+	TPS65218_INFO(DCDC2, "DCDC2", 850000, 1675000),
-+	TPS65218_INFO(DCDC3, "DCDC3", 900000, 3400000),
-+	TPS65218_INFO(DCDC4, "DCDC4", 1175000, 3400000),
-+	TPS65218_INFO(DCDC5, "DCDC5", 1000000, 1000000),
-+	TPS65218_INFO(DCDC6, "DCDC6", 1800000, 1800000),
-+	TPS65218_INFO(LDO1, "LDO1", 900000, 3400000),
- };
- 
- #define TPS65218_OF_MATCH(comp, label) \
--- 
-2.0.0.390.gcb682f8
+--- a/drivers/target/iscsi/iscsi_target_auth.c
++++ b/drivers/target/iscsi/iscsi_target_auth.c
+@@ -337,6 +337,16 @@ static int chap_server_compute_md5(
+ 		goto out;
+ 	}
+ 	/*
++	 * During mutual authentication, the CHAP_C generated by the
++	 * initiator must not match the original CHAP_C generated by
++	 * the target.
++	 */
++	if (!memcmp(challenge_binhex, chap->challenge, CHAP_CHALLENGE_LENGTH)) {
++		pr_err("initiator CHAP_C matches target CHAP_C, failing"
++		       " login attempt\n");
++		goto out;
++	}
++	/*
+ 	 * Generate CHAP_N and CHAP_R for mutual authentication.
+ 	 */
+ 	tfm = crypto_alloc_hash("md5", 0, CRYPTO_ALG_ASYNC);
 
