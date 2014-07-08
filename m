@@ -1,79 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285AbaGHSjH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 14:39:07 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755208AbaGHSjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 14:39:05 -0400
-Message-ID: <53BC3AC5.6000203@nod.at>
-Date: Tue, 08 Jul 2014 20:39:01 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755314AbaGHSju (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 14:39:50 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:50097 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753931AbaGHSjs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 14:39:48 -0400
 MIME-Version: 1.0
-To: KY Srinivasan <kys@microsoft.com>, Haiyang Zhang <haiyangz@microsoft.com>
-CC: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] hyperv: Add netpoll support
-References: <1404811947-5174-1-git-send-email-richard@nod.at> <9fb91c2ee32a4a59a2bec54043a6b9fd@BY2PR03MB299.namprd03.prod.outlook.com>
-In-Reply-To: <9fb91c2ee32a4a59a2bec54043a6b9fd@BY2PR03MB299.namprd03.prod.outlook.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAKgNAkgMA39AfoSoA5Pe1r9N+ZzfYQNvNPvcRN7tOvRb8+v06Q@mail.gmail.com>
+References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
+	<1402655819-14325-4-git-send-email-dh.herrmann@gmail.com>
+	<CAKgNAkgnnWjrbE+2KAETsmiyrnrMQu0h7-MrYLvkiwj--_nxcQ@mail.gmail.com>
+	<CANq1E4R2K+eq9AxtFewp4YUL2cujg+dg+sN19Anvf-zWuvgyWw@mail.gmail.com>
+	<CAKgNAkgMA39AfoSoA5Pe1r9N+ZzfYQNvNPvcRN7tOvRb8+v06Q@mail.gmail.com>
+Date: Tue, 8 Jul 2014 20:39:47 +0200
+Message-ID: <CANq1E4RYWb9WbXD+Vj0SYDAZqym4mc4u6+HQJbjDeS+wQeG2Uw@mail.gmail.com>
+Subject: Re: [PATCH v3 3/7] shm: add memfd_create() syscall
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Michael Kerrisk-manpages <mtk.manpages@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Ryan Lortie <desrt@desrt.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Hugh Dickins <hughd@google.com>,
+        Tony Battersby <tonyb@cybernetics.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 08.07.2014 20:01, schrieb KY Srinivasan:
-> 
-> 
->> -----Original Message-----
->> From: Richard Weinberger [mailto:richard@nod.at]
->> Sent: Tuesday, July 8, 2014 2:32 AM
->> To: KY Srinivasan; Haiyang Zhang
->> Cc: devel@linuxdriverproject.org; netdev@vger.kernel.org; linux-
->> kernel@vger.kernel.org; Richard Weinberger
->> Subject: [PATCH] hyperv: Add netpoll support
->>
->> In order to have at least a netconsole to debug kernel issues on Windows
->> Azure this patch implements netpoll support.
->> Sending packets is easy, netvsc_start_xmit() does already everything
->> needed.
->> To receive we need to trigger the channel callback which is usally called via
->> tasklet_schedule().
->>
->> Signed-off-by: Richard Weinberger <richard@nod.at>
->> ---
->>  drivers/net/hyperv/netvsc_drv.c | 14 ++++++++++++++
->>  1 file changed, 14 insertions(+)
->>
->> diff --git a/drivers/net/hyperv/netvsc_drv.c
->> b/drivers/net/hyperv/netvsc_drv.c index 4fd71b7..367b71e 100644
->> --- a/drivers/net/hyperv/netvsc_drv.c
->> +++ b/drivers/net/hyperv/netvsc_drv.c
->> @@ -736,6 +736,17 @@ static int netvsc_set_mac_addr(struct net_device
->> *ndev, void *p)
->>  	return err;
->>  }
->>
->> +#ifdef CONFIG_NET_POLL_CONTROLLER
->> +static void netvsc_poll_controller(struct net_device *net) {
->> +	struct net_device_context *net_device_ctx = netdev_priv(net);
->> +	struct hv_device *dev = net_device_ctx->device_ctx;
->> +
->> +	local_bh_disable();
->> +	netvsc_channel_cb(dev->channel);
->> +	local_bh_enable();
->> +}
->> +#endif
-> 
-> Each channel is bound to a specific VCPU in the guest and the channel callback is expected to be delivered on
-> the VCPU the channel is bound to. This code is not satisfying that requirement.
+Hi
 
-But struct hv_device has only one channel attribute. How does this work with multiple VCPUs?
+On Fri, Jun 13, 2014 at 4:20 PM, Michael Kerrisk (man-pages)
+<mtk.manpages@gmail.com> wrote:
+> Hi David,
+>
+> On Fri, Jun 13, 2014 at 2:41 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>> Hi
+>>
+>> On Fri, Jun 13, 2014 at 2:27 PM, Michael Kerrisk (man-pages)
+>> <mtk.manpages@gmail.com> wrote:
+>>> Hi David,
+>>>
+>>> On Fri, Jun 13, 2014 at 12:36 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>>>> memfd_create() is similar to mmap(MAP_ANON), but returns a file-descriptor
+>>>> that you can pass to mmap(). It can support sealing and avoids any
+>>>> connection to user-visible mount-points. Thus, it's not subject to quotas
+>>>> on mounted file-systems, but can be used like malloc()'ed memory, but
+>>>> with a file-descriptor to it.
+>>>>
+>>>> memfd_create() returns the raw shmem file, so calls like ftruncate() can
+>>>> be used to modify the underlying inode. Also calls like fstat()
+>>>> will return proper information and mark the file as regular file. If you
+>>>> want sealing, you can specify MFD_ALLOW_SEALING. Otherwise, sealing is not
+>>>> supported (like on all other regular files).
+>>>>
+>>>> Compared to O_TMPFILE, it does not require a tmpfs mount-point and is not
+>>>> subject to quotas and alike. It is still properly accounted to memcg
+>>>> limits, though.
+>>>
+>>> Where do I find / is there detailed documentation (ideally, a man
+>>> page) for this new system call?
+>>
+>> I did write a man-page proposal for memfd_create() and a patch for
+>> fcntl() for v1,
+>
+> Ahh -- that's why I had a recollection of such a page ;-).
+>
+>> however, the API changed several times so I didn't
+>> keep them up to date (the man-page patches are on LKML). However, I
+>> wrote a short introduction to memfd+sealing v3, that I recommend
+>> reading first:
+>>   http://dvdhrm.wordpress.com/2014/06/10/memfd_create2/
+>
+> Yes, I saw it already. (It's good, but I want more.)
 
-Anyways, what solution to you propose?
+Sorry, totally forgot about that one. I now pushed the man-pages out.
+They're available here:
 
-Thanks,
-//richard
+http://cgit.freedesktop.org/~dvdhrm/man-pages/log/?h=memfd
+
+Thanks!
+David
