@@ -1,67 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753635AbaGHJBw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 05:01:52 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:50275 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752526AbaGHJBt (ORCPT
+	id S1753725AbaGHJDh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 05:03:37 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:54021 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752230AbaGHJDe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 05:01:49 -0400
-Message-ID: <53BBB358.3040801@st.com>
-Date: Tue, 8 Jul 2014 11:01:12 +0200
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 8 Jul 2014 05:03:34 -0400
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Peter Griffin <peter.griffin@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <patrice.chotard@st.com>, <srinivas.kandagatla@gmail.com>,
-        <devicetree@vger.kernel.org>, <balbi@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <peppe.cavallaro@st.com>
-Subject: Re: [PATCH v2 3/3] MAINTAINERS: Add dwc3-st.c file to ARCH/STI architecture
-References: <1404541530-27856-1-git-send-email-peter.griffin@linaro.org> <1404541530-27856-4-git-send-email-peter.griffin@linaro.org> <53BBA075.9040204@st.com> <20140708075332.GM6407@lee--X1>
-In-Reply-To: <20140708075332.GM6407@lee--X1>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-07-08_03:2014-07-08,2014-07-08,1970-01-01 signatures=0
+In-Reply-To: <53BBB0F2.20109@nod.at>
+References: <20140705112238.16142.42735.stgit@zurg>
+	<20140707150523.cc671116bf366e8db73209c5@linux-foundation.org>
+	<CALYGNiMjL_GYqqkid4yQsubpnbydVXxTPnKW0GqJcg05x9zbHQ@mail.gmail.com>
+	<CAFLxGvzxvuizdHyjQ0SjUm8jJcj=w+qS5ut-u76Xo-m2sftvvw@mail.gmail.com>
+	<CALYGNiOTC8KOxWwRo+f=6JmtUYhJ=1cQNq-Us1BZbW85r4P+ug@mail.gmail.com>
+	<53BBA9B4.7050609@nod.at>
+	<CALYGNiNSFoW6Z_1o3JfV-cCeay1QmTptrt4kWHVegkuw+-6A8A@mail.gmail.com>
+	<53BBACF4.4070800@nod.at>
+	<CALYGNiND3xk4DGkM_RYApmX7BMkg=cKX2gUpyyOry0ny_DVrkA@mail.gmail.com>
+	<53BBB0F2.20109@nod.at>
+Date: Tue, 8 Jul 2014 13:03:33 +0400
+Message-ID: <CALYGNiPakwGquDk9MVGeSrx4RmUOg21=_Zcw097Z5sGTsP=Cwg@mail.gmail.com>
+Subject: Re: [uml-devel] [PATCH] checkstack: use $UTS_MACHINE as target architecture
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        UML devel <user-mode-linux-devel@lists.sourceforge.net>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 07/08/2014 09:53 AM, Lee Jones wrote:
-> On Tue, 08 Jul 2014, Maxime Coquelin wrote:
->> On 07/05/2014 08:25 AM, Peter Griffin wrote:
->>> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+On Tue, Jul 8, 2014 at 12:50 PM, Richard Weinberger <richard@nod.at> wrote:
+> Am 08.07.2014 10:47, schrieb Konstantin Khlebnikov:
+>> On Tue, Jul 8, 2014 at 12:33 PM, Richard Weinberger <richard@nod.at> wrote:
+>>> Am 08.07.2014 10:30, schrieb Konstantin Khlebnikov:
+>>>> On Tue, Jul 8, 2014 at 12:20 PM, Richard Weinberger <richard@nod.at> wrote:
+>>>>> Am 08.07.2014 10:16, schrieb Konstantin Khlebnikov:
+>>>>>> On Tue, Jul 8, 2014 at 12:01 PM, Richard Weinberger
+>>>>>> <richard.weinberger@gmail.com> wrote:
+>>>>>>> On Tue, Jul 8, 2014 at 7:48 AM, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
+>>>>>>>> On Tue, Jul 8, 2014 at 2:05 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+>>>>>>>>> On Sat, 05 Jul 2014 15:22:38 +0400 Konstantin Khlebnikov <koct9i@gmail.com> wrote:
+>>>>>>>>>
+>>>>>>>>>> This fixes command # make checkstack for i386/x86_64.
+>>>>>>>>>> Looks like $UTS_MACHINE is exactly what scripts/checkstack.pl needs.
+>>>>>>>>>>
+>>>>>>>>>> By default $UTS_MACHINE is equal to $ARCH, but some arch/${ARCH}/Makefile
+>>>>>>>>>> overrides it. This patch updates it also in arch/x86/Makefile.um
+>>>>>>>>>>
+>>>>>>>>>> broken in ffee0de ("x86: Default to ARCH=x86 to avoid overriding CONFIG_64BIT")
+>>>>>>>>>
+>>>>>>>>> The changelog doesn't describe the bug which is being fixed.  It should
+>>>>>>>>> do so please.  If there are any compiler/make error messages then those
+>>>>>>>>> should be included.
+>>>>>>>>>
+>>>>>>>>
+>>>>>>>> Oh, ok. checkstalk.pl needs either i386 or x86_64, x86 isn't enough.
+>>>>>>>>
+>>>>>>>> $ make checkstack
+>>>>>>>> objdump -d vmlinux $(find . -name '*.ko') | \
+>>>>>>>> perl /home/blind/src/linux-stable/scripts/checkstack.pl x86
+>>>>>>>> wrong or unknown architecture "x86"
+>>>>>>>
+>>>>>>> And now we need ARCH, SUBARCH and UTS_MACHINE on UML? :-(
+>>>>>>
+>>>>>> Nope UTS_MACHINE is autodetected, see hunk Makefile.x86 in my patch.
+>>>>>>
+>>>>>> I thought about cleaning this part of UML.
+>>>>>> For example we could move arch/x86/um into arch/um/x86 and use # make
+>>>>>> ARCH=um/x86
+>>>>>
+>>>>> No way. We moved the x86 stuff to arch/x86/ a few Years ago by design.
+>>>>
+>>>> Ok, fine. We could leave it in arch/x86/um and use make ARCH=x86/um
+>>>
+>>> I don't like this. Please keep ARCH=um as is.
+>>>
+>>>>>
+>>>>>> after collecting this stuff together it woud be easier to get rid of
+>>>>>> forever-broken parts.
+>>>>>> As I see UML has been designed to work everywhere but SMP seem never worked
+>>>>>> as well as any host os except of linux or other arch except x86.
+>>>>>
+>>>>> Currently UML runs only on x86_32/64.
+>>>>> Adding/fixing SMP support should be doable.
+>>>>
+>>>> This might be quite difficult on top of current ptrace-based design.
+>>>> I thought about running userspace in kvm context, this might be much
+>>>> faster than ptrace but requires indirect uaccess like for 4gb-split.
+>>>> But it's very unlikely that I'll find time for that.
+>>>
+>>> Erm, UML is a systemcall emulator based on ptrace().
+>>> If you make it use any KVM backend there is 0 usecase for UML because we can just use qemu/kvmtool.
 >>
->> Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
+>> But kernel stays in userspace, so it could be easily debugged.
+>> It's like merge kvmtool+linux into one application.
 >
-> Maxime,
->    Once Acked by Felipe, I think this should go in via your tree to
-> avoid conflicts with other ARM/STI ARCHITECTURE additions.
+> You can already do this with qemu. It has a -gdb switch.
 
-Ok
+I know. But debugging/profiling of kernel code is much easier when it
+runs in userspace.
+I think this is the last use case where uml might beat normal hardware
+accelerated qemu/kvm.
+But without SMP and with that high overhead on each syscall and
+context/mm switch it's mostly useless.
 
 >
->>> ---
->>>   MAINTAINERS | 1 +
->>>   1 file changed, 1 insertion(+)
->>>
->>> diff --git a/MAINTAINERS b/MAINTAINERS
->>> index 702ca10..269ad3b 100644
->>> --- a/MAINTAINERS
->>> +++ b/MAINTAINERS
->>> @@ -1325,6 +1325,7 @@ F:	drivers/pinctrl/pinctrl-st.c
->>>   F:	drivers/media/rc/st_rc.c
->>>   F:	drivers/i2c/busses/i2c-st.c
->>>   F:	drivers/tty/serial/st-asc.c
->>> +F:	drivers/usb/dwc3/dwc3-st.c
->>>
->>>   ARM/TECHNOLOGIC SYSTEMS TS7250 MACHINE SUPPORT
->>>   M:	Lennert Buytenhek <kernel@wantstofly.org>
->>>
->
+> Thanks,
+> //richard
