@@ -1,77 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754416AbaGHADY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:03:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56407 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754826AbaGHADT (ORCPT
+	id S1754302AbaGHAKD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:10:03 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:47747 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751834AbaGHAKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 20:03:19 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Neukum <oneukum@suse.de>,
-        Alif Mubarak Ahmad <alive4ever@live.com>,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.4 05/44] USB: option: add device ID for SpeedUp SU9800 usb 3g modem
-Date: Mon,  7 Jul 2014 17:06:55 -0700
-Message-Id: <20140707235858.810272963@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140707235858.652771077@linuxfoundation.org>
-References: <20140707235858.652771077@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Mon, 7 Jul 2014 20:10:00 -0400
+Date: Mon, 07 Jul 2014 17:09:59 -0700 (PDT)
+Message-Id: <20140707.170959.196790738318422847.davem@davemloft.net>
+To: linux@rainbow-software.org
+Cc: chessman@tux.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/11 v3] tlan: Link handling improvements and Olicom
+ fixes
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1404146317-3094-1-git-send-email-linux@rainbow-software.org>
+References: <1404146317-3094-1-git-send-email-linux@rainbow-software.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 07 Jul 2014 17:10:00 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+From: Ondrej Zary <linux@rainbow-software.org>
+Date: Mon, 30 Jun 2014 18:38:26 +0200
 
-------------------
+> This patch series improves link handling in tlan driver, allowing the
+> cable to be (un)plugged anytime and NetworkManager to work properly.
+> 
+> Also there are some bugfixes related to Olicom OC-2326 card.
 
-From: Oliver Neukum <oneukum@suse.de>
-
-commit 1cab4c68e339086cdaff7535848e878e8f261fca upstream.
-
-Reported by Alif Mubarak Ahmad:
-
-This device vendor and product id is 1c9e:9800
-It is working as serial interface with generic usbserial driver.
-I thought it is more suitable to use usbserial option driver, which has
-better capability distinguishing between modem serial interface and
-micro sd storage interface.
-
-[ johan: style changes ]
-
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Tested-by: Alif Mubarak Ahmad <alive4ever@live.com>
-Signed-off-by: Johan Hovold <johan@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/serial/option.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -357,6 +357,9 @@ static void option_instat_callback(struc
- /* Zoom */
- #define ZOOM_PRODUCT_4597			0x9607
- 
-+/* SpeedUp SU9800 usb 3g modem */
-+#define SPEEDUP_PRODUCT_SU9800			0x9800
-+
- /* Haier products */
- #define HAIER_VENDOR_ID				0x201e
- #define HAIER_PRODUCT_CE100			0x2009
-@@ -1597,6 +1600,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
-   	  .driver_info = (kernel_ulong_t)&four_g_w14_blacklist
-   	},
-+	{ USB_DEVICE_INTERFACE_CLASS(LONGCHEER_VENDOR_ID, SPEEDUP_PRODUCT_SU9800, 0xff) },
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, ZOOM_PRODUCT_4597) },
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, IBALL_3_5G_CONNECT) },
- 	{ USB_DEVICE(HAIER_VENDOR_ID, HAIER_PRODUCT_CE100) },
-
-
+Series applied to net-next, thanks.
