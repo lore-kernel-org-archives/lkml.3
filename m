@@ -1,66 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754536AbaGHUmS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 16:42:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36188 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754110AbaGHUmQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 16:42:16 -0400
-Date: Tue, 8 Jul 2014 13:46:40 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: linux-arch@vger.kernel.org, thellstrom@vmware.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linaro-mm-sig@lists.linaro.org, robdclark@gmail.com,
-        thierry.reding@gmail.com, ccross@google.com, daniel@ffwll.ch,
-        sumit.semwal@linaro.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH v2 0/9] Updated fence patch series
-Message-ID: <20140708204640.GA25937@kroah.com>
-References: <20140701103432.12718.82795.stgit@patser>
- <20140702053758.GA7578@kroah.com>
- <53B3CD00.5030003@canonical.com>
+	id S1754628AbaGHUnH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 16:43:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22803 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754321AbaGHUnF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 16:43:05 -0400
+Date: Tue, 8 Jul 2014 16:41:32 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Miller <davem@davemloft.net>,
+        Andres Freund <andres@2ndquadrant.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>,
+        Kees Cook <kees@outflux.net>
+Subject: Re: [PATCH v3 1/3] mm: introduce fincore()
+Message-ID: <20140708204132.GA16195@nhori.redhat.com>
+References: <1404756006-23794-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1404756006-23794-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <53BAEE95.50807@intel.com>
+ <20140708190326.GA28595@nhori>
+ <53BC49C2.8090409@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53B3CD00.5030003@canonical.com>
+In-Reply-To: <53BC49C2.8090409@intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 02, 2014 at 11:12:32AM +0200, Maarten Lankhorst wrote:
-> op 02-07-14 07:37, Greg KH schreef:
-> > On Tue, Jul 01, 2014 at 12:57:02PM +0200, Maarten Lankhorst wrote:
-> >> So after some more hacking I've moved dma-buf to its own subdirectory,
-> >> drivers/dma-buf and applied the fence patches to its new place. I believe that the
-> >> first patch should be applied regardless, and the rest should be ready now.
-> >> :-)
-> >>
-> >> Changes to the fence api:
-> >> - release_fence -> fence_release etc.
-> >> - __fence_init -> fence_init
-> >> - __fence_signal -> fence_signal_locked
-> >> - __fence_is_signaled -> fence_is_signaled_locked
-> >> - Changing BUG_ON to WARN_ON in fence_later, and return NULL if it triggers.
-> >>
-> >> Android can expose fences to userspace. It's possible to make the new fence
-> >> mechanism expose the same fences to userspace by changing sync_fence_create
-> >> to take a struct fence instead of a struct sync_pt. No other change is needed,
-> >> because only the fence parts of struct sync_pt are used. But because the
-> >> userspace fences are a separate problem and I haven't really looked at it yet
-> >> I feel it should stay in staging, for now.
-> > Ok, that's reasonable.
-> >
-> > At first glance, this all looks "sane" to me, any objection from anyone
-> > if I merge this through my driver-core tree for 3.17?
-> >
-> Sounds good to me, let me know when you pull it in, so I can rebase my
-> drm conversion on top of it. :-)
+On Tue, Jul 08, 2014 at 12:42:58PM -0700, Dave Hansen wrote:
+> On 07/08/2014 12:03 PM, Naoya Horiguchi wrote:
+> >> > The biggest question for me, though, is whether we want to start
+> >> > designing these per-page interfaces to consider different page sizes, or
+> >> > whether we're going to just continue to pretend that the entire world is
+> >> > 4k pages.  Using FINCORE_BMAP on 1GB hugetlbfs files would be a bit
+> >> > silly, for instance.
+> > I didn't answer this question, sorry.
+> > 
+> > In my option, hugetlbfs pages should be handled as one hugepage (not as
+> > many 4kB pages) to avoid lots of meaningless data transfer, as you pointed
+> > out. And the current patch already works like that.
+> 
+> Just reading the code, I don't see any way that pc_shift gets passed
+> down in to the do_fincore() loop.
 
-All are now queued up and in my driver-core tree in the driver-core-next
-branch, you should have gotten the emails about it.
+No need to pass it down because operations over page cache tree use
+page index internally to identify the in-file position and doesn't care
+about page size. In 2MB hugetlbfs file, for example, index 1 means
+byte offset 2MB (not offset 4kB.) So radix_tree_for_each_slot() runs
+iter.index like 0 -> 1 -> 2 ... (instead of 0 -> 512 -> 1024 ...)
 
-thanks,
+>  I don't see it getting reflected in
+> to 'nr' or 'nr_pages' in there, and I can't see how:
+> 
+> 	jump = iter.index - fc->pgstart - nr;
+> 
+> can possibly be right since iter.index is being kept against the offset
+> in the userspace buffer (4k pages) and 'nr' and fc->pgstart are
+> essentially done in the huge page size.
 
-greg k-h
+... so all of iter.index, fc->pgstart, and nr is the same unit,
+index (in hugepage size.) 
+This is a pure index calculation, and do_fincore() is exactly the same
+between 4kB pages and hugetlbfs pages.
+
+> If you had a 2-page 1GB-hpage_size() hugetlbfs file, you would only have
+> two pages in the radix tree, and only two iterations of
+> radix_tree_for_each_slot().
+
+Correct.
+
+>  It would only set the first two bytes of a
+> 256k BMAP buffer since only two pages were encountered in the radix tree.
+
+Hmm, this example shows me a problem, thanks.
+
+If the user knows the fd is for 1GB hugetlbfs file, it just prepares
+the 2 bytes buffer, so no problem.
+But if the user doesn't know whether the fd is from hugetlbfs file,
+the user must prepare the large buffer, though only first few bytes
+are used. And the more problematic is that the user could interpret
+the data in buffer differently:
+  1. only the first two 4kB-pages are loaded in the 2GB range,
+  2. two 1GB-pages are loaded.
+So for such callers, fincore() must notify the relevant page size
+in some way on return.
+Returning it via fincore_extra is my first thought but I'm not sure
+if it's elegant enough.
+
+Thanks,
+Naoya Horiguchi
