@@ -1,59 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142AbaGHHVx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 03:21:53 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:13494 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751610AbaGHHVw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 03:21:52 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 08 Jul 2014 00:11:07 -0700
-From: Aaron Plattner <aplattner@nvidia.com>
-To: Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>
-CC: Aaron Plattner <aplattner@nvidia.com>, <alsa-devel@alsa-project.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ALSA: hda - Add new GPU codec ID 0x10de0070 to snd-hda
-Date: Tue, 8 Jul 2014 00:21:38 -0700
-Message-ID: <1404804098-11570-1-git-send-email-aplattner@nvidia.com>
-X-Mailer: git-send-email 2.0.1
-X-NVConfidentiality: public
+	id S1753240AbaGHHXQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 03:23:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45515 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750927AbaGHHXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 03:23:15 -0400
+Message-ID: <53BB9C61.8040902@suse.cz>
+Date: Tue, 08 Jul 2014 09:23:13 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Gioh Kim <gioh.kim@lge.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 08/10] mm/page_alloc: use get_onbuddy_migratetype() to
+ get buddy list type
+References: <1404460675-24456-1-git-send-email-iamjoonsoo.kim@lge.com> <1404460675-24456-9-git-send-email-iamjoonsoo.kim@lge.com> <53BAC37D.3060703@suse.cz> <53BB42E3.4060005@lge.com>
+In-Reply-To: <53BB42E3.4060005@lge.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vendor ID 0x10de0070 is used by a yet-to-be-named GPU chip.
+On 07/08/2014 03:01 AM, Gioh Kim wrote:
+>
+>
+> 2014-07-08 오전 12:57, Vlastimil Babka 쓴 글:
+>> On 07/04/2014 09:57 AM, Joonsoo Kim wrote:
+>>> When isolating free page, what we want to know is which list
+>>> the page is linked. If it is linked in isolate migratetype buddy list,
+>>> we can skip watermark check and freepage counting. And if it is linked
+>>> in CMA migratetype buddy list, we need to fixup freepage counting. For
+>>> this purpose, get_onbuddy_migratetype() is more fit and cheap than
+>>> get_pageblock_migratetype(). So use it.
+>>
+>> Hm but you made get_onbuddy_migratetype() work only with CONFIG_MEMORY_ISOLATION. And __isolate_free_page is (despite the name) not at all limited to CONFIG_MEMORY_ISOLATION.
+>>
+>
+> Current __isolate_free_page is called by only split_free_page, and split_free_page by isolate_freepages_block.
+> split_free_page is called only for isolated pages now but It can be changed someday.
 
-Signed-off-by: Aaron Plattner <aplattner@nvidia.com>
----
-Another day, another Azalia codec ID.  I verified that the patch_nvhdmi code is
-still needed for this chip.
+Yeah, but isolate_freepages_block is also not part of 
+CONFIG_MEMORY_ISOLATION. Unfortunately, there are two distinct concepts 
+of memory isolation and LRU isolation, that are not distinguished in 
+function names.
 
- sound/pci/hda/patch_hdmi.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
-index 3e4417b0ddbe..1df5cf629a24 100644
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -3337,6 +3337,7 @@ static const struct hda_codec_preset snd_hda_preset_hdmi[] = {
- { .id = 0x10de0051, .name = "GPU 51 HDMI/DP",	.patch = patch_nvhdmi },
- { .id = 0x10de0060, .name = "GPU 60 HDMI/DP",	.patch = patch_nvhdmi },
- { .id = 0x10de0067, .name = "MCP67 HDMI",	.patch = patch_nvhdmi_2ch },
-+{ .id = 0x10de0070, .name = "GPU 70 HDMI/DP",	.patch = patch_nvhdmi },
- { .id = 0x10de0071, .name = "GPU 71 HDMI/DP",	.patch = patch_nvhdmi },
- { .id = 0x10de8001, .name = "MCP73 HDMI",	.patch = patch_nvhdmi_2ch },
- { .id = 0x11069f80, .name = "VX900 HDMI/DP",	.patch = patch_via_hdmi },
-@@ -3394,6 +3395,7 @@ MODULE_ALIAS("snd-hda-codec-id:10de0044");
- MODULE_ALIAS("snd-hda-codec-id:10de0051");
- MODULE_ALIAS("snd-hda-codec-id:10de0060");
- MODULE_ALIAS("snd-hda-codec-id:10de0067");
-+MODULE_ALIAS("snd-hda-codec-id:10de0070");
- MODULE_ALIAS("snd-hda-codec-id:10de0071");
- MODULE_ALIAS("snd-hda-codec-id:10de8001");
- MODULE_ALIAS("snd-hda-codec-id:11069f80");
--- 
-2.0.1
+> I think get_onbuddy_migratetype should work with any situation.
+>
+> And I think the name of get_onbuddy_migratetype is confused.
+> Because of _onbuddy_, it might look like that the pages are buddy pages.
+> I think the original name _freepage_ is proper one.
+>
+>
+>>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>>> ---
+>>>    mm/page_alloc.c |    2 +-
+>>>    1 file changed, 1 insertion(+), 1 deletion(-)
+>>>
+>>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>>> index e1c4c3e..d9fb8bb 100644
+>>> --- a/mm/page_alloc.c
+>>> +++ b/mm/page_alloc.c
+>>> @@ -1597,7 +1597,7 @@ static int __isolate_free_page(struct page *page, unsigned int order)
+>>>        BUG_ON(!PageBuddy(page));
+>>>
+>>>        zone = page_zone(page);
+>>> -    mt = get_pageblock_migratetype(page);
+>>> +    mt = get_onbuddy_migratetype(page);
+>>>
+>>>        if (!is_migrate_isolate(mt)) {
+>>>            /* Obey watermarks as if the page was being allocated */
+>>>
+>>
+>>
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
 
