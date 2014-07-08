@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193AbaGHTYS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:24:18 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54168 "EHLO
+	id S1756175AbaGHTYQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:24:16 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54213 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755703AbaGHTIl (ORCPT
+	by vger.kernel.org with ESMTP id S1755719AbaGHTIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:08:41 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Lars-Peter Clausen" <lars@metafoo.de>,
-        "Takashi Iwai" <tiwai@suse.de>, "Jaroslav Kysela" <perex@perex.cz>
+CC: akpm@linux-foundation.org, "Alan Stern" <stern@rowland.harvard.edu>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Leandro Liptak" <leandroliptak@gmail.com>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.999385095@decadent.org.uk>
+Message-ID: <lsq.1404846110.673598499@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 083/125] ALSA: control: Protect user controls against
- concurrent access
+Subject: [PATCH 3.2 082/125] USB: EHCI: avoid BIOS handover on the HASEE E200
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,127 +32,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 07f4d9d74a04aa7c72c5dae0ef97565f28f17b92 upstream.
+commit b0a50e92bda3c4aeb8017d4e6c6e92146ebd5c9b upstream.
 
-The user-control put and get handlers as well as the tlv do not protect against
-concurrent access from multiple threads. Since the state of the control is not
-updated atomically it is possible that either two write operations or a write
-and a read operation race against each other. Both can lead to arbitrary memory
-disclosure. This patch introduces a new lock that protects user-controls from
-concurrent access. Since applications typically access controls sequentially
-than in parallel a single lock per card should be fine.
+Leandro Liptak reports that his HASEE E200 computer hangs when we ask
+the BIOS to hand over control of the EHCI host controller.  This
+definitely sounds like a bug in the BIOS, but at the moment there is
+no way to fix it.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Jaroslav Kysela <perex@perex.cz>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This patch works around the problem by avoiding the handoff whenever
+the motherboard and BIOS version match those of Leandro's computer.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Leandro Liptak <leandroliptak@gmail.com>
+Tested-by: Leandro Liptak <leandroliptak@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/sound/core.h |  2 ++
- sound/core/control.c | 31 +++++++++++++++++++++++++------
- sound/core/init.c    |  1 +
- 3 files changed, 28 insertions(+), 6 deletions(-)
+ drivers/usb/host/pci-quirks.c | 19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
 
---- a/include/sound/core.h
-+++ b/include/sound/core.h
-@@ -120,6 +120,8 @@ struct snd_card {
- 	int user_ctl_count;		/* count of all user controls */
- 	struct list_head controls;	/* all controls for this card */
- 	struct list_head ctl_files;	/* active control files */
-+	struct mutex user_ctl_lock;	/* protects user controls against
-+					   concurrent access */
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -555,6 +555,14 @@ static const struct dmi_system_id __devi
+ 			DMI_MATCH(DMI_BIOS_VERSION, "Lucid-"),
+ 		},
+ 	},
++	{
++		/* HASEE E200 */
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "HASEE"),
++			DMI_MATCH(DMI_BOARD_NAME, "E210"),
++			DMI_MATCH(DMI_BIOS_VERSION, "6.00"),
++		},
++	},
+ 	{ }
+ };
  
- 	struct snd_info_entry *proc_root;	/* root for soundcard specific files */
- 	struct snd_info_entry *proc_id;	/* the card id */
---- a/sound/core/control.c
-+++ b/sound/core/control.c
-@@ -988,6 +988,7 @@ static int snd_ctl_elem_unlock(struct sn
- 
- struct user_element {
- 	struct snd_ctl_elem_info info;
-+	struct snd_card *card;
- 	void *elem_data;		/* element data */
- 	unsigned long elem_data_size;	/* size of element data in bytes */
- 	void *tlv_data;			/* TLV data */
-@@ -1031,7 +1032,9 @@ static int snd_ctl_elem_user_get(struct
+@@ -564,9 +572,14 @@ static void __devinit ehci_bios_handoff(
  {
- 	struct user_element *ue = kcontrol->private_data;
+ 	int try_handoff = 1, tried_handoff = 0;
  
-+	mutex_lock(&ue->card->user_ctl_lock);
- 	memcpy(&ucontrol->value, ue->elem_data, ue->elem_data_size);
-+	mutex_unlock(&ue->card->user_ctl_lock);
- 	return 0;
- }
- 
-@@ -1040,10 +1043,12 @@ static int snd_ctl_elem_user_put(struct
- {
- 	int change;
- 	struct user_element *ue = kcontrol->private_data;
--	
-+
-+	mutex_lock(&ue->card->user_ctl_lock);
- 	change = memcmp(&ucontrol->value, ue->elem_data, ue->elem_data_size) != 0;
- 	if (change)
- 		memcpy(ue->elem_data, &ucontrol->value, ue->elem_data_size);
-+	mutex_unlock(&ue->card->user_ctl_lock);
- 	return change;
- }
- 
-@@ -1063,19 +1068,32 @@ static int snd_ctl_elem_user_tlv(struct
- 		new_data = memdup_user(tlv, size);
- 		if (IS_ERR(new_data))
- 			return PTR_ERR(new_data);
-+		mutex_lock(&ue->card->user_ctl_lock);
- 		change = ue->tlv_data_size != size;
- 		if (!change)
- 			change = memcmp(ue->tlv_data, new_data, size);
- 		kfree(ue->tlv_data);
- 		ue->tlv_data = new_data;
- 		ue->tlv_data_size = size;
-+		mutex_unlock(&ue->card->user_ctl_lock);
- 	} else {
--		if (! ue->tlv_data_size || ! ue->tlv_data)
--			return -ENXIO;
--		if (size < ue->tlv_data_size)
--			return -ENOSPC;
-+		int ret = 0;
-+
-+		mutex_lock(&ue->card->user_ctl_lock);
-+		if (!ue->tlv_data_size || !ue->tlv_data) {
-+			ret = -ENXIO;
-+			goto err_unlock;
-+		}
-+		if (size < ue->tlv_data_size) {
-+			ret = -ENOSPC;
-+			goto err_unlock;
-+		}
- 		if (copy_to_user(tlv, ue->tlv_data, ue->tlv_data_size))
--			return -EFAULT;
-+			ret = -EFAULT;
-+err_unlock:
-+		mutex_unlock(&ue->card->user_ctl_lock);
-+		if (ret)
-+			return ret;
+-	/* The Pegatron Lucid tablet sporadically waits for 98 seconds trying
+-	 * the handoff on its unused controller.  Skip it. */
+-	if (pdev->vendor == 0x8086 && pdev->device == 0x283a) {
++	/*
++	 * The Pegatron Lucid tablet sporadically waits for 98 seconds trying
++	 * the handoff on its unused controller.  Skip it.
++	 *
++	 * The HASEE E200 hangs when the semaphore is set (bugzilla #77021).
++	 */
++	if (pdev->vendor == 0x8086 && (pdev->device == 0x283a ||
++			pdev->device == 0x27cc)) {
+ 		if (dmi_check_system(ehci_dmi_nohandoff_table))
+ 			try_handoff = 0;
  	}
- 	return change;
- }
-@@ -1207,6 +1225,7 @@ static int snd_ctl_elem_add(struct snd_c
- 	ue = kzalloc(sizeof(struct user_element) + private_size, GFP_KERNEL);
- 	if (ue == NULL)
- 		return -ENOMEM;
-+	ue->card = card;
- 	ue->info = *info;
- 	ue->info.access = 0;
- 	ue->elem_data = (char *)ue + sizeof(*ue);
---- a/sound/core/init.c
-+++ b/sound/core/init.c
-@@ -207,6 +207,7 @@ int snd_card_create(int idx, const char
- 	INIT_LIST_HEAD(&card->devices);
- 	init_rwsem(&card->controls_rwsem);
- 	rwlock_init(&card->ctl_files_rwlock);
-+	mutex_init(&card->user_ctl_lock);
- 	INIT_LIST_HEAD(&card->controls);
- 	INIT_LIST_HEAD(&card->ctl_files);
- 	spin_lock_init(&card->files_lock);
 
