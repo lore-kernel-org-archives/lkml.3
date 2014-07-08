@@ -1,286 +1,339 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755319AbaGHSsY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 14:48:24 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:62540 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755218AbaGHSsW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 14:48:22 -0400
-From: George Joseph <george.joseph@fairview5.com>
-To: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH V2] ARM: dts: Restructure imx6qdl-wandboard.dtsi for new rev C1 board.
-Date: Tue,  8 Jul 2014 12:48:16 -0600
-Message-Id: <1404845297-13751-1-git-send-email-george.joseph@fairview5.com>
-X-Mailer: git-send-email 1.9.3
+	id S1755415AbaGHStX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 14:49:23 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:1200 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754460AbaGHStV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 14:49:21 -0400
+X-IronPort-AV: E=Sophos;i="5.01,626,1400025600"; 
+   d="scan'208";a="150692986"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
+Subject: [PATCH net-next v4] xen-netback: Adding debugfs "io_ring_qX" files
+Date: Tue, 8 Jul 2014 19:49:14 +0100
+Message-ID: <1404845354-16237-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.9.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The rev C1 Wandboard uses the Broadcom 4330 for WiFi and Bluetooth instead of
-the 4329.  This changes the PADS assigned for the control lines.  Another
-side effect of the change is that on the rev C1 board, usdhc driver can't
-detect the chip presence correctly so usdhc2 now needs its 'non-removeable'
-property removed.
+This patch adds debugfs capabilities to netback. There used to be a similar
+patch floating around for classic kernel, but it used procfs. It is based on a
+very similar blkback patch.
+It creates xen-netback/[vifname]/io_ring_q[queueno] files, reading them output
+various ring variables etc. Writing "kick" into it imitates an interrupt
+happened, it can be useful to check whether the ring is just stalled due to a
+missed interrupt.
 
-So that rev B1 and earlier can continue to work, this patch splits the
-board-specific definitions from imx6qdl-wandboard.dtsi into
-imx6qdl-wandboard-revb1.dtsi and imx6qdl-wandboard-revc1.dtsi.  The new files
-include the original base imx6qdl-wandboard.dtsi which retains the common
-definitions.
-
-The existing imx6dl-wandboard.dts includes imx6qdl-wandboard-revc1.dtsi and
-imx6dl-wandboard-revb1.dts (new) includes imx6qdl-wandboard-revb1.dtsi.
-This makes the rev C1 board the new default.  The same pattern is used for
-imx6q-wandboard.dts.
-
-So, from U-Boot on a WB-Quad you use imxq-wandboard-revb1.dtb for the older B1
-board and imxq-wandboard.dtb for the current rev C1 board.
-
-Signed-off-by: George Joseph <george.joseph@fairview5.com>
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xenproject.org
 ---
- arch/arm/boot/dts/imx6dl-wandboard-revb1.dts   | 22 ++++++++++++++
- arch/arm/boot/dts/imx6dl-wandboard.dts         |  2 +-
- arch/arm/boot/dts/imx6q-wandboard-revb1.dts    | 26 ++++++++++++++++
- arch/arm/boot/dts/imx6q-wandboard.dts          |  2 +-
- arch/arm/boot/dts/imx6qdl-wandboard-revb1.dtsi | 42 ++++++++++++++++++++++++++
- arch/arm/boot/dts/imx6qdl-wandboard-revc1.dtsi | 41 +++++++++++++++++++++++++
- arch/arm/boot/dts/imx6qdl-wandboard.dtsi       | 21 -------------
- 7 files changed, 133 insertions(+), 23 deletions(-)
- create mode 100644 arch/arm/boot/dts/imx6dl-wandboard-revb1.dts
- create mode 100644 arch/arm/boot/dts/imx6q-wandboard-revb1.dts
- create mode 100644 arch/arm/boot/dts/imx6qdl-wandboard-revb1.dtsi
- create mode 100644 arch/arm/boot/dts/imx6qdl-wandboard-revc1.dtsi
+v2:
+- use sequential files
+- put everything behind the right config option
+- fix error handling
 
-diff --git a/arch/arm/boot/dts/imx6dl-wandboard-revb1.dts b/arch/arm/boot/dts/imx6dl-wandboard-revb1.dts
-new file mode 100644
-index 0000000..f607d4f
---- /dev/null
-+++ b/arch/arm/boot/dts/imx6dl-wandboard-revb1.dts
-@@ -0,0 +1,22 @@
-+/*
-+ * Copyright 2013 Freescale Semiconductor, Inc.
-+ *
-+ * Author: Fabio Estevam <fabio.estevam@freescale.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+/dts-v1/;
-+#include "imx6dl.dtsi"
-+#include "imx6qdl-wandboard-revb1.dtsi"
-+
-+/ {
-+	model = "Wandboard i.MX6 Dual Lite Board";
-+	compatible = "wand,imx6dl-wandboard", "fsl,imx6dl";
-+
-+	memory {
-+		reg = <0x10000000 0x40000000>;
-+	};
-+};
-diff --git a/arch/arm/boot/dts/imx6dl-wandboard.dts b/arch/arm/boot/dts/imx6dl-wandboard.dts
-index e672891..bbb6167 100644
---- a/arch/arm/boot/dts/imx6dl-wandboard.dts
-+++ b/arch/arm/boot/dts/imx6dl-wandboard.dts
-@@ -10,7 +10,7 @@
-  */
- /dts-v1/;
- #include "imx6dl.dtsi"
--#include "imx6qdl-wandboard.dtsi"
-+#include "imx6qdl-wandboard-revc1.dtsi"
+v3:
+- use macro for "kick"
+- fix a type of io_ring
+- use macros for permissions
+- shuffle around some checking into addif/delif
+
+v4:
+- various fixups mentioned by Konrad
+
+diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
+index 2532ce8..28c9822 100644
+--- a/drivers/net/xen-netback/common.h
++++ b/drivers/net/xen-netback/common.h
+@@ -44,6 +44,7 @@
+ #include <xen/interface/grant_table.h>
+ #include <xen/grant_table.h>
+ #include <xen/xenbus.h>
++#include <linux/debugfs.h>
  
- / {
- 	model = "Wandboard i.MX6 Dual Lite Board";
-diff --git a/arch/arm/boot/dts/imx6q-wandboard-revb1.dts b/arch/arm/boot/dts/imx6q-wandboard-revb1.dts
-new file mode 100644
-index 0000000..20bf3c2
---- /dev/null
-+++ b/arch/arm/boot/dts/imx6q-wandboard-revb1.dts
-@@ -0,0 +1,26 @@
-+/*
-+ * Copyright 2013 Freescale Semiconductor, Inc.
-+ *
-+ * Author: Fabio Estevam <fabio.estevam@freescale.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+/dts-v1/;
-+#include "imx6q.dtsi"
-+#include "imx6qdl-wandboard-revb1.dtsi"
-+
-+/ {
-+	model = "Wandboard i.MX6 Quad Board";
-+	compatible = "wand,imx6q-wandboard", "fsl,imx6q";
-+
-+	memory {
-+		reg = <0x10000000 0x80000000>;
-+	};
-+};
-+
-+&sata {
-+	status = "okay";
-+};
-diff --git a/arch/arm/boot/dts/imx6q-wandboard.dts b/arch/arm/boot/dts/imx6q-wandboard.dts
-index 36be17f..4a8a6ee 100644
---- a/arch/arm/boot/dts/imx6q-wandboard.dts
-+++ b/arch/arm/boot/dts/imx6q-wandboard.dts
-@@ -10,7 +10,7 @@
-  */
- /dts-v1/;
- #include "imx6q.dtsi"
--#include "imx6qdl-wandboard.dtsi"
-+#include "imx6qdl-wandboard-revc1.dtsi"
+ typedef unsigned int pending_ring_idx_t;
+ #define INVALID_PENDING_RING_IDX (~0U)
+@@ -224,6 +225,10 @@ struct xenvif {
+ 	struct xenvif_queue *queues;
+ 	unsigned int num_queues; /* active queues, resource allocated */
  
- / {
- 	model = "Wandboard i.MX6 Quad Board";
-diff --git a/arch/arm/boot/dts/imx6qdl-wandboard-revb1.dtsi b/arch/arm/boot/dts/imx6qdl-wandboard-revb1.dtsi
-new file mode 100644
-index 0000000..ef7fa62
---- /dev/null
-+++ b/arch/arm/boot/dts/imx6qdl-wandboard-revb1.dtsi
-@@ -0,0 +1,42 @@
-+/*
-+ * Copyright 2013 Freescale Semiconductor, Inc.
-+ *
-+ * Author: Fabio Estevam <fabio.estevam@freescale.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
++#ifdef CONFIG_DEBUG_FS
++	struct dentry *xenvif_dbg_root;
++#endif
 +
-+#include "imx6qdl-wandboard.dtsi"
-+
-+&iomuxc {
-+	pinctrl-0 = <&pinctrl_hog>;
-+
-+	imx6qdl-wandboard {
-+		pinctrl_hog: hoggrp {
-+			fsl,pins = <
-+				MX6QDL_PAD_GPIO_0__CCM_CLKO1		0x130b0		/* GPIO_0_CLKO */
-+				MX6QDL_PAD_GPIO_2__GPIO1_IO02		0x80000000	/* uSDHC1 CD */
-+				MX6QDL_PAD_EIM_DA9__GPIO3_IO09		0x80000000	/* uSDHC3 CD */
-+				MX6QDL_PAD_EIM_EB1__GPIO2_IO29		0x0f0b0		/* WL_REF_ON */
-+				MX6QDL_PAD_EIM_A25__GPIO5_IO02		0x0f0b0		/* WL_RST_N */
-+				MX6QDL_PAD_ENET_RXD1__GPIO1_IO26	0x000b0		/* WL_REG_ON */
-+				MX6QDL_PAD_ENET_TXD1__GPIO1_IO29	0x80000000	/* WL_HOST_WAKE */
-+				MX6QDL_PAD_ENET_TXD0__GPIO1_IO30	0x80000000	/* WL_WAKE */
-+				MX6QDL_PAD_EIM_D29__GPIO3_IO29		0x80000000	/* RGMII_nRST */
-+				MX6QDL_PAD_EIM_DA13__GPIO3_IO13		0x80000000	/* BT_ON */
-+				MX6QDL_PAD_EIM_DA14__GPIO3_IO14		0x80000000	/* BT_WAKE */
-+				MX6QDL_PAD_EIM_DA15__GPIO3_IO15		0x80000000	/* BT_HOST_WAKE */				
-+			>;
-+		};
-+	};
-+};
-+
-+&usdhc2 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_usdhc2>;
-+	non-removable;
-+	status = "okay";
-+};
-diff --git a/arch/arm/boot/dts/imx6qdl-wandboard-revc1.dtsi b/arch/arm/boot/dts/imx6qdl-wandboard-revc1.dtsi
-new file mode 100644
-index 0000000..8d893a7
---- /dev/null
-+++ b/arch/arm/boot/dts/imx6qdl-wandboard-revc1.dtsi
-@@ -0,0 +1,41 @@
-+/*
-+ * Copyright 2013 Freescale Semiconductor, Inc.
-+ *
-+ * Author: Fabio Estevam <fabio.estevam@freescale.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include "imx6qdl-wandboard.dtsi"
-+
-+&iomuxc {
-+	pinctrl-0 = <&pinctrl_hog>;
-+
-+	imx6qdl-wandboard {
-+		pinctrl_hog: hoggrp {
-+			fsl,pins = <
-+				MX6QDL_PAD_GPIO_0__CCM_CLKO1		0x130b0		/* GPIO_0_CLKO */
-+				MX6QDL_PAD_GPIO_2__GPIO1_IO02		0x80000000	/* uSDHC1 CD */
-+				MX6QDL_PAD_EIM_DA9__GPIO3_IO09		0x80000000	/* uSDHC3 CD */
-+				MX6QDL_PAD_CSI0_DAT14__GPIO6_IO00	0x0f0b0		/* WIFI_ON (reset, active low) */
-+				MX6QDL_PAD_ENET_RXD1__GPIO1_IO26	0x000b0		/* WL_REG_ON (unused) */
-+				MX6QDL_PAD_ENET_TXD1__GPIO1_IO29	0x80000000	/* WL_HOST_WAKE, input */
-+				MX6QDL_PAD_CSI0_DAT13__GPIO5_IO31	0x0f0b0		/* GPIO5_IO31 (Wifi Power Enable) */
-+				MX6QDL_PAD_ENET_TXD0__GPIO1_IO30	0x80000000	/* WL_WAKE (unused) */
-+				MX6QDL_PAD_CSI0_VSYNC__GPIO5_IO21	0x80000000	/* BT_ON */
-+				MX6QDL_PAD_CSI0_DAT12__GPIO5_IO30	0x80000000	/* BT_WAKE */
-+				MX6QDL_PAD_CSI0_DATA_EN__GPIO5_IO20	0x80000000	/* BT_HOST_WAKE */
-+				MX6QDL_PAD_EIM_D29__GPIO3_IO29		0x80000000	/* RGMII_nRST */
-+			>;
-+		};
-+	};
-+};
-+
-+&usdhc2 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_usdhc2>;
-+	status = "okay";
-+};
-diff --git a/arch/arm/boot/dts/imx6qdl-wandboard.dtsi b/arch/arm/boot/dts/imx6qdl-wandboard.dtsi
-index bdfdf89..2aa9fbf 100644
---- a/arch/arm/boot/dts/imx6qdl-wandboard.dtsi
-+++ b/arch/arm/boot/dts/imx6qdl-wandboard.dtsi
-@@ -79,22 +79,8 @@
- 
- &iomuxc {
- 	pinctrl-names = "default";
--	pinctrl-0 = <&pinctrl_hog>;
- 
- 	imx6qdl-wandboard {
--		pinctrl_hog: hoggrp {
--			fsl,pins = <
--				MX6QDL_PAD_GPIO_0__CCM_CLKO1 	 0x130b0
--				MX6QDL_PAD_GPIO_2__GPIO1_IO02	 0x80000000
--				MX6QDL_PAD_EIM_DA9__GPIO3_IO09	 0x80000000
--				MX6QDL_PAD_EIM_EB1__GPIO2_IO29   0x80000000 /* WL_REF_ON */
--				MX6QDL_PAD_EIM_A25__GPIO5_IO02   0x80000000 /* WL_RST_N */
--				MX6QDL_PAD_ENET_RXD1__GPIO1_IO26 0x80000000 /* WL_REG_ON */
--				MX6QDL_PAD_ENET_TXD1__GPIO1_IO29 0x80000000 /* WL_HOST_WAKE */
--				MX6QDL_PAD_ENET_TXD0__GPIO1_IO30 0x80000000 /* WL_WAKE */
--				MX6QDL_PAD_EIM_D29__GPIO3_IO29   0x80000000
--			>;
--		};
- 
- 		pinctrl_audmux: audmuxgrp {
- 			fsl,pins = <
-@@ -250,13 +236,6 @@
- 	status = "okay";
+ 	/* Miscellaneous private stuff. */
+ 	struct net_device *dev;
  };
+@@ -297,10 +302,16 @@ static inline pending_ring_idx_t nr_pending_reqs(struct xenvif_queue *queue)
+ /* Callback from stack when TX packet can be released */
+ void xenvif_zerocopy_callback(struct ubuf_info *ubuf, bool zerocopy_success);
  
--&usdhc2 {
--	pinctrl-names = "default";
--	pinctrl-0 = <&pinctrl_usdhc2>;
--	non-removable;
--	status = "okay";
--};
--
- &usdhc3 {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&pinctrl_usdhc3>;
--- 
-1.9.3
-
++irqreturn_t xenvif_interrupt(int irq, void *dev_id);
++
+ extern bool separate_tx_rx_irq;
+ 
+ extern unsigned int rx_drain_timeout_msecs;
+ extern unsigned int rx_drain_timeout_jiffies;
+ extern unsigned int xenvif_max_queues;
+ 
++#ifdef CONFIG_DEBUG_FS
++extern struct dentry *xen_netback_dbg_root;
++#endif
++
+ #endif /* __XEN_NETBACK__COMMON_H__ */
+diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
+index 9e97c7c..ef75b45 100644
+--- a/drivers/net/xen-netback/interface.c
++++ b/drivers/net/xen-netback/interface.c
+@@ -102,7 +102,7 @@ static irqreturn_t xenvif_rx_interrupt(int irq, void *dev_id)
+ 	return IRQ_HANDLED;
+ }
+ 
+-static irqreturn_t xenvif_interrupt(int irq, void *dev_id)
++irqreturn_t xenvif_interrupt(int irq, void *dev_id)
+ {
+ 	xenvif_tx_interrupt(irq, dev_id);
+ 	xenvif_rx_interrupt(irq, dev_id);
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index 1844a47..77127ca 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -1987,6 +1987,13 @@ static int __init netback_init(void)
+ 
+ 	rx_drain_timeout_jiffies = msecs_to_jiffies(rx_drain_timeout_msecs);
+ 
++#ifdef CONFIG_DEBUG_FS
++	xen_netback_dbg_root = debugfs_create_dir("xen-netback", NULL);
++	if (IS_ERR_OR_NULL(xen_netback_dbg_root))
++		pr_warn("Init of debugfs returned %ld!\n",
++			PTR_ERR(xen_netback_dbg_root));
++#endif /* CONFIG_DEBUG_FS */
++
+ 	return 0;
+ 
+ failed_init:
+@@ -1997,6 +2004,10 @@ module_init(netback_init);
+ 
+ static void __exit netback_fini(void)
+ {
++#ifdef CONFIG_DEBUG_FS
++	if (!IS_ERR_OR_NULL(xen_netback_dbg_root))
++		debugfs_remove_recursive(xen_netback_dbg_root);
++#endif /* CONFIG_DEBUG_FS */
+ 	xenvif_xenbus_fini();
+ }
+ module_exit(netback_fini);
+diff --git a/drivers/net/xen-netback/xenbus.c b/drivers/net/xen-netback/xenbus.c
+index 3d85acd..580517d 100644
+--- a/drivers/net/xen-netback/xenbus.c
++++ b/drivers/net/xen-netback/xenbus.c
+@@ -44,6 +44,175 @@ static void unregister_hotplug_status_watch(struct backend_info *be);
+ static void set_backend_state(struct backend_info *be,
+ 			      enum xenbus_state state);
+ 
++#ifdef CONFIG_DEBUG_FS
++struct dentry *xen_netback_dbg_root = NULL;
++
++static int xenvif_read_io_ring(struct seq_file *m, void *v)
++{
++	struct xenvif_queue *queue = m->private;
++	struct xen_netif_tx_back_ring *tx_ring = &queue->tx;
++	struct xen_netif_rx_back_ring *rx_ring = &queue->rx;
++
++	if (tx_ring->sring) {
++		struct xen_netif_tx_sring *sring = tx_ring->sring;
++
++		seq_printf(m, "Queue %d\nTX: nr_ents %u\n", queue->id,
++			   tx_ring->nr_ents);
++		seq_printf(m, "req prod %u (%d) cons %u (%d) event %u (%d)\n",
++			   sring->req_prod,
++			   sring->req_prod - sring->rsp_prod,
++			   tx_ring->req_cons,
++			   tx_ring->req_cons - sring->rsp_prod,
++			   sring->req_event,
++			   sring->req_event - sring->rsp_prod);
++		seq_printf(m, "rsp prod %u (base) pvt %u (%d) event %u (%d)\n",
++			   sring->rsp_prod,
++			   tx_ring->rsp_prod_pvt,
++			   tx_ring->rsp_prod_pvt - sring->rsp_prod,
++			   sring->rsp_event,
++			   sring->rsp_event - sring->rsp_prod);
++		seq_printf(m, "pending prod %u pending cons %u nr_pending_reqs %u\n",
++			   queue->pending_prod,
++			   queue->pending_cons,
++			   nr_pending_reqs(queue));
++		seq_printf(m, "dealloc prod %u dealloc cons %u dealloc_queue %u\n\n",
++			   queue->dealloc_prod,
++			   queue->dealloc_cons,
++			   queue->dealloc_prod - queue->dealloc_cons);
++	}
++
++	if (rx_ring->sring) {
++		struct xen_netif_rx_sring *sring = rx_ring->sring;
++
++		seq_printf(m, "RX: nr_ents %u\n", rx_ring->nr_ents);
++		seq_printf(m, "req prod %u (%d) cons %u (%d) event %u (%d)\n",
++			   sring->req_prod,
++			   sring->req_prod - sring->rsp_prod,
++			   rx_ring->req_cons,
++			   rx_ring->req_cons - sring->rsp_prod,
++			   sring->req_event,
++			   sring->req_event - sring->rsp_prod);
++		seq_printf(m, "rsp prod %u (base) pvt %u (%d) event %u (%d)\n\n",
++			   sring->rsp_prod,
++			   rx_ring->rsp_prod_pvt,
++			   rx_ring->rsp_prod_pvt - sring->rsp_prod,
++			   sring->rsp_event,
++			   sring->rsp_event - sring->rsp_prod);
++	}
++
++	seq_printf(m, "NAPI state: %lx NAPI weight: %d TX queue len %u\n"
++		   "Credit timer_pending: %d, credit: %lu, usec: %lu\n"
++		   "remaining: %lu, expires: %lu, now: %lu\n",
++		   queue->napi.state, queue->napi.weight,
++		   skb_queue_len(&queue->tx_queue),
++		   timer_pending(&queue->credit_timeout),
++		   queue->credit_bytes,
++		   queue->credit_usec,
++		   queue->remaining_credit,
++		   queue->credit_timeout.expires,
++		   jiffies);
++
++	return 0;
++}
++
++#define XENVIF_KICK_STR "kick"
++
++static ssize_t
++xenvif_write_io_ring(struct file *filp, const char __user *buf, size_t count,
++		     loff_t *ppos)
++{
++	struct xenvif_queue *queue =
++		((struct seq_file *)filp->private_data)->private;
++	int len;
++	char write[sizeof(XENVIF_KICK_STR)];
++
++	/* don't allow partial writes and check the length */
++	if (*ppos != 0)
++		return 0;
++	if (count < sizeof(XENVIF_KICK_STR) - 1)
++		return -ENOSPC;
++
++	len = simple_write_to_buffer(write,
++				     sizeof(write),
++				     ppos,
++				     buf,
++				     count);
++	if (len < 0)
++		return len;
++
++	if (!strncmp(write, XENVIF_KICK_STR, sizeof(XENVIF_KICK_STR) - 1))
++		xenvif_interrupt(0, (void *)queue);
++	else {
++		pr_warn("Unknown command to io_ring_q%d. Available: kick\n",
++			queue->id);
++		count = -EINVAL;
++	}
++	return count;
++}
++
++static int xenvif_dump_open(struct inode *inode, struct file *filp)
++{
++	int ret;
++	void *queue = NULL;
++
++	if (inode->i_private)
++		queue = inode->i_private;
++	ret = single_open(filp, xenvif_read_io_ring, queue);
++	filp->f_mode |= FMODE_PWRITE;
++	return ret;
++}
++
++static const struct file_operations xenvif_dbg_io_ring_ops_fops = {
++	.owner = THIS_MODULE,
++	.open = xenvif_dump_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++	.write = xenvif_write_io_ring,
++};
++
++static void xenvif_debugfs_addif(struct xenvif_queue *queue)
++{
++	struct dentry *pfile;
++	struct xenvif *vif = queue->vif;
++	int i;
++
++	if (IS_ERR_OR_NULL(xen_netback_dbg_root))
++		return;
++
++	vif->xenvif_dbg_root = debugfs_create_dir(vif->dev->name,
++						  xen_netback_dbg_root);
++	if (!IS_ERR_OR_NULL(vif->xenvif_dbg_root)) {
++		for (i = 0; i < vif->num_queues; ++i) {
++			char filename[sizeof("io_ring_q") + 4];
++
++			snprintf(filename, sizeof(filename), "io_ring_q%d", i);
++			pfile = debugfs_create_file(filename,
++						    S_IRUSR | S_IWUSR,
++						    vif->xenvif_dbg_root,
++						    &vif->queues[i],
++						    &xenvif_dbg_io_ring_ops_fops);
++			if (IS_ERR_OR_NULL(pfile))
++				pr_warn("Creation of io_ring file returned %ld!\n",
++					PTR_ERR(pfile));
++		}
++	} else
++		netdev_warn(vif->dev,
++			    "Creation of vif debugfs dir returned %ld!\n",
++			    PTR_ERR(vif->xenvif_dbg_root));
++}
++
++static void xenvif_debugfs_delif(struct xenvif *vif)
++{
++	if (IS_ERR_OR_NULL(xen_netback_dbg_root))
++		return;
++
++	if (!IS_ERR_OR_NULL(vif->xenvif_dbg_root))
++		debugfs_remove_recursive(vif->xenvif_dbg_root);
++	vif->xenvif_dbg_root = NULL;
++}
++#endif /* CONFIG_DEBUG_FS */
++
+ static int netback_remove(struct xenbus_device *dev)
+ {
+ 	struct backend_info *be = dev_get_drvdata(&dev->dev);
+@@ -246,8 +415,12 @@ static void backend_create_xenvif(struct backend_info *be)
+ 
+ static void backend_disconnect(struct backend_info *be)
+ {
+-	if (be->vif)
++	if (be->vif) {
++#ifdef CONFIG_DEBUG_FS
++		xenvif_debugfs_delif(be->vif);
++#endif /* CONFIG_DEBUG_FS */
+ 		xenvif_disconnect(be->vif);
++	}
+ }
+ 
+ static void backend_connect(struct backend_info *be)
+@@ -560,6 +733,9 @@ static void connect(struct backend_info *be)
+ 			be->vif->num_queues = queue_index;
+ 			goto err;
+ 		}
++#ifdef CONFIG_DEBUG_FS
++		xenvif_debugfs_addif(queue);
++#endif /* CONFIG_DEBUG_FS */
+ 	}
+ 
+ 	/* Initialisation completed, tell core driver the number of
