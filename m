@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044AbaGHNVP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:21:15 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:33434 "EHLO
+	id S1755135AbaGHNVV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:21:21 -0400
+Received: from inca-roads.misterjones.org ([213.251.177.50]:48081 "EHLO
 	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754776AbaGHNVN (ORCPT
+	by vger.kernel.org with ESMTP id S1755072AbaGHNVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:21:13 -0400
-X-Greylist: delayed 622 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Jul 2014 09:21:13 EDT
+	Tue, 8 Jul 2014 09:21:18 -0400
 From: Marc Zyngier <marc.zyngier@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: Russell King <linux@arm.linux.org.uk>,
@@ -23,9 +22,9 @@ Cc: Russell King <linux@arm.linux.org.uk>,
         Larry Bassel <larry.bassel@linaro.org>,
         Mark Rutland <mark.rutland@arm.com>,
         Sudeep Holla <sudeep.holla@arm.com>
-Subject: [PATCH 11/15] irqchip: sun4i: convert to handle_domain_irq
-Date: Tue,  8 Jul 2014 14:10:34 +0100
-Message-Id: <1404825038-547-12-git-send-email-marc.zyngier@arm.com>
+Subject: [PATCH 15/15] irqchip: zevio: convert to handle_domain_irq
+Date: Tue,  8 Jul 2014 14:10:38 +0100
+Message-Id: <1404825038-547-16-git-send-email-marc.zyngier@arm.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404825038-547-1-git-send-email-marc.zyngier@arm.com>
 References: <1404825038-547-1-git-send-email-marc.zyngier@arm.com>
@@ -41,32 +40,23 @@ Use the new handle_domain_irq method to handle interrupts.
 
 Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
 ---
- drivers/irqchip/irq-sun4i.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/irqchip/irq-zevio.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/irqchip/irq-sun4i.c b/drivers/irqchip/irq-sun4i.c
-index 6fcef4a..64155b6 100644
---- a/drivers/irqchip/irq-sun4i.c
-+++ b/drivers/irqchip/irq-sun4i.c
-@@ -136,7 +136,7 @@ IRQCHIP_DECLARE(allwinner_sun4i_ic, "allwinner,sun4i-a10-ic", sun4i_of_init);
+diff --git a/drivers/irqchip/irq-zevio.c b/drivers/irqchip/irq-zevio.c
+index ceb3a43..1b7c67d 100644
+--- a/drivers/irqchip/irq-zevio.c
++++ b/drivers/irqchip/irq-zevio.c
+@@ -56,8 +56,7 @@ static void __exception_irq_entry zevio_handle_irq(struct pt_regs *regs)
  
- static void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs)
- {
--	u32 irq, hwirq;
-+	u32 hwirq;
- 
- 	/*
- 	 * hwirq == 0 can mean one of 3 things:
-@@ -154,8 +154,7 @@ static void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs)
- 		return;
- 
- 	do {
--		irq = irq_find_mapping(sun4i_irq_domain, hwirq);
--		handle_IRQ(irq, regs);
-+		handle_domain_irq(sun4i_irq_domain, hwirq, regs);
- 		hwirq = readl(sun4i_irq_base + SUN4I_IRQ_VECTOR_REG) >> 2;
- 	} while (hwirq != 0);
+ 	while (readl(zevio_irq_io + IO_STATUS)) {
+ 		irqnr = readl(zevio_irq_io + IO_CURRENT);
+-		irqnr = irq_find_mapping(zevio_irq_domain, irqnr);
+-		handle_IRQ(irqnr, regs);
++		handle_domain_IRQ(zevio_irq_domain, irqnr, regs);
+ 	};
  }
+ 
 -- 
 2.0.0
 
