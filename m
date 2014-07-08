@@ -1,374 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676AbaGHM2V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 08:28:21 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:35766 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754583AbaGHM2T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 08:28:19 -0400
-From: Amit Daniel Kachhap <amit.daniel@samsung.com>
-To: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] regulator: s2mps11: Optimize the regulator description macro
-Date: Tue,  8 Jul 2014 17:58:00 +0530
-Message-Id: <1404822480-31525-3-git-send-email-amit.daniel@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1404822480-31525-1-git-send-email-amit.daniel@samsung.com>
-References: <1404822480-31525-1-git-send-email-amit.daniel@samsung.com>
+	id S1754609AbaGHMaI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 08:30:08 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:55990 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750867AbaGHMaG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 08:30:06 -0400
+Message-ID: <53BBE419.8080107@ti.com>
+Date: Tue, 8 Jul 2014 17:59:13 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
+	<antoine.tenart@free-electrons.com>,
+        <sebastian.hesselbarth@gmail.com>, <tj@kernel.org>
+CC: <alexandre.belloni@free-electrons.com>,
+        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
+        <jszhang@marvell.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-ide@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v9 1/7] phy: add a driver for the Berlin SATA PHY
+References: <1404728173-20263-1-git-send-email-antoine.tenart@free-electrons.com> <1404728173-20263-2-git-send-email-antoine.tenart@free-electrons.com>
+In-Reply-To: <1404728173-20263-2-git-send-email-antoine.tenart@free-electrons.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes the regulator description macro take minimum and
-steps voltage as parameter. In this way many repeated macros can be
-removed. Now these macros are repeated only if the the LDO/BUCK ctrl
-registers have non-linear positions. The good thing is these ctrl registers
-are mostly linear so they are not passed as parameters.
+Hi Antoine,
 
-This patch reduces the code size and also allow easy addition of more
-s2mpxxx PMIC drivers which differs a lot in minimum/step voltages.
+On Monday 07 July 2014 03:46 PM, Antoine Ténart wrote:
+> The Berlin SoC has a two SATA ports. Add a PHY driver to handle them.
+> 
+> The mode selection can let us think this PHY can be configured to fit
+> other purposes. But there are reasons to think the SATA mode will be
+> the only one usable: the PHY registers are only accessible indirectly
+> through two registers in the SATA range, the PHY seems to be integrated
+> and no information tells us the contrary. For these reasons, make the
+> driver a SATA PHY driver.
 
-Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
----
- drivers/regulator/s2mps11.c | 261 +++++++++++++++-----------------------------
- 1 file changed, 86 insertions(+), 175 deletions(-)
+Thanks for doing multiple revisions of this. Looks good to be merged for me now.
 
-diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
-index 2098c3e..ea94f47 100644
---- a/drivers/regulator/s2mps11.c
-+++ b/drivers/regulator/s2mps11.c
-@@ -250,28 +250,14 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.set_ramp_delay		= s2mps11_set_ramp_delay,
- };
- 
--#define regulator_desc_s2mps11_ldo1(num)	{	\
-+#define regulator_desc_s2mps11_ldo(num, min, step) {	\
- 	.name		= "LDO"#num,			\
- 	.id		= S2MPS11_LDO##num,		\
- 	.ops		= &s2mps11_ldo_ops,		\
- 	.type		= REGULATOR_VOLTAGE,		\
- 	.owner		= THIS_MODULE,			\
--	.min_uV		= MIN_800_MV,			\
--	.uV_step	= STEP_50_MV,			\
--	.n_voltages	= S2MPS11_LDO_N_VOLTAGES,	\
--	.vsel_reg	= S2MPS11_REG_L1CTRL + num - 1,	\
--	.vsel_mask	= S2MPS11_LDO_VSEL_MASK,	\
--	.enable_reg	= S2MPS11_REG_L1CTRL + num - 1,	\
--	.enable_mask	= S2MPS11_ENABLE_MASK		\
--}
--#define regulator_desc_s2mps11_ldo2(num) {		\
--	.name		= "LDO"#num,			\
--	.id		= S2MPS11_LDO##num,		\
--	.ops		= &s2mps11_ldo_ops,		\
--	.type		= REGULATOR_VOLTAGE,		\
--	.owner		= THIS_MODULE,			\
--	.min_uV		= MIN_800_MV,			\
--	.uV_step	= STEP_25_MV,			\
-+	.min_uV		= min,				\
-+	.uV_step	= step,				\
- 	.n_voltages	= S2MPS11_LDO_N_VOLTAGES,	\
- 	.vsel_reg	= S2MPS11_REG_L1CTRL + num - 1,	\
- 	.vsel_mask	= S2MPS11_LDO_VSEL_MASK,	\
-@@ -311,14 +297,14 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.enable_mask	= S2MPS11_ENABLE_MASK			\
- }
- 
--#define regulator_desc_s2mps11_buck6_8(num) {			\
-+#define regulator_desc_s2mps11_buck6_10(num, min, step) {	\
- 	.name		= "BUCK"#num,				\
- 	.id		= S2MPS11_BUCK##num,			\
- 	.ops		= &s2mps11_buck_ops,			\
- 	.type		= REGULATOR_VOLTAGE,			\
- 	.owner		= THIS_MODULE,				\
--	.min_uV		= MIN_600_MV,				\
--	.uV_step	= STEP_6_25_MV,				\
-+	.min_uV		= min,					\
-+	.uV_step	= step,					\
- 	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
- 	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
- 	.vsel_reg	= S2MPS11_REG_B6CTRL2 + (num - 6) * 2,	\
-@@ -327,87 +313,55 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.enable_mask	= S2MPS11_ENABLE_MASK			\
- }
- 
--#define regulator_desc_s2mps11_buck9 {				\
--	.name		= "BUCK9",				\
--	.id		= S2MPS11_BUCK9,			\
--	.ops		= &s2mps11_buck_ops,			\
--	.type		= REGULATOR_VOLTAGE,			\
--	.owner		= THIS_MODULE,				\
--	.min_uV		= MIN_3000_MV,				\
--	.uV_step	= STEP_25_MV,				\
--	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
--	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
--	.vsel_reg	= S2MPS11_REG_B9CTRL2,			\
--	.vsel_mask	= S2MPS11_BUCK_VSEL_MASK,		\
--	.enable_reg	= S2MPS11_REG_B9CTRL1,			\
--	.enable_mask	= S2MPS11_ENABLE_MASK			\
--}
--
--#define regulator_desc_s2mps11_buck10 {				\
--	.name		= "BUCK10",				\
--	.id		= S2MPS11_BUCK10,			\
--	.ops		= &s2mps11_buck_ops,			\
--	.type		= REGULATOR_VOLTAGE,			\
--	.owner		= THIS_MODULE,				\
--	.min_uV		= MIN_750_MV,				\
--	.uV_step	= STEP_12_5_MV,				\
--	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
--	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
--	.vsel_reg	= S2MPS11_REG_B10CTRL2,			\
--	.vsel_mask	= S2MPS11_BUCK_VSEL_MASK,		\
--	.enable_reg	= S2MPS11_REG_B10CTRL1,			\
--	.enable_mask	= S2MPS11_ENABLE_MASK			\
--}
--
- static const struct regulator_desc s2mps11_regulators[] = {
--	regulator_desc_s2mps11_ldo2(1),
--	regulator_desc_s2mps11_ldo1(2),
--	regulator_desc_s2mps11_ldo1(3),
--	regulator_desc_s2mps11_ldo1(4),
--	regulator_desc_s2mps11_ldo1(5),
--	regulator_desc_s2mps11_ldo2(6),
--	regulator_desc_s2mps11_ldo1(7),
--	regulator_desc_s2mps11_ldo1(8),
--	regulator_desc_s2mps11_ldo1(9),
--	regulator_desc_s2mps11_ldo1(10),
--	regulator_desc_s2mps11_ldo2(11),
--	regulator_desc_s2mps11_ldo1(12),
--	regulator_desc_s2mps11_ldo1(13),
--	regulator_desc_s2mps11_ldo1(14),
--	regulator_desc_s2mps11_ldo1(15),
--	regulator_desc_s2mps11_ldo1(16),
--	regulator_desc_s2mps11_ldo1(17),
--	regulator_desc_s2mps11_ldo1(18),
--	regulator_desc_s2mps11_ldo1(19),
--	regulator_desc_s2mps11_ldo1(20),
--	regulator_desc_s2mps11_ldo1(21),
--	regulator_desc_s2mps11_ldo2(22),
--	regulator_desc_s2mps11_ldo2(23),
--	regulator_desc_s2mps11_ldo1(24),
--	regulator_desc_s2mps11_ldo1(25),
--	regulator_desc_s2mps11_ldo1(26),
--	regulator_desc_s2mps11_ldo2(27),
--	regulator_desc_s2mps11_ldo1(28),
--	regulator_desc_s2mps11_ldo1(29),
--	regulator_desc_s2mps11_ldo1(30),
--	regulator_desc_s2mps11_ldo1(31),
--	regulator_desc_s2mps11_ldo1(32),
--	regulator_desc_s2mps11_ldo1(33),
--	regulator_desc_s2mps11_ldo1(34),
--	regulator_desc_s2mps11_ldo1(35),
--	regulator_desc_s2mps11_ldo1(36),
--	regulator_desc_s2mps11_ldo1(37),
--	regulator_desc_s2mps11_ldo1(38),
-+	regulator_desc_s2mps11_ldo(1, MIN_800_MV, STEP_25_MV),
-+	regulator_desc_s2mps11_ldo(2, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(3, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(4, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(5, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(6, MIN_800_MV, STEP_25_MV),
-+	regulator_desc_s2mps11_ldo(7, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(8, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(9, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(10, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(11, MIN_800_MV, STEP_25_MV),
-+	regulator_desc_s2mps11_ldo(12, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(13, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(14, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(15, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(16, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(17, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(18, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(19, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(20, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(21, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(22, MIN_800_MV, STEP_25_MV),
-+	regulator_desc_s2mps11_ldo(23, MIN_800_MV, STEP_25_MV),
-+	regulator_desc_s2mps11_ldo(24, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(25, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(26, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(27, MIN_800_MV, STEP_25_MV),
-+	regulator_desc_s2mps11_ldo(28, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(29, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(30, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(31, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(32, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(33, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(34, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(35, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(36, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(37, MIN_800_MV, STEP_50_MV),
-+	regulator_desc_s2mps11_ldo(38, MIN_800_MV, STEP_50_MV),
- 	regulator_desc_s2mps11_buck1_4(1),
- 	regulator_desc_s2mps11_buck1_4(2),
- 	regulator_desc_s2mps11_buck1_4(3),
- 	regulator_desc_s2mps11_buck1_4(4),
- 	regulator_desc_s2mps11_buck5,
--	regulator_desc_s2mps11_buck6_8(6),
--	regulator_desc_s2mps11_buck6_8(7),
--	regulator_desc_s2mps11_buck6_8(8),
--	regulator_desc_s2mps11_buck9,
--	regulator_desc_s2mps11_buck10,
-+	regulator_desc_s2mps11_buck6_10(6, MIN_600_MV, STEP_6_25_MV),
-+	regulator_desc_s2mps11_buck6_10(7, MIN_600_MV, STEP_6_25_MV),
-+	regulator_desc_s2mps11_buck6_10(8, MIN_600_MV, STEP_6_25_MV),
-+	regulator_desc_s2mps11_buck6_10(9, MIN_3000_MV, STEP_25_MV),
-+	regulator_desc_s2mps11_buck6_10(10, MIN_750_MV, STEP_12_5_MV),
- };
- 
- static int s2mps14_regulator_enable(struct regulator_dev *rdev)
-@@ -467,56 +421,29 @@ static struct regulator_ops s2mps14_reg_ops = {
- 	.set_suspend_disable	= s2mps14_regulator_set_suspend_disable,
- };
- 
--#define regulator_desc_s2mps14_ldo1(num) {		\
--	.name		= "LDO"#num,			\
--	.id		= S2MPS14_LDO##num,		\
--	.ops		= &s2mps14_reg_ops,		\
--	.type		= REGULATOR_VOLTAGE,		\
--	.owner		= THIS_MODULE,			\
--	.min_uV		= MIN_800_MV,			\
--	.uV_step	= STEP_25_MV,			\
--	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
--	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
--	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
--	.enable_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
--	.enable_mask	= S2MPS14_ENABLE_MASK		\
--}
--#define regulator_desc_s2mps14_ldo2(num) {		\
--	.name		= "LDO"#num,			\
--	.id		= S2MPS14_LDO##num,		\
--	.ops		= &s2mps14_reg_ops,		\
--	.type		= REGULATOR_VOLTAGE,		\
--	.owner		= THIS_MODULE,			\
--	.min_uV		= MIN_1800_MV,			\
--	.uV_step	= STEP_25_MV,			\
--	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
--	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
--	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
--	.enable_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
--	.enable_mask	= S2MPS14_ENABLE_MASK		\
--}
--#define regulator_desc_s2mps14_ldo3(num) {		\
-+#define regulator_desc_s2mps14_ldo(num, min, step) {	\
- 	.name		= "LDO"#num,			\
- 	.id		= S2MPS14_LDO##num,		\
- 	.ops		= &s2mps14_reg_ops,		\
- 	.type		= REGULATOR_VOLTAGE,		\
- 	.owner		= THIS_MODULE,			\
--	.min_uV		= MIN_800_MV,			\
--	.uV_step	= STEP_12_5_MV,			\
-+	.min_uV		= min,				\
-+	.uV_step	= step,				\
- 	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
- 	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
- 	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
- 	.enable_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
- 	.enable_mask	= S2MPS14_ENABLE_MASK		\
- }
--#define regulator_desc_s2mps14_buck1235(num) {			\
-+
-+#define regulator_desc_s2mps14_buck(num, min, step) {		\
- 	.name		= "BUCK"#num,				\
- 	.id		= S2MPS14_BUCK##num,			\
- 	.ops		= &s2mps14_reg_ops,			\
- 	.type		= REGULATOR_VOLTAGE,			\
- 	.owner		= THIS_MODULE,				\
--	.min_uV		= MIN_600_MV,				\
--	.uV_step	= STEP_6_25_MV,				\
-+	.min_uV		= min,					\
-+	.uV_step	= step,					\
- 	.n_voltages	= S2MPS14_BUCK_N_VOLTAGES,		\
- 	.linear_min_sel = S2MPS14_BUCK1235_START_SEL,		\
- 	.ramp_delay	= S2MPS14_BUCK_RAMP_DELAY,		\
-@@ -525,54 +452,38 @@ static struct regulator_ops s2mps14_reg_ops = {
- 	.enable_reg	= S2MPS14_REG_B1CTRL1 + (num - 1) * 2,	\
- 	.enable_mask	= S2MPS14_ENABLE_MASK			\
- }
--#define regulator_desc_s2mps14_buck4(num) {			\
--	.name		= "BUCK"#num,				\
--	.id		= S2MPS14_BUCK##num,			\
--	.ops		= &s2mps14_reg_ops,			\
--	.type		= REGULATOR_VOLTAGE,			\
--	.owner		= THIS_MODULE,				\
--	.min_uV		= MIN_1400_MV,				\
--	.uV_step	= STEP_12_5_MV,				\
--	.n_voltages	= S2MPS14_BUCK_N_VOLTAGES,		\
--	.linear_min_sel = S2MPS14_BUCK4_START_SEL,		\
--	.ramp_delay	= S2MPS14_BUCK_RAMP_DELAY,		\
--	.vsel_reg	= S2MPS14_REG_B1CTRL2 + (num - 1) * 2,	\
--	.vsel_mask	= S2MPS14_BUCK_VSEL_MASK,		\
--	.enable_reg	= S2MPS14_REG_B1CTRL1 + (num - 1) * 2,	\
--	.enable_mask	= S2MPS14_ENABLE_MASK			\
--}
- 
- static const struct regulator_desc s2mps14_regulators[] = {
--	regulator_desc_s2mps14_ldo3(1),
--	regulator_desc_s2mps14_ldo3(2),
--	regulator_desc_s2mps14_ldo1(3),
--	regulator_desc_s2mps14_ldo1(4),
--	regulator_desc_s2mps14_ldo3(5),
--	regulator_desc_s2mps14_ldo3(6),
--	regulator_desc_s2mps14_ldo1(7),
--	regulator_desc_s2mps14_ldo2(8),
--	regulator_desc_s2mps14_ldo3(9),
--	regulator_desc_s2mps14_ldo3(10),
--	regulator_desc_s2mps14_ldo1(11),
--	regulator_desc_s2mps14_ldo2(12),
--	regulator_desc_s2mps14_ldo2(13),
--	regulator_desc_s2mps14_ldo2(14),
--	regulator_desc_s2mps14_ldo2(15),
--	regulator_desc_s2mps14_ldo2(16),
--	regulator_desc_s2mps14_ldo2(17),
--	regulator_desc_s2mps14_ldo2(18),
--	regulator_desc_s2mps14_ldo1(19),
--	regulator_desc_s2mps14_ldo1(20),
--	regulator_desc_s2mps14_ldo1(21),
--	regulator_desc_s2mps14_ldo3(22),
--	regulator_desc_s2mps14_ldo1(23),
--	regulator_desc_s2mps14_ldo2(24),
--	regulator_desc_s2mps14_ldo2(25),
--	regulator_desc_s2mps14_buck1235(1),
--	regulator_desc_s2mps14_buck1235(2),
--	regulator_desc_s2mps14_buck1235(3),
--	regulator_desc_s2mps14_buck4(4),
--	regulator_desc_s2mps14_buck1235(5),
-+	regulator_desc_s2mps14_ldo(1, MIN_800_MV, STEP_12_5_MV),
-+	regulator_desc_s2mps14_ldo(2, MIN_800_MV, STEP_12_5_MV),
-+	regulator_desc_s2mps14_ldo(3, MIN_800_MV, STEP_25_MV),
-+	regulator_desc_s2mps14_ldo(4, MIN_800_MV, STEP_25_MV),
-+	regulator_desc_s2mps14_ldo(5, MIN_800_MV, STEP_12_5_MV),
-+	regulator_desc_s2mps14_ldo(6, MIN_800_MV, STEP_12_5_MV),
-+	regulator_desc_s2mps14_ldo(7, MIN_800_MV, STEP_25_MV),
-+	regulator_desc_s2mps14_ldo(8, MIN_1800_MV, STEP_25_MV),
-+	regulator_desc_s2mps14_ldo(9, MIN_800_MV, STEP_12_5_MV),
-+	regulator_desc_s2mps14_ldo(10, MIN_800_MV, STEP_12_5_MV),
-+	regulator_desc_s2mps14_ldo(11, MIN_800_MV, STEP_25_MV),
-+	regulator_desc_s2mps14_ldo(12, MIN_1800_MV, STEP_25_MV),
-+	regulator_desc_s2mps14_ldo(13, MIN_1800_MV, STEP_25_MV),
-+	regulator_desc_s2mps14_ldo(14, MIN_1800_MV, STEP_25_MV),
-+	regulator_desc_s2mps14_ldo(15, MIN_1800_MV, STEP_25_MV),
-+	regulator_desc_s2mps14_ldo(16, MIN_1800_MV, STEP_25_MV),
-+	regulator_desc_s2mps14_ldo(17, MIN_1800_MV, STEP_25_MV),
-+	regulator_desc_s2mps14_ldo(18, MIN_1800_MV, STEP_25_MV),
-+	regulator_desc_s2mps14_ldo(19, MIN_800_MV, STEP_25_MV),
-+	regulator_desc_s2mps14_ldo(20, MIN_800_MV, STEP_25_MV),
-+	regulator_desc_s2mps14_ldo(21, MIN_800_MV, STEP_25_MV),
-+	regulator_desc_s2mps14_ldo(22, MIN_800_MV, STEP_12_5_MV),
-+	regulator_desc_s2mps14_ldo(23, MIN_800_MV, STEP_25_MV),
-+	regulator_desc_s2mps14_ldo(24, MIN_1800_MV, STEP_25_MV),
-+	regulator_desc_s2mps14_ldo(25, MIN_1800_MV, STEP_25_MV),
-+	regulator_desc_s2mps14_buck(1, MIN_600_MV, STEP_6_25_MV),
-+	regulator_desc_s2mps14_buck(2, MIN_600_MV, STEP_6_25_MV),
-+	regulator_desc_s2mps14_buck(3, MIN_600_MV, STEP_6_25_MV),
-+	regulator_desc_s2mps14_buck(4, MIN_1400_MV, STEP_12_5_MV),
-+	regulator_desc_s2mps14_buck(5, MIN_600_MV, STEP_6_25_MV),
- };
- 
- static int s2mps14_pmic_enable_ext_control(struct s2mps11_info *s2mps11,
--- 
-1.9.1
-
+Cheers
+Kishon
+> 
+> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+> ---
+>  drivers/phy/Kconfig           |   7 ++
+>  drivers/phy/Makefile          |   1 +
+>  drivers/phy/phy-berlin-sata.c | 284 ++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 292 insertions(+)
+>  create mode 100644 drivers/phy/phy-berlin-sata.c
+> 
+> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+> index 16a2f067c242..8ad5c341b8f9 100644
+> --- a/drivers/phy/Kconfig
+> +++ b/drivers/phy/Kconfig
+> @@ -15,6 +15,13 @@ config GENERIC_PHY
+>  	  phy users can obtain reference to the PHY. All the users of this
+>  	  framework should select this config.
+>  
+> +config PHY_BERLIN_SATA
+> +	tristate "Marvell Berlin SATA PHY driver"
+> +	depends on ARCH_BERLIN && HAS_IOMEM && OF
+> +	select GENERIC_PHY
+> +	help
+> +	  Enable this to support the SATA PHY on Marvell Berlin SoCs.
+> +
+>  config PHY_EXYNOS_MIPI_VIDEO
+>  	tristate "S5P/EXYNOS SoC series MIPI CSI-2/DSI PHY driver"
+>  	depends on HAS_IOMEM
+> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+> index b4f1d5770601..a137a2e23218 100644
+> --- a/drivers/phy/Makefile
+> +++ b/drivers/phy/Makefile
+> @@ -3,6 +3,7 @@
+>  #
+>  
+>  obj-$(CONFIG_GENERIC_PHY)		+= phy-core.o
+> +obj-$(CONFIG_PHY_BERLIN_SATA)		+= phy-berlin-sata.o
+>  obj-$(CONFIG_BCM_KONA_USB2_PHY)		+= phy-bcm-kona-usb2.o
+>  obj-$(CONFIG_PHY_EXYNOS_DP_VIDEO)	+= phy-exynos-dp-video.o
+>  obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)	+= phy-exynos-mipi-video.o
+> diff --git a/drivers/phy/phy-berlin-sata.c b/drivers/phy/phy-berlin-sata.c
+> new file mode 100644
+> index 000000000000..c5e688b0899f
+> --- /dev/null
+> +++ b/drivers/phy/phy-berlin-sata.c
+> @@ -0,0 +1,284 @@
+> +/*
+> + * Marvell Berlin SATA PHY driver
+> + *
+> + * Copyright (C) 2014 Marvell Technology Group Ltd.
+> + *
+> + * Antoine Ténart <antoine.tenart@free-electrons.com>
+> + *
+> + * This file is licensed under the terms of the GNU General Public
+> + * License version 2. This program is licensed "as is" without any
+> + * warranty of any kind, whether express or implied.
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/module.h>
+> +#include <linux/phy/phy.h>
+> +#include <linux/io.h>
+> +#include <linux/platform_device.h>
+> +
+> +#define HOST_VSA_ADDR		0x0
+> +#define HOST_VSA_DATA		0x4
+> +#define PORT_SCR_CTL		0x2c
+> +#define PORT_VSR_ADDR		0x78
+> +#define PORT_VSR_DATA		0x7c
+> +
+> +#define CONTROL_REGISTER	0x0
+> +#define MBUS_SIZE_CONTROL	0x4
+> +
+> +#define POWER_DOWN_PHY0			BIT(6)
+> +#define POWER_DOWN_PHY1			BIT(14)
+> +#define MBUS_WRITE_REQUEST_SIZE_128	(BIT(2) << 16)
+> +#define MBUS_READ_REQUEST_SIZE_128	(BIT(2) << 19)
+> +
+> +#define PHY_BASE		0x200
+> +
+> +/* register 0x01 */
+> +#define REF_FREF_SEL_25		BIT(0)
+> +#define PHY_MODE_SATA		(0x0 << 5)
+> +
+> +/* register 0x02 */
+> +#define USE_MAX_PLL_RATE	BIT(12)
+> +
+> +/* register 0x23 */
+> +#define DATA_BIT_WIDTH_10	(0x0 << 10)
+> +#define DATA_BIT_WIDTH_20	(0x1 << 10)
+> +#define DATA_BIT_WIDTH_40	(0x2 << 10)
+> +
+> +/* register 0x25 */
+> +#define PHY_GEN_MAX_1_5		(0x0 << 10)
+> +#define PHY_GEN_MAX_3_0		(0x1 << 10)
+> +#define PHY_GEN_MAX_6_0		(0x2 << 10)
+> +
+> +struct phy_berlin_desc {
+> +	struct phy	*phy;
+> +	u32		power_bit;
+> +	unsigned	index;
+> +};
+> +
+> +struct phy_berlin_priv {
+> +	void __iomem		*base;
+> +	spinlock_t		lock;
+> +	struct clk		*clk;
+> +	struct phy_berlin_desc	**phys;
+> +	unsigned		nphys;
+> +};
+> +
+> +static inline void phy_berlin_sata_reg_setbits(void __iomem *ctrl_reg, u32 reg,
+> +					       u32 mask, u32 val)
+> +{
+> +	u32 regval;
+> +
+> +	/* select register */
+> +	writel(PHY_BASE + reg, ctrl_reg + PORT_VSR_ADDR);
+> +
+> +	/* set bits */
+> +	regval = readl(ctrl_reg + PORT_VSR_DATA);
+> +	regval &= ~mask;
+> +	regval |= val;
+> +	writel(regval, ctrl_reg + PORT_VSR_DATA);
+> +}
+> +
+> +static int phy_berlin_sata_power_on(struct phy *phy)
+> +{
+> +	struct phy_berlin_desc *desc = phy_get_drvdata(phy);
+> +	struct phy_berlin_priv *priv = dev_get_drvdata(phy->dev.parent);
+> +	void __iomem *ctrl_reg = priv->base + 0x60 + (desc->index * 0x80);
+> +	int ret = 0;
+> +	u32 regval;
+> +
+> +	clk_prepare_enable(priv->clk);
+> +
+> +	spin_lock(&priv->lock);
+> +
+> +	/* Power on PHY */
+> +	writel(CONTROL_REGISTER, priv->base + HOST_VSA_ADDR);
+> +	regval = readl(priv->base + HOST_VSA_DATA);
+> +	regval &= ~desc->power_bit;
+> +	writel(regval, priv->base + HOST_VSA_DATA);
+> +
+> +	/* Configure MBus */
+> +	writel(MBUS_SIZE_CONTROL, priv->base + HOST_VSA_ADDR);
+> +	regval = readl(priv->base + HOST_VSA_DATA);
+> +	regval |= MBUS_WRITE_REQUEST_SIZE_128 | MBUS_READ_REQUEST_SIZE_128;
+> +	writel(regval, priv->base + HOST_VSA_DATA);
+> +
+> +	/* set PHY mode and ref freq to 25 MHz */
+> +	phy_berlin_sata_reg_setbits(ctrl_reg, 0x1, 0xff,
+> +				    REF_FREF_SEL_25 | PHY_MODE_SATA);
+> +
+> +	/* set PHY up to 6 Gbps */
+> +	phy_berlin_sata_reg_setbits(ctrl_reg, 0x25, 0xc00, PHY_GEN_MAX_6_0);
+> +
+> +	/* set 40 bits width */
+> +	phy_berlin_sata_reg_setbits(ctrl_reg, 0x23,  0xc00, DATA_BIT_WIDTH_40);
+> +
+> +	/* use max pll rate */
+> +	phy_berlin_sata_reg_setbits(ctrl_reg, 0x2, 0x0, USE_MAX_PLL_RATE);
+> +
+> +	/* set Gen3 controller speed */
+> +	regval = readl(ctrl_reg + PORT_SCR_CTL);
+> +	regval &= ~GENMASK(7, 4);
+> +	regval |= 0x30;
+> +	writel(regval, ctrl_reg + PORT_SCR_CTL);
+> +
+> +	spin_unlock(&priv->lock);
+> +
+> +	clk_disable_unprepare(priv->clk);
+> +
+> +	return ret;
+> +}
+> +
+> +static int phy_berlin_sata_power_off(struct phy *phy)
+> +{
+> +	struct phy_berlin_desc *desc = phy_get_drvdata(phy);
+> +	struct phy_berlin_priv *priv = dev_get_drvdata(phy->dev.parent);
+> +	u32 regval;
+> +
+> +	clk_prepare_enable(priv->clk);
+> +
+> +	spin_lock(&priv->lock);
+> +
+> +	/* Power down PHY */
+> +	writel(CONTROL_REGISTER, priv->base + HOST_VSA_ADDR);
+> +	regval = readl(priv->base + HOST_VSA_DATA);
+> +	regval |= desc->power_bit;
+> +	writel(regval, priv->base + HOST_VSA_DATA);
+> +
+> +	spin_unlock(&priv->lock);
+> +
+> +	clk_disable_unprepare(priv->clk);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct phy *phy_berlin_sata_phy_xlate(struct device *dev,
+> +					     struct of_phandle_args *args)
+> +{
+> +	struct phy_berlin_priv *priv = dev_get_drvdata(dev);
+> +	int i;
+> +
+> +	if (WARN_ON(args->args[0] >= priv->nphys))
+> +		return ERR_PTR(-ENODEV);
+> +
+> +	for (i = 0; i < priv->nphys; i++) {
+> +		if (priv->phys[i]->index == args->args[0])
+> +			break;
+> +	}
+> +
+> +	if (i == priv->nphys)
+> +		return ERR_PTR(-ENODEV);
+> +
+> +	return priv->phys[i]->phy;
+> +}
+> +
+> +static struct phy_ops phy_berlin_sata_ops = {
+> +	.power_on	= phy_berlin_sata_power_on,
+> +	.power_off	= phy_berlin_sata_power_off,
+> +	.owner		= THIS_MODULE,
+> +};
+> +
+> +static u32 phy_berlin_power_down_bits[] = {
+> +	POWER_DOWN_PHY0,
+> +	POWER_DOWN_PHY1,
+> +};
+> +
+> +static int phy_berlin_sata_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct device_node *child;
+> +	struct phy *phy;
+> +	struct phy_provider *phy_provider;
+> +	struct phy_berlin_priv *priv;
+> +	struct resource *res;
+> +	int i = 0;
+> +	u32 phy_id;
+> +
+> +	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
+> +	if (!priv)
+> +		return -ENOMEM;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (!res)
+> +		return -EINVAL;
+> +
+> +	priv->base = devm_ioremap(dev, res->start, resource_size(res));
+> +	if (!priv->base)
+> +		return -ENOMEM;
+> +
+> +	priv->clk = devm_clk_get(dev, NULL);
+> +	if (IS_ERR(priv->clk))
+> +		return PTR_ERR(priv->clk);
+> +
+> +	priv->nphys = of_get_child_count(dev->of_node);
+> +	if (priv->nphys == 0)
+> +		return -ENODEV;
+> +
+> +	priv->phys = devm_kzalloc(dev, priv->nphys * sizeof(*priv->phys),
+> +				  GFP_KERNEL);
+> +	if (!priv->phys)
+> +		return -ENOMEM;
+> +
+> +	dev_set_drvdata(dev, priv);
+> +	spin_lock_init(&priv->lock);
+> +
+> +	for_each_available_child_of_node(dev->of_node, child) {
+> +		struct phy_berlin_desc *phy_desc;
+> +
+> +		if (of_property_read_u32(child, "reg", &phy_id)) {
+> +			dev_err(dev, "missing reg property in node %s\n",
+> +				child->name);
+> +			return -EINVAL;
+> +		}
+> +
+> +		if (phy_id >= ARRAY_SIZE(phy_berlin_power_down_bits)) {
+> +			dev_err(dev, "invalid reg in node %s\n", child->name);
+> +			return -EINVAL;
+> +		}
+> +
+> +		phy_desc = devm_kzalloc(dev, sizeof(*phy_desc), GFP_KERNEL);
+> +		if (!phy_desc)
+> +			return -ENOMEM;
+> +
+> +		phy = devm_phy_create(dev, &phy_berlin_sata_ops, NULL);
+> +		if (IS_ERR(phy)) {
+> +			dev_err(dev, "failed to create PHY %d\n", phy_id);
+> +			return PTR_ERR(phy);
+> +		}
+> +
+> +		phy_desc->phy = phy;
+> +		phy_desc->power_bit = phy_berlin_power_down_bits[phy_id];
+> +		phy_desc->index = phy_id;
+> +		phy_set_drvdata(phy, phy_desc);
+> +
+> +		priv->phys[i++] = phy_desc;
+> +
+> +		/* Make sure the PHY is off */
+> +		phy_berlin_sata_power_off(phy);
+> +	}
+> +
+> +	phy_provider =
+> +		devm_of_phy_provider_register(dev, phy_berlin_sata_phy_xlate);
+> +	if (IS_ERR(phy_provider))
+> +		return PTR_ERR(phy_provider);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct of_device_id phy_berlin_sata_of_match[] = {
+> +	{ .compatible = "marvell,berlin2q-sata-phy" },
+> +	{ },
+> +};
+> +
+> +static struct platform_driver phy_berlin_sata_driver = {
+> +	.probe	= phy_berlin_sata_probe,
+> +	.driver	= {
+> +		.name		= "phy-berlin-sata",
+> +		.owner		= THIS_MODULE,
+> +		.of_match_table	= phy_berlin_sata_of_match,
+> +	},
+> +};
+> +module_platform_driver(phy_berlin_sata_driver);
+> +
+> +MODULE_DESCRIPTION("Marvell Berlin SATA PHY driver");
+> +MODULE_AUTHOR("Antoine Ténart <antoine.tenart@free-electrons.com>");
+> +MODULE_LICENSE("GPL v2");
+> 
