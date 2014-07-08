@@ -1,67 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687AbaGHJJF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 05:09:05 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:47884 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834AbaGHJJC (ORCPT
+	id S1753591AbaGHJK5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 05:10:57 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:53743 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751842AbaGHJKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 05:09:02 -0400
+	Tue, 8 Jul 2014 05:10:55 -0400
+From: "xiaofeng.yan" <xiaofeng.yan@huawei.com>
+To: <mingo@redhat.com>, <peterz@infradead.org>, <juri.lelli@gmail.com>,
+        <linux-kernel@vger.kernel.org>
+CC: <xiaofeng.yan2012@gmail.com>, "xiaofeng.yan" <xiaofeng.yan@huawei.com>
+Subject: [PATCH] sched/deadline: overrun could happen in start_hrtick_dl
+Date: Tue, 8 Jul 2014 08:53:27 +0000
+Message-ID: <1404809607-26197-1-git-send-email-xiaofeng.yan@huawei.com>
+X-Mailer: git-send-email 1.8.3.4
 MIME-Version: 1.0
-In-Reply-To: <53BBB4AF.1080507@nod.at>
-References: <20140705112238.16142.42735.stgit@zurg>
-	<20140707150523.cc671116bf366e8db73209c5@linux-foundation.org>
-	<CALYGNiMjL_GYqqkid4yQsubpnbydVXxTPnKW0GqJcg05x9zbHQ@mail.gmail.com>
-	<CAFLxGvzxvuizdHyjQ0SjUm8jJcj=w+qS5ut-u76Xo-m2sftvvw@mail.gmail.com>
-	<CALYGNiOTC8KOxWwRo+f=6JmtUYhJ=1cQNq-Us1BZbW85r4P+ug@mail.gmail.com>
-	<53BBA9B4.7050609@nod.at>
-	<CALYGNiNSFoW6Z_1o3JfV-cCeay1QmTptrt4kWHVegkuw+-6A8A@mail.gmail.com>
-	<53BBACF4.4070800@nod.at>
-	<CALYGNiND3xk4DGkM_RYApmX7BMkg=cKX2gUpyyOry0ny_DVrkA@mail.gmail.com>
-	<53BBB0F2.20109@nod.at>
-	<CALYGNiPakwGquDk9MVGeSrx4RmUOg21=_Zcw097Z5sGTsP=Cwg@mail.gmail.com>
-	<53BBB4AF.1080507@nod.at>
-Date: Tue, 8 Jul 2014 11:09:00 +0200
-X-Google-Sender-Auth: nh1cRizdQxCgufCsfmPC0aSD0gQ
-Message-ID: <CAMuHMdXczkVGAejZ2RnsdXYvTq-8eZAhheR-ygXmXKMmh9VsEA@mail.gmail.com>
-Subject: Re: [uml-devel] [PATCH] checkstack: use $UTS_MACHINE as target architecture
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: Konstantin Khlebnikov <koct9i@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        UML devel <user-mode-linux-devel@lists.sourceforge.net>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 8, 2014 at 11:06 AM, Richard Weinberger <richard@nod.at> wrote:
-> Am 08.07.2014 11:03, schrieb Konstantin Khlebnikov:
->> I know. But debugging/profiling of kernel code is much easier when it
->> runs in userspace.
->> I think this is the last use case where uml might beat normal hardware
->> accelerated qemu/kvm.
->> But without SMP and with that high overhead on each syscall and
->> context/mm switch it's mostly useless.
->
-> The major use case of UML is that you can run it on hardware without
-> KVM support.
-> Everyone else is using KVM.
+It could be wrong for the precision of runtime and deadline
+when the precision is within microsecond level. For example:
+Task runtime deadline period
+ P1   200us   500us   500us
 
-And that you don't need root permissions to run it.
-Which is why I'm still interested in an ARM port.
-Need... More... Spare... Time...
+This case need enbale HRTICK feature by the next command
+PC#echo "HRTICK" > /sys/kernel/debug/sched_features
+PC#trace-cmd record -e sched_switch &
+PC#./schedtool -E -t 200000:500000 -e ./test
 
-Gr{oetje,eeting}s,
+Some of runtime and deadline run with millisecond level by
+reading kernershark. Some pieces of trace.dat are as follows:
+(remove some irrelevant information)
+<idle>-0   157.603157: sched_switch: :R ==> 2481:4294967295: test
+test-2481  157.603203: sched_switch:  2481:R ==> 0:120: swapper/2
+<idle>-0   157.605657: sched_switch:  :R ==> 2481:4294967295: test
+test-2481  157.608183: sched_switch:  2481:R ==> 2483:120: trace-cmd
+trace-cmd-2483 157.609656: sched_switch:2483:R==>2481:4294967295: test
 
-                        Geert
+We can get the runtime from the information at some point.
+runtime = 157.605657 - 157.608183
+runtime = 0.002526(2.526ms)
+The correct runtime should be less than or equal to 200us at some point.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+The problem is caused by a conditional judgment "delta > 10000".
+Because no hrtimer start up to control the runtime when runtime is less than 10us.
+So the process will continue to run until tick-period coming.
+For fixing this problem, Let delta is equal to 10us when it is less than 10us.
+So the hrtimer will start up to control the end of process.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Signed-off-by: Xiaofeng Yan <xiaofeng.yan@huawei.com>
+---
+ kernel/sched/deadline.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index fc4f98b1..b71c229 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -997,10 +997,8 @@ static void check_preempt_curr_dl(struct rq *rq, struct task_struct *p,
+ #ifdef CONFIG_SCHED_HRTICK
+ static void start_hrtick_dl(struct rq *rq, struct task_struct *p)
+ {
+-	s64 delta = p->dl.dl_runtime - p->dl.runtime;
+-
+-	if (delta > 10000)
+-		hrtick_start(rq, p->dl.runtime);
++	delta = max_t(s64, 10000LL, delta);
++	hrtick_start(rq, delta);
+ }
+ #endif
+ 
+-- 
+1.7.9.5
+
