@@ -1,197 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614AbaGHMZx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 08:25:53 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:44176 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754426AbaGHMZv (ORCPT
+	id S1754558AbaGHM2P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 08:28:15 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:36039 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753801AbaGHM2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 08:25:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <1403819615-9253-1-git-send-email-markus.mayer@linaro.org>
-References: <1403819615-9253-1-git-send-email-markus.mayer@linaro.org>
-Date: Tue, 8 Jul 2014 14:25:50 +0200
-Message-ID: <CAPDyKFrjQqu=SqmBdqR9pTKSF_RLN4wFNwyOO2Laex2ED6eJyA@mail.gmail.com>
-Subject: Re: [PATCH v5] mmc: sdhci: Replace host->mmc with mmc where possible
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Markus Mayer <markus.mayer@linaro.org>
-Cc: Chris Ball <chris@printf.net>, Tim Kryger <tim.kryger@gmail.com>,
-        Mike Looijmans <mike.looijmans@topic.nl>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Matt Porter <mporter@linaro.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 8 Jul 2014 08:28:13 -0400
+From: Amit Daniel Kachhap <amit.daniel@samsung.com>
+To: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] regulator: s2mpxxx: Move regulator min/step voltages in common place
+Date: Tue,  8 Jul 2014 17:57:58 +0530
+Message-Id: <1404822480-31525-1-git-send-email-amit.daniel@samsung.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 June 2014 23:53, Markus Mayer <markus.mayer@linaro.org> wrote:
-> After the switch to the MMC core regulator infrastucture, we already
-> have a local "mmc" pointer in various functions. There is no longer a
-> need to access the data structure via host->mmc.
->
-> Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
-> Reviewed-by: Matt Porter <mporter@linaro.org>
+This is a cleanup patch and moves min/step voltages in a common samsung
+header file so that they can be used by other s2mpxxx PMIC drivers. Only
+few required macros are added currently and others can be added if needed.
 
-Thanks! Applied for next.
+Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+---
+ drivers/regulator/s2mpa01.c         | 32 ++++++++++++------------
+ drivers/regulator/s2mps11.c         | 50 ++++++++++++++++++-------------------
+ include/linux/mfd/samsung/core.h    | 21 ++++++++++++++++
+ include/linux/mfd/samsung/s2mpa01.h | 12 ---------
+ include/linux/mfd/samsung/s2mps11.h |  9 -------
+ include/linux/mfd/samsung/s2mps14.h | 10 --------
+ 6 files changed, 62 insertions(+), 72 deletions(-)
 
-Kind regards
-Uffe
+diff --git a/drivers/regulator/s2mpa01.c b/drivers/regulator/s2mpa01.c
+index ee83b48..962c5f1 100644
+--- a/drivers/regulator/s2mpa01.c
++++ b/drivers/regulator/s2mpa01.c
+@@ -241,8 +241,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
+ 	.ops		= &s2mpa01_ldo_ops,		\
+ 	.type		= REGULATOR_VOLTAGE,		\
+ 	.owner		= THIS_MODULE,			\
+-	.min_uV		= S2MPA01_LDO_MIN,		\
+-	.uV_step	= S2MPA01_LDO_STEP1,		\
++	.min_uV		= MIN_800_MV,			\
++	.uV_step	= STEP_50_MV,			\
+ 	.n_voltages	= S2MPA01_LDO_N_VOLTAGES,	\
+ 	.vsel_reg	= S2MPA01_REG_L1CTRL + num - 1,	\
+ 	.vsel_mask	= S2MPA01_LDO_VSEL_MASK,	\
+@@ -255,8 +255,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
+ 	.ops		= &s2mpa01_ldo_ops,		\
+ 	.type		= REGULATOR_VOLTAGE,		\
+ 	.owner		= THIS_MODULE,			\
+-	.min_uV		= S2MPA01_LDO_MIN,		\
+-	.uV_step	= S2MPA01_LDO_STEP2,		\
++	.min_uV		= MIN_800_MV,			\
++	.uV_step	= STEP_25_MV,			\
+ 	.n_voltages	= S2MPA01_LDO_N_VOLTAGES,	\
+ 	.vsel_reg	= S2MPA01_REG_L1CTRL + num - 1,	\
+ 	.vsel_mask	= S2MPA01_LDO_VSEL_MASK,	\
+@@ -270,8 +270,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
+ 	.ops		= &s2mpa01_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPA01_BUCK_MIN1,			\
+-	.uV_step	= S2MPA01_BUCK_STEP1,			\
++	.min_uV		= MIN_600_MV,				\
++	.uV_step	= STEP_6_25_MV,				\
+ 	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPA01_REG_B1CTRL2 + (num - 1) * 2,	\
+@@ -286,8 +286,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
+ 	.ops		= &s2mpa01_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPA01_BUCK_MIN2,			\
+-	.uV_step	= S2MPA01_BUCK_STEP1,			\
++	.min_uV		= MIN_800_MV,				\
++	.uV_step	= STEP_6_25_MV,				\
+ 	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPA01_REG_B5CTRL2,			\
+@@ -302,8 +302,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
+ 	.ops		= &s2mpa01_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPA01_BUCK_MIN1,			\
+-	.uV_step	= S2MPA01_BUCK_STEP1,			\
++	.min_uV		= MIN_600_MV,				\
++	.uV_step	= STEP_6_25_MV,				\
+ 	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPA01_REG_B6CTRL2 + (num - 6) * 2,	\
+@@ -318,8 +318,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
+ 	.ops		= &s2mpa01_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPA01_BUCK_MIN2,			\
+-	.uV_step	= S2MPA01_BUCK_STEP2,			\
++	.min_uV		= MIN_800_MV,				\
++	.uV_step	= STEP_12_5_MV,				\
+ 	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPA01_REG_B8CTRL2,			\
+@@ -334,8 +334,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
+ 	.ops		= &s2mpa01_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPA01_BUCK_MIN4,			\
+-	.uV_step	= S2MPA01_BUCK_STEP2,			\
++	.min_uV		= MIN_1500_MV,				\
++	.uV_step	= STEP_12_5_MV,				\
+ 	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPA01_REG_B9CTRL2,			\
+@@ -350,8 +350,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
+ 	.ops		= &s2mpa01_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPA01_BUCK_MIN3,			\
+-	.uV_step	= S2MPA01_BUCK_STEP2,			\
++	.min_uV		= MIN_1000_MV,				\
++	.uV_step	= STEP_12_5_MV,				\
+ 	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPA01_REG_B10CTRL2,			\
+diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
+index 02e2fb2..2098c3e 100644
+--- a/drivers/regulator/s2mps11.c
++++ b/drivers/regulator/s2mps11.c
+@@ -250,14 +250,14 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.set_ramp_delay		= s2mps11_set_ramp_delay,
+ };
+ 
+-#define regulator_desc_s2mps11_ldo1(num)	{		\
++#define regulator_desc_s2mps11_ldo1(num)	{	\
+ 	.name		= "LDO"#num,			\
+ 	.id		= S2MPS11_LDO##num,		\
+ 	.ops		= &s2mps11_ldo_ops,		\
+ 	.type		= REGULATOR_VOLTAGE,		\
+ 	.owner		= THIS_MODULE,			\
+-	.min_uV		= S2MPS11_LDO_MIN,		\
+-	.uV_step	= S2MPS11_LDO_STEP1,		\
++	.min_uV		= MIN_800_MV,			\
++	.uV_step	= STEP_50_MV,			\
+ 	.n_voltages	= S2MPS11_LDO_N_VOLTAGES,	\
+ 	.vsel_reg	= S2MPS11_REG_L1CTRL + num - 1,	\
+ 	.vsel_mask	= S2MPS11_LDO_VSEL_MASK,	\
+@@ -270,8 +270,8 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.ops		= &s2mps11_ldo_ops,		\
+ 	.type		= REGULATOR_VOLTAGE,		\
+ 	.owner		= THIS_MODULE,			\
+-	.min_uV		= S2MPS11_LDO_MIN,		\
+-	.uV_step	= S2MPS11_LDO_STEP2,		\
++	.min_uV		= MIN_800_MV,			\
++	.uV_step	= STEP_25_MV,			\
+ 	.n_voltages	= S2MPS11_LDO_N_VOLTAGES,	\
+ 	.vsel_reg	= S2MPS11_REG_L1CTRL + num - 1,	\
+ 	.vsel_mask	= S2MPS11_LDO_VSEL_MASK,	\
+@@ -285,8 +285,8 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.ops		= &s2mps11_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPS11_BUCK_MIN1,			\
+-	.uV_step	= S2MPS11_BUCK_STEP1,			\
++	.min_uV		= MIN_600_MV,				\
++	.uV_step	= STEP_6_25_MV,				\
+ 	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPS11_REG_B1CTRL2 + (num - 1) * 2,	\
+@@ -301,8 +301,8 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.ops		= &s2mps11_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPS11_BUCK_MIN1,			\
+-	.uV_step	= S2MPS11_BUCK_STEP1,			\
++	.min_uV		= MIN_600_MV,				\
++	.uV_step	= STEP_6_25_MV,				\
+ 	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPS11_REG_B5CTRL2,			\
+@@ -317,8 +317,8 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.ops		= &s2mps11_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPS11_BUCK_MIN1,			\
+-	.uV_step	= S2MPS11_BUCK_STEP1,			\
++	.min_uV		= MIN_600_MV,				\
++	.uV_step	= STEP_6_25_MV,				\
+ 	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPS11_REG_B6CTRL2 + (num - 6) * 2,	\
+@@ -333,8 +333,8 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.ops		= &s2mps11_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPS11_BUCK_MIN3,			\
+-	.uV_step	= S2MPS11_BUCK_STEP3,			\
++	.min_uV		= MIN_3000_MV,				\
++	.uV_step	= STEP_25_MV,				\
+ 	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPS11_REG_B9CTRL2,			\
+@@ -349,8 +349,8 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.ops		= &s2mps11_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPS11_BUCK_MIN2,			\
+-	.uV_step	= S2MPS11_BUCK_STEP2,			\
++	.min_uV		= MIN_750_MV,				\
++	.uV_step	= STEP_12_5_MV,				\
+ 	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPS11_REG_B10CTRL2,			\
+@@ -473,8 +473,8 @@ static struct regulator_ops s2mps14_reg_ops = {
+ 	.ops		= &s2mps14_reg_ops,		\
+ 	.type		= REGULATOR_VOLTAGE,		\
+ 	.owner		= THIS_MODULE,			\
+-	.min_uV		= S2MPS14_LDO_MIN_800MV,	\
+-	.uV_step	= S2MPS14_LDO_STEP_25MV,	\
++	.min_uV		= MIN_800_MV,			\
++	.uV_step	= STEP_25_MV,			\
+ 	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
+ 	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
+ 	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
+@@ -487,8 +487,8 @@ static struct regulator_ops s2mps14_reg_ops = {
+ 	.ops		= &s2mps14_reg_ops,		\
+ 	.type		= REGULATOR_VOLTAGE,		\
+ 	.owner		= THIS_MODULE,			\
+-	.min_uV		= S2MPS14_LDO_MIN_1800MV,	\
+-	.uV_step	= S2MPS14_LDO_STEP_25MV,	\
++	.min_uV		= MIN_1800_MV,			\
++	.uV_step	= STEP_25_MV,			\
+ 	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
+ 	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
+ 	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
+@@ -501,8 +501,8 @@ static struct regulator_ops s2mps14_reg_ops = {
+ 	.ops		= &s2mps14_reg_ops,		\
+ 	.type		= REGULATOR_VOLTAGE,		\
+ 	.owner		= THIS_MODULE,			\
+-	.min_uV		= S2MPS14_LDO_MIN_800MV,	\
+-	.uV_step	= S2MPS14_LDO_STEP_12_5MV,	\
++	.min_uV		= MIN_800_MV,			\
++	.uV_step	= STEP_12_5_MV,			\
+ 	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
+ 	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
+ 	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
+@@ -515,8 +515,8 @@ static struct regulator_ops s2mps14_reg_ops = {
+ 	.ops		= &s2mps14_reg_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPS14_BUCK1235_MIN_600MV,		\
+-	.uV_step	= S2MPS14_BUCK1235_STEP_6_25MV,		\
++	.min_uV		= MIN_600_MV,				\
++	.uV_step	= STEP_6_25_MV,				\
+ 	.n_voltages	= S2MPS14_BUCK_N_VOLTAGES,		\
+ 	.linear_min_sel = S2MPS14_BUCK1235_START_SEL,		\
+ 	.ramp_delay	= S2MPS14_BUCK_RAMP_DELAY,		\
+@@ -531,8 +531,8 @@ static struct regulator_ops s2mps14_reg_ops = {
+ 	.ops		= &s2mps14_reg_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPS14_BUCK4_MIN_1400MV,		\
+-	.uV_step	= S2MPS14_BUCK4_STEP_12_5MV,		\
++	.min_uV		= MIN_1400_MV,				\
++	.uV_step	= STEP_12_5_MV,				\
+ 	.n_voltages	= S2MPS14_BUCK_N_VOLTAGES,		\
+ 	.linear_min_sel = S2MPS14_BUCK4_START_SEL,		\
+ 	.ramp_delay	= S2MPS14_BUCK_RAMP_DELAY,		\
+diff --git a/include/linux/mfd/samsung/core.h b/include/linux/mfd/samsung/core.h
+index 47d8424..a4118aa 100644
+--- a/include/linux/mfd/samsung/core.h
++++ b/include/linux/mfd/samsung/core.h
+@@ -14,6 +14,27 @@
+ #ifndef __LINUX_MFD_SEC_CORE_H
+ #define __LINUX_MFD_SEC_CORE_H
+ 
++/* Macros to represent minimum voltages for LDO/BUCK */
++#define MIN_3000_MV		3000000
++#define MIN_2500_MV		2500000
++#define MIN_2000_MV		2000000
++#define MIN_1800_MV		1800000
++#define MIN_1500_MV		1500000
++#define MIN_1400_MV		1400000
++#define MIN_1000_MV		1000000
++
++#define MIN_900_MV		900000
++#define MIN_850_MV		850000
++#define MIN_800_MV		800000
++#define MIN_750_MV		750000
++#define MIN_600_MV		600000
++
++/* Macros to represent steps for LDO/BUCK */
++#define STEP_50_MV		50000
++#define STEP_25_MV		25000
++#define STEP_12_5_MV		12500
++#define STEP_6_25_MV		6250
++
+ enum sec_device_type {
+ 	S5M8751X,
+ 	S5M8763X,
+diff --git a/include/linux/mfd/samsung/s2mpa01.h b/include/linux/mfd/samsung/s2mpa01.h
+index fbc63bc..2766108 100644
+--- a/include/linux/mfd/samsung/s2mpa01.h
++++ b/include/linux/mfd/samsung/s2mpa01.h
+@@ -155,18 +155,6 @@ enum s2mpa01_regulators {
+ 	S2MPA01_REGULATOR_MAX,
+ };
+ 
+-#define S2MPA01_BUCK_MIN1	600000
+-#define S2MPA01_BUCK_MIN2	800000
+-#define S2MPA01_BUCK_MIN3	1000000
+-#define S2MPA01_BUCK_MIN4	1500000
+-#define S2MPA01_LDO_MIN		800000
+-
+-#define S2MPA01_BUCK_STEP1	6250
+-#define S2MPA01_BUCK_STEP2	12500
+-
+-#define S2MPA01_LDO_STEP1	50000
+-#define S2MPA01_LDO_STEP2	25000
+-
+ #define S2MPA01_LDO_VSEL_MASK	0x3F
+ #define S2MPA01_BUCK_VSEL_MASK	0xFF
+ #define S2MPA01_ENABLE_MASK	(0x03 << S2MPA01_ENABLE_SHIFT)
+diff --git a/include/linux/mfd/samsung/s2mps11.h b/include/linux/mfd/samsung/s2mps11.h
+index b3ddf98..7981a9d 100644
+--- a/include/linux/mfd/samsung/s2mps11.h
++++ b/include/linux/mfd/samsung/s2mps11.h
+@@ -171,15 +171,6 @@ enum s2mps11_regulators {
+ 	S2MPS11_REGULATOR_MAX,
+ };
+ 
+-#define S2MPS11_BUCK_MIN1	600000
+-#define S2MPS11_BUCK_MIN2	750000
+-#define S2MPS11_BUCK_MIN3	3000000
+-#define S2MPS11_LDO_MIN	800000
+-#define S2MPS11_BUCK_STEP1	6250
+-#define S2MPS11_BUCK_STEP2	12500
+-#define S2MPS11_BUCK_STEP3	25000
+-#define S2MPS11_LDO_STEP1	50000
+-#define S2MPS11_LDO_STEP2	25000
+ #define S2MPS11_LDO_VSEL_MASK	0x3F
+ #define S2MPS11_BUCK_VSEL_MASK	0xFF
+ #define S2MPS11_ENABLE_MASK	(0x03 << S2MPS11_ENABLE_SHIFT)
+diff --git a/include/linux/mfd/samsung/s2mps14.h b/include/linux/mfd/samsung/s2mps14.h
+index 900cd7a..c92f478 100644
+--- a/include/linux/mfd/samsung/s2mps14.h
++++ b/include/linux/mfd/samsung/s2mps14.h
+@@ -123,10 +123,6 @@ enum s2mps14_regulators {
+ };
+ 
+ /* Regulator constraints for BUCKx */
+-#define S2MPS14_BUCK1235_MIN_600MV	600000
+-#define S2MPS14_BUCK4_MIN_1400MV	1400000
+-#define S2MPS14_BUCK1235_STEP_6_25MV	6250
+-#define S2MPS14_BUCK4_STEP_12_5MV	12500
+ #define S2MPS14_BUCK1235_START_SEL	0x20
+ #define S2MPS14_BUCK4_START_SEL		0x40
+ /*
+@@ -136,12 +132,6 @@ enum s2mps14_regulators {
+  */
+ #define S2MPS14_BUCK_RAMP_DELAY		12500
+ 
+-/* Regulator constraints for different types of LDOx */
+-#define S2MPS14_LDO_MIN_800MV		800000
+-#define S2MPS14_LDO_MIN_1800MV		1800000
+-#define S2MPS14_LDO_STEP_12_5MV		12500
+-#define S2MPS14_LDO_STEP_25MV		25000
+-
+ #define S2MPS14_LDO_VSEL_MASK		0x3F
+ #define S2MPS14_BUCK_VSEL_MASK		0xFF
+ #define S2MPS14_ENABLE_MASK		(0x03 << S2MPS14_ENABLE_SHIFT)
+-- 
+1.9.1
 
-> ---
->
-> This patch was posted before as part 2/2 of a series
-> (https://lkml.org/lkml/2014/6/13/449). Part 1/2 has since been
-> accepted.
->
-> Please note that checkpatch still complains about the wrapped strings,
-> but issue is not introduced by this patch, nor is it confined to the
-> lines changed by this patch. (There are several other locations in
-> sdhci.c where strings are wrapped across lines.)
->
-> Changes from v4:
->   - Rebased on Ulf's current mmc-next branch.
->
->  drivers/mmc/host/sdhci.c | 30 +++++++++++++++---------------
->  1 file changed, 15 insertions(+), 15 deletions(-)
->
-> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-> index 5cf4a86..26639bf 100644
-> --- a/drivers/mmc/host/sdhci.c
-> +++ b/drivers/mmc/host/sdhci.c
-> @@ -1228,7 +1228,7 @@ static void sdhci_set_power(struct sdhci_host *host, unsigned char mode,
->
->         if (!IS_ERR(mmc->supply.vmmc)) {
->                 spin_unlock_irq(&host->lock);
-> -               mmc_regulator_set_ocr(host->mmc, mmc->supply.vmmc, vdd);
-> +               mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, vdd);
->                 spin_lock_irq(&host->lock);
->                 return;
->         }
-> @@ -1450,7 +1450,7 @@ static void sdhci_do_set_ios(struct sdhci_host *host, struct mmc_ios *ios)
->                 spin_unlock_irqrestore(&host->lock, flags);
->                 if (!IS_ERR(mmc->supply.vmmc) &&
->                     ios->power_mode == MMC_POWER_OFF)
-> -                       mmc_regulator_set_ocr(host->mmc, mmc->supply.vmmc, 0);
-> +                       mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, 0);
->                 return;
->         }
->
-> @@ -1734,7 +1734,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
->                                                     3600000);
->                         if (ret) {
->                                 pr_warning("%s: Switching to 3.3V signalling voltage "
-> -                                               " failed\n", mmc_hostname(host->mmc));
-> +                                               " failed\n", mmc_hostname(mmc));
->                                 return -EIO;
->                         }
->                 }
-> @@ -1747,7 +1747,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
->                         return 0;
->
->                 pr_warning("%s: 3.3V regulator output did not became stable\n",
-> -                               mmc_hostname(host->mmc));
-> +                               mmc_hostname(mmc));
->
->                 return -EAGAIN;
->         case MMC_SIGNAL_VOLTAGE_180:
-> @@ -1756,7 +1756,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
->                                         1700000, 1950000);
->                         if (ret) {
->                                 pr_warning("%s: Switching to 1.8V signalling voltage "
-> -                                               " failed\n", mmc_hostname(host->mmc));
-> +                                               " failed\n", mmc_hostname(mmc));
->                                 return -EIO;
->                         }
->                 }
-> @@ -1777,7 +1777,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
->                         return 0;
->
->                 pr_warning("%s: 1.8V regulator output did not became stable\n",
-> -                               mmc_hostname(host->mmc));
-> +                               mmc_hostname(mmc));
->
->                 return -EAGAIN;
->         case MMC_SIGNAL_VOLTAGE_120:
-> @@ -1786,7 +1786,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
->                                                     1300000);
->                         if (ret) {
->                                 pr_warning("%s: Switching to 1.2V signalling voltage "
-> -                                               " failed\n", mmc_hostname(host->mmc));
-> +                                               " failed\n", mmc_hostname(mmc));
->                                 return -EIO;
->                         }
->                 }
-> @@ -2825,12 +2825,12 @@ int sdhci_add_host(struct sdhci_host *host)
->                  * (128) and potentially one alignment transfer for
->                  * each of those entries.
->                  */
-> -               host->adma_desc = dma_alloc_coherent(mmc_dev(host->mmc),
-> +               host->adma_desc = dma_alloc_coherent(mmc_dev(mmc),
->                                                      ADMA_SIZE, &host->adma_addr,
->                                                      GFP_KERNEL);
->                 host->align_buffer = kmalloc(128 * 4, GFP_KERNEL);
->                 if (!host->adma_desc || !host->align_buffer) {
-> -                       dma_free_coherent(mmc_dev(host->mmc), ADMA_SIZE,
-> +                       dma_free_coherent(mmc_dev(mmc), ADMA_SIZE,
->                                           host->adma_desc, host->adma_addr);
->                         kfree(host->align_buffer);
->                         pr_warning("%s: Unable to allocate ADMA "
-> @@ -2843,7 +2843,7 @@ int sdhci_add_host(struct sdhci_host *host)
->                         pr_warning("%s: unable to allocate aligned ADMA descriptor\n",
->                                    mmc_hostname(mmc));
->                         host->flags &= ~SDHCI_USE_ADMA;
-> -                       dma_free_coherent(mmc_dev(host->mmc), ADMA_SIZE,
-> +                       dma_free_coherent(mmc_dev(mmc), ADMA_SIZE,
->                                           host->adma_desc, host->adma_addr);
->                         kfree(host->align_buffer);
->                         host->adma_desc = NULL;
-> @@ -2858,7 +2858,7 @@ int sdhci_add_host(struct sdhci_host *host)
->          */
->         if (!(host->flags & (SDHCI_USE_SDMA | SDHCI_USE_ADMA))) {
->                 host->dma_mask = DMA_BIT_MASK(64);
-> -               mmc_dev(host->mmc)->dma_mask = &host->dma_mask;
-> +               mmc_dev(mmc)->dma_mask = &host->dma_mask;
->         }
->
->         if (host->version >= SDHCI_SPEC_300)
-> @@ -2964,7 +2964,7 @@ int sdhci_add_host(struct sdhci_host *host)
->                 mmc->caps |= MMC_CAP_SD_HIGHSPEED | MMC_CAP_MMC_HIGHSPEED;
->
->         if ((host->quirks & SDHCI_QUIRK_BROKEN_CARD_DETECTION) &&
-> -           !(host->mmc->caps & MMC_CAP_NONREMOVABLE))
-> +           !(mmc->caps & MMC_CAP_NONREMOVABLE))
->                 mmc->caps |= MMC_CAP_NEEDS_POLL;
->
->         /* If there are external regulators, get them */
-> @@ -3261,7 +3261,7 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
->
->                 if (host->mrq) {
->                         pr_err("%s: Controller removed during "
-> -                               " transfer!\n", mmc_hostname(host->mmc));
-> +                               " transfer!\n", mmc_hostname(mmc));
->
->                         host->mrq->cmd->error = -ENOMEDIUM;
->                         tasklet_schedule(&host->finish_tasklet);
-> @@ -3272,7 +3272,7 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
->
->         sdhci_disable_card_detection(host);
->
-> -       mmc_remove_host(host->mmc);
-> +       mmc_remove_host(mmc);
->
->  #ifdef SDHCI_USE_LEDS_CLASS
->         led_classdev_unregister(&host->led);
-> @@ -3296,7 +3296,7 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
->                 regulator_disable(mmc->supply.vqmmc);
->
->         if (host->adma_desc)
-> -               dma_free_coherent(mmc_dev(host->mmc), ADMA_SIZE,
-> +               dma_free_coherent(mmc_dev(mmc), ADMA_SIZE,
->                                   host->adma_desc, host->adma_addr);
->         kfree(host->align_buffer);
->
-> --
-> 1.9.1
->
