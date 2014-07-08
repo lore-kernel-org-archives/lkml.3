@@ -1,91 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093AbaGHHty (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 03:49:54 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53376 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752135AbaGHHtx (ORCPT
+	id S1753279AbaGHHuk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 03:50:40 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:34148 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927AbaGHHui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 03:49:53 -0400
-Date: Tue, 8 Jul 2014 09:49:43 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "xiaofeng.yan" <xiaofeng.yan@huawei.com>
-Cc: Li Zefan <lizefan@huawei.com>, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, xiaofeng.yan2012@gmail.com,
-        Juri Lelli <juri.lelli@gmail.com>
-Subject: Re: [PATCH] sched/rt: overrun could happen in start_hrtick_dl
-Message-ID: <20140708074943.GK19379@twins.programming.kicks-ass.net>
-References: <1404475341-22536-1-git-send-email-xiaofeng.yan@huawei.com>
- <20140707084150.GC19379@twins.programming.kicks-ass.net>
- <53BB4510.5090704@huawei.com>
- <53BB5A13.1070305@huawei.com>
- <53BB5C96.2040203@huawei.com>
+	Tue, 8 Jul 2014 03:50:38 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="R9gO+D7ggLXSSo9w"
-Content-Disposition: inline
-In-Reply-To: <53BB5C96.2040203@huawei.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140707160916.GA9238@himangi-Dell>
+References: <20140707160916.GA9238@himangi-Dell>
+Date: Tue, 8 Jul 2014 09:50:36 +0200
+X-Google-Sender-Auth: 9qDRJAEkMfGW7d4v8aOQuNJNBT0
+Message-ID: <CAMuHMdULhp2kmJU-OnNzJL8g_sYi9RKGVqkAsgmG1jA7q1kPAw@mail.gmail.com>
+Subject: Re: [PATCH] sh-pfc: sh73a0: Introduce the use of devm_regulator_register
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Himangi Saraogi <himangi774@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Julia Lawall <julia.lawall@lip6.fr>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+CC linux-sh
 
---R9gO+D7ggLXSSo9w
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Mon, Jul 7, 2014 at 6:09 PM, Himangi Saraogi <himangi774@gmail.com> wrote:
+> This patch moves data allocated using regulator_register to
+> devm_regulator_register and does away the calls to regulator_unregister.
+> The sh73a0_pinmux_soc_exit function is no longer needed and is removed.
+>
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+> ---
+> To send to: Linus Walleij <linus.walleij@linaro.org>,linux-kernel@vger.kernel.org
+>  drivers/pinctrl/sh-pfc/pfc-sh73a0.c | 11 ++---------
+>  1 file changed, 2 insertions(+), 9 deletions(-)
+>
+> diff --git a/drivers/pinctrl/sh-pfc/pfc-sh73a0.c b/drivers/pinctrl/sh-pfc/pfc-sh73a0.c
+> index ee370de..0bd8f44 100644
+> --- a/drivers/pinctrl/sh-pfc/pfc-sh73a0.c
+> +++ b/drivers/pinctrl/sh-pfc/pfc-sh73a0.c
+> @@ -3842,7 +3842,8 @@ static int sh73a0_pinmux_soc_init(struct sh_pfc *pfc)
+>         cfg.init_data = &sh73a0_vccq_mc0_init_data;
+>         cfg.driver_data = pfc;
+>
+> -       data->vccq_mc0 = regulator_register(&sh73a0_vccq_mc0_desc, &cfg);
+> +       data->vccq_mc0 = devm_regulator_register(pfc->dev,
+> +                                                &sh73a0_vccq_mc0_desc, &cfg);
+>         if (IS_ERR(data->vccq_mc0)) {
+>                 ret = PTR_ERR(data->vccq_mc0);
+>                 dev_err(pfc->dev, "Failed to register VCCQ MC0 regulator: %d\n",
+> @@ -3855,16 +3856,8 @@ static int sh73a0_pinmux_soc_init(struct sh_pfc *pfc)
+>         return 0;
+>  }
+>
+> -static void sh73a0_pinmux_soc_exit(struct sh_pfc *pfc)
+> -{
+> -       struct sh73a0_pinmux_data *data = pfc->soc_data;
+> -
+> -       regulator_unregister(data->vccq_mc0);
+> -}
+> -
+>  static const struct sh_pfc_soc_operations sh73a0_pinmux_ops = {
+>         .init = sh73a0_pinmux_soc_init,
+> -       .exit = sh73a0_pinmux_soc_exit,
+>         .get_bias = sh73a0_pinmux_get_bias,
+>         .set_bias = sh73a0_pinmux_set_bias,
+>  };
+> --
+> 1.9.1
 
-On Tue, Jul 08, 2014 at 10:51:02AM +0800, xiaofeng.yan wrote:
-> On 2014/7/8 10:40, Li Zefan wrote:
-> >On 2014/7/8 9:10, xiaofeng.yan wrote:
-> >>On 2014/7/7 16:41, Peter Zijlstra wrote:
-> >>>On Fri, Jul 04, 2014 at 12:02:21PM +0000, xiaofeng.yan wrote:
-> >>>>It could be wrong for the precision of runtime and deadline
-> >>>>when the precision is within microsecond level. For example:
-> >>>>Task runtime deadline period
-> >>>>   P1   200us   500us   500us
-> >>>>
-> >>>>This case need enbale HRTICK feature by the next command
-> >>>>PC#echo "HRTICK" > /sys/kernel/debug/sched_features
-> >>>>PC#./schedtool -E -t 200000:500000 -e ./test&
-> >>>>PC#trace-cmd record -e sched_switch
-> >>>Are you actually using HRTICK ?
-> >>yes, If HRTICK is close , then all of runtime and deadline will be wrong.
-> >I think what peter meant is, do you use HRTICK in products or
-> >just use it for testing/experiment?
-> >
-> Thanks for your timely comments. In fact, We use HRTICK feature in product.
-> We need microsecond level
-> precision.
+Gr{oetje,eeting}s,
 
-Ah, thanks. Be advised that currently HRTICK is rather expensive. The
-cost is twofold: 1) doing all the kernel side hrtimer things and 2)
-programming clock hardware.
+                        Geert
 
-Of course, if that's what you need, you're willing to pay the price.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-I'll see if I can put making it less expensive slightly higher on the
-(endless) todo list.
-
---R9gO+D7ggLXSSo9w
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTu6KXAAoJEHZH4aRLwOS6GsIP/2nXCruY1lJ+eeSiUGz+otlQ
-QJ7BbwAuLCufX4hOsUONjd01KrU7PpQRQHQQ3ECBrTwgnEqle/Pws96y+tvppnFw
-bYRPipMM8bKUKRGEBiVgSpnyCx7++IlXuulcjqnGqEJAHVTHreEJKPFhFr+wSmkr
-SpGCg29s1ih4At+Qlks7bc79dvd6fZiFCpqgaMvtJG8u85EnT3rF0pgOYPS0JZDT
-OBTL7I4DffKjFK1z1Z6b9v7bNy6boUsYvn7LqwF4Lyo/EnrFsBDrqK1kmlmuV+i/
-COhlR0RI68VfXZVNQ1gqtHGV/lHOPFOLk2UnWHtVTXWyfdsUmGDiRK4vOCK+LNYV
-jBuF9rZmu1jmoGZ8Xi45tSdXeJOGIIOjJrQ3kEa+EpjjJFur8nrXJglYFFJWSdxN
-A8+qwiuii/RBXHwWr/oOUbUYBMwGDlwWaezvGoQMGeRuHj3LbcTUKI1xeXG0PLjX
-4upzdTHz1YX6iT0Tbm2k+W4HWuM6hr8CmIoQhp+wfefvsnQQGk6qB7CwOkM/FrmL
-kO3dwzr6q0R7kI4XFKUYnMvRn816gvIn3faqdYwVtQ6WazcKqCKAh2w5Nr8tG4PD
-28sJtFOXSU8pU6LhOjahGQ4xMgGqvBlWEUuIUAYKjcFAO+xHK3fEbhTMuEjMydlh
-GcAs/pU2X+TfBJaLq4BC
-=M7eg
------END PGP SIGNATURE-----
-
---R9gO+D7ggLXSSo9w--
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
