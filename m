@@ -1,57 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756550AbaGHT2i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:28:38 -0400
-Received: from relay.parallels.com ([195.214.232.42]:46262 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756469AbaGHT2f (ORCPT
+	id S1756531AbaGHT2h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:28:37 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:35700 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756510AbaGHT2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:28:35 -0400
-Message-ID: <53BC465D.7030205@parallels.com>
-Date: Tue, 8 Jul 2014 23:28:29 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+Date: Tue, 8 Jul 2014 21:28:33 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Andi Kleen <andi@firstfloor.org>, jolsa@redhat.com,
+        linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org
+Subject: Re: perf: Add support for full Intel event lists v7
+Message-ID: <20140708192833.GI18735@two.firstfloor.org>
+References: <1403910964-11017-1-git-send-email-andi@firstfloor.org>
+ <20140708184311.GA14707@us.ibm.com>
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>
-CC: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] mm: Don't forget to set softdirty on file mapped fault
-References: <20140708192151.GD17860@moon.sw.swsoft.com>
-In-Reply-To: <20140708192151.GD17860@moon.sw.swsoft.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.24.20.194]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140708184311.GA14707@us.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2014 11:21 PM, Cyrill Gorcunov wrote:
-> Otherwise we may not notice that pte was softdirty because pte_mksoft_dirty
-> helper _returns_ new pte but not modifies argument.
-> 
-> CC: Pavel Emelyanov <xemul@parallels.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Thanks for testing.
 
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
-
-> ---
->  mm/memory.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+On Tue, Jul 08, 2014 at 11:43:11AM -0700, Sukadev Bhattiprolu wrote:
+> | The JSON format and perf parser has some minor Intelisms, but they
+> | are simple and small and optional. It's easy to extend, so it would be
+> | possible to use it for other CPUs too, add different pmu attributes, and
+> | add new download sites to the downloader tool.
 > 
-> Index: linux-2.6.git/mm/memory.c
-> ===================================================================
-> --- linux-2.6.git.orig/mm/memory.c
-> +++ linux-2.6.git/mm/memory.c
-> @@ -2744,7 +2744,7 @@ void do_set_pte(struct vm_area_struct *v
->  	if (write)
->  		entry = maybe_mkwrite(pte_mkdirty(entry), vma);
->  	else if (pte_file(*pte) && pte_file_soft_dirty(*pte))
-> -		pte_mksoft_dirty(entry);
-> +		entry = pte_mksoft_dirty(entry);
->  	if (anon) {
->  		inc_mm_counter_fast(vma->vm_mm, MM_ANONPAGES);
->  		page_add_new_anon_rmap(page, vma, address);
-> .
-> 
+> Is there a minimal set of JSON entries an architecture would need ?
 
+That should be enough, assuming the EventCode is enough to select
+the event.
+
+> 
+> I tried the following on Power
+> 	[
+> 	  {
+> 	    "EventCode": "2",
+> 	    "EventName": "PM_INST_CMPL",
+> 	    "BriefDescription": "Instructions completed",
+> 	    "PublicDescription": "Number of PPC instructions finished",
+> 	  },
+> 	  {
+> 	    "EventCode": "0x1E",
+> 	    "EventName": "PM_CYC",
+> 	    "BriefDescription": "Cycles completed",
+> 	    "PublicDescription": "Number of PPC cycles finished",
+> 	  }
+> 	]
+> 
+> 	/tmp/perf record --events-file=/tmp/power8.json -e PM_INST_CMPL sleep 1
+> 
+> works, but for some TBD reason,
+> 
+> 	/tmp/perf list --events-file=/tmp/power8.json doesn't list PM_INST_CMPL.
+
+Works for me with your input file:
+
+% perf list --events-file t.json
+...
+  pm_cyc                                             [Cycles completed]
+  pm_inst_cmpl                                       [Instructions completed]
+
+
+> Another observation was that the order of --events-file and -e is significant.
+> Maybe worth a note in the man page.
+
+Will add.
+
+> Can you specify the qualifiers like ':k' or ':ku' with the events on
+> Intel ?
+>to only monitor kernel or user ? Or do they need some additional JSON
+> entries ?
+
+They can be all specified.
+
+
+> With the above events file, I get "invalid event" for 'PM_INST_CMPL:u'
+
+It works in new style syntax, like
+
+perf stat --events-file t.json  -e cpu/pm_inst_cmpl/u  ls
+
+
+Thanks,
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
