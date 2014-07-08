@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468AbaGHVCW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 17:02:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36298 "EHLO
+	id S1754334AbaGHVFF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 17:05:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36383 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753663AbaGHVCT (ORCPT
+	with ESMTP id S1753137AbaGHVFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 17:02:19 -0400
-Date: Tue, 8 Jul 2014 14:02:18 -0700
+	Tue, 8 Jul 2014 17:05:03 -0400
+Date: Tue, 8 Jul 2014 14:05:01 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Philippe De Muyter <phdm@macqel.be>
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
-        torvalds@linux-foundation.org, Karel Zak <kzak@redhat.com>
-Subject: Re: [PATCH PING] VFS: mount must return EACCES, not EROFS
-Message-Id: <20140708140218.ce415094dd073a3ddbd98eeb@linux-foundation.org>
-In-Reply-To: <20140703162919.GA16315@frolo.macqel>
-References: <20140619230924.GO4453@dastard>
-	<1403253562-29248-1-git-send-email-phdm@macqel.be>
-	<20140627082058.GA24986@frolo.macqel>
-	<20140702124651.38b315a8adce63a37fccc60e@linux-foundation.org>
-	<20140703162919.GA16315@frolo.macqel>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [PATCH] mm: Don't forget to set softdirty on file mapped fault
+Message-Id: <20140708140501.6c293226bfd87e4dff7ef7fb@linux-foundation.org>
+In-Reply-To: <20140708205448.GH17860@moon.sw.swsoft.com>
+References: <20140708192151.GD17860@moon.sw.swsoft.com>
+	<20140708131920.2a857d573e8cc89780c9fa1c@linux-foundation.org>
+	<20140708204017.GG17860@moon.sw.swsoft.com>
+	<20140708134511.4a32b7400a952541a31e9078@linux-foundation.org>
+	<20140708205448.GH17860@moon.sw.swsoft.com>
 X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -29,70 +28,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Jul 2014 18:29:19 +0200 Philippe De Muyter <phdm@macqel.be> wrote:
+On Wed, 9 Jul 2014 00:54:48 +0400 Cyrill Gorcunov <gorcunov@gmail.com> wrote:
 
-> On Wed, Jul 02, 2014 at 12:46:51PM -0700, Andrew Morton wrote:
-> > On Fri, 27 Jun 2014 10:20:58 +0200 Philippe De Muyter <phdm@macqel.be> wrote:
+> On Tue, Jul 08, 2014 at 01:45:11PM -0700, Andrew Morton wrote:
 > > 
-> > > Currently, the initial mount of the root file system by the linux
-> > > kernel fails with a cryptic message instead of being retried with
-> > > the MS_RDONLY flag set,  when the device is read-only and the
-> > > combination of block driver and filesystem driver yields EROFS.
-> > > 
-> > > I do not know if POSIX mandates that mount(2) must fail with EACCES, nor
-> > > if linux aims to strict compliance with POSIX on that point.  Consensus
-> > > amongst the messages that I have read so far seems to show that linux
-> > > kernel hackers feel that EROFS is a more appropriate error code than
-> > > EACCES in that case.
+> > The user doesn't know or care about pte bits.
 > > 
-> > Isn't the core problem that "the combination of block driver and
-> > filesystem driver yields EROFS"?  That the fs should instead be
-> > returning EACCESS in this case?
+> > What actually *happens*?  Does criu migration hang?  Does it lose data?
+> > Does it take longer?
 > 
-> Does POSIX or Linux mandate that it should ?
+> Ah, I see. Yes, the softdirty bit might be lost that usespace program
+> won't see that a page was modified. So data lose is possible.
 > 
+> > IOW, what would an end-user's bug report look like?
 > > 
-> > What fs and block driver are we talking about here, anyway?
+> > It's important to think this way because a year from now some person
+> > we've never heard of may be looking at a user's bug report and
+> > wondering whether backporting this patch will fix it.  Amongst other
+> > reasons.
 > 
-> The problem happened to me with a f2fs filesystem on a sd-card that was
-> accidentally write-protected and that was put in a SD-card slot (mmc block
-> driver).
+> Here is updated changelog, sounds better?
+> ---
 > 
-> I retested using mount(8) with a similar now intentionnaly write-protected
-> sd card in a usb reader (usb_storage driver ?) with vfat, f2fs and ext4
-> filesystems with the following results :
-> 
->   mywdesk:~ # strace -e mount mount /dev/sdb1 /mnt
->   mount("/dev/sdb1", "/mnt", "vfat", MS_MGC_VAL, NULL) = -1 EROFS (Read-only file system)
->   mount: /dev/sdb1 is write-protected, mounting read-only
->   mount("/dev/sdb1", "/mnt", "vfat", MS_MGC_VAL|MS_RDONLY, NULL) = 0
->   +++ exited with 0 +++
->   mywdesk:~ # umount /mnt
->   mywdesk:~ # strace -e mount mount -t f2fs /dev/sdb2 /mnt
->   mount("/dev/sdb2", "/mnt", "f2fs", MS_MGC_VAL, NULL) = -1 EROFS (Read-only file system)
->   mount: /dev/sdb2 is write-protected, mounting read-only
->   mount("/dev/sdb2", "/mnt", "f2fs", MS_MGC_VAL|MS_RDONLY, NULL) = 0
->   +++ exited with 0 +++
->   mywdesk:~ # umount /mnt
->   mywdesk:~ # strace -e mount mount /dev/sdb3 /mnt
->   mount("/dev/sdb3", "/mnt", "ext4", MS_MGC_VAL, NULL) = -1 EROFS (Read-only file system)
->   mount: /dev/sdb3 is write-protected, mounting read-only
->   mount("/dev/sdb3", "/mnt", "ext4", MS_MGC_VAL|MS_RDONLY, NULL) = 0
->   +++ exited with 0 +++
->   mywdesk:~ #
-> 
-> All three file-systems (vfat, f2fs & ext4) yield EROFS.
-> 
-> I also quickly grepped for occurences of EROFS under fs/, and found no check
-> to replace EROFS by EACCES,
-> while the same grep under drivers/{block,cdrom,ide,md,memstick, mtd,
-> s390/block,scsi,usb} gives plenty of "return -EROFS;"
-> 
-> So, if no filesystem driver replaces EROFS by EACCES and many block drivers
-> return EROFS, it seems to me that many combinations will yield EROFS.
+> In case if page fault happend on dirty filemapping the newly created pte
+> may loose softdirty bit thus if a userspace program is tracking memory
+> changes with help of a memory tracker (CONFIG_MEM_SOFT_DIRTY) it might
+> miss modification of a memory page (which in worts case may lead to
+> data inconsistency).
 
-hm.  I'm thinking that in an ideal world, those block drivers will
-return -EACCES rather than -EROFS.  You open() a read-only device for
-rw, you get "permission denied".
+Much better, thanks.
 
-Al, speak to us.
+It's a rather gross-looking bug and data inconsistency sounds serious. 
+Do you think a -stable backport is needed?  
+
