@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751464AbaGHVid (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 17:38:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36530 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064AbaGHVic (ORCPT
+	id S1751875AbaGHVir (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 17:38:47 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:39564 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958AbaGHVip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 17:38:32 -0400
-Date: Tue, 8 Jul 2014 14:38:30 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
-        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [RFC 2/2] prctl: PR_SET_MM -- Introduce PR_SET_MM_MAP operation
-Message-Id: <20140708143830.ea078ef01e1d7d31276edbcd@linux-foundation.org>
-In-Reply-To: <20140708190849.GC17860@moon.sw.swsoft.com>
-References: <20140703143318.568554771@openvz.org>
-	<20140703151102.842945837@openvz.org>
-	<20140708190849.GC17860@moon.sw.swsoft.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Jul 2014 17:38:45 -0400
+From: Fabio Falzoi <fabio.falzoi84@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org, joe@perches.com,
+        dan.carpenter@oracle.com, wei_wang@realsil.com.cn,
+        micky_ching@realsil.com.cn, Fabio Falzoi <fabio.falzoi84@gmail.com>
+Subject: [PATCH v3 0/4] Staging: rts5208: Use standard debug features
+Date: Tue,  8 Jul 2014 23:38:28 +0200
+Message-Id: <1404855512-5864-1-git-send-email-fabio.falzoi84@gmail.com>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Jul 2014 23:08:49 +0400 Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+Use standard debug features instead of relying on the custom
+configuration option CONFIG_RTS5208_DEBUG and a series of home grown
+macros.
 
-> Ping. Guys, any commens please?
+Changes in v3:
+* defined rtsx_hex_dump as a static inline function to avoid checkpatch errors
 
-Well, allowing a process to modify pretty deep internals like this is
-always scary from a security point of view, and now we're removing
-CAP_SYS_RESOURCE protections.  Yikes.  Convince me we aren't handing
-out root here.
+Changes in v2:
+* defined rtsx_hex_dump macro to produce output only if DEBUG is defined
 
-The changelog doesn't make it clear (to me) why this is actually being
-done.  criu runs unprivileged?  What's the requirement here?
+Fabio Falzoi (4):
+  Staging: rts5208: Replace custom macro with pr_debug
+  Staging: rts5208: Replace custom macro with print_hex_dump_bytes
+  Staging: rts5208: Remove CONFIG_RTS5208_DEBUG option
+  Staging: rts5208: Fix a format specifier for dev_err
 
-struct prctl_mm_map could do with a nice comment explaining its role in
-the world.
+ drivers/staging/rts5208/Kconfig          |   7 --
+ drivers/staging/rts5208/debug.h          |  43 -------
+ drivers/staging/rts5208/ms.c             | 144 ++++++++++++------------
+ drivers/staging/rts5208/rtsx.c           |   8 +-
+ drivers/staging/rts5208/rtsx.h           |   1 -
+ drivers/staging/rts5208/rtsx_card.c      |  72 ++++++------
+ drivers/staging/rts5208/rtsx_card.h      |   1 -
+ drivers/staging/rts5208/rtsx_chip.c      | 134 +++++++++++-----------
+ drivers/staging/rts5208/rtsx_scsi.c      |  45 ++++----
+ drivers/staging/rts5208/rtsx_transport.c |  45 ++++----
+ drivers/staging/rts5208/sd.c             | 186 +++++++++++++++----------------
+ drivers/staging/rts5208/spi.c            |   8 +-
+ drivers/staging/rts5208/trace.h          |  15 ++-
+ drivers/staging/rts5208/xd.c             | 121 ++++++++++----------
+ 14 files changed, 393 insertions(+), 437 deletions(-)
+ delete mode 100644 drivers/staging/rts5208/debug.h
 
-I'm not seeing a coherent description of the proposed userspace
-interface.  We'll eventually want to update the prctl manpage for this,
-so how about laying out all the needed details now, at patch review
-time so we can see what is proposed.
+-- 
+2.0.0
 
-Why isn't the newly-added code under #ifdef CONFIG_CHECKPOINT_RESTORE?
