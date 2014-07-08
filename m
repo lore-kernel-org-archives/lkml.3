@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131AbaGHTDf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:03:35 -0400
-Received: from mail.kernel.org ([198.145.19.201]:57984 "EHLO mail.kernel.org"
+	id S932164AbaGHTDq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:03:46 -0400
+Received: from mail.kernel.org ([198.145.19.201]:58057 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755348AbaGHTDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:03:31 -0400
+	id S1755446AbaGHTDl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 15:03:41 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 03/16] perf hists browser: Introduce gotorc method
-Date: Tue,  8 Jul 2014 16:02:51 -0300
-Message-Id: <1404846184-20075-4-git-send-email-acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <jolsa@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 05/16] perf hists browser: Add support for showing columns header
+Date: Tue,  8 Jul 2014 16:02:53 -0300
+Message-Id: <1404846184-20075-6-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1404846184-20075-1-git-send-email-acme@kernel.org>
 References: <1404846184-20075-1-git-send-email-acme@kernel.org>
@@ -26,70 +25,143 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Arnaldo Carvalho de Melo <jolsa@kernel.org>
 
-That will allow us to add a row offset to open up space for the column
-headers.
+Open up space to show a one-line header text whenever 'H' is pressed,
+hide it on another key press.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
+Follow up patch will format this line from the set of headers used.
+
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-otc3ployokfci5qi81o7jo22@git.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-m894d6qk30h3qofw4k8neq4q@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browsers/hists.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ tools/perf/ui/browsers/hists.c | 42 ++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 40 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index e16aff45b564..ca63564d203a 100644
+index ef7abf896f5a..2be71bf17b71 100644
 --- a/tools/perf/ui/browsers/hists.c
 +++ b/tools/perf/ui/browsers/hists.c
-@@ -63,6 +63,11 @@ static void hist_browser__refresh_dimensions(struct hist_browser *browser)
- 			     sizeof("[k]"));
+@@ -26,6 +26,7 @@ struct hist_browser {
+ 	struct map_symbol   *selection;
+ 	int		     print_seq;
+ 	bool		     show_dso;
++	bool		     show_headers;
+ 	float		     min_pcnt;
+ 	u64		     nr_non_filtered_entries;
+ 	u64		     nr_callchain_rows;
+@@ -56,6 +57,21 @@ static u32 hist_browser__nr_entries(struct hist_browser *hb)
+ 	return nr_entries + hb->nr_callchain_rows;
  }
  
-+static void hist_browser__gotorc(struct hist_browser *browser, int row, int column)
++static void hist_browser__update_rows(struct hist_browser *hb)
 +{
-+	ui_browser__gotorc(&browser->b, row, column);
++	struct ui_browser *browser = &hb->b;
++	u16 header_offset = hb->show_headers ? 1 : 0, index_row;
++
++	browser->rows = browser->height - header_offset;
++	/*
++	 * Verify if we were at the last line and that line isn't
++	 * visibe because we now show the header line(s).
++	 */
++	index_row = browser->index - browser->top_idx;
++	if (index_row >= browser->rows)
++		browser->index -= index_row - browser->rows + 1;
 +}
 +
- static void hist_browser__reset(struct hist_browser *browser)
+ static void hist_browser__refresh_dimensions(struct ui_browser *browser)
  {
- 	/*
-@@ -508,7 +513,7 @@ static int hist_browser__show_callchain_node_rb_tree(struct hist_browser *browse
- 			}
+ 	struct hist_browser *hb = container_of(browser, struct hist_browser, b);
+@@ -69,11 +85,14 @@ static void hist_browser__refresh_dimensions(struct ui_browser *browser)
+  	 *	  changeset.
+  	 */
+ 	ui_browser__refresh_dimensions(browser);
++	hist_browser__update_rows(hb);
+ }
  
- 			ui_browser__set_color(&browser->b, color);
--			ui_browser__gotorc(&browser->b, row, 0);
-+			hist_browser__gotorc(browser, row, 0);
- 			slsmg_write_nstring(" ", offset + extra_offset);
- 			slsmg_printf("%c ", folded_sign);
- 			slsmg_write_nstring(str, width);
-@@ -567,7 +572,7 @@ static int hist_browser__show_callchain_node(struct hist_browser *browser,
+ static void hist_browser__gotorc(struct hist_browser *browser, int row, int column)
+ {
+-	ui_browser__gotorc(&browser->b, row, column);
++	u16 header_offset = browser->show_headers ? 1 : 0;
++
++	ui_browser__gotorc(&browser->b, row + header_offset, column);
+ }
  
- 		s = callchain_list__sym_name(chain, bf, sizeof(bf),
- 					     browser->show_dso);
--		ui_browser__gotorc(&browser->b, row, 0);
-+		hist_browser__gotorc(browser, row, 0);
- 		ui_browser__set_color(&browser->b, color);
- 		slsmg_write_nstring(" ", offset);
- 		slsmg_printf("%c ", folded_sign);
-@@ -732,7 +737,7 @@ static int hist_browser__show_entry(struct hist_browser *browser,
- 			.ptr		= &arg,
- 		};
+ static void hist_browser__reset(struct hist_browser *browser)
+@@ -421,6 +440,10 @@ static int hist_browser__run(struct hist_browser *browser,
+ 			/* Expand the whole world. */
+ 			hist_browser__set_folding(browser, true);
+ 			break;
++		case 'H':
++			browser->show_headers = !browser->show_headers;
++			hist_browser__update_rows(browser);
++			break;
+ 		case K_ENTER:
+ 			if (hist_browser__toggle_fold(browser))
+ 				break;
+@@ -799,6 +822,13 @@ static int hist_browser__show_entry(struct hist_browser *browser,
+ 	return printed;
+ }
  
--		ui_browser__gotorc(&browser->b, row, 0);
-+		hist_browser__gotorc(browser, row, 0);
++static void hist_browser__show_headers(struct hist_browser *browser)
++{
++	ui_browser__gotorc(&browser->b, 0, 0);
++	ui_browser__set_color(&browser->b, HE_COLORSET_ROOT);
++	slsmg_write_nstring(" ", browser->b.width + 1);
++}
++
+ static void ui_browser__hists_init_top(struct ui_browser *browser)
+ {
+ 	if (browser->top == NULL) {
+@@ -812,9 +842,15 @@ static void ui_browser__hists_init_top(struct ui_browser *browser)
+ static unsigned int hist_browser__refresh(struct ui_browser *browser)
+ {
+ 	unsigned row = 0;
++	u16 header_offset = 0;
+ 	struct rb_node *nd;
+ 	struct hist_browser *hb = container_of(browser, struct hist_browser, b);
  
- 		perf_hpp__for_each_format(fmt) {
- 			if (perf_hpp__should_skip(fmt))
++	if (hb->show_headers) {
++		hist_browser__show_headers(hb);
++		header_offset = 1;
++	}
++
+ 	ui_browser__hists_init_top(browser);
+ 
+ 	for (nd = browser->top; nd; nd = rb_next(nd)) {
+@@ -833,7 +869,7 @@ static unsigned int hist_browser__refresh(struct ui_browser *browser)
+ 			break;
+ 	}
+ 
+-	return row;
++	return row + header_offset;
+ }
+ 
+ static struct rb_node *hists__filter_entries(struct rb_node *nd,
+@@ -1205,6 +1241,7 @@ static struct hist_browser *hist_browser__new(struct hists *hists)
+ 		browser->b.refresh_dimensions = hist_browser__refresh_dimensions;
+ 		browser->b.seek = ui_browser__hists_seek;
+ 		browser->b.use_navkeypressed = true;
++		browser->show_headers = false;
+ 	}
+ 
+ 	return browser;
+@@ -1434,6 +1471,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 	"d             Zoom into current DSO\n"				\
+ 	"E             Expand all callchains\n"				\
+ 	"F             Toggle percentage of filtered entries\n"		\
++	"H             Display column headers\n"			\
+ 
+ 	/* help messages are sorted by lexical order of the hotkey */
+ 	const char report_help[] = HIST_BROWSER_HELP_COMMON
 -- 
 1.9.3
 
