@@ -1,149 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104AbaGHJYW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 05:24:22 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:56113 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754031AbaGHJYT (ORCPT
+	id S1754031AbaGHJZY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 05:25:24 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43865 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751834AbaGHJZV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 05:24:19 -0400
+	Tue, 8 Jul 2014 05:25:21 -0400
+Date: Tue, 8 Jul 2014 11:25:13 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: kan.liang@intel.com
+Cc: andi@firstfloor.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH V3 1/2] perf ignore LBR and offcore_rsp.
+Message-ID: <20140708092513.GB6758@twins.programming.kicks-ass.net>
+References: <1404740066-4374-1-git-send-email-kan.liang@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1404803213-10653-1-git-send-email-zlim.lnx@gmail.com>
-References: <1404803213-10653-1-git-send-email-zlim.lnx@gmail.com>
-Date: Tue, 8 Jul 2014 02:24:17 -0700
-Message-ID: <CAMEtUuydrYMGdg2zNDYX4vKL0_-reF+yOPKx5hpUvy4guuVeBg@mail.gmail.com>
-Subject: Re: [PATCH RFCv2] arm64: eBPF JIT compiler
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Zi Shen Lim <zlim.lnx@gmail.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Network Development <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9uH70MWbZgudpa7t"
+Content-Disposition: inline
+In-Reply-To: <1404740066-4374-1-git-send-email-kan.liang@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 8, 2014 at 12:06 AM, Zi Shen Lim <zlim.lnx@gmail.com> wrote:
-> The JIT compiler emits A64 instructions. It supports eBPF only.
-> Legacy BPF is supported thanks to conversion by BPF core.
->
-> JIT is enabled in the same way as for other architectures:
->
->         echo 1 > /proc/sys/net/core/bpf_jit_enable
->
-> Or for additional compiler output:
->
->         echo 2 > /proc/sys/net/core/bpf_jit_enable
->
-> See Documentation/networking/filter.txt for more information.
->
-> The implementation passes all 57 tests in lib/test_bpf.c
-> on ARMv8 Foundation Model :)
->
-> Signed-off-by: Zi Shen Lim <zlim.lnx@gmail.com>
->
-> ---
-> RFCv1->RFCv2:
->
->   Addressed review comments from Alexei:
->   - use core-$(CONFIG_NET)
->   - use GENMASK
->   - lower-case function names in header file
->   - drop LD_ABS+DW and LD_IND+DW, which do not exist in eBPF yet
->   - use pr_xxx_once() to prevent spamming logs
->   - clarify 16B stack alignment requirement
->   - drop usage of EMIT macro which was saving just one argument,
->     turns out having additional argument wasn't too much of an eyesore
->
->   Also, per discussion with Alexei, and additional suggestion from
->   Daniel:
->   - moved load_pointer() from net/core/filter.c into filter.h
->     as bpf_load_pointer()
->   which is done as a separate preparatory patch. [1]
->
-> [1] http://patchwork.ozlabs.org/patch/366906/
 
-Just to clarify. This patch is on top of [1]
+--9uH70MWbZgudpa7t
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> +       /* R0 = ntohx(*(size *)(((struct sk_buff *)R6)->data + src + imm)) */
-> +       case BPF_LD | BPF_IND | BPF_W:
-> +       case BPF_LD | BPF_IND | BPF_H:
-> +       case BPF_LD | BPF_IND | BPF_B:
-> +       {
-> +               const u8 r0 = bpf2a64[BPF_REG_0]; /* r0 = return value */
-> +               const u8 r6 = bpf2a64[BPF_REG_6]; /* r6 = pointer to sk_buff */
-> +               const u8 fp = bpf2a64[BPF_REG_FP];
-> +               const u8 r1 = bpf2a64[BPF_REG_1]; /* r1: struct sk_buff *skb */
-> +               const u8 r2 = bpf2a64[BPF_REG_2]; /* r2: int k */
-> +               const u8 r3 = bpf2a64[BPF_REG_3]; /* r3: unsigned int size */
-> +               const u8 r4 = bpf2a64[BPF_REG_4]; /* r4: void *buffer */
-> +               const u8 r5 = bpf2a64[BPF_REG_5]; /* r5: void *(*func)(...) */
-> +               int size;
-> +
-> +               emit(A64_MOV(1, r1, r6), ctx);
-> +               emit_a64_mov_i(0, r2, imm, ctx);
-> +               if (BPF_MODE(code) == BPF_IND)
-> +                       emit(A64_ADD(0, r2, r2, src), ctx);
-> +               switch (BPF_SIZE(code)) {
-> +               case BPF_W:
-> +                       size = 4;
-> +                       break;
-> +               case BPF_H:
-> +                       size = 2;
-> +                       break;
-> +               case BPF_B:
-> +                       size = 1;
-> +                       break;
-> +               default:
-> +                       return -EINVAL;
-> +               }
-> +               emit_a64_mov_i64(r3, size, ctx);
-> +               emit(A64_ADD_I(1, r4, fp, MAX_BPF_STACK), ctx);
-> +               emit_a64_mov_i64(r5, (unsigned long)bpf_load_pointer, ctx);
-> +               emit(A64_PUSH(A64_FP, A64_LR, A64_SP), ctx);
-> +               emit(A64_MOV(1, A64_FP, A64_SP), ctx);
-> +               emit(A64_BLR(r5), ctx);
-> +               emit(A64_MOV(1, r0, A64_R(0)), ctx);
-> +               emit(A64_POP(A64_FP, A64_LR, A64_SP), ctx);
-> +
-> +               jmp_offset = epilogue_offset(ctx);
-> +               check_imm19(jmp_offset);
-> +               emit(A64_CBZ(1, r0, jmp_offset), ctx);
-> +               emit(A64_MOV(1, r5, r0), ctx);
-> +               switch (BPF_SIZE(code)) {
-> +               case BPF_W:
-> +                       emit(A64_LDR32(r0, r5, A64_ZR), ctx);
-> +#ifndef CONFIG_CPU_BIG_ENDIAN
-> +                       emit(A64_REV32(0, r0, r0), ctx);
-> +#endif
-> +                       break;
-> +               case BPF_H:
-> +                       emit(A64_LDRH(r0, r5, A64_ZR), ctx);
-> +#ifndef CONFIG_CPU_BIG_ENDIAN
-> +                       emit(A64_REV16(0, r0, r0), ctx);
-> +#endif
-> +                       break;
-> +               case BPF_B:
-> +                       emit(A64_LDRB(r0, r5, A64_ZR), ctx);
-> +                       break;
-> +               case BPF_DW:
+On Mon, Jul 07, 2014 at 06:34:25AM -0700, kan.liang@intel.com wrote:
+> +	/*
+> +	 * Access LBR MSR may cause #GP under certain circumstances.
+> +	 * E.g. KVM doesn't support LBR MSR
+> +	 * Check all LBT MSR here.
+> +	 * Disable LBR access if any LBR MSRs can not be accessed.
+> +	 */
+> +	if (x86_pmu.lbr_nr) {
+> +		x86_pmu.lbr_msr_access = check_msr(x86_pmu.lbr_tos);
+> +		for (i = 0; i < x86_pmu.lbr_nr; i++) {
+> +			x86_pmu.lbr_msr_access &=
+> +				check_msr(x86_pmu.lbr_from + i);
+> +			x86_pmu.lbr_msr_access &=
+> +				check_msr(x86_pmu.lbr_to + i);
+> +		}
+> +	}
 
-this case can be removed too.
+So I was going to refer you to an email I send earlier telling you that
+this was wrong, but then found it got stuck in a mailqueue on my laptop
+:-(
 
-Acked-by: Alexei Starovoitov <ast@plumgrid.com>
+In any case its wrong; just clear lbr_nr and kill lbr_msr_access. We
+already check lbr_nr in all the right places and you added
+lbr_msr_access to far too few of them (also the fact that every place
+you check lbr_msr_access already had an lbr_nr test should've been a
+clue).
 
-Great work. Thanks.
 
-> +                       emit(A64_LDR64(r0, r5, A64_ZR), ctx);
-> +#ifndef CONFIG_CPU_BIG_ENDIAN
-> +                       emit(A64_REV64(r0, r0), ctx);
-> +#endif
-> +                       break;
-> +               }
-> +               break;
-> +       }
+
+--9uH70MWbZgudpa7t
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTu7j5AAoJEHZH4aRLwOS6tJIP/10OHJ0vI/W9HhrRX0yGPLUA
+LdDfzUYzY4nrymxYi3j6qBvnyXoF28jSRJegx4bUOn1Dyw+jPV9hkLU2XaaHbfPF
+tDooilqwC6BLvnKtd9I/dJjXstUSqNDdhOumiXU+Duq6E65LfuRwjeyuvyQj7WXZ
+i3NKY3OEenrHb6bUf42xLARdB1JYt9OBTrKzzuqSbAfIstmERFByySmIE0oQwxvX
+7pN7LUOzMd0HF+eL9xZpdIAZtBaAOuhewiibtK/+FHKyJtqVXtYpXFWW6zdQ7swd
+64BjJG5B26AyWumbNbNPrLgVzivBWS9oVMZ00wc9AFsafckODXMNdPN/4xVGKOl+
+Z/dXXzXJU/W+xJ7R7qxX2UMgFegJKpzQTK/ymVzaI2X32Ibt8tsY+1BGFHoM50V0
+HnCZMvEXGOF2sYfPZ8w8FVD/WPSkDmQoI9EJl5kCLv3JCBxaStWtzMmuW0jv2Gr7
++mnpiL2geemfRGGZej4OPqaxNWo8bzm1y4y14RZWmUv9wR1wLZle0qSa14TTN1ws
+mKSGeD9ijyZMgv1EfphNJLIgAgElolz3ijmWcYFIQPsIt3jYCwhAOugorxa8BNYn
+y3veXZvo6qDTsaYz/J5k015h63M8WRtaTFrykRmw95PKiMJQvu21+sGYxlB/1uqu
+oAedFwlR8xAzVk2jPiBd
+=ecZb
+-----END PGP SIGNATURE-----
+
+--9uH70MWbZgudpa7t--
