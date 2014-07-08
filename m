@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755077AbaGHAIw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:08:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56485 "EHLO
+	id S932192AbaGHAJL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:09:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56466 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754879AbaGHAD3 (ORCPT
+	with ESMTP id S1752576AbaGHAD2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 20:03:29 -0400
+	Mon, 7 Jul 2014 20:03:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rinat Camalov <richman1000000d@gmail.com>,
-        Kevin McKinney <klmckinney1@gmail.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
+        Ian Abbott <abbotti@mev.co.uk>, Ben Hutchings <ben@decadent.org.uk>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 3.4 35/44] Staging: bcm: Create and initialize new device id in InterfaceInit
-Date: Mon,  7 Jul 2014 17:07:25 -0700
-Message-Id: <20140707235859.689705652@linuxfoundation.org>
+Subject: [PATCH 3.4 33/44] staging: comedi: fix a race between do_cmd_ioctl() and read/write
+Date: Mon,  7 Jul 2014 17:07:23 -0700
+Message-Id: <20140707235859.631290823@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235858.652771077@linuxfoundation.org>
 References: <20140707235858.652771077@linuxfoundation.org>
@@ -31,50 +29,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kevin McKinney <klmckinney1@gmail.com>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit e66fc1fba248738d32f3b64508f9ef1176d9e767 upstream.
+commit 4b18f08be01a7b3c7b6df497137b6e3cb28adaa3 upstream.
 
-This patch create and initalizes a new device
-id of 0x172 as reported by Rinat Camalov
-<richman1000000d@gmail.com>. In addition, a
-comment is added to the potential invalid
-existing device id.
+`do_cmd_ioctl()` is called with the comedi device's mutex locked to
+process the `COMEDI_CMD` ioctl to set up comedi's asynchronous command
+handling on a comedi subdevice.  `comedi_read()` and `comedi_write()`
+are the `read` and `write` handlers for the comedi device, but do not
+lock the mutex (for performance reasons, as some things can hold the
+mutex for quite a long time).
 
-Reported-by: Rinat Camalov <richman1000000d@gmail.com>
-Signed-off-by: Kevin McKinney <klmckinney1@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+There is a race condition if `comedi_read()` or `comedi_write()` is
+running at the same time and for the same file object and comedi
+subdevice as `do_cmd_ioctl()`.  `do_cmd_ioctl()` sets the subdevice's
+`busy` pointer to the file object way before it sets the `SRF_RUNNING` flag
+in the subdevice's `runflags` member.  `comedi_read() and
+`comedi_write()` check the subdevice's `busy` pointer is pointing to the
+current file object, then if the `SRF_RUNNING` flag is not set, will call
+`do_become_nonbusy()` to shut down the asyncronous command.  Bad things
+can happen if the asynchronous command is being shutdown and set up at
+the same time.
+
+To prevent the race, don't set the `busy` pointer until
+after the `SRF_RUNNING` flag has been set.  Also, make sure the mutex is
+held in `comedi_read()` and `comedi_write()` while calling
+`do_become_nonbusy()` in order to avoid moving the race condition to a
+point within that function.
+
+Change some error handling `goto cleanup` statements in `do_cmd_ioctl()`
+to simple `return -ERRFOO` statements as a result of changing when the
+`busy` pointer is set.
+
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 [bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/bcm/InterfaceInit.c |    1 +
- drivers/staging/bcm/InterfaceInit.h |    3 ++-
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ drivers/staging/comedi/comedi_fops.c |   25 +++++++++++++++----------
+ 1 file changed, 15 insertions(+), 10 deletions(-)
 
---- a/drivers/staging/bcm/InterfaceInit.c
-+++ b/drivers/staging/bcm/InterfaceInit.c
-@@ -8,6 +8,7 @@ static struct usb_device_id InterfaceUsb
- 	{ USB_DEVICE(BCM_USB_VENDOR_ID_ZTE, BCM_USB_PRODUCT_ID_226) },
- 	{ USB_DEVICE(BCM_USB_VENDOR_ID_FOXCONN, BCM_USB_PRODUCT_ID_1901) },
- 	{ USB_DEVICE(BCM_USB_VENDOR_ID_ZTE, BCM_USB_PRODUCT_ID_ZTE_TU25) },
-+	{ USB_DEVICE(BCM_USB_VENDOR_ID_ZTE, BCM_USB_PRODUCT_ID_ZTE_226) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(usb, InterfaceUsbtable);
---- a/drivers/staging/bcm/InterfaceInit.h
-+++ b/drivers/staging/bcm/InterfaceInit.h
-@@ -11,7 +11,8 @@
- #define BCM_USB_PRODUCT_ID_SM250 	0xbccd
- #define BCM_USB_PRODUCT_ID_SYM  0x15E
- #define BCM_USB_PRODUCT_ID_1901 0xe017
--#define BCM_USB_PRODUCT_ID_226  0x0132
-+#define BCM_USB_PRODUCT_ID_226	0x0132 /* not sure if this is valid */
-+#define BCM_USB_PRODUCT_ID_ZTE_226 0x172
- #define BCM_USB_PRODUCT_ID_ZTE_TU25 0x0007
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -1078,22 +1078,19 @@ static int do_cmd_ioctl(struct comedi_de
+ 		DPRINTK("subdevice busy\n");
+ 		return -EBUSY;
+ 	}
+-	s->busy = file;
  
- #define BCM_USB_MINOR_BASE 		192
+ 	/* make sure channel/gain list isn't too long */
+ 	if (user_cmd.chanlist_len > s->len_chanlist) {
+ 		DPRINTK("channel/gain list too long %u > %d\n",
+ 			user_cmd.chanlist_len, s->len_chanlist);
+-		ret = -EINVAL;
+-		goto cleanup;
++		return -EINVAL;
+ 	}
+ 
+ 	/* make sure channel/gain list isn't too short */
+ 	if (user_cmd.chanlist_len < 1) {
+ 		DPRINTK("channel/gain list too short %u < 1\n",
+ 			user_cmd.chanlist_len);
+-		ret = -EINVAL;
+-		goto cleanup;
++		return -EINVAL;
+ 	}
+ 
+ 	async->cmd = user_cmd;
+@@ -1103,8 +1100,7 @@ static int do_cmd_ioctl(struct comedi_de
+ 	    kmalloc(async->cmd.chanlist_len * sizeof(int), GFP_KERNEL);
+ 	if (!async->cmd.chanlist) {
+ 		DPRINTK("allocation failed\n");
+-		ret = -ENOMEM;
+-		goto cleanup;
++		return -ENOMEM;
+ 	}
+ 
+ 	if (copy_from_user(async->cmd.chanlist, user_cmd.chanlist,
+@@ -1156,6 +1152,9 @@ static int do_cmd_ioctl(struct comedi_de
+ 
+ 	comedi_set_subdevice_runflags(s, ~0, SRF_USER | SRF_RUNNING);
+ 
++	/* set s->busy _after_ setting SRF_RUNNING flag to avoid race with
++	 * comedi_read() or comedi_write() */
++	s->busy = file;
+ 	ret = s->do_cmd(dev, s);
+ 	if (ret == 0)
+ 		return 0;
+@@ -1658,6 +1657,7 @@ static ssize_t comedi_write(struct file
+ 
+ 		if (!(comedi_get_subdevice_runflags(s) & SRF_RUNNING)) {
+ 			if (count == 0) {
++				mutex_lock(&dev->mutex);
+ 				if (comedi_get_subdevice_runflags(s) &
+ 					SRF_ERROR) {
+ 					retval = -EPIPE;
+@@ -1665,6 +1665,7 @@ static ssize_t comedi_write(struct file
+ 					retval = 0;
+ 				}
+ 				do_become_nonbusy(dev, s);
++				mutex_unlock(&dev->mutex);
+ 			}
+ 			break;
+ 		}
+@@ -1779,6 +1780,7 @@ static ssize_t comedi_read(struct file *
+ 
+ 		if (n == 0) {
+ 			if (!(comedi_get_subdevice_runflags(s) & SRF_RUNNING)) {
++				mutex_lock(&dev->mutex);
+ 				do_become_nonbusy(dev, s);
+ 				if (comedi_get_subdevice_runflags(s) &
+ 				    SRF_ERROR) {
+@@ -1786,6 +1788,7 @@ static ssize_t comedi_read(struct file *
+ 				} else {
+ 					retval = 0;
+ 				}
++				mutex_unlock(&dev->mutex);
+ 				break;
+ 			}
+ 			if (file->f_flags & O_NONBLOCK) {
+@@ -1823,9 +1826,11 @@ static ssize_t comedi_read(struct file *
+ 		buf += n;
+ 		break;		/* makes device work like a pipe */
+ 	}
+-	if (!(comedi_get_subdevice_runflags(s) & (SRF_ERROR | SRF_RUNNING)) &&
+-	    async->buf_read_count - async->buf_write_count == 0) {
+-		do_become_nonbusy(dev, s);
++	if (!(comedi_get_subdevice_runflags(s) & (SRF_ERROR | SRF_RUNNING))) {
++		mutex_lock(&dev->mutex);
++		if (async->buf_read_count - async->buf_write_count == 0)
++			do_become_nonbusy(dev, s);
++		mutex_unlock(&dev->mutex);
+ 	}
+ 	set_current_state(TASK_RUNNING);
+ 	remove_wait_queue(&async->wait_head, &wait);
 
 
