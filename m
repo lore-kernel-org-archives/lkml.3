@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932295AbaGHTNo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:13:44 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54273 "EHLO
+	id S932232AbaGHTNl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:13:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54358 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755774AbaGHTIm (ORCPT
+	by vger.kernel.org with ESMTP id S1755771AbaGHTIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:08:42 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,11 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Alex Deucher" <alexander.deucher@amd.com>
+CC: akpm@linux-foundation.org, "Johan Hovold" <jhovold@gmail.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.32410301@decadent.org.uk>
+Message-ID: <lsq.1404846110.736035028@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 054/125] drm/radeon: fix typo in radeon_connector_is_dp12_capable()
+Subject: [PATCH 3.2 027/125] USB: sierra: fix remote wakeup
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,29 +31,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit af5d36539dfe043f1cf0f8b7334d6bb12cd14e75 upstream.
+commit 80cc0fcbdaeaf10d04ba27779a2d7ceb73d2717a upstream.
 
-We were checking the ext clock rather than the display clock.
+Make sure that needs_remote_wake up is always set when there are open
+ports.
 
-Noticed by ArtForz on IRC.
+Currently close() would unconditionally set needs_remote_wakeup to 0
+even though there might still be open ports. This could lead to blocked
+input and possibly dropped data on devices that do not support remote
+wakeup (and which must therefore not be runtime suspended while open).
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Add an open_ports counter (protected by the susp_lock) and only clear
+needs_remote_wakeup when the last port is closed.
+
+Fixes: e6929a9020ac ("USB: support for autosuspend in sierra while
+online")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust indentation]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/radeon/radeon_connectors.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/sierra.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_connectors.c
-+++ b/drivers/gpu/drm/radeon/radeon_connectors.c
-@@ -1246,7 +1246,7 @@ bool radeon_connector_is_dp12_capable(st
- 	struct radeon_device *rdev = dev->dev_private;
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -59,6 +59,7 @@ struct sierra_intf_private {
+ 	spinlock_t susp_lock;
+ 	unsigned int suspended:1;
+ 	int in_flight;
++	unsigned int open_ports;
+ };
  
- 	if (ASIC_IS_DCE5(rdev) &&
--	    (rdev->clock.dp_extclk >= 53900) &&
-+	    (rdev->clock.default_dispclk >= 53900) &&
- 	    radeon_connector_encoder_is_hbr2(connector)) {
- 		return true;
- 	}
+ static int sierra_set_power_state(struct usb_device *udev, __u16 swiState)
+@@ -814,7 +815,6 @@ static void sierra_close(struct usb_seri
+ 	if (serial->dev) {
+ 		mutex_lock(&serial->disc_mutex);
+ 		if (!serial->disconnected) {
+-			serial->interface->needs_remote_wakeup = 0;
+ 			/* odd error handling due to pm counters */
+ 			if (!usb_autopm_get_interface(serial->interface))
+ 				sierra_send_setup(port);
+@@ -825,6 +825,8 @@ static void sierra_close(struct usb_seri
+ 		mutex_unlock(&serial->disc_mutex);
+ 		spin_lock_irq(&intfdata->susp_lock);
+ 		portdata->opened = 0;
++		if (--intfdata->open_ports == 0)
++			serial->interface->needs_remote_wakeup = 0;
+ 		spin_unlock_irq(&intfdata->susp_lock);
+ 
+ 		for (;;) {
+@@ -885,9 +887,10 @@ static int sierra_open(struct tty_struct
+ 
+ 	sierra_send_setup(port);
+ 
+-	serial->interface->needs_remote_wakeup = 1;
+ 	spin_lock_irq(&intfdata->susp_lock);
+ 	portdata->opened = 1;
++	if (++intfdata->open_ports == 1)
++		serial->interface->needs_remote_wakeup = 1;
+ 	spin_unlock_irq(&intfdata->susp_lock);
+ 	usb_autopm_put_interface(serial->interface);
+ 
 
