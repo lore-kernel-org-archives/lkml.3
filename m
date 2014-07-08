@@ -1,76 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260AbaGHON4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 10:13:56 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:52885 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834AbaGHONy (ORCPT
+	id S1753691AbaGHOP0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 10:15:26 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:20841 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707AbaGHOPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 10:13:54 -0400
-Date: Tue, 8 Jul 2014 16:11:26 +0200
-From: Mark Brown <broonie@kernel.org>
-To: Keerthy <j-keerthy@ti.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, mark.rutland@arm.com, galak@codeaurora.org,
-        robh+dt@kernel.org, linux@arm.linux.org.uk, balbi@ti.com,
-        tony@atomide.com, kishon@ti.com
-Message-ID: <20140708141126.GW30458@sirena.org.uk>
-References: <1404814597-4404-1-git-send-email-j-keerthy@ti.com>
- <1404814597-4404-7-git-send-email-j-keerthy@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MjBORTcaENZKFEO1"
-Content-Disposition: inline
-In-Reply-To: <1404814597-4404-7-git-send-email-j-keerthy@ti.com>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 82.127.83.212
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 6/7] regulator: tps65218: Add get_voltage ops for
- dcdc5 and dcdc6
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Tue, 8 Jul 2014 10:15:24 -0400
+X-AuditID: cbfee68d-b7fd46d000005f36-e4-53bbfcfabb66
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Tomasz Figa'" <t.figa@samsung.com>, linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
+        "'Tomasz Figa'" <tomasz.figa@gmail.com>
+References: <1403618235-19353-1-git-send-email-t.figa@samsung.com>
+ <1403618235-19353-7-git-send-email-t.figa@samsung.com>
+In-reply-to: <1403618235-19353-7-git-send-email-t.figa@samsung.com>
+Subject: RE: [PATCH 6/6] ARM: EXYNOS: Register cpuidle device only on
+ Exynos4210 and 5250
+Date: Tue, 08 Jul 2014 23:15:21 +0900
+Message-id: <038b01cf9ab7$0de5a440$29b0ecc0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQImwlMNtKSRmS2HaaYx0l+evMEXagHXA9bPmtkxNiA=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t8zI91ff3YHG8w+wW2x6fE1VovLu+aw
+	Wcw4v4/JYu2Ru+wW62e8ZrFYtesPowObx85Zd9k9Ni+p9+jbsorR4/MmuQCWKC6blNSczLLU
+	In27BK6MW7fvMxXM4qk40rmPrYGxgauLkZNDQsBEYuf82YwQtpjEhXvr2UBsIYFljBJvJofB
+	1Jz9uA4ozgUUX8Qo0fy+jR2i6C+jxKkmZhCbTUBD4vD7Z2BxEQFPiQenDrCDNDALLGCUOHtr
+	BlRDtcSxc/PAbE4BZ4nVv/rBbGGBaIkt7ycBDeLgYBFQlZjdYQ0S5hWwlDiw/zQrhC0o8WPy
+	PRYQm1lAS2L9zuNMELa8xOY1b5khDlWQ2HH2NSPEDVYS/65+YYOoEZHY9+IdI8g9EgLX2CU+
+	PDgP1sAiICDxbfIhFpC9EgKyEpsOQM2RlDi44gbLBEaJWUhWz0KyehaS1bOQrFjAyLKKUTS1
+	ILmgOCm9yFCvODG3uDQvXS85P3cTIyROe3cw3j5gfYgxGWj9RGYp0eR8YJznlcQbGpsZWZia
+	mBobmVuakSasJM6b9DApSEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAPj7vSMa5s/yQmpSzyY
+	WfP9qe6Td5qVJrdny/dy67/elflPZZYOl6N567QfPUtZAjv/z/DJKTFZ6qNvpnlmLZPNTc+d
+	buu7lcsfHlbaxSxxOCtE+0jG08g/k708mhgP/z/RfHjKd7Zns6syFe77hx/eq+8eEph972aO
+	QujMe3tObGk71rDBQCJXiaU4I9FQi7moOBEAo1TvmukCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjleLIzCtJLcpLzFFi42I5/e+xgO6vP7uDDXadZbfY9Pgaq8XlXXPY
+	LGac38dksfbIXXaL9TNes1is2vWH0YHNY+esu+wem5fUe/RtWcXo8XmTXABLVAOjTUZqYkpq
+	kUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QciWFssScUqBQQGJx
+	sZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxq3b95kKZvFUHOncx9bA2MDVxcjJISFgInH2
+	4zo2CFtM4sK99UA2F4eQwCJGieb3bewgCSGBv4wSp5qYQWw2AQ2Jw++fgcVFBDwlHpw6wA7S
+	wCywgFHi7K0ZUA3VEsfOzQOzOQWcJVb/6gezhQWiJba8nwQ0iIODRUBVYnaHNUiYV8BS4sD+
+	06wQtqDEj8n3WEBsZgEtifU7jzNB2PISm9e8ZYY4VEFix9nXjBA3WEn8u/qFDaJGRGLfi3eM
+	ExiFZiEZNQvJqFlIRs1C0rKAkWUVo2hqQXJBcVJ6rqFecWJucWleul5yfu4mRnAaeCa1g3Fl
+	g8UhRgEORiUe3hUHdwULsSaWFVfmHmKU4GBWEuH9cmp3sBBvSmJlVWpRfnxRaU5q8SFGU6BH
+	JzJLiSbnA1NUXkm8obGJmZGlkZmFkYm5uZI474FW60AhgfTEktTs1NSC1CKYPiYOTqkGxnX1
+	51dfClkQqXCba/5xZo2kg/rz2PfFLN35t9DlinfONBk2Cbbmh4YrbTzar92PZ+Zo9t233OLa
+	JPfp9Yo7bF/fnfSBh3O25est9h+zPCpvFquaxTG7PLeSe3tGL2zDyV384k5a0x4zv1Jxmp3O
+	PXmmQuXJDU6L+6XXne4SrdLKOb/hHY+uuxJLcUaioRZzUXEiANqatYIZAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Tomasz Figa wrote:
+> 
+> Currently, the Exynos cpuidle driver works correctly only on Exynos4210
+> and 5250. Trying to use it with just one CPU online on any other Exynos
+> SoC will lead to system failure, due to unsupported AFTR mode on other
+> SoCs. This patch fixes the problem by registering the driver only on
+> supported SoCs and letting others simply use default WFI mode until
+> support for them is added.
+> 
+Hmm...I thought other SoCs have no problem on cpuidle except exynos5420 and
+exynos5440....something like this would be helpful to avoid system failure.
+But unfortunately this conflicts with Pankaj's cleanup cpufreq_init() and
+cpuidle_init() patch you've reviewed and I've applied in my local...
 
---MjBORTcaENZKFEO1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I'm going to check which exynos is ok on cpuidle and then sort them out.
 
-On Tue, Jul 08, 2014 at 03:46:36PM +0530, Keerthy wrote:
+Thanks,
+Kukjin
 
-> +static int tps65218_pmic_dcdc56_get_voltage(struct regulator_dev *dev)
-> +{
-> +	struct tps65218 *tps = rdev_get_drvdata(dev);
-> +	unsigned int rid = rdev_get_id(dev);
-> +
-> +	return tps->info[rid]->min_uV;
-> +}
+> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+> ---
+>  arch/arm/mach-exynos/exynos.c | 6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
+> index f38cf7c..176bbf5 100644
+> --- a/arch/arm/mach-exynos/exynos.c
+> +++ b/arch/arm/mach-exynos/exynos.c
+> @@ -173,10 +173,8 @@ static struct platform_device exynos_cpuidle = {
+> 
+>  void __init exynos_cpuidle_init(void)
+>  {
+> -	if (soc_is_exynos5440())
+> -		return;
+> -
+> -	platform_device_register(&exynos_cpuidle);
+> +	if (soc_is_exynos4210() || soc_is_exynos5250())
+> +		platform_device_register(&exynos_cpuidle);
+>  }
+> 
+>  void __init exynos_cpufreq_init(void)
+> --
+> 1.9.3
 
-Set fixed_uV in the descriptor.
-
---MjBORTcaENZKFEO1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTu/wGAAoJELSic+t+oim9lqIP/RqV+TTMDUxAlFijepWYUBq1
-TzJtD2peZymC74ESIFKsaM5YKMqbD4PJ8Kp7gfICOCh1ribTLc6y2QRKh1kczhxt
-ISzYV1x6WOGFTVx77YziShJ/w4idKHkJ80aWpRtZ9lx32UQO770u0/CSwkQf/aMd
-oBXqBu7PHlbJJUBUcy3Z04N2UQVWe6QjvdEg9CYFNxykVUuLGK3n9/DLJobe7zTM
-13Kdl+ivyAO4nmgzCJW3c1DdhxNZu8GuOZ32yERMMp6T9vQAW1gw3OKPzBEcCWKw
-TLuFup7RfPcDq7Xc1QmBCsVFxJyvt/hzQe1QPcoSuNI/qta9rtyW6Hep9z42OSz4
-koCR44Xuu6UabApwy3pjf3G6NOwJH3hmCZmKSGPVP8CHXaSnmxAvXs00NNqhq3g6
-3nnQA9os+VT+kKYO9XbpOkRP60+hr5q4QD3cSgCLytM+9fIsSYlJV6/XWgQfL9KB
-glN6tqbh5lxIh6qwKQWSw9+6CmMhwGNF4XeMJ0jIfqixnqGrTKD5d9dkFZhCLr2i
-j2r/653OC72TiNNrduOXH4ugNAJuKaI9fqEFeED4g3seYg5Ejj8G6fnOmKy/kXbz
-Pq5uPNJeEFutr0V9ibWCHrdxG5ATje9BmneCZOBTAFgCWpxpnTjn//OaMBGqlgkB
-LkVgtSwRqQWzX9GFkW3J
-=83JU
------END PGP SIGNATURE-----
-
---MjBORTcaENZKFEO1--
