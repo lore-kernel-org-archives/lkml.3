@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071AbaGHTLS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:11:18 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54282 "EHLO
+	id S1756054AbaGHTLR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:11:17 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54314 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755803AbaGHTIp (ORCPT
+	by vger.kernel.org with ESMTP id S1755805AbaGHTIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:08:45 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Christoph Hellwig" <hch@lst.de>,
-        "J. Bruce Fields" <bfields@redhat.com>
+CC: akpm@linux-foundation.org,
+        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.327686795@decadent.org.uk>
+Message-ID: <lsq.1404846110.919414242@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 052/125] nfsd: getattr for FATTR4_WORD0_FILES_AVAIL
- needs the statfs buffer
+Subject: [PATCH 3.2 060/125] powerpc/serial: Use saner flags when creating
+ legacy ports
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,31 +32,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@lst.de>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 12337901d654415d9f764b5f5ba50052e9700f37 upstream.
+commit c4cad90f9e9dcb85afc5e75a02ae3522ed077296 upstream.
 
-Note nobody's ever noticed because the typical client probably never
-requests FILES_AVAIL without also requesting something else on the list.
+We had a mix & match of flags used when creating legacy ports
+depending on where we found them in the device-tree. Among others
+we were missing UPF_SKIP_TEST for some kind of ISA ports which is
+a problem as quite a few UARTs out there don't support the loopback
+test (such as a lot of BMCs).
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Let's pick the set of flags used by the SoC code and generalize it
+which means autoconf, no loopback test, irq maybe shared and fixed
+port.
+
+Sending to stable as the lack of UPF_SKIP_TEST is breaking
+serial on some machines so I want this back into distros
+
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfsd/nfs4xdr.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/legacy_serial.c | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -2035,8 +2035,8 @@ nfsd4_encode_fattr(struct svc_fh *fhp, s
- 	err = vfs_getattr(exp->ex_path.mnt, dentry, &stat);
- 	if (err)
- 		goto out_nfserr;
--	if ((bmval0 & (FATTR4_WORD0_FILES_FREE | FATTR4_WORD0_FILES_TOTAL |
--			FATTR4_WORD0_MAXNAME)) ||
-+	if ((bmval0 & (FATTR4_WORD0_FILES_AVAIL | FATTR4_WORD0_FILES_FREE |
-+			FATTR4_WORD0_FILES_TOTAL | FATTR4_WORD0_MAXNAME)) ||
- 	    (bmval1 & (FATTR4_WORD1_SPACE_AVAIL | FATTR4_WORD1_SPACE_FREE |
- 		       FATTR4_WORD1_SPACE_TOTAL))) {
- 		err = vfs_statfs(&path, &statfs);
+--- a/arch/powerpc/kernel/legacy_serial.c
++++ b/arch/powerpc/kernel/legacy_serial.c
+@@ -48,6 +48,9 @@ static struct __initdata of_device_id le
+ static unsigned int legacy_serial_count;
+ static int legacy_serial_console = -1;
+ 
++static const upf_t legacy_port_flags = UPF_BOOT_AUTOCONF | UPF_SKIP_TEST |
++	UPF_SHARE_IRQ | UPF_FIXED_PORT;
++
+ static unsigned int tsi_serial_in(struct uart_port *p, int offset)
+ {
+ 	unsigned int tmp;
+@@ -153,8 +156,6 @@ static int __init add_legacy_soc_port(st
+ {
+ 	u64 addr;
+ 	const u32 *addrp;
+-	upf_t flags = UPF_BOOT_AUTOCONF | UPF_SKIP_TEST | UPF_SHARE_IRQ
+-		| UPF_FIXED_PORT;
+ 	struct device_node *tsi = of_get_parent(np);
+ 
+ 	/* We only support ports that have a clock frequency properly
+@@ -185,9 +186,11 @@ static int __init add_legacy_soc_port(st
+ 	 * IO port value. It will be fixed up later along with the irq
+ 	 */
+ 	if (tsi && !strcmp(tsi->type, "tsi-bridge"))
+-		return add_legacy_port(np, -1, UPIO_TSI, addr, addr, NO_IRQ, flags, 0);
++		return add_legacy_port(np, -1, UPIO_TSI, addr, addr,
++				       NO_IRQ, legacy_port_flags, 0);
+ 	else
+-		return add_legacy_port(np, -1, UPIO_MEM, addr, addr, NO_IRQ, flags, 0);
++		return add_legacy_port(np, -1, UPIO_MEM, addr, addr,
++				       NO_IRQ, legacy_port_flags, 0);
+ }
+ 
+ static int __init add_legacy_isa_port(struct device_node *np,
+@@ -228,7 +231,7 @@ static int __init add_legacy_isa_port(st
+ 
+ 	/* Add port, irq will be dealt with later */
+ 	return add_legacy_port(np, index, UPIO_PORT, be32_to_cpu(reg[1]), taddr,
+-			       NO_IRQ, UPF_BOOT_AUTOCONF, 0);
++			       NO_IRQ, legacy_port_flags, 0);
+ 
+ }
+ 
+@@ -301,7 +304,7 @@ static int __init add_legacy_pci_port(st
+ 	 * IO port value. It will be fixed up later along with the irq
+ 	 */
+ 	return add_legacy_port(np, index, iotype, base, addr, NO_IRQ,
+-			       UPF_BOOT_AUTOCONF, np != pci_dev);
++			       legacy_port_flags, np != pci_dev);
+ }
+ #endif
+ 
 
