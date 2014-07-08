@@ -1,100 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755345AbaGHSFd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 14:05:33 -0400
-Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:52511 "EHLO
-	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755293AbaGHSF3 (ORCPT
+	id S1755430AbaGHSGf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 14:06:35 -0400
+Received: from smtprelay0138.hostedemail.com ([216.40.44.138]:57571 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755405AbaGHSGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 14:05:29 -0400
-X-Yandex-Uniq: 78a35862-b5cc-4a76-93b4-d93f5edb43a2
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-From: Stanislav Fomichev <stfomichev@yandex-team.ru>
-To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@kernel.org, dsahern@gmail.com, stfomichev@yandex-team.ru
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] perf trace: add pagefault statistics
-Date: Tue,  8 Jul 2014 22:05:16 +0400
-Message-Id: <1404842716-19190-1-git-send-email-stfomichev@yandex-team.ru>
-X-Mailer: git-send-email 1.9.1
+	Tue, 8 Jul 2014 14:06:32 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622
+X-HE-Tag: form01_727280eb1f556
+X-Filterd-Recvd-Size: 3074
+Message-ID: <1404842784.932.22.camel@joe-AO725>
+Subject: Re: [PATCH tip/core/rcu 2/3] rcu: Add designated reviewers for RCU
+From: Joe Perches <joe@perches.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Date: Tue, 08 Jul 2014 11:06:24 -0700
+In-Reply-To: <20140708080908.GN19379@twins.programming.kicks-ass.net>
+References: <20140707224146.GA9118@linux.vnet.ibm.com>
+	 <1404772924-9423-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1404772924-9423-2-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <20140708080908.GN19379@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'perf trace' can show summary of events using -S option. This commit
-also reports number of major/minor pagefault events in this summary.
+On Tue, 2014-07-08 at 10:09 +0200, Peter Zijlstra wrote:
+> On Mon, Jul 07, 2014 at 03:42:03PM -0700, Paul E. McKenney wrote:
+> >  MAINTAINERS | 8 ++++++++
+> >  1 file changed, 8 insertions(+)
+> > 
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+> > index 1814075c0e74..92f2bf91eec1 100644
+> > --- a/MAINTAINERS
+> > +++ b/MAINTAINERS
+> > @@ -7405,6 +7405,9 @@ F:	kernel/rcu/torture.c
+> >  
+> >  RCUTORTURE TEST FRAMEWORK
+> >  M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > +R:	Steven Rostedt <rostedt@goodmis.org>
+> > +R:	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> > +R:	Lai Jiangshan <laijs@cn.fujitsu.com>
+> >  L:	linux-kernel@vger.kernel.org
+> >  S:	Supported
+> >  T:	git git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
+> 
+> OK,.. so if we're going to do this can we talk about the syntax here.
+> 
+> I would like to also use this for SCHED and PERF, but since both are
+> rather big I would like to be able to subdivide things. Now I could of
+> course go create many MAINTAINER sections, but that feels artificial.
+> 
+> So I would like to be able to write:
+> 
+> SCHEDULER:
+> ...
+> R:   Steven Rostedt <rostedt@goodmis.org> (kernel/sched/rt.c)
+> R:   Juri Lelli <juri.lelli@gmail.com>    (kernel/sched/deadline.c)
+> 
+> or something like that. And here I've already done concessions in that
+> the above is machine readable. Ideally I'd be able to say things like:
+> 'for sched and numa related things' add 'rik and mel'.
+> 
+> Hmm, maybe we can look at the patch subject tag like: sched/numa or
+> sched/rt or sched/deadline etc.. instead of the files touched.
 
-$ perf trace -s --pf all -- sleep 1
+I think it's best to use separate sections.
 
- Summary of events:
+The parsing logic in get_maintainers is already ugly enough.
 
- sleep (18604), 275 events, 99.6%, 197 minfaults, 0.000 msec
-
-   syscall            calls      min       avg       max      stddev
-                               (msec)    (msec)    (msec)        (%)
-   --------------- -------- --------- --------- ---------     ------
-   read                   2     0.000     0.001     0.002    100.00%
-   open                   3     0.004     0.005     0.007     21.13%
-   close                  3     0.001     0.001     0.001      1.37%
-   fstat                  3     0.001     0.002     0.002     10.66%
-   mmap                   8     0.002     0.004     0.006     10.69%
-   mprotect               4     0.003     0.005     0.008     24.68%
-   munmap                 1     0.005     0.005     0.005      0.00%
-   brk                    3     0.001     0.002     0.003     28.08%
-   access                 3     0.002     0.003     0.005     24.48%
-   nanosleep              1  1000.747  1000.747  1000.747      0.00%
-   execve                 8     0.000     0.033     0.246     91.00%
-   arch_prctl             1     0.001     0.001     0.001      0.00%
-
-Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
----
- tools/perf/builtin-trace.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
-
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index dc7a694b61fe..b94dffc5fa85 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -1133,6 +1133,7 @@ struct thread_trace {
- 	u64		  exit_time;
- 	bool		  entry_pending;
- 	unsigned long	  nr_events;
-+	unsigned long	  pfmaj, pfmin;
- 	char		  *entry_str;
- 	double		  runtime_ms;
- 	struct {
-@@ -1804,8 +1805,20 @@ static int trace__pgfault(struct trace *trace,
- 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
- 	struct addr_location al;
- 	char map_type = 'd';
-+	struct thread_trace *ttrace;
- 
- 	thread = machine__findnew_thread(trace->host, sample->pid, sample->tid);
-+	ttrace = thread__trace(thread, trace->output);
-+	if (ttrace == NULL)
-+		return -1;
-+
-+	if (evsel->attr.config == PERF_COUNT_SW_PAGE_FAULTS_MAJ)
-+		ttrace->pfmaj++;
-+	else
-+		ttrace->pfmin++;
-+
-+	if (trace->summary_only)
-+		return 0;
- 
- 	thread__find_addr_location(thread, trace->host, cpumode, MAP__FUNCTION,
- 			      sample->ip, &al);
-@@ -2346,6 +2359,10 @@ static int trace__fprintf_one_thread(struct thread *thread, void *priv)
- 	printed += fprintf(fp, " %s (%d), ", thread__comm_str(thread), thread->tid);
- 	printed += fprintf(fp, "%lu events, ", ttrace->nr_events);
- 	printed += fprintf(fp, "%.1f%%", ratio);
-+	if (ttrace->pfmaj)
-+		printed += fprintf(fp, ", %lu majfaults", ttrace->pfmaj);
-+	if (ttrace->pfmin)
-+		printed += fprintf(fp, ", %lu minfaults", ttrace->pfmin);
- 	printed += fprintf(fp, ", %.3f msec\n", ttrace->runtime_ms);
- 	printed += thread__dump_stats(ttrace, trace, fp);
- 
--- 
-1.9.1
 
