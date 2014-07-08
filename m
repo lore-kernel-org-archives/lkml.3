@@ -1,74 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536AbaGHTRp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:17:45 -0400
-Received: from cernmx13.cern.ch ([188.184.36.46]:33164 "EHLO CERNMX13.cern.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932580AbaGHTRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:17:16 -0400
-From: Federico Vaga <federico.vaga@cern.ch>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <michel.arruat@cern.ch>
-Subject: Re: PCIe bus enumeration
-Date: Tue, 8 Jul 2014 21:20:59 +0200
-Message-ID: <3107266.EcOOcRPPM0@harkonnen>
-Organization: CERN
-User-Agent: KMail/4.12.5 (Linux/3.14.9-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <CAErSpo5ixtc=n0f56=QvtxYnXumZiao6NMgBVAWpcJH4f7QA4g@mail.gmail.com>
-References: <280883016.9onmf0miLq@pcbe13110.cern.ch> <5283004.YemU4lhtKD@pcbe13110.cern.ch> <CAErSpo5ixtc=n0f56=QvtxYnXumZiao6NMgBVAWpcJH4f7QA4g@mail.gmail.com>
+	id S932577AbaGHTRN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:17:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54344 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755759AbaGHTIm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 15:08:42 -0400
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Originating-IP: [81.65.79.216]
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Johan Hovold" <jhovold@gmail.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Date: Tue, 08 Jul 2014 20:01:50 +0100
+Message-ID: <lsq.1404846110.849728407@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 035/125] USB: cdc-acm: fix write and resume race
+In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 08 July 2014 12:23:39 Bjorn Helgaas wrote:
-> On Tue, Jul 8, 2014 at 1:15 AM, Federico Vaga 
-<federico.vaga@cern.ch> wrote:
-> >> > So, It looks like that some BIOS disable the bridge when there
-> >> > is
-> >> > nothing behind it. Why? Power save? :/
-> >> 
-> >> Could be power savings, or possibly to conserve bus numbers,
-> >> which
-> >> are a limited resource.
-> > 
-> > what is the maximum number of buses?
-> 
-> 256.
+3.2.61-rc1 review patch.  If anyone has any objections, please let me know.
 
-Well, it is not a small number. I will ask directly to the company who 
-sell this crate and ask them what is going on in the BIOS
+------------------
 
-> > At this point I'm a little bit confused about the definition "slot
-> > numbers" :) You mean the 22, 25, ...
-> 
-> Right.  Bus numbers are under software control, to some degree (as a
-> general rule, an x86 BIOS assigns them and Linux leaves them alone,
-> but they *can* be changed so they aren't a good thing to rely on).
-> The bus number of a root bus is usually determined by hardware or
-> by an arch-specific host bridge driver.  The bus number below a
-> PCI-PCI bridge is determined by the bridge's "secondary bus number"
-> register, which software can change.
-> 
-> Slot numbers are based on the Physical Slot Number in the PCIe Slot
-> Capability register.  This is set by some hardware mechanism such as
-> pin strapping or a serial EEPROM.  Software can't change it, so you
-> can rely on it to be constant.  (There's also a mechanism for
-> getting a slot number from ACPI, but that should also return a
-> constant value).  The problem is that I don't think the Linux slot
-> number support is very good, so I'm sure there's plenty of stuff
-> that we *should* be able to do that we can't do *yet*.
+From: Johan Hovold <jhovold@gmail.com>
 
-Mh, I understand. Let's say that I have time to spend on this problem 
-(I do not know) and contributing to the PCI subsystem. How many 
-differences are there between 3.2, 3.6, 3.16/next? We are using 
-3.2/3.6 at the moment, but probably you should expect that it will 
-work on the last version :)
+commit e144ed28bed10684f9aaec6325ed974d53f76110 upstream.
 
--- 
-Federico Vaga
+Fix race between write() and resume() due to improper locking that could
+lead to writes being reordered.
+
+Resume must be done atomically and susp_count be protected by the
+write_lock in order to prevent racing with write(). This could otherwise
+lead to writes being reordered if write() grabs the write_lock after
+susp_count is decremented, but before the delayed urb is submitted.
+
+Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
+that support remote wakeup")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Move mutex_lock(acm->mutex) above acquisition of spinlocks]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/usb/class/cdc-acm.c | 23 +++++++++--------------
+ 1 file changed, 9 insertions(+), 14 deletions(-)
+
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1371,28 +1371,21 @@ static int acm_resume(struct usb_interfa
+ 	struct acm *acm = usb_get_intfdata(intf);
+ 	struct acm_wb *wb;
+ 	int rv = 0;
+-	int cnt;
+ 
++	mutex_lock(&acm->mutex);
+ 	spin_lock_irq(&acm->read_lock);
+-	acm->susp_count -= 1;
+-	cnt = acm->susp_count;
+-	spin_unlock_irq(&acm->read_lock);
++	spin_lock(&acm->write_lock);
+ 
+-	if (cnt)
+-		return 0;
++	if (--acm->susp_count)
++		goto out;
+ 
+-	mutex_lock(&acm->mutex);
+ 	if (acm->port.count) {
+-		rv = usb_submit_urb(acm->ctrlurb, GFP_NOIO);
++		rv = usb_submit_urb(acm->ctrlurb, GFP_ATOMIC);
+ 
+-		spin_lock_irq(&acm->write_lock);
+ 		if (acm->delayed_wb) {
+ 			wb = acm->delayed_wb;
+ 			acm->delayed_wb = NULL;
+-			spin_unlock_irq(&acm->write_lock);
+ 			acm_start_wb(acm, wb);
+-		} else {
+-			spin_unlock_irq(&acm->write_lock);
+ 		}
+ 
+ 		/*
+@@ -1400,13 +1393,15 @@ static int acm_resume(struct usb_interfa
+ 		 * do the write path at all cost
+ 		 */
+ 		if (rv < 0)
+-			goto err_out;
++			goto out;
+ 
+-		rv = acm_submit_read_urbs(acm, GFP_NOIO);
++		rv = acm_submit_read_urbs(acm, GFP_ATOMIC);
+ 	}
+-
+-err_out:
++out:
++	spin_unlock(&acm->write_lock);
++	spin_unlock_irq(&acm->read_lock);
+ 	mutex_unlock(&acm->mutex);
++
+ 	return rv;
+ }
+ 
+
