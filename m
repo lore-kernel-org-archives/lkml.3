@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756699AbaGHT34 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:29:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54165 "EHLO
+	id S1756683AbaGHT3y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:29:54 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54187 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755696AbaGHTIk (ORCPT
+	by vger.kernel.org with ESMTP id S1755702AbaGHTIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:08:40 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jaroslav Kysela" <perex@perex.cz>,
-        "Takashi Iwai" <tiwai@suse.de>, "Lars-Peter Clausen" <lars@metafoo.de>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Vlad Yasevich" <vyasevich@gmail.com>,
+        "Daniel Borkmann" <dborkman@redhat.com>,
+        "Xufeng Zhang" <xufeng.zhang@windriver.com>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.592442671@decadent.org.uk>
+Message-ID: <lsq.1404846110.728012183@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 087/125] ALSA: control: Make sure that id->index does
- not overflow
+Subject: [PATCH 3.2 113/125] sctp: Fix sk_ack_backlog wrap-around problem
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,35 +33,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
 
-commit 883a1d49f0d77d30012f114b2e19fc141beb3e8e upstream.
+[ Upstream commit d3217b15a19a4779c39b212358a5c71d725822ee ]
 
-The ALSA control code expects that the range of assigned indices to a control is
-continuous and does not overflow. Currently there are no checks to enforce this.
-If a control with a overflowing index range is created that control becomes
-effectively inaccessible and unremovable since snd_ctl_find_id() will not be
-able to find it. This patch adds a check that makes sure that controls with a
-overflowing index range can not be created.
+Consider the scenario:
+For a TCP-style socket, while processing the COOKIE_ECHO chunk in
+sctp_sf_do_5_1D_ce(), after it has passed a series of sanity check,
+a new association would be created in sctp_unpack_cookie(), but afterwards,
+some processing maybe failed, and sctp_association_free() will be called to
+free the previously allocated association, in sctp_association_free(),
+sk_ack_backlog value is decremented for this socket, since the initial
+value for sk_ack_backlog is 0, after the decrement, it will be 65535,
+a wrap-around problem happens, and if we want to establish new associations
+afterward in the same socket, ABORT would be triggered since sctp deem the
+accept queue as full.
+Fix this issue by only decrementing sk_ack_backlog for associations in
+the endpoint's list.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Jaroslav Kysela <perex@perex.cz>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fix-suggested-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/core/control.c | 3 +++
- 1 file changed, 3 insertions(+)
+ net/sctp/associola.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/core/control.c
-+++ b/sound/core/control.c
-@@ -341,6 +341,9 @@ int snd_ctl_add(struct snd_card *card, s
- 	if (snd_BUG_ON(!card || !kcontrol->info))
- 		goto error;
- 	id = kcontrol->id;
-+	if (id.index > UINT_MAX - kcontrol->count)
-+		goto error;
-+
- 	down_write(&card->controls_rwsem);
- 	if (snd_ctl_find_id(card, &id)) {
- 		up_write(&card->controls_rwsem);
+--- a/net/sctp/associola.c
++++ b/net/sctp/associola.c
+@@ -389,7 +389,7 @@ void sctp_association_free(struct sctp_a
+ 	/* Only real associations count against the endpoint, so
+ 	 * don't bother for if this is a temporary association.
+ 	 */
+-	if (!asoc->temp) {
++	if (!list_empty(&asoc->asocs)) {
+ 		list_del(&asoc->asocs);
+ 
+ 		/* Decrement the backlog value for a TCP-style listening
 
