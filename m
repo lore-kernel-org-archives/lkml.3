@@ -1,119 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754912AbaGHNBj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:01:39 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:60986 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754280AbaGHNBh (ORCPT
+	id S1754944AbaGHNC3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:02:29 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:29969 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754524AbaGHNAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:01:37 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: robert.moore@intel.com, lv.zheng@intel.com, rafael.j.wysocki@intel.com,
-        lenb@kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 1/2] ACPICA: Add acpi_check_gpe_method() to check GPE method
-Date: Tue, 08 Jul 2014 15:19:40 +0200
-Message-ID: <10899721.ERDUBaimNr@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1404802679-24019-1-git-send-email-tianyu.lan@intel.com>
-References: <1404802679-24019-1-git-send-email-tianyu.lan@intel.com>
+	Tue, 8 Jul 2014 09:00:42 -0400
+X-IronPort-AV: E=Sophos;i="5.00,856,1396972800"; 
+   d="scan'208";a="32994962"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: <gleb@kernel.org>, <mtosatti@redhat.com>, <nadav.amit@gmail.com>
+CC: <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
+        <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>
+Subject: [PATCH v2 2/5] kvm: Use APIC_DEFAULT_PHYS_BASE macro as the apic access page address.
+Date: Tue, 8 Jul 2014 21:01:29 +0800
+Message-ID: <1404824492-30095-3-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1404824492-30095-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1404824492-30095-1-git-send-email-tangchen@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 08, 2014 02:57:57 PM Lan Tianyu wrote:
-> This patch is to expose acpi_check_gpe_method() to check whether there
-> is a GPE method for the given gpe. Enabling ACPI button devices' gpes
-> will depend on the new function's result.
-> 
-> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-> ---
->  drivers/acpi/acpica/evxface.c | 39 ++++++++++++++++++++++++++++++++++++++-
->  include/acpi/acpixf.h         |  3 +++
->  2 files changed, 41 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/acpi/acpica/evxface.c b/drivers/acpi/acpica/evxface.c
-> index 11e5803..0fcb248 100644
-> --- a/drivers/acpi/acpica/evxface.c
-> +++ b/drivers/acpi/acpica/evxface.c
-> @@ -717,6 +717,44 @@ ACPI_EXPORT_SYMBOL(acpi_remove_fixed_event_handler)
->  
->  /*******************************************************************************
->   *
-> + * FUNCTION:    acpi_check_gpe_method
-> + *
-> + * PARAMETERS:  gpe_device      - Namespace node for the GPE (NULL for FADT
-> + *                                defined GPEs)
-> + *              gpe_number      - The event to remove a handler
-> + *
-> + * RETURN:      Status
-> + *
-> + * DESCRIPTION: Check whether the given GPE has associated event method.
-> + *
-> + ******************************************************************************/
-> +acpi_status
-> +acpi_check_gpe_method(acpi_handle gpe_device, u32 gpe_number)
+We have APIC_DEFAULT_PHYS_BASE defined as 0xfee00000, which is also the address of
+apic access page. So use this macro.
 
-This should be a boolean routine (ie. returning 0 or 1) called something like
-acpi_gpe_has_method() that will return 1 if there's a method for the given GPE
-and 0 otherwise.
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+---
+ arch/x86/kvm/svm.c | 3 ++-
+ arch/x86/kvm/vmx.c | 6 +++---
+ 2 files changed, 5 insertions(+), 4 deletions(-)
 
-> +{
-> +	struct acpi_gpe_event_info *gpe_event_info;
-> +	acpi_status status = AE_NOT_EXIST;
-> +	acpi_cpu_flags flags;
-> +
-> +	ACPI_FUNCTION_TRACE(acpi_check_gpe_method);
-> +
-> +	flags = acpi_os_acquire_lock(acpi_gbl_gpe_lock);
-> +	gpe_event_info = acpi_ev_get_gpe_event_info(gpe_device, gpe_number);
-> +	if (!gpe_event_info) {
-> +		status = AE_ERROR;
-> +		goto unlock_and_exit;
-> +	}
-> +
-> +	if (gpe_event_info->flags & ACPI_GPE_DISPATCH_METHOD)
-> +		status = AE_OK;
-> +
-> +unlock_and_exit:
-> +	acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
-> +	return status;
-> +}
-> +ACPI_EXPORT_SYMBOL(acpi_check_gpe_method)
-> +
-> +/*******************************************************************************
-> + *
->   * FUNCTION:    acpi_install_gpe_handler
->   *
->   * PARAMETERS:  gpe_device      - Namespace node for the GPE (NULL for FADT
-> @@ -821,7 +859,6 @@ free_and_exit:
->  	ACPI_FREE(handler);
->  	goto unlock_and_exit;
->  }
-> -
->  ACPI_EXPORT_SYMBOL(acpi_install_gpe_handler)
->  
->  /*******************************************************************************
-> diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
-> index 35b525c..5b475c6 100644
-> --- a/include/acpi/acpixf.h
-> +++ b/include/acpi/acpixf.h
-> @@ -554,6 +554,9 @@ ACPI_HW_DEPENDENT_RETURN_STATUS(acpi_status
->  							  address,
->  							  void *context))
->  ACPI_HW_DEPENDENT_RETURN_STATUS(acpi_status
-> +				acpi_check_gpe_method(acpi_handle gpe_device,
-> +							u32 gpe_number))
-> +ACPI_HW_DEPENDENT_RETURN_STATUS(acpi_status
->  				 acpi_remove_gpe_handler(acpi_handle gpe_device,
->  							 u32 gpe_number,
->  							 acpi_gpe_handler
-> 
-
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index ec8366c..576b525 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -1257,7 +1257,8 @@ static struct kvm_vcpu *svm_create_vcpu(struct kvm *kvm, unsigned int id)
+ 	svm->asid_generation = 0;
+ 	init_vmcb(svm);
+ 
+-	svm->vcpu.arch.apic_base = 0xfee00000 | MSR_IA32_APICBASE_ENABLE;
++	svm->vcpu.arch.apic_base = APIC_DEFAULT_PHYS_BASE |
++				   MSR_IA32_APICBASE_ENABLE;
+ 	if (kvm_vcpu_is_bsp(&svm->vcpu))
+ 		svm->vcpu.arch.apic_base |= MSR_IA32_APICBASE_BSP;
+ 
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 801332e..0e1117c 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -3982,13 +3982,13 @@ static int alloc_apic_access_page(struct kvm *kvm)
+ 		goto out;
+ 	kvm_userspace_mem.slot = APIC_ACCESS_PAGE_PRIVATE_MEMSLOT;
+ 	kvm_userspace_mem.flags = 0;
+-	kvm_userspace_mem.guest_phys_addr = 0xfee00000ULL;
++	kvm_userspace_mem.guest_phys_addr = APIC_DEFAULT_PHYS_BASE;
+ 	kvm_userspace_mem.memory_size = PAGE_SIZE;
+ 	r = __kvm_set_memory_region(kvm, &kvm_userspace_mem);
+ 	if (r)
+ 		goto out;
+ 
+-	page = gfn_to_page(kvm, 0xfee00);
++	page = gfn_to_page(kvm, APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT);
+ 	if (is_error_page(page)) {
+ 		r = -EFAULT;
+ 		goto out;
+@@ -4460,7 +4460,7 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
+ 
+ 	vmx->vcpu.arch.regs[VCPU_REGS_RDX] = get_rdx_init_val();
+ 	kvm_set_cr8(&vmx->vcpu, 0);
+-	apic_base_msr.data = 0xfee00000 | MSR_IA32_APICBASE_ENABLE;
++	apic_base_msr.data = APIC_DEFAULT_PHYS_BASE | MSR_IA32_APICBASE_ENABLE;
+ 	if (kvm_vcpu_is_bsp(&vmx->vcpu))
+ 		apic_base_msr.data |= MSR_IA32_APICBASE_BSP;
+ 	apic_base_msr.host_initiated = true;
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.3.1
+
