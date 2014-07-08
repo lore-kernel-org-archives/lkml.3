@@ -1,83 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083AbaGHU1X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 16:27:23 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:47229 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750845AbaGHU1V (ORCPT
+	id S1754222AbaGHU1t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 16:27:49 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:59483 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753652AbaGHU1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 16:27:21 -0400
+	Tue, 8 Jul 2014 16:27:47 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: lenb@kernel.org, rientjes@google.com, naszar@ya.ru,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH V3] ACPI/Battery: Retry to get Battery information if failed during probing
+Date: Tue, 08 Jul 2014 22:45:52 +0200
+Message-ID: <6200181.uMLNz9GBpL@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1404719232-17911-1-git-send-email-tianyu.lan@intel.com>
+References: <1404719232-17911-1-git-send-email-tianyu.lan@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <3107266.EcOOcRPPM0@harkonnen>
-References: <280883016.9onmf0miLq@pcbe13110.cern.ch> <5283004.YemU4lhtKD@pcbe13110.cern.ch>
- <CAErSpo5ixtc=n0f56=QvtxYnXumZiao6NMgBVAWpcJH4f7QA4g@mail.gmail.com> <3107266.EcOOcRPPM0@harkonnen>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 8 Jul 2014 14:27:00 -0600
-Message-ID: <CAErSpo7YEiiM1b8Jf1d3Pt4iZXhwNTr18SsSZS15Ekm_LHS03A@mail.gmail.com>
-Subject: Re: PCIe bus enumeration
-To: Federico Vaga <federico.vaga@cern.ch>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        michel.arruat@cern.ch
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 8, 2014 at 1:20 PM, Federico Vaga <federico.vaga@cern.ch> wrote:
-> On Tuesday 08 July 2014 12:23:39 Bjorn Helgaas wrote:
->> On Tue, Jul 8, 2014 at 1:15 AM, Federico Vaga
-> <federico.vaga@cern.ch> wrote:
->> >> > So, It looks like that some BIOS disable the bridge when there
->> >> > is
->> >> > nothing behind it. Why? Power save? :/
->> >>
->> >> Could be power savings, or possibly to conserve bus numbers,
->> >> which
->> >> are a limited resource.
->> >
->> > what is the maximum number of buses?
->>
->> 256.
->
-> Well, it is not a small number. I will ask directly to the company who
-> sell this crate and ask them what is going on in the BIOS
+On Monday, July 07, 2014 03:47:12 PM Lan Tianyu wrote:
+> Some machines'(E,G Lenovo Z480) ECs are not stable during boot up
+> and causes battery driver fails to be loaded due to failure of getting
+> battery information from EC sometimes. After several retries, the
+> operation will work. This patch is to retry to get battery information 5
+> times if the first try fails.
+> 
+> Reported-and-tested-by: naszar <naszar@ya.ru>
+> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=75581
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 
-Yeah, it's not usually a problem until you get to the really big
-machines.  The BIOS vendor could give you a much better reason; I'm
-only speculating.
+Queued up as a fix for 3.16, thanks!
 
->> > At this point I'm a little bit confused about the definition "slot
->> > numbers" :) You mean the 22, 25, ...
->>
->> Right.  Bus numbers are under software control, to some degree (as a
->> general rule, an x86 BIOS assigns them and Linux leaves them alone,
->> but they *can* be changed so they aren't a good thing to rely on).
->> The bus number of a root bus is usually determined by hardware or
->> by an arch-specific host bridge driver.  The bus number below a
->> PCI-PCI bridge is determined by the bridge's "secondary bus number"
->> register, which software can change.
->>
->> Slot numbers are based on the Physical Slot Number in the PCIe Slot
->> Capability register.  This is set by some hardware mechanism such as
->> pin strapping or a serial EEPROM.  Software can't change it, so you
->> can rely on it to be constant.  (There's also a mechanism for
->> getting a slot number from ACPI, but that should also return a
->> constant value).  The problem is that I don't think the Linux slot
->> number support is very good, so I'm sure there's plenty of stuff
->> that we *should* be able to do that we can't do *yet*.
->
-> Mh, I understand. Let's say that I have time to spend on this problem
-> (I do not know) and contributing to the PCI subsystem. How many
-> differences are there between 3.2, 3.6, 3.16/next? We are using
-> 3.2/3.6 at the moment, but probably you should expect that it will
-> work on the last version :)
+> ---
+> Change since V1:
+> 	Change code style and add a comment.
+> 
+> Change since V2:
+> 	Change code style.
+> 
+>  drivers/acpi/battery.c | 27 ++++++++++++++++++++++++++-
+>  1 file changed, 26 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+> index e48fc98..cee5ee8 100644
+> --- a/drivers/acpi/battery.c
+> +++ b/drivers/acpi/battery.c
+> @@ -34,6 +34,7 @@
+>  #include <linux/dmi.h>
+>  #include <linux/slab.h>
+>  #include <linux/suspend.h>
+> +#include <linux/delay.h>
+>  #include <asm/unaligned.h>
+>  
+>  #ifdef CONFIG_ACPI_PROCFS_POWER
+> @@ -1117,6 +1118,28 @@ static struct dmi_system_id bat_dmi_table[] = {
+>  	{},
+>  };
+>  
+> +/*
+> + * Some machines'(E,G Lenovo Z480) ECs are not stable
+> + * during boot up and this causes battery driver fails to be
+> + * probed due to failure of getting battery information
+> + * from EC sometimes. After several retries, the operation
+> + * may work. So add retry code here and 20ms sleep between
+> + * every retries.
+> + */
+> +static int acpi_battery_update_retry(struct acpi_battery *battery)
+> +{
+> +	int retry, ret;
+> +
+> +	for (retry = 5; retry; retry--) {
+> +		ret = acpi_battery_update(battery, false);
+> +		if (!ret)
+> +			break;
+> +
+> +		msleep(20);
+> +	}
+> +	return ret;
+> +}
+> +
+>  static int acpi_battery_add(struct acpi_device *device)
+>  {
+>  	int result = 0;
+> @@ -1135,9 +1158,11 @@ static int acpi_battery_add(struct acpi_device *device)
+>  	mutex_init(&battery->sysfs_lock);
+>  	if (acpi_has_method(battery->device->handle, "_BIX"))
+>  		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
+> -	result = acpi_battery_update(battery, false);
+> +
+> +	result = acpi_battery_update_retry(battery);
+>  	if (result)
+>  		goto fail;
+> +
+>  #ifdef CONFIG_ACPI_PROCFS_POWER
+>  	result = acpi_battery_add_fs(device);
+>  #endif
+> 
 
-There are quite a few differences, including a fair amount of work on
-the hotplug drivers.  The problem in this area is that pciehp (the
-PCIe hotplug driver) and acpiphp (the ACPI hotplug driver) both can
-register slot numbers and it's sort of ugly to figure out which one to
-use in a given situation.  Neither can be a loadable module anymore,
-which simplifies things a little bit, but it's still ugly.
-
-Bjorn
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
