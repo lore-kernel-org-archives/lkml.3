@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817AbaGHI0l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 04:26:41 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:12178 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753691AbaGHI0i (ORCPT
+	id S1754111AbaGHIbZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 04:31:25 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:64710 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753975AbaGHIbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 04:26:38 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 08 Jul 2014 01:15:54 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Ben Skeggs <bskeggs@redhat.com>, David Airlie <airlied@linux.ie>,
-        David Herrmann <dh.herrmann@gmail.com>, Lucas Stach <dev@lynxeye.de>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>
-CC: <nouveau@lists.freedesktop.org>, <dri-devel@lists.freedesktop.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH v4 2/6] drm/nouveau: map pages using DMA API on platform devices
-Date: Tue, 8 Jul 2014 17:25:57 +0900
-Message-ID: <1404807961-30530-3-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1404807961-30530-1-git-send-email-acourbot@nvidia.com>
-References: <1404807961-30530-1-git-send-email-acourbot@nvidia.com>
-X-NVConfidentiality: public
+	Tue, 8 Jul 2014 04:31:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CACRpkdaRReCWObTBP-ujiM-R9Js2y+L6RFtAfw6AP1cwx1hrHA@mail.gmail.com>
+References: <1404193516-4384-1-git-send-email-acourbot@nvidia.com>
+ <1404193516-4384-3-git-send-email-acourbot@nvidia.com> <CACRpkdaRReCWObTBP-ujiM-R9Js2y+L6RFtAfw6AP1cwx1hrHA@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 8 Jul 2014 17:31:01 +0900
+Message-ID: <CAAVeFuKrvvmWGS0OaP+JBmozT70K9=0ntL7Zx+vZPBjr2H8aDg@mail.gmail.com>
+Subject: Re: [RFC 2/3] gpio: move sysfs support to its own file
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-page_to_phys() is not the correct way to obtain the DMA address of a
-buffer on a non-PCI system. Use the DMA API functions for this, which
-are portable and will allow us to use other DMA API functions for
-buffer synchronization.
+On Tue, Jul 8, 2014 at 5:21 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Tue, Jul 1, 2014 at 7:45 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>
+>> sysfs support is currently entangled within the core GPIO support, while
+>> it should relly just be a (privileged) user of the integer GPIO API.
+>> This patch is a first step towards making the gpiolib code more readable
+>> by splitting it into logical parts.
+>>
+>> Move all sysfs support to their own source file, and share static
+>> members of gpiolib that need to be in the private gpiolib.h file. In
+>> the future we will want to put some of them back into gpiolib.c, but this
+>> first patch let us at least identify them.
+>>
+>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>
+> Patch applied. We really need to make refactorings like this
+> so thanks a lot.
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
----
- drivers/gpu/drm/nouveau/core/engine/device/base.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+Excellent, glad you approve of this. I actually have some more coming
+after that, since the current lack of organization stands in the way
+of a proper multi-consumer GPIO implementation.
 
-diff --git a/drivers/gpu/drm/nouveau/core/engine/device/base.c b/drivers/gpu/drm/nouveau/core/engine/device/base.c
-index 18c8c7245b73..e4e9e64988fe 100644
---- a/drivers/gpu/drm/nouveau/core/engine/device/base.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/device/base.c
-@@ -489,7 +489,10 @@ nv_device_map_page(struct nouveau_device *device, struct page *page)
- 		if (pci_dma_mapping_error(device->pdev, ret))
- 			ret = 0;
- 	} else {
--		ret = page_to_phys(page);
-+		ret = dma_map_page(&device->platformdev->dev, page, 0,
-+				   PAGE_SIZE, DMA_BIDIRECTIONAL);
-+		if (dma_mapping_error(&device->platformdev->dev, ret))
-+			ret = 0;
- 	}
- 
- 	return ret;
-@@ -501,6 +504,9 @@ nv_device_unmap_page(struct nouveau_device *device, dma_addr_t addr)
- 	if (nv_device_is_pci(device))
- 		pci_unmap_page(device->pdev, addr, PAGE_SIZE,
- 			       PCI_DMA_BIDIRECTIONAL);
-+	else
-+		dma_unmap_page(&device->platformdev->dev, addr,
-+			       PAGE_SIZE, DMA_BIDIRECTIONAL);
- }
- 
- int
--- 
-2.0.0
-
+Thanks!
+Alex.
