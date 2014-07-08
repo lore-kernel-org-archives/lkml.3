@@ -1,71 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428AbaGHGEd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 02:04:33 -0400
-Received: from ozlabs.org ([103.22.144.67]:49179 "EHLO ozlabs.org"
+	id S1753477AbaGHGEu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 02:04:50 -0400
+Received: from mga14.intel.com ([192.55.52.115]:47471 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752555AbaGHGEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753398AbaGHGEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 02:04:31 -0400
-Date: Tue, 8 Jul 2014 16:04:17 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Nicholas Krause <xerofoify@gmail.com>
-Cc: benh@kernel.crashing.org, mahesh@linux.vnet.ibm.com, agraf@suse.de,
-        linux-kernel@vger.kernel.org, michael@ellerman.id.au, paulus@samba.org,
-        anton@samba.org, linuxppc-dev@lists.ozlabs.org,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: Re: powerpc allyesconfig fix
-Message-ID: <20140708160417.47fb4d7c@canb.auug.org.au>
-In-Reply-To: <1404795849-25609-1-git-send-email-xerofoify@gmail.com>
-References: <1404795849-25609-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/O=XqCrweHOp8en2jl/Reuu1"; protocol="application/pgp-signature"
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,624,1400050800"; 
+   d="scan'208";a="558668973"
+From: Jenny TC <jenny.tc@intel.com>
+To: linux-kernel@vger.kernel.org, Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Pavel Machek <pavel@ucw.cz>, Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
+        Jenny TC <jenny.tc@intel.com>
+Subject: [PATCH 1/4] power_supply: Add inlmt,iterm, min/max temp props
+Date: Tue,  8 Jul 2014 11:34:18 +0530
+Message-Id: <1404799461-26345-2-git-send-email-jenny.tc@intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1404799461-26345-1-git-send-email-jenny.tc@intel.com>
+References: <1404799461-26345-1-git-send-email-jenny.tc@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/O=XqCrweHOp8en2jl/Reuu1
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Add new power supply properties for input current, charge termination
+current, min and max temperature
 
-Hi Nicholas,
+POWER_SUPPLY_PROP_TEMP_MIN - minimum operatable temperature
+POWER_SUPPLY_PROP_TEMP_MAX - maximum operatable temperature
 
-On Tue,  8 Jul 2014 01:04:09 -0400 Nicholas Krause <xerofoify@gmail.com> wr=
-ote:
->
-> powerpc:allmodconfig has been failing for some time with the following
-> error.
+POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT - input current limit programmed
+by charger. Indicates the input current for a charging source.
 
-This patch has already bee submitted directly by Guenter, however for
-future reference:  when you submit someone else's patch, you should
-include a From line as the first line of the email body containing their
-email address and you should include a Signed-off-by line from yourself.
+POWER_SUPPLY_PROP_CHARGE_TERM_CURRENT - Charge termination current used
+to detect the end of charge condition
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Signed-off-by: Jenny TC <jenny.tc@intel.com>
+---
+ Documentation/power/power_supply_class.txt |    6 ++++++
+ drivers/power/power_supply_sysfs.c         |    4 ++++
+ include/linux/power_supply.h               |    4 ++++
+ 3 files changed, 14 insertions(+)
 
---Sig_/O=XqCrweHOp8en2jl/Reuu1
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+diff --git a/Documentation/power/power_supply_class.txt b/Documentation/power/power_supply_class.txt
+index 89a8816..48cff88 100644
+--- a/Documentation/power/power_supply_class.txt
++++ b/Documentation/power/power_supply_class.txt
+@@ -118,6 +118,10 @@ relative, time-based measurements.
+ CONSTANT_CHARGE_CURRENT - constant charge current programmed by charger.
+ CONSTANT_CHARGE_CURRENT_MAX - maximum charge current supported by the
+ power supply object.
++INPUT_CURRENT_LIMIT - input current limit programmed by charger. Indicates
++the current drawn from a charging source.
++CHARGE_TERM_CURRENT - Charge termination current used to detect the end of charge
++condition.
+ 
+ CONSTANT_CHARGE_VOLTAGE - constant charge voltage programmed by charger.
+ CONSTANT_CHARGE_VOLTAGE_MAX - maximum charge voltage supported by the
+@@ -140,6 +144,8 @@ TEMP_ALERT_MAX - maximum battery temperature alert.
+ TEMP_AMBIENT - ambient temperature.
+ TEMP_AMBIENT_ALERT_MIN - minimum ambient temperature alert.
+ TEMP_AMBIENT_ALERT_MAX - maximum ambient temperature alert.
++TEMP_MIN - minimum operatable temperature
++TEMP_MAX - maximum operatable temperature
+ 
+ TIME_TO_EMPTY - seconds left for battery to be considered empty (i.e.
+ while battery powers a load)
+diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
+index 44420d1..750a202 100644
+--- a/drivers/power/power_supply_sysfs.c
++++ b/drivers/power/power_supply_sysfs.c
+@@ -167,6 +167,7 @@ static struct device_attribute power_supply_attrs[] = {
+ 	POWER_SUPPLY_ATTR(constant_charge_voltage_max),
+ 	POWER_SUPPLY_ATTR(charge_control_limit),
+ 	POWER_SUPPLY_ATTR(charge_control_limit_max),
++	POWER_SUPPLY_ATTR(input_current_limit),
+ 	POWER_SUPPLY_ATTR(energy_full_design),
+ 	POWER_SUPPLY_ATTR(energy_empty_design),
+ 	POWER_SUPPLY_ATTR(energy_full),
+@@ -178,6 +179,8 @@ static struct device_attribute power_supply_attrs[] = {
+ 	POWER_SUPPLY_ATTR(capacity_alert_max),
+ 	POWER_SUPPLY_ATTR(capacity_level),
+ 	POWER_SUPPLY_ATTR(temp),
++	POWER_SUPPLY_ATTR(temp_max),
++	POWER_SUPPLY_ATTR(temp_min),
+ 	POWER_SUPPLY_ATTR(temp_alert_min),
+ 	POWER_SUPPLY_ATTR(temp_alert_max),
+ 	POWER_SUPPLY_ATTR(temp_ambient),
+@@ -189,6 +192,7 @@ static struct device_attribute power_supply_attrs[] = {
+ 	POWER_SUPPLY_ATTR(time_to_full_avg),
+ 	POWER_SUPPLY_ATTR(type),
+ 	POWER_SUPPLY_ATTR(scope),
++	POWER_SUPPLY_ATTR(charge_term_current),
+ 	/* Properties of type `const char *' */
+ 	POWER_SUPPLY_ATTR(model_name),
+ 	POWER_SUPPLY_ATTR(manufacturer),
+diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+index c9dc4e0..0278600 100644
+--- a/include/linux/power_supply.h
++++ b/include/linux/power_supply.h
+@@ -120,6 +120,7 @@ enum power_supply_property {
+ 	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE_MAX,
+ 	POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT,
+ 	POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT_MAX,
++	POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT,
+ 	POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN,
+ 	POWER_SUPPLY_PROP_ENERGY_EMPTY_DESIGN,
+ 	POWER_SUPPLY_PROP_ENERGY_FULL,
+@@ -131,6 +132,8 @@ enum power_supply_property {
+ 	POWER_SUPPLY_PROP_CAPACITY_ALERT_MAX, /* in percents! */
+ 	POWER_SUPPLY_PROP_CAPACITY_LEVEL,
+ 	POWER_SUPPLY_PROP_TEMP,
++	POWER_SUPPLY_PROP_TEMP_MAX,
++	POWER_SUPPLY_PROP_TEMP_MIN,
+ 	POWER_SUPPLY_PROP_TEMP_ALERT_MIN,
+ 	POWER_SUPPLY_PROP_TEMP_ALERT_MAX,
+ 	POWER_SUPPLY_PROP_TEMP_AMBIENT,
+@@ -142,6 +145,7 @@ enum power_supply_property {
+ 	POWER_SUPPLY_PROP_TIME_TO_FULL_AVG,
+ 	POWER_SUPPLY_PROP_TYPE, /* use power_supply.type instead */
+ 	POWER_SUPPLY_PROP_SCOPE,
++	POWER_SUPPLY_PROP_CHARGE_TERM_CURRENT,
+ 	/* Properties of type `const char *' */
+ 	POWER_SUPPLY_PROP_MODEL_NAME,
+ 	POWER_SUPPLY_PROP_MANUFACTURER,
+-- 
+1.7.9.5
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTu4nmAAoJEMDTa8Ir7ZwV4mIQAI1fivBNbbXD5/n/4Q+zTrsW
-ZXJ/pBalXPut/JpnaXEacvfwKI0QFVhtxED5hPYj/OjxMfwsHdk7FFfcgujYnPkB
-uPl2yQNiEeJWKHDtjF6aNNO69ZuqTpLeYjWj8nrGtZWkdEtVdsiQCPZKI8Yi5JyV
-GMVSW8rwWAqdwSrArUHR8wmm/dgW9img1/wk5uhIgABvMjs0UnDhIp4M4iHPuNYK
-VIjzIHYO0BF2rteFiilfsIxGIE0Xy7q4n7XseKuZMt8me1IEItPHsyVAm9F9F/W4
-QjOkxSE3jnDVDH/TSprc0X8qILgiPtsu3GZFmRbVVnWHWWnWBqgjTnDp7+ozuZi9
-BmjqFkNi6GWGSAivTaKUpozKNwQg2xVTD/ykrXZmJHY6T47DuqQTQoASJ7vvUUQ2
-McUU0LR8iX/OsqyrHhZOfn4eTGjUn9hisi5ncOkYPRKZdU9cLfEKSx5tf26JCTfu
-QyP3n8Njynu3ZUSlKFNY7A//ktjOk6clzOkbr9dOWriWBGAoY3HgOyHcohTjXzc7
-odUC0jslztiY5zbo49NHA1rBCZDxx3IP00/ALIVHUGSrWANWA+pYP9PO0CTj7TUN
-qVc4j9YdaO24CxU8qmkdkSqaFdgAD1rSjXY/PO8iAdiAW1bJD3qZQ0Cbd0PjH9rE
-Y598N/14XgOAFLd8TC/C
-=z/pS
------END PGP SIGNATURE-----
-
---Sig_/O=XqCrweHOp8en2jl/Reuu1--
