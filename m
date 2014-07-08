@@ -1,317 +1,336 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753953AbaGHNic (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:38:32 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:15625 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752753AbaGHNib (ORCPT
+	id S1754002AbaGHNil (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:38:41 -0400
+Received: from w-smtp-out-7.wedos.net ([46.28.106.5]:45438 "EHLO
+	we2-f167.wedos.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751931AbaGHNij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:38:31 -0400
-Date: Tue, 8 Jul 2014 09:38:26 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: peterz@infradead.org, torvalds@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, mingo@kernel.org, Waiman.Long@hp.com,
-        davidlohr@hp.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        riel@redhat.com, akpm@linux-foundation.org, hpa@zytor.com,
-        tim.c.chen@linux.intel.com, konrad.wilk@oracle.com, aswin@hp.com,
-        scott.norton@hp.com, chegu_vinod@hp.com
-Subject: Re: [PATCH 2/4] MCS spinlocks: Convert osq lock to atomic_t to
- reduce overhead
-Message-ID: <20140708093826.32a734f3@gandalf.local.home>
-In-Reply-To: <1404759019-4268-3-git-send-email-jason.low2@hp.com>
-References: <1404759019-4268-1-git-send-email-jason.low2@hp.com>
-	<1404759019-4268-3-git-send-email-jason.low2@hp.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Tue, 8 Jul 2014 09:38:39 -0400
+Date: Tue, 8 Jul 2014 15:38:33 +0200
+From: Josef Gajdusek <atx@atalax.net>
+To: linux-iio@vger.kernel.org
+Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org, jic23@kernel.org,
+        linux-kernel@vger.kernel.org, pmeerw@pmeerw.net,
+        dan.carpenter@oracle.com
+Subject: [PATCH v3 1/5] staging:iio:hmc5843: Added regmap support
+Message-ID: <20140708133833.GC14393@dashie>
+References: <20140708133711.GB14393@dashie>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140708133711.GB14393@dashie>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  7 Jul 2014 11:50:17 -0700
-Jason Low <jason.low2@hp.com> wrote:
+This patch changes hmc5843.c to use regmap. This provides transparent caching
+to the code as well as abstraction necessary to add support for SPI-based
+hmc5983.
 
-> The cancellable MCS spinlock is currently used to queue threads that are
-> doing optimistic spinning. It uses per-cpu nodes, where a thread obtaining
-> the lock would access and queue the local node corresponding to the CPU that
-> it's running on. Currently, the cancellable MCS lock is implemented by using
-> pointers to these nodes.
-> 
-> In this patch, instead of operating on pointers to the per-cpu nodes, we
-> store the CPU numbers in which the per-cpu nodes correspond to in atomic_t.
-> A similar concept is used with the qspinlock.
-> 
-> By operating on the CPU # of the nodes using atomic_t instead of pointers
-> to those nodes, this can reduce the overhead of the cancellable MCS spinlock
-> by 32 bits (on 64 bit systems).
-> 
-> Signed-off-by: Jason Low <jason.low2@hp.com>
-> ---
->  include/linux/mutex.h         |    4 +-
->  include/linux/osq_lock.h      |   19 +++++++++++++++++
->  include/linux/rwsem.h         |    7 ++---
->  kernel/locking/mcs_spinlock.c |   44 ++++++++++++++++++++++++++++++++++------
->  kernel/locking/mcs_spinlock.h |    5 ++-
->  kernel/locking/mutex.c        |    2 +-
->  kernel/locking/rwsem-xadd.c   |    2 +-
->  7 files changed, 66 insertions(+), 17 deletions(-)
->  create mode 100644 include/linux/osq_lock.h
-> 
-> diff --git a/include/linux/mutex.h b/include/linux/mutex.h
-> index 885f3f5..42aa9b9 100644
-> --- a/include/linux/mutex.h
-> +++ b/include/linux/mutex.h
-> @@ -17,6 +17,7 @@
->  #include <linux/lockdep.h>
->  #include <linux/atomic.h>
->  #include <asm/processor.h>
-> +#include <linux/osq_lock.h>
->  
->  /*
->   * Simple, straightforward mutexes with strict semantics:
-> @@ -46,7 +47,6 @@
->   * - detects multi-task circular deadlocks and prints out all affected
->   *   locks and tasks (and only those tasks)
->   */
-> -struct optimistic_spin_node;
->  struct mutex {
->  	/* 1: unlocked, 0: locked, negative: locked, possible waiters */
->  	atomic_t		count;
-> @@ -56,7 +56,7 @@ struct mutex {
->  	struct task_struct	*owner;
->  #endif
->  #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
-> -	struct optimistic_spin_node	*osq;	/* Spinner MCS lock */
-> +	struct optimistic_spin_queue osq; /* Spinner MCS lock */
->  #endif
->  #ifdef CONFIG_DEBUG_MUTEXES
->  	const char 		*name;
-> diff --git a/include/linux/osq_lock.h b/include/linux/osq_lock.h
-> new file mode 100644
-> index 0000000..b001682
-> --- /dev/null
-> +++ b/include/linux/osq_lock.h
-> @@ -0,0 +1,19 @@
-> +#ifndef __LINUX_OSQ_LOCK_H
-> +#define __LINUX_OSQ_LOCK_H
-> +
-> +/*
-> + * An MCS like lock especially tailored for optimistic spinning for sleeping
-> + * lock implementations (mutex, rwsem, etc).
-> + */
-> +
-> +#define OSQ_UNLOCKED_VAL (0)
-> +
-> +struct optimistic_spin_queue {
-> +	/*
-> +	 * Stores an encoded value of the CPU # of the tail node in the queue.
-> +	 * If the queue is empty, then it's set to OSQ_UNLOCKED_VAL.
-> +	 */
-> +	atomic_t tail;
-> +};
-> +
-> +#endif
-> diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-> index ba3f108..9fdcdd0 100644
-> --- a/include/linux/rwsem.h
-> +++ b/include/linux/rwsem.h
-> @@ -13,10 +13,9 @@
->  #include <linux/kernel.h>
->  #include <linux/list.h>
->  #include <linux/spinlock.h>
-> -
->  #include <linux/atomic.h>
-> +#include <linux/osq_lock.h>
->  
-> -struct optimistic_spin_node;
->  struct rw_semaphore;
->  
->  #ifdef CONFIG_RWSEM_GENERIC_SPINLOCK
-> @@ -33,7 +32,7 @@ struct rw_semaphore {
->  	 * if the owner is running on the cpu.
->  	 */
->  	struct task_struct *owner;
-> -	struct optimistic_spin_node *osq; /* spinner MCS lock */
-> +	struct optimistic_spin_queue osq; /* spinner MCS lock */
->  #endif
->  #ifdef CONFIG_DEBUG_LOCK_ALLOC
->  	struct lockdep_map	dep_map;
-> @@ -70,7 +69,7 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
->  	  __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),	\
->  	  LIST_HEAD_INIT((name).wait_list),		\
->  	  NULL, /* owner */				\
-> -	  NULL /* mcs lock */                           \
-> +	  { ATOMIC_INIT(OSQ_UNLOCKED_VAL) } /* osq */   \
+Signed-off-by: Josef Gajdusek <atx@atx.name>
+---
+ drivers/staging/iio/magnetometer/Kconfig   |   1 +
+ drivers/staging/iio/magnetometer/hmc5843.c | 140 +++++++++++++++++++----------
+ 2 files changed, 96 insertions(+), 45 deletions(-)
 
-This should probably be a macro, similar to the __RWSEM_DEP_MAP_INIT()
-below.  Open coded inits are evil.
-
-  OSQ_LOCK_INIT() ?
-
-
->  	  __RWSEM_DEP_MAP_INIT(name) }
->  #else
->  #define __RWSEM_INITIALIZER(name)			\
-> diff --git a/kernel/locking/mcs_spinlock.c b/kernel/locking/mcs_spinlock.c
-> index e9866f7..124a3bb 100644
-> --- a/kernel/locking/mcs_spinlock.c
-> +++ b/kernel/locking/mcs_spinlock.c
-> @@ -17,18 +17,43 @@
->  static DEFINE_PER_CPU_SHARED_ALIGNED(struct optimistic_spin_node, osq_node);
->  
->  /*
-> + * We use the value 0 to represent "no CPU", thus the encoded value
-> + * will be the CPU number incremented by 1.
-> + */
-> +static inline int encode_cpu(int cpu_nr)
-> +{
-> +	return (cpu_nr + 1);
-
-return is not a function, remove the parenthesis (checkpatch should
-point that out to you too).
-
-> +}
-> +
-> +static inline struct optimistic_spin_node *decode_cpu(int encoded_cpu_val)
-> +{
-> +	int cpu_nr = encoded_cpu_val - 1;
-> +
-> +	return per_cpu_ptr(&osq_node, cpu_nr);
-> +}
-> +
-> +/*
->   * Get a stable @node->next pointer, either for unlock() or unqueue() purposes.
->   * Can return NULL in case we were the last queued and we updated @lock instead.
->   */
->  static inline struct optimistic_spin_node *
-> -osq_wait_next(struct optimistic_spin_node **lock,
-> +osq_wait_next(struct optimistic_spin_queue *lock,
->  	      struct optimistic_spin_node *node,
->  	      struct optimistic_spin_node *prev)
->  {
->  	struct optimistic_spin_node *next = NULL;
-> +	int curr = encode_cpu(smp_processor_id()), old;
-
-Add a second line for "int old". Having it after an initialization is
-weird and confusing.
-
-
-> +
-> +	/*
-> +	 * If there is a prev node in queue, then the 'old' value will be
-> +	 * the prev node's CPU #, else it's set to OSQ_UNLOCKED_VAL since if
-> +	 * we're currently last in queue, then the queue will then become empty.
-> +	 */
-> +	old = prev ? prev->cpu : OSQ_UNLOCKED_VAL;
->  
->  	for (;;) {
-> -		if (*lock == node && cmpxchg(lock, node, prev) == node) {
-> +		if (atomic_read(&lock->tail) == curr &&
-> +		    atomic_cmpxchg(&lock->tail, curr, old) == curr) {
->  			/*
->  			 * We were the last queued, we moved @lock back. @prev
->  			 * will now observe @lock and will complete its
-> @@ -59,18 +84,22 @@ osq_wait_next(struct optimistic_spin_node **lock,
->  	return next;
->  }
->  
-> -bool osq_lock(struct optimistic_spin_node **lock)
-> +bool osq_lock(struct optimistic_spin_queue *lock)
->  {
->  	struct optimistic_spin_node *node = this_cpu_ptr(&osq_node);
->  	struct optimistic_spin_node *prev, *next;
-> +	int curr = encode_cpu(smp_processor_id()), old;
-
-Again, move old to its own line.
-
->  
->  	node->locked = 0;
->  	node->next = NULL;
-> +	node->cpu = curr;
->  
-> -	node->prev = prev = xchg(lock, node);
-> -	if (likely(prev == NULL))
-> +	old = atomic_xchg(&lock->tail, curr);
-> +	if (old == OSQ_UNLOCKED_VAL)
->  		return true;
->  
-> +	prev = decode_cpu(old);
-> +	node->prev = prev;
->  	ACCESS_ONCE(prev->next) = node;
->  
->  	/*
-> @@ -149,15 +178,16 @@ unqueue:
->  	return false;
->  }
->  
-> -void osq_unlock(struct optimistic_spin_node **lock)
-> +void osq_unlock(struct optimistic_spin_queue *lock)
->  {
->  	struct optimistic_spin_node *node = this_cpu_ptr(&osq_node);
->  	struct optimistic_spin_node *next;
-> +	int curr = encode_cpu(smp_processor_id());
->  
->  	/*
->  	 * Fast path for the uncontended case.
->  	 */
-> -	if (likely(cmpxchg(lock, node, NULL) == node))
-> +	if (likely(atomic_cmpxchg(&lock->tail, curr, OSQ_UNLOCKED_VAL) == curr))
->  		return;
->  
->  	/*
-> diff --git a/kernel/locking/mcs_spinlock.h b/kernel/locking/mcs_spinlock.h
-> index c99dc00..74356dc 100644
-> --- a/kernel/locking/mcs_spinlock.h
-> +++ b/kernel/locking/mcs_spinlock.h
-> @@ -121,9 +121,10 @@ void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
->  struct optimistic_spin_node {
->  	struct optimistic_spin_node *next, *prev;
->  	int locked; /* 1 if lock acquired */
-> +	int cpu; /* encoded CPU # value */
->  };
->  
-> -extern bool osq_lock(struct optimistic_spin_node **lock);
-> -extern void osq_unlock(struct optimistic_spin_node **lock);
-> +extern bool osq_lock(struct optimistic_spin_queue *lock);
-> +extern void osq_unlock(struct optimistic_spin_queue *lock);
->  
->  #endif /* __LINUX_MCS_SPINLOCK_H */
-> diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-> index bc73d33..d9b3139 100644
-> --- a/kernel/locking/mutex.c
-> +++ b/kernel/locking/mutex.c
-> @@ -60,7 +60,7 @@ __mutex_init(struct mutex *lock, const char *name, struct lock_class_key *key)
->  	INIT_LIST_HEAD(&lock->wait_list);
->  	mutex_clear_owner(lock);
->  #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
-> -	lock->osq = NULL;
-> +	atomic_set(&lock->osq.tail, OSQ_UNLOCKED_VAL);
-
-Probably should have a macro for this too.
-
->  #endif
->  
->  	debug_mutex_init(lock, name, key);
-> diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
-> index dacc321..9416ddb 100644
-> --- a/kernel/locking/rwsem-xadd.c
-> +++ b/kernel/locking/rwsem-xadd.c
-> @@ -84,7 +84,7 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
->  	INIT_LIST_HEAD(&sem->wait_list);
->  #ifdef CONFIG_SMP
->  	sem->owner = NULL;
-> -	sem->osq = NULL;
-> +	atomic_set(&sem->osq.tail, OSQ_UNLOCKED_VAL);
-
-And here.
-
--- Steve
-
->  #endif
->  }
->  
+diff --git a/drivers/staging/iio/magnetometer/Kconfig b/drivers/staging/iio/magnetometer/Kconfig
+index 34634da..ad88d61 100644
+--- a/drivers/staging/iio/magnetometer/Kconfig
++++ b/drivers/staging/iio/magnetometer/Kconfig
+@@ -8,6 +8,7 @@ config SENSORS_HMC5843
+ 	depends on I2C
+ 	select IIO_BUFFER
+ 	select IIO_TRIGGERED_BUFFER
++	select REGMAP_I2C
+ 	help
+ 	  Say Y here to add support for the Honeywell HMC5843, HMC5883 and
+ 	  HMC5883L 3-Axis Magnetometer (digital compass).
+diff --git a/drivers/staging/iio/magnetometer/hmc5843.c b/drivers/staging/iio/magnetometer/hmc5843.c
+index d4f4dd9..a458160 100644
+--- a/drivers/staging/iio/magnetometer/hmc5843.c
++++ b/drivers/staging/iio/magnetometer/hmc5843.c
+@@ -21,6 +21,7 @@
+ 
+ #include <linux/module.h>
+ #include <linux/i2c.h>
++#include <linux/regmap.h>
+ #include <linux/iio/iio.h>
+ #include <linux/iio/sysfs.h>
+ #include <linux/iio/trigger_consumer.h>
+@@ -34,6 +35,7 @@
+ #define HMC5843_DATA_OUT_MSB_REGS		0x03
+ #define HMC5843_STATUS_REG			0x09
+ #define HMC5843_ID_REG				0x0a
++#define HMC5843_ID_END				0x0c
+ 
+ enum hmc5843_ids {
+ 	HMC5843_ID,
+@@ -49,6 +51,7 @@ enum hmc5843_ids {
+ #define HMC5843_RANGE_GAIN_OFFSET		0x05
+ #define HMC5843_RANGE_GAIN_DEFAULT		0x01
+ #define HMC5843_RANGE_GAINS			8
++#define HMC5843_RANGE_GAIN_MASK		0xe0
+ 
+ /* Device status */
+ #define HMC5843_DATA_READY			0x01
+@@ -68,6 +71,7 @@ enum hmc5843_ids {
+ #define HMC5843_RATE_OFFSET			0x02
+ #define HMC5843_RATE_DEFAULT			0x04
+ #define HMC5843_RATES				7
++#define HMC5843_RATE_MASK		0x1c
+ 
+ /* Device measurement configuration */
+ #define HMC5843_MEAS_CONF_NORMAL		0x00
+@@ -121,10 +125,7 @@ struct hmc5843_chip_info {
+ struct hmc5843_data {
+ 	struct i2c_client *client;
+ 	struct mutex lock;
+-	u8 rate;
+-	u8 meas_conf;
+-	u8 operating_mode;
+-	u8 range;
++	struct regmap *regmap;
+ 	const struct hmc5843_chip_info *variant;
+ 	__be16 buffer[8]; /* 3x 16-bit channels + padding + 64-bit timestamp */
+ };
+@@ -135,10 +136,8 @@ static s32 hmc5843_set_mode(struct hmc5843_data *data, u8 operating_mode)
+ 	int ret;
+ 
+ 	mutex_lock(&data->lock);
+-	ret = i2c_smbus_write_byte_data(data->client, HMC5843_MODE_REG,
+-					operating_mode & HMC5843_MODE_MASK);
+-	if (ret >= 0)
+-		data->operating_mode = operating_mode;
++	ret = regmap_update_bits(data->regmap, HMC5843_MODE_REG,
++			HMC5843_MODE_MASK, operating_mode);
+ 	mutex_unlock(&data->lock);
+ 
+ 	return ret;
+@@ -146,15 +145,15 @@ static s32 hmc5843_set_mode(struct hmc5843_data *data, u8 operating_mode)
+ 
+ static int hmc5843_wait_measurement(struct hmc5843_data *data)
+ {
+-	s32 result;
+ 	int tries = 150;
++	int val;
++	int ret;
+ 
+ 	while (tries-- > 0) {
+-		result = i2c_smbus_read_byte_data(data->client,
+-			HMC5843_STATUS_REG);
+-		if (result < 0)
+-			return result;
+-		if (result & HMC5843_DATA_READY)
++		ret = regmap_read(data->regmap, HMC5843_STATUS_REG, &val);
++		if (ret < 0)
++			return ret;
++		if (val & HMC5843_DATA_READY)
+ 			break;
+ 		msleep(20);
+ 	}
+@@ -171,20 +170,20 @@ static int hmc5843_wait_measurement(struct hmc5843_data *data)
+ static int hmc5843_read_measurement(struct hmc5843_data *data,
+ 				    int idx, int *val)
+ {
+-	s32 result;
+ 	__be16 values[3];
++	int ret;
+ 
+ 	mutex_lock(&data->lock);
+-	result = hmc5843_wait_measurement(data);
+-	if (result < 0) {
++	ret = hmc5843_wait_measurement(data);
++	if (ret < 0) {
+ 		mutex_unlock(&data->lock);
+-		return result;
++		return ret;
+ 	}
+-	result = i2c_smbus_read_i2c_block_data(data->client,
+-		HMC5843_DATA_OUT_MSB_REGS, sizeof(values), (u8 *) values);
++	ret = regmap_bulk_read(data->regmap, HMC5843_DATA_OUT_MSB_REGS,
++			values, sizeof(values));
+ 	mutex_unlock(&data->lock);
+-	if (result < 0)
+-		return -EINVAL;
++	if (ret < 0)
++		return ret;
+ 
+ 	*val = sign_extend32(be16_to_cpu(values[idx]), 15);
+ 	return IIO_VAL_INT;
+@@ -208,16 +207,13 @@ static int hmc5843_read_measurement(struct hmc5843_data *data,
+  *     and BN.
+  *
+  */
+-static s32 hmc5843_set_meas_conf(struct hmc5843_data *data, u8 meas_conf)
++static int hmc5843_set_meas_conf(struct hmc5843_data *data, u8 meas_conf)
+ {
+ 	int ret;
+ 
+ 	mutex_lock(&data->lock);
+-	ret = i2c_smbus_write_byte_data(data->client, HMC5843_CONFIG_REG_A,
+-		(meas_conf & HMC5843_MEAS_CONF_MASK) |
+-		(data->rate << HMC5843_RATE_OFFSET));
+-	if (ret >= 0)
+-		data->meas_conf = meas_conf;
++	ret = regmap_update_bits(data->regmap, HMC5843_CONFIG_REG_A,
++			HMC5843_MEAS_CONF_MASK, meas_conf);
+ 	mutex_unlock(&data->lock);
+ 
+ 	return ret;
+@@ -228,7 +224,15 @@ static ssize_t hmc5843_show_measurement_configuration(struct device *dev,
+ 						char *buf)
+ {
+ 	struct hmc5843_data *data = iio_priv(dev_to_iio_dev(dev));
+-	return sprintf(buf, "%d\n", data->meas_conf);
++	int val;
++	int ret;
++
++	ret = regmap_read(data->regmap, HMC5843_CONFIG_REG_A, &val);
++	if (ret)
++		return ret;
++	val &= HMC5843_MEAS_CONF_MASK;
++
++	return sprintf(buf, "%d\n", val);
+ }
+ 
+ static ssize_t hmc5843_set_measurement_configuration(struct device *dev,
+@@ -282,10 +286,8 @@ static int hmc5843_set_samp_freq(struct hmc5843_data *data, u8 rate)
+ 	int ret;
+ 
+ 	mutex_lock(&data->lock);
+-	ret = i2c_smbus_write_byte_data(data->client, HMC5843_CONFIG_REG_A,
+-		data->meas_conf | (rate << HMC5843_RATE_OFFSET));
+-	if (ret >= 0)
+-		data->rate = rate;
++	ret = regmap_update_bits(data->regmap, HMC5843_CONFIG_REG_A,
++			HMC5843_RATE_MASK, rate << HMC5843_RATE_OFFSET);
+ 	mutex_unlock(&data->lock);
+ 
+ 	return ret;
+@@ -309,10 +311,9 @@ static int hmc5843_set_range_gain(struct hmc5843_data *data, u8 range)
+ 	int ret;
+ 
+ 	mutex_lock(&data->lock);
+-	ret = i2c_smbus_write_byte_data(data->client, HMC5843_CONFIG_REG_B,
+-		range << HMC5843_RANGE_GAIN_OFFSET);
+-	if (ret >= 0)
+-		data->range = range;
++	ret = regmap_update_bits(data->regmap, HMC5843_CONFIG_REG_B,
++			HMC5843_RANGE_GAIN_MASK,
++			range << HMC5843_RANGE_GAIN_OFFSET);
+ 	mutex_unlock(&data->lock);
+ 
+ 	return ret;
+@@ -358,17 +359,27 @@ static int hmc5843_read_raw(struct iio_dev *indio_dev,
+ 			    int *val, int *val2, long mask)
+ {
+ 	struct hmc5843_data *data = iio_priv(indio_dev);
++	int rval;
++	int ret;
+ 
+ 	switch (mask) {
+ 	case IIO_CHAN_INFO_RAW:
+ 		return hmc5843_read_measurement(data, chan->scan_index, val);
+ 	case IIO_CHAN_INFO_SCALE:
++		ret = regmap_read(data->regmap, HMC5843_CONFIG_REG_B, &rval);
++		if (ret < 0)
++			return ret;
++		rval >>= HMC5843_RANGE_GAIN_OFFSET;
+ 		*val = 0;
+-		*val2 = data->variant->regval_to_nanoscale[data->range];
++		*val2 = data->variant->regval_to_nanoscale[rval];
+ 		return IIO_VAL_INT_PLUS_NANO;
+ 	case IIO_CHAN_INFO_SAMP_FREQ:
+-		*val = data->variant->regval_to_samp_freq[data->rate][0];
+-		*val2 = data->variant->regval_to_samp_freq[data->rate][1];
++		ret = regmap_read(data->regmap, HMC5843_CONFIG_REG_A, &rval);
++		if (ret < 0)
++			return ret;
++		rval >>= HMC5843_RATE_OFFSET;
++		*val = data->variant->regval_to_samp_freq[rval][0];
++		*val2 = data->variant->regval_to_samp_freq[rval][1];
+ 		return IIO_VAL_INT_PLUS_MICRO;
+ 	}
+ 	return -EINVAL;
+@@ -426,9 +437,9 @@ static irqreturn_t hmc5843_trigger_handler(int irq, void *p)
+ 		goto done;
+ 	}
+ 
+-	ret = i2c_smbus_read_i2c_block_data(data->client,
+-		HMC5843_DATA_OUT_MSB_REGS, 3 * sizeof(__be16),
+-			(u8 *) data->buffer);
++	ret = regmap_bulk_read(data->regmap, HMC5843_DATA_OUT_MSB_REGS,
++			data->buffer, 3 * sizeof(__be16));
++
+ 	mutex_unlock(&data->lock);
+ 	if (ret < 0)
+ 		goto done;
+@@ -508,8 +519,8 @@ static int hmc5843_init(struct hmc5843_data *data)
+ 	int ret;
+ 	u8 id[3];
+ 
+-	ret = i2c_smbus_read_i2c_block_data(data->client, HMC5843_ID_REG,
+-		sizeof(id), id);
++	ret = regmap_bulk_read(data->regmap, HMC5843_ID_REG,
++			id, ARRAY_SIZE(id));
+ 	if (ret < 0)
+ 		return ret;
+ 	if (id[0] != 'H' || id[1] != '4' || id[2] != '3') {
+@@ -539,6 +550,44 @@ static const struct iio_info hmc5843_info = {
+ 
+ static const unsigned long hmc5843_scan_masks[] = {0x7, 0};
+ 
++static const struct regmap_range hmc5843_readable_ranges[] = {
++		regmap_reg_range(0, HMC5843_ID_END),
++};
++
++static struct regmap_access_table hmc5843_readable_table = {
++		.yes_ranges = hmc5843_readable_ranges,
++		.n_yes_ranges = ARRAY_SIZE(hmc5843_readable_ranges),
++};
++
++static const struct regmap_range hmc5843_writable_ranges[] = {
++		regmap_reg_range(0, HMC5843_MODE_REG),
++};
++
++static struct regmap_access_table hmc5843_writable_table = {
++		.yes_ranges = hmc5843_writable_ranges,
++		.n_yes_ranges = ARRAY_SIZE(hmc5843_writable_ranges),
++};
++
++static const struct regmap_range hmc5843_volatile_ranges[] = {
++		regmap_reg_range(HMC5843_DATA_OUT_MSB_REGS, HMC5843_STATUS_REG),
++};
++
++static struct regmap_access_table hmc5843_volatile_table = {
++		.yes_ranges = hmc5843_volatile_ranges,
++		.n_yes_ranges = ARRAY_SIZE(hmc5843_volatile_ranges),
++};
++
++static struct regmap_config hmc5843_regmap_config = {
++		.reg_bits = 8,
++		.val_bits = 8,
++
++		.rd_table = &hmc5843_readable_table,
++		.wr_table = &hmc5843_writable_table,
++		.volatile_table = &hmc5843_volatile_table,
++
++		.cache_type = REGCACHE_RBTREE,
++};
++
+ static int hmc5843_probe(struct i2c_client *client,
+ 			 const struct i2c_device_id *id)
+ {
+@@ -554,6 +603,7 @@ static int hmc5843_probe(struct i2c_client *client,
+ 	data = iio_priv(indio_dev);
+ 	data->client = client;
+ 	data->variant = &hmc5843_chip_info_tbl[id->driver_data];
++	data->regmap = devm_regmap_init_i2c(client, &hmc5843_regmap_config);
+ 	mutex_init(&data->lock);
+ 
+ 	i2c_set_clientdata(client, indio_dev);
+-- 
+1.8.5.5
 
