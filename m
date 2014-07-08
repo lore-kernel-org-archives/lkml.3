@@ -1,124 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756216AbaGHA7v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:59:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55444 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753121AbaGGXyH (ORCPT
+	id S1756227AbaGHBAD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:00:03 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:41607 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753121AbaGHA76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:07 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mario Kleiner <mario.kleiner.de@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [PATCH 3.15 037/122] drm/nv50-/mc: fix kms pageflip events by reordering irq handling order.
-Date: Mon,  7 Jul 2014 16:56:39 -0700
-Message-Id: <20140707235735.356207989@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
-References: <20140707235734.234226883@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Mon, 7 Jul 2014 20:59:58 -0400
+Date: Mon, 7 Jul 2014 18:59:54 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: linux-pci <linux-pci@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 6/9] pci: Introduce a domain number for
+ pci_host_bridge.
+Message-ID: <20140708005954.GC22939@google.com>
+References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
+ <1404240214-9804-7-git-send-email-Liviu.Dudau@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404240214-9804-7-git-send-email-Liviu.Dudau@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jul 01, 2014 at 07:43:31PM +0100, Liviu Dudau wrote:
+> Make it easier to discover the domain number of a bus by storing
+> the number in pci_host_bridge for the root bus. Several architectures
+> have their own way of storing this information, so it makes sense
+> to try to unify the code. While at this, add a new function that
+> creates a root bus in a given domain and make pci_create_root_bus()
+> a wrapper around this function.
 
-------------------
+"While at this" is always a good clue that maybe something should be
+split into a separate patch :)  This is a very good example, since it
+adds a new interface that deserves its own changelog.
 
-From: Mario Kleiner <mario.kleiner.de@gmail.com>
+> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> Tested-by: Tanmay Inamdar <tinamdar@apm.com>
+> ---
+>  drivers/pci/probe.c | 41 +++++++++++++++++++++++++++++++++--------
+>  include/linux/pci.h |  4 ++++
+>  2 files changed, 37 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index 2c92662..abf5e82 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -1748,8 +1748,9 @@ void __weak pcibios_remove_bus(struct pci_bus *bus)
+>  {
+>  }
+>  
+> -struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+> -		struct pci_ops *ops, void *sysdata, struct list_head *resources)
+> +struct pci_bus *pci_create_root_bus_in_domain(struct device *parent,
+> +		int domain, int bus, struct pci_ops *ops, void *sysdata,
+> +		struct list_head *resources)
 
-commit dcfb1009df3b4ad8d2e0779dd45b438629d6858a upstream.
+I don't think we should do it this way; this makes it possible to have a
+host bridge where "bridge->domain_nr != pci_domain_nr(bridge->bus)".
 
-Whenever a single nouveau_mc_intr() main gpu irq-handler invocation was
-responsible for calling both, the vblank-irq handler (display engine irq)
-and kms-pageflip completion handler (from fifo irq), the order of
-invocation was wrong. nouveau_finish_flip() was called before
-drm_handle_vblank() for the vblank of pageflip completion, so the
-emitted pageflip event contained stale vblank count and timestamp
-from previous vblank. This caused failure in userspace to timestamp
-properly.
+I wonder if it would help to make a weak pci_domain_nr() function that
+returns "bridge->domain_nr".  Then each arch could individually drop its
+pci_domain_nr() definition as it was converted, e.g., something like this:
 
-Reorder order of invocation of engine irq handlers: Put
-NVDEV_ENGINE_DISP always on top, and thereby before NVDEV_ENGINE_FIFO,
-so that drm_handle_vblank() gets called to update vblank timestamps
-and count before potential pageflip events make use of that
-information.
+  - Convert every arch pci_domain_nr() from a #define to a non-inline
+    function
+  - Add bridge.domain_nr, initialized from pci_domain_nr()
+  - Add a weak generic pci_domain_nr() that returns bridge.domain_nr
+  - Add a way to create a host bridge in a specified domain, so we can
+    initialize bridge.domain_nr without using pci_domain_nr()
+  - Convert each arch to use the new creation mechanism and drop its
+    pci_domain_nr() implementation
 
-This works on nv-50 and later, where kms-pageflip completion triggers
-an irq either after a separate vblank irq, or both pageflip and vblank
-trigger one common irq invocation, but never before vblank irqs.
-
-v2 (Ben):
-- removed mods for nv04-nv40, it doesn't help there anyway
-- this is considered a hack, and a better solution should be found
-
-Signed-off-by: Mario Kleiner <mario.kleiner.de@gmail.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/gpu/drm/nouveau/core/subdev/mc/nv50.c |    2 +-
- drivers/gpu/drm/nouveau/core/subdev/mc/nv98.c |    2 +-
- drivers/gpu/drm/nouveau/core/subdev/mc/nvc0.c |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
-
---- a/drivers/gpu/drm/nouveau/core/subdev/mc/nv50.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/mc/nv50.c
-@@ -26,6 +26,7 @@
- 
- const struct nouveau_mc_intr
- nv50_mc_intr[] = {
-+	{ 0x04000000, NVDEV_ENGINE_DISP },  /* DISP before FIFO, so pageflip-timestamping works! */
- 	{ 0x00000001, NVDEV_ENGINE_MPEG },
- 	{ 0x00000100, NVDEV_ENGINE_FIFO },
- 	{ 0x00001000, NVDEV_ENGINE_GR },
-@@ -34,7 +35,6 @@ nv50_mc_intr[] = {
- 	{ 0x00020000, NVDEV_ENGINE_VP },	/* NV84- */
- 	{ 0x00100000, NVDEV_SUBDEV_TIMER },
- 	{ 0x00200000, NVDEV_SUBDEV_GPIO },
--	{ 0x04000000, NVDEV_ENGINE_DISP },
- 	{ 0x10000000, NVDEV_SUBDEV_BUS },
- 	{ 0x80000000, NVDEV_ENGINE_SW },
- 	{ 0x0002d101, NVDEV_SUBDEV_FB },
---- a/drivers/gpu/drm/nouveau/core/subdev/mc/nv98.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/mc/nv98.c
-@@ -26,6 +26,7 @@
- 
- static const struct nouveau_mc_intr
- nv98_mc_intr[] = {
-+	{ 0x04000000, NVDEV_ENGINE_DISP },  /* DISP first, so pageflip timestamps work */
- 	{ 0x00000001, NVDEV_ENGINE_PPP },
- 	{ 0x00000100, NVDEV_ENGINE_FIFO },
- 	{ 0x00001000, NVDEV_ENGINE_GR },
-@@ -37,7 +38,6 @@ nv98_mc_intr[] = {
- 	{ 0x00100000, NVDEV_SUBDEV_TIMER },
- 	{ 0x00200000, NVDEV_SUBDEV_GPIO },
- 	{ 0x00400000, NVDEV_ENGINE_COPY0 },	/* NVA3-     */
--	{ 0x04000000, NVDEV_ENGINE_DISP },
- 	{ 0x10000000, NVDEV_SUBDEV_BUS },
- 	{ 0x80000000, NVDEV_ENGINE_SW },
- 	{ 0x0042d101, NVDEV_SUBDEV_FB },
---- a/drivers/gpu/drm/nouveau/core/subdev/mc/nvc0.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/mc/nvc0.c
-@@ -26,6 +26,7 @@
- 
- const struct nouveau_mc_intr
- nvc0_mc_intr[] = {
-+	{ 0x04000000, NVDEV_ENGINE_DISP },  /* DISP first, so pageflip timestamps work. */
- 	{ 0x00000001, NVDEV_ENGINE_PPP },
- 	{ 0x00000020, NVDEV_ENGINE_COPY0 },
- 	{ 0x00000040, NVDEV_ENGINE_COPY1 },
-@@ -40,7 +41,6 @@ nvc0_mc_intr[] = {
- 	{ 0x00200000, NVDEV_SUBDEV_GPIO },
- 	{ 0x01000000, NVDEV_SUBDEV_PWR },
- 	{ 0x02000000, NVDEV_SUBDEV_LTCG },
--	{ 0x04000000, NVDEV_ENGINE_DISP },
- 	{ 0x08000000, NVDEV_SUBDEV_FB },
- 	{ 0x10000000, NVDEV_SUBDEV_BUS },
- 	{ 0x40000000, NVDEV_SUBDEV_IBUS },
-
-
+>  {
+>  	int error;
+>  	struct pci_host_bridge *bridge;
+> @@ -1762,27 +1763,31 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+>  
+>  	bridge = pci_alloc_host_bridge();
+>  	if (!bridge)
+> -		return NULL;
+> +		return ERR_PTR(-ENOMEM);
+>  
+>  	bridge->dev.parent = parent;
+>  	bridge->dev.release = pci_release_host_bridge_dev;
+> +	bridge->domain_nr = domain;
+>  
+>  	b = pci_alloc_bus();
+> -	if (!b)
+> +	if (!b) {
+> +		error = -ENOMEM;
+>  		goto err_out;
+> +	}
+>  
+>  	b->sysdata = sysdata;
+>  	b->ops = ops;
+>  	b->number = b->busn_res.start = bus;
+> -	b2 = pci_find_bus(pci_domain_nr(b), bus);
+> +	b2 = pci_find_bus(bridge->domain_nr, bus);
+>  	if (b2) {
+>  		/* If we already got to this bus through a different bridge, ignore it */
+>  		dev_dbg(&b2->dev, "bus already known\n");
+> +		error = -EEXIST;
+>  		goto err_bus_out;
+>  	}
+>  
+>  	bridge->bus = b;
+> -	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
+> +	dev_set_name(&bridge->dev, "pci%04x:%02x", bridge->domain_nr, bus);
+>  	error = pcibios_root_bridge_prepare(bridge);
+>  	if (error)
+>  		goto err_out;
+> @@ -1801,7 +1806,7 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+>  
+>  	b->dev.class = &pcibus_class;
+>  	b->dev.parent = b->bridge;
+> -	dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
+> +	dev_set_name(&b->dev, "%04x:%02x", bridge->domain_nr, bus);
+>  	error = device_register(&b->dev);
+>  	if (error)
+>  		goto class_dev_reg_err;
+> @@ -1851,7 +1856,27 @@ err_bus_out:
+>  	kfree(b);
+>  err_out:
+>  	kfree(bridge);
+> -	return NULL;
+> +	return ERR_PTR(error);
+> +}
+> +
+> +struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+> +		struct pci_ops *ops, void *sysdata, struct list_head *resources)
+> +{
+> +	int domain_nr;
+> +	struct pci_bus *b = pci_alloc_bus();
+> +	if (!b)
+> +		return NULL;
+> +
+> +	b->sysdata = sysdata;
+> +	domain_nr = pci_domain_nr(b);
+> +	kfree(b);
+> +
+> +	b = pci_create_root_bus_in_domain(parent, domain_nr, bus,
+> +				ops, sysdata, resources);
+> +	if (IS_ERR(b))
+> +		return NULL;
+> +
+> +	return b;
+>  }
+>  
+>  int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int bus_max)
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 466bcd1..7e7b939 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -401,6 +401,7 @@ struct pci_host_bridge_window {
+>  struct pci_host_bridge {
+>  	struct device dev;
+>  	struct pci_bus *bus;		/* root bus */
+> +	int domain_nr;
+>  	struct list_head windows;	/* pci_host_bridge_windows */
+>  	void (*release_fn)(struct pci_host_bridge *);
+>  	void *release_data;
+> @@ -769,6 +770,9 @@ struct pci_bus *pci_scan_bus(int bus, struct pci_ops *ops, void *sysdata);
+>  struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+>  				    struct pci_ops *ops, void *sysdata,
+>  				    struct list_head *resources);
+> +struct pci_bus *pci_create_root_bus_in_domain(struct device *parent,
+> +			int domain, int bus, struct pci_ops *ops,
+> +			void *sysdata, struct list_head *resources);
+>  int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int busmax);
+>  int pci_bus_update_busn_res_end(struct pci_bus *b, int busmax);
+>  void pci_bus_release_busn_res(struct pci_bus *b);
+> -- 
+> 2.0.0
+> 
