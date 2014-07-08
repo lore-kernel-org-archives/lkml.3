@@ -1,38 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922AbaGHIcj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 04:32:39 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:24090 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754005AbaGHIcH (ORCPT
+	id S1753952AbaGHId0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 04:33:26 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:61492 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753141AbaGHIdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 04:32:07 -0400
-Date: Tue, 8 Jul 2014 11:26:45 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Guillaume Clement <gclement@baobob.org>
-Cc: Julian Andres Klode <jak@jak-linux.org>, Marc Dietrich <marvin24@gmx.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-tegra@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, ac100@lists.launchpad.net
-Subject: Re: [PATCH 5/5] staging:nvec: Add missing blank line after
- declarations.
-Message-ID: <20140708082644.GF25880@mwanda>
-References: <1404772297-6549-1-git-send-email-gclement@baobob.org>
- <1404772297-6549-6-git-send-email-gclement@baobob.org>
+	Tue, 8 Jul 2014 04:33:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404772297-6549-6-git-send-email-gclement@baobob.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <20140701122717.GN23300@sirena.org.uk>
+References: <1404215726-2480-1-git-send-email-broonie@kernel.org>
+	<20140701120622.GJ32514@n2100.arm.linux.org.uk>
+	<20140701121142.GM23300@sirena.org.uk>
+	<CAAVeFuJqRW0ih8Mg9MFwLf=wQ7eVK5+pm8deW0vTUdozJ16FfQ@mail.gmail.com>
+	<20140701122717.GN23300@sirena.org.uk>
+Date: Tue, 8 Jul 2014 10:33:23 +0200
+Message-ID: <CACRpkdZ7ai0AShAen=AkaorHt0ObhYCDC-OuHG-9nVb3LLt3KQ@mail.gmail.com>
+Subject: Re: [PATCH] regulator: core: Still free GPIOs using gpio_free()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks ok.  If you wanted it probably would have been better to fold
-patches 3, 4, and 5 together but this is ok too.
+On Tue, Jul 1, 2014 at 2:27 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Tue, Jul 01, 2014 at 09:24:22PM +0900, Alexandre Courbot wrote:
+>> On Tue, Jul 1, 2014 at 9:11 PM, Mark Brown <broonie@kernel.org> wrote:
+>
+>> > Huh, good point (though it still seems a bit neater to match up the
+>> > request and release functions I guess).  Linus?
+>
+>> Yeah it's a nice habit to free the GPIOs using the same interface as
+>> the one used to obtain them. Although if we are to allow the regulator
+>> framework to request GPIO through both the integer and descriptor
+>> interfaces, we certainly don't want to track that information forever.
+>
+>> On top of that we want to limit the use of gpio_to_desc() and
+>> desc_to_gpio() in drivers as much as possible, so I'd say I prefer to
+>> see gpiod_free() used no matter where the GPIO came from.
+>
+> Right, but Linus said we didn't need this conversion to descriptors so
+> I'm a bit confused as to what the issue he was raising was.
 
-regards,
-dan carpenter
+Now I'm probably confusing myself...
 
+All drivers should as far as possible use descriptors internally, doing
+things like gpio_to_desc() only for backward-compatibility where
+necessary, with the intent of eventually ridding the integer interfaces
+entirely.
 
+It may be an eternal project, but hey, we are atleast two of us
+pursuing it.
+
+Yours,
+Linus Walleij
