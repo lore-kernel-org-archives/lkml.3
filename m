@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997AbaGHNFO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:05:14 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:43535 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754600AbaGHNFH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:05:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140708125138.GA4749@infradead.org>
-References: <1404124096-21445-1-git-send-email-drysdale@google.com>
- <1404124096-21445-2-git-send-email-drysdale@google.com> <CALCETrU=HLmw9n-DxPkFV1xP5wtzQ7-YF3-uao6YiGZODA9kdw@mail.gmail.com>
- <20140630154928.GB10375@google.com> <CALCETrWJ-rqDo8OvSZWPUt1806gObNtwVHvC4M6kfQgvd3Eg9w@mail.gmail.com>
- <20140708120702.GB30459@infradead.org> <CAD=T17FQEZV+iy91wQAvAdd0PW2tsfjpU7atp-xeatm5sEGz5Q@mail.gmail.com>
- <20140708125138.GA4749@infradead.org>
-From: Meredydd Luff <meredydd@senatehouse.org>
-Date: Tue, 8 Jul 2014 14:04:45 +0100
-Message-ID: <CAD=T17FcSKCkEwGMDtcss0Ye-EwuW4Gd2bmXiVj0YV2JG3xeWQ@mail.gmail.com>
-Subject: Re: [PATCH 01/11] fs: add O_BENEATH_ONLY flag to openat(2)
+	id S1755024AbaGHNFg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:05:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45632 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754861AbaGHNFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 09:05:32 -0400
+Date: Tue, 8 Jul 2014 09:05:05 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
 To: Christoph Hellwig <hch@infradead.org>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        David Drysdale <drysdale@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-man <linux-man@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+cc: Jens Axboe <axboe@kernel.dk>, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [dm-devel] [PATCH] blk-lib: fix error reporting
+In-Reply-To: <20140708095038.GA31180@infradead.org>
+Message-ID: <alpine.LRH.2.02.1407080859370.27276@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1407031514320.3347@file01.intranet.prod.int.rdu2.redhat.com> <20140708095038.GA31180@infradead.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 July 2014 13:51, Christoph Hellwig <hch@infradead.org> wrote:
-> Yeah, it won't work for an explicit directory - I was thinking of
-> working relative to $CWD.
 
-I think that would sacrifice far too much flexibility. Even without
-Capsicum, it would be worthwhile to be able to wire up a static
-seccomp-bpf filter to enforce constraints such as "you can open files
-under fd#5 for reading, but you can only write to files under fd#6,
-and you can't do any global lookups."
 
-Meredydd
+On Tue, 8 Jul 2014, Christoph Hellwig wrote:
+
+> > +	if (unlikely(err))
+> > +		ACCESS_ONCE(bb->error) = err;
+> 
+> I can't see a reason for the ACCESS_ONCE here.
+
+Multiple bios can be completed concurrently, so they write bb->error at 
+the same time. The compiler may do store tearing (see "store tearing" in 
+Documentation/memory-barriers.txt) - it may split one 4-byte write into 
+several smaller writes - and it could result in setting bb->error to 
+invalid value. We need ACCESS_ONCE to make sure that store tearing doesn't 
+happen.
+
+Mikulas
+
+> Also the likely/unlikely annotations here smell like premature
+> optimization.
+> 
+> Otherwise looks good to me.
