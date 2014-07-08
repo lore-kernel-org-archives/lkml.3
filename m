@@ -1,90 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296AbaGHHze (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 03:55:34 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35324 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751649AbaGHHzd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 03:55:33 -0400
-Date: Tue, 8 Jul 2014 09:51:06 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/5] ARM: at91/dt: sama5d3: define mpddr clock and ramc
- clocks
-Message-ID: <20140708075105.GI13423@lukather>
-References: <1404746355-19988-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1404746355-19988-4-git-send-email-alexandre.belloni@free-electrons.com>
- <20140707183236.GF9558@ns203013.ovh.net>
- <20140707195556.GI3113@piout.net>
+	id S1753151AbaGHH6s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 03:58:48 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53692 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750927AbaGHH6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 03:58:46 -0400
+Date: Tue, 8 Jul 2014 00:58:43 -0700
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Changman Lee <cm224.lee@samsung.com>,
+        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: f2fs: Add f2fs_balance_fs for direct IO
+Message-ID: <20140708075843.GA59558@jmac>
+References: <1404711988-18264-1-git-send-email-ying.huang@intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YhFoJY/gx7awiIuK"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140707195556.GI3113@piout.net>
+In-Reply-To: <1404711988-18264-1-git-send-email-ying.huang@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Huang,
 
---YhFoJY/gx7awiIuK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It occurs a merge conflict.
+Please check the patch.
 
-Hi,
+Anyway, IMO, it needs to place f2fs_balance_fs somewhere in get_data_block.
 
-On Mon, Jul 07, 2014 at 09:55:56PM +0200, Alexandre Belloni wrote:
-> On 07/07/2014 at 20:32:36 +0200, Jean-Christophe PLAGNIOL-VILLARD wrote :
-> > > -				compatible =3D "atmel,at91sam9g45-ddramc";
-> > > +				compatible =3D "atmel,sama5d3-mpddramc", "atmel,at91sam9g45-ddra=
-mc";
-> > the sama5 ddr controler is not back compitble with 9g45 one the compati=
-ble is
-> > wrong
->=20
-> Keeping atmel,at91sam9g45-ddramc allows to reuse the old code for the
-> iomap needed for the PM code without adding a new compatible in the
-> ramc_ids[] array.
+Thanks,
 
-That looks like a pretty bad argument :)
+On Mon, Jul 07, 2014 at 01:46:28PM +0800, Huang Ying wrote:
+> Otherwise, if a large amount of direct IO writes were done, the
+> segment allocation may be failed because no enough segments are gced.
+> 
+> Signed-off-by: Huang, Ying <ying.huang@intel.com>
+> ---
+>  fs/f2fs/data.c |    6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> --- a/fs/f2fs/data.c
+> +++ b/fs/f2fs/data.c
+> @@ -1038,6 +1038,7 @@ static ssize_t f2fs_direct_IO(int rw, st
+>  {
+>  	struct file *file = iocb->ki_filp;
+>  	struct inode *inode = file->f_mapping->host;
+> +	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+>  
+>  	/* Let buffer I/O handle the inline data case. */
+>  	if (f2fs_has_inline_data(inode))
+> @@ -1046,8 +1047,11 @@ static ssize_t f2fs_direct_IO(int rw, st
+>  	if (check_direct_IO(inode, rw, iter, offset))
+>  		return 0;
+>  
+> +	if (rw == WRITE)
+> +		f2fs_balance_fs(sbi);
+> +
+>  	/* clear fsync mark to recover these blocks */
+> -	fsync_mark_clear(F2FS_SB(inode->i_sb), inode->i_ino);
+> +	fsync_mark_clear(sbi, inode->i_ino);
+>  
+>  	return blockdev_direct_IO(rw, iocb, inode, iter, offset,
+>  				  get_data_block);
 
-If the two devices are not alike, they should have a different
-compatible, it's as simple as that, and Linux should just deal with
-it.
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---YhFoJY/gx7awiIuK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTu6LpAAoJEBx+YmzsjxAgnWQQAIPPLHL9ICn1GsIoiieANjPY
-alw0a9GIwamf52RBe6jeHsoEECbRnh9DNJiSehjsj+ynAmjei43pcCcj7gI1RPtb
-mgDJj6+h1W3d06kIY5A5IqcLMta+1aYDAloCN30AdPtZ6oYuJ0xyUMtub7DD6I5z
-3RHFe9wytsr++vDFrDrgpgoBjSO/aaTt2zVxazPG6iPUQssXu1GOknd5GVQ8MZjt
-061M5k4QZYHeojSCF7kxkAoeoXAdJT4DXdDe+NNoRWhFFYN0oGRRBT0AI5MJlU13
-eAq0hDfNE42LIljXJ73GH9txnAA0IJY8T5abZnIjNI4m9UDKmucRGF9a1ABP2BkV
-a/AER6/VtsIWtHTB0R6rLASCCQHqobf7rSPwYq4mWLeWuAMEoOGAT0qpG7Cp4OA7
-3QBadh9M5pD+w8siLraI+EgTPKUrrO/srrz5kvP3UVN/r92lzKEQE3488jeecMv+
-qZNUK2gj5Z6dE8UGxekxfrHiuZPenTqLCy+5sSQ1C6/BDcFThG7NDHmfZWcXrgOW
-l2fSL1xKe2vjWvkcagWo9vTw8lRxHA7m4hONv2xTKxIteMpwiOg5xZlwnxRDMLXO
-dSI+p2xKSYo9Pvehyh6SBQbcBWWV+Lq16gsqgXDphX8Aq2zOQXA750JeUbkzKjvh
-F/gMCo/WKNQ2AKXPObEI
-=djgG
------END PGP SIGNATURE-----
-
---YhFoJY/gx7awiIuK--
+-- 
+Jaegeuk Kim
