@@ -1,115 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932381AbaGHTaD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:30:03 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54167 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755697AbaGHTIk (ORCPT
+	id S932447AbaGHTaR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:30:17 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:39556 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932383AbaGHTaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:08:40 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Tue, 8 Jul 2014 15:30:07 -0400
+Date: Tue, 8 Jul 2014 12:30:03 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Nick Krause <xerofoify@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Compile issues with se7206_defconfig
+Message-ID: <20140708193003.GA30984@roeck-us.net>
+References: <CAPDOMVid3nbw0-3n_5d8QF_c5uOosWyYRPtqW29ZUB9Ziz7F+Q@mail.gmail.com>
+ <53BB6D8F.70900@roeck-us.net>
+ <CAMuHMdVS79CpOiNkB60Vdrbe_ba=C=ONTFbsXbkcjJacSLaZYw@mail.gmail.com>
+ <20140708164525.GB12935@roeck-us.net>
+ <CAMuHMdVpWMboV1JGnOY7BtB1Qcm2=70Q079NPSGfut4Kjz34dQ@mail.gmail.com>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>,
-        "Jaroslav Kysela" <perex@perex.cz>,
-        "Lars-Peter Clausen" <lars@metafoo.de>
-Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.492344936@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 085/125] ALSA: control: Don't access controls outside
- of protected regions
-In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdVpWMboV1JGnOY7BtB1Qcm2=70Q079NPSGfut4Kjz34dQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.61-rc1 review patch.  If anyone has any objections, please let me know.
+On Tue, Jul 08, 2014 at 09:24:49PM +0200, Geert Uytterhoeven wrote:
+> On Tue, Jul 8, 2014 at 6:45 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> >> > net/built-in.o: In function `__sk_run_filter':
+> >> > filter.c:(.text+0x3156c): undefined reference to `__fpscr_values'
+> >> > filter.c:(.text+0x31760): undefined reference to `__fpscr_values'
+> >> > filter.c:(.text+0x31c8c): undefined reference to `__fpscr_values'
+> >> > filter.c:(.text+0x31f00): undefined reference to `__fpscr_values'
+> >> > filter.c:(.text+0x323b0): undefined reference to `__fpscr_values'
+> >>
+> >> Toolchain issue: the compiler doesn't recognize the option to disable
+> >> the FPU, so it isn't passed, cfr.
+> >> www.spinics.net/lists/netdev/msg278300.html
+> >
+> > Seems that similar problems were fixed earlier without requiring a toolchain
+> > change. What is different this time (besides the apparent difficulty to build a
+> > new toolchain) ? Or am I missing something ?
+> 
+> sh4-linux-gcc doesn't recognize -m2a-nofpu, so that is not passed.
+> It does recognize -m4a-nofpu, but when that's passed, it complains
+> about opcode not valid for this cpu variant in inline asm/
+> 
+> Ah, it also recognizes -m4-nofpu. If I add that, se7206_defconfig builds.
+> I assume a proper sh2a-linux toolchain will not recognize the -m4-nofpu,
+> so it won't be passed due to $(call cc-option).
+> 
+> Does this sound like an acceptable solution? If yes, I'll send a patch.
+> 
+Sounds good to me.
 
-------------------
-
-From: Lars-Peter Clausen <lars@metafoo.de>
-
-commit fd9f26e4eca5d08a27d12c0933fceef76ed9663d upstream.
-
-A control that is visible on the card->controls list can be freed at any time.
-This means we must not access any of its memory while not holding the
-controls_rw_lock. Otherwise we risk a use after free access.
-
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Jaroslav Kysela <perex@perex.cz>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- sound/core/control.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
-
---- a/sound/core/control.c
-+++ b/sound/core/control.c
-@@ -329,6 +329,7 @@ int snd_ctl_add(struct snd_card *card, s
- {
- 	struct snd_ctl_elem_id id;
- 	unsigned int idx;
-+	unsigned int count;
- 	int err = -EINVAL;
- 
- 	if (! kcontrol)
-@@ -357,8 +358,9 @@ int snd_ctl_add(struct snd_card *card, s
- 	card->controls_count += kcontrol->count;
- 	kcontrol->id.numid = card->last_numid + 1;
- 	card->last_numid += kcontrol->count;
-+	count = kcontrol->count;
- 	up_write(&card->controls_rwsem);
--	for (idx = 0; idx < kcontrol->count; idx++, id.index++, id.numid++)
-+	for (idx = 0; idx < count; idx++, id.index++, id.numid++)
- 		snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_ADD, &id);
- 	return 0;
- 
-@@ -387,6 +389,7 @@ int snd_ctl_replace(struct snd_card *car
- 		    bool add_on_replace)
- {
- 	struct snd_ctl_elem_id id;
-+	unsigned int count;
- 	unsigned int idx;
- 	struct snd_kcontrol *old;
- 	int ret;
-@@ -422,8 +425,9 @@ add:
- 	card->controls_count += kcontrol->count;
- 	kcontrol->id.numid = card->last_numid + 1;
- 	card->last_numid += kcontrol->count;
-+	count = kcontrol->count;
- 	up_write(&card->controls_rwsem);
--	for (idx = 0; idx < kcontrol->count; idx++, id.index++, id.numid++)
-+	for (idx = 0; idx < count; idx++, id.index++, id.numid++)
- 		snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_ADD, &id);
- 	return 0;
- 
-@@ -894,9 +898,9 @@ static int snd_ctl_elem_write(struct snd
- 			result = kctl->put(kctl, control);
- 		}
- 		if (result > 0) {
-+			struct snd_ctl_elem_id id = control->id;
- 			up_read(&card->controls_rwsem);
--			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_VALUE,
--				       &control->id);
-+			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_VALUE, &id);
- 			return 0;
- 		}
- 	}
-@@ -1330,8 +1334,9 @@ static int snd_ctl_tlv_ioctl(struct snd_
- 		}
- 		err = kctl->tlv.c(kctl, op_flag, tlv.length, _tlv->tlv); 
- 		if (err > 0) {
-+			struct snd_ctl_elem_id id = kctl->id;
- 			up_read(&card->controls_rwsem);
--			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_TLV, &kctl->id);
-+			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_TLV, &id);
- 			return 0;
- 		}
- 	} else {
-
+Guenter
