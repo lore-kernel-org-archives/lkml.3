@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932089AbaGHADW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:03:22 -0400
+	id S1754374AbaGHAKt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:10:49 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:56407 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754786AbaGHADQ (ORCPT
+	with ESMTP id S932074AbaGHADW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 20:03:16 -0400
+	Mon, 7 Jul 2014 20:03:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David R. Piegdon" <lkml@p23q.org>, Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 3.4 19/44] ARM: OMAP2+: Fix parser-bug in platform muxing code
-Date: Mon,  7 Jul 2014 17:07:09 -0700
-Message-Id: <20140707235859.229687247@linuxfoundation.org>
+        Nadav Amit <namit@cs.technion.ac.il>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.4 22/44] KVM: x86: Increase the number of fixed MTRR regs to 10
+Date: Mon,  7 Jul 2014 17:07:12 -0700
+Message-Id: <20140707235859.315158598@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235858.652771077@linuxfoundation.org>
 References: <20140707235858.652771077@linuxfoundation.org>
@@ -28,60 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David R. Piegdon" <lkml@p23q.org>
+From: Nadav Amit <namit@cs.technion.ac.il>
 
-commit c021f241f4fab2bb4fc4120a38a828a03dd3f970 upstream.
+commit 682367c494869008eb89ef733f196e99415ae862 upstream.
 
-Fix a parser-bug in the omap2 muxing code where muxtable-entries will be
-wrongly selected if the requested muxname is a *prefix* of their
-m0-entry and they have a matching mN-entry. Fix by additionally checking
-that the length of the m0_entry is equal.
+Recent Intel CPUs have 10 variable range MTRRs. Since operating systems
+sometime make assumptions on CPUs while they ignore capability MSRs, it is
+better for KVM to be consistent with recent CPUs. Reporting more MTRRs than
+actually supported has no functional implications.
 
-For example muxing of "dss_data2.dss_data2" on omap32xx will fail
-because the prefix "dss_data2" will match the mux-entries "dss_data2" as
-well as "dss_data20", with the suffix "dss_data2" matching m0 (for
-dss_data2) and m4 (for dss_data20). Thus both are recognized as signal
-path candidates:
-
-Relevant muxentries from mux34xx.c:
-        _OMAP3_MUXENTRY(DSS_DATA20, 90,
-                "dss_data20", NULL, "mcspi3_somi", "dss_data2",
-                "gpio_90", NULL, NULL, "safe_mode"),
-        _OMAP3_MUXENTRY(DSS_DATA2, 72,
-                "dss_data2", NULL, NULL, NULL,
-                "gpio_72", NULL, NULL, "safe_mode"),
-
-This will result in a failure to mux the pin at all:
-
- _omap_mux_get_by_name: Multiple signal paths (2) for dss_data2.dss_data2
-
-Patch should apply to linus' latest master down to rather old linux-2.6
-trees.
-
-Signed-off-by: David R. Piegdon <lkml@p23q.org>
-Cc: stable@vger.kernel.org
-[tony@atomide.com: updated description to include full description]
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/mux.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mach-omap2/mux.c
-+++ b/arch/arm/mach-omap2/mux.c
-@@ -184,8 +184,10 @@ static int __init _omap_mux_get_by_name(
- 		m0_entry = mux->muxnames[0];
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -102,7 +102,7 @@
+ #define KVM_REFILL_PAGES 25
+ #define KVM_MAX_CPUID_ENTRIES 80
+ #define KVM_NR_FIXED_MTRR_REGION 88
+-#define KVM_NR_VAR_MTRR 8
++#define KVM_NR_VAR_MTRR 10
  
- 		/* First check for full name in mode0.muxmode format */
--		if (mode0_len && strncmp(muxname, m0_entry, mode0_len))
--			continue;
-+		if (mode0_len)
-+			if (strncmp(muxname, m0_entry, mode0_len) ||
-+			    (strlen(m0_entry) != mode0_len))
-+				continue;
+ #define ASYNC_PF_PER_VCPU 64
  
- 		/* Then check for muxmode only */
- 		for (i = 0; i < OMAP_MUX_NR_MODES; i++) {
 
 
