@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148AbaGHTXA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:23:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54233 "EHLO
+	id S1756131AbaGHTW7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:22:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54237 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755726AbaGHTIl (ORCPT
+	by vger.kernel.org with ESMTP id S1755730AbaGHTIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:08:41 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Peter Zijlstra" <peterz@infradead.org>,
-        "Dave Jones" <davej@redhat.com>, "Hugh Dickins" <hughd@google.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>
+CC: akpm@linux-foundation.org, "Hans de Goede" <hdegoede@redhat.com>,
+        "Dmitry Torokhov" <dmitry.torokhov@gmail.com>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.839169924@decadent.org.uk>
+Message-ID: <lsq.1404846110.582590494@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 059/125] mm: fix sleeping function warning from
- __put_anon_vma
+Subject: [PATCH 3.2 067/125] Input: elantech - deal with clickpads
+ reporting right button events
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,65 +32,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 7f39dda9d86fb4f4f17af0de170decf125726f8c upstream.
+commit cd9e83e2754465856097f31c7ab933ce74c473f8 upstream.
 
-Trinity reports BUG:
+At least the Dell Vostro 5470 elantech *clickpad* reports right button
+clicks when clicked in the right bottom area:
 
-  sleeping function called from invalid context at kernel/locking/rwsem.c:47
-  in_atomic(): 0, irqs_disabled(): 0, pid: 5787, name: trinity-c27
+https://bugzilla.redhat.com/show_bug.cgi?id=1103528
 
-__might_sleep < down_write < __put_anon_vma < page_get_anon_vma <
-migrate_pages < compact_zone < compact_zone_order < try_to_compact_pages ..
+This is different from how (elantech) clickpads normally operate, normally
+no matter where the user clicks on the pad the pad always reports a left
+button event, since there is only 1 hardware button beneath the path.
 
-Right, since conversion to mutex then rwsem, we should not put_anon_vma()
-from inside an rcu_read_lock()ed section: fix the two places that did so.
-And add might_sleep() to anon_vma_free(), as suggested by Peter Zijlstra.
+It looks like Dell has put 2 buttons under the pad, one under each bottom
+corner, causing this.
 
-Fixes: 88c22088bf23 ("mm: optimize page_lock_anon_vma() fast-path")
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: adjust context]
+Since this however still clearly is a real clickpad hardware-wise, we still
+want to report it as such to userspace, so that things like finger movement
+in the bottom area can be properly ignored as it should be on clickpads.
+
+So deal with this weirdness by simply mapping a right click to a left click
+on elantech clickpads. As an added advantage this is something which we can
+simply do on all elantech clickpads, so no need to add special quirks for
+this weird model.
+
+Reported-and-tested-by: Elder Marco <eldermarco@gmail.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/rmap.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/input/mouse/elantech.c | 22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
 
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -103,6 +103,7 @@ static inline void anon_vma_free(struct
- 	 * LOCK should suffice since the actual taking of the lock must
- 	 * happen _before_ what follows.
- 	 */
-+	might_sleep();
- 	if (mutex_is_locked(&anon_vma->root->mutex)) {
- 		anon_vma_lock(anon_vma);
- 		anon_vma_unlock(anon_vma);
-@@ -434,8 +435,9 @@ struct anon_vma *page_get_anon_vma(struc
- 	 * above cannot corrupt).
- 	 */
- 	if (!page_mapped(page)) {
-+		rcu_read_unlock();
- 		put_anon_vma(anon_vma);
--		anon_vma = NULL;
-+		return NULL;
- 	}
- out:
- 	rcu_read_unlock();
-@@ -485,9 +487,9 @@ struct anon_vma *page_lock_anon_vma(stru
- 	}
+--- a/drivers/input/mouse/elantech.c
++++ b/drivers/input/mouse/elantech.c
+@@ -455,8 +455,15 @@ static void elantech_report_absolute_v3(
+ 	input_report_key(dev, BTN_TOOL_FINGER, fingers == 1);
+ 	input_report_key(dev, BTN_TOOL_DOUBLETAP, fingers == 2);
+ 	input_report_key(dev, BTN_TOOL_TRIPLETAP, fingers == 3);
+-	input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
+-	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
++
++	/* For clickpads map both buttons to BTN_LEFT */
++	if (etd->fw_version & 0x001000) {
++		input_report_key(dev, BTN_LEFT, packet[0] & 0x03);
++	} else {
++		input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
++		input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
++	}
++
+ 	input_report_abs(dev, ABS_PRESSURE, pres);
+ 	input_report_abs(dev, ABS_TOOL_WIDTH, width);
  
- 	if (!page_mapped(page)) {
-+		rcu_read_unlock();
- 		put_anon_vma(anon_vma);
--		anon_vma = NULL;
--		goto out;
-+		return NULL;
- 	}
+@@ -466,10 +473,17 @@ static void elantech_report_absolute_v3(
+ static void elantech_input_sync_v4(struct psmouse *psmouse)
+ {
+ 	struct input_dev *dev = psmouse->dev;
++	struct elantech_data *etd = psmouse->private;
+ 	unsigned char *packet = psmouse->packet;
  
- 	/* we pinned the anon_vma, its safe to sleep */
+-	input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
+-	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
++	/* For clickpads map both buttons to BTN_LEFT */
++	if (etd->fw_version & 0x001000) {
++		input_report_key(dev, BTN_LEFT, packet[0] & 0x03);
++	} else {
++		input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
++		input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
++	}
++
+ 	input_mt_report_pointer_emulation(dev, true);
+ 	input_sync(dev);
+ }
 
