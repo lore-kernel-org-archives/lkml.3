@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331AbaGHHwH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 03:52:07 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:33354 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752058AbaGHHwE (ORCPT
+	id S1753425AbaGHHxp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 03:53:45 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:64626 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752617AbaGHHxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 03:52:04 -0400
+	Tue, 8 Jul 2014 03:53:38 -0400
+Date: Tue, 8 Jul 2014 08:53:32 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Maxime Coquelin <maxime.coquelin@st.com>
+Cc: Peter Griffin <peter.griffin@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        patrice.chotard@st.com, srinivas.kandagatla@gmail.com,
+        devicetree@vger.kernel.org, balbi@ti.com, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, peppe.cavallaro@st.com
+Subject: Re: [PATCH v2 3/3] MAINTAINERS: Add dwc3-st.c file to ARCH/STI
+ architecture
+Message-ID: <20140708075332.GM6407@lee--X1>
+References: <1404541530-27856-1-git-send-email-peter.griffin@linaro.org>
+ <1404541530-27856-4-git-send-email-peter.griffin@linaro.org>
+ <53BBA075.9040204@st.com>
 MIME-Version: 1.0
-In-Reply-To: <1403098673-3058-1-git-send-email-houcheng@gmail.com>
-References: <1403098673-3058-1-git-send-email-houcheng@gmail.com>
-Date: Tue, 8 Jul 2014 09:52:03 +0200
-Message-ID: <CACRpkdYfu8HmVCkn9JFh+YP5OPdr8o9nTfoCnkJ7SSpGoenQUg@mail.gmail.com>
-Subject: Re: [RFC PATCH v3] reset: Add a defer reset object to send board
- specific reset
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Houcheng Lin <houcheng@gmail.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Stephen Gallimore <stephen.gallimore@st.com>,
-        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>, sre@kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Vikas Sajjan <vikas.sajjan@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53BBA075.9040204@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 3:37 PM, Houcheng Lin <houcheng@gmail.com> wrote:
+On Tue, 08 Jul 2014, Maxime Coquelin wrote:
+> On 07/05/2014 08:25 AM, Peter Griffin wrote:
+> >Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+> 
+> Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
 
-> The Problem
-> -----------
-> The reset signal on a hardware board is send either:
->     - during machine initialization
->     - during bus master's initialization
+Maxime,
+  Once Acked by Felipe, I think this should go in via your tree to
+avoid conflicts with other ARM/STI ARCHITECTURE additions.
 
-I just thought about this a bit, since there isn't already a generic GPIO
-reset driver, just call this drivers/reset/reset-gpio.c and make the
-ability to deferral just a configuration detail of the GPIO reset driver.
+> >---
+> >  MAINTAINERS | 1 +
+> >  1 file changed, 1 insertion(+)
+> >
+> >diff --git a/MAINTAINERS b/MAINTAINERS
+> >index 702ca10..269ad3b 100644
+> >--- a/MAINTAINERS
+> >+++ b/MAINTAINERS
+> >@@ -1325,6 +1325,7 @@ F:	drivers/pinctrl/pinctrl-st.c
+> >  F:	drivers/media/rc/st_rc.c
+> >  F:	drivers/i2c/busses/i2c-st.c
+> >  F:	drivers/tty/serial/st-asc.c
+> >+F:	drivers/usb/dwc3/dwc3-st.c
+> >
+> >  ARM/TECHNOLOGIC SYSTEMS TS7250 MACHINE SUPPORT
+> >  M:	Lennert Buytenhek <kernel@wantstofly.org>
+> >
 
-Yours,
-Linus Walleij
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
