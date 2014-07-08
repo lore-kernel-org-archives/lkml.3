@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750AbaGHAL7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:11:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56407 "EHLO
+	id S1754758AbaGHAMc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:12:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56422 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754833AbaGHADU (ORCPT
+	with ESMTP id S1754813AbaGHADS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 20:03:20 -0400
+	Mon, 7 Jul 2014 20:03:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.4 09/44] rt2x00: disable TKIP on USB
-Date: Mon,  7 Jul 2014 17:06:59 -0700
-Message-Id: <20140707235858.923422763@linuxfoundation.org>
+        "Wang, Yu" <yu.y.wang@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 3.4 03/44] xhci: Fix runtime suspended xhci from blocking system suspend.
+Date: Mon,  7 Jul 2014 17:06:53 -0700
+Message-Id: <20140707235858.753313225@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235858.652771077@linuxfoundation.org>
 References: <20140707235858.652771077@linuxfoundation.org>
@@ -29,56 +30,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: "Wang, Yu" <yu.y.wang@intel.com>
 
-commit 8edcb0ba0d56f5914eef11eda6db8bfe74eb9ca8 upstream.
+commit d6236f6d1d885aa19d1cd7317346fe795227a3cc upstream.
 
-On USB we can not get atomically TKIP key. We have to disable support
-for TKIP acceleration on USB hardware to avoid bug as showed bellow.
+The system suspend flow as following:
+1, Freeze all user processes and kenrel threads.
 
-[  860.827243] BUG: scheduling while atomic: hostapd/3397/0x00000002
-<snip>
-[  860.827280] Call Trace:
-[  860.827282]  [<ffffffff81682ea6>] dump_stack+0x4d/0x66
-[  860.827284]  [<ffffffff8167eb9b>] __schedule_bug+0x47/0x55
-[  860.827285]  [<ffffffff81685bb3>] __schedule+0x733/0x7b0
-[  860.827287]  [<ffffffff81685c59>] schedule+0x29/0x70
-[  860.827289]  [<ffffffff81684f8a>] schedule_timeout+0x15a/0x2b0
-[  860.827291]  [<ffffffff8105ac50>] ? ftrace_raw_event_tick_stop+0xc0/0xc0
-[  860.827294]  [<ffffffff810c13c2>] ? __module_text_address+0x12/0x70
-[  860.827296]  [<ffffffff81686823>] wait_for_completion_timeout+0xb3/0x140
-[  860.827298]  [<ffffffff81080fc0>] ? wake_up_state+0x20/0x20
-[  860.827301]  [<ffffffff814d5b3d>] usb_start_wait_urb+0x7d/0x150
-[  860.827303]  [<ffffffff814d5cd5>] usb_control_msg+0xc5/0x110
-[  860.827305]  [<ffffffffa02fb0c6>] rt2x00usb_vendor_request+0xc6/0x160  [rt2x00usb]
-[  860.827307]  [<ffffffffa02fb215>] rt2x00usb_vendor_req_buff_lock+0x75/0x150 [rt2x00usb]
-[  860.827309]  [<ffffffffa02fb393>] rt2x00usb_vendor_request_buff+0xa3/0xe0 [rt2x00usb]
-[  860.827311]  [<ffffffffa023d1a3>] rt2x00usb_register_multiread+0x33/0x40 [rt2800usb]
-[  860.827314]  [<ffffffffa05805f9>] rt2800_get_tkip_seq+0x39/0x50  [rt2800lib]
-[  860.827321]  [<ffffffffa0480f88>] ieee80211_get_key+0x218/0x2a0  [mac80211]
-[  860.827322]  [<ffffffff815cc68c>] ? __nlmsg_put+0x6c/0x80
-[  860.827329]  [<ffffffffa051b02e>] nl80211_get_key+0x22e/0x360 [cfg80211]
+2, Try to suspend all devices.
 
-Reported-and-tested-by: Peter Wu <lekensteyn@gmail.com>
-Reported-and-tested-by: Pontus Fuchs <pontus.fuchs@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+2.1, If pci device is in RPM suspended state, then pci driver will try
+to resume it to RPM active state in the prepare stage.
+
+2.2, xhci_resume function calls usb_hcd_resume_root_hub to queue two
+workqueue items to resume usb2&usb3 roothub devices.
+
+2.3, Call suspend callbacks of devices.
+
+2.3.1, All suspend callbacks of all hcd's children, including
+roothub devices are called.
+
+2.3.2, Finally, hcd_pci_suspend callback is called.
+
+Due to workqueue threads were already frozen in step 1, the workqueue
+items can't be scheduled, and the roothub devices can't be resumed in
+this flow. The HCD_FLAG_WAKEUP_PENDING flag which is set in
+usb_hcd_resume_root_hub won't be cleared. Finally,
+hcd_pci_suspend will return -EBUSY, and system suspend fails.
+
+The reason why this issue doesn't show up very often is due to that
+choose_wakeup will be called in step 2.3.1. In step 2.3.1, if
+udev->do_remote_wakeup is not equal to device_may_wakeup(&udev->dev), then
+udev will resume to RPM active for changing the wakeup settings. This
+has been a lucky hit which hides this issue.
+
+For some special xHCI controllers which have no USB2 port, then roothub
+will not match hub driver due to probe failed. Then its
+do_remote_wakeup will be set to zero, and we won't be as lucky.
+
+xhci driver doesn't need to resume roothub devices everytime like in
+the above case. It's only needed when there are pending event TRBs.
+
+This patch should be back-ported to kernels as old as 3.2, that
+contains the commit f69e3120df82391a0ee8118e0a156239a06b2afb
+"USB: XHCI: resume root hubs when the controller resumes"
+
+Signed-off-by: Wang, Yu <yu.y.wang@intel.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+[use readl() instead of removed xhci_readl(), reword commit message -Mathias]
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2x00mac.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/host/xhci.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2x00mac.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
-@@ -517,6 +517,8 @@ int rt2x00mac_set_key(struct ieee80211_h
- 	crypto.cipher = rt2x00crypto_key_to_cipher(key);
- 	if (crypto.cipher == CIPHER_NONE)
- 		return -EOPNOTSUPP;
-+	if (crypto.cipher == CIPHER_TKIP && rt2x00_is_usb(rt2x00dev))
-+		return -EOPNOTSUPP;
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -963,7 +963,7 @@ int xhci_suspend(struct xhci_hcd *xhci)
+  */
+ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
+ {
+-	u32			command, temp = 0;
++	u32			command, temp = 0, status;
+ 	struct usb_hcd		*hcd = xhci_to_hcd(xhci);
+ 	struct usb_hcd		*secondary_hcd;
+ 	int			retval = 0;
+@@ -1087,8 +1087,12 @@ int xhci_resume(struct xhci_hcd *xhci, b
  
- 	crypto.cmd = cmd;
+  done:
+ 	if (retval == 0) {
+-		usb_hcd_resume_root_hub(hcd);
+-		usb_hcd_resume_root_hub(xhci->shared_hcd);
++		/* Resume root hubs only when have pending events. */
++		status = readl(&xhci->op_regs->status);
++		if (status & STS_EINT) {
++			usb_hcd_resume_root_hub(hcd);
++			usb_hcd_resume_root_hub(xhci->shared_hcd);
++		}
+ 	}
  
+ 	/*
 
 
