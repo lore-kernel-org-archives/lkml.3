@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377AbaGHWbe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 18:31:34 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:60725 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755184AbaGHWbc (ORCPT
+	id S1755283AbaGHWck (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 18:32:40 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:57923 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753836AbaGHWcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 18:31:32 -0400
-Date: Wed, 9 Jul 2014 04:01:26 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Andreas Noever <andreas.noever@gmail.com>, linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH v3] thunderbolt: Use kcalloc and correct the argument to
- sizeof
-Message-ID: <20140708223126.GA12035@himangi-Dell>
+	Tue, 8 Jul 2014 18:32:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1404858378-23806-1-git-send-email-bobby.prani@gmail.com>
+References: <1404858378-23806-1-git-send-email-bobby.prani@gmail.com>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Tue, 8 Jul 2014 18:32:03 -0400
+Message-ID: <CAJhHMCDUy_=LZWkhA5OU3WsfpyFwxwDJGT6rnqY3E6t=ZXQk3g@mail.gmail.com>
+Subject: Re: [PATCH 0/9] rcu: trivial sparse and return type fixes for rcu
+To: LKML <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nhi->rx_rings does not have type as struct tb_ring *, as it is a double
-pointer. So, the elements of the array should have pointer type, not
-structure type. The advantage of kcalloc is, that will prevent integer
-overflows which could result from the multiplication of number of
-elements and size and it is also a bit nicer to read.
+This patch series contains trivial fixes for sparse warnings and using bool
+types where appropriate instead of 0/1.
 
-The Coccinelle semantic patch that makes the first change is as follows:
+I can probably merge the return type changes into one commit if you think that
+is appropriate.
 
-// <smpl>
-@disable sizeof_type_expr@
-type T;
-T **x;
-@@
+Pranith Kumar (9):
+  rcu: fix sparse warning about rcu_batches_completed_preempt(
+) being
+    non-static
+  rcu: use bool type for return value in rcu_is_watching()
+  rcu: Fix a sparse warning about boost_mutex being non-static
+  rcu: return bool type in rcu_lockdep_current_cpu_online()
+  rcu: return bool type for rcu_try_advance_all_cbs()
+  rcu: use true/false for return in __call_rcu_nocb()
+  rcu: use true/false for return in rcu_nocb_adopt_orphan_cbs()
+  rcu: use false for return in __call_rcu_nocb()
+  rcu: use bool return type in rcu_nocb_adopt_orphan_cbs()
 
-  x =
-  <+...sizeof(
-- T
-+ *x
-  )...+>
-// </smpl>
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
-v2: Use kcalloc
-v3: Add maintainer in To
- drivers/thunderbolt/nhi.c | 10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/thunderbolt/nhi.c b/drivers/thunderbolt/nhi.c
-index 2054fbf..c68fe12 100644
---- a/drivers/thunderbolt/nhi.c
-+++ b/drivers/thunderbolt/nhi.c
-@@ -569,12 +569,10 @@ static int nhi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 			 nhi->hop_count);
- 	INIT_WORK(&nhi->interrupt_work, nhi_interrupt_work);
- 
--	nhi->tx_rings = devm_kzalloc(&pdev->dev,
--				     nhi->hop_count * sizeof(struct tb_ring),
--				     GFP_KERNEL);
--	nhi->rx_rings = devm_kzalloc(&pdev->dev,
--				     nhi->hop_count * sizeof(struct tb_ring),
--				     GFP_KERNEL);
-+	nhi->tx_rings = devm_kcalloc(&pdev->dev, nhi->hop_count,
-+				     sizeof(*nhi->tx_rings), GFP_KERNEL);
-+	nhi->rx_rings = devm_kcalloc(&pdev->dev, nhi->hop_count,
-+				     sizeof(*nhi->rx_rings), GFP_KERNEL);
- 	if (!nhi->tx_rings || !nhi->rx_rings)
- 		return -ENOMEM;
- 
--- 
-1.9.1
-	
+ include/linux/rcupdate.h |  2 +-
+ kernel/rcu/rcutorture.c  |  2 +-
+ kernel/rcu/tree.c        |  2 +-
+ kernel/rcu/tree_plugin.h | 16 ++++++++--------
+ 4 files changed, 11 insertions(+), 11 deletions(-)
