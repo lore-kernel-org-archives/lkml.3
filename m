@@ -1,227 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755143AbaGHQXF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 12:23:05 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:33038 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755075AbaGHQW4 (ORCPT
+	id S1754873AbaGHQWa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 12:22:30 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:39694 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754087AbaGHQV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 12:22:56 -0400
-From: Suman Anna <s-anna@ti.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: Dave Gerlach <d-gerlach@ti.com>,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, Suman Anna <s-anna@ti.com>,
-        Robert Tivy <rtivy@ti.com>
-Subject: [PATCH 2/2] remoteproc: add support to handle internal memories
-Date: Tue, 8 Jul 2014 11:22:01 -0500
-Message-ID: <1404836521-59637-3-git-send-email-s-anna@ti.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1404836521-59637-1-git-send-email-s-anna@ti.com>
-References: <1404836521-59637-1-git-send-email-s-anna@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 8 Jul 2014 12:21:28 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 5/6] ARM: at91/dt: at91sam9: use ddrck in ramc
+Date: Tue,  8 Jul 2014 18:21:15 +0200
+Message-Id: <1404836476-23787-6-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404836476-23787-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1404836476-23787-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A remote processor may need to load certain firmware sections into
-internal memories (eg: RAM at L1 or L2 levels) for performance or
-other reasons. Introduce a new resource type (RSC_INTMEM) and add
-an associated handler function to handle such memories. The handler
-creates a kernel mapping for the resource's 'pa' (physical address).
+Make the ram controller driver take the ddrck clock for at91sam9n12 and
+at91sam9x5.
 
-Note that no iommu mapping is performed for this resource, as the
-resource is primarily used to represent physical internal memories.
-If the internal memory region can only be accessed through an iommu,
-a devmem resource entry should be used instead.
-
-Signed-off-by: Robert Tivy <rtivy@ti.com>
-Signed-off-by: Suman Anna <s-anna@ti.com>
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- drivers/remoteproc/remoteproc_core.c | 85 +++++++++++++++++++++++++++++++++++-
- include/linux/remoteproc.h           | 43 +++++++++++++++++-
- 2 files changed, 126 insertions(+), 2 deletions(-)
+ arch/arm/boot/dts/at91sam9n12.dtsi | 2 ++
+ arch/arm/boot/dts/at91sam9x5.dtsi  | 2 ++
+ 2 files changed, 4 insertions(+)
 
-diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
-index 11cdb11..e2bd869 100644
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@ -664,6 +664,84 @@ free_carv:
- 	return ret;
- }
+diff --git a/arch/arm/boot/dts/at91sam9n12.dtsi b/arch/arm/boot/dts/at91sam9n12.dtsi
+index 287795985e32..3d48255c4ed1 100644
+--- a/arch/arm/boot/dts/at91sam9n12.dtsi
++++ b/arch/arm/boot/dts/at91sam9n12.dtsi
+@@ -85,6 +85,8 @@
+ 			ramc0: ramc@ffffe800 {
+ 				compatible = "atmel,at91sam9g45-ddramc";
+ 				reg = <0xffffe800 0x200>;
++				clocks = <&ddrck>;
++				clock-names = "ddrck";
+ 			};
  
-+/**
-+ * rproc_handle_intmem() - handle internal memory resource entry
-+ * @rproc: rproc handle
-+ * @rsc: the intmem resource entry
-+ * @offset: offset of the resource data in resource table
-+ * @avail: size of available data (for image validation)
-+ *
-+ * This function will handle firmware requests for mapping a memory region
-+ * internal to a remote processor into kernel. It neither allocates any
-+ * physical pages, nor performs any iommu mapping, as this resource entry
-+ * is primarily used for representing physical internal memories. If the
-+ * internal memory region can only be accessed through an iommu, please
-+ * use a devmem resource entry.
-+ *
-+ * These resource entries should be grouped near the carveout entries in
-+ * the firmware's resource table, as other firmware entries might request
-+ * placing other data objects inside these memory regions (e.g. data/code
-+ * segments, trace resource entries, ...).
-+ */
-+static int rproc_handle_intmem(struct rproc *rproc, struct fw_rsc_intmem *rsc,
-+			       int offset, int avail)
-+{
-+	struct rproc_mem_entry *intmem;
-+	struct device *dev = &rproc->dev;
-+	void *va;
-+	int ret;
-+
-+	if (sizeof(*rsc) > avail) {
-+		dev_err(dev, "intmem rsc is truncated\n");
-+		return -EINVAL;
-+	}
-+
-+	if (rsc->version != 1) {
-+		dev_err(dev, "intmem rsc version %d is not supported\n",
-+			rsc->version);
-+		return -EINVAL;
-+	}
-+
-+	if (rsc->reserved) {
-+		dev_err(dev, "intmem rsc has non zero reserved bytes\n");
-+		return -EINVAL;
-+	}
-+
-+	dev_dbg(dev, "intmem rsc: da 0x%x, pa 0x%x, len 0x%x\n",
-+		rsc->da, rsc->pa, rsc->len);
-+
-+	intmem = kzalloc(sizeof(*intmem), GFP_KERNEL);
-+	if (!intmem) {
-+		dev_err(dev, "kzalloc carveout failed\n");
-+		return -ENOMEM;
-+	}
-+
-+	va = (__force void *)ioremap_nocache(rsc->pa, rsc->len);
-+	if (!va) {
-+		dev_err(dev, "ioremap_nocache err: %d\n", rsc->len);
-+		ret = -ENOMEM;
-+		goto free_intmem;
-+	}
-+
-+	dev_dbg(dev, "intmem mapped pa 0x%x of len 0x%x into kernel va %p\n",
-+		rsc->pa, rsc->len, va);
-+
-+	intmem->va = va;
-+	intmem->len = rsc->len;
-+	intmem->dma = rsc->pa;
-+	intmem->da = rsc->da;
-+	intmem->priv = (void *)1;    /* prevents freeing */
-+
-+	/* reuse the rproc->carveouts list, so that loading is automatic */
-+	list_add_tail(&intmem->node, &rproc->carveouts);
-+
-+	return 0;
-+
-+free_intmem:
-+	kfree(intmem);
-+	return ret;
-+}
-+
- static int rproc_count_vrings(struct rproc *rproc, struct fw_rsc_vdev *rsc,
- 			      int offset, int avail)
- {
-@@ -681,6 +759,7 @@ static rproc_handle_resource_t rproc_loading_handlers[RSC_LAST] = {
- 	[RSC_CARVEOUT] = (rproc_handle_resource_t)rproc_handle_carveout,
- 	[RSC_DEVMEM] = (rproc_handle_resource_t)rproc_handle_devmem,
- 	[RSC_TRACE] = (rproc_handle_resource_t)rproc_handle_trace,
-+	[RSC_INTMEM] = (rproc_handle_resource_t)rproc_handle_intmem,
- 	[RSC_VDEV] = NULL, /* VDEVs were handled upon registrarion */
- };
+ 			pmc: pmc@fffffc00 {
+diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
+index d6133f497207..74722853e667 100644
+--- a/arch/arm/boot/dts/at91sam9x5.dtsi
++++ b/arch/arm/boot/dts/at91sam9x5.dtsi
+@@ -93,6 +93,8 @@
+ 			ramc0: ramc@ffffe800 {
+ 				compatible = "atmel,at91sam9g45-ddramc";
+ 				reg = <0xffffe800 0x200>;
++				clocks = <&ddrck>;
++				clock-names = "ddrck";
+ 			};
  
-@@ -768,7 +847,11 @@ static void rproc_resource_cleanup(struct rproc *rproc)
- 
- 	/* clean up carveout allocations */
- 	list_for_each_entry_safe(entry, tmp, &rproc->carveouts, node) {
--		dma_free_coherent(dev->parent, entry->len, entry->va, entry->dma);
-+		if (!entry->priv)
-+			dma_free_coherent(dev->parent, entry->len, entry->va,
-+					  entry->dma);
-+		else
-+			iounmap((__force void __iomem *)entry->va);
- 		list_del(&entry->node);
- 		kfree(entry);
- 	}
-diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
-index 78b8a9b..2a25ee8 100644
---- a/include/linux/remoteproc.h
-+++ b/include/linux/remoteproc.h
-@@ -100,6 +100,7 @@ struct fw_rsc_hdr {
-  *		    the remote processor will be writing logs.
-  * @RSC_VDEV:       declare support for a virtio device, and serve as its
-  *		    virtio header.
-+ * @RSC_INTMEM:     request to map into kernel an internal memory region.
-  * @RSC_LAST:       just keep this one at the end
-  *
-  * For more details regarding a specific resource type, please see its
-@@ -115,7 +116,8 @@ enum fw_resource_type {
- 	RSC_DEVMEM	= 1,
- 	RSC_TRACE	= 2,
- 	RSC_VDEV	= 3,
--	RSC_LAST	= 4,
-+	RSC_INTMEM	= 4,
-+	RSC_LAST	= 5,
- };
- 
- #define FW_RSC_ADDR_ANY (0xFFFFFFFFFFFFFFFF)
-@@ -306,6 +308,45 @@ struct fw_rsc_vdev {
- } __packed;
- 
- /**
-+ * struct fw_rsc_intmem - internal memory publishing request
-+ * @version: version for this resource type (must be one)
-+ * @da: device address
-+ * @pa: physical address
-+ * @len: length (in bytes)
-+ * @reserved: reserved (must be zero)
-+ * @name: human-readable name of the region being published
-+ *
-+ * This resource entry allows a remote processor to publish an internal
-+ * memory region to the host. This resource type allows a remote processor
-+ * to publish the whole or just a portion of certain internal memories,
-+ * while it owns and manages any unpublished portion (eg: a shared L1
-+ * memory that can be split configured as RAM and/or cache). This is
-+ * primarily provided to allow a host to load code/data into internal
-+ * memories, the memory for which is neither allocated nor required to
-+ * be mapped into an iommu.
-+ *
-+ * @da should specify the required address as accessible by the device
-+ * without going through an iommu, @pa should specify the physical address
-+ * for the region as seen on the bus, @len should specify the size of the
-+ * memory region. As always, @name may (optionally) contain a human readable
-+ * name of this mapping (mainly for debugging purposes). The @version field
-+ * is added for future scalability, and should be 1 for now.
-+ *
-+ * Note: at this point we just "trust" these intmem entries to contain valid
-+ * physical bus addresses. these are not currently intended to be managed
-+ * as host-controlled heaps, as it is much better to do that from the remote
-+ * processor side.
-+ */
-+struct fw_rsc_intmem {
-+	u32 version;
-+	u32 da;
-+	u32 pa;
-+	u32 len;
-+	u32 reserved;
-+	u8 name[32];
-+} __packed;
-+
-+/**
-  * struct rproc_mem_entry - memory entry descriptor
-  * @va:	virtual address
-  * @dma: dma address
+ 			pmc: pmc@fffffc00 {
 -- 
-2.0.0
+1.9.1
 
