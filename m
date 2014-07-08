@@ -1,101 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611AbaGHW6X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 18:58:23 -0400
-Received: from smtp-out-04.shaw.ca ([64.59.134.12]:5405 "EHLO
-	smtp-out-04.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172AbaGHW6V (ORCPT
+	id S1752912AbaGHXAr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 19:00:47 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:48793 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751082AbaGHXAp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 18:58:21 -0400
-X-Greylist: delayed 576 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Jul 2014 18:58:21 EDT
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=97kX/pcSDRzxCpZyrJZ+O3bQ3yje/MppWgySN1iIsrk= c=1 sm=1
- a=vULbWnCzOkcA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
- a=f/edn6q14DUxYFbwN4BeGQ==:17 a=20KFwNOVAAAA:8 a=gu6fZOg2AAAA:8
- a=kn0y_Jr5trtkw_KoMmwA:9 a=CjuIK1q_8ugA:10 a=GC8p-B92FUEA:10
- a=NWVoK91CQyQA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Date: Tue, 8 Jul 2014 17:48:43 -0500
-From: Trevor Cordes <trevor@tecnopolis.ca>
-To: linux-kernel@vger.kernel.org
-Subject: memory bug ever since 3.12, oom-killer invoked, computer freezes
-Message-ID: <20140708174843.046ed76a@pog.tecnopolis.ca>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; i686-redhat-linux-gnu)
+	Tue, 8 Jul 2014 19:00:45 -0400
+Date: Tue, 8 Jul 2014 19:00:43 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [ANNOUNCE] 3.12.22-rt35
+Message-ID: <20140708190043.42c8996c@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excuse a novice on his first post to this list.  I have tried to obtain
-help elsewhere with no success.
 
-I have been dealing with a bad kernel bug since 3.12 came out.  It is
-present in 3.12, 3.13 and 3.14 up to 3.14.8 (Fedora 19 kernel).
+Dear RT Folks,
 
-What happens is around the same time every day, using the buggy
-kernels, I get dozens of oom-killer messages over about 3-5 minutes,
-the system slows to a crawl instantly, and usually freezes (numlock no
-longer works, etc) within a few minutes.
+I'm pleased to announce the 3.12.22-rt35 stable release.
 
-Using 3.11, the system runs fine, there is no bug.
 
-I think I have isolated the trigger of the problem to a simple
-backup-helper script I run nightly at the same time.  I have come to
-this conclusion based on the fact I can run in 3.14 for many days with
-no problems if I disable my script from running.  As soon as I enable
-the script, the bug will hit the subsequent morning at the same time as
-usual.  Again, in 3.11 there is no bug even if my script is running.
+You can get this release via the git tree at:
 
-I have made a RH bugzilla bug for this that contains even more detail:
-https://bugzilla.redhat.com/show_bug.cgi?id=1075185
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
 
-My script looks like this (simplified):
-#!/bin/perl
-$dirs="/ /mnt/peecee/DATA";
-$Ddest="/data/Bak/FindList";
-system "/bin/nice -n19 /usr/bin/ionice -c2 -n7 -t find $dirs -xdev -ls
-2>/dev/null > $Ddest/find-list";
+  branch: v3.12-rt
+  Head SHA1: 3d9a32ec9382bfb61fdc45c1eb038dc514cd0bfb
 
-Notes: /mnt/peecee is a cifs share (old XP box).  $Ddest is an NFS
-mount on my file server.
 
-This script runs in about 1 min when nothing is cached, about 10s when
-everything is cached.
+Or to build 3.12.22-rt35 directly, the following patches should be applied:
 
-I can run this script 200 times over and over again manually for
-testing (not via the usual cron) and it does NOT trigger the bug.  It
-is only when I enable this script via cron that the bug occurs.
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.12.tar.xz
 
-I have captured key /proc files at moments in time before/during the
-bug occurring, which may help figure out the problem.  I have attached
-those files to the bugzilla linked above.  I can post them here if
-required.  I can obtain more/finer results if required.  I can
-reproduce this bug "sort of on demand" by enabling my script to run the
-following morning.
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.12.22.xz
 
-Known buggy kernels:
-3.14.8-100.fc19
-3.14.4-100.fc19
-3.13.9-100.fc19
-3.13.5-103.fc19
-3.12.9-201.fc19
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.12/patch-3.12.22-rt35.patch.xz
 
-Known good kernel:
-3.11.10-200.fc19
 
-My kernels are all 32-bit, PAE.
 
-My / is md RAID1.  The disks are 15k UW-SCSI enterprise drives.  The
-controller is Adaptec AIC-7892A U160/m, a 29160 card I believe.  I am
-usually tainted with Nvidia video driver binary, but can untaint for
-purposes of testing.
+You can also build from 3.12.22-rt34 by applying the incremental patch:
 
-I wanted to bisect to help figure this out but cannot using Fedora
-tools due to bug in 32-bit python libraries.  I don't know how to
-bisect the vanilla kernel whilst still incorporating all Fedora tweaks
-without using Fedora tools.
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.12/incr/patch-3.12.22-rt34-rt35.patch.xz
 
-I did much googling and discovered this thread which sounds very much
-related to my problem, though not an exact duplicate:
-http://marc.info/?l=linux-mm&m=139267140606805&w=2
+
+
+Enjoy,
+
+-- Steve
+
+
+Changes from v3.12.22-rt34:
+
+---
+
+Ben Hutchings (1):
+      Fix latency histogram after "hrtimer: Set expiry time before switch_hrtimer_base()"
+
+Sebastian Andrzej Siewior (2):
+      Revert "migrate_disable pushd down in atomic_dec_and_spin_lock"
+      timer: do not spin_trylock() on UP
+
+Steven Rostedt (Red Hat) (1):
+      Linux 3.12.22-rt35
+
+----
+ kernel/hrtimer.c | 10 +++++-----
+ kernel/rtmutex.c |  6 +++---
+ kernel/timer.c   | 13 +++++++++++++
+ localversion-rt  |  2 +-
+ 4 files changed, 22 insertions(+), 9 deletions(-)
+---------------------------
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index bc0e47dc0a05..c967b718ab37 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1105,6 +1105,11 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ #endif
+ 	}
+ 
++	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
++
++	/* Switch the timer base, if necessary: */
++	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
++
+ #ifdef CONFIG_MISSED_TIMER_OFFSETS_HIST
+ 	{
+ 		ktime_t now = new_base->get_time();
+@@ -1116,11 +1121,6 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ 	}
+ #endif
+ 
+-	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
+-
+-	/* Switch the timer base, if necessary: */
+-	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
+-
+ 	timer_stats_hrtimer_set_start_info(timer);
+ 
+ 	leftmost = enqueue_hrtimer(timer, new_base);
+diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
+index 4057bc607923..d1b2ca08b160 100644
+--- a/kernel/rtmutex.c
++++ b/kernel/rtmutex.c
+@@ -952,12 +952,12 @@ int atomic_dec_and_spin_lock(atomic_t *atomic, spinlock_t *lock)
+ 	/* Subtract 1 from counter unless that drops it to 0 (ie. it was 1) */
+ 	if (atomic_add_unless(atomic, -1, 1))
+ 		return 0;
++	migrate_disable();
+ 	rt_spin_lock(lock);
+-	if (atomic_dec_and_test(atomic)){
+-		migrate_disable();
++	if (atomic_dec_and_test(atomic))
+ 		return 1;
+-	}
+ 	rt_spin_unlock(lock);
++	migrate_enable();
+ 	return 0;
+ }
+ EXPORT_SYMBOL(atomic_dec_and_spin_lock);
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 611a5973d9e1..3b79da2f9c67 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1461,6 +1461,19 @@ void run_local_timers(void)
+ 	 * the timer softirq.
+ 	 */
+ #ifdef CONFIG_PREEMPT_RT_FULL
++
++#ifndef CONFIG_SMP
++	/*
++	 * The spin_do_trylock() later may fail as the lock may be hold before
++	 * the interrupt arrived. The spin-lock debugging code will raise a
++	 * warning if the try_lock fails on UP. Since this is only an
++	 * optimization for the FULL_NO_HZ case (not to run the timer softirq on
++	 * an nohz_full CPU) we don't really care and shedule the softirq.
++	 */
++	raise_softirq(TIMER_SOFTIRQ);
++	return;
++#endif
++
+ 	/* On RT, irq work runs from softirq */
+ 	if (irq_work_needs_cpu()) {
+ 		raise_softirq(TIMER_SOFTIRQ);
+diff --git a/localversion-rt b/localversion-rt
+index 21988f9ad53f..366440d74b77 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt34
++-rt35
