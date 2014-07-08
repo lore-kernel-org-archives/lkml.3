@@ -1,82 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924AbaGHKIA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 06:08:00 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:54028 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041AbaGHKH7 (ORCPT
+	id S1754145AbaGHKI6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 06:08:58 -0400
+Received: from www.linutronix.de ([62.245.132.108]:54704 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753465AbaGHKI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 06:07:59 -0400
-Message-ID: <53BBC2F9.4070808@linaro.org>
-Date: Tue, 08 Jul 2014 18:07:53 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Tue, 8 Jul 2014 06:08:56 -0400
+Date: Tue, 8 Jul 2014 12:08:53 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Fengguang Wu <fengguang.wu@intel.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Jet Chen <jet.chen@intel.com>,
+        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
+        LKP <lkp@01.org>
+Subject: Re: [timer] BUG: soft lockup - CPU#1 stuck for 23s! [swapper/0:1]
+In-Reply-To: <20140708034521.GD17142@localhost>
+Message-ID: <alpine.DEB.2.10.1407081208060.4357@nanos>
+References: <20140708034521.GD17142@localhost>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Tony Luck <tony.luck@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH 2/4] ACPI: Don't use acpi_lapic in ACPI core code
-References: <1404290847-7671-1-git-send-email-hanjun.guo@linaro.org> <1404290847-7671-3-git-send-email-hanjun.guo@linaro.org> <2058650.s5vKv1ibCp@vostro.rjw.lan>
-In-Reply-To: <2058650.s5vKv1ibCp@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年07月08日 05:08, Rafael J. Wysocki wrote:
-> On Wednesday, July 02, 2014 04:47:24 PM Hanjun Guo wrote:
->> From: Graeme Gregory <graeme.gregory@linaro.org>
->>
->> Now ARM64 support is being added to ACPI so architecture specific
->> values can not be used in core ACPI code.
->>
->> Following on the patch "ACPI / processor: Check if LAPIC is present
->> during initialization" which uses acpi_lapic in acpi_processor.c,
->> on ARM64 platform, GIC is used instead of local APIC, so acpi_lapic
->> is not a suitable value for ARM64.
->>
->> What is actually important at this point is the SMPness of the system,
->> so introduce acpi_arch_is_smp() to be arch specific and generic.
->>
->> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
->> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
->> ---
->>  arch/ia64/include/asm/acpi.h  |    5 +++++
->>  arch/x86/include/asm/acpi.h   |    5 +++++
->>  drivers/acpi/acpi_processor.c |    2 +-
->>  3 files changed, 11 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/ia64/include/asm/acpi.h b/arch/ia64/include/asm/acpi.h
->> index 75dc59a..2fc0757 100644
->> --- a/arch/ia64/include/asm/acpi.h
->> +++ b/arch/ia64/include/asm/acpi.h
->> @@ -40,6 +40,11 @@ extern int acpi_lapic;
->>  #define acpi_noirq 0	/* ACPI always enabled on IA64 */
->>  #define acpi_pci_disabled 0 /* ACPI PCI always enabled on IA64 */
->>  #define acpi_strict 1	/* no ACPI spec workarounds on IA64 */
->> +
->> +static inline bool acpi_arch_is_smp(void)
-> Why this name?  In particular, local APIC being present doesn't imply SMP.
+On Tue, 8 Jul 2014, Fengguang Wu wrote:
 
-Hmm, agreed. How about acpi_has_cpu_in_madt()? As we know,
-Local APIC/SAPIC in MADT stands for CPU in the system, how about
-the function name above?
+> Greetings,
+> 
+> 0day kernel testing robot got the below dmesg and the first bad commit is
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git master
+> commit 1ead65812486cda65093683a99b8907a7242fa93
+> Merge: b6d739e b97f029
+> Author:     Linus Torvalds <torvalds@linux-foundation.org>
+> AuthorDate: Tue Apr 1 11:00:07 2014 -0700
+> Commit:     Linus Torvalds <torvalds@linux-foundation.org>
+> CommitDate: Tue Apr 1 11:00:07 2014 -0700
 
->
->> +{
->> +	return acpi_lapic;
-> Also
->
-> 	return !!acpi_lapic;
->
-> would be cleaner IMO.
->
+That's not really helpful. It's a merge commit, so we'd need to drill
+down the bisect into what got merged.
 
-I will update it as you suggested.
+Thanks,
 
-Thanks
-Hanjun
+	tglx
