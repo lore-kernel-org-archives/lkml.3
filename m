@@ -1,270 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252AbaGHNVz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:21:55 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38792 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754837AbaGHNVx (ORCPT
+	id S1755265AbaGHNWA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:22:00 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:23627 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755189AbaGHNV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:21:53 -0400
-Message-ID: <53BBF031.5080105@ti.com>
-Date: Tue, 8 Jul 2014 09:20:49 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Murali Karicheri <m-karicheri2@ti.com>, Mohit Kumar <mohit.kumar@st.com>,
-        Jingoo Han <jg1.han@samsung.com>
-CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Pratyush Anand <pratyush.anand@st.com>,
-        Richard Zhu <r65037@freescale.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: Re: [PATCH v3 3/5] PCI: designware: refactor host init code to re-use
- on keystone PCI
-References: <1404164720-11066-1-git-send-email-m-karicheri2@ti.com> <1404164720-11066-4-git-send-email-m-karicheri2@ti.com>
-In-Reply-To: <1404164720-11066-4-git-send-email-m-karicheri2@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Jul 2014 09:21:56 -0400
+X-AuditID: cbfee68e-b7fb96d000004bfc-44-53bbf071e696
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Tomasz Figa'" <t.figa@samsung.com>, linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
+        "'Tomasz Figa'" <tomasz.figa@gmail.com>
+References: <1403618235-19353-1-git-send-email-t.figa@samsung.com>
+ <1403618235-19353-3-git-send-email-t.figa@samsung.com>
+In-reply-to: <1403618235-19353-3-git-send-email-t.figa@samsung.com>
+Subject: RE: [PATCH 2/6] ARM: EXYNOS: Fix core ID used by platsmp and hotplug
+ code
+Date: Tue, 08 Jul 2014 22:21:50 +0900
+Message-id: <031001cf9aaf$959cf6c0$c0d6e440$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQImwlMNtKSRmS2HaaYx0l+evMEXagJEk3MgmtW1RiA=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBIsWRmVeSWpSXmKPExsVy+t8zfd3CD7uDDU49trTY9Pgaq8XlXXPY
+	LGac38dksfbIXXaL9TNes1is2vWH0YHNY+esu+wem5fUe/RtWcXo8XmTXABLFJdNSmpOZllq
+	kb5dAlfGhQOJBd81KrYv7GFpYGxV6GLk5JAQMJH4v2MRM4QtJnHh3nq2LkYuDiGBZYwSjdvu
+	MsIUHV95ASoxnVHizb7PUM5fRonDcyYygVSxCWhIHH7/jB3EFhHwlHhw6gA7SBGzwAJGibO3
+	ZoAlhASqJTYdXMIKYnMKOEt8+vaVBcQWFgiRWHRyGtgdLAKqEq/Ot4LFeQUsJWZcOc4EYQtK
+	/Jh8DyzOLKAlsX4nRJxZQF5i85q3UD8oSOw4+5oR4ggrict9j5khakQk9r14xwhykITANXaJ
+	Tc0Qv7EICEh8m3wIaCgHUEJWYtMBqDmSEgdX3GCZwCgxC8nqWUhWz0KyehaSFQsYWVYxiqYW
+	JBcUJ6UXGekVJ+YWl+al6yXn525ihMRq3w7GmwesDzEmA62fyCwlmpwPjPW8knhDYzMjC1MT
+	U2Mjc0sz0oSVxHkXPUwKEhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cC4uJEv6fx7hojKlgev
+	73u/7D6/7vz07w6cNks07J9nerjWhWQ7ywddab+qG5vgrhOddGWFs9m5rtATHR3nZpzbtHib
+	bu3XMsmInmm3e2Ys03FKLA3O5zhaE7xT9vo6n4D5TstUAmdKfLgUwFm+8dv2ZVdKX+h+nrrj
+	LE/Xiijh6T8VLefHHONUYinOSDTUYi4qTgQALSz6x+sCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnleLIzCtJLcpLzFFi42I5/e+xoG7hh93BBjc6TC02Pb7GanF51xw2
+	ixnn9zFZrD1yl91i/YzXLBardv1hdGDz2DnrLrvH5iX1Hn1bVjF6fN4kF8AS1cBok5GamJJa
+	pJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0XEmhLDGnFCgUkFhc
+	rKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYceFAYsF3jYrtC3tYGhhbFboYOTkkBEwkjq+8
+	wAZhi0lcuLceyObiEBKYzijxZt9nKOcvo8ThOROZQKrYBDQkDr9/xg5iiwh4Sjw4dYAdpIhZ
+	YAGjxNlbM8ASQgLVEpsOLmEFsTkFnCU+ffvKAmILC4RILDo5jRnEZhFQlXh1vhUszitgKTHj
+	ynEmCFtQ4sfke2BxZgEtifU7IeLMAvISm9e8ZYY4VUFix9nXjBBHWElc7nvMDFEjIrHvxTvG
+	CYxCs5CMmoVk1Cwko2YhaVnAyLKKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzgRPJPewbiq
+	weIQowAHoxIP74qDu4KFWBPLiitzDzFKcDArifB+ObU7WIg3JbGyKrUoP76oNCe1+BCjKdCn
+	E5mlRJPzgUkqryTe0NjEzMjSyMzCyMTcXEmc92CrdaCQQHpiSWp2ampBahFMHxMHp1QD42zT
+	qvv9N/vLfuZL32ps/DD50doJMTUrrG7df8Cxt3dFpJzLlud2JrZv9iyU6Jl/4fOj/nVm35fO
+	zG+scpuyakOC5ikrI5byru/fZfvbbjbMt15iJLXzrUDzM/20p9LKMrEqapxNacwqf/+9u7fN
+	4oam/Ubdgt8npVw4dvdwelWrFCyanMP4XomlOCPRUIu5qDgRAM47BZAaAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mohit, Jingoo,
+Tomasz Figa wrote:
+> 
+> When CPU topology is specified in device tree, cpu_logical_map() does
+> not return core ID anymore, but rather full MPIDR value. This breaks
+> existing calculation of PMU register offsets on Exynos SoCs.
+> 
+> This patch fixes the problem by adjusting the code to use only core ID
+> bits of the value returned by cpu_logical_map() to allow CPU topology to
+> be specified in device tree on Exynos SoCs.
+> 
+> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
 
-Thanks for the Ack for 1/5 and 2/5 of this series.
+Looks good to me, but I think we don't need this fix in 3.16 because the CPU
+topology is not specified in DT yet...if I'm wrong, please correct me.
 
-Could you also review 3/5 and 4/5 of this series and provide your Ack or 
-comments at the earliest.
+Will apply for 3.17.
 
-Thanks and regards,
+Thanks,
+Kukjin
 
-Murali
-
-On 06/30/2014 05:45 PM, Murali Karicheri wrote:
-> This patch refactor the host controller init code to support Keystone
-> PCI controller.
->
-> Current DW PCI host controller init code has code specific to newer
-> DW hw such as ATU port resource parse and ioremap. Conditionally
-> execute this code if DW h/w is not v3.65. Keystone PCI controller
-> is based on v3.65 DW PCI h/w and it has MSI controller implemented
-> in application space and requires different controller initialization
-> code. So factor out the MSI host init code to a separate function.
->
-> Rename dw_pcie_host_init() to dw_pcie_common_host_init() that takes an
-> additional arg, ptr to hw_pci structure. This allows to re-use the code
-> for Keystone PCI that can now provide it's own pci hw ops and msi irq
-> ops.  dw_pcie_host_init() is now a wrapper function that calls
-> dw_pcie_common_host_init() for pci common initialization.
->
-> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
->
-> CC: Santosh Shilimkar<santosh.shilimkar@ti.com>
-> CC: Russell King<linux@arm.linux.org.uk>
-> CC: Grant Likely<grant.likely@linaro.org>
-> CC: Rob Herring<robh+dt@kernel.org>
-> CC: Mohit Kumar<mohit.kumar@st.com>
-> CC: Jingoo Han<jg1.han@samsung.com>
-> CC: Bjorn Helgaas<bhelgaas@google.com>
-> CC: Pratyush Anand<pratyush.anand@st.com>
-> CC: Richard Zhu<r65037@freescale.com>
-> CC: Kishon Vijay Abraham I<kishon@ti.com>
-> CC: Marek Vasut<marex@denx.de>
-> CC: Arnd Bergmann<arnd@arndb.de>
-> CC: Pawel Moll<pawel.moll@arm.com>
-> CC: Mark Rutland<mark.rutland@arm.com>
-> CC: Ian Campbell<ijc+devicetree@hellion.org.uk>
-> CC: Kumar Gala<galak@codeaurora.org>
-> CC: Randy Dunlap<rdunlap@infradead.org>
-> CC: Grant Likely<grant.likely@linaro.org>
 > ---
->   drivers/pci/host/pcie-designware.c |  105 +++++++++++++++++++++++++-----------
->   drivers/pci/host/pcie-designware.h |    3 +-
->   2 files changed, 75 insertions(+), 33 deletions(-)
->
-> diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
-> index 905941c..c11e4de 100644
-> --- a/drivers/pci/host/pcie-designware.c
-> +++ b/drivers/pci/host/pcie-designware.c
-> @@ -415,19 +415,24 @@ static const struct irq_domain_ops msi_domain_ops = {
->   	.map = dw_pcie_msi_map,
->   };
->
-> -int __init dw_pcie_host_init(struct pcie_port *pp)
-> +static int __init dw_pcie_common_host_init(struct pcie_port *pp,
-> +					   struct hw_pci *hw)
->   {
->   	struct device_node *np = pp->dev->of_node;
->   	struct of_pci_range range;
->   	struct of_pci_range_parser parser;
-> +	struct hw_pci *pci_hw = hw;
->   	u32 val;
-> -	int i;
->
->   	if (of_pci_range_parser_init(&parser, np)) {
->   		dev_err(pp->dev, "missing ranges property\n");
->   		return -EINVAL;
->   	}
->
-> +	/* Default to dw_pci if no hw ops provided */
-> +	if (!pci_hw)
-> +		pci_hw =&dw_pci;
+>  arch/arm/mach-exynos/hotplug.c | 10 ++++++----
+>  arch/arm/mach-exynos/platsmp.c | 34 +++++++++++++++++++---------------
+>  2 files changed, 25 insertions(+), 19 deletions(-)
+> 
+> diff --git a/arch/arm/mach-exynos/hotplug.c b/arch/arm/mach-exynos/hotplug.c
+> index 69fa483..5644dac 100644
+> --- a/arch/arm/mach-exynos/hotplug.c
+> +++ b/arch/arm/mach-exynos/hotplug.c
+> @@ -40,11 +40,13 @@ static inline void cpu_leave_lowpower(void)
+> 
+>  static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
+>  {
+> +	u32 mpidr = cpu_logical_map(cpu);
+> +	u32 core_id = MPIDR_AFFINITY_LEVEL(mpidr, 0);
 > +
->   	/* Get the I/O and memory ranges from DT */
->   	for_each_of_pci_range(&parser,&range) {
->   		unsigned long restype = range.flags&  IORESOURCE_TYPE_BITS;
-> @@ -467,21 +472,24 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
->   		}
->   	}
->
-> -	pp->cfg0_base = pp->cfg.start;
-> -	pp->cfg1_base = pp->cfg.start + pp->config.cfg0_size;
->   	pp->mem_base = pp->mem.start;
-> -
-> -	pp->va_cfg0_base = devm_ioremap(pp->dev, pp->cfg0_base,
-> -					pp->config.cfg0_size);
-> -	if (!pp->va_cfg0_base) {
-> -		dev_err(pp->dev, "error with ioremap in function\n");
-> -		return -ENOMEM;
-> -	}
-> -	pp->va_cfg1_base = devm_ioremap(pp->dev, pp->cfg1_base,
-> -					pp->config.cfg1_size);
-> -	if (!pp->va_cfg1_base) {
-> -		dev_err(pp->dev, "error with ioremap\n");
-> -		return -ENOMEM;
-> +	if (!pp->version&  DW_HW_V3_65) {
-> +		/* Default is with ATU port. */
-> +		pp->cfg0_base = pp->cfg.start;
-> +		pp->cfg1_base = pp->cfg.start + pp->config.cfg0_size;
-> +
-> +		pp->va_cfg0_base = devm_ioremap(pp->dev, pp->cfg0_base,
-> +						pp->config.cfg0_size);
-> +		if (!pp->va_cfg0_base) {
-> +			dev_err(pp->dev, "error with ioremap in function\n");
-> +			return -ENOMEM;
-> +		}
-> +		pp->va_cfg1_base = devm_ioremap(pp->dev, pp->cfg1_base,
-> +						pp->config.cfg1_size);
-> +		if (!pp->va_cfg1_base) {
-> +			dev_err(pp->dev, "error with ioremap\n");
-> +			return -ENOMEM;
-> +		}
->   	}
->
->   	if (of_property_read_u32(np, "num-lanes",&pp->lanes)) {
-> @@ -489,19 +497,6 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
->   		return -EINVAL;
->   	}
->
-> -	if (IS_ENABLED(CONFIG_PCI_MSI)) {
-> -		pp->irq_domain = irq_domain_add_linear(pp->dev->of_node,
-> -					MAX_MSI_IRQS,&msi_domain_ops,
-> -					&dw_pcie_msi_chip);
-> -		if (!pp->irq_domain) {
-> -			dev_err(pp->dev, "irq domain init failed\n");
-> -			return -ENXIO;
-> -		}
-> -
-> -		for (i = 0; i<  MAX_MSI_IRQS; i++)
-> -			irq_create_mapping(pp->irq_domain, i);
-> -	}
-> -
->   	if (pp->ops->host_init)
->   		pp->ops->host_init(pp);
->
-> @@ -514,10 +509,10 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
->   	val |= PORT_LOGIC_SPEED_CHANGE;
->   	dw_pcie_wr_own_conf(pp, PCIE_LINK_WIDTH_SPEED_CONTROL, 4, val);
->
-> -	dw_pci.nr_controllers = 1;
-> -	dw_pci.private_data = (void **)&pp;
-> +	pci_hw->nr_controllers = 1;
-> +	pci_hw->private_data = (void **)&pp;
->
-> -	pci_common_init_dev(pp->dev,&dw_pci);
-> +	pci_common_init_dev(pp->dev, pci_hw);
->   	pci_assign_unassigned_resources();
->   #ifdef CONFIG_PCI_DOMAINS
->   	dw_pci.domain++;
-> @@ -526,6 +521,52 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
->   	return 0;
->   }
->
-> +/*
-> + * dw_pcie_msi_host_init() - Function to initialize msi host controller
-> + * @pp: ptr to pcie port
-> + * @msi_irqc_np: device node ptr to msi irq controller
-> + * @irq_msi_ops: ptr to MSI irq_domain_ops struct
-> + *
-> + * Function register irq domain for msi irq controller and create mappings
-> + * for MSI irqs.
-> + */
-> +static int dw_pcie_msi_host_init(struct pcie_port *pp,
-> +				 struct device_node *msi_irqc_np,
-> +				 const struct irq_domain_ops *msi_irq_ops)
-> +{
-> +	const struct irq_domain_ops *msi_irq_domain_ops = msi_irq_ops;
-> +	int i;
-> +
-> +	/* Default to  msi_domain_ops if no msi irq domain ops provided */
-> +	if (!msi_irq_domain_ops)
-> +		msi_irq_domain_ops =&msi_domain_ops;
-> +
-> +	if (IS_ENABLED(CONFIG_PCI_MSI)) {
-> +		pp->irq_domain = irq_domain_add_linear(msi_irqc_np,
-> +					MAX_MSI_IRQS, msi_irq_domain_ops,
-> +					&dw_pcie_msi_chip);
-> +		if (!pp->irq_domain) {
-> +			dev_err(pp->dev, "irq domain init failed\n");
-> +			return -ENXIO;
-> +		}
-> +
-> +		for (i = 0; i<  MAX_MSI_IRQS; i++)
-> +			irq_create_mapping(pp->irq_domain, i);
-> +	}
-> +	return 0;
-> +}
-> +
-> +int __init dw_pcie_host_init(struct pcie_port *pp)
-> +{
-> +	int ret;
-> +
-> +	ret = dw_pcie_msi_host_init(pp, pp->dev->of_node, NULL);
-> +	if (ret)
-> +		return ret;
-> +
-> +	return dw_pcie_common_host_init(pp, NULL);
-> +}
-> +
->   static void dw_pcie_prog_viewport_cfg0(struct pcie_port *pp, u32 busdev)
->   {
->   	/* Program viewport 0 : OUTBOUND : CFG0 */
-> diff --git a/drivers/pci/host/pcie-designware.h b/drivers/pci/host/pcie-designware.h
-> index 387f69e..db0260f 100644
-> --- a/drivers/pci/host/pcie-designware.h
-> +++ b/drivers/pci/host/pcie-designware.h
-> @@ -51,6 +51,8 @@ struct pcie_port {
->   	int			msi_irq;
->   	struct irq_domain	*irq_domain;
->   	unsigned long		msi_data;
-> +#define DW_HW_V3_65		BIT(0)
-> +	u32			version;
->   	DECLARE_BITMAP(msi_irq_in_use, MAX_MSI_IRQS);
->   };
->
-> @@ -79,5 +81,4 @@ void dw_pcie_msi_init(struct pcie_port *pp);
->   int dw_pcie_link_up(struct pcie_port *pp);
->   void dw_pcie_setup_rc(struct pcie_port *pp);
->   int dw_pcie_host_init(struct pcie_port *pp);
-> -
->   #endif /* _PCIE_DESIGNWARE_H */
+>  	for (;;) {
+> 
+> -		/* make cpu1 to be turned off at next WFI command */
+> -		if (cpu == 1)
+> -			exynos_cpu_power_down(cpu);
+> +		/* Turn the CPU off on next WFI instruction. */
+> +		exynos_cpu_power_down(core_id);
+> 
+>  		/*
+>  		 * here's the WFI
+> @@ -54,7 +56,7 @@ static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
+>  		    :
+>  		    : "memory", "cc");
+> 
+> -		if (pen_release == cpu_logical_map(cpu)) {
+> +		if (pen_release == core_id) {
+>  			/*
+>  			 * OK, proper wakeup, we're done
+>  			 */
+> diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
+> index 1c8d31e..50b9aad 100644
+> --- a/arch/arm/mach-exynos/platsmp.c
+> +++ b/arch/arm/mach-exynos/platsmp.c
+> @@ -90,7 +90,8 @@ static void exynos_secondary_init(unsigned int cpu)
+>  static int exynos_boot_secondary(unsigned int cpu, struct task_struct *idle)
+>  {
+>  	unsigned long timeout;
+> -	unsigned long phys_cpu = cpu_logical_map(cpu);
+> +	u32 mpidr = cpu_logical_map(cpu);
+> +	u32 core_id = MPIDR_AFFINITY_LEVEL(mpidr, 0);
+>  	int ret = -ENOSYS;
+> 
+>  	/*
+> @@ -104,17 +105,18 @@ static int exynos_boot_secondary(unsigned int cpu, struct task_struct *idle)
+>  	 * the holding pen - release it, then wait for it to flag
+>  	 * that it has been released by resetting pen_release.
+>  	 *
+> -	 * Note that "pen_release" is the hardware CPU ID, whereas
+> +	 * Note that "pen_release" is the hardware CPU core ID, whereas
+>  	 * "cpu" is Linux's internal ID.
+>  	 */
+> -	write_pen_release(phys_cpu);
+> +	write_pen_release(core_id);
+> 
+> -	if (!exynos_cpu_power_state(cpu)) {
+> -		exynos_cpu_power_up(cpu);
+> +	if (!exynos_cpu_power_state(core_id)) {
+> +		exynos_cpu_power_up(core_id);
+>  		timeout = 10;
+> 
+>  		/* wait max 10 ms until cpu1 is on */
+> -		while (exynos_cpu_power_state(cpu) != S5P_CORE_LOCAL_PWR_EN) {
+> +		while (exynos_cpu_power_state(core_id)
+> +		       != S5P_CORE_LOCAL_PWR_EN) {
+>  			if (timeout-- == 0)
+>  				break;
+> 
+> @@ -145,20 +147,20 @@ static int exynos_boot_secondary(unsigned int cpu, struct task_struct *idle)
+>  		 * Try to set boot address using firmware first
+>  		 * and fall back to boot register if it fails.
+>  		 */
+> -		ret = call_firmware_op(set_cpu_boot_addr, phys_cpu, boot_addr);
+> +		ret = call_firmware_op(set_cpu_boot_addr, core_id, boot_addr);
+>  		if (ret && ret != -ENOSYS)
+>  			goto fail;
+>  		if (ret == -ENOSYS) {
+> -			void __iomem *boot_reg = cpu_boot_reg(phys_cpu);
+> +			void __iomem *boot_reg = cpu_boot_reg(core_id);
+> 
+>  			if (IS_ERR(boot_reg)) {
+>  				ret = PTR_ERR(boot_reg);
+>  				goto fail;
+>  			}
+> -			__raw_writel(boot_addr, cpu_boot_reg(phys_cpu));
+> +			__raw_writel(boot_addr, cpu_boot_reg(core_id));
+>  		}
+> 
+> -		call_firmware_op(cpu_boot, phys_cpu);
+> +		call_firmware_op(cpu_boot, core_id);
+> 
+>  		arch_send_wakeup_ipi_mask(cpumask_of(cpu));
+> 
+> @@ -227,22 +229,24 @@ static void __init exynos_smp_prepare_cpus(unsigned int max_cpus)
+>  	 * boot register if it fails.
+>  	 */
+>  	for (i = 1; i < max_cpus; ++i) {
+> -		unsigned long phys_cpu;
+>  		unsigned long boot_addr;
+> +		u32 mpidr;
+> +		u32 core_id;
+>  		int ret;
+> 
+> -		phys_cpu = cpu_logical_map(i);
+> +		mpidr = cpu_logical_map(i);
+> +		core_id = MPIDR_AFFINITY_LEVEL(mpidr, 0);
+>  		boot_addr = virt_to_phys(exynos4_secondary_startup);
+> 
+> -		ret = call_firmware_op(set_cpu_boot_addr, phys_cpu, boot_addr);
+> +		ret = call_firmware_op(set_cpu_boot_addr, core_id, boot_addr);
+>  		if (ret && ret != -ENOSYS)
+>  			break;
+>  		if (ret == -ENOSYS) {
+> -			void __iomem *boot_reg = cpu_boot_reg(phys_cpu);
+> +			void __iomem *boot_reg = cpu_boot_reg(core_id);
+> 
+>  			if (IS_ERR(boot_reg))
+>  				break;
+> -			__raw_writel(boot_addr, cpu_boot_reg(phys_cpu));
+> +			__raw_writel(boot_addr, cpu_boot_reg(core_id));
+>  		}
+>  	}
+>  }
+> --
+> 1.9.3
 
