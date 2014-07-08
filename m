@@ -1,89 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772AbaGHRSf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 13:18:35 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:45493 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754527AbaGHRSc convert rfc822-to-8bit (ORCPT
+	id S1754828AbaGHRUo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 13:20:44 -0400
+Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:32006 "EHLO
+	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752883AbaGHRUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 13:18:32 -0400
-Date: Tue, 8 Jul 2014 18:18:28 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 0/9] Support for creating generic PCI host bridges
- from DT
-Message-ID: <20140708171828.GM6501@e106497-lin.cambridge.arm.com>
-References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
- <CAL_JsqK_CfagmiFOpOXVYGry22nGnCZL0ZXeJhYxb9zp=P2fsQ@mail.gmail.com>
-MIME-Version: 1.0
-In-Reply-To: <CAL_JsqK_CfagmiFOpOXVYGry22nGnCZL0ZXeJhYxb9zp=P2fsQ@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 08 Jul 2014 17:18:29.0512 (UTC) FILETIME=[A2F8C080:01CF9AD0]
-X-MC-Unique: 114070818183000901
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	Tue, 8 Jul 2014 13:20:42 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: At4OANcnvFNXQDwH/2dsb2JhbABZgw6tHwUBAQEBAQEFAW4BmVmBGBd1hDFSgRo3iEYByDMXhXqIZGQdhC0FhGkDlgqUDINFO4Ex
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Antti Palosaari <crope@iki.fi>, Michael Krufky <mkrufky@linuxtv.org>,
+        linux-media@vger.kernel.org
+Subject: [PATCH 1/1] r820t: remove unnecessary break after goto
+Date: Tue,  8 Jul 2014 19:20:37 +0200
+Message-Id: <1404840037-29692-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 06, 2014 at 04:23:43PM +0100, Rob Herring wrote:
-> On Tue, Jul 1, 2014 at 1:43 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> > This is my resurected attempt at adding support for generic PCI host
-> > bridge controllers that make use of device tree information to
-> > configure themselves. I've tagged it as v8 although the patches
-> > have now been reshuffled in order to ease adoption so referring to
-> > the older versions might be a bit of a hoop jumping exercise.
-> >
-> > Changes from v7:
-> >   - Reordered the patches so that fixes and non-controversial patches
-> >     from v7 can be accepted more easily. If agreed I can split the
-> >     series again into patches that can be upstreamed easily and ones
-> >     that still need discussion.
-> >   - Moved the of_create_host_bridge() function to drivers/of/of_pci.c
-> >     to better reflect its target use.
-> >   - Added the function to remap the bus I/O resources that used to be
-> >     provided in my arm64 patch series and (re)named it pci_remap_iospace()
-> >   - Removed error code checking from parsing and mapping of IRQ from DT
-> >     in recognition that some PCI devices will not have legacy IRQ mappings.
-> >
-> > v7 thread here with all the historic information: https://lkml.org/lkml/2014/3/14/279
-> 
-> Can you publish a branch for this series please.
-> 
-> Rob
-> 
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Antti Palosaari <crope@iki.fi>
+Cc: Michael Krufky <mkrufky@linuxtv.org>
+Cc: linux-media@vger.kernel.org
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ drivers/media/tuners/r820t.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-Hi Rob,
-
-I have pushed a brach that matches my v8 patchset +1 obvious missing header include
-here: http://www.linux-arm.org/git?p=linux-ld.git;a=shortlog;h=refs/heads/for-upstream/pci_v8
-
-Best regards,
-Liviu
-
-
+diff --git a/drivers/media/tuners/r820t.c b/drivers/media/tuners/r820t.c
+index 96ccfeb..6906b16 100644
+--- a/drivers/media/tuners/r820t.c
++++ b/drivers/media/tuners/r820t.c
+@@ -2300,7 +2300,6 @@ struct dvb_frontend *r820t_attach(struct dvb_frontend *fe,
+ 	case 0:
+ 		/* memory allocation failure */
+ 		goto err_no_gate;
+-		break;
+ 	case 1:
+ 		/* new tuner instance */
+ 		priv->cfg = cfg;
 -- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+1.8.4.5
 
