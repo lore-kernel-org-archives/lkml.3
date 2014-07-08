@@ -1,48 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754AbaGHRXM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 13:23:12 -0400
-Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:63523 "EHLO
-	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753405AbaGHRXK (ORCPT
+	id S1754945AbaGHRYj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 13:24:39 -0400
+Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:40977 "EHLO
+	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754541AbaGHRYi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 13:23:10 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: At4OAIQovFNXQDwH/2dsb2JhbABZgw6tHwUBAQEBAQEFAW4BmVmBGBd1hQOBGjeIRgHIMxeFeohkZB2ELQWEaQOWCpQMg0U7gTE
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org
-Subject: [PATCH 1/1] dvb-frontends: remove unnecessary break after goto
-Date: Tue,  8 Jul 2014 19:23:01 +0200
-Message-Id: <1404840181-29822-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Tue, 8 Jul 2014 13:24:38 -0400
+From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
+Date: Tue, 8 Jul 2014 13:24:35 -0400
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>
+Subject: Re: [RFC PATCH] tty: serial: Add 8250-core based omap driver
+Message-ID: <20140708172435.GW17765@csclub.uwaterloo.ca>
+References: <1404316809-20637-1-git-send-email-bigeasy@linutronix.de>
+ <20140703184808.GD17769@csclub.uwaterloo.ca>
+ <20140704181317.GE17769@csclub.uwaterloo.ca>
+ <53BC2082.9090807@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53BC2082.9090807@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Antti Palosaari <crope@iki.fi>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: linux-media@vger.kernel.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/media/dvb-frontends/af9013.c | 1 -
- 1 file changed, 1 deletion(-)
+On Tue, Jul 08, 2014 at 06:46:58PM +0200, Sebastian Andrzej Siewior wrote:
+> I just managed to boot my dra7-evm on mainline. It crashed in
+> serial_omap_runtime_resume(). Now that is fixed. The next post should
+> have this fixed and work (at least on v3.16-rc).
 
-diff --git a/drivers/media/dvb-frontends/af9013.c b/drivers/media/dvb-frontends/af9013.c
-index fb504f1..ecf6388 100644
---- a/drivers/media/dvb-frontends/af9013.c
-+++ b/drivers/media/dvb-frontends/af9013.c
-@@ -470,7 +470,6 @@ static int af9013_statistics_snr_result(struct dvb_frontend *fe)
- 		break;
- 	default:
- 		goto err;
--		break;
- 	}
- 
- 	for (i = 0; i < len; i++) {
+Sounds good.  I am still stuck on 3.12 since I need xenomais well as a
+few things I don't think has been merged from TI's tree yet.
+
 -- 
-1.8.4.5
-
+Len Sorensen
