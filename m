@@ -1,190 +1,491 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531AbaGHOeJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 10:34:09 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:58419 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641AbaGHOeH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 10:34:07 -0400
-X-IronPort-AV: E=Sophos;i="5.01,625,1400025600"; 
-   d="scan'208";a="150833892"
-Message-ID: <53BC014E.5090600@citrix.com>
-Date: Tue, 8 Jul 2014 15:33:50 +0100
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754228AbaGHOe4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 10:34:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3767 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750845AbaGHOey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 10:34:54 -0400
+Date: Tue, 8 Jul 2014 16:02:28 +0200 (CEST)
+From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
+X-X-Sender: lczerner@localhost.localdomain
+To: Namjae Jeon <namjae.jeon@samsung.com>
+cc: Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-ext4 <linux-ext4@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Brian Foster <bfoster@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Ashish Sangwan <a.sangwan@samsung.com>, xfs@oss.sgi.com
+Subject: Re: [PATCH 3/3] ext4: Add support IOC_MOV_DATA ioctl
+In-Reply-To: <004001cf9aa4$2670e280$7352a780$@samsung.com>
+Message-ID: <alpine.LFD.2.00.1407081558280.2180@localhost.localdomain>
+References: <004001cf9aa4$2670e280$7352a780$@samsung.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xenproject.org>
-Subject: Re: [Xen-devel] [PATCH net-next v2] xen-netback: Adding debugfs "io_ring_qX"
- files
-References: <1404330830-24504-1-git-send-email-zoltan.kiss@citrix.com> <20140702200252.GA17294@laptop.dumpdata.com>
-In-Reply-To: <20140702200252.GA17294@laptop.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1224561518-1404828153=:2180"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/14 21:02, Konrad Rzeszutek Wilk wrote:
-> On Wed, Jul 02, 2014 at 08:53:50PM +0100, Zoltan Kiss wrote:
->> +static ssize_t
->> +xenvif_write_io_ring(struct file *filp, const char __user *buf, size_t count,
->> +		     loff_t *ppos)
->> +{
->> +	struct xenvif_queue *queue =
->> +		((struct seq_file *)filp->private_data)->private;
->> +	int len;
->> +	char write[sizeof("kick")];
->
-> <blinks>
->> +
->> +	/* don't allow partial writes and check the length */
->> +	if (*ppos != 0)
->> +		return 0;
->> +	if (count < sizeof("kick") - 1)
->
-> Um, could you just use a #define please?
-OK
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
->
->> +		return -ENOSPC;
->> +
->> +	len = simple_write_to_buffer(write,
->> +				     sizeof(write),
->> +				     ppos,
->> +				     buf,
->> +				     count);
->> +	if (len < 0)
->> +		return len;
->> +
->> +	if (!strncmp(write, "kick", sizeof("kick") - 1))
->> +		xenvif_interrupt(0, (void *)queue);
->> +	else
->> +		pr_warn("Unknown command to io_ring. Available: kick\n");
->
-> It is 'io_ring_q%d'?
-Yes
+--8323328-1224561518-1404828153=:2180
+Content-Type: TEXT/PLAIN; charset=iso-8859-2
+Content-Transfer-Encoding: 8BIT
 
-> Why don't you split that back out to the user
-> instead of the console?
-How do you mean? Printing it into buf? I don't think the user cares 
-about its content after doing the write syscall. More importantly, I 
-don't know if that buffer is big enough to hold the message.
->
->
->> +	return count;
->> +}
->> +
->> +static int xenvif_dump_open(struct inode *inode, struct file *filp)
->> +{
->> +	int ret;
->> +	void *queue = NULL;
->> +
->> +	if (inode->i_private)
->> +		queue = inode->i_private;
->> +	ret = single_open(filp, xenvif_read_io_ring, queue);
->> +	filp->f_mode |= FMODE_PWRITE;
->> +	return ret;
->> +}
->> +
->> +static const struct file_operations xenvif_dbg_io_ring_ops_fops = {
->> +	.owner = THIS_MODULE,
->> +	.open = xenvif_dump_open,
->> +	.read = seq_read,
->> +	.llseek = seq_lseek,
->> +	.release = single_release,
->> +	.write = xenvif_write_io_ring,
->> +};
->> +
->> +static void xenvif_debugfs_addif(struct xenvif_queue *queue)
->> +{
->> +	struct dentry *pfile;
->> +	struct xenvif *vif = queue->vif;
->> +	int i;
->> +
->> +	vif->xenvif_dbg_root = debugfs_create_dir(vif->dev->name,
->> +						  xen_netback_dbg_root);
->> +	if (!IS_ERR_OR_NULL(vif->xenvif_dbg_root)) {
->> +		for (i = 0; i < vif->num_queues; ++i) {
->> +			char filename[sizeof("io_ring_q") + 4];
->> +
->> +			snprintf(filename, sizeof(filename), "io_ring_q%d", i);
->> +			pfile = debugfs_create_file(filename,
->> +						    0600,
->
-> Pls use macros for that.
-OK
+On Tue, 8 Jul 2014, Namjae Jeon wrote:
 
->> +						    vif->xenvif_dbg_root,
->> +						    &vif->queues[i],
->> +						    &xenvif_dbg_io_ring_ops_fops);
->> +			if (IS_ERR_OR_NULL(pfile))
->> +				pr_warn("Creation of io_ring file returned %ld!\n",
->> +					PTR_ERR(pfile));
->> +		}
->> +	} else
->> +		netdev_warn(vif->dev,
->> +			    "Creation of vif debugfs dir returned %ld!\n",
->> +			    PTR_ERR(vif->xenvif_dbg_root));
->> +}
->> +
->> +static void xenvif_debugfs_delif(struct xenvif *vif)
->> +{
->
-> Could you add:
->
-> 	if (!IS_ERR_OR_NULL(xen_netback_dbg_root))
-> 		return;
->
-Ok
+> Date: Tue, 08 Jul 2014 21:00:02 +0900
+> From: Namjae Jeon <namjae.jeon@samsung.com>
+> To: Dave Chinner <david@fromorbit.com>, Theodore Ts'o <tytso@mit.edu>
+> Cc: linux-ext4 <linux-ext4@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+>     linux-kernel@vger.kernel.org, Luká¹ Czerner <lczerner@redhat.com>,
+>     Brian Foster <bfoster@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+>     Ashish Sangwan <a.sangwan@samsung.com>, xfs@oss.sgi.com
+> Subject: [PATCH 3/3] ext4: Add support IOC_MOV_DATA ioctl
+> 
+> This patch implements fs ioctl's IOC_MOV_DATA for Ext4.
 
->> +	if (!IS_ERR_OR_NULL(vif->xenvif_dbg_root))
->> +		debugfs_remove_recursive(vif->xenvif_dbg_root);
->> +	vif->xenvif_dbg_root = NULL;
->> +}
->> +#endif /* CONFIG_DEBUG_FS */
->> +
->>   static int netback_remove(struct xenbus_device *dev)
->>   {
->>   	struct backend_info *be = dev_get_drvdata(&dev->dev);
->> @@ -246,8 +404,13 @@ static void backend_create_xenvif(struct backend_info *be)
->>
->>   static void backend_disconnect(struct backend_info *be)
->>   {
->> -	if (be->vif)
->> +	if (be->vif) {
->> +#ifdef CONFIG_DEBUG_FS
->> +		if (!IS_ERR_OR_NULL(xen_netback_dbg_root))
->> +			xenvif_debugfs_delif(be->vif);
->
-> .. and then you can remove these 'if' here
->> +#endif /* CONFIG_DEBUG_FS */
->>   		xenvif_disconnect(be->vif);
->> +	}
->>   }
->>
->>   static void backend_connect(struct backend_info *be)
->> @@ -560,6 +723,10 @@ static void connect(struct backend_info *be)
->>   			be->vif->num_queues = queue_index;
->>   			goto err;
->>   		}
->> +#ifdef CONFIG_DEBUG_FS
->> +		if (!IS_ERR_OR_NULL(xen_netback_dbg_root))
->
-> .. and here.
->> +			xenvif_debugfs_addif(queue);
->> +#endif /* CONFIG_DEBUG_FS */
->>   	}
->>
->>   	/* Initialisation completed, tell core driver the number of
->>
->> _______________________________________________
->> Xen-devel mailing list
->> Xen-devel@lists.xen.org
->> http://lists.xen.org/xen-devel
+Hmm isn't this basically what ext4_move_extents() does ? eg.
+EXT4_IOC_MOVE_EXT ?
 
+I guess that the intention here is to do the move, without actually
+moving the data right ? But nevertheless maybe some code can be
+shared with ext4_move_extents() ?
+
+-Lukas
+
+> 
+> The semantics of this ioctl are:
+> 1) Like collapse range, offsets and length should be file system block size
+>    aligned.
+> 2) In the receiver file, atleast length size hole should be present at
+>    receiver_offset
+> 3) It does not change file size of any of donor or receiver file.
+> 4) It leaves a hole at the place from where blocks are moved out in donor file.
+> 5) Both (donor_offset + length) and (receiver_offset + length) should be within
+>    size of donor file and receiver file respectively.
+>    Only unwritten extents resides beyond file size and it does not make sense
+>    to transfer unwritten extents, leave apart the security issues it may raise.
+> 6) If the range to be transfered from donor file contain any holes, they are
+>    replicated as it is in receiver file. It mean holes are preserved and
+>    the length of hole will be added to moved_len signifying that the hole range
+>    is succesfully transfered.
+> 
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+> ---
+>  fs/ext4/ext4.h    |   2 +
+>  fs/ext4/extents.c | 375 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  fs/ext4/file.c    |   1 +
+>  3 files changed, 378 insertions(+)
+> 
+> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+> index 6386c5f..26478eb 100644
+> --- a/fs/ext4/ext4.h
+> +++ b/fs/ext4/ext4.h
+> @@ -2725,6 +2725,8 @@ extern int ext4_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
+>  extern int ext4_ext_precache(struct inode *inode);
+>  extern int ext4_collapse_range(struct inode *inode, loff_t offset, loff_t len);
+>  extern int ext4_insert_range(struct file *file, loff_t offset, loff_t len);
+> +extern int ext4_mov_data(struct inode *, struct inode *, loff_t, loff_t, loff_t,
+> +			 loff_t *);
+>  
+>  /* move_extent.c */
+>  extern void ext4_double_down_write_data_sem(struct inode *first,
+> diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+> index 0c2432e..511db03 100644
+> --- a/fs/ext4/extents.c
+> +++ b/fs/ext4/extents.c
+> @@ -5811,3 +5811,378 @@ out_mutex:
+>  	mutex_unlock(&inode->i_mutex);
+>  	return ret;
+>  }
+> +
+> +/*
+> + * If offset_lblk does not lie on the extent start boundary, split extent
+> + */
+> +int ext4_find_and_split_extent_at(struct inode *inode, ext4_lblk_t offset_lblk)
+> +{
+> +	struct ext4_ext_path *path;
+> +	handle_t *handle;
+> +	int credits, err = 0, split_flag, ex_len;
+> +	struct ext4_extent *ex;
+> +	int depth = ext_depth(inode);
+> +	ext4_lblk_t ex_start;
+> +
+> +	path = ext4_ext_find_extent(inode, offset_lblk, NULL, 0);
+> +	if (IS_ERR(path))
+> +		return PTR_ERR(path);
+> +
+> +	ex = path[depth].p_ext;
+> +	if (!ex)
+> +		goto free_path;
+> +	ex_start = le32_to_cpu(ex->ee_block);
+> +	ex_len = ext4_ext_get_actual_len(ex);
+> +
+> +	if (offset_lblk > ex_start && offset_lblk < (ex_start + ex_len)) {
+> +		credits = ext4_writepage_trans_blocks(inode);
+> +		handle = ext4_journal_start(inode, EXT4_HT_TRUNCATE, credits);
+> +		if (IS_ERR(handle)) {
+> +			err = PTR_ERR(handle);
+> +			goto free_path;
+> +		}
+> +		if (ext4_ext_is_unwritten(ex))
+> +			split_flag = EXT4_EXT_MARK_UNWRIT1 |
+> +				     EXT4_EXT_MARK_UNWRIT2;
+> +		else
+> +			split_flag = 0;
+> +
+> +		err = ext4_split_extent_at(handle, inode, path, offset_lblk,
+> +					   split_flag, EXT4_EX_NOCACHE |
+> +					   EXT4_GET_BLOCKS_PRE_IO);
+> +		ext4_journal_stop(handle);
+> +	}
+> +
+> +free_path:
+> +	ext4_ext_drop_refs(path);
+> +	kfree(path);
+> +	return err;
+> +}
+> +
+> +/*
+> + * Compute the size of hole in terms of filesystem blocks present at offset_lblk
+> + * until the next extent is found OR till we reach the last block within isize.
+> + * Store the computed value in hole_blkcnt.
+> + * offset_lblk should be within isize of inode.
+> + */
+> +int ext4_compute_hole_size(struct inode *inode, ext4_lblk_t offset_lblk,
+> +			   ext4_lblk_t *hole_blkcnt)
+> +{
+> +	struct ext4_ext_path *path;
+> +	struct ext4_extent *ex;
+> +	ext4_lblk_t ex_start, isize_lblk;
+> +	int ret = 0, depth, ex_len;
+> +
+> +	isize_lblk = (inode->i_size + EXT4_BLOCK_SIZE(inode->i_sb) - 1) >>
+> +		     EXT4_BLOCK_SIZE_BITS(inode->i_sb);
+> +
+> +	if (offset_lblk > isize_lblk)
+> +		return -EINVAL;
+> +
+> +	*hole_blkcnt = 0;
+> +	path = ext4_ext_find_extent(inode, offset_lblk, NULL, 0);
+> +	if (IS_ERR(path))
+> +		return PTR_ERR(path);
+> +
+> +	depth = ext_depth(inode);
+> +	ex = path[depth].p_ext;
+> +	if (!ex) {
+> +		/* No blocks allocated in this file */
+> +		*hole_blkcnt = isize_lblk - offset_lblk;
+> +		goto out;
+> +	}
+> +	ex_start = le32_to_cpu(ex->ee_block);
+> +	ex_len = ext4_ext_get_actual_len(ex);
+> +
+> +	/* if offset_lblk lies within extent? */
+> +	if (offset_lblk >= ex_start && offset_lblk < (ex_start + ex_len))
+> +		goto out;
+> +
+> +	if (ex_start < offset_lblk) {
+> +		ret = mext_next_extent(inode, path, &ex);
+> +		if (!ret) {
+> +			ex_start = le32_to_cpu(ex->ee_block);
+> +		} else {
+> +			if (ret == 1) {
+> +				*hole_blkcnt = isize_lblk - offset_lblk;
+> +				ret = 0;
+> +			}
+> +			goto out;
+> +		}
+> +	}
+> +	*hole_blkcnt = (ex_start < isize_lblk) ? (ex_start - offset_lblk) :
+> +						 (isize_lblk - offset_lblk);
+> +out:
+> +	ext4_ext_drop_refs(path);
+> +	kfree(path);
+> +
+> +	return ret;
+> +}
+> +
+> +/*
+> + * Remove a complete extent from in memory and on-disk extent tree
+> + * without freeing any data blocks covered by the extent. Caller must call
+> + * ext4_mark_inode_dirty() to sync the changes to disk.
+> + */
+> +int ext4_ext_rm_extent(handle_t *handle, struct inode *inode,
+> +		       struct ext4_ext_path *path, struct ext4_extent *ex)
+> +{
+> +	struct ext4_extent_header *eh;
+> +	int depth = ext_depth(inode);
+> +	int credits, err, correct_index = 0;
+> +	int ex_ee_len = ext4_ext_get_actual_len(ex);
+> +
+> +	if (!path[depth].p_hdr)
+> +		path[depth].p_hdr = ext_block_hdr(path[depth].p_bh);
+> +	eh = path[depth].p_hdr;
+> +
+> +	credits = 7 + 2*(ex_ee_len/EXT4_BLOCKS_PER_GROUP(inode->i_sb));
+> +	if (ex == EXT_FIRST_EXTENT(eh)) {
+> +		correct_index = 1;
+> +		credits += (ext_depth(inode)) + 1;
+> +	}
+> +	credits += EXT4_MAXQUOTAS_TRANS_BLOCKS(inode->i_sb);
+> +	err = ext4_ext_truncate_extend_restart(handle, inode, credits);
+> +	if (err)
+> +		return err;
+> +
+> +	err = ext4_ext_get_access(handle, inode, path + depth);
+> +	if (err)
+> +		return err;
+> +
+> +	ext4_ext_store_pblock(ex, 0);
+> +	memmove(ex, ex+1,
+> +		(EXT_LAST_EXTENT(eh) - ex) * sizeof(struct ext4_extent));
+> +	memset(EXT_LAST_EXTENT(eh), 0, sizeof(struct ext4_extent));
+> +	le16_add_cpu(&eh->eh_entries, -1);
+> +
+> +	err = ext4_ext_dirty(handle, inode, path + depth);
+> +	if (err)
+> +		return err;
+> +
+> +	if (correct_index && eh->eh_entries)
+> +		err = ext4_ext_correct_indexes(handle, inode, path);
+> +
+> +	if (err == 0 && eh->eh_entries == 0 && path[depth].p_bh != NULL)
+> +		err = ext4_ext_rm_idx(handle, inode, path, depth);
+> +
+> +	return err;
+> +}
+> +
+> +/*
+> + * Move len_lblk amount of blocks from donor inode to receiver inode.
+> + * Blocks are to be moved from doffset_lblk and moved to roffset_lblk.
+> + * Caller of this function must make sure there is atleast len_lblk size
+> + * hole at roffset_lblk. Also doffset_lblk and doffset_lblk + len_lblk
+> + * should fall on extent boundary.
+> + */
+> +int ext4_ext_mov_data(struct inode *donor, struct inode *receiver,
+> +		      ext4_lblk_t doffset_lblk, ext4_lblk_t roffset_lblk,
+> +		      ext4_lblk_t len_lblk, loff_t *bytes_moved)
+> +{
+> +	int error = 0, depth = ext_depth(donor);
+> +	struct ext4_ext_path *path;
+> +	struct ext4_extent *ex;
+> +	loff_t blocks_moved = 0;
+> +	handle_t *handle;
+> +	int credits = ext4_writepage_trans_blocks(donor) +
+> +		      ext4_writepage_trans_blocks(receiver);
+> +
+> +	while (blocks_moved < len_lblk && !error) {
+> +		struct ext4_ext_path *rpath = NULL;
+> +		ext4_lblk_t ex_start;
+> +		int ex_len;
+> +
+> +		path = ext4_ext_find_extent(donor, doffset_lblk, NULL, 0);
+> +		if (IS_ERR(path)) {
+> +			error = PTR_ERR(path);
+> +			break;
+> +		}
+> +		ex = path[depth].p_ext;
+> +		/*
+> +		 * No allocated blocks? This could only happen during
+> +		 * 1st iteration. Otherwise it is en error.
+> +		 */
+> +		if (!ex) {
+> +			if (blocks_moved)
+> +				error = -EIO;
+> +			else
+> +				blocks_moved = len_lblk;
+> +			goto out;
+> +		}
+> +		ex_start = le32_to_cpu(ex->ee_block);
+> +		ex_len = ext4_ext_get_actual_len(ex);
+> +
+> +		if (doffset_lblk != ex_start) {
+> +			/* Hole within range, move to the next extent */
+> +			if (ex_start < doffset_lblk)
+> +				error = mext_next_extent(donor, path, &ex);
+> +			/* Below if will also handle ex_start > doffset_lblk */
+> +			if (error == 0) {
+> +				ex_start = le32_to_cpu(ex->ee_block);
+> +				blocks_moved += ex_start - doffset_lblk;
+> +				roffset_lblk += ex_start - doffset_lblk;
+> +				doffset_lblk = ex_start;
+> +			}
+> +			if (error == 1) {
+> +				/* doffset_lblk till EOF is hole. Success!! */
+> +				blocks_moved = len_lblk;
+> +				error = 0;
+> +			}
+> +			goto out;
+> +		}
+> +
+> +		/* Add this extent to receiver */
+> +		handle = ext4_journal_start(donor, EXT4_HT_TRUNCATE, credits);
+> +		if (IS_ERR(handle)) {
+> +			error = PTR_ERR(handle);
+> +			goto out;
+> +		}
+> +
+> +		rpath = ext4_ext_find_extent(receiver, roffset_lblk, NULL, 0);
+> +		if (IS_ERR(rpath)) {
+> +			error = PTR_ERR(rpath);
+> +			ext4_journal_stop(handle);
+> +			goto out;
+> +		}
+> +		ex->ee_block = cpu_to_le32(roffset_lblk);
+> +		error = ext4_ext_insert_extent(handle, receiver, rpath, ex, 0);
+> +		if (error)
+> +			goto hout;
+> +
+> +		/* Remove this extent from donor */
+> +		error = ext4_ext_rm_extent(handle, donor, path, ex);
+> +		if (error)
+> +			goto hout;
+> +
+> +		/* Extent moved successfully */
+> +		roffset_lblk += ex_len;
+> +		doffset_lblk += ex_len;
+> +		blocks_moved += ex_len;
+> +
+> +		donor->i_blocks -= (ex_len << (donor->i_blkbits - 9));
+> +		receiver->i_blocks += (ex_len << (receiver->i_blkbits - 9));
+> +		donor->i_mtime = donor->i_ctime = ext4_current_time(donor);
+> +		receiver->i_mtime = receiver->i_ctime =
+> +						ext4_current_time(receiver);
+> +		ext4_mark_inode_dirty(handle, donor);
+> +		ext4_mark_inode_dirty(handle, receiver);
+> +hout:
+> +		ext4_journal_stop(handle);
+> +		ext4_ext_drop_refs(rpath);
+> +		kfree(rpath);
+> +out:
+> +		ext4_ext_drop_refs(path);
+> +		kfree(path);
+> +	}
+> +
+> +	/* This can happen when (doffset_lblk + len_lblk) is in a hole */
+> +	if (blocks_moved > len_lblk)
+> +		blocks_moved = len_lblk;
+> +
+> +	*bytes_moved = blocks_moved << EXT4_BLOCK_SIZE_BITS(donor->i_sb);
+> +	return error;
+> +}
+> +
+> +int ext4_mov_data(struct inode *donor, struct inode *receiver, loff_t doffset,
+> +		  loff_t roffset, loff_t len, loff_t *moved_len)
+> +{
+> +	struct super_block *sb = donor->i_sb;
+> +	loff_t d_pg_off, r_pg_off, pg_len;
+> +	ext4_lblk_t doffset_lblk, roffset_lblk, len_lblk, hole_size;
+> +	int error;
+> +
+> +	if (doffset & (EXT4_BLOCK_SIZE(sb) - 1) ||
+> +	    roffset & (EXT4_BLOCK_SIZE(sb) - 1) ||
+> +	    len & (EXT4_BLOCK_SIZE(sb) - 1))
+> +		return -EINVAL;
+> +
+> +	if (EXT4_SB(sb)->s_cluster_ratio > 1)
+> +		return -EOPNOTSUPP;
+> +
+> +	if (!ext4_test_inode_flag(donor, EXT4_INODE_EXTENTS) ||
+> +	    !ext4_test_inode_flag(receiver, EXT4_INODE_EXTENTS))
+> +		return -EOPNOTSUPP;
+> +
+> +	doffset_lblk = doffset >> EXT4_BLOCK_SIZE_BITS(sb);
+> +	roffset_lblk = roffset >> EXT4_BLOCK_SIZE_BITS(sb);
+> +	len_lblk = len >> EXT4_BLOCK_SIZE_BITS(sb);
+> +
+> +	d_pg_off = round_down(doffset, PAGE_SIZE);
+> +	r_pg_off = round_down(roffset, PAGE_SIZE);
+> +	pg_len = round_up(len, PAGE_SIZE);
+> +
+> +	if (ext4_should_journal_data(donor)) {
+> +		error = ext4_force_commit(donor->i_sb);
+> +		if (error)
+> +			return error;
+> +		error = ext4_force_commit(receiver->i_sb);
+> +		if (error)
+> +			return error;
+> +	}
+> +
+> +	error = filemap_write_and_wait_range(donor->i_mapping,
+> +					     d_pg_off, d_pg_off + pg_len);
+> +	if (error)
+> +		return error;
+> +	error = filemap_write_and_wait_range(receiver->i_mapping,
+> +					     r_pg_off, r_pg_off + pg_len);
+> +	if (error)
+> +		return error;
+> +
+> +	lock_two_nondirectories(donor, receiver);
+> +
+> +	/* Check for isize limits for both files */
+> +	if (doffset + len > donor->i_size ||
+> +	    roffset + len > receiver->i_size) {
+> +		error = -EINVAL;
+> +		goto out_mutex;
+> +	}
+> +
+> +	truncate_pagecache_range(donor, d_pg_off, d_pg_off + pg_len - 1);
+> +	truncate_pagecache_range(receiver, r_pg_off, r_pg_off + pg_len - 1);
+> +
+> +	ext4_inode_block_unlocked_dio(donor);
+> +	inode_dio_wait(donor);
+> +	ext4_inode_block_unlocked_dio(receiver);
+> +	inode_dio_wait(receiver);
+> +
+> +	ext4_discard_preallocations(donor);
+> +	ext4_discard_preallocations(receiver);
+> +
+> +	error = ext4_es_remove_extent(donor, doffset_lblk, len_lblk);
+> +	if (error)
+> +		goto out_sem;
+> +	error = ext4_es_remove_extent(receiver, roffset_lblk, len_lblk);
+> +	if (error)
+> +		goto out_sem;
+> +
+> +	error = ext4_compute_hole_size(receiver, roffset_lblk, &hole_size);
+> +	if (error)
+> +		goto out_sem;
+> +	if (len_lblk > hole_size) {
+> +		error = -EINVAL;
+> +		goto out_sem;
+> +	}
+> +
+> +	error = ext4_find_and_split_extent_at(donor, doffset_lblk);
+> +	if (error)
+> +		goto out_sem;
+> +
+> +	error = ext4_find_and_split_extent_at(donor, doffset_lblk + len_lblk);
+> +	if (error)
+> +		goto out_sem;
+> +
+> +	error = ext4_ext_mov_data(donor, receiver, doffset_lblk,
+> +				  roffset_lblk, len_lblk, moved_len);
+> +
+> +	ext4_discard_preallocations(donor);
+> +	ext4_discard_preallocations(receiver);
+> +out_sem:
+> +	ext4_inode_resume_unlocked_dio(donor);
+> +	ext4_inode_resume_unlocked_dio(receiver);
+> +
+> +out_mutex:
+> +	unlock_two_nondirectories(donor, receiver);
+> +	return error;
+> +}
+> diff --git a/fs/ext4/file.c b/fs/ext4/file.c
+> index 8695f70..d2feaba 100644
+> --- a/fs/ext4/file.c
+> +++ b/fs/ext4/file.c
+> @@ -614,5 +614,6 @@ const struct inode_operations ext4_file_inode_operations = {
+>  	.get_acl	= ext4_get_acl,
+>  	.set_acl	= ext4_set_acl,
+>  	.fiemap		= ext4_fiemap,
+> +	.mov_data	= ext4_mov_data,
+>  };
+>  
+> 
+--8323328-1224561518-1404828153=:2180--
