@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932610AbaGHTRT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:17:19 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54338 "EHLO
+	id S932594AbaGHTRR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:17:17 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54335 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755756AbaGHTIm (ORCPT
+	by vger.kernel.org with ESMTP id S1755753AbaGHTIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:08:42 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "George McCollister" <george.mccollister@gmail.com>,
-        "Johan Hovold" <jhovold@gmail.com>
+CC: akpm@linux-foundation.org, "Cornelia Huck" <cornelia.huck@de.ibm.com>,
+        "Martin Schwidefsky" <schwidefsky@de.ibm.com>,
+        "Sebastian Ott" <sebott@linux.vnet.ibm.com>,
+        "Christian Borntraeger" <borntraeger@de.ibm.com>,
+        "Heiko Carstens" <heiko.carstens@de.ibm.com>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.971342823@decadent.org.uk>
+Message-ID: <lsq.1404846110.859778775@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 040/125] USB: ftdi_sio: add NovaTech OrionLXm product ID
+Subject: [PATCH 3.2 045/125] s390/lowcore: reserve 96 bytes for IRB in lowcore
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,49 +34,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: George McCollister <george.mccollister@gmail.com>
+From: Christian Borntraeger <borntraeger@de.ibm.com>
 
-commit d0839d757e6294921c31b1c4ca4f1dcc5df63bcd upstream.
+commit 993072ee67aa179c48c85eb19869804e68887d86 upstream.
 
-The NovaTech OrionLXm uses an onboard FTDI serial converter for JTAG and
-console access.
+The IRB might be 96 bytes if the extended-I/O-measurement facility is
+used. This feature is currently not used by Linux, but struct irb
+already has the emw defined. So let's make the irb in lowcore match the
+size of the internal data structure to be future proof.
+We also have to add a pad, to correctly align the paste.
 
-Here is the lsusb output:
-Bus 004 Device 123: ID 0403:7c90 Future Technology Devices
-International, Ltd
+The bigger irb field also circumvents a bug in some QEMU versions that
+always write the emw field on test subchannel and therefore destroy the
+paste definitions of this CPU. Running under these QEMU version broke
+some timing functions in the VDSO and all users of these functions,
+e.g. some JREs.
 
-Signed-off-by: George McCollister <george.mccollister@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
+[bwh: Backported to 3.2: offsets of the affected fields in the 64-bit version
+ of struct _lowcore are 128 bytes smaller]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/ftdi_sio.c     | 2 ++
- drivers/usb/serial/ftdi_sio_ids.h | 5 +++++
- 2 files changed, 7 insertions(+)
+ arch/s390/include/asm/lowcore.h | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -591,6 +591,8 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_TAVIR_STK500_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_TIAO_UMPA_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
-+	{ USB_DEVICE(FTDI_VID, FTDI_NT_ORIONLXM_PID),
-+		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+--- a/arch/s390/include/asm/lowcore.h
++++ b/arch/s390/include/asm/lowcore.h
+@@ -140,9 +140,9 @@ struct _lowcore {
+ 	__u8	pad_0x02e8[0x0300-0x02e8];	/* 0x02e8 */
+ 
+ 	/* Interrupt response block */
+-	__u8	irb[64];			/* 0x0300 */
++	__u8	irb[96];			/* 0x0300 */
+ 
+-	__u8	pad_0x0340[0x0e00-0x0340];	/* 0x0340 */
++	__u8	pad_0x0360[0x0e00-0x0360];	/* 0x0360 */
+ 
  	/*
- 	 * ELV devices:
- 	 */
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -538,6 +538,11 @@
-  */
- #define FTDI_TIAO_UMPA_PID	0x8a98	/* TIAO/DIYGADGET USB Multi-Protocol Adapter */
+ 	 * 0xe00 contains the address of the IPL Parameter Information
+@@ -274,12 +274,13 @@ struct _lowcore {
+ 	__u64	cmf_hpp;			/* 0x0378 */
  
-+/*
-+ * NovaTech product ids (FTDI_VID)
-+ */
-+#define FTDI_NT_ORIONLXM_PID	0x7c90	/* OrionLXm Substation Automation Platform */
-+
+ 	/* Interrupt response block. */
+-	__u8	irb[64];			/* 0x0380 */
++	__u8	irb[96];			/* 0x0380 */
++	__u8	pad_0x03e0[0x0400-0x03e0];	/* 0x03e0 */
  
- /********************************/
- /** third-party VID/PID combos **/
+ 	/* Per cpu primary space access list */
+-	__u32	paste[16];			/* 0x03c0 */
++	__u32	paste[16];			/* 0x0400 */
+ 
+-	__u8	pad_0x0400[0x0e00-0x0400];	/* 0x0400 */
++	__u8	pad_0x0440[0x0e00-0x0440];	/* 0x0440 */
+ 
+ 	/*
+ 	 * 0xe00 contains the address of the IPL Parameter Information
 
