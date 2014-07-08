@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756750AbaGHTea (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:34:30 -0400
+	id S1756772AbaGHTev (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:34:51 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54778 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756088AbaGHTe0 (ORCPT
+	by vger.kernel.org with ESMTP id S1755828AbaGHTed (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:34:26 -0400
+	Tue, 8 Jul 2014 15:34:33 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Roland Dreier" <roland@purestorage.com>,
-        "Yann Droneaud" <ydroneaud@opteya.com>,
-        "Dan Carpenter" <dan.carpenter@oracle.com>,
-        "Steve Wise" <swise@opengridcomputing.com>
+CC: akpm@linux-foundation.org, "Johan Hovold" <jhovold@gmail.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.947114285@decadent.org.uk>
+Message-ID: <lsq.1404846110.888799323@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 051/125] RDMA/cxgb4: Add missing padding at end of
- struct c4iw_create_cq_resp
+Subject: [PATCH 3.2 024/125] USB: sierra: fix AA deadlock in open error path
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,99 +31,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yann Droneaud <ydroneaud@opteya.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit b6f04d3d21458818073a2f5af5339f958864bf71 upstream.
+commit 353fe198602e8b4d1c7bdcceb8e60955087201b1 upstream.
 
-The i386 ABI disagrees with most other ABIs regarding alignment of
-data types larger than 4 bytes: on most ABIs a padding must be added
-at end of the structures, while it is not required on i386.
+Fix AA deadlock in open error path that would call close() and try to
+grab the already held disc_mutex.
 
-So for most ABI struct c4iw_create_cq_resp gets implicitly padded
-to be aligned on a 8 bytes multiple, while for i386, such padding
-is not added.
+Fixes: b9a44bc19f48 ("sierra: driver urb handling improvements")
 
-The tool pahole can be used to find such implicit padding:
-
-  $ pahole --anon_include \
-           --nested_anon_include \
-           --recursive \
-           --class_name c4iw_create_cq_resp \
-           drivers/infiniband/hw/cxgb4/iw_cxgb4.o
-
-Then, structure layout can be compared between i386 and x86_64:
-
-# +++ obj-i386/drivers/infiniband/hw/cxgb4/iw_cxgb4.o.pahole.txt   2014-03-28 11:43:05.547432195 +0100
-# --- obj-x86_64/drivers/infiniband/hw/cxgb4/iw_cxgb4.o.pahole.txt 2014-03-28 10:55:10.990133017 +0100
-  @@ -14,9 +13,8 @@ struct c4iw_create_cq_resp {
-          __u32                      size;                 /*    28     4 */
-          __u32                      qid_mask;             /*    32     4 */
-
-  -       /* size: 36, cachelines: 1, members: 6 */
-  -       /* last cacheline: 36 bytes */
-  +       /* size: 40, cachelines: 1, members: 6 */
-  +       /* padding: 4 */
-  +       /* last cacheline: 40 bytes */
-   };
-
-This ABI disagreement will make an x86_64 kernel try to write past the
-buffer provided by an i386 binary.
-
-When boundary check will be implemented, the x86_64 kernel will refuse
-to write past the i386 userspace provided buffer and the uverbs will
-fail.
-
-If the structure is on a page boundary and the next page is not
-mapped, ib_copy_to_udata() will fail and the uverb will fail.
-
-This patch adds an explicit padding at end of structure
-c4iw_create_cq_resp, and, like 92b0ca7cb149 ("IB/mlx5: Fix stack info
-leak in mlx5_ib_alloc_ucontext()"), makes function c4iw_create_cq()
-not writting this padding field to userspace. This way, x86_64 kernel
-will be able to write struct c4iw_create_cq_resp as expected by
-unpatched and patched i386 libcxgb4.
-
-Link: http://marc.info/?i=cover.1399309513.git.ydroneaud@opteya.com
-Fixes: cfdda9d764362 ("RDMA/cxgb4: Add driver for Chelsio T4 RNIC")
-Fixes: e24a72a3302a6 ("RDMA/cxgb4: Fix four byte info leak in c4iw_create_cq()")
-Cc: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-Acked-by: Steve Wise <swise@opengridcomputing.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/infiniband/hw/cxgb4/cq.c   | 4 ++--
- drivers/infiniband/hw/cxgb4/user.h | 1 +
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/usb/serial/sierra.c | 21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
 
---- a/drivers/infiniband/hw/cxgb4/cq.c
-+++ b/drivers/infiniband/hw/cxgb4/cq.c
-@@ -833,7 +833,6 @@ struct ib_cq *c4iw_create_cq(struct ib_d
- 		if (!mm2)
- 			goto err4;
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -868,14 +868,9 @@ static int sierra_open(struct tty_struct
+ 			usb_sndbulkpipe(serial->dev, endpoint) | USB_DIR_IN);
  
--		memset(&uresp, 0, sizeof(uresp));
- 		uresp.qid_mask = rhp->rdev.cqmask;
- 		uresp.cqid = chp->cq.cqid;
- 		uresp.size = chp->cq.size;
-@@ -844,7 +843,8 @@ struct ib_cq *c4iw_create_cq(struct ib_d
- 		uresp.gts_key = ucontext->key;
- 		ucontext->key += PAGE_SIZE;
- 		spin_unlock(&ucontext->mmap_lock);
--		ret = ib_copy_to_udata(udata, &uresp, sizeof uresp);
-+		ret = ib_copy_to_udata(udata, &uresp,
-+				       sizeof(uresp) - sizeof(uresp.reserved));
- 		if (ret)
- 			goto err5;
+ 	err = sierra_submit_rx_urbs(port, GFP_KERNEL);
+-	if (err) {
+-		/* get rid of everything as in close */
+-		sierra_close(port);
+-		/* restore balance for autopm */
+-		if (!serial->disconnected)
+-			usb_autopm_put_interface(serial->interface);
+-		return err;
+-	}
++	if (err)
++		goto err_submit;
++
+ 	sierra_send_setup(port);
  
---- a/drivers/infiniband/hw/cxgb4/user.h
-+++ b/drivers/infiniband/hw/cxgb4/user.h
-@@ -48,6 +48,7 @@ struct c4iw_create_cq_resp {
- 	__u32 cqid;
- 	__u32 size;
- 	__u32 qid_mask;
-+	__u32 reserved; /* explicit padding (optional for i386) */
- };
+ 	serial->interface->needs_remote_wakeup = 1;
+@@ -885,6 +880,16 @@ static int sierra_open(struct tty_struct
+ 	usb_autopm_put_interface(serial->interface);
+ 
+ 	return 0;
++
++err_submit:
++	sierra_stop_rx_urbs(port);
++
++	for (i = 0; i < portdata->num_in_urbs; i++) {
++		sierra_release_urb(portdata->in_urbs[i]);
++		portdata->in_urbs[i] = NULL;
++	}
++
++	return err;
+ }
  
  
 
