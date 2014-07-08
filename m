@@ -1,130 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454AbaGHAgp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:36:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55834 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753734AbaGGXyl (ORCPT
+	id S1755042AbaGHAha (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:37:30 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:36203 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753063AbaGHAhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:41 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        Peter Chen <peter.chen@freescale.com>
-Subject: [PATCH 3.14 14/94] usb: chipidea: udc: delete td from reqs td list at ep_dequeue
-Date: Mon,  7 Jul 2014 16:57:04 -0700
-Message-Id: <20140707235757.195905706@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
-References: <20140707235756.780319003@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Mon, 7 Jul 2014 20:37:24 -0400
 MIME-Version: 1.0
+In-Reply-To: <f40e93b943b749628d4012812a76e547384ea267.1404425176.git.joe@perches.com>
+References: <cover.1404425176.git.joe@perches.com>
+	<f40e93b943b749628d4012812a76e547384ea267.1404425176.git.joe@perches.com>
+Date: Mon, 7 Jul 2014 17:37:23 -0700
+Message-ID: <CAFECyb8xPhC_sjQQ8VepNqXV7gUaE0zSXr9keRZGmRSmq2C8Aw@mail.gmail.com>
+Subject: Re: [PATCH 03/16] MAINTAINERS: Use the correct efi-stub location
+From: Roy Franz <roy.franz@linaro.org>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Peter Chen <peter.chen@freescale.com>
-
-commit e4adcff09ca39ecbcc4851d40d0f0a5458e7b77a upstream.
-
-We need to delete un-finished td from current request's td list
-at ep_dequeue API, otherwise, this non-user td will be remained
-at td list before this request is freed. So if we do ep_queue->
-ep_dequeue->ep_queue sequence, when the complete interrupt for
-the second ep_queue comes, we search td list for this request,
-the first td (added by the first ep_queue) will be handled, and
-its status is still active, so we will consider the this transfer
-still not be completed, but in fact, it has completed. It causes
-the peripheral side considers it never receives current data for
-this transfer.
-
-We met this problem when do "Error Recovery Test - Device Configured"
-test item for USBCV2 MSC test, the host has never received ACK for
-the IN token for CSW due to peripheral considers it does not get this
-CBW, the USBCV test log like belows:
-
---------------------------------------------------------------------------
-INFO
-Issuing BOT MSC Reset, reset should always succeed
-INFO
-Retrieving status on CBW endpoint
-INFO
-CBW endpoint status = 0x0
-INFO
-Retrieving status on CSW endpoint
-INFO
-CSW endpoint status = 0x0
-INFO
-Issuing required command (Test Unit Ready) to verify device has recovered
-INFO
-Issuing CBW (attempt #1):
-INFO
-|----- CBW LUN                  = 0x0
-INFO
-|----- CBW Flags                = 0x0
-INFO
-|----- CBW Data Transfer Length = 0x0
-INFO
-|----- CBW CDB Length           = 0x6
-INFO
-|----- CBW CDB-00 = 0x0
-INFO
-|----- CBW CDB-01 = 0x0
-INFO
-|----- CBW CDB-02 = 0x0
-INFO
-|----- CBW CDB-03 = 0x0
-INFO
-|----- CBW CDB-04 = 0x0
-INFO
-|----- CBW CDB-05 = 0x0
-INFO
-Issuing CSW : try 1
-INFO
-CSW Bulk Request timed out!
-ERROR
-Failed CSW phase : should have been success or stall
-FAIL
-(5.3.4) The CSW status value must be 0x00, 0x01, or 0x02.
-ERROR
-BOTCommonMSCRequest failed:  error=80004000
-
-Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Signed-off-by: Peter Chen <peter.chen@freescale.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/chipidea/udc.c |    7 +++++++
- 1 file changed, 7 insertions(+)
-
---- a/drivers/usb/chipidea/udc.c
-+++ b/drivers/usb/chipidea/udc.c
-@@ -1326,6 +1326,7 @@ static int ep_dequeue(struct usb_ep *ep,
- 	struct ci_hw_ep  *hwep  = container_of(ep,  struct ci_hw_ep, ep);
- 	struct ci_hw_req *hwreq = container_of(req, struct ci_hw_req, req);
- 	unsigned long flags;
-+	struct td_node *node, *tmpnode;
- 
- 	if (ep == NULL || req == NULL || hwreq->req.status != -EALREADY ||
- 		hwep->ep.desc == NULL || list_empty(&hwreq->queue) ||
-@@ -1336,6 +1337,12 @@ static int ep_dequeue(struct usb_ep *ep,
- 
- 	hw_ep_flush(hwep->ci, hwep->num, hwep->dir);
- 
-+	list_for_each_entry_safe(node, tmpnode, &hwreq->tds, td) {
-+		dma_pool_free(hwep->td_pool, node->ptr, node->dma);
-+		list_del(&node->td);
-+		kfree(node);
-+	}
-+
- 	/* pop request */
- 	list_del_init(&hwreq->queue);
- 
-
-
+On Thu, Jul 3, 2014 at 3:07 PM, Joe Perches <joe@perches.com> wrote:
+> commit 4171fe2f8a47 ("EFI stub documentation updates") moved
+> the file, update the pattern.
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
+> cc: Roy Franz <roy.franz@linaro.org>
+> ---
+>  MAINTAINERS | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index a047941..e3531a5 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -3362,7 +3362,7 @@ M:        Matt Fleming <matt.fleming@intel.com>
+>  L:     linux-efi@vger.kernel.org
+>  T:     git git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git
+>  S:     Maintained
+> -F:     Documentation/x86/efi-stub.txt
+> +F:     Documentation/efi-stub.txt
+>  F:     arch/ia64/kernel/efi.c
+>  F:     arch/x86/boot/compressed/eboot.[ch]
+>  F:     arch/x86/include/asm/efi.h
+> --
+> 1.8.1.2.459.gbcd45b4.dirty
+>
+Acked-by: Roy Franz <roy.franz@linaro.org>
