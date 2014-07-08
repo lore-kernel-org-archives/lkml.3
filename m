@@ -1,84 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756021AbaGHTLL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:11:11 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:35266 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755655AbaGHTIw (ORCPT
+	id S1756102AbaGHTLW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:11:22 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54276 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755765AbaGHTIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:08:52 -0400
-Date: Tue, 8 Jul 2014 23:08:49 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [RFC 2/2] prctl: PR_SET_MM -- Introduce PR_SET_MM_MAP operation
-Message-ID: <20140708190849.GC17860@moon.sw.swsoft.com>
-References: <20140703143318.568554771@openvz.org>
- <20140703151102.842945837@openvz.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 8 Jul 2014 15:08:43 -0400
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
-In-Reply-To: <20140703151102.842945837@openvz.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "hujianyang" <hujianyang@huawei.com>,
+        "Artem Bityutskiy" <artem.bityutskiy@linux.intel.com>
+Date: Tue, 08 Jul 2014 20:01:50 +0100
+Message-ID: <lsq.1404846110.708829902@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 053/125] UBIFS: Remove incorrect assertion in shrink_tnc()
+In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 03, 2014 at 06:33:20PM +0400, Cyrill Gorcunov wrote:
-> During development of c/r we've noticed that in case if we need to
-> support user namespaces we face a problem with capabilities in
-> prctl(PR_SET_MM, ...) call.
-> 
-> Current PR_SET_MM code forbids to modify fields if no CAP_SYS_RESOURCE
-> granted, but rather relies on one who use this interface is passing
-> more-less sane values (though the values must pass the basic validation
-> procedure).
-> 
-> It seems a better approach is to eliminate CAP_SYS_RESOURCE check but
-> provide all new values in one bundle, which would allow the kernel to make
-> more intensive test for sanity of values and same time allow us to
-> support checkpoint/restore of user namespaces.
-> 
-> Thus a new command (PR_SET_MM_MAP) introduced. It takes a pointer of
-> prctl_mm_map structure which carries all members to be updated.
-> 
-> Most intensive work is done in validate_prctl_map_locked helper,
-> because we need to make sure the values are valid. Thus we do
-> 
->  - check the values are laying inside available user address space
->  - stack, brk, command line arguments and evnironment variables
->    must point to already existing VMA
->  - values must be ordered (start < end)
->  - if RLIMITs are defined don't allow to exceed it with new values
-> 
-> Since it uses prctl_set_mm_exe_file_locked helper, updating the
-> exe-file link is one-shot action for security reason.
-> 
-> I believe the old interface should be deprecated and ripped off
-> in a couple of kernel releases if noone against.
-> 
-> To test if new interface is implemented in the kernel one
-> can pass PR_SET_MM_MAP_SIZE opcode and the kernel returns
-> the size of currently supported struct prctl_mm_map.
-> 
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> Cc: Kees Cook <keescook@chromium.org>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Andrew Vagin <avagin@openvz.org>
-> Cc: Eric W. Biederman <ebiederm@xmission.com>
-> Cc: Serge Hallyn <serge.hallyn@canonical.com>
-> Cc: Pavel Emelyanov <xemul@parallels.com>
-> Cc: Vasiliy Kulikov <segoon@openwall.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+3.2.61-rc1 review patch.  If anyone has any objections, please let me know.
 
-Ping. Guys, any commens please?
+------------------
+
+From: hujianyang <hujianyang@huawei.com>
+
+commit 72abc8f4b4e8574318189886de627a2bfe6cd0da upstream.
+
+I hit the same assert failed as Dolev Raviv reported in Kernel v3.10
+shows like this:
+
+[ 9641.164028] UBIFS assert failed in shrink_tnc at 131 (pid 13297)
+[ 9641.234078] CPU: 1 PID: 13297 Comm: mmap.test Tainted: G           O 3.10.40 #1
+[ 9641.234116] [<c0011a6c>] (unwind_backtrace+0x0/0x12c) from [<c000d0b0>] (show_stack+0x20/0x24)
+[ 9641.234137] [<c000d0b0>] (show_stack+0x20/0x24) from [<c0311134>] (dump_stack+0x20/0x28)
+[ 9641.234188] [<c0311134>] (dump_stack+0x20/0x28) from [<bf22425c>] (shrink_tnc_trees+0x25c/0x350 [ubifs])
+[ 9641.234265] [<bf22425c>] (shrink_tnc_trees+0x25c/0x350 [ubifs]) from [<bf2245ac>] (ubifs_shrinker+0x25c/0x310 [ubifs])
+[ 9641.234307] [<bf2245ac>] (ubifs_shrinker+0x25c/0x310 [ubifs]) from [<c00cdad8>] (shrink_slab+0x1d4/0x2f8)
+[ 9641.234327] [<c00cdad8>] (shrink_slab+0x1d4/0x2f8) from [<c00d03d0>] (do_try_to_free_pages+0x300/0x544)
+[ 9641.234344] [<c00d03d0>] (do_try_to_free_pages+0x300/0x544) from [<c00d0a44>] (try_to_free_pages+0x2d0/0x398)
+[ 9641.234363] [<c00d0a44>] (try_to_free_pages+0x2d0/0x398) from [<c00c6a60>] (__alloc_pages_nodemask+0x494/0x7e8)
+[ 9641.234382] [<c00c6a60>] (__alloc_pages_nodemask+0x494/0x7e8) from [<c00f62d8>] (new_slab+0x78/0x238)
+[ 9641.234400] [<c00f62d8>] (new_slab+0x78/0x238) from [<c031081c>] (__slab_alloc.constprop.42+0x1a4/0x50c)
+[ 9641.234419] [<c031081c>] (__slab_alloc.constprop.42+0x1a4/0x50c) from [<c00f80e8>] (kmem_cache_alloc_trace+0x54/0x188)
+[ 9641.234459] [<c00f80e8>] (kmem_cache_alloc_trace+0x54/0x188) from [<bf227908>] (do_readpage+0x168/0x468 [ubifs])
+[ 9641.234553] [<bf227908>] (do_readpage+0x168/0x468 [ubifs]) from [<bf2296a0>] (ubifs_readpage+0x424/0x464 [ubifs])
+[ 9641.234606] [<bf2296a0>] (ubifs_readpage+0x424/0x464 [ubifs]) from [<c00c17c0>] (filemap_fault+0x304/0x418)
+[ 9641.234638] [<c00c17c0>] (filemap_fault+0x304/0x418) from [<c00de694>] (__do_fault+0xd4/0x530)
+[ 9641.234665] [<c00de694>] (__do_fault+0xd4/0x530) from [<c00e10c0>] (handle_pte_fault+0x480/0xf54)
+[ 9641.234690] [<c00e10c0>] (handle_pte_fault+0x480/0xf54) from [<c00e2bf8>] (handle_mm_fault+0x140/0x184)
+[ 9641.234716] [<c00e2bf8>] (handle_mm_fault+0x140/0x184) from [<c0316688>] (do_page_fault+0x150/0x3ac)
+[ 9641.234737] [<c0316688>] (do_page_fault+0x150/0x3ac) from [<c000842c>] (do_DataAbort+0x3c/0xa0)
+[ 9641.234759] [<c000842c>] (do_DataAbort+0x3c/0xa0) from [<c0314e38>] (__dabt_usr+0x38/0x40)
+
+After analyzing the code, I found a condition that may cause this failed
+in correct operations. Thus, I think this assertion is wrong and should be
+removed.
+
+Suppose there are two clean znodes and one dirty znode in TNC. So the
+per-filesystem atomic_t @clean_zn_cnt is (2). If commit start, dirty_znode
+is set to COW_ZNODE in get_znodes_to_commit() in case of potentially ops
+on this znode. We clear COW bit and DIRTY bit in write_index() without
+@tnc_mutex locked. We don't increase @clean_zn_cnt in this place. As the
+comments in write_index() shows, if another process hold @tnc_mutex and
+dirty this znode after we clean it, @clean_zn_cnt would be decreased to (1).
+We will increase @clean_zn_cnt to (2) with @tnc_mutex locked in
+free_obsolete_znodes() to keep it right.
+
+If shrink_tnc() performs between decrease and increase, it will release
+other 2 clean znodes it holds and found @clean_zn_cnt is less than zero
+(1 - 2 = -1), then hit the assertion. Because free_obsolete_znodes() will
+soon correct @clean_zn_cnt and no harm to fs in this case, I think this
+assertion could be removed.
+
+2 clean zondes and 1 dirty znode, @clean_zn_cnt == 2
+
+Thread A (commit)         Thread B (write or others)       Thread C (shrinker)
+->write_index
+   ->clear_bit(DIRTY_NODE)
+   ->clear_bit(COW_ZNODE)
+
+            @clean_zn_cnt == 2
+                          ->mutex_locked(&tnc_mutex)
+                          ->dirty_cow_znode
+                              ->!ubifs_zn_cow(znode)
+                              ->!test_and_set_bit(DIRTY_NODE)
+                              ->atomic_dec(&clean_zn_cnt)
+                          ->mutex_unlocked(&tnc_mutex)
+
+            @clean_zn_cnt == 1
+                                                           ->mutex_locked(&tnc_mutex)
+                                                           ->shrink_tnc
+                                                             ->destroy_tnc_subtree
+                                                             ->atomic_sub(&clean_zn_cnt, 2)
+                                                             ->ubifs_assert  <- hit
+                                                           ->mutex_unlocked(&tnc_mutex)
+
+            @clean_zn_cnt == -1
+->mutex_lock(&tnc_mutex)
+->free_obsolete_znodes
+   ->atomic_inc(&clean_zn_cnt)
+->mutux_unlock(&tnc_mutex)
+
+            @clean_zn_cnt == 0 (correct after shrink)
+
+Signed-off-by: hujianyang <hujianyang@huawei.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ fs/ubifs/shrinker.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+--- a/fs/ubifs/shrinker.c
++++ b/fs/ubifs/shrinker.c
+@@ -128,7 +128,6 @@ static int shrink_tnc(struct ubifs_info
+ 			freed = ubifs_destroy_tnc_subtree(znode);
+ 			atomic_long_sub(freed, &ubifs_clean_zn_cnt);
+ 			atomic_long_sub(freed, &c->clean_zn_cnt);
+-			ubifs_assert(atomic_long_read(&c->clean_zn_cnt) >= 0);
+ 			total_freed += freed;
+ 			znode = zprev;
+ 		}
+
