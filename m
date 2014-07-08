@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580AbaGHMgn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 08:36:43 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37732 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754335AbaGHMgm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 08:36:42 -0400
-Date: Tue, 8 Jul 2014 14:36:37 +0200
-From: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        sebastian.hesselbarth@gmail.com, tj@kernel.org,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v9 1/7] phy: add a driver for the Berlin SATA PHY
-Message-ID: <20140708123637.GA5330@kwain>
-References: <1404728173-20263-1-git-send-email-antoine.tenart@free-electrons.com>
- <1404728173-20263-2-git-send-email-antoine.tenart@free-electrons.com>
- <53BBE419.8080107@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53BBE419.8080107@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754621AbaGHMhN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 08:37:13 -0400
+Received: from gnurou.org ([207.192.72.5]:48207 "EHLO mail.gnurou.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750867AbaGHMhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 08:37:11 -0400
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Andrzej Hajda <a.hajda@samsung.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Terje Bergstrom <tbergstrom@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Cc: linux-tegra@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, gnurou@gmail.com,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH v3 1/4] drm/dsi: Flag for non-continuous clock behavior
+Date: Tue,  8 Jul 2014 21:32:11 +0900
+Message-Id: <1404822734-8603-2-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1404822734-8603-1-git-send-email-acourbot@nvidia.com>
+References: <1404822734-8603-1-git-send-email-acourbot@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+As per section 5.6.1 of the DSI specification, all DSI transmitters must
+support continuous clock behavior on the clock lane, while non-continuous
+mode support is only optional. Add a flag that allows devices to indicate
+that they support non-continuous clock mode so host drivers can adapt
+their behavior accordingly.
 
-On Tue, Jul 08, 2014 at 05:59:13PM +0530, Kishon Vijay Abraham I wrote:
-> Hi Antoine,
-> 
-> On Monday 07 July 2014 03:46 PM, Antoine Ténart wrote:
-> > The Berlin SoC has a two SATA ports. Add a PHY driver to handle them.
-> > 
-> > The mode selection can let us think this PHY can be configured to fit
-> > other purposes. But there are reasons to think the SATA mode will be
-> > the only one usable: the PHY registers are only accessible indirectly
-> > through two registers in the SATA range, the PHY seems to be integrated
-> > and no information tells us the contrary. For these reasons, make the
-> > driver a SATA PHY driver.
-> 
-> Thanks for doing multiple revisions of this. Looks good to be merged for me now.
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+ include/drm/drm_mipi_dsi.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Great!
-
-Thanks,
-Antoine
-
+diff --git a/include/drm/drm_mipi_dsi.h b/include/drm/drm_mipi_dsi.h
+index 944f33f..efa1b55 100644
+--- a/include/drm/drm_mipi_dsi.h
++++ b/include/drm/drm_mipi_dsi.h
+@@ -94,6 +94,8 @@ void mipi_dsi_host_unregister(struct mipi_dsi_host *host);
+ #define MIPI_DSI_MODE_VSYNC_FLUSH	BIT(8)
+ /* disable EoT packets in HS mode */
+ #define MIPI_DSI_MODE_EOT_PACKET	BIT(9)
++/* device supports non-continuous clock behavior (DSI spec 5.6.1) */
++#define MIPI_DSI_CLOCK_NON_CONTINUOUS	BIT(10)
+ 
+ enum mipi_dsi_pixel_format {
+ 	MIPI_DSI_FMT_RGB888,
 -- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+2.0.0
+
