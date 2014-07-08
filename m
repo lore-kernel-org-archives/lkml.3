@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160AbaGHEUg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 00:20:36 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:48742 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752051AbaGHEUf (ORCPT
+	id S1752574AbaGHE2y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 00:28:54 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:43901 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747AbaGHE2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 00:20:35 -0400
-Date: Mon, 07 Jul 2014 21:20:34 -0700 (PDT)
-Message-Id: <20140707.212034.2224956636540078311.davem@davemloft.net>
-To: loicp@google.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, timo.teras@iki.fi,
-        jiri@resnulli.us
-Subject: Re: [PATCH] net: Fix NETDEV_CHANGE notifier usage causing spurious
- arp flush
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1404275983-7908-1-git-send-email-loicp@google.com>
-References: <1404275983-7908-1-git-send-email-loicp@google.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 07 Jul 2014 21:20:35 -0700 (PDT)
+	Tue, 8 Jul 2014 00:28:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <2CC2A0A4A178534D93D5159BF3BCB661A17A3E45ED@EAPEX1MAIL1.st.com>
+References: <cover.1397555158.git.mohit.kumar@st.com>
+	<2CC2A0A4A178534D93D5159BF3BCB6619B94997E2B@EAPEX1MAIL1.st.com>
+	<20140522113119.GA2646@pratyush-vbox>
+	<8677743.Bty96DiF3F@amdc1032>
+	<2CC2A0A4A178534D93D5159BF3BCB661A17A3E45ED@EAPEX1MAIL1.st.com>
+Date: Tue, 8 Jul 2014 09:58:51 +0530
+X-Google-Sender-Auth: 8F9ZqMRMINbVwH8ZY1vjwLiB0mo
+Message-ID: <CAOh2x=nGuFNa2vgFv+3j3B6WoHb2EXg+K47Vh4OUFUHS9a7peg@mail.gmail.com>
+Subject: Re: [PATCH V8 0/9] PCI: Add SPEAr13xx PCie support
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Mohit KUMAR DCG <Mohit.KUMAR@st.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Pratyush ANAND <pratyush.anand@st.com>,
+        "Arnd Bergmann (arnd@arndb.de)" <arnd@arndb.de>,
+        "'Bjorn Helgaas' (bhelgaas@google.com)" <bhelgaas@google.com>,
+        spear-devel <spear-devel@list.st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Mark Nicholson <mark@nicholnet.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Loic Prylli <loicp@google.com>
-Date: Tue,  1 Jul 2014 21:39:43 -0700
+On Tue, Jul 8, 2014 at 9:21 AM, Mohit KUMAR DCG <Mohit.KUMAR@st.com> wrote:
+> - These patches are rebased over 3-16-rc3 to go through arm-soc tree.
+> Somehow we are having 'sync' issue in providing web link for spear public
+> repository with these patches.
+>
+> It will be resolve soon, and I will provide the link.
 
-> A bug was introduced in NETDEV_CHANGE notifier sequence causing the
-> arp table to be sometimes spuriously cleared (including manual arp
-> entries marked permanent), upon network link carrier changes.
-> 
-> The changed argument for the notifier was applied only to a single
-> caller of NETDEV_CHANGE, missing among others netdev_state_change().
-> So upon net_carrier events induced by the network, which are
-> triggering a call to netdev_state_change(), arp_netdev_event() would
-> decide whether to clear or not arp cache based on random/junk stack
-> values (a kind of read buffer overflow).
-> 
-> Fixes: be9efd365328 ("net: pass changed flags along with NETDEV_CHANGE event")
-> Fixes: 6c8b4e3ff81b ("arp: flush arp cache on IFF_NOARP change")
-> Signed-off-by: Loic Prylli <loicp@google.com>
-
-Applied, thanks.
-
-We should probably make plain call_netdevice_notifiers() BUG if it is
-invoked for NETDEV_CHANGE.
+I can push these to some Linaro repo of mine if you want. And you can
+send a pull request from there then.
