@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662AbaGHWKy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 18:10:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36813 "EHLO
+	id S1754740AbaGHWLQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 18:11:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36821 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754179AbaGHWKw (ORCPT
+	with ESMTP id S1754179AbaGHWLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 18:10:52 -0400
-Date: Tue, 8 Jul 2014 15:15:17 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.10 00/53] 3.10.48-stable review
-Message-ID: <20140708221517.GD29964@kroah.com>
-References: <20140707235829.281783607@linuxfoundation.org>
- <53BBEFE9.7030508@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53BBEFE9.7030508@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 8 Jul 2014 18:11:15 -0400
+Date: Tue, 8 Jul 2014 15:11:13 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Luiz Capitulino <lcapitulino@redhat.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch] mm, hugetlb: generalize writes to nr_hugepages
+Message-Id: <20140708151113.dd1469faea6177959356620b@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.02.1407021743340.4970@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1406301655480.27587@chino.kir.corp.google.com>
+	<20140702172529.347f2dd2@redhat.com>
+	<alpine.DEB.2.02.1407021743340.4970@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 08, 2014 at 06:19:37AM -0700, Guenter Roeck wrote:
-> On 07/07/2014 04:57 PM, Greg Kroah-Hartman wrote:
-> >This is the start of the stable review cycle for the 3.10.48 release.
-> >There are 53 patches in this series, all will be posted as a response
-> >to this one.  If anyone has any issues with these being applied, please
-> >let me know.
-> >
-> >Responses should be made by Wed Jul  9 23:58:20 UTC 2014.
-> >Anything received after that time might be too late.
-> >
-> 
-> Build results:
-> 	total: 138 pass: 137 fail: 1
-> Failed builds:
-> 	score:defconfig
-> 
-> Qemu tests all passed.
-> 
-> This is an improvement over 3.10.47, as the unicore32 build now passes.
+On Wed, 2 Jul 2014 17:44:46 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
 
-Yeah!
-
-> Details are available at http://server.roeck-us.net:8010/builders.
+> > > @@ -2248,36 +2257,18 @@ static int hugetlb_sysctl_handler_common(bool obey_mempolicy,
+> > >  			 void __user *buffer, size_t *length, loff_t *ppos)
+> > >  {
+> > >  	struct hstate *h = &default_hstate;
+> > > -	unsigned long tmp;
+> > > +	unsigned long tmp = h->max_huge_pages;
+> > >  	int ret;
+> > >  
+> > > -	if (!hugepages_supported())
+> > > -		return -ENOTSUPP;
+> > 
+> > Shouldn't you add this check to __nr_hugepages_store_common()? Otherwise
+> > looks good to me.
+> > 
 > 
-> The following patches would fix the remaining build failure.
-> 
-> ae49b83dca score: normalize global variables exported by vmlinux.lds
-> 1ed62ca648 Score: Implement the function csum_ipv6_magic
-> 5fbbf8a1a9 Score: The commit is for compiling successfully
-> df9e4d1c39 Score: Modify the Makefile of Score, remove -mlong-calls for compiling
+> Hmm, I think you're right but I don't think __nr_hugepages_store_common() 
+> is the right place: if we have a legitimate hstate for the sysfs tunables 
+> then we should support hugepages.  I think this should be kept in 
+> hugetlb_sysctl_handler_common().
 
-Ok, will do that for the next stable release, thanks.
+This?
 
-greg k-h
+--- a/mm/hugetlb.c~mm-hugetlb-generalize-writes-to-nr_hugepages-fix
++++ a/mm/hugetlb.c
+@@ -2260,6 +2260,9 @@ static int hugetlb_sysctl_handler_common
+ 	unsigned long tmp = h->max_huge_pages;
+ 	int ret;
+ 
++	if (!hugepages_supported())
++		return -ENOTSUPP;
++
+ 	table->data = &tmp;
+ 	table->maxlen = sizeof(unsigned long);
+ 	ret = proc_doulongvec_minmax(table, write, buffer, length, ppos);
+_
+
