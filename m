@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757049AbaGHTsg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:48:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54036 "EHLO
+	id S1757032AbaGHTsf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:48:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54041 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755648AbaGHTIi (ORCPT
+	by vger.kernel.org with ESMTP id S1755653AbaGHTIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 15:08:38 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jan Kara" <jack@suse.cz>,
-        "Marco Stornelli" <marco.stornelli@gmail.com>,
-        "Al Viro" <viro@zeniv.linux.org.uk>
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Will Deacon" <will.deacon@arm.com>,
+        "Alan Stern" <stern@rowland.harvard.edu>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.550217343@decadent.org.uk>
+Message-ID: <lsq.1404846110.900782906@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 009/125] reiserfs: drop vmtruncate
+Subject: [PATCH 3.2 013/125] USB: Avoid runtime suspend loops for HCDs
+ that can't handle suspend/resume
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,81 +34,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marco Stornelli <marco.stornelli@gmail.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit cfac4b47c664e207740880d6492938761c53d74b upstream.
+commit 8ef42ddd9a53b73e6fc3934278710c27f80f324f upstream.
 
-Removed vmtruncate
+Not all host controller drivers have bus-suspend and bus-resume
+methods.  When one doesn't, it will cause problems if runtime PM is
+enabled in the kernel.  The PM core will attempt to suspend the
+controller's root hub, the suspend will fail because there is no
+bus-suspend routine, and a -EBUSY error code will be returned to the
+PM core.  This will cause the suspend attempt to be repeated shortly
+thereafter, in a never-ending loop.
 
-Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
-Reviewed-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-[bwh: Backported to 3.2: adjust filename]
+Part of the problem is that the original error code -ENOENT gets
+changed to -EBUSY in usb_runtime_suspend(), on the grounds that the PM
+core will interpret -ENOENT as meaning that the root hub has gotten
+into a runtime-PM error state.  While this change is appropriate for
+real USB devices, it's not such a good idea for a root hub.  In fact,
+considering the root hub to be in a runtime-PM error state would not
+be far from the truth.  Therefore this patch updates
+usb_runtime_suspend() so that it adjusts error codes only for
+non-root-hub devices.
+
+Furthermore, the patch attempts to prevent the problem from occurring
+in the first place by not enabling runtime PM by default for root hubs
+whose host controller driver doesn't have bus_suspend and bus_resume
+methods.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Will Deacon <will.deacon@arm.com>
+Tested-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: runtime PM is also not supported for USB 3.0
+ non-root hubs]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/reiserfs/file.c          |  3 +--
- fs/reiserfs/inode.c         | 15 +++++++++++----
- include/linux/reiserfs_fs.h |  1 +
- 3 files changed, 13 insertions(+), 6 deletions(-)
-
---- a/fs/reiserfs/file.c
-+++ b/fs/reiserfs/file.c
-@@ -126,7 +126,7 @@ static int reiserfs_file_open(struct ino
- 	return err;
- }
+--- a/drivers/usb/core/driver.c
++++ b/drivers/usb/core/driver.c
+@@ -1686,10 +1686,13 @@ int usb_runtime_suspend(struct device *d
+ 	if (status == -EAGAIN || status == -EBUSY)
+ 		usb_mark_last_busy(udev);
  
--static void reiserfs_vfs_truncate_file(struct inode *inode)
-+void reiserfs_vfs_truncate_file(struct inode *inode)
- {
- 	mutex_lock(&(REISERFS_I(inode)->tailpack));
- 	reiserfs_truncate_file(inode, 1);
-@@ -312,7 +312,6 @@ const struct file_operations reiserfs_fi
- };
- 
- const struct inode_operations reiserfs_file_inode_operations = {
--	.truncate = reiserfs_vfs_truncate_file,
- 	.setattr = reiserfs_setattr,
- 	.setxattr = reiserfs_setxattr,
- 	.getxattr = reiserfs_getxattr,
---- a/fs/reiserfs/inode.c
-+++ b/fs/reiserfs/inode.c
-@@ -3091,8 +3091,10 @@ static ssize_t reiserfs_direct_IO(int rw
- 		loff_t isize = i_size_read(inode);
- 		loff_t end = offset + iov_length(iov, nr_segs);
- 
--		if (end > isize)
--			vmtruncate(inode, isize);
-+		if ((end > isize) && inode_newsize_ok(inode, isize) == 0) {
-+			truncate_setsize(inode, isize);
-+			reiserfs_vfs_truncate_file(inode);
-+		}
- 	}
- 
- 	return ret;
-@@ -3206,8 +3208,13 @@ int reiserfs_setattr(struct dentry *dent
+-	/* The PM core reacts badly unless the return code is 0,
+-	 * -EAGAIN, or -EBUSY, so always return -EBUSY on an error.
++	/*
++	 * The PM core reacts badly unless the return code is 0,
++	 * -EAGAIN, or -EBUSY, so always return -EBUSY on an error
++	 * (except for root hubs, because they don't suspend through
++	 * an upstream port like other USB devices).
  	 */
- 	reiserfs_write_unlock_once(inode->i_sb, depth);
- 	if ((attr->ia_valid & ATTR_SIZE) &&
--	    attr->ia_size != i_size_read(inode))
--		error = vmtruncate(inode, attr->ia_size);
-+	    attr->ia_size != i_size_read(inode)) {
-+		error = inode_newsize_ok(inode, attr->ia_size);
-+		if (!error) {
-+			truncate_setsize(inode, attr->ia_size);
-+			reiserfs_vfs_truncate_file(inode);
-+		}
+-	if (status != 0)
++	if (status != 0 && udev->parent)
+ 		return -EBUSY;
+ 	return status;
+ }
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -1370,14 +1370,24 @@ static int hub_probe(struct usb_interfac
+ 	desc = intf->cur_altsetting;
+ 	hdev = interface_to_usbdev(intf);
+ 
+-	/* Hubs have proper suspend/resume support.  USB 3.0 device suspend is
++	/*
++	 * Hubs have proper suspend/resume support, except for root hubs
++	 * where the controller driver doesn't have bus_suspend and
++	 * bus_resume methods.  Also, USB 3.0 device suspend is
+ 	 * different from USB 2.0/1.1 device suspend, and unfortunately we
+ 	 * don't support it yet.  So leave autosuspend disabled for USB 3.0
+ 	 * external hubs for now.  Enable autosuspend for USB 3.0 roothubs,
+ 	 * since that isn't a "real" hub.
+ 	 */
+-	if (!hub_is_superspeed(hdev) || !hdev->parent)
+-		usb_enable_autosuspend(hdev);
++	if (hdev->parent) {		/* normal device */
++		if (!hub_is_superspeed(hdev))
++			usb_enable_autosuspend(hdev);
++	} else {			/* root hub */
++		const struct hc_driver *drv = bus_to_hcd(hdev->bus)->driver;
++
++		if (drv->bus_suspend && drv->bus_resume)
++			usb_enable_autosuspend(hdev);
 +	}
  
- 	if (!error) {
- 		setattr_copy(inode, attr);
---- a/include/linux/reiserfs_fs.h
-+++ b/include/linux/reiserfs_fs.h
-@@ -1882,6 +1882,7 @@ struct reiserfs_transaction_handle *reis
- 								    *,
- 								    int count);
- int reiserfs_end_persistent_transaction(struct reiserfs_transaction_handle *);
-+void reiserfs_vfs_truncate_file(struct inode *inode);
- int reiserfs_commit_page(struct inode *inode, struct page *page,
- 			 unsigned from, unsigned to);
- int reiserfs_flush_old_commits(struct super_block *);
+ 	if (hdev->level == MAX_TOPO_LEVEL) {
+ 		dev_err(&intf->dev,
 
