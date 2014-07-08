@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756096AbaGHTg4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:36:56 -0400
+	id S1756095AbaGHTh3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:37:29 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54778 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755666AbaGHTeX (ORCPT
+	by vger.kernel.org with ESMTP id S1755587AbaGHTeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:34:23 -0400
+	Tue, 8 Jul 2014 15:34:21 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mike Marciniszyn" <mike.marciniszyn@intel.com>,
-        "Dennis Dalessandro" <dennis.dalessandro@intel.com>,
-        "Roland Dreier" <roland@purestorage.com>,
-        "Rickard Strandqvist" <rickard_strandqvist@spectrumdigital.se>
+CC: akpm@linux-foundation.org, "Dan Carpenter" <dan.carpenter@oracle.com>,
+        "Roland Dreier" <roland@purestorage.com>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.885545140@decadent.org.uk>
+Message-ID: <lsq.1404846110.361620356@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 023/125] IB/ipath: Translate legacy diagpkt into newer
- extended diagpkt
+Subject: [PATCH 3.2 050/125] RDMA/cxgb4: Fix four byte info leak in
+ c4iw_create_cq()
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,35 +32,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dennis Dalessandro <dennis.dalessandro@intel.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 7e6d3e5c70f13874fb06e6b67696ed90ce79bd48 upstream.
+commit e24a72a3302a638d4c6e77f0b40c45cc61c3f089 upstream.
 
-This patch addresses an issue where the legacy diagpacket is sent in
-from the user, but the driver operates on only the extended
-diagpkt. This patch specifically initializes the extended diagpkt
-based on the legacy packet.
+There is a four byte hole at the end of the "uresp" struct after the
+->qid_mask member.
 
-Reported-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Reviewed-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/infiniband/hw/ipath/ipath_diag.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/infiniband/hw/cxgb4/cq.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/infiniband/hw/ipath/ipath_diag.c
-+++ b/drivers/infiniband/hw/ipath/ipath_diag.c
-@@ -346,6 +346,10 @@ static ssize_t ipath_diagpkt_write(struc
- 			ret = -EFAULT;
- 			goto bail;
- 		}
-+		dp.len = odp.len;
-+		dp.unit = odp.unit;
-+		dp.data = odp.data;
-+		dp.pbc_wd = 0;
- 	} else {
- 		ret = -EINVAL;
- 		goto bail;
+--- a/drivers/infiniband/hw/cxgb4/cq.c
++++ b/drivers/infiniband/hw/cxgb4/cq.c
+@@ -833,6 +833,7 @@ struct ib_cq *c4iw_create_cq(struct ib_d
+ 		if (!mm2)
+ 			goto err4;
+ 
++		memset(&uresp, 0, sizeof(uresp));
+ 		uresp.qid_mask = rhp->rdev.cqmask;
+ 		uresp.cqid = chp->cq.cqid;
+ 		uresp.size = chp->cq.size;
 
