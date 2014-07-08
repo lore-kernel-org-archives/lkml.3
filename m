@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224AbaGHKbj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 06:31:39 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:61735 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753063AbaGHKbh (ORCPT
+	id S1754232AbaGHKdx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 06:33:53 -0400
+Received: from esgaroth.petrovitsch.at ([78.47.184.11]:1248 "EHLO
+	esgaroth.tuxoid.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753063AbaGHKdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 06:31:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALYGNiMjL_GYqqkid4yQsubpnbydVXxTPnKW0GqJcg05x9zbHQ@mail.gmail.com>
-References: <20140705112238.16142.42735.stgit@zurg>
-	<20140707150523.cc671116bf366e8db73209c5@linux-foundation.org>
-	<CALYGNiMjL_GYqqkid4yQsubpnbydVXxTPnKW0GqJcg05x9zbHQ@mail.gmail.com>
-Date: Tue, 8 Jul 2014 14:31:36 +0400
-Message-ID: <CALYGNiOkiBWfT1+SeAkx1qEZKFm2y9G1gXhVEyNC0OrewB2ktA@mail.gmail.com>
-Subject: Re: [PATCH] checkstack: use $UTS_MACHINE as target architecture
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        UML devel <user-mode-linux-devel@lists.sourceforge.net>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 8 Jul 2014 06:33:51 -0400
+X-Greylist: delayed 2532 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Jul 2014 06:33:51 EDT
+Subject: Re: [PATCH] sched/deadline: overrun could happen in start_hrtick_dl
+From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "xiaofeng.yan" <xiaofeng.yan@huawei.com>, mingo@redhat.com,
+        juri.lelli@gmail.com, linux-kernel@vger.kernel.org,
+        xiaofeng.yan2012@gmail.com
+Date: Tue, 08 Jul 2014 11:49:49 +0200
+In-Reply-To: <20140708093334.GD6758@twins.programming.kicks-ass.net>
+References: <1404809607-26197-1-git-send-email-xiaofeng.yan@huawei.com>
+	 <20140708093334.GD6758@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1404812992.29824.2.camel@thorin>
+Mime-Version: 1.0
+X-DCC-URT-Metrics: esgaroth.petrovitsch.priv.at 1060; Body=6 Fuz1=6 Fuz2=6
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	* -0.2 AWL AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 8, 2014 at 9:48 AM, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
-> On Tue, Jul 8, 2014 at 2:05 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
->> On Sat, 05 Jul 2014 15:22:38 +0400 Konstantin Khlebnikov <koct9i@gmail.com> wrote:
->>
->>> This fixes command # make checkstack for i386/x86_64.
->>> Looks like $UTS_MACHINE is exactly what scripts/checkstack.pl needs.
->>>
->>> By default $UTS_MACHINE is equal to $ARCH, but some arch/${ARCH}/Makefile
->>> overrides it. This patch updates it also in arch/x86/Makefile.um
->>>
->>> broken in ffee0de ("x86: Default to ARCH=x86 to avoid overriding CONFIG_64BIT")
->>
->> The changelog doesn't describe the bug which is being fixed.  It should
->> do so please.  If there are any compiler/make error messages then those
->> should be included.
->>
->
-> Oh, ok. checkstalk.pl needs either i386 or x86_64, x86 isn't enough.
->
-> $ make checkstack
-> objdump -d vmlinux $(find . -name '*.ko') | \
-> perl /home/blind/src/linux-stable/scripts/checkstack.pl x86
-> wrong or unknown architecture "x86"
+On Die, 2014-07-08 at 11:33 +0200, Peter Zijlstra wrote:
+[...]
+> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+> index fc4f98b1258f..e1e24eea8061 100644
+> --- a/kernel/sched/deadline.c
+> +++ b/kernel/sched/deadline.c
+> @@ -999,8 +999,7 @@ static void start_hrtick_dl(struct rq *rq, struct task_struct *p)
+>  {
+>  	s64 delta = p->dl.dl_runtime - p->dl.runtime;
 
-I guess it still not descriptive enough.
+This line can be removed as well (an then we have a one-line
+function ....).
 
-checkstack.pl searches patterns of machine instructions which are
-usually used for allocating stack frames. commit ffee0de
-("x86: Default to ARCH=x86 to avoid overriding CONFIG_64BIT")
-had merged ARCH=i386 and ARCH=x86_64 into one ARCH=x86.
-checkstalk.pl needs either i386 or x86_64, x86 isn't enough.
-
-$ make checkstack
-objdump -d vmlinux $(find . -name '*.ko') | \
-perl linux/scripts/checkstack.pl x86
-wrong or unknown architecture "x86"
+> -	if (delta > 10000)
+> -		hrtick_start(rq, p->dl.runtime);
+> +	hrtick_start(rq, p->dl.runtime);
+>  }
+>  #endif
 
 
+	Bernd
+-- 
+"I dislike type abstraction if it has no real reason. And saving
+on typing is not a good reason - if your typing speed is the main
+issue when you're coding, you're doing something seriously wrong."
+    - Linus Torvalds
 
-This also might be fixed in checkstack.pl: i386 and x86_64 differs only
-in name of  sp register: %esp/%rsp.
