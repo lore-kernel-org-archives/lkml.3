@@ -1,194 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892AbaGHNmc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:42:32 -0400
-Received: from w-smtp-out-7.wedos.net ([46.28.106.5]:45791 "EHLO
-	we2-f167.wedos.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754825AbaGHNmJ (ORCPT
+	id S1754453AbaGHNoX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:44:23 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:64471 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753947AbaGHNoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:42:09 -0400
-Date: Tue, 8 Jul 2014 15:42:06 +0200
-From: Josef Gajdusek <atx@atalax.net>
-To: linux-iio@vger.kernel.org
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org, jic23@kernel.org,
-        linux-kernel@vger.kernel.org, pmeerw@pmeerw.net,
-        dan.carpenter@oracle.com
-Subject: [PATCH v3 5/5] staging:iio:hmc5843: Add support for spi hmc5983
-Message-ID: <20140708134206.GG14393@dashie>
-References: <20140708133711.GB14393@dashie>
+	Tue, 8 Jul 2014 09:44:19 -0400
+Date: Tue, 8 Jul 2014 15:44:27 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Daniel Vetter <daniel@ffwll.ch>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        "open list:GENERIC INCLUDE/A..." <linux-arch@vger.kernel.org>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "Clark, Rob" <robdclark@gmail.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Colin Cross <ccross@google.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Subject: Re: [PATCH v2 0/9] Updated fence patch series
+Message-ID: <20140708134427.GG17271@phenom.ffwll.local>
+Mail-Followup-To: Greg KH <gregkh@linuxfoundation.org>,
+	Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+	"open list:GENERIC INCLUDE/A..." <linux-arch@vger.kernel.org>,
+	Thomas Hellstrom <thellstrom@vmware.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	dri-devel <dri-devel@lists.freedesktop.org>,
+	"linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+	"Clark, Rob" <robdclark@gmail.com>,
+	Thierry Reding <thierry.reding@gmail.com>,
+	Colin Cross <ccross@google.com>,
+	Sumit Semwal <sumit.semwal@linaro.org>,
+	"linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+References: <20140701103432.12718.82795.stgit@patser>
+ <20140702053758.GA7578@kroah.com>
+ <CAKMK7uHZQjQ2m7KE22kTRVs-NtGguHREk24pSJiLbN7EoQLZ=g@mail.gmail.com>
+ <20140707173052.GA8693@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140708133711.GB14393@dashie>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140707173052.GA8693@kroah.com>
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the hmc5983 spi interface.
-This chip is almost identical to the hmc5883. The difference being added
-temperature compensation, additional available sample rate (220Hz) and an SPI
-interface.
+On Mon, Jul 07, 2014 at 10:30:52AM -0700, Greg KH wrote:
+> On Mon, Jul 07, 2014 at 03:23:17PM +0200, Daniel Vetter wrote:
+> > On Wed, Jul 2, 2014 at 7:37 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > >> Android can expose fences to userspace. It's possible to make the new fence
+> > >> mechanism expose the same fences to userspace by changing sync_fence_create
+> > >> to take a struct fence instead of a struct sync_pt. No other change is needed,
+> > >> because only the fence parts of struct sync_pt are used. But because the
+> > >> userspace fences are a separate problem and I haven't really looked at it yet
+> > >> I feel it should stay in staging, for now.
+> > >
+> > > Ok, that's reasonable.
+> > >
+> > > At first glance, this all looks "sane" to me, any objection from anyone
+> > > if I merge this through my driver-core tree for 3.17?
+> > 
+> > Ack from my side fwiw.
+> 
+> Thanks, I'll queue it up later today.
 
-Signed-off-by: Josef Gajdusek <atx@atx.name>
----
- drivers/staging/iio/magnetometer/Kconfig       |   8 ++
- drivers/staging/iio/magnetometer/Makefile      |   1 +
- drivers/staging/iio/magnetometer/hmc5843_spi.c | 105 +++++++++++++++++++++++++
- 3 files changed, 114 insertions(+)
- create mode 100644 drivers/staging/iio/magnetometer/hmc5843_spi.c
-
-diff --git a/drivers/staging/iio/magnetometer/Kconfig b/drivers/staging/iio/magnetometer/Kconfig
-index 32c69c0..bc5c355 100644
---- a/drivers/staging/iio/magnetometer/Kconfig
-+++ b/drivers/staging/iio/magnetometer/Kconfig
-@@ -9,6 +9,7 @@ config SENSORS_HMC5843
- 	select IIO_BUFFER
- 	select IIO_TRIGGERED_BUFFER
- 	select SENSORS_HMC5843_I2C if (I2C)
-+	select SENSORS_HMC5843_SPI if (SPI_MASTER)
- 	help
- 	  Say Y here to add support for the Honeywell HMC5843, HMC5883 and
- 	  HMC5883L 3-Axis Magnetometer (digital compass).
-@@ -17,6 +18,7 @@ config SENSORS_HMC5843
- 	  If so, these modules will be created:
- 	  - hmc5843_core (core functions)
- 	  - hmc5843_i2c (support for HMC5843, HMC5883, HMC5883L and HMC5983)
-+	  - hmc5843_spi (support for HMC5983)
- 
- config SENSORS_HMC5843_I2C
- 	tristate
-@@ -24,4 +26,10 @@ config SENSORS_HMC5843_I2C
- 	depends on SENSORS_HMC5843
- 	select REGMAP_I2C
- 
-+config SENSORS_HMC5843_SPI
-+	tristate
-+	depends on SPI_MASTER
-+	depends on SENSORS_HMC5843
-+	select REGMAP_SPI
-+
- endmenu
-diff --git a/drivers/staging/iio/magnetometer/Makefile b/drivers/staging/iio/magnetometer/Makefile
-index 65baf1c..33761a1 100644
---- a/drivers/staging/iio/magnetometer/Makefile
-+++ b/drivers/staging/iio/magnetometer/Makefile
-@@ -4,3 +4,4 @@
- 
- obj-$(CONFIG_SENSORS_HMC5843)		+= hmc5843_core.o
- obj-$(CONFIG_SENSORS_HMC5843_I2C)	+= hmc5843_i2c.o
-+obj-$(CONFIG_SENSORS_HMC5843_SPI)	+= hmc5843_spi.o
-diff --git a/drivers/staging/iio/magnetometer/hmc5843_spi.c b/drivers/staging/iio/magnetometer/hmc5843_spi.c
-new file mode 100644
-index 0000000..3f71ee0
---- /dev/null
-+++ b/drivers/staging/iio/magnetometer/hmc5843_spi.c
-@@ -0,0 +1,105 @@
-+/*
-+ * SPI driver for hmc5983
-+ *
-+ * Copyright (C) Josef Gajdusek <atx@atx.name>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * */
-+
-+#include <linux/module.h>
-+#include <linux/spi/spi.h>
-+#include <linux/iio/iio.h>
-+
-+#include "hmc5843.h"
-+
-+struct regmap_config hmc5843_spi_regmap_config = {
-+		.reg_bits = 8,
-+		.val_bits = 8,
-+
-+		.rd_table = &hmc5843_readable_table,
-+		.wr_table = &hmc5843_writable_table,
-+		.volatile_table = &hmc5843_volatile_table,
-+
-+		/* Autoincrement address pointer */
-+		.read_flag_mask = 0xc0,
-+
-+		.cache_type = REGCACHE_RBTREE,
-+};
-+
-+static int hmc5843_spi_probe(struct spi_device *spi)
-+{
-+	struct hmc5843_data *data;
-+	struct iio_dev *indio_dev;
-+	int ret;
-+
-+	indio_dev = devm_iio_device_alloc(&spi->dev, sizeof(*data));
-+	if (indio_dev == NULL)
-+		return -ENOMEM;
-+
-+	spi->mode = SPI_MODE_3;
-+	spi->max_speed_hz = 8000000;
-+	spi->bits_per_word = 8;
-+	ret = spi_setup(spi);
-+	if (ret)
-+		return ret;
-+
-+	spi_set_drvdata(spi, indio_dev);
-+
-+	data = iio_priv(indio_dev);
-+	data->dev = &spi->dev;
-+	data->regmap = devm_regmap_init_spi(spi, &hmc5843_spi_regmap_config);
-+
-+	indio_dev->dev.parent = &spi->dev;
-+
-+	return hmc5843_common_probe(indio_dev, HMC5983_ID);
-+}
-+
-+static int hmc5843_spi_remove(struct spi_device *spi)
-+{
-+	struct iio_dev *indio_dev = spi_get_drvdata(spi);
-+	return hmc5843_common_remove(indio_dev);
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int hmc5843_spi_suspend(struct device *dev)
-+{
-+	return hmc5843_common_suspend(spi_get_drvdata(to_spi_device(dev)));
-+}
-+
-+static int hmc5843_spi_resume(struct device *dev)
-+{
-+	return hmc5843_common_resume(spi_get_drvdata(to_spi_device(dev)));
-+}
-+
-+static SIMPLE_DEV_PM_OPS(hmc5843_pm_ops,
-+		hmc5843_spi_suspend, hmc5843_spi_resume);
-+#define HMC5843_PM_OPS (&hmc5843_pm_ops)
-+#else
-+#define HMC5843_PM_OPS NULL
-+#endif
-+
-+
-+static const struct spi_device_id hmc5843_id[] = {
-+	{ "hmc5983", HMC5983_ID },
-+	{ }
-+};
-+
-+static struct spi_driver hmc5843_driver = {
-+		.driver = {
-+				.name = "hmc5843",
-+				.pm = HMC5843_PM_OPS,
-+				.owner = THIS_MODULE,
-+		},
-+		.id_table = hmc5843_id,
-+		.probe = hmc5843_spi_probe,
-+		.remove = hmc5843_spi_remove,
-+};
-+
-+module_spi_driver(hmc5843_driver);
-+
-+MODULE_AUTHOR("Josef Gajdusek <atx@atx.name>");
-+MODULE_DESCRIPTION("HMC5983 SPI driver");
-+MODULE_LICENSE("GPL");
+btw should we add you as a (co)maintainer for driver/core/dma-buf since
+you seem to want to keep a closer tab on what the insane gfx folks are up
+to in there?
+-Daniel
 -- 
-1.8.5.5
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
