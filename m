@@ -1,52 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964867AbaGIP1u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 11:27:50 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:36196 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932748AbaGIP1s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 11:27:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <53BD5F0C.2050509@ti.com>
-References: <cover.1404231535.git.viresh.kumar@linaro.org>
-	<b26946cc4573904cd1ef0212ad053a983b547c23.1404231535.git.viresh.kumar@linaro.org>
-	<53BD576F.2010408@ti.com>
-	<CAKohpokz4eyw86Uxp_aA=9T9x-X=kTV=_=zx4dEuC2ZyR=3pKw@mail.gmail.com>
-	<53BD5F0C.2050509@ti.com>
-Date: Wed, 9 Jul 2014 20:57:47 +0530
-Message-ID: <CAKohpokOMs3V250wyWB=wdW6SQEcj+RUQaQZk5MYikUKqF6Nsg@mail.gmail.com>
-Subject: Re: [PATCH 09/14] cpufreq: cpu0: Move per-cluster initialization code
- to ->init()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Shawn Guo <shawn.guo@linaro.org>,
-        Nishanth Menon <nm@ti.com>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Tomasz Figa <t.figa@samsung.com>, Stephen Boyd <sboyd@codeaurora.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas P Abraham <thomas.ab@samsung.com>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Sachin Kamat <spk.linux@gmail.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Content-Type: text/plain; charset=UTF-8
+	id S964933AbaGIP2Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 11:28:25 -0400
+Received: from mga02.intel.com ([134.134.136.20]:36861 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964870AbaGIP2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 11:28:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,631,1400050800"; 
+   d="scan'208";a="570650797"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Tadeusz Struk <tadeusz.struk@intel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Helge Deller <deller@gmx.de>,
+        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>, linux390@de.ibm.com,
+        Alexander Viro <viro@zeniv.linux.org.uk>, qat-linux@intel.com,
+        linux-crypto@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v1 2/5] saa7164: convert to seq_hex_dump()
+Date: Wed,  9 Jul 2014 18:24:27 +0300
+Message-Id: <1404919470-26668-3-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1404919470-26668-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1404919470-26668-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 July 2014 20:56, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
->>> We still *don't* support platforms with separate clock/voltage lines for CPUs.
->>> This would be done in a separate patch.
+Instead of custom approach let's use recently added seq_hex_dump() helper.
 
-Probably s/separate/later would be enough to make you happy ?
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ drivers/media/pci/saa7164/saa7164-core.c | 31 ++++---------------------------
+ 1 file changed, 4 insertions(+), 27 deletions(-)
 
->> Its already fixed as part of this series.
->>
-> I suggest you word the commit in that case. Saying subsequent patch
-> adds support for the remainder case. Let me scan the remainder
-> patches again to see how its done.
->
-> Regards,
-> Santosh
+diff --git a/drivers/media/pci/saa7164/saa7164-core.c b/drivers/media/pci/saa7164/saa7164-core.c
+index 1bf0697..6f81584 100644
+--- a/drivers/media/pci/saa7164/saa7164-core.c
++++ b/drivers/media/pci/saa7164/saa7164-core.c
+@@ -1065,7 +1065,6 @@ static int saa7164_proc_show(struct seq_file *m, void *v)
+ 	struct saa7164_dev *dev;
+ 	struct tmComResBusInfo *b;
+ 	struct list_head *list;
+-	int i, c;
+ 
+ 	if (saa7164_devcount == 0)
+ 		return 0;
+@@ -1089,35 +1088,13 @@ static int saa7164_proc_show(struct seq_file *m, void *v)
+ 
+ 		seq_printf(m, " .m_pdwGetReadPos  = 0x%x (0x%08x)\n",
+ 			b->m_dwGetWritePos, saa7164_readl(b->m_dwGetWritePos));
+-		c = 0;
+ 		seq_printf(m, "\n  Set Ring:\n");
+-		seq_printf(m, "\n addr  00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n");
+-		for (i = 0; i < b->m_dwSizeSetRing; i++) {
+-			if (c == 0)
+-				seq_printf(m, " %04x:", i);
++		seq_hex_dump(m, " ", DUMP_PREFIX_OFFSET, 16, 1,
++			     b->m_pdwSetRing, b->m_dwSizeSetRing, false);
+ 
+-			seq_printf(m, " %02x", *(b->m_pdwSetRing + i));
+-
+-			if (++c == 16) {
+-				seq_printf(m, "\n");
+-				c = 0;
+-			}
+-		}
+-
+-		c = 0;
+ 		seq_printf(m, "\n  Get Ring:\n");
+-		seq_printf(m, "\n addr  00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n");
+-		for (i = 0; i < b->m_dwSizeGetRing; i++) {
+-			if (c == 0)
+-				seq_printf(m, " %04x:", i);
+-
+-			seq_printf(m, " %02x", *(b->m_pdwGetRing + i));
+-
+-			if (++c == 16) {
+-				seq_printf(m, "\n");
+-				c = 0;
+-			}
+-		}
++		seq_hex_dump(m, " ", DUMP_PREFIX_OFFSET, 16, 1,
++			     b->m_pdwGetRing, b->m_dwSizeGetRing, false);
+ 
+ 		mutex_unlock(&b->lock);
+ 
+-- 
+2.0.1
+
