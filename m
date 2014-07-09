@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756312AbaGIPbg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 11:31:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52447 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755085AbaGIPbd convert rfc822-to-8bit (ORCPT
+	id S965005AbaGIPb5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 11:31:57 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:55924 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756418AbaGIPby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 11:31:33 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1403620852-16476-1-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1403620852-16476-1-git-send-email-zohar@linux.vnet.ibm.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: dhowells@redhat.com, keyrings <keyrings@linux-nfs.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Josh Boyer <jwboyer@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Subject: Re: [PATCH v6 0/6] ima: extending secure boot certificate chain of trust
+	Wed, 9 Jul 2014 11:31:54 -0400
+Date: Wed, 9 Jul 2014 16:31:46 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 18/24] mfd: max77686: Add Maxim 77802 PMIC support
+Message-ID: <20140709153146.GJ2635@lee--X1>
+References: <1404505467-26526-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1404505467-26526-19-git-send-email-javier.martinez@collabora.co.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <24143.1404919879.1@warthog.procyon.org.uk>
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 09 Jul 2014 16:31:19 +0100
-Message-ID: <24144.1404919879@warthog.procyon.org.uk>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1404505467-26526-19-git-send-email-javier.martinez@collabora.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Okay, I've merged a number of patchsets together that I want to push for the
-next merge window:
+On Fri, 04 Jul 2014, Javier Martinez Canillas wrote:
+> Maxim MAX77802 is a power management chip that contains 10 high
+> efficiency Buck regulators, 32 Low-dropout (LDO) regulators used
+> to power up application processors and peripherals, a 2-channel
+> 32kHz clock outputs, a Real-Time-Clock (RTC) and a I2C interface
+> to program the individual regulators, clocks outputs and the RTC.
+> 
+> This patch adds support for MAX77802 to the MAX77686 driver and is
+> based on a driver added to the Chrome OS kernel 3.8 by Simon Glass.
+> 
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
 
-	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-next
+[...]
 
-I'd like to add yours.  Shall I pull:
+>  static const struct i2c_device_id max77686_i2c_id[] = {
+>  	{ "max77686", TYPE_MAX77686 },
+> +	{ "max77802", TYPE_MAX77802 },
+>  	{ }
 
-	linux-integrity/next-trusted-keys
+There's no point in filling this in.  Just empty it completely.
 
-which is here, I presume:
+Once you've done that, resubmit the patchset with my:
 
-	http://git.kernel.org/cgit/linux/kernel/git/zohar/linux-integrity.git/
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-David
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
