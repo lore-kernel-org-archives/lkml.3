@@ -1,132 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756442AbaGIRHW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 13:07:22 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:51571 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753515AbaGIRHT (ORCPT
+	id S1756451AbaGIRIr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 13:08:47 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:61427 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268AbaGIRIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 13:07:19 -0400
+	Wed, 9 Jul 2014 13:08:45 -0400
+From: bsegall@google.com
+To: Yuyang Du <yuyang.du@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com,
+        arjan.van.de.ven@intel.com, len.brown@intel.com, alan.cox@intel.com,
+        mark.gross@intel.com, pjt@google.com, fengguang.wu@intel.com
+Subject: Re: [PATCH 2/2] sched: Rewrite per entity runnable load average tracking
+References: <1404268256-3019-1-git-send-email-yuyang.du@intel.com>
+	<1404268256-3019-2-git-send-email-yuyang.du@intel.com>
+	<20140707104646.GK6758@twins.programming.kicks-ass.net>
+	<xm26r41wyfgc.fsf@sword-of-the-dawn.mtv.corp.google.com>
+	<20140708000840.GB25653@intel.com>
+	<xm26k37nye7d.fsf@sword-of-the-dawn.mtv.corp.google.com>
+	<20140709010753.GD25653@intel.com>
+Date: Wed, 09 Jul 2014 10:08:42 -0700
+In-Reply-To: <20140709010753.GD25653@intel.com> (Yuyang Du's message of "Wed,
+	9 Jul 2014 09:07:53 +0800")
+Message-ID: <xm26fviaxxwl.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20140709183116.506ad2e4@canb.auug.org.au>
-References: <20140709183116.506ad2e4@canb.auug.org.au>
-Date: Wed, 9 Jul 2014 13:07:18 -0400
-Message-ID: <CAPDOMVjAMHOhuzfcJRL_JQ1jSKOeE7PEhppZJKJKbtR2-ixi-A@mail.gmail.com>
-Subject: Fwd: linux-next: Tree for Jul 9
-From: Nick Krause <xerofoify@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=047d7b6da0b4a048f704fdc5bdf6
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b6da0b4a048f704fdc5bdf6
-Content-Type: text/plain; charset=UTF-8
+Yuyang Du <yuyang.du@intel.com> writes:
 
----------- Forwarded message ----------
-From: Stephen Rothwell wrote on Wed, Jul 9, 2014 at 4:31 AM
-Subject: linux-next: Tree for Jul 9
-To: linux-next@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
+> Thanks, Ben.
+>
+> On Tue, Jul 08, 2014 at 10:04:22AM -0700, bsegall@google.com wrote:
+>
+>> > The sampling of cfs_rq->load.weight should be equivalent to the current
+>> > code in that at the end of day cfs_rq->load.weight worth of runnable would 
+>> > contribute to runnable_load_avg/blocked_load_avg for both the current and
+>> > the rewrite.
+>> 
+>> Yes, but the point is that it looks at load.weight when delta/1024 > 0
+>> and assumes that it has had that load.weight the entire time, when this
+>> might not actually be true. The largest error I can think of is if you
+>> have a very high weight task that tends to run for very short periods of
+>> time, you could end up losing their entire contribution to load. This
+>> may be acceptable, I'm not certain.
+>
+> That I believe is not a problem. It is a matter of when cfs_rq->load.weight
+> changes and when we look at it to contribute to the cfs_rq's load_avg.
+> Fortunately, we will not miss any change of cfs_rq->load.weight, always
+> contributing to the load_avg the right amount. Put another way, we always
+> use the right cfs_rq->load.weight.
 
+You always call __update_load_avg with every needed load.weight, but if
+now - sa->last_update_time < 1024, then it will not do anything with
+that weight, and the next actual update may be with a different weight.
 
-Hi all,
+>
+>> > So left are the migrate_task_rq_fair() not holding lock issue and cfs_rq->avg.load_avg
+>> > overflow issue. I need some time to study them.
+>> >
+>> > Overall, I think none of these issues are originally caused by combination/split
+>> > of runnable and blocked. It is just a matter of how synchronized we want to be
+>> > (this rewrite is the most synchronized), and the workaround I need to borrow from the
+>> > current codes.
+>> 
+>> If you can manage to find a to deal with the migration issue without it,
+>> that would be great, I'm just pretty sure that's why we did the split.
+>  
+> After thinking about it the whole morning, this issue is a killer... :)
+>
+> But I think, even by spliting and by using atomic operations, the current code
+> does not substract the migrating task's load absolutely synchronized:
+>
+> When se migrating, you atomic_read cfs_rq->decay_counter (say t1), and then atomic_add
+> the se's load_avg_contrib to removed_load. However, when updating the cfs_rq->blocked_load_avg
+> it is not guranteed when substracting the removed_load from the blocked_load_avg,
+> the actual decay_counter (say t2) is the same as t1. Because at t1 time (when you
+> atomic_read it), the decay_counter can be being updated (before you atomic_add to
+> removed_load). Atomic operation does not help synchronize them. Right?
+>
+> So essentially, to perfectly substract the right amount, we must first synchronize
+> the migrating task with its cfs_rq (catch up), and then substract it right away.
+> Those two steps must be synchronized (with lock) or atomically done at once. Considering
+> migrating and load averaging are not sequential (strict interleaving). Separating the
+> two steps but synchronizing them is not enough, they must be done
+> atomically.
 
-Changes since 20140708:
+Yeah, I don't think it is actually entirely safe, and looking at it
+again, there's not even any guarantee that the decay_counter read is
+anything close to current, even on something like x86, which is... bad.
+I know this is why subtract_blocked_load_contrib makes sure to clamp at
+zero.
 
-My fixes tree contains:
-        powerpc: Disable RELOCATABLE for COMPILE_TEST with PPC64
+To do this actually correctly, you'd need cmpxchg16b or locking. Given
+that we end up pulling a cacheline to do the removed_load add RMW
+anyway, it might be reasonable to do something like that, I don't know.
 
-The net tree lost its build failure.
-
-The net-next tree gained a build failure so I used the version from
-next-20140708.
-
-The drm tree gained a conflict against the drm-intel-fixes tree.
-
-The regulator tree lost its build failure.
-
-The iommu tree lost its build failure.
-
-The staging tree still had its build failure for which I disabled a driver.
-
-The rd-docs tree gained a conflict against the trivial tree.
-
-The akpm-current tree still had its build failure for which I applied a
-patch.
-
-Non-merge commits (relative to Linus' tree): 4287
- 4000 files changed, 161994 insertions(+), 195983 deletions(-)
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" and checkout or reset to the new
-master.
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64 and a
-multi_v7_defconfig for arm. After the final fixups (if any), it is also
-built with powerpc allnoconfig (32 and 64 bit), ppc44x_defconfig and
-allyesconfig (this fails its final link) and i386, sparc, sparc64 and arm
-defconfig.
-
-Below is a summary of the state of the merge.
-
-I am currently merging 222 trees (counting Linus' and 30 trees of patches
-pending for Linus' tree).
-
-Stats about the size of the tree over time can be seen at
-http://neuling.org/linux-next-size.html .
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.  And to Paul
-Gortmaker for triage and bug fixes.
-
---
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-Hey Stephen,
-
-A lot of your builds that are failing seem to build for me. Please try
-a compiler toolchain
-newer then gcc 4.6.3 to see if this is why your builds are failing.
-Since all the arm builds
-you have failing build for me.
-Cheers Nick
-
---047d7b6da0b4a048f704fdc5bdf6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Disposition: attachment; filename="signature.asc"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: cb83f2e263218ef1_0.1
-
-LS0tLS1CRUdJTiBQR1AgU0lHTkFUVVJFLS0tLS0NClZlcnNpb246IEdudVBHIHYyDQoNCmlRSWNC
-QUVCQ0FBR0JRSlR2UDNaQUFvSkVNRFRhOElyN1p3VnNwOFAvMGVKT1BtNHozZy84TXF2MElmampK
-eFQNCkg0MythL1UyMXdZcHlndnVrRStFd0V0aTRTdnN6YmZtemM0amxneUhKc1hzSmF4ckdOa3Zy
-RlJ4RjNkNmw1OUoNCkFnc1JqZ3pUN1g5WWxPZUd1WUwvcmxORTRrRUkvK3R6ZnBacVJtQVkxSkZG
-UHFnSVFveStIdHROUlhYVHVXQ2MNCm16Qkk0UURNVTloc3Bvc1hoMGhyNUE2SG1RTWMveFVrOG1s
-dXFBUTZTRDMxelNJRVhYSnBiSnUvemRRTFBhY3oNClJEOFdiek5ETTFQRG82VmpmOVlTeFp2TG5j
-aWxwcEhtUzk3T1FTVHJxTmtNVm9mRFpLS2xoa0dvd01yekc2UDcNClFtMkFseHVZaGZvTGxBbzc4
-VjlEYU5scDc2RzNkbTk0Q1J0TVY0ZUpoTjFmMmdUWWR2Ulk1b1NHcXJtekZUOGcNCnE4eENSQjNJ
-ZHpNTWFMMDFraDlVM1k3WTNlUXg5citqR01pOW5OZ3J2ZWUvdVpwbkJORDFGMXZRS0VXbVBBVkQN
-CmEydW0rc2lZY1BTMGdZcUorMmEwWlJJY1dDTXNXam5Pa1ZHQ1h4QWh4S2lTRUdYcHlUSlpuYTRh
-eTlvRnJBQVcNClRsd3JveTBoZ3B6T1loTXNYc2N1T1Nkc0x2Tkd0U1RBek1OVEJsaHJQd1cvNS9t
-T0JuSHZuZHdhZTJLUWNDSEkNClcyTzN1YlJ5ajN6S3NDMTN5T2lyZk9Ca3NucmFRbnZzV0JaUCtP
-eG9XN0NJZHNZYmFZSmNsTFNjbmg0eWdLcm8NClZkeHlQSGZBUEJJcERrdm1aSWl1MHRMRkNjMWc0
-Ry8xd2VqbG44SFRPOUtyMGpCbGhiSFhPNXpDQWUwWU1RMkENCjE2NTJUbWQ2a3NpVUpvYU13SG9Z
-DQo9Z1F4Lw0KLS0tLS1FTkQgUEdQIFNJR05BVFVSRS0tLS0tDQo=
---047d7b6da0b4a048f704fdc5bdf6--
+>
+> That is chalenging... Can someone (Peter) grant us a lock of the remote rq? :)
+>
+> Thanks,
+> Yuyang
