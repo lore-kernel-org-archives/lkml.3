@@ -1,113 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755666AbaGIMJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 08:09:28 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:51204 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755278AbaGIMIG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 08:08:06 -0400
-From: sanjeev sharma <sanjeevsharmaengg@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: rmfrfs@gmail.com, peter.senna@gmail.com, teobaluta@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        sanjeev sharma <sanjeev_sharma@mentor.com>,
-        Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
-Subject: [PATCH v3 2/4] staging: rtl8192u: Removed unnecessary whitespace & tab warning.
-Date: Wed,  9 Jul 2014 17:49:40 +0530
-Message-Id: <1404908382-7043-3-git-send-email-sanjeevsharmaengg@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1404908382-7043-1-git-send-email-sanjeevsharmaengg@gmail.com>
-References: <20140708100142.GR25934@mwanda>
- <1404908382-7043-1-git-send-email-sanjeevsharmaengg@gmail.com>
+	id S1755703AbaGIMKY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 08:10:24 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:42151 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755523AbaGIMKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 08:10:23 -0400
+X-IronPort-AV: E=Sophos;i="5.01,631,1400025600"; 
+   d="scan'208";a="150930093"
+Message-ID: <53BD311B.2050404@citrix.com>
+Date: Wed, 9 Jul 2014 13:10:03 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: <konrad@kernel.org>, <xen-devel@lists.xenproject.org>,
+        <david.vrabel@citrix.com>, <boris.ostrovsky@oracle.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH v2] xen: Introduce 'xen_nopv' to disable PV
+ extensions for HVM guests.
+References: <1404852745-25187-1-git-send-email-konrad@kernel.org>
+In-Reply-To: <1404852745-25187-1-git-send-email-konrad@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: sanjeev sharma <sanjeev_sharma@mentor.com>
+On 08/07/14 21:52, konrad@kernel.org wrote:
+> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> 
+> By default when CONFIG_XEN and CONFIG_XEN_PVHVM kernels are
+> run, they will enable the PV extensions (drivers, interrupts, timers,
+> etc) - which is perfect.
 
-This patch will remove whitespace and tabs reported by
-checkpatch.pl script.
+If it's "perfect" what's this option for? ;)
 
-Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
----
- drivers/staging/rtl8192u/r819xU_phy.c | 23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
+I think you mean to say "which is the best option for the majority of
+use cases".
 
-diff --git a/drivers/staging/rtl8192u/r819xU_phy.c b/drivers/staging/rtl8192u/r819xU_phy.c
-index 0bcdd4e..0fcb673 100644
---- a/drivers/staging/rtl8192u/r819xU_phy.c
-+++ b/drivers/staging/rtl8192u/r819xU_phy.c
-@@ -106,10 +106,10 @@ void rtl8192_setBBreg(struct net_device *dev, u32 reg_addr, u32 bitmask,
- /******************************************************************************
-  * function:  This function reads specific bits from BB register
-  * input:     net_device	*dev
-- *            u32	 	reg_addr   //target addr to be readback
-- *            u32	 	bitmask    //taget bit pos to be readback
-- * output:    none
-- * return:    u32	 	data       //the readback register value
-+ * u32		reg_addr   //target addr to be readback
-+ * u32		bitmask    //taget bit pos to be readback
-+ * output:	none
-+ * return:	u32		data       //the readback register value
-  * notice:
-  ******************************************************************************/
- u32 rtl8192_QueryBBReg(struct net_device *dev, u32 reg_addr, u32 bitmask)
-@@ -478,9 +478,9 @@ static void phy_FwRFSerialWrite(struct net_device *dev,
- /******************************************************************************
-  * function:  This function reads BB parameters from header file we generate,
-  *            and do register read/write
-- * input:     net_device 	*dev
-- * output:    none
-- * return:    none
-+ * input:	net_device	*dev
-+ * output:	none
-+ * return:	none
-  * notice:    BB parameters may change all the time, so please make
-  *            sure it has been synced with the newest.
-  *****************************************************************************/
-@@ -900,7 +900,7 @@ void rtl8192_phy_getTxPower(struct net_device *dev)
- 	read_nic_byte(dev, rOFDM0_RxDetector3, &priv->framesync);
- 	read_nic_byte(dev, rOFDM0_RxDetector2, &tmp);
- 	priv->framesyncC34 = tmp;
--	RT_TRACE(COMP_INIT, "Default framesync (0x%x) = 0x%x \n",
-+	RT_TRACE(COMP_INIT, "Default framesync (0x%x) = 0x%x\n",
- 		rOFDM0_RxDetector3, priv->framesync);
- 
- 	/* Read SIFS (save the value read fome MACPHY_REG.txt) */
-@@ -1463,6 +1463,7 @@ void rtl8192_SwChnl_WorkItem(struct net_device *dev)
- u8 rtl8192_phy_SwChnl(struct net_device *dev, u8 channel)
- {
- 	struct r8192_priv *priv = ieee80211_priv(dev);
-+
- 	RT_TRACE(COMP_CH, "%s(), SwChnlInProgress: %d\n", __func__,
- 		 priv->SwChnlInProgress);
- 	if (!priv->up)
-@@ -1745,13 +1746,13 @@ void InitialGainOperateWorkItemCallBack(struct work_struct *work)
- 		RT_TRACE(COMP_SCAN, "Scan InitialGainBackup 0xa0a is %x\n",
- 			 priv->initgain_backup.cca);
- 
--		RT_TRACE(COMP_SCAN, "Write scan initial gain = 0x%x \n",
-+		RT_TRACE(COMP_SCAN, "Write scan initial gain = 0x%x\n",
- 			 initial_gain);
- 		write_nic_byte(dev, rOFDM0_XAAGCCore1, initial_gain);
- 		write_nic_byte(dev, rOFDM0_XBAGCCore1, initial_gain);
- 		write_nic_byte(dev, rOFDM0_XCAGCCore1, initial_gain);
- 		write_nic_byte(dev, rOFDM0_XDAGCCore1, initial_gain);
--		RT_TRACE(COMP_SCAN, "Write scan 0xa0a = 0x%x \n",
-+		RT_TRACE(COMP_SCAN, "Write scan 0xa0a = 0x%x\n",
- 			 POWER_DETECTION_TH);
- 		write_nic_byte(dev, 0xa0a, POWER_DETECTION_TH);
- 		break;
-@@ -1792,7 +1793,7 @@ void InitialGainOperateWorkItemCallBack(struct work_struct *work)
- 			rtl8192_setBBreg(dev, UFWP, bMaskByte1, 0x1);
- 		break;
- 	default:
--		RT_TRACE(COMP_SCAN, "Unknown IG Operation. \n");
-+		RT_TRACE(COMP_SCAN, "Unknown IG Operation.\n");
- 		break;
- 	}
- }
--- 
-1.7.11.7
+> However, in some cases (kexec not fully wokring, benchmarking)
+> we want to disable Xen PV extensions. As such introduce the
+> 'xen_nopv' parameter that will do it.
+
+"working"
+
+I'm unconvinced about the utility of this option.  The resulting kernel
+will go like molasses and I'm not sure what the use of being any to
+benchmark a configuration no one will use in practice.  But it's a small
+patch so
+
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+
+David
 
