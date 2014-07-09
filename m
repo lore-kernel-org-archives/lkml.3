@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756444AbaGISfb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 14:35:31 -0400
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:52735 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756180AbaGISfa (ORCPT
+	id S1756610AbaGISfw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 14:35:52 -0400
+Received: from mail-bn1blp0182.outbound.protection.outlook.com ([207.46.163.182]:43120
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756016AbaGISfu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 14:35:30 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnEQAO2KvVNbsF1T/2dsb2JhbABZgw6tFwUBAQEBAQEFAW6ZdoEQF3WEYCOBGjeIRgG0eJN2F4V6iUgdhC0FmnaLTIhAg0U7
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Fengguang Wu <fengguang.wu@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, netdev@vger.kernel.org
-Subject: [PATCH 1/1 net-next] ipconfig: move ic_dev_xid under IPCONFIG_BOOTP
-Date: Wed,  9 Jul 2014 20:35:21 +0200
-Message-Id: <1404930921-14879-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.1
+	Wed, 9 Jul 2014 14:35:50 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Christoph Hellwig <hch@infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: RE: [PATCH 8/8] drivers: scsi: storvsc: Correctly handle
+ TEST_UNIT_READY failure
+Thread-Topic: [PATCH 8/8] drivers: scsi: storvsc: Correctly handle
+ TEST_UNIT_READY failure
+Thread-Index: AQHPmwbbLP1k3YziP06O7vS4mu3TlZuXbpEAgACjy7A=
+Date: Wed, 9 Jul 2014 18:35:47 +0000
+Message-ID: <67b90e6c79674f27979f42277dbb62e5@BY2PR03MB299.namprd03.prod.outlook.com>
+References: <1404866789-26910-1-git-send-email-kys@microsoft.com>
+ <1404866812-26950-1-git-send-email-kys@microsoft.com>
+ <1404866812-26950-8-git-send-email-kys@microsoft.com>
+ <20140709084644.GH6012@infradead.org>
+In-Reply-To: <20140709084644.GH6012@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.135.110.52]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:
+x-forefront-prvs: 0267E514F9
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(199002)(189002)(51704005)(13464003)(24454002)(377454003)(19580405001)(64706001)(106356001)(2656002)(74316001)(54356999)(81342001)(19580395003)(74662001)(105586002)(83322001)(76576001)(31966008)(76482001)(99396002)(92566001)(95666004)(50986999)(86612001)(79102001)(99286002)(80022001)(106116001)(83072002)(66066001)(46102001)(21056001)(74502001)(77982001)(101416001)(33646001)(20776003)(81542001)(76176999)(4396001)(85852003)(107046002)(110136001)(93886003)(87936001)(86362001)(85306003)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB298;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ic_dev_xid is only used in __init ic_bootp_recv under IPCONFIG_BOOTP
-and __init ic_dynamic under IPCONFIG_DYNAMIC(which is itself defined
-with the same IPCONFIG_BOOTP)
 
-This patch fixes the following warning when IPCONFIG_BOOTP is not set:
->> net/ipv4/ipconfig.c:146:15: warning: 'ic_dev_xid' defined but not used [-Wunused-variable]
-    static __be32 ic_dev_xid;  /* Device under configuration */
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: netdev@vger.kernel.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- net/ipv4/ipconfig.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+> -----Original Message-----
+> From: Christoph Hellwig [mailto:hch@infradead.org]
+> Sent: Wednesday, July 9, 2014 1:47 AM
+> To: KY Srinivasan
+> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> ohering@suse.com; jbottomley@parallels.com; jasowang@redhat.com;
+> apw@canonical.com; linux-scsi@vger.kernel.org; stable@vger.kernel.org
+> Subject: Re: [PATCH 8/8] drivers: scsi: storvsc: Correctly handle
+> TEST_UNIT_READY failure
+> 
+> On Tue, Jul 08, 2014 at 05:46:52PM -0700, K. Y. Srinivasan wrote:
+> > --- a/drivers/scsi/storvsc_drv.c
+> > +++ b/drivers/scsi/storvsc_drv.c
+> > @@ -1023,6 +1023,13 @@ static void storvsc_handle_error(struct
+> vmscsi_request *vm_srb,
+> >  		case ATA_12:
+> >  			set_host_byte(scmnd, DID_PASSTHROUGH);
+> >  			break;
+> > +		/*
+> > +		 * On Some Windows hosts TEST_UNIT_READY command can
+> return
+> > +		 * SRB_STATUS_ERROR, let the upper level code deal with it
+> > +		 * based on the sense information.
+> > +		 */
+> > +		case TEST_UNIT_READY:
+> > +			break;
+> 
+> Don't we need to set an error in the command for the error handler to take
+> action?  Or is this propagated elsewhere?
 
-diff --git a/net/ipv4/ipconfig.c b/net/ipv4/ipconfig.c
-index f0f3f9f..f02f594 100644
---- a/net/ipv4/ipconfig.c
-+++ b/net/ipv4/ipconfig.c
-@@ -143,8 +143,6 @@ __be32 ic_servaddr = NONE;	/* Boot server IP address */
- __be32 root_server_addr = NONE;	/* Address of NFS server */
- u8 root_server_path[256] = { 0, };	/* Path to mount as root */
- 
--static __be32 ic_dev_xid;		/* Device under configuration */
--
- /* vendor class identifier */
- static char vendor_class_identifier[253] __initdata;
- 
-@@ -654,6 +652,7 @@ static struct packet_type bootp_packet_type __initdata = {
- 	.func =	ic_bootp_recv,
- };
- 
-+static __be32 ic_dev_xid;		/* Device under configuration */
- 
- /*
-  *  Initialize DHCP/BOOTP extension fields in the request.
--- 
-1.9.1
+The host sets the appropriate scsi response and sense information that allows the upper-level scsi stack to appropriately recover. We are just making sure that we won't mark the target as failed which is what would happen in the absence of this patch since the host has set a very generic SRB error code that indicates failure.
+
+Regards,
+
+K. Y
 
