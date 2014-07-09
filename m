@@ -1,84 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755318AbaGIJRb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 05:17:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10776 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755276AbaGIJRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 05:17:25 -0400
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        <xen-devel@lists.xenproject.org>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        <linux-kernel@vger.kernel.org>, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [Xen-devel] [PATCH] mmap_vmcore: skip non-ram pages reported by hypervisors
-References: <1404745549-16023-1-git-send-email-vkuznets@redhat.com>
-	<20140707133301.dfcc078f416efeb1ada72da9@linux-foundation.org>
-	<53BC1B96.3070101@citrix.com>
-Date: Wed, 09 Jul 2014 11:17:13 +0200
-In-Reply-To: <53BC1B96.3070101@citrix.com> (David Vrabel's message of "Tue, 8
-	Jul 2014 17:25:58 +0100")
-Message-ID: <87vbr6opra.fsf@vitty.brq.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1754947AbaGIJT1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 05:19:27 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:53008 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268AbaGIJTZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 05:19:25 -0400
+Date: Wed, 9 Jul 2014 11:19:17 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: kan.liang@intel.com
+Cc: andi@firstfloor.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH V4 1/2] perf ignore LBR and extra_regs.
+Message-ID: <20140709091917.GC9918@twins.programming.kicks-ass.net>
+References: <1404838181-3911-1-git-send-email-kan.liang@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="69pVuxX8awAiJ7fD"
+Content-Disposition: inline
+In-Reply-To: <1404838181-3911-1-git-send-email-kan.liang@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Vrabel <david.vrabel@citrix.com> writes:
 
-> On 07/07/14 21:33, Andrew Morton wrote:
->> On Mon,  7 Jul 2014 17:05:49 +0200 Vitaly Kuznetsov <vkuznets@redhat.com> wrote:
->> 
->>> we have a special check in read_vmcore() handler to check if the page was
->>> reported as ram or not by the hypervisor (pfn_is_ram()). However, when
->>> vmcore is read with mmap() no such check is performed. That can lead to
->>> unpredictable results, e.g. when running Xen PVHVM guest memcpy() after
->>> mmap() on /proc/vmcore will hang processing HVMMEM_mmio_dm pages creating
->>> enormous load in both DomU and Dom0.
->
-> Does make forward progress though?  Or is it ending up in a repeatedly
-> retrying the same instruction?
+--69pVuxX8awAiJ7fD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-If memcpy is using SSE2 optimization 16-byte 'movdqu' instruction never
-finishes (repeatedly retrying to issue two 8-byte requests to
-qemu-dm). qemu-dm decides that it's hitting 'Neither RAM nor known MMIO
-space' and returns 8 0xff bytes for both of this requests (I was testing
-with qemu-traditional).
+On Tue, Jul 08, 2014 at 09:49:40AM -0700, kan.liang@intel.com wrote:
+> +	/*
+> +	 * Access LBR MSR may cause #GP under certain circumstances.
+> +	 * E.g. KVM doesn't support LBR MSR
+> +	 * Check all LBT MSR here.
+> +	 * Disable LBR access if any LBR MSRs can not be accessed.
+> +	 */
+> +	if (x86_pmu.lbr_nr) {
+> +		access = check_msr(x86_pmu.lbr_tos);
+> +		for (i = 0; i < x86_pmu.lbr_nr; i++) {
+> +			access &= check_msr(x86_pmu.lbr_from + i);
+> +			access &= check_msr(x86_pmu.lbr_to + i);
+> +		}
+> +		if (!access)
+> +			x86_pmu.lbr_nr = 0;
+> +	}
 
->
-> Is it failing on a ballooned page in a RAM region? Or is mapping non-RAM
-> regions as well?
+You _could_ write that as:
 
-I wasn't using ballooning, it happens that oldmem has several (two in my
-test) pages which are HVMMEM_mmio_dm but qemu-dm considers them being
-neither ram nor mmio.
+	if (x86_pmu.lbr_nr) {
+		if (!check_msr(x86_pmu.lbr_tos))
+			x86_pmu.lbr_nr = 0;
+		for (i = 0; i < x86_pmu.lbr_nr; i++) {
+			if (!(check_msr(x86_pmu.lbr_from + i) &&
+			      check_msr(x86_pmu.lbr_to + i)))
+			      x86_pmu.lbr_nr = 0;
+		}
+	}
 
->
->>> Fix the issue by mapping each non-ram page to the zero page. Keep direct
->>> path with remap_oldmem_pfn_range() to avoid looping through all pages on
->>> bare metal.
->>>
->>> The issue can also be solved by overriding remap_oldmem_pfn_range() in
->>> xen-specific code, as remap_oldmem_pfn_range() was been designed for.
->>> That, however, would involve non-obvious xen code path for all x86 builds
->>> with CONFIG_XEN_PVHVM=y and would prevent all other hypervisor-specific
->>> code on x86 arch from doing the same override.
->
-> The oldmem_pfn_is_ram() is Xen-specific but this problem (ballooned
-> pages) must be common to KVM.  How does KVM handle this?
+There is no point in checking any more MSRs after the first fail after
+all.
 
-Is far as I'm concearned the issue was never hit with KVM. I *think* the
-issue has something to do with the conjunction of 16-byte 'movdqu'
-emulation for io pages in xen hypervisor, 8-byte event channel requests
-and qemu-traditional. But even if it gets fixed on hypervisor side I
-believe fixing the issue kernel-side still worth it as there are
-non-fixed hypervisors out there (e.g. AWS EC2).
+--69pVuxX8awAiJ7fD
+Content-Type: application/pgp-signature
 
->
-> David
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
--- 
-  Vitaly
+iQIcBAEBAgAGBQJTvQkVAAoJEHZH4aRLwOS6XMMP/2pubbvOc4B03UMdcbE9Mh4O
+gDQ8a+GXZEE5wGvUi9ota4xxQ8YHaSkRRHO4/5H8xD0QC648ivkd4JVviJEfy8WU
+zsKgoSLq4IbVzmfRcH4gpA7T7EEdPYLhtzBuGhKdhiVk/vG6Ppeh3xOkI9wEd5sT
+NeNdaIGbsxuhmrqb0ey2szdZtNThSVWz+AWPh3ws9dx1rSbJP6fWATSGAUGy2EBW
+zsio10c7ilhQol4MSQUXWXEhoZtSRAX1HGNYUQ8LuTD6gzC8M/K+8Ps7gChJAZFO
+FqI1V8rmWKyPDOIbOWOWdGZYStOOkJuPLmSr+gV8KUFKGfQJ8Bzc9PjCzj/ShHdE
+Ki3cLn5dfneNiteu+CHEAa3LIlb8I7aA5jAzI8PX8uK9QOsq/9F2nd6YKNBgN6Wz
+DVXd64dRuSPYstFXQ9D05fErQzXLzilciOyEqkMit5y6hdj+tfhfhpqAXYYFgDMV
+6+M1TXjh9xpdNFRm+zYx8Y3g4A3e9sYFW5w7OS2dTXkzjTi3WQYdv9jyzteRQEHL
+ljGo7P/qjgTXJpb29nxrl5/xBtXim1z398pXOxjM/dGUXklTZ89JQGaTdtGd77Wo
+wg8W1CiFtjspQxPYn48Aeb3zfkccnTns+hm36UPqGizrQkht10mK7HrRO24FdX0b
+WO0f6JKK11ZK9IcXYgHC
+=jHP2
+-----END PGP SIGNATURE-----
+
+--69pVuxX8awAiJ7fD--
