@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452AbaGIMIO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 08:08:14 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:60844 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755276AbaGIMIK (ORCPT
+	id S1755526AbaGIMIT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 08:08:19 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:33791 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755276AbaGIMIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 08:08:10 -0400
+	Wed, 9 Jul 2014 08:08:15 -0400
 From: sanjeev sharma <sanjeevsharmaengg@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: rmfrfs@gmail.com, peter.senna@gmail.com, teobaluta@gmail.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         sanjeev sharma <sanjeev_sharma@mentor.com>,
         Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
-Subject: [PATCH v3 3/4] staging: rtl8192u: Fixed switch and case indentation error.
-Date: Wed,  9 Jul 2014 17:49:41 +0530
-Message-Id: <1404908382-7043-4-git-send-email-sanjeevsharmaengg@gmail.com>
+Subject: [PATCH v3 4/4] staging: rtl8192u: Fixed too long lines
+Date: Wed,  9 Jul 2014 17:49:42 +0530
+Message-Id: <1404908382-7043-5-git-send-email-sanjeevsharmaengg@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1404908382-7043-1-git-send-email-sanjeevsharmaengg@gmail.com>
 References: <20140708100142.GR25934@mwanda>
@@ -26,37 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: sanjeev sharma <sanjeev_sharma@mentor.com>
 
-This patch will fix switch and case indentation Error
-reported by checkpatch script.
+This patch will fix too long lines warning
+reported by checkpatch.pl.
 
 Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
 ---
- drivers/staging/rtl8192u/r819xU_phy.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/staging/rtl8192u/r819xU_phy.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/staging/rtl8192u/r819xU_phy.c b/drivers/staging/rtl8192u/r819xU_phy.c
-index 0fcb673..3155616 100644
+index 3155616..1ea3a4e 100644
 --- a/drivers/staging/rtl8192u/r819xU_phy.c
 +++ b/drivers/staging/rtl8192u/r819xU_phy.c
-@@ -946,12 +946,12 @@ void rtl8192_phy_RFConfig(struct net_device *dev)
- 	struct r8192_priv *priv = ieee80211_priv(dev);
- 
- 	switch (priv->rf_chip) {
--		case RF_8256:
--			PHY_RF8256_Config(dev);
--			break;
--		default:
--			RT_TRACE(COMP_ERR, "error chip id\n");
--			break;
-+	case RF_8256:
-+		PHY_RF8256_Config(dev);
-+		break;
-+	default:
-+		RT_TRACE(COMP_ERR, "error chip id\n");
-+		break;
+@@ -1236,7 +1236,8 @@ static u8 rtl8192_phy_SetSwChnlCmdArray(SwChnlCmd *CmdTable, u32 CmdTableIdx,
+ 		return false;
  	}
+ 	if (CmdTableIdx >= CmdTableSz) {
+-		RT_TRACE(COMP_ERR, "%s(): Access invalid index, please check size of the table, CmdTableIdx:%d, CmdTableSz:%d\n",
++		RT_TRACE(COMP_ERR,
++			 "%s():invalid index,CmdTableIdx:%d, CmdTableSz:%d\n",
+ 			 __func__, CmdTableIdx, CmdTableSz);
+ 		return false;
+ 	}
+@@ -1697,7 +1698,8 @@ void InitialGain819xUsb(struct net_device *dev,	u8 Operation)
+ 	priv->InitialGainOperateType = Operation;
+ 
+ 	if (priv->up)
+-		queue_delayed_work(priv->priv_wq, &priv->initialgain_operate_wq, 0);
++		queue_delayed_work(priv->priv_wq,
++				   &priv->initialgain_operate_wq, 0);
  }
  
+ void InitialGainOperateWorkItemCallBack(struct work_struct *work)
+@@ -1786,7 +1788,9 @@ void InitialGainOperateWorkItemCallBack(struct work_struct *work)
+ 		RT_TRACE(COMP_SCAN, "Scan BBInitialGainRestore 0xa0a is %x\n",
+ 			 priv->initgain_backup.cca);
+ 
+-		rtl8192_phy_setTxPower(dev, priv->ieee80211->current_network.channel);
++		rtl8192_phy_setTxPower(dev,
++					priv->ieee80211->current_network.channel
++				       );
+ 
+ 		if (dm_digtable.dig_algorithm == DIG_ALGO_BY_FALSE_ALARM)
+ 			/* FW DIG ON */
 -- 
 1.7.11.7
 
