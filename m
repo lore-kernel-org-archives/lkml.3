@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756468AbaGISrJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 14:47:09 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:49624 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756042AbaGISrH (ORCPT
+	id S932255AbaGISrU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 14:47:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47206 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932178AbaGISrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 14:47:07 -0400
-Date: Wed, 9 Jul 2014 11:47:03 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Nick Krause <xerofoify@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: Fwd: linux-next: Tree for Jul 9
-Message-ID: <20140709184703.GA16363@roeck-us.net>
-References: <20140709183116.506ad2e4@canb.auug.org.au>
- <CAPDOMVjAMHOhuzfcJRL_JQ1jSKOeE7PEhppZJKJKbtR2-ixi-A@mail.gmail.com>
- <53BD77CC.9060606@infradead.org>
+	Wed, 9 Jul 2014 14:47:17 -0400
+Date: Wed, 9 Jul 2014 11:51:42 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Michalis Pappas <mpappas@fastmail.fm>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: gdm72xx: conditionally compile debug code
+Message-ID: <20140709185142.GA13271@kroah.com>
+References: <1404219616-1788-1-git-send-email-mpappas@fastmail.fm>
+ <1404219616-1788-2-git-send-email-mpappas@fastmail.fm>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53BD77CC.9060606@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1404219616-1788-2-git-send-email-mpappas@fastmail.fm>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 10:11:40AM -0700, Randy Dunlap wrote:
-> On 07/09/2014 10:07 AM, Nick Krause wrote:
-> > ---------- Forwarded message ----------
-> > From: Stephen Rothwell wrote on Wed, Jul 9, 2014 at 4:31 AM
-> > Subject: linux-next: Tree for Jul 9
-> > To: linux-next@vger.kernel.org
-> > Cc: linux-kernel@vger.kernel.org
-> > 
-> > 
-> > Hi all,
-> > 
-> > Changes since 20140708:
-> > 
-> > 
-> > --
-> > Cheers,
-> > Stephen Rothwell                    sfr@canb.auug.org.au
-> > 
-> > Hey Stephen,
-> > 
-> > A lot of your builds that are failing seem to build for me. Please try
-> > a compiler toolchain
-> > newer then gcc 4.6.3 to see if this is why your builds are failing.
-> > Since all the arm builds
-> > you have failing build for me.
-> > Cheers Nick
-> > 
+On Tue, Jul 01, 2014 at 02:00:15PM +0100, Michalis Pappas wrote:
+> Signed-off-by: Michalis Pappas <mpappas@fastmail.fm>
+> ---
+>  drivers/staging/gdm72xx/gdm_qos.c   | 2 ++
+>  drivers/staging/gdm72xx/gdm_sdio.c  | 7 +++++++
+>  drivers/staging/gdm72xx/gdm_usb.c   | 7 +++++++
+>  drivers/staging/gdm72xx/gdm_wimax.c | 6 ++++++
+>  drivers/staging/gdm72xx/gdm_wimax.h | 2 ++
+>  5 files changed, 24 insertions(+)
 > 
-> Hey Nick,
-> 
-> Does your email client interface have a "Reply All" or "Reply to All" button
-> or selection that you can use?  Please use that instead of Forwarding each message.
-> That will make it easier to read the email threading.
-> 
-I suspect he may be using an e-mail client from a certain vendor in Redmond, WA.
-It appears they have not heard that there is something like '>' to mark original
-text in e-mail replies.
+> diff --git a/drivers/staging/gdm72xx/gdm_qos.c b/drivers/staging/gdm72xx/gdm_qos.c
+> index b08c8e1..7900981 100644
+> --- a/drivers/staging/gdm72xx/gdm_qos.c
+> +++ b/drivers/staging/gdm72xx/gdm_qos.c
+> @@ -88,7 +88,9 @@ static void free_qos_entry_list(struct list_head *free_list)
+>  		total_free++;
+>  	}
+>  
+> +	#if defined(GDM72xx_DEBUG)
+>  	pr_debug("%s: total_free_cnt=%d\n", __func__, total_free);
+> +	#endif
 
-Guenter
+Ick, no, never put #ifdef in .c code if you can help it.  For stuff like
+this, just rely on the dynamic debug core and use the pr_debug and
+dev_dbg() calls, like the driver is doing, so all should be fine.
+
+> diff --git a/drivers/staging/gdm72xx/gdm_sdio.c b/drivers/staging/gdm72xx/gdm_sdio.c
+> index 9d2de6f..914fd75 100644
+> --- a/drivers/staging/gdm72xx/gdm_sdio.c
+> +++ b/drivers/staging/gdm72xx/gdm_sdio.c
+> @@ -280,9 +280,11 @@ static void send_sdu(struct sdio_func *func, struct tx_cxt *tx)
+>  
+>  	spin_unlock_irqrestore(&tx->lock, flags);
+>  
+> +	#if defined(GDM72xx_DEBUG)
+>  	print_hex_dump_debug("sdio_send: ", DUMP_PREFIX_NONE, 16, 1,
+>  			     tx->sdu_buf + TYPE_A_HEADER_SIZE,
+>  			     aggr_len - TYPE_A_HEADER_SIZE, false);
+> +	#endif
+
+This should be moved to use dev_dbg(), along with the other calls to
+this function in this file.
+
+thanks,
+
+greg k-h
