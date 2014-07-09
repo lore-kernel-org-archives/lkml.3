@@ -1,51 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562AbaGIX1L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 19:27:11 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36275 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752911AbaGIX1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 19:27:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,634,1400050800"; 
-   d="scan'208";a="567615098"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Havard Skinnemoen <hskinnemoen@google.com>
-CC: Borislav Petkov <bp@alien8.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ewout van Bekkum <ewout@google.com>
-Subject: RE: [PATCH 5/6] x86-mce: check if no_way_out applies before
- deciding not to clear MCE banks.
-Thread-Topic: [PATCH 5/6] x86-mce: check if no_way_out applies before
- deciding not to clear MCE banks.
-Thread-Index: AQHPm5iX9ZL7m71kC0ibecR2+1ErWJuYOJZAgACYmwD//5FEQA==
-Date: Wed, 9 Jul 2014 23:27:07 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F32857896@ORSMSX114.amr.corp.intel.com>
-References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
-	<1404925766-32253-6-git-send-email-hskinnemoen@google.com>
-	<3908561D78D1C84285E8C5FCA982C28F328574C3@ORSMSX114.amr.corp.intel.com>
- <CAFQmdRb9vsWyF06jppS5U7Wzuc+SzRgWL+hs5+es-GC=5e_8qg@mail.gmail.com>
-In-Reply-To: <CAFQmdRb9vsWyF06jppS5U7Wzuc+SzRgWL+hs5+es-GC=5e_8qg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
+	id S1755745AbaGIX2X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 19:28:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49101 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752188AbaGIX2W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 19:28:22 -0400
+Date: Wed, 9 Jul 2014 16:32:48 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation: devres: Sort managed interfaces
+Message-ID: <20140709233248.GA12171@kroah.com>
+References: <1404919578-4457-1-git-send-email-geert+renesas@glider.be>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404919578-4457-1-git-send-email-geert+renesas@glider.be>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s69NRH5I003614
 
-> to run with tolerant=3, but I kind of understood the logic to be that
-> if we're going to keep running, we need to clear the banks, and if
-> we're going to crash, we need to leave them intact 
+On Wed, Jul 09, 2014 at 05:26:18PM +0200, Geert Uytterhoeven wrote:
+> Sort the list of managed interfaces and their lists of methods
+> alphabetically, to reduce the risk of merge conflicts and duplicates.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> ---
+> I got annoyed by the merge conflicts when merging several for-next
+> branches a while ago, so I sorted the list after everything became
+> quiet.
+> ---
+>  Documentation/driver-model/devres.txt | 108 +++++++++++++++++-----------------
+>  1 file changed, 54 insertions(+), 54 deletions(-)
 
-That makes sense ... fold some text like that into the commit
-description, and this part is:
+What tree/version is this against?  I get merge issues with my
+driver-core-next tree :(
 
-Acked-by: Tony Luck <tony.luck@intel.com>
+thanks,
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+greg k-h
