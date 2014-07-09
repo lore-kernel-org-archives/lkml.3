@@ -1,88 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646AbaGIVB5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 17:01:57 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:38553 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751226AbaGIVBz (ORCPT
+	id S1754666AbaGIVEL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 17:04:11 -0400
+Received: from mga02.intel.com ([134.134.136.20]:6534 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751167AbaGIVEJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 17:01:55 -0400
+	Wed, 9 Jul 2014 17:04:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,633,1400050800"; 
+   d="scan'208";a="570797283"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Havard Skinnemoen <hskinnemoen@google.com>, Borislav Petkov <bp@alien8.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ewout van Bekkum" <ewout@google.com>
+Subject: RE: [PATCH 6/6] x86-mce: ensure the MCP timer is not already set in
+ the mce_timer_fn.
+Thread-Topic: [PATCH 6/6] x86-mce: ensure the MCP timer is not already set
+ in the mce_timer_fn.
+Thread-Index: AQHPm5irgIXlqkYstkWOf8C65eGf0puYOvCQ
+Date: Wed, 9 Jul 2014 21:04:06 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F328574D1@ORSMSX114.amr.corp.intel.com>
+References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
+ <1404925766-32253-7-git-send-email-hskinnemoen@google.com>
+In-Reply-To: <1404925766-32253-7-git-send-email-hskinnemoen@google.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <53BD8398.6020507@codeaurora.org>
-References: <1404665232-14311-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<53BD8398.6020507@codeaurora.org>
-Date: Wed, 9 Jul 2014 23:01:54 +0200
-Message-ID: <CAFo99gaqS747k9kVRh0uyt+TTmdi5RrXOxBb=pgEBca3eSpKTw@mail.gmail.com>
-Subject: Re: [PATCH v2] tty: serial: msm_serial.c: Cleaning up uninitialized variables
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-arm-msm@vger.kernel.org,
-        linux-serial@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-07-09 20:02 GMT+02:00 Stephen Boyd <sboyd@codeaurora.org>:
-> On 07/06/14 09:47, Rickard Strandqvist wrote:
->> Set reasonable initial value of some variables, in case
->> they do not get set to something otherwise.
->> And I've also added a plausibility control of the values.
->>
->> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> ---
->
-> This patch doesn't look right...
->
->> @@ -930,17 +930,21 @@ static int __init msm_console_setup(struct console *co, char *options)
->>
->>       msm_init_clock(port);
->>
->> -     if (options)
->> +     if (options) {
->>               uart_parse_options(options, &baud, &parity, &bits, &flow);
->> +             if (baud < 300 || baud > 115200)
->> +                     baud = 115200;
->> +             if (NULL == strchr("noeNOE", parity))
->> +                     parity = 'n';
->> +             if (bits != 7)
->> +                     bits = 8;
->> +             if (flow != 'r')
->> +                     flow = 'n';
->> +     }
->>
->> -     bits = 8;
->> -     parity = 'n';
->> -     flow = 'n';
->>       msm_write(port, UART_MR2_BITS_PER_CHAR_8 | UART_MR2_STOP_BIT_LEN_ONE,
->>                 UART_MR2);    /* 8N1 */
->>
->
-> because this code is overriding whatever is parsed from
-> uart_parse_options() on purpose. The hardware is configured for 8 bits,
-> no parity, no flow control with this msm_write() statement. Maybe we
-> should extend the code to configure the parity and flow control bits
-> instead.
++	/* Ensure a CMCI interrupt can't preempt this. */
++	local_irq_save(flags);
+ 	if (mce_available(__this_cpu_ptr(&cpu_info))) {
+ 		machine_check_poll(MCP_TIMESTAMP,
+ 				&__get_cpu_var(mce_poll_banks));
 
+Does this remove the problem that you fixed in part4?  If a CMCI can
+no longer interrupt a poll ... do we really need the locks you added?
 
-
-Hi
-
-Okay, well that explains the strange code.
-Maybe there should be a comment about this?
-
-You mean that UART_MR2_BITS_PER_CHAR_8 | UART_MR2_STOP_BIT_LEN_ONE is
-set correctly for the msm_write function?
-I can do that...
-
-Regardless, the original error whas that baud could be used uninitialized.
-
-
-Kind regards
-Rickard Strandqvist
+-Tony
