@@ -1,41 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756786AbaGIS5F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 14:57:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27499 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752746AbaGIS5C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 14:57:02 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1404924054.14643.36.camel@dhcp-9-2-203-236.watson.ibm.com>
-References: <1404924054.14643.36.camel@dhcp-9-2-203-236.watson.ibm.com> <1403620852-16476-1-git-send-email-zohar@linux.vnet.ibm.com> <24144.1404919879@warthog.procyon.org.uk>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: dhowells@redhat.com, keyrings <keyrings@linux-nfs.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Josh Boyer <jwboyer@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Subject: Re: [PATCH v6 0/6] ima: extending secure boot certificate chain of trust
+	id S932196AbaGIS5h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 14:57:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47258 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751778AbaGIS5g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 14:57:36 -0400
+Date: Wed, 9 Jul 2014 12:02:00 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: lidza.louina@gmail.com, driverdev-devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCH] staging: dgap: removes redundant null check and change
+ paramter for dgap_maxcps_room()
+Message-ID: <20140709190200.GA8113@kroah.com>
+References: <20140707012754.GA26042@devel.8.8.4.4>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <8974.1404932208.1@warthog.procyon.org.uk>
-Date: Wed, 09 Jul 2014 19:56:48 +0100
-Message-ID: <8975.1404932208@warthog.procyon.org.uk>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140707012754.GA26042@devel.8.8.4.4>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+On Mon, Jul 07, 2014 at 10:27:54AM +0900, Daeseok Youn wrote:
+> Null checks for tty, un and ch are already done by caller,
+> so replace parameter "tty" with "ch" and "un".
+> 
+> And also use a pointer for returning new bytes_available instead of
+> return variable.
 
-> Yes, that's fine.  My concern, however, is that the trusted keyring
-> patches are independent of the other patches being upstreamed and should
-> be upstreamed regardless of the other patches.
+Why make that change?  It's nicer to return a real value where ever
+possible.  That's more like other "room" functions in the tty layer.
 
-There is overlap in the X.509 certificate request function that you took from
-my pkcs#7 patches.
+Care to fix this up to just do the first change you made to the function
+instead?
 
-David
+thanks,
+
+greg k-h
