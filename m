@@ -1,145 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135AbaGIPmz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 11:42:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25898 "EHLO mx1.redhat.com"
+	id S1756400AbaGIPoT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 11:44:19 -0400
+Received: from mga11.intel.com ([192.55.52.93]:38468 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755390AbaGIPmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 11:42:53 -0400
-Subject: [PATCH06/17] PKCS#7: Verify internal certificate chain
-From: David Howells <dhowells@redhat.com>
-To: keyrings@linux-nfs.org
-Cc: linux-security-module@vger.kernel.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 09 Jul 2014 16:16:04 +0100
-Message-ID: <20140709151604.23074.4848.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20140709151525.23074.32315.stgit@warthog.procyon.org.uk>
-References: <20140709151525.23074.32315.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.17-dirty
+	id S1755735AbaGIPoR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 11:44:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,631,1400050800"; 
+   d="scan'208";a="567423677"
+From: "Liang, Kan" <kan.liang@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "andi@firstfloor.org" <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: RE: [PATCH V4 1/2] perf ignore LBR and extra_regs.
+Thread-Topic: [PATCH V4 1/2] perf ignore LBR and extra_regs.
+Thread-Index: AQHPmw42PYiPusxucki+Ie3j6NurFZuXRIqAgACHbiD//4Q0gIAAh8MA
+Date: Wed, 9 Jul 2014 15:43:45 +0000
+Message-ID: <37D7C6CF3E00A74B8858931C1DB2F077014D2729@SHSMSX103.ccr.corp.intel.com>
+References: <1404838181-3911-1-git-send-email-kan.liang@intel.com>
+ <20140709141631.GE9918@twins.programming.kicks-ass.net>
+ <37D7C6CF3E00A74B8858931C1DB2F077014D2005@SHSMSX103.ccr.corp.intel.com>
+ <20140709145809.GG9918@twins.programming.kicks-ass.net>
+In-Reply-To: <20140709145809.GG9918@twins.programming.kicks-ass.net>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Verify certificate chain in the X.509 certificates contained within the PKCS#7
-message as far as possible.  If any signature that we should be able to verify
-fails, we reject the whole lot.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
-Reviewed-by: Kees Cook <keescook@chromium.org>
----
-
- crypto/asymmetric_keys/pkcs7_verify.c |   88 +++++++++++++++++++++++++++++++++
- 1 file changed, 87 insertions(+), 1 deletion(-)
 
 
-diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
-index 745e5c8..51ff36f 100644
---- a/crypto/asymmetric_keys/pkcs7_verify.c
-+++ b/crypto/asymmetric_keys/pkcs7_verify.c
-@@ -170,6 +170,91 @@ static int pkcs7_find_key(struct pkcs7_message *pkcs7,
- }
- 
- /*
-+ * Verify the internal certificate chain as best we can.
-+ */
-+static int pkcs7_verify_sig_chain(struct pkcs7_message *pkcs7,
-+				  struct pkcs7_signed_info *sinfo)
-+{
-+	struct x509_certificate *x509 = sinfo->signer, *p;
-+	int ret;
-+
-+	kenter("");
-+
-+	for (p = pkcs7->certs; p; p = p->next)
-+		p->seen = false;
-+
-+	for (;;) {
-+		pr_debug("verify %s: %s\n", x509->subject, x509->fingerprint);
-+		x509->seen = true;
-+		ret = x509_get_sig_params(x509);
-+		if (ret < 0)
-+			return ret;
-+
-+		if (x509->issuer)
-+			pr_debug("- issuer %s\n", x509->issuer);
-+		if (x509->authority)
-+			pr_debug("- authkeyid %s\n", x509->authority);
-+
-+		if (!x509->authority ||
-+		    (x509->subject &&
-+		     strcmp(x509->subject, x509->issuer) == 0)) {
-+			/* If there's no authority certificate specified, then
-+			 * the certificate must be self-signed and is the root
-+			 * of the chain.  Likewise if the cert is its own
-+			 * authority.
-+			 */
-+			pr_debug("- no auth?\n");
-+			if (x509->raw_subject_size != x509->raw_issuer_size ||
-+			    memcmp(x509->raw_subject, x509->raw_issuer,
-+				   x509->raw_issuer_size) != 0)
-+				return 0;
-+
-+			ret = x509_check_signature(x509->pub, x509);
-+			if (ret < 0)
-+				return ret;
-+			x509->signer = x509;
-+			pr_debug("- self-signed\n");
-+			return 0;
-+		}
-+
-+		/* Look through the X.509 certificates in the PKCS#7 message's
-+		 * list to see if the next one is there.
-+		 */
-+		pr_debug("- want %s\n", x509->authority);
-+		for (p = pkcs7->certs; p; p = p->next) {
-+			pr_debug("- cmp [%u] %s\n", p->index, p->fingerprint);
-+			if (p->raw_subject_size == x509->raw_issuer_size &&
-+			    strcmp(p->fingerprint, x509->authority) == 0 &&
-+			    memcmp(p->raw_subject, x509->raw_issuer,
-+				   x509->raw_issuer_size) == 0)
-+				goto found_issuer;
-+		}
-+
-+		/* We didn't find the root of this chain */
-+		pr_debug("- top\n");
-+		return 0;
-+
-+	found_issuer:
-+		pr_debug("- issuer %s\n", p->subject);
-+		if (p->seen) {
-+			pr_warn("Sig %u: X.509 chain contains loop\n",
-+				sinfo->index);
-+			return 0;
-+		}
-+		ret = x509_check_signature(p->pub, x509);
-+		if (ret < 0)
-+			return ret;
-+		x509->signer = p;
-+		if (x509 == p) {
-+			pr_debug("- self-signed\n");
-+			return 0;
-+		}
-+		x509 = p;
-+		might_sleep();
-+	}
-+}
-+
-+/*
-  * Verify one signed information block from a PKCS#7 message.
-  */
- static int pkcs7_verify_one(struct pkcs7_message *pkcs7,
-@@ -201,7 +286,8 @@ static int pkcs7_verify_one(struct pkcs7_message *pkcs7,
- 
- 	pr_devel("Verified signature %u\n", sinfo->index);
- 
--	return 0;
-+	/* Verify the internal certificate chain */
-+	return pkcs7_verify_sig_chain(pkcs7, sinfo);
- }
- 
- /**
+> -----Original Message-----
+> From: Peter Zijlstra [mailto:peterz@infradead.org]
+> Sent: Wednesday, July 09, 2014 10:58 AM
+> To: Liang, Kan
+> Cc: andi@firstfloor.org; linux-kernel@vger.kernel.org; kvm@vger.kernel.org
+> Subject: Re: [PATCH V4 1/2] perf ignore LBR and extra_regs.
+> 
+> On Wed, Jul 09, 2014 at 02:32:28PM +0000, Liang, Kan wrote:
+> >
+> >
+> > > On Tue, Jul 08, 2014 at 09:49:40AM -0700, kan.liang@intel.com wrote:
+> > > > +/*
+> > > > + * Under certain circumstances, access certain MSR may cause #GP.
+> > > > + * The function tests if the input MSR can be safely accessed.
+> > > > + */
+> > > > +static inline bool check_msr(unsigned long msr) {
+> > > > +	u64 value;
+> > > > +
+> > > > +	if (rdmsrl_safe(msr, &value) < 0)
+> > > > +		return false;
+> > > > +	if (wrmsrl_safe(msr, value) < 0)
+> > > > +		return false;
+> > > > +	return true;
+> > > > +}
+> > >
+> > > What does this thing return after patch 2? does the write still
+> > > fault or will KVM silently take writes too?
+> >
+> > If applying patch 2, the function will return true. The KVM just simply ignore
+> the reads/writes.
+> 
+> OK, then that's broken too. We want a function to return false for any
+> malfunctioning MSR, ignoring writes and returning 0s is not proper
+> functioning.
+
+The patch 2 is to handle the case that the administrator can only patch the host. Don't need to force user to upgrade their guest to fix the crash.  
+And ignore the annoying "unhandled...." KVM messages
 
