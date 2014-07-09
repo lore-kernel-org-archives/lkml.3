@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756668AbaGITaz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 15:30:55 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:45583 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756317AbaGITaZ (ORCPT
+	id S1756716AbaGITbP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 15:31:15 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:39194 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756230AbaGITaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 15:30:25 -0400
+	Wed, 9 Jul 2014 15:30:21 -0400
 From: Reyad Attiyat <reyad.attiyat@gmail.com>
 To: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org, jic23@kernel.org,
         srinivas.pandruvada@linux.intel.com
 Cc: Reyad Attiyat <reyad.attiyat@gmail.com>
-Subject: [PATCH v5 3/4] iio: hid-sensor-magn-3d: Scan for usage attributes before setting up iio channels
-Date: Wed,  9 Jul 2014 14:30:12 -0500
-Message-Id: <1404934213-2733-4-git-send-email-reyad.attiyat@gmail.com>
+Subject: [PATCH v5 1/4] iio: Documentation: Add documentation for rotation from north sensor usage attributes
+Date: Wed,  9 Jul 2014 14:30:10 -0500
+Message-Id: <1404934213-2733-2-git-send-email-reyad.attiyat@gmail.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1404934213-2733-1-git-send-email-reyad.attiyat@gmail.com>
 References: <1404934213-2733-1-git-send-email-reyad.attiyat@gmail.com>
@@ -21,294 +21,167 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Scan for and count the HID usage attributes supported by the driver.
-This allows for the driver to only setup the IIO channels for the
-sensor usages present in the HID USB reports.
-
-Changes from v4
-Renamed iio_val array to iio_vals
-Renamed return value of hid sensor attribute for loop
-Fixed formatting
-Added comment about magn_val_addr and iio_vals
-Added more debugging information and checks
-Removed static initalizing of scan_index, it is now set dynamically
-Use struct iio_chan_spec address field to store magn array index (could be set statically)
+Added documentation for the sysfs attributes supported by the rotation from north
+sensor.
 
 Signed-off-by: Reyad Attiyat <reyad.attiyat@gmail.com>
 ---
- drivers/iio/magnetometer/hid-sensor-magn-3d.c | 144 ++++++++++++++++++--------
- 1 file changed, 100 insertions(+), 44 deletions(-)
+ Documentation/ABI/testing/sysfs-bus-iio | 82 +++++++++++++++++++++++++++++++++
+ 1 file changed, 82 insertions(+)
 
-diff --git a/drivers/iio/magnetometer/hid-sensor-magn-3d.c b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-index 41cf29e..f69664b 100644
---- a/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-+++ b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-@@ -42,7 +42,12 @@ struct magn_3d_state {
- 	struct hid_sensor_hub_callbacks callbacks;
- 	struct hid_sensor_common common_attributes;
- 	struct hid_sensor_hub_attribute_info magn[MAGN_3D_CHANNEL_MAX];
--	u32 magn_val[MAGN_3D_CHANNEL_MAX];
+diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
+index a9757dc..995642f 100644
+--- a/Documentation/ABI/testing/sysfs-bus-iio
++++ b/Documentation/ABI/testing/sysfs-bus-iio
+@@ -260,6 +260,10 @@ What:		/sys/bus/iio/devices/iio:deviceX/in_magn_scale
+ What:		/sys/bus/iio/devices/iio:deviceX/in_magn_x_scale
+ What:		/sys/bus/iio/devices/iio:deviceX/in_magn_y_scale
+ What:		/sys/bus/iio/devices/iio:deviceX/in_magn_z_scale
++What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_magnetic_scale
++What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_true_scale
++What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_magnetic_tilt_comp_scale
++What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_true_tilt_comp_scale
+ What:		/sys/bus/iio/devices/iio:deviceX/in_pressureY_scale
+ What:		/sys/bus/iio/devices/iio:deviceX/in_pressure_scale
+ KernelVersion:	2.6.35
+@@ -447,6 +451,14 @@ What:		/sys/.../iio:deviceX/events/in_magn_y_thresh_rising_en
+ What:		/sys/.../iio:deviceX/events/in_magn_y_thresh_falling_en
+ What:		/sys/.../iio:deviceX/events/in_magn_z_thresh_rising_en
+ What:		/sys/.../iio:deviceX/events/in_magn_z_thresh_falling_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_thresh_rising_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_thresh_falling_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_thresh_rising_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_thresh_falling_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_tilt_comp_thresh_rising_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_tilt_comp_thresh_falling_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_tilt_comp_thresh_rising_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_tilt_comp_thresh_falling_en
+ What:		/sys/.../iio:deviceX/events/in_voltageY_supply_thresh_rising_en
+ What:		/sys/.../iio:deviceX/events/in_voltageY_supply_thresh_falling_en
+ What:		/sys/.../iio:deviceX/events/in_voltageY_thresh_rising_en
+@@ -492,6 +504,14 @@ What:		/sys/.../iio:deviceX/events/in_magn_y_roc_rising_en
+ What:		/sys/.../iio:deviceX/events/in_magn_y_roc_falling_en
+ What:		/sys/.../iio:deviceX/events/in_magn_z_roc_rising_en
+ What:		/sys/.../iio:deviceX/events/in_magn_z_roc_falling_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_roc_rising_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_roc_falling_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_roc_rising_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_roc_falling_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_tilt_comp_roc_rising_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_tilt_comp_roc_falling_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_tilt_comp_roc_rising_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_tilt_comp_roc_falling_en
+ What:		/sys/.../iio:deviceX/events/in_voltageY_supply_roc_rising_en
+ What:		/sys/.../iio:deviceX/events/in_voltageY_supply_roc_falling_en
+ What:		/sys/.../iio:deviceX/events/in_voltageY_roc_rising_en
+@@ -538,6 +558,14 @@ What:		/sys/.../events/in_magn_y_raw_thresh_rising_value
+ What:		/sys/.../events/in_magn_y_raw_thresh_falling_value
+ What:		/sys/.../events/in_magn_z_raw_thresh_rising_value
+ What:		/sys/.../events/in_magn_z_raw_thresh_falling_value
++What:		/sys/.../events/in_rot_from_north_magnetic_raw_thresh_rising_value
++What:		/sys/.../events/in_rot_from_north_magnetic_raw_thresh_falling_value
++What:		/sys/.../events/in_rot_from_north_true_raw_thresh_rising_value
++What:		/sys/.../events/in_rot_from_north_true_raw_thresh_falling_value
++What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_raw_thresh_rising_value
++What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_raw_thresh_falling_value
++What:		/sys/.../events/in_rot_from_north_true_tilt_comp_raw_thresh_rising_value
++What:		/sys/.../events/in_rot_from_north_true_tilt_comp_raw_thresh_falling_value
+ What:		/sys/.../events/in_voltageY_supply_raw_thresh_rising_value
+ What:		/sys/.../events/in_voltageY_supply_raw_thresh_falling_value
+ What:		/sys/.../events/in_voltageY_raw_thresh_rising_value
+@@ -588,6 +616,18 @@ What:		/sys/.../events/in_magn_y_thresh_either_hysteresis
+ What:		/sys/.../events/in_magn_z_thresh_rising_hysteresis
+ What:		/sys/.../events/in_magn_z_thresh_falling_hysteresis
+ What:		/sys/.../events/in_magn_z_thresh_either_hysteresis
++What:		/sys/.../events/in_rot_from_north_magnetic_thresh_rising_hysteresis
++What:		/sys/.../events/in_rot_from_north_magnetic_thresh_falling_hysteresis
++What:		/sys/.../events/in_rot_from_north_magnetic_thresh_either_hysteresis
++What:		/sys/.../events/in_rot_from_north_true_thresh_rising_hysteresis
++What:		/sys/.../events/in_rot_from_north_true_thresh_falling_hysteresis
++What:		/sys/.../events/in_rot_from_north_true_thresh_either_hysteresis
++What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_thresh_rising_hysteresis
++What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_thresh_falling_hysteresis
++What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_thresh_either_hysteresis
++What:		/sys/.../events/in_rot_from_north_true_tilt_comp_thresh_rising_hysteresis
++What:		/sys/.../events/in_rot_from_north_true_tilt_comp_thresh_falling_hysteresis
++What:		/sys/.../events/in_rot_from_north_true_tilt_comp_thresh_either_hysteresis
+ What:		/sys/.../events/in_voltageY_thresh_rising_hysteresis
+ What:		/sys/.../events/in_voltageY_thresh_falling_hysteresis
+ What:		/sys/.../events/in_voltageY_thresh_either_hysteresis
+@@ -635,6 +675,14 @@ What:		/sys/.../events/in_magn_y_raw_roc_rising_value
+ What:		/sys/.../events/in_magn_y_raw_roc_falling_value
+ What:		/sys/.../events/in_magn_z_raw_roc_rising_value
+ What:		/sys/.../events/in_magn_z_raw_roc_falling_value
++What:		/sys/.../events/in_rot_from_north_magnetic_raw_roc_rising_value
++What:		/sys/.../events/in_rot_from_north_magnetic_raw_roc_falling_value
++What:		/sys/.../events/in_rot_from_north_true_raw_roc_rising_value
++What:		/sys/.../events/in_rot_from_north_true_raw_roc_falling_value
++What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_raw_roc_rising_value
++What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_raw_roc_falling_value
++What:		/sys/.../events/in_rot_from_north_true_tilt_comp_raw_roc_rising_value
++What:		/sys/.../events/in_rot_from_north_true_tilt_comp_raw_roc_falling_value
+ What:		/sys/.../events/in_voltageY_supply_raw_roc_rising_value
+ What:		/sys/.../events/in_voltageY_supply_raw_roc_falling_value
+ What:		/sys/.../events/in_voltageY_raw_roc_rising_value
+@@ -690,6 +738,22 @@ What:		/sys/.../events/in_magn_z_thresh_rising_period
+ What:		/sys/.../events/in_magn_z_thresh_falling_period
+ What:		/sys/.../events/in_magn_z_roc_rising_period
+ What:		/sys/.../events/in_magn_z_roc_falling_period
++What:		/sys/.../events/in_rot_from_north_magnetic_thresh_rising_period
++What:		/sys/.../events/in_rot_from_north_magnetic_thresh_falling_period
++What:		/sys/.../events/in_rot_from_north_magnetic_roc_rising_period
++What:		/sys/.../events/in_rot_from_north_magnetic_roc_falling_period
++What:		/sys/.../events/in_rot_from_north_true_thresh_rising_period
++What:		/sys/.../events/in_rot_from_north_true_thresh_falling_period
++What:		/sys/.../events/in_rot_from_north_true_roc_rising_period
++What:		/sys/.../events/in_rot_from_north_true_roc_falling_period
++What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_thresh_rising_period
++What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_thresh_falling_period
++What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_roc_rising_period
++What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_roc_falling_period
++What:		/sys/.../events/in_rot_from_north_true_tilt_comp_thresh_rising_period
++What:		/sys/.../events/in_rot_from_north_true_tilt_comp_thresh_falling_period
++What:		/sys/.../events/in_rot_from_north_true_tilt_comp_roc_rising_period
++What:		/sys/.../events/in_rot_from_north_true_tilt_comp_roc_falling_period
+ What:		/sys/.../events/in_voltageY_supply_thresh_rising_period
+ What:		/sys/.../events/in_voltageY_supply_thresh_falling_period
+ What:		/sys/.../events/in_voltageY_supply_roc_rising_period
+@@ -787,6 +851,10 @@ What:		/sys/.../iio:deviceX/scan_elements/in_anglvel_z_en
+ What:		/sys/.../iio:deviceX/scan_elements/in_magn_x_en
+ What:		/sys/.../iio:deviceX/scan_elements/in_magn_y_en
+ What:		/sys/.../iio:deviceX/scan_elements/in_magn_z_en
++What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_magnetic_en
++What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_true_en
++What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_magnetic_tilt_comp_en
++What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_true_tilt_comp_en
+ What:		/sys/.../iio:deviceX/scan_elements/in_timestamp_en
+ What:		/sys/.../iio:deviceX/scan_elements/in_voltageY_supply_en
+ What:		/sys/.../iio:deviceX/scan_elements/in_voltageY_en
+@@ -853,6 +921,10 @@ What:		/sys/.../iio:deviceX/scan_elements/in_anglvel_z_index
+ What:		/sys/.../iio:deviceX/scan_elements/in_magn_x_index
+ What:		/sys/.../iio:deviceX/scan_elements/in_magn_y_index
+ What:		/sys/.../iio:deviceX/scan_elements/in_magn_z_index
++What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_magnetic_index
++What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_true_index
++What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_magnetic_tilt_comp_index
++What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_true_tilt_comp_index
+ What:		/sys/.../iio:deviceX/scan_elements/in_incli_x_index
+ What:		/sys/.../iio:deviceX/scan_elements/in_incli_y_index
+ What:		/sys/.../iio:deviceX/scan_elements/in_timestamp_index
+@@ -933,3 +1005,13 @@ Description:
+ 		x y z w. Here x, y, and z component represents the axis about
+ 		which a rotation will occur and w component represents the
+ 		amount of rotation.
 +
-+	/* dynamically sized array to hold sensor values */
-+	u32 *iio_vals;
-+	/* array of pointers to sensor value */
-+	u32 *magn_val_addr[MAGN_3D_CHANNEL_MAX];
-+
- 	int scale_pre_decml;
- 	int scale_post_decml;
- 	int scale_precision;
-@@ -66,7 +71,6 @@ static const struct iio_chan_spec magn_3d_channels[] = {
- 		BIT(IIO_CHAN_INFO_SCALE) |
- 		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
- 		BIT(IIO_CHAN_INFO_HYSTERESIS),
--		.scan_index = CHANNEL_SCAN_INDEX_X,
- 	}, {
- 		.type = IIO_MAGN,
- 		.modified = 1,
-@@ -76,7 +80,6 @@ static const struct iio_chan_spec magn_3d_channels[] = {
- 		BIT(IIO_CHAN_INFO_SCALE) |
- 		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
- 		BIT(IIO_CHAN_INFO_HYSTERESIS),
--		.scan_index = CHANNEL_SCAN_INDEX_Y,
- 	}, {
- 		.type = IIO_MAGN,
- 		.modified = 1,
-@@ -86,7 +89,6 @@ static const struct iio_chan_spec magn_3d_channels[] = {
- 		BIT(IIO_CHAN_INFO_SCALE) |
- 		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
- 		BIT(IIO_CHAN_INFO_HYSTERESIS),
--		.scan_index = CHANNEL_SCAN_INDEX_Z,
- 	}
- };
- 
-@@ -127,8 +129,8 @@ static int magn_3d_read_raw(struct iio_dev *indio_dev,
- 		msleep_interruptible(poll_value * 2);
- 
- 		report_id =
--			magn_state->magn[chan->scan_index].report_id;
--		address = magn_3d_addresses[chan->scan_index];
-+			magn_state->magn[chan->address].report_id;
-+		address = magn_3d_addresses[chan->address];
- 		if (report_id >= 0)
- 			*val = sensor_hub_input_attr_get_raw_value(
- 				magn_state->common_attributes.hsdev,
-@@ -221,8 +223,8 @@ static int magn_3d_proc_event(struct hid_sensor_hub_device *hsdev,
- 	dev_dbg(&indio_dev->dev, "magn_3d_proc_event\n");
- 	if (atomic_read(&magn_state->common_attributes.data_ready))
- 		hid_sensor_push_data(indio_dev,
--				magn_state->magn_val,
--				sizeof(magn_state->magn_val));
-+				magn_state->iio_vals,
-+				sizeof(magn_state->iio_vals));
- 
- 	return 0;
- }
-@@ -236,52 +238,114 @@ static int magn_3d_capture_sample(struct hid_sensor_hub_device *hsdev,
- 	struct iio_dev *indio_dev = platform_get_drvdata(priv);
- 	struct magn_3d_state *magn_state = iio_priv(indio_dev);
- 	int offset;
--	int ret = -EINVAL;
-+	int ret = 0;
-+	u32 *iio_val = NULL;
- 
- 	switch (usage_id) {
- 	case HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_X_AXIS:
- 	case HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Y_AXIS:
- 	case HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Z_AXIS:
--		offset = usage_id - HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_X_AXIS;
--		magn_state->magn_val[CHANNEL_SCAN_INDEX_X + offset] =
--						*(u32 *)raw_data;
--		ret = 0;
-+		offset = (usage_id - HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_X_AXIS)
-+				+ CHANNEL_SCAN_INDEX_X;
- 	break;
- 	default:
--		break;
-+		return -EINVAL;
- 	}
- 
-+	if (!!(iio_val = magn_state->magn_val_addr[offset]))
-+		*iio_val = *(u32 *)raw_data;
-+	else
-+		ret = -EINVAL;
-+
- 	return ret;
- }
- 
- /* Parse report which is specific to an usage id*/
- static int magn_3d_parse_report(struct platform_device *pdev,
- 				struct hid_sensor_hub_device *hsdev,
--				struct iio_chan_spec *channels,
-+				struct iio_chan_spec **channels,
-+				int *chan_count,
- 				unsigned usage_id,
- 				struct magn_3d_state *st)
- {
--	int ret;
- 	int i;
-+	int attr_count = 0;
-+
-+	/* Scan for each usage attribute supported */
-+	for (i = 0; i < MAGN_3D_CHANNEL_MAX; i++) {
-+		int status;
-+		u32 address = magn_3d_addresses[i];
-+
-+		/* Check if usage attribute exists in the sensor hub device */
-+		status = sensor_hub_input_get_attribute_info(hsdev,
-+			HID_INPUT_REPORT,
-+			usage_id,
-+			address,
-+			&(st->magn[i]));
-+		if (!status)
-+			attr_count++;
-+	}
- 
--	for (i = 0; i <= CHANNEL_SCAN_INDEX_Z; ++i) {
--		ret = sensor_hub_input_get_attribute_info(hsdev,
--				HID_INPUT_REPORT,
--				usage_id,
--				HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_X_AXIS + i,
--				&st->magn[CHANNEL_SCAN_INDEX_X + i]);
--		if (ret < 0)
--			break;
--		magn_3d_adjust_channel_bit_mask(channels,
--				CHANNEL_SCAN_INDEX_X + i,
--				st->magn[CHANNEL_SCAN_INDEX_X + i].size);
-+	if (attr_count <= 0) {
-+		dev_err(&pdev->dev,
-+			"failed to find any supported usage attributes in report\n");
-+		return  -EINVAL;
- 	}
--	dev_dbg(&pdev->dev, "magn_3d %x:%x, %x:%x, %x:%x\n",
-+
-+	dev_dbg(&pdev->dev, "magn_3d Found %d usage attributes\n",
-+			attr_count);
-+	dev_dbg(&pdev->dev, "magn_3d X: %x:%x Y: %x:%x Z: %x:%x\n",
- 			st->magn[0].index,
- 			st->magn[0].report_id,
- 			st->magn[1].index, st->magn[1].report_id,
- 			st->magn[2].index, st->magn[2].report_id);
- 
-+	/* Setup IIO channel array */
-+	*channels = devm_kcalloc(&pdev->dev, attr_count,
-+				sizeof(struct iio_chan_spec),
-+				GFP_KERNEL);
-+	if (!*channels) {
-+		dev_err(&pdev->dev,
-+			"failed to allocate space for iio channels\n");
-+		return -ENOMEM;
-+	}
-+
-+	st->iio_vals = devm_kcalloc(&pdev->dev, attr_count,
-+				sizeof(u32),
-+				GFP_KERNEL);
-+	if (!st->iio_vals) {
-+		dev_err(&pdev->dev,
-+			"failed to allocate space for iio values array\n");
-+		return -ENOMEM;
-+	}
-+
-+	for (i = 0, *chan_count = 0;
-+	i < MAGN_3D_CHANNEL_MAX && *chan_count < attr_count;
-+	i++){
-+		if (st->magn[i].index >= 0) {
-+			/* Setup IIO channel struct */
-+			(*channels[*chan_count]) = magn_3d_channels[i];
-+			(*channels[*chan_count]).scan_index = *chan_count;
-+			(*channels[*chan_count]).address = i;
-+
-+			/* Set magn_val_addr to iio value address */
-+			st->magn_val_addr[i] = &(st->iio_vals[*chan_count]);
-+			magn_3d_adjust_channel_bit_mask(*channels,
-+							*chan_count,
-+							st->magn[i].size);
-+			(*chan_count)++;
-+		}
-+	}
-+
-+	if (*chan_count <= 0) {
-+		dev_err(&pdev->dev,
-+			"failed to find any magnetic channels setup\n");
-+		return -EINVAL;
-+	}
-+
-+	dev_dbg(&pdev->dev, "magn_3d Setup %d IIO channels\n",
-+			*chan_count);
-+
- 	st->scale_precision = hid_sensor_format_scale(
- 				HID_USAGE_SENSOR_COMPASS_3D,
- 				&st->magn[CHANNEL_SCAN_INDEX_X],
-@@ -299,7 +363,7 @@ static int magn_3d_parse_report(struct platform_device *pdev,
- 			st->common_attributes.sensitivity.report_id);
- 	}
- 
--	return ret;
-+	return 0;
- }
- 
- /* Function to initialize the processing for usage id */
-@@ -311,6 +375,7 @@ static int hid_magn_3d_probe(struct platform_device *pdev)
- 	struct magn_3d_state *magn_state;
- 	struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
- 	struct iio_chan_spec *channels;
-+	int chan_count = 0;
- 
- 	indio_dev = devm_iio_device_alloc(&pdev->dev,
- 					  sizeof(struct magn_3d_state));
-@@ -331,22 +396,16 @@ static int hid_magn_3d_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
--	channels = kmemdup(magn_3d_channels, sizeof(magn_3d_channels),
--			   GFP_KERNEL);
--	if (!channels) {
--		dev_err(&pdev->dev, "failed to duplicate channels\n");
--		return -ENOMEM;
--	}
--
--	ret = magn_3d_parse_report(pdev, hsdev, channels,
-+	ret = magn_3d_parse_report(pdev, hsdev,
-+				&channels, &chan_count,
- 				HID_USAGE_SENSOR_COMPASS_3D, magn_state);
- 	if (ret) {
--		dev_err(&pdev->dev, "failed to setup attributes\n");
--		goto error_free_dev_mem;
-+		dev_err(&pdev->dev, "failed to parse report\n");
-+		return ret;
- 	}
- 
- 	indio_dev->channels = channels;
--	indio_dev->num_channels = ARRAY_SIZE(magn_3d_channels);
-+	indio_dev->num_channels = chan_count;
- 	indio_dev->dev.parent = &pdev->dev;
- 	indio_dev->info = &magn_3d_info;
- 	indio_dev->name = name;
-@@ -356,7 +415,7 @@ static int hid_magn_3d_probe(struct platform_device *pdev)
- 		NULL, NULL);
- 	if (ret) {
- 		dev_err(&pdev->dev, "failed to initialize trigger buffer\n");
--		goto error_free_dev_mem;
-+		return ret;
- 	}
- 	atomic_set(&magn_state->common_attributes.data_ready, 0);
- 	ret = hid_sensor_setup_trigger(indio_dev, name,
-@@ -390,8 +449,6 @@ error_remove_trigger:
- 	hid_sensor_remove_trigger(&magn_state->common_attributes);
- error_unreg_buffer_funcs:
- 	iio_triggered_buffer_cleanup(indio_dev);
--error_free_dev_mem:
--	kfree(indio_dev->channels);
- 	return ret;
- }
- 
-@@ -406,7 +463,6 @@ static int hid_magn_3d_remove(struct platform_device *pdev)
- 	iio_device_unregister(indio_dev);
- 	hid_sensor_remove_trigger(&magn_state->common_attributes);
- 	iio_triggered_buffer_cleanup(indio_dev);
--	kfree(indio_dev->channels);
- 
- 	return 0;
- }
++What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_magnetic_tilt_comp_raw
++What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_true_tilt_comp_raw
++What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_magnetic_raw
++What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_true_raw
++KernelVersion:	3.15
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Raw value of rotation from true/magnetic north measured with
++		or without compensation from tilt sensors.
 -- 
 1.9.3
 
