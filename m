@@ -1,104 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754979AbaGII3M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 04:29:12 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.163]:22216 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751294AbaGII3I (ORCPT
+	id S1755257AbaGII3d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 04:29:33 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:27921 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752301AbaGII3J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 04:29:08 -0400
-X-Env-Sender: James.Ban.opensource@diasemi.com
-X-Msg-Ref: server-7.tower-39.messagelabs.com!1404894545!26125309!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-Date: Wed, 9 Jul 2014 17:28:59 +0900
-Message-ID: <201407090828.s698SxPD017842@krsrvapps-01.diasemi.com>
-From: James Ban <james.ban.opensource@diasemi.com>
-Subject: Re: [PATCH V4] regulator: DA9211 : new regulator driver
-To: Mark Brown <broonie@kernel.org>
-CC: Liam Girdwood <lgirdwood@gmail.com>,
-        Support Opensource <support.opensource@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "David Dajun Chen" <david.chen@diasemi.com>
+	Wed, 9 Jul 2014 04:29:09 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/L4I8eriW0sIg1+URUfijP
+Date: Wed, 9 Jul 2014 01:29:07 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Suman Anna <s-anna@ti.com>
+Cc: Pavel Machek <pavel@ucw.cz>, Jassi Brar <jaswinder.singh@linaro.org>,
+        Dave Gerlach <d-gerlach@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [PATCH 2/6] mailbox/omap: add support for parsing dt devices
+Message-ID: <20140709082906.GG28884@atomide.com>
+References: <1403660878-56350-3-git-send-email-s-anna@ti.com>
+ <20140628170709.GB23634@xo-6d-61-c0.localdomain>
+ <53B18999.2020506@ti.com>
+ <20140630185942.GA5410@amd.pavel.ucw.cz>
+ <53B1BBA8.5090507@ti.com>
+ <20140630203225.GA3893@amd.pavel.ucw.cz>
+ <20140704064547.GZ28884@atomide.com>
+ <20140704080556.GA16274@amd.pavel.ucw.cz>
+ <20140704082354.GD28884@atomide.com>
+ <53BC3081.9010402@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53BC3081.9010402@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Mark Brown [mailto:broonie@kernel.org]
-> Sent: Wednesday, July 09, 2014 4:57 PM
-> To: Opensource [James Seong-Won Ban]
-> Cc: Liam Girdwood; Support Opensource; LKML; David Dajun Chen
-> Subject: Re: your mail
+* Suman Anna <s-anna@ti.com> [140708 10:57]:
+> Hi Tony, Pavel,
 > 
-> On Wed, Jul 09, 2014 at 10:03:32AM +0900, James Ban wrote:
+> On 07/04/2014 03:23 AM, Tony Lindgren wrote:
+> > * Pavel Machek <pavel@ucw.cz> [140704 01:07]:
+> >> Hi!
+> >>
+> >>>>>>>>> The non-DT support has to be maintained for now to not break
+> >>>>>>>>> OMAP3 legacy boot, and the legacy-style code will be cleaned
+> >>>>>>>>> up once OMAP3 is also converted to DT-boot only.
+> >>>>>>>>
+> >>>>>>>>> @@ -587,24 +606,157 @@ static int omap_mbox_unregister(struct omap_mbox_device *mdev)
+> >>>>>>>>>  	return 0;
+> >>>>>>>>>  }
+> >>>>>>>>>  
+> >>>>>>>>> +static const struct omap_mbox_device_data omap2_data = {
+> >>>>>>>>> +	.num_users	= 4,
+> >>>>>>>>> +	.num_fifos	= 6,
+> >>>>>>>>> +	.intr_type	= MBOX_INTR_CFG_TYPE1,
+> >>>>>>>>> +};
+> >>>>>>>>> +
+> >>>>>>>>> +static const struct omap_mbox_device_data omap3_data = {
+> >>>>>>>>> +	.num_users	= 2,
+> >>>>>>>>> +	.num_fifos	= 2,
+> >>>>>>>>> +	.intr_type	= MBOX_INTR_CFG_TYPE1,
+> >>>>>>>>> +};
+> >>>>>>>>> +
+> >>>>>>>>> +static const struct omap_mbox_device_data am335x_data = {
+> >>>>>>>>> +	.num_users	= 4,
+> >>>>>>>>> +	.num_fifos	= 8,
+> >>>>>>>>> +	.intr_type	= MBOX_INTR_CFG_TYPE2,
+> >>>>>>>>> +};
+> >>>>>>>>
+> >>
+> >>>> Aha, ok, then the intr_type should be derived from
+> >>>> compatible-string. Or rather... you should have three
+> >>>> compatible-strings for the three possibilities? (And then subtype,
+> >>>> currently unused, in case there are more hw differences).
+> >>>
+> >>> The compatible string can and should be separate for each revision
+> >>> unless they are the same exacat hardware revision.
+> >>
+> >> ACK.
 > 
-> > > > +	ret = regmap_read(chip->regmap, DA9211_REG_EVENT_B, &reg_val);
-> > > > +	if (ret < 0)
-> > > > +		goto error_i2c;
+> I checked the revision register from all SoCs. OMAP2 and OMAP3 have
+> different revisions compared to OMAP4+. All of OMAP4, OMAP5, DRA7,
+> AM335x and AM437x have the same version, but with different num-fifos
+> and num-users.  So, I can switch back to using omap4-mailbox for all of
+> these SoCs only if we encode the num-fifos and num-users in DT.
 > 
-> > > > +	if (reg_val & DA9211_E_OV_CURR_A) {
+> >>
+> >>>>> two are HW IP design parameters, so in general putting them in DT isn't
+> >>>>> completely a bad idea, but I will wait to see if there are any further
+> >>>>> comments on this from Tony or DT maintainers before I make changes.
+> >>>>
+> >>>> Ok, right... I'd vote for putting them into DT.
+> >>>
+> >>> I would avoid adding custom DT properties where possible and let the
+> >>> driver just initialize the right data based on the compatible flag.
+> >>
+> >> If these are HW IP design parameters, we can expect to see many
+> >> different combinations. Yet we know ahead of time how to handle
+> >> different parameters HW people select.
 > 
-> > > > +	if (reg_val & DA9211_E_OV_CURR_B) {
+> That's right, the above OMAP4+ SoCs already demonstrate this behavior.
 > 
-> > > > +	return IRQ_HANDLED;
+> >>
+> >> Thus IMO we should do it in the device tree.
+> > 
+> > Oh you mean from supporting new hardware with just .dts changes?
+> > From that point of view it makes sense to have them as DT properties,
+> > so I'm fine with that.
+> > 
+> > Let's just try to use something that's generic like fifosize. No idea
+> > how the property for num_fifos should be handled though as that
+> > implies some knowledge in the driver which num_users have fifos?
 > 
-> > > This is buggy - the driver should only return IRQ_HANDLED if it
-> > > handled the interrupt somehow, otherwise it should return IRQ_NONE
-> > > and let the interrupt core handle things.  This is especially
-> > > important since the device appears to require that interrupts are
-> > > explicitly acknoweldged so if something is flagged but not handled the
-> interrupt will just sit constantly asserted.
-> 
-> > Basically all interrupts are masked when the chip wakes up.
-> > Only two interrupts are unmasked at the start of driver like below.
-> 
-> I know that's the intention but the code should still be written robustly -
-> something might go wrong somewhere which causes another interrupt to be
-> enabled, or we might even gain support for shared threaded interrupts in the
-> interrupt core and someone could then try to use that in a system.
-How about below code for proper handle of interrupt?
-static irqreturn_t da9211_irq_handler(int irq, void *data)
-{
-	struct da9211 *chip = data;
-	int reg_val, ret;
+> The fifos are not per num_users, but rather the total number of fifos
+> within the IP block. The num_users will be the number of targets the IP
+> block can interrupt. I tried looking for generic properties, but there
+> weren't any that seem to fit the description. If you want generic names,
+> I can use num-fifos and num-users, otherwise will stick to the
+> names defined in the previous series.
 
-	ret = regmap_read(chip->regmap, DA9211_REG_EVENT_B, &reg_val);
-	if (ret < 0)
-		goto error_i2c;
+OK since we already have some .dts entries with ti,mbox-num-fifos and
+ti,mbox-num-users I'd use those for now. Adding parsing for a generic
+property can be done later on.
 
-	if (reg_val & DA9211_E_OV_CURR_A) {
-		regulator_notifier_call_chain(chip->rdev[0],
-			REGULATOR_EVENT_OVER_CURRENT,
-			rdev_get_drvdata(chip->rdev[0]));
+> > So unless that can be described clearly in a DT property as well,
+> > the binding might be still unusable for new hardware :)
+> > 
+> 
+> I don't expect the OMAP mailbox IP to change much in the future. There
+> is a FIFO depth parameter as well, but that's constant in all the
+> current versions, and even if they change it, I can already use the
+> generic property for that.
 
-		ret = regmap_write(chip->regmap, DA9211_REG_EVENT_B,
-			DA9211_E_OV_CURR_A);
-		if (ret < 0)
-			goto error_i2c;
+OK
+ 
+> Tony,
+> Depending on the agreement here, I may have to respin the OMAP
+> mailbox DT/hwmod cleanup series [1]
 
-		return IRQ_HANDLED;
-	}
-	else if (reg_val & DA9211_E_OV_CURR_B) {
-		regulator_notifier_call_chain(chip->rdev[1],
-			REGULATOR_EVENT_OVER_CURRENT,
-			rdev_get_drvdata(chip->rdev[1]));
+OK let me know.
 
-		ret = regmap_write(chip->regmap, DA9211_REG_EVENT_B,
-			DA9211_E_OV_CURR_B);
-		if (ret < 0)
-			goto error_i2c;
+Regards,
 
-		return IRQ_HANDLED;
-	}
-	else
-		return IRQ_NONE;
-
-error_i2c:
-	dev_err(chip->dev, "I2C error : %d\n", ret);
-	return IRQ_NONE;
-}
+Tony
+ 
+> [1] http://marc.info/?l=linux-omap&m=140365833121612&w=2
+> 
