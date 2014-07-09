@@ -1,189 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396AbaGILVc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 07:21:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41695 "EHLO mx2.suse.de"
+	id S1754479AbaGILYY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 07:24:24 -0400
+Received: from mout.gmx.net ([212.227.17.21]:61027 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752198AbaGILV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 07:21:29 -0400
-Message-ID: <53BD25B7.9040302@suse.de>
-Date: Wed, 09 Jul 2014 13:21:27 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1750739AbaGILYX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 07:24:23 -0400
+From: Jan-Simon =?ISO-8859-1?Q?M=F6ller?= <dl9pf@gmx.de>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "behanw@converseincode.com" <behanw@converseincode.com>,
+        "anurag19aggarwal@gmail.com" <anurag19aggarwal@gmail.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "charlebm@gmail.com" <charlebm@gmail.com>,
+        "dave.long@linaro.org" <dave.long@linaro.org>,
+        "k.khlebnikov@samsung.com" <k.khlebnikov@samsung.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linyongting@gmail.com" <linyongting@gmail.com>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rabin@rab.in" <rabin@rab.in>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>
+Subject: Re: [PATCH 0/6] LLVMLinux: Patches to enable the kernel to be compiled with clang/LLVM
+Date: Wed, 09 Jul 2014 13:24:04 +0200
+Message-ID: <1485533.R9kdQa9l1r@aragorn>
+User-Agent: KMail/4.13.2 (Linux/3.11.10-7-desktop; KDE/4.13.2; x86_64; ; )
+In-Reply-To: <20140709095718.GD9485@arm.com>
+References: <1404850576-2006-1-git-send-email-behanw@converseincode.com> <20140709095718.GD9485@arm.com>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
-        Robert Elliott <Elliott@hp.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 12/14] scatterlist: allow chaining to preallocated chunks
-References: <1403715121-1201-1-git-send-email-hch@lst.de> <1403715121-1201-13-git-send-email-hch@lst.de>
-In-Reply-To: <1403715121-1201-13-git-send-email-hch@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:cR4uAPFN7fjsKAsJyp0MvhRGqL+QAtQDx0z3xf1ola+QQWD4hKw
+ JDIQYMcU5RKRq/5vtkVPYQ1yFxeRgslX0RHsTfJJa5mSgE1XKIxUwpnqXPmw4rQPrDrDqu4
+ 3kbqHtRQ2U8tU1kwEOjCCOlcBITmhk7/OcFBWulb09hYov1n1TTAf5veNj85q9ocnV/oI0O
+ 3SQkJH+AQt+hLtssEUkpg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2014 06:51 PM, Christoph Hellwig wrote:
-> Blk-mq drivers usually preallocate their S/G list as part of the request,
-> but if we want to support the very large S/G lists currently supported by
-> the SCSI code that would tie up a lot of memory in the preallocated request
-> pool.  Add support to the scatterlist code so that it can initialize a
-> S/G list that uses a preallocated first chunks and dynamically allocated
-> additional chunks.  That way the scsi-mq code can preallocate a first
-> page worth of S/G entries as part of the request, and dynamically extent
-> the S/G list when needed.
->
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
-> ---
->   drivers/scsi/scsi_lib.c     |   16 +++++++---------
->   include/linux/scatterlist.h |    6 +++---
->   lib/scatterlist.c           |   24 ++++++++++++++++--------
->   3 files changed, 26 insertions(+), 20 deletions(-)
->
-> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-> index 58534fd..900b1c0 100644
-> --- a/drivers/scsi/scsi_lib.c
-> +++ b/drivers/scsi/scsi_lib.c
-> @@ -567,6 +567,11 @@ static struct scatterlist *scsi_sg_alloc(unsigned int nents, gfp_t gfp_mask)
->   	return mempool_alloc(sgp->pool, gfp_mask);
->   }
->
-> +static void scsi_free_sgtable(struct scsi_data_buffer *sdb)
-> +{
-> +	__sg_free_table(&sdb->table, SCSI_MAX_SG_SEGMENTS, false, scsi_sg_free);
-> +}
-> +
->   static int scsi_alloc_sgtable(struct scsi_data_buffer *sdb, int nents,
->   			      gfp_t gfp_mask)
->   {
-> @@ -575,19 +580,12 @@ static int scsi_alloc_sgtable(struct scsi_data_buffer *sdb, int nents,
->   	BUG_ON(!nents);
->
->   	ret = __sg_alloc_table(&sdb->table, nents, SCSI_MAX_SG_SEGMENTS,
-> -			       gfp_mask, scsi_sg_alloc);
-> +			       NULL, gfp_mask, scsi_sg_alloc);
->   	if (unlikely(ret))
-> -		__sg_free_table(&sdb->table, SCSI_MAX_SG_SEGMENTS,
-> -				scsi_sg_free);
-> -
-> +		scsi_free_sgtable(sdb);
->   	return ret;
->   }
->
-> -static void scsi_free_sgtable(struct scsi_data_buffer *sdb)
-> -{
-> -	__sg_free_table(&sdb->table, SCSI_MAX_SG_SEGMENTS, scsi_sg_free);
-> -}
-> -
->   /*
->    * Function:    scsi_release_buffers()
->    *
-> diff --git a/include/linux/scatterlist.h b/include/linux/scatterlist.h
-> index a964f72..f4ec8bb 100644
-> --- a/include/linux/scatterlist.h
-> +++ b/include/linux/scatterlist.h
-> @@ -229,10 +229,10 @@ void sg_init_one(struct scatterlist *, const void *, unsigned int);
->   typedef struct scatterlist *(sg_alloc_fn)(unsigned int, gfp_t);
->   typedef void (sg_free_fn)(struct scatterlist *, unsigned int);
->
-> -void __sg_free_table(struct sg_table *, unsigned int, sg_free_fn *);
-> +void __sg_free_table(struct sg_table *, unsigned int, bool, sg_free_fn *);
->   void sg_free_table(struct sg_table *);
-> -int __sg_alloc_table(struct sg_table *, unsigned int, unsigned int, gfp_t,
-> -		     sg_alloc_fn *);
-> +int __sg_alloc_table(struct sg_table *, unsigned int, unsigned int,
-> +		     struct scatterlist *, gfp_t, sg_alloc_fn *);
->   int sg_alloc_table(struct sg_table *, unsigned int, gfp_t);
->   int sg_alloc_table_from_pages(struct sg_table *sgt,
->   	struct page **pages, unsigned int n_pages,
-> diff --git a/lib/scatterlist.c b/lib/scatterlist.c
-> index 3a8e8e8..48c15d2 100644
-> --- a/lib/scatterlist.c
-> +++ b/lib/scatterlist.c
-> @@ -165,6 +165,7 @@ static void sg_kfree(struct scatterlist *sg, unsigned int nents)
->    * __sg_free_table - Free a previously mapped sg table
->    * @table:	The sg table header to use
->    * @max_ents:	The maximum number of entries per single scatterlist
-> + * @skip_first_chunk: don't free the (preallocated) first scatterlist chunk
->    * @free_fn:	Free function
->    *
->    *  Description:
-> @@ -174,7 +175,7 @@ static void sg_kfree(struct scatterlist *sg, unsigned int nents)
->    *
->    **/
->   void __sg_free_table(struct sg_table *table, unsigned int max_ents,
-> -		     sg_free_fn *free_fn)
-> +		     bool skip_first_chunk, sg_free_fn *free_fn)
->   {
->   	struct scatterlist *sgl, *next;
->
-> @@ -202,7 +203,9 @@ void __sg_free_table(struct sg_table *table, unsigned int max_ents,
->   		}
->
->   		table->orig_nents -= sg_size;
-> -		free_fn(sgl, alloc_size);
-> +		if (!skip_first_chunk)
-> +			free_fn(sgl, alloc_size);
-> +		skip_first_chunk = false;
->   		sgl = next;
->   	}
->
-> @@ -217,7 +220,7 @@ EXPORT_SYMBOL(__sg_free_table);
->    **/
->   void sg_free_table(struct sg_table *table)
->   {
-> -	__sg_free_table(table, SG_MAX_SINGLE_ALLOC, sg_kfree);
-> +	__sg_free_table(table, SG_MAX_SINGLE_ALLOC, false, sg_kfree);
->   }
->   EXPORT_SYMBOL(sg_free_table);
->
-> @@ -241,8 +244,8 @@ EXPORT_SYMBOL(sg_free_table);
->    *
->    **/
->   int __sg_alloc_table(struct sg_table *table, unsigned int nents,
-> -		     unsigned int max_ents, gfp_t gfp_mask,
-> -		     sg_alloc_fn *alloc_fn)
-> +		     unsigned int max_ents, struct scatterlist *first_chunk,
-> +		     gfp_t gfp_mask, sg_alloc_fn *alloc_fn)
->   {
->   	struct scatterlist *sg, *prv;
->   	unsigned int left;
-> @@ -269,7 +272,12 @@ int __sg_alloc_table(struct sg_table *table, unsigned int nents,
->
->   		left -= sg_size;
->
-> -		sg = alloc_fn(alloc_size, gfp_mask);
-> +		if (first_chunk) {
-> +			sg = first_chunk;
-> +			first_chunk = NULL;
-> +		} else {
-> +			sg = alloc_fn(alloc_size, gfp_mask);
-> +		}
->   		if (unlikely(!sg)) {
->   			/*
->   			 * Adjust entry count to reflect that the last
-> @@ -324,9 +332,9 @@ int sg_alloc_table(struct sg_table *table, unsigned int nents, gfp_t gfp_mask)
->   	int ret;
->
->   	ret = __sg_alloc_table(table, nents, SG_MAX_SINGLE_ALLOC,
-> -			       gfp_mask, sg_kmalloc);
-> +			       NULL, gfp_mask, sg_kmalloc);
->   	if (unlikely(ret))
-> -		__sg_free_table(table, SG_MAX_SINGLE_ALLOC, sg_kfree);
-> +		__sg_free_table(table, SG_MAX_SINGLE_ALLOC, false, sg_kfree);
->
->   	return ret;
->   }
->
-Reviewed-by: Hannes Reinecke <hare@suse.de>
+Hi Will,
 
-Cheers,
 
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+> BTW, have you tried building an arm64 kernel with clang?
+
+ragarding arm64: yes, there is a test target already - see  
+http://git.linuxfoundation.org/?p=llvmlinux.git;a=tree;f=targets/vexpress64
+
+Reproduce with:
+git clone http://git.linuxfoundation.org/llvmlinux.git
+cd llvmlinux/targets/vexpress64
+make
+
+
+Best,
+Jan-Simon
+
+
