@@ -1,49 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442AbaGIKMW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 06:12:22 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.160]:46929 "EHLO
-	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993AbaGIKMU (ORCPT
+	id S1755269AbaGIKOL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 06:14:11 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:34642 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754412AbaGIKOJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 06:12:20 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWi/zfN1cLnBYfssBY9SQMKk8kCovkkmJbh+VP2spQG3tvMeGW7W
-X-RZG-CLASS-ID: mo00
-Date: Wed, 9 Jul 2014 12:12:15 +0200
-From: Olaf Hering <olaf@aepfle.de>
-To: Vitaly Kuznetsov <vkuznets@redhat.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, xen-devel@lists.xenproject.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH] mmap_vmcore: skip non-ram pages reported by
- hypervisors
-Message-ID: <20140709101215.GA31182@aepfle.de>
-References: <1404745549-16023-1-git-send-email-vkuznets@redhat.com>
- <20140708191159.GA17746@redhat.com>
- <87mwciooe7.fsf@vitty.brq.redhat.com>
+	Wed, 9 Jul 2014 06:14:09 -0400
+From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        sanjeev sharma <sanjeevsharmaengg@gmail.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "peter.senna@gmail.com" <peter.senna@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rmfrfs@gmail.com" <rmfrfs@gmail.com>,
+        "teobaluta@gmail.com" <teobaluta@gmail.com>
+Subject: RE: [PATCH v2 1/4] staging: rtl8192u: Remove useless return
+ statement in r819xU_phy.c
+Thread-Topic: [PATCH v2 1/4] staging: rtl8192u: Remove useless return
+ statement in r819xU_phy.c
+Thread-Index: AQHPmzoE2xF1VKdhOEKbJTxgsZWmZZuXUw+AgAAuJOA=
+Date: Wed, 9 Jul 2014 10:14:04 +0000
+Message-ID: <FDC088D3B5555644AE135ED28A7ABDE938EF8E4A@EU-MBX-04.mgc.mentorg.com>
+References: <20140708100142.GR25934@mwanda>
+ <1404885860-19468-1-git-send-email-sanjeevsharmaengg@gmail.com>
+ <1404885860-19468-2-git-send-email-sanjeevsharmaengg@gmail.com>
+ <20140709080943.GT25880@mwanda>
+In-Reply-To: <20140709080943.GT25880@mwanda>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [137.202.0.76]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <87mwciooe7.fsf@vitty.brq.redhat.com>
-User-Agent: Mutt/1.5.22.rev6346 (2013-10-29)
+X-OriginalArrivalTime: 09 Jul 2014 10:14:06.0923 (UTC) FILETIME=[847FC1B0:01CF9B5E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, Vitaly Kuznetsov wrote:
-
-> > Also I am wondering why it was not done as part of copy_oldmem_page()
-> > so that respective arch could hide all the details.
-> Afaiac that wouldn't solve the mmap issue I'm trying to address but we
-> can ask Olaf why he preferred pfn_is_ram() path.
-
-Every copy_oldmem_page would need to know about the pfn_is_ram function,
-so I think its better to keep that part of the code private to
-fs/proc/vmcore.c
-
-Perhaps pfn_is_ram could be named pfn_is_backed_by_ram, but the comments
-make it clear what the function does.
+Thanks Dan,
 
 
-Olaf
+-----Original Message-----
+From: Dan Carpenter [mailto:dan.carpenter@oracle.com] 
+Sent: Wednesday, July 09, 2014 1:40 PM
+To: sanjeev sharma
+Cc: gregkh@linuxfoundation.org; devel@driverdev.osuosl.org; peter.senna@gmail.com; linux-kernel@vger.kernel.org; rmfrfs@gmail.com; teobaluta@gmail.com; Sharma, Sanjeev
+Subject: Re: [PATCH v2 1/4] staging: rtl8192u: Remove useless return statement in r819xU_phy.c
+
+These patches look ok now.  The only thing is that the changelogs are a little off.
+
+On Wed, Jul 09, 2014 at 11:34:17AM +0530, sanjeev sharma wrote:
+> From: sanjeev sharma <sanjeev_sharma@mentor.com>
+
+Don't use the From header unless you are sending patches on behalf of someone else.  It's better if you can configure your email client so you can send the patches from your @mentor.com address.  It would be better if the names were capitalized.
+
+I will take care for future patches and configure email client by using mentor address.
+
+> 
+> This is a patch to the r819xU_phy.c file that remove unneeded return statements in code.
+
+Please line wrap the changelog at 72 characters (the same as email).
+Otherwise Greg sometimes fixes them manually...
+
+But the patches themselves are nice now.
+
+@Greg.,@Dan: Is it Ok if this can be taken care in future.
+
+regards,
+dan carpenter
+
