@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526AbaGIMIT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 08:08:19 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:33791 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755276AbaGIMIP (ORCPT
+	id S1755613AbaGIMIg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 08:08:36 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:59375 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754779AbaGIMIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 08:08:15 -0400
-From: sanjeev sharma <sanjeevsharmaengg@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: rmfrfs@gmail.com, peter.senna@gmail.com, teobaluta@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        sanjeev sharma <sanjeev_sharma@mentor.com>,
-        Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
-Subject: [PATCH v3 4/4] staging: rtl8192u: Fixed too long lines
-Date: Wed,  9 Jul 2014 17:49:42 +0530
-Message-Id: <1404908382-7043-5-git-send-email-sanjeevsharmaengg@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1404908382-7043-1-git-send-email-sanjeevsharmaengg@gmail.com>
-References: <20140708100142.GR25934@mwanda>
- <1404908382-7043-1-git-send-email-sanjeevsharmaengg@gmail.com>
+	Wed, 9 Jul 2014 08:08:30 -0400
+Date: Wed, 9 Jul 2014 13:08:23 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: kernel@stlinux.com, ajitpal.singh@st.com, edubezval@gmail.com,
+        rui.zhang@intel.com, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, maxime.coquelin@st.com,
+        patrice.chotard@st.com
+Subject: Re: [RESEND PATCH 0/6] thermal: sti: Add new Thermal driver
+Message-ID: <20140709120823.GA32573@lee--X1>
+References: <1401980819-19962-1-git-send-email-lee.jones@linaro.org>
+ <20140624092309.GD13803@lee--X1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140624092309.GD13803@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: sanjeev sharma <sanjeev_sharma@mentor.com>
+On Tue, 24 Jun 2014, Lee Jones wrote:
 
-This patch will fix too long lines warning
-reported by checkpatch.pl.
+> > I'm re-sending this set, as one of the maintainers' email addresses
+> > is incorrect in the MAINTAINERS file.
+> > 
+> > This patchset adds full support for 2 types of Thermal Controllers
+> > produced by STMicroelectronics.  One is a more traditional memory
+> > mapped variant, the other is controlled solely by system configuration
+> > registers.
+> 
+> Any thing from the Thermal guys? Has this set fallen through the gaps?
 
-Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
----
- drivers/staging/rtl8192u/r819xU_phy.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+Anything at all?  It's been well over a month now.
 
-diff --git a/drivers/staging/rtl8192u/r819xU_phy.c b/drivers/staging/rtl8192u/r819xU_phy.c
-index 3155616..1ea3a4e 100644
---- a/drivers/staging/rtl8192u/r819xU_phy.c
-+++ b/drivers/staging/rtl8192u/r819xU_phy.c
-@@ -1236,7 +1236,8 @@ static u8 rtl8192_phy_SetSwChnlCmdArray(SwChnlCmd *CmdTable, u32 CmdTableIdx,
- 		return false;
- 	}
- 	if (CmdTableIdx >= CmdTableSz) {
--		RT_TRACE(COMP_ERR, "%s(): Access invalid index, please check size of the table, CmdTableIdx:%d, CmdTableSz:%d\n",
-+		RT_TRACE(COMP_ERR,
-+			 "%s():invalid index,CmdTableIdx:%d, CmdTableSz:%d\n",
- 			 __func__, CmdTableIdx, CmdTableSz);
- 		return false;
- 	}
-@@ -1697,7 +1698,8 @@ void InitialGain819xUsb(struct net_device *dev,	u8 Operation)
- 	priv->InitialGainOperateType = Operation;
- 
- 	if (priv->up)
--		queue_delayed_work(priv->priv_wq, &priv->initialgain_operate_wq, 0);
-+		queue_delayed_work(priv->priv_wq,
-+				   &priv->initialgain_operate_wq, 0);
- }
- 
- void InitialGainOperateWorkItemCallBack(struct work_struct *work)
-@@ -1786,7 +1788,9 @@ void InitialGainOperateWorkItemCallBack(struct work_struct *work)
- 		RT_TRACE(COMP_SCAN, "Scan BBInitialGainRestore 0xa0a is %x\n",
- 			 priv->initgain_backup.cca);
- 
--		rtl8192_phy_setTxPower(dev, priv->ieee80211->current_network.channel);
-+		rtl8192_phy_setTxPower(dev,
-+					priv->ieee80211->current_network.channel
-+				       );
- 
- 		if (dm_digtable.dig_algorithm == DIG_ALGO_BY_FALSE_ALARM)
- 			/* FW DIG ON */
+> >  Documentation/devicetree/bindings/thermal/st-thermal.txt |  42 ++++++++++++++++
+> >  arch/arm/boot/dts/stih416.dtsi                           |  18 +++++++
+> >  arch/arm/configs/multi_v7_defconfig                      |   2 +
+> >  drivers/thermal/Kconfig                                  |   5 ++
+> >  drivers/thermal/Makefile                                 |   1 +
+> >  drivers/thermal/st/Kconfig                               |  12 +++++
+> >  drivers/thermal/st/Makefile                              |   3 ++
+> >  drivers/thermal/st/st_thermal.c                          | 313 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> > ++++++++++++++++++++++++++++
+> >  drivers/thermal/st/st_thermal.h                          | 104 ++++++++++++++++++++++++++++++++++++++
+> >  drivers/thermal/st/st_thermal_memmap.c                   | 209 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> >  drivers/thermal/st/st_thermal_syscfg.c                   | 179 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> >  11 files changed, 888 insertions(+)
+> > 
+> 
+
 -- 
-1.7.11.7
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
