@@ -1,132 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583AbaGIPHR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 11:07:17 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48300 "EHLO
+	id S1756963AbaGIPh5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 11:37:57 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48312 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751542AbaGIPHP (ORCPT
+	with ESMTP id S1755218AbaGIPHR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 11:07:15 -0400
+	Wed, 9 Jul 2014 11:07:17 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>
 Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Boris Brezillon <boris.brezillon@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Gregory Hermant <gregory.hermant@calao-systems.com>,
-        Joachim Eastwood <manabian@gmail.com>,
-        Fabio Porcedda <fabio.porcedda@gmail.com>,
-        Tim Schendekehl <tim.schendekehl@egnite.de>,
-        Gael Portay <g.portay@overkiz.com>,
-        Rodolfo Giometti <giometti@linux.it>
-Subject: [PATCHv3 00/34] ARM: at91: Switch remaining SoCs and boards to CCF
-Date: Wed,  9 Jul 2014 17:06:28 +0200
-Message-Id: <1404918422-7562-1-git-send-email-alexandre.belloni@free-electrons.com>
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv3 02/34] ARM: at91/dt: ariag25: define crystals frequencies
+Date: Wed,  9 Jul 2014 17:06:30 +0200
+Message-Id: <1404918422-7562-3-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404918422-7562-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1404918422-7562-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set adds support for the common clock framwork to the remaining atml
-SoCs: at91rm9200, at91sam9260, at91sam9263, at91sam9g45.
+Define Acme Systems Aria G25 board main and slow crystals frequencies.
 
-It also defines the necessary main crystal and slow crystal frequencies.
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/boot/dts/at91-ariag25.dts | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-I couldn't find datasheets for the following boards:
- - mpa1600
- - animeo_ip
-
-For those, I assumed the 32kHz crystal is present on the board as this is the
-most common implementation (only one board doesn't have it). Please correct me
-if this is wrong.
-
-I could not test at91rm9200 as I don't own any board with that chip.
-
-Changes in v3:
- - add ddrck in ramc for sam9g45
- - move slow_xtal from ge863-pro3.dtsi to the board dts
-
-Changes in v2:
- - Drop patch 3 that has been taken in the clock tree
- - rename tcb*_clk in tc*_clk for rm9200 an sam9260
- - rename tc0_clk in tcb_clk for sam9263
-
-Cc: Gregory Hermant <gregory.hermant@calao-systems.com>
-Cc: Joachim Eastwood <manabian@gmail.com>
-Cc: Fabio Porcedda <fabio.porcedda@gmail.com>
-Cc: Tim Schendekehl <tim.schendekehl@egnite.de>
-Cc: Gael Portay <g.portay@overkiz.com>
-Cc: Rodolfo Giometti <giometti@linux.it>
-
-Alexandre Belloni (34):
-  Documentation: dt: document all the atmel pmc compatibles
-  ARM: at91/dt: ariag25: define crystals frequencies
-  ARM: at91: prepare common clk transition for rm9200
-  ARM: at91/dt: rm9200: define clocks
-  ARM: at91: move at91rm9200 SoC to the CCF
-  ARM: at91/dt: at91rm9200ek: define crystals frequencies
-  ARM: at91: prepare common clk transition for sam9260
-  ARM: at91/dt: sam9260: define clocks
-  ARM: at91/dt: sam9g20: define clocks
-  ARM: at91: move at91sam9260 SoCs to the CCF
-  ARM: at91/dt: at91sam9g20ek: define crystals frequencies
-  ARM: at91/dt: foxg20: define crystals frequencies
-  ARM: at91/dt: usb_a9260: define crystals frequencies
-  ARM: at91/dt: tny_a9260: define crystals frequencies
-  ARM: at91/dt: qil_a9260: define crystals frequencies
-  ARM: at91/dt: mpa1600: define crytals frequencies
-  ARM: at91/dt: ge863-pro3: define main crystal frequency
-  ARM: at91/dt: aks-cdu: define slow crytal frequency
-  ARM: at91/dt: evk-pro3: define slow crytal frequency
-  ARM: at91/dt: ethernut5: define crystals frequencies
-  ARM: at91/dt: animeo_ip: define crystals frequencies
-  ARM: at91/dt: kizbox: define main crystal frequency
-  ARM: at91: prepare common clk transition for sam9g45
-  ARM: at91/dt: sam9g45: define clocks
-  ARM: at91: move at91sam9g45 SoC to the CCF
-  ARM: at91/dt: sam9m10g45ek: define crystals frequencies
-  ARM: at91/dt: pm9g45: crystals frequencies
-  ARM: at91/dt: cosino define crystals frequencies
-  ARM: at91: prepare common clk transition for sam9263
-  ARM: at91/dt: sam9263: define clocks
-  ARM: at91: move at91sam9263 SoC to the CCF
-  ARM: at91/dt: sam9263ek: define crystals frequencies
-  ARM: at91/dt: tny_a9263: define crystals frequencies
-  ARM: at91/dt: usb_a9263: define crystals frequencies
-
- .../devicetree/bindings/arm/atmel-pmc.txt          |   5 +-
- arch/arm/boot/dts/aks-cdu.dts                      |   6 +
- arch/arm/boot/dts/animeo_ip.dts                    |   8 +
- arch/arm/boot/dts/at91-ariag25.dts                 |   8 +
- arch/arm/boot/dts/at91-cosino.dtsi                 |   8 +
- arch/arm/boot/dts/at91-foxg20.dts                  |   8 +
- arch/arm/boot/dts/at91-qil_a9260.dts               |   8 +
- arch/arm/boot/dts/at91rm9200.dtsi                  | 304 ++++++++++++++++++
- arch/arm/boot/dts/at91rm9200ek.dts                 |   8 +
- arch/arm/boot/dts/at91sam9260.dtsi                 | 314 ++++++++++++++++++-
- arch/arm/boot/dts/at91sam9263.dtsi                 | 311 +++++++++++++++++++
- arch/arm/boot/dts/at91sam9263ek.dts                |   8 +
- arch/arm/boot/dts/at91sam9g20.dtsi                 |  24 ++
- arch/arm/boot/dts/at91sam9g20ek_common.dtsi        |   8 +
- arch/arm/boot/dts/at91sam9g45.dtsi                 | 342 ++++++++++++++++++++-
- arch/arm/boot/dts/at91sam9m10g45ek.dts             |   8 +
- arch/arm/boot/dts/ethernut5.dts                    |  10 +
- arch/arm/boot/dts/evk-pro3.dts                     |   6 +
- arch/arm/boot/dts/ge863-pro3.dtsi                  |   4 +
- arch/arm/boot/dts/kizbox.dts                       |   4 +
- arch/arm/boot/dts/mpa1600.dts                      |   8 +
- arch/arm/boot/dts/pm9g45.dts                       |   8 +
- arch/arm/boot/dts/tny_a9260_common.dtsi            |   8 +
- arch/arm/boot/dts/tny_a9263.dts                    |   8 +
- arch/arm/boot/dts/usb_a9260_common.dtsi            |   8 +
- arch/arm/boot/dts/usb_a9263.dts                    |   8 +
- arch/arm/mach-at91/Kconfig                         |   4 -
- arch/arm/mach-at91/at91rm9200.c                    |   6 +-
- arch/arm/mach-at91/at91sam9260.c                   |   6 +-
- arch/arm/mach-at91/at91sam9263.c                   |   6 +-
- arch/arm/mach-at91/at91sam9g45.c                   |   6 +-
- 31 files changed, 1467 insertions(+), 11 deletions(-)
-
+diff --git a/arch/arm/boot/dts/at91-ariag25.dts b/arch/arm/boot/dts/at91-ariag25.dts
+index 55ab6180e350..e9ced30159a7 100644
+--- a/arch/arm/boot/dts/at91-ariag25.dts
++++ b/arch/arm/boot/dts/at91-ariag25.dts
+@@ -42,6 +42,14 @@
+ 			compatible = "atmel,osc", "fixed-clock";
+ 			clock-frequency = <12000000>;
+ 		};
++
++		slow_xtal {
++			clock-frequency = <32768>;
++		};
++
++		main_xtal {
++			clock-frequency = <12000000>;
++		};
+ 	};
+ 
+ 	ahb {
 -- 
 1.9.1
 
