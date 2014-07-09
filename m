@@ -1,106 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756156AbaGIOMV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 10:12:21 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:17589 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755041AbaGIOMU (ORCPT
+	id S1756208AbaGIONO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 10:13:14 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:65439 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755470AbaGIONM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 10:12:20 -0400
-Date: Wed, 9 Jul 2014 10:12:11 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: konrad@kernel.org, xen-devel@lists.xenproject.org,
-        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 4/7] xen/pciback: Implement PCI reset slot or bus with
- 'do_flr' SysFS attribute
-Message-ID: <20140709141211.GF21837@laptop.dumpdata.com>
-References: <1404845909-13563-1-git-send-email-konrad@kernel.org>
- <1404845909-13563-5-git-send-email-konrad@kernel.org>
- <53BC324B.5090600@citrix.com>
- <20140708184626.GA15548@laptop.dumpdata.com>
- <53BD364A.5020703@citrix.com>
+	Wed, 9 Jul 2014 10:13:12 -0400
+Message-ID: <53BD4DFD.6070805@cogentembedded.com>
+Date: Wed, 09 Jul 2014 18:13:17 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53BD364A.5020703@citrix.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Richard Weinberger <richard@nod.at>, kys@microsoft.com,
+        haiyangz@microsoft.com
+CC: romieu@fr.zoreil.com, devel@linuxdriverproject.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] hyperv: Add netpoll support
+References: <1404892702-11094-1-git-send-email-richard@nod.at>
+In-Reply-To: <1404892702-11094-1-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 01:32:10PM +0100, David Vrabel wrote:
-> On 08/07/14 19:46, Konrad Rzeszutek Wilk wrote:
-> > On Tue, Jul 08, 2014 at 07:02:51PM +0100, David Vrabel wrote:
-> >> On 08/07/14 19:58, konrad@kernel.org wrote:
-> >>> --- a/Documentation/ABI/testing/sysfs-driver-pciback
-> >>> +++ b/Documentation/ABI/testing/sysfs-driver-pciback
-> >>> @@ -82,3 +82,14 @@ Description:
-> >>>                  device is shared, enabled, or on a level interrupt line.
-> >>>                  Writing a string of DDDD:BB:DD.F will toggle the state.
-> >>>                  This is Domain:Bus:Device.Function where domain is optional.
-> >>> +
-> >>> +What:           /sys/bus/pci/drivers/pciback/do_flr
-> >>> +Date:           July 2014
-> >>> +KernelVersion:  3.16
-> >>> +Contact:        xen-devel@lists.xenproject.org
-> >>> +Description:
-> >>> +                An option to slot or bus reset an PCI device owned by
-> >>> +                Xen PCI backend. Writing a string of DDDD:BB:DD.F will cause
-> >>> +                the driver to perform an slot or bus reset if the device
-> >>> +                supports. It also checks to make sure that all of the devices
-> >>> +                under the bridge are owned by Xen PCI backend.
-> >>
-> >> Not sure I like this new interface.  I solved this by adding a new reset
-> >> file that looked like the regular one the pci would have if it supported
-> >> FLR.  I'm fairly sure I posted a series for this.  Was there a reason
-> >> you didn't do this?
-> > 
-> > It did not work.
-> > 
-> > During bootup kobject would complain about a secondary 'reset' SysFS
-> > on the PCI device.
-> 
-> I think this because of pciback registering a driver too early, before
-> the device is fully initialized.  You can see in the trace that it is
-> the common pci code that is trying to add the "reset" file so it must be
-> doing this /after/ pciback's probe has been called.
-> 
-> I would consider:
-> 
-> 1. Removing the "hide" module parameter -- it doesn't work if pciback is
-> a module anyway.
+Hello.
 
-I find it incredibly useful and so do a lot of other people.
+On 07/09/2014 11:58 AM, Richard Weinberger wrote:
 
-> 
-> 2. Making pciback initialize like a regular driver module (no
-> fs_initcall() shenanigans).
+> In order to have at least a netconsole to debug kernel issues on
+> Windows Azure this patch implements netpoll support.
+> Sending packets is easy, netvsc_start_xmit() does already everything
+> needed.
 
-The point is to take the PCI device before the drivers touch it.
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>   drivers/net/hyperv/netvsc_drv.c | 11 +++++++++++
+>   1 file changed, 11 insertions(+)
 
-We want it to be in a pristine state so that the device driver
-domains can use it.
-> 
-> 3. Require userspace to sort out binding the device to pciback (e.g.,
-> libxl already does the unbind if requested).
+> diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+> index 4fd71b7..45218d5 100644
+> --- a/drivers/net/hyperv/netvsc_drv.c
+> +++ b/drivers/net/hyperv/netvsc_drv.c
+> @@ -736,6 +736,14 @@ static int netvsc_set_mac_addr(struct net_device *ndev, void *p)
+>   	return err;
+>   }
+>
+> +#ifdef CONFIG_NET_POLL_CONTROLLER
+> +static void netvsc_poll_controller(struct net_device *net)
+> +{
+> +	/* As netvsc_start_xmit() works synchronous we don't have to
+> +	   trigger anything here. */
 
-How would you do the bus/slot reset? Or are you thinking that at
-that point the 'reset' functionality would be over-written to point
-to Xen pciback and it would do the job?
+    The multi-line comment style in the networking code is this:
 
-> 
-> 4. Finally, I would consider generic driver core functionality for
-> prioritizing drivers so they get probed first.
+/* bla
+  * bla
+  */
 
-Not sure I understand why you want the drivers to use the device
-first? The point is that we can 'hide' them from the generic
-drivers and present them to the backend domains.
+> +	return;
 
-Regardless of these - I am curious to why you don't like do_flr
-as it is even implemented in the the toolstack (but buggy) and
-it does a good job of allowing us to do slot/bus reset?
+    Not needed.
 
-> 
-> David
+> +}
+> +#endif
+[...]
+
+WBR, Sergei
+
