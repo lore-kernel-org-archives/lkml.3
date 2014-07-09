@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755344AbaGIOce (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 10:32:34 -0400
-Received: from mga11.intel.com ([192.55.52.93]:32888 "EHLO mga11.intel.com"
+	id S1755487AbaGIOdi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 10:33:38 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:41312 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755177AbaGIOcc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 10:32:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,631,1400050800"; 
-   d="scan'208";a="567385464"
-From: "Liang, Kan" <kan.liang@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "andi@firstfloor.org" <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: RE: [PATCH V4 1/2] perf ignore LBR and extra_regs.
-Thread-Topic: [PATCH V4 1/2] perf ignore LBR and extra_regs.
-Thread-Index: AQHPmw42PYiPusxucki+Ie3j6NurFZuXRIqAgACHbiA=
-Date: Wed, 9 Jul 2014 14:32:28 +0000
-Message-ID: <37D7C6CF3E00A74B8858931C1DB2F077014D2005@SHSMSX103.ccr.corp.intel.com>
-References: <1404838181-3911-1-git-send-email-kan.liang@intel.com>
- <20140709141631.GE9918@twins.programming.kicks-ass.net>
-In-Reply-To: <20140709141631.GE9918@twins.programming.kicks-ass.net>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751993AbaGIOdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 10:33:36 -0400
+Message-ID: <53BD52B1.4060608@ti.com>
+Date: Wed, 9 Jul 2014 10:33:21 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>, <rjw@rjwysocki.net>,
+        <shawn.guo@linaro.org>
+CC: <nm@ti.com>, <linaro-kernel@lists.linaro.org>, <linux-pm@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>, <t.figa@samsung.com>,
+        <sboyd@codeaurora.org>, <linux-kernel@vger.kernel.org>,
+        <thomas.ab@samsung.com>, <arvind.chauhan@arm.com>,
+        <spk.linux@gmail.com>
+Subject: Re: [PATCH 03/14] cpufreq: Add support for per-policy driver data
+References: <cover.1404231535.git.viresh.kumar@linaro.org> <0614df495e361dd23ebe2d4e4ee3d40cb23948da.1404231535.git.viresh.kumar@linaro.org>
+In-Reply-To: <0614df495e361dd23ebe2d4e4ee3d40cb23948da.1404231535.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> On Tue, Jul 08, 2014 at 09:49:40AM -0700, kan.liang@intel.com wrote:
-> > +/*
-> > + * Under certain circumstances, access certain MSR may cause #GP.
-> > + * The function tests if the input MSR can be safely accessed.
-> > + */
-> > +static inline bool check_msr(unsigned long msr) {
-> > +	u64 value;
-> > +
-> > +	if (rdmsrl_safe(msr, &value) < 0)
-> > +		return false;
-> > +	if (wrmsrl_safe(msr, value) < 0)
-> > +		return false;
-> > +	return true;
-> > +}
+On Tuesday 01 July 2014 12:32 PM, Viresh Kumar wrote:
+> Drivers supporting multiple clusters or multiple 'struct cpufreq_policy'
+> instances may need to keep per-policy data. If the core doesn't support them,
+> they might do it in the most unoptimized way: 'per-cpu' data.
 > 
-> What does this thing return after patch 2? does the write still fault or will
-> KVM silently take writes too?
+> This patch adds another field in 'struct cpufreq_policy': 'driver_data'. It
+> isn't accessed by core and is for driver's internal use.
+> 
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  include/linux/cpufreq.h | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+> index ec4112d..d4b1108 100644
+> --- a/include/linux/cpufreq.h
+> +++ b/include/linux/cpufreq.h
+> @@ -112,6 +112,9 @@ struct cpufreq_policy {
+>  	spinlock_t		transition_lock;
+>  	wait_queue_head_t	transition_wait;
+>  	struct task_struct	*transition_task; /* Task which is doing the transition */
+> +
+> +	/* For cpufreq driver's internal use */
+> +	void			*driver_data;
+>  };
+>  
+Minor comment for consistency either maintain same commenting style
+for the above structure (description after the variable) or may
+be clean up the comments in another patch.
 
-If applying patch 2, the function will return true. The KVM just simply ignore the reads/writes.
+Regards,
+Santosh
+
