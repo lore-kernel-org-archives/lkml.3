@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964775AbaGITd4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 15:33:56 -0400
+	id S932493AbaGITdz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 15:33:55 -0400
 Received: from mga02.intel.com ([134.134.136.20]:22830 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753748AbaGITdx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 15:33:53 -0400
+	id S932476AbaGITdr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 15:33:47 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,632,1400050800"; 
-   d="scan'208";a="570761711"
-From: "Liang, Kan" <kan.liang@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "andi@firstfloor.org" <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: RE: [PATCH V4 1/2] perf ignore LBR and extra_regs.
-Thread-Topic: [PATCH V4 1/2] perf ignore LBR and extra_regs.
-Thread-Index: AQHPmw42PYiPusxucki+Ie3j6NurFZuXRIqAgACHbiD//4Q0gIAAh8MA//+VMACAAIvOEA==
-Date: Wed, 9 Jul 2014 19:32:09 +0000
-Message-ID: <37D7C6CF3E00A74B8858931C1DB2F077014D361B@SHSMSX103.ccr.corp.intel.com>
-References: <1404838181-3911-1-git-send-email-kan.liang@intel.com>
- <20140709141631.GE9918@twins.programming.kicks-ass.net>
- <37D7C6CF3E00A74B8858931C1DB2F077014D2005@SHSMSX103.ccr.corp.intel.com>
- <20140709145809.GG9918@twins.programming.kicks-ass.net>
- <37D7C6CF3E00A74B8858931C1DB2F077014D2729@SHSMSX103.ccr.corp.intel.com>
- <20140709164146.GH9918@twins.programming.kicks-ass.net>
-In-Reply-To: <20140709164146.GH9918@twins.programming.kicks-ass.net>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+   d="scan'208";a="570761552"
+From: Andi Kleen <andi@firstfloor.org>
+To: Andrey Ryabinin <a.ryabinin@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Alexey Preobrazhensky <preobr@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        x86@kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC/PATCH RESEND -next 03/21] x86: add kasan hooks fort memcpy/memmove/memset functions
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+	<1404905415-9046-4-git-send-email-a.ryabinin@samsung.com>
+Date: Wed, 09 Jul 2014 12:31:58 -0700
+In-Reply-To: <1404905415-9046-4-git-send-email-a.ryabinin@samsung.com> (Andrey
+	Ryabinin's message of "Wed, 09 Jul 2014 15:29:57 +0400")
+Message-ID: <87ion6nxap.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Andrey Ryabinin <a.ryabinin@samsung.com> writes:
+> +
+> +#undef memcpy
+> +void *kasan_memset(void *ptr, int val, size_t len);
+> +void *kasan_memcpy(void *dst, const void *src, size_t len);
+> +void *kasan_memmove(void *dst, const void *src, size_t len);
+> +
+> +#define memcpy(dst, src, len) kasan_memcpy((dst), (src), (len))
+> +#define memset(ptr, val, len) kasan_memset((ptr), (val), (len))
+> +#define memmove(dst, src, len) kasan_memmove((dst), (src), (len))
 
+I don't think just define is enough, gcc can call these functions
+implicitely too (both with and without __). For example for a struct copy.
 
-> > >
-> > > On Wed, Jul 09, 2014 at 02:32:28PM +0000, Liang, Kan wrote:
-> > > >
-> > > >
-> > > > > On Tue, Jul 08, 2014 at 09:49:40AM -0700, kan.liang@intel.com wrote:
-> > > > > > +/*
-> > > > > > + * Under certain circumstances, access certain MSR may cause #GP.
-> > > > > > + * The function tests if the input MSR can be safely accessed.
-> > > > > > + */
-> > > > > > +static inline bool check_msr(unsigned long msr) {
-> > > > > > +	u64 value;
-> > > > > > +
-> > > > > > +	if (rdmsrl_safe(msr, &value) < 0)
-> > > > > > +		return false;
-> > > > > > +	if (wrmsrl_safe(msr, value) < 0)
-> > > > > > +		return false;
-> > > > > > +	return true;
-> > > > > > +}
-> > > > >
-> > > > > What does this thing return after patch 2? does the write still
-> > > > > fault or will KVM silently take writes too?
-> > > >
-> > > > If applying patch 2, the function will return true. The KVM just
-> > > > simply ignore
-> > > the reads/writes.
-> > >
-> > > OK, then that's broken too. We want a function to return false for
-> > > any malfunctioning MSR, ignoring writes and returning 0s is not
-> > > proper functioning.
-> >
-> > The patch 2 is to handle the case that the administrator can only
-> > patch the host. Don't need to force user to upgrade their guest to fix
-> > the crash.  And ignore the annoying "unhandled...." KVM messages
-> 
-> Sure; but what I meant was, check_msr() is broken when ran on such a
-> kernel. You need to fix check_msr() to return failure on these 'ignored'
-> MSRs, after all they don't function as expected, they're effectively broken.
+You need to have true linker level aliases. 
 
-The function is designed to check if the MSRs can be safely accessed (no #GP). It cannot guarantee the correctness of the MSRs.
-If KVM applied patch 2 and guest applied patch 1, from the guest's perspective, the MSRs can be accessed (no #GP triggered). So return true is expected. It should not be a broken.
-The only unexpected thing for guest is that the counting/sampling result for LBR/extra reg is always 0. But the patch is a short term fix to stop things from crashing. I think it should be acceptable.
+-Andi
 
-
+-- 
+ak@linux.intel.com -- Speaking for myself only
