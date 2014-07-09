@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205AbaGIW6b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 18:58:31 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:54492 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755197AbaGIW63 (ORCPT
+	id S1756659AbaGIW7m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 18:59:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48846 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756527AbaGIW7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 18:58:29 -0400
-Date: Wed, 9 Jul 2014 16:58:26 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [GIT PULL] PCI fixes for v3.16
-Message-ID: <20140709225826.GA8252@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 9 Jul 2014 18:59:41 -0400
+Date: Wed, 9 Jul 2014 15:59:39 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: fs: use after free in /proc/pid/mountinfo
+Message-Id: <20140709155939.48b126f891132370532cb999@linux-foundation.org>
+In-Reply-To: <53BDBDE7.8090600@oracle.com>
+References: <53B3F331.7090204@oracle.com>
+	<53B4CAB8.5070407@oracle.com>
+	<alpine.DEB.2.02.1407031434470.10658@chino.kir.corp.google.com>
+	<53B6C051.2060704@oracle.com>
+	<20140706100420.GB3589@osiris>
+	<20140709142406.GA27561@osiris>
+	<20140709133138.c523aa03883be5417a4d19a4@linux-foundation.org>
+	<53BDBDE7.8090600@oracle.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, 09 Jul 2014 18:10:47 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
 
-Just a fix for the device reset path and an email address update.
+> On 07/09/2014 04:31 PM, Andrew Morton wrote:
+> > On Wed, 9 Jul 2014 16:24:06 +0200 Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
+> > 
+> >> > 058504edd026 ("fs/seq_file: fallback to vmalloc allocation") is suspected to
+> >> > cause a crash. Actually I can't reprocude the crash nor would I be able to
+> >> > tell how the commit could cause the crash.
+> >> > Anyway, I'll be offline for the next 2.5 weeks. So if Sasha could confirm
+> >> > that reverting the patch actually does fix the crash, please revert the
+> >> > commit, unless somebody else can make sense of the report of course.
+> >> > 
+> >> > I'm still wondering how Sasha could reproduce the crash.
+> > This really sucks :(
+> > 
+> > I suppose I'll queue up a revert of 058504edd026 as a for-3.16 bandaid.
+> > 
+> > Sasha, it would be great if you could delve a bit further into this,
+> > see if we can identify a way for others to reproduce the bug.
+> > 
+> > Did you test that little patchlet which Heiko sent?
+> 
+> I've been trying, but as there isn't an easy way to reproduce it, breakage
+> elsewhere in -next (there is a long list) is slowing me down. I'll revert
+> back to the -next where I've initially observed this issue and will retry.
+> 
 
-Bjorn
-
-
-The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
-
-  Linux 3.16-rc1 (2014-06-15 17:45:28 -1000)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git tags/pci-v3.16-fixes-1
-
-for you to fetch changes up to bf177a1eb6d106ba195de86734392d43dfbef702:
-
-  MAINTAINERS: Update mx6 PCI driver maintainer's email (2014-07-05 15:27:42 -0600)
-
-----------------------------------------------------------------
-PCI updates for v3.16:
-
-  Virtualization
-    - Fix "wait for pending transactions" for PCI AF reset (Alex Williamson)
-
-  Miscellaneous
-    - Update mx6 PCI driver maintainer email (Fabio Estevam)
-
-----------------------------------------------------------------
-Alex Williamson (1):
-      PCI: Fix unaligned access in AF transaction pending test
-
-Fabio Estevam (1):
-      MAINTAINERS: Update mx6 PCI driver maintainer's email
-
- MAINTAINERS       | 2 +-
- drivers/pci/pci.c | 9 +++++++--
- 2 files changed, 8 insertions(+), 3 deletions(-)
+Thanks.  The bug should be present in current mainline.
