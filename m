@@ -1,82 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756266AbaGIOFF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 10:05:05 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:44996 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756241AbaGIOFE (ORCPT
+	id S1756310AbaGIOFV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 10:05:21 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40286 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756274AbaGIOFT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 10:05:04 -0400
-Date: Wed, 9 Jul 2014 10:04:53 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Jiri Kosina <jkosina@suse.cz>,
-        Josh Poimboeuf <notifications@github.com>,
-        Anton Blanchard <anton@samba.org>
-Subject: Re: [RFA][PATCH 09/27] powerpc/ftrace: Add call to
- ftrace_graph_is_dead() in function graph code
-Message-ID: <20140709100453.689b1ef6@gandalf.local.home>
-In-Reply-To: <20140626165850.107467021@goodmis.org>
-References: <20140626165221.736847419@goodmis.org>
-	<20140626165850.107467021@goodmis.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Wed, 9 Jul 2014 10:05:19 -0400
+Date: Wed, 9 Jul 2014 15:04:28 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        "steve.capper@linaro.org" <steve.capper@linaro.org>
+Subject: Re: [PATCH 0/3] ARM: perf: allow tracing with kernel tracepoints
+ events
+Message-ID: <20140709140427.GP9485@arm.com>
+References: <1404740710-14691-1-git-send-email-jean.pihet@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404740710-14691-1-git-send-email-jean.pihet@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben,
+Hi Jean,
 
-Can you ack this please?
-
-Thanks,
-
--- Steve
-
-
-On Thu, 26 Jun 2014 12:52:30 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Mon, Jul 07, 2014 at 02:45:07PM +0100, Jean Pihet wrote:
+> - Robustify the user backtrace code, as done on other architectures.
+> - Provide the symbols resolution when triggering from tracepoints.
 > 
-> ftrace_stop() is going away as it disables parts of function tracing
-> that affects users that should not be affected. But ftrace_graph_stop()
-> is built on ftrace_stop(). Here's another example of killing all of
-> function tracing because something went wrong with function graph
-> tracing.
+> Big thanks to Steve Capper for the help in debugging and rephrasing the
+> commits descriptions.
 > 
-> Instead of disabling all users of function tracing on function graph
-> error, disable only function graph tracing. To do this, the arch code
-> must call ftrace_graph_is_dead() before it implements function graph.
-> 
-> Cc: Anton Blanchard <anton@samba.org>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  arch/powerpc/kernel/ftrace.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/arch/powerpc/kernel/ftrace.c b/arch/powerpc/kernel/ftrace.c
-> index f202d0731b06..f8c0ce5523a5 100644
-> --- a/arch/powerpc/kernel/ftrace.c
-> +++ b/arch/powerpc/kernel/ftrace.c
-> @@ -527,6 +527,9 @@ void prepare_ftrace_return(unsigned long *parent, unsigned long self_addr)
->  	struct ftrace_graph_ent trace;
->  	unsigned long return_hooker = (unsigned long)&return_to_handler;
->  
-> +	if (unlikely(ftrace_graph_is_dead()))
-> +		return;
-> +
->  	if (unlikely(atomic_read(&current->tracing_graph_pause)))
->  		return;
->  
+> Stress tested with perf record and tracepoints triggering (-e <tracepoint>),
+> with unwinding using fp (--call-graph fp) and dwarf info (--call-graph dwarf).
 
+I've taken the first two in this series, but patch 3 still doesn't address
+my concerns about saving the required register state for unwinding.
+
+Thanks!
+
+Will
