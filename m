@@ -1,116 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166AbaGIGwz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 02:52:55 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:46096 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbaGIGwy (ORCPT
+	id S1754297AbaGIGxg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 02:53:36 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:53617 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753377AbaGIGxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 02:52:54 -0400
+	Wed, 9 Jul 2014 02:53:34 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s696rQ13026900, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <nic_swsd@realtek.com>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net v2] r8169: disable L23
+Date: Wed, 9 Jul 2014 14:52:51 +0800
+Message-ID: <1394712342-15778-7-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <1394712342-15778-6-Taiwan-albertk@realtek.com>
+References: <1394712342-15778-6-Taiwan-albertk@realtek.com>
 MIME-Version: 1.0
-In-Reply-To: <CAPM=9tyAmEQq9CZn9FFOxLbE7J9TMkTMu=XHEnzaRFBBByDyew@mail.gmail.com>
-References: <1402866165-17408-1-git-send-email-minipli@googlemail.com>
-	<CA+rthh-CYWjUCji4GXNeZV5CcLd3_DNaV9zFDc_DznYbyw6T+A@mail.gmail.com>
-	<CAPM=9tyAmEQq9CZn9FFOxLbE7J9TMkTMu=XHEnzaRFBBByDyew@mail.gmail.com>
-Date: Wed, 9 Jul 2014 08:52:52 +0200
-Message-ID: <CA+rthh9w4Tj-b9m=jeCBcGP4E8X9ssVLGom=TmYT=9-4e_nmkw@mail.gmail.com>
-Subject: Re: [PATCH] agp: remove read/write stubs
-From: Mathias Krause <minipli@googlemail.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: David Airlie <airlied@linux.ie>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 July 2014 00:48, Dave Airlie <airlied@gmail.com> wrote:
-> On 2 July 2014 16:15, Mathias Krause <minipli@googlemail.com> wrote:
->> On 15 June 2014 23:02, Mathias Krause <minipli@googlemail.com> wrote:
->>> The VFS layer handles those in the very same way, if unset. No need for
->>> additional stubs.
->>>
->>> Signed-off-by: Mathias Krause <minipli@googlemail.com>
->>> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
->>> ---
->>>  drivers/char/agp/frontend.c |   15 ---------------
->>>  1 file changed, 15 deletions(-)
->>>
->>> diff --git a/drivers/char/agp/frontend.c b/drivers/char/agp/frontend.c
->>> index b29703324e..09f17eb734 100644
->>> --- a/drivers/char/agp/frontend.c
->>> +++ b/drivers/char/agp/frontend.c
->>> @@ -710,19 +710,6 @@ static int agp_open(struct inode *inode, struct file *file)
->>>         return 0;
->>>  }
->>>
->>> -
->>> -static ssize_t agp_read(struct file *file, char __user *buf,
->>> -                       size_t count, loff_t * ppos)
->>> -{
->>> -       return -EINVAL;
->>> -}
->>> -
->>> -static ssize_t agp_write(struct file *file, const char __user *buf,
->>> -                        size_t count, loff_t * ppos)
->>> -{
->>> -       return -EINVAL;
->>> -}
->>> -
->>>  static int agpioc_info_wrap(struct agp_file_private *priv, void __user *arg)
->>>  {
->>>         struct agp_info userinfo;
->>> @@ -1047,8 +1034,6 @@ static const struct file_operations agp_fops =
->>>  {
->>>         .owner          = THIS_MODULE,
->>>         .llseek         = no_llseek,
->>> -       .read           = agp_read,
->>> -       .write          = agp_write,
->>>         .unlocked_ioctl = agp_ioctl,
->>>  #ifdef CONFIG_COMPAT
->>>         .compat_ioctl   = compat_agp_ioctl,
->>> --
->>> 1.7.10.4
->>>
->>
->> Ping. Any objections, comments? David?
->
-> Are you sure VFS handles this the same way? can you point me where it
-> checks ->read and returns -EINVAL, I'm probably just missing it in my
-> quick look over fs/read_write.c
+For RTL8411, RTL8111G, RTL8402, RTL8105, and RTL8106, disable the feature
+of entering the L2/L3 link state of the PCIe. When the nic starts the process
+of entering the L2/L3 link state and the PCI reset occurs before the work
+is finished, the work would be queued and continue after the next the PCI
+reset occurs. This causes the device stays in L2/L3 link state, and the system
+couldn't find the device.
 
-The VFS code changed during the last merge window so the ->read and
-->write tests are no longer directly visible. The presence of a ->read
-/ ->write function is now remembered at open(2) time and stored in
-->f_mode as a flag.
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/ethernet/realtek/r8169.c | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
-The corresponding commit for the VFS change is 7f7f25e82d "replace
-checking for ->read/->aio_read presence with check in ->f_mode".
-Despite its subject, it also handles ->write / ->aio_write. The flags
-are set in fs/open:do_dentry_open():
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index be425ad..38144ee 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -538,6 +538,7 @@ enum rtl_register_content {
+ 	MagicPacket	= (1 << 5),	/* Wake up when receives a Magic Packet */
+ 	LinkUp		= (1 << 4),	/* Wake up when the cable connection is re-established */
+ 	Jumbo_En0	= (1 << 2),	/* 8168 only. Reserved in the 8168b */
++	Rdy_to_L23	= (1 << 1),	/* L23 Enable */
+ 	Beacon_en	= (1 << 0),	/* 8168 only. Reserved in the 8168b */
+ 
+ 	/* Config4 register */
+@@ -4897,6 +4898,21 @@ static void rtl_enable_clock_request(struct pci_dev *pdev)
+ 				 PCI_EXP_LNKCTL_CLKREQ_EN);
+ }
+ 
++static void rtl_l23_enable(struct rtl8169_private *tp, bool enable)
++{
++	void __iomem *ioaddr = tp->mmio_addr;
++	u8 data;
++
++	data = RTL_R8(Config3);
++
++	if (enable)
++		data |= Rdy_to_L23;
++	else
++		data &= ~Rdy_to_L23;
++
++	RTL_W8(Config3, data);
++}
++
+ #define R8168_CPCMD_QUIRK_MASK (\
+ 	EnableBist | \
+ 	Mac_dbgo_oe | \
+@@ -5246,6 +5262,7 @@ static void rtl_hw_start_8411(struct rtl8169_private *tp)
+ 	};
+ 
+ 	rtl_hw_start_8168f(tp);
++	rtl_l23_enable(tp, false);
+ 
+ 	rtl_ephy_init(tp, e_info_8168f_1, ARRAY_SIZE(e_info_8168f_1));
+ 
+@@ -5284,6 +5301,8 @@ static void rtl_hw_start_8168g_1(struct rtl8169_private *tp)
+ 
+ 	rtl_w1w0_eri(tp, 0x2fc, ERIAR_MASK_0001, 0x01, 0x06, ERIAR_EXGMAC);
+ 	rtl_w1w0_eri(tp, 0x1b0, ERIAR_MASK_0011, 0x0000, 0x1000, ERIAR_EXGMAC);
++
++	rtl_l23_enable(tp, false);
+ }
+ 
+ static void rtl_hw_start_8168g_2(struct rtl8169_private *tp)
+@@ -5536,6 +5555,8 @@ static void rtl_hw_start_8105e_1(struct rtl8169_private *tp)
+ 	RTL_W8(DLLPR, RTL_R8(DLLPR) | PFM_EN);
+ 
+ 	rtl_ephy_init(tp, e_info_8105e_1, ARRAY_SIZE(e_info_8105e_1));
++
++	rtl_l23_enable(tp, false);
+ }
+ 
+ static void rtl_hw_start_8105e_2(struct rtl8169_private *tp)
+@@ -5571,6 +5592,8 @@ static void rtl_hw_start_8402(struct rtl8169_private *tp)
+ 	rtl_eri_write(tp, 0xc0, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
+ 	rtl_eri_write(tp, 0xb8, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
+ 	rtl_w1w0_eri(tp, 0x0d4, ERIAR_MASK_0011, 0x0e00, 0xff00, ERIAR_EXGMAC);
++
++	rtl_l23_enable(tp, false);
+ }
+ 
+ static void rtl_hw_start_8106(struct rtl8169_private *tp)
+@@ -5583,6 +5606,8 @@ static void rtl_hw_start_8106(struct rtl8169_private *tp)
+ 	RTL_W32(MISC, (RTL_R32(MISC) | DISABLE_LAN_EN) & ~EARLY_TALLY_EN);
+ 	RTL_W8(MCU, RTL_R8(MCU) | EN_NDP | EN_OOB_RESET);
+ 	RTL_W8(DLLPR, RTL_R8(DLLPR) & ~PFM_EN);
++
++	rtl_l23_enable(tp, false);
+ }
+ 
+ static void rtl_hw_start_8101(struct net_device *dev)
+-- 
+1.9.3
 
-    if ((f->f_mode & FMODE_READ) &&
-         likely(f->f_op->read || f->f_op->aio_read || f->f_op->read_iter))
-        f->f_mode |= FMODE_CAN_READ;
-    if ((f->f_mode & FMODE_WRITE) &&
-         likely(f->f_op->write || f->f_op->aio_write || f->f_op->write_iter))
-        f->f_mode |= FMODE_CAN_WRITE;
-
-With that change in mind, the redundancy of the agp_read() and
-agp_write() functions can be seen for read(2) in vfs_read():
-
-    if (!(file->f_mode & FMODE_CAN_READ))
-        return -EINVAL;
-
-..and for write(2) in vfs_write():
-
-    if (!(file->f_mode & FMODE_CAN_WRITE))
-        return -EINVAL;
-
-The other entry points (readv / writev / compat wrappers) have been
-changed accordingly, so those handle a missing ->read / ->write
-callback in the same way: returning -EINVAL.
-
-Regards,
-Mathias
