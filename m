@@ -1,166 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842AbaGIJXj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 05:23:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35342 "EHLO mx1.redhat.com"
+	id S1755086AbaGIJ0F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 05:26:05 -0400
+Received: from smtp.mei.co.jp ([133.183.100.20]:40395 "EHLO smtp.mei.co.jp"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751294AbaGIJXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 05:23:37 -0400
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Vivek Goyal <vgoyal@redhat.com>, xen-devel@lists.xenproject.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH] mmap_vmcore: skip non-ram pages reported by hypervisors
-References: <1404745549-16023-1-git-send-email-vkuznets@redhat.com>
-	<20140708162930.GC9727@laptop.dumpdata.com>
-Date: Wed, 09 Jul 2014 11:23:26 +0200
-In-Reply-To: <20140708162930.GC9727@laptop.dumpdata.com> (Konrad Rzeszutek
-	Wilk's message of "Tue, 8 Jul 2014 12:29:30 -0400")
-Message-ID: <87r41uopgx.fsf@vitty.brq.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1754562AbaGIJ0C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 05:26:02 -0400
+Date: Wed, 09 Jul 2014 18:25:42 +0900
+From: Masahiro Yamada <yamada.m@jp.panasonic.com>
+To: Michal Marek <mmarek@suse.cz>
+Subject: Re: [PATCH] kbuild: Use symbolic link to the source tree for out-of-tree build
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sam Ravnborg <sam@ravnborg.org>
+In-Reply-To: <53BD048F.4000800@suse.cz>
+References: <1404887241-14455-1-git-send-email-yamada.m@jp.panasonic.com> <53BD048F.4000800@suse.cz>
+X-BkSecure-Plugin: BkSecure.dll Ver 1, 2, 7, 0
+Message-Id: <20140709182542.B0CB.AA925319@jp.panasonic.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.64.06 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
+Hi Michal,
 
-> On Mon, Jul 07, 2014 at 05:05:49PM +0200, Vitaly Kuznetsov wrote:
->> we have a special check in read_vmcore() handler to check if the page was
->> reported as ram or not by the hypervisor (pfn_is_ram()). However, when
->> vmcore is read with mmap() no such check is performed. That can lead to
->> unpredictable results, e.g. when running Xen PVHVM guest memcpy() after
->> mmap() on /proc/vmcore will hang processing HVMMEM_mmio_dm pages creating
->> enormous load in both DomU and Dom0.
->> 
->> Fix the issue by mapping each non-ram page to the zero page. Keep direct
->> path with remap_oldmem_pfn_range() to avoid looping through all pages on
->> bare metal.
->> 
->> The issue can also be solved by overriding remap_oldmem_pfn_range() in
->> xen-specific code, as remap_oldmem_pfn_range() was been designed for.
->> That, however, would involve non-obvious xen code path for all x86 builds
->> with CONFIG_XEN_PVHVM=y and would prevent all other hypervisor-specific
->> code on x86 arch from doing the same override.
->
-> Could the 'remap_oldmem_pfn_range' become an function ops? I see there
-> is an 'register_oldmem_pfn_is_ram' - so could there be similar one for
-> 'pfn_range'?
 
-yes, it is possible to replace '__weak remap_oldmem_pfn_range' with
-'register_oldmem_pfn_is_ram'. However s390 arch overrides this function
-in arch/s390/kernel/crash_dump.c so we'll have to make some changes
-there as well.
+On Wed, 09 Jul 2014 10:59:59 +0200
+Michal Marek <mmarek@suse.cz> wrote:
 
->
->> 
->> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
->> ---
->>  fs/proc/vmcore.c | 68 +++++++++++++++++++++++++++++++++++++++++++++++++++-----
->>  1 file changed, 62 insertions(+), 6 deletions(-)
->> 
->> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
->> index 382aa89..2716e19 100644
->> --- a/fs/proc/vmcore.c
->> +++ b/fs/proc/vmcore.c
->> @@ -328,6 +328,46 @@ static inline char *alloc_elfnotes_buf(size_t notes_sz)
->>   * virtually contiguous user-space in ELF layout.
->>   */
->>  #ifdef CONFIG_MMU
->> +static u64 remap_oldmem_pfn_checked(struct vm_area_struct *vma, u64 len,
->> +				    unsigned long pfn, unsigned long page_count)
->> +{
->> +	unsigned long pos;
->> +	size_t size;
->> +	unsigned long vma_addr;
->> +	unsigned long emptypage_pfn = __pa(empty_zero_page) >> PAGE_SHIFT;
->> +
->> +	for (pos = pfn; (pos - pfn) <= page_count; pos++) {
->> +		if (!pfn_is_ram(pos) || (pos - pfn) == page_count) {
->> +			/* we hit a page which is not ram or reached the end */
->> +			if (pos - pfn > 0) {
->> +				/* remapping continuous region */
->> +				size = (pos - pfn) << PAGE_SHIFT;
->> +				vma_addr = vma->vm_start + len;
->> +				if (remap_oldmem_pfn_range(vma, vma_addr,
->> +							   pfn, size,
->> +							   vma->vm_page_prot))
->> +					return len;
->> +				len += size;
->> +				page_count -= (pos - pfn);
->> +			}
->> +			if (page_count > 0) {
->> +				/* we hit a page which is not ram, replacing
->> +				   with an empty one */
->> +				vma_addr = vma->vm_start + len;
->> +				if (remap_oldmem_pfn_range(vma, vma_addr,
->> +							   emptypage_pfn,
->> +							   PAGE_SIZE,
->> +							   vma->vm_page_prot))
->> +					return len;
->> +				len += PAGE_SIZE;
->> +				pfn = pos + 1;
->> +				page_count--;
->> +			}
->> +		}
->> +	}
->> +	return len;
->> +}
->> +
->>  static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
->>  {
->>  	size_t size = vma->vm_end - vma->vm_start;
->> @@ -383,17 +423,33 @@ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
->>  
->>  	list_for_each_entry(m, &vmcore_list, list) {
->>  		if (start < m->offset + m->size) {
->> -			u64 paddr = 0;
->> +			u64 paddr = 0, original_len;
->> +			unsigned long pfn, page_count;
->>  
->>  			tsz = min_t(size_t, m->offset + m->size - start, size);
->>  			paddr = m->paddr + start - m->offset;
->> -			if (remap_oldmem_pfn_range(vma, vma->vm_start + len,
->> -						   paddr >> PAGE_SHIFT, tsz,
->> -						   vma->vm_page_prot))
->> -				goto fail;
->> +
->> +			/* check if oldmem_pfn_is_ram was registered to avoid
->> +			   looping over all pages without a reason */
->> +			if (oldmem_pfn_is_ram) {
->> +				pfn = paddr >> PAGE_SHIFT;
->> +				page_count = tsz >> PAGE_SHIFT;
->> +				original_len = len;
->> +				len = remap_oldmem_pfn_checked(vma, len, pfn,
->> +							       page_count);
->> +				if (len != original_len + tsz)
->> +					goto fail;
->> +			} else {
->> +				if (remap_oldmem_pfn_range(vma,
->> +							   vma->vm_start + len,
->> +							   paddr >> PAGE_SHIFT,
->> +							   tsz,
->> +							   vma->vm_page_prot))
->> +					goto fail;
->> +				len += tsz;
->> +			}
->>  			size -= tsz;
->>  			start += tsz;
->> -			len += tsz;
->>  
->>  			if (size == 0)
->>  				return 0;
->> -- 
->> 1.9.3
->> 
->> 
->> _______________________________________________
->> Xen-devel mailing list
->> Xen-devel@lists.xen.org
->> http://lists.xen.org/xen-devel
+> On 2014-07-09 08:27, Masahiro Yamada wrote:
+> > Since commit 9da0763bd, the variable 'srctree' is set as follows:
+> > 
+> > [1] Building in the source tree
+> >       => srctree is set to '.'
+> > [2] Building in a subdir right under the source tree
+> >       => srctree is set to '..'
+> > [3] Other cases
+> >       => srctree is set to the absolute path to the source tree
+> > 
+> > Pros are more readable compiler messages, WARN_ON() etc.
+> > for case [1] and [2]. (but not [3])
+> > 
+> > Cons are we have to do build-test for 3 cases when adding
+> > some changes to the build infrastructure.
+> > 
+> > We want to treat case [2] and [3] in the same way like prior to
+> > commit 9da0763bd, keeping the compact log messages.
+> > 
+> > The idea here is to create a symbolic link 'srctree' pointing
+> > to $(KBUILD_SRC) at the very early stage of the build process.
+> 
+> If the symlink points to an absolute path, then you can't move the
+> source and build tree around anymore.
 
--- 
-  Vitaly
+
+In which cases do we need to do this?
+
+
+Anyway, even if we move the source and build tree around,
+it is much faster to rebuild it.
+
+The point here is that the absolute paths do not appear
+in .*.cmd files.
+
+
+For example,
+
+$ make O=foo/bar defconfig all
+  [ full build ]
+$ cd ..
+$ mkdir baz
+$ move linux baz
+$ cd baz/linux
+$ make O=foo/bar
+  [ much faster re-build ]
+
+
+
+Best Regards
+Masahiro Yamada
+
