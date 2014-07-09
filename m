@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911AbaGIMX7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 08:23:59 -0400
-Received: from baptiste.telenet-ops.be ([195.130.132.51]:53606 "EHLO
-	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755761AbaGIMX4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 08:23:56 -0400
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>
-Cc: devicetree@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH 11/13] [RFC] mmc: tmio-mmc: Add support for SDHI on new R-Car Gen2 SoCs
-Date: Wed,  9 Jul 2014 14:23:41 +0200
-Message-Id: <1404908623-909-12-git-send-email-geert+renesas@glider.be>
+	id S1755998AbaGIMYa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 08:24:30 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:45354 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754784AbaGIMY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 08:24:27 -0400
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>, <santosh.shilimkar@ti.com>,
+        <netdev@vger.kernel.org>
+CC: <prabhakar.csengg@gmail.com>, Sekhar Nori <nsekhar@ti.com>,
+        Rob Herring <robh+dt@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: [PATCH 0/2] net: davinci_mdio: reuse for keystone2 arch
+Date: Wed, 9 Jul 2014 16:10:49 +0300
+Message-ID: <1404911451-9921-1-git-send-email-grygorii.strashko@ti.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1404908623-909-1-git-send-email-geert+renesas@glider.be>
-References: <1404908623-909-1-git-send-email-geert+renesas@glider.be>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  - r8a7792 (R-Car V2H)
-  - r8a7793 (R-Car M2-N)
-  - r8a7794 (R-Car E2)
+The similar MDIO HW blocks is used by keystone 2 SoCs as
+in Davinci SoCs:
+- one in Gigabit Ethernet (GbE) Switch Subsystem
+  See http://www.ti.com/lit/ug/sprugv9d/sprugv9d.pdf
+- one in 10 Gigabit Ethernet Subsystem
+  See http://www.ti.com/lit/ug/spruhj5/spruhj5.pdf
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
----
- Documentation/devicetree/bindings/mmc/tmio_mmc.txt | 3 +++
- drivers/mmc/host/sh_mobile_sdhi.c                  | 3 +++
- 2 files changed, 6 insertions(+)
+Hence, reuse Davinci MDIO driver for Keystone 2 and
+enable TI networking for Keystone 2 devices.
 
-diff --git a/Documentation/devicetree/bindings/mmc/tmio_mmc.txt b/Documentation/devicetree/bindings/mmc/tmio_mmc.txt
-index fa0f327cde01..400b640fabc7 100644
---- a/Documentation/devicetree/bindings/mmc/tmio_mmc.txt
-+++ b/Documentation/devicetree/bindings/mmc/tmio_mmc.txt
-@@ -19,6 +19,9 @@ Required properties:
- 		"renesas,sdhi-r8a7779" - SDHI IP on R8A7779 SoC
- 		"renesas,sdhi-r8a7790" - SDHI IP on R8A7790 SoC
- 		"renesas,sdhi-r8a7791" - SDHI IP on R8A7791 SoC
-+		"renesas,sdhi-r8a7792" - SDHI IP on R8A7792 SoC
-+		"renesas,sdhi-r8a7793" - SDHI IP on R8A7793 SoC
-+		"renesas,sdhi-r8a7794" - SDHI IP on R8A7794 SoC
- 
- Optional properties:
- - toshiba,mmc-wrprotect-disable: write-protect detection is unavailable
-diff --git a/drivers/mmc/host/sh_mobile_sdhi.c b/drivers/mmc/host/sh_mobile_sdhi.c
-index 91058dabd11a..443c20969bd7 100644
---- a/drivers/mmc/host/sh_mobile_sdhi.c
-+++ b/drivers/mmc/host/sh_mobile_sdhi.c
-@@ -68,6 +68,9 @@ static const struct of_device_id sh_mobile_sdhi_of_match[] = {
- 	{ .compatible = "renesas,sdhi-r8a7779", .data = &of_rcar_gen1_compatible, },
- 	{ .compatible = "renesas,sdhi-r8a7790", .data = &of_rcar_gen2_compatible, },
- 	{ .compatible = "renesas,sdhi-r8a7791", .data = &of_rcar_gen2_compatible, },
-+	{ .compatible = "renesas,sdhi-r8a7792", .data = &of_rcar_gen2_compatible, },
-+	{ .compatible = "renesas,sdhi-r8a7793", .data = &of_rcar_gen2_compatible, },
-+	{ .compatible = "renesas,sdhi-r8a7794", .data = &of_rcar_gen2_compatible, },
- 	{},
- };
- MODULE_DEVICE_TABLE(of, sh_mobile_sdhi_of_match);
+Also, as part of this series, enable PHY's creation from DT, because
+Keystone 2 supports DT boot mode only.
+
+Grygorii Strashko (2):
+  net: davinci_mdio: reuse for keystone2 arch
+  net: davinci_mdio: allow to create phys from dt
+
+ .../devicetree/bindings/net/davinci-mdio.txt       |    8 ++++----
+ drivers/net/ethernet/ti/Kconfig                    |    4 ++--
+ drivers/net/ethernet/ti/davinci_mdio.c             |   18 ++++++++++++++++--
+ 3 files changed, 22 insertions(+), 8 deletions(-)
+
 -- 
-1.9.1
+1.7.9.5
 
