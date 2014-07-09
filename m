@@ -1,52 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290AbaGIIN7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 04:13:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38438 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754412AbaGIINQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 04:13:16 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 5/6] mm: page_alloc: Abort fair zone allocation policy when remotes nodes are encountered
-Date: Wed,  9 Jul 2014 09:13:07 +0100
-Message-Id: <1404893588-21371-6-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1404893588-21371-1-git-send-email-mgorman@suse.de>
-References: <1404893588-21371-1-git-send-email-mgorman@suse.de>
+	id S1755305AbaGIIOV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 04:14:21 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:47268 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751294AbaGIIOS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 04:14:18 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Joseph Schuchart <joseph.schuchart@tu-dresden.de>
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Ilsche <thomas.ilsche@tu-dresden.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] perf script: Add missing calls to Py_DECREF for return values
+References: <53031D2C.2050009@tu-dresden.de>
+	<20140307141857.GA3153@ghostprotocols.net>
+	<533D2283.3090703@tu-dresden.de> <87wqd5f7j5.fsf@sejong.aot.lge.com>
+	<538F0BF2.1010806@tu-dresden.de>
+	<20140707171706.GA20752@krava.redhat.com>
+	<53BCF1ED.1000004@tu-dresden.de>
+Date: Wed, 09 Jul 2014 17:14:15 +0900
+In-Reply-To: <53BCF1ED.1000004@tu-dresden.de> (Joseph Schuchart's message of
+	"Wed, 09 Jul 2014 09:40:29 +0200")
+Message-ID: <874myr3q5k.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The purpose of numa_zonelist_order=zone is to preserve lower zones
-for use with 32-bit devices. If locality is preferred then the
-numa_zonelist_order=node policy should be used. Unfortunately, the fair
-zone allocation policy overrides this by skipping zones on remote nodes
-until the lower one is found. While this makes sense from a page aging
-and performance perspective, it breaks the expected zonelist policy. This
-patch restores the expected behaviour for zone-list ordering.
+Hi Joseph,
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/page_alloc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Wed, 09 Jul 2014 09:40:29 +0200, Joseph Schuchart wrote:
+> [PATCH 1/3] perf script: Add missing calls to Py_DECREF for return values
+>
+> Signed-off-by: Joseph Schuchart <joseph.schuchart@tu-dresden.de>
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index aa46f00..0bf384a 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1957,7 +1957,7 @@ zonelist_scan:
- 		 */
- 		if (alloc_flags & ALLOC_FAIR) {
- 			if (!zone_local(preferred_zone, zone))
--				continue;
-+				break;
- 			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
- 				continue;
- 		}
--- 
-1.8.4.5
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 
+Thanks,
+Namhyung
+
+
+> ---
+>  tools/perf/util/scripting-engines/trace-event-python.c | 12 ++++++++++--
+>  1 file changed, 10 insertions(+), 2 deletions(-)
+>
+> diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+> index 1c41932..631aa85 100644
+> --- a/tools/perf/util/scripting-engines/trace-event-python.c
+> +++ b/tools/perf/util/scripting-engines/trace-event-python.c
+> @@ -50,10 +50,14 @@ static int zero_flag_atom;
+>  
+>  static PyObject *main_module, *main_dict;
+>  
+> +static void handler_call_die(const char *handler_name) NORETURN;
+>  static void handler_call_die(const char *handler_name)
+>  {
+>  	PyErr_Print();
+>  	Py_FatalError("problem in Python trace event handler");
+> +	// Py_FatalError does not return
+> +	// but we have to make the compiler happy
+> +	abort();
+>  }
+>  
+>  /*
+> @@ -97,6 +101,7 @@ static void define_value(enum print_arg_type field_type,
+>  		retval = PyObject_CallObject(handler, t);
+>  		if (retval == NULL)
+>  			handler_call_die(handler_name);
+> +		Py_DECREF(retval);
+>  	}
+>  
+>  	Py_DECREF(t);
+> @@ -143,6 +148,7 @@ static void define_field(enum print_arg_type field_type,
+>  		retval = PyObject_CallObject(handler, t);
+>  		if (retval == NULL)
+>  			handler_call_die(handler_name);
+> +		Py_DECREF(retval);
+>  	}
+>  
+>  	Py_DECREF(t);
+> @@ -334,6 +340,7 @@ static void python_process_tracepoint(struct perf_sample *sample,
+>  		retval = PyObject_CallObject(handler, t);
+>  		if (retval == NULL)
+>  			handler_call_die(handler_name);
+> +		Py_DECREF(retval);
+>  	} else {
+>  		handler = PyDict_GetItemString(main_dict, "trace_unhandled");
+>  		if (handler && PyCallable_Check(handler)) {
+> @@ -341,6 +348,7 @@ static void python_process_tracepoint(struct perf_sample *sample,
+>  			retval = PyObject_CallObject(handler, t);
+>  			if (retval == NULL)
+>  				handler_call_die("trace_unhandled");
+> +			Py_DECREF(retval);
+>  		}
+>  		Py_DECREF(dict);
+>  	}
+> @@ -400,6 +408,7 @@ static void python_process_general_event(struct perf_sample *sample,
+>  	retval = PyObject_CallObject(handler, t);
+>  	if (retval == NULL)
+>  		handler_call_die(handler_name);
+> +	Py_DECREF(retval);
+>  exit:
+>  	Py_DECREF(dict);
+>  	Py_DECREF(t);
+> @@ -521,8 +530,7 @@ static int python_stop_script(void)
+>  	retval = PyObject_CallObject(handler, NULL);
+>  	if (retval == NULL)
+>  		handler_call_die("trace_end");
+> -	else
+> -		Py_DECREF(retval);
+> +	Py_DECREF(retval);
+>  out:
+>  	Py_XDECREF(main_dict);
+>  	Py_XDECREF(main_module);
