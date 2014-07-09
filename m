@@ -1,174 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756576AbaGIOQm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 10:16:42 -0400
-Received: from mailout1.zih.tu-dresden.de ([141.30.67.72]:50924 "EHLO
-	mailout1.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755427AbaGIOQk (ORCPT
+	id S1755978AbaGIOUi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 10:20:38 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:58143 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751778AbaGIOUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 10:16:40 -0400
-Message-ID: <53BD4EB9.50903@tu-dresden.de>
-Date: Wed, 09 Jul 2014 16:16:25 +0200
-From: Joseph Schuchart <joseph.schuchart@tu-dresden.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 9 Jul 2014 10:20:36 -0400
+Message-ID: <53BD4FAF.8060502@ti.com>
+Date: Wed, 9 Jul 2014 10:20:31 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: Namhyung Kim <namhyung@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Ilsche <thomas.ilsche@tu-dresden.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3]  perf script: Add callchain to generic and tracepoint
- events
-References: <53031D2C.2050009@tu-dresden.de> <20140307141857.GA3153@ghostprotocols.net> <533D2283.3090703@tu-dresden.de> <87wqd5f7j5.fsf@sejong.aot.lge.com> <538F0BF2.1010806@tu-dresden.de> <20140707171706.GA20752@krava.redhat.com> <53BCF1F2.70100@tu-dresden.de> <20140709112721.GC1814@krava.redhat.com> <53BD2AD6.6020309@tu-dresden.de> <20140709114903.GA5767@krava.redhat.com>
-In-Reply-To: <20140709114903.GA5767@krava.redhat.com>
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms030806070409010105070305"
-X-TUD-Virus-Scanned: mailout1.zih.tu-dresden.de
+To: Grygorii Strashko <grygorii.strashko@ti.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>, <netdev@vger.kernel.org>
+CC: <prabhakar.csengg@gmail.com>, Sekhar Nori <nsekhar@ti.com>,
+        Rob Herring <robh+dt@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>
+Subject: Re: [PATCH 1/2] net: davinci_mdio: reuse for keystone2 arch
+References: <1404911451-9921-1-git-send-email-grygorii.strashko@ti.com> <1404911451-9921-2-git-send-email-grygorii.strashko@ti.com>
+In-Reply-To: <1404911451-9921-2-git-send-email-grygorii.strashko@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
+On Wednesday 09 July 2014 09:10 AM, Grygorii Strashko wrote:
+> The similar MDIO HW blocks is used by keystone 2 SoCs as
+> in Davinci SoCs:
+> - one in Gigabit Ethernet (GbE) Switch Subsystem
+>   See http://www.ti.com/lit/ug/sprugv9d/sprugv9d.pdf
+> - one in 10 Gigabit Ethernet Subsystem
+>   See http://www.ti.com/lit/ug/spruhj5/spruhj5.pdf
+> 
+> Hence, reuse Davinci MDIO driver for Keystone 2 and
+> enable TI networking for Keystone 2 devices
+> 
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> ---
+Looks good to me.
+Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
---------------ms030806070409010105070305
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+>  .../devicetree/bindings/net/davinci-mdio.txt       |    8 ++++----
+>  drivers/net/ethernet/ti/Kconfig                    |    4 ++--
+>  2 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/net/davinci-mdio.txt b/Documentation/devicetree/bindings/net/davinci-mdio.txt
+> index 72efaaf..d2e68e7 100644
+> --- a/Documentation/devicetree/bindings/net/davinci-mdio.txt
+> +++ b/Documentation/devicetree/bindings/net/davinci-mdio.txt
+> @@ -1,8 +1,8 @@
+> -TI SoC Davinci MDIO Controller Device Tree Bindings
+> +TI SoC Davinci/Keystone2 MDIO Controller Device Tree Bindings
+>  ---------------------------------------------------
+>  
+>  Required properties:
+> -- compatible		: Should be "ti,davinci_mdio"
+> +- compatible		: Should be "ti,davinci_mdio" or "ti,keystone-mdio"
+>  - reg			: physical base address and size of the davinci mdio
+>  			  registers map
+>  - bus_freq		: Mdio Bus frequency
+> @@ -19,7 +19,7 @@ file.
+>  Examples:
+>  
+>  	mdio: davinci_mdio@4A101000 {
+> -		compatible = "ti,cpsw";
+> +		compatible = "ti,davinci_mdio";
+>  		reg = <0x4A101000 0x1000>;
+>  		bus_freq = <1000000>;
+>  	};
+> @@ -27,7 +27,7 @@ Examples:
+>  (or)
+>  
+>  	mdio: davinci_mdio@4A101000 {
+> -		compatible = "ti,cpsw";
+> +		compatible = "ti,davinci_mdio";
+>  		ti,hwmods = "davinci_mdio";
+>  		bus_freq = <1000000>;
+>  	};
+> diff --git a/drivers/net/ethernet/ti/Kconfig b/drivers/net/ethernet/ti/Kconfig
+> index 53150c2..1769700 100644
+> --- a/drivers/net/ethernet/ti/Kconfig
+> +++ b/drivers/net/ethernet/ti/Kconfig
+> @@ -5,7 +5,7 @@
+>  config NET_VENDOR_TI
+>  	bool "Texas Instruments (TI) devices"
+>  	default y
+> -	depends on PCI || EISA || AR7 || (ARM && (ARCH_DAVINCI || ARCH_OMAP3 || SOC_AM33XX))
+> +	depends on PCI || EISA || AR7 || (ARM && (ARCH_DAVINCI || ARCH_OMAP3 || SOC_AM33XX || ARCH_KEYSTONE))
+>  	---help---
+>  	  If you have a network (Ethernet) card belonging to this class, say Y
+>  	  and read the Ethernet-HOWTO, available from
+> @@ -32,7 +32,7 @@ config TI_DAVINCI_EMAC
+>  
+>  config TI_DAVINCI_MDIO
+>  	tristate "TI DaVinci MDIO Support"
+> -	depends on ARM && ( ARCH_DAVINCI || ARCH_OMAP3 || SOC_AM33XX )
+> +	depends on ARM && ( ARCH_DAVINCI || ARCH_OMAP3 || SOC_AM33XX || ARCH_KEYSTONE )
+>  	select PHYLIB
+>  	---help---
+>  	  This driver supports TI's DaVinci MDIO module.
+> 
 
-Ok, with the help of a colleague with some more expertise on git than I h=
-ave, we finally figured out which branch you mean with tip/perf/core. Sor=
-ry for the confusion! The conflict was trivial to solve, I will send the =
-rebased patches separately.=20
-
-Joseph
-
-On 09.07.2014 13:49, Jiri Olsa wrote:
-> On Wed, Jul 09, 2014 at 01:43:18PM +0200, Joseph Schuchart wrote:
->> Jirka,
->>
->> I tried to apply the patches to the latest version of the perf/core br=
-anch before sending. Can you please send me some more information about t=
-he conflict?
->=20
-> is your HEAD 8b5b584 ?
->=20
-> [jolsa@krava perf]$ git show --oneline tip/perf/core
-> 8b5b584 Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm=
-/linux/kernel/git/jolsa/perf into perf/core
->=20
-> jirka
->=20
-
---=20
-Dipl. Inf. Joseph Schuchart=20
-Computer Scientist=20
-
-Technische Universit=E4t Dresden=20
-Center for Information Services and High Performance Computing (ZIH)=20
-01062 Dresden, Germany=20
-
-Phone: +49 351 463-36494=20
-Fax: +49 351 463-3773=20
-E-Mail: joseph.schuchart@tu-dresden.de
-
-
---------------ms030806070409010105070305
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIPizCC
-BHQwggNcoAMCAQICCQCJkBEVWD6HmzANBgkqhkiG9w0BAQsFADBxMQswCQYDVQQGEwJERTEc
-MBoGA1UEChMTRGV1dHNjaGUgVGVsZWtvbSBBRzEfMB0GA1UECxMWVC1UZWxlU2VjIFRydXN0
-IENlbnRlcjEjMCEGA1UEAxMaRGV1dHNjaGUgVGVsZWtvbSBSb290IENBIDIwHhcNMTQwMjEx
-MTMxMTQ1WhcNMTkwNzA5MjM1OTAwWjBaMQswCQYDVQQGEwJERTETMBEGA1UEChMKREZOLVZl
-cmVpbjEQMA4GA1UECxMHREZOLVBLSTEkMCIGA1UEAxMbREZOLVZlcmVpbiBQQ0EgR2xvYmFs
-IC0gRzAxMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6ZvDZ4X5Da71jVTDllA1
-PWLpbkztlNcAW5UidNQg6zSP1uzAMQQLmYHiphTSUqAoI4SLdIkEXlvg4njBeMsWyyg1OXst
-kEXQ7aAAeny/Sg4bAMOG6VwrMRF7DPOCJEOMHDiLamgAmu7cT3ir0sYTm3at7t4m6O8Br3QP
-wQmi9mvOvdPNFDBP9eXjpMhim4IaAycwDQJlYE3t0QkjKpY1WCfTdsZxtpAdxO3/NYZ9bzOz
-2w/FEcKKg6GUXUFr2NIQ9Uz9ylGs2b3vkoO72uuLFlZWQ8/h1RM9ph8nMM1JVNvJEzSacXXF
-bOqnC5j5IZ0nrz6jOTlIaoytyZn7wxLyvQIDAQABo4IBJDCCASAwDgYDVR0PAQH/BAQDAgEG
-MB0GA1UdDgQWBBRJt8bP6D0ff+pEexMp9/EKcD7eZDAfBgNVHSMEGDAWgBQxw3kbuvVT1xfg
-iXotF2wKsyudMzASBgNVHRMBAf8ECDAGAQH/AgECMD8GA1UdHwQ4MDYwNKAyoDCGLmh0dHA6
-Ly9vY3NwMDMzNi50ZWxlc2VjLmRlL3JsL0RUX1JPT1RfQ0FfMi5jcmwweQYIKwYBBQUHAQEE
-bTBrMCwGCCsGAQUFBzABhiBodHRwOi8vb2NzcDAzMzYudGVsZXNlYy5kZS9vY3NwcjA7Bggr
-BgEFBQcwAoYvaHR0cDovL29jc3AwMzM2LnRlbGVzZWMuZGUvY3J0L0RUX1JPT1RfQ0FfMi5j
-ZXIwDQYJKoZIhvcNAQELBQADggEBACwvqeBeQy8FcNxRlXVdgI47DMFjWFSBMIOcXalRh8m2
-1w8runhIJGBCzPGi4jPhMh4ym1ETlXnGtazQJO0YFLwvKuovq7ITrEkdXgALBBhqmmXU6Ec1
-vK7t33S22PGAUGWgxtojm41TR8psu0DJlV1OYHor5LtmQFWvtjPB6iMhbvxUnd0zQm5Ma9Xk
-w/LqBrdaMmoyRXS2tW/+6v8cY6q7iNH4WK8gfo+///b3OHeLGrZQP609R3lGw1e0F2KHvZ6j
-NiUHaCSqIvL2rynsN6UUma66AWCGdS1hFbp4loe1ks/hUJGeWToV7J5axob8KD5mutTZNa+t
-PEkihYfub48wggVhMIIESaADAgECAgcXpCR5aFyOMA0GCSqGSIb3DQEBCwUAMFoxCzAJBgNV
-BAYTAkRFMRMwEQYDVQQKEwpERk4tVmVyZWluMRAwDgYDVQQLEwdERk4tUEtJMSQwIgYDVQQD
-ExtERk4tVmVyZWluIFBDQSBHbG9iYWwgLSBHMDEwHhcNMTQwNTI3MTQ1MzI5WhcNMTkwNzA5
-MjM1OTAwWjCBhTELMAkGA1UEBhMCREUxKDAmBgNVBAoTH1RlY2huaXNjaGUgVW5pdmVyc2l0
-YWV0IERyZXNkZW4xDDAKBgNVBAsTA1pJSDEcMBoGA1UEAxMTVFUgRHJlc2RlbiBDQSAtIEcw
-MjEgMB4GCSqGSIb3DQEJARYRcGtpQHR1LWRyZXNkZW4uZGUwggEiMA0GCSqGSIb3DQEBAQUA
-A4IBDwAwggEKAoIBAQDBDh6T80T27NAn91B6YQsENBWT/LEfbGPagOzhM1w1Cjx3ICCilYCg
-JeIPQmBZT9RalxxF2z2OGDPcRTuqcaFPkgtdGaw1BFEIX+kGe3Itz2GlaKLPnQBHwcp+ODj8
-OdgvD4wZqYkvsjaDx1ck2spHHVxLEh/7ybexJL3f1zatqPJkK2fJuOeeUz3Ip74sPqhKn3QA
-5Q5E4JUHlvh3l4TDFrbmEIMntRqrJ+LaG2JCQ2G9hfEUvxeo3Zr6y88IdG+d7Hbp+XJkZYoO
-enVItm9z+atzo+NBxdmW8nD00xJAG52xQSwN4HR+qtj0CcnMtj41zXv6ul2E7ltRubqNM3sn
-AgMBAAGjggH+MIIB+jASBgNVHRMBAf8ECDAGAQH/AgEBMA4GA1UdDwEB/wQEAwIBBjARBgNV
-HSAECjAIMAYGBFUdIAAwHQYDVR0OBBYEFMUrU5MXg8n1RkLtQ2rftoCmR/LgMB8GA1UdIwQY
-MBaAFEm3xs/oPR9/6kR7Eyn38QpwPt5kMBwGA1UdEQQVMBOBEXBraUB0dS1kcmVzZGVuLmRl
-MIGIBgNVHR8EgYAwfjA9oDugOYY3aHR0cDovL2NkcDEucGNhLmRmbi5kZS9nbG9iYWwtcm9v
-dC1jYS9wdWIvY3JsL2NhY3JsLmNybDA9oDugOYY3aHR0cDovL2NkcDIucGNhLmRmbi5kZS9n
-bG9iYWwtcm9vdC1jYS9wdWIvY3JsL2NhY3JsLmNybDCB1wYIKwYBBQUHAQEEgcowgccwMwYI
-KwYBBQUHMAGGJ2h0dHA6Ly9vY3NwLnBjYS5kZm4uZGUvT0NTUC1TZXJ2ZXIvT0NTUDBHBggr
-BgEFBQcwAoY7aHR0cDovL2NkcDEucGNhLmRmbi5kZS9nbG9iYWwtcm9vdC1jYS9wdWIvY2Fj
-ZXJ0L2NhY2VydC5jcnQwRwYIKwYBBQUHMAKGO2h0dHA6Ly9jZHAyLnBjYS5kZm4uZGUvZ2xv
-YmFsLXJvb3QtY2EvcHViL2NhY2VydC9jYWNlcnQuY3J0MA0GCSqGSIb3DQEBCwUAA4IBAQCJ
-hMBD4Oh4PXhRwECrWgomDDnELDDFh4FN1e2g0gYbKLg/kA0gw6RKImh4GhTRAbENxW2My+tH
-aKFjtwQdBaanilk4DN581jqxjo37jPEwDmNNzT8U4ssiwmkMD2bWM2vTcc7lDj2g7w+sRzIJ
-8zi1AtCV43bJT8xBVj0PQpFuqYVvYzgMq+KNtGn4YyiBAMyDY1EzPEgtOovN7sqXb3jGDa71
-gqdHWIKf9orfDWCZ/Y8d+Y+rSqtBAHj0fnAzjnIgtJvUIif+Afx/4Rvxy0MHj3q6uHhPFcZ9
-QBPm+vxX2nWXEMlJcf1A/Igdah5hUpkmAQIUUJso8QbE4gXBS/BPMIIFqjCCBJKgAwIBAgIH
-Fr0+Fq4AGTANBgkqhkiG9w0BAQUFADCBhTELMAkGA1UEBhMCREUxKDAmBgNVBAoTH1RlY2hu
-aXNjaGUgVW5pdmVyc2l0YWV0IERyZXNkZW4xDDAKBgNVBAsTA1pJSDEcMBoGA1UEAxMTVFUg
-RHJlc2RlbiBDQSAtIEcwMjEgMB4GCSqGSIb3DQEJARYRcGtpQHR1LWRyZXNkZW4uZGUwHhcN
-MTMxMjAzMTEyOTEwWhcNMTYxMjAyMTEyOTEwWjBgMQswCQYDVQQGEwJERTEoMCYGA1UEChMf
-VGVjaG5pc2NoZSBVbml2ZXJzaXRhZXQgRHJlc2RlbjEMMAoGA1UECxMDWklIMRkwFwYDVQQD
-ExBKb3NlcGggU2NodWNoYXJ0MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtp78
-4m+f4qwkmx2yLZT4xVDtjvN3WXBRI53CmFu6lm/3cMyj32EHPE/PLs/J2yYqSI2dUPUNQpg+
-PX1rbofQcxXCEYCAErs/p7ynofEeJoQf5BF0BbtXBqD+1PaHXOALbk51lWFbyDDaLsCEh15r
-uOC60HRTdRz8ztDf+jQDeidqZBijFjU7cUIShnxOCxnCOna11aiamDqCZDatlwE/9bj5C8JN
-YQLmMNo2AHaQLF4e3e9DtcGdCPRDjwwrL+Dl/EmyEyQTy4CljQjSjlKS4jtW+uFNOffU2t7R
-fBeNJx8xgQe+JxZK2tzlPWh72JM96AiPHpHAY2X2cUhpheqPdQIDAQABo4ICQTCCAj0wLwYD
-VR0gBCgwJjARBg8rBgEEAYGtIYIsAQEEAwEwEQYPKwYBBAGBrSGCLAIBBAMBMAkGA1UdEwQC
-MAAwCwYDVR0PBAQDAgXgMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4E
-FgQU2IlmQWpeOkXl+dw+0arfnVk2FEkwHwYDVR0jBBgwFoAUxStTkxeDyfVGQu1Dat+2gKZH
-8uAwKQYDVR0RBCIwIIEeam9zZXBoLnNjaHVjaGFydEB0dS1kcmVzZGVuLmRlMIGLBgNVHR8E
-gYMwgYAwPqA8oDqGOGh0dHA6Ly9jZHAxLnBjYS5kZm4uZGUvdHUtZHJlc2Rlbi1jYS9wdWIv
-Y3JsL2dfY2FjcmwuY3JsMD6gPKA6hjhodHRwOi8vY2RwMi5wY2EuZGZuLmRlL3R1LWRyZXNk
-ZW4tY2EvcHViL2NybC9nX2NhY3JsLmNybDCB2QYIKwYBBQUHAQEEgcwwgckwMwYIKwYBBQUH
-MAGGJ2h0dHA6Ly9vY3NwLnBjYS5kZm4uZGUvT0NTUC1TZXJ2ZXIvT0NTUDBIBggrBgEFBQcw
-AoY8aHR0cDovL2NkcDEucGNhLmRmbi5kZS90dS1kcmVzZGVuLWNhL3B1Yi9jYWNlcnQvZ19j
-YWNlcnQuY3J0MEgGCCsGAQUFBzAChjxodHRwOi8vY2RwMi5wY2EuZGZuLmRlL3R1LWRyZXNk
-ZW4tY2EvcHViL2NhY2VydC9nX2NhY2VydC5jcnQwDQYJKoZIhvcNAQEFBQADggEBACoeSNfg
-yIAGxawrnghOIhIaD3xIsPvZP7ZFMV1aQ9ltzHiZgUxnnaEUJEV0f+ASblYavp+0T/up0Nre
-+fKqm9/VMNyYG8068m6jNC+72NywQD9BKWCTWgDZ3RqChwzrfBq7URSqNJhLSKj/Q7e+k7mC
-FIqwpnhMeFCZhAkORPUNiuMbyFYO9ahtbuIujiF4c3FYDQJZFf83HWZ4neG4ioc8qhsOuXaB
-lN0AtExPw1KfpHqw1kwMaxZ10Yin8M4k8gOPNIbm6vl1F8yFCHQka2ZnaDBueswhj+ntj1WU
-jqHED1hovfievMMW7Fd3njo+T9RODMi3kNC7VObz0hu0cs0xggPUMIID0AIBATCBkTCBhTEL
-MAkGA1UEBhMCREUxKDAmBgNVBAoTH1RlY2huaXNjaGUgVW5pdmVyc2l0YWV0IERyZXNkZW4x
-DDAKBgNVBAsTA1pJSDEcMBoGA1UEAxMTVFUgRHJlc2RlbiBDQSAtIEcwMjEgMB4GCSqGSIb3
-DQEJARYRcGtpQHR1LWRyZXNkZW4uZGUCBxa9PhauABkwCQYFKw4DAhoFAKCCAhcwGAYJKoZI
-hvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTQwNzA5MTQxNjI1WjAjBgkq
-hkiG9w0BCQQxFgQU9DuDMZ+BtmDgZ5s1auvxXlUA6bgwbAYJKoZIhvcNAQkPMV8wXTALBglg
-hkgBZQMEASowCwYJYIZIAWUDBAECMAoGCCqGSIb3DQMHMA4GCCqGSIb3DQMCAgIAgDANBggq
-hkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG9w0DAgIBKDCBogYJKwYBBAGCNxAEMYGUMIGR
-MIGFMQswCQYDVQQGEwJERTEoMCYGA1UEChMfVGVjaG5pc2NoZSBVbml2ZXJzaXRhZXQgRHJl
-c2RlbjEMMAoGA1UECxMDWklIMRwwGgYDVQQDExNUVSBEcmVzZGVuIENBIC0gRzAyMSAwHgYJ
-KoZIhvcNAQkBFhFwa2lAdHUtZHJlc2Rlbi5kZQIHFr0+Fq4AGTCBpAYLKoZIhvcNAQkQAgsx
-gZSggZEwgYUxCzAJBgNVBAYTAkRFMSgwJgYDVQQKEx9UZWNobmlzY2hlIFVuaXZlcnNpdGFl
-dCBEcmVzZGVuMQwwCgYDVQQLEwNaSUgxHDAaBgNVBAMTE1RVIERyZXNkZW4gQ0EgLSBHMDIx
-IDAeBgkqhkiG9w0BCQEWEXBraUB0dS1kcmVzZGVuLmRlAgcWvT4WrgAZMA0GCSqGSIb3DQEB
-AQUABIIBABiLDOuvgo6/z25bYxl92BVJKYWxCNlzYyRQR09eFDuxNNU+OUu3JxVM0nuyRJb1
-bykKKWUyF2YaBummhmOStudLuz8Q7zv+6phayyK0Rpnrg7fbS+7U8DLrxm4JNlQPy+Kx4gRL
-CNwZDjjqhhAhMOo8jGiT+3ort9skF3cFijWIg5zRsy7BLYOndldiTIsbT0UbV5O/1I8cM9Hr
-jmnol2IShHnTmGudA5QYUm9wQixiVS6Sk4pNcIcyPAEB2df9/aviZjKxg9iEltTQ/SwLaEAJ
-K6NMatyJoJhoJZ1FHOUS8IzmAnasVMVuhid3KFfPJaA6AeXWx1JbjI4Z0O9WsDgAAAAAAAA=
---------------ms030806070409010105070305--
