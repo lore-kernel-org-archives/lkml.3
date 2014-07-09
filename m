@@ -1,99 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979AbaGIN0n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 09:26:43 -0400
-Received: from mail.kernel.org ([198.145.19.201]:44246 "EHLO mail.kernel.org"
+	id S1755844AbaGINbx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 09:31:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24506 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751778AbaGIN0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 09:26:42 -0400
-Date: Wed, 9 Jul 2014 06:26:35 -0700
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Changman Lee <cm224.lee@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: f2fs: Add f2fs_balance_fs for direct IO
-Message-ID: <20140709132635.GA4926@jmac>
-References: <1404711988-18264-1-git-send-email-ying.huang@intel.com>
- <20140708075843.GA59558@jmac>
- <1404807412.13519.46.camel@yhuang-dev>
+	id S1753923AbaGINbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 09:31:52 -0400
+Date: Wed, 9 Jul 2014 09:31:37 -0400
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch] mm, hugetlb: generalize writes to nr_hugepages
+Message-ID: <20140709093137.5a6ab051@redhat.com>
+In-Reply-To: <20140708151113.dd1469faea6177959356620b@linux-foundation.org>
+References: <alpine.DEB.2.02.1406301655480.27587@chino.kir.corp.google.com>
+	<20140702172529.347f2dd2@redhat.com>
+	<alpine.DEB.2.02.1407021743340.4970@chino.kir.corp.google.com>
+	<20140708151113.dd1469faea6177959356620b@linux-foundation.org>
+Organization: Red Hat
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404807412.13519.46.camel@yhuang-dev>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 08, 2014 at 04:16:52PM +0800, Huang Ying wrote:
-> Hi, Jaegeuk,
-> 
-> On Tue, 2014-07-08 at 00:58 -0700, Jaegeuk Kim wrote:
-> > Hi Huang,
-> > 
-> > It occurs a merge conflict.
-> > Please check the patch.
-> 
-> Sorry, my fault.  I think I need to base my patch on f2fs tree instead
-> of latest Linus' tree?
+On Tue, 8 Jul 2014 15:11:13 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-My apologies.
-As Chao said, it was due to the other patch.
-I'll merge them soon.
-
+> On Wed, 2 Jul 2014 17:44:46 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
 > 
-> > Anyway, IMO, it needs to place f2fs_balance_fs somewhere in get_data_block.
-> 
-> Yes.  I think so too.  So you prefer to add f2fs_balance_fs in both
-> f2fs_direct_IO and get_data_block, or just add f2fs_blance_fs in
-> get_data_block only?
-
-I think it should be placed on get_data_block only.
-But, at a glance, we need to figure out some conditions when it should be
-called.
-Since we don't or shouldn't call that in the look-up paths (e.g., read).
-
-Thanks,
-
-> 
-> Best Regards,
-> Huang, Ying
-> 
-> > Thanks,
-> > 
-> > On Mon, Jul 07, 2014 at 01:46:28PM +0800, Huang Ying wrote:
-> > > Otherwise, if a large amount of direct IO writes were done, the
-> > > segment allocation may be failed because no enough segments are gced.
+> > > > @@ -2248,36 +2257,18 @@ static int hugetlb_sysctl_handler_common(bool obey_mempolicy,
+> > > >  			 void __user *buffer, size_t *length, loff_t *ppos)
+> > > >  {
+> > > >  	struct hstate *h = &default_hstate;
+> > > > -	unsigned long tmp;
+> > > > +	unsigned long tmp = h->max_huge_pages;
+> > > >  	int ret;
+> > > >  
+> > > > -	if (!hugepages_supported())
+> > > > -		return -ENOTSUPP;
 > > > 
-> > > Signed-off-by: Huang, Ying <ying.huang@intel.com>
-> > > ---
-> > >  fs/f2fs/data.c |    6 +++++-
-> > >  1 file changed, 5 insertions(+), 1 deletion(-)
+> > > Shouldn't you add this check to __nr_hugepages_store_common()? Otherwise
+> > > looks good to me.
 > > > 
-> > > --- a/fs/f2fs/data.c
-> > > +++ b/fs/f2fs/data.c
-> > > @@ -1038,6 +1038,7 @@ static ssize_t f2fs_direct_IO(int rw, st
-> > >  {
-> > >  	struct file *file = iocb->ki_filp;
-> > >  	struct inode *inode = file->f_mapping->host;
-> > > +	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-> > >  
-> > >  	/* Let buffer I/O handle the inline data case. */
-> > >  	if (f2fs_has_inline_data(inode))
-> > > @@ -1046,8 +1047,11 @@ static ssize_t f2fs_direct_IO(int rw, st
-> > >  	if (check_direct_IO(inode, rw, iter, offset))
-> > >  		return 0;
-> > >  
-> > > +	if (rw == WRITE)
-> > > +		f2fs_balance_fs(sbi);
-> > > +
-> > >  	/* clear fsync mark to recover these blocks */
-> > > -	fsync_mark_clear(F2FS_SB(inode->i_sb), inode->i_ino);
-> > > +	fsync_mark_clear(sbi, inode->i_ino);
-> > >  
-> > >  	return blockdev_direct_IO(rw, iocb, inode, iter, offset,
-> > >  				  get_data_block);
 > > 
+> > Hmm, I think you're right but I don't think __nr_hugepages_store_common() 
+> > is the right place: if we have a legitimate hstate for the sysfs tunables 
+> > then we should support hugepages.  I think this should be kept in 
+> > hugetlb_sysctl_handler_common().
+> 
+> This?
 
--- 
-Jaegeuk Kim
+Yes.
+
+> 
+> --- a/mm/hugetlb.c~mm-hugetlb-generalize-writes-to-nr_hugepages-fix
+> +++ a/mm/hugetlb.c
+> @@ -2260,6 +2260,9 @@ static int hugetlb_sysctl_handler_common
+>  	unsigned long tmp = h->max_huge_pages;
+>  	int ret;
+>  
+> +	if (!hugepages_supported())
+> +		return -ENOTSUPP;
+> +
+>  	table->data = &tmp;
+>  	table->maxlen = sizeof(unsigned long);
+>  	ret = proc_doulongvec_minmax(table, write, buffer, length, ppos);
+> _
+> 
+
