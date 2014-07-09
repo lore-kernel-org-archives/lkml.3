@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208AbaGIONO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 10:13:14 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:65439 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755470AbaGIONM (ORCPT
+	id S1756321AbaGION0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 10:13:26 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:50319 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756271AbaGIONY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 10:13:12 -0400
-Message-ID: <53BD4DFD.6070805@cogentembedded.com>
-Date: Wed, 09 Jul 2014 18:13:17 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 9 Jul 2014 10:13:24 -0400
+Date: Wed, 9 Jul 2014 10:01:06 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: konrad@kernel.org, xen-devel@lists.xenproject.org,
+        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/7] xen/pciback: Don't deadlock when unbinding.
+Message-ID: <20140709140106.GE21837@laptop.dumpdata.com>
+References: <1404845909-13563-1-git-send-email-konrad@kernel.org>
+ <1404845909-13563-3-git-send-email-konrad@kernel.org>
+ <53BD33B8.9020901@citrix.com>
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, kys@microsoft.com,
-        haiyangz@microsoft.com
-CC: romieu@fr.zoreil.com, devel@linuxdriverproject.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] hyperv: Add netpoll support
-References: <1404892702-11094-1-git-send-email-richard@nod.at>
-In-Reply-To: <1404892702-11094-1-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53BD33B8.9020901@citrix.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Wed, Jul 09, 2014 at 01:21:12PM +0100, David Vrabel wrote:
+> On 08/07/14 19:58, konrad@kernel.org wrote:
+> > --- a/drivers/xen/xen-pciback/pci_stub.c
+> > +++ b/drivers/xen/xen-pciback/pci_stub.c
+> > @@ -277,10 +277,15 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+> >  	 * (so it's ready for the next domain)
+> >  	 */
+> >  
+> > -	/* This is OK - we are running from workqueue context
+> > -	 * and want to inhibit the user from fiddling with 'reset'
+> > +	/* We might be holding the PCI lock (see comment at the top of the
+> > +	 * function) - as such try lock and if we can't then don't worry -
+> > +	 * as either:
+> > +	 *  - we are 'unbind' in which case 'pcistub_device_release' gets
+> > +	 *    called which does the locked version of this.
+> > +	 *  - the toolstack has the smarts to do it and has done the
+> > +	 *    reset on SysFS before assigning this device to another guest.
+> >  	 */
+> > -	pci_reset_function(dev);
+> > +	pci_try_reset_function(dev);
+> 
+> Why not use __pci_reset_function_locked() and ensure all callers of
+> pcistub_put_pci_dev() are holding the device lock?
 
-On 07/09/2014 11:58 AM, Richard Weinberger wrote:
+That could also be done.
+> 
+> >  	pci_restore_state(dev);
+> 
+> If we didn't reset the device there is no need to restore its state.
 
-> In order to have at least a netconsole to debug kernel issues on
-> Windows Azure this patch implements netpoll support.
-> Sending packets is easy, netvsc_start_xmit() does already everything
-> needed.
-
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->   drivers/net/hyperv/netvsc_drv.c | 11 +++++++++++
->   1 file changed, 11 insertions(+)
-
-> diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-> index 4fd71b7..45218d5 100644
-> --- a/drivers/net/hyperv/netvsc_drv.c
-> +++ b/drivers/net/hyperv/netvsc_drv.c
-> @@ -736,6 +736,14 @@ static int netvsc_set_mac_addr(struct net_device *ndev, void *p)
->   	return err;
->   }
->
-> +#ifdef CONFIG_NET_POLL_CONTROLLER
-> +static void netvsc_poll_controller(struct net_device *net)
-> +{
-> +	/* As netvsc_start_xmit() works synchronous we don't have to
-> +	   trigger anything here. */
-
-    The multi-line comment style in the networking code is this:
-
-/* bla
-  * bla
-  */
-
-> +	return;
-
-    Not needed.
-
-> +}
-> +#endif
-[...]
-
-WBR, Sergei
-
+<nods>
+> 
+> David
