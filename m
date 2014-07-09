@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755881AbaGINJA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 09:09:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32573 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751268AbaGINI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 09:08:59 -0400
-Date: Wed, 9 Jul 2014 18:38:22 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: linux-kernel@vger.kernel.org,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
-        keescook@chromium.org, stable@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] hwrng: fetch randomness only after device init
-Message-ID: <20140709130822.GA4553@grmbl.mre>
-References: <cover.1404538109.git.amit.shah@redhat.com>
- <515a12ecc5fca5452bf0bfda4d54546d8fb5829c.1404538109.git.amit.shah@redhat.com>
- <20140709115317.GM13433@titan.lakedaemon.net>
+	id S1754874AbaGINPI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 09:15:08 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:39442 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268AbaGINPG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 09:15:06 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Himangi Saraogi <himangi774@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH] sh-pfc: sh73a0: Introduce the use of devm_regulator_register
+Date: Wed, 09 Jul 2014 15:16:08 +0200
+Message-ID: <6084416.kjNb0aQC9P@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.12.21-gentoo-r1; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CACRpkdbX_mhwOP1S6vLxRi8sqvwk4uo+gLk_0a+2wZOjA_Yoig@mail.gmail.com>
+References: <20140707160916.GA9238@himangi-Dell> <CACRpkdbX_mhwOP1S6vLxRi8sqvwk4uo+gLk_0a+2wZOjA_Yoig@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140709115317.GM13433@titan.lakedaemon.net>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Wed) 09 Jul 2014 [07:53:17], Jason Cooper wrote:
-> On Sat, Jul 05, 2014 at 11:04:52AM +0530, Amit Shah wrote:
-> > Commit d9e7972619334 "hwrng: add randomness to system from rng sources"
-> > added a call to rng_get_data() from the hwrng_register() function.
-> > However, some rng devices need initialization before data can be read
-> > from them.
+On Wednesday 09 July 2014 12:32:44 Linus Walleij wrote:
+> On Mon, Jul 7, 2014 at 6:09 PM, Himangi Saraogi wrote:
+> > This patch moves data allocated using regulator_register to
+> > devm_regulator_register and does away the calls to regulator_unregister.
+> > The sh73a0_pinmux_soc_exit function is no longer needed and is removed.
 > > 
-> > This commit makes the call to rng_get_data() depend on no init fn
-> > pointer being registered by the device.  If an init function is
-> > registered, this call is made after device init.
-> > 
-> > CC: Kees Cook <keescook@chromium.org>
-> > CC: Jason Cooper <jason@lakedaemon.net>
-> > CC: Herbert Xu <herbert@gondor.apana.org.au>
-> > CC: <stable@vger.kernel.org> # For v3.15+
-> > Signed-off-by: Amit Shah <amit.shah@redhat.com>
-> > ---
-> >  drivers/char/hw_random/core.c | 31 +++++++++++++++++++++++++------
-> >  1 file changed, 25 insertions(+), 6 deletions(-)
+> > Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> > Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 > 
-> Thanks for cleaning this up!
+> Laurent is maintaining this driver so let's see if he can ACK it.
 
-Thanks!
+Assuming we're talking about https://lkml.org/lkml/2014/7/7/386,
 
-Any thoughts on the follow-up patch posted later that resolves some of
-the weirdness in init?
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-		Amit
+-- 
+Regards,
+
+Laurent Pinchart
+
