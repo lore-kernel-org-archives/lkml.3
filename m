@@ -1,90 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755155AbaGIWEA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 18:04:00 -0400
-Received: from elasmtp-banded.atl.sa.earthlink.net ([209.86.89.70]:39132 "EHLO
-	elasmtp-banded.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751753AbaGIWD7 (ORCPT
+	id S932109AbaGIWIX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 18:08:23 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:59894 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752795AbaGIWIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 18:03:59 -0400
-X-Greylist: delayed 535 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Jul 2014 18:03:58 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=mindspring.com;
-  b=Wo9rqfZLp3HtS2mbW3WAPBAp/TLMq21mcV3/4hmlaGdI4V82XlUAlaW1WAh4WuOZ;
-  h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer:X-ELNK-Trace:X-Originating-IP;
-From: "Frank S. Filz" <ffilzlnx@mindspring.com>
-To: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
-        "Frank S. Filz" <ffilzlnx@mindspring.com>
-Subject: [PATCH 1/1] Fix permission checking by NFS client for open-create with mode 000
-Date: Wed,  9 Jul 2014 17:54:52 -0400
-Message-Id: <1404942892-18323-1-git-send-email-ffilzlnx@mindspring.com>
-X-Mailer: git-send-email 1.8.3.1
-X-ELNK-Trace: 136157f01908a8929c7f779228e2f6aeda0071232e20db4dddc0f23d06885a76d5c836618781787f350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 71.236.153.111
+	Wed, 9 Jul 2014 18:08:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140709163050.GM2635@lee--X1>
+References: <1404763270-24932-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<20140709163050.GM2635@lee--X1>
+Date: Thu, 10 Jul 2014 00:08:21 +0200
+Message-ID: <CAFo99gYErPZo_f-5kZkDqZ0YSPirE1fLn2F1odMPSjuUdLUQ8A@mail.gmail.com>
+Subject: Re: [PATCH] video: backlight: jornada720_lcd.c: Cleaning up variable
+ that is never used
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Frank S. Filz" <ffilzlnx@mindspring.com>
+2014-07-09 18:30 GMT+02:00 Lee Jones <lee.jones@linaro.org>:
+> On Mon, 07 Jul 2014, Rickard Strandqvist wrote:
+>
+>> Variable ar assigned a value that is never used.
+>> I have also removed all the code that thereby serves no purpose,
+>> and made same change to clarify the similarities in function.
+>>
+>> This was found using a static code analysis program called cppcheck
+>>
+>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>> ---
+>>  drivers/video/backlight/jornada720_lcd.c |   31 ++++++++++++++----------------
+>>  1 file changed, 14 insertions(+), 17 deletions(-)
+>>
+>> diff --git a/drivers/video/backlight/jornada720_lcd.c b/drivers/video/backlight/jornada720_lcd.c
+>> index da3876c..d16abcf 100644
+>> --- a/drivers/video/backlight/jornada720_lcd.c
+>> +++ b/drivers/video/backlight/jornada720_lcd.c
+>> @@ -36,44 +36,41 @@ static int jornada_lcd_get_power(struct lcd_device *ld)
+>>
+>>  static int jornada_lcd_get_contrast(struct lcd_device *ld)
+>>  {
+>> -     int ret;
+>> +     int ret = -ETIMEDOUT;
+>>
+>>       if (jornada_lcd_get_power(ld) != FB_BLANK_UNBLANK)
+>>               return 0;
+>>
+>>       jornada_ssp_start();
+>>
+>> -     if (jornada_ssp_byte(GETCONTRAST) != TXDUMMY) {
+>> +     if (jornada_ssp_byte(GETCONTRAST) != TXDUMMY)
+>>               dev_err(&ld->dev, "get contrast failed\n");
+>> -             jornada_ssp_end();
+>> -             return -ETIMEDOUT;
+>> -     } else {
+>> +     else
+>>               ret = jornada_ssp_byte(TXDUMMY);
+>> -             jornada_ssp_end();
+>> -             return ret;
+>> -     }
+>> +
+>> +     jornada_ssp_end();
+>> +
+>> +     return ret;
+>>  }
+>>
+>>  static int jornada_lcd_set_contrast(struct lcd_device *ld, int value)
+>>  {
+>> -     int ret;
+>> +     int ret = -ETIMEDOUT;
+>>
+>>       jornada_ssp_start();
+>>
+>>       /* start by sending our set contrast cmd to mcu */
+>> -     ret = jornada_ssp_byte(SETCONTRAST);
+>> -
+>> +     if (jornada_ssp_byte(SETCONTRAST) != TXDUMMY)
+>> +             dev_err(&ld->dev, "set contrast failed\n");
+>>       /* push the new value */
+>> -     if (jornada_ssp_byte(value) != TXDUMMY) {
+>> +     else if (jornada_ssp_byte(value) != TXDUMMY)
+>>               dev_err(&ld->dev, "set contrast failed\n");
+>> -             jornada_ssp_end();
+>> -             return -ETIMEDOUT;
+>> -     }
+>> +     else /* if we get here we can assume everything went well */
+>> +             ret = 0;
+>>
+>> -     /* if we get here we can assume everything went well */
+>>       jornada_ssp_end();
+>>
+>> -     return 0;
+>> +     return ret;
+>>  }
+>>
+>>  static int jornada_lcd_set_power(struct lcd_device *ld, int power)
+>
+> Counter suggestion.
+>
+> What do you think, I think this looks cleaner:
+>
+> static int jornada_lcd_get_contrast(struct lcd_device *ld)
+> {
+>         int ret;
+>
+>         if (jornada_lcd_get_power(ld) != FB_BLANK_UNBLANK)
+>                 return 0;
+>
+>         jornada_ssp_start();
+>
+>         if (jornada_ssp_byte(GETCONTRAST) == TXDUMMY) {
+>                 ret = jornada_ssp_byte(TXDUMMY);
+>                 goto success;
+>         }
+>
+>         dev_err(&ld->dev, "failed to set contrast\n");
+>         ret = -ETIMEDOUT;
+>
+> success:
+>         jornada_ssp_end();
+>         return ret;
+> }
+>
+> static int jornada_lcd_set_contrast(struct lcd_device *ld, int value)
+> {
+>         int ret = 0;
+>
+>         jornada_ssp_start();
+>
+>         /* start by sending our set contrast cmd to mcu */
+>         if (jornada_ssp_byte(SETCONTRAST) == TXDUMMY) {
+>                 /* if successful, push the new value */
+>                 if (jornada_ssp_byte(value) == TXDUMMY)
+>                         goto success;
+>         }
+>
+>         dev_err(&ld->dev, "failed to set contrast\n");
+>         ret = -ETIMEDOUT;
+>
+> success:
+>         jornada_ssp_end();
+>         return ret;
+> }
 
-The NFS v4 client sends a COMPOUND with an OPEN and an ACCESS.
 
-The ACCESS is required to verify an open for read is actually
-allowed because RFC 3530 indicates OPEN for read only must succeed
-for an execute only file.
+Hi Lee!
 
-The old code expected to have read access if the requested access
-was O_RDWR.
+Yes, I agree!
+Both are clean without so much repetition of code, which was what annoyd me.
+But yours is clearer when things go good or bad, nice 1 ;)
 
-We can expect the OPEN to properly permission check as long as
-the open is O_WRONLY or O_RDWR.
+I do not know what I can/may do, but I'll try. Remove what is not ok :-)
 
-Signed-off-by: Frank S. Filz <ffilzlnx@mindspring.com>
----
- fs/nfs/nfs4proc.c | 25 ++++++++++++++++++++-----
- 1 file changed, 20 insertions(+), 5 deletions(-)
+Reviewed-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Suggested-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 4bf3d97..9742054 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -1966,15 +1966,30 @@ static int nfs4_opendata_access(struct rpc_cred *cred,
- 		return 0;
- 
- 	mask = 0;
--	/* don't check MAY_WRITE - a newly created file may not have
--	 * write mode bits, but POSIX allows the creating process to write.
--	 * use openflags to check for exec, because fmode won't
--	 * always have FMODE_EXEC set when file open for exec. */
-+	/* Don't trust the permission check on OPEN if open for exec or for
-+	 * read only. Since FMODE_EXEC doesn't go across the wire, the server
-+	 * has no way to distinguish between an open to read an executable file
-+	 * and an open to read a readable file. Write access is properly checked
-+	 * and permission SHOULD always be granted if the file was created as a
-+	 * result of this OPEN, no matter what mode the file was created with.
-+	 *
-+	 * NOTE: If the case of a OPEN CREATE READ-ONLY with a mode that does
-+	 *       not allow read access, this test will produce an incorrect
-+	 *       EACCES error.
-+	 */
- 	if (openflags & __FMODE_EXEC) {
- 		/* ONLY check for exec rights */
- 		mask = MAY_EXEC;
--	} else if (fmode & FMODE_READ)
-+	} else if (!(fmode & FMODE_WRITE)) {
-+		/* In case the file was execute only, check for read permission
-+		 * ONLY if write access was not requested. It is expected that
-+		 * an OPEN for write will fail if the file is execute only.
-+		 * Note that if the file was newly created, the fmode SHOULD
-+		 * include FMODE_WRITE, especially if the file will be created
-+		 * with a restrictive mode.
-+		 */
- 		mask = MAY_READ;
-+	}
- 
- 	cache.cred = cred;
- 	cache.jiffies = jiffies;
--- 
-1.8.3.1
 
+Kind regards
+Rickard Strandqvist
