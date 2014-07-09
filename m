@@ -1,54 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875AbaGIVVT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 17:21:19 -0400
-Received: from smtprelay0049.hostedemail.com ([216.40.44.49]:33394 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755141AbaGIVVR (ORCPT
+	id S1756042AbaGIVVX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 17:21:23 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:60681 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755850AbaGIVVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 17:21:17 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3865:3866:3867:3868:387
-X-HE-Tag: tub22_7e9deed0a4513
-X-Filterd-Recvd-Size: 1889
-Message-ID: <1404940868.932.168.camel@joe-AO725>
-Subject: Re: [PATCH v1 1/5] seq_file: provide an analogue of print_hex_dump()
-From: Joe Perches <joe@perches.com>
-To: Marek Vasut <marex@denx.de>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Tadeusz Struk <tadeusz.struk@intel.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Helge Deller <deller@gmx.de>,
-        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>, linux390@de.ibm.com,
-        Alexander Viro <viro@zeniv.linux.org.uk>, qat-linux@intel.com,
-        linux-crypto@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+	Wed, 9 Jul 2014 17:21:20 -0400
+Date: Thu, 10 Jul 2014 02:51:12 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        linux-omap@vger.kernel.org, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org
-Date: Wed, 09 Jul 2014 14:21:08 -0700
-In-Reply-To: <201407092239.30561.marex@denx.de>
-References: <1404919470-26668-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1404919470-26668-2-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <201407092239.30561.marex@denx.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] ASoC: omap-dmic: use managed interfaces
+Message-ID: <20140709212112.GA11848@himangi-Dell>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-09 at 22:39 +0200, Marek Vasut wrote:
-> The above function looks like almost verbatim copy of print_hex_dump(). The only 
-> difference I can spot is that it's calling seq_printf() instead of printk(). Can 
-> you not instead generalize print_hex_dump() and based on it's invocation, make 
-> it call either seq_printf() or printk() ?
+This patch moves data allocated using clk_put and
+snd_soc_register_component to the corresponding managed interfaces and
+does away with the functions to free memory in the probe and remove
+functions. The probe function is no longer required and is completely
+removed.
 
-How do you propose doing that given any seq_<foo> call
-requires a struct seq_file * and print_hex_dump needs
-a KERN_<LEVEL>.
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+ sound/soc/omap/omap-dmic.c | 35 ++++++++---------------------------
+ 1 file changed, 8 insertions(+), 27 deletions(-)
 
-Is there an actual value to it?
-
-
+diff --git a/sound/soc/omap/omap-dmic.c b/sound/soc/omap/omap-dmic.c
+index 6925d71..b315b27 100644
+--- a/sound/soc/omap/omap-dmic.c
++++ b/sound/soc/omap/omap-dmic.c
+@@ -466,7 +466,7 @@ static int asoc_dmic_probe(struct platform_device *pdev)
+ 
+ 	mutex_init(&dmic->mutex);
+ 
+-	dmic->fclk = clk_get(dmic->dev, "fck");
++	dmic->fclk = devm_clk_get(dmic->dev, "fck");
+ 	if (IS_ERR(dmic->fclk)) {
+ 		dev_err(dmic->dev, "cant get fck\n");
+ 		return -ENODEV;
+@@ -475,8 +475,7 @@ static int asoc_dmic_probe(struct platform_device *pdev)
+ 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "dma");
+ 	if (!res) {
+ 		dev_err(dmic->dev, "invalid dma memory resource\n");
+-		ret = -ENODEV;
+-		goto err_put_clk;
++		return -ENODEV;
+ 	}
+ 	dmic->dma_data.addr = res->start + OMAP_DMIC_DATA_REG;
+ 
+@@ -484,34 +483,17 @@ static int asoc_dmic_probe(struct platform_device *pdev)
+ 
+ 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "mpu");
+ 	dmic->io_base = devm_ioremap_resource(&pdev->dev, res);
+-	if (IS_ERR(dmic->io_base)) {
+-		ret = PTR_ERR(dmic->io_base);
+-		goto err_put_clk;
+-	}
+-
++	if (IS_ERR(dmic->io_base))
++		return PTR_ERR(dmic->io_base);
+ 
+-	ret = snd_soc_register_component(&pdev->dev, &omap_dmic_component,
+-					 &omap_dmic_dai, 1);
++	ret = devm_snd_soc_register_component(&pdev->dev, &omap_dmic_component,
++					      &omap_dmic_dai, 1);
+ 	if (ret)
+-		goto err_put_clk;
++		return ret;
+ 
+ 	ret = omap_pcm_platform_register(&pdev->dev);
+ 	if (ret)
+-		goto err_put_clk;
+-
+-	return 0;
+-
+-err_put_clk:
+-	clk_put(dmic->fclk);
+-	return ret;
+-}
+-
+-static int asoc_dmic_remove(struct platform_device *pdev)
+-{
+-	struct omap_dmic *dmic = platform_get_drvdata(pdev);
+-
+-	snd_soc_unregister_component(&pdev->dev);
+-	clk_put(dmic->fclk);
++		return ret;
+ 
+ 	return 0;
+ }
+@@ -529,7 +511,6 @@ static struct platform_driver asoc_dmic_driver = {
+ 		.of_match_table = omap_dmic_of_match,
+ 	},
+ 	.probe = asoc_dmic_probe,
+-	.remove = asoc_dmic_remove,
+ };
+ 
+ module_platform_driver(asoc_dmic_driver);
+-- 
+1.9.1
 
