@@ -1,177 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756225AbaGINrr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 09:47:47 -0400
-Received: from mail.kernel.org ([198.145.19.201]:45570 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754910AbaGINrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 09:47:45 -0400
-Date: Wed, 9 Jul 2014 06:47:41 -0700
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: "'Changman Lee'" <cm224.lee@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [f2fs-dev][PATCH 1/2] f2fs: check name_len of dir entry to
- prevent from deadloop
-Message-ID: <20140709134741.GB4926@jmac>
-References: <000001cf95b5$eac71ad0$c0555070$@samsung.com>
- <20140705064313.GA35795@jmac.local>
- <005f01cf9982$4b8920f0$e29b62d0$@samsung.com>
- <20140708055613.GA37622@jmac.local>
- <006201cf9b21$afe7e4f0$0fb7aed0$@samsung.com>
+	id S1755528AbaGINxx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 09:53:53 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:51158 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313AbaGINxu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 09:53:50 -0400
+Message-ID: <53BD4918.2040807@ti.com>
+Date: Wed, 9 Jul 2014 09:52:24 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <006201cf9b21$afe7e4f0$0fb7aed0$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Murali Karicheri <m-karicheri2@ti.com>, <devicetree@vger.kernel.org>
+CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Mohit Kumar <mohit.kumar@st.com>,
+        Jingoo Han <jg1.han@samsung.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Pratyush Anand <pratyush.anand@st.com>,
+        Richard Zhu <r65037@freescale.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: [PATCH v3 0/5] Add Keystone PCIe controller driver
+References: <1404164720-11066-1-git-send-email-m-karicheri2@ti.com>
+In-Reply-To: <1404164720-11066-1-git-send-email-m-karicheri2@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chao,
+On Monday 30 June 2014 05:45 PM, Murali Karicheri wrote:
+> This patch add PCIe controller driver for Keystone SoCs. This
+> is based on v2 of the series posted to the mailing list.
+> Keystone PCI controller is based on version 3.65 of the DW
+> hardware. This driver re-uses some of the DW core driver
+> functions and required modification in some to support
+> the old DW h/w based Keystone driver.
+> 
+> Please review and let me know if you have any comments.
+> 
+> CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> CC: Russell King <linux@arm.linux.org.uk>
+> CC: Grant Likely <grant.likely@linaro.org>
+> CC: Rob Herring <robh+dt@kernel.org>
+> CC: Mohit Kumar <mohit.kumar@st.com>
+> CC: Jingoo Han <jg1.han@samsung.com>
+> CC: Bjorn Helgaas <bhelgaas@google.com>
+> CC: Pratyush Anand <pratyush.anand@st.com>
+> CC: Richard Zhu <r65037@freescale.com>
+> CC: Kishon Vijay Abraham I <kishon@ti.com>
+> CC: Marek Vasut <marex@denx.de>
+> CC: Arnd Bergmann <arnd@arndb.de>
+> CC: Pawel Moll <pawel.moll@arm.com>
+> CC: Mark Rutland <mark.rutland@arm.com>
+> CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> CC: Kumar Gala <galak@codeaurora.org>
+> CC: Randy Dunlap <rdunlap@infradead.org>
+> CC: Grant Likely <grant.likely@linaro.org> 
+> 
+> Changelog:
+> 
+> v3
+>  - DW application register handling code is now part of
+>    Keystone PCI driver. RFC had this code part of Keystone
+>    PCI driver, then V1 moved this to a separate file to
+>    re-use on other platforms that uses this version of the
+>    DW h/w. Then based on comments against v2, this is moved
+>    back to Keystone driver.
+>  - Keystone SerDes phy driver is removed from this series so that
+>    this can be merged independent of that patch
+>  - added msi_set_irq()/clear_irq() API's to support Keystone
+> 
+> V2
+>  - Split the designware pcie enhancement patch to multiple
+>    patches based on functionality added
+>  - Remove the quirk code and add a patch to fix mps/mrss
+>    tuning for ARM. Use kernel command line parameter
+>    pci=pcie_bus_perf to work with Keystone PCI Controller.
+>    Following patch addressed this.
+>      [PATCH v1] ARM: pci: add call to pcie_bus_configure_settings()
+>  - Add documentation for device tree bindings
+>  - Add separate interrupt controller nodes for MSI and Legacy
+>    IRQs and use irq map for legacy IRQ
+>  - Use compatibility to identify v3.65 version of the DW hardware
+>    and use it to customize the designware common code.
+>  - Use reg property for configuration space instead of range
+>  - Other minor updates based on code inspection. 
+> 
+> V1
+>  - Add an interrupt controller node for Legacy irq chip and use
+>    interrupt map/map-mask property to map legacy IRQs A/B/C/D
+>  - Add a Phy driver to replace the original serdes driver
+>  - Move common application register handling code to a separate
+>    file to allow re-use across other platforms that use older
+>    DW PCIe h/w
+>  - PCI quirk for maximum read request size. Check and override only
+>    if the maximum is higher than what controller can handle.
+>  - Converted to a module platform driver.
+> 
+> Murali Karicheri (5):
+>   PCI: designware: add rd[wr]_other_conf API
+>   PCI: designware: refactor MSI code to work with v3.65 dw hardware
+>   PCI: designware: refactor host init code to re-use on keystone PCI
+>   PCI: designware: enhance dw core driver to support Keystone PCI host
+>     controller
+>   PCI: add PCI controller for Keystone PCIe h/w
+> 
+I haven't given review remarks on public list but had few internal
+review discussions with you. So just in case you need some
+additional review/ack tags, feel free to include mine.
 
-On Wed, Jul 09, 2014 at 10:57:43AM +0800, Chao Yu wrote:
-> Hi,
-> 
-> > -----Original Message-----
-> > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> > Sent: Tuesday, July 08, 2014 1:56 PM
-> > To: Chao Yu
-> > Cc: 'Changman Lee'; linux-f2fs-devel@lists.sourceforge.net; linux-fsdevel@vger.kernel.org;
-> > linux-kernel@vger.kernel.org
-> > Subject: Re: [f2fs-dev][PATCH 1/2] f2fs: check name_len of dir entry to prevent from deadloop
-> > 
-> > On Mon, Jul 07, 2014 at 09:24:05AM +0800, Chao Yu wrote:
-> > > Hi Jaegeuk,
-> > >
-> > > > -----Original Message-----
-> > > > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> > > > Sent: Saturday, July 05, 2014 2:43 PM
-> > > > To: Chao Yu
-> > > > Cc: Changman Lee; linux-f2fs-devel@lists.sourceforge.net; linux-fsdevel@vger.kernel.org;
-> > > > linux-kernel@vger.kernel.org
-> > > > Subject: Re: [f2fs-dev][PATCH 1/2] f2fs: check name_len of dir entry to prevent from deadloop
-> > > >
-> > > > Hi Chao,
-> > > >
-> > > > On Wed, Jul 02, 2014 at 01:23:47PM +0800, Chao Yu wrote:
-> > > > > We assume that modification of some special application could result in zeroed
-> > > > > name_len, or it is consciously made by somebody. We will deadloop in
-> > > > > find_in_block when name_len of dir entry is zero.
-> > > >
-> > > > Could you explain this a little bit more?
-> > > > I'm not sure how it can happen.
-> > >
-> > > IMO,
-> > > On one hand, programs like mkfs/fsck/img2simg and f2fs could directly operate
-> > > the raw device, so bugs of these software may be triggered to generate the
-> > > corrupt data such as zeroed name_len.
-> > 
-> > Well...
-> > If such the programs try to corrupt the f2fs image crucially, the bug should be
-> > fixed inside the programs, not from the workaround through f2fs.
-> 
-> IMO, software should have ability of self fault-tolerant, but not depend on correctness
-> of other related software. And I will hope there are no more other software which could
-> directly operate the raw device, to provide us such corrupted data as input.
-> 
-> How about swifting to BUG_ON here?
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-Well, IMO, it would be good to add f2fs_bug_on() here with a specific comment.
+Once the driver changes gets merged by Bjorn, I can they
+merge the DTS related changes via my tree.
 
-In the current phase of f2fs, it is more important to investigate the file
-system bugs, rather than workarounds for any corrupted images.
-And, definitely it needs to stop the kernel if any corrupted image was mounted,
-so that we can figure out where the bugs are occurred.
+Thanks for all the work Murali !!
 
-Thanks,
-
-> 
-> > 
-> > As I mentioned, even though f2fs avoids such the dead loop whatever at that
-> > moment, it will be operating with inconsistent file system status, resulting
-> > in system crash in the near furture finally.
-> 
-> Agreed, we should avoid this. Previous solution with "break" is not suitable here.
-> Thanks for you reminder.
-> 
-> > 
-> > Why should we avoid this specific case only?
-> 
-> Hmm... I just found this case could cause some issue when I review Gu's last patch.
-> As I check, several error cases of find_data_page in find_in_level could also cause
-> inconsistent status of fs as you said.
-> 
-> > It seems that it is a kinda intentional user-made case.
-> > Is it really normal?
-> 
-> It's really rare.
-> 
-> > 
-> > > On the other hand, it' could be treated as a potential security problem, because
-> > > user could crafted such a malicious image include zeroed name_len for hacking purpose.
-> > 
-> > If user can try to do something like that, why do they write zeroed name_len only?
-> > To crash the system, they can do everything.
-> 
-> If they have the whole right to access the system, certainly they do not have to do such
-> thing. I just assume that they only have the right to upload the crafted image, then use
-> social engineering in next "do mount" step. Or it's no need to worry about this?
-> 
-> Thanks,
-> Yu
-> 
-> > 
-> > Thanks,
-> > 
-> > > Once such special image is being mounted, deadloop could be triggered, finally will
-> > > result in effecting on linux system's running.
-> > >
-> > > Thanks,
-> > > Yu
-> > >
-> > > > I think the zeroed name_len would cause some problems in f2fs_add_link.
-> > > >
-> > > > Thanks,
-> > > >
-> > > > >
-> > > > > This patch is added for preventing deadloop in above scenario.
-> > > > >
-> > > > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > > > > ---
-> > > > >  fs/f2fs/dir.c |   10 ++++++++++
-> > > > >  1 file changed, 10 insertions(+)
-> > > > >
-> > > > > diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
-> > > > > index be8c7af..4316ec5 100644
-> > > > > --- a/fs/f2fs/dir.c
-> > > > > +++ b/fs/f2fs/dir.c
-> > > > > @@ -121,6 +121,16 @@ static struct f2fs_dir_entry *find_in_block(struct page *dentry_page,
-> > > > >  			}
-> > > > >  		}
-> > > > >
-> > > > > +		/* check name_len to prevent from deadloop here */
-> > > > > +		if (unlikely(de->name_len == 0)) {
-> > > > > +			struct inode *inode = dentry_page->mapping->host;
-> > > > > +
-> > > > > +			f2fs_msg(inode->i_sb, KERN_ERR,
-> > > > > +				"zero-length dir entry, ino = %lu, name = %s",
-> > > > > +				(unsigned long)inode->i_ino, name->name);
-> > > > > +			break;
-> > > > > +		}
-> > > > > +
-> > > > >  		bit_start = bit_pos
-> > > > >  				+ GET_DENTRY_SLOTS(le16_to_cpu(de->name_len));
-> > > > >  	}
-> > > > > --
-> > > > > 1.7.9.5
-> > > >
-> > > > --
-> > > > Jaegeuk Kim
-> > 
-> > --
-> > Jaegeuk Kim
-
--- 
-Jaegeuk Kim
+Regards,
+Santosh
