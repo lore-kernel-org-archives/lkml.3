@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932347AbaGIWU0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 18:20:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1749 "EHLO mx1.redhat.com"
+	id S932386AbaGIWUi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 18:20:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57042 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932139AbaGIWUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 18:20:22 -0400
-Date: Thu, 10 Jul 2014 00:19:58 +0200
+	id S932352AbaGIWUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 18:20:31 -0400
+Date: Thu, 10 Jul 2014 00:20:07 +0200
 From: Jiri Olsa <jolsa@redhat.com>
 To: Andi Kleen <andi@firstfloor.org>
 Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
         Andi Kleen <ak@linux.intel.com>
 Subject: Re: [PATCH 3/9] perf, tools: Add support for reading JSON event
  files v3
-Message-ID: <20140709221958.GH20938@krava.redhat.com>
+Message-ID: <20140709222007.GI20938@krava.redhat.com>
 References: <1403910964-11017-1-git-send-email-andi@firstfloor.org>
  <1403910964-11017-4-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
@@ -24,11 +24,6 @@ User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-Im confused, your branch shows v4 in patch Subject,
-while this patch has v3... ?
-
-jirka
 
 On Fri, Jun 27, 2014 at 04:15:58PM -0700, Andi Kleen wrote:
 > From: Andi Kleen <ak@linux.intel.com>
@@ -46,7 +41,31 @@ On Fri, Jun 27, 2014 at 04:15:58PM -0700, Andi Kleen wrote:
 > The parser code is partially shared with an independent parsing
 > library, which is 2-clause BSD licenced. To avoid any conflicts I marked
 > those files as BSD licenced too. As part of perf they become GPLv2.
-> 
 
 SNIP
 
+> +
+> +#include <stdio.h>
+> +#include <stdlib.h>
+> +#include <errno.h>
+> +#include <string.h>
+> +#include <ctype.h>
+> +#include "jsmn.h"
+> +#include "json.h"
+> +#include "jevents.h"
+> +
+> +static void addfield(char *map, char **dst, const char *sep,
+> +		     const char *a, jsmntok_t *bt)
+> +{
+> +	unsigned len = strlen(a) + 1 + strlen(sep);
+> +	int olen = *dst ? strlen(*dst) : 0;
+> +	int blen = bt ? json_len(bt) : 0;
+> +	char *out;
+> +
+> +	out = realloc(*dst, len + olen + blen);
+> +	if (!out)
+> +		return;
+
+what happens if we fail to realloc?
+
+jirka
