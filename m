@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754304AbaGIDiU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 23:38:20 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:40116 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752996AbaGIDiR (ORCPT
+	id S1754774AbaGIDij (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 23:38:39 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:33335 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752996AbaGIDig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 23:38:17 -0400
+	Tue, 8 Jul 2014 23:38:36 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: Wim Van Sebroeck <wim@iguana.be>,
@@ -23,9 +23,9 @@ Cc: Wim Van Sebroeck <wim@iguana.be>,
         David Woodhouse <dwmw2@infradead.org>,
         Tomasz Figa <t.figa@samsung.com>, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v3 2/7] arm64: Support restart through restart notifier call chain
-Date: Tue,  8 Jul 2014 20:37:58 -0700
-Message-Id: <1404877083-6552-3-git-send-email-linux@roeck-us.net>
+Subject: [PATCH v3 7/7] arm/arm64: Unexport restart handlers
+Date: Tue,  8 Jul 2014 20:38:03 -0700
+Message-Id: <1404877083-6552-8-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404877083-6552-1-git-send-email-linux@roeck-us.net>
 References: <1404877083-6552-1-git-send-email-linux@roeck-us.net>
@@ -33,31 +33,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel core now supports a notifier call chain to restart
-the system. Call it if arm_pm_restart is not set.
+Implementing a restart handler in a module don't make sense
+as there would be no guarantee that the module is loaded when
+a restart is needed. Unexport arm_pm_restart to ensure that
+no one gets the idea to do it anyway.
 
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
-v3: Use wrapper function to execute notifier call chain.
-v2: Only call notifier call chain if arm_pm_restart is not set.
-    Do not include linux/watchdog.h.
+v3: No change
+v2: No change
 
- arch/arm64/kernel/process.c | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm/kernel/process.c   | 1 -
+ arch/arm64/kernel/process.c | 1 -
+ 2 files changed, 2 deletions(-)
 
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index 5d191e3..25c7f00 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -125,7 +125,6 @@ void (*pm_power_off)(void);
+ EXPORT_SYMBOL(pm_power_off);
+ 
+ void (*arm_pm_restart)(enum reboot_mode reboot_mode, const char *cmd) = null_restart;
+-EXPORT_SYMBOL_GPL(arm_pm_restart);
+ 
+ /*
+  * This is our default idle handler.
 diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
-index 43b7c34..b2da6d5 100644
+index b2da6d5..5b07396 100644
 --- a/arch/arm64/kernel/process.c
 +++ b/arch/arm64/kernel/process.c
-@@ -174,6 +174,8 @@ void machine_restart(char *cmd)
- 	/* Now call the architecture specific reboot code. */
- 	if (arm_pm_restart)
- 		arm_pm_restart(reboot_mode, cmd);
-+	else
-+		kernel_restart_notify(cmd);
+@@ -92,7 +92,6 @@ void (*pm_power_off)(void);
+ EXPORT_SYMBOL_GPL(pm_power_off);
  
- 	/*
- 	 * Whoops - the architecture was unable to reboot.
+ void (*arm_pm_restart)(enum reboot_mode reboot_mode, const char *cmd);
+-EXPORT_SYMBOL_GPL(arm_pm_restart);
+ 
+ /*
+  * This is our default idle handler.
 -- 
 1.9.1
 
