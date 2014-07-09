@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932477AbaGIWVL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 18:21:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60025 "EHLO mx1.redhat.com"
+	id S932501AbaGIWVQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 18:21:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29594 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932352AbaGIWVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 18:21:08 -0400
-Date: Thu, 10 Jul 2014 00:20:38 +0200
+	id S932352AbaGIWVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 18:21:12 -0400
+Date: Thu, 10 Jul 2014 00:20:47 +0200
 From: Jiri Olsa <jolsa@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 8/9] perf, tools, test: Add test case for alias and JSON
- parsing v2
-Message-ID: <20140709222038.GL20938@krava.redhat.com>
-References: <1403910964-11017-1-git-send-email-andi@firstfloor.org>
- <1403910964-11017-9-git-send-email-andi@firstfloor.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        acme@infradead.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 9/9] perf, tools: Add a --quiet flag to perf list
+Message-ID: <20140709222047.GM20938@krava.redhat.com>
+References: <1402700580-26939-1-git-send-email-andi@firstfloor.org>
+ <1402700580-26939-10-git-send-email-andi@firstfloor.org>
+ <1402838261.1684.39.camel@leonhard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1403910964-11017-9-git-send-email-andi@firstfloor.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1402838261.1684.39.camel@leonhard>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 04:16:03PM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
+On Sun, Jun 15, 2014 at 10:17:41PM +0900, Namhyung Kim wrote:
+> Hi Andi,
 > 
-> Add a simple test case to perf test that runs perf download and parses
-> all the available events, including json events.
+> 2014-06-13 (금), 16:03 -0700, Andi Kleen:
+> > From: Andi Kleen <ak@linux.intel.com>
+> > 
+> > Add a --quiet flag to perf list to not print the event descriptions
+> > that were earlier added for JSON events. This may be useful to
+> > get a less crowded listing.
+> > 
+> > It's still default to print descriptions as that is the more useful
+> > default for most users.  Requested by Namhyung Kim.
 > 
-> This needs adding an all event iterator to pmu.c
+> Did I request the --quiet thing?  It seems like there's a
+> miscommunication.. :-/
 > 
+> I still prefer -v option and not printing descriptions by default - but
+> want to inform users to use -v option.  However I also want to hear from
+> others on this.
 
-SNIP
-
-> +
-> +int pmu_iterate_events(int (*func)(const char *name))
-> +{
-> +	int ret = 0;
-> +	struct perf_pmu *pmu;
-> +	struct perf_pmu_alias *alias;
-> +
-> +	perf_pmu__find("cpu"); /* Load PMUs */
-> +	pmu = NULL;
-> +	while ((pmu = perf_pmu__scan(pmu)) != NULL) {
-> +		list_for_each_entry(alias, &pmu->aliases, list) {
-> +			ret = func(alias->name);
-> +			if (ret != 0)
-> +				break;
-> +		}
-> +	}
-> +	return ret;
-> +}
-> diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-> index 583d21e..a8ed283 100644
-> --- a/tools/perf/util/pmu.h
-> +++ b/tools/perf/util/pmu.h
-> @@ -47,5 +47,7 @@ bool pmu_have_event(const char *pname, const char *name);
->  
->  int perf_pmu__test(void);
->  
-> +int pmu_iterate_events(int (*func)(const char *name));
-> +
-
-this new pmu interface needs to go to separated patchset
+I dont mind descriptions by default, but 'quiet' seems more generic
+than what it does now ... how about '--no-desc'
 
 jirka
