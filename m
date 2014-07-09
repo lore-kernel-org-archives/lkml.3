@@ -1,96 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751641AbaGIB1l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 21:27:41 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:63547 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750947AbaGIB1j (ORCPT
+	id S1751702AbaGIBgL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 21:36:11 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52651 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947AbaGIBgJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 21:27:39 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53BC9A89.20809@roeck-us.net>
-Date: Tue, 08 Jul 2014 18:27:37 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-CC: torvalds@linux-foundation.org, Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 3.2 000/125] 3.2.61-rc1 review
-References: <lsq.1404846109.699842714@decadent.org.uk>
-In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Jul 2014 21:36:09 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Rob Clark <robdclark@gmail.com>
+Subject: [PATCH v2] clk: qcom: Fix MN frequency tables, parent map, and jpegd
+Date: Tue,  8 Jul 2014 18:36:06 -0700
+Message-Id: <1404869766-6311-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2014 12:01 PM, Ben Hutchings wrote:
-> This is the start of the stable review cycle for the 3.2.61 release.
-> There are 125 patches in this series, which will be posted as responses
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Thu Jul 10 19:01:49 UTC 2014.
-> Anything received after that time might be too late.
->
+Clocks that don't have a pre-divider don't list any pre-divider
+in their frequency tables, but their tables are initialized using
+aggregate initializers. Use tagged initializers so we properly
+assign the m and n values for each frequency. Furthermore, the
+mmcc_pxo_pll8_pll2_pll3 array improperly mapped the second
+element to pll2 instead of pll8, causing the clock driver to
+recalculate the wrong rate for any clocks using this array along
+with a rate that uses pll2. Plus the .num_parents field is 3
+instead of 4 so you can't even switch the parent to pll3. Finally
+I noticed that the jpegd clock improperly indicates that the
+pre-divider width is only 2, when it's actually 4 bits wide.
 
-Build results:
-	total: 109 pass: 71 fail: 38
-Failed builds:
-	alpha:allmodconfig
-	arm:defconfig
-	arm:imx_v4_v5_defconfig
-	arm:mxs_defconfig
-	arm:dove_defconfig
-	arm:kirkwood_defconfig
-	arm:omap2plus_defconfig
-	arm:tegra_defconfig
-	arm:u8500_defconfig
-	arm:at91sam9rl_defconfig
-	arm:pxa910_defconfig
-	arm:mackerel_defconfig
-	arm:ixp4xx_defconfig
-	arm:vexpress_defconfig
-	arm:msm_defconfig
-	arm:at91rm9200_defconfig
-	arm:at91sam9263_defconfig
-	arm:at91sam9g45_defconfig
-	arm:assabet_defconfig
-	i386:defconfig
-	i386:allyesconfig
-	i386:allmodconfig
-	m32r:defconfig
-	microblaze:mmu_defconfig
-	microblaze:nommu_defconfig
-	mips:defconfig
-	mips:allmodconfig
-	mips:bcm47xx_defconfig
-	mips:bcm63xx_defconfig
-	mips:ar7_defconfig
-	mips:fuloong2e_defconfig
-	mips:malta_defconfig
-	score:defconfig
-	sparc64:allmodconfig
-	um:defconfig
-	unicore32:defconfig
-	xtensa:defconfig
-	xtensa:allmodconfig
+Fixes: 6d00b56fe "clk: qcom: Add support for MSM8960's multimedia clock controller (MMCC)"
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
 
-Qemu images fail to build for mips, mips64, and x86.
+ Changes since v1:
+  - num_parents for gfx3d should be 4, not 3.
 
-Build error seems to be always the same.
+ drivers/clk/qcom/mmcc-msm8960.c | 82 +++++++++++++++++++++--------------------
+ 1 file changed, 42 insertions(+), 40 deletions(-)
 
-lib/nlattr.c: In function 'nla_parse':
-lib/nlattr.c:201:3: error: dereferencing pointer to incomplete type
-make[1]: *** [lib/nlattr.o] Error 1
-
-Culprit is bfc5184b69 (netlink: rate-limit leftover bytes warning
-and print process name). In 3.2, it is necessary to include <linux/sched.h>
-explicitly to get the definition of 'struct task_struct'.
-
-Details are available at http://server.roeck-us.net:8010/builders.
-
-Guenter
+diff --git a/drivers/clk/qcom/mmcc-msm8960.c b/drivers/clk/qcom/mmcc-msm8960.c
+index 12f3c0b64fcd..10d2f135dfba 100644
+--- a/drivers/clk/qcom/mmcc-msm8960.c
++++ b/drivers/clk/qcom/mmcc-msm8960.c
+@@ -38,6 +38,8 @@
+ #define P_PLL2	2
+ #define P_PLL3	3
+ 
++#define F_MN(f, s, _m, _n) { .freq = f, .src = s, .m = _m, .n = _n }
++
+ static u8 mmcc_pxo_pll8_pll2_map[] = {
+ 	[P_PXO]		= 0,
+ 	[P_PLL8]	= 2,
+@@ -59,8 +61,8 @@ static u8 mmcc_pxo_pll8_pll2_pll3_map[] = {
+ 
+ static const char *mmcc_pxo_pll8_pll2_pll3[] = {
+ 	"pxo",
+-	"pll2",
+ 	"pll8_vote",
++	"pll2",
+ 	"pll3",
+ };
+ 
+@@ -710,18 +712,18 @@ static struct clk_branch csiphy2_timer_clk = {
+ };
+ 
+ static struct freq_tbl clk_tbl_gfx2d[] = {
+-	{  27000000, P_PXO,  1,  0 },
+-	{  48000000, P_PLL8, 1,  8 },
+-	{  54857000, P_PLL8, 1,  7 },
+-	{  64000000, P_PLL8, 1,  6 },
+-	{  76800000, P_PLL8, 1,  5 },
+-	{  96000000, P_PLL8, 1,  4 },
+-	{ 128000000, P_PLL8, 1,  3 },
+-	{ 145455000, P_PLL2, 2, 11 },
+-	{ 160000000, P_PLL2, 1,  5 },
+-	{ 177778000, P_PLL2, 2,  9 },
+-	{ 200000000, P_PLL2, 1,  4 },
+-	{ 228571000, P_PLL2, 2,  7 },
++	F_MN( 27000000, P_PXO,  1,  0),
++	F_MN( 48000000, P_PLL8, 1,  8),
++	F_MN( 54857000, P_PLL8, 1,  7),
++	F_MN( 64000000, P_PLL8, 1,  6),
++	F_MN( 76800000, P_PLL8, 1,  5),
++	F_MN( 96000000, P_PLL8, 1,  4),
++	F_MN(128000000, P_PLL8, 1,  3),
++	F_MN(145455000, P_PLL2, 2, 11),
++	F_MN(160000000, P_PLL2, 1,  5),
++	F_MN(177778000, P_PLL2, 2,  9),
++	F_MN(200000000, P_PLL2, 1,  4),
++	F_MN(228571000, P_PLL2, 2,  7),
+ 	{ }
+ };
+ 
+@@ -842,22 +844,22 @@ static struct clk_branch gfx2d1_clk = {
+ };
+ 
+ static struct freq_tbl clk_tbl_gfx3d[] = {
+-	{  27000000, P_PXO,  1,  0 },
+-	{  48000000, P_PLL8, 1,  8 },
+-	{  54857000, P_PLL8, 1,  7 },
+-	{  64000000, P_PLL8, 1,  6 },
+-	{  76800000, P_PLL8, 1,  5 },
+-	{  96000000, P_PLL8, 1,  4 },
+-	{ 128000000, P_PLL8, 1,  3 },
+-	{ 145455000, P_PLL2, 2, 11 },
+-	{ 160000000, P_PLL2, 1,  5 },
+-	{ 177778000, P_PLL2, 2,  9 },
+-	{ 200000000, P_PLL2, 1,  4 },
+-	{ 228571000, P_PLL2, 2,  7 },
+-	{ 266667000, P_PLL2, 1,  3 },
+-	{ 300000000, P_PLL3, 1,  4 },
+-	{ 320000000, P_PLL2, 2,  5 },
+-	{ 400000000, P_PLL2, 1,  2 },
++	F_MN( 27000000, P_PXO,  1,  0),
++	F_MN( 48000000, P_PLL8, 1,  8),
++	F_MN( 54857000, P_PLL8, 1,  7),
++	F_MN( 64000000, P_PLL8, 1,  6),
++	F_MN( 76800000, P_PLL8, 1,  5),
++	F_MN( 96000000, P_PLL8, 1,  4),
++	F_MN(128000000, P_PLL8, 1,  3),
++	F_MN(145455000, P_PLL2, 2, 11),
++	F_MN(160000000, P_PLL2, 1,  5),
++	F_MN(177778000, P_PLL2, 2,  9),
++	F_MN(200000000, P_PLL2, 1,  4),
++	F_MN(228571000, P_PLL2, 2,  7),
++	F_MN(266667000, P_PLL2, 1,  3),
++	F_MN(300000000, P_PLL3, 1,  4),
++	F_MN(320000000, P_PLL2, 2,  5),
++	F_MN(400000000, P_PLL2, 1,  2),
+ 	{ }
+ };
+ 
+@@ -897,7 +899,7 @@ static struct clk_dyn_rcg gfx3d_src = {
+ 		.hw.init = &(struct clk_init_data){
+ 			.name = "gfx3d_src",
+ 			.parent_names = mmcc_pxo_pll8_pll2_pll3,
+-			.num_parents = 3,
++			.num_parents = 4,
+ 			.ops = &clk_dyn_rcg_ops,
+ 		},
+ 	},
+@@ -995,7 +997,7 @@ static struct clk_rcg jpegd_src = {
+ 	.ns_reg = 0x00ac,
+ 	.p = {
+ 		.pre_div_shift = 12,
+-		.pre_div_width = 2,
++		.pre_div_width = 4,
+ 	},
+ 	.s = {
+ 		.src_sel_shift = 0,
+@@ -1342,15 +1344,15 @@ static struct clk_branch hdmi_app_clk = {
+ };
+ 
+ static struct freq_tbl clk_tbl_vcodec[] = {
+-	{  27000000, P_PXO,  1,  0 },
+-	{  32000000, P_PLL8, 1, 12 },
+-	{  48000000, P_PLL8, 1,  8 },
+-	{  54860000, P_PLL8, 1,  7 },
+-	{  96000000, P_PLL8, 1,  4 },
+-	{ 133330000, P_PLL2, 1,  6 },
+-	{ 200000000, P_PLL2, 1,  4 },
+-	{ 228570000, P_PLL2, 2,  7 },
+-	{ 266670000, P_PLL2, 1,  3 },
++	F_MN( 27000000, P_PXO,  1,  0),
++	F_MN( 32000000, P_PLL8, 1, 12),
++	F_MN( 48000000, P_PLL8, 1,  8),
++	F_MN( 54860000, P_PLL8, 1,  7),
++	F_MN( 96000000, P_PLL8, 1,  4),
++	F_MN(133330000, P_PLL2, 1,  6),
++	F_MN(200000000, P_PLL2, 1,  4),
++	F_MN(228570000, P_PLL2, 2,  7),
++	F_MN(266670000, P_PLL2, 1,  3),
+ 	{ }
+ };
+ 
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
