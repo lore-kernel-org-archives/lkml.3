@@ -1,171 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768AbaGIBTI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 21:19:08 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52064 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750958AbaGIBTF (ORCPT
+	id S1753541AbaGIBTn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 21:19:43 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:64421 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752135AbaGIBTl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 21:19:05 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Rob Clark <robdclark@gmail.com>
-Subject: [PATCH] clk: qcom: Fix MN frequency tables, parent map, and jpegd
-Date: Tue,  8 Jul 2014 18:19:00 -0700
-Message-Id: <1404868740-10847-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
+	Tue, 8 Jul 2014 21:19:41 -0400
+X-IronPort-AV: E=Sophos;i="5.00,860,1396972800"; 
+   d="scan'208";a="33020264"
+Message-ID: <53BC98E1.5050006@cn.fujitsu.com>
+Date: Wed, 9 Jul 2014 09:20:33 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: <gleb@kernel.org>, <mtosatti@redhat.com>, <nadav.amit@gmail.com>
+CC: Tang Chen <tangchen@cn.fujitsu.com>, <kvm@vger.kernel.org>,
+        <laijs@cn.fujitsu.com>, <isimatu.yasuaki@jp.fujitsu.com>,
+        <guz.fnst@cn.fujitsu.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/5] kvm, mem-hotplug: Do not pin ept identity pagetable
+ and apic access page.
+References: <1404824492-30095-1-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1404824492-30095-1-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clocks that don't have a pre-divider don't list any pre-divider
-in their frequency tables, but their tables are initialized using
-aggregate initializers. Use tagged initializers so we properly
-assign the m and n values for each frequency. Furthermore, the
-mmcc_pxo_pll8_pll2_pll3 array improperly mapped the second
-element to pll2 instead of pll8, causing the clock driver to
-recalculate the wrong rate for any clocks using this array along
-with a rate that uses pll2. Finally I noticed that the jpegd
-clock improperly indicates that the pre-divider width is only 2,
-when it's actually 4 bits wide.
+On 07/08/2014 09:01 PM, Tang Chen wrote:
+> ept identity pagetable and apic access page in kvm are pinned in memory.
+> As a result, they cannot be migrated/hot-removed.
+>
+> But actually they don't need to be pinned in memory.
+>
+> [For ept identity page]
+> Just do not pin it. When it is migrated, guest will be able to find the
+> new page in the next ept violation.
+>
+> [For apic access page]
+> The hpa of apic access page is stored in VMCS APIC_ACCESS_ADDR pointer.
+> When apic access page is migrated, we update VMCS APIC_ACCESS_ADDR pointer
+> for each vcpu in addition.
+>
+> Change log v1 ->  v2:
+> 1. Add [PATCH 4/5] to remove unnecessary kvm_arch->ept_identity_pagetable.
+> 2. In [PATCH 3/5], only introduce KVM_REQ_APIC_PAGE_RELOAD request.
 
-Fixes: 6d00b56fe "clk: qcom: Add support for MSM8960's multimedia
-clock controller (MMCC)"
+      s/[PATCH 3/5]/[PATCH 5/5]
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/clk/qcom/mmcc-msm8960.c | 80 +++++++++++++++++++++--------------------
- 1 file changed, 41 insertions(+), 39 deletions(-)
+> 3. In [PATCH 3/5], add set_apic_access_page_addr() for svm.
 
-diff --git a/drivers/clk/qcom/mmcc-msm8960.c b/drivers/clk/qcom/mmcc-msm8960.c
-index 12f3c0b64fcd..de8ee19160f7 100644
---- a/drivers/clk/qcom/mmcc-msm8960.c
-+++ b/drivers/clk/qcom/mmcc-msm8960.c
-@@ -38,6 +38,8 @@
- #define P_PLL2	2
- #define P_PLL3	3
- 
-+#define F_MN(f, s, _m, _n) { .freq = f, .src = s, .m = _m, .n = _n }
-+
- static u8 mmcc_pxo_pll8_pll2_map[] = {
- 	[P_PXO]		= 0,
- 	[P_PLL8]	= 2,
-@@ -59,8 +61,8 @@ static u8 mmcc_pxo_pll8_pll2_pll3_map[] = {
- 
- static const char *mmcc_pxo_pll8_pll2_pll3[] = {
- 	"pxo",
--	"pll2",
- 	"pll8_vote",
-+	"pll2",
- 	"pll3",
- };
- 
-@@ -710,18 +712,18 @@ static struct clk_branch csiphy2_timer_clk = {
- };
- 
- static struct freq_tbl clk_tbl_gfx2d[] = {
--	{  27000000, P_PXO,  1,  0 },
--	{  48000000, P_PLL8, 1,  8 },
--	{  54857000, P_PLL8, 1,  7 },
--	{  64000000, P_PLL8, 1,  6 },
--	{  76800000, P_PLL8, 1,  5 },
--	{  96000000, P_PLL8, 1,  4 },
--	{ 128000000, P_PLL8, 1,  3 },
--	{ 145455000, P_PLL2, 2, 11 },
--	{ 160000000, P_PLL2, 1,  5 },
--	{ 177778000, P_PLL2, 2,  9 },
--	{ 200000000, P_PLL2, 1,  4 },
--	{ 228571000, P_PLL2, 2,  7 },
-+	F_MN( 27000000, P_PXO,  1,  0),
-+	F_MN( 48000000, P_PLL8, 1,  8),
-+	F_MN( 54857000, P_PLL8, 1,  7),
-+	F_MN( 64000000, P_PLL8, 1,  6),
-+	F_MN( 76800000, P_PLL8, 1,  5),
-+	F_MN( 96000000, P_PLL8, 1,  4),
-+	F_MN(128000000, P_PLL8, 1,  3),
-+	F_MN(145455000, P_PLL2, 2, 11),
-+	F_MN(160000000, P_PLL2, 1,  5),
-+	F_MN(177778000, P_PLL2, 2,  9),
-+	F_MN(200000000, P_PLL2, 1,  4),
-+	F_MN(228571000, P_PLL2, 2,  7),
- 	{ }
- };
- 
-@@ -842,22 +844,22 @@ static struct clk_branch gfx2d1_clk = {
- };
- 
- static struct freq_tbl clk_tbl_gfx3d[] = {
--	{  27000000, P_PXO,  1,  0 },
--	{  48000000, P_PLL8, 1,  8 },
--	{  54857000, P_PLL8, 1,  7 },
--	{  64000000, P_PLL8, 1,  6 },
--	{  76800000, P_PLL8, 1,  5 },
--	{  96000000, P_PLL8, 1,  4 },
--	{ 128000000, P_PLL8, 1,  3 },
--	{ 145455000, P_PLL2, 2, 11 },
--	{ 160000000, P_PLL2, 1,  5 },
--	{ 177778000, P_PLL2, 2,  9 },
--	{ 200000000, P_PLL2, 1,  4 },
--	{ 228571000, P_PLL2, 2,  7 },
--	{ 266667000, P_PLL2, 1,  3 },
--	{ 300000000, P_PLL3, 1,  4 },
--	{ 320000000, P_PLL2, 2,  5 },
--	{ 400000000, P_PLL2, 1,  2 },
-+	F_MN( 27000000, P_PXO,  1,  0),
-+	F_MN( 48000000, P_PLL8, 1,  8),
-+	F_MN( 54857000, P_PLL8, 1,  7),
-+	F_MN( 64000000, P_PLL8, 1,  6),
-+	F_MN( 76800000, P_PLL8, 1,  5),
-+	F_MN( 96000000, P_PLL8, 1,  4),
-+	F_MN(128000000, P_PLL8, 1,  3),
-+	F_MN(145455000, P_PLL2, 2, 11),
-+	F_MN(160000000, P_PLL2, 1,  5),
-+	F_MN(177778000, P_PLL2, 2,  9),
-+	F_MN(200000000, P_PLL2, 1,  4),
-+	F_MN(228571000, P_PLL2, 2,  7),
-+	F_MN(266667000, P_PLL2, 1,  3),
-+	F_MN(300000000, P_PLL3, 1,  4),
-+	F_MN(320000000, P_PLL2, 2,  5),
-+	F_MN(400000000, P_PLL2, 1,  2),
- 	{ }
- };
- 
-@@ -995,7 +997,7 @@ static struct clk_rcg jpegd_src = {
- 	.ns_reg = 0x00ac,
- 	.p = {
- 		.pre_div_shift = 12,
--		.pre_div_width = 2,
-+		.pre_div_width = 4,
- 	},
- 	.s = {
- 		.src_sel_shift = 0,
-@@ -1342,15 +1344,15 @@ static struct clk_branch hdmi_app_clk = {
- };
- 
- static struct freq_tbl clk_tbl_vcodec[] = {
--	{  27000000, P_PXO,  1,  0 },
--	{  32000000, P_PLL8, 1, 12 },
--	{  48000000, P_PLL8, 1,  8 },
--	{  54860000, P_PLL8, 1,  7 },
--	{  96000000, P_PLL8, 1,  4 },
--	{ 133330000, P_PLL2, 1,  6 },
--	{ 200000000, P_PLL2, 1,  4 },
--	{ 228570000, P_PLL2, 2,  7 },
--	{ 266670000, P_PLL2, 1,  3 },
-+	F_MN( 27000000, P_PXO,  1,  0),
-+	F_MN( 32000000, P_PLL8, 1, 12),
-+	F_MN( 48000000, P_PLL8, 1,  8),
-+	F_MN( 54860000, P_PLL8, 1,  7),
-+	F_MN( 96000000, P_PLL8, 1,  4),
-+	F_MN(133330000, P_PLL2, 1,  6),
-+	F_MN(200000000, P_PLL2, 1,  4),
-+	F_MN(228570000, P_PLL2, 2,  7),
-+	F_MN(266670000, P_PLL2, 1,  3),
- 	{ }
- };
- 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+      s/[PATCH 3/5]/[PATCH 5/5]
 
+>
+>
+> Tang Chen (5):
+>    kvm: Add gfn_to_page_no_pin() to translate gfn to page without
+>      pinning.
+>    kvm: Use APIC_DEFAULT_PHYS_BASE macro as the apic access page address.
+>    kvm, mem-hotplug: Do not pin ept identity pagetable in memory.
+>    kvm: Remove ept_identity_pagetable from struct kvm_arch.
+>    kvm, mem-hotplug: Do not pin apic access page in memory.
+>
+>   arch/x86/include/asm/kvm_host.h |  2 +-
+>   arch/x86/kvm/mmu.c              | 11 +++++++++++
+>   arch/x86/kvm/svm.c              |  9 ++++++++-
+>   arch/x86/kvm/vmx.c              | 40 ++++++++++++++++++++++------------------
+>   arch/x86/kvm/x86.c              | 16 ++++++++++++++--
+>   include/linux/kvm_host.h        |  3 +++
+>   virt/kvm/kvm_main.c             | 29 ++++++++++++++++++++++++++++-
+>   7 files changed, 87 insertions(+), 23 deletions(-)
+>
