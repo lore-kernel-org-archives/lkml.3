@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014AbaGIV1R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 17:27:17 -0400
-Received: from baptiste.telenet-ops.be ([195.130.132.51]:60983 "EHLO
-	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752136AbaGIV1P (ORCPT
+	id S1756570AbaGIV3P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 17:29:15 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:42006 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010AbaGIV3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 17:27:15 -0400
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH 2/2] spi: sh-msiof: SPI_SH_MSIOF should depend on HAS_DMA
-Date: Wed,  9 Jul 2014 23:27:08 +0200
-Message-Id: <1404941228-9922-2-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1404941228-9922-1-git-send-email-geert+renesas@glider.be>
-References: <1404941228-9922-1-git-send-email-geert+renesas@glider.be>
+	Wed, 9 Jul 2014 17:29:13 -0400
+Message-ID: <1404941347.14643.57.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH v6 0/6] ima: extending secure boot certificate chain of
+ trust
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings <keyrings@linux-nfs.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Josh Boyer <jwboyer@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Date: Wed, 09 Jul 2014 17:29:07 -0400
+In-Reply-To: <8975.1404932208@warthog.procyon.org.uk>
+References: <1404924054.14643.36.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <1403620852-16476-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <24144.1404919879@warthog.procyon.org.uk>
+	 <8975.1404932208@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14070921-9332-0000-0000-000001552CC0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If NO_DMA=y:
+On Wed, 2014-07-09 at 19:56 +0100, David Howells wrote: 
+> Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> 
+> > Yes, that's fine.  My concern, however, is that the trusted keyring
+> > patches are independent of the other patches being upstreamed and should
+> > be upstreamed regardless of the other patches.
+> 
+> There is overlap in the X.509 certificate request function that you took from
+> my pkcs#7 patches.
 
-    drivers/built-in.o: In function `sh_msiof_release_dma':
-    spi-sh-msiof.c:(.text+0x23cbfe): undefined reference to `dma_unmap_single'
-    drivers/built-in.o: In function `sh_msiof_request_dma':
-    spi-sh-msiof.c:(.text+0x23cd5e): undefined reference to `dma_map_single'
-    spi-sh-msiof.c:(.text+0x23cd70): undefined reference to `dma_mapping_error'
-    spi-sh-msiof.c:(.text+0x23cdca): undefined reference to `dma_unmap_single'
-    drivers/built-in.o: In function `sh_msiof_dma_once':
-    spi-sh-msiof.c:(.text+0x23d450): undefined reference to `dma_sync_single_for_cpu'
-    spi-sh-msiof.c:(.text+0x23d5ea): undefined reference to `dma_sync_single_for_cpu'
+Right, x509_request_asymmetric_key() is the same as
+pkcs7_request_asymmetric_key().
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
----
- drivers/spi/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index d46b4b9e73b2..ab70bca8c7e1 100644
---- a/drivers/spi/Kconfig
-+++ b/drivers/spi/Kconfig
-@@ -446,7 +446,7 @@ config SPI_SC18IS602
- 
- config SPI_SH_MSIOF
- 	tristate "SuperH MSIOF SPI controller"
--	depends on HAVE_CLK
-+	depends on HAVE_CLK && HAS_DMA
- 	depends on SUPERH || ARCH_SHMOBILE || COMPILE_TEST
- 	help
- 	  SPI driver for SuperH and SH Mobile MSIOF blocks.
--- 
-1.9.1
+Mimi
 
