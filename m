@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755782AbaGITRx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 15:17:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47437 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755337AbaGITRw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 15:17:52 -0400
-Date: Wed, 9 Jul 2014 12:22:16 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Sami Laine <laine.j.sami@gmail.com>
-Cc: devel@driverdev.osuosl.org, trivial@kernel.org, gulsah.1004@gmail.com,
-        linville@tuxdriver.com, linux-kernel@vger.kernel.org,
-        paulmck@linux.vnet.ibm.com, Larry.Finger@lwfinger.net
-Subject: Re: [PATCH next-20140704]: staging/rtl8821ae/base.c: sparse warning
- corrections
-Message-ID: <20140709192216.GA32205@kroah.com>
-References: <20140706090111.GA16760@acer>
+	id S1756180AbaGITR6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 15:17:58 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:41894 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755810AbaGITRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 15:17:55 -0400
+Date: Wed, 9 Jul 2014 21:17:47 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Havard Skinnemoen <hskinnemoen@google.com>
+Cc: Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        Ewout van Bekkum <ewout@google.com>
+Subject: Re: [PATCH 1/6] x86-mce: Modify CMCI poll interval to adjust for
+ small check_interval values.
+Message-ID: <20140709191747.GB5249@pd.tnic>
+References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
+ <1404925766-32253-2-git-send-email-hskinnemoen@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140706090111.GA16760@acer>
+In-Reply-To: <1404925766-32253-2-git-send-email-hskinnemoen@google.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 06, 2014 at 12:01:11PM +0300, Sami Laine wrote:
-> From: Sami Laine <laine.j.sami@gmail.com>
+On Wed, Jul 09, 2014 at 10:09:21AM -0700, Havard Skinnemoen wrote:
+> From: Ewout van Bekkum <ewout@google.com>
 > 
-> Sparse warning corrections for:
-> 
-> drivers/staging/rtl8821ae/base.c:1370:16: warning: symbol 'rtl_make_smps_action' was not declared. Should it be static?
-> drivers/staging/rtl8821ae/base.c:1543:6: warning: symbol 'rtl_find_221_ie' was not declared. Should it be static?
-> drivers/staging/rtl8821ae/base.c:1804:5: warning: symbol 'rtl_core_module_init' was not declared. Should it be static?
-> drivers/staging/rtl8821ae/base.c:1820:6: warning: symbol 'rtl_core_module_exit' was not declared. Should it be static?
-> 
-> Signed-off-by: Sami Laine <laine.j.sami@gmail.com>
+> The CMCI poll interval was updated to pick the minimum interval between
+> the original 30 seconds and the check_interval divided by 8 (minimum of
+> 3 polls).
 
-You obviously did not build the code with your patch applied, as it
-breaks the build in bad ways :(
+Why min 3 polls? How do you come up with exactly that frequency?
 
-Please ALWAYS test your patches before sending them out...
+> This resolves a bug where the CMCI storm handler is unable to return to
+> interrupt mode from polling mode, if the check_interval shorter than the
+> CMCI poll interval. This problem is caused by the mce_timer_fn function
+> which only allows the poll interval to be incremented up to the
+> check_interval, while the mce_intel_adjust_timer function requires the
+> poll interval to be greater than the CMCI poll interval before leaving
+> the CMCI_STORM_ACTIVE state.
 
-greg k-h
+Interesting. So it seems you guys want to set the check_interval to
+something < 30 secs.
+
+Out of curiosity, what is your use case which requires such small
+check_interval setting?
+
+Maybe we need to redesign and simplify this intervals thing to make it
+more user-friendly...
+
+Btw, on a related note, we're working on a small mechanism which
+collects correctable errors in the kernel and when a certain count for a
+physical error address has been reached, we soft-offline that page. We'd
+appreciate it if you guys took a look and told us whether it makes sense
+to you:
+
+http://lkml.kernel.org/r/1404242623-10094-1-git-send-email-bp@alien8.de
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
