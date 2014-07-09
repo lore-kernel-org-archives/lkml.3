@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932143AbaGINEZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 09:04:25 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:50025 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755979AbaGINEV (ORCPT
+	id S932085AbaGINEX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 09:04:23 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:48589 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754949AbaGINEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 09:04:21 -0400
+	Wed, 9 Jul 2014 09:04:20 -0400
 From: Alex Elder <elder@linaro.org>
 To: akpm@linux-foundation.org
 Cc: ak@linux.intel.com, bp@suse.de, jack@suse.cz, john.stultz@linaro.org,
         pmladek@suse.cz, rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] printk: miscellaneous cleanups
-Date: Wed,  9 Jul 2014 08:04:16 -0500
-Message-Id: <1404911056-29064-5-git-send-email-elder@linaro.org>
+Subject: [PATCH 3/4] printk: use a clever macro
+Date: Wed,  9 Jul 2014 08:04:15 -0500
+Message-Id: <1404911056-29064-4-git-send-email-elder@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404911056-29064-1-git-send-email-elder@linaro.org>
 References: <1404911056-29064-1-git-send-email-elder@linaro.org>
@@ -21,101 +21,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch contains some small cleanups to kernel/printk/printk.c.
-None of them should cause any change in behavior.
-  - When CONFIG_PRINTK is defined, parenthesize the value of LOG_LINE_MAX.
-  - When CONFIG_PRINTK is *not* defined, there is an extra LOG_LINE_MAX
-    definition; delete it.
-  - Pull an assignment out of a conditional expression in console_setup().
-  - Use isdigit() in console_setup() rather than open coding it.
-  - In update_console_cmdline(), drop a NUL-termination assignment;
-    the strlcpy() call that precedes it guarantees it's not needed.
-  - Simplify some logic in printk_timed_ratelimit().
+Use the IS_ENABLED() macro rather than #ifdef blocks to set certain
+global values.
 
 Signed-off-by: Alex Elder <elder@linaro.org>
 ---
- kernel/printk/printk.c | 26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+ kernel/printk/printk.c | 12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
 
 diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 6f75e8a..909029e 100644
+index 646146c..6f75e8a 100644
 --- a/kernel/printk/printk.c
 +++ b/kernel/printk/printk.c
-@@ -45,6 +45,7 @@
- #include <linux/poll.h>
- #include <linux/irq_work.h>
- #include <linux/utsname.h>
-+#include <linux/ctype.h>
- 
- #include <asm/uaccess.h>
- 
-@@ -257,7 +258,7 @@ static u64 clear_seq;
- static u32 clear_idx;
- 
- #define PREFIX_MAX		32
--#define LOG_LINE_MAX		1024 - PREFIX_MAX
-+#define LOG_LINE_MAX		(1024 - PREFIX_MAX)
- 
- /* record buffer */
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
-@@ -1794,7 +1795,7 @@ EXPORT_SYMBOL(printk);
- 
- #define LOG_LINE_MAX		0
- #define PREFIX_MAX		0
--#define LOG_LINE_MAX 0
-+
- static u64 syslog_seq;
- static u32 syslog_idx;
- static u64 console_seq;
-@@ -1895,7 +1896,8 @@ static int __init console_setup(char *str)
- 		strncpy(buf, str, sizeof(buf) - 1);
- 	}
- 	buf[sizeof(buf) - 1] = 0;
--	if ((options = strchr(str, ',')) != NULL)
-+	options = strchr(str, ',');
-+	if (options)
- 		*(options++) = 0;
- #ifdef __sparc__
- 	if (!strcmp(str, "ttya"))
-@@ -1904,7 +1906,7 @@ static int __init console_setup(char *str)
- 		strcpy(buf, "ttyS1");
- #endif
- 	for (s = buf; *s; s++)
--		if ((*s >= '0' && *s <= '9') || *s == ',')
-+		if (isdigit(*s) || *s == ',')
- 			break;
- 	idx = simple_strtoul(s, NULL, 10);
- 	*s = 0;
-@@ -1943,7 +1945,6 @@ int update_console_cmdline(char *name, int idx, char *name_new, int idx_new, cha
- 	     i++, c++)
- 		if (strcmp(c->name, name) == 0 && c->index == idx) {
- 			strlcpy(c->name, name_new, sizeof(c->name));
--			c->name[sizeof(c->name) - 1] = 0;
- 			c->options = options;
- 			c->index = idx_new;
- 			return i;
-@@ -2611,14 +2612,13 @@ EXPORT_SYMBOL(__printk_ratelimit);
- bool printk_timed_ratelimit(unsigned long *caller_jiffies,
- 			unsigned int interval_msecs)
- {
--	if (*caller_jiffies == 0
--			|| !time_in_range(jiffies, *caller_jiffies,
--					*caller_jiffies
--					+ msecs_to_jiffies(interval_msecs))) {
--		*caller_jiffies = jiffies;
--		return true;
--	}
--	return false;
-+	unsigned long elapsed = jiffies - *caller_jiffies;
-+
-+	if (*caller_jiffies && elapsed <= msecs_to_jiffies(interval_msecs))
-+		return false;
-+
-+	*caller_jiffies = jiffies;
-+	return true;
+@@ -453,11 +453,7 @@ static int log_store(int facility, int level,
+ 	return msg->text_len;
  }
- EXPORT_SYMBOL(printk_timed_ratelimit);
  
+-#ifdef CONFIG_SECURITY_DMESG_RESTRICT
+-int dmesg_restrict = 1;
+-#else
+-int dmesg_restrict;
+-#endif
++int dmesg_restrict = IS_ENABLED(CONFIG_SECURITY_DMESG_RESTRICT);
+ 
+ static int syslog_action_restricted(int type)
+ {
+@@ -947,11 +943,7 @@ static inline void boot_delay_msec(int level)
+ }
+ #endif
+ 
+-#if defined(CONFIG_PRINTK_TIME)
+-static bool printk_time = 1;
+-#else
+-static bool printk_time;
+-#endif
++static bool printk_time = IS_ENABLED(CONFIG_PRINTK_TIME);
+ module_param_named(time, printk_time, bool, S_IRUGO | S_IWUSR);
+ 
+ static size_t print_time(u64 ts, char *buf)
 -- 
 1.9.1
 
