@@ -1,71 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932386AbaGIWUi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 18:20:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57042 "EHLO mx1.redhat.com"
+	id S932425AbaGIWUp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 18:20:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58506 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932352AbaGIWUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 18:20:31 -0400
-Date: Thu, 10 Jul 2014 00:20:07 +0200
+	id S932352AbaGIWUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 18:20:42 -0400
+Date: Thu, 10 Jul 2014 00:20:17 +0200
 From: Jiri Olsa <jolsa@redhat.com>
 To: Andi Kleen <andi@firstfloor.org>
 Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 3/9] perf, tools: Add support for reading JSON event
- files v3
-Message-ID: <20140709222007.GI20938@krava.redhat.com>
+Subject: Re: [PATCH 8/9] perf, tools, test: Add test case for alias and JSON
+ parsing v2
+Message-ID: <20140709222017.GJ20938@krava.redhat.com>
 References: <1403910964-11017-1-git-send-email-andi@firstfloor.org>
- <1403910964-11017-4-git-send-email-andi@firstfloor.org>
+ <1403910964-11017-9-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403910964-11017-4-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1403910964-11017-9-git-send-email-andi@firstfloor.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 04:15:58PM -0700, Andi Kleen wrote:
+On Fri, Jun 27, 2014 at 04:16:03PM -0700, Andi Kleen wrote:
 > From: Andi Kleen <ak@linux.intel.com>
 > 
-> Add a parser for Intel style JSON event files. This allows
-> to use an Intel event list directly with perf. The Intel
-> event lists can be quite large and are too big to store
-> in unswappable kernel memory.
+> Add a simple test case to perf test that runs perf download and parses
+> all the available events, including json events.
 > 
-> The parser code knows how to convert the JSON fields
-> to perf fields. The conversion code is straight forward.
-> It knows (very little) Intel specific information, and can be easily
-> extended to handle fields for other CPUs.
-> 
-> The parser code is partially shared with an independent parsing
-> library, which is 2-clause BSD licenced. To avoid any conflicts I marked
-> those files as BSD licenced too. As part of perf they become GPLv2.
+> This needs adding an all event iterator to pmu.c
 
-SNIP
+I still get this error display
 
-> +
-> +#include <stdio.h>
-> +#include <stdlib.h>
-> +#include <errno.h>
-> +#include <string.h>
-> +#include <ctype.h>
-> +#include "jsmn.h"
-> +#include "json.h"
-> +#include "jevents.h"
-> +
-> +static void addfield(char *map, char **dst, const char *sep,
-> +		     const char *a, jsmntok_t *bt)
-> +{
-> +	unsigned len = strlen(a) + 1 + strlen(sep);
-> +	int olen = *dst ? strlen(*dst) : 0;
-> +	int blen = bt ? json_len(bt) : 0;
-> +	char *out;
-> +
-> +	out = realloc(*dst, len + olen + blen);
-> +	if (!out)
-> +		return;
+33: Test parsing JSON aliases                              :invalid or unsupported event: 'clockticks'
+invalid or unsupported event: 'clockticks'
+ Parsed 521 events : Ok
 
-what happens if we fail to realloc?
+I guess you could iterate just cpu PMU
 
 jirka
