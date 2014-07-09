@@ -1,177 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756267AbaGIPLt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 11:11:49 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:62935 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755861AbaGIPLq (ORCPT
+	id S1756324AbaGIPMF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 11:12:05 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:18272 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756283AbaGIPMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 11:11:46 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] ARM: Use include/asm-generic/io.h
-Date: Wed,  9 Jul 2014 17:11:38 +0200
-Message-Id: <1404918699-17284-2-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <1404918699-17284-1-git-send-email-thierry.reding@gmail.com>
-References: <1404918699-17284-1-git-send-email-thierry.reding@gmail.com>
+	Wed, 9 Jul 2014 11:12:00 -0400
+Date: Wed, 9 Jul 2014 11:11:50 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Andrew Cooper <andrew.cooper3@citrix.com>, konrad@kernel.org,
+        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xenproject.org
+Subject: Re: [Xen-devel] [PATCH v3 1/7] xen-pciback: Document the various
+ parameters and attributes in SysFS
+Message-ID: <20140709151150.GD28943@laptop.dumpdata.com>
+References: <1404845909-13563-2-git-send-email-konrad@kernel.org>
+ <53BD32C2.6000306@citrix.com>
+ <20140709135922.GD21837@laptop.dumpdata.com>
+ <53BD4C44.30805@citrix.com>
+ <20140709141354.GG21837@laptop.dumpdata.com>
+ <53BD5026.2030908@citrix.com>
+ <20140709142510.GI21837@laptop.dumpdata.com>
+ <53BD556F.10408@citrix.com>
+ <20140709144744.GC27881@laptop.dumpdata.com>
+ <53BD584B.2030005@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53BD584B.2030005@citrix.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+On Wed, Jul 09, 2014 at 03:57:15PM +0100, David Vrabel wrote:
+> On 09/07/14 15:47, Konrad Rzeszutek Wilk wrote:
+> > On Wed, Jul 09, 2014 at 03:45:03PM +0100, David Vrabel wrote:
+> >> On 09/07/14 15:25, Konrad Rzeszutek Wilk wrote:
+> >>> On Wed, Jul 09, 2014 at 03:22:30PM +0100, Andrew Cooper wrote:
+> >>>> On 09/07/14 15:13, Konrad Rzeszutek Wilk wrote:
+> >>>>> On Wed, Jul 09, 2014 at 03:05:56PM +0100, Andrew Cooper wrote:
+> >>>>>> On 09/07/14 14:59, Konrad Rzeszutek Wilk wrote:
+> >>>>>>>>> +What:           /sys/bus/pci/drivers/pciback/irq_handler_state
+> >>>>>>>>> +Date:           Oct 2011
+> >>>>>>>>> +KernelVersion:  3.1
+> >>>>>>>>> +Contact:        xen-devel@lists.xenproject.org
+> >>>>>>>>> +Description:
+> >>>>>>>>> +                An option to toggle Xen PCI back to acknowledge (or stop)
+> >>>>>>>>> +                interrupts for the specific device regardless of whether the
+> >>>>>>>>> +                device is shared, enabled, or on a level interrupt line.
+> >>>>>>>>> +                Writing a string of DDDD:BB:DD.F will toggle the state.
+> >>>>>>>>> +                This is Domain:Bus:Device.Function where domain is optional.
+> >>>>>>>> I do not understand under what circumstances this should be used in.
+> >>>>>>> So that dom0 does not disable the IRQ line as it would be getting the IRQs
+> >>>>>>> for the guest as well (because the IRQ line is level and another guest
+> >>>>>>> uses an PCI device that is using the same line).
+> >>>>>> Why is this relevant?  Xen (and Xen alone) actually controls this aspect
+> >>>>>> of interrupts.  Xen manages passing line level interrupts to any domain
+> >>>>>> which might have a device hanging off a particular line, and has to wait
+> >>>>>> until all domains have EOI'd the line until it can clear the interrupt
+> >>>>>> at the IO-APIC.
+> >>>>> Because Linux will think there is an IRQ storm as the event->IRQ points
+> >>>>> to the default one. And then it will mask the event, which means dom0
+> >>>>> will mask the PIRQ, and Xen will then also mask the IRQ.
+> >>>>
+> >>>> Xen will (and by this I mean 'should', and this was the behaviour last
+> >>>> time I delved in there) only mask the IRQ if dom0 is the only consumer
+> >>>> of these interrupts.
+> >>>>
+> >>>> For any PCIPassthrough, dom0 will get line interrupts for passed-through
+> >>>> devices, but in this case pci-back should always handle the line
+> >>>> interrupts so Linux doesn't block them as an IRQ storm.
+> >>>
+> >>> And that is what it does - and this option provides the option to enable/disable
+> >>> it the system admin wishes to do it.
+> >>
+> >> I still don't understand why someone would want to flip the handler to
+> >> a broken mode.
+> > 
+> > The intent was to allow you to flip to the 'enable' mode in case Linux
+> > did not detect it correctly.
+> 
+> We should not provide sysfs knobs to work around kernel bugs.
 
-Include the generic I/O header file so that duplicate implementations
-can be removed. This will also help to establish consistency across more
-architectures regarding which accessors they support.
+It is already in the code. This is just a documentation patch.
+But I can drop this chunk from it if you would like.
+> 
+> >> The original commit isn't very enlightening either.
+> > 
+> > Thoughts then on what this documentation patch should say to make it
+> > clear of its intent?
+> 
+> I think it should be removed.
+> 
+> It also has non-standard behaviour of /toggling/ with every write
+> instead of using a write of a 1 or a 0 like every other sysfs file.
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
- arch/arm/include/asm/io.h     | 52 +++++++++----------------------------------
- arch/arm/include/asm/memory.h |  2 ++
- 2 files changed, 13 insertions(+), 41 deletions(-)
+The 'unbind' and 'bind' expect an BDF as well and they are part
+of the SysFS and in documentation.
 
-diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
-index a78562f21aab..ef54f5c8a7ae 100644
---- a/arch/arm/include/asm/io.h
-+++ b/arch/arm/include/asm/io.h
-@@ -69,6 +69,7 @@ extern void __raw_readsl(const void __iomem *addr, void *data, int longlen);
-  * writeback addressing modes as these incur a significant performance
-  * overhead (the address generation must be emulated in software).
-  */
-+#define __raw_writew __raw_writew
- static inline void __raw_writew(u16 val, volatile void __iomem *addr)
- {
- 	asm volatile("strh %1, %0"
-@@ -76,6 +77,7 @@ static inline void __raw_writew(u16 val, volatile void __iomem *addr)
- 		     : "r" (val));
- }
- 
-+#define __raw_readw __raw_readw
- static inline u16 __raw_readw(const volatile void __iomem *addr)
- {
- 	u16 val;
-@@ -86,6 +88,7 @@ static inline u16 __raw_readw(const volatile void __iomem *addr)
- }
- #endif
- 
-+#define __raw_writeb __raw_writeb
- static inline void __raw_writeb(u8 val, volatile void __iomem *addr)
- {
- 	asm volatile("strb %1, %0"
-@@ -93,6 +96,7 @@ static inline void __raw_writeb(u8 val, volatile void __iomem *addr)
- 		     : "r" (val));
- }
- 
-+#define __raw_writel __raw_writel
- static inline void __raw_writel(u32 val, volatile void __iomem *addr)
- {
- 	asm volatile("str %1, %0"
-@@ -100,6 +104,7 @@ static inline void __raw_writel(u32 val, volatile void __iomem *addr)
- 		     : "r" (val));
- }
- 
-+#define __raw_readb __raw_readb
- static inline u8 __raw_readb(const volatile void __iomem *addr)
- {
- 	u8 val;
-@@ -109,6 +114,7 @@ static inline u8 __raw_readb(const volatile void __iomem *addr)
- 	return val;
- }
- 
-+#define __raw_readl __raw_readl
- static inline u32 __raw_readl(const volatile void __iomem *addr)
- {
- 	u32 val;
-@@ -267,20 +273,6 @@ extern void pci_iounmap_io(unsigned int offset);
- #define insl(p,d,l)		__raw_readsl(__io(p),d,l)
- #endif
- 
--#define outb_p(val,port)	outb((val),(port))
--#define outw_p(val,port)	outw((val),(port))
--#define outl_p(val,port)	outl((val),(port))
--#define inb_p(port)		inb((port))
--#define inw_p(port)		inw((port))
--#define inl_p(port)		inl((port))
--
--#define outsb_p(port,from,len)	outsb(port,from,len)
--#define outsw_p(port,from,len)	outsw(port,from,len)
--#define outsl_p(port,from,len)	outsl(port,from,len)
--#define insb_p(port,to,len)	insb(port,to,len)
--#define insw_p(port,to,len)	insw(port,to,len)
--#define insl_p(port,to,len)	insl(port,to,len)
--
- /*
-  * String version of IO memory access ops:
-  */
-@@ -346,40 +338,18 @@ extern void _memset_io(volatile void __iomem *, int, size_t);
- #define ioremap_wc(cookie,size)		__arm_ioremap((cookie), (size), MT_DEVICE_WC)
- #define iounmap				__arm_iounmap
- 
--/*
-- * io{read,write}{8,16,32} macros
-- */
--#ifndef ioread8
--#define ioread8(p)	({ unsigned int __v = __raw_readb(p); __iormb(); __v; })
--#define ioread16(p)	({ unsigned int __v = le16_to_cpu((__force __le16)__raw_readw(p)); __iormb(); __v; })
--#define ioread32(p)	({ unsigned int __v = le32_to_cpu((__force __le32)__raw_readl(p)); __iormb(); __v; })
--
--#define ioread16be(p)	({ unsigned int __v = be16_to_cpu((__force __be16)__raw_readw(p)); __iormb(); __v; })
--#define ioread32be(p)	({ unsigned int __v = be32_to_cpu((__force __be32)__raw_readl(p)); __iormb(); __v; })
--
--#define iowrite8(v,p)	({ __iowmb(); __raw_writeb(v, p); })
--#define iowrite16(v,p)	({ __iowmb(); __raw_writew((__force __u16)cpu_to_le16(v), p); })
--#define iowrite32(v,p)	({ __iowmb(); __raw_writel((__force __u32)cpu_to_le32(v), p); })
--
--#define iowrite16be(v,p) ({ __iowmb(); __raw_writew((__force __u16)cpu_to_be16(v), p); })
--#define iowrite32be(v,p) ({ __iowmb(); __raw_writel((__force __u32)cpu_to_be32(v), p); })
--
--#define ioread8_rep(p,d,c)	__raw_readsb(p,d,c)
--#define ioread16_rep(p,d,c)	__raw_readsw(p,d,c)
--#define ioread32_rep(p,d,c)	__raw_readsl(p,d,c)
--
--#define iowrite8_rep(p,s,c)	__raw_writesb(p,s,c)
--#define iowrite16_rep(p,s,c)	__raw_writesw(p,s,c)
--#define iowrite32_rep(p,s,c)	__raw_writesl(p,s,c)
--
-+#define ioport_map ioport_map
- extern void __iomem *ioport_map(unsigned long port, unsigned int nr);
-+#define ioport_unmap ioport_unmap
- extern void ioport_unmap(void __iomem *addr);
--#endif
- 
- struct pci_dev;
- 
-+#define pci_iounmap pci_iounmap
- extern void pci_iounmap(struct pci_dev *dev, void __iomem *addr);
- 
-+#include <asm-generic/io.h>
-+
- /*
-  * can the hardware map this into one segment or not, given no other
-  * constraints.
-diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-index 2b751464d6ff..35ae6eaf33b2 100644
---- a/arch/arm/include/asm/memory.h
-+++ b/arch/arm/include/asm/memory.h
-@@ -278,11 +278,13 @@ static inline unsigned long __phys_to_virt(phys_addr_t x)
-  * translation for translating DMA addresses.  Use the driver
-  * DMA support - see dma-mapping.h.
-  */
-+#define virt_to_phys virt_to_phys
- static inline phys_addr_t virt_to_phys(const volatile void *x)
- {
- 	return __virt_to_phys((unsigned long)(x));
- }
- 
-+#define phys_to_virt phys_to_virt
- static inline void *phys_to_virt(phys_addr_t x)
- {
- 	return (void *)__phys_to_virt(x);
--- 
-2.0.1
-
+> 
+> David
