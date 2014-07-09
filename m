@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740AbaGIN0A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 09:26:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25718 "EHLO mx1.redhat.com"
+	id S1755979AbaGIN0n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 09:26:43 -0400
+Received: from mail.kernel.org ([198.145.19.201]:44246 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752726AbaGINZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 09:25:59 -0400
-Date: Wed, 9 Jul 2014 18:55:24 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: linux-kernel@vger.kernel.org,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
-        keescook@chromium.org, stable@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] hwrng: fetch randomness only after device init
-Message-ID: <20140709132524.GB4667@grmbl.mre>
-References: <cover.1404538109.git.amit.shah@redhat.com>
- <515a12ecc5fca5452bf0bfda4d54546d8fb5829c.1404538109.git.amit.shah@redhat.com>
- <20140709115317.GM13433@titan.lakedaemon.net>
- <20140709130822.GA4553@grmbl.mre>
- <20140709131737.GO13433@titan.lakedaemon.net>
+	id S1751778AbaGIN0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 09:26:42 -0400
+Date: Wed, 9 Jul 2014 06:26:35 -0700
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Changman Lee <cm224.lee@samsung.com>,
+        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: f2fs: Add f2fs_balance_fs for direct IO
+Message-ID: <20140709132635.GA4926@jmac>
+References: <1404711988-18264-1-git-send-email-ying.huang@intel.com>
+ <20140708075843.GA59558@jmac>
+ <1404807412.13519.46.camel@yhuang-dev>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140709131737.GO13433@titan.lakedaemon.net>
+In-Reply-To: <1404807412.13519.46.camel@yhuang-dev>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Wed) 09 Jul 2014 [09:17:37], Jason Cooper wrote:
-> On Wed, Jul 09, 2014 at 06:38:22PM +0530, Amit Shah wrote:
-> > On (Wed) 09 Jul 2014 [07:53:17], Jason Cooper wrote:
-> > > On Sat, Jul 05, 2014 at 11:04:52AM +0530, Amit Shah wrote:
-> > > > Commit d9e7972619334 "hwrng: add randomness to system from rng sources"
-> > > > added a call to rng_get_data() from the hwrng_register() function.
-> > > > However, some rng devices need initialization before data can be read
-> > > > from them.
-> > > > 
-> > > > This commit makes the call to rng_get_data() depend on no init fn
-> > > > pointer being registered by the device.  If an init function is
-> > > > registered, this call is made after device init.
-> > > > 
-> > > > CC: Kees Cook <keescook@chromium.org>
-> > > > CC: Jason Cooper <jason@lakedaemon.net>
-> > > > CC: Herbert Xu <herbert@gondor.apana.org.au>
-> > > > CC: <stable@vger.kernel.org> # For v3.15+
-> > > > Signed-off-by: Amit Shah <amit.shah@redhat.com>
-> > > > ---
-> > > >  drivers/char/hw_random/core.c | 31 +++++++++++++++++++++++++------
-> > > >  1 file changed, 25 insertions(+), 6 deletions(-)
-> > > 
-> > > Thanks for cleaning this up!
-> > 
-> > Thanks!
-> > 
-> > Any thoughts on the follow-up patch posted later that resolves some of
-> > the weirdness in init?
+On Tue, Jul 08, 2014 at 04:16:52PM +0800, Huang Ying wrote:
+> Hi, Jaegeuk,
 > 
-> hmm, I'd rather see an init function for virtio-rng that checks the bit
-> and returns 0 or -EAGAIN.  With your proposed change, you would get
-> hangs again.
+> On Tue, 2014-07-08 at 00:58 -0700, Jaegeuk Kim wrote:
+> > Hi Huang,
+> > 
+> > It occurs a merge conflict.
+> > Please check the patch.
+> 
+> Sorry, my fault.  I think I need to base my patch on f2fs tree instead
+> of latest Linus' tree?
 
-Confused; I meant the patch in
+My apologies.
+As Chao said, it was due to the other patch.
+I'll merge them soon.
 
-https://lkml.org/lkml/2014/7/7/58
+> 
+> > Anyway, IMO, it needs to place f2fs_balance_fs somewhere in get_data_block.
+> 
+> Yes.  I think so too.  So you prefer to add f2fs_balance_fs in both
+> f2fs_direct_IO and get_data_block, or just add f2fs_blance_fs in
+> get_data_block only?
 
-		Amit
+I think it should be placed on get_data_block only.
+But, at a glance, we need to figure out some conditions when it should be
+called.
+Since we don't or shouldn't call that in the look-up paths (e.g., read).
+
+Thanks,
+
+> 
+> Best Regards,
+> Huang, Ying
+> 
+> > Thanks,
+> > 
+> > On Mon, Jul 07, 2014 at 01:46:28PM +0800, Huang Ying wrote:
+> > > Otherwise, if a large amount of direct IO writes were done, the
+> > > segment allocation may be failed because no enough segments are gced.
+> > > 
+> > > Signed-off-by: Huang, Ying <ying.huang@intel.com>
+> > > ---
+> > >  fs/f2fs/data.c |    6 +++++-
+> > >  1 file changed, 5 insertions(+), 1 deletion(-)
+> > > 
+> > > --- a/fs/f2fs/data.c
+> > > +++ b/fs/f2fs/data.c
+> > > @@ -1038,6 +1038,7 @@ static ssize_t f2fs_direct_IO(int rw, st
+> > >  {
+> > >  	struct file *file = iocb->ki_filp;
+> > >  	struct inode *inode = file->f_mapping->host;
+> > > +	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+> > >  
+> > >  	/* Let buffer I/O handle the inline data case. */
+> > >  	if (f2fs_has_inline_data(inode))
+> > > @@ -1046,8 +1047,11 @@ static ssize_t f2fs_direct_IO(int rw, st
+> > >  	if (check_direct_IO(inode, rw, iter, offset))
+> > >  		return 0;
+> > >  
+> > > +	if (rw == WRITE)
+> > > +		f2fs_balance_fs(sbi);
+> > > +
+> > >  	/* clear fsync mark to recover these blocks */
+> > > -	fsync_mark_clear(F2FS_SB(inode->i_sb), inode->i_ino);
+> > > +	fsync_mark_clear(sbi, inode->i_ino);
+> > >  
+> > >  	return blockdev_direct_IO(rw, iocb, inode, iter, offset,
+> > >  				  get_data_block);
+> > 
+
+-- 
+Jaegeuk Kim
