@@ -1,117 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756739AbaGIRPi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 13:15:38 -0400
-Received: from mail-vc0-f202.google.com ([209.85.220.202]:55446 "EHLO
-	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756717AbaGIRPg (ORCPT
+	id S1755928AbaGIRS6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 13:18:58 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:14297 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754666AbaGIRSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 13:15:36 -0400
-From: Havard Skinnemoen <hskinnemoen@google.com>
-To: Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, Ewout van Bekkum <ewout@google.com>,
-        Havard Skinnemoen <hskinnemoen@google.com>
-Subject: [PATCH 2/6] x86-mce: Modify CMCI storm exit to reenable instead of rediscover banks.
-Date: Wed,  9 Jul 2014 10:09:22 -0700
-Message-Id: <1404925766-32253-3-git-send-email-hskinnemoen@google.com>
-X-Mailer: git-send-email 2.0.0.526.g5318336
-In-Reply-To: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
-References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
+	Wed, 9 Jul 2014 13:18:55 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-5d-53bd797dd6f9
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        b.zolnierkie@samsung.com
+Subject: [PATCH v3 1/4] ARM: EXYNOS: PM: replace EXYNOS_BOOT_VECTOR_* macros by
+ static inlines
+Date: Wed, 09 Jul 2014 19:17:51 +0200
+Message-id: <1404926274-18411-2-git-send-email-b.zolnierkie@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+In-reply-to: <1404926274-18411-1-git-send-email-b.zolnierkie@samsung.com>
+References: <1404926274-18411-1-git-send-email-b.zolnierkie@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrELMWRmVeSWpSXmKPExsVy+t9jAd3ayr3BBrM2KFpsnLGe1WLeZ1mL
+	3gVX2SzONr1ht3h/6BmzxabH11gtLu+aw2bxufcIo8WM8/uYLM6cvsRqcfJPL6PF+hmvWSw2
+	fvVw4PW4c20Pm8fmJfUet/89ZvbYcrWdxaNvyypGj8+b5ALYorhsUlJzMstSi/TtErgypj6K
+	KmgSrNi1ZCV7A+NRvi5GTg4JAROJb8c7WCFsMYkL99azdTFycQgJLGKUmPrxAiOE08UksX37
+	AWaQKjYBK4mJ7asYQWwRATWJnsVbwYqYBfYySyzt3sQOkhAWSJD4dv0ESxcjBweLgKrEp5vx
+	IGFeAQ+JK2dPs0BsU5TofjaBDaSEU8BT4tnWYpCwEFDJ2WftTBMYeRcwMqxiFE0tSC4oTkrP
+	NdIrTswtLs1L10vOz93ECA7JZ9I7GFc1WBxiFOBgVOLhVeDZEyzEmlhWXJl7iFGCg1lJhPdW
+	yd5gId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rwHW60DhQTSE0tSs1NTC1KLYLJMHJxSDYwbLfad
+	WHvY5wHr+/ZQPt1zr5uqfzYHmh5ZG9N0VH+m18+v23fe3NR4Vj76xieJn2svuFS8sVz8tF5f
+	5dqNuv5/S7c9e2ev/TXw2STzoin63rZPHbdEOB/+ML+pdelx51X5mp+uuhddy7YRTZNce5xL
+	8LBbyxPJm+YXZfYc+7316JcfZ5ldJJaqKbEUZyQaajEXFScCAGiF5cVFAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ewout van Bekkum <ewout@google.com>
+Replace EXYNOS_BOOT_VECTOR_ADDR and EXYNOS_BOOT_VECTOR_FLAG macros
+by exynos_boot_vector_addr() and exynos_boot_vector_flag() static
+inlines.
 
-The CMCI storm handler previously called cmci_reenable() when exiting a
-CMCI storm. However, when entering a CMCI storm the bank ownership was
-not relinquished by the affected CPUs. The CMCIs were only disabled via
-cmci_storm_disable_banks(). The handler was updated to instead call a
-new function, cmci_storm_enable_banks(), to reenable CMCI on the already
-owned banks instead of rediscovering CMCI banks (which were still owned
-but disabled).
+This patch shouldn't cause any functionality changes.
 
-Signed-off-by: Ewout van Bekkum <ewout@google.com>
-Signed-off-by: Havard Skinnemoen <hskinnemoen@google.com>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
- arch/x86/kernel/cpu/mcheck/mce_intel.c | 50 ++++++++++++++++++++++------------
- 1 file changed, 33 insertions(+), 17 deletions(-)
+v3:
+- added Acked-by from Daniel
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-index 26eb8d3..d015daf 100644
---- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-@@ -104,6 +104,38 @@ void mce_intel_hcpu_update(unsigned long cpu)
- 	per_cpu(cmci_storm_state, cpu) = CMCI_STORM_NONE;
+ arch/arm/mach-exynos/pm.c | 28 ++++++++++++++++++++--------
+ 1 file changed, 20 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
+index ed20318..c722454 100644
+--- a/arch/arm/mach-exynos/pm.c
++++ b/arch/arm/mach-exynos/pm.c
+@@ -167,12 +167,23 @@ int exynos_cluster_power_state(int cluster)
+ 			S5P_CORE_LOCAL_PWR_EN);
  }
  
-+static void cmci_storm_disable_banks(void)
+-#define EXYNOS_BOOT_VECTOR_ADDR	(samsung_rev() == EXYNOS4210_REV_1_1 ? \
+-			S5P_INFORM7 : (samsung_rev() == EXYNOS4210_REV_1_0 ? \
+-			(sysram_base_addr + 0x24) : S5P_INFORM0))
+-#define EXYNOS_BOOT_VECTOR_FLAG	(samsung_rev() == EXYNOS4210_REV_1_1 ? \
+-			S5P_INFORM6 : (samsung_rev() == EXYNOS4210_REV_1_0 ? \
+-			(sysram_base_addr + 0x20) : S5P_INFORM1))
++static inline void __iomem *exynos_boot_vector_addr(void)
 +{
-+	unsigned long flags, *owned;
-+	int bank;
-+	u64 val;
-+
-+	spin_lock_irqsave(&cmci_discover_lock, flags);
-+	owned = __get_cpu_var(mce_banks_owned);
-+	for_each_set_bit(bank, owned, MAX_NR_BANKS) {
-+		rdmsrl(MSR_IA32_MCx_CTL2(bank), val);
-+		val &= ~MCI_CTL2_CMCI_EN;
-+		wrmsrl(MSR_IA32_MCx_CTL2(bank), val);
-+	}
-+	spin_unlock_irqrestore(&cmci_discover_lock, flags);
++	if (samsung_rev() == EXYNOS4210_REV_1_1)
++		return S5P_INFORM7;
++	else if (samsung_rev() == EXYNOS4210_REV_1_0)
++		return sysram_base_addr + 0x24;
++	return S5P_INFORM0;
 +}
 +
-+static void cmci_storm_enable_banks(void)
++static inline void __iomem *exynos_boot_vector_flag(void)
 +{
-+	unsigned long flags, *owned;
-+	int bank;
-+	u64 val;
-+
-+	spin_lock_irqsave(&cmci_discover_lock, flags);
-+	owned = __get_cpu_var(mce_banks_owned);
-+	for_each_set_bit(bank, owned, MAX_NR_BANKS) {
-+		rdmsrl(MSR_IA32_MCx_CTL2(bank), val);
-+		val |= MCI_CTL2_CMCI_EN;
-+		wrmsrl(MSR_IA32_MCx_CTL2(bank), val);
-+	}
-+	spin_unlock_irqrestore(&cmci_discover_lock, flags);
++	if (samsung_rev() == EXYNOS4210_REV_1_1)
++		return S5P_INFORM6;
++	else if (samsung_rev() == EXYNOS4210_REV_1_0)
++		return sysram_base_addr + 0x20;
++	return S5P_INFORM1;
 +}
-+
- unsigned long mce_intel_adjust_timer(unsigned long interval)
+ 
+ #define S5P_CHECK_AFTR  0xFCBA0D10
+ #define S5P_CHECK_SLEEP 0x00000BAD
+@@ -185,8 +196,9 @@ static void exynos_set_wakeupmask(long mask)
+ 
+ static void exynos_cpu_set_boot_vector(long flags)
  {
- 	int r;
-@@ -132,7 +164,7 @@ unsigned long mce_intel_adjust_timer(unsigned long interval)
- 		 */
- 		if (!atomic_read(&cmci_storm_on_cpus)) {
- 			__this_cpu_write(cmci_storm_state, CMCI_STORM_NONE);
--			cmci_reenable();
-+			cmci_storm_enable_banks();
- 			cmci_recheck();
- 		}
- 		return cmci_poll_interval();
-@@ -145,22 +177,6 @@ unsigned long mce_intel_adjust_timer(unsigned long interval)
- 	}
+-	__raw_writel(virt_to_phys(exynos_cpu_resume), EXYNOS_BOOT_VECTOR_ADDR);
+-	__raw_writel(flags, EXYNOS_BOOT_VECTOR_FLAG);
++	__raw_writel(virt_to_phys(exynos_cpu_resume),
++		     exynos_boot_vector_addr());
++	__raw_writel(flags, exynos_boot_vector_flag());
  }
  
--static void cmci_storm_disable_banks(void)
--{
--	unsigned long flags, *owned;
--	int bank;
--	u64 val;
--
--	spin_lock_irqsave(&cmci_discover_lock, flags);
--	owned = __get_cpu_var(mce_banks_owned);
--	for_each_set_bit(bank, owned, MAX_NR_BANKS) {
--		rdmsrl(MSR_IA32_MCx_CTL2(bank), val);
--		val &= ~MCI_CTL2_CMCI_EN;
--		wrmsrl(MSR_IA32_MCx_CTL2(bank), val);
--	}
--	spin_unlock_irqrestore(&cmci_discover_lock, flags);
--}
--
- static bool cmci_storm_detect(void)
- {
- 	unsigned int cnt = __this_cpu_read(cmci_storm_cnt);
+ void exynos_enter_aftr(void)
 -- 
-2.0.0.526.g5318336
+1.8.2.3
 
