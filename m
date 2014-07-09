@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754996AbaGIHPj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 03:15:39 -0400
-Received: from ozlabs.org ([103.22.144.67]:36015 "EHLO ozlabs.org"
+	id S1752796AbaGIHW7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 03:22:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57222 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753923AbaGIHOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 03:14:21 -0400
-Date: Wed, 9 Jul 2014 17:14:14 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Randy Dunlap <rdunlap@infradead.org>, Jiri Kosina <jkosina@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Pali =?UTF-8?B?Um9o?= =?UTF-8?B?w6Fy?= <pali.rohar@gmail.com>
-Subject: linux-next: manual merge of the rd-docs tree with the trivial tree
-Message-ID: <20140709171414.5d995396@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1750953AbaGIHW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 03:22:57 -0400
+Message-ID: <53BCEDAF.8090308@redhat.com>
+Date: Wed, 09 Jul 2014 09:22:23 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/.Q.BxtoPTey=h+ObpmG1C2D"; protocol="application/pgp-signature"
+To: Tejun Heo <tj@kernel.org>,
+        =?ISO-8859-1?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+CC: sebastian.hesselbarth@gmail.com, kishon@ti.com,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v9 3/7] ata: libahci: allow to use multiple PHYs
+References: <1404728173-20263-1-git-send-email-antoine.tenart@free-electrons.com> <1404728173-20263-4-git-send-email-antoine.tenart@free-electrons.com> <20140708134000.GC4979@htj.dyndns.org>
+In-Reply-To: <20140708134000.GC4979@htj.dyndns.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/.Q.BxtoPTey=h+ObpmG1C2D
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi Randy,
+On 07/08/2014 03:40 PM, Tejun Heo wrote:
+> (Cc'ing Hans.)
 
-Today's linux-next merge of the rd-docs tree got a conflict in
-Documentation/laptops/freefall.c between commit d5ae11dc402f ("doc:
-hpfall.c: fix missing null-terminate after strncpy call") from the
-trivial tree and commit 0af05db576e9 ("Dell kernel driver dell-smo8800
-provides same freefall interface as hp_accel so") from the rd-docs tree.
+Thanks for adding me to the loop.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+I've been reading the entire thread sofar, and here are my 2 cents:
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+1) I think overall this is a good idea, and I like the suggested dt representation
+2) I agree with Tejun that it would be better to tie the phy to the port, and thus to
+add the struct phy * pointer to struct ahci_port_priv.
 
-diff --cc Documentation/laptops/freefall.c
-index 67084321dab4,aab2ff09e868..000000000000
---- a/Documentation/laptops/freefall.c
-+++ b/Documentation/laptops/freefall.c
-@@@ -27,8 -33,8 +33,9 @@@ static int set_unload_heads_path(char *
- =20
-  	if (strlen(device) <=3D 5 || strncmp(device, "/dev/", 5) !=3D 0)
-  		return -EINVAL;
-- 	strncpy(devname, device + 5, sizeof(devname));
-+ 	strncpy(devname, device + 5, sizeof(devname) - 1);
- +	devname[sizeof(devname) - 1] =3D '\0';
-+ 	strncpy(device_path, device, sizeof(device_path) - 1);
- =20
-  	snprintf(unload_heads_path, sizeof(unload_heads_path) - 1,
-  				"/sys/block/%s/device/unload_heads", devname);
+One question 2 brings with it is how to deal with older device-tree files which
+have the phy directly in the ahci controller node. This seems to only be the
+case for the TI dra7 and omap5 platforms. Probably those have only 1 sata port
+(this needs to be verified), if that is the case we can simply hard code
+tying the phy to port 0 in this case, and we should probably also update their
+dts files in the kernel tree to use the new structure (while keeping the
+ahci driver compatible with the old structure for now).
 
---Sig_/.Q.BxtoPTey=h+ObpmG1C2D
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Regards,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Hans
 
-iQIcBAEBCAAGBQJTvOvLAAoJEMDTa8Ir7ZwV/NoP/0mQjnIUWvZTwBmxnIumk1Fr
-VS3hZAIm1g5mW+7XszUTDQnzCB56JIIeubPA3rk2v2FLyaf/zwXxQTQkIflI5SJD
-bb2eTPSdSHIdJU/vnvJimsvtmGQZ5lMaspWMZE0gpkfCB3AOILOkrJs51b7u/mTE
-YOAyy/gqvpbErhkphWiY4vu5gqNtQzXhhI3fMaQrtorMZYerpyn4iKn5vOavcJ36
-TxXSp37usjZcbOzdldp4XpPJyZ7OSHEXZcaY1dLU2N/EQg/gkrXdI6fQFox8cdHv
-a0/heP1myFAMSD//16kLML4wxQdui+qMacinIKYhiREA6AKqVmfAa+9R3eqGEPb+
-Hg8KH2a/5EKDen7XP/W5Z/ZSFfB1yi2AOFzSbX1apR2+5/lR/fY54ksXbS5Yt4ag
-PlrZ78kkWAcLrJq/LD28B5hYvTulRe33kZNDziQrZhkai0xS2PzgeqV2hLbYks2p
-Y8uA+roHQPKTajAJIMWdkJNHXMBhhep6NOeS3l6/Tqbi/Wb5W0ie2+LFEh3CLnoU
-BiOw2Xdy39fiaoYli0y6cXnwZjBnhngnhyRSuRuJ8x1etSSmOZsdRg5pYwaLABnu
-jmEFmDBBCUv5XBUh2gW7TqSQjqVtMjSXeadOzkPlB25AXHw+zJXz5IABJtCZhpRe
-usd7qy12uvnIOgxqfnRS
-=NWLj
------END PGP SIGNATURE-----
 
---Sig_/.Q.BxtoPTey=h+ObpmG1C2D--
