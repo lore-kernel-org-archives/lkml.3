@@ -1,61 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932264AbaGINWL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 09:22:11 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:48585 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755550AbaGINV3 (ORCPT
+	id S932297AbaGINWq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 09:22:46 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:58854 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932267AbaGINWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 09:21:29 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH v2] serial: core: Preserve termios c_cflag for console resume
-Date: Wed,  9 Jul 2014 09:21:14 -0400
-Message-Id: <1404912074-9729-2-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1404912074-9729-1-git-send-email-peter@hurleysoftware.com>
-References: <1404912074-9729-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	Wed, 9 Jul 2014 09:22:45 -0400
+Message-ID: <53BD421F.8020904@gmail.com>
+Date: Wed, 09 Jul 2014 18:52:39 +0530
+From: Anil Shashikumar Belur <askb23@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Pavel Machek <pavel@ucw.cz>
+CC: m.chehab@samsung.com, dan.carpenter@oracle.com, gregkh@linuxfoundation.org,
+        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] staging: nokia_h4p: nokia_core.c - removed IRQF_DISABLED
+ macro
+References: <1404885998-10981-1-git-send-email-askb23@gmail.com> <1404885998-10981-2-git-send-email-askb23@gmail.com> <20140709114605.GB22777@amd.pavel.ucw.cz>
+In-Reply-To: <20140709114605.GB22777@amd.pavel.ucw.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a tty is opened for the serial console, the termios c_cflag
-settings are inherited from the console line settings.
-However, if the tty is subsequently closed, the termios settings
-are lost. This results in a garbled console if the console is later
-suspended and resumed.
 
-Preserve the termios c_cflag for the serial console when the tty
-is shutdown; this reflects the most recent line settings.
+On Wednesday 09 July 2014 05:16 PM, Pavel Machek wrote:
+> I wonder if it would maek sense to do
+> ./include/linux/interrupt.h:#define IRQF_DISABLED 0 to make it extra
+> clear that it is nop now? Pavel 
+yes - it makes sense. there are still a few references to the macro in
+the code.
 
-Fixes: Bugzilla #69751, 'serial console does not wake from S3'
-Reported-by: Valerio Vanni <valerio.vanni@inwind.it>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/serial/serial_core.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index b68550d..aab7190 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -239,6 +239,9 @@ static void uart_shutdown(struct tty_struct *tty, struct uart_state *state)
- 		/*
- 		 * Turn off DTR and RTS early.
- 		 */
-+		if (uart_console(uport) && tty)
-+			uport->cons->cflag = tty->termios.c_cflag;
-+
- 		if (!tty || (tty->termios.c_cflag & HUPCL))
- 			uart_clear_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
- 
--- 
-2.0.0
-
+Cheers,
+Anil
