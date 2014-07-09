@@ -1,108 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167AbaGIFs1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 01:48:27 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:50861 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751871AbaGIFsZ (ORCPT
+	id S1751928AbaGIFwf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 01:52:35 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:54907 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718AbaGIFwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 01:48:25 -0400
-From: Mohit KUMAR DCG <Mohit.KUMAR@st.com>
-To: "olof@lixom.net" <olof@lixom.net>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Pratyush ANAND <pratyush.anand@st.com>,
-        "'Bjorn Helgaas' (bhelgaas@google.com)" <bhelgaas@google.com>,
-        spear-devel <spear-devel@list.st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Mark Nicholson <mark@nicholnet.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Date: Wed, 9 Jul 2014 13:48:03 +0800
-Subject: [GIT PULL] ARM: SPEAr1310 PCIe updates
-Thread-Topic: [GIT PULL] ARM: SPEAr1310 PCIe updates
-Thread-Index: Ac+bOQmNHftFNS/3QAWQP2M4WgZk3Q==
-Message-ID: <2CC2A0A4A178534D93D5159BF3BCB661A17A3E48F2@EAPEX1MAIL1.st.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-07-09_02:2014-07-08,2014-07-09,1970-01-01 signatures=0
+	Wed, 9 Jul 2014 01:52:34 -0400
+From: sanjeev sharma <sanjeevsharmaengg@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: rmfrfs@gmail.com, peter.senna@gmail.com, teobaluta@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        sanjeev sharma <sanjeev_sharma@mentor.com>
+Subject: [PATCH v2 0/4] Fix checkpatch reported problem in r819xU_phy.c
+Date: Wed,  9 Jul 2014 11:34:16 +0530
+Message-Id: <1404885860-19468-1-git-send-email-sanjeevsharmaengg@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <20140708100142.GR25934@mwanda>
+References: <20140708100142.GR25934@mwanda>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s695mXqY026535
 
-Hello Olof,
+From: sanjeev sharma <sanjeev_sharma@mentor.com>
 
-Please pull PCIe updates for ST's SPEAr1310 SoC.
+I have come up with seperate patch as per Dan comment.
 
-Last version of posted V8 patches have been Acked-by respective maintainers.
-https://lkml.org/lkml/2014/4/15/260
+sanjeev sharma (4):
+  staging: rtl8192u: Remove useless return statement in r819xU_phy.c
+  staging: rtl8192u: Removed unnecessary whitespace & tab warning  in
+    r819xU_phy.c
+  staging: rtl8192u: Fixed switch and case indentation error in
+    r819xU_phy.c
+  staging: rtl8192u: Fixed too long lines in r819xU_phy.c
 
-Apart from arch/arm/ changes, it also contains patches for drivers/{pci|phy}.
-Bjorn advised to get complete series via arm-soc tree.
-http://www.spinics.net/lists/linux-pci/msg30271.html
+ drivers/staging/rtl8192u/r819xU_phy.c | 58 +++++++++++++++--------------------
+ 1 file changed, 25 insertions(+), 33 deletions(-)
 
- Regards
- Mohit
+-- 
+1.7.11.7
 
-The following changes since commit 4c834452aad01531db949414f94f817a86348d59:
-  Linus Torvalds (1):
-        Linux 3.16-rc3
-
-are available in the git repository at:
-
-  https://git.kernel.org/pub/scm/linux/kernel/git/vireshk/linux.git spear/pcie-support-v8
-
-Mohit Kumar (1):
-      SPEAr13xx: defconfig: Update
-
-Pratyush Anand (8):
-      clk: SPEAr13XX: Fix pcie clock name
-      SPEAr13XX: Fix static mapping table
-      phy: SPEAr1310/40-miphy: Add binding information
-      SPEAr: misc: Add binding information
-      phy: SPEAr1310/40-miphy: Add phy driver for PCIe and SATA
-      SPEAr13XX: Add binding information for PCIe controller
-      SPEAr13XX: dts: Add PCIe node information
-      pcie: SPEAr13xx: Add designware wrapper support
-
- .../devicetree/bindings/arm/spear-misc.txt         |    9 +
- .../devicetree/bindings/pci/spear13xx-pcie.txt     |   14 +
- .../devicetree/bindings/phy/st-spear1310-miphy.txt |   12 +
- .../devicetree/bindings/phy/st-spear1340-miphy.txt |   11 +
- MAINTAINERS                                        |    6 +
- arch/arm/boot/dts/spear1310-evb.dts                |    4 +
- arch/arm/boot/dts/spear1310.dtsi                   |   93 +++++-
- arch/arm/boot/dts/spear1340-evb.dts                |    4 +
- arch/arm/boot/dts/spear1340.dtsi                   |   30 ++-
- arch/arm/boot/dts/spear13xx.dtsi                   |    9 +-
- arch/arm/configs/spear13xx_defconfig               |   16 +
- arch/arm/mach-spear/Kconfig                        |    4 +
- arch/arm/mach-spear/include/mach/spear.h           |    4 +-
- arch/arm/mach-spear/spear1340.c                    |  127 +------
- arch/arm/mach-spear/spear13xx.c                    |    2 +-
- drivers/clk/spear/spear1310_clock.c                |    6 +-
- drivers/clk/spear/spear1340_clock.c                |    2 +-
- drivers/pci/host/Kconfig                           |    8 +
- drivers/pci/host/Makefile                          |    1 +
- drivers/pci/host/pcie-spear13xx.c                  |  406 ++++++++++++++++++++
- drivers/phy/Kconfig                                |   12 +
- drivers/phy/Makefile                               |    2 +
- drivers/phy/phy-spear1310-miphy.c                  |  274 +++++++++++++
- drivers/phy/phy-spear1340-miphy.c                  |  300 +++++++++++++++
- 24 files changed, 1217 insertions(+), 139 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/spear-misc.txt
- create mode 100644 Documentation/devicetree/bindings/pci/spear13xx-pcie.txt
- create mode 100644 Documentation/devicetree/bindings/phy/st-spear1310-miphy.txt
- create mode 100644 Documentation/devicetree/bindings/phy/st-spear1340-miphy.txt
- create mode 100644 drivers/pci/host/pcie-spear13xx.c
- create mode 100644 drivers/phy/phy-spear1310-miphy.c
- create mode 100644 drivers/phy/phy-spear1340-miphy.c
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
