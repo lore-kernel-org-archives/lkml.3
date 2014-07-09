@@ -1,50 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652AbaGIHbN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 03:31:13 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:60322 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469AbaGIHbL (ORCPT
+	id S1754458AbaGIHks (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 03:40:48 -0400
+Received: from mailout1.zih.tu-dresden.de ([141.30.67.72]:37273 "EHLO
+	mailout1.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751351AbaGIHkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 03:31:11 -0400
-Date: Wed, 9 Jul 2014 16:29:58 +0900
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: lidza.louina@gmail.com
-Cc: markh@compro.net, gregkh@linuxfoundation.org,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] staging: dgap: remove redundant NULL check in
- dgap_tty_init()
-Message-ID: <20140709072958.GA30050@devel.8.8.4.4>
+	Wed, 9 Jul 2014 03:40:45 -0400
+Message-ID: <53BCF1ED.1000004@tu-dresden.de>
+Date: Wed, 09 Jul 2014 09:40:29 +0200
+From: Joseph Schuchart <joseph.schuchart@tu-dresden.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Jiri Olsa <jolsa@redhat.com>
+CC: Namhyung Kim <namhyung@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Ilsche <thomas.ilsche@tu-dresden.de>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] perf script: Add missing calls to Py_DECREF for return
+ values
+References: <53031D2C.2050009@tu-dresden.de> <20140307141857.GA3153@ghostprotocols.net> <533D2283.3090703@tu-dresden.de> <87wqd5f7j5.fsf@sejong.aot.lge.com> <538F0BF2.1010806@tu-dresden.de> <20140707171706.GA20752@krava.redhat.com>
+In-Reply-To: <20140707171706.GA20752@krava.redhat.com>
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms010709090403080309030900"
+X-TUD-Virus-Scanned: mailout1.zih.tu-dresden.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The brd is already checked by earlier function in dgap_init_one().
+This is a cryptographically signed message in MIME format.
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+--------------ms010709090403080309030900
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+[PATCH 1/3] perf script: Add missing calls to Py_DECREF for return values=
+
+
+Signed-off-by: Joseph Schuchart <joseph.schuchart@tu-dresden.de>
 ---
- drivers/staging/dgap/dgap.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+ tools/perf/util/scripting-engines/trace-event-python.c | 12 ++++++++++--=
 
-diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index 8e3fd87..b60995e 100644
---- a/drivers/staging/dgap/dgap.c
-+++ b/drivers/staging/dgap/dgap.c
-@@ -1363,9 +1363,6 @@ static int dgap_tty_init(struct board_t *brd)
- 	struct cm_t __iomem *cm;
- 	int ret;
- 
--	if (!brd)
--		return -EIO;
--
- 	/*
- 	 * Initialize board structure elements.
- 	 */
--- 
-1.7.1
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/too=
+ls/perf/util/scripting-engines/trace-event-python.c
+index 1c41932..631aa85 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -50,10 +50,14 @@ static int zero_flag_atom;
+=20
+ static PyObject *main_module, *main_dict;
+=20
++static void handler_call_die(const char *handler_name) NORETURN;
+ static void handler_call_die(const char *handler_name)
+ {
+ 	PyErr_Print();
+ 	Py_FatalError("problem in Python trace event handler");
++	// Py_FatalError does not return
++	// but we have to make the compiler happy
++	abort();
+ }
+=20
+ /*
+@@ -97,6 +101,7 @@ static void define_value(enum print_arg_type field_typ=
+e,
+ 		retval =3D PyObject_CallObject(handler, t);
+ 		if (retval =3D=3D NULL)
+ 			handler_call_die(handler_name);
++		Py_DECREF(retval);
+ 	}
+=20
+ 	Py_DECREF(t);
+@@ -143,6 +148,7 @@ static void define_field(enum print_arg_type field_ty=
+pe,
+ 		retval =3D PyObject_CallObject(handler, t);
+ 		if (retval =3D=3D NULL)
+ 			handler_call_die(handler_name);
++		Py_DECREF(retval);
+ 	}
+=20
+ 	Py_DECREF(t);
+@@ -334,6 +340,7 @@ static void python_process_tracepoint(struct perf_sam=
+ple *sample,
+ 		retval =3D PyObject_CallObject(handler, t);
+ 		if (retval =3D=3D NULL)
+ 			handler_call_die(handler_name);
++		Py_DECREF(retval);
+ 	} else {
+ 		handler =3D PyDict_GetItemString(main_dict, "trace_unhandled");
+ 		if (handler && PyCallable_Check(handler)) {
+@@ -341,6 +348,7 @@ static void python_process_tracepoint(struct perf_sam=
+ple *sample,
+ 			retval =3D PyObject_CallObject(handler, t);
+ 			if (retval =3D=3D NULL)
+ 				handler_call_die("trace_unhandled");
++			Py_DECREF(retval);
+ 		}
+ 		Py_DECREF(dict);
+ 	}
+@@ -400,6 +408,7 @@ static void python_process_general_event(struct perf_=
+sample *sample,
+ 	retval =3D PyObject_CallObject(handler, t);
+ 	if (retval =3D=3D NULL)
+ 		handler_call_die(handler_name);
++	Py_DECREF(retval);
+ exit:
+ 	Py_DECREF(dict);
+ 	Py_DECREF(t);
+@@ -521,8 +530,7 @@ static int python_stop_script(void)
+ 	retval =3D PyObject_CallObject(handler, NULL);
+ 	if (retval =3D=3D NULL)
+ 		handler_call_die("trace_end");
+-	else
+-		Py_DECREF(retval);
++	Py_DECREF(retval);
+ out:
+ 	Py_XDECREF(main_dict);
+ 	Py_XDECREF(main_module);
+--=20
+1.8.1.2
+
+
+
+--------------ms010709090403080309030900
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIPizCC
+BHQwggNcoAMCAQICCQCJkBEVWD6HmzANBgkqhkiG9w0BAQsFADBxMQswCQYDVQQGEwJERTEc
+MBoGA1UEChMTRGV1dHNjaGUgVGVsZWtvbSBBRzEfMB0GA1UECxMWVC1UZWxlU2VjIFRydXN0
+IENlbnRlcjEjMCEGA1UEAxMaRGV1dHNjaGUgVGVsZWtvbSBSb290IENBIDIwHhcNMTQwMjEx
+MTMxMTQ1WhcNMTkwNzA5MjM1OTAwWjBaMQswCQYDVQQGEwJERTETMBEGA1UEChMKREZOLVZl
+cmVpbjEQMA4GA1UECxMHREZOLVBLSTEkMCIGA1UEAxMbREZOLVZlcmVpbiBQQ0EgR2xvYmFs
+IC0gRzAxMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6ZvDZ4X5Da71jVTDllA1
+PWLpbkztlNcAW5UidNQg6zSP1uzAMQQLmYHiphTSUqAoI4SLdIkEXlvg4njBeMsWyyg1OXst
+kEXQ7aAAeny/Sg4bAMOG6VwrMRF7DPOCJEOMHDiLamgAmu7cT3ir0sYTm3at7t4m6O8Br3QP
+wQmi9mvOvdPNFDBP9eXjpMhim4IaAycwDQJlYE3t0QkjKpY1WCfTdsZxtpAdxO3/NYZ9bzOz
+2w/FEcKKg6GUXUFr2NIQ9Uz9ylGs2b3vkoO72uuLFlZWQ8/h1RM9ph8nMM1JVNvJEzSacXXF
+bOqnC5j5IZ0nrz6jOTlIaoytyZn7wxLyvQIDAQABo4IBJDCCASAwDgYDVR0PAQH/BAQDAgEG
+MB0GA1UdDgQWBBRJt8bP6D0ff+pEexMp9/EKcD7eZDAfBgNVHSMEGDAWgBQxw3kbuvVT1xfg
+iXotF2wKsyudMzASBgNVHRMBAf8ECDAGAQH/AgECMD8GA1UdHwQ4MDYwNKAyoDCGLmh0dHA6
+Ly9vY3NwMDMzNi50ZWxlc2VjLmRlL3JsL0RUX1JPT1RfQ0FfMi5jcmwweQYIKwYBBQUHAQEE
+bTBrMCwGCCsGAQUFBzABhiBodHRwOi8vb2NzcDAzMzYudGVsZXNlYy5kZS9vY3NwcjA7Bggr
+BgEFBQcwAoYvaHR0cDovL29jc3AwMzM2LnRlbGVzZWMuZGUvY3J0L0RUX1JPT1RfQ0FfMi5j
+ZXIwDQYJKoZIhvcNAQELBQADggEBACwvqeBeQy8FcNxRlXVdgI47DMFjWFSBMIOcXalRh8m2
+1w8runhIJGBCzPGi4jPhMh4ym1ETlXnGtazQJO0YFLwvKuovq7ITrEkdXgALBBhqmmXU6Ec1
+vK7t33S22PGAUGWgxtojm41TR8psu0DJlV1OYHor5LtmQFWvtjPB6iMhbvxUnd0zQm5Ma9Xk
+w/LqBrdaMmoyRXS2tW/+6v8cY6q7iNH4WK8gfo+///b3OHeLGrZQP609R3lGw1e0F2KHvZ6j
+NiUHaCSqIvL2rynsN6UUma66AWCGdS1hFbp4loe1ks/hUJGeWToV7J5axob8KD5mutTZNa+t
+PEkihYfub48wggVhMIIESaADAgECAgcXpCR5aFyOMA0GCSqGSIb3DQEBCwUAMFoxCzAJBgNV
+BAYTAkRFMRMwEQYDVQQKEwpERk4tVmVyZWluMRAwDgYDVQQLEwdERk4tUEtJMSQwIgYDVQQD
+ExtERk4tVmVyZWluIFBDQSBHbG9iYWwgLSBHMDEwHhcNMTQwNTI3MTQ1MzI5WhcNMTkwNzA5
+MjM1OTAwWjCBhTELMAkGA1UEBhMCREUxKDAmBgNVBAoTH1RlY2huaXNjaGUgVW5pdmVyc2l0
+YWV0IERyZXNkZW4xDDAKBgNVBAsTA1pJSDEcMBoGA1UEAxMTVFUgRHJlc2RlbiBDQSAtIEcw
+MjEgMB4GCSqGSIb3DQEJARYRcGtpQHR1LWRyZXNkZW4uZGUwggEiMA0GCSqGSIb3DQEBAQUA
+A4IBDwAwggEKAoIBAQDBDh6T80T27NAn91B6YQsENBWT/LEfbGPagOzhM1w1Cjx3ICCilYCg
+JeIPQmBZT9RalxxF2z2OGDPcRTuqcaFPkgtdGaw1BFEIX+kGe3Itz2GlaKLPnQBHwcp+ODj8
+OdgvD4wZqYkvsjaDx1ck2spHHVxLEh/7ybexJL3f1zatqPJkK2fJuOeeUz3Ip74sPqhKn3QA
+5Q5E4JUHlvh3l4TDFrbmEIMntRqrJ+LaG2JCQ2G9hfEUvxeo3Zr6y88IdG+d7Hbp+XJkZYoO
+enVItm9z+atzo+NBxdmW8nD00xJAG52xQSwN4HR+qtj0CcnMtj41zXv6ul2E7ltRubqNM3sn
+AgMBAAGjggH+MIIB+jASBgNVHRMBAf8ECDAGAQH/AgEBMA4GA1UdDwEB/wQEAwIBBjARBgNV
+HSAECjAIMAYGBFUdIAAwHQYDVR0OBBYEFMUrU5MXg8n1RkLtQ2rftoCmR/LgMB8GA1UdIwQY
+MBaAFEm3xs/oPR9/6kR7Eyn38QpwPt5kMBwGA1UdEQQVMBOBEXBraUB0dS1kcmVzZGVuLmRl
+MIGIBgNVHR8EgYAwfjA9oDugOYY3aHR0cDovL2NkcDEucGNhLmRmbi5kZS9nbG9iYWwtcm9v
+dC1jYS9wdWIvY3JsL2NhY3JsLmNybDA9oDugOYY3aHR0cDovL2NkcDIucGNhLmRmbi5kZS9n
+bG9iYWwtcm9vdC1jYS9wdWIvY3JsL2NhY3JsLmNybDCB1wYIKwYBBQUHAQEEgcowgccwMwYI
+KwYBBQUHMAGGJ2h0dHA6Ly9vY3NwLnBjYS5kZm4uZGUvT0NTUC1TZXJ2ZXIvT0NTUDBHBggr
+BgEFBQcwAoY7aHR0cDovL2NkcDEucGNhLmRmbi5kZS9nbG9iYWwtcm9vdC1jYS9wdWIvY2Fj
+ZXJ0L2NhY2VydC5jcnQwRwYIKwYBBQUHMAKGO2h0dHA6Ly9jZHAyLnBjYS5kZm4uZGUvZ2xv
+YmFsLXJvb3QtY2EvcHViL2NhY2VydC9jYWNlcnQuY3J0MA0GCSqGSIb3DQEBCwUAA4IBAQCJ
+hMBD4Oh4PXhRwECrWgomDDnELDDFh4FN1e2g0gYbKLg/kA0gw6RKImh4GhTRAbENxW2My+tH
+aKFjtwQdBaanilk4DN581jqxjo37jPEwDmNNzT8U4ssiwmkMD2bWM2vTcc7lDj2g7w+sRzIJ
+8zi1AtCV43bJT8xBVj0PQpFuqYVvYzgMq+KNtGn4YyiBAMyDY1EzPEgtOovN7sqXb3jGDa71
+gqdHWIKf9orfDWCZ/Y8d+Y+rSqtBAHj0fnAzjnIgtJvUIif+Afx/4Rvxy0MHj3q6uHhPFcZ9
+QBPm+vxX2nWXEMlJcf1A/Igdah5hUpkmAQIUUJso8QbE4gXBS/BPMIIFqjCCBJKgAwIBAgIH
+Fr0+Fq4AGTANBgkqhkiG9w0BAQUFADCBhTELMAkGA1UEBhMCREUxKDAmBgNVBAoTH1RlY2hu
+aXNjaGUgVW5pdmVyc2l0YWV0IERyZXNkZW4xDDAKBgNVBAsTA1pJSDEcMBoGA1UEAxMTVFUg
+RHJlc2RlbiBDQSAtIEcwMjEgMB4GCSqGSIb3DQEJARYRcGtpQHR1LWRyZXNkZW4uZGUwHhcN
+MTMxMjAzMTEyOTEwWhcNMTYxMjAyMTEyOTEwWjBgMQswCQYDVQQGEwJERTEoMCYGA1UEChMf
+VGVjaG5pc2NoZSBVbml2ZXJzaXRhZXQgRHJlc2RlbjEMMAoGA1UECxMDWklIMRkwFwYDVQQD
+ExBKb3NlcGggU2NodWNoYXJ0MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtp78
+4m+f4qwkmx2yLZT4xVDtjvN3WXBRI53CmFu6lm/3cMyj32EHPE/PLs/J2yYqSI2dUPUNQpg+
+PX1rbofQcxXCEYCAErs/p7ynofEeJoQf5BF0BbtXBqD+1PaHXOALbk51lWFbyDDaLsCEh15r
+uOC60HRTdRz8ztDf+jQDeidqZBijFjU7cUIShnxOCxnCOna11aiamDqCZDatlwE/9bj5C8JN
+YQLmMNo2AHaQLF4e3e9DtcGdCPRDjwwrL+Dl/EmyEyQTy4CljQjSjlKS4jtW+uFNOffU2t7R
+fBeNJx8xgQe+JxZK2tzlPWh72JM96AiPHpHAY2X2cUhpheqPdQIDAQABo4ICQTCCAj0wLwYD
+VR0gBCgwJjARBg8rBgEEAYGtIYIsAQEEAwEwEQYPKwYBBAGBrSGCLAIBBAMBMAkGA1UdEwQC
+MAAwCwYDVR0PBAQDAgXgMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4E
+FgQU2IlmQWpeOkXl+dw+0arfnVk2FEkwHwYDVR0jBBgwFoAUxStTkxeDyfVGQu1Dat+2gKZH
+8uAwKQYDVR0RBCIwIIEeam9zZXBoLnNjaHVjaGFydEB0dS1kcmVzZGVuLmRlMIGLBgNVHR8E
+gYMwgYAwPqA8oDqGOGh0dHA6Ly9jZHAxLnBjYS5kZm4uZGUvdHUtZHJlc2Rlbi1jYS9wdWIv
+Y3JsL2dfY2FjcmwuY3JsMD6gPKA6hjhodHRwOi8vY2RwMi5wY2EuZGZuLmRlL3R1LWRyZXNk
+ZW4tY2EvcHViL2NybC9nX2NhY3JsLmNybDCB2QYIKwYBBQUHAQEEgcwwgckwMwYIKwYBBQUH
+MAGGJ2h0dHA6Ly9vY3NwLnBjYS5kZm4uZGUvT0NTUC1TZXJ2ZXIvT0NTUDBIBggrBgEFBQcw
+AoY8aHR0cDovL2NkcDEucGNhLmRmbi5kZS90dS1kcmVzZGVuLWNhL3B1Yi9jYWNlcnQvZ19j
+YWNlcnQuY3J0MEgGCCsGAQUFBzAChjxodHRwOi8vY2RwMi5wY2EuZGZuLmRlL3R1LWRyZXNk
+ZW4tY2EvcHViL2NhY2VydC9nX2NhY2VydC5jcnQwDQYJKoZIhvcNAQEFBQADggEBACoeSNfg
+yIAGxawrnghOIhIaD3xIsPvZP7ZFMV1aQ9ltzHiZgUxnnaEUJEV0f+ASblYavp+0T/up0Nre
++fKqm9/VMNyYG8068m6jNC+72NywQD9BKWCTWgDZ3RqChwzrfBq7URSqNJhLSKj/Q7e+k7mC
+FIqwpnhMeFCZhAkORPUNiuMbyFYO9ahtbuIujiF4c3FYDQJZFf83HWZ4neG4ioc8qhsOuXaB
+lN0AtExPw1KfpHqw1kwMaxZ10Yin8M4k8gOPNIbm6vl1F8yFCHQka2ZnaDBueswhj+ntj1WU
+jqHED1hovfievMMW7Fd3njo+T9RODMi3kNC7VObz0hu0cs0xggPUMIID0AIBATCBkTCBhTEL
+MAkGA1UEBhMCREUxKDAmBgNVBAoTH1RlY2huaXNjaGUgVW5pdmVyc2l0YWV0IERyZXNkZW4x
+DDAKBgNVBAsTA1pJSDEcMBoGA1UEAxMTVFUgRHJlc2RlbiBDQSAtIEcwMjEgMB4GCSqGSIb3
+DQEJARYRcGtpQHR1LWRyZXNkZW4uZGUCBxa9PhauABkwCQYFKw4DAhoFAKCCAhcwGAYJKoZI
+hvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTQwNzA5MDc0MDMwWjAjBgkq
+hkiG9w0BCQQxFgQUdohJ9PguPnIoSiePhABuBCt5VM0wbAYJKoZIhvcNAQkPMV8wXTALBglg
+hkgBZQMEASowCwYJYIZIAWUDBAECMAoGCCqGSIb3DQMHMA4GCCqGSIb3DQMCAgIAgDANBggq
+hkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG9w0DAgIBKDCBogYJKwYBBAGCNxAEMYGUMIGR
+MIGFMQswCQYDVQQGEwJERTEoMCYGA1UEChMfVGVjaG5pc2NoZSBVbml2ZXJzaXRhZXQgRHJl
+c2RlbjEMMAoGA1UECxMDWklIMRwwGgYDVQQDExNUVSBEcmVzZGVuIENBIC0gRzAyMSAwHgYJ
+KoZIhvcNAQkBFhFwa2lAdHUtZHJlc2Rlbi5kZQIHFr0+Fq4AGTCBpAYLKoZIhvcNAQkQAgsx
+gZSggZEwgYUxCzAJBgNVBAYTAkRFMSgwJgYDVQQKEx9UZWNobmlzY2hlIFVuaXZlcnNpdGFl
+dCBEcmVzZGVuMQwwCgYDVQQLEwNaSUgxHDAaBgNVBAMTE1RVIERyZXNkZW4gQ0EgLSBHMDIx
+IDAeBgkqhkiG9w0BCQEWEXBraUB0dS1kcmVzZGVuLmRlAgcWvT4WrgAZMA0GCSqGSIb3DQEB
+AQUABIIBABrS38oxj7oalufJFPLyTKXufGL8aaxhlfPGUrnMFWs7aaMVeVc6EFzVRUZcQUfU
+a2+q1OaMJOIDl99bmKEqB/YnLv60b4pgrIuO7TrD5UMC7xlBhCKYmw7mO15jMIhd2hgiKPIi
+UOy/Dm+Ry64uKTxQqrPJ3lg9wk3fKgnVfxUZiBCKyZKmteo0IwdMmRzTUTlxcYMF2vYjSEGV
+vxQfPtPdoCAvBbGoXSA6w/4RKcRVaR5IkTeCr5q8+Vn+RJoVTn9f+C/oBqVMohOzI5ZtS7AK
+9f/2msfUnGxav8effKBM5GYtOxSa0ctqlmBPr3jrBiRGj02hdiDvbbK/UyqvPi4AAAAAAAA=
+--------------ms010709090403080309030900--
