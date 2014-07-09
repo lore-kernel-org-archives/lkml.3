@@ -1,113 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557AbaGIMU4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 08:20:56 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:60854 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752020AbaGIMUy (ORCPT
+	id S1755610AbaGIMVQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 08:21:16 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:31396 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752108AbaGIMVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 08:20:54 -0400
+	Wed, 9 Jul 2014 08:21:14 -0400
+X-IronPort-AV: E=Sophos;i="5.01,631,1400025600"; 
+   d="scan'208";a="151206785"
+Message-ID: <53BD33B8.9020901@citrix.com>
+Date: Wed, 9 Jul 2014 13:21:12 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <CACVxJT8U-E+vYjGPbiop-7Fqcwt0sWhMtmuCRQHLAnALU+5AgQ@mail.gmail.com>
-References: <CACVxJT8U-E+vYjGPbiop-7Fqcwt0sWhMtmuCRQHLAnALU+5AgQ@mail.gmail.com>
-Date: Wed, 9 Jul 2014 15:20:53 +0300
-Message-ID: <CACVxJT8+9oJa5r2acCdNe5+PjDxYVmASMY2Pcb=FyzB4x+0Naw@mail.gmail.com>
-Subject: Re: Procfs race condition bug
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Mike Cardwell <mike.cardwell@grepular.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelianov <xemul@parallels.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: <konrad@kernel.org>, <xen-devel@lists.xenproject.org>,
+        <boris.ostrovsky@oracle.com>, <linux-kernel@vger.kernel.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v3 2/7] xen/pciback: Don't deadlock when unbinding.
+References: <1404845909-13563-1-git-send-email-konrad@kernel.org> <1404845909-13563-3-git-send-email-konrad@kernel.org>
+In-Reply-To: <1404845909-13563-3-git-send-email-konrad@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[broken email]
+On 08/07/14 19:58, konrad@kernel.org wrote:
+> --- a/drivers/xen/xen-pciback/pci_stub.c
+> +++ b/drivers/xen/xen-pciback/pci_stub.c
+> @@ -277,10 +277,15 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+>  	 * (so it's ready for the next domain)
+>  	 */
+>  
+> -	/* This is OK - we are running from workqueue context
+> -	 * and want to inhibit the user from fiddling with 'reset'
+> +	/* We might be holding the PCI lock (see comment at the top of the
+> +	 * function) - as such try lock and if we can't then don't worry -
+> +	 * as either:
+> +	 *  - we are 'unbind' in which case 'pcistub_device_release' gets
+> +	 *    called which does the locked version of this.
+> +	 *  - the toolstack has the smarts to do it and has done the
+> +	 *    reset on SysFS before assigning this device to another guest.
+>  	 */
+> -	pci_reset_function(dev);
+> +	pci_try_reset_function(dev);
 
-On Wed, Jul 9, 2014 at 3:17 PM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
->> I originally posted this two years ago (*) but received no response.
->> I just had a look and the problem still exists on the 3.14 kernel
->> I am currently running.
->>
->> I *think* I've uncovered a race condition bug in procfs.
->> If I attempt to open a file in /proc/net, eg "/proc/net/tcp"
->> it works fine, but if I spawn a POSIX thread and attempt to do it
->> from there, it *usually* fails with a "No such file or directory",
->> but some times succeeds. If I do a system call inside the thread
->> to look up the thread ID and then open "/proc/THREADID/net/tcp"
->> instead, it works fine.
->>
->> There are more details and some example code
->> so you can replicate the problem on a stack overflow question
->> I asked previously here:
->> http://stackoverflow.com/questions/11580020/opening-proc-net-tcp-in-c-from-a-posix-thread-fails-most-of-the-time
->>
->> (*) https://lkml.org/lkml/2012/7/20/331
->
-> Mike,
->
-> as was correctly notes on SO, what's happening is that original thread exits
-> before spawned thread does open().
->
-> ->lookup
-> proc_tgid_net_lookup
-> get_proc_task_net
-> nsproxy = NULL          <== thread is dead
-> ENOENT
->
-> This was probably broken when /proc/net became symlink:
->
-> commit e9720acd728a46cb40daa52c99a979f7c4ff195c
-> Author: Pavel Emelyanov <xemul@openvz.org>
-> Date:   Fri Mar 7 11:08:40 2008 -0800
->
->     [NET]: Make /proc/net a symlink on /proc/self/net (v3)
->
->
-> So, userspace has two solutions:
-> 1) original thread doesn't exit too early
-> 2) spawned thread uses /proc/$TID
->
->
-> So,
-> we definitely broke /proc/net/tcp somewhere after netns concept was introduced.
->
-> But,
-> you'd have very same problem with other /proc files (anything under
-> /proc/$PID/).
->
->     Alexey
->
->
-> #include <sys/types.h>
-> #include <sys/stat.h>
-> #include <fcntl.h>
-> #include <stdio.h>
-> #include <pthread.h>
-> #include <unistd.h>
->
-> void *f(void *_)
-> {
-> int fd;
->
-> sleep(1);
->
-> fd = open("/proc/net/tcp", O_RDONLY);
-> if (fd == -1) {
-> fprintf(stderr, "FAIL\n");
-> return NULL;
-> }
-> fprintf(stderr, "OK\n");
-> return NULL;
-> }
->
-> int main(void)
-> {
-> pthread_t thread;
->
-> pthread_create(&thread, NULL, f, NULL);
-> pthread_exit(0);
-> return 0;
-> }
+Why not use __pci_reset_function_locked() and ensure all callers of
+pcistub_put_pci_dev() are holding the device lock?
+
+>  	pci_restore_state(dev);
+
+If we didn't reset the device there is no need to restore its state.
+
+David
