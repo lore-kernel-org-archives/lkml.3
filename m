@@ -1,67 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029AbaGKFVj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 01:21:39 -0400
-Received: from ozlabs.org ([103.22.144.67]:59019 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750775AbaGKFVh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 01:21:37 -0400
-Date: Fri, 11 Jul 2014 15:21:30 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Kristina =?UTF-8?B?TWFydMWhZW5rbw==?= 
-	<kristina.martsenko@gmail.com>
-Subject: linux-next: manual merge of the staging tree with the  tree
-Message-ID: <20140711152130.45a6978f@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/kNEhfwjVU6gkoloKmDFb/Pt"; protocol="application/pgp-signature"
+	id S1752195AbaGKFZX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 01:25:23 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:52683 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751685AbaGKFZV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 01:25:21 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH] of: Use proper types for checking memory overflow
+To: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Laura Abbott <lauraa@codeaurora.org>
+Cc: Rob Herring <rob.herring@linaro.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <alpine.DEB.2.10.1407080923001.2561@Yrabib>
+References: <1404780343-32188-1-git-send-email-lauraa@codeaurora.org>
+	<alpine.DEB.2.10.1407080923001.2561@Yrabib>
+Date: Wed, 09 Jul 2014 13:58:19 +0100
+Message-Id: <20140709125819.8E285C40A5C@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/kNEhfwjVU6gkoloKmDFb/Pt
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, 8 Jul 2014 09:24:08 +0200 (CEST), Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> On Mon, 7 Jul 2014, Laura Abbott wrote:
+> 
+> > Commit a67a6ed15513541579d38bcbd127e7be170710e5
+> > (of: Check for phys_addr_t overflows in early_init_dt_add_memory_arch)
+> > corrected early_init_dt_add_memory_arch to account for overflows
+> > but did so in an unclean way using ULONG_MAX. There is no
+> > guarantee that sizeof(unsigned long) == sizeof(phys_addr_t).
+> > Check against phys_addr_t instead.
+> > 
+> > Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+> 
+> Acked-by: Nicolas Pitre <nico@linaro.org>
 
-Hi Greg,
+Applied, thanks.
 
-Today's linux-next merge of the staging tree got a conflict in
-drivers/staging/dgrp/dgrp_tty.c between commit e359a4e38d22 ("tty:
-Remove tty_hung_up_p() tests from tty drivers' open()") from the tty
-tree and commit 19b1e7695be8 ("staging: dgrp: remove driver") from the
-staging tree.
+g.
 
-I fixed it up (by just removing the file) and can carry the fix as
-necessary (no action is required).
+> 
+> > ---
+> >  drivers/of/fdt.c | 22 +++++++++++-----------
+> >  1 file changed, 11 insertions(+), 11 deletions(-)
+> > 
+> > diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+> > index b777d8f..b88a68e 100644
+> > --- a/drivers/of/fdt.c
+> > +++ b/drivers/of/fdt.c
+> > @@ -875,24 +875,24 @@ int __init early_init_dt_scan_chosen(unsigned long node, const char *uname,
+> >  }
+> >  
+> >  #ifdef CONFIG_HAVE_MEMBLOCK
+> > +#define MAX_PHYS_ADDR	((phys_addr_t)~0)
+> > +
+> >  void __init __weak early_init_dt_add_memory_arch(u64 base, u64 size)
+> >  {
+> >  	const u64 phys_offset = __pa(PAGE_OFFSET);
+> >  	base &= PAGE_MASK;
+> >  	size &= PAGE_MASK;
+> >  
+> > -	if (sizeof(phys_addr_t) < sizeof(u64)) {
+> > -		if (base > ULONG_MAX) {
+> > -			pr_warning("Ignoring memory block 0x%llx - 0x%llx\n",
+> > -					base, base + size);
+> > -			return;
+> > -		}
+> > +	if (base > MAX_PHYS_ADDR) {
+> > +		pr_warning("Ignoring memory block 0x%llx - 0x%llx\n",
+> > +				base, base + size);
+> > +		return;
+> > +	}
+> >  
+> > -		if (base + size > ULONG_MAX) {
+> > -			pr_warning("Ignoring memory range 0x%lx - 0x%llx\n",
+> > -					ULONG_MAX, base + size);
+> > -			size = ULONG_MAX - base;
+> > -		}
+> > +	if (base + size > MAX_PHYS_ADDR) {
+> > +		pr_warning("Ignoring memory range 0x%lx - 0x%llx\n",
+> > +				ULONG_MAX, base + size);
+> > +		size = MAX_PHYS_ADDR - base;
+> >  	}
+> >  
+> >  	if (base + size < phys_offset) {
+> > -- 
+> > The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> > hosted by The Linux Foundation
+> > 
+> > 
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/kNEhfwjVU6gkoloKmDFb/Pt
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTv3RfAAoJEMDTa8Ir7ZwVl6oP/R9xKRGI0oE0EbX1rxrJrGMa
-AhusOHiX1IKLjpvXfKBD02+/OSR2CtMK5yKCEUL33ax6/4bothSfWsOzrA9jejY9
-kLiXr/m8CMI6qJgAm/o4voG/gGFVG7k5QP7rFWzuHNxbvhId19AK0HGMtih2l4vK
-TZW9heKI17t1kg8+puy/VwY3iWtqDIgtH9HdCinOOoKOtW8YRYBdRRCVxUvkH4cf
-UUqM4HvYXa6x2Pnt05GylAHsiHW0/QENHp0XsebzCq8OXpJCPC5DQdLSucDJz6Q2
-33dAosOW5PDrA8YTgE0CaxxAUe8r/6GYRdPJU0L50+cRWGzVKXYTKBBMNoVU0ZJF
-kt+ovJBlA5Z5v6qJgppn00LCHx+6LUckecCrh8fKywPATHbp5hQFNnJZx3Fwxa+i
-fuXp2gwRUNJjC2FZrrG6FzqPigGQTgId10j3CDohD12n2wCv9uvXcpCPOS7fkqfF
-kWV3U0tadudsO3w7y+Gk7rXeij3CBTT98Ily3IFI9x+06O8PHp0uzxwrcYyzxM+s
-IOxZhigHb4ujqDueMVTtSohNnqcozTyTSl5gLm/C/4Urfox4UUILGCXSDkFl3oyY
-MvIVL0wpZuORxDb8cDMlf3Jsw3o2FDwlzfdF1//G41qxKTGYtpCNkvtqnpfdL4oZ
-wGX3l2pAhkGBaWMm3f4G
-=dPsJ
------END PGP SIGNATURE-----
-
---Sig_/kNEhfwjVU6gkoloKmDFb/Pt--
