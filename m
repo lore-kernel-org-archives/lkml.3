@@ -1,44 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462AbaGINPf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 09:15:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44403 "EHLO mx2.suse.de"
+	id S1755566AbaGINQg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 09:16:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36441 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751660AbaGINPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 09:15:34 -0400
-Message-ID: <53BD4074.5070100@suse.cz>
-Date: Wed, 09 Jul 2014 15:15:32 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751542AbaGINQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 09:16:35 -0400
+Date: Wed, 9 Jul 2014 18:45:59 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        Virtualization List <virtualization@lists.linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "# 3.4.x" <stable@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] virtio: rng: ensure reads happen after successful
+ probe
+Message-ID: <20140709131559.GB4553@grmbl.mre>
+References: <cover.1404538109.git.amit.shah@redhat.com>
+ <f64852e0dd8a439193db4c7da1d3022d029cc85d.1404538109.git.amit.shah@redhat.com>
+ <CAGXu5jK1wL9DCnH0RcqhantcCvyJhwZfkw+_L7VQi8wfY2Nt_g@mail.gmail.com>
+ <20140707055049.GA27024@grmbl.mre>
+ <CAGXu5jJ9-b-NycB4ESvVnVgiBXpeQvKAT_hDPoAzhWSpQQKreg@mail.gmail.com>
+ <20140707063409.GD27024@grmbl.mre>
+ <20140709120823.GN13433@titan.lakedaemon.net>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Subject: Re: v3.16-rc4 messes up make kernelrelease with additional output
-References: <20140709125955.GS21766@n2100.arm.linux.org.uk>
-In-Reply-To: <20140709125955.GS21766@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140709120823.GN13433@titan.lakedaemon.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-07-09 14:59, Russell King - ARM Linux wrote:
-> 3.16-rc3 and all previous versions:
+On (Wed) 09 Jul 2014 [08:08:23], Jason Cooper wrote:
+> On Mon, Jul 07, 2014 at 12:04:09PM +0530, Amit Shah wrote:
+> > On (Sun) 06 Jul 2014 [23:09:49], Kees Cook wrote:
+> > > On Sun, Jul 6, 2014 at 10:51 PM, Amit Shah <amit.shah@redhat.com> wrote:
+> > > > On (Sun) 06 Jul 2014 [21:38:36], Kees Cook wrote:
+> > > >> On Fri, Jul 4, 2014 at 10:34 PM, Amit Shah <amit.shah@redhat.com> wrote:
+> > > >> > The hwrng core asks for random data in the hwrng_register() call itself
+> > > >> > from commit d9e7972619.  This doesn't play well with virtio -- the
+> > > >> > DRIVER_OK bit is only set by virtio core on a successful probe, and
+> > > >> > we're not yet out of our probe routine when this call is made.  This
+> > > >> > causes the host to not acknowledge any requests we put in the virtqueue,
+> > > >> > and the insmod or kernel boot process just waits for data to arrive from
+> > > >> > the host, which never happens.
+> > > >>
+> > > >> Doesn't this mean that virtio-rng won't ever contribute entropy to the system?
+> > > >
+> > > > The initial randomness?  Yes.  But it'll start contributing entropy as
+> > > > soon as it's used as the current source.
+> > > 
+> > > How does that happen? I don't see an init function defined for it?
+> > 
+> > I mean the regular usage; not the initial randomness patch that you
+> > added.
+> > 
+> > Initial randomness from virtio-rng currently won't be sourced.  That's
+> > no different from the way things were before your patch; and I can't
+> > think of a way to make that happen for now.
 > 
-> $ make ARCH=arm CROSS_COMPILE=arm-linux- O=/tmp/build/ kernelrelease
-> 3.16.0-rc3+
-> $
+> Yes, but this is a critical case.  There are three common scenarios
+> where long term keys are generated in entropy-deprived states:
 > 
-> 3.16-rc4:
+>   - boot to a Linux Install CD, encrypt system during install
+>   - first boot of a Linux-based embedded router, need SSL keys
+>   - first boot of a Linux VM, need SSH host keys
 > 
-> $ make ARCH=arm CROSS_COMPILE=arm-linux- O=/tmp/build/ kernelrelease
-> make[1]: Entering directory `/tmp/build'
-> 3.16.0-rc4+
-> $
+> We have the opportunity to make the third option suck less if we can get
+> this right.
+> 
+> > virtio's probe() has to finish before communication with the host can
+> > start.  If a virtio-rng device is the only hwrng in the system (very
+> > likely in a guest), it's almost guaranteed that hwrng_init() won't be
+> > called after hwrng_register() completes (as it would have already been
+> > called and the virtio-rng device will have become the current_rng).
+> 
+> Well, I'm confused.  virtio-rng has no init function defined.  So
+> hwrng_init() will just return zero.
 
-This is fixed by commit 066b7ed9 in linux-next, which I'll send to Linus
-shortly. But you should use make -s ... kernelrelease, otherwise the
-output will be polluted not only by the "Entering directory" message,
-but possibly also by a  silentoldconfig run.
+This isn't really tied to hwrng_init() anymore, is it?
 
-Michal
+The problem with virtio-rng is that on a system with virtio-rng,
+i.e. a kvm guest, it's most likely that there's only one hwrng device,
+namely the virtio-rng, and when hwrng_register() is called in its
+probe routine, hwrng_register doesn't have an old_rng, and will
+proceed to call hwrng_init() and start using it.
+
+So there's no second chance for the virtio-rng driver to finish its
+probe and give the hwrng core an initial set of randomness.
+
+> I think the basic question is: Where in the virtio-rng driver does it
+> execute init-style code?  And why isn't that in an init function?
+
+As mentioned above, putting it inside init won't help, as that init
+function will be called during probe itself by hwrng_register due to
+no current_rng registered at that point.
+
+> Should we create a small init function that simply checks this DRIVER_OK
+> bit?
+
+I can't think of a solution that doesn't involve a layering violation
+in the virtio code (i.e. set the DRIVER_OK bit in the probe routine;
+the host is happy to service requests from such a driver and passes on
+some randomness; and then reset that bit before probe() finishes).
+
+Perhaps a re-work in hw_random/core.c could achieve this result for
+virtio-rng, but that approach can't be valid for a -stable patch.
+Perhaps a workqueue item that fires off the get_initial_randomness
+function, which then sleeps till it receives a reply.  Then, the
+'wait' param for hwrng_read() can be 0.
+
+Thoughts?
+		Amit
