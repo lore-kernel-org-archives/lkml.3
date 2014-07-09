@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035AbaGILk1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 07:40:27 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:26878 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755482AbaGILgh (ORCPT
+	id S1755128AbaGILkY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 07:40:24 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:53593 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755483AbaGILgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Jul 2014 07:36:37 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-83-53bd293e954e
+X-AuditID: cbfec7f4-b7fac6d000006cfe-e2-53bd2943596b
 From: Andrey Ryabinin <a.ryabinin@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
@@ -25,48 +25,75 @@ Cc: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
         linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         x86@kernel.org, linux-mm@kvack.org,
         Andrey Ryabinin <a.ryabinin@samsung.com>
-Subject: [RFC/PATCH RESEND -next 07/21] x86: Kconfig: enable kernel address
- sanitizer
-Date: Wed, 09 Jul 2014 15:30:01 +0400
-Message-id: <1404905415-9046-8-git-send-email-a.ryabinin@samsung.com>
+Subject: [RFC/PATCH RESEND -next 11/21] mm: slub: share slab_err and object_err
+ functions
+Date: Wed, 09 Jul 2014 15:30:05 +0400
+Message-id: <1404905415-9046-12-git-send-email-a.ryabinin@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
 In-reply-to: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
 References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLLMWRmVeSWpSXmKPExsVy+t/xy7p2mnuDDbYf5LfY9usRm8XvvTNZ
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHLMWRmVeSWpSXmKPExsVy+t/xy7rOmnuDDS5O0bXY9usRm8XvvTNZ
 	LeasX8Nmcf3bG0aLCQ/b2C1WdjezWWx/9pbJYmXnA1aLTY+vsVr82bWDyeLyrjlsFvfW/Ge1
 	uH2Z1+LSgQVMFi37LjBZtH3+x2qxb+V5IGvJRiaLxUduM1u8ezaZ2WLzpqnMFj82PGZ1EPNo
 	ae5h89g56y67x4JNpR6bVnWyeWz6NIndo+vtFSaPd+fOsXucmPGbxePJlelMHpuX1Ht8fHqL
-	xeP9vqtsHn1bVjF6nFlwhN3j8ya5AP4oLpuU1JzMstQifbsEroyzKzsYCyaxVDxuu8rYwLiJ
-	uYuRk0NCwERi1moYW0ziwr31bCC2kMBSRonFHwu7GLmA7D4mies3W8ASbAJ6Ev9mbQezRQQU
-	JDb3PmMFKWIWaGaTaO/4AORwcAgLhEu0rXYHMVkEVCWOnlQDKecVcJXovniDHWKXgsSy5TNZ
-	QWxOATeJCdOvMYOUCwHVTFihNoGRdwEjwypG0dTS5ILipPRcI73ixNzi0rx0veT83E2MkCj6
-	uoNx6TGrQ4wCHIxKPLwvdu8JFmJNLCuuzD3EKMHBrCTCayu6N1iINyWxsiq1KD++qDQntfgQ
-	IxMHp1QD422WeVVTeKb+fekgcrLgsdn3ug7uZR+ZTJ9eaJJhfnrpc3ry9anH2homfL69Zvak
-	DXPkG73k8x1d/E33/MmSiHFneyC1WNj67JZXZsedpW9+maoYcLaQi58tynb3Ce+UcA/G16Vs
-	lYyCcRMf+3mvn/3oYL8UK1d/7/H9U3iWc5c/ufI9PGNHohJLcUaioRZzUXEiAF1D4tCAAgAA
+	xeP9vqtsHn1bVjF6nFlwhN3j8ya5AP4oLpuU1JzMstQifbsEroxpx6axFkzmrujYPIWtgbGV
+	s4uRk0NCwETi8Jw/LBC2mMSFe+vZuhi5OIQEljJKTD38kQkkISTQxySx/EkgiM0moCfxb9Z2
+	NhBbREBBYnPvM1aQBmaBZjaJ9o4PrCAJYYFoifXr9zCC2CwCqhIHNr4GGsTBwSvgJtG0zw1i
+	mYLEsuUzwco5gcITpl9jBikREnCVmLBCbQIj7wJGhlWMoqmlyQXFSem5hnrFibnFpXnpesn5
+	uZsYIXH0ZQfj4mNWhxgFOBiVeHg1ancHC7EmlhVX5h5ilOBgVhLhtRXdGyzEm5JYWZValB9f
+	VJqTWnyIkYmDU6qBsa34a/KEt4pxNQbuyRmeMmWzRVWbn38zM/NlvfziSPKk/I07227/cvD9
+	5yWguseuLmtiluRbq7wjqu4mldbzyje3Hz/S8aig4o+T6ekPupx7J0dPP9IdZR7wVc70WYjC
+	q5kvrm2fck71i/03r0mR8VNXy7UBA4ORc+2ylxEsq48G53g4XJ6kxFKckWioxVxUnAgAEkkI
+	LoECAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now everything in x86 code is ready for kasan. Enable it.
+Remove static and add function declarations to mm/slab.h so they
+could be used by kernel address sanitizer.
 
 Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
 ---
- arch/x86/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
+ mm/slab.h | 5 +++++
+ mm/slub.c | 4 ++--
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 8657c06..f9863b3 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -132,6 +132,7 @@ config X86
- 	select HAVE_CC_STACKPROTECTOR
- 	select GENERIC_CPU_AUTOPROBE
- 	select HAVE_ARCH_AUDITSYSCALL
-+	select HAVE_ARCH_KASAN
+diff --git a/mm/slab.h b/mm/slab.h
+index 1257ade..912af7f 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -339,5 +339,10 @@ static inline struct kmem_cache_node *get_node(struct kmem_cache *s, int node)
  
- config INSTRUCTION_DECODER
- 	def_bool y
+ void *slab_next(struct seq_file *m, void *p, loff_t *pos);
+ void slab_stop(struct seq_file *m, void *p);
++void slab_err(struct kmem_cache *s, struct page *page,
++		const char *fmt, ...);
++void object_err(struct kmem_cache *s, struct page *page,
++		u8 *object, char *reason);
++
+ 
+ #endif /* MM_SLAB_H */
+diff --git a/mm/slub.c b/mm/slub.c
+index 6641a8f..3bdd9ac 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -635,14 +635,14 @@ static void print_trailer(struct kmem_cache *s, struct page *page, u8 *p)
+ 	dump_stack();
+ }
+ 
+-static void object_err(struct kmem_cache *s, struct page *page,
++void object_err(struct kmem_cache *s, struct page *page,
+ 			u8 *object, char *reason)
+ {
+ 	slab_bug(s, "%s", reason);
+ 	print_trailer(s, page, object);
+ }
+ 
+-static void slab_err(struct kmem_cache *s, struct page *page,
++void slab_err(struct kmem_cache *s, struct page *page,
+ 			const char *fmt, ...)
+ {
+ 	va_list args;
 -- 
 1.8.5.5
 
