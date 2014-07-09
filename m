@@ -1,100 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756025AbaGILyJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 07:54:09 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:42335 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755782AbaGILx1 (ORCPT
+	id S1754667AbaGIL6V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 07:58:21 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:47013 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351AbaGIL6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 07:53:27 -0400
-From: Sachin Kamat <sachin.kamat@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-samsung-soc@vger.kernel.org, kishon@ti.com, dianders@chromium.org,
-        gautam.vivek@samsung.com, spk.linux@gmail.com, tomasz.figa@gmail.com,
-        jg1.han@samsung.com
-Subject: [PATCH v2 1/2] phy: Kconfig: Re-organize Exynos USB 2.0 PHY configs
-Date: Wed,  9 Jul 2014 17:19:28 +0530
-Message-Id: <1404906569-28026-1-git-send-email-sachin.kamat@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 9 Jul 2014 07:58:19 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: linux-gpio@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Subject: [PATCH] pinctrl: msm: move all qualcomm drivers to subdir
+Date: Wed,  9 Jul 2014 13:57:32 +0200
+Message-Id: <1404907052-14454-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the USB 2.0 PHYs are required with EHCI/OHCI USB drivers and
-USB gadget controller supported by the DWC2 gadget driver, make it
-depend on them and default to ARCH_EXYNOS as they are meant for
-Exynos platforms. Also, make the sub-drivers silent options enabling
-them based on the SoC platforms that they are meant to work with. This
-will make life easier for end users who do not have any way knowing the
-dependencies.
+We have four Qualcomm-related pin control drivers, and now there
+are drivers coming in for the PMICs on these systems, so let's
+create a qcom subdirectory to hold all the Qualcomm stuff.
 
-Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: Ivan T. Ivanov <iivanov@mm-sol.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
-Changes since v1:
-* Added dependency on DWC2 gadget driver as suggested by Tomasz Figa.
----
- drivers/phy/Kconfig |   35 +++++++++++------------------------
- 1 file changed, 11 insertions(+), 24 deletions(-)
+ drivers/pinctrl/Kconfig                      | 40 +---------------------------
+ drivers/pinctrl/Makefile                     |  5 ----
+ drivers/pinctrl/{ => qcom}/pinctrl-apq8064.c |  0
+ drivers/pinctrl/{ => qcom}/pinctrl-ipq8064.c |  0
+ drivers/pinctrl/{ => qcom}/pinctrl-msm.c     |  0
+ drivers/pinctrl/{ => qcom}/pinctrl-msm8960.c |  0
+ drivers/pinctrl/{ => qcom}/pinctrl-msm8x74.c |  0
+ 7 files changed, 1 insertion(+), 44 deletions(-)
+ rename drivers/pinctrl/{ => qcom}/pinctrl-apq8064.c (100%)
+ rename drivers/pinctrl/{ => qcom}/pinctrl-ipq8064.c (100%)
+ rename drivers/pinctrl/{ => qcom}/pinctrl-msm.c (100%)
+ rename drivers/pinctrl/{ => qcom}/pinctrl-msm8960.c (100%)
+ rename drivers/pinctrl/{ => qcom}/pinctrl-msm8x74.c (100%)
 
-diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-index fcdfe7c0e4a7..128f8b92b55c 100644
---- a/drivers/phy/Kconfig
-+++ b/drivers/phy/Kconfig
-@@ -123,43 +123,30 @@ config PHY_SUN4I_USB
- config PHY_SAMSUNG_USB2
- 	tristate "Samsung USB 2.0 PHY driver"
- 	depends on HAS_IOMEM
-+	depends on USB_EHCI_EXYNOS || USB_OHCI_EXYNOS || USB_DWC2
- 	select GENERIC_PHY
- 	select MFD_SYSCON
-+	default ARCH_EXYNOS
- 	help
- 	  Enable this to support the Samsung USB 2.0 PHY driver for Samsung
--	  SoCs. This driver provides the interface for USB 2.0 PHY. Support for
--	  particular SoCs has to be enabled in addition to this driver. Number
--	  and type of supported phys depends on the SoC.
-+	  SoCs. This driver provides the interface for USB 2.0 PHY. Support
-+	  for particular PHYs will be enabled based on the SoC type in addition
-+	  to this driver.
+diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
+index c0f49fb3276c..e2c7e09783fa 100644
+--- a/drivers/pinctrl/Kconfig
++++ b/drivers/pinctrl/Kconfig
+@@ -233,45 +233,6 @@ config PINCTRL_IMX28
+ 	bool
+ 	select PINCTRL_MXS
  
- config PHY_EXYNOS4210_USB2
--	bool "Support for Exynos 4210"
-+	bool
- 	depends on PHY_SAMSUNG_USB2
--	depends on CPU_EXYNOS4210
+-config PINCTRL_MSM
+-	bool
+-	select PINMUX
+-	select PINCONF
+-	select GENERIC_PINCONF
+-	select GPIOLIB_IRQCHIP
+-
+-config PINCTRL_APQ8064
+-	tristate "Qualcomm APQ8064 pin controller driver"
+-	depends on GPIOLIB && OF
+-	select PINCTRL_MSM
 -	help
--	  Enable USB PHY support for Exynos 4210. This option requires that
--	  Samsung USB 2.0 PHY driver is enabled and means that support for this
--	  particular SoC is compiled in the driver. In case of Exynos 4210 four
--	  phys are available - device, host, HSIC0 and HSIC1.
-+	default CPU_EXYNOS4210
- 
- config PHY_EXYNOS4X12_USB2
--	bool "Support for Exynos 4x12"
-+	bool
- 	depends on PHY_SAMSUNG_USB2
--	depends on (SOC_EXYNOS4212 || SOC_EXYNOS4412)
+-	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+-	  Qualcomm TLMM block found in the Qualcomm APQ8064 platform.
+-
+-config PINCTRL_IPQ8064
+-	tristate "Qualcomm IPQ8064 pin controller driver"
+-	depends on GPIOLIB && OF
+-	select PINCTRL_MSM
 -	help
--	  Enable USB PHY support for Exynos 4x12. This option requires that
--	  Samsung USB 2.0 PHY driver is enabled and means that support for this
--	  particular SoC is compiled in the driver. In case of Exynos 4x12 four
--	  phys are available - device, host, HSIC0 and HSIC1.
-+	default SOC_EXYNOS4212 || SOC_EXYNOS4412
- 
- config PHY_EXYNOS5250_USB2
--	bool "Support for Exynos 5250"
-+	bool
- 	depends on PHY_SAMSUNG_USB2
--	depends on SOC_EXYNOS5250
+-	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+-	  Qualcomm TLMM block found in the Qualcomm IPQ8064 platform.
+-
+-config PINCTRL_MSM8960
+-	tristate "Qualcomm 8960 pin controller driver"
+-	depends on GPIOLIB && OF
+-	select PINCTRL_MSM
 -	help
--	  Enable USB PHY support for Exynos 5250. This option requires that
--	  Samsung USB 2.0 PHY driver is enabled and means that support for this
--	  particular SoC is compiled in the driver. In case of Exynos 5250 four
--	  phys are available - device, host, HSIC0 and HSIC.
-+	default SOC_EXYNOS5250 || SOC_EXYNOS5420
+-	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+-	  Qualcomm TLMM block found in the Qualcomm 8960 platform.
+-
+-config PINCTRL_MSM8X74
+-	tristate "Qualcomm 8x74 pin controller driver"
+-	depends on GPIOLIB && OF && (ARCH_QCOM || COMPILE_TEST)
+-	select PINCTRL_MSM
+-	help
+-	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+-	  Qualcomm TLMM block found in the Qualcomm 8974 platform.
+-
+ config PINCTRL_NOMADIK
+ 	bool "Nomadik pin controller driver"
+ 	depends on ARCH_U8500 || ARCH_NOMADIK
+@@ -410,6 +371,7 @@ config PINCTRL_S3C64XX
  
- config PHY_EXYNOS5_USBDRD
- 	tristate "Exynos5 SoC series USB DRD PHY driver"
+ source "drivers/pinctrl/berlin/Kconfig"
+ source "drivers/pinctrl/mvebu/Kconfig"
++source "drivers/pinctrl/qcom/Kconfig"
+ source "drivers/pinctrl/sh-pfc/Kconfig"
+ source "drivers/pinctrl/spear/Kconfig"
+ source "drivers/pinctrl/sunxi/Kconfig"
+diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
+index 80bced77446a..a7b8a9e62a14 100644
+--- a/drivers/pinctrl/Makefile
++++ b/drivers/pinctrl/Makefile
+@@ -39,11 +39,6 @@ obj-$(CONFIG_PINCTRL_MXS)	+= pinctrl-mxs.o
+ obj-$(CONFIG_PINCTRL_IMX23)	+= pinctrl-imx23.o
+ obj-$(CONFIG_PINCTRL_IMX25)	+= pinctrl-imx25.o
+ obj-$(CONFIG_PINCTRL_IMX28)	+= pinctrl-imx28.o
+-obj-$(CONFIG_PINCTRL_MSM)	+= pinctrl-msm.o
+-obj-$(CONFIG_PINCTRL_APQ8064)	+= pinctrl-apq8064.o
+-obj-$(CONFIG_PINCTRL_IPQ8064)	+= pinctrl-ipq8064.o
+-obj-$(CONFIG_PINCTRL_MSM8960)	+= pinctrl-msm8960.o
+-obj-$(CONFIG_PINCTRL_MSM8X74)	+= pinctrl-msm8x74.o
+ obj-$(CONFIG_PINCTRL_NOMADIK)	+= pinctrl-nomadik.o
+ obj-$(CONFIG_PINCTRL_STN8815)	+= pinctrl-nomadik-stn8815.o
+ obj-$(CONFIG_PINCTRL_DB8500)	+= pinctrl-nomadik-db8500.o
+diff --git a/drivers/pinctrl/pinctrl-apq8064.c b/drivers/pinctrl/qcom/pinctrl-apq8064.c
+similarity index 100%
+rename from drivers/pinctrl/pinctrl-apq8064.c
+rename to drivers/pinctrl/qcom/pinctrl-apq8064.c
+diff --git a/drivers/pinctrl/pinctrl-ipq8064.c b/drivers/pinctrl/qcom/pinctrl-ipq8064.c
+similarity index 100%
+rename from drivers/pinctrl/pinctrl-ipq8064.c
+rename to drivers/pinctrl/qcom/pinctrl-ipq8064.c
+diff --git a/drivers/pinctrl/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
+similarity index 100%
+rename from drivers/pinctrl/pinctrl-msm.c
+rename to drivers/pinctrl/qcom/pinctrl-msm.c
+diff --git a/drivers/pinctrl/pinctrl-msm8960.c b/drivers/pinctrl/qcom/pinctrl-msm8960.c
+similarity index 100%
+rename from drivers/pinctrl/pinctrl-msm8960.c
+rename to drivers/pinctrl/qcom/pinctrl-msm8960.c
+diff --git a/drivers/pinctrl/pinctrl-msm8x74.c b/drivers/pinctrl/qcom/pinctrl-msm8x74.c
+similarity index 100%
+rename from drivers/pinctrl/pinctrl-msm8x74.c
+rename to drivers/pinctrl/qcom/pinctrl-msm8x74.c
 -- 
-1.7.9.5
+1.9.3
 
