@@ -1,118 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269AbaGIO0L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 10:26:11 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:29821 "EHLO SMTP.CITRIX.COM"
+	id S932337AbaGIO1Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 10:27:24 -0400
+Received: from sauhun.de ([89.238.76.85]:48834 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932215AbaGIO0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 10:26:08 -0400
-X-IronPort-AV: E=Sophos;i="5.01,631,1400025600"; 
-   d="scan'208";a="150976418"
-Message-ID: <53BD50FD.7080309@citrix.com>
-Date: Wed, 9 Jul 2014 15:26:05 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <konrad@kernel.org>, <xen-devel@lists.xenproject.org>,
-        <boris.ostrovsky@oracle.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 4/7] xen/pciback: Implement PCI reset slot or bus with
- 'do_flr' SysFS attribute
-References: <1404845909-13563-1-git-send-email-konrad@kernel.org> <1404845909-13563-5-git-send-email-konrad@kernel.org> <53BC324B.5090600@citrix.com> <20140708184626.GA15548@laptop.dumpdata.com> <53BD364A.5020703@citrix.com> <20140709141211.GF21837@laptop.dumpdata.com>
-In-Reply-To: <20140709141211.GF21837@laptop.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
+	id S1753076AbaGIO1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 10:27:23 -0400
+From: Wolfram Sang <wsa@the-dreams.de>
+To: linux-i2c@vger.kernel.org
+Cc: Jim Cromie <jim.cromie@gmail.com>, linux-kernel@vger.kernel.org,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [PATCH] i2c: scx200: drop GPIO based i2c driver
+Date: Wed,  9 Jul 2014 16:27:09 +0200
+Message-Id: <1404916029-3319-1-git-send-email-wsa@the-dreams.de>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/14 15:12, Konrad Rzeszutek Wilk wrote:
-> On Wed, Jul 09, 2014 at 01:32:10PM +0100, David Vrabel wrote:
->> On 08/07/14 19:46, Konrad Rzeszutek Wilk wrote:
->>> On Tue, Jul 08, 2014 at 07:02:51PM +0100, David Vrabel wrote:
->>>> On 08/07/14 19:58, konrad@kernel.org wrote:
->>>>> --- a/Documentation/ABI/testing/sysfs-driver-pciback
->>>>> +++ b/Documentation/ABI/testing/sysfs-driver-pciback
->>>>> @@ -82,3 +82,14 @@ Description:
->>>>>                  device is shared, enabled, or on a level interrupt line.
->>>>>                  Writing a string of DDDD:BB:DD.F will toggle the state.
->>>>>                  This is Domain:Bus:Device.Function where domain is optional.
->>>>> +
->>>>> +What:           /sys/bus/pci/drivers/pciback/do_flr
->>>>> +Date:           July 2014
->>>>> +KernelVersion:  3.16
->>>>> +Contact:        xen-devel@lists.xenproject.org
->>>>> +Description:
->>>>> +                An option to slot or bus reset an PCI device owned by
->>>>> +                Xen PCI backend. Writing a string of DDDD:BB:DD.F will cause
->>>>> +                the driver to perform an slot or bus reset if the device
->>>>> +                supports. It also checks to make sure that all of the devices
->>>>> +                under the bridge are owned by Xen PCI backend.
->>>>
->>>> Not sure I like this new interface.  I solved this by adding a new reset
->>>> file that looked like the regular one the pci would have if it supported
->>>> FLR.  I'm fairly sure I posted a series for this.  Was there a reason
->>>> you didn't do this?
->>>
->>> It did not work.
->>>
->>> During bootup kobject would complain about a secondary 'reset' SysFS
->>> on the PCI device.
->>
->> I think this because of pciback registering a driver too early, before
->> the device is fully initialized.  You can see in the trace that it is
->> the common pci code that is trying to add the "reset" file so it must be
->> doing this /after/ pciback's probe has been called.
->>
->> I would consider:
->>
->> 1. Removing the "hide" module parameter -- it doesn't work if pciback is
->> a module anyway.
-> 
-> I find it incredibly useful and so do a lot of other people.
+This driver is marked as deprecated since the pre-git era. Any user
+left(?) should really have switched to i2c-gpio meanwhile.
 
-PCI passthrough must work well without hide and without pciback being
-built-in (and it does with the "reset" change).
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+---
+ drivers/i2c/busses/Kconfig      |  31 ----------
+ drivers/i2c/busses/Makefile     |   1 -
+ drivers/i2c/busses/scx200_i2c.c | 129 ----------------------------------------
+ 3 files changed, 161 deletions(-)
+ delete mode 100644 drivers/i2c/busses/scx200_i2c.c
 
-What are you using "hide" for?
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index d25dd120c011..0a8a5bba4ef9 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -1008,37 +1008,6 @@ config I2C_CROS_EC_TUNNEL
+ 	  connected there. This will work whatever the interface used to
+ 	  talk to the EC (SPI, I2C or LPC).
+ 
+-config SCx200_I2C
+-	tristate "NatSemi SCx200 I2C using GPIO pins (DEPRECATED)"
+-	depends on SCx200_GPIO
+-	select I2C_ALGOBIT
+-	help
+-	  Enable the use of two GPIO pins of a SCx200 processor as an I2C bus.
+-
+-	  If you don't know what to do here, say N.
+-
+-	  This support is also available as a module.  If so, the module
+-	  will be called scx200_i2c.
+-
+-	  This driver is deprecated and will be dropped soon. Use i2c-gpio
+-	  (or scx200_acb) instead.
+-
+-config SCx200_I2C_SCL
+-	int "GPIO pin used for SCL"
+-	depends on SCx200_I2C
+-	default "12"
+-	help
+-	  Enter the GPIO pin number used for the SCL signal.  This value can
+-	  also be specified with a module parameter.
+-
+-config SCx200_I2C_SDA
+-	int "GPIO pin used for SDA"
+-	depends on SCx200_I2C
+-	default "13"
+-	help
+-	  Enter the GPIO pin number used for the SSA signal.  This value can
+-	  also be specified with a module parameter.
+-
+ config SCx200_ACB
+ 	tristate "Geode ACCESS.bus support"
+ 	depends on X86_32 && PCI
+diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
+index 1958b490105e..49bf07e5ef4d 100644
+--- a/drivers/i2c/busses/Makefile
++++ b/drivers/i2c/busses/Makefile
+@@ -100,6 +100,5 @@ obj-$(CONFIG_I2C_ELEKTOR)	+= i2c-elektor.o
+ obj-$(CONFIG_I2C_PCA_ISA)	+= i2c-pca-isa.o
+ obj-$(CONFIG_I2C_SIBYTE)	+= i2c-sibyte.o
+ obj-$(CONFIG_SCx200_ACB)	+= scx200_acb.o
+-obj-$(CONFIG_SCx200_I2C)	+= scx200_i2c.o
+ 
+ ccflags-$(CONFIG_I2C_DEBUG_BUS) := -DDEBUG
+diff --git a/drivers/i2c/busses/scx200_i2c.c b/drivers/i2c/busses/scx200_i2c.c
+deleted file mode 100644
+index 8eadf0f47ad7..000000000000
+--- a/drivers/i2c/busses/scx200_i2c.c
++++ /dev/null
+@@ -1,129 +0,0 @@
+-/* linux/drivers/i2c/busses/scx200_i2c.c
+-
+-   Copyright (c) 2001,2002 Christer Weinigel <wingel@nano-system.com>
+-
+-   National Semiconductor SCx200 I2C bus on GPIO pins
+-
+-   Based on i2c-velleman.c Copyright (C) 1995-96, 2000 Simon G. Vogl
+-
+-   This program is free software; you can redistribute it and/or modify
+-   it under the terms of the GNU General Public License as published by
+-   the Free Software Foundation; either version 2 of the License, or
+-   (at your option) any later version.
+-   
+-   This program is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-   GNU General Public License for more details.
+-   
+-   You should have received a copy of the GNU General Public License
+-   along with this program; if not, write to the Free Software
+-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.		     
+-*/
+-
+-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+-
+-#include <linux/module.h>
+-#include <linux/errno.h>
+-#include <linux/kernel.h>
+-#include <linux/i2c.h>
+-#include <linux/i2c-algo-bit.h>
+-#include <linux/io.h>
+-
+-#include <linux/scx200_gpio.h>
+-
+-MODULE_AUTHOR("Christer Weinigel <wingel@nano-system.com>");
+-MODULE_DESCRIPTION("NatSemi SCx200 I2C Driver");
+-MODULE_LICENSE("GPL");
+-
+-static int scl = CONFIG_SCx200_I2C_SCL;
+-static int sda = CONFIG_SCx200_I2C_SDA;
+-
+-module_param(scl, int, 0);
+-MODULE_PARM_DESC(scl, "GPIO line for SCL");
+-module_param(sda, int, 0);
+-MODULE_PARM_DESC(sda, "GPIO line for SDA");
+-
+-static void scx200_i2c_setscl(void *data, int state)
+-{
+-	scx200_gpio_set(scl, state);
+-}
+-
+-static void scx200_i2c_setsda(void *data, int state)
+-{
+-	scx200_gpio_set(sda, state);
+-} 
+-
+-static int scx200_i2c_getscl(void *data)
+-{
+-	return scx200_gpio_get(scl);
+-}
+-
+-static int scx200_i2c_getsda(void *data)
+-{
+-	return scx200_gpio_get(sda);
+-}
+-
+-/* ------------------------------------------------------------------------
+- * Encapsulate the above functions in the correct operations structure.
+- * This is only done when more than one hardware adapter is supported.
+- */
+-
+-static struct i2c_algo_bit_data scx200_i2c_data = {
+-	.setsda		= scx200_i2c_setsda,
+-	.setscl		= scx200_i2c_setscl,
+-	.getsda		= scx200_i2c_getsda,
+-	.getscl		= scx200_i2c_getscl,
+-	.udelay		= 10,
+-	.timeout	= HZ,
+-};
+-
+-static struct i2c_adapter scx200_i2c_ops = {
+-	.owner		   = THIS_MODULE,
+-	.class             = I2C_CLASS_HWMON | I2C_CLASS_SPD,
+-	.algo_data	   = &scx200_i2c_data,
+-	.name	= "NatSemi SCx200 I2C",
+-};
+-
+-static int scx200_i2c_init(void)
+-{
+-	pr_debug("NatSemi SCx200 I2C Driver\n");
+-
+-	if (!scx200_gpio_present()) {
+-		pr_err("no SCx200 gpio pins available\n");
+-		return -ENODEV;
+-	}
+-
+-	pr_debug("SCL=GPIO%02u, SDA=GPIO%02u\n", scl, sda);
+-
+-	if (scl == -1 || sda == -1 || scl == sda) {
+-		pr_err("scl and sda must be specified\n");
+-		return -EINVAL;
+-	}
+-
+-	/* Configure GPIOs as open collector outputs */
+-	scx200_gpio_configure(scl, ~2, 5);
+-	scx200_gpio_configure(sda, ~2, 5);
+-
+-	if (i2c_bit_add_bus(&scx200_i2c_ops) < 0) {
+-		pr_err("adapter %s registration failed\n", scx200_i2c_ops.name);
+-		return -ENODEV;
+-	}
+-	
+-	return 0;
+-}
+-
+-static void scx200_i2c_cleanup(void)
+-{
+-	i2c_del_adapter(&scx200_i2c_ops);
+-}
+-
+-module_init(scx200_i2c_init);
+-module_exit(scx200_i2c_cleanup);
+-
+-/*
+-    Local variables:
+-        compile-command: "make -k -C ../.. SUBDIRS=drivers/i2c modules"
+-        c-basic-offset: 8
+-    End:
+-*/
+-- 
+2.0.0
 
->> 2. Making pciback initialize like a regular driver module (no
->> fs_initcall() shenanigans).
-> 
-> The point is to take the PCI device before the drivers touch it.
-> 
-> We want it to be in a pristine state so that the device driver
-> domains can use it.
-
-But hide only ensures this the first time the device is assigned.  Using
-a function reset ensures this all the time.
-
->> 3. Require userspace to sort out binding the device to pciback (e.g.,
->> libxl already does the unbind if requested).
-> 
-> How would you do the bus/slot reset? Or are you thinking that at
-> that point the 'reset' functionality would be over-written to point
-> to Xen pciback and it would do the job?
-
-I'm not sure I understand your question.  libxl already does the
-function reset (by writing to "reset").
-
->> 4. Finally, I would consider generic driver core functionality for
->> prioritizing drivers so they get probed first.
-> 
-> Not sure I understand why you want the drivers to use the device
-> first? The point is that we can 'hide' them from the generic
-> drivers and present them to the backend domains.
-
-The pciback driver would be prioritized, so it would be probed first.
-
-> Regardless of these - I am curious to why you don't like do_flr
-> as it is even implemented in the the toolstack (but buggy) and
-> it does a good job of allowing us to do slot/bus reset?
-
-Because there is already a documented interface for resetting devices
-(the "reset" file), we don't want a second interface.
-
-David
