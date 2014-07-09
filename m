@@ -1,69 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755971AbaGINTc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 09:19:32 -0400
-Received: from mga09.intel.com ([134.134.136.24]:47260 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753786AbaGINTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 09:19:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,631,1400050800"; 
-   d="scan'208";a="570580730"
-Message-ID: <1404911964.28592.4.camel@rzhang1-toshiba>
-Subject: Re: [RESEND PATCH 0/6] thermal: sti: Add new Thermal driver
-From: Zhang Rui <rui.zhang@intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, ajitpal.singh@st.com, edubezval@gmail.com,
-        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
-        maxime.coquelin@st.com, patrice.chotard@st.com
-Date: Wed, 09 Jul 2014 21:19:24 +0800
-In-Reply-To: <20140709120823.GA32573@lee--X1>
-References: <1401980819-19962-1-git-send-email-lee.jones@linaro.org>
-	 <20140624092309.GD13803@lee--X1> <20140709120823.GA32573@lee--X1>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756041AbaGINUQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 09:20:16 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:5704 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752020AbaGINUN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 09:20:13 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 09 Jul 2014 06:09:23 -0700
+Date: Wed, 9 Jul 2014 16:20:10 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Subject: Re: [PATCH 6/9] ARM: tegra: Export tegra_powergate_power_on
+Message-ID: <20140709132010.GL23218@tbergstrom-lnx.Nvidia.com>
+References: <20140623101441.GU3407@tbergstrom-lnx.Nvidia.com>
+ <20140708130501.GC9516@ulmo>
+ <20140708141135.GC23218@tbergstrom-lnx.Nvidia.com>
+ <20140709063130.GA3170@ulmo>
+ <20140709083311.GE23218@tbergstrom-lnx.Nvidia.com>
+ <20140709102551.GA19357@ulmo>
+ <20140709110816.GF23218@tbergstrom-lnx.Nvidia.com>
+ <20140709120400.GA3819@ulmo>
+ <20140709124344.GK23218@tbergstrom-lnx.Nvidia.com>
+ <20140709125613.GA3262@ulmo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140709125613.GA3262@ulmo>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-09 at 13:08 +0100, Lee Jones wrote:
-> On Tue, 24 Jun 2014, Lee Jones wrote:
+On Wed, Jul 09, 2014 at 02:56:14PM +0200, Thierry Reding wrote:
+> * PGP Signed by an unknown key
 > 
-> > > I'm re-sending this set, as one of the maintainers' email addresses
-> > > is incorrect in the MAINTAINERS file.
+> On Wed, Jul 09, 2014 at 03:43:44PM +0300, Peter De Schrijver wrote:
+> > On Wed, Jul 09, 2014 at 02:04:02PM +0200, Thierry Reding wrote:
+> > > > For those 2 domains we can find the necessary clocks and resets by parsing
+> > > > the relevant existing DT nodes for PCIe and gr3d. For clocks, this isn't
+> > > > even needed as we can always register some extra clkdev's to get them. There
+> > > > is no equivalent for resets so we have to parse the gr3d and pcie DT nodes,
+> > > > but that's not too bad I think.
 > > > 
-> > > This patchset adds full support for 2 types of Thermal Controllers
-> > > produced by STMicroelectronics.  One is a more traditional memory
-> > > mapped variant, the other is controlled solely by system configuration
-> > > registers.
-> > 
-> > Any thing from the Thermal guys? Has this set fallen through the gaps?
-> 
-> Anything at all?  It's been well over a month now.
-> 
-Well, for the soc thermal drivers, I'd prefer to take them via Eduardo,
-but as we didn't get any feedback from Eduardo, I will take them.
-
-thanks,
-rui
-> > >  Documentation/devicetree/bindings/thermal/st-thermal.txt |  42 ++++++++++++++++
-> > >  arch/arm/boot/dts/stih416.dtsi                           |  18 +++++++
-> > >  arch/arm/configs/multi_v7_defconfig                      |   2 +
-> > >  drivers/thermal/Kconfig                                  |   5 ++
-> > >  drivers/thermal/Makefile                                 |   1 +
-> > >  drivers/thermal/st/Kconfig                               |  12 +++++
-> > >  drivers/thermal/st/Makefile                              |   3 ++
-> > >  drivers/thermal/st/st_thermal.c                          | 313 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-> > > ++++++++++++++++++++++++++++
-> > >  drivers/thermal/st/st_thermal.h                          | 104 ++++++++++++++++++++++++++++++++++++++
-> > >  drivers/thermal/st/st_thermal_memmap.c                   | 209 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-> > >  drivers/thermal/st/st_thermal_syscfg.c                   | 179 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-> > >  11 files changed, 888 insertions(+)
+> > > Even if we could really do this, at this point I don't see an advantage.
+> > > All that it would be doing is move to some subsystem that doesn't quite
+> > > match what we need just for the sake of moving to that subsystem. Having
+> > > a Tegra-specific API doesn't sound so bad anymore.
 > > > 
 > > 
+> > The advantage would be that we can use LP0/SC7 as a cpuidle state.
+> 
+> How is that going to work? And why does it need powergates to be
+
+pm_runtime_get() and pm_runtime_put() hook into genpd. So genpd knows
+when all devices in a domain are idle. It can then decide to turn off
+the domain (based on the decision of a per domain governor). If all
+domains are off (except for the non-powergateable domain), a special cpuidle
+state can be enabled by genpd which will initiate a transition to LP0 without
+actually doing a full system suspend.
+
+> implemented as power domains? If we switch off power gates, then we need
+> to restore context in the drivers anyway, therefore I assume .suspend()
+> and .resume() would need to be called, in which case powergate handling
+> can surely be done at that stage, can't it?
 > 
 
+.suspend() and .resume() are not used for this. genpd uses other per device
+callbacks to save and restore the state which are invoked when the domain
+is turned off and on (.save_state and .restore_state). The major difference
+with .suspend() and .resume() is that .suspend() has to perform 3 tasks:
+prevent any new requests to the driver, finalize or cancel all outstanding
+requests and save the hw context. .save_state will only be called when the
+device is idle (based on the refcount controlled by pm_runtime_get() and
+pm_runtime_put()) which means it only has to handle saving the hw context.
 
+> > Also system
+> > resume from LP0 can be faster as we potentially don't have to resume all
+> > domains at once.
+> 
+> I don't understand what that's got to do with anything. If we call into
+> the PMC driver explicitly via tegra_powergate_*() functions from driver
+> code, then we have full control over suspend/resume in the drivers, and
+> therefore don't need to resume all at once either.
+
+But then we would be duplicating all the bookkeeping required for this? What's
+the point of that?
+
+Cheers,
+
+Peter.
