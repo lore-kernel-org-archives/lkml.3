@@ -1,237 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753861AbaGIGtg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 02:49:36 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:61307 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953AbaGIGtd (ORCPT
+	id S1753166AbaGIGwz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 02:52:55 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:46096 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268AbaGIGwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 02:49:33 -0400
-Date: Wed, 9 Jul 2014 08:49:29 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Mikko Perttunen <mperttunen@nvidia.com>
-Cc: swarren@wwwdotorg.org, tj@kernel.org, pdeschrijver@nvidia.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: [PATCH v2 6/7] ata: Add support for the Tegra124 SATA controller
-Message-ID: <20140709064928.GC3170@ulmo>
-References: <1403101406-15439-1-git-send-email-mperttunen@nvidia.com>
- <1403101406-15439-7-git-send-email-mperttunen@nvidia.com>
+	Wed, 9 Jul 2014 02:52:54 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="B4IIlcmfBL/1gGOG"
-Content-Disposition: inline
-In-Reply-To: <1403101406-15439-7-git-send-email-mperttunen@nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAPM=9tyAmEQq9CZn9FFOxLbE7J9TMkTMu=XHEnzaRFBBByDyew@mail.gmail.com>
+References: <1402866165-17408-1-git-send-email-minipli@googlemail.com>
+	<CA+rthh-CYWjUCji4GXNeZV5CcLd3_DNaV9zFDc_DznYbyw6T+A@mail.gmail.com>
+	<CAPM=9tyAmEQq9CZn9FFOxLbE7J9TMkTMu=XHEnzaRFBBByDyew@mail.gmail.com>
+Date: Wed, 9 Jul 2014 08:52:52 +0200
+Message-ID: <CA+rthh9w4Tj-b9m=jeCBcGP4E8X9ssVLGom=TmYT=9-4e_nmkw@mail.gmail.com>
+Subject: Re: [PATCH] agp: remove read/write stubs
+From: Mathias Krause <minipli@googlemail.com>
+To: Dave Airlie <airlied@gmail.com>
+Cc: David Airlie <airlied@linux.ie>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 9 July 2014 00:48, Dave Airlie <airlied@gmail.com> wrote:
+> On 2 July 2014 16:15, Mathias Krause <minipli@googlemail.com> wrote:
+>> On 15 June 2014 23:02, Mathias Krause <minipli@googlemail.com> wrote:
+>>> The VFS layer handles those in the very same way, if unset. No need for
+>>> additional stubs.
+>>>
+>>> Signed-off-by: Mathias Krause <minipli@googlemail.com>
+>>> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+>>> ---
+>>>  drivers/char/agp/frontend.c |   15 ---------------
+>>>  1 file changed, 15 deletions(-)
+>>>
+>>> diff --git a/drivers/char/agp/frontend.c b/drivers/char/agp/frontend.c
+>>> index b29703324e..09f17eb734 100644
+>>> --- a/drivers/char/agp/frontend.c
+>>> +++ b/drivers/char/agp/frontend.c
+>>> @@ -710,19 +710,6 @@ static int agp_open(struct inode *inode, struct file *file)
+>>>         return 0;
+>>>  }
+>>>
+>>> -
+>>> -static ssize_t agp_read(struct file *file, char __user *buf,
+>>> -                       size_t count, loff_t * ppos)
+>>> -{
+>>> -       return -EINVAL;
+>>> -}
+>>> -
+>>> -static ssize_t agp_write(struct file *file, const char __user *buf,
+>>> -                        size_t count, loff_t * ppos)
+>>> -{
+>>> -       return -EINVAL;
+>>> -}
+>>> -
+>>>  static int agpioc_info_wrap(struct agp_file_private *priv, void __user *arg)
+>>>  {
+>>>         struct agp_info userinfo;
+>>> @@ -1047,8 +1034,6 @@ static const struct file_operations agp_fops =
+>>>  {
+>>>         .owner          = THIS_MODULE,
+>>>         .llseek         = no_llseek,
+>>> -       .read           = agp_read,
+>>> -       .write          = agp_write,
+>>>         .unlocked_ioctl = agp_ioctl,
+>>>  #ifdef CONFIG_COMPAT
+>>>         .compat_ioctl   = compat_agp_ioctl,
+>>> --
+>>> 1.7.10.4
+>>>
+>>
+>> Ping. Any objections, comments? David?
+>
+> Are you sure VFS handles this the same way? can you point me where it
+> checks ->read and returns -EINVAL, I'm probably just missing it in my
+> quick look over fs/read_write.c
 
---B4IIlcmfBL/1gGOG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The VFS code changed during the last merge window so the ->read and
+->write tests are no longer directly visible. The presence of a ->read
+/ ->write function is now remembered at open(2) time and stored in
+->f_mode as a flag.
 
-On Wed, Jun 18, 2014 at 05:23:25PM +0300, Mikko Perttunen wrote:
-[...]
-> diff --git a/drivers/ata/ahci_tegra.c b/drivers/ata/ahci_tegra.c
-[...]
-> +#include <linux/ahci_platform.h>
-> +#include <linux/reset.h>
-> +#include <linux/errno.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/of_device.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/tegra-powergate.h>
-> +#include <linux/regulator/consumer.h>
-> +#include <linux/tegra-soc.h>
-> +#include "ahci.h"
-> +
-> +#define SATA_CONFIGURATION_0				0x180
-> +#define		SATA_CONFIGURATION_EN_FPCI		BIT(0)
+The corresponding commit for the VFS change is 7f7f25e82d "replace
+checking for ->read/->aio_read presence with check in ->f_mode".
+Despite its subject, it also handles ->write / ->aio_write. The flags
+are set in fs/open:do_dentry_open():
 
-This, and the register/field definitions below look weirdly indented,
-but I guess that's mostly a matter of taste.
+    if ((f->f_mode & FMODE_READ) &&
+         likely(f->f_op->read || f->f_op->aio_read || f->f_op->read_iter))
+        f->f_mode |= FMODE_CAN_READ;
+    if ((f->f_mode & FMODE_WRITE) &&
+         likely(f->f_op->write || f->f_op->aio_write || f->f_op->write_iter))
+        f->f_mode |= FMODE_CAN_WRITE;
 
-> +#define T_SATA0_CHX_PHY_CTRL1_GEN1			0x690
-> +#define		T_SATA0_CHX_PHY_CTRL1_GEN1_TX_AMP_MASK	0xff
-> +#define		T_SATA0_CHX_PHY_CTRL1_GEN1_TX_AMP_SHIFT	0
-> +#define		T_SATA0_CHX_PHY_CTRL1_GEN1_TX_PEAK_MASK	(0xff<<8)
+With that change in mind, the redundancy of the agp_read() and
+agp_write() functions can be seen for read(2) in vfs_read():
 
-Perhaps single spaces around "<<"? The same for other occurrences below.
+    if (!(file->f_mode & FMODE_CAN_READ))
+        return -EINVAL;
 
-> +struct sata_pad_calibration {
-> +	u8 gen1_tx_amp, gen1_tx_peak, gen2_tx_amp, gen2_tx_peak;
-> +};
+..and for write(2) in vfs_write():
 
-I think a more idiomatic way would be to put the fields in a structure
-declaration on separate lines.
+    if (!(file->f_mode & FMODE_CAN_WRITE))
+        return -EINVAL;
 
-> +static const struct sata_pad_calibration tegra124_pad_calibration[] = {
-> +	{0x18, 0x04, 0x18, 0x0a},
+The other entry points (readv / writev / compat wrappers) have been
+changed accordingly, so those handle a missing ->read / ->write
+callback in the same way: returning -EINVAL.
 
-Maybe spaces after '{' and before '}'?
-
-> +static int tegra_ahci_power_on(struct ahci_host_priv *hpriv)
-> +{
-> +	struct tegra_ahci_priv *tegra = hpriv->plat_data;
-> +	int ret;
-> +
-> +	ret = regulator_bulk_enable(ARRAY_SIZE(tegra->supplies),
-> +				    tegra->supplies);
-> +	if (ret)
-> +		return ret;
-> +
-> +	ret = tegra_powergate_sequence_power_up(TEGRA_POWERGATE_SATA,
-> +		tegra->sata_clk, tegra->sata_rst);
-
-These could be aligned with TEGRA_POWERGATE_SATA.
-
-> +	ret = clk_prepare_enable(tegra->cml1_clk);
-> +	if (ret) {
-> +		clk_disable_unprepare(tegra->sata_oob_clk);
-> +		goto disable_power;
-> +	}
-> +
-> +	ret = clk_prepare_enable(tegra->plle_clk);
-> +	if (ret) {
-> +		clk_disable_unprepare(tegra->cml1_clk);
-> +		clk_disable_unprepare(tegra->sata_oob_clk);
-> +		goto disable_power;
-> +	}
-> +
-> +	reset_control_deassert(tegra->sata_cold_rst);
-> +	reset_control_deassert(tegra->sata_oob_rst);
-> +
-> +	ret = phy_power_on(tegra->padctl_phy);
-> +	if (ret) {
-> +		clk_disable_unprepare(tegra->plle_clk);
-> +		clk_disable_unprepare(tegra->cml1_clk);
-> +		clk_disable_unprepare(tegra->sata_oob_clk);
-> +		goto disable_power;
-> +	}
-
-These error paths might be more readable if you did unwind them similar
-to how you did with sata_clk below.
-
-> +static int tegra_ahci_controller_init(struct ahci_host_priv *hpriv)
-> +{
-> +	struct tegra_ahci_priv *tegra = hpriv->plat_data;
-> +	int ret;
-> +	unsigned int val;
-> +	struct sata_pad_calibration calib;
-> +
-> +	ret = tegra_ahci_power_on(hpriv);
-> +	if (ret) {
-> +		dev_err(&tegra->pdev->dev,
-> +			"failed to power on ahci controller: %d\n", ret);
-
-s/ahci/AHCI/
-
-> +		return ret;
-> +	}
-> +
-> +	val = readl(tegra->sata_regs + SATA_CONFIGURATION_0);
-> +	val |= SATA_CONFIGURATION_EN_FPCI;
-> +	writel(val, tegra->sata_regs + SATA_CONFIGURATION_0);
-> +
-> +	/* Pad calibration */
-> +
-> +	ret = tegra_fuse_readl(FUSE_SATA_CALIB, &val);
-> +	if (ret) {
-> +		dev_err(&tegra->pdev->dev,
-> +			"failed to read sata calibration fuse: %d\n", ret);
-
-s/sata/SATA/
-
-> +static struct ata_port_operations ahci_tegra_port_ops = {
-> +	.inherits	= &ahci_ops,
-> +	.host_stop	= tegra_ahci_host_stop,
-> +};
-> +
-> +static const struct ata_port_info ahci_tegra_port_info = {
-> +	.flags		= AHCI_FLAG_COMMON,
-> +	.pio_mask	= ATA_PIO4,
-> +	.udma_mask	= ATA_UDMA6,
-> +	.port_ops	= &ahci_tegra_port_ops,
-> +};
-
-I prefer these to not be arbitrarily indented, but Tejun seemed to
-indicate he did, so it's ultimately his call.
-
-> +static const struct of_device_id tegra_ahci_of_match[] = {
-> +	{ .compatible = "nvidia,tegra124-ahci" },
-> +	{},
-
-Technically there's no need for the comma at the end here. Usually you'd
-put one here so that if somebody ever were to add a new entry after this
-the diff wouldn't need to include the line that you only add a comma to.
-But in this particular case the last entry is used as a sentinel, so
-leaving away the comma is actually useful as a hint that entries should
-be added in front rather than at the end.
-
-> +	hpriv->mmio = devm_ioremap_resource(&pdev->dev,
-> +		platform_get_resource(pdev, IORESOURCE_MEM, 0));
-
-Perhaps a temporary variable for the result of platform_get_resource()
-would help make this look less cluttered.
-
-> +	if (IS_ERR(hpriv->mmio)) {
-> +		dev_err(&pdev->dev, "Failed to get AHCI IO memory\n");
-
-This isn't necessary. devm_ioremap_resource() will already output an
-error message.
-
-> +	tegra->sata_regs = devm_ioremap_resource(&pdev->dev,
-> +		platform_get_resource(pdev, IORESOURCE_MEM, 1));
-> +	if (IS_ERR(tegra->sata_regs)) {
-> +		dev_err(&pdev->dev, "Failed to get SATA IO memory\n");
-
-Same here.
-
-> +	tegra->padctl_phy = devm_phy_get(&pdev->dev, "sata-phy");
-> +	if (IS_ERR(tegra->padctl_phy)) {
-> +		dev_err(&pdev->dev, "Failed to get phy\n");
-
-s/phy/PHY/
-
-> +	ret = devm_regulator_bulk_get(&pdev->dev, ARRAY_SIZE(tegra->supplies),
-> +					tegra->supplies);
-
-The trailing argument here isn't aligned as in other places.
-
-> +static struct platform_driver tegra_ahci_driver = {
-> +	.probe = tegra_ahci_probe,
-> +	.remove = ata_platform_remove_one,
-> +	.driver = {
-> +		.name = "tegra-ahci",
-> +		.owner = THIS_MODULE,
-
-This isn't really needed anymore, module_platform_driver will end up
-setting this for you anyway.
-
-Thierry
-
---B4IIlcmfBL/1gGOG
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTvOX4AAoJEN0jrNd/PrOhe9AQAJQeRSYMRCkut/2iRRpJmvpp
-h5JL/XLVmcCTsseLiBRcwP0a+2M0CK7QghmvTAEkly0mucWbkthwao0z0T3fdlAR
-jttvC3/YYBsXZVkOMm6Q+N/AFD891BnhTi9IcITNfzYffcSYZurpvhioCtYfOS1t
-7Kwna1n3uG2Rqeqj5MQfxEPuRoWXB7ibMJLYX8twKeAj7P28BJiBkZ99kOae60XQ
-C7zbrMUXkCpRZO6SAs9zPmtAMrKxRDIADmQ2KTLJByYGtcR7A3ZmvaiXTte7S/6x
-VPzAFA66qXwDiBrPBUj1ciP10nLKs/kE53DAOfKItX00dDXMDu+7MQgeIRIW52HE
-uQOMYsV6/1/P2Xm+UmtT6ps486U5meDYW9RNy3KrdsC+pkYT/M2RN3QIwOp54bvA
-KKxxM+XmrM7LDH4Nf0qttklk/CfkSGniacwEOLEelzjh97hMXqGmQ9t4HOBLnvrT
-D2voaxtNPmQ7RyYkvJ6B77JmcOww8j+YeWbi2yEgobuEa/6lJNsNASIoy/GfzIZb
-c3uNeK0Cw5Ox8Wo8Nu88Oe+SzSByna+7ikKjuRiX/6w59zBupASVP7iOYLvlTtN7
-278NXrEv9teXklzCvsp8jUcikp4Ih+/MFEQL8DJo/hk8g9AXUFB2TReOH3hmh4my
-jA7qvcAUP0R9nZxdpmfO
-=Y0ip
------END PGP SIGNATURE-----
-
---B4IIlcmfBL/1gGOG--
+Regards,
+Mathias
