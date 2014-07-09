@@ -1,105 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182AbaGIVJF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 17:09:05 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:58140 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751424AbaGIVIu (ORCPT
+	id S1755525AbaGIVJa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 17:09:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48127 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754555AbaGIVJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 17:08:50 -0400
-X-Auth-Info: b0XHPdGcdfRyJhcHCSMzOU/bRkdVpVxVH5C+VZDV2bs=
-From: Marek Vasut <marex@denx.de>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: Re: [PATCH v1 1/5] seq_file: provide an analogue of print_hex_dump()
-Date: Wed, 9 Jul 2014 22:39:30 +0200
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
-Cc: Tadeusz Struk <tadeusz.struk@intel.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Helge Deller <deller@gmx.de>,
-        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>, linux390@de.ibm.com,
-        Alexander Viro <viro@zeniv.linux.org.uk>, qat-linux@intel.com,
-        linux-crypto@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1404919470-26668-1-git-send-email-andriy.shevchenko@linux.intel.com> <1404919470-26668-2-git-send-email-andriy.shevchenko@linux.intel.com>
-In-Reply-To: <1404919470-26668-2-git-send-email-andriy.shevchenko@linux.intel.com>
+	Wed, 9 Jul 2014 17:09:04 -0400
+Date: Wed, 9 Jul 2014 14:13:29 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Cc: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com
+Subject: Re: [PATCH 4/4] GenWQE: Increase driver version number
+Message-ID: <20140709211329.GA29571@kroah.com>
+References: <1401890273-13067-1-git-send-email-klebers@linux.vnet.ibm.com>
+ <1401890273-13067-5-git-send-email-klebers@linux.vnet.ibm.com>
+ <20140604155454.GA2866@kroah.com>
+ <1401960184.11932.10.camel@oc7383187364.ibm.com>
+ <20140605160010.GF23993@kroah.com>
+ <1402056453.31366.34.camel@oc7383187364.ibm.com>
+ <1402058435.31366.46.camel@oc7383187364.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201407092239.30561.marex@denx.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402058435.31366.46.camel@oc7383187364.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 09, 2014 at 05:24:26 PM, Andy Shevchenko wrote:
-> The new seq_hex_dump() is a complete analogue of print_hex_dump().
+On Fri, Jun 06, 2014 at 02:40:35PM +0200, Frank Haverkamp wrote:
+> Hi Greg,
 > 
-> We have few users of this functionality already. It allows to reduce their
-> codebase.
+> Am Freitag, den 06.06.2014, 14:07 +0200 schrieb Frank Haverkamp:
+> > Hi Greg,
+> > 
+> > Am Donnerstag, den 05.06.2014, 09:00 -0700 schrieb Greg KH:
+> > > On Thu, Jun 05, 2014 at 11:23:04AM +0200, Frank Haverkamp wrote:
+> > > > Hi Greg,
+> > > > 
+> > > > Am Mittwoch, den 04.06.2014, 08:54 -0700 schrieb Greg KH:
+> > > > > On Wed, Jun 04, 2014 at 10:57:53AM -0300, Kleber Sacilotto de Souza wrote:
+> > > > > > Increase genwqe driver version number.
+> > > > > > 
+> > > > > > Signed-off-by: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+> > > > > > ---
+> > > > > >  drivers/misc/genwqe/genwqe_driver.h |    2 +-
+> > > > > >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > > > > > 
+> > > > > > diff --git a/drivers/misc/genwqe/genwqe_driver.h b/drivers/misc/genwqe/genwqe_driver.h
+> > > > > > index cd52631..a506e9a 100644
+> > > > > > --- a/drivers/misc/genwqe/genwqe_driver.h
+> > > > > > +++ b/drivers/misc/genwqe/genwqe_driver.h
+> > > > > > @@ -36,7 +36,7 @@
+> > > > > >  #include <asm/byteorder.h>
+> > > > > >  #include <linux/genwqe/genwqe_card.h>
+> > > > > >  
+> > > > > > -#define DRV_VERS_STRING		"2.0.15"
+> > > > > > +#define DRV_VERS_STRING		"2.0.21"
+> > > > > 
+> > > > > Why is this even needed?  Can't you go off of the kernel version number
+> > > > > now?  Who needs / wants this number?
+> > > > 
+> > > > I am aware that if just considering the mainline kernels, we could use
+> > > > the kernel version itself for the purpose of identifying which code we
+> > > > are running.
+> > > 
+> > > Which is what you are patching here :)
+> > > 
+> > > > But in our lab we are running multiple back-ported versions of this
+> > > > driver on different Linux distributions using different kernel versions.
+> > > 
+> > > Then deal with that in the backported code, the upstream kernel doesn't
+> > > care about this.
+> > > 
+> > > > Our user-space software needs to know if the driver has or has not
+> > > > bug-fixes or features. For this purpose, we are using this extra number.
+> > > 
+> > > Why would you rely on a version number for this, shouldn't you be able
+> > > to tell with your api what features are present?
+> > 
+> > For version "2.0.15" there is no automatic recovery for certain
+> > problems, for "2.0.21" there is.
+> > 
+> > I personally use the driver versions sysfs entry if a user complains
+> > that something e.g. the recovery is not working right. First thing I am
+> > asking for is the version of the code/driver  as part of the debug data.
+> > If that is not matching my expectations, I will tell the user to update
+> > the code.
+> > 
+> > In the current example new applications could more gracefully handle
+> > failing recovery scenarios by knowing that the old version of the code
+> > cannot properly handle certain problems. And it could this without
+> > knowing if it is using a driver which is in the mainline tree or if it
+> > is a back-ported version.
+> > 
+> > Therefore I find it much more convenient for us to handle such things
+> > and I would kindly ask you to accept patch 4/4.
+> > 
 > 
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
->  fs/seq_file.c            | 35 +++++++++++++++++++++++++++++++++++
->  include/linux/seq_file.h |  4 ++++
->  2 files changed, 39 insertions(+)
+> I talked a bit with a colleague about version numbers for kernel
+> drivers. He pointed me on to the fact that when other people contribute
+> to our code, they will mostly not alter my version number, which is
+> certainly ok. That in turn makes it impossible for me to figure out the
+> exact code version from my own (internal) version number.
 > 
-> diff --git a/fs/seq_file.c b/fs/seq_file.c
-> index 3857b72..fec4a6b 100644
-> --- a/fs/seq_file.c
-> +++ b/fs/seq_file.c
-> @@ -12,6 +12,7 @@
->  #include <linux/slab.h>
->  #include <linux/cred.h>
->  #include <linux/mm.h>
-> +#include <linux/printk.h>
-> 
->  #include <asm/uaccess.h>
->  #include <asm/page.h>
-> @@ -794,6 +795,40 @@ void seq_pad(struct seq_file *m, char c)
->  }
->  EXPORT_SYMBOL(seq_pad);
-> 
-> +/* Analogue of print_hex_dump() */
-> +void seq_hex_dump(struct seq_file *m, const char *prefix_str, int
-> prefix_type, +		  int rowsize, int groupsize, const void *buf, 
-size_t len,
-> +		  bool ascii)
-> +{
-> +	const u8 *ptr = buf;
-> +	int i, linelen, remaining = len;
-> +	unsigned char linebuf[32 * 3 + 2 + 32 + 1];
-> +
-> +	if (rowsize != 16 && rowsize != 32)
-> +		rowsize = 16;
-> +
-> +	for (i = 0; i < len; i += rowsize) {
-> +		linelen = min(remaining, rowsize);
-> +		remaining -= rowsize;
-> +
-> +		hex_dump_to_buffer(ptr + i, linelen, rowsize, groupsize,
-> +				   linebuf, sizeof(linebuf), ascii);
-> +
-> +		switch (prefix_type) {
-> +		case DUMP_PREFIX_ADDRESS:
-> +			seq_printf(m, "%s%p: %s\n", prefix_str, ptr + i, 
-linebuf);
-> +			break;
-> +		case DUMP_PREFIX_OFFSET:
-> +			seq_printf(m, "%s%.8x: %s\n", prefix_str, i, linebuf);
-> +			break;
-> +		default:
-> +			seq_printf(m, "%s%s\n", prefix_str, linebuf);
-> +			break;
-> +		}
-> +	}
-> +}
-> +EXPORT_SYMBOL(seq_hex_dump);
+> So at the end it is the kernel version number or maybe the git checksum
+> used to build the code what enables me to identify the exact version of
+> the code. If this be the case, than I wonder, if we should not remove
+> the "version" sysfs entry entirely. I mean, if you reject the update to
+> it anyways ;-).
 
-The above function looks like almost verbatim copy of print_hex_dump(). The only 
-difference I can spot is that it's calling seq_printf() instead of printk(). Can 
-you not instead generalize print_hex_dump() and based on it's invocation, make 
-it call either seq_printf() or printk() ?
+I suggest just removing the version entirely.  I'll take this patch, but
+can you send a follow-on one removing it?
 
-Best regards,
+thanks,
+
+greg k-h
