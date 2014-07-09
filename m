@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816AbaGIH6j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 03:58:39 -0400
-Received: from mail.sigma-star.at ([95.130.255.111]:14385 "EHLO
-	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753838AbaGIH6i (ORCPT
+	id S1755138AbaGIH7G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 03:59:06 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:59392 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754947AbaGIH7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 03:58:38 -0400
-From: Richard Weinberger <richard@nod.at>
-To: kys@microsoft.com, haiyangz@microsoft.com
-Cc: romieu@fr.zoreil.com, devel@linuxdriverproject.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>
-Subject: [PATCH v2] hyperv: Add netpoll support
-Date: Wed,  9 Jul 2014 09:58:22 +0200
-Message-Id: <1404892702-11094-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 2.0.1
+	Wed, 9 Jul 2014 03:59:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <1404782785-1824-2-git-send-email-bjorn.andersson@sonymobile.com>
+References: <1404782785-1824-1-git-send-email-bjorn.andersson@sonymobile.com>
+	<1404782785-1824-2-git-send-email-bjorn.andersson@sonymobile.com>
+Date: Wed, 9 Jul 2014 09:59:02 +0200
+Message-ID: <CACRpkdaYRwSb2cd88KEjKHKN_3sRv5BvJTvNMmF3CZszu8c2HQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] mfd: pm8921: Expose pm8xxx_read_irq_status
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to have at least a netconsole to debug kernel issues on
-Windows Azure this patch implements netpoll support.
-Sending packets is easy, netvsc_start_xmit() does already everything
-needed.
+On Tue, Jul 8, 2014 at 3:26 AM, Bjorn Andersson
+<bjorn.andersson@sonymobile.com> wrote:
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- drivers/net/hyperv/netvsc_drv.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+> Most status bits, e.g. for GPIO and MPP input, is retrieved by reading
+> the interrupt status registers, so this needs to be exposed to clients.
+>
+> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 4fd71b7..45218d5 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -736,6 +736,14 @@ static int netvsc_set_mac_addr(struct net_device *ndev, void *p)
- 	return err;
- }
- 
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+static void netvsc_poll_controller(struct net_device *net)
-+{
-+	/* As netvsc_start_xmit() works synchronous we don't have to
-+	   trigger anything here. */
-+	return;
-+}
-+#endif
- 
- static const struct ethtool_ops ethtool_ops = {
- 	.get_drvinfo	= netvsc_get_drvinfo,
-@@ -751,6 +759,9 @@ static const struct net_device_ops device_ops = {
- 	.ndo_validate_addr =		eth_validate_addr,
- 	.ndo_set_mac_address =		netvsc_set_mac_addr,
- 	.ndo_select_queue =		netvsc_select_queue,
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+	.ndo_poll_controller =		netvsc_poll_controller,
-+#endif
- };
- 
- /*
--- 
-2.0.1
+Hm do you mean you read the input *values* from the interrupt status
+registers?
 
+What madness in that case.... :-)
+
+Anyway, since the driver is based on regmap, can't the children just
+get a regmap * somehow and then just go read the same register
+instead of having to add a special function for it?
+
+When I look at it it seems like it's doing regmap strangely or
+something, like it's one write then one read operation to get
+the register(s) and isn't that all supposed to be hidden behind
+regmap so you don't need the local lock chip->pm_irq_lock?
+
+Yours,
+Linus Walleij
