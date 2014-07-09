@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932284AbaGIPHY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 11:07:24 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48327 "EHLO
+	id S932457AbaGIPHh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 11:07:37 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48312 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755910AbaGIPHV (ORCPT
+	with ESMTP id S932391AbaGIPHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 11:07:21 -0400
+	Wed, 9 Jul 2014 11:07:33 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>
 Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Boris Brezillon <boris.brezillon@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv3 09/34] ARM: at91/dt: sam9g20: define clocks
-Date: Wed,  9 Jul 2014 17:06:37 +0200
-Message-Id: <1404918422-7562-10-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCHv3 27/34] ARM: at91/dt: pm9g45: crystals frequencies
+Date: Wed,  9 Jul 2014 17:06:55 +0200
+Message-Id: <1404918422-7562-28-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404918422-7562-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1404918422-7562-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -23,48 +23,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define the at91sam9g20 clocks that differ from at91sam9260 in the SoC dtsi file.
+Define Ronetix pm9g45 main and slow crystals frequencies.
 
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- arch/arm/boot/dts/at91sam9g20.dtsi | 24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ arch/arm/boot/dts/pm9g45.dts | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/arch/arm/boot/dts/at91sam9g20.dtsi b/arch/arm/boot/dts/at91sam9g20.dtsi
-index b8e79466014f..31f7652612fc 100644
---- a/arch/arm/boot/dts/at91sam9g20.dtsi
-+++ b/arch/arm/boot/dts/at91sam9g20.dtsi
-@@ -25,6 +25,30 @@
- 			adc0: adc@fffe0000 {
- 				atmel,adc-startup-time = <40>;
- 			};
-+
-+			pmc: pmc@fffffc00 {
-+				plla: pllack {
-+					atmel,clk-input-range = <2000000 32000000>;
-+					atmel,pll-clk-output-ranges = <745000000 800000000 0 0>,
-+								<695000000 750000000 1 0>,
-+								<645000000 700000000 2 0>,
-+								<595000000 650000000 3 0>,
-+								<545000000 600000000 0 1>,
-+								<495000000 550000000 1 1>,
-+								<445000000 500000000 2 1>,
-+								<400000000 450000000 3 1>;
-+				};
-+
-+				pllb: pllbck {
-+					atmel,clk-input-range = <2000000 32000000>;
-+					atmel,pll-clk-output-ranges = <30000000 100000000 0 0>;
-+				};
-+
-+				mck: masterck {
-+					atmel,clk-output-range = <0 133000000>;
-+					atmel,clk-divisors = <1 2 4 6>;
-+				};
-+			};
+diff --git a/arch/arm/boot/dts/pm9g45.dts b/arch/arm/boot/dts/pm9g45.dts
+index 33ffabe9c4c8..66afcff67fde 100644
+--- a/arch/arm/boot/dts/pm9g45.dts
++++ b/arch/arm/boot/dts/pm9g45.dts
+@@ -29,6 +29,14 @@
+ 			compatible = "atmel,osc", "fixed-clock";
+ 			clock-frequency = <12000000>;
  		};
++
++		slow_xtal {
++		      clock-frequency = <32768>;
++		};
++
++		main_xtal {
++		      clock-frequency = <12000000>;
++		};
  	};
- };
+ 
+ 	ahb {
 -- 
 1.9.1
 
