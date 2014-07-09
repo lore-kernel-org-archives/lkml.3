@@ -1,52 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019AbaGIFiu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 01:38:50 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44648 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751954AbaGIFik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 01:38:40 -0400
-From: Keerthy <j-keerthy@ti.com>
-To: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-CC: <mark.rutland@arm.com>, <galak@codeaurora.org>, <robh+dt@kernel.org>,
-        <linux@arm.linux.org.uk>, <balbi@ti.com>, <tony@atomide.com>,
-        <kishon@ti.com>, <broonie@kernel.org>, Keerthy <j-keerthy@ti.com>
-Subject: [PATCH v3 0/7] ARM: dts: AM43x: Add devcice tree nodes 
-Date: Wed, 9 Jul 2014 11:06:26 +0530
-Message-ID: <1404884193-20580-1-git-send-email-j-keerthy@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753167AbaGIFs1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 01:48:27 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:50861 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751871AbaGIFsZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 01:48:25 -0400
+From: Mohit KUMAR DCG <Mohit.KUMAR@st.com>
+To: "olof@lixom.net" <olof@lixom.net>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Pratyush ANAND <pratyush.anand@st.com>,
+        "'Bjorn Helgaas' (bhelgaas@google.com)" <bhelgaas@google.com>,
+        spear-devel <spear-devel@list.st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Mark Nicholson <mark@nicholnet.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Date: Wed, 9 Jul 2014 13:48:03 +0800
+Subject: [GIT PULL] ARM: SPEAr1310 PCIe updates
+Thread-Topic: [GIT PULL] ARM: SPEAr1310 PCIe updates
+Thread-Index: Ac+bOQmNHftFNS/3QAWQP2M4WgZk3Q==
+Message-ID: <2CC2A0A4A178534D93D5159BF3BCB661A17A3E48F2@EAPEX1MAIL1.st.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-07-09_02:2014-07-08,2014-07-09,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s695mXqY026535
 
-The patch series adds the device tree nodes and the corresponding
-documentation. The series also enabled tps65218 config options
-in the omap2plus_defconfig.
+Hello Olof,
 
-The series is boot tested on both AM43x-epos-evm and AM437x-gp-evm.
+Please pull PCIe updates for ST's SPEAr1310 SoC.
 
-Keerthy (7):
-  regulator: tps65218: Add fixed_uV fields for dcdc5 and dcdc6
-  mfd: Add DT bindings for tps65218 PMIC
-  regulator: Add DT bindings for tps65218 PMIC regulators.
-  ARM: dts: AM43x: Add TPS65218 device tree nodes
-  ARM: dts: AM437x: Fix i2c nodes indentation
-  ARM: dts: AM437x: Add TPS65218 device tree nodes
-  ARM: configs: omap2plus_defconfig: enable TPS65218 configs
+Last version of posted V8 patches have been Acked-by respective maintainers.
+https://lkml.org/lkml/2014/4/15/260
 
- Documentation/devicetree/bindings/mfd/tps65218.txt |   89 ++++++++++++++++++++
- .../devicetree/bindings/regulator/tps65218.txt     |   23 +++++
- arch/arm/boot/dts/am437x-gp-evm.dts                |   71 ++++++++++++++--
- arch/arm/boot/dts/am43x-epos-evm.dts               |   59 +++++++++++++
- arch/arm/configs/omap2plus_defconfig               |    2 +
- drivers/regulator/tps65218-regulator.c             |   17 ++--
- 6 files changed, 246 insertions(+), 15 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/tps65218.txt
- create mode 100644 Documentation/devicetree/bindings/regulator/tps65218.txt
+Apart from arch/arm/ changes, it also contains patches for drivers/{pci|phy}.
+Bjorn advised to get complete series via arm-soc tree.
+http://www.spinics.net/lists/linux-pci/msg30271.html
 
--- 
-1.7.9.5
+ Regards
+ Mohit
 
+The following changes since commit 4c834452aad01531db949414f94f817a86348d59:
+  Linus Torvalds (1):
+        Linux 3.16-rc3
+
+are available in the git repository at:
+
+  https://git.kernel.org/pub/scm/linux/kernel/git/vireshk/linux.git spear/pcie-support-v8
+
+Mohit Kumar (1):
+      SPEAr13xx: defconfig: Update
+
+Pratyush Anand (8):
+      clk: SPEAr13XX: Fix pcie clock name
+      SPEAr13XX: Fix static mapping table
+      phy: SPEAr1310/40-miphy: Add binding information
+      SPEAr: misc: Add binding information
+      phy: SPEAr1310/40-miphy: Add phy driver for PCIe and SATA
+      SPEAr13XX: Add binding information for PCIe controller
+      SPEAr13XX: dts: Add PCIe node information
+      pcie: SPEAr13xx: Add designware wrapper support
+
+ .../devicetree/bindings/arm/spear-misc.txt         |    9 +
+ .../devicetree/bindings/pci/spear13xx-pcie.txt     |   14 +
+ .../devicetree/bindings/phy/st-spear1310-miphy.txt |   12 +
+ .../devicetree/bindings/phy/st-spear1340-miphy.txt |   11 +
+ MAINTAINERS                                        |    6 +
+ arch/arm/boot/dts/spear1310-evb.dts                |    4 +
+ arch/arm/boot/dts/spear1310.dtsi                   |   93 +++++-
+ arch/arm/boot/dts/spear1340-evb.dts                |    4 +
+ arch/arm/boot/dts/spear1340.dtsi                   |   30 ++-
+ arch/arm/boot/dts/spear13xx.dtsi                   |    9 +-
+ arch/arm/configs/spear13xx_defconfig               |   16 +
+ arch/arm/mach-spear/Kconfig                        |    4 +
+ arch/arm/mach-spear/include/mach/spear.h           |    4 +-
+ arch/arm/mach-spear/spear1340.c                    |  127 +------
+ arch/arm/mach-spear/spear13xx.c                    |    2 +-
+ drivers/clk/spear/spear1310_clock.c                |    6 +-
+ drivers/clk/spear/spear1340_clock.c                |    2 +-
+ drivers/pci/host/Kconfig                           |    8 +
+ drivers/pci/host/Makefile                          |    1 +
+ drivers/pci/host/pcie-spear13xx.c                  |  406 ++++++++++++++++++++
+ drivers/phy/Kconfig                                |   12 +
+ drivers/phy/Makefile                               |    2 +
+ drivers/phy/phy-spear1310-miphy.c                  |  274 +++++++++++++
+ drivers/phy/phy-spear1340-miphy.c                  |  300 +++++++++++++++
+ 24 files changed, 1217 insertions(+), 139 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/spear-misc.txt
+ create mode 100644 Documentation/devicetree/bindings/pci/spear13xx-pcie.txt
+ create mode 100644 Documentation/devicetree/bindings/phy/st-spear1310-miphy.txt
+ create mode 100644 Documentation/devicetree/bindings/phy/st-spear1340-miphy.txt
+ create mode 100644 drivers/pci/host/pcie-spear13xx.c
+ create mode 100644 drivers/phy/phy-spear1310-miphy.c
+ create mode 100644 drivers/phy/phy-spear1340-miphy.c
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
