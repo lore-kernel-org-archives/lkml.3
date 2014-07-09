@@ -1,52 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691AbaGIGgS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 02:36:18 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:41596 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbaGIGgP convert rfc822-to-8bit (ORCPT
+	id S932067AbaGIGhN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 02:37:13 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:41944 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218AbaGIGhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 02:36:15 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s696a5jb017450, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        nic_swsd <nic_swsd@realtek.com>
-Subject: RE: [PATCH net] r8169: disable L23
-Thread-Topic: [PATCH net] r8169: disable L23
-Thread-Index: AQHPmoZbW/3+J0HPL0qr/A2kidAPWZuWF9kAgAEsuSA=
-Date: Wed, 9 Jul 2014 06:36:05 +0000
-Message-ID: <0835B3720019904CB8F7AA43166CEEB2505DFA@RTITMBSV03.realtek.com.tw>
-References: <1394712342-15778-6-Taiwan-albertk@realtek.com>
- <20140708201630.GA31885@electric-eye.fr.zoreil.com>
-In-Reply-To: <20140708201630.GA31885@electric-eye.fr.zoreil.com>
-Accept-Language: zh-TW, en-US
-Content-Language: zh-TW
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.21.71.143]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 9 Jul 2014 02:37:10 -0400
+Date: Tue, 8 Jul 2014 23:35:32 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Sasha Levin <sasha.levin@oracle.com>
+cc: akpm@linux-foundation.org, hughd@google.com, davej@redhat.com,
+        koct9i@gmail.com, lczerner@redhat.com, stable@vger.kernel.org,
+        Vlastimil Babka <vbabka@suse.cz>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: + shmem-fix-faulting-into-a-hole-while-its-punched-take-2.patch
+ added to -mm tree
+In-Reply-To: <53BCBF1F.1000506@oracle.com>
+Message-ID: <alpine.LSU.2.11.1407082309040.7374@eggly.anvils>
+References: <53b45c9b.2rlA0uGYBLzlXEeS%akpm@linux-foundation.org> <53BCBF1F.1000506@oracle.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Francois Romieu [mailto:romieu@fr.zoreil.com] 
-> Sent: Wednesday, July 09, 2014 4:17 AM
-> To: Hayes Wang
-> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org; nic_swsd
-> Subject: Re: [PATCH net] r8169: disable L23
-[...]
-> Can you elaborate what L23 is or should the commit message be reworded
-> as "Disable a (yet undocumented) power saving feature that randomly
-> causes RTL8411, RTL8111G, RTL8402, RTL8105, and RTL8106 devices to be
-> lost on some systems." ?
+On Wed, 9 Jul 2014, Sasha Levin wrote:
+> On 07/02/2014 03:25 PM, akpm@linux-foundation.org wrote:
+> > From: Hugh Dickins <hughd@google.com>
+> > Subject: shmem: fix faulting into a hole while it's punched, take 2
+> 
+> I suspect there's something off with this patch, as the shmem_fallocate
+> hangs are back... Pretty much same as before:
 
-The L2/L3 are the link status which are defined in the specification of the PCI
-Express Base Specification for the link state power manager. I don't know them
-much, so I don't sure if I could explain them clearly. 
+Thank you for reporting, but that is depressing news.
 
-Best Regards,
-Hayes
+I don't see what's wrong with this (take 2) patch,
+and I don't see that it's been garbled in any way in next-20140708.
+
+> 
+> [  363.600969] INFO: task trinity-c327:9203 blocked for more than 120 seconds.
+> [  363.605359]       Not tainted 3.16.0-rc4-next-20140708-sasha-00022-g94c7290-dirty #772
+> [  363.609730] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> [  363.615861] trinity-c327    D 000000000000000b 13496  9203   8559 0x10000004
+> [  363.620284]  ffff8800b857bce8 0000000000000002 ffffffff9dc11b10 0000000000000001
+> [  363.624468]  ffff880104860000 ffff8800b857bfd8 00000000001d7740 00000000001d7740
+> [  363.629118]  ffff880104863000 ffff880104860000 ffff8800b857bcd8 ffff8801eaed8868
+> [  363.633879] Call Trace:
+> [  363.635442]  [<ffffffff9a4dc535>] schedule+0x65/0x70
+> [  363.638638]  [<ffffffff9a4dc948>] schedule_preempt_disabled+0x18/0x30
+> [  363.642833]  [<ffffffff9a4df0a5>] mutex_lock_nested+0x2e5/0x550
+> [  363.646599]  [<ffffffff972a4d7c>] ? shmem_fallocate+0x6c/0x350
+> [  363.651319]  [<ffffffff9719b721>] ? get_parent_ip+0x11/0x50
+> [  363.654683]  [<ffffffff972a4d7c>] ? shmem_fallocate+0x6c/0x350
+> [  363.658264]  [<ffffffff972a4d7c>] shmem_fallocate+0x6c/0x350
+
+So it's trying to acquire i_mutex at shmem_fallocate+0x6c...
+
+> [  363.662010]  [<ffffffff971bd96e>] ? put_lock_stats.isra.12+0xe/0x30
+> [  363.665866]  [<ffffffff9730c043>] do_fallocate+0x153/0x1d0
+> [  363.669381]  [<ffffffff972b472f>] SyS_madvise+0x33f/0x970
+> [  363.672906]  [<ffffffff9a4e3f13>] tracesys+0xe1/0xe6
+> [  363.682900] 2 locks held by trinity-c327/9203:
+> [  363.684928]  #0:  (sb_writers#12){.+.+.+}, at: [<ffffffff9730c02d>] do_fallocate+0x13d/0x1d0
+> [  363.715102]  #1:  (&sb->s_type->i_mutex_key#16){+.+.+.}, at: [<ffffffff972a4d7c>] shmem_fallocate+0x6c/0x350
+
+...but it already holds i_mutex, acquired at shmem_fallocate+0x6c.
+Am I reading that correctly?
+
+In my source for next-20140708, the only return from shmem_fallocate()
+which omits to mutex_unlock(&inode->i_mutex) is the "return -EOPNOTSUPP"
+at the top, just before the mutex_lock(&inode->i_mutex).  And inode
+doesn't get reassigned in the middle.
+
+Does 3.16.0-rc4-next-20140708-sasha-00022-g94c7290-dirty look different?
+
+Hugh
