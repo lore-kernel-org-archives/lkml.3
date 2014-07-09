@@ -1,65 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755613AbaGIMIg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 08:08:36 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:59375 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754779AbaGIMIa (ORCPT
+	id S1755572AbaGIMIf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 08:08:35 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:62055 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755276AbaGIMIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 08:08:30 -0400
-Date: Wed, 9 Jul 2014 13:08:23 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: kernel@stlinux.com, ajitpal.singh@st.com, edubezval@gmail.com,
-        rui.zhang@intel.com, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, maxime.coquelin@st.com,
-        patrice.chotard@st.com
-Subject: Re: [RESEND PATCH 0/6] thermal: sti: Add new Thermal driver
-Message-ID: <20140709120823.GA32573@lee--X1>
-References: <1401980819-19962-1-git-send-email-lee.jones@linaro.org>
- <20140624092309.GD13803@lee--X1>
+	Wed, 9 Jul 2014 08:08:31 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18T6V92x8YTUB+26+RWwaD3nmWdbU2P+D0=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 0199D5A674D
+Date: Wed, 9 Jul 2014 08:08:23 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        Virtualization List <virtualization@lists.linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "# 3.4.x" <stable@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] virtio: rng: ensure reads happen after
+ successful probe
+Message-ID: <20140709120823.GN13433@titan.lakedaemon.net>
+References: <cover.1404538109.git.amit.shah@redhat.com>
+ <f64852e0dd8a439193db4c7da1d3022d029cc85d.1404538109.git.amit.shah@redhat.com>
+ <CAGXu5jK1wL9DCnH0RcqhantcCvyJhwZfkw+_L7VQi8wfY2Nt_g@mail.gmail.com>
+ <20140707055049.GA27024@grmbl.mre>
+ <CAGXu5jJ9-b-NycB4ESvVnVgiBXpeQvKAT_hDPoAzhWSpQQKreg@mail.gmail.com>
+ <20140707063409.GD27024@grmbl.mre>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140624092309.GD13803@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140707063409.GD27024@grmbl.mre>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jun 2014, Lee Jones wrote:
-
-> > I'm re-sending this set, as one of the maintainers' email addresses
-> > is incorrect in the MAINTAINERS file.
+On Mon, Jul 07, 2014 at 12:04:09PM +0530, Amit Shah wrote:
+> On (Sun) 06 Jul 2014 [23:09:49], Kees Cook wrote:
+> > On Sun, Jul 6, 2014 at 10:51 PM, Amit Shah <amit.shah@redhat.com> wrote:
+> > > On (Sun) 06 Jul 2014 [21:38:36], Kees Cook wrote:
+> > >> On Fri, Jul 4, 2014 at 10:34 PM, Amit Shah <amit.shah@redhat.com> wrote:
+> > >> > The hwrng core asks for random data in the hwrng_register() call itself
+> > >> > from commit d9e7972619.  This doesn't play well with virtio -- the
+> > >> > DRIVER_OK bit is only set by virtio core on a successful probe, and
+> > >> > we're not yet out of our probe routine when this call is made.  This
+> > >> > causes the host to not acknowledge any requests we put in the virtqueue,
+> > >> > and the insmod or kernel boot process just waits for data to arrive from
+> > >> > the host, which never happens.
+> > >>
+> > >> Doesn't this mean that virtio-rng won't ever contribute entropy to the system?
+> > >
+> > > The initial randomness?  Yes.  But it'll start contributing entropy as
+> > > soon as it's used as the current source.
 > > 
-> > This patchset adds full support for 2 types of Thermal Controllers
-> > produced by STMicroelectronics.  One is a more traditional memory
-> > mapped variant, the other is controlled solely by system configuration
-> > registers.
+> > How does that happen? I don't see an init function defined for it?
 > 
-> Any thing from the Thermal guys? Has this set fallen through the gaps?
-
-Anything at all?  It's been well over a month now.
-
-> >  Documentation/devicetree/bindings/thermal/st-thermal.txt |  42 ++++++++++++++++
-> >  arch/arm/boot/dts/stih416.dtsi                           |  18 +++++++
-> >  arch/arm/configs/multi_v7_defconfig                      |   2 +
-> >  drivers/thermal/Kconfig                                  |   5 ++
-> >  drivers/thermal/Makefile                                 |   1 +
-> >  drivers/thermal/st/Kconfig                               |  12 +++++
-> >  drivers/thermal/st/Makefile                              |   3 ++
-> >  drivers/thermal/st/st_thermal.c                          | 313 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-> > ++++++++++++++++++++++++++++
-> >  drivers/thermal/st/st_thermal.h                          | 104 ++++++++++++++++++++++++++++++++++++++
-> >  drivers/thermal/st/st_thermal_memmap.c                   | 209 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-> >  drivers/thermal/st/st_thermal_syscfg.c                   | 179 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-> >  11 files changed, 888 insertions(+)
-> > 
+> I mean the regular usage; not the initial randomness patch that you
+> added.
 > 
+> Initial randomness from virtio-rng currently won't be sourced.  That's
+> no different from the way things were before your patch; and I can't
+> think of a way to make that happen for now.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Yes, but this is a critical case.  There are three common scenarios
+where long term keys are generated in entropy-deprived states:
+
+  - boot to a Linux Install CD, encrypt system during install
+  - first boot of a Linux-based embedded router, need SSL keys
+  - first boot of a Linux VM, need SSH host keys
+
+We have the opportunity to make the third option suck less if we can get
+this right.
+
+> virtio's probe() has to finish before communication with the host can
+> start.  If a virtio-rng device is the only hwrng in the system (very
+> likely in a guest), it's almost guaranteed that hwrng_init() won't be
+> called after hwrng_register() completes (as it would have already been
+> called and the virtio-rng device will have become the current_rng).
+
+Well, I'm confused.  virtio-rng has no init function defined.  So
+hwrng_init() will just return zero.
+
+I think the basic question is: Where in the virtio-rng driver does it
+execute init-style code?  And why isn't that in an init function?
+
+Should we create a small init function that simply checks this DRIVER_OK
+bit?
+
+thx,
+
+Jason.
