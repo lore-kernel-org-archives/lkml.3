@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161AbaGIRVl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 13:21:41 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:29043 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbaGIRVk (ORCPT
+	id S1756611AbaGIRWg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 13:22:36 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:37683 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951AbaGIRWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 13:21:40 -0400
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-To: hpa@linux.intel.com
-Cc: konrad.wilk@oracle.com, david.vrabel@citrix.com, linux@eikelenboom.it,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        boris.ostrovsky@oracle.com
-Subject: [PATCH] espfix/xen: Fix allocation of pages for paravirt page tables
-Date: Wed,  9 Jul 2014 13:18:18 -0400
-Message-Id: <1404926298-5565-1-git-send-email-boris.ostrovsky@oracle.com>
-X-Mailer: git-send-email 1.8.1.4
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Wed, 9 Jul 2014 13:22:34 -0400
+Date: Wed, 9 Jul 2014 10:22:29 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Lee Jones <lee.jones@linaro.org>, devicetree@vger.kernel.org,
+        Boris BREZILLON <b.brezillon.dev@gmail.com>, kernel@stlinux.com,
+        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        "Gupta, Pekon\"" <pekon@ti.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Subject: Re: [PATCH] mtd: nand: stm_nand_bch: add new driver
+Message-ID: <20140709172229.GH7537@ld-irv-0074>
+References: <1401268805-26043-1-git-send-email-lee.jones@linaro.org>
+ <20140703002237.GM3599@ld-irv-0074>
+ <20140703100522.756f9715@bbrezillon>
+ <20140707235222.GC7537@ld-irv-0074>
+ <20140708095855.29c2fb87@bbrezillon>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140708095855.29c2fb87@bbrezillon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-init_espfix_ap() is currently off by one level when informing hypervisor
-that allocated pages will be used for ministacks' page tables.
+Hi Boris,
 
-The most immediate effect of this on a PV guest is that if
-'stack_page = __get_free_page()' returns a non-zeroed-out page the hypervisor
-will refuse to use it for a page table (which it shouldn't be anyway). This will
-result in warnings by both Xen and Linux.
+On Tue, Jul 08, 2014 at 09:58:55AM +0200, Boris BREZILLON wrote:
+> On Mon, 7 Jul 2014 16:52:22 -0700 Brian Norris <computersforpeace@gmail.com> wrote:
+> > On Thu, Jul 03, 2014 at 10:05:22AM +0200, Boris BREZILLON wrote:
+> > > On Wed, 2 Jul 2014 17:22:37 -0700 Brian Norris <computersforpeace@gmail.com> wrote:
+> > > 
+> > > AFAIR, the NAND timing representation for non-ONFI chips question was
+> > > left unanswered:
+> > > 
+> > > https://lkml.org/lkml/2014/5/20/581
+> > > 
+> > > I can definitely respin my NAND timings series, but I'd like to be sure
+> > > this is how you want it done before doing so.
+> > 
+> > Can we start by supporting ONFI-only (or ONFI-only, plus entries in
+> > nand_flash_ids[]), and have nand_base provide the translation so drivers
+> > can retrieve the info? Then we can begin supporting new drivers like
+> > Lee's, and worry about the DT question separately.
+> 
+> So, basically, I just send a new series with patch 1 and 2 from my sunxi
+> NAND series [1] (including the fixes you suggested, of course), right ?
+> 
+> [1] http://thread.gmane.org/gmane.comp.hardware.netbook.arm.sunxi/7977
 
-More importantly, a subsequent write to that page (again, by a PV guest) is
-likely to result in fatal page fault.
+Yes, please send 1 and 2 on their own. I think that would be a good
+start for supporting these drivers.
 
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
----
- arch/x86/kernel/espfix_64.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/espfix_64.c b/arch/x86/kernel/espfix_64.c
-index 6afbb16..94d857f 100644
---- a/arch/x86/kernel/espfix_64.c
-+++ b/arch/x86/kernel/espfix_64.c
-@@ -175,7 +175,7 @@ void init_espfix_ap(void)
- 	if (!pud_present(pud)) {
- 		pmd_p = (pmd_t *)__get_free_page(PGALLOC_GFP);
- 		pud = __pud(__pa(pmd_p) | (PGTABLE_PROT & ptemask));
--		paravirt_alloc_pud(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
-+		paravirt_alloc_pmd(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
- 		for (n = 0; n < ESPFIX_PUD_CLONES; n++)
- 			set_pud(&pud_p[n], pud);
- 	}
-@@ -185,7 +185,7 @@ void init_espfix_ap(void)
- 	if (!pmd_present(pmd)) {
- 		pte_p = (pte_t *)__get_free_page(PGALLOC_GFP);
- 		pmd = __pmd(__pa(pte_p) | (PGTABLE_PROT & ptemask));
--		paravirt_alloc_pmd(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
-+		paravirt_alloc_pte(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
- 		for (n = 0; n < ESPFIX_PMD_CLONES; n++)
- 			set_pmd(&pmd_p[n], pmd);
- 	}
-@@ -193,7 +193,6 @@ void init_espfix_ap(void)
- 	pte_p = pte_offset_kernel(&pmd, addr);
- 	stack_page = (void *)__get_free_page(GFP_KERNEL);
- 	pte = __pte(__pa(stack_page) | (__PAGE_KERNEL_RO & ptemask));
--	paravirt_alloc_pte(&init_mm, __pa(stack_page) >> PAGE_SHIFT);
- 	for (n = 0; n < ESPFIX_PTE_CLONES; n++)
- 		set_pte(&pte_p[n*PTE_STRIDE], pte);
- 
--- 
-1.8.1.4
-
+Brian
