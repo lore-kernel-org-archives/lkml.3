@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280AbaGIJRZ (ORCPT <rfc822;w@1wt.eu>);
+	id S1755318AbaGIJRb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 05:17:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10776 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755276AbaGIJRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Jul 2014 05:17:25 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54611 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755216AbaGIJRV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 05:17:21 -0400
-Date: Wed, 9 Jul 2014 11:14:42 +0200
-From: Mark Brown <broonie@kernel.org>
-To: Keerthy <j-keerthy@ti.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, mark.rutland@arm.com, galak@codeaurora.org,
-        robh+dt@kernel.org, linux@arm.linux.org.uk, balbi@ti.com,
-        tony@atomide.com, kishon@ti.com
-Message-ID: <20140709091442.GN30458@sirena.org.uk>
-References: <1404884193-20580-1-git-send-email-j-keerthy@ti.com>
- <1404884193-20580-2-git-send-email-j-keerthy@ti.com>
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        <xen-devel@lists.xenproject.org>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        <linux-kernel@vger.kernel.org>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [Xen-devel] [PATCH] mmap_vmcore: skip non-ram pages reported by hypervisors
+References: <1404745549-16023-1-git-send-email-vkuznets@redhat.com>
+	<20140707133301.dfcc078f416efeb1ada72da9@linux-foundation.org>
+	<53BC1B96.3070101@citrix.com>
+Date: Wed, 09 Jul 2014 11:17:13 +0200
+In-Reply-To: <53BC1B96.3070101@citrix.com> (David Vrabel's message of "Tue, 8
+	Jul 2014 17:25:58 +0100")
+Message-ID: <87vbr6opra.fsf@vitty.brq.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="J/pvEKOcHgREgBce"
-Content-Disposition: inline
-In-Reply-To: <1404884193-20580-2-git-send-email-j-keerthy@ti.com>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 82.127.83.212
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 1/7] regulator: tps65218: Add fixed_uV fields for
- dcdc5 and dcdc6
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+David Vrabel <david.vrabel@citrix.com> writes:
 
---J/pvEKOcHgREgBce
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On 07/07/14 21:33, Andrew Morton wrote:
+>> On Mon,  7 Jul 2014 17:05:49 +0200 Vitaly Kuznetsov <vkuznets@redhat.com> wrote:
+>> 
+>>> we have a special check in read_vmcore() handler to check if the page was
+>>> reported as ram or not by the hypervisor (pfn_is_ram()). However, when
+>>> vmcore is read with mmap() no such check is performed. That can lead to
+>>> unpredictable results, e.g. when running Xen PVHVM guest memcpy() after
+>>> mmap() on /proc/vmcore will hang processing HVMMEM_mmio_dm pages creating
+>>> enormous load in both DomU and Dom0.
+>
+> Does make forward progress though?  Or is it ending up in a repeatedly
+> retrying the same instruction?
 
-On Wed, Jul 09, 2014 at 11:06:27AM +0530, Keerthy wrote:
-> Add fixed_uV fields for dcdc5 and dcdc6.
+If memcpy is using SSE2 optimization 16-byte 'movdqu' instruction never
+finishes (repeatedly retrying to issue two 8-byte requests to
+qemu-dm). qemu-dm decides that it's hitting 'Neither RAM nor known MMIO
+space' and returns 8 0xff bytes for both of this requests (I was testing
+with qemu-traditional).
 
-This doesn't apply against current code, can you please check and
-resend?  There were some cleanups from Felipe that just went in, it
-looks like a collision with them.
+>
+> Is it failing on a ballooned page in a RAM region? Or is mapping non-RAM
+> regions as well?
 
---J/pvEKOcHgREgBce
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I wasn't using ballooning, it happens that oldmem has several (two in my
+test) pages which are HVMMEM_mmio_dm but qemu-dm considers them being
+neither ram nor mmio.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+>
+>>> Fix the issue by mapping each non-ram page to the zero page. Keep direct
+>>> path with remap_oldmem_pfn_range() to avoid looping through all pages on
+>>> bare metal.
+>>>
+>>> The issue can also be solved by overriding remap_oldmem_pfn_range() in
+>>> xen-specific code, as remap_oldmem_pfn_range() was been designed for.
+>>> That, however, would involve non-obvious xen code path for all x86 builds
+>>> with CONFIG_XEN_PVHVM=y and would prevent all other hypervisor-specific
+>>> code on x86 arch from doing the same override.
+>
+> The oldmem_pfn_is_ram() is Xen-specific but this problem (ballooned
+> pages) must be common to KVM.  How does KVM handle this?
 
-iQIcBAEBAgAGBQJTvQf+AAoJELSic+t+oim9rFYP/1U9OPrzNpZaVlB8ZxLMBw0P
-UsxVMF8sAOpr68FxKQn8cp6dvovCkRraTg7KNoRaPKkbZpIp+XRoC366wvZwipYd
-73QTVfpSTrjhc49UCc0H7B+780z0s5g1oAWgGZuMPyWs9RGM1mHBrUCRw1jP1yjH
-WX9wylkzcwDuAhFvskFyuWiZPcuxBW7ENLKSkb+X52lrmgBcZUct922ac5tJipvT
-T9l6CcabumZv1P+VLQM1MjL1xfoLXEOXYAfyG+N1XUUkmFhVahFbbN44KxCUif/T
-03bOdhb28pS0UeB1/4VD0khe5P/XECgK79AIRWjrU/8I7rSdbDeh2vY8FQDR8UeR
-4r9gDH4tOh3yOfxF8UfVbSXCxYHjGq7EmA7aD6uSXqoIrr3y9C7d4N5H4f1YtvNk
-CO3pgYz/lIcXk831+IVN/RpB1GcVo1Z+hTvXTuBM21LPb3V9sEHwvUkqzZ0MZANP
-Y+ksia8kM+NTYTx3p+1MAjZKOo/J7i1DTRIaqstotCkBrcT0FAqHXTgkM8GkYev+
-bLlghl0fEgsrAm2PrZVQ0Qjw+xxkC6KDcuqn03DYvK/M2avyXd4GHrWPyB+Vo/ec
-D74bvJYfgNNbdmOW1AhdAf/iRT9v0rpS/gG1010peDVbBLpG7hnrbQwpM5AnmRDw
-HCtbJVBgnuGSkue7dtYu
-=lflV
------END PGP SIGNATURE-----
+Is far as I'm concearned the issue was never hit with KVM. I *think* the
+issue has something to do with the conjunction of 16-byte 'movdqu'
+emulation for io pages in xen hypervisor, 8-byte event channel requests
+and qemu-traditional. But even if it gets fixed on hypervisor side I
+believe fixing the issue kernel-side still worth it as there are
+non-fixed hypervisors out there (e.g. AWS EC2).
 
---J/pvEKOcHgREgBce--
+>
+> David
+
+-- 
+  Vitaly
