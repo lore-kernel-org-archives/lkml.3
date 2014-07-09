@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836AbaGIBsX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 21:48:23 -0400
-Received: from smtprelay0108.hostedemail.com ([216.40.44.108]:33757 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751112AbaGIBsW (ORCPT
+	id S1753405AbaGIBtS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 21:49:18 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:48013 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751465AbaGIBtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 21:48:22 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:3872:4250:4321:5007:7652:10004:10400:10848:11026:11232:11473:11658:11914:12043:12114:12438:12517:12519:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: silk19_48c43b6426c47
-X-Filterd-Recvd-Size: 1783
-Message-ID: <1404870498.932.79.camel@joe-AO725>
-Subject: Re: [PATCH v3 2/4] Staging: rts5208: Replace custom macro with
- print_hex_dump_bytes
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Fabio Falzoi <fabio.falzoi84@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, dan.carpenter@oracle.com,
-        wei_wang@realsil.com.cn, micky_ching@realsil.com.cn
-Date: Tue, 08 Jul 2014 18:48:18 -0700
-In-Reply-To: <20140708234529.GA25645@kroah.com>
-References: <1404855512-5864-1-git-send-email-fabio.falzoi84@gmail.com>
-	 <1404855512-5864-3-git-send-email-fabio.falzoi84@gmail.com>
-	 <20140708234529.GA25645@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	Tue, 8 Jul 2014 21:49:16 -0400
+X-IronPort-AV: E=Sophos;i="5.00,861,1396972800"; 
+   d="scan'208";a="33021463"
+Message-ID: <53BC9FD1.90604@cn.fujitsu.com>
+Date: Wed, 9 Jul 2014 09:50:09 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: <linux-kernel@vger.kernel.org>, <mingo@kernel.org>, <dipankar@in.ibm.com>,
+        <akpm@linux-foundation.org>, <mathieu.desnoyers@efficios.com>,
+        <josh@joshtriplett.org>, <niv@us.ibm.com>, <tglx@linutronix.de>,
+        <peterz@infradead.org>, <rostedt@goodmis.org>, <dhowells@redhat.com>,
+        <edumazet@google.com>, <dvhart@linux.intel.com>, <fweisbec@gmail.com>,
+        <oleg@redhat.com>, <sbw@mit.edu>
+Subject: Re: [PATCH tip/core/rcu 08/17] rcu: Allow post-unlock reference for
+ rt_mutex
+References: <20140707223756.GA7187@linux.vnet.ibm.com> <1404772701-8804-1-git-send-email-paulmck@linux.vnet.ibm.com> <1404772701-8804-8-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1404772701-8804-8-git-send-email-paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-08 at 16:45 -0700, Greg KH wrote:
-> On Tue, Jul 08, 2014 at 11:38:30PM +0200, Fabio Falzoi wrote:
-> > Use print_hex_dump_bytes to have memory properly dumped only when
-> > DEBUG is defined.
-[]
-> > diff --git a/drivers/staging/rts5208/trace.h b/drivers/staging/rts5208/trace.h
-[]
-> > @@ -82,12 +82,11 @@ static inline char *filename(char *path)
-[]
-> > +static inline void rtsx_hex_dump(const void *buf, size_t len)
-> > +{
-> > +#ifdef DEBUG
-> > +	print_hex_dump_bytes(KBUILD_MODNAME ": ", DUMP_PREFIX_NONE, buf, len);
-> >  #endif
-> > +}
+On 07/08/2014 06:38 AM, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > 
-> What a mess.  What's wrong with just using the %*ph modifier in
-> dev_dbg() like other drivers do?
+> The current approach to RCU priority boosting uses an rt_mutex strictly
+> for its priority-boosting side effects.  The rt_mutex_init_proxy_locked()
+> function is used by the booster to initialize the lock as held by the
+> boostee.  The booster then uses rt_mutex_lock() to acquire this rt_mutex,
+> which priority-boosts the boostee.  When the boostee reaches the end
+> of its outermost RCU read-side critical section, it checks a field in
+> its task structure to see whether it has been boosted, and, if so, uses
+> rt_mutex_unlock() to release the rt_mutex.  The booster can then go on
+> to boost the next task that is blocking the current RCU grace period.
+> 
+> But reasonable implementations of rt_mutex_unlock() might result in the
+> boostee referencing the rt_mutex's data after releasing it. 
 
-Dunno.
-Is it ever desired to emit more than 64 bytes of buf?
+XXXX_unlock(lock_ptr) should not reference to the lock_ptr after it has unlocked the lock. (*)
+So I think this patch is unneeded. Although its adding overhead is at slow-patch,
+but it adds REVIEW-burden.
 
+And although the original rt_mutex_unlock() violates the rule(*) when the fast-cmpxchg-path,
+but it is fixed now.
 
+It is the lock-subsystem's responsible to do this. I prefer to add the wait_for_complete()
+stuff until the future when the boostee needs to re-access the booster after rt_mutex_unlock()
+instead of now.
+
+Thanks,
+Lai
