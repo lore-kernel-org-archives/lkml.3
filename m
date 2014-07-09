@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040AbaGIGd0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 02:33:26 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:59430 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345AbaGIGdX (ORCPT
+	id S1754259AbaGIGd5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 02:33:57 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:55405 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218AbaGIGdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 02:33:23 -0400
-X-AuditID: cbfee691-b7f2f6d0000040c4-ce-53bce231d26d
-From: Namjae Jeon <namjae.jeon@samsung.com>
-To: "'Christoph Hellwig'" <hch@infradead.org>
-Cc: "'Dave Chinner'" <david@fromorbit.com>, "'Theodore Ts'o'" <tytso@mit.edu>,
-        "'linux-ext4'" <linux-ext4@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Luk?? Czerner'" <lczerner@redhat.com>,
-        "'Brian Foster'" <bfoster@redhat.com>,
-        "'Ashish Sangwan'" <a.sangwan@samsung.com>, xfs@oss.sgi.com
-References: <003f01cf9aa4$1e9e5240$5bdaf6c0$@samsung.com>
- <20140708121500.GA518@infradead.org>
-In-reply-to: <20140708121500.GA518@infradead.org>
-Subject: RE: [PATCH 2/3] xfs: Add support IOC_MOV_DATA ioctl
-Date: Wed, 09 Jul 2014 15:33:21 +0900
-Message-id: <001801cf9b3f$ad786ff0$08694fd0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQJH64km/LFjhKi9hcuiYREqQxtdmwKGaWSgmpJZKsA=
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOIsWRmVeSWpSXmKPExsWyRsSkUNfw0Z5gg3kvVC2WTrzEbPHuc5XF
-	lmP3GC1OT1jEZLHswWYWi5nz7rBZ7Nl7ksXi8q45bBatPT/ZLRb13WJ04PI4tUjCY/MKLY+m
-	M0eZPVZf2Mro8X7fVTaPvi2rGD0+b5ILYI/isklJzcksSy3St0vgyni57QBzwRWWimedS1kb
-	GJ8xdzFyckgImEgc2bqcCcIWk7hwbz1bFyMXh5DAUkaJxntbmWCKbh8+xgSRWMQoceDMV2YI
-	5y+jxIfPL1m7GDk42AS0Jf5sEQVpEAEy1y87BraBWeAAk8TjxzYgtpBAgsS2iydYQWxOAUOJ
-	bbcOsYPYwgI2Ejenv2UEsVkEVCXuPjjIAjKSV8BS4vrFdJAwr4CgxI/J91ggRmpJrN95nAnC
-	lpfYvOYt1DMKEjvOvmaEOMFKouPbY6gTRCT2vXjHCHKyhEAnh8Sm1u3MELsEJL5NPgS2S0JA
-	VmLTAag5khIHV9xgmcAoMQvJ6llIVs9CsnoWkhULGFlWMYqmFiQXFCelF5nqFSfmFpfmpesl
-	5+duYgRG+ul/zybuYLx/wPoQYzLQ+onMUqLJ+cBEkVcSb2hsZmRhamJqbGRuaUaasJI4b/qj
-	pCAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjNYXOWJ1vt2T9RKpqvBjvW/2KTU6Y4+bftPL
-	9cHX7ePdLi15JWj3U+Fi97STVhdMGSR6S9kecBtX/P3xkHv7DmvtNOeX9udMrPn0Tho1rco0
-	vuKw+P7VCUdCr2kqzbhbzeRUmv0g+WvZi/DKG8n93/KPeup+uc5tdnXBhNUsibMSXu/aLcWQ
-	rcRSnJFoqMVcVJwIAAAmWIcKAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGKsWRmVeSWpSXmKPExsVy+t9jAV3DR3uCDU5dkbdYOvESs8W7z1UW
-	W47dY7Q4PWERk8WyB5tZLGbOu8NmsWfvSRaLy7vmsFm09vxkt1jUd4vRgcvj1CIJj80rtDya
-	zhxl9lh9YSujx/t9V9k8+rasYvT4vEkugD2qgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTM
-	wFDX0NLCXEkhLzE31VbJxSdA1y0zB+g6JYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFw
-	PUYGaCBhDWPGy20HmAuusFQ861zK2sD4jLmLkZNDQsBE4vbhY0wQtpjEhXvr2boYuTiEBBYx
-	Shw485UZwvnLKPHh80vWLkYODjYBbYk/W0RBGkSAzPXLjoENYhY4wCTx+LENiC0kkCCx7eIJ
-	VhCbU8BQYtutQ+wgtrCAjcTN6W8ZQWwWAVWJuw8OsoCM5BWwlLh+MR0kzCsgKPFj8j0WiJFa
-	Eut3HmeCsOUlNq95C3WzgsSOs68ZIU6wkuj49hjqBBGJfS/eMU5gFJqFZNQsJKNmIRk1C0nL
-	AkaWVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBaeSZ9A7GVQ0WhxgFOBiVeHgVePYEC7Em
-	lhVX5h5ilOBgVhLh/eYGFOJNSaysSi3Kjy8qzUktPsRoCvToRGYp0eR8YIrLK4k3NDYxM7I0
-	Mje0MDI2VxLnPdhqHSgkkJ5YkpqdmlqQWgTTx8TBKdXAmJrqK3x1lRD/nenJHBfLpkyOOP9o
-	otZ+yR9zQp490GSrmMKmH9GQ0Htuv0PearcFRwrEpvidf8ZY+n2TkoKA2nkF0w95DQb5Rz8e
-	lf4X16z/t+P5hemyz/w/NQrc9bvozHKk61nfz4mfLm4VCbp4v+cylxrPlhM3U1bcPB6QyZzT
-	/f7y1W91q5RYijMSDbWYi4oTASl1BME5AwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 9 Jul 2014 02:33:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Subject: Re: [PATCH v8 3/9] pci: Introduce pci_register_io_range() helper function.
+Date: Wed, 9 Jul 2014 08:32:37 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci" <linux-pci@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linaro-kernel" <linaro-kernel@lists.linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com> <20140708212951.GA4555@google.com> <20140708224529.GB4980@e106497-lin.cambridge.arm.com>
+In-Reply-To: <20140708224529.GB4980@e106497-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201407090832.37918.arnd@arndb.de>
+X-Provags-ID: V02:K0:xKVFTATeSKfIvxpR+V0IXEMGi6Y8FOSCqy7EIDW5fuq
+ CdsT9eK4MbmF2JMpiD0l4Gb0KyRalzVPEAavxVO8VgcfKwNS7I
+ p1FR3ibkx1WWEVZhwFI6+pHe+tzFZvv9Dv3ceFJUSSCjAyHXN8
+ RdRTlTet+BmVKRy/4cclGghzl++NNsOraG5k4LaAb4n7NiUXqh
+ ybYKJHY8zo0L3lZI+0cMWYw8Cmtjfhq4l2tC8RN6nHot89HJTS
+ k5RmVY5Dp6kcysJsppjH7pnoN9E0ylUoxKZ/cgqF/RDoRicWDd
+ 1EgzzKFUAzm4eNM6muWCDbskSOWkidvbI/zMWHxYguyPba9jKe
+ Ua8LY7XvK60Od97t0/R6TQeL5ft1n1z3TBIKg2GUh
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 09 July 2014, Liviu Dudau wrote:
+> > Maybe that assumption is guaranteed by OF, but it doesn't hold for ACPI;
+> > ACPI can describe several I/O port apertures for a single bridge, each
+> > associated with a different CPU physical memory region.
 > 
-> On Tue, Jul 08, 2014 at 08:59:49PM +0900, Namjae Jeon wrote:
-> > This patch implements fs ioctl's IOC_MOV_DATA for XFS.
-> 
-> Shouldn't this share code with the XFS_IOC_SWAPEXT implementation?
-Lukas has raised the same question for ext4.
-Both xfs(XFS_IOC_SWAPEXT) and ext4(EXT4_IOC_MOVE_EXT) has ioctls which uses
-almost similar kind of structure as struct mov_data.
-As such, there seems to be possiblity for sharing basic code (I will try)
-used for sanity checking in IOC_MOV_DATA to be shared with these ioctls
-but the core functionality code will remain different.
+> That is actually a good catch, I've completely missed the fact that
+> io_range->pci_addr could be non-zero.
 
-Thanks!
+Hmm, that's what I thought in my initial review, but you convinced me
+that it's actually correct later on, and I still believe it is. Maybe
+now you got confused by your own code?
 
+Please have another look, I think your code in pci_host_bridge_of_get_ranges
+sufficiently handles the registration to the PCI code with the correct
+io_offset. The only thing that we might want to add is to record the
+PCI address along with the bridge->io_base: For the host driver to
+set up the mapping window correctly, you either need both of them, or
+you assume they are already set up.
+
+	Arnd
