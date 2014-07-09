@@ -1,78 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755840AbaGILNb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 07:13:31 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:34255 "EHLO extserv.mm-sol.com"
+	id S1755889AbaGILOH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 07:14:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41541 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755805AbaGILN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 07:13:28 -0400
-Message-ID: <1404904380.16296.17.camel@iivanov-dev>
-Subject: Re: [PATCH 0/4] New Qualcomm PMIC pin controller drivers
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Date: Wed, 09 Jul 2014 14:13:00 +0300
-In-Reply-To: <CACRpkdYcoA-nifxojO5tZUy6dL6P2PTSGW0mVLUfqG20rOg-Nw@mail.gmail.com>
-References: <1404745893-6379-1-git-send-email-iivanov@mm-sol.com>
-	 <CACRpkdYcoA-nifxojO5tZUy6dL6P2PTSGW0mVLUfqG20rOg-Nw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
-Mime-Version: 1.0
+	id S1754252AbaGILOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 07:14:04 -0400
+Message-ID: <53BD23FA.2090600@suse.de>
+Date: Wed, 09 Jul 2014 13:14:02 +0200
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Christoph Hellwig <hch@lst.de>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
+        Robert Elliott <Elliott@hp.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/14] scsi: set ->scsi_done before calling scsi_dispatch_cmd
+References: <1403715121-1201-1-git-send-email-hch@lst.de> <1403715121-1201-5-git-send-email-hch@lst.de>
+In-Reply-To: <1403715121-1201-5-git-send-email-hch@lst.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, 
+On 06/25/2014 06:51 PM, Christoph Hellwig wrote:
+> The blk-mq code path will set this to a different function, so make the
+> code simpler by setting it up in a legacy-request specific place.
+>
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
+> ---
+>   drivers/scsi/scsi.c     |   23 +----------------------
+>   drivers/scsi/scsi_lib.c |   20 ++++++++++++++++++++
+>   2 files changed, 21 insertions(+), 22 deletions(-)
+>
+> diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+> index dcc43fd..d3bd6cf 100644
+> --- a/drivers/scsi/scsi.c
+> +++ b/drivers/scsi/scsi.c
+> @@ -72,8 +72,6 @@
+>   #define CREATE_TRACE_POINTS
+>   #include <trace/events/scsi.h>
+>
+> -static void scsi_done(struct scsi_cmnd *cmd);
+> -
+>   /*
+>    * Definitions and constants.
+>    */
+> @@ -696,8 +694,6 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+>   	}
+>
+>   	trace_scsi_dispatch_cmd_start(cmd);
+> -
+> -	cmd->scsi_done = scsi_done;
+>   	rtn = host->hostt->queuecommand(host, cmd);
+>   	if (rtn) {
+>   		trace_scsi_dispatch_cmd_error(cmd, rtn);
+> @@ -711,28 +707,11 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+>
+>   	return rtn;
+>    done:
+> -	scsi_done(cmd);
+> +	cmd->scsi_done(cmd);
+>   	return 0;
+>   }
+>
+>   /**
+> - * scsi_done - Invoke completion on finished SCSI command.
+> - * @cmd: The SCSI Command for which a low-level device driver (LLDD) gives
+> - * ownership back to SCSI Core -- i.e. the LLDD has finished with it.
+> - *
+> - * Description: This function is the mid-level's (SCSI Core) interrupt routine,
+> - * which regains ownership of the SCSI command (de facto) from a LLDD, and
+> - * calls blk_complete_request() for further processing.
+> - *
+> - * This function is interrupt context safe.
+> - */
+> -static void scsi_done(struct scsi_cmnd *cmd)
+> -{
+> -	trace_scsi_dispatch_cmd_done(cmd);
+> -	blk_complete_request(cmd->request);
+> -}
+> -
+> -/**
+>    * scsi_finish_command - cleanup and pass command back to upper layer
+>    * @cmd: the command
+>    *
+> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+> index 63bf844..6989b6f 100644
+> --- a/drivers/scsi/scsi_lib.c
+> +++ b/drivers/scsi/scsi_lib.c
+> @@ -29,6 +29,8 @@
+>   #include <scsi/scsi_eh.h>
+>   #include <scsi/scsi_host.h>
+>
+> +#include <trace/events/scsi.h>
+> +
+>   #include "scsi_priv.h"
+>   #include "scsi_logging.h"
+>
+> @@ -1480,6 +1482,23 @@ static void scsi_softirq_done(struct request *rq)
+>   	}
+>   }
+>
+> +/**
+> + * scsi_done - Invoke completion on finished SCSI command.
+> + * @cmd: The SCSI Command for which a low-level device driver (LLDD) gives
+> + * ownership back to SCSI Core -- i.e. the LLDD has finished with it.
+> + *
+> + * Description: This function is the mid-level's (SCSI Core) interrupt routine,
+> + * which regains ownership of the SCSI command (de facto) from a LLDD, and
+> + * calls blk_complete_request() for further processing.
+> + *
+> + * This function is interrupt context safe.
+> + */
+> +static void scsi_done(struct scsi_cmnd *cmd)
+> +{
+> +	trace_scsi_dispatch_cmd_done(cmd);
+> +	blk_complete_request(cmd->request);
+> +}
+> +
+>   /*
+>    * Function:    scsi_request_fn()
+>    *
+> @@ -1582,6 +1601,7 @@ static void scsi_request_fn(struct request_queue *q)
+>   		/*
+>   		 * Dispatch the command to the low-level driver.
+>   		 */
+> +		cmd->scsi_done = scsi_done;
+>   		rtn = scsi_dispatch_cmd(cmd);
+>   		if (rtn) {
+>   			scsi_queue_insert(cmd, rtn);
+>
+Reviewed-by: Hannes Reinecke <hare@suse.de>
 
-On Wed, 2014-07-09 at 11:43 +0200, Linus Walleij wrote:
-> On Mon, Jul 7, 2014 at 5:11 PM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
-> 
-> > This set of patches adds pin control drivers for Multi-purpose
-> > pin (MPP) and General-purpose pin (GPIO) controllers found
-> > in Qualcomm PMIC chips.
-> >
-> > MPP's are enhanced GPIO's with analog circuits, which support
-> > following functions in addition to digital input/output: analog
-> > input/output and current sinks.
-> >
-> > PMIC PM8941 have 8 MPP's and 36 GPIO's. PMIC PM8841 have 4 MPP's.
-> >
-> > Ivan T. Ivanov (4):
-> >   pinctrl: qpnp: Qualcomm PMIC pin controller driver
-> >   pinctrl: qcom: Add documentation for pinctrl-qpnp binding
-> >   pinctrl: qcom: Add PM8941 and PM8941 pinctrl drivers
-> >   ARM: dts: qcom: Add PM8941 and PM8841 pinctrl nodes
-> 
-> Oh, I just spent some 45 minutes reviewing an 8xxx pinctrl driver from
-> BjÃ¶rn Andersson
-> that *seems* to be doing exactly the same thing.
-> 
-> Now I have two drivers from people outside Qualcomm :-)
-> 
-> Some of my review comments on BjÃ¶rn's driver (like using SI units with the pin
-> config) are actually adressed in this patch set. The idea to split in subdrivers
-> per-ASIC may be good? I don't really know.
-> 
-> Can you two guys *PLEASE* join efforts and combine your drivers into one?
+Cheers,
 
-Not sure. BjÃ¶rn patches cover older PMIC chips, if not mistaken, mine
-cover PMIC's used with APQ8074 and onward [1]. Main difference is
-the bus which connects them to SoC, interrupts handling, runtime
-pin type detection and register map. 
-
-Regards,
-Ivan
-
-[1] pm8019, pm8110, pm8226, pm8841, pm8916, pm8941, pm8994, pma8084, 
-    pmd9635, pmd9635, pmi8962, pmi8994.
-
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
