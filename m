@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103AbaGIGWo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 02:22:44 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:55156 "EHLO
+	id S1753324AbaGIGWh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 02:22:37 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:55071 "EHLO
 	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778AbaGIGWl (ORCPT
+	with ESMTP id S1750892AbaGIGWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 02:22:41 -0400
+	Wed, 9 Jul 2014 02:22:34 -0400
 X-Original-SENDERIP: 10.177.220.169
 X-Original-MAILFROM: minchan@kernel.org
 From: Minchan Kim <minchan@kernel.org>
@@ -20,14 +20,13 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         Minchan Kim <minchan@kernel.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Dominik Dingel <dingel@linux.vnet.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        linux-s390@vger.kernel.org
-Subject: [PATCH v12 5/8] s390: add pmd_[dirty|mkclean] for THP
-Date: Wed,  9 Jul 2014 15:22:26 +0900
-Message-Id: <1404886949-17695-6-git-send-email-minchan@kernel.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH v12 4/8] powerpc: add pmd_[dirty|mkclean] for THP
+Date: Wed,  9 Jul 2014 15:22:25 +0900
+Message-Id: <1404886949-17695-5-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404886949-17695-1-git-send-email-minchan@kernel.org>
 References: <1404886949-17695-1-git-send-email-minchan@kernel.org>
@@ -37,48 +36,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 MADV_FREE needs pmd_dirty and pmd_mkclean for detecting recent
 overwrite of the contents since MADV_FREE syscall is called for
-THP page but for s390 pmds only referenced bit is available
-because there is no free bit left in the pmd entry for the
-software dirty bit so this patch adds dumb pmd_dirty which
-returns always true by suggesting by Martin.
+THP page.
 
-They finally find a solution in future.
-http://marc.info/?l=linux-api&m=140440328820808&w=2
+This patch adds pmd_dirty and pmd_mkclean for THP page MADV_FREE
+support.
 
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Dominik Dingel <dingel@linux.vnet.ibm.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: linux-s390@vger.kernel.org
-Acked-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linuxppc-dev@lists.ozlabs.org
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- arch/s390/include/asm/pgtable.h | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ arch/powerpc/include/asm/pgtable-ppc64.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
-index fcba5e03839f..9862fcb0592b 100644
---- a/arch/s390/include/asm/pgtable.h
-+++ b/arch/s390/include/asm/pgtable.h
-@@ -1586,6 +1586,18 @@ static inline pmd_t pmd_mkdirty(pmd_t pmd)
- 	return pmd;
- }
+diff --git a/arch/powerpc/include/asm/pgtable-ppc64.h b/arch/powerpc/include/asm/pgtable-ppc64.h
+index eb9261024f51..c9a4bbe8e179 100644
+--- a/arch/powerpc/include/asm/pgtable-ppc64.h
++++ b/arch/powerpc/include/asm/pgtable-ppc64.h
+@@ -468,9 +468,11 @@ static inline pte_t *pmdp_ptep(pmd_t *pmd)
  
-+static inline int pmd_dirty(pmd_t pmd)
-+{
-+	/* No dirty bit in the segment table entry */
-+	return 1;
-+}
-+
-+static inline pmd_t pmd_mkclean(pmd_t pmd)
-+{
-+	/* No dirty bit in the segment table entry */
-+	return pmd;
-+}
-+
- #define __HAVE_ARCH_PMDP_TEST_AND_CLEAR_YOUNG
- static inline int pmdp_test_and_clear_young(struct vm_area_struct *vma,
- 					    unsigned long address, pmd_t *pmdp)
+ #define pmd_pfn(pmd)		pte_pfn(pmd_pte(pmd))
+ #define pmd_young(pmd)		pte_young(pmd_pte(pmd))
++#define pmd_dirty(pmd)		pte_dirty(pmd_pte(pmd))
+ #define pmd_mkold(pmd)		pte_pmd(pte_mkold(pmd_pte(pmd)))
+ #define pmd_wrprotect(pmd)	pte_pmd(pte_wrprotect(pmd_pte(pmd)))
+ #define pmd_mkdirty(pmd)	pte_pmd(pte_mkdirty(pmd_pte(pmd)))
++#define pmd_mkclean(pmd)	pte_pmd(pte_mkclean(pmd_pte(pmd)))
+ #define pmd_mkyoung(pmd)	pte_pmd(pte_mkyoung(pmd_pte(pmd)))
+ #define pmd_mkwrite(pmd)	pte_pmd(pte_mkwrite(pmd_pte(pmd)))
+ 
 -- 
 2.0.0
 
