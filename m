@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843AbaGIDjO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 23:39:14 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:41762 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754356AbaGIDi3 (ORCPT
+	id S1754528AbaGIDi2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 23:38:28 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:41550 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754356AbaGIDiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 23:38:29 -0400
+	Tue, 8 Jul 2014 23:38:25 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: Wim Van Sebroeck <wim@iguana.be>,
@@ -23,9 +23,9 @@ Cc: Wim Van Sebroeck <wim@iguana.be>,
         David Woodhouse <dwmw2@infradead.org>,
         Tomasz Figa <t.figa@samsung.com>, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v3 5/7] watchdog: moxart: Register restart handler with restart notifier
-Date: Tue,  8 Jul 2014 20:38:01 -0700
-Message-Id: <1404877083-6552-6-git-send-email-linux@roeck-us.net>
+Subject: [PATCH v3 4/7] power/restart: Call machine_restart instead of arm_pm_restart
+Date: Tue,  8 Jul 2014 20:38:00 -0700
+Message-Id: <1404877083-6552-5-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404877083-6552-1-git-send-email-linux@roeck-us.net>
 References: <1404877083-6552-1-git-send-email-linux@roeck-us.net>
@@ -33,91 +33,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel now provides an API to trigger a system restart.
-Register with it instead of setting arm_pm_restart.
+machine_restart is supported on non-ARM platforms, and and ultimately calls
+arm_pm_restart, so dont call arm_pm_restart directly but use the more
+generic function.
 
+Cc: Russell King <linux@arm.linux.org.uk>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
-v3: Move struct notifier_block into struct moxart_wdt_dev.
-    Drop static variable previously needed to access struct moxart_wdt_dev
-    from notifier function; use container_of instead.
-v2: No change.
+v3: No change.
+v2: Added patch.
 
- drivers/watchdog/moxart_wdt.c | 30 ++++++++++++++++++------------
- 1 file changed, 18 insertions(+), 12 deletions(-)
+ drivers/power/reset/restart-poweroff.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/watchdog/moxart_wdt.c b/drivers/watchdog/moxart_wdt.c
-index 4aa3a8a..5aed8b98 100644
---- a/drivers/watchdog/moxart_wdt.c
-+++ b/drivers/watchdog/moxart_wdt.c
-@@ -15,12 +15,12 @@
- #include <linux/module.h>
- #include <linux/err.h>
- #include <linux/kernel.h>
-+#include <linux/notifier.h>
- #include <linux/platform_device.h>
-+#include <linux/reboot.h>
- #include <linux/watchdog.h>
- #include <linux/moduleparam.h>
+diff --git a/drivers/power/reset/restart-poweroff.c b/drivers/power/reset/restart-poweroff.c
+index 5758033..47f10eb 100644
+--- a/drivers/power/reset/restart-poweroff.c
++++ b/drivers/power/reset/restart-poweroff.c
+@@ -20,7 +20,8 @@
  
--#include <asm/system_misc.h>
--
- #define REG_COUNT			0x4
- #define REG_MODE			0x8
- #define REG_ENABLE			0xC
-@@ -29,17 +29,22 @@ struct moxart_wdt_dev {
- 	struct watchdog_device dev;
- 	void __iomem *base;
- 	unsigned int clock_frequency;
-+	struct notifier_block restart_notifier;
- };
- 
--static struct moxart_wdt_dev *moxart_restart_ctx;
--
- static int heartbeat;
- 
--static void moxart_wdt_restart(enum reboot_mode reboot_mode, const char *cmd)
-+static int moxart_restart_notify(struct notifier_block *this,
-+				 unsigned long mode, void *cmd)
+ static void restart_poweroff_do_poweroff(void)
  {
--	writel(1, moxart_restart_ctx->base + REG_COUNT);
--	writel(0x5ab9, moxart_restart_ctx->base + REG_MODE);
--	writel(0x03, moxart_restart_ctx->base + REG_ENABLE);
-+	struct moxart_wdt_dev *moxart_wdt = container_of(this,
-+							 struct moxart_wdt_dev,
-+							 restart_notifier);
-+	writel(1, moxart_wdt->base + REG_COUNT);
-+	writel(0x5ab9, moxart_wdt->base + REG_MODE);
-+	writel(0x03, moxart_wdt->base + REG_ENABLE);
-+
-+	return NOTIFY_DONE;
+-	arm_pm_restart(REBOOT_HARD, NULL);
++	reboot_mode = REBOOT_HARD;
++	machine_restart(NULL);
  }
  
- static int moxart_wdt_stop(struct watchdog_device *wdt_dev)
-@@ -136,8 +141,10 @@ static int moxart_wdt_probe(struct platform_device *pdev)
- 	if (err)
- 		return err;
- 
--	moxart_restart_ctx = moxart_wdt;
--	arm_pm_restart = moxart_wdt_restart;
-+	moxart_wdt->restart_notifier.notifier_call = moxart_restart_notify;
-+	err = register_restart_notifier(&moxart_wdt->restart_notifier);
-+	if (err)
-+		dev_err(dev, "cannot register restart notifier (err=%d)\n", err);
- 
- 	dev_dbg(dev, "Watchdog enabled (heartbeat=%d sec, nowayout=%d)\n",
- 		moxart_wdt->dev.timeout, nowayout);
-@@ -149,9 +156,8 @@ static int moxart_wdt_remove(struct platform_device *pdev)
- {
- 	struct moxart_wdt_dev *moxart_wdt = platform_get_drvdata(pdev);
- 
--	arm_pm_restart = NULL;
-+	unregister_restart_notifier(&moxart_wdt->restart_notifier);
- 	moxart_wdt_stop(&moxart_wdt->dev);
--	watchdog_unregister_device(&moxart_wdt->dev);
- 
- 	return 0;
- }
+ static int restart_poweroff_probe(struct platform_device *pdev)
 -- 
 1.9.1
 
