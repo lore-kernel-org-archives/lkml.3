@@ -1,187 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755763AbaGIIun (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 04:50:43 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:22113 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753838AbaGIItB (ORCPT
+	id S1755581AbaGIIsy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 04:48:54 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:58984 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754846AbaGIIsw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 04:49:01 -0400
-Message-ID: <53BD01F6.9020206@huawei.com>
-Date: Wed, 9 Jul 2014 16:48:54 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 9 Jul 2014 04:48:52 -0400
+Message-ID: <53BD01ED.30802@gmail.com>
+Date: Wed, 09 Jul 2014 16:48:45 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH v3 09/12] cpuset: refactor cpuset_hotplug_update_tasks()
-References: <53BD0174.4060002@huawei.com>
-In-Reply-To: <53BD0174.4060002@huawei.com>
-Content-Type: text/plain; charset="GB2312"
+To: Liqin Chen <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] arch: score: Export necessary symbols in related files
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We mix the handling for both default hierarchy and legacy hierarchy in
-the same function, and it's quite messy, so split into two functions.
+'csum_partial_copy_from_user' and 'flush_dcache_page' are also needed by
+outside modules, so need export them in the related files.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
+The related error (with allmodconfig under score):
+
+    MODPOST 1365 modules
+  ERROR: "csum_partial_copy_from_user" [net/rxrpc/af-rxrpc.ko] undefined!
+  ERROR: "flush_dcache_page" [net/sunrpc/sunrpc.ko] undefined!
+
+
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
 ---
- kernel/cpuset.c | 121 ++++++++++++++++++++++++++++++--------------------------
- 1 file changed, 66 insertions(+), 55 deletions(-)
+ arch/score/lib/checksum_copy.c | 1 +
+ arch/score/mm/cache.c          | 1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 4b409d2..41822e2 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -2080,6 +2080,65 @@ static void remove_tasks_in_empty_cpuset(struct cpuset *cs)
- 	}
+diff --git a/arch/score/lib/checksum_copy.c b/arch/score/lib/checksum_copy.c
+index 04565dd..9b770b3 100644
+--- a/arch/score/lib/checksum_copy.c
++++ b/arch/score/lib/checksum_copy.c
+@@ -50,3 +50,4 @@ unsigned int csum_partial_copy_from_user(const char *src, char *dst,
+ 
+ 	return csum_partial(dst, len, sum);
  }
- 
-+static void hotplug_update_tasks_legacy(struct cpuset *cs,
-+					struct cpumask *off_cpus,
-+					nodemask_t *off_mems)
-+{
-+	bool is_empty;
-+
-+	mutex_lock(&callback_mutex);
-+	cpumask_andnot(cs->cpus_allowed, cs->cpus_allowed, off_cpus);
-+	cpumask_andnot(cs->effective_cpus, cs->effective_cpus, off_cpus);
-+	nodes_andnot(cs->mems_allowed, cs->mems_allowed, *off_mems);
-+	nodes_andnot(cs->effective_mems, cs->effective_mems, *off_mems);
-+	mutex_unlock(&callback_mutex);
-+
-+	/*
-+	 * Don't call update_tasks_cpumask() if the cpuset becomes empty,
-+	 * as the tasks will be migratecd to an ancestor.
-+	 */
-+	if (!cpumask_empty(off_cpus) && !cpumask_empty(cs->cpus_allowed))
-+		update_tasks_cpumask(cs);
-+	if (!nodes_empty(*off_mems) && !nodes_empty(cs->mems_allowed))
-+		update_tasks_nodemask(cs);
-+
-+	is_empty = cpumask_empty(cs->cpus_allowed) ||
-+		   nodes_empty(cs->mems_allowed);
-+
-+	mutex_unlock(&cpuset_mutex);
-+
-+	/*
-+	 * Move tasks to the nearest ancestor with execution resources,
-+	 * This is full cgroup operation which will also call back into
-+	 * cpuset. Should be done outside any lock.
-+	 */
-+	if (is_empty)
-+		remove_tasks_in_empty_cpuset(cs);
-+
-+	mutex_lock(&cpuset_mutex);
-+}
-+
-+static void hotplug_update_tasks(struct cpuset *cs,
-+				 struct cpumask *off_cpus,
-+				 nodemask_t *off_mems)
-+{
-+	mutex_lock(&callback_mutex);
-+	cpumask_andnot(cs->effective_cpus, cs->effective_cpus, off_cpus);
-+	if (cpumask_empty(cs->effective_cpus))
-+		cpumask_copy(cs->effective_cpus,
-+			     parent_cs(cs)->effective_cpus);
-+
-+	nodes_andnot(cs->effective_mems, cs->effective_mems, *off_mems);
-+	if (nodes_empty(cs->effective_mems))
-+		cs->effective_mems = parent_cs(cs)->effective_mems;
-+	mutex_unlock(&callback_mutex);
-+
-+	if (!cpumask_empty(off_cpus))
-+		update_tasks_cpumask(cs);
-+	if (!nodes_empty(*off_mems))
-+		update_tasks_nodemask(cs);
-+}
-+
- /**
-  * cpuset_hotplug_update_tasks - update tasks in a cpuset for hotunplug
-  * @cs: cpuset in interest
-@@ -2092,9 +2151,6 @@ static void cpuset_hotplug_update_tasks(struct cpuset *cs)
- {
- 	static cpumask_t off_cpus;
- 	static nodemask_t off_mems;
--	bool is_empty;
--	bool on_dfl = cgroup_on_dfl(cs->css.cgroup);
--
- retry:
- 	wait_event(cpuset_attach_wq, cs->attach_in_progress == 0);
- 
-@@ -2109,61 +2165,16 @@ retry:
- 		goto retry;
- 	}
- 
--	cpumask_andnot(&off_cpus, cs->cpus_allowed, top_cpuset.cpus_allowed);
--	nodes_andnot(off_mems, cs->mems_allowed, top_cpuset.mems_allowed);
--
--	mutex_lock(&callback_mutex);
--	cpumask_andnot(cs->cpus_allowed, cs->cpus_allowed, &off_cpus);
--
--	/* Inherit the effective mask of the parent, if it becomes empty. */
--	cpumask_andnot(cs->effective_cpus, cs->effective_cpus, &off_cpus);
--	if (on_dfl && cpumask_empty(cs->effective_cpus))
--		cpumask_copy(cs->effective_cpus, parent_cs(cs)->effective_cpus);
--	mutex_unlock(&callback_mutex);
--
--	/*
--	 * If on_dfl, we need to update tasks' cpumask for empty cpuset to
--	 * take on ancestor's cpumask. Otherwise, don't call
--	 * update_tasks_cpumask() if the cpuset becomes empty, as the tasks
--	 * in it will be migrated to an ancestor.
--	 */
--	if ((on_dfl && cpumask_empty(cs->cpus_allowed)) ||
--	    (!cpumask_empty(&off_cpus) && !cpumask_empty(cs->cpus_allowed)))
--		update_tasks_cpumask(cs);
--
--	mutex_lock(&callback_mutex);
--	nodes_andnot(cs->mems_allowed, cs->mems_allowed, off_mems);
-+	cpumask_andnot(&off_cpus, cs->effective_cpus,
-+		       top_cpuset.effective_cpus);
-+	nodes_andnot(off_mems, cs->effective_mems, top_cpuset.effective_mems);
- 
--	/* Inherit the effective mask of the parent, if it becomes empty */
--	nodes_andnot(cs->effective_mems, cs->effective_mems, off_mems);
--	if (on_dfl && nodes_empty(cs->effective_mems))
--		cs->effective_mems = parent_cs(cs)->effective_mems;
--	mutex_unlock(&callback_mutex);
--
--	/*
--	 * If on_dfl, we need to update tasks' nodemask for empty cpuset to
--	 * take on ancestor's nodemask. Otherwise, don't call
--	 * update_tasks_nodemask() if the cpuset becomes empty, as the
--	 * tasks in it will be migratd to an ancestor.
--	 */
--	if ((on_dfl && nodes_empty(cs->mems_allowed)) ||
--	    (!nodes_empty(off_mems) && !nodes_empty(cs->mems_allowed)))
--		update_tasks_nodemask(cs);
--
--	is_empty = cpumask_empty(cs->cpus_allowed) ||
--		nodes_empty(cs->mems_allowed);
-+	if (cgroup_on_dfl(cs->css.cgroup))
-+		hotplug_update_tasks(cs, &off_cpus, &off_mems);
-+	else
-+		hotplug_update_tasks_legacy(cs, &off_cpus, &off_mems);
- 
- 	mutex_unlock(&cpuset_mutex);
--
--	/*
--	 * If on_dfl, we'll keep tasks in empty cpusets.
--	 *
--	 * Otherwise move tasks to the nearest ancestor with execution
--	 * resources.  This is full cgroup operation which will
--	 * also call back into cpuset.  Should be done outside any lock.
--	 */
--	if (!on_dfl && is_empty)
--		remove_tasks_in_empty_cpuset(cs);
++EXPORT_SYMBOL(csum_partial_copy_from_user);
+diff --git a/arch/score/mm/cache.c b/arch/score/mm/cache.c
+index f85ec1a..be91041 100644
+--- a/arch/score/mm/cache.c
++++ b/arch/score/mm/cache.c
+@@ -72,6 +72,7 @@ void flush_dcache_page(struct page *page)
+ 	addr = (unsigned long) page_address(page);
+ 	flush_data_cache_page(addr);
  }
++EXPORT_SYMBOL(flush_dcache_page);
  
- /**
+ /* called by update_mmu_cache. */
+ void __update_cache(struct vm_area_struct *vma, unsigned long address,
 -- 
-1.8.0.2
-
+1.9.2.459.g68773ac
