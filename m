@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755683AbaGIItY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 04:49:24 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:55931 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755661AbaGIItU (ORCPT
+	id S1755702AbaGIIti (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 04:49:38 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:22486 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755427AbaGIItf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 04:49:20 -0400
-Message-ID: <53BD0208.2010302@huawei.com>
-Date: Wed, 9 Jul 2014 16:49:12 +0800
+	Wed, 9 Jul 2014 04:49:35 -0400
+Message-ID: <53BD0215.8060305@huawei.com>
+Date: Wed, 9 Jul 2014 16:49:25 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
 To: Tejun Heo <tj@kernel.org>
 CC: LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH v3 11/12] cpuset: allow writing offlined masks to cpuset.cpus/mems
+Subject: [PATCH v3 12/12] cpuset: export effective masks to userspace
 References: <53BD0174.4060002@huawei.com>
 In-Reply-To: <53BD0174.4060002@huawei.com>
 Content-Type: text/plain; charset="GB2312"
@@ -25,58 +25,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the configured masks won't be limited by its parent, and the top
-cpuset's masks won't change when hotplug happens, it's natural to
-allow writing offlined masks to the configured masks.
+cpuset.cpus and cpuset.mems are the configured masks, and we need
+to export effective masks to userspace, so users know the real
+cpus_allowed and mems_allowed that apply to the tasks in a cpuset.
 
-If on default hierarchy:
-
-	# echo 0 > /sys/devices/system/cpu/cpu1/online
-	# mkdir /cpuset/sub
-	# echo 1 > /cpuset/sub/cpuset.cpus
-	# cat /cpuset/sub/cpuset.cpus
-	1
-
-If on legacy hierarchy:
-
-	# echo 0 > /sys/devices/system/cpu/cpu1/online
-	# mkdir /cpuset/sub
-	# echo 1 > /cpuset/sub/cpuset.cpus
-	-bash: echo: write error: Invalid argument
-
-Note the checks don't need to be gated by cgroup_on_dfl, because we've
-initialized top_cpuset.{cpus,mems}_allowed accordingly in cpuset_bind().
+v2:
+- export those masks unconditionally, suggested by Tejun.
 
 Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
- kernel/cpuset.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ kernel/cpuset.c | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
 diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index c47cb94..65878a7 100644
+index 65878a7..53a9bbf 100644
 --- a/kernel/cpuset.c
 +++ b/kernel/cpuset.c
-@@ -929,7 +929,8 @@ static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
- 		if (retval < 0)
- 			return retval;
+@@ -1535,6 +1535,8 @@ typedef enum {
+ 	FILE_MEMORY_MIGRATE,
+ 	FILE_CPULIST,
+ 	FILE_MEMLIST,
++	FILE_EFFECTIVE_CPULIST,
++	FILE_EFFECTIVE_MEMLIST,
+ 	FILE_CPU_EXCLUSIVE,
+ 	FILE_MEM_EXCLUSIVE,
+ 	FILE_MEM_HARDWALL,
+@@ -1701,6 +1703,12 @@ static int cpuset_common_seq_show(struct seq_file *sf, void *v)
+ 	case FILE_MEMLIST:
+ 		s += nodelist_scnprintf(s, count, cs->mems_allowed);
+ 		break;
++	case FILE_EFFECTIVE_CPULIST:
++		s += cpulist_scnprintf(s, count, cs->effective_cpus);
++		break;
++	case FILE_EFFECTIVE_MEMLIST:
++		s += nodelist_scnprintf(s, count, cs->effective_mems);
++		break;
+ 	default:
+ 		ret = -EINVAL;
+ 		goto out_unlock;
+@@ -1786,6 +1794,18 @@ static struct cftype files[] = {
+ 	},
  
--		if (!cpumask_subset(trialcs->cpus_allowed, cpu_active_mask))
-+		if (!cpumask_subset(trialcs->cpus_allowed,
-+				    top_cpuset.cpus_allowed))
- 			return -EINVAL;
- 	}
- 
-@@ -1186,8 +1187,8 @@ static int update_nodemask(struct cpuset *cs, struct cpuset *trialcs,
- 			goto done;
- 
- 		if (!nodes_subset(trialcs->mems_allowed,
--				node_states[N_MEMORY])) {
--			retval =  -EINVAL;
-+				  top_cpuset.mems_allowed)) {
-+			retval = -EINVAL;
- 			goto done;
- 		}
- 	}
+ 	{
++		.name = "effective_cpus",
++		.seq_show = cpuset_common_seq_show,
++		.private = FILE_EFFECTIVE_CPULIST,
++	},
++
++	{
++		.name = "effective_mems",
++		.seq_show = cpuset_common_seq_show,
++		.private = FILE_EFFECTIVE_MEMLIST,
++	},
++
++	{
+ 		.name = "cpu_exclusive",
+ 		.read_u64 = cpuset_read_u64,
+ 		.write_u64 = cpuset_write_u64,
 -- 
 1.8.0.2
 
