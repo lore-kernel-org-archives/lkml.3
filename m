@@ -1,154 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755149AbaGIJOt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 05:14:49 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:44968 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755041AbaGIJOo convert rfc822-to-8bit (ORCPT
+	id S1755210AbaGIJRS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 05:17:18 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54607 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751345AbaGIJRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 05:14:44 -0400
-Date: Wed, 9 Jul 2014 10:14:41 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci <linux-pci@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+	Wed, 9 Jul 2014 05:17:16 -0400
+Date: Wed, 9 Jul 2014 11:15:25 +0200
+From: Mark Brown <broonie@kernel.org>
+To: James Ban <james.ban.opensource@diasemi.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>,
+        Support Opensource <support.opensource@diasemi.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 3/9] pci: Introduce pci_register_io_range() helper
- function.
-Message-ID: <20140709091441.GR6501@e106497-lin.cambridge.arm.com>
-References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
- <201407080900.44882.arnd@arndb.de>
- <20140708212951.GA4555@google.com>
- <201407090820.49418.arnd@arndb.de>
+        David Dajun Chen <david.chen@diasemi.com>
+Message-ID: <20140709091525.GO30458@sirena.org.uk>
+References: <201407090857.s698vu4m031984@krsrvapps-01.diasemi.com>
 MIME-Version: 1.0
-In-Reply-To: <201407090820.49418.arnd@arndb.de>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 09 Jul 2014 09:14:42.0103 (UTC) FILETIME=[37B36470:01CF9B56]
-X-MC-Unique: 114070910144205601
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KQSGybwJm5+gcNx6"
 Content-Disposition: inline
+In-Reply-To: <201407090857.s698vu4m031984@krsrvapps-01.diasemi.com>
+X-Cookie: You look tired.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 82.127.83.212
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V4] regulator: DA9211 : new regulator driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 07:20:49AM +0100, Arnd Bergmann wrote:
-> On Tuesday 08 July 2014, Bjorn Helgaas wrote:
-> > On Tue, Jul 8, 2014 at 1:00 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > > On Tuesday 08 July 2014, Bjorn Helgaas wrote:
-> > >> On Tue, Jul 01, 2014 at 07:43:28PM +0100, Liviu Dudau wrote:
-> > >> > +static LIST_HEAD(io_range_list);
-> > >> > +
-> > >> > +/*
-> > >> > + * Record the PCI IO range (expressed as CPU physical address + size).
-> > >> > + * Return a negative value if an error has occured, zero otherwise
-> > >> > + */
-> > >> > +int __weak pci_register_io_range(phys_addr_t addr, resource_size_t size)
-> > >>
-> > >> I don't understand the interface here.  What's the mapping from CPU
-> > >> physical address to bus I/O port?  For example, I have the following
-> > >> machine in mind:
-> > >>
-> > >>   HWP0002:00: PCI Root Bridge (domain 0000 [bus 00-1b])
-> > >>   HWP0002:00: memory-mapped IO port space [mem 0xf8010000000-0xf8010000fff]
-> > >>   HWP0002:00: host bridge window [io  0x0000-0x0fff]
-> > >>
-> > >>   HWP0002:09: PCI Root Bridge (domain 0001 [bus 00-1b])
-> > >>   HWP0002:09: memory-mapped IO port space [mem 0xf8110000000-0xf8110000fff]
-> > >>   HWP0002:09: host bridge window [io  0x1000000-0x1000fff] (PCI address [0x0-0xfff])
-> > >>
-> > >> The CPU physical memory [mem 0xf8010000000-0xf8010000fff] is translated by
-> > >> the bridge to I/O ports 0x0000-0x0fff on PCI bus 0000:00.  Drivers use,
-> > >> e.g., "inb(0)" to access it.
-> > >>
-> > >> Similarly, [mem 0xf8110000000-0xf8110000fff] is translated by the second
-> > >> bridge to I/O ports 0x0000-0x0fff on PCI bus 0001:00.  Drivers use
-> > >> "inb(0x1000000)" to access it.
-> > >
-> > > I guess you are thinking of the IA64 model here where you keep the virtual
-> > > I/O port numbers in a per-bus lookup table that gets accessed for each
-> > > inb() call. I've thought about this some more, and I believe there are good
-> > > reasons for sticking with the model used on arm32 and powerpc for the
-> > > generic OF implementation.
-> > >
-> > > The idea is that there is a single virtual memory range for all I/O port
-> > > mappings and we use the MMU to do the translation rather than computing
-> > > it manually in the inb() implemnetation. The main advantage is that all
-> > > functions used in device drivers to (potentially) access I/O ports
-> > > become trivial this way, which helps for code size and in some cases
-> > > (e.g. SoC-internal registers with a low latency) it may even be performance
-> > > relevant.
-> > 
-> > My example is from ia64, but I'm not advocating for the lookup table.
-> > The point is that the hardware works similarly (at least for dense ia64
-> > I/O port spaces) in terms of mapping CPU physical addresses to PCI I/O
-> > space.
-> > 
-> > I think my confusion is because your pci_register_io_range() and
-> > pci_addess_to_pci() implementations assume that every io_range starts at
-> > I/O port 0 on PCI (correct me if I'm wrong).  I suspect that's why you
-> > don't save the I/O port number in struct io_range.
-> 
-> I think you are just misreading the code, but I agree it's hard to
-> understand and I made the same mistake in my initial reply to the
-> first version.
 
-I am willing to make the code more easy to understand and validate. Proof that
-things are not that easy to check is that I've also got confused last night
-without having all the code in front of me. Any suggestions?
+--KQSGybwJm5+gcNx6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Best regards,
-Liviu
+On Wed, Jul 09, 2014 at 05:57:56PM +0900, James Ban wrote:
 
-> 
-> pci_register_io_range and pci_address_to_pci only worry about the mapping
-> between CPU physical and Linux I/O address, they do not care which PCI
-> port numbers are behind that. The mapping between PCI port numbers and
-> Linux port numbers is done correctly in patch 8/9 in the
-> pci_host_bridge_of_get_ranges() function.
-> 
-> > Maybe that assumption is guaranteed by OF, but it doesn't hold for ACPI;
-> > ACPI can describe several I/O port apertures for a single bridge, each
-> > associated with a different CPU physical memory region.
-> 
-> DT can have the same, although the common case is that each PCI host
-> bridge has 64KB of I/O ports starting at address 0. Most driver writers
-> get it wrong for the case where it starts at a different address, so
-> I really want to have a generic implementation that gets it right.
-> 
-> > If my speculation here is correct, a comment to the effect that each
-> > io_range corresponds to a PCI I/O space range that starts at 0 might be
-> > enough.
-> > 
-> > If you did add a PCI I/O port number argument to pci_register_io_range(),
-> > we might be able to make an ACPI-based implementation of it.  But I guess
-> > that could be done if/when anybody ever wants to do that.
-> 
-> I think we shoulnd't worry about it before we actually need it. As far as
-> I understand, the only user of that code (unless someone wants to convert
-> ia64) would be ARM64 with ACPI, but that uses the SBSA hardware model that
-> recommends having no I/O space at all.
-> 
->  	Arnd
-> 
+> Thanks for your comment. Is below code O.K.?
 
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+Yes.
 
+--KQSGybwJm5+gcNx6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTvQgqAAoJELSic+t+oim9IPoP/2OJRXkj7fZZ8tTPo3v9CUYb
++xJUDXbc9BYqvedUlUf9/zRJHNHWGUtDulh2AVQ+rO9bZap+cV4kOlptLncrj1Q/
+lMhxCeRLwCisLXq434scyXSBk0P4oMV1rRFqwCVTa09qdon+CRHCX4wRuMv0c1Yk
+EWDi2ThO4ESQZAS+Bst68aLG8furbUCba7dZcMN1HK+mArJ2QD0ugitIo3dySryl
+xf4gHuxQaYZFqN4X9Tx3q4AQ0TFpXxCkpnn/aYNHbOe+tKMr0i9jpmAhFoQZkFQz
+qcByU4JUmNlxJvV1t9J28OumelZ/M61Br6ijWAdfLrv7/V46I/BI1PUKcWJoFK0N
+euYtK0aV8Nv540ldrWuSWsgs0aJ50+SJZx/Zt8eA2pw4t5UaiZ1yF84ra2wA8o+C
+VzFGqWMegDNRC1gFJtgRzoPwTVovZYqDqSie/Me/ymkf7ei65tW3W5Z5ooHPl1Jj
+ISf55MrlJ+9r54WBwxFu5E4K9ywWLwWF6cR6kk39PL2XGXb1wICu8lDu5jF1kNhI
+52ZkSXft8VF/7Q8KLweSQr5YmcsbQwmSM7mbSO/SnCE0RCUTPKVkbIjDr1/8K3M6
+ZmJGyXIzLfB7lGo0R8Q12Wo4lxx+tE7P2JBZf2/6Yb9dz6umOvA0ja+GGsajn+Ph
+deaq+kk6BleksNuD+37s
+=CuaE
+-----END PGP SIGNATURE-----
+
+--KQSGybwJm5+gcNx6--
