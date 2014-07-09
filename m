@@ -1,54 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036AbaGIHuv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 03:50:51 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:40546 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754498AbaGIHup convert rfc822-to-8bit (ORCPT
+	id S1755175AbaGIHvH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 03:51:07 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:41452 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755115AbaGIHvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 03:50:45 -0400
+	Wed, 9 Jul 2014 03:51:03 -0400
+Message-ID: <53BCF463.3000604@linaro.org>
+Date: Wed, 09 Jul 2014 08:50:59 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <53B94DC6.7070308@gmail.com>
-References: <1404457379-4193-1-git-send-email-varkab@cdac.in>
-	<CAAVeFuK8oQStjAozf_3e3YTWBx3JYzBxEvLUq6n6uke1qaxXvg@mail.gmail.com>
-	<53B94DC6.7070308@gmail.com>
-Date: Wed, 9 Jul 2014 09:50:45 +0200
-Message-ID: <CACRpkdaVNeY2KLnKSL=3dOPcXwzDX+fQW4xVPSjvUZhuV6Pi_g@mail.gmail.com>
-Subject: Re: [PATCH v2] drivers/gpio/gpio-sch311x: check return value of gpiochip_remove()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Varka Bhadram <varkabhadram@gmail.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Varka Bhadram <varkab@cdac.in>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: a case for a common efuse API?
+References: <53BC4DD7.20906@codeaurora.org>
+In-Reply-To: <53BC4DD7.20906@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 6, 2014 at 3:23 PM, Varka Bhadram <varkabhadram@gmail.com> wrote:
-> On Sunday 06 July 2014 02:52 PM, Alexandre Courbot wrote:
->> On Fri, Jul 4, 2014 at 4:02 PM, Varka Bhadram <varkabhadram@gmail.com>
->> wrote:
->>>
->>> This patch eliminates the following warning
->>>
->>> drivers/gpio/gpio-sch311x.c: In function ‘sch311x_gpio_probe’:
->>> drivers/gpio/gpio-sch311x.c:286:18: warning: ignoring return value of
->>> ‘gpiochip_remove’, declared with attribute warn_unused_result
->>
->> gpiochip_remove() is to have its return value set to void in another
->> patch, so I'm not sure we need this one in the meantime?
->
->
-> I also saw that patch from abdoulaye berthe<berthe.ab@gmail.com>  .
->
-> If that is accepted its good. If not this may require.
 
-Yeah I'll go remove that. Just working out the patch mechanics right now,
-we'll probably remove all return value checks in v3.17 and then delete
-the code in gpiolib in late v3.17 cycle or the next merge window.
 
-Yours,
-Linus Walleij
+On 08/07/14 21:00, Stephen Boyd wrote:
+> Hi,
+>
+> On MSM chips we have some efuses (called qfprom) where we store things
+> like calibration data, speed bins, etc. We need to read out data from
+> the efuses in various drivers like the cpufreq, thermal, etc. This
+> essentially boils down to a bunch of readls on the efuse from a handful
+> of different drivers. In devicetree this looks a little odd because
+> these drivers end up having an extra reg property (or two) that points
+> to a register in the efuse and some length, i.e you see this:
+>
+> 	thermal-sensor@34000 {
+> 		compatible = "sensor";
+> 		reg = <0x34000 0x1000>, <0x10018 0xc>;
+> 		reg-names = "sensor", "efuse_calib";
+> 	}
+>
+>
+> I imagine in DT we want something more like this:
+>
+> 	efuse: efuse@10000 {
+> 		compatible = "efuse";
+> 		reg = <0x10000 0x1000>;
+> 	}
+>
+> 	thermal-sensor@34000 {
+> 		compatible = "sensor";
+> 		reg = <0x34000 0x1000>;
+> 		efuse = <&efuse 0x18>;
+> 	}
+>
+>
+> Where we can point to the efuse and give an address offset. From code we
+> could then call some efuse_read() function to read the sensor's
+> calibration data.
+>
+> It's been suggested that we use syscon for this, but I wonder if that is
+> the right thing to do. With a syscon you're usually writing some
+> registers that got lumped together with other registers that aren't
+> directly related to your driver. It doesn't seem like syscon is made for
+> reading fuses or other things like eeproms. Maybe I'm wrong though.
+>
+
+I remember there was a similar discussion some time last year about 
+this:  https://lkml.org/lkml/2013/7/5/361
+
+
+> Using syscon would probably work if we could add a way to point to
+> offsets within the syscon node (the 0x18 part in the example). In my
+> specific use-case the calibration data may have different offsets
+> depending on which SoC the hardware is instantiated in so we could also
+> make syscon work if the compatible field for the sensor node indicates
+> which SoC it is.
+
+Something like this:
+
+	efuse: efuse@10000 {
+  		compatible = "efuse", "syscon";
+  		reg = <0x10000 0x1000>;
+  	}
+
+  	thermal-sensor@34000 {
+  		compatible = "sensor", "soc-xyz";
+  		reg = <0x34000 0x1000>;
+		syscon = <&efuse>;
+  	}
+
+sensor driver could add of_data for the soc-xyz which would contain soc 
+specific efuse offsets.
+
+
+--srini
+
+>
+> I added Tegra folks because I see that on Tegra this hardware is exposed
+> via an SoC specific API, tegra_fuse_readl(), and an associated driver in
+> drivers/misc/fuse/tegra/. Unfortunately I don't see any users of the API
+> outside of the speedo code in the same directory and the sysfs bin
+> attribute that may or may not be in use by some userspace code.
+>
