@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256AbaGIL1g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 07:27:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41799 "EHLO mx2.suse.de"
+	id S1755399AbaGIL1q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 07:27:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43464 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752831AbaGIL1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 07:27:34 -0400
-Message-ID: <53BD2724.5060803@suse.de>
-Date: Wed, 09 Jul 2014 13:27:32 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755276AbaGIL1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 07:27:44 -0400
+Date: Wed, 9 Jul 2014 13:27:21 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Joseph Schuchart <joseph.schuchart@tu-dresden.de>
+Cc: Namhyung Kim <namhyung@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Ilsche <thomas.ilsche@tu-dresden.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3]  perf script: Add callchain to generic and
+ tracepoint events
+Message-ID: <20140709112721.GC1814@krava.redhat.com>
+References: <53031D2C.2050009@tu-dresden.de>
+ <20140307141857.GA3153@ghostprotocols.net>
+ <533D2283.3090703@tu-dresden.de>
+ <87wqd5f7j5.fsf@sejong.aot.lge.com>
+ <538F0BF2.1010806@tu-dresden.de>
+ <20140707171706.GA20752@krava.redhat.com>
+ <53BCF1F2.70100@tu-dresden.de>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
-        Robert Elliott <Elliott@hp.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Hiral Patel <hiralpat@cisco.com>,
-        Suma Ramars <sramars@cisco.com>, Brian Uchino <buchino@cisco.com>
-Subject: Re: [PATCH 14/14] fnic: reject device resets without assigned tags
- for the blk-mq case
-References: <1403715121-1201-1-git-send-email-hch@lst.de> <1403715121-1201-15-git-send-email-hch@lst.de>
-In-Reply-To: <1403715121-1201-15-git-send-email-hch@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53BCF1F2.70100@tu-dresden.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2014 06:52 PM, Christoph Hellwig wrote:
-> Current the midlayer fakes up a struct request for the explicit reset
-> ioctls, and those don't have a tag allocated to them.  The fnic driver pokes
-> into midlayer structures to paper over this design issue, but that won't
-> work for the blk-mq case.
->
-> Either someone who can actually test the hardware will have to come up with
-> a similar hack for the blk-mq case, or we'll have to bite the bullet and fix
-> the way the EH ioctls work for real, but until that happens we fail these
-> explicit requests here.
->
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
-> Cc: Hiral Patel <hiralpat@cisco.com>
-> Cc: Suma Ramars <sramars@cisco.com>
-> Cc: Brian Uchino <buchino@cisco.com>
-> ---
->   drivers/scsi/fnic/fnic_scsi.c |   16 ++++++++++++++++
->   1 file changed, 16 insertions(+)
->
-> diff --git a/drivers/scsi/fnic/fnic_scsi.c b/drivers/scsi/fnic/fnic_scsi.c
-> index 3f88f56..961bdf5 100644
-> --- a/drivers/scsi/fnic/fnic_scsi.c
-> +++ b/drivers/scsi/fnic/fnic_scsi.c
-> @@ -2224,6 +2224,22 @@ int fnic_device_reset(struct scsi_cmnd *sc)
->
->   	tag = sc->request->tag;
->   	if (unlikely(tag < 0)) {
-> +		/*
-> +		 * XXX(hch): current the midlayer fakes up a struct
-> +		 * request for the explicit reset ioctls, and those
-> +		 * don't have a tag allocated to them.  The below
-> +		 * code pokes into midlayer structures to paper over
-> +		 * this design issue, but that won't work for blk-mq.
-> +		 *
-> +		 * Either someone who can actually test the hardware
-> +		 * will have to come up with a similar hack for the
-> +		 * blk-mq case, or we'll have to bite the bullet and
-> +		 * fix the way the EH ioctls work for real, but until
-> +		 * that happens we fail these explicit requests here.
-> +		 */
-> +		if (shost_use_blk_mq(sc->device->host))
-> +			goto fnic_device_reset_end;
-> +
->   		tag = fnic_scsi_host_start_tag(fnic, sc);
->   		if (unlikely(tag == SCSI_NO_TAG))
->   			goto fnic_device_reset_end;
->
-The correct fix will be part of my EH redesign.
-Plan is to allocate a real command/request for EH, which then can be 
-used to send down EH TMFs and related commands.
+On Wed, Jul 09, 2014 at 09:40:34AM +0200, Joseph Schuchart wrote:
+> [PATCH 2/3]  perf script: Add callchain to generic and tracepoint events.  Since
+>  this alters the interface for the python scripts, also adjust the script 
+>  generation and the provided scripts.
 
-Reviewed-by: Hannes Reinecke <hare@suse.de>
+still having issues to apply 2nd patch on tip/perf/core (8b5b584)
 
-Cheers,
+Applying: perf script: Add missing calls to Py_DECREF for return values
+Applying: perf script: Add callchain to generic and tracepoint events
+error: patch failed: tools/perf/util/scripting-engines/trace-event-python.c:237
+error: tools/perf/util/scripting-engines/trace-event-python.c: patch does not apply
+Patch failed at 0002 perf script: Add callchain to generic and tracepoint events
+The copy of the patch that failed is found in:
+   /home/jolsa/kernel.org/linux-perf/.git/rebase-apply/patch
+When you have resolved this problem, run "git am --resolved".
+If you prefer to skip this patch, run "git am --skip" instead.
+To restore the original branch and stop patching, run "git am --abort".
 
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+
+thanks,
+jirka
