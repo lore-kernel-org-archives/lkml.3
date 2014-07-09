@@ -1,126 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932354AbaGIRK4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 13:10:56 -0400
-Received: from mail-qc0-f202.google.com ([209.85.216.202]:32831 "EHLO
-	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756611AbaGIRJn (ORCPT
+	id S932444AbaGIRLr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 13:11:47 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60468 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932421AbaGIRLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 13:09:43 -0400
-From: Havard Skinnemoen <hskinnemoen@google.com>
-To: Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, Ewout van Bekkum <ewout@google.com>,
-        Havard Skinnemoen <hskinnemoen@google.com>
-Subject: [PATCH 1/6] x86-mce: Modify CMCI poll interval to adjust for small check_interval values.
-Date: Wed,  9 Jul 2014 10:09:21 -0700
-Message-Id: <1404925766-32253-2-git-send-email-hskinnemoen@google.com>
-X-Mailer: git-send-email 2.0.0.526.g5318336
-In-Reply-To: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
-References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
+	Wed, 9 Jul 2014 13:11:45 -0400
+Message-ID: <53BD77CC.9060606@infradead.org>
+Date: Wed, 09 Jul 2014 10:11:40 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Nick Krause <xerofoify@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Subject: Re: Fwd: linux-next: Tree for Jul 9
+References: <20140709183116.506ad2e4@canb.auug.org.au> <CAPDOMVjAMHOhuzfcJRL_JQ1jSKOeE7PEhppZJKJKbtR2-ixi-A@mail.gmail.com>
+In-Reply-To: <CAPDOMVjAMHOhuzfcJRL_JQ1jSKOeE7PEhppZJKJKbtR2-ixi-A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ewout van Bekkum <ewout@google.com>
+On 07/09/2014 10:07 AM, Nick Krause wrote:
+> ---------- Forwarded message ----------
+> From: Stephen Rothwell wrote on Wed, Jul 9, 2014 at 4:31 AM
+> Subject: linux-next: Tree for Jul 9
+> To: linux-next@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> 
+> 
+> Hi all,
+> 
+> Changes since 20140708:
+> 
+> 
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> Hey Stephen,
+> 
+> A lot of your builds that are failing seem to build for me. Please try
+> a compiler toolchain
+> newer then gcc 4.6.3 to see if this is why your builds are failing.
+> Since all the arm builds
+> you have failing build for me.
+> Cheers Nick
+> 
 
-The CMCI poll interval was updated to pick the minimum interval between
-the original 30 seconds and the check_interval divided by 8 (minimum of
-3 polls).
+Hey Nick,
 
-This resolves a bug where the CMCI storm handler is unable to return to
-interrupt mode from polling mode, if the check_interval shorter than the
-CMCI poll interval. This problem is caused by the mce_timer_fn function
-which only allows the poll interval to be incremented up to the
-check_interval, while the mce_intel_adjust_timer function requires the
-poll interval to be greater than the CMCI poll interval before leaving
-the CMCI_STORM_ACTIVE state.
+Does your email client interface have a "Reply All" or "Reply to All" button
+or selection that you can use?  Please use that instead of Forwarding each message.
+That will make it easier to read the email threading.
 
-Signed-off-by: Ewout van Bekkum <ewout@google.com>
-Signed-off-by: Havard Skinnemoen <hskinnemoen@google.com>
----
- arch/x86/kernel/cpu/mcheck/mce-internal.h |  1 +
- arch/x86/kernel/cpu/mcheck/mce.c          |  5 +++++
- arch/x86/kernel/cpu/mcheck/mce_intel.c    | 15 +++++++++++----
- 3 files changed, 17 insertions(+), 4 deletions(-)
+Thanks.
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce-internal.h b/arch/x86/kernel/cpu/mcheck/mce-internal.h
-index 09edd0b..2f0b1e8 100644
---- a/arch/x86/kernel/cpu/mcheck/mce-internal.h
-+++ b/arch/x86/kernel/cpu/mcheck/mce-internal.h
-@@ -40,6 +40,7 @@ static inline void cmci_disable_bank(int bank) { }
- #endif
- 
- void mce_timer_kick(unsigned long interval);
-+unsigned long current_check_interval(void);
- 
- #ifdef CONFIG_ACPI_APEI
- int apei_write_mce(struct mce *m);
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index bb92f38..1ebdd34 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1265,6 +1265,11 @@ void mce_log_therm_throt_event(__u64 status)
-  */
- static unsigned long check_interval = 5 * 60; /* 5 minutes */
- 
-+unsigned long current_check_interval(void)
-+{
-+	return check_interval;
-+}
-+
- static DEFINE_PER_CPU(unsigned long, mce_next_interval); /* in jiffies */
- static DEFINE_PER_CPU(struct timer_list, mce_timer);
- 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-index 9a316b2..26eb8d3 100644
---- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-@@ -45,10 +45,17 @@ static DEFINE_PER_CPU(mce_banks_t, mce_banks_owned);
- static DEFINE_SPINLOCK(cmci_discover_lock);
- 
- #define CMCI_THRESHOLD		1
--#define CMCI_POLL_INTERVAL	(30 * HZ)
- #define CMCI_STORM_INTERVAL	(1 * HZ)
- #define CMCI_STORM_THRESHOLD	15
- 
-+/*
-+ * Poll every 30 seconds unless the current check_interval / 8 is smaller.
-+ */
-+static unsigned long cmci_poll_interval(void)
-+{
-+	return min(30UL * HZ, current_check_interval() * HZ / 8);
-+}
-+
- static DEFINE_PER_CPU(unsigned long, cmci_time_stamp);
- static DEFINE_PER_CPU(unsigned int, cmci_storm_cnt);
- static DEFINE_PER_CPU(unsigned int, cmci_storm_state);
-@@ -101,7 +108,7 @@ unsigned long mce_intel_adjust_timer(unsigned long interval)
- {
- 	int r;
- 
--	if (interval < CMCI_POLL_INTERVAL)
-+	if (interval < cmci_poll_interval())
- 		return interval;
- 
- 	switch (__this_cpu_read(cmci_storm_state)) {
-@@ -128,7 +135,7 @@ unsigned long mce_intel_adjust_timer(unsigned long interval)
- 			cmci_reenable();
- 			cmci_recheck();
- 		}
--		return CMCI_POLL_INTERVAL;
-+		return cmci_poll_interval();
- 	default:
- 		/*
- 		 * We have shiny weather. Let the poll do whatever it
-@@ -178,7 +185,7 @@ static bool cmci_storm_detect(void)
- 	cmci_storm_disable_banks();
- 	__this_cpu_write(cmci_storm_state, CMCI_STORM_ACTIVE);
- 	r = atomic_add_return(1, &cmci_storm_on_cpus);
--	mce_timer_kick(CMCI_POLL_INTERVAL);
-+	mce_timer_kick(cmci_poll_interval());
- 
- 	if (r == 1)
- 		pr_notice("CMCI storm detected: switching to poll mode\n");
 -- 
-2.0.0.526.g5318336
-
+~Randy
