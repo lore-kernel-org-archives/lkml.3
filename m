@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299AbaGIJnD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 05:43:03 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:33708 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754201AbaGIJnA convert rfc822-to-8bit (ORCPT
+	id S1755168AbaGIJp4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 05:45:56 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54750 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751766AbaGIJpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 05:43:00 -0400
+	Wed, 9 Jul 2014 05:45:55 -0400
+Date: Wed, 9 Jul 2014 11:44:17 +0200
+From: Mark Brown <broonie@kernel.org>
+To: Himangi Saraogi <himangi774@gmail.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        julia.lawall@lip6.fr
+Message-ID: <20140709094417.GR30458@sirena.org.uk>
+References: <20140707154214.GA9212@himangi-Dell>
 MIME-Version: 1.0
-In-Reply-To: <1404745893-6379-1-git-send-email-iivanov@mm-sol.com>
-References: <1404745893-6379-1-git-send-email-iivanov@mm-sol.com>
-Date: Wed, 9 Jul 2014 11:43:00 +0200
-Message-ID: <CACRpkdYcoA-nifxojO5tZUy6dL6P2PTSGW0mVLUfqG20rOg-Nw@mail.gmail.com>
-Subject: Re: [PATCH 0/4] New Qualcomm PMIC pin controller drivers
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0WzQiIesntPPsVaS"
+Content-Disposition: inline
+In-Reply-To: <20140707154214.GA9212@himangi-Dell>
+X-Cookie: You look tired.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 82.127.83.212
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: lp8755: Use devm_regulator_register
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 7, 2014 at 5:11 PM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
 
-> This set of patches adds pin control drivers for Multi-purpose
-> pin (MPP) and General-purpose pin (GPIO) controllers found
-> in Qualcomm PMIC chips.
->
-> MPP's are enhanced GPIO's with analog circuits, which support
-> following functions in addition to digital input/output: analog
-> input/output and current sinks.
->
-> PMIC PM8941 have 8 MPP's and 36 GPIO's. PMIC PM8841 have 4 MPP's.
->
-> Ivan T. Ivanov (4):
->   pinctrl: qpnp: Qualcomm PMIC pin controller driver
->   pinctrl: qcom: Add documentation for pinctrl-qpnp binding
->   pinctrl: qcom: Add PM8941 and PM8941 pinctrl drivers
->   ARM: dts: qcom: Add PM8941 and PM8841 pinctrl nodes
+--0WzQiIesntPPsVaS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Oh, I just spent some 45 minutes reviewing an 8xxx pinctrl driver from
-Björn Andersson
-that *seems* to be doing exactly the same thing.
+On Mon, Jul 07, 2014 at 09:12:14PM +0530, Himangi Saraogi wrote:
+> This patch moves data allocated using regulator_register to
+> devm_regulator_register and does away with the calls to
+> regulator_unregister. Also some labels are removed and a new labelerr is
+> introduced which is less specific to context.
 
-Now I have two drivers from people outside Qualcomm :-)
+Applied, thanks.
 
-Some of my review comments on Björn's driver (like using SI units with the pin
-config) are actually adressed in this patch set. The idea to split in subdrivers
-per-ASIC may be good? I don't really know.
+--0WzQiIesntPPsVaS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Can you two guys *PLEASE* join efforts and combine your drivers into one?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-If we do this efficiently it should be possible to get one single real
-nice driver
-in the end.
+iQIcBAEBAgAGBQJTvQ7uAAoJELSic+t+oim91CcQAJUJwsbxVD1Vk1si4rSr9nRd
+h+oAZ5AvDAVptVe0PL3Vw9DYepYlm5dEyHSTKE8SKkS8TJvj+uHeIXvuZGKi8Uap
+07+05GWEraVO5nm9+b78OArwSb4wBvRzaIYPzbkqOTs+E+x0y1KZ544CS2LXph9r
+r1CMm4yMgtjRHpmIGrHL//VwydmgCWX5JwXYR3nMRUaXV+D4a2yfvoYLDz3HMp3T
+671RwErHezQ9dEsgBnLnECOARTlu0iID6Eii6oRzPkvtyRMXypIhjDhGOzafDLtu
+L4FWlHQtUtZvH2XIGGfuIknD1AaRfwuz4telxR5l6wOfLExDEbnf8CpTYzNhd31k
+fFnncTNmvXHA2ei61AnjqBI1PkdhGXDCgAskCa3HWRpL4bMzgd3egPdtEn3Dtvd4
+mVYKZVCJ/cg5N6/gN2et7bx0MFbbiRMLtRraqod6grGrOmckPRBoQGOoOw8MrSp/
+jOha6wT4uhXrGV46oRDVY/5iDGL5gYbe+z8xMV53WJj8ty9iECG5KYH58xbpRBno
+r6e1w3f6BKYtUZJ/XQYXFGq2SY+4pAqHJ9lc7hf93TzYlfqv4sNt804t5QrIguNI
+9fw2TLg9I3Wf+qB4vm1KvmKH8sDqyjr/pRncry293iFz3gvhaqB01wOJiW8k8xmU
++tRuiMfczsrOZ1jXo96/
+=VBzo
+-----END PGP SIGNATURE-----
 
-If you start arguing about nittt gritty stuff like who's going to be author on
-the commit I'll get really disappointed ;-)
-
-Yours,
-Linus Walleij
+--0WzQiIesntPPsVaS--
