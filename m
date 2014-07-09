@@ -1,189 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755137AbaGIMuN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 08:50:13 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39294 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750922AbaGIMuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 08:50:10 -0400
-Message-ID: <53BD3A56.9050302@ti.com>
-Date: Wed, 9 Jul 2014 15:49:26 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Rostislav Lisovy <lisovy@gmail.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-CC: Pekon Gupta <pekon@ti.com>, Michal Vokac <vokac.m@gmail.com>,
-        Michal Sojka <sojkam1@fel.cvut.cz>,
-        Rostislav Lisovy <lisovy@merica.cz>
-Subject: Re: [PATCH] ARM: omap2+: gpmc-nand: Use dynamic platform_device_alloc()
-References: <1401891875-27843-1-git-send-email-lisovy@merica.cz>
-In-Reply-To: <1401891875-27843-1-git-send-email-lisovy@merica.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1755673AbaGIMuv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 08:50:51 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:50397 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755152AbaGIMuu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 08:50:50 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: linux-gpio@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Subject: [PATCH v3] pinctrl: msm: move all qualcomm drivers to subdir
+Date: Wed,  9 Jul 2014 14:50:16 +0200
+Message-Id: <1404910216-2170-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rostislav,
+We have four Qualcomm-related pin control drivers, and now there
+are drivers coming in for the PMICs on these systems, so let's
+create a qcom subdirectory to hold all the Qualcomm stuff.
 
-On 06/04/2014 05:24 PM, Rostislav Lisovy wrote:
-> GPMC controller supports up to 8 memory devices connected to it.
-> Since there is one statically allocated "struct platform_device
-> gpmc_nand_device" it is not possible to configure the system to
-> use more than one NAND device connected to the GPMC. This
-> modification makes it possible to use up to 8 NAND devices
-> connected to the GPMC controller.
-> 
-> Signed-off-by: Rostislav Lisovy <lisovy@merica.cz>
-> ---
-> 
-> Tested on custom AM335x board with two different NAND chips
-> (128 + 256 MiB) using GPMC configuration in FDT -- behaves
-> correctly.
-> 
-> 
->  arch/arm/mach-omap2/gpmc-nand.c | 79 +++++++++++++++++++----------------------
->  1 file changed, 37 insertions(+), 42 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/gpmc-nand.c b/arch/arm/mach-omap2/gpmc-nand.c
-> index 4349e82..c5481a8 100644
-> --- a/arch/arm/mach-omap2/gpmc-nand.c
-> +++ b/arch/arm/mach-omap2/gpmc-nand.c
-> @@ -24,25 +24,6 @@
->  /* minimum size for IO mapping */
->  #define	NAND_IO_SIZE	4
->  
-> -static struct resource gpmc_nand_resource[] = {
-> -	{
-> -		.flags		= IORESOURCE_MEM,
-> -	},
-> -	{
-> -		.flags		= IORESOURCE_IRQ,
-> -	},
-> -	{
-> -		.flags		= IORESOURCE_IRQ,
-> -	},
-> -};
-> -
-> -static struct platform_device gpmc_nand_device = {
-> -	.name		= "omap2-nand",
-> -	.id		= 0,
-> -	.num_resources	= ARRAY_SIZE(gpmc_nand_resource),
-> -	.resource	= gpmc_nand_resource,
-> -};
-> -
->  static bool gpmc_hwecc_bch_capable(enum omap_ecc ecc_opt)
->  {
->  	/* platforms which support all ECC schemes */
-> @@ -93,43 +74,41 @@ int gpmc_nand_init(struct omap_nand_platform_data *gpmc_nand_data,
->  {
->  	int err	= 0;
->  	struct gpmc_settings s;
-> -	struct device *dev = &gpmc_nand_device.dev;
-> -
-> -	memset(&s, 0, sizeof(struct gpmc_settings));
-> +	struct platform_device *pdev;
-> +	struct resource gpmc_nand_res[] = {
-> +		{ .flags = IORESOURCE_MEM, },
-> +		{ .flags = IORESOURCE_IRQ, },
-> +		{ .flags = IORESOURCE_IRQ, },
-> +	};
->  
-> -	gpmc_nand_device.dev.platform_data = gpmc_nand_data;
-> +	BUG_ON(gpmc_nand_data->cs >= GPMC_CS_NUM);
->  
->  	err = gpmc_cs_request(gpmc_nand_data->cs, NAND_IO_SIZE,
-> -				(unsigned long *)&gpmc_nand_resource[0].start);
-> +			      (unsigned long *)&gpmc_nand_res[0].start);
->  	if (err < 0) {
-> -		dev_err(dev, "Cannot request GPMC CS %d, error %d\n",
-> -			gpmc_nand_data->cs, err);
-> +		pr_err("omap2-gpmc: Cannot request GPMC CS %d, error %d\n",
-> +		       gpmc_nand_data->cs, err);
->  		return err;
->  	}
-> -
-> -	gpmc_nand_resource[0].end = gpmc_nand_resource[0].start +
-> -							NAND_IO_SIZE - 1;
-> -
-> -	gpmc_nand_resource[1].start =
-> -				gpmc_get_client_irq(GPMC_IRQ_FIFOEVENTENABLE);
-> -	gpmc_nand_resource[2].start =
-> -				gpmc_get_client_irq(GPMC_IRQ_COUNT_EVENT);
-> +	gpmc_nand_res[0].end = gpmc_nand_res[0].start + NAND_IO_SIZE - 1;
-> +	gpmc_nand_res[1].start = gpmc_get_client_irq(GPMC_IRQ_FIFOEVENTENABLE);
-> +	gpmc_nand_res[2].start = gpmc_get_client_irq(GPMC_IRQ_COUNT_EVENT);
->  
->  	if (gpmc_t) {
->  		err = gpmc_cs_set_timings(gpmc_nand_data->cs, gpmc_t);
->  		if (err < 0) {
-> -			dev_err(dev, "Unable to set gpmc timings: %d\n", err);
-> +			pr_err("omap2-gpmc: Unable to set gpmc timings: %d\n", err);
->  			return err;
->  		}
->  	}
->  
-> +	memset(&s, 0, sizeof(struct gpmc_settings));
->  	if (gpmc_nand_data->of_node)
->  		gpmc_read_settings_dt(gpmc_nand_data->of_node, &s);
->  	else
->  		gpmc_set_legacy(gpmc_nand_data, &s);
->  
->  	s.device_nand = true;
-> -
->  	err = gpmc_cs_program_settings(gpmc_nand_data->cs, &s);
->  	if (err < 0)
->  		goto out_free_cs;
-> @@ -141,18 +120,34 @@ int gpmc_nand_init(struct omap_nand_platform_data *gpmc_nand_data,
->  	gpmc_update_nand_reg(&gpmc_nand_data->reg, gpmc_nand_data->cs);
->  
->  	if (!gpmc_hwecc_bch_capable(gpmc_nand_data->ecc_opt)) {
-> -		dev_err(dev, "Unsupported NAND ECC scheme selected\n");
-> -		return -EINVAL;
-> +		pr_err("omap2-nand: Unsupported NAND ECC scheme selected\n");
-> +		err = -EINVAL;
-> +		goto out_free_cs;
->  	}
->  
-> -	err = platform_device_register(&gpmc_nand_device);
-> -	if (err < 0) {
-> -		dev_err(dev, "Unable to register NAND device\n");
-> -		goto out_free_cs;
-> +
-> +	pdev = platform_device_alloc("omap2-nand", gpmc_nand_data->cs);
-> +	if (pdev) {
-> +		err = platform_device_add_resources(pdev, gpmc_nand_res,
-> +						    ARRAY_SIZE(gpmc_nand_res));
-> +		if (!err)
-> +			pdev->dev.platform_data = gpmc_nand_data;
-> +	} else {
-> +		err = -ENOMEM;
-> +	}
-> +	if (err)
-> +		goto out_free_pdev;
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: Ivan T. Ivanov <iivanov@mm-sol.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ChangeLog v2->v3:
+- Alter the Makefile so the thing actually compiles. Find bugs,
+  like forgetting to move the pinctrl-msm.h header, and fix them.
+---
+ drivers/pinctrl/Kconfig                      | 40 +-------------------------
+ drivers/pinctrl/Makefile                     |  6 +---
+ drivers/pinctrl/qcom/Kconfig                 | 42 ++++++++++++++++++++++++++++
+ drivers/pinctrl/qcom/Makefile                |  6 ++++
+ drivers/pinctrl/{ => qcom}/pinctrl-apq8064.c |  0
+ drivers/pinctrl/{ => qcom}/pinctrl-ipq8064.c |  0
+ drivers/pinctrl/{ => qcom}/pinctrl-msm.c     |  6 ++--
+ drivers/pinctrl/{ => qcom}/pinctrl-msm.h     |  0
+ drivers/pinctrl/{ => qcom}/pinctrl-msm8960.c |  0
+ drivers/pinctrl/{ => qcom}/pinctrl-msm8x74.c |  0
+ 10 files changed, 53 insertions(+), 47 deletions(-)
+ create mode 100644 drivers/pinctrl/qcom/Kconfig
+ create mode 100644 drivers/pinctrl/qcom/Makefile
+ rename drivers/pinctrl/{ => qcom}/pinctrl-apq8064.c (100%)
+ rename drivers/pinctrl/{ => qcom}/pinctrl-ipq8064.c (100%)
+ rename drivers/pinctrl/{ => qcom}/pinctrl-msm.c (99%)
+ rename drivers/pinctrl/{ => qcom}/pinctrl-msm.h (100%)
+ rename drivers/pinctrl/{ => qcom}/pinctrl-msm8960.c (100%)
+ rename drivers/pinctrl/{ => qcom}/pinctrl-msm8x74.c (100%)
 
-There is a slight problem here. If platform_device_alloc() fails,
-we must jump to 'out_free_cs' and not 'out_free_pdev'.
+diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
+index c0f49fb3276c..e2c7e09783fa 100644
+--- a/drivers/pinctrl/Kconfig
++++ b/drivers/pinctrl/Kconfig
+@@ -233,45 +233,6 @@ config PINCTRL_IMX28
+ 	bool
+ 	select PINCTRL_MXS
+ 
+-config PINCTRL_MSM
+-	bool
+-	select PINMUX
+-	select PINCONF
+-	select GENERIC_PINCONF
+-	select GPIOLIB_IRQCHIP
+-
+-config PINCTRL_APQ8064
+-	tristate "Qualcomm APQ8064 pin controller driver"
+-	depends on GPIOLIB && OF
+-	select PINCTRL_MSM
+-	help
+-	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+-	  Qualcomm TLMM block found in the Qualcomm APQ8064 platform.
+-
+-config PINCTRL_IPQ8064
+-	tristate "Qualcomm IPQ8064 pin controller driver"
+-	depends on GPIOLIB && OF
+-	select PINCTRL_MSM
+-	help
+-	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+-	  Qualcomm TLMM block found in the Qualcomm IPQ8064 platform.
+-
+-config PINCTRL_MSM8960
+-	tristate "Qualcomm 8960 pin controller driver"
+-	depends on GPIOLIB && OF
+-	select PINCTRL_MSM
+-	help
+-	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+-	  Qualcomm TLMM block found in the Qualcomm 8960 platform.
+-
+-config PINCTRL_MSM8X74
+-	tristate "Qualcomm 8x74 pin controller driver"
+-	depends on GPIOLIB && OF && (ARCH_QCOM || COMPILE_TEST)
+-	select PINCTRL_MSM
+-	help
+-	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+-	  Qualcomm TLMM block found in the Qualcomm 8974 platform.
+-
+ config PINCTRL_NOMADIK
+ 	bool "Nomadik pin controller driver"
+ 	depends on ARCH_U8500 || ARCH_NOMADIK
+@@ -410,6 +371,7 @@ config PINCTRL_S3C64XX
+ 
+ source "drivers/pinctrl/berlin/Kconfig"
+ source "drivers/pinctrl/mvebu/Kconfig"
++source "drivers/pinctrl/qcom/Kconfig"
+ source "drivers/pinctrl/sh-pfc/Kconfig"
+ source "drivers/pinctrl/spear/Kconfig"
+ source "drivers/pinctrl/sunxi/Kconfig"
+diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
+index 80bced77446a..abe17724036c 100644
+--- a/drivers/pinctrl/Makefile
++++ b/drivers/pinctrl/Makefile
+@@ -39,11 +39,6 @@ obj-$(CONFIG_PINCTRL_MXS)	+= pinctrl-mxs.o
+ obj-$(CONFIG_PINCTRL_IMX23)	+= pinctrl-imx23.o
+ obj-$(CONFIG_PINCTRL_IMX25)	+= pinctrl-imx25.o
+ obj-$(CONFIG_PINCTRL_IMX28)	+= pinctrl-imx28.o
+-obj-$(CONFIG_PINCTRL_MSM)	+= pinctrl-msm.o
+-obj-$(CONFIG_PINCTRL_APQ8064)	+= pinctrl-apq8064.o
+-obj-$(CONFIG_PINCTRL_IPQ8064)	+= pinctrl-ipq8064.o
+-obj-$(CONFIG_PINCTRL_MSM8960)	+= pinctrl-msm8960.o
+-obj-$(CONFIG_PINCTRL_MSM8X74)	+= pinctrl-msm8x74.o
+ obj-$(CONFIG_PINCTRL_NOMADIK)	+= pinctrl-nomadik.o
+ obj-$(CONFIG_PINCTRL_STN8815)	+= pinctrl-nomadik-stn8815.o
+ obj-$(CONFIG_PINCTRL_DB8500)	+= pinctrl-nomadik-db8500.o
+@@ -74,6 +69,7 @@ obj-$(CONFIG_PINCTRL_VF610)	+= pinctrl-vf610.o
+ 
+ obj-$(CONFIG_ARCH_BERLIN)	+= berlin/
+ obj-$(CONFIG_PLAT_ORION)        += mvebu/
++obj-$(CONFIG_ARCH_QCOM)		+= qcom/
+ obj-$(CONFIG_ARCH_SHMOBILE)	+= sh-pfc/
+ obj-$(CONFIG_SUPERH)		+= sh-pfc/
+ obj-$(CONFIG_PLAT_SPEAR)	+= spear/
+diff --git a/drivers/pinctrl/qcom/Kconfig b/drivers/pinctrl/qcom/Kconfig
+new file mode 100644
+index 000000000000..d160a710d704
+--- /dev/null
++++ b/drivers/pinctrl/qcom/Kconfig
+@@ -0,0 +1,42 @@
++if (ARCH_QCOM || COMPILE_TEST)
++
++config PINCTRL_MSM
++	bool
++	select PINMUX
++	select PINCONF
++	select GENERIC_PINCONF
++	select GPIOLIB_IRQCHIP
++
++config PINCTRL_APQ8064
++	tristate "Qualcomm APQ8064 pin controller driver"
++	depends on GPIOLIB && OF
++	select PINCTRL_MSM
++	help
++	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
++	  Qualcomm TLMM block found in the Qualcomm APQ8064 platform.
++
++config PINCTRL_IPQ8064
++	tristate "Qualcomm IPQ8064 pin controller driver"
++	depends on GPIOLIB && OF
++	select PINCTRL_MSM
++	help
++	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
++	  Qualcomm TLMM block found in the Qualcomm IPQ8064 platform.
++
++config PINCTRL_MSM8960
++	tristate "Qualcomm 8960 pin controller driver"
++	depends on GPIOLIB && OF
++	select PINCTRL_MSM
++	help
++	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
++	  Qualcomm TLMM block found in the Qualcomm 8960 platform.
++
++config PINCTRL_MSM8X74
++	tristate "Qualcomm 8x74 pin controller driver"
++	depends on GPIOLIB && OF
++	select PINCTRL_MSM
++	help
++	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
++	  Qualcomm TLMM block found in the Qualcomm 8974 platform.
++
++endif
+diff --git a/drivers/pinctrl/qcom/Makefile b/drivers/pinctrl/qcom/Makefile
+new file mode 100644
+index 000000000000..2a02602d715c
+--- /dev/null
++++ b/drivers/pinctrl/qcom/Makefile
+@@ -0,0 +1,6 @@
++# Qualcomm pin control drivers
++obj-$(CONFIG_PINCTRL_MSM)	+= pinctrl-msm.o
++obj-$(CONFIG_PINCTRL_APQ8064)	+= pinctrl-apq8064.o
++obj-$(CONFIG_PINCTRL_IPQ8064)	+= pinctrl-ipq8064.o
++obj-$(CONFIG_PINCTRL_MSM8960)	+= pinctrl-msm8960.o
++obj-$(CONFIG_PINCTRL_MSM8X74)	+= pinctrl-msm8x74.o
+diff --git a/drivers/pinctrl/pinctrl-apq8064.c b/drivers/pinctrl/qcom/pinctrl-apq8064.c
+similarity index 100%
+rename from drivers/pinctrl/pinctrl-apq8064.c
+rename to drivers/pinctrl/qcom/pinctrl-apq8064.c
+diff --git a/drivers/pinctrl/pinctrl-ipq8064.c b/drivers/pinctrl/qcom/pinctrl-ipq8064.c
+similarity index 100%
+rename from drivers/pinctrl/pinctrl-ipq8064.c
+rename to drivers/pinctrl/qcom/pinctrl-ipq8064.c
+diff --git a/drivers/pinctrl/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
+similarity index 99%
+rename from drivers/pinctrl/pinctrl-msm.c
+rename to drivers/pinctrl/qcom/pinctrl-msm.c
+index 43d47b7cff92..90d383d3ce17 100644
+--- a/drivers/pinctrl/pinctrl-msm.c
++++ b/drivers/pinctrl/qcom/pinctrl-msm.c
+@@ -27,10 +27,10 @@
+ #include <linux/interrupt.h>
+ #include <linux/spinlock.h>
+ 
+-#include "core.h"
+-#include "pinconf.h"
++#include "../core.h"
++#include "../pinconf.h"
+ #include "pinctrl-msm.h"
+-#include "pinctrl-utils.h"
++#include "../pinctrl-utils.h"
+ 
+ #define MAX_NR_GPIO 300
+ 
+diff --git a/drivers/pinctrl/pinctrl-msm.h b/drivers/pinctrl/qcom/pinctrl-msm.h
+similarity index 100%
+rename from drivers/pinctrl/pinctrl-msm.h
+rename to drivers/pinctrl/qcom/pinctrl-msm.h
+diff --git a/drivers/pinctrl/pinctrl-msm8960.c b/drivers/pinctrl/qcom/pinctrl-msm8960.c
+similarity index 100%
+rename from drivers/pinctrl/pinctrl-msm8960.c
+rename to drivers/pinctrl/qcom/pinctrl-msm8960.c
+diff --git a/drivers/pinctrl/pinctrl-msm8x74.c b/drivers/pinctrl/qcom/pinctrl-msm8x74.c
+similarity index 100%
+rename from drivers/pinctrl/pinctrl-msm8x74.c
+rename to drivers/pinctrl/qcom/pinctrl-msm8x74.c
+-- 
+1.9.3
 
-> +
-> +	err = platform_device_add(pdev);
-> +	if (err) {
-> +		dev_err(&pdev->dev, "Unable to register NAND device\n");
-> +		goto out_free_pdev;
->  	}
->  
->  	return 0;
->  
-> +out_free_pdev:
-> +	platform_device_put(pdev);
->  out_free_cs:
->  	gpmc_cs_free(gpmc_nand_data->cs);
->  
-> 
-
-cheers,
--roger
