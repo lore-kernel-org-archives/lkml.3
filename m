@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756678AbaGIPQI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 11:16:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59528 "EHLO mx1.redhat.com"
+	id S1756711AbaGIPQS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 11:16:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16314 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752301AbaGIPQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 11:16:05 -0400
-Subject: [PATCH02/17] X.509: Export certificate parse and free functions
+	id S1756691AbaGIPQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 11:16:15 -0400
+Subject: [PATCH04/17] PKCS#7: Digest the data in a signed-data message
 From: David Howells <dhowells@redhat.com>
 To: keyrings@linux-nfs.org
 Cc: linux-security-module@vger.kernel.org, kexec@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Date: Wed, 09 Jul 2014 16:15:38 +0100
-Message-ID: <20140709151538.23074.74939.stgit@warthog.procyon.org.uk>
+Date: Wed, 09 Jul 2014 16:15:51 +0100
+Message-ID: <20140709151551.23074.4361.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20140709151525.23074.32315.stgit@warthog.procyon.org.uk>
 References: <20140709151525.23074.32315.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.17-dirty
@@ -23,44 +23,211 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Export certificate parse and free functions for use by modules.
+Digest the data in a PKCS#7 signed-data message and attach to the
+public_key_signature struct contained in the pkcs7_message struct.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 Acked-by: Vivek Goyal <vgoyal@redhat.com>
 Reviewed-by: Kees Cook <keescook@chromium.org>
-Reviewed-by: Josh Boyer <jwboyer@redhat.com>
 ---
 
- crypto/asymmetric_keys/x509_cert_parser.c |    3 +++
- 1 file changed, 3 insertions(+)
+ crypto/asymmetric_keys/Makefile       |    3 -
+ crypto/asymmetric_keys/pkcs7_verify.c |  173 +++++++++++++++++++++++++++++++++
+ 2 files changed, 175 insertions(+), 1 deletion(-)
+ create mode 100644 crypto/asymmetric_keys/pkcs7_verify.c
 
 
-diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
-index 4a8df29..ac72348 100644
---- a/crypto/asymmetric_keys/x509_cert_parser.c
-+++ b/crypto/asymmetric_keys/x509_cert_parser.c
-@@ -11,6 +11,7 @@
+diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
+index 59d8cad..b6b39e7 100644
+--- a/crypto/asymmetric_keys/Makefile
++++ b/crypto/asymmetric_keys/Makefile
+@@ -32,7 +32,8 @@ clean-files	+= x509_rsakey-asn1.c x509_rsakey-asn1.h
+ obj-$(CONFIG_PKCS7_MESSAGE_PARSER) += pkcs7_message.o
+ pkcs7_message-y := \
+ 	pkcs7-asn1.o \
+-	pkcs7_parser.o
++	pkcs7_parser.o \
++	pkcs7_verify.o
  
- #define pr_fmt(fmt) "X.509: "fmt
- #include <linux/kernel.h>
+ $(obj)/pkcs7_parser.o: $(obj)/pkcs7-asn1.h
+ $(obj)/pkcs7-asn1.o: $(obj)/pkcs7-asn1.c $(obj)/pkcs7-asn1.h
+diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
+new file mode 100644
+index 0000000..0bb408a
+--- /dev/null
++++ b/crypto/asymmetric_keys/pkcs7_verify.c
+@@ -0,0 +1,173 @@
++/* Verify the signature on a PKCS#7 message.
++ *
++ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++
++#define pr_fmt(fmt) "PKCS7: "fmt
++#include <linux/kernel.h>
 +#include <linux/export.h>
- #include <linux/slab.h>
- #include <linux/err.h>
- #include <linux/oid_registry.h>
-@@ -52,6 +53,7 @@ void x509_free_certificate(struct x509_certificate *cert)
- 		kfree(cert);
- 	}
- }
-+EXPORT_SYMBOL_GPL(x509_free_certificate);
- 
- /*
-  * Parse an X.509 certificate
-@@ -97,6 +99,7 @@ error_no_ctx:
- error_no_cert:
- 	return ERR_PTR(ret);
- }
-+EXPORT_SYMBOL_GPL(x509_cert_parse);
- 
- /*
-  * Note an OID when we find one for later processing when we know how
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/asn1.h>
++#include <crypto/hash.h>
++#include "public_key.h"
++#include "pkcs7_parser.h"
++
++/*
++ * Digest the relevant parts of the PKCS#7 data
++ */
++static int pkcs7_digest(struct pkcs7_message *pkcs7,
++			struct pkcs7_signed_info *sinfo)
++{
++	struct crypto_shash *tfm;
++	struct shash_desc *desc;
++	size_t digest_size, desc_size;
++	void *digest;
++	int ret;
++
++	kenter(",%u,%u", sinfo->index, sinfo->sig.pkey_hash_algo);
++
++	if (sinfo->sig.pkey_hash_algo >= PKEY_HASH__LAST ||
++	    !hash_algo_name[sinfo->sig.pkey_hash_algo])
++		return -ENOPKG;
++
++	/* Allocate the hashing algorithm we're going to need and find out how
++	 * big the hash operational data will be.
++	 */
++	tfm = crypto_alloc_shash(hash_algo_name[sinfo->sig.pkey_hash_algo],
++				 0, 0);
++	if (IS_ERR(tfm))
++		return (PTR_ERR(tfm) == -ENOENT) ? -ENOPKG : PTR_ERR(tfm);
++
++	desc_size = crypto_shash_descsize(tfm) + sizeof(*desc);
++	sinfo->sig.digest_size = digest_size = crypto_shash_digestsize(tfm);
++
++	ret = -ENOMEM;
++	digest = kzalloc(digest_size + desc_size, GFP_KERNEL);
++	if (!digest)
++		goto error_no_desc;
++
++	desc = digest + digest_size;
++	desc->tfm   = tfm;
++	desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
++
++	/* Digest the message [RFC2315 9.3] */
++	ret = crypto_shash_init(desc);
++	if (ret < 0)
++		goto error;
++	ret = crypto_shash_finup(desc, pkcs7->data, pkcs7->data_len, digest);
++	if (ret < 0)
++		goto error;
++	pr_devel("MsgDigest = [%*ph]\n", 8, digest);
++
++	/* However, if there are authenticated attributes, there must be a
++	 * message digest attribute amongst them which corresponds to the
++	 * digest we just calculated.
++	 */
++	if (sinfo->msgdigest) {
++		u8 tag;
++
++		if (sinfo->msgdigest_len != sinfo->sig.digest_size) {
++			pr_debug("Sig %u: Invalid digest size (%u)\n",
++				 sinfo->index, sinfo->msgdigest_len);
++			ret = -EBADMSG;
++			goto error;
++		}
++
++		if (memcmp(digest, sinfo->msgdigest, sinfo->msgdigest_len) != 0) {
++			pr_debug("Sig %u: Message digest doesn't match\n",
++				 sinfo->index);
++			ret = -EKEYREJECTED;
++			goto error;
++		}
++
++		/* We then calculate anew, using the authenticated attributes
++		 * as the contents of the digest instead.  Note that we need to
++		 * convert the attributes from a CONT.0 into a SET before we
++		 * hash it.
++		 */
++		memset(digest, 0, sinfo->sig.digest_size);
++
++		ret = crypto_shash_init(desc);
++		if (ret < 0)
++			goto error;
++		tag = ASN1_CONS_BIT | ASN1_SET;
++		ret = crypto_shash_update(desc, &tag, 1);
++		if (ret < 0)
++			goto error;
++		ret = crypto_shash_finup(desc, sinfo->authattrs,
++					 sinfo->authattrs_len, digest);
++		if (ret < 0)
++			goto error;
++		pr_devel("AADigest = [%*ph]\n", 8, digest);
++	}
++
++	sinfo->sig.digest = digest;
++	digest = NULL;
++
++error:
++	kfree(digest);
++error_no_desc:
++	crypto_free_shash(tfm);
++	kleave(" = %d", ret);
++	return ret;
++}
++
++/*
++/*
++ * Verify one signed information block from a PKCS#7 message.
++ */
++static int pkcs7_verify_one(struct pkcs7_message *pkcs7,
++			    struct pkcs7_signed_info *sinfo)
++{
++	int ret;
++
++	kenter(",%u", sinfo->index);
++
++	/* First of all, digest the data in the PKCS#7 message and the
++	 * signed information block
++	 */
++	ret = pkcs7_digest(pkcs7, sinfo);
++	if (ret < 0)
++		return ret;
++
++	return 0;
++}
++
++/**
++ * pkcs7_verify - Verify a PKCS#7 message
++ * @pkcs7: The PKCS#7 message to be verified
++ */
++int pkcs7_verify(struct pkcs7_message *pkcs7)
++{
++	struct pkcs7_signed_info *sinfo;
++	struct x509_certificate *x509;
++	int ret, n;
++
++	kenter("");
++
++	for (n = 0, x509 = pkcs7->certs; x509; x509 = x509->next, n++) {
++		ret = x509_get_sig_params(x509);
++		if (ret < 0)
++			return ret;
++		pr_debug("X.509[%u] %s\n", n, x509->authority);
++	}
++
++	for (sinfo = pkcs7->signed_infos; sinfo; sinfo = sinfo->next) {
++		ret = pkcs7_verify_one(pkcs7, sinfo);
++		if (ret < 0) {
++			kleave(" = %d", ret);
++			return ret;
++		}
++	}
++
++	kleave(" = 0");
++	return 0;
++}
++EXPORT_SYMBOL_GPL(pkcs7_verify);
 
