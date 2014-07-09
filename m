@@ -1,33 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530AbaGIIru (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 04:47:50 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:1038 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754230AbaGIIrs (ORCPT
+	id S1755180AbaGIIsB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 04:48:01 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:21538 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754230AbaGIIr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 04:47:48 -0400
-Message-ID: <53BD01AD.6070003@huawei.com>
-Date: Wed, 9 Jul 2014 16:47:41 +0800
+	Wed, 9 Jul 2014 04:47:57 -0400
+Message-ID: <53BD01B6.403@huawei.com>
+Date: Wed, 9 Jul 2014 16:47:50 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
 To: Tejun Heo <tj@kernel.org>
 CC: LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH v3 04/12] cpuset: inherit ancestor's masks if effective_{cpus,mems}
- becomes empty
+Subject: [PATCH v3 05/12] cpuset: use effective cpumask to build sched domains
 References: <53BD0174.4060002@huawei.com>
 In-Reply-To: <53BD0174.4060002@huawei.com>
 Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.177.18.230]
 X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020203.53BD01B2.00C5,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: 88308c6bfe02988e188a704308ec698a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -48,76 +41,121 @@ Those behavior changes are for default hierarchy only. For legacy
 hierarchy, effective_mask and configured_mask are the same, so we won't
 break old interfaces.
 
-To make cs->effective_{cpus,mems} to be effective masks, we need to
-  - update the effective masks at hotplug
-  - update the effective masks at config change
-  - take on ancestor's mask when the effective mask is empty
-
-The last item is done here.
+We should partition sched domains according to effective_cpus, which
+is the real cpulist that takes effects on tasks in the cpuset.
 
 This won't introduce behavior change.
 
+v2:
+- Add a comment for the call of rebuild_sched_domains(), suggested
+by Tejun.
+
 Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
- kernel/cpuset.c | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ kernel/cpuset.c | 28 +++++++++++++++++-----------
+ 1 file changed, 17 insertions(+), 11 deletions(-)
 
 diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index da766c3..f834002 100644
+index f834002..60577cc 100644
 --- a/kernel/cpuset.c
 +++ b/kernel/cpuset.c
-@@ -877,6 +877,13 @@ static void update_cpumasks_hier(struct cpuset *cs, struct cpumask *new_cpus)
+@@ -494,11 +494,11 @@ out:
+ #ifdef CONFIG_SMP
+ /*
+  * Helper routine for generate_sched_domains().
+- * Do cpusets a, b have overlapping cpus_allowed masks?
++ * Do cpusets a, b have overlapping effective cpus_allowed masks?
+  */
+ static int cpusets_overlap(struct cpuset *a, struct cpuset *b)
+ {
+-	return cpumask_intersects(a->cpus_allowed, b->cpus_allowed);
++	return cpumask_intersects(a->effective_cpus, b->effective_cpus);
+ }
  
- 		cpumask_and(new_cpus, cp->cpus_allowed, parent->effective_cpus);
+ static void
+@@ -615,7 +615,7 @@ static int generate_sched_domains(cpumask_var_t **domains,
+ 			*dattr = SD_ATTR_INIT;
+ 			update_domain_attr_tree(dattr, &top_cpuset);
+ 		}
+-		cpumask_copy(doms[0], top_cpuset.cpus_allowed);
++		cpumask_copy(doms[0], top_cpuset.effective_cpus);
+ 
+ 		goto done;
+ 	}
+@@ -719,7 +719,7 @@ restart:
+ 			struct cpuset *b = csa[j];
+ 
+ 			if (apn == b->pn) {
+-				cpumask_or(dp, dp, b->cpus_allowed);
++				cpumask_or(dp, dp, b->effective_cpus);
+ 				if (dattr)
+ 					update_domain_attr_tree(dattr + nslot, b);
+ 
+@@ -771,7 +771,7 @@ static void rebuild_sched_domains_locked(void)
+ 	 * passing doms with offlined cpu to partition_sched_domains().
+ 	 * Anyways, hotplug work item will rebuild sched domains.
+ 	 */
+-	if (!cpumask_equal(top_cpuset.cpus_allowed, cpu_active_mask))
++	if (!cpumask_equal(top_cpuset.effective_cpus, cpu_active_mask))
+ 		goto out;
+ 
+ 	/* Generate domain masks and attrs */
+@@ -870,6 +870,7 @@ static void update_cpumasks_hier(struct cpuset *cs, struct cpumask *new_cpus)
+ {
+ 	struct cpuset *cp;
+ 	struct cgroup_subsys_state *pos_css;
++	bool need_rebuild_sched_domains = false;
+ 
+ 	rcu_read_lock();
+ 	cpuset_for_each_descendant_pre(cp, pos_css, cs) {
+@@ -903,10 +904,21 @@ static void update_cpumasks_hier(struct cpuset *cs, struct cpumask *new_cpus)
+ 
+ 		update_tasks_cpumask(cp);
  
 +		/*
-+		 * If it becomes empty, inherit the effective mask of the
-+		 * parent, which is guaranteed to have some CPUs.
++		 * If the effective cpumask of any non-empty cpuset is changed,
++		 * we need to rebuild sched domains.
 +		 */
-+		if (cpumask_empty(new_cpus))
-+			cpumask_copy(new_cpus, parent->effective_cpus);
++		if (!cpumask_empty(cp->cpus_allowed) &&
++		    is_sched_load_balance(cp))
++			need_rebuild_sched_domains = true;
 +
- 		/* Skip the whole subtree if the cpumask remains the same. */
- 		if (cpumask_equal(new_cpus, cp->effective_cpus)) {
- 			pos_css = css_rightmost_descendant(pos_css);
-@@ -1123,6 +1130,13 @@ static void update_nodemasks_hier(struct cpuset *cs, nodemask_t *new_mems)
- 
- 		nodes_and(*new_mems, cp->mems_allowed, parent->effective_mems);
- 
-+		/*
-+		 * If it becomes empty, inherit the effective mask of the
-+		 * parent, which is guaranteed to have some MEMs.
-+		 */
-+		if (nodes_empty(*new_mems))
-+			*new_mems = parent->effective_mems;
+ 		rcu_read_lock();
+ 		css_put(&cp->css);
+ 	}
+ 	rcu_read_unlock();
 +
- 		/* Skip the whole subtree if the nodemask remains the same. */
- 		if (nodes_equal(*new_mems, cp->effective_mems)) {
- 			pos_css = css_rightmost_descendant(pos_css);
-@@ -2102,7 +2116,11 @@ retry:
++	if (need_rebuild_sched_domains)
++		rebuild_sched_domains_locked();
+ }
  
+ /**
+@@ -919,7 +931,6 @@ static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
+ 			  const char *buf)
+ {
+ 	int retval;
+-	int is_load_balanced;
+ 
+ 	/* top_cpuset.cpus_allowed tracks cpu_online_mask; it's read-only */
+ 	if (cs == &top_cpuset)
+@@ -950,17 +961,12 @@ static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
+ 	if (retval < 0)
+ 		return retval;
+ 
+-	is_load_balanced = is_sched_load_balance(trialcs);
+-
  	mutex_lock(&callback_mutex);
- 	cpumask_andnot(cs->cpus_allowed, cs->cpus_allowed, &off_cpus);
-+
-+	/* Inherit the effective mask of the parent, if it becomes empty. */
- 	cpumask_andnot(cs->effective_cpus, cs->effective_cpus, &off_cpus);
-+	if (on_dfl && cpumask_empty(cs->effective_cpus))
-+		cpumask_copy(cs->effective_cpus, parent_cs(cs)->effective_cpus);
+ 	cpumask_copy(cs->cpus_allowed, trialcs->cpus_allowed);
  	mutex_unlock(&callback_mutex);
  
- 	/*
-@@ -2117,7 +2135,11 @@ retry:
+ 	/* use trialcs->cpus_allowed as a temp variable */
+ 	update_cpumasks_hier(cs, trialcs->cpus_allowed);
+-
+-	if (is_load_balanced)
+-		rebuild_sched_domains_locked();
+ 	return 0;
+ }
  
- 	mutex_lock(&callback_mutex);
- 	nodes_andnot(cs->mems_allowed, cs->mems_allowed, off_mems);
-+
-+	/* Inherit the effective mask of the parent, if it becomes empty */
- 	nodes_andnot(cs->effective_mems, cs->effective_mems, off_mems);
-+	if (on_dfl && nodes_empty(cs->effective_mems))
-+		cs->effective_mems = parent_cs(cs)->effective_mems;
- 	mutex_unlock(&callback_mutex);
- 
- 	/*
 -- 
 1.8.0.2
 
