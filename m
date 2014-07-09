@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294AbaGIJE4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 05:04:56 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37963 "EHLO arroyo.ext.ti.com"
+	id S1754486AbaGIJKu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 05:10:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:35602 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754887AbaGIJEw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 05:04:52 -0400
-From: George Cherian <george.cherian@ti.com>
-To: <cw00.choi@samsung.com>, <myungjoo.ham@samsung.com>,
-        <grant.likely@linaro.org>, <rdunlap@infradead.org>,
-        <galak@codeaurora.org>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <linux@roeck-us.net>
-CC: <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <george.cherian@ti.com>
-Subject: [PATCH v2 1/2] extcon: gpio: Minor cleanups
-Date: Wed, 9 Jul 2014 14:31:07 +0530
-Message-ID: <1404896468-15974-2-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1404896468-15974-1-git-send-email-george.cherian@ti.com>
-References: <1404896468-15974-1-git-send-email-george.cherian@ti.com>
+	id S1753377AbaGIJKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 05:10:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,630,1400050800"; 
+   d="scan'208";a="540762434"
+Date: Wed, 9 Jul 2014 09:07:53 +0800
+From: Yuyang Du <yuyang.du@intel.com>
+To: bsegall@google.com
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com,
+        arjan.van.de.ven@intel.com, len.brown@intel.com, alan.cox@intel.com,
+        mark.gross@intel.com, pjt@google.com, fengguang.wu@intel.com
+Subject: Re: [PATCH 2/2] sched: Rewrite per entity runnable load average
+ tracking
+Message-ID: <20140709010753.GD25653@intel.com>
+References: <1404268256-3019-1-git-send-email-yuyang.du@intel.com>
+ <1404268256-3019-2-git-send-email-yuyang.du@intel.com>
+ <20140707104646.GK6758@twins.programming.kicks-ass.net>
+ <xm26r41wyfgc.fsf@sword-of-the-dawn.mtv.corp.google.com>
+ <20140708000840.GB25653@intel.com>
+ <xm26k37nye7d.fsf@sword-of-the-dawn.mtv.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <xm26k37nye7d.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minor Cleanups
- - Order the include files in alphabetical order.
- - Fix description of state_off in extcon_gpio.h
- - Add a descrition for check_on_resume in extcon_gpio.h
+Thanks, Ben.
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
----
- drivers/extcon/extcon-gpio.c       | 10 +++++-----
- include/linux/extcon/extcon-gpio.h |  4 +++-
- 2 files changed, 8 insertions(+), 6 deletions(-)
+On Tue, Jul 08, 2014 at 10:04:22AM -0700, bsegall@google.com wrote:
 
-diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
-index 645b283..6c268b4 100644
---- a/drivers/extcon/extcon-gpio.c
-+++ b/drivers/extcon/extcon-gpio.c
-@@ -20,16 +20,16 @@
-  *
- */
+> > The sampling of cfs_rq->load.weight should be equivalent to the current
+> > code in that at the end of day cfs_rq->load.weight worth of runnable would 
+> > contribute to runnable_load_avg/blocked_load_avg for both the current and
+> > the rewrite.
+> 
+> Yes, but the point is that it looks at load.weight when delta/1024 > 0
+> and assumes that it has had that load.weight the entire time, when this
+> might not actually be true. The largest error I can think of is if you
+> have a very high weight task that tends to run for very short periods of
+> time, you could end up losing their entire contribution to load. This
+> may be acceptable, I'm not certain.
+
+That I believe is not a problem. It is a matter of when cfs_rq->load.weight
+changes and when we look at it to contribute to the cfs_rq's load_avg.
+Fortunately, we will not miss any change of cfs_rq->load.weight, always
+contributing to the load_avg the right amount. Put another way, we always
+use the right cfs_rq->load.weight.
+
+> > So left are the migrate_task_rq_fair() not holding lock issue and cfs_rq->avg.load_avg
+> > overflow issue. I need some time to study them.
+> >
+> > Overall, I think none of these issues are originally caused by combination/split
+> > of runnable and blocked. It is just a matter of how synchronized we want to be
+> > (this rewrite is the most synchronized), and the workaround I need to borrow from the
+> > current codes.
+> 
+> If you can manage to find a to deal with the migration issue without it,
+> that would be great, I'm just pretty sure that's why we did the split.
  
--#include <linux/module.h>
--#include <linux/kernel.h>
-+#include <linux/extcon.h>
-+#include <linux/extcon/extcon-gpio.h>
-+#include <linux/gpio.h>
- #include <linux/init.h>
- #include <linux/interrupt.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
- #include <linux/platform_device.h>
- #include <linux/slab.h>
- #include <linux/workqueue.h>
--#include <linux/gpio.h>
--#include <linux/extcon.h>
--#include <linux/extcon/extcon-gpio.h>
- 
- struct gpio_extcon_data {
- 	struct extcon_dev *edev;
-diff --git a/include/linux/extcon/extcon-gpio.h b/include/linux/extcon/extcon-gpio.h
-index 8900fdf..0b17ad4 100644
---- a/include/linux/extcon/extcon-gpio.h
-+++ b/include/linux/extcon/extcon-gpio.h
-@@ -34,8 +34,10 @@
-  * @irq_flags:		IRQ Flags (e.g., IRQF_TRIGGER_LOW).
-  * @state_on:		print_state is overriden with state_on if attached.
-  *			If NULL, default method of extcon class is used.
-- * @state_off:		print_state is overriden with state_on if detached.
-+ * @state_off:		print_state is overriden with state_off if detached.
-  *			If NUll, default method of extcon class is used.
-+ * @check_on_resume:	Boolean describing whether to check the state of gpio
-+ *			while resuming from sleep.
-  *
-  * Note that in order for state_on or state_off to be valid, both state_on
-  * and state_off should be not NULL. If at least one of them is NULL,
--- 
-1.8.3.1
+After thinking about it the whole morning, this issue is a killer... :)
+
+But I think, even by spliting and by using atomic operations, the current code
+does not substract the migrating task's load absolutely synchronized:
+
+When se migrating, you atomic_read cfs_rq->decay_counter (say t1), and then atomic_add
+the se's load_avg_contrib to removed_load. However, when updating the cfs_rq->blocked_load_avg
+it is not guranteed when substracting the removed_load from the blocked_load_avg,
+the actual decay_counter (say t2) is the same as t1. Because at t1 time (when you
+atomic_read it), the decay_counter can be being updated (before you atomic_add to
+removed_load). Atomic operation does not help synchronize them. Right?
+
+So essentially, to perfectly substract the right amount, we must first synchronize
+the migrating task with its cfs_rq (catch up), and then substract it right away.
+Those two steps must be synchronized (with lock) or atomically done at once. Considering
+migrating and load averaging are not sequential (strict interleaving). Separating the
+two steps but synchronizing them is not enough, they must be done atomically.
+
+That is chalenging... Can someone (Peter) grant us a lock of the remote rq? :)
+
+Thanks,
+Yuyang
 
