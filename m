@@ -1,64 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755890AbaGIXvM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 19:51:12 -0400
-Received: from message.langara.bc.ca ([142.35.159.25]:50265 "EHLO
-	message.langara.bc.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919AbaGIXvL (ORCPT
+	id S1756375AbaGIXwf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 19:52:35 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:34667 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223AbaGIXwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 19:51:11 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-disposition: inline
-Content-type: text/plain; charset=us-ascii
-From: Steven Stewart-Gallus <sstewartgallus00@mylangara.bc.ca>
-To: linux-kernel@vger.kernel.org
-Cc: Christoph Hellwig <hch@infradead.org>
-Message-id: <fb4eb72f7cd0.53bdd56f@langara.bc.ca>
-Date: Wed, 09 Jul 2014 23:51:11 +0000 (GMT)
-X-Mailer: Sun Java(tm) System Messenger Express 6.3-6.03 (built Mar 14 2008;
- 32bit)
-Content-language: en
-Subject: [PATCH v2 1/2] include/uapi: Define AT_ABSOLUTE to allow only absolute
- paths
-X-Accept-Language: en
+	Wed, 9 Jul 2014 19:52:34 -0400
+Date: Wed, 09 Jul 2014 16:52:32 -0700 (PDT)
+Message-Id: <20140709.165232.539576872991411664.davem@davemloft.net>
+To: grygorii.strashko@ti.com
+Cc: f.fainelli@gmail.com, santosh.shilimkar@ti.com, netdev@vger.kernel.org,
+        prabhakar.csengg@gmail.com, nsekhar@ti.com, robh+dt@kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com
+Subject: Re: [PATCH 1/2] net: davinci_mdio: reuse for keystone2 arch
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1404911451-9921-2-git-send-email-grygorii.strashko@ti.com>
+References: <1404911451-9921-1-git-send-email-grygorii.strashko@ti.com>
+	<1404911451-9921-2-git-send-email-grygorii.strashko@ti.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 09 Jul 2014 16:52:33 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This way people can use existing functionality (passing an invalid value
-for dirfd to allow only absolute paths in *at style functions) and be
-compatible for the future if Linux ever adds in new AT_* flags.
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+Date: Wed, 9 Jul 2014 16:10:50 +0300
 
-Signed-off-by: Steven Stewart-Gallus <sstewartgallus00@mylangara.bc.ca>
----
- include/uapi/linux/fcntl.h |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+>  Required properties:
+> -- compatible		: Should be "ti,davinci_mdio"
+> +- compatible		: Should be "ti,davinci_mdio" or "ti,keystone-mdio"
 
-diff --git a/include/uapi/linux/fcntl.h b/include/uapi/linux/fcntl.h
-index 074b886..c4c5705 100644
---- a/include/uapi/linux/fcntl.h
-+++ b/include/uapi/linux/fcntl.h
-@@ -38,9 +38,16 @@
- #define DN_ATTRIB	0x00000020	/* File changed attibutes */
- #define DN_MULTISHOT	0x80000000	/* Don't remove notifier */
- 
-+#define AT_FDABSOLUTE		-1      /* Special value used to indicate
-+					   openat should not use any directory
-+					   and only accept absolute values.
-+					   Currently, other values work for this
-+					   but in the future that might
-+					   change. */
- #define AT_FDCWD		-100    /* Special value used to indicate
--                                           openat should use the current
--                                           working directory. */
-+					   openat should use the current
-+					   working directory. */
-+
- #define AT_SYMLINK_NOFOLLOW	0x100   /* Do not follow symbolic links.  */
- #define AT_REMOVEDIR		0x200   /* Remove directory instead of
-                                            unlinking file.  */
--- 
-1.7.9.5
-
-
+Why the inconsistency in naming schemes?  I don't see any reason
+to be different wrt. "_" vs. "-" in the name string.
