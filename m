@@ -1,103 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366AbaGIUzE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 16:55:04 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:47085 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750896AbaGIUzA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 16:55:00 -0400
+	id S1753413AbaGIU64 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 16:58:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52439 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750889AbaGIU6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 16:58:55 -0400
+Date: Wed, 9 Jul 2014 22:58:50 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] firewire: IEEE 1394 (FireWire) support should depend on
+ HAS_DMA
+Message-ID: <20140709225850.57132656@endymion.delvare>
+In-Reply-To: <1404932640-9029-1-git-send-email-geert@linux-m68k.org>
+References: <1404932640-9029-1-git-send-email-geert@linux-m68k.org>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <53BD9670.5030809@infradead.org>
-References: <20140709183116.506ad2e4@canb.auug.org.au>
-	<CAPDOMVjAMHOhuzfcJRL_JQ1jSKOeE7PEhppZJKJKbtR2-ixi-A@mail.gmail.com>
-	<53BD77CC.9060606@infradead.org>
-	<20140709184703.GA16363@roeck-us.net>
-	<53BD8F8E.9030105@infradead.org>
-	<CAPDOMVjBOfLF6CFWYse6-=P4wanvKBE6wmX6by=AhO0vs1jjRw@mail.gmail.com>
-	<53BD9670.5030809@infradead.org>
-Date: Wed, 9 Jul 2014 16:54:59 -0400
-Message-ID: <CAPDOMVjPv+-9J51xA1xYc6Wn=uf8xTibjeg+-ey4hRTuVA+pZg@mail.gmail.com>
-Subject: Re: Fwd: linux-next: Tree for Jul 9
-From: Nick Krause <xerofoify@gmail.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 9, 2014 at 3:22 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
-> On 07/09/2014 11:56 AM, Nick Krause wrote:
->> Very well then I just wnated  the info for the conversation into my email.
->> Seems not a good idea to do on the list. Seems better to do it this way.
->> Nick
->>
->
-> <see below>
->
->> On Wed, Jul 9, 2014 at 2:53 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
->>> On 07/09/2014 11:47 AM, Guenter Roeck wrote:
->>>> On Wed, Jul 09, 2014 at 10:11:40AM -0700, Randy Dunlap wrote:
->>>>> On 07/09/2014 10:07 AM, Nick Krause wrote:
->>>>>> ---------- Forwarded message ----------
->>>>>> From: Stephen Rothwell wrote on Wed, Jul 9, 2014 at 4:31 AM
->>>>>> Subject: linux-next: Tree for Jul 9
->>>>>> To: linux-next@vger.kernel.org
->>>>>> Cc: linux-kernel@vger.kernel.org
->>>>>>
->>>>>>
->>>>>> Hi all,
->>>>>>
->>>>>> Changes since 20140708:
->>>>>>
->>>>>>
->>>>>> --
->>>>>> Cheers,
->>>>>> Stephen Rothwell                    sfr@canb.auug.org.au
->>>>>>
->>>>>> Hey Stephen,
->>>>>>
->>>>>> A lot of your builds that are failing seem to build for me. Please try
->>>>>> a compiler toolchain
->>>>>> newer then gcc 4.6.3 to see if this is why your builds are failing.
->>>>>> Since all the arm builds
->>>>>> you have failing build for me.
->>>>>> Cheers Nick
->>>>>>
->>>>>
->>>>> Hey Nick,
->>>>>
->>>>> Does your email client interface have a "Reply All" or "Reply to All" button
->>>>> or selection that you can use?  Please use that instead of Forwarding each message.
->>>>> That will make it easier to read the email threading.
->>>>>
->>>> I suspect he may be using an e-mail client from a certain vendor in Redmond, WA.
->>>> It appears they have not heard that there is something like '>' to mark original
->>>> text in e-mail replies.
->>>
->>> He used Reply one time and then reverted back to his old ways.
->>>
->>> Nick, the idea is to use Reply all the time, not just one time.
->>> That is, if you want to do things correctly and are not just wasting our time.
->>>
->>> --
->>> ~Randy
->
-> The mail thread is all here (just above here), so Reply does keep it,
-> it's just at the bottom of the email instead of at the top.
-> That's the way we prefer it, so please don't top-post your replies;
-> move the text cursor to the bottom of the email and then begin typing.
->
-> Thanks.
->
-> --
-> ~Randy
+Hi Geert,
 
+On Wed,  9 Jul 2014 21:04:00 +0200, Geert Uytterhoeven wrote:
+> Commit b3d681a4fc108f9653bbb44e4f4e72db2b8a5734 ("firewire: Use
+> COMPILE_TEST for build testing") added COMPILE_TEST as an alternative
+> dependency for the purpose of build testing the firewire core.
+> However, this bypasses all other implicit dependencies assumed by PCI,
+> like HAS_DMA.
 
-Ok Randy ,
-Thanks for the help. Hope this message is better makes sense to me.
-Cheers Nick
+Good catch, however the problem was already present before commit
+b3d681a4, just less visible because nobody test builds with BROKEN. I'm
+not even sure why we still have that, but that's a different story...
+
+> 
+> If NO_DMA=y:
+> 
+>     drivers/built-in.o: In function `fw_iso_buffer_destroy':
+>     (.text+0x36a096): undefined reference to `dma_unmap_page'
+>     drivers/built-in.o: In function `fw_iso_buffer_map_dma':
+>     (.text+0x36a164): undefined reference to `dma_map_page'
+>     drivers/built-in.o: In function `fw_iso_buffer_map_dma':
+>     (.text+0x36a172): undefined reference to `dma_mapping_error'
+>     drivers/built-in.o: In function `sbp2_send_management_orb':
+>     sbp2.c:(.text+0x36c6b4): undefined reference to `dma_map_single'
+>     sbp2.c:(.text+0x36c6c8): undefined reference to `dma_mapping_error'
+>     sbp2.c:(.text+0x36c772): undefined reference to `dma_map_single'
+>     sbp2.c:(.text+0x36c786): undefined reference to `dma_mapping_error'
+>     sbp2.c:(.text+0x36c854): undefined reference to `dma_unmap_single'
+>     sbp2.c:(.text+0x36c872): undefined reference to `dma_unmap_single'
+>     drivers/built-in.o: In function `sbp2_map_scatterlist':
+>     sbp2.c:(.text+0x36ccbc): undefined reference to `scsi_dma_map'
+>     sbp2.c:(.text+0x36cd36): undefined reference to `dma_map_single'
+>     sbp2.c:(.text+0x36cd4e): undefined reference to `dma_mapping_error'
+>     sbp2.c:(.text+0x36cd84): undefined reference to `scsi_dma_unmap'
+>     drivers/built-in.o: In function `sbp2_unmap_scatterlist':
+>     sbp2.c:(.text+0x36cda6): undefined reference to `scsi_dma_unmap'
+>     sbp2.c:(.text+0x36cdc6): undefined reference to `dma_unmap_single'
+>     drivers/built-in.o: In function `complete_command_orb':
+>     sbp2.c:(.text+0x36d6ac): undefined reference to `dma_unmap_single'
+>     drivers/built-in.o: In function `sbp2_scsi_queuecommand':
+>     sbp2.c:(.text+0x36d8e0): undefined reference to `dma_map_single'
+>     sbp2.c:(.text+0x36d8f6): undefined reference to `dma_mapping_error'
+> 
+> Add an explicit dependency on HAS_DMA to fix this.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+
+Reviewed-by: Jean Delvare <jdelvare@suse.de>
+
+> ---
+>  drivers/firewire/Kconfig | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/firewire/Kconfig b/drivers/firewire/Kconfig
+> index 4199849e3758..145974f9662b 100644
+> --- a/drivers/firewire/Kconfig
+> +++ b/drivers/firewire/Kconfig
+> @@ -1,4 +1,5 @@
+>  menu "IEEE 1394 (FireWire) support"
+> +	depends on HAS_DMA
+>  	depends on PCI || COMPILE_TEST
+>  	# firewire-core does not depend on PCI but is
+>  	# not useful without PCI controller driver
+
+Thanks,
+-- 
+Jean Delvare
+SUSE L3 Support
