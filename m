@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755633AbaGINF5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 09:05:57 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:62011 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755218AbaGINES (ORCPT
+	id S1756066AbaGINGn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 09:06:43 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:41472 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755834AbaGINGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 09:04:18 -0400
-From: Alex Elder <elder@linaro.org>
-To: akpm@linux-foundation.org
-Cc: ak@linux.intel.com, bp@suse.de, jack@suse.cz, john.stultz@linaro.org,
-        pmladek@suse.cz, rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] printk: rename DEFAULT_MESSAGE_LOGLEVEL
-Date: Wed,  9 Jul 2014 08:04:13 -0500
-Message-Id: <1404911056-29064-2-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1404911056-29064-1-git-send-email-elder@linaro.org>
-References: <1404911056-29064-1-git-send-email-elder@linaro.org>
+	Wed, 9 Jul 2014 09:06:40 -0400
+Message-ID: <53BD3E54.3030205@collabora.com>
+Date: Wed, 09 Jul 2014 15:06:28 +0200
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Chanwoo Choi <cw00.choi@samsung.com>
+CC: Tomasz Figa <t.figa@samsung.com>, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com, rafael.j.wysocki@intel.com, nm@ti.com,
+        b.zolnierkie@samsaung.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Thierry Reding <treding@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: Re: [PATCHv2 0/8] devfreq: exynos4: Support dt and use common
+ ppmu driver
+References: <1394698649-20996-1-git-send-email-cw00.choi@samsung.com> <5323432E.5060005@samsung.com> <532656B1.2010907@samsung.com>
+In-Reply-To: <532656B1.2010907@samsung.com>
+Content-Type: text/plain; charset=US-ASCII;
+	format=flowed
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit:
-    a8fe19eb kernel/printk: use symbolic defines for console loglevels
-makes consistent use of symbolic values for printk() log levels.
+On 03/17/2014 02:58 AM, Chanwoo Choi wrote:
+> Hi Tomasz,
+>
+> On 03/15/2014 02:58 AM, Tomasz Figa wrote:
+>>
+>> However, this driver, even after applying your series, is still far
+>> from a state that would allow it to be enabled. The most important
+>> issue is direct access to CMU registers, based on static mapping,
+>> which is not allowed on multiplatform kernels and
+>> multiplatform-awareness for drivers is currently a must.
+>>
+>> To allow this driver to be enabled, it needs to be converted to use
+>> common clock framework functions to configure all clocks, e.g.
+>> clk_set_rate(), clk_set_parent(), etc., without accessing CMU
+>> registers directly.
+>>
+>> Of course as long as the driver is effectively unusable, to keep
+>> development, we can proceed with refactoring it step-by-step and
+>> your series would be basically the first step, after addressing the
+>> review comments.
+>>
+>
+> I agree your opinion. When setting frequency of memory bus, this
+> driver access directly to CMU registers. I know it should be modified
+> by using common clk framework as your comment.
+>
+> I'll send patch set about using common clk framework instead of CMU
+> register based on static mapping after finished the review and apply
+> of this patch set as next step.
 
-The naming scheme used is different from the one used for
-DEFAULT_MESSAGE_LOGLEVEL though.  Change that symbol name to be
-MESSAGE_LOGLEVEL_DEFAULT for consistency.
+Hi Chanwoo,
 
-Note that we don't rename CONFIG_DEFAULT_MESSAGE_LOGLEVEL (to avoid
-breaking existing config files that might reference it).
+any news on this?
 
-Signed-off-by: Alex Elder <elder@linaro.org>
----
- include/linux/printk.h | 2 +-
- kernel/printk/printk.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+I would love to test this devfreq driver with the clk_set_floor_rate API 
+I'm adding to the common clk framework.
 
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index 319ff7e..3d1ccad 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -31,7 +31,7 @@ static inline const char *printk_skip_level(const char *buffer)
- }
- 
- /* printk's without a loglevel use this.. */
--#define DEFAULT_MESSAGE_LOGLEVEL CONFIG_DEFAULT_MESSAGE_LOGLEVEL
-+#define MESSAGE_LOGLEVEL_DEFAULT CONFIG_DEFAULT_MESSAGE_LOGLEVEL
- 
- /* We show everything that is MORE important than this.. */
- #define CONSOLE_LOGLEVEL_SILENT  0 /* Mum's the word */
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 13e839d..ac2b64e 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -56,7 +56,7 @@
- 
- int console_printk[4] = {
- 	CONSOLE_LOGLEVEL_DEFAULT,	/* console_loglevel */
--	DEFAULT_MESSAGE_LOGLEVEL,	/* default_message_loglevel */
-+	MESSAGE_LOGLEVEL_DEFAULT,	/* default_message_loglevel */
- 	CONSOLE_LOGLEVEL_MIN,		/* minimum_console_loglevel */
- 	CONSOLE_LOGLEVEL_DEFAULT,	/* default_console_loglevel */
- };
--- 
-1.9.1
+Regards,
 
+Tomeu
