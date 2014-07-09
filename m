@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756241AbaGIVYq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 17:24:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48264 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756126AbaGIVYp (ORCPT
+	id S1756311AbaGIV1S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 17:27:18 -0400
+Received: from andre.telenet-ops.be ([195.130.132.53]:54051 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754576AbaGIV1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 17:24:45 -0400
-Date: Wed, 9 Jul 2014 14:29:10 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Matwey V. Kornilov" <matwey@sai.msu.ru>
-Cc: linux-kernel@vger.kernel.org, linux-parport@lists.infradead.org,
-        hsommer@eso.org, matwey.kornilov@gmail.com
-Subject: Re: [PATCHv3 2/2] Add force_epp module option for parport_pc.
-Message-ID: <20140709212910.GB26562@kroah.com>
-References: <alpine.LRH.2.00.1407071101060.3492@lnfm1.sai.msu.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.00.1407071101060.3492@lnfm1.sai.msu.ru>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 9 Jul 2014 17:27:15 -0400
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH 1/2] spi: rspi: Relax DMA dependency and increase build coverage
+Date: Wed,  9 Jul 2014 23:27:07 +0200
+Message-Id: <1404941228-9922-1-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 07, 2014 at 11:01:51AM +0400, Matwey V. Kornilov wrote:
-> >From cf37d0cc4d51da5c0b368e1f5ab05082c041d1e1 Mon Sep 17 00:00:00 2001
-> From: "Matwey V. Kornilov" <matwey.kornilov@gmail.com>
-> Date: Wed, 25 Jun 2014 01:08:45 +0400
-> Subject: [PATCHv3 2/2] Add force_epp module option for parport_pc.
-> 
-> The detection of Intel EPP bug is known to produce much false positives.
-> The new option is introduced to force enable EPP in spite of the test result.
+As of commit ab116a4df4942c78c189d9b0744dd940ab9e00b9 ("dmaengine:
+shdma: fix a build failure on platforms with no DMA support"), the DMA
+filter function shdma_chan_filter() is sufficiently abstracted to allow
+building without DMA support. Hence drop the SH_DMAE_BASE dependency on
+SUPERH.
+Also increase build coverage by allowing the driver to be enabled if
+COMPILE_TEST=y.
 
-module parameters are horrid, how is someone supposed to know to use
-this?  Why can't we "fix" the detection logic?  You just now broke
-systems that were working by forcing them to now set a module option
-where previously they didn't, so I can't take these patches as-is,
-sorry.
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+---
+ drivers/spi/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-greg k-h
+diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+index d6be5e6e93e9..d46b4b9e73b2 100644
+--- a/drivers/spi/Kconfig
++++ b/drivers/spi/Kconfig
+@@ -396,7 +396,7 @@ config SPI_ROCKCHIP
+ 
+ config SPI_RSPI
+ 	tristate "Renesas RSPI/QSPI controller"
+-	depends on (SUPERH && SH_DMAE_BASE) || ARCH_SHMOBILE
++	depends on SUPERH || ARCH_SHMOBILE || COMPILE_TEST
+ 	help
+ 	  SPI driver for Renesas RSPI and QSPI blocks.
+ 
+-- 
+1.9.1
+
