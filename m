@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524AbaGIHY7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 03:24:59 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:45110 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753974AbaGIHY5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 03:24:57 -0400
-Message-ID: <1404890669.16296.5.camel@iivanov-dev>
-Subject: Re: [PATCH 1/3] mfd: pm8921: Expose pm8xxx_read_irq_status
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Bjorn Andersson <bjorn@kryo.se>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 09 Jul 2014 10:24:29 +0300
-In-Reply-To: <CAJAp7Ogy3=tZvMAUojbf5sy8EMmQOT+imA3=TRVcGXXA_y7CtA@mail.gmail.com>
-References: <1404782785-1824-1-git-send-email-bjorn.andersson@sonymobile.com>
-	 <1404782785-1824-2-git-send-email-bjorn.andersson@sonymobile.com>
-	 <53BC7CBD.2060901@codeaurora.org>
-	 <CAJAp7Ogy3=tZvMAUojbf5sy8EMmQOT+imA3=TRVcGXXA_y7CtA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
-Mime-Version: 1.0
+	id S1754739AbaGIHZO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 03:25:14 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:15453 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753974AbaGIHZK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 03:25:10 -0400
+Message-ID: <53BCEE4C.6080006@huawei.com>
+Date: Wed, 9 Jul 2014 15:25:00 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHSET cgroup/for-3.17] cgroup: remove sane_behavior support
+ on non-default hierarchies
+References: <1404344747-7957-1-git-send-email-tj@kernel.org>
+In-Reply-To: <1404344747-7957-1-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020202.53BCEE53.0020,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2011-05-27 18:58:46
+X-Mirapoint-Loop-Id: 3657e58907ef1a60ae0e9cfca9ff8096
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-08 at 16:43 -0700, Bjorn Andersson wrote:
-> On Tue, Jul 8, 2014 at 4:20 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> > On 07/07/14 18:26, Bjorn Andersson wrote:
-
-<snip>
-
-> [...]
-> > Sad, the header file came back. I guess there isn't a way to put the
-> > pinctrl driver inside the core mfd driver? Then we wouldn't need to
-> > expose an "irq read line" function.
-> >
+On 2014/7/3 7:45, Tejun Heo wrote:
+> Hello,
 > 
-> I continued my search and this needs to be accessed by gpio, mpp, adc,
-> charger, bms and usb(?). So we have to expose it in some form.
+> sane_behavior has been used as a development vehicle for the default
+> unified hierarchy.  Now that the default hierarchy is in place, the
+> flag became redundant and confusing as its usage is allowed on all
+> hierarchies.  There are gonna be either the default hierarchy or
+> legacy ones.  Let's make that clear by removing sane_behavior support
+> on non-default hierarchies.
 > 
-> > Actually Abhijeet proposed such an API in 2011 but it didn't go
-> > anywhere[1]. If we had that API we should be able to call
-> > read_irq_line() from the pinctrl driver whenever we want to get the
-> > state of the gpio, plus the API is generic. We're going to need that API
-> > anyway for things like USB insertion detection so it might make sense to
-> > add it sooner rather than later.
-> >
-> > [1]
-> > http://lists.infradead.org/pipermail/linux-arm-kernel/2011-April/048319.html
+> This patchset contains the following four patches.
 > 
-> From what I can see of this thread it was exposed as a way for drivers
-> to be able to query if an interrupt handler was called on raising or
-> falling edge. And based on the locking limitations of the
-> implementation we couldn't have used it anyways.
+>  0001-cgroup-remove-CGRP_ROOT_OPTION_MASK.patch
+>  0002-cgroup-make-interface-file-cgroup.sane_behavior-lega.patch
+>  0003-cgroup-remove-sane_behavior-support-on-non-default-h.patch
+>  0004-cgroup-clean-up-sane_behavior-handling.patch
 > 
-> Our use case is different in that we're at any point in time
-> interested in reading out the status of the irq line, as the only way
-> of getting that status.
+> 0001 is a trivial cleanup.
+> 
+> 0002 removes "cgroup.sane_behavior" from the default hierarchy.
+> 
+> 0003 removes sane_behavior support on non-default hierarchies.
+> 
+> 0004 cleans up sane_behavior handling.
+> 
+> This patchset is on top of a497c3ba1d97 ("Linux 3.16-rc2") and
+> available in the following git branch.
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-dfl-instead-of-sane
+> 
+> diffstat follows.  Thanks.
+> 
+>  block/blk-throttle.c   |    6 +-
+>  include/linux/cgroup.h |  128 ++++++++++++++++++++-----------------------------
+>  kernel/cgroup.c        |   96 +++++++++++++++---------------------
+>  kernel/cpuset.c        |   33 +++++-------
+>  mm/memcontrol.c        |    7 +-
+>  5 files changed, 117 insertions(+), 153 deletions(-)
+> 
 
-How about using extcon framework? 
+Acked-by: Li Zefan <lizefan@huawei.com>
 
-Regards,
-Ivan
+I'm rebasing my cpuset patchset against this.
 
