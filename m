@@ -1,95 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756741AbaGIWua (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 18:50:30 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:55459 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753717AbaGIWu2 (ORCPT
+	id S1756205AbaGIW6b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 18:58:31 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:54492 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755197AbaGIW63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 18:50:28 -0400
-Date: Wed, 9 Jul 2014 15:48:50 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Hugh Dickins <hughd@google.com>, Vlastimil Babka <vbabka@suse.cz>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mm: shm: hang in shmem_fallocate
-In-Reply-To: <20140709215906.GA27323@cmpxchg.org>
-Message-ID: <alpine.LSU.2.11.1407091518530.13001@eggly.anvils>
-References: <52AE7B10.2080201@oracle.com> <52F6898A.50101@oracle.com> <alpine.LSU.2.11.1402081841160.26825@eggly.anvils> <52F82E62.2010709@oracle.com> <539A0FC8.8090504@oracle.com> <alpine.LSU.2.11.1406151921070.2850@eggly.anvils> <53A9A7D8.2020703@suse.cz>
- <alpine.LSU.2.11.1406251152450.1580@eggly.anvils> <53ABE479.3080508@suse.cz> <alpine.LSU.2.11.1406262108390.27670@eggly.anvils> <20140709215906.GA27323@cmpxchg.org>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Wed, 9 Jul 2014 18:58:29 -0400
+Date: Wed, 9 Jul 2014 16:58:26 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [GIT PULL] PCI fixes for v3.16
+Message-ID: <20140709225826.GA8252@google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Jul 2014, Johannes Weiner wrote:
-> On Thu, Jun 26, 2014 at 10:36:20PM -0700, Hugh Dickins wrote:
-> > Hannes, a question for you please, I just could not make up my mind.
-> > In mm/truncate.c truncate_inode_pages_range(), what should be done
-> > with a failed clear_exceptional_entry() in the case of hole-punch?
-> > Is that case currently depending on the rescan loop (that I'm about
-> > to revert) to remove a new page, so I would need to add a retry for
-> > that rather like the shmem_free_swap() one?  Or is it irrelevant,
-> > and can stay unchanged as below?  I've veered back and forth,
-> > thinking first one and then the other.
-> 
-> I realize you have given up on changing truncate.c in the meantime,
-> but I'm still asking myself about the swap retry case: why retry for
-> swap-to-page changes, yet not for page-to-page changes?
-> 
-> In case faults are disabled through i_size, concurrent swapin could
-> still turn swap entries into pages, so I can see the need to retry.
-> There is no equivalent for shadow entries, though, and they can only
-> be turned through page faults, so no retry necessary in that case.
-> 
-> However, you explicitely mentioned the hole-punch case above: if that
-> can't guarantee the hole will be reliably cleared under concurrent
-> faults, I'm not sure why it would put in more effort to free it of
-> swap (or shadow) entries than to free it of pages.
-> 
-> What am I missing?
+Hi Linus,
 
-In dropping the pincer effect, I am conceding that data written (via
-mmap) racily into the hole, behind the punching cursor, between the
-starting and the ending of the punch operation, may be allowed to
-remain.  It will not often happen (given the two loops), but it might.
+Just a fix for the device reset path and an email address update.
 
-But I insist that all data in the hole at the starting of the punch
-operation must be removed by the ending of the punch operation (though
-of course, given the paragraph above, identical data might be written
-in its place concurrently, via mmap, if the application chooses).
+Bjorn
 
-I think you probably agree with both of those propositions.
 
-As the punching cursor moves along the radix_tree, it gathers page
-pointers and swap entries (the emply slots are already skipped at
-the level below; and tmpfs takes care that there is no instant in
-switching between page and swap when the slot appears empty).
+The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
 
-Dealing with the page pointers is easy: a reference is already held,
-then shmem_undo_range takes the page lock which prevents swizzling
-to swap, then truncates that page out of the tree.
+  Linux 3.16-rc1 (2014-06-15 17:45:28 -1000)
 
-But dealing with swap entries is slippery: there is no reference
-held, and no lock to prevent swizzling to page (outside of the
-tree_lock taken in shmem_free_swap).
+are available in the git repository at:
 
-So, as I see it, the page lock ensures that any pages present at
-the starting of the punch operation will be removed, without any
-need to go back and retry.  But a swap entry present at the starting
-of the punch operation might be swizzled back to page (and, if we
-imagine massive preemption, even back to swap again, and to page
-again, etc) at the wrong moment: so for swap we do need to retry.
+  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git tags/pci-v3.16-fixes-1
 
-(What I said there is not quite correct: that swap would actually
-have to be a locked page at the time when the first loop meets it.)
+for you to fetch changes up to bf177a1eb6d106ba195de86734392d43dfbef702:
 
-Does that make sense?
+  MAINTAINERS: Update mx6 PCI driver maintainer's email (2014-07-05 15:27:42 -0600)
 
-Hugh
+----------------------------------------------------------------
+PCI updates for v3.16:
+
+  Virtualization
+    - Fix "wait for pending transactions" for PCI AF reset (Alex Williamson)
+
+  Miscellaneous
+    - Update mx6 PCI driver maintainer email (Fabio Estevam)
+
+----------------------------------------------------------------
+Alex Williamson (1):
+      PCI: Fix unaligned access in AF transaction pending test
+
+Fabio Estevam (1):
+      MAINTAINERS: Update mx6 PCI driver maintainer's email
+
+ MAINTAINERS       | 2 +-
+ drivers/pci/pci.c | 9 +++++++--
+ 2 files changed, 8 insertions(+), 3 deletions(-)
