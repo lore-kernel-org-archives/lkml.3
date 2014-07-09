@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755952AbaGILi7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 07:38:59 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:45164 "EHLO
+	id S1755538AbaGILgj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 07:36:39 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:45126 "EHLO
 	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755608AbaGILgr (ORCPT
+	with ESMTP id S1755348AbaGILgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 07:36:47 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-10-53bd294d92e2
+	Wed, 9 Jul 2014 07:36:36 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-90-53bd2940cdc9
 From: Andrey Ryabinin <a.ryabinin@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
@@ -25,54 +25,50 @@ Cc: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
         linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         x86@kernel.org, linux-mm@kvack.org,
         Andrey Ryabinin <a.ryabinin@samsung.com>
-Subject: [RFC/PATCH RESEND -next 18/21] arm: mm: reserve shadow memory for kasan
-Date: Wed, 09 Jul 2014 15:30:12 +0400
-Message-id: <1404905415-9046-19-git-send-email-a.ryabinin@samsung.com>
+Subject: [RFC/PATCH RESEND -next 09/21] mm: Makefile: kasan: don't instrument
+ slub.c and slab_common.c files
+Date: Wed, 09 Jul 2014 15:30:03 +0400
+Message-id: <1404905415-9046-10-git-send-email-a.ryabinin@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
 In-reply-to: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
 References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t/xy7q+mnuDDZa+N7bY9usRm8XvvTNZ
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t/xy7oOmnuDDRYcsLHY9usRm8XvvTNZ
 	LeasX8Nmcf3bG0aLCQ/b2C1WdjezWWx/9pbJYmXnA1aLTY+vsVr82bWDyeLyrjlsFvfW/Ge1
 	uH2Z1+LSgQVMFi37LjBZtH3+x2qxb+V5IGvJRiaLxUduM1u8ezaZ2WLzpqnMFj82PGZ1EPNo
 	ae5h89g56y67x4JNpR6bVnWyeWz6NIndo+vtFSaPd+fOsXucmPGbxePJlelMHpuX1Ht8fHqL
-	xeP9vqtsHn1bVjF6nFlwhN3j8ya5AP4oLpuU1JzMstQifbsErownU+ML7rJWLH/xibmB8QVL
-	FyMnh4SAicTl3ZOZIWwxiQv31rN1MXJxCAksZZT4PG0CC4TTxyRx5OhTdpAqNgE9iX+ztrOB
-	2CICChKbe5+xghQxCzSzSbR3fGAFSQgLBEgc23WREcRmEVCVuH3iGBOIzSvgJrHo91Q2iHUK
-	EsuWzwSr5wSKT5h+DegMDqBtrhITVqhNYORdwMiwilE0tTS5oDgpPddQrzgxt7g0L10vOT93
-	EyMkkr7sYFx8zOoQowAHoxIPr0bt7mAh1sSy4srcQ4wSHMxKIry2onuDhXhTEiurUovy44tK
-	c1KLDzEycXBKNTBavhBICcyVW22//0dTXGvyqydVV/znKbLueCPJt0NyR8GBcMHS8MhSl4TN
-	ff9C7svl2XI8nVltpx3JyVEvd/hiX9mjx/nuqh/cC/LMmHNdAuyuTX7+1tudeSajZdGaOf2i
-	gbveGWzf4s+9sGvGphxXtW3uUgxHeGZsjZr8OnxapqtkbbPyCiWW4oxEQy3mouJEAEWCUpmC	AgAA
+	xeP9vqtsHn1bVjF6nFlwhN3j8ya5AP4oLpuU1JzMstQifbsEroy3u1+xFSxmqZg2tZu5gXE3
+	cxcjJ4eEgInE/O39bBC2mMSFe+vBbCGBpYwSG1YodDFyAdl9TBLfd29nAUmwCehJ/Ju1HaxI
+	REBBYnPvM1aQImaBZjaJ9o4PrCAJYYE8iZdv9oDZLAKqEpv+N4Jt4xVwk/jcspMdYpuCxLLl
+	M8FqOIHiE6ZfA6rhANrmKjFhhdoERt4FjAyrGEVTS5MLipPSc430ihNzi0vz0vWS83M3MUIi
+	6esOxqXHrA4xCnAwKvHwvti9J1iINbGsuDL3EKMEB7OSCK+t6N5gId6UxMqq1KL8+KLSnNTi
+	Q4xMHJxSDYxhu5qK3op5WF14r2bRVryG9XJlQ83yTYlSp6UVnsZyNros8ZGpfPP+VMlJ36w8
+	+WAbt781elbmibUX7t2wt3Mz+evW95Xp6Nu1ywISv5yeveKS0HZ28R2RzeWRYQv333TZGKY0
+	qWM1z7dEXRmeG0VSW5ZY8NpNLzpg8+NIesLl3Ycfdd2J11FiKc5INNRiLipOBACuBTowggIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Code in slub.c and slab_common.c files could validly access to object's
+redzones
+
 Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
 ---
- arch/arm/mm/init.c | 3 +++
- 1 file changed, 3 insertions(+)
+ mm/Makefile | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-index 659c75d..02fce2c 100644
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -22,6 +22,7 @@
- #include <linux/memblock.h>
- #include <linux/dma-contiguous.h>
- #include <linux/sizes.h>
-+#include <linux/kasan.h>
+diff --git a/mm/Makefile b/mm/Makefile
+index 6a9c3f8..59cc184 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -3,6 +3,8 @@
+ #
  
- #include <asm/cp15.h>
- #include <asm/mach-types.h>
-@@ -324,6 +325,8 @@ void __init arm_memblock_init(const struct machine_desc *mdesc)
- 	 */
- 	dma_contiguous_reserve(min(arm_dma_limit, arm_lowmem_limit));
+ KASAN_SANITIZE_page_alloc.o := n
++KASAN_SANITIZE_slab_common.o := n
++KASAN_SANITIZE_slub.o := n
  
-+	kasan_alloc_shadow();
-+
- 	arm_memblock_steal_permitted = false;
- 	memblock_dump_all();
- }
+ mmu-y			:= nommu.o
+ mmu-$(CONFIG_MMU)	:= gup.o highmem.o madvise.o memory.o mincore.o \
 -- 
 1.8.5.5
 
