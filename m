@@ -1,92 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755055AbaGIO5k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 10:57:40 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:33481 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbaGIO5j (ORCPT
+	id S1755535AbaGIO6T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 10:58:19 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59821 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753485AbaGIO6S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 10:57:39 -0400
-X-IronPort-AV: E=Sophos;i="5.01,631,1400025600"; 
-   d="scan'208";a="151263804"
-Message-ID: <53BD584B.2030005@citrix.com>
-Date: Wed, 9 Jul 2014 15:57:15 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Wed, 9 Jul 2014 10:58:18 -0400
+Date: Wed, 9 Jul 2014 16:58:09 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Liang, Kan" <kan.liang@intel.com>
+Cc: "andi@firstfloor.org" <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [PATCH V4 1/2] perf ignore LBR and extra_regs.
+Message-ID: <20140709145809.GG9918@twins.programming.kicks-ass.net>
+References: <1404838181-3911-1-git-send-email-kan.liang@intel.com>
+ <20140709141631.GE9918@twins.programming.kicks-ass.net>
+ <37D7C6CF3E00A74B8858931C1DB2F077014D2005@SHSMSX103.ccr.corp.intel.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Andrew Cooper <andrew.cooper3@citrix.com>, <konrad@kernel.org>,
-        <boris.ostrovsky@oracle.com>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xenproject.org>
-Subject: Re: [Xen-devel] [PATCH v3 1/7] xen-pciback: Document the various
- parameters and attributes in SysFS
-References: <1404845909-13563-1-git-send-email-konrad@kernel.org> <1404845909-13563-2-git-send-email-konrad@kernel.org> <53BD32C2.6000306@citrix.com> <20140709135922.GD21837@laptop.dumpdata.com> <53BD4C44.30805@citrix.com> <20140709141354.GG21837@laptop.dumpdata.com> <53BD5026.2030908@citrix.com> <20140709142510.GI21837@laptop.dumpdata.com> <53BD556F.10408@citrix.com> <20140709144744.GC27881@laptop.dumpdata.com>
-In-Reply-To: <20140709144744.GC27881@laptop.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MrRUTeZlqqNo1jQ9"
+Content-Disposition: inline
+In-Reply-To: <37D7C6CF3E00A74B8858931C1DB2F077014D2005@SHSMSX103.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/14 15:47, Konrad Rzeszutek Wilk wrote:
-> On Wed, Jul 09, 2014 at 03:45:03PM +0100, David Vrabel wrote:
->> On 09/07/14 15:25, Konrad Rzeszutek Wilk wrote:
->>> On Wed, Jul 09, 2014 at 03:22:30PM +0100, Andrew Cooper wrote:
->>>> On 09/07/14 15:13, Konrad Rzeszutek Wilk wrote:
->>>>> On Wed, Jul 09, 2014 at 03:05:56PM +0100, Andrew Cooper wrote:
->>>>>> On 09/07/14 14:59, Konrad Rzeszutek Wilk wrote:
->>>>>>>>> +What:           /sys/bus/pci/drivers/pciback/irq_handler_state
->>>>>>>>> +Date:           Oct 2011
->>>>>>>>> +KernelVersion:  3.1
->>>>>>>>> +Contact:        xen-devel@lists.xenproject.org
->>>>>>>>> +Description:
->>>>>>>>> +                An option to toggle Xen PCI back to acknowledge (or stop)
->>>>>>>>> +                interrupts for the specific device regardless of whether the
->>>>>>>>> +                device is shared, enabled, or on a level interrupt line.
->>>>>>>>> +                Writing a string of DDDD:BB:DD.F will toggle the state.
->>>>>>>>> +                This is Domain:Bus:Device.Function where domain is optional.
->>>>>>>> I do not understand under what circumstances this should be used in.
->>>>>>> So that dom0 does not disable the IRQ line as it would be getting the IRQs
->>>>>>> for the guest as well (because the IRQ line is level and another guest
->>>>>>> uses an PCI device that is using the same line).
->>>>>> Why is this relevant?  Xen (and Xen alone) actually controls this aspect
->>>>>> of interrupts.  Xen manages passing line level interrupts to any domain
->>>>>> which might have a device hanging off a particular line, and has to wait
->>>>>> until all domains have EOI'd the line until it can clear the interrupt
->>>>>> at the IO-APIC.
->>>>> Because Linux will think there is an IRQ storm as the event->IRQ points
->>>>> to the default one. And then it will mask the event, which means dom0
->>>>> will mask the PIRQ, and Xen will then also mask the IRQ.
->>>>
->>>> Xen will (and by this I mean 'should', and this was the behaviour last
->>>> time I delved in there) only mask the IRQ if dom0 is the only consumer
->>>> of these interrupts.
->>>>
->>>> For any PCIPassthrough, dom0 will get line interrupts for passed-through
->>>> devices, but in this case pci-back should always handle the line
->>>> interrupts so Linux doesn't block them as an IRQ storm.
->>>
->>> And that is what it does - and this option provides the option to enable/disable
->>> it the system admin wishes to do it.
->>
->> I still don't understand why someone would want to flip the handler to
->> a broken mode.
-> 
-> The intent was to allow you to flip to the 'enable' mode in case Linux
-> did not detect it correctly.
 
-We should not provide sysfs knobs to work around kernel bugs.
+--MrRUTeZlqqNo1jQ9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> The original commit isn't very enlightening either.
-> 
-> Thoughts then on what this documentation patch should say to make it
-> clear of its intent?
+On Wed, Jul 09, 2014 at 02:32:28PM +0000, Liang, Kan wrote:
+>=20
+>=20
+> > On Tue, Jul 08, 2014 at 09:49:40AM -0700, kan.liang@intel.com wrote:
+> > > +/*
+> > > + * Under certain circumstances, access certain MSR may cause #GP.
+> > > + * The function tests if the input MSR can be safely accessed.
+> > > + */
+> > > +static inline bool check_msr(unsigned long msr) {
+> > > +	u64 value;
+> > > +
+> > > +	if (rdmsrl_safe(msr, &value) < 0)
+> > > +		return false;
+> > > +	if (wrmsrl_safe(msr, value) < 0)
+> > > +		return false;
+> > > +	return true;
+> > > +}
+> >=20
+> > What does this thing return after patch 2? does the write still fault o=
+r will
+> > KVM silently take writes too?
+>=20
+> If applying patch 2, the function will return true. The KVM just simply i=
+gnore the reads/writes.
 
-I think it should be removed.
+OK, then that's broken too. We want a function to return false for any
+malfunctioning MSR, ignoring writes and returning 0s is not proper
+functioning.
 
-It also has non-standard behaviour of /toggling/ with every write
-instead of using a write of a 1 or a 0 like every other sysfs file.
+--MrRUTeZlqqNo1jQ9
+Content-Type: application/pgp-signature
 
-David
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTvViBAAoJEHZH4aRLwOS6HHYP/imLIsUJ8Z2qUFtIPInFDg97
+g8HtI3AxDt30wZk4IJ8OU8YANVwTvaBcr+BGpVECgeU95QqQldeWySc+rt3gbC1o
+qxEd6JCQqV7ECdoTMVxmRScq268SOC82FB/cZzWOwej7SA6BHbXv9/aMQ+oI/fOY
+/jIlpWPdckNEDarDhVRqqHXa5cQ4Vt2fDRWiIYY9ffLBOvvcq/WT29FKLdr1fd5Q
+VPlYsz/nXFcK2hxLcCBLbGUsleB35te21temSxl6osSAWRE8kLk9xYb0YkyiYk9b
+82edfmOCOIcPK2sORVIb2nAye8ieq+5RrpBgiPRfeKPDxxFoWj44FPs856qzm8SP
+STIJmlZ5KPcop3wITbyjxFa69aHOI9q9K7XrKpX0Vif7D0GdOFVjgflK/IBYKEew
+sInGf4u1byB6KF+HGPov23NrqnhpDuZzW6OZG0N3fWylL4/HbGC0ksre0WT954zS
+aJNTRoWAqdfjOqwpYVbsJIegv5Ims2GZBo7mCbeD/+CQBnjFv8xh3uBY8A/nRHR7
+p+TFH+hp8rgv1TSpuzOd+uj2jl2x360YAUxJFTIDWIRrzYB6QJEqIogbK45154Zr
+IkMjED8iwzjBwpbft16iB9hycG21MTnOKrcQ0mY9jUQVHXyx8A8PkrvUsytbZj5l
+gC3rgTwF7MQLmLrqhAnt
+=Y0fz
+-----END PGP SIGNATURE-----
+
+--MrRUTeZlqqNo1jQ9--
