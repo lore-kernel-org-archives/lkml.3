@@ -1,45 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751337AbaGIEYK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 00:24:10 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:33053 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718AbaGIEYI (ORCPT
+	id S1751941AbaGIEZb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 00:25:31 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:45227 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751561AbaGIEZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 00:24:08 -0400
+	Wed, 9 Jul 2014 00:25:29 -0400
+Message-ID: <53BCC434.3090303@gmail.com>
+Date: Wed, 09 Jul 2014 09:55:24 +0530
+From: Anil Shashikumar Belur <askb23@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <5395860E.3070000@mev.co.uk>
-References: <1402149415-20037-1-git-send-email-a.s.protopopov@gmail.com>
-	<5395860E.3070000@mev.co.uk>
-Date: Wed, 9 Jul 2014 08:24:06 +0400
-X-Google-Sender-Auth: MnFZJFo0Ad0Q7iKVkzBKZcG89BU
-Message-ID: <CAGn_itzc_Lnu6qNTin6eDcBirJE3mHEp2_Ex+H6tqLA2OUBBjw@mail.gmail.com>
-Subject: Re: [PATCH] Staging: comedi: check the return value of kobject_set_name
-From: Anton Protopopov <a.s.protopopov@gmail.com>
-To: gregkh <gregkh@linuxfoundation.org>
-Cc: hsweeten@visionengravers.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, abbotti <abbotti@mev.co.uk>
-Content-Type: text/plain; charset=UTF-8
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: teobaluta@gmail.com, oleg.drokin@intel.com, dmitry.eremin@intel.com,
+        bergwolf@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] staging: lustre: libcfs: nidstrings.c - use ARRAY_SIZE
+ macro
+References: <1404298435-9729-1-git-send-email-askb23@gmail.com> <20140708234824.GA31003@kroah.com>
+In-Reply-To: <20140708234824.GA31003@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-06-09 14:01 GMT+04:00 Ian Abbott <abbotti@mev.co.uk>:
-> On 2014-06-07 14:56, Anton Protopopov wrote:
->>
->> Added a check of the return value of the kobject_set_name function.
->>
->> Signed-off-by: Anton Protopopov <a.s.protopopov@gmail.com>
->> ---
->>   drivers/staging/comedi/comedi_fops.c | 9 ++++++++-
->>   1 file changed, 8 insertions(+), 1 deletion(-)
->
->
-> Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 
-This patch was lost, I guess?
-
+On Wednesday 09 July 2014 05:18 AM, Greg KH wrote:
+> Someone sent this same patch just before you did, sorry :(
 >
-> --
-> -=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
-> -=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+Ah - no worries - sorry for the noise.
