@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756659AbaGIW7m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 18:59:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48846 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756527AbaGIW7l (ORCPT
+	id S1756747AbaGIXAH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 19:00:07 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:60197 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756527AbaGIXAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 18:59:41 -0400
-Date: Wed, 9 Jul 2014 15:59:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: fs: use after free in /proc/pid/mountinfo
-Message-Id: <20140709155939.48b126f891132370532cb999@linux-foundation.org>
-In-Reply-To: <53BDBDE7.8090600@oracle.com>
-References: <53B3F331.7090204@oracle.com>
-	<53B4CAB8.5070407@oracle.com>
-	<alpine.DEB.2.02.1407031434470.10658@chino.kir.corp.google.com>
-	<53B6C051.2060704@oracle.com>
-	<20140706100420.GB3589@osiris>
-	<20140709142406.GA27561@osiris>
-	<20140709133138.c523aa03883be5417a4d19a4@linux-foundation.org>
-	<53BDBDE7.8090600@oracle.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Jul 2014 19:00:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F328574C3@ORSMSX114.amr.corp.intel.com>
+References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
+	<1404925766-32253-6-git-send-email-hskinnemoen@google.com>
+	<3908561D78D1C84285E8C5FCA982C28F328574C3@ORSMSX114.amr.corp.intel.com>
+Date: Wed, 9 Jul 2014 16:00:04 -0700
+Message-ID: <CAFQmdRb9vsWyF06jppS5U7Wzuc+SzRgWL+hs5+es-GC=5e_8qg@mail.gmail.com>
+Subject: Re: [PATCH 5/6] x86-mce: check if no_way_out applies before deciding
+ not to clear MCE banks.
+From: Havard Skinnemoen <hskinnemoen@google.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ewout van Bekkum <ewout@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 09 Jul 2014 18:10:47 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
+On Wed, Jul 9, 2014 at 2:00 PM, Luck, Tony <tony.luck@intel.com> wrote:
+> +       if (!(no_way_out && cfg->tolerant < 3))
+>                 mce_clear_state(toclear);
+>
+> Style - I think this is easier to grok:
+>
+>         if (!no_way_out || cfg->tolerant >=3)
+>                 mce_clear_state(toclear);
+>
+> but not too strongly if other like !(a && b) form.
 
-> On 07/09/2014 04:31 PM, Andrew Morton wrote:
-> > On Wed, 9 Jul 2014 16:24:06 +0200 Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
-> > 
-> >> > 058504edd026 ("fs/seq_file: fallback to vmalloc allocation") is suspected to
-> >> > cause a crash. Actually I can't reprocude the crash nor would I be able to
-> >> > tell how the commit could cause the crash.
-> >> > Anyway, I'll be offline for the next 2.5 weeks. So if Sasha could confirm
-> >> > that reverting the patch actually does fix the crash, please revert the
-> >> > commit, unless somebody else can make sense of the report of course.
-> >> > 
-> >> > I'm still wondering how Sasha could reproduce the crash.
-> > This really sucks :(
-> > 
-> > I suppose I'll queue up a revert of 058504edd026 as a for-3.16 bandaid.
-> > 
-> > Sasha, it would be great if you could delve a bit further into this,
-> > see if we can identify a way for others to reproduce the bug.
-> > 
-> > Did you test that little patchlet which Heiko sent?
-> 
-> I've been trying, but as there isn't an easy way to reproduce it, breakage
-> elsewhere in -next (there is a long list) is slowing me down. I'll revert
-> back to the -next where I've initially observed this issue and will retry.
-> 
+I tend to agree with you. It came up during our internal review, and
+others argued the other way. But since I'm in charge now, I'll change
+it back ;-)
 
-Thanks.  The bug should be present in current mainline.
+> I'm never sure how to treat the crazy levels of "tolerant" though.  Do
+> we really want to clear the banks?  In one sense we do ... we are still
+> running and might see more UC errors. Since newer UC errors don't
+> overwrite older ones, clearing the banks allows us to see how many
+> errors are piling up and being ignored.
+>
+> But running with tolerant==3 is likely to end in tears ... should we erase
+> the evidence on what bad things happened?
+
+It probably doesn't make a huge difference since you're not supposed
+to run with tolerant=3, but I kind of understood the logic to be that
+if we're going to keep running, we need to clear the banks, and if
+we're going to crash, we need to leave them intact so whatever runs
+next gets a chance to look at them. So with tolerant==3, we are going
+to continue running, and I think for debugging purposes, it's useful
+to see how many additional errors are happening.
+
+Havard
