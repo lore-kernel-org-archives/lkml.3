@@ -1,71 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195AbaGIJ1J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 05:27:09 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54682 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754562AbaGIJ1F (ORCPT
+	id S1755250AbaGIJ11 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 05:27:27 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:49952 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754562AbaGIJ1W convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 05:27:05 -0400
-Date: Wed, 9 Jul 2014 11:25:11 +0200
-From: Mark Brown <broonie@kernel.org>
-To: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20140709092511.GP30458@sirena.org.uk>
-References: <1404822480-31525-1-git-send-email-amit.daniel@samsung.com>
+	Wed, 9 Jul 2014 05:27:22 -0400
+Date: Wed, 9 Jul 2014 10:27:16 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <robherring2@gmail.com>, Sinan Kaya <okaya@codeaurora.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Jingoo Han <jg1.han@samsung.com>, Will Deacon <Will.Deacon@arm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Kukjin Kim <kgene.kim@samsung.com>, Tanmay Inamdar <tinamdar@apm.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH v8 4/9] pci: OF: Fix the conversion of IO ranges into IO
+ resources.
+Message-ID: <20140709092716.GS6501@e106497-lin.cambridge.arm.com>
+References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
+ <201407072322.00990.arnd@arndb.de>
+ <20140708100332.GW6501@e106497-lin.cambridge.arm.com>
+ <201407091031.50402.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dngyMJhgXGAL5Gb8"
+In-Reply-To: <201407091031.50402.arnd@arndb.de>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 09 Jul 2014 09:27:17.0687 (UTC) FILETIME=[FA105C70:01CF9B57]
+X-MC-Unique: 114070910271904701
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1404822480-31525-1-git-send-email-amit.daniel@samsung.com>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 82.127.83.212
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/3] regulator: s2mpxxx: Move regulator min/step voltages
- in common place
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 09, 2014 at 09:31:50AM +0100, Arnd Bergmann wrote:
+> On Tuesday 08 July 2014, Liviu Dudau wrote:
+> > On Mon, Jul 07, 2014 at 10:22:00PM +0100, Arnd Bergmann wrote:
+> > > 
+> > > I looked at the other drivers briefly, and I think you indeed fix the Tegra
+> > > driver with this but break the integrator driver as mentioned above.
+> > > The other callers of of_pci_range_to_resource() are apparently not
+> > > impacted as they recalculate the values they get.
+> > 
+> > I would argue that integrator version is having broken assumptions. If it would
+> > try to allocate that IO range or request the resource as returned currently by
+> > of_pci_range_to_resource (without my patch) it would fail. I know because I did
+> > the same thing in my host bridge driver and it failed miserably. That's why I
+> > tried to patch it.
+> 
+> The integrator code was just introduced and the reason for how it does things
+> is the way that of_pci_range_to_resource() works today. We tried to cope with
+> it and not change the existing behavior in order to not break any other drivers.
+> 
+> It's certainly not fair to call the integrator version broken, it just works
+> around the common code having a quirky interface. We should probably have
+> done of_pci_range_to_resource better than it is today (I would have argued
+> for it to return an IORESOURCE_MEM with the CPU address), but it took long
+> enough to get that merged and I was sick of arguing about it.
 
---dngyMJhgXGAL5Gb8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Understood. That is why I have carefully worded my email as not to diss anyone.
+I didn't say the code is broken, I've said it has broken assumptions.
 
-On Tue, Jul 08, 2014 at 05:57:58PM +0530, Amit Daniel Kachhap wrote:
+> 
+> > If the IO space is memory mapped, then we use the port number, the io_offset
+> > and the PCI_IOBASE to get to the virtual address that, when accessed, will
+> > generate the correct addresses on the bus, based on what the host bridge has
+> > been configured.
+> > 
+> > This is the current level of my understanding of PCI IO.
+> 
+> Your understanding is absolutely correct, and that's great because very few
+> people get that right. What I think we're really arguing about is what the
+> of_pci_range_to_resource is supposed to return. As you and Bjorn both pointed
+> out earlier, there are in fact two resources associated with the I/O window
+> and the flaw in the current implementation is that of_pci_range_to_resource
+> returns the numeric values for the IORESOURCE_MEM resource, but sets the
+> type to IORESOURCE_IO, which is offset from that by PCI_IOBASE.
+> 
+> You try to fix that by making it return the correct IORESOURCE_IO resource,
+> which is a reasonable approach but you must not break drivers that rely
+> on the broken resource while doing that.
 
->  include/linux/mfd/samsung/core.h    | 21 ++++++++++++++++
->  include/linux/mfd/samsung/s2mpa01.h | 12 ---------
->  include/linux/mfd/samsung/s2mps11.h |  9 -------
->  include/linux/mfd/samsung/s2mps14.h | 10 --------
+Or I need to fix the existing drivers that rely on the old behaviour.
 
-You need to send patches to the MFD subsystem to the MFD maintainers as
-well.
+> 
+> The approach that I would have picked is to return the IORESOURCE_MEM
+> resource associated with the I/O window and pick a (basically random)
+> IORESOURCE_IO resource struct based on what hasn't been used and then
+> compute the appropriate io_offset from that. This approach of course
+> would also have required fixing up all drivers relying on the current
+> behavior.
+> 
+> To be clear, I'm fine with you (and Bjorn if he cares) picking the
+> approach you like here, either one of these works fine as long as the
+> host drivers use the interface in the way it is defined.
 
---dngyMJhgXGAL5Gb8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+OK. Thanks for that. It does look like either way some existing code needs
+fixing, so I will have a look at that. Unless Bjorn votes for making a new
+version of pci_range_to_resource().
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+> 
+> > Now, I believe Rob has switched entirely to using my series in some test that
+> > he has run and he hasn't encountered any issues, as long as one remembers in
+> > the host bridge driver to add the io_base offset to the .start resource. If
+> > not then I need to patch pci_v3.c.
+> 
+> The crazy part of all these discussions is that basically nobody ever uses
+> I/O port access, so it's very hard to test and we don't even notice when
+> we get it wrong, but we end up spending most of the time for PCI host controller
+> reviews trying to get these right.
+> 
+> I'm very thankful that you are doing this work to get it moved into common
+> code so hopefully this is the last time we ever have to worry about it because
+> all future drivers will be able to use the common implemnetation.
 
-iQIcBAEBAgAGBQJTvQp0AAoJELSic+t+oim9nW0P/Rmn24r8W6qWMkt0AyiAgN+T
-1uZl8GaHsyyOevbE2qUKIco/flZ60Q6shvBcVXA7Jm+Raq8YJOPtOk+9iU8aG3yF
-Uiqk3fx1H1UQZl9eSW81VApr8K7i0C0DUreDOT3z8qtG+N1UaQl5gwv2oYIHBW6w
-+Ipd5iQ3JeNZ630LY2Cc5eQvZc+mXPiiAS72RtrQH7eoeYgBGgH32K71EgSiM1lB
-QGbBBpe139m9TX42vzK/vcYKOWv7oRfJVS87w3Yb/XmiZx8tkXRSOe/T8l0bsa/O
-2pkEpoX21FuWN5daMUv85C1ZWHd7DYtfVUJ9D7vwD+yx3W7AVUHCS2kX/QEBzGcW
-Ix9SRp3KBkWZxyrk1Ec47+ERT07lsUCZibLpRtQH0OMXVgiekId4A1fph4OtzjHa
-UH5wrmhBK8QymWiKC8XVO83QYNMi/EyECH4467MyhhD3mRlWo6uVcTZ7byS+uXAZ
-tvph/AuH3utHF+Gpgt7ijQIRjEdLHQeMaCOm53t64mvybZFknSyNAFan+fdr+TGb
-ui1B/p5xmunj+aXBm5wnZRLi8rnUCzLmBpabHHFqQJNAtQixLFRNSshmI/Na2GKH
-9xxglRmCZlXEdx3RP4Y5CE1kIj2063JfZjmt8E+brM3T1wARGN/FtFfWkLnfEHOI
-9OxgCdI6QKIhlokN9iJs
-=X8i/
------END PGP SIGNATURE-----
+Ahh, we humans! We always hope for the best! :)
 
---dngyMJhgXGAL5Gb8--
+My only chance of succeeding is if I make it a no brainer for people to use the
+code. At the moment the interface for host bridge drivers is not too bad, but
+it looks like the internals are still hard to comprehend.
+
+Best regards,
+Liviu
+
+> 
+> 	Arnd
+> 
+
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
+
