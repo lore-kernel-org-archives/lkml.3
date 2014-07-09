@@ -1,154 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755862AbaGILNh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 07:13:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41521 "EHLO mx2.suse.de"
+	id S1755840AbaGILNb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 07:13:31 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:34255 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755313AbaGILNd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 07:13:33 -0400
-Message-ID: <53BD23DB.3050303@suse.de>
-Date: Wed, 09 Jul 2014 13:13:31 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
-        Robert Elliott <Elliott@hp.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/14] scsi: centralize command re-queueing in scsi_dispatch_fn
-References: <1403715121-1201-1-git-send-email-hch@lst.de> <1403715121-1201-4-git-send-email-hch@lst.de>
-In-Reply-To: <1403715121-1201-4-git-send-email-hch@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755805AbaGILN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 07:13:28 -0400
+Message-ID: <1404904380.16296.17.camel@iivanov-dev>
+Subject: Re: [PATCH 0/4] New Qualcomm PMIC pin controller drivers
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Date: Wed, 09 Jul 2014 14:13:00 +0300
+In-Reply-To: <CACRpkdYcoA-nifxojO5tZUy6dL6P2PTSGW0mVLUfqG20rOg-Nw@mail.gmail.com>
+References: <1404745893-6379-1-git-send-email-iivanov@mm-sol.com>
+	 <CACRpkdYcoA-nifxojO5tZUy6dL6P2PTSGW0mVLUfqG20rOg-Nw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2014 06:51 PM, Christoph Hellwig wrote:
-> Make sure we only have the logic for requeing commands in one place.
->
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
-> ---
->   drivers/scsi/scsi.c     |   35 ++++++++++++-----------------------
->   drivers/scsi/scsi_lib.c |    9 ++++++---
->   2 files changed, 18 insertions(+), 26 deletions(-)
->
-> diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-> index ce5b4e5..dcc43fd 100644
-> --- a/drivers/scsi/scsi.c
-> +++ b/drivers/scsi/scsi.c
-> @@ -648,9 +648,7 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
->   		 * returns an immediate error upwards, and signals
->   		 * that the device is no longer present */
->   		cmd->result = DID_NO_CONNECT << 16;
-> -		scsi_done(cmd);
-> -		/* return 0 (because the command has been processed) */
-> -		goto out;
-> +		goto done;
->   	}
->
->   	/* Check to see if the scsi lld made this device blocked. */
-> @@ -662,17 +660,9 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
->   		 * occur until the device transitions out of the
->   		 * suspend state.
->   		 */
-> -
-> -		scsi_queue_insert(cmd, SCSI_MLQUEUE_DEVICE_BUSY);
-> -
->   		SCSI_LOG_MLQUEUE(3, scmd_printk(KERN_INFO, cmd,
->   			"queuecommand : device blocked\n"));
-> -
-> -		/*
-> -		 * NOTE: rtn is still zero here because we don't need the
-> -		 * queue to be plugged on return (it's already stopped)
-> -		 */
-> -		goto out;
-> +		return SCSI_MLQUEUE_DEVICE_BUSY;
->   	}
->
->   	/*
-> @@ -696,20 +686,19 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
->   			       "cdb_size=%d host->max_cmd_len=%d\n",
->   			       cmd->cmd_len, cmd->device->host->max_cmd_len));
->   		cmd->result = (DID_ABORT << 16);
-> -
-> -		scsi_done(cmd);
-> -		goto out;
-> +		goto done;
->   	}
->
->   	if (unlikely(host->shost_state == SHOST_DEL)) {
->   		cmd->result = (DID_NO_CONNECT << 16);
-> -		scsi_done(cmd);
-> -	} else {
-> -		trace_scsi_dispatch_cmd_start(cmd);
-> -		cmd->scsi_done = scsi_done;
-> -		rtn = host->hostt->queuecommand(host, cmd);
-> +		goto done;
-> +
->   	}
->
-> +	trace_scsi_dispatch_cmd_start(cmd);
-> +
-> +	cmd->scsi_done = scsi_done;
-> +	rtn = host->hostt->queuecommand(host, cmd);
->   	if (rtn) {
->   		trace_scsi_dispatch_cmd_error(cmd, rtn);
->   		if (rtn != SCSI_MLQUEUE_DEVICE_BUSY &&
-> @@ -718,12 +707,12 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
->
->   		SCSI_LOG_MLQUEUE(3, scmd_printk(KERN_INFO, cmd,
->   			"queuecommand : request rejected\n"));
-> -
-> -		scsi_queue_insert(cmd, rtn);
->   	}
->
-> - out:
->   	return rtn;
-> + done:
-> +	scsi_done(cmd);
-> +	return 0;
->   }
->
->   /**
-> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-> index 2667c75..63bf844 100644
-> --- a/drivers/scsi/scsi_lib.c
-> +++ b/drivers/scsi/scsi_lib.c
-> @@ -1583,9 +1583,12 @@ static void scsi_request_fn(struct request_queue *q)
->   		 * Dispatch the command to the low-level driver.
->   		 */
->   		rtn = scsi_dispatch_cmd(cmd);
-> -		spin_lock_irq(q->queue_lock);
-> -		if (rtn)
-> +		if (rtn) {
-> +			scsi_queue_insert(cmd, rtn);
-> +			spin_lock_irq(q->queue_lock);
->   			goto out_delay;
-> +		}
-> +		spin_lock_irq(q->queue_lock);
->   	}
->
->   	return;
-> @@ -1605,7 +1608,7 @@ static void scsi_request_fn(struct request_queue *q)
->   	blk_requeue_request(q, req);
->   	sdev->device_busy--;
->   out_delay:
-> -	if (sdev->device_busy == 0)
-> +	if (sdev->device_busy == 0 && !scsi_device_blocked(sdev))
->   		blk_delay_queue(q, SCSI_QUEUE_DELAY);
->   }
->
->
+Hi, 
 
-Reviewed-by: Hannes Reinecke <hare@suse.de>
+On Wed, 2014-07-09 at 11:43 +0200, Linus Walleij wrote:
+> On Mon, Jul 7, 2014 at 5:11 PM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
+> 
+> > This set of patches adds pin control drivers for Multi-purpose
+> > pin (MPP) and General-purpose pin (GPIO) controllers found
+> > in Qualcomm PMIC chips.
+> >
+> > MPP's are enhanced GPIO's with analog circuits, which support
+> > following functions in addition to digital input/output: analog
+> > input/output and current sinks.
+> >
+> > PMIC PM8941 have 8 MPP's and 36 GPIO's. PMIC PM8841 have 4 MPP's.
+> >
+> > Ivan T. Ivanov (4):
+> >   pinctrl: qpnp: Qualcomm PMIC pin controller driver
+> >   pinctrl: qcom: Add documentation for pinctrl-qpnp binding
+> >   pinctrl: qcom: Add PM8941 and PM8941 pinctrl drivers
+> >   ARM: dts: qcom: Add PM8941 and PM8841 pinctrl nodes
+> 
+> Oh, I just spent some 45 minutes reviewing an 8xxx pinctrl driver from
+> BjÃ¶rn Andersson
+> that *seems* to be doing exactly the same thing.
+> 
+> Now I have two drivers from people outside Qualcomm :-)
+> 
+> Some of my review comments on BjÃ¶rn's driver (like using SI units with the pin
+> config) are actually adressed in this patch set. The idea to split in subdrivers
+> per-ASIC may be good? I don't really know.
+> 
+> Can you two guys *PLEASE* join efforts and combine your drivers into one?
 
-Cheers,
+Not sure. BjÃ¶rn patches cover older PMIC chips, if not mistaken, mine
+cover PMIC's used with APQ8074 and onward [1]. Main difference is
+the bus which connects them to SoC, interrupts handling, runtime
+pin type detection and register map. 
 
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+Regards,
+Ivan
+
+[1] pm8019, pm8110, pm8226, pm8841, pm8916, pm8941, pm8994, pma8084, 
+    pmd9635, pmd9635, pmi8962, pmi8994.
+
