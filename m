@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756233AbaGIQk0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 12:40:26 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:56343 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753748AbaGIQkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 12:40:25 -0400
-Date: Wed, 9 Jul 2014 18:40:18 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Petr =?utf-8?Q?Ml=C3=A1dek?= <pmladek@suse.cz>
-Cc: Alex Elder <elder@linaro.org>, akpm@linux-foundation.org,
-        ak@linux.intel.com, bp@suse.de, jack@suse.cz, john.stultz@linaro.org,
-        rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] printk: use a clever macro
-Message-ID: <20140709164018.GF5254@pd.tnic>
-References: <1404911056-29064-1-git-send-email-elder@linaro.org>
- <1404911056-29064-4-git-send-email-elder@linaro.org>
- <20140709161946.GA26508@pathway.suse.cz>
- <20140709162404.GE5254@pd.tnic>
- <20140709163205.GC26508@pathway.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140709163205.GC26508@pathway.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756448AbaGIQlJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 12:41:09 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:58066 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755722AbaGIQlG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 12:41:06 -0400
+Message-ID: <1404924054.14643.36.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH v6 0/6] ima: extending secure boot certificate chain of
+ trust
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings <keyrings@linux-nfs.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Josh Boyer <jwboyer@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Date: Wed, 09 Jul 2014 12:40:54 -0400
+In-Reply-To: <24144.1404919879@warthog.procyon.org.uk>
+References: <1403620852-16476-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <24144.1404919879@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14070916-3532-0000-0000-0000030657C6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 06:32:05PM +0200, Petr Mládek wrote:
-> I know that it sets 1 now. I wondered about possible future changes.
-> Well, it is probably too paranoid. Anyway, any non-zero value is fine.
+On Wed, 2014-07-09 at 16:31 +0100, David Howells wrote: 
+> Okay, I've merged a number of patchsets together that I want to push for the
+> next merge window:
+> 
+> 	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-next
+> 
+> I'd like to add yours.  Shall I pull:
+> 
+> 	linux-integrity/next-trusted-keys
+> 
+> which is here, I presume:
+> 
+> 	http://git.kernel.org/cgit/linux/kernel/git/zohar/linux-integrity.git/
+> 
 
-Yes, because they both are used only in a boolean context.
+Yes, that's fine.  My concern, however, is that the trusted keyring
+patches are independent of the other patches being upstreamed and should
+be upstreamed regardless of the other patches.
 
--- 
-Regards/Gruss,
-    Boris.
+Mimi
 
-Sent from a fat crate under my desk. Formatting is fine.
---
