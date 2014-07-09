@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756561AbaGIRB0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 13:01:26 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:60928 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755337AbaGIRBZ (ORCPT
+	id S1755968AbaGIREp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 13:04:45 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:43919 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754057AbaGIREn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 13:01:25 -0400
-Date: Wed, 9 Jul 2014 13:01:22 -0400
-From: "James A. Shackleford" <shack@linux.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net,
-        florian.c.schilhabel@googlemail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 8/8] staging: rtl8712: remove inapplicable comment
-Message-ID: <20140709170122.GA4315@xavier>
-References: <1403664761-15728-1-git-send-email-shack@linux.com>
- <1403664761-15728-2-git-send-email-shack@linux.com>
- <1403664761-15728-3-git-send-email-shack@linux.com>
- <1403664761-15728-4-git-send-email-shack@linux.com>
- <1403664761-15728-5-git-send-email-shack@linux.com>
- <1403664761-15728-6-git-send-email-shack@linux.com>
- <1403664761-15728-7-git-send-email-shack@linux.com>
- <1403664761-15728-8-git-send-email-shack@linux.com>
- <20140708101653.GJ25880@mwanda>
+	Wed, 9 Jul 2014 13:04:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140708101653.GJ25880@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140709163631.GG6685@esperanza>
+References: <cover.1404383187.git.vdavydov@parallels.com> <20140709075252.GB31067@esperanza>
+ <CAAAKZwsRDb6a062SFZYv-1SDYyD12uTzVMpdZt0CtdDjoddNVg@mail.gmail.com> <20140709163631.GG6685@esperanza>
+From: Greg Thelen <gthelen@google.com>
+Date: Wed, 9 Jul 2014 10:04:21 -0700
+Message-ID: <CAHH2K0Y2OH9scJ8FGkL3M124RSfoUFiELNhGNTHJEsaCEm+hiQ@mail.gmail.com>
+Subject: Re: [PATCH RFC 0/5] Virtual Memory Resource Controller for cgroups
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Tim Hockin <thockin@hockin.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Balbir Singh <bsingharora@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 08, 2014 at 01:16:53PM +0300, Dan Carpenter wrote:
-> On Tue, Jun 24, 2014 at 10:52:41PM -0400, James A Shackleford wrote:
-> > Signed-off-by: James A Shackleford <shack@linux.com>
-> > ---
-> >  drivers/staging/rtl8712/osdep_service.h |    5 -----
-> >  1 file changed, 5 deletions(-)
-> > 
-> > diff --git a/drivers/staging/rtl8712/osdep_service.h b/drivers/staging/rtl8712/osdep_service.h
-> > index 77b1443..3dfc473 100644
-> > --- a/drivers/staging/rtl8712/osdep_service.h
-> > +++ b/drivers/staging/rtl8712/osdep_service.h
-> > @@ -95,11 +95,6 @@ static inline void _set_workitem(_workitem *pwork)
-> >  	#define BIT(x)	(1 << (x))
-> >  #endif
-> >  
-> > -/*
-> > -For the following list_xxx operations,
-> > -caller must guarantee the atomic context.
-> > -Otherwise, there will be racing condition.
-> > -*/
-> >  static inline u32 _down_sema(struct semaphore *sema)
-> >  {
-> >  	if (down_interruptible(sema))
-> 
-> This function sucks obviously just like the wrappers you deleted earlier.
-> 
-> Only one of the callers checks the return value.
-> 
-> TODO-list: 2014-07-08: rtl8712: delete _down_sema().
-> 
-> regards,
-> dan carpenter
-> 
+On Wed, Jul 9, 2014 at 9:36 AM, Vladimir Davydov <vdavydov@parallels.com> wrote:
+> Hi Tim,
+>
+> On Wed, Jul 09, 2014 at 08:08:07AM -0700, Tim Hockin wrote:
+>> How is this different from RLIMIT_AS?  You specifically mentioned it
+>> earlier but you don't explain how this is different.
+>
+> The main difference is that RLIMIT_AS is per process while this
+> controller is per cgroup. RLIMIT_AS doesn't allow us to limit VSIZE for
+> a group of unrelated or cooperating through shmem processes.
+>
+> Also RLIMIT_AS accounts for total VM usage (including file mappings),
+> while this only charges private writable and shared mappings, whose
+> faulted-in pages always occupy mem+swap and therefore cannot be just
+> synced and dropped like file pages. In other words, this controller
+> works exactly as the global overcommit control.
+>
+>> From my perspective, this is pointless.  There's plenty of perfectly
+>> correct software that mmaps files without concern for VSIZE, because
+>> they never fault most of those pages in.
+>
+> But there's also software that correctly handles ENOMEM returned by
+> mmap. For example, mongodb keeps growing its buffers until mmap fails.
+> Therefore, if there's no overcommit control, it will be OOM-killed
+> sooner or later, which may be pretty annoying. And we did have customers
+> complaining about that.
 
-I completely agree -- most of the stuff in this header is pretty ugly.  More
-clean-up patches are in the pipe.
+Is mongodb's buffer growth causing the oom kills?
 
-Regards,
-James Shackleford
+If yes, I wonder if apps, like mongodb, that want ENOMEM should (1)
+use MAP_POPULATE and (2) we change vm_map_pgoff() to propagate
+mm_populate() ENOMEM failures back to mmap()?
+
+>> From my observations it is not generally possible to predict an
+>> average VSIZE limit that would satisfy your concerns *and* not kill
+>> lots of valid apps.
+>
+> Yes, it's difficult. Actually, we can only guess. Nevertheless, we
+> predict and set the VSIZE limit system-wide by default.
+>
+>> It sounds like what you want is to limit or even disable swap usage.
+>
+> I want to avoid OOM kill if it's possible to return ENOMEM. OOM can be
+> painful. It can kill lots of innocent processes. Of course, the user can
+> protect some processes by setting oom_score_adj, but this is difficult
+> and requires time and expertise, so an average user won't do that.
+>
+>> Given your example, your hypothetical user would probably be better of
+>> getting an OOM kill early so she can fix her job spec to request more
+>> memory.
+>
+> In my example the user won't get OOM kill *early*...
