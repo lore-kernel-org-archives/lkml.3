@@ -1,138 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745AbaGII1z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 04:27:55 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:52477 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871AbaGII1x (ORCPT
+	id S1754979AbaGII3M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 04:29:12 -0400
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.163]:22216 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751294AbaGII3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 04:27:53 -0400
+	Wed, 9 Jul 2014 04:29:08 -0400
+X-Env-Sender: James.Ban.opensource@diasemi.com
+X-Msg-Ref: server-7.tower-39.messagelabs.com!1404894545!26125309!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+Date: Wed, 9 Jul 2014 17:28:59 +0900
+Message-ID: <201407090828.s698SxPD017842@krsrvapps-01.diasemi.com>
+From: James Ban <james.ban.opensource@diasemi.com>
+Subject: Re: [PATCH V4] regulator: DA9211 : new regulator driver
+To: Mark Brown <broonie@kernel.org>
+CC: Liam Girdwood <lgirdwood@gmail.com>,
+        Support Opensource <support.opensource@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "David Dajun Chen" <david.chen@diasemi.com>
 MIME-Version: 1.0
-In-Reply-To: <53BCBD0E.2070609@linux.vnet.ibm.com>
-References: <1404144343-18720-1-git-send-email-vincent.guittot@linaro.org>
- <1404144343-18720-2-git-send-email-vincent.guittot@linaro.org>
- <53BB61E9.80200@linux.vnet.ibm.com> <CAKfTPtA8BVPtRRLzomqnGp7_uaSbFYmFTrrt4fpQTOb7qyjddg@mail.gmail.com>
- <53BCBD0E.2070609@linux.vnet.ibm.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Wed, 9 Jul 2014 10:27:32 +0200
-Message-ID: <CAKfTPtA3FXE+kK_E_c_GkN7LAP+rf6+S4jRxE-42mdmLuS3L7A@mail.gmail.com>
-Subject: Re: [PATCH v3 01/12] sched: fix imbalance flag reset
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 July 2014 05:54, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
-> Hi Vincent,
->
-> On 07/08/2014 03:42 PM, Vincent Guittot wrote:
+> -----Original Message-----
+> From: Mark Brown [mailto:broonie@kernel.org]
+> Sent: Wednesday, July 09, 2014 4:57 PM
+> To: Opensource [James Seong-Won Ban]
+> Cc: Liam Girdwood; Support Opensource; LKML; David Dajun Chen
+> Subject: Re: your mail
+> 
+> On Wed, Jul 09, 2014 at 10:03:32AM +0900, James Ban wrote:
+> 
+> > > > +	ret = regmap_read(chip->regmap, DA9211_REG_EVENT_B, &reg_val);
+> > > > +	if (ret < 0)
+> > > > +		goto error_i2c;
+> 
+> > > > +	if (reg_val & DA9211_E_OV_CURR_A) {
+> 
+> > > > +	if (reg_val & DA9211_E_OV_CURR_B) {
+> 
+> > > > +	return IRQ_HANDLED;
+> 
+> > > This is buggy - the driver should only return IRQ_HANDLED if it
+> > > handled the interrupt somehow, otherwise it should return IRQ_NONE
+> > > and let the interrupt core handle things.  This is especially
+> > > important since the device appears to require that interrupts are
+> > > explicitly acknoweldged so if something is flagged but not handled the
+> interrupt will just sit constantly asserted.
+> 
+> > Basically all interrupts are masked when the chip wakes up.
+> > Only two interrupts are unmasked at the start of driver like below.
+> 
+> I know that's the intention but the code should still be written robustly -
+> something might go wrong somewhere which causes another interrupt to be
+> enabled, or we might even gain support for shared threaded interrupts in the
+> interrupt core and someone could then try to use that in a system.
+How about below code for proper handle of interrupt?
+static irqreturn_t da9211_irq_handler(int irq, void *data)
+{
+	struct da9211 *chip = data;
+	int reg_val, ret;
 
-[ snip]
+	ret = regmap_read(chip->regmap, DA9211_REG_EVENT_B, &reg_val);
+	if (ret < 0)
+		goto error_i2c;
 
->>>>  out_balanced:
->>>> +     /*
->>>> +      * We reach balance although we may have faced some affinity
->>>> +      * constraints. Clear the imbalance flag if it was set.
->>>> +      */
->>>> +     if (sd_parent) {
->>>> +             int *group_imbalance = &sd_parent->groups->sgc->imbalance;
->>>> +             if (*group_imbalance)
->>>> +                     *group_imbalance = 0;
->>>> +     }
->>>> +
->>>>       schedstat_inc(sd, lb_balanced[idle]);
->>>>
->>>>       sd->nr_balance_failed = 0;
->>>>
->>> I am not convinced that we can clear the imbalance flag here. Lets take
->>> a simple example. Assume at a particular level of sched_domain, there
->>> are two sched_groups with one cpu each. There are 2 tasks on the source
->>> cpu, one of which is running(t1) and the other thread(t2) does not have
->>> the dst_cpu in the tsk_allowed_mask. Now no task can be migrated to the
->>> dst_cpu due to affinity constraints. Note that t2 is *not pinned, it
->>> just cannot run on the dst_cpu*. In this scenario also we reach the
->>> out_balanced tag right? If we set the group_imbalance flag to 0, we are
->>
->> No we will not. If we have 2 tasks on 1 CPU in one sched_group and the
->> other group with an idle CPU,  we are not balanced so we will not go
->> to out_balanced and the group_imbalance will staty set until we reach
->> a balanced state (by migrating t1).
->
-> In the example that I mention above, t1 and t2 are on the rq of cpu0;
-> while t1 is running on cpu0, t2 is on the rq but does not have cpu1 in
-> its cpus allowed mask. So during load balance, cpu1 tries to pull t2,
-> cannot do so, and hence LBF_ALL_PINNED flag is set and it jumps to
+	if (reg_val & DA9211_E_OV_CURR_A) {
+		regulator_notifier_call_chain(chip->rdev[0],
+			REGULATOR_EVENT_OVER_CURRENT,
+			rdev_get_drvdata(chip->rdev[0]));
 
-That's where I disagree: my understanding of can_migrate_task is that
-the LBF_ALL_PINNED will be cleared before returning false when
-checking t1 because we are testing all tasks even the running task
+		ret = regmap_write(chip->regmap, DA9211_REG_EVENT_B,
+			DA9211_E_OV_CURR_A);
+		if (ret < 0)
+			goto error_i2c;
 
-> out_balanced. Note that there are only two sched groups at this level of
-> sched domain.one with cpu0 and the other with cpu1. In this scenario we
-> do not try to do active load balancing, atleast thats what the code does
-> now if LBF_ALL_PINNED flag is set.
->
->>
->>> ruling out the possibility of migrating t2 to any other cpu in a higher
->>> level sched_domain by saying that all is well, there is no imbalance.
->>> This is wrong, isn't it?
->>>
->>> My point is that by clearing the imbalance flag in the out_balanced
->>> case, you might be overlooking the fact that the tsk_cpus_allowed mask
->>> of the tasks on the src_cpu may not be able to run on the dst_cpu in
->>> *this* level of sched_domain, but can potentially run on a cpu at any
->>> higher level of sched_domain. By clearing the flag, we are not
->>
->> The imbalance flag is per sched_domain level so we will not clear
->> group_imbalance flag of other levels if the imbalance is also detected
->> at a higher level it will migrate t2
->
-> Continuing with the above explanation; when LBF_ALL_PINNED flag is
-> set,and we jump to out_balanced, we clear the imbalance flag for the
-> sched_group comprising of cpu0 and cpu1,although there is actually an
-> imbalance. t2 could still be migrated to say cpu2/cpu3 (t2 has them in
-> its cpus allowed mask) in another sched group when load balancing is
-> done at the next sched domain level.
+		return IRQ_HANDLED;
+	}
+	else if (reg_val & DA9211_E_OV_CURR_B) {
+		regulator_notifier_call_chain(chip->rdev[1],
+			REGULATOR_EVENT_OVER_CURRENT,
+			rdev_get_drvdata(chip->rdev[1]));
 
-The imbalance is per sched_domain level so it will not have any side
-effect on the next level
+		ret = regmap_write(chip->regmap, DA9211_REG_EVENT_B,
+			DA9211_E_OV_CURR_B);
+		if (ret < 0)
+			goto error_i2c;
 
-Regards,
-Vincent
+		return IRQ_HANDLED;
+	}
+	else
+		return IRQ_NONE;
 
->
-> Elaborating on this, when cpu2 in another socket,lets say, begins load
-> balancing and update_sd_pick_busiest() is called, the group with cpu0
-> and cpu1 may not be picked as a potential imbalanced group. Had we not
-> cleared the imbalance flag for this group, we could have balanced out t2
-> to cpu2/3.
->
-> Is the scenario I am describing clear?
->
-> Regards
-> Preeti U Murthy
->>
->> Regards,
->> Vincent
->>
->>> encouraging load balance at that level for t2.
->>>
->>> Am I missing something?
->>>
->>> Regards
->>> Preeti U Murthy
->>>
->>
->
+error_i2c:
+	dev_err(chip->dev, "I2C error : %d\n", ret);
+	return IRQ_NONE;
+}
