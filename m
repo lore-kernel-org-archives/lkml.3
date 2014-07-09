@@ -1,73 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754812AbaGIHxL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 03:53:11 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:56908 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751450AbaGIHxK (ORCPT
+	id S1753540AbaGIH6T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 03:58:19 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54298 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268AbaGIH6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 03:53:10 -0400
-Date: Wed, 9 Jul 2014 11:52:52 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [PATCH RFC 0/5] Virtual Memory Resource Controller for cgroups
-Message-ID: <20140709075252.GB31067@esperanza>
-References: <cover.1404383187.git.vdavydov@parallels.com>
+	Wed, 9 Jul 2014 03:58:17 -0400
+Date: Wed, 9 Jul 2014 09:56:36 +0200
+From: Mark Brown <broonie@kernel.org>
+To: James Ban <james.ban.opensource@diasemi.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>,
+        Support Opensource <support.opensource@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Message-ID: <20140709075636.GD30458@sirena.org.uk>
+References: <201407090103.s6913Wwl035701@krsrvapps-01.diasemi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3IyuMspwcGTbYISR"
 Content-Disposition: inline
-In-Reply-To: <cover.1404383187.git.vdavydov@parallels.com>
+In-Reply-To: <201407090103.s6913Wwl035701@krsrvapps-01.diasemi.com>
+X-Cookie: You look tired.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 82.127.83.212
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: your mail
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 03, 2014 at 04:48:16PM +0400, Vladimir Davydov wrote:
-> Hi,
-> 
-> Typically, when a process calls mmap, it isn't given all the memory pages it
-> requested immediately. Instead, only its address space is grown, while the
-> memory pages will be actually allocated on the first use. If the system fails
-> to allocate a page, it will have no choice except invoking the OOM killer,
-> which may kill this or any other process. Obviously, it isn't the best way of
-> telling the user that the system is unable to handle his request. It would be
-> much better to fail mmap with ENOMEM instead.
-> 
-> That's why Linux has the memory overcommit control feature, which accounts and
-> limits VM size that may contribute to mem+swap, i.e. private writable mappings
-> and shared memory areas. However, currently it's only available system-wide,
-> and there's no way of avoiding OOM in cgroups.
-> 
-> This patch set is an attempt to fill the gap. It implements the resource
-> controller for cgroups that accounts and limits address space allocations that
-> may contribute to mem+swap.
-> 
-> The interface is similar to the one of the memory cgroup except it controls
-> virtual memory usage, not actual memory allocation:
-> 
->   vm.usage_in_bytes            current vm usage of processes inside cgroup
->                                (read-only)
-> 
->   vm.max_usage_in_bytes        max vm.usage_in_bytes, can be reset by writing 0
-> 
->   vm.limit_in_bytes            vm.usage_in_bytes must be <= vm.limite_in_bytes;
->                                allocations that hit the limit will be failed
->                                with ENOMEM
-> 
->   vm.failcnt                   number of times the limit was hit, can be reset
->                                by writing 0
-> 
-> In future, the controller can be easily extended to account for locked pages
-> and shmem.
 
-Any thoughts on this?
+--3IyuMspwcGTbYISR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks.
+On Wed, Jul 09, 2014 at 10:03:32AM +0900, James Ban wrote:
+
+> > > +	ret =3D regmap_read(chip->regmap, DA9211_REG_EVENT_B, &reg_val);
+> > > +	if (ret < 0)
+> > > +		goto error_i2c;
+
+> > > +	if (reg_val & DA9211_E_OV_CURR_A) {
+
+> > > +	if (reg_val & DA9211_E_OV_CURR_B) {
+
+> > > +	return IRQ_HANDLED;
+
+> > This is buggy - the driver should only return IRQ_HANDLED if it handled=
+ the
+> > interrupt somehow, otherwise it should return IRQ_NONE and let the inte=
+rrupt
+> > core handle things.  This is especially important since the device appe=
+ars to
+> > require that interrupts are explicitly acknoweldged so if something is =
+flagged
+> > but not handled the interrupt will just sit constantly asserted.
+
+> Basically all interrupts are masked when the chip wakes up.=20
+> Only two interrupts are unmasked at the start of driver like below.
+
+I know that's the intention but the code should still be written
+robustly - something might go wrong somewhere which causes another
+interrupt to be enabled, or we might even gain support for shared
+threaded interrupts in the interrupt core and someone could then
+try to use that in a system.
+
+--3IyuMspwcGTbYISR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTvPWxAAoJELSic+t+oim9AXkP/RQ3//m+mqAVPrHuYDlx+UJs
+s/zk+1m2oiL+a/pxPmW8IPaVfnsWYBF1P5BEXfk+VETvzNTn/pWNqAv8M/snq2wW
+XuHB8onzoSxZV3tWfz8A4GBglTdYojsLLJeFLH0gLUKIK28X8mLpTH+Q7cWPnXwa
+FfG1zJokZP5gyw+5Rrj2kzJxKJMCPKUV+WWXNCJ4IXs+xJjqv4HHRQZFOKAG9/Ii
+fyUnfQHSrN7F2uYn6AhBz257Sj7KDrifqiWTlMLca9c2GGpStKoXreau+ixlAx5d
+MRE+rXpr3WadFenZmtZ4rkheQx54AIJeQCBsEh0M90q/4ZxIJwSVQVG3MaxsewkJ
+VIBYVXkWTj4DMaP4egos379zsAdVC9BmwSyiz015eiILyu64QkSgdpbT7GNaGhLY
+AWmhfUP7GfbSA7Ns55TcNkHag9zkEA5MFLWOMQxu9xIVEuzAHnfVWzKqGCB+VmSd
+apLWjMhaOFEdVAfFaaDWQ7cRaaOxh57EssJRqq9VQATXJ+jwlW9WDnLJBZsqEjTf
+7BEdR488dWZDpjcI0RgqakWGktLCVr6+13NOC1h0t7E3xDDWG6WgCQ5MW7x5T076
+V6Tnx2yfNRHDMgidQ/NPhj8zVr8+x8MFkqmeqDFD/2czzDFlnCFMPqHPpOQLaLLr
+1e3UAmClqGat47xZEqfs
+=O7oi
+-----END PGP SIGNATURE-----
+
+--3IyuMspwcGTbYISR--
