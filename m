@@ -1,70 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796AbaGIBJz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 21:09:55 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:61821 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751941AbaGIBJy (ORCPT
+	id S1752620AbaGIBMf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 21:12:35 -0400
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.107]:49112 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751150AbaGIBMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 21:09:54 -0400
+	Tue, 8 Jul 2014 21:12:34 -0400
+X-Greylist: delayed 384 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Jul 2014 21:12:34 EDT
+X-Env-Sender: James.Ban.opensource@diasemi.com
+X-Msg-Ref: server-15.tower-194.messagelabs.com!1404867967!23040285!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+Date: Wed, 9 Jul 2014 10:06:02 +0900
+Message-ID: <201407090106.s69162IU036141@krsrvapps-01.diasemi.com>
+From: James Ban <james.ban.opensource@diasemi.com>
+Subject: Re: [PATCH V4] regulator: DA9211 : new regulator driver
+To: Mark Brown <broonie@kernel.org>
+CC: Liam Girdwood <lgirdwood@gmail.com>,
+        Support Opensource <support.opensource@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
 MIME-Version: 1.0
-In-Reply-To: <20140708193003.GA30984@roeck-us.net>
-References: <CAPDOMVid3nbw0-3n_5d8QF_c5uOosWyYRPtqW29ZUB9Ziz7F+Q@mail.gmail.com>
-	<53BB6D8F.70900@roeck-us.net>
-	<CAMuHMdVS79CpOiNkB60Vdrbe_ba=C=ONTFbsXbkcjJacSLaZYw@mail.gmail.com>
-	<20140708164525.GB12935@roeck-us.net>
-	<CAMuHMdVpWMboV1JGnOY7BtB1Qcm2=70Q079NPSGfut4Kjz34dQ@mail.gmail.com>
-	<20140708193003.GA30984@roeck-us.net>
-Date: Tue, 8 Jul 2014 21:09:52 -0400
-Message-ID: <CAPDOMVhkN5_+Ue_5SZ5QNoYqvZ=_FNp13=hGU2HMuiv4TAwTBQ@mail.gmail.com>
-Subject: Fwd: Compile issues with se7206_defconfig
-From: Nick Krause <xerofoify@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Guenter Roeck <linux@roeck-us.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Guenter Roeck  wrote on Tue, Jul 8, 2014 at 3:30 PM
-Subject: Re: Compile issues with se7206_defconfig
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Nick Krause <xerofoify@gmail.com>, "linux-kernel@vger.kernel.org"
-<linux-kernel@vger.kernel.org>
-
-
-On Tue, Jul 08, 2014 at 09:24:49PM +0200, Geert Uytterhoeven wrote:
-> On Tue, Jul 8, 2014 at 6:45 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> >> > net/built-in.o: In function `__sk_run_filter':
-> >> > filter.c:(.text+0x3156c): undefined reference to `__fpscr_values'
-> >> > filter.c:(.text+0x31760): undefined reference to `__fpscr_values'
-> >> > filter.c:(.text+0x31c8c): undefined reference to `__fpscr_values'
-> >> > filter.c:(.text+0x31f00): undefined reference to `__fpscr_values'
-> >> > filter.c:(.text+0x323b0): undefined reference to `__fpscr_values'
-> >>
-> >> Toolchain issue: the compiler doesn't recognize the option to disable
-> >> the FPU, so it isn't passed, cfr.
-> >> www.spinics.net/lists/netdev/msg278300.html
-> >
-> > Seems that similar problems were fixed earlier without requiring a toolchain
-> > change. What is different this time (besides the apparent difficulty to build a
-> > new toolchain) ? Or am I missing something ?
->
-> sh4-linux-gcc doesn't recognize -m2a-nofpu, so that is not passed.
-> It does recognize -m4a-nofpu, but when that's passed, it complains
-> about opcode not valid for this cpu variant in inline asm/
->
-> Ah, it also recognizes -m4-nofpu. If I add that, se7206_defconfig builds.
-> I assume a proper sh2a-linux toolchain will not recognize the -m4-nofpu,
-> so it won't be passed due to $(call cc-option).
->
-> Does this sound like an acceptable solution? If yes, I'll send a patch.
->
-Sounds good to me.
-
-Guenter
-
-Please send the patch to the maintainers of this and cc me so I can test it to
-see if it works.
-Cheers Nick
+Sorry. The previous mail was sent without Subject.
+> -----Original Message-----
+> From: Mark Brown [mailto:broonie@kernel.org]
+> Sent: Tuesday, July 08, 2014 4:36 PM
+> To: Opensource [James Seong-Won Ban]
+> Cc: Liam Girdwood; Support Opensource; LKML; David Dajun Chen
+> Subject: Re: [PATCH V4] regulator: DA9211 : new regulator driver
+> 
+> On Thu, Jul 03, 2014 at 04:29:03PM +0900, James Ban wrote:
+> 
+> This is greatly improved, thanks, however there are still a few issues which
+> should be addressed:
+> 
+> > +static irqreturn_t da9211_irq_handler(int irq, void *data) {
+> > +	struct da9211 *chip = data;
+> > +	int reg_val, ret;
+> > +
+> > +	ret = regmap_read(chip->regmap, DA9211_REG_EVENT_B, &reg_val);
+> > +	if (ret < 0)
+> > +		goto error_i2c;
+> > +
+> > +	if (reg_val & DA9211_E_OV_CURR_A) {
+> 
+> > +	if (reg_val & DA9211_E_OV_CURR_B) {
+> 
+> > +
+> > +	return IRQ_HANDLED;
+> 
+> This is buggy - the driver should only return IRQ_HANDLED if it handled the
+> interrupt somehow, otherwise it should return IRQ_NONE and let the interrupt
+> core handle things.  This is especially important since the device appears to
+> require that interrupts are explicitly acknoweldged so if something is flagged
+> but not handled the interrupt will just sit constantly asserted.
+Basically all interrupts are masked when the chip wakes up. 
+Only two interrupts are unmasked at the start of driver like below.
+-------------
+if (chip->chip_irq != 0) {
+			ret = regmap_update_bits(chip->regmap,
+				DA9211_REG_MASK_B, DA9211_M_OV_CURR_A << i, 1);
+-----------------
+So constant assertion which you are worry about could not happen.
+Please let me know if you think other case.
+> 
+> > +static int da9211_regulator_init(struct da9211 *chip) {
+> > +	struct regulator_config config = { };
+> > +	int i, ret;
+> > +	unsigned int data;
+> > +
+> > +	ret = regmap_update_bits(chip->regmap, DA9211_REG_PAGE_CON,
+> > +			DA9211_REG_PAGE_MASK, DA9211_REG_PAGE2);
+> > +	if (ret < 0) {
+> > +		dev_err(chip->dev, "Failed to update PAGE reg: %d\n", ret);
+> > +		goto err;
+> > +	}
+> 
+> It would be better to model the paging in the register map in the regmap
+> - the API has support for this, it's going to be more robust to use it.
+I will change the code for the usage of the API.
+> 
+> > +		dev_info(chip->dev, "# IRQ configured [%d]\n", chip->chip_irq);
+> 
+> > +	for (i = 0; i < chip->num_regulator; i++)
+> > +		regulator_unregister(chip->rdev[i]);
+> 
+> Use devm_regulator_register().
+I will do it.
+> 
+> > +	if (chip->chip_irq != 0)
+> > +		free_irq(chip->chip_irq, chip);
+> 
+> devm_request_threaded_irq().
+I will use devm_request_threaded_irq and remove free_irq.
