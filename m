@@ -1,120 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853AbaGIFjy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 01:39:54 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:43093 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbaGIFjx (ORCPT
+	id S1753531AbaGIFiw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 01:38:52 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:40671 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752020AbaGIFim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 01:39:53 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Wed, 9 Jul 2014 14:39:57 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Alexander E. Patrakov" <patrakov@gmail.com>,
-        Nitin Gupta <ngupta@vflare.org>, Jerome Marchand <jmarchan@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 3.15 093/122] zram: revalidate disk after capacity change
-Message-ID: <20140709053957.GD9824@bbox>
-References: <20140707235734.234226883@linuxfoundation.org>
- <20140707235737.041217860@linuxfoundation.org>
- <20140708105617.GA947@swordfish>
- <20140708150226.GA4113@kroah.com>
+	Wed, 9 Jul 2014 01:38:42 -0400
+From: Keerthy <j-keerthy@ti.com>
+To: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+CC: <mark.rutland@arm.com>, <galak@codeaurora.org>, <robh+dt@kernel.org>,
+        <linux@arm.linux.org.uk>, <balbi@ti.com>, <tony@atomide.com>,
+        <kishon@ti.com>, <broonie@kernel.org>, Keerthy <j-keerthy@ti.com>
+Subject: [PATCH v3 1/7] regulator: tps65218: Add fixed_uV fields for dcdc5 and dcdc6
+Date: Wed, 9 Jul 2014 11:06:27 +0530
+Message-ID: <1404884193-20580-2-git-send-email-j-keerthy@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1404884193-20580-1-git-send-email-j-keerthy@ti.com>
+References: <1404884193-20580-1-git-send-email-j-keerthy@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140708150226.GA4113@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Greg,
+Add fixed_uV fields for dcdc5 and dcdc6.
 
-On Tue, Jul 08, 2014 at 08:02:26AM -0700, Greg Kroah-Hartman wrote:
-> On Tue, Jul 08, 2014 at 07:56:17PM +0900, Sergey Senozhatsky wrote:
-> > On (07/07/14 16:57), Greg Kroah-Hartman wrote:
-> > > Date: Mon,  7 Jul 2014 16:57:35 -0700
-> > > From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > > To: linux-kernel@vger.kernel.org
-> > > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-> > >  stable@vger.kernel.org, Minchan Kim <minchan@kernel.org>, "Alexander E.
-> > >  Patrakov" <patrakov@gmail.com>, Sergey Senozhatsky
-> > >  <sergey.senozhatsky@gmail.com>, Nitin Gupta <ngupta@vflare.org>, Jerome
-> > >  Marchand <jmarchan@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-> > >  Linus Torvalds <torvalds@linux-foundation.org>
-> > > Subject: [PATCH 3.15 093/122] zram: revalidate disk after capacity change
-> > > X-Mailer: git-send-email 2.0.0.254.g50f84e3
-> > > User-Agent: quilt/0.63-1
-> > > 
-> > > 3.15-stable review patch.  If anyone has any objections, please let me know.
-> > > 
-> > > ------------------
-> > > 
-> > > From: Minchan Kim <minchan@kernel.org>
-> > > 
-> > > commit 2e32baea46ce542c561a519414c840295b229c8f upstream.
-> > > 
-> > > Alexander reported mkswap on /dev/zram0 is failed if other process is
-> > > opening the block device file.
-> > > 
-> > > Step is as follows,
-> > > 
-> > > 0. Reset the unused zram device.
-> > > 1. Use a program that opens /dev/zram0 with O_RDWR and sleeps
-> > >    until killed.
-> > > 2. While that program sleeps, echo the correct value to
-> > >    /sys/block/zram0/disksize.
-> > > 3. Verify (e.g. in /proc/partitions) that the disk size is applied
-> > >    correctly. It is.
-> > > 4. While that program still sleeps, attempt to mkswap /dev/zram0.
-> > >    This fails: mkswap: error: swap area needs to be at least 40 KiB
-> > > 
-> > > When I investigated, the size get by ioctl(fd, BLKGETSIZE64, xxx) on
-> > > mkswap to get a size of blockdev was zero although zram0 has right size by
-> > > 2.
-> > > 
-> > > The reason is zram didn't revalidate disk after changing capacity so that
-> > > size of blockdev's inode is not uptodate until all of file is close.
-> > > 
-> > > This patch should fix the BUG.
-> > > 
-> > > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > > Reported-by: Alexander E. Patrakov <patrakov@gmail.com>
-> > > Tested-by: Alexander E. Patrakov <patrakov@gmail.com>
-> > > Reviewed-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> > > Cc: Nitin Gupta <ngupta@vflare.org>
-> > > Acked-by: Jerome Marchand <jmarchan@redhat.com>
-> > > Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> > > Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> > > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > 
-> > Hello,
-> > 
-> > this patch is known to cause problems. please see
-> > https://lkml.org/lkml/2014/7/3/885
-> 
-> Did the fix ever get merged to Linus's tree?  If not, why not?  I'd
-> rather just take that fix as well.
+Signed-off-by: Keerthy <j-keerthy@ti.com>
+---
 
-Not yet.
-Because Andrew picked his tree(ie, mmotm) today.
+Changes from V2:
+  * Added fixed_uV fields for the regulator_desc structures.
 
-> 
-> thanks,
-> 
-> greg k-h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+ drivers/regulator/tps65218-regulator.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
+diff --git a/drivers/regulator/tps65218-regulator.c b/drivers/regulator/tps65218-regulator.c
+index 9effe48..27dc70d 100644
+--- a/drivers/regulator/tps65218-regulator.c
++++ b/drivers/regulator/tps65218-regulator.c
+@@ -30,7 +30,7 @@
+ enum tps65218_regulators { DCDC1, DCDC2, DCDC3, DCDC4, DCDC5, DCDC6, LDO1 };
+ 
+ #define TPS65218_REGULATOR(_name, _id, _ops, _n, _vr, _vm, _er, _em, _t, \
+-			    _lr, _nlr, _delay)			\
++			    _lr, _nlr, _delay, _fuv)			\
+ 	{							\
+ 		.name			= _name,		\
+ 		.id			= _id,			\
+@@ -46,6 +46,7 @@ enum tps65218_regulators { DCDC1, DCDC2, DCDC3, DCDC4, DCDC5, DCDC6, LDO1 };
+ 		.linear_ranges		= _lr,			\
+ 		.n_linear_ranges	= _nlr,			\
+ 		.ramp_delay		= _delay,		\
++		.fixed_uV		= _fuv			\
+ 	}							\
+ 
+ #define TPS65218_INFO(_id, _nm, _min, _max)	\
+@@ -186,33 +187,33 @@ static const struct regulator_desc regulators[] = {
+ 			   TPS65218_REG_CONTROL_DCDC1,
+ 			   TPS65218_CONTROL_DCDC1_MASK,
+ 			   TPS65218_REG_ENABLE1, TPS65218_ENABLE1_DC1_EN, NULL,
+-			   dcdc1_dcdc2_ranges, 2, 4000),
++			   dcdc1_dcdc2_ranges, 2, 4000, 0),
+ 	TPS65218_REGULATOR("DCDC2", TPS65218_DCDC_2, tps65218_dcdc12_ops, 64,
+ 			   TPS65218_REG_CONTROL_DCDC2,
+ 			   TPS65218_CONTROL_DCDC2_MASK,
+ 			   TPS65218_REG_ENABLE1, TPS65218_ENABLE1_DC2_EN, NULL,
+-			   dcdc1_dcdc2_ranges, 2, 4000),
++			   dcdc1_dcdc2_ranges, 2, 4000, 0),
+ 	TPS65218_REGULATOR("DCDC3", TPS65218_DCDC_3, tps65218_ldo1_dcdc34_ops,
+ 			   64, TPS65218_REG_CONTROL_DCDC3,
+ 			   TPS65218_CONTROL_DCDC3_MASK, TPS65218_REG_ENABLE1,
+ 			   TPS65218_ENABLE1_DC3_EN, NULL,
+-			   ldo1_dcdc3_ranges, 2, 0),
++			   ldo1_dcdc3_ranges, 2, 0, 0),
+ 	TPS65218_REGULATOR("DCDC4", TPS65218_DCDC_4, tps65218_ldo1_dcdc34_ops,
+ 			   53, TPS65218_REG_CONTROL_DCDC4,
+ 			   TPS65218_CONTROL_DCDC4_MASK,
+ 			   TPS65218_REG_ENABLE1, TPS65218_ENABLE1_DC4_EN, NULL,
+-			   dcdc4_ranges, 2, 0),
++			   dcdc4_ranges, 2, 0, 0),
+ 	TPS65218_REGULATOR("DCDC5", TPS65218_DCDC_5, tps65218_dcdc56_pmic_ops,
+ 			   1, -1, -1, TPS65218_REG_ENABLE1,
+-			   TPS65218_ENABLE1_DC5_EN, NULL, NULL, 0, 0),
++			   TPS65218_ENABLE1_DC5_EN, NULL, NULL, 0, 0, 1000000),
+ 	TPS65218_REGULATOR("DCDC6", TPS65218_DCDC_6, tps65218_dcdc56_pmic_ops,
+ 			   1, -1, -1, TPS65218_REG_ENABLE1,
+-			   TPS65218_ENABLE1_DC6_EN, NULL, NULL, 0, 0),
++			   TPS65218_ENABLE1_DC6_EN, NULL, NULL, 0, 0, 1800000),
+ 	TPS65218_REGULATOR("LDO1", TPS65218_LDO_1, tps65218_ldo1_dcdc34_ops, 64,
+ 			   TPS65218_REG_CONTROL_LDO1,
+ 			   TPS65218_CONTROL_LDO1_MASK, TPS65218_REG_ENABLE2,
+ 			   TPS65218_ENABLE2_LDO1_EN, NULL, ldo1_dcdc3_ranges,
+-			   2, 0),
++			   2, 0, 0),
+ };
+ 
+ static int tps65218_regulator_probe(struct platform_device *pdev)
 -- 
-Kind regards,
-Minchan Kim
+1.7.9.5
+
