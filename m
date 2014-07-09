@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756105AbaGIM0M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 08:26:12 -0400
-Received: from albert.telenet-ops.be ([195.130.137.90]:53072 "EHLO
-	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649AbaGIMX4 (ORCPT
+	id S1755804AbaGIM0L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 08:26:11 -0400
+Received: from michel.telenet-ops.be ([195.130.137.88]:55363 "EHLO
+	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755816AbaGIMX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Jul 2014 08:23:56 -0400
 From: Geert Uytterhoeven <geert+renesas@glider.be>
@@ -12,9 +12,9 @@ To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>
 Cc: devicetree@vger.kernel.org, linux-sh@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH 12/13] [RFC] thermal: rcar: Add binding docs for new R-Car Gen2 SoCs
-Date: Wed,  9 Jul 2014 14:23:42 +0200
-Message-Id: <1404908623-909-13-git-send-email-geert+renesas@glider.be>
+Subject: [PATCH 13/13] [RFC] irqchip: renesas-irqc: Add binding docs for new R-Car Gen2 SoCs
+Date: Wed,  9 Jul 2014 14:23:43 +0200
+Message-Id: <1404908623-909-14-git-send-email-geert+renesas@glider.be>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1404908623-909-1-git-send-email-geert+renesas@glider.be>
 References: <1404908623-909-1-git-send-email-geert+renesas@glider.be>
@@ -30,25 +30,25 @@ r8a7791 is now called "R-Car M2-W".
 
 Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 ---
- Documentation/devicetree/bindings/thermal/rcar-thermal.txt | 5 ++++-
+ .../devicetree/bindings/interrupt-controller/renesas,irqc.txt        | 5 ++++-
  1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/thermal/rcar-thermal.txt b/Documentation/devicetree/bindings/thermal/rcar-thermal.txt
-index 0ef00be44b01..43404b197933 100644
---- a/Documentation/devicetree/bindings/thermal/rcar-thermal.txt
-+++ b/Documentation/devicetree/bindings/thermal/rcar-thermal.txt
-@@ -7,7 +7,10 @@ Required properties:
- 			    - "renesas,thermal-r8a73a4" (R-Mobile AP6)
- 			    - "renesas,thermal-r8a7779" (R-Car H1)
- 			    - "renesas,thermal-r8a7790" (R-Car H2)
--			    - "renesas,thermal-r8a7791" (R-Car M2)
-+			    - "renesas,thermal-r8a7791" (R-Car M2-W)
-+			    - "renesas,thermal-r8a7792" (R-Car V2H)
-+			    - "renesas,thermal-r8a7793" (R-Car M2-N)
-+			    - "renesas,thermal-r8a7794" (R-Car E2)
- - reg			: Address range of the thermal registers.
- 			  The 1st reg will be recognized as common register
- 			  if it has "interrupts".
+diff --git a/Documentation/devicetree/bindings/interrupt-controller/renesas,irqc.txt b/Documentation/devicetree/bindings/interrupt-controller/renesas,irqc.txt
+index f819e2a5907c..cd9d92708c21 100644
+--- a/Documentation/devicetree/bindings/interrupt-controller/renesas,irqc.txt
++++ b/Documentation/devicetree/bindings/interrupt-controller/renesas,irqc.txt
+@@ -6,7 +6,10 @@ Required properties:
+   Examples with soctypes are:
+     - "renesas,irqc-r8a73a4" (R-Mobile AP6)
+     - "renesas,irqc-r8a7790" (R-Car H2)
+-    - "renesas,irqc-r8a7791" (R-Car M2)
++    - "renesas,irqc-r8a7791" (R-Car M2-W)
++    - "renesas,irqc-r8a7792" (R-Car V2H)
++    - "renesas,irqc-r8a7793" (R-Car M2-N)
++    - "renesas,irqc-r8a7794" (R-Car E2)
+ - #interrupt-cells: has to be <2>: an interrupt index and flags, as defined in
+   interrupts.txt in this directory
+ 
 -- 
 1.9.1
 
