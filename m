@@ -1,55 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134AbaGIFPZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 01:15:25 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:45396 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746AbaGIFPY (ORCPT
+	id S1752525AbaGIF2U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 01:28:20 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:39828 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718AbaGIF2R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 01:15:24 -0400
-Message-ID: <53BCCFE1.5000806@oracle.com>
-Date: Wed, 09 Jul 2014 13:15:13 +0800
-From: ethan zhao <ethan.zhao@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: balbi@ti.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sriharsha.devdas@oracle.com, ethan.kernel@gmail.com,
-        vaughan.cao@oracle.com
-Subject: Re: [PATCH NET-NEXT V2] netxen: fix ethtool rx_dropped information
- in ethtool get_ethtool_stats()
-References: <1404827830-22990-1-git-send-email-ethan.zhao@oracle.com> <53BCABD3.3050207@oracle.com> <20140708.204602.1475610247455018529.davem@davemloft.net>
-In-Reply-To: <20140708.204602.1475610247455018529.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 9 Jul 2014 01:28:17 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCHSET 0/6] perf tools: Honor column width setting
+Date: Wed,  9 Jul 2014 14:28:08 +0900
+Message-Id: <1404883694-5342-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David,
-     Sorry I don't know who owns this driver, the SOB of other patches 
-to netxen may mislead me you could ACK it or not,  so it is definitely 
-not the original meaning that ask you specifically to review one patch.  
-just ask for help point to someone could review it.
+Hello,
+
+This patchset is to control perf report/top output column width by
+-w/--column-widths option so that it can fit into the terminal size.
+The -w option is there for perf report but it ignored by recent output
+field changed due to some reason.  This patchset fixes it and supports
+perf top also.
+
+This is sometimes useful if your terminal is small and there's some
+C++ applications which have amazingly long symbol names.  Without this
+patchset user might not see those symbols on TUI, since it maps
+left/right arrow keys to other functions.
+
+The -w option sets column width starting from the first column
+(overhead or optional overhead_children column unless -F option is
+given).  It doesn't make sense to limit those overhead columns so it's
+not a hard-limit for them.  But it *is* a hard-limit for other columns
+such as comm, dso, symbol, and so on.  One can use 0 not to
+limit/force a width for those columns.
+
+
+For example:
+
+  $ perf report --stdio -s comm,dso
+  ...
+  # Overhead  Command          Shared Object                                        
+  # ........  ...............  .....................................................
+  #
+      71.08%  gnome-shell      perf-1497.map                                        
+       9.23%  gnome-shell      swrast_dri.so                                        
+       3.99%  Xorg             [unknown]                                            
+       3.18%  Xorg             [kernel.kallsyms]                                    
+       2.93%  gnome-shell      [kernel.kallsyms]                                    
+       2.41%  swapper          [kernel.kallsyms]                                    
+       1.55%  synergys         libpthread-2.15.so                                   
+       1.08%  synergys         synergys                                             
+       0.68%  systemd-journal  [kernel.kallsyms]                                    
+       0.59%  synergys         libstdc++.so.6.0.17                                  
+       0.58%  gnome-shell      libc-2.15.so                                         
+       0.54%  kworker/0:2      [kernel.kallsyms]                                    
+       0.20%  systemd-journal  [unknown]                                            
+       0.19%  gnome-shell      libclutter-1.0.so.0.1000.8.#prelink#.1kh1we (deleted)
+       0.18%  firefox          libxul.so (deleted)                                  
+       0.17%  gnome-shell      libcogl.so.9.1.1.#prelink#.ZL3fn1 (deleted)          
+       0.14%  firefox          [kernel.kallsyms]                                    
+       0.14%  gnome-shell      libgobject-2.0.so.0.3200.4                           
+       0.13%  gnome-shell      libpthread-2.15.so                                   
+       0.11%  synergys         [kernel.kallsyms]                                    
+       0.10%  perf             [kernel.kallsyms]                                    
+
+
+  $ perf report --stdio -s comm,dso -w 0,10,20   # 0 means no limit
+  ...
+  # Overhead  Command     Shared Object       
+  # ........  ..........  ....................
+  #
+      71.08%  gnome-shel  perf-1497.map       
+       9.23%  gnome-shel  swrast_dri.so       
+       3.99%  Xorg        [unknown]           
+       3.18%  Xorg        [kernel.kallsyms]   
+       2.93%  gnome-shel  [kernel.kallsyms]   
+       2.41%  swapper     [kernel.kallsyms]   
+       1.55%  synergys    libpthread-2.15.so  
+       1.08%  synergys    synergys            
+       0.68%  systemd-jo  [kernel.kallsyms]   
+       0.59%  synergys    libstdc++.so.6.0.17 
+       0.58%  gnome-shel  libc-2.15.so        
+       0.54%  kworker/0:  [kernel.kallsyms]   
+       0.20%  systemd-jo  [unknown]           
+       0.19%  gnome-shel  libclutter-1.0.so.0.
+       0.18%  firefox     libxul.so (deleted) 
+       0.17%  gnome-shel  libcogl.so.9.1.1.#pr
+       0.14%  firefox     [kernel.kallsyms]   
+       0.14%  gnome-shel  libgobject-2.0.so.0.
+       0.13%  gnome-shel  libpthread-2.15.so  
+       0.11%  synergys    [kernel.kallsyms]   
+       0.10%  perf        [kernel.kallsyms]   
+
+
+You can also get this from 'perf/width-v1' branch on my tree
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
 
 Thanks,
-Ethan
+Namhyung
 
-On 2014/7/9 11:46, David Miller wrote:
-> From: ethan zhao<ethan.zhao@oracle.com>
-> Date: Wed, 09 Jul 2014 10:41:23 +0800
->
->>     Please help to review and confirm this patch.
-> It's not in patchwork, therefore it's not in my queue.
->
-> It is also not my responsibility to review all patches, that's
-> a joint responsibility of everyone on this mailing list.
->
-> So asking me specifically to review a patch is really not
-> generally inappropriate.
->
-> Thanks.
->
+
+Namhyung Kim (6):
+  perf tools: Left-align output contents
+  perf tools: Make __hpp__fmt() receive an additional len argument
+  perf tools: Save column length in perf_hpp_fmt
+  perf report: Honor column width setting
+  perf top: Add -w option for setting column width
+  perf tools: Add name field into perf_hpp_fmt
+
+ tools/perf/Documentation/perf-report.txt |   2 +-
+ tools/perf/Documentation/perf-top.txt    |   6 +
+ tools/perf/builtin-top.c                 |   3 +
+ tools/perf/ui/browsers/hists.c           |  31 ++--
+ tools/perf/ui/gtk/hists.c                |  18 +-
+ tools/perf/ui/hist.c                     | 275 +++++++++++++++++++------------
+ tools/perf/ui/stdio/hist.c               |   4 +-
+ tools/perf/util/color.c                  |  16 ++
+ tools/perf/util/color.h                  |   1 +
+ tools/perf/util/hist.h                   |  17 +-
+ tools/perf/util/sort.c                   |  51 +++---
+ 11 files changed, 274 insertions(+), 150 deletions(-)
+
+-- 
+2.0.0
 
