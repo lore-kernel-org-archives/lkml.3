@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756688AbaGIPeV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 11:34:21 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48330 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932237AbaGIPHY (ORCPT
+	id S1756655AbaGIPeU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 11:34:20 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:63347 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756603AbaGIPeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 11:07:24 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Gregory Hermant <gregory.hermant@calao-systems.com>
-Subject: [PATCHv3 13/34] ARM: at91/dt: usb_a9260: define crystals frequencies
-Date: Wed,  9 Jul 2014 17:06:41 +0200
-Message-Id: <1404918422-7562-14-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1404918422-7562-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1404918422-7562-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Wed, 9 Jul 2014 11:34:16 -0400
+Date: Wed, 9 Jul 2014 16:34:10 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: robh+dt@kernel.org, swarren@nvidia.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mark.rutland@arm.com
+Subject: Re: [PATCH] Doc: mfd: as3722: Add details of optional missing
+ property
+Message-ID: <20140709153410.GK2635@lee--X1>
+References: <1402297417-9338-1-git-send-email-ldewangan@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1402297417-9338-1-git-send-email-ldewangan@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define Calao USB-A9260, USB-A9G20 and USB-A9G20-LPW main and slow crystals
-frequencies.
+On Mon, 09 Jun 2014, Laxman Dewangan wrote:
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Gregory Hermant <gregory.hermant@calao-systems.com>
----
- arch/arm/boot/dts/usb_a9260_common.dtsi | 8 ++++++++
- 1 file changed, 8 insertions(+)
+> Add details of following properties which are used on driver but
+> not documented on DT binding document.
+> - ams,enable-internal-int-pullup
+> - ams,enable-internal-i2c-pullup
+> 
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> Reported-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  Documentation/devicetree/bindings/mfd/as3722.txt | 8 ++++++++
+>  1 file changed, 8 insertions(+)
 
-diff --git a/arch/arm/boot/dts/usb_a9260_common.dtsi b/arch/arm/boot/dts/usb_a9260_common.dtsi
-index 285977682cf3..12edafefd44a 100644
---- a/arch/arm/boot/dts/usb_a9260_common.dtsi
-+++ b/arch/arm/boot/dts/usb_a9260_common.dtsi
-@@ -16,6 +16,14 @@
- 			compatible = "atmel,osc", "fixed-clock";
- 			clock-frequency = <12000000>;
- 		};
-+
-+		slow_xtal {
-+			clock-frequency = <32768>;
-+		};
-+
-+		main_xtal {
-+			clock-frequency = <12000000>;
-+		};
- 	};
- 
- 	ahb {
+Applied with Linus' Ack, thanks.
+
 -- 
-1.9.1
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
