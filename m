@@ -1,97 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755909AbaGIUHa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 16:07:30 -0400
-Received: from mail-by2lp0239.outbound.protection.outlook.com ([207.46.163.239]:29614
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753923AbaGIUH2 convert rfc822-to-8bit (ORCPT
+	id S1756357AbaGIUHv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 16:07:51 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:49201 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755943AbaGIUHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 16:07:28 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Christoph Hellwig <hch@infradead.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "jbottomley@parallels.com" <jbottomley@parallels.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: RE: [PATCH 1/8] Drivers: scsi: storvsc: Change the limits to reflect
- the values on the host
-Thread-Topic: [PATCH 1/8] Drivers: scsi: storvsc: Change the limits to reflect
- the values on the host
-Thread-Index: AQHPmwbkhR2ZqN76CEKfQBmR/e5a65uXbKgAgAC+28A=
-Date: Wed, 9 Jul 2014 20:07:25 +0000
-Message-ID: <e5e366a15a9f4a6fa1817b0f3b25a482@BY2PR03MB299.namprd03.prod.outlook.com>
-References: <1404866789-26910-1-git-send-email-kys@microsoft.com>
- <1404866812-26950-1-git-send-email-kys@microsoft.com>
- <20140709083954.GA6012@infradead.org>
-In-Reply-To: <20140709083954.GA6012@infradead.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [50.135.110.52]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:
-x-forefront-prvs: 0267E514F9
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(24454002)(377454003)(189002)(199002)(51704005)(13464003)(85306003)(85852003)(81542001)(20776003)(105586002)(76482001)(95666004)(81342001)(86612001)(74316001)(74502001)(66066001)(21056001)(110136001)(77982001)(33646001)(107046002)(79102001)(86362001)(74662001)(76576001)(83072002)(106356001)(87936001)(76176999)(54356999)(80022001)(101416001)(64706001)(106116001)(4396001)(19580395003)(2656002)(99286002)(92566001)(50986999)(99396002)(31966008)(46102001)(19580405001)(83322001)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB299;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 9 Jul 2014 16:07:48 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
+In-Reply-To: <20140626094507.GM15240@leverpostej>
+References: <1403730927-16163-1-git-send-email-tthayer@altera.com>
+	<1403730927-16163-3-git-send-email-tthayer@altera.com>
+	<20140626094507.GM15240@leverpostej>
+Date: Wed, 9 Jul 2014 15:07:46 -0500
+Message-ID: <CAF03EBdBMphBLkGj4=_kGADF4iq_uUpyBbRJ7O63OvSHcR5hSw@mail.gmail.com>
+Subject: Re: [PATCHv7 2/3] devicetree: Addition of the Altera SDRAM EDAC.
+From: Thor Thayer <tthayer.linux@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "tthayer@altera.com" <tthayer@altera.com>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "dinguyen@altera.com" <dinguyen@altera.com>,
+        "dougthompson@xmission.com" <dougthompson@xmission.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "bp@alien8.de" <bp@alien8.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 26, 2014 at 4:45 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+> On Wed, Jun 25, 2014 at 10:15:26PM +0100, tthayer@altera.com wrote:
+>> From: Thor Thayer <tthayer@altera.com>
+>>
+>> Add the Altera SDRAM EDAC bindings and device tree changes to the Altera SoC project.
+>>
+>> Signed-off-by: Thor Thayer <tthayer@altera.com>
+>> ---
+>> v2: Changes to SoC EDAC source code.
+>>
+>> v3: Fix typo in device tree documentation.
+>>
+>> v4,v5: No changes - bump version for consistency.
+>>
+>> v6: Assign ECC registers in SDRAM controller to EDAC
+>>
+>> v7: Fix SDRAM EDAC base address.
+>> ---
+>>  .../bindings/arm/altera/socfpga-sdram-edac.txt     |   15 +++++++++++++++
+>>  arch/arm/boot/dts/socfpga.dtsi                     |    6 ++++++
+>>  2 files changed, 21 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
+>> new file mode 100644
+>> index 0000000..d68e033
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
+>> @@ -0,0 +1,15 @@
+>> +Altera SOCFPGA SDRAM Error Detection & Correction [EDAC]
+>> +
+>> +Required properties:
+>> +- compatible : should contain "altr,sdram-edac";
+>> +- reg : should contain the ECC register range in sdram
+>> +        controller (address and length).
+>> +- interrupts : Should contain the SDRAM ECC IRQ in the
+>> +     appropriate format for the IRQ controller.
+>> +
+>> +Example:
+>> +     sdramedac@ffc2502c {
+>> +             compatible = "altr,sdram-edac";
+>> +             reg = <0xffc2502c 0x28>;
+>> +             interrupts = <0 39 4>;
+>> +     };
+>> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+>> index 310292e..da0785d 100644
+>> --- a/arch/arm/boot/dts/socfpga.dtsi
+>> +++ b/arch/arm/boot/dts/socfpga.dtsi
+>> @@ -687,6 +687,12 @@
+>>                       reg = <0xffc25000 0x4>;
+>>               };
+>>
+>> +             sdramedac@ffc2502c {
+>> +                     compatible = "altr,sdram-edac";
+>> +                     reg = <0xffc2502c 0x28>;
+>> +                     interrupts = <0 39 4>;
+>> +             };
+>
+> I'm not sure I understand this. The ECC register existing within the
+> SDRAM controller, which we have a binding for. Why do we need a separate
+> binding for a subset of registers within an IP block?
+>
+> Why can we not have a single binding for the entire SDRAM controlelr and
+> decompse that within Linux as it makes sense for the appropriate
+> subsystyems?
+>
+> Leaking Linux design into bindings is a bad idea; it makes it harder to
+> change things.
+>
+> Mark.
 
+Hi Mark,
 
-> -----Original Message-----
-> From: Christoph Hellwig [mailto:hch@infradead.org]
-> Sent: Wednesday, July 9, 2014 1:40 AM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> ohering@suse.com; jbottomley@parallels.com; jasowang@redhat.com;
-> apw@canonical.com; linux-scsi@vger.kernel.org; stable@vger.kernel.org
-> Subject: Re: [PATCH 1/8] Drivers: scsi: storvsc: Change the limits to reflect the
-> values on the host
-> 
-> On Tue, Jul 08, 2014 at 05:46:45PM -0700, K. Y. Srinivasan wrote:
-> > + * In Hyper-V, each port/path/target maps to 1 scsi host adapter.
-> 
-> Does it still?  The STORVSC_FC_MAX_TARGETS define suggests otherwise.
+How would we decompose this within Linux. MFD? Is there an example
+that I can look at?
 
-I will fix the comments and get rid of unnecessary comments.
+We originally used syscon for the entire sdram controller register
+block but we got dinged on it.
 
-> 
-> > -	.cmd_per_lun =		1,
-> > +	.cmd_per_lun =		255,
-> 
-> This looks like an unrelated change.
+Thanks for your help.
 
-I will have a separate patch for this.
-> 
-> > +		/* max # of devices per target */
-> > +		host->max_lun = STORVSC_FC_MAX_LUNS_PER_TARGET;
-> > +		/* max # of targets per channel */
-> > +		host->max_id = STORVSC_FC_MAX_TARGETS;
-> > +		/* max # of channels */
-> > +		host->max_channel = STORVSC_FC_MAX_CHANNELS - 1;
-> 
-> I don't think these comments add any value..
-
-I will get rid of the comments.
-
-> 
-> Also any reason you use off by one defines for max_channel, but not the
-> others?
-
-No particular reason; I will clean this up.
-
-
-Thanks Christoph for the detailed comments. I will re-spin these after I address your comments.
-
-Regards,
-
-K. Y
+Thor
