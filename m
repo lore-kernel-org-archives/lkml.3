@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756497AbaGIV1a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 17:27:30 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:41903 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756406AbaGIV11 (ORCPT
+	id S1756014AbaGIV1R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 17:27:17 -0400
+Received: from baptiste.telenet-ops.be ([195.130.132.51]:60983 "EHLO
+	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752136AbaGIV1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 17:27:27 -0400
-Date: Wed, 9 Jul 2014 14:27:23 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Feng Kan <fkan@apm.com>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        patches <patches@apm.com>
-Subject: Re: [PATCH V8 1/6] power: reset: Add generic SYSCON register mapped
- reset
-Message-ID: <20140709212723.GA6737@roeck-us.net>
-References: <1404872153-3594-1-git-send-email-fkan@apm.com>
- <1404872153-3594-2-git-send-email-fkan@apm.com>
- <53BCBCEC.7010306@roeck-us.net>
- <CAL85gmB9wRXXrza3g0MBFWUi5w3_eCEhxdSd2FfmoB_SkGA8Ww@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL85gmB9wRXXrza3g0MBFWUi5w3_eCEhxdSd2FfmoB_SkGA8Ww@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 9 Jul 2014 17:27:15 -0400
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH 2/2] spi: sh-msiof: SPI_SH_MSIOF should depend on HAS_DMA
+Date: Wed,  9 Jul 2014 23:27:08 +0200
+Message-Id: <1404941228-9922-2-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1404941228-9922-1-git-send-email-geert+renesas@glider.be>
+References: <1404941228-9922-1-git-send-email-geert+renesas@glider.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 02:15:44PM -0700, Feng Kan wrote:
-> On Tue, Jul 8, 2014 at 8:54 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> > On 07/08/2014 07:15 PM, Feng Kan wrote:
-> >>
-> >> Add a generic SYSCON register mapped reset mechanism.
-> >>
-> >> Signed-off-by: Feng Kan <fkan@apm.com>
-> >> ---
-> >>   drivers/power/reset/Kconfig         |  6 +++
-> >>   drivers/power/reset/Makefile        |  1 +
-> >>   drivers/power/reset/syscon-reboot.c | 91
-> >> +++++++++++++++++++++++++++++++++++++
-> >>   3 files changed, 98 insertions(+)
-> >>   create mode 100644 drivers/power/reset/syscon-reboot.c
-> >>
-> >> diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-> >> index bdcf517..5877b38 100644
-> >> --- a/drivers/power/reset/Kconfig
-> >> +++ b/drivers/power/reset/Kconfig
-> >> @@ -80,3 +80,9 @@ config POWER_RESET_KEYSTONE
-> >>         help
-> >>           Reboot support for the KEYSTONE SoCs.
-> >>
-> >> +config POWER_RESET_SYSCON
-> >> +       bool "Generic SYSCON regmap reset driver"
-> >> +       depends on ARM || ARM64 || COMPILE_TEST
-> >
-> >
-> > As written, this driver is really not generic but very arm specific.
-> > I don't think COMPILE_TEST is a good idea either, since arm_pm_restart
-> > is only defined for the arm architecture. Did you try compiling allmodconfig
-> > or allyesconfig for, say, x86_64 with this patch applied ?
-> >
-> > I think this might benefit from using [1], which would make it really
-> > generic.
-> >
-> > Guenter
-> >
-> > [1] http://www.spinics.net/lists/kernel/msg1780939.html
-> This is great, I will base off this list. Did it make it to a branch anywhere?
-> 
-Still in review. I hope it will make it into 3.17.
-Of course it might be useful if you (and others)
-help making the case for it.
+If NO_DMA=y:
 
-Thanks,
-Guenter
+    drivers/built-in.o: In function `sh_msiof_release_dma':
+    spi-sh-msiof.c:(.text+0x23cbfe): undefined reference to `dma_unmap_single'
+    drivers/built-in.o: In function `sh_msiof_request_dma':
+    spi-sh-msiof.c:(.text+0x23cd5e): undefined reference to `dma_map_single'
+    spi-sh-msiof.c:(.text+0x23cd70): undefined reference to `dma_mapping_error'
+    spi-sh-msiof.c:(.text+0x23cdca): undefined reference to `dma_unmap_single'
+    drivers/built-in.o: In function `sh_msiof_dma_once':
+    spi-sh-msiof.c:(.text+0x23d450): undefined reference to `dma_sync_single_for_cpu'
+    spi-sh-msiof.c:(.text+0x23d5ea): undefined reference to `dma_sync_single_for_cpu'
+
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+---
+ drivers/spi/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+index d46b4b9e73b2..ab70bca8c7e1 100644
+--- a/drivers/spi/Kconfig
++++ b/drivers/spi/Kconfig
+@@ -446,7 +446,7 @@ config SPI_SC18IS602
+ 
+ config SPI_SH_MSIOF
+ 	tristate "SuperH MSIOF SPI controller"
+-	depends on HAVE_CLK
++	depends on HAVE_CLK && HAS_DMA
+ 	depends on SUPERH || ARCH_SHMOBILE || COMPILE_TEST
+ 	help
+ 	  SPI driver for SuperH and SH Mobile MSIOF blocks.
+-- 
+1.9.1
+
