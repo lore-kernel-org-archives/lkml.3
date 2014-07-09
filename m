@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756672AbaGIVcA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 17:32:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48286 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751861AbaGIVb7 (ORCPT
+	id S1756677AbaGIVdQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 17:33:16 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:33904 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226AbaGIVdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 17:31:59 -0400
-Date: Wed, 9 Jul 2014 14:36:24 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/8] phy: phy-samsung-usb2: Change phy power on/power off
- sequence
-Message-ID: <20140709213624.GA14556@kroah.com>
-References: <1404715705-5041-1-git-send-email-kishon@ti.com>
- <1404715705-5041-4-git-send-email-kishon@ti.com>
- <20140708014442.GB13844@kroah.com>
- <53BB8BDA.3020205@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53BB8BDA.3020205@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 9 Jul 2014 17:33:15 -0400
+Date: Wed, 09 Jul 2014 14:33:12 -0700 (PDT)
+Message-Id: <20140709.143312.1847154920217915711.davem@davemloft.net>
+To: fabf@skynet.be
+Cc: linux-kernel@vger.kernel.org, fengguang.wu@intel.com, kuznet@ms2.inr.ac.ru,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 1/1 net-next] ipconfig: move ic_dev_xid under
+ IPCONFIG_BOOTP
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1404930921-14879-1-git-send-email-fabf@skynet.be>
+References: <1404930921-14879-1-git-send-email-fabf@skynet.be>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 09 Jul 2014 14:33:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 08, 2014 at 11:42:42AM +0530, Kishon Vijay Abraham I wrote:
-> Hi Greg,
+From: Fabian Frederick <fabf@skynet.be>
+Date: Wed,  9 Jul 2014 20:35:21 +0200
+
+> ic_dev_xid is only used in __init ic_bootp_recv under IPCONFIG_BOOTP
+> and __init ic_dynamic under IPCONFIG_DYNAMIC(which is itself defined
+> with the same IPCONFIG_BOOTP)
 > 
-> On Tuesday 08 July 2014 07:14 AM, Greg KH wrote:
-> > On Mon, Jul 07, 2014 at 12:18:20PM +0530, Kishon Vijay Abraham I wrote:
-> >> From: Kamil Debski <k.debski@samsung.com>
-> >>
-> >> The Exynos4412 USB 2.0 PHY hardware differs from the description provided
-> >> in the documentation. Some register bits have different function. This
-> >> patch fixes the defines of register bits and changes the way how phys are
-> >> powered on and off.
-> >>
-> >> Signed-off-by: Kamil Debski <k.debski@samsung.com>
-> >> Tested-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> >> Tested-by: Daniel Drake <drake@endlessm.com>
-> >> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> >> ---
-> >>  drivers/phy/phy-exynos4x12-usb2.c |  112 +++++++++++++++++++++++++------------
-> >>  drivers/phy/phy-exynos5250-usb2.c |    2 -
-> >>  drivers/phy/phy-samsung-usb2.h    |    3 +-
-> >>  3 files changed, 77 insertions(+), 40 deletions(-)
-> >>
-> > 
-> > This doesn't look like a regression fix for 3.16-final, it looks like a
-> > "new feature" to me :(
+> This patch fixes the following warning when IPCONFIG_BOOTP is not set:
+>>> net/ipv4/ipconfig.c:146:15: warning: 'ic_dev_xid' defined but not used [-Wunused-variable]
+>     static __be32 ic_dev_xid;  /* Device under configuration */
 > 
-> This patch was primarily due to the incorrectly documented register bits in the
-> manual. So thought this would qualify as fix and should be in 3.16.
+> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> Cc: Fengguang Wu <fengguang.wu@intel.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+> Cc: netdev@vger.kernel.org
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
 
-Sorry, that's really big for a patch so late in the -rc cycle.  There
-should only be real regressions or reported bugfixes now.
-
-Care to redo this whole series based on these responses?  I can't take
-it as-is.
-
-thanks,
-
-greg k-h
+Applied, thank you.
