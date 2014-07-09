@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756433AbaGIUUt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 16:20:49 -0400
-Received: from mga11.intel.com ([192.55.52.93]:6852 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756062AbaGIUUs convert rfc822-to-8bit (ORCPT
+	id S1756074AbaGIUYO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 16:24:14 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:60085 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751766AbaGIUYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 16:20:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,633,1400050800"; 
-   d="scan'208";a="559582895"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Havard Skinnemoen <hskinnemoen@google.com>, Borislav Petkov <bp@alien8.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ewout van Bekkum" <ewout@google.com>
-Subject: RE: [PATCH 2/6] x86-mce: Modify CMCI storm exit to reenable instead
- of rediscover banks.
-Thread-Topic: [PATCH 2/6] x86-mce: Modify CMCI storm exit to reenable
- instead of rediscover banks.
-Thread-Index: AQHPm5j+9/jcYklCLkGqPwCvlFaVaJuYLliA
-Date: Wed, 9 Jul 2014 20:20:41 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F328573E4@ORSMSX114.amr.corp.intel.com>
-References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
- <1404925766-32253-3-git-send-email-hskinnemoen@google.com>
-In-Reply-To: <1404925766-32253-3-git-send-email-hskinnemoen@google.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 9 Jul 2014 16:24:12 -0400
+Date: Wed, 9 Jul 2014 16:24:08 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH v3 12/12] cpuset: export effective masks to userspace
+Message-ID: <20140709202408.GE21090@htj.dyndns.org>
+References: <53BD0174.4060002@huawei.com>
+ <53BD0215.8060305@huawei.com>
+ <20140709201549.GD21090@htj.dyndns.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140709201549.GD21090@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The CMCI storm handler previously called cmci_reenable() when exiting a
-> CMCI storm. However, when entering a CMCI storm the bank ownership was
-> not relinquished by the affected CPUs. The CMCIs were only disabled via
-> cmci_storm_disable_banks(). The handler was updated to instead call a
-> new function, cmci_storm_enable_banks(), to reenable CMCI on the already
-> owned banks instead of rediscovering CMCI banks (which were still owned
-> but disabled).
+On Wed, Jul 09, 2014 at 04:15:49PM -0400, Tejun Heo wrote:
+> On Wed, Jul 09, 2014 at 04:49:25PM +0800, Li Zefan wrote:
+> > cpuset.cpus and cpuset.mems are the configured masks, and we need
+> > to export effective masks to userspace, so users know the real
+> > cpus_allowed and mems_allowed that apply to the tasks in a cpuset.
+> > 
+> > v2:
+> > - export those masks unconditionally, suggested by Tejun.
+> > 
+> > Signed-off-by: Li Zefan <lizefan@huawei.com>
+> 
+> I applied this patch but there's a pending patchset to split legacy
+> and dfl cftype arrays, so maybe doing it separately makes more sense
+> now, I'm not sure.  Anyways, we need to review cpuset interface for
+> the default hierarchy anyway.  At least the memory pressure knobs
+> should go.  It's measuring something which is completely
+> implementation dependent.
 
-Won't this cause problems if we online a cpu during the storm. We will
-re-run the discovery algorithm and some other cpu that shares the bank
-will see MCi_CTL2{30} is zero and claim ownership.
+The exclusive knobs too.  These are purely to aid configuration.
+memory_migrate is questionable too given that we're moving towards the
+model where the controllers are set up before the cgroup gets
+populated.  Also, if necessary, this should be implementable from
+userland with migrate_pages(2).
 
--Tony
+Thanks.
+
+-- 
+tejun
