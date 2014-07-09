@@ -1,157 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756627AbaGIPPd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 11:15:33 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:50962 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932286AbaGIPHv (ORCPT
+	id S1756609AbaGIPPc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 11:15:32 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:35392 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756203AbaGIPP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 11:07:51 -0400
-Date: Wed, 9 Jul 2014 11:07:40 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: konrad@kernel.org, xen-devel@lists.xenproject.org,
-        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 4/7] xen/pciback: Implement PCI reset slot or bus with
- 'do_flr' SysFS attribute
-Message-ID: <20140709150740.GC28943@laptop.dumpdata.com>
-References: <1404845909-13563-1-git-send-email-konrad@kernel.org>
- <1404845909-13563-5-git-send-email-konrad@kernel.org>
- <53BC324B.5090600@citrix.com>
- <20140708184626.GA15548@laptop.dumpdata.com>
- <53BD364A.5020703@citrix.com>
- <20140709141211.GF21837@laptop.dumpdata.com>
- <53BD50FD.7080309@citrix.com>
+	Wed, 9 Jul 2014 11:15:29 -0400
+Message-ID: <53BD3E0B.6040901@gmail.com>
+Date: Wed, 09 Jul 2014 15:05:15 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53BD50FD.7080309@citrix.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: lkml <linux-kernel@vger.kernel.org>
+CC: mtk.manpages@gmail.com
+Subject: man-pages-3.70 is released
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 03:26:05PM +0100, David Vrabel wrote:
-> On 09/07/14 15:12, Konrad Rzeszutek Wilk wrote:
-> > On Wed, Jul 09, 2014 at 01:32:10PM +0100, David Vrabel wrote:
-> >> On 08/07/14 19:46, Konrad Rzeszutek Wilk wrote:
-> >>> On Tue, Jul 08, 2014 at 07:02:51PM +0100, David Vrabel wrote:
-> >>>> On 08/07/14 19:58, konrad@kernel.org wrote:
-> >>>>> --- a/Documentation/ABI/testing/sysfs-driver-pciback
-> >>>>> +++ b/Documentation/ABI/testing/sysfs-driver-pciback
-> >>>>> @@ -82,3 +82,14 @@ Description:
-> >>>>>                  device is shared, enabled, or on a level interrupt line.
-> >>>>>                  Writing a string of DDDD:BB:DD.F will toggle the state.
-> >>>>>                  This is Domain:Bus:Device.Function where domain is optional.
-> >>>>> +
-> >>>>> +What:           /sys/bus/pci/drivers/pciback/do_flr
-> >>>>> +Date:           July 2014
-> >>>>> +KernelVersion:  3.16
-> >>>>> +Contact:        xen-devel@lists.xenproject.org
-> >>>>> +Description:
-> >>>>> +                An option to slot or bus reset an PCI device owned by
-> >>>>> +                Xen PCI backend. Writing a string of DDDD:BB:DD.F will cause
-> >>>>> +                the driver to perform an slot or bus reset if the device
-> >>>>> +                supports. It also checks to make sure that all of the devices
-> >>>>> +                under the bridge are owned by Xen PCI backend.
-> >>>>
-> >>>> Not sure I like this new interface.  I solved this by adding a new reset
-> >>>> file that looked like the regular one the pci would have if it supported
-> >>>> FLR.  I'm fairly sure I posted a series for this.  Was there a reason
-> >>>> you didn't do this?
-> >>>
-> >>> It did not work.
-> >>>
-> >>> During bootup kobject would complain about a secondary 'reset' SysFS
-> >>> on the PCI device.
-> >>
-> >> I think this because of pciback registering a driver too early, before
-> >> the device is fully initialized.  You can see in the trace that it is
-> >> the common pci code that is trying to add the "reset" file so it must be
-> >> doing this /after/ pciback's probe has been called.
-> >>
-> >> I would consider:
-> >>
-> >> 1. Removing the "hide" module parameter -- it doesn't work if pciback is
-> >> a module anyway.
-> > 
-> > I find it incredibly useful and so do a lot of other people.
-> 
-> PCI passthrough must work well without hide and without pciback being
-> built-in (and it does with the "reset" change).
-> 
-> What are you using "hide" for?
+Gidday,
 
-For hiding the AHCI driver from the likes of multipath and lvm.
-I want the device driver domain to set those up and don't want the
-initial domain have to create this and then have to tear it down.
+The Linux man-pages maintainer proudly announces:
 
-Ditto for the bttv - it ends up loading tons of drivers and
-just sorting out the dependency is tedious. If I hide it away
-I can easily pass it in the backend.
-> 
-> >> 2. Making pciback initialize like a regular driver module (no
-> >> fs_initcall() shenanigans).
-> > 
-> > The point is to take the PCI device before the drivers touch it.
-> > 
-> > We want it to be in a pristine state so that the device driver
-> > domains can use it.
-> 
-> But hide only ensures this the first time the device is assigned.  Using
-> a function reset ensures this all the time.
+    man-pages-3.70 - man pages for Linux
 
-The hide also saves the registers:
+Tarball download:
+    http://www.kernel.org/doc/man-pages/download.html
+Git repository:
+    https://git.kernel.org/cgit/docs/man-pages/man-pages.git/
+Online changelog:
+    http://man7.org/linux/man-pages/changelog.html#release_3.70
 
- 514         pci_save_state(dev);
- 515         dev_data->pci_saved_state = pci_store_saved_state(dev);
+A short summary of the release is blogged at:
+http://linux-man-pages.blogspot.com/2014/07/man-pages-370-is-released.html
 
-before they are used by device drivers. The function reset (or bus
-reset) won't ensure that those registers will always be the same
-from the initial bootup state. As in: device drivers -> pciback ->
-save states -> FLR -> give to guest. There is still the taint of the
-device driver modifying the registers.
+The current version of the pages is browsable at:
+http://man7.org/linux/man-pages/
 
-> 
-> >> 3. Require userspace to sort out binding the device to pciback (e.g.,
-> >> libxl already does the unbind if requested).
-> > 
-> > How would you do the bus/slot reset? Or are you thinking that at
-> > that point the 'reset' functionality would be over-written to point
-> > to Xen pciback and it would do the job?
-> 
-> I'm not sure I understand your question.  libxl already does the
-> function reset (by writing to "reset").
+A few changes in this release that may be of interest to readers of
+this list are given below.
 
-Right.  And it also does 'do_flr'.
-> 
-> >> 4. Finally, I would consider generic driver core functionality for
-> >> prioritizing drivers so they get probed first.
-> > 
-> > Not sure I understand why you want the drivers to use the device
-> > first? The point is that we can 'hide' them from the generic
-> > drivers and present them to the backend domains.
-> 
-> The pciback driver would be prioritized, so it would be probed first.
+Cheers,
 
-Which would require it to be some early_initcall variant and use
-the override (which I think is going in 3.17?) for 'struct device'?
-(Alex implemented it). I think that is what you are saying? However
-that looks to be orthogonal to what this patch tries to do?
+Michael
 
-> 
-> > Regardless of these - I am curious to why you don't like do_flr
-> > as it is even implemented in the the toolstack (but buggy) and
-> > it does a good job of allowing us to do slot/bus reset?
-> 
-> Because there is already a documented interface for resetting devices
-> (the "reset" file), we don't want a second interface.
+==================== Changes in man-pages-3.70 ====================
 
-Which just does the FLR. This is doing bus/slot reset and doing an
-override of the 'reset' in SysFS does not work without some clever
-coding.
+Released: 2014-07-08, Munich
 
-The 'do_flr' seems to be already baked in libxl - why not use it?
-> 
-> David
+
+New and rewritten pages
+-----------------------
+
+sprof.1
+    Michael Kerrisk [Marko Myllynen]
+        New page for the glibc sprof(1) command
+
+
+Newly documented interfaces in existing pages
+---------------------------------------------
+
+epoll_ctl.2
+    NeilBrown
+        Document EPOLLWAKEUP
+
+epoll.7
+    NeilBrown
+        Document EPOLLWAKEUP
+
+
+Changes to individual pages
+---------------------------
+
+dup.2
+    Michael Kerrisk  [Rich Felker]
+        Fix erroneous discussion regarding closing 'newfd' before calling dup2()
+            And propose a workaround if the caller cares about catching
+            close() time errors.
+
+            See http://stackoverflow.com/questions/23440216/race-condition-when-using-dup2#comment36888604_23444465
+            and http://austingroupbugs.net/view.php?id=411
+    Michael Kerrisk
+        Rework and enhance discussion of dup2()
+            In particular, note that dup2() performs the steps of closing
+            and reusing 'newfd' atomically.
+
+epoll_ctl.2
+    Michael Kerrisk
+        BUGS: EPOLLWAKEUP is silently ignored without CAP_BLOCK_SUSPEND
+            If the caller does not have CAP_BLOCK_SUSPEND, then EPOLLWAKEUP
+            is silently ignored.
+
+fcntl.2
+    Michael Kerrisk  [Tomi Salminen]
+        The return value for F_SETPIPE_SZ is the pipe capacity
+    Michael Kerrisk
+        ERRORS: Document ENOTDIR error for F_NOTIFY
+    Michael Kerrisk
+        Suggest the use of real-time signals with F_NOTIFY
+
+inotify_add_watch.2
+    Michael Kerrisk
+        Clarify that the target of a watch is an i-node
+            The target of a watch is an i-node, not a pathname. Clarify
+            the text to prevent the reader possibly misunderstanding
+            that establishing watches by two different links to the same
+            file might create different watch descriptors.
+
+open.2
+    Michael Kerrisk  [Кирилл]
+        O_CLOEXEC is also one the flags not ignored when O_PATH is specified
+
+shmop.2
+    Michael Kerrisk
+        Explain SHMLBA in much more detail
+
+syslog.2
+    Michael Kerrisk
+        Rework introductory paragraph
+    Michael Kerrisk  [Robert P. J. Day]
+        Rework text describing loglevels
+            The kernel header file mentioned in the discussion of the KERN_*
+            constants has morphed and is no longer exported inside glibc.
+            And the definitions of the constants themselves changed subtly
+            with kernel commit 04d2c8c83d0e3ac5f78aeede51babb3236200112.
+            So, rewrite the description of the constants to be a bit more
+            abstract.
+    Michael Kerrisk
+        Rewrite parts of the page, and import /proc/sys/kernel/printk
+            * Move /proc/sys/kernel/printk from proc(5) to this page,
+              and correct various details in the discussion of that file.
+            * Rewrite and correct various other details on the page.
+            * Clean out some crufty text.
+            * Miscellaneous minor fixes.
+    Michael Kerrisk
+        Update SYSLOG_ACTION_CONSOLE_OFF + SYSLOG_ACTION_CONSOLE_ON description
+            Details changed in Linux 2.6.32
+
+inotify.7
+    Michael Kerrisk
+        Clarify which events are generated for watched directories
+            Really, with respect to watched directories, events fall into
+            three classes (not two, as was shown):
+
+            * Events that can be generated only for the watched directory.
+            * Events that can be generated only for objects that are inside
+              the watched directory.
+            * Events that can be generated both for the watched directory
+              and for objects inside the directory.
+
+            So, mark these three classes more clearly in the list of inotify
+            events.
+    Heinrich Schuchardt  [Michael Kerrisk]
+        BUGS: Note possible bug triggered by watch descriptor reuse
+            Watch descriptor IDs are returned by inotify_add_watch().
+            When calling inotify_rm_watch() an IN_IGNORE is placed on the
+            inotify queue pointing to the ID of the removed watch.
+
+            inotify_add_watch() should not return a watch descriptor ID for
+            which events are still on the queue but should return an
+            unused ID.
+
+            Unfortunately, the existing Kernel code does not provide such a
+            guarantee.
+
+            Actually, in rare cases watch descriptor IDs are returned by
+            inotify_add_watch() for which events are still on the inotify
+            queue.
+
+            See https://bugzilla.kernel.org/show_bug.cgi?id=77111
+
+pipe.7
+    Elie De Brauwer
+        Add reference that the pipe capacity can be changed
+            In fcntl(2) F_SETPIPE_SZ, F_GETPIPE_SZ and
+            /proc/sys/fs/pipe-max-size are defined, however
+            pipe(7) still defines the pipe capacity as being
+            a static entity. Adding a reference to fcntl(2).
+
+ld.so.8
+    Michael Kerrisk
+        Clarify that LD_PROFILE can specify just a single shared object
+    Michael Kerrisk
+        Clarify that LD_PROFILE output is appended to target file
+            The LD_PROFILE output is appended to any existing
+            contents of the target file.
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
