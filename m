@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932088AbaGIGz6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 02:55:58 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:62272 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751542AbaGIGzz (ORCPT
+	id S932125AbaGIG4H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 02:56:07 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:34733 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751542AbaGIG4C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 02:55:55 -0400
+	Wed, 9 Jul 2014 02:56:02 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: tglx@linutronix.de
 Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
         fweisbec@gmail.com, arvind.chauhan@arm.com, preeti@linux.vnet.ibm.com,
         khilman@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [RFC 1/7] hrtimer: Warn if hrtimer_start*() failed to enqueue hrtimer
-Date: Wed,  9 Jul 2014 12:25:33 +0530
-Message-Id: <bc8cabd00810c2f91cb45a64514f5c4ca12d584c.1404888801.git.viresh.kumar@linaro.org>
+Subject: [RFC 2/7] hrtimer: don't check for active hrtimer after adding it
+Date: Wed,  9 Jul 2014 12:25:34 +0530
+Message-Id: <13861232628603285a2734e32b309abd73c8741c.1404888801.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <cover.1404888801.git.viresh.kumar@linaro.org>
 References: <cover.1404888801.git.viresh.kumar@linaro.org>
@@ -29,34 +29,48 @@ only special case is when the hrtimer was in past. If it is getting enqueued to
 local CPUs's clock-base, we raise a softirq and exit, else we handle that on
 next interrupt on remote CPU.
 
-At several places in kernel we check if hrtimer is enqueued properly with
-hrtimer_active(). This isn't required and can be dropped.
+At several places in the kernel, we try to make sure if hrtimer was added
+properly or not by calling hrtimer_active(), like:
 
-Before fixing that, lets make sure hrtimer is always enqueued properly by adding
+	hrtimer_start(timer, expires, mode);
+	if (hrtimer_active(timer)) {
+		/* Added successfully */
+	} else {
+		/* Was added in the past */
+	}
 
-	WARN_ON_ONCE(!hrtimer_active(timer));
+As hrtimer_start*() never fails, hrtimer_active() is guaranteed to return '1'.
+So, there is no point calling hrtimer_active().
 
-towards the end of __hrtimer_start_range_ns().
+This patch updates hrtimer core to get this fixed.
 
-Suggested-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- kernel/hrtimer.c | 2 ++
- 1 file changed, 2 insertions(+)
+ kernel/hrtimer.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
 diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 3ab2899..cf40209 100644
+index cf40209..a76f962 100644
 --- a/kernel/hrtimer.c
 +++ b/kernel/hrtimer.c
-@@ -1037,6 +1037,8 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+@@ -1555,8 +1555,6 @@ static int __sched do_nanosleep(struct hrtimer_sleeper *t, enum hrtimer_mode mod
+ 	do {
+ 		set_current_state(TASK_INTERRUPTIBLE);
+ 		hrtimer_start_expires(&t->timer, mode);
+-		if (!hrtimer_active(&t->timer))
+-			t->task = NULL;
  
- 	unlock_hrtimer_base(timer, &flags);
+ 		if (likely(t->task))
+ 			freezable_schedule();
+@@ -1837,8 +1835,6 @@ schedule_hrtimeout_range_clock(ktime_t *expires, unsigned long delta,
+ 	hrtimer_init_sleeper(&t, current);
  
-+	/* Make sure timer is enqueued */
-+	WARN_ON_ONCE(!hrtimer_active(timer));
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(__hrtimer_start_range_ns);
+ 	hrtimer_start_expires(&t.timer, mode);
+-	if (!hrtimer_active(&t.timer))
+-		t.task = NULL;
+ 
+ 	if (likely(t.task))
+ 		schedule();
 -- 
 2.0.0.rc2
 
