@@ -1,124 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156AbaGIClf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 22:41:35 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:41546 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465AbaGICld (ORCPT
+	id S1752651AbaGICqg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 22:46:36 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:47810 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163AbaGICqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 22:41:33 -0400
-Message-ID: <53BCABD3.3050207@oracle.com>
-Date: Wed, 09 Jul 2014 10:41:23 +0800
-From: ethan zhao <ethan.zhao@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Tue, 8 Jul 2014 22:46:34 -0400
 MIME-Version: 1.0
-To: davem@davemloft.net
-CC: balbi@ti.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sriharsha.devdas@oracle.com, ethan.kernel@gmail.com,
-        vaughan <vaughan.cao@oracle.com>
-Subject: Re: [PATCH NET-NEXT V2] netxen: fix ethtool rx_dropped information
- in ethtool get_ethtool_stats()
-References: <1404827830-22990-1-git-send-email-ethan.zhao@oracle.com>
-In-Reply-To: <1404827830-22990-1-git-send-email-ethan.zhao@oracle.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <10113119.9fnj2984Hk@amdc1032>
+References: <10113119.9fnj2984Hk@amdc1032>
+Date: Wed, 9 Jul 2014 08:16:33 +0530
+X-Google-Sender-Auth: F6KfXmOJSN2lWXJjpV1FXhJeP-Q
+Message-ID: <CADGdYn48PPc=kXxny936cShcwKPy2Qs93d7-86ta2GVLJNutJw@mail.gmail.com>
+Subject: Re: [PATCH] thermal: exynos: fix ordering in exynos_tmu_remove()
+From: amit daniel kachhap <amit.daniel@samsung.com>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David,
-
-    Please help to review and confirm this patch.
-
-Thanks,
-Ethan
-
-On 2014/7/8 21:57, Ethan Zhao wrote:
-> netxen driver has implemented netxen_nic_get_ethtool_stats() interface,
-> but it doesn't collect stats.rxdropped in driver, so we will get
-> different rx_dropped statistic information while using ifconfig and ethtool.
-> this patch fills stats.rxdropped field with data from net core
-> with dev_get_stats() just as ixgbe driver did for some of its stats.
+On Tue, Jul 8, 2014 at 6:39 PM, Bartlomiej Zolnierkiewicz
+<b.zolnierkie@samsung.com> wrote:
+> It might not be a problem currently but unregister/uninitialize things
+> in the reverse order that they are registered/initialized.
 >
-> V2: only fix the stats.rxdropped field.
->
-> Tested with last netxen 4.0.82
-> Compiled with net-next branch 3.16-rc2
->
-> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
-> Tested-by: Sriharsha Yadagudde <sriharsha.devdas@oracle.com>
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Changes look fine,
+Reviewed-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 > ---
->   .../ethernet/qlogic/netxen/netxen_nic_ethtool.c    |   34 +++++++++++++++++---
->   1 files changed, 29 insertions(+), 5 deletions(-)
+>  drivers/thermal/samsung/exynos_tmu.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 >
-> diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c b/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
-> index 4ca2c19..49e6a1b 100644
-> --- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
-> +++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
-> @@ -33,22 +33,30 @@
->   #include "netxen_nic.h"
->   #include "netxen_nic_hw.h"
->   
-> +enum {NETDEV_STATS, NETXEN_STATS};
+> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+> index d7ca9f4..6243ba0 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.c
+> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> @@ -759,10 +759,10 @@ static int exynos_tmu_remove(struct platform_device *pdev)
+>  {
+>         struct exynos_tmu_data *data = platform_get_drvdata(pdev);
+>
+> -       exynos_tmu_control(pdev, false);
+> -
+>         exynos_unregister_thermal(data->reg_conf);
+>
+> +       exynos_tmu_control(pdev, false);
 > +
->   struct netxen_nic_stats {
->   	char stat_string[ETH_GSTRING_LEN];
-> +	int type;
->   	int sizeof_stat;
->   	int stat_offset;
->   };
->   
-> -#define NETXEN_NIC_STAT(m) sizeof(((struct netxen_adapter *)0)->m), \
-> +#define NETXEN_NIC_STAT(m)	NETXEN_STATS, \
-> +			sizeof(((struct netxen_adapter *)0)->m), \
->   			offsetof(struct netxen_adapter, m)
->   
-> +#define NETXEN_NETDEV_STAT(m)	NETDEV_STATS, \
-> +			sizeof(((struct rtnl_link_stats64 *)0)->m), \
-> +			offsetof(struct rtnl_link_stats64, m)
-> +
->   #define NETXEN_NIC_PORT_WINDOW 0x10000
->   #define NETXEN_NIC_INVALID_DATA 0xDEADBEEF
->   
->   static const struct netxen_nic_stats netxen_nic_gstrings_stats[] = {
->   	{"xmit_called", NETXEN_NIC_STAT(stats.xmitcalled)},
->   	{"xmit_finished", NETXEN_NIC_STAT(stats.xmitfinished)},
-> -	{"rx_dropped", NETXEN_NIC_STAT(stats.rxdropped)},
-> +	{"rx_dropped", NETXEN_NETDEV_STAT(rx_dropped)},
->   	{"tx_dropped", NETXEN_NIC_STAT(stats.txdropped)},
->   	{"csummed", NETXEN_NIC_STAT(stats.csummed)},
->   	{"rx_pkts", NETXEN_NIC_STAT(stats.rx_pkts)},
-> @@ -679,11 +687,27 @@ netxen_nic_get_ethtool_stats(struct net_device *dev,
->   {
->   	struct netxen_adapter *adapter = netdev_priv(dev);
->   	int index;
-> +	struct rtnl_link_stats64 temp;
-> +	const struct rtnl_link_stats64 *net_stats;
-> +	char *p = NULL;
->   
-> +	net_stats = dev_get_stats(dev, &temp);
->   	for (index = 0; index < NETXEN_NIC_STATS_LEN; index++) {
-> -		char *p =
-> -		    (char *)adapter +
-> -		    netxen_nic_gstrings_stats[index].stat_offset;
-> +
-> +		switch (netxen_nic_gstrings_stats[index].type) {
-> +		case NETDEV_STATS:
-> +			p = (char *)net_stats +
-> +				netxen_nic_gstrings_stats[index].stat_offset;
-> +			break;
-> +		case NETXEN_STATS:
-> +			p = (char *)adapter +
-> +				netxen_nic_gstrings_stats[index].stat_offset;
-> +			break;
-> +		default:
-> +			data[index] = 0;
-> +			continue;
-> +		}
-> +
->   		data[index] =
->   		    (netxen_nic_gstrings_stats[index].sizeof_stat ==
->   		     sizeof(u64)) ? *(u64 *) p : *(u32 *) p;
-
+>         clk_unprepare(data->clk);
+>         if (!IS_ERR(data->clk_sec))
+>                 clk_unprepare(data->clk_sec);
+> --
+> 1.8.2.3
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
