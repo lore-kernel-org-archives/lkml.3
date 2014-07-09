@@ -1,135 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754956AbaGIDkI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 23:40:08 -0400
-Received: from mga11.intel.com ([192.55.52.93]:56586 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754887AbaGIDkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 23:40:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,630,1400050800"; 
-   d="scan'208";a="559146616"
-Message-ID: <53BCB910.4070709@intel.com>
-Date: Wed, 09 Jul 2014 11:37:52 +0800
-From: "xinhui.pan" <xinhuix.pan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755029AbaGIDlU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 23:41:20 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:51452 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752336AbaGIDlR convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 23:41:17 -0400
+From: Mohit KUMAR DCG <Mohit.KUMAR@st.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "jg1.han@samsung.com" <jg1.han@samsung.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Marek Vasut <marex@denx.de>, Arnd Bergmann <arnd@arndb.de>
+Date: Wed, 9 Jul 2014 11:40:30 +0800
+Subject: RE: [PATCH 2/3] PCI: designware: use untranslated address while
+ programming ATU
+Thread-Topic: [PATCH 2/3] PCI: designware: use untranslated address while
+ programming ATU
+Thread-Index: Ac+aqJ/NCBmshVCBQg+4G9qig9Z5awAfq0VA
+Message-ID: <2CC2A0A4A178534D93D5159BF3BCB661A17A3E488B@EAPEX1MAIL1.st.com>
+References: <1403719007-9352-1-git-send-email-kishon@ti.com>
+ <1403719007-9352-3-git-send-email-kishon@ti.com> <53BBE492.4070904@ti.com>
+In-Reply-To: <53BBE492.4070904@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-        Mikulas Patocka <mpatocka@redhat.com>
-CC: linux-kernel@vger.kernel.org, agk@redhat.com, snitzer@redhat.com,
-        dm-devel@redhat.com, "Liu, ShuoX" <shuox.liu@intel.com>
-Subject: Re: [dm-devel] [PATCH] md/dm-ioctl.c: optimize memory allocation
- in copy_params
-References: <53B68068.2060102@intel.com> <alpine.LRH.2.02.1407081831510.27831@file01.intranet.prod.int.rdu2.redhat.com> <53BCA278.5050205@linux.intel.com>
-In-Reply-To: <53BCA278.5050205@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-07-09_01:2014-07-08,2014-07-09,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Kishon,
 
-
-于 2014年07月09日 10:01, Zhang, Yanmin 写道:
-> On 2014/7/9 6:39, Mikulas Patocka wrote:
+> -----Original Message-----
+> From: Kishon Vijay Abraham I [mailto:kishon@ti.com]
+> Sent: Tuesday, July 08, 2014 6:01 PM
+> To: devicetree@vger.kernel.org; linux-doc@vger.kernel.org; linux-
+> pci@vger.kernel.org; jg1.han@samsung.com; bhelgaas@google.com; Mohit
+> KUMAR DCG; linux-kernel@vger.kernel.org
+> Cc: grant.likely@linaro.org; Jason Gunthorpe; Marek Vasut; Arnd Bergmann
+> Subject: Re: [PATCH 2/3] PCI: designware: use untranslated address while
+> programming ATU
 > 
->> Hi
+> Hi Mohit, Jingoo,
 > 
-> Mikulas,
+> On Wednesday 25 June 2014 11:26 PM, Kishon Vijay Abraham I wrote:
+> > In DRA7, the cpu sees 32bit address, but the pcie controller can see
+> > only 28bit address. So whenever the cpu issues a read/write request,
+> > the 4 most significant bits are used by L3 to determine the target controller.
+> > For example, the cpu reserves 0x2000_0000 - 0x2FFF_FFFF for PCIe
+> > controller but the PCIe controller will see only (0x000_0000 -
+> > 0xFFF_FFF). So for programming the outbound translation window the
+> *base* should be programmed as 0x000_0000.
+> > Whenever we try to write to say 0x2000_0000, it will be translated to
+> > whatever we have programmed in the translation window with base as
+> 0x000_0000.
+> >
+> > This is needed when the dt node is modelled something like below axi {
+> > 	compatible = "simple-bus";
+> > 	#size-cells = <1>;
+> > 	#address-cells = <1>;
+> > 	ranges = <0x0        0x20000000 0x10000000 // 28-bit bus
+> > 		  0x51000000 0x51000000 0x3000>;
+> > 	pcie@51000000 {
+> > 		reg = <0x1000 0x2000>, <0x51002000 0x14c>, <0x51000000
+> 0x2000>;
+> > 		reg-names = "config", "ti_conf", "rc_dbics";
+> > 		#address-cells = <3>;
+> > 		#size-cells = <2>;
+> > 		ranges = <0x81000000 0 0          0x03000 0 0x00010000
+> > 			  0x82000000 0 0x20013000 0x13000 0 0xffed000>;
+> > 	};
+> > };
+> >
+> > Here the CPU address for configuration space is 0x20013000 and the
+> > controller address for configuration space is 0x13000. The controller
+> > address should be used while programming the ATU (in order for
+> > translation to happen properly in DRA7xx).
 > 
-> Thanks for your kind comments.
-> 
->> I don't really know what is the purpose of this patch. In existing device
->> mapper code, if kmalloc fails, the allocation is retried with __vmalloc.
->> So there is no need to avoid kmalloc aritifically.
->>
->> kmalloc doesn't cause memory fragmentation. If the memory is too
->> fragmented, kmalloc fails. If it isn't, it succeeds. But it doesn't cause
->> memory being fragmented.
-> 
-> I agree with you. The patch's original description is not appropriate.
-> Basically, memory fragmentation is not caused by this kmalloc.
-> 
-> The right description is: When memory is fragmented and most memory is used up,
-> kmalloc a big memory might cause lots of OutOFMemory and system might kill
-> lots of processes. Then, system might hang.
-> 
-> We are enabling Android on mobiles and tablets. We hit OOM often at
-> Monkey and other stress testing. Sometimes, kernel prints big memory allocation
-> warning.
-> 
-> Theoretically, it's a good idea to call kmalloc firstly. If it fails, use vmalloc.
-> However, kernel assumes drivers do the right thing. When drivers call kmalloc to
-> allocate a big memory, memory management would do the best to fulfill it. When memory
-> is fragmented and most memory is used up, such allocation would cause big memory
-> recollection. Some processes might be killed. The worse scenario is after a process
-> is killed, it is restarted and allocates memory again. That causes system hang,
-> or mobile users feel a big stall. We did fix a similar issue in one of our drivers.
-> 
-> Usually, kernel and drivers can allocate big continuous memory at booting or
-> initialization stage. After that, they need allocate small order memory. The best
-> is to just allocate order-0 memory.
-> 
-> 
->>
->> If you have some other driver that fails because of large kmalloc failure,
->> you should fix it to use scatter-gather DMA or (if the hardware can't do
->> it) preallocate the memory when the driver is loaded.
-> 
-> I agree with you. Here the patch fixes the issue, where dm might allocate
-> big continuous memory after booting. Monkey testing triggers it by operating
-> menu Setting=>Security=>InstallfromSDcard.
+> Are you okay with this patch? Can you give your Reviewed-by/Acked-by?
 > 
 
-hi, Yanmin && Mikulas
-	Thanks for your nice comments. And sorry for confusing you as my comment is not clear enough.
-In android, there is a command "dumpstate", it run many other commands to collect information. In our scenario,
-it run command "vdc dump", and vdc uses socket to pass some parameters to "vold", then vold generates ioctl. 
+- looks fine to me.
+Reviewed-by: Mohit Kumar<mohit.kumar@st.com>
 
-thanks.
-> We are catching all places in kernel where big memory allocation happens.
-> This patch is just to fix one case.
-> 
-> Thanks,
-> Yanmin
-> 
->>
->> Mikulas
->>
->>
->>
->> On Fri, 4 Jul 2014, xinhui.pan wrote:
->>
->>> KMALLOC_MAX_SIZE is too big, it easily cause memory fragmented and low memory when param_kernel->data_size
->>> is also big. That's not nice. So use vmalloc instead of kmalloc when size is larger than (PAGE_SIZE << 2).
->>> There are other drivers using kmalloc to gain a big size memory. And that cause our devices to hit hang and
->>> many worse issues. We don't benefit much when using kmalloc in such scenario.
->>>
->>> Signed-off-by: xinhui.pan <xinhuiX.pan@intel.com>
->>> Signed-off-by: yanmin.zhang <yanmin_zhang@linux.intel.com>
->>> ---
->>>   drivers/md/dm-ioctl.c |    2 +-
->>>   1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> diff --git a/drivers/md/dm-ioctl.c b/drivers/md/dm-ioctl.c
->>> index 5152142..31c3af9 100644
->>> --- a/drivers/md/dm-ioctl.c
->>> +++ b/drivers/md/dm-ioctl.c
->>> @@ -1709,7 +1709,7 @@ static int copy_params(struct dm_ioctl __user *user, struct dm_ioctl *param_kern
->>>           * Use kmalloc() rather than vmalloc() when we can.
->>>           */
->>>          dmi = NULL;
->>> -       if (param_kernel->data_size <= KMALLOC_MAX_SIZE) {
->>> +       if (param_kernel->data_size <= (PAGE_SIZE << 2)) {
->>>                  dmi = kmalloc(param_kernel->data_size, GFP_NOIO | __GFP_NORETRY | __GFP_NOMEMALLOC | __GFP_NOWARN);
->>>                  if (dmi)
->>>                          *param_flags |= DM_PARAMS_KMALLOC;
->>> -- 
->>> 1.7.9.5
->>>
->>> -- 
->>> dm-devel mailing list
->>> dm-devel@redhat.com
->>> https://www.redhat.com/mailman/listinfo/dm-devel
->>>
-> 
+Thanks
+Mohit
+> Cheers
+> Kishon
+> >
+> > Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+> > Cc: Bjorn Helgaas <bhelgaas@google.com>
+> > Cc: Mohit Kumar <mohit.kumar@st.com>
+> > Cc: Jingoo Han <jg1.han@samsung.com>
+> > Cc: Marek Vasut <marex@denx.de>
+> > Cc: Arnd Bergmann <arnd@arndb.de>
+> > Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> > ---
+> >  drivers/pci/host/pcie-designware.c |   49
+> ++++++++++++++++++++++++++++--------
+> >  drivers/pci/host/pcie-designware.h |    4 +++
+> >  2 files changed, 42 insertions(+), 11 deletions(-)
+> >
+> > diff --git a/drivers/pci/host/pcie-designware.c
+> > b/drivers/pci/host/pcie-designware.c
+> > index 0b7b455..11aba6d 100644
+> > --- a/drivers/pci/host/pcie-designware.c
+> > +++ b/drivers/pci/host/pcie-designware.c
+> > @@ -401,8 +401,15 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
+> >  	struct of_pci_range range;
+> >  	struct of_pci_range_parser parser;
+> >  	struct resource *cfg_res;
+> > -	u32 val;
+> > -	int i;
+> > +	u32 val, na, ns;
+> > +	const __be32 *addrp;
+> > +	int i, index;
+> > +
+> > +	/* Find the address cell size and the number of cells in order to get
+> > +	 * the untranslated address.
+> > +	 */
+> > +	of_property_read_u32(np, "#address-cells", &na);
+> > +	ns = of_n_size_cells(np);
+> >
+> >  	cfg_res = platform_get_resource_byname(pdev,
+> IORESOURCE_MEM, "config");
+> >  	if (cfg_res) {
+> > @@ -410,6 +417,12 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
+> >  		pp->config.cfg1_size = resource_size(cfg_res)/2;
+> >  		pp->cfg0_base = cfg_res->start;
+> >  		pp->cfg1_base = cfg_res->start + pp->config.cfg0_size;
+> > +
+> > +		/* Find the untranslated configuration space address */
+> > +		index = of_property_match_string(np, "reg-names",
+> "config");
+> > +		addrp = of_get_address(np, index, false, false);
+> > +		pp->cfg0_mod_addr = of_read_number(addrp, ns);
+> > +		pp->cfg1_mod_addr = pp->cfg0_mod_addr + pp-
+> >config.cfg0_size;
+> >  	} else {
+> >  		dev_err(pp->dev, "missing *config* reg space\n");
+> >  	}
+> > @@ -435,12 +448,20 @@ int __init dw_pcie_host_init(struct pcie_port
+> *pp)
+> >  			pp->config.io_size = resource_size(&pp->io);
+> >  			pp->config.io_bus_addr = range.pci_addr;
+> >  			pp->io_base = range.cpu_addr;
+> > +
+> > +			/* Find the untranslated IO space address */
+> > +			pp->io_mod_addr = of_read_number(parser.range -
+> > +							 parser.np + na, ns);
+> >  		}
+> >  		if (restype == IORESOURCE_MEM) {
+> >  			of_pci_range_to_resource(&range, np, &pp->mem);
+> >  			pp->mem.name = "MEM";
+> >  			pp->config.mem_size = resource_size(&pp->mem);
+> >  			pp->config.mem_bus_addr = range.pci_addr;
+> > +
+> > +			/* Find the untranslated MEM space address */
+> > +			pp->mem_mod_addr =
+> of_read_number(parser.range -
+> > +							  parser.np + na, ns);
+> >  		}
+> >  		if (restype == 0) {
+> >  			of_pci_range_to_resource(&range, np, &pp->cfg);
+> @@ -448,6 +469,12
+> > @@ int __init dw_pcie_host_init(struct pcie_port *pp)
+> >  			pp->config.cfg1_size = resource_size(&pp->cfg)/2;
+> >  			pp->cfg0_base = pp->cfg.start;
+> >  			pp->cfg1_base = pp->cfg.start + pp-
+> >config.cfg0_size;
+> > +
+> > +			/* Find the untranslated configuration space address
+> */
+> > +			pp->cfg0_mod_addr =
+> of_read_number(parser.range -
+> > +							   parser.np + na, ns);
+> > +			pp->cfg1_mod_addr = pp->cfg0_mod_addr +
+> > +					    pp->config.cfg0_size;
+> >  		}
+> >  	}
+> >
+> > @@ -522,9 +549,9 @@ static void dw_pcie_prog_viewport_cfg0(struct
+> pcie_port *pp, u32 busdev)
+> >  	/* Program viewport 0 : OUTBOUND : CFG0 */
+> >  	dw_pcie_writel_rc(pp, PCIE_ATU_REGION_OUTBOUND |
+> PCIE_ATU_REGION_INDEX0,
+> >  			  PCIE_ATU_VIEWPORT);
+> > -	dw_pcie_writel_rc(pp, pp->cfg0_base, PCIE_ATU_LOWER_BASE);
+> > -	dw_pcie_writel_rc(pp, (pp->cfg0_base >> 32),
+> PCIE_ATU_UPPER_BASE);
+> > -	dw_pcie_writel_rc(pp, pp->cfg0_base + pp->config.cfg0_size - 1,
+> > +	dw_pcie_writel_rc(pp, pp->cfg0_mod_addr,
+> PCIE_ATU_LOWER_BASE);
+> > +	dw_pcie_writel_rc(pp, (pp->cfg0_mod_addr >> 32),
+> PCIE_ATU_UPPER_BASE);
+> > +	dw_pcie_writel_rc(pp, pp->cfg0_mod_addr + pp->config.cfg0_size -
+> 1,
+> >  			  PCIE_ATU_LIMIT);
+> >  	dw_pcie_writel_rc(pp, busdev, PCIE_ATU_LOWER_TARGET);
+> >  	dw_pcie_writel_rc(pp, 0, PCIE_ATU_UPPER_TARGET); @@ -538,9
+> +565,9 @@
+> > static void dw_pcie_prog_viewport_cfg1(struct pcie_port *pp, u32 busdev)
+> >  	dw_pcie_writel_rc(pp, PCIE_ATU_REGION_OUTBOUND |
+> PCIE_ATU_REGION_INDEX1,
+> >  			  PCIE_ATU_VIEWPORT);
+> >  	dw_pcie_writel_rc(pp, PCIE_ATU_TYPE_CFG1, PCIE_ATU_CR1);
+> > -	dw_pcie_writel_rc(pp, pp->cfg1_base, PCIE_ATU_LOWER_BASE);
+> > -	dw_pcie_writel_rc(pp, (pp->cfg1_base >> 32),
+> PCIE_ATU_UPPER_BASE);
+> > -	dw_pcie_writel_rc(pp, pp->cfg1_base + pp->config.cfg1_size - 1,
+> > +	dw_pcie_writel_rc(pp, pp->cfg1_mod_addr,
+> PCIE_ATU_LOWER_BASE);
+> > +	dw_pcie_writel_rc(pp, (pp->cfg1_mod_addr >> 32),
+> PCIE_ATU_UPPER_BASE);
+> > +	dw_pcie_writel_rc(pp, pp->cfg1_mod_addr + pp->config.cfg1_size -
+> 1,
+> >  			  PCIE_ATU_LIMIT);
+> >  	dw_pcie_writel_rc(pp, busdev, PCIE_ATU_LOWER_TARGET);
+> >  	dw_pcie_writel_rc(pp, 0, PCIE_ATU_UPPER_TARGET); @@ -553,9
+> +580,9 @@
+> > static void dw_pcie_prog_viewport_mem_outbound(struct pcie_port *pp)
+> >  	dw_pcie_writel_rc(pp, PCIE_ATU_REGION_OUTBOUND |
+> PCIE_ATU_REGION_INDEX0,
+> >  			  PCIE_ATU_VIEWPORT);
+> >  	dw_pcie_writel_rc(pp, PCIE_ATU_TYPE_MEM, PCIE_ATU_CR1);
+> > -	dw_pcie_writel_rc(pp, pp->mem_base, PCIE_ATU_LOWER_BASE);
+> > -	dw_pcie_writel_rc(pp, (pp->mem_base >> 32),
+> PCIE_ATU_UPPER_BASE);
+> > -	dw_pcie_writel_rc(pp, pp->mem_base + pp->config.mem_size - 1,
+> > +	dw_pcie_writel_rc(pp, pp->mem_mod_addr,
+> PCIE_ATU_LOWER_BASE);
+> > +	dw_pcie_writel_rc(pp, (pp->mem_mod_addr >> 32),
+> PCIE_ATU_UPPER_BASE);
+> > +	dw_pcie_writel_rc(pp, pp->mem_mod_addr + pp->config.mem_size
+> - 1,
+> >  			  PCIE_ATU_LIMIT);
+> >  	dw_pcie_writel_rc(pp, pp->config.mem_bus_addr,
+> PCIE_ATU_LOWER_TARGET);
+> >  	dw_pcie_writel_rc(pp, upper_32_bits(pp->config.mem_bus_addr),
+> > diff --git a/drivers/pci/host/pcie-designware.h
+> > b/drivers/pci/host/pcie-designware.h
+> > index 77f592f..13828f8 100644
+> > --- a/drivers/pci/host/pcie-designware.h
+> > +++ b/drivers/pci/host/pcie-designware.h
+> > @@ -36,11 +36,15 @@ struct pcie_port {
+> >  	u8			root_bus_nr;
+> >  	void __iomem		*dbi_base;
+> >  	u64			cfg0_base;
+> > +	u64			cfg0_mod_addr;
+> >  	void __iomem		*va_cfg0_base;
+> >  	u64			cfg1_base;
+> > +	u64			cfg1_mod_addr;
+> >  	void __iomem		*va_cfg1_base;
+> >  	u64			io_base;
+> > +	u64			io_mod_addr;
+> >  	u64			mem_base;
+> > +	u64			mem_mod_addr;
+> >  	struct resource		cfg;
+> >  	struct resource		io;
+> >  	struct resource		mem;
+> >
