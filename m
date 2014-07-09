@@ -1,63 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219AbaGIXah (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 19:30:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49115 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753340AbaGIXag (ORCPT
+	id S1756239AbaGIXcJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 19:32:09 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:36162 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753574AbaGIXcG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 19:30:36 -0400
-Date: Wed, 9 Jul 2014 16:30:34 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Jan Beulich" <JBeulich@suse.com>
-Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>,
-        "Andy Lutomirski" <luto@amacapital.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ix86: fix vDSO build
-Message-Id: <20140709163034.2d93541a7af85fa71fddd17b@linux-foundation.org>
-In-Reply-To: <53B5863B02000078000204D5@mail.emea.novell.com>
-References: <53B5863B02000078000204D5@mail.emea.novell.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 9 Jul 2014 19:32:06 -0400
+Message-ID: <53BDD0F3.7040906@codeaurora.org>
+Date: Wed, 09 Jul 2014 16:32:03 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: a case for a common efuse API?
+References: <53BC4DD7.20906@codeaurora.org> <20140709083509.GQ13423@lukather>
+In-Reply-To: <20140709083509.GQ13423@lukather>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 03 Jul 2014 15:35:07 +0100 "Jan Beulich" <JBeulich@suse.com> wrote:
+On 07/09/14 01:35, Maxime Ripard wrote:
+> Hi Stephen,
+>
+> On Tue, Jul 08, 2014 at 01:00:23PM -0700, Stephen Boyd wrote:
+>> Hi,
+>>
+>> On MSM chips we have some efuses (called qfprom) where we store things
+>> like calibration data, speed bins, etc. We need to read out data from
+>> the efuses in various drivers like the cpufreq, thermal, etc. This
+>> essentially boils down to a bunch of readls on the efuse from a handful
+>> of different drivers. In devicetree this looks a little odd because
+>> these drivers end up having an extra reg property (or two) that points
+>> to a register in the efuse and some length, i.e you see this:
+>>
+>> 	thermal-sensor@34000 {
+>> 		compatible = "sensor";
+>> 		reg = <0x34000 0x1000>, <0x10018 0xc>;
+>> 		reg-names = "sensor", "efuse_calib";
+>> 	}
+>>
+>>
+>> I imagine in DT we want something more like this:
+>>
+>> 	efuse: efuse@10000 {
+>> 		compatible = "efuse";
+>> 		reg = <0x10000 0x1000>;
+>> 	}
+>>
+>> 	thermal-sensor@34000 {
+>> 		compatible = "sensor";
+>> 		reg = <0x34000 0x1000>;
+>> 		efuse = <&efuse 0x18>;
+>> 	}
+> We have pretty much the same things in the Allwinner SoCs. We have an
+> efuse directly mapped into memory, with a few informations like a MAC
+> address, the SoC ID, the serial number, some RSA keys for the device,
+> etc.
+>
+> The thing is, some boards expose these informations in an external
+> EEPROM as well.
+>
+> I started working and went quite far to create an "eeprom" framework
+> to handle these cases, with a dt representation similar to what you
+> were exposing.
+>
+> https://github.com/mripard/linux/tree/eeprom-framework-at24
+>
+> It was working quite well, I was about to send it, but was told that I
+> should all be moved to MTD, and given up on it.
 
-> Relying on static functions used just once to get inlined (and
-> subsequently have dead code paths eliminated) is wrong: Compilers are
-> free to decide whether they do this, regardless of optimization level.
-> With this not happening for vdso_addr() (observed with gcc 4.1.x), an
-> unresolved reference to align_vdso_addr() causes the build to fail.
-> 
-> Signed-off-by: Jan Beulich <jbeulich@suse.com>
-> Cc: Andy Lutomirski <luto@amacapital.net>
-> ---
->  arch/x86/vdso/vma.c    |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> --- 3.16-rc3/arch/x86/vdso/vma.c
-> +++ 3.16-rc3-x86-vdso-build/arch/x86/vdso/vma.c
-> @@ -62,6 +62,9 @@ struct linux_binprm;
->     Only used for the 64-bit and x32 vdsos. */
->  static unsigned long vdso_addr(unsigned long start, unsigned len)
->  {
-> +#ifdef CONFIG_X86_32
-> +	return 0;
-> +#else
->  	unsigned long addr, end;
->  	unsigned offset;
->  	end = (start + PMD_SIZE - 1) & PMD_MASK;
-> @@ -83,6 +86,7 @@ static unsigned long vdso_addr(unsigned
->  	addr = align_vdso_addr(addr);
->  
->  	return addr;
-> +#endif
->  }
->  
->  static int map_vdso(const struct vdso_image *image, bool calculate_addr)
+Did anything ever get merged? Or the whole thing was dropped?
 
-Tested-by: Andrew Morton <akpm@linux-foundation.org>
+That branch looks like what I want, assuming we could get an agreement
+on the binding. It looks like pretty much every SoC has this, and there
+isn't any API or binding for it that I've seen. The only thing I see is
+Documentation/devicetree/bindings/eeprom.txt and that doesn't cover the
+client aspect at all.
+
+Taking a quick peek at the code, it might be better to change the read
+API to take a buffer and length, so that the caller doesn't need to free
+the data allocated by the eeprom layer. It also makes it symmetrical
+with the write API. We'd probably also need to make it work really early
+for SoC's like Tegra where we want to read the SoC revision early. So
+probably split off the device registration part to a later time to allow
+register() to be called early.
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
