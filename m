@@ -1,138 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753677AbaGIGbh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 02:31:37 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:44443 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751610AbaGIGbf (ORCPT
+	id S1754040AbaGIGd0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 02:33:26 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:59430 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751345AbaGIGdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 02:31:35 -0400
-Date: Wed, 9 Jul 2014 08:31:32 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: [PATCH 6/9] ARM: tegra: Export tegra_powergate_power_on
-Message-ID: <20140709063130.GA3170@ulmo>
-References: <20140617121313.GE18816@ulmo>
- <20140617140146.GH3407@tbergstrom-lnx.Nvidia.com>
- <20140617215119.GC24743@mithrandir>
- <20140618121806.GJ3407@tbergstrom-lnx.Nvidia.com>
- <53A1B252.1030204@wwwdotorg.org>
- <20140619080234.GK3407@tbergstrom-lnx.Nvidia.com>
- <53A3096B.1040409@wwwdotorg.org>
- <20140623101441.GU3407@tbergstrom-lnx.Nvidia.com>
- <20140708130501.GC9516@ulmo>
- <20140708141135.GC23218@tbergstrom-lnx.Nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zYM0uCDKw75PZbzx"
-Content-Disposition: inline
-In-Reply-To: <20140708141135.GC23218@tbergstrom-lnx.Nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 9 Jul 2014 02:33:23 -0400
+X-AuditID: cbfee691-b7f2f6d0000040c4-ce-53bce231d26d
+From: Namjae Jeon <namjae.jeon@samsung.com>
+To: "'Christoph Hellwig'" <hch@infradead.org>
+Cc: "'Dave Chinner'" <david@fromorbit.com>, "'Theodore Ts'o'" <tytso@mit.edu>,
+        "'linux-ext4'" <linux-ext4@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Luk?? Czerner'" <lczerner@redhat.com>,
+        "'Brian Foster'" <bfoster@redhat.com>,
+        "'Ashish Sangwan'" <a.sangwan@samsung.com>, xfs@oss.sgi.com
+References: <003f01cf9aa4$1e9e5240$5bdaf6c0$@samsung.com>
+ <20140708121500.GA518@infradead.org>
+In-reply-to: <20140708121500.GA518@infradead.org>
+Subject: RE: [PATCH 2/3] xfs: Add support IOC_MOV_DATA ioctl
+Date: Wed, 09 Jul 2014 15:33:21 +0900
+Message-id: <001801cf9b3f$ad786ff0$08694fd0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQJH64km/LFjhKi9hcuiYREqQxtdmwKGaWSgmpJZKsA=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOIsWRmVeSWpSXmKPExsWyRsSkUNfw0Z5gg3kvVC2WTrzEbPHuc5XF
+	lmP3GC1OT1jEZLHswWYWi5nz7rBZ7Nl7ksXi8q45bBatPT/ZLRb13WJ04PI4tUjCY/MKLY+m
+	M0eZPVZf2Mro8X7fVTaPvi2rGD0+b5ILYI/isklJzcksSy3St0vgyni57QBzwRWWimedS1kb
+	GJ8xdzFyckgImEgc2bqcCcIWk7hwbz1bFyMXh5DAUkaJxntbmWCKbh8+xgSRWMQoceDMV2YI
+	5y+jxIfPL1m7GDk42AS0Jf5sEQVpEAEy1y87BraBWeAAk8TjxzYgtpBAgsS2iydYQWxOAUOJ
+	bbcOsYPYwgI2Ejenv2UEsVkEVCXuPjjIAjKSV8BS4vrFdJAwr4CgxI/J91ggRmpJrN95nAnC
+	lpfYvOYt1DMKEjvOvmaEOMFKouPbY6gTRCT2vXjHCHKyhEAnh8Sm1u3MELsEJL5NPgS2S0JA
+	VmLTAag5khIHV9xgmcAoMQvJ6llIVs9CsnoWkhULGFlWMYqmFiQXFCelF5nqFSfmFpfmpesl
+	5+duYgRG+ul/zybuYLx/wPoQYzLQ+onMUqLJ+cBEkVcSb2hsZmRhamJqbGRuaUaasJI4b/qj
+	pCAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjNYXOWJ1vt2T9RKpqvBjvW/2KTU6Y4+bftPL
+	9cHX7ePdLi15JWj3U+Fi97STVhdMGSR6S9kecBtX/P3xkHv7DmvtNOeX9udMrPn0Tho1rco0
+	vuKw+P7VCUdCr2kqzbhbzeRUmv0g+WvZi/DKG8n93/KPeup+uc5tdnXBhNUsibMSXu/aLcWQ
+	rcRSnJFoqMVcVJwIAAAmWIcKAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGKsWRmVeSWpSXmKPExsVy+t9jAV3DR3uCDU5dkbdYOvESs8W7z1UW
+	W47dY7Q4PWERk8WyB5tZLGbOu8NmsWfvSRaLy7vmsFm09vxkt1jUd4vRgcvj1CIJj80rtDya
+	zhxl9lh9YSujx/t9V9k8+rasYvT4vEkugD2qgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTM
+	wFDX0NLCXEkhLzE31VbJxSdA1y0zB+g6JYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFw
+	PUYGaCBhDWPGy20HmAuusFQ861zK2sD4jLmLkZNDQsBE4vbhY0wQtpjEhXvr2boYuTiEBBYx
+	Shw485UZwvnLKPHh80vWLkYODjYBbYk/W0RBGkSAzPXLjoENYhY4wCTx+LENiC0kkCCx7eIJ
+	VhCbU8BQYtutQ+wgtrCAjcTN6W8ZQWwWAVWJuw8OsoCM5BWwlLh+MR0kzCsgKPFj8j0WiJFa
+	Eut3HmeCsOUlNq95C3WzgsSOs68ZIU6wkuj49hjqBBGJfS/eMU5gFJqFZNQsJKNmIRk1C0nL
+	AkaWVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBaeSZ9A7GVQ0WhxgFOBiVeHgVePYEC7Em
+	lhVX5h5ilOBgVhLh/eYGFOJNSaysSi3Kjy8qzUktPsRoCvToRGYp0eR8YIrLK4k3NDYxM7I0
+	Mje0MDI2VxLnPdhqHSgkkJ5YkpqdmlqQWgTTx8TBKdXAmJrqK3x1lRD/nenJHBfLpkyOOP9o
+	otZ+yR9zQp490GSrmMKmH9GQ0Htuv0PearcFRwrEpvidf8ZY+n2TkoKA2nkF0w95DQb5Rz8e
+	lf4X16z/t+P5hemyz/w/NQrc9bvozHKk61nfz4mfLm4VCbp4v+cylxrPlhM3U1bcPB6QyZzT
+	/f7y1W91q5RYijMSDbWYi4oTASl1BME5AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> 
+> On Tue, Jul 08, 2014 at 08:59:49PM +0900, Namjae Jeon wrote:
+> > This patch implements fs ioctl's IOC_MOV_DATA for XFS.
+> 
+> Shouldn't this share code with the XFS_IOC_SWAPEXT implementation?
+Lukas has raised the same question for ext4.
+Both xfs(XFS_IOC_SWAPEXT) and ext4(EXT4_IOC_MOVE_EXT) has ioctls which uses
+almost similar kind of structure as struct mov_data.
+As such, there seems to be possiblity for sharing basic code (I will try)
+used for sanity checking in IOC_MOV_DATA to be shared with these ioctls
+but the core functionality code will remain different.
 
---zYM0uCDKw75PZbzx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks!
 
-On Tue, Jul 08, 2014 at 05:11:35PM +0300, Peter De Schrijver wrote:
-> > >=20
-> > > Yes, but the problem is that you also need clocks and reset of other =
-modules
-> > > in the same domain to safely control the domain's status. Eg: the ISP=
-s, VI and
-> > > CSI share a domain. VI and CSI are useable without ISP and the ISP la=
-cks
-> > > public documentation. So it's not unlikely a VI and CSI driver will u=
-pstreamed
-> > > someday which means we would need to control the domain and therefore=
- would
-> > > need to tell that driver about the ISPs clocks and resets even though=
- the
-> > > driver doesn't know anything about the ISP hw otherwise.
-> >=20
-> > Can't we make powergates reference counted so that they don't get
-> > disabled as long as there are any users? Looking for example at the
->=20
-> We could, but then why not switch to the powerdomain code and make poweri=
-ng
-> off a domain a NOP until we sorted out the context save/restore or fixed
-> the framework to allow for suspend without turning off the domains?
-
-Well, one of the reasons why I'm not sure it's worth the effort at this
-point is that we can't get rid of the tegra_powergate_*() API anyway
-because of backwards compatibility. So we're going to add code (without
-getting rid of old code) merely to support some generic framework. That
-doesn't sound very useful to me.
-
-> > display controller driver, modules don't seem to care overly much about
-> > the powergate's state except that it needs to be turned on before they
-> > touch some of the registers.
-> >=20
-> > From a bit of experimentation it also seems like the sequence encoded
-> > within tegra_powergate_sequence_power_up() isn't at all necessary. I
-> > couldn't find an authoritative reference for that either, so I'm tempted
-> > to conclude that it was simply cargo-culted from the dark-ages.
-> >=20
-> > So I'm thinking that if we ever move to use power domains for this, we
-> > may be able to just drop any extra handling (well, we'd need to keep it
-> > for backwards-compatibility... *sigh*) and let drivers handle the clock
-> > and reset resources.
-> >=20
-> > On the other hand, given that we already need to keep the existing code
-> > for backwards-compatibility, I'm not sure there's a real advantage in
-> > turning them into power domains, since we'd be adding extra code without
-> > an clear gains (especially since it seems like we'd need even more code
-> > to properly handle suspend/resume in drivers that need powergates).
-> >=20
->=20
-> Unless we fix the framework to require context save/restore for suspend.
-> There is a good reason to do that. context save/restore requires energy
-> as well, so it's not a given that turning off domains in system suspend
-> will save power.
-
-I'm not sure I follow. "require context save/restore for suspend" is
-what many drivers currently don't support, hence we can't use the
-generic PM domains. Perhaps what you're saying is that the PM domain
-core code should be enhanced so that domains can be marked so that they
-stay on during a suspend/resume cycle.
-
-Such functionality could be part of a specifier in a DT binding. It's
-technically not a description of the hardware, but it encodes a device's
-requirements regarding suspend/resume latency.
-
-Thierry
-
---zYM0uCDKw75PZbzx
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTvOHCAAoJEN0jrNd/PrOhSWYP/ii2wlR15uMXlLs5i6Rfp492
-iakh2grZLuClz0nqqVq6inDhak2+PQ3ehq7Y1x/+9Am7n//vvYwB8Fd/9Oo2zer1
-4uT/xxyrXKXaO9KMuczycTpFLA6hSZS/WbUJMcOdb7axF95FlAeOe/AlaGMrD+aL
-E6FDvvT3nmxVFmJfHJCSorsJWguGW8bYFGkVQt+lGvdRMUtUaRnEYxFfk7jzJWLd
-/E/y38g+RyoaTTw6e05RXEOM9iA+ituSVpkjL/RVlxu2cDuH4TqXhYzK/wAYmVky
-RWeh+CyerRyJ22q8S+kQ5T7aLWlz6zxk7sT6EOyRyRdikqePRgnVv6ThLqJ1KPML
-KrM2K7fXCJkN4yifY8TQAcX11W3OEMpU3EBk6P1BknuQ184mrr7eaMhQVwBZnEnx
-OVPBjaafoPXjkydf9gyZGffEcy6kGEo5b8L673ryaT66rhdwhE2CCUWKifz7R/2c
-hEtkuVOVQo2TSptKecEKFkHfl7a96nuZ7jkFIHfa407pE1pMzTA5a0TQcsMry1Ki
-9WB8hTqJZrVXLlf6pplDQqyn53yM9f7N7aG3YTYdFzvcOYF4pGhSEIuo8hEaWrD/
-9uVqGITBoZIwwbnFbaWoEz9QA3JtrabQFYiioTpTDa6kT6y22IXF66fguTeQwPE/
-6H5h2C0t3amJ1oVii1Fx
-=A34F
------END PGP SIGNATURE-----
-
---zYM0uCDKw75PZbzx--
