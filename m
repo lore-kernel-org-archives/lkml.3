@@ -1,70 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968AbaGIG4m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 02:56:42 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:60482 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754242AbaGIG4j (ORCPT
+	id S1753251AbaGIHM3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 03:12:29 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:30100 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751709AbaGIHM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 02:56:39 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: tglx@linutronix.de
-Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, arvind.chauhan@arm.com, preeti@linux.vnet.ibm.com,
-        khilman@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: [RFC 7/7] net: don't check for active hrtimer after adding it
-Date: Wed,  9 Jul 2014 12:25:39 +0530
-Message-Id: <a8994b5dda7599c0d8ce9f66aef40b8587acf691.1404888801.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <cover.1404888801.git.viresh.kumar@linaro.org>
-References: <cover.1404888801.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1404888801.git.viresh.kumar@linaro.org>
-References: <cover.1404888801.git.viresh.kumar@linaro.org>
+	Wed, 9 Jul 2014 03:12:27 -0400
+Message-ID: <53BCEA77.2080004@huawei.com>
+Date: Wed, 9 Jul 2014 09:08:39 +0200
+From: Jerome FORISSIER <jerome.forissier@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Zhou Wang <wangzhou.bry@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Pekon Gupta <pekon@ti.com>,
+        "Artem Bityutskiy" <artem.bityutskiy@linux.intel.com>,
+        Alexander Shiyan <shc_work@mail.ru>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        Joern Engel <joern@logfs.org>, Randy Dunlap <rdunlap@infradead.org>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <linux-mtd@lists.infradead.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <caizhiyong@huawei.com>, <wangzhou1@hisilicon.com>
+Subject: Re: [PATCH 1/3] mtd: hisilicon: add device tree node for nand controller
+References: <1404115409-20200-1-git-send-email-wangzhou.bry@gmail.com> <1404115409-20200-2-git-send-email-wangzhou.bry@gmail.com>
+In-Reply-To: <1404115409-20200-2-git-send-email-wangzhou.bry@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.122.142.65]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hrtimer_start*() family never fails to enqueue a hrtimer to a clock-base. The
-only special case is when the hrtimer was in past. If it is getting enqueued to
-local CPUs's clock-base, we raise a softirq and exit, else we handle that on
-next interrupt on remote CPU.
+On 30-Jun-14 10:03, Zhou Wang wrote:
+> Signed-off-by: Zhou Wang <wangzhou.bry@gmail.com>
+> ---
+>  arch/arm/boot/dts/hip04.dtsi |   31 +++++++++++++++++++++++++++++++
+>  1 file changed, 31 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/hip04.dtsi b/arch/arm/boot/dts/hip04.dtsi
+> index abb42ca..e63fc61 100644
+> --- a/arch/arm/boot/dts/hip04.dtsi
+> +++ b/arch/arm/boot/dts/hip04.dtsi
+> @@ -386,5 +386,36 @@
+>  				interrupts = <0 389 4>;
+>  			};
+>  		};
+> +
+> +		nand: nand@4020000 {
+> +			compatible = "hisilicon,504-nfc";
 
-At several places in the kernel, we try to make sure if hrtimer was added
-properly or not by calling hrtimer_active(), like:
+In PATCH 2/3 and 3/3 you are using "hisilicon,nfc504".
 
-	hrtimer_start(timer, expires, mode);
-	if (hrtimer_active(timer)) {
-		/* Added successfully */
-	} else {
-		/* Was added in the past */
-	}
+> +			reg = <0x4020000 0x10000>, <0x5000000 0x1000>;
+> +			interrupts = <0 379 4>;
+> +			nand-bus-width = <8>;
+> +			nand-ecc-mode = "none";
+> +			hisi,nand-ecc-bits = <0>;
+> +			#address-cells = <1>;
+> +			#size-cells = <1>;
+> +
+> +			partition@0 {
+> +				label = "nand_text";
+> +				reg = <0x00000000 0x00400000>;
+> +			};
+> +
+> +			partition@00400000 {
+> +				label = "nand_monitor";
+> +				reg = <0x00400000 0x00400000>;
+> +			};
+> +
+> +			partition@00800000 {
+> +				label = "nand_kernel";
+> +				reg = <0x00800000 0x00800000>;
+> +			};
+> +
+> +			partition@01000000 {
+> +				label = "nand_fs";
+> +				reg = <0x01000000 0x1f000000>;
+> +			};
+> +		};
+>  	};
+>  };
+> 
 
-As hrtimer_start*() never fails, hrtimer_active() is guaranteed to return '1'.
-So, there is no point calling hrtimer_active().
-
-This patch updates net core to get this fixed.
-
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- net/core/pktgen.c | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/net/core/pktgen.c b/net/core/pktgen.c
-index fc17a9d..f911acd 100644
---- a/net/core/pktgen.c
-+++ b/net/core/pktgen.c
-@@ -2186,8 +2186,6 @@ static void spin(struct pktgen_dev *pkt_dev, ktime_t spin_until)
- 		do {
- 			set_current_state(TASK_INTERRUPTIBLE);
- 			hrtimer_start_expires(&t.timer, HRTIMER_MODE_ABS);
--			if (!hrtimer_active(&t.timer))
--				t.task = NULL;
- 
- 			if (likely(t.task))
- 				schedule();
 -- 
-2.0.0.rc2
-
+Jerome
