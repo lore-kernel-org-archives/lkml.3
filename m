@@ -1,406 +1,342 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562AbaGIKVe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 06:21:34 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:50570 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755152AbaGIKVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 06:21:30 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        =?utf-8?B?ZWRkaWUo6JSh5p6rKQ==?= <cf@rock-chips.com>,
-        huangtao@rock-chips.com, Peter Meerwald <pmeerw@pmeerw.net>
-Subject: [PATCH v3 1/2] iio: adc: add driver for Rockchip saradc
-Date: Wed, 09 Jul 2014 12:22:48 +0200
-Message-ID: <2263220.rhyqmTfAiL@diego>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <2482306.yDb91TH59G@diego>
-References: <2959154.xc8BQActsn@diego> <2482306.yDb91TH59G@diego>
+	id S1755588AbaGIKV4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 06:21:56 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:45249 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754412AbaGIKTs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 06:19:48 -0400
+From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org, Peter.Chen@freescale.com,
+        kishon@ti.com, stern@rowland.harvard.edu
+Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 4/4] usb: chipidea: add support to the PHY framework for ChipIdea
+Date: Wed,  9 Jul 2014 12:17:16 +0200
+Message-Id: <1404901036-27682-5-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404901036-27682-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1404901036-27682-1-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ADC is a 3-channel signal-ended 10-bit Successive Approximation
-Register (SAR) A/D Converter. It uses the supply and ground as its reference
-and converts the analog input signal into 10-bit binary digital codes.
+This patch adds the support to the PHY framework for ChipIdea drivers
+while keeping the USB PHY compatibility. Changes are done in both the
+ChipIdea common code and in the drivers accessing the PHY. This is done
+by renaming 'phy' into 'usb_phy' and adding a new 'phy' member into the
+ci_hdrc structre.
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
 ---
- changes since v2:
-- address more comments from Peter Meerwald
-  mainly the missing info_mask_shared_by_type element
- changes since v1:
-- address comments from Peter Meerwald
+ drivers/usb/chipidea/ci.h          |  4 ++-
+ drivers/usb/chipidea/ci_hdrc_imx.c |  2 +-
+ drivers/usb/chipidea/ci_hdrc_msm.c |  6 ++--
+ drivers/usb/chipidea/core.c        | 67 +++++++++++++++++++++++++++++++-------
+ drivers/usb/chipidea/debug.c       |  4 ++-
+ drivers/usb/chipidea/host.c        | 17 ++++++----
+ drivers/usb/chipidea/otg_fsm.c     |  6 ++--
+ drivers/usb/chipidea/udc.c         |  4 +--
+ include/linux/usb/chipidea.h       |  4 ++-
+ 9 files changed, 86 insertions(+), 28 deletions(-)
 
-drivers/iio/adc/Kconfig           |  10 ++
- drivers/iio/adc/Makefile          |   1 +
- drivers/iio/adc/rockchip_saradc.c | 314 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 325 insertions(+)
- create mode 100644 drivers/iio/adc/rockchip_saradc.c
-
-diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
-index a80d236..5d36bdb 100644
---- a/drivers/iio/adc/Kconfig
-+++ b/drivers/iio/adc/Kconfig
-@@ -187,6 +187,16 @@ config NAU7802
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called nau7802.
+diff --git a/drivers/usb/chipidea/ci.h b/drivers/usb/chipidea/ci.h
+index 9563cb56d564..139589c8ab90 100644
+--- a/drivers/usb/chipidea/ci.h
++++ b/drivers/usb/chipidea/ci.h
+@@ -201,7 +201,9 @@ struct ci_hdrc {
  
-+config ROCKCHIP_SARADC
-+	tristate "Rockchip SARADC driver"
-+	depends on ARCH_ROCKCHIP || (OF && COMPILE_TEST)
-+	help
-+	  Say yes here to build support for the SARADC found in SoCs from
-+	  Rockchip.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called rockchip_saradc.
-+
- config TI_ADC081C
- 	tristate "Texas Instruments ADC081C021/027"
- 	depends on I2C
-diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
-index 9d60f2d..8e2932d 100644
---- a/drivers/iio/adc/Makefile
-+++ b/drivers/iio/adc/Makefile
-@@ -20,6 +20,7 @@ obj-$(CONFIG_MCP320X) += mcp320x.o
- obj-$(CONFIG_MCP3422) += mcp3422.o
- obj-$(CONFIG_MEN_Z188_ADC) += men_z188_adc.o
- obj-$(CONFIG_NAU7802) += nau7802.o
-+obj-$(CONFIG_ROCKCHIP_SARADC) += rockchip_saradc.o
- obj-$(CONFIG_TI_ADC081C) += ti-adc081c.o
- obj-$(CONFIG_TI_AM335X_ADC) += ti_am335x_adc.o
- obj-$(CONFIG_TWL4030_MADC) += twl4030-madc.o
-diff --git a/drivers/iio/adc/rockchip_saradc.c b/drivers/iio/adc/rockchip_saradc.c
-new file mode 100644
-index 0000000..8fc5867
---- /dev/null
-+++ b/drivers/iio/adc/rockchip_saradc.c
-@@ -0,0 +1,314 @@
-+/*
-+ * Rockchip Successive Approximation Register (SAR) A/D Converter
-+ * Copyright (C) 2014 ROCKCHIP, Inc.
+ 	struct ci_hdrc_platform_data	*platdata;
+ 	int				vbus_active;
+-	struct usb_phy			*transceiver;
++	struct phy			*transceiver;
++	/* old usb_phy interface */
++	struct usb_phy			*usb_transceiver;
+ 	struct usb_hcd			*hcd;
+ 	struct dentry			*debugfs;
+ 	bool				id_event;
+diff --git a/drivers/usb/chipidea/ci_hdrc_imx.c b/drivers/usb/chipidea/ci_hdrc_imx.c
+index 2e58f8dfd311..33b982dddac5 100644
+--- a/drivers/usb/chipidea/ci_hdrc_imx.c
++++ b/drivers/usb/chipidea/ci_hdrc_imx.c
+@@ -136,7 +136,7 @@ static int ci_hdrc_imx_probe(struct platform_device *pdev)
+ 		goto err_clk;
+ 	}
+ 
+-	pdata.phy = data->phy;
++	pdata.usb_phy = data->phy;
+ 
+ 	if (imx_platform_flag->flags & CI_HDRC_IMX_IMX28_WRITE_FIX)
+ 		pdata.flags |= CI_HDRC_IMX28_WRITE_FIX;
+diff --git a/drivers/usb/chipidea/ci_hdrc_msm.c b/drivers/usb/chipidea/ci_hdrc_msm.c
+index d72b9d2de2c5..07b85674d208 100644
+--- a/drivers/usb/chipidea/ci_hdrc_msm.c
++++ b/drivers/usb/chipidea/ci_hdrc_msm.c
+@@ -34,10 +34,10 @@ static void ci_hdrc_msm_notify_event(struct ci_hdrc *ci, unsigned event)
+ 		 * Put the transceiver in non-driving mode. Otherwise host
+ 		 * may not detect soft-disconnection.
+ 		 */
+-		val = usb_phy_io_read(ci->transceiver, ULPI_FUNC_CTRL);
++		val = usb_phy_io_read(ci->usb_transceiver, ULPI_FUNC_CTRL);
+ 		val &= ~ULPI_FUNC_CTRL_OPMODE_MASK;
+ 		val |= ULPI_FUNC_CTRL_OPMODE_NONDRIVING;
+-		usb_phy_io_write(ci->transceiver, val, ULPI_FUNC_CTRL);
++		usb_phy_io_write(ci->usb_transceiver, val, ULPI_FUNC_CTRL);
+ 		break;
+ 	default:
+ 		dev_dbg(dev, "unknown ci_hdrc event\n");
+@@ -71,7 +71,7 @@ static int ci_hdrc_msm_probe(struct platform_device *pdev)
+ 	if (IS_ERR(phy))
+ 		return PTR_ERR(phy);
+ 
+-	ci_hdrc_msm_platdata.phy = phy;
++	ci_hdrc_msm_platdata.usb_phy = phy;
+ 
+ 	plat_ci = ci_hdrc_add_device(&pdev->dev,
+ 				pdev->resource, pdev->num_resources,
+diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
+index 619d13e29995..4b93e2d6fe89 100644
+--- a/drivers/usb/chipidea/core.c
++++ b/drivers/usb/chipidea/core.c
+@@ -47,6 +47,7 @@
+ #include <linux/delay.h>
+ #include <linux/device.h>
+ #include <linux/dma-mapping.h>
++#include <linux/phy/phy.h>
+ #include <linux/platform_device.h>
+ #include <linux/module.h>
+ #include <linux/idr.h>
+@@ -293,6 +294,46 @@ static void hw_phymode_configure(struct ci_hdrc *ci)
+ }
+ 
+ /**
++ * _ci_usb_phy_init: initialize phy taking in account both phy and usb_phy
++ * interfaces
++ * @ci: the controller
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
++ * This function returns an error code if the phy failed to init
 + */
-+
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/interrupt.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/clk.h>
-+#include <linux/completion.h>
-+#include <linux/regulator/consumer.h>
-+#include <linux/iio/iio.h>
-+
-+#define SARADC_DATA			0x00
-+#define SARADC_DATA_MASK		0x3ff
-+
-+#define SARADC_STAS			0x04
-+#define SARADC_STAS_BUSY		BIT(0)
-+
-+#define SARADC_CTRL			0x08
-+#define SARADC_CTRL_IRQ_STATUS		BIT(6)
-+#define SARADC_CTRL_IRQ_ENABLE		BIT(5)
-+#define SARADC_CTRL_POWER_CTRL		BIT(3)
-+#define SARADC_CTRL_CHN_MASK		0x7
-+
-+#define SARADC_DLY_PU_SOC		0x0c
-+#define SARADC_DLY_PU_SOC_MASK		0x3f
-+
-+#define SARADC_BITS			10
-+#define SARADC_TIMEOUT			msecs_to_jiffies(100)
-+
-+struct rockchip_saradc {
-+	void __iomem		*regs;
-+	struct clk		*pclk;
-+	struct clk		*clk;
-+	struct completion	completion;
-+	struct regulator	*vref;
-+	int			vref_mv;
-+	u16			last_val;
-+};
-+
-+static int rockchip_saradc_read_raw(struct iio_dev *indio_dev,
-+				    struct iio_chan_spec const *chan,
-+				    int *val, int *val2, long mask)
++static int _ci_usb_phy_init(struct ci_hdrc *ci)
 +{
-+	struct rockchip_saradc *info = iio_priv(indio_dev);
-+
-+	switch (mask) {
-+	case IIO_CHAN_INFO_RAW:
-+		mutex_lock(&indio_dev->mlock);
-+
-+		/* Select the channel to be used and trigger conversion */
-+		writel_relaxed(0x08, info->regs + SARADC_DLY_PU_SOC);
-+		writel(SARADC_CTRL_POWER_CTRL
-+				| (chan->channel & SARADC_CTRL_CHN_MASK)
-+				| SARADC_CTRL_IRQ_ENABLE,
-+		       info->regs + SARADC_CTRL);
-+
-+		if (!wait_for_completion_timeout(&info->completion,
-+						 SARADC_TIMEOUT)) {
-+			writel_relaxed(0, info->regs + SARADC_CTRL);
-+			mutex_unlock(&indio_dev->mlock);
-+			return -ETIMEDOUT;
-+		}
-+
-+		*val = info->last_val;
-+		mutex_unlock(&indio_dev->mlock);
-+		return IIO_VAL_INT;
-+	case IIO_CHAN_INFO_SCALE:
-+		*val = info->vref_mv;
-+		*val2 = SARADC_BITS;
-+		return IIO_VAL_FRACTIONAL_LOG2;
-+	default:
-+		return -EINVAL;
-+	}
-+}
-+
-+static irqreturn_t rockchip_saradc_isr(int irq, void *dev_id)
-+{
-+	struct rockchip_saradc *info = (struct rockchip_saradc *)dev_id;
-+
-+	/* Read value */
-+	info->last_val = readl_relaxed(info->regs + SARADC_DATA);
-+	info->last_val &= SARADC_DATA_MASK;
-+
-+	/* Clear irq & power down adc */
-+	writel_relaxed(0, info->regs + SARADC_CTRL);
-+
-+	complete(&info->completion);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static const struct iio_info rockchip_saradc_iio_info = {
-+	.read_raw = rockchip_saradc_read_raw,
-+	.driver_module = THIS_MODULE,
-+};
-+
-+#define ADC_CHANNEL(_index, _id) {				\
-+	.type = IIO_VOLTAGE,					\
-+	.indexed = 1,						\
-+	.channel = _index,					\
-+	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),		\
-+	.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),	\
-+	.datasheet_name = _id,					\
-+}
-+
-+static const struct iio_chan_spec rockchip_saradc_iio_channels[] = {
-+	ADC_CHANNEL(0, "adc0"),
-+	ADC_CHANNEL(1, "adc1"),
-+	ADC_CHANNEL(2, "adc2"),
-+};
-+
-+static int rockchip_saradc_probe(struct platform_device *pdev)
-+{
-+	struct rockchip_saradc *info = NULL;
-+	struct device_node *np = pdev->dev.of_node;
-+	struct iio_dev *indio_dev = NULL;
-+	struct resource	*mem;
-+	int ret = -ENODEV;
-+	int irq;
-+	u32 rate;
-+
-+	if (!np)
-+		return ret;
-+
-+	indio_dev = devm_iio_device_alloc(&pdev->dev, sizeof(*info));
-+	if (!indio_dev) {
-+		dev_err(&pdev->dev, "failed allocating iio device\n");
-+		return -ENOMEM;
-+	}
-+	info = iio_priv(indio_dev);
-+
-+	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	info->regs = devm_request_and_ioremap(&pdev->dev, mem);
-+	if (!info->regs)
-+		return -ENOMEM;
-+
-+	irq = platform_get_irq(pdev, 0);
-+	if (irq < 0) {
-+		dev_err(&pdev->dev, "no irq resource?\n");
-+		return irq;
-+	}
-+
-+	ret = devm_request_irq(&pdev->dev, irq, rockchip_saradc_isr,
-+			       0, dev_name(&pdev->dev), info);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed requesting irq %d\n", irq);
-+		return ret;
-+	}
-+
-+	init_completion(&info->completion);
-+
-+	info->pclk = devm_clk_get(&pdev->dev, "apb_pclk");
-+	if (IS_ERR(info->pclk)) {
-+		dev_err(&pdev->dev, "failed to get pclk\n");
-+		return PTR_ERR(info->pclk);
-+	}
-+
-+	info->clk = devm_clk_get(&pdev->dev, "saradc");
-+	if (IS_ERR(info->clk)) {
-+		dev_err(&pdev->dev, "failed to get adc clock\n");
-+		return PTR_ERR(info->clk);
-+	}
-+
-+	info->vref = devm_regulator_get(&pdev->dev, "vref");
-+	if (IS_ERR(info->vref)) {
-+		dev_err(&pdev->dev, "failed to get regulator, %ld\n",
-+			PTR_ERR(info->vref));
-+		return PTR_ERR(info->vref);
-+	}
-+
-+	/* use a default of 1MHz for the converter clock */
-+	if (of_property_read_u32(np, "clock-frequency", &rate))
-+		rate = 1000000;
-+
-+	ret = clk_set_rate(info->clk, rate);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to set adc clk rate, %d\n", ret);
-+		return ret;
-+	}
-+
-+	ret = regulator_enable(info->vref);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to enable vref regulator\n");
-+		return ret;
-+	}
-+
-+	ret = regulator_get_voltage(info->vref);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to get regulator voltage\n");
-+		goto err_reg_voltage;
-+	}
-+	info->vref_mv = ret / 1000;
-+
-+	ret = clk_prepare_enable(info->pclk);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to enable pclk\n");
-+		goto err_reg_voltage;
-+	}
-+
-+	ret = clk_prepare_enable(info->clk);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to enable converter clock\n");
-+		goto err_pclk;
-+	}
-+
-+	platform_set_drvdata(pdev, indio_dev);
-+
-+	indio_dev->name = dev_name(&pdev->dev);
-+	indio_dev->dev.parent = &pdev->dev;
-+	indio_dev->dev.of_node = pdev->dev.of_node;
-+	indio_dev->info = &rockchip_saradc_iio_info;
-+	indio_dev->modes = INDIO_DIRECT_MODE;
-+
-+	indio_dev->channels = rockchip_saradc_iio_channels;
-+	indio_dev->num_channels = ARRAY_SIZE(rockchip_saradc_iio_channels);
-+
-+	ret = iio_device_register(indio_dev);
-+	if (ret)
-+		goto err_clk;
-+
-+	return 0;
-+
-+err_clk:
-+	clk_disable_unprepare(info->clk);
-+err_pclk:
-+	clk_disable_unprepare(info->pclk);
-+err_reg_voltage:
-+	regulator_disable(info->vref);
-+	return ret;
-+}
-+
-+static int rockchip_saradc_remove(struct platform_device *pdev)
-+{
-+	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
-+	struct rockchip_saradc *info = iio_priv(indio_dev);
-+
-+	iio_device_unregister(indio_dev);
-+	clk_disable_unprepare(info->clk);
-+	clk_disable_unprepare(info->pclk);
-+	regulator_disable(info->vref);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int rockchip_saradc_suspend(struct device *dev)
-+{
-+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-+	struct rockchip_saradc *info = iio_priv(indio_dev);
-+
-+	clk_disable_unprepare(info->clk);
-+	clk_disable_unprepare(info->pclk);
-+	regulator_disable(info->vref);
-+
-+	return 0;
-+}
-+
-+static int rockchip_saradc_resume(struct device *dev)
-+{
-+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-+	struct rockchip_saradc *info = iio_priv(indio_dev);
 +	int ret;
 +
-+	ret = regulator_enable(info->vref);
-+	if (ret)
-+		return ret;
-+
-+	ret = clk_prepare_enable(info->pclk);
-+	if (ret)
-+		return ret;
-+
-+	ret = clk_prepare_enable(info->clk);
-+	if (ret)
-+		return ret;
++	if (ci->transceiver) {
++		ret = phy_init(ci->transceiver);
++		if (ret) {
++			phy_exit(ci->transceiver);
++			return ret;
++		}
++		ret = phy_power_on(ci->transceiver);
++	} else {
++		ret = usb_phy_init(ci->usb_transceiver);
++	}
 +
 +	return ret;
 +}
-+#endif
 +
-+static SIMPLE_DEV_PM_OPS(rockchip_saradc_pm_ops,
-+			 rockchip_saradc_suspend, rockchip_saradc_resume);
++/**
++ * _ci_usb_phy_exit: deinitialize phy taking in account both phy and usb_phy
++ * interfaces
++ * @ci: the controller
++ */
++static void ci_usb_phy_exit(struct ci_hdrc *ci)
++{
++	if (ci->transceiver) {
++		phy_power_off(ci->transceiver);
++		phy_exit(ci->transceiver);
++	} else {
++		usb_phy_shutdown(ci->usb_transceiver);
++	}
++}
 +
-+static const struct of_device_id rockchip_saradc_match[] = {
-+	{ .compatible = "rockchip,saradc" },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, rockchip_saradc_match);
-+
-+static struct platform_driver rockchip_saradc_driver = {
-+	.probe		= rockchip_saradc_probe,
-+	.remove		= rockchip_saradc_remove,
-+	.driver		= {
-+		.name	= "rockchip-saradc",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = rockchip_saradc_match,
-+		.pm	= &rockchip_saradc_pm_ops,
-+	},
-+};
-+
-+module_platform_driver(rockchip_saradc_driver);
++/**
+  * ci_usb_phy_init: initialize phy according to different phy type
+  * @ci: the controller
+   *
+@@ -306,7 +347,7 @@ static int ci_usb_phy_init(struct ci_hdrc *ci)
+ 	case USBPHY_INTERFACE_MODE_UTMI:
+ 	case USBPHY_INTERFACE_MODE_UTMIW:
+ 	case USBPHY_INTERFACE_MODE_HSIC:
+-		ret = usb_phy_init(ci->transceiver);
++		ret = _ci_usb_phy_init(ci);
+ 		if (ret)
+ 			return ret;
+ 		hw_phymode_configure(ci);
+@@ -314,12 +355,12 @@ static int ci_usb_phy_init(struct ci_hdrc *ci)
+ 	case USBPHY_INTERFACE_MODE_ULPI:
+ 	case USBPHY_INTERFACE_MODE_SERIAL:
+ 		hw_phymode_configure(ci);
+-		ret = usb_phy_init(ci->transceiver);
++		ret = _ci_usb_phy_init(ci);
+ 		if (ret)
+ 			return ret;
+ 		break;
+ 	default:
+-		ret = usb_phy_init(ci->transceiver);
++		ret = _ci_usb_phy_init(ci);
+ 	}
+ 
+ 	return ret;
+@@ -597,21 +638,25 @@ static int ci_hdrc_probe(struct platform_device *pdev)
+ 
+ 	if (ci->platdata->phy)
+ 		ci->transceiver = ci->platdata->phy;
++	else if (ci->platdata->usb_phy)
++		ci->usb_transceiver = ci->platdata->usb_phy;
+ 	else
+-		ci->transceiver = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
++		ci->transceiver = of_phy_get(dev->of_node, 0);
+ 
+ 	if (IS_ERR(ci->transceiver)) {
+-		ret = PTR_ERR(ci->transceiver);
+ 		/*
+ 		 * if -ENXIO is returned, it means PHY layer wasn't
+ 		 * enabled, so it makes no sense to return -EPROBE_DEFER
+ 		 * in that case, since no PHY driver will ever probe.
+ 		 */
+-		if (ret == -ENXIO)
+-			return ret;
++		if (PTR_ERR(ci->transceiver) == -ENXIO)
++			return -ENXIO;
+ 
+-		dev_err(dev, "no usb2 phy configured\n");
+-		return -EPROBE_DEFER;
++		ci->usb_transceiver = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
++		if (IS_ERR(ci->usb_transceiver)) {
++			dev_err(dev, "no usb2 phy configured\n");
++			return -EPROBE_DEFER;
++		}
+ 	}
+ 
+ 	ret = ci_usb_phy_init(ci);
+@@ -718,7 +763,7 @@ static int ci_hdrc_probe(struct platform_device *pdev)
+ stop:
+ 	ci_role_destroy(ci);
+ deinit_phy:
+-	usb_phy_shutdown(ci->transceiver);
++	ci_usb_phy_exit(ci);
+ 
+ 	return ret;
+ }
+@@ -731,7 +776,7 @@ static int ci_hdrc_remove(struct platform_device *pdev)
+ 	free_irq(ci->irq, ci);
+ 	ci_role_destroy(ci);
+ 	ci_hdrc_enter_lpm(ci, true);
+-	usb_phy_shutdown(ci->transceiver);
++	ci_usb_phy_exit(ci);
+ 	kfree(ci->hw_bank.regmap);
+ 
+ 	return 0;
+diff --git a/drivers/usb/chipidea/debug.c b/drivers/usb/chipidea/debug.c
+index 9a9702773e43..23b3deed34ba 100644
+--- a/drivers/usb/chipidea/debug.c
++++ b/drivers/usb/chipidea/debug.c
+@@ -219,7 +219,9 @@ int ci_otg_show(struct seq_file *s, void *unused)
+ 	fsm = &ci->fsm;
+ 
+ 	/* ------ State ----- */
+-		usb_otg_state_string(ci->transceiver->otg.state));
++	if (ci->usb_transceiver)
++		seq_printf(s, "OTG state: %s\n\n",
++			usb_otg_state_string(ci->usb_transceiver->otg->state));
+ 
+ 	/* ------ State Machine Variables ----- */
+ 	seq_printf(s, "a_bus_drop: %d\n", fsm->a_bus_drop);
+diff --git a/drivers/usb/chipidea/host.c b/drivers/usb/chipidea/host.c
+index fc7541c906a2..29fc4a3ba5a8 100644
+--- a/drivers/usb/chipidea/host.c
++++ b/drivers/usb/chipidea/host.c
+@@ -59,7 +59,10 @@ static int host_start(struct ci_hdrc *ci)
+ 	hcd->has_tt = 1;
+ 
+ 	hcd->power_budget = ci->platdata->power_budget;
+-	hcd->usb_phy = ci->transceiver;
++	if (ci->transceiver)
++		hcd->phy = ci->transceiver;
++	else
++		hcd->usb_phy = ci->usb_transceiver;
+ 
+ 	ehci = hcd_to_ehci(hcd);
+ 	ehci->caps = ci->hw_bank.cap;
+@@ -85,13 +88,15 @@ static int host_start(struct ci_hdrc *ci)
+ 	if (ret) {
+ 		goto disable_reg;
+ 	} else {
+-		struct usb_otg *otg = ci->transceiver->otg;
++		if (ci->usb_transceiver) {
++			struct usb_otg *otg = ci->usb_transceiver->otg;
++			if (otg) {
++				otg->host = &hcd->self;
++				hcd->self.otg_port = 1;
++			}
++		}
+ 
+ 		ci->hcd = hcd;
+-		if (otg) {
+-			otg->host = &hcd->self;
+-			hcd->self.otg_port = 1;
+-		}
+ 	}
+ 
+ 	if (ci->platdata->flags & CI_HDRC_DISABLE_STREAMING)
+diff --git a/drivers/usb/chipidea/otg_fsm.c b/drivers/usb/chipidea/otg_fsm.c
+index d8490e758a74..ebf48ed55ac5 100644
+--- a/drivers/usb/chipidea/otg_fsm.c
++++ b/drivers/usb/chipidea/otg_fsm.c
+@@ -788,10 +788,12 @@ int ci_hdrc_otg_fsm_init(struct ci_hdrc *ci)
+ 		return -ENOMEM;
+ 	}
+ 
+-	otg->usb_phy = ci->transceiver;
++	if (ci->transceiver)
++		otg->phy = ci->transceiver;
++	else
++		otg->usb_phy = ci->usb_transceiver;
+ 	otg->gadget = &ci->gadget;
+ 	ci->fsm.otg = otg;
+-	ci->transceiver->otg = ci->fsm.otg;
+ 	ci->fsm.power_up = 1;
+ 	ci->fsm.id = hw_read_otgsc(ci, OTGSC_ID) ? 1 : 0;
+ 	ci->fsm.otg->state = OTG_STATE_UNDEFINED;
+diff --git a/drivers/usb/chipidea/udc.c b/drivers/usb/chipidea/udc.c
+index 9d2b673f90e3..a67c58117e42 100644
+--- a/drivers/usb/chipidea/udc.c
++++ b/drivers/usb/chipidea/udc.c
+@@ -1519,8 +1519,8 @@ static int ci_udc_vbus_draw(struct usb_gadget *_gadget, unsigned ma)
+ {
+ 	struct ci_hdrc *ci = container_of(_gadget, struct ci_hdrc, gadget);
+ 
+-	if (ci->transceiver)
+-		return usb_phy_set_power(ci->transceiver, ma);
++	if (ci->usb_transceiver)
++		return usb_phy_set_power(ci->usb_transceiver, ma);
+ 	return -ENOTSUPP;
+ }
+ 
+diff --git a/include/linux/usb/chipidea.h b/include/linux/usb/chipidea.h
+index bbe779f640be..a0285623b9c1 100644
+--- a/include/linux/usb/chipidea.h
++++ b/include/linux/usb/chipidea.h
+@@ -13,7 +13,9 @@ struct ci_hdrc_platform_data {
+ 	/* offset of the capability registers */
+ 	uintptr_t	 capoffset;
+ 	unsigned	 power_budget;
+-	struct usb_phy	*phy;
++	struct phy	*phy;
++	/* old usb_phy interface */
++	struct usb_phy	*usb_phy;
+ 	enum usb_phy_interface phy_mode;
+ 	unsigned long	 flags;
+ #define CI_HDRC_REGS_SHARED		BIT(0)
 -- 
-1.9.0
-
+1.9.1
 
