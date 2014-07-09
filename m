@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932157AbaGIMmb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 08:42:31 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:57041 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932094AbaGIMm1 convert rfc822-to-8bit (ORCPT
+	id S932191AbaGIMmp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 08:42:45 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:53644 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932094AbaGIMmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 08:42:27 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 2/2] ACPI/Wakup: Enable button wakeup GPEs if these GPEs have associated GPE methods.
-Date: Wed, 09 Jul 2014 15:00:32 +0200
-Message-ID: <1566864.H9h1bMoShf@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53BCB23A.1070304@intel.com>
-References: <1404802679-24019-1-git-send-email-tianyu.lan@intel.com> <3011365.oYtXFx0LHa@vostro.rjw.lan> <53BCB23A.1070304@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+	Wed, 9 Jul 2014 08:42:43 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-d9-53bd38c164b2
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Vikas Sajjan <vikas.sajjan@samsung.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] ARM: EXYNOS: add Exynos3250 PMU support
+Date: Wed, 09 Jul 2014 14:42:25 +0200
+Message-id: <1640080.ftkUyQnINn@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <2933359.zRXLcIi25R@amdc1032>
+References: <2933359.zRXLcIi25R@amdc1032>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsVy+t9jQd2DFnuDDabM07C4/uU5q0Xvgqts
+	Fmeb3rBbbHp8jdXi8q45bBYzzu9jsli09Qu7xfoZr1ksbj7bzuTA6bF5Sb1H35ZVjB6fN8kF
+	MEdx2aSk5mSWpRbp2yVwZXzecIy94Cp7xdOOPsYGxhtsXYycHBICJhLTZn1jgrDFJC7cWw8U
+	5+IQEpjOKLFvy15WCKeFSWLz159gHWwCVhIT21cxgtgiAmoSPYu3MoIUMQtsY5Jo3voabJSw
+	gL3E+fdzwIpYBFQlTq3ZyQJi8wpoSixvuwc2SFTAU2LH9pVANgcHp4CWxN5lPiBhIaCSN+ve
+	MkKUC0r8mHwPrJVZQF5i3/6prBC2lsT6nceZJjAKzEJSNgtJ2SwkZQsYmVcxiqYWJBcUJ6Xn
+	GuoVJ+YWl+al6yXn525iBAf5M6kdjCsbLA4xCnAwKvHwKvDsCRZiTSwrrsw9xCjBwawkwmts
+	ujdYiDclsbIqtSg/vqg0J7X4EKM0B4uSOO+BVutAIYH0xJLU7NTUgtQimCwTB6dUA2NN1rlF
+	nHaWkUGLTje187PIPfOL/tj+bV2yoegMlx0eKz7qX/nN4TMh21X2s9rFN8WP6ypX676ZGMQv
+	F/LxxovCve1dwstE1dwu/DB44NrIscY+X/bUB/30n7v/svY9Ypnfqs4uFHzx1JK5y3erskvq
+	f7/todO+4CLnBIvbRS1TXH9e0n37SFGJpTgj0VCLuag4EQBlsnBcbgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 09, 2014 11:08:42 AM Lan Tianyu wrote:
-> On 2014年07月08日 21:26, Rafael J. Wysocki wrote:
-> > On Tuesday, July 08, 2014 02:57:58 PM Lan Tianyu wrote:
-> >> The button wakeup GPEs are enabled unconditionally in the current world by
-> >> commit 2a5d24(ACPI / Wakeup: Enable button GPEs unconditionally during
-> >> initialization). Because button's GPE methods needs to be run to clear
-> >> GPE status on some machines when there is GPE interrupt. If not, it will
-> >> cause machines resume immediately after being suspended since GPE status
-> >> isn't cleared correctly.
-> >>
-> >> But if there is no GPE method for button wakeup GPE, these GPEs should not
-> >> be enabled since nothing needs to be done when they are triggered and this
-> >> also causes LID GPE storm on Lenovo Ideapad y560p.
-> >>
-> >> This patch is to check Button GPE method and enable it if there is associated
-> >> GPE method.
-> > 
-> > Part of the problem is that we call acpi_setup_gpe_for_wake() for buttons too
-> > and it sets ACPI_GPE_DISPATCH_NOTIFY unconditionally.
+On Wednesday, July 09, 2014 02:39:14 PM Bartlomiej Zolnierkiewicz wrote:
+> This is needed for suspend/resume and cpuidle AFTR mode support.
 > 
-> Yes, this is why the GPE wasn't disabled by CA. From my opinion,
-> original reason of enabling button wakeup GPE in the runtime is that it
-> may have associated GPE method and the method will notify button driver
-> and clear some hardware status. But if it didn't have GPE method, I
-> don't why we need to enable the GPE.
+> Cc: Pankaj Dubey <pankaj.dubey@samsung.com>
+> Cc: Vikas Sajjan <vikas.sajjan@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> ---
 
-I think you're right, but "is there a handler method for that GPE present?"
-is a bit too low-level question to ask from outside of ACPICA.  We should be
-asking "is there any kind of handling registered for it?" if anything, but in
-my opinion the cleanest approach would be to modify acpi_enable_gpe() to
-return an error code if there's no handler/method/notify for the GPE in
-question.
+Changelog for v2:
 
-The patch I attached to the BZ entry doesn't do that just yet, because I'm
-wondering whether or not it will make the ACPICA's auto-disabling trigger. :-)
+- rebased on top of next-20140708 and
+  http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32410.html
+  http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg33660.html
+  http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg33675.html
 
-Rafael
+  this patchset also applies fine after/before Exynos5800 PMU support:
+  http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg33835.html
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
