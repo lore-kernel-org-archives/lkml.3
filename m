@@ -1,115 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175AbaGIHvH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 03:51:07 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:41452 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755115AbaGIHvD (ORCPT
+	id S1754812AbaGIHxL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 03:53:11 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:56908 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751450AbaGIHxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 03:51:03 -0400
-Message-ID: <53BCF463.3000604@linaro.org>
-Date: Wed, 09 Jul 2014 08:50:59 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 9 Jul 2014 03:53:10 -0400
+Date: Wed, 9 Jul 2014 11:52:52 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [PATCH RFC 0/5] Virtual Memory Resource Controller for cgroups
+Message-ID: <20140709075252.GB31067@esperanza>
+References: <cover.1404383187.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: a case for a common efuse API?
-References: <53BC4DD7.20906@codeaurora.org>
-In-Reply-To: <53BC4DD7.20906@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <cover.1404383187.git.vdavydov@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 08/07/14 21:00, Stephen Boyd wrote:
+On Thu, Jul 03, 2014 at 04:48:16PM +0400, Vladimir Davydov wrote:
 > Hi,
->
-> On MSM chips we have some efuses (called qfprom) where we store things
-> like calibration data, speed bins, etc. We need to read out data from
-> the efuses in various drivers like the cpufreq, thermal, etc. This
-> essentially boils down to a bunch of readls on the efuse from a handful
-> of different drivers. In devicetree this looks a little odd because
-> these drivers end up having an extra reg property (or two) that points
-> to a register in the efuse and some length, i.e you see this:
->
-> 	thermal-sensor@34000 {
-> 		compatible = "sensor";
-> 		reg = <0x34000 0x1000>, <0x10018 0xc>;
-> 		reg-names = "sensor", "efuse_calib";
-> 	}
->
->
-> I imagine in DT we want something more like this:
->
-> 	efuse: efuse@10000 {
-> 		compatible = "efuse";
-> 		reg = <0x10000 0x1000>;
-> 	}
->
-> 	thermal-sensor@34000 {
-> 		compatible = "sensor";
-> 		reg = <0x34000 0x1000>;
-> 		efuse = <&efuse 0x18>;
-> 	}
->
->
-> Where we can point to the efuse and give an address offset. From code we
-> could then call some efuse_read() function to read the sensor's
-> calibration data.
->
-> It's been suggested that we use syscon for this, but I wonder if that is
-> the right thing to do. With a syscon you're usually writing some
-> registers that got lumped together with other registers that aren't
-> directly related to your driver. It doesn't seem like syscon is made for
-> reading fuses or other things like eeproms. Maybe I'm wrong though.
->
+> 
+> Typically, when a process calls mmap, it isn't given all the memory pages it
+> requested immediately. Instead, only its address space is grown, while the
+> memory pages will be actually allocated on the first use. If the system fails
+> to allocate a page, it will have no choice except invoking the OOM killer,
+> which may kill this or any other process. Obviously, it isn't the best way of
+> telling the user that the system is unable to handle his request. It would be
+> much better to fail mmap with ENOMEM instead.
+> 
+> That's why Linux has the memory overcommit control feature, which accounts and
+> limits VM size that may contribute to mem+swap, i.e. private writable mappings
+> and shared memory areas. However, currently it's only available system-wide,
+> and there's no way of avoiding OOM in cgroups.
+> 
+> This patch set is an attempt to fill the gap. It implements the resource
+> controller for cgroups that accounts and limits address space allocations that
+> may contribute to mem+swap.
+> 
+> The interface is similar to the one of the memory cgroup except it controls
+> virtual memory usage, not actual memory allocation:
+> 
+>   vm.usage_in_bytes            current vm usage of processes inside cgroup
+>                                (read-only)
+> 
+>   vm.max_usage_in_bytes        max vm.usage_in_bytes, can be reset by writing 0
+> 
+>   vm.limit_in_bytes            vm.usage_in_bytes must be <= vm.limite_in_bytes;
+>                                allocations that hit the limit will be failed
+>                                with ENOMEM
+> 
+>   vm.failcnt                   number of times the limit was hit, can be reset
+>                                by writing 0
+> 
+> In future, the controller can be easily extended to account for locked pages
+> and shmem.
 
-I remember there was a similar discussion some time last year about 
-this:  https://lkml.org/lkml/2013/7/5/361
+Any thoughts on this?
 
-
-> Using syscon would probably work if we could add a way to point to
-> offsets within the syscon node (the 0x18 part in the example). In my
-> specific use-case the calibration data may have different offsets
-> depending on which SoC the hardware is instantiated in so we could also
-> make syscon work if the compatible field for the sensor node indicates
-> which SoC it is.
-
-Something like this:
-
-	efuse: efuse@10000 {
-  		compatible = "efuse", "syscon";
-  		reg = <0x10000 0x1000>;
-  	}
-
-  	thermal-sensor@34000 {
-  		compatible = "sensor", "soc-xyz";
-  		reg = <0x34000 0x1000>;
-		syscon = <&efuse>;
-  	}
-
-sensor driver could add of_data for the soc-xyz which would contain soc 
-specific efuse offsets.
-
-
---srini
-
->
-> I added Tegra folks because I see that on Tegra this hardware is exposed
-> via an SoC specific API, tegra_fuse_readl(), and an associated driver in
-> drivers/misc/fuse/tegra/. Unfortunately I don't see any users of the API
-> outside of the speedo code in the same directory and the sysfs bin
-> attribute that may or may not be in use by some userspace code.
->
+Thanks.
