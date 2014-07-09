@@ -1,104 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756465AbaGIWRr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 18:17:47 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:39370 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752795AbaGIWRp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 18:17:45 -0400
+	id S1756623AbaGIWT0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 18:19:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61794 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756445AbaGIWTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 18:19:23 -0400
+Date: Thu, 10 Jul 2014 00:18:43 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org
+Subject: Re: perf: Add support for full Intel event lists v7
+Message-ID: <20140709221843.GA20938@krava.redhat.com>
+References: <1403910964-11017-1-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-In-Reply-To: <1404942892-18323-1-git-send-email-ffilzlnx@mindspring.com>
-References: <1404942892-18323-1-git-send-email-ffilzlnx@mindspring.com>
-Date: Wed, 9 Jul 2014 18:17:44 -0400
-Message-ID: <CAHQdGtSUwScEdUeKT1w+-ynqNz-e1=YvDBtdu_k=_6yndFZSVQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] Fix permission checking by NFS client for open-create
- with mode 000
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: "Frank S. Filz" <ffilzlnx@mindspring.com>
-Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403910964-11017-1-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Frank
+On Fri, Jun 27, 2014 at 04:15:55PM -0700, Andi Kleen wrote:
+> Should be ready for merge now. Please consider.
+> 
+> [v2: Review feedback addressed and some minor improvements]
+> [v3: More review feedback addressed and handle test failures better.
+> Ported to latest tip/core.]
+> [v4: Addressed Namhyung's feedback]
+> [v5: Rebase to latest tree. Minor description update.]
+> [v6: Rebase. Add acked by from Namhyung and address feedback. Some minor
+> fixes. Should be good to go now I hope. The period patch was dropped,
+> as that is already handled. I added an extra patch for a --quiet argument
+> for perf list]
+> [v7: Just rebase to latest tip/core. Should be ready to merge.]
 
-On Wed, Jul 9, 2014 at 5:54 PM, Frank S. Filz <ffilzlnx@mindspring.com> wrote:
-> From: "Frank S. Filz" <ffilzlnx@mindspring.com>
->
-> The NFS v4 client sends a COMPOUND with an OPEN and an ACCESS.
->
-> The ACCESS is required to verify an open for read is actually
-> allowed because RFC 3530 indicates OPEN for read only must succeed
-> for an execute only file.
->
-> The old code expected to have read access if the requested access
-> was O_RDWR.
->
-> We can expect the OPEN to properly permission check as long as
-> the open is O_WRONLY or O_RDWR.
->
-> Signed-off-by: Frank S. Filz <ffilzlnx@mindspring.com>
-> ---
->  fs/nfs/nfs4proc.c | 25 ++++++++++++++++++++-----
->  1 file changed, 20 insertions(+), 5 deletions(-)
->
-> diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-> index 4bf3d97..9742054 100644
-> --- a/fs/nfs/nfs4proc.c
-> +++ b/fs/nfs/nfs4proc.c
-> @@ -1966,15 +1966,30 @@ static int nfs4_opendata_access(struct rpc_cred *cred,
->                 return 0;
->
->         mask = 0;
-> -       /* don't check MAY_WRITE - a newly created file may not have
-> -        * write mode bits, but POSIX allows the creating process to write.
-> -        * use openflags to check for exec, because fmode won't
-> -        * always have FMODE_EXEC set when file open for exec. */
-> +       /* Don't trust the permission check on OPEN if open for exec or for
-> +        * read only. Since FMODE_EXEC doesn't go across the wire, the server
-> +        * has no way to distinguish between an open to read an executable file
-> +        * and an open to read a readable file. Write access is properly checked
-> +        * and permission SHOULD always be granted if the file was created as a
-> +        * result of this OPEN, no matter what mode the file was created with.
-> +        *
-> +        * NOTE: If the case of a OPEN CREATE READ-ONLY with a mode that does
-> +        *       not allow read access, this test will produce an incorrect
-> +        *       EACCES error.
-> +        */
->         if (openflags & __FMODE_EXEC) {
->                 /* ONLY check for exec rights */
->                 mask = MAY_EXEC;
-> -       } else if (fmode & FMODE_READ)
-> +       } else if (!(fmode & FMODE_WRITE)) {
-> +               /* In case the file was execute only, check for read permission
-> +                * ONLY if write access was not requested. It is expected that
-> +                * an OPEN for write will fail if the file is execute only.
-> +                * Note that if the file was newly created, the fmode SHOULD
-> +                * include FMODE_WRITE, especially if the file will be created
-> +                * with a restrictive mode.
-> +                */
->                 mask = MAY_READ;
-> +       }
+please remove 'vX' suffixes from patch subjects
 
-This looks wrong. AFAICS it will allow you to open an existing file
-which has -wx permissions (i.e. no read permissions) for O_RDWR. That
-should not be permitted under POSIX rules.
-
->
->         cache.cred = cred;
->         cache.jiffies = jiffies;
-> --
-> 1.8.3.1
->
-
-
-
--- 
-Trond Myklebust
-
-Linux NFS client maintainer, PrimaryData
-
-trond.myklebust@primarydata.com
+jirka
