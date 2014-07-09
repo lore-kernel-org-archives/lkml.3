@@ -1,96 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756658AbaGIWtd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 18:49:33 -0400
-Received: from ozlabs.org ([103.22.144.67]:57414 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755274AbaGIWtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 18:49:31 -0400
-Date: Thu, 10 Jul 2014 08:49:11 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Madhusudanan Kandasamy <kmadhu@linux.vnet.ibm.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] powerpc: Fail remap_4k_pfn() if PFN doesn't fit inside
- PTE
-Message-ID: <20140710084911.22cb58d4@canb.auug.org.au>
-In-Reply-To: <53BD68FF.7000307@linux.vnet.ibm.com>
-References: <53BD68FF.7000307@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1756741AbaGIWua (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 18:50:30 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:55459 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753717AbaGIWu2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 18:50:28 -0400
+Date: Wed, 9 Jul 2014 15:48:50 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Hugh Dickins <hughd@google.com>, Vlastimil Babka <vbabka@suse.cz>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mm: shm: hang in shmem_fallocate
+In-Reply-To: <20140709215906.GA27323@cmpxchg.org>
+Message-ID: <alpine.LSU.2.11.1407091518530.13001@eggly.anvils>
+References: <52AE7B10.2080201@oracle.com> <52F6898A.50101@oracle.com> <alpine.LSU.2.11.1402081841160.26825@eggly.anvils> <52F82E62.2010709@oracle.com> <539A0FC8.8090504@oracle.com> <alpine.LSU.2.11.1406151921070.2850@eggly.anvils> <53A9A7D8.2020703@suse.cz>
+ <alpine.LSU.2.11.1406251152450.1580@eggly.anvils> <53ABE479.3080508@suse.cz> <alpine.LSU.2.11.1406262108390.27670@eggly.anvils> <20140709215906.GA27323@cmpxchg.org>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/h1fVS2dE973m3B64ZcYvb=W"; protocol="application/pgp-signature"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/h1fVS2dE973m3B64ZcYvb=W
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed, 9 Jul 2014, Johannes Weiner wrote:
+> On Thu, Jun 26, 2014 at 10:36:20PM -0700, Hugh Dickins wrote:
+> > Hannes, a question for you please, I just could not make up my mind.
+> > In mm/truncate.c truncate_inode_pages_range(), what should be done
+> > with a failed clear_exceptional_entry() in the case of hole-punch?
+> > Is that case currently depending on the rescan loop (that I'm about
+> > to revert) to remove a new page, so I would need to add a retry for
+> > that rather like the shmem_free_swap() one?  Or is it irrelevant,
+> > and can stay unchanged as below?  I've veered back and forth,
+> > thinking first one and then the other.
+> 
+> I realize you have given up on changing truncate.c in the meantime,
+> but I'm still asking myself about the swap retry case: why retry for
+> swap-to-page changes, yet not for page-to-page changes?
+> 
+> In case faults are disabled through i_size, concurrent swapin could
+> still turn swap entries into pages, so I can see the need to retry.
+> There is no equivalent for shadow entries, though, and they can only
+> be turned through page faults, so no retry necessary in that case.
+> 
+> However, you explicitely mentioned the hole-punch case above: if that
+> can't guarantee the hole will be reliably cleared under concurrent
+> faults, I'm not sure why it would put in more effort to free it of
+> swap (or shadow) entries than to free it of pages.
+> 
+> What am I missing?
 
-Hi Madhusudanan,
+In dropping the pincer effect, I am conceding that data written (via
+mmap) racily into the hole, behind the punching cursor, between the
+starting and the ending of the punch operation, may be allowed to
+remain.  It will not often happen (given the two loops), but it might.
 
-On Wed, 09 Jul 2014 21:38:31 +0530 Madhusudanan Kandasamy <kmadhu@linux.vne=
-t.ibm.com> wrote:
->
-> diff --git a/arch/powerpc/include/asm/pte-hash64-64k.h b/arch/powerpc/inc=
-lude/asm/pte-hash64-64k.h
-> index d836d94..10af7f1 100644
-> --- a/arch/powerpc/include/asm/pte-hash64-64k.h
-> +++ b/arch/powerpc/include/asm/pte-hash64-64k.h
-> @@ -74,8 +74,15 @@
->  #define pte_pagesize_index(mm, addr, pte)	\
->  	(((pte) & _PAGE_COMBO)? MMU_PAGE_4K: MMU_PAGE_64K)
->=20
-> +static inline int bad_4k_pfn(void)
-> +{
-> +	WARN_ON(1);
-> +	return -EINVAL;
-> +}
-> +
->  #define remap_4k_pfn(vma, addr, pfn, prot)				\
-> -	remap_pfn_range((vma), (addr), (pfn), PAGE_SIZE,		\
-> -			__pgprot(pgprot_val((prot)) | _PAGE_4K_PFN))
-> +	((pfn >=3D (1UL << (64 - PTE_RPN_SHIFT))) ? bad_4k_pfn() :	\
-> +		remap_pfn_range((vma), (addr), (pfn), PAGE_SIZE,	\
-> +			__pgprot(pgprot_val((prot)) | _PAGE_4K_PFN)))
->=20
->  #endif	/* __ASSEMBLY__ */
+But I insist that all data in the hole at the starting of the punch
+operation must be removed by the ending of the punch operation (though
+of course, given the paragraph above, identical data might be written
+in its place concurrently, via mmap, if the application chooses).
 
-WARN_ON() returns the value it is passed, so no helper is needed:
+I think you probably agree with both of those propositions.
 
- #define remap_4k_pfn(vma, addr, pfn, prot)				\
--	remap_pfn_range((vma), (addr), (pfn), PAGE_SIZE,		\
--			__pgprot(pgprot_val((prot)) | _PAGE_4K_PFN))
-+	WARN_ON(((pfn >=3D (1UL << (64 - PTE_RPN_SHIFT)))) ? -EINVAL :	\
-+		remap_pfn_range((vma), (addr), (pfn), PAGE_SIZE,	\
-+			__pgprot(pgprot_val((prot)) | _PAGE_4K_PFN)))
+As the punching cursor moves along the radix_tree, it gathers page
+pointers and swap entries (the emply slots are already skipped at
+the level below; and tmpfs takes care that there is no instant in
+switching between page and swap when the slot appears empty).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Dealing with the page pointers is easy: a reference is already held,
+then shmem_undo_range takes the page lock which prevents swizzling
+to swap, then truncates that page out of the tree.
 
---Sig_/h1fVS2dE973m3B64ZcYvb=W
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+But dealing with swap entries is slippery: there is no reference
+held, and no lock to prevent swizzling to page (outside of the
+tree_lock taken in shmem_free_swap).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+So, as I see it, the page lock ensures that any pages present at
+the starting of the punch operation will be removed, without any
+need to go back and retry.  But a swap entry present at the starting
+of the punch operation might be swizzled back to page (and, if we
+imagine massive preemption, even back to swap again, and to page
+again, etc) at the wrong moment: so for swap we do need to retry.
 
-iQIcBAEBCAAGBQJTvcb3AAoJEMDTa8Ir7ZwVlaIQAJBoBqF3IYhUMKxcoWhAmFXO
-huw/jlZF4sAFPjGintk8dk9PRoGXSwbQ/jcBJtdrFI3WDjkd4DVuClQ+bcw7nK3Z
-yJ5iam3EI5VT7e6wfymEtXSpKu4pBYT/nQVeWVzzgVM6hGo+i2np06xTQKbzWOpD
-paYvNzdiEkUqpaQUmH8d+YMKphYn0Fspye5jSQFyOeevKWx2y7y0ntOY2Ay3DE1u
-PSuYwpusaOKTKu6pRtnsnQWuRqigix37SDJquZ0ws9DO3A2DNVMPzW7qP2CMvCGX
-wmt2JoCLKngj2j0IyKcTRbIqAgh7tPBPhNiBvsBc96QdGH0AzmjJHj2FAovC1fZ8
-BWxgC6/QDt5TghG1+UVik/FdIP0xymUuwnagkA2kTEanOwVfk3EwSgHWQf4tBSl1
-5vagNJCY/pKiK1VQhCEmPGV3YLmyYwkKBNh5pDYi5cFTBpPOgCptEkzKU2aujp5B
-D3r1f29+GsUcJViMKuHQ7a9hb2LKZpmzL+Pm0tdLI2QBIOzMraArWcvL/zcx7apH
-jbWmbcfqtF5YjkKrgau6EiQoTVF+S1xGukLWpcTuMrb2K+3BOyLkfFDvfTS5s7PI
-RLR6JrDQ2gzqWN0rMQtbHq0ux6NVDz9IE4uYA/gkmviPdNQCTTzqsNHK1nYMCqSe
-+JlbkihkpA9gV8y7ypBR
-=z5JH
------END PGP SIGNATURE-----
+(What I said there is not quite correct: that swap would actually
+have to be a locked page at the time when the first loop meets it.)
 
---Sig_/h1fVS2dE973m3B64ZcYvb=W--
+Does that make sense?
+
+Hugh
