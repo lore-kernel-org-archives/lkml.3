@@ -1,172 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755921AbaGINk0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 09:40:26 -0400
-Received: from mout.gmx.com ([74.208.4.201]:57191 "EHLO mout.gmx.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753076AbaGINkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 09:40:24 -0400
-Date: Wed, 9 Jul 2014 19:09:58 +0530 (IST)
-From: Govindarajulu Varadarajan <_govind@gmx.com>
-X-X-Sender: gvaradar@ws.cisco
-To: Mugunthan V N <mugunthanvnm@ti.com>
-cc: netdev@vger.kernel.org, davem@davemloft.net, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [net-next PATCH v2 3/3] drivers: net: cpsw: Add support for
- multicast/broadcast rate limit
-In-Reply-To: <1404890050-4020-4-git-send-email-mugunthanvnm@ti.com>
-Message-ID: <alpine.LNX.2.03.1407091904170.16937@ws.cisco>
-References: <1404890050-4020-1-git-send-email-mugunthanvnm@ti.com> <1404890050-4020-4-git-send-email-mugunthanvnm@ti.com>
-User-Agent: Alpine 2.03 (LNX 1266 2009-07-14)
+	id S1755553AbaGINoc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 09:44:32 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39824 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753076AbaGINoa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 09:44:30 -0400
+Date: Wed, 9 Jul 2014 14:40:50 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
+        Joerg Roedel <joro@8bytes.org>, Cho KyongHo <pullip.cho@samsung.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Olav Haugan <ohaugan@codeaurora.org>,
+        Varun Sethi <varun.sethi@freescale.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] devicetree: Add generic IOMMU device tree bindings
+Message-ID: <20140709134050.GN9485@arm.com>
+References: <1404487757-18829-1-git-send-email-thierry.reding@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
-X-Provags-ID: V03:K0:xyRg8dcDB4lJQR5UJzpYjEKTYC79fc2EeRrtp7HkFA9vUrCr7cu
- BFFDznLIKruL8HsCx9SbxLN2FLONkaBacZ5nyh1DmDPbyvQRNdI7Dtybt/RKhTm+3xms2qP
- LCIcFn3swEHvS66N3sWfdcdOYXro5nZQUaRJJMoH31D6xtyFna3KNUzLJWpei6O+fFgdYSQ
- dj9WuoFsc7qsMklIzi0JA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404487757-18829-1-git-send-email-thierry.reding@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 04, 2014 at 04:29:17PM +0100, Thierry Reding wrote:
+> From: Thierry Reding <treding@nvidia.com>
+> 
+> This commit introduces a generic device tree binding for IOMMU devices.
+> Only a very minimal subset is described here, but it is enough to cover
+> the requirements of both the Exynos System MMU and Tegra SMMU as
+> discussed here:
+> 
+>     https://lkml.org/lkml/2014/4/27/346
+> 
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
 
+  Acked-by: Will Deacon <will.deacon@arm.com>
 
-On Wed, 9 Jul 2014, Mugunthan V N wrote:
+I would like to move the ARM SMMU driver over to this for 3.18, if possible.
+One use-case there is the ability to describe groups of masters behind a
+multi-master IOMMU but which must be part of the same domain (i.e. an
+iommu_group). This is useful for presenting devices to a guest with a
+virtual SMMU, where the physical devices share a stage-2 context.
 
-> Add support for multicast/broadcast rate limit feature via ethtool coalesce.
->
-> Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
-> ---
-> drivers/net/ethernet/ti/cpsw.c | 80 ++++++++++++++++++++++++++++++++++++++++--
-> 1 file changed, 78 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
-> index a6117e6..2a984e6 100644
-> --- a/drivers/net/ethernet/ti/cpsw.c
-> +++ b/drivers/net/ethernet/ti/cpsw.c
-> @@ -403,6 +403,8 @@ struct cpsw_priv {
-> 	bool irq_enabled;
-> 	struct cpts *cpts;
-> 	u32 emac_port;
-> +	u32 rx_max_mcast;
-> +	u32 rx_max_bcast;
-> };
->
-> struct cpsw_stats {
-> @@ -871,11 +873,13 @@ static int cpsw_get_coalesce(struct net_device *ndev,
-> 	struct cpsw_priv *priv = netdev_priv(ndev);
->
-> 	coal->rx_coalesce_usecs = priv->coal_intvl;
-> +	coal->rx_max_mcast = priv->rx_max_mcast;
-> +	coal->rx_max_bcast = priv->rx_max_bcast;
-> 	return 0;
-> }
->
-> -static int cpsw_set_coalesce(struct net_device *ndev,
-> -				struct ethtool_coalesce *coal)
-> +static int cpsw_set_coalesce_usecs(struct net_device *ndev,
-> +				   struct ethtool_coalesce *coal)
-> {
-> 	struct cpsw_priv *priv = netdev_priv(ndev);
-> 	u32 int_ctrl;
-> @@ -933,6 +937,74 @@ static int cpsw_set_coalesce(struct net_device *ndev,
-> 	return 0;
-> }
->
-> +static int cpsw_set_coalesce_mcast(struct net_device *ndev,
-> +				   struct ethtool_coalesce *coal)
-> +{
-> +	struct cpsw_priv *priv = netdev_priv(ndev);
-> +	int port;
-> +
-> +	priv->rx_max_mcast = coal->rx_max_mcast;
-> +
-> +	if (priv->data.dual_emac)
-> +		port = priv->emac_port;
-> +	else
-> +		port = priv->data.active_slave;
-> +
-> +	cpsw_ale_control_set(priv->ale, port, ALE_PORT_MCAST_LIMIT,
-> +			     coal->rx_max_mcast);
-> +
-> +	dev_dbg(priv->dev, "rx_max_mcast set to %d\n", priv->rx_max_mcast);
-> +	return 0;
-> +}
-> +
-> +static int cpsw_set_coalesce_bcast(struct net_device *ndev,
-> +				   struct ethtool_coalesce *coal)
-> +{
-> +	struct cpsw_priv *priv = netdev_priv(ndev);
-> +	int port;
-> +
-> +	priv->rx_max_bcast = coal->rx_max_bcast;
-> +
-> +	if (priv->data.dual_emac)
-> +		port = priv->emac_port + 1;
-> +	else
-> +		port = priv->data.active_slave + 1;
-> +
-> +	cpsw_ale_control_set(priv->ale, port, ALE_PORT_BCAST_LIMIT,
-> +			     coal->rx_max_bcast);
+With your binding, does this simply mean determining the set of master IDs
+in the group, then describing the complete set for each master?
 
-Both cpsw_set_coalesce_bcast & cpsw_set_coalesce_mcast always return 0.
-May be you can return result of cpsw_ale_control_set()?
-
-> +
-> +	dev_dbg(priv->dev, "rx_max_mcast set to %d\n", priv->rx_max_bcast);
-> +	return 0;
-> +}
-> +
-> +static int cpsw_set_coalesce(struct net_device *ndev,
-> +			     struct ethtool_coalesce *coal)
-> +{
-> +	int ret = -EINVAL;
-> +
-> +	if (coal->rx_coalesce_usecs) {
-> +		ret = cpsw_set_coalesce_usecs(ndev, coal);
-> +		if (ret) {
-> +			dev_err(&ndev->dev, "set rx-usecs failed\n");
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	ret = cpsw_set_coalesce_mcast(ndev, coal);
-> +	if (ret) {
-> +		dev_err(&ndev->dev, "set coalesce rx-max-mcast failed\n");
-> +		return ret;
-> +	}
-
-So that ret check here will be meaningful.
-
-thanks
-> +
-> +	ret = cpsw_set_coalesce_bcast(ndev, coal);
-> +	if (ret) {
-> +		dev_err(&ndev->dev, "set coalesce rx-max-bcast failed\n");
-> +		return ret;
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> static int cpsw_get_sset_count(struct net_device *ndev, int sset)
-> {
-> 	switch (sset) {
-> @@ -1227,6 +1299,10 @@ static int cpsw_ndo_open(struct net_device *ndev)
-> 		/* enable statistics collection only on all ports */
-> 		__raw_writel(0x7, &priv->regs->stat_port_en);
->
-> +		/* Enable rate limit feature in the switch for rx only */
-> +		cpsw_ale_control_set(priv->ale, 0, ALE_RATE_LIMIT, 1);
-> +		cpsw_ale_control_set(priv->ale, 0, ALE_RATE_LIMIT_TX, 0);
-> +
-> 		if (WARN_ON(!priv->data.rx_descs))
-> 			priv->data.rx_descs = 128;
->
-> -- 
-> 2.0.0.390.gcb682f8
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Will
