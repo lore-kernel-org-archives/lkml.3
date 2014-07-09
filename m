@@ -1,167 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700AbaGIDzH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 23:55:07 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:33195 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753942AbaGIDzF (ORCPT
+	id S1754567AbaGIDze (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 23:55:34 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:41394 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753537AbaGIDzd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 23:55:05 -0400
-Message-ID: <53BCBD0E.2070609@linux.vnet.ibm.com>
-Date: Wed, 09 Jul 2014 09:24:54 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 8 Jul 2014 23:55:33 -0400
+Message-ID: <53BCBD2E.6010203@ozlabs.ru>
+Date: Wed, 09 Jul 2014 13:55:26 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>
-CC: Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>
-Subject: Re: [PATCH v3 01/12] sched: fix imbalance flag reset
-References: <1404144343-18720-1-git-send-email-vincent.guittot@linaro.org> <1404144343-18720-2-git-send-email-vincent.guittot@linaro.org> <53BB61E9.80200@linux.vnet.ibm.com> <CAKfTPtA8BVPtRRLzomqnGp7_uaSbFYmFTrrt4fpQTOb7qyjddg@mail.gmail.com>
-In-Reply-To: <CAKfTPtA8BVPtRRLzomqnGp7_uaSbFYmFTrrt4fpQTOb7qyjddg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Junichi Nomura <j-nomura@ce.jp.nec.com>, Mike Snitzer <snitzer@redhat.com>,
+        Paul Mackerras <paulus@samba.org>
+CC: Vladimir Davydov <vdavydov@parallels.com>,
+        "bvanassche@acm.org" <bvanassche@acm.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Regression in 3.15 on POWER8 with multipath SCSI
+References: <20140630103058.GA17747@iris.ozlabs.ibm.com> <20140701193907.GA15306@redhat.com> <11AF7C027C4C02408624617A4986078401323542@BPXM12GP.gisp.nec.co.jp>
+In-Reply-To: <11AF7C027C4C02408624617A4986078401323542@BPXM12GP.gisp.nec.co.jp>
+Content-Type: text/plain; charset=KOI8-R
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070903-9332-0000-0000-00000151DAB4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vincent,
-
-On 07/08/2014 03:42 PM, Vincent Guittot wrote:
-> On 8 July 2014 05:13, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
->> On 06/30/2014 09:35 PM, Vincent Guittot wrote:
->>> The imbalance flag can stay set whereas there is no imbalance.
->>>
->>> Let assume that we have 3 tasks that run on a dual cores /dual cluster system.
->>> We will have some idle load balance which are triggered during tick.
->>> Unfortunately, the tick is also used to queue background work so we can reach
->>> the situation where short work has been queued on a CPU which already runs a
->>> task. The load balance will detect this imbalance (2 tasks on 1 CPU and an idle
->>> CPU) and will try to pull the waiting task on the idle CPU. The waiting task is
->>> a worker thread that is pinned on a CPU so an imbalance due to pinned task is
->>> detected and the imbalance flag is set.
->>> Then, we will not be able to clear the flag because we have at most 1 task on
->>> each CPU but the imbalance flag will trig to useless active load balance
->>> between the idle CPU and the busy CPU.
->>>
->>> We need to reset of the imbalance flag as soon as we have reached a balanced
->>> state.
->>>
->>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->>> ---
->>>  kernel/sched/fair.c | 14 +++++++++++---
->>>  1 file changed, 11 insertions(+), 3 deletions(-)
->>>
->>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->>> index d3c73122..0c48dff 100644
->>> --- a/kernel/sched/fair.c
->>> +++ b/kernel/sched/fair.c
->>> @@ -6615,10 +6615,8 @@ more_balance:
->>>               if (sd_parent) {
->>>                       int *group_imbalance = &sd_parent->groups->sgc->imbalance;
->>>
->>> -                     if ((env.flags & LBF_SOME_PINNED) && env.imbalance > 0) {
->>> +                     if ((env.flags & LBF_SOME_PINNED) && env.imbalance > 0)
->>>                               *group_imbalance = 1;
->>> -                     } else if (*group_imbalance)
->>> -                             *group_imbalance = 0;
->>>               }
->>>
->>>               /* All tasks on this runqueue were pinned by CPU affinity */
->>> @@ -6703,6 +6701,16 @@ more_balance:
->>>       goto out;
->>>
->>>  out_balanced:
->>> +     /*
->>> +      * We reach balance although we may have faced some affinity
->>> +      * constraints. Clear the imbalance flag if it was set.
->>> +      */
->>> +     if (sd_parent) {
->>> +             int *group_imbalance = &sd_parent->groups->sgc->imbalance;
->>> +             if (*group_imbalance)
->>> +                     *group_imbalance = 0;
->>> +     }
->>> +
->>>       schedstat_inc(sd, lb_balanced[idle]);
->>>
->>>       sd->nr_balance_failed = 0;
->>>
->> I am not convinced that we can clear the imbalance flag here. Lets take
->> a simple example. Assume at a particular level of sched_domain, there
->> are two sched_groups with one cpu each. There are 2 tasks on the source
->> cpu, one of which is running(t1) and the other thread(t2) does not have
->> the dst_cpu in the tsk_allowed_mask. Now no task can be migrated to the
->> dst_cpu due to affinity constraints. Note that t2 is *not pinned, it
->> just cannot run on the dst_cpu*. In this scenario also we reach the
->> out_balanced tag right? If we set the group_imbalance flag to 0, we are
-> 
-> No we will not. If we have 2 tasks on 1 CPU in one sched_group and the
-> other group with an idle CPU,  we are not balanced so we will not go
-> to out_balanced and the group_imbalance will staty set until we reach
-> a balanced state (by migrating t1).
-
-In the example that I mention above, t1 and t2 are on the rq of cpu0;
-while t1 is running on cpu0, t2 is on the rq but does not have cpu1 in
-its cpus allowed mask. So during load balance, cpu1 tries to pull t2,
-cannot do so, and hence LBF_ALL_PINNED flag is set and it jumps to
-out_balanced. Note that there are only two sched groups at this level of
-sched domain.one with cpu0 and the other with cpu1. In this scenario we
-do not try to do active load balancing, atleast thats what the code does
-now if LBF_ALL_PINNED flag is set.
-
-> 
->> ruling out the possibility of migrating t2 to any other cpu in a higher
->> level sched_domain by saying that all is well, there is no imbalance.
->> This is wrong, isn't it?
+On 07/08/2014 08:28 PM, Junichi Nomura wrote:
+> On 07/02/14 04:39, Mike Snitzer wrote:
+>> On Mon, Jun 30 2014 at  6:30am -0400,
+>> Paul Mackerras <paulus@samba.org> wrote:
 >>
->> My point is that by clearing the imbalance flag in the out_balanced
->> case, you might be overlooking the fact that the tsk_cpus_allowed mask
->> of the tasks on the src_cpu may not be able to run on the dst_cpu in
->> *this* level of sched_domain, but can potentially run on a cpu at any
->> higher level of sched_domain. By clearing the flag, we are not
-> 
-> The imbalance flag is per sched_domain level so we will not clear
-> group_imbalance flag of other levels if the imbalance is also detected
-> at a higher level it will migrate t2
-
-Continuing with the above explanation; when LBF_ALL_PINNED flag is
-set,and we jump to out_balanced, we clear the imbalance flag for the
-sched_group comprising of cpu0 and cpu1,although there is actually an
-imbalance. t2 could still be migrated to say cpu2/cpu3 (t2 has them in
-its cpus allowed mask) in another sched group when load balancing is
-done at the next sched domain level.
-
-Elaborating on this, when cpu2 in another socket,lets say, begins load
-balancing and update_sd_pick_busiest() is called, the group with cpu0
-and cpu1 may not be picked as a potential imbalanced group. Had we not
-cleared the imbalance flag for this group, we could have balanced out t2
-to cpu2/3.
-
-Is the scenario I am describing clear?
-
-Regards
-Preeti U Murthy
-> 
-> Regards,
-> Vincent
-> 
->> encouraging load balance at that level for t2.
+>>> I have a machine on which 3.15 usually fails to boot, and 3.14 boots
+>>> every time.  The machine is a POWER8 2-socket server with 20 cores
+>>> (thus 160 CPUs), 128GB of RAM, and 7 SCSI disks connected via a
+>>> hardware-RAID-capable adapter which appears as two IPR controllers
+>>> which are both connected to each disk.  I am booting from a disk that
+>>> has Fedora 20 installed on it.
+>>>
+>>> After over two weeks of bisections, I can finally point to the commits
+>>> that cause the problems.  The culprits are:
+>>>
+>>> 3e9f1be1 dm mpath: remove process_queued_ios()
+>>> e8099177 dm mpath: push back requests instead of queueing
+>>> bcccff93 kobject: don't block for each kobject_uevent
+>>>
+>>> The interesting thing is that neither e8099177 nor bcccff93 cause
+>>> failures on their own, but with both commits in there are failures
+>>> where the system will fail to find /home on some occasions.
+>>>
+>>> With 3e9f1be1 included, the system appears to be prone to a deadlock
+>>> condition which typically causes the boot process to hang with this
+>>> message showing:
+>>>
+>>> A start job is running for Monitoring of LVM2 mirror...rogress polling
+>>>
+>>> (with a [***     ] thing before it where the asterisks move back and
+>>> forth).
+>>>
+>>> If I revert 63d832c3 ("dm mpath: really fix lockdep warning") ,
+>>> 4cdd2ad7 ("dm mpath: fix lock order inconsistency in
+>>> multipath_ioctl"), 3e9f1be1 and bcccff93, in that order, I get a
+>>> kernel that will boot every time.  The first two are later commits
+>>> that fix some problems with 3e9f1be1 (though not the problems I am
+>>> seeing).
+>>>
+>>> Can anyone see any reason why e8099177 and bcccff93 would interfere
+>>> with each other?
 >>
->> Am I missing something?
+>> No, not seeing any obvious relation.
 >>
->> Regards
->> Preeti U Murthy
+>> But even though you listed e8099177 as a culprit you didn't list it as a
+>> commit you reverted.  Did you leave e8099177 simply because attempting
+>> to revert it fails (if you don't first revert other dm-mpath.c commits)?
 >>
+>> (btw, Bart Van Assche also has issues with commit e8099177 due to hangs
+>> during cable pull testing of mpath devices -- Bart: curious to know if
+>> your cable pull tests pass if you just revert bcccff93).
 > 
+> It seems Bart's issue has gone with the attached patch:
+> http://www.redhat.com/archives/dm-devel/2014-July/msg00035.html
+> Could you try if it makes any difference on your issue?
+> 
+> The problem is dm-mpath's state machine stall due to e8099177
+> but ioctl to the device can kick the state machine running again.
+> That might be related to why bcccff93 affects the reproducibility.
+> Also, 3e9f1be1 integrates some codes into the one which is affected
+> by this problem. So it makes sense why the problem becomes easier
+> to occur with that.
+> 
+> -
+> Jun'ichi Nomura, NEC Corporation
+> 
+> 
+> pg_ready() checks the current state of the multipath and may return
+> false even if a new IO is needed to change the state.
+> 
+> OTOH, if multipath_busy() returns busy, a new IO will not be sent
+> to multipath target and the state change won't happen. That results
+> in lock up.
+> 
+> The intent of multipath_busy() is to avoid unnecessary cycles of
+> dequeue + request_fn + requeue if it is known that multipath device
+> will requeue.
+> 
+> Such situation would be:
+>   - path group is being activated
+>   - there is no path and the multipath is setup to requeue if no path
+> 
+> This patch should fix the problem introduced as a part of this commit:
+>   commit e809917735ebf1b9a56c24e877ce0d320baee2ec
+>   dm mpath: push back requests instead of queueing
+> 
+> diff --git a/drivers/md/dm-mpath.c b/drivers/md/dm-mpath.c
+> index ebfa411..d58343e 100644
+> --- a/drivers/md/dm-mpath.c
+> +++ b/drivers/md/dm-mpath.c
+> @@ -1620,8 +1620,9 @@ static int multipath_busy(struct dm_target *ti)
+>  
+>  	spin_lock_irqsave(&m->lock, flags);
+>  
+> -	/* pg_init in progress, requeue until done */
+> -	if (!pg_ready(m)) {
+> +	/* pg_init in progress or no paths available */
+> +	if (m->pg_init_in_progress ||
+> +	    (!m->nr_valid_paths && m->queue_if_no_path)) {
+>  		busy = 1;
+>  		goto out;
+>  	}
 
+This patch fixes IPR SCSI for my POWER8 box, e8099177 was the problem.
+
+
+
+
+-- 
+Alexey
