@@ -1,131 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755813AbaGIQDm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 12:03:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48005 "EHLO mx2.suse.de"
+	id S1756010AbaGIQD7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 12:03:59 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:54035 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755711AbaGIQDl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 12:03:41 -0400
-Date: Wed, 9 Jul 2014 18:03:39 +0200
-From: Alex Elder <elder@linaro.org>
-To: akpm@linux-foundation.org
-Cc: ak@linux.intel.com, bp@suse.de, jack@suse.cz, john.stultz@linaro.org,
-        pmladek@suse.cz, rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] printk: miscellaneous cleanups
-Message-ID: <20140709160337.GB6774@pathway.suse.cz>
-References: <1404911056-29064-1-git-send-email-elder@linaro.org>
+	id S1755893AbaGIQD5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 12:03:57 -0400
+Date: Wed, 9 Jul 2014 18:03:49 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: David Howells <dhowells@redhat.com>, Vivek Goyal <vgoyal@redhat.com>
+Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        x86-ml <x86@kernel.org>
+Subject: Re: [PATCH 00/17] KEYS: PKCS#7 and PE file signature checking for
+ kexec
+Message-ID: <20140709160349.GA5292@pd.tnic>
+References: <20140709151525.23074.32315.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1404911056-29064-1-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.9.1
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140709151525.23074.32315.stgit@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch contains some small cleanups to kernel/printk/printk.c.
-None of them should cause any change in behavior.
-  - When CONFIG_PRINTK is defined, parenthesize the value of LOG_LINE_MAX.
-  - When CONFIG_PRINTK is *not* defined, there is an extra LOG_LINE_MAX
-    definition; delete it.
-  - Pull an assignment out of a conditional expression in console_setup().
-  - Use isdigit() in console_setup() rather than open coding it.
-  - In update_console_cmdline(), drop a NUL-termination assignment;
-    the strlcpy() call that precedes it guarantees it's not needed.
-  - Simplify some logic in printk_timed_ratelimit().
+Hi David,
 
-Signed-off-by: Alex Elder <elder@linaro.org>
----
- kernel/printk/printk.c | 26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+On Wed, Jul 09, 2014 at 04:15:25PM +0100, David Howells wrote:
+> David Howells (16):
+>       X.509: Add bits needed for PKCS#7
+>       X.509: Export certificate parse and free functions
+>       PKCS#7: Implement a parser [RFC 2315]
+>       PKCS#7: Digest the data in a signed-data message
+>       PKCS#7: Find the right key in the PKCS#7 key list and verify the signature
+>       PKCS#7: Verify internal certificate chain
+>       PKCS#7: Find intersection between PKCS#7 message and known, trusted keys
+>       PKCS#7: Provide a key type for testing PKCS#7
+>       KEYS: X.509: Fix a spelling mistake
+>       Provide PE binary definitions
+>       pefile: Parse a PE binary to find a key and a signature contained therein
+>       pefile: Strip the wrapper off of the cert data block
+>       pefile: Parse the presumed PKCS#7 content of the certificate blob
+>       pefile: Parse the "Microsoft individual code signing" data blob
+>       pefile: Digest the PE binary and compare to the PKCS#7 data
+>       pefile: Validate PKCS#7 trust chain
+> 
+> Vivek Goyal (1):
+>       pefile: Handle pesign using the wrong OID
 
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 6f75e8a..909029e 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -45,6 +45,7 @@
- #include <linux/poll.h>
- #include <linux/irq_work.h>
- #include <linux/utsname.h>
-+#include <linux/ctype.h>
- 
- #include <asm/uaccess.h>
- 
-@@ -257,7 +258,7 @@ static u64 clear_seq;
- static u32 clear_idx;
- 
- #define PREFIX_MAX		32
--#define LOG_LINE_MAX		1024 - PREFIX_MAX
-+#define LOG_LINE_MAX		(1024 - PREFIX_MAX)
- 
- /* record buffer */
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
-@@ -1794,7 +1795,7 @@ EXPORT_SYMBOL(printk);
- 
- #define LOG_LINE_MAX		0
- #define PREFIX_MAX		0
--#define LOG_LINE_MAX 0
-+
- static u64 syslog_seq;
- static u32 syslog_idx;
- static u64 console_seq;
-@@ -1895,7 +1896,8 @@ static int __init console_setup(char *str)
- 		strncpy(buf, str, sizeof(buf) - 1);
- 	}
- 	buf[sizeof(buf) - 1] = 0;
--	if ((options = strchr(str, ',')) != NULL)
-+	options = strchr(str, ',');
-+	if (options)
- 		*(options++) = 0;
- #ifdef __sparc__
- 	if (!strcmp(str, "ttya"))
-@@ -1904,7 +1906,7 @@ static int __init console_setup(char *str)
- 		strcpy(buf, "ttyS1");
- #endif
- 	for (s = buf; *s; s++)
--		if ((*s >= '0' && *s <= '9') || *s == ',')
-+		if (isdigit(*s) || *s == ',')
- 			break;
- 	idx = simple_strtoul(s, NULL, 10);
- 	*s = 0;
-@@ -1943,7 +1945,6 @@ int update_console_cmdline(char *name, int idx, char *name_new, int idx_new, cha
- 	     i++, c++)
- 		if (strcmp(c->name, name) == 0 && c->index == idx) {
- 			strlcpy(c->name, name_new, sizeof(c->name));
--			c->name[sizeof(c->name) - 1] = 0;
- 			c->options = options;
- 			c->index = idx_new;
- 			return i;
-@@ -2611,14 +2612,13 @@ EXPORT_SYMBOL(__printk_ratelimit);
- bool printk_timed_ratelimit(unsigned long *caller_jiffies,
- 			unsigned int interval_msecs)
- {
--	if (*caller_jiffies == 0
--			|| !time_in_range(jiffies, *caller_jiffies,
--					*caller_jiffies
--					+ msecs_to_jiffies(interval_msecs))) {
--		*caller_jiffies = jiffies;
--		return true;
--	}
--	return false;
-+	unsigned long elapsed = jiffies - *caller_jiffies;
+let me see if I get this straight:
 
-I wondered if the deduction might be negative. Well, it should not be
-if none manipulates *caller_jiffies a strange way. If it happens,
-the following condition will most likely fail and *caller_jiffies will
-get reset to jiffies. It looks reasonable to me.
+this current submission is supposed to replace
 
-Reviewed-by: Petr Mladek <pmladek@suse.cz>
+http://lkml.kernel.org/r/20140708131504.28621.61165.stgit@warthog.procyon.org.uk
 
-+
-+	if (*caller_jiffies && elapsed <= msecs_to_jiffies(interval_msecs))
-+		return false;
-+
-+	*caller_jiffies = jiffies;
-+	return true;
- }
- EXPORT_SYMBOL(printk_timed_ratelimit);
+and Vivek's one:
 
-Best Regards,
-Petr
+http://lkml.kernel.org/r/1404421641-12691-1-git-send-email-vgoyal@redhat.com
+
+(which added those parsers to arch/x86/kernel/ - not a good place anyway.)
+
+?
+
+The kexec bits with the sig verif will come ontop, it seems. What's the
+story guys?
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
