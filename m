@@ -1,92 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848AbaGIHuq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 03:50:46 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:57690 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313AbaGIHuo (ORCPT
+	id S1755036AbaGIHuv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 03:50:51 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:40546 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754498AbaGIHup convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 03:50:44 -0400
+	Wed, 9 Jul 2014 03:50:45 -0400
 MIME-Version: 1.0
-In-Reply-To: <1404144343-18720-7-git-send-email-vincent.guittot@linaro.org>
-References: <1404144343-18720-1-git-send-email-vincent.guittot@linaro.org>
-	<1404144343-18720-7-git-send-email-vincent.guittot@linaro.org>
-Date: Wed, 9 Jul 2014 09:50:43 +0200
-Message-ID: <CAP245DXYvhD1EinAuRUCzY2wH=jJggV1dtAXwPJZN35jOU_bwA@mail.gmail.com>
-Subject: Re: [PATCH v3 06/12] sched: add per rq cpu_power_orig
-From: Amit Kucheria <amit.kucheria@linaro.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+In-Reply-To: <53B94DC6.7070308@gmail.com>
+References: <1404457379-4193-1-git-send-email-varkab@cdac.in>
+	<CAAVeFuK8oQStjAozf_3e3YTWBx3JYzBxEvLUq6n6uke1qaxXvg@mail.gmail.com>
+	<53B94DC6.7070308@gmail.com>
+Date: Wed, 9 Jul 2014 09:50:45 +0200
+Message-ID: <CACRpkdaVNeY2KLnKSL=3dOPcXwzDX+fQW4xVPSjvUZhuV6Pi_g@mail.gmail.com>
+Subject: Re: [PATCH v2] drivers/gpio/gpio-sch311x: check return value of gpiochip_remove()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Varka Bhadram <varkabhadram@gmail.com>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Lists LAKML <linux-arm-kernel@lists.infradead.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+        Varka Bhadram <varkab@cdac.in>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 6:05 PM, Vincent Guittot
-<vincent.guittot@linaro.org> wrote:
-> This new field cpu_power_orig reflects the available capacity of a CPUs unlike
-> the cpu_power which reflects the current capacity that can be altered by
-> frequency and rt tasks.
+On Sun, Jul 6, 2014 at 3:23 PM, Varka Bhadram <varkabhadram@gmail.com> wrote:
+> On Sunday 06 July 2014 02:52 PM, Alexandre Courbot wrote:
+>> On Fri, Jul 4, 2014 at 4:02 PM, Varka Bhadram <varkabhadram@gmail.com>
+>> wrote:
+>>>
+>>> This patch eliminates the following warning
+>>>
+>>> drivers/gpio/gpio-sch311x.c: In function ‘sch311x_gpio_probe’:
+>>> drivers/gpio/gpio-sch311x.c:286:18: warning: ignoring return value of
+>>> ‘gpiochip_remove’, declared with attribute warn_unused_result
+>>
+>> gpiochip_remove() is to have its return value set to void in another
+>> patch, so I'm not sure we need this one in the meantime?
 >
+>
+> I also saw that patch from abdoulaye berthe<berthe.ab@gmail.com>  .
+>
+> If that is accepted its good. If not this may require.
 
-s/cpu_power/cpu_capacity
+Yeah I'll go remove that. Just working out the patch mechanics right now,
+we'll probably remove all return value checks in v3.17 and then delete
+the code in gpiolib in late v3.17 cycle or the next merge window.
 
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> ---
->  kernel/sched/core.c  | 2 +-
->  kernel/sched/fair.c  | 1 +
->  kernel/sched/sched.h | 1 +
->  3 files changed, 3 insertions(+), 1 deletion(-)
->
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 54f5722..92dd6d1 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -6964,7 +6964,7 @@ void __init sched_init(void)
->  #ifdef CONFIG_SMP
->                 rq->sd = NULL;
->                 rq->rd = NULL;
-> -               rq->cpu_capacity = SCHED_CAPACITY_SCALE;
-> +               rq->cpu_capacity = rq->cpu_capacity_orig = SCHED_CAPACITY_SCALE;
->                 rq->post_schedule = 0;
->                 rq->active_balance = 0;
->                 rq->next_balance = jiffies;
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index f0bba5f..7dff578 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -5671,6 +5671,7 @@ static void update_cpu_capacity(struct sched_domain *sd, int cpu)
->
->         capacity >>= SCHED_CAPACITY_SHIFT;
->
-> +       cpu_rq(cpu)->cpu_capacity_orig = capacity;
->         sdg->sgc->capacity_orig = capacity;
->
->         if (sched_feat(ARCH_CAPACITY))
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index 2f86361..7b311de 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -568,6 +568,7 @@ struct rq {
->         struct sched_domain *sd;
->
->         unsigned long cpu_capacity;
-> +       unsigned long cpu_capacity_orig;
->
->         unsigned char idle_balance;
->         /* For active balancing */
-> --
-> 1.9.1
->
->
-> _______________________________________________
-> linaro-kernel mailing list
-> linaro-kernel@lists.linaro.org
-> http://lists.linaro.org/mailman/listinfo/linaro-kernel
+Yours,
+Linus Walleij
