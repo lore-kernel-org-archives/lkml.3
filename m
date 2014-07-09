@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196AbaGIJ5M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 05:57:12 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35923 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751313AbaGIJ5L (ORCPT
+	id S1755248AbaGIKBr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 06:01:47 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:33204 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739AbaGIKBp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 05:57:11 -0400
-Date: Wed, 9 Jul 2014 10:57:18 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: "behanw@converseincode.com" <behanw@converseincode.com>
-Cc: "anurag19aggarwal@gmail.com" <anurag19aggarwal@gmail.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "charlebm@gmail.com" <charlebm@gmail.com>,
-        "dave.long@linaro.org" <dave.long@linaro.org>,
-        "k.khlebnikov@samsung.com" <k.khlebnikov@samsung.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linyongting@gmail.com" <linyongting@gmail.com>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rabin@rab.in" <rabin@rab.in>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>
-Subject: Re: [PATCH 0/6] LLVMLinux: Patches to enable the kernel to be
- compiled with clang/LLVM
-Message-ID: <20140709095718.GD9485@arm.com>
-References: <1404850576-2006-1-git-send-email-behanw@converseincode.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404850576-2006-1-git-send-email-behanw@converseincode.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 9 Jul 2014 06:01:45 -0400
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, kishon@ti.com, kgene.kim@samsung.com,
+        mathias.nyman@intel.com, jwerner@chromium.org,
+        sergei.shtylyov@cogentembedded.com, heikki.krogerus@linux.intel.com,
+        pratyush.anand@st.com, Vivek Gautam <gautam.vivek@samsung.com>
+Subject: [PATCH v2 0/4] Fine tune USB 3.0 PHY on exynos5420
+Date: Wed,  9 Jul 2014 15:31:32 +0530
+Message-Id: <1404900096-1721-1-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 08, 2014 at 09:16:10PM +0100, behanw@converseincode.com wrote:
-> From: Behan Webster <behanw@converseincode.com>
-> 
-> The LLVMLinux project aims to fully build the Linux kernel using both gcc and
-> clang (the C front end for the LLVM compiler infrastructure project). 
-> 
-> Clang only supports global named registers for non-allocatable registers like
-> the stack pointer. By centralizing the definition of current_stack_pointer, the
-> use of named registers for ARM remains largely unchanged while working for both
-> gcc and clang.
+This series is based on Heikki's patches for simpliefied phy lookup table:
+[PATCHv2 0/6] phy: simplified phy lookup [1], applied against 'next' branch
+of Kishon's linux-phy tree.
 
-All looks sane to me. For the series:
+Changes since v1:
+1) Using 'gen_phy' member of 'hcd' instead of declaring more variables
+   to hold phys.
+2) Added a check for compatible match for 'Synopsys-dwc3' controller,
+   since the 'gen_phy' member of 'hcd' already gets the 'usb' PHY
+   in core/hcd.c; but XHCI on Synopsys-dwc3 doesn't need that,
+   instead two separate PHYs for UTMI+ and PIPE3 for the two HCDs
+   (main hcd and shared hcd).
+3) Restructured the code in 'xhci_plat_setup()' and 'xhci_plat_resume()'
+   to use hcd->gen_phy directly. Also added the check for Synopsys's DWC3
+   controller while trying to calibrate the PHY.
 
-  Acked-by: Will Deacon <will.deacon@arm.com>
+Explanation for the need of this patch-series:
+"The DWC3-exynos eXtensible host controller present on Exynos5420/5800
+SoCs is quirky. The PHY serving this controller operates at High-Speed
+by default, so it detects even Super-speed devices as high-speed ones.
+Certain PHY parameters like Tx LOS levels and Boost levels need to be
+calibrated further post initialization of xHCI controller, to get
+SuperSpeed operations working."
 
-BTW, have you tried building an arm64 kernel with clang?
+[1] https://lkml.org/lkml/2014/6/5/358
 
-Will
+Vivek Gautam (4):
+  phy: Add provision for calibrating phy.
+  usb: host: xhci-plat: Get PHYs for xhci's hcds
+  usb: host: xhci-plat: Caibrate PHY post host reset
+  phy: exynos5-usbdrd: Calibrate LOS levels for exynos5420/5800
+
+ drivers/phy/phy-core.c           |   36 ++++++++
+ drivers/phy/phy-exynos5-usbdrd.c |  169 ++++++++++++++++++++++++++++++++++++++
+ drivers/usb/host/xhci-plat.c     |   75 ++++++++++++++++-
+ include/linux/phy/phy.h          |    8 ++
+ 4 files changed, 286 insertions(+), 2 deletions(-)
+
+-- 
+1.7.10.4
+
