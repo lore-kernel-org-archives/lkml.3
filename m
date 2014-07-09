@@ -1,148 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756299AbaGIOYO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 10:24:14 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:39391 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755909AbaGIOYM (ORCPT
+	id S1756415AbaGIOYs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 10:24:48 -0400
+Received: from mail.sigma-star.at ([95.130.255.111]:14385 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755890AbaGIOYr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 10:24:12 -0400
-Date: Wed, 9 Jul 2014 16:24:06 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Sasha Levin <sasha.levin@oracle.com>, David Rientjes <rientjes@google.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: fs: use after free in /proc/pid/mountinfo
-Message-ID: <20140709142406.GA27561@osiris>
-References: <53B3F331.7090204@oracle.com>
- <53B4CAB8.5070407@oracle.com>
- <alpine.DEB.2.02.1407031434470.10658@chino.kir.corp.google.com>
- <53B6C051.2060704@oracle.com>
- <20140706100420.GB3589@osiris>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140706100420.GB3589@osiris>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070914-5024-0000-0000-000000A643F4
+	Wed, 9 Jul 2014 10:24:47 -0400
+From: Richard Weinberger <richard@nod.at>
+To: kys@microsoft.com, haiyangz@microsoft.com
+Cc: sergei.shtylyov@cogentembedded.com, romieu@fr.zoreil.com,
+        devel@linuxdriverproject.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>
+Subject: [PATCH v3] hyperv: Add netpoll support
+Date: Wed,  9 Jul 2014 16:23:59 +0200
+Message-Id: <1404915839-15940-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[full quote of my mail below]
+In order to have at least a netconsole to debug kernel issues on
+Windows Azure this patch implements netpoll support.
+Sending packets is easy, netvsc_start_xmit() does already everything
+needed.
 
-058504edd026 ("fs/seq_file: fallback to vmalloc allocation") is suspected to
-cause a crash. Actually I can't reprocude the crash nor would I be able to
-tell how the commit could cause the crash.
-Anyway, I'll be offline for the next 2.5 weeks. So if Sasha could confirm
-that reverting the patch actually does fix the crash, please revert the
-commit, unless somebody else can make sense of the report of course.
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ drivers/net/hyperv/netvsc_drv.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-I'm still wondering how Sasha could reproduce the crash.
-
-Thanks,
-Heiko
-
-On Sun, Jul 06, 2014 at 12:04:20PM +0200, Heiko Carstens wrote:
-> On Fri, Jul 04, 2014 at 10:55:13AM -0400, Sasha Levin wrote:
-> > On 07/03/2014 05:37 PM, David Rientjes wrote:
-> > > On Wed, 2 Jul 2014, Sasha Levin wrote:
-> > > 
-> > >>> Hi all,
-> > >>>
-> > >>> While fuzzing with trinity inside a KVM tools guest running the latest -next
-> > >>> kernel I've stumbled on the following spew:
-> > >>>
-> > >>> [ 3569.869749] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> > >>> [ 3569.869769] Dumping ftrace buffer:
-> > >>> [ 3569.869879]    (ftrace buffer empty)
-> > >>> [ 3569.869894] Modules linked in:
-> > >>> [ 3569.869900] CPU: 7 PID: 10239 Comm: trinity-c86 Tainted: G        W      3.16.0-rc3-next-20140701-sasha-00023-g4eb2544-dirty #759
-> > >>> [ 3569.869906] task: ffff88039e873000 ti: ffff880393f8c000 task.ti: ffff880393f8c000
-> > >>> [ 3569.869932] RIP: show_mountinfo (fs/proc_namespace.c:127)
-> 
-> So that would be this line then:
-> 
-> static int show_mountinfo(struct seq_file *m, struct vfsmount *mnt)
-> {
-> 	struct proc_mounts *p = proc_mounts(m);
-> 	struct mount *r = real_mount(mnt);
-> 	struct super_block *sb = mnt->mnt_sb;
-> 	struct path mnt_path = { .dentry = mnt->mnt_root, .mnt = mnt }; <---
-> 
-> if I understand the output correctly?
-> 
-> > >>> All code
-> > >>> ========
-> > >>>    0:	00 00                	add    %al,(%rax)
-> > >>>    2:	00 00                	add    %al,(%rax)
-> > >>>    4:	66 66 66 66 90       	data32 data32 data32 xchg %ax,%ax
-> > >>>    9:	55                   	push   %rbp
-> > >>>    a:	48 89 e5             	mov    %rsp,%rbp
-> > >>>    d:	48 83 ec 50          	sub    $0x50,%rsp
-> > >>>   11:	48 89 5d d8          	mov    %rbx,-0x28(%rbp)
-> > >>>   15:	48 89 f3             	mov    %rsi,%rbx
-> > >>>   18:	4c 89 65 e0          	mov    %r12,-0x20(%rbp)
-> > >>>   1c:	49 89 fc             	mov    %rdi,%r12
-> > >>>   1f:	4c 89 6d e8          	mov    %r13,-0x18(%rbp)
-> > >>>   23:	4c 89 75 f0          	mov    %r14,-0x10(%rbp)
-> > >>>   27:	4c 89 7d f8          	mov    %r15,-0x8(%rbp)
-> > >>>   2b:*	48 8b 06             	mov    (%rsi),%rax		<-- trapping instruction
-> > >>>   2e:	48 89 75 b0          	mov    %rsi,-0x50(%rbp)
-> > >>>   32:	4c 8b 76 08          	mov    0x8(%rsi),%r14
-> > >>>   36:	8b 96 ec 00 00 00    	mov    0xec(%rsi),%edx
-> > >>>   3c:	48 89 45 b8          	mov    %rax,-0x48(%rbp)
-> 
-> Does that fit to this asm code? Sorry.. I'm not very familar with x86 asm.
-> 
-> > > Does this now reproduce on Linus's tree?  If so, does reverting commit
-> > > 058504edd026 ("fs/seq_file: fallback to vmalloc allocation") prevent this 
-> > > issue?
-> > > 
-> > > This is a use-after-free since the poison value is 0x6b and I'm presuming 
-> > > that your /proc/self/mountinfo may be larger than PAGE_SIZE in your 
-> > > testing environment.
-> > 
-> > Good call, reverting that patch made both issues go away.
-> 
-> Ok, does that mean you have a test case so you can reproduce the crashes?
-> Just wondering, since trinity is usually quite random in what it does.
-> 
-> I tried to reproduce a crash on one of my systems by enforcing several
-> seq_files to grow beyond PAGE_SIZE, but couldn't reproduce anything yet.
-> 
-> Could you try the patch below please? It basically reverts my patch and
-> just leaves the kfree->kvfree conversion in. This is just a shot in the
-> dark, since I can't make any sense of this ...yet :)
-> 
-> diff --git a/fs/seq_file.c b/fs/seq_file.c
-> index 3857b720cb1b..c1cf494cc238 100644
-> --- a/fs/seq_file.c
-> +++ b/fs/seq_file.c
-> @@ -34,12 +34,7 @@ static void seq_set_overflow(struct seq_file *m)
->  
->  static void *seq_buf_alloc(unsigned long size)
->  {
-> -	void *buf;
-> -
-> -	buf = kmalloc(size, GFP_KERNEL | __GFP_NOWARN);
-> -	if (!buf && size > PAGE_SIZE)
-> -		buf = vmalloc(size);
-> -	return buf;
-> +	return kmalloc(size, GFP_KERNEL);
->  }
->  
->  /**
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+index 4fd71b7..fcf3be7 100644
+--- a/drivers/net/hyperv/netvsc_drv.c
++++ b/drivers/net/hyperv/netvsc_drv.c
+@@ -736,6 +736,14 @@ static int netvsc_set_mac_addr(struct net_device *ndev, void *p)
+ 	return err;
+ }
+ 
++#ifdef CONFIG_NET_POLL_CONTROLLER
++static void netvsc_poll_controller(struct net_device *net)
++{
++	/* As netvsc_start_xmit() works synchronous we don't have to
++	 * trigger anything here.
++	 */
++}
++#endif
+ 
+ static const struct ethtool_ops ethtool_ops = {
+ 	.get_drvinfo	= netvsc_get_drvinfo,
+@@ -751,6 +759,9 @@ static const struct net_device_ops device_ops = {
+ 	.ndo_validate_addr =		eth_validate_addr,
+ 	.ndo_set_mac_address =		netvsc_set_mac_addr,
+ 	.ndo_select_queue =		netvsc_select_queue,
++#ifdef CONFIG_NET_POLL_CONTROLLER
++	.ndo_poll_controller =		netvsc_poll_controller,
++#endif
+ };
+ 
+ /*
+-- 
+2.0.1
 
