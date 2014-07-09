@@ -1,44 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589AbaGIPO6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 11:14:58 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:51689 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756122AbaGIPO5 (ORCPT
+	id S1756627AbaGIPPd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 11:15:33 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:50962 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932286AbaGIPHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 11:14:57 -0400
-Message-ID: <53BD5C6E.3030805@linaro.org>
-Date: Wed, 09 Jul 2014 10:14:54 -0500
-From: Alex Elder <alex.elder@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 9 Jul 2014 11:07:51 -0400
+Date: Wed, 9 Jul 2014 11:07:40 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: konrad@kernel.org, xen-devel@lists.xenproject.org,
+        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 4/7] xen/pciback: Implement PCI reset slot or bus with
+ 'do_flr' SysFS attribute
+Message-ID: <20140709150740.GC28943@laptop.dumpdata.com>
+References: <1404845909-13563-1-git-send-email-konrad@kernel.org>
+ <1404845909-13563-5-git-send-email-konrad@kernel.org>
+ <53BC324B.5090600@citrix.com>
+ <20140708184626.GA15548@laptop.dumpdata.com>
+ <53BD364A.5020703@citrix.com>
+ <20140709141211.GF21837@laptop.dumpdata.com>
+ <53BD50FD.7080309@citrix.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Alex Elder <elder@linaro.org>, akpm@linux-foundation.org,
-        ak@linux.intel.com, bp@suse.de, jack@suse.cz, john.stultz@linaro.org,
-        pmladek@suse.cz, rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] printk: rename DEFAULT_MESSAGE_LOGLEVEL
-References: <1404911056-29064-1-git-send-email-elder@linaro.org> <1404911056-29064-2-git-send-email-elder@linaro.org> <20140709150043.GB5254@pd.tnic> <53BD5B64.3010703@linaro.org> <20140709151351.GD5254@pd.tnic>
-In-Reply-To: <20140709151351.GD5254@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53BD50FD.7080309@citrix.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2014 10:13 AM, Borislav Petkov wrote:
-> On Wed, Jul 09, 2014 at 10:10:28AM -0500, Alex Elder wrote:
->> Yes I realized this just sort of moved that sort of problem
->> to a different place.  The change was responding to the
->> inconsistency in naming in "printk.c".  I can control the
->> effects of that, but I can't predict who might be using
->> various config options, so I avoided doing that rename.
->>
->> Was I being overly cautious on the config option name?
->> I could fix that too and have consistency everywhere.
->
-> You mean turn it into CONFIG_MESSAGE_LOGLEVEL_DEFAULT?
+On Wed, Jul 09, 2014 at 03:26:05PM +0100, David Vrabel wrote:
+> On 09/07/14 15:12, Konrad Rzeszutek Wilk wrote:
+> > On Wed, Jul 09, 2014 at 01:32:10PM +0100, David Vrabel wrote:
+> >> On 08/07/14 19:46, Konrad Rzeszutek Wilk wrote:
+> >>> On Tue, Jul 08, 2014 at 07:02:51PM +0100, David Vrabel wrote:
+> >>>> On 08/07/14 19:58, konrad@kernel.org wrote:
+> >>>>> --- a/Documentation/ABI/testing/sysfs-driver-pciback
+> >>>>> +++ b/Documentation/ABI/testing/sysfs-driver-pciback
+> >>>>> @@ -82,3 +82,14 @@ Description:
+> >>>>>                  device is shared, enabled, or on a level interrupt line.
+> >>>>>                  Writing a string of DDDD:BB:DD.F will toggle the state.
+> >>>>>                  This is Domain:Bus:Device.Function where domain is optional.
+> >>>>> +
+> >>>>> +What:           /sys/bus/pci/drivers/pciback/do_flr
+> >>>>> +Date:           July 2014
+> >>>>> +KernelVersion:  3.16
+> >>>>> +Contact:        xen-devel@lists.xenproject.org
+> >>>>> +Description:
+> >>>>> +                An option to slot or bus reset an PCI device owned by
+> >>>>> +                Xen PCI backend. Writing a string of DDDD:BB:DD.F will cause
+> >>>>> +                the driver to perform an slot or bus reset if the device
+> >>>>> +                supports. It also checks to make sure that all of the devices
+> >>>>> +                under the bridge are owned by Xen PCI backend.
+> >>>>
+> >>>> Not sure I like this new interface.  I solved this by adding a new reset
+> >>>> file that looked like the regular one the pci would have if it supported
+> >>>> FLR.  I'm fairly sure I posted a series for this.  Was there a reason
+> >>>> you didn't do this?
+> >>>
+> >>> It did not work.
+> >>>
+> >>> During bootup kobject would complain about a secondary 'reset' SysFS
+> >>> on the PCI device.
+> >>
+> >> I think this because of pciback registering a driver too early, before
+> >> the device is fully initialized.  You can see in the trace that it is
+> >> the common pci code that is trying to add the "reset" file so it must be
+> >> doing this /after/ pciback's probe has been called.
+> >>
+> >> I would consider:
+> >>
+> >> 1. Removing the "hide" module parameter -- it doesn't work if pciback is
+> >> a module anyway.
+> > 
+> > I find it incredibly useful and so do a lot of other people.
+> 
+> PCI passthrough must work well without hide and without pciback being
+> built-in (and it does with the "reset" change).
+> 
+> What are you using "hide" for?
 
-OK, I'll repost a little later with that change included.
-Thanks.
+For hiding the AHCI driver from the likes of multipath and lvm.
+I want the device driver domain to set those up and don't want the
+initial domain have to create this and then have to tear it down.
 
-					-Alex
+Ditto for the bttv - it ends up loading tons of drivers and
+just sorting out the dependency is tedious. If I hide it away
+I can easily pass it in the backend.
+> 
+> >> 2. Making pciback initialize like a regular driver module (no
+> >> fs_initcall() shenanigans).
+> > 
+> > The point is to take the PCI device before the drivers touch it.
+> > 
+> > We want it to be in a pristine state so that the device driver
+> > domains can use it.
+> 
+> But hide only ensures this the first time the device is assigned.  Using
+> a function reset ensures this all the time.
+
+The hide also saves the registers:
+
+ 514         pci_save_state(dev);
+ 515         dev_data->pci_saved_state = pci_store_saved_state(dev);
+
+before they are used by device drivers. The function reset (or bus
+reset) won't ensure that those registers will always be the same
+from the initial bootup state. As in: device drivers -> pciback ->
+save states -> FLR -> give to guest. There is still the taint of the
+device driver modifying the registers.
+
+> 
+> >> 3. Require userspace to sort out binding the device to pciback (e.g.,
+> >> libxl already does the unbind if requested).
+> > 
+> > How would you do the bus/slot reset? Or are you thinking that at
+> > that point the 'reset' functionality would be over-written to point
+> > to Xen pciback and it would do the job?
+> 
+> I'm not sure I understand your question.  libxl already does the
+> function reset (by writing to "reset").
+
+Right.  And it also does 'do_flr'.
+> 
+> >> 4. Finally, I would consider generic driver core functionality for
+> >> prioritizing drivers so they get probed first.
+> > 
+> > Not sure I understand why you want the drivers to use the device
+> > first? The point is that we can 'hide' them from the generic
+> > drivers and present them to the backend domains.
+> 
+> The pciback driver would be prioritized, so it would be probed first.
+
+Which would require it to be some early_initcall variant and use
+the override (which I think is going in 3.17?) for 'struct device'?
+(Alex implemented it). I think that is what you are saying? However
+that looks to be orthogonal to what this patch tries to do?
+
+> 
+> > Regardless of these - I am curious to why you don't like do_flr
+> > as it is even implemented in the the toolstack (but buggy) and
+> > it does a good job of allowing us to do slot/bus reset?
+> 
+> Because there is already a documented interface for resetting devices
+> (the "reset" file), we don't want a second interface.
+
+Which just does the FLR. This is doing bus/slot reset and doing an
+override of the 'reset' in SysFS does not work without some clever
+coding.
+
+The 'do_flr' seems to be already baked in libxl - why not use it?
+> 
+> David
