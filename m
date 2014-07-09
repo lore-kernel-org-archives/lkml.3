@@ -1,73 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932522AbaGIWVo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 18:21:44 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:42077 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932352AbaGIWVl (ORCPT
+	id S932287AbaGIW1b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 18:27:31 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:35664 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424AbaGIW13 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 18:21:41 -0400
-Date: Thu, 10 Jul 2014 00:21:33 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: tglx@linutronix.de, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
-        preeti@linux.vnet.ibm.com, khilman@linaro.org
-Subject: Re: [RFC 1/7] hrtimer: Warn if hrtimer_start*() failed to enqueue
- hrtimer
-Message-ID: <20140709222131.GD23881@localhost.localdomain>
-References: <cover.1404888801.git.viresh.kumar@linaro.org>
- <bc8cabd00810c2f91cb45a64514f5c4ca12d584c.1404888801.git.viresh.kumar@linaro.org>
+	Wed, 9 Jul 2014 18:27:29 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: "kys@microsoft.com" <kys@microsoft.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mkp@mkp.net" <mkp@mkp.net>, "hch@infradead.org" <hch@infradead.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+Thread-Topic: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+Thread-Index: AQHPmwbc2vh72TcerE+9u7O+On3hT5uXbYYAgACybACAAH8bAP//jcAwgACcZoA=
+Date: Wed, 9 Jul 2014 22:27:24 +0000
+Message-ID: <1404944843.2184.8.camel@dabdike.int.hansenpartnership.com>
+References: <1404866789-26910-1-git-send-email-kys@microsoft.com>
+	 <1404866812-26950-1-git-send-email-kys@microsoft.com>
+	 <1404866812-26950-4-git-send-email-kys@microsoft.com>
+	 <20140709084300.GD6012@infradead.org>
+	 <a31a45eddb544024a7538458b98c3611@BY2PR03MB299.namprd03.prod.outlook.com>
+	 <1404935792.2184.5.camel@dabdike.int.hansenpartnership.com>
+	 <2f3ae589e6f149acbe4c5dd79f905971@BY2PR03MB299.namprd03.prod.outlook.com>
+In-Reply-To: <2f3ae589e6f149acbe4c5dd79f905971@BY2PR03MB299.namprd03.prod.outlook.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.46.103.107]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <D38C3C14A4260946A1FF55B5F3705949@sw.swsoft.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <bc8cabd00810c2f91cb45a64514f5c4ca12d584c.1404888801.git.viresh.kumar@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 12:25:33PM +0530, Viresh Kumar wrote:
-> hrtimer_start*() family never fails to enqueue a hrtimer to a clock-base. The
-> only special case is when the hrtimer was in past. If it is getting enqueued to
-> local CPUs's clock-base, we raise a softirq and exit, else we handle that on
-> next interrupt on remote CPU.
+On Wed, 2014-07-09 at 21:14 +0000, KY Srinivasan wrote:
 > 
-> At several places in kernel we check if hrtimer is enqueued properly with
-> hrtimer_active(). This isn't required and can be dropped.
+> > -----Original Message-----
+> > From: James Bottomley [mailto:jbottomley@parallels.com]
+> > Sent: Wednesday, July 9, 2014 12:57 PM
+> > To: KY Srinivasan
+> > Cc: linux-kernel@vger.kernel.org; hch@infradead.org;
+> > devel@linuxdriverproject.org; apw@canonical.com; stable@vger.kernel.org;
+> > linux-scsi@vger.kernel.org; ohering@suse.com; jasowang@redhat.com
+> > Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+> > 
+> > On Wed, 2014-07-09 at 19:52 +0000, KY Srinivasan wrote:
+> > >
+> > > > -----Original Message-----
+> > > > From: Christoph Hellwig [mailto:hch@infradead.org]
+> > > > Sent: Wednesday, July 9, 2014 1:43 AM
+> > > > To: KY Srinivasan
+> > > > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> > > > ohering@suse.com; jbottomley@parallels.com; jasowang@redhat.com;
+> > > > apw@canonical.com; linux-scsi@vger.kernel.org;
+> > > > stable@vger.kernel.org
+> > > > Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter
+> > > > WRITE_SAME_16
+> > > >
+> > > > On Tue, Jul 08, 2014 at 05:46:48PM -0700, K. Y. Srinivasan wrote:
+> > > > > Host does not handle WRITE_SAME_16; filter this command out. This
+> > > > > patch is required to handle large devices (greater than 2 TB disks).
+> > > >
+> > > > Storvsc already sets the no_write_same flag, where is the command
+> > > > coming from?
+> > >
+> > > In spite of this flag,  I see WRITE_SAME_16 being issued when I format
+> > > a device bigger than 2 TB; I tried both xfs and ext4. Windows hosts
+> > > currently do not handle unsupported commands correctly - The
+> > > information returned is not sufficient to effect recovery in the Linux guest.
+> > While this may be addressed in future hosts, this patch fixes the problem.
+> > 
+> > What Christoph means is that this looks like a bug somewhere in SCSI itself.
+> > That means we need to find it and kill it, not add workarounds to every driver
+> > that sets no_write_same ...
 > 
-> Before fixing that, lets make sure hrtimer is always enqueued properly by adding
+> James,
 > 
-> 	WARN_ON_ONCE(!hrtimer_active(timer));
-> 
-> towards the end of __hrtimer_start_range_ns().
-> 
-> Suggested-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  kernel/hrtimer.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-> index 3ab2899..cf40209 100644
-> --- a/kernel/hrtimer.c
-> +++ b/kernel/hrtimer.c
-> @@ -1037,6 +1037,8 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
->  
->  	unlock_hrtimer_base(timer, &flags);
->  
-> +	/* Make sure timer is enqueued */
-> +	WARN_ON_ONCE(!hrtimer_active(timer));
+> I will try to isolate this issue in the SCSI stack. If it is ok with you guys, I would still want to filter WRITE_SAME_16
+> (as we currently do WRITE_SAME) in our driver since this would address the problem for a large number of
+> customers on our platform.
 
-Hmm, after reading Thomas reply, I think it's possible that the hrtimer expires
-right after we unlock it and, if we are unlucky enough, before the hrtimer_active()
-check.
+If we fix it at source, why would there be any need to filter?  That's
+the reason the no_write_same flag was introduced.  If we can find and
+fix the bug, it can go back into the stable trees as a bug fix, hence
+nothing should ever emit write_same(10 or 16) and additional driver code
+is redundant (and counter productive, since if this ever breaks again
+you're our best canary).
 
-In this case we might hit a false positive.
+This looks like it might be the problem but Martin should confirm (I
+think the problem comes to us from the RC16 code which unconditionally
+sets WS16).
 
->  	return ret;
->  }
->  EXPORT_SYMBOL_GPL(__hrtimer_start_range_ns);
-> -- 
-> 2.0.0.rc2
-> 
+James
+
+---
+
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 6825eda..8353a4c 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -634,6 +634,23 @@ static void sd_config_discard(struct scsi_disk *sdkp, unsigned int mode)
+ 		max(sdkp->physical_block_size,
+ 		    sdkp->unmap_granularity * logical_block_size);
+ 
++	if (sdkp->device->host->no_write_same) {
++		switch(mode) {
++
++		case SD_LBP_WS16:
++		case SD_LBP_WS10:
++		case SD_LBP_ZERO:
++			/*
++			 * filter out all the WRITE SAME modes and map them
++			 * directly to UNMAP
++			 */
++			mode = SD_LBP_UNMAP;
++			/* fall through */
++		default:
++			/* everything else is OK */
++			break;
++		}
++	}
+ 	sdkp->provisioning_mode = mode;
+ 
+ 	switch (mode) {
+
