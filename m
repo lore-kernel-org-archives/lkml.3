@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751386AbaGIUfb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 16:35:31 -0400
-Received: from mga03.intel.com ([143.182.124.21]:62201 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750724AbaGIUfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 16:35:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,633,1400050800"; 
-   d="scan'208";a="455118454"
-From: Andi Kleen <andi@firstfloor.org>
-To: Havard Skinnemoen <hskinnemoen@google.com>
-Cc: Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
-        linux-kernel@vger.kernel.org, Ewout van Bekkum <ewout@google.com>
-Subject: Re: [PATCH 4/6] x86-mce: Add spinlocks to prevent duplicated MCP and CMCI reports.
-References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
-	<1404925766-32253-5-git-send-email-hskinnemoen@google.com>
-Date: Wed, 09 Jul 2014 13:35:28 -0700
-In-Reply-To: <1404925766-32253-5-git-send-email-hskinnemoen@google.com>
-	(Havard Skinnemoen's message of "Wed, 9 Jul 2014 10:09:24 -0700")
-Message-ID: <87a98inucv.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1751957AbaGIUgZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 16:36:25 -0400
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:46485 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750915AbaGIUgX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 16:36:23 -0400
+From: Shuah Khan <shuah.kh@samsung.com>
+To: m.chehab@samsung.com
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] media: em28xx - remove reset_resume interface
+Date: Wed,  9 Jul 2014 14:36:03 -0600
+Message-Id: <1404938163-27461-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Havard Skinnemoen <hskinnemoen@google.com> writes:
+em28xx uses resume interface as its reset_resume interface.
+If usb device is reset during suspend, reset_resume doesn't
+do the necessary initialization which leads to resume failure.
+Many systems don't maintain do not maintain suspend current to
+the USB host controllers during hibernation. Remove reset_resume
+to allow disconnect to be called followed by device restore
+sequence.
 
-> machine_check_poll() was modified to use spin_lock_irqsave independently
-> per bank when a valid MCE is found to prevent duplicated MCE reports by
-> the CMCI and polling methods. In the common case no MCE will be found,
-> so the lock is not acquired until a valid MCE is found. The status is
-> reread after the lock is acquired in case the MCE was already handled by
-> a different thread. A unique spinlock is used per bank number, so
-> contention should be mostly limited to non-shared banks.
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+---
+ drivers/media/usb/em28xx/em28xx-cards.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-This doesn't make sense. Banks are either owned by CMCI or by poll,
-not by both. If you have true duplicates the bug must be somewhere else.
-
--Andi
-
+diff --git a/drivers/media/usb/em28xx/em28xx-cards.c b/drivers/media/usb/em28xx/em28xx-cards.c
+index 15ad470..c53fa77 100644
+--- a/drivers/media/usb/em28xx/em28xx-cards.c
++++ b/drivers/media/usb/em28xx/em28xx-cards.c
+@@ -3522,7 +3522,6 @@ static struct usb_driver em28xx_usb_driver = {
+ 	.disconnect = em28xx_usb_disconnect,
+ 	.suspend = em28xx_usb_suspend,
+ 	.resume = em28xx_usb_resume,
+-	.reset_resume = em28xx_usb_resume,
+ 	.id_table = em28xx_id_table,
+ };
+ 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+1.7.10.4
+
