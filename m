@@ -1,70 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143AbaGIDGh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 23:06:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31619 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751104AbaGIDGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 23:06:36 -0400
-Message-ID: <53BCB170.9020005@redhat.com>
-Date: Tue, 08 Jul 2014 23:05:20 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>, peterz@infradead.org,
-        mingo@kernel.org, linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org
-CC: preeti@linux.vnet.ibm.com, Morten.Rasmussen@arm.com, efault@gmx.de,
-        nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
-        daniel.lezcano@linaro.org, dietmar.eggemann@arm.com
-Subject: Re: [PATCH v3 01/12] sched: fix imbalance flag reset
-References: <1404144343-18720-1-git-send-email-vincent.guittot@linaro.org> <1404144343-18720-2-git-send-email-vincent.guittot@linaro.org>
-In-Reply-To: <1404144343-18720-2-git-send-email-vincent.guittot@linaro.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753977AbaGIDHY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 23:07:24 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:49817 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751561AbaGIDHW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 23:07:22 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-91-53bcb1e9fa1c
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Huang Ying'" <ying.huang@intel.com>,
+        "'Jaegeuk Kim'" <jaegeuk@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+References: <1404711988-18264-1-git-send-email-ying.huang@intel.com>
+ <20140708075843.GA59558@jmac> <1404807412.13519.46.camel@yhuang-dev>
+In-reply-to: <1404807412.13519.46.camel@yhuang-dev>
+Subject: RE: [f2fs-dev] f2fs: Add f2fs_balance_fs for direct IO
+Date: Wed, 09 Jul 2014 11:06:35 +0800
+Message-id: <006401cf9b22$e658db10$b30a9130$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIq9lshuiPSC8EQEB7iOSulJI6IuwIaOQOkA4l+E3iaszmAIA==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsVy+t9jAd2XG/cEG9x8KWLxZP0sZotLi9wt
+	Lu+aw2ZxctZkFgcWj8V7XjJ5bFrVyeaxe8FnJo/Pm+QCWKK4bFJSczLLUov07RK4Mt5NX8xW
+	sEOi4tum9awNjFuEuxg5OCQETCSmHkjuYuQEMsUkLtxbz9bFyMUhJLCIUWL++1nsEM4PRol5
+	kxawg1SxCahILO/4zwRiiwh4SxzY+p0RZBCzgIfErmOlEPXdjBLPH6xhAolzChhLbF9oC2IK
+	C9hLLHnGC9LJIqAq8XrNK1aQMK+ApcTEQ2An8AoISvyYfI8FxGYW0JJYv/M4E4QtL7F5zVtm
+	iDMVJHacfc0IcYCTxMQ1SxghasQlNh65xTKBUWgWklGzkIyahWTULCQtCxhZVjGKphYkFxQn
+	peca6RUn5haX5qXrJefnbmIEB/8z6R2MqxosDjEKcDAq8fAq8OwJFmJNLCuuzD3EKMHBrCTC
+	+80NKMSbklhZlVqUH19UmpNafIhRmoNFSZz3YKt1oJBAemJJanZqakFqEUyWiYNTqoExJNF9
+	Oe8no563jzUOmDQF7qqoSC878/2OXUo3R1qR5dOJ13qddH51LaiZVbauS4nnDO+bxI2n1q7a
+	8fIBk/SJueemJ7v6Xpy+7dTuaMljG0UO6s3puHL6+ouPh9+ZzFTYn9682/uy+e+/qSu/me3O
+	1/5x49PXgi5GJ7cHiezXf7b8eR+d/nnSaSWW4oxEQy3mouJEAIp0pqJ6AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Hi Huang,
 
-On 06/30/2014 12:05 PM, Vincent Guittot wrote:
-> The imbalance flag can stay set whereas there is no imbalance.
+> -----Original Message-----
+> From: Huang Ying [mailto:ying.huang@intel.com]
+> Sent: Tuesday, July 08, 2014 4:17 PM
+> To: Jaegeuk Kim
+> Cc: linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net
+> Subject: Re: [f2fs-dev] f2fs: Add f2fs_balance_fs for direct IO
 > 
-> Let assume that we have 3 tasks that run on a dual cores /dual
-> cluster system. We will have some idle load balance which are
-> triggered during tick. Unfortunately, the tick is also used to
-> queue background work so we can reach the situation where short
-> work has been queued on a CPU which already runs a task. The load
-> balance will detect this imbalance (2 tasks on 1 CPU and an idle 
-> CPU) and will try to pull the waiting task on the idle CPU. The
-> waiting task is a worker thread that is pinned on a CPU so an
-> imbalance due to pinned task is detected and the imbalance flag is
-> set. Then, we will not be able to clear the flag because we have at
-> most 1 task on each CPU but the imbalance flag will trig to useless
-> active load balance between the idle CPU and the busy CPU.
+> Hi, Jaegeuk,
 > 
-> We need to reset of the imbalance flag as soon as we have reached a
-> balanced state.
+> On Tue, 2014-07-08 at 00:58 -0700, Jaegeuk Kim wrote:
+> > Hi Huang,
+> >
+> > It occurs a merge conflict.
+> > Please check the patch.
 > 
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+> Sorry, my fault.  I think I need to base my patch on f2fs tree instead
+> of latest Linus' tree?
 
-Acked-by: Rik van Riel <riel@redhat.com>
+I think you patch is not conflict to both latest linux's tree and f2fs dev tree.
+but conflict to this patch 
+"f2fs: introduce f2fs_write_failed to handle error case when write" which
+maybe in Jaegeuk's local tree, not update to f2fs dev tree.
 
+If possible, you could wait for Jaegeuk to update f2fs tree, or merge this patch,
+then apply your new patch.
 
-- -- 
-All rights reversed
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Thanks,
+Yu
 
-iQEcBAEBAgAGBQJTvLFvAAoJEM553pKExN6DUcYIAJkj0fl4DIpx/7ywqSSCo4Da
-1IpJI5Hz2zb+NunG8M/4kugDSYvMmiuNhFgG1ET7me11jxTcTqg0e8UZ4zJbW55u
-i14IVyXLW+AVhJNQc1Umu3c6tTnjawOIzLa4wJ5JCVFVTj/5AhHyJjbKfQJnew1q
-XlYm8+FPGmXQgJ0G3itmpx3gAYsrQIQXtIhM9wwgmKiysF4s+HZZppyZKtGbOtm4
-ia408LsmjOYYp4vGSTa4F4IWx1K0fJVpz33TsCLb2pwKy6t/4hKf9tOn/wXPSLVc
-NbWrP7zYYJ8EaXgo/RV9OJnPXq0h0Tbp9eMtd4u/hRCrcHw1dUZBpDMIRkS5NzI=
-=uoh0
------END PGP SIGNATURE-----
+> 
+> > Anyway, IMO, it needs to place f2fs_balance_fs somewhere in get_data_block.
+> 
+> Yes.  I think so too.  So you prefer to add f2fs_balance_fs in both
+> f2fs_direct_IO and get_data_block, or just add f2fs_blance_fs in
+> get_data_block only?
+> 
+> Best Regards,
+> Huang, Ying
+> 
+> > Thanks,
+> >
+> > On Mon, Jul 07, 2014 at 01:46:28PM +0800, Huang Ying wrote:
+> > > Otherwise, if a large amount of direct IO writes were done, the
+> > > segment allocation may be failed because no enough segments are gced.
+> > >
+> > > Signed-off-by: Huang, Ying <ying.huang@intel.com>
+> > > ---
+> > >  fs/f2fs/data.c |    6 +++++-
+> > >  1 file changed, 5 insertions(+), 1 deletion(-)
+> > >
+> > > --- a/fs/f2fs/data.c
+> > > +++ b/fs/f2fs/data.c
+> > > @@ -1038,6 +1038,7 @@ static ssize_t f2fs_direct_IO(int rw, st
+> > >  {
+> > >  	struct file *file = iocb->ki_filp;
+> > >  	struct inode *inode = file->f_mapping->host;
+> > > +	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+> > >
+> > >  	/* Let buffer I/O handle the inline data case. */
+> > >  	if (f2fs_has_inline_data(inode))
+> > > @@ -1046,8 +1047,11 @@ static ssize_t f2fs_direct_IO(int rw, st
+> > >  	if (check_direct_IO(inode, rw, iter, offset))
+> > >  		return 0;
+> > >
+> > > +	if (rw == WRITE)
+> > > +		f2fs_balance_fs(sbi);
+> > > +
+> > >  	/* clear fsync mark to recover these blocks */
+> > > -	fsync_mark_clear(F2FS_SB(inode->i_sb), inode->i_ino);
+> > > +	fsync_mark_clear(sbi, inode->i_ino);
+> > >
+> > >  	return blockdev_direct_IO(rw, iocb, inode, iter, offset,
+> > >  				  get_data_block);
+> >
+> 
+> 
+> 
+> ------------------------------------------------------------------------------
+> Open source business process management suite built on Java and Eclipse
+> Turn processes into business applications with Bonita BPM Community Edition
+> Quickly connect people, data, and systems into organized workflows
+> Winner of BOSSIE, CODIE, OW2 and Gartner awards
+> http://p.sf.net/sfu/Bonitasoft
+> _______________________________________________
+> Linux-f2fs-devel mailing list
+> Linux-f2fs-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+
