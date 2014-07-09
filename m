@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525AbaGIF2U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 01:28:20 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:39828 "EHLO
+	id S1753258AbaGIF2d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 01:28:33 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:39895 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718AbaGIF2R (ORCPT
+	with ESMTP id S1750892AbaGIF2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 01:28:17 -0400
+	Wed, 9 Jul 2014 01:28:20 -0400
 X-Original-SENDERIP: 10.177.220.181
 X-Original-MAILFROM: namhyung@kernel.org
 From: Namhyung Kim <namhyung@kernel.org>
@@ -15,123 +15,280 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
         Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCHSET 0/6] perf tools: Honor column width setting
-Date: Wed,  9 Jul 2014 14:28:08 +0900
-Message-Id: <1404883694-5342-1-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 6/6] perf tools: Add name field into perf_hpp_fmt
+Date: Wed,  9 Jul 2014 14:28:14 +0900
+Message-Id: <1404883694-5342-7-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1404883694-5342-1-git-send-email-namhyung@kernel.org>
+References: <1404883694-5342-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+It makes the code a bit simpler and easier to debug IMHO.
 
-This patchset is to control perf report/top output column width by
--w/--column-widths option so that it can fit into the terminal size.
-The -w option is there for perf report but it ignored by recent output
-field changed due to some reason.  This patchset fixes it and supports
-perf top also.
+I guess it can also remove similar code in perf diff, but let's keep
+it for a future work. :)
 
-This is sometimes useful if your terminal is small and there's some
-C++ applications which have amazingly long symbol names.  Without this
-patchset user might not see those symbols on TUI, since it maps
-left/right arrow keys to other functions.
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/ui/gtk/hists.c |   4 +-
+ tools/perf/ui/hist.c      | 109 ++++++++++++++++++++++------------------------
+ tools/perf/util/hist.h    |   1 +
+ tools/perf/util/sort.c    |   6 +--
+ 4 files changed, 57 insertions(+), 63 deletions(-)
 
-The -w option sets column width starting from the first column
-(overhead or optional overhead_children column unless -F option is
-given).  It doesn't make sense to limit those overhead columns so it's
-not a hard-limit for them.  But it *is* a hard-limit for other columns
-such as comm, dso, symbol, and so on.  One can use 0 not to
-limit/force a width for those columns.
-
-
-For example:
-
-  $ perf report --stdio -s comm,dso
-  ...
-  # Overhead  Command          Shared Object                                        
-  # ........  ...............  .....................................................
-  #
-      71.08%  gnome-shell      perf-1497.map                                        
-       9.23%  gnome-shell      swrast_dri.so                                        
-       3.99%  Xorg             [unknown]                                            
-       3.18%  Xorg             [kernel.kallsyms]                                    
-       2.93%  gnome-shell      [kernel.kallsyms]                                    
-       2.41%  swapper          [kernel.kallsyms]                                    
-       1.55%  synergys         libpthread-2.15.so                                   
-       1.08%  synergys         synergys                                             
-       0.68%  systemd-journal  [kernel.kallsyms]                                    
-       0.59%  synergys         libstdc++.so.6.0.17                                  
-       0.58%  gnome-shell      libc-2.15.so                                         
-       0.54%  kworker/0:2      [kernel.kallsyms]                                    
-       0.20%  systemd-journal  [unknown]                                            
-       0.19%  gnome-shell      libclutter-1.0.so.0.1000.8.#prelink#.1kh1we (deleted)
-       0.18%  firefox          libxul.so (deleted)                                  
-       0.17%  gnome-shell      libcogl.so.9.1.1.#prelink#.ZL3fn1 (deleted)          
-       0.14%  firefox          [kernel.kallsyms]                                    
-       0.14%  gnome-shell      libgobject-2.0.so.0.3200.4                           
-       0.13%  gnome-shell      libpthread-2.15.so                                   
-       0.11%  synergys         [kernel.kallsyms]                                    
-       0.10%  perf             [kernel.kallsyms]                                    
-
-
-  $ perf report --stdio -s comm,dso -w 0,10,20   # 0 means no limit
-  ...
-  # Overhead  Command     Shared Object       
-  # ........  ..........  ....................
-  #
-      71.08%  gnome-shel  perf-1497.map       
-       9.23%  gnome-shel  swrast_dri.so       
-       3.99%  Xorg        [unknown]           
-       3.18%  Xorg        [kernel.kallsyms]   
-       2.93%  gnome-shel  [kernel.kallsyms]   
-       2.41%  swapper     [kernel.kallsyms]   
-       1.55%  synergys    libpthread-2.15.so  
-       1.08%  synergys    synergys            
-       0.68%  systemd-jo  [kernel.kallsyms]   
-       0.59%  synergys    libstdc++.so.6.0.17 
-       0.58%  gnome-shel  libc-2.15.so        
-       0.54%  kworker/0:  [kernel.kallsyms]   
-       0.20%  systemd-jo  [unknown]           
-       0.19%  gnome-shel  libclutter-1.0.so.0.
-       0.18%  firefox     libxul.so (deleted) 
-       0.17%  gnome-shel  libcogl.so.9.1.1.#pr
-       0.14%  firefox     [kernel.kallsyms]   
-       0.14%  gnome-shel  libgobject-2.0.so.0.
-       0.13%  gnome-shel  libpthread-2.15.so  
-       0.11%  synergys    [kernel.kallsyms]   
-       0.10%  perf        [kernel.kallsyms]   
-
-
-You can also get this from 'perf/width-v1' branch on my tree
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
-
-
-Thanks,
-Namhyung
-
-
-Namhyung Kim (6):
-  perf tools: Left-align output contents
-  perf tools: Make __hpp__fmt() receive an additional len argument
-  perf tools: Save column length in perf_hpp_fmt
-  perf report: Honor column width setting
-  perf top: Add -w option for setting column width
-  perf tools: Add name field into perf_hpp_fmt
-
- tools/perf/Documentation/perf-report.txt |   2 +-
- tools/perf/Documentation/perf-top.txt    |   6 +
- tools/perf/builtin-top.c                 |   3 +
- tools/perf/ui/browsers/hists.c           |  31 ++--
- tools/perf/ui/gtk/hists.c                |  18 +-
- tools/perf/ui/hist.c                     | 275 +++++++++++++++++++------------
- tools/perf/ui/stdio/hist.c               |   4 +-
- tools/perf/util/color.c                  |  16 ++
- tools/perf/util/color.h                  |   1 +
- tools/perf/util/hist.h                   |  17 +-
- tools/perf/util/sort.c                   |  51 +++---
- 11 files changed, 274 insertions(+), 150 deletions(-)
-
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index 897b2e140428..f3fa4258b256 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -207,10 +207,8 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 		if (perf_hpp__is_sort_entry(fmt))
+ 			sym_col = col_idx;
+ 
+-		fmt->header(fmt, &hpp, hists_to_evsel(hists));
+-
+ 		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view),
+-							    -1, ltrim(s),
++							    -1, fmt->name,
+ 							    renderer, "markup",
+ 							    col_idx++, NULL);
+ 	}
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index b2d60a95f01d..93285df06164 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -209,7 +209,7 @@ static int __hpp__sort_acc(struct hist_entry *a, struct hist_entry *b,
+ 	return ret;
+ }
+ 
+-#define __HPP_WIDTH_FN(_type, _str)					\
++#define __HPP_WIDTH_FN(_type)						\
+ static int hpp__width_##_type(struct perf_hpp_fmt *fmt,			\
+ 			      struct perf_hpp *hpp __maybe_unused,	\
+ 			      struct perf_evsel *evsel)			\
+@@ -219,19 +219,19 @@ static int hpp__width_##_type(struct perf_hpp_fmt *fmt,			\
+ 	if (symbol_conf.event_group)					\
+ 		len = max(len, evsel->nr_members * fmt->len);		\
+ 									\
+-	if (len < (int)strlen(_str))					\
+-		len = strlen(_str);					\
++	if (len < (int)strlen(fmt->name))				\
++		len = strlen(fmt->name);				\
+ 									\
+ 	return len;							\
+ }
+ 
+-#define __HPP_HEADER_FN(_type, _str) 					\
++#define __HPP_HEADER_FN(_type) 						\
+ static int hpp__header_##_type(struct perf_hpp_fmt *fmt,		\
+ 			       struct perf_hpp *hpp,			\
+ 			       struct perf_evsel *evsel)		\
+ {									\
+ 	int len = hpp__width_##_type(fmt, hpp, evsel);			\
+-	return scnprintf(hpp->buf, hpp->size, "%*s", len, _str);	\
++	return scnprintf(hpp->buf, hpp->size, "%*s", len, fmt->name);	\
+ }
+ 
+ static int hpp_color_scnprintf(struct perf_hpp *hpp, const char *fmt, ...)
+@@ -337,38 +337,35 @@ static int64_t hpp__sort_##_type(struct hist_entry *a, struct hist_entry *b)	\
+ }
+ 
+ 
+-#define HPP_PERCENT_FNS(_type, _str, _field)				\
+-__HPP_WIDTH_FN(_type, _str)						\
+-__HPP_HEADER_FN(_type, _str)						\
++#define HPP_PERCENT_FNS(_type, _field)					\
++__HPP_WIDTH_FN(_type)							\
++__HPP_HEADER_FN(_type)							\
+ __HPP_COLOR_PERCENT_FN(_type, _field)					\
+ __HPP_ENTRY_PERCENT_FN(_type, _field)					\
+ __HPP_SORT_FN(_type, _field)
+ 
+-#define HPP_PERCENT_ACC_FNS(_type, _str, _field)			\
+-__HPP_WIDTH_FN(_type, _str)						\
+-__HPP_HEADER_FN(_type, _str)						\
++#define HPP_PERCENT_ACC_FNS(_type, _field)				\
++__HPP_WIDTH_FN(_type)							\
++__HPP_HEADER_FN(_type)							\
+ __HPP_COLOR_ACC_PERCENT_FN(_type, _field)				\
+ __HPP_ENTRY_ACC_PERCENT_FN(_type, _field)				\
+ __HPP_SORT_ACC_FN(_type, _field)
+ 
+-#define HPP_RAW_FNS(_type, _str, _field)				\
+-__HPP_WIDTH_FN(_type, _str)						\
+-__HPP_HEADER_FN(_type, _str)						\
++#define HPP_RAW_FNS(_type, _field)					\
++__HPP_WIDTH_FN(_type)							\
++__HPP_HEADER_FN(_type)							\
+ __HPP_ENTRY_RAW_FN(_type, _field)					\
+ __HPP_SORT_RAW_FN(_type, _field)
+ 
+-__HPP_WIDTH_FN(overhead_self, "Self")
+-__HPP_HEADER_FN(overhead_self, "Self")
++HPP_PERCENT_FNS(overhead, period)
++HPP_PERCENT_FNS(overhead_sys, period_sys)
++HPP_PERCENT_FNS(overhead_us, period_us)
++HPP_PERCENT_FNS(overhead_guest_sys, period_guest_sys)
++HPP_PERCENT_FNS(overhead_guest_us, period_guest_us)
++HPP_PERCENT_ACC_FNS(overhead_acc, period)
+ 
+-HPP_PERCENT_FNS(overhead, "Overhead", period)
+-HPP_PERCENT_FNS(overhead_sys, "sys", period_sys)
+-HPP_PERCENT_FNS(overhead_us, "usr", period_us)
+-HPP_PERCENT_FNS(overhead_guest_sys, "guest sys", period_guest_sys)
+-HPP_PERCENT_FNS(overhead_guest_us, "guest usr", period_guest_us)
+-HPP_PERCENT_ACC_FNS(overhead_acc, "Children", period)
+-
+-HPP_RAW_FNS(samples, "Samples", nr_events)
+-HPP_RAW_FNS(period, "Period", period)
++HPP_RAW_FNS(samples, nr_events)
++HPP_RAW_FNS(period, period)
+ 
+ static int64_t hpp__nop_cmp(struct hist_entry *a __maybe_unused,
+ 			    struct hist_entry *b __maybe_unused)
+@@ -376,47 +373,50 @@ static int64_t hpp__nop_cmp(struct hist_entry *a __maybe_unused,
+ 	return 0;
+ }
+ 
+-#define HPP__COLOR_PRINT_FNS(_name)			\
++#define HPP__COLOR_PRINT_FNS(_name, _fn)		\
+ 	{						\
+-		.header	= hpp__header_ ## _name,	\
+-		.width	= hpp__width_ ## _name,		\
+-		.color	= hpp__color_ ## _name,		\
+-		.entry	= hpp__entry_ ## _name,		\
++		.name   = _name,			\
++		.header	= hpp__header_ ## _fn,		\
++		.width	= hpp__width_ ## _fn,		\
++		.color	= hpp__color_ ## _fn,		\
++		.entry	= hpp__entry_ ## _fn,		\
+ 		.cmp	= hpp__nop_cmp,			\
+ 		.collapse = hpp__nop_cmp,		\
+-		.sort	= hpp__sort_ ## _name,		\
++		.sort	= hpp__sort_ ## _fn,		\
+ 	}
+ 
+-#define HPP__COLOR_ACC_PRINT_FNS(_name)			\
++#define HPP__COLOR_ACC_PRINT_FNS(_name, _fn)		\
+ 	{						\
+-		.header	= hpp__header_ ## _name,	\
+-		.width	= hpp__width_ ## _name,		\
+-		.color	= hpp__color_ ## _name,		\
+-		.entry	= hpp__entry_ ## _name,		\
++		.name   = _name,			\
++		.header	= hpp__header_ ## _fn,		\
++		.width	= hpp__width_ ## _fn,		\
++		.color	= hpp__color_ ## _fn,		\
++		.entry	= hpp__entry_ ## _fn,		\
+ 		.cmp	= hpp__nop_cmp,			\
+ 		.collapse = hpp__nop_cmp,		\
+-		.sort	= hpp__sort_ ## _name,		\
++		.sort	= hpp__sort_ ## _fn,		\
+ 	}
+ 
+-#define HPP__PRINT_FNS(_name)				\
++#define HPP__PRINT_FNS(_name, _fn)			\
+ 	{						\
+-		.header	= hpp__header_ ## _name,	\
+-		.width	= hpp__width_ ## _name,		\
+-		.entry	= hpp__entry_ ## _name,		\
++		.name   = _name,			\
++		.header	= hpp__header_ ## _fn,	\
++		.width	= hpp__width_ ## _fn,		\
++		.entry	= hpp__entry_ ## _fn,		\
+ 		.cmp	= hpp__nop_cmp,			\
+ 		.collapse = hpp__nop_cmp,		\
+-		.sort	= hpp__sort_ ## _name,		\
++		.sort	= hpp__sort_ ## _fn,		\
+ 	}
+ 
+ struct perf_hpp_fmt perf_hpp__format[] = {
+-	HPP__COLOR_PRINT_FNS(overhead),
+-	HPP__COLOR_PRINT_FNS(overhead_sys),
+-	HPP__COLOR_PRINT_FNS(overhead_us),
+-	HPP__COLOR_PRINT_FNS(overhead_guest_sys),
+-	HPP__COLOR_PRINT_FNS(overhead_guest_us),
+-	HPP__COLOR_ACC_PRINT_FNS(overhead_acc),
+-	HPP__PRINT_FNS(samples),
+-	HPP__PRINT_FNS(period)
++	HPP__COLOR_PRINT_FNS("Overhead", overhead),
++	HPP__COLOR_PRINT_FNS("sys", overhead_sys),
++	HPP__COLOR_PRINT_FNS("usr", overhead_us),
++	HPP__COLOR_PRINT_FNS("guest sys", overhead_guest_sys),
++	HPP__COLOR_PRINT_FNS("guest usr", overhead_guest_us),
++	HPP__COLOR_ACC_PRINT_FNS("Children", overhead_acc),
++	HPP__PRINT_FNS("Samples", samples),
++	HPP__PRINT_FNS("Period", period)
+ };
+ 
+ LIST_HEAD(perf_hpp__list);
+@@ -466,11 +466,7 @@ void perf_hpp__init(void)
+ 
+ 	if (symbol_conf.cumulate_callchain) {
+ 		perf_hpp__column_enable(PERF_HPP__OVERHEAD_ACC);
+-
+-		perf_hpp__format[PERF_HPP__OVERHEAD].header =
+-						hpp__header_overhead_self;
+-		perf_hpp__format[PERF_HPP__OVERHEAD].width =
+-						hpp__width_overhead_self;
++		perf_hpp__format[PERF_HPP__OVERHEAD].name = "Self";
+ 	}
+ 
+ 	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
+@@ -536,8 +532,7 @@ void perf_hpp__cancel_cumulate(void)
+ 		return;
+ 
+ 	perf_hpp__column_disable(PERF_HPP__OVERHEAD_ACC);
+-	perf_hpp__format[PERF_HPP__OVERHEAD].header = hpp__header_overhead;
+-	perf_hpp__format[PERF_HPP__OVERHEAD].width = hpp__width_overhead;
++	perf_hpp__format[PERF_HPP__OVERHEAD].name = "Overhead";
+ }
+ 
+ void perf_hpp__setup_output_field(void)
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 2e70003fcd00..95405a8fbd95 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -192,6 +192,7 @@ struct perf_hpp {
+ };
+ 
+ struct perf_hpp_fmt {
++	const char *name;
+ 	int (*header)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
+ 		      struct perf_evsel *evsel);
+ 	int (*width)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index f89714329c0f..7a1944f8d001 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -1203,8 +1203,7 @@ void perf_hpp__reset_sort_width(struct perf_hpp_fmt *fmt, struct hists *hists)
+ 		return;
+ 
+ 	hse = container_of(fmt, struct hpp_sort_entry, hpp);
+-	hists__new_col_len(hists, hse->se->se_width_idx,
+-			   strlen(hse->se->se_header));
++	hists__new_col_len(hists, hse->se->se_width_idx, strlen(fmt->name));
+ }
+ 
+ static int __sort__hpp_header(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
+@@ -1218,7 +1217,7 @@ static int __sort__hpp_header(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
+ 	if (!len)
+ 		len = hists__col_len(&evsel->hists, hse->se->se_width_idx);
+ 
+-	return scnprintf(hpp->buf, hpp->size, "%-*.*s", len, len, hse->se->se_header);
++	return scnprintf(hpp->buf, hpp->size, "%-*.*s", len, len, fmt->name);
+ }
+ 
+ static int __sort__hpp_width(struct perf_hpp_fmt *fmt,
+@@ -1262,6 +1261,7 @@ __sort_dimension__alloc_hpp(struct sort_dimension *sd)
+ 	}
+ 
+ 	hse->se = sd->entry;
++	hse->hpp.name = sd->entry->se_header;
+ 	hse->hpp.header = __sort__hpp_header;
+ 	hse->hpp.width = __sort__hpp_width;
+ 	hse->hpp.entry = __sort__hpp_entry;
 -- 
 2.0.0
 
