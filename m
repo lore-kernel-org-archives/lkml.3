@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756440AbaGIXdO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 19:33:14 -0400
-Received: from mga09.intel.com ([134.134.136.24]:58745 "EHLO mga09.intel.com"
+	id S932306AbaGIXdV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 19:33:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:58752 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753945AbaGIXdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 19:33:12 -0400
+	id S932210AbaGIXdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 19:33:20 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,634,1400050800"; 
-   d="scan'208";a="541145302"
-Message-ID: <53BDD135.1000105@intel.com>
-Date: Wed, 09 Jul 2014 16:33:09 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+   d="scan'208";a="570853299"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Havard Skinnemoen <hskinnemoen@google.com>,
+        Andi Kleen <andi@firstfloor.org>
+CC: Borislav Petkov <bp@alien8.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ewout van Bekkum <ewout@google.com>
+Subject: RE: [PATCH 4/6] x86-mce: Add spinlocks to prevent duplicated MCP
+ and CMCI reports.
+Thread-Topic: [PATCH 4/6] x86-mce: Add spinlocks to prevent duplicated MCP
+ and CMCI reports.
+Thread-Index: AQHPm7VRKQRI444FeUKUaXDupa/8IJuYveoA//+l3oA=
+Date: Wed, 9 Jul 2014 23:32:53 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F328578D2@ORSMSX114.amr.corp.intel.com>
+References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
+	<1404925766-32253-5-git-send-email-hskinnemoen@google.com>
+	<87a98inucv.fsf@tassilo.jf.intel.com>
+ <CAFQmdRZejRwbk90kZoN777EO+a5VN8+AaXcjeqLzSBT6U2QfRw@mail.gmail.com>
+In-Reply-To: <CAFQmdRZejRwbk90kZoN777EO+a5VN8+AaXcjeqLzSBT6U2QfRw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Vegard Nossum <vegard.nossum@gmail.com>, Andi Kleen <andi@firstfloor.org>
-CC: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Alexey Preobrazhensky <preobr@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kbuild <linux-kbuild@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, x86 maintainers <x86@kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: [RFC/PATCH RESEND -next 00/21] Address sanitizer for kernel (kasan)
- - dynamic memory error detector.
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>	<53BDB1D6.1090605@intel.com>	<8761j6nr53.fsf@tassilo.jf.intel.com> <CAOMGZ=Fmqg6MWyx3NygqVmYiqw=npkPQrO9ifhF489bq5Gxz4A@mail.gmail.com>
-In-Reply-To: <CAOMGZ=Fmqg6MWyx3NygqVmYiqw=npkPQrO9ifhF489bq5Gxz4A@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s69NXPG4003655
 
-On 07/09/2014 02:59 PM, Vegard Nossum wrote:
->> > But I could see KASAN eventually deprecating kmemcheck, which
->> > is just incredible slow.
-> FWIW, I definitely agree with this -- if KASAN can do everything that
-> kmemcheck can, it is no doubt the right way forward.
+> I don't think we got the description right here. I think the real
+> issue here was machine check polls happening on multiple CPUs with
+> shared banks, all reporting the same MCEs. This is very reproducible
+> when booting with mce=no_cmci, since all CPUs will handle all banks,
+> and there's AFAICT no good way to identify shared banks without
+> enabling CMCI.
 
-That's very cool.  For what it's worth, the per-arch work does appear to
-be pretty minimal and the things like the string function replacements
-_should_ be able to be made generic.  Aren't the x86_32/x86_64 and arm
-hooks pretty much copied-and-pasted?
+Ok - then update the description to enumerate the problem cases.
+Probably:
 
+*) mce=no_cmci
+*) Intel cpus with MCG_CAP.MCG_CMCI_P=0
+*) AMD cpus (they don't do CMCI at all, do they??)
+
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
