@@ -1,104 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046AbaGIMZH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 08:25:07 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:56354 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755749AbaGIMY3 (ORCPT
+	id S1755885AbaGIMX6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 08:23:58 -0400
+Received: from michel.telenet-ops.be ([195.130.137.88]:55316 "EHLO
+	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755322AbaGIMXz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 08:24:29 -0400
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>, <santosh.shilimkar@ti.com>,
-        <netdev@vger.kernel.org>
-CC: <prabhakar.csengg@gmail.com>, Sekhar Nori <nsekhar@ti.com>,
-        Rob Herring <robh+dt@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: [PATCH 1/2] net: davinci_mdio: reuse for keystone2 arch
-Date: Wed, 9 Jul 2014 16:10:50 +0300
-Message-ID: <1404911451-9921-2-git-send-email-grygorii.strashko@ti.com>
+	Wed, 9 Jul 2014 08:23:55 -0400
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>
+Cc: devicetree@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH 01/13] of: Add vendor prefix for Sitronix
+Date: Wed,  9 Jul 2014 14:23:31 +0200
+Message-Id: <1404908623-909-2-git-send-email-geert+renesas@glider.be>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1404911451-9921-1-git-send-email-grygorii.strashko@ti.com>
-References: <1404911451-9921-1-git-send-email-grygorii.strashko@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1404908623-909-1-git-send-email-geert+renesas@glider.be>
+References: <1404908623-909-1-git-send-email-geert+renesas@glider.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The similar MDIO HW blocks is used by keystone 2 SoCs as
-in Davinci SoCs:
-- one in Gigabit Ethernet (GbE) Switch Subsystem
-  See http://www.ti.com/lit/ug/sprugv9d/sprugv9d.pdf
-- one in 10 Gigabit Ethernet Subsystem
-  See http://www.ti.com/lit/ug/spruhj5/spruhj5.pdf
+The stock ticker for Sitronix is just a number.
+"sitronix,st1232" is used for the Sitronix st1232 touchscreen controller.
 
-Hence, reuse Davinci MDIO driver for Keystone 2 and
-enable TI networking for Keystone 2 devices
-
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 ---
- .../devicetree/bindings/net/davinci-mdio.txt       |    8 ++++----
- drivers/net/ethernet/ti/Kconfig                    |    4 ++--
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/Documentation/devicetree/bindings/net/davinci-mdio.txt b/Documentation/devicetree/bindings/net/davinci-mdio.txt
-index 72efaaf..d2e68e7 100644
---- a/Documentation/devicetree/bindings/net/davinci-mdio.txt
-+++ b/Documentation/devicetree/bindings/net/davinci-mdio.txt
-@@ -1,8 +1,8 @@
--TI SoC Davinci MDIO Controller Device Tree Bindings
-+TI SoC Davinci/Keystone2 MDIO Controller Device Tree Bindings
- ---------------------------------------------------
- 
- Required properties:
--- compatible		: Should be "ti,davinci_mdio"
-+- compatible		: Should be "ti,davinci_mdio" or "ti,keystone-mdio"
- - reg			: physical base address and size of the davinci mdio
- 			  registers map
- - bus_freq		: Mdio Bus frequency
-@@ -19,7 +19,7 @@ file.
- Examples:
- 
- 	mdio: davinci_mdio@4A101000 {
--		compatible = "ti,cpsw";
-+		compatible = "ti,davinci_mdio";
- 		reg = <0x4A101000 0x1000>;
- 		bus_freq = <1000000>;
- 	};
-@@ -27,7 +27,7 @@ Examples:
- (or)
- 
- 	mdio: davinci_mdio@4A101000 {
--		compatible = "ti,cpsw";
-+		compatible = "ti,davinci_mdio";
- 		ti,hwmods = "davinci_mdio";
- 		bus_freq = <1000000>;
- 	};
-diff --git a/drivers/net/ethernet/ti/Kconfig b/drivers/net/ethernet/ti/Kconfig
-index 53150c2..1769700 100644
---- a/drivers/net/ethernet/ti/Kconfig
-+++ b/drivers/net/ethernet/ti/Kconfig
-@@ -5,7 +5,7 @@
- config NET_VENDOR_TI
- 	bool "Texas Instruments (TI) devices"
- 	default y
--	depends on PCI || EISA || AR7 || (ARM && (ARCH_DAVINCI || ARCH_OMAP3 || SOC_AM33XX))
-+	depends on PCI || EISA || AR7 || (ARM && (ARCH_DAVINCI || ARCH_OMAP3 || SOC_AM33XX || ARCH_KEYSTONE))
- 	---help---
- 	  If you have a network (Ethernet) card belonging to this class, say Y
- 	  and read the Ethernet-HOWTO, available from
-@@ -32,7 +32,7 @@ config TI_DAVINCI_EMAC
- 
- config TI_DAVINCI_MDIO
- 	tristate "TI DaVinci MDIO Support"
--	depends on ARM && ( ARCH_DAVINCI || ARCH_OMAP3 || SOC_AM33XX )
-+	depends on ARM && ( ARCH_DAVINCI || ARCH_OMAP3 || SOC_AM33XX || ARCH_KEYSTONE )
- 	select PHYLIB
- 	---help---
- 	  This driver supports TI's DaVinci MDIO module.
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index 46a311e728a8..967bb7797a54 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -120,6 +120,7 @@ silabs	Silicon Laboratories
+ simtek
+ sii	Seiko Instruments, Inc.
+ sirf	SiRF Technology, Inc.
++sitronix	Sitronix Technology Corporation
+ smsc	Standard Microsystems Corporation
+ snps 	Synopsys, Inc.
+ spansion	Spansion Inc.
 -- 
-1.7.9.5
+1.9.1
 
