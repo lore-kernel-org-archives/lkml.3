@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460AbaGIGzu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 02:55:50 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:38735 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751542AbaGIGzt (ORCPT
+	id S932088AbaGIGz6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 02:55:58 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:62272 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751542AbaGIGzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 02:55:49 -0400
+	Wed, 9 Jul 2014 02:55:55 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: tglx@linutronix.de
 Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
         fweisbec@gmail.com, arvind.chauhan@arm.com, preeti@linux.vnet.ibm.com,
-        khilman@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@redhat.com>, netdev@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [RFC 0/7] hrtimer: drop active hrtimer checks after adding it
-Date: Wed,  9 Jul 2014 12:25:32 +0530
-Message-Id: <cover.1404888801.git.viresh.kumar@linaro.org>
+        khilman@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [RFC 1/7] hrtimer: Warn if hrtimer_start*() failed to enqueue hrtimer
+Date: Wed,  9 Jul 2014 12:25:33 +0530
+Message-Id: <bc8cabd00810c2f91cb45a64514f5c4ca12d584c.1404888801.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 2.0.0.rc2
+In-Reply-To: <cover.1404888801.git.viresh.kumar@linaro.org>
+References: <cover.1404888801.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1404888801.git.viresh.kumar@linaro.org>
+References: <cover.1404888801.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,50 +29,34 @@ only special case is when the hrtimer was in past. If it is getting enqueued to
 local CPUs's clock-base, we raise a softirq and exit, else we handle that on
 next interrupt on remote CPU.
 
-At several places in the kernel, we try to make sure if hrtimer was added
-properly or not by calling hrtimer_active(), like:
+At several places in kernel we check if hrtimer is enqueued properly with
+hrtimer_active(). This isn't required and can be dropped.
 
-	hrtimer_start(timer, expires, mode);
-	if (hrtimer_active(timer)) {
-		/* Added successfully */
-	} else {
-		/* Was added in the past */
-	}
+Before fixing that, lets make sure hrtimer is always enqueued properly by adding
 
-As hrtimer_start*() never fails, hrtimer_active() is guaranteed to return '1'.
-So, there is no point calling hrtimer_active().
+	WARN_ON_ONCE(!hrtimer_active(timer));
 
-First patch adds a WARN_ON_ONCE() to __hrtimer_start_range_ns() to make sure
-hrtimers are always enqueued from it. Next 6 patches update several parts of
-kernel to drop calls to hrtimer_active() after starting a hrtimer.
+towards the end of __hrtimer_start_range_ns().
 
-Rebased over 3.16-rc4 and pushed here:
-git://git.kernel.org/pub/scm/linux/kernel/git/vireshk/linux.git hrtimer/drop-hrtimer-active-calls
+Suggested-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ kernel/hrtimer.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Cc: Darren Hart <dvhart@linux.intel.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: netdev@vger.kernel.org
-Cc: Peter Zijlstra <peterz@infradead.org>
-
-Viresh Kumar (7):
-  hrtimer: Warn if hrtimer_start*() failed to enqueue hrtimer
-  hrtimer: don't check for active hrtimer after adding it
-  tick: don't check for active hrtimer after adding it
-  sched: don't check for active hrtimer after adding it
-  futex: don't check for active hrtimer after adding it
-  rtmutex: don't check for active hrtimer after adding it
-  net: don't check for active hrtimer after adding it
-
- kernel/futex.c           |  5 +----
- kernel/hrtimer.c         |  6 ++----
- kernel/locking/rtmutex.c |  5 +----
- kernel/sched/core.c      | 20 +++++++++-----------
- kernel/sched/deadline.c  |  2 +-
- kernel/time/tick-sched.c | 45 ++++++++++++++++++---------------------------
- net/core/pktgen.c        |  2 --
- 7 files changed, 32 insertions(+), 53 deletions(-)
-
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 3ab2899..cf40209 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1037,6 +1037,8 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ 
+ 	unlock_hrtimer_base(timer, &flags);
+ 
++	/* Make sure timer is enqueued */
++	WARN_ON_ONCE(!hrtimer_active(timer));
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(__hrtimer_start_range_ns);
 -- 
 2.0.0.rc2
 
