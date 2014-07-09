@@ -1,120 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756089AbaGIQxE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 12:53:04 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:49721 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753748AbaGIQxC (ORCPT
+	id S1756315AbaGIQyE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 12:54:04 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:30804 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754666AbaGIQyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 12:53:02 -0400
-Date: Wed, 9 Jul 2014 18:52:56 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ARM: at91: Switch to CCF for 3.17
-Message-ID: <20140709165256.GO3113@piout.net>
+	Wed, 9 Jul 2014 12:54:01 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: drivers for 3.17 #1
+Date: Wed, 9 Jul 2014 18:53:57 +0200
+Message-ID: <1404924837-20952-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nicolas,
+Arnd, Olof, Kevin,
 
-This is the switch to CCF for all the remaining at91 SoCs and boards. It
-is based on my branch that already include fixes that you or Mike
-Turquette have taken. Please tell me if you want me to rebase.
+This update delayed to 3.17, is about replacing the existing calls to the
+older, non-standard drivers by the use of the newer "pwm-atmel" which takes
+advantage of the PWM framework.
+All concerned maintainer gave their acknowledgement to the relevant patches.
+At the end, it removes three obsolete drivers and the diffstat looks pretty
+nice as well.
 
-The following changes since commit 17229cb7259e6d4ab8d26f9c7c71e33ccaf072aa:
+Thanks, best regards,
 
-  clk: at91: main: warn when the main crystal frequency is not set (2014-07-07 22:12:55 +0200)
+The following changes since commit 4c834452aad01531db949414f94f817a86348d59:
+
+  Linux 3.16-rc3 (2014-06-29 14:11:36 -0700)
 
 are available in the git repository at:
 
-  git://github.com/at91linux/linux-at91.git tags/CCF-for-3.17
+  git://github.com/at91linux/linux-at91.git tags/at91-drivers
 
-for you to fetch changes up to f2558fcdc7ceaa31f265a85292db145ced2c4362:
+for you to fetch changes up to f2a70e1fc1ccc0fcdf4ad12db7382134228fb552:
 
-  ARM: at91/dt: usb_a9263: define crystals frequencies (2014-07-09 18:29:45 +0200)
-
-----------------------------------------------------------------
-CCF migration for 3.17
+  misc: atmel_pwm: remove obsolete driver (2014-07-09 15:14:35 +0200)
 
 ----------------------------------------------------------------
-Alexandre Belloni (34):
-      Documentation: dt: document all the atmel pmc compatibles
-      ARM: at91/dt: ariag25: define crystals frequencies
-      ARM: at91: prepare common clk transition for rm9200
-      ARM: at91/dt: rm9200: define clocks
-      ARM: at91: move at91rm9200 SoC to the CCF
-      ARM: at91/dt: at91rm9200ek: define crystals frequencies
-      ARM: at91: prepare common clk transition for sam9260
-      ARM: at91/dt: sam9260: define clocks
-      ARM: at91/dt: sam9g20: define clocks
-      ARM: at91: move at91sam9260 SoCs to the CCF
-      ARM: at91/dt: at91sam9g20ek: define crystals frequencies
-      ARM: at91/dt: foxg20: define crystals frequencies
-      ARM: at91/dt: usb_a9260: define crystals frequencies
-      ARM: at91/dt: tny_a9260: define crystals frequencies
-      ARM: at91/dt: qil_a9260: define crystals frequencies
-      ARM: at91/dt: mpa1600: define crytals frequencies
-      ARM: at91/dt: ge863-pro3: define main crystal frequency
-      ARM: at91/dt: aks-cdu: define slow crytal frequency
-      ARM: at91/dt: evk-pro3: define slow crytal frequency
-      ARM: at91/dt: ethernut5: define crystals frequencies
-      ARM: at91/dt: animeo_ip: define crystals frequencies
-      ARM: at91/dt: kizbox: define main crystal frequency
-      ARM: at91: prepare common clk transition for sam9g45
-      ARM: at91/dt: sam9g45: define clocks
-      ARM: at91: move at91sam9g45 SoC to the CCF
-      ARM: at91/dt: sam9m10g45ek: define crystals frequencies
-      ARM: at91/dt: pm9g45: crystals frequencies
-      ARM: at91/dt: cosino define crystals frequencies
-      ARM: at91: prepare common clk transition for sam9263
-      ARM: at91/dt: sam9263: define clocks
-      ARM: at91: move at91sam9263 SoC to the CCF
-      ARM: at91/dt: sam9263ek: define crystals frequencies
-      ARM: at91/dt: tny_a9263: define crystals frequencies
-      ARM: at91/dt: usb_a9263: define crystals frequencies
+Atmel PWM driver update for 3.17
+- move to the new PWM driver which uses PWM framework
+- remove 3 obsolete drivers (atmel-pwm-bl.c, leds-atmel-pwm.c and atmel_pwm.c)
 
- .../devicetree/bindings/arm/atmel-pmc.txt          |   5 +-
- arch/arm/boot/dts/aks-cdu.dts                      |   6 +
- arch/arm/boot/dts/animeo_ip.dts                    |   8 +
- arch/arm/boot/dts/at91-ariag25.dts                 |   8 +
- arch/arm/boot/dts/at91-cosino.dtsi                 |   8 +
- arch/arm/boot/dts/at91-foxg20.dts                  |   8 +
- arch/arm/boot/dts/at91-qil_a9260.dts               |   8 +
- arch/arm/boot/dts/at91rm9200.dtsi                  | 304 ++++++++++++++++++
- arch/arm/boot/dts/at91rm9200ek.dts                 |   8 +
- arch/arm/boot/dts/at91sam9260.dtsi                 | 314 ++++++++++++++++++-
- arch/arm/boot/dts/at91sam9263.dtsi                 | 311 +++++++++++++++++++
- arch/arm/boot/dts/at91sam9263ek.dts                |   8 +
- arch/arm/boot/dts/at91sam9g20.dtsi                 |  24 ++
- arch/arm/boot/dts/at91sam9g20ek_common.dtsi        |   8 +
- arch/arm/boot/dts/at91sam9g45.dtsi                 | 342 ++++++++++++++++++++-
- arch/arm/boot/dts/at91sam9m10g45ek.dts             |   8 +
- arch/arm/boot/dts/ethernut5.dts                    |  10 +
- arch/arm/boot/dts/evk-pro3.dts                     |   6 +
- arch/arm/boot/dts/ge863-pro3.dtsi                  |   4 +
- arch/arm/boot/dts/kizbox.dts                       |   4 +
- arch/arm/boot/dts/mpa1600.dts                      |   8 +
- arch/arm/boot/dts/pm9g45.dts                       |   8 +
- arch/arm/boot/dts/tny_a9260_common.dtsi            |   8 +
- arch/arm/boot/dts/tny_a9263.dts                    |   8 +
- arch/arm/boot/dts/usb_a9260_common.dtsi            |   8 +
- arch/arm/boot/dts/usb_a9263.dts                    |   8 +
- arch/arm/mach-at91/Kconfig                         |   4 -
- arch/arm/mach-at91/at91rm9200.c                    |   6 +-
- arch/arm/mach-at91/at91sam9260.c                   |   6 +-
- arch/arm/mach-at91/at91sam9263.c                   |   6 +-
- arch/arm/mach-at91/at91sam9g45.c                   |   6 +-
- 31 files changed, 1467 insertions(+), 11 deletions(-)
+----------------------------------------------------------------
+Alexandre Belloni (15):
+      ARM: at91: at91sam9g45: switch to generic PWM framework
+      ARM: at91: sam9m10g45ek: use generic leds_pwm driver
+      ARM: at91: at91sam9263: switch to generic PWM framework
+      ARM: at91: sam9263ek: use generic leds_pwm driver
+      ARM: at91: at91sam9rl: switch to generic PWM framework
+      ARM: at91: remove useless at91_pwm_leds()
+      PWM: atmel: allow building for AVR32
+      avr32/at32ap: switch to the generic PWM framework
+      avr32: MRMT: use generic leds_pwm driver
+      avr32: merisc: use generic leds_pwm driver
+      avr32: favr-32: use generic pwm_bl driver
+      avr32: update defconfig to use the generic PWM framework
+      backlight: atmel-pwm-bl: remove obsolete driver
+      leds: atmel-pwm: remove obsolete driver
+      misc: atmel_pwm: remove obsolete driver
+
+ arch/arm/mach-at91/at91sam9263.c           |   1 +
+ arch/arm/mach-at91/at91sam9263_devices.c   |  11 +-
+ arch/arm/mach-at91/at91sam9g45.c           |   1 +
+ arch/arm/mach-at91/at91sam9g45_devices.c   |  11 +-
+ arch/arm/mach-at91/at91sam9rl.c            |   1 +
+ arch/arm/mach-at91/at91sam9rl_devices.c    |  11 +-
+ arch/arm/mach-at91/board-sam9263ek.c       |  55 +++-
+ arch/arm/mach-at91/board-sam9m10g45ek.c    |  42 ++-
+ arch/arm/mach-at91/board.h                 |   1 -
+ arch/arm/mach-at91/leds.c                  |  37 ---
+ arch/avr32/boards/atngw100/mrmt.c          |  34 ++-
+ arch/avr32/boards/favr-32/setup.c          |  48 ++--
+ arch/avr32/boards/merisc/setup.c           |  34 ++-
+ arch/avr32/configs/atngw100_mrmt_defconfig |   5 +-
+ arch/avr32/configs/atstk1002_defconfig     |   5 +-
+ arch/avr32/configs/atstk1003_defconfig     |   5 +-
+ arch/avr32/configs/atstk1004_defconfig     |   5 +-
+ arch/avr32/configs/atstk1006_defconfig     |   5 +-
+ arch/avr32/configs/favr-32_defconfig       |   6 +-
+ arch/avr32/configs/merisc_defconfig        |   5 +-
+ arch/avr32/mach-at32ap/at32ap700x.c        |   7 +-
+ drivers/leds/Kconfig                       |   8 -
+ drivers/leds/Makefile                      |   1 -
+ drivers/leds/leds-atmel-pwm.c              | 149 -----------
+ drivers/misc/Kconfig                       |  10 -
+ drivers/misc/Makefile                      |   1 -
+ drivers/misc/atmel_pwm.c                   | 402 -----------------------------
+ drivers/pwm/Kconfig                        |   2 +-
+ drivers/video/backlight/Kconfig            |  11 -
+ drivers/video/backlight/Makefile           |   1 -
+ drivers/video/backlight/atmel-pwm-bl.c     | 223 ----------------
+ include/linux/atmel-pwm-bl.h               |  43 ---
+ include/linux/atmel_pwm.h                  |  70 -----
+ 33 files changed, 186 insertions(+), 1065 deletions(-)
+ delete mode 100644 drivers/leds/leds-atmel-pwm.c
+ delete mode 100644 drivers/misc/atmel_pwm.c
+ delete mode 100644 drivers/video/backlight/atmel-pwm-bl.c
+ delete mode 100644 include/linux/atmel-pwm-bl.h
+ delete mode 100644 include/linux/atmel_pwm.h
 
 -- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Nicolas Ferre
