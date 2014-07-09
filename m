@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756381AbaGIQg4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 12:36:56 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:53581 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751948AbaGIQgy (ORCPT
+	id S1756425AbaGIQh2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 12:37:28 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:35976 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755249AbaGIQh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 12:36:54 -0400
-Date: Wed, 9 Jul 2014 20:36:31 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Tim Hockin <thockin@hockin.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, Cgroups <cgroups@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [PATCH RFC 0/5] Virtual Memory Resource Controller for cgroups
-Message-ID: <20140709163631.GG6685@esperanza>
-References: <cover.1404383187.git.vdavydov@parallels.com>
- <20140709075252.GB31067@esperanza>
- <CAAAKZwsRDb6a062SFZYv-1SDYyD12uTzVMpdZt0CtdDjoddNVg@mail.gmail.com>
+	Wed, 9 Jul 2014 12:37:26 -0400
+Date: Wed, 9 Jul 2014 17:37:20 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kishon <kishon@ti.com>, "kernel@stlinux.com" <kernel@stlinux.com>
+Subject: Re: [PATCH v3 1/5] phy: miphy365x: Add Device Tree bindings for the
+ MiPHY365x
+Message-ID: <20140709163720.GN2635@lee--X1>
+References: <1404906074-31992-1-git-send-email-lee.jones@linaro.org>
+ <1404906074-31992-2-git-send-email-lee.jones@linaro.org>
+ <CAG374jBLq8YShOakBJtf2U47wuKGYNM7vSTn4PjzHsvjaYjmNQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAAAKZwsRDb6a062SFZYv-1SDYyD12uTzVMpdZt0CtdDjoddNVg@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAG374jBLq8YShOakBJtf2U47wuKGYNM7vSTn4PjzHsvjaYjmNQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tim,
+On Wed, 09 Jul 2014, Gabriel Fernandez wrote:
+> On 9 July 2014 13:41, Lee Jones <lee.jones@linaro.org> wrote:
+> > The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
+> > devices. It has 2 ports which it can use for either; both SATA, both
+> > PCIe or one of each in any configuration.
+> >
+> > Cc: Kishon Vijay Abraham I <kishon@ti.com>
+> > Acked-by: Mark Rutland <mark.rutland@arm.com>
+> > Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > ---
+> >  .../devicetree/bindings/phy/phy-miphy365x.txt      | 76 ++++++++++++++++++++++
+> >  1 file changed, 76 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/phy/phy-miphy365x.txt
 
-On Wed, Jul 09, 2014 at 08:08:07AM -0700, Tim Hockin wrote:
-> How is this different from RLIMIT_AS?  You specifically mentioned it
-> earlier but you don't explain how this is different.
+[...]
 
-The main difference is that RLIMIT_AS is per process while this
-controller is per cgroup. RLIMIT_AS doesn't allow us to limit VSIZE for
-a group of unrelated or cooperating through shmem processes.
+> > +Specifying phy control of devices
+> > +=================================
+> > +
+> > +Device nodes should specify the configuration required in their "phys"
+> > +property, containing a phandle to the phy port node and a device type.
+> > +
+> > +Example:
+> > +
+> > +#include <dt-bindings/phy/phy-miphy365x.h>
+> > +
+> > +       sata0: sata@fe380000 {
+> > +               ...
+> > +               phys      = <&miphy365x_phy MIPHY_TYPE_SATA>;
+> > +               ...
+> 
+> In this example you select the type (SATA) but I don't understand how
+> do you select
+> the port (phy_port0 or phy_port1)
 
-Also RLIMIT_AS accounts for total VM usage (including file mappings),
-while this only charges private writable and shared mappings, whose
-faulted-in pages always occupy mem+swap and therefore cannot be just
-synced and dropped like file pages. In other words, this controller
-works exactly as the global overcommit control.
+Right, historical typo.  Will send a v+1 as a reply, so it's easy for
+Kishon to collect when he applies next week.
 
-> From my perspective, this is pointless.  There's plenty of perfectly
-> correct software that mmaps files without concern for VSIZE, because
-> they never fault most of those pages in.
-
-But there's also software that correctly handles ENOMEM returned by
-mmap. For example, mongodb keeps growing its buffers until mmap fails.
-Therefore, if there's no overcommit control, it will be OOM-killed
-sooner or later, which may be pretty annoying. And we did have customers
-complaining about that.
-
-> From my observations it is not generally possible to predict an
-> average VSIZE limit that would satisfy your concerns *and* not kill
-> lots of valid apps.
-
-Yes, it's difficult. Actually, we can only guess. Nevertheless, we
-predict and set the VSIZE limit system-wide by default.
-
-> It sounds like what you want is to limit or even disable swap usage.
-
-I want to avoid OOM kill if it's possible to return ENOMEM. OOM can be
-painful. It can kill lots of innocent processes. Of course, the user can
-protect some processes by setting oom_score_adj, but this is difficult
-and requires time and expertise, so an average user won't do that.
-
-> Given your example, your hypothetical user would probably be better of
-> getting an OOM kill early so she can fix her job spec to request more
-> memory.
-
-In my example the user won't get OOM kill *early*...
-
-Thanks.
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
