@@ -1,124 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751803AbaGIFif (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 01:38:35 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:47936 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751294AbaGIFid (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 01:38:33 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Wed, 9 Jul 2014 14:38:37 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Steve Capper <steve.capper@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v11 6/7] ARM: add pmd_[dirty|mkclean] for THP
-Message-ID: <20140709053837.GC9824@bbox>
-References: <1404799424-1120-1-git-send-email-minchan@kernel.org>
- <1404799424-1120-7-git-send-email-minchan@kernel.org>
- <20140708113737.GA2958@linaro.org>
+	id S1753920AbaGIFiy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 01:38:54 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44666 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752051AbaGIFio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 01:38:44 -0400
+From: Keerthy <j-keerthy@ti.com>
+To: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+CC: <mark.rutland@arm.com>, <galak@codeaurora.org>, <robh+dt@kernel.org>,
+        <linux@arm.linux.org.uk>, <balbi@ti.com>, <tony@atomide.com>,
+        <kishon@ti.com>, <broonie@kernel.org>, Keerthy <j-keerthy@ti.com>
+Subject: [PATCH v3 2/7] mfd: Add DT bindings for tps65218 PMIC
+Date: Wed, 9 Jul 2014 11:06:28 +0530
+Message-ID: <1404884193-20580-3-git-send-email-j-keerthy@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1404884193-20580-1-git-send-email-j-keerthy@ti.com>
+References: <1404884193-20580-1-git-send-email-j-keerthy@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140708113737.GA2958@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Steve,
+Add DT bindings for tps65218 PMIC
 
-On Tue, Jul 08, 2014 at 12:37:38PM +0100, Steve Capper wrote:
-> On Tue, Jul 08, 2014 at 03:03:43PM +0900, Minchan Kim wrote:
-> > MADV_FREE needs pmd_dirty and pmd_mkclean for detecting recent
-> > overwrite of the contents since MADV_FREE syscall is called for
-> > THP page.
-> > 
-> > This patch adds pmd_dirty and pmd_mkclean for THP page MADV_FREE
-> > support.
-> > 
-> > Cc: Catalin Marinas <catalin.marinas@arm.com>
-> > Cc: Will Deacon <will.deacon@arm.com>
-> > Cc: Steve Capper <steve.capper@linaro.org>
-> > Cc: Russell King <linux@arm.linux.org.uk>
-> > Cc: linux-arm-kernel@lists.infradead.org
-> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > ---
-> >  arch/arm/include/asm/pgtable-3level.h | 3 +++
-> >  arch/arm64/include/asm/pgtable.h      | 2 ++
-> >  2 files changed, 5 insertions(+)
-> 
-> Hi Minchan,
-> arch/arm and arch/arm64 are handled separately.
-> Could you please split this patch into arm and arm64 versions?
-> 
+Signed-off-by: Keerthy <j-keerthy@ti.com>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+---
+ Documentation/devicetree/bindings/mfd/tps65218.txt |   89 ++++++++++++++++++++
+ 1 file changed, 89 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/tps65218.txt
 
-Sure.
-
-> 
-> > 
-> > diff --git a/arch/arm/include/asm/pgtable-3level.h b/arch/arm/include/asm/pgtable-3level.h
-> > index 85c60adc8b60..3a7bb8dc7d05 100644
-> > --- a/arch/arm/include/asm/pgtable-3level.h
-> > +++ b/arch/arm/include/asm/pgtable-3level.h
-> > @@ -220,6 +220,8 @@ static inline pmd_t *pmd_offset(pud_t *pud, unsigned long addr)
-> >  #define pmd_trans_splitting(pmd) (pmd_val(pmd) & PMD_SECT_SPLITTING)
-> >  #endif
-> >  
-> > +#define pmd_dirty	(pmd_val(pmd) & PMD_SECT_DIRTY)
-> 
-> This macro is missing the parameter definition, and will generate a
-> compile errror when CONFIG_ARM_LPAE=y
-> 
-> For 32-bit ARM with CONFIG_ARM_LPAE=n, we don't have THP support and I noticed
-> some compiler errors in mm/madvise.c:
-> 
->   CC      mm/madvise.o
-> mm/madvise.c: In function ‘madvise_free_pte_range’:
-> mm/madvise.c:279:3: error: implicit declaration of function ‘pmdp_get_and_clear’ [-Werror=implicit-function-declaration]
->    orig_pmd = pmdp_get_and_clear(mm, addr, pmd);
->    ^
-> mm/madvise.c:285:3: error: implicit declaration of function ‘pmd_mkold’ [-Werror=implicit-function-declaration]
->    orig_pmd = pmd_mkold(orig_pmd);
->    ^
-> mm/madvise.c:286:3: error: implicit declaration of function ‘pmd_mkclean’ [-Werror=implicit-function-declaration]
->    orig_pmd = pmd_mkclean(orig_pmd);
->    ^
-> mm/madvise.c:288:3: error: implicit declaration of function ‘set_pmd_at’ [-Werror=implicit-function-declaration]
->    set_pmd_at(mm, addr, pmd, orig_pmd);
->    ^
-> cc1: some warnings being treated as errors
-> make[1]: *** [mm/madvise.o] Error 1
-> 
-
-Oops, will fix.
-
-Thanks for the review!
-
-> 
-> Cheers,
-> -- 
-> Steve 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
+diff --git a/Documentation/devicetree/bindings/mfd/tps65218.txt b/Documentation/devicetree/bindings/mfd/tps65218.txt
+new file mode 100644
+index 0000000..01ac973
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/tps65218.txt
+@@ -0,0 +1,89 @@
++Texas Instruments TPS65218 family
++
++The TPS65218 are Integrated Power Management Chips.
++
++Required properties:
++- compatible : Must be "ti,tps65218";
++  For Integrated power-management used in AM437x based boards
++- interrupts : This i2c device has an IRQ line connected to the main SoC
++- interrupt-controller : Since the tps65218 supports several interrupts
++  internally, it is considered as an interrupt controller cascaded to the
++  SoC one.
++- #interrupt-cells = <2>;
++- interrupt-parent : The parent interrupt controller which is gic.
++
++Optional node:
++- TPS65218 PMIC has a number of child nodes. Mainly the regularors and SMPSs.
++
++Example:
++/*
++ * Integrated Power Management Chip
++ */
++tps65218: tps65218@24 {
++	reg = <0x24>;
++	compatible = "ti,tps65218";
++	interrupts = <GIC_SPI 7 IRQ_TYPE_NONE>; /* NMIn */
++	interrupt-parent = <&gic>;
++	interrupt-controller;
++	#interrupt-cells = <2>;
++
++	dcdc1: regulator-dcdc1 {
++		compatible = "ti,tps65218-dcdc1";
++		/* VDD_CORE voltage limits min of OPP50 and max of OPP100 */
++		regulator-name = "vdd_core";
++		regulator-min-microvolt = <912000>;
++		regulator-max-microvolt = <1144000>;
++		regulator-boot-on;
++		regulator-always-on;
++	};
++
++	dcdc2: regulator-dcdc2 {
++		compatible = "ti,tps65218-dcdc2";
++		/* VDD_MPU voltage limits min of OPP50 and max of OPP_NITRO */
++		regulator-name = "vdd_mpu";
++		regulator-min-microvolt = <912000>;
++		regulator-max-microvolt = <1378000>;
++		regulator-boot-on;
++		regulator-always-on;
++	};
++
++	dcdc3: regulator-dcdc3 {
++		compatible = "ti,tps65218-dcdc3";
++		regulator-name = "vdcdc3";
++		regulator-min-microvolt = <1350000>;
++		regulator-max-microvolt = <1350000>;
++		regulator-boot-on;
++		regulator-always-on;
++	};
++
++	dcdc4: regulator-dcdc4 {
++		compatible = "ti,tps65218-dcdc4";
++		regulator-name = "v3_3d";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		regulator-boot-on;
++		regulator-always-on;
++	};
++
++	dcdc5: regulator-dcdc5 {
++		compatible = "ti,tps65218-dcdc5";
++		regulator-name = "v1_0bat";
++		regulator-min-microvolt = <1000000>;
++		regulator-max-microvolt = <1000000>;
++	};
++
++	dcdc6: regulator-dcdc6 {
++		compatible = "ti,tps65218-dcdc6";
++		regulator-name = "v1_8vat";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <1800000>;
++	};
++
++	ldo1: regulator-ldo1 {
++		compatible = "ti,tps65218-ldo1";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <1800000>;
++		regulator-boot-on;
++		regulator-always-on;
++	};
++};
 -- 
-Kind regards,
-Minchan Kim
+1.7.9.5
+
