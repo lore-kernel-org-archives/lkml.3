@@ -1,82 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756121AbaGIRqL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 13:46:11 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:56106 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754252AbaGIRqI (ORCPT
+	id S1756665AbaGIRql (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 13:46:41 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:58992 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756486AbaGIRqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 13:46:08 -0400
-Date: Wed, 9 Jul 2014 10:46:03 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Herring <robherring2@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
-        dev@linux-sunxi.org
-Subject: Re: [PATCH v3 4/9] of: mtd: add documentation for the ONFI NAND
- timing mode property
-Message-ID: <20140709174603.GJ7537@ld-irv-0074>
-References: <1394647664-8258-1-git-send-email-b.brezillon.dev@gmail.com>
- <1394647664-8258-5-git-send-email-b.brezillon.dev@gmail.com>
- <20140520182542.GS28907@ld-irv-0074>
- <537BAD59.3060902@free-electrons.com>
- <20140520195240.GW28907@ld-irv-0074>
- <537BC9D4.6070200@free-electrons.com>
+	Wed, 9 Jul 2014 13:46:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <537BC9D4.6070200@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [95.21.62.104]
+In-Reply-To: <CAD=FV=XDs8FL3wdmDUF8ch9NuZ4hWn6FHhn8vVK42aa4qwV_Sg@mail.gmail.com>
+References: <1402464739-19044-1-git-send-email-tushar.b@samsung.com>
+	<1402464739-19044-3-git-send-email-tushar.b@samsung.com>
+	<CAD=FV=W5yh58fYTwRZxmZt=BORcZMSRV0oRe12yA74Q5h2S4YQ@mail.gmail.com>
+	<7hpphwlgn0.fsf@paris.lan>
+	<CAC5m3Bzey-YoPLmjAq4YNPQ13rojtVFWAbnhX6-ZFtYZwEdMWg@mail.gmail.com>
+	<7h8uojk61a.fsf@paris.lan>
+	<53ACE724.7090606@gmail.com>
+	<CAGa+x86COQz+cYtrXWrP-sjFGz-gi2tf6GEvLiKYoQwg1zMivQ@mail.gmail.com>
+	<CAGa+x87LHiYGb03=GRcZisK1=TyakW1htd1E2vOQ6ijZKw8syg@mail.gmail.com>
+	<53B2A2A5.4070203@gmail.com>
+	<53BB2E7A.5080204@samsung.com>
+	<53BB5EBD.5030607@gmail.com>
+	<CABxcv=ka5UxZ8E3+F4cR4vcY1m3AfX=g7HiaNYqmyQjHfSVqtw@mail.gmail.com>
+	<53BD3157.7030804@gmail.com>
+	<CABxcv=mcKNY8TO3Ay+GRs3ha45ptw_w_tig0L8g_syMQdbUmhw@mail.gmail.com>
+	<CAD=FV=XDs8FL3wdmDUF8ch9NuZ4hWn6FHhn8vVK42aa4qwV_Sg@mail.gmail.com>
+Date: Wed, 9 Jul 2014 19:46:36 +0200
+Message-ID: <CABxcv==v9whax3oraJQnTiDwfAUznjQP6WHK-auPv3q-LOmdnA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] ARM: dts: Update the parent for Audss clocks in Exynos5420
+From: Javier Martinez Canillas <javier@dowhile0.org>
+To: Doug Anderson <dianders@google.com>
+Cc: Tushar Behera <trblinux@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Shaik Ameer Basha <shaik.ameer@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
+Hello Doug,
 
-Looking back at this thread, there's at least one or two things I forgot
-to answer. Sorry.
+On Wed, Jul 9, 2014 at 6:01 PM, Doug Anderson <dianders@google.com> wrote:
+> Javier,
+>
+> On Wed, Jul 9, 2014 at 6:03 AM, Javier Martinez Canillas
+> <javier@dowhile0.org> wrote:
+>> Hello Tushar,
+>>
+>> On Wed, Jul 9, 2014 at 2:11 PM, Tushar Behera <trblinux@gmail.com> wrote:
+>>> On 07/09/2014 03:44 PM, Javier Martinez Canillas wrote:
+>>>> Hello Tushar,
+>>>>
+>>>> On Tue, Jul 8, 2014 at 5:00 AM, Tushar Behera <trblinux@gmail.com> wrote:
+>>>>>>>
+>>>>>>> The u-boot version is a little different on my Peach-Pi as compared to
+>>>>>>> the market release version. Not sure if that is making any difference.
+>>>>>>>
+>>>>>>> Peach # version
+>>>>>>>
+>>>>>>> U-Boot 2013.04 (Feb 13 2014 - 16:35:03) for Peach
+>>>>>>> armv7a-cros-linux-gnueabi-gcc.real (4.8.1_cos_gg_feea904_4.8.1-r66)
+>>>>>>> 4.8.x-google 20130905 (prerelease)
+>>>>>>> GNU ld (binutils-2.22_cos_gg_2) 2.22
+>>>>>>>
+>>>>>>
+>>>>
+>>>> I'm using the same U-Boot version than Kevin (U-Boot 2013.04-gb98ed09)
+>>>> and on my setup using chained nv-uboot I also need patch 1/3 along
+>>>> with 2/3 to fix the issue.
+>>>>
+>>>>>> Note that I've applied this only from this series so I'm not sure how
+>>>>>> much the problem can be solved...any updates for 1/3 and 3/3?
+>>>>>>
+>>>>>> - Kukjin
+>>>>>
+>>>>> Thanks for applying 2/3. I am working on 1/3 to see if we are following
+>>>>> the right approach to fix Kevin's issue (unfortunately, I am not hitting
+>>>>> the bug on my board ATM). 3/3 has already been merged through a
+>>>>> different patchset.
+>>>>>
+>>>>
+>>>> I'm sending as an attachment my complete boot log when booting today's
+>>>> next (20140709) until it hangs and my u-boot env vars. I hope that
+>>>> helps.
+>>>>
+>>>
+>>> Would you please check the behaviour after enabling following config
+>>> options?
+>>>
+>>> diff --git a/arch/arm/configs/exynos_defconfig
+>>> b/arch/arm/configs/exynos_defconfig
+>>> index e07a227..d6056ab 100644
+>>> --- a/arch/arm/configs/exynos_defconfig
+>>> +++ b/arch/arm/configs/exynos_defconfig
+>>> @@ -93,6 +93,11 @@ CONFIG_FRAMEBUFFER_CONSOLE=y
+>>>  CONFIG_FONTS=y
+>>>  CONFIG_FONT_7x14=y
+>>>  CONFIG_LOGO=y
+>>> +CONFIG_SOUND=y
+>>> +CONFIG_SND=y
+>>> +CONFIG_SND_SOC=y
+>>> +CONFIG_SND_SOC_SAMSUNG=y
+>>> +CONFIG_SND_SOC_SNOW=y
+>>>  CONFIG_USB=y
+>>>  CONFIG_USB_EHCI_HCD=y
+>>>  CONFIG_USB_EHCI_EXYNOS=y
+>>> @@ -109,6 +114,8 @@ CONFIG_MMC_DW_IDMAC=y
+>>>  CONFIG_MMC_DW_EXYNOS=y
+>>>  CONFIG_RTC_CLASS=y
+>>>  CONFIG_RTC_DRV_S3C=y
+>>> +CONFIG_DMADEVICES=y
+>>> +CONFIG_PL330_DMA=y
+>>>  CONFIG_COMMON_CLK_MAX77686=y
+>>>  CONFIG_EXT2_FS=y
+>>>  CONFIG_EXT3_FS=y
+>>>
+>>>
+>>
+>> With those Kconfig options enabled the kernel does not hang anymore so
+>> patch 1/3 is not needed in that case.
+>
+> Just checking: did you happen to confirm whether it's the PL330 /
+> DMADEVICES that fixes things or do you actually need the sound stuff?
 
-On Tue, May 20, 2014 at 11:32:04PM +0200, Boris BREZILLON wrote:
-> On 20/05/2014 21:52, Brian Norris wrote:
-[...]
-> If the ECC bindings don't encode the "minimum required ECC strength" but
-> rather the "ECC config on a specific board" then I guess "minimum
-> required ECC strength" for non-ONFI chips should be defined somewhere
-> else (stored in the device ID table ?).
+Sorry I should had mentioned this before. The DMADEVICES and PL330
+Kconfig are enough to avoid the kernel to hang, the sound config
+options are not actually required.
 
-They are. See nand_flash_dev::ecc, which holds fields for
-ecc_strength_ds and step_ds. If we have to, we can add a "timing mode"
-field to this struct.
-
-> > So you're saying that even though the chip actually specifies a single
-> > set of timings, you would describe this as a bitmask of several
-> > supported ONFI timing modes, up to the "max performance"?
-> >
-> > Is there ever a case where (for instance) a non-ONFI flash supports the
-> > equivalent of timing mode 3, but it does not support mode 2 or 1?
-> 
-> I don't think so.
-
-OK, then I don't think the mask approach is necessary, if we do ever
-settle on using a DT binding here. (I hope we can avoid this.)
-
-> >> But I can modify the bindings to just encode the maximum supported
-> >> timing mode.
-> > AIUI, the non-ONFI datasheets really only specify a single timing mode,
-> > so I think we should only specify the "max." And as a bonus, this
-> > actually makes the binding easier to use. A driver does not care about
-> > how many different modes are supported; it only needs to know what the
-> > max is.
-> 
-> Agreed, actually my first binding was defining it this way.
-
-Was there a good reason for changing it?
-
-Thanks,
-Brian
+Best regards,
+Javier
