@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756063AbaGINUx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 09:20:53 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:60835 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751778AbaGINUw (ORCPT
+	id S932154AbaGINVa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 09:21:30 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:48277 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755539AbaGINV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 09:20:52 -0400
-Date: Wed, 9 Jul 2014 14:20:47 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Subject: Re: v3.16-rc4 messes up make kernelrelease with additional output
-Message-ID: <20140709132047.GT21766@n2100.arm.linux.org.uk>
-References: <20140709125955.GS21766@n2100.arm.linux.org.uk> <53BD4074.5070100@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53BD4074.5070100@suse.cz>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 9 Jul 2014 09:21:28 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH v2] fix serial console resume-from-suspend
+Date: Wed,  9 Jul 2014 09:21:13 -0400
+Message-Id: <1404912074-9729-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 2.0.0
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 03:15:32PM +0200, Michal Marek wrote:
-> On 2014-07-09 14:59, Russell King - ARM Linux wrote:
-> > 3.16-rc3 and all previous versions:
-> > 
-> > $ make ARCH=arm CROSS_COMPILE=arm-linux- O=/tmp/build/ kernelrelease
-> > 3.16.0-rc3+
-> > $
-> > 
-> > 3.16-rc4:
-> > 
-> > $ make ARCH=arm CROSS_COMPILE=arm-linux- O=/tmp/build/ kernelrelease
-> > make[1]: Entering directory `/tmp/build'
-> > 3.16.0-rc4+
-> > $
-> 
-> This is fixed by commit 066b7ed9 in linux-next, which I'll send to Linus
-> shortly. But you should use make -s ... kernelrelease, otherwise the
-> output will be polluted not only by the "Entering directory" message,
-> but possibly also by a  silentoldconfig run.
+Greg,
 
-Since my scripts run a full build before doing that, it's very unlikely
-that there would be a silentoldconfig run.  The -s requirement isn't
-documented in the help - should it be?
+This v2 respin removes the dependency on the patch to which Alan objected
+(regarding not hanging up remote serial console modems).
+
+This patch fixes bugzilla #69751, where the serial console is garbled
+after resume from suspend.
+
+Although this was originally reported as a regression, this bug is
+actually caused when a user-space process (such as setserial or stty)
+opens and then closes the associated tty. The resultant tty port shutdown
+caused the console termios settings to be lost, and thus uninitialized when
+the console was subsequently suspended and then resumed (and there was not
+an associated open tty).
+
+This patch preserves the cflag settings from the associated tty as the
+console cflags (which reflect the current line settings anyway). The
+console cflags are already used to restore the console line settings if
+there is not an associated open tty.
+
+The side-effect of this patch is that the serial console line settings
+are persistent. Originally, only the first-time initialization of the
+associated port inherited the console line settings; now, each time the
+associated port is initialized to the most recent line settings.
+
+Peter Hurley (1):
+  serial: core: Preserve termios c_cflag for console resume
+
+ drivers/tty/serial/serial_core.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+2.0.0
+
