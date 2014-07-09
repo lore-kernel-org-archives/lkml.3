@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850AbaGIGXy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 02:23:54 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:55022 "EHLO
+	id S1754797AbaGIGXx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 02:23:53 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:55044 "EHLO
 	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472AbaGIGWc (ORCPT
+	with ESMTP id S1751709AbaGIGWc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Jul 2014 02:22:32 -0400
 X-Original-SENDERIP: 10.177.220.169
@@ -19,12 +19,11 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
         Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Minchan Kim <minchan@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
-Subject: [PATCH v12 2/8] x86: add pmd_[dirty|mkclean] for THP
-Date: Wed,  9 Jul 2014 15:22:23 +0900
-Message-Id: <1404886949-17695-3-git-send-email-minchan@kernel.org>
+        Minchan Kim <minchan@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: [PATCH v12 3/8] sparc: add pmd_[dirty|mkclean] for THP
+Date: Wed,  9 Jul 2014 15:22:24 +0900
+Message-Id: <1404886949-17695-4-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404886949-17695-1-git-send-email-minchan@kernel.org>
 References: <1404886949-17695-1-git-send-email-minchan@kernel.org>
@@ -39,45 +38,47 @@ THP page.
 This patch adds pmd_dirty and pmd_mkclean for THP page MADV_FREE
 support.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Acked-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- arch/x86/include/asm/pgtable.h | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/sparc/include/asm/pgtable_64.h | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index 0ec056012618..329865799653 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -104,6 +104,11 @@ static inline int pmd_young(pmd_t pmd)
- 	return pmd_flags(pmd) & _PAGE_ACCESSED;
+diff --git a/arch/sparc/include/asm/pgtable_64.h b/arch/sparc/include/asm/pgtable_64.h
+index 3770bf5c6e1b..b80a309d7e00 100644
+--- a/arch/sparc/include/asm/pgtable_64.h
++++ b/arch/sparc/include/asm/pgtable_64.h
+@@ -666,6 +666,13 @@ static inline unsigned long pmd_young(pmd_t pmd)
+ 	return pte_young(pte);
  }
  
 +static inline int pmd_dirty(pmd_t pmd)
 +{
-+	return pmd_flags(pmd) & _PAGE_DIRTY;
++	pte_t pte = __pte(pmd_val(pmd));
++
++	return pte_dirty(pte);
 +}
 +
- static inline int pte_write(pte_t pte)
+ static inline unsigned long pmd_write(pmd_t pmd)
  {
- 	return pte_flags(pte) & _PAGE_RW;
-@@ -267,6 +272,11 @@ static inline pmd_t pmd_mkold(pmd_t pmd)
- 	return pmd_clear_flags(pmd, _PAGE_ACCESSED);
+ 	pte_t pte = __pte(pmd_val(pmd));
+@@ -723,6 +730,15 @@ static inline pmd_t pmd_mkdirty(pmd_t pmd)
+ 	return __pmd(pte_val(pte));
  }
  
 +static inline pmd_t pmd_mkclean(pmd_t pmd)
 +{
-+	return pmd_clear_flags(pmd, _PAGE_DIRTY);
++	pte_t pte = __pte(pmd_val(pmd));
++
++	pte = pte_mkclean(pte);
++
++	return __pmd(pte_val(pte));
 +}
 +
- static inline pmd_t pmd_wrprotect(pmd_t pmd)
+ static inline pmd_t pmd_mkyoung(pmd_t pmd)
  {
- 	return pmd_clear_flags(pmd, _PAGE_RW);
+ 	pte_t pte = __pte(pmd_val(pmd));
 -- 
 2.0.0
 
