@@ -1,83 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794AbaGICQF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 22:16:05 -0400
-Received: from exprod5og109.obsmtp.com ([64.18.0.188]:58732 "HELO
-	exprod5og109.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751163AbaGICQC (ORCPT
+	id S1751906AbaGICW0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 22:22:26 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:43695 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163AbaGICWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 22:16:02 -0400
-From: Feng Kan <fkan@apm.com>
-To: dbaryshkov@gmail.com, catalin.marinas@arm.com, dwmw2@infradead.org,
-        arnd@arndb.de, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        patches@apm.com
-Cc: Feng Kan <fkan@apm.com>
-Subject: [PATCH V8 0/6] Add X-Gene platform reboot mechanism
-Date: Tue,  8 Jul 2014 19:15:47 -0700
-Message-Id: <1404872153-3594-1-git-send-email-fkan@apm.com>
-X-Mailer: git-send-email 1.9.1
+	Tue, 8 Jul 2014 22:22:24 -0400
+MIME-Version: 1.0
+Date: Tue, 8 Jul 2014 22:22:23 -0400
+Message-ID: <CAPDOMVhZr=rP_7Bsez==4LzScZxsQnfpaiYpvGRuHCf9WnqHTw@mail.gmail.com>
+Subject: TIckless Timers On Laptops and Battery Enabled Devices
+From: Nick Krause <xerofoify@gmail.com>
+To: fweisbec@gmail.com
+Cc: josh@joshtriplett.org, khilman@linaro.org, paulmck@linux.vnet.ibm.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable reboot driver for the X-Gene platform. Add generic syscon reboot
-driver.
-
-V8 Change:
-	- change Kconfig to depend on ARM || ARM64 || COMPILE_TEST
-
-V7 Change:
-	- Seem V3 on, the patches were not making in to the mailinglist.
-	- Fix build error produced by other ARCH while including this
-	  driver. Set to depend on arm64 ARCH for now.
-
-V6 Change:
-	- Add documentation for scu node.
-
-V5 Change:
-	- Documentation update, endian and access size.
-
-V4 Change:
-	- Remove old X-Gene reboot driver
-	- Add generic syscon reboot driver
-	- Add DTS and Kconfig for X-Gene reboot using syscon method
-
-V3 Change:
-	- Remove the reboot driver's use of acpi resource patch.
-	- Change the reboot driver to use syscon to parse out 
-	  system clock register. Remove the old method of getting
-	  register from the reboot driver directly.
-	- Remove documentation since its now simple.
-
-V2 Change:
-	- Add support for using ACPI resource.
-
-
-Feng Kan (6):
-  power: reset: Add generic SYSCON register mapped reset
-  Documentation: power: reset: Add documentation for generic SYSCON
-    reboot driver
-  Documentation: arm64: add SCU dts binding documentation to linux
-    kernel
-  arm64: dts: Add X-Gene reboot driver dts node
-  arm64: Select reboot driver for X-Gene platform
-  power: reset: Remove X-Gene reboot driver
-
- Documentation/devicetree/bindings/arm/apm/scu.txt  |  17 ++++
- .../bindings/power/reset/syscon-reboot.txt         |  23 +++++
- arch/arm64/Kconfig                                 |   2 +
- arch/arm64/boot/dts/apm-storm.dtsi                 |  12 +++
- drivers/power/reset/Kconfig                        |  13 ++-
- drivers/power/reset/Makefile                       |   2 +-
- drivers/power/reset/syscon-reboot.c                |  91 ++++++++++++++++++
- drivers/power/reset/xgene-reboot.c                 | 103 ---------------------
- 8 files changed, 152 insertions(+), 111 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/apm/scu.txt
- create mode 100644 Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
- create mode 100644 drivers/power/reset/syscon-reboot.c
- delete mode 100644 drivers/power/reset/xgene-reboot.c
-
--- 
-1.9.1
-
+I  am been thinking , this is just a idea but can we enable the kernel
+to be tick less for laptops when they are on battery. I don't have any
+laptop on me to test but if
+someone can test the battery on a tick less kernel versus non tick
+less to see if it increases battery. It would be good if we can test
+when it's in standby , high cpu usage
+and average work to see if it's a good idea to enable a tick less
+kernel for default when a user is on battery for laptops and perhaps
+even get into the embedded boards
+that run on battery and/or cellphones if it's a great help in
+increasing  battery. I will also be glad to help these features into
+the mainline kernel if they are of use to saving
+battery.
+Cheers Nick
