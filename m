@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989AbaGILjd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 07:39:33 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:26878 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755348AbaGILgk (ORCPT
+	id S1756053AbaGILk3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 07:40:29 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:63125 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755479AbaGILgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 07:36:40 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-89-53bd293f04ab
+	Wed, 9 Jul 2014 07:36:36 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-95-53bd2942480a
 From: Andrey Ryabinin <a.ryabinin@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
@@ -25,182 +25,87 @@ Cc: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
         linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         x86@kernel.org, linux-mm@kvack.org,
         Andrey Ryabinin <a.ryabinin@samsung.com>
-Subject: [RFC/PATCH RESEND -next 08/21] mm: page_alloc: add kasan hooks on
- alloc and free pathes
-Date: Wed, 09 Jul 2014 15:30:02 +0400
-Message-id: <1404905415-9046-9-git-send-email-a.ryabinin@samsung.com>
+Subject: [RFC/PATCH RESEND -next 10/21] mm: slab: share virt_to_cache() between
+ slab and slub
+Date: Wed, 09 Jul 2014 15:30:04 +0400
+Message-id: <1404905415-9046-11-git-send-email-a.ryabinin@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
 In-reply-to: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
 References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t/xy7r2mnuDDZa0q1ts+/WIzeL33pms
-	FnPWr2GzuP7tDaPFhIdt7BYru5vZLLY/e8tksbLzAavFpsfXWC3+7NrBZHF51xw2i3tr/rNa
-	3L7Ma3HpwAImi5Z9F5gs2j7/Y7XYt/I8kLVkI5PF4iO3mS3ePZvMbLF501Rmix8bHrM6iHm0
-	NPeweeycdZfdY8GmUo9NqzrZPDZ9msTu0fX2CpPHu3Pn2D1OzPjN4vHkynQmj81L6j0+Pr3F
-	4vF+31U2j74tqxg9ziw4wu7xeZNcAH8Ul01Kak5mWWqRvl0CV8aZ133sBW1qFZ/bJrM3MC6Q
-	72Lk5JAQMJH4+nE5E4QtJnHh3nq2LkYuDiGBpYwSE28/YoVw+pgkfi06BFbFJqAn8W/WdjYQ
-	W0RAQWJz7zOwImaBZjaJ9o4PrCAJYYEkiQNdz8AaWARUJb5c7wWKc3DwCrhKbLslDLFNQWLZ
-	8plg5ZwCbhITpl9jBikRAiqZsEJtAiPvAkaGVYyiqaXJBcVJ6blGesWJucWleel6yfm5mxgh
-	kfR1B+PSY1aHGAU4GJV4eF/s3hMsxJpYVlyZe4hRgoNZSYTXVnRvsBBvSmJlVWpRfnxRaU5q
-	8SFGJg5OqQbGVrFdOcYH3tzqPnvotuKneLGvEseOz5J9LFPe9m/7gXk+YV7bWG5E/xetSbr7
-	6Nwr6YS2yMWBEQ02L3cU37aUWDpN8VVjZMccpj/Rj2xP+/Apiasej/ffG7tLflEhJ8eS2g/u
-	J4Q45h75eu1b/qO3MTv2huxnd+7jNJj+PDT6GEeWy6YXKo77lViKMxINtZiLihMBiCQe7YIC	AAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLLMWRmVeSWpSXmKPExsVy+t/xy7pOmnuDDd78FLXY9usRm8XvvTNZ
+	LeasX8Nmcf3bG0aLCQ/b2C1WdjezWWx/9pbJYmXnA1aLTY+vsVr82bWDyeLyrjlsFvfW/Ge1
+	uH2Z1+LSgQVMFi37LjBZtH3+x2qxb+V5IGvJRiaLxUduM1u8ezaZ2WLzpqnMFj82PGZ1EPNo
+	ae5h89g56y67x4JNpR6bVnWyeWz6NIndo+vtFSaPd+fOsXucmPGbxePJlelMHpuX1Ht8fHqL
+	xeP9vqtsHn1bVjF6nFlwhN3j8ya5AP4oLpuU1JzMstQifbsEroxz846xFszmq7gxX7yB8Rx3
+	FyMnh4SAicTlxlcsELaYxIV769m6GLk4hASWMko8mPCNHcLpY5K4vr+RGaSKTUBP4t+s7Wwg
+	toiAgsTm3mesIEXMAs1sEu0dH1hBEsIC8RLPvyxi7GLk4GARUJXYcy8ExOQVcJPYPN0DYpmC
+	xLLlM8GqOYHCE6ZfYwYpERJwlZiwQm0CI+8CRoZVjKKppckFxUnpuUZ6xYm5xaV56XrJ+bmb
+	GCFR9HUH49JjVocYBTgYlXh4X+zeEyzEmlhWXJl7iFGCg1lJhNdWdG+wEG9KYmVValF+fFFp
+	TmrxIUYmDk6pBkYm7lt5fQaLItSX7o2WyTVmjdcTtdDducqdKd/znPgKsdzP3w3T5t0qnzPn
+	jsTvd5yH/7ed+GxyfloCw4EFLT+lIxRqJr0LjU6pippQoPB/gv+UOw4fokvUOfreRsb8DGh5
+	sSPQwOHIyeMMmr5OM9mrlyrxCMQaPF+o0rlcI0Y9YJbpPE2hrUosxRmJhlrMRcWJAF6aqSyA	AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add kernel address sanitizer hooks to mark allocated page's addresses
-as accessible in corresponding shadow region.
-Mark freed pages as unaccessible.
+This patch shares virt_to_cache() between slab and slub and
+it used in cache_from_obj() now.
+Later virt_to_cache() will be kernel address sanitizer also.
 
 Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
 ---
- include/linux/kasan.h |  6 ++++++
- mm/Makefile           |  2 ++
- mm/kasan/kasan.c      | 18 ++++++++++++++++++
- mm/kasan/kasan.h      |  1 +
- mm/kasan/report.c     |  7 +++++++
- mm/page_alloc.c       |  4 ++++
- 6 files changed, 38 insertions(+)
+ mm/slab.c |  6 ------
+ mm/slab.h | 10 +++++++---
+ 2 files changed, 7 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/kasan.h b/include/linux/kasan.h
-index 7efc3eb..4adc0a1 100644
---- a/include/linux/kasan.h
-+++ b/include/linux/kasan.h
-@@ -17,6 +17,9 @@ void kasan_disable_local(void);
- void kasan_alloc_shadow(void);
- void kasan_init_shadow(void);
+diff --git a/mm/slab.c b/mm/slab.c
+index e7763db..fa4f840 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -433,12 +433,6 @@ static inline void set_obj_status(struct page *page, int idx, int val) {}
+ static int slab_max_order = SLAB_MAX_ORDER_LO;
+ static bool slab_max_order_set __initdata;
  
-+void kasan_alloc_pages(struct page *page, unsigned int order);
-+void kasan_free_pages(struct page *page, unsigned int order);
-+
- #else /* CONFIG_KASAN */
- 
- static inline void unpoison_shadow(const void *address, size_t size) {}
-@@ -28,6 +31,9 @@ static inline void kasan_disable_local(void) {}
- static inline void kasan_init_shadow(void) {}
- static inline void kasan_alloc_shadow(void) {}
- 
-+static inline void kasan_alloc_pages(struct page *page, unsigned int order) {}
-+static inline void kasan_free_pages(struct page *page, unsigned int order) {}
-+
- #endif /* CONFIG_KASAN */
- 
- #endif /* LINUX_KASAN_H */
-diff --git a/mm/Makefile b/mm/Makefile
-index dbe9a22..6a9c3f8 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -2,6 +2,8 @@
- # Makefile for the linux memory manager.
- #
- 
-+KASAN_SANITIZE_page_alloc.o := n
-+
- mmu-y			:= nommu.o
- mmu-$(CONFIG_MMU)	:= gup.o highmem.o madvise.o memory.o mincore.o \
- 			   mlock.o mmap.o mprotect.o mremap.o msync.o rmap.o \
-diff --git a/mm/kasan/kasan.c b/mm/kasan/kasan.c
-index e2cd345..109478e 100644
---- a/mm/kasan/kasan.c
-+++ b/mm/kasan/kasan.c
-@@ -177,6 +177,24 @@ void __init kasan_init_shadow(void)
- 	}
- }
- 
-+void kasan_alloc_pages(struct page *page, unsigned int order)
-+{
-+	if (unlikely(!kasan_initialized))
-+		return;
-+
-+	if (likely(page && !PageHighMem(page)))
-+		unpoison_shadow(page_address(page), PAGE_SIZE << order);
-+}
-+
-+void kasan_free_pages(struct page *page, unsigned int order)
-+{
-+	if (unlikely(!kasan_initialized))
-+		return;
-+
-+	if (likely(!PageHighMem(page)))
-+		poison_shadow(page_address(page), PAGE_SIZE << order, KASAN_FREE_PAGE);
-+}
-+
- void *kasan_memcpy(void *dst, const void *src, size_t len)
+-static inline struct kmem_cache *virt_to_cache(const void *obj)
+-{
+-	struct page *page = virt_to_head_page(obj);
+-	return page->slab_cache;
+-}
+-
+ static inline void *index_to_obj(struct kmem_cache *cache, struct page *page,
+ 				 unsigned int idx)
  {
- 	if (unlikely(len == 0))
-diff --git a/mm/kasan/kasan.h b/mm/kasan/kasan.h
-index 711ae4f..be9597e 100644
---- a/mm/kasan/kasan.h
-+++ b/mm/kasan/kasan.h
-@@ -5,6 +5,7 @@
- #define KASAN_SHADOW_SCALE_SIZE (1UL << KASAN_SHADOW_SCALE_SHIFT)
- #define KASAN_SHADOW_MASK       (KASAN_SHADOW_SCALE_SIZE - 1)
- 
-+#define KASAN_FREE_PAGE         0xFF  /* page was freed */
- #define KASAN_SHADOW_GAP        0xF9  /* address belongs to shadow memory */
- 
- struct access_info {
-diff --git a/mm/kasan/report.c b/mm/kasan/report.c
-index 2430e05..6ef9e57 100644
---- a/mm/kasan/report.c
-+++ b/mm/kasan/report.c
-@@ -46,6 +46,9 @@ static void print_error_description(struct access_info *info)
- 	case 0 ... KASAN_SHADOW_SCALE_SIZE - 1:
- 		bug_type = "buffer overflow";
- 		break;
-+	case KASAN_FREE_PAGE:
-+		bug_type = "use after free";
-+		break;
- 	case KASAN_SHADOW_GAP:
- 		bug_type = "wild memory access";
- 		break;
-@@ -67,6 +70,10 @@ static void print_address_description(struct access_info *info)
- 	page = virt_to_page(info->access_addr);
- 
- 	switch (shadow_val) {
-+	case KASAN_FREE_PAGE:
-+		dump_page(page, "kasan error");
-+		dump_stack();
-+		break;
- 	case KASAN_SHADOW_GAP:
- 		pr_err("No metainfo is available for this access.\n");
- 		dump_stack();
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 8c9eeec..67833d1 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -61,6 +61,7 @@
- #include <linux/page-debug-flags.h>
- #include <linux/hugetlb.h>
- #include <linux/sched/rt.h>
-+#include <linux/kasan.h>
- 
- #include <asm/sections.h>
- #include <asm/tlbflush.h>
-@@ -747,6 +748,7 @@ static bool free_pages_prepare(struct page *page, unsigned int order)
- 
- 	trace_mm_page_free(page, order);
- 	kmemcheck_free_shadow(page, order);
-+	kasan_free_pages(page, order);
- 
- 	if (PageAnon(page))
- 		page->mapping = NULL;
-@@ -2807,6 +2809,7 @@ out:
- 	if (unlikely(!page && read_mems_allowed_retry(cpuset_mems_cookie)))
- 		goto retry_cpuset;
- 
-+	kasan_alloc_pages(page, order);
- 	return page;
+diff --git a/mm/slab.h b/mm/slab.h
+index 84c160a..1257ade 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -260,10 +260,15 @@ static inline void memcg_uncharge_slab(struct kmem_cache *s, int order)
  }
- EXPORT_SYMBOL(__alloc_pages_nodemask);
-@@ -6415,6 +6418,7 @@ int alloc_contig_range(unsigned long start, unsigned long end,
- 	if (end != outer_end)
- 		free_contig_range(end, outer_end - end);
+ #endif
  
-+	kasan_alloc_pages(pfn_to_page(start), end - start);
- done:
- 	undo_isolate_page_range(pfn_max_align_down(start),
- 				pfn_max_align_up(end), migratetype);
++static inline struct kmem_cache *virt_to_cache(const void *obj)
++{
++	struct page *page = virt_to_head_page(obj);
++	return page->slab_cache;
++}
++
+ static inline struct kmem_cache *cache_from_obj(struct kmem_cache *s, void *x)
+ {
+ 	struct kmem_cache *cachep;
+-	struct page *page;
+ 
+ 	/*
+ 	 * When kmemcg is not being used, both assignments should return the
+@@ -275,8 +280,7 @@ static inline struct kmem_cache *cache_from_obj(struct kmem_cache *s, void *x)
+ 	if (!memcg_kmem_enabled() && !unlikely(s->flags & SLAB_DEBUG_FREE))
+ 		return s;
+ 
+-	page = virt_to_head_page(x);
+-	cachep = page->slab_cache;
++	cachep = virt_to_cache(x);
+ 	if (slab_equal_or_root(cachep, s))
+ 		return cachep;
+ 
 -- 
 1.8.5.5
 
