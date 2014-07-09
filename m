@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964953AbaGIP3D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 11:29:03 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:58991 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964879AbaGIP2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 11:28:21 -0400
-Message-ID: <53BD5F93.6030205@mm-sol.com>
-Date: Wed, 09 Jul 2014 18:28:19 +0300
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Subject: Re: [RFC PATCH v2 2/5] dt: qcom: msm8974: add qpnp-spmi device nodes
-References: <1404393243-7324-1-git-send-email-svarbanov@mm-sol.com> <1404393243-7324-3-git-send-email-svarbanov@mm-sol.com> <20140709141026.GB2635@lee--X1>
-In-Reply-To: <20140709141026.GB2635@lee--X1>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S932393AbaGIPHd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 11:07:33 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48312 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932289AbaGIPH0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 11:07:26 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv3 17/34] ARM: at91/dt: ge863-pro3: define main crystal frequency
+Date: Wed,  9 Jul 2014 17:06:45 +0200
+Message-Id: <1404918422-7562-18-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404918422-7562-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1404918422-7562-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2014 05:10 PM, Lee Jones wrote:
-> On Thu, 03 Jul 2014, Stanimir Varbanov wrote:
-> 
->> From: Ivan T. Ivanov <iivanov@mm-sol.com>
->>
->> The qpnp-spmi device nodes are childrens of spmi pmic arbiter.
->> msm8974 SoC using two pmic chips pm8941 and pm8841. Every chip
->> has two spmi-qpnp bus id's.
->>
->> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
->> ---
->>  arch/arm/boot/dts/qcom-msm8974.dtsi |   45 +++++++++++++++++++++++++++++++++++
->>  1 files changed, 45 insertions(+), 0 deletions(-)
-> 
-> Subject should start with 'ARM: ' for all of your arch/arm patches.
+Define Telit GE863-PRO3 main crystal frequency.
 
-Sure, will correct the subject, thanks.
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/boot/dts/ge863-pro3.dtsi | 4 ++++
+ 1 file changed, 4 insertions(+)
 
+diff --git a/arch/arm/boot/dts/ge863-pro3.dtsi b/arch/arm/boot/dts/ge863-pro3.dtsi
+index 230099bb31c8..0d0e62489d93 100644
+--- a/arch/arm/boot/dts/ge863-pro3.dtsi
++++ b/arch/arm/boot/dts/ge863-pro3.dtsi
+@@ -19,6 +19,10 @@
+ 			compatible = "atmel,osc", "fixed-clock";
+ 			clock-frequency = <6000000>;
+ 		};
++
++		main_xtal {
++			clock-frequency = <6000000>;
++		};
+ 	};
+ 
+ 	ahb {
 -- 
-regards,
-Stan
+1.9.1
+
