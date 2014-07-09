@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756634AbaGIOQy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 10:16:54 -0400
-Received: from mailout1.zih.tu-dresden.de ([141.30.67.72]:50958 "EHLO
+	id S1756576AbaGIOQm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 10:16:42 -0400
+Received: from mailout1.zih.tu-dresden.de ([141.30.67.72]:50924 "EHLO
 	mailout1.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756616AbaGIOQw (ORCPT
+	by vger.kernel.org with ESMTP id S1755427AbaGIOQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 10:16:52 -0400
-Message-ID: <53BD4EC4.1050304@tu-dresden.de>
-Date: Wed, 09 Jul 2014 16:16:36 +0200
+	Wed, 9 Jul 2014 10:16:40 -0400
+Message-ID: <53BD4EB9.50903@tu-dresden.de>
+Date: Wed, 09 Jul 2014 16:16:25 +0200
 From: Joseph Schuchart <joseph.schuchart@tu-dresden.de>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
@@ -19,11 +19,11 @@ CC: Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
         Thomas Ilsche <thomas.ilsche@tu-dresden.de>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3]  perf script: Provide additional sample information on
- generic events
+Subject: Re: [PATCH 2/3]  perf script: Add callchain to generic and tracepoint
+ events
 References: <53031D2C.2050009@tu-dresden.de> <20140307141857.GA3153@ghostprotocols.net> <533D2283.3090703@tu-dresden.de> <87wqd5f7j5.fsf@sejong.aot.lge.com> <538F0BF2.1010806@tu-dresden.de> <20140707171706.GA20752@krava.redhat.com> <53BCF1F2.70100@tu-dresden.de> <20140709112721.GC1814@krava.redhat.com> <53BD2AD6.6020309@tu-dresden.de> <20140709114903.GA5767@krava.redhat.com>
 In-Reply-To: <20140709114903.GA5767@krava.redhat.com>
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms010008070007030105060903"
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms030806070409010105070305"
 X-TUD-Virus-Scanned: mailout1.zih.tu-dresden.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,88 +31,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a cryptographically signed message in MIME format.
 
---------------ms010008070007030105060903
+--------------ms030806070409010105070305
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
+Ok, with the help of a colleague with some more expertise on git than I h=
+ave, we finally figured out which branch you mean with tip/perf/core. Sor=
+ry for the confusion! The conflict was trivial to solve, I will send the =
+rebased patches separately.=20
 
- perf script: Provide additional sample information on
- generic events  to Python scripts, including pid, tid, and cpu for which=
- the
- event was  recorded. At the moment, the pointer to the sample struct is
- passed to  scripts, which seems to be of little use. The patch puts this=
+Joseph
 
- information in  dictionaries for easy access by Python scripts.
+On 09.07.2014 13:49, Jiri Olsa wrote:
+> On Wed, Jul 09, 2014 at 01:43:18PM +0200, Joseph Schuchart wrote:
+>> Jirka,
+>>
+>> I tried to apply the patches to the latest version of the perf/core br=
+anch before sending. Can you please send me some more information about t=
+he conflict?
+>=20
+> is your HEAD 8b5b584 ?
+>=20
+> [jolsa@krava perf]$ git show --oneline tip/perf/core
+> 8b5b584 Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm=
+/linux/kernel/git/jolsa/perf into perf/core
+>=20
+> jirka
+>=20
 
-Signed-off-by: Joseph Schuchart <joseph.schuchart@tu-dresden.de>
-Acked-by: Thomas Ilsche <thomas.ilsche@tu-dresden.de>
----
- .../util/scripting-engines/trace-event-python.c    | 23 ++++++++++++++++=
-+++---
- 1 file changed, 20 insertions(+), 3 deletions(-)
-
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/too=
-ls/perf/util/scripting-engines/trace-event-python.c
-index dae78e4..64923cd 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -446,7 +446,7 @@ static void python_process_general_event(struct perf_=
-sample *sample,
- 					 struct thread *thread,
- 					 struct addr_location *al)
- {
--	PyObject *handler, *retval, *t, *dict, *callchain;
-+	PyObject *handler, *retval, *t, *dict, *callchain, *dict_sample;
- 	static char handler_name[64];
- 	unsigned n =3D 0;
-=20
-@@ -462,6 +462,10 @@ static void python_process_general_event(struct perf=
-_sample *sample,
- 	if (!dict)
- 		Py_FatalError("couldn't create Python dictionary");
-=20
-+	dict_sample =3D PyDict_New();
-+	if (!dict_sample)
-+		Py_FatalError("couldn't create Python dictionary");
-+
- 	snprintf(handler_name, sizeof(handler_name), "%s", "process_event");
-=20
- 	handler =3D PyDict_GetItemString(main_dict, handler_name);
-@@ -471,8 +475,21 @@ static void python_process_general_event(struct perf=
-_sample *sample,
- 	pydict_set_item_string_decref(dict, "ev_name", PyString_FromString(perf=
-_evsel__name(evsel)));
- 	pydict_set_item_string_decref(dict, "attr", PyString_FromStringAndSize(=
-
- 			(const char *)&evsel->attr, sizeof(evsel->attr)));
--	pydict_set_item_string_decref(dict, "sample", PyString_FromStringAndSiz=
-e(
--			(const char *)sample, sizeof(*sample)));
-+
-+	pydict_set_item_string_decref(dict_sample, "pid",
-+			PyInt_FromLong(sample->pid));
-+	pydict_set_item_string_decref(dict_sample, "tid",
-+			PyInt_FromLong(sample->tid));
-+	pydict_set_item_string_decref(dict_sample, "cpu",
-+			PyInt_FromLong(sample->cpu));
-+	pydict_set_item_string_decref(dict_sample, "ip",
-+			PyLong_FromUnsignedLongLong(sample->ip));
-+	pydict_set_item_string_decref(dict_sample, "time",
-+			PyLong_FromUnsignedLongLong(sample->time));
-+	pydict_set_item_string_decref(dict_sample, "period",
-+			PyLong_FromUnsignedLongLong(sample->period));
-+	pydict_set_item_string_decref(dict, "sample", dict_sample);
-+
- 	pydict_set_item_string_decref(dict, "raw_buf", PyString_FromStringAndSi=
-ze(
- 			(const char *)sample->raw_data, sample->raw_size));
- 	pydict_set_item_string_decref(dict, "comm",
 --=20
-1.8.1.2
+Dipl. Inf. Joseph Schuchart=20
+Computer Scientist=20
+
+Technische Universit=E4t Dresden=20
+Center for Information Services and High Performance Computing (ZIH)=20
+01062 Dresden, Germany=20
+
+Phone: +49 351 463-36494=20
+Fax: +49 351 463-3773=20
+E-Mail: joseph.schuchart@tu-dresden.de
 
 
-
---------------ms010008070007030105060903
+--------------ms030806070409010105070305
 Content-Type: application/pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -196,8 +156,8 @@ jqHED1hovfievMMW7Fd3njo+T9RODMi3kNC7VObz0hu0cs0xggPUMIID0AIBATCBkTCBhTEL
 MAkGA1UEBhMCREUxKDAmBgNVBAoTH1RlY2huaXNjaGUgVW5pdmVyc2l0YWV0IERyZXNkZW4x
 DDAKBgNVBAsTA1pJSDEcMBoGA1UEAxMTVFUgRHJlc2RlbiBDQSAtIEcwMjEgMB4GCSqGSIb3
 DQEJARYRcGtpQHR1LWRyZXNkZW4uZGUCBxa9PhauABkwCQYFKw4DAhoFAKCCAhcwGAYJKoZI
-hvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTQwNzA5MTQxNjM2WjAjBgkq
-hkiG9w0BCQQxFgQURHFW+c9IqUbQXgUKx+w/gdpWmiMwbAYJKoZIhvcNAQkPMV8wXTALBglg
+hvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTQwNzA5MTQxNjI1WjAjBgkq
+hkiG9w0BCQQxFgQU9DuDMZ+BtmDgZ5s1auvxXlUA6bgwbAYJKoZIhvcNAQkPMV8wXTALBglg
 hkgBZQMEASowCwYJYIZIAWUDBAECMAoGCCqGSIb3DQMHMA4GCCqGSIb3DQMCAgIAgDANBggq
 hkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG9w0DAgIBKDCBogYJKwYBBAGCNxAEMYGUMIGR
 MIGFMQswCQYDVQQGEwJERTEoMCYGA1UEChMfVGVjaG5pc2NoZSBVbml2ZXJzaXRhZXQgRHJl
@@ -206,9 +166,9 @@ KoZIhvcNAQkBFhFwa2lAdHUtZHJlc2Rlbi5kZQIHFr0+Fq4AGTCBpAYLKoZIhvcNAQkQAgsx
 gZSggZEwgYUxCzAJBgNVBAYTAkRFMSgwJgYDVQQKEx9UZWNobmlzY2hlIFVuaXZlcnNpdGFl
 dCBEcmVzZGVuMQwwCgYDVQQLEwNaSUgxHDAaBgNVBAMTE1RVIERyZXNkZW4gQ0EgLSBHMDIx
 IDAeBgkqhkiG9w0BCQEWEXBraUB0dS1kcmVzZGVuLmRlAgcWvT4WrgAZMA0GCSqGSIb3DQEB
-AQUABIIBALSw1hmA897iR1D8nm++JjBy+RwH6etBtErTeEgKqiXZ8ZlHps84CnkIUM8Eyy6z
-Kvo92eVJR/QZLS4IdrELqm59QvWV1UM+Xqr6zXyFrJI0UaIj1rbVQrZlr5wDV8uYwjHmeU1y
-632azrb8hM2K1h6cfN6triNqGvlyO+KkZRhFF2Rlw20ODT8KJEMWFdbbEk8nlX6/V9/8BSyB
-+73ZuirydlUfiM7DPvOlCzadhJVardG+/5iY3+oUVrg5XcLWt2bF4G0w3CVKwk2c8QfH34+a
-YckJAFHGIBUz7vEMoqhO1j3nxhr7yTmXLcFEqLRb/1hxCsb2jQ0uJb/WpfjtzUQAAAAAAAA=
---------------ms010008070007030105060903--
+AQUABIIBABiLDOuvgo6/z25bYxl92BVJKYWxCNlzYyRQR09eFDuxNNU+OUu3JxVM0nuyRJb1
+bykKKWUyF2YaBummhmOStudLuz8Q7zv+6phayyK0Rpnrg7fbS+7U8DLrxm4JNlQPy+Kx4gRL
+CNwZDjjqhhAhMOo8jGiT+3ort9skF3cFijWIg5zRsy7BLYOndldiTIsbT0UbV5O/1I8cM9Hr
+jmnol2IShHnTmGudA5QYUm9wQixiVS6Sk4pNcIcyPAEB2df9/aviZjKxg9iEltTQ/SwLaEAJ
+K6NMatyJoJhoJZ1FHOUS8IzmAnasVMVuhid3KFfPJaA6AeXWx1JbjI4Z0O9WsDgAAAAAAAA=
+--------------ms030806070409010105070305--
