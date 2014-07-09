@@ -1,359 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756622AbaGIQ6Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 12:58:24 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:61659 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755584AbaGIQ6W (ORCPT
+	id S1756638AbaGIQ7n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 12:59:43 -0400
+Received: from smtprelay0139.hostedemail.com ([216.40.44.139]:36828 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751742AbaGIQ7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 12:58:22 -0400
-Date: Wed, 9 Jul 2014 09:58:17 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Kamil Debski <k.debski@samsung.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org, t.figa@samsung.com,
-        m.szyprowski@samsung.com
-Subject: Re: [lm-sensors] [PATCH] hwmon: pwm-fan: Add pwm-fan driver
-Message-ID: <20140709165817.GA24842@roeck-us.net>
-References: <1404917600-4430-1-git-send-email-k.debski@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404917600-4430-1-git-send-email-k.debski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 9 Jul 2014 12:59:41 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3868:3871:3872:3873:3874:4321:5007:7652:8957:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12555:12740:13161:13229:14093:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: jewel54_1a2803a8c8036
+X-Filterd-Recvd-Size: 2924
+Message-ID: <1404925177.932.120.camel@joe-AO725>
+Subject: Re: [PATCH] staging: bcm: add missing blank lines after declarations
+From: Joe Perches <joe@perches.com>
+To: Pawel Lebioda <pawel.lebioda89@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Wed, 09 Jul 2014 09:59:37 -0700
+In-Reply-To: <1404921569-5081-1-git-send-email-pawel.lebioda89@gmail.com>
+References: <20140704203024.GA11946@ThinkPad>
+	 <1404921569-5081-1-git-send-email-pawel.lebioda89@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 04:53:20PM +0200, Kamil Debski wrote:
-> The pwm-fan driver enables control of fans connected to PWM lines.
-> This driver uses the PWM framework, so it is compatible with all
-> PWM devices that provide drivers through the PWM framework.
-> 
-> Signed-off-by: Kamil Debski <k.debski@samsung.com>
-> ---
->  .../devicetree/bindings/hwmon/pwm-fan.txt          |   12 ++
->  drivers/hwmon/Kconfig                              |    9 +
->  drivers/hwmon/Makefile                             |    1 +
->  drivers/hwmon/pwm-fan.c                            |  199 ++++++++++++++++++++
->  4 files changed, 221 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/hwmon/pwm-fan.txt
->  create mode 100644 drivers/hwmon/pwm-fan.c
+On Wed, 2014-07-09 at 17:59 +0200, Pawel Lebioda wrote:
+> Fix "Missing blank line after declaration" warnings reported by
+> checkpatch.pl.
 
-Documentation/hwmon/pwm-fan is missing.
+trivial unrelated notes:
 
-> 
-> diff --git a/Documentation/devicetree/bindings/hwmon/pwm-fan.txt b/Documentation/devicetree/bindings/hwmon/pwm-fan.txt
-> new file mode 100644
-> index 0000000..f534607
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/hwmon/pwm-fan.txt
-> @@ -0,0 +1,12 @@
-> +Bindings for a fan connected to the PWM lines
+> diff --git a/drivers/staging/bcm/CmHost.c b/drivers/staging/bcm/CmHost.c
+> index 3dbdf0e..adca0ce 100644
+> --- a/drivers/staging/bcm/CmHost.c
+> +++ b/drivers/staging/bcm/CmHost.c
+> @@ -972,6 +972,7 @@ static VOID DumpCmControlPacket(PVOID pvBuffer)
+>  		pstAddIndication->sfAuthorizedSet.bValid = 1;
+>  	for (nIndex = 0; nIndex < nCurClassifierCnt; nIndex++) {
+>  		struct bcm_convergence_types *psfCSType = NULL;
 > +
-> +Required properties:
-> +- compatible: "pwm-fan"
-> +- pwms: the PWM that is used to control the PWM fan
-> +
-> +Example:
-> +	pwm-fan {
-> +		compatible = "pwm-fan";
-> +		status = "okay";
-> +		pwms = <&pwm 0 10000 0>;
-> +	};
-> diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-> index 08531a1..838ffb8 100644
-> --- a/drivers/hwmon/Kconfig
-> +++ b/drivers/hwmon/Kconfig
-> @@ -1104,6 +1104,15 @@ config SENSORS_PCF8591
->  
->  source drivers/hwmon/pmbus/Kconfig
->  
-> +config SENSORS_PWM_FAN
-> +	tristate "PWM fan"
-> +	depends on PWM
-> +	help
-> +	  If you say yes here you get support for fans connected to PWM lines.
-> +
-> +	  This driver can also be built as a module.  If so, the module
-> +	  will be called pwm-fan.
-> +
->  config SENSORS_SHT15
->  	tristate "Sensiron humidity and temperature sensors. SHT15 and compat."
->  	depends on GPIOLIB
-> diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-> index 3dc0f02..3967ecf 100644
-> --- a/drivers/hwmon/Makefile
-> +++ b/drivers/hwmon/Makefile
-> @@ -120,6 +120,7 @@ obj-$(CONFIG_SENSORS_NTC_THERMISTOR)	+= ntc_thermistor.o
->  obj-$(CONFIG_SENSORS_PC87360)	+= pc87360.o
->  obj-$(CONFIG_SENSORS_PC87427)	+= pc87427.o
->  obj-$(CONFIG_SENSORS_PCF8591)	+= pcf8591.o
-> +obj-$(CONFIG_SENSORS_PWM_FAN)	+= pwm-fan.o
->  obj-$(CONFIG_SENSORS_S3C)	+= s3c-hwmon.o
->  obj-$(CONFIG_SENSORS_SCH56XX_COMMON)+= sch56xx-common.o
->  obj-$(CONFIG_SENSORS_SCH5627)	+= sch5627.o
-> diff --git a/drivers/hwmon/pwm-fan.c b/drivers/hwmon/pwm-fan.c
-> new file mode 100644
-> index 0000000..78fa627
-> --- /dev/null
-> +++ b/drivers/hwmon/pwm-fan.c
-> @@ -0,0 +1,199 @@
-> +/*
-> + * pwm-fan.c - Hwmon driver for fans connected to PWM lines.
-> + *
-> + * Copyright (c) 2014 Samsung Electronics Co., Ltd.
-> + *
-> + * Author: Kamil Debski <k.debski@samsung.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+>  		psfCSType =  &pstAddIndication->sfAuthorizedSet.cConvergenceSLTypes[nIndex];
 
-Please run the patch through checkpatch and ensure that all warnings and errors
-are fixed.
+You might consider removing the = NULL; on the declaration
+as it's set on the next line.
 
-> + */
-> +
-> +#include <linux/hwmon-sysfs.h>
-> +#include <linux/hwmon.h>
-> +#include <linux/module.h>
-> +#include <linux/mutex.h>
-> +#include <linux/of.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/pwm.h>
+> diff --git a/drivers/staging/bcm/IPv6Protocol.c b/drivers/staging/bcm/IPv6Protocol.c
+> index cd16067..e013c5a 100644
+> --- a/drivers/staging/bcm/IPv6Protocol.c
+> +++ b/drivers/staging/bcm/IPv6Protocol.c
+> @@ -45,6 +45,7 @@ static UCHAR *GetNextIPV6ChainedHeader(UCHAR **ppucPayload,
+[]
+>  			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV6_DBG,
+>  					DBG_LVL_ALL, "\nIPv6 Routing Header");
 
-For new drivers, please list include files in alphabetic order.
+The leading "\n" is unnecessary and could be removed.
 
-> +
-> +#define MAX_PWM 255
-> +
-> +struct pwm_fan_ctx {
-> +	struct device *hwmon;
-> +	struct mutex lock;
-> +	struct platform_device *pdev;
-> +	struct pwm_device *pwm;
-> +	unsigned int duty_cycle;
-> +	unsigned char pwm_value;
-> +};
-> +
-> +static ssize_t show_pwm_enable(struct device *dev,
-> +			       struct device_attribute *attr, char *buf)
-> +{
-> +	/* For the sake of simplicity only mode 1 (PWM) is supported */
-> +	return sprintf(buf, "1\n");
-> +}
-> +
-> +static ssize_t set_pwm(struct device *dev, struct device_attribute *attr,
-> +		       const char *buf, size_t count)
-> +{
-> +	struct pwm_fan_ctx *ctx = dev_get_drvdata(dev);
-> +	unsigned long pwm, duty;
-> +
-> +	if (kstrtoul(buf, 10, &pwm) || pwm > MAX_PWM)
-> +		return -EINVAL;
-> +
-> +	mutex_lock(&ctx->lock);
-> +
-> +	if (ctx->pwm_value == pwm)
-> +		goto exit_set_pwm;
-> +
-> +	duty =  DIV_ROUND_UP(pwm * (ctx->pwm->period - 1), MAX_PWM);
+> @@ -66,6 +67,7 @@ static UCHAR *GetNextIPV6ChainedHeader(UCHAR **ppucPayload,
+[]
+>  			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV6_DBG,
+>  					DBG_LVL_ALL,
+>  					"\nIPv6 DestOpts Header Header");
 
-Unnecessary double space.
+etc.
 
-> +	if (pwm_config(ctx->pwm, duty, ctx->pwm->period))
-> +		goto exit_set_pwm;
+> @@ -407,6 +411,7 @@ VOID DumpIpv6Address(ULONG *puIpv6Address)
+>  	UINT uiIpv6AddrNoLongWords = 4;
+>  	UINT uiIpv6AddIndex = 0;
+>  	struct bcm_mini_adapter *Adapter = GET_BCM_ADAPTER(gblpnetdev);
+> +
+>  	for (uiIpv6AddIndex = 0; uiIpv6AddIndex < uiIpv6AddrNoLongWords; uiIpv6AddIndex++) {
+>  		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV6_DBG, DBG_LVL_ALL,
+>  				":%lx", puIpv6Address[uiIpv6AddIndex]);
 
-Please return the error code.
+All of these are effectively broken.
 
-> +
-> +	ctx->duty_cycle = duty;
-> +	ctx->pwm_value = pwm;
-> +
-> +
-Single empty line only please.
+There's no BCM_DEBUG_PRINT that's like a pr_cont. 
+All of these are emitted on separate lines.
 
-> +exit_set_pwm:
-> +	mutex_unlock(&ctx->lock);
-> +
-> +	return count;
-> +}
-> +
-> +static ssize_t show_pwm(struct device *dev,
-> +			struct device_attribute *attr, char *buf)
-> +{
-> +	struct pwm_fan_ctx *ctx = dev_get_drvdata(dev);
-> +
-> +	return sprintf(buf, "%d\n", ctx->pwm_value);
 
-pwm_value is unsigned, so please use %u.
-
-> +}
-> +
-> +
-Single empty line only please
-
-> +static SENSOR_DEVICE_ATTR(pwm1_enable, S_IRUGO | S_IWUSR,
-> +		   show_pwm_enable, NULL, 0);
-
-Is this attribute really needed ?
-
-> +static SENSOR_DEVICE_ATTR(pwm1, S_IRUGO | S_IWUSR,
-> +		   show_pwm, set_pwm, 0);
-> +
-> +static struct attribute *pwm_fan_attributes[] = {
-> +	&sensor_dev_attr_pwm1_enable.dev_attr.attr,
-> +	&sensor_dev_attr_pwm1.dev_attr.attr,
-> +	NULL,
-> +};
-> +
-> +static const struct attribute_group pwm_fan_group = {
-> +	.attrs = pwm_fan_attributes,
-> +};
-> +
-> +static const struct attribute_group *pwm_fan_groups[] = {
-> +	&pwm_fan_group,
-> +	NULL
-> +};
-
-Please use the ATTRIBUTE_GROUPS macro.
-
-> +
-> +static int pwm_fan_probe(struct platform_device *pdev)
-> +{
-> +	struct pwm_fan_ctx *ctx;
-> +
-> +	ctx = devm_kzalloc(&pdev->dev, sizeof(*ctx), GFP_KERNEL);
-> +	if (!ctx) {
-> +		dev_err(&pdev->dev, "Not enough memory for PWM fan device\n");
-
-Unnecessary error message.
-
-> +		return -ENOMEM;
-> +	}
-> +
-> +	ctx->pdev = pdev;
-> +	mutex_init(&ctx->lock);
-> +
-> +	ctx->pwm = devm_of_pwm_get(&pdev->dev, pdev->dev.of_node, 0);
-
-Last argument is a string pointer. Please use NULL.
-
-> +	if (IS_ERR(ctx->pwm)) {
-> +		dev_err(&pdev->dev, "Could not get PWM");
-> +		return -EINVAL;
-
-Return PTR_ERR(ctx->pwm).
-
-> +	}
-> +
-> +	dev_set_drvdata(&pdev->dev, ctx);
-> +	platform_set_drvdata(pdev, ctx);
-> +
-> +	/* Set duty cycle to maximum allowed */
-> +	ctx->duty_cycle = ctx->pwm->period - 1;
-> +	ctx->pwm_value = MAX_PWM;
-> +	pwm_config(ctx->pwm, ctx->duty_cycle, ctx->pwm->period);
-
-pwm_config() can return an error. Why not check it here ?
-
-> +
-> +	ctx->hwmon = hwmon_device_register_with_groups(&pdev->dev, "pwmfan",
-> +		ctx, pwm_fan_groups);
-
-Why not devm_hwmon_device_register_with_groups ?
-
-> +
-> +	if (IS_ERR(ctx->hwmon)) {
-> +		dev_err(&pdev->dev, "Failed to register hwmon device");
-> +		return PTR_ERR(ctx->hwmon);
-> +	}
-> +
-> +	/* Enbale PWM output */
-> +	pwm_enable(ctx->pwm);
-> +
-> +	return 0;
-> +}
-> +
-> +static int pwm_fan_remove(struct platform_device *pdev)
-> +{
-> +	struct pwm_fan_ctx *ctx = platform_get_drvdata(pdev);
-> +
-> +	pwm_disable(ctx->pwm);
-
-Is this needed ? I don't see it used by the leds-pwm driver on cleanup.
-
-> +	hwmon_device_unregister(ctx->hwmon);
-> +
-> +	return 0;
-> +}
-> +
-> +#ifdef CONFIG_PM_SLEEP
-> +static int pwm_fan_suspend(struct device *dev)
-> +{
-> +	struct pwm_fan_ctx *ctx = dev_get_drvdata(dev);
-> +
-> +	return pwm_config(ctx->pwm, 0, ctx->pwm->period);
-
-Wonder if this should be pwm_disable instead (and pwm_enable on resume).
-Any thoughts ?
-
-> +}
-> +
-> +static int pwm_fan_resume(struct device *dev)
-> +{
-> +	struct pwm_fan_ctx *ctx = dev_get_drvdata(dev);
-> +
-> +	return pwm_config(ctx->pwm, ctx->duty_cycle, ctx->pwm->period);
-> +}
-> +
-> +static SIMPLE_DEV_PM_OPS(pwm_fan_pm, pwm_fan_suspend, pwm_fan_resume);
-> +#endif
-> +
-> +
-> +
-Single empty line only please
-
-> +static struct of_device_id of_pwm_fan_match[] = {
-> +	{ .compatible = "pwm-fan", },
-> +	{},
-> +};
-> +
-> +static struct platform_driver pwm_fan_driver = {
-> +	.probe		= pwm_fan_probe,
-> +	.remove		= pwm_fan_remove,
-> +	.driver	= {
-> +		.name		= "pwm-fan",
-> +#ifdef CONFIG_PM_SLEEP
-> +		.pm		= &pwm_fan_pm,
-> +#endif
-> +		.of_match_table	= of_match_ptr(of_pwm_fan_match),
-> +	},
-> +};
-> +
-> +module_platform_driver(pwm_fan_driver);
-> +
-> +MODULE_AUTHOR("Kamil Debski <k.debski@samsung.com>");
-> +MODULE_ALIAS("platform:pwm-fan");
-> +MODULE_DESCRIPTION("PWM FAN driver");
-> +MODULE_LICENSE("GPL");
-> -- 
-> 1.7.9.5
-> 
-> 
-> _______________________________________________
-> lm-sensors mailing list
-> lm-sensors@lm-sensors.org
-> http://lists.lm-sensors.org/mailman/listinfo/lm-sensors
-> 
