@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106AbaGINVa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 09:21:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37066 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755535AbaGINV2 (ORCPT
+	id S932264AbaGINWL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 09:22:11 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:48585 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755550AbaGINV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 09:21:28 -0400
-Message-ID: <53BD41CE.6000506@canonical.com>
-Date: Wed, 09 Jul 2014 15:21:18 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Mike Lothian <mike@fireburn.co.uk>
-CC: bskeggs@redhat.com, dri-devel@lists.freedesktop.org,
-        christian.koenig@amd.com, alexander.deucher@amd.com, airlied@linux.ie,
-        thellstrom@vmware.com, linux-kernel@vger.kernel.org,
-        nouveau@lists.freedesktop.org
-Subject: Re: [PATCH 00/17] Convert TTM to the new fence interface.
-References: <20140709093124.11354.3774.stgit@patser> <CAHbf0-HaFi0px7QGfBErKenH7wDU08B5mxo_QhFJdDPC4WBDrQ@mail.gmail.com>
-In-Reply-To: <CAHbf0-HaFi0px7QGfBErKenH7wDU08B5mxo_QhFJdDPC4WBDrQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Jul 2014 09:21:29 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH v2] serial: core: Preserve termios c_cflag for console resume
+Date: Wed,  9 Jul 2014 09:21:14 -0400
+Message-Id: <1404912074-9729-2-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1404912074-9729-1-git-send-email-peter@hurleysoftware.com>
+References: <1404912074-9729-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-op 09-07-14 15:09, Mike Lothian schreef:
-> Hi Maarten
->
-> Will this stop the stuttering I've been seeing with DRI3 and PRIME? Or will
-> other patches / plumbing be required
->
-No, that testing was with the whole series including the parts where you synchronized intel with radeon (iirc).
-Although it might if lucky, I noticed that I missed a int to long conversion, which resulted in a success being
-reported as error, disabling graphics acceleration entirely.
+When a tty is opened for the serial console, the termios c_cflag
+settings are inherited from the console line settings.
+However, if the tty is subsequently closed, the termios settings
+are lost. This results in a garbled console if the console is later
+suspended and resumed.
 
-The series here simply convert the drivers to a common fence infrastructure, but shouldn't cause any regressions
-or any major behavioral changes. A separate series is needed to make intel and radeon synchronized,
-and for that series the support on the intel side is a hack. It should be possible to get the the radeon/nouveau
-changes upstreamed, but this conversion is required for that.
+Preserve the termios c_cflag for the serial console when the tty
+is shutdown; this reflects the most recent line settings.
 
-~Maarten
+Fixes: Bugzilla #69751, 'serial console does not wake from S3'
+Reported-by: Valerio Vanni <valerio.vanni@inwind.it>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/serial/serial_core.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index b68550d..aab7190 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -239,6 +239,9 @@ static void uart_shutdown(struct tty_struct *tty, struct uart_state *state)
+ 		/*
+ 		 * Turn off DTR and RTS early.
+ 		 */
++		if (uart_console(uport) && tty)
++			uport->cons->cflag = tty->termios.c_cflag;
++
+ 		if (!tty || (tty->termios.c_cflag & HUPCL))
+ 			uart_clear_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
+ 
+-- 
+2.0.0
 
