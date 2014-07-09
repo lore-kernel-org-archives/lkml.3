@@ -1,105 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425AbaGIIQM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 04:16:12 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:58045 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752051AbaGIIQH (ORCPT
+	id S1754648AbaGIIXk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 04:23:40 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:44174 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751294AbaGIIXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 04:16:07 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Joseph Schuchart <joseph.schuchart@tu-dresden.de>
-Cc: Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Ilsche <thomas.ilsche@tu-dresden.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3]  perf script: Provide additional sample information on generic events
-References: <53031D2C.2050009@tu-dresden.de>
-	<20140307141857.GA3153@ghostprotocols.net>
-	<533D2283.3090703@tu-dresden.de> <87wqd5f7j5.fsf@sejong.aot.lge.com>
-	<538F0BF2.1010806@tu-dresden.de>
-	<20140707171706.GA20752@krava.redhat.com>
-	<53BCF1F4.7020906@tu-dresden.de>
-Date: Wed, 09 Jul 2014 17:16:00 +0900
-In-Reply-To: <53BCF1F4.7020906@tu-dresden.de> (Joseph Schuchart's message of
-	"Wed, 09 Jul 2014 09:40:36 +0200")
-Message-ID: <87vbr72bi7.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 9 Jul 2014 04:23:35 -0400
+Date: Wed, 9 Jul 2014 10:23:31 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, kishon@ti.com,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>
+Subject: Re: [PATCH v9 3/7] ata: libahci: allow to use multiple PHYs
+Message-ID: <20140709082331.GA4510@kwain>
+References: <1404728173-20263-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1404728173-20263-4-git-send-email-antoine.tenart@free-electrons.com>
+ <20140708134000.GC4979@htj.dyndns.org>
+ <20140708170353.GA16148@kwain>
+ <20140708171817.GH4979@htj.dyndns.org>
+ <20140708174900.GC16148@kwain>
+ <20140708214010.GI4979@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140708214010.GI4979@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 09 Jul 2014 09:40:36 +0200, Joseph Schuchart wrote:
->  [PATCH 3/3]  perf script: Provide additional sample information on
->  generic events  to Python scripts, including pid, tid, and cpu for which the
->  event was  recorded. At the moment, the pointer to the sample struct is
->  passed to  scripts, which seems to be of little use. The patch puts this
->  information in  dictionaries for easy access by Python scripts.
->
-> Signed-off-by: Joseph Schuchart <joseph.schuchart@tu-dresden.de>
-> Acked-by: Thomas Ilsche <thomas.ilsche@tu-dresden.de>
+Hi Tejun,
 
-Acked-by: Namhyung Kim <namhyung@kernel.org>
+On Tue, Jul 08, 2014 at 05:40:10PM -0400, Tejun Heo wrote:
+> Hey,
+> 
+> On Tue, Jul 08, 2014 at 07:49:00PM +0200, Antoine Ténart wrote:
+> > > So, yeah, it's being used both as input and output and we also have
+> > > the arguments which affect port_map, right?  It does seem confusing.
+> > 
+> > I do see priv->port_map as being automatically set and then restricted
+> > if needed by the port_map input here. I don't see how that's confusing.
+> > The only modification is we restrict the port_map parameter to the set
+> > of available ports. The port_map argument affected priv->port_map before
+> > this patch.
+> 
+> It is confusing.  If you wanna pass around available ports in hpriv,
+> please add a separate field and replace the arguments to
+> save_initial_config().
+
+I don't get it. Which argument should I replace in
+save_initial_config()? The change is we compute hpriv->port_map.
+I don't see which arguments we can add or replace.
+
+If that's more clear, the modification here is equivalent to (when using
+the new bindings):
+
+diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
+index 40ea583d3610..f9d3cfd5d1bd 100644
+--- a/drivers/ata/libahci.c
++++ b/drivers/ata/libahci.c
+@@ -513,7 +513,7 @@ void ahci_save_initial_config(struct device *dev,
+        /* record values to use during operation */
+        hpriv->cap = cap;
+        hpriv->cap2 = cap2;
+-       hpriv->port_map = port_map;
++       hpriv->port_map &= port_map;
+ 
+        if (!hpriv->start_engine)
+                hpriv->start_engine = ahci_start_engine;
+
+It just use the argument port_map on the real set of ports. If that's
+still not clear, I can add a separate field. But the field will store
+the exact same information as hpriv->port_map. We will have something
+like:
+
+if (hpriv->available_port_map)
+	hpriv->port_map &= hpriv->available_port_map;
+
+> > > Well, so does clk.  Let's say clk is more restricted and phy can be
+> > > one or more per port and thus needs to be dynamic.  If so, shouldn't
+> > > we at least have some correlation between phys and ports?  It bothers
+> > > me that now libahci is carrying random number of resources that it has
+> > > no idea how to associate with the ports it manages.  What if later we
+> > > want to involve phy driver in power managing unoccupied ports?
+> > 
+> > I see. This is a first (working) attempt to have a one node per port. I
+> > agree that would be nice to have a correlation between ports and PHYs.
+> > This can definitively be added when needed without changing the dt
+> > bindings as only the internal representation changes. This would also
+> > require to get all phys from the port nodes, which is again internal
+> > stuff.
+> > 
+> > Don't you think we can go by steps, and have a following up series for
+> > this when needed (like in a power managing series for unoccupied ports)?
+> 
+> I don't know.  It isn't exactly difficult to make it per-port, is it?
+> We already have ahci_port_priv and wouldn't the code actually be
+> simpler that way?
+
+I had a quick look on this, and it does not seems to be that simple. The
+ahci_port_priv is stored inside the ata_port struct and not accessible
+(as of now) from the ahci_host_priv one. The ahci_port_priv is
+initialized at the end of ahci_platform_init_host(), far after we need
+it. This requires quite a lot of changes. Or is there another way?
+
+To be honest, we are now at v9 and it's been quite a long time since v1.
+I'd really like it to be merged in 3.17. As I see it, this patch keeps
+the same logic as what was in place before, only with more PHYs.
+
+Don't take me wrong, I really think this is a good idea to have a
+per-port PHY information. But this is a refactoring not clearly related
+to this series as the logic is not changed. This definitively can be the
+subject of a dedicated series, especially if I got it right and the
+required modifications are not that obvious.
+
+What do you think?
 
 Thanks,
-Namhyung
 
+Antoine
 
-> ---
->  .../util/scripting-engines/trace-event-python.c    | 23 +++++++++++++++++++---
->  1 file changed, 20 insertions(+), 3 deletions(-)
->
-> diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-> index dae78e4..64923cd 100644
-> --- a/tools/perf/util/scripting-engines/trace-event-python.c
-> +++ b/tools/perf/util/scripting-engines/trace-event-python.c
-> @@ -446,7 +446,7 @@ static void python_process_general_event(struct perf_sample *sample,
->  					 struct thread *thread,
->  					 struct addr_location *al)
->  {
-> -	PyObject *handler, *retval, *t, *dict, *callchain;
-> +	PyObject *handler, *retval, *t, *dict, *callchain, *dict_sample;
->  	static char handler_name[64];
->  	unsigned n = 0;
->  
-> @@ -462,6 +462,10 @@ static void python_process_general_event(struct perf_sample *sample,
->  	if (!dict)
->  		Py_FatalError("couldn't create Python dictionary");
->  
-> +	dict_sample = PyDict_New();
-> +	if (!dict_sample)
-> +		Py_FatalError("couldn't create Python dictionary");
-> +
->  	snprintf(handler_name, sizeof(handler_name), "%s", "process_event");
->  
->  	handler = PyDict_GetItemString(main_dict, handler_name);
-> @@ -471,8 +475,21 @@ static void python_process_general_event(struct perf_sample *sample,
->  	pydict_set_item_string_decref(dict, "ev_name", PyString_FromString(perf_evsel__name(evsel)));
->  	pydict_set_item_string_decref(dict, "attr", PyString_FromStringAndSize(
->  			(const char *)&evsel->attr, sizeof(evsel->attr)));
-> -	pydict_set_item_string_decref(dict, "sample", PyString_FromStringAndSize(
-> -			(const char *)sample, sizeof(*sample)));
-> +
-> +	pydict_set_item_string_decref(dict_sample, "pid",
-> +			PyInt_FromLong(sample->pid));
-> +	pydict_set_item_string_decref(dict_sample, "tid",
-> +			PyInt_FromLong(sample->tid));
-> +	pydict_set_item_string_decref(dict_sample, "cpu",
-> +			PyInt_FromLong(sample->cpu));
-> +	pydict_set_item_string_decref(dict_sample, "ip",
-> +			PyLong_FromUnsignedLongLong(sample->ip));
-> +	pydict_set_item_string_decref(dict_sample, "time",
-> +			PyLong_FromUnsignedLongLong(sample->time));
-> +	pydict_set_item_string_decref(dict_sample, "period",
-> +			PyLong_FromUnsignedLongLong(sample->period));
-> +	pydict_set_item_string_decref(dict, "sample", dict_sample);
-> +
->  	pydict_set_item_string_decref(dict, "raw_buf", PyString_FromStringAndSize(
->  			(const char *)sample->raw_data, sample->raw_size));
->  	pydict_set_item_string_decref(dict, "comm",
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
