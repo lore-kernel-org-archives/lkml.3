@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964811AbaGIP01 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 11:26:27 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:46422 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932729AbaGIP0X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 11:26:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140709145343.GA2384@redhat.com>
-References: <1404857759-25105-1-git-send-email-eranian@google.com>
-	<87mwcj2b0z.fsf@sejong.aot.lge.com>
-	<20140709145343.GA2384@redhat.com>
-Date: Wed, 9 Jul 2014 17:26:22 +0200
-Message-ID: <CABPqkBRO-p4Nv=2L9J19LgGdTmLTDBbMVf5kWFC8LzpKqax+Yw@mail.gmail.com>
-Subject: Re: [PATCH v1 0/4] perf: add ability to sample interrupted machine state
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	id S964852AbaGIP11 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 11:27:27 -0400
+Received: from mga09.intel.com ([134.134.136.24]:64911 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932531AbaGIP0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 11:26:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,631,1400050800"; 
+   d="scan'208";a="540934522"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Tadeusz Struk <tadeusz.struk@intel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Helge Deller <deller@gmx.de>,
+        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>, linux390@de.ibm.com,
+        Alexander Viro <viro@zeniv.linux.org.uk>, qat-linux@intel.com,
+        linux-crypto@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v1 5/5] [S390] zcrypt: use seq_hex_dump() to dump buffers
+Date: Wed,  9 Jul 2014 18:24:30 +0300
+Message-Id: <1404919470-26668-6-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1404919470-26668-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1404919470-26668-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 9, 2014 at 4:53 PM, Arnaldo Carvalho de Melo
-<acme@kernel.org> wrote:
-> Em Wed, Jul 09, 2014 at 05:26:20PM +0900, Namhyung Kim escreveu:
->> On Wed,  9 Jul 2014 00:15:55 +0200, Stephane Eranian wrote:
->> > This patch series is the fundation for a future series adding
->> > function value profiling.
->>
->> Probably a silly question: what is the function value profiling?
->
-> I think he wants to sample the values of parameters and local variables,
-> etc, right?
->
-> http://lists.cs.uiuc.edu/pipermail/llvmdev/2013-June/062950.html lists
-> some things you can do with that.
->
-> Stephane, is that what you mean by "value profiling"?
->
-Value profiling means sampling the values of function arguments passed in
-registers.
+Instead of custom approach let's use recently introduced seq_hex_dump() helper.
+
+In this case it slightly changes the output, namely the four tetrads will be
+output on one line.
+
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ drivers/s390/crypto/zcrypt_api.c | 10 +---------
+ 1 file changed, 1 insertion(+), 9 deletions(-)
+
+diff --git a/drivers/s390/crypto/zcrypt_api.c b/drivers/s390/crypto/zcrypt_api.c
+index 0e18c5d..d1f9983 100644
+--- a/drivers/s390/crypto/zcrypt_api.c
++++ b/drivers/s390/crypto/zcrypt_api.c
+@@ -1203,16 +1203,8 @@ static void sprinthx(unsigned char *title, struct seq_file *m,
+ static void sprinthx4(unsigned char *title, struct seq_file *m,
+ 		      unsigned int *array, unsigned int len)
+ {
+-	int r;
+-
+ 	seq_printf(m, "\n%s\n", title);
+-	for (r = 0; r < len; r++) {
+-		if ((r % 8) == 0)
+-			seq_printf(m, "    ");
+-		seq_printf(m, "%08X ", array[r]);
+-		if ((r % 8) == 7)
+-			seq_putc(m, '\n');
+-	}
++	seq_hex_dump(m, "    ", DUMP_PREFIX_NONE, 32, 4, array, len, false);
+ 	seq_putc(m, '\n');
+ }
+ 
+-- 
+2.0.1
+
