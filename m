@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320AbaGIAfq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 20:35:46 -0400
-Received: from ozlabs.org ([103.22.144.67]:58152 "EHLO ozlabs.org"
+	id S1753642AbaGIAgL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 20:36:11 -0400
+Received: from mga11.intel.com ([192.55.52.93]:36071 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751064AbaGIAfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 20:35:41 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Christoph Hellwig <hch@infradead.org>, Hannes Reinecke <hare@suse.de>
-Cc: James Bottomley <jbottomley@parallels.com>,
-        Christoph Hellwig <hch@infradead.org>, Ewan Milne <emilne@redhat.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/6] scsi: use 64-bit value for 'max_luns'
-In-Reply-To: <20140625122856.GA3221@infradead.org>
-References: <1401785937-43581-1-git-send-email-hare@suse.de> <1401785937-43581-6-git-send-email-hare@suse.de> <20140625122856.GA3221@infradead.org>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 09 Jul 2014 09:30:19 +0930
-Message-ID: <87a98j765o.fsf@rustcorp.com.au>
+	id S1752158AbaGIAfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 20:35:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,629,1400050800"; 
+   d="scan'208";a="566994985"
+Message-ID: <53BC8DDC.5080705@linux.intel.com>
+Date: Tue, 08 Jul 2014 17:33:32 -0700
+From: eric ernst <eric.ernst@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Gross <mark.gross@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: Re: [PATCH v4 1/1] pinctrl: baytrail: Warn if direct IRQ GPIO set
+ to output
+References: <CACRpkdbU-d7Gdji2fJr4h7bC58d63E_CAVeSHZm3ARuut1UFKQ@mail.gmail.com>	<1402596380-18783-1-git-send-email-eric.ernst@linux.intel.com> <CACRpkdbBsP-_K4Y2MS17EuzZeho6uYKqRPHPPL0-KDAamsdxvQ@mail.gmail.com>
+In-Reply-To: <CACRpkdbBsP-_K4Y2MS17EuzZeho6uYKqRPHPPL0-KDAamsdxvQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Hellwig <hch@infradead.org> writes:
-> On Tue, Jun 03, 2014 at 10:58:56AM +0200, Hannes Reinecke wrote:
->> Now that we're using 64-bit LUNs internally we need to increase
->> the size of max_luns to 64 bits, too.
->> 
->> Signed-off-by: Hannes Reinecke <hare@suse.de>
->> Reviewed-by: Christoph Hellwig <hch@infradead.org>
->> Reviewed-by: Ewan Milne <emilne@redhat.com>
->
-> I just noticed that this has changes to the module param code.
-> These should be split into a separate patch and be ACKed by the modules
-> maintainer.  I'd still love to take the change through the SCSI tree to
-> be able to get this into 3.17 easily.
->
-> moduleparam changes below:
->
->> diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
->> index 204a677..21e2ba6 100644
->> --- a/include/linux/moduleparam.h
->> +++ b/include/linux/moduleparam.h
->> @@ -381,6 +381,11 @@ extern int param_set_ulong(const char *val, const struct kernel_param *kp);
->>  extern int param_get_ulong(char *buffer, const struct kernel_param *kp);
->>  #define param_check_ulong(name, p) __param_check(name, p, unsigned long)
->>  
->> +extern struct kernel_param_ops param_ops_ullong;
->> +extern int param_set_ullong(const char *val, const struct kernel_param *kp);
->> +extern int param_get_ullong(char *buffer, const struct kernel_param *kp);
->> +#define param_check_ullong(name, p) __param_check(name, p, unsigned long long)
->> +
->>  extern struct kernel_param_ops param_ops_charp;
->>  extern int param_set_charp(const char *val, const struct kernel_param *kp);
->>  extern int param_get_charp(char *buffer, const struct kernel_param *kp);
->
->> diff --git a/kernel/params.c b/kernel/params.c
->> index b00142e..2b2a9dd 100644
->> --- a/kernel/params.c
->> +++ b/kernel/params.c
->> @@ -253,6 +253,7 @@ STANDARD_PARAM_DEF(int, int, "%i", kstrtoint);
->>  STANDARD_PARAM_DEF(uint, unsigned int, "%u", kstrtouint);
->>  STANDARD_PARAM_DEF(long, long, "%li", kstrtol);
->>  STANDARD_PARAM_DEF(ulong, unsigned long, "%lu", kstrtoul);
->> +STANDARD_PARAM_DEF(ullong, unsigned long long, "%llu", kstrtoull);
+Mea culpa - thanks Linus.  I saw a note from kbuild test
+robot indicating an issue, but given your response, I am
+assuming it was from your first build attempt.  Thanks.
 
-Thanks Christoph!
+On 14-07-07 02:14 PM, Linus Walleij wrote:
+> On Thu, Jun 12, 2014 at 8:06 PM,  <eric.ernst@linux.intel.com> wrote:
+>
+>> +       WARN(readl(conf_reg) & BYT_DIRECT_IRQ_EN,
+>> +               "Potential Error: Setting GPIO with direct_irq_en to output");
+> Hm in the v4 version you somehow managed to drop the definition
+> of BYT_DIRECT_IRQ_EN...
+>
+> I patched it back in. Let's hope it compiles now.
+>
+> Yours,
+> Linus Walleij
 
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-
-Cheers,
-Rusty.
