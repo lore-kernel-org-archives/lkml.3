@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932531AbaGITee (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 15:34:34 -0400
-Received: from mga01.intel.com ([192.55.52.88]:50963 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751778AbaGITeb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 15:34:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,632,1400050800"; 
-   d="scan'208";a="567528100"
-From: Andi Kleen <andi@firstfloor.org>
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Alexey Preobrazhensky <preobr@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        x86@kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC/PATCH RESEND -next 05/21] x86: cpu: don't sanitize early stages of a secondary CPU boot
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
-	<1404905415-9046-6-git-send-email-a.ryabinin@samsung.com>
-Date: Wed, 09 Jul 2014 12:33:16 -0700
-In-Reply-To: <1404905415-9046-6-git-send-email-a.ryabinin@samsung.com> (Andrey
-	Ryabinin's message of "Wed, 09 Jul 2014 15:29:59 +0400")
-Message-ID: <87egxunx8j.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1756184AbaGITiS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 15:38:18 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:51949 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751766AbaGITiP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 15:38:15 -0400
+Message-ID: <53BD9A24.7010203@kernel.dk>
+Date: Wed, 09 Jul 2014 21:38:12 +0200
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: dgilbert@interlog.com, Christoph Hellwig <hch@infradead.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Bart Van Assche <bvanassche@fusionio.com>,
+        Robert Elliott <Elliott@hp.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: scsi-mq V2
+References: <1403715121-1201-1-git-send-email-hch@lst.de> <20140708144829.GA5539@infradead.org> <53BD7041.5010300@interlog.com>
+In-Reply-To: <53BD7041.5010300@interlog.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrey Ryabinin <a.ryabinin@samsung.com> writes:
+On 2014-07-09 18:39, Douglas Gilbert wrote:
+> On 14-07-08 10:48 AM, Christoph Hellwig wrote:
+>> On Wed, Jun 25, 2014 at 06:51:47PM +0200, Christoph Hellwig wrote:
+>>> Changes from V1:
+>>>   - rebased on top of the core-for-3.17 branch, most notable the
+>>>     scsi logging changes
+>>>   - fixed handling of cmd_list to prevent crashes for some heavy
+>>>     workloads
+>>>   - fixed incorrect handling of !target->can_queue
+>>>   - avoid scheduling a workqueue on I/O completions when no queues
+>>>     are congested
+>>>
+>>> In addition to the patches in this thread there also is a git
+>>> available at:
+>>>
+>>>     git://git.infradead.org/users/hch/scsi.git scsi-mq.2
+>>
+>>
+>> I've pushed out a new scsi-mq.3 branch, which has been rebased on the
+>> latest core-for-3.17 tree + the "RFC: clean up command setup" series
+>> from June 29th.  Robert Elliot found a problem with not fully zeroed
+>> out UNMAP CDBs, which is fixed by the saner discard handling in that
+>> series.
+>>
+>> There is a new patch to factor the code from the above series for
+>> blk-mq use, which I've attached below.  Besides that the only changes
+>> are minor merge fixups in the main blk-mq usage patch.
+>
+> Be warned: both Rob Elliott and I can easily break
+> the scsi-mq.3 branch. It seems as though a regression
+> has slipped in. I notice that Christoph has added a
+> new branch called "scsi-mq.3-no-rebase".
 
-> Instrumentation of this files may result in unbootable machine.
+Rob/Doug, those issues look very much like problems in the aio code. Can 
+either/both of you try with:
 
-This doesn't make sense. Is the code not NMI safe? 
-If yes that would need to be fixed because
+f8567a3845ac05bb28f3c1b478ef752762bd39ef
+edfbbf388f293d70bf4b7c0bc38774d05e6f711a
 
-Please debug more.
+reverted (in that order) and see if that changes anything.
 
-perf is a common source of bugs (see Vice Weaver's fuzzer results),
-so it would be good to have this functionality for it.
-
--Andi
 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+Jens Axboe
+
