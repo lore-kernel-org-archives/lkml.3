@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899AbaGIHOt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 03:14:49 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:40256 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754498AbaGIHOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 03:14:24 -0400
+	id S1754394AbaGIHOW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 03:14:22 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:36444 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114AbaGIHOU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 03:14:20 -0400
 From: Mugunthan V N <mugunthanvnm@ti.com>
 To: <netdev@vger.kernel.org>
 CC: <davem@davemloft.net>, <linux-api@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Mugunthan V N <mugunthanvnm@ti.com>
-Subject: [net-next PATCH v2 2/3] drivers: net: cpsw: remove redundancy check
-Date: Wed, 9 Jul 2014 12:44:09 +0530
-Message-ID: <1404890050-4020-3-git-send-email-mugunthanvnm@ti.com>
+Subject: [net-next PATCH v2 0/3] Broadcast/Multicast rate limit via Ethtool Coalesce
+Date: Wed, 9 Jul 2014 12:44:07 +0530
+Message-ID: <1404890050-4020-1-git-send-email-mugunthanvnm@ti.com>
 X-Mailer: git-send-email 2.0.0.390.gcb682f8
-In-Reply-To: <1404890050-4020-1-git-send-email-mugunthanvnm@ti.com>
-References: <1404890050-4020-1-git-send-email-mugunthanvnm@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In cpsw_set_coalesce, rx_coalesce_usecs is already checked before
-calling this function, so removing redundancy check.
+A system/cpu can be loaded by a hacker with flooding of broadcast or
+multicast packets, to prevent this some Ethernet controllers like CPSW
+provide a mechanism to limit the broadcast/multicast packet rate via
+hardware limiters. This patch series enables this feature via
+Ethtool Coalesce.
 
-Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
----
- drivers/net/ethernet/ti/cpsw.c | 3 ---
- 1 file changed, 3 deletions(-)
+Mugunthan V N (3):
+  net: ethtool: Add Multicast and broadcast rate limit coalescing
+    feature
+  drivers: net: cpsw: remove redundancy check
+  drivers: net: cpsw: Add support for multicast/broadcast rate limit
 
-diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
-index b988d16..a6117e6 100644
---- a/drivers/net/ethernet/ti/cpsw.c
-+++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -884,9 +884,6 @@ static int cpsw_set_coalesce(struct net_device *ndev,
- 	u32 addnl_dvdr = 1;
- 	u32 coal_intvl = 0;
- 
--	if (!coal->rx_coalesce_usecs)
--		return -EINVAL;
--
- 	coal_intvl = coal->rx_coalesce_usecs;
- 
- 	int_ctrl =  readl(&priv->wr_regs->int_control);
+ drivers/net/ethernet/ti/cpsw.c | 83 +++++++++++++++++++++++++++++++++++++++---
+ include/uapi/linux/ethtool.h   |  4 ++
+ 2 files changed, 82 insertions(+), 5 deletions(-)
+
 -- 
 2.0.0.390.gcb682f8
 
