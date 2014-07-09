@@ -1,150 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896AbaGIEEp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 00:04:45 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:55307 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751337AbaGIEDn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 00:03:43 -0400
-X-AuditID: cbfee691-b7f2f6d0000040c4-a2-53bcbf1892d7
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, t.figa@samsung.com,
-        vikas.sajjan@samsung.com, joshi@samsung.com, naushad@samsung.com,
-        thomas.ab@samsung.com, chow.kim@samsung.com,
-        Pankaj Dubey <pankaj.dubey@samsung.com>
-Subject: [PATCH v7 1/4] ARM: EXYNOS: Add support for mapping PMU base address
- via DT
-Date: Wed, 09 Jul 2014 09:30:52 +0530
-Message-id: <1404878455-31518-2-git-send-email-pankaj.dubey@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1404878455-31518-1-git-send-email-pankaj.dubey@samsung.com>
-References: <1404878455-31518-1-git-send-email-pankaj.dubey@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgkeLIzCtJLcpLzFFi42JZI2JSpyuxf0+wwawNyhbLJt1ls/i+6wu7
-	Re+Cq2wWmx5fY7W4vGsOm8WM8/uYLG5f5rX4dPQ/q8WirUAV62e8ZrHoWMZocfPZdiYHHo+W
-	5h42j81L6j36tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoEro/vNc5aCHrGKjd9vMDcwHhTqYuTk
-	kBAwkdjQe50ZwhaTuHBvPVsXIxeHkMBSRokPx5aywxQ9WrIXKrGIUWL5wz/sEM4EJonu21/Z
-	QKrYBHQlnryfCzZKRCBbov/2ahaQImaBx4wSb1YeZQRJCAuESXzd/hKsiEVAVeLMuilgzbwC
-	HhJbpt0DauAAWqcgMWeSDUiYU8BTomX6crASIaCSM+s2sILMlBDYxC6x9slqVog5AhLfJh+C
-	6pWV2HQA6h1JiYMrbrBMYBRewMiwilE0tSC5oDgpvchUrzgxt7g0L10vOT93EyMwFk7/ezZx
-	B+P9A9aHGJOBxk1klhJNzgfGUl5JvKGxmZGFqYmpsZG5pRlpwkrivOmPkoKEBNITS1KzU1ML
-	Uovii0pzUosPMTJxcEo1MFaYSDpMXrlyFvO0hYfm1Xjcvao5ldHVId4jz87FNr2f22duwVRv
-	Hg8ppdde4tvPRh46KVEby6vUO/HCzrrAs3sW5cloLp295aKuJ2vy7fCPZg1tNoJcL6r4Hgv9
-	PF6wp1zpj9osxSfXIq+vO2sYpqcygemifbzhOQ6FEDadztUT7u6IiPigqsRSnJFoqMVcVJwI
-	AOR9FICbAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsVy+t9jAV2J/XuCDT78kLRYNukum8X3XV/Y
-	LXoXXGWz2PT4GqvF5V1z2CxmnN/HZHH7Mq/Fp6P/WS0WbQWqWD/jNYtFxzJGi5vPtjM58Hi0
-	NPeweWxeUu/Rt2UVo8fnTXIBLFENjDYZqYkpqUUKqXnJ+SmZeem2St7B8c7xpmYGhrqGlhbm
-	Sgp5ibmptkouPgG6bpk5QIcpKZQl5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJAAwlr
-	GDO63zxnKegRq9j4/QZzA+NBoS5GTg4JAROJR0v2skHYYhIX7q0Hsrk4hAQWMUosf/iHHcKZ
-	wCTRffsrWBUbMJyevJ/LDGKLCGRL9N9ezQJSxCzwmFHizcqjjCAJYYEwia/bX4IVsQioSpxZ
-	NwWsmVfAQ2LLtHtADRxA6xQk5kyyAQlzCnhKtExfDlYiBFRyZt0G1gmMvAsYGVYxiqYWJBcU
-	J6XnGuoVJ+YWl+al6yXn525iBEfaM6kdjCsbLA4xCnAwKvHwKvDsCRZiTSwrrsw9xCjBwawk
-	wvvNDSjEm5JYWZValB9fVJqTWnyI0RToqInMUqLJ+cAkkFcSb2hsYm5qbGppYmFiZqkkznug
-	1TpQSCA9sSQ1OzW1ILUIpo+Jg1OqgTGCs1vl0/VH1yNPJMllhSXr+lct1BbdxCay4ZRXUjbn
-	hl2J0XMPf9i2ZPXm9BW7FJl2Tme0P7RtUuTynnnXSiVvJ/88+O7Te5MC8da50+t5/xW7T2rN
-	XLNxdQ3jQuXobctCj+leVp167ta17Cqx8lqu/rl8FyeXTrDQNXnOvPTDCy1xpX1XOkWUWIoz
-	Eg21mIuKEwEEr9/RygIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1754341AbaGIEGY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 00:06:24 -0400
+Received: from ozlabs.org ([103.22.144.67]:40201 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750718AbaGIEGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 00:06:23 -0400
+Date: Wed, 9 Jul 2014 14:06:16 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Clint Taylor <clinton.a.taylor@intel.com>,
+        Rodrigo Vivi <rodrigo.vivi@gmail.com>
+Subject: linux-next: manual merge of the drm tree with the drm-intel-fixes
+ tree
+Message-ID: <20140709140616.28db3a01@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/NjQkMcXrVM.xC=3UTXYQdX1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for mapping Samsung Power Management Unit (PMU)
-base address from device tree.
+--Sig_/NjQkMcXrVM.xC=3UTXYQdX1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
----
- arch/arm/mach-exynos/common.h |    1 +
- arch/arm/mach-exynos/exynos.c |   37 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 38 insertions(+)
+Hi Dave,
 
-diff --git a/arch/arm/mach-exynos/common.h b/arch/arm/mach-exynos/common.h
-index 152b464..f8daa9c 100644
---- a/arch/arm/mach-exynos/common.h
-+++ b/arch/arm/mach-exynos/common.h
-@@ -113,6 +113,7 @@ IS_SAMSUNG_CPU(exynos5800, EXYNOS5800_SOC_ID, EXYNOS5_SOC_MASK)
- 
- extern void __iomem *sysram_ns_base_addr;
- extern void __iomem *sysram_base_addr;
-+extern void __iomem *pmu_base_addr;
- void exynos_sysram_init(void);
- 
- void exynos_firmware_init(void);
-diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
-index 186f35d..173aac8 100644
---- a/arch/arm/mach-exynos/exynos.c
-+++ b/arch/arm/mach-exynos/exynos.c
-@@ -19,6 +19,7 @@
- #include <linux/of_platform.h>
- #include <linux/platform_device.h>
- #include <linux/pm_domain.h>
-+#include <linux/irqchip.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/hardware/cache-l2x0.h>
-@@ -31,6 +32,8 @@
- #include "regs-pmu.h"
- #include "regs-sys.h"
- 
-+void __iomem *pmu_base_addr;
-+
- static struct map_desc exynos4_iodesc[] __initdata = {
- 	{
- 		.virtual	= (unsigned long)S3C_VA_SYS,
-@@ -253,6 +256,39 @@ static void __init exynos_init_io(void)
- 	exynos_map_io();
- }
- 
-+static const struct of_device_id exynos_dt_pmu_match[] = {
-+	{ .compatible = "samsung,exynos3250-pmu" },
-+	{ .compatible = "samsung,exynos4210-pmu" },
-+	{ .compatible = "samsung,exynos4212-pmu" },
-+	{ .compatible = "samsung,exynos4412-pmu" },
-+	{ .compatible = "samsung,exynos5250-pmu" },
-+	{ .compatible = "samsung,exynos5420-pmu" },
-+	{ /*sentinel*/ },
-+};
-+
-+static void exynos_map_pmu(void)
-+{
-+	struct device_node *np;
-+
-+	np = of_find_matching_node(NULL, exynos_dt_pmu_match);
-+	if (np)
-+		pmu_base_addr = of_iomap(np, 0);
-+
-+	if (!pmu_base_addr)
-+		panic("failed to find exynos pmu register\n");
-+}
-+
-+static void __init exynos_init_irq(void)
-+{
-+	irqchip_init();
-+	/*
-+	 * Since platsmp.c needs pmu base address by the time
-+	 * DT is not unflatten so we can't use DT APIs before
-+	 * init_irq
-+	 */
-+	exynos_map_pmu();
-+}
-+
- static void __init exynos_dt_machine_init(void)
- {
- 	struct device_node *i2c_np;
-@@ -336,6 +372,7 @@ DT_MACHINE_START(EXYNOS_DT, "SAMSUNG EXYNOS (Flattened Device Tree)")
- 	.smp		= smp_ops(exynos_smp_ops),
- 	.map_io		= exynos_init_io,
- 	.init_early	= exynos_firmware_init,
-+	.init_irq	= exynos_init_irq,
- 	.init_machine	= exynos_dt_machine_init,
- 	.init_late	= exynos_init_late,
- 	.dt_compat	= exynos_dt_compat,
--- 
-1.7.9.5
+Today's linux-next merge of the drm tree got a conflict in
+drivers/gpu/drm/i915/intel_drv.h between commit 72f5fd2a9815
+("drm/i915/vlv: T12 eDP panel timing enforcement during reboot") from
+the drm-intel-fixes tree and commit 6118efe5968c ("drm/i915: move
+psr_setup_done to psr struct") from the drm tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/gpu/drm/i915/intel_drv.h
+index f67340ed2c12,5f7c7bd94d90..000000000000
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@@ -537,9 -541,6 +541,8 @@@ struct intel_dp=20
+  	unsigned long last_power_cycle;
+  	unsigned long last_power_on;
+  	unsigned long last_backlight_off;
+- 	bool psr_setup_done;
+ +	struct notifier_block edp_notifier;
+ +
+  	bool use_tps3;
+  	struct intel_connector *attached_connector;
+ =20
+
+--Sig_/NjQkMcXrVM.xC=3UTXYQdX1
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTvL+8AAoJEMDTa8Ir7ZwVBwAP/0zcugRoR0fd3uMzZgtTiSAI
+640tl7fflwupvLFqkC4YYs8iU2J5IJm0VURX/QUfyqJcxtUsRDyj5QI2wnB7s1zB
+As2749C+J55xfZsIjXuSuNCvQTuUV0dMkLN6q5IRtTq29Kfwpt+TOwYFAuiBNJAP
+F1k60y1//5zWQcNnOyuGR1f3PhPPOVsSeTPFmm0IMDujNQ+vzcECUZyf9dgGWOIz
+ARzCJ8kNQN28g9psJMUkSszXzaaSIGrNRrGVZN5p2eCHkHJzl+NBwGssGh3Opwig
+IsuCk4M91HlS8h0ko+AnptreZc7k2AI/nmEutTrWjSB/Dw5tyyPSl3JNIrTb3dEp
+ttVflm+wybaOPKyjocibgu7G5BXN3J2nrb3jf94kL+oVzdl4+2nSj6PwUXv7TNUe
+rcyfYILP1aZMlAkotolCR0XJxZILBgg3Ol38k8E1hfwAUmGbY/mLolcIOd4RkTpM
+WJInI1xsAaBCHx4y61BWxmqg90AX+FprcV8wCHoKH3xmyRojGpmxAKCd8qub1I5l
+hadK8+joSzKn4fBFfB561FW7XPwU7DvHE4Wc/Ewx7aroWQChptjZLMbEPLU69n0T
+PnD0ujpSE2SvUM93Cije3Sru+S9MS/BPou8kbUJJQDxvJ9W9S2YKENvzFA3tls2o
+735u1afseaqypK9HW8WU
+=mtF/
+-----END PGP SIGNATURE-----
+
+--Sig_/NjQkMcXrVM.xC=3UTXYQdX1--
