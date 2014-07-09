@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756469AbaGIOOG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 10:14:06 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:50747 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756252AbaGIOOE (ORCPT
+	id S1756523AbaGIOOd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 10:14:33 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:55308 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756250AbaGIOOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 10:14:04 -0400
-Date: Wed, 9 Jul 2014 10:13:54 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Andrew Cooper <andrew.cooper3@citrix.com>
-Cc: David Vrabel <david.vrabel@citrix.com>, konrad@kernel.org,
-        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xenproject.org
-Subject: Re: [Xen-devel] [PATCH v3 1/7] xen-pciback: Document the various
- parameters and attributes in SysFS
-Message-ID: <20140709141354.GG21837@laptop.dumpdata.com>
-References: <1404845909-13563-1-git-send-email-konrad@kernel.org>
- <1404845909-13563-2-git-send-email-konrad@kernel.org>
- <53BD32C2.6000306@citrix.com>
- <20140709135922.GD21837@laptop.dumpdata.com>
- <53BD4C44.30805@citrix.com>
+	Wed, 9 Jul 2014 10:14:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53BD4C44.30805@citrix.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Originating-IP: [46.139.80.5]
+In-Reply-To: <25574.1404813385@warthog.procyon.org.uk>
+References: <11446.1401420931@jrobl>
+	<7184.1401439773@warthog.procyon.org.uk>
+	<CA+icZUV5P=fVwe_MJJHixwBOBoj7HoKSFuySLdS6AU5L++S=4g@mail.gmail.com>
+	<15839.1401786056@warthog.procyon.org.uk>
+	<CA+icZUUiirxYnoL7pg5TvFEy6pQ+5Q3CuJ0jonJMXTOwhT-LDw@mail.gmail.com>
+	<CA+icZUU8BqGUoQdtuqt403NdCBnJnH1-k64bxTM0b_GSfQr1hQ@mail.gmail.com>
+	<10013.1401791634@warthog.procyon.org.uk>
+	<20140603132153.GA26512@tucsk.piliscsaba.szeredi.hu>
+	<19281.1401809418@warthog.procyon.org.uk>
+	<17091.1403628374@warthog.procyon.org.uk>
+	<20140708092848.GA26119@tucsk.piliscsaba.szeredi.hu>
+	<25574.1404813385@warthog.procyon.org.uk>
+Date: Wed, 9 Jul 2014 16:14:29 +0200
+Message-ID: <CAJfpegtJ24ktUonDgb_1nC52yKyGEuvzusSm9xWns7nJyOwhgQ@mail.gmail.com>
+Subject: Re: Overlayfs rename bug
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: David Howells <dhowells@redhat.com>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>,
+        "J. R. Okajima" <hooanon05g@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Robo Bot <apw@canonical.com>, Felix Fietkau <nbd@openwrt.org>,
+        Neil Brown <neilb@suse.de>, Jordi Pujol <jordipujolp@gmail.com>,
+        ezk@fsl.cs.sunysb.edu, "mszeredi@suse.cz" <mszeredi@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 03:05:56PM +0100, Andrew Cooper wrote:
-> On 09/07/14 14:59, Konrad Rzeszutek Wilk wrote:
-> >
-> >>> +What:           /sys/bus/pci/drivers/pciback/irq_handler_state
-> >>> +Date:           Oct 2011
-> >>> +KernelVersion:  3.1
-> >>> +Contact:        xen-devel@lists.xenproject.org
-> >>> +Description:
-> >>> +                An option to toggle Xen PCI back to acknowledge (or stop)
-> >>> +                interrupts for the specific device regardless of whether the
-> >>> +                device is shared, enabled, or on a level interrupt line.
-> >>> +                Writing a string of DDDD:BB:DD.F will toggle the state.
-> >>> +                This is Domain:Bus:Device.Function where domain is optional.
-> >> I do not understand under what circumstances this should be used in.
-> > So that dom0 does not disable the IRQ line as it would be getting the IRQs
-> > for the guest as well (because the IRQ line is level and another guest
-> > uses an PCI device that is using the same line).
-> 
-> Why is this relevant?  Xen (and Xen alone) actually controls this aspect
-> of interrupts.  Xen manages passing line level interrupts to any domain
-> which might have a device hanging off a particular line, and has to wait
-> until all domains have EOI'd the line until it can clear the interrupt
-> at the IO-APIC.
+On Tue, Jul 8, 2014 at 11:56 AM, David Howells <dhowells@redhat.com> wrote:
+> Miklos Szeredi <miklos@szeredi.hu> wrote:
+>
+>> Following patch fixes it and tests now run fine.
+>
+> Yep, that seems to fix it.  You can have my Tested-by back;-)  Are you going
+> to release another branch in your git repo?
 
-Because Linux will think there is an IRQ storm as the event->IRQ points
-to the default one. And then it will mask the event, which means dom0
-will mask the PIRQ, and Xen will then also mask the IRQ.
-> 
-> ~Andrew
+Updated series pushed to overlayfs.v23 and overlayfs.current.
+
+Thanks,
+Miklos
