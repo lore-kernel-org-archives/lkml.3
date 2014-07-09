@@ -1,73 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755787AbaGIMKx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 08:10:53 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:36107 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739AbaGIMKv (ORCPT
+	id S1755874AbaGIMLO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 08:11:14 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:65278 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755816AbaGIMLK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 08:10:51 -0400
+	Wed, 9 Jul 2014 08:11:10 -0400
+Message-ID: <53BD3157.7030804@gmail.com>
+Date: Wed, 09 Jul 2014 17:41:03 +0530
+From: Tushar Behera <trblinux@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdYbK3tizezXNaTBT6ANQ8fxoBUH5OATpb5cLykQqRSuKA@mail.gmail.com>
-References: <cover.1404665589.git.himangi774@gmail.com> <CACRpkdYbK3tizezXNaTBT6ANQ8fxoBUH5OATpb5cLykQqRSuKA@mail.gmail.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Wed, 9 Jul 2014 21:10:29 +0900
-Message-ID: <CAAVeFuLKdah5JHoetoSwZTxd4qAioCSFEWGgMCv1tY1_BSZowg@mail.gmail.com>
-Subject: Re: [PATCH 0/5] Introduce a managed function for gpio_request_array
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Himangi Saraogi <himangi774@gmail.com>,
-        Rob Jones <rob.jones@codethink.co.uk>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+To: Javier Martinez Canillas <javier@dowhile0.org>
+CC: Kukjin Kim <kgene.kim@samsung.com>, Kevin Hilman <khilman@linaro.org>,
+        Doug Anderson <dianders@google.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        patches@opensource.wolfsonmicro.com,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Paul Parsons <lost.distance@yahoo.com>,
-        Julia Lawall <julia.lawall@lip6.fr>
-Content-Type: text/plain; charset=UTF-8
+        Mike Turquette <mturquette@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Shaik Ameer Basha <shaik.ameer@samsung.com>
+Subject: Re: [PATCH 2/3] ARM: dts: Update the parent for Audss clocks in Exynos5420
+References: <1402464739-19044-1-git-send-email-tushar.b@samsung.com>	<1402464739-19044-3-git-send-email-tushar.b@samsung.com>	<CAD=FV=W5yh58fYTwRZxmZt=BORcZMSRV0oRe12yA74Q5h2S4YQ@mail.gmail.com>	<7hpphwlgn0.fsf@paris.lan>	<CAC5m3Bzey-YoPLmjAq4YNPQ13rojtVFWAbnhX6-ZFtYZwEdMWg@mail.gmail.com>	<7h8uojk61a.fsf@paris.lan>	<53ACE724.7090606@gmail.com>	<CAGa+x86COQz+cYtrXWrP-sjFGz-gi2tf6GEvLiKYoQwg1zMivQ@mail.gmail.com>	<CAGa+x87LHiYGb03=GRcZisK1=TyakW1htd1E2vOQ6ijZKw8syg@mail.gmail.com>	<53B2A2A5.4070203@gmail.com>	<53BB2E7A.5080204@samsung.com>	<53BB5EBD.5030607@gmail.com> <CABxcv=ka5UxZ8E3+F4cR4vcY1m3AfX=g7HiaNYqmyQjHfSVqtw@mail.gmail.com>
+In-Reply-To: <CABxcv=ka5UxZ8E3+F4cR4vcY1m3AfX=g7HiaNYqmyQjHfSVqtw@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 9, 2014 at 7:14 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Sun, Jul 6, 2014 at 7:46 PM, Himangi Saraogi <himangi774@gmail.com> wrote:
->
->> This patchset intoduces a new managed interface devm_gpio_request_array,
->> adds it in the documentation and its declaration in the gpio.h include
->> file. Some cases of gpio_request_array are changed to
->> devm_gpio_request_array.
+On 07/09/2014 03:44 PM, Javier Martinez Canillas wrote:
+> Hello Tushar,
+> 
+> On Tue, Jul 8, 2014 at 5:00 AM, Tushar Behera <trblinux@gmail.com> wrote:
+>>>>
+>>>> The u-boot version is a little different on my Peach-Pi as compared to
+>>>> the market release version. Not sure if that is making any difference.
+>>>>
+>>>> Peach # version
+>>>>
+>>>> U-Boot 2013.04 (Feb 13 2014 - 16:35:03) for Peach
+>>>> armv7a-cros-linux-gnueabi-gcc.real (4.8.1_cos_gg_feea904_4.8.1-r66)
+>>>> 4.8.x-google 20130905 (prerelease)
+>>>> GNU ld (binutils-2.22_cos_gg_2) 2.22
+>>>>
+>>>
+> 
+> I'm using the same U-Boot version than Kevin (U-Boot 2013.04-gb98ed09)
+> and on my setup using chained nv-uboot I also need patch 1/3 along
+> with 2/3 to fix the issue.
+> 
+>>> Note that I've applied this only from this series so I'm not sure how
+>>> much the problem can be solved...any updates for 1/3 and 3/3?
+>>>
+>>> - Kukjin
 >>
->> Himangi Saraogi (5):
->>   gpiolib: devres: Introduce the function devm_request_gpio_array
->>   ASoC: wm1250-ev1: Use devm_gpio_request_array
->>   ASoC: pxa: Use devm_gpio_request_array
->>   ASoC: pxa: e800_wm9712: Introduce the use of devm_gpio_request_array
->>   ASoC: pxa/hx4700: Introduce the use of devm_gpio_request_array
->
-> Sorry, we're not encouraging extension of the old gpio* plain API anymore.
->
-> The right thing to do is convert users over to using GPIO descriptors
-> internally, then introduce devm_gpiod_get_array() if that makes some
-> sense.
->
-> Alexandre, what do you say?
+>> Thanks for applying 2/3. I am working on 1/3 to see if we are following
+>> the right approach to fix Kevin's issue (unfortunately, I am not hitting
+>> the bug on my board ATM). 3/3 has already been merged through a
+>> different patchset.
+>>
+> 
+> I'm sending as an attachment my complete boot log when booting today's
+> next (20140709) until it hangs and my u-boot env vars. I hope that
+> helps.
+> 
 
-I do agree that we want to discourage people from using the integer
-API, and would also prefer to see the consumers converted to gpiod and
-proper gpiod functions introduced.
+Would you please check the behaviour after enabling following config
+options?
 
-On the other hand with Rob's similar patch which seems to be about to
-be merged (https://lkml.org/lkml/2014/7/2/149 ) I guess the pressure
-to accept one or the other is quite high. At least, I hope Rob or
-Himangi will follow-up with a patch adding similar functionality to
-the gpiod API, and will consider converting their consumers to it
-(it's for your own good!).
+diff --git a/arch/arm/configs/exynos_defconfig
+b/arch/arm/configs/exynos_defconfig
+index e07a227..d6056ab 100644
+--- a/arch/arm/configs/exynos_defconfig
++++ b/arch/arm/configs/exynos_defconfig
+@@ -93,6 +93,11 @@ CONFIG_FRAMEBUFFER_CONSOLE=y
+ CONFIG_FONTS=y
+ CONFIG_FONT_7x14=y
+ CONFIG_LOGO=y
++CONFIG_SOUND=y
++CONFIG_SND=y
++CONFIG_SND_SOC=y
++CONFIG_SND_SOC_SAMSUNG=y
++CONFIG_SND_SOC_SNOW=y
+ CONFIG_USB=y
+ CONFIG_USB_EHCI_HCD=y
+ CONFIG_USB_EHCI_EXYNOS=y
+@@ -109,6 +114,8 @@ CONFIG_MMC_DW_IDMAC=y
+ CONFIG_MMC_DW_EXYNOS=y
+ CONFIG_RTC_CLASS=y
+ CONFIG_RTC_DRV_S3C=y
++CONFIG_DMADEVICES=y
++CONFIG_PL330_DMA=y
+ CONFIG_COMMON_CLK_MAX77686=y
+ CONFIG_EXT2_FS=y
+ CONFIG_EXT3_FS=y
+
+
+>> --
+>> Tushar Behera
+>> --
+> 
+> Best regards,
+> Javier
+> 
+
+
+-- 
+Tushar Behera
