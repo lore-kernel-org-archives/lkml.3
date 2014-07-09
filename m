@@ -1,43 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932169AbaGIXoX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 19:44:23 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:34628 "EHLO
+	id S1756752AbaGIXrA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 19:47:00 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:34633 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751442AbaGIXoV (ORCPT
+	with ESMTP id S1751942AbaGIXq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 19:44:21 -0400
-Date: Wed, 09 Jul 2014 16:44:20 -0700 (PDT)
-Message-Id: <20140709.164420.157865201153845876.davem@davemloft.net>
-To: mugunthanvnm@ti.com
-Cc: netdev@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [net-next PATCH v2 0/3] Broadcast/Multicast rate limit via
- Ethtool Coalesce
+	Wed, 9 Jul 2014 19:46:59 -0400
+Date: Wed, 09 Jul 2014 16:46:58 -0700 (PDT)
+Message-Id: <20140709.164658.447780441521030859.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net-next] r8152: support jumbo frame for RTL8153
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1404890050-4020-1-git-send-email-mugunthanvnm@ti.com>
-References: <1404890050-4020-1-git-send-email-mugunthanvnm@ti.com>
+In-Reply-To: <1394712342-15778-8-Taiwan-albertk@realtek.com>
+References: <1394712342-15778-8-Taiwan-albertk@realtek.com>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 09 Jul 2014 16:44:21 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 09 Jul 2014 16:46:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mugunthan V N <mugunthanvnm@ti.com>
-Date: Wed, 9 Jul 2014 12:44:07 +0530
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Wed, 9 Jul 2014 16:07:02 +0800
 
-> A system/cpu can be loaded by a hacker with flooding of broadcast or
-> multicast packets, to prevent this some Ethernet controllers like CPSW
-> provide a mechanism to limit the broadcast/multicast packet rate via
-> hardware limiters. This patch series enables this feature via
-> Ethtool Coalesce.
+> +static int rtl8152_change_mtu(struct net_device *dev, int new_mtu)
+> +{
+> +	struct r8152 *tp = netdev_priv(dev);
+> +
+> +	if (dev->mtu == new_mtu)
+> +		return 0;
 
-This is pretty bogus if you ask me.
+This method will never be invoked if the MTU is actually not changing.
 
-What is the difference from accepting a high rate of unicast packets?
-I say it is no different.
-
-Therefore, this feature makes no sense to me at all.
+Please remove this test.
