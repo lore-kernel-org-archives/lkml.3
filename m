@@ -1,110 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541AbaGIKlp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 06:41:45 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:21914 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751271AbaGIKlo (ORCPT
+	id S1753137AbaGIKno (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 06:43:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58656 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739AbaGIKnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 06:41:44 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/xUhYQ1hQ1JH7fGN8cyJ+q
-Date: Wed, 9 Jul 2014 03:41:42 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Pascal Huerst <pascal.huerst@gmail.com>
-Cc: santosh.shilimkar@ti.com, khilman@deeprootsystems.com,
-        linus.walleij@linaro.org, gnurou@gmail.com, linux-omap@vger.kernel.org,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Mack <daniel@zonque.org>
-Subject: Re: gpio-omap: wakeup mask
-Message-ID: <20140709104142.GO28884@atomide.com>
-References: <53B3F687.5050502@gmail.com>
- <20140704072752.GC28884@atomide.com>
- <53BD1683.9030505@gmail.com>
+	Wed, 9 Jul 2014 06:43:43 -0400
+Date: Wed, 9 Jul 2014 12:43:32 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>
+Subject: Re: [PATCH v3 01/12] sched: fix imbalance flag reset
+Message-ID: <20140709104332.GS19379@twins.programming.kicks-ass.net>
+References: <1404144343-18720-1-git-send-email-vincent.guittot@linaro.org>
+ <1404144343-18720-2-git-send-email-vincent.guittot@linaro.org>
+ <53BB61E9.80200@linux.vnet.ibm.com>
+ <CAKfTPtA8BVPtRRLzomqnGp7_uaSbFYmFTrrt4fpQTOb7qyjddg@mail.gmail.com>
+ <53BCBD0E.2070609@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="k0QEB357i8jZX4tx"
 Content-Disposition: inline
-In-Reply-To: <53BD1683.9030505@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53BCBD0E.2070609@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pascal Huerst <pascal.huerst@gmail.com> [140709 03:18]:
-> Hey Tony, all
-> 
-> On 04.07.2014 09:27, Tony Lindgren wrote:
-> > * Pascal Huerst <pascal.huerst@gmail.com> [140702 05:12]:
-> >> Hi everyone,
-> >>
-> >> we have a device with an am335x and are using some gpios on bank0 to
-> >> wake up the device from suspend to ram.
-> >>
-> >> We have some user buttons which are configured in the devicetree as
-> >> gpio-keys and one power-key which should wake up the device:
-> >>
-> >> &buttons {
-> >>         power {
-> >>                 label = "Power";
-> >>                 gpios = <&gpio0 6 1>;
-> >>                 linux,code = <116>;
-> >>                 gpio-key,wakeup;
-> >>         };
-> >>
-> >>         one {
-> >>                 label = "One";
-> >>                 gpios = <&gpio0 11 1>;
-> >>                 linux,code = <2>;
-> >>         };
-> >>
-> >>         : : :
-> >> }
-> >>
-> >> The problem is, that the device wakes up on any trigger on bank 0. No
-> >> matter which button was pressed. "gpio-key,wakeup" seems not to have any
-> >> influence.
-> >>
-> >> Now, if I comment the following lines out in drivers/gpio/gpio-omap.c :
-> >> set_gpio_trigger(...).
-> >>
-> >> 321
-> >> 322 if (likely(!(bank->non_wakeup_gpios & gpio_bit))) {
-> >> 323    _gpio_rmw(base, bank->regs->wkup_en, gpio_bit, trigger != 0);
-> >> 324      bank->context.wake_en =
-> >> 325        readl_relaxed(bank->base + bank->regs->wkup_en);
-> >> 326 }
-> >> 327
-> >>
-> >> Everything works as expected. But I don't really understand why? Is this
-> >> a bug, or does this break something else I have not discovered yet?
-> > 
-> > The GPIO wake-up events are working from off-idle for omap3
-> > the last time I checked, so sounds like this is some am335x
-> > related issue.
-> 
-> Ok, that sounds reasonable.
-> 
-> > What does your bank->context.wake_en mask get set to with this code?
-> 
-> by calling 'echo mem > /sys/power/state' followed by a wakeup, I get the
-> following:
-> 
-> [   28.992866] bank->context->wake_en = 00080040
-> [   29.020974] PM: noirq resume of devices complete after 22.439 msecs
 
-I guess that's for gpio bank 0 with no bit 11 as your dts has it
-configured. If you just comment out the _gpio_rmw part above do
-things work as expected?
+--k0QEB357i8jZX4tx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Then if that works as expected, maybe write only some unused bits
-into wkup_en register and see if it still wakes to all events while
-it should not?
+On Wed, Jul 09, 2014 at 09:24:54AM +0530, Preeti U Murthy wrote:
+> In the example that I mention above, t1 and t2 are on the rq of cpu0;
+> while t1 is running on cpu0, t2 is on the rq but does not have cpu1 in
+> its cpus allowed mask. So during load balance, cpu1 tries to pull t2,
+> cannot do so, and hence LBF_ALL_PINNED flag is set and it jumps to
+> out_balanced. Note that there are only two sched groups at this level of
+> sched domain.one with cpu0 and the other with cpu1. In this scenario we
+> do not try to do active load balancing, atleast thats what the code does
+> now if LBF_ALL_PINNED flag is set.
 
-It might be worth comparing the GPIO registers between am37xx and
-am335x for the wkup_en register.
+I think Vince is right in saying that in this scenario ALL_PINNED won't
+be set. move_tasks() will iterate cfs_rq::cfs_tasks, that list will also
+include the current running task.
 
-Regards,
+And can_migrate_task() only checks for current after the pinning bits.
 
-Tony
+> Continuing with the above explanation; when LBF_ALL_PINNED flag is
+> set,and we jump to out_balanced, we clear the imbalance flag for the
+> sched_group comprising of cpu0 and cpu1,although there is actually an
+> imbalance. t2 could still be migrated to say cpu2/cpu3 (t2 has them in
+> its cpus allowed mask) in another sched group when load balancing is
+> done at the next sched domain level.
+
+And this is where Vince is wrong; note how
+update_sg_lb_stats()/sg_imbalance() uses group->sgc->imbalance, but
+load_balance() sets: sd_parent->groups->sgc->imbalance, so explicitly
+one level up.
+
+So what we can do I suppose is clear 'group->sgc->imbalance' at
+out_balanced.
+
+In any case, the entirely of this group imbalance crap is just that,
+crap. Its a terribly difficult situation and the current bits more or
+less fudge around some of the common cases. Also see the comment near
+sg_imbalanced(). Its not a solid and 'correct' anything. Its a bunch of
+hacks trying to deal with hard cases.
+
+A 'good' solution would be prohibitively expensive I fear.
+
+--k0QEB357i8jZX4tx
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTvRzUAAoJEHZH4aRLwOS6MicQAKcWnLCmVn5wcCXla0m5T56m
+U4I5SsbiBt35/+X+2bTh5MAKSj5mZZF2WopU0ZFtcc5KBi7Bd5krYgiTl9d3JgBb
+usGF4e3EJG3Dagkcl4BmcTEFF5X8KxJBKrr7kWC6u63h4K7WgGIigfWjB1GFJDjw
+6Lkn9orGH11GNN4eNreUfHMgzPSTt8Vxh9iHCDJ0RWn58HvBlWibdeQp0aRtoWjB
++GEW1bxcse89F5twRbyYE3YbPpkxpMsWZC1faRRh+tEYN2a+bULYtK3xTILjgLcs
+B1YdoStlKGqoTIdZkj7Y+ija3epaERGAbqSyxAj0TlSsBGxlidDeNNkJ86sH3jXS
+TfkZh4s+4fIxU8Twu72DosM8+y2MH9kFvMQUvrmATEVyhKXeZvEYFIj33akycG1f
+7xmtAaMcocshoOxoalPbcilrmRTumlQSXs+Jp+e29/G01EjtrUe8g3Hg8ZFdLgMF
+6rUOZkkwMtWolroNOhDu69/wEZn9JUfxFuQnMdHn5gh76805tU9sMg2SSY9112iX
+VKpckYoU+1M7tglhVG9M8SLOwN+7p81hlDELE5U6whKgQs9SEQuYVq1p31F4tNo0
++IqsFmpfmge14sc+MfEW/Z+Rk8EEpqgPMn+LigZKy63p+RkH8Ykt5JF+4QUK0RUw
+62UBsT1zQrDp7c+gwBT0
+=aXZk
+-----END PGP SIGNATURE-----
+
+--k0QEB357i8jZX4tx--
