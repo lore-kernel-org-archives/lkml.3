@@ -1,104 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559AbaGIKdg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 06:33:36 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45980 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755022AbaGIKdf (ORCPT
+	id S1755587AbaGIKeF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 06:34:05 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:30191 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755256AbaGIKeB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 06:33:35 -0400
-Message-ID: <1404901907.5766.3.camel@weser.hi.pengutronix.de>
-Subject: Re: [PATCH 6/9] ARM: tegra: Export tegra_powergate_power_on
-From: Lucas Stach <l.stach@pengutronix.de>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Wed, 09 Jul 2014 12:31:47 +0200
-In-Reply-To: <20140709102551.GA19357@ulmo>
-References: <20140617215119.GC24743@mithrandir>
-	 <20140618121806.GJ3407@tbergstrom-lnx.Nvidia.com>
-	 <53A1B252.1030204@wwwdotorg.org>
-	 <20140619080234.GK3407@tbergstrom-lnx.Nvidia.com>
-	 <53A3096B.1040409@wwwdotorg.org>
-	 <20140623101441.GU3407@tbergstrom-lnx.Nvidia.com>
-	 <20140708130501.GC9516@ulmo>
-	 <20140708141135.GC23218@tbergstrom-lnx.Nvidia.com>
-	 <20140709063130.GA3170@ulmo>
-	 <20140709083311.GE23218@tbergstrom-lnx.Nvidia.com>
-	 <20140709102551.GA19357@ulmo>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:fa0f:41ff:fe58:4010
-X-SA-Exim-Mail-From: l.stach@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 9 Jul 2014 06:34:01 -0400
+X-IronPort-AV: E=Sophos;i="5.00,861,1396972800"; 
+   d="scan'208";a="33042225"
+From: "chenhanxiao@cn.fujitsu.com" <chenhanxiao@cn.fujitsu.com>
+To: "Eric W. Biederman (ebiederm@xmission.com)" <ebiederm@xmission.com>,
+        "Serge Hallyn (serge.hallyn@ubuntu.com)" <serge.hallyn@ubuntu.com>,
+        "Oleg Nesterov (oleg@redhat.com)" <oleg@redhat.com>,
+        "Richard Weinberger (richard@nod.at)" <richard@nod.at>,
+        "Pavel Emelyanov (xemul@parallels.com)" <xemul@parallels.com>,
+        "Vasily Kulikov (segoon@openwall.com)" <segoon@openwall.com>,
+        "Gotou, Yasunori" <y-goto@jp.fujitsu.com>,
+        "'Daniel P. Berrange (berrange@redhat.com)'" <berrange@redhat.com>
+CC: "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [RFC]Pid conversion between pid namespace
+Thread-Topic: [RFC]Pid conversion between pid namespace
+Thread-Index: Ac+WpagelAqWSmeOTWy8zWQgFaQt9gEpMoTA
+Date: Wed, 9 Jul 2014 10:34:02 +0000
+Message-ID: <5871495633F38949900D2BF2DC04883E560412@G08CNEXMBPEKD02.g08.fujitsu.local>
+References: <5871495633F38949900D2BF2DC04883E55C374@G08CNEXMBPEKD02.g08.fujitsu.local>
+In-Reply-To: <5871495633F38949900D2BF2DC04883E55C374@G08CNEXMBPEKD02.g08.fujitsu.local>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.226.240]
+Content-Type: text/plain; charset="gb2312"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s69AYAPZ028829
 
-Am Mittwoch, den 09.07.2014, 12:25 +0200 schrieb Thierry Reding:
-> On Wed, Jul 09, 2014 at 11:33:11AM +0300, Peter De Schrijver wrote:
-> > On Wed, Jul 09, 2014 at 08:31:32AM +0200, Thierry Reding wrote:
-> > > * PGP Signed by an unknown key
-> > > 
-> > > On Tue, Jul 08, 2014 at 05:11:35PM +0300, Peter De Schrijver wrote:
-> > > > > > 
-> > > > > > Yes, but the problem is that you also need clocks and reset of other modules
-> > > > > > in the same domain to safely control the domain's status. Eg: the ISPs, VI and
-> > > > > > CSI share a domain. VI and CSI are useable without ISP and the ISP lacks
-> > > > > > public documentation. So it's not unlikely a VI and CSI driver will upstreamed
-> > > > > > someday which means we would need to control the domain and therefore would
-> > > > > > need to tell that driver about the ISPs clocks and resets even though the
-> > > > > > driver doesn't know anything about the ISP hw otherwise.
-> > > > > 
-> > > > > Can't we make powergates reference counted so that they don't get
-> > > > > disabled as long as there are any users? Looking for example at the
-> > > > 
-> > > > We could, but then why not switch to the powerdomain code and make powering
-> > > > off a domain a NOP until we sorted out the context save/restore or fixed
-> > > > the framework to allow for suspend without turning off the domains?
-> > > 
-> > > Well, one of the reasons why I'm not sure it's worth the effort at this
-> > > point is that we can't get rid of the tegra_powergate_*() API anyway
-> > > because of backwards compatibility. So we're going to add code (without
-> > > getting rid of old code) merely to support some generic framework. That
-> > > doesn't sound very useful to me.
-> > > 
-> > 
-> > We can also convert the existing users to genpd. Today there are only 2 users
-> > (gpu/drm/tegra/gr3d.c and pci/host/pci-tegra.c), so that doesn't seem to be
-> > an impossible task.
-> 
-> We can certainly do that. What I'm trying to say is that since people
-> may be running newer versions of the kernel with a DTB that doesn't have
-> the necessary properties to hook up power domains, we have to keep calls
-> to tegra_powergate_*() functions as-is, lest we break those setups.
-> 
-> That then means that each such driver needs a way to figure out whether
-> power domains are hooked up (which will be rather clumsy to do if it's
-> all supposed to work transparently) and fallback to the legacy API
-> otherwise.
-> 
-> So essentially we'll be adding code without the possibility to remove
-> any of the old code.
-> 
-You could also take the easy way out and enable all power domains by
-default. So drivers won't be able to disable the power domain on old
-DTBs where they aren't hooked up, but the will continue to function
-without calling into the old Tegra specific power domain code.
+Hi,
 
-Regards,
-Lucas
--- 
-Pengutronix e.K.             | Lucas Stach                 |
-Industrial Linux Solutions   | http://www.pengutronix.de/  |
+Let me summarize our discussions of ID conversion by pros/cons: 
 
+A) make new system call for translation	
+    A-1) systemcall(ID, NS1, NS2) into (ID).
+    pros:
+        - has a reference ns(NS2)
+          We could get any lower level ID directly.
+		 
+    cons:
+        - lack of hierarchy information. 
+          CRIU need hierarchy info for checkpoint/restore in nested containers.
+        - not easy for debug. 
+          And a lot of tools/libs need be modified.
+
+    A-2) syscall pid_t getnspid(pid_t query_pid, pid_t observer_pid)
+    pros:
+        - ns procfs free, easy to use.
+        We could get rid of mounted ns procfs.
+
+    cons:
+        - may find multiple results in nested ns.
+          We wished the new API could tell us the exact answer.
+          But if getnspid return more than one results will bring trouble to admins,
+          they had to make another decision.
+          Or we marked the deepest level for translation as prerequisite.
+
+        -based on current pidns, no reference ns.
+
+B) make/change proc file/directories
+	B-1) expand /proc/pid/status
+	pros:
+        - easy to use and to debug
+        - already had existed interface in kernel
+        
+	cons:
+        - based on current ns
+          for middle level, we had to make another decision.
+        - do not have hierarchy info.
+
+	B-2) /proc/<pidX>/ns/proc/ which would contain everything
+	pros:
+        - have enough info from /proc in container
+
+	cons:
+        - Requirements unclear.
+          We need more discussion to decide which items should not be exposed.
+        - do not have hierarchy info.
+
+
+How about do these things in two steps: 
+
+C)  1. expose all sets of pid, pgid, sid and tgid
+via expanded /proc/PID/status
+      We could get translated IDs from container like:
+    NStgid:	16465 	5 	1 
+    NSpid:	16465 	5 	1 
+    NSpgid:	16465 	5 	1 
+    NSsid:	16423 	1 	0
+    (a set of IDs with 3 level of ns)
+
+    2. add hierarchy info under /proc
+      We lacked of method of getting hierarchy info, which is useful.
+      Then we could know the relationship of ns.
+      How about adding a new proc file just under /proc
+      to show the hierarchy like readlink did:
+	  pid:[4026531836]-> [4026532390] -> [4026532484]
+      pid:[4026531836]-> [4026532491]
+      (A 3 level pid and 2 level pid_
+
+Any comments would be appreciated.
+
+Thanks,
+- Chen
+
+> -----Original Message-----
+> Subject: [RFC]Pid conversion between pid namespace
+> 
+> Hi,
+> 
+> We had some discussions on how to carry out
+> pid conversion between pid namespace via:
+> syscall[1] and procfs[2].
+> 
+> Pavel suggested that a syscall like
+> (ID, NS1, NS2) into (ID).
+> 
+> Serge suggested that a syscall
+> pid_t getnspid(pid_t query_pid, pid_t observer_pid).
+> 
+> 
+> Eric and Richard suggested a procfs solution is
+> more appropriate.
+> 
+> Oleg suggested that we should expand /proc/pid/status
+> to report this kind of information.
+> 
+> And Richard suggested adding a directory like
+> /proc/<pidX>/ns/proc/ which would contain everything
+> from /proc/<pidX inside the namespace>/.
+> 
+> As procfs provided a more user friendly interface,
+> how about expose all sets of tgid, pid, pgid, sid
+> by expanding /proc/PID/status in procfs?
+> And we could also expose ns hierarchy under /proc,
+> which could be another reference.
+> 
+> Ex:
+>     init_pid_ns    ns1         ns2
+> t1  2
+> t2   `- 3          1
+> t3       `- 4      `- 5        1
+> 
+> We could get in /proc/t3/status:
+> NSpid: 4 5 1
+> We knew that pid 1 in container is pid 4 in init ns.
+> 
+> And we could get ns hierarchy under /proc/ns_hierarchy like:
+> init_ns->ns1->ns2		(as the result of readlink)
+>          ->ns3
+> We knew that t3 in ns2, and its hierarchy.
+> 
+> How these ideas looks like?
+> Any comments would be appreciated.
+> 
+> Thanks,
+> - Chen
+> 
+> 
+> a) syscall
+> http://lwn.net/Articles/602987/
+> 
+> b) procfs
+> http://www.spinics.net/lists/kernel/msg1751688.html
+> 
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/containers
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
