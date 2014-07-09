@@ -1,159 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150AbaGILoi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 07:44:38 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:44022 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755752AbaGILog (ORCPT
+	id S932179AbaGILpI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 07:45:08 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49924 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754622AbaGILpE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 07:44:36 -0400
-Message-ID: <53BD2B42.9000008@oracle.com>
-Date: Wed, 09 Jul 2014 19:45:06 +0800
-From: vaughan <vaughan.cao@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 9 Jul 2014 07:45:04 -0400
+Date: Wed, 9 Jul 2014 13:45:01 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Anil Belur <askb23@gmail.com>
+Cc: m.chehab@samsung.com, dan.carpenter@oracle.com, gregkh@linuxfoundation.org,
+        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] staging: media: bcm2048: radio-bcm2048.c - removed
+ IRQF_DISABLED macro
+Message-ID: <20140709114501.GA22777@amd.pavel.ucw.cz>
+References: <1404885998-10981-1-git-send-email-askb23@gmail.com>
 MIME-Version: 1.0
-To: Manish Chopra <manish.chopra@qlogic.com>,
-        ethan zhao <ethan.zhao@oracle.com>, David Miller <davem@davemloft.net>
-CC: "balbi@ti.com" <balbi@ti.com>, netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "sriharsha.devdas@oracle.com" <sriharsha.devdas@oracle.com>,
-        "ethan.kernel@gmail.com" <ethan.kernel@gmail.com>
-Subject: Re: [PATCH NET-NEXT V2] netxen: fix ethtool rx_dropped information
- in ethtool get_ethtool_stats()
-References: <1404827830-22990-1-git-send-email-ethan.zhao@oracle.com> <53BCABD3.3050207@oracle.com> <31AFFC7280259C4184970ABA9AFE8B93E074D13E@avmb3.qlogic.org>
-In-Reply-To: <31AFFC7280259C4184970ABA9AFE8B93E074D13E@avmb3.qlogic.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404885998-10981-1-git-send-email-askb23@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2014 07:32 PM, Manish Chopra wrote:
->> -----Original Message-----
->> From: netdev-owner@vger.kernel.org [mailto:netdev-owner@vger.kernel.org]
->> On Behalf Of ethan zhao
->> Sent: Wednesday, July 09, 2014 8:11 AM
->> To: David Miller
->> Cc: balbi@ti.com; netdev; linux-kernel; sriharsha.devdas@oracle.com;
->> ethan.kernel@gmail.com; vaughan
->> Subject: Re: [PATCH NET-NEXT V2] netxen: fix ethtool rx_dropped information in
->> ethtool get_ethtool_stats()
->>
->> David,
->>
->>    Please help to review and confirm this patch.
->>
->> Thanks,
->> Ethan
->>
->> On 2014/7/8 21:57, Ethan Zhao wrote:
->>> netxen driver has implemented netxen_nic_get_ethtool_stats()
->>> interface, but it doesn't collect stats.rxdropped in driver, so we
->>> will get different rx_dropped statistic information while using ifconfig and
->> ethtool.
->>> this patch fills stats.rxdropped field with data from net core with
->>> dev_get_stats() just as ixgbe driver did for some of its stats.
->>>
->>> V2: only fix the stats.rxdropped field.
->>>
->>> Tested with last netxen 4.0.82
->>> Compiled with net-next branch 3.16-rc2
->>>
->>> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
->>> Tested-by: Sriharsha Yadagudde <sriharsha.devdas@oracle.com>
->>> ---
->>>   .../ethernet/qlogic/netxen/netxen_nic_ethtool.c    |   34 +++++++++++++++++-
->> --
->>>   1 files changed, 29 insertions(+), 5 deletions(-)
->>>
->>> diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
->>> b/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
->>> index 4ca2c19..49e6a1b 100644
->>> --- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
->>> +++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
->>> @@ -33,22 +33,30 @@
->>>   #include "netxen_nic.h"
->>>   #include "netxen_nic_hw.h"
->>>
->>> +enum {NETDEV_STATS, NETXEN_STATS};
->>> +
->>>   struct netxen_nic_stats {
->>>   	char stat_string[ETH_GSTRING_LEN];
->>> +	int type;
->>>   	int sizeof_stat;
->>>   	int stat_offset;
->>>   };
->>>
->>> -#define NETXEN_NIC_STAT(m) sizeof(((struct netxen_adapter *)0)->m), \
->>> +#define NETXEN_NIC_STAT(m)	NETXEN_STATS, \
->>> +			sizeof(((struct netxen_adapter *)0)->m), \
->>>   			offsetof(struct netxen_adapter, m)
->>>
->>> +#define NETXEN_NETDEV_STAT(m)	NETDEV_STATS, \
->>> +			sizeof(((struct rtnl_link_stats64 *)0)->m), \
->>> +			offsetof(struct rtnl_link_stats64, m)
->>> +
->>>   #define NETXEN_NIC_PORT_WINDOW 0x10000
->>>   #define NETXEN_NIC_INVALID_DATA 0xDEADBEEF
->>>
->>>   static const struct netxen_nic_stats netxen_nic_gstrings_stats[] = {
->>>   	{"xmit_called", NETXEN_NIC_STAT(stats.xmitcalled)},
->>>   	{"xmit_finished", NETXEN_NIC_STAT(stats.xmitfinished)},
->>> -	{"rx_dropped", NETXEN_NIC_STAT(stats.rxdropped)},
->>> +	{"rx_dropped", NETXEN_NETDEV_STAT(rx_dropped)},
->>>   	{"tx_dropped", NETXEN_NIC_STAT(stats.txdropped)},
->>>   	{"csummed", NETXEN_NIC_STAT(stats.csummed)},
->>>   	{"rx_pkts", NETXEN_NIC_STAT(stats.rx_pkts)}, @@ -679,11 +687,27 @@
->>> netxen_nic_get_ethtool_stats(struct net_device *dev,
->>>   {
->>>   	struct netxen_adapter *adapter = netdev_priv(dev);
->>>   	int index;
->>> +	struct rtnl_link_stats64 temp;
->>> +	const struct rtnl_link_stats64 *net_stats;
->>> +	char *p = NULL;
->>>
->>> +	net_stats = dev_get_stats(dev, &temp);
->>>   	for (index = 0; index < NETXEN_NIC_STATS_LEN; index++) {
->>> -		char *p =
->>> -		    (char *)adapter +
->>> -		    netxen_nic_gstrings_stats[index].stat_offset;
->>> +
->>> +		switch (netxen_nic_gstrings_stats[index].type) {
->>> +		case NETDEV_STATS:
->>> +			p = (char *)net_stats +
->>> +				netxen_nic_gstrings_stats[index].stat_offset;
->>> +			break;
->>> +		case NETXEN_STATS:
->>> +			p = (char *)adapter +
->>> +				netxen_nic_gstrings_stats[index].stat_offset;
->>> +			break;
->>> +		default:
->>> +			data[index] = 0;
->>> +			continue;
->>> +		}
->>> +
->>>   		data[index] =
->>>   		    (netxen_nic_gstrings_stats[index].sizeof_stat ==
->>>   		     sizeof(u64)) ? *(u64 *) p : *(u32 *) p;
-> Ethan, I can't download this patch as I don’t see it in netdev patchwork. Just looking at the diff I think there is style issue with macro definition of NETXEN_NIC_STAT and NETXEN_NETDEV_STAT.
-> Enclose macro definition in parentheses as they are containing complex values.
-It's not an error as checkpatch.pl indicates.  As the definition of
-netxen_nic_stats shows,
+On Wed 2014-07-09 11:36:37, Anil Belur wrote:
+> From: Anil Belur <askb23@gmail.com>
+> 
+> - this patch removes IRQF_DISABLED macro, as this is
+>   deprecated/noop.
+> 
+> Signed-off-by: Anil Belur <askb23@gmail.com>
 
-  struct netxen_nic_stats {
-  	char stat_string[ETH_GSTRING_LEN];
-+	int type;
-  	int sizeof_stat;
-  	int stat_offset;
-  };
+Acked-by: Pavel Machek <pavel@ucw.cz>
 
-This macros consists of multiple elements, which shouldn't be enclosed
-in parentheses.
-
->
-> Send this patch targeted for net instead of net-next being a bug fix. Please also run checkpatch.pl to correct any style warning/errors in the patch.
->
-> Thanks!!  
->
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
