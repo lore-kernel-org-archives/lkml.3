@@ -1,93 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620AbaGIRmi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 13:42:38 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:49221 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755152AbaGIRmh (ORCPT
+	id S1756121AbaGIRqL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 13:46:11 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:56106 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754252AbaGIRqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 13:42:37 -0400
-Date: Wed, 9 Jul 2014 19:42:33 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: paulmck@linux.vnet.ibm.com, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, oleg@redhat.com,
-        sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 2/3] rcu: Add designated reviewers for RCU
-Message-ID: <20140709174231.GC23881@localhost.localdomain>
-References: <1404772924-9423-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1404772924-9423-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140708080908.GN19379@twins.programming.kicks-ass.net>
- <1404842784.932.22.camel@joe-AO725>
- <20140708204124.GW4603@linux.vnet.ibm.com>
- <1404853264.932.52.camel@joe-AO725>
- <20140708215229.GA4603@linux.vnet.ibm.com>
- <1404857116.932.68.camel@joe-AO725>
- <20140708222557.GF4603@linux.vnet.ibm.com>
- <1404878965.932.87.camel@joe-AO725>
+	Wed, 9 Jul 2014 13:46:08 -0400
+Date: Wed, 9 Jul 2014 10:46:03 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rob Herring <robherring2@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
+        dev@linux-sunxi.org
+Subject: Re: [PATCH v3 4/9] of: mtd: add documentation for the ONFI NAND
+ timing mode property
+Message-ID: <20140709174603.GJ7537@ld-irv-0074>
+References: <1394647664-8258-1-git-send-email-b.brezillon.dev@gmail.com>
+ <1394647664-8258-5-git-send-email-b.brezillon.dev@gmail.com>
+ <20140520182542.GS28907@ld-irv-0074>
+ <537BAD59.3060902@free-electrons.com>
+ <20140520195240.GW28907@ld-irv-0074>
+ <537BC9D4.6070200@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1404878965.932.87.camel@joe-AO725>
+In-Reply-To: <537BC9D4.6070200@free-electrons.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 08, 2014 at 09:09:25PM -0700, Joe Perches wrote:
-> On Tue, 2014-07-08 at 15:25 -0700, Paul E. McKenney wrote:
-> > On Tue, Jul 08, 2014 at 03:05:16PM -0700, Joe Perches wrote:
-> []
-> > > I still think the concept is pretty useless and it's
-> > > just a duplication of "M:", which isn't anything other
-> > > than a list of who should be sent patches.
-> []
-> > It will be interesting to see how things go.
-> 
-> Yes, it might work out fine and maybe might cause some
-> other beneficial changes.
-> 
-> > There did seem to be
-> > some people who were comfortable being listed as RCU reviewers, but
-> > not as RCU maintainers.  Perhaps the same thing happens elsewhere.
-> 
-> Maybe so.
-> 
-> I wrote a script to find which maintainer addresses that
-> haven't signed or authored a commit in the last 2 years.
-> 
-> I got ~250 entries.  That's about 1/4 of all maintainer
-> email addresses.
-> 
-> Maybe a dozen of these are false positives though because
-> some maintainers prefer to receive email at one address
-> but ack from another.
-> 
-> These are all lowercase for better matching.
+Hi Boris,
 
-Aren't we all falling in the typical pessimism trap, evil of the century!
-Why do we always want to consider the lack of activity from a maintainer as a bad symptom?
+Looking back at this thread, there's at least one or two things I forgot
+to answer. Sorry.
 
-What if it were actually a positive sign resulting of a finished, completed, and perfect
-clean bug-free subsystem?
+On Tue, May 20, 2014 at 11:32:04PM +0200, Boris BREZILLON wrote:
+> On 20/05/2014 21:52, Brian Norris wrote:
+[...]
+> If the ECC bindings don't encode the "minimum required ECC strength" but
+> rather the "ECC config on a specific board" then I guess "minimum
+> required ECC strength" for non-ONFI chips should be defined somewhere
+> else (stored in the device ID table ?).
 
-Once we accept that, all we need is support from the MAINTAINERS file:
+They are. See nand_flash_dev::ecc, which holds fields for
+ecc_strength_ds and step_ds. If we have to, we can add a "timing mode"
+field to this struct.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 970c4a0..5da75dd 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -76,6 +76,9 @@ Descriptions of section entries:
- 	T: SCM tree type and location.
- 	   Type is one of: git, hg, quilt, stgit, topgit
- 	S: Status, one of the following:
-+          Finished:	The code is finished. The maintainer has fixed all
-+			the bugs and adressed all missing features. No further
-+			patch is needed.
- 	   Supported:	Someone is actually paid to look after this.
- 	   Maintained:	Someone actually looks after it.
- 	   Odd Fixes:	It has a maintainer but they don't have time to do
+> > So you're saying that even though the chip actually specifies a single
+> > set of timings, you would describe this as a bitmask of several
+> > supported ONFI timing modes, up to the "max performance"?
+> >
+> > Is there ever a case where (for instance) a non-ONFI flash supports the
+> > equivalent of timing mode 3, but it does not support mode 2 or 1?
+> 
+> I don't think so.
+
+OK, then I don't think the mask approach is necessary, if we do ever
+settle on using a DT binding here. (I hope we can avoid this.)
+
+> >> But I can modify the bindings to just encode the maximum supported
+> >> timing mode.
+> > AIUI, the non-ONFI datasheets really only specify a single timing mode,
+> > so I think we should only specify the "max." And as a bonus, this
+> > actually makes the binding easier to use. A driver does not care about
+> > how many different modes are supported; it only needs to know what the
+> > max is.
+> 
+> Agreed, actually my first binding was defining it this way.
+
+Was there a good reason for changing it?
+
+Thanks,
+Brian
