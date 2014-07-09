@@ -1,93 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755147AbaGIJuQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 05:50:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39911 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751294AbaGIJuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 05:50:14 -0400
-Message-ID: <53BD1053.5020401@suse.cz>
-Date: Wed, 09 Jul 2014 11:50:11 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754901AbaGIJ4D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 05:56:03 -0400
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:60175 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751294AbaGIJ4B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 05:56:01 -0400
+Date: Wed, 9 Jul 2014 11:55:52 +0200
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Mugunthan V N <mugunthanvnm@ti.com>
+Cc: linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        Paul Walmsley <paul@pwsan.com>, Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Rajendra Nayak <rnayak@ti.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [Re-send PATCH 1/1] arm: dra7xx: Add hwmod data for MDIO and CPSW
+Message-ID: <20140709095552.GA25154@breakpoint.cc>
+References: <1404825399-10330-1-git-send-email-mugunthanvnm@ti.com>
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>, Sasha Levin <sasha.levin@oracle.com>
-CC: akpm@linux-foundation.org, davej@redhat.com, koct9i@gmail.com,
-        lczerner@redhat.com, stable@vger.kernel.org,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: + shmem-fix-faulting-into-a-hole-while-its-punched-take-2.patch
- added to -mm tree
-References: <53b45c9b.2rlA0uGYBLzlXEeS%akpm@linux-foundation.org> <53BCBF1F.1000506@oracle.com> <alpine.LSU.2.11.1407082309040.7374@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.11.1407082309040.7374@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404825399-10330-1-git-send-email-mugunthanvnm@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2014 08:35 AM, Hugh Dickins wrote:
-> On Wed, 9 Jul 2014, Sasha Levin wrote:
->> On 07/02/2014 03:25 PM, akpm@linux-foundation.org wrote:
->>> From: Hugh Dickins <hughd@google.com>
->>> Subject: shmem: fix faulting into a hole while it's punched, take 2
->>
->> I suspect there's something off with this patch, as the shmem_fallocate
->> hangs are back... Pretty much same as before:
->
-> Thank you for reporting, but that is depressing news.
->
-> I don't see what's wrong with this (take 2) patch,
-> and I don't see that it's been garbled in any way in next-20140708.
->
->>
->> [  363.600969] INFO: task trinity-c327:9203 blocked for more than 120 seconds.
->> [  363.605359]       Not tainted 3.16.0-rc4-next-20140708-sasha-00022-g94c7290-dirty #772
->> [  363.609730] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->> [  363.615861] trinity-c327    D 000000000000000b 13496  9203   8559 0x10000004
->> [  363.620284]  ffff8800b857bce8 0000000000000002 ffffffff9dc11b10 0000000000000001
->> [  363.624468]  ffff880104860000 ffff8800b857bfd8 00000000001d7740 00000000001d7740
->> [  363.629118]  ffff880104863000 ffff880104860000 ffff8800b857bcd8 ffff8801eaed8868
->> [  363.633879] Call Trace:
->> [  363.635442]  [<ffffffff9a4dc535>] schedule+0x65/0x70
->> [  363.638638]  [<ffffffff9a4dc948>] schedule_preempt_disabled+0x18/0x30
->> [  363.642833]  [<ffffffff9a4df0a5>] mutex_lock_nested+0x2e5/0x550
->> [  363.646599]  [<ffffffff972a4d7c>] ? shmem_fallocate+0x6c/0x350
->> [  363.651319]  [<ffffffff9719b721>] ? get_parent_ip+0x11/0x50
->> [  363.654683]  [<ffffffff972a4d7c>] ? shmem_fallocate+0x6c/0x350
->> [  363.658264]  [<ffffffff972a4d7c>] shmem_fallocate+0x6c/0x350
->
-> So it's trying to acquire i_mutex at shmem_fallocate+0x6c...
->
->> [  363.662010]  [<ffffffff971bd96e>] ? put_lock_stats.isra.12+0xe/0x30
->> [  363.665866]  [<ffffffff9730c043>] do_fallocate+0x153/0x1d0
->> [  363.669381]  [<ffffffff972b472f>] SyS_madvise+0x33f/0x970
->> [  363.672906]  [<ffffffff9a4e3f13>] tracesys+0xe1/0xe6
->> [  363.682900] 2 locks held by trinity-c327/9203:
->> [  363.684928]  #0:  (sb_writers#12){.+.+.+}, at: [<ffffffff9730c02d>] do_fallocate+0x13d/0x1d0
->> [  363.715102]  #1:  (&sb->s_type->i_mutex_key#16){+.+.+.}, at: [<ffffffff972a4d7c>] shmem_fallocate+0x6c/0x350
->
-> ...but it already holds i_mutex, acquired at shmem_fallocate+0x6c.
-> Am I reading that correctly?
+On 2014-07-08 18:46:39 [+0530], Mugunthan V N wrote:
+> Adding hwmod data for CPSW and MDIO which is present in DRA7xx SoC
 
-I wonder, why wouldn't lockdep fire here if it was a double lock? I 
-assume lockdep is enabled. It seems to me that the lock #1 is being 
-printed because it's being acquired, not because it already is acquired. 
-__mutex_lock_common() calls mutex_acquire_nest() *before* it actually 
-tries to acquire the mutex. So the output is just confusing.
+I reverted my patch, applied this one and after boot I got:
 
-So it would again help to see stacks of other tasks, to see who holds 
-the i_mutex and where it's stuck...
+|platform 48485000.mdio: Cannot lookup hwmod 'davinci_mdio'
+|cpsw 48484000.ethernet: _od_fail_runtime_resume: FIXME: missing hwmod/omap_dev info
+|davinci_mdio 48485000.mdio: failed to get device clock
+|davinci_mdio: probe of 48485000.mdio failed with error -2
+|cpsw 48484000.ethernet: Random MACID = 46:c6:34:6f:8d:c6
+| (null): fck is not found
 
-Vlastimil
+with no eth0. Is there something with my setup? I still have the device
+tree pieces I posted (in case there is something wrong with them).
 
-> In my source for next-20140708, the only return from shmem_fallocate()
-> which omits to mutex_unlock(&inode->i_mutex) is the "return -EOPNOTSUPP"
-> at the top, just before the mutex_lock(&inode->i_mutex).  And inode
-> doesn't get reassigned in the middle.
->
-> Does 3.16.0-rc4-next-20140708-sasha-00022-g94c7290-dirty look different?
->
-> Hugh
->
-
+Sebastian
