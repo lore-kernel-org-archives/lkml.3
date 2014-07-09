@@ -1,553 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755475AbaGIJjr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 05:39:47 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:60939 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755448AbaGIJjm (ORCPT
+	id S1755262AbaGIJl4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 05:41:56 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:37184 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751032AbaGIJlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 05:39:42 -0400
-From: Hanjun Guo <hanjun.guo@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Tony Luck <tony.luck@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
-        Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH v2 3/3] ACPI / processor: Introduce ARCH_HAS_ACPI_PDC
-Date: Wed,  9 Jul 2014 17:39:06 +0800
-Message-Id: <1404898746-6685-4-git-send-email-hanjun.guo@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1404898746-6685-1-git-send-email-hanjun.guo@linaro.org>
-References: <1404898746-6685-1-git-send-email-hanjun.guo@linaro.org>
+	Wed, 9 Jul 2014 05:41:53 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Subject: [PATCH] scripts: modpost: Remove numeric suffix pattern matching
+Organization: D03
+References: <1403685999-31013-1-git-send-email-linux@rasmusvillemoes.dk>
+	<53AADC30.7080401@windriver.com> <8761jooaw2.fsf@rasmusvillemoes.dk>
+	<87d2df768c.fsf@rustcorp.com.au> <20140709071319.GA30377@ravnborg.org>
+X-Hashcash: 1:20:140709:sam@ravnborg.org::p5RXgGTKS07wXg83:00G4y
+X-Hashcash: 1:20:140709:rusty@rustcorp.com.au::QF/kejXStDbtaQDy:00000000000000000000000000000000000000002Kbu
+X-Hashcash: 1:20:140709:paul.gortmaker@windriver.com::FVJOXAr/pVXw6fGR:0000000000000000000000000000000002QP8
+X-Hashcash: 1:20:140709:linux-kernel@vger.kernel.org::IytuI8tZQhQlHH46:000000000000000000000000000000000330c
+X-Hashcash: 1:20:140709:akpm@linux-foundation.org::hEqBiQNRm8iKdaTh:0000000000000000000000000000000000005K4y
+X-Hashcash: 1:20:140709:hpa@linux.intel.com::1rCOEjOfBTkCtqwk:000000000000000000000000000000000000000000614x
+Date: Wed, 09 Jul 2014 11:41:48 +0200
+In-Reply-To: <20140709071319.GA30377@ravnborg.org> (Sam Ravnborg's message of
+	"Wed, 9 Jul 2014 09:13:19 +0200")
+Message-ID: <87a98idg2r.fsf_-_@rasmusvillemoes.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The use of _PDC is deprecated in ACPI 3.0 in favor of _OSC,
-as ARM platform is supported only in ACPI 5.0 or higher version,
-_PDC will not be used in ARM platform, so make Make _PDC only for
-platforms with Intel CPUs.
+For several years, the pattern "foo$" has effectively been treated as
+equivalent to "foo" due to a bug in the (misnamed) helper
+number_prefix(). This hasn't been observed to cause any problems, so
+remove the broken $ functionality and change all foo$ patterns to foo.
 
-Introduce ARCH_MIGHT_HAVE_ACPI_PDC and move _PDC related code in
-ACPI processor driver into a single file processor_pdc.c, make x86
-and ia64 select it when ACPI is enabled.
-
-This patch also use pr_* to replace printk to fix the checkpatch
-warning and factor acpi_processor_alloc_pdc() a little bit to
-avoid duplicate pr_err() code.
-
-Suggested-by: Robert Richter <rric@kernel.org>
-Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 ---
- arch/ia64/Kconfig             |    1 +
- arch/x86/Kconfig              |    1 +
- drivers/acpi/Kconfig          |    3 +
- drivers/acpi/Makefile         |    1 +
- drivers/acpi/internal.h       |    5 +
- drivers/acpi/processor_core.c |  198 ---------------------------------------
- drivers/acpi/processor_pdc.c  |  206 +++++++++++++++++++++++++++++++++++++++++
- 7 files changed, 217 insertions(+), 198 deletions(-)
- create mode 100644 drivers/acpi/processor_pdc.c
+Sam, was this what you meant? Otherwise, I'd be more than happy to
+leave the issue to someone else.
 
-diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
-index c54bd7e..2ca45d6 100644
---- a/arch/ia64/Kconfig
-+++ b/arch/ia64/Kconfig
-@@ -10,6 +10,7 @@ config IA64
- 	select ARCH_MIGHT_HAVE_PC_SERIO
- 	select PCI if (!IA64_HP_SIM)
- 	select ACPI if (!IA64_HP_SIM)
-+	select ARCH_MIGHT_HAVE_ACPI_PDC if ACPI
- 	select PM if (!IA64_HP_SIM)
- 	select HAVE_UNSTABLE_SCHED_CLOCK
- 	select HAVE_IDE
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 6d9f1d8..6fd5d66 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -21,6 +21,7 @@ config X86_64
- ### Arch settings
- config X86
- 	def_bool y
-+	select ARCH_MIGHT_HAVE_ACPI_PDC if ACPI
- 	select ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS
- 	select ARCH_MIGHT_HAVE_PC_PARPORT
- 	select ARCH_MIGHT_HAVE_PC_SERIO
-diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-index 970524c..3f5f745 100644
---- a/drivers/acpi/Kconfig
-+++ b/drivers/acpi/Kconfig
-@@ -45,6 +45,9 @@ if ACPI
- config ACPI_LEGACY_TABLES_LOOKUP
- 	bool
- 
-+config ARCH_MIGHT_HAVE_ACPI_PDC
-+	bool
-+
- config ACPI_SLEEP
- 	bool
- 	depends on SUSPEND || HIBERNATION
-diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-index ea55e01..505d4d7 100644
---- a/drivers/acpi/Makefile
-+++ b/drivers/acpi/Makefile
-@@ -36,6 +36,7 @@ acpi-y				+= scan.o
- acpi-y				+= resource.o
- acpi-y				+= acpi_processor.o
- acpi-y				+= processor_core.o
-+acpi-$(CONFIG_ARCH_MIGHT_HAVE_ACPI_PDC) += processor_pdc.o
- acpi-y				+= ec.o
- acpi-$(CONFIG_ACPI_DOCK)	+= dock.o
- acpi-y				+= pci_root.o pci_link.o pci_irq.o
-diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-index 151f3e7..4c5cf77 100644
---- a/drivers/acpi/internal.h
-+++ b/drivers/acpi/internal.h
-@@ -106,7 +106,12 @@ int acpi_power_transition(struct acpi_device *device, int state);
- int acpi_device_update_power(struct acpi_device *device, int *state_p);
- 
- int acpi_wakeup_device_init(void);
-+
-+#ifdef CONFIG_ARCH_MIGHT_HAVE_ACPI_PDC
- void acpi_early_processor_set_pdc(void);
-+#else
-+static inline void acpi_early_processor_set_pdc(void) {}
-+#endif
- 
- /* --------------------------------------------------------------------------
-                                   Embedded Controller
-diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
-index 71e2065..00f48d1 100644
---- a/drivers/acpi/processor_core.c
-+++ b/drivers/acpi/processor_core.c
-@@ -4,17 +4,11 @@
-  *
-  *	Alex Chiang <achiang@hp.com>
-  *	- Unified x86/ia64 implementations
-- *	Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>
-- *	- Added _PDC for platforms with Intel CPUs
-  */
- #include <linux/export.h>
--#include <linux/dmi.h>
--#include <linux/slab.h>
- #include <linux/acpi.h>
- #include <acpi/processor.h>
- 
--#include "internal.h"
--
- #define _COMPONENT		ACPI_PROCESSOR_COMPONENT
- ACPI_MODULE_NAME("processor_core");
- 
-@@ -208,195 +202,3 @@ int acpi_get_cpuid(acpi_handle handle, int type, u32 acpi_id)
- 	return acpi_map_cpuid(apic_id, acpi_id);
+ scripts/mod/modpost.c | 49 ++++++++++---------------------------------------
+ 1 file changed, 10 insertions(+), 39 deletions(-)
+
+diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+index 9d9c5b9..8f5e122 100644
+--- a/scripts/mod/modpost.c
++++ b/scripts/mod/modpost.c
+@@ -772,32 +772,10 @@ static const char *sech_name(struct elf_info *elf, Elf_Shdr *sechdr)
+ 		sechdr->sh_name;
  }
- EXPORT_SYMBOL_GPL(acpi_get_cpuid);
--
--static bool __init processor_physically_present(acpi_handle handle)
--{
--	int cpuid, type;
--	u32 acpi_id;
--	acpi_status status;
--	acpi_object_type acpi_type;
--	unsigned long long tmp;
--	union acpi_object object = { 0 };
--	struct acpi_buffer buffer = { sizeof(union acpi_object), &object };
--
--	status = acpi_get_type(handle, &acpi_type);
--	if (ACPI_FAILURE(status))
--		return false;
--
--	switch (acpi_type) {
--	case ACPI_TYPE_PROCESSOR:
--		status = acpi_evaluate_object(handle, NULL, NULL, &buffer);
--		if (ACPI_FAILURE(status))
--			return false;
--		acpi_id = object.processor.proc_id;
--		break;
--	case ACPI_TYPE_DEVICE:
--		status = acpi_evaluate_integer(handle, "_UID", NULL, &tmp);
--		if (ACPI_FAILURE(status))
--			return false;
--		acpi_id = tmp;
--		break;
--	default:
--		return false;
--	}
--
--	type = (acpi_type == ACPI_TYPE_DEVICE) ? 1 : 0;
--	cpuid = acpi_get_cpuid(handle, type, acpi_id);
--
--	if (cpuid == -1)
--		return false;
--
--	return true;
--}
--
--static void acpi_set_pdc_bits(u32 *buf)
--{
--	buf[0] = ACPI_PDC_REVISION_ID;
--	buf[1] = 1;
--
--	/* Enable coordination with firmware's _TSD info */
--	buf[2] = ACPI_PDC_SMP_T_SWCOORD;
--
--	/* Twiddle arch-specific bits needed for _PDC */
--	arch_acpi_set_pdc_bits(buf);
--}
--
--static struct acpi_object_list *acpi_processor_alloc_pdc(void)
--{
--	struct acpi_object_list *obj_list;
--	union acpi_object *obj;
--	u32 *buf;
--
--	/* allocate and initialize pdc. It will be used later. */
--	obj_list = kmalloc(sizeof(struct acpi_object_list), GFP_KERNEL);
--	if (!obj_list) {
--		printk(KERN_ERR "Memory allocation error\n");
--		return NULL;
--	}
--
--	obj = kmalloc(sizeof(union acpi_object), GFP_KERNEL);
--	if (!obj) {
--		printk(KERN_ERR "Memory allocation error\n");
--		kfree(obj_list);
--		return NULL;
--	}
--
--	buf = kmalloc(12, GFP_KERNEL);
--	if (!buf) {
--		printk(KERN_ERR "Memory allocation error\n");
--		kfree(obj);
--		kfree(obj_list);
--		return NULL;
--	}
--
--	acpi_set_pdc_bits(buf);
--
--	obj->type = ACPI_TYPE_BUFFER;
--	obj->buffer.length = 12;
--	obj->buffer.pointer = (u8 *) buf;
--	obj_list->count = 1;
--	obj_list->pointer = obj;
--
--	return obj_list;
--}
--
--/*
-- * _PDC is required for a BIOS-OS handshake for most of the newer
-- * ACPI processor features.
+ 
+-/* if sym is empty or point to a string
+- * like ".[0-9]+" then return 1.
+- * This is the optional prefix added by ld to some sections
 - */
--static acpi_status
--acpi_processor_eval_pdc(acpi_handle handle, struct acpi_object_list *pdc_in)
+-static int number_prefix(const char *sym)
 -{
--	acpi_status status = AE_OK;
--
--	if (boot_option_idle_override == IDLE_NOMWAIT) {
--		/*
--		 * If mwait is disabled for CPU C-states, the C2C3_FFH access
--		 * mode will be disabled in the parameter of _PDC object.
--		 * Of course C1_FFH access mode will also be disabled.
--		 */
--		union acpi_object *obj;
--		u32 *buffer = NULL;
--
--		obj = pdc_in->pointer;
--		buffer = (u32 *)(obj->buffer.pointer);
--		buffer[2] &= ~(ACPI_PDC_C_C2C3_FFH | ACPI_PDC_C_C1_FFH);
--
--	}
--	status = acpi_evaluate_object(handle, "_PDC", pdc_in, NULL);
--
--	if (ACPI_FAILURE(status))
--		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
--		    "Could not evaluate _PDC, using legacy perf. control.\n"));
--
--	return status;
+-	if (*sym++ == '\0')
+-		return 1;
+-	if (*sym != '.')
+-		return 0;
+-	do {
+-		char c = *sym++;
+-		if (c < '0' || c > '9')
+-			return 0;
+-	} while (*sym);
+-	return 1;
 -}
 -
--void acpi_processor_set_pdc(acpi_handle handle)
--{
--	struct acpi_object_list *obj_list;
--
--	if (arch_has_acpi_pdc() == false)
--		return;
--
--	obj_list = acpi_processor_alloc_pdc();
--	if (!obj_list)
--		return;
--
--	acpi_processor_eval_pdc(handle, obj_list);
--
--	kfree(obj_list->pointer->buffer.pointer);
--	kfree(obj_list->pointer);
--	kfree(obj_list);
--}
--
--static acpi_status __init
--early_init_pdc(acpi_handle handle, u32 lvl, void *context, void **rv)
--{
--	if (processor_physically_present(handle) == false)
--		return AE_OK;
--
--	acpi_processor_set_pdc(handle);
--	return AE_OK;
--}
--
--#if defined(CONFIG_X86) || defined(CONFIG_IA64)
--static int __init set_no_mwait(const struct dmi_system_id *id)
--{
--	pr_notice(PREFIX "%s detected - disabling mwait for CPU C-states\n",
--		  id->ident);
--	boot_option_idle_override = IDLE_NOMWAIT;
--	return 0;
--}
--
--static struct dmi_system_id processor_idle_dmi_table[] __initdata = {
--	{
--	set_no_mwait, "Extensa 5220", {
--	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
--	DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
--	DMI_MATCH(DMI_PRODUCT_VERSION, "0100"),
--	DMI_MATCH(DMI_BOARD_NAME, "Columbia") }, NULL},
--	{},
--};
--
--static void __init processor_dmi_check(void)
--{
--	/*
--	 * Check whether the system is DMI table. If yes, OSPM
--	 * should not use mwait for CPU-states.
--	 */
--	dmi_check_system(processor_idle_dmi_table);
--}
--#else
--static inline void processor_dmi_check(void) {}
--#endif
--
--void __init acpi_early_processor_set_pdc(void)
--{
--	processor_dmi_check();
--
--	acpi_walk_namespace(ACPI_TYPE_PROCESSOR, ACPI_ROOT_OBJECT,
--			    ACPI_UINT32_MAX,
--			    early_init_pdc, NULL, NULL, NULL);
--	acpi_get_devices(ACPI_PROCESSOR_DEVICE_HID, early_init_pdc, NULL, NULL);
--}
-diff --git a/drivers/acpi/processor_pdc.c b/drivers/acpi/processor_pdc.c
-new file mode 100644
-index 0000000..e5dd808
---- /dev/null
-+++ b/drivers/acpi/processor_pdc.c
-@@ -0,0 +1,206 @@
-+/*
-+ * Copyright (C) 2005 Intel Corporation
-+ * Copyright (C) 2009 Hewlett-Packard Development Company, L.P.
-+ *
-+ *      Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>
-+ *      - Added _PDC for platforms with Intel CPUs
-+ */
-+
-+#define pr_fmt(fmt) "ACPI: " fmt
-+
-+#include <linux/dmi.h>
-+#include <linux/slab.h>
-+#include <linux/acpi.h>
-+#include <acpi/processor.h>
-+
-+#include "internal.h"
-+
-+#define _COMPONENT              ACPI_PROCESSOR_COMPONENT
-+ACPI_MODULE_NAME("processor_pdc");
-+
-+static bool __init processor_physically_present(acpi_handle handle)
-+{
-+	int cpuid, type;
-+	u32 acpi_id;
-+	acpi_status status;
-+	acpi_object_type acpi_type;
-+	unsigned long long tmp;
-+	union acpi_object object = { 0 };
-+	struct acpi_buffer buffer = { sizeof(union acpi_object), &object };
-+
-+	status = acpi_get_type(handle, &acpi_type);
-+	if (ACPI_FAILURE(status))
-+		return false;
-+
-+	switch (acpi_type) {
-+	case ACPI_TYPE_PROCESSOR:
-+		status = acpi_evaluate_object(handle, NULL, NULL, &buffer);
-+		if (ACPI_FAILURE(status))
-+			return false;
-+		acpi_id = object.processor.proc_id;
-+		break;
-+	case ACPI_TYPE_DEVICE:
-+		status = acpi_evaluate_integer(handle, "_UID", NULL, &tmp);
-+		if (ACPI_FAILURE(status))
-+			return false;
-+		acpi_id = tmp;
-+		break;
-+	default:
-+		return false;
-+	}
-+
-+	type = (acpi_type == ACPI_TYPE_DEVICE) ? 1 : 0;
-+	cpuid = acpi_get_cpuid(handle, type, acpi_id);
-+
-+	if (cpuid == -1)
-+		return false;
-+
-+	return true;
-+}
-+
-+static void acpi_set_pdc_bits(u32 *buf)
-+{
-+	buf[0] = ACPI_PDC_REVISION_ID;
-+	buf[1] = 1;
-+
-+	/* Enable coordination with firmware's _TSD info */
-+	buf[2] = ACPI_PDC_SMP_T_SWCOORD;
-+
-+	/* Twiddle arch-specific bits needed for _PDC */
-+	arch_acpi_set_pdc_bits(buf);
-+}
-+
-+static struct acpi_object_list *acpi_processor_alloc_pdc(void)
-+{
-+	struct acpi_object_list *obj_list;
-+	union acpi_object *obj;
-+	u32 *buf;
-+
-+	/* allocate and initialize pdc. It will be used later. */
-+	obj_list = kmalloc(sizeof(struct acpi_object_list), GFP_KERNEL);
-+	if (!obj_list)
-+		goto out;
-+
-+	obj = kmalloc(sizeof(union acpi_object), GFP_KERNEL);
-+	if (!obj) {
-+		kfree(obj_list);
-+		goto out;
-+	}
-+
-+	buf = kmalloc(12, GFP_KERNEL);
-+	if (!buf) {
-+		kfree(obj);
-+		kfree(obj_list);
-+		goto out;
-+	}
-+
-+	acpi_set_pdc_bits(buf);
-+
-+	obj->type = ACPI_TYPE_BUFFER;
-+	obj->buffer.length = 12;
-+	obj->buffer.pointer = (u8 *) buf;
-+	obj_list->count = 1;
-+	obj_list->pointer = obj;
-+
-+	return obj_list;
-+out:
-+	pr_err("Memory allocation error\n");
-+	return NULL;
-+}
-+
-+/*
-+ * _PDC is required for a BIOS-OS handshake for most of the newer
-+ * ACPI processor features.
-+ */
-+static acpi_status
-+acpi_processor_eval_pdc(acpi_handle handle, struct acpi_object_list *pdc_in)
-+{
-+	acpi_status status = AE_OK;
-+
-+	if (boot_option_idle_override == IDLE_NOMWAIT) {
-+		/*
-+		 * If mwait is disabled for CPU C-states, the C2C3_FFH access
-+		 * mode will be disabled in the parameter of _PDC object.
-+		 * Of course C1_FFH access mode will also be disabled.
-+		 */
-+		union acpi_object *obj;
-+		u32 *buffer = NULL;
-+
-+		obj = pdc_in->pointer;
-+		buffer = (u32 *)(obj->buffer.pointer);
-+		buffer[2] &= ~(ACPI_PDC_C_C2C3_FFH | ACPI_PDC_C_C1_FFH);
-+
-+	}
-+	status = acpi_evaluate_object(handle, "_PDC", pdc_in, NULL);
-+
-+	if (ACPI_FAILURE(status))
-+		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
-+		    "Could not evaluate _PDC, using legacy perf. control.\n"));
-+
-+	return status;
-+}
-+
-+void acpi_processor_set_pdc(acpi_handle handle)
-+{
-+	struct acpi_object_list *obj_list;
-+
-+	if (arch_has_acpi_pdc() == false)
-+		return;
-+
-+	obj_list = acpi_processor_alloc_pdc();
-+	if (!obj_list)
-+		return;
-+
-+	acpi_processor_eval_pdc(handle, obj_list);
-+
-+	kfree(obj_list->pointer->buffer.pointer);
-+	kfree(obj_list->pointer);
-+	kfree(obj_list);
-+}
-+
-+static acpi_status __init
-+early_init_pdc(acpi_handle handle, u32 lvl, void *context, void **rv)
-+{
-+	if (processor_physically_present(handle) == false)
-+		return AE_OK;
-+
-+	acpi_processor_set_pdc(handle);
-+	return AE_OK;
-+}
-+
-+static int __init set_no_mwait(const struct dmi_system_id *id)
-+{
-+	pr_notice("%s detected - disabling mwait for CPU C-states\n",
-+		  id->ident);
-+	boot_option_idle_override = IDLE_NOMWAIT;
-+	return 0;
-+}
-+
-+static struct dmi_system_id processor_idle_dmi_table[] __initdata = {
-+	{
-+	set_no_mwait, "Extensa 5220", {
-+	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
-+	DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
-+	DMI_MATCH(DMI_PRODUCT_VERSION, "0100"),
-+	DMI_MATCH(DMI_BOARD_NAME, "Columbia") }, NULL},
-+	{},
-+};
-+
-+static void __init processor_dmi_check(void)
-+{
-+	/*
-+	 * Check whether the system is DMI table. If yes, OSPM
-+	 * should not use mwait for CPU-states.
-+	 */
-+	dmi_check_system(processor_idle_dmi_table);
-+}
-+
-+void __init acpi_early_processor_set_pdc(void)
-+{
-+	processor_dmi_check();
-+
-+	acpi_walk_namespace(ACPI_TYPE_PROCESSOR, ACPI_ROOT_OBJECT,
-+			    ACPI_UINT32_MAX,
-+			    early_init_pdc, NULL, NULL, NULL);
-+	acpi_get_devices(ACPI_PROCESSOR_DEVICE_HID, early_init_pdc, NULL, NULL);
-+}
+ /* The pattern is an array of simple patterns.
+  * "foo" will match an exact string equal to "foo"
+  * "*foo" will match a string that ends with "foo"
+  * "foo*" will match a string that begins with "foo"
+- * "foo$" will match a string equal to "foo" or "foo.1"
+- *   where the '1' can be any number including several digits.
+- *   The $ syntax is for sections where ld append a dot number
+- *   to make section name unique.
+  */
+ static int match(const char *sym, const char * const pat[])
+ {
+@@ -816,13 +794,6 @@ static int match(const char *sym, const char * const pat[])
+ 			if (strncmp(sym, p, strlen(p) - 1) == 0)
+ 				return 1;
+ 		}
+-		/* "foo$" */
+-		else if (*endp == '$') {
+-			if (strncmp(sym, p, strlen(p) - 1) == 0) {
+-				if (number_prefix(sym + strlen(p) - 1))
+-					return 1;
+-			}
+-		}
+ 		/* no wildcards */
+ 		else {
+ 			if (strcmp(p, sym) == 0)
+@@ -880,20 +851,20 @@ static void check_section(const char *modname, struct elf_info *elf,
+ 
+ 
+ #define ALL_INIT_DATA_SECTIONS \
+-	".init.setup$", ".init.rodata$", ".meminit.rodata$", \
+-	".init.data$", ".meminit.data$"
++	".init.setup", ".init.rodata", ".meminit.rodata", \
++	".init.data", ".meminit.data"
+ #define ALL_EXIT_DATA_SECTIONS \
+-	".exit.data$", ".memexit.data$"
++	".exit.data", ".memexit.data"
+ 
+ #define ALL_INIT_TEXT_SECTIONS \
+-	".init.text$", ".meminit.text$"
++	".init.text", ".meminit.text"
+ #define ALL_EXIT_TEXT_SECTIONS \
+-	".exit.text$", ".memexit.text$"
++	".exit.text", ".memexit.text"
+ 
+ #define ALL_PCI_INIT_SECTIONS	\
+-	".pci_fixup_early$", ".pci_fixup_header$", ".pci_fixup_final$", \
+-	".pci_fixup_enable$", ".pci_fixup_resume$", \
+-	".pci_fixup_resume_early$", ".pci_fixup_suspend$"
++	".pci_fixup_early", ".pci_fixup_header", ".pci_fixup_final", \
++	".pci_fixup_enable", ".pci_fixup_resume", \
++	".pci_fixup_resume_early", ".pci_fixup_suspend"
+ 
+ #define ALL_XXXINIT_SECTIONS MEM_INIT_SECTIONS
+ #define ALL_XXXEXIT_SECTIONS MEM_EXIT_SECTIONS
+@@ -901,8 +872,8 @@ static void check_section(const char *modname, struct elf_info *elf,
+ #define ALL_INIT_SECTIONS INIT_SECTIONS, ALL_XXXINIT_SECTIONS
+ #define ALL_EXIT_SECTIONS EXIT_SECTIONS, ALL_XXXEXIT_SECTIONS
+ 
+-#define DATA_SECTIONS ".data$", ".data.rel$"
+-#define TEXT_SECTIONS ".text$", ".text.unlikely$"
++#define DATA_SECTIONS ".data", ".data.rel"
++#define TEXT_SECTIONS ".text", ".text.unlikely"
+ 
+ #define INIT_SECTIONS      ".init.*"
+ #define MEM_INIT_SECTIONS  ".meminit.*"
 -- 
-1.7.9.5
+1.9.2
 
