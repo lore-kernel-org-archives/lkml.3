@@ -1,191 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330AbaGIJq6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 05:46:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34740 "EHLO mx1.redhat.com"
+	id S1755147AbaGIJuQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 05:50:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39911 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755193AbaGIJq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 05:46:56 -0400
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        Olaf Hering <olaf@aepfle.de>
-Subject: Re: [PATCH] mmap_vmcore: skip non-ram pages reported by hypervisors
-References: <1404745549-16023-1-git-send-email-vkuznets@redhat.com>
-	<20140708191159.GA17746@redhat.com>
-Date: Wed, 09 Jul 2014 11:46:40 +0200
-In-Reply-To: <20140708191159.GA17746@redhat.com> (Vivek Goyal's message of
-	"Tue, 8 Jul 2014 15:11:59 -0400")
-Message-ID: <87mwciooe7.fsf@vitty.brq.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1751294AbaGIJuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 05:50:14 -0400
+Message-ID: <53BD1053.5020401@suse.cz>
+Date: Wed, 09 Jul 2014 11:50:11 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Hugh Dickins <hughd@google.com>, Sasha Levin <sasha.levin@oracle.com>
+CC: akpm@linux-foundation.org, davej@redhat.com, koct9i@gmail.com,
+        lczerner@redhat.com, stable@vger.kernel.org,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: + shmem-fix-faulting-into-a-hole-while-its-punched-take-2.patch
+ added to -mm tree
+References: <53b45c9b.2rlA0uGYBLzlXEeS%akpm@linux-foundation.org> <53BCBF1F.1000506@oracle.com> <alpine.LSU.2.11.1407082309040.7374@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.11.1407082309040.7374@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
-
-> On Mon, Jul 07, 2014 at 05:05:49PM +0200, Vitaly Kuznetsov wrote:
->> we have a special check in read_vmcore() handler to check if the page was
->> reported as ram or not by the hypervisor (pfn_is_ram()).
+On 07/09/2014 08:35 AM, Hugh Dickins wrote:
+> On Wed, 9 Jul 2014, Sasha Levin wrote:
+>> On 07/02/2014 03:25 PM, akpm@linux-foundation.org wrote:
+>>> From: Hugh Dickins <hughd@google.com>
+>>> Subject: shmem: fix faulting into a hole while it's punched, take 2
+>>
+>> I suspect there's something off with this patch, as the shmem_fallocate
+>> hangs are back... Pretty much same as before:
 >
-> I am wondering if this name pfn_is_ram() appropriate for what we are 
-> doing. So IIUC, a balooned memory is also RAM just that it has not 
-> been allocated yet. That means we can safely assume that there is no
-> data and can safely fill it with zeros?
-
-For Xen pfn_is_ram() returns 0 in case the page is an mmio. Ballooned
-pages are also considered being mmio (HVMOP_get_mem_type returns
-HVMMEM_mmio_dm).
-
+> Thank you for reporting, but that is depressing news.
 >
-> If yes, then page_is_zero_filled() might be a more approprate name.
+> I don't see what's wrong with this (take 2) patch,
+> and I don't see that it's been garbled in any way in next-20140708.
+>
+>>
+>> [  363.600969] INFO: task trinity-c327:9203 blocked for more than 120 seconds.
+>> [  363.605359]       Not tainted 3.16.0-rc4-next-20140708-sasha-00022-g94c7290-dirty #772
+>> [  363.609730] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>> [  363.615861] trinity-c327    D 000000000000000b 13496  9203   8559 0x10000004
+>> [  363.620284]  ffff8800b857bce8 0000000000000002 ffffffff9dc11b10 0000000000000001
+>> [  363.624468]  ffff880104860000 ffff8800b857bfd8 00000000001d7740 00000000001d7740
+>> [  363.629118]  ffff880104863000 ffff880104860000 ffff8800b857bcd8 ffff8801eaed8868
+>> [  363.633879] Call Trace:
+>> [  363.635442]  [<ffffffff9a4dc535>] schedule+0x65/0x70
+>> [  363.638638]  [<ffffffff9a4dc948>] schedule_preempt_disabled+0x18/0x30
+>> [  363.642833]  [<ffffffff9a4df0a5>] mutex_lock_nested+0x2e5/0x550
+>> [  363.646599]  [<ffffffff972a4d7c>] ? shmem_fallocate+0x6c/0x350
+>> [  363.651319]  [<ffffffff9719b721>] ? get_parent_ip+0x11/0x50
+>> [  363.654683]  [<ffffffff972a4d7c>] ? shmem_fallocate+0x6c/0x350
+>> [  363.658264]  [<ffffffff972a4d7c>] shmem_fallocate+0x6c/0x350
+>
+> So it's trying to acquire i_mutex at shmem_fallocate+0x6c...
+>
+>> [  363.662010]  [<ffffffff971bd96e>] ? put_lock_stats.isra.12+0xe/0x30
+>> [  363.665866]  [<ffffffff9730c043>] do_fallocate+0x153/0x1d0
+>> [  363.669381]  [<ffffffff972b472f>] SyS_madvise+0x33f/0x970
+>> [  363.672906]  [<ffffffff9a4e3f13>] tracesys+0xe1/0xe6
+>> [  363.682900] 2 locks held by trinity-c327/9203:
+>> [  363.684928]  #0:  (sb_writers#12){.+.+.+}, at: [<ffffffff9730c02d>] do_fallocate+0x13d/0x1d0
+>> [  363.715102]  #1:  (&sb->s_type->i_mutex_key#16){+.+.+.}, at: [<ffffffff972a4d7c>] shmem_fallocate+0x6c/0x350
+>
+> ...but it already holds i_mutex, acquired at shmem_fallocate+0x6c.
+> Am I reading that correctly?
+
+I wonder, why wouldn't lockdep fire here if it was a double lock? I 
+assume lockdep is enabled. It seems to me that the lock #1 is being 
+printed because it's being acquired, not because it already is acquired. 
+__mutex_lock_common() calls mutex_acquire_nest() *before* it actually 
+tries to acquire the mutex. So the output is just confusing.
+
+So it would again help to see stacks of other tasks, to see who holds 
+the i_mutex and where it's stuck...
+
+Vlastimil
+
+> In my source for next-20140708, the only return from shmem_fallocate()
+> which omits to mutex_unlock(&inode->i_mutex) is the "return -EOPNOTSUPP"
+> at the top, just before the mutex_lock(&inode->i_mutex).  And inode
+> doesn't get reassigned in the middle.
+>
+> Does 3.16.0-rc4-next-20140708-sasha-00022-g94c7290-dirty look different?
+>
+> Hugh
 >
 
-It's not as mmio page is not always zero-filled. We just don't need
-these pages in vmcore.
-
-> Also I am wondering why it was not done as part of copy_oldmem_page()
-> so that respective arch could hide all the details.
->
-
-Afaiac that wouldn't solve the mmap issue I'm trying to address but we
-can ask Olaf why he preferred pfn_is_ram() path.
-
->> However, when
->> vmcore is read with mmap() no such check is performed. That can lead to
->> unpredictable results, e.g. when running Xen PVHVM guest memcpy() after
->> mmap() on /proc/vmcore will hang processing HVMMEM_mmio_dm pages creating
->> enormous load in both DomU and Dom0.
->> 
->> Fix the issue by mapping each non-ram page to the zero page. Keep direct
->> path with remap_oldmem_pfn_range() to avoid looping through all pages on
->> bare metal.
->> 
->> The issue can also be solved by overriding remap_oldmem_pfn_range() in
->> xen-specific code, as remap_oldmem_pfn_range() was been designed for.
->> That, however, would involve non-obvious xen code path for all x86 builds
->> with CONFIG_XEN_PVHVM=y and would prevent all other hypervisor-specific
->> code on x86 arch from doing the same override.
->
-> I am not sure I understand this part. So what is "all other hypervisor
-> specic" code which will like to do this. And will that code is compiled
-> at the same time as CONFIG_XEN_PVHVM?
->
-
-I meant to say that we have many hypervisors for x86 supported. In case
-I override __weak remap_oldmem_pfn_range() in xen-specific code it will
-*always* get executed when this code was compiled. In case we'll have to
-do similar override in e.g. Hyperv or KVM code in future we'll have a
-mess (in which order do we need to execute these overrides?).
-
-In few words, Xen-PVHVM is not an architecture so I'm not following
-"Architectures may override this function to map oldmem" path.
-
->> 
->> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
->> ---
->>  fs/proc/vmcore.c | 68 +++++++++++++++++++++++++++++++++++++++++++++++++++-----
->>  1 file changed, 62 insertions(+), 6 deletions(-)
->> 
->> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
->> index 382aa89..2716e19 100644
->> --- a/fs/proc/vmcore.c
->> +++ b/fs/proc/vmcore.c
->> @@ -328,6 +328,46 @@ static inline char *alloc_elfnotes_buf(size_t notes_sz)
->>   * virtually contiguous user-space in ELF layout.
->>   */
->>  #ifdef CONFIG_MMU
->> +static u64 remap_oldmem_pfn_checked(struct vm_area_struct *vma, u64 len,
->> +				    unsigned long pfn, unsigned long page_count)
->> +{
->> +	unsigned long pos;
->> +	size_t size;
->> +	unsigned long vma_addr;
->> +	unsigned long emptypage_pfn = __pa(empty_zero_page) >> PAGE_SHIFT;
->> +
->> +	for (pos = pfn; (pos - pfn) <= page_count; pos++) {
->> +		if (!pfn_is_ram(pos) || (pos - pfn) == page_count) {
->> +			/* we hit a page which is not ram or reached the end */
->> +			if (pos - pfn > 0) {
->> +				/* remapping continuous region */
->> +				size = (pos - pfn) << PAGE_SHIFT;
->> +				vma_addr = vma->vm_start + len;
->> +				if (remap_oldmem_pfn_range(vma, vma_addr,
->> +							   pfn, size,
->> +							   vma->vm_page_prot))
->> +					return len;
->> +				len += size;
->> +				page_count -= (pos - pfn);
->> +			}
->> +			if (page_count > 0) {
->> +				/* we hit a page which is not ram, replacing
->> +				   with an empty one */
->> +				vma_addr = vma->vm_start + len;
->> +				if (remap_oldmem_pfn_range(vma, vma_addr,
->> +							   emptypage_pfn,
->> +							   PAGE_SIZE,
->> +							   vma->vm_page_prot))
->> +					return len;
->> +				len += PAGE_SIZE;
->> +				pfn = pos + 1;
->> +				page_count--;
->> +			}
->> +		}
->> +	}
->> +	return len;
->> +}
->> +
->>  static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
->>  {
->>  	size_t size = vma->vm_end - vma->vm_start;
->> @@ -383,17 +423,33 @@ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
->>  
->>  	list_for_each_entry(m, &vmcore_list, list) {
->>  		if (start < m->offset + m->size) {
->> -			u64 paddr = 0;
->> +			u64 paddr = 0, original_len;
->> +			unsigned long pfn, page_count;
->>  
->>  			tsz = min_t(size_t, m->offset + m->size - start, size);
->>  			paddr = m->paddr + start - m->offset;
->> -			if (remap_oldmem_pfn_range(vma, vma->vm_start + len,
->> -						   paddr >> PAGE_SHIFT, tsz,
->> -						   vma->vm_page_prot))
->> -				goto fail;
->> +
->> +			/* check if oldmem_pfn_is_ram was registered to avoid
->> +			   looping over all pages without a reason */
->> +			if (oldmem_pfn_is_ram) {
->> +				pfn = paddr >> PAGE_SHIFT;
->> +				page_count = tsz >> PAGE_SHIFT;
->> +				original_len = len;
->> +				len = remap_oldmem_pfn_checked(vma, len, pfn,
->> +							       page_count);
->> +				if (len != original_len + tsz)
->> +					goto fail;
->> +			} else {
->> +				if (remap_oldmem_pfn_range(vma,
->> +							   vma->vm_start + len,
->> +							   paddr >> PAGE_SHIFT,
->> +							   tsz,
->> +							   vma->vm_page_prot))
->> +					goto fail;
->
-> Why are we defining both remap_oldmem_pfn_checked()? Can't we just
-> modify remap_oldmem_pfn_range() to *always* check for if
-> pfn_is_zero_filled() and map accordingly.
-
-I wanted to preserve the direct path without the check to make things
-faster when the pfn_is_ram() handler was not registered. oldmem is huge
-sometimes and issuing a single call per pfn can cost us something.
-
->
-> Thanks
-> Vivek
-
--- 
-  Vitaly
