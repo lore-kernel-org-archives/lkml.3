@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755649AbaGIVTk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 17:19:40 -0400
-Received: from mga02.intel.com ([134.134.136.20]:26174 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750889AbaGIVTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 17:19:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,633,1400050800"; 
-   d="scan'208";a="541093258"
-Message-ID: <53BDB1D6.1090605@intel.com>
-Date: Wed, 09 Jul 2014 14:19:18 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Andrey Ryabinin <a.ryabinin@samsung.com>, linux-kernel@vger.kernel.org
-CC: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
-        Alexey Preobrazhensky <preobr@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        x86@kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC/PATCH RESEND -next 00/21] Address sanitizer for kernel (kasan)
- - dynamic memory error detector.
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
-In-Reply-To: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755875AbaGIVVT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 17:21:19 -0400
+Received: from smtprelay0049.hostedemail.com ([216.40.44.49]:33394 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755141AbaGIVVR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 17:21:17 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3865:3866:3867:3868:387
+X-HE-Tag: tub22_7e9deed0a4513
+X-Filterd-Recvd-Size: 1889
+Message-ID: <1404940868.932.168.camel@joe-AO725>
+Subject: Re: [PATCH v1 1/5] seq_file: provide an analogue of print_hex_dump()
+From: Joe Perches <joe@perches.com>
+To: Marek Vasut <marex@denx.de>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Tadeusz Struk <tadeusz.struk@intel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Helge Deller <deller@gmx.de>,
+        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>, linux390@de.ibm.com,
+        Alexander Viro <viro@zeniv.linux.org.uk>, qat-linux@intel.com,
+        linux-crypto@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 09 Jul 2014 14:21:08 -0700
+In-Reply-To: <201407092239.30561.marex@denx.de>
+References: <1404919470-26668-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1404919470-26668-2-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <201407092239.30561.marex@denx.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is totally self-serving (and employer-serving), but has anybody
-thought about this large collection of memory debugging tools that we
-are growing?  It helps to have them all in the same places in the menus
-(thanks for adding it to Memory Debugging, btw!).
+On Wed, 2014-07-09 at 22:39 +0200, Marek Vasut wrote:
+> The above function looks like almost verbatim copy of print_hex_dump(). The only 
+> difference I can spot is that it's calling seq_printf() instead of printk(). Can 
+> you not instead generalize print_hex_dump() and based on it's invocation, make 
+> it call either seq_printf() or printk() ?
 
-But, this gives us at least four things that overlap with kasan's
-features on some level.  Each of these has its own advantages and
-disadvantages, of course:
+How do you propose doing that given any seq_<foo> call
+requires a struct seq_file * and print_hex_dump needs
+a KERN_<LEVEL>.
 
-1. DEBUG_PAGEALLOC
-2. SLUB debugging / DEBUG_OBJECTS
-3. kmemcheck
-4. kasan
-... and there are surely more coming down pike.  Like Intel MPX:
+Is there an actual value to it?
 
-> https://software.intel.com/en-us/articles/introduction-to-intel-memory-protection-extensions
 
-Or, do we just keep adding these overlapping tools and their associated
-code over and over and fragment their user bases?
 
-You're also claiming that "KASAN is better than all of
-CONFIG_DEBUG_PAGEALLOC".  So should we just disallow (or hide)
-DEBUG_PAGEALLOC on kernels where KASAN is available?
-
-Maybe we just need to keep these out of mainline and make Andrew carry
-it in -mm until the end of time. :)
