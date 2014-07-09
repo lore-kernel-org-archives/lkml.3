@@ -1,80 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756529AbaGIQmw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 12:42:52 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:58650 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755337AbaGIQmu (ORCPT
+	id S1755801AbaGIQpx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 12:45:53 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:62999 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751948AbaGIQpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 12:42:50 -0400
-Date: Wed, 9 Jul 2014 09:42:42 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] rcu: use true/false instead of 1/0 for a bool type
-Message-ID: <20140709164242.GP4603@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1404878897-3680-1-git-send-email-bobby.prani@gmail.com>
+	Wed, 9 Jul 2014 12:45:52 -0400
+Message-ID: <53BD71BD.9010308@linaro.org>
+Date: Wed, 09 Jul 2014 11:45:49 -0500
+From: Alex Elder <alex.elder@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404878897-3680-1-git-send-email-bobby.prani@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070916-3532-0000-0000-0000030659F5
+To: =?ISO-8859-1?Q?Petr_Ml=E1dek?= <pmladek@suse.cz>,
+        Alex Elder <elder@linaro.org>
+CC: akpm@linux-foundation.org, ak@linux.intel.com, bp@suse.de, jack@suse.cz,
+        john.stultz@linaro.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] printk: miscellaneous cleanups
+References: <1404911056-29064-1-git-send-email-elder@linaro.org> <1404911056-29064-5-git-send-email-elder@linaro.org> <20140709162935.GB26508@pathway.suse.cz>
+In-Reply-To: <20140709162935.GB26508@pathway.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 12:08:17AM -0400, Pranith Kumar wrote:
-> One more bool type change which I found while reading the code.
-> 
-> Use true/false instead of 0/1 for a bool type
-> 
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+On 07/09/2014 11:29 AM, Petr Mládek wrote:
+> Sending once again as a correct reply. I am sorry for the
+> confusion. I think that it is high time for me to go home and sleep :-)
+>
+> On Wed 2014-07-09 08:04:16, Alex Elder wrote:
+>> This patch contains some small cleanups to kernel/printk/printk.c.
+>> None of them should cause any change in behavior.
+>>    - When CONFIG_PRINTK is defined, parenthesize the value of LOG_LINE_MAX.
+>>    - When CONFIG_PRINTK is *not* defined, there is an extra LOG_LINE_MAX
+>>      definition; delete it.
+>>    - Pull an assignment out of a conditional expression in console_setup().
+>>    - Use isdigit() in console_setup() rather than open coding it.
+>>    - In update_console_cmdline(), drop a NUL-termination assignment;
+>>      the strlcpy() call that precedes it guarantees it's not needed.
+>>    - Simplify some logic in printk_timed_ratelimit().
+>>
+>> Signed-off-by: Alex Elder <elder@linaro.org>
+>> ---
+>>   kernel/printk/printk.c | 26 +++++++++++++-------------
+>>   1 file changed, 13 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+>> index 6f75e8a..909029e 100644
+>> --- a/kernel/printk/printk.c
+>> +++ b/kernel/printk/printk.c
 
-Queued for 3.18, thank you!
+. . .
 
-							Thanx, Paul
+>> @@ -2611,14 +2612,13 @@ EXPORT_SYMBOL(__printk_ratelimit);
+>>   bool printk_timed_ratelimit(unsigned long *caller_jiffies,
+>>   			unsigned int interval_msecs)
+>>   {
+>> -	if (*caller_jiffies == 0
+>> -			|| !time_in_range(jiffies, *caller_jiffies,
+>> -					*caller_jiffies
+>> -					+ msecs_to_jiffies(interval_msecs))) {
+>> -		*caller_jiffies = jiffies;
+>> -		return true;
+>> -	}
+>> -	return false;
+>> +	unsigned long elapsed = jiffies - *caller_jiffies;
+>
 
-> ---
->  kernel/rcu/tree.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> index 1b70cb6..bc7b6f1 100644
-> --- a/kernel/rcu/tree.c
-> +++ b/kernel/rcu/tree.c
-> @@ -1668,7 +1668,7 @@ static int rcu_gp_fqs(struct rcu_state *rsp, int fqs_state_in)
->  	if (fqs_state == RCU_SAVE_DYNTICK) {
->  		/* Collect dyntick-idle snapshots. */
->  		if (is_sysidle_rcu_state(rsp)) {
-> -			isidle = 1;
-> +			isidle = true;
->  			maxj = jiffies - ULONG_MAX / 4;
->  		}
->  		force_qs_rnp(rsp, dyntick_save_progress_counter,
-> @@ -1677,7 +1677,7 @@ static int rcu_gp_fqs(struct rcu_state *rsp, int fqs_state_in)
->  		fqs_state = RCU_FORCE_QS;
->  	} else {
->  		/* Handle dyntick-idle and offline CPUs. */
-> -		isidle = 0;
-> +		isidle = false;
->  		force_qs_rnp(rsp, rcu_implicit_dynticks_qs, &isidle, &maxj);
->  	}
->  	/* Clear flag to prevent immediate re-entry. */
-> @@ -2449,7 +2449,7 @@ static void force_qs_rnp(struct rcu_state *rsp,
->  		for (; cpu <= rnp->grphi; cpu++, bit <<= 1) {
->  			if ((rnp->qsmask & bit) != 0) {
->  				if ((rnp->qsmaskinit & bit) != 0)
-> -					*isidle = 0;
-> +					*isidle = false;
->  				if (f(per_cpu_ptr(rsp->rda, cpu), isidle, maxj))
->  					mask |= bit;
->  			}
-> -- 
-> 1.9.1
-> 
+Currently, all callers pass a 0 value in *caller_jiffies
+initially (using a static/BSS variable), and a value updated
+by a previous call to __printk_ratelimit() thereafter.
+
+If a caller passed something different, yes, it's possible the
+result would wrap to a high unsigned value (i.e., go negative).
+However the logic used here involves the same subtraction
+operation as was used before--though previously that was
+buried inside the time_after() macro called by time_in_range().
+
+					-Alex
+
+> I wondered if the deduction might be negative. Well, it should not be
+> if none manipulates *caller_jiffies in a strange way. If it happens,
+> the following condition will most likely fail and *caller_jiffies will
+> get reset to jiffies. It looks reasonable to me.
+>
+> Reviewed-by: Petr Mladek <pmladek@suse.cz>
+>
+>> +	if (*caller_jiffies && elapsed <= msecs_to_jiffies(interval_msecs))
+>> +		return false;
+>> +
+>> +	*caller_jiffies = jiffies;
+>> +	return true;
+>>   }
+>>   EXPORT_SYMBOL(printk_timed_ratelimit);
+>
+> Best Regards,
+> Petr
+>
 
