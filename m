@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932129AbaGIRJp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 13:09:45 -0400
-Received: from mail-yh0-f74.google.com ([209.85.213.74]:56087 "EHLO
-	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756605AbaGIRJn (ORCPT
+	id S932285AbaGIRKJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 13:10:09 -0400
+Received: from mail-qc0-f201.google.com ([209.85.216.201]:34977 "EHLO
+	mail-qc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756624AbaGIRJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 13:09:43 -0400
+	Wed, 9 Jul 2014 13:09:45 -0400
 From: Havard Skinnemoen <hskinnemoen@google.com>
 To: Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, Havard Skinnemoen <hskinnemoen@google.com>,
-        Ewout van Bekkum <ewout@google.com>
-Subject: [PATCH 0/6] x86 mce fixes
-Date: Wed,  9 Jul 2014 10:09:20 -0700
-Message-Id: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
+Cc: linux-kernel@vger.kernel.org, Ewout van Bekkum <ewout@google.com>,
+        Havard Skinnemoen <hskinnemoen@google.com>
+Subject: [PATCH 5/6] x86-mce: check if no_way_out applies before deciding not to clear MCE banks.
+Date: Wed,  9 Jul 2014 10:09:25 -0700
+Message-Id: <1404925766-32253-6-git-send-email-hskinnemoen@google.com>
 X-Mailer: git-send-email 2.0.0.526.g5318336
+In-Reply-To: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
+References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following series contains a few fixes we came up with while testing the MCE
-handling on our servers in the lab. These should fix the following symptoms:
+From: Ewout van Bekkum <ewout@google.com>
 
-  - Once entering CMCI storm mode, we would never exit. This was because we set
-    the check_interval to be shorter than 30 seconds, so the condition to exit
-    storm mode could never become true.
-  - After a storm, the MCE banks previously handled by a CPU could not be
-    reclaimed.
-  - After a kexec reboot, none of the MCE banks could be claimed by any CPU.
-  - Duplicate MCEs were being reported in some circumstances (e.g. with
-    mce=no_cmci and/or mce=3).
-  - Crashes because the polling timer was added multiple times.
-
-We're not sure if these patches are the best way to fix these issues, and they
-may introduce new, subtle bugs, but it's the best we managed to come up with.
-Please take a good look and tell us what we got wrong.
-
-Ewout did all the leg work in getting this implemented and tested, while I've
-been providing advice and reviews.
+The machine check handler, do_machine_check(), has a sanity check before
+clearing the MCE banks in case the system has no_way_out and has to
+crash.  However, this sanity check does not take into account the
+configured MCE tolerant level as the system may still keep running. The
+sanity check was updated to check if the system has no_way_out and that
+no_way_out is relevant (tolerant level is less than 3).
 
 Signed-off-by: Ewout van Bekkum <ewout@google.com>
 Signed-off-by: Havard Skinnemoen <hskinnemoen@google.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Ewout van Bekkum (6):
-  x86-mce: Modify CMCI poll interval to adjust for small check_interval
-    values.
-  x86-mce: Modify CMCI storm exit to reenable instead of rediscover
-    banks.
-  x86-mce: Clear CMCI enable on all claimed CMCI banks before reboot.
-  x86-mce: Add spinlocks to prevent duplicated MCP and CMCI reports.
-  x86-mce: check if no_way_out applies before deciding not to clear MCE
-    banks.
-  x86-mce: ensure the MCP timer is not already set in the mce_timer_fn.
-
- arch/x86/kernel/cpu/mcheck/mce-internal.h |  2 +
- arch/x86/kernel/cpu/mcheck/mce.c          | 39 +++++++++++--
- arch/x86/kernel/cpu/mcheck/mce_intel.c    | 95 ++++++++++++++++++++++++-------
- 3 files changed, 111 insertions(+), 25 deletions(-)
-
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 64270d7..1587b18 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -1153,7 +1153,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 	/* mce_clear_state will clear *final, save locally for use later */
+ 	m = *final;
+ 
+-	if (!no_way_out)
++	if (!(no_way_out && cfg->tolerant < 3))
+ 		mce_clear_state(toclear);
+ 
+ 	/*
 -- 
 2.0.0.526.g5318336
 
