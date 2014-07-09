@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874AbaGINPI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 09:15:08 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:39442 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbaGINPG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 09:15:06 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Himangi Saraogi <himangi774@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH] sh-pfc: sh73a0: Introduce the use of devm_regulator_register
-Date: Wed, 09 Jul 2014 15:16:08 +0200
-Message-ID: <6084416.kjNb0aQC9P@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.12.21-gentoo-r1; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CACRpkdbX_mhwOP1S6vLxRi8sqvwk4uo+gLk_0a+2wZOjA_Yoig@mail.gmail.com>
-References: <20140707160916.GA9238@himangi-Dell> <CACRpkdbX_mhwOP1S6vLxRi8sqvwk4uo+gLk_0a+2wZOjA_Yoig@mail.gmail.com>
+	id S1755462AbaGINPf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 09:15:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44403 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751660AbaGINPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 09:15:34 -0400
+Message-ID: <53BD4074.5070100@suse.cz>
+Date: Wed, 09 Jul 2014 15:15:32 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
+Subject: Re: v3.16-rc4 messes up make kernelrelease with additional output
+References: <20140709125955.GS21766@n2100.arm.linux.org.uk>
+In-Reply-To: <20140709125955.GS21766@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 09 July 2014 12:32:44 Linus Walleij wrote:
-> On Mon, Jul 7, 2014 at 6:09 PM, Himangi Saraogi wrote:
-> > This patch moves data allocated using regulator_register to
-> > devm_regulator_register and does away the calls to regulator_unregister.
-> > The sh73a0_pinmux_soc_exit function is no longer needed and is removed.
-> > 
-> > Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> > Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+On 2014-07-09 14:59, Russell King - ARM Linux wrote:
+> 3.16-rc3 and all previous versions:
 > 
-> Laurent is maintaining this driver so let's see if he can ACK it.
+> $ make ARCH=arm CROSS_COMPILE=arm-linux- O=/tmp/build/ kernelrelease
+> 3.16.0-rc3+
+> $
+> 
+> 3.16-rc4:
+> 
+> $ make ARCH=arm CROSS_COMPILE=arm-linux- O=/tmp/build/ kernelrelease
+> make[1]: Entering directory `/tmp/build'
+> 3.16.0-rc4+
+> $
 
-Assuming we're talking about https://lkml.org/lkml/2014/7/7/386,
+This is fixed by commit 066b7ed9 in linux-next, which I'll send to Linus
+shortly. But you should use make -s ... kernelrelease, otherwise the
+output will be polluted not only by the "Entering directory" message,
+but possibly also by a  silentoldconfig run.
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-
--- 
-Regards,
-
-Laurent Pinchart
-
+Michal
