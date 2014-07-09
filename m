@@ -1,108 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756451AbaGIRIr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 13:08:47 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:61427 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbaGIRIp (ORCPT
+	id S1756603AbaGIRJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 13:09:27 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:49806 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755523AbaGIRJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 13:08:45 -0400
-From: bsegall@google.com
-To: Yuyang Du <yuyang.du@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com,
-        arjan.van.de.ven@intel.com, len.brown@intel.com, alan.cox@intel.com,
-        mark.gross@intel.com, pjt@google.com, fengguang.wu@intel.com
-Subject: Re: [PATCH 2/2] sched: Rewrite per entity runnable load average tracking
-References: <1404268256-3019-1-git-send-email-yuyang.du@intel.com>
-	<1404268256-3019-2-git-send-email-yuyang.du@intel.com>
-	<20140707104646.GK6758@twins.programming.kicks-ass.net>
-	<xm26r41wyfgc.fsf@sword-of-the-dawn.mtv.corp.google.com>
-	<20140708000840.GB25653@intel.com>
-	<xm26k37nye7d.fsf@sword-of-the-dawn.mtv.corp.google.com>
-	<20140709010753.GD25653@intel.com>
-Date: Wed, 09 Jul 2014 10:08:42 -0700
-In-Reply-To: <20140709010753.GD25653@intel.com> (Yuyang Du's message of "Wed,
-	9 Jul 2014 09:07:53 +0800")
-Message-ID: <xm26fviaxxwl.fsf@sword-of-the-dawn.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Wed, 9 Jul 2014 13:09:26 -0400
+Date: Wed, 9 Jul 2014 19:09:22 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] ARM: at91: Switch to CCF for 3.17
+Message-ID: <20140709170921.GP3113@piout.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yuyang Du <yuyang.du@intel.com> writes:
+Hi Nicolas,
 
-> Thanks, Ben.
->
-> On Tue, Jul 08, 2014 at 10:04:22AM -0700, bsegall@google.com wrote:
->
->> > The sampling of cfs_rq->load.weight should be equivalent to the current
->> > code in that at the end of day cfs_rq->load.weight worth of runnable would 
->> > contribute to runnable_load_avg/blocked_load_avg for both the current and
->> > the rewrite.
->> 
->> Yes, but the point is that it looks at load.weight when delta/1024 > 0
->> and assumes that it has had that load.weight the entire time, when this
->> might not actually be true. The largest error I can think of is if you
->> have a very high weight task that tends to run for very short periods of
->> time, you could end up losing their entire contribution to load. This
->> may be acceptable, I'm not certain.
->
-> That I believe is not a problem. It is a matter of when cfs_rq->load.weight
-> changes and when we look at it to contribute to the cfs_rq's load_avg.
-> Fortunately, we will not miss any change of cfs_rq->load.weight, always
-> contributing to the load_avg the right amount. Put another way, we always
-> use the right cfs_rq->load.weight.
+This is the switch to CCF for all the remaining at91 SoCs and boards. It
+is based on your at91-3.17-dt branch.
 
-You always call __update_load_avg with every needed load.weight, but if
-now - sa->last_update_time < 1024, then it will not do anything with
-that weight, and the next actual update may be with a different weight.
+The following changes since commit ad7c56aa2d08f9b4e182e8294cfd5896864e4db0:
 
->
->> > So left are the migrate_task_rq_fair() not holding lock issue and cfs_rq->avg.load_avg
->> > overflow issue. I need some time to study them.
->> >
->> > Overall, I think none of these issues are originally caused by combination/split
->> > of runnable and blocked. It is just a matter of how synchronized we want to be
->> > (this rewrite is the most synchronized), and the workaround I need to borrow from the
->> > current codes.
->> 
->> If you can manage to find a to deal with the migration issue without it,
->> that would be great, I'm just pretty sure that's why we did the split.
->  
-> After thinking about it the whole morning, this issue is a killer... :)
->
-> But I think, even by spliting and by using atomic operations, the current code
-> does not substract the migrating task's load absolutely synchronized:
->
-> When se migrating, you atomic_read cfs_rq->decay_counter (say t1), and then atomic_add
-> the se's load_avg_contrib to removed_load. However, when updating the cfs_rq->blocked_load_avg
-> it is not guranteed when substracting the removed_load from the blocked_load_avg,
-> the actual decay_counter (say t2) is the same as t1. Because at t1 time (when you
-> atomic_read it), the decay_counter can be being updated (before you atomic_add to
-> removed_load). Atomic operation does not help synchronize them. Right?
->
-> So essentially, to perfectly substract the right amount, we must first synchronize
-> the migrating task with its cfs_rq (catch up), and then substract it right away.
-> Those two steps must be synchronized (with lock) or atomically done at once. Considering
-> migrating and load averaging are not sequential (strict interleaving). Separating the
-> two steps but synchronizing them is not enough, they must be done
-> atomically.
+  ARM: at91/dt: add NAND + DMA property for at91sam9rl (2014-07-09 18:02:47 +0200)
 
-Yeah, I don't think it is actually entirely safe, and looking at it
-again, there's not even any guarantee that the decay_counter read is
-anything close to current, even on something like x86, which is... bad.
-I know this is why subtract_blocked_load_contrib makes sure to clamp at
-zero.
+are available in the git repository at:
 
-To do this actually correctly, you'd need cmpxchg16b or locking. Given
-that we end up pulling a cacheline to do the removed_load add RMW
-anyway, it might be reasonable to do something like that, I don't know.
+  git://github.com/at91linux/linux-at91.git tags/CCF-for-3.17
 
->
-> That is chalenging... Can someone (Peter) grant us a lock of the remote rq? :)
->
-> Thanks,
-> Yuyang
+for you to fetch changes up to 447025e96d54e32a4e60050cc430705d4e532917:
+
+  ARM: at91/dt: usb_a9263: define crystals frequencies (2014-07-09 19:05:23 +0200)
+
+----------------------------------------------------------------
+CCF migration for 3.17
+
+----------------------------------------------------------------
+Alexandre Belloni (34):
+      Documentation: dt: document all the atmel pmc compatibles
+      ARM: at91/dt: ariag25: define crystals frequencies
+      ARM: at91: prepare common clk transition for rm9200
+      ARM: at91/dt: rm9200: define clocks
+      ARM: at91: move at91rm9200 SoC to the CCF
+      ARM: at91/dt: at91rm9200ek: define crystals frequencies
+      ARM: at91: prepare common clk transition for sam9260
+      ARM: at91/dt: sam9260: define clocks
+      ARM: at91/dt: sam9g20: define clocks
+      ARM: at91: move at91sam9260 SoCs to the CCF
+      ARM: at91/dt: at91sam9g20ek: define crystals frequencies
+      ARM: at91/dt: foxg20: define crystals frequencies
+      ARM: at91/dt: usb_a9260: define crystals frequencies
+      ARM: at91/dt: tny_a9260: define crystals frequencies
+      ARM: at91/dt: qil_a9260: define crystals frequencies
+      ARM: at91/dt: mpa1600: define crytals frequencies
+      ARM: at91/dt: ge863-pro3: define main crystal frequency
+      ARM: at91/dt: aks-cdu: define slow crytal frequency
+      ARM: at91/dt: evk-pro3: define slow crytal frequency
+      ARM: at91/dt: ethernut5: define crystals frequencies
+      ARM: at91/dt: animeo_ip: define crystals frequencies
+      ARM: at91/dt: kizbox: define main crystal frequency
+      ARM: at91: prepare common clk transition for sam9g45
+      ARM: at91/dt: sam9g45: define clocks
+      ARM: at91: move at91sam9g45 SoC to the CCF
+      ARM: at91/dt: sam9m10g45ek: define crystals frequencies
+      ARM: at91/dt: pm9g45: crystals frequencies
+      ARM: at91/dt: cosino define crystals frequencies
+      ARM: at91: prepare common clk transition for sam9263
+      ARM: at91/dt: sam9263: define clocks
+      ARM: at91: move at91sam9263 SoC to the CCF
+      ARM: at91/dt: sam9263ek: define crystals frequencies
+      ARM: at91/dt: tny_a9263: define crystals frequencies
+      ARM: at91/dt: usb_a9263: define crystals frequencies
+
+ .../devicetree/bindings/arm/atmel-pmc.txt          |   5 +-
+ arch/arm/boot/dts/aks-cdu.dts                      |   6 +
+ arch/arm/boot/dts/animeo_ip.dts                    |   8 +
+ arch/arm/boot/dts/at91-ariag25.dts                 |   8 +
+ arch/arm/boot/dts/at91-cosino.dtsi                 |   8 +
+ arch/arm/boot/dts/at91-foxg20.dts                  |   8 +
+ arch/arm/boot/dts/at91-qil_a9260.dts               |   8 +
+ arch/arm/boot/dts/at91rm9200.dtsi                  | 304 ++++++++++++++++++
+ arch/arm/boot/dts/at91rm9200ek.dts                 |   8 +
+ arch/arm/boot/dts/at91sam9260.dtsi                 | 314 ++++++++++++++++++-
+ arch/arm/boot/dts/at91sam9263.dtsi                 | 311 +++++++++++++++++++
+ arch/arm/boot/dts/at91sam9263ek.dts                |   8 +
+ arch/arm/boot/dts/at91sam9g20.dtsi                 |  24 ++
+ arch/arm/boot/dts/at91sam9g20ek_common.dtsi        |   8 +
+ arch/arm/boot/dts/at91sam9g45.dtsi                 | 342 ++++++++++++++++++++-
+ arch/arm/boot/dts/at91sam9m10g45ek.dts             |   8 +
+ arch/arm/boot/dts/ethernut5.dts                    |  10 +
+ arch/arm/boot/dts/evk-pro3.dts                     |   6 +
+ arch/arm/boot/dts/ge863-pro3.dtsi                  |   4 +
+ arch/arm/boot/dts/kizbox.dts                       |   4 +
+ arch/arm/boot/dts/mpa1600.dts                      |   8 +
+ arch/arm/boot/dts/pm9g45.dts                       |   8 +
+ arch/arm/boot/dts/tny_a9260_common.dtsi            |   8 +
+ arch/arm/boot/dts/tny_a9263.dts                    |   8 +
+ arch/arm/boot/dts/usb_a9260_common.dtsi            |   8 +
+ arch/arm/boot/dts/usb_a9263.dts                    |   8 +
+ arch/arm/mach-at91/Kconfig                         |   4 -
+ arch/arm/mach-at91/at91rm9200.c                    |   6 +-
+ arch/arm/mach-at91/at91sam9260.c                   |   6 +-
+ arch/arm/mach-at91/at91sam9263.c                   |   6 +-
+ arch/arm/mach-at91/at91sam9g45.c                   |   6 +-
+ 31 files changed, 1467 insertions(+), 11 deletions(-)
+
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
