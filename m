@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158AbaGICfj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 22:35:39 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:55927 "EHLO
+	id S1753186AbaGICkY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 22:40:24 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:55944 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751163AbaGICfh (ORCPT
+	with ESMTP id S1751104AbaGICkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 22:35:37 -0400
-Date: Tue, 08 Jul 2014 19:35:36 -0700 (PDT)
-Message-Id: <20140708.193536.1470966008910828465.davem@davemloft.net>
-To: ixaphire@qrator.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ip_tunnel: fix ip_tunnel_lookup
+	Tue, 8 Jul 2014 22:40:23 -0400
+Date: Tue, 08 Jul 2014 19:40:21 -0700 (PDT)
+Message-Id: <20140708.194021.617273242591768642.davem@davemloft.net>
+To: andrey.krieger.utkin@gmail.com
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        netdev@vger.kernel.org, acme@ghostprotocols.net,
+        eric.dumazet@gmail.com
+Subject: Re: [PATCH] appletalk: Fix socket referencing in skb
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140709044759.009fdce94cf1fb2d872a4a4f@qrator.net>
-References: <20140705022637.73152ff57309c468c1fdb563@qrator.net>
-	<20140708.151210.1879376103263511218.davem@davemloft.net>
-	<20140709044759.009fdce94cf1fb2d872a4a4f@qrator.net>
+In-Reply-To: <1404764570-24120-1-git-send-email-andrey.krieger.utkin@gmail.com>
+References: <1404764570-24120-1-git-send-email-andrey.krieger.utkin@gmail.com>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 08 Jul 2014 19:35:37 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 08 Jul 2014 19:40:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Popov <ixaphire@qrator.net>
-Date: Wed, 9 Jul 2014 04:47:59 +0400
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Date: Mon,  7 Jul 2014 23:22:50 +0300
 
-> How I see ip_tunnel_lookup logic:
-> 1) try to find exact match (and if found return this tunnel):
-> tunnel.saddr == iph.daddr && tunnel.daddr == iph.saddr && key_matched()
-> 2) try to find matched (local) wildcard tunnel:
-> tunnel.saddr == any && tunnel.daddr == iph.saddr && key_matched()
-> 3) try to find matched (remote) wildcard tunnel:
-> tunnel.saddr == iph.daddr && tunnel.daddr == any && key_matched()
-> (there is also a test for multicast tunnel, but let's skip it for simplicity)
-> 4) try to find matched (full) wildcard tunnel:
-> tunnel.saddr == any && tunnel.daddr == any && key_matched()
-> 5) if nothing found return default tunnel.
+> Setting just skb->sk without taking its reference and setting a
+> destructor is invalid. However, in the places where this was done, skb
+> is used in a way not requiring skb->sk setting. So dropping the setting
+> of skb->sk.
+> Thanks to Eric Dumazet <eric.dumazet@gmail.com> for correct solution.
 > 
-> According to this logic, in 4th loop (the one you quoted) we have to test that
-> tunnel.daddr == any && tunnel.saddr == any. In my opinion those two new lines
-> are the best way to achieve it.
+> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=79441
+> Reported-by: Ed Martin <edman007@edman007.com>
+> Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 
-Now it makes sense, thanks for explaining.
-
-Applied and queued up for -stable, thanks again.
+Applied and queued up for -stable.
