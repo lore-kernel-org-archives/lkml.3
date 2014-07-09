@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209AbaGIPKe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 11:10:34 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:50460 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752301AbaGIPKa (ORCPT
+	id S932614AbaGIPLA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 11:11:00 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:53538 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932613AbaGIPIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 11:10:30 -0400
-Message-ID: <53BD5B64.3010703@linaro.org>
-Date: Wed, 09 Jul 2014 10:10:28 -0500
-From: Alex Elder <alex.elder@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Alex Elder <elder@linaro.org>
-CC: akpm@linux-foundation.org, ak@linux.intel.com, bp@suse.de, jack@suse.cz,
-        john.stultz@linaro.org, pmladek@suse.cz, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] printk: rename DEFAULT_MESSAGE_LOGLEVEL
-References: <1404911056-29064-1-git-send-email-elder@linaro.org> <1404911056-29064-2-git-send-email-elder@linaro.org> <20140709150043.GB5254@pd.tnic>
-In-Reply-To: <20140709150043.GB5254@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Jul 2014 11:08:22 -0400
+From: Peter Griffin <peter.griffin@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        ulf.hansson@linaro.org, chris@printf.net, maxime.coquelin@st.com,
+        patrice.chotard@st.com, srinivas.kandagatla@gmail.com
+Cc: peter.griffin@linaro.org, lee.jones@linaro.org, linux-mmc@vger.kernel.org,
+        devicetree@vger.kernel.org, peppe.cavallaro@st.com
+Subject: [PATCH v4 08/10] ARM: STi: DT: Enable second sdhci controller for stih416 b2020 boards.
+Date: Wed,  9 Jul 2014 16:07:39 +0100
+Message-Id: <1404918461-25390-9-git-send-email-peter.griffin@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404918461-25390-1-git-send-email-peter.griffin@linaro.org>
+References: <1404918461-25390-1-git-send-email-peter.griffin@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The second controller is only present on the stih416 SoC. Also
+mark this as non-removeable as its eMMC.
 
+Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
+---
+ arch/arm/boot/dts/stih416-b2020.dts  | 8 ++++++++
+ arch/arm/boot/dts/stih416-b2020e.dts | 6 ++++++
+ 2 files changed, 14 insertions(+)
 
-On 07/09/2014 10:00 AM, Borislav Petkov wrote:
-> On Wed, Jul 09, 2014 at 08:04:13AM -0500, Alex Elder wrote:
->> This commit:
->>      a8fe19eb kernel/printk: use symbolic defines for console loglevels
->> makes consistent use of symbolic values for printk() log levels.
->>
->> The naming scheme used is different from the one used for
->> DEFAULT_MESSAGE_LOGLEVEL though.  Change that symbol name to be
->> MESSAGE_LOGLEVEL_DEFAULT for consistency.
->>
->> Note that we don't rename CONFIG_DEFAULT_MESSAGE_LOGLEVEL (to avoid
->> breaking existing config files that might reference it).
->>
->> Signed-off-by: Alex Elder <elder@linaro.org>
->> ---
->>   include/linux/printk.h | 2 +-
->>   kernel/printk/printk.c | 2 +-
->>   2 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/include/linux/printk.h b/include/linux/printk.h
->> index 319ff7e..3d1ccad 100644
->> --- a/include/linux/printk.h
->> +++ b/include/linux/printk.h
->> @@ -31,7 +31,7 @@ static inline const char *printk_skip_level(const char *buffer)
->>   }
->>
->>   /* printk's without a loglevel use this.. */
->> -#define DEFAULT_MESSAGE_LOGLEVEL CONFIG_DEFAULT_MESSAGE_LOGLEVEL
->> +#define MESSAGE_LOGLEVEL_DEFAULT CONFIG_DEFAULT_MESSAGE_LOGLEVEL
->
-> Well, I can't say I like it - we have the config item
-> CONFIG_DEFAULT_MESSAGE_LOGLEVEL and DEFAULT_MESSAGE_LOGLEVEL resembles
-> it for a reason - it is the corresponding define coming from .config.
->
-> With this change you have:
->
-> CONFIG_DEFAULT_MESSAGE_LOGLEVEL
->         MESSAGE_LOGLEVEL_DEFAULT
->
-> which is more confusing. To me at least. I can't see the resemblance at
-> a quick glance anymore.
-
-Yes I realized this just sort of moved that sort of problem
-to a different place.  The change was responding to the
-inconsistency in naming in "printk.c".  I can control the
-effects of that, but I can't predict who might be using
-various config options, so I avoided doing that rename.
-
-Was I being overly cautious on the config option name?
-I could fix that too and have consistency everywhere.
-
-					-Alex
+diff --git a/arch/arm/boot/dts/stih416-b2020.dts b/arch/arm/boot/dts/stih416-b2020.dts
+index 4e2df66..d42ff1d 100644
+--- a/arch/arm/boot/dts/stih416-b2020.dts
++++ b/arch/arm/boot/dts/stih416-b2020.dts
+@@ -12,4 +12,12 @@
+ / {
+ 	model = "STiH416 B2020";
+ 	compatible = "st,stih416-b2020", "st,stih416";
++
++	soc {
++		mmc1: sdhci@fe81f000 {
++			status       = "okay";
++			bus-width    = <8>;
++			non-removable;
++		};
++	};
+ };
+diff --git a/arch/arm/boot/dts/stih416-b2020e.dts b/arch/arm/boot/dts/stih416-b2020e.dts
+index ba0fa2c..68dfdaf 100644
+--- a/arch/arm/boot/dts/stih416-b2020e.dts
++++ b/arch/arm/boot/dts/stih416-b2020e.dts
+@@ -31,5 +31,11 @@
+ 		ethernet1: dwmac@fef08000 {
+ 			snps,reset-gpio = <&PIO0 7>;
+ 		};
++
++		mmc1: sdhci@fe81f000 {
++			status       = "okay";
++			bus-width    = <8>;
++			non-removable;
++		};
+ 	};
+ };
+-- 
+1.9.1
 
