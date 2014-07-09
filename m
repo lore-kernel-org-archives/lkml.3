@@ -1,445 +1,446 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755127AbaGIJcN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 05:32:13 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:46554 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754645AbaGIJcI (ORCPT
+	id S1755008AbaGIJgb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 05:36:31 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:43547 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752269AbaGIJg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 05:32:08 -0400
+	Wed, 9 Jul 2014 05:36:28 -0400
+Message-ID: <53BD0D17.6030201@linaro.org>
+Date: Wed, 09 Jul 2014 10:36:23 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <1404782785-1824-4-git-send-email-bjorn.andersson@sonymobile.com>
-References: <1404782785-1824-1-git-send-email-bjorn.andersson@sonymobile.com>
-	<1404782785-1824-4-git-send-email-bjorn.andersson@sonymobile.com>
-Date: Wed, 9 Jul 2014 11:32:08 +0200
-Message-ID: <CACRpkdYqzsbisK-X22dwCcLFdvRm6-uJjNoEjv-h1-Jn6Uy-iw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] pinctrl: Introduce pinctrl driver for Qualcomm pm8xxx
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-ide@vger.kernel.org, Sujit Reddy Thumma <sthumma@codeaurora.org>
+Subject: Re: [PATCH] phy: qcom: Add driver for QCOM APQ8064 SATA PHY
+References: <1403546409-10860-1-git-send-email-srinivas.kandagatla@linaro.org>
+In-Reply-To: <1403546409-10860-1-git-send-email-srinivas.kandagatla@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 8, 2014 at 3:26 AM, Bjorn Andersson
-<bjorn.andersson@sonymobile.com> wrote:
+Hi Kishon,
 
-> This introduces a pinctrl, pinconf, pinmux and gpio driver for the gpio
-> block found in pm8018, pm8038, pm8058, pm8917 and pm8921 pmics from
-> Qualcomm.
+Could you please consider this for v3.17?
+
+
+Thanks,
+srini
+
+On 23/06/14 19:00, Srinivas Kandagatla wrote:
+> Add a PHY driver for uses with AHCI based SATA controller driver on the
+> APQ8064 family of SoCs.
 >
-> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-
-(...)
-
-> +config PINCTRL_PM8XXX_GPIO
-> +       tristate "Qualcomm PM8xxx gpio driver"
-
-I would prefer PINCTRL_PM8XXX simply. GPIO is just one aspect of what
-this block inside PM8XXX is doing, it is a bit confusing.
-
-> +++ b/drivers/pinctrl/pinctrl-pm8xxx-gpio.c
-
-Likewise name the file and all functions just pinctrl-pm8xxx or so, reserve
-the "gpio" string in function names for functions that really just deal with
-the gpiochip.
-
-> +struct pm8xxx_gpio_pin {
-> +       int irq;
+> This patch is a forward port plus separating PHY code of SATA driver
+> from Qualcomm's v3.4 andriod kernel.
+>
+> Tested on IFC6410 board.
+>
+> CC: Sujit Reddy Thumma <sthumma@codeaurora.org>
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+> ---
+>   drivers/phy/Kconfig                 |   7 +
+>   drivers/phy/Makefile                |   1 +
+>   drivers/phy/phy-qcom-apq8064-sata.c | 358 ++++++++++++++++++++++++++++++++++++
+>   3 files changed, 366 insertions(+)
+>   create mode 100644 drivers/phy/phy-qcom-apq8064-sata.c
+>
+> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+> index b7b6bce..39083c7 100644
+> --- a/drivers/phy/Kconfig
+> +++ b/drivers/phy/Kconfig
+> @@ -178,6 +178,13 @@ config PHY_XGENE
+>   	help
+>   	  This option enables support for APM X-Gene SoC multi-purpose PHY.
+>
+> +config PHY_QCOM_APQ8064_SATA
+> +	tristate "Qualcomm APQ8064 SATA SerDes/PHY driver"
+> +	depends on ARCH_QCOM
+> +	depends on HAS_IOMEM
+> +	depends on OF
+> +	select GENERIC_PHY
 > +
-> +       u8 power_source;
-> +       u8 direction;
-> +       u8 output_buffer;
-> +       u8 output_value;
-> +       u8 bias;
-> +       u8 output_strength;
-> +       u8 disable;
-> +       u8 function;
-> +       u8 non_inverted;
+>   config PHY_QCOM_IPQ806X_SATA
+>   	tristate "Qualcomm IPQ806x SATA SerDes/PHY driver"
+>   	depends on ARCH_QCOM
+> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+> index d950317..8782088 100644
+> --- a/drivers/phy/Makefile
+> +++ b/drivers/phy/Makefile
+> @@ -20,4 +20,5 @@ phy-exynos-usb2-$(CONFIG_PHY_EXYNOS4X12_USB2)	+= phy-exynos4x12-usb2.o
+>   phy-exynos-usb2-$(CONFIG_PHY_EXYNOS5250_USB2)	+= phy-exynos5250-usb2.o
+>   obj-$(CONFIG_PHY_EXYNOS5_USBDRD)	+= phy-exynos5-usbdrd.o
+>   obj-$(CONFIG_PHY_XGENE)			+= phy-xgene.o
+> +obj-$(CONFIG_PHY_QCOM_APQ8064_SATA)	+= phy-qcom-apq8064-sata.o
+>   obj-$(CONFIG_PHY_QCOM_IPQ806X_SATA)	+= phy-qcom-ipq806x-sata.o
+> diff --git a/drivers/phy/phy-qcom-apq8064-sata.c b/drivers/phy/phy-qcom-apq8064-sata.c
+> new file mode 100644
+> index 0000000..e9e59e2
+> --- /dev/null
+> +++ b/drivers/phy/phy-qcom-apq8064-sata.c
+> @@ -0,0 +1,358 @@
+> +/*
+> + * Copyright (c) 2014, The Linux Foundation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/io.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/time.h>
+> +#include <linux/delay.h>
+> +#include <linux/clk.h>
+> +#include <linux/slab.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/phy/phy.h>
+> +
+> +/* PHY registers */
+> +#define UNIPHY_PLL_REFCLK_CFG		0x000
+> +#define UNIPHY_PLL_POSTDIV1_CFG		0x004
+> +#define UNIPHY_PLL_CHGPUMP_CFG		0x008
+> +#define UNIPHY_PLL_VCOLPF_CFG		0x00C
+> +#define UNIPHY_PLL_VREG_CFG		0x010
+> +#define UNIPHY_PLL_PWRGEN_CFG		0x014
+> +#define UNIPHY_PLL_DMUX_CFG		0x018
+> +#define UNIPHY_PLL_AMUX_CFG		0x01C
+> +#define UNIPHY_PLL_GLB_CFG		0x020
+> +#define UNIPHY_PLL_POSTDIV2_CFG		0x024
+> +#define UNIPHY_PLL_POSTDIV3_CFG		0x028
+> +#define UNIPHY_PLL_LPFR_CFG		0x02C
+> +#define UNIPHY_PLL_LPFC1_CFG		0x030
+> +#define UNIPHY_PLL_LPFC2_CFG		0x034
+> +#define UNIPHY_PLL_SDM_CFG0		0x038
+> +#define UNIPHY_PLL_SDM_CFG1		0x03C
+> +#define UNIPHY_PLL_SDM_CFG2		0x040
+> +#define UNIPHY_PLL_SDM_CFG3		0x044
+> +#define UNIPHY_PLL_SDM_CFG4		0x048
+> +#define UNIPHY_PLL_SSC_CFG0		0x04C
+> +#define UNIPHY_PLL_SSC_CFG1		0x050
+> +#define UNIPHY_PLL_SSC_CFG2		0x054
+> +#define UNIPHY_PLL_SSC_CFG3		0x058
+> +#define UNIPHY_PLL_LKDET_CFG0		0x05C
+> +#define UNIPHY_PLL_LKDET_CFG1		0x060
+> +#define UNIPHY_PLL_LKDET_CFG2		0x064
+> +#define UNIPHY_PLL_TEST_CFG		0x068
+> +#define UNIPHY_PLL_CAL_CFG0		0x06C
+> +#define UNIPHY_PLL_CAL_CFG1		0x070
+> +#define UNIPHY_PLL_CAL_CFG2		0x074
+> +#define UNIPHY_PLL_CAL_CFG3		0x078
+> +#define UNIPHY_PLL_CAL_CFG4		0x07C
+> +#define UNIPHY_PLL_CAL_CFG5		0x080
+> +#define UNIPHY_PLL_CAL_CFG6		0x084
+> +#define UNIPHY_PLL_CAL_CFG7		0x088
+> +#define UNIPHY_PLL_CAL_CFG8		0x08C
+> +#define UNIPHY_PLL_CAL_CFG9		0x090
+> +#define UNIPHY_PLL_CAL_CFG10		0x094
+> +#define UNIPHY_PLL_CAL_CFG11		0x098
+> +#define UNIPHY_PLL_EFUSE_CFG		0x09C
+> +#define UNIPHY_PLL_DEBUG_BUS_SEL	0x0A0
+> +#define UNIPHY_PLL_CTRL_42		0x0A4
+> +#define UNIPHY_PLL_CTRL_43		0x0A8
+> +#define UNIPHY_PLL_CTRL_44		0x0AC
+> +#define UNIPHY_PLL_CTRL_45		0x0B0
+> +#define UNIPHY_PLL_CTRL_46		0x0B4
+> +#define UNIPHY_PLL_CTRL_47		0x0B8
+> +#define UNIPHY_PLL_CTRL_48		0x0BC
+> +#define UNIPHY_PLL_STATUS		0x0C0
+> +#define UNIPHY_PLL_DEBUG_BUS0		0x0C4
+> +#define UNIPHY_PLL_DEBUG_BUS1		0x0C8
+> +#define UNIPHY_PLL_DEBUG_BUS2		0x0CC
+> +#define UNIPHY_PLL_DEBUG_BUS3		0x0D0
+> +#define UNIPHY_PLL_CTRL_54		0x0D4
+> +
+> +#define SATA_PHY_SER_CTRL		0x100
+> +#define SATA_PHY_TX_DRIV_CTRL0		0x104
+> +#define SATA_PHY_TX_DRIV_CTRL1		0x108
+> +#define SATA_PHY_TX_DRIV_CTRL2		0x10C
+> +#define SATA_PHY_TX_DRIV_CTRL3		0x110
+> +#define SATA_PHY_TX_IMCAL0		0x11C
+> +#define SATA_PHY_TX_IMCAL1		0x120
+> +#define SATA_PHY_TX_IMCAL2		0x124
+> +#define SATA_PHY_RX_IMCAL0		0x128
+> +#define SATA_PHY_RX_IMCAL1		0x12C
+> +#define SATA_PHY_RX_IMCAL2		0x130
+> +#define SATA_PHY_RX_TERM		0x134
+> +#define SATA_PHY_EQUAL			0x13C
+> +#define SATA_PHY_OOB_TERM		0x144
+> +#define SATA_PHY_CDR_CTRL0		0x148
+> +#define SATA_PHY_CDR_CTRL1		0x14C
+> +#define SATA_PHY_CDR_CTRL2		0x150
+> +#define SATA_PHY_CDR_CTRL3		0x154
+> +#define SATA_PHY_CDR_CTRL4		0x158
+> +#define SATA_PHY_FA_LOAD0		0x15C
+> +#define SATA_PHY_FA_LOAD1		0x160
+> +#define SATA_PHY_PI_CTRL0		0x168
+> +#define SATA_PHY_PI_CTRL1		0x16C
+> +#define SATA_PHY_AD_TPA_CTRL		0x178
+> +#define SATA_PHY_REFCLK_CTRL		0x17C
+> +#define SATA_PHY_POW_DWN_CTRL0		0x180
+> +#define SATA_PHY_POW_DWN_CTRL1		0x184
+> +#define SATA_PHY_TX_DATA_CTRL		0x188
+> +#define SATA_PHY_BIST_GEN0		0x18C
+> +#define SATA_PHY_BIST_GEN1		0x190
+> +#define SATA_PHY_BIST_GEN2		0x194
+> +#define SATA_PHY_BIST_GEN3		0x198
+> +#define SATA_PHY_LBK_CTRL		0x19C
+> +#define SATA_PHY_TEST_DEBUG_CTRL	0x1A0
+> +#define SATA_PHY_ALIGNP			0x1A4
+> +#define SATA_PHY_PRBS_CFG0		0x1A8
+> +#define SATA_PHY_PRBS_CFG1		0x1AC
+> +#define SATA_PHY_PRBS_CFG2		0x1B0
+> +#define SATA_PHY_PRBS_CFG3		0x1B4
+> +#define SATA_PHY_CHAN_COMP_CHK_CNT	0x1B8
+> +#define SATA_PHY_RESET_CTRL		0x1BC
+> +#define SATA_PHY_RX_CLR			0x1C0
+> +#define SATA_PHY_RX_EBUF_CTRL		0x1C4
+> +#define SATA_PHY_ID0			0x1C8
+> +#define SATA_PHY_ID1			0x1CC
+> +#define SATA_PHY_ID2			0x1D0
+> +#define SATA_PHY_ID3			0x1D4
+> +#define SATA_PHY_RX_CHK_ERR_CNT0	0x1D8
+> +#define SATA_PHY_RX_CHK_ERR_CNT1	0x1DC
+> +#define SATA_PHY_RX_CHK_STAT		0x1E0
+> +#define SATA_PHY_TX_IMCAL_STAT		0x1E4
+> +#define SATA_PHY_RX_IMCAL_STAT		0x1E8
+> +#define SATA_PHY_RX_EBUF_STAT		0x1EC
+> +#define SATA_PHY_DEBUG_BUS_STAT0	0x1F0
+> +#define SATA_PHY_DEBUG_BUS_STAT1	0x1F4
+> +#define SATA_PHY_DEBUG_BUS_STAT2	0x1F8
+> +#define SATA_PHY_DEBUG_BUS_STAT3	0x1FC
+> +
+> +#define UNIPHY_PLL_LOCK		BIT(0)
+> +#define SATA_PHY_TX_CAL		BIT(0)
+> +#define SATA_PHY_RX_CAL		BIT(0)
+> +
+> +/* default timeout set to 1 sec */
+> +#define TIMEOUT_MS		10000
+> +
+> +struct qcom_apq8064_sata_phy {
+> +	void __iomem *mmio;
+> +	struct clk *cfg_clk;
+> +	struct device *dev;
 > +};
-
-This struct really needs kerneldoc, as I guess it is what will be reflected
-in dbg_view messages etc too.
-
-Some u8:s seem dubious. Like why isn't "disable" a bool?
-
-Why is there a property "non_inverted", like being inverted was the
-normal state? Isn't it a bool inverted rather?
-
-"direction" also seems a bit bool ... even "output_value".
-
-Such things.
-
-> +struct pm8xxx_gpio_data {
-> +       int ngpio;
-
-Can this be negative or should it be unsigned?
-Plus the usage in the code seems to be npins rather than
-ngpio. It indicates the number of pins this driver can handle,
-that they also do GPIO is just one aspect of their full pin potential...
-
-> +       const int *power_sources;
-> +       int npower_sources;
-
-Dito.
-
-> +};
 > +
-> +struct pm8xxx_gpio {
-> +       struct device *dev;
-> +       struct regmap *regmap;
-> +       struct pinctrl_dev *pctrl;
-> +       struct gpio_chip chip;
-> +
-> +       const struct pm8xxx_gpio_data *data;
-> +
-> +       struct pm8xxx_gpio_pin pins[PM8XXX_MAX_GPIOS];
-
-No thanks. Use the .pins in struct pinctrl_desc.
-(Details below.)
-
-> +};
-> +
-> +static const char * const pm8xxx_gpio_groups[PM8XXX_MAX_GPIOS] = {
-> +       "gpio1", "gpio2", "gpio3", "gpio4", "gpio5", "gpio6", "gpio7", "gpio8",
-> +       "gpio9", "gpio10", "gpio11", "gpio12", "gpio13", "gpio14", "gpio15",
-> +       "gpio16", "gpio17", "gpio18", "gpio19", "gpio20", "gpio21", "gpio22",
-> +       "gpio23", "gpio24", "gpio25", "gpio26", "gpio27", "gpio28", "gpio29",
-> +       "gpio30", "gpio31", "gpio32", "gpio33", "gpio34", "gpio35", "gpio36",
-> +       "gpio37", "gpio38", "gpio39", "gpio40", "gpio41", "gpio42", "gpio43",
-> +       "gpio44",
-> +};
-> +
-> +static const char * const pm8xxx_gpio_functions[] = {
-> +       "normal", "paired",
-> +       "func1", "func2",
-> +       "dtest1", "dtest2", "dtest3", "dtest4",
-> +};
-
-What is a bit strange is that the driver does not contain an array of the
-actual pin names, just groups and functions? It is usually very helpful
-to name all the individual pins.
-
-> +static int pm8xxx_gpio_read(struct pm8xxx_gpio *pctrl, int pin, int bank)
-
-I would prefer if this was named pm8xxx_pinctrl_read() or similar, so we
-get the GPIO ambiguity out of the way.
-
+> +/* Helper function to do poll and timeout */
+> +static int read_poll_timeout(void __iomem *addr, u32 mask)
 > +{
-> +       int reg = SSBI_REG_ADDR_GPIO(pin);
-
-But I guess the registers may be named "GPIO" (something something)
-in the datasheet because the HW and spec authors are in the gpiomode
-pitfall we describe in the pinctrl.txt document. Like they think muxing
-and electrical config is "something GPIO" you know. So if this is matching
-a datasheet then keep that designation.
-
-> +static int pm8xxx_gpio_get_groups_count(struct pinctrl_dev *pctldev)
-> +{
-> +       struct pm8xxx_gpio *pctrl = pinctrl_dev_get_drvdata(pctldev);
+> +	unsigned long timeout = jiffies + msecs_to_jiffies(TIMEOUT_MS);
+> +	u32 val;
 > +
-> +       return pctrl->data->ngpio;
+> +	do {
+> +		cpu_relax();
+> +		val = readl_relaxed(addr);
+> +		if (val & mask)
+> +			break;
+> +	} while (!time_after(jiffies, timeout));
+> +
+> +	return (val & mask) ? 0 : -ETIMEDOUT;
 > +}
-
-So I suggest renaming that ->npins.
-
-> +static void pm8xxx_pinmux_disable(struct pinctrl_dev *pctldev,
-> +                              unsigned function,
-> +                              unsigned group)
+> +
+> +static int qcom_apq8064_sata_phy_init(struct phy *generic_phy)
 > +{
-> +       struct pm8xxx_gpio *pctrl = pinctrl_dev_get_drvdata(pctldev);
-> +       struct pm8xxx_gpio_pin *pin = &pctrl->pins[group];
-> +       u8 val;
+> +	struct qcom_apq8064_sata_phy *phy = phy_get_drvdata(generic_phy);
+> +	void __iomem *base = phy->mmio;
+> +	int ret = 0;
 > +
-> +       pin->function = 0;
-> +       val = pin->function << 1;
+> +	/* SATA phy initialization */
+> +	writel_relaxed(0x01, base + SATA_PHY_SER_CTRL);
+> +	writel_relaxed(0xB1, base + SATA_PHY_POW_DWN_CTRL0);
+> +	/* Make sure the power down happens before power up */
+> +	mb();
+> +	usleep_range(10, 60);
 > +
-> +       pm8xxx_gpio_write(pctrl, group, 4, val);
+> +	writel_relaxed(0x01, base + SATA_PHY_POW_DWN_CTRL0);
+> +	writel_relaxed(0x3E, base + SATA_PHY_POW_DWN_CTRL1);
+> +	writel_relaxed(0x01, base + SATA_PHY_RX_IMCAL0);
+> +	writel_relaxed(0x01, base + SATA_PHY_TX_IMCAL0);
+> +	writel_relaxed(0x02, base + SATA_PHY_TX_IMCAL2);
+> +
+> +	/* Write UNIPHYPLL registers to configure PLL */
+> +	writel_relaxed(0x04, base + UNIPHY_PLL_REFCLK_CFG);
+> +	writel_relaxed(0x00, base + UNIPHY_PLL_PWRGEN_CFG);
+> +
+> +	writel_relaxed(0x0A, base + UNIPHY_PLL_CAL_CFG0);
+> +	writel_relaxed(0xF3, base + UNIPHY_PLL_CAL_CFG8);
+> +	writel_relaxed(0x01, base + UNIPHY_PLL_CAL_CFG9);
+> +	writel_relaxed(0xED, base + UNIPHY_PLL_CAL_CFG10);
+> +	writel_relaxed(0x02, base + UNIPHY_PLL_CAL_CFG11);
+> +
+> +	writel_relaxed(0x36, base + UNIPHY_PLL_SDM_CFG0);
+> +	writel_relaxed(0x0D, base + UNIPHY_PLL_SDM_CFG1);
+> +	writel_relaxed(0xA3, base + UNIPHY_PLL_SDM_CFG2);
+> +	writel_relaxed(0xF0, base + UNIPHY_PLL_SDM_CFG3);
+> +	writel_relaxed(0x00, base + UNIPHY_PLL_SDM_CFG4);
+> +
+> +	writel_relaxed(0x19, base + UNIPHY_PLL_SSC_CFG0);
+> +	writel_relaxed(0xE1, base + UNIPHY_PLL_SSC_CFG1);
+> +	writel_relaxed(0x00, base + UNIPHY_PLL_SSC_CFG2);
+> +	writel_relaxed(0x11, base + UNIPHY_PLL_SSC_CFG3);
+> +
+> +	writel_relaxed(0x04, base + UNIPHY_PLL_LKDET_CFG0);
+> +	writel_relaxed(0xFF, base + UNIPHY_PLL_LKDET_CFG1);
+> +
+> +	writel_relaxed(0x02, base + UNIPHY_PLL_GLB_CFG);
+> +	/* make sure global config LDO power down happens before power up */
+> +	mb();
+> +
+> +	writel_relaxed(0x03, base + UNIPHY_PLL_GLB_CFG);
+> +	writel_relaxed(0x05, base + UNIPHY_PLL_LKDET_CFG2);
+> +
+> +	/* PLL Lock wait */
+> +	ret = read_poll_timeout(base + UNIPHY_PLL_STATUS, UNIPHY_PLL_LOCK);
+> +	if (ret) {
+> +		dev_err(phy->dev, "poll timeout UNIPHY_PLL_STATUS\n");
+> +		return ret;
+> +	}
+> +
+> +	/* TX Calibration */
+> +	ret = read_poll_timeout(base + SATA_PHY_TX_IMCAL_STAT, SATA_PHY_TX_CAL);
+> +	if (ret) {
+> +		dev_err(phy->dev, "poll timeout SATA_PHY_TX_IMCAL_STAT\n");
+> +		return ret;
+> +	}
+> +
+> +	/* RX Calibration */
+> +	ret = read_poll_timeout(base + SATA_PHY_RX_IMCAL_STAT, SATA_PHY_RX_CAL);
+> +	if (ret) {
+> +		dev_err(phy->dev, "poll timeout SATA_PHY_RX_IMCAL_STAT\n");
+> +		return ret;
+> +	}
+> +
+> +	/* SATA phy calibrated succesfully, power up to functional mode */
+> +	writel_relaxed(0x3E, base + SATA_PHY_POW_DWN_CTRL1);
+> +	writel_relaxed(0x01, base + SATA_PHY_RX_IMCAL0);
+> +	writel_relaxed(0x01, base + SATA_PHY_TX_IMCAL0);
+> +
+> +	writel_relaxed(0x00, base + SATA_PHY_POW_DWN_CTRL1);
+> +	writel_relaxed(0x59, base + SATA_PHY_CDR_CTRL0);
+> +	writel_relaxed(0x04, base + SATA_PHY_CDR_CTRL1);
+> +	writel_relaxed(0x00, base + SATA_PHY_CDR_CTRL2);
+> +	writel_relaxed(0x00, base + SATA_PHY_PI_CTRL0);
+> +	writel_relaxed(0x00, base + SATA_PHY_CDR_CTRL3);
+> +	writel_relaxed(0x01, base + SATA_PHY_POW_DWN_CTRL0);
+> +
+> +	writel_relaxed(0x11, base + SATA_PHY_TX_DATA_CTRL);
+> +	writel_relaxed(0x43, base + SATA_PHY_ALIGNP);
+> +	writel_relaxed(0x04, base + SATA_PHY_OOB_TERM);
+> +
+> +	writel_relaxed(0x01, base + SATA_PHY_EQUAL);
+> +	writel_relaxed(0x09, base + SATA_PHY_TX_DRIV_CTRL0);
+> +	writel_relaxed(0x09, base + SATA_PHY_TX_DRIV_CTRL1);
+> +
+> +	return 0;
 > +}
-
-We just got rid of this function from the ops becuase it was just
-causing trouble in the concepts so just delete it :-)
-
-> +static int pm8xxx_gpio_config_get(struct pinctrl_dev *pctldev,
-> +                         unsigned int offset,
-> +                         unsigned long *config)
+> +
+> +static int qcom_apq8064_sata_phy_exit(struct phy *generic_phy)
 > +{
-
-Kudos for using generic pinconf, that makes everything much easier.
-
-> +       struct pm8xxx_gpio *pctrl = pinctrl_dev_get_drvdata(pctldev);
-> +       struct pm8xxx_gpio_pin *pin = &pctrl->pins[offset];
-> +       unsigned param = pinconf_to_config_param(*config);
-> +       unsigned arg;
+> +	struct qcom_apq8064_sata_phy *phy = phy_get_drvdata(generic_phy);
+> +	void __iomem *base = phy->mmio;
 > +
-> +       switch (param) {
-> +       case PIN_CONFIG_BIAS_DISABLE:
-> +               arg = pin->bias == PM8XXX_GPIO_BIAS_NP;
-> +               break;
-> +       case PIN_CONFIG_BIAS_PULL_DOWN:
-> +               arg = pin->bias == PM8XXX_GPIO_BIAS_PD;
-> +               break;
-> +       case PIN_CONFIG_BIAS_PULL_UP:
-> +               if (pin->bias >= PM8XXX_GPIO_BIAS_PU_30 &&
-> +                   pin->bias <= PM8XXX_GPIO_BIAS_PU_1P5_30)
-> +                       arg = PM8XXX_GPIO_PULL_UP_30 + pin->bias;
-> +               else
-> +                       arg = 0;
-> +               break;
-
-So here I expect SI unit conversion instead.
-
-> +       case PIN_CONFIG_BIAS_HIGH_IMPEDANCE:
-> +               arg = pin->disable;
-> +               break;
-> +       case PIN_CONFIG_INPUT_ENABLE:
-> +               arg = pin->direction == PM8XXX_GPIO_DIR_IN;
-> +               break;
-> +       case PIN_CONFIG_OUTPUT:
-> +               arg = pin->output_value;
-> +               break;
-> +       case PIN_CONFIG_POWER_SOURCE:
-> +               arg = pin->power_source;
-> +               break;
-> +       case PIN_CONFIG_DRIVE_STRENGTH:
-> +               arg = pin->output_strength;
-> +               break;
-
-And here.
-
-> +       case PIN_CONFIG_DRIVE_PUSH_PULL:
-> +               arg = pin->output_buffer == PM8XXX_GPIO_PUSH_PULL;
-> +               break;
-> +       case PIN_CONFIG_DRIVE_OPEN_DRAIN:
-> +               arg = pin->output_buffer == PM8XXX_GPIO_OPEN_DRAIN;
-> +               break;
-> +       default:
-> +               dev_err(pctrl->dev,
-> +                       "unsupported config parameter: %x\n",
-> +                       param);
-> +               return -EINVAL;
-> +       }
+> +	/* Power down PHY */
+> +	writel_relaxed(0xF8, base + SATA_PHY_POW_DWN_CTRL0);
+> +	writel_relaxed(0xFE, base + SATA_PHY_POW_DWN_CTRL1);
 > +
-> +       *config = pinconf_to_config_packed(param, arg);
+> +	/* Power down PLL block */
+> +	writel_relaxed(0x00, base + UNIPHY_PLL_GLB_CFG);
 > +
-> +       return 0;
+> +	return 0;
 > +}
-
-(...)
-> +static int pm8xxx_gpio_config_set(struct pinctrl_dev *pctldev,
-> +                                 unsigned int offset,
-> +                                 unsigned long *configs,
-> +                                 unsigned num_configs)
-> +{
-> +       struct pm8xxx_gpio *pctrl = pinctrl_dev_get_drvdata(pctldev);
-> +       struct pm8xxx_gpio_pin *pin = &pctrl->pins[offset];
-> +       unsigned param;
-> +       unsigned arg;
-> +       unsigned i;
-> +       int ret;
-> +       u8 banks = 0;
-> +       u8 val;
 > +
-> +       for (i = 0; i < num_configs; i++) {
-> +               param = pinconf_to_config_param(configs[i]);
-> +               arg = pinconf_to_config_argument(configs[i]);
-> +
-> +               switch (param) {
-> +               case PIN_CONFIG_BIAS_DISABLE:
-> +                       pin->bias = PM8XXX_GPIO_BIAS_NP;
-> +                       banks |= BIT(2);
-> +                       pin->disable = 0;
-> +                       banks |= BIT(3);
-> +                       break;
-> +               case PIN_CONFIG_BIAS_PULL_DOWN:
-> +                       pin->bias = PM8XXX_GPIO_BIAS_PD;
-> +                       banks |= BIT(2);
-> +                       pin->disable = 0;
-> +                       banks |= BIT(3);
-> +                       break;
-> +               case PIN_CONFIG_BIAS_PULL_UP:
-> +                       if (arg < PM8XXX_GPIO_PULL_UP_30 ||
-> +                           arg > PM8XXX_GPIO_PULL_UP_1P5_30) {
-> +                               dev_err(pctrl->dev, "invalid pull-up level\n");
-> +                               return -EINVAL;
-> +                       }
-> +                       pin->bias = arg - PM8XXX_GPIO_BIAS_PU_30;
-
-Proper SI unit...
-
-> +                       banks |= BIT(2);
-> +                       pin->disable = 0;
-> +                       banks |= BIT(3);
-> +                       break;
-> +               case PIN_CONFIG_BIAS_HIGH_IMPEDANCE:
-> +                       pin->disable = 1;
-> +                       banks |= BIT(3);
-> +                       break;
-> +               case PIN_CONFIG_INPUT_ENABLE:
-> +                       pin->direction = PM8XXX_GPIO_DIR_IN;
-> +                       banks |= BIT(1);
-> +                       break;
-> +               case PIN_CONFIG_OUTPUT:
-> +                       pin->direction = PM8XXX_GPIO_DIR_OUT;
-> +                       pin->output_value = !!arg;
-> +                       banks |= BIT(1);
-> +                       break;
-> +               case PIN_CONFIG_POWER_SOURCE:
-> +                       /* Sanity check the power source */
-> +                       ret = resolve_power_source(pctrl, arg);
-> +                       if (ret < 0)
-> +                               return ret;
-> +                       pin->power_source = arg;
-> +                       banks |= BIT(0);
-> +                       break;
-> +               case PIN_CONFIG_DRIVE_STRENGTH:
-> +                       if (arg > PM8XXX_GPIO_STRENGTH_LOW) {
-> +                               dev_err(pctrl->dev, "invalid drive strength\n");
-> +                               return -EINVAL;
-> +                       }
-> +                       pin->output_strength = arg;
-> +                       banks |= BIT(3);
-> +                       break;
-
-SI units...
-
-> +               case PIN_CONFIG_DRIVE_PUSH_PULL:
-> +                       pin->output_buffer = PM8XXX_GPIO_PUSH_PULL;
-> +                       banks |= BIT(1);
-> +                       break;
-> +               case PIN_CONFIG_DRIVE_OPEN_DRAIN:
-> +                       pin->output_buffer = PM8XXX_GPIO_OPEN_DRAIN;
-> +                       banks |= BIT(1);
-> +                       break;
-> +               default:
-> +                       dev_err(pctrl->dev,
-> +                                       "unsupported config parameter: %x\n",
-> +                                       param);
-> +                       return -EINVAL;
-> +               }
-> +       }
-
-(...)
-
-> +static struct pinctrl_desc pm8xxx_gpio_desc = {
-> +       .pctlops = &pm8xxx_gpio_pinctrl_ops,
-> +       .pmxops = &pm8xxx_pinmux_ops,
-> +       .confops = &pm8xxx_gpio_pinconf_ops,
-> +       .owner = THIS_MODULE,
+> +static struct phy_ops qcom_apq8064_sata_phy_ops = {
+> +	.init		= qcom_apq8064_sata_phy_init,
+> +	.exit		= qcom_apq8064_sata_phy_exit,
+> +	.owner		= THIS_MODULE,
 > +};
-
-So this (that should be named pm8xxx_pinctrl_desc) does not
-contain .pins, .npins, or even .name (!). Why not?
-
-.pins could be identical to the actually software-configurable
-pins on the circuit, or a superset describing all pins on it
-if you like. The .pins variable in the state container seems
-to be sort of duplicating this.
-
-Note:
-
-struct pinctrl_pin_desc {
-        unsigned number;
-        const char *name;
-        void *drv_data;
-};
-
-See .drv_data above? Instead of using your custom struct
-for this, use pinctrl_pin_desc and dereference .drv_data.
-
-Naming the pins is usually very helpful, and usually the debugfs
-will look very nice, and the implementation of .pin_dbg_show() in
-pinctrl_ops can print something meaningful.
-
-> +static int pm8xxx_gpio_direction_input(struct gpio_chip *chip,
-> +                                      unsigned offset)
-> +{
-
-These functions are OK to name with *gpio* infix as they relate to
-the gpiochip.
-
-> +static int pm8xxx_gpio_get(struct gpio_chip *chip, unsigned offset)
-> +{
-> +       struct pm8xxx_gpio *pctrl = container_of(chip, struct pm8xxx_gpio, chip);
-> +       struct pm8xxx_gpio_pin *pin = &pctrl->pins[offset - 1];
 > +
-> +       if (pin->direction == PM8XXX_GPIO_DIR_OUT)
-> +               return pin->output_value;
-> +       else
-> +               return pm8xxx_read_irq_status(pin->irq);
-
-Yeah that thing... brrrr...
-
-> +static int pm8xxx_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+> +static int qcom_apq8064_sata_phy_probe(struct platform_device *pdev)
 > +{
-> +       struct pm8xxx_gpio *pctrl = container_of(chip, struct pm8xxx_gpio, chip);
-> +       struct pm8xxx_gpio_pin *pin = &pctrl->pins[offset - 1];
+> +	struct qcom_apq8064_sata_phy *phy;
+> +	struct device *dev = &pdev->dev;
+> +	struct resource *res;
+> +	struct phy_provider *phy_provider;
+> +	struct phy *generic_phy;
+> +	int ret;
 > +
-> +       return pin->irq;
+> +	phy = devm_kzalloc(dev, sizeof(*phy), GFP_KERNEL);
+> +	if (!phy)
+> +		return -ENOMEM;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	phy->mmio = devm_ioremap_resource(dev, res);
+> +	if (IS_ERR(phy->mmio))
+> +		return PTR_ERR(phy->mmio);
+> +
+> +	generic_phy = devm_phy_create(dev, &qcom_apq8064_sata_phy_ops, NULL);
+> +	if (IS_ERR(generic_phy)) {
+> +		dev_err(dev, "%s: failed to create phy\n", __func__);
+> +		return PTR_ERR(generic_phy);
+> +	}
+> +
+> +	phy->dev = dev;
+> +	phy_set_drvdata(generic_phy, phy);
+> +
+> +	phy->cfg_clk = devm_clk_get(dev, "cfg");
+> +	if (IS_ERR(phy->cfg_clk)) {
+> +		dev_err(dev, "Failed to get sata cfg clock\n");
+> +		return PTR_ERR(phy->cfg_clk);
+> +	}
+> +
+> +	ret = clk_prepare_enable(phy->cfg_clk);
+> +	if (ret)
+> +		return ret;
+> +
+> +	phy_provider = devm_of_phy_provider_register(dev, of_phy_simple_xlate);
+> +	if (IS_ERR(phy_provider)) {
+> +		clk_disable_unprepare(phy->cfg_clk);
+> +		dev_err(dev, "%s: failed to register phy\n", __func__);
+> +		return PTR_ERR(phy_provider);
+> +	}
+> +
+> +	return 0;
 > +}
-
-That's I guess proper if some totally different irqchip is managing the
-IRQs and there is a line for each GPIO to its corresponding IRQ
-on that irqchip.
-
-> +static int pm8xxx_gpio_populate(struct pm8xxx_gpio *pctrl)
+> +
+> +static int qcom_apq8064_sata_phy_remove(struct platform_device *pdev)
 > +{
-> +       const struct pm8xxx_gpio_data *data = pctrl->data;
-> +       struct pm8xxx_gpio_pin *pin;
-> +       int val;
-> +       int i;
+> +	struct qcom_apq8064_sata_phy *phy = platform_get_drvdata(pdev);
 > +
-> +       for (i = 0; i < pctrl->data->ngpio; i++) {
-> +               pin = &pctrl->pins[i];
+> +	clk_disable_unprepare(phy->cfg_clk);
 > +
-> +               val = pm8xxx_gpio_read(pctrl, i, 0);
-> +               if (val < 0)
-> +                       return val;
+> +	return 0;
+> +}
 > +
-> +               pin->power_source = data->power_sources[(val >> 1) & 0x7];
+> +static const struct of_device_id qcom_apq8064_sata_phy_of_match[] = {
+> +	{ .compatible = "qcom,apq8064-sata-phy" },
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(of, qcom_apq8064_sata_phy_of_match);
 > +
-> +               val = pm8xxx_gpio_read(pctrl, i, 1);
-> +               if (val < 0)
-> +                       return val;
+> +static struct platform_driver qcom_apq8064_sata_phy_driver = {
+> +	.probe	= qcom_apq8064_sata_phy_probe,
+> +	.remove	= qcom_apq8064_sata_phy_remove,
+> +	.driver = {
+> +		.name	= "qcom-apq8064-sata-phy",
+> +		.owner	= THIS_MODULE,
+> +		.of_match_table	= qcom_apq8064_sata_phy_of_match,
+> +	}
+> +};
+> +module_platform_driver(qcom_apq8064_sata_phy_driver);
 > +
-> +               pin->direction = (val >> 2) & 0x3;
-> +               pin->output_buffer = !!(val & BIT(1));
-> +               pin->output_value = val & BIT(0);
-> +
-> +               val = pm8xxx_gpio_read(pctrl, i, 2);
-> +               if (val < 0)
-> +                       return val;
-> +
-> +               pin->bias = (val >> 1) & 0x7;
-> +
-> +               val = pm8xxx_gpio_read(pctrl, i, 3);
-> +               if (val < 0)
-> +                       return val;
-> +
-> +               pin->output_strength = (val >> 2) & 0x3;
-> +               pin->disable = val & BIT(0);
-> +
-> +               val = pm8xxx_gpio_read(pctrl, i, 4);
-> +               if (val < 0)
-> +                       return val;
-> +
-> +               pin->function = (val >> 1) & 0x7;
-> +
-> +               val = pm8xxx_gpio_read(pctrl, i, 5);
-> +               if (val < 0)
-> +                       return val;
-> +
-> +               pin->non_inverted = !!(val & BIT(3));
-
-See, it's bool, no u8. It seems the HW has the logic reversed here,
-ho hum. Maybe it's right to name it "non_inverted" then.
-
-That's all for now...
-
-Yours,
-Linus Walleij
+> +MODULE_DESCRIPTION("QCOM apq8064 SATA PHY driver");
+> +MODULE_LICENSE("GPL v2");
+>
