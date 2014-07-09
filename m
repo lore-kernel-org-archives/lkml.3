@@ -1,107 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743AbaGIR6h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 13:58:37 -0400
-Received: from sym2.noone.org ([178.63.92.236]:51271 "EHLO sym2.noone.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756692AbaGIR6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 13:58:35 -0400
-X-Greylist: delayed 532 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Jul 2014 13:58:35 EDT
-Date: Wed, 9 Jul 2014 19:49:39 +0200
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Kamil Debski <k.debski@samsung.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org, t.figa@samsung.com,
-        m.szyprowski@samsung.com
-Subject: Re: [PATCH] hwmon: pwm-fan: Add pwm-fan driver
-Message-ID: <20140709174939.GE27655@distanz.ch>
-References: <1404917600-4430-1-git-send-email-k.debski@samsung.com>
+	id S1756044AbaGISCH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 14:02:07 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:47817 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752746AbaGISCD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 14:02:03 -0400
+Message-ID: <53BD8398.6020507@codeaurora.org>
+Date: Wed, 09 Jul 2014 11:02:00 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404917600-4430-1-git-send-email-k.debski@samsung.com>
-X-Editor: Vi IMproved 7.3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+CC: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-arm-msm@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v2] tty: serial: msm_serial.c:  Cleaning up uninitialized
+ variables
+References: <1404665232-14311-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1404665232-14311-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-07-09 at 16:53:20 +0200, Kamil Debski <k.debski@samsung.com> wrote:
-> The pwm-fan driver enables control of fans connected to PWM lines.
-> This driver uses the PWM framework, so it is compatible with all
-> PWM devices that provide drivers through the PWM framework.
-> 
-> Signed-off-by: Kamil Debski <k.debski@samsung.com>
+On 07/06/14 09:47, Rickard Strandqvist wrote:
+> Set reasonable initial value of some variables, in case
+> they do not get set to something otherwise.
+> And I've also added a plausibility control of the values.
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 > ---
->  .../devicetree/bindings/hwmon/pwm-fan.txt          |   12 ++
->  drivers/hwmon/Kconfig                              |    9 +
->  drivers/hwmon/Makefile                             |    1 +
->  drivers/hwmon/pwm-fan.c                            |  199 ++++++++++++++++++++
->  4 files changed, 221 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/hwmon/pwm-fan.txt
->  create mode 100644 drivers/hwmon/pwm-fan.c
 
-[...]
+This patch doesn't look right...
 
-> diff --git a/drivers/hwmon/pwm-fan.c b/drivers/hwmon/pwm-fan.c
-> new file mode 100644
-> index 0000000..78fa627
-> --- /dev/null
-> +++ b/drivers/hwmon/pwm-fan.c
-> @@ -0,0 +1,199 @@
+> @@ -930,17 +930,21 @@ static int __init msm_console_setup(struct console *co, char *options)
+>  
+>  	msm_init_clock(port);
+>  
+> -	if (options)
+> +	if (options) {
+>  		uart_parse_options(options, &baud, &parity, &bits, &flow);
+> +		if (baud < 300 || baud > 115200)
+> +			baud = 115200;
+> +		if (NULL == strchr("noeNOE", parity))
+> +			parity = 'n';
+> +		if (bits != 7)
+> +			bits = 8;
+> +		if (flow != 'r')
+> +			flow = 'n';
+> +	}
+>  
+> -	bits = 8;
+> -	parity = 'n';
+> -	flow = 'n';
+>  	msm_write(port, UART_MR2_BITS_PER_CHAR_8 | UART_MR2_STOP_BIT_LEN_ONE,
+>  		  UART_MR2);	/* 8N1 */
+>  
 
-[...]
+because this code is overriding whatever is parsed from
+uart_parse_options() on purpose. The hardware is configured for 8 bits,
+no parity, no flow control with this msm_write() statement. Maybe we
+should extend the code to configure the parity and flow control bits
+instead.
 
-> +#ifdef CONFIG_PM_SLEEP
-> +static int pwm_fan_suspend(struct device *dev)
-> +{
-> +	struct pwm_fan_ctx *ctx = dev_get_drvdata(dev);
-> +
-> +	return pwm_config(ctx->pwm, 0, ctx->pwm->period);
-> +}
-> +
-> +static int pwm_fan_resume(struct device *dev)
-> +{
-> +	struct pwm_fan_ctx *ctx = dev_get_drvdata(dev);
-> +
-> +	return pwm_config(ctx->pwm, ctx->duty_cycle, ctx->pwm->period);
-> +}
-> +
-> +static SIMPLE_DEV_PM_OPS(pwm_fan_pm, pwm_fan_suspend, pwm_fan_resume);
+> -	if (baud < 300 || baud > 115200)
+> -		baud = 115200;
+>  	msm_set_baud_rate(port, baud);
+>  
+>  	msm_reset(port);
 
-If you move this out of #ifdef CONFIG_PM_SLEEP, you won't need the
-#ifdef around driver.pm below [1]. SIMPLE_DEV_PM_OPS will just define an
-empty struct dev_pm_os if CONFIG_PM_LSEEP is not defined.
 
-> +#endif
-> +
-> +
-> +
-> +static struct of_device_id of_pwm_fan_match[] = {
-> +	{ .compatible = "pwm-fan", },
-> +	{},
-> +};
-> +
-> +static struct platform_driver pwm_fan_driver = {
-> +	.probe		= pwm_fan_probe,
-> +	.remove		= pwm_fan_remove,
-> +	.driver	= {
-> +		.name		= "pwm-fan",
-> +#ifdef CONFIG_PM_SLEEP
-> +		.pm		= &pwm_fan_pm,
-> +#endif
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-[1] #ifdef CONFIG_PM_SLEEP not needed with the above change.
-
-> +		.of_match_table	= of_match_ptr(of_pwm_fan_match),
-> +	},
-> +};
-> +
-> +module_platform_driver(pwm_fan_driver);
-> +
-> +MODULE_AUTHOR("Kamil Debski <k.debski@samsung.com>");
-> +MODULE_ALIAS("platform:pwm-fan");
-> +MODULE_DESCRIPTION("PWM FAN driver");
-> +MODULE_LICENSE("GPL");
-> -- 
-> 1.7.9.5
