@@ -1,98 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251AbaGIHM3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 03:12:29 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:30100 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751709AbaGIHM1 (ORCPT
+	id S1753751AbaGIHN0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 03:13:26 -0400
+Received: from asavdk3.altibox.net ([109.247.116.14]:38749 "EHLO
+	asavdk3.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313AbaGIHNZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 03:12:27 -0400
-Message-ID: <53BCEA77.2080004@huawei.com>
-Date: Wed, 9 Jul 2014 09:08:39 +0200
-From: Jerome FORISSIER <jerome.forissier@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 9 Jul 2014 03:13:25 -0400
+Date: Wed, 9 Jul 2014 09:13:19 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scripts/mod/modpost.c: Fix bug in number_prefix
+Message-ID: <20140709071319.GA30377@ravnborg.org>
+References: <1403685999-31013-1-git-send-email-linux@rasmusvillemoes.dk>
+ <53AADC30.7080401@windriver.com>
+ <8761jooaw2.fsf@rasmusvillemoes.dk>
+ <87d2df768c.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Zhou Wang <wangzhou.bry@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Pekon Gupta <pekon@ti.com>,
-        "Artem Bityutskiy" <artem.bityutskiy@linux.intel.com>,
-        Alexander Shiyan <shc_work@mail.ru>,
-        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        Joern Engel <joern@logfs.org>, Randy Dunlap <rdunlap@infradead.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <caizhiyong@huawei.com>, <wangzhou1@hisilicon.com>
-Subject: Re: [PATCH 1/3] mtd: hisilicon: add device tree node for nand controller
-References: <1404115409-20200-1-git-send-email-wangzhou.bry@gmail.com> <1404115409-20200-2-git-send-email-wangzhou.bry@gmail.com>
-In-Reply-To: <1404115409-20200-2-git-send-email-wangzhou.bry@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.122.142.65]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87d2df768c.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30-Jun-14 10:03, Zhou Wang wrote:
-> Signed-off-by: Zhou Wang <wangzhou.bry@gmail.com>
-> ---
->  arch/arm/boot/dts/hip04.dtsi |   31 +++++++++++++++++++++++++++++++
->  1 file changed, 31 insertions(+)
+On Wed, Jul 09, 2014 at 09:28:43AM +0930, Rusty Russell wrote:
+> Rasmus Villemoes <linux@rasmusvillemoes.dk> writes:
+> > Paul Gortmaker <paul.gortmaker@windriver.com> writes:
+> >
+> >> On 14-06-25 04:46 AM, Rasmus Villemoes wrote:
+> >>> The function number_prefix() can currently only return 1 if its
+> >>> argument is the empty string: If line 3 is reached and *sym (now the
+> >>> second character in the argument) is not '.', 0 is returned. However,
+> >>> if that character is '.', the first assignment to c is that same '.',
+> >>> which obviously fails to be a digit.
+> >>
+> >> I'd suggest you expand the commit log to actually list the end-user
+> >> visible symptom and the use case that this actually fixes, since it
+> >> isn't obvious to me at all.
+> >
+> > Sorry, it isn't obvious to me either. I just stumbled on it reading the
+> > code; the rest of modpost.c is too deep magic for me.
 > 
-> diff --git a/arch/arm/boot/dts/hip04.dtsi b/arch/arm/boot/dts/hip04.dtsi
-> index abb42ca..e63fc61 100644
-> --- a/arch/arm/boot/dts/hip04.dtsi
-> +++ b/arch/arm/boot/dts/hip04.dtsi
-> @@ -386,5 +386,36 @@
->  				interrupts = <0 389 4>;
->  			};
->  		};
-> +
-> +		nand: nand@4020000 {
-> +			compatible = "hisilicon,504-nfc";
+> The function is horribly mis-named which doesn't help ("number_postfix"
+> would be closer).
+number_suffix() - I sometimes mix postfix and suffix.
 
-In PATCH 2/3 and 3/3 you are using "hisilicon,nfc504".
-
-> +			reg = <0x4020000 0x10000>, <0x5000000 0x1000>;
-> +			interrupts = <0 379 4>;
-> +			nand-bus-width = <8>;
-> +			nand-ecc-mode = "none";
-> +			hisi,nand-ecc-bits = <0>;
-> +			#address-cells = <1>;
-> +			#size-cells = <1>;
-> +
-> +			partition@0 {
-> +				label = "nand_text";
-> +				reg = <0x00000000 0x00400000>;
-> +			};
-> +
-> +			partition@00400000 {
-> +				label = "nand_monitor";
-> +				reg = <0x00400000 0x00400000>;
-> +			};
-> +
-> +			partition@00800000 {
-> +				label = "nand_kernel";
-> +				reg = <0x00800000 0x00800000>;
-> +			};
-> +
-> +			partition@01000000 {
-> +				label = "nand_fs";
-> +				reg = <0x01000000 0x1f000000>;
-> +			};
-> +		};
->  	};
->  };
 > 
+> And yes, it's completely broken.
+> 
+> Sam, this never worked, and was clearly never tested.  Seems like we
+> should just rip out the '$' postfix then, or are you aware of platforms
+> which have been ignoring modpost complaints since 2008?
+The architectures that uses -ffunction_sections are sometimes
+in a situation where they add a number. And maybe in other cases too.
 
--- 
-Jerome
+I still see section mismatch warnings ignored but there are much less
+of them these days.
+And since this has not worked for years lets rip it out.
+If we really need this feature in the future then we can add it back.
+
+Rasmus - will you take care and send a patch that removes this?
+
+Thanks,
+	Sam
