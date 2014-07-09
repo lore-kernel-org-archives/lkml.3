@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751810AbaGIUrb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 16:47:31 -0400
-Received: from mga03.intel.com ([143.182.124.21]:52006 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750724AbaGIUra convert rfc822-to-8bit (ORCPT
+	id S1753185AbaGIUsH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 16:48:07 -0400
+Received: from asavdk3.altibox.net ([109.247.116.14]:50959 "EHLO
+	asavdk3.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896AbaGIUsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 16:47:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,633,1400050800"; 
-   d="scan'208";a="455122518"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Havard Skinnemoen <hskinnemoen@google.com>, Borislav Petkov <bp@alien8.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ewout van Bekkum" <ewout@google.com>
-Subject: RE: [PATCH 4/6] x86-mce: Add spinlocks to prevent duplicated MCP
- and CMCI reports.
-Thread-Topic: [PATCH 4/6] x86-mce: Add spinlocks to prevent duplicated MCP
- and CMCI reports.
-Thread-Index: AQHPm5irKQRI444FeUKUaXDupa/8IJuYNj4Q
-Date: Wed, 9 Jul 2014 20:47:23 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F328574AE@ORSMSX114.amr.corp.intel.com>
-References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
- <1404925766-32253-5-git-send-email-hskinnemoen@google.com>
-In-Reply-To: <1404925766-32253-5-git-send-email-hskinnemoen@google.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 9 Jul 2014 16:48:05 -0400
+Date: Wed, 9 Jul 2014 22:47:59 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scripts: modpost: Remove numeric suffix pattern matching
+Message-ID: <20140709204759.GA32335@ravnborg.org>
+References: <1403685999-31013-1-git-send-email-linux@rasmusvillemoes.dk>
+ <53AADC30.7080401@windriver.com>
+ <8761jooaw2.fsf@rasmusvillemoes.dk>
+ <87d2df768c.fsf@rustcorp.com.au>
+ <20140709071319.GA30377@ravnborg.org>
+ <87a98idg2r.fsf_-_@rasmusvillemoes.dk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87a98idg2r.fsf_-_@rasmusvillemoes.dk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-		if (!(flags & MCP_UC) &&
--		    (m.status & (mca_cfg.ser ? MCI_STATUS_S : MCI_STATUS_UC)))
-+		    (m.status & (mca_cfg.ser ? MCI_STATUS_S : MCI_STATUS_UC))) {
-+			spin_unlock_irqrestore(&mce_banks[i].poll_spinlock,
-+					       irq_flags);
- 			continue;
-+		}
+On Wed, Jul 09, 2014 at 11:41:48AM +0200, Rasmus Villemoes wrote:
+> For several years, the pattern "foo$" has effectively been treated as
+> equivalent to "foo" due to a bug in the (misnamed) helper
+> number_prefix(). This hasn't been observed to cause any problems, so
+> remove the broken $ functionality and change all foo$ patterns to foo.
+> 
+> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+> ---
+> Sam, was this what you meant? Otherwise, I'd be more than happy to
+> leave the issue to someone else.
+Exactly - thanks.
+Acked-by: Sam Ravnborg <sam@ravnborg.org>
 
-Perhaps move this test for UC up to before you grab the lock?
+Rusty - I assume you pick this up and channel it through the module tree.
 
--Tony
+	Sam
