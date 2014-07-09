@@ -1,57 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523AbaGIOOd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 10:14:33 -0400
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:55308 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756250AbaGIOOa (ORCPT
+	id S1756318AbaGIOPy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 10:15:54 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:6304 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755182AbaGIOPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 10:14:30 -0400
-MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <25574.1404813385@warthog.procyon.org.uk>
-References: <11446.1401420931@jrobl>
-	<7184.1401439773@warthog.procyon.org.uk>
-	<CA+icZUV5P=fVwe_MJJHixwBOBoj7HoKSFuySLdS6AU5L++S=4g@mail.gmail.com>
-	<15839.1401786056@warthog.procyon.org.uk>
-	<CA+icZUUiirxYnoL7pg5TvFEy6pQ+5Q3CuJ0jonJMXTOwhT-LDw@mail.gmail.com>
-	<CA+icZUU8BqGUoQdtuqt403NdCBnJnH1-k64bxTM0b_GSfQr1hQ@mail.gmail.com>
-	<10013.1401791634@warthog.procyon.org.uk>
-	<20140603132153.GA26512@tucsk.piliscsaba.szeredi.hu>
-	<19281.1401809418@warthog.procyon.org.uk>
-	<17091.1403628374@warthog.procyon.org.uk>
-	<20140708092848.GA26119@tucsk.piliscsaba.szeredi.hu>
-	<25574.1404813385@warthog.procyon.org.uk>
-Date: Wed, 9 Jul 2014 16:14:29 +0200
-Message-ID: <CAJfpegtJ24ktUonDgb_1nC52yKyGEuvzusSm9xWns7nJyOwhgQ@mail.gmail.com>
-Subject: Re: Overlayfs rename bug
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: David Howells <dhowells@redhat.com>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>,
-        "J. R. Okajima" <hooanon05g@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
+	Wed, 9 Jul 2014 10:15:52 -0400
+Date: Wed, 9 Jul 2014 10:15:50 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Robo Bot <apw@canonical.com>, Felix Fietkau <nbd@openwrt.org>,
-        Neil Brown <neilb@suse.de>, Jordi Pujol <jordipujolp@gmail.com>,
-        ezk@fsl.cs.sunysb.edu, "mszeredi@suse.cz" <mszeredi@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Jiri Kosina <jkosina@suse.cz>,
+        Josh Poimboeuf <notifications@github.com>, linux-mips@linux-mips.org
+Subject: Re: [RFA][PATCH 21/27] MIPS: ftrace: Remove check of obsolete
+ variable function_trace_stop
+Message-ID: <20140709101550.2ec6582f@gandalf.local.home>
+In-Reply-To: <20140626165852.665644919@goodmis.org>
+References: <20140626165221.736847419@goodmis.org>
+	<20140626165852.665644919@goodmis.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 8, 2014 at 11:56 AM, David Howells <dhowells@redhat.com> wrote:
-> Miklos Szeredi <miklos@szeredi.hu> wrote:
->
->> Following patch fixes it and tests now run fine.
->
-> Yep, that seems to fix it.  You can have my Tested-by back;-)  Are you going
-> to release another branch in your git repo?
+Ralf,
 
-Updated series pushed to overlayfs.v23 and overlayfs.current.
+Can you please ack this patch.
 
 Thanks,
-Miklos
+
+-- Steve
+
+
+On Thu, 26 Jun 2014 12:52:42 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
+
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> 
+> Nothing sets function_trace_stop to disable function tracing anymore.
+> Remove the check for it in the arch code.
+> 
+> [ Please test this on your arch ]
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  arch/mips/Kconfig         | 1 -
+>  arch/mips/kernel/mcount.S | 7 -------
+>  2 files changed, 8 deletions(-)
+> 
+> diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+> index 7a469acee33c..9ca52987fcd5 100644
+> --- a/arch/mips/Kconfig
+> +++ b/arch/mips/Kconfig
+> @@ -15,7 +15,6 @@ config MIPS
+>  	select HAVE_BPF_JIT if !CPU_MICROMIPS
+>  	select ARCH_HAVE_CUSTOM_GPIO_H
+>  	select HAVE_FUNCTION_TRACER
+> -	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
+>  	select HAVE_DYNAMIC_FTRACE
+>  	select HAVE_FTRACE_MCOUNT_RECORD
+>  	select HAVE_C_RECORDMCOUNT
+> diff --git a/arch/mips/kernel/mcount.S b/arch/mips/kernel/mcount.S
+> index 539b6294b613..00940d1d5c4f 100644
+> --- a/arch/mips/kernel/mcount.S
+> +++ b/arch/mips/kernel/mcount.S
+> @@ -74,10 +74,6 @@ _mcount:
+>  #endif
+>  
+>  	/* When tracing is activated, it calls ftrace_caller+8 (aka here) */
+> -	lw	t1, function_trace_stop
+> -	bnez	t1, ftrace_stub
+> -	 nop
+> -
+>  	MCOUNT_SAVE_REGS
+>  #ifdef KBUILD_MCOUNT_RA_ADDRESS
+>  	PTR_S	MCOUNT_RA_ADDRESS_REG, PT_R12(sp)
+> @@ -105,9 +101,6 @@ ftrace_stub:
+>  #else	/* ! CONFIG_DYNAMIC_FTRACE */
+>  
+>  NESTED(_mcount, PT_SIZE, ra)
+> -	lw	t1, function_trace_stop
+> -	bnez	t1, ftrace_stub
+> -	 nop
+>  	PTR_LA	t1, ftrace_stub
+>  	PTR_L	t2, ftrace_trace_function /* Prepare t2 for (1) */
+>  	bne	t1, t2, static_trace
+
