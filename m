@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755692AbaGILMi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 07:12:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41485 "EHLO mx2.suse.de"
+	id S1755737AbaGILM5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 07:12:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41502 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755667AbaGILMg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 07:12:36 -0400
-Message-ID: <53BD23A2.4030902@suse.de>
-Date: Wed, 09 Jul 2014 13:12:34 +0200
+	id S1755712AbaGILM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 07:12:56 -0400
+Message-ID: <53BD23B6.5030900@suse.de>
+Date: Wed, 09 Jul 2014 13:12:54 +0200
 From: Hannes Reinecke <hare@suse.de>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
@@ -16,9 +16,9 @@ To: Christoph Hellwig <hch@lst.de>,
 CC: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
         Robert Elliott <Elliott@hp.com>, linux-scsi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/14] sd: don't use rq->cmd_len before setting it up
-References: <1403715121-1201-1-git-send-email-hch@lst.de> <1403715121-1201-2-git-send-email-hch@lst.de>
-In-Reply-To: <1403715121-1201-2-git-send-email-hch@lst.de>
+Subject: Re: [PATCH 02/14] scsi: split __scsi_queue_insert
+References: <1403715121-1201-1-git-send-email-hch@lst.de> <1403715121-1201-3-git-send-email-hch@lst.de>
+In-Reply-To: <1403715121-1201-3-git-send-email-hch@lst.de>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,36 +26,80 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 06/25/2014 06:51 PM, Christoph Hellwig wrote:
-> Unlike the old request code blk-mq doesn't initialize cmd_len with a
-> default value, so don't rely on it being set in sd_setup_write_same_cmnd.
+> Factor out a helper to set the _blocked values, which we'll reuse for the
+> blk-mq code path.
 >
 > Signed-off-by: Christoph Hellwig <hch@lst.de>
 > ---
->   drivers/scsi/sd.c |    3 ++-
->   1 file changed, 2 insertions(+), 1 deletion(-)
+>   drivers/scsi/scsi_lib.c |   44 ++++++++++++++++++++++++++------------------
+>   1 file changed, 26 insertions(+), 18 deletions(-)
 >
-> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-> index 9c86e3d..6ec4ffe 100644
-> --- a/drivers/scsi/sd.c
-> +++ b/drivers/scsi/sd.c
-> @@ -824,15 +824,16 @@ static int sd_setup_write_same_cmnd(struct scsi_device *sdp, struct request *rq)
+> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+> index d5d22e4..2667c75 100644
+> --- a/drivers/scsi/scsi_lib.c
+> +++ b/drivers/scsi/scsi_lib.c
+> @@ -75,28 +75,12 @@ struct kmem_cache *scsi_sdb_cache;
+>    */
+>   #define SCSI_QUEUE_DELAY	3
 >
->   	rq->__data_len = sdp->sector_size;
->   	rq->timeout = SD_WRITE_SAME_TIMEOUT;
-> -	memset(rq->cmd, 0, rq->cmd_len);
+> -/**
+> - * __scsi_queue_insert - private queue insertion
+> - * @cmd: The SCSI command being requeued
+> - * @reason:  The reason for the requeue
+> - * @unbusy: Whether the queue should be unbusied
+> - *
+> - * This is a private queue insertion.  The public interface
+> - * scsi_queue_insert() always assumes the queue should be unbusied
+> - * because it's always called before the completion.  This function is
+> - * for a requeue after completion, which should only occur in this
+> - * file.
+> - */
+> -static void __scsi_queue_insert(struct scsi_cmnd *cmd, int reason, int unbusy)
+> +static void
+> +scsi_set_blocked(struct scsi_cmnd *cmd, int reason)
+>   {
+>   	struct Scsi_Host *host = cmd->device->host;
+>   	struct scsi_device *device = cmd->device;
+>   	struct scsi_target *starget = scsi_target(device);
+> -	struct request_queue *q = device->request_queue;
+> -	unsigned long flags;
+> -
+> -	SCSI_LOG_MLQUEUE(1, scmd_printk(KERN_INFO, cmd,
+> -		"Inserting command %p into mlqueue\n", cmd));
 >
->   	if (sdkp->ws16 || sector > 0xffffffff || nr_sectors > 0xffff) {
->   		rq->cmd_len = 16;
-> +		memset(rq->cmd, 0, rq->cmd_len);
->   		rq->cmd[0] = WRITE_SAME_16;
->   		put_unaligned_be64(sector, &rq->cmd[2]);
->   		put_unaligned_be32(nr_sectors, &rq->cmd[10]);
->   	} else {
->   		rq->cmd_len = 10;
-> +		memset(rq->cmd, 0, rq->cmd_len);
->   		rq->cmd[0] = WRITE_SAME;
->   		put_unaligned_be32(sector, &rq->cmd[2]);
->   		put_unaligned_be16(nr_sectors, &rq->cmd[7]);
+>   	/*
+>   	 * Set the appropriate busy bit for the device/host.
+> @@ -123,6 +107,30 @@ static void __scsi_queue_insert(struct scsi_cmnd *cmd, int reason, int unbusy)
+>   		starget->target_blocked = starget->max_target_blocked;
+>   		break;
+>   	}
+> +}
+> +
+> +/**
+> + * __scsi_queue_insert - private queue insertion
+> + * @cmd: The SCSI command being requeued
+> + * @reason:  The reason for the requeue
+> + * @unbusy: Whether the queue should be unbusied
+> + *
+> + * This is a private queue insertion.  The public interface
+> + * scsi_queue_insert() always assumes the queue should be unbusied
+> + * because it's always called before the completion.  This function is
+> + * for a requeue after completion, which should only occur in this
+> + * file.
+> + */
+> +static void __scsi_queue_insert(struct scsi_cmnd *cmd, int reason, int unbusy)
+> +{
+> +	struct scsi_device *device = cmd->device;
+> +	struct request_queue *q = device->request_queue;
+> +	unsigned long flags;
+> +
+> +	SCSI_LOG_MLQUEUE(1, scmd_printk(KERN_INFO, cmd,
+> +		"Inserting command %p into mlqueue\n", cmd));
+> +
+> +	scsi_set_blocked(cmd, reason);
+>
+>   	/*
+>   	 * Decrement the counters, since these commands are no longer
 >
 Reviewed-by: Hannes Reinecke <hare@suse.de>
 
