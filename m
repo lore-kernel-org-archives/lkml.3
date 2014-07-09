@@ -1,67 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373AbaGILKc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 07:10:32 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:61610 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751351AbaGILKZ (ORCPT
+	id S1755338AbaGILK2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 07:10:28 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:43665 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755164AbaGILKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Jul 2014 07:10:25 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-ae-53bd231de4a7
+X-AuditID: cbfec7f4-b7fac6d000006cfe-a0-53bd231ab90b
 From: Andrey Ryabinin <a.ryabinin@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andrey Ryabinin <a.ryabinin@samsung.com>
-Subject: [RFC/PATCH -next 20/21] fs: dcache: manually unpoison dname after
- allocation to shut up kasan's reports
-Date: Wed, 09 Jul 2014 15:01:17 +0400
-Message-id: <1404903678-8257-21-git-send-email-a.ryabinin@samsung.com>
+Subject: [RFC/PATCH -next 10/21] mm: slab: share virt_to_cache() between slab
+ and slub
+Date: Wed, 09 Jul 2014 15:01:07 +0400
+Message-id: <1404903678-8257-11-git-send-email-a.ryabinin@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
 In-reply-to: <1404903678-8257-1-git-send-email-a.ryabinin@samsung.com>
 References: <1404903678-8257-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLJMWRmVeSWpSXmKPExsVy+t/xy7qyynuDDR69MbHY9usRm8XlXXPY
-	HJg8+rasYvT4vEkugCmKyyYlNSezLLVI3y6BK+PDs1esBbvYK771trA3MHawdTFyckgImEh0
-	71oFZYtJXLi3Hsjm4hASWMooMe3jPnYIp49JYuPG3awgVWwCehL/Zm0H6xARUJDY3PsMLM4s
-	oCOx8VorE4gtLFAk8fn6MeYuRg4OFgFViRcLy0DCvAJuEqf//WKBWKYgsWz5TLBWTqB4T88C
-	sFYhAVeJ1Z+3MU5g5F3AyLCKUTS1NLmgOCk911CvODG3uDQvXS85P3cTIyQIvuxgXHzM6hCj
-	AAejEg+vRu3uYCHWxLLiytxDjBIczEoivLaie4OFeFMSK6tSi/Lji0pzUosPMTJxcEo1MIpl
-	x/8qU3n77WF0254H76J3KMcv8/6Tbt+vHZXzLP8H32FHxuUfZTzjrVLf8li81v33w73S6PHV
-	Jy0vHz+yesxXekpl4U2FvZLtn6WOF+zMfH6OLSqidO7nipAao7XV8yd3nduj8H3ru79SGc8N
-	Nj+cduP8msnywX31KSnrt617JBF7LHCK8lolluKMREMt5qLiRABG69924AEAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLJMWRmVeSWpSXmKPExsVy+t/xy7pSynuDDX52cFts+/WIzeLyrjls
+	DkwefVtWMXp83iQXwBTFZZOSmpNZllqkb5fAlXFu3jHWgtl8FTfmizcwnuPuYuTkkBAwkXjf
+	vJwRwhaTuHBvPVsXIxeHkMBSRokzB9ayQzh9TBKXO5+AVbEJ6En8m7WdDcQWEVCQ2Nz7jBXE
+	ZhbQkdh4rZUJxBYWiJC42NLGDGKzCKhKPOt+DBbnFXCT6H30gxVim4LEsuUzwWxOoHhPzwKw
+	GiEBV4nVn7cxTmDkXcDIsIpRNLU0uaA4KT3XUK84Mbe4NC9dLzk/dxMjJAi+7GBcfMzqEKMA
+	B6MSD69G7e5gIdbEsuLK3EOMEhzMSiK8tqJ7g4V4UxIrq1KL8uOLSnNSiw8xMnFwSjUwbnbm
+	nXVUc4dM59NdzGX1nGU+V6rznR7GzeX80+3X8kJN/OB5FfOVL8Rb2PdZKk1Z8dPsgAr36l/n
+	2951Snp+eN20NYDrQ2kId7vt5UdKYTzCiowNX8WUbFxkfli9up82eU9HqaBiqKdktOMde7Pe
+	XZtPOE1UWikkF25++sL2+vZdD9TrpTKUWIozEg21mIuKEwGxVDUF4AEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to manually unpoison rounded up allocation size for dname
-to avoid kasan's reports in __d_lookup_rcu.
-__d_lookup_rcu may validly read a little beyound allocated size.
+This patch shares virt_to_cache() between slab and slub and
+it used in cache_from_obj() now.
+Later virt_to_cache() will be kernel address sanitizer also.
 
-Reported-by: Dmitry Vyukov <dvyukov@google.com>
 Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
 ---
- fs/dcache.c | 3 +++
- 1 file changed, 3 insertions(+)
+ mm/slab.c |  6 ------
+ mm/slab.h | 10 +++++++---
+ 2 files changed, 7 insertions(+), 9 deletions(-)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index b7e8b20..dff64f2 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -38,6 +38,7 @@
- #include <linux/prefetch.h>
- #include <linux/ratelimit.h>
- #include <linux/list_lru.h>
-+#include <linux/kasan.h>
- #include "internal.h"
- #include "mount.h"
+diff --git a/mm/slab.c b/mm/slab.c
+index e7763db..fa4f840 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -433,12 +433,6 @@ static inline void set_obj_status(struct page *page, int idx, int val) {}
+ static int slab_max_order = SLAB_MAX_ORDER_LO;
+ static bool slab_max_order_set __initdata;
  
-@@ -1412,6 +1413,8 @@ struct dentry *__d_alloc(struct super_block *sb, const struct qstr *name)
- 			kmem_cache_free(dentry_cache, dentry); 
- 			return NULL;
- 		}
-+		unpoison_shadow(dname,
-+				roundup(name->len + 1, sizeof(unsigned long)));
- 	} else  {
- 		dname = dentry->d_iname;
- 	}	
+-static inline struct kmem_cache *virt_to_cache(const void *obj)
+-{
+-	struct page *page = virt_to_head_page(obj);
+-	return page->slab_cache;
+-}
+-
+ static inline void *index_to_obj(struct kmem_cache *cache, struct page *page,
+ 				 unsigned int idx)
+ {
+diff --git a/mm/slab.h b/mm/slab.h
+index 84c160a..1257ade 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -260,10 +260,15 @@ static inline void memcg_uncharge_slab(struct kmem_cache *s, int order)
+ }
+ #endif
+ 
++static inline struct kmem_cache *virt_to_cache(const void *obj)
++{
++	struct page *page = virt_to_head_page(obj);
++	return page->slab_cache;
++}
++
+ static inline struct kmem_cache *cache_from_obj(struct kmem_cache *s, void *x)
+ {
+ 	struct kmem_cache *cachep;
+-	struct page *page;
+ 
+ 	/*
+ 	 * When kmemcg is not being used, both assignments should return the
+@@ -275,8 +280,7 @@ static inline struct kmem_cache *cache_from_obj(struct kmem_cache *s, void *x)
+ 	if (!memcg_kmem_enabled() && !unlikely(s->flags & SLAB_DEBUG_FREE))
+ 		return s;
+ 
+-	page = virt_to_head_page(x);
+-	cachep = page->slab_cache;
++	cachep = virt_to_cache(x);
+ 	if (slab_equal_or_root(cachep, s))
+ 		return cachep;
+ 
 -- 
 1.8.5.5
 
