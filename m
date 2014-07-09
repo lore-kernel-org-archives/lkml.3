@@ -1,40 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756588AbaGIWQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 18:16:26 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:62131 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755289AbaGIWQY (ORCPT
+	id S1756465AbaGIWRr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 18:17:47 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:39370 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752795AbaGIWRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 18:16:24 -0400
+	Wed, 9 Jul 2014 18:17:45 -0400
 MIME-Version: 1.0
-In-Reply-To: <1404910216-2170-1-git-send-email-linus.walleij@linaro.org>
-References: <1404910216-2170-1-git-send-email-linus.walleij@linaro.org>
-Date: Wed, 9 Jul 2014 15:16:24 -0700
-Message-ID: <CAJAp7Oi-UH4SUHNw_gHtm=P8EYG3+BsA=hPAsZZWjfG5KCMJeA@mail.gmail.com>
-Subject: Re: [PATCH v3] pinctrl: msm: move all qualcomm drivers to subdir
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-gpio@vger.kernel.org,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>
+In-Reply-To: <1404942892-18323-1-git-send-email-ffilzlnx@mindspring.com>
+References: <1404942892-18323-1-git-send-email-ffilzlnx@mindspring.com>
+Date: Wed, 9 Jul 2014 18:17:44 -0400
+Message-ID: <CAHQdGtSUwScEdUeKT1w+-ynqNz-e1=YvDBtdu_k=_6yndFZSVQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] Fix permission checking by NFS client for open-create
+ with mode 000
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: "Frank S. Filz" <ffilzlnx@mindspring.com>
+Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 9, 2014 at 5:50 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> We have four Qualcomm-related pin control drivers, and now there
-> are drivers coming in for the PMICs on these systems, so let's
-> create a qcom subdirectory to hold all the Qualcomm stuff.
+Hi Frank
+
+On Wed, Jul 9, 2014 at 5:54 PM, Frank S. Filz <ffilzlnx@mindspring.com> wrote:
+> From: "Frank S. Filz" <ffilzlnx@mindspring.com>
 >
-> Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> Cc: Ivan T. Ivanov <iivanov@mm-sol.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> The NFS v4 client sends a COMPOUND with an OPEN and an ACCESS.
+>
+> The ACCESS is required to verify an open for read is actually
+> allowed because RFC 3530 indicates OPEN for read only must succeed
+> for an execute only file.
+>
+> The old code expected to have read access if the requested access
+> was O_RDWR.
+>
+> We can expect the OPEN to properly permission check as long as
+> the open is O_WRONLY or O_RDWR.
+>
+> Signed-off-by: Frank S. Filz <ffilzlnx@mindspring.com>
+> ---
+>  fs/nfs/nfs4proc.c | 25 ++++++++++++++++++++-----
+>  1 file changed, 20 insertions(+), 5 deletions(-)
+>
+> diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+> index 4bf3d97..9742054 100644
+> --- a/fs/nfs/nfs4proc.c
+> +++ b/fs/nfs/nfs4proc.c
+> @@ -1966,15 +1966,30 @@ static int nfs4_opendata_access(struct rpc_cred *cred,
+>                 return 0;
+>
+>         mask = 0;
+> -       /* don't check MAY_WRITE - a newly created file may not have
+> -        * write mode bits, but POSIX allows the creating process to write.
+> -        * use openflags to check for exec, because fmode won't
+> -        * always have FMODE_EXEC set when file open for exec. */
+> +       /* Don't trust the permission check on OPEN if open for exec or for
+> +        * read only. Since FMODE_EXEC doesn't go across the wire, the server
+> +        * has no way to distinguish between an open to read an executable file
+> +        * and an open to read a readable file. Write access is properly checked
+> +        * and permission SHOULD always be granted if the file was created as a
+> +        * result of this OPEN, no matter what mode the file was created with.
+> +        *
+> +        * NOTE: If the case of a OPEN CREATE READ-ONLY with a mode that does
+> +        *       not allow read access, this test will produce an incorrect
+> +        *       EACCES error.
+> +        */
+>         if (openflags & __FMODE_EXEC) {
+>                 /* ONLY check for exec rights */
+>                 mask = MAY_EXEC;
+> -       } else if (fmode & FMODE_READ)
+> +       } else if (!(fmode & FMODE_WRITE)) {
+> +               /* In case the file was execute only, check for read permission
+> +                * ONLY if write access was not requested. It is expected that
+> +                * an OPEN for write will fail if the file is execute only.
+> +                * Note that if the file was newly created, the fmode SHOULD
+> +                * include FMODE_WRITE, especially if the file will be created
+> +                * with a restrictive mode.
+> +                */
+>                 mask = MAY_READ;
+> +       }
 
-Nice initiative.
+This looks wrong. AFAICS it will allow you to open an existing file
+which has -wx permissions (i.e. no read permissions) for O_RDWR. That
+should not be permitted under POSIX rules.
 
-Acked-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+>
+>         cache.cred = cred;
+>         cache.jiffies = jiffies;
+> --
+> 1.8.3.1
+>
+
+
+
+-- 
+Trond Myklebust
+
+Linux NFS client maintainer, PrimaryData
+
+trond.myklebust@primarydata.com
