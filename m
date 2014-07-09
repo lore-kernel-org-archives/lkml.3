@@ -1,86 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053AbaGIBNU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 21:13:20 -0400
-Received: from ozlabs.org ([103.22.144.67]:37463 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752726AbaGIBNR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 21:13:17 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Tejun Heo <tj@kernel.org>, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] percpu: add data dependency barrier in percpu accessors and operations
-In-Reply-To: <20140617152752.GC31819@htj.dyndns.org>
-References: <20140612135630.GA23606@htj.dyndns.org> <20140612153426.GV4581@linux.vnet.ibm.com> <20140612155227.GB23606@htj.dyndns.org> <20140617144151.GD4669@linux.vnet.ibm.com> <20140617152752.GC31819@htj.dyndns.org>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 09 Jul 2014 10:25:44 +0930
-Message-ID: <87lhs35p0v.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1751768AbaGIBTI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 21:19:08 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52064 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958AbaGIBTF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 21:19:05 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Rob Clark <robdclark@gmail.com>
+Subject: [PATCH] clk: qcom: Fix MN frequency tables, parent map, and jpegd
+Date: Tue,  8 Jul 2014 18:19:00 -0700
+Message-Id: <1404868740-10847-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo <tj@kernel.org> writes:
-> Hello, Paul.
+Clocks that don't have a pre-divider don't list any pre-divider
+in their frequency tables, but their tables are initialized using
+aggregate initializers. Use tagged initializers so we properly
+assign the m and n values for each frequency. Furthermore, the
+mmcc_pxo_pll8_pll2_pll3 array improperly mapped the second
+element to pll2 instead of pll8, causing the clock driver to
+recalculate the wrong rate for any clocks using this array along
+with a rate that uses pll2. Finally I noticed that the jpegd
+clock improperly indicates that the pre-divider width is only 2,
+when it's actually 4 bits wide.
 
-Rusty wakes up...
+Fixes: 6d00b56fe "clk: qcom: Add support for MSM8960's multimedia
+clock controller (MMCC)"
 
->> Good point.  How about per-CPU variables that are introduced by
->> loadable modules?  (I would guess that there are plenty of memory
->> barriers in the load process, given that text and data also needs
->> to be visible to other CPUs.)
->
-> (cc'ing Rusty, hi!)
->
-> Percpu initialization happens in post_relocation() before
-> module_finalize().  There seem to be enough operations which can act
-> as write barrier afterwards but nothing seems explicit.
->
-> I have no idea how we're guaranteeing that .data is visible to all
-> cpus without barrier from reader side.  Maybe we don't allow something
-> like the following?
->
->   module init				built-in code
->
->   static int mod_static_var = X;	if (builtin_ptr)
->   builtin_ptr = &mod_static_var;		WARN_ON(*builtin_ptr != X);
->
-> Rusty, can you please enlighten me?
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/clk/qcom/mmcc-msm8960.c | 80 +++++++++++++++++++++--------------------
+ 1 file changed, 41 insertions(+), 39 deletions(-)
 
-Subtle, but I think in theory (though not in practice) this can happen.
+diff --git a/drivers/clk/qcom/mmcc-msm8960.c b/drivers/clk/qcom/mmcc-msm8960.c
+index 12f3c0b64fcd..de8ee19160f7 100644
+--- a/drivers/clk/qcom/mmcc-msm8960.c
++++ b/drivers/clk/qcom/mmcc-msm8960.c
+@@ -38,6 +38,8 @@
+ #define P_PLL2	2
+ #define P_PLL3	3
+ 
++#define F_MN(f, s, _m, _n) { .freq = f, .src = s, .m = _m, .n = _n }
++
+ static u8 mmcc_pxo_pll8_pll2_map[] = {
+ 	[P_PXO]		= 0,
+ 	[P_PLL8]	= 2,
+@@ -59,8 +61,8 @@ static u8 mmcc_pxo_pll8_pll2_pll3_map[] = {
+ 
+ static const char *mmcc_pxo_pll8_pll2_pll3[] = {
+ 	"pxo",
+-	"pll2",
+ 	"pll8_vote",
++	"pll2",
+ 	"pll3",
+ };
+ 
+@@ -710,18 +712,18 @@ static struct clk_branch csiphy2_timer_clk = {
+ };
+ 
+ static struct freq_tbl clk_tbl_gfx2d[] = {
+-	{  27000000, P_PXO,  1,  0 },
+-	{  48000000, P_PLL8, 1,  8 },
+-	{  54857000, P_PLL8, 1,  7 },
+-	{  64000000, P_PLL8, 1,  6 },
+-	{  76800000, P_PLL8, 1,  5 },
+-	{  96000000, P_PLL8, 1,  4 },
+-	{ 128000000, P_PLL8, 1,  3 },
+-	{ 145455000, P_PLL2, 2, 11 },
+-	{ 160000000, P_PLL2, 1,  5 },
+-	{ 177778000, P_PLL2, 2,  9 },
+-	{ 200000000, P_PLL2, 1,  4 },
+-	{ 228571000, P_PLL2, 2,  7 },
++	F_MN( 27000000, P_PXO,  1,  0),
++	F_MN( 48000000, P_PLL8, 1,  8),
++	F_MN( 54857000, P_PLL8, 1,  7),
++	F_MN( 64000000, P_PLL8, 1,  6),
++	F_MN( 76800000, P_PLL8, 1,  5),
++	F_MN( 96000000, P_PLL8, 1,  4),
++	F_MN(128000000, P_PLL8, 1,  3),
++	F_MN(145455000, P_PLL2, 2, 11),
++	F_MN(160000000, P_PLL2, 1,  5),
++	F_MN(177778000, P_PLL2, 2,  9),
++	F_MN(200000000, P_PLL2, 1,  4),
++	F_MN(228571000, P_PLL2, 2,  7),
+ 	{ }
+ };
+ 
+@@ -842,22 +844,22 @@ static struct clk_branch gfx2d1_clk = {
+ };
+ 
+ static struct freq_tbl clk_tbl_gfx3d[] = {
+-	{  27000000, P_PXO,  1,  0 },
+-	{  48000000, P_PLL8, 1,  8 },
+-	{  54857000, P_PLL8, 1,  7 },
+-	{  64000000, P_PLL8, 1,  6 },
+-	{  76800000, P_PLL8, 1,  5 },
+-	{  96000000, P_PLL8, 1,  4 },
+-	{ 128000000, P_PLL8, 1,  3 },
+-	{ 145455000, P_PLL2, 2, 11 },
+-	{ 160000000, P_PLL2, 1,  5 },
+-	{ 177778000, P_PLL2, 2,  9 },
+-	{ 200000000, P_PLL2, 1,  4 },
+-	{ 228571000, P_PLL2, 2,  7 },
+-	{ 266667000, P_PLL2, 1,  3 },
+-	{ 300000000, P_PLL3, 1,  4 },
+-	{ 320000000, P_PLL2, 2,  5 },
+-	{ 400000000, P_PLL2, 1,  2 },
++	F_MN( 27000000, P_PXO,  1,  0),
++	F_MN( 48000000, P_PLL8, 1,  8),
++	F_MN( 54857000, P_PLL8, 1,  7),
++	F_MN( 64000000, P_PLL8, 1,  6),
++	F_MN( 76800000, P_PLL8, 1,  5),
++	F_MN( 96000000, P_PLL8, 1,  4),
++	F_MN(128000000, P_PLL8, 1,  3),
++	F_MN(145455000, P_PLL2, 2, 11),
++	F_MN(160000000, P_PLL2, 1,  5),
++	F_MN(177778000, P_PLL2, 2,  9),
++	F_MN(200000000, P_PLL2, 1,  4),
++	F_MN(228571000, P_PLL2, 2,  7),
++	F_MN(266667000, P_PLL2, 1,  3),
++	F_MN(300000000, P_PLL3, 1,  4),
++	F_MN(320000000, P_PLL2, 2,  5),
++	F_MN(400000000, P_PLL2, 1,  2),
+ 	{ }
+ };
+ 
+@@ -995,7 +997,7 @@ static struct clk_rcg jpegd_src = {
+ 	.ns_reg = 0x00ac,
+ 	.p = {
+ 		.pre_div_shift = 12,
+-		.pre_div_width = 2,
++		.pre_div_width = 4,
+ 	},
+ 	.s = {
+ 		.src_sel_shift = 0,
+@@ -1342,15 +1344,15 @@ static struct clk_branch hdmi_app_clk = {
+ };
+ 
+ static struct freq_tbl clk_tbl_vcodec[] = {
+-	{  27000000, P_PXO,  1,  0 },
+-	{  32000000, P_PLL8, 1, 12 },
+-	{  48000000, P_PLL8, 1,  8 },
+-	{  54860000, P_PLL8, 1,  7 },
+-	{  96000000, P_PLL8, 1,  4 },
+-	{ 133330000, P_PLL2, 1,  6 },
+-	{ 200000000, P_PLL2, 1,  4 },
+-	{ 228570000, P_PLL2, 2,  7 },
+-	{ 266670000, P_PLL2, 1,  3 },
++	F_MN( 27000000, P_PXO,  1,  0),
++	F_MN( 32000000, P_PLL8, 1, 12),
++	F_MN( 48000000, P_PLL8, 1,  8),
++	F_MN( 54860000, P_PLL8, 1,  7),
++	F_MN( 96000000, P_PLL8, 1,  4),
++	F_MN(133330000, P_PLL2, 1,  6),
++	F_MN(200000000, P_PLL2, 1,  4),
++	F_MN(228570000, P_PLL2, 2,  7),
++	F_MN(266670000, P_PLL2, 1,  3),
+ 	{ }
+ };
+ 
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-Making this this assigner's responsibility is nasty, since we reasonably
-assume that .data is consistent across CPUs once code is executing
-(similarly on boot).
-
->> Again, it won't help for the allocator to strongly order the
->> initialization to zero if there are additional initializations of some
->> fields to non-zero values.  And again, it should be a lot easier to
->> require the smp_store_release() or whatever uniformly than only in cases
->> where additional initialization occurred.
->
-> This one is less murky as we can say that the cpu which allocated owns
-> the zeroing; however, it still deviates from requiring the one which
-> makes changes to take care of barriering for those changes, which is
-> what makes me feel a bit uneasy.  IOW, it's the allocator which
-> cleared the memory, why should its users worry about in-flight
-> operations from it?  That said, this poses a lot less issues compared
-> to percpu ones as passing normal pointers to other cpus w/o going
-> through proper set of barriers is a special thing to do anyway.
-
-I think that the implicit per-cpu allocations done by modules need to
-be consistent once the module is running.
-
-I'm deeply reluctant to advocate it in the other per-cpu cases though.
-Once we add a barrier, it's impossible to remove: callers may subtly
-rely on the behavior.
-
-"Magic barrier sprinkles" is a bad path to start down, IMHO.
-
-Cheers,
-Rusty.
