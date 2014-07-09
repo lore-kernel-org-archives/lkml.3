@@ -1,65 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754528AbaGIDi2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 23:38:28 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:41550 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754356AbaGIDiZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 23:38:25 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Wim Van Sebroeck <wim@iguana.be>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tomasz Figa <t.figa@samsung.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v3 4/7] power/restart: Call machine_restart instead of arm_pm_restart
-Date: Tue,  8 Jul 2014 20:38:00 -0700
-Message-Id: <1404877083-6552-5-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1404877083-6552-1-git-send-email-linux@roeck-us.net>
-References: <1404877083-6552-1-git-send-email-linux@roeck-us.net>
+	id S1754956AbaGIDkI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 23:40:08 -0400
+Received: from mga11.intel.com ([192.55.52.93]:56586 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754887AbaGIDkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 23:40:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,630,1400050800"; 
+   d="scan'208";a="559146616"
+Message-ID: <53BCB910.4070709@intel.com>
+Date: Wed, 09 Jul 2014 11:37:52 +0800
+From: "xinhui.pan" <xinhuix.pan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+        Mikulas Patocka <mpatocka@redhat.com>
+CC: linux-kernel@vger.kernel.org, agk@redhat.com, snitzer@redhat.com,
+        dm-devel@redhat.com, "Liu, ShuoX" <shuox.liu@intel.com>
+Subject: Re: [dm-devel] [PATCH] md/dm-ioctl.c: optimize memory allocation
+ in copy_params
+References: <53B68068.2060102@intel.com> <alpine.LRH.2.02.1407081831510.27831@file01.intranet.prod.int.rdu2.redhat.com> <53BCA278.5050205@linux.intel.com>
+In-Reply-To: <53BCA278.5050205@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-machine_restart is supported on non-ARM platforms, and and ultimately calls
-arm_pm_restart, so dont call arm_pm_restart directly but use the more
-generic function.
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-v3: No change.
-v2: Added patch.
 
- drivers/power/reset/restart-poweroff.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+于 2014年07月09日 10:01, Zhang, Yanmin 写道:
+> On 2014/7/9 6:39, Mikulas Patocka wrote:
+> 
+>> Hi
+> 
+> Mikulas,
+> 
+> Thanks for your kind comments.
+> 
+>> I don't really know what is the purpose of this patch. In existing device
+>> mapper code, if kmalloc fails, the allocation is retried with __vmalloc.
+>> So there is no need to avoid kmalloc aritifically.
+>>
+>> kmalloc doesn't cause memory fragmentation. If the memory is too
+>> fragmented, kmalloc fails. If it isn't, it succeeds. But it doesn't cause
+>> memory being fragmented.
+> 
+> I agree with you. The patch's original description is not appropriate.
+> Basically, memory fragmentation is not caused by this kmalloc.
+> 
+> The right description is: When memory is fragmented and most memory is used up,
+> kmalloc a big memory might cause lots of OutOFMemory and system might kill
+> lots of processes. Then, system might hang.
+> 
+> We are enabling Android on mobiles and tablets. We hit OOM often at
+> Monkey and other stress testing. Sometimes, kernel prints big memory allocation
+> warning.
+> 
+> Theoretically, it's a good idea to call kmalloc firstly. If it fails, use vmalloc.
+> However, kernel assumes drivers do the right thing. When drivers call kmalloc to
+> allocate a big memory, memory management would do the best to fulfill it. When memory
+> is fragmented and most memory is used up, such allocation would cause big memory
+> recollection. Some processes might be killed. The worse scenario is after a process
+> is killed, it is restarted and allocates memory again. That causes system hang,
+> or mobile users feel a big stall. We did fix a similar issue in one of our drivers.
+> 
+> Usually, kernel and drivers can allocate big continuous memory at booting or
+> initialization stage. After that, they need allocate small order memory. The best
+> is to just allocate order-0 memory.
+> 
+> 
+>>
+>> If you have some other driver that fails because of large kmalloc failure,
+>> you should fix it to use scatter-gather DMA or (if the hardware can't do
+>> it) preallocate the memory when the driver is loaded.
+> 
+> I agree with you. Here the patch fixes the issue, where dm might allocate
+> big continuous memory after booting. Monkey testing triggers it by operating
+> menu Setting=>Security=>InstallfromSDcard.
+> 
 
-diff --git a/drivers/power/reset/restart-poweroff.c b/drivers/power/reset/restart-poweroff.c
-index 5758033..47f10eb 100644
---- a/drivers/power/reset/restart-poweroff.c
-+++ b/drivers/power/reset/restart-poweroff.c
-@@ -20,7 +20,8 @@
- 
- static void restart_poweroff_do_poweroff(void)
- {
--	arm_pm_restart(REBOOT_HARD, NULL);
-+	reboot_mode = REBOOT_HARD;
-+	machine_restart(NULL);
- }
- 
- static int restart_poweroff_probe(struct platform_device *pdev)
--- 
-1.9.1
+hi, Yanmin && Mikulas
+	Thanks for your nice comments. And sorry for confusing you as my comment is not clear enough.
+In android, there is a command "dumpstate", it run many other commands to collect information. In our scenario,
+it run command "vdc dump", and vdc uses socket to pass some parameters to "vold", then vold generates ioctl. 
 
+thanks.
+> We are catching all places in kernel where big memory allocation happens.
+> This patch is just to fix one case.
+> 
+> Thanks,
+> Yanmin
+> 
+>>
+>> Mikulas
+>>
+>>
+>>
+>> On Fri, 4 Jul 2014, xinhui.pan wrote:
+>>
+>>> KMALLOC_MAX_SIZE is too big, it easily cause memory fragmented and low memory when param_kernel->data_size
+>>> is also big. That's not nice. So use vmalloc instead of kmalloc when size is larger than (PAGE_SIZE << 2).
+>>> There are other drivers using kmalloc to gain a big size memory. And that cause our devices to hit hang and
+>>> many worse issues. We don't benefit much when using kmalloc in such scenario.
+>>>
+>>> Signed-off-by: xinhui.pan <xinhuiX.pan@intel.com>
+>>> Signed-off-by: yanmin.zhang <yanmin_zhang@linux.intel.com>
+>>> ---
+>>>   drivers/md/dm-ioctl.c |    2 +-
+>>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>>
+>>> diff --git a/drivers/md/dm-ioctl.c b/drivers/md/dm-ioctl.c
+>>> index 5152142..31c3af9 100644
+>>> --- a/drivers/md/dm-ioctl.c
+>>> +++ b/drivers/md/dm-ioctl.c
+>>> @@ -1709,7 +1709,7 @@ static int copy_params(struct dm_ioctl __user *user, struct dm_ioctl *param_kern
+>>>           * Use kmalloc() rather than vmalloc() when we can.
+>>>           */
+>>>          dmi = NULL;
+>>> -       if (param_kernel->data_size <= KMALLOC_MAX_SIZE) {
+>>> +       if (param_kernel->data_size <= (PAGE_SIZE << 2)) {
+>>>                  dmi = kmalloc(param_kernel->data_size, GFP_NOIO | __GFP_NORETRY | __GFP_NOMEMALLOC | __GFP_NOWARN);
+>>>                  if (dmi)
+>>>                          *param_flags |= DM_PARAMS_KMALLOC;
+>>> -- 
+>>> 1.7.9.5
+>>>
+>>> -- 
+>>> dm-devel mailing list
+>>> dm-devel@redhat.com
+>>> https://www.redhat.com/mailman/listinfo/dm-devel
+>>>
+> 
