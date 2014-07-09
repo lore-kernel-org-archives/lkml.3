@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756555AbaGIMad (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 08:30:33 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:44998 "EHLO
+	id S1755847AbaGIMao (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 08:30:44 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:45074 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755360AbaGIMa2 (ORCPT
+	with ESMTP id S1755152AbaGIMak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 08:30:28 -0400
-Subject: [PATCH 14/17] drm/nouveau: use rcu in nouveau_gem_ioctl_cpu_prep
+	Wed, 9 Jul 2014 08:30:40 -0400
+Subject: [PATCH 16/17] drm/vmwgfx: use rcu in vmw_user_dmabuf_synccpu_grab
 To: airlied@linux.ie
 From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 Cc: thellstrom@vmware.com, nouveau@lists.freedesktop.org,
         linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         bskeggs@redhat.com, alexander.deucher@amd.com,
         christian.koenig@amd.com
-Date: Wed, 09 Jul 2014 14:30:23 +0200
-Message-ID: <20140709123023.11354.45654.stgit@patser>
+Date: Wed, 09 Jul 2014 14:30:34 +0200
+Message-ID: <20140709123034.11354.50674.stgit@patser>
 In-Reply-To: <20140709093124.11354.3774.stgit@patser>
 References: <20140709093124.11354.3774.stgit@patser>
 User-Agent: StGit/0.15
@@ -26,61 +26,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the conversion to the reservation api this should be safe.
-
 Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 ---
- drivers/gpu/drm/nouveau/nouveau_gem.c |   28 ++++++++++++----------------
- 1 file changed, 12 insertions(+), 16 deletions(-)
+ drivers/gpu/drm/vmwgfx/vmwgfx_resource.c |   17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_gem.c b/drivers/gpu/drm/nouveau/nouveau_gem.c
-index 4beaa897adad..c2ca894f6507 100644
---- a/drivers/gpu/drm/nouveau/nouveau_gem.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_gem.c
-@@ -863,33 +863,29 @@ nouveau_gem_ioctl_cpu_prep(struct drm_device *dev, void *data,
- 	struct drm_gem_object *gem;
- 	struct nouveau_bo *nvbo;
- 	bool no_wait = !!(req->flags & NOUVEAU_GEM_CPU_PREP_NOWAIT);
-+	bool write = !!(req->flags & NOUVEAU_GEM_CPU_PREP_WRITE);
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c b/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
+index 20a1a866ceeb..79e950df3018 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
+@@ -567,13 +567,16 @@ static int vmw_user_dmabuf_synccpu_grab(struct vmw_user_dma_buffer *user_bo,
  	int ret;
--	struct nouveau_fence *fence = NULL;
  
- 	gem = drm_gem_object_lookup(dev, file_priv, req->handle);
- 	if (!gem)
- 		return -ENOENT;
- 	nvbo = nouveau_gem_object(gem);
- 
--	ret = ttm_bo_reserve(&nvbo->bo, true, false, false, 0);
--	if (!ret) {
--		ret = ttm_bo_wait(&nvbo->bo, true, true, true);
--		if (!no_wait && ret) {
--			struct fence *excl;
--
--			excl = reservation_object_get_excl(nvbo->bo.resv);
--			fence = nouveau_fence_ref((struct nouveau_fence *)excl);
+ 	if (flags & drm_vmw_synccpu_allow_cs) {
+-		ret = ttm_bo_reserve(bo, true, !!(flags & drm_vmw_synccpu_dontblock), false, 0);
+-		if (!ret) {
+-			ret = ttm_bo_wait(bo, false, true,
+-					  !!(flags & drm_vmw_synccpu_dontblock));
+-			ttm_bo_unreserve(bo);
 -		}
-+	if (no_wait)
-+		ret = reservation_object_test_signaled_rcu(nvbo->bo.resv, write) ? 0 : -EBUSY;
-+	else {
+-		return ret;
 +		long lret;
- 
--		ttm_bo_unreserve(&nvbo->bo);
-+		lret = reservation_object_wait_timeout_rcu(nvbo->bo.resv, write, true, 30 * HZ);
++		if (flags & drm_vmw_synccpu_dontblock)
++			return reservation_object_test_signaled_rcu(bo->resv, true) ? 0 : -EBUSY;
++
++		lret = reservation_object_wait_timeout_rcu(bo->resv, true, true, MAX_SCHEDULE_TIMEOUT);
 +		if (!lret)
-+			ret = -EBUSY;
-+		else if (lret > 0)
-+			ret = 0;
-+		else
-+			ret = lret;
++			return -EBUSY;
++		else if (lret < 0)
++			return lret;
++		return 0;
  	}
- 	drm_gem_object_unreference_unlocked(gem);
  
--	if (fence) {
--		ret = nouveau_fence_wait(fence, true, no_wait);
--		nouveau_fence_unref(&fence);
--	}
--
- 	return ret;
- }
- 
+ 	ret = ttm_bo_synccpu_write_grab
 
