@@ -1,87 +1,349 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754400AbaGII6q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 04:58:46 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.145]:28537 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751778AbaGII6o (ORCPT
+	id S1755115AbaGII7a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 04:59:30 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:41741 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754947AbaGII7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 04:58:44 -0400
-X-Env-Sender: James.Ban.opensource@diasemi.com
-X-Msg-Ref: server-7.tower-178.messagelabs.com!1404896282!36736930!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-Date: Wed, 9 Jul 2014 17:57:56 +0900
-Message-ID: <201407090857.s698vu4m031984@krsrvapps-01.diasemi.com>
-From: James Ban <james.ban.opensource@diasemi.com>
-Subject: Re: [PATCH V4] regulator: DA9211 : new regulator driver
-To: Mark Brown <broonie@kernel.org>
-CC: Liam Girdwood <lgirdwood@gmail.com>,
-        Support Opensource <support.opensource@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "David Dajun Chen" <david.chen@diasemi.com>
+	Wed, 9 Jul 2014 04:59:21 -0400
+Date: Wed, 9 Jul 2014 01:57:48 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: David Herrmann <dh.herrmann@gmail.com>
+cc: linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Ryan Lortie <desrt@desrt.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
+        Greg Kroah-Hartman <greg@kroah.com>, john.stultz@linaro.org,
+        Lennart Poettering <lennart@poettering.net>,
+        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Hugh Dickins <hughd@google.com>,
+        Tony Battersby <tonyb@cybernetics.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: [RFC v3 7/7] shm: isolate pinned pages when sealing files
+In-Reply-To: <1402655819-14325-8-git-send-email-dh.herrmann@gmail.com>
+Message-ID: <alpine.LSU.2.11.1407090155250.7841@eggly.anvils>
+References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com> <1402655819-14325-8-git-send-email-dh.herrmann@gmail.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Mark Brown [mailto:broonie@kernel.org]
-> Sent: Wednesday, July 09, 2014 5:39 PM
-> To: Opensource [James Seong-Won Ban]
-> Cc: Liam Girdwood; Support Opensource; LKML; David Dajun Chen
-> Subject: Re: [PATCH V4] regulator: DA9211 : new regulator driver
+On Fri, 13 Jun 2014, David Herrmann wrote:
+
+> When setting SEAL_WRITE, we must make sure nobody has a writable reference
+> to the pages (via GUP or similar). We currently check references and wait
+> some time for them to be dropped. This, however, might fail for several
+> reasons, including:
+>  - the page is pinned for longer than we wait
+>  - while we wait, someone takes an already pinned page for read-access
 > 
-> On Wed, Jul 09, 2014 at 05:28:59PM +0900, James Ban wrote:
+> Therefore, this patch introduces page-isolation. When sealing a file with
+> SEAL_WRITE, we copy all pages that have an elevated ref-count. The newpage
+> is put in place atomically, the old page is detached and left alone. It
+> will get reclaimed once the last external user dropped it.
 > 
-> > How about below code for proper handle of interrupt?
+> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+
+I've not checked it line by line, but this seems to be very good work;
+and I'm glad you have posted it, where we can refer back to it in future.
+
+However, I'm NAKing this patch, at least for now.
+
+The reason is simple and twofold.
+
+I absolutely do not want to be maintaining an alternative form of
+page migration in mm/shmem.c.  Shmem has its own peculiar problems
+(mostly because of swap): adding a new dimension of very rarely
+exercised complication, and dependence on the rest mm, is not wise.
+
+And sealing just does not need this.  It is clearly technically
+superior to, and more satisfying than, the "wait-a-while-then-give-up"
+technique which it would replace.  But in practice, the wait-a-while
+technique is quite good enough (and much better self-contained than this). 
+
+I've heard no requirement to support sealing of objects pinned for I/O,
+and the sealer just would not have given the object out for that; the
+requirement is to give the recipient of a sealed object confidence
+that it cannot be susceptible to modification in that way.
+
+I doubt there will ever be an actual need for sealing to use this
+migration technique; but I can imagine us referring back to your work in
+future, when/if implementing revoke on regular files.  And integrating
+this into mm/migrate.c's unmap_and_move() as an extra-force mode
+(proceed even when the page count is raised).
+
+I think the concerns I had, when Tony first proposed this migration copy
+technique, were in fact unfounded - I was worried by the new inverse COW.
+On reflection, I don't think this introduces any new risks, which are
+not already present in page migration, truncation and orphaned pages.
+
+I didn't begin to test it at all, but the only defects that stood out
+in your code were in the areas of memcg and mlock.  I think that if we
+go down the road of duplicating pinned pages, then we do have to make
+a memcg charge on the new page in addition to the old page.  And if
+any pages happen to be mlock'ed into an address space, then we ought
+to map in the replacement pages afterwards (as page migration does,
+whether mlock'ed or not).
+
+(You were perfectly correct to use unmap_mapping_range(), rather than
+try_to_unmap() as page migration does: because unmap_mapping_range()
+manages the VM_NONLINEAR case.  But our intention, under way, is to
+scrap all VM_NONLINEAR code, and just emulate it with multiple vmas,
+in which case try_to_unmap() should do.)
+
+Hugh
+
+> ---
+>  mm/shmem.c | 218 +++++++++++++++++++++++++++++--------------------------------
+>  1 file changed, 105 insertions(+), 113 deletions(-)
 > 
-> That's fine, or you could have a return value which defaults to IRQ_NONE and
-> then set it to IRQ_HANDLED when you handle a particular bit - that is more
-> common since that way if multiple things happen to flag simultaneously they
-> can be handled in one call to the interrupt handler.
-Thanks for your comment. Is below code O.K.?
-static irqreturn_t da9211_irq_handler(int irq, void *data)
-{
-	struct da9211 *chip = data;
-	int reg_val, err, ret = IRQ_NONE;
-
-	err = regmap_read(chip->regmap, DA9211_REG_EVENT_B, &reg_val);
-	if (err < 0)
-		goto error_i2c;
-
-	if (reg_val & DA9211_E_OV_CURR_A) {
-		regulator_notifier_call_chain(chip->rdev[0],
-			REGULATOR_EVENT_OVER_CURRENT,
-			rdev_get_drvdata(chip->rdev[0]));
-
-		err = regmap_write(chip->regmap, DA9211_REG_EVENT_B,
-			DA9211_E_OV_CURR_A);
-		if (err < 0)
-			goto error_i2c;
-
-		ret = IRQ_HANDLED;
-	}
-
-	if (reg_val & DA9211_E_OV_CURR_B) {
-		regulator_notifier_call_chain(chip->rdev[1],
-			REGULATOR_EVENT_OVER_CURRENT,
-			rdev_get_drvdata(chip->rdev[1]));
-
-		err = regmap_write(chip->regmap, DA9211_REG_EVENT_B,
-			DA9211_E_OV_CURR_B);
-		if (err < 0)
-			goto error_i2c;
-
-		ret = IRQ_HANDLED;
-	}
-
-	return ret;
-
-error_i2c:
-	dev_err(chip->dev, "I2C error : %d\n", err);
-	return IRQ_NONE;
-}
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index ddc3998..34b14fb 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -1237,6 +1237,110 @@ unlock:
+>  	return error;
+>  }
+>  
+> +static int shmem_isolate_page(struct inode *inode, struct page *oldpage)
+> +{
+> +	struct address_space *mapping = inode->i_mapping;
+> +	struct shmem_inode_info *info = SHMEM_I(inode);
+> +	struct page *newpage;
+> +	int error;
+> +
+> +	if (oldpage->mapping != mapping)
+> +		return 0;
+> +	if (page_count(oldpage) - page_mapcount(oldpage) <= 2)
+> +		return 0;
+> +
+> +	if (page_mapped(oldpage))
+> +		unmap_mapping_range(mapping,
+> +				    (loff_t)oldpage->index << PAGE_CACHE_SHIFT,
+> +				    PAGE_CACHE_SIZE, 0);
+> +
+> +	VM_BUG_ON_PAGE(PageWriteback(oldpage), oldpage);
+> +	VM_BUG_ON_PAGE(page_has_private(oldpage), oldpage);
+> +
+> +	newpage = shmem_alloc_page(mapping_gfp_mask(mapping), info,
+> +				   oldpage->index);
+> +	if (!newpage)
+> +		return -ENOMEM;
+> +
+> +	__set_page_locked(newpage);
+> +	copy_highpage(newpage, oldpage);
+> +	flush_dcache_page(newpage);
+> +
+> +	page_cache_get(newpage);
+> +	SetPageUptodate(newpage);
+> +	SetPageSwapBacked(newpage);
+> +	newpage->mapping = mapping;
+> +	newpage->index = oldpage->index;
+> +
+> +	cancel_dirty_page(oldpage, PAGE_CACHE_SIZE);
+> +
+> +	spin_lock_irq(&mapping->tree_lock);
+> +	error = shmem_radix_tree_replace(mapping, oldpage->index,
+> +					 oldpage, newpage);
+> +	if (!error) {
+> +		__inc_zone_page_state(newpage, NR_FILE_PAGES);
+> +		__dec_zone_page_state(oldpage, NR_FILE_PAGES);
+> +	}
+> +	spin_unlock_irq(&mapping->tree_lock);
+> +
+> +	if (error) {
+> +		newpage->mapping = NULL;
+> +		unlock_page(newpage);
+> +		page_cache_release(newpage);
+> +		page_cache_release(newpage);
+> +		return error;
+> +	}
+> +
+> +	mem_cgroup_replace_page_cache(oldpage, newpage);
+> +	lru_cache_add_anon(newpage);
+> +
+> +	oldpage->mapping = NULL;
+> +	page_cache_release(oldpage);
+> +	unlock_page(newpage);
+> +	page_cache_release(newpage);
+> +
+> +	return 1;
+> +}
+> +
+> +static int shmem_isolate_pins(struct inode *inode)
+> +{
+> +	struct address_space *mapping = inode->i_mapping;
+> +	struct pagevec pvec;
+> +	pgoff_t indices[PAGEVEC_SIZE];
+> +	pgoff_t index;
+> +	int i, ret, error;
+> +
+> +	pagevec_init(&pvec, 0);
+> +	index = 0;
+> +	error = 0;
+> +	while ((pvec.nr = find_get_entries(mapping, index, PAGEVEC_SIZE,
+> +					   pvec.pages, indices))) {
+> +		for (i = 0; i < pagevec_count(&pvec); i++) {
+> +			struct page *page = pvec.pages[i];
+> +
+> +			index = indices[i];
+> +			if (radix_tree_exceptional_entry(page))
+> +				continue;
+> +			if (page->mapping != mapping)
+> +				continue;
+> +			if (page_count(page) - page_mapcount(page) <= 2)
+> +				continue;
+> +
+> +			lock_page(page);
+> +			ret = shmem_isolate_page(inode, page);
+> +			if (ret < 0)
+> +				error = ret;
+> +			unlock_page(page);
+> +		}
+> +		pagevec_remove_exceptionals(&pvec);
+> +		pagevec_release(&pvec);
+> +		cond_resched();
+> +		index++;
+> +	}
+> +
+> +	return error;
+> +}
+> +
+>  static int shmem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+>  {
+>  	struct inode *inode = file_inode(vma->vm_file);
+> @@ -1734,118 +1838,6 @@ static loff_t shmem_file_llseek(struct file *file, loff_t offset, int whence)
+>  	return offset;
+>  }
+>  
+> -/*
+> - * We need a tag: a new tag would expand every radix_tree_node by 8 bytes,
+> - * so reuse a tag which we firmly believe is never set or cleared on shmem.
+> - */
+> -#define SHMEM_TAG_PINNED        PAGECACHE_TAG_TOWRITE
+> -#define LAST_SCAN               4       /* about 150ms max */
+> -
+> -static void shmem_tag_pins(struct address_space *mapping)
+> -{
+> -	struct radix_tree_iter iter;
+> -	void **slot;
+> -	pgoff_t start;
+> -	struct page *page;
+> -
+> -	start = 0;
+> -	rcu_read_lock();
+> -
+> -restart:
+> -	radix_tree_for_each_slot(slot, &mapping->page_tree, &iter, start) {
+> -		page = radix_tree_deref_slot(slot);
+> -		if (!page || radix_tree_exception(page)) {
+> -			if (radix_tree_deref_retry(page))
+> -				goto restart;
+> -		} else if (page_count(page) - page_mapcount(page) > 1) {
+> -			spin_lock_irq(&mapping->tree_lock);
+> -			radix_tree_tag_set(&mapping->page_tree, iter.index,
+> -					   SHMEM_TAG_PINNED);
+> -			spin_unlock_irq(&mapping->tree_lock);
+> -		}
+> -
+> -		if (need_resched()) {
+> -			cond_resched_rcu();
+> -			start = iter.index + 1;
+> -			goto restart;
+> -		}
+> -	}
+> -	rcu_read_unlock();
+> -}
+> -
+> -/*
+> - * Setting SEAL_WRITE requires us to verify there's no pending writer. However,
+> - * via get_user_pages(), drivers might have some pending I/O without any active
+> - * user-space mappings (eg., direct-IO, AIO). Therefore, we look at all pages
+> - * and see whether it has an elevated ref-count. If so, we tag them and wait for
+> - * them to be dropped.
+> - * The caller must guarantee that no new user will acquire writable references
+> - * to those pages to avoid races.
+> - */
+> -static int shmem_wait_for_pins(struct address_space *mapping)
+> -{
+> -	struct radix_tree_iter iter;
+> -	void **slot;
+> -	pgoff_t start;
+> -	struct page *page;
+> -	int error, scan;
+> -
+> -	shmem_tag_pins(mapping);
+> -
+> -	error = 0;
+> -	for (scan = 0; scan <= LAST_SCAN; scan++) {
+> -		if (!radix_tree_tagged(&mapping->page_tree, SHMEM_TAG_PINNED))
+> -			break;
+> -
+> -		if (!scan)
+> -			lru_add_drain_all();
+> -		else if (schedule_timeout_killable((HZ << scan) / 200))
+> -			scan = LAST_SCAN;
+> -
+> -		start = 0;
+> -		rcu_read_lock();
+> -restart:
+> -		radix_tree_for_each_tagged(slot, &mapping->page_tree, &iter,
+> -					   start, SHMEM_TAG_PINNED) {
+> -
+> -			page = radix_tree_deref_slot(slot);
+> -			if (radix_tree_exception(page)) {
+> -				if (radix_tree_deref_retry(page))
+> -					goto restart;
+> -
+> -				page = NULL;
+> -			}
+> -
+> -			if (page &&
+> -			    page_count(page) - page_mapcount(page) != 1) {
+> -				if (scan < LAST_SCAN)
+> -					goto continue_resched;
+> -
+> -				/*
+> -				 * On the last scan, we clean up all those tags
+> -				 * we inserted; but make a note that we still
+> -				 * found pages pinned.
+> -				 */
+> -				error = -EBUSY;
+> -			}
+> -
+> -			spin_lock_irq(&mapping->tree_lock);
+> -			radix_tree_tag_clear(&mapping->page_tree,
+> -					     iter.index, SHMEM_TAG_PINNED);
+> -			spin_unlock_irq(&mapping->tree_lock);
+> -continue_resched:
+> -			if (need_resched()) {
+> -				cond_resched_rcu();
+> -				start = iter.index + 1;
+> -				goto restart;
+> -			}
+> -		}
+> -		rcu_read_unlock();
+> -	}
+> -
+> -	return error;
+> -}
+> -
+>  #define F_ALL_SEALS (F_SEAL_SEAL | \
+>  		     F_SEAL_SHRINK | \
+>  		     F_SEAL_GROW | \
+> @@ -1907,7 +1899,7 @@ int shmem_add_seals(struct file *file, unsigned int seals)
+>  		if (error)
+>  			goto unlock;
+>  
+> -		error = shmem_wait_for_pins(file->f_mapping);
+> +		error = shmem_isolate_pins(inode);
+>  		if (error) {
+>  			mapping_allow_writable(file->f_mapping);
+>  			goto unlock;
+> -- 
+> 2.0.0
