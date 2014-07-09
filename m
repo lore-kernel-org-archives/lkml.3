@@ -1,356 +1,552 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932329AbaGINXb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 09:23:31 -0400
-Received: from smtprelay0177.hostedemail.com ([216.40.44.177]:44401 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932299AbaGINX3 (ORCPT
+	id S932348AbaGINXz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 09:23:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37086 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932146AbaGINXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 09:23:29 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 10,1,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::,RULES_HIT:1:41:196:355:379:541:599:800:960:966:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1434:1437:1515:1516:1518:1593:1594:1605:1622:1730:1747:1777:1792:2194:2196:2198:2199:2200:2201:2393:2553:2559:2562
-X-HE-Tag: fan81_1dac3b8ff0c2f
-X-Filterd-Recvd-Size: 14519
-Message-ID: <1404912202.932.116.camel@joe-AO725>
-Subject: Re: [PATCH tip/core/rcu 2/3] rcu: Add designated reviewers for RCU
-From: Joe Perches <joe@perches.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        sbw@mit.edu
-Date: Wed, 09 Jul 2014 06:23:22 -0700
-In-Reply-To: <20140709111427.GL4603@linux.vnet.ibm.com>
-References: <1404772924-9423-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1404772924-9423-2-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <20140708080908.GN19379@twins.programming.kicks-ass.net>
-	 <1404842784.932.22.camel@joe-AO725>
-	 <20140708204124.GW4603@linux.vnet.ibm.com>
-	 <1404853264.932.52.camel@joe-AO725>
-	 <20140708215229.GA4603@linux.vnet.ibm.com>
-	 <1404857116.932.68.camel@joe-AO725>
-	 <20140708222557.GF4603@linux.vnet.ibm.com>
-	 <1404878965.932.87.camel@joe-AO725>
-	 <20140709111427.GL4603@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Wed, 9 Jul 2014 09:23:54 -0400
+Message-ID: <53BD4265.2040508@canonical.com>
+Date: Wed, 09 Jul 2014 15:23:49 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: "Deucher, Alexander" <Alexander.Deucher@amd.com>,
+        "airlied@linux.ie" <airlied@linux.ie>
+CC: "thellstrom@vmware.com" <thellstrom@vmware.com>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "bskeggs@redhat.com" <bskeggs@redhat.com>,
+        "Koenig, Christian" <Christian.Koenig@amd.com>
+Subject: [PATCH v2 09/17] drm/radeon: use common fence implementation for
+ fences
+References: <20140709093124.11354.3774.stgit@patser> <20140709122953.11354.46381.stgit@patser> <A3397C8B8B789E45844E7EC5DEAD89D04D5D246C@satlexdag05.amd.com>
+In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D04D5D246C@satlexdag05.amd.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-09 at 04:14 -0700, Paul E. McKenney wrote:
-> On Tue, Jul 08, 2014 at 09:09:25PM -0700, Joe Perches wrote:
-[]
-> > I wrote a script to find which maintainer addresses that
-> > haven't signed or authored a commit in the last 2 years.
-> > 
-> > I got ~250 entries.  That's about 1/4 of all maintainer
-> > email addresses.
-> > 
-> > Maybe a dozen of these are false positives though because
-> > some maintainers prefer to receive email at one address
-> > but ack from another.
-> > 
-> > These are all lowercase for better matching.
-> 
-> I am not too surprised.  There is currently no penalty for keeping a
-> stale maintainer listing, and possibly severe social penalties for
-> wrongly removing one.  ;-)
+op 09-07-14 14:57, Deucher, Alexander schreef:
+>> <snip>
+>> +static const char *radeon_fence_get_timeline_name(struct fence *f)
+>> +{
+>> +	struct radeon_fence *fence = to_radeon_fence(f);
+>> +	switch (fence->ring) {
+>> +	case RADEON_RING_TYPE_GFX_INDEX: return "radeon.gfx";
+>> +	case CAYMAN_RING_TYPE_CP1_INDEX: return "radeon.cp1";
+>> +	case CAYMAN_RING_TYPE_CP2_INDEX: return "radeon.cp2";
+>> +	case R600_RING_TYPE_DMA_INDEX: return "radeon.dma";
+>> +	case CAYMAN_RING_TYPE_DMA1_INDEX: return "radeon.dma1";
+>> +	case R600_RING_TYPE_UVD_INDEX: return "radeon.uvd";
+> Radeon supports vce rings on newer ascis.  Probably want to add the case for those here too.
+>
+> Alex
+>
+Indeed, how about this?
+----------8<-------
+Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+---
+ drivers/gpu/drm/radeon/radeon.h        |  15 +--
+ drivers/gpu/drm/radeon/radeon_device.c |  60 ++++++++-
+ drivers/gpu/drm/radeon/radeon_fence.c  | 225 +++++++++++++++++++++++++++------
+ 3 files changed, 250 insertions(+), 50 deletions(-)
 
-I guess I'm not that social.
-
-Most of these were the initial code submitters that
-haven't had to change anything in quite awhile.
-
-My suggestion is to change the below "M:" entries to "R:"
-sometime after "R:" is upstream.
-
-Maybe also change the sections that have only these names to
-"S:	Odd Fixes" or "S:	Orphan" or add a new
-"S:	Unmaintained but Reviewed" section type.
-
-This might encourage people to take over maintainership of
-old code, help people figure out who better to send a patch
-to and maybe who's more likely to apply it.
-
-Also reviewer ack's aren't an indication that an upstream
-maintainer will pick it up and push it forward.
-
-To Peter's point:
-
-On Tue, 2014-07-08 at 10:09 +0200, Peter Zijlstra wrote:
-> So I would like to be able to write:
-> 
-> SCHEDULER:
-> ...
-> R:   Steven Rostedt <rostedt@goodmis.org> (kernel/sched/rt.c)
-> R:   Juri Lelli <jundri.lelli@gmail.com>    (kernel/sched/deadline.c)
-
-Maybe a better syntax might be something like:
-R:	Steven Rostedt
-	F:	kernel/sched/rt.c
-
-where optional F:/X: lines override the default
-assumption of all F:/X: from the section.
-
-Anyone have any comment on these inactive maintainers
-that should be converted to "R:" reviewers?
-
-> > abhijit mahajan <abhijit.mahajan@avagotech.com>
-> > achim leubner <achim_leubner@adaptec.com>
-> > adam radford <linuxraid@lsi.com>
-> > al cho <acho@novell.com>
-> > ali akcaagac <aliakc@web.de>
-> > allan stephens <allan.stephens@windriver.com>
-> > aloisio almeida jr <aloisio.almeida@openbossa.org>
-> > andreas dilger <adilger.kernel@dilger.ca>
-> > andreas koensgen <ajk@comnets.uni-bremen.de>
-> > andrew hendry <andrew.hendry@gmail.com>onl
-> > andrew veliath <andrewtv@usa.net>
-> > andries brouwer <aeb@cwi.nl>
-> > andy henroid <andrew.d.henroid@intel.com>
-> > anil ravindranath <anil_ravindranath@pmc-sierra.com>
-> > anil s keshavamurthy <anil.s.keshavamurthy@intel.com>
-> > antoine jacquet <royale@zerezo.com>
-> > antonino daplas <adaplas@gmail.com>
-> > armin schindler <mac@melware.de>
-> > artur paszkiewicz <artur.paszkiewicz@intel.com>
-> > "arvind r." <arvino55@gmail.com>
-> > ashley lai <ashley@ashleylai.com>
-> > aurelien jacquiot <a-jacquiot@ti.com>
-> > balbir singh <bsingharora@gmail.com>
-> > bill metzenthen <billm@melbpc.org.au>
-> > bradley grove <linuxdrivers@attotech.com>
-> > brett rudley <brudley@broadcom.com>
-> > brian johnson <brijohn@gmail.com>
-> > bruce chang <brucechang@via.com.tw>
-> > bryan huntsman <bryanh@codeaurora.org>
-> > ceph-devel@vger.kernel.org
-> > cesar miquel <miquel@df.uba.ar>
-> > cezary jackiewicz <cezary.jackiewicz@gmail.com>
-> > chaoming li <chaoming_li@realsil.com.cn>
-> > chen liqin <liqin.linux@gmail.com>
-> > chien yen <chien.yen@oracle.com>
-> > chirag kantharia <chirag.kantharia@hp.com>
-> > chris brannon <chris@the-brannons.com>
-> > christine caulfield <ccaulfie@redhat.com>
-> > christopher harrer <charrer@alacritech.com>
-> > "christopher li" <sparse@chrisli.org>
-> > christoph raisch <raisch@de.ibm.com>
-> > cliff whickman <cpw@sgi.com>
-> > colin leroy <colin@colino.net>
-> > corentin labbe <clabbe.montjoie@gmail.com>
-> > daniel drake <dsd@gentoo.org>
-> > daniele venzano <venza@brownhat.org>
-> > daniel oliveira nascimento <don@syst.com.br>
-> > daniel ribeiro <drwyrm@gmail.com>
-> > dario ballabio <ballabio_dario@emc.com>
-> > david kershner <david.kershner@unisys.com>
-> > david rowe <david@rowetel.com>
-> > david safford <safford@us.ibm.com>
-> > david täht <d@teklibre.com>
-> > deepak saxena <dsaxena@plexity.net>
-> > dirk eibach <eibach@gdsys.de>
-> > dirk opfer <dirk@opfer-online.de>
-> > dmitry tarnyagin <dmitry.tarnyagin@lockless.no>
-> > dominik brodowski <linux@dominikbrodowski.net>
-> > doug gilbert <dgilbert@interlog.com>
-> > doug thompson <dougthompson@xmission.com>
-> > doug warzecha <douglas_warzecha@dell.com>
-> > duncan sands <duncan.sands@free.fr>
-> > "ed l. cashin" <ecashin@coraid.com>
-> > egor martovetsky <egor@pasemi.com>
-> > eric biederman <ebiederm@xmission.com>
-> > eric piel <eric.piel@tremplin-utc.net>
-> > erik andren <erik.andren@gmail.com>
-> > faisal latif <faisal.latif@intel.com>
-> > ferenc bakonyi <fero@drama.obuda.kando.hu>
-> > florian schilhabel <florian.c.schilhabel@googlemail.com>.
-> > forest bond <forest@alittletooquiet.net>
-> > frank seidel <frank@f-seidel.de>
-> > fujita tomonori <fujita.tomonori@lab.ntt.co.jp>
-> > gary zambrano <zambrano@broadcom.com>
-> > gilles muller <gilles.muller@lip6.fr>
-> > gleb natapov <gleb@kernel.org>
-> > guillaume ligneul <guillaume.ligneul@gmail.com>
-> > guo-fu tseng <cooldavid@cooldavid.org>
-> > gustavo padovan <gustavo@padovan.org>
-> > haavard skinnemoen <hskinnemoen@gmail.com>
-> > hal rosenstock <hal.rosenstock@gmail.com>
-> > hansjoerg lipp <hjlipp@web.de>
-> > hans ulli kroll <ulli.kroll@googlemail.com>
-> > harald welte <haraldwelte@viatech.com>
-> > harald welte <laforge@openezx.org>
-> > henk vergonet <henk.vergonet@gmail.com>
-> > henrique de moraes holschuh <ibm-acpi@hmh.eng.br>
-> > herton ronaldo krzesinski <herton@canonical.com>
-> > heungjun kim <riverful.kim@samsung.com>
-> > hideaki yoshifuji <yoshfuji@linux-ipv6.org>
-> > hoang-nam nguyen <hnguyen@de.ibm.com>
-> > hubert feurstein <hubert.feurstein@contec.at>
-> > "hung hing lun, mike" <hlhung3i@gmail.com>
-> > ian campbell <ijc+devicetree@hellion.org.uk>
-> > ian molton <spyro@f2s.com>
-> > ion badulescu <ionut@badula.org>
-> > ishizaki kou <kou.ishizaki@toshiba.co.jp>
-> > ivan kokshaysky <ink@jurassic.park.msu.ru>
-> > jakub schmidtke <sjakub@gmail.com>
-> > "james e.j. bottomley" <james.bottomley@hansenpartnership.com>
-> > "james e.j. bottomley" <jbottomley@parallels.com>
-> > "james e.j. bottomley" <jejb@parisc-linux.org>
-> > james morris <jmorris@namei.org>
-> > "james r. van zandt" <jrv@vanzandt.mv.com>
-> > jamie lenehan <lenehan@twibble.org>
-> > jan-benedict glaw <jbglaw@lug-owl.de>
-> > jan dumon <j.dumon@option.com>
-> > jan harkes <jaharkes@cs.cmu.edu>
-> > jan-simon moeller <jansimon.moeller@gmx.de>
-> > jarkko lavinen <jarkko.lavinen@nokia.com>
-> > jarod wilson <jarod@wilsonet.com>
-> > jason uhlenkott <juhlenko@akamai.com>
-> > jaya kumar <jayakumar.alsa@gmail.com>
-> > jaya kumar <jayalk@intworks.biz>
-> > jay cliburn <jcliburn@gmail.com>
-> > jean-paul roubelat <jpr@f6fbb.org>
-> > jeff dike <jdike@addtoit.com>
-> > jens osterkamp <jens@de.ibm.com>
-> > jes sorensen <jes@trained-monkey.org>
-> > jim paris <jim@jtan.com>
-> > jiri kosina <trivial@kernel.org>
-> > jiri slaby <jirislaby@gmail.com>
-> > joerg reuter <jreuter@yaina.de>
-> > joern engel <joern@lazybastard.org>
-> > johan hedberg <johan.hedberg@gmail.com>
-> > john mccutchan <john@johnmccutchan.com>
-> > john ronciak <john.ronciak@intel.com>
-> > "john w. linville" <linville@tuxdriver.com>
-> > jonathan buzzard <jonathan@buzzard.org.uk>
-> > "jon d. mason" <jdmason@kudzu.us>
-> > jon nettleton <jon.nettleton@gmail.com>
-> > josh triplett <josh@freedesktop.org>
-> > joshua morris <josh.h.morris@us.ibm.com>
-> > joshua thompson <funaho@jurai.org>
-> > juanjo ciarlante <jjciarla@raiz.uncu.edu.ar>
-> > "juergen e. fischer" <fischer@norbit.de>
-> > juergen stuber <starblue@users.sourceforge.net>
-> > juerg haefliger <juergh@gmail.com>
-> > kentaro takeda <takedakn@nttdata.co.jp>
-> > kevin curtis <kevin.curtis@farsite.co.uk>
-> > kevin hilman <khilman@kernel.org>
-> > kirk reiser <kirk@reisers.ca>
-> > koichi yasutake <yasutake.koichi@jp.panasonic.com>
-> > kristoffer glembo <kristoffer@gaisler.com>
-> > kurt garloff <garloff@suse.de>
-> > leandro costantino <lcostantino@gmail.com>
-> > len brown <lenb@kernel.org>
-> > lennert buytenhek <kernel@wantstofly.org>
-> > liam girdwood <lgirdwood@gmail.com>
-> > liam girdwood <lrg@slimlogic.co.uk>
-> > lior dotan <liodot@gmail.com>
-> > "luis r. rodriguez" <mcgrof@gmail.com>
-> > maik broemme <mbroemme@plusserver.de>
-> > manohar vanga <manohar.vanga@gmail.com>
-> > marcelo henrique cerri <mhcerri@linux.vnet.ibm.com>
-> > marc hulsman <m.hulsman@tudelft.nl>
-> > "mark f. brown" <mark.brown314@gmail.com>
-> > martin mares <mj@ucw.cz>
-> > matthew wilcox <matthew@wil.cx>
-> > matt mackall <mpm@selenic.com>
-> > maxim krasnyansky <maxk@qti.qualcomm.com>
-> > michael hanselmann <linux-kernel@hansmi.ch>
-> > michael petchkovsky <mkpetch@internode.on.net>
-> > michael reed <mdr@sgi.com>
-> > michal januszewski <spock@gentoo.org>
-> > michal ostrowski <mostrows@earthlink.net>
-> > miguel ojeda sandonis <miguel.ojeda.sandonis@gmail.com>
-> > mikael starvik <starvik@axis.com>
-> > mike marciniszyn <infinipath@intel.com>
-> > mike rapoport <mike@compulab.co.il>
-> > miloslav trmac <mitr@volny.cz>
-> > miroslav zagorac <zaga@fly.cc.fer.hr>
-> > mitchell blank jr <mitch@sfgoth.com>
-> > muli ben-yehuda <muli@il.ibm.com>
-> > nagalakshmi nandigama <nagalakshmi.nandigama@avagotech.com>
-> > neela syam kolli <megaraidlinux@lsi.com>
-> > nelson castillo <arhuaco@freaks-unidos.net>
-> > nicholas a. bellinger <nab@linux-iscsi.org>
-> > nick piggin <npiggin@kernel.dk>
-> > olav kongas <ok@artecdesign.ee>
-> > olivier lorin <o.lorin@laposte.net>
-> > pantelis antoniou <pantelis.antoniou@gmail.com>
-> > pat gefre <pfg@sgi.com>
-> > paul mackerras <paulus@au.ibm.com>
-> > pau oliva fora <pof@eslack.org>
-> > peter chubb <pleb@gelato.unsw.edu.au>
-> > peter feuerer <peter@piie.net>
-> > philip blundell <philb@gnu.org>
-> > philip kelleher <pjk1939@linux.vnet.ibm.com>
-> > philip moltmann <moltmann@vmware.com>
-> > praveen krishnamoorthy <praveen.krishnamoorthy@avagotech.com>
-> > rakesh iyer <riyer@nvidia.com>
-> > ranganathan desikan <ravi@jetztechnologies.com>
-> > remi denis-courmont <courmisch@gmail.com>
-> > riccardo facchetti <fizban@tin.it>
-> > richard l maliszewski <richard.l.maliszewski@intel.com>
-> > "richard russon (flatcap)" <ldm@flatcap.org>
-> > rik faith <faith@cs.unc.edu>
-> > robert gerlach <khnz@gmx.de>
-> > robert love <rlove@rlove.org>
-> > robert love <rml@tech9.net>
-> > rob herring <robh+dt@kernel.org>
-> > roland dreier <roland@kernel.org>
-> > roland mcgrath <roland@redhat.com>
-> > ron mercer <ron.mercer@qlogic.com>
-> > ron minnich <rminnich@sandia.gov>
-> > samuel chessman <chessman@tux.org>
-> > santosh raspatur <santosh@chelsio.com>
-> > scott murray <scott@spiteful.org>
-> > sergey lapin <slapin@ossfans.org>
-> > shane wang <shane.wang@intel.com>
-> > simon arlott <cxacru@fire.lp0.eu>
-> > simon kelley <simon@thekelleys.org.uk>
-> > sorbica shieh <sorbica@icplus.com.tw>
-> > srinivas kandagatla <srinivas.kandagatla@gmail.com>
-> > stefan eletzhofer <stefan.eletzhofer@eletztrick.de>
-> > stefano brivio <stefano.brivio@polimi.it>
-> > steve french <sfrench@samba.org>
-> > steve sakoman <sakoman@gmail.com>
-> > steve underwood <steveu@coppice.org>
-> > steve wise <swise@chelsio.com>
-> > subbu seetharaman <subbu.seetharaman@emulex.com>
-> > sudarsana kalluru <sudarsana.kalluru@qlogic.com>
-> > sujith thomas <sujith.thomas@intel.com>
-> > teddy wang <teddy.wang@siliconmotion.com.cn>
-> > terje bergström <tbergstrom@nvidia.com>
-> > thibaut varene <t-bone@parisc-linux.org>
-> > thomas dahlmann <dahlmann.thomas@arcor.de>
-> > thomas winischhofer <thomas@winischhofer.net>
-> > "tigran a. aivazian" <tigran@aivazian.fsnet.co.uk>
-> > tigran aivazian <tigran@aivazian.fsnet.co.uk>
-> > till harbaum <till@harbaum.org>
-> > tim small <tim@buttersideup.com>
-> > tim waugh <tim@cyberelk.net>
-> > tony finch <dot@dotat.at>
-> > tony olech <tony.olech@elandigitalsystems.com>
-> > torben mathiasen <device@lanana.org>
-> > ulrich kunitz <kune@deine-taler.de>
-> > vegard nossum <vegardno@ifi.uio.no>
-> > ville syrjala <syrjala@sci.fi>
-> > vishwas a deshpande <vishwas.a.deshpande@ti.com>
-> > vitaly bordug <vbordug@ru.mvista.com>
-> > vitaly bordug <vitb@kernel.crashing.org>
-> > wensong zhang <wensong@linux-vs.org>
-> > willem riede <osst@riede.org>
-> > willy tarreau <willy@meta-x.org>
-> > "wong hoi sing, edison" <hswong3i@gmail.com>
-> > xavier deguillard <xdeguillard@vmware.com>
-> > yokota hiroshi <yokota@netlab.is.tsukuba.ac.jp>
-> > zhang wei <zw@zh-kernel.org>
-> > zwane mwaikambo <zwanem@gmail.com>
+diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
+index 29d9cc04c04e..03a5567f2c2f 100644
+--- a/drivers/gpu/drm/radeon/radeon.h
++++ b/drivers/gpu/drm/radeon/radeon.h
+@@ -64,6 +64,7 @@
+ #include <linux/wait.h>
+ #include <linux/list.h>
+ #include <linux/kref.h>
++#include <linux/fence.h>
+ 
+ #include <ttm/ttm_bo_api.h>
+ #include <ttm/ttm_bo_driver.h>
+@@ -116,9 +117,6 @@ extern int radeon_deep_color;
+ #define RADEONFB_CONN_LIMIT			4
+ #define RADEON_BIOS_NUM_SCRATCH			8
+ 
+-/* fence seq are set to this number when signaled */
+-#define RADEON_FENCE_SIGNALED_SEQ		0LL
+-
+ /* internal ring indices */
+ /* r1xx+ has gfx CP ring */
+ #define RADEON_RING_TYPE_GFX_INDEX		0
+@@ -350,12 +348,15 @@ struct radeon_fence_driver {
+ };
+ 
+ struct radeon_fence {
++	struct fence base;
++
+ 	struct radeon_device		*rdev;
+-	struct kref			kref;
+ 	/* protected by radeon_fence.lock */
+ 	uint64_t			seq;
+ 	/* RB, DMA, etc. */
+ 	unsigned			ring;
++
++	wait_queue_t fence_wake;
+ };
+ 
+ int radeon_fence_driver_start_ring(struct radeon_device *rdev, int ring);
+@@ -2268,6 +2269,7 @@ struct radeon_device {
+ 	struct radeon_mman		mman;
+ 	struct radeon_fence_driver	fence_drv[RADEON_NUM_RINGS];
+ 	wait_queue_head_t		fence_queue;
++	unsigned			fence_context;
+ 	struct mutex			ring_lock;
+ 	struct radeon_ring		ring[RADEON_NUM_RINGS];
+ 	bool				ib_pool_ready;
+@@ -2358,11 +2360,6 @@ u32 cik_mm_rdoorbell(struct radeon_device *rdev, u32 index);
+ void cik_mm_wdoorbell(struct radeon_device *rdev, u32 index, u32 v);
+ 
+ /*
+- * Cast helper
+- */
+-#define to_radeon_fence(p) ((struct radeon_fence *)(p))
+-
+-/*
+  * Registers read & write functions.
+  */
+ #define RREG8(reg) readb((rdev->rmmio) + (reg))
+diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
+index 03686fab842d..86699df7c8f3 100644
+--- a/drivers/gpu/drm/radeon/radeon_device.c
++++ b/drivers/gpu/drm/radeon/radeon_device.c
+@@ -1213,6 +1213,7 @@ int radeon_device_init(struct radeon_device *rdev,
+ 	for (i = 0; i < RADEON_NUM_RINGS; i++) {
+ 		rdev->ring[i].idx = i;
+ 	}
++	rdev->fence_context = fence_context_alloc(RADEON_NUM_RINGS);
+ 
+ 	DRM_INFO("initializing kernel modesetting (%s 0x%04X:0x%04X 0x%04X:0x%04X).\n",
+ 		radeon_family_name[rdev->family], pdev->vendor, pdev->device,
+@@ -1607,6 +1608,54 @@ int radeon_resume_kms(struct drm_device *dev, bool resume, bool fbcon)
+ 	return 0;
+ }
+ 
++static uint32_t radeon_gpu_mask_sw_irq(struct radeon_device *rdev)
++{
++	uint32_t mask = 0;
++	int i;
++
++	if (!rdev->ddev->irq_enabled)
++		return mask;
++
++	/*
++	 * increase refcount on sw interrupts for all rings to stop
++	 * enabling interrupts in radeon_fence_enable_signaling during
++	 * gpu reset.
++	 */
++
++	for (i = 0; i < RADEON_NUM_RINGS; ++i) {
++		if (!rdev->ring[i].ready)
++			continue;
++
++		atomic_inc(&rdev->irq.ring_int[i]);
++		mask |= 1 << i;
++	}
++	return mask;
++}
++
++static void radeon_gpu_unmask_sw_irq(struct radeon_device *rdev, uint32_t mask)
++{
++	unsigned long irqflags;
++	int i;
++
++	if (!mask)
++		return;
++
++	/*
++	 * undo refcount increase, and reset irqs to correct value.
++	 */
++
++	for (i = 0; i < RADEON_NUM_RINGS; ++i) {
++		if (!(mask & (1 << i)))
++			continue;
++
++		atomic_dec(&rdev->irq.ring_int[i]);
++	}
++
++	spin_lock_irqsave(&rdev->irq.lock, irqflags);
++	radeon_irq_set(rdev);
++	spin_unlock_irqrestore(&rdev->irq.lock, irqflags);
++}
++
+ /**
+  * radeon_gpu_reset - reset the asic
+  *
+@@ -1624,6 +1673,7 @@ int radeon_gpu_reset(struct radeon_device *rdev)
+ 
+ 	int i, r;
+ 	int resched;
++	uint32_t sw_mask;
+ 
+ 	down_write(&rdev->exclusive_lock);
+ 
+@@ -1637,6 +1687,7 @@ int radeon_gpu_reset(struct radeon_device *rdev)
+ 	radeon_save_bios_scratch_regs(rdev);
+ 	/* block TTM */
+ 	resched = ttm_bo_lock_delayed_workqueue(&rdev->mman.bdev);
++	sw_mask = radeon_gpu_mask_sw_irq(rdev);
+ 	radeon_pm_suspend(rdev);
+ 	radeon_suspend(rdev);
+ 
+@@ -1686,13 +1737,20 @@ retry:
+ 	radeon_pm_resume(rdev);
+ 	drm_helper_resume_force_mode(rdev->ddev);
+ 
++	radeon_gpu_unmask_sw_irq(rdev, sw_mask);
+ 	ttm_bo_unlock_delayed_workqueue(&rdev->mman.bdev, resched);
+ 	if (r) {
+ 		/* bad news, how to tell it to userspace ? */
+ 		dev_info(rdev->dev, "GPU reset failed\n");
+ 	}
+ 
+-	up_write(&rdev->exclusive_lock);
++	/*
++	 * force all waiters to recheck, some may have been
++	 * added while the exclusive_lock was unavailable
++	 */
++	downgrade_write(&rdev->exclusive_lock);
++	wake_up_all(&rdev->fence_queue);
++	up_read(&rdev->exclusive_lock);
+ 	return r;
+ }
+ 
+diff --git a/drivers/gpu/drm/radeon/radeon_fence.c b/drivers/gpu/drm/radeon/radeon_fence.c
+index 6435719fd45b..763b7928026d 100644
+--- a/drivers/gpu/drm/radeon/radeon_fence.c
++++ b/drivers/gpu/drm/radeon/radeon_fence.c
+@@ -39,6 +39,15 @@
+ #include "radeon.h"
+ #include "radeon_trace.h"
+ 
++static const struct fence_ops radeon_fence_ops;
++
++#define to_radeon_fence(p) \
++	({								\
++		struct radeon_fence *__f;				\
++		__f = container_of((p), struct radeon_fence, base);	\
++		__f->base.ops == &radeon_fence_ops ? __f : NULL;	\
++	})
++
+ /*
+  * Fences
+  * Fences mark an event in the GPUs pipeline and are used
+@@ -111,30 +120,55 @@ int radeon_fence_emit(struct radeon_device *rdev,
+ 		      struct radeon_fence **fence,
+ 		      int ring)
+ {
++	u64 seq = ++rdev->fence_drv[ring].sync_seq[ring];
++
+ 	/* we are protected by the ring emission mutex */
+ 	*fence = kmalloc(sizeof(struct radeon_fence), GFP_KERNEL);
+ 	if ((*fence) == NULL) {
+ 		return -ENOMEM;
+ 	}
+-	kref_init(&((*fence)->kref));
+-	(*fence)->rdev = rdev;
+-	(*fence)->seq = ++rdev->fence_drv[ring].sync_seq[ring];
+ 	(*fence)->ring = ring;
++	fence_init(&(*fence)->base, &radeon_fence_ops,
++		   &rdev->fence_queue.lock, rdev->fence_context + ring, seq);
++	(*fence)->rdev = rdev;
++	(*fence)->seq = seq;
+ 	radeon_fence_ring_emit(rdev, ring, *fence);
+ 	trace_radeon_fence_emit(rdev->ddev, ring, (*fence)->seq);
+ 	return 0;
+ }
+ 
+ /**
+- * radeon_fence_process - process a fence
++ * radeon_fence_check_signaled - callback from fence_queue
+  *
+- * @rdev: radeon_device pointer
+- * @ring: ring index the fence is associated with
+- *
+- * Checks the current fence value and wakes the fence queue
+- * if the sequence number has increased (all asics).
++ * this function is called with fence_queue lock held, which is also used
++ * for the fence locking itself, so unlocked variants are used for
++ * fence_signal, and remove_wait_queue.
+  */
+-void radeon_fence_process(struct radeon_device *rdev, int ring)
++static int radeon_fence_check_signaled(wait_queue_t *wait, unsigned mode, int flags, void *key)
++{
++	struct radeon_fence *fence;
++	u64 seq;
++
++	fence = container_of(wait, struct radeon_fence, fence_wake);
++
++	seq = atomic64_read(&fence->rdev->fence_drv[fence->ring].last_seq);
++	if (seq >= fence->seq) {
++		int ret = fence_signal_locked(&fence->base);
++
++		if (!ret)
++			FENCE_TRACE(&fence->base, "signaled from irq context\n");
++		else
++			FENCE_TRACE(&fence->base, "was already signaled\n");
++
++		radeon_irq_kms_sw_irq_put(fence->rdev, fence->ring);
++		__remove_wait_queue(&fence->rdev->fence_queue, &fence->fence_wake);
++		fence_put(&fence->base);
++	} else
++		FENCE_TRACE(&fence->base, "pending\n");
++	return 0;
++}
++
++static bool __radeon_fence_process(struct radeon_device *rdev, int ring)
+ {
+ 	uint64_t seq, last_seq, last_emitted;
+ 	unsigned count_loop = 0;
+@@ -190,23 +224,22 @@ void radeon_fence_process(struct radeon_device *rdev, int ring)
+ 		}
+ 	} while (atomic64_xchg(&rdev->fence_drv[ring].last_seq, seq) > seq);
+ 
+-	if (wake)
+-		wake_up_all(&rdev->fence_queue);
++	return wake;
+ }
+ 
+ /**
+- * radeon_fence_destroy - destroy a fence
++ * radeon_fence_process - process a fence
+  *
+- * @kref: fence kref
++ * @rdev: radeon_device pointer
++ * @ring: ring index the fence is associated with
+  *
+- * Frees the fence object (all asics).
++ * Checks the current fence value and wakes the fence queue
++ * if the sequence number has increased (all asics).
+  */
+-static void radeon_fence_destroy(struct kref *kref)
++void radeon_fence_process(struct radeon_device *rdev, int ring)
+ {
+-	struct radeon_fence *fence;
+-
+-	fence = container_of(kref, struct radeon_fence, kref);
+-	kfree(fence);
++	if (__radeon_fence_process(rdev, ring))
++		wake_up_all(&rdev->fence_queue);
+ }
+ 
+ /**
+@@ -237,6 +270,69 @@ static bool radeon_fence_seq_signaled(struct radeon_device *rdev,
+ 	return false;
+ }
+ 
++static bool __radeon_fence_signaled(struct fence *f)
++{
++	struct radeon_fence *fence = to_radeon_fence(f);
++	struct radeon_device *rdev = fence->rdev;
++	unsigned ring = fence->ring;
++	u64 seq = fence->seq;
++
++	if (atomic64_read(&rdev->fence_drv[ring].last_seq) >= seq) {
++		return true;
++	}
++
++	if (down_read_trylock(&rdev->exclusive_lock)) {
++		radeon_fence_process(rdev, ring);
++		up_read(&rdev->exclusive_lock);
++
++		if (atomic64_read(&rdev->fence_drv[ring].last_seq) >= seq) {
++			return true;
++		}
++	}
++	return false;
++}
++
++/**
++ * radeon_fence_enable_signaling - enable signalling on fence
++ * @fence: fence
++ *
++ * This function is called with fence_queue lock held, and adds a callback
++ * to fence_queue that checks if this fence is signaled, and if so it
++ * signals the fence and removes itself.
++ */
++static bool radeon_fence_enable_signaling(struct fence *f)
++{
++	struct radeon_fence *fence = to_radeon_fence(f);
++	struct radeon_device *rdev = fence->rdev;
++
++	if (atomic64_read(&rdev->fence_drv[fence->ring].last_seq) >= fence->seq ||
++	    !rdev->ddev->irq_enabled)
++		return false;
++
++	radeon_irq_kms_sw_irq_get(rdev, fence->ring);
++
++	if (down_read_trylock(&rdev->exclusive_lock)) {
++		if (__radeon_fence_process(rdev, fence->ring))
++			wake_up_all_locked(&rdev->fence_queue);
++
++		up_read(&rdev->exclusive_lock);
++	}
++
++	/* did fence get signaled after we enabled the sw irq? */
++	if (atomic64_read(&rdev->fence_drv[fence->ring].last_seq) >= fence->seq) {
++		radeon_irq_kms_sw_irq_put(rdev, fence->ring);
++		return false;
++	}
++
++	fence->fence_wake.flags = 0;
++	fence->fence_wake.private = NULL;
++	fence->fence_wake.func = radeon_fence_check_signaled;
++	__add_wait_queue(&rdev->fence_queue, &fence->fence_wake);
++	fence_get(f);
++
++	return true;
++}
++
+ /**
+  * radeon_fence_signaled - check if a fence has signaled
+  *
+@@ -250,11 +346,13 @@ bool radeon_fence_signaled(struct radeon_fence *fence)
+ 	if (!fence) {
+ 		return true;
+ 	}
+-	if (fence->seq == RADEON_FENCE_SIGNALED_SEQ) {
+-		return true;
+-	}
++
+ 	if (radeon_fence_seq_signaled(fence->rdev, fence->seq, fence->ring)) {
+-		fence->seq = RADEON_FENCE_SIGNALED_SEQ;
++		int ret;
++
++		ret = fence_signal(&fence->base);
++		if (!ret)
++			FENCE_TRACE(&fence->base, "signaled from radeon_fence_signaled\n");
+ 		return true;
+ 	}
+ 	return false;
+@@ -413,21 +511,18 @@ int radeon_fence_wait(struct radeon_fence *fence, bool intr)
+ 	uint64_t seq[RADEON_NUM_RINGS] = {};
+ 	long r;
+ 
+-	if (fence == NULL) {
+-		WARN(1, "Querying an invalid fence : %p !\n", fence);
+-		return -EINVAL;
+-	}
+-
+-	seq[fence->ring] = fence->seq;
+-	if (seq[fence->ring] == RADEON_FENCE_SIGNALED_SEQ)
++	if (test_bit(FENCE_FLAG_SIGNALED_BIT, &fence->base.flags))
+ 		return 0;
+ 
++	seq[fence->ring] = fence->seq;
+ 	r = radeon_fence_wait_seq_timeout(fence->rdev, seq, intr, MAX_SCHEDULE_TIMEOUT);
+ 	if (r < 0) {
+ 		return r;
+ 	}
+ 
+-	fence->seq = RADEON_FENCE_SIGNALED_SEQ;
++	r = fence_signal(&fence->base);
++	if (!r)
++		FENCE_TRACE(&fence->base, "signaled from fence_wait\n");
+ 	return 0;
+ }
+ 
+@@ -459,12 +554,13 @@ int radeon_fence_wait_any(struct radeon_device *rdev,
+ 			continue;
+ 		}
+ 
++		if (test_bit(FENCE_FLAG_SIGNALED_BIT, &fences[i]->base.flags)) {
++			/* already signaled */
++			return 0;
++		}
++
+ 		seq[i] = fences[i]->seq;
+ 		++num_rings;
+-
+-		/* test if something was allready signaled */
+-		if (seq[i] == RADEON_FENCE_SIGNALED_SEQ)
+-			return 0;
+ 	}
+ 
+ 	/* nothing to wait for ? */
+@@ -545,7 +641,7 @@ int radeon_fence_wait_empty(struct radeon_device *rdev, int ring)
+  */
+ struct radeon_fence *radeon_fence_ref(struct radeon_fence *fence)
+ {
+-	kref_get(&fence->kref);
++	fence_get(&fence->base);
+ 	return fence;
+ }
+ 
+@@ -561,9 +657,8 @@ void radeon_fence_unref(struct radeon_fence **fence)
+ 	struct radeon_fence *tmp = *fence;
+ 
+ 	*fence = NULL;
+-	if (tmp) {
+-		kref_put(&tmp->kref, radeon_fence_destroy);
+-	}
++	if (tmp)
++		fence_put(&tmp->base);
+ }
+ 
+ /**
+@@ -872,3 +967,53 @@ int radeon_debugfs_fence_init(struct radeon_device *rdev)
+ 	return 0;
+ #endif
+ }
++
++static long __radeon_fence_wait(struct fence *f, bool intr, long timeout)
++{
++	struct radeon_fence *fence = to_radeon_fence(f);
++	u64 target_seq[RADEON_NUM_RINGS] = {};
++	struct radeon_device *rdev = fence->rdev;
++	long r;
++
++	target_seq[fence->ring] = fence->seq;
++
++	down_read(&rdev->exclusive_lock);
++	r = radeon_fence_wait_seq_timeout(fence->rdev, target_seq, intr, timeout);
++
++	if (r > 0 && !fence_signal(&fence->base))
++		FENCE_TRACE(&fence->base, "signaled from __radeon_fence_wait\n");
++
++	up_read(&rdev->exclusive_lock);
++	return r;
++
++}
++
++static const char *radeon_fence_get_driver_name(struct fence *fence)
++{
++	return "radeon";
++}
++
++static const char *radeon_fence_get_timeline_name(struct fence *f)
++{
++	struct radeon_fence *fence = to_radeon_fence(f);
++	switch (fence->ring) {
++	case RADEON_RING_TYPE_GFX_INDEX: return "radeon.gfx";
++	case CAYMAN_RING_TYPE_CP1_INDEX: return "radeon.cp1";
++	case CAYMAN_RING_TYPE_CP2_INDEX: return "radeon.cp2";
++	case R600_RING_TYPE_DMA_INDEX: return "radeon.dma";
++	case CAYMAN_RING_TYPE_DMA1_INDEX: return "radeon.dma1";
++	case R600_RING_TYPE_UVD_INDEX: return "radeon.uvd";
++	case TN_RING_TYPE_VCE1_INDEX: return "radeon.vce1";
++	case TN_RING_TYPE_VCE2_INDEX: return "radeon.vce2";
++	default: WARN_ON_ONCE(1); return "radeon.unk";
++	}
++}
++
++static const struct fence_ops radeon_fence_ops = {
++	.get_driver_name = radeon_fence_get_driver_name,
++	.get_timeline_name = radeon_fence_get_timeline_name,
++	.enable_signaling = radeon_fence_enable_signaling,
++	.signaled = __radeon_fence_signaled,
++	.wait = __radeon_fence_wait,
++	.release = NULL,
++};
+-- 
+2.0.0
 
 
