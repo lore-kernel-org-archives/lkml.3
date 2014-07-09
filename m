@@ -1,52 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756914AbaGIXmp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 19:42:45 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:34612 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756885AbaGIXmn (ORCPT
+	id S1756931AbaGIXn1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 19:43:27 -0400
+Received: from message.mylangara.bc.ca ([142.35.159.25]:49982 "EHLO
+	message.langara.bc.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754317AbaGIXn0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 19:42:43 -0400
-Date: Wed, 09 Jul 2014 16:42:38 -0700 (PDT)
-Message-Id: <20140709.164238.899320392607428223.davem@davemloft.net>
-To: romieu@fr.zoreil.com
-Cc: hayeswang@realtek.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nic_swsd@realtek.com
-Subject: Re: [PATCH net v2] r8169: disable L23
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140709220954.GA30848@electric-eye.fr.zoreil.com>
-References: <1394712342-15778-6-Taiwan-albertk@realtek.com>
-	<1394712342-15778-7-Taiwan-albertk@realtek.com>
-	<20140709220954.GA30848@electric-eye.fr.zoreil.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 09 Jul 2014 16:42:42 -0700 (PDT)
+	Wed, 9 Jul 2014 19:43:26 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+Content-type: text/plain; charset=us-ascii
+From: Steven Stewart-Gallus <sstewartgallus00@mylangara.bc.ca>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org
+Message-id: <fb46c0d9691c.53bdd39d@langara.bc.ca>
+Date: Wed, 09 Jul 2014 23:43:25 +0000 (GMT)
+X-Mailer: Sun Java(tm) System Messenger Express 6.3-6.03 (built Mar 14 2008;
+ 32bit)
+Content-language: en
+Subject: Re: [PATCH 1/1] include/uapi: Define AT_FDNODIR constant as future
+ guarantee
+X-Accept-Language: en
+In-reply-to: <20140708121229.GA21107@infradead.org>
+References: <fb469d6277ef.53b85737@langara.bc.ca>
+ <20140708121229.GA21107@infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Francois Romieu <romieu@fr.zoreil.com>
-Date: Thu, 10 Jul 2014 00:09:54 +0200
+Thank you for the criticisms Christopher Hellwig.
 
-> Hayes Wang <hayeswang@realtek.com> :
->> For RTL8411, RTL8111G, RTL8402, RTL8105, and RTL8106, disable the feature
->> of entering the L2/L3 link state of the PCIe. When the nic starts the process
->> of entering the L2/L3 link state and the PCI reset occurs before the work
->> is finished, the work would be queued and continue after the next the PCI
->> reset occurs. This causes the device stays in L2/L3 link state, and the system
->> couldn't find the device.
->> 
->> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
-> 
-> Acked-by: Francois Romieu <romieu@fr.zoreil.com>
-> 
-> Thanks, the explanation of the race between software induced PCI reset
-> and transition to PCIe L2/L3 should be clear enough. PM scared me, yet
-> it got worse.
-> 
-> Davem, would you mind to s/rtl_l23_enable/rtl_pcie_state_l2l3_enable/ or
-> do you want a new patch for it ?
+I will edit the commit message to be better and comments in the code
+to be clearer. I will also document the constant in the manpages. I
+think I will call the constant AT_FDABSOLUTE though because I want it
+to be prepended with FD the same way AT_FDCWD is.
 
-Applied with the function name adjusted, thanks.
+Thank you,
+Steven Stewart-Gallus
