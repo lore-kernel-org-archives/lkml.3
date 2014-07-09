@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229AbaGIM23 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 08:28:29 -0400
-Received: from xavier.telenet-ops.be ([195.130.132.52]:44755 "EHLO
+	id S1756238AbaGIM2c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 08:28:32 -0400
+Received: from xavier.telenet-ops.be ([195.130.132.52]:44756 "EHLO
 	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755178AbaGIMXy (ORCPT
+	with ESMTP id S1755062AbaGIMXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Jul 2014 08:23:54 -0400
 From: Geert Uytterhoeven <geert+renesas@glider.be>
@@ -13,9 +13,9 @@ Cc: devicetree@vger.kernel.org, linux-sh@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert+renesas@glider.be>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 03/13] irqchip: renesas-irqc: Add DT binding documentation
-Date: Wed,  9 Jul 2014 14:23:33 +0200
-Message-Id: <1404908623-909-4-git-send-email-geert+renesas@glider.be>
+Subject: [PATCH 02/13] irqchip: renesas-intc-irqpin: Document SoC-specific bindings
+Date: Wed,  9 Jul 2014 14:23:32 +0200
+Message-Id: <1404908623-909-3-git-send-email-geert+renesas@glider.be>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1404908623-909-1-git-send-email-geert+renesas@glider.be>
 References: <1404908623-909-1-git-send-email-geert+renesas@glider.be>
@@ -23,52 +23,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The renesas-irqc driver supports DT, but the DT binding documentation was
-missing.
+The documentation only mentioned the generic fallback compatible property.
+Add the missing SoC-specific compatible properties, which are already in
+use.
 
 Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- .../bindings/interrupt-controller/renesas,irqc.txt | 30 ++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/interrupt-controller/renesas,irqc.txt
+ .../bindings/interrupt-controller/renesas,intc-irqpin.txt         | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/interrupt-controller/renesas,irqc.txt b/Documentation/devicetree/bindings/interrupt-controller/renesas,irqc.txt
-new file mode 100644
-index 000000000000..f819e2a5907c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/interrupt-controller/renesas,irqc.txt
-@@ -0,0 +1,30 @@
-+DT bindings for the R-Mobile/R-Car interrupt controller
-+
-+Required properties:
-+
-+- compatible: has to be "renesas,irqc-<soctype>", "renesas,irqc" as fallback.
+diff --git a/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-irqpin.txt b/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-irqpin.txt
+index 1f8b0c507c26..c73acd060093 100644
+--- a/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-irqpin.txt
++++ b/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-irqpin.txt
+@@ -2,7 +2,13 @@ DT bindings for the R-/SH-Mobile irqpin controller
+ 
+ Required properties:
+ 
+-- compatible: has to be "renesas,intc-irqpin"
++- compatible: has to be "renesas,intc-irqpin-<soctype>", "renesas,intc-irqpin"
++  as fallback.
 +  Examples with soctypes are:
-+    - "renesas,irqc-r8a73a4" (R-Mobile AP6)
-+    - "renesas,irqc-r8a7790" (R-Car H2)
-+    - "renesas,irqc-r8a7791" (R-Car M2)
-+- #interrupt-cells: has to be <2>: an interrupt index and flags, as defined in
-+  interrupts.txt in this directory
-+
-+Optional properties:
-+
-+- any properties, listed in interrupts.txt, and any standard resource allocation
-+  properties
-+
-+Example:
-+
-+	irqc0: interrupt-controller@e61c0000 {
-+		compatible = "renesas,irqc-r8a7790", "renesas,irqc";
-+		#interrupt-cells = <2>;
-+		interrupt-controller;
-+		reg = <0 0xe61c0000 0 0x200>;
-+		interrupts = <0 0 IRQ_TYPE_LEVEL_HIGH>,
-+			     <0 1 IRQ_TYPE_LEVEL_HIGH>,
-+			     <0 2 IRQ_TYPE_LEVEL_HIGH>,
-+			     <0 3 IRQ_TYPE_LEVEL_HIGH>;
-+	};
-+
++    - "renesas,intc-irqpin-r8a7740" (R-Mobile A1)
++    - "renesas,intc-irqpin-r8a7778" (R-Car M1A)
++    - "renesas,intc-irqpin-r8a7779" (R-Car H1)
++    - "renesas,intc-irqpin-sh73a0" (SH-Mobile AG5)
+ - #interrupt-cells: has to be <2>: an interrupt index and flags, as defined in
+   interrupts.txt in this directory
+ 
 -- 
 1.9.1
 
