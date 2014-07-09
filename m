@@ -1,50 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756311AbaGIV1S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 17:27:18 -0400
-Received: from andre.telenet-ops.be ([195.130.132.53]:54051 "EHLO
-	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754576AbaGIV1P (ORCPT
+	id S1756497AbaGIV1a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 17:27:30 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:41903 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756406AbaGIV11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 17:27:15 -0400
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH 1/2] spi: rspi: Relax DMA dependency and increase build coverage
-Date: Wed,  9 Jul 2014 23:27:07 +0200
-Message-Id: <1404941228-9922-1-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 9 Jul 2014 17:27:27 -0400
+Date: Wed, 9 Jul 2014 14:27:23 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Feng Kan <fkan@apm.com>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        patches <patches@apm.com>
+Subject: Re: [PATCH V8 1/6] power: reset: Add generic SYSCON register mapped
+ reset
+Message-ID: <20140709212723.GA6737@roeck-us.net>
+References: <1404872153-3594-1-git-send-email-fkan@apm.com>
+ <1404872153-3594-2-git-send-email-fkan@apm.com>
+ <53BCBCEC.7010306@roeck-us.net>
+ <CAL85gmB9wRXXrza3g0MBFWUi5w3_eCEhxdSd2FfmoB_SkGA8Ww@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAL85gmB9wRXXrza3g0MBFWUi5w3_eCEhxdSd2FfmoB_SkGA8Ww@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As of commit ab116a4df4942c78c189d9b0744dd940ab9e00b9 ("dmaengine:
-shdma: fix a build failure on platforms with no DMA support"), the DMA
-filter function shdma_chan_filter() is sufficiently abstracted to allow
-building without DMA support. Hence drop the SH_DMAE_BASE dependency on
-SUPERH.
-Also increase build coverage by allowing the driver to be enabled if
-COMPILE_TEST=y.
+On Wed, Jul 09, 2014 at 02:15:44PM -0700, Feng Kan wrote:
+> On Tue, Jul 8, 2014 at 8:54 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> > On 07/08/2014 07:15 PM, Feng Kan wrote:
+> >>
+> >> Add a generic SYSCON register mapped reset mechanism.
+> >>
+> >> Signed-off-by: Feng Kan <fkan@apm.com>
+> >> ---
+> >>   drivers/power/reset/Kconfig         |  6 +++
+> >>   drivers/power/reset/Makefile        |  1 +
+> >>   drivers/power/reset/syscon-reboot.c | 91
+> >> +++++++++++++++++++++++++++++++++++++
+> >>   3 files changed, 98 insertions(+)
+> >>   create mode 100644 drivers/power/reset/syscon-reboot.c
+> >>
+> >> diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
+> >> index bdcf517..5877b38 100644
+> >> --- a/drivers/power/reset/Kconfig
+> >> +++ b/drivers/power/reset/Kconfig
+> >> @@ -80,3 +80,9 @@ config POWER_RESET_KEYSTONE
+> >>         help
+> >>           Reboot support for the KEYSTONE SoCs.
+> >>
+> >> +config POWER_RESET_SYSCON
+> >> +       bool "Generic SYSCON regmap reset driver"
+> >> +       depends on ARM || ARM64 || COMPILE_TEST
+> >
+> >
+> > As written, this driver is really not generic but very arm specific.
+> > I don't think COMPILE_TEST is a good idea either, since arm_pm_restart
+> > is only defined for the arm architecture. Did you try compiling allmodconfig
+> > or allyesconfig for, say, x86_64 with this patch applied ?
+> >
+> > I think this might benefit from using [1], which would make it really
+> > generic.
+> >
+> > Guenter
+> >
+> > [1] http://www.spinics.net/lists/kernel/msg1780939.html
+> This is great, I will base off this list. Did it make it to a branch anywhere?
+> 
+Still in review. I hope it will make it into 3.17.
+Of course it might be useful if you (and others)
+help making the case for it.
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
----
- drivers/spi/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index d6be5e6e93e9..d46b4b9e73b2 100644
---- a/drivers/spi/Kconfig
-+++ b/drivers/spi/Kconfig
-@@ -396,7 +396,7 @@ config SPI_ROCKCHIP
- 
- config SPI_RSPI
- 	tristate "Renesas RSPI/QSPI controller"
--	depends on (SUPERH && SH_DMAE_BASE) || ARCH_SHMOBILE
-+	depends on SUPERH || ARCH_SHMOBILE || COMPILE_TEST
- 	help
- 	  SPI driver for Renesas RSPI and QSPI blocks.
- 
--- 
-1.9.1
-
+Thanks,
+Guenter
