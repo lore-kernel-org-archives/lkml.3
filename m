@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932095AbaGIOYz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 10:24:55 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756422AbaGIOYx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 10:24:53 -0400
-Message-ID: <53BD50B2.8050007@nod.at>
-Date: Wed, 09 Jul 2014 16:24:50 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S932208AbaGIOZY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 10:25:24 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:22198 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932129AbaGIOZT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 10:25:19 -0400
+Date: Wed, 9 Jul 2014 10:25:10 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Andrew Cooper <andrew.cooper3@citrix.com>
+Cc: David Vrabel <david.vrabel@citrix.com>, konrad@kernel.org,
+        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xenproject.org
+Subject: Re: [Xen-devel] [PATCH v3 1/7] xen-pciback: Document the various
+ parameters and attributes in SysFS
+Message-ID: <20140709142510.GI21837@laptop.dumpdata.com>
+References: <1404845909-13563-1-git-send-email-konrad@kernel.org>
+ <1404845909-13563-2-git-send-email-konrad@kernel.org>
+ <53BD32C2.6000306@citrix.com>
+ <20140709135922.GD21837@laptop.dumpdata.com>
+ <53BD4C44.30805@citrix.com>
+ <20140709141354.GG21837@laptop.dumpdata.com>
+ <53BD5026.2030908@citrix.com>
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>, kys@microsoft.com,
-        haiyangz@microsoft.com
-CC: romieu@fr.zoreil.com, devel@linuxdriverproject.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] hyperv: Add netpoll support
-References: <1404892702-11094-1-git-send-email-richard@nod.at> <53BD4DFD.6070805@cogentembedded.com>
-In-Reply-To: <53BD4DFD.6070805@cogentembedded.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53BD5026.2030908@citrix.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 09.07.2014 16:13, schrieb Sergei Shtylyov:
-> Hello.
+On Wed, Jul 09, 2014 at 03:22:30PM +0100, Andrew Cooper wrote:
+> On 09/07/14 15:13, Konrad Rzeszutek Wilk wrote:
+> > On Wed, Jul 09, 2014 at 03:05:56PM +0100, Andrew Cooper wrote:
+> >> On 09/07/14 14:59, Konrad Rzeszutek Wilk wrote:
+> >>>>> +What:           /sys/bus/pci/drivers/pciback/irq_handler_state
+> >>>>> +Date:           Oct 2011
+> >>>>> +KernelVersion:  3.1
+> >>>>> +Contact:        xen-devel@lists.xenproject.org
+> >>>>> +Description:
+> >>>>> +                An option to toggle Xen PCI back to acknowledge (or stop)
+> >>>>> +                interrupts for the specific device regardless of whether the
+> >>>>> +                device is shared, enabled, or on a level interrupt line.
+> >>>>> +                Writing a string of DDDD:BB:DD.F will toggle the state.
+> >>>>> +                This is Domain:Bus:Device.Function where domain is optional.
+> >>>> I do not understand under what circumstances this should be used in.
+> >>> So that dom0 does not disable the IRQ line as it would be getting the IRQs
+> >>> for the guest as well (because the IRQ line is level and another guest
+> >>> uses an PCI device that is using the same line).
+> >> Why is this relevant?  Xen (and Xen alone) actually controls this aspect
+> >> of interrupts.  Xen manages passing line level interrupts to any domain
+> >> which might have a device hanging off a particular line, and has to wait
+> >> until all domains have EOI'd the line until it can clear the interrupt
+> >> at the IO-APIC.
+> > Because Linux will think there is an IRQ storm as the event->IRQ points
+> > to the default one. And then it will mask the event, which means dom0
+> > will mask the PIRQ, and Xen will then also mask the IRQ.
 > 
-> On 07/09/2014 11:58 AM, Richard Weinberger wrote:
+> Xen will (and by this I mean 'should', and this was the behaviour last
+> time I delved in there) only mask the IRQ if dom0 is the only consumer
+> of these interrupts.
 > 
->> In order to have at least a netconsole to debug kernel issues on
->> Windows Azure this patch implements netpoll support.
->> Sending packets is easy, netvsc_start_xmit() does already everything
->> needed.
-> 
->> Signed-off-by: Richard Weinberger <richard@nod.at>
->> ---
->>   drivers/net/hyperv/netvsc_drv.c | 11 +++++++++++
->>   1 file changed, 11 insertions(+)
-> 
->> diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
->> index 4fd71b7..45218d5 100644
->> --- a/drivers/net/hyperv/netvsc_drv.c
->> +++ b/drivers/net/hyperv/netvsc_drv.c
->> @@ -736,6 +736,14 @@ static int netvsc_set_mac_addr(struct net_device *ndev, void *p)
->>       return err;
->>   }
->>
->> +#ifdef CONFIG_NET_POLL_CONTROLLER
->> +static void netvsc_poll_controller(struct net_device *net)
->> +{
->> +    /* As netvsc_start_xmit() works synchronous we don't have to
->> +       trigger anything here. */
-> 
->    The multi-line comment style in the networking code is this:
-> 
-> /* bla
->  * bla
->  */
-> 
->> +    return;
-> 
->    Not needed.
-> 
->> +}
->> +#endif
-> [...]
+> For any PCIPassthrough, dom0 will get line interrupts for passed-through
+> devices, but in this case pci-back should always handle the line
+> interrupts so Linux doesn't block them as an IRQ storm.
 
--ETOOMANYCODINGSTYLES :)
-
-Thanks,
-//richard
+And that is what it does - and this option provides the option to enable/disable
+it the system admin wishes to do it.
+> 
+> ~Andrew
