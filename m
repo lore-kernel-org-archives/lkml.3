@@ -1,53 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964797AbaGIP0P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 11:26:15 -0400
-Received: from mga09.intel.com ([134.134.136.24]:64911 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932511AbaGIP0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 11:26:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,631,1400050800"; 
-   d="scan'208";a="540934519"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Tadeusz Struk <tadeusz.struk@intel.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Helge Deller <deller@gmx.de>,
-        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>, linux390@de.ibm.com,
-        Alexander Viro <viro@zeniv.linux.org.uk>, qat-linux@intel.com,
-        linux-crypto@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v1 0/5] fs/seq_file: introduce seq_hex_dump() helper
-Date: Wed,  9 Jul 2014 18:24:25 +0300
-Message-Id: <1404919470-26668-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 2.0.1
+	id S932745AbaGIP0b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 11:26:31 -0400
+Received: from andre.telenet-ops.be ([195.130.132.53]:34330 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932511AbaGIP0X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 11:26:23 -0400
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH] Documentation: devres: Sort managed interfaces
+Date: Wed,  9 Jul 2014 17:26:18 +0200
+Message-Id: <1404919578-4457-1-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This introduces a new helper and switches current users to use it.
+Sort the list of managed interfaces and their lists of methods
+alphabetically, to reduce the risk of merge conflicts and duplicates.
 
-parisc and s390 weren't tested anyhow, the other are compile tested.
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+---
+I got annoyed by the merge conflicts when merging several for-next
+branches a while ago, so I sorted the list after everything became
+quiet.
+---
+ Documentation/driver-model/devres.txt | 108 +++++++++++++++++-----------------
+ 1 file changed, 54 insertions(+), 54 deletions(-)
 
-Andy Shevchenko (5):
-  seq_file: provide an analogue of print_hex_dump()
-  saa7164: convert to seq_hex_dump()
-  crypto: qat - use seq_hex_dump() to dump buffers
-  parisc: use seq_hex_dump() to dump buffers
-  [S390] zcrypt: use seq_hex_dump() to dump buffers
-
- .../crypto/qat/qat_common/adf_transport_debug.c    | 16 ++--------
- drivers/media/pci/saa7164/saa7164-core.c           | 31 +++----------------
- drivers/parisc/ccio-dma.c                          | 14 ++-------
- drivers/parisc/sba_iommu.c                         | 11 ++-----
- drivers/s390/crypto/zcrypt_api.c                   | 10 +------
- fs/seq_file.c                                      | 35 ++++++++++++++++++++++
- include/linux/seq_file.h                           |  4 +++
- 7 files changed, 52 insertions(+), 69 deletions(-)
-
+diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
+index 1525e30483fd..3b8bbe0c389d 100644
+--- a/Documentation/driver-model/devres.txt
++++ b/Documentation/driver-model/devres.txt
+@@ -233,66 +233,76 @@ certainly invest a bit more effort into libata core layer).
+   6. List of managed interfaces
+   -----------------------------
+ 
+-MEM
+-  devm_kzalloc()
+-  devm_kfree()
+-  devm_kmemdup()
+-  devm_get_free_pages()
+-  devm_free_pages()
++CLOCK
++  devm_clk_get()
++  devm_clk_put()
++
++DMA
++  dmam_alloc_coherent()
++  dmam_alloc_noncoherent()
++  dmam_declare_coherent_memory()
++  dmam_free_coherent()
++  dmam_free_noncoherent()
++  dmam_pool_create()
++  dmam_pool_destroy()
++
++GPIO
++  devm_gpiod_get()
++  devm_gpiod_get_index()
++  devm_gpiod_get_index_optional()
++  devm_gpiod_get_optional()
++  devm_gpiod_put()
+ 
+ IIO
+   devm_iio_device_alloc()
+   devm_iio_device_free()
+-  devm_iio_trigger_alloc()
+-  devm_iio_trigger_free()
+   devm_iio_device_register()
+   devm_iio_device_unregister()
++  devm_iio_trigger_alloc()
++  devm_iio_trigger_free()
+ 
+ IO region
+-  devm_request_region()
+-  devm_request_mem_region()
+-  devm_release_region()
+   devm_release_mem_region()
+-
+-IRQ
+-  devm_request_irq()
+-  devm_free_irq()
+-
+-DMA
+-  dmam_alloc_coherent()
+-  dmam_free_coherent()
+-  dmam_alloc_noncoherent()
+-  dmam_free_noncoherent()
+-  dmam_declare_coherent_memory()
+-  dmam_pool_create()
+-  dmam_pool_destroy()
+-
+-PCI
+-  pcim_enable_device()	: after success, all PCI ops become managed
+-  pcim_pin_device()	: keep PCI device enabled after release
++  devm_release_region()
++  devm_request_mem_region()
++  devm_request_region()
+ 
+ IOMAP
+   devm_ioport_map()
+   devm_ioport_unmap()
+   devm_ioremap()
+   devm_ioremap_nocache()
+-  devm_iounmap()
+   devm_ioremap_resource() : checks resource, requests memory region, ioremaps
++  devm_iounmap()
+   devm_request_and_ioremap() : obsoleted by devm_ioremap_resource()
+   pcim_iomap()
+-  pcim_iounmap()
+-  pcim_iomap_table()	: array of mapped addresses indexed by BAR
+   pcim_iomap_regions()	: do request_region() and iomap() on multiple BARs
++  pcim_iomap_table()	: array of mapped addresses indexed by BAR
++  pcim_iounmap()
+ 
+-REGULATOR
+-  devm_regulator_get()
+-  devm_regulator_put()
+-  devm_regulator_bulk_get()
+-  devm_regulator_register()
++IRQ
++  devm_free_irq()
++  devm_request_irq()
+ 
+-CLOCK
+-  devm_clk_get()
+-  devm_clk_put()
++MDIO
++  devm_mdiobus_alloc()
++  devm_mdiobus_alloc_size()
++  devm_mdiobus_free()
++
++MEM
++  devm_free_pages()
++  devm_get_free_pages()
++  devm_kfree()
++  devm_kmemdup()
++  devm_kzalloc()
++
++PCI
++  pcim_enable_device()	: after success, all PCI ops become managed
++  pcim_pin_device()	: keep PCI device enabled after release
++
++PHY
++  devm_usb_get_phy()
++  devm_usb_put_phy()
+ 
+ PINCTRL
+   devm_pinctrl_get()
+@@ -302,24 +312,14 @@ PWM
+   devm_pwm_get()
+   devm_pwm_put()
+ 
+-PHY
+-  devm_usb_get_phy()
+-  devm_usb_put_phy()
++REGULATOR
++  devm_regulator_bulk_get()
++  devm_regulator_get()
++  devm_regulator_put()
++  devm_regulator_register()
+ 
+ SLAVE DMA ENGINE
+   devm_acpi_dma_controller_register()
+ 
+ SPI
+   devm_spi_register_master()
+-
+-GPIO
+-  devm_gpiod_get()
+-  devm_gpiod_get_index()
+-  devm_gpiod_get_optional()
+-  devm_gpiod_get_index_optional()
+-  devm_gpiod_put()
+-
+-MDIO
+-  devm_mdiobus_alloc()
+-  devm_mdiobus_alloc_size()
+-  devm_mdiobus_free()
 -- 
-2.0.1
+1.9.1
 
