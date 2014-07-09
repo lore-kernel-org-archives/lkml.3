@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755928AbaGIRS6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 13:18:58 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:14297 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754666AbaGIRSz (ORCPT
+	id S1756364AbaGIRTI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 13:19:08 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:59043 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755987AbaGIRTA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 13:18:55 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-5d-53bd797dd6f9
+	Wed, 9 Jul 2014 13:19:00 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-61-53bd7982ef9f
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: Kukjin Kim <kgene.kim@samsung.com>
 Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
@@ -20,90 +20,104 @@ Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
         linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
         b.zolnierkie@samsung.com
-Subject: [PATCH v3 1/4] ARM: EXYNOS: PM: replace EXYNOS_BOOT_VECTOR_* macros by
- static inlines
-Date: Wed, 09 Jul 2014 19:17:51 +0200
-Message-id: <1404926274-18411-2-git-send-email-b.zolnierkie@samsung.com>
+Subject: [PATCH v3 2/4] ARM: EXYNOS: add AFTR mode support to firmware do_idle
+ method
+Date: Wed, 09 Jul 2014 19:17:52 +0200
+Message-id: <1404926274-18411-3-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-reply-to: <1404926274-18411-1-git-send-email-b.zolnierkie@samsung.com>
 References: <1404926274-18411-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrELMWRmVeSWpSXmKPExsVy+t9jAd3ayr3BBrM2KFpsnLGe1WLeZ1mL
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMLMWRmVeSWpSXmKPExsVy+t9jAd2myr3BBns+61hsnLGe1WLeZ1mL
 	3gVX2SzONr1ht3h/6BmzxabH11gtLu+aw2bxufcIo8WM8/uYLM6cvsRqcfJPL6PF+hmvWSw2
-	fvVw4PW4c20Pm8fmJfUet/89ZvbYcrWdxaNvyypGj8+b5ALYorhsUlJzMstSi/TtErgypj6K
-	KmgSrNi1ZCV7A+NRvi5GTg4JAROJb8c7WCFsMYkL99azdTFycQgJLGKUmPrxAiOE08UksX37
-	AWaQKjYBK4mJ7asYQWwRATWJnsVbwYqYBfYySyzt3sQOkhAWSJD4dv0ESxcjBweLgKrEp5vx
-	IGFeAQ+JK2dPs0BsU5TofjaBDaSEU8BT4tnWYpCwEFDJ2WftTBMYeRcwMqxiFE0tSC4oTkrP
-	NdIrTswtLs1L10vOz93ECA7JZ9I7GFc1WBxiFOBgVOLhVeDZEyzEmlhWXJl7iFGCg1lJhPdW
-	yd5gId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rwHW60DhQTSE0tSs1NTC1KLYLJMHJxSDYwbLfad
-	WHvY5wHr+/ZQPt1zr5uqfzYHmh5ZG9N0VH+m18+v23fe3NR4Vj76xieJn2svuFS8sVz8tF5f
-	5dqNuv5/S7c9e2ev/TXw2STzoin63rZPHbdEOB/+ML+pdelx51X5mp+uuhddy7YRTZNce5xL
-	8LBbyxPJm+YXZfYc+7316JcfZ5ldJJaqKbEUZyQaajEXFScCAGiF5cVFAgAA
+	fvVw4PW4c20Pm8fmJfUet/89ZvbYcrWdxaNvyypGj8+b5ALYorhsUlJzMstSi/TtErgyVh68
+	yVJwXahiYtsmxgbGs/xdjJwcEgImEvO6vrJA2GISF+6tZ+ti5OIQEljEKPHxwDdmkISQQBeT
+	xLWdQiA2m4CVxMT2VYwgtoiAmkTP4q2MIA3MAnuZJZZ2b2IHSQgLhEs0n37ECmKzCKhKXPo5
+	D6yBV8BDomdpAzPENkWJ7mcTgLZxcHAKeEo821oMsctD4uyzdqYJjLwLGBlWMYqmFiQXFCel
+	5xrpFSfmFpfmpesl5+duYgQH5TPpHYyrGiwOMQpwMCrx8Crw7AkWYk0sK67MPcQowcGsJMJ7
+	q2RvsBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeg63WgUIC6YklqdmpqQWpRTBZJg5OqQbGHo3G
+	aWVJ92V0zc+WMb7YbjBj1a/56pdmrvn39twXx7sf89Vsvs28ULtaQez99+L4/SrW+7vYrCek
+	/+mr/FCsOSPB8OjU9bsc58n/uLKSXX7r1ENnNv1l7RLYfmXNZdUJi83/yCVKiM/YsFitae+C
+	0KoNjyI7GF6kTjn6SuZB7i1v9kg51wkXwpVYijMSDbWYi4oTAWZQJc5GAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace EXYNOS_BOOT_VECTOR_ADDR and EXYNOS_BOOT_VECTOR_FLAG macros
-by exynos_boot_vector_addr() and exynos_boot_vector_flag() static
-inlines.
+On some platforms (i.e. EXYNOS ones) more than one idle mode is
+available and we need to distinguish them in firmware do_idle method.
 
-This patch shouldn't cause any functionality changes.
+Add mode parameter to do_idle firmware method and AFTR mode support
+to EXYNOS do_idle implementation.
+
+This change is a preparation for adding secure firmware support to
+EXYNOS cpuidle driver.
+
+This patch shouldn't cause any functionality changes (please note
+that do_idle firmware method is unused currently).
 
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
 v3:
-- added Acked-by from Daniel
+- convert 'mode' parameter from int to unsigned long
+- rename FW_DO_IDLE_NORMAL to FW_DO_IDLE_SLEEP
+- move FW_DO_IDLE_* enums to common.h
 
- arch/arm/mach-exynos/pm.c | 28 ++++++++++++++++++++--------
- 1 file changed, 20 insertions(+), 8 deletions(-)
+ arch/arm/include/asm/firmware.h |  2 +-
+ arch/arm/mach-exynos/common.h   |  5 +++++
+ arch/arm/mach-exynos/firmware.c | 10 ++++++++--
+ 3 files changed, 14 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
-index ed20318..c722454 100644
---- a/arch/arm/mach-exynos/pm.c
-+++ b/arch/arm/mach-exynos/pm.c
-@@ -167,12 +167,23 @@ int exynos_cluster_power_state(int cluster)
- 			S5P_CORE_LOCAL_PWR_EN);
- }
+diff --git a/arch/arm/include/asm/firmware.h b/arch/arm/include/asm/firmware.h
+index 5904f59..89aefe1 100644
+--- a/arch/arm/include/asm/firmware.h
++++ b/arch/arm/include/asm/firmware.h
+@@ -28,7 +28,7 @@ struct firmware_ops {
+ 	/*
+ 	 * Enters CPU idle mode
+ 	 */
+-	int (*do_idle)(void);
++	int (*do_idle)(unsigned long mode);
+ 	/*
+ 	 * Sets boot address of specified physical CPU
+ 	 */
+diff --git a/arch/arm/mach-exynos/common.h b/arch/arm/mach-exynos/common.h
+index 152b464..297ac39 100644
+--- a/arch/arm/mach-exynos/common.h
++++ b/arch/arm/mach-exynos/common.h
+@@ -115,6 +115,11 @@ extern void __iomem *sysram_ns_base_addr;
+ extern void __iomem *sysram_base_addr;
+ void exynos_sysram_init(void);
  
--#define EXYNOS_BOOT_VECTOR_ADDR	(samsung_rev() == EXYNOS4210_REV_1_1 ? \
--			S5P_INFORM7 : (samsung_rev() == EXYNOS4210_REV_1_0 ? \
--			(sysram_base_addr + 0x24) : S5P_INFORM0))
--#define EXYNOS_BOOT_VECTOR_FLAG	(samsung_rev() == EXYNOS4210_REV_1_1 ? \
--			S5P_INFORM6 : (samsung_rev() == EXYNOS4210_REV_1_0 ? \
--			(sysram_base_addr + 0x20) : S5P_INFORM1))
-+static inline void __iomem *exynos_boot_vector_addr(void)
-+{
-+	if (samsung_rev() == EXYNOS4210_REV_1_1)
-+		return S5P_INFORM7;
-+	else if (samsung_rev() == EXYNOS4210_REV_1_0)
-+		return sysram_base_addr + 0x24;
-+	return S5P_INFORM0;
-+}
++enum {
++	FW_DO_IDLE_SLEEP,
++	FW_DO_IDLE_AFTR,
++};
 +
-+static inline void __iomem *exynos_boot_vector_flag(void)
-+{
-+	if (samsung_rev() == EXYNOS4210_REV_1_1)
-+		return S5P_INFORM6;
-+	else if (samsung_rev() == EXYNOS4210_REV_1_0)
-+		return sysram_base_addr + 0x20;
-+	return S5P_INFORM1;
-+}
+ void exynos_firmware_init(void);
  
- #define S5P_CHECK_AFTR  0xFCBA0D10
- #define S5P_CHECK_SLEEP 0x00000BAD
-@@ -185,8 +196,9 @@ static void exynos_set_wakeupmask(long mask)
+ extern u32 exynos_get_eint_wake_mask(void);
+diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
+index e50b5ec..a52dd975 100644
+--- a/arch/arm/mach-exynos/firmware.c
++++ b/arch/arm/mach-exynos/firmware.c
+@@ -27,9 +27,15 @@
+ #define EXYNOS_BOOT_ADDR	0x8
+ #define EXYNOS_BOOT_FLAG	0xc
  
- static void exynos_cpu_set_boot_vector(long flags)
+-static int exynos_do_idle(void)
++static int exynos_do_idle(unsigned long mode)
  {
--	__raw_writel(virt_to_phys(exynos_cpu_resume), EXYNOS_BOOT_VECTOR_ADDR);
--	__raw_writel(flags, EXYNOS_BOOT_VECTOR_FLAG);
-+	__raw_writel(virt_to_phys(exynos_cpu_resume),
-+		     exynos_boot_vector_addr());
-+	__raw_writel(flags, exynos_boot_vector_flag());
+-	exynos_smc(SMC_CMD_SLEEP, 0, 0, 0);
++	switch (mode) {
++	case FW_DO_IDLE_AFTR:
++		exynos_smc(SMC_CMD_CPU0AFTR, 0, 0, 0);
++		break;
++	case FW_DO_IDLE_SLEEP:
++		exynos_smc(SMC_CMD_SLEEP, 0, 0, 0);
++	}
+ 	return 0;
  }
  
- void exynos_enter_aftr(void)
 -- 
 1.8.2.3
 
