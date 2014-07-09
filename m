@@ -1,43 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932196AbaGIS5h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 14:57:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47258 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778AbaGIS5g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 14:57:36 -0400
-Date: Wed, 9 Jul 2014 12:02:00 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Daeseok Youn <daeseok.youn@gmail.com>
-Cc: lidza.louina@gmail.com, driverdev-devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCH] staging: dgap: removes redundant null check and change
- paramter for dgap_maxcps_room()
-Message-ID: <20140709190200.GA8113@kroah.com>
-References: <20140707012754.GA26042@devel.8.8.4.4>
+	id S932338AbaGIS5v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 14:57:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35111 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932226AbaGIS5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 14:57:48 -0400
+Date: Wed, 9 Jul 2014 20:55:49 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        linux-api@vger.kernel.org, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH v9 09/11] seccomp: introduce writer locking
+Message-ID: <20140709185549.GB4866@redhat.com>
+References: <1403911380-27787-1-git-send-email-keescook@chromium.org> <1403911380-27787-10-git-send-email-keescook@chromium.org> <20140709184215.GA4866@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140707012754.GA26042@devel.8.8.4.4>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140709184215.GA4866@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 07, 2014 at 10:27:54AM +0900, Daeseok Youn wrote:
-> Null checks for tty, un and ch are already done by caller,
-> so replace parameter "tty" with "ch" and "un".
-> 
-> And also use a pointer for returning new bytes_available instead of
-> return variable.
+On 07/09, Oleg Nesterov wrote:
+>
+> On 06/27, Kees Cook wrote:
+> >
+> >  static u32 seccomp_run_filters(int syscall)
+> >  {
+> > -	struct seccomp_filter *f;
+> > +	struct seccomp_filter *f = ACCESS_ONCE(current->seccomp.filter);
+>
+> I am not sure...
+>
+> This is fine if this ->filter is the 1st (and only) one, in this case
+> we can rely on rmb() in the caller.
+>
+> But the new filter can be installed at any moment. Say, right after that
+> rmb() although this doesn't matter. Either we need smp_read_barrier_depends()
+> after that, or smp_load_acquire() like the previous version did?
 
-Why make that change?  It's nicer to return a real value where ever
-possible.  That's more like other "room" functions in the tty layer.
+Wait... and it seems that seccomp_sync_threads() needs smp_store_release()
+when it sets thread->filter = current->filter by the same reason?
 
-Care to fix this up to just do the first change you made to the function
-instead?
+OTOH. smp_store_release() in seccomp_attach_filter() can die, "current"
+doesn't need a barrier to serialize with itself.
 
-thanks,
+Oleg.
 
-greg k-h
