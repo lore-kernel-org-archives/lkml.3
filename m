@@ -1,100 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932374AbaGISKq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 14:10:46 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43749 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932335AbaGISKo (ORCPT
+	id S1756168AbaGISNR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 14:13:17 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:22397 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754666AbaGISNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 14:10:44 -0400
-Date: Wed, 9 Jul 2014 19:10:48 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
-        Joerg Roedel <joro@8bytes.org>, Cho KyongHo <pullip.cho@samsung.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Olav Haugan <ohaugan@codeaurora.org>,
-        Varun Sethi <varun.sethi@freescale.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] devicetree: Add generic IOMMU device tree bindings
-Message-ID: <20140709181048.GX9485@arm.com>
-References: <1404487757-18829-1-git-send-email-thierry.reding@gmail.com>
- <20140709134050.GN9485@arm.com>
- <20140709142125.GB3262@ulmo>
+	Wed, 9 Jul 2014 14:13:15 -0400
+Date: Wed, 9 Jul 2014 14:13:04 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: hpa@linux.intel.com, david.vrabel@citrix.com, linux@eikelenboom.it,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] espfix/xen: Fix allocation of pages for paravirt page
+ tables
+Message-ID: <20140709181304.GA32419@laptop.dumpdata.com>
+References: <1404926298-5565-1-git-send-email-boris.ostrovsky@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140709142125.GB3262@ulmo>
+In-Reply-To: <1404926298-5565-1-git-send-email-boris.ostrovsky@oracle.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
-
-On Wed, Jul 09, 2014 at 03:21:27PM +0100, Thierry Reding wrote:
-> On Wed, Jul 09, 2014 at 02:40:50PM +0100, Will Deacon wrote:
-> > I would like to move the ARM SMMU driver over to this for 3.18, if possible.
-> > One use-case there is the ability to describe groups of masters behind a
-> > multi-master IOMMU but which must be part of the same domain (i.e. an
-> > iommu_group). This is useful for presenting devices to a guest with a
-> > virtual SMMU, where the physical devices share a stage-2 context.
-> > 
-> > With your binding, does this simply mean determining the set of master IDs
-> > in the group, then describing the complete set for each master?
+On Wed, Jul 09, 2014 at 01:18:18PM -0400, Boris Ostrovsky wrote:
+> init_espfix_ap() is currently off by one level when informing hypervisor
+> that allocated pages will be used for ministacks' page tables.
 > 
-> I'm not sure I properly understand what you're trying to do, but I don't
-> think the binding is designed to cover that. Rather the goal was to
-> describe the IDs belonging to each master, so that an IOMMU can be
-> properly configured.
-
-This is directly related to that problem, see below.
-
-> Anything beyond that (e.g. logical grouping of masters) isn't directly
-> within the scope of the binding (it doesn't describe hardware but some
-> policy pertaining to some specific use-case).
-
-This *is* for hardware. I can use PCI as an example, but this could equally
-apply to other types of bus. If you have a bunch of PCI master devices
-sitting being a non-transparent bridge, they can end up sharing the same
-master device ID (requester ID). This means that there is no way in the
-IOMMU to initialise a translation for one of these devices without also
-affecting the others. We currently have iommu_groups to deal with this, but
-it *is* a property of the hardware and we absolutely need a way to describe
-it. I'm happy to add it later, but we need to think about it now to avoid
-merging something that can't easily be extended.
-
-For PCI, the topology is probable but even then, we need this information to
-describe the resulting master device ID emitted by the bridge for the
-upstream group. One way to do this with your binding would be to treat all
-of the upstream masters as having the same device ID.
-
-With virtualisation, we may want to assign a group of devices to a guest but
-without emulating the bridge. This would need something the device-tree to
-describe that they are grouped together.
-
-> That said, the IOMMU driver that I prototyped for Tegra did some similar
-> grouping of devices, although in a much more restricted way. The goal of
-> that was to add a known set of devices into one group, "peripherals", so
-> that they could share one IOMMU domain. This was meant to separate them
-> from devices with more advanced needs (such as a GPU driver). Devices in
-> the "peripherals" group would be using the DMA mapping API integration
-> whereas other devices would have to explicitly allocate an IOMMU domain.
+> The most immediate effect of this on a PV guest is that if
+> 'stack_page = __get_free_page()' returns a non-zeroed-out page the hypervisor
+> will refuse to use it for a page table (which it shouldn't be anyway). This will
+> result in warnings by both Xen and Linux.
 > 
-> I'm not sure how much that helps for the use-case that you have in mind.
+> More importantly, a subsequent write to that page (again, by a PV guest) is
+> likely to result in fatal page fault.
+> 
+> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 
-That sounds more like a software decision, which I agree doesn't need to be
-described.
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-Will
+<sigh>
+> ---
+>  arch/x86/kernel/espfix_64.c | 5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/espfix_64.c b/arch/x86/kernel/espfix_64.c
+> index 6afbb16..94d857f 100644
+> --- a/arch/x86/kernel/espfix_64.c
+> +++ b/arch/x86/kernel/espfix_64.c
+> @@ -175,7 +175,7 @@ void init_espfix_ap(void)
+>  	if (!pud_present(pud)) {
+>  		pmd_p = (pmd_t *)__get_free_page(PGALLOC_GFP);
+>  		pud = __pud(__pa(pmd_p) | (PGTABLE_PROT & ptemask));
+> -		paravirt_alloc_pud(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
+> +		paravirt_alloc_pmd(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
+>  		for (n = 0; n < ESPFIX_PUD_CLONES; n++)
+>  			set_pud(&pud_p[n], pud);
+>  	}
+> @@ -185,7 +185,7 @@ void init_espfix_ap(void)
+>  	if (!pmd_present(pmd)) {
+>  		pte_p = (pte_t *)__get_free_page(PGALLOC_GFP);
+>  		pmd = __pmd(__pa(pte_p) | (PGTABLE_PROT & ptemask));
+> -		paravirt_alloc_pmd(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
+> +		paravirt_alloc_pte(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
+>  		for (n = 0; n < ESPFIX_PMD_CLONES; n++)
+>  			set_pmd(&pmd_p[n], pmd);
+>  	}
+> @@ -193,7 +193,6 @@ void init_espfix_ap(void)
+>  	pte_p = pte_offset_kernel(&pmd, addr);
+>  	stack_page = (void *)__get_free_page(GFP_KERNEL);
+>  	pte = __pte(__pa(stack_page) | (__PAGE_KERNEL_RO & ptemask));
+> -	paravirt_alloc_pte(&init_mm, __pa(stack_page) >> PAGE_SHIFT);
+>  	for (n = 0; n < ESPFIX_PTE_CLONES; n++)
+>  		set_pte(&pte_p[n*PTE_STRIDE], pte);
+>  
+> -- 
+> 1.8.1.4
+> 
