@@ -1,97 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756687AbaGIWT2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 18:19:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47296 "EHLO mx1.redhat.com"
+	id S1756710AbaGIWTj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 18:19:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37972 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756445AbaGIWT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 18:19:27 -0400
-Date: Thu, 10 Jul 2014 00:18:53 +0200
+	id S1755943AbaGIWTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 18:19:37 -0400
+Date: Thu, 10 Jul 2014 00:19:03 +0200
 From: Jiri Olsa <jolsa@redhat.com>
 To: Andi Kleen <andi@firstfloor.org>
 Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 6/9] perf, tools: Allow events with dot
-Message-ID: <20140709221853.GB20938@krava.redhat.com>
+Subject: Re: [PATCH 3/9] perf, tools: Add support for reading JSON event
+ files v3
+Message-ID: <20140709221903.GC20938@krava.redhat.com>
 References: <1403910964-11017-1-git-send-email-andi@firstfloor.org>
- <1403910964-11017-7-git-send-email-andi@firstfloor.org>
+ <1403910964-11017-4-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1403910964-11017-7-git-send-email-andi@firstfloor.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1403910964-11017-4-git-send-email-andi@firstfloor.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 04:16:01PM -0700, Andi Kleen wrote:
+On Fri, Jun 27, 2014 at 04:15:58PM -0700, Andi Kleen wrote:
 > From: Andi Kleen <ak@linux.intel.com>
 > 
-> The Intel events use a dot to separate event name and unit mask.
-> Allow dot in names in the scanner, and remove special handling
-> of dot as EOF. Also remove the hack in jevents to replace dot
-> with underscore. This way dotted events can be specified
-> directly by the user.
+> Add a parser for Intel style JSON event files. This allows
+> to use an Intel event list directly with perf. The Intel
+> event lists can be quite large and are too big to store
+> in unswappable kernel memory.
 > 
-> I'm not fully sure this change to the scanner is correct
-> (what was the dot special case good for?), but I haven't
-> found anything that breaks with it so far at least.
+> The parser code knows how to convert the JSON fields
+> to perf fields. The conversion code is straight forward.
+> It knows (very little) Intel specific information, and can be easily
+> extended to handle fields for other CPUs.
 > 
-> Acked-by: Namhyung Kim <namhyung@kernel.org>
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  tools/perf/util/jevents.c      | 9 +--------
->  tools/perf/util/parse-events.l | 3 +--
->  2 files changed, 2 insertions(+), 10 deletions(-)
-> 
-> diff --git a/tools/perf/util/jevents.c b/tools/perf/util/jevents.c
-> index 1fae0b7..43550f7 100644
-> --- a/tools/perf/util/jevents.c
-> +++ b/tools/perf/util/jevents.c
-> @@ -100,15 +100,8 @@ static void addfield(char *map, char **dst, const char *sep,
->  
->  static void fixname(char *s)
->  {
-> -	for (; *s; s++) {
-> +	for (; *s; s++)
->  		*s = tolower(*s);
-> -		/*
-> -		 * Remove '.' for now, until the parser
-> -		 * can deal with it.
-> -		 */
-> -		if (*s == '.')
-> -			*s = '_';
-> -	}
->  }
+> The parser code is partially shared with an independent parsing
+> library, which is 2-clause BSD licenced. To avoid any conflicts I marked
+> those files as BSD licenced too. As part of perf they become GPLv2.
 
-please submit change below as separated patch
-before above 'fixname' is introduced
+this change breaks compilation, which is probably fixed later on in patchset
+
+  CC       util/jevents.o
+util/jevents.c: In function ‘lookup_msr’:
+util/jevents.c:140:2: error: unknown type name ‘bool’
+  static bool warned;
+  ^
+util/jevents.c:148:12: error: ‘true’ undeclared (first use in this function)
+   warned = true;
+            ^
+util/jevents.c:148:12: note: each undeclared identifier is reported only once for each function it appears in
+util/jevents.c:149:3: error: implicit declaration of function ‘pr_err’ [-Werror=implicit-function-declaration]
+   pr_err("Unknown MSR in event file %.*s\n",
+   ^
+util/jevents.c:149:3: error: nested extern declaration of ‘pr_err’ [-Werror=nested-externs]
+cc1: all warnings being treated as errors
+make[1]: *** [util/jevents.o] Error 1
+make: *** [all] Error 2
+
 
 jirka
-
->  
->  static void fixdesc(char *s)
-> diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-> index 3432995..709fa3b 100644
-> --- a/tools/perf/util/parse-events.l
-> +++ b/tools/perf/util/parse-events.l
-> @@ -81,7 +81,7 @@ num_dec		[0-9]+
->  num_hex		0x[a-fA-F0-9]+
->  num_raw_hex	[a-fA-F0-9]+
->  name		[a-zA-Z_*?][a-zA-Z0-9_*?]*
-> -name_minus	[a-zA-Z_*?][a-zA-Z0-9\-_*?]*
-> +name_minus	[a-zA-Z_*?][a-zA-Z0-9\-_*?.]*
->  /* If you add a modifier you need to update check_modifier() */
->  modifier_event	[ukhpGHSD]+
->  modifier_bp	[rwx]{1,3}
-> @@ -119,7 +119,6 @@ modifier_bp	[rwx]{1,3}
->  			return PE_EVENT_NAME;
->  		}
->  
-> -.		|
->  <<EOF>>		{
->  			BEGIN(INITIAL); yyless(0);
->  		}
-> -- 
-> 1.9.3
-> 
