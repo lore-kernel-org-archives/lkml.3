@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220AbaGINVd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 09:21:33 -0400
-Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:51741 "EHLO
-	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932165AbaGINVb (ORCPT
+	id S1756106AbaGINVa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 09:21:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37066 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755535AbaGINV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 09:21:31 -0400
-From: Shuah Khan <shuah.kh@samsung.com>
-To: m.chehab@samsung.com, crope@iki.fi
-Cc: Shuah Khan <shuah.kh@samsung.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] media: em28xx-dvb - fix em28xx_dvb_resume() to not unregister i2c and dvb
-Date: Wed,  9 Jul 2014 07:21:27 -0600
-Message-Id: <1404912087-22028-1-git-send-email-shuah.kh@samsung.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 9 Jul 2014 09:21:28 -0400
+Message-ID: <53BD41CE.6000506@canonical.com>
+Date: Wed, 09 Jul 2014 15:21:18 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Mike Lothian <mike@fireburn.co.uk>
+CC: bskeggs@redhat.com, dri-devel@lists.freedesktop.org,
+        christian.koenig@amd.com, alexander.deucher@amd.com, airlied@linux.ie,
+        thellstrom@vmware.com, linux-kernel@vger.kernel.org,
+        nouveau@lists.freedesktop.org
+Subject: Re: [PATCH 00/17] Convert TTM to the new fence interface.
+References: <20140709093124.11354.3774.stgit@patser> <CAHbf0-HaFi0px7QGfBErKenH7wDU08B5mxo_QhFJdDPC4WBDrQ@mail.gmail.com>
+In-Reply-To: <CAHbf0-HaFi0px7QGfBErKenH7wDU08B5mxo_QhFJdDPC4WBDrQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-em28xx_dvb_resume() unregisters i2c tuner, i2c demod, and dvb.
-This erroneous cleanup results in i2c tuner, i2c demod, and dvb
-devices unregistered and removed during resume. This error is a
-result of merge conflict between two patches that went into 3.15.
+op 09-07-14 15:09, Mike Lothian schreef:
+> Hi Maarten
+>
+> Will this stop the stuttering I've been seeing with DRI3 and PRIME? Or will
+> other patches / plumbing be required
+>
+No, that testing was with the whole series including the parts where you synchronized intel with radeon (iirc).
+Although it might if lucky, I noticed that I missed a int to long conversion, which resulted in a success being
+reported as error, disabling graphics acceleration entirely.
 
-Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
----
- drivers/media/usb/em28xx/em28xx-dvb.c |   17 -----------------
- 1 file changed, 17 deletions(-)
+The series here simply convert the drivers to a common fence infrastructure, but shouldn't cause any regressions
+or any major behavioral changes. A separate series is needed to make intel and radeon synchronized,
+and for that series the support on the intel side is a hack. It should be possible to get the the radeon/nouveau
+changes upstreamed, but this conversion is required for that.
 
-diff --git a/drivers/media/usb/em28xx/em28xx-dvb.c b/drivers/media/usb/em28xx/em28xx-dvb.c
-index a121ed9..d381861 100644
---- a/drivers/media/usb/em28xx/em28xx-dvb.c
-+++ b/drivers/media/usb/em28xx/em28xx-dvb.c
-@@ -1712,7 +1712,6 @@ static int em28xx_dvb_resume(struct em28xx *dev)
- 	em28xx_info("Resuming DVB extension");
- 	if (dev->dvb) {
- 		struct em28xx_dvb *dvb = dev->dvb;
--		struct i2c_client *client = dvb->i2c_client_tuner;
- 
- 		if (dvb->fe[0]) {
- 			ret = dvb_frontend_resume(dvb->fe[0]);
-@@ -1723,22 +1722,6 @@ static int em28xx_dvb_resume(struct em28xx *dev)
- 			ret = dvb_frontend_resume(dvb->fe[1]);
- 			em28xx_info("fe1 resume %d", ret);
- 		}
--		/* remove I2C tuner */
--		if (client) {
--			module_put(client->dev.driver->owner);
--			i2c_unregister_device(client);
--		}
--
--		/* remove I2C demod */
--		client = dvb->i2c_client_demod;
--		if (client) {
--			module_put(client->dev.driver->owner);
--			i2c_unregister_device(client);
--		}
--
--		em28xx_unregister_dvb(dvb);
--		kfree(dvb);
--		dev->dvb = NULL;
- 	}
- 
- 	return 0;
--- 
-1.7.10.4
+~Maarten
 
