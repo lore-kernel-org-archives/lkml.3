@@ -1,128 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755855AbaGILSu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 07:18:50 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:46347 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932144AbaGILSr (ORCPT
+	id S1755793AbaGILSW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 07:18:22 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:52164 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754910AbaGILKW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 07:18:47 -0400
-Message-ID: <53BD2509.6070803@codethink.co.uk>
-Date: Wed, 09 Jul 2014 12:18:33 +0100
-From: Rob Jones <rob.jones@codethink.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Himangi Saraogi <himangi774@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
-        linux-doc@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, patches@opensource.wolfsonmicro.com,
-        alsa-devel@alsa-project.org, Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Paul Parsons <lost.distance@yahoo.com>
-CC: julia.lawall@lip6.fr
-Subject: Re: [PATCH 1/5] gpiolib: devres: Introduce the function devm_request_gpio_array
-References: <cover.1404665589.git.himangi774@gmail.com> <1a1752ce7455bac8f2505a9790da891a830699f5.1404665589.git.himangi774@gmail.com>
-In-Reply-To: <1a1752ce7455bac8f2505a9790da891a830699f5.1404665589.git.himangi774@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Jul 2014 07:10:22 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-9b-53bd2319408d
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>
+Subject: [RFC/PATCH -next 08/21] mm: page_alloc: add kasan hooks on alloc and
+ free pathes
+Date: Wed, 09 Jul 2014 15:01:05 +0400
+Message-id: <1404903678-8257-9-git-send-email-a.ryabinin@samsung.com>
+X-Mailer: git-send-email 1.8.5.5
+In-reply-to: <1404903678-8257-1-git-send-email-a.ryabinin@samsung.com>
+References: <1404903678-8257-1-git-send-email-a.ryabinin@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHJMWRmVeSWpSXmKPExsVy+t/xy7qSynuDDebdk7fY9usRm8XlXXPY
+	HJg8+rasYvT4vEkugCmKyyYlNSezLLVI3y6BK+PM6z72gja1is9tk9kbGBfIdzFyckgImEi8
+	/L+PHcIWk7hwbz1bFyMXh5DAUkaJXQ9+MUI4fUwSC+e/ZQWpYhPQk/g3azsbiC0ioCCxufcZ
+	WJxZQEdi47VWJhBbWCBa4v2RfYwgNouAqsSDVRdYQGxeAVeJV7MfsEFsU5BYtnwmWC+ngJtE
+	T88CsF4hoJrVn7cxTmDkXcDIsIpRNLU0uaA4KT3XUK84Mbe4NC9dLzk/dxMjJAy+7GBcfMzq
+	EKMAB6MSD69G7e5gIdbEsuLK3EOMEhzMSiK8tqJ7g4V4UxIrq1KL8uOLSnNSiw8xMnFwSjUw
+	VprvSDJaXjZt1/VMTs9LfeXaBYyKL67JaZ5YuFlz9gP7R0vf+n+5Ev7a2PWhwqbnZ/SKjSs9
+	4zfLvkw/9POs0MOkGZdOeR1Tn6z9MCz0/os+8VcfNil6bJ8RHVXdZL1HvnR9caJO8PldabXa
+	R2VSU9YpPLr/bt7igHlXQnJOehwRnvnzhJxovBJLcUaioRZzUXEiAPZ1MOfhAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please note that I submitted a patch on 02/07/14 to create this
-function which was acked by Linus Walleij on 05/07/14.
+Add kernel address sanitizer hooks to mark allocated page's addresses
+as accessible in corresponding shadow region.
+Mark freed pages as unaccessible.
 
-Great minds think alike, and all that.
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+---
+ include/linux/kasan.h |  6 ++++++
+ mm/Makefile           |  2 ++
+ mm/kasan/kasan.c      | 18 ++++++++++++++++++
+ mm/kasan/kasan.h      |  1 +
+ mm/kasan/report.c     |  7 +++++++
+ mm/page_alloc.c       |  4 ++++
+ 6 files changed, 38 insertions(+)
 
-However, I think that the version I submitted better replicates the
-original (non devm) functionality, see below.
-
-I didn't, however, add it to the documentation. +1 on that.
-
-On 06/07/14 18:47, Himangi Saraogi wrote:
-> This patch introduces the function devm_request_gpio_array that
-> allocates multiple GPIOs in a single call in a managed manner. The
-> function is also included in the documentation and a declaration is
-> added in include/linux/gpio.h.
->
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> ---
->   Documentation/driver-model/devres.txt |  1 +
->   drivers/gpio/devres.c                 | 21 +++++++++++++++++++++
->   include/linux/gpio.h                  |  2 ++
->   3 files changed, 24 insertions(+)
->
-> diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
-> index 9e2098e..756f6cf 100644
-> --- a/Documentation/driver-model/devres.txt
-> +++ b/Documentation/driver-model/devres.txt
-> @@ -337,6 +337,7 @@ GPIO
->     devm_gpiod_put()
->     devm_gpio_request()
->     devm_gpio_request_one()
-> +  devm_gpio_request_array()
->     devm_gpio_free()
->
->   SND
-> diff --git a/drivers/gpio/devres.c b/drivers/gpio/devres.c
-> index 65978cf..adae7fa 100644
-> --- a/drivers/gpio/devres.c
-> +++ b/drivers/gpio/devres.c
-> @@ -229,6 +229,27 @@ int devm_gpio_request_one(struct device *dev, unsigned gpio,
->   EXPORT_SYMBOL(devm_gpio_request_one);
->
->   /**
-> + *	devm_gpio_request_array - request multiple GPIOs in a single call
-> + *	@dev:   device to request for
-> + *	@array:	array of the 'struct gpio'
-> + *	@num:	how many GPIOs in the array
-> + */
-> +int devm_gpio_request_array(struct device *dev, const struct gpio *array,
-> +			    size_t num)
-> +{
-> +	int i, err;
-> +
-> +	for (i = 0; i < num; i++, array++) {
-> +		err = devm_gpio_request_one(dev, array->gpio, array->flags,
-> +					    array->label);
-> +		if (err)
-> +			return err;
-
-The failure path in the version I submitted frees up any already
-allocated gpios on the first failure.
-
-> +	}
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(devm_gpio_request_array);
-> +
-> +/**
->    *      devm_gpio_free - free a GPIO
->    *      @dev: device to free GPIO for
->    *      @gpio: GPIO to free
-> diff --git a/include/linux/gpio.h b/include/linux/gpio.h
-> index 85aa5d0..c85f243 100644
-> --- a/include/linux/gpio.h
-> +++ b/include/linux/gpio.h
-> @@ -84,6 +84,8 @@ struct device;
->   int devm_gpio_request(struct device *dev, unsigned gpio, const char *label);
->   int devm_gpio_request_one(struct device *dev, unsigned gpio,
->   			  unsigned long flags, const char *label);
-> +int devm_gpio_request_array(struct device *dev, const struct gpio *array,
-> +			    size_t num);
->   void devm_gpio_free(struct device *dev, unsigned int gpio);
->
->   #else /* ! CONFIG_GPIOLIB */
->
-
+diff --git a/include/linux/kasan.h b/include/linux/kasan.h
+index 7efc3eb..4adc0a1 100644
+--- a/include/linux/kasan.h
++++ b/include/linux/kasan.h
+@@ -17,6 +17,9 @@ void kasan_disable_local(void);
+ void kasan_alloc_shadow(void);
+ void kasan_init_shadow(void);
+ 
++void kasan_alloc_pages(struct page *page, unsigned int order);
++void kasan_free_pages(struct page *page, unsigned int order);
++
+ #else /* CONFIG_KASAN */
+ 
+ static inline void unpoison_shadow(const void *address, size_t size) {}
+@@ -28,6 +31,9 @@ static inline void kasan_disable_local(void) {}
+ static inline void kasan_init_shadow(void) {}
+ static inline void kasan_alloc_shadow(void) {}
+ 
++static inline void kasan_alloc_pages(struct page *page, unsigned int order) {}
++static inline void kasan_free_pages(struct page *page, unsigned int order) {}
++
+ #endif /* CONFIG_KASAN */
+ 
+ #endif /* LINUX_KASAN_H */
+diff --git a/mm/Makefile b/mm/Makefile
+index dbe9a22..6a9c3f8 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -2,6 +2,8 @@
+ # Makefile for the linux memory manager.
+ #
+ 
++KASAN_SANITIZE_page_alloc.o := n
++
+ mmu-y			:= nommu.o
+ mmu-$(CONFIG_MMU)	:= gup.o highmem.o madvise.o memory.o mincore.o \
+ 			   mlock.o mmap.o mprotect.o mremap.o msync.o rmap.o \
+diff --git a/mm/kasan/kasan.c b/mm/kasan/kasan.c
+index e2cd345..109478e 100644
+--- a/mm/kasan/kasan.c
++++ b/mm/kasan/kasan.c
+@@ -177,6 +177,24 @@ void __init kasan_init_shadow(void)
+ 	}
+ }
+ 
++void kasan_alloc_pages(struct page *page, unsigned int order)
++{
++	if (unlikely(!kasan_initialized))
++		return;
++
++	if (likely(page && !PageHighMem(page)))
++		unpoison_shadow(page_address(page), PAGE_SIZE << order);
++}
++
++void kasan_free_pages(struct page *page, unsigned int order)
++{
++	if (unlikely(!kasan_initialized))
++		return;
++
++	if (likely(!PageHighMem(page)))
++		poison_shadow(page_address(page), PAGE_SIZE << order, KASAN_FREE_PAGE);
++}
++
+ void *kasan_memcpy(void *dst, const void *src, size_t len)
+ {
+ 	if (unlikely(len == 0))
+diff --git a/mm/kasan/kasan.h b/mm/kasan/kasan.h
+index 711ae4f..be9597e 100644
+--- a/mm/kasan/kasan.h
++++ b/mm/kasan/kasan.h
+@@ -5,6 +5,7 @@
+ #define KASAN_SHADOW_SCALE_SIZE (1UL << KASAN_SHADOW_SCALE_SHIFT)
+ #define KASAN_SHADOW_MASK       (KASAN_SHADOW_SCALE_SIZE - 1)
+ 
++#define KASAN_FREE_PAGE         0xFF  /* page was freed */
+ #define KASAN_SHADOW_GAP        0xF9  /* address belongs to shadow memory */
+ 
+ struct access_info {
+diff --git a/mm/kasan/report.c b/mm/kasan/report.c
+index 2430e05..6ef9e57 100644
+--- a/mm/kasan/report.c
++++ b/mm/kasan/report.c
+@@ -46,6 +46,9 @@ static void print_error_description(struct access_info *info)
+ 	case 0 ... KASAN_SHADOW_SCALE_SIZE - 1:
+ 		bug_type = "buffer overflow";
+ 		break;
++	case KASAN_FREE_PAGE:
++		bug_type = "use after free";
++		break;
+ 	case KASAN_SHADOW_GAP:
+ 		bug_type = "wild memory access";
+ 		break;
+@@ -67,6 +70,10 @@ static void print_address_description(struct access_info *info)
+ 	page = virt_to_page(info->access_addr);
+ 
+ 	switch (shadow_val) {
++	case KASAN_FREE_PAGE:
++		dump_page(page, "kasan error");
++		dump_stack();
++		break;
+ 	case KASAN_SHADOW_GAP:
+ 		pr_err("No metainfo is available for this access.\n");
+ 		dump_stack();
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 8c9eeec..67833d1 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -61,6 +61,7 @@
+ #include <linux/page-debug-flags.h>
+ #include <linux/hugetlb.h>
+ #include <linux/sched/rt.h>
++#include <linux/kasan.h>
+ 
+ #include <asm/sections.h>
+ #include <asm/tlbflush.h>
+@@ -747,6 +748,7 @@ static bool free_pages_prepare(struct page *page, unsigned int order)
+ 
+ 	trace_mm_page_free(page, order);
+ 	kmemcheck_free_shadow(page, order);
++	kasan_free_pages(page, order);
+ 
+ 	if (PageAnon(page))
+ 		page->mapping = NULL;
+@@ -2807,6 +2809,7 @@ out:
+ 	if (unlikely(!page && read_mems_allowed_retry(cpuset_mems_cookie)))
+ 		goto retry_cpuset;
+ 
++	kasan_alloc_pages(page, order);
+ 	return page;
+ }
+ EXPORT_SYMBOL(__alloc_pages_nodemask);
+@@ -6415,6 +6418,7 @@ int alloc_contig_range(unsigned long start, unsigned long end,
+ 	if (end != outer_end)
+ 		free_contig_range(end, outer_end - end);
+ 
++	kasan_alloc_pages(pfn_to_page(start), end - start);
+ done:
+ 	undo_isolate_page_range(pfn_max_align_down(start),
+ 				pfn_max_align_up(end), migratetype);
 -- 
-Rob Jones
-Codethink Ltd
-mailto:rob.jones@codethink.co.uk
-tel:+44 161 236 5575
+1.8.5.5
+
