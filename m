@@ -1,86 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887AbaGIKqt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 06:46:49 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:49401 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751709AbaGIKqr (ORCPT
+	id S1754939AbaGIKsW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 06:48:22 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:54067 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751183AbaGIKsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 06:46:47 -0400
-Date: Wed, 9 Jul 2014 12:46:39 +0200 (CEST)
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
-X-X-Sender: sebott@denkbrett
-To: Frank Haverkamp <haver@linux.vnet.ibm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] misc/GenWQE: fix pci_enable_msi usage
-Message-ID: <alpine.LFD.2.11.1407091237030.1590@denkbrett>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-Organization: =?ISO-8859-15?Q?=22IBM_Deutschland_Research_&_Development_GmbH_=2F_Vorsitzende_des_Aufsichtsrats=3A_Martina_Koederitz_Gesch=E4ftsf=FChrung=3A_Dirk_Wittkopp_Sitz_der_Gesellschaft=3A_B=F6blingen_=2F_Registergericht?=
- =?ISO-8859-15?Q?=3A_Amtsgericht_Stuttgart=2C_HRB_243294=22?=
+	Wed, 9 Jul 2014 06:48:20 -0400
+Message-ID: <53BD1DEC.7050305@arm.com>
+Date: Wed, 09 Jul 2014 11:48:12 +0100
+From: Chris Redpath <Chris.Redpath@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070910-3548-0000-0000-00000078BD7F
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Arvind Chauhan <Arvind.Chauhan@arm.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [RFC 7/7] net: don't check for active hrtimer after adding it
+References: <cover.1404888801.git.viresh.kumar@linaro.org>	<a8994b5dda7599c0d8ce9f66aef40b8587acf691.1404888801.git.viresh.kumar@linaro.org>	<53BD1A56.7000902@arm.com> <CAKohpomdxB7ui4WQTWfJva9YYYqcfs6cabsC+SyYijdRUViT_g@mail.gmail.com>
+In-Reply-To: <CAKohpomdxB7ui4WQTWfJva9YYYqcfs6cabsC+SyYijdRUViT_g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GenWQE used to call pci_enable_msi_block to allocate a desired number
-of MSI's. If that was not possible pci_enable_msi_block returned with a
-smaller number which might be possible to allocate. GenWQE then called
-pci_enable_msi_block with that number.
+On 09/07/14 11:44, Viresh Kumar wrote:
+> Hi Chris,
+>
+> On 9 July 2014 16:02, Chris Redpath <Chris.Redpath@arm.com> wrote:
+>
+>>> diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+>>> index fc17a9d..f911acd 100644
+>>> --- a/net/core/pktgen.c
+>>> +++ b/net/core/pktgen.c
+>>> @@ -2186,8 +2186,6 @@ static void spin(struct pktgen_dev *pkt_dev, ktime_t
+>>> spin_until)
+>>>                  do {
+>>>                          set_current_state(TASK_INTERRUPTIBLE);
+>>>                          hrtimer_start_expires(&t.timer, HRTIMER_MODE_ABS);
+>>> -                       if (!hrtimer_active(&t.timer))
+>>> -                               t.task = NULL;
+>>>
+>>>                          if (likely(t.task))
+>>>                                  schedule();
+>>
+>>
+>> I think this if condition can also be removed. hrtimer_init_sleeper copies
+>> the supplied task_struct * to the timer, which in this case is 'current'.
+>> The check is likely to be there in case of !active case you removed.
+>
+> Yeah, it looks like we can get rid of this. Also,
+>
+>          } while (t.task && pkt_dev->running && !signal_pending(current));
+>
+> is present in the closing "}" of do-while loop and probably we
+> don't need to check t.task here as well.
+>
+> And this review comment applies to patch 2/7 as well:
+> hrtimer: don't check for active hrtimer after adding it
+>
+> I would still wait for somebody to prove us wrong :), and will resend
+> it next week only.
+>
+> Thanks.
+>
 
-Since commit a30d0108b
-"GenWQE: Use pci_enable_msi_exact() instead of pci_enable_msi_block()"
-pci_enable_msi_exact is used which fails if the desired number of MSI's
-was not possible to allocate. Change GenWQE to use pci_enable_msi_range
-to restore the old behavior.
+Yeah, no worries. I just happened to read it and not knowing any of the 
+APIs had to look up what is going on.
 
-Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
----
- drivers/misc/genwqe/card_ddcb.c  |  4 +---
- drivers/misc/genwqe/card_utils.c | 10 ++++++----
- 2 files changed, 7 insertions(+), 7 deletions(-)
+BTW, I *will* get back to you about that broadcast stuff when I get back 
+to it myself. Other priorities at the moment again.
 
-diff --git a/drivers/misc/genwqe/card_ddcb.c b/drivers/misc/genwqe/card_ddcb.c
-index c8046db..f66d43d 100644
---- a/drivers/misc/genwqe/card_ddcb.c
-+++ b/drivers/misc/genwqe/card_ddcb.c
-@@ -1237,9 +1237,7 @@ int genwqe_setup_service_layer(struct genwqe_dev *cd)
- 	}
- 
- 	rc = genwqe_set_interrupt_capability(cd, GENWQE_MSI_IRQS);
--	if (rc > 0)
--		rc = genwqe_set_interrupt_capability(cd, rc);
--	if (rc != 0) {
-+	if (rc) {
- 		rc = -ENODEV;
- 		goto stop_kthread;
- 	}
-diff --git a/drivers/misc/genwqe/card_utils.c b/drivers/misc/genwqe/card_utils.c
-index 62cc6bb..6abc437 100644
---- a/drivers/misc/genwqe/card_utils.c
-+++ b/drivers/misc/genwqe/card_utils.c
-@@ -718,10 +718,12 @@ int genwqe_set_interrupt_capability(struct genwqe_dev *cd, int count)
- 	int rc;
- 	struct pci_dev *pci_dev = cd->pci_dev;
- 
--	rc = pci_enable_msi_exact(pci_dev, count);
--	if (rc == 0)
--		cd->flags |= GENWQE_FLAG_MSI_ENABLED;
--	return rc;
-+	rc = pci_enable_msi_range(pci_dev, 1, count);
-+	if (rc < 0)
-+		return rc;
-+
-+	cd->flags |= GENWQE_FLAG_MSI_ENABLED;
-+	return 0;
- }
- 
- /**
--- 
-1.9.3
-
+--Chris
