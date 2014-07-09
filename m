@@ -1,248 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756812AbaGIXDc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 19:03:32 -0400
-Received: from exprod5og118.obsmtp.com ([64.18.0.160]:45917 "HELO
-	exprod5og118.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756790AbaGIXDa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 19:03:30 -0400
+	id S1756816AbaGIXFO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 19:05:14 -0400
+Received: from mail-by2lp0236.outbound.protection.outlook.com ([207.46.163.236]:35685
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756571AbaGIXFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 19:05:12 -0400
+X-WSS-ID: 0N8GW4J-07-8ML-02
+X-M-MSG: 
+From: <suravee.suthikulpanit@amd.com>
+To: <marc.zyngier@arm.com>, <mark.rutland@arm.com>, <jason@lakedaemon.net>
+CC: <pawel.moll@arm.com>, <Catalin.Marinas@arm.com>, <Will.Deacon@arm.com>,
+        <tglx@linutronix.de>, <Harish.Kasiviswanathan@amd.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+Subject: [PATCH 0/4 V3] irqchip: gic: Introduce ARM GICv2m MSI(-X) support
+Date: Wed, 9 Jul 2014 18:05:00 -0500
+Message-ID: <1404947104-21345-1-git-send-email-suravee.suthikulpanit@amd.com>
+X-Mailer: git-send-email 1.9.0
 MIME-Version: 1.0
-In-Reply-To: <20140708224732.GK13433@titan.lakedaemon.net>
-References: <1404335939-31754-1-git-send-email-fkan@apm.com>
-	<1404335939-31754-2-git-send-email-fkan@apm.com>
-	<20140708224732.GK13433@titan.lakedaemon.net>
-Date: Wed, 9 Jul 2014 16:03:29 -0700
-Message-ID: <CAL85gmC2DPnDXR3m+BEE44JN1h0+trVCmR3Et2w4y-MZxcJtyg@mail.gmail.com>
-Subject: Re: [PATCH V3 1/2] irqchip: gic: replace hex numbers with defines.
-From: Feng Kan <fkan@apm.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        patches <patches@apm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(189002)(199002)(77982001)(77156001)(79102001)(20776003)(95666004)(85306003)(53416004)(77096002)(64706001)(76482001)(105586002)(47776003)(33646001)(107046002)(229853001)(48376002)(74502001)(106466001)(50466002)(46102001)(4396001)(19580405001)(97736001)(80022001)(44976005)(83322001)(19580395003)(31966008)(2201001)(102836001)(81342001)(74662001)(86152002)(92566001)(50986999)(21056001)(86362001)(101416001)(93916002)(92726001)(89996001)(36756003)(84676001)(88136002)(62966002)(99396002)(68736004)(50226001)(87286001)(83072002)(15975445006)(85852003)(81542001)(87936001);DIR:OUT;SFP:;SCL:1;SRVR:CO1PR02MB048;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 0267E514F9
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 8, 2014 at 3:47 PM, Jason Cooper <jason@lakedaemon.net> wrote:
-> Feng,
->
-> On Wed, Jul 02, 2014 at 02:18:58PM -0700, Feng Kan wrote:
->> This is to cleanup some hex numbers used in the code and replace
->> then with defines to make the code cleaner.
->>
->> Signed-off-by: Feng Kan <fkan@apm.com>
->> Reviewed-by: Anup Patel <apatel@apm.com>
->> ---
->>  drivers/irqchip/irq-gic.c       | 62 ++++++++++++++++++++++++++++-------------
->>  include/linux/irqchip/arm-gic.h |  2 --
->>  2 files changed, 43 insertions(+), 21 deletions(-)
->>
->> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
->> index 7e11c9d..9ec3f4c 100644
->> --- a/drivers/irqchip/irq-gic.c
->> +++ b/drivers/irqchip/irq-gic.c
->> @@ -48,6 +48,23 @@
->>
->>  #include "irqchip.h"
->>
->> +#define GIC_DIST_ENABLE                      0x1
->> +#define GIC_DIST_DISABLE             0x0
->> +#define GIC_DIST_INT_CLR_EN_32               0xffffffff
->> +#define GIC_DIST_INT_SET_EN_SGI              0x0000ffff
->> +#define GIC_DIST_INT_CLR_EN_PPI              0xffff0000
->
-> Please watch your whitespace here...
->
->> +#define GIC_DIST_INT_LVL_TRIGGER     0x0
->> +#define GIC_DIST_INT_DEF_PRI         0xa0
->> +#define GIC_DIST_INT_DEF_PRI_4               ((GIC_DIST_INT_DEF_PRI << 24) |\
->> +                                     (GIC_DIST_INT_DEF_PRI << 16) |\
->> +                                     (GIC_DIST_INT_DEF_PRI << 8) |\
->> +                                     GIC_DIST_INT_DEF_PRI)
->> +
->> +#define GIC_CPU_ENABLE                       0x1
->
-> And here.
+From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
 
-I am not sure what you mean here, I have listed the listings below.  Do you
-mean the extra line or tab?
-+#define GIC_DIST_ENABLE^I^I^I0x1$
-+#define GIC_DIST_DISABLE^I^I0x0$
-+#define GIC_DIST_INT_CLR_EN_32^I^I0xffffffff$
-+#define GIC_DIST_INT_SET_EN_SGI^I^I0x0000ffff$
-+#define GIC_DIST_INT_CLR_EN_PPI^I^I0xffff0000$
-+#define GIC_DIST_INT_LVL_TRIGGER^I0x0$
-+#define GIC_DIST_INT_DEF_PRI^I^I0xa0$
-+#define GIC_DIST_INT_DEF_PRI_4^I^I((GIC_DIST_INT_DEF_PRI << 24) |\$
-+^I^I^I^I^I(GIC_DIST_INT_DEF_PRI << 16) |\$
-+^I^I^I^I^I(GIC_DIST_INT_DEF_PRI << 8) |\$
-+^I^I^I^I^IGIC_DIST_INT_DEF_PRI)$
-+$
-+#define GIC_CPU_ENABLE^I^I^I0x1$
-+#define GIC_CPU_INT_PRI_THRESHOLD^I0xf0$
-+#define GIC_CPU_INT_SPURIOUS^I^I1023$
-+#define GIC_CPU_INT_ID_MASK^I^I0x3ff$
-+$
->
-> I imagine quite a few of these magic numbers were cleaned up in Marc's
-> series adding GICv3.  Please see my response to your coverletter.
-Thanks, I am basing off that right now. Not sure if you want the defines in the
-common.h or only placed in the file that they affect.
+This patch set introduces support for MSI(-X) in GICv2m specification,
+which is implemented in some variation of GIC400.
 
->
-> thx,
->
-> Jason.
->
->> +#define GIC_CPU_INT_PRI_THRESHOLD    0xf0
->> +#define GIC_CPU_INT_SPURIOUS         1023
->> +#define GIC_CPU_INT_ID_MASK          0x3ff
->> +
->>  union gic_base {
->>       void __iomem *common_base;
->>       void __percpu * __iomem *percpu_base;
->> @@ -291,7 +308,7 @@ static void __exception_irq_entry gic_handle_irq(struct pt_regs *regs)
->>
->>       do {
->>               irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
->> -             irqnr = irqstat & GICC_IAR_INT_ID_MASK;
->> +             irqnr = irqstat & GIC_CPU_INT_ID_MASK;
->>
->>               if (likely(irqnr > 15 && irqnr < 1021)) {
->>                       irqnr = irq_find_mapping(gic->domain, irqnr);
->> @@ -322,8 +339,8 @@ static void gic_handle_cascade_irq(unsigned int irq, struct irq_desc *desc)
->>       status = readl_relaxed(gic_data_cpu_base(chip_data) + GIC_CPU_INTACK);
->>       raw_spin_unlock(&irq_controller_lock);
->>
->> -     gic_irq = (status & 0x3ff);
->> -     if (gic_irq == 1023)
->> +     gic_irq = (status & GIC_CPU_INT_ID_MASK);
->> +     if (gic_irq == GIC_CPU_INT_SPURIOUS)
->>               goto out;
->>
->>       cascade_irq = irq_find_mapping(chip_data->domain, gic_irq);
->> @@ -384,13 +401,14 @@ static void __init gic_dist_init(struct gic_chip_data *gic)
->>       unsigned int gic_irqs = gic->gic_irqs;
->>       void __iomem *base = gic_data_dist_base(gic);
->>
->> -     writel_relaxed(0, base + GIC_DIST_CTRL);
->> +     writel_relaxed(GIC_DIST_DISABLE, base + GIC_DIST_CTRL);
->>
->>       /*
->>        * Set all global interrupts to be level triggered, active low.
->>        */
->>       for (i = 32; i < gic_irqs; i += 16)
->> -             writel_relaxed(0, base + GIC_DIST_CONFIG + i * 4 / 16);
->> +             writel_relaxed(GIC_DIST_INT_LVL_TRIGGER,
->> +                             base + GIC_DIST_CONFIG + i * 4 / 16);
->>
->>       /*
->>        * Set all global interrupts to this CPU only.
->> @@ -405,16 +423,18 @@ static void __init gic_dist_init(struct gic_chip_data *gic)
->>        * Set priority on all global interrupts.
->>        */
->>       for (i = 32; i < gic_irqs; i += 4)
->> -             writel_relaxed(0xa0a0a0a0, base + GIC_DIST_PRI + i * 4 / 4);
->> +             writel_relaxed(GIC_DIST_INT_DEF_PRI_4,
->> +                                     base + GIC_DIST_PRI + i * 4 / 4);
->>
->>       /*
->>        * Disable all interrupts.  Leave the PPI and SGIs alone
->>        * as these enables are banked registers.
->>        */
->>       for (i = 32; i < gic_irqs; i += 32)
->> -             writel_relaxed(0xffffffff, base + GIC_DIST_ENABLE_CLEAR + i * 4 / 32);
->> +             writel_relaxed(GIC_DIST_INT_CLR_EN_32,
->> +                             base + GIC_DIST_ENABLE_CLEAR + i * 4 / 32);
->>
->> -     writel_relaxed(1, base + GIC_DIST_CTRL);
->> +     writel_relaxed(GIC_DIST_ENABLE, base + GIC_DIST_CTRL);
->>  }
->>
->>  static void gic_cpu_init(struct gic_chip_data *gic)
->> @@ -443,17 +463,20 @@ static void gic_cpu_init(struct gic_chip_data *gic)
->>        * Deal with the banked PPI and SGI interrupts - disable all
->>        * PPI interrupts, ensure all SGI interrupts are enabled.
->>        */
->> -     writel_relaxed(0xffff0000, dist_base + GIC_DIST_ENABLE_CLEAR);
->> -     writel_relaxed(0x0000ffff, dist_base + GIC_DIST_ENABLE_SET);
->> +     writel_relaxed(GIC_DIST_INT_CLR_EN_PPI,
->> +                     dist_base + GIC_DIST_ENABLE_CLEAR);
->> +     writel_relaxed(GIC_DIST_INT_SET_EN_SGI,
->> +                     dist_base + GIC_DIST_ENABLE_SET);
->>
->>       /*
->>        * Set priority on PPI and SGI interrupts
->>        */
->>       for (i = 0; i < 32; i += 4)
->> -             writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
->> +             writel_relaxed(GIC_DIST_INT_DEF_PRI_4,
->> +                             dist_base + GIC_DIST_PRI + i * 4 / 4);
->>
->> -     writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
->> -     writel_relaxed(1, base + GIC_CPU_CTRL);
->> +     writel_relaxed(GIC_CPU_INT_PRI_THRESHOLD, base + GIC_CPU_PRIMASK);
->> +     writel_relaxed(GIC_CPU_ENABLE, base + GIC_CPU_CTRL);
->>  }
->>
->>  void gic_cpu_if_down(void)
->> @@ -519,14 +542,14 @@ static void gic_dist_restore(unsigned int gic_nr)
->>       if (!dist_base)
->>               return;
->>
->> -     writel_relaxed(0, dist_base + GIC_DIST_CTRL);
->> +     writel_relaxed(GIC_DIST_DISABLE, dist_base + GIC_DIST_CTRL);
->>
->>       for (i = 0; i < DIV_ROUND_UP(gic_irqs, 16); i++)
->>               writel_relaxed(gic_data[gic_nr].saved_spi_conf[i],
->>                       dist_base + GIC_DIST_CONFIG + i * 4);
->>
->>       for (i = 0; i < DIV_ROUND_UP(gic_irqs, 4); i++)
->> -             writel_relaxed(0xa0a0a0a0,
->> +             writel_relaxed(GIC_DIST_INT_DEF_PRI_4,
->>                       dist_base + GIC_DIST_PRI + i * 4);
->>
->>       for (i = 0; i < DIV_ROUND_UP(gic_irqs, 4); i++)
->> @@ -537,7 +560,7 @@ static void gic_dist_restore(unsigned int gic_nr)
->>               writel_relaxed(gic_data[gic_nr].saved_spi_enable[i],
->>                       dist_base + GIC_DIST_ENABLE_SET + i * 4);
->>
->> -     writel_relaxed(1, dist_base + GIC_DIST_CTRL);
->> +     writel_relaxed(GIC_DIST_ENABLE, dist_base + GIC_DIST_CTRL);
->>  }
->>
->>  static void gic_cpu_save(unsigned int gic_nr)
->> @@ -591,10 +614,11 @@ static void gic_cpu_restore(unsigned int gic_nr)
->>               writel_relaxed(ptr[i], dist_base + GIC_DIST_CONFIG + i * 4);
->>
->>       for (i = 0; i < DIV_ROUND_UP(32, 4); i++)
->> -             writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
->> +             writel_relaxed(GIC_DIST_INT_DEF_PRI_4,
->> +                                     dist_base + GIC_DIST_PRI + i * 4);
->>
->> -     writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
->> -     writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
->> +     writel_relaxed(GIC_CPU_INT_PRI_THRESHOLD, cpu_base + GIC_CPU_PRIMASK);
->> +     writel_relaxed(GIC_CPU_ENABLE, cpu_base + GIC_CPU_CTRL);
->>  }
->>
->>  static int gic_notifier(struct notifier_block *self, unsigned long cmd,      void *v)
->> diff --git a/include/linux/irqchip/arm-gic.h b/include/linux/irqchip/arm-gic.h
->> index 45e2d8c..7ed92d0 100644
->> --- a/include/linux/irqchip/arm-gic.h
->> +++ b/include/linux/irqchip/arm-gic.h
->> @@ -21,8 +21,6 @@
->>  #define GIC_CPU_ACTIVEPRIO           0xd0
->>  #define GIC_CPU_IDENT                        0xfc
->>
->> -#define GICC_IAR_INT_ID_MASK         0x3ff
->> -
->>  #define GIC_DIST_CTRL                        0x000
->>  #define GIC_DIST_CTR                 0x004
->>  #define GIC_DIST_IGROUP                      0x080
->> --
->> 1.9.1
->>
+This depends on and has been tested with the V7 of"Add support for PCI in AArch64"
+(https://lkml.org/lkml/2014/3/14/320).
+
+Changes in V3:
+    * Rebase to git://git.infradead.org/users/jcooper/linux.git irqchip/gic
+      (per Jason Cooper request)
+    * Misc fix/clean up per Mark Rutland comments
+    * Minor Clean up in the driver/irqchip/irq-gic-v2m.c: alloc_msi_irqs()
+    * Patch 4 is new to the series:
+        * Add ARM64-specific version arch_setup_msi_irqs() to allow support
+          for Multiple MSI.
+        * Add support for Multiple MSI for GICv2m.
+
+Suravee Suthikulpanit (4):
+  irqchip: gic: Add binding probe for ARM GIC400
+  irqchip: gic: Restructuring ARM GIC code
+  irqchip: gic: Add supports for ARM GICv2m MSI(-X)
+  irqchip: gicv2m: Add support for multiple MSI for ARM64 GICv2m
+
+ Documentation/devicetree/bindings/arm/gic.txt |  20 +-
+ arch/arm64/Kconfig                            |   1 +
+ arch/arm64/include/asm/msi.h                  |  15 ++
+ arch/arm64/kernel/Makefile                    |   1 +
+ arch/arm64/kernel/msi.c                       |  57 +++++
+ drivers/irqchip/Kconfig                       |   7 +
+ drivers/irqchip/Makefile                      |   1 +
+ drivers/irqchip/irq-gic-v2m.c                 | 331 ++++++++++++++++++++++++++
+ drivers/irqchip/irq-gic-v2m.h                 |  13 +
+ drivers/irqchip/irq-gic.c                     |  90 ++++---
+ drivers/irqchip/irq-gic.h                     |  67 ++++++
+ 11 files changed, 562 insertions(+), 41 deletions(-)
+ create mode 100644 arch/arm64/include/asm/msi.h
+ create mode 100644 arch/arm64/kernel/msi.c
+ create mode 100644 drivers/irqchip/irq-gic-v2m.c
+ create mode 100644 drivers/irqchip/irq-gic-v2m.h
+ create mode 100644 drivers/irqchip/irq-gic.h
+
+-- 
+1.9.0
+
