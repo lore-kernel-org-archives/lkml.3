@@ -1,105 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755484AbaGIMig (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 08:38:36 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:36364 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751313AbaGIMie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 08:38:34 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <tony@atomide.com>, <computersforpeace@gmail.com>
-CC: <javier@dowhile0.org>, <pekon@ti.com>,
-        <ezequiel.garcia@free-electrons.com>, <dwmw2@infradead.org>,
-        <jg1.han@samsung.com>, <nsekhar@ti.com>,
-        <linux-mtd@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [RFC PATCH 00/10] OMAP: GPMC: NAND: Introduce GPMC APIs for OMAP NAND
-Date: Wed, 9 Jul 2014 15:37:20 +0300
-Message-ID: <1404909450-11970-1-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S932157AbaGIMmb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 08:42:31 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57041 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932094AbaGIMm1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 08:42:27 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 2/2] ACPI/Wakup: Enable button wakeup GPEs if these GPEs have associated GPE methods.
+Date: Wed, 09 Jul 2014 15:00:32 +0200
+Message-ID: <1566864.H9h1bMoShf@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53BCB23A.1070304@intel.com>
+References: <1404802679-24019-1-git-send-email-tianyu.lan@intel.com> <3011365.oYtXFx0LHa@vostro.rjw.lan> <53BCB23A.1070304@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wednesday, July 09, 2014 11:08:42 AM Lan Tianyu wrote:
+> On 2014年07月08日 21:26, Rafael J. Wysocki wrote:
+> > On Tuesday, July 08, 2014 02:57:58 PM Lan Tianyu wrote:
+> >> The button wakeup GPEs are enabled unconditionally in the current world by
+> >> commit 2a5d24(ACPI / Wakeup: Enable button GPEs unconditionally during
+> >> initialization). Because button's GPE methods needs to be run to clear
+> >> GPE status on some machines when there is GPE interrupt. If not, it will
+> >> cause machines resume immediately after being suspended since GPE status
+> >> isn't cleared correctly.
+> >>
+> >> But if there is no GPE method for button wakeup GPE, these GPEs should not
+> >> be enabled since nothing needs to be done when they are triggered and this
+> >> also causes LID GPE storm on Lenovo Ideapad y560p.
+> >>
+> >> This patch is to check Button GPE method and enable it if there is associated
+> >> GPE method.
+> > 
+> > Part of the problem is that we call acpi_setup_gpe_for_wake() for buttons too
+> > and it sets ACPI_GPE_DISPATCH_NOTIFY unconditionally.
+> 
+> Yes, this is why the GPE wasn't disabled by CA. From my opinion,
+> original reason of enabling button wakeup GPE in the runtime is that it
+> may have associated GPE method and the method will notify button driver
+> and clear some hardware status. But if it didn't have GPE method, I
+> don't why we need to enable the GPE.
 
-The following hardware modules/registers are meant for NAND controller driver
-usage:
-- NAND I/O control (NAND address, data, command registers)
-- Prefetch/Write-post engine
-- ECC/BCH engine
+I think you're right, but "is there a handler method for that GPE present?"
+is a bit too low-level question to ask from outside of ACPICA.  We should be
+asking "is there any kind of handling registered for it?" if anything, but in
+my opinion the cleanest approach would be to modify acpi_enable_gpe() to
+return an error code if there's no handler/method/notify for the GPE in
+question.
 
-However, these registers sit in the GPMC controller's register space and there
-need to be some sane way to access them from the OMAP NAND controller driver.
+The patch I attached to the BZ entry doesn't do that just yet, because I'm
+wondering whether or not it will make the ACPICA's auto-disabling trigger. :-)
 
-Till now the GPMC driver was populating a data structure (struct gpmc_nand_regs)
-with the register addresses and passing it to the OMAP NAND driver via platform
-data. This mechanism cannot be used for true Device tree support as custom
-platform data passing mechanism doesn't seem to work. Moreover, direct
-access to these registers must be limited to the GPMC driver. This calls for
-a few custom OMAP GPMC specific APIs that the OMAP NAND driver can use
-to access these GPMC space registers.
-
-This series attempts to add the following new APIs and gets rid of
-'struct gpmc_nand_regs' and 'gpmc_update_nand_regs()'.
-
--For NAND I/O control registers
-u32 omap_gpmc_read_reg(int cs, enum omap_gpmc_reg reg);
-void omap_gpmc_write_reg(int cs, enum omap_gpmc_reg reg, u32 val);
-
--For Prefetch engine
-int omap_gpmc_prefetch_start(int cs, int fifo_th, bool dma,
-			     u32 count, int is_write);
-int omap_gpmc_prefetch_stop(int cs);
-u32 omap_gpmc_get_prefetch_count(void);
-u32 omap_gpmc_get_prefetch_fifo_count(void);
-
--For ECC/BCH engine
-void omap_gpmc_ecc_disable(void);
-void omap_gpmc_ecc_configure_enable(int cs, bool ecc16, u8 ecc_size0,
-				    u8 ecc_size1, bool use_bch,
-				    enum omap_gpmc_bch_type bch_type,
-				    u8 bch_sectors, u8 bch_wrap_mode);
-void omap_gpmc_ecc_get_result(int length, u32 *result);
-void omap_gpmc_ecc_get_bch_result(int length, u8 sector, u32 *result);
-
-These APIs don't implement any logic to serialize access to the
-NAND/Prefetch/ECC registers. It is upto the NAND controller driver
-to ensure that. As these modules can only handle one NAND controller context
-at a time, we set the nand_chip->hwcontrol to point to a single
-controller instance even if there are multiple NAND chips on different
-Chip select spaces. The NAND base driver then takes care of serializing
-access to the NAND controller (and ECC) through nandchip->hwcontrol->lock.
-
-NOTE: Patches are still untested and only meant for review.
-
-cheers,
--roger
----
-Roger Quadros (10):
-  mtd: nand: omap: Use a single hardware controller instance
-  mtd: nand: omap: Always use chip->ecc.steps for BCH sector count
-  OMAP: GPMC: Introduce APIs to access NAND control registers
-  mtd: nand: omap: Use GPMC APIs for NAND control
-  OMAP: GPMC: Introduce APIs for accessing Prefetch/Write-post engine
-  mtd: nand: omap: Use GPMC APIs for accessing Prefetch engine
-  OMAP: GPMC: Introduce APIs for Configuring ECC Engine
-  OMAP: GPMC: Introduce APIs to get ECC/BCH results
-  mtd: nand: omap: Use GPMC APIs for accessing ECC/BCH engine
-  OMAP: GPMC: NAND: Don't pass NAND/ECC/BCH register adresses to NAND
-    driver
-
- arch/arm/mach-omap2/gpmc-nand.c              |   2 -
- arch/arm/mach-omap2/gpmc.c                   | 464 +++++++++++++++++++++++----
- arch/arm/mach-omap2/gpmc.h                   |   1 -
- drivers/mtd/nand/omap2.c                     | 397 +++++++++--------------
- include/linux/omap-gpmc-nand.h               | 106 ++++++
- include/linux/platform_data/mtd-nand-omap2.h |   5 +-
- 6 files changed, 663 insertions(+), 312 deletions(-)
- create mode 100644 include/linux/omap-gpmc-nand.h
-
--- 
-1.8.3.2
+Rafael
 
