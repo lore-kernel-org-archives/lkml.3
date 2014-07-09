@@ -1,183 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702AbaGIBgL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 21:36:11 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52651 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750947AbaGIBgJ (ORCPT
+	id S1751916AbaGIBrH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 21:47:07 -0400
+Received: from mail-bl2lp0207.outbound.protection.outlook.com ([207.46.163.207]:28320
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751104AbaGIBrE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 21:36:09 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Rob Clark <robdclark@gmail.com>
-Subject: [PATCH v2] clk: qcom: Fix MN frequency tables, parent map, and jpegd
-Date: Tue,  8 Jul 2014 18:36:06 -0700
-Message-Id: <1404869766-6311-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
+	Tue, 8 Jul 2014 21:47:04 -0400
+From: Dexuan Cui <decui@microsoft.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: Dan Carpenter <dan.carpenter@oracle.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tomi.valkeinen@ti.com" <tomi.valkeinen@ti.com>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH v2] video: hyperv: hyperv_fb: refresh the VM screen by
+ force on VM panic
+Thread-Topic: [PATCH v2] video: hyperv: hyperv_fb: refresh the VM screen by
+ force on VM panic
+Thread-Index: AQHPmo7K9bmiR/mw30qA8kPuB/vMKpuWvrIAgAAFu4CAADUD0A==
+Date: Wed, 9 Jul 2014 01:46:18 +0000
+Message-ID: <EE124450C0AAF944A40DD71E61F878C987AEB9@SINEX14MBXC417.southpacific.corp.microsoft.com>
+References: <1403818501-15547-1-git-send-email-decui@microsoft.com>
+ <20140708092709.GI25880@mwanda>
+ <EE124450C0AAF944A40DD71E61F878C987A663@SINEX14MBXC417.southpacific.corp.microsoft.com>
+ <20140708223425.GB6310@kroah.com>
+In-Reply-To: <20140708223425.GB6310@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.3.94]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(377454003)(199002)(189002)(13464003)(51704005)(164054003)(19580405001)(79102001)(26826002)(76482001)(81342001)(4396001)(86362001)(54356999)(92566001)(81156004)(50986999)(92726001)(97736001)(55846006)(85852003)(99396002)(74662001)(86612001)(6806004)(20776003)(31966008)(47776003)(16796002)(68736004)(106466001)(95666004)(74502001)(110136001)(76176999)(77982001)(85306003)(69596002)(97756001)(19580395003)(107046002)(33656002)(23726002)(93886003)(80022001)(85806002)(2656002)(87936001)(77096002)(64706001)(46406003)(81542001)(50466002)(83072002)(46102001)(106116001)(83322001)(84676001)(2351001)(44976005)(21056001);DIR:OUT;SFP:;SCL:1;SRVR:BN3PR0301MB1169;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+X-Forefront-PRVS: 0267E514F9
+Authentication-Results: spf=pass (sender IP is 131.107.125.37)
+ smtp.mailfrom=decui@microsoft.com; 
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clocks that don't have a pre-divider don't list any pre-divider
-in their frequency tables, but their tables are initialized using
-aggregate initializers. Use tagged initializers so we properly
-assign the m and n values for each frequency. Furthermore, the
-mmcc_pxo_pll8_pll2_pll3 array improperly mapped the second
-element to pll2 instead of pll8, causing the clock driver to
-recalculate the wrong rate for any clocks using this array along
-with a rate that uses pll2. Plus the .num_parents field is 3
-instead of 4 so you can't even switch the parent to pll3. Finally
-I noticed that the jpegd clock improperly indicates that the
-pre-divider width is only 2, when it's actually 4 bits wide.
+> -----Original Message-----
+> > > From: Dan Carpenter [mailto:dan.carpenter@oracle.com]
+> > > Sent: Tuesday, July 8, 2014 17:27 PM
+> > > To: Dexuan Cui
+> > > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> driverdev-
+> > > devel@linuxdriverproject.org; plagnioj@jcrosoft.com;
+> > > tomi.valkeinen@ti.com; linux-fbdev@vger.kernel.org; olaf@aepfle.de;
+> > > apw@canonical.com; jasowang@redhat.com; Haiyang Zhang
+> > > Subject: Re: [PATCH v2] video: hyperv: hyperv_fb: refresh the VM screen
+> by
+> > > force on VM panic
+> > >
+> > > Don't use likely/unlikely unless you have benchmark numbers to show
+> that
+> > > it makes a speed up.
+> > >
+> > > regards,
+> > > dan carpenter
+> >
+> > Hi Dan,
+> > Here the variable 'synchronous_fb' is only set to true when the system
+> panics.
+> > So before the system panics, it's always 'unlikely'. :-)
+> 
+> Then take advantage of gcc's and your processor's prediction, which
+> knows that 0 is the "common" case and will choose to do the right thing
+> here.
+> 
+> Dan is right, never put those markings in your code unless you can
+> benchmark the difference.  Which means in reality, never put them in
+> your code.
+> 
+> gerg k-h
 
-Fixes: 6d00b56fe "clk: qcom: Add support for MSM8960's multimedia clock controller (MMCC)"
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
+OK, let me send out a v3 patch, which will remove the unlikely.
 
- Changes since v1:
-  - num_parents for gfx3d should be 4, not 3.
-
- drivers/clk/qcom/mmcc-msm8960.c | 82 +++++++++++++++++++++--------------------
- 1 file changed, 42 insertions(+), 40 deletions(-)
-
-diff --git a/drivers/clk/qcom/mmcc-msm8960.c b/drivers/clk/qcom/mmcc-msm8960.c
-index 12f3c0b64fcd..10d2f135dfba 100644
---- a/drivers/clk/qcom/mmcc-msm8960.c
-+++ b/drivers/clk/qcom/mmcc-msm8960.c
-@@ -38,6 +38,8 @@
- #define P_PLL2	2
- #define P_PLL3	3
- 
-+#define F_MN(f, s, _m, _n) { .freq = f, .src = s, .m = _m, .n = _n }
-+
- static u8 mmcc_pxo_pll8_pll2_map[] = {
- 	[P_PXO]		= 0,
- 	[P_PLL8]	= 2,
-@@ -59,8 +61,8 @@ static u8 mmcc_pxo_pll8_pll2_pll3_map[] = {
- 
- static const char *mmcc_pxo_pll8_pll2_pll3[] = {
- 	"pxo",
--	"pll2",
- 	"pll8_vote",
-+	"pll2",
- 	"pll3",
- };
- 
-@@ -710,18 +712,18 @@ static struct clk_branch csiphy2_timer_clk = {
- };
- 
- static struct freq_tbl clk_tbl_gfx2d[] = {
--	{  27000000, P_PXO,  1,  0 },
--	{  48000000, P_PLL8, 1,  8 },
--	{  54857000, P_PLL8, 1,  7 },
--	{  64000000, P_PLL8, 1,  6 },
--	{  76800000, P_PLL8, 1,  5 },
--	{  96000000, P_PLL8, 1,  4 },
--	{ 128000000, P_PLL8, 1,  3 },
--	{ 145455000, P_PLL2, 2, 11 },
--	{ 160000000, P_PLL2, 1,  5 },
--	{ 177778000, P_PLL2, 2,  9 },
--	{ 200000000, P_PLL2, 1,  4 },
--	{ 228571000, P_PLL2, 2,  7 },
-+	F_MN( 27000000, P_PXO,  1,  0),
-+	F_MN( 48000000, P_PLL8, 1,  8),
-+	F_MN( 54857000, P_PLL8, 1,  7),
-+	F_MN( 64000000, P_PLL8, 1,  6),
-+	F_MN( 76800000, P_PLL8, 1,  5),
-+	F_MN( 96000000, P_PLL8, 1,  4),
-+	F_MN(128000000, P_PLL8, 1,  3),
-+	F_MN(145455000, P_PLL2, 2, 11),
-+	F_MN(160000000, P_PLL2, 1,  5),
-+	F_MN(177778000, P_PLL2, 2,  9),
-+	F_MN(200000000, P_PLL2, 1,  4),
-+	F_MN(228571000, P_PLL2, 2,  7),
- 	{ }
- };
- 
-@@ -842,22 +844,22 @@ static struct clk_branch gfx2d1_clk = {
- };
- 
- static struct freq_tbl clk_tbl_gfx3d[] = {
--	{  27000000, P_PXO,  1,  0 },
--	{  48000000, P_PLL8, 1,  8 },
--	{  54857000, P_PLL8, 1,  7 },
--	{  64000000, P_PLL8, 1,  6 },
--	{  76800000, P_PLL8, 1,  5 },
--	{  96000000, P_PLL8, 1,  4 },
--	{ 128000000, P_PLL8, 1,  3 },
--	{ 145455000, P_PLL2, 2, 11 },
--	{ 160000000, P_PLL2, 1,  5 },
--	{ 177778000, P_PLL2, 2,  9 },
--	{ 200000000, P_PLL2, 1,  4 },
--	{ 228571000, P_PLL2, 2,  7 },
--	{ 266667000, P_PLL2, 1,  3 },
--	{ 300000000, P_PLL3, 1,  4 },
--	{ 320000000, P_PLL2, 2,  5 },
--	{ 400000000, P_PLL2, 1,  2 },
-+	F_MN( 27000000, P_PXO,  1,  0),
-+	F_MN( 48000000, P_PLL8, 1,  8),
-+	F_MN( 54857000, P_PLL8, 1,  7),
-+	F_MN( 64000000, P_PLL8, 1,  6),
-+	F_MN( 76800000, P_PLL8, 1,  5),
-+	F_MN( 96000000, P_PLL8, 1,  4),
-+	F_MN(128000000, P_PLL8, 1,  3),
-+	F_MN(145455000, P_PLL2, 2, 11),
-+	F_MN(160000000, P_PLL2, 1,  5),
-+	F_MN(177778000, P_PLL2, 2,  9),
-+	F_MN(200000000, P_PLL2, 1,  4),
-+	F_MN(228571000, P_PLL2, 2,  7),
-+	F_MN(266667000, P_PLL2, 1,  3),
-+	F_MN(300000000, P_PLL3, 1,  4),
-+	F_MN(320000000, P_PLL2, 2,  5),
-+	F_MN(400000000, P_PLL2, 1,  2),
- 	{ }
- };
- 
-@@ -897,7 +899,7 @@ static struct clk_dyn_rcg gfx3d_src = {
- 		.hw.init = &(struct clk_init_data){
- 			.name = "gfx3d_src",
- 			.parent_names = mmcc_pxo_pll8_pll2_pll3,
--			.num_parents = 3,
-+			.num_parents = 4,
- 			.ops = &clk_dyn_rcg_ops,
- 		},
- 	},
-@@ -995,7 +997,7 @@ static struct clk_rcg jpegd_src = {
- 	.ns_reg = 0x00ac,
- 	.p = {
- 		.pre_div_shift = 12,
--		.pre_div_width = 2,
-+		.pre_div_width = 4,
- 	},
- 	.s = {
- 		.src_sel_shift = 0,
-@@ -1342,15 +1344,15 @@ static struct clk_branch hdmi_app_clk = {
- };
- 
- static struct freq_tbl clk_tbl_vcodec[] = {
--	{  27000000, P_PXO,  1,  0 },
--	{  32000000, P_PLL8, 1, 12 },
--	{  48000000, P_PLL8, 1,  8 },
--	{  54860000, P_PLL8, 1,  7 },
--	{  96000000, P_PLL8, 1,  4 },
--	{ 133330000, P_PLL2, 1,  6 },
--	{ 200000000, P_PLL2, 1,  4 },
--	{ 228570000, P_PLL2, 2,  7 },
--	{ 266670000, P_PLL2, 1,  3 },
-+	F_MN( 27000000, P_PXO,  1,  0),
-+	F_MN( 32000000, P_PLL8, 1, 12),
-+	F_MN( 48000000, P_PLL8, 1,  8),
-+	F_MN( 54860000, P_PLL8, 1,  7),
-+	F_MN( 96000000, P_PLL8, 1,  4),
-+	F_MN(133330000, P_PLL2, 1,  6),
-+	F_MN(200000000, P_PLL2, 1,  4),
-+	F_MN(228570000, P_PLL2, 2,  7),
-+	F_MN(266670000, P_PLL2, 1,  3),
- 	{ }
- };
- 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+Thanks,
+-- Dexuan
