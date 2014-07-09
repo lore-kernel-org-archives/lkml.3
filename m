@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724AbaGIG4W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 02:56:22 -0400
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:36212 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751542AbaGIG4R (ORCPT
+	id S1754815AbaGIG40 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 02:56:26 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:41856 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751542AbaGIG4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 02:56:17 -0400
+	Wed, 9 Jul 2014 02:56:25 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: tglx@linutronix.de
 Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
         fweisbec@gmail.com, arvind.chauhan@arm.com, preeti@linux.vnet.ibm.com,
         khilman@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: [RFC 4/7] sched: don't check for active hrtimer after adding it
-Date: Wed,  9 Jul 2014 12:25:36 +0530
-Message-Id: <9c72a8d137cfca4e67848a7bf9dc9942eea7452b.1404888801.git.viresh.kumar@linaro.org>
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Darren Hart <dvhart@linux.intel.com>
+Subject: [RFC 5/7] futex: don't check for active hrtimer after adding it
+Date: Wed,  9 Jul 2014 12:25:37 +0530
+Message-Id: <e64bf28d15929bdafcc0970644b6d880650c1cd8.1404888801.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <cover.1404888801.git.viresh.kumar@linaro.org>
 References: <cover.1404888801.git.viresh.kumar@linaro.org>
@@ -43,64 +44,33 @@ properly or not by calling hrtimer_active(), like:
 As hrtimer_start*() never fails, hrtimer_active() is guaranteed to return '1'.
 So, there is no point calling hrtimer_active().
 
-Also this is done in while loop at several places, which isn't required anymore.
-
-This patch updates sched core to get this fixed.
+This patch updates futex core to get this fixed.
 
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Darren Hart <dvhart@linux.intel.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- kernel/sched/core.c     | 20 +++++++++-----------
- kernel/sched/deadline.c |  2 +-
- 2 files changed, 10 insertions(+), 12 deletions(-)
+ kernel/futex.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 3bdf01b..4a6ef8d 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -111,19 +111,17 @@ void start_bandwidth_timer(struct hrtimer *period_timer, ktime_t period)
- 	unsigned long delta;
- 	ktime_t soft, hard, now;
+diff --git a/kernel/futex.c b/kernel/futex.c
+index b632b5f..4847efc 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2083,11 +2083,8 @@ static void futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q *q,
+ 	queue_me(q, hb);
  
--	for (;;) {
--		if (hrtimer_active(period_timer))
--			break;
-+	if (hrtimer_active(period_timer))
-+		return;
- 
--		now = hrtimer_cb_get_time(period_timer);
--		hrtimer_forward(period_timer, now, period);
-+	now = hrtimer_cb_get_time(period_timer);
-+	hrtimer_forward(period_timer, now, period);
- 
--		soft = hrtimer_get_softexpires(period_timer);
--		hard = hrtimer_get_expires(period_timer);
--		delta = ktime_to_ns(ktime_sub(hard, soft));
--		__hrtimer_start_range_ns(period_timer, soft, delta,
--					 HRTIMER_MODE_ABS_PINNED, 0);
+ 	/* Arm the timer */
+-	if (timeout) {
++	if (timeout)
+ 		hrtimer_start_expires(&timeout->timer, HRTIMER_MODE_ABS);
+-		if (!hrtimer_active(&timeout->timer))
+-			timeout->task = NULL;
 -	}
-+	soft = hrtimer_get_softexpires(period_timer);
-+	hard = hrtimer_get_expires(period_timer);
-+	delta = ktime_to_ns(ktime_sub(hard, soft));
-+	__hrtimer_start_range_ns(period_timer, soft, delta,
-+				 HRTIMER_MODE_ABS_PINNED, 0);
- }
  
- DEFINE_MUTEX(sched_domains_mutex);
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index fc4f98b1..eeb6786 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -484,7 +484,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
- 	__hrtimer_start_range_ns(&dl_se->dl_timer, soft,
- 				 range, HRTIMER_MODE_ABS, 0);
- 
--	return hrtimer_active(&dl_se->dl_timer);
-+	return 1;
- }
- 
- /*
+ 	/*
+ 	 * If we have been removed from the hash list, then another task
 -- 
 2.0.0.rc2
 
