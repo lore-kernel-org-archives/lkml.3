@@ -1,39 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756375AbaGIXwf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 19:52:35 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:34667 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223AbaGIXwe (ORCPT
+	id S1756721AbaGIXxM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 19:53:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49232 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755347AbaGIXxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 19:52:34 -0400
-Date: Wed, 09 Jul 2014 16:52:32 -0700 (PDT)
-Message-Id: <20140709.165232.539576872991411664.davem@davemloft.net>
-To: grygorii.strashko@ti.com
-Cc: f.fainelli@gmail.com, santosh.shilimkar@ti.com, netdev@vger.kernel.org,
-        prabhakar.csengg@gmail.com, nsekhar@ti.com, robh+dt@kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        davinci-linux-open-source@linux.davincidsp.com
-Subject: Re: [PATCH 1/2] net: davinci_mdio: reuse for keystone2 arch
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1404911451-9921-2-git-send-email-grygorii.strashko@ti.com>
-References: <1404911451-9921-1-git-send-email-grygorii.strashko@ti.com>
-	<1404911451-9921-2-git-send-email-grygorii.strashko@ti.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 09 Jul 2014 16:52:33 -0700 (PDT)
+	Wed, 9 Jul 2014 19:53:11 -0400
+Date: Wed, 9 Jul 2014 16:57:36 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, Joe Perches <joe@perches.com>,
+        Kay Sievers <kay@vrfy.org>
+Subject: Re: [PATCH v2] drivers/base: Fix length checks in
+ create_syslog_header()/dev_vprintk_emit()
+Message-ID: <20140709235736.GA31914@kroah.com>
+References: <1402267903.23860.45.camel@deadeye.wl.decadent.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1402267903.23860.45.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-Date: Wed, 9 Jul 2014 16:10:50 +0300
+On Sun, Jun 08, 2014 at 11:51:43PM +0100, Ben Hutchings wrote:
+> snprintf() returns the number of bytes that could have been written
+> (excluding the null), not the actual number of bytes written.  Given a
+> long enough subsystem or device name, these functions will advance
+> beyond the end of the on-stack buffer in dev_vprintk_exit(), resulting
+> in an information leak or stack corruption.  I don't know whether such
+> a long name is currently possible.
+> 
+> In case snprintf() returns a value >= the buffer size, do not add
+> structured logging information.  Also WARN if this happens, so we can
+> fix the driver or increase the buffer size.
+> 
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> ---
+> v2: use dev_WARN() not dev_WARN_ON()
 
->  Required properties:
-> -- compatible		: Should be "ti,davinci_mdio"
-> +- compatible		: Should be "ti,davinci_mdio" or "ti,keystone-mdio"
+This patch breaks the build in a huge way:
 
-Why the inconsistency in naming schemes?  I don't see any reason
-to be different wrt. "_" vs. "-" in the name string.
+drivers/base/core.c: In function ‘create_syslog_header’:
+drivers/base/core.c:2049:16: error: expected ‘)’ before numeric constant
+  dev_WARN(dev, 1, "device/subsystem name too long");
+                  ^
+
+is the start of it, it goes on for a page or so after that :(
+
+greg k-h
