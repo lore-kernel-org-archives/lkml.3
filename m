@@ -1,75 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755421AbaGILgd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 07:36:33 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:53572 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755189AbaGILga (ORCPT
+	id S1755685AbaGILnf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 07:43:35 -0400
+Received: from mailout1.zih.tu-dresden.de ([141.30.67.72]:39263 "EHLO
+	mailout1.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754006AbaGILnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 07:36:30 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-78-53bd293b232c
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
-        Alexey Preobrazhensky <preobr@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        x86@kernel.org, linux-mm@kvack.org,
-        Andrey Ryabinin <a.ryabinin@samsung.com>
-Subject: [RFC/PATCH RESEND -next 05/21] x86: cpu: don't sanitize early stages
- of a secondary CPU boot
-Date: Wed, 09 Jul 2014 15:29:59 +0400
-Message-id: <1404905415-9046-6-git-send-email-a.ryabinin@samsung.com>
-X-Mailer: git-send-email 1.8.5.5
-In-reply-to: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t/xy7rWmnuDDS6vUrDY9usRm8XvvTNZ
-	LeasX8Nmcf3bG0aLCQ/b2C1WdjezWWx/9pbJYmXnA1aLTY+vsVr82bWDyeLyrjlsFvfW/Ge1
-	uH2Z1+LSgQVMFi37LjBZtH3+x2qxb+V5IGvJRiaLxUduM1u8ezaZ2WLzpqnMFj82PGZ1EPNo
-	ae5h89g56y67x4JNpR6bVnWyeWz6NIndo+vtFSaPd+fOsXucmPGbxePJlelMHpuX1Ht8fHqL
-	xeP9vqtsHn1bVjF6nFlwhN3j8ya5AP4oLpuU1JzMstQifbsEroydJ38xFexjrdizfipLA+Nl
-	li5GTg4JAROJvbub2CBsMYkL99YD2VwcQgJLGSUuLj7HDpIQEuhjklhzzQvEZhPQk/g3aztY
-	g4iAgsTm3mesIA3MAs1sEu0dH1hBEsIC6RJT5x1mBrFZBFQlpk+bAGbzCrhK9EybCLVNQWLZ
-	8plg9ZwCbhITpl8DquEAWuYqMWGF2gRG3gWMDKsYRVNLkwuKk9JzjfSKE3OLS/PS9ZLzczcx
-	QiLp6w7GpcesDjEKcDAq8fC+2L0nWIg1say4MvcQowQHs5IIr63o3mAh3pTEyqrUovz4otKc
-	1OJDjEwcnFINjKX5jJJxSrNm+rqVul37t1o7oUzSYTVf1ofHs+JDxHPcVnUtsvvduGpW1C6J
-	wK6de5YXTxN65BNluUjv7s6507bPnJnlcqXn4YYPZw1YO7asdN77XOGDIEvMrY6JbVOfcDbq
-	TJA8Y7t5/oUbGz/+cp6WHXl+6tK8mUWGTM7eSY/qFdULO5f+0FViKc5INNRiLipOBACZdNI4
-	ggIAAA==
+	Wed, 9 Jul 2014 07:43:33 -0400
+Message-ID: <53BD2AD6.6020309@tu-dresden.de>
+Date: Wed, 09 Jul 2014 13:43:18 +0200
+From: Joseph Schuchart <joseph.schuchart@tu-dresden.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Jiri Olsa <jolsa@redhat.com>
+CC: Namhyung Kim <namhyung@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Ilsche <thomas.ilsche@tu-dresden.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3]  perf script: Add callchain to generic and tracepoint
+ events
+References: <53031D2C.2050009@tu-dresden.de> <20140307141857.GA3153@ghostprotocols.net> <533D2283.3090703@tu-dresden.de> <87wqd5f7j5.fsf@sejong.aot.lge.com> <538F0BF2.1010806@tu-dresden.de> <20140707171706.GA20752@krava.redhat.com> <53BCF1F2.70100@tu-dresden.de> <20140709112721.GC1814@krava.redhat.com>
+In-Reply-To: <20140709112721.GC1814@krava.redhat.com>
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms020807060909060601040309"
+X-TUD-Virus-Scanned: mailout1.zih.tu-dresden.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instrumentation of this files may result in unbootable machine.
+This is a cryptographically signed message in MIME format.
 
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
----
- arch/x86/kernel/cpu/Makefile | 3 +++
- 1 file changed, 3 insertions(+)
+--------------ms020807060909060601040309
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index 7fd54f0..a7bb360 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -8,6 +8,9 @@ CFLAGS_REMOVE_common.o = -pg
- CFLAGS_REMOVE_perf_event.o = -pg
- endif
- 
-+KASAN_SANITIZE_common.o := n
-+KASAN_SANITIZE_perf_event.o := n
-+
- # Make sure load_percpu_segment has no stackprotector
- nostackp := $(call cc-option, -fno-stack-protector)
- CFLAGS_common.o		:= $(nostackp)
--- 
-1.8.5.5
+Jirka,
 
+I tried to apply the patches to the latest version of the perf/core branc=
+h before sending. Can you please send me some more information about the =
+conflict?
+
+Thanks=20
+Joseph
+
+
+
+On 09.07.2014 13:27, Jiri Olsa wrote:
+> On Wed, Jul 09, 2014 at 09:40:34AM +0200, Joseph Schuchart wrote:
+>> [PATCH 2/3]  perf script: Add callchain to generic and tracepoint even=
+ts.  Since
+>>  this alters the interface for the python scripts, also adjust the scr=
+ipt=20
+>>  generation and the provided scripts.
+>=20
+> still having issues to apply 2nd patch on tip/perf/core (8b5b584)
+>=20
+> Applying: perf script: Add missing calls to Py_DECREF for return values=
+
+> Applying: perf script: Add callchain to generic and tracepoint events
+> error: patch failed: tools/perf/util/scripting-engines/trace-event-pyth=
+on.c:237
+> error: tools/perf/util/scripting-engines/trace-event-python.c: patch do=
+es not apply
+> Patch failed at 0002 perf script: Add callchain to generic and tracepoi=
+nt events
+> The copy of the patch that failed is found in:
+>    /home/jolsa/kernel.org/linux-perf/.git/rebase-apply/patch
+> When you have resolved this problem, run "git am --resolved".
+> If you prefer to skip this patch, run "git am --skip" instead.
+> To restore the original branch and stop patching, run "git am --abort".=
+
+>=20
+>=20
+> thanks,
+> jirka
+>=20
+
+--=20
+Dipl. Inf. Joseph Schuchart=20
+Computer Scientist=20
+
+Technische Universit=E4t Dresden=20
+Center for Information Services and High Performance Computing (ZIH)=20
+01062 Dresden, Germany=20
+
+Phone: +49 351 463-36494=20
+Fax: +49 351 463-3773=20
+E-Mail: joseph.schuchart@tu-dresden.de
+
+
+--------------ms020807060909060601040309
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIPizCC
+BHQwggNcoAMCAQICCQCJkBEVWD6HmzANBgkqhkiG9w0BAQsFADBxMQswCQYDVQQGEwJERTEc
+MBoGA1UEChMTRGV1dHNjaGUgVGVsZWtvbSBBRzEfMB0GA1UECxMWVC1UZWxlU2VjIFRydXN0
+IENlbnRlcjEjMCEGA1UEAxMaRGV1dHNjaGUgVGVsZWtvbSBSb290IENBIDIwHhcNMTQwMjEx
+MTMxMTQ1WhcNMTkwNzA5MjM1OTAwWjBaMQswCQYDVQQGEwJERTETMBEGA1UEChMKREZOLVZl
+cmVpbjEQMA4GA1UECxMHREZOLVBLSTEkMCIGA1UEAxMbREZOLVZlcmVpbiBQQ0EgR2xvYmFs
+IC0gRzAxMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6ZvDZ4X5Da71jVTDllA1
+PWLpbkztlNcAW5UidNQg6zSP1uzAMQQLmYHiphTSUqAoI4SLdIkEXlvg4njBeMsWyyg1OXst
+kEXQ7aAAeny/Sg4bAMOG6VwrMRF7DPOCJEOMHDiLamgAmu7cT3ir0sYTm3at7t4m6O8Br3QP
+wQmi9mvOvdPNFDBP9eXjpMhim4IaAycwDQJlYE3t0QkjKpY1WCfTdsZxtpAdxO3/NYZ9bzOz
+2w/FEcKKg6GUXUFr2NIQ9Uz9ylGs2b3vkoO72uuLFlZWQ8/h1RM9ph8nMM1JVNvJEzSacXXF
+bOqnC5j5IZ0nrz6jOTlIaoytyZn7wxLyvQIDAQABo4IBJDCCASAwDgYDVR0PAQH/BAQDAgEG
+MB0GA1UdDgQWBBRJt8bP6D0ff+pEexMp9/EKcD7eZDAfBgNVHSMEGDAWgBQxw3kbuvVT1xfg
+iXotF2wKsyudMzASBgNVHRMBAf8ECDAGAQH/AgECMD8GA1UdHwQ4MDYwNKAyoDCGLmh0dHA6
+Ly9vY3NwMDMzNi50ZWxlc2VjLmRlL3JsL0RUX1JPT1RfQ0FfMi5jcmwweQYIKwYBBQUHAQEE
+bTBrMCwGCCsGAQUFBzABhiBodHRwOi8vb2NzcDAzMzYudGVsZXNlYy5kZS9vY3NwcjA7Bggr
+BgEFBQcwAoYvaHR0cDovL29jc3AwMzM2LnRlbGVzZWMuZGUvY3J0L0RUX1JPT1RfQ0FfMi5j
+ZXIwDQYJKoZIhvcNAQELBQADggEBACwvqeBeQy8FcNxRlXVdgI47DMFjWFSBMIOcXalRh8m2
+1w8runhIJGBCzPGi4jPhMh4ym1ETlXnGtazQJO0YFLwvKuovq7ITrEkdXgALBBhqmmXU6Ec1
+vK7t33S22PGAUGWgxtojm41TR8psu0DJlV1OYHor5LtmQFWvtjPB6iMhbvxUnd0zQm5Ma9Xk
+w/LqBrdaMmoyRXS2tW/+6v8cY6q7iNH4WK8gfo+///b3OHeLGrZQP609R3lGw1e0F2KHvZ6j
+NiUHaCSqIvL2rynsN6UUma66AWCGdS1hFbp4loe1ks/hUJGeWToV7J5axob8KD5mutTZNa+t
+PEkihYfub48wggVhMIIESaADAgECAgcXpCR5aFyOMA0GCSqGSIb3DQEBCwUAMFoxCzAJBgNV
+BAYTAkRFMRMwEQYDVQQKEwpERk4tVmVyZWluMRAwDgYDVQQLEwdERk4tUEtJMSQwIgYDVQQD
+ExtERk4tVmVyZWluIFBDQSBHbG9iYWwgLSBHMDEwHhcNMTQwNTI3MTQ1MzI5WhcNMTkwNzA5
+MjM1OTAwWjCBhTELMAkGA1UEBhMCREUxKDAmBgNVBAoTH1RlY2huaXNjaGUgVW5pdmVyc2l0
+YWV0IERyZXNkZW4xDDAKBgNVBAsTA1pJSDEcMBoGA1UEAxMTVFUgRHJlc2RlbiBDQSAtIEcw
+MjEgMB4GCSqGSIb3DQEJARYRcGtpQHR1LWRyZXNkZW4uZGUwggEiMA0GCSqGSIb3DQEBAQUA
+A4IBDwAwggEKAoIBAQDBDh6T80T27NAn91B6YQsENBWT/LEfbGPagOzhM1w1Cjx3ICCilYCg
+JeIPQmBZT9RalxxF2z2OGDPcRTuqcaFPkgtdGaw1BFEIX+kGe3Itz2GlaKLPnQBHwcp+ODj8
+OdgvD4wZqYkvsjaDx1ck2spHHVxLEh/7ybexJL3f1zatqPJkK2fJuOeeUz3Ip74sPqhKn3QA
+5Q5E4JUHlvh3l4TDFrbmEIMntRqrJ+LaG2JCQ2G9hfEUvxeo3Zr6y88IdG+d7Hbp+XJkZYoO
+enVItm9z+atzo+NBxdmW8nD00xJAG52xQSwN4HR+qtj0CcnMtj41zXv6ul2E7ltRubqNM3sn
+AgMBAAGjggH+MIIB+jASBgNVHRMBAf8ECDAGAQH/AgEBMA4GA1UdDwEB/wQEAwIBBjARBgNV
+HSAECjAIMAYGBFUdIAAwHQYDVR0OBBYEFMUrU5MXg8n1RkLtQ2rftoCmR/LgMB8GA1UdIwQY
+MBaAFEm3xs/oPR9/6kR7Eyn38QpwPt5kMBwGA1UdEQQVMBOBEXBraUB0dS1kcmVzZGVuLmRl
+MIGIBgNVHR8EgYAwfjA9oDugOYY3aHR0cDovL2NkcDEucGNhLmRmbi5kZS9nbG9iYWwtcm9v
+dC1jYS9wdWIvY3JsL2NhY3JsLmNybDA9oDugOYY3aHR0cDovL2NkcDIucGNhLmRmbi5kZS9n
+bG9iYWwtcm9vdC1jYS9wdWIvY3JsL2NhY3JsLmNybDCB1wYIKwYBBQUHAQEEgcowgccwMwYI
+KwYBBQUHMAGGJ2h0dHA6Ly9vY3NwLnBjYS5kZm4uZGUvT0NTUC1TZXJ2ZXIvT0NTUDBHBggr
+BgEFBQcwAoY7aHR0cDovL2NkcDEucGNhLmRmbi5kZS9nbG9iYWwtcm9vdC1jYS9wdWIvY2Fj
+ZXJ0L2NhY2VydC5jcnQwRwYIKwYBBQUHMAKGO2h0dHA6Ly9jZHAyLnBjYS5kZm4uZGUvZ2xv
+YmFsLXJvb3QtY2EvcHViL2NhY2VydC9jYWNlcnQuY3J0MA0GCSqGSIb3DQEBCwUAA4IBAQCJ
+hMBD4Oh4PXhRwECrWgomDDnELDDFh4FN1e2g0gYbKLg/kA0gw6RKImh4GhTRAbENxW2My+tH
+aKFjtwQdBaanilk4DN581jqxjo37jPEwDmNNzT8U4ssiwmkMD2bWM2vTcc7lDj2g7w+sRzIJ
+8zi1AtCV43bJT8xBVj0PQpFuqYVvYzgMq+KNtGn4YyiBAMyDY1EzPEgtOovN7sqXb3jGDa71
+gqdHWIKf9orfDWCZ/Y8d+Y+rSqtBAHj0fnAzjnIgtJvUIif+Afx/4Rvxy0MHj3q6uHhPFcZ9
+QBPm+vxX2nWXEMlJcf1A/Igdah5hUpkmAQIUUJso8QbE4gXBS/BPMIIFqjCCBJKgAwIBAgIH
+Fr0+Fq4AGTANBgkqhkiG9w0BAQUFADCBhTELMAkGA1UEBhMCREUxKDAmBgNVBAoTH1RlY2hu
+aXNjaGUgVW5pdmVyc2l0YWV0IERyZXNkZW4xDDAKBgNVBAsTA1pJSDEcMBoGA1UEAxMTVFUg
+RHJlc2RlbiBDQSAtIEcwMjEgMB4GCSqGSIb3DQEJARYRcGtpQHR1LWRyZXNkZW4uZGUwHhcN
+MTMxMjAzMTEyOTEwWhcNMTYxMjAyMTEyOTEwWjBgMQswCQYDVQQGEwJERTEoMCYGA1UEChMf
+VGVjaG5pc2NoZSBVbml2ZXJzaXRhZXQgRHJlc2RlbjEMMAoGA1UECxMDWklIMRkwFwYDVQQD
+ExBKb3NlcGggU2NodWNoYXJ0MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtp78
+4m+f4qwkmx2yLZT4xVDtjvN3WXBRI53CmFu6lm/3cMyj32EHPE/PLs/J2yYqSI2dUPUNQpg+
+PX1rbofQcxXCEYCAErs/p7ynofEeJoQf5BF0BbtXBqD+1PaHXOALbk51lWFbyDDaLsCEh15r
+uOC60HRTdRz8ztDf+jQDeidqZBijFjU7cUIShnxOCxnCOna11aiamDqCZDatlwE/9bj5C8JN
+YQLmMNo2AHaQLF4e3e9DtcGdCPRDjwwrL+Dl/EmyEyQTy4CljQjSjlKS4jtW+uFNOffU2t7R
+fBeNJx8xgQe+JxZK2tzlPWh72JM96AiPHpHAY2X2cUhpheqPdQIDAQABo4ICQTCCAj0wLwYD
+VR0gBCgwJjARBg8rBgEEAYGtIYIsAQEEAwEwEQYPKwYBBAGBrSGCLAIBBAMBMAkGA1UdEwQC
+MAAwCwYDVR0PBAQDAgXgMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4E
+FgQU2IlmQWpeOkXl+dw+0arfnVk2FEkwHwYDVR0jBBgwFoAUxStTkxeDyfVGQu1Dat+2gKZH
+8uAwKQYDVR0RBCIwIIEeam9zZXBoLnNjaHVjaGFydEB0dS1kcmVzZGVuLmRlMIGLBgNVHR8E
+gYMwgYAwPqA8oDqGOGh0dHA6Ly9jZHAxLnBjYS5kZm4uZGUvdHUtZHJlc2Rlbi1jYS9wdWIv
+Y3JsL2dfY2FjcmwuY3JsMD6gPKA6hjhodHRwOi8vY2RwMi5wY2EuZGZuLmRlL3R1LWRyZXNk
+ZW4tY2EvcHViL2NybC9nX2NhY3JsLmNybDCB2QYIKwYBBQUHAQEEgcwwgckwMwYIKwYBBQUH
+MAGGJ2h0dHA6Ly9vY3NwLnBjYS5kZm4uZGUvT0NTUC1TZXJ2ZXIvT0NTUDBIBggrBgEFBQcw
+AoY8aHR0cDovL2NkcDEucGNhLmRmbi5kZS90dS1kcmVzZGVuLWNhL3B1Yi9jYWNlcnQvZ19j
+YWNlcnQuY3J0MEgGCCsGAQUFBzAChjxodHRwOi8vY2RwMi5wY2EuZGZuLmRlL3R1LWRyZXNk
+ZW4tY2EvcHViL2NhY2VydC9nX2NhY2VydC5jcnQwDQYJKoZIhvcNAQEFBQADggEBACoeSNfg
+yIAGxawrnghOIhIaD3xIsPvZP7ZFMV1aQ9ltzHiZgUxnnaEUJEV0f+ASblYavp+0T/up0Nre
++fKqm9/VMNyYG8068m6jNC+72NywQD9BKWCTWgDZ3RqChwzrfBq7URSqNJhLSKj/Q7e+k7mC
+FIqwpnhMeFCZhAkORPUNiuMbyFYO9ahtbuIujiF4c3FYDQJZFf83HWZ4neG4ioc8qhsOuXaB
+lN0AtExPw1KfpHqw1kwMaxZ10Yin8M4k8gOPNIbm6vl1F8yFCHQka2ZnaDBueswhj+ntj1WU
+jqHED1hovfievMMW7Fd3njo+T9RODMi3kNC7VObz0hu0cs0xggPUMIID0AIBATCBkTCBhTEL
+MAkGA1UEBhMCREUxKDAmBgNVBAoTH1RlY2huaXNjaGUgVW5pdmVyc2l0YWV0IERyZXNkZW4x
+DDAKBgNVBAsTA1pJSDEcMBoGA1UEAxMTVFUgRHJlc2RlbiBDQSAtIEcwMjEgMB4GCSqGSIb3
+DQEJARYRcGtpQHR1LWRyZXNkZW4uZGUCBxa9PhauABkwCQYFKw4DAhoFAKCCAhcwGAYJKoZI
+hvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTQwNzA5MTE0MzE4WjAjBgkq
+hkiG9w0BCQQxFgQURvNLpt5e2AqPzh+uqYHxaCs8wEEwbAYJKoZIhvcNAQkPMV8wXTALBglg
+hkgBZQMEASowCwYJYIZIAWUDBAECMAoGCCqGSIb3DQMHMA4GCCqGSIb3DQMCAgIAgDANBggq
+hkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG9w0DAgIBKDCBogYJKwYBBAGCNxAEMYGUMIGR
+MIGFMQswCQYDVQQGEwJERTEoMCYGA1UEChMfVGVjaG5pc2NoZSBVbml2ZXJzaXRhZXQgRHJl
+c2RlbjEMMAoGA1UECxMDWklIMRwwGgYDVQQDExNUVSBEcmVzZGVuIENBIC0gRzAyMSAwHgYJ
+KoZIhvcNAQkBFhFwa2lAdHUtZHJlc2Rlbi5kZQIHFr0+Fq4AGTCBpAYLKoZIhvcNAQkQAgsx
+gZSggZEwgYUxCzAJBgNVBAYTAkRFMSgwJgYDVQQKEx9UZWNobmlzY2hlIFVuaXZlcnNpdGFl
+dCBEcmVzZGVuMQwwCgYDVQQLEwNaSUgxHDAaBgNVBAMTE1RVIERyZXNkZW4gQ0EgLSBHMDIx
+IDAeBgkqhkiG9w0BCQEWEXBraUB0dS1kcmVzZGVuLmRlAgcWvT4WrgAZMA0GCSqGSIb3DQEB
+AQUABIIBAERcfTrV5poKavUqHR/kz5gFMftlYyqMMtKhsB/CIcKZnlRcw4RmikPTxjL7ehQv
+wrKrg2165Ikq260urqCpUCJOMjGare/9cMmc3xWNAackr/IClWndILGyNXCjutPeQxnOOJdK
+P7JHNs6KIgdya4ohK/qHc0naHvkWAw6qI2r8VxteHtwsWFRzu1IknBlFzivS/34xFuVet2Uv
+bjZg8Pq1Tx7mjDLQCcaX9CU21Zp6Q7H/pKKNHu0NQpvyhWoc+WozRJhH/zYqeGIDaHLQQtGi
+dCJHGkwoSAoujlfgzmWmRAofPORgVYFozLO467S1c0OaZQQFaELBad9l7kPaKMMAAAAAAAA=
+--------------ms020807060909060601040309--
