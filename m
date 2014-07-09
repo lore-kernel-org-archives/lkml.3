@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756077AbaGIOyQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 10:54:16 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47177 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756014AbaGIOxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 10:53:55 -0400
-Message-ID: <53BD576F.2010408@ti.com>
-Date: Wed, 9 Jul 2014 10:53:35 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1756165AbaGIOyt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 10:54:49 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:47208 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755276AbaGIOyq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 10:54:46 -0400
+Date: Wed, 9 Jul 2014 15:54:38 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 06/24] mfd: max77686: Make error checking consistent
+Message-ID: <20140709145438.GH2635@lee--X1>
+References: <1404505467-26526-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1404505467-26526-7-git-send-email-javier.martinez@collabora.co.uk>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>, <rjw@rjwysocki.net>,
-        <shawn.guo@linaro.org>
-CC: <nm@ti.com>, <linaro-kernel@lists.linaro.org>, <linux-pm@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>, <t.figa@samsung.com>,
-        <sboyd@codeaurora.org>, <linux-kernel@vger.kernel.org>,
-        <thomas.ab@samsung.com>, <arvind.chauhan@arm.com>,
-        <spk.linux@gmail.com>, Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Subject: Re: [PATCH 09/14] cpufreq: cpu0: Move per-cluster initialization
- code to ->init()
-References: <cover.1404231535.git.viresh.kumar@linaro.org> <b26946cc4573904cd1ef0212ad053a983b547c23.1404231535.git.viresh.kumar@linaro.org>
-In-Reply-To: <b26946cc4573904cd1ef0212ad053a983b547c23.1404231535.git.viresh.kumar@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1404505467-26526-7-git-send-email-javier.martinez@collabora.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 04 Jul 2014, Javier Martinez Canillas wrote:
 
-On Tuesday 01 July 2014 12:32 PM, Viresh Kumar wrote:
-> Currently this driver only support platforms on which all CPUs share clock &
-> voltage lines and there is requirement to support platforms which have separate
-> clock & voltage lines for CPUs, like Qualcomm's Krait and ARM's big LITTLE.
+> Error checking across the driver is mostly consistent besides
+> a few exceptions, so change these exceptions for consistency.
 > 
-> Each group of CPUs sharing clock/voltage lines are represented by 'struct
-> cpufreq_policy' in cpufreq framework. And core calls ->init() once for each
-> policy.
-> 
-> Currently we do all initialization/allocation from probe() which wouldn't work
-> for above scenario. To make it work for these platforms, the first step is to
-> move all initialization/allocation to ->init() and add ->exit() to do the
-> reverse of it.
-> 
-> Also, remove all global variables and allocate space for them at runtime.
-> 
-> This patch creates 'struct private_data' for keeping all such information and
-> a pointer to that would be stored in policy->driver_data.
-> 
-> The changed probe() routine now tries to see if regulator/clocks are available
-> or we need to defer probe. In case they are available, it registers cpufreq
-> driver. Otherwise, returns with -EPROBE_DEFER.
-> 
-> We still *don't* support platforms with separate clock/voltage lines for CPUs.
-> This would be done in a separate patch.
-> 
-I scanned this patch and subsequent patches from the series. Since you are
-modifying the interfaces and bindings, I just think its better if we can
-address the cases where separate clock lines will be used by CPUs.
-
-Surely don't want to increase your work neither want hold the progress
-of the series but if you look at the changes to the interfaces, they
-give you a feeling of incompleteness.
-
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 > ---
-Would you able to give some idea about what will it take to address that one
-remainder case as well as part of this series.
+>  drivers/mfd/max77686.c | 10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
 
-Regards,
-Santosh
+Acked-by: Lee Jones <lee.jones@linaro.org>
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
