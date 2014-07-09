@@ -1,118 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755542AbaGILMI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 07:12:08 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:43665 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755182AbaGILK0 (ORCPT
+	id S1755988AbaGILRN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 07:17:13 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:25379 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754949AbaGILKX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 07:10:26 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-3c-53bd231bdc1f
+	Wed, 9 Jul 2014 07:10:23 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-a4-53bd231a7755
 From: Andrey Ryabinin <a.ryabinin@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andrey Ryabinin <a.ryabinin@samsung.com>
-Subject: [RFC/PATCH -next 13/21] mm: slub: add allocation size field to struct
- kmem_cache
-Date: Wed, 09 Jul 2014 15:01:10 +0400
-Message-id: <1404903678-8257-14-git-send-email-a.ryabinin@samsung.com>
+Subject: [RFC/PATCH -next 12/21] mm: util: move krealloc/kzfree to slab_common.c
+Date: Wed, 09 Jul 2014 15:01:09 +0400
+Message-id: <1404903678-8257-13-git-send-email-a.ryabinin@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
 In-reply-to: <1404903678-8257-1-git-send-email-a.ryabinin@samsung.com>
 References: <1404903678-8257-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLJMWRmVeSWpSXmKPExsVy+t/xy7rSynuDDfpOcVls+/WIzeLyrjls
-	DkwefVtWMXp83iQXwBTFZZOSmpNZllqkb5fAlfG2axtTwSvRisN36hsYrwt2MXJySAiYSEy9
-	0sIEYYtJXLi3nq2LkYtDSGApo8S5V/3sEE4fk0Tv1iuMIFVsAnoS/2ZtZwOxRQQUJDb3PmMF
-	sZkFdCQ2XmsFmyQsEC3RtLiHHcRmEVCVuLF7LVicV8BNov3fSxaIbQoSy5bPBOvlBIr39CwA
-	qxEScJVY/Xkb4wRG3gWMDKsYRVNLkwuKk9JzjfSKE3OLS/PS9ZLzczcxQoLg6w7GpcesDjEK
-	cDAq8fC+2L0nWIg1say4MvcQowQHs5IIr63o3mAh3pTEyqrUovz4otKc1OJDjEwcnFINjCXv
-	8y81q3g8fybx8pOJup7Ucovwg6oawoIRblNkTlQu3bt298M5IZ3RfOe0NFaXuX/efqZFev1N
-	Ow1Nx5+PYxQbP8xZpqN/ttXXZbrc8Ucuc6Wz5Xt4dvs6zMmV8ZS/0bUypP1GRqmM9ROhm2+z
-	udikCo3sZqfnF2vPLOwO35/5PGPvDr9+JZbijERDLeai4kQAZzdA9uABAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLJMWRmVeSWpSXmKPExsVy+t/xy7pSynuDDT5vNLbY9usRm8XlXXPY
+	HJg8+rasYvT4vEkugCmKyyYlNSezLLVI3y6BK2P6tnbGgnUGFXt7XjA3MC5R62Lk5JAQMJHo
+	f/SXBcIWk7hwbz1bFyMXh5DAUkaJoyc2MEE4fUwSlzufMIJUsQnoSfybtZ0NxBYRUJDY3PuM
+	FcRmFtCR2HitFaiBg0NYIEDi+/JqkDCLgKrEzZezmEBsXgE3iZ3f1jJCLFOQWLZ8JlgrJ1C8
+	p2cBWI2QgKvE6s/bGCcw8i5gZFjFKJpamlxQnJSea6hXnJhbXJqXrpecn7uJERIEX3YwLj5m
+	dYhRgINRiYdXo3Z3sBBrYllxZe4hRgkOZiURXlvRvcFCvCmJlVWpRfnxRaU5qcWHGJk4OKUa
+	GNNrnRsuz4uVOx3+6ZH/13It/QVpOcznwux37TwRFSbQlFHu8at+8cZHO4R6ddjZD8zWPcJj
+	qcm9bhPfT3YJv6Y8x53bhNeJdO1a37Kl+uWmBD+5HwUGs1v7825tvqIof7ZD9orS06D+D+nN
+	qh+d5dcUn5xjt/bUSZHj+W0fNO2i45a+mX/GVImlOCPRUIu5qDgRAJ1hNoPgAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When caller creates new kmem_cache, requested size of kmem_cache
-will be stored in alloc_size. Later alloc_size will be used by
-kerenel address sanitizer to mark alloc_size of slab object as
-accessible and the rest of its size as redzone.
+To avoid false positive reports in kernel address sanitizer krealloc/kzfree
+functions shouldn't be instrumented. Since we want to instrument other
+functions in mm/util.c, krealloc/kzfree moved to slab_common.c which is not
+instrumented.
+
+Unfortunately we can't completely disable instrumentation for one function.
+We could disable compiler's instrumentation for one function by using
+__atribute__((no_sanitize_address)).
+But the problem here is that memset call will be replaced by instumented
+version kasan_memset since currently it's implemented as define:
 
 Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
 ---
- include/linux/slub_def.h |  5 +++++
- mm/slab.h                | 10 ++++++++++
- mm/slab_common.c         |  2 ++
- mm/slub.c                |  1 +
- 4 files changed, 18 insertions(+)
+ mm/slab_common.c | 91 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ mm/util.c        | 91 --------------------------------------------------------
+ 2 files changed, 91 insertions(+), 91 deletions(-)
 
-diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
-index d82abd4..b8b8154 100644
---- a/include/linux/slub_def.h
-+++ b/include/linux/slub_def.h
-@@ -68,6 +68,11 @@ struct kmem_cache {
- 	int object_size;	/* The size of an object without meta data */
- 	int offset;		/* Free pointer offset. */
- 	int cpu_partial;	/* Number of per cpu partial objects to keep around */
-+
-+#ifdef CONFIG_KASAN
-+	int alloc_size;		/* actual allocation size kmem_cache_create */
-+#endif
-+
- 	struct kmem_cache_order_objects oo;
- 
- 	/* Allocation and freeing of slabs */
-diff --git a/mm/slab.h b/mm/slab.h
-index 912af7f..cb2e776 100644
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -260,6 +260,16 @@ static inline void memcg_uncharge_slab(struct kmem_cache *s, int order)
- }
- #endif
- 
-+#ifdef CONFIG_KASAN
-+static inline void kasan_set_alloc_size(struct kmem_cache *s, size_t size)
-+{
-+	s->alloc_size = size;
-+}
-+#else
-+static inline void kasan_set_alloc_size(struct kmem_cache *s, size_t size) { }
-+#endif
-+
-+
- static inline struct kmem_cache *virt_to_cache(const void *obj)
- {
- 	struct page *page = virt_to_head_page(obj);
 diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 8df59b09..f5b52f0 100644
+index d31c4ba..8df59b09 100644
 --- a/mm/slab_common.c
 +++ b/mm/slab_common.c
-@@ -147,6 +147,7 @@ do_kmem_cache_create(char *name, size_t object_size, size_t size, size_t align,
- 	s->name = name;
- 	s->object_size = object_size;
- 	s->size = size;
-+	kasan_set_alloc_size(s, object_size);
- 	s->align = align;
- 	s->ctor = ctor;
+@@ -787,3 +787,94 @@ static int __init slab_proc_init(void)
+ }
+ module_init(slab_proc_init);
+ #endif /* CONFIG_SLABINFO */
++
++static __always_inline void *__do_krealloc(const void *p, size_t new_size,
++					   gfp_t flags)
++{
++	void *ret;
++	size_t ks = 0;
++
++	if (p)
++		ks = ksize(p);
++
++	if (ks >= new_size)
++		return (void *)p;
++
++	ret = kmalloc_track_caller(new_size, flags);
++	if (ret && p)
++		memcpy(ret, p, ks);
++
++	return ret;
++}
++
++/**
++ * __krealloc - like krealloc() but don't free @p.
++ * @p: object to reallocate memory for.
++ * @new_size: how many bytes of memory are required.
++ * @flags: the type of memory to allocate.
++ *
++ * This function is like krealloc() except it never frees the originally
++ * allocated buffer. Use this if you don't want to free the buffer immediately
++ * like, for example, with RCU.
++ */
++void *__krealloc(const void *p, size_t new_size, gfp_t flags)
++{
++	if (unlikely(!new_size))
++		return ZERO_SIZE_PTR;
++
++	return __do_krealloc(p, new_size, flags);
++
++}
++EXPORT_SYMBOL(__krealloc);
++
++/**
++ * krealloc - reallocate memory. The contents will remain unchanged.
++ * @p: object to reallocate memory for.
++ * @new_size: how many bytes of memory are required.
++ * @flags: the type of memory to allocate.
++ *
++ * The contents of the object pointed to are preserved up to the
++ * lesser of the new and old sizes.  If @p is %NULL, krealloc()
++ * behaves exactly like kmalloc().  If @new_size is 0 and @p is not a
++ * %NULL pointer, the object pointed to is freed.
++ */
++void *krealloc(const void *p, size_t new_size, gfp_t flags)
++{
++	void *ret;
++
++	if (unlikely(!new_size)) {
++		kfree(p);
++		return ZERO_SIZE_PTR;
++	}
++
++	ret = __do_krealloc(p, new_size, flags);
++	if (ret && p != ret)
++		kfree(p);
++
++	return ret;
++}
++EXPORT_SYMBOL(krealloc);
++
++/**
++ * kzfree - like kfree but zero memory
++ * @p: object to free memory of
++ *
++ * The memory of the object @p points to is zeroed before freed.
++ * If @p is %NULL, kzfree() does nothing.
++ *
++ * Note: this function zeroes the whole allocated buffer which can be a good
++ * deal bigger than the requested buffer size passed to kmalloc(). So be
++ * careful when using this function in performance sensitive code.
++ */
++void kzfree(const void *p)
++{
++	size_t ks;
++	void *mem = (void *)p;
++
++	if (unlikely(ZERO_OR_NULL_PTR(mem)))
++		return;
++	ks = ksize(mem);
++	memset(mem, 0, ks);
++	kfree(mem);
++}
++EXPORT_SYMBOL(kzfree);
+diff --git a/mm/util.c b/mm/util.c
+index 8f326ed..2992e16 100644
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -142,97 +142,6 @@ void *memdup_user(const void __user *src, size_t len)
+ }
+ EXPORT_SYMBOL(memdup_user);
  
-@@ -409,6 +410,7 @@ void __init create_boot_cache(struct kmem_cache *s, const char *name, size_t siz
- 
- 	s->name = name;
- 	s->size = s->object_size = size;
-+	kasan_set_alloc_size(s, size);
- 	s->align = calculate_alignment(flags, ARCH_KMALLOC_MINALIGN, size);
- 	err = __kmem_cache_create(s, flags);
- 
-diff --git a/mm/slub.c b/mm/slub.c
-index 3bdd9ac..6ddedf9 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -3724,6 +3724,7 @@ __kmem_cache_alias(const char *name, size_t size, size_t align,
- 		 * the complete object on kzalloc.
- 		 */
- 		s->object_size = max(s->object_size, (int)size);
-+		kasan_set_alloc_size(s, max(s->alloc_size, (int)size));
- 		s->inuse = max_t(int, s->inuse, ALIGN(size, sizeof(void *)));
- 
- 		for_each_memcg_cache_index(i) {
+-static __always_inline void *__do_krealloc(const void *p, size_t new_size,
+-					   gfp_t flags)
+-{
+-	void *ret;
+-	size_t ks = 0;
+-
+-	if (p)
+-		ks = ksize(p);
+-
+-	if (ks >= new_size)
+-		return (void *)p;
+-
+-	ret = kmalloc_track_caller(new_size, flags);
+-	if (ret && p)
+-		memcpy(ret, p, ks);
+-
+-	return ret;
+-}
+-
+-/**
+- * __krealloc - like krealloc() but don't free @p.
+- * @p: object to reallocate memory for.
+- * @new_size: how many bytes of memory are required.
+- * @flags: the type of memory to allocate.
+- *
+- * This function is like krealloc() except it never frees the originally
+- * allocated buffer. Use this if you don't want to free the buffer immediately
+- * like, for example, with RCU.
+- */
+-void *__krealloc(const void *p, size_t new_size, gfp_t flags)
+-{
+-	if (unlikely(!new_size))
+-		return ZERO_SIZE_PTR;
+-
+-	return __do_krealloc(p, new_size, flags);
+-
+-}
+-EXPORT_SYMBOL(__krealloc);
+-
+-/**
+- * krealloc - reallocate memory. The contents will remain unchanged.
+- * @p: object to reallocate memory for.
+- * @new_size: how many bytes of memory are required.
+- * @flags: the type of memory to allocate.
+- *
+- * The contents of the object pointed to are preserved up to the
+- * lesser of the new and old sizes.  If @p is %NULL, krealloc()
+- * behaves exactly like kmalloc().  If @new_size is 0 and @p is not a
+- * %NULL pointer, the object pointed to is freed.
+- */
+-void *krealloc(const void *p, size_t new_size, gfp_t flags)
+-{
+-	void *ret;
+-
+-	if (unlikely(!new_size)) {
+-		kfree(p);
+-		return ZERO_SIZE_PTR;
+-	}
+-
+-	ret = __do_krealloc(p, new_size, flags);
+-	if (ret && p != ret)
+-		kfree(p);
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL(krealloc);
+-
+-/**
+- * kzfree - like kfree but zero memory
+- * @p: object to free memory of
+- *
+- * The memory of the object @p points to is zeroed before freed.
+- * If @p is %NULL, kzfree() does nothing.
+- *
+- * Note: this function zeroes the whole allocated buffer which can be a good
+- * deal bigger than the requested buffer size passed to kmalloc(). So be
+- * careful when using this function in performance sensitive code.
+- */
+-void kzfree(const void *p)
+-{
+-	size_t ks;
+-	void *mem = (void *)p;
+-
+-	if (unlikely(ZERO_OR_NULL_PTR(mem)))
+-		return;
+-	ks = ksize(mem);
+-	memset(mem, 0, ks);
+-	kfree(mem);
+-}
+-EXPORT_SYMBOL(kzfree);
+-
+ /*
+  * strndup_user - duplicate an existing string from user space
+  * @s: The string to duplicate
 -- 
 1.8.5.5
 
