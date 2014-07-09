@@ -1,136 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932287AbaGIW1b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 18:27:31 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:35664 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751424AbaGIW13 convert rfc822-to-8bit (ORCPT
+	id S1755797AbaGIWdV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 18:33:21 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:61544 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424AbaGIWdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 18:27:29 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: "kys@microsoft.com" <kys@microsoft.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mkp@mkp.net" <mkp@mkp.net>, "hch@infradead.org" <hch@infradead.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
-Thread-Topic: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
-Thread-Index: AQHPmwbc2vh72TcerE+9u7O+On3hT5uXbYYAgACybACAAH8bAP//jcAwgACcZoA=
-Date: Wed, 9 Jul 2014 22:27:24 +0000
-Message-ID: <1404944843.2184.8.camel@dabdike.int.hansenpartnership.com>
-References: <1404866789-26910-1-git-send-email-kys@microsoft.com>
-	 <1404866812-26950-1-git-send-email-kys@microsoft.com>
-	 <1404866812-26950-4-git-send-email-kys@microsoft.com>
-	 <20140709084300.GD6012@infradead.org>
-	 <a31a45eddb544024a7538458b98c3611@BY2PR03MB299.namprd03.prod.outlook.com>
-	 <1404935792.2184.5.camel@dabdike.int.hansenpartnership.com>
-	 <2f3ae589e6f149acbe4c5dd79f905971@BY2PR03MB299.namprd03.prod.outlook.com>
-In-Reply-To: <2f3ae589e6f149acbe4c5dd79f905971@BY2PR03MB299.namprd03.prod.outlook.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [50.46.103.107]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <D38C3C14A4260946A1FF55B5F3705949@sw.swsoft.com>
-Content-Transfer-Encoding: 7BIT
+	Wed, 9 Jul 2014 18:33:20 -0400
 MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:157d:8cce:4220:32bc:b297]
+In-Reply-To: <1404324218-4743-3-git-send-email-lauraa@codeaurora.org>
+References: <1404324218-4743-1-git-send-email-lauraa@codeaurora.org>
+	<1404324218-4743-3-git-send-email-lauraa@codeaurora.org>
+Date: Wed, 9 Jul 2014 15:33:19 -0700
+Message-ID: <CAOesGMiKBNDmJhiY-yK0uZmG-MnK82=ffNGxqasLKozqgpQQpw@mail.gmail.com>
+Subject: Re: [PATCHv4 2/5] lib/genalloc.c: Add genpool range check function
+From: Olof Johansson <olof@lixom.net>
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        David Riley <davidriley@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ritesh Harjain <ritesh.harjani@gmail.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-09 at 21:14 +0000, KY Srinivasan wrote:
-> 
-> > -----Original Message-----
-> > From: James Bottomley [mailto:jbottomley@parallels.com]
-> > Sent: Wednesday, July 9, 2014 12:57 PM
-> > To: KY Srinivasan
-> > Cc: linux-kernel@vger.kernel.org; hch@infradead.org;
-> > devel@linuxdriverproject.org; apw@canonical.com; stable@vger.kernel.org;
-> > linux-scsi@vger.kernel.org; ohering@suse.com; jasowang@redhat.com
-> > Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
-> > 
-> > On Wed, 2014-07-09 at 19:52 +0000, KY Srinivasan wrote:
-> > >
-> > > > -----Original Message-----
-> > > > From: Christoph Hellwig [mailto:hch@infradead.org]
-> > > > Sent: Wednesday, July 9, 2014 1:43 AM
-> > > > To: KY Srinivasan
-> > > > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> > > > ohering@suse.com; jbottomley@parallels.com; jasowang@redhat.com;
-> > > > apw@canonical.com; linux-scsi@vger.kernel.org;
-> > > > stable@vger.kernel.org
-> > > > Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter
-> > > > WRITE_SAME_16
-> > > >
-> > > > On Tue, Jul 08, 2014 at 05:46:48PM -0700, K. Y. Srinivasan wrote:
-> > > > > Host does not handle WRITE_SAME_16; filter this command out. This
-> > > > > patch is required to handle large devices (greater than 2 TB disks).
-> > > >
-> > > > Storvsc already sets the no_write_same flag, where is the command
-> > > > coming from?
-> > >
-> > > In spite of this flag,  I see WRITE_SAME_16 being issued when I format
-> > > a device bigger than 2 TB; I tried both xfs and ext4. Windows hosts
-> > > currently do not handle unsupported commands correctly - The
-> > > information returned is not sufficient to effect recovery in the Linux guest.
-> > While this may be addressed in future hosts, this patch fixes the problem.
-> > 
-> > What Christoph means is that this looks like a bug somewhere in SCSI itself.
-> > That means we need to find it and kill it, not add workarounds to every driver
-> > that sets no_write_same ...
-> 
-> James,
-> 
-> I will try to isolate this issue in the SCSI stack. If it is ok with you guys, I would still want to filter WRITE_SAME_16
-> (as we currently do WRITE_SAME) in our driver since this would address the problem for a large number of
-> customers on our platform.
+On Wed, Jul 2, 2014 at 11:03 AM, Laura Abbott <lauraa@codeaurora.org> wrote:
+>
+> After allocating an address from a particular genpool,
+> there is no good way to verify if that address actually
+> belongs to a genpool. Introduce addr_in_gen_pool which
+> will return if an address plus size falls completely
+> within the genpool range.
+>
+> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
 
-If we fix it at source, why would there be any need to filter?  That's
-the reason the no_write_same flag was introduced.  If we can find and
-fix the bug, it can go back into the stable trees as a bug fix, hence
-nothing should ever emit write_same(10 or 16) and additional driver code
-is redundant (and counter productive, since if this ever breaks again
-you're our best canary).
+Reviewed-by: Olof Johansson <olof@lixom.net>
 
-This looks like it might be the problem but Martin should confirm (I
-think the problem comes to us from the RC16 code which unconditionally
-sets WS16).
+What's the merge path for this code? Part of the arm64 code that needs
+it, I presume?
 
-James
 
----
-
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 6825eda..8353a4c 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -634,6 +634,23 @@ static void sd_config_discard(struct scsi_disk *sdkp, unsigned int mode)
- 		max(sdkp->physical_block_size,
- 		    sdkp->unmap_granularity * logical_block_size);
- 
-+	if (sdkp->device->host->no_write_same) {
-+		switch(mode) {
-+
-+		case SD_LBP_WS16:
-+		case SD_LBP_WS10:
-+		case SD_LBP_ZERO:
-+			/*
-+			 * filter out all the WRITE SAME modes and map them
-+			 * directly to UNMAP
-+			 */
-+			mode = SD_LBP_UNMAP;
-+			/* fall through */
-+		default:
-+			/* everything else is OK */
-+			break;
-+		}
-+	}
- 	sdkp->provisioning_mode = mode;
- 
- 	switch (mode) {
-
+-Olof
