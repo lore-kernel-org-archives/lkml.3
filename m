@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012AbaGILjf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 07:39:35 -0400
+	id S1755989AbaGILjd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 07:39:33 -0400
 Received: from mailout1.w1.samsung.com ([210.118.77.11]:26878 "EHLO
 	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755533AbaGILgj (ORCPT
+	with ESMTP id S1755348AbaGILgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 07:36:39 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-73-53bd293a4eaf
+	Wed, 9 Jul 2014 07:36:40 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-89-53bd293f04ab
 From: Andrey Ryabinin <a.ryabinin@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
@@ -25,104 +25,182 @@ Cc: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
         linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         x86@kernel.org, linux-mm@kvack.org,
         Andrey Ryabinin <a.ryabinin@samsung.com>
-Subject: [RFC/PATCH RESEND -next 04/21] x86: boot: vdso: disable
- instrumentation for code not linked with kernel
-Date: Wed, 09 Jul 2014 15:29:58 +0400
-Message-id: <1404905415-9046-5-git-send-email-a.ryabinin@samsung.com>
+Subject: [RFC/PATCH RESEND -next 08/21] mm: page_alloc: add kasan hooks on
+ alloc and free pathes
+Date: Wed, 09 Jul 2014 15:30:02 +0400
+Message-id: <1404905415-9046-9-git-send-email-a.ryabinin@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
 In-reply-to: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
 References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsVy+t/xy7pWmnuDDRb3cVps+/WIzeL33pms
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t/xy7r2mnuDDZa0q1ts+/WIzeL33pms
 	FnPWr2GzuP7tDaPFhIdt7BYru5vZLLY/e8tksbLzAavFpsfXWC3+7NrBZHF51xw2i3tr/rNa
 	3L7Ma3HpwAImi5Z9F5gs2j7/Y7XYt/I8kLVkI5PF4iO3mS3ePZvMbLF501Rmix8bHrM6iHm0
 	NPeweeycdZfdY8GmUo9NqzrZPDZ9msTu0fX2CpPHu3Pn2D1OzPjN4vHkynQmj81L6j0+Pr3F
-	4vF+31U2j74tqxg9ziw4wu7xeZNcAH8Ul01Kak5mWWqRvl0CV8bK55fZC5YJVnTveMrUwDiH
-	r4uRk0NCwERiwbzPbBC2mMSFe+uBbC4OIYGljBJbfpxghXD6mCQ2vjrDDlLFJqAn8W/WdrAO
-	EQEFic29z8CKmAWa2STaOz6wgiSEBYokWlYsYAaxWQRUJQ4+fMsEYvMKuEpcf7mHBWKdgsSy
-	5TPB6jkF3CQmTL8GVM8BtM1VYsIKtQmMvAsYGVYxiqaWJhcUJ6XnGukVJ+YWl+al6yXn525i
-	hMTS1x2MS49ZHWIU4GBU4uF9sXtPsBBrYllxZe4hRgkOZiURXlvRvcFCvCmJlVWpRfnxRaU5
-	qcWHGJk4OKUaGNeEc+zs+z3Heo8pC9ebZAa5iMe7U1nkw3pfr4t7Vs17u33ax+sKeskySfFf
-	/CfNsnnTuuvSkqenW7uW952/wL3MocnK/E7bDaG3tes2ztrp3sS7TTrTICV9fUdh1GeO5X/O
-	+ykfd+25Hmo9gVVeN4bv261fd8LXHtf78CrV9bTz5bgJpnkhf5RYijMSDbWYi4oTARu0y72D	AgAA
+	4vF+31U2j74tqxg9ziw4wu7xeZNcAH8Ul01Kak5mWWqRvl0CV8aZ133sBW1qFZ/bJrM3MC6Q
+	72Lk5JAQMJH4+nE5E4QtJnHh3nq2LkYuDiGBpYwSE28/YoVw+pgkfi06BFbFJqAn8W/WdjYQ
+	W0RAQWJz7zOwImaBZjaJ9o4PrCAJYYEkiQNdz8AaWARUJb5c7wWKc3DwCrhKbLslDLFNQWLZ
+	8plg5ZwCbhITpl9jBikRAiqZsEJtAiPvAkaGVYyiqaXJBcVJ6blGesWJucWleel6yfm5mxgh
+	kfR1B+PSY1aHGAU4GJV4eF/s3hMsxJpYVlyZe4hRgoNZSYTXVnRvsBBvSmJlVWpRfnxRaU5q
+	8SFGJg5OqQbGVrFdOcYH3tzqPnvotuKneLGvEseOz5J9LFPe9m/7gXk+YV7bWG5E/xetSbr7
+	6Nwr6YS2yMWBEQ02L3cU37aUWDpN8VVjZMccpj/Rj2xP+/Apiasej/ffG7tLflEhJ8eS2g/u
+	J4Q45h75eu1b/qO3MTv2huxnd+7jNJj+PDT6GEeWy6YXKo77lViKMxINtZiLihMBiCQe7YIC	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To avoid build errors, compiler's instrumentation must be disabled
-for code not linked with kernel image.
+Add kernel address sanitizer hooks to mark allocated page's addresses
+as accessible in corresponding shadow region.
+Mark freed pages as unaccessible.
 
 Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
 ---
- arch/x86/boot/Makefile            | 2 ++
- arch/x86/boot/compressed/Makefile | 2 ++
- arch/x86/realmode/Makefile        | 2 +-
- arch/x86/realmode/rm/Makefile     | 1 +
- arch/x86/vdso/Makefile            | 1 +
- 5 files changed, 7 insertions(+), 1 deletion(-)
+ include/linux/kasan.h |  6 ++++++
+ mm/Makefile           |  2 ++
+ mm/kasan/kasan.c      | 18 ++++++++++++++++++
+ mm/kasan/kasan.h      |  1 +
+ mm/kasan/report.c     |  7 +++++++
+ mm/page_alloc.c       |  4 ++++
+ 6 files changed, 38 insertions(+)
 
-diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
-index dbe8dd2..9204cc0 100644
---- a/arch/x86/boot/Makefile
-+++ b/arch/x86/boot/Makefile
-@@ -14,6 +14,8 @@
- # Set it to -DSVGA_MODE=NORMAL_VGA if you just want the EGA/VGA mode.
- # The number is the same as you would ordinarily press at bootup.
+diff --git a/include/linux/kasan.h b/include/linux/kasan.h
+index 7efc3eb..4adc0a1 100644
+--- a/include/linux/kasan.h
++++ b/include/linux/kasan.h
+@@ -17,6 +17,9 @@ void kasan_disable_local(void);
+ void kasan_alloc_shadow(void);
+ void kasan_init_shadow(void);
  
-+KASAN_SANITIZE := n
++void kasan_alloc_pages(struct page *page, unsigned int order);
++void kasan_free_pages(struct page *page, unsigned int order);
 +
- SVGA_MODE	:= -DSVGA_MODE=NORMAL_VGA
+ #else /* CONFIG_KASAN */
  
- targets		:= vmlinux.bin setup.bin setup.elf bzImage
-diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
-index 0fcd913..64a92b3 100644
---- a/arch/x86/boot/compressed/Makefile
-+++ b/arch/x86/boot/compressed/Makefile
-@@ -4,6 +4,8 @@
- # create a compressed vmlinux image from the original vmlinux
- #
+ static inline void unpoison_shadow(const void *address, size_t size) {}
+@@ -28,6 +31,9 @@ static inline void kasan_disable_local(void) {}
+ static inline void kasan_init_shadow(void) {}
+ static inline void kasan_alloc_shadow(void) {}
  
-+KASAN_SANITIZE := n
++static inline void kasan_alloc_pages(struct page *page, unsigned int order) {}
++static inline void kasan_free_pages(struct page *page, unsigned int order) {}
 +
- targets := vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma \
- 	vmlinux.bin.xz vmlinux.bin.lzo vmlinux.bin.lz4
+ #endif /* CONFIG_KASAN */
  
-diff --git a/arch/x86/realmode/Makefile b/arch/x86/realmode/Makefile
-index 94f7fbe..e02c2c6 100644
---- a/arch/x86/realmode/Makefile
-+++ b/arch/x86/realmode/Makefile
-@@ -6,7 +6,7 @@
- # for more details.
- #
- #
--
-+KASAN_SANITIZE := n
- subdir- := rm
- 
- obj-y += init.o
-diff --git a/arch/x86/realmode/rm/Makefile b/arch/x86/realmode/rm/Makefile
-index 7c0d7be..2730d77 100644
---- a/arch/x86/realmode/rm/Makefile
-+++ b/arch/x86/realmode/rm/Makefile
-@@ -6,6 +6,7 @@
- # for more details.
- #
- #
-+KASAN_SANITIZE := n
- 
- always := realmode.bin realmode.relocs
- 
-diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
-index 61b04fe..90daad6 100644
---- a/arch/x86/vdso/Makefile
-+++ b/arch/x86/vdso/Makefile
-@@ -3,6 +3,7 @@
+ #endif /* LINUX_KASAN_H */
+diff --git a/mm/Makefile b/mm/Makefile
+index dbe9a22..6a9c3f8 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -2,6 +2,8 @@
+ # Makefile for the linux memory manager.
  #
  
- KBUILD_CFLAGS += $(DISABLE_LTO)
-+KASAN_SANITIZE := n
++KASAN_SANITIZE_page_alloc.o := n
++
+ mmu-y			:= nommu.o
+ mmu-$(CONFIG_MMU)	:= gup.o highmem.o madvise.o memory.o mincore.o \
+ 			   mlock.o mmap.o mprotect.o mremap.o msync.o rmap.o \
+diff --git a/mm/kasan/kasan.c b/mm/kasan/kasan.c
+index e2cd345..109478e 100644
+--- a/mm/kasan/kasan.c
++++ b/mm/kasan/kasan.c
+@@ -177,6 +177,24 @@ void __init kasan_init_shadow(void)
+ 	}
+ }
  
- VDSO64-$(CONFIG_X86_64)		:= y
- VDSOX32-$(CONFIG_X86_X32_ABI)	:= y
++void kasan_alloc_pages(struct page *page, unsigned int order)
++{
++	if (unlikely(!kasan_initialized))
++		return;
++
++	if (likely(page && !PageHighMem(page)))
++		unpoison_shadow(page_address(page), PAGE_SIZE << order);
++}
++
++void kasan_free_pages(struct page *page, unsigned int order)
++{
++	if (unlikely(!kasan_initialized))
++		return;
++
++	if (likely(!PageHighMem(page)))
++		poison_shadow(page_address(page), PAGE_SIZE << order, KASAN_FREE_PAGE);
++}
++
+ void *kasan_memcpy(void *dst, const void *src, size_t len)
+ {
+ 	if (unlikely(len == 0))
+diff --git a/mm/kasan/kasan.h b/mm/kasan/kasan.h
+index 711ae4f..be9597e 100644
+--- a/mm/kasan/kasan.h
++++ b/mm/kasan/kasan.h
+@@ -5,6 +5,7 @@
+ #define KASAN_SHADOW_SCALE_SIZE (1UL << KASAN_SHADOW_SCALE_SHIFT)
+ #define KASAN_SHADOW_MASK       (KASAN_SHADOW_SCALE_SIZE - 1)
+ 
++#define KASAN_FREE_PAGE         0xFF  /* page was freed */
+ #define KASAN_SHADOW_GAP        0xF9  /* address belongs to shadow memory */
+ 
+ struct access_info {
+diff --git a/mm/kasan/report.c b/mm/kasan/report.c
+index 2430e05..6ef9e57 100644
+--- a/mm/kasan/report.c
++++ b/mm/kasan/report.c
+@@ -46,6 +46,9 @@ static void print_error_description(struct access_info *info)
+ 	case 0 ... KASAN_SHADOW_SCALE_SIZE - 1:
+ 		bug_type = "buffer overflow";
+ 		break;
++	case KASAN_FREE_PAGE:
++		bug_type = "use after free";
++		break;
+ 	case KASAN_SHADOW_GAP:
+ 		bug_type = "wild memory access";
+ 		break;
+@@ -67,6 +70,10 @@ static void print_address_description(struct access_info *info)
+ 	page = virt_to_page(info->access_addr);
+ 
+ 	switch (shadow_val) {
++	case KASAN_FREE_PAGE:
++		dump_page(page, "kasan error");
++		dump_stack();
++		break;
+ 	case KASAN_SHADOW_GAP:
+ 		pr_err("No metainfo is available for this access.\n");
+ 		dump_stack();
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 8c9eeec..67833d1 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -61,6 +61,7 @@
+ #include <linux/page-debug-flags.h>
+ #include <linux/hugetlb.h>
+ #include <linux/sched/rt.h>
++#include <linux/kasan.h>
+ 
+ #include <asm/sections.h>
+ #include <asm/tlbflush.h>
+@@ -747,6 +748,7 @@ static bool free_pages_prepare(struct page *page, unsigned int order)
+ 
+ 	trace_mm_page_free(page, order);
+ 	kmemcheck_free_shadow(page, order);
++	kasan_free_pages(page, order);
+ 
+ 	if (PageAnon(page))
+ 		page->mapping = NULL;
+@@ -2807,6 +2809,7 @@ out:
+ 	if (unlikely(!page && read_mems_allowed_retry(cpuset_mems_cookie)))
+ 		goto retry_cpuset;
+ 
++	kasan_alloc_pages(page, order);
+ 	return page;
+ }
+ EXPORT_SYMBOL(__alloc_pages_nodemask);
+@@ -6415,6 +6418,7 @@ int alloc_contig_range(unsigned long start, unsigned long end,
+ 	if (end != outer_end)
+ 		free_contig_range(end, outer_end - end);
+ 
++	kasan_alloc_pages(pfn_to_page(start), end - start);
+ done:
+ 	undo_isolate_page_range(pfn_max_align_down(start),
+ 				pfn_max_align_up(end), migratetype);
 -- 
 1.8.5.5
 
