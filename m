@@ -1,121 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756118AbaGILm5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 07:42:57 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:37939 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755367AbaGILl2 (ORCPT
+	id S1755421AbaGILgd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 07:36:33 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:53572 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755189AbaGILga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 07:41:28 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kishon@ti.com
-Cc: lee.jones@linaro.org, kernel@stlinux.com
-Subject: [PATCH v3 1/5] phy: miphy365x: Add Device Tree bindings for the MiPHY365x
-Date: Wed,  9 Jul 2014 12:41:10 +0100
-Message-Id: <1404906074-31992-2-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1404906074-31992-1-git-send-email-lee.jones@linaro.org>
-References: <1404906074-31992-1-git-send-email-lee.jones@linaro.org>
+	Wed, 9 Jul 2014 07:36:30 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-78-53bd293b232c
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
+        Alexey Preobrazhensky <preobr@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        x86@kernel.org, linux-mm@kvack.org,
+        Andrey Ryabinin <a.ryabinin@samsung.com>
+Subject: [RFC/PATCH RESEND -next 05/21] x86: cpu: don't sanitize early stages
+ of a secondary CPU boot
+Date: Wed, 09 Jul 2014 15:29:59 +0400
+Message-id: <1404905415-9046-6-git-send-email-a.ryabinin@samsung.com>
+X-Mailer: git-send-email 1.8.5.5
+In-reply-to: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t/xy7rWmnuDDS6vUrDY9usRm8XvvTNZ
+	LeasX8Nmcf3bG0aLCQ/b2C1WdjezWWx/9pbJYmXnA1aLTY+vsVr82bWDyeLyrjlsFvfW/Ge1
+	uH2Z1+LSgQVMFi37LjBZtH3+x2qxb+V5IGvJRiaLxUduM1u8ezaZ2WLzpqnMFj82PGZ1EPNo
+	ae5h89g56y67x4JNpR6bVnWyeWz6NIndo+vtFSaPd+fOsXucmPGbxePJlelMHpuX1Ht8fHqL
+	xeP9vqtsHn1bVjF6nFlwhN3j8ya5AP4oLpuU1JzMstQifbsEroydJ38xFexjrdizfipLA+Nl
+	li5GTg4JAROJvbub2CBsMYkL99YD2VwcQgJLGSUuLj7HDpIQEuhjklhzzQvEZhPQk/g3aztY
+	g4iAgsTm3mesIA3MAs1sEu0dH1hBEsIC6RJT5x1mBrFZBFQlpk+bAGbzCrhK9EybCLVNQWLZ
+	8plg9ZwCbhITpl8DquEAWuYqMWGF2gRG3gWMDKsYRVNLkwuKk9JzjfSKE3OLS/PS9ZLzczcx
+	QiLp6w7GpcesDjEKcDAq8fC+2L0nWIg1say4MvcQowQHs5IIr63o3mAh3pTEyqrUovz4otKc
+	1OJDjEwcnFINjKX5jJJxSrNm+rqVul37t1o7oUzSYTVf1ofHs+JDxHPcVnUtsvvduGpW1C6J
+	wK6de5YXTxN65BNluUjv7s6507bPnJnlcqXn4YYPZw1YO7asdN77XOGDIEvMrY6JbVOfcDbq
+	TJA8Y7t5/oUbGz/+cp6WHXl+6tK8mUWGTM7eSY/qFdULO5f+0FViKc5INNRiLipOBACZdNI4
+	ggIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
-devices. It has 2 ports which it can use for either; both SATA, both
-PCIe or one of each in any configuration.
+Instrumentation of this files may result in unbootable machine.
 
-Cc: Kishon Vijay Abraham I <kishon@ti.com>
-Acked-by: Mark Rutland <mark.rutland@arm.com>
-Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
 ---
- .../devicetree/bindings/phy/phy-miphy365x.txt      | 76 ++++++++++++++++++++++
- 1 file changed, 76 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/phy/phy-miphy365x.txt
+ arch/x86/kernel/cpu/Makefile | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/phy/phy-miphy365x.txt b/Documentation/devicetree/bindings/phy/phy-miphy365x.txt
-new file mode 100644
-index 0000000..7337ac2
---- /dev/null
-+++ b/Documentation/devicetree/bindings/phy/phy-miphy365x.txt
-@@ -0,0 +1,76 @@
-+STMicroelectronics STi MIPHY365x PHY binding
-+============================================
+diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+index 7fd54f0..a7bb360 100644
+--- a/arch/x86/kernel/cpu/Makefile
++++ b/arch/x86/kernel/cpu/Makefile
+@@ -8,6 +8,9 @@ CFLAGS_REMOVE_common.o = -pg
+ CFLAGS_REMOVE_perf_event.o = -pg
+ endif
+ 
++KASAN_SANITIZE_common.o := n
++KASAN_SANITIZE_perf_event.o := n
 +
-+This binding describes a miphy device that is used to control PHY hardware
-+for SATA and PCIe.
-+
-+Required properties (controller (parent) node):
-+- compatible    : Should be "st,miphy365x-phy"
-+- st,syscfg     : Should be a phandle of the system configuration register group
-+		  which contain the SATA, PCIe mode setting bits
-+
-+Required nodes	:  A sub-node is required for each channel the controller
-+		   provides. Address range information including the usual
-+		   'reg' and 'reg-names' properties are used inside these
-+		   nodes to describe the controller's topology. These nodes
-+		   are translated by the driver's .xlate() function.
-+
-+Required properties (port (child) node):
-+- #phy-cells 	: Should be 1 (See second example)
-+		  Cell after port phandle is device type from:
-+			- MIPHY_TYPE_SATA
-+			- MIPHY_TYPE_PCI
-+- reg        	: Address and length of register sets for each device in
-+		  "reg-names"
-+- reg-names     : The names of the register addresses corresponding to the
-+		  registers filled in "reg":
-+			- sata:   For SATA devices
-+			- pcie:   For PCIe devices
-+			- syscfg: To specify the syscfg based config register
-+
-+Optional properties (port (child) node):
-+- st,sata-gen	     :	Generation of locally attached SATA IP. Expected values
-+			are {1,2,3). If not supplied generation 1 hardware will
-+			be expected
-+- st,pcie-tx-pol-inv :	Bool property to invert the polarity PCIe Tx (Txn/Txp)
-+- st,sata-tx-pol-inv :	Bool property to invert the polarity SATA Tx (Txn/Txp)
-+
-+Example:
-+
-+	miphy365x_phy: miphy365x@fe382000 {
-+		compatible      = "st,miphy365x-phy";
-+		st,syscfg  	= <&syscfg_rear>;
-+		#address-cells	= <1>;
-+		#size-cells	= <1>;
-+		ranges;
-+
-+		phy_port0: port@fe382000 {
-+			reg = <0xfe382000 0x100>, <0xfe394000 0x100>, <0x824 0x4>;
-+			reg-names = "sata", "pcie", "syscfg";
-+			#phy-cells = <1>;
-+			st,sata-gen = <3>;
-+		};
-+
-+		phy_port1: port@fe38a000 {
-+			reg = <0xfe38a000 0x100>, <0xfe804000 0x100>, <0x828 0x4>;;
-+			reg-names = "sata", "pcie", "syscfg";
-+			#phy-cells = <1>;
-+			st,pcie-tx-pol-inv;
-+		};
-+	};
-+
-+Specifying phy control of devices
-+=================================
-+
-+Device nodes should specify the configuration required in their "phys"
-+property, containing a phandle to the phy port node and a device type.
-+
-+Example:
-+
-+#include <dt-bindings/phy/phy-miphy365x.h>
-+
-+	sata0: sata@fe380000 {
-+		...
-+		phys	  = <&miphy365x_phy MIPHY_TYPE_SATA>;
-+		...
-+	};
+ # Make sure load_percpu_segment has no stackprotector
+ nostackp := $(call cc-option, -fno-stack-protector)
+ CFLAGS_common.o		:= $(nostackp)
 -- 
-1.8.3.2
+1.8.5.5
 
