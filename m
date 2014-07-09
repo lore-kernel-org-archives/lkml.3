@@ -1,86 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229AbaGIAHI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 20:07:08 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:54342 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085AbaGIAHG (ORCPT
+	id S1753013AbaGIAJr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 20:09:47 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:37334 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751709AbaGIAJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 20:07:06 -0400
-Date: Tue, 8 Jul 2014 17:07:01 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 1/1] rcu: use atomic_read(v) instead of
- atomic_add_return(0, v)
-Message-ID: <20140709000701.GJ4603@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1404860145-16450-1-git-send-email-bobby.prani@gmail.com>
+	Tue, 8 Jul 2014 20:09:45 -0400
+Message-ID: <53BC8845.9060106@gmail.com>
+Date: Wed, 09 Jul 2014 08:09:41 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404860145-16450-1-git-send-email-bobby.prani@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070900-0928-0000-0000-00000340AA5D
+To: Liqin Chen <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch/score/kernel: Add 'score_ksyms.c' to export special
+ symbols
+References: <53BBF6A5.8090707@gmail.com>
+In-Reply-To: <53BBF6A5.8090707@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 08, 2014 at 06:55:45PM -0400, Pranith Kumar wrote:
-> atomic_add_return() invalidates the cache line in other processors where-as
-> atomic_read does not. I don't see why we would need invalidation in this case.
-> If indeed it was need a comment would be helpful for readers. Otherwise doesn't
-> using atomic_read() make more sense here? RFC!
+
+Oh, sorry, forgot 'csum_partial' which also need export in this file.
+And I shall send patch v2 for it.
+
+
+On 07/08/2014 09:48 PM, Chen Gang wrote:
+> Some symbols are not implemented in C, or not in "arch/score", but
+> score need export them, so add 'score_ksyms.c' to export them, just
+> like other architectures have done.
 > 
-> replace atomic_add_return(0, v) with atomic_read(v) as the latter is better.
+> The related error (with allmodconfig under score):
 > 
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-
-This will break RCU -- the full memory barriers implied both before
-and after atomic_add_return() are needed in order for RCU to be able to
-avoid death due to memory reordering.
-
-That said, I have considered replacing the atomic_add_return() with:
-
-	smp_mb();
-	... = atomic_read(...);
-	smp_mb();
-
-However, this is a very ticklish change, and would need serious thought
-and even more serious testing.
-
-							Thanx, Paul
-
+>    MODPOST 1365 modules
+>   ERROR: "__clear_user" [drivers/md/dm-mod.ko] undefined!
+>   ERROR: "__copy_tofrom_user" [net/x25/x25.ko] undefined!
+>   ERROR: "__strncpy_from_user" [fs/xfs/xfs.ko] undefined!
+> 
+>   ERROR: "max_low_pfn" [net/wireless/lib80211_crypt_tkip.ko] undefined!
+>   ERROR: "min_low_pfn" [net/wireless/lib80211_crypt_tkip.ko] undefined!
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
 > ---
->  kernel/rcu/tree.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+>  arch/score/kernel/Makefile      |  2 +-
+>  arch/score/kernel/score_ksyms.c | 39 +++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 40 insertions(+), 1 deletion(-)
+>  create mode 100644 arch/score/kernel/score_ksyms.c
 > 
-> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> index dac6d20..a4a8f5f 100644
-> --- a/kernel/rcu/tree.c
-> +++ b/kernel/rcu/tree.c
-> @@ -891,7 +891,7 @@ static int rcu_is_cpu_rrupt_from_idle(void)
->  static int dyntick_save_progress_counter(struct rcu_data *rdp,
->  					 bool *isidle, unsigned long *maxj)
->  {
-> -	rdp->dynticks_snap = atomic_add_return(0, &rdp->dynticks->dynticks);
-> +	rdp->dynticks_snap = atomic_read(&rdp->dynticks->dynticks);
->  	rcu_sysidle_check_cpu(rdp, isidle, maxj);
->  	if ((rdp->dynticks_snap & 0x1) == 0) {
->  		trace_rcu_fqs(rdp->rsp->name, rdp->gpnum, rdp->cpu, TPS("dti"));
-> @@ -920,7 +920,7 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp,
->  	int *rcrmp;
->  	unsigned int snap;
-> 
-> -	curr = (unsigned int)atomic_add_return(0, &rdp->dynticks->dynticks);
-> +	curr = (unsigned int)atomic_read(&rdp->dynticks->dynticks);
->  	snap = (unsigned int)rdp->dynticks_snap;
-> 
->  	/*
-> -- 
-> 1.9.1
+> diff --git a/arch/score/kernel/Makefile b/arch/score/kernel/Makefile
+> index fb1802b..891133b 100644
+> --- a/arch/score/kernel/Makefile
+> +++ b/arch/score/kernel/Makefile
+> @@ -6,6 +6,6 @@ extra-y	:= head.o vmlinux.lds
+>  
+>  obj-y += entry.o irq.o process.o ptrace.o \
+>  	setup.o signal.o sys_score.o time.o traps.o \
+> -	sys_call_table.o
+> +	sys_call_table.o score_ksyms.o
+>  
+>  obj-$(CONFIG_MODULES) += module.o
+> diff --git a/arch/score/kernel/score_ksyms.c b/arch/score/kernel/score_ksyms.c
+> new file mode 100644
+> index 0000000..507d008
+> --- /dev/null
+> +++ b/arch/score/kernel/score_ksyms.c
+> @@ -0,0 +1,39 @@
+> +/*
+> + * arch/score/kernel/score_ksyms.c
+> + *
+> + * Score Processor version.
+> + *
+> + * No Copyright (C)
+> + *  Chen Gang <gang.chen.5i5j@gmail.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, see the file COPYING, or write
+> + * to the Free Software Foundation, Inc.,
+> + * 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+> + */
+> +
+> +#include <linux/export.h>
+> +#include <linux/syscalls.h>
+> +
+> +/*
+> + * Assembly functions that may be used (directly or indirectly) by modules
+> + */
+> +EXPORT_SYMBOL(__clear_user);
+> +EXPORT_SYMBOL(__copy_tofrom_user);
+> +EXPORT_SYMBOL(__strncpy_from_user);
+> +
+> +/*
+> + * Define but not export in generic mm sub-systems, but score need export
+> + */
+> +EXPORT_SYMBOL(min_low_pfn);
+> +EXPORT_SYMBOL(max_low_pfn);
 > 
 
+-- 
+Chen Gang
+
+Open, share, and attitude like air, water, and life which God blessed
