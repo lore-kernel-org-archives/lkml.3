@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932135AbaGIU0B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 16:26:01 -0400
-Received: from mail-la0-f66.google.com ([209.85.215.66]:46903 "EHLO
-	mail-la0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753923AbaGIU0A convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 16:26:00 -0400
+	id S932258AbaGIU0i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 16:26:38 -0400
+Received: from mga02.intel.com ([134.134.136.20]:61362 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932144AbaGIU0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 16:26:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,633,1400050800"; 
+   d="scan'208";a="541071686"
+Message-ID: <53BDA568.5030607@intel.com>
+Date: Wed, 09 Jul 2014 13:26:16 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Reply-To: youssoufibrahim360@yahoo.com
-Date: Wed, 9 Jul 2014 22:25:58 +0200
-Message-ID: <CALd_ZSA0TBATn2xEUNQWDaNgbi7NhiD03cS1VDXuFor2xzZdqQ@mail.gmail.com>
-Subject: Confidential Business Proposal!!
-From: Youssouf Ibrahim <youssouf11ibrahim@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Andrey Ryabinin <a.ryabinin@samsung.com>, linux-kernel@vger.kernel.org
+CC: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
+        Alexey Preobrazhensky <preobr@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        x86@kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC/PATCH RESEND -next 01/21] Add kernel address sanitizer infrastructure.
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com> <1404905415-9046-2-git-send-email-a.ryabinin@samsung.com>
+In-Reply-To: <1404905415-9046-2-git-send-email-a.ryabinin@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Personal Email / Confidential Business Proposal
-From: Mr Youssouf Ibrahim.
-Senior Auditor Foreign Remittance Unit
-Bank Of Africa (BOA)
-Ouagadougou - Burkina-Faso
-West /Africa.
-E-mail :youssouf11ibrahim@gmail.com
+On 07/09/2014 04:29 AM, Andrey Ryabinin wrote:
+> Address sanitizer dedicates 1/8 of the low memory to the shadow memory and uses direct
+> mapping with a scale and offset to translate a memory address to its corresponding
+> shadow address.
+> 
+> Here is function to translate address to corresponding shadow address:
+> 
+>      unsigned long kasan_mem_to_shadow(unsigned long addr)
+>      {
+>                 return ((addr - PAGE_OFFSET) >> KASAN_SHADOW_SCALE_SHIFT)
+>                              + kasan_shadow_start;
+>      }
 
-
-                         Confidential Business Proposal!!
-
-
-I must say that I have enormous respect for you considering the manner
-in which I have made contact with you.
-
-I am Mr Youssouf Ibrahim, the senior Auditor In charge of Foreign
-Remittance Unit, Bank Of Africa (BOA) Ouagadougou Burkina Faso. I have
-a business which will benefit both of us, The amount of money involved
-is ($15.5 Million Dollars) which i want to transfer from an abandoned
-account to your bank account; it is 100% risk free.
-
-After the end of the business, We shall agree that { 40% } Forty
-Percent will be for you in respect of all your assistance for this
-transaction and { 60% } Sixty- Percent will be for me being the
-pioneer of the business.
-
-I will like you to provide immediately the below information's, to
-enable me use it and get you next of kin application form from my
-bank.
-
-1.Full Name:_________________
-2.Full Address:_______________
-3.Telephone Number:_________
-4.Country:__________________
-5.Occupation:_______________
-6.Age:______________________
-7.Sex:______________________
-
-
-
-As soon as you reply me with this my private email address
-(youssouf11ibrahim@gmail.com), I will let you know the next steps and
-procedures and more details to follow in order to finalize this
-transaction immediately.
-
-
-I am waiting soonest to hear from you.
-
-Yours Sincerely,
-Mr Youssouf Ibrahim.
+How does this interact with vmalloc() addresses or those from a kmap()?
