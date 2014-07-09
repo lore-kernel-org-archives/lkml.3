@@ -1,184 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755587AbaGIKeF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 06:34:05 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:30191 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755256AbaGIKeB (ORCPT
+	id S1755643AbaGIKeR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 06:34:17 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:50553 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755598AbaGIKeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 06:34:01 -0400
-X-IronPort-AV: E=Sophos;i="5.00,861,1396972800"; 
-   d="scan'208";a="33042225"
-From: "chenhanxiao@cn.fujitsu.com" <chenhanxiao@cn.fujitsu.com>
-To: "Eric W. Biederman (ebiederm@xmission.com)" <ebiederm@xmission.com>,
-        "Serge Hallyn (serge.hallyn@ubuntu.com)" <serge.hallyn@ubuntu.com>,
-        "Oleg Nesterov (oleg@redhat.com)" <oleg@redhat.com>,
-        "Richard Weinberger (richard@nod.at)" <richard@nod.at>,
-        "Pavel Emelyanov (xemul@parallels.com)" <xemul@parallels.com>,
-        "Vasily Kulikov (segoon@openwall.com)" <segoon@openwall.com>,
-        "Gotou, Yasunori" <y-goto@jp.fujitsu.com>,
-        "'Daniel P. Berrange (berrange@redhat.com)'" <berrange@redhat.com>
-CC: "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [RFC]Pid conversion between pid namespace
-Thread-Topic: [RFC]Pid conversion between pid namespace
-Thread-Index: Ac+WpagelAqWSmeOTWy8zWQgFaQt9gEpMoTA
-Date: Wed, 9 Jul 2014 10:34:02 +0000
-Message-ID: <5871495633F38949900D2BF2DC04883E560412@G08CNEXMBPEKD02.g08.fujitsu.local>
-References: <5871495633F38949900D2BF2DC04883E55C374@G08CNEXMBPEKD02.g08.fujitsu.local>
-In-Reply-To: <5871495633F38949900D2BF2DC04883E55C374@G08CNEXMBPEKD02.g08.fujitsu.local>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.226.240]
-Content-Type: text/plain; charset="gb2312"
+	Wed, 9 Jul 2014 06:34:13 -0400
+Message-ID: <53BD1AA3.4000203@arm.com>
+Date: Wed, 09 Jul 2014 11:34:11 +0100
+From: Chris Redpath <Chris.Redpath@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+CC: "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        Arvind Chauhan <Arvind.Chauhan@arm.com>
+Subject: Re: [RFC 2/7] hrtimer: don't check for active hrtimer after adding
+ it
+References: <cover.1404888801.git.viresh.kumar@linaro.org> <13861232628603285a2734e32b309abd73c8741c.1404888801.git.viresh.kumar@linaro.org>
+In-Reply-To: <13861232628603285a2734e32b309abd73c8741c.1404888801.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s69AYAPZ028829
 
-Hi,
+Hi Viresh,
 
-Let me summarize our discussions of ID conversion by pros/cons: 
+On 09/07/14 07:55, Viresh Kumar wrote:
+> hrtimer_start*() family never fails to enqueue a hrtimer to a clock-base. The
+> only special case is when the hrtimer was in past. If it is getting enqueued to
+> local CPUs's clock-base, we raise a softirq and exit, else we handle that on
+> next interrupt on remote CPU.
+>
+> At several places in the kernel, we try to make sure if hrtimer was added
+> properly or not by calling hrtimer_active(), like:
+>
+> 	hrtimer_start(timer, expires, mode);
+> 	if (hrtimer_active(timer)) {
+> 		/* Added successfully */
+> 	} else {
+> 		/* Was added in the past */
+> 	}
+>
+> As hrtimer_start*() never fails, hrtimer_active() is guaranteed to return '1'.
+> So, there is no point calling hrtimer_active().
+>
+> This patch updates hrtimer core to get this fixed.
+>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>   kernel/hrtimer.c | 4 ----
+>   1 file changed, 4 deletions(-)
+>
+> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+> index cf40209..a76f962 100644
+> --- a/kernel/hrtimer.c
+> +++ b/kernel/hrtimer.c
+> @@ -1555,8 +1555,6 @@ static int __sched do_nanosleep(struct hrtimer_sleeper *t, enum hrtimer_mode mod
+>   	do {
+>   		set_current_state(TASK_INTERRUPTIBLE);
+>   		hrtimer_start_expires(&t->timer, mode);
+> -		if (!hrtimer_active(&t->timer))
+> -			t->task = NULL;
+>
+>   		if (likely(t->task))
+>   			freezable_schedule();
+> @@ -1837,8 +1835,6 @@ schedule_hrtimeout_range_clock(ktime_t *expires, unsigned long delta,
+>   	hrtimer_init_sleeper(&t, current);
+>
+>   	hrtimer_start_expires(&t.timer, mode);
+> -	if (!hrtimer_active(&t.timer))
+> -		t.task = NULL;
+>
+>   	if (likely(t.task))
+>   		schedule();
+>
 
-A) make new system call for translation	
-    A-1) systemcall(ID, NS1, NS2) into (ID).
-    pros:
-        - has a reference ns(NS2)
-          We could get any lower level ID directly.
-		 
-    cons:
-        - lack of hierarchy information. 
-          CRIU need hierarchy info for checkpoint/restore in nested containers.
-        - not easy for debug. 
-          And a lot of tools/libs need be modified.
-
-    A-2) syscall pid_t getnspid(pid_t query_pid, pid_t observer_pid)
-    pros:
-        - ns procfs free, easy to use.
-        We could get rid of mounted ns procfs.
-
-    cons:
-        - may find multiple results in nested ns.
-          We wished the new API could tell us the exact answer.
-          But if getnspid return more than one results will bring trouble to admins,
-          they had to make another decision.
-          Or we marked the deepest level for translation as prerequisite.
-
-        -based on current pidns, no reference ns.
-
-B) make/change proc file/directories
-	B-1) expand /proc/pid/status
-	pros:
-        - easy to use and to debug
-        - already had existed interface in kernel
-        
-	cons:
-        - based on current ns
-          for middle level, we had to make another decision.
-        - do not have hierarchy info.
-
-	B-2) /proc/<pidX>/ns/proc/ which would contain everything
-	pros:
-        - have enough info from /proc in container
-
-	cons:
-        - Requirements unclear.
-          We need more discussion to decide which items should not be exposed.
-        - do not have hierarchy info.
-
-
-How about do these things in two steps: 
-
-C)  1. expose all sets of pid, pgid, sid and tgid
-via expanded /proc/PID/status
-      We could get translated IDs from container like:
-    NStgid:	16465 	5 	1 
-    NSpid:	16465 	5 	1 
-    NSpgid:	16465 	5 	1 
-    NSsid:	16423 	1 	0
-    (a set of IDs with 3 level of ns)
-
-    2. add hierarchy info under /proc
-      We lacked of method of getting hierarchy info, which is useful.
-      Then we could know the relationship of ns.
-      How about adding a new proc file just under /proc
-      to show the hierarchy like readlink did:
-	  pid:[4026531836]-> [4026532390] -> [4026532484]
-      pid:[4026531836]-> [4026532491]
-      (A 3 level pid and 2 level pid_
-
-Any comments would be appreciated.
-
-Thanks,
-- Chen
-
-> -----Original Message-----
-> Subject: [RFC]Pid conversion between pid namespace
-> 
-> Hi,
-> 
-> We had some discussions on how to carry out
-> pid conversion between pid namespace via:
-> syscall[1] and procfs[2].
-> 
-> Pavel suggested that a syscall like
-> (ID, NS1, NS2) into (ID).
-> 
-> Serge suggested that a syscall
-> pid_t getnspid(pid_t query_pid, pid_t observer_pid).
-> 
-> 
-> Eric and Richard suggested a procfs solution is
-> more appropriate.
-> 
-> Oleg suggested that we should expand /proc/pid/status
-> to report this kind of information.
-> 
-> And Richard suggested adding a directory like
-> /proc/<pidX>/ns/proc/ which would contain everything
-> from /proc/<pidX inside the namespace>/.
-> 
-> As procfs provided a more user friendly interface,
-> how about expose all sets of tgid, pid, pgid, sid
-> by expanding /proc/PID/status in procfs?
-> And we could also expose ns hierarchy under /proc,
-> which could be another reference.
-> 
-> Ex:
->     init_pid_ns    ns1         ns2
-> t1  2
-> t2   `- 3          1
-> t3       `- 4      `- 5        1
-> 
-> We could get in /proc/t3/status:
-> NSpid: 4 5 1
-> We knew that pid 1 in container is pid 4 in init ns.
-> 
-> And we could get ns hierarchy under /proc/ns_hierarchy like:
-> init_ns->ns1->ns2		(as the result of readlink)
->          ->ns3
-> We knew that t3 in ns2, and its hierarchy.
-> 
-> How these ideas looks like?
-> Any comments would be appreciated.
-> 
-> Thanks,
-> - Chen
-> 
-> 
-> a) syscall
-> http://lwn.net/Articles/602987/
-> 
-> b) procfs
-> http://www.spinics.net/lists/kernel/msg1751688.html
-> 
-> _______________________________________________
-> Containers mailing list
-> Containers@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/containers
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Maybe safe to remove this if condition too.
