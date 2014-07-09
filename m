@@ -1,42 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185AbaGIBNW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 21:13:22 -0400
-Received: from ozlabs.org ([103.22.144.67]:55255 "EHLO ozlabs.org"
+	id S1754053AbaGIBNU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 21:13:20 -0400
+Received: from ozlabs.org ([103.22.144.67]:37463 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752936AbaGIBNR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752726AbaGIBNR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jul 2014 21:13:17 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Jens Axboe <axboe@kernel.dk>, Ming Lei <ming.lei@canonical.com>,
-        linux-kernel@vger.kernel.org
-Cc: linux-api@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [PATCH v2 0/2] block: virtio-blk: support multi vq per virtio-blk
-In-Reply-To: <53ABAA34.6070006@kernel.dk>
-References: <1403748526-1923-1-git-send-email-ming.lei@canonical.com> <53ABAA34.6070006@kernel.dk>
+To: Tejun Heo <tj@kernel.org>, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] percpu: add data dependency barrier in percpu accessors and operations
+In-Reply-To: <20140617152752.GC31819@htj.dyndns.org>
+References: <20140612135630.GA23606@htj.dyndns.org> <20140612153426.GV4581@linux.vnet.ibm.com> <20140612155227.GB23606@htj.dyndns.org> <20140617144151.GD4669@linux.vnet.ibm.com> <20140617152752.GC31819@htj.dyndns.org>
 User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 09 Jul 2014 10:31:08 +0930
-Message-ID: <87ion75orv.fsf@rustcorp.com.au>
+Date: Wed, 09 Jul 2014 10:25:44 +0930
+Message-ID: <87lhs35p0v.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens Axboe <axboe@kernel.dk> writes:
-> Rusty, do you want to ack this (and I'll slurp it up for 3.17) or take 
-> this yourself? Or something else?
+Tejun Heo <tj@kernel.org> writes:
+> Hello, Paul.
 
-I'm happy with the idea, and importantly, the new feature bit.  So once
-the implementation is tweaked, please add:
+Rusty wakes up...
 
-        Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+>> Good point.  How about per-CPU variables that are introduced by
+>> loadable modules?  (I would guess that there are plenty of memory
+>> barriers in the load process, given that text and data also needs
+>> to be visible to other CPUs.)
+>
+> (cc'ing Rusty, hi!)
+>
+> Percpu initialization happens in post_relocation() before
+> module_finalize().  There seem to be enough operations which can act
+> as write barrier afterwards but nothing seems explicit.
+>
+> I have no idea how we're guaranteeing that .data is visible to all
+> cpus without barrier from reader side.  Maybe we don't allow something
+> like the following?
+>
+>   module init				built-in code
+>
+>   static int mod_static_var = X;	if (builtin_ptr)
+>   builtin_ptr = &mod_static_var;		WARN_ON(*builtin_ptr != X);
+>
+> Rusty, can you please enlighten me?
 
-The new feature bit takes us outside the current standard (which is
-hopefully now frozen), but I'll just add it to the pile of things to
-revisit for 1.1.
+Subtle, but I think in theory (though not in practice) this can happen.
 
-Thanks,
-Rusty,
+Making this this assigner's responsibility is nasty, since we reasonably
+assume that .data is consistent across CPUs once code is executing
+(similarly on boot).
+
+>> Again, it won't help for the allocator to strongly order the
+>> initialization to zero if there are additional initializations of some
+>> fields to non-zero values.  And again, it should be a lot easier to
+>> require the smp_store_release() or whatever uniformly than only in cases
+>> where additional initialization occurred.
+>
+> This one is less murky as we can say that the cpu which allocated owns
+> the zeroing; however, it still deviates from requiring the one which
+> makes changes to take care of barriering for those changes, which is
+> what makes me feel a bit uneasy.  IOW, it's the allocator which
+> cleared the memory, why should its users worry about in-flight
+> operations from it?  That said, this poses a lot less issues compared
+> to percpu ones as passing normal pointers to other cpus w/o going
+> through proper set of barriers is a special thing to do anyway.
+
+I think that the implicit per-cpu allocations done by modules need to
+be consistent once the module is running.
+
+I'm deeply reluctant to advocate it in the other per-cpu cases though.
+Once we add a barrier, it's impossible to remove: callers may subtly
+rely on the behavior.
+
+"Magic barrier sprinkles" is a bad path to start down, IMHO.
+
+Cheers,
+Rusty.
