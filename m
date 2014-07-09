@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150AbaGIOc0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 10:32:26 -0400
-Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:51944 "EHLO
-	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753293AbaGIOcZ (ORCPT
+	id S1755344AbaGIOce (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 10:32:34 -0400
+Received: from mga11.intel.com ([192.55.52.93]:32888 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755177AbaGIOcc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 10:32:25 -0400
-Date: Wed, 9 Jul 2014 09:32:21 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-cc: linux-kernel@vger.kernel.org, Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Alexey Preobrazhensky <preobr@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        x86@kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC/PATCH RESEND -next 12/21] mm: util: move krealloc/kzfree
- to slab_common.c
-In-Reply-To: <1404905415-9046-13-git-send-email-a.ryabinin@samsung.com>
-Message-ID: <alpine.DEB.2.11.1407090931350.1384@gentwo.org>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com> <1404905415-9046-13-git-send-email-a.ryabinin@samsung.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 9 Jul 2014 10:32:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,631,1400050800"; 
+   d="scan'208";a="567385464"
+From: "Liang, Kan" <kan.liang@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "andi@firstfloor.org" <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: RE: [PATCH V4 1/2] perf ignore LBR and extra_regs.
+Thread-Topic: [PATCH V4 1/2] perf ignore LBR and extra_regs.
+Thread-Index: AQHPmw42PYiPusxucki+Ie3j6NurFZuXRIqAgACHbiA=
+Date: Wed, 9 Jul 2014 14:32:28 +0000
+Message-ID: <37D7C6CF3E00A74B8858931C1DB2F077014D2005@SHSMSX103.ccr.corp.intel.com>
+References: <1404838181-3911-1-git-send-email-kan.liang@intel.com>
+ <20140709141631.GE9918@twins.programming.kicks-ass.net>
+In-Reply-To: <20140709141631.GE9918@twins.programming.kicks-ass.net>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Jul 2014, Andrey Ryabinin wrote:
 
-> To avoid false positive reports in kernel address sanitizer krealloc/kzfree
-> functions shouldn't be instrumented. Since we want to instrument other
-> functions in mm/util.c, krealloc/kzfree moved to slab_common.c which is not
-> instrumented.
->
-> Unfortunately we can't completely disable instrumentation for one function.
-> We could disable compiler's instrumentation for one function by using
-> __atribute__((no_sanitize_address)).
-> But the problem here is that memset call will be replaced by instumented
-> version kasan_memset since currently it's implemented as define:
 
-Looks good to me and useful regardless of the sanitizer going in.
+> On Tue, Jul 08, 2014 at 09:49:40AM -0700, kan.liang@intel.com wrote:
+> > +/*
+> > + * Under certain circumstances, access certain MSR may cause #GP.
+> > + * The function tests if the input MSR can be safely accessed.
+> > + */
+> > +static inline bool check_msr(unsigned long msr) {
+> > +	u64 value;
+> > +
+> > +	if (rdmsrl_safe(msr, &value) < 0)
+> > +		return false;
+> > +	if (wrmsrl_safe(msr, value) < 0)
+> > +		return false;
+> > +	return true;
+> > +}
+> 
+> What does this thing return after patch 2? does the write still fault or will
+> KVM silently take writes too?
 
-Acked-by: Christoph Lameter <cl@linux.com>
+If applying patch 2, the function will return true. The KVM just simply ignore the reads/writes.
