@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754919AbaGIHmn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 03:42:43 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54249 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751709AbaGIHml (ORCPT
+	id S1754356AbaGIHqB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 03:46:01 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:55142 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313AbaGIHp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 03:42:41 -0400
-Date: Wed, 9 Jul 2014 09:40:00 +0200
-From: Mark Brown <broonie@kernel.org>
-To: jianqun <xjq@rock-chips.com>
-Cc: heiko@sntech.de, lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        grant.likely@linaro.org, robh+dt@kernel.org,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        devicetree@vger.kernel.org, zhangqing@rock-chips.com,
-        hj@rock-chips.com, kever.yang@rock-chips.com, huangtao@rock-chips.com,
-        zyw@rock-chips.com, yzq@rock-chips.com, zhenfu.fang@rock-chips.com,
-        cf@rock-chips.com, kfx@rock-chips.com
-Message-ID: <20140709074000.GC30458@sirena.org.uk>
-References: <1404458796-6818-1-git-send-email-xjq@rock-chips.com>
- <1404558638-1739-1-git-send-email-xjq@rock-chips.com>
+	Wed, 9 Jul 2014 03:45:59 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SLk8PSyqxe/ugcCT"
-Content-Disposition: inline
-In-Reply-To: <1404558638-1739-1-git-send-email-xjq@rock-chips.com>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 82.127.83.212
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 1/2] ASoC: dt-bindings: add rockchip i2s bindings
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1404592088-26996-1-git-send-email-berthe.ab@gmail.com>
+References: <CACRpkdZz+BZHuMY8pB4Ooq0-L-=fjW=OeUOnnS7D3Adzt=dbhQ@mail.gmail.com>
+	<1404592088-26996-1-git-send-email-berthe.ab@gmail.com>
+Date: Wed, 9 Jul 2014 09:45:58 +0200
+Message-ID: <CACRpkda6mzVdaN0cvOxpbsxWyCv2nGyDXOjZg_5aT8u7SSQeUw@mail.gmail.com>
+Subject: Re: [PATCH] gpio: removes all usage of gpiochip_remove retval
+From: Linus Walleij <linus.walleij@linaro.org>
+To: abdoulaye berthe <berthe.ab@gmail.com>
+Cc: Alexandre Courbot <gnurou@gmail.com>, Michael Buesch <m@bues.ch>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Jul 5, 2014 at 10:28 PM, abdoulaye berthe <berthe.ab@gmail.com> wrote:
 
---SLk8PSyqxe/ugcCT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> This patch updates users of gpiochip_remove return value.
+>
+> Signed-off-by: abdoulaye berthe <berthe.ab@gmail.com>
 
-On Sat, Jul 05, 2014 at 07:10:38PM +0800, jianqun wrote:
-> From: Jianqun Xu <xjq@rock-chips.com>
->=20
-> Add devicetree bindings for i2s controller found on
-> rk3066, rk3188 and rk3288 processors from rockchip.
+This doesn't apply on my devel branch from the GPIO tree.
 
-Applied both, thanks.
+Did you really use that branch?
 
---SLk8PSyqxe/ugcCT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+This looks more like it was based on the linux-next tree or
+something.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+BTW maybe it's better to split this patch in three:
 
-iQIcBAEBAgAGBQJTvPHHAAoJELSic+t+oim9U5AP/i0QrCPu2XrqOJE8bfgZ3ht8
-CHL1VnPn0glFK/Ub5znyqeEDG+OBKNO1a4CKxBbF8ZpAi+dQhxtAwN4xlhp4glVr
-vmOlb6ddAVB2CP8QrwEgkmzp9GrTg5JWLZwgPa2KEU2QNpI9n/ZE2h6oyQMrLIk/
-uHWeAQhZ07Y/vM2nhTAAl2yc1UnhdoNkeE4GmOLaFxdks0ssSOlffzRjblVU7qaH
-FDijYQU/HG6BZLo1xFCRKIxgC2SVYXqOXjrbSCk1Dvd/DYLDDX5jyPjQ486yU0iO
-Wqq8QtZF727mSHWBFfxh/DZ32W3GpehDymb2a5eTUYzy/SW7CT4okFqm7t+QtQXn
-PgKC7P81e7hIHMP1O0O7HTEG5eXE5XSaxsLXiHcy/oooJUp7eh3mpe00oQc9hKiB
-nLZPUHGMfU9nJfLXsSxDk+QANjy5HQwesdJPcxQd3osunVqqLs0TL8Knq4f1uKIR
-jaU+T/E5SldTQVfW0SksmiNtHJGDm+Syb56LOppcHnri0ulJjR18VgVp7S7ZmEW6
-eAyyAFpT834gHmrLuVbe44lPazGaq6fabzUU0mmi30/1K1A/Lcsi8JVupvtS6y+b
-K92BwwQQkF9+Irqf9rQzZ295qnErDeHVbBAkc8ZAX52aVHTEDV9juyP5hVRnvhrD
-eTM2IedQ1ZDrQzug194v
-=gObV
------END PGP SIGNATURE-----
+- One that removes all users in drivers/gpio so I can
+  apply that to the GPIO tree, patch based on the GPIO
+  "devel" branch.
+- One that removes all users in drivers/pinctrl based on
+  the pinctrl "devel" branch so I can apply that to the
+  pinctrl tree.
+- One that removes the rest of the users, that I can maybe
+  just apply to the GPIO tree. This could use some ACKs
+  from the different maintainers, but if I don't get that I can
+  just apply it after some timeout.
 
---SLk8PSyqxe/ugcCT--
+Then we will apply the second patch actually changing
+the gpiolib in the next merge window or late in the merge
+cycle.
+
+What do you say?
+
+Yours,
+Linus Walleij
