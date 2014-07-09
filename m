@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756818AbaGIPRA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 11:17:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61563 "EHLO mx1.redhat.com"
+	id S1756833AbaGIPRF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 11:17:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41918 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755720AbaGIPQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 11:16:56 -0400
-Subject: [PATCH10/17] Provide PE binary definitions
+	id S1755720AbaGIPRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 11:17:00 -0400
+Subject: [PATCH11/17] pefile: Parse a PE binary to find a key and a
+ signature contained therein
 From: David Howells <dhowells@redhat.com>
 To: keyrings@linux-nfs.org
 Cc: linux-security-module@vger.kernel.org, kexec@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Date: Wed, 09 Jul 2014 16:16:30 +0100
-Message-ID: <20140709151630.23074.81121.stgit@warthog.procyon.org.uk>
+Date: Wed, 09 Jul 2014 16:16:37 +0100
+Message-ID: <20140709151637.23074.91595.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20140709151525.23074.32315.stgit@warthog.procyon.org.uk>
 References: <20140709151525.23074.32315.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.17-dirty
@@ -23,471 +24,293 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide some PE binary structural and constant definitions as taken from the
-pesign package sources.
+Parse a PE binary to find a key and a signature contained therein.  Later
+patches will check the signature and add the key if the signature checks out.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 Acked-by: Vivek Goyal <vgoyal@redhat.com>
 Reviewed-by: Kees Cook <keescook@chromium.org>
 ---
 
- include/linux/pe.h |  448 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 448 insertions(+)
- create mode 100644 include/linux/pe.h
+ crypto/asymmetric_keys/Kconfig         |    9 ++
+ crypto/asymmetric_keys/Makefile        |    8 ++
+ crypto/asymmetric_keys/verify_pefile.c |  163 ++++++++++++++++++++++++++++++++
+ crypto/asymmetric_keys/verify_pefile.h |   37 +++++++
+ include/linux/verify_pefile.h          |   18 ++++
+ 5 files changed, 235 insertions(+)
+ create mode 100644 crypto/asymmetric_keys/verify_pefile.c
+ create mode 100644 crypto/asymmetric_keys/verify_pefile.h
+ create mode 100644 include/linux/verify_pefile.h
 
 
-diff --git a/include/linux/pe.h b/include/linux/pe.h
+diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
+index 14cac28..ca41be5 100644
+--- a/crypto/asymmetric_keys/Kconfig
++++ b/crypto/asymmetric_keys/Kconfig
+@@ -59,4 +59,13 @@ config PKCS7_TEST_KEY
+ 
+ 	  This is intended for testing the PKCS#7 parser.
+ 
++config SIGNED_PE_FILE_VERIFICATION
++	bool "Support for PE file signature verification"
++	depends on PKCS7_MESSAGE_PARSER=y
++	select ASN1
++	select OID_REGISTRY
++	help
++	  This option provides support for verifying the signature(s) on a
++	  signed PE binary.
++
+ endif # ASYMMETRIC_KEY_TYPE
+diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
+index 92d0e9a..3e4de52 100644
+--- a/crypto/asymmetric_keys/Makefile
++++ b/crypto/asymmetric_keys/Makefile
+@@ -47,3 +47,11 @@ clean-files	+= pkcs7-asn1.c pkcs7-asn1.h
+ obj-$(CONFIG_PKCS7_TEST_KEY) += pkcs7_test_key.o
+ pkcs7_test_key-y := \
+ 	pkcs7_key_type.o
++
++#
++# Signed PE binary-wrapped key handling
++#
++obj-$(CONFIG_SIGNED_PE_FILE_VERIFICATION) += verify_signed_pefile.o
++
++verify_signed_pefile-y := \
++	verify_pefile.o
+diff --git a/crypto/asymmetric_keys/verify_pefile.c b/crypto/asymmetric_keys/verify_pefile.c
 new file mode 100644
-index 0000000..e170b95
+index 0000000..aec7c50
 --- /dev/null
-+++ b/include/linux/pe.h
-@@ -0,0 +1,448 @@
-+/*
-+ * Copyright 2011 Red Hat, Inc.
-+ * All rights reserved.
++++ b/crypto/asymmetric_keys/verify_pefile.c
+@@ -0,0 +1,163 @@
++/* Parse a signed PE binary
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 of the License.
++ * Copyright (C) 2014 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
 + *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ * Author(s): Peter Jones <pjones@redhat.com>
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
 + */
-+#ifndef __LINUX_PE_H
-+#define __LINUX_PE_H
 +
-+#include <linux/types.h>
-+
-+#define MZ_MAGIC	0x5a4d	/* "MZ" */
-+
-+struct mz_hdr {
-+	uint16_t magic;		/* MZ_MAGIC */
-+	uint16_t lbsize;	/* size of last used block */
-+	uint16_t blocks;	/* pages in file, 0x3 */
-+	uint16_t relocs;	/* relocations */
-+	uint16_t hdrsize;	/* header size in "paragraphs" */
-+	uint16_t min_extra_pps;	/* .bss */
-+	uint16_t max_extra_pps;	/* runtime limit for the arena size */
-+	uint16_t ss;		/* relative stack segment */
-+	uint16_t sp;		/* initial %sp register */
-+	uint16_t checksum;	/* word checksum */
-+	uint16_t ip;		/* initial %ip register */
-+	uint16_t cs;		/* initial %cs relative to load segment */
-+	uint16_t reloc_table_offset;	/* offset of the first relocation */
-+	uint16_t overlay_num;	/* overlay number.  set to 0. */
-+	uint16_t reserved0[4];	/* reserved */
-+	uint16_t oem_id;	/* oem identifier */
-+	uint16_t oem_info;	/* oem specific */
-+	uint16_t reserved1[10];	/* reserved */
-+	uint32_t peaddr;	/* address of pe header */
-+	char     message[64];	/* message to print */
-+};
-+
-+struct mz_reloc {
-+	uint16_t offset;
-+	uint16_t segment;
-+};
-+
-+#define PE_MAGIC		0x00004550	/* "PE\0\0" */
-+#define PE_OPT_MAGIC_PE32	0x010b
-+#define PE_OPT_MAGIC_PE32_ROM	0x0107
-+#define PE_OPT_MAGIC_PE32PLUS	0x020b
-+
-+/* machine type */
-+#define	IMAGE_FILE_MACHINE_UNKNOWN	0x0000
-+#define	IMAGE_FILE_MACHINE_AM33		0x01d3
-+#define	IMAGE_FILE_MACHINE_AMD64	0x8664
-+#define	IMAGE_FILE_MACHINE_ARM		0x01c0
-+#define	IMAGE_FILE_MACHINE_ARMV7	0x01c4
-+#define	IMAGE_FILE_MACHINE_EBC		0x0ebc
-+#define	IMAGE_FILE_MACHINE_I386		0x014c
-+#define	IMAGE_FILE_MACHINE_IA64		0x0200
-+#define	IMAGE_FILE_MACHINE_M32R		0x9041
-+#define	IMAGE_FILE_MACHINE_MIPS16	0x0266
-+#define	IMAGE_FILE_MACHINE_MIPSFPU	0x0366
-+#define	IMAGE_FILE_MACHINE_MIPSFPU16	0x0466
-+#define	IMAGE_FILE_MACHINE_POWERPC	0x01f0
-+#define	IMAGE_FILE_MACHINE_POWERPCFP	0x01f1
-+#define	IMAGE_FILE_MACHINE_R4000	0x0166
-+#define	IMAGE_FILE_MACHINE_SH3		0x01a2
-+#define	IMAGE_FILE_MACHINE_SH3DSP	0x01a3
-+#define	IMAGE_FILE_MACHINE_SH3E		0x01a4
-+#define	IMAGE_FILE_MACHINE_SH4		0x01a6
-+#define	IMAGE_FILE_MACHINE_SH5		0x01a8
-+#define	IMAGE_FILE_MACHINE_THUMB	0x01c2
-+#define	IMAGE_FILE_MACHINE_WCEMIPSV2	0x0169
-+
-+/* flags */
-+#define IMAGE_FILE_RELOCS_STRIPPED           0x0001
-+#define IMAGE_FILE_EXECUTABLE_IMAGE          0x0002
-+#define IMAGE_FILE_LINE_NUMS_STRIPPED        0x0004
-+#define IMAGE_FILE_LOCAL_SYMS_STRIPPED       0x0008
-+#define IMAGE_FILE_AGGRESSIVE_WS_TRIM        0x0010
-+#define IMAGE_FILE_LARGE_ADDRESS_AWARE       0x0020
-+#define IMAGE_FILE_16BIT_MACHINE             0x0040
-+#define IMAGE_FILE_BYTES_REVERSED_LO         0x0080
-+#define IMAGE_FILE_32BIT_MACHINE             0x0100
-+#define IMAGE_FILE_DEBUG_STRIPPED            0x0200
-+#define IMAGE_FILE_REMOVABLE_RUN_FROM_SWAP   0x0400
-+#define IMAGE_FILE_NET_RUN_FROM_SWAP         0x0800
-+#define IMAGE_FILE_SYSTEM                    0x1000
-+#define IMAGE_FILE_DLL                       0x2000
-+#define IMAGE_FILE_UP_SYSTEM_ONLY            0x4000
-+#define IMAGE_FILE_BYTES_REVERSED_HI         0x8000
-+
-+struct pe_hdr {
-+	uint32_t magic;		/* PE magic */
-+	uint16_t machine;	/* machine type */
-+	uint16_t sections;	/* number of sections */
-+	uint32_t timestamp;	/* time_t */
-+	uint32_t symbol_table;	/* symbol table offset */
-+	uint32_t symbols;	/* number of symbols */
-+	uint16_t opt_hdr_size;	/* size of optional header */
-+	uint16_t flags;		/* flags */
-+};
-+
-+#define IMAGE_FILE_OPT_ROM_MAGIC	0x107
-+#define IMAGE_FILE_OPT_PE32_MAGIC	0x10b
-+#define IMAGE_FILE_OPT_PE32_PLUS_MAGIC	0x20b
-+
-+#define IMAGE_SUBSYSTEM_UNKNOWN			 0
-+#define IMAGE_SUBSYSTEM_NATIVE			 1
-+#define IMAGE_SUBSYSTEM_WINDOWS_GUI		 2
-+#define IMAGE_SUBSYSTEM_WINDOWS_CUI		 3
-+#define IMAGE_SUBSYSTEM_POSIX_CUI		 7
-+#define IMAGE_SUBSYSTEM_WINDOWS_CE_GUI		 9
-+#define IMAGE_SUBSYSTEM_EFI_APPLICATION		10
-+#define IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER	11
-+#define IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER	12
-+#define IMAGE_SUBSYSTEM_EFI_ROM_IMAGE		13
-+#define IMAGE_SUBSYSTEM_XBOX			14
-+
-+#define IMAGE_DLL_CHARACTERISTICS_DYNAMIC_BASE          0x0040
-+#define IMAGE_DLL_CHARACTERISTICS_FORCE_INTEGRITY       0x0080
-+#define IMAGE_DLL_CHARACTERISTICS_NX_COMPAT             0x0100
-+#define IMAGE_DLLCHARACTERISTICS_NO_ISOLATION           0x0200
-+#define IMAGE_DLLCHARACTERISTICS_NO_SEH                 0x0400
-+#define IMAGE_DLLCHARACTERISTICS_NO_BIND                0x0800
-+#define IMAGE_DLLCHARACTERISTICS_WDM_DRIVER             0x2000
-+#define IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE  0x8000
-+
-+/* the fact that pe32 isn't padded where pe32+ is 64-bit means union won't
-+ * work right.  vomit. */
-+struct pe32_opt_hdr {
-+	/* "standard" header */
-+	uint16_t magic;		/* file type */
-+	uint8_t  ld_major;	/* linker major version */
-+	uint8_t  ld_minor;	/* linker minor version */
-+	uint32_t text_size;	/* size of text section(s) */
-+	uint32_t data_size;	/* size of data section(s) */
-+	uint32_t bss_size;	/* size of bss section(s) */
-+	uint32_t entry_point;	/* file offset of entry point */
-+	uint32_t code_base;	/* relative code addr in ram */
-+	uint32_t data_base;	/* relative data addr in ram */
-+	/* "windows" header */
-+	uint32_t image_base;	/* preferred load address */
-+	uint32_t section_align;	/* alignment in bytes */
-+	uint32_t file_align;	/* file alignment in bytes */
-+	uint16_t os_major;	/* major OS version */
-+	uint16_t os_minor;	/* minor OS version */
-+	uint16_t image_major;	/* major image version */
-+	uint16_t image_minor;	/* minor image version */
-+	uint16_t subsys_major;	/* major subsystem version */
-+	uint16_t subsys_minor;	/* minor subsystem version */
-+	uint32_t win32_version;	/* reserved, must be 0 */
-+	uint32_t image_size;	/* image size */
-+	uint32_t header_size;	/* header size rounded up to
-+				   file_align */
-+	uint32_t csum;		/* checksum */
-+	uint16_t subsys;	/* subsystem */
-+	uint16_t dll_flags;	/* more flags! */
-+	uint32_t stack_size_req;/* amt of stack requested */
-+	uint32_t stack_size;	/* amt of stack required */
-+	uint32_t heap_size_req;	/* amt of heap requested */
-+	uint32_t heap_size;	/* amt of heap required */
-+	uint32_t loader_flags;	/* reserved, must be 0 */
-+	uint32_t data_dirs;	/* number of data dir entries */
-+};
-+
-+struct pe32plus_opt_hdr {
-+	uint16_t magic;		/* file type */
-+	uint8_t  ld_major;	/* linker major version */
-+	uint8_t  ld_minor;	/* linker minor version */
-+	uint32_t text_size;	/* size of text section(s) */
-+	uint32_t data_size;	/* size of data section(s) */
-+	uint32_t bss_size;	/* size of bss section(s) */
-+	uint32_t entry_point;	/* file offset of entry point */
-+	uint32_t code_base;	/* relative code addr in ram */
-+	/* "windows" header */
-+	uint64_t image_base;	/* preferred load address */
-+	uint32_t section_align;	/* alignment in bytes */
-+	uint32_t file_align;	/* file alignment in bytes */
-+	uint16_t os_major;	/* major OS version */
-+	uint16_t os_minor;	/* minor OS version */
-+	uint16_t image_major;	/* major image version */
-+	uint16_t image_minor;	/* minor image version */
-+	uint16_t subsys_major;	/* major subsystem version */
-+	uint16_t subsys_minor;	/* minor subsystem version */
-+	uint32_t win32_version;	/* reserved, must be 0 */
-+	uint32_t image_size;	/* image size */
-+	uint32_t header_size;	/* header size rounded up to
-+				   file_align */
-+	uint32_t csum;		/* checksum */
-+	uint16_t subsys;	/* subsystem */
-+	uint16_t dll_flags;	/* more flags! */
-+	uint64_t stack_size_req;/* amt of stack requested */
-+	uint64_t stack_size;	/* amt of stack required */
-+	uint64_t heap_size_req;	/* amt of heap requested */
-+	uint64_t heap_size;	/* amt of heap required */
-+	uint32_t loader_flags;	/* reserved, must be 0 */
-+	uint32_t data_dirs;	/* number of data dir entries */
-+};
-+
-+struct data_dirent {
-+	uint32_t virtual_address;	/* relative to load address */
-+	uint32_t size;
-+};
-+
-+struct data_directory {
-+	struct data_dirent exports;		/* .edata */
-+	struct data_dirent imports;		/* .idata */
-+	struct data_dirent resources;		/* .rsrc */
-+	struct data_dirent exceptions;		/* .pdata */
-+	struct data_dirent certs;		/* certs */
-+	struct data_dirent base_relocations;	/* .reloc */
-+	struct data_dirent debug;		/* .debug */
-+	struct data_dirent arch;		/* reservered */
-+	struct data_dirent global_ptr;		/* global pointer reg. Size=0 */
-+	struct data_dirent tls;			/* .tls */
-+	struct data_dirent load_config;		/* load configuration structure */
-+	struct data_dirent bound_imports;	/* no idea */
-+	struct data_dirent import_addrs;	/* import address table */
-+	struct data_dirent delay_imports;	/* delay-load import table */
-+	struct data_dirent clr_runtime_hdr;	/* .cor (object only) */
-+	struct data_dirent reserved;
-+};
-+
-+struct section_header {
-+	char name[8];			/* name or "/12\0" string tbl offset */
-+	uint32_t virtual_size;		/* size of loaded section in ram */
-+	uint32_t virtual_address;	/* relative virtual address */
-+	uint32_t raw_data_size;		/* size of the section */
-+	uint32_t data_addr;		/* file pointer to first page of sec */
-+	uint32_t relocs;		/* file pointer to relocation entries */
-+	uint32_t line_numbers;		/* line numbers! */
-+	uint16_t num_relocs;		/* number of relocations */
-+	uint16_t num_lin_numbers;	/* srsly. */
-+	uint32_t flags;
-+};
-+
-+/* they actually defined 0x00000000 as well, but I think we'll skip that one. */
-+#define IMAGE_SCN_RESERVED_0	0x00000001
-+#define IMAGE_SCN_RESERVED_1	0x00000002
-+#define IMAGE_SCN_RESERVED_2	0x00000004
-+#define IMAGE_SCN_TYPE_NO_PAD	0x00000008 /* don't pad - obsolete */
-+#define IMAGE_SCN_RESERVED_3	0x00000010
-+#define IMAGE_SCN_CNT_CODE	0x00000020 /* .text */
-+#define IMAGE_SCN_CNT_INITIALIZED_DATA 0x00000040 /* .data */
-+#define IMAGE_SCN_CNT_UNINITIALIZED_DATA 0x00000080 /* .bss */
-+#define IMAGE_SCN_LNK_OTHER	0x00000100 /* reserved */
-+#define IMAGE_SCN_LNK_INFO	0x00000200 /* .drectve comments */
-+#define IMAGE_SCN_RESERVED_4	0x00000400
-+#define IMAGE_SCN_LNK_REMOVE	0x00000800 /* .o only - scn to be rm'd*/
-+#define IMAGE_SCN_LNK_COMDAT	0x00001000 /* .o only - COMDAT data */
-+#define IMAGE_SCN_RESERVED_5	0x00002000 /* spec omits this */
-+#define IMAGE_SCN_RESERVED_6	0x00004000 /* spec omits this */
-+#define IMAGE_SCN_GPREL		0x00008000 /* global pointer referenced data */
-+/* spec lists 0x20000 twice, I suspect they meant 0x10000 for one of them */
-+#define IMAGE_SCN_MEM_PURGEABLE	0x00010000 /* reserved for "future" use */
-+#define IMAGE_SCN_16BIT		0x00020000 /* reserved for "future" use */
-+#define IMAGE_SCN_LOCKED	0x00040000 /* reserved for "future" use */
-+#define IMAGE_SCN_PRELOAD	0x00080000 /* reserved for "future" use */
-+/* and here they just stuck a 1-byte integer in the middle of a bitfield */
-+#define IMAGE_SCN_ALIGN_1BYTES	0x00100000 /* it does what it says on the box */
-+#define IMAGE_SCN_ALIGN_2BYTES	0x00200000
-+#define IMAGE_SCN_ALIGN_4BYTES	0x00300000
-+#define IMAGE_SCN_ALIGN_8BYTES	0x00400000
-+#define IMAGE_SCN_ALIGN_16BYTES	0x00500000
-+#define IMAGE_SCN_ALIGN_32BYTES	0x00600000
-+#define IMAGE_SCN_ALIGN_64BYTES	0x00700000
-+#define IMAGE_SCN_ALIGN_128BYTES 0x00800000
-+#define IMAGE_SCN_ALIGN_256BYTES 0x00900000
-+#define IMAGE_SCN_ALIGN_512BYTES 0x00a00000
-+#define IMAGE_SCN_ALIGN_1024BYTES 0x00b00000
-+#define IMAGE_SCN_ALIGN_2048BYTES 0x00c00000
-+#define IMAGE_SCN_ALIGN_4096BYTES 0x00d00000
-+#define IMAGE_SCN_ALIGN_8192BYTES 0x00e00000
-+#define IMAGE_SCN_LNK_NRELOC_OVFL 0x01000000 /* extended relocations */
-+#define IMAGE_SCN_MEM_DISCARDABLE 0x02000000 /* scn can be discarded */
-+#define IMAGE_SCN_MEM_NOT_CACHED 0x04000000 /* cannot be cached */
-+#define IMAGE_SCN_MEM_NOT_PAGED	0x08000000 /* not pageable */
-+#define IMAGE_SCN_MEM_SHARED	0x10000000 /* can be shared */
-+#define IMAGE_SCN_MEM_EXECUTE	0x20000000 /* can be executed as code */
-+#define IMAGE_SCN_MEM_READ	0x40000000 /* readable */
-+#define IMAGE_SCN_MEM_WRITE	0x80000000 /* writeable */
-+
-+enum x64_coff_reloc_type {
-+	IMAGE_REL_AMD64_ABSOLUTE = 0,
-+	IMAGE_REL_AMD64_ADDR64,
-+	IMAGE_REL_AMD64_ADDR32,
-+	IMAGE_REL_AMD64_ADDR32N,
-+	IMAGE_REL_AMD64_REL32,
-+	IMAGE_REL_AMD64_REL32_1,
-+	IMAGE_REL_AMD64_REL32_2,
-+	IMAGE_REL_AMD64_REL32_3,
-+	IMAGE_REL_AMD64_REL32_4,
-+	IMAGE_REL_AMD64_REL32_5,
-+	IMAGE_REL_AMD64_SECTION,
-+	IMAGE_REL_AMD64_SECREL,
-+	IMAGE_REL_AMD64_SECREL7,
-+	IMAGE_REL_AMD64_TOKEN,
-+	IMAGE_REL_AMD64_SREL32,
-+	IMAGE_REL_AMD64_PAIR,
-+	IMAGE_REL_AMD64_SSPAN32,
-+};
-+
-+enum arm_coff_reloc_type {
-+	IMAGE_REL_ARM_ABSOLUTE,
-+	IMAGE_REL_ARM_ADDR32,
-+	IMAGE_REL_ARM_ADDR32N,
-+	IMAGE_REL_ARM_BRANCH2,
-+	IMAGE_REL_ARM_BRANCH1,
-+	IMAGE_REL_ARM_SECTION,
-+	IMAGE_REL_ARM_SECREL,
-+};
-+
-+enum sh_coff_reloc_type {
-+	IMAGE_REL_SH3_ABSOLUTE,
-+	IMAGE_REL_SH3_DIRECT16,
-+	IMAGE_REL_SH3_DIRECT32,
-+	IMAGE_REL_SH3_DIRECT8,
-+	IMAGE_REL_SH3_DIRECT8_WORD,
-+	IMAGE_REL_SH3_DIRECT8_LONG,
-+	IMAGE_REL_SH3_DIRECT4,
-+	IMAGE_REL_SH3_DIRECT4_WORD,
-+	IMAGE_REL_SH3_DIRECT4_LONG,
-+	IMAGE_REL_SH3_PCREL8_WORD,
-+	IMAGE_REL_SH3_PCREL8_LONG,
-+	IMAGE_REL_SH3_PCREL12_WORD,
-+	IMAGE_REL_SH3_STARTOF_SECTION,
-+	IMAGE_REL_SH3_SIZEOF_SECTION,
-+	IMAGE_REL_SH3_SECTION,
-+	IMAGE_REL_SH3_SECREL,
-+	IMAGE_REL_SH3_DIRECT32_NB,
-+	IMAGE_REL_SH3_GPREL4_LONG,
-+	IMAGE_REL_SH3_TOKEN,
-+	IMAGE_REL_SHM_PCRELPT,
-+	IMAGE_REL_SHM_REFLO,
-+	IMAGE_REL_SHM_REFHALF,
-+	IMAGE_REL_SHM_RELLO,
-+	IMAGE_REL_SHM_RELHALF,
-+	IMAGE_REL_SHM_PAIR,
-+	IMAGE_REL_SHM_NOMODE,
-+};
-+
-+enum ppc_coff_reloc_type {
-+	IMAGE_REL_PPC_ABSOLUTE,
-+	IMAGE_REL_PPC_ADDR64,
-+	IMAGE_REL_PPC_ADDR32,
-+	IMAGE_REL_PPC_ADDR24,
-+	IMAGE_REL_PPC_ADDR16,
-+	IMAGE_REL_PPC_ADDR14,
-+	IMAGE_REL_PPC_REL24,
-+	IMAGE_REL_PPC_REL14,
-+	IMAGE_REL_PPC_ADDR32N,
-+	IMAGE_REL_PPC_SECREL,
-+	IMAGE_REL_PPC_SECTION,
-+	IMAGE_REL_PPC_SECREL16,
-+	IMAGE_REL_PPC_REFHI,
-+	IMAGE_REL_PPC_REFLO,
-+	IMAGE_REL_PPC_PAIR,
-+	IMAGE_REL_PPC_SECRELLO,
-+	IMAGE_REL_PPC_GPREL,
-+	IMAGE_REL_PPC_TOKEN,
-+};
-+
-+enum x86_coff_reloc_type {
-+	IMAGE_REL_I386_ABSOLUTE,
-+	IMAGE_REL_I386_DIR16,
-+	IMAGE_REL_I386_REL16,
-+	IMAGE_REL_I386_DIR32,
-+	IMAGE_REL_I386_DIR32NB,
-+	IMAGE_REL_I386_SEG12,
-+	IMAGE_REL_I386_SECTION,
-+	IMAGE_REL_I386_SECREL,
-+	IMAGE_REL_I386_TOKEN,
-+	IMAGE_REL_I386_SECREL7,
-+	IMAGE_REL_I386_REL32,
-+};
-+
-+enum ia64_coff_reloc_type {
-+	IMAGE_REL_IA64_ABSOLUTE,
-+	IMAGE_REL_IA64_IMM14,
-+	IMAGE_REL_IA64_IMM22,
-+	IMAGE_REL_IA64_IMM64,
-+	IMAGE_REL_IA64_DIR32,
-+	IMAGE_REL_IA64_DIR64,
-+	IMAGE_REL_IA64_PCREL21B,
-+	IMAGE_REL_IA64_PCREL21M,
-+	IMAGE_REL_IA64_PCREL21F,
-+	IMAGE_REL_IA64_GPREL22,
-+	IMAGE_REL_IA64_LTOFF22,
-+	IMAGE_REL_IA64_SECTION,
-+	IMAGE_REL_IA64_SECREL22,
-+	IMAGE_REL_IA64_SECREL64I,
-+	IMAGE_REL_IA64_SECREL32,
-+	IMAGE_REL_IA64_DIR32NB,
-+	IMAGE_REL_IA64_SREL14,
-+	IMAGE_REL_IA64_SREL22,
-+	IMAGE_REL_IA64_SREL32,
-+	IMAGE_REL_IA64_UREL32,
-+	IMAGE_REL_IA64_PCREL60X,
-+	IMAGE_REL_IA64_PCREL60B,
-+	IMAGE_REL_IA64_PCREL60F,
-+	IMAGE_REL_IA64_PCREL60I,
-+	IMAGE_REL_IA64_PCREL60M,
-+	IMAGE_REL_IA64_IMMGPREL6,
-+	IMAGE_REL_IA64_TOKEN,
-+	IMAGE_REL_IA64_GPREL32,
-+	IMAGE_REL_IA64_ADDEND,
-+};
-+
-+struct coff_reloc {
-+	uint32_t virtual_address;
-+	uint32_t symbol_table_index;
-+	union {
-+		enum x64_coff_reloc_type  x64_type;
-+		enum arm_coff_reloc_type  arm_type;
-+		enum sh_coff_reloc_type   sh_type;
-+		enum ppc_coff_reloc_type  ppc_type;
-+		enum x86_coff_reloc_type  x86_type;
-+		enum ia64_coff_reloc_type ia64_type;
-+		uint16_t data;
-+	};
-+};
++#define pr_fmt(fmt) "PEFILE: "fmt
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/pe.h>
++#include <crypto/pkcs7.h>
++#include <crypto/hash.h>
++#include "verify_pefile.h"
 +
 +/*
-+ * Definitions for the contents of the certs data block
++ * Parse a PE binary.
 + */
-+#define WIN_CERT_TYPE_PKCS_SIGNED_DATA	0x0002
-+#define WIN_CERT_TYPE_EFI_OKCS115	0x0EF0
-+#define WIN_CERT_TYPE_EFI_GUID		0x0EF1
++static int pefile_parse_binary(const void *pebuf, unsigned int pelen,
++			       struct pefile_context *ctx)
++{
++	const struct mz_hdr *mz = pebuf;
++	const struct pe_hdr *pe;
++	const struct pe32_opt_hdr *pe32;
++	const struct pe32plus_opt_hdr *pe64;
++	const struct data_directory *ddir;
++	const struct data_dirent *dde;
++	const struct section_header *secs, *sec;
++	size_t cursor, datalen = pelen;
 +
-+#define WIN_CERT_REVISION_1_0	0x0100
-+#define WIN_CERT_REVISION_2_0	0x0200
++	kenter("");
 +
-+struct win_certificate {
-+	uint32_t length;
-+	uint16_t revision;
-+	uint16_t cert_type;
++#define chkaddr(base, x, s)						\
++	do {								\
++		if ((x) < base || (s) >= datalen || (x) > datalen - (s)) \
++			return -ELIBBAD;				\
++	} while (0)
++
++	chkaddr(0, 0, sizeof(*mz));
++	if (mz->magic != MZ_MAGIC)
++		return -ELIBBAD;
++	cursor = sizeof(*mz);
++
++	chkaddr(cursor, mz->peaddr, sizeof(*pe));
++	pe = pebuf + mz->peaddr;
++	if (pe->magic != PE_MAGIC)
++		return -ELIBBAD;
++	cursor = mz->peaddr + sizeof(*pe);
++
++	chkaddr(0, cursor, sizeof(pe32->magic));
++	pe32 = pebuf + cursor;
++	pe64 = pebuf + cursor;
++
++	switch (pe32->magic) {
++	case PE_OPT_MAGIC_PE32:
++		chkaddr(0, cursor, sizeof(*pe32));
++		ctx->image_checksum_offset =
++			(unsigned long)&pe32->csum - (unsigned long)pebuf;
++		ctx->header_size = pe32->header_size;
++		cursor += sizeof(*pe32);
++		ctx->n_data_dirents = pe32->data_dirs;
++		break;
++
++	case PE_OPT_MAGIC_PE32PLUS:
++		chkaddr(0, cursor, sizeof(*pe64));
++		ctx->image_checksum_offset =
++			(unsigned long)&pe64->csum - (unsigned long)pebuf;
++		ctx->header_size = pe64->header_size;
++		cursor += sizeof(*pe64);
++		ctx->n_data_dirents = pe64->data_dirs;
++		break;
++
++	default:
++		pr_debug("Unknown PEOPT magic = %04hx\n", pe32->magic);
++		return -ELIBBAD;
++	}
++
++	pr_debug("checksum @ %x\n", ctx->image_checksum_offset);
++	pr_debug("header size = %x\n", ctx->header_size);
++
++	if (cursor >= ctx->header_size || ctx->header_size >= datalen)
++		return -ELIBBAD;
++
++	if (ctx->n_data_dirents > (ctx->header_size - cursor) / sizeof(*dde))
++		return -ELIBBAD;
++
++	ddir = pebuf + cursor;
++	cursor += sizeof(*dde) * ctx->n_data_dirents;
++
++	ctx->cert_dirent_offset =
++		(unsigned long)&ddir->certs - (unsigned long)pebuf;
++	ctx->certs_size = ddir->certs.size;
++
++	if (!ddir->certs.virtual_address || !ddir->certs.size) {
++		pr_debug("Unsigned PE binary\n");
++		return -EKEYREJECTED;
++	}
++
++	chkaddr(ctx->header_size, ddir->certs.virtual_address,
++		ddir->certs.size);
++	ctx->sig_offset = ddir->certs.virtual_address;
++	ctx->sig_len = ddir->certs.size;
++	pr_debug("cert = %x @%x [%*ph]\n",
++		 ctx->sig_len, ctx->sig_offset,
++		 ctx->sig_len, pebuf + ctx->sig_offset);
++
++	ctx->n_sections = pe->sections;
++	if (ctx->n_sections > (ctx->header_size - cursor) / sizeof(*sec))
++		return -ELIBBAD;
++	ctx->secs = secs = pebuf + cursor;
++
++	return 0;
++}
++
++/**
++ * verify_pefile_signature - Verify the signature on a PE binary image
++ * @pebuf: Buffer containing the PE binary image
++ * @pelen: Length of the binary image
++ * @trust_keyring: Signing certificates to use as starting points
++ * @_trusted: Set to true if trustworth, false otherwise
++ *
++ * Validate that the certificate chain inside the PKCS#7 message inside the PE
++ * binary image intersects keys we already know and trust.
++ *
++ * Returns, in order of descending priority:
++ *
++ *  (*) -ELIBBAD if the image cannot be parsed, or:
++ *
++ *  (*) -EKEYREJECTED if a signature failed to match for which we have a valid
++ *	key, or:
++ *
++ *  (*) 0 if at least one signature chain intersects with the keys in the trust
++ *	keyring, or:
++ *
++ *  (*) -ENOPKG if a suitable crypto module couldn't be found for a check on a
++ *	chain.
++ *
++ *  (*) -ENOKEY if we couldn't find a match for any of the signature chains in
++ *	the message.
++ *
++ * May also return -ENOMEM.
++ */
++int verify_pefile_signature(const void *pebuf, unsigned pelen,
++			    struct key *trusted_keyring, bool *_trusted)
++{
++	struct pefile_context ctx;
++	int ret;
++
++	kenter("");
++
++	memset(&ctx, 0, sizeof(ctx));
++	ret = pefile_parse_binary(pebuf, pelen, &ctx);
++	if (ret < 0)
++		return ret;
++
++	return -ENOANO; // Not yet complete
++}
+diff --git a/crypto/asymmetric_keys/verify_pefile.h b/crypto/asymmetric_keys/verify_pefile.h
+new file mode 100644
+index 0000000..e165d23
+--- /dev/null
++++ b/crypto/asymmetric_keys/verify_pefile.h
+@@ -0,0 +1,37 @@
++/* PE Binary parser bits
++ *
++ * Copyright (C) 2014 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++
++#include <linux/verify_pefile.h>
++#include <crypto/pkcs7.h>
++#include <crypto/hash_info.h>
++
++struct pefile_context {
++	unsigned	header_size;
++	unsigned	image_checksum_offset;
++	unsigned	cert_dirent_offset;
++	unsigned	n_data_dirents;
++	unsigned	n_sections;
++	unsigned	certs_size;
++	unsigned	sig_offset;
++	unsigned	sig_len;
++	const struct section_header *secs;
++	struct pkcs7_message *pkcs7;
++
++	/* PKCS#7 MS Individual Code Signing content */
++	const void	*digest;		/* Digest */
++	unsigned	digest_len;		/* Digest length */
++	enum hash_algo	digest_algo;		/* Digest algorithm */
 +};
 +
-+#endif /* __LINUX_PE_H */
++#define kenter(FMT, ...)					\
++	pr_devel("==> %s("FMT")\n", __func__, ##__VA_ARGS__)
++#define kleave(FMT, ...) \
++	pr_devel("<== %s()"FMT"\n", __func__, ##__VA_ARGS__)
+diff --git a/include/linux/verify_pefile.h b/include/linux/verify_pefile.h
+new file mode 100644
+index 0000000..ac34819
+--- /dev/null
++++ b/include/linux/verify_pefile.h
+@@ -0,0 +1,18 @@
++/* Signed PE file verification
++ *
++ * Copyright (C) 2014 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++
++#ifndef _LINUX_VERIFY_PEFILE_H
++#define _LINUX_VERIFY_PEFILE_H
++
++extern int verify_pefile_signature(const void *pebuf, unsigned pelen,
++				   struct key *trusted_keyring, bool *_trusted);
++
++#endif /* _LINUX_VERIFY_PEFILE_H */
 
