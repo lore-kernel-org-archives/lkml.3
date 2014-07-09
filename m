@@ -1,65 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274AbaGIR0D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 13:26:03 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:61403 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754748AbaGIR0A (ORCPT
+	id S1755912AbaGIR2f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 13:28:35 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:60987 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951AbaGIR2d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 13:26:00 -0400
-Date: Wed, 9 Jul 2014 10:25:55 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Boris BREZILLON <b.brezillon.dev@gmail.com>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Herring <robherring2@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
-        dev@linux-sunxi.org
-Subject: Re: [PATCH v3 2/9] mtd: nand: add ONFI timing mode to nand_timings
- converter
-Message-ID: <20140709172555.GI7537@ld-irv-0074>
-References: <1394647664-8258-1-git-send-email-b.brezillon.dev@gmail.com>
- <1394647664-8258-3-git-send-email-b.brezillon.dev@gmail.com>
+	Wed, 9 Jul 2014 13:28:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394647664-8258-3-git-send-email-b.brezillon.dev@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140709171930.GA11527@kroah.com>
+References: <1404924948-3298-1-git-send-email-xerofoify@gmail.com>
+	<20140709171930.GA11527@kroah.com>
+Date: Wed, 9 Jul 2014 13:28:32 -0400
+Message-ID: <CAPDOMVgZGWm=A89DdXiTmt+1qKNKxc+UpbupqCW52_+abfWAYw@mail.gmail.com>
+Subject: Re: [PATCH] Removes FIXME message in usb.c
+From: Nick Krause <xerofoify@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: balbi@ti.com, Tony Lindgren <tony@atomide.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
+Greg KH wrote on July 9th at 1:19 P.M.
+Ok, this has been fun to watch on lkml for a while now, but really,
+please, just stop doing this.  Randomly searching the kernel source for
+FIXME lines and just commenting them out, isn't ok.  Almost always,
+those lines are there because the original developer really doesn't know
+how else to resolve the issue.
 
-Since I think you were planning on revisiting this soon, I have one more
-comment:
+So, if the domain-specific-author doesn't have an idea of what to do,
+how does someone who is brand-new to the code know better?
 
-On Wed, Mar 12, 2014 at 07:07:37PM +0100, Boris BREZILLON wrote:
-> diff --git a/drivers/mtd/nand/Makefile b/drivers/mtd/nand/Makefile
-> index c970ce7..0b8a822 100644
-> --- a/drivers/mtd/nand/Makefile
-> +++ b/drivers/mtd/nand/Makefile
-> @@ -2,7 +2,7 @@
->  # linux/drivers/nand/Makefile
->  #
->  
-> -obj-$(CONFIG_MTD_NAND)			+= nand.o
-> +obj-$(CONFIG_MTD_NAND)			+= nand.o nand_timings.o
+If you are looking for a task to do in the kernel, try
+drivers/staging/*/TODO for a list.  Or look at the kernel janitor's list
+on kernelnewbies.org.  Or try running the kernel and finding something
+that is broken for you and fixing that.  Any of those would be better
+than randomly deleting FIXME lines.  By doing that, you are just wasting
+maintainer's time.  Which is the resource we have the least of at the
+moment.
 
-This is not the right place, as it will generate a new module
-'nand_timings' (nand_timings.ko, if CONFIG_MTD_NAND=m). You probably
-want to just add nand_timings.o to the 'nand-objs' list at the bottom of
-the Makefile, like this:
+thanks,
 
-	nand-objs := nand_base.o nand_bbt.o nand_timings.o
+greg k-h
 
->  obj-$(CONFIG_MTD_NAND_ECC)		+= nand_ecc.o
->  obj-$(CONFIG_MTD_NAND_BCH)		+= nand_bch.o
->  obj-$(CONFIG_MTD_NAND_IDS)		+= nand_ids.o nand_hynix.o
 
-Thanks,
-Brian
+
+Greg ,
+
+I sent in another patch which enables omap_cfg_reg(USB2_SPEED) as
+stated in the fix me.
+The maintainers of this file stated to me this was dangerous due to
+the wires perhaps being
+shared with other parts of the board and we should depend on the boot
+loader to set this.
+The maintainers decided to remove this fix me not me based on their
+better understanding
+of this file.
+
+Cheers Nick
+
+On Wed, Jul 9, 2014 at 1:19 PM, Greg KH <greg@kroah.com> wrote:
+> Ok, this has been fun to watch on lkml for a while now, but really,
+> please, just stop doing this.  Randomly searching the kernel source for
+> FIXME lines and just commenting them out, isn't ok.  Almost always,
+> those lines are there because the original developer really doesn't know
+> how else to resolve the issue.
+>
+> So, if the domain-specific-author doesn't have an idea of what to do,
+> how does someone who is brand-new to the code know better?
+>
+> If you are looking for a task to do in the kernel, try
+> drivers/staging/*/TODO for a list.  Or look at the kernel janitor's list
+> on kernelnewbies.org.  Or try running the kernel and finding something
+> that is broken for you and fixing that.  Any of those would be better
+> than randomly deleting FIXME lines.  By doing that, you are just wasting
+> maintainer's time.  Which is the resource we have the least of at the
+> moment.
+>
+> thanks,
+>
+> greg k-h
