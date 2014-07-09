@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756099AbaGIODP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 10:03:15 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:28092 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755276AbaGIODO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 10:03:14 -0400
-Date: Wed, 9 Jul 2014 10:03:10 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Michal Simek <monstr@monstr.eu>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Jiri Kosina <jkosina@suse.cz>,
-        Josh Poimboeuf <notifications@github.com>
-Subject: Re: [RFA][PATCH 06/27] microblaze: ftrace: Add call to
- ftrace_graph_is_dead() in function graph code
-Message-ID: <20140709100310.3c3b25ff@gandalf.local.home>
-In-Reply-To: <20140626165849.119568888@goodmis.org>
-References: <20140626165221.736847419@goodmis.org>
-	<20140626165849.119568888@goodmis.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1756215AbaGIODg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 10:03:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30351 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753507AbaGIODe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 10:03:34 -0400
+Message-ID: <53BD4B92.7030601@redhat.com>
+Date: Wed, 09 Jul 2014 16:02:58 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+To: Tejun Heo <tj@kernel.org>,
+        =?ISO-8859-1?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+CC: sebastian.hesselbarth@gmail.com, kishon@ti.com,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v9 3/7] ata: libahci: allow to use multiple PHYs
+References: <1404728173-20263-1-git-send-email-antoine.tenart@free-electrons.com> <1404728173-20263-4-git-send-email-antoine.tenart@free-electrons.com> <20140708134000.GC4979@htj.dyndns.org> <20140708170353.GA16148@kwain> <20140708171817.GH4979@htj.dyndns.org> <20140708174900.GC16148@kwain> <20140708214010.GI4979@htj.dyndns.org> <20140709082331.GA4510@kwain> <20140709135910.GA11193@htj.dyndns.org>
+In-Reply-To: <20140709135910.GA11193@htj.dyndns.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal,
+Hi,
 
-Can you ack this please?
-
--- Steve
-
-
-On Thu, 26 Jun 2014 12:52:27 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On 07/09/2014 03:59 PM, Tejun Heo wrote:
+> Hello,
 > 
-> ftrace_stop() is going away as it disables parts of function tracing
-> that affects users that should not be affected. But ftrace_graph_stop()
-> is built on ftrace_stop(). Here's another example of killing all of
-> function tracing because something went wrong with function graph
-> tracing.
+> On Wed, Jul 09, 2014 at 10:23:31AM +0200, Antoine Ténart wrote:
+>>> It is confusing.  If you wanna pass around available ports in hpriv,
+>>> please add a separate field and replace the arguments to
+>>> save_initial_config().
+>>
+>> I don't get it. Which argument should I replace in
+>> save_initial_config()? The change is we compute hpriv->port_map.
+>> I don't see which arguments we can add or replace.
 > 
-> Instead of disabling all users of function tracing on function graph
-> error, disable only function graph tracing. To do this, the arch code
-> must call ftrace_graph_is_dead() before it implements function graph.
+> The @force_port_map and @mask_port_map of ahci_save_initial_config().
+> We end up with three params from two places modifying port_map and one
+> of those is in/out parameter, so ummm, no.  If you wanna add port
+> masking to @hpriv, please do it by moving @force_port_map and
+> @mask_port_map into @hpriv instead.
 > 
-> Cc: Michal Simek <monstr@monstr.eu>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  arch/microblaze/kernel/ftrace.c | 3 +++
->  1 file changed, 3 insertions(+)
+> Sure, the proposed change is small but the end result is messy.
 > 
-> diff --git a/arch/microblaze/kernel/ftrace.c b/arch/microblaze/kernel/ftrace.c
-> index bbcd2533766c..fc7b48a52cd5 100644
-> --- a/arch/microblaze/kernel/ftrace.c
-> +++ b/arch/microblaze/kernel/ftrace.c
-> @@ -27,6 +27,9 @@ void prepare_ftrace_return(unsigned long *parent, unsigned long self_addr)
->  	unsigned long return_hooker = (unsigned long)
->  				&return_to_handler;
->  
-> +	if (unlikely(ftrace_graph_is_dead()))
-> +		return;
-> +
->  	if (unlikely(atomic_read(&current->tracing_graph_pause)))
->  		return;
->  
+>> I had a quick look on this, and it does not seems to be that simple. The
+>> ahci_port_priv is stored inside the ata_port struct and not accessible
+>> (as of now) from the ahci_host_priv one. The ahci_port_priv is
+>> initialized at the end of ahci_platform_init_host(), far after we need
+>> it. This requires quite a lot of changes. Or is there another way?
+> 
+> Yeah, it'd probably need separating out port resource handling, so
+> that the order is get_resources, host_alloc, get_port_resources and
+> then init and activate.  Hans, what do you think?
 
+The order (and function names) you're suggesting here sound good to me.
+
+Regards,
+
+Hans
