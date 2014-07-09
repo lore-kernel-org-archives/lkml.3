@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755413AbaGIJjd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 05:39:33 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:56171 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755370AbaGIJj3 (ORCPT
+	id S1755443AbaGIJjj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 05:39:39 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:36853 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755370AbaGIJjg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 05:39:29 -0400
+	Wed, 9 Jul 2014 05:39:36 -0400
 From: Hanjun Guo <hanjun.guo@linaro.org>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 Cc: Catalin Marinas <catalin.marinas@arm.com>,
@@ -15,9 +15,9 @@ Cc: Catalin Marinas <catalin.marinas@arm.com>,
         linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
         Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH v2 1/3] ACPI: ARM64 does not have a BIOS add config for BIOS table scan.
-Date: Wed,  9 Jul 2014 17:39:04 +0800
-Message-Id: <1404898746-6685-2-git-send-email-hanjun.guo@linaro.org>
+Subject: [PATCH v2 2/3] ACPI: Don't use acpi_lapic in ACPI core code
+Date: Wed,  9 Jul 2014 17:39:05 +0800
+Message-Id: <1404898746-6685-3-git-send-email-hanjun.guo@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1404898746-6685-1-git-send-email-hanjun.guo@linaro.org>
 References: <1404898746-6685-1-git-send-email-hanjun.guo@linaro.org>
@@ -27,77 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Graeme Gregory <graeme.gregory@linaro.org>
 
-With the addition of ARM64 that does not have a traditional BIOS to
-scan, add a config option which is selected on x86 and ia64 to do
-the traditional BIOS scanning for tables.
+Now ARM64 support is being added to ACPI so architecture specific
+values can not be used in core ACPI code.
+
+Following on the patch "ACPI / processor: Check if LAPIC is present
+during initialization" which uses acpi_lapic in acpi_processor.c,
+on ARM64 platform, GIC is used instead of local APIC, so acpi_lapic
+is not a suitable value for ARM64.
+
+What is actually important at this point is if there is/are CPU
+entry/entries (Local APIC/SAPIC, GICC) in MADT, so introduce
+acpi_has_cpu_in_madt() to be arch specific and generic.
 
 Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
 Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
 ---
- arch/ia64/Kconfig    |    1 +
- arch/x86/Kconfig     |    1 +
- drivers/acpi/Kconfig |    3 +++
- drivers/acpi/osl.c   |    4 +++-
- 4 files changed, 8 insertions(+), 1 deletion(-)
+ arch/ia64/include/asm/acpi.h  |    5 +++++
+ arch/x86/include/asm/acpi.h   |    5 +++++
+ drivers/acpi/acpi_processor.c |    2 +-
+ 3 files changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
-index 2f3abcf..c54bd7e 100644
---- a/arch/ia64/Kconfig
-+++ b/arch/ia64/Kconfig
-@@ -47,6 +47,7 @@ config IA64
- 	select MODULES_USE_ELF_RELA
- 	select ARCH_USE_CMPXCHG_LOCKREF
- 	select HAVE_ARCH_AUDITSYSCALL
-+	select ACPI_LEGACY_TABLES_LOOKUP if ACPI
- 	default y
- 	help
- 	  The Itanium Processor Family is Intel's 64-bit successor to
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index a8f749e..6d9f1d8 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -131,6 +131,7 @@ config X86
- 	select HAVE_CC_STACKPROTECTOR
- 	select GENERIC_CPU_AUTOPROBE
- 	select HAVE_ARCH_AUDITSYSCALL
-+	select ACPI_LEGACY_TABLES_LOOKUP if ACPI
- 
- config INSTRUCTION_DECODER
- 	def_bool y
-diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-index a34a228..970524c 100644
---- a/drivers/acpi/Kconfig
-+++ b/drivers/acpi/Kconfig
-@@ -42,6 +42,9 @@ menuconfig ACPI
- 
- if ACPI
- 
-+config ACPI_LEGACY_TABLES_LOOKUP
-+	bool
+diff --git a/arch/ia64/include/asm/acpi.h b/arch/ia64/include/asm/acpi.h
+index 75dc59a..a1d91ab 100644
+--- a/arch/ia64/include/asm/acpi.h
++++ b/arch/ia64/include/asm/acpi.h
+@@ -40,6 +40,11 @@ extern int acpi_lapic;
+ #define acpi_noirq 0	/* ACPI always enabled on IA64 */
+ #define acpi_pci_disabled 0 /* ACPI PCI always enabled on IA64 */
+ #define acpi_strict 1	/* no ACPI spec workarounds on IA64 */
 +
- config ACPI_SLEEP
- 	bool
- 	depends on SUSPEND || HIBERNATION
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index bad25b0..3abe9b2 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -259,12 +259,14 @@ acpi_physical_address __init acpi_os_get_root_pointer(void)
- 			       "System description tables not found\n");
- 			return 0;
- 		}
--	} else {
-+	} else if (IS_ENABLED(CONFIG_ACPI_LEGACY_TABLES_LOOKUP)) {
- 		acpi_physical_address pa = 0;
- 
- 		acpi_find_root_pointer(&pa);
- 		return pa;
- 	}
-+
-+	return 0;
++static inline bool acpi_has_cpu_in_madt(void)
++{
++	return !!acpi_lapic;
++}
+ #endif
+ #define acpi_processor_cstate_check(x) (x) /* no idle limits on IA64 :) */
+ static inline void disable_acpi(void) { }
+diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+index e06225e..0ab4f9f 100644
+--- a/arch/x86/include/asm/acpi.h
++++ b/arch/x86/include/asm/acpi.h
+@@ -121,6 +121,11 @@ static inline void arch_acpi_set_pdc_bits(u32 *buf)
+ 		buf[2] &= ~(ACPI_PDC_C_C2C3_FFH);
  }
  
- /* Must be called with 'acpi_ioremap_lock' or RCU read lock held. */
++static inline bool acpi_has_cpu_in_madt(void)
++{
++	return !!acpi_lapic;
++}
++
+ #else /* !CONFIG_ACPI */
+ 
+ #define acpi_lapic 0
+diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
+index 1c08574..1fdf5e0 100644
+--- a/drivers/acpi/acpi_processor.c
++++ b/drivers/acpi/acpi_processor.c
+@@ -268,7 +268,7 @@ static int acpi_processor_get_info(struct acpi_device *device)
+ 	pr->apic_id = apic_id;
+ 
+ 	cpu_index = acpi_map_cpuid(pr->apic_id, pr->acpi_id);
+-	if (!cpu0_initialized && !acpi_lapic) {
++	if (!cpu0_initialized && !acpi_has_cpu_in_madt()) {
+ 		cpu0_initialized = 1;
+ 		/* Handle UP system running SMP kernel, with no LAPIC in MADT */
+ 		if ((cpu_index == -1) && (num_online_cpus() == 1))
 -- 
 1.7.9.5
 
