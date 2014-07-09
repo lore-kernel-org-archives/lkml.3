@@ -1,133 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932328AbaGISKb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 14:10:31 -0400
-Received: from smtprelay0058.hostedemail.com ([216.40.44.58]:54969 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755274AbaGISKa (ORCPT
+	id S932374AbaGISKq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 14:10:46 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43749 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932335AbaGISKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 14:10:30 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:966:968:973:979:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1543:1593:1594:1711:1712:1730:1747:1777:1792:2196:2198:2199:2200:2393:2553:2559:2562:2693:2828:29
-X-HE-Tag: bomb30_3d4d6ba14a45d
-X-Filterd-Recvd-Size: 4797
-Message-ID: <1404929419.932.136.camel@joe-AO725>
-Subject: Re: [PATCH tip/core/rcu 2/3] rcu: Add designated reviewers for RCU
-From: Joe Perches <joe@perches.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: paulmck@linux.vnet.ibm.com, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, oleg@redhat.com,
-        sbw@mit.edu
-Date: Wed, 09 Jul 2014 11:10:19 -0700
-In-Reply-To: <20140709174231.GC23881@localhost.localdomain>
-References: <1404772924-9423-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1404772924-9423-2-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <20140708080908.GN19379@twins.programming.kicks-ass.net>
-	 <1404842784.932.22.camel@joe-AO725>
-	 <20140708204124.GW4603@linux.vnet.ibm.com>
-	 <1404853264.932.52.camel@joe-AO725>
-	 <20140708215229.GA4603@linux.vnet.ibm.com>
-	 <1404857116.932.68.camel@joe-AO725>
-	 <20140708222557.GF4603@linux.vnet.ibm.com>
-	 <1404878965.932.87.camel@joe-AO725>
-	 <20140709174231.GC23881@localhost.localdomain>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Jul 2014 14:10:44 -0400
+Date: Wed, 9 Jul 2014 19:10:48 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
+        Joerg Roedel <joro@8bytes.org>, Cho KyongHo <pullip.cho@samsung.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Olav Haugan <ohaugan@codeaurora.org>,
+        Varun Sethi <varun.sethi@freescale.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] devicetree: Add generic IOMMU device tree bindings
+Message-ID: <20140709181048.GX9485@arm.com>
+References: <1404487757-18829-1-git-send-email-thierry.reding@gmail.com>
+ <20140709134050.GN9485@arm.com>
+ <20140709142125.GB3262@ulmo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140709142125.GB3262@ulmo>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-09 at 19:42 +0200, Frederic Weisbecker wrote:
-> On Tue, Jul 08, 2014 at 09:09:25PM -0700, Joe Perches wrote:
-> > On Tue, 2014-07-08 at 15:25 -0700, Paul E. McKenney wrote:
-> > > On Tue, Jul 08, 2014 at 03:05:16PM -0700, Joe Perches wrote:
-> > []
-> > > > I still think the concept is pretty useless and it's
-> > > > just a duplication of "M:", which isn't anything other
-> > > > than a list of who should be sent patches.
-> > []
-> > > It will be interesting to see how things go.
+Hi Thierry,
+
+On Wed, Jul 09, 2014 at 03:21:27PM +0100, Thierry Reding wrote:
+> On Wed, Jul 09, 2014 at 02:40:50PM +0100, Will Deacon wrote:
+> > I would like to move the ARM SMMU driver over to this for 3.18, if possible.
+> > One use-case there is the ability to describe groups of masters behind a
+> > multi-master IOMMU but which must be part of the same domain (i.e. an
+> > iommu_group). This is useful for presenting devices to a guest with a
+> > virtual SMMU, where the physical devices share a stage-2 context.
 > > 
-> > Yes, it might work out fine and maybe might cause some
-> > other beneficial changes.
-> > 
-> > > There did seem to be
-> > > some people who were comfortable being listed as RCU reviewers, but
-> > > not as RCU maintainers.  Perhaps the same thing happens elsewhere.
-> > 
-> > Maybe so.
-> > 
-> > I wrote a script to find which maintainer addresses that
-> > haven't signed or authored a commit in the last 2 years.
-> > 
-> > I got ~250 entries.  That's about 1/4 of all maintainer
-> > email addresses.
-> > 
-> > Maybe a dozen of these are false positives though because
-> > some maintainers prefer to receive email at one address
-> > but ack from another.
-> > 
-> > These are all lowercase for better matching.
+> > With your binding, does this simply mean determining the set of master IDs
+> > in the group, then describing the complete set for each master?
 > 
-> Aren't we all falling in the typical pessimism trap, evil of the century!
-> Why do we always want to consider the lack of activity from a maintainer as a bad symptom?
+> I'm not sure I properly understand what you're trying to do, but I don't
+> think the binding is designed to cover that. Rather the goal was to
+> describe the IDs belonging to each master, so that an IOMMU can be
+> properly configured.
 
-> What if it were actually a positive sign resulting of a finished, completed, and perfect
-> clean bug-free subsystem?
+This is directly related to that problem, see below.
 
-You mean "free of known defects".
+> Anything beyond that (e.g. logical grouping of masters) isn't directly
+> within the scope of the binding (it doesn't describe hardware but some
+> policy pertaining to some specific use-case).
 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-[]
-> @@ -76,6 +76,9 @@ Descriptions of section entries:
->  	T: SCM tree type and location.
->  	   Type is one of: git, hg, quilt, stgit, topgit
->  	S: Status, one of the following:
-> +          Finished:	The code is finished. The maintainer has fixed all
-> +			the bugs and adressed all missing features. No further
-> +			patch is needed.
+This *is* for hardware. I can use PCI as an example, but this could equally
+apply to other types of bus. If you have a bunch of PCI master devices
+sitting being a non-transparent bridge, they can end up sharing the same
+master device ID (requester ID). This means that there is no way in the
+IOMMU to initialise a translation for one of these devices without also
+affecting the others. We currently have iommu_groups to deal with this, but
+it *is* a property of the hardware and we absolutely need a way to describe
+it. I'm happy to add it later, but we need to think about it now to avoid
+merging something that can't easily be extended.
 
-Yeah, some'um like that.
+For PCI, the topology is probable but even then, we need this information to
+describe the resulting master device ID emitted by the bridge for the
+upstream group. One way to do this with your binding would be to treat all
+of the upstream masters as having the same device ID.
 
-But very few people are capable of writing bug-free,
-"finished" code akin to Donald Knuth.
+With virtualisation, we may want to assign a group of devices to a guest but
+without emulating the bridge. This would need something the device-tree to
+describe that they are grouped together.
 
-Maybe finding a bug in a section marked like that
-should be worth something to the patch submitter.
+> That said, the IOMMU driver that I prototyped for Tegra did some similar
+> grouping of devices, although in a much more restricted way. The goal of
+> that was to add a known set of devices into one group, "peripherals", so
+> that they could share one IOMMU domain. This was meant to separate them
+> from devices with more advanced needs (such as a GPU driver). Devices in
+> the "peripherals" group would be using the DMA mapping API integration
+> whereas other devices would have to explicitly allocate an IOMMU domain.
+> 
+> I'm not sure how much that helps for the use-case that you have in mind.
 
-Maybe:
-	virtual credit << bugs found
+That sounds more like a software decision, which I agree doesn't need to be
+described.
 
-Most of those entries were for the people that
-submitted the original code.  Most of those too
-are no longer active in linux development.
-
-So either put them in the CREDITS file and remove
-them altogether from MAINTAINERS or maybe mark them
-as reviewers instead of maintainers.
-
-btw:  Here's a slightly cleaned up version of the
-      script I used
-
-$ cat find_active_maintainers.sh
-#!/bin/bash
-
-git log --since=2-years-ago | tr [:upper:] [:lower:] > git.commit.log
-git grep -E "^M:" MAINTAINERS | tr [:upper:] [:lower:] | cut -d: -f3- | \
-    sort | uniq | sed  -r 's/^\s+//' > maintainer.addresses
-cat maintainer.addresses |
-while read entry ; do
-    email=$(echo $entry | sed -r -e 's/^[^<]*<//' -e 's/>.*//')
-    echo "---> $entry	email --> $email"
-    grep -P "^\s*(?:author:|[\w\-]+by:).*\b$email\b" git.commit.log | \
-	sed -r -e 's/^\s+//' -e 's/>.*/>/' -e 's/\s+/ /g' | \
-	sort | uniq -c
-done
-
-
+Will
