@@ -1,110 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418AbaGIKB6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 06:01:58 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:59935 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755355AbaGIKBz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 06:01:55 -0400
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, kishon@ti.com, kgene.kim@samsung.com,
-        mathias.nyman@intel.com, jwerner@chromium.org,
-        sergei.shtylyov@cogentembedded.com, heikki.krogerus@linux.intel.com,
-        pratyush.anand@st.com, Vivek Gautam <gautam.vivek@samsung.com>
-Subject: [PATCH v2 2/4] usb: host: xhci-plat: Get PHYs for xhci's hcds
-Date: Wed,  9 Jul 2014 15:31:34 +0530
-Message-Id: <1404900096-1721-3-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1404900096-1721-1-git-send-email-gautam.vivek@samsung.com>
-References: <1404900096-1721-1-git-send-email-gautam.vivek@samsung.com>
+	id S1755246AbaGIKE5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 06:04:57 -0400
+Received: from imp02.mtu.ru ([62.5.255.19]:54672 "EHLO imp02.mtu.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754718AbaGIKE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 06:04:56 -0400
+X-Spam-Flag: NO
+Message-ID: <53BD1316.5090901@pavlinux.ru>
+Date: Wed, 09 Jul 2014 14:01:58 +0400
+From: Pavel Vasilyev <pavel@pavlinux.ru>
+Reply-To: pavel@pavlinux.ru
+Organization: Pavlinux. Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
+CC: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sebastian Sewior <bigeasy@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Carsten Emde <cbe@osadl.org>
+Subject: Re: [ANNOUNCE] 3.14.10-rt7
+References: <alpine.DEB.2.10.1407071027170.22031@nanos> <alpine.DEB.2.10.1407071633460.22031@nanos>
+In-Reply-To: <alpine.DEB.2.10.1407071633460.22031@nanos>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The host controller by itself may sometimes need to handle PHY
-and/or calibrate some of the PHY settings to get full support out
-of the PHY controller. The PHY core provides a calibration
-funtionality now to do so.
-Therefore, facilitate getting the two possible PHYs, viz.
-USB 2.0 type (UTMI+) and USB 3.0 type (PIPE3), provided
-by the parent - Synopsys's DWC3 controller
+07.07.2014 18:34, Thomas Gleixner пишет:
+> This time with proper Subject line :)
+>
+> Dear RT Folks,
+>
+> I'm pleased to announce the 3.14.10-rt7 release. 3.14.10-rt6 is a not
+> announced update to 3.14.10 without any RT changes aside of resolving
+> the patch conflicts.
+>
+> Changes since 3.14.10-rt6:
+>
+>     * Do not clear PF_NO_SETAFFINITY flag in select_fallback_rq() -
+>       from Steven
+>
+>     * Prevent workqueue deadlock/stall observed with XFS
+>
+>
+> A few words on the status and the future of RT:
+> -----------------------------------------------
+>
+> The situation since last years RTLWS (https://lwn.net/Articles/572740/)
+> has not improved at all, it's worse than before.
+>
+> While shortly after RTLWS quite some people promised to whip up proper
+> funding, nothing has materialized and my personal situation is worse
+> than before.
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
----
- drivers/usb/host/xhci-plat.c |   36 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
+Create site, add PayPal [DOANTE] button.
 
-diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
-index 29d8adb..e50bd7d 100644
---- a/drivers/usb/host/xhci-plat.c
-+++ b/drivers/usb/host/xhci-plat.c
-@@ -16,6 +16,7 @@
- #include <linux/module.h>
- #include <linux/of.h>
- #include <linux/platform_device.h>
-+#include <linux/phy/phy.h>
- #include <linux/slab.h>
- 
- #include "xhci.h"
-@@ -101,6 +102,7 @@ static int xhci_plat_probe(struct platform_device *pdev)
- 	struct clk              *clk;
- 	int			ret;
- 	int			irq;
-+	struct device		*parent;
- 
- 	if (usb_disabled())
- 		return -ENODEV;
-@@ -165,6 +167,23 @@ static int xhci_plat_probe(struct platform_device *pdev)
- 			goto unmap_registers;
- 	}
- 
-+	parent = pdev->dev.parent;
-+	/*
-+	 * Get possile USB 2.0 type PHY (UTMI+) registered by xhci's parent:
-+	 * Synopsys-dwc3
-+	 */
-+	if (of_device_is_compatible(parent->of_node, "synopsys,dwc3") ||
-+	    of_device_is_compatible(parent->of_node, "snps,dwc3")) {
-+		hcd->gen_phy = devm_phy_get(&pdev->dev, "usb2-phy");
-+		if (IS_ERR(hcd->gen_phy)) {
-+			ret = PTR_ERR(hcd->gen_phy);
-+			if (ret != -ENOSYS && ret != -ENODEV) {
-+				dev_err(&pdev->dev, "no usb2 phy configured\n");
-+				return ret;
-+			}
-+		}
-+	}
-+
- 	ret = usb_add_hcd(hcd, irq, IRQF_SHARED);
- 	if (ret)
- 		goto disable_clk;
-@@ -191,6 +210,23 @@ static int xhci_plat_probe(struct platform_device *pdev)
- 	if (HCC_MAX_PSA(xhci->hcc_params) >= 4)
- 		xhci->shared_hcd->can_do_streams = 1;
- 
-+	/*
-+	 * Get possile USB 3.0 type PHY (PIPE3) registered by xhci's parent:
-+	 * Synopsys-dwc3
-+	 */
-+	if (of_device_is_compatible(parent->of_node, "synopsys,dwc3") ||
-+	    of_device_is_compatible(parent->of_node, "snps,dwc3")) {
-+		xhci->shared_hcd->gen_phy = devm_phy_get(&pdev->dev,
-+							 "usb3-phy");
-+		if (IS_ERR(xhci->shared_hcd->gen_phy)) {
-+			ret = PTR_ERR(xhci->shared_hcd->gen_phy);
-+			if (ret != -ENOSYS && ret != -ENODEV) {
-+				dev_err(&pdev->dev, "no usb3 phy configured\n");
-+				return ret;
-+			}
-+		}
-+	}
-+
- 	ret = usb_add_hcd(xhci->shared_hcd, irq, IRQF_SHARED);
- 	if (ret)
- 		goto put_usb3_hcd;
+
 -- 
-1.7.10.4
 
+                                                          Pavel.
