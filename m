@@ -1,126 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401AbaGIEEA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 00:04:00 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:28162 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752996AbaGIED6 (ORCPT
+	id S1752436AbaGIEDt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 00:03:49 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:59162 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751871AbaGIEDp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 00:03:58 -0400
-Message-ID: <53BCBF1F.1000506@oracle.com>
-Date: Wed, 09 Jul 2014 00:03:43 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: akpm@linux-foundation.org, hughd@google.com, davej@redhat.com,
-        koct9i@gmail.com, lczerner@redhat.com, stable@vger.kernel.org,
-        Vlastimil Babka <vbabka@suse.cz>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: + shmem-fix-faulting-into-a-hole-while-its-punched-take-2.patch
- added to -mm tree
-References: <53b45c9b.2rlA0uGYBLzlXEeS%akpm@linux-foundation.org>
-In-Reply-To: <53b45c9b.2rlA0uGYBLzlXEeS%akpm@linux-foundation.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 9 Jul 2014 00:03:45 -0400
+X-AuditID: cbfee690-b7fb56d000003439-de-53bcbf1e24cd
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, t.figa@samsung.com,
+        vikas.sajjan@samsung.com, joshi@samsung.com, naushad@samsung.com,
+        thomas.ab@samsung.com, chow.kim@samsung.com,
+        Pankaj Dubey <pankaj.dubey@samsung.com>
+Subject: [PATCH v7 4/4] ARM: EXYNOS: Move PMU specific definitions from common.h
+Date: Wed, 09 Jul 2014 09:30:55 +0530
+Message-id: <1404878455-31518-5-git-send-email-pankaj.dubey@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1404878455-31518-1-git-send-email-pankaj.dubey@samsung.com>
+References: <1404878455-31518-1-git-send-email-pankaj.dubey@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgkeLIzCtJLcpLzFFi42JZI2JSqyu/f0+wQXMXk8WySXfZLL7v+sJu
+	0bvgKpvFpsfXWC0u75rDZjHj/D4mi9uXeS0+Hf3ParFoK1DF+hmvWSw6ljFa3Hy2ncmBx6Ol
+	uYfNY/OSeo++LasYPT5vkgtgieKySUnNySxLLdK3S+DKWDppDkvBQZmKR4vOsTYw3hbvYuTk
+	kBAwkfg0+w8rhC0mceHeerYuRi4OIYGljBLPFp5jhim6/HIVO0RiEaPEpp83WCGcCUwSs5bt
+	YQGpYhPQlXjyfi5Yh4hAtkT/7dUsIEXMAo8ZJd6sPMoIkhAWCJBoPLKYHcRmEVCVOPtkJ1ic
+	V8BDYuJ0kEEcQOsUJOZMsgEJcwp4SrRMX84GYgsBlZxZtwFssYTAJnaJw227GCHmCEh8m3wI
+	qldWYtMBqKslJQ6uuMEygVF4ASPDKkbR1ILkguKk9CITveLE3OLSvHS95PzcTYzAWDj979mE
+	HYz3DlgfYkwGGjeRWUo0OR8YS3kl8YbGZkYWpiamxkbmlmakCSuJ86o9SgoSEkhPLEnNTk0t
+	SC2KLyrNSS0+xMjEwSnVwMgvNrfq3JVDCdJceU4yxhYimqKRSffZlHMl5V4Z1s2adKxORkqv
+	xXtpytvyncH+ug0vX19Nf3TzTVnoa+OirzsfGh5sXbdx+p9MtdJFGp03+QI0zVfqGHBr7qlW
+	+5Atq6ky/489q2jk/LU8Nyez1PeVh8g+i9653PTMWY/FR5nPNJ8++qs0RImlOCPRUIu5qDgR
+	AB9C0NKbAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsVy+t9jAV25/XuCDfZNN7dYNukum8X3XV/Y
+	LXoXXGWz2PT4GqvF5V1z2CxmnN/HZHH7Mq/Fp6P/WS0WbQWqWD/jNYtFxzJGi5vPtjM58Hi0
+	NPeweWxeUu/Rt2UVo8fnTXIBLFENjDYZqYkpqUUKqXnJ+SmZeem2St7B8c7xpmYGhrqGlhbm
+	Sgp5ibmptkouPgG6bpk5QIcpKZQl5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJAAwlr
+	GDOWTprDUnBQpuLRonOsDYy3xbsYOTkkBEwkLr9cxQ5hi0lcuLeerYuRi0NIYBGjxKafN1gh
+	nAlMErOW7WEBqWIT0JV48n4uM4gtIpAt0X97NQtIEbPAY0aJNyuPMoIkhAUCJBqPLAYbyyKg
+	KnH2yU6wOK+Ah8TE6SCDOIDWKUjMmWQDEuYU8JRomb6cDcQWAio5s24D6wRG3gWMDKsYRVML
+	kguKk9JzDfWKE3OLS/PS9ZLzczcxgiPtmdQOxpUNFocYBTgYlXh4FXj2BAuxJpYVV+YeYpTg
+	YFYS4f3mBhTiTUmsrEotyo8vKs1JLT7EaAp01ERmKdHkfGASyCuJNzQ2MTc1NrU0sTAxs1QS
+	5z3Qah0oJJCeWJKanZpakFoE08fEwSnVwLj/2ewS8acS3+Ivffy4wb1E0MCrONirbmK2nugh
+	5ZUfk5+tVqlqvXnZpPb/3UDlBVZzdPonvUm+9zeuuKPXpL5n78NY96gJpvIr9cOfpvV5zdZT
+	mvKD4c3WN+IXDTP0ZRTDpJJVp6jd5vEL/5i8q+CDp33ulCs6mxT6XJS2sse5r1+98/UsLiWW
+	4oxEQy3mouJEAKPhJA/KAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2014 03:25 PM, akpm@linux-foundation.org wrote:
-> 
-> The patch titled
->      Subject: shmem: fix faulting into a hole while it's punched, take 2
-> has been added to the -mm tree.  Its filename is
->      shmem-fix-faulting-into-a-hole-while-its-punched-take-2.patch
-> 
-> This patch should soon appear at
->     http://ozlabs.org/~akpm/mmots/broken-out/shmem-fix-faulting-into-a-hole-while-its-punched-take-2.patch
-> and later at
->     http://ozlabs.org/~akpm/mmotm/broken-out/shmem-fix-faulting-into-a-hole-while-its-punched-take-2.patch
-> 
-> Before you just go and hit "reply", please:
->    a) Consider who else should be cc'ed
->    b) Prefer to cc a suitable mailing list as well
->    c) Ideally: find the original patch on the mailing list and do a
->       reply-to-all to that, adding suitable additional cc's
-> 
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
-> 
-> The -mm tree is included into linux-next and is updated
-> there every 3-4 working days
-> 
-> ------------------------------------------------------
-> From: Hugh Dickins <hughd@google.com>
-> Subject: shmem: fix faulting into a hole while it's punched, take 2
-> 
-> Trinity finds that mmap access to a hole while it's punched from shmem can
-> prevent the madvise(MADV_REMOVE) or fallocate(FALLOC_FL_PUNCH_HOLE) from
-> completing, until the (killable) reader stops; with the puncher's hold on
-> i_mutex locking out all other writers until it can complete.  This issue
-> was tagged with CVE-2014-4171.
-> 
-> It appears that the tmpfs fault path is too light in comparison with its
-> hole-punching path, lacking an i_data_sem to obstruct it; but we don't
-> want to slow down the common case.  It is not a problem in truncation,
-> because there the SIGBUS beyond i_size stops pages from being appended.
-> 
-> The origin of this problem is my v3.1 commit d0823576bf4b ("mm: pincer in
-> truncate_inode_pages_range"), once it was duplicated into shmem.c.  It
-> seemed like a nice idea at the time, to ensure (barring RCU lookup
-> fuzziness) that there's an instant when the entire hole is empty; but the
-> indefinitely repeated scans to ensure that make it vulnerable.
-> 
-> Revert that "enhancement" to hole-punch from shmem_undo_range(), but
-> retain the unproblematic rescanning when it's truncating; add a couple of
-> comments there.
-> 
-> Remove the "indices[0] >= end" test: that is now handled satisfactorily by
-> the inner loop, and mem_cgroup_uncharge_start()/end() are too light to be
-> worth avoiding here.
-> 
-> But if we do not always loop indefinitely, we do need to handle the case
-> of swap swizzled back to page before shmem_free_swap() gets it: add a
-> retry for that case, as suggested by Konstantin Khlebnikov.
-> 
-> Reported-by: Sasha Levin <sasha.levin@oracle.com>
-> Suggested-and-Tested-by: Vlastimil Babka <vbabka@suse.cz>
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Cc: Konstantin Khlebnikov <koct9i@gmail.com>
-> Cc: Lukas Czerner <lczerner@redhat.com>
-> Cc: Dave Jones <davej@redhat.com>
-> Cc: <stable@vger.kernel.org>	[3.1+]
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+This patch moves PMU specific definitions into a new file
+as exynos-pmu.h.
+This will help in reducing dependency of common.h in pmu.c.
 
-I suspect there's something off with this patch, as the shmem_fallocate
-hangs are back... Pretty much same as before:
+Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+---
+ arch/arm/mach-exynos/common.h     |   17 -----------------
+ arch/arm/mach-exynos/exynos-pmu.h |   24 ++++++++++++++++++++++++
+ arch/arm/mach-exynos/pm.c         |    1 +
+ arch/arm/mach-exynos/pmu.c        |   20 +++++++++++++++++++-
+ 4 files changed, 44 insertions(+), 18 deletions(-)
+ create mode 100644 arch/arm/mach-exynos/exynos-pmu.h
 
-[  363.600969] INFO: task trinity-c327:9203 blocked for more than 120 seconds.
-[  363.605359]       Not tainted 3.16.0-rc4-next-20140708-sasha-00022-g94c7290-dirty #772
-[  363.609730] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[  363.615861] trinity-c327    D 000000000000000b 13496  9203   8559 0x10000004
-[  363.620284]  ffff8800b857bce8 0000000000000002 ffffffff9dc11b10 0000000000000001
-[  363.624468]  ffff880104860000 ffff8800b857bfd8 00000000001d7740 00000000001d7740
-[  363.629118]  ffff880104863000 ffff880104860000 ffff8800b857bcd8 ffff8801eaed8868
-[  363.633879] Call Trace:
-[  363.635442]  [<ffffffff9a4dc535>] schedule+0x65/0x70
-[  363.638638]  [<ffffffff9a4dc948>] schedule_preempt_disabled+0x18/0x30
-[  363.642833]  [<ffffffff9a4df0a5>] mutex_lock_nested+0x2e5/0x550
-[  363.646599]  [<ffffffff972a4d7c>] ? shmem_fallocate+0x6c/0x350
-[  363.651319]  [<ffffffff9719b721>] ? get_parent_ip+0x11/0x50
-[  363.654683]  [<ffffffff972a4d7c>] ? shmem_fallocate+0x6c/0x350
-[  363.658264]  [<ffffffff972a4d7c>] shmem_fallocate+0x6c/0x350
-[  363.662010]  [<ffffffff971bd96e>] ? put_lock_stats.isra.12+0xe/0x30
-[  363.665866]  [<ffffffff9730c043>] do_fallocate+0x153/0x1d0
-[  363.669381]  [<ffffffff972b472f>] SyS_madvise+0x33f/0x970
-[  363.672906]  [<ffffffff9a4e3f13>] tracesys+0xe1/0xe6
-[  363.682900] 2 locks held by trinity-c327/9203:
-[  363.684928]  #0:  (sb_writers#12){.+.+.+}, at: [<ffffffff9730c02d>] do_fallocate+0x13d/0x1d0
-[  363.715102]  #1:  (&sb->s_type->i_mutex_key#16){+.+.+.}, at: [<ffffffff972a4d7c>] shmem_fallocate+0x6c/0x350
-
-
-Thanks,
-Sasha
+diff --git a/arch/arm/mach-exynos/common.h b/arch/arm/mach-exynos/common.h
+index 47b904b..9019d86 100644
+--- a/arch/arm/mach-exynos/common.h
++++ b/arch/arm/mach-exynos/common.h
+@@ -132,23 +132,6 @@ extern struct smp_operations exynos_smp_ops;
+ 
+ extern void exynos_cpu_die(unsigned int cpu);
+ 
+-/* PMU(Power Management Unit) support */
+-
+-#define PMU_TABLE_END	(-1U)
+-
+-enum sys_powerdown {
+-	SYS_AFTR,
+-	SYS_LPA,
+-	SYS_SLEEP,
+-	NUM_SYS_POWERDOWN,
+-};
+-
+-struct exynos_pmu_conf {
+-	unsigned int offset;
+-	unsigned int val[NUM_SYS_POWERDOWN];
+-};
+-
+-extern void exynos_sys_powerdown_conf(enum sys_powerdown mode);
+ extern void exynos_cpu_power_down(int cpu);
+ extern void exynos_cpu_power_up(int cpu);
+ extern int  exynos_cpu_power_state(int cpu);
+diff --git a/arch/arm/mach-exynos/exynos-pmu.h b/arch/arm/mach-exynos/exynos-pmu.h
+new file mode 100644
+index 0000000..a2ab0d5
+--- /dev/null
++++ b/arch/arm/mach-exynos/exynos-pmu.h
+@@ -0,0 +1,24 @@
++/*
++ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
++ *		http://www.samsung.com
++ *
++ * Header for EXYNOS PMU Driver support
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef __EXYNOS_PMU_H
++#define __EXYNOS_PMU_H
++
++enum sys_powerdown {
++	SYS_AFTR,
++	SYS_LPA,
++	SYS_SLEEP,
++	NUM_SYS_POWERDOWN,
++};
++
++extern void exynos_sys_powerdown_conf(enum sys_powerdown mode);
++
++#endif /* __EXYNOS_PMU_H */
+diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
+index bcb96be..b2efe8c 100644
+--- a/arch/arm/mach-exynos/pm.c
++++ b/arch/arm/mach-exynos/pm.c
+@@ -34,6 +34,7 @@
+ #include <mach/map.h>
+ 
+ #include "common.h"
++#include "exynos-pmu.h"
+ #include "regs-pmu.h"
+ #include "regs-sys.h"
+ 
+diff --git a/arch/arm/mach-exynos/pmu.c b/arch/arm/mach-exynos/pmu.c
+index 5b76728..117f333 100644
+--- a/arch/arm/mach-exynos/pmu.c
++++ b/arch/arm/mach-exynos/pmu.c
+@@ -15,9 +15,16 @@
+ #include <linux/regmap.h>
+ #include <linux/mfd/syscon.h>
+ 
+-#include "common.h"
++#include "exynos-pmu.h"
+ #include "regs-pmu.h"
+ 
++#define PMU_TABLE_END	(-1U)
++
++struct exynos_pmu_conf {
++	unsigned int offset;
++	unsigned int val[NUM_SYS_POWERDOWN];
++};
++
+ struct exynos_pmu_data {
+ 	const struct exynos_pmu_conf *pmu_config;
+ 	const struct exynos_pmu_conf *pmu_config_extra;
+@@ -31,8 +38,19 @@ struct exynos_pmu_context {
+ 	const struct exynos_pmu_data *pmu_data;
+ };
+ 
++static void __iomem *pmu_base_addr;
+ static struct exynos_pmu_context *pmu_context;
+ 
++static inline void pmu_raw_writel(u32 val, u32 offset)
++{
++	__raw_writel(val, pmu_base_addr + offset);
++}
++
++static inline u32 pmu_raw_readl(u32 offset)
++{
++	return __raw_readl(pmu_base_addr + offset);
++}
++
+ static const struct exynos_pmu_conf exynos4210_pmu_config[] = {
+ 	/* { .offset = offset, .val = { AFTR, LPA, SLEEP } */
+ 	{ S5P_ARM_CORE0_LOWPWR,			{ 0x0, 0x0, 0x2 } },
+-- 
+1.7.9.5
 
