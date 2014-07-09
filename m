@@ -1,309 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756306AbaGITaW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 15:30:22 -0400
-Received: from mga02.intel.com ([134.134.136.20]:27200 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755274AbaGITaT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 15:30:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,632,1400050800"; 
-   d="scan'208";a="541049765"
-From: Andi Kleen <andi@firstfloor.org>
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Alexey Preobrazhensky <preobr@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        x86@kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC/PATCH RESEND -next 01/21] Add kernel address sanitizer infrastructure.
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
-	<1404905415-9046-2-git-send-email-a.ryabinin@samsung.com>
-Date: Wed, 09 Jul 2014 12:29:26 -0700
-In-Reply-To: <1404905415-9046-2-git-send-email-a.ryabinin@samsung.com> (Andrey
-	Ryabinin's message of "Wed, 09 Jul 2014 15:29:55 +0400")
-Message-ID: <87pphenxex.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756455AbaGITa2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 15:30:28 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:33932 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755274AbaGITaX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 15:30:23 -0400
+From: Reyad Attiyat <reyad.attiyat@gmail.com>
+To: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org, jic23@kernel.org,
+        srinivas.pandruvada@linux.intel.com
+Cc: Reyad Attiyat <reyad.attiyat@gmail.com>
+Subject: [PATCH v5 2/4] iio: types: Added support for rotation from north usage attributes
+Date: Wed,  9 Jul 2014 14:30:11 -0500
+Message-Id: <1404934213-2733-3-git-send-email-reyad.attiyat@gmail.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1404934213-2733-1-git-send-email-reyad.attiyat@gmail.com>
+References: <1404934213-2733-1-git-send-email-reyad.attiyat@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrey Ryabinin <a.ryabinin@samsung.com> writes:
+Added the rotation from north usage attributes to the iio modifier enum and to the iio modifier names array.
 
-Seems like a useful facility. Thanks for working on it. Overall the code
-looks fairly good. Some comments below.
+Signed-off-by: Reyad Attiyat <reyad.attiyat@gmail.com>
+---
+ drivers/iio/industrialio-core.c | 4 ++++
+ include/linux/iio/types.h       | 4 ++++
+ 2 files changed, 8 insertions(+)
 
-
-> +
-> +Address sanitizer for kernel (KASAN) is a dynamic memory error detector. It provides
-> +fast and comprehensive solution for finding use-after-free and out-of-bounds bugs.
-> +
-> +KASAN is better than all of CONFIG_DEBUG_PAGEALLOC, because it:
-> + - is based on compiler instrumentation (fast),
-> + - detects OOB for both writes and reads,
-> + - provides UAF detection,
-
-Please expand the acronym.
-
-> +
-> +|--------|        |--------|
-> +| Memory |----    | Memory |
-> +|--------|    \   |--------|
-> +| Shadow |--   -->| Shadow |
-> +|--------|  \     |--------|
-> +|   Bad  |   ---->|  Bad   |
-> +|--------|  /     |--------|
-> +| Shadow |--   -->| Shadow |
-> +|--------|    /   |--------|
-> +| Memory |----    | Memory |
-> +|--------|        |--------|
-
-I guess this implies it's incompatible with memory hotplug, as the 
-shadow couldn't be extended?
-
-That's fine, but you should exclude that in Kconfig.
-
-There are likely more exclude dependencies for Kconfig too.
-Neds dependencies on the right sparse mem options?
-Does it work with kmemcheck? If not exclude.
-
-Perhaps try to boot it with all other debug options and see which ones break.
-
-> diff --git a/Makefile b/Makefile
-> index 64ab7b3..08a07f2 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -384,6 +384,12 @@ LDFLAGS_MODULE  =
->  CFLAGS_KERNEL	=
->  AFLAGS_KERNEL	=
->  CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
-> +CFLAGS_KASAN	= -fsanitize=address --param asan-stack=0 \
-> +			--param asan-use-after-return=0 \
-> +			--param asan-globals=0 \
-> +			--param asan-memintrin=0 \
-> +			--param asan-instrumentation-with-call-threshold=0 \
-
-Hardcoding --param is not very nice. They can change from compiler
-to compiler version. Need some version checking?
-
-Also you should probably have some check that the compiler supports it
-(and print some warning if not)
-Otherwise randconfig builds will be broken if the compiler doesn't.
-
-Also does the kernel really build/work without the other patches?
-If not please move this patchkit to the end of the series, to keep
-the patchkit bisectable (this may need moving parts of the includes
-into a separate patch)
-
-> diff --git a/commit b/commit
-> new file mode 100644
-> index 0000000..134f4dd
-> --- /dev/null
-> +++ b/commit
-> @@ -0,0 +1,3 @@
-> +
-> +I'm working on address sanitizer for kernel.
-> +fuck this bloody.
-> \ No newline at end of file
-
-Heh. Please remove.
-
-> diff --git a/lib/Kconfig.kasan b/lib/Kconfig.kasan
-> new file mode 100644
-> index 0000000..2bfff78
-> --- /dev/null
-> +++ b/lib/Kconfig.kasan
-> @@ -0,0 +1,20 @@
-> +config HAVE_ARCH_KASAN
-> +	bool
-> +
-> +if HAVE_ARCH_KASAN
-> +
-> +config KASAN
-> +	bool "AddressSanitizer: dynamic memory error detector"
-> +	default n
-> +	help
-> +	  Enables AddressSanitizer - dynamic memory error detector,
-> +	  that finds out-of-bounds and use-after-free bugs.
-
-Needs much more description.
-
-> +
-> +config KASAN_SANITIZE_ALL
-> +	bool "Instrument entire kernel"
-> +	depends on KASAN
-> +	default y
-> +	help
-> +	  This enables compiler intrumentation for entire kernel
-> +
-
-Same.
-
-
-> diff --git a/mm/kasan/kasan.c b/mm/kasan/kasan.c
-> new file mode 100644
-> index 0000000..e2cd345
-> --- /dev/null
-> +++ b/mm/kasan/kasan.c
-> @@ -0,0 +1,292 @@
-> +/*
-> + *
-
-Add one line here what the file does. Same for other files.
-
-> + * Copyright (c) 2014 Samsung Electronics Co., Ltd.
-> + * Author: Andrey Ryabinin <a.ryabinin@samsung.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> +#include "kasan.h"
-> +#include "../slab.h"
-
-That's ugly, but ok.
-
-> +
-> +static bool __read_mostly kasan_initialized;
-
-It would be better to use a static_key, but I guess your initialization
-is too early?
-
-Of course the proposal to move it into start_kernel and get rid of the
-flag would be best.
-
-> +
-> +unsigned long kasan_shadow_start;
-> +unsigned long kasan_shadow_end;
-> +
-> +/* equals to (kasan_shadow_start - PAGE_OFFSET/KASAN_SHADOW_SCALE_SIZE) */
-> +unsigned long __read_mostly kasan_shadow_offset; /* it's not a very good name for this variable */
-
-Do these all need to be global?
-
-> +
-> +
-> +static inline bool addr_is_in_mem(unsigned long addr)
-> +{
-> +	return likely(addr >= PAGE_OFFSET && addr < (unsigned long)high_memory);
-> +}
-
-Of course there are lots of cases where this doesn't work (like large
-holes), but I assume this has been checked elsewhere?
-
-
-> +
-> +void kasan_enable_local(void)
-> +{
-> +	if (likely(kasan_initialized))
-> +		current->kasan_depth--;
-> +}
-> +
-> +void kasan_disable_local(void)
-> +{
-> +	if (likely(kasan_initialized))
-> +		current->kasan_depth++;
-> +}
-
-Couldn't this be done without checking the flag?
-
-
-> +		return;
-> +
-> +	if (unlikely(addr < TASK_SIZE)) {
-> +		info.access_addr = addr;
-> +		info.access_size = size;
-> +		info.is_write = write;
-> +		info.ip = _RET_IP_;
-> +		kasan_report_user_access(&info);
-> +		return;
-> +	}
-
-How about vsyscall pages here?
-
-> +
-> +	if (!addr_is_in_mem(addr))
-> +		return;
-> +
-> +	access_addr = memory_is_poisoned(addr, size);
-> +	if (likely(access_addr == 0))
-> +		return;
-> +
-> +	info.access_addr = access_addr;
-> +	info.access_size = size;
-> +	info.is_write = write;
-> +	info.ip = _RET_IP_;
-> +	kasan_report_error(&info);
-> +}
-> +
-> +void __init kasan_alloc_shadow(void)
-> +{
-> +	unsigned long lowmem_size = (unsigned long)high_memory - PAGE_OFFSET;
-> +	unsigned long shadow_size;
-> +	phys_addr_t shadow_phys_start;
-> +
-> +	shadow_size = lowmem_size >> KASAN_SHADOW_SCALE_SHIFT;
-> +
-> +	shadow_phys_start = memblock_alloc(shadow_size, PAGE_SIZE);
-> +	if (!shadow_phys_start) {
-> +		pr_err("Unable to reserve shadow memory\n");
-> +		return;
-
-Wouldn't this crash&burn later? panic?
-
-> +void *kasan_memcpy(void *dst, const void *src, size_t len)
-> +{
-> +	if (unlikely(len == 0))
-> +		return dst;
-> +
-> +	check_memory_region((unsigned long)src, len, false);
-> +	check_memory_region((unsigned long)dst, len, true);
-
-I assume this handles negative len?
-Also check for overlaps?
-
-> +
-> +static inline void *virt_to_obj(struct kmem_cache *s, void *slab_start, void *x)
-> +{
-> +	return x - ((x - slab_start) % s->size);
-> +}
-
-This should be in the respective slab headers, not hard coded.
-
-> +void kasan_report_error(struct access_info *info)
-> +{
-> +	kasan_disable_local();
-> +	pr_err("================================="
-> +		"=================================\n");
-> +	print_error_description(info);
-> +	print_address_description(info);
-> +	print_shadow_for_address(info->access_addr);
-> +	pr_err("================================="
-> +		"=================================\n");
-> +	kasan_enable_local();
-> +}
-> +
-> +void kasan_report_user_access(struct access_info *info)
-> +{
-> +	kasan_disable_local();
-
-Should print the same prefix oopses use, a lot of log grep tools
-look for that. 
-
-Also you may want some lock to prevent multiple
-reports mixing. 
-
--Andi
+diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
+index 4b1f375..af3e76d 100644
+--- a/drivers/iio/industrialio-core.c
++++ b/drivers/iio/industrialio-core.c
+@@ -87,6 +87,10 @@ static const char * const iio_modifier_names[] = {
+ 	[IIO_MOD_QUATERNION] = "quaternion",
+ 	[IIO_MOD_TEMP_AMBIENT] = "ambient",
+ 	[IIO_MOD_TEMP_OBJECT] = "object",
++	[IIO_MOD_NORTH_MAGN] = "from_north_magnetic",
++	[IIO_MOD_NORTH_TRUE] = "from_north_true",
++	[IIO_MOD_NORTH_MAGN_TILT_COMP] = "from_north_magnetic_tilt_comp",
++	[IIO_MOD_NORTH_TRUE_TILT_COMP] = "from_north_true_tilt_comp",
+ };
+ 
+ /* relies on pairs of these shared then separate */
+diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
+index d480631..d09c40d 100644
+--- a/include/linux/iio/types.h
++++ b/include/linux/iio/types.h
+@@ -56,6 +56,10 @@ enum iio_modifier {
+ 	IIO_MOD_QUATERNION,
+ 	IIO_MOD_TEMP_AMBIENT,
+ 	IIO_MOD_TEMP_OBJECT,
++	IIO_MOD_NORTH_MAGN,
++	IIO_MOD_NORTH_TRUE,
++	IIO_MOD_NORTH_MAGN_TILT_COMP,
++	IIO_MOD_NORTH_TRUE_TILT_COMP
+ };
+ 
+ enum iio_event_type {
 -- 
-ak@linux.intel.com -- Speaking for myself only
+1.9.3
+
