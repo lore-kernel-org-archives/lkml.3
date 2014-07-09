@@ -1,61 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835AbaGIDNx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 23:13:53 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:61660 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751709AbaGIDNw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 23:13:52 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53BCB36E.1030803@roeck-us.net>
-Date: Tue, 08 Jul 2014 20:13:50 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752106AbaGID0a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 23:26:30 -0400
+Received: from ozlabs.org ([103.22.144.67]:45898 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751104AbaGID03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 23:26:29 -0400
+Date: Wed, 9 Jul 2014 13:26:19 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tom Herbert <therbert@google.com>
+Subject: linux-next: build failure after merge of the net-next tree
+Message-ID: <20140709132619.19eb3f6a@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-CC: torvalds@linux-foundation.org, Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 3.2 000/125] 3.2.61-rc1 review
-References: <lsq.1404846109.699842714@decadent.org.uk>
-In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_//LD23Ml/Efg.AWxd8mRK1zy"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2014 12:01 PM, Ben Hutchings wrote:
-> This is the start of the stable review cycle for the 3.2.61 release.
-> There are 125 patches in this series, which will be posted as responses
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Thu Jul 10 19:01:49 UTC 2014.
-> Anything received after that time might be too late.
->
+--Sig_//LD23Ml/Efg.AWxd8mRK1zy
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Looks better now, with the additional fix.
+Hi all,
 
-Build results:
-	total: 109 pass: 100 fail: 9
-Failed builds:
-	alpha:allmodconfig
-	microblaze:mmu_defconfig
-	microblaze:nommu_defconfig
-	mips:allmodconfig
-	score:defconfig
-	sparc64:allmodconfig
-	unicore32:defconfig
-	xtensa:defconfig
-	xtensa:allmodconfig
+After merging the net-next tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-Qemu tests all passed.
+In file included from include/linux/tcp.h:23:0,
+                 from include/linux/ipv6.h:63,
+                 from include/net/ipv6.h:16,
+                 from include/linux/sunrpc/clnt.h:27,
+                 from include/linux/nfs_fs.h:30,
+                 from init/do_mounts.c:32:
+include/net/ipv6.h: In function 'ip6_set_txhash':
+include/net/sock.h:327:33: error: 'struct sock_common' has no member named =
+'skc_v6_daddr'
+ #define sk_v6_daddr  __sk_common.skc_v6_daddr
+                                 ^
+include/net/ipv6.h:695:49: note: in expansion of macro 'sk_v6_daddr'
+  keys.dst =3D (__force __be32)ipv6_addr_hash(&sk->sk_v6_daddr);
+                                                 ^
+In file included from include/linux/sunrpc/clnt.h:27:0,
+                 from include/linux/nfs_fs.h:30,
+                 from init/do_mounts.c:32:
+include/net/ipv6.h: In function 'ip6_make_flowlabel':
+include/net/ipv6.h:705:37: error: 'struct net' has no member named 'ipv6'
+  if (!flowlabel && (autolabel || net->ipv6.sysctl.auto_flowlabels)) {
+                                     ^
 
-Results are as expected.
+And lots more ...
 
-Details are available at http://server.roeck-us.net:8010/builders.
+Caused by commits b73c3d0e4f0e ("net: Save TX flow hash in sock and set
+in skbuf on xmit") and cb1ce2ef387b ("ipv6: Implement automatic flow
+label generation on transmit").  This build has CONFIG_IPV6 unset.
 
-Guenter
+I have used the net-next tree from next-20140708 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Sig_//LD23Ml/Efg.AWxd8mRK1zy
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTvLZgAAoJEMDTa8Ir7ZwVTlMP/RJiDnsiPndLfxDp159bHFsU
+549Oj2Mfrm/bAUiFchg/3kPbbHv3GqVdV66PvTbJuLipB9tgCduv01YYn/dOkpBb
+CSbsE0OMJkXSdDxAn/4Y35c/4P61RsBpxcmFBvKL6H9rvWYEriJ1iGWnKlGyN/W6
+q5MPa+VAnrBXy56URTPUd86iwXgCMZZvN1LRpf7oluJjrMLL4lKz6vTECRWDwHb3
+4W5v2xUYy1o+DBlxhHspSsNYyRUVWPrmVXXhyywMV6D5Onro4NROeKow8NitNLv4
+VVPxcInXeA5vdhogbDtlcvV32+cRfww4sgR2RBdpcZe5QBgSgSTJygG6gro8mIGU
+WpH8ogdtcZ+zoybz+HUsLO6qAmKet0USuYD4fcsUO9doMqy4L6cBvnuab5/N2I/t
+NWLTm4HG27dOG/E5IuoBDU1ZHX23dPbYhX8n8YD2fSD0/SzaUcpBEIY7MJMspffh
+rK/kxuTYXDw5aBe8ajulT8sWa3+dHG+GOlN0bylhSxAUUXuWhQ08VaJ1oQxqrqMz
+1t16APGCuhP5ugVOKa0D9se1xCcITQgij4ddZCBg/0YW1xB79HVDhQWMZPddpoIm
+eQX+PzT/NkwjPsgkjy91yb7AJIDfyZPQRjb+NuKbo/4dQrCeMXr47dnAAf3zM9n3
+/mRIiP8/Pcs1eq8ZoZRr
+=3ZgA
+-----END PGP SIGNATURE-----
+
+--Sig_//LD23Ml/Efg.AWxd8mRK1zy--
