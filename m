@@ -1,147 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863AbaGIQJd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 12:09:33 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:14145 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932201AbaGIQJ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 12:09:29 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 09 Jul 2014 08:58:38 -0700
-Date: Wed, 9 Jul 2014 19:09:25 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: [PATCH 6/9] ARM: tegra: Export tegra_powergate_power_on
-Message-ID: <20140709160925.GM23218@tbergstrom-lnx.Nvidia.com>
-References: <20140708141135.GC23218@tbergstrom-lnx.Nvidia.com>
- <20140709063130.GA3170@ulmo>
- <20140709083311.GE23218@tbergstrom-lnx.Nvidia.com>
- <20140709102551.GA19357@ulmo>
- <20140709110816.GF23218@tbergstrom-lnx.Nvidia.com>
- <20140709120400.GA3819@ulmo>
- <20140709124344.GK23218@tbergstrom-lnx.Nvidia.com>
- <20140709125613.GA3262@ulmo>
- <20140709132010.GL23218@tbergstrom-lnx.Nvidia.com>
- <20140709144216.GA32375@ulmo>
+	id S932252AbaGIQLW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 12:11:22 -0400
+Received: from mail-by2lp0243.outbound.protection.outlook.com ([207.46.163.243]:58179
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752198AbaGIQLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 12:11:20 -0400
+Date: Wed, 9 Jul 2014 09:11:16 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-pm@vger.kernel.org>
+Subject: Re: timers & suspend
+References: <f270ad9c-9906-445d-9e9a-4d3618787455@BY2FFO11FD039.protection.gbl>
+ <2489e9cb-51c2-4901-9ab5-c952877d8a9d@BL2FFO11FD057.protection.gbl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <20140709144216.GA32375@ulmo>
-X-NVConfidentiality: public
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <2489e9cb-51c2-4901-9ab5-c952877d8a9d@BL2FFO11FD057.protection.gbl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <380dd2ef-160a-4683-9783-ea4f964ca730@BL2FFO11FD037.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(189002)(199002)(51704005)(377424004)(24454002)(102836001)(1496007)(70736001)(104016002)(23676002)(46102001)(4396001)(81542001)(85306003)(53416004)(54356999)(107046002)(74316001)(85852003)(50986999)(6806004)(33646001)(21056001)(92726001)(44976005)(85202003)(86362001)(76482001)(92566001)(19580395003)(99396002)(575784001)(87936001)(74502001)(83072002)(83506001)(83322001)(64706001)(79102001)(80022001)(31696002)(74662001)(77982001)(77096002)(81342001)(76176999)(95666004)(50466002)(31966008)(47776003)(20776003)(85182001)(106466001)(107986001)(23106004);DIR:OUT;SFP:;SCL:1;SRVR:BL2FFO11HUB022;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
+X-OriginatorOrg: xilinx.onmicrosoft.com
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 0267E514F9
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 04:42:18PM +0200, Thierry Reding wrote:
-> * PGP Signed by an unknown key
+On Tue, 2014-07-08 at 04:50PM -0700, Sören Brinkmann wrote:
+> Let me extend the audience a bit.
 > 
-> On Wed, Jul 09, 2014 at 04:20:10PM +0300, Peter De Schrijver wrote:
-> > On Wed, Jul 09, 2014 at 02:56:14PM +0200, Thierry Reding wrote:
-> > > > Old Signed by an unknown key
-> > > 
-> > > On Wed, Jul 09, 2014 at 03:43:44PM +0300, Peter De Schrijver wrote:
-> > > > On Wed, Jul 09, 2014 at 02:04:02PM +0200, Thierry Reding wrote:
-> > > > > > For those 2 domains we can find the necessary clocks and resets by parsing
-> > > > > > the relevant existing DT nodes for PCIe and gr3d. For clocks, this isn't
-> > > > > > even needed as we can always register some extra clkdev's to get them. There
-> > > > > > is no equivalent for resets so we have to parse the gr3d and pcie DT nodes,
-> > > > > > but that's not too bad I think.
-> > > > > 
-> > > > > Even if we could really do this, at this point I don't see an advantage.
-> > > > > All that it would be doing is move to some subsystem that doesn't quite
-> > > > > match what we need just for the sake of moving to that subsystem. Having
-> > > > > a Tegra-specific API doesn't sound so bad anymore.
-> > > > > 
-> > > > 
-> > > > The advantage would be that we can use LP0/SC7 as a cpuidle state.
-> > > 
-> > > How is that going to work? And why does it need powergates to be
+> On Mon, 2014-06-30 at 11:39AM -0700, Sören Brinkmann wrote:
+> > Hi,
 > > 
-> > pm_runtime_get() and pm_runtime_put() hook into genpd. So genpd knows
-> > when all devices in a domain are idle. It can then decide to turn off
-> > the domain (based on the decision of a per domain governor). If all
-> > domains are off (except for the non-powergateable domain), a special cpuidle
-> > state can be enabled by genpd which will initiate a transition to LP0 without
-> > actually doing a full system suspend.
-> 
-> Okay, I see.
-> 
-> > > implemented as power domains? If we switch off power gates, then we need
-> > > to restore context in the drivers anyway, therefore I assume .suspend()
-> > > and .resume() would need to be called, in which case powergate handling
-> > > can surely be done at that stage, can't it?
-> > > 
+> > I'm currently working on suspend for Zynq and try to track down some
+> > spurious wakes. It looks like the spurious wakes are caused by timers,
+> > hence I was wondering whether there are any special requirements for
+> > timer drivers when it comes to suspend support or if I just missed
+> > something.
 > > 
-> > .suspend() and .resume() are not used for this. genpd uses other per device
-> > callbacks to save and restore the state which are invoked when the domain
-> > is turned off and on (.save_state and .restore_state). The major difference
-> > with .suspend() and .resume() is that .suspend() has to perform 3 tasks:
-> > prevent any new requests to the driver, finalize or cancel all outstanding
-> > requests and save the hw context. .save_state will only be called when the
-> > device is idle (based on the refcount controlled by pm_runtime_get() and
-> > pm_runtime_put()) which means it only has to handle saving the hw context.
-> 
-> With the above, would it be possible to make turning off the domain
-> conditional on whether or not all devices in the domain implement
-> .save_state() and .restore_state()? That would allow us to convert to
-> power domains and then stage in context save/restore in drivers (or even
-> leave it out if there's not enough to be gained from turning the
-> partition off).
-> 
-
-Maybe. I would have to check that.
-
-> > > > Also system
-> > > > resume from LP0 can be faster as we potentially don't have to resume all
-> > > > domains at once.
-> > > 
-> > > I don't understand what that's got to do with anything. If we call into
-> > > the PMC driver explicitly via tegra_powergate_*() functions from driver
-> > > code, then we have full control over suspend/resume in the drivers, and
-> > > therefore don't need to resume all at once either.
+> > Zynq sets the 'IRQCHIP_MASK_ON_SUSPEND' flag, which should mask all
+> > interrupts but the wake source. Reading through kernel/irq/pm.c
+> > indicates, that timer interrupts get some special treatment though.
+> > Therefore I implemented some suspend/resume callbacks for the
+> > cadence_ttc which disable and clear the timer's interrupts when going
+> > into suspend. That seems to mitigate the issue quite a bit, but I still
+> > saw spurious wakes - just a lot less often.
+> > Digging a little deeper revealed, the spurious wakes are caused by the
+> > ARM's smp_twd timer now. Given that that driver is probably used by a few
+> > more ARM platforms, I get the feeling that I'm missing something.
 > > 
-> > But then we would be duplicating all the bookkeeping required for this? What's
-> > the point of that?
+> > It's probably worth mentioning that the suspend state in Zynq does not
+> > power off the CPU cores. It just asserts the resets on secondary cores
+> > and the primary one waits in wfi.
 > 
-> We're doing fine without any bookkeeping currently. I understand that
-> this may change eventually, but I'm hesitant to start any conversion
-> like this before we don't have a better understanding of how it should
-> work (and actual use-cases which we can test). Also we've seen in the
-> past that coding things up before we have enough use-cases we're bound
-> to fail at coming up with a proper binding and then we have to keep
-> carrying loads of code for compatibility.
+> I think I found the issue. When going into suspend, all device
+> interrupts get disabled, but timers are kept running until very late.
+> Then in kernel/power/suspend.c:
+>  - arch_suspend_disable_irqs() disables interrupts (locally)
+>  - syscore_suspend is called, which disables timers through
+>    tick_suspend()
 > 
-> So if you're willing to give this a shot, I'm not at all opposed to it
-> generally. But we need to make sure that both the binding is reasonably
-> future-proof and that we can actually test things like reference-counted
-> power domains.
+> I think what happens is: The interrupts get disabled locally, but the
+> timers are still running and generating interrupts.
+> Such an interrupt happens and stays pending since interrupts are already
+> disabled and no longer handled.
+> Then, since Zynq does not power off but only goes into wfi, it
+> immediately resumes due to a pending timer IRQ.
 > 
-> Now in the meantime there are a bunch of other drivers that will need to
-> use the powergate API. DC is one of them. We haven't needed this before
-> because we assumed the partitions would be on by default. That's not
-> always the case apparently (ChromeOS does some funky things here). Both
-> the SATA and XUSB drivers that have been posted use them as well and the
-> nouveau driver that Alex has been working on uses at least parts of it.
-> I don't think it's fair to keep them from being merged while we're
-> trying to make the transition to power domains, but we should keep an
-> eye on what's happening there so it doesn't conflict with any of the
-> work we're planning for power domains.
+> Especially with the TTC this can happen quite often since it is only
+> 16 bit wide. But I also see spurious wakes caused by the twd.
+> 
+> Does that sound like a possible scenario?
 
-The problem with this is that moving to the genpd APIs will become much more
-difficult I'm afraid. I think we should maybe just make the pmc driver turn
-on all the domains which were turned off by the bootloader. That way the
-drivers don't need to handle the powerdomains at all for the time being.
+As another data point: I don't see any spurious wakes with the changes
+below.
 
-Cheers,
+	Sören
 
-Peter.
+---------------8<------------------8<-----------------8<----------------8<------
+diff --git a/drivers/clocksource/cadence_ttc_timer.c b/drivers/clocksource/cadence_ttc_timer.c
+index e0a81327e10c..3abe2d7031ed 100644
+--- a/drivers/clocksource/cadence_ttc_timer.c
++++ b/drivers/clocksource/cadence_ttc_timer.c
+@@ -321,6 +321,19 @@ static int ttc_rate_change_clocksource_cb(struct notifier_block *nb,
+ 	return NOTIFY_DONE;
+ }
+ 
++static void ttc_ce_suspend(struct clock_event_device *ce)
++{
++	struct ttc_timer_clockevent *ttcce = to_ttc_timer_clkevent(ce);
++
++	readl_relaxed(ttcce->ttc.base_addr + TTC_ISR_OFFSET);
++	disable_irq(ce->irq);
++}
++
++static void ttc_ce_resume(struct clock_event_device *ce)
++{
++	enable_irq(ce->irq);
++}
++
+ static void __init ttc_setup_clocksource(struct clk *clk, void __iomem *base)
+ {
+ 	struct ttc_timer_clocksource *ttccs;
+@@ -428,6 +441,8 @@ static void __init ttc_setup_clockevent(struct clk *clk,
+ 	ttcce->ce.features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT;
+ 	ttcce->ce.set_next_event = ttc_set_next_event;
+ 	ttcce->ce.set_mode = ttc_set_mode;
++	ttcce->ce.suspend = ttc_ce_suspend;
++	ttcce->ce.resume = ttc_ce_resume;
+ 	ttcce->ce.rating = 200;
+ 	ttcce->ce.irq = irq;
+ 	ttcce->ce.cpumask = cpu_possible_mask;
+diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
+index 6591e26fc13f..956d40d9281f 100644
+--- a/arch/arm/kernel/smp_twd.c
++++ b/arch/arm/kernel/smp_twd.c
+@@ -264,6 +264,18 @@ static void twd_get_clock(struct device_node *np)
+ 	twd_timer_rate = clk_get_rate(twd_clk);
+ }
+ 
++static void twd_suspend(struct clock_event_device *ce)
++{
++	struct clock_event_device *clk = __this_cpu_ptr(twd_evt);
++	disable_percpu_irq(clk->irq);
++}
++
++static void twd_resume(struct clock_event_device *ce)
++{
++	struct clock_event_device *clk = __this_cpu_ptr(twd_evt);
++	enable_percpu_irq(clk->irq, 0);
++}
++
+ /*
+  * Setup the local clock events for a CPU.
+  */
+@@ -300,6 +312,8 @@ static void twd_timer_setup(void)
+ 	clk->set_next_event = twd_set_next_event;
+ 	clk->irq = twd_ppi;
+ 	clk->cpumask = cpumask_of(cpu);
++	clk->suspend = twd_suspend;
++	clk->resume = twd_resume;
+ 
+ 	clockevents_config_and_register(clk, twd_timer_rate,
+ 					0xf, 0xffffffff);
