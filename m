@@ -1,130 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547AbaGIIHo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 04:07:44 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:36576 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751114AbaGIIHk (ORCPT
+	id S1754448AbaGIIJx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 04:09:53 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:42450 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114AbaGIIJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 04:07:40 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s6987arX015224, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next] r8152: support jumbo frame for RTL8153
-Date: Wed, 9 Jul 2014 16:07:02 +0800
-Message-ID: <1394712342-15778-8-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
+	Wed, 9 Jul 2014 04:09:50 -0400
+Date: Wed, 9 Jul 2014 11:09:43 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: sanjeev sharma <sanjeevsharmaengg@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        peter.senna@gmail.com, linux-kernel@vger.kernel.org, rmfrfs@gmail.com,
+        teobaluta@gmail.com, Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+Subject: Re: [PATCH v2 1/4] staging: rtl8192u: Remove useless return
+ statement in r819xU_phy.c
+Message-ID: <20140709080943.GT25880@mwanda>
+References: <20140708100142.GR25934@mwanda>
+ <1404885860-19468-1-git-send-email-sanjeevsharmaengg@gmail.com>
+ <1404885860-19468-2-git-send-email-sanjeevsharmaengg@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404885860-19468-2-git-send-email-sanjeevsharmaengg@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The maximum jumbo frame size for RTL8153 is 9K bytes.
-Change the max rx packet size to 9K.
-Change the use of the shared fifo from 6K (default) to 12K for tx.
+These patches look ok now.  The only thing is that the changelogs are
+a little off.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 39 +++++++++++++++++++++++++++++++++++----
- 1 file changed, 35 insertions(+), 4 deletions(-)
+On Wed, Jul 09, 2014 at 11:34:17AM +0530, sanjeev sharma wrote:
+> From: sanjeev sharma <sanjeev_sharma@mentor.com>
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index e9685ce..c3ce4e4 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -59,6 +59,7 @@
- #define PLA_WDT6_CTRL		0xe428
- #define PLA_TCR0		0xe610
- #define PLA_TCR1		0xe612
-+#define PLA_MTPS		0xe615
- #define PLA_TXFIFO_CTRL		0xe618
- #define PLA_RSTTALLY		0xe800
- #define PLA_CR			0xe813
-@@ -180,6 +181,10 @@
- /* PLA_TCR1 */
- #define VERSION_MASK		0x7cf0
- 
-+/* PLA_MTPS */
-+#define MTPS_JUMBO		(12 * 1024 / 64)
-+#define MTPS_DEFAULT		(6 * 1024 / 64)
-+
- /* PLA_RSTTALLY */
- #define TALLY_RESET		0x0001
- 
-@@ -440,7 +445,10 @@ enum rtl_register_content {
- #define BYTE_EN_START_MASK	0x0f
- #define BYTE_EN_END_MASK	0xf0
- 
-+#define RTL8153_MAX_PACKET	9216 /* 9K */
-+#define RTL8153_MAX_MTU		(RTL8153_MAX_PACKET - VLAN_ETH_HLEN - VLAN_HLEN)
- #define RTL8152_RMS		(VLAN_ETH_FRAME_LEN + VLAN_HLEN)
-+#define RTL8153_RMS		RTL8153_MAX_PACKET
- #define RTL8152_TX_TIMEOUT	(5 * HZ)
- 
- /* rtl8152 flags */
-@@ -2522,7 +2530,8 @@ static void r8153_first_init(struct r8152 *tp)
- 	ocp_data &= ~CPCR_RX_VLAN;
- 	ocp_write_word(tp, MCU_TYPE_PLA, PLA_CPCR, ocp_data);
- 
--	ocp_write_word(tp, MCU_TYPE_PLA, PLA_RMS, RTL8152_RMS);
-+	ocp_write_word(tp, MCU_TYPE_PLA, PLA_RMS, RTL8153_RMS);
-+	ocp_write_byte(tp, MCU_TYPE_PLA, PLA_MTPS, MTPS_JUMBO);
- 
- 	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_TCR0);
- 	ocp_data |= TCR0_AUTO_FIFO;
-@@ -2572,7 +2581,7 @@ static void r8153_enter_oob(struct r8152 *tp)
- 		mdelay(1);
- 	}
- 
--	ocp_write_word(tp, MCU_TYPE_PLA, PLA_RMS, RTL8152_RMS);
-+	ocp_write_word(tp, MCU_TYPE_PLA, PLA_RMS, RTL8153_RMS);
- 
- 	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_TEREDO_CFG);
- 	ocp_data &= ~TEREDO_WAKE_MASK;
-@@ -3284,6 +3293,29 @@ out:
- 	return res;
- }
- 
-+static int rtl8152_change_mtu(struct net_device *dev, int new_mtu)
-+{
-+	struct r8152 *tp = netdev_priv(dev);
-+
-+	if (dev->mtu == new_mtu)
-+		return 0;
-+
-+	switch (tp->version) {
-+	case RTL_VER_01:
-+	case RTL_VER_02:
-+		return eth_change_mtu(dev, new_mtu);
-+	default:
-+		break;
-+	}
-+
-+	if (new_mtu < 68 || new_mtu > RTL8153_MAX_MTU)
-+		return -EINVAL;
-+
-+	dev->mtu = new_mtu;
-+
-+	return 0;
-+}
-+
- static const struct net_device_ops rtl8152_netdev_ops = {
- 	.ndo_open		= rtl8152_open,
- 	.ndo_stop		= rtl8152_close,
-@@ -3292,8 +3324,7 @@ static const struct net_device_ops rtl8152_netdev_ops = {
- 	.ndo_tx_timeout		= rtl8152_tx_timeout,
- 	.ndo_set_rx_mode	= rtl8152_set_rx_mode,
- 	.ndo_set_mac_address	= rtl8152_set_mac_address,
--
--	.ndo_change_mtu		= eth_change_mtu,
-+	.ndo_change_mtu		= rtl8152_change_mtu,
- 	.ndo_validate_addr	= eth_validate_addr,
- };
- 
--- 
-1.9.3
+Don't use the From header unless you are sending patches on behalf of
+someone else.  It's better if you can configure your email client so you
+can send the patches from your @mentor.com address.  It would be better
+if the names were capitalized.
+
+> 
+> This is a patch to the r819xU_phy.c file that remove unneeded return statements in code.
+
+Please line wrap the changelog at 72 characters (the same as email).
+Otherwise Greg sometimes fixes them manually...
+
+But the patches themselves are nice now.
+
+regards,
+dan carpenter
 
