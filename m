@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885AbaGILBd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 07:01:33 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40710 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751345AbaGILBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 07:01:31 -0400
-Message-ID: <53BD208E.6000507@ti.com>
-Date: Wed, 9 Jul 2014 16:29:26 +0530
-From: Keerthy <a0393675@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Keerthy <j-keerthy@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <mark.rutland@arm.com>, <galak@codeaurora.org>, <robh+dt@kernel.org>,
-        <linux@arm.linux.org.uk>, <balbi@ti.com>, <kishon@ti.com>,
-        <broonie@kernel.org>
-Subject: Re: [PATCH v3 0/7] ARM: dts: AM43x: Add devcice tree nodes
-References: <1404884193-20580-1-git-send-email-j-keerthy@ti.com> <20140709083114.GH28884@atomide.com>
-In-Reply-To: <20140709083114.GH28884@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753660AbaGILDo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 07:03:44 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:49881 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351AbaGILDl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 07:03:41 -0400
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-ide@vger.kernel.org,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Subject: [PATCH v2 0/2] Add Qcom AP8064 SATA PHY support
+Date: Wed,  9 Jul 2014 12:03:27 +0100
+Message-Id: <1404903807-26032-1-git-send-email-srinivas.kandagatla@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403546409-10860-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1403546409-10860-1-git-send-email-srinivas.kandagatla@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 09 July 2014 02:01 PM, Tony Lindgren wrote:
-> * Keerthy <j-keerthy@ti.com> [140708 22:40]:
->> The patch series adds the device tree nodes and the corresponding
->> documentation. The series also enabled tps65218 config options
->> in the omap2plus_defconfig.
->>
->> The series is boot tested on both AM43x-epos-evm and AM437x-gp-evm.
-> Are the .dts changes safe to apply separately without breaking
-> anything?
-Tony,
+Hi Kishon,
 
-Patch 1/7 had to be re-based on Mark's latest branch for tps65218.
-Other patches can be taken as is. These patches are boot tested on
-both am437x-gp-evm and am43x-epos-evm.
+First patch in this series adds support to the APQ8064 SATA PHY.
+Second patch updates the existing Kumar gala's device tree PHY bindings
+with APQ8064 soc specific compatible.
 
-> Regards,
->
-> Tony
+Eventhough there are two seperate drivers for both IPQ and APQ SOCs,
+the bindings are exactly same, so I did not create new bindings document.
 
-Regards,
-Keerthy
+Could you please pick these patches for v3.17.
+
+Changes since v1:
+	- included DT bindings in the series.
+
+Thanks,
+srini
+
+Srinivas Kandagatla (2):
+  phy: qcom: Add driver for QCOM APQ8064 SATA PHY
+  phy: qcom: Update APQ8064 PHY device tree bindings
+
+ Documentation/devicetree/bindings/phy/qcom-phy.txt |   3 +-
+ drivers/phy/Kconfig                                |   7 +
+ drivers/phy/Makefile                               |   1 +
+ drivers/phy/phy-qcom-apq8064-sata.c                | 358 +++++++++++++++++++++
+ 4 files changed, 368 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/phy/phy-qcom-apq8064-sata.c
+
+-- 
+1.9.1
+
