@@ -1,186 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932745AbaGIP0b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 11:26:31 -0400
-Received: from andre.telenet-ops.be ([195.130.132.53]:34330 "EHLO
-	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932511AbaGIP0X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 11:26:23 -0400
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH] Documentation: devres: Sort managed interfaces
-Date: Wed,  9 Jul 2014 17:26:18 +0200
-Message-Id: <1404919578-4457-1-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.7.9.5
+	id S964828AbaGIP03 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 11:26:29 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:34630 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932730AbaGIP0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 11:26:24 -0400
+Message-ID: <53BD5F0C.2050509@ti.com>
+Date: Wed, 9 Jul 2014 11:26:04 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Shawn Guo <shawn.guo@linaro.org>,
+        Nishanth Menon <nm@ti.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Tomasz Figa <t.figa@samsung.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas P Abraham <thomas.ab@samsung.com>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Sachin Kamat <spk.linux@gmail.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Subject: Re: [PATCH 09/14] cpufreq: cpu0: Move per-cluster initialization
+ code to ->init()
+References: <cover.1404231535.git.viresh.kumar@linaro.org>	<b26946cc4573904cd1ef0212ad053a983b547c23.1404231535.git.viresh.kumar@linaro.org>	<53BD576F.2010408@ti.com> <CAKohpokz4eyw86Uxp_aA=9T9x-X=kTV=_=zx4dEuC2ZyR=3pKw@mail.gmail.com>
+In-Reply-To: <CAKohpokz4eyw86Uxp_aA=9T9x-X=kTV=_=zx4dEuC2ZyR=3pKw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sort the list of managed interfaces and their lists of methods
-alphabetically, to reduce the risk of merge conflicts and duplicates.
+On Wednesday 09 July 2014 11:17 AM, Viresh Kumar wrote:
+> On 9 July 2014 20:23, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
+>> I scanned this patch and subsequent patches from the series. Since you are
+>> modifying the interfaces and bindings, I just think its better if we can
+>> address the cases where separate clock lines will be used by CPUs.
+>>
+>> Surely don't want to increase your work neither want hold the progress
+>> of the series but if you look at the changes to the interfaces, they
+>> give you a feeling of incompleteness.
+> 
+> Lets talk in the other thread you raised, 2/14 ..
+> 
+>>> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+>>> ---
+>> Would you able to give some idea about what will it take to address that one
+>> remainder case as well as part of this series.
+> 
+> Which one? This:
+> 
+>> We still *don't* support platforms with separate clock/voltage lines for CPUs.
+>> This would be done in a separate patch.
+> 
+> Its already fixed as part of this series.
+> 
+I suggest you word the commit in that case. Saying subsequent patch
+adds support for the remainder case. Let me scan the remainder
+patches again to see how its done.
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
----
-I got annoyed by the merge conflicts when merging several for-next
-branches a while ago, so I sorted the list after everything became
-quiet.
----
- Documentation/driver-model/devres.txt | 108 +++++++++++++++++-----------------
- 1 file changed, 54 insertions(+), 54 deletions(-)
-
-diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
-index 1525e30483fd..3b8bbe0c389d 100644
---- a/Documentation/driver-model/devres.txt
-+++ b/Documentation/driver-model/devres.txt
-@@ -233,66 +233,76 @@ certainly invest a bit more effort into libata core layer).
-   6. List of managed interfaces
-   -----------------------------
- 
--MEM
--  devm_kzalloc()
--  devm_kfree()
--  devm_kmemdup()
--  devm_get_free_pages()
--  devm_free_pages()
-+CLOCK
-+  devm_clk_get()
-+  devm_clk_put()
-+
-+DMA
-+  dmam_alloc_coherent()
-+  dmam_alloc_noncoherent()
-+  dmam_declare_coherent_memory()
-+  dmam_free_coherent()
-+  dmam_free_noncoherent()
-+  dmam_pool_create()
-+  dmam_pool_destroy()
-+
-+GPIO
-+  devm_gpiod_get()
-+  devm_gpiod_get_index()
-+  devm_gpiod_get_index_optional()
-+  devm_gpiod_get_optional()
-+  devm_gpiod_put()
- 
- IIO
-   devm_iio_device_alloc()
-   devm_iio_device_free()
--  devm_iio_trigger_alloc()
--  devm_iio_trigger_free()
-   devm_iio_device_register()
-   devm_iio_device_unregister()
-+  devm_iio_trigger_alloc()
-+  devm_iio_trigger_free()
- 
- IO region
--  devm_request_region()
--  devm_request_mem_region()
--  devm_release_region()
-   devm_release_mem_region()
--
--IRQ
--  devm_request_irq()
--  devm_free_irq()
--
--DMA
--  dmam_alloc_coherent()
--  dmam_free_coherent()
--  dmam_alloc_noncoherent()
--  dmam_free_noncoherent()
--  dmam_declare_coherent_memory()
--  dmam_pool_create()
--  dmam_pool_destroy()
--
--PCI
--  pcim_enable_device()	: after success, all PCI ops become managed
--  pcim_pin_device()	: keep PCI device enabled after release
-+  devm_release_region()
-+  devm_request_mem_region()
-+  devm_request_region()
- 
- IOMAP
-   devm_ioport_map()
-   devm_ioport_unmap()
-   devm_ioremap()
-   devm_ioremap_nocache()
--  devm_iounmap()
-   devm_ioremap_resource() : checks resource, requests memory region, ioremaps
-+  devm_iounmap()
-   devm_request_and_ioremap() : obsoleted by devm_ioremap_resource()
-   pcim_iomap()
--  pcim_iounmap()
--  pcim_iomap_table()	: array of mapped addresses indexed by BAR
-   pcim_iomap_regions()	: do request_region() and iomap() on multiple BARs
-+  pcim_iomap_table()	: array of mapped addresses indexed by BAR
-+  pcim_iounmap()
- 
--REGULATOR
--  devm_regulator_get()
--  devm_regulator_put()
--  devm_regulator_bulk_get()
--  devm_regulator_register()
-+IRQ
-+  devm_free_irq()
-+  devm_request_irq()
- 
--CLOCK
--  devm_clk_get()
--  devm_clk_put()
-+MDIO
-+  devm_mdiobus_alloc()
-+  devm_mdiobus_alloc_size()
-+  devm_mdiobus_free()
-+
-+MEM
-+  devm_free_pages()
-+  devm_get_free_pages()
-+  devm_kfree()
-+  devm_kmemdup()
-+  devm_kzalloc()
-+
-+PCI
-+  pcim_enable_device()	: after success, all PCI ops become managed
-+  pcim_pin_device()	: keep PCI device enabled after release
-+
-+PHY
-+  devm_usb_get_phy()
-+  devm_usb_put_phy()
- 
- PINCTRL
-   devm_pinctrl_get()
-@@ -302,24 +312,14 @@ PWM
-   devm_pwm_get()
-   devm_pwm_put()
- 
--PHY
--  devm_usb_get_phy()
--  devm_usb_put_phy()
-+REGULATOR
-+  devm_regulator_bulk_get()
-+  devm_regulator_get()
-+  devm_regulator_put()
-+  devm_regulator_register()
- 
- SLAVE DMA ENGINE
-   devm_acpi_dma_controller_register()
- 
- SPI
-   devm_spi_register_master()
--
--GPIO
--  devm_gpiod_get()
--  devm_gpiod_get_index()
--  devm_gpiod_get_optional()
--  devm_gpiod_get_index_optional()
--  devm_gpiod_put()
--
--MDIO
--  devm_mdiobus_alloc()
--  devm_mdiobus_alloc_size()
--  devm_mdiobus_free()
--- 
-1.9.1
-
+Regards,
+Santosh
