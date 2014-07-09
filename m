@@ -1,113 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730AbaGIWmc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 18:42:32 -0400
-Received: from elasmtp-kukur.atl.sa.earthlink.net ([209.86.89.65]:55344 "EHLO
-	elasmtp-kukur.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756693AbaGIWma convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 18:42:30 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=mindspring.com;
-  b=OaXLkaj6WUq3BGektX5cRUTEzWxIz3UovcstTzHD4yV3sDX4RDA3H+G9eUqonDmb;
-  h=Received:From:To:Cc:References:In-Reply-To:Subject:Date:Message-ID:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Mailer:Thread-Index:Content-Language:X-Antivirus-Status:X-ELNK-Trace:X-Originating-IP;
-From: "Frank Filz" <ffilzlnx@mindspring.com>
-To: "'Trond Myklebust'" <trond.myklebust@primarydata.com>
-Cc: "'Linux NFS Mailing List'" <linux-nfs@vger.kernel.org>,
-        "'Linux Kernel mailing list'" <linux-kernel@vger.kernel.org>
-References: <1404942892-18323-1-git-send-email-ffilzlnx@mindspring.com> <CAHQdGtSUwScEdUeKT1w+-ynqNz-e1=YvDBtdu_k=_6yndFZSVQ@mail.gmail.com>
-In-Reply-To: <CAHQdGtSUwScEdUeKT1w+-ynqNz-e1=YvDBtdu_k=_6yndFZSVQ@mail.gmail.com>
-Subject: RE: [PATCH 1/1] Fix permission checking by NFS client for open-create with mode 000
-Date: Wed, 9 Jul 2014 15:42:22 -0700
-Message-ID: <033801cf9bc7$0d7ee190$287ca4b0$@mindspring.com>
+	id S1756472AbaGIWq6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 18:46:58 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:45182 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754839AbaGIWq5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 18:46:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Outlook 15.0
-Thread-Index: AQGbOTJ6MUf6FOx4w+cyNjCBvBXZJAJkOHk0m+34UJA=
-Content-Language: en-us
-X-Antivirus: avast! (VPS 140709-0, 07/09/2014), Outbound message
-X-Antivirus-Status: Clean
-X-ELNK-Trace: 136157f01908a8929c7f779228e2f6aeda0071232e20db4ded48dc2eadf00c781ed2204f5bd6c0ba350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 71.236.153.111
+X-Originating-IP: [2620:0:1000:157d:8cce:4220:32bc:b297]
+In-Reply-To: <1404324218-4743-4-git-send-email-lauraa@codeaurora.org>
+References: <1404324218-4743-1-git-send-email-lauraa@codeaurora.org>
+	<1404324218-4743-4-git-send-email-lauraa@codeaurora.org>
+Date: Wed, 9 Jul 2014 15:46:56 -0700
+Message-ID: <CAOesGMimCAYnqxkKoYpZ2ws7x9eH4K1Yw3LnLz9HC6MWyHEo3A@mail.gmail.com>
+Subject: Re: [PATCHv4 3/5] common: dma-mapping: Introduce common remapping functions
+From: Olof Johansson <olof@lixom.net>
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        David Riley <davidriley@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ritesh Harjain <ritesh.harjani@gmail.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, Jul 9, 2014 at 5:54 PM, Frank S. Filz <ffilzlnx@mindspring.com>
-> wrote:
-> > From: "Frank S. Filz" <ffilzlnx@mindspring.com>
-> >
-> > The NFS v4 client sends a COMPOUND with an OPEN and an ACCESS.
-> >
-> > The ACCESS is required to verify an open for read is actually allowed
-> > because RFC 3530 indicates OPEN for read only must succeed for an
-> > execute only file.
-> >
-> > The old code expected to have read access if the requested access was
-> > O_RDWR.
-> >
-> > We can expect the OPEN to properly permission check as long as the
-> > open is O_WRONLY or O_RDWR.
-> >
-> > Signed-off-by: Frank S. Filz <ffilzlnx@mindspring.com>
-> > ---
-> >  fs/nfs/nfs4proc.c | 25 ++++++++++++++++++++-----
-> >  1 file changed, 20 insertions(+), 5 deletions(-)
-> >
-> > diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c index
-> > 4bf3d97..9742054 100644
-> > --- a/fs/nfs/nfs4proc.c
-> > +++ b/fs/nfs/nfs4proc.c
-> > @@ -1966,15 +1966,30 @@ static int nfs4_opendata_access(struct
-> rpc_cred *cred,
-> >                 return 0;
-> >
-> >         mask = 0;
-> > -       /* don't check MAY_WRITE - a newly created file may not have
-> > -        * write mode bits, but POSIX allows the creating process to write.
-> > -        * use openflags to check for exec, because fmode won't
-> > -        * always have FMODE_EXEC set when file open for exec. */
-> > +       /* Don't trust the permission check on OPEN if open for exec or for
-> > +        * read only. Since FMODE_EXEC doesn't go across the wire, the server
-> > +        * has no way to distinguish between an open to read an executable
-> file
-> > +        * and an open to read a readable file. Write access is properly checked
-> > +        * and permission SHOULD always be granted if the file was created as
-> a
-> > +        * result of this OPEN, no matter what mode the file was created with.
-> > +        *
-> > +        * NOTE: If the case of a OPEN CREATE READ-ONLY with a mode that
-> does
-> > +        *       not allow read access, this test will produce an incorrect
-> > +        *       EACCES error.
-> > +        */
-> >         if (openflags & __FMODE_EXEC) {
-> >                 /* ONLY check for exec rights */
-> >                 mask = MAY_EXEC;
-> > -       } else if (fmode & FMODE_READ)
-> > +       } else if (!(fmode & FMODE_WRITE)) {
-> > +               /* In case the file was execute only, check for read permission
-> > +                * ONLY if write access was not requested. It is expected that
-> > +                * an OPEN for write will fail if the file is execute only.
-> > +                * Note that if the file was newly created, the fmode SHOULD
-> > +                * include FMODE_WRITE, especially if the file will be created
-> > +                * with a restrictive mode.
-> > +                */
-> >                 mask = MAY_READ;
-> > +       }
-> 
-> This looks wrong. AFAICS it will allow you to open an existing file which has -
-> wx permissions (i.e. no read permissions) for O_RDWR. That should not be
-> permitted under POSIX rules.
+On Wed, Jul 2, 2014 at 11:03 AM, Laura Abbott <lauraa@codeaurora.org> wrote:
+>
+> For architectures without coherent DMA, memory for DMA may
+> need to be remapped with coherent attributes. Factor out
+> the the remapping code from arm and put it in a
+> common location to reduced code duplication.
+>
+> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
 
-The server permission checks the OPEN, this only affects the subsequent ACCESS.
+Hm. The switch from ioremap to map_vm_area() here seems to imply that
+lib/ioremap can/should be reworked to use just wrap the vmalloc
+functions too?
 
-The server will fail the OPEN with NFS4_ERR_ACCESS if the open is for read/write and the file has write-execute permission.
+Unrelated to this change.
 
-See the test program I subsequently posted. The program demonstrates that open O_RDWR on a mode=0333 file fails as expected. (Tested on both Ganesha and knfsd).
+I did a pass of review here. Nothing stands out as wrong but I don't
+claim to know this area well these days.
 
-Frank
+What's the merge/ack plan here? It might reduce the complexity of
+merging to add the common functions in your series, then move the ARM
+code over separately?
 
 
+-Olof
