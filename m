@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751900AbaGIFL4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 01:11:56 -0400
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:40684 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbaGIFLz (ORCPT
+	id S1752336AbaGIFOM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 01:14:12 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:38783 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718AbaGIFOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 01:11:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMEtUuydrYMGdg2zNDYX4vKL0_-reF+yOPKx5hpUvy4guuVeBg@mail.gmail.com>
-References: <1404803213-10653-1-git-send-email-zlim.lnx@gmail.com>
-	<CAMEtUuydrYMGdg2zNDYX4vKL0_-reF+yOPKx5hpUvy4guuVeBg@mail.gmail.com>
-Date: Tue, 8 Jul 2014 22:11:54 -0700
-Message-ID: <CABg9mcv+7qSOSKw9emq1A+JbEvrUT9k4vAHMx9pdJiy4R4ZF9A@mail.gmail.com>
-Subject: Re: [PATCH RFCv2] arm64: eBPF JIT compiler
-From: Z Lim <zlim.lnx@gmail.com>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Network Development <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 9 Jul 2014 01:14:11 -0400
+From: Anton Protopopov <a.s.protopopov@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Anton Protopopov <a.s.protopopov@gmail.com>
+Subject: [PATCH] Staging: comedi: check the return value of kobject_set_name
+Date: Wed,  9 Jul 2014 09:12:37 +0400
+Message-Id: <1404882757-5164-1-git-send-email-a.s.protopopov@gmail.com>
+X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <20140709045553.GA9861@kroah.com>
+References: <20140709045553.GA9861@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 8, 2014 at 2:24 AM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> On Tue, Jul 8, 2014 at 12:06 AM, Zi Shen Lim <zlim.lnx@gmail.com> wrote:
-[...]
->>   Also, per discussion with Alexei, and additional suggestion from
->>   Daniel:
->>   - moved load_pointer() from net/core/filter.c into filter.h
->>     as bpf_load_pointer()
->>   which is done as a separate preparatory patch. [1]
->>
->> [1] http://patchwork.ozlabs.org/patch/366906/
->
-> Just to clarify. This patch is on top of [1]
+Added a check of the return value of the kobject_set_name function.
 
-Yes, that's correct. This patch uses bpf_load_pointer() from [1].
+Signed-off-by: Anton Protopopov <a.s.protopopov@gmail.com>
+---
+ drivers/staging/comedi/comedi_fops.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-BTW, looks like David has applied it in net-next 9f12fbe603f7
-("net: filter: move load_pointer() into filter.h").
+diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+index 9d99fb3..dfeefa2 100644
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -2597,7 +2597,14 @@ static int __init comedi_init(void)
+ 		return -EIO;
+ 	cdev_init(&comedi_cdev, &comedi_fops);
+ 	comedi_cdev.owner = THIS_MODULE;
+-	kobject_set_name(&comedi_cdev.kobj, "comedi");
++
++	retval = kobject_set_name(&comedi_cdev.kobj, "comedi");
++	if (retval) {
++		unregister_chrdev_region(MKDEV(COMEDI_MAJOR, 0),
++					 COMEDI_NUM_MINORS);
++		return retval;
++	}
++
+ 	if (cdev_add(&comedi_cdev, MKDEV(COMEDI_MAJOR, 0), COMEDI_NUM_MINORS)) {
+ 		unregister_chrdev_region(MKDEV(COMEDI_MAJOR, 0),
+ 					 COMEDI_NUM_MINORS);
+-- 
+1.8.3.4
 
-[...]
->> +               case BPF_DW:
->
-> this case can be removed too.
-
-Thanks for catching this :) I've removed it.
-
->
-> Acked-by: Alexei Starovoitov <ast@plumgrid.com>
->
-> Great work. Thanks.
-
-Thanks for your time and feedback!
