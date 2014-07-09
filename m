@@ -1,75 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755630AbaGIKWF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 06:22:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36036 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755590AbaGIKWA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 06:22:00 -0400
-Date: Wed, 9 Jul 2014 11:21:54 +0100
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.10 00/53] 3.10.48-stable review
-Message-ID: <20140709102154.GC6924@hercules>
-References: <20140707235829.281783607@linuxfoundation.org>
- <53BBEFE9.7030508@roeck-us.net>
- <20140708221517.GD29964@kroah.com>
+	id S1755505AbaGIKZN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 06:25:13 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:45629 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754682AbaGIKZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 06:25:11 -0400
+From: Keerthy <j-keerthy@ti.com>
+To: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+CC: <mark.rutland@arm.com>, <galak@codeaurora.org>, <robh+dt@kernel.org>,
+        <linux@arm.linux.org.uk>, <balbi@ti.com>, <tony@atomide.com>,
+        <kishon@ti.com>, <broonie@kernel.org>, Keerthy <j-keerthy@ti.com>
+Subject: [PATCH v4] regulator: tps65218: Add fixed_uV fields for dcdc5 and dcdc6
+Date: Wed, 9 Jul 2014 15:52:59 +0530
+Message-ID: <1404901379-30135-1-git-send-email-j-keerthy@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1404884193-20580-2-git-send-email-j-keerthy@ti.com>
+References: <1404884193-20580-2-git-send-email-j-keerthy@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140708221517.GD29964@kroah.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 08, 2014 at 03:15:17PM -0700, Greg Kroah-Hartman wrote:
-> On Tue, Jul 08, 2014 at 06:19:37AM -0700, Guenter Roeck wrote:
-> > On 07/07/2014 04:57 PM, Greg Kroah-Hartman wrote:
-> > >This is the start of the stable review cycle for the 3.10.48 release.
-> > >There are 53 patches in this series, all will be posted as a response
-> > >to this one.  If anyone has any issues with these being applied, please
-> > >let me know.
-> > >
-> > >Responses should be made by Wed Jul  9 23:58:20 UTC 2014.
-> > >Anything received after that time might be too late.
-> > >
-> > 
-> > Build results:
-> > 	total: 138 pass: 137 fail: 1
-> > Failed builds:
-> > 	score:defconfig
-> > 
-> > Qemu tests all passed.
-> > 
-> > This is an improvement over 3.10.47, as the unicore32 build now passes.
-> 
-> Yeah!
-> 
-> > Details are available at http://server.roeck-us.net:8010/builders.
-> > 
-> > The following patches would fix the remaining build failure.
-> > 
-> > ae49b83dca score: normalize global variables exported by vmlinux.lds
-> > 1ed62ca648 Score: Implement the function csum_ipv6_magic
-> > 5fbbf8a1a9 Score: The commit is for compiling successfully
-> > df9e4d1c39 Score: Modify the Makefile of Score, remove -mlong-calls for compiling
-> 
-> Ok, will do that for the next stable release, thanks.
-> 
-> greg k-h
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Add fixed_uV fields for dcdc5 and dcdc6.
 
-I'll queue them for the 3.11 kernel as well.  Thanks.
+Signed-off-by: Keerthy <j-keerthy@ti.com>
+---
+Changes from V3:
 
-Cheers,
---
-Luís
+  * Rebased to Latest for/tps65218 branch.
+
+ drivers/regulator/tps65218-regulator.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/regulator/tps65218-regulator.c b/drivers/regulator/tps65218-regulator.c
+index e610dad..f0a4028 100644
+--- a/drivers/regulator/tps65218-regulator.c
++++ b/drivers/regulator/tps65218-regulator.c
+@@ -30,7 +30,7 @@
+ enum tps65218_regulators { DCDC1, DCDC2, DCDC3, DCDC4, DCDC5, DCDC6, LDO1 };
+ 
+ #define TPS65218_REGULATOR(_name, _id, _ops, _n, _vr, _vm, _er, _em, \
+-			    _lr, _nlr, _delay)			\
++			    _lr, _nlr, _delay, _fuv)		\
+ 	{							\
+ 		.name			= _name,		\
+ 		.id			= _id,			\
+@@ -46,6 +46,7 @@ enum tps65218_regulators { DCDC1, DCDC2, DCDC3, DCDC4, DCDC5, DCDC6, LDO1 };
+ 		.linear_ranges		= _lr,			\
+ 		.n_linear_ranges	= _nlr,			\
+ 		.ramp_delay		= _delay,		\
++		.fixed_uV		= _fuv			\
+ 	}							\
+ 
+ #define TPS65218_INFO(_id, _nm, _min, _max)	\
+@@ -186,32 +187,32 @@ static const struct regulator_desc regulators[] = {
+ 			   TPS65218_REG_CONTROL_DCDC1,
+ 			   TPS65218_CONTROL_DCDC1_MASK,
+ 			   TPS65218_REG_ENABLE1, TPS65218_ENABLE1_DC1_EN,
+-			   dcdc1_dcdc2_ranges, 2, 4000),
++			   dcdc1_dcdc2_ranges, 2, 4000, 0),
+ 	TPS65218_REGULATOR("DCDC2", TPS65218_DCDC_2, tps65218_dcdc12_ops, 64,
+ 			   TPS65218_REG_CONTROL_DCDC2,
+ 			   TPS65218_CONTROL_DCDC2_MASK,
+ 			   TPS65218_REG_ENABLE1, TPS65218_ENABLE1_DC2_EN,
+-			   dcdc1_dcdc2_ranges, 2, 4000),
++			   dcdc1_dcdc2_ranges, 2, 4000, 0),
+ 	TPS65218_REGULATOR("DCDC3", TPS65218_DCDC_3, tps65218_ldo1_dcdc34_ops,
+ 			   64, TPS65218_REG_CONTROL_DCDC3,
+ 			   TPS65218_CONTROL_DCDC3_MASK, TPS65218_REG_ENABLE1,
+-			   TPS65218_ENABLE1_DC3_EN, ldo1_dcdc3_ranges, 2, 0),
++			   TPS65218_ENABLE1_DC3_EN, ldo1_dcdc3_ranges, 2, 0, 0),
+ 	TPS65218_REGULATOR("DCDC4", TPS65218_DCDC_4, tps65218_ldo1_dcdc34_ops,
+ 			   53, TPS65218_REG_CONTROL_DCDC4,
+ 			   TPS65218_CONTROL_DCDC4_MASK,
+ 			   TPS65218_REG_ENABLE1, TPS65218_ENABLE1_DC4_EN,
+-			   dcdc4_ranges, 2, 0),
++			   dcdc4_ranges, 2, 0, 0),
+ 	TPS65218_REGULATOR("DCDC5", TPS65218_DCDC_5, tps65218_dcdc56_pmic_ops,
+ 			   1, -1, -1, TPS65218_REG_ENABLE1,
+-			   TPS65218_ENABLE1_DC5_EN, NULL, 0, 0),
++			   TPS65218_ENABLE1_DC5_EN, NULL, 0, 0, 1000000),
+ 	TPS65218_REGULATOR("DCDC6", TPS65218_DCDC_6, tps65218_dcdc56_pmic_ops,
+ 			   1, -1, -1, TPS65218_REG_ENABLE1,
+-			   TPS65218_ENABLE1_DC6_EN, NULL, 0, 0),
++			   TPS65218_ENABLE1_DC6_EN, NULL, 0, 0, 1800000),
+ 	TPS65218_REGULATOR("LDO1", TPS65218_LDO_1, tps65218_ldo1_dcdc34_ops, 64,
+ 			   TPS65218_REG_CONTROL_LDO1,
+ 			   TPS65218_CONTROL_LDO1_MASK, TPS65218_REG_ENABLE2,
+ 			   TPS65218_ENABLE2_LDO1_EN, ldo1_dcdc3_ranges,
+-			   2, 0),
++			   2, 0, 0),
+ };
+ 
+ static int tps65218_regulator_probe(struct platform_device *pdev)
+-- 
+1.7.9.5
+
