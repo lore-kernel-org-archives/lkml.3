@@ -1,42 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928AbaGIFwf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 01:52:35 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:54907 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718AbaGIFwe (ORCPT
+	id S1753116AbaGIFwk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 01:52:40 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:34733 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574AbaGIFwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 01:52:34 -0400
+	Wed, 9 Jul 2014 01:52:38 -0400
 From: sanjeev sharma <sanjeevsharmaengg@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: rmfrfs@gmail.com, peter.senna@gmail.com, teobaluta@gmail.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        sanjeev sharma <sanjeev_sharma@mentor.com>
-Subject: [PATCH v2 0/4] Fix checkpatch reported problem in r819xU_phy.c
-Date: Wed,  9 Jul 2014 11:34:16 +0530
-Message-Id: <1404885860-19468-1-git-send-email-sanjeevsharmaengg@gmail.com>
+        sanjeev sharma <sanjeev_sharma@mentor.com>,
+        Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+Subject: [PATCH v2 1/4] staging: rtl8192u: Remove useless return statement in r819xU_phy.c
+Date: Wed,  9 Jul 2014 11:34:17 +0530
+Message-Id: <1404885860-19468-2-git-send-email-sanjeevsharmaengg@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <20140708100142.GR25934@mwanda>
+In-Reply-To: <1404885860-19468-1-git-send-email-sanjeevsharmaengg@gmail.com>
 References: <20140708100142.GR25934@mwanda>
+ <1404885860-19468-1-git-send-email-sanjeevsharmaengg@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: sanjeev sharma <sanjeev_sharma@mentor.com>
 
-I have come up with seperate patch as per Dan comment.
+This is a patch to the r819xU_phy.c file that remove unneeded return statements in code.
 
-sanjeev sharma (4):
-  staging: rtl8192u: Remove useless return statement in r819xU_phy.c
-  staging: rtl8192u: Removed unnecessary whitespace & tab warning  in
-    r819xU_phy.c
-  staging: rtl8192u: Fixed switch and case indentation error in
-    r819xU_phy.c
-  staging: rtl8192u: Fixed too long lines in r819xU_phy.c
+Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+---
+Changes in v2:
+  - Remove useless return statement.
+---
+ drivers/staging/rtl8192u/r819xU_phy.c | 13 -------------
+ 1 file changed, 13 deletions(-)
 
- drivers/staging/rtl8192u/r819xU_phy.c | 58 +++++++++++++++--------------------
- 1 file changed, 25 insertions(+), 33 deletions(-)
-
+diff --git a/drivers/staging/rtl8192u/r819xU_phy.c b/drivers/staging/rtl8192u/r819xU_phy.c
+index 02554c9..0bcdd4e 100644
+--- a/drivers/staging/rtl8192u/r819xU_phy.c
++++ b/drivers/staging/rtl8192u/r819xU_phy.c
+@@ -101,7 +101,6 @@ void rtl8192_setBBreg(struct net_device *dev, u32 reg_addr, u32 bitmask,
+ 	} else {
+ 		write_nic_dword(dev, reg_addr, data);
+ 	}
+-	return;
+ }
+ 
+ /******************************************************************************
+@@ -281,7 +280,6 @@ static void rtl8192_phy_RFSerialWrite(struct net_device *dev,
+ 					 priv->RfReg0Value[eRFPath] << 16);
+ 		}
+ 	}
+-	return;
+ }
+ 
+ /******************************************************************************
+@@ -332,7 +330,6 @@ void rtl8192_phy_SetRFReg(struct net_device *dev, RF90_RADIO_PATH_E eRFPath,
+ 			rtl8192_phy_RFSerialWrite(dev, eRFPath, reg_addr, data);
+ 		}
+ 	}
+-	return;
+ }
+ 
+ /******************************************************************************
+@@ -513,7 +510,6 @@ void rtl8192_phy_configmac(struct net_device *dev)
+ 		rtl8192_setBBreg(dev, pdwArray[i], pdwArray[i+1],
+ 				 pdwArray[i+2]);
+ 	}
+-	return;
+ }
+ 
+ /******************************************************************************
+@@ -559,7 +555,6 @@ void rtl8192_phyConfigBB(struct net_device *dev, u8 ConfigType)
+ 				 rtl819XAGCTAB_Array[i+1]);
+ 		}
+ 	}
+-	return;
+ }
+ 
+ /******************************************************************************
+@@ -846,7 +841,6 @@ static void rtl8192_BB_Config_ParaFile(struct net_device *dev)
+ 	priv->bCckHighPower = (u8)rtl8192_QueryBBReg(dev,
+ 						     rFPGA0_XA_HSSIParameter2,
+ 						     0x200);
+-	return;
+ }
+ 
+ /******************************************************************************
+@@ -864,7 +858,6 @@ void rtl8192_BBConfig(struct net_device *dev)
+ 	 * implemented, so use file first.
+ 	 * FIXME: should implement it for hardcode? */
+ 	rtl8192_BB_Config_ParaFile(dev);
+-	return;
+ }
+ 
+ 
+@@ -912,8 +905,6 @@ void rtl8192_phy_getTxPower(struct net_device *dev)
+ 
+ 	/* Read SIFS (save the value read fome MACPHY_REG.txt) */
+ 	read_nic_word(dev, SIFS, &priv->SifsTime);
+-
+-	return;
+ }
+ 
+ /******************************************************************************
+@@ -942,7 +933,6 @@ void rtl8192_phy_setTxPower(struct net_device *dev, u8 channel)
+ 			 __func__);
+ 		break;
+ 	}
+-	return;
+ }
+ 
+ /******************************************************************************
+@@ -963,7 +953,6 @@ void rtl8192_phy_RFConfig(struct net_device *dev)
+ 			RT_TRACE(COMP_ERR, "error chip id\n");
+ 			break;
+ 	}
+-	return;
+ }
+ 
+ /******************************************************************************
+@@ -974,7 +963,6 @@ void rtl8192_phy_RFConfig(struct net_device *dev)
+  ******************************************************************************/
+ void rtl8192_phy_updateInitGain(struct net_device *dev)
+ {
+-	return;
+ }
+ 
+ /******************************************************************************
+@@ -1094,7 +1082,6 @@ static void rtl8192_SetTxPowerLevel(struct net_device *dev, u8 channel)
+ 		RT_TRACE(COMP_ERR, "unknown rf chip ID in %s()\n", __func__);
+ 		break;
+ 	}
+-	return;
+ }
+ 
+ /******************************************************************************
 -- 
 1.7.11.7
 
