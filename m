@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735AbaGJHdd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 03:33:33 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:54797 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768AbaGJHdc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 03:33:32 -0400
+	id S1751829AbaGJHdp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 03:33:45 -0400
+Received: from mga03.intel.com ([143.182.124.21]:56586 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751786AbaGJHdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 03:33:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,636,1400050800"; 
+   d="scan'208";a="455293394"
+Date: Thu, 10 Jul 2014 07:30:49 +0800
+From: Yuyang Du <yuyang.du@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: bsegall@google.com, mingo@redhat.com, linux-kernel@vger.kernel.org,
+        rafael.j.wysocki@intel.com, arjan.van.de.ven@intel.com,
+        len.brown@intel.com, alan.cox@intel.com, mark.gross@intel.com,
+        pjt@google.com, fengguang.wu@intel.com
+Subject: Re: [PATCH 2/2] sched: Rewrite per entity runnable load average
+ tracking
+Message-ID: <20140709233049.GA12024@intel.com>
+References: <1404268256-3019-1-git-send-email-yuyang.du@intel.com>
+ <1404268256-3019-2-git-send-email-yuyang.du@intel.com>
+ <20140707104646.GK6758@twins.programming.kicks-ass.net>
+ <xm26r41wyfgc.fsf@sword-of-the-dawn.mtv.corp.google.com>
+ <20140708000840.GB25653@intel.com>
+ <xm26k37nye7d.fsf@sword-of-the-dawn.mtv.corp.google.com>
+ <20140709010753.GD25653@intel.com>
+ <20140709184543.GI9918@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <1326492948-26160-1-git-send-email-dianders@chromium.org>
-References: <1326156853-24840-1-git-send-email-dianders@chromium.org>
-	<1326492948-26160-1-git-send-email-dianders@chromium.org>
-Date: Thu, 10 Jul 2014 09:33:31 +0200
-X-Google-Sender-Auth: vn_IOr3AO-UjMdSRbFc-QaB5OeE
-Message-ID: <CANcMJZBDyx4KXB18nn=2zO-eEpeq2eL+7mpLhhsgsc632P9uAg@mail.gmail.com>
-Subject: Re: [PATCH v2] of: Support CONFIG_CMDLINE_EXTEND config option
-From: John Stultz <john.stultz@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rob Herring <rob.herring@linaro.org>, Colin Cross <ccross@android.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140709184543.GI9918@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 11:15 PM, Doug Anderson <dianders@chromium.org> wrote:
-> The old logic assumes CMDLINE_FROM_BOOTLOADER vs. CMDLINE_FORCE and
-> ignores CMDLINE_EXTEND.  Here's the old logic:
->
-> - CONFIG_CMDLINE_FORCE=true
->     CONFIG_CMDLINE
-> - dt bootargs=non-empty:
->     dt bootargs
-> - dt bootargs=empty, @data is non-empty string
->     @data is left unchanged
-> - dt bootargs=empty, @data is empty string
->     CONFIG_CMDLINE (or "" if that's not defined)
->
-> The new logic is now documented in of_fdt.h and is copied here for
-> reference:
->
-> - CONFIG_CMDLINE_FORCE=true
->     CONFIG_CMDLINE
-> - CONFIG_CMDLINE_EXTEND=true, @data is non-empty string
->     @data + dt bootargs (even if dt bootargs are empty)
-> - CONFIG_CMDLINE_EXTEND=true, @data is empty string
->     CONFIG_CMDLINE + dt bootargs (even if dt bootargs are empty)
-> - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=non-empty:
->     dt bootargs
-> - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=empty, @data is non-empty string
->     @data is left unchanged
-> - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=empty, @data is empty string
->     CONFIG_CMDLINE (or "" if that's not defined)
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> CC: devicetree-discuss@lists.ozlabs.org
-> CC: Grant Likely <grant.likely@secretlab.ca>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Rob Herring <rob.herring@calxeda.com>
-> ---
-> I didn't hear a response from Ben about whether he was OK with
-> my proposal for how CONFIG_CMDLINE_EXTEND should behave with
-> a non-empty @data, so sending out code that implements my
-> interpretation.  Hopefully this looks OK.
->
-> Changes in v2:
-> - Removed broken fix for the case when there is no "chosen" attribute.
-> - Changed CONFIG_CMDLINE_EXTEND behavior when @data is a non-empty string.
+Thanks, Peter.
 
-In reviewing some of the random patches in the Android AOSP common.git
-tree, I noticed this one, and found this discussion which petered out
-without resolution.  Were there any objections still, or did this just
-slip through the cracks?
+On Wed, Jul 09, 2014 at 08:45:43PM +0200, Peter Zijlstra wrote:
 
-Note, there's also this follow-on fix from Colin, which probably
-should be included if the parent patch is merged:
-https://android.googlesource.com/kernel/common.git/+/a2acc58bc7460a03627f20842a7169d7a1328299
+> Nope :-).. we got rid of that lock for a good reason.
+> 
+> Also, this is one area where I feel performance really trumps
+> correctness, we can fudge the blocked load a little. So the
+> sched_clock_cpu() difference is a strict upper bound on the
+> rq_clock_task() difference (and under 'normal' circumstances shouldn't
+> be much off).
 
-thanks
--john
+Strictly, migrating wakee task on remote CPU entails two steps:
+
+(1) Catch up with task's queue's last_update_time, and then substract
+
+(2) Cache up with "current" time of remote CPU (for comparable matter), and then
+    on new CPU, change to the new timing source (when enqueue)
+
+So I will try sched_clock_cpu(remote_cpu) for step (2). For step (2), maybe we
+should not use cfs_rq_clock_task anyway, since the task is about to going
+to another CPU/queue. Is this right?
+
+I made another mistake. Should not only track task entity load, group entity
+(as an entity) is also needed. Otherwise, task_h_load can't be done correctly...
+Sorry for the messup. But this won't make much change in the codes.
+
+Thanks,
+Yuyang
+ 
+> So we could simply use a timestamps from dequeue and one from enqueue,
+> and use that.
+> 
+> As to the remote subtraction, a RMW on another cacheline than the
+> rq->lock one should be good; esp since we don't actually observe the
+> per-rq total often (once per tick or so) I think, no?
+> 
+> The thing is, we do not want to disturb scheduling on whatever cpu the
+> task last ran on if we wake it to another cpu. Taking rq->lock wrecks
+> that for sure. 
+
+
