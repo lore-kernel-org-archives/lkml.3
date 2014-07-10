@@ -1,70 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751588AbaGJKdJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 06:33:09 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:36769 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750778AbaGJKdH (ORCPT
+	id S1751943AbaGJKdX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 06:33:23 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:37764 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053AbaGJKdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 06:33:07 -0400
+	Thu, 10 Jul 2014 06:33:20 -0400
 MIME-Version: 1.0
-In-Reply-To: <9b76360fb30745d3941b6d56bdae268f@BY2PR03MB299.namprd03.prod.outlook.com>
-References: <1404866789-26910-1-git-send-email-kys@microsoft.com>
-	<1404866812-26950-1-git-send-email-kys@microsoft.com>
-	<1404866812-26950-6-git-send-email-kys@microsoft.com>
-	<20140709084415.GF6012@infradead.org>
-	<9b76360fb30745d3941b6d56bdae268f@BY2PR03MB299.namprd03.prod.outlook.com>
-Date: Thu, 10 Jul 2014 12:33:05 +0200
-Message-ID: <CAFLxGvzFTeE9J-4KFUn9q1fggB_pGBHEMEPcBtDhje+uRm7yMw@mail.gmail.com>
-Subject: Re: [PATCH 6/8] Drivers: scsi: storvsc: Implement an abort handler
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
+In-Reply-To: <CAMuHMdU2HyCwXBJTAyswyj7XqhzhHQ24MamGLLVgMwU4xi0kxQ@mail.gmail.com>
+References: <1404982207-4707-1-git-send-email-harinik@xilinx.com>
+	<1404982207-4707-2-git-send-email-harinik@xilinx.com>
+	<CAMuHMdXO-PkQ+07F=aZEjvH1Kh7uhWK8i3V9w+1aHvvtg7wDoQ@mail.gmail.com>
+	<CAFcVECJ93Lw1MRVU-=zLRbB6To--zmAxz8OLObu=mhV84-FTNA@mail.gmail.com>
+	<CAMuHMdU2HyCwXBJTAyswyj7XqhzhHQ24MamGLLVgMwU4xi0kxQ@mail.gmail.com>
+Date: Thu, 10 Jul 2014 16:03:19 +0530
+Message-ID: <CAFcVEC+-bM91WmfwweDdTvJ7KwH+dxKDLkzsT82snWKhukLeYQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/2] spi: Add support for Zynq QSPI controller
+From: Harini Katakam <harinikatakamlinux@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Mark Brown <broonie@kernel.org>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        linux-spi <linux-spi@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "jbottomley@parallels.com" <jbottomley@parallels.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        =?UTF-8?B?TWFyZWsgVmHFoXV0?= <marex@denx.de>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Jingoo Han <jg1.han@samsung.com>, Sourav Poddar <sourav.poddar@ti.com>,
+        "michals@xilinx.com" <michals@xilinx.com>,
+        Punnaiah Choudary Kalluri <punnaia@xilinx.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 9, 2014 at 8:51 PM, KY Srinivasan <kys@microsoft.com> wrote:
+Hi Geert,
+
+On Thu, Jul 10, 2014 at 3:12 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> Hi Harini,
 >
->
->> -----Original Message-----
->> From: Christoph Hellwig [mailto:hch@infradead.org]
->> Sent: Wednesday, July 9, 2014 1:44 AM
->> To: KY Srinivasan
->> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
->> ohering@suse.com; jbottomley@parallels.com; jasowang@redhat.com;
->> apw@canonical.com; linux-scsi@vger.kernel.org
->> Subject: Re: [PATCH 6/8] Drivers: scsi: storvsc: Implement an abort handler
+> On Thu, Jul 10, 2014 at 11:31 AM, Harini Katakam
+> <harinikatakamlinux@gmail.com> wrote:
+>>>> +       master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_RX_DUAL | SPI_RX_QUAD |
+>>>> +                           SPI_TX_DUAL | SPI_TX_QUAD;
+>>>
+>>> Your driver advertises Dual/Quad SPI Transfer capabilities, but it doesn't
+>>> check spi_transfer.[tr]x_nbits? How can it determine when to enable Dual/Quad?
 >>
->> On Tue, Jul 08, 2014 at 05:46:50PM -0700, K. Y. Srinivasan wrote:
->> > Implement a simple abort handler. The host does not support "Abort";
->> > just ensure that all inflight I/Os have been accounted for.
->>
->> The abort handler should abort a single command, not wait for all of them.
->> What issue do you see that this tries to address?
+>> Here the driver is just giving information that the controller support it.
+>> The MTD layer enables dual/quad based on what the flash supports; quad
+>> being the first priority
+>> I understand that the spi core reads rx, tx-bus-width property and
+>> master support flags and
+>> performs the necessary checks.
 >
-> On Azure, we sometimes have unbounded I/O latencies and some distributions (such as SLES12) based on recent kernels are invoking
-> the "Abort Handler". Unfortunately, our scsi emulation on the host does not support aborting a command.
-> The issue I have seen is that the upper level scsi code attempts error recovery when the command times out and finally frees up the command.
-> The host subsequently responds to the command that has timed out and since the memory has been freed up, we end up touching freed memory
-> in this driver. Since the host is also doing error recovery, by just delaying the error handler in the guest until we can account for all the in-flight commands,
-> we can get around the problem.
+> That's correct: as long as the rx, tx-bus-width  properties do not indicate a
+> Dual or Quad wiring, it won't be used.
+>
+> However, based on schematics, someone may set the rx, tx-bus-width properties
+> to 4, which is correct, as DT describes the hardware. But this will fail to
+> work.
+> So I think it's safer not to announce Dual/Quad support in the driver until
+> the actual driver support is there.
+>
 
-I see strange issues in Azure and maybe they are related to this.
-Some Linux machines crash in a way that no disk IO is possible (thus,
-no SSH for me) but they still respond to
-ping. It happens rather seldom (every few weeks).
+OK. Correct me if I'm wrong but announcing this support in master->flags is
+just to say the controller supports it - Like Punnaiah mentioned in the other
+mail, nothing specific needs to be done from the controller driver to enable
+dual/quad support. This is at the SOC/IP level.
+I agree it might or might not be supported at board-level.
+But that's based on the user's hardware. Should master->flags
+really take this into consideration?
 
-Do you see similar symptoms?
+BTW, I dint see master->mode_bits being used anywhere at the moment.
 
--- 
-Thanks,
-//richard
+Regards,
+Harini
