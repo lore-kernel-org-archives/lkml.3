@@ -1,91 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345AbaGJMSH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 08:18:07 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:44273 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752484AbaGJMSE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 08:18:04 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-f0-53be84785f79
-Message-id: <53BE8333.6060404@samsung.com>
-Date: Thu, 10 Jul 2014 16:12:35 +0400
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Dave Hansen <dave.hansen@intel.com>, linux-kernel@vger.kernel.org
-Cc: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
-        Alexey Preobrazhensky <preobr@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        x86@kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC/PATCH RESEND -next 01/21] Add kernel address sanitizer
- infrastructure.
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1404905415-9046-2-git-send-email-a.ryabinin@samsung.com>
- <53BDA568.5030607@intel.com>
-In-reply-to: <53BDA568.5030607@intel.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsVy+t/xa7oVLfuCDU62K1j83juT1WLO+jVs
-	Fte/vWG0+PTyAaPFhIdt7BYru5vZLLY/e8tksbLzAavFpsfXWC3+7NrBZHF51xw2i3tr/rNa
-	3L7Ma3HpwAImi5Z9F5gs2j7/Y7XYt/I8kLVkI5PF4iO3mS3ePZvMbLF501Rmix8bHrM6iHm0
-	NPeweeycdZfdY8GmUo/Fe14yeWxa1cnmsenTJHaPrrdXmDzenTvH7nFixm8WjydXpjN5bF5S
-	7/Hx6S0Wj/f7rrJ5nFlwhN3j8ya5AP4oLpuU1JzMstQifbsEroz1LcuYCv6zV/ze3cTcwNjE
-	1sXIySEhYCIx9e19dghbTOLCvfVAcS4OIYGljBIL1txggXCamSRunpgBVsUroCUx7/tTRhCb
-	RUBV4te9X2BxNgE9iX+ztoNNFRWIkDjQ94wVol5Q4sfkeywgtoiAq8SK7lawocwC11kl2i8f
-	BhskLBAl0fP8DCPEtgWMEm82LWEGSXAKaErs2vsUrJtZQEdif+s0NghbXmLzmrfMExgFZiFZ
-	MgtJ2SwkZQsYmVcxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn525ihMT3lx2Mi49ZHWIU4GBU4uHV
-	qN0dLMSaWFZcmXuIUYKDWUmEN6tuX7AQb0piZVVqUX58UWlOavEhRiYOTqkGxqnKX907vssl
-	vHTR372twGjvk68V4Twb5vUIvNp03kNo4YuVS/cHvRAX35Rld33lDLdfEYVbPOTTUnWPBEd+
-	uh5XeEaXXcc9izNSc3lHlyZDbkh4W6SB6sGDSdoO65Qdw5SXNisuzXvW5Fy3aZHgqlm582ex
-	9ik83rhiR/pTiXkNZ9pcp504oMRSnJFoqMVcVJwIAPcdevfNAgAA
+	id S1753390AbaGJMSf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 08:18:35 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:53645 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752681AbaGJMSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 08:18:34 -0400
+Date: Thu, 10 Jul 2014 08:18:30 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 6/6] mm: page_alloc: Reduce cost of the fair zone
+ allocation policy
+Message-ID: <20140710121830.GN29639@cmpxchg.org>
+References: <1404893588-21371-1-git-send-email-mgorman@suse.de>
+ <1404893588-21371-7-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404893588-21371-7-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/14 00:26, Dave Hansen wrote:
-> On 07/09/2014 04:29 AM, Andrey Ryabinin wrote:
->> Address sanitizer dedicates 1/8 of the low memory to the shadow memory and uses direct
->> mapping with a scale and offset to translate a memory address to its corresponding
->> shadow address.
->>
->> Here is function to translate address to corresponding shadow address:
->>
->>      unsigned long kasan_mem_to_shadow(unsigned long addr)
->>      {
->>                 return ((addr - PAGE_OFFSET) >> KASAN_SHADOW_SCALE_SHIFT)
->>                              + kasan_shadow_start;
->>      }
+On Wed, Jul 09, 2014 at 09:13:08AM +0100, Mel Gorman wrote:
+> The fair zone allocation policy round-robins allocations between zones
+> within a node to avoid age inversion problems during reclaim. If the
+> first allocation fails, the batch counts is reset and a second attempt
+> made before entering the slow path.
 > 
-> How does this interact with vmalloc() addresses or those from a kmap()?
+> One assumption made with this scheme is that batches expire at roughly the
+> same time and the resets each time are justified. This assumption does not
+> hold when zones reach their low watermark as the batches will be consumed
+> at uneven rates.  Allocation failure due to watermark depletion result in
+> additional zonelist scans for the reset and another watermark check before
+> hitting the slowpath.
 > 
+> On UMA, the benefit is negligible -- around 0.25%. On 4-socket NUMA
+> machine it's variable due to the variability of measuring overhead with
+> the vmstat changes. The system CPU overhead comparison looks like
+> 
+>           3.16.0-rc3  3.16.0-rc3  3.16.0-rc3
+>              vanilla   vmstat-v5 lowercost-v5
+> User          746.94      774.56      802.00
+> System      65336.22    32847.27    40852.33
+> Elapsed     27553.52    27415.04    27368.46
+> 
+> However it is worth noting that the overall benchmark still completed
+> faster and intuitively it makes sense to take as few passes as possible
+> through the zonelists.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-It's used only for lowmem:
-
-static inline bool addr_is_in_mem(unsigned long addr)
-{
-	return likely(addr >= PAGE_OFFSET && addr < (unsigned long)high_memory);
-}
-
-
-
-static __always_inline void check_memory_region(unsigned long addr,
-						size_t size, bool write)
-{
-
-	....
-	if (!addr_is_in_mem(addr))
-		return;
-	// check shadow here
-
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
