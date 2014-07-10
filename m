@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244AbaGJJ4D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 05:56:03 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:52309 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751987AbaGJJ4B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 05:56:01 -0400
-Message-ID: <53BE632E.5040408@kernel.dk>
-Date: Thu, 10 Jul 2014 11:55:58 +0200
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Philipp Reisner <philipp.reisner@linbit.com>
-CC: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
-Subject: Re: [PATCH] drbd: fix regression 'out of mem, failed to invoke fence-peer
- helper'
-References: <1404933512-5166-1-git-send-email-philipp.reisner@linbit.com> <1404933512-5166-2-git-send-email-philipp.reisner@linbit.com> <53BE57CA.9020807@kernel.dk> <2397073.C8BSPuutsL@fat-tyre>
-In-Reply-To: <2397073.C8BSPuutsL@fat-tyre>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753271AbaGJJ4g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 05:56:36 -0400
+Received: from mga03.intel.com ([143.182.124.21]:65150 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752829AbaGJJ4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 05:56:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,637,1400050800"; 
+   d="scan'208";a="455337991"
+Message-ID: <1404986186.5102.98.camel@smile.fi.intel.com>
+Subject: Re: [PATCH v1 5/5] [S390] zcrypt: use seq_hex_dump() to dump buffers
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Tadeusz Struk <tadeusz.struk@intel.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Helge Deller <deller@gmx.de>,
+        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>, linux390@de.ibm.com,
+        Alexander Viro <viro@zeniv.linux.org.uk>, qat-linux@intel.com,
+        linux-crypto@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 10 Jul 2014 12:56:26 +0300
+In-Reply-To: <1404919470-26668-6-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1404919470-26668-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1404919470-26668-6-git-send-email-andriy.shevchenko@linux.intel.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-07-10 11:53, Philipp Reisner wrote:
-> Am Donnerstag, 10. Juli 2014, 11:07:22 schrieb Jens Axboe:
->> On 2014-07-09 21:18, Philipp Reisner wrote:
->>> From: Lars Ellenberg <lars.ellenberg@linbit.com>
->>>
->>> Since linux kernel 3.13, kthread_run() internally uses
->>> wait_for_completion_killable().  We sometimes may use kthread_run()
->>> while we still have a signal pending, which we used to kick our threads
->>> out of potentially blocking network functions, causing kthread_run() to
->>> mistake that as a new fatal signal and fail.
->>>
->>> Fix: flush_signals() before kthread_run().
->>
->> Applied - should this have been marked stable, if it affects 3..13+ kernels?
->
-> Yes, you are right. It should go to the stable kernels since 3.13 as
-> well.
+On Wed, 2014-07-09 at 18:24 +0300, Andy Shevchenko wrote:
+> Instead of custom approach let's use recently introduced seq_hex_dump() helper.
+> 
+> In this case it slightly changes the output, namely the four tetrads will be
+> output on one line.
 
-Alright, we'll have to notify Greg/stable when it goes in.
+The above paragraph is not true and will be removed in v2.
+The output is kept the same as in original code.
 
-> What is the correct way for me to mark it as stable when sending a patch?
+> 
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> ---
+>  drivers/s390/crypto/zcrypt_api.c | 10 +---------
+>  1 file changed, 1 insertion(+), 9 deletions(-)
+> 
+> diff --git a/drivers/s390/crypto/zcrypt_api.c b/drivers/s390/crypto/zcrypt_api.c
+> index 0e18c5d..d1f9983 100644
+> --- a/drivers/s390/crypto/zcrypt_api.c
+> +++ b/drivers/s390/crypto/zcrypt_api.c
+> @@ -1203,16 +1203,8 @@ static void sprinthx(unsigned char *title, struct seq_file *m,
+>  static void sprinthx4(unsigned char *title, struct seq_file *m,
+>  		      unsigned int *array, unsigned int len)
+>  {
+> -	int r;
+> -
+>  	seq_printf(m, "\n%s\n", title);
+> -	for (r = 0; r < len; r++) {
+> -		if ((r % 8) == 0)
+> -			seq_printf(m, "    ");
+> -		seq_printf(m, "%08X ", array[r]);
+> -		if ((r % 8) == 7)
+> -			seq_putc(m, '\n');
+> -	}
+> +	seq_hex_dump(m, "    ", DUMP_PREFIX_NONE, 32, 4, array, len, false);
+>  	seq_putc(m, '\n');
+>  }
+>  
 
-You just add a:
-
-Cc: stable@kernel.org
-
-where the signed-off-by is. If you know the versions it should be 
-applied to, you can add that information as well. For this case, you 
-would have done:
-
-Cc: stable@kernel.org # v3.13+
-
-to get it into 3.13 stable and later.
 
 -- 
-Jens Axboe
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
 
