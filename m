@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966AbaGJUIj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 16:08:39 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:59186 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752942AbaGJUIf (ORCPT
+	id S1752509AbaGJULZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 16:11:25 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:34960 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751992AbaGJULX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 16:08:35 -0400
-Date: Thu, 10 Jul 2014 13:06:55 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Sasha Levin <sasha.levin@oracle.com>
-cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Vlastimil Babka <vbabka@suse.cz>, akpm@linux-foundation.org,
-        davej@redhat.com, koct9i@gmail.com, lczerner@redhat.com,
-        stable@vger.kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: + shmem-fix-faulting-into-a-hole-while-its-punched-take-2.patch
- added to -mm tree
-In-Reply-To: <alpine.LSU.2.11.1407101131310.19154@eggly.anvils>
-Message-ID: <alpine.LSU.2.11.1407101301230.20929@eggly.anvils>
-References: <53b45c9b.2rlA0uGYBLzlXEeS%akpm@linux-foundation.org> <53BCBF1F.1000506@oracle.com> <alpine.LSU.2.11.1407082309040.7374@eggly.anvils> <53BD1053.5020401@suse.cz> <53BD39FC.7040205@oracle.com> <53BD67DC.9040700@oracle.com>
- <alpine.LSU.2.11.1407092358090.18131@eggly.anvils> <53BE8B1B.3000808@oracle.com> <53BECBA4.3010508@oracle.com> <alpine.LSU.2.11.1407101033280.18934@eggly.anvils> <53BED7F6.4090502@oracle.com> <alpine.LSU.2.11.1407101131310.19154@eggly.anvils>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Thu, 10 Jul 2014 16:11:23 -0400
+Message-ID: <53BEF367.6060703@kernel.dk>
+Date: Thu, 10 Jul 2014 22:11:19 +0200
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Philipp Reisner <philipp.reisner@linbit.com>, linux-kernel@vger.kernel.org
+CC: drbd-dev@lists.linbit.com
+Subject: Re: [GIT PULL] DRBD updates for your for-3.17/drivers branch
+References: <14195494.KgRksUidBS@fat-tyre> <1620384.qJGGe2kQsK@fat-tyre>
+In-Reply-To: <1620384.qJGGe2kQsK@fat-tyre>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Jul 2014, Hugh Dickins wrote:
-> 
-> I'll pore over the new log.  It does help to know that its base kernel
-> is more stable: thanks so much.  But whether I can work out any more...
+On 2014-07-10 18:47, Philipp Reisner wrote:
+> Hi Jens,
+>
+> shame on me. The previous pull request had a mistake in commit
+> 7 'drbd: get rid of atomic update on disk bitmap works'.
+> It missed the function drbd_bm_write_lazy() in drbd_bitmap.c.
+> My test procedure only had a module build, but that does not
+> unveil a completely missed function.
+>
+> Here is a branch with that mistake corrected.
+>
+> The following changes since commit 6a27b656fc0210e976db362e1368c56db05c8f08:
+>
+>    block: virtio-blk: support multi virt queues per virtio-blk device (2014-07-01 10:51:03 -0600)
+>
+> are available in the git repository at:
+>
+>    git://git.linbit.com/linux-drbd.git for-3.17v2
+>
+> for you to fetch changes up to bf0d6e4a1138e71cafdbbb99cde430eee50c4ff1:
+>
+>    drbd: silence underflow warning in read_in_block() (2014-07-10 18:35:23 +0200)
 
-Actually, today's log is not much use to me: for a tenth of a second
-it just shows "NNN printk messages dropped" instead of task traces.
-Do you have a better one?
+Pulled your updated variant, thanks.
 
-Hugh
+-- 
+Jens Axboe
+
