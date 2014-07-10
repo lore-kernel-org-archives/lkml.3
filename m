@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756877AbaGJAaE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 20:30:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49508 "EHLO
+	id S1756781AbaGJAfl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 20:35:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49529 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751766AbaGJAaD (ORCPT
+	with ESMTP id S1751235AbaGJAfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 20:30:03 -0400
-Date: Wed, 9 Jul 2014 17:34:28 -0700
+	Wed, 9 Jul 2014 20:35:39 -0400
+Date: Wed, 9 Jul 2014 17:40:04 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel@vger.kernel.org, Sumit Semwal <sumit.semwal@linaro.org>,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH 1/1] drivers/base/dma-buf.c: replace
- dma_buf_uninit_debugfs by debugfs_remove_recursive
-Message-ID: <20140710003428.GA22113@kroah.com>
-References: <1403901130-8156-1-git-send-email-fabf@skynet.be>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: Rob Herring <robherring2@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jiri Slaby <jslaby@suse.cz>,
+        Paul Bolle <pebolle@tiscali.nl>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Francois.Bedard@synopsys.com
+Subject: Re: [PATCH v2 REBASED 00/10] Generic earlyconsole for ARC UART Driver
+Message-ID: <20140710004004.GB4950@kroah.com>
+References: <1403598315-1429-1-git-send-email-vgupta@synopsys.com>
+ <CAL_JsqJF-a3K+dUHpwgSLNrwZTHLp2uj44bZaNboVpTtc8a-RA@mail.gmail.com>
+ <53B65255.9000303@synopsys.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403901130-8156-1-git-send-email-fabf@skynet.be>
+In-Reply-To: <53B65255.9000303@synopsys.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 10:32:10PM +0200, Fabian Frederick wrote:
-> null test before debugfs_remove_recursive is not needed so one line function
-> dma_buf_uninit_debugfs can be removed.
+On Fri, Jul 04, 2014 at 12:35:57PM +0530, Vineet Gupta wrote:
+> Hi Greg,
 > 
-> This patch calls debugfs_remove_recursive under CONFIG_DEBUG_FS
+> On Wednesday 25 June 2014 02:35 AM, Rob Herring wrote:
+> > On Tue, Jun 24, 2014 at 3:25 AM, Vineet Gupta
+> > <Vineet.Gupta1@synopsys.com> wrote:
+> >> Hi,
+> >>
+> >> This is slightly modified repost of series posted last week
+> >> http://www.spinics.net/lists/linux-serial/msg12884.html
+> >>
+> >> This series switches ARC UART from custom earlyprintk support to generic
+> >> earlycon (many thanks to Rob for doing that). And also build on Grant's recent
+> >> work for using DT stdout-path as default console.
+> >>
+> >> The motivation is to get rid of the early platform code, which in turn
+> >> would help consolidate the init code across several ARC platforms.
+> >>
+> >> First 3 patches are general cleanup/refactoring, not necesarily related to
+> >> earlycon.
+> > 
+> > Other than my comment on patch 6:
+> > 
+> > Reviewed-by: Rob Herring <robh@kernel.org>
 > 
-> Cc: Sumit Semwal <sumit.semwal@linaro.org>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: linux-media@vger.kernel.org
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
-> 
-> This is untested.
-> 
->  drivers/base/dma-buf.c | 13 +++----------
->  1 file changed, 3 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
-> index 840c7fa..184c0cb 100644
-> --- a/drivers/base/dma-buf.c
-> +++ b/drivers/base/dma-buf.c
-> @@ -701,12 +701,6 @@ static int dma_buf_init_debugfs(void)
->  	return err;
->  }
->  
-> -static void dma_buf_uninit_debugfs(void)
-> -{
-> -	if (dma_buf_debugfs_dir)
-> -		debugfs_remove_recursive(dma_buf_debugfs_dir);
-> -}
-> -
->  int dma_buf_debugfs_create_file(const char *name,
->  				int (*write)(struct seq_file *))
->  {
-> @@ -722,9 +716,6 @@ static inline int dma_buf_init_debugfs(void)
->  {
->  	return 0;
->  }
-> -static inline void dma_buf_uninit_debugfs(void)
-> -{
-> -}
->  #endif
->  
->  static int __init dma_buf_init(void)
-> @@ -738,6 +729,8 @@ subsys_initcall(dma_buf_init);
->  
->  static void __exit dma_buf_deinit(void)
->  {
-> -	dma_buf_uninit_debugfs();
-> +#ifdef CONFIG_DEBUG_FS
-> +	debugfs_remove_recursive(dma_buf_debugfs_dir);
-> +#endif
+> Is something else needed for this to me merged in tty-next for 3.17.
+> I've had only 1 minor comment from Rob, and my reply to him never reached completion.
 
-That ifdef should not be needed at all, right?  No ifdefs should be
-needed for debugfs code, if it is written correctly :)
+I'll look at these in a few days...
 
-thanks,
-
-greg k-h
