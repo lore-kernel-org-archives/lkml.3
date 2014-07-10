@@ -1,74 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752528AbaGJPDk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 11:03:40 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:36532 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051AbaGJPDj (ORCPT
+	id S1753481AbaGJPEw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 11:04:52 -0400
+Received: from smtp-s04.adinet.com.uy ([200.40.30.64]:47606 "EHLO
+	smtp-s04.adinet.com.uy" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752194AbaGJPEv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 11:03:39 -0400
-Date: Thu, 10 Jul 2014 11:03:36 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] workqueue fixes for v3.16-rc4 (this one is really for wq)
-Message-ID: <20140710150336.GE6609@htj.dyndns.org>
+	Thu, 10 Jul 2014 11:04:51 -0400
+X-Greylist: delayed 489 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Jul 2014 11:04:51 EDT
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-RefID: str=0001.0A020208.53BEA941.0273,ss=1,re=0.000,fgs=0
+Message-ID: <32951504.3820231405004097565.JavaMail.defaultUser@defaultHost>
+Date: Thu, 10 Jul 2014 11:54:57 -0300 (UYT)
+From: Mercy edgard <wwwevv10102@adinet.com.uy>
+Subject: Hallo
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain;charset="ISO-8859-15"
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: 41.82.154.242
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+Hallo
+Freut mich, dich kennenzulernen
+Am vermissen Mercy, das Interesse an Ihnen,
+und möchten Sie als meinen Freund zu haben,
+antworten Sie mir, so dass ich mein Bild zu euch senden.
 
-Two workqueue fixes.  Both are one liners.  One fixes missing uevent
-for workqueue files on sysfs.  The other one fixes missing zeroing of
-NUMA cpu masks which can lead to oopses among other things.
 
-Thanks.
 
-The following changes since commit ebe06187bf2aec10d537ce4595e416035367d703:
+hello
+nice to meet you
+Am miss Mercy, Interest in you,
+and wish to Have you as my friend,
+reply me so that i can send my picture to you.
 
-  epoll: fix use-after-free in eventpoll_release_file (2014-06-16 17:21:59 -1000)
 
-are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.16-fixes
 
-for you to fetch changes up to 5a6024f1604eef119cf3a6fa413fe0261a81a8f3:
-
-  workqueue: zero cpumask of wq_numa_possible_cpumask on init (2014-07-07 09:56:48 -0400)
-
-----------------------------------------------------------------
-Maxime Bizon (1):
-      workqueue: fix dev_set_uevent_suppress() imbalance
-
-Yasuaki Ishimatsu (1):
-      workqueue: zero cpumask of wq_numa_possible_cpumask on init
-
- kernel/workqueue.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 6203d29..35974ac 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3284,6 +3284,7 @@ int workqueue_sysfs_register(struct workqueue_struct *wq)
- 		}
- 	}
- 
-+	dev_set_uevent_suppress(&wq_dev->dev, false);
- 	kobject_uevent(&wq_dev->dev.kobj, KOBJ_ADD);
- 	return 0;
- }
-@@ -4879,7 +4880,7 @@ static void __init wq_numa_init(void)
- 	BUG_ON(!tbl);
- 
- 	for_each_node(node)
--		BUG_ON(!alloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
-+		BUG_ON(!zalloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
- 				node_online(node) ? node : NUMA_NO_NODE));
- 
- 	for_each_possible_cpu(cpu) {
