@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751727AbaGJV4i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 17:56:38 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:56571 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019AbaGJV4f (ORCPT
+	id S1754143AbaGJV4d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 17:56:33 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:37925 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019AbaGJV41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 17:56:35 -0400
+	Thu, 10 Jul 2014 17:56:27 -0400
 From: Oded Gabbay <oded.gabbay@gmail.com>
 X-Google-Original-From: Oded Gabbay <oded.gabbay@amd.com>
 To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
@@ -14,10 +14,13 @@ To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
 Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         John Bridgman <John.Bridgman@amd.com>,
         Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>
-Subject: [PATCH 58/83] hsa/radeon: Various kernel styling fixes
-Date: Fri, 11 Jul 2014 00:54:14 +0300
-Message-Id: <1405029279-6894-30-git-send-email-oded.gabbay@amd.com>
+        Joerg Roedel <joro@8bytes.org>, Ben Goz <ben.goz@amd.com>,
+        Oded Gabbay <oded.gabbay@amd.com>,
+        Evgeny Pinchuk <evgeny.pinchuk@amd.com>,
+        Alexey Skidanov <Alexey.Skidanov@amd.com>, linux-api@vger.kernel.org
+Subject: [PATCH 55/83] hsa/radeon: Add IOCTL for update queue
+Date: Fri, 11 Jul 2014 00:54:11 +0300
+Message-Id: <1405029279-6894-27-git-send-email-oded.gabbay@amd.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405029279-6894-1-git-send-email-oded.gabbay@amd.com>
 References: <1405029279-6894-1-git-send-email-oded.gabbay@amd.com>
@@ -25,196 +28,269 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Ben Goz <ben.goz@amd.com>
+
+This patch adds a new IOCTL that enables the user to perform update to an HSA
+queue.
+
+Signed-off-by: Ben Goz <ben.goz@amd.com>
 Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
 ---
- drivers/gpu/hsa/radeon/kfd_device_queue_manager.h |  6 +++---
- drivers/gpu/hsa/radeon/kfd_hw_pointer_store.h     |  6 +++---
- drivers/gpu/hsa/radeon/kfd_kernel_queue.h         |  6 +++---
- drivers/gpu/hsa/radeon/kfd_module.c               |  8 ++++----
- drivers/gpu/hsa/radeon/kfd_mqd_manager.h          |  6 +++---
- drivers/gpu/hsa/radeon/kfd_pm4_headers.h          | 11 ++++++-----
- drivers/gpu/hsa/radeon/kfd_pm4_opcodes.h          |  6 +++---
- 7 files changed, 25 insertions(+), 24 deletions(-)
+ drivers/gpu/hsa/radeon/cik_mqds.h                  |  1 -
+ drivers/gpu/hsa/radeon/kfd_chardev.c               | 29 ++++++++++++++++++++++
+ drivers/gpu/hsa/radeon/kfd_device_queue_manager.c  |  1 -
+ drivers/gpu/hsa/radeon/kfd_device_queue_manager.h  |  1 -
+ drivers/gpu/hsa/radeon/kfd_hw_pointer_store.c      |  1 -
+ drivers/gpu/hsa/radeon/kfd_hw_pointer_store.h      |  1 -
+ drivers/gpu/hsa/radeon/kfd_kernel_queue.c          |  1 -
+ drivers/gpu/hsa/radeon/kfd_kernel_queue.h          |  1 -
+ drivers/gpu/hsa/radeon/kfd_mqd_manager.c           |  1 -
+ drivers/gpu/hsa/radeon/kfd_mqd_manager.h           |  1 -
+ drivers/gpu/hsa/radeon/kfd_packet_manager.c        | 23 ++++++++++++++---
+ drivers/gpu/hsa/radeon/kfd_process_queue_manager.c |  1 -
+ drivers/gpu/hsa/radeon/kfd_queue.c                 |  1 -
+ include/uapi/linux/kfd_ioctl.h                     |  9 +++++++
+ 14 files changed, 58 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/gpu/hsa/radeon/kfd_device_queue_manager.h b/drivers/gpu/hsa/radeon/kfd_device_queue_manager.h
-index fe9ef10..57dc636 100644
---- a/drivers/gpu/hsa/radeon/kfd_device_queue_manager.h
-+++ b/drivers/gpu/hsa/radeon/kfd_device_queue_manager.h
-@@ -21,8 +21,8 @@
+diff --git a/drivers/gpu/hsa/radeon/cik_mqds.h b/drivers/gpu/hsa/radeon/cik_mqds.h
+index 58945c8..35a35b4 100644
+--- a/drivers/gpu/hsa/radeon/cik_mqds.h
++++ b/drivers/gpu/hsa/radeon/cik_mqds.h
+@@ -19,7 +19,6 @@
+  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+  * OTHER DEALINGS IN THE SOFTWARE.
   *
+- * Author: Ben Goz
   */
  
--#ifndef DEVICE_QUEUE_MANAGER_H_
--#define DEVICE_QUEUE_MANAGER_H_
-+#ifndef KFD_DEVICE_QUEUE_MANAGER_H_
-+#define KFD_DEVICE_QUEUE_MANAGER_H_
- 
- #include <linux/rwsem.h>
- #include <linux/list.h>
-@@ -98,4 +98,4 @@ struct device_queue_manager {
- 
- 
- 
--#endif /* DEVICE_QUEUE_MANAGER_H_ */
-+#endif /* KFD_DEVICE_QUEUE_MANAGER_H_ */
-diff --git a/drivers/gpu/hsa/radeon/kfd_hw_pointer_store.h b/drivers/gpu/hsa/radeon/kfd_hw_pointer_store.h
-index f384b7f..642703f 100644
---- a/drivers/gpu/hsa/radeon/kfd_hw_pointer_store.h
-+++ b/drivers/gpu/hsa/radeon/kfd_hw_pointer_store.h
-@@ -21,8 +21,8 @@
-  *
-  */
- 
--#ifndef HW_POINTER_STORE_H_
--#define HW_POINTER_STORE_H_
-+#ifndef KFD_HW_POINTER_STORE_H_
-+#define KFD_HW_POINTER_STORE_H_
- 
- #include <linux/mutex.h>
- 
-@@ -61,4 +61,4 @@ radeon_kfd_hw_pointer_store_mmap(struct hw_pointer_store_properties *ptr,
- 		struct vm_area_struct *vma);
- 
- 
--#endif /* HW_POINTER_STORE_H_ */
-+#endif /* KFD_HW_POINTER_STORE_H_ */
-diff --git a/drivers/gpu/hsa/radeon/kfd_kernel_queue.h b/drivers/gpu/hsa/radeon/kfd_kernel_queue.h
-index 963e861..abfb9c8 100644
---- a/drivers/gpu/hsa/radeon/kfd_kernel_queue.h
-+++ b/drivers/gpu/hsa/radeon/kfd_kernel_queue.h
-@@ -21,8 +21,8 @@
-  *
-  */
- 
--#ifndef KERNEL_QUEUE_H_
--#define KERNEL_QUEUE_H_
-+#ifndef KFD_KERNEL_QUEUE_H_
-+#define KFD_KERNEL_QUEUE_H_
- 
- #include <linux/list.h>
- #include <linux/types.h>
-@@ -63,4 +63,4 @@ struct kernel_queue {
- 	struct list_head	list;
- };
- 
--#endif /* KERNEL_QUEUE_H_ */
-+#endif /* KFD_KERNEL_QUEUE_H_ */
-diff --git a/drivers/gpu/hsa/radeon/kfd_module.c b/drivers/gpu/hsa/radeon/kfd_module.c
-index e8bb67c..85069c5 100644
---- a/drivers/gpu/hsa/radeon/kfd_module.c
-+++ b/drivers/gpu/hsa/radeon/kfd_module.c
-@@ -24,7 +24,7 @@
- #include <linux/sched.h>
- #include <linux/notifier.h>
- #include <linux/moduleparam.h>
--
-+#include <linux/device.h>
- #include "kfd_priv.h"
- 
- #define DRIVER_AUTHOR		"Andrew Lewycky, Oded Gabbay, Evgeny Pinchuk, others."
-@@ -46,7 +46,7 @@ static const struct kgd2kfd_calls kgd2kfd = {
- 
- int sched_policy = KFD_SCHED_POLICY_HWS_NO_OVERSUBSCRIPTION;
- module_param(sched_policy, int, S_IRUSR | S_IWUSR);
--MODULE_PARM_DESC(sched_policy, "Kernel comline parameter define the kfd scheduling policy");
-+MODULE_PARM_DESC(sched_policy, "Kernel cmdline parameter define the kfd scheduling policy");
- 
- bool kgd2kfd_init(unsigned interface_version,
- 		  const struct kfd2kgd_calls *f2g,
-@@ -95,7 +95,7 @@ static int __init kfd_module_init(void)
- 	if (err < 0)
- 		goto err_topology;
- 
--	pr_info("[hsa] Initialized kfd module");
-+	dev_info(kfd_device, "Initialized module\n");
- 
- 	return 0;
- err_topology:
-@@ -114,7 +114,7 @@ static void __exit kfd_module_exit(void)
- 	mmput_unregister_notifier(&kfd_mmput_nb);
- 	radeon_kfd_chardev_exit();
- 	radeon_kfd_pasid_exit();
--	pr_info("[hsa] Removed kfd module");
-+	dev_info(kfd_device, "Removed module\n");
+ #ifndef CIK_MQDS_H_
+diff --git a/drivers/gpu/hsa/radeon/kfd_chardev.c b/drivers/gpu/hsa/radeon/kfd_chardev.c
+index bb2ef02..9a77332 100644
+--- a/drivers/gpu/hsa/radeon/kfd_chardev.c
++++ b/drivers/gpu/hsa/radeon/kfd_chardev.c
+@@ -230,6 +230,31 @@ kfd_ioctl_destroy_queue(struct file *filp, struct kfd_process *p, void __user *a
+ 	return retval;
  }
  
- module_init(kfd_module_init);
++static int
++kfd_ioctl_update_queue(struct file *filp, struct kfd_process *p, void __user *arg)
++{
++	int retval;
++	struct kfd_ioctl_update_queue_args args;
++	struct queue_properties properties;
++
++	if (copy_from_user(&args, arg, sizeof(args)))
++		return -EFAULT;
++
++	properties.queue_address = args.ring_base_address;
++	properties.queue_size = args.ring_size;
++	properties.queue_percent = args.queue_percentage;
++	properties.priority = args.queue_priority;
++
++	pr_debug("kfd: updating queue id %d for PASID %d\n", args.queue_id, p->pasid);
++
++	mutex_lock(&p->mutex);
++
++	retval = pqm_update_queue(&p->pqm, args.queue_id, &properties);
++
++	mutex_unlock(&p->mutex);
++
++	return retval;
++}
+ 
+ static long
+ kfd_ioctl_set_memory_policy(struct file *filep, struct kfd_process *p, void __user *arg)
+@@ -398,6 +423,10 @@ kfd_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
+ 		err = kfd_ioctl_get_process_apertures(filep, process, (void __user *)arg);
+ 		break;
+ 
++	case KFD_IOC_UPDATE_QUEUE:
++		err = kfd_ioctl_update_queue(filep, process, (void __user *)arg);
++		break;
++
+ 	default:
+ 		dev_err(kfd_device,
+ 			"unknown ioctl cmd 0x%x, arg 0x%lx)\n",
+diff --git a/drivers/gpu/hsa/radeon/kfd_device_queue_manager.c b/drivers/gpu/hsa/radeon/kfd_device_queue_manager.c
+index 9e21074..c2d91c9 100644
+--- a/drivers/gpu/hsa/radeon/kfd_device_queue_manager.c
++++ b/drivers/gpu/hsa/radeon/kfd_device_queue_manager.c
+@@ -19,7 +19,6 @@
+  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+  * OTHER DEALINGS IN THE SOFTWARE.
+  *
+- * Author: Ben Goz
+  */
+ 
+ #include <linux/slab.h>
+diff --git a/drivers/gpu/hsa/radeon/kfd_device_queue_manager.h b/drivers/gpu/hsa/radeon/kfd_device_queue_manager.h
+index 0529a96..fe9ef10 100644
+--- a/drivers/gpu/hsa/radeon/kfd_device_queue_manager.h
++++ b/drivers/gpu/hsa/radeon/kfd_device_queue_manager.h
+@@ -19,7 +19,6 @@
+  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+  * OTHER DEALINGS IN THE SOFTWARE.
+  *
+- * Author: Ben Goz
+  */
+ 
+ #ifndef DEVICE_QUEUE_MANAGER_H_
+diff --git a/drivers/gpu/hsa/radeon/kfd_hw_pointer_store.c b/drivers/gpu/hsa/radeon/kfd_hw_pointer_store.c
+index 1372fb2..4e71f7d 100644
+--- a/drivers/gpu/hsa/radeon/kfd_hw_pointer_store.c
++++ b/drivers/gpu/hsa/radeon/kfd_hw_pointer_store.c
+@@ -19,7 +19,6 @@
+  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+  * OTHER DEALINGS IN THE SOFTWARE.
+  *
+- * Author: Ben Goz
+  */
+ 
+ #include <linux/types.h>
+diff --git a/drivers/gpu/hsa/radeon/kfd_hw_pointer_store.h b/drivers/gpu/hsa/radeon/kfd_hw_pointer_store.h
+index be1d6cb..f384b7f 100644
+--- a/drivers/gpu/hsa/radeon/kfd_hw_pointer_store.h
++++ b/drivers/gpu/hsa/radeon/kfd_hw_pointer_store.h
+@@ -19,7 +19,6 @@
+  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+  * OTHER DEALINGS IN THE SOFTWARE.
+  *
+- * Author: Ben Goz
+  */
+ 
+ #ifndef HW_POINTER_STORE_H_
+diff --git a/drivers/gpu/hsa/radeon/kfd_kernel_queue.c b/drivers/gpu/hsa/radeon/kfd_kernel_queue.c
+index 61f420f..aa64693e 100644
+--- a/drivers/gpu/hsa/radeon/kfd_kernel_queue.c
++++ b/drivers/gpu/hsa/radeon/kfd_kernel_queue.c
+@@ -19,7 +19,6 @@
+  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+  * OTHER DEALINGS IN THE SOFTWARE.
+  *
+- * Author: Ben Goz
+  */
+ 
+ #include <linux/types.h>
+diff --git a/drivers/gpu/hsa/radeon/kfd_kernel_queue.h b/drivers/gpu/hsa/radeon/kfd_kernel_queue.h
+index 339376c..963e861 100644
+--- a/drivers/gpu/hsa/radeon/kfd_kernel_queue.h
++++ b/drivers/gpu/hsa/radeon/kfd_kernel_queue.h
+@@ -19,7 +19,6 @@
+  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+  * OTHER DEALINGS IN THE SOFTWARE.
+  *
+- * Author: Ben Goz
+  */
+ 
+ #ifndef KERNEL_QUEUE_H_
+diff --git a/drivers/gpu/hsa/radeon/kfd_mqd_manager.c b/drivers/gpu/hsa/radeon/kfd_mqd_manager.c
+index 14b248f..a3e9f7c 100644
+--- a/drivers/gpu/hsa/radeon/kfd_mqd_manager.c
++++ b/drivers/gpu/hsa/radeon/kfd_mqd_manager.c
+@@ -19,7 +19,6 @@
+  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+  * OTHER DEALINGS IN THE SOFTWARE.
+  *
+- * Author: Ben Goz
+  */
+ 
+ #include <linux/printk.h>
 diff --git a/drivers/gpu/hsa/radeon/kfd_mqd_manager.h b/drivers/gpu/hsa/radeon/kfd_mqd_manager.h
-index 8e7a5fd..314d490 100644
+index e7b39ee..8e7a5fd 100644
 --- a/drivers/gpu/hsa/radeon/kfd_mqd_manager.h
 +++ b/drivers/gpu/hsa/radeon/kfd_mqd_manager.h
-@@ -21,8 +21,8 @@
+@@ -19,7 +19,6 @@
+  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+  * OTHER DEALINGS IN THE SOFTWARE.
   *
+- * Author: Ben Goz
   */
  
--#ifndef MQD_MANAGER_H_
--#define MQD_MANAGER_H_
-+#ifndef KFD_MQD_MANAGER_H_
-+#define KFD_MQD_MANAGER_H_
+ #ifndef MQD_MANAGER_H_
+diff --git a/drivers/gpu/hsa/radeon/kfd_packet_manager.c b/drivers/gpu/hsa/radeon/kfd_packet_manager.c
+index 4967b7c..3fc8c34 100644
+--- a/drivers/gpu/hsa/radeon/kfd_packet_manager.c
++++ b/drivers/gpu/hsa/radeon/kfd_packet_manager.c
+@@ -1,9 +1,26 @@
+ /*
+- * packet_manager.c
++ * Copyright 2014 Advanced Micro Devices, Inc.
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, including without limitation
++ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
++ * and/or sell copies of the Software, and to permit persons to whom the
++ * Software is furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++ * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
++ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
++ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ * OTHER DEALINGS IN THE SOFTWARE.
+  *
+- *  Created on: Mar 16, 2014
+- *      Author: ben
+  */
++
+ #include <linux/slab.h>
+ #include <linux/mutex.h>
+ #include "kfd_device_queue_manager.h"
+diff --git a/drivers/gpu/hsa/radeon/kfd_process_queue_manager.c b/drivers/gpu/hsa/radeon/kfd_process_queue_manager.c
+index 6e38ca4..fe74dd7 100644
+--- a/drivers/gpu/hsa/radeon/kfd_process_queue_manager.c
++++ b/drivers/gpu/hsa/radeon/kfd_process_queue_manager.c
+@@ -19,7 +19,6 @@
+  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+  * OTHER DEALINGS IN THE SOFTWARE.
+  *
+- * Author: Ben Goz
+  */
  
- #include "kfd_priv.h"
+ #include <linux/slab.h>
+diff --git a/drivers/gpu/hsa/radeon/kfd_queue.c b/drivers/gpu/hsa/radeon/kfd_queue.c
+index 78fe180..2d22cc1 100644
+--- a/drivers/gpu/hsa/radeon/kfd_queue.c
++++ b/drivers/gpu/hsa/radeon/kfd_queue.c
+@@ -19,7 +19,6 @@
+  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+  * OTHER DEALINGS IN THE SOFTWARE.
+  *
+- * Author: Ben Goz
+  */
  
-@@ -44,4 +44,4 @@ struct mqd_manager {
+ #include <linux/slab.h>
+diff --git a/include/uapi/linux/kfd_ioctl.h b/include/uapi/linux/kfd_ioctl.h
+index 5134880..d58231d 100644
+--- a/include/uapi/linux/kfd_ioctl.h
++++ b/include/uapi/linux/kfd_ioctl.h
+@@ -58,6 +58,14 @@ struct kfd_ioctl_destroy_queue_args {
+ 	uint32_t queue_id;		/* to KFD */
  };
  
- 
--#endif /* MQD_MANAGER_H_ */
-+#endif /* KFD_MQD_MANAGER_H_ */
-diff --git a/drivers/gpu/hsa/radeon/kfd_pm4_headers.h b/drivers/gpu/hsa/radeon/kfd_pm4_headers.h
-index dae460f..3ffb3f4 100644
---- a/drivers/gpu/hsa/radeon/kfd_pm4_headers.h
-+++ b/drivers/gpu/hsa/radeon/kfd_pm4_headers.h
-@@ -21,8 +21,8 @@
-  *
-  */
- 
--#ifndef F32_MES_PM4_PACKETS_72_H
--#define F32_MES_PM4_PACKETS_72_H
-+#ifndef KFD_PM4_HEADERS_H_
-+#define KFD_PM4_HEADERS_H_
- 
- #ifndef PM4_HEADER_DEFINED
- #define PM4_HEADER_DEFINED
-@@ -657,7 +657,7 @@ typedef struct _PM4__SET_SH_REG {
- #ifndef _PM4__SET_CONFIG_REG_DEFINED
- #define _PM4__SET_CONFIG_REG_DEFINED
- 
--typedef struct _PM4__SET_CONFIG_REG {
-+struct pm4__set_config_reg {
- 	union {
- 		PM4_TYPE_3_HEADER header;
- 		unsigned int ordinal1;
-@@ -676,6 +676,7 @@ typedef struct _PM4__SET_CONFIG_REG {
- 
- 	unsigned int reg_data[1];	/* 1..N of these fields */
- 
--}  PM4_SET_CONFIG_REG, *PPM4_SET_CONFIG_REG;
--#endif
++struct kfd_ioctl_update_queue_args {
++	uint32_t queue_id;		/* to KFD */
++	uint64_t ring_base_address;	/* to KFD */
++	uint32_t ring_size;		/* to KFD */
++	uint32_t queue_percentage;	/* to KFD */
++	uint32_t queue_priority;	/* to KFD */
 +};
- #endif
 +
-+#endif /* KFD_PM4_HEADERS_H_ */
-diff --git a/drivers/gpu/hsa/radeon/kfd_pm4_opcodes.h b/drivers/gpu/hsa/radeon/kfd_pm4_opcodes.h
-index c04060c..b72fa3b 100644
---- a/drivers/gpu/hsa/radeon/kfd_pm4_opcodes.h
-+++ b/drivers/gpu/hsa/radeon/kfd_pm4_opcodes.h
-@@ -22,8 +22,8 @@
-  */
+ /* For kfd_ioctl_set_memory_policy_args.default_policy and alternate_policy */
+ #define KFD_IOC_CACHE_POLICY_COHERENT 0
+ #define KFD_IOC_CACHE_POLICY_NONCOHERENT 1
+@@ -103,6 +111,7 @@ struct kfd_ioctl_get_process_apertures_args {
+ #define KFD_IOC_SET_MEMORY_POLICY	_IOW(KFD_IOC_MAGIC, 4, struct kfd_ioctl_set_memory_policy_args)
+ #define KFD_IOC_GET_CLOCK_COUNTERS	_IOWR(KFD_IOC_MAGIC, 5, struct kfd_ioctl_get_clock_counters_args)
+ #define KFD_IOC_GET_PROCESS_APERTURES _IOR(KFD_IOC_MAGIC, 6, struct kfd_ioctl_get_process_apertures_args)
++#define KFD_IOC_UPDATE_QUEUE	_IOW(KFD_IOC_MAGIC, 7, struct kfd_ioctl_update_queue_args)
  
- 
--#ifndef PM4_IT_OPCODES_H
--#define PM4_IT_OPCODES_H
-+#ifndef KFD_PM4_OPCODES_H
-+#define KFD_PM4_OPCODES_H
- 
- enum it_opcode_type {
- 	IT_NOP                               = 0x10,
-@@ -103,5 +103,5 @@ enum it_opcode_type {
- #define PM4_TYPE_2 2
- #define PM4_TYPE_3 3
- 
--#endif /* PM4_IT_OPCODES_H */
-+#endif /* KFD_PM4_OPCODES_H */
+ #pragma pack(pop)
  
 -- 
 1.9.1
