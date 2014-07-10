@@ -1,51 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236AbaGJKHY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 06:07:24 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:57514 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751942AbaGJKHW (ORCPT
+	id S1753261AbaGJKI2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 06:08:28 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:20635 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752457AbaGJKI1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 06:07:22 -0400
-Date: Thu, 10 Jul 2014 03:07:19 -0700
-From: "hch@infradead.org" <hch@infradead.org>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: James Bottomley <jbottomley@parallels.com>,
+	Thu, 10 Jul 2014 06:08:27 -0400
+Date: Thu, 10 Jul 2014 11:08:03 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "eparis@redhat.com" <eparis@redhat.com>,
+        "rgb@redhat.com" <rgb@redhat.com>, Will Deacon <Will.Deacon@arm.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mkp@mkp.net" <mkp@mkp.net>, "hch@infradead.org" <hch@infradead.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
-Message-ID: <20140710100719.GA1151@infradead.org>
-References: <1404866789-26910-1-git-send-email-kys@microsoft.com>
- <1404866812-26950-1-git-send-email-kys@microsoft.com>
- <1404866812-26950-4-git-send-email-kys@microsoft.com>
- <20140709084300.GD6012@infradead.org>
- <a31a45eddb544024a7538458b98c3611@BY2PR03MB299.namprd03.prod.outlook.com>
- <1404935792.2184.5.camel@dabdike.int.hansenpartnership.com>
- <2f3ae589e6f149acbe4c5dd79f905971@BY2PR03MB299.namprd03.prod.outlook.com>
- <1404944843.2184.8.camel@dabdike.int.hansenpartnership.com>
- <de81772c7f0c418ba6180ee634ca3ff7@BY2PR03MB299.namprd03.prod.outlook.com>
+        "linux-audit@redhat.com" <linux-audit@redhat.com>
+Subject: Re: [PATCH v10 0/3] arm64: Add audit support
+Message-ID: <20140710100803.GH16137@arm.com>
+References: <1404458911-8214-1-git-send-email-takahiro.akashi@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <de81772c7f0c418ba6180ee634ca3ff7@BY2PR03MB299.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <1404458911-8214-1-git-send-email-takahiro.akashi@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 10:36:26PM +0000, KY Srinivasan wrote:
-> Ok; I am concerned about older kernels that do not have no_write_same flag.
-> I suppose I can work directly with these Distros and give them a choice: either implement
-> the no_write_same flag or filter the command in our driver. I will not include this patch when
+On Fri, Jul 04, 2014 at 08:28:28AM +0100, AKASHI Takahiro wrote:
+> This patchset adds system call audit support on arm64.
+> Both 32-bit (AUDIT_ARCH_ARM) and 64-bit tasks (AUDIT_ARCH_AARCH64)
+> are supported. Since arm64 has the exact same set of system calls
+> on LE and BE, we don't care about endianness (or more specifically
+> __AUDIT_ARCH_64BIT bit in AUDIT_ARCH_*).
 
-Exactly.  In general they should be interested in the flag as various
-raid controllers react badly to it as well.
+Applied for 3.17. Thanks.
 
+-- 
+Catalin
