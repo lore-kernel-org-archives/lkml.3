@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751128AbaGJGTx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 02:19:53 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:22460 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708AbaGJGTv (ORCPT
+	id S1751403AbaGJGUx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 02:20:53 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:42900 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708AbaGJGUw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 02:19:51 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18U95cPUUUjcoR6/f0xDAsZ
-Date: Wed, 9 Jul 2014 23:19:49 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Lokesh Vutla <lokeshvutla@ti.com>
-Cc: Sricharan R <r.sricharan@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, santosh.shilimkar@ti.com, nm@ti.com,
-        rnayak@ti.com, linux@arm.linux.org.uk, tglx@linutronix.de,
-        jason@lakedaemon.net, joe@perches.com,
-        Benoit Cousson <bcousson@baylibre.com>
-Subject: Re: [PATCH V4 2/2] arm: dts: dra7: add crossbar device binding
-Message-ID: <20140710061949.GE28884@atomide.com>
-References: <1403767532-19290-1-git-send-email-r.sricharan@ti.com>
- <1403767532-19290-3-git-send-email-r.sricharan@ti.com>
- <20140626074417.GF28884@atomide.com>
- <53ABDA9A.8000108@ti.com>
- <20140626102650.GH28884@atomide.com>
- <20140709154417.GC28884@atomide.com>
- <53BE2B6D.1090602@ti.com>
+	Thu, 10 Jul 2014 02:20:52 -0400
+Date: Wed, 9 Jul 2014 23:20:40 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        "dgilbert@interlog.com" <dgilbert@interlog.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Bart Van Assche <bvanassche@fusionio.com>,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: scsi-mq V2
+Message-ID: <20140710062040.GB20146@infradead.org>
+References: <1403715121-1201-1-git-send-email-hch@lst.de>
+ <20140708144829.GA5539@infradead.org>
+ <53BD7041.5010300@interlog.com>
+ <53BD9A24.7010203@kernel.dk>
+ <94D0CD8314A33A4D9D801C0FE68B402958B9628B@G9W0745.americas.hpqcorp.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53BE2B6D.1090602@ti.com>
+In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B402958B9628B@G9W0745.americas.hpqcorp.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Lokesh Vutla <lokeshvutla@ti.com> [140709 23:00]:
-> Hi Tony,
-> On Wednesday 09 July 2014 09:14 PM, Tony Lindgren wrote:
-> > * Tony Lindgren <tony@atomide.com> [140626 03:28]:
-> >> * Sricharan R <r.sricharan@ti.com> [140626 01:36]:
-> >>> Hi Tony,
-> >>>
-> >>> On Thursday 26 June 2014 01:14 PM, Tony Lindgren wrote:
-> >>>> * Sricharan R <r.sricharan@ti.com> [140626 00:29]:
-> >>>>> From: R Sricharan <r.sricharan@ti.com>
-> >>>>>
-> >>>>> There is a IRQ crossbar device in the soc, which
-> >>>>> maps the irq requests from the peripherals to the
-> >>>>> mpu interrupt controller's inputs. The Peripheral irq
-> >>>>> requests are connected to only one crossbar
-> >>>>> input and the output of the crossbar is connected to only one
-> >>>>> controller's input line. The crossbar device is used to map
-> >>>>> a peripheral input to a free mpu's interrupt controller line.
-> >>>>>
-> >>>>> Here, adding a new crossbar device node and replacing all the peripheral
-> >>>>> interrupt numbers with its fixed crossbar input lines.
-> >>>>
-> >>>> I think these two patches need to be a single patch to avoid
-> >>>> breaking booting for git bisect inbetween these patches?
-> >>>   This does not cause booting issues. irq_desc gets allocated linearly,
-> >>>    but that does not create boot issues.
-> >>
-> >> OK
-> > 
-> > These are now applied on top of Jason's immutable irqchip branch
-> > and merged and pushed out into omap-for-v3.17/dt. Can you guys
-> > please test?
-> I have tested omap-for-v3.17/dt on DRA7 EVM. Crossbar is working fine.
-> Looks good to me.
-> 
-> lokesh@a0131933lt:~/working/mainline/linux$ git describe 
-> v3.16-rc1-34-g6464099
-> 
-> Please find the logs here: http://paste.ubuntu.com/7773616/
+On Thu, Jul 10, 2014 at 12:53:36AM +0000, Elliott, Robert (Server Storage) wrote:
+> the problem still occurs - fio results in low or 0 IOPS, with perf top 
+> reporting unusual amounts of time spent in do_io_submit and io_submit.
 
-OK great thanks!
+The diff between the two version doesn't show too much other possible
+interesting commits, the most interesting being some minor block
+updates.
 
-Tony
+I guess we'll have to a manual bisect, I've pushed out a
+scsi-mq.3-bisect-1 branch that is rebased to just before the merge of
+the block tree, and a scsi-mq.3-bisect-2 branch that is just after
+the merge of the block tree to get started.
+
