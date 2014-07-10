@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100AbaGJPul (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 11:50:41 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:41041 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517AbaGJPuk (ORCPT
+	id S1753432AbaGJPvX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 11:51:23 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:52513 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015AbaGJPvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 11:50:40 -0400
-Date: Thu, 10 Jul 2014 16:50:03 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: "'Olivier Sobrie'" <olivier@sobrie.be>, David Miller <davem@davemloft.net>,
-        "j.dumon@option.com" <j.dumon@option.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] hso: fix deadlock when receiving bursts of data
-Message-ID: <20140710165003.0309924e@alan.etchedpixels.co.uk>
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D17270044@AcuExch.aculab.com>
-References: <1404723967-24245-1-git-send-email-olivier@sobrie.be>
-	<1404723967-24245-2-git-send-email-olivier@sobrie.be>
-	<20140708.161633.2130069042930765600.davem@davemloft.net>
-	<20140710142848.GA28056@hposo>
-	<063D6719AE5E284EB5DD2968C1650D6D17270044@AcuExch.aculab.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Thu, 10 Jul 2014 11:51:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140710141155.GA24310@redhat.com>
+References: <alpine.LRH.2.00.1407071101060.3492@lnfm1.sai.msu.ru>
+ <20140709212910.GB26562@kroah.com> <alpine.LRH.2.00.1407101045510.25305@lnfm1.sai.msu.ru>
+ <20140710141155.GA24310@redhat.com>
+From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
+Date: Thu, 10 Jul 2014 19:50:58 +0400
+X-Google-Sender-Auth: aGozqrEhMEXPGmkQwGzXZ_p8yG0
+Message-ID: <CAJs94EabQGisuySLvDVnDY7Bk95RpNPaV8GsfKqGDexGeb_nVA@mail.gmail.com>
+Subject: Re: [PATCHv3 2/2] Add force_epp module option for parport_pc.
+To: Dave Jones <davej@redhat.com>, "Matwey V. Kornilov" <matwey@sai.msu.ru>,
+        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        linux-parport@lists.infradead.org,
+        Heiko Andreas Sommer <hsommer@eso.org>,
+        "Matwey V. Kornilov" <matwey.kornilov@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Jul 2014 14:37:37 +0000
-David Laight <David.Laight@ACULAB.COM> wrote:
+2014-07-10 18:11 GMT+04:00 Dave Jones <davej@redhat.com>:
+> On Thu, Jul 10, 2014 at 11:56:15AM +0400, Matwey V. Kornilov wrote:
+>
+>  > Initial check had been introduced in 1999 [1], however I am failed to find
+>  > any proves, because davej/history.git is missed.
+>
+> https://archive.org/details/git-history-of-linux
 
-> From: Olivier Sobrie
-> ...
-> > The function put_rxbuf_data() is called from the urb completion handler.
-> > It puts the data of the urb transfer in the tty buffer with
-> > tty_insert_flip_string_flags() and schedules a work queue in order to
-> > push the data to the ldisc.
-> > Problem is that we are in a urb completion handler so we can't wait
-> > until there is room in the tty buffer.
+Thank you, Dave.
 
-The tty provides the input queue, if the queue is full then just chuck
-the data in the bitbucket.  hso is trying to be far too clever.
-
-If hso is fast enough that the buffering isn't sufficient on the tty side
-then we need to fix the tty buffer size.
-
-Arguably what we need are tty fastpaths for non N_TTY but thats rather
-more work. There's no fundamental reason that hso can't throw the buffer
-at buffer straight at the PPP ldisc and straight into the network stack -
-just that 
-
-1. The tty mid layer glue is standing in the way
-2. The change of line discipline code has to lock against it
-
-Alan
+This was introduced by cecd99566ac6aba844ff296e461f88131013da94 (2.3.10).
+In lkml archives I've found that this code is probably belongs to
+David Campbell, whose email has been dropped as bounced. So, I don't
+have any idea whether we can contact him.
