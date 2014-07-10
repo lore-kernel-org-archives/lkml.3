@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752455AbaGJUFc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 16:05:32 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:40233 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752422AbaGJUFa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 16:05:30 -0400
-Date: Thu, 10 Jul 2014 14:05:27 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Fabio Coatti <fabio.coatti@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: Re: WARNING: CPU: 2 PID: 1 at arch/x86/mm/ioremap.c:171
- __ioremap_caller+0x290/0x2fa()
-Message-ID: <20140710200527.GA15190@google.com>
-References: <CADpTngUm7d88RJS9OV=64t6QrJU4r3M_Z8eV1QYWPeeB5SX5-w@mail.gmail.com>
- <20140710085208.GD12054@laptop.lan>
- <20140710085448.GE12054@laptop.lan>
- <2093681.h3dgJ8rFNA@calvin>
- <CABPqkBTu9vk_wsmYVrO6OOxgbwsLDG-A8f7dzutKwYXmoGsqnw@mail.gmail.com>
+	id S1752734AbaGJUFs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 16:05:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43274 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752560AbaGJUFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 16:05:46 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Benjamin LaHaise <bcrl@kvack.org>,
+        "Elliott\, Robert \(Server Storage\)" <Elliott@hp.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "dgilbert\@interlog.com" <dgilbert@interlog.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Bart Van Assche <bvanassche@fusionio.com>,
+        "linux-scsi\@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: scsi-mq V2
+References: <1403715121-1201-1-git-send-email-hch@lst.de>
+	<20140708144829.GA5539@infradead.org> <53BD7041.5010300@interlog.com>
+	<53BD9A24.7010203@kernel.dk>
+	<94D0CD8314A33A4D9D801C0FE68B402958B9628B@G9W0745.americas.hpqcorp.net>
+	<20140710062040.GB20146@infradead.org>
+	<20140710133609.GO12478@kvack.org>
+	<20140710135051.GA28227@infradead.org> <53BE9AB1.6090603@kernel.dk>
+	<94D0CD8314A33A4D9D801C0FE68B402958B96CF0@G9W0745.americas.hpqcorp.net>
+	<20140710144539.GU12478@kvack.org>
+	<x49k37l1c6p.fsf@segfault.boston.devel.redhat.com>
+	<53BEF0A8.7010608@kernel.dk>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 10 Jul 2014 16:05:02 -0400
+In-Reply-To: <53BEF0A8.7010608@kernel.dk> (Jens Axboe's message of "Thu, 10
+	Jul 2014 21:59:36 +0200")
+Message-ID: <x49r41tyo7l.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CABPqkBTu9vk_wsmYVrO6OOxgbwsLDG-A8f7dzutKwYXmoGsqnw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 09:12:44PM +0200, Stephane Eranian wrote:
-> On Thu, Jul 10, 2014 at 2:13 PM, Fabio Coatti <fabio.coatti@gmail.com> wrote:
-> > In data giovedì 10 luglio 2014 10:54:48, Peter Zijlstra ha scritto:
-> >> On Thu, Jul 10, 2014 at 10:52:08AM +0200, Peter Zijlstra wrote:
-> >> > On Thu, Jul 10, 2014 at 10:44:21AM +0200, Peter Zijlstra wrote:
-> >> > > On Wed, Jul 09, 2014 at 12:48:05PM -0700, Fabio Coatti wrote:
-> >> > > > In data mercoledì 9 luglio 2014 11:54:21, Greg Kroah-Hartman ha
-> > scritto:
-> >> > > > > Try cc:ing everyone on that patch, with the original information you
-> >> > > > > provided, and the linux-kernel mailing list.  Those developers
-> >> > > > > should be
-> >> > > > > able to help you out properly.
-> >> > > >
-> >> > > > Ok, here you can find the description of a problem that I'm
-> >> > > > experiencing on
-> >> > > > latest kernels, since 3.15.0.  (this report comes from 3.15.4)
-> >> > > >
-> >> > > > lug 07 22:08:00 calvin kernel: resource map sanity check conflict:
-> >> > > > 0xfed10000 0xfed15fff 0xfed10000 0xfed13fff reserved
-> >> > > > lug 07 22:08:00 calvin kernel: ------------[ cut here ]------------
-> >> > >
-> >> > > I think this is a 'known' issue on Thinkpad (iirc). For some obscure
-> >> > > reason its BIOS has funny ideas about resources etc.
-> >> > >
-> >> > > I couldn't quickly find the prvious thread, maybe Stephane knows.
-> >> >
-> >> > Found it:
-> >> >   lkml.kernel.org/r/20140224162400.GE16457@pd.tnic
-> >>
-> >> Ok, reread that thread and no definite conclusion was found I think.
-> >> Just Thinkpad firmware having overlapping resources.
-> >
-> >
-> > So I guess that this happens also for HP Folio 9470m, not only in thinkpads. I
-> > wonder how many machines shares this behaviour...
-> >
-> Somehow, I thought that Bjorn had proposed a fix for this.
+Jens Axboe <axboe@kernel.dk> writes:
 
-Yep, this [1]:
+> On 2014-07-10 17:11, Jeff Moyer wrote:
+>> Benjamin LaHaise <bcrl@kvack.org> writes:
+>>
+>>>>
+>>>> [  186.339064] ioctx_alloc: nr_events=-2 aio_max_nr=65536
+>>>> [  186.339065] ioctx_alloc: nr_events=-2 aio_max_nr=65536
+>>>> [  186.339067] ioctx_alloc: nr_events=-2 aio_max_nr=65536
+>>>> [  186.339068] ioctx_alloc: nr_events=-2 aio_max_nr=65536
+>>>> [  186.339069] ioctx_alloc: nr_events=-2 aio_max_nr=65536
+>>>
+>>> Something is horribly wrong here.  There is no way that value for nr_events
+>>> should be passed in to ioctx_alloc().  This implies that userland is calling
+>>> io_setup() with an impossibly large value for nr_events.  Can you post the
+>>> actual diff for your fs/aio.c relative to linus' tree?
+>>>
+>>
+>> fio does exactly this!  it passes INT_MAX.
+>
+> That's correct, I had actually forgotten about this. It was a change
+> made a few years back, in correlation with the aio optimizations
+> posted then, basically telling aio to ignore that silly (and broken)
+> user ring.
 
-    cb171f7abb9a PNP: Work around BIOS defects in Intel MCH area reporting
+I still don't see how you accomplish that.  Making it bigger doesn't get
+rid of it.  ;-)
 
-which appeared in v3.15, so it should be in your kernel.  But apparently
-it didn't work.  Fabio, can you pastebin your complete dmesg log?
-
-[1] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=cb171f7abb9a
+Cheers,
+Jeff
