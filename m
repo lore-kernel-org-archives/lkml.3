@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751875AbaGJK1e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 06:27:34 -0400
-Received: from rslrsmtp2.opaltelecom.net ([62.24.128.202]:11041 "EHLO
-	iprslrsmtp2msp.cpwnetworks.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750966AbaGJK1d (ORCPT
+	id S1751588AbaGJKdJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 06:33:09 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:36769 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750778AbaGJKdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 06:27:33 -0400
-X-Greylist: delayed 640 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Jul 2014 06:27:32 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsgEAMBmvlM+GID9/2dsb2JhbABZhymtAo8sh1GBIXWELVY1AiYCLjEBEohGrkqZLheBLI4Ygn6BTAWiD4RBiEWDRA
-X-IPAS-Result: AsgEAMBmvlM+GID9/2dsb2JhbABZhymtAo8sh1GBIXWELVY1AiYCLjEBEohGrkqZLheBLI4Ygn6BTAWiD4RBiEWDRA
-X-IronPort-AV: E=Sophos;i="5.01,637,1400022000"; 
-   d="scan'208";a="481251859"
-Message-ID: <1404987355.23201.65.camel@samson1.armitage.org.uk>
-Subject: [PATCH] cpufreq: kirkwood: Reinstate cpufreq driver for
- ARCH_KIRKWOOD
-From: Quentin Armitage <quentin@armitage.org.uk>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Lunn <andrew@lunn.ch>
-Date: Thu, 10 Jul 2014 11:15:55 +0100
-Organization: The Armitage family
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 10 Jul 2014 06:33:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <9b76360fb30745d3941b6d56bdae268f@BY2PR03MB299.namprd03.prod.outlook.com>
+References: <1404866789-26910-1-git-send-email-kys@microsoft.com>
+	<1404866812-26950-1-git-send-email-kys@microsoft.com>
+	<1404866812-26950-6-git-send-email-kys@microsoft.com>
+	<20140709084415.GF6012@infradead.org>
+	<9b76360fb30745d3941b6d56bdae268f@BY2PR03MB299.namprd03.prod.outlook.com>
+Date: Thu, 10 Jul 2014 12:33:05 +0200
+Message-ID: <CAFLxGvzFTeE9J-4KFUn9q1fggB_pGBHEMEPcBtDhje+uRm7yMw@mail.gmail.com>
+Subject: Re: [PATCH 6/8] Drivers: scsi: storvsc: Implement an abort handler
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit ff1f0018cf66080d8e6f59791e552615648a033a ("drivers: Enable
-building of Kirkwood drivers for mach-mvebu") added Kirkwood into
-mach-mvebu, adding MACH_KIRKWOOD to ARCH_KIRKWOOD in the KConfig files.
+On Wed, Jul 9, 2014 at 8:51 PM, KY Srinivasan <kys@microsoft.com> wrote:
+>
+>
+>> -----Original Message-----
+>> From: Christoph Hellwig [mailto:hch@infradead.org]
+>> Sent: Wednesday, July 9, 2014 1:44 AM
+>> To: KY Srinivasan
+>> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+>> ohering@suse.com; jbottomley@parallels.com; jasowang@redhat.com;
+>> apw@canonical.com; linux-scsi@vger.kernel.org
+>> Subject: Re: [PATCH 6/8] Drivers: scsi: storvsc: Implement an abort handler
+>>
+>> On Tue, Jul 08, 2014 at 05:46:50PM -0700, K. Y. Srinivasan wrote:
+>> > Implement a simple abort handler. The host does not support "Abort";
+>> > just ensure that all inflight I/Os have been accounted for.
+>>
+>> The abort handler should abort a single command, not wait for all of them.
+>> What issue do you see that this tries to address?
+>
+> On Azure, we sometimes have unbounded I/O latencies and some distributions (such as SLES12) based on recent kernels are invoking
+> the "Abort Handler". Unfortunately, our scsi emulation on the host does not support aborting a command.
+> The issue I have seen is that the upper level scsi code attempts error recovery when the command times out and finally frees up the command.
+> The host subsequently responds to the command that has timed out and since the memory has been freed up, we end up touching freed memory
+> in this driver. Since the host is also doing error recovery, by just delaying the error handler in the guest until we can account for all the in-flight commands,
+> we can get around the problem.
 
-The change for ARM_KIRKWOOD_CPUFREQ replaced ARCH_KIRKWOOD with
-MACH_KIRKWOOD, whereas all the other changes were ARCH_KIRKWOOD ||
-MACH_KIRKWOOD.
+I see strange issues in Azure and maybe they are related to this.
+Some Linux machines crash in a way that no disk IO is possible (thus,
+no SSH for me) but they still respond to
+ping. It happens rather seldom (every few weeks).
 
-As a consequence of this change, the cpufreq driver is no longer enabled
-for ARCH_KIRKWOOD. This patch reinstates ARM_KIRKWOOD_CPUFREQ for
-ARCH_KIRKWOOD.
+Do you see similar symptoms?
 
-Signed-off-by: Quentin Armitage <quentin@armitage.org.uk>
----
-diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
-index ebac671..24778f0 100644
---- a/drivers/cpufreq/Kconfig.arm
-+++ b/drivers/cpufreq/Kconfig.arm
-@@ -118,7 +118,7 @@ config ARM_INTEGRATOR
-          If in doubt, say Y.
-
- config ARM_KIRKWOOD_CPUFREQ
--       def_bool MACH_KIRKWOOD
-+       def_bool ARCH_KIRKWOOD || MACH_KIRKWOOD
-        help
-          This adds the CPUFreq driver for Marvell Kirkwood
-          SoCs.
- 
-
-
-
-
-
+-- 
+Thanks,
+//richard
