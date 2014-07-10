@@ -1,117 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751722AbaGJHJv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 03:09:51 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:51027 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750768AbaGJHJt (ORCPT
+	id S1751660AbaGJHMf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 03:12:35 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:50215 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804AbaGJHMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 03:09:49 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/nVoZ1EBLitsGa3T/gnIqe
-Date: Thu, 10 Jul 2014 00:09:48 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH 6/6] tty: serial: Add 8250-core based omap driver
-Message-ID: <20140710070948.GH28884@atomide.com>
-References: <1404928177-26554-1-git-send-email-bigeasy@linutronix.de>
- <1404928177-26554-7-git-send-email-bigeasy@linutronix.de>
+	Thu, 10 Jul 2014 03:12:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1404928177-26554-7-git-send-email-bigeasy@linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1404918461-25390-2-git-send-email-peter.griffin@linaro.org>
+References: <1404918461-25390-1-git-send-email-peter.griffin@linaro.org>
+	<1404918461-25390-2-git-send-email-peter.griffin@linaro.org>
+Date: Thu, 10 Jul 2014 09:12:32 +0200
+Message-ID: <CAPDyKFqxEGjgiu-4qB76Bg4Jhv4WEPXSXkbCHVuQ1sS8zw_pmw@mail.gmail.com>
+Subject: Re: [PATCH v4 01/10] mmc: sdhci-st: Intial support for ST SDHCI controller
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Peter Griffin <peter.griffin@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Ball <chris@printf.net>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice CHOTARD <patrice.chotard@st.com>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sebastian Andrzej Siewior <bigeasy@linutronix.de> [140709 10:52]:
-> 
-> v1…v2:
-> 	- added runtime PM. Could somebody could plese double check
-> 	  this? I seems to be enabled and nothing explodes. However
-> 	  serial_omap_get_context_loss_count() & enable_wakeup() are
-> 	  NULL pointer (in the omap-serial driver). So I am not sure how
-> 	  this supposed to work :)
-> 	- added omap_8250_set_termios()
+On 9 July 2014 17:07, Peter Griffin <peter.griffin@linaro.org> wrote:
+> This platform driver adds initial support for the SDHCI host controller
+> found on STMicroelectronics SoCs.
+>
+> It has been tested on STiH41x b2020 platforms currently.
+>
+> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
 
-You can test this pretty easily on beagleboard xm for example
-using v3.16-r4:
+Thanks! Applied for next!
 
-1. Compile the kernel using omap2plus_defconfig and enable your
-   driver. USB EHCI needs to be disabled and OTG port should
-   not have a USB cable connected.
+Kind regards
+Uffe
 
-2. Boot with init=/bin/sh to keep user space timers to minimum
-   at least until you have verified to hit off-idle
-
-3. Enable UART timeouts with something like this. You may need
-   to update it for ttyS, I just changed ttyO to ttyS here:
-
-   #!/bin/bash
-   uarts=$(find /sys/class/tty/ttyS*/device/power/ -type d)
-   for uart in $uarts; do
-   	echo 3000 > $uart/autosuspend_delay_ms
-   done
-
-   uarts=$(find /sys/class/tty/ttyS*/power/ -type d)
-   for uart in $uarts; do
-   	echo enabled > $uart/wakeup
-   	echo auto > $uart/control
-   done
-
-   echo 1 > /sys/kernel/debug/pm_debug/enable_off_mode
-
-4. Wait for UART to time out and verify you hit off-idle by
-   looking at the debugfs entry:
-
-   # cat /sys/kernel/debug/pm_debug/count
-   ...
-   core_pwrdm (ON),OFF:6,RET:0,INA:0,ON:7,RET-LOGIC-OFF:0,RET-MEMBANK1-OFF:0,RET-MEMBANK2-OFF:0
-   ...
- 
-I just tried testing this, but did not get far on my omap3 evm:
-
-[    5.445953] Unhandled fault: external abort on non-linefetch (0x1028) at 0xfb020000
-[    5.453674] Internal error: : 1028 [#1] SMP ARM
-[    5.458221] Modules linked in:
-[    5.461334] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.16.0-rc4-00006-gaab2c6a #98
-[    5.469024] task: ce058b00 ti: ce05a000 task.ti: ce05a000
-[    5.474456] PC is at mem32_serial_in+0xc/0x1c
-[    5.478851] LR is at serial8250_do_startup+0xc8/0x89c
-[    5.483917] pc : [<c0346f90>]    lr : [<c034ab2c>]    psr: 60000113
-[    5.483917] sp : ce05bd10  ip : c0a0aba8  fp : ce275400
-[    5.495452] r10: 00000000  r9 : cda7a680  r8 : ce27568c
-[    5.500701] r7 : ce275400  r6 : 00000000  r5 : ce280408  r4 : c10b6234
-[    5.507263] r3 : fb020000  r2 : 00000002  r1 : fb020000  r0 : c10b6234
-[    5.513854] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-[    5.521179] Control: 10c5387d  Table: 80004019  DAC: 00000015
-[    5.526977] Process swapper/0 (pid: 1, stack limit = 0xce05a248)
-[    5.532989] Stack: (0xce05bd10 to 0xce05c000)
-...
-[    5.734771] [<c0346f90>] (mem32_serial_in) from [<c034ab2c>] (serial8250_do_startup+0xc8/0x89c)
-[    5.743530] [<c034ab2c>] (serial8250_do_startup) from [<c03461f8>] (uart_startup.part.3+0x7c/0x1dc)
-[    5.752624] [<c03461f8>] (uart_startup.part.3) from [<c0346d68>] (uart_open+0xe4/0x124)
-[    5.760681] [<c0346d68>] (uart_open) from [<c032c19c>] (tty_open+0x130/0x58c)
-[    5.767852] [<c032c19c>] (tty_open) from [<c01216f4>] (chrdev_open+0x9c/0x174)
-[    5.775115] [<c01216f4>] (chrdev_open) from [<c011b8d4>] (do_dentry_open+0x1d0/0x310)
-[    5.783020] [<c011b8d4>] (do_dentry_open) from [<c011bd98>] (finish_open+0x34/0x4c)
-[    5.790710] [<c011bd98>] (finish_open) from [<c012a8f8>] (do_last.isra.27+0x5a4/0xb98)
-[    5.798675] [<c012a8f8>] (do_last.isra.27) from [<c012afa0>] (path_openat+0xb4/0x5e4)
-[    5.806549] [<c012afa0>] (path_openat) from [<c012b7dc>] (do_filp_open+0x2c/0x80)
-[    5.814086] [<c012b7dc>] (do_filp_open) from [<c011cd14>] (do_sys_open+0x100/0x1d0)
-[    5.821777] [<c011cd14>] (do_sys_open) from [<c07b7ce0>] (kernel_init_freeable+0x124/0x1c8)
-[    5.830200] [<c07b7ce0>] (kernel_init_freeable) from [<c054eb90>] (kernel_init+0x8/0xe4)
-[    5.838348] [<c054eb90>] (kernel_init) from [<c000e868>] (ret_from_fork+0x14/0x2c)
-
-Sounds like the clocks are not enabled properly?
-
-Regards,
-
-Tony
+> ---
+>  drivers/mmc/host/Kconfig    |  12 +++
+>  drivers/mmc/host/Makefile   |   1 +
+>  drivers/mmc/host/sdhci-st.c | 176 ++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 189 insertions(+)
+>  create mode 100644 drivers/mmc/host/sdhci-st.c
+>
+> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+> index a565254..6615b79 100644
+> --- a/drivers/mmc/host/Kconfig
+> +++ b/drivers/mmc/host/Kconfig
+> @@ -290,6 +290,18 @@ config MMC_MOXART
+>           be found on some embedded hardware such as UC-7112-LX.
+>           If you have a controller with this interface, say Y here.
+>
+> +config MMC_SDHCI_ST
+> +       tristate "SDHCI support on STMicroelectronics SoC"
+> +       depends on ARCH_STI
+> +       depends on MMC_SDHCI_PLTFM
+> +       select MMC_SDHCI_IO_ACCESSORS
+> +       help
+> +         This selects the Secure Digital Host Controller Interface in
+> +         STMicroelectronics SoCs.
+> +
+> +         If you have a controller with this interface, say Y or M here.
+> +         If unsure, say N.
+> +
+>  config MMC_OMAP
+>         tristate "TI OMAP Multimedia Card Interface support"
+>         depends on ARCH_OMAP
+> diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
+> index 7f81ddf..f211eed 100644
+> --- a/drivers/mmc/host/Makefile
+> +++ b/drivers/mmc/host/Makefile
+> @@ -68,6 +68,7 @@ obj-$(CONFIG_MMC_SDHCI_OF_HLWD)               += sdhci-of-hlwd.o
+>  obj-$(CONFIG_MMC_SDHCI_BCM_KONA)       += sdhci-bcm-kona.o
+>  obj-$(CONFIG_MMC_SDHCI_BCM2835)                += sdhci-bcm2835.o
+>  obj-$(CONFIG_MMC_SDHCI_MSM)            += sdhci-msm.o
+> +obj-$(CONFIG_MMC_SDHCI_ST)             += sdhci-st.o
+>
+>  ifeq ($(CONFIG_CB710_DEBUG),y)
+>         CFLAGS-cb710-mmc        += -DDEBUG
+> diff --git a/drivers/mmc/host/sdhci-st.c b/drivers/mmc/host/sdhci-st.c
+> new file mode 100644
+> index 0000000..328f348
+> --- /dev/null
+> +++ b/drivers/mmc/host/sdhci-st.c
+> @@ -0,0 +1,176 @@
+> +/*
+> + * Support for SDHCI on STMicroelectronics SoCs
+> + *
+> + * Copyright (C) 2014 STMicroelectronics Ltd
+> + * Author: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+> + * Contributors: Peter Griffin <peter.griffin@linaro.org>
+> + *
+> + * Based on sdhci-cns3xxx.c
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + */
+> +
+> +#include <linux/io.h>
+> +#include <linux/of.h>
+> +#include <linux/module.h>
+> +#include <linux/err.h>
+> +#include <linux/mmc/host.h>
+> +
+> +#include "sdhci-pltfm.h"
+> +
+> +static u32 sdhci_st_readl(struct sdhci_host *host, int reg)
+> +{
+> +       u32 ret;
+> +
+> +       switch (reg) {
+> +       case SDHCI_CAPABILITIES:
+> +               ret = readl_relaxed(host->ioaddr + reg);
+> +               /* Support 3.3V and 1.8V */
+> +               ret &= ~SDHCI_CAN_VDD_300;
+> +               break;
+> +       default:
+> +               ret = readl_relaxed(host->ioaddr + reg);
+> +       }
+> +       return ret;
+> +}
+> +
+> +static const struct sdhci_ops sdhci_st_ops = {
+> +       .get_max_clock = sdhci_pltfm_clk_get_max_clock,
+> +       .set_clock = sdhci_set_clock,
+> +       .set_bus_width = sdhci_set_bus_width,
+> +       .read_l = sdhci_st_readl,
+> +       .reset = sdhci_reset,
+> +};
+> +
+> +static const struct sdhci_pltfm_data sdhci_st_pdata = {
+> +       .ops = &sdhci_st_ops,
+> +       .quirks = SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC |
+> +           SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN,
+> +};
+> +
+> +
+> +static int sdhci_st_probe(struct platform_device *pdev)
+> +{
+> +       struct sdhci_host *host;
+> +       struct sdhci_pltfm_host *pltfm_host;
+> +       struct clk *clk;
+> +       int ret = 0;
+> +       u16 host_version;
+> +
+> +       clk =  devm_clk_get(&pdev->dev, "mmc");
+> +       if (IS_ERR(clk)) {
+> +               dev_err(&pdev->dev, "Peripheral clk not found\n");
+> +               return PTR_ERR(clk);
+> +       }
+> +
+> +       host = sdhci_pltfm_init(pdev, &sdhci_st_pdata, 0);
+> +       if (IS_ERR(host)) {
+> +               dev_err(&pdev->dev, "Failed sdhci_pltfm_init\n");
+> +               return PTR_ERR(host);
+> +       }
+> +
+> +       ret = mmc_of_parse(host->mmc);
+> +
+> +       if (ret) {
+> +               dev_err(&pdev->dev, "Failed mmc_of_parse\n");
+> +               return ret;
+> +       }
+> +
+> +       clk_prepare_enable(clk);
+> +
+> +       pltfm_host = sdhci_priv(host);
+> +       pltfm_host->clk = clk;
+> +
+> +       ret = sdhci_add_host(host);
+> +       if (ret) {
+> +               dev_err(&pdev->dev, "Failed sdhci_add_host\n");
+> +               goto err_out;
+> +       }
+> +
+> +       platform_set_drvdata(pdev, host);
+> +
+> +       host_version = readw_relaxed((host->ioaddr + SDHCI_HOST_VERSION));
+> +
+> +       dev_info(&pdev->dev, "SDHCI ST Initialised: Host Version: 0x%x Vendor Version 0x%x\n",
+> +               ((host_version & SDHCI_SPEC_VER_MASK) >> SDHCI_SPEC_VER_SHIFT),
+> +               ((host_version & SDHCI_VENDOR_VER_MASK) >>
+> +               SDHCI_VENDOR_VER_SHIFT));
+> +
+> +       return 0;
+> +
+> +err_out:
+> +       clk_disable_unprepare(clk);
+> +       sdhci_pltfm_free(pdev);
+> +
+> +       return ret;
+> +}
+> +
+> +static int sdhci_st_remove(struct platform_device *pdev)
+> +{
+> +       struct sdhci_host *host = platform_get_drvdata(pdev);
+> +       struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+> +
+> +       clk_disable_unprepare(pltfm_host->clk);
+> +
+> +       return sdhci_pltfm_unregister(pdev);
+> +}
+> +
+> +#ifdef CONFIG_PM_SLEEP
+> +static int sdhci_st_suspend(struct device *dev)
+> +{
+> +       struct sdhci_host *host = dev_get_drvdata(dev);
+> +       struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+> +       int ret = sdhci_suspend_host(host);
+> +
+> +       if (ret)
+> +               goto out;
+> +
+> +       clk_disable_unprepare(pltfm_host->clk);
+> +out:
+> +       return ret;
+> +}
+> +
+> +static int sdhci_st_resume(struct device *dev)
+> +{
+> +       struct sdhci_host *host = dev_get_drvdata(dev);
+> +       struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+> +
+> +       clk_prepare_enable(pltfm_host->clk);
+> +
+> +       return sdhci_resume_host(host);
+> +}
+> +#endif
+> +
+> +static SIMPLE_DEV_PM_OPS(sdhci_st_pmops, sdhci_st_suspend, sdhci_st_resume);
+> +
+> +static const struct of_device_id st_sdhci_match[] = {
+> +       { .compatible = "st,sdhci" },
+> +       {},
+> +};
+> +
+> +MODULE_DEVICE_TABLE(of, st_sdhci_match);
+> +
+> +static struct platform_driver sdhci_st_driver = {
+> +       .probe = sdhci_st_probe,
+> +       .remove = sdhci_st_remove,
+> +       .driver = {
+> +                  .name = "sdhci-st",
+> +                  .pm = &sdhci_st_pmops,
+> +                  .of_match_table = of_match_ptr(st_sdhci_match),
+> +                 },
+> +};
+> +
+> +module_platform_driver(sdhci_st_driver);
+> +
+> +MODULE_DESCRIPTION("SDHCI driver for STMicroelectronics SoCs");
+> +MODULE_AUTHOR("Giuseppe Cavallaro <peppe.cavallaro@st.com>");
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_ALIAS("platform:st-sdhci");
+> --
+> 1.9.1
+>
