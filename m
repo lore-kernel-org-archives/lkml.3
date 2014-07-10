@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365AbaGJMip (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 08:38:45 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:50740 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753249AbaGJMin convert rfc822-to-8bit (ORCPT
+	id S1753415AbaGJMjN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 08:39:13 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:39936 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753249AbaGJMjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 08:38:43 -0400
-Date: Thu, 10 Jul 2014 14:38:37 +0200
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-i2c@vger.kernel.org, davinci-linux-open-source@linux.davincidsp.com,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        adi-buildroot-devel@lists.sourceforge.net, linux-tegra@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 00/16] i2c: drop class based instantiaion for selected
- drivers
-Message-ID: <20140710143837.558c1d07@ipc1.ka-ro>
-In-Reply-To: <1404992799-3705-1-git-send-email-wsa@the-dreams.de>
-References: <1404992799-3705-1-git-send-email-wsa@the-dreams.de>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
+	Thu, 10 Jul 2014 08:39:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAKohpo=KUktq8XJv7Ayis1Q3ik+Wh3wb8wN6VpRAtOsbbv9XCw@mail.gmail.com>
+References: <cover.1404231535.git.viresh.kumar@linaro.org>
+	<1ba7771e910084cd0820c19ca5994fe1b3d6451d.1404231535.git.viresh.kumar@linaro.org>
+	<53BD5564.2060704@ti.com>
+	<CAKohpo=KUktq8XJv7Ayis1Q3ik+Wh3wb8wN6VpRAtOsbbv9XCw@mail.gmail.com>
+Date: Thu, 10 Jul 2014 07:39:08 -0500
+X-Google-Sender-Auth: q-rWjWl6Q12RxPNQZ-OpwK5lCno
+Message-ID: <CAGo_u6rBMGO9t87w1e4KCTA+ckF8aeFr+jMw00fks-=y+9JGdA@mail.gmail.com>
+Subject: Re: [PATCH 07/14] cpufreq: cpu0: OPPs can be populated at runtime
+From: Nishanth Menon <nm@ti.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>, Tony Lindgren <tony@atomide.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Tomasz Figa <t.figa@samsung.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas P Abraham <thomas.ab@samsung.com>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Sachin Kamat <spk.linux@gmail.com>, Dave Gerlach <d-gerlach@ti.com>,
+        linux-omap <linux-omap@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Wolfram Sang wrote:
-> Some drivers were flagged to remove class based instantiation soon to improve
-> boot-up time. Originally, I was planning for a longer deprecation time so users
-> could switch over to some other kind of instantiation. However, the demand for
-> the speed up is high enough and class based instantiation is used rarely, so
-> the removal takes place now. To make up for the deprecation time, another
-> warning is added to the i2c core pointing out that the behaviour has now
-> changed:
-> 
-> +	/* Warn that the adapter lost class based instantiation */
-> +	if (adapter->class == I2C_CLASS_DEPRECATED) {
-> +		dev_dbg(&adapter->dev,
-> +			"This adapter dropped support for I2C classes and "
-> +			"won't auto-detect %s devices anymore. If you need it, check "
-> +			"'Documentation/i2c/instantiating-devices' for alternatives.\n",
+On Thu, Jul 10, 2014 at 6:19 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 9 July 2014 20:14, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
+>> Assuming you are updating bidnings as suggested by Stephen,
+>> patch looks good to me.
+>> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 >
-It's usually a bad idea to split kernel messages across source lines
-because it makes searching for the corresponding source line for a
-message found in the log difficult.
-You could at least do the split at the sentence boundary.
+> Why do you still have a separate cpufreq driver for omap?
+> Would this patch help getting that out?
+>
+> I see this for omap:
+>
+> static inline void omap_init_cpufreq(void)
+> {
+>         struct platform_device_info devinfo = { };
+>
+>         if (!of_have_populated_dt())
+>                 devinfo.name = "omap-cpufreq";
+>         else
+>                 devinfo.name = "cpufreq-generic";
+>         platform_device_register_full(&devinfo);
+> }
+>
+> and it makes me believe that you were just waiting for this patch?
 
+Sorry, am away on vacation and slow on emails. The plan was to kill
+omap cpufreq once all platforms convert to device tree only boot. Only
+platform left is OMAP3 based platforms - though the date for removing
+non-dt support has changed a couple of kernel revisions - but we
+should be able to remove that entire file with this change.
 
-Lothar Waßmann
--- 
-___________________________________________________________
+We will need this support to go with the solution recommended for opp
+modifier series[1] - where platform code will populate or add OPPs
+based on "speed grade" sample detection.
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+[1]http://comments.gmane.org/gmane.linux.ports.arm.kernel/309466
 
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+---
+Regards,
+Nishanth Menon
