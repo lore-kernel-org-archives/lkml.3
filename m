@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824AbaGJOQN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 10:16:13 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:34287 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751517AbaGJOQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 10:16:11 -0400
-Date: Thu, 10 Jul 2014 16:16:03 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>
-Subject: Re: [PATCH] cpufreq: report driver's successful {un}registration
-Message-ID: <20140710141603.GH2970@pd.tnic>
-References: <9e68cba2bf41923630ea93de7c3d17637f175895.1403772686.git.viresh.kumar@linaro.org>
- <20140710114828.GA3254@pd.tnic>
- <CAKohpom0Qwbj5Ma_zCE5juk=1JjbBDLZJcBXZMgnkDVPiTvRCA@mail.gmail.com>
- <20140710115934.GF2970@pd.tnic>
- <CAKohpok0M1_khYB=AobfAuPM9Tf8wi63K5o6NCQ+sC=STP5HMw@mail.gmail.com>
- <20140710140704.GG2970@pd.tnic>
- <CAKohpok-ZdxJMCsLMGVA1yhmCjQyTwhCTu7PuXU47wpLQQyxEg@mail.gmail.com>
+	id S1752912AbaGJOR1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 10:17:27 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:43655 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417AbaGJOR0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 10:17:26 -0400
+Date: Thu, 10 Jul 2014 16:17:23 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Sebastien Buisson <sebastien.buisson@bull.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Allow increasing the buffer-head per-CPU LRU size
+Message-ID: <20140710141723.GS18735@two.firstfloor.org>
+References: <53B667F9.90306@bull.net>
+ <87y4w6sbp7.fsf@tassilo.jf.intel.com>
+ <53BA772C.6040506@bull.net>
+ <20140707163003.GA18735@two.firstfloor.org>
+ <20140707152936.a286b0f46ae1b06aa41c1959@linux-foundation.org>
+ <20140707224634.GE18735@two.firstfloor.org>
+ <53BB8F7C.1060505@bull.net>
+ <53BE37E5.4030407@bull.net>
+ <20140710000745.37be4400.akpm@linux-foundation.org>
+ <53BE40E3.6000101@bull.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CAKohpok-ZdxJMCsLMGVA1yhmCjQyTwhCTu7PuXU47wpLQQyxEg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53BE40E3.6000101@bull.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 07:43:07PM +0530, Viresh Kumar wrote:
-> But I faced the issue when I had to see some test reports from the
-> automated stuff and wanted to see if cpufreq is up and running.
+On Thu, Jul 10, 2014 at 09:29:39AM +0200, Sebastien Buisson wrote:
+> 
+> Le 10/07/2014 09:07, Andrew Morton a écrit :
+> >This hardwires 16 if ext4&quota and 8 otherwise.  There's no way for
+> >anyone to alter this decision if they think it will be helpful (or
+> >harmful) in their setup.
+> 
+> In fact I do not know how to let experienced people alter the value
+> without confusing the others with yet another obscure config option
+> (Andi's comment). I would welcome any suggestion to achieve this.
 
-Sorry, this is a very specialized usage to enforce meaningless spew in
-dmesg on *everybody*. Fix your tests instead.
+I don't think we should generally expose it.
+
+If someone really wants to experiment they can change the source.
+
+-Andi
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+ak@linux.intel.com -- Speaking for myself only.
