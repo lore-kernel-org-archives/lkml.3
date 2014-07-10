@@ -1,99 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682AbaGJTss (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 15:48:48 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:56842 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752575AbaGJTsq (ORCPT
+	id S1752767AbaGJTtR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 15:49:17 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:29255 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752575AbaGJTtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 15:48:46 -0400
+	Thu, 10 Jul 2014 15:49:14 -0400
+X-CheckPoint: {53BEEE39-C-2100090A-C0000000}
+Message-ID: <53BEEE38.8030407@tilera.com>
+Date: Thu, 10 Jul 2014 15:49:12 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <53BEB77A.6020003@intel.com>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
-	<1404905415-9046-2-git-send-email-a.ryabinin@samsung.com>
-	<53BDA568.5030607@intel.com>
-	<53BE8333.6060404@samsung.com>
-	<53BEB77A.6020003@intel.com>
-Date: Thu, 10 Jul 2014 23:48:45 +0400
-Message-ID: <CAPAsAGwYZ9AVUoOMipZEe8jdmJfd=aULR+yoVH5FqzW1Qa75AQ@mail.gmail.com>
-Subject: Re: [RFC/PATCH RESEND -next 01/21] Add kernel address sanitizer infrastructure.
-From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>, linux-kernel@vger.kernel.org,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Alexey Preobrazhensky <preobr@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        x86@kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 10/17] tile: Remove tile-specific _sinitdata and _einitdata
+References: <1384285347-13506-1-git-send-email-geert@linux-m68k.org>	<1384285347-13506-11-git-send-email-geert@linux-m68k.org>	<528414A6.8090208@tilera.com>	<alpine.DEB.2.02.1311140927170.9407@ayla.of.borg>	<5284E467.6040502@tilera.com> <CAMuHMdXUSMU6dTnaMtSDPgL-x89XJh8hKKRhhDBYJvWZ9rpomQ@mail.gmail.com>
+In-Reply-To: <CAMuHMdXUSMU6dTnaMtSDPgL-x89XJh8hKKRhhDBYJvWZ9rpomQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [108.20.112.127]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-07-10 19:55 GMT+04:00 Dave Hansen <dave.hansen@intel.com>:
-> On 07/10/2014 05:12 AM, Andrey Ryabinin wrote:
->> On 07/10/14 00:26, Dave Hansen wrote:
->>> On 07/09/2014 04:29 AM, Andrey Ryabinin wrote:
->>>> Address sanitizer dedicates 1/8 of the low memory to the shadow memory and uses direct
->>>> mapping with a scale and offset to translate a memory address to its corresponding
->>>> shadow address.
->>>>
->>>> Here is function to translate address to corresponding shadow address:
->>>>
->>>>      unsigned long kasan_mem_to_shadow(unsigned long addr)
->>>>      {
->>>>                 return ((addr - PAGE_OFFSET) >> KASAN_SHADOW_SCALE_SHIFT)
->>>>                              + kasan_shadow_start;
->>>>      }
+On 7/9/2014 2:33 PM, Geert Uytterhoeven wrote:
+> Hi Chris,
+>
+> On Thu, Nov 14, 2013 at 3:55 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+>> On 11/14/2013 3:31 AM, Geert Uytterhoeven wrote:
+>>> Feel free to take v2 below. Thanks!
 >>>
->>> How does this interact with vmalloc() addresses or those from a kmap()?
+>>>  From d761d4d63945ff0a6eab5a9058c132f870c92aff Mon Sep 17 00:00:00 2001
+>>> From: Geert Uytterhoeven <geert@linux-m68k.org>
+>>> Date: Fri, 8 Nov 2013 21:33:29 +0100
+>>> Subject: [PATCH -v2] tile: Remove tile-specific _sinitdata and _einitdata
 >>>
->> It's used only for lowmem:
->>
->> static inline bool addr_is_in_mem(unsigned long addr)
->> {
->>       return likely(addr >= PAGE_OFFSET && addr < (unsigned long)high_memory);
->> }
->
-> That's fine, and definitely covers the common cases.  Could you make
-> sure to call this out explicitly?  Also, there's nothing to _keep_ this
-> approach working for things out of the direct map, right?  It would just
-> be a matter of updating the shadow memory to have entries for the other
-> virtual address ranges.
+>>> Use standard __init_begin and __init_end instead.
+>>>
+>>> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>>> Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+>> Taken into the tile tree; thanks!  (I did fix one extra place where it mentioned _sinitdata in a comment.)
+> I'm going through old patches, and it seems this is still not upstream?
 
-Why do you want shadow for things out of the direct map?
-If you want to catch use-after-free in vmalloc than DEBUG_PAGEALLOC
-will be enough.
-If you want catch out-of-bounds in vmalloc you don't need anything,
-because vmalloc
-allocates guarding hole in the end.
-Or do you want something else?
+Yes, and I'm not at all sure what happened.  There were a couple of mistakes
+in the original post (einittext converted instead of einitdata), and maybe I
+ended up dropping it entirely instead of taking v2.
 
->
-> addr_is_in_mem() is a pretty bad name for what it's doing. :)
->
-> I'd probably call it something like kasan_tracks_vaddr().
->
-Agree
+In any case it's now in the tile tree and upstreamed to linux-tile so you
+should see it in linux-next shortly.
 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
-
+Sorry!
 
 -- 
-Best regards,
-Andrey Ryabinin
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
