@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757AbaGJKUi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 06:20:38 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:36330 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051AbaGJKUg (ORCPT
+	id S1751818AbaGJKWH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 06:22:07 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:33167 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958AbaGJKWF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 06:20:36 -0400
+	Thu, 10 Jul 2014 06:22:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <1404987355.23201.65.camel@samson1.armitage.org.uk>
-References: <1404987355.23201.65.camel@samson1.armitage.org.uk>
-Date: Thu, 10 Jul 2014 15:50:36 +0530
-Message-ID: <CAKohpo=kj9qsz2qRDdF5M4T3zSyZTa_HHOJH27Q4Y3mnhKw4gA@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: kirkwood: Reinstate cpufreq driver for ARCH_KIRKWOOD
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Quentin Armitage <quentin@armitage.org.uk>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Lunn <andrew@lunn.ch>
+X-Originating-IP: [84.208.72.173]
+In-Reply-To: <87tx6ph8u5.fsf@nemi.mork.no>
+References: <1404980258-30853-1-git-send-email-teg@jklm.no>
+ <1404980258-30853-4-git-send-email-teg@jklm.no> <87tx6ph8u5.fsf@nemi.mork.no>
+From: Tom Gundersen <teg@jklm.no>
+Date: Thu, 10 Jul 2014 12:21:44 +0200
+Message-ID: <CAG-2HqVvW2dh5y8xn9v-B29ohFTcPGgY3NY-P5y_xZu0SGgG3g@mail.gmail.com>
+Subject: Re: [PATCH v7 03/33] net: set name_assign_type in alloc_netdev()
+To: =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 July 2014 15:45, Quentin Armitage <quentin@armitage.org.uk> wrote:
-> Commit ff1f0018cf66080d8e6f59791e552615648a033a ("drivers: Enable
-> building of Kirkwood drivers for mach-mvebu") added Kirkwood into
-> mach-mvebu, adding MACH_KIRKWOOD to ARCH_KIRKWOOD in the KConfig files.
+On Thu, Jul 10, 2014 at 11:16 AM, Bjørn Mork <bjorn@mork.no> wrote:
+> Tom Gundersen <teg@jklm.no> writes:
 >
-> The change for ARM_KIRKWOOD_CPUFREQ replaced ARCH_KIRKWOOD with
-> MACH_KIRKWOOD, whereas all the other changes were ARCH_KIRKWOOD ||
-> MACH_KIRKWOOD.
+>> diff --git a/net/ethernet/eth.c b/net/ethernet/eth.c
+>> index 5dc638c..f405e05 100644
+>> --- a/net/ethernet/eth.c
+>> +++ b/net/ethernet/eth.c
+>> @@ -390,7 +390,8 @@ EXPORT_SYMBOL(ether_setup);
+>>  struct net_device *alloc_etherdev_mqs(int sizeof_priv, unsigned int txqs,
+>>                                     unsigned int rxqs)
+>>  {
+>> -     return alloc_netdev_mqs(sizeof_priv, "eth%d", ether_setup, txqs, rxqs);
+>> +     return alloc_netdev_mqs(sizeof_priv, "eth%d", NET_NAME_UNKNOWN,
+>> +                             ether_setup, txqs, rxqs);
+>>  }
+>>  EXPORT_SYMBOL(alloc_etherdev_mqs);
 >
-> As a consequence of this change, the cpufreq driver is no longer enabled
-> for ARCH_KIRKWOOD. This patch reinstates ARM_KIRKWOOD_CPUFREQ for
-> ARCH_KIRKWOOD.
+> I believe this chunk makes the rest of this exercise pretty pointless.
 >
-> Signed-off-by: Quentin Armitage <quentin@armitage.org.uk>
-> ---
-> diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
-> index ebac671..24778f0 100644
-> --- a/drivers/cpufreq/Kconfig.arm
-> +++ b/drivers/cpufreq/Kconfig.arm
-> @@ -118,7 +118,7 @@ config ARM_INTEGRATOR
->           If in doubt, say Y.
+> bjorn@nemi:/usr/local/src/git/linux$ git grep alloc_etherdev drivers/net/|wc -l
+> 283
 >
->  config ARM_KIRKWOOD_CPUFREQ
-> -       def_bool MACH_KIRKWOOD
-> +       def_bool ARCH_KIRKWOOD || MACH_KIRKWOOD
->         help
->           This adds the CPUFreq driver for Marvell Kirkwood
->           SoCs.
+> I don't care enough to go look, but I'd be surprised if none of those
+> drivers rename the device before registering it.
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+I did look for that, and I only found devices being renamed to the
+same name assign type as eth%d (wlan%d, etc).
+
+Cheers,
+
+Tom
