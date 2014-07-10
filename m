@@ -1,82 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751513AbaGJXch (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 19:32:37 -0400
-Received: from si-002-i161.relay.mailchannels.net ([108.178.49.173]:10198 "EHLO
-	relay.mailchannels.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751170AbaGJXcf (ORCPT
+	id S1751317AbaGJXpu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 19:45:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52396 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011AbaGJXpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 19:32:35 -0400
-X-Greylist: delayed 6885 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Jul 2014 19:32:34 EDT
-X-Sender-Id: arvixe|x-authuser|przemo@firszt.eu
-X-Sender-Id: arvixe|x-authuser|przemo@firszt.eu
-X-MC-Relay: Neutral
-X-MailChannels-SenderId: arvixe|x-authuser|przemo@firszt.eu
-X-MailChannels-Auth-Id: arvixe
-Message-ID: <1405026844.2613.15.camel@fedora-lan>
-Subject: Re: [PATCH 0/5] Input - wacom: battery enhancements and unifying
- hid-wacom and wacom
-From: Przemo Firszt <przemo@firszt.eu>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Date: Thu, 10 Jul 2014 22:14:04 +0100
-In-Reply-To: <1405017900-16024-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1405017900-16024-1-git-send-email-benjamin.tissoires@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-AuthUser: przemo@firszt.eu
+	Thu, 10 Jul 2014 19:45:49 -0400
+Date: Thu, 10 Jul 2014 16:45:33 -0700
+From: tip-bot for Jan Beulich <tipbot@zytor.com>
+Message-ID: <tip-d093601be5e97d2729614419d0d256ed3b6a56b0@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        boris.ostrovsky@oracle.com, jbeulich@suse.com, luto@amacapital.net,
+        akpm@linux-foundation.org, JBeulich@suse.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        boris.ostrovsky@oracle.com, jbeulich@suse.com, luto@amacapital.net,
+        akpm@linux-foundation.org, JBeulich@suse.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <53B5863B02000078000204D5@mail.emea.novell.com>
+References: <53B5863B02000078000204D5@mail.emea.novell.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86-32, vdso:
+  Fix vDSO build error due to missing align_vdso_addr()
+Git-Commit-ID: d093601be5e97d2729614419d0d256ed3b6a56b0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dnia 2014-07-10, czw o godzinie 14:44 -0400, Benjamin Tissoires pisze:
-[..]
-Hi Benjamin,
-> However, I did not backport the speed attribute and the ac power
-> device (which
-> is infered by the battery status). I don't know if there are users of
-> those two,
-> so I let them aside for now. Przemo, any ideas if this is actually 
-> used?
-Both tablets that I had (Graphire Wireless and Intuos4 Wireless)
-supports slow and fast reporting. Slow reporting is necessary with older
-bluetooth receivers otherwise the lag between pen movement and cursor
-movement made devices unusable.
+Commit-ID:  d093601be5e97d2729614419d0d256ed3b6a56b0
+Gitweb:     http://git.kernel.org/tip/d093601be5e97d2729614419d0d256ed3b6a56b0
+Author:     Jan Beulich <JBeulich@suse.com>
+AuthorDate: Thu, 3 Jul 2014 15:35:07 +0100
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 10 Jul 2014 16:06:04 -0700
 
-I tried to expose all events reported by hardware and I think AC
-reporting should stay in the kernel.
+x86-32, vdso: Fix vDSO build error due to missing align_vdso_addr()
 
-Intuos4 Wireless
-AC power disconnected:
-bash-4.2$ cat /sys/class/power_supply/wacom_ac/uevent 
-POWER_SUPPLY_NAME=wacom_ac
-POWER_SUPPLY_PRESENT=0
-POWER_SUPPLY_ONLINE=0
-POWER_SUPPLY_SCOPE=Device
-bash-4.2$ cat /sys/class/power_supply/wacom_battery/uevent 
-POWER_SUPPLY_NAME=wacom_battery
-POWER_SUPPLY_PRESENT=1
-POWER_SUPPLY_CAPACITY=85
-POWER_SUPPLY_SCOPE=Device
-POWER_SUPPLY_STATUS=Discharging
+Relying on static functions used just once to get inlined (and
+subsequently have dead code paths eliminated) is wrong: Compilers are
+free to decide whether they do this, regardless of optimization level.
+With this not happening for vdso_addr() (observed with gcc 4.1.x), an
+unresolved reference to align_vdso_addr() causes the build to fail.
 
-AC power connected:
-bash-4.2$ cat /sys/class/power_supply/wacom_ac/uevent 
-POWER_SUPPLY_NAME=wacom_ac
-POWER_SUPPLY_PRESENT=1
-POWER_SUPPLY_ONLINE=1
-POWER_SUPPLY_SCOPE=Device
-bash-4.2$ cat /sys/class/power_supply/wacom_battery/uevent 
-POWER_SUPPLY_NAME=wacom_battery
-POWER_SUPPLY_PRESENT=1
-POWER_SUPPLY_CAPACITY=85
-POWER_SUPPLY_SCOPE=Device
-POWER_SUPPLY_STATUS=Charging
--- 
-Kind regards,
-Przemo Firszt
+[ hpa: vdso_addr() is never actually used on x86-32, as calculate_addr
+  in map_vdso() is always false.  It ought to be possible to clean
+  this up further, but this fixes the immediate problem. ]
 
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Link: http://lkml.kernel.org/r/53B5863B02000078000204D5@mail.emea.novell.com
+Acked-by: Andy Lutomirski <luto@amacapital.net>
+Tested-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Tested-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/vdso/vma.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
+index e1513c4..5a5176d 100644
+--- a/arch/x86/vdso/vma.c
++++ b/arch/x86/vdso/vma.c
+@@ -62,6 +62,9 @@ struct linux_binprm;
+    Only used for the 64-bit and x32 vdsos. */
+ static unsigned long vdso_addr(unsigned long start, unsigned len)
+ {
++#ifdef CONFIG_X86_32
++	return 0;
++#else
+ 	unsigned long addr, end;
+ 	unsigned offset;
+ 	end = (start + PMD_SIZE - 1) & PMD_MASK;
+@@ -83,6 +86,7 @@ static unsigned long vdso_addr(unsigned long start, unsigned len)
+ 	addr = align_vdso_addr(addr);
+ 
+ 	return addr;
++#endif
+ }
+ 
+ static int map_vdso(const struct vdso_image *image, bool calculate_addr)
