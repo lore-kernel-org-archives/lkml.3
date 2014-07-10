@@ -1,111 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751416AbaGJF4w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 01:56:52 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:14583
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751128AbaGJF4v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 01:56:51 -0400
-X-IronPort-AV: E=Sophos;i="5.01,636,1400018400"; 
-   d="scan'208";a="70800982"
-Date: Thu, 10 Jul 2014 07:56:47 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
-cc: Himangi Saraogi <himangi774@gmail.com>, Chris Mason <clm@fb.com>,
-        Josef Bacik <jbacik@fb.com>, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Btrfs: use BUG_ON
-In-Reply-To: <53BDD8B5.2040609@jp.fujitsu.com>
-Message-ID: <alpine.DEB.2.02.1407100747350.2187@localhost6.localdomain6>
-References: <20140708222141.GA11854@himangi-Dell> <53BDD8B5.2040609@jp.fujitsu.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751443AbaGJF7G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 01:59:06 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53854 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750702AbaGJF7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 01:59:05 -0400
+Message-ID: <53BE2B6D.1090602@ti.com>
+Date: Thu, 10 Jul 2014 11:28:05 +0530
+From: Lokesh Vutla <lokeshvutla@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Tony Lindgren <tony@atomide.com>
+CC: Sricharan R <r.sricharan@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <santosh.shilimkar@ti.com>,
+        <nm@ti.com>, <rnayak@ti.com>, <linux@arm.linux.org.uk>,
+        <tglx@linutronix.de>, <jason@lakedaemon.net>, <joe@perches.com>,
+        Benoit Cousson <bcousson@baylibre.com>
+Subject: Re: [PATCH V4 2/2] arm: dts: dra7: add crossbar device binding
+References: <1403767532-19290-1-git-send-email-r.sricharan@ti.com> <1403767532-19290-3-git-send-email-r.sricharan@ti.com> <20140626074417.GF28884@atomide.com> <53ABDA9A.8000108@ti.com> <20140626102650.GH28884@atomide.com> <20140709154417.GC28884@atomide.com>
+In-Reply-To: <20140709154417.GC28884@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Thu, 10 Jul 2014, Satoru Takeuchi wrote:
-
-> Hi Himangi,
+Hi Tony,
+On Wednesday 09 July 2014 09:14 PM, Tony Lindgren wrote:
+> * Tony Lindgren <tony@atomide.com> [140626 03:28]:
+>> * Sricharan R <r.sricharan@ti.com> [140626 01:36]:
+>>> Hi Tony,
+>>>
+>>> On Thursday 26 June 2014 01:14 PM, Tony Lindgren wrote:
+>>>> * Sricharan R <r.sricharan@ti.com> [140626 00:29]:
+>>>>> From: R Sricharan <r.sricharan@ti.com>
+>>>>>
+>>>>> There is a IRQ crossbar device in the soc, which
+>>>>> maps the irq requests from the peripherals to the
+>>>>> mpu interrupt controller's inputs. The Peripheral irq
+>>>>> requests are connected to only one crossbar
+>>>>> input and the output of the crossbar is connected to only one
+>>>>> controller's input line. The crossbar device is used to map
+>>>>> a peripheral input to a free mpu's interrupt controller line.
+>>>>>
+>>>>> Here, adding a new crossbar device node and replacing all the peripheral
+>>>>> interrupt numbers with its fixed crossbar input lines.
+>>>>
+>>>> I think these two patches need to be a single patch to avoid
+>>>> breaking booting for git bisect inbetween these patches?
+>>>   This does not cause booting issues. irq_desc gets allocated linearly,
+>>>    but that does not create boot issues.
+>>
+>> OK
 > 
-> (2014/07/09 7:21), Himangi Saraogi wrote:
-> > Use BUG_ON(x) rather than if(x) BUG();
-> > 
-> > The semantic patch that fixes this problem is as follows:
-> > 
-> > // <smpl>
-> > @@ identifier x; @@
-> > -if (x) BUG();
-> > +BUG_ON(x);
-> > // </smpl>
+> These are now applied on top of Jason's immutable irqchip branch
+> and merged and pushed out into omap-for-v3.17/dt. Can you guys
+> please test?
+I have tested omap-for-v3.17/dt on DRA7 EVM. Crossbar is working fine.
+Looks good to me.
+
+lokesh@a0131933lt:~/working/mainline/linux$ git describe 
+v3.16-rc1-34-g6464099
+
+Please find the logs here: http://paste.ubuntu.com/7773616/
+
+Thanks and regards,
+Lokesh
+
 > 
-> Strictly speaking, BUG_ON() is "if (unlikely(x)) BUG".
-> Anyway, I consider that put this condition in unlikely()
-> in this case is good.
+> Regards,
 > 
-> BTW, there are many "if BUG()" case under fs/btrfs.
-> How about fix all of them?
-> 
-> ===============================================================================
-> $ grep -rnH -B 1 "BUG()" fs/btrfs | grep -A 1 'if.*('
-> fs/btrfs/inode.c-6318-		} else if (create && PageUptodate(page)) {
-
-In the past, BUG_ON (and BUG) could have a definition that would just do 
-nothing.  In that case, the call to PageUptodate would go away.  The 
-function may do a read barrier, so that could be undesirable.
-
-But now I don't see any definition of BUG_ON that discards the condition.  
-So Himangi, you can discard the requirement that the tested expression be 
-an identifier in the semantic patch, and just allow any expression:
-
--if(e) BUG();
-+BUG_ON(e);
-
-julia
-
-> fs/btrfs/inode.c:6319:			BUG();
+> Tony
 > --
-> fs/btrfs/volumes.c-2626-			else if (ret)
-> fs/btrfs/volumes.c:2627:				BUG(); # <- your patch
-> fixes it.
-> --
-> fs/btrfs/volumes.c-3092-		if (ret == 0)
-> fs/btrfs/volumes.c:3093:			BUG(); /* FIXME break ? */
-> --
-> fs/btrfs/raid56.c-2048-	if (rbio->faila == -1) {
-> fs/btrfs/raid56.c:2049:		BUG();
-> ===============================================================================
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> Thanks,
-> Satoru
-> 
-> > 
-> > Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> > Acked-by: Julia Lawall <julia.lawall@lip6.fr>
-> > ---
-> >   fs/btrfs/volumes.c | 4 ++--
-> >   1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-> > index 6104676..63e746e 100644
-> > --- a/fs/btrfs/volumes.c
-> > +++ b/fs/btrfs/volumes.c
-> > @@ -2623,8 +2623,8 @@ again:
-> >   						   found_key.offset);
-> >   			if (ret == -ENOSPC)
-> >   				failed++;
-> > -			else if (ret)
-> > -				BUG();
-> > +			else
-> > +				BUG_ON(ret);
-> >   		}
-> > 
-> >   		if (found_key.offset == 0)
-> > 
-> 
-> 
+
