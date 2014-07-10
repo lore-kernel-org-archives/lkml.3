@@ -1,74 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790AbaGJH5D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 03:57:03 -0400
-Received: from lnfm1.sai.msu.ru ([93.180.26.255]:42913 "EHLO lnfm1.sai.msu.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750768AbaGJH5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 03:57:01 -0400
-Date: Thu, 10 Jul 2014 11:56:15 +0400 (MSK)
-From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
-To: Greg KH <gregkh@linuxfoundation.org>
-cc: linux-kernel@vger.kernel.org, linux-parport@lists.infradead.org,
-        hsommer@eso.org, matwey.kornilov@gmail.com
-Subject: Re: [PATCHv3 2/2] Add force_epp module option for parport_pc.
-In-Reply-To: <20140709212910.GB26562@kroah.com>
-Message-ID: <alpine.LRH.2.00.1407101045510.25305@lnfm1.sai.msu.ru>
-References: <alpine.LRH.2.00.1407071101060.3492@lnfm1.sai.msu.ru> <20140709212910.GB26562@kroah.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1751808AbaGJIAy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 04:00:54 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:41986 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095AbaGJIAw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 04:00:52 -0400
+Message-ID: <53BE482C.9000503@collabora.com>
+Date: Thu, 10 Jul 2014 10:00:44 +0200
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: Tomasz Figa <tomasz.figa@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Mike Turquette <mturquette@linaro.org>, rabin@rab.in,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: Re: [RFC v2 0/5] Per-user clock constraints
+References: <1404398323-18934-1-git-send-email-tomeu.vizoso@collabora.com> <53BDA31D.40502@gmail.com>
+In-Reply-To: <53BDA31D.40502@gmail.com>
+Content-Type: text/plain; charset=US-ASCII;
+	format=flowed
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Wed, 9 Jul 2014, Greg KH wrote:
-
-> On Mon, Jul 07, 2014 at 11:01:51AM +0400, Matwey V. Kornilov wrote:
->>> From cf37d0cc4d51da5c0b368e1f5ab05082c041d1e1 Mon Sep 17 00:00:00 2001
->> From: "Matwey V. Kornilov" <matwey.kornilov@gmail.com>
->> Date: Wed, 25 Jun 2014 01:08:45 +0400
->> Subject: [PATCHv3 2/2] Add force_epp module option for parport_pc.
+On 07/09/2014 10:16 PM, Tomasz Figa wrote:
+> Hi Tomeu,
+>
+> On 03.07.2014 16:38, Tomeu Vizoso wrote:
+>> Hello,
 >>
->> The detection of Intel EPP bug is known to produce much false positives.
->> The new option is introduced to force enable EPP in spite of the test result.
+>> here is another round for commenting, not very different from the first one.
+>>
+>> Something I forgot to mention before is that the function rename was performed
+>> by the scripts in:
+>>
+>> http://cgit.collabora.com/git/user/tomeu/linux.git/commit/?h=clk-refactoring-4&id=0e983e28864229f2cd525f87d59e034c4876b233
+>>
+>> As before, I have only checked that drivers/clk/ builds with allyesconfig, and
+>> that a kernel can be built for tegra_defconfig.
+>
+> This is quite an interesting series. I have reviewed two of five patches
+> and have plans to look at remaining ones, however here are few general
+> issues I'd like to raise:
+>
+> - somehow I don't see patch 2/5 on LAKML. Too big?
 
-Hi,
+Yes, I'm not sure what I can do about that, but it's only automated 
+function renaming. I'm going to send v3 in a bit and will CC you.
 
-First of all, maybe I missed something fundamental, or did something 
-wrong, but I can't understand how is it going to break working systems? We 
-have current behaviour B0, and introduce an option switches between B0 
-(which is default value) and alternative behaviour B1. So, until you go to 
-/etc/modprobe.d to override defaults or modprobe with specific option the 
-current behaviour B0 is active. Am I not right here?
+> - I see the series changing particular clock drivers. A good practice
+> would be to Cc respective driver maintainers to take a look at those
+> changes.
 
-> module parameters are horrid, how is someone supposed to know to use
-> this?
+Now that I'm more confident about this approach, for the next version 
+I'm going to CC them as well.
 
-I usually do `modinfo' to list existing options. Do I understand right 
-that description has to be added into Documentations also?
+> - please make sure that all the patches don't have checkpatch errors or
+> significant warnings.
 
-> Why can't we "fix" the detection logic?
+Sure.
 
-Initial check had been introduced in 1999 [1], however I am failed to find 
-any proves, because davej/history.git is missed. Initial committer is 
-unknown. The check fixes issue with the affected hardware (A) and 
-introduces new one with false-positive (F) hardware.
+> Will try (myself or by asking someone else) to do some testing on
+> Samsung platforms.
 
-Now, there are no evidences of what hardware is affected (it seems to be 
-quite aged), and no owners of this hardware are known. So, If I had fixed 
-the detection logic (in one or another way), I would have not been able to 
-check it.
+That will be great, thanks. One scenario I'm looking forward to test 
+this with is low system load while the display is being updated often at 
+a high resolution.
 
-What I am trying to do here (as it is described in 0/2) is to allow people 
-with false-positive hardware somehow operate with it.
+I would expect to see that the Exynos5 devfreq driver sets a relatively 
+low floor frequency, and the DC driver overrides that by setting a 
+higher floor, based on the calculated bandwidth that will be required to 
+move pixels around.
 
-> You just now broke systems that were working by forcing them to now set a module option
-> where previously they didn't
+Regards,
 
-See above.
+Tomeu
 
-[1] https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=630593#79
+> Best regards,
+> Tomasz
+>
 
