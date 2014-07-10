@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851AbaGJHzF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 03:55:05 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:53239 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751225AbaGJHzD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 03:55:03 -0400
-Date: Thu, 10 Jul 2014 09:51:05 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Boris Brezillon <boris@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/14] AT91: PIT: Cleanups and move to
- drivers/clocksource
-Message-ID: <20140710075105.GA27469@lukather>
-References: <1404207208-14513-1-git-send-email-maxime.ripard@free-electrons.com>
+	id S1751790AbaGJH5D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 03:57:03 -0400
+Received: from lnfm1.sai.msu.ru ([93.180.26.255]:42913 "EHLO lnfm1.sai.msu.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750768AbaGJH5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 03:57:01 -0400
+Date: Thu, 10 Jul 2014 11:56:15 +0400 (MSK)
+From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
+To: Greg KH <gregkh@linuxfoundation.org>
+cc: linux-kernel@vger.kernel.org, linux-parport@lists.infradead.org,
+        hsommer@eso.org, matwey.kornilov@gmail.com
+Subject: Re: [PATCHv3 2/2] Add force_epp module option for parport_pc.
+In-Reply-To: <20140709212910.GB26562@kroah.com>
+Message-ID: <alpine.LRH.2.00.1407101045510.25305@lnfm1.sai.msu.ru>
+References: <alpine.LRH.2.00.1407071101060.3492@lnfm1.sai.msu.ru> <20140709212910.GB26562@kroah.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="G4iJoqBmSsgzjUCe"
-Content-Disposition: inline
-In-Reply-To: <1404207208-14513-1-git-send-email-maxime.ripard@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---G4iJoqBmSsgzjUCe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Daniel,
+On Wed, 9 Jul 2014, Greg KH wrote:
 
-On Tue, Jul 01, 2014 at 11:33:13AM +0200, Maxime Ripard wrote:
-> Hi everyone,
->=20
-> This series cleans up the PIT driver in order for it to not depend on
-> anything in mach-at91 anymore, and in the end move it out of
-> mach-at91.
->=20
-> Along the way, these patches also do a bit of cleanup.
->=20
-> This has been tested on a G45-EK without DT and an Xplained with DT.
->=20
+> On Mon, Jul 07, 2014 at 11:01:51AM +0400, Matwey V. Kornilov wrote:
+>>> From cf37d0cc4d51da5c0b368e1f5ab05082c041d1e1 Mon Sep 17 00:00:00 2001
+>> From: "Matwey V. Kornilov" <matwey.kornilov@gmail.com>
+>> Date: Wed, 25 Jun 2014 01:08:45 +0400
+>> Subject: [PATCHv3 2/2] Add force_epp module option for parport_pc.
+>>
+>> The detection of Intel EPP bug is known to produce much false positives.
+>> The new option is introduced to force enable EPP in spite of the test result.
 
-Even though most of this patches are not clocksource related, it would
-be great if we could at least get an acked-by on the last patch that
-moves the driver to drivers/clocksource, since it pretty much becomes
-your burden :)
+Hi,
 
-Thanks!
-Maxime
+First of all, maybe I missed something fundamental, or did something 
+wrong, but I can't understand how is it going to break working systems? We 
+have current behaviour B0, and introduce an option switches between B0 
+(which is default value) and alternative behaviour B1. So, until you go to 
+/etc/modprobe.d to override defaults or modprobe with specific option the 
+current behaviour B0 is active. Am I not right here?
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+> module parameters are horrid, how is someone supposed to know to use
+> this?
 
---G4iJoqBmSsgzjUCe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I usually do `modinfo' to list existing options. Do I understand right 
+that description has to be added into Documentations also?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+> Why can't we "fix" the detection logic?
 
-iQIcBAEBAgAGBQJTvkXoAAoJEBx+YmzsjxAg1cMP/Axp7YxHX6/HbqKPIZuVTJxv
-PVY6yIqEEw4k9AFUSSKOERsVZb7gdjq8UxP/78t2N2wGzdovvGiipMxILUtoW/5Z
-Fcg2jzRkwf+FBOjPNlmcszONOcgq0Oa+NU31c9ww9o+xY4iUh/6SexH2QksMcKmO
-/VKhKfJRUtpwYijWSWuEKs8RGyIy1Xj0VWr3b9tFhAZiLeDlF/cYupH2CKFefdZx
-j8iNH60TavcecfgvQAoT+kjsjlqiMzdcwYAoXZPXFB9Io8Jh/envMQGV5WMCdY02
-SbkLK5CcSgbnqb/yaCMQKKkkDWLxTVjvnfjk1jBy1IX2E3LvvLjaxzZ2H5T7xrWh
-nvgRMryKBORW9wF6Ay+zOrbtNK+8qX9XocdDq1zrKxQ9mjXNKYgvI2OnD9V6H0UP
-J7QSmQ0D9WXlkBgSYtaKPSiTTcRG/eRVvieVeAWTd4Ga+Obm4plzRIrmFP3Mkorg
-VXTImQb0SjmSbi/I2hc88blKIU+8MP/HEigBMiPKzx7NLvFUGYH3b5LM2Gu1ocS4
-ThzeXJBD2njM14rK9b/Z5MK7F9wLbXbahUg8ho9c5SjcW/F10tNWSqkfaNWxHa/f
-MmUDjDRBgvRTWGvpJl6MexCKdJkwQKlNxAy1APAdZiuOn5PujG6FI0gWfCp96F7G
-cJN0M/lVW87zyqB1yNcV
-=dHwZ
------END PGP SIGNATURE-----
+Initial check had been introduced in 1999 [1], however I am failed to find 
+any proves, because davej/history.git is missed. Initial committer is 
+unknown. The check fixes issue with the affected hardware (A) and 
+introduces new one with false-positive (F) hardware.
 
---G4iJoqBmSsgzjUCe--
+Now, there are no evidences of what hardware is affected (it seems to be 
+quite aged), and no owners of this hardware are known. So, If I had fixed 
+the detection logic (in one or another way), I would have not been able to 
+check it.
+
+What I am trying to do here (as it is described in 0/2) is to allow people 
+with false-positive hardware somehow operate with it.
+
+> You just now broke systems that were working by forcing them to now set a module option
+> where previously they didn't
+
+See above.
+
+[1] https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=630593#79
+
