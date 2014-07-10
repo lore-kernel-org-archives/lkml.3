@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751113AbaGJFss (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 01:48:48 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:37640 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750752AbaGJFsr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 01:48:47 -0400
-Message-ID: <53BE292D.2080104@ti.com>
-Date: Thu, 10 Jul 2014 11:18:29 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/8] phy: phy-samsung-usb2: Change phy power on/power
- off sequence
-References: <1404715705-5041-1-git-send-email-kishon@ti.com> <1404715705-5041-4-git-send-email-kishon@ti.com> <20140708014442.GB13844@kroah.com> <53BB8BDA.3020205@ti.com> <20140709213624.GA14556@kroah.com>
-In-Reply-To: <20140709213624.GA14556@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1751037AbaGJFzx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 01:55:53 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:65496 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750702AbaGJFzv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 01:55:51 -0400
+From: Anil Belur <askb23@gmail.com>
+X-Google-Original-From: Anil Belur
+To: Larry.Finger@lwfinger.net, Jes.Sorensen@redhat.com,
+        gregkh@linuxfoundation.org
+Cc: linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Anil Belur <askb23@gmail.com>
+Subject: [PATCH 1/2] staging: rtl8723au: core: rtw_ap.c - removed NULL pointer check before kfree()
+Date: Thu, 10 Jul 2014 11:25:36 +0530
+Message-Id: <1404971737-9737-1-git-send-email-askb23@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Anil Belur <askb23@gmail.com>
 
+- as kfree() internally check for NULL, additional check it not
+  required.
 
-On Thursday 10 July 2014 03:06 AM, Greg KH wrote:
-> On Tue, Jul 08, 2014 at 11:42:42AM +0530, Kishon Vijay Abraham I wrote:
->> Hi Greg,
->>
->> On Tuesday 08 July 2014 07:14 AM, Greg KH wrote:
->>> On Mon, Jul 07, 2014 at 12:18:20PM +0530, Kishon Vijay Abraham I wrote:
->>>> From: Kamil Debski <k.debski@samsung.com>
->>>>
->>>> The Exynos4412 USB 2.0 PHY hardware differs from the description provided
->>>> in the documentation. Some register bits have different function. This
->>>> patch fixes the defines of register bits and changes the way how phys are
->>>> powered on and off.
->>>>
->>>> Signed-off-by: Kamil Debski <k.debski@samsung.com>
->>>> Tested-by: Marek Szyprowski <m.szyprowski@samsung.com>
->>>> Tested-by: Daniel Drake <drake@endlessm.com>
->>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>>> ---
->>>>  drivers/phy/phy-exynos4x12-usb2.c |  112 +++++++++++++++++++++++++------------
->>>>  drivers/phy/phy-exynos5250-usb2.c |    2 -
->>>>  drivers/phy/phy-samsung-usb2.h    |    3 +-
->>>>  3 files changed, 77 insertions(+), 40 deletions(-)
->>>>
->>>
->>> This doesn't look like a regression fix for 3.16-final, it looks like a
->>> "new feature" to me :(
->>
->> This patch was primarily due to the incorrectly documented register bits in the
->> manual. So thought this would qualify as fix and should be in 3.16.
-> 
-> Sorry, that's really big for a patch so late in the -rc cycle.  There
-> should only be real regressions or reported bugfixes now.
+Signed-off-by: Anil Belur <askb23@gmail.com>
+---
+ drivers/staging/rtl8723au/core/rtw_ap.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Okay sure. Will send it.
+diff --git a/drivers/staging/rtl8723au/core/rtw_ap.c b/drivers/staging/rtl8723au/core/rtw_ap.c
+index c8700b3..8714ae3 100644
+--- a/drivers/staging/rtl8723au/core/rtw_ap.c
++++ b/drivers/staging/rtl8723au/core/rtw_ap.c
+@@ -1270,8 +1270,7 @@ static void update_bcn_wps_ie(struct rtw_adapter *padapter)
+ 		pnetwork->IELength = wps_offset + (wps_ielen+2) + remainder_ielen;
+ 	}
+ 
+-	if (pbackup_remainder_ie)
+-		kfree(pbackup_remainder_ie);
++	kfree(pbackup_remainder_ie);
+ }
+ 
+ static void update_bcn_p2p_ie(struct rtw_adapter *padapter)
+-- 
+1.9.1
 
-Thanks
-Kishon
