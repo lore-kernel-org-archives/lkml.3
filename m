@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074AbaGJRdX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 13:33:23 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:61977 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458AbaGJRdV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 13:33:21 -0400
+	id S1752030AbaGJRix (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 13:38:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56459 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751191AbaGJRiv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 13:38:51 -0400
+Date: Thu, 10 Jul 2014 19:35:52 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-arch <linux-arch@vger.kernel.org>, linux-mips@linux-mips.org,
+        Will Drewry <wad@chromium.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Julien Tinnes <jln@chromium.org>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Drysdale <drysdale@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alexei Starovoitov <ast@plumgrid.com>
+Subject: Re: [PATCH v9 09/11] seccomp: introduce writer locking
+Message-ID: <20140710173552.GA27410@redhat.com>
+References: <1403911380-27787-1-git-send-email-keescook@chromium.org> <1403911380-27787-10-git-send-email-keescook@chromium.org> <20140709184215.GA4866@redhat.com> <20140709185549.GB4866@redhat.com> <CAGXu5jL6q1d16uA1Yu+QO4eV7zWwcWEWgkZrwmsfymbMvEr6+Q@mail.gmail.com> <20140710152418.GB20861@redhat.com> <CAGXu5jKNUn0OcXPyTmqbHwQ_GPMNTeajyrxpd2xAtzjTRFyhpg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140710170954.GB23544@kroah.com>
-References: <alpine.LRH.2.00.1407071101060.3492@lnfm1.sai.msu.ru>
- <20140709212910.GB26562@kroah.com> <alpine.LRH.2.00.1407101045510.25305@lnfm1.sai.msu.ru>
- <20140710170954.GB23544@kroah.com>
-From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
-Date: Thu, 10 Jul 2014 21:32:59 +0400
-X-Google-Sender-Auth: DT77OExGshJyB_NVAjc_tV6ZXXw
-Message-ID: <CAJs94Eao-ujjZevjptf5hhmkS742HdUVafP4avHR3gx0WzuSTw@mail.gmail.com>
-Subject: Re: [PATCHv3 2/2] Add force_epp module option for parport_pc.
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-parport <linux-parport@lists.infradead.org>,
-        Heiko Andreas Sommer <hsommer@eso.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jKNUn0OcXPyTmqbHwQ_GPMNTeajyrxpd2xAtzjTRFyhpg@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-07-10 21:09 GMT+04:00 Greg KH <gregkh@linuxfoundation.org>:
-> On Thu, Jul 10, 2014 at 11:56:15AM +0400, Matwey V. Kornilov wrote:
->>
->>
->> On Wed, 9 Jul 2014, Greg KH wrote:
->>
->> >On Mon, Jul 07, 2014 at 11:01:51AM +0400, Matwey V. Kornilov wrote:
->> >>>From cf37d0cc4d51da5c0b368e1f5ab05082c041d1e1 Mon Sep 17 00:00:00 2001
->> >>From: "Matwey V. Kornilov" <matwey.kornilov@gmail.com>
->> >>Date: Wed, 25 Jun 2014 01:08:45 +0400
->> >>Subject: [PATCHv3 2/2] Add force_epp module option for parport_pc.
->> >>
->> >>The detection of Intel EPP bug is known to produce much false positives.
->> >>The new option is introduced to force enable EPP in spite of the test result.
->>
->> Hi,
->>
->> First of all, maybe I missed something fundamental, or did something wrong,
->> but I can't understand how is it going to break working systems?
+On 07/10, Kees Cook wrote:
 >
-> I thought you disabled the quirk test and now rely on the module option
-> instead.  That would require a machine that was happily relying on the
-> quirk test to now be forced to add a module option, right?
+> On Thu, Jul 10, 2014 at 8:24 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > Just to simplify. Suppose TIF_SECCOMP was set a long ago. This thread
+> > has a single filter F1 and it enters seccomp_run_filters().
+> >
+> > Right before it does ACCESS_ONCE() to read the pointer, another thread
+> > does seccomp_sync_threads() and sets .filter = F2.
+> >
+> > If ACCESS_ONCE() returns F1 - everything is fine. But it can see the new
+> > pointer F2, and in this case we need a barrier to ensure that, say,
+> > LOAD(F2->prog) will see all the preceding changes in this memory.
+>
+> And the rmb() isn't sufficient for that?
 
-No, this would not...
+But it has no effect if the pointer was changed _after_ rmb() was already
+called.
 
-> Or did I read the patch incorrectly?
+And, you need a barrier _after_ ACCESS_ONCE().
 
-Maybe I've implemented something incorrectly? I think I suggested
-exactly inverse thing: the check is disabled only when the option is
-touched by user:
+(Unless, again, we know that this is the first filter, but this is only
+ by accident).
 
-!force_epp && intel_bug_present(pb) <=> intel_bug_present(pb) (given
-that force_epp is false)
+> Is another barrier needed
+> before assigning the filter pointer to make sure the contents it
+> points to are flushed?
 
-> Why not implement Alan's suggestion?
+I think smp_store_release() should be moved from seccomp_attach_filter()
+to seccomp_sync_threads(). Although probably it _should_ work either way,
+but at least this looks confusing because a) "current" doesn't need a
+barrier to serialize wuth itself, and b) it is not clear why it is safe
+to change the pointer dereferenced by another thread without a barrier.
 
-Why not, if you are fine with it. Are you sure that PPro was turning point?
+> What's the least time-consuming operation I can use in run_filters?
+
+As I said smp_read_barrier_depends() (nop unless alpha) or
+smp_load_acquire() which you used in the previous version.
+
+And to remind, afaics smp_load_acquire() in put_filter() should die ;)
+
+Oleg.
+
