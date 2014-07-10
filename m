@@ -1,84 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549AbaGJVwI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 17:52:08 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:49401 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753531AbaGJVwF (ORCPT
+	id S1752983AbaGJWLA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 18:11:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59728 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736AbaGJWK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 17:52:05 -0400
-From: Oded Gabbay <oded.gabbay@gmail.com>
-X-Google-Original-From: Oded Gabbay <oded.gabbay@amd.com>
-To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <j.glisse@gmail.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        John Bridgman <John.Bridgman@amd.com>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>
-Subject: [PATCH 19/83] hsa/radeon: Enable/Disable KFD interrupt module
-Date: Fri, 11 Jul 2014 00:50:19 +0300
-Message-Id: <1405029027-6085-18-git-send-email-oded.gabbay@amd.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
-References: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
+	Thu, 10 Jul 2014 18:10:58 -0400
+Date: Thu, 10 Jul 2014 15:15:24 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: sanjeev sharma <sanjeevsharmaengg@gmail.com>
+Cc: devel@driverdev.osuosl.org, peter.senna@gmail.com,
+        linux-kernel@vger.kernel.org, rmfrfs@gmail.com, teobaluta@gmail.com,
+        Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+Subject: Re: [PATCH v4 2/4] staging: rtl8192u: Removed unnecessary whitespace
+ & tab warning
+Message-ID: <20140710221524.GA26493@kroah.com>
+References: <20140708100142.GR25934@mwanda>
+ <1404995097-12689-1-git-send-email-sanjeevsharmaengg@gmail.com>
+ <1404995097-12689-3-git-send-email-sanjeevsharmaengg@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404995097-12689-3-git-send-email-sanjeevsharmaengg@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add calls to initialize and finalize the KFD interrupt
-module.
+On Thu, Jul 10, 2014 at 05:54:55PM +0530, sanjeev sharma wrote:
+> From: sanjeev sharma <sanjeev_sharma@mentor.com>
+> 
+> This patch will remove whitespace and tabs reported by
+> checkpatch.pl script.
+> 
+> Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+> ---
+>  drivers/staging/rtl8192u/r819xU_phy.c | 23 ++++++++++++-----------
+>  1 file changed, 12 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/staging/rtl8192u/r819xU_phy.c b/drivers/staging/rtl8192u/r819xU_phy.c
+> index 0bcdd4e..0fcb673 100644
+> --- a/drivers/staging/rtl8192u/r819xU_phy.c
+> +++ b/drivers/staging/rtl8192u/r819xU_phy.c
+> @@ -106,10 +106,10 @@ void rtl8192_setBBreg(struct net_device *dev, u32 reg_addr, u32 bitmask,
+>  /******************************************************************************
+>   * function:  This function reads specific bits from BB register
+>   * input:     net_device	*dev
+> - *            u32	 	reg_addr   //target addr to be readback
+> - *            u32	 	bitmask    //taget bit pos to be readback
+> - * output:    none
+> - * return:    u32	 	data       //the readback register value
+> + * u32		reg_addr   //target addr to be readback
+> + * u32		bitmask    //taget bit pos to be readback
+> + * output:	none
+> + * return:	u32		data       //the readback register value
+>   * notice:
+>   ******************************************************************************/
+>  u32 rtl8192_QueryBBReg(struct net_device *dev, u32 reg_addr, u32 bitmask)
 
-The calls are done per device initialize/finalize inside the kgd-->kfd
-interface.
+That doesn't look like you cleaned it up well, it now looks worse.
+Please keep the proper indentation of the variables.  It's not the
+"proper" kernel coding style, but don't make code worse, like you did
+here :(
 
-Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
----
- drivers/gpu/hsa/radeon/cik_regs.h   |  1 +
- drivers/gpu/hsa/radeon/kfd_device.c | 10 ++++++++--
- 2 files changed, 9 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/gpu/hsa/radeon/cik_regs.h b/drivers/gpu/hsa/radeon/cik_regs.h
-index 9c3ce97..813cdc4 100644
---- a/drivers/gpu/hsa/radeon/cik_regs.h
-+++ b/drivers/gpu/hsa/radeon/cik_regs.h
-@@ -73,6 +73,7 @@
- #define CP_PQ_WPTR_POLL_CNTL				0xC20C
- #define	WPTR_POLL_EN					(1 << 31)
- 
-+#define CPC_INT_CNTL					0xC2D0
- #define CP_ME1_PIPE0_INT_CNTL				0xC214
- #define CP_ME1_PIPE1_INT_CNTL				0xC218
- #define CP_ME1_PIPE2_INT_CNTL				0xC21C
-diff --git a/drivers/gpu/hsa/radeon/kfd_device.c b/drivers/gpu/hsa/radeon/kfd_device.c
-index b2d2861..b627e57 100644
---- a/drivers/gpu/hsa/radeon/kfd_device.c
-+++ b/drivers/gpu/hsa/radeon/kfd_device.c
-@@ -127,6 +127,9 @@ bool kgd2kfd_device_init(struct kfd_dev *kfd,
- 
- 	radeon_kfd_doorbell_init(kfd);
- 
-+	if (radeon_kfd_interrupt_init(kfd))
-+		return false;
-+
- 	if (!device_iommu_pasid_init(kfd))
- 		return false;
- 
-@@ -155,10 +158,13 @@ void kgd2kfd_device_exit(struct kfd_dev *kfd)
- 
- 	BUG_ON(err != 0);
- 
--	if (kfd->init_complete) {
-+	if (kfd->init_complete)
- 		kfd->device_info->scheduler_class->stop(kfd->scheduler);
--		kfd->device_info->scheduler_class->destroy(kfd->scheduler);
- 
-+	radeon_kfd_interrupt_exit(kfd);
-+
-+	if (kfd->init_complete) {
-+		kfd->device_info->scheduler_class->destroy(kfd->scheduler);
- 		amd_iommu_free_device(kfd->pdev);
- 	}
- 
--- 
-1.9.1
-
+greg k-h
