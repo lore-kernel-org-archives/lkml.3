@@ -1,88 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095AbaGJJuW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 05:50:22 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:1247 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752136AbaGJJuV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 05:50:21 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 10 Jul 2014 02:39:27 -0700
-Message-ID: <53BE61D9.4020202@nvidia.com>
-Date: Thu, 10 Jul 2014 12:50:17 +0300
-From: Mikko Perttunen <mperttunen@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>, Ben Skeggs <bskeggs@redhat.com>
-CC: "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gnurou@gmail.com" <gnurou@gmail.com>
-Subject: Re: [PATCH 0/3] drm/gk20a: support for reclocking
-References: <1404977677-22248-1-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1404977677-22248-1-git-send-email-acourbot@nvidia.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1753143AbaGJJuz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 05:50:55 -0400
+Received: from mga03.intel.com ([143.182.124.21]:64351 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751420AbaGJJux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 05:50:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,636,1400050800"; 
+   d="scan'208";a="455336421"
+Message-ID: <1404985839.5102.97.camel@smile.fi.intel.com>
+Subject: Re: [PATCH v1 1/5] seq_file: provide an analogue of print_hex_dump()
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Marek Vasut <marex@denx.de>
+Cc: Joe Perches <joe@perches.com>, Tadeusz Struk <tadeusz.struk@intel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Helge Deller <deller@gmx.de>,
+        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>, linux390@de.ibm.com,
+        Alexander Viro <viro@zeniv.linux.org.uk>, qat-linux@intel.com,
+        linux-crypto@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 10 Jul 2014 12:50:39 +0300
+In-Reply-To: <201407100958.02218.marex@denx.de>
+References: <1404919470-26668-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <201407092239.30561.marex@denx.de> <1404940868.932.168.camel@joe-AO725>
+	 <201407100958.02218.marex@denx.de>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Does GK20A itself have any kind of thermal protection capabilities? 
-Upstream SOCTHERM support is not yet available (though I have a driver 
-in my tree), so we are thinking of disabling CPU DVFS on boards that 
-don't have always-on active cooling for now. Same might be necessary for 
-GPU as well.
+On Thu, 2014-07-10 at 09:58 +0200, Marek Vasut wrote:
+> On Wednesday, July 09, 2014 at 11:21:08 PM, Joe Perches wrote:
+> > On Wed, 2014-07-09 at 22:39 +0200, Marek Vasut wrote:
+> > > The above function looks like almost verbatim copy of print_hex_dump().
+> > > The only difference I can spot is that it's calling seq_printf() instead
+> > > of printk(). Can you not instead generalize print_hex_dump() and based
+> > > on it's invocation, make it call either seq_printf() or printk() ?
+> > 
+> > How do you propose doing that given any seq_<foo> call
+> > requires a struct seq_file * and print_hex_dump needs
+> > a KERN_<LEVEL>.
+> 
+> I can imagine a rather nasty way, I can't say I would like it myself tho. The 
+> general idea would be to pull out the entire switch {} statement into a separate 
+> functions , one for printk() and one for seq_printf() cases. Then, have a 
+> generic do_hex_dump() call which would take as an argument a pointer to either 
+> of those functions and a void * to either the seq_file or level . Finally, there 
+> would have to be a wrapper to call the do_hex_dump() with the correct function 
+> pointer and it's associated arg.
+> 
+> Nasty? Yes ... Ineffective? Most likely.
 
-On 10/07/14 10:34, Alexandre Courbot wrote:
-> This series adds support for reclocking on GK20A. The first two patches touch
-> the clock subsystem to allow GK20A to operate, by making the presence of the
-> thermal and voltage devices optional, and allowing pstates to be provided
-> directly instead of being probed using the BIOS (which Tegra does not have).
->
-> The last patch adds the GK20A clock device. Arguably the clock can be seen as a
-> stripped-down version of what is seen on NVE0, however instead of using NVE0
-> support has been written from scratch using the ChromeOS kernel as a basis.
-> There are several reasons for this:
->
-> - The ChromeOS driver uses a lookup table for the P coefficient which I could
->    not find in the NVE0 driver,
-> - Some registers that NVE0 expects to find are not present on GK20A (e.g.
->    0x137120 and 0x137140),
-> - Calculation of MNP is done differently from what is performed in
->    nva3_pll_calc(), and it might be interesting to compare the two methods,
-> - All the same, the programming sequence is done differently in the ChromeOS
->    driver and NVE0 could possibly benefit from it (?)
->
-> It would be interesting to try and merge both, but for now I prefer to have the
-> two coexisting to ensure proper operation on GK20A and besure I don't break
-> dGPU support. :)
->
-> Regarding the first patch, one might argue that I could as well add thermal
-> and voltage devices to GK20A. The reason this is not done is because these
-> currently depend heavily on the presence of a BIOS, and will require a rework
-> similar to that done in patch 2 for clocks. I would like to make sure this
-> approach is approved because applying it to other subdevs.
->
-> Alexandre Courbot (3):
->    drm/nouveau/clk: make therm and volt devices optional
->    drm/nouveau/clk: support for non-BIOS pstates
->    drm/gk20a: reclocking support
->
->   drivers/gpu/drm/nouveau/Makefile                   |   1 +
->   drivers/gpu/drm/nouveau/core/engine/device/nve0.c  |   1 +
->   .../gpu/drm/nouveau/core/include/subdev/clock.h    |   9 +-
->   drivers/gpu/drm/nouveau/core/subdev/clock/base.c   |  52 +-
->   drivers/gpu/drm/nouveau/core/subdev/clock/gk20a.c  | 670 +++++++++++++++++++++
->   drivers/gpu/drm/nouveau/core/subdev/clock/nv04.c   |   4 +-
->   drivers/gpu/drm/nouveau/core/subdev/clock/nv40.c   |   4 +-
->   drivers/gpu/drm/nouveau/core/subdev/clock/nv50.c   |   2 +-
->   drivers/gpu/drm/nouveau/core/subdev/clock/nva3.c   |   4 +-
->   drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c   |   4 +-
->   drivers/gpu/drm/nouveau/core/subdev/clock/nvc0.c   |   4 +-
->   drivers/gpu/drm/nouveau/core/subdev/clock/nve0.c   |   4 +-
->   12 files changed, 725 insertions(+), 34 deletions(-)
->   create mode 100644 drivers/gpu/drm/nouveau/core/subdev/clock/gk20a.c
->
+It looks not good idea, yeah.
+
+> > Is there an actual value to it?
+> 
+> Reducing the code duplication, but I wonder if there is a smarter solution than 
+> the horrid one above.
+
+I have considered to modify hex_dump_to_buffer() to return how many
+bytes it actually proceed to the buffer. In that case we can directly
+print to m->buf like other seq_<foo> calls do.
+
+But I still have doubts about it. Any opinion?
+
+-- 
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
+
