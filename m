@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429AbaGJNj6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:39:58 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:34694 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753097AbaGJNjz (ORCPT
+	id S1753514AbaGJNkF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:40:05 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:36054 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753220AbaGJNkA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:39:55 -0400
-Date: Thu, 10 Jul 2014 14:39:48 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Maxime Coquelin <maxime.coquelin@st.com>,
-        Peter Griffin <peter.griffin@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        patrice.chotard@st.com, srinivas.kandagatla@gmail.com,
-        devicetree@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, peppe.cavallaro@st.com
-Subject: Re: [PATCH v2 3/3] MAINTAINERS: Add dwc3-st.c file to ARCH/STI
- architecture
-Message-ID: <20140710133948.GF11948@lee--X1>
-References: <1404541530-27856-1-git-send-email-peter.griffin@linaro.org>
- <1404541530-27856-4-git-send-email-peter.griffin@linaro.org>
- <53BBA075.9040204@st.com>
- <20140708075332.GM6407@lee--X1>
- <20140710132718.GH15340@saruman.home>
+	Thu, 10 Jul 2014 09:40:00 -0400
+Message-ID: <53BE97AD.9080306@kernel.dk>
+Date: Thu, 10 Jul 2014 15:39:57 +0200
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140710132718.GH15340@saruman.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Benjamin LaHaise <bcrl@kvack.org>, Christoph Hellwig <hch@infradead.org>
+CC: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        "dgilbert@interlog.com" <dgilbert@interlog.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Bart Van Assche <bvanassche@fusionio.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: scsi-mq V2
+References: <1403715121-1201-1-git-send-email-hch@lst.de> <20140708144829.GA5539@infradead.org> <53BD7041.5010300@interlog.com> <53BD9A24.7010203@kernel.dk> <94D0CD8314A33A4D9D801C0FE68B402958B9628B@G9W0745.americas.hpqcorp.net> <20140710062040.GB20146@infradead.org> <20140710133609.GO12478@kvack.org>
+In-Reply-To: <20140710133609.GO12478@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Jul 2014, Felipe Balbi wrote:
+On 2014-07-10 15:36, Benjamin LaHaise wrote:
+> On Wed, Jul 09, 2014 at 11:20:40PM -0700, Christoph Hellwig wrote:
+>> On Thu, Jul 10, 2014 at 12:53:36AM +0000, Elliott, Robert (Server Storage) wrote:
+>>> the problem still occurs - fio results in low or 0 IOPS, with perf top
+>>> reporting unusual amounts of time spent in do_io_submit and io_submit.
+>>
+>> The diff between the two version doesn't show too much other possible
+>> interesting commits, the most interesting being some minor block
+>> updates.
+>>
+>> I guess we'll have to a manual bisect, I've pushed out a
+>> scsi-mq.3-bisect-1 branch that is rebased to just before the merge of
+>> the block tree, and a scsi-mq.3-bisect-2 branch that is just after
+>> the merge of the block tree to get started.
+>
+> There is one possible concern that could be exacerbated by other changes in
+> the system: if the application is running close to the bare minimum number
+> of requests allocated in io_setup(), the per cpu reference counters will
+> have a hard time batching things.  It might be worth testing with an
+> increased number of requests being allocated if this is the case.
 
-> On Tue, Jul 08, 2014 at 08:53:32AM +0100, Lee Jones wrote:
-> > On Tue, 08 Jul 2014, Maxime Coquelin wrote:
-> > > On 07/05/2014 08:25 AM, Peter Griffin wrote:
-> > > >Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
-> > > 
-> > > Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
-> > 
-> > Maxime,
-> >   Once Acked by Felipe, I think this should go in via your tree to
-> > avoid conflicts with other ARM/STI ARCHITECTURE additions.
-> 
-> there are still many unresolved comments on patches 1 and 2.
-
-"Once Acked" ;)
+That's how fio always runs, it sets up the context with the exact queue 
+depth that it needs. Do we have a good enough understanding of other aio 
+use cases to say that this isn't the norm? I would expect it to be, it's 
+the way that the API would most obviously be used.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Jens Axboe
+
