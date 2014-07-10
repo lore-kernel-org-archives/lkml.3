@@ -1,162 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751025AbaGJEcc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 00:32:32 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:63286 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702AbaGJEca convert rfc822-to-8bit (ORCPT
+	id S1751083AbaGJEe6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 00:34:58 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:58184 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823AbaGJEe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 00:32:30 -0400
+	Thu, 10 Jul 2014 00:34:57 -0400
+Message-ID: <53BE17AE.7080301@linaro.org>
+Date: Thu, 10 Jul 2014 06:33:50 +0200
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <037801cf9bf7$1c039d20$540ad760$@mindspring.com>
-References: <1404942892-18323-1-git-send-email-ffilzlnx@mindspring.com>
-	<CAHQdGtSUwScEdUeKT1w+-ynqNz-e1=YvDBtdu_k=_6yndFZSVQ@mail.gmail.com>
-	<033801cf9bc7$0d7ee190$287ca4b0$@mindspring.com>
-	<CAHQdGtQjCYV2jE7FGu-J+02xp25uaUUVv8uzcs5sfbKXBbVk6A@mail.gmail.com>
-	<CAHQdGtTkTh4MQJk6bec46OjsyZHnEGGws3b_2HA+kszzOHM-pw@mail.gmail.com>
-	<037801cf9bf7$1c039d20$540ad760$@mindspring.com>
-Date: Thu, 10 Jul 2014 00:32:29 -0400
-Message-ID: <CAHQdGtSmEO8pyw+1FMmQcRgHwRufedzLRwonksueWcFSf4cm8A@mail.gmail.com>
-Subject: Re: [PATCH 1/1] Fix permission checking by NFS client for open-create
- with mode 000
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Frank Filz <ffilzlnx@mindspring.com>
-Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Will Deacon <will.deacon@arm.com>
+CC: "wad@chromium.org" <wad@chromium.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RESEND PATCH v4 2/2] arm64: Add seccomp support
+References: <1404459115-8292-1-git-send-email-takahiro.akashi@linaro.org> <1404459115-8292-3-git-send-email-takahiro.akashi@linaro.org> <20140709111239.GH9485@arm.com>
+In-Reply-To: <20140709111239.GH9485@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 12:26 AM, Frank Filz <ffilzlnx@mindspring.com> wrote:
->> On Wed, Jul 9, 2014 at 7:06 PM, Trond Myklebust
->> <trond.myklebust@primarydata.com> wrote:
->> > On Wed, Jul 9, 2014 at 6:42 PM, Frank Filz <ffilzlnx@mindspring.com>
->> wrote:
->> >>> On Wed, Jul 9, 2014 at 5:54 PM, Frank S. Filz
->> >>> <ffilzlnx@mindspring.com>
->> >>> wrote:
->> >>> > From: "Frank S. Filz" <ffilzlnx@mindspring.com>
->> >>> >
->> >>> > The NFS v4 client sends a COMPOUND with an OPEN and an ACCESS.
->> >>> >
->> >>> > The ACCESS is required to verify an open for read is actually
->> >>> > allowed because RFC 3530 indicates OPEN for read only must succeed
->> >>> > for an execute only file.
->> >>> >
->> >>> > The old code expected to have read access if the requested access
->> >>> > was O_RDWR.
->> >>> >
->> >>> > We can expect the OPEN to properly permission check as long as the
->> >>> > open is O_WRONLY or O_RDWR.
->> >>> >
->> >>> > Signed-off-by: Frank S. Filz <ffilzlnx@mindspring.com>
->> >>> > ---
->> >>> >  fs/nfs/nfs4proc.c | 25 ++++++++++++++++++++-----
->> >>> >  1 file changed, 20 insertions(+), 5 deletions(-)
->> >>> >
->> >>> > diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c index
->> >>> > 4bf3d97..9742054 100644
->> >>> > --- a/fs/nfs/nfs4proc.c
->> >>> > +++ b/fs/nfs/nfs4proc.c
->> >>> > @@ -1966,15 +1966,30 @@ static int nfs4_opendata_access(struct
->> >>> rpc_cred *cred,
->> >>> >                 return 0;
->> >>> >
->> >>> >         mask = 0;
->> >>> > -       /* don't check MAY_WRITE - a newly created file may not have
->> >>> > -        * write mode bits, but POSIX allows the creating process to write.
->> >>> > -        * use openflags to check for exec, because fmode won't
->> >>> > -        * always have FMODE_EXEC set when file open for exec. */
->> >>> > +       /* Don't trust the permission check on OPEN if open for exec or
->> for
->> >>> > +        * read only. Since FMODE_EXEC doesn't go across the wire, the
->> server
->> >>> > +        * has no way to distinguish between an open to read an
->> >>> > + executable
->> >>> file
->> >>> > +        * and an open to read a readable file. Write access is properly
->> checked
->> >>> > +        * and permission SHOULD always be granted if the file was
->> >>> > + created as
->> >>> a
->> >>> > +        * result of this OPEN, no matter what mode the file was created
->> with.
->> >>> > +        *
->> >>> > +        * NOTE: If the case of a OPEN CREATE READ-ONLY with a
->> >>> > + mode that
->> >>> does
->> >>> > +        *       not allow read access, this test will produce an incorrect
->> >>> > +        *       EACCES error.
->> >>> > +        */
->> >>> >         if (openflags & __FMODE_EXEC) {
->> >>> >                 /* ONLY check for exec rights */
->> >>> >                 mask = MAY_EXEC;
->> >>> > -       } else if (fmode & FMODE_READ)
->> >>> > +       } else if (!(fmode & FMODE_WRITE)) {
->> >>> > +               /* In case the file was execute only, check for read permission
->> >>> > +                * ONLY if write access was not requested. It is expected that
->> >>> > +                * an OPEN for write will fail if the file is execute only.
->> >>> > +                * Note that if the file was newly created, the fmode SHOULD
->> >>> > +                * include FMODE_WRITE, especially if the file will be created
->> >>> > +                * with a restrictive mode.
->> >>> > +                */
->> >>> >                 mask = MAY_READ;
->> >>> > +       }
->> >>>
->> >>> This looks wrong. AFAICS it will allow you to open an existing file
->> >>> which has - wx permissions (i.e. no read permissions) for O_RDWR.
->> >>> That should not be permitted under POSIX rules.
->> >>
->> >> The server permission checks the OPEN, this only affects the subsequent
->> ACCESS.
->> >>
->> >> The server will fail the OPEN with NFS4_ERR_ACCESS if the open is for
->> read/write and the file has write-execute permission.
->> >
->> > RFC3530bis draft 33 (6.2.1.3.1.  Discussion of Mask Attributes) states
->> > that for both the OPEN and the READ operations, "Servers SHOULD allow
->> > a user the ability to read the data of the file when only the
->> > ACE4_EXECUTE access mask bit is allowed". RFC5561 has the same
->> > language.
->>
->> Oops. Sorry, the correct sub-sub-sub-sub-....paragraph is this one:
->>
->>          Permission to execute a file.
->>
->>          Servers SHOULD allow a user the ability to read the data of the
->>          file when only the ACE4_EXECUTE access mask bit is allowed.
->>          This is because there is no way to execute a file without
->>          reading the contents.  Though a server may treat ACE4_EXECUTE
->>          and ACE4_READ_DATA bits identically when deciding to permit a
->>          READ operation, it SHOULD still allow the two bits to be set
->>          independently in ACLs, and MUST distinguish between them when
->>          replying to ACCESS operations.  In particular, servers SHOULD
->>          NOT silently turn on one of the two bits when the other is set,
->>          as that would make it impossible for the client to correctly
->>          enforce the distinction between read and execute permissions.
->>
->>
->> > To me that translates as saying that the server SHOULD accept an
->> > OPEN(SHARE_ACCESS_READ|SHARE_ACCESS_WRITE) request in the above
->> > situation.
->>
->> Same conclusion, though....
+Will,
+
+ >  (1) Updating syscallno based on w8, but this ties us to the current ABI
+ >      and could get messy if this register changes in the future.
+
+So, is this the conclusion that I should follow?
+
+-Takahiro AKASHI
+
+
+On 07/09/2014 01:12 PM, Will Deacon wrote:
+> Hi Akashi,
 >
-> When I read that paragraph, my interpretation is that OPEN (and READ) should be permission checked normally, however, if ONLY execute permission is granted, and the OPEN is read only (and READ of course is read only) then permission would be granted for the purpose of execution. But if any other combination of bits was allowed, then the paragraph doesn't apply. Thus an OPEN SHARE_ACCESS_READ | SHARE_ACCESS_WRITE must fail since write access was not granted (if it was, the exception doesn't apply to my reading).
+> On Fri, Jul 04, 2014 at 08:31:55AM +0100, AKASHI Takahiro wrote:
+>> secure_computing() should always be called first in syscall_trace_enter().
+>> If it returns non-zero, we should stop further handling. Then that system
+>> call may eventually fail, be trapped or the process itself be killed
+>> depending on loaded rules.
+>> In this case, syscall_trace_enter() returns a dedicated value in order to
+>> skip a normal syscall table lookup because a seccomp rule may have already
+>> overridden errno.
 >
-
-Where does that paragraph say anything about SHARE_WRITE, or even
-mention the word "only"?
-
-All it says is that as far as the OPEN and READ operations are
-concerned, ACE4_EXECUTE == ACE4_READ_DATA, whereas for the ACCESS
-operation, they differ.
-
--- 
-Trond Myklebust
-
-Linux NFS client maintainer, PrimaryData
-
-trond.myklebust@primarydata.com
+> [...]
+>
+>> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+>> index 70526cf..baab5fc 100644
+>> --- a/arch/arm64/kernel/ptrace.c
+>> +++ b/arch/arm64/kernel/ptrace.c
+>> @@ -21,12 +21,14 @@
+>>
+>>   #include <linux/audit.h>
+>>   #include <linux/compat.h>
+>> +#include <linux/errno.h>
+>>   #include <linux/kernel.h>
+>>   #include <linux/sched.h>
+>>   #include <linux/mm.h>
+>>   #include <linux/smp.h>
+>>   #include <linux/ptrace.h>
+>>   #include <linux/user.h>
+>> +#include <linux/seccomp.h>
+>>   #include <linux/security.h>
+>>   #include <linux/init.h>
+>>   #include <linux/signal.h>
+>> @@ -1109,6 +1111,10 @@ static void tracehook_report_syscall(struct pt_regs *regs,
+>>
+>>   asmlinkage int syscall_trace_enter(struct pt_regs *regs)
+>>   {
+>> +	if (secure_computing(regs->syscallno) == -1)
+>> +		/* seccomp failures shouldn't expose any additional code. */
+>> +		return -EPERM;
+>> +
+>>   	if (test_thread_flag(TIF_SYSCALL_TRACE))
+>>   		tracehook_report_syscall(regs, PTRACE_SYSCALL_ENTER);
+>
+> We return regs->syscallno immediately after this, so we have the same issue
+> that Kees identified for arch/arm/. Did you follow the discussion I had with
+> Andy?
+>
+> Will
+>
