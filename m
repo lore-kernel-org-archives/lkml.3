@@ -1,101 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931AbaGJIaw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 04:30:52 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:38090 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645AbaGJIas (ORCPT
+	id S1752167AbaGJIS2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 04:18:28 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:61034 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119AbaGJISP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 04:30:48 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: rickard_strandqvist@spectrumdigital.se, Lee Jones <lee.jones@linaro.org>,
-        Bryan Wu <cooloney@gmail.com>
-Subject: [PATCH] backlight: jornada720: Minimise code duplication and handle errors better
-Date: Thu, 10 Jul 2014 09:07:06 +0100
-Message-Id: <1404979626-10951-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
+	Thu, 10 Jul 2014 04:18:15 -0400
+From: Tom Gundersen <teg@jklm.no>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Tom Gundersen <teg@jklm.no>
+Subject: [PATCH v7 07/33] net: rtnetlink - make create_link take name_assign_type
+Date: Thu, 10 Jul 2014 10:17:12 +0200
+Message-Id: <1404980258-30853-8-git-send-email-teg@jklm.no>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1404980258-30853-1-git-send-email-teg@jklm.no>
+References: <1404980258-30853-1-git-send-email-teg@jklm.no>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rickard Strandqvi's ran a code analysis application which found that
-jornada_lcd_get_contrast(() and jornada_lcd_set_contrast() contained
-some code duplication (calling the same functions during various
-code execution paths) and failed to return errors in a consistent
-manner.  This patch aims to simplify the code, coercing it into
-behaving at a level expected of a driver in the Linux kernel.
-
-Cc: Bryan Wu <cooloney@gmail.com>
-Suggested-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Acked-by: Jingoo Han <jg1.han@samsung.com>
-Reviewed-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Tom Gundersen <teg@jklm.no>
 ---
- drivers/video/backlight/jornada720_lcd.c | 37 ++++++++++++++++----------------
- 1 file changed, 19 insertions(+), 18 deletions(-)
+ drivers/net/veth.c      | 11 ++++++++---
+ include/net/rtnetlink.h |  1 +
+ net/core/rtnetlink.c    | 12 ++++++++----
+ 3 files changed, 17 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/video/backlight/jornada720_lcd.c b/drivers/video/backlight/jornada720_lcd.c
-index da3876c..228bc31 100644
---- a/drivers/video/backlight/jornada720_lcd.c
-+++ b/drivers/video/backlight/jornada720_lcd.c
-@@ -43,37 +43,38 @@ static int jornada_lcd_get_contrast(struct lcd_device *ld)
+diff --git a/drivers/net/veth.c b/drivers/net/veth.c
+index b4a10bc..5058700 100644
+--- a/drivers/net/veth.c
++++ b/drivers/net/veth.c
+@@ -319,6 +319,7 @@ static int veth_newlink(struct net *src_net, struct net_device *dev,
+ 	struct nlattr *peer_tb[IFLA_MAX + 1], **tbp;
+ 	struct ifinfomsg *ifmp;
+ 	struct net *net;
++	unsigned char name_assign_type;
  
- 	jornada_ssp_start();
- 
--	if (jornada_ssp_byte(GETCONTRAST) != TXDUMMY) {
--		dev_err(&ld->dev, "get contrast failed\n");
--		jornada_ssp_end();
--		return -ETIMEDOUT;
--	} else {
-+	if (jornada_ssp_byte(GETCONTRAST) == TXDUMMY) {
- 		ret = jornada_ssp_byte(TXDUMMY);
--		jornada_ssp_end();
--		return ret;
-+		goto success;
+ 	/*
+ 	 * create and register peer first
+@@ -344,16 +345,20 @@ static int veth_newlink(struct net *src_net, struct net_device *dev,
+ 		tbp = tb;
  	}
-+
-+	dev_err(&ld->dev, "failed to set contrast\n");
-+	ret = -ETIMEDOUT;
-+
-+success:
-+	jornada_ssp_end();
-+	return ret;
- }
  
- static int jornada_lcd_set_contrast(struct lcd_device *ld, int value)
+-	if (tbp[IFLA_IFNAME])
++	if (tbp[IFLA_IFNAME]) {
+ 		nla_strlcpy(ifname, tbp[IFLA_IFNAME], IFNAMSIZ);
+-	else
++		name_assign_type = NET_NAME_USER;
++	} else {
+ 		snprintf(ifname, IFNAMSIZ, DRV_NAME "%%d");
++		name_assign_type = NET_NAME_ENUM;
++	}
+ 
+ 	net = rtnl_link_get_net(src_net, tbp);
+ 	if (IS_ERR(net))
+ 		return PTR_ERR(net);
+ 
+-	peer = rtnl_create_link(net, ifname, &veth_link_ops, tbp);
++	peer = rtnl_create_link(net, ifname, name_assign_type,
++				&veth_link_ops, tbp);
+ 	if (IS_ERR(peer)) {
+ 		put_net(net);
+ 		return PTR_ERR(peer);
+diff --git a/include/net/rtnetlink.h b/include/net/rtnetlink.h
+index 72240e5..e21b9f9 100644
+--- a/include/net/rtnetlink.h
++++ b/include/net/rtnetlink.h
+@@ -136,6 +136,7 @@ void rtnl_af_unregister(struct rtnl_af_ops *ops);
+ 
+ struct net *rtnl_link_get_net(struct net *src_net, struct nlattr *tb[]);
+ struct net_device *rtnl_create_link(struct net *net, char *ifname,
++				    unsigned char name_assign_type,
+ 				    const struct rtnl_link_ops *ops,
+ 				    struct nlattr *tb[]);
+ int rtnl_configure_link(struct net_device *dev, const struct ifinfomsg *ifm);
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index 899de40..09456ff 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1805,7 +1805,8 @@ int rtnl_configure_link(struct net_device *dev, const struct ifinfomsg *ifm)
+ EXPORT_SYMBOL(rtnl_configure_link);
+ 
+ struct net_device *rtnl_create_link(struct net *net,
+-	char *ifname, const struct rtnl_link_ops *ops, struct nlattr *tb[])
++	char *ifname, unsigned char name_assign_type,
++	const struct rtnl_link_ops *ops, struct nlattr *tb[])
  {
--	int ret;
-+	int ret = 0;
+ 	int err;
+ 	struct net_device *dev;
+@@ -1823,7 +1824,7 @@ struct net_device *rtnl_create_link(struct net *net,
+ 		num_rx_queues = ops->get_num_rx_queues();
  
- 	jornada_ssp_start();
+ 	err = -ENOMEM;
+-	dev = alloc_netdev_mqs(ops->priv_size, ifname, NET_NAME_UNKNOWN,
++	dev = alloc_netdev_mqs(ops->priv_size, ifname, name_assign_type,
+ 			       ops->setup, num_tx_queues, num_rx_queues);
+ 	if (!dev)
+ 		goto err;
+@@ -1889,6 +1890,7 @@ static int rtnl_newlink(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 	char ifname[IFNAMSIZ];
+ 	struct nlattr *tb[IFLA_MAX+1];
+ 	struct nlattr *linkinfo[IFLA_INFO_MAX+1];
++	unsigned char name_assign_type = NET_NAME_USER;
+ 	int err;
  
- 	/* start by sending our set contrast cmd to mcu */
--	ret = jornada_ssp_byte(SETCONTRAST);
--
--	/* push the new value */
--	if (jornada_ssp_byte(value) != TXDUMMY) {
--		dev_err(&ld->dev, "set contrast failed\n");
--		jornada_ssp_end();
--		return -ETIMEDOUT;
-+	if (jornada_ssp_byte(SETCONTRAST) == TXDUMMY) {
-+		/* if successful push the new value */
-+		if (jornada_ssp_byte(value) == TXDUMMY)
-+			goto success;
- 	}
+ #ifdef CONFIG_MODULES
+@@ -2038,14 +2040,16 @@ replay:
+ 			return -EOPNOTSUPP;
+ 		}
  
--	/* if we get here we can assume everything went well */
--	jornada_ssp_end();
-+	dev_err(&ld->dev, "failed to set contrast\n");
-+	ret = -ETIMEDOUT;
+-		if (!ifname[0])
++		if (!ifname[0]) {
+ 			snprintf(ifname, IFNAMSIZ, "%s%%d", ops->kind);
++			name_assign_type = NET_NAME_ENUM;
++		}
  
--	return 0;
-+success:
-+	jornada_ssp_end();
-+	return ret;
- }
+ 		dest_net = rtnl_link_get_net(net, tb);
+ 		if (IS_ERR(dest_net))
+ 			return PTR_ERR(dest_net);
  
- static int jornada_lcd_set_power(struct lcd_device *ld, int power)
+-		dev = rtnl_create_link(dest_net, ifname, ops, tb);
++		dev = rtnl_create_link(dest_net, ifname, name_assign_type, ops, tb);
+ 		if (IS_ERR(dev)) {
+ 			err = PTR_ERR(dev);
+ 			goto out;
 -- 
-1.8.3.2
+1.9.3
 
