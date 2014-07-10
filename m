@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056AbaGJMIi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 08:08:38 -0400
-Received: from max.feld.cvut.cz ([147.32.192.36]:34436 "EHLO max.feld.cvut.cz"
+	id S1753230AbaGJMJD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 08:09:03 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:53082 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752992AbaGJMIf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 08:08:35 -0400
-X-Greylist: delayed 431 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Jul 2014 08:08:34 EDT
-From: Michal Sojka <sojkam1@fel.cvut.cz>
-To: Johan Hovold <johan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Michal Sojka <sojkam1@fel.cvut.cz>
-Subject: [PATCH] USB: serial: ftdi_sio: Add Infineon Triboard
-Date: Thu, 10 Jul 2014 14:00:34 +0200
-Message-Id: <1404993634-5251-1-git-send-email-sojkam1@fel.cvut.cz>
-X-Mailer: git-send-email 2.0.0
+	id S1752173AbaGJMJB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 08:09:01 -0400
+Date: Thu, 10 Jul 2014 08:08:57 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 3/6] mm: Move zone->pages_scanned into a vmstat counter
+Message-ID: <20140710120857.GK29639@cmpxchg.org>
+References: <1404893588-21371-1-git-send-email-mgorman@suse.de>
+ <1404893588-21371-4-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404893588-21371-4-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds support for Infineon TriBoard TC1798 [1]. Only interface 1
-is used as serial line (see [2], Figure 8-6).
+On Wed, Jul 09, 2014 at 09:13:05AM +0100, Mel Gorman wrote:
+> zone->pages_scanned is a write-intensive cache line during page reclaim
+> and it's also updated during page free. Move the counter into vmstat to
+> take advantage of the per-cpu updates and do not update it in the free
+> paths unless necessary.
+> 
+> On a small UMA machine running tiobench the difference is marginal. On a
+> 4-node machine the overhead is more noticable. Note that automatic NUMA
+> balancing was disabled for this test as otherwise the system CPU overhead
+> is unpredictable.
+> 
+>           3.16.0-rc3  3.16.0-rc3  3.16.0-rc3
+>              vanillarearrange-v5   vmstat-v5
+> User          746.94      759.78      774.56
+> System      65336.22    58350.98    32847.27
+> Elapsed     27553.52    27282.02    27415.04
+> 
+> Note that the overhead reduction will vary depending on where exactly
+> pages are allocated and freed.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-[1] http://www.infineon.com/cms/de/product/microcontroller/development-tools-software-and-kits/tricore-tm-development-tools-software-and-kits/starterkits-and-evaluation-boards/starter-kit-tc1798/channel.html?channel=db3a304333b8a7ca0133cfa3d73e4268
-[2] http://www.infineon.com/dgdl/TriBoardManual-TC1798-V10.pdf?folderId=db3a304412b407950112b409ae7c0343&fileId=db3a304333b8a7ca0133cfae99fe426a
-
-Signed-off-by: Michal Sojka <sojkam1@fel.cvut.cz>
----
- drivers/usb/serial/ftdi_sio.c     | 2 ++
- drivers/usb/serial/ftdi_sio_ids.h | 6 ++++++
- 2 files changed, 8 insertions(+)
-
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 115662c1..0c2b6e0 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -944,6 +944,8 @@ static const struct usb_device_id id_table_combined[] = {
- 	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_2_PID) },
- 	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_3_PID) },
- 	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_4_PID) },
-+	/* Infineon Devices */
-+	{ USB_DEVICE_INTERFACE_NUMBER(INFINEON_VID, INFINEON_TRIBOARD_PID, 1) },
- 	{ }					/* Terminating entry */
- };
- 
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index 500474c..8d959a7 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -584,6 +584,12 @@
- #define RATOC_PRODUCT_ID_USB60F	0xb020
- 
- /*
-+ * Infineon Technologies
-+ */
-+#define INFINEON_VID		0x058b
-+#define INFINEON_TRIBOARD_PID	0x0028 /* DAS JTAG TriBoard TC1798 V1.0 */
-+
-+/*
-  * Acton Research Corp.
-  */
- #define ACTON_VID		0x0647	/* Vendor ID */
--- 
-2.0.0
-
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
