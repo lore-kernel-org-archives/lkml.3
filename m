@@ -1,162 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932428AbaGJE01 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 00:26:27 -0400
-Received: from elasmtp-galgo.atl.sa.earthlink.net ([209.86.89.61]:52358 "EHLO
-	elasmtp-galgo.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750733AbaGJE00 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 00:26:26 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=mindspring.com;
-  b=WlbbTB97BAAipluxv63dmvnXB9DkGxMicjfDtRSvqJnmYvGDgKTZooGKkx4OJ4SX;
-  h=Received:From:To:Cc:References:In-Reply-To:Subject:Date:Message-ID:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Mailer:Thread-Index:Content-Language:X-Antivirus-Status:X-ELNK-Trace:X-Originating-IP;
-From: "Frank Filz" <ffilzlnx@mindspring.com>
-To: "'Trond Myklebust'" <trond.myklebust@primarydata.com>
-Cc: "'Linux NFS Mailing List'" <linux-nfs@vger.kernel.org>,
-        "'Linux Kernel mailing list'" <linux-kernel@vger.kernel.org>
-References: <1404942892-18323-1-git-send-email-ffilzlnx@mindspring.com>	<CAHQdGtSUwScEdUeKT1w+-ynqNz-e1=YvDBtdu_k=_6yndFZSVQ@mail.gmail.com>	<033801cf9bc7$0d7ee190$287ca4b0$@mindspring.com>	<CAHQdGtQjCYV2jE7FGu-J+02xp25uaUUVv8uzcs5sfbKXBbVk6A@mail.gmail.com> <CAHQdGtTkTh4MQJk6bec46OjsyZHnEGGws3b_2HA+kszzOHM-pw@mail.gmail.com>
-In-Reply-To: <CAHQdGtTkTh4MQJk6bec46OjsyZHnEGGws3b_2HA+kszzOHM-pw@mail.gmail.com>
-Subject: RE: [PATCH 1/1] Fix permission checking by NFS client for open-create with mode 000
-Date: Wed, 9 Jul 2014 21:26:23 -0700
-Message-ID: <037801cf9bf7$1c039d20$540ad760$@mindspring.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Outlook 15.0
-Thread-Index: AQGbOTJ6MUf6FOx4w+cyNjCBvBXZJAJkOHk0AgwpNNsCL2Qw8AGAxr2Um8BwAYA=
-Content-Language: en-us
-X-Antivirus: avast! (VPS 140709-1, 07/09/2014), Outbound message
-X-Antivirus-Status: Clean
-X-ELNK-Trace: 136157f01908a8929c7f779228e2f6aeda0071232e20db4dbfb858fdd61e003bf11811d49272b917350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 71.236.153.111
+	id S932459AbaGJE0h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 00:26:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10338 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932430AbaGJE0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 00:26:34 -0400
+From: WANG Chao <chaowang@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH v2] mm/vmalloc.c: clean up map_vm_area third argument
+Date: Thu, 10 Jul 2014 12:26:07 +0800
+Message-Id: <1404966367-7599-1-git-send-email-chaowang@redhat.com>
+In-Reply-To: <1404721943-6506-1-git-send-email-chaowang@redhat.com>
+References: <1404721943-6506-1-git-send-email-chaowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, Jul 9, 2014 at 7:06 PM, Trond Myklebust
-> <trond.myklebust@primarydata.com> wrote:
-> > On Wed, Jul 9, 2014 at 6:42 PM, Frank Filz <ffilzlnx@mindspring.com>
-> wrote:
-> >>> On Wed, Jul 9, 2014 at 5:54 PM, Frank S. Filz
-> >>> <ffilzlnx@mindspring.com>
-> >>> wrote:
-> >>> > From: "Frank S. Filz" <ffilzlnx@mindspring.com>
-> >>> >
-> >>> > The NFS v4 client sends a COMPOUND with an OPEN and an ACCESS.
-> >>> >
-> >>> > The ACCESS is required to verify an open for read is actually
-> >>> > allowed because RFC 3530 indicates OPEN for read only must succeed
-> >>> > for an execute only file.
-> >>> >
-> >>> > The old code expected to have read access if the requested access
-> >>> > was O_RDWR.
-> >>> >
-> >>> > We can expect the OPEN to properly permission check as long as the
-> >>> > open is O_WRONLY or O_RDWR.
-> >>> >
-> >>> > Signed-off-by: Frank S. Filz <ffilzlnx@mindspring.com>
-> >>> > ---
-> >>> >  fs/nfs/nfs4proc.c | 25 ++++++++++++++++++++-----
-> >>> >  1 file changed, 20 insertions(+), 5 deletions(-)
-> >>> >
-> >>> > diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c index
-> >>> > 4bf3d97..9742054 100644
-> >>> > --- a/fs/nfs/nfs4proc.c
-> >>> > +++ b/fs/nfs/nfs4proc.c
-> >>> > @@ -1966,15 +1966,30 @@ static int nfs4_opendata_access(struct
-> >>> rpc_cred *cred,
-> >>> >                 return 0;
-> >>> >
-> >>> >         mask = 0;
-> >>> > -       /* don't check MAY_WRITE - a newly created file may not have
-> >>> > -        * write mode bits, but POSIX allows the creating process to write.
-> >>> > -        * use openflags to check for exec, because fmode won't
-> >>> > -        * always have FMODE_EXEC set when file open for exec. */
-> >>> > +       /* Don't trust the permission check on OPEN if open for exec or
-> for
-> >>> > +        * read only. Since FMODE_EXEC doesn't go across the wire, the
-> server
-> >>> > +        * has no way to distinguish between an open to read an
-> >>> > + executable
-> >>> file
-> >>> > +        * and an open to read a readable file. Write access is properly
-> checked
-> >>> > +        * and permission SHOULD always be granted if the file was
-> >>> > + created as
-> >>> a
-> >>> > +        * result of this OPEN, no matter what mode the file was created
-> with.
-> >>> > +        *
-> >>> > +        * NOTE: If the case of a OPEN CREATE READ-ONLY with a
-> >>> > + mode that
-> >>> does
-> >>> > +        *       not allow read access, this test will produce an incorrect
-> >>> > +        *       EACCES error.
-> >>> > +        */
-> >>> >         if (openflags & __FMODE_EXEC) {
-> >>> >                 /* ONLY check for exec rights */
-> >>> >                 mask = MAY_EXEC;
-> >>> > -       } else if (fmode & FMODE_READ)
-> >>> > +       } else if (!(fmode & FMODE_WRITE)) {
-> >>> > +               /* In case the file was execute only, check for read permission
-> >>> > +                * ONLY if write access was not requested. It is expected that
-> >>> > +                * an OPEN for write will fail if the file is execute only.
-> >>> > +                * Note that if the file was newly created, the fmode SHOULD
-> >>> > +                * include FMODE_WRITE, especially if the file will be created
-> >>> > +                * with a restrictive mode.
-> >>> > +                */
-> >>> >                 mask = MAY_READ;
-> >>> > +       }
-> >>>
-> >>> This looks wrong. AFAICS it will allow you to open an existing file
-> >>> which has - wx permissions (i.e. no read permissions) for O_RDWR.
-> >>> That should not be permitted under POSIX rules.
-> >>
-> >> The server permission checks the OPEN, this only affects the subsequent
-> ACCESS.
-> >>
-> >> The server will fail the OPEN with NFS4_ERR_ACCESS if the open is for
-> read/write and the file has write-execute permission.
-> >
-> > RFC3530bis draft 33 (6.2.1.3.1.  Discussion of Mask Attributes) states
-> > that for both the OPEN and the READ operations, "Servers SHOULD allow
-> > a user the ability to read the data of the file when only the
-> > ACE4_EXECUTE access mask bit is allowed". RFC5561 has the same
-> > language.
-> 
-> Oops. Sorry, the correct sub-sub-sub-sub-....paragraph is this one:
-> 
->          Permission to execute a file.
-> 
->          Servers SHOULD allow a user the ability to read the data of the
->          file when only the ACE4_EXECUTE access mask bit is allowed.
->          This is because there is no way to execute a file without
->          reading the contents.  Though a server may treat ACE4_EXECUTE
->          and ACE4_READ_DATA bits identically when deciding to permit a
->          READ operation, it SHOULD still allow the two bits to be set
->          independently in ACLs, and MUST distinguish between them when
->          replying to ACCESS operations.  In particular, servers SHOULD
->          NOT silently turn on one of the two bits when the other is set,
->          as that would make it impossible for the client to correctly
->          enforce the distinction between read and execute permissions.
-> 
-> 
-> > To me that translates as saying that the server SHOULD accept an
-> > OPEN(SHARE_ACCESS_READ|SHARE_ACCESS_WRITE) request in the above
-> > situation.
-> 
-> Same conclusion, though....
+Currently map_vm_area() takes (struct page *** pages) as third argument,
+and after mapping, it moves (*pages) to point to (*pages + nr_mappped_pages).
 
-When I read that paragraph, my interpretation is that OPEN (and READ) should be permission checked normally, however, if ONLY execute permission is granted, and the OPEN is read only (and READ of course is read only) then permission would be granted for the purpose of execution. But if any other combination of bits was allowed, then the paragraph doesn't apply. Thus an OPEN SHARE_ACCESS_READ | SHARE_ACCESS_WRITE must fail since write access was not granted (if it was, the exception doesn't apply to my reading).
+It looks like this kind of increment is useless to its caller these
+days. The callers don't care about the increments and actually they're
+trying to avoid this by passing another copy to map_vm_area().
 
-The trouble is if we require the ACCESS to always be used to distinguish read from execute, we have no way of allowing an open("foo", O_CREAT, 0) system call.
+The caller can always guarantee all the pages can be mapped into
+vm_area as specified in first argument and the caller only cares about
+whether map_vm_area() fails or not.
 
-It's a real shame we don't have a SHARE_ACCESS_EXECUTE so we wouldn't have to have the exception for OPEN...
+This patch cleans up the pointer movement in map_vm_area() and updates
+its callers accordingly.
 
-Another option would be to have some hint that the OPEN was responsible for creating the file (in which case the ACCESS results could be ignored), but that's more protocol wishful thinking (and not so easy for the server to implement).
+v2: Fix arch/tile/kernel/module.c::module_alloc().
 
-Frank
+Signed-off-by: WANG Chao <chaowang@redhat.com>
+---
+ arch/tile/kernel/module.c        |  2 +-
+ drivers/lguest/core.c            |  7 ++-----
+ drivers/staging/android/binder.c |  4 +---
+ include/linux/vmalloc.h          |  2 +-
+ mm/vmalloc.c                     | 14 +++++---------
+ mm/zsmalloc.c                    |  2 +-
+ 6 files changed, 11 insertions(+), 20 deletions(-)
 
+diff --git a/arch/tile/kernel/module.c b/arch/tile/kernel/module.c
+index 4918d91..d19b13e 100644
+--- a/arch/tile/kernel/module.c
++++ b/arch/tile/kernel/module.c
+@@ -58,7 +58,7 @@ void *module_alloc(unsigned long size)
+ 	area->nr_pages = npages;
+ 	area->pages = pages;
+ 
+-	if (map_vm_area(area, prot_rwx, &pages)) {
++	if (map_vm_area(area, prot_rwx, pages)) {
+ 		vunmap(area->addr);
+ 		goto error;
+ 	}
+diff --git a/drivers/lguest/core.c b/drivers/lguest/core.c
+index 0bf1e4e..6590558 100644
+--- a/drivers/lguest/core.c
++++ b/drivers/lguest/core.c
+@@ -42,7 +42,6 @@ DEFINE_MUTEX(lguest_lock);
+ static __init int map_switcher(void)
+ {
+ 	int i, err;
+-	struct page **pagep;
+ 
+ 	/*
+ 	 * Map the Switcher in to high memory.
+@@ -110,11 +109,9 @@ static __init int map_switcher(void)
+ 	 * This code actually sets up the pages we've allocated to appear at
+ 	 * switcher_addr.  map_vm_area() takes the vma we allocated above, the
+ 	 * kind of pages we're mapping (kernel pages), and a pointer to our
+-	 * array of struct pages.  It increments that pointer, but we don't
+-	 * care.
++	 * array of struct pages.
+ 	 */
+-	pagep = lg_switcher_pages;
+-	err = map_vm_area(switcher_vma, PAGE_KERNEL_EXEC, &pagep);
++	err = map_vm_area(switcher_vma, PAGE_KERNEL_EXEC, lg_switcher_pages);
+ 	if (err) {
+ 		printk("lguest: map_vm_area failed: %i\n", err);
+ 		goto free_vma;
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index a741da7..0ca9785 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -586,7 +586,6 @@ static int binder_update_page_range(struct binder_proc *proc, int allocate,
+ 
+ 	for (page_addr = start; page_addr < end; page_addr += PAGE_SIZE) {
+ 		int ret;
+-		struct page **page_array_ptr;
+ 
+ 		page = &proc->pages[(page_addr - proc->buffer) / PAGE_SIZE];
+ 
+@@ -599,8 +598,7 @@ static int binder_update_page_range(struct binder_proc *proc, int allocate,
+ 		}
+ 		tmp_area.addr = page_addr;
+ 		tmp_area.size = PAGE_SIZE + PAGE_SIZE /* guard page? */;
+-		page_array_ptr = page;
+-		ret = map_vm_area(&tmp_area, PAGE_KERNEL, &page_array_ptr);
++		ret = map_vm_area(&tmp_area, PAGE_KERNEL, page);
+ 		if (ret) {
+ 			pr_err("%d: binder_alloc_buf failed to map page at %p in kernel\n",
+ 			       proc->pid, page_addr);
+diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
+index 4b8a891..b87696f 100644
+--- a/include/linux/vmalloc.h
++++ b/include/linux/vmalloc.h
+@@ -113,7 +113,7 @@ extern struct vm_struct *remove_vm_area(const void *addr);
+ extern struct vm_struct *find_vm_area(const void *addr);
+ 
+ extern int map_vm_area(struct vm_struct *area, pgprot_t prot,
+-			struct page ***pages);
++			struct page **pages);
+ #ifdef CONFIG_MMU
+ extern int map_kernel_range_noflush(unsigned long start, unsigned long size,
+ 				    pgprot_t prot, struct page **pages);
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index f64632b..c36547f 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -1270,19 +1270,15 @@ void unmap_kernel_range(unsigned long addr, unsigned long size)
+ }
+ EXPORT_SYMBOL_GPL(unmap_kernel_range);
+ 
+-int map_vm_area(struct vm_struct *area, pgprot_t prot, struct page ***pages)
++int map_vm_area(struct vm_struct *area, pgprot_t prot, struct page **pages)
+ {
+ 	unsigned long addr = (unsigned long)area->addr;
+ 	unsigned long end = addr + get_vm_area_size(area);
+ 	int err;
+ 
+-	err = vmap_page_range(addr, end, prot, *pages);
+-	if (err > 0) {
+-		*pages += err;
+-		err = 0;
+-	}
++	err = vmap_page_range(addr, end, prot, pages);
+ 
+-	return err;
++	return err > 0 ? 0 : err;
+ }
+ EXPORT_SYMBOL_GPL(map_vm_area);
+ 
+@@ -1548,7 +1544,7 @@ void *vmap(struct page **pages, unsigned int count,
+ 	if (!area)
+ 		return NULL;
+ 
+-	if (map_vm_area(area, prot, &pages)) {
++	if (map_vm_area(area, prot, pages)) {
+ 		vunmap(area->addr);
+ 		return NULL;
+ 	}
+@@ -1604,7 +1600,7 @@ static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
+ 		area->pages[i] = page;
+ 	}
+ 
+-	if (map_vm_area(area, prot, &pages))
++	if (map_vm_area(area, prot, pages))
+ 		goto fail;
+ 	return area->addr;
+ 
+diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+index fe78189..bb62a4a 100644
+--- a/mm/zsmalloc.c
++++ b/mm/zsmalloc.c
+@@ -690,7 +690,7 @@ static inline void __zs_cpu_down(struct mapping_area *area)
+ static inline void *__zs_map_object(struct mapping_area *area,
+ 				struct page *pages[2], int off, int size)
+ {
+-	BUG_ON(map_vm_area(area->vm, PAGE_KERNEL, &pages));
++	BUG_ON(map_vm_area(area->vm, PAGE_KERNEL, pages));
+ 	area->vm_addr = area->vm->addr;
+ 	return area->vm_addr + off;
+ }
+-- 
+1.9.3
 
