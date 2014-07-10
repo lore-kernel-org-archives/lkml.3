@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647AbaGJNB7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:01:59 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:38230 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753436AbaGJNB0 (ORCPT
+	id S1753632AbaGJNB5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:01:57 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:48035 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753535AbaGJNB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:01:26 -0400
+	Thu, 10 Jul 2014 09:01:29 -0400
 From: Alex Elder <elder@linaro.org>
 To: akpm@linux-foundation.org
 Cc: ak@linux.intel.com, bp@suse.de, jack@suse.cz, john.stultz@linaro.org,
         pmladek@suse.cz, rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/4] printk: rename DEFAULT_MESSAGE_LOGLEVEL
-Date: Thu, 10 Jul 2014 08:01:21 -0500
-Message-Id: <1404997284-20844-2-git-send-email-elder@linaro.org>
+Subject: [PATCH v2 4/4] printk: miscellaneous cleanups
+Date: Thu, 10 Jul 2014 08:01:24 -0500
+Message-Id: <1404997284-20844-5-git-send-email-elder@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404997284-20844-1-git-send-email-elder@linaro.org>
 References: <1404997284-20844-1-git-send-email-elder@linaro.org>
@@ -21,62 +21,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit:
-    a8fe19eb kernel/printk: use symbolic defines for console loglevels
-makes consistent use of symbolic values for printk() log levels.
-
-The naming scheme used is different from the one used for
-DEFAULT_MESSAGE_LOGLEVEL though.  Change that symbol name to be
-MESSAGE_LOGLEVEL_DEFAULT for consistency.  And because the value
-of that symbol comes from a similarly-named config option, rename
-CONFIG_DEFAULT_MESSAGE_LOGLEVEL as well.
+This patch contains some small cleanups to kernel/printk/printk.c.
+None of them should cause any change in behavior.
+  - When CONFIG_PRINTK is defined, parenthesize the value of LOG_LINE_MAX.
+  - When CONFIG_PRINTK is *not* defined, there is an extra LOG_LINE_MAX
+    definition; delete it.
+  - Pull an assignment out of a conditional expression in console_setup().
+  - Use isdigit() in console_setup() rather than open coding it.
+  - In update_console_cmdline(), drop a NUL-termination assignment;
+    the strlcpy() call that precedes it guarantees it's not needed.
+  - Simplify some logic in printk_timed_ratelimit().
 
 Signed-off-by: Alex Elder <elder@linaro.org>
+Reviewed-by: Petr Mladek <pmladek@suse.cz>
 ---
- include/linux/printk.h | 2 +-
- kernel/printk/printk.c | 2 +-
- lib/Kconfig.debug      | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ kernel/printk/printk.c | 26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index 319ff7e..0990997 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -31,7 +31,7 @@ static inline const char *printk_skip_level(const char *buffer)
- }
- 
- /* printk's without a loglevel use this.. */
--#define DEFAULT_MESSAGE_LOGLEVEL CONFIG_DEFAULT_MESSAGE_LOGLEVEL
-+#define MESSAGE_LOGLEVEL_DEFAULT CONFIG_MESSAGE_LOGLEVEL_DEFAULT
- 
- /* We show everything that is MORE important than this.. */
- #define CONSOLE_LOGLEVEL_SILENT  0 /* Mum's the word */
 diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 13e839d..ac2b64e 100644
+index 6f75e8a..909029e 100644
 --- a/kernel/printk/printk.c
 +++ b/kernel/printk/printk.c
-@@ -56,7 +56,7 @@
+@@ -45,6 +45,7 @@
+ #include <linux/poll.h>
+ #include <linux/irq_work.h>
+ #include <linux/utsname.h>
++#include <linux/ctype.h>
  
- int console_printk[4] = {
- 	CONSOLE_LOGLEVEL_DEFAULT,	/* console_loglevel */
--	DEFAULT_MESSAGE_LOGLEVEL,	/* default_message_loglevel */
-+	MESSAGE_LOGLEVEL_DEFAULT,	/* default_message_loglevel */
- 	CONSOLE_LOGLEVEL_MIN,		/* minimum_console_loglevel */
- 	CONSOLE_LOGLEVEL_DEFAULT,	/* default_console_loglevel */
- };
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 7a638aa..fd939e1 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -15,7 +15,7 @@ config PRINTK_TIME
- 	  The behavior is also controlled by the kernel command line
- 	  parameter printk.time=1. See Documentation/kernel-parameters.txt
+ #include <asm/uaccess.h>
  
--config DEFAULT_MESSAGE_LOGLEVEL
-+config MESSAGE_LOGLEVEL_DEFAULT
- 	int "Default message log level (1-7)"
- 	range 1 7
- 	default "4"
+@@ -257,7 +258,7 @@ static u64 clear_seq;
+ static u32 clear_idx;
+ 
+ #define PREFIX_MAX		32
+-#define LOG_LINE_MAX		1024 - PREFIX_MAX
++#define LOG_LINE_MAX		(1024 - PREFIX_MAX)
+ 
+ /* record buffer */
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+@@ -1794,7 +1795,7 @@ EXPORT_SYMBOL(printk);
+ 
+ #define LOG_LINE_MAX		0
+ #define PREFIX_MAX		0
+-#define LOG_LINE_MAX 0
++
+ static u64 syslog_seq;
+ static u32 syslog_idx;
+ static u64 console_seq;
+@@ -1895,7 +1896,8 @@ static int __init console_setup(char *str)
+ 		strncpy(buf, str, sizeof(buf) - 1);
+ 	}
+ 	buf[sizeof(buf) - 1] = 0;
+-	if ((options = strchr(str, ',')) != NULL)
++	options = strchr(str, ',');
++	if (options)
+ 		*(options++) = 0;
+ #ifdef __sparc__
+ 	if (!strcmp(str, "ttya"))
+@@ -1904,7 +1906,7 @@ static int __init console_setup(char *str)
+ 		strcpy(buf, "ttyS1");
+ #endif
+ 	for (s = buf; *s; s++)
+-		if ((*s >= '0' && *s <= '9') || *s == ',')
++		if (isdigit(*s) || *s == ',')
+ 			break;
+ 	idx = simple_strtoul(s, NULL, 10);
+ 	*s = 0;
+@@ -1943,7 +1945,6 @@ int update_console_cmdline(char *name, int idx, char *name_new, int idx_new, cha
+ 	     i++, c++)
+ 		if (strcmp(c->name, name) == 0 && c->index == idx) {
+ 			strlcpy(c->name, name_new, sizeof(c->name));
+-			c->name[sizeof(c->name) - 1] = 0;
+ 			c->options = options;
+ 			c->index = idx_new;
+ 			return i;
+@@ -2611,14 +2612,13 @@ EXPORT_SYMBOL(__printk_ratelimit);
+ bool printk_timed_ratelimit(unsigned long *caller_jiffies,
+ 			unsigned int interval_msecs)
+ {
+-	if (*caller_jiffies == 0
+-			|| !time_in_range(jiffies, *caller_jiffies,
+-					*caller_jiffies
+-					+ msecs_to_jiffies(interval_msecs))) {
+-		*caller_jiffies = jiffies;
+-		return true;
+-	}
+-	return false;
++	unsigned long elapsed = jiffies - *caller_jiffies;
++
++	if (*caller_jiffies && elapsed <= msecs_to_jiffies(interval_msecs))
++		return false;
++
++	*caller_jiffies = jiffies;
++	return true;
+ }
+ EXPORT_SYMBOL(printk_timed_ratelimit);
+ 
 -- 
 1.9.1
 
