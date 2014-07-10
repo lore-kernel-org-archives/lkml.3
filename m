@@ -1,129 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543AbaGJC7Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 22:59:16 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:54508 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778AbaGJC7O (ORCPT
+	id S932186AbaGJDF0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 23:05:26 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:46451 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755386AbaGJDFV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 22:59:14 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s6A2xBPM024567, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-Subject: [PATCH net-next v2] r8152: support jumbo frame for RTL8153
-Date: Thu, 10 Jul 2014 10:58:54 +0800
-Message-ID: <1394712342-15778-9-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <1394712342-15778-8-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-8-Taiwan-albertk@realtek.com>
+	Wed, 9 Jul 2014 23:05:21 -0400
+X-Sasl-enc: 61XQu4v4B9z5GaBsJ8l6RLx+OyvhFrJF3rNLdpnzqQhs 1404961520
+Date: Wed, 9 Jul 2014 20:09:45 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Magnus Damm <damm+renesas@opensource.se>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the staging tree
+Message-ID: <20140710030945.GA8364@kroah.com>
+References: <20140620141807.45761bd0@canb.auug.org.au>
+ <20140620165353.GA3433@kroah.com>
+ <20140710102700.65ff2c14@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140710102700.65ff2c14@canb.auug.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The maximum jumbo frame size for RTL8153 is 9K bytes.
-Change the max rx packet size to 9K.
-Change the use of the shared fifo from 6K (default) to 12K for tx.
+On Thu, Jul 10, 2014 at 10:27:00AM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> On Fri, 20 Jun 2014 09:53:53 -0700 Greg KH <greg@kroah.com> wrote:
+> >
+> > On Fri, Jun 20, 2014 at 02:18:07PM +1000, Stephen Rothwell wrote:
+> > > Hi Greg,
+> > > 
+> > > After merging the staging tree, today's linux-next build (powerpc
+> > > allyesconfig) failed like this:
+> > > 
+> > > drivers/staging/board/board.c: In function 'find_by_address':
+> > > drivers/staging/board/board.c:14:3: error: implicit declaration of function 'of_can_translate_address' [-Werror=implicit-function-declaration]
+> > >    if (of_can_translate_address(dn)
+> > >    ^
+> > > 
+> > > Caused by commit 382063d91e15 ("staging: board: Initial board staging
+> > > support").
+> > > 
+> > > I have disabled that driver for today.
+> > > 
+> > > From: Stephen Rothwell <sfr@canb.auug.org.au>
+> > > Date: Fri, 20 Jun 2014 14:14:17 +1000
+> > > Subject: [PATCH] staging: board: disable
+> > > 
+> > > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> > > ---
+> > >  drivers/staging/board/Kconfig | 1 +
+> > >  1 file changed, 1 insertion(+)
+> > > 
+> > > diff --git a/drivers/staging/board/Kconfig b/drivers/staging/board/Kconfig
+> > > index 09d94b48c9c9..7eda0b8b7aab 100644
+> > > --- a/drivers/staging/board/Kconfig
+> > > +++ b/drivers/staging/board/Kconfig
+> > > @@ -1,6 +1,7 @@
+> > >  config STAGING_BOARD
+> > >  	boolean "Staging Board Support"
+> > >  	depends on OF_ADDRESS
+> > > +	depends on BROKEN
+> > >  	help
+> > >  	  Select to enable per-board staging support code.
+> > >  
+> > 
+> > Magnus, can you send me a proper patch for this to get the code back to
+> > building condition?
+> 
+> Ping?
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 36 ++++++++++++++++++++++++++++++++----
- 1 file changed, 32 insertions(+), 4 deletions(-)
+Magnus went quiet...
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index e9685ce..7d2dd80 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -59,6 +59,7 @@
- #define PLA_WDT6_CTRL		0xe428
- #define PLA_TCR0		0xe610
- #define PLA_TCR1		0xe612
-+#define PLA_MTPS		0xe615
- #define PLA_TXFIFO_CTRL		0xe618
- #define PLA_RSTTALLY		0xe800
- #define PLA_CR			0xe813
-@@ -180,6 +181,10 @@
- /* PLA_TCR1 */
- #define VERSION_MASK		0x7cf0
- 
-+/* PLA_MTPS */
-+#define MTPS_JUMBO		(12 * 1024 / 64)
-+#define MTPS_DEFAULT		(6 * 1024 / 64)
-+
- /* PLA_RSTTALLY */
- #define TALLY_RESET		0x0001
- 
-@@ -440,7 +445,10 @@ enum rtl_register_content {
- #define BYTE_EN_START_MASK	0x0f
- #define BYTE_EN_END_MASK	0xf0
- 
-+#define RTL8153_MAX_PACKET	9216 /* 9K */
-+#define RTL8153_MAX_MTU		(RTL8153_MAX_PACKET - VLAN_ETH_HLEN - VLAN_HLEN)
- #define RTL8152_RMS		(VLAN_ETH_FRAME_LEN + VLAN_HLEN)
-+#define RTL8153_RMS		RTL8153_MAX_PACKET
- #define RTL8152_TX_TIMEOUT	(5 * HZ)
- 
- /* rtl8152 flags */
-@@ -2522,7 +2530,8 @@ static void r8153_first_init(struct r8152 *tp)
- 	ocp_data &= ~CPCR_RX_VLAN;
- 	ocp_write_word(tp, MCU_TYPE_PLA, PLA_CPCR, ocp_data);
- 
--	ocp_write_word(tp, MCU_TYPE_PLA, PLA_RMS, RTL8152_RMS);
-+	ocp_write_word(tp, MCU_TYPE_PLA, PLA_RMS, RTL8153_RMS);
-+	ocp_write_byte(tp, MCU_TYPE_PLA, PLA_MTPS, MTPS_JUMBO);
- 
- 	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_TCR0);
- 	ocp_data |= TCR0_AUTO_FIFO;
-@@ -2572,7 +2581,7 @@ static void r8153_enter_oob(struct r8152 *tp)
- 		mdelay(1);
- 	}
- 
--	ocp_write_word(tp, MCU_TYPE_PLA, PLA_RMS, RTL8152_RMS);
-+	ocp_write_word(tp, MCU_TYPE_PLA, PLA_RMS, RTL8153_RMS);
- 
- 	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_TEREDO_CFG);
- 	ocp_data &= ~TEREDO_WAKE_MASK;
-@@ -3284,6 +3293,26 @@ out:
- 	return res;
- }
- 
-+static int rtl8152_change_mtu(struct net_device *dev, int new_mtu)
-+{
-+	struct r8152 *tp = netdev_priv(dev);
-+
-+	switch (tp->version) {
-+	case RTL_VER_01:
-+	case RTL_VER_02:
-+		return eth_change_mtu(dev, new_mtu);
-+	default:
-+		break;
-+	}
-+
-+	if (new_mtu < 68 || new_mtu > RTL8153_MAX_MTU)
-+		return -EINVAL;
-+
-+	dev->mtu = new_mtu;
-+
-+	return 0;
-+}
-+
- static const struct net_device_ops rtl8152_netdev_ops = {
- 	.ndo_open		= rtl8152_open,
- 	.ndo_stop		= rtl8152_close,
-@@ -3292,8 +3321,7 @@ static const struct net_device_ops rtl8152_netdev_ops = {
- 	.ndo_tx_timeout		= rtl8152_tx_timeout,
- 	.ndo_set_rx_mode	= rtl8152_set_rx_mode,
- 	.ndo_set_mac_address	= rtl8152_set_mac_address,
--
--	.ndo_change_mtu		= eth_change_mtu,
-+	.ndo_change_mtu		= rtl8152_change_mtu,
- 	.ndo_validate_addr	= eth_validate_addr,
- };
- 
--- 
-1.9.3
+Magnus?
 
