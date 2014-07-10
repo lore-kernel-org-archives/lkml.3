@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754AbaGJWJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 18:09:59 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:55253 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753842AbaGJVyx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753844AbaGJVyx (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 10 Jul 2014 17:54:53 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:33822 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753025AbaGJVyu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 17:54:50 -0400
 From: Oded Gabbay <oded.gabbay@gmail.com>
 X-Google-Original-From: Oded Gabbay <oded.gabbay@amd.com>
 To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
@@ -14,13 +14,10 @@ To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
 Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         John Bridgman <John.Bridgman@amd.com>,
         Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Joerg Roedel <joro@8bytes.org>,
-        Evgeny Pinchuk <evgeny.pinchuk@amd.com>,
-        Oded Gabbay <oded.gabbay@amd.com>,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
-Subject: [PATCH 31/83] drm/radeon: extending kfd-kgd interface
-Date: Fri, 11 Jul 2014 00:53:47 +0300
-Message-Id: <1405029279-6894-3-git-send-email-oded.gabbay@amd.com>
+        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>
+Subject: [PATCH 30/83] hsa/radeon: Fix list of supported devices
+Date: Fri, 11 Jul 2014 00:53:46 +0300
+Message-Id: <1405029279-6894-2-git-send-email-oded.gabbay@amd.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405029279-6894-1-git-send-email-oded.gabbay@amd.com>
 References: <1405029279-6894-1-git-send-email-oded.gabbay@amd.com>
@@ -28,60 +25,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Evgeny Pinchuk <evgeny.pinchuk@amd.com>
-
-Adding API for KFD to be able to query the GPU clock counter.
-
-Signed-off-by: Evgeny Pinchuk <evgeny.pinchuk@amd.com>
 Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
 ---
- drivers/gpu/drm/radeon/radeon_kfd.c | 9 +++++++++
- include/linux/radeon_kfd.h          | 1 +
- 2 files changed, 10 insertions(+)
+ drivers/gpu/hsa/radeon/kfd_device.c | 28 +++++++++++++++++++++++-----
+ 1 file changed, 23 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_kfd.c b/drivers/gpu/drm/radeon/radeon_kfd.c
-index f4cc3c5..121e67b 100644
---- a/drivers/gpu/drm/radeon/radeon_kfd.c
-+++ b/drivers/gpu/drm/radeon/radeon_kfd.c
-@@ -42,6 +42,7 @@ static int kmap_mem(struct kgd_dev *kgd, struct kgd_mem *mem, void **ptr);
- static void unkmap_mem(struct kgd_dev *kgd, struct kgd_mem *mem);
+diff --git a/drivers/gpu/hsa/radeon/kfd_device.c b/drivers/gpu/hsa/radeon/kfd_device.c
+index b627e57..a21c095 100644
+--- a/drivers/gpu/hsa/radeon/kfd_device.c
++++ b/drivers/gpu/hsa/radeon/kfd_device.c
+@@ -27,7 +27,7 @@
+ #include "kfd_priv.h"
+ #include "kfd_scheduler.h"
  
- static uint64_t get_vmem_size(struct kgd_dev *kgd);
-+static uint64_t get_gpu_clock_counter(struct kgd_dev *kgd);
+-static const struct kfd_device_info bonaire_device_info = {
++static const struct kfd_device_info kaveri_device_info = {
+ 	.scheduler_class = &radeon_kfd_cik_static_scheduler_class,
+ 	.max_pasid_bits = 16,
+ 	.ih_ring_entry_size = 4 * sizeof(uint32_t)
+@@ -40,10 +40,28 @@ struct kfd_deviceid {
  
- static void lock_srbm_gfx_cntl(struct kgd_dev *kgd);
- static void unlock_srbm_gfx_cntl(struct kgd_dev *kgd);
-@@ -55,6 +56,7 @@ static const struct kfd2kgd_calls kfd2kgd = {
- 	.kmap_mem = kmap_mem,
- 	.unkmap_mem = unkmap_mem,
- 	.get_vmem_size = get_vmem_size,
-+	.get_gpu_clock_counter = get_gpu_clock_counter,
- 	.lock_srbm_gfx_cntl = lock_srbm_gfx_cntl,
- 	.unlock_srbm_gfx_cntl = unlock_srbm_gfx_cntl,
+ /* Please keep this sorted by increasing device id. */
+ static const struct kfd_deviceid supported_devices[] = {
+-	{ 0x1305, &bonaire_device_info },	/* Kaveri */
+-	{ 0x1307, &bonaire_device_info },	/* Kaveri */
+-	{ 0x130F, &bonaire_device_info },	/* Kaveri */
+-	{ 0x665C, &bonaire_device_info },	/* Bonaire */
++	{ 0x1304, &kaveri_device_info },	/* Kaveri */
++	{ 0x1305, &kaveri_device_info },	/* Kaveri */
++	{ 0x1306, &kaveri_device_info },	/* Kaveri */
++	{ 0x1307, &kaveri_device_info },	/* Kaveri */
++	{ 0x1309, &kaveri_device_info },	/* Kaveri */
++	{ 0x130A, &kaveri_device_info },	/* Kaveri */
++	{ 0x130B, &kaveri_device_info },	/* Kaveri */
++	{ 0x130C, &kaveri_device_info },	/* Kaveri */
++	{ 0x130D, &kaveri_device_info },	/* Kaveri */
++	{ 0x130E, &kaveri_device_info },	/* Kaveri */
++	{ 0x130F, &kaveri_device_info },	/* Kaveri */
++	{ 0x1310, &kaveri_device_info },	/* Kaveri */
++	{ 0x1311, &kaveri_device_info },	/* Kaveri */
++	{ 0x1312, &kaveri_device_info },	/* Kaveri */
++	{ 0x1313, &kaveri_device_info },	/* Kaveri */
++	{ 0x1315, &kaveri_device_info },	/* Kaveri */
++	{ 0x1316, &kaveri_device_info },	/* Kaveri */
++	{ 0x1317, &kaveri_device_info },	/* Kaveri */
++	{ 0x1318, &kaveri_device_info },	/* Kaveri */
++	{ 0x131B, &kaveri_device_info },	/* Kaveri */
++	{ 0x131C, &kaveri_device_info },	/* Kaveri */
++	{ 0x131D, &kaveri_device_info },	/* Kaveri */
  };
-@@ -275,3 +277,10 @@ static void unlock_srbm_gfx_cntl(struct kgd_dev *kgd)
  
- 	mutex_unlock(&rdev->srbm_mutex);
- }
-+
-+static uint64_t get_gpu_clock_counter(struct kgd_dev *kgd)
-+{
-+	struct radeon_device *rdev = (struct radeon_device *)kgd;
-+
-+	return rdev->asic->get_gpu_clock_counter(rdev);
-+}
-diff --git a/include/linux/radeon_kfd.h b/include/linux/radeon_kfd.h
-index 63b7bac..fcb6c7a 100644
---- a/include/linux/radeon_kfd.h
-+++ b/include/linux/radeon_kfd.h
-@@ -84,6 +84,7 @@ struct kfd2kgd_calls {
- 	void (*unkmap_mem)(struct kgd_dev *kgd, struct kgd_mem *mem);
- 
- 	uint64_t (*get_vmem_size)(struct kgd_dev *kgd);
-+	uint64_t (*get_gpu_clock_counter)(struct kgd_dev *kgd);
- 
- 	/* SRBM_GFX_CNTL mutex */
- 	void (*lock_srbm_gfx_cntl)(struct kgd_dev *kgd);
+ static const struct kfd_device_info *
 -- 
 1.9.1
 
