@@ -1,82 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267AbaGJRQe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 13:16:34 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:57556 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751103AbaGJRO2 (ORCPT
+	id S1752332AbaGJRQk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 13:16:40 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:33184 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752279AbaGJRQh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 13:14:28 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v4 1/7] genirq: generic chip: export irq_map_generic_chip function
-Date: Thu, 10 Jul 2014 19:14:16 +0200
-Message-Id: <1405012462-766-2-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1405012462-766-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1405012462-766-1-git-send-email-boris.brezillon@free-electrons.com>
+	Thu, 10 Jul 2014 13:16:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+r1ZhhJxs_EL3UbtL8qAK4_JAqo3sJ3fF3KJ_3=NcRhnJiYjg@mail.gmail.com>
+References: <CA+r1ZhhJxs_EL3UbtL8qAK4_JAqo3sJ3fF3KJ_3=NcRhnJiYjg@mail.gmail.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Thu, 10 Jul 2014 10:15:56 -0700
+Message-ID: <CAGVrzcYc+B-tsvGBspD3mujYf_mMsyRx2VoYJj3hEvwkZffX1Q@mail.gmail.com>
+Subject: Re: randconfig build error with next-20140710, in net/ipv4/ipconfig.c
+To: Jim Davis <jim.epost@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, kuznet@ms2.inr.ac.ru,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Export the generic irq map function in order to provide irq_domain ops with
-generic mapping and specific of xlate function (needed by the new atmel
-AIC driver).
+2014-07-10 10:07 GMT-07:00 Jim Davis <jim.epost@gmail.com>:
+> Building with the attached random configuration file,
+>
+> net/ipv4/ipconfig.c: In function ‘ic_dynamic’:
+> net/ipv4/ipconfig.c:1221:3: error: ‘ic_dev_xid’ undeclared (first use
+> in this function)
+>    ic_dev_xid = d->xid;
+>    ^
+> net/ipv4/ipconfig.c:1221:3: note: each undeclared identifier is
+> reported only once for each function it appears in
+> make[2]: *** [net/ipv4/ipconfig.o] Error 1
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
----
- include/linux/irq.h       | 2 ++
- kernel/irq/generic-chip.c | 5 +++--
- 2 files changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 0d998d8..62af592 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -771,6 +771,8 @@ void irq_gc_eoi(struct irq_data *d);
- int irq_gc_set_wake(struct irq_data *d, unsigned int on);
- 
- /* Setup functions for irq_chip_generic */
-+int irq_map_generic_chip(struct irq_domain *d, unsigned int virq,
-+			 irq_hw_number_t hw_irq);
- struct irq_chip_generic *
- irq_alloc_generic_chip(const char *name, int nr_ct, unsigned int irq_base,
- 		       void __iomem *reg_base, irq_flow_handler_t handler);
-diff --git a/kernel/irq/generic-chip.c b/kernel/irq/generic-chip.c
-index 452d6f2..cf80e7b 100644
---- a/kernel/irq/generic-chip.c
-+++ b/kernel/irq/generic-chip.c
-@@ -341,8 +341,8 @@ static struct lock_class_key irq_nested_lock_class;
- /*
-  * irq_map_generic_chip - Map a generic chip for an irq domain
-  */
--static int irq_map_generic_chip(struct irq_domain *d, unsigned int virq,
--				irq_hw_number_t hw_irq)
-+int irq_map_generic_chip(struct irq_domain *d, unsigned int virq,
-+			 irq_hw_number_t hw_irq)
- {
- 	struct irq_data *data = irq_get_irq_data(virq);
- 	struct irq_domain_chip_generic *dgc = d->gc;
-@@ -394,6 +394,7 @@ static int irq_map_generic_chip(struct irq_domain *d, unsigned int virq,
- 	irq_modify_status(virq, dgc->irq_flags_to_clear, dgc->irq_flags_to_set);
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(irq_map_generic_chip);
- 
- struct irq_domain_ops irq_generic_chip_ops = {
- 	.map	= irq_map_generic_chip,
+Looks like David just fixed it with: http://patchwork.ozlabs.org/patch/368463/
 -- 
-1.8.3.2
-
+Florian
