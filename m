@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403AbaGJGUx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 02:20:53 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:42900 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708AbaGJGUw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 02:20:52 -0400
-Date: Wed, 9 Jul 2014 23:20:40 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        "dgilbert@interlog.com" <dgilbert@interlog.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Bart Van Assche <bvanassche@fusionio.com>,
-        Benjamin LaHaise <bcrl@kvack.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: scsi-mq V2
-Message-ID: <20140710062040.GB20146@infradead.org>
-References: <1403715121-1201-1-git-send-email-hch@lst.de>
- <20140708144829.GA5539@infradead.org>
- <53BD7041.5010300@interlog.com>
- <53BD9A24.7010203@kernel.dk>
- <94D0CD8314A33A4D9D801C0FE68B402958B9628B@G9W0745.americas.hpqcorp.net>
+	id S1751518AbaGJGZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 02:25:28 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55129 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751487AbaGJGZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 02:25:26 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <gregkh@linuxfoundation.org>
+CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/5] drivers: phy: phy-samsung-usb2.c: Add missing MODULE_DEVICE_TABLE
+Date: Thu, 10 Jul 2014 11:55:01 +0530
+Message-ID: <1404973503-3310-4-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1404973503-3310-1-git-send-email-kishon@ti.com>
+References: <1404973503-3310-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B402958B9628B@G9W0745.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 12:53:36AM +0000, Elliott, Robert (Server Storage) wrote:
-> the problem still occurs - fio results in low or 0 IOPS, with perf top 
-> reporting unusual amounts of time spent in do_io_submit and io_submit.
+From: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
 
-The diff between the two version doesn't show too much other possible
-interesting commits, the most interesting being some minor block
-updates.
+Allow phy-exynos-usb2 to be autoloaded based on devicetree information.
+Tested on Odroid X2 with its USB subsystem build as modules.
 
-I guess we'll have to a manual bisect, I've pushed out a
-scsi-mq.3-bisect-1 branch that is rebased to just before the merge of
-the block tree, and a scsi-mq.3-bisect-2 branch that is just after
-the merge of the block tree to get started.
+Signed-off-by: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ drivers/phy/phy-samsung-usb2.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/phy/phy-samsung-usb2.c b/drivers/phy/phy-samsung-usb2.c
+index 8a8c6bc..1e69a32 100644
+--- a/drivers/phy/phy-samsung-usb2.c
++++ b/drivers/phy/phy-samsung-usb2.c
+@@ -107,6 +107,7 @@ static const struct of_device_id samsung_usb2_phy_of_match[] = {
+ #endif
+ 	{ },
+ };
++MODULE_DEVICE_TABLE(of, samsung_usb2_phy_of_match);
+ 
+ static int samsung_usb2_phy_probe(struct platform_device *pdev)
+ {
+-- 
+1.7.9.5
 
