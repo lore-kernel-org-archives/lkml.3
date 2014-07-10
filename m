@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243AbaGJV5A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 17:57:00 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:45565 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753170AbaGJV45 (ORCPT
+	id S1754283AbaGJV5I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 17:57:08 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:48960 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754238AbaGJV5A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 17:56:57 -0400
+	Thu, 10 Jul 2014 17:57:00 -0400
 From: Oded Gabbay <oded.gabbay@gmail.com>
 X-Google-Original-From: Oded Gabbay <oded.gabbay@amd.com>
 To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         Andrew Lewycky <Andrew.Lewycky@amd.com>,
         Joerg Roedel <joro@8bytes.org>, Ben Goz <ben.goz@amd.com>,
         Oded Gabbay <oded.gabbay@amd.com>
-Subject: [PATCH 64/83] hsa/radeon: update queue fault handling
-Date: Fri, 11 Jul 2014 00:54:20 +0300
-Message-Id: <1405029279-6894-36-git-send-email-oded.gabbay@amd.com>
+Subject: [PATCH 65/83] hsa/radeon: fixing a bug to support 32b processes
+Date: Fri, 11 Jul 2014 00:54:21 +0300
+Message-Id: <1405029279-6894-37-git-send-email-oded.gabbay@amd.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405029279-6894-1-git-send-email-oded.gabbay@amd.com>
 References: <1405029279-6894-1-git-send-email-oded.gabbay@amd.com>
@@ -28,47 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ben Goz <ben.goz@amd.com>
 
-This commit adding fault handling for process queue manager update queue
+This commit is a bug fix for 32b hsa processes support
 
 Signed-off-by: Ben Goz <ben.goz@amd.com>
 Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
 ---
- drivers/gpu/hsa/radeon/kfd_process_queue_manager.c | 15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ drivers/gpu/hsa/radeon/cik_regs.h                 | 1 +
+ drivers/gpu/hsa/radeon/kfd_device_queue_manager.c | 8 +++++---
+ 2 files changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/hsa/radeon/kfd_process_queue_manager.c b/drivers/gpu/hsa/radeon/kfd_process_queue_manager.c
-index fe74dd7..2034d2b 100644
---- a/drivers/gpu/hsa/radeon/kfd_process_queue_manager.c
-+++ b/drivers/gpu/hsa/radeon/kfd_process_queue_manager.c
-@@ -334,6 +334,7 @@ int pqm_destroy_queue(struct process_queue_manager *pqm, unsigned int qid)
+diff --git a/drivers/gpu/hsa/radeon/cik_regs.h b/drivers/gpu/hsa/radeon/cik_regs.h
+index fa5ec01..a6404e3 100644
+--- a/drivers/gpu/hsa/radeon/cik_regs.h
++++ b/drivers/gpu/hsa/radeon/cik_regs.h
+@@ -45,6 +45,7 @@
+ /* if PTR32, this is the upper limit of GPUVM */
+ #define	SH_MEM_CONFIG					0x8C34
+ #define	PTR32						(1 << 0)
++#define PRIVATE_ATC					(1 << 1)
+ #define	ALIGNMENT_MODE(x)				((x) << 2)
+ #define	SH_MEM_ALIGNMENT_MODE_DWORD			0
+ #define	SH_MEM_ALIGNMENT_MODE_DWORD_STRICT		1
+diff --git a/drivers/gpu/hsa/radeon/kfd_device_queue_manager.c b/drivers/gpu/hsa/radeon/kfd_device_queue_manager.c
+index 01573b1..3e1def1 100644
+--- a/drivers/gpu/hsa/radeon/kfd_device_queue_manager.c
++++ b/drivers/gpu/hsa/radeon/kfd_device_queue_manager.c
+@@ -90,15 +90,17 @@ static void init_process_memory(struct device_queue_manager *dqm, struct qcm_pro
+ 	if (qpd->pqm->process->is_32bit_user_mode) {
+ 		temp = get_sh_mem_bases_32(qpd->pqm->process, dqm->dev);
+ 		qpd->sh_mem_bases = SHARED_BASE(temp);
++		qpd->sh_mem_config = PTR32;
+ 	} else {
+ 		temp = get_sh_mem_bases_nybble_64(qpd->pqm->process, dqm->dev);
+ 		qpd->sh_mem_bases = compute_sh_mem_bases_64bit(temp);
++		qpd->sh_mem_config = 0;
+ 	}
  
- int pqm_update_queue(struct process_queue_manager *pqm, unsigned int qid, struct queue_properties *p)
- {
-+	int retval;
- 	struct process_queue_node *pqn;
+-	qpd->sh_mem_config = ALIGNMENT_MODE(SH_MEM_ALIGNMENT_MODE_UNALIGNED);
++	qpd->sh_mem_config |= ALIGNMENT_MODE(SH_MEM_ALIGNMENT_MODE_UNALIGNED);
+ 	qpd->sh_mem_config |= DEFAULT_MTYPE(MTYPE_NONCACHED);
+ 	qpd->sh_mem_ape1_limit = 0;
+-	qpd->sh_mem_ape1_base = 1;
++	qpd->sh_mem_ape1_base = 0;
  
- 	BUG_ON(!pqm);
-@@ -346,9 +347,17 @@ int pqm_update_queue(struct process_queue_manager *pqm, unsigned int qid, struct
- 	pqn->q->properties.queue_percent = p->queue_percent;
- 	pqn->q->properties.priority = p->priority;
+ 	pr_debug("kfd: is32bit process: %d sh_mem_bases nybble: 0x%X and register 0x%X\n",
+ 		qpd->pqm->process->is_32bit_user_mode, temp, qpd->sh_mem_bases);
+@@ -854,7 +856,7 @@ static int execute_queues_cpsch(struct device_queue_manager *dqm)
+ 	}
  
--	pqn->q->device->dqm->destroy_queues(pqn->q->device->dqm);
--	pqn->q->device->dqm->update_queue(pqn->q->device->dqm, pqn->q);
--	pqn->q->device->dqm->execute_queues(pqn->q->device->dqm);
-+	retval = pqn->q->device->dqm->destroy_queues(pqn->q->device->dqm);
-+	if (retval != 0)
-+		return retval;
-+
-+	retval = pqn->q->device->dqm->update_queue(pqn->q->device->dqm, pqn->q);
-+	if (retval != 0)
-+		return retval;
-+
-+	retval = pqn->q->device->dqm->execute_queues(pqn->q->device->dqm);
-+	if (retval != 0)
-+		return retval;
+ 	if (dqm->queue_count <= 0 || dqm->processes_count <= 0)
+-				return 0;
++		return 0;
  
- 	return 0;
- }
+ 	mutex_lock(&dqm->lock);
+ 	if (dqm->active_runlist) {
 -- 
 1.9.1
 
