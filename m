@@ -1,89 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347AbaGJW0y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 18:26:54 -0400
-Received: from seketeli.net ([94.23.218.202]:52708 "EHLO ms.seketeli.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751649AbaGJW0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 18:26:52 -0400
-From: Apelete Seketeli <apelete@seketeli.net>
-To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Alex Smith <alex.smith@imgtec.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        linux-mmc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v3] Use DMA for data transfers in JZ4740 MMC driver
-Date: Fri, 11 Jul 2014 00:27:25 +0200
-Message-Id: <1405031246-16365-1-git-send-email-apelete@seketeli.net>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752052AbaGJWcV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 18:32:21 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:35731 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927AbaGJWcS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 18:32:18 -0400
+Message-ID: <53BF1470.1000704@codeaurora.org>
+Date: Thu, 10 Jul 2014 15:32:16 -0700
+From: Olav Haugan <ohaugan@codeaurora.org>
+Organization: Qualcomm Innovation Center, Inc.
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>
+CC: Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        "mitchelh@codeaurora.org" <mitchelh@codeaurora.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, mitchelh@codeaurora.org
+Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
+References: <4545972.cM7IP1qTXQ@wuerfel> <53A4C0C9.2050908@codeaurora.org> <20140624091808.GC26013@arm.com> <53A9BC18.2090106@codeaurora.org> <20140624181150.GB4067@arm.com> <53A9EF3A.2070704@codeaurora.org> <20140625091858.GG6153@arm.com> <53ADEEDF.7060902@codeaurora.org> <20140630095220.GA25779@arm.com> <53BC95DA.1010500@codeaurora.org> <20140709105441.GE9485@arm.com>
+In-Reply-To: <20140709105441.GE9485@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 7/9/2014 3:54 AM, Will Deacon wrote:
+> On Wed, Jul 09, 2014 at 02:07:38AM +0100, Olav Haugan wrote:
+>> On 6/30/2014 2:52 AM, Will Deacon wrote:
+>>> On Fri, Jun 27, 2014 at 11:23:27PM +0100, Olav Haugan wrote:
+>>>> Lets say I have an IOMMU with 2 masters and 2 SMRn slots with the
+>>>> following stream IDs coming from the masters:
+>>>>
+>>>> Master 1: 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28
+>>>> Master 2: 0x30
+>>>>
+>>>> To make this work I would program SMR[0] with StreamID 0x20 and mask 0xF
+>>>> to ignore lower 4 bits. SMR[1] would just be StreamID 0x30 with mask 0x0.
+>>>>
+>>>> However, I could also have an IOMMU with 2 masters and 9 SMRn slots with
+>>>> the following stream IDs:
+>>>>
+>>>> Master 1: 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28
+>>>> Master 2: 0x29
+>>>>
+>>>> Here I would program all SMRn and leave the mask to be 0 for all SMRn's.
+>>>> So how do I detect when to apply a mask or not?
+>>>
+>>> You would aim to use the smallest number of SMRs per master possible.
+>>> You could probably use:
+>>>
+>>>   Master 1: SMR[0].id == 0x20, SMR[0].mask = 0x07
+>>>             SMR[1].id == 0x28, SMR[1].mask = 0x00
+>>>
+>>>   Master 2: SMR[2].id == 0x29, SMR[2].mask = 0x00
+>>
+>> So how does an algorithm figure this out in both my examples? The
+>> algorithm would have to know about both (all) bus masters and their
+>> stream IDs for a specific SMMU. If the algorithm operates on the set of
+>> stream IDs for one bus master at a time the algorithm has no way of
+>> knowing which bits can be ignored since it doesn't know the value of the
+>> other stream IDs for the other bus masters and thus could potentially
+>> create a mask that could cause a stream ID to match in two different
+>> entries.
+> 
+> Complete knowledge of the system topology (i.e. all bus masters) is a
+> requirement for being able to configure the SMMU correctly if you want to
+> guarantee that you don't have SMR aliasing issues.
 
-MMC driver for JZ4740 SoC is currently relying on PIO mode only for
-data transfers.
+So you agree that an algorithm needs to know about all the bus
+masters/stream IDs for a specific IOMMU before it can figure out the
+StreamID masks and how many SMRs can be allocated to a specific bus
+master? Andreas's algorithm does not know about the other bus
+masters/stream IDs. It operates on one bus master at a time.
 
-The patch that comes as a follow-up of this message allows the use of
-DMA for data transfers.
+>>>> I am not familiar with Andreas's proposal. Do you have a link?
+>>>
+>>>   http://marc.info/?l=linux-arm-kernel&m=139110598005846&w=2
+>>
+>> Unless I am mistaken the algorithm works on one bus master at a time. I
+>> don't think that will work.
+> 
+> IIRC, it works for densely packed SIDs on the master, so it tries to build
+> up power-of-2 sized groups for that master then mops up the rest with
+> individual entries.
 
-Changes since v2:
-  - declare sg_len member of struct jz4740_mmc_host as int instead of
-    unsigned int.
-Changes since v1:
-  - remove blank line added by mistake in jz_mmc_prepare_data_transfer().
+I ran the algorithm through a few trivial cases:
 
-According to the following DMA vs PIO benchmarks there seems to be a
-slight improvement in transfer speed with the Ben NanoNote booting
-from SD card, while load average seems to be roughly on par:
+1)
+Stream IDs: 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28
+Number of SMRs: 9
 
-* With DMA:
+In this case the algorithm decided to set mask to 0 for all entries
+using up 8 of the SMRs.
 
-Test cases |             root@BenNanoNote:/# uptime              |   root@BenNanoNote:/# time zcat root/fedora-16.iso.gz > /dev/null && uptime
------------|----------------------------------------------------------------------------------------------------------------------------------
-Test run 1 | 00:20:55 up 1 min,  load average: 1.26, 0.42, 0.14  |  00:26:10 up 6 min,  load average: 2.89, 1.94, 0.89
-Test run 2 | 00:30:22 up 1 min,  load average: 1.16, 0.38, 0.13  |  00:35:34 up 6 min,  load average: 2.68, 1.86, 0.85
-Test run 3 | 00:39:56 up 1 min,  load average: 1.16, 0.38, 0.13  |  00:45:06 up 6 min,  load average: 2.57, 1.76, 0.81
------------|----------------------------------------------------------------------------------------------------------------------------------
-  Average  |             1 min,  load average: 1.19, 0.39, 0.13  |              6 min,  load average: 2.71, 1.85, 0.85
+2) Same Stream IDs but only 2 SMRs.
+The algorithm gave an error saying I did not have enough SMRs.
 
+Thanks,
 
-* With PIO:
-
-Test cases |             root@BenNanoNote:/# uptime              |   root@BenNanoNote:/# time zcat root/fedora-16.iso.gz > /dev/null && uptime
-----------------------------------------------------------------------------------------------------------------------------------------------
-Test run 1 | 00:50:47 up 1 min,  load average: 1.42, 0.49, 0.17  |  00:56:52 up 7 min,  load average: 2.47, 2.00, 0.98
-Test run 2 | 01:00:19 up 1 min,  load average: 1.21, 0.39, 0.14  |  01:06:29 up 7 min,  load average: 2.45, 1.96, 0.96
-Test run 3 | 01:11:27 up 1 min,  load average: 1.15, 0.36, 0.12  |  01:17:33 up 7 min,  load average: 2.63, 2.01, 0.97
------------|----------------------------------------------------------------------------------------------------------------------------------
-  Average  |             1 min,  load average: 1.26, 0.41, 0.14  |              7 min,  load average: 2.52, 1.99, 0.97
-
-
-DMA tranfers performance might be further improved with a latter patch
-by taking advantage of the asynchronous request capability of the MMC
-framework.
-
-Changes were rebased on top of linux master branch, built and tested
-successfully.
-
-The following changes since commit cd3de83:
-
-  Linux 3.16-rc4
-
-are available in the git repository at:
-
-  git://git.seketeli.net/~apelete/linux.git jz4740-mmc-dma
-
-Apelete Seketeli (1):
-  mmc: jz4740: add dma infrastructure for data transfers
-
- drivers/mmc/host/jz4740_mmc.c |  172 +++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 164 insertions(+), 8 deletions(-)
+Olav
 
 -- 
-1.7.10.4
-
+The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
