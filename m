@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047AbaGJIdS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 04:33:18 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:57197 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752116AbaGJISU (ORCPT
+	id S1752907AbaGJIdQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 04:33:16 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:61000 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752119AbaGJISW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 04:18:20 -0400
+	Thu, 10 Jul 2014 04:18:22 -0400
 From: Tom Gundersen <teg@jklm.no>
 To: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
         David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        Tom Gundersen <teg@jklm.no>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        linux-zigbee-devel@lists.sourceforge.net
-Subject: [PATCH v7 09/33] net: nl802154 - make add_iface take name assign type
-Date: Thu, 10 Jul 2014 10:17:14 +0200
-Message-Id: <1404980258-30853-10-git-send-email-teg@jklm.no>
+        Tom Gundersen <teg@jklm.no>, dingtianhong <dingtianhong@huawei.com>,
+        Tan Xiaojun <tanxiaojun@huawei.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>
+Subject: [PATCH v7 10/33] net: dummy - set name assign type
+Date: Thu, 10 Jul 2014 10:17:15 +0200
+Message-Id: <1404980258-30853-11-git-send-email-teg@jklm.no>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1404980258-30853-1-git-send-email-teg@jklm.no>
 References: <1404980258-30853-1-git-send-email-teg@jklm.no>
@@ -24,91 +24,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Tom Gundersen <teg@jklm.no>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: linux-zigbee-devel@lists.sourceforge.net
----
- include/net/wpan-phy.h         | 4 +++-
- net/ieee802154/nl-phy.c        | 5 ++++-
- net/mac802154/ieee802154_dev.c | 7 ++++---
- 3 files changed, 11 insertions(+), 5 deletions(-)
+A fixed number of indistinguishable dummy devices are allocated at module init time,
+the names are therefore PREDICTABLE rather than ENUM.
 
-diff --git a/include/net/wpan-phy.h b/include/net/wpan-phy.h
-index 10ab0fc..bb07a1b 100644
---- a/include/net/wpan-phy.h
-+++ b/include/net/wpan-phy.h
-@@ -58,7 +58,9 @@ struct wpan_phy {
- 	int idx;
+Signed-off-by: Tom Gundersen <teg@jklm.no>
+Cc: dingtianhong <dingtianhong@huawei.com>
+Cc: Tan Xiaojun <tanxiaojun@huawei.com>
+Cc: WANG Cong <xiyou.wangcong@gmail.com>
+---
+ drivers/net/dummy.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/dummy.c b/drivers/net/dummy.c
+index ff435fb..3eef710 100644
+--- a/drivers/net/dummy.c
++++ b/drivers/net/dummy.c
+@@ -164,7 +164,7 @@ static int __init dummy_init_one(void)
+ 	struct net_device *dev_dummy;
+ 	int err;
  
- 	struct net_device *(*add_iface)(struct wpan_phy *phy,
--					const char *name, int type);
-+					const char *name,
-+					unsigned char name_assign_type,
-+					int type);
- 	void (*del_iface)(struct wpan_phy *phy, struct net_device *dev);
+-	dev_dummy = alloc_netdev(0, "dummy%d", NET_NAME_UNKNOWN, dummy_setup);
++	dev_dummy = alloc_netdev(0, "dummy%d", NET_NAME_PREDICTABLE, dummy_setup);
+ 	if (!dev_dummy)
+ 		return -ENOMEM;
  
- 	int (*set_txpower)(struct wpan_phy *phy, int db);
-diff --git a/net/ieee802154/nl-phy.c b/net/ieee802154/nl-phy.c
-index 89b265a..dc0c8f7 100644
---- a/net/ieee802154/nl-phy.c
-+++ b/net/ieee802154/nl-phy.c
-@@ -174,6 +174,7 @@ int ieee802154_add_iface(struct sk_buff *skb, struct genl_info *info)
- 	struct wpan_phy *phy;
- 	const char *name;
- 	const char *devname;
-+	unsigned char name_assign_type;
- 	int rc = -ENOBUFS;
- 	struct net_device *dev;
- 	int type = __IEEE802154_DEV_INVALID;
-@@ -192,8 +193,10 @@ int ieee802154_add_iface(struct sk_buff *skb, struct genl_info *info)
- 		if (devname[nla_len(info->attrs[IEEE802154_ATTR_DEV_NAME]) - 1]
- 				!= '\0')
- 			return -EINVAL; /* phy name should be null-terminated */
-+		name_assign_type = NET_NAME_USER;
- 	} else  {
- 		devname = "wpan%d";
-+		name_assign_type = NET_NAME_ENUM;
- 	}
- 
- 	if (strlen(devname) >= IFNAMSIZ)
-@@ -227,7 +230,7 @@ int ieee802154_add_iface(struct sk_buff *skb, struct genl_info *info)
- 		}
- 	}
- 
--	dev = phy->add_iface(phy, devname, type);
-+	dev = phy->add_iface(phy, devname, name_assign_type, type);
- 	if (IS_ERR(dev)) {
- 		rc = PTR_ERR(dev);
- 		goto nla_put_failure;
-diff --git a/net/mac802154/ieee802154_dev.c b/net/mac802154/ieee802154_dev.c
-index 1a79072..ebd9e79 100644
---- a/net/mac802154/ieee802154_dev.c
-+++ b/net/mac802154/ieee802154_dev.c
-@@ -158,7 +158,8 @@ mac802154_del_iface(struct wpan_phy *phy, struct net_device *dev)
- }
- 
- static struct net_device *
--mac802154_add_iface(struct wpan_phy *phy, const char *name, int type)
-+mac802154_add_iface(struct wpan_phy *phy, const char *name,
-+		    unsigned char name_assign_type, int type)
- {
- 	struct net_device *dev;
- 	int err = -ENOMEM;
-@@ -166,12 +167,12 @@ mac802154_add_iface(struct wpan_phy *phy, const char *name, int type)
- 	switch (type) {
- 	case IEEE802154_DEV_MONITOR:
- 		dev = alloc_netdev(sizeof(struct mac802154_sub_if_data),
--				   name, NET_NAME_UNKNOWN,
-+				   name, name_assign_type,
- 				   mac802154_monitor_setup);
- 		break;
- 	case IEEE802154_DEV_WPAN:
- 		dev = alloc_netdev(sizeof(struct mac802154_sub_if_data),
--				   name, NET_NAME_UNKNOWN,
-+				   name, name_assign_type,
- 				   mac802154_wpan_setup);
- 		break;
- 	default:
 -- 
 1.9.3
 
