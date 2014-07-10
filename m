@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753676AbaGJVwa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 17:52:30 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:55702 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753652AbaGJVwZ (ORCPT
+	id S1753708AbaGJVwh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 17:52:37 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:38976 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753239AbaGJVwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 17:52:25 -0400
+	Thu, 10 Jul 2014 17:52:33 -0400
 From: Oded Gabbay <oded.gabbay@gmail.com>
 X-Google-Original-From: Oded Gabbay <oded.gabbay@amd.com>
 To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
@@ -14,12 +14,12 @@ To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
 Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         John Bridgman <John.Bridgman@amd.com>,
         Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Joerg Roedel <joro@8bytes.org>,
-        Evgeny Pinchuk <evgeny.pinchuk@amd.com>,
-        Oded Gabbay <oded.gabbay@amd.com>
-Subject: [PATCH 25/83] hsa/radeon: fix the OEMID assignment in kfd_topology
-Date: Fri, 11 Jul 2014 00:50:25 +0300
-Message-Id: <1405029027-6085-24-git-send-email-oded.gabbay@amd.com>
+        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>,
+        Ben Goz <ben.goz@amd.com>, Evgeny Pinchuk <evgeny.pinchuk@amd.com>,
+        Alexey Skidanov <Alexey.Skidanov@amd.com>, linux-api@vger.kernel.org
+Subject: [PATCH 27/83] hsa/radeon: Implement hsaKmtSetMemoryPolicy
+Date: Fri, 11 Jul 2014 00:50:27 +0300
+Message-Id: <1405029027-6085-26-git-send-email-oded.gabbay@amd.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
 References: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
@@ -27,47 +27,307 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Evgeny Pinchuk <evgeny.pinchuk@amd.com>
+From: Andrew Lewycky <Andrew.Lewycky@amd.com>
 
-The assignment of OEMID from the CRAT table is into a 64 variable. The OEMID is 48bit wide in the CRAT.
-This fix makes sure that only 48bit are assigned for the OEMID value from the CRAT table.
+This patch adds support in KFD for the hsaKmtSetMemoryPolicy
+HSA thunk API call
 
-Signed-off-by: Evgeny Pinchuk <evgeny.pinchuk@amd.com>
+Signed-off-by: Andrew Lewycky <Andrew.Lewycky@amd.com>
 Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
 ---
- drivers/gpu/hsa/radeon/kfd_crat.h     | 2 ++
- drivers/gpu/hsa/radeon/kfd_topology.c | 4 ++--
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ drivers/gpu/hsa/radeon/cik_regs.h             |  1 +
+ drivers/gpu/hsa/radeon/kfd_chardev.c          | 59 +++++++++++++++++
+ drivers/gpu/hsa/radeon/kfd_sched_cik_static.c | 91 +++++++++++++++++++++++++--
+ drivers/gpu/hsa/radeon/kfd_scheduler.h        | 12 ++++
+ include/uapi/linux/kfd_ioctl.h                | 13 ++++
+ 5 files changed, 172 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpu/hsa/radeon/kfd_crat.h b/drivers/gpu/hsa/radeon/kfd_crat.h
-index 587455d..a374fa3 100644
---- a/drivers/gpu/hsa/radeon/kfd_crat.h
-+++ b/drivers/gpu/hsa/radeon/kfd_crat.h
-@@ -42,6 +42,8 @@
- #define CRAT_OEMTABLEID_LENGTH	8
- #define CRAT_RESERVED_LENGTH	6
+diff --git a/drivers/gpu/hsa/radeon/cik_regs.h b/drivers/gpu/hsa/radeon/cik_regs.h
+index 813cdc4..93f7b34 100644
+--- a/drivers/gpu/hsa/radeon/cik_regs.h
++++ b/drivers/gpu/hsa/radeon/cik_regs.h
+@@ -54,6 +54,7 @@
+ #define	APE1_MTYPE(x)					((x) << 7)
  
-+#define CRAT_OEMID_64BIT_MASK ((1ULL << (CRAT_OEMID_LENGTH * 8)) - 1)
+ /* valid for both DEFAULT_MTYPE and APE1_MTYPE */
++#define	MTYPE_CACHED					0
+ #define	MTYPE_NONCACHED					3
+ 
+ 
+diff --git a/drivers/gpu/hsa/radeon/kfd_chardev.c b/drivers/gpu/hsa/radeon/kfd_chardev.c
+index e0b276d..ddaf357 100644
+--- a/drivers/gpu/hsa/radeon/kfd_chardev.c
++++ b/drivers/gpu/hsa/radeon/kfd_chardev.c
+@@ -231,6 +231,61 @@ kfd_ioctl_destroy_queue(struct file *filp, struct kfd_process *p, void __user *a
+ }
+ 
+ static long
++kfd_ioctl_set_memory_policy(struct file *filep, struct kfd_process *p, void __user *arg)
++{
++	struct kfd_ioctl_set_memory_policy_args args;
++	struct kfd_dev *dev;
++	int err = 0;
++	struct kfd_process_device *pdd;
++	enum cache_policy default_policy, alternate_policy;
 +
- struct crat_header {
- 	uint32_t	signature;
- 	uint32_t	length;
-diff --git a/drivers/gpu/hsa/radeon/kfd_topology.c b/drivers/gpu/hsa/radeon/kfd_topology.c
-index 6acac25..2ee5444 100644
---- a/drivers/gpu/hsa/radeon/kfd_topology.c
-+++ b/drivers/gpu/hsa/radeon/kfd_topology.c
-@@ -467,10 +467,10 @@ static int kfd_parse_crat_table(void *crat_image)
- 		if (!top_dev) {
- 			kfd_release_live_view();
- 			return -ENOMEM;
-+		}
- 	}
--}
++	if (copy_from_user(&args, arg, sizeof(args)))
++		return -EFAULT;
++
++	if (args.default_policy != KFD_IOC_CACHE_POLICY_COHERENT
++	    && args.default_policy != KFD_IOC_CACHE_POLICY_NONCOHERENT) {
++		return -EINVAL;
++	}
++
++	if (args.alternate_policy != KFD_IOC_CACHE_POLICY_COHERENT
++	    && args.alternate_policy != KFD_IOC_CACHE_POLICY_NONCOHERENT) {
++		return -EINVAL;
++	}
++
++	dev = radeon_kfd_device_by_id(args.gpu_id);
++	if (dev == NULL)
++		return -EINVAL;
++
++	mutex_lock(&p->mutex);
++
++	pdd = radeon_kfd_bind_process_to_device(dev, p);
++	if (IS_ERR(pdd) < 0) {
++		err = PTR_ERR(pdd);
++		goto out;
++	}
++
++	default_policy = (args.default_policy == KFD_IOC_CACHE_POLICY_COHERENT)
++			 ? cache_policy_coherent : cache_policy_noncoherent;
++
++	alternate_policy = (args.alternate_policy == KFD_IOC_CACHE_POLICY_COHERENT)
++			   ? cache_policy_coherent : cache_policy_noncoherent;
++
++	if (!dev->device_info->scheduler_class->set_cache_policy(dev->scheduler,
++								 pdd->scheduler_process,
++								 default_policy,
++								 alternate_policy,
++								 (void __user *)args.alternate_aperture_base,
++								 args.alternate_aperture_size))
++		err = -EINVAL;
++
++out:
++	mutex_unlock(&p->mutex);
++
++	return err;
++}
++
++
++static long
+ kfd_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
+ {
+ 	struct kfd_process *process;
+@@ -253,6 +308,10 @@ kfd_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
+ 		err = kfd_ioctl_destroy_queue(filep, process, (void __user *)arg);
+ 		break;
  
--	sys_props.platform_id = *((uint64_t *)crat_table->oem_id);
-+	sys_props.platform_id = (*((uint64_t *)crat_table->oem_id)) & CRAT_OEMID_64BIT_MASK;
- 	sys_props.platform_oem = *((uint64_t *)crat_table->oem_table_id);
- 	sys_props.platform_rev = crat_table->revision;
++	case KFD_IOC_SET_MEMORY_POLICY:
++		err = kfd_ioctl_set_memory_policy(filep, process, (void __user *)arg);
++		break;
++
+ 	default:
+ 		dev_err(kfd_device,
+ 			"unknown ioctl cmd 0x%x, arg 0x%lx)\n",
+diff --git a/drivers/gpu/hsa/radeon/kfd_sched_cik_static.c b/drivers/gpu/hsa/radeon/kfd_sched_cik_static.c
+index 9add5e5..3c3e7d6 100644
+--- a/drivers/gpu/hsa/radeon/kfd_sched_cik_static.c
++++ b/drivers/gpu/hsa/radeon/kfd_sched_cik_static.c
+@@ -162,6 +162,10 @@ struct cik_static_private {
+ struct cik_static_process {
+ 	unsigned int vmid;
+ 	pasid_t pasid;
++
++	uint32_t sh_mem_config;
++	uint32_t ape1_base;
++	uint32_t ape1_limit;
+ };
+ 
+ struct cik_static_queue {
+@@ -346,6 +350,7 @@ static void init_ats(struct cik_static_private *priv)
+ 
+ 			sh_mem_config = ALIGNMENT_MODE(SH_MEM_ALIGNMENT_MODE_UNALIGNED);
+ 			sh_mem_config |= DEFAULT_MTYPE(MTYPE_NONCACHED);
++			sh_mem_config |= APE1_MTYPE(MTYPE_NONCACHED);
+ 
+ 			WRITE_REG(priv->dev, SH_MEM_CONFIG, sh_mem_config);
+ 
+@@ -562,14 +567,26 @@ static void release_vmid(struct cik_static_private *priv, unsigned int vmid)
+ 	set_bit(vmid, &priv->free_vmid_mask);
+ }
+ 
++static void program_sh_mem_settings(struct cik_static_private *sched,
++				    struct cik_static_process *proc)
++{
++	lock_srbm_index(sched);
++
++	vmid_select(sched, proc->vmid);
++
++	WRITE_REG(sched->dev, SH_MEM_CONFIG, proc->sh_mem_config);
++
++	WRITE_REG(sched->dev, SH_MEM_APE1_BASE, proc->ape1_base);
++	WRITE_REG(sched->dev, SH_MEM_APE1_LIMIT, proc->ape1_limit);
++
++	unlock_srbm_index(sched);
++}
++
+ static void setup_vmid_for_process(struct cik_static_private *priv, struct cik_static_process *p)
+ {
+ 	set_vmid_pasid_mapping(priv, p->vmid, p->pasid);
+ 
+-	/*
+-	 * SH_MEM_CONFIG and others need to be programmed differently
+-	 * for 32/64-bit processes. And maybe other reasons.
+-	 */
++	program_sh_mem_settings(priv, p);
+ }
+ 
+ static int
+@@ -591,6 +608,12 @@ cik_static_register_process(struct kfd_scheduler *scheduler, struct kfd_process
+ 
+ 	hwp->pasid = process->pasid;
+ 
++	hwp->sh_mem_config = ALIGNMENT_MODE(SH_MEM_ALIGNMENT_MODE_UNALIGNED)
++			     | DEFAULT_MTYPE(MTYPE_NONCACHED)
++			     | APE1_MTYPE(MTYPE_NONCACHED);
++	hwp->ape1_base = 1;
++	hwp->ape1_limit = 0;
++
+ 	setup_vmid_for_process(priv, hwp);
+ 
+ 	*scheduler_process = (struct kfd_scheduler_process *)hwp;
+@@ -894,6 +917,64 @@ cik_static_interrupt_wq(struct kfd_scheduler *scheduler, const void *ih_ring_ent
+ {
+ }
+ 
++/* Low bits must be 0000/FFFF as required by HW, high bits must be 0 to stay in user mode. */
++#define APE1_FIXED_BITS_MASK 0xFFFF80000000FFFFULL
++#define APE1_LIMIT_ALIGNMENT 0xFFFF /* APE1 limit is inclusive and 64K aligned. */
++
++static bool cik_static_set_cache_policy(struct kfd_scheduler *scheduler,
++					struct kfd_scheduler_process *process,
++					enum cache_policy default_policy,
++					enum cache_policy alternate_policy,
++					void __user *alternate_aperture_base,
++					uint64_t alternate_aperture_size)
++{
++	struct cik_static_private *sched = kfd_scheduler_to_private(scheduler);
++	struct cik_static_process *proc = kfd_process_to_private(process);
++
++	uint32_t default_mtype;
++	uint32_t ape1_mtype;
++
++	if (alternate_aperture_size == 0) {
++		/* base > limit disables APE1 */
++		proc->ape1_base = 1;
++		proc->ape1_limit = 0;
++	} else {
++		/*
++		 * In FSA64, APE1_Base[63:0] = { 16{SH_MEM_APE1_BASE[31]}, SH_MEM_APE1_BASE[31:0], 0x0000 }
++		 * APE1_Limit[63:0] = { 16{SH_MEM_APE1_LIMIT[31]}, SH_MEM_APE1_LIMIT[31:0], 0xFFFF }
++		 * Verify that the base and size parameters can be represented in this format
++		 * and convert them. Additionally restrict APE1 to user-mode addresses.
++		 */
++
++		uint64_t base = (uintptr_t)alternate_aperture_base;
++		uint64_t limit = base + alternate_aperture_size - 1;
++
++		if (limit <= base)
++			return false;
++
++		if ((base & APE1_FIXED_BITS_MASK) != 0)
++			return false;
++
++		if ((limit & APE1_FIXED_BITS_MASK) != APE1_LIMIT_ALIGNMENT)
++			return false;
++
++		proc->ape1_base = base >> 16;
++		proc->ape1_limit = limit >> 16;
++	}
++
++	default_mtype = (default_policy == cache_policy_coherent) ? MTYPE_NONCACHED : MTYPE_CACHED;
++	ape1_mtype = (alternate_policy == cache_policy_coherent) ? MTYPE_NONCACHED : MTYPE_CACHED;
++
++	proc->sh_mem_config = ALIGNMENT_MODE(SH_MEM_ALIGNMENT_MODE_UNALIGNED)
++			      | DEFAULT_MTYPE(default_mtype)
++			      | APE1_MTYPE(ape1_mtype);
++
++	program_sh_mem_settings(sched, proc);
++
++	return true;
++}
++
++
+ const struct kfd_scheduler_class radeon_kfd_cik_static_scheduler_class = {
+ 	.name = "CIK static scheduler",
+ 	.create = cik_static_create,
+@@ -908,4 +989,6 @@ const struct kfd_scheduler_class radeon_kfd_cik_static_scheduler_class = {
+ 
+ 	.interrupt_isr = cik_static_interrupt_isr,
+ 	.interrupt_wq = cik_static_interrupt_wq,
++
++	.set_cache_policy = cik_static_set_cache_policy,
+ };
+diff --git a/drivers/gpu/hsa/radeon/kfd_scheduler.h b/drivers/gpu/hsa/radeon/kfd_scheduler.h
+index e5a93c4..9dc2994 100644
+--- a/drivers/gpu/hsa/radeon/kfd_scheduler.h
++++ b/drivers/gpu/hsa/radeon/kfd_scheduler.h
+@@ -31,6 +31,11 @@ struct kfd_scheduler;
+ struct kfd_scheduler_process;
+ struct kfd_scheduler_queue;
+ 
++enum cache_policy {
++	cache_policy_coherent,
++	cache_policy_noncoherent
++};
++
+ struct kfd_scheduler_class {
+ 	const char *name;
+ 
+@@ -58,6 +63,13 @@ struct kfd_scheduler_class {
+ 
+ 	bool (*interrupt_isr)(struct kfd_scheduler *, const void *ih_ring_entry);
+ 	void (*interrupt_wq)(struct kfd_scheduler *, const void *ih_ring_entry);
++
++	bool (*set_cache_policy)(struct kfd_scheduler *scheduler,
++				 struct kfd_scheduler_process *process,
++				 enum cache_policy default_policy,
++				 enum cache_policy alternate_policy,
++				 void __user *alternate_aperture_base,
++				 uint64_t alternate_aperture_size);
+ };
+ 
+ extern const struct kfd_scheduler_class radeon_kfd_cik_static_scheduler_class;
+diff --git a/include/uapi/linux/kfd_ioctl.h b/include/uapi/linux/kfd_ioctl.h
+index dcc5fe0..928e628 100644
+--- a/include/uapi/linux/kfd_ioctl.h
++++ b/include/uapi/linux/kfd_ioctl.h
+@@ -58,11 +58,24 @@ struct kfd_ioctl_destroy_queue_args {
+ 	uint32_t queue_id;		/* to KFD */
+ };
+ 
++/* For kfd_ioctl_set_memory_policy_args.default_policy and alternate_policy */
++#define KFD_IOC_CACHE_POLICY_COHERENT 0
++#define KFD_IOC_CACHE_POLICY_NONCOHERENT 1
++
++struct kfd_ioctl_set_memory_policy_args {
++	uint32_t gpu_id;			/* to KFD */
++	uint32_t default_policy;		/* to KFD */
++	uint32_t alternate_policy;		/* to KFD */
++	uint64_t alternate_aperture_base;	/* to KFD */
++	uint64_t alternate_aperture_size;	/* to KFD */
++};
++
+ #define KFD_IOC_MAGIC 'K'
+ 
+ #define KFD_IOC_GET_VERSION	_IOR(KFD_IOC_MAGIC, 1, struct kfd_ioctl_get_version_args)
+ #define KFD_IOC_CREATE_QUEUE	_IOWR(KFD_IOC_MAGIC, 2, struct kfd_ioctl_create_queue_args)
+ #define KFD_IOC_DESTROY_QUEUE	_IOWR(KFD_IOC_MAGIC, 3, struct kfd_ioctl_destroy_queue_args)
++#define KFD_IOC_SET_MEMORY_POLICY	_IOW(KFD_IOC_MAGIC, 4, struct kfd_ioctl_set_memory_policy_args)
+ 
+ #pragma pack(pop)
  
 -- 
 1.9.1
