@@ -1,446 +1,554 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753459AbaGJPRx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 11:17:53 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:64534 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945AbaGJPRv (ORCPT
+	id S1753896AbaGJPST (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 11:18:19 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:48660 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752891AbaGJPSR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 11:17:51 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-1d-53beae9cf6cd
-From: Kamil Debski <k.debski@samsung.com>
-To: "'Guenter Roeck'" <linux@roeck-us.net>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org, Tomasz Figa <t.figa@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-References: <1404917600-4430-1-git-send-email-k.debski@samsung.com>
- <20140709165817.GA24842@roeck-us.net>
-In-reply-to: <20140709165817.GA24842@roeck-us.net>
-Subject: RE: [lm-sensors] [PATCH] hwmon: pwm-fan: Add pwm-fan driver
-Date: Thu, 10 Jul 2014 17:17:54 +0200
-Message-id: <107401cf9c52$1fe0a0e0$5fa1e2a0$%debski@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac+blwAJnEaTCVqDQXqAN4TbaxFC4wAj+Jzg
-Content-language: pl
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsVy+t/xa7pz1u0LNmi6qWMx/8g5VovLu+aw
-	WTxZeIbJ4s60vWwWa4/cZbdYP+M1iwObx4OJu9k8dn5vYPfo27KK0ePzJrkAligum5TUnMyy
-	1CJ9uwSujC3fJ7EX3Auv6Hv5lLWB8bpzFyMnh4SAicSWvyvZIGwxiQv31oPZQgJLGSV2PlXq
-	YuQCshuYJF58fM3axcjBwSagKbHqngdIjYiAhsT1KXMYQWxmgVWMEqeWS0D0Zktc/3afGcTm
-	FDCSmDF1BROILSzgInHr2g+wOIuAqsSJji9gvbwCDhKbG+awQNiCEj8m32OBmKklsX7ncSYI
-	W15i85q3zCAnSAioSzz6qwtxgpHEh6szoMpFJO42PGedwCg0C8mkWUgmzUIyaRaSlgWMLKsY
-	RVNLkwuKk9JzDfWKE3OLS/PS9ZLzczcxQqLiyw7GxcesDjEKcDAq8fBq1O4OFmJNLCuuzD3E
-	KMHBrCTCW75iX7AQb0piZVVqUX58UWlOavEhRiYOTqkGxoTvxjoHImPLps69wCbnEtj+ufpa
-	6RGOtKUXXzx8fS4pqv7DUy224Kf3WjQ3rnw+9VXnsj0Pl1f8jVh/dKHLE7VNwlwHJ7Vd7TTm
-	6WhK3nDMc/MPKU5uyZD93+797t0aoX0gdJrFcqGVRr6F7P988qZFdn6fLtmv8uHvl1OvO95+
-	SN6xeeMct0glluKMREMt5qLiRAARKCRhaAIAAA==
+	Thu, 10 Jul 2014 11:18:17 -0400
+From: Peter Griffin <peter.griffin@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        maxime.coquelin@st.com, patrice.chotard@st.com,
+        gregkh@linuxfoundation.org, srinivas.kandagatla@gmail.com,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org
+Cc: peter.griffin@linaro.org, lee.jones@linaro.org
+Subject: [PATCH 1/3] usb: host: st-hcd: Add USB HCD support for STi SoCs
+Date: Thu, 10 Jul 2014 16:18:04 +0100
+Message-Id: <1405005486-26355-2-git-send-email-peter.griffin@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405005486-26355-1-git-send-email-peter.griffin@linaro.org>
+References: <1405005486-26355-1-git-send-email-peter.griffin@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+This driver adds support for the USB HCD present in STi
+SoC's from STMicroelectronics. It has been tested on the
+stih416-b2020 board.
 
-Thank you for your review.
+Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+---
+ drivers/usb/host/Kconfig  |  17 ++
+ drivers/usb/host/Makefile |   1 +
+ drivers/usb/host/st-hcd.c | 471 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 489 insertions(+)
+ create mode 100644 drivers/usb/host/st-hcd.c
 
-> From: Guenter Roeck [mailto:groeck7@gmail.com] On Behalf Of Guenter
-> Roeck
-> Sent: Wednesday, July 09, 2014 6:58 PM
-> 
-> On Wed, Jul 09, 2014 at 04:53:20PM +0200, Kamil Debski wrote:
-> > The pwm-fan driver enables control of fans connected to PWM lines.
-> > This driver uses the PWM framework, so it is compatible with all PWM
-> > devices that provide drivers through the PWM framework.
-> >
-> > Signed-off-by: Kamil Debski <k.debski@samsung.com>
-> > ---
-> >  .../devicetree/bindings/hwmon/pwm-fan.txt          |   12 ++
-> >  drivers/hwmon/Kconfig                              |    9 +
-> >  drivers/hwmon/Makefile                             |    1 +
-> >  drivers/hwmon/pwm-fan.c                            |  199
-> ++++++++++++++++++++
-> >  4 files changed, 221 insertions(+)
-> >  create mode 100644
-> > Documentation/devicetree/bindings/hwmon/pwm-fan.txt
-> >  create mode 100644 drivers/hwmon/pwm-fan.c
-> 
-> Documentation/hwmon/pwm-fan is missing.
-
-Ok, I will add it.
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 61b7817..dc0358e 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -753,6 +753,23 @@ config USB_HCD_SSB
  
-> >
-> > diff --git a/Documentation/devicetree/bindings/hwmon/pwm-fan.txt
-> > b/Documentation/devicetree/bindings/hwmon/pwm-fan.txt
-> > new file mode 100644
-> > index 0000000..f534607
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/hwmon/pwm-fan.txt
-> > @@ -0,0 +1,12 @@
-> > +Bindings for a fan connected to the PWM lines
-> > +
-> > +Required properties:
-> > +- compatible: "pwm-fan"
-> > +- pwms: the PWM that is used to control the PWM fan
-> > +
-> > +Example:
-> > +	pwm-fan {
-> > +		compatible = "pwm-fan";
-> > +		status = "okay";
-> > +		pwms = <&pwm 0 10000 0>;
-> > +	};
-> > diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig index
-> > 08531a1..838ffb8 100644
-> > --- a/drivers/hwmon/Kconfig
-> > +++ b/drivers/hwmon/Kconfig
-> > @@ -1104,6 +1104,15 @@ config SENSORS_PCF8591
-> >
-> >  source drivers/hwmon/pmbus/Kconfig
-> >
-> > +config SENSORS_PWM_FAN
-> > +	tristate "PWM fan"
-> > +	depends on PWM
-> > +	help
-> > +	  If you say yes here you get support for fans connected to PWM
-> lines.
-> > +
-> > +	  This driver can also be built as a module.  If so, the module
-> > +	  will be called pwm-fan.
-> > +
-> >  config SENSORS_SHT15
-> >  	tristate "Sensiron humidity and temperature sensors. SHT15 and
-> compat."
-> >  	depends on GPIOLIB
-> > diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile index
-> > 3dc0f02..3967ecf 100644
-> > --- a/drivers/hwmon/Makefile
-> > +++ b/drivers/hwmon/Makefile
-> > @@ -120,6 +120,7 @@ obj-$(CONFIG_SENSORS_NTC_THERMISTOR)	+=
-> ntc_thermistor.o
-> >  obj-$(CONFIG_SENSORS_PC87360)	+= pc87360.o
-> >  obj-$(CONFIG_SENSORS_PC87427)	+= pc87427.o
-> >  obj-$(CONFIG_SENSORS_PCF8591)	+= pcf8591.o
-> > +obj-$(CONFIG_SENSORS_PWM_FAN)	+= pwm-fan.o
-> >  obj-$(CONFIG_SENSORS_S3C)	+= s3c-hwmon.o
-> >  obj-$(CONFIG_SENSORS_SCH56XX_COMMON)+= sch56xx-common.o
-> >  obj-$(CONFIG_SENSORS_SCH5627)	+= sch5627.o
-> > diff --git a/drivers/hwmon/pwm-fan.c b/drivers/hwmon/pwm-fan.c new
-> > file mode 100644 index 0000000..78fa627
-> > --- /dev/null
-> > +++ b/drivers/hwmon/pwm-fan.c
-> > @@ -0,0 +1,199 @@
-> > +/*
-> > + * pwm-fan.c - Hwmon driver for fans connected to PWM lines.
-> > + *
-> > + * Copyright (c) 2014 Samsung Electronics Co., Ltd.
-> > + *
-> > + * Author: Kamil Debski <k.debski@samsung.com>
-> > + *
-> > + * This program is free software; you can redistribute it and/or
-> > +modify
-> > + * it under the terms of the GNU General Public License as published
-> > +by
-> > + * the Free Software Foundation; either version 2 of the License, or
-> > + * (at your option) any later version.
-> > + *
-> > + * This program is distributed in the hope that it will be useful,
-> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> > + * GNU General Public License for more details.
-> > + *
-> > + * You should have received a copy of the GNU General Public License
-> > + * along with this program; if not, write to the Free Software
-> > + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
-> > +02111-1307  USA
-> 
-> Please run the patch through checkpatch and ensure that all warnings
-> and errors are fixed.
-
-I did checkpatch with -f by mistake, so it missed this error. Thanks for
-pointing this out.
-
-> > + */
-> > +
-> > +#include <linux/hwmon-sysfs.h>
-> > +#include <linux/hwmon.h>
-> > +#include <linux/module.h>
-> > +#include <linux/mutex.h>
-> > +#include <linux/of.h>
-> > +#include <linux/platform_device.h>
-> > +#include <linux/pwm.h>
-> 
-> For new drivers, please list include files in alphabetic order.
-
-Ok.
-
-> 
-> > +
-> > +#define MAX_PWM 255
-> > +
-> > +struct pwm_fan_ctx {
-> > +	struct device *hwmon;
-> > +	struct mutex lock;
-> > +	struct platform_device *pdev;
-> > +	struct pwm_device *pwm;
-> > +	unsigned int duty_cycle;
-> > +	unsigned char pwm_value;
-> > +};
-> > +
-> > +static ssize_t show_pwm_enable(struct device *dev,
-> > +			       struct device_attribute *attr, char *buf) {
-> > +	/* For the sake of simplicity only mode 1 (PWM) is supported */
-> > +	return sprintf(buf, "1\n");
-> > +}
-> > +
-> > +static ssize_t set_pwm(struct device *dev, struct device_attribute
-> *attr,
-> > +		       const char *buf, size_t count) {
-> > +	struct pwm_fan_ctx *ctx = dev_get_drvdata(dev);
-> > +	unsigned long pwm, duty;
-> > +
-> > +	if (kstrtoul(buf, 10, &pwm) || pwm > MAX_PWM)
-> > +		return -EINVAL;
-> > +
-> > +	mutex_lock(&ctx->lock);
-> > +
-> > +	if (ctx->pwm_value == pwm)
-> > +		goto exit_set_pwm;
-> > +
-> > +	duty =  DIV_ROUND_UP(pwm * (ctx->pwm->period - 1), MAX_PWM);
-> 
-> Unnecessary double space.
-
-Right.
-
-> 
-> > +	if (pwm_config(ctx->pwm, duty, ctx->pwm->period))
-> > +		goto exit_set_pwm;
-> 
-> Please return the error code.
-
-Right.
-
-> 
-> > +
-> > +	ctx->duty_cycle = duty;
-> > +	ctx->pwm_value = pwm;
-> > +
-> > +
-> Single empty line only please.
-
-Ok.
-
-> 
-> > +exit_set_pwm:
-> > +	mutex_unlock(&ctx->lock);
-> > +
-> > +	return count;
-> > +}
-> > +
-> > +static ssize_t show_pwm(struct device *dev,
-> > +			struct device_attribute *attr, char *buf) {
-> > +	struct pwm_fan_ctx *ctx = dev_get_drvdata(dev);
-> > +
-> > +	return sprintf(buf, "%d\n", ctx->pwm_value);
-> 
-> pwm_value is unsigned, so please use %u.
-
-Ok.
-
-> 
-> > +}
-> > +
-> > +
-> Single empty line only please
-
-Ok.
-
-> 
-> > +static SENSOR_DEVICE_ATTR(pwm1_enable, S_IRUGO | S_IWUSR,
-> > +		   show_pwm_enable, NULL, 0);
-> 
-> Is this attribute really needed ?
-
-I it can be omitted then I see no problem removing this.
-
-> 
-> > +static SENSOR_DEVICE_ATTR(pwm1, S_IRUGO | S_IWUSR,
-> > +		   show_pwm, set_pwm, 0);
-> > +
-> > +static struct attribute *pwm_fan_attributes[] = {
-> > +	&sensor_dev_attr_pwm1_enable.dev_attr.attr,
-> > +	&sensor_dev_attr_pwm1.dev_attr.attr,
-> > +	NULL,
-> > +};
-> > +
-> > +static const struct attribute_group pwm_fan_group = {
-> > +	.attrs = pwm_fan_attributes,
-> > +};
-> > +
-> > +static const struct attribute_group *pwm_fan_groups[] = {
-> > +	&pwm_fan_group,
-> > +	NULL
-> > +};
-> 
-> Please use the ATTRIBUTE_GROUPS macro.
-
-Ok.
-
-> 
-> > +
-> > +static int pwm_fan_probe(struct platform_device *pdev) {
-> > +	struct pwm_fan_ctx *ctx;
-> > +
-> > +	ctx = devm_kzalloc(&pdev->dev, sizeof(*ctx), GFP_KERNEL);
-> > +	if (!ctx) {
-> > +		dev_err(&pdev->dev, "Not enough memory for PWM fan
-> device\n");
-> 
-> Unnecessary error message.
-
-Ok.
-
-> 
-> > +		return -ENOMEM;
-> > +	}
-> > +
-> > +	ctx->pdev = pdev;
-> > +	mutex_init(&ctx->lock);
-> > +
-> > +	ctx->pwm = devm_of_pwm_get(&pdev->dev, pdev->dev.of_node, 0);
-> 
-> Last argument is a string pointer. Please use NULL.
-
-Ok.
-
-> 
-> > +	if (IS_ERR(ctx->pwm)) {
-> > +		dev_err(&pdev->dev, "Could not get PWM");
-> > +		return -EINVAL;
-> 
-> Return PTR_ERR(ctx->pwm).
-
-Right.
-
-> 
-> > +	}
-> > +
-> > +	dev_set_drvdata(&pdev->dev, ctx);
-> > +	platform_set_drvdata(pdev, ctx);
-> > +
-> > +	/* Set duty cycle to maximum allowed */
-> > +	ctx->duty_cycle = ctx->pwm->period - 1;
-> > +	ctx->pwm_value = MAX_PWM;
-> > +	pwm_config(ctx->pwm, ctx->duty_cycle, ctx->pwm->period);
-
-Guenter, I have a question regarding this. I see that gpio-fan reads
-the state of gpios and uses this as the initial setting. 
-Led-pwm on init sets the brightness to LED_OFF.
-
-What should be the default state after init? Should the fan be off or
-at full power? I am thinking about adding an optional node to device
-tree that could be used to set this. But the question remains - what
-should be the default setting?
-
-> 
-> pwm_config() can return an error. Why not check it here ?
-
-Right.
-
-> 
-> > +
-> > +	ctx->hwmon = hwmon_device_register_with_groups(&pdev->dev,
-> "pwmfan",
-> > +		ctx, pwm_fan_groups);
-> 
-> Why not devm_hwmon_device_register_with_groups ?
-
-You're right.
-
-> 
-> > +
-> > +	if (IS_ERR(ctx->hwmon)) {
-> > +		dev_err(&pdev->dev, "Failed to register hwmon device");
-> > +		return PTR_ERR(ctx->hwmon);
-> > +	}
-> > +
-> > +	/* Enbale PWM output */
-> > +	pwm_enable(ctx->pwm);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static int pwm_fan_remove(struct platform_device *pdev) {
-> > +	struct pwm_fan_ctx *ctx = platform_get_drvdata(pdev);
-> > +
-> > +	pwm_disable(ctx->pwm);
-> 
-> Is this needed ? I don't see it used by the leds-pwm driver on cleanup.
-> 
-> > +	hwmon_device_unregister(ctx->hwmon);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +#ifdef CONFIG_PM_SLEEP
-> > +static int pwm_fan_suspend(struct device *dev) {
-> > +	struct pwm_fan_ctx *ctx = dev_get_drvdata(dev);
-> > +
-> > +	return pwm_config(ctx->pwm, 0, ctx->pwm->period);
-> 
-> Wonder if this should be pwm_disable instead (and pwm_enable on resume).
-> Any thoughts ?
-
-I think this is a good idea. I had also looked on the leds-pwm, that you
-mentioned, and the driver also runs pwm_disable for pwm setting of 0, which
-seems like a good idea as well.
+ 	  If unsure, say N.
  
-> > +}
-> > +
-> > +static int pwm_fan_resume(struct device *dev) {
-> > +	struct pwm_fan_ctx *ctx = dev_get_drvdata(dev);
-> > +
-> > +	return pwm_config(ctx->pwm, ctx->duty_cycle, ctx->pwm->period); }
-> > +
-> > +static SIMPLE_DEV_PM_OPS(pwm_fan_pm, pwm_fan_suspend,
-> > +pwm_fan_resume); #endif
-> > +
-> > +
-> > +
-> Single empty line only please
-
-Ok.
-
-> 
-> > +static struct of_device_id of_pwm_fan_match[] = {
-> > +	{ .compatible = "pwm-fan", },
-> > +	{},
-> > +};
-> > +
-> > +static struct platform_driver pwm_fan_driver = {
-> > +	.probe		= pwm_fan_probe,
-> > +	.remove		= pwm_fan_remove,
-> > +	.driver	= {
-> > +		.name		= "pwm-fan",
-> > +#ifdef CONFIG_PM_SLEEP
-> > +		.pm		= &pwm_fan_pm,
-> > +#endif
-> > +		.of_match_table	= of_match_ptr(of_pwm_fan_match),
-> > +	},
-> > +};
-> > +
-> > +module_platform_driver(pwm_fan_driver);
-> > +
-> > +MODULE_AUTHOR("Kamil Debski <k.debski@samsung.com>");
-> > +MODULE_ALIAS("platform:pwm-fan");
-> > +MODULE_DESCRIPTION("PWM FAN driver"); MODULE_LICENSE("GPL");
-> > --
-> > 1.7.9.5
-> >
-> >
-> > _______________________________________________
-> > lm-sensors mailing list
-> > lm-sensors@lm-sensors.org
-> > http://lists.lm-sensors.org/mailman/listinfo/lm-sensors
-> >
++config USB_HCD_ST
++	tristate "STMicroelectronics STi family HCD support"
++	depends on ARCH_STI
++	select USB_OHCI_HCD_PLATFORM if USB_OHCI_HCD
++	select USB_EHCI_HCD_PLATFORM if USB_EHCI_HCD
++	select MFD_SYSCON
++	select GENERIC_PHY
++	help
++	  Enable support for the EHCI and OCHI host controller on ST
++	  consumer electronics SoCs.
++
++	  It converts the ST driver into two platform device drivers
++	  for EHCI and OHCI and provides bus configuration, clock and power
++	  management for the combined hardware block.
++
++	  If unsure, say N.
++
+ config USB_HCD_TEST_MODE
+ 	bool "HCD test mode support"
+ 	---help---
+diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
+index af89a90..af0b81d 100644
+--- a/drivers/usb/host/Makefile
++++ b/drivers/usb/host/Makefile
+@@ -74,3 +74,4 @@ obj-$(CONFIG_USB_HCD_SSB)	+= ssb-hcd.o
+ obj-$(CONFIG_USB_FUSBH200_HCD)	+= fusbh200-hcd.o
+ obj-$(CONFIG_USB_FOTG210_HCD)	+= fotg210-hcd.o
+ obj-$(CONFIG_USB_MAX3421_HCD)	+= max3421-hcd.o
++obj-$(CONFIG_USB_HCD_ST)	+= st-hcd.o
+diff --git a/drivers/usb/host/st-hcd.c b/drivers/usb/host/st-hcd.c
+new file mode 100644
+index 0000000..8a9636c
+--- /dev/null
++++ b/drivers/usb/host/st-hcd.c
+@@ -0,0 +1,471 @@
++/*
++ * STMicroelectronics HCD (Host Controller Driver) for USB 2.0 and 1.1.
++ *
++ * Copyright (c) 2013 STMicroelectronics (R&D) Ltd.
++ * Authors: Stephen Gallimore <stephen.gallimore@st.com>
++ *          Peter Griffin <peter.griffin@linaro.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2, as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <linux/dma-mapping.h>
++#include <linux/of.h>
++#include <linux/pm_runtime.h>
++#include <linux/pm_clock.h>
++#include <linux/delay.h>
++#include <linux/usb.h>
++#include <linux/usb/hcd.h>
++#include <linux/clk.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/reset.h>
++#include <linux/regmap.h>
++#include <linux/phy/phy.h>
++#include <linux/mfd/syscon.h>
++#include <linux/usb/ohci_pdriver.h>
++#include <linux/usb/ehci_pdriver.h>
++
++#include "ohci.h"
++
++#define EHCI_CAPS_SIZE 0x10
++#define AHB2STBUS_INSREG01 (EHCI_CAPS_SIZE + 0x84)
++
++struct st_hcd_dev {
++	int port_nr;
++	struct platform_device *ehci_device;
++	struct platform_device *ohci_device;
++	struct clk *ic_clk; /* Interconnect clock to the controller block */
++	struct clk *ohci_clk; /* 48MHz clock for OHCI */
++	struct reset_control *pwr;
++	struct reset_control *rst;
++	struct phy *phy;
++};
++
++static inline void st_ehci_configure_bus(void __iomem *regs)
++{
++	/* Set EHCI packet buffer IN/OUT threshold to 128 bytes */
++	u32 threshold = 128 | (128 << 16);
++
++	writel(threshold, regs + AHB2STBUS_INSREG01);
++}
++
++static int st_hcd_enable_clocks(struct device *dev,
++				struct st_hcd_dev *hcd_dev)
++{
++	int err;
++	/*
++	 * The interconnect input clock have either fixed
++	 * rate or the rate is defined on boot, so we are only concerned about
++	 * enabling any gates for this clock.
++	 */
++	err = clk_prepare_enable(hcd_dev->ic_clk);
++	if (err) {
++		dev_err(dev, "can't enable ic clock\n");
++		return err;
++	}
++	/*
++	 * The 48MHz OHCI clock is usually provided by a programmable
++	 * frequency synthesizer, which is often not programmed on boot/chip
++	 * reset, so we set its rate here to ensure it is correct.
++	 *
++	 * However not all SoC's have a dedicated ohci clock so it isn't fatal
++	 * for this not to  exist.
++	 */
++	if (!IS_ERR(hcd_dev->ohci_clk)) {
++		err = clk_set_rate(hcd_dev->ohci_clk, 48000000);
++		if (err) {
++			dev_err(dev, "can't set ohci_clk rate\n");
++			goto error;
++		}
++
++		err = clk_prepare_enable(hcd_dev->ohci_clk);
++		if (err) {
++			dev_err(dev, "can't enable ohci_clk\n");
++			goto error;
++		}
++	}
++
++	return 0;
++error:
++	clk_disable_unprepare(hcd_dev->ic_clk);
++	return err;
++}
++
++
++static void st_hcd_disable_clocks(struct st_hcd_dev *hcd_dev)
++{
++	/* not all SoCs provide a dedicated ohci_clk */
++	if (!IS_ERR(hcd_dev->ohci_clk))
++		clk_disable_unprepare(hcd_dev->ohci_clk);
++
++	clk_disable_unprepare(hcd_dev->ic_clk);
++}
++
++static void st_hcd_assert_resets(struct device *dev,
++				struct st_hcd_dev *hcd_dev)
++{
++	int err;
++
++	err = reset_control_assert(hcd_dev->pwr);
++	if (err)
++		dev_err(dev, "unable to put into powerdown\n");
++
++	err = reset_control_assert(hcd_dev->rst);
++	if (err)
++		dev_err(dev, "unable to put into softreset\n");
++}
++
++static int st_hcd_deassert_resets(struct device *dev,
++				struct st_hcd_dev *hcd_dev)
++{
++	int err;
++
++	err = reset_control_deassert(hcd_dev->pwr);
++	if (err) {
++		dev_err(dev, "unable to bring out of powerdown\n");
++		return err;
++	}
++
++	err = reset_control_deassert(hcd_dev->rst);
++	if (err) {
++		dev_err(dev, "unable to bring out of softreset\n");
++		goto err_assert_power;
++	}
++
++	return 0;
++
++err_assert_power:
++	reset_control_assert(hcd_dev->pwr);
++	return err;
++}
++
++static const struct usb_ehci_pdata ehci_pdata = {
++};
++
++static const struct usb_ohci_pdata ohci_pdata = {
++};
++
++static int st_hcd_remove(struct platform_device *pdev)
++{
++	struct st_hcd_dev *hcd_dev = platform_get_drvdata(pdev);
++
++	platform_device_unregister(hcd_dev->ehci_device);
++	platform_device_unregister(hcd_dev->ohci_device);
++
++	phy_power_off(hcd_dev->phy);
++
++	phy_exit(hcd_dev->phy);
++
++	st_hcd_assert_resets(&pdev->dev, hcd_dev);
++
++	st_hcd_disable_clocks(hcd_dev);
++
++	return 0;
++}
++
++static struct platform_device *st_hcd_device_create(const char *name, int id,
++		struct platform_device *parent)
++{
++	struct platform_device *pdev;
++	const char *platform_name;
++	struct resource *res;
++	struct resource hcd_res[2];
++	int ret;
++
++	res = platform_get_resource_byname(parent, IORESOURCE_MEM, name);
++	if (!res)
++		return ERR_PTR(-ENODEV);
++
++	hcd_res[0] = *res;
++
++	res = platform_get_resource_byname(parent, IORESOURCE_IRQ, name);
++	if (!res)
++		return ERR_PTR(-ENODEV);
++
++	hcd_res[1] = *res;
++
++	platform_name = kasprintf(GFP_KERNEL, "%s-platform", name);
++	if (!platform_name)
++		return ERR_PTR(-ENOMEM);
++
++	pdev = platform_device_alloc(platform_name, id);
++
++	kfree(platform_name);
++
++	if (!pdev)
++		return ERR_PTR(-ENOMEM);
++
++	pdev->dev.parent = &parent->dev;
++	pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
++	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
++
++	ret = platform_device_add_resources(pdev, hcd_res, ARRAY_SIZE(hcd_res));
++	if (ret)
++		goto error;
++
++	if (!strcmp(name, "ohci"))
++		ret = platform_device_add_data(pdev, &ohci_pdata,
++					       sizeof(ohci_pdata));
++	else
++		ret = platform_device_add_data(pdev, &ehci_pdata,
++					       sizeof(ehci_pdata));
++
++	if (ret)
++		goto error;
++
++	ret = platform_device_add(pdev);
++	if (ret)
++		goto error;
++
++	return pdev;
++
++error:
++	platform_device_put(pdev);
++	return ERR_PTR(ret);
++}
++
++#ifdef CONFIG_PM_SLEEP
++static int st_hcd_resume(struct device *dev)
++{
++	struct st_hcd_dev *hcd_dev = dev_get_drvdata(dev);
++	struct usb_hcd *ehci_hcd = platform_get_drvdata(hcd_dev->ehci_device);
++	int err;
++
++	pinctrl_pm_select_default_state(dev);
++
++	err = st_hcd_enable_clocks(dev, hcd_dev);
++	if (err)
++		return err;
++
++	err = phy_init(hcd_dev->phy);
++	if (err) {
++		dev_err(dev, "phy initialization failed\n");
++		goto err_disable_clocks;
++	}
++
++	err = phy_power_on(hcd_dev->phy);
++	if (err && (err != -ENOTSUPP)) {
++		dev_err(dev, "phy power on failed\n");
++		goto err_phy_exit;
++	}
++
++	err = st_hcd_deassert_resets(dev, hcd_dev);
++	if (err)
++		goto err_phy_off;
++
++	st_ehci_configure_bus(ehci_hcd->regs);
++
++	return 0;
++
++err_phy_off:
++	phy_power_off(hcd_dev->phy);
++err_phy_exit:
++	phy_exit(hcd_dev->phy);
++err_disable_clocks:
++	st_hcd_disable_clocks(hcd_dev);
++
++	return err;
++}
++
++static int st_hcd_suspend(struct device *dev)
++{
++	struct st_hcd_dev *hcd_dev = dev_get_drvdata(dev);
++	int err;
++
++	err = reset_control_assert(hcd_dev->pwr);
++	if (err) {
++		dev_err(dev, "unable to put into powerdown\n");
++		return err;
++	}
++
++	err = reset_control_assert(hcd_dev->rst);
++	if (err) {
++		dev_err(dev, "unable to put into softreset\n");
++		return err;
++	}
++
++	err = phy_power_off(hcd_dev->phy);
++	if (err && (err != -ENOTSUPP)) {
++		dev_err(dev, "phy power off failed\n");
++		return err;
++	}
++
++	phy_exit(hcd_dev->phy);
++
++	st_hcd_disable_clocks(hcd_dev);
++
++	pinctrl_pm_select_sleep_state(dev);
++
++	return 0;
++}
++#endif
++
++static SIMPLE_DEV_PM_OPS(st_hcd_pm, st_hcd_suspend, st_hcd_resume);
++
++static struct of_device_id st_hcd_match[] = {
++	{ .compatible = "st,usb-300x" },
++	{ /* sentinel */ },
++};
++MODULE_DEVICE_TABLE(of, st_hcd_match);
++
++static int st_hcd_probe_clocks(struct device *dev,
++				struct st_hcd_dev *hcd_dev)
++{
++	hcd_dev->ic_clk = devm_clk_get(dev, "ic");
++	if (IS_ERR(hcd_dev->ic_clk)) {
++		dev_err(dev, "ic clk not found\n");
++		return PTR_ERR(hcd_dev->ic_clk);
++	}
++
++	/* some SoCs don't have a dedicated ohci clk */
++	hcd_dev->ohci_clk = devm_clk_get(dev, "ohci");
++	if (IS_ERR(hcd_dev->ohci_clk))
++		dev_info(dev, "48MHz ohci clk not found\n");
++
++	return st_hcd_enable_clocks(dev, hcd_dev);
++}
++
++
++static int st_hcd_probe_resets(struct device *dev,
++				struct st_hcd_dev *hcd_dev)
++{
++	hcd_dev->pwr = devm_reset_control_get(dev, "power");
++	if (IS_ERR(hcd_dev->pwr)) {
++		dev_err(dev, "power reset control not found\n");
++		return PTR_ERR(hcd_dev->pwr);
++	}
++
++	hcd_dev->rst = devm_reset_control_get(dev, "softreset");
++	if (IS_ERR(hcd_dev->rst)) {
++		dev_err(dev, "soft reset control not found\n");
++		return PTR_ERR(hcd_dev->rst);
++	}
++
++	return st_hcd_deassert_resets(dev, hcd_dev);
++}
++
++static int st_hcd_probe_ehci_setup(struct platform_device *pdev)
++{
++	struct resource *res;
++	void __iomem *ehci_regs;
++
++	/*
++	 * We need to do some integration specific setup in the EHCI
++	 * controller, which the EHCI platform driver does not provide any
++	 * hooks to allow us to do during it's initialisation.
++	 */
++	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "ehci");
++	if (!res)
++		return -ENODEV;
++
++	ehci_regs = devm_ioremap(&pdev->dev, res->start, resource_size(res));
++	if (!ehci_regs)
++		return -ENOMEM;
++
++	st_ehci_configure_bus(ehci_regs);
++	devm_iounmap(&pdev->dev, ehci_regs);
++
++	return 0;
++}
++
++static int st_hcd_probe(struct platform_device *pdev)
++{
++	struct st_hcd_dev *hcd_dev;
++	int id;
++	int err;
++
++	if (!pdev->dev.of_node)
++		return -ENODEV;
++
++	id = of_alias_get_id(pdev->dev.of_node, "usb");
++
++	if (id < 0) {
++		dev_err(&pdev->dev, "No ID specified via DT alias\n");
++		return -ENODEV;
++	}
++
++	hcd_dev = devm_kzalloc(&pdev->dev, sizeof(*hcd_dev), GFP_KERNEL);
++	if (!hcd_dev)
++		return -ENOMEM;
++
++	hcd_dev->port_nr = id;
++
++	err = st_hcd_probe_clocks(&pdev->dev, hcd_dev);
++	if (err)
++		return err;
++
++	err = st_hcd_probe_resets(&pdev->dev, hcd_dev);
++	if (err)
++		goto err_disable_clocks;
++
++	err = st_hcd_probe_ehci_setup(pdev);
++	if (err)
++		goto err_assert_resets;
++
++	hcd_dev->phy = devm_phy_get(&pdev->dev, "usb2-phy");
++	if (IS_ERR(hcd_dev->phy)) {
++		dev_err(&pdev->dev, "no PHY configured\n");
++		err = PTR_ERR(hcd_dev->phy);
++		goto err_assert_resets;
++	}
++
++	err = phy_init(hcd_dev->phy);
++	if (err) {
++		dev_err(&pdev->dev, "phy initialization failed\n");
++		goto err_assert_resets;
++	}
++
++	err = phy_power_on(hcd_dev->phy);
++	if (err && (err != -ENOTSUPP)) {
++		dev_err(&pdev->dev, "phy power on failed\n");
++		goto err_phy_exit;
++	}
++
++	hcd_dev->ehci_device = st_hcd_device_create("ehci", id, pdev);
++	if (IS_ERR(hcd_dev->ehci_device)) {
++		err = PTR_ERR(hcd_dev->ehci_device);
++		goto err_phy_off;
++	}
++
++	hcd_dev->ohci_device = st_hcd_device_create("ohci", id, pdev);
++	if (IS_ERR(hcd_dev->ohci_device)) {
++		platform_device_del(hcd_dev->ehci_device);
++		err = PTR_ERR(hcd_dev->ohci_device);
++		goto err_phy_off;
++	}
++
++	platform_set_drvdata(pdev, hcd_dev);
++
++	return 0;
++
++err_phy_off:
++	phy_power_off(hcd_dev->phy);
++err_phy_exit:
++	phy_exit(hcd_dev->phy);
++err_assert_resets:
++	st_hcd_assert_resets(&pdev->dev, hcd_dev);
++err_disable_clocks:
++	st_hcd_disable_clocks(hcd_dev);
++
++	return err;
++}
++
++static struct platform_driver st_hcd_driver = {
++	.probe = st_hcd_probe,
++	.remove = st_hcd_remove,
++	.driver = {
++		.name = "st-hcd",
++		.pm = &st_hcd_pm,
++		.of_match_table = st_hcd_match,
++	},
++};
++
++module_platform_driver(st_hcd_driver);
++
++MODULE_DESCRIPTION("STMicroelectronics On-Chip USB Host Controller");
++MODULE_AUTHOR("Stephen Gallimore <stephen.gallimore@st.com>");
++MODULE_LICENSE("GPL v2");
+-- 
+1.9.1
 
