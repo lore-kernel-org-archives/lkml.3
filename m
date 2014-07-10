@@ -1,41 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbaGJQdc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 12:33:32 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:38131 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750778AbaGJQdb convert rfc822-to-8bit (ORCPT
+	id S1751500AbaGJQfo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 12:35:44 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:57462 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993AbaGJQfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 12:33:31 -0400
+	Thu, 10 Jul 2014 12:35:42 -0400
+Date: Thu, 10 Jul 2014 09:36:03 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Benson Leung <bleung@chromium.org>
+Cc: gene.chen@intel.com, moch@chromium.org, mika.westerberg@linux.intel.com,
+        lkml14@scotdoyle.com, kirill.shutemov@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 0/4] platform/chrome: chromeos_laptop - Add Haswell
+ Chromebooks
+Message-ID: <20140710163603.GA3011@quad.lixom.net>
+References: <1401835464-15267-1-git-send-email-bleung@chromium.org>
+ <1403038923-19444-1-git-send-email-bleung@chromium.org>
 MIME-Version: 1.0
-In-Reply-To: <20140710162419.GK2970@pd.tnic>
-References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
-	<1404925766-32253-4-git-send-email-hskinnemoen@google.com>
-	<3908561D78D1C84285E8C5FCA982C28F32857499@ORSMSX114.amr.corp.intel.com>
-	<CAFQmdRYabFy84FxeJGbrdd6w5O0mu9Kn_jE5V4rpw7cBrMvb0w@mail.gmail.com>
-	<20140710162419.GK2970@pd.tnic>
-Date: Thu, 10 Jul 2014 09:33:30 -0700
-Message-ID: <CA+8MBbJL6F3pvjX3a0eCNbutuKNudbLeMTbTdz+ZXZ2OOhX-KA@mail.gmail.com>
-Subject: Re: [PATCH 3/6] x86-mce: Clear CMCI enable on all claimed CMCI banks
- before reboot.
-From: Tony Luck <tony.luck@gmail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Havard Skinnemoen <hskinnemoen@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ewout van Bekkum <ewout@google.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403038923-19444-1-git-send-email-bleung@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 9:24 AM, Borislav Petkov <bp@alien8.de> wrote:
-> I'm saying that because I'm assuming BIOS will clear those MSRs upon
-> warm reset. If it doesn't, then we have a bigger problem.
+On Tue, Jun 17, 2014 at 02:01:59PM -0700, Benson Leung wrote:
+> This patch series  will add support for the cypress touchpads on the
+> HP Chromebook 14, Dell Chromebook 11, and Toshiba CB35.
+> 
+> Based on the work here by Mika Westerberg, which this series incorporates :
+> https://patchwork.kernel.org/patch/4288591/
+> 
+> [PATCHv2 1/4] platform/chrome: chromeos_laptop - Add support for Acer C720
+> [PATCHv2 2/4] platform/chrome: chromeos_laptop - Add HP Chromebook 14
+> [PATCHv2 3/4] platform/chrome: chromeos_laptop - Add Dell Chromebook 11 Touch
+> [PATCHv2 4/4] platform/chrome: chromeos_laptop - Add Toshiba CB35 Touch
 
-We  don't have to trust BIOS to do that. SDM section 15.3.2.5
-"IA32_MCi_CTL2 MSRs" says:
+Applied, sorry for the repeated delays. :-/
 
-After processor reset, IA32_MCi_CTL2 MSRs are zero’ed.
 
--Tony
+-Olof
