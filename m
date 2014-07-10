@@ -1,160 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817AbaGJIYu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 04:24:50 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:44874 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752213AbaGJISj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 04:18:39 -0400
-From: Tom Gundersen <teg@jklm.no>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        Tom Gundersen <teg@jklm.no>, Dan Carpenter <dan.carpenter@oracle.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH v7 18/33] net: arcdev - label alloc_arcdev names
-Date: Thu, 10 Jul 2014 10:17:23 +0200
-Message-Id: <1404980258-30853-19-git-send-email-teg@jklm.no>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1404980258-30853-1-git-send-email-teg@jklm.no>
-References: <1404980258-30853-1-git-send-email-teg@jklm.no>
+	id S1752830AbaGJIZd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 04:25:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59361 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751846AbaGJIZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 04:25:26 -0400
+Date: Thu, 10 Jul 2014 18:25:19 +1000
+From: NeilBrown <neilb@suse.de>
+To: Ian Kent <raven@themaw.net>
+Cc: autofs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] autofs4: support RCU-walk
+Message-ID: <20140710182519.79120b90@notabene.brown>
+In-Reply-To: <1404978220.2609.25.camel@perseus.fritz.box>
+References: <20140709233541.4525.25151.stgit@notabene.brown>
+	<1404978220.2609.25.camel@perseus.fritz.box>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/6_S0IDb.PbJmwE_p+Hjy7NX"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let the drivers pass in the name assign type. They all get the name as a module
-parameter.
+--Sig_/6_S0IDb.PbJmwE_p+Hjy7NX
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Tom Gundersen <teg@jklm.no>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- drivers/net/arcnet/arc-rimi.c     | 2 +-
- drivers/net/arcnet/arcnet.c       | 8 ++++++--
- drivers/net/arcnet/com20020-isa.c | 2 +-
- drivers/net/arcnet/com20020-pci.c | 2 +-
- drivers/net/arcnet/com20020_cs.c  | 2 +-
- drivers/net/arcnet/com90io.c      | 2 +-
- drivers/net/arcnet/com90xx.c      | 2 +-
- include/linux/arcdevice.h         | 3 ++-
- 8 files changed, 14 insertions(+), 9 deletions(-)
+On Thu, 10 Jul 2014 15:43:40 +0800 Ian Kent <raven@themaw.net> wrote:
 
-diff --git a/drivers/net/arcnet/arc-rimi.c b/drivers/net/arcnet/arc-rimi.c
-index b8b4c7b..c6fc1ce 100644
---- a/drivers/net/arcnet/arc-rimi.c
-+++ b/drivers/net/arcnet/arc-rimi.c
-@@ -337,7 +337,7 @@ static int __init arc_rimi_init(void)
- {
- 	struct net_device *dev;
- 
--	dev = alloc_arcdev(device);
-+	dev = alloc_arcdev(device, NET_NAME_USER);
- 	if (!dev)
- 		return -ENOMEM;
- 
-diff --git a/drivers/net/arcnet/arcnet.c b/drivers/net/arcnet/arcnet.c
-index 3b790de..710fe54 100644
---- a/drivers/net/arcnet/arcnet.c
-+++ b/drivers/net/arcnet/arcnet.c
-@@ -341,12 +341,16 @@ static void arcdev_setup(struct net_device *dev)
- 
- }
- 
--struct net_device *alloc_arcdev(const char *name)
-+struct net_device *alloc_arcdev(const char *name, unsigned char name_assign_type)
- {
- 	struct net_device *dev;
- 
-+	if (name && !*name)
-+		name = NULL;
-+
- 	dev = alloc_netdev(sizeof(struct arcnet_local),
--			   name && *name ? name : "arc%d", NET_NAME_UNKNOWN,
-+			   name ? name : "arc%d",
-+			   name ? name_assign_type : NET_NAME_ENUM,
- 			   arcdev_setup);
- 	if(dev) {
- 		struct arcnet_local *lp = netdev_priv(dev);
-diff --git a/drivers/net/arcnet/com20020-isa.c b/drivers/net/arcnet/com20020-isa.c
-index 45c61a2..4b48598 100644
---- a/drivers/net/arcnet/com20020-isa.c
-+++ b/drivers/net/arcnet/com20020-isa.c
-@@ -144,7 +144,7 @@ static int __init com20020_init(void)
- 	struct net_device *dev;
- 	struct arcnet_local *lp;
- 
--	dev = alloc_arcdev(device);
-+	dev = alloc_arcdev(device, NET_NAME_USER);
- 	if (!dev)
- 		return -ENOMEM;
- 
-diff --git a/drivers/net/arcnet/com20020-pci.c b/drivers/net/arcnet/com20020-pci.c
-index cbc44f5..b1d0dc7 100644
---- a/drivers/net/arcnet/com20020-pci.c
-+++ b/drivers/net/arcnet/com20020-pci.c
-@@ -69,7 +69,7 @@ static int com20020pci_probe(struct pci_dev *pdev, const struct pci_device_id *i
- 
- 	if (pci_enable_device(pdev))
- 		return -EIO;
--	dev = alloc_arcdev(device);
-+	dev = alloc_arcdev(device, NET_NAME_USER);
- 	if (!dev)
- 		return -ENOMEM;
- 
-diff --git a/drivers/net/arcnet/com20020_cs.c b/drivers/net/arcnet/com20020_cs.c
-index 326a612..de09df0 100644
---- a/drivers/net/arcnet/com20020_cs.c
-+++ b/drivers/net/arcnet/com20020_cs.c
-@@ -129,7 +129,7 @@ static int com20020_probe(struct pcmcia_device *p_dev)
-     if (!info)
- 	goto fail_alloc_info;
- 
--    dev = alloc_arcdev("");
-+    dev = alloc_arcdev("", NET_NAME_UNKNOWN);
-     if (!dev)
- 	goto fail_alloc_dev;
- 
-diff --git a/drivers/net/arcnet/com90io.c b/drivers/net/arcnet/com90io.c
-index 487d780..f3b2938 100644
---- a/drivers/net/arcnet/com90io.c
-+++ b/drivers/net/arcnet/com90io.c
-@@ -394,7 +394,7 @@ static int __init com90io_init(void)
- 	struct net_device *dev;
- 	int err;
- 
--	dev = alloc_arcdev(device);
-+	dev = alloc_arcdev(device, NET_NAME_USER);
- 	if (!dev)
- 		return -ENOMEM;
- 
-diff --git a/drivers/net/arcnet/com90xx.c b/drivers/net/arcnet/com90xx.c
-index b80fbe4..875efbd 100644
---- a/drivers/net/arcnet/com90xx.c
-+++ b/drivers/net/arcnet/com90xx.c
-@@ -463,7 +463,7 @@ static int __init com90xx_found(int ioaddr, int airq, u_long shmem, void __iomem
- 	int mirror_size;
- 
- 	/* allocate struct net_device */
--	dev = alloc_arcdev(device);
-+	dev = alloc_arcdev(device, NET_NAME_USER);
- 	if (!dev) {
- 		BUGMSG2(D_NORMAL, "com90xx: Can't allocate device!\n");
- 		iounmap(p);
-diff --git a/include/linux/arcdevice.h b/include/linux/arcdevice.h
-index 7216b0d..1e9a473 100644
---- a/include/linux/arcdevice.h
-+++ b/include/linux/arcdevice.h
-@@ -334,7 +334,8 @@ void arcnet_dump_skb(struct net_device *dev, struct sk_buff *skb, char *desc);
- 
- void arcnet_unregister_proto(struct ArcProto *proto);
- irqreturn_t arcnet_interrupt(int irq, void *dev_id);
--struct net_device *alloc_arcdev(const char *name);
-+struct net_device *alloc_arcdev(const char *name,
-+				unsigned char name_assgin_type);
- 
- int arcnet_open(struct net_device *dev);
- int arcnet_close(struct net_device *dev);
--- 
-1.9.3
+> On Thu, 2014-07-10 at 09:41 +1000, NeilBrown wrote:
+> > autofs4 currently doesn't support RCU-walk - it immediately
+> > aborts any attempt at RCU-walk to force REF-walk for path name
+> > lookup.
+> >=20
+> > This can cause a significant performance impact on multi-core
+> > systems.
+> > I have a client with a test case which spends >80% of its time
+> > waiting for spinlocks with a "make -j 40" on a 40 core system.
+>=20
+> Right, sounds worth the effort.
+>=20
+> >=20
+> > This patchset aims to remove most of these spinlocks.  To be fully
+> > effective in the particular case it needs a second patch set which
+> > makes NFS RCU-walk friendly, but one thing at a time.
+> >=20
+> > This has only been lightly tested so far so I'm really after feed-back
+> > rather than to have the patch set accepted, though the first two
+> > patches are trivial and could be taken immediately.
+>=20
+> I've only scanned the patches so far, I'll need to spend a bit more time
+> on them before I can comment.
+>=20
+> I'm going to be pressed for time for at least several days so I won't be
+> able to get to this right away.
+>=20
+> I expect the submount_test I use to stress path walking and expire to
+> mount transitions will likely be a good test to use. I haven't used it
+> in my personal environment for quite a while now so I'll need to have a
+> look around and see if I can still find a suitable set of scripts.
+> Otherwise I'll need to decouple it from the RedHat automated test
+> environment.
+>=20
+> >=20
+> > The last two patches are the most interesting so review comments on
+> > those are particularly welcome.
+>=20
+> Again I haven't looked closely at these but don't you mean the last
+> three patches or am I just fussing over an obviously straight forward
+> patch 3?
 
+Exactly right - that thirds last patch was "obviously straight forward", so
+is naturally the one that I have already found a bug in (the patch assumes
+that autofs4_check_leaves returns a different dentry, which clearly isn't
+true).
+
+I'll repost it, probably on Monday.
+
+>=20
+> Thanks for your effort Bruce,
+> Ian
+>=20
+
+    http://www.youtube.com/watch?v=3D_f_p0CgPeyA
+
+(Usually when people get my name wrong they call me "Ian", so you calling me
+Bruce is both slightly ironic and quite refreshing!)
+
+Thanks,
+NeilBrown
+
+--Sig_/6_S0IDb.PbJmwE_p+Hjy7NX
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUBU75N7znsnt1WYoG5AQLg/Q//S9cmPIEJSSuHqRW8g6+UkW7SrK4UzFVs
+R0MokL1o3JpJTWDGymRZUwHwJM0x2oycGynPIi/EKQiSUtIizkvo5fCrFc1iwwf0
+/MNXsXR1wylgOO4iRw1zZR4Zcj51QxMSf6oSOWS7YJdF+rSWIk+aArOlRya/F0qk
+wkns5O7J+Y0yRtg6P8fE8eH2y3uRh2m7GVxqYqoL8g0yC9C5N840DkY56oKwO16o
+qudU6vBcl2mQZbhvr6gRoRwJcIdM5OVylp738uz8euTzoEmnVEMAH08Awh0kLn6F
+RjVE5PAlc7+zQfckMK9I3BJWl3aSvV+W+uNHIiAitopgowFQ0s9VsZWp4GCNceQz
+uJpdg6ixH/TXCzHH1za1h7ga99G8W9CfELLOy/FGNXArQSQCoiK9dbSMeal5AB/b
+tTySJLGbT8lqTslCj90Vt1eU9PMsj2nWbZLAFWV7gvLK6Ip9IS5GkhPQwCoIpkYc
+7pNBuz6LSKCNKSmqwTtebNT5pNbl4ZRQdB1iJYmUWCqZJ9NNR+ENg/EXMnb/k1c3
+0zKuUsMMmfekUYY3Z44fCQtmPXhfDG4UUNyeIQK0eJRZ4Gir6oPyB9a3IiMhBDi+
+4BlgINOtLrYayCimblePJmZNaosEanH3gO5FYVll69+6wseVi7ur53FiD1PVLSfo
+51QgjEHEHJY=
+=ErsM
+-----END PGP SIGNATURE-----
+
+--Sig_/6_S0IDb.PbJmwE_p+Hjy7NX--
