@@ -1,92 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655AbaGJNu3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:50:29 -0400
-Received: from mail.kernel.org ([198.145.19.201]:45878 "EHLO mail.kernel.org"
+	id S1753794AbaGJNuh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:50:37 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:52409 "EHLO kanga.kvack.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753606AbaGJNu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:50:27 -0400
-Date: Thu, 10 Jul 2014 10:50:22 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 04/16] perf hists browser: Override ui_browser
- refresh_dimensions method
-Message-ID: <20140710135022.GB8014@kernel.org>
-References: <1404846184-20075-1-git-send-email-acme@kernel.org>
- <1404846184-20075-5-git-send-email-acme@kernel.org>
- <20140709224849.GA23232@krava.redhat.com>
-MIME-Version: 1.0
+	id S1753671AbaGJNuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 09:50:35 -0400
+Date: Thu, 10 Jul 2014 09:50:34 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        "dgilbert@interlog.com" <dgilbert@interlog.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Bart Van Assche <bvanassche@fusionio.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: scsi-mq V2
+Message-ID: <20140710135034.GR12478@kvack.org>
+References: <1403715121-1201-1-git-send-email-hch@lst.de> <20140708144829.GA5539@infradead.org> <53BD7041.5010300@interlog.com> <53BD9A24.7010203@kernel.dk> <94D0CD8314A33A4D9D801C0FE68B402958B9628B@G9W0745.americas.hpqcorp.net> <20140710062040.GB20146@infradead.org> <20140710133609.GO12478@kvack.org> <53BE97AD.9080306@kernel.dk> <20140710134439.GP12478@kvack.org> <53BE999A.6060309@kernel.dk>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140709224849.GA23232@krava.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53BE999A.6060309@kernel.dk>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jul 10, 2014 at 12:48:49AM +0200, Jiri Olsa escreveu:
-> On Tue, Jul 08, 2014 at 04:02:52PM -0300, Arnaldo Carvalho de Melo wrote:
-> > From: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > 
+On Thu, Jul 10, 2014 at 03:48:10PM +0200, Jens Axboe wrote:
+> On 2014-07-10 15:44, Benjamin LaHaise wrote:
+> >On Thu, Jul 10, 2014 at 03:39:57PM +0200, Jens Axboe wrote:
+> >>That's how fio always runs, it sets up the context with the exact queue
+> >>depth that it needs. Do we have a good enough understanding of other aio
+> >>use cases to say that this isn't the norm? I would expect it to be, it's
+> >>the way that the API would most obviously be used.
+> >
+> >The problem with this approach is that it works very poorly with per cpu
+> >reference counting's batching of references, which is pretty much a
+> >requirement now that many core systems are the norm.  Allocating the bare
+> >minimum is not the right thing to do today.  That said, the default limits
+> >on the number of requests probably needs to be raised.
 > 
-> SNIP
+> Sorry, that's a complete cop-out. Then you handle this internally, 
+> allocate a bigger pool and cap the limit if you need to. Look at the 
+> API. You pass in the number of requests you will use. Do you expect 
+> anyone to double up, just in case? Will never happen.
 > 
-> > index ca63564d203a..ef7abf896f5a 100644
-> > --- a/tools/perf/ui/browsers/hists.c
-> > +++ b/tools/perf/ui/browsers/hists.c
-> > @@ -56,11 +56,19 @@ static u32 hist_browser__nr_entries(struct hist_browser *hb)
-> >  	return nr_entries + hb->nr_callchain_rows;
-> >  }
-> >  
-> > -static void hist_browser__refresh_dimensions(struct hist_browser *browser)
-> > +static void hist_browser__refresh_dimensions(struct ui_browser *browser)
-> >  {
-> > +	struct hist_browser *hb = container_of(browser, struct hist_browser, b);
-> > +
-> >  	/* 3 == +/- toggle symbol before actual hist_entry rendering */
-> > -	browser->b.width = 3 + (hists__sort_list_width(browser->hists) +
-> > -			     sizeof("[k]"));
-> > +	browser->width = 3 + (hists__sort_list_width(hb->hists) + sizeof("[k]"));
-> 
-> why not remove this completely? it'll get overwritten in the
-> following ui_browser__refresh_dimensions call anyway..
+> But all of this is side stepping the point that there's a real bug 
+> reported here. The above could potentially explain the "it's using X 
+> more CPU, or it's Y slower". The above is a softlock, it never completes.
 
-I thought I left a comment below it explaining that this would get fixed
-at a later patch, but yeah, we can comment it out, leaving it just as a
-hint at what needs to be done if we ever want to partition the screen
-horizontally.
- 
-> > +	/*
-> > + 	 * FIXME: Just keeping existing behaviour, but this really should be
-> > + 	 *	  before updating browser->width, as it will invalidate the
-> > + 	 *	  calculation above. Fix this and the fallout in another
-> > + 	 *	  changeset.
-> > + 	 */
-> 
-> extra whitespace above
+I'm not trying to cop out on this -- I'm asking for a data point to see 
+if changing the request limits has any effect.
 
-Gack, thought I had that fixed, will check my pre-commit hooks... now:
+		-ben
 
-  [acme@zoo linux]$ ls -la .git/hooks/pre-commit.sample 
-  -rwxrwxr-x. 1 acme acme 1704 Abr 16  2013 .git/hooks/pre-commit.sample
-  [acme@zoo linux]$ mv .git/hooks/pre-commit.sample .git/hooks/pre-commit
-  [acme@zoo linux]$ vim .git/hooks/pre-commit
-  [acme@zoo linux]$ tail -3 .git/hooks/pre-commit
+> -- 
+> Jens Axboe
 
-  # If there are whitespace errors, print the offending file names and
-  # fail.
-  exec git diff-index --check --cached $against --
-  [acme@zoo linux]
-
-I guess I should catch those on this machine from now on.
-
-- Arnaldo
+-- 
+"Thought is the essence of where you are now."
