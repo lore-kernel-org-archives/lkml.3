@@ -1,113 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894AbaGJOxR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 10:53:17 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40956 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752391AbaGJOxO (ORCPT
+	id S1753901AbaGJOyj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 10:54:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56563 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051AbaGJOyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 10:53:14 -0400
-Date: Thu, 10 Jul 2014 15:52:15 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: Re: [PATCH 5/6] tty: serial: 8250-core: add rs485 support
-Message-ID: <20140710155215.3e17ca08@alan.etchedpixels.co.uk>
-In-Reply-To: <1404928177-26554-6-git-send-email-bigeasy@linutronix.de>
-References: <1404928177-26554-1-git-send-email-bigeasy@linutronix.de>
-	<1404928177-26554-6-git-send-email-bigeasy@linutronix.de>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Thu, 10 Jul 2014 10:54:38 -0400
+Date: Thu, 10 Jul 2014 07:54:17 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: B_B_Singh@DELL.com
+Cc: tiwai@suse.de, Abhay_Salunke@DELL.com, arnd@arndb.de, kay@vrfy.org,
+        ming.lei@canonical.com, sr@denx.de, teg@jklm.no, Stuart_Hayes@DELL.com,
+        Srinivas_G_Gowda@DELL.com, linux-kernel@vger.kernel.org
+Subject: Re: patch "firmware loader: allow disabling of udev as firmware
+ loader" added to driver-core tree
+Message-ID: <20140710145417.GB18412@kroah.com>
+References: <14048583172593@kroah.com>
+ <8B2F6FFD0BD1E448853114367400A37306FD6FBBE9@BLRX7MCDC203.AMER.DELL.COM>
+ <20140710143144.GA17639@kroah.com>
+ <8B2F6FFD0BD1E448853114367400A37306FD6FBBF0@BLRX7MCDC203.AMER.DELL.COM>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <8B2F6FFD0BD1E448853114367400A37306FD6FBBF0@BLRX7MCDC203.AMER.DELL.COM>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  static inline void __stop_tx(struct uart_8250_port *p)
->  {
-> +	if (p->rs485.flags & SER_RS485_ENABLED) {
-> +		int ret;
-> +
-> +		ret = (p->rs485.flags & SER_RS485_RTS_AFTER_SEND) ? 1 : 0;
-> +		if (gpio_get_value(p->rts_gpio) != ret) {
-> +			if (p->rs485.delay_rts_after_send > 0)
-> +				mdelay(p->rs485.delay_rts_after_send);
-> +			gpio_set_value(p->rts_gpio, ret);
-> +		}
+On Thu, Jul 10, 2014 at 08:10:01PM +0530, B_B_Singh@DELL.com wrote:
+> Resending the mail..
+> 
+> Hi All,
+> 
+> As I communicated earlier the test never passed with older BIOS DUPs.
 
-RTS is not normally a GPIO. We should be controlling the UART RTS here,
-and if the UART has a magic special case RTS wired to a GPIO then really
-the hardware specific part should handle that gunge. I don't care whether
-the drive does it via serial_out magic or a more explicit hook but it
-doesn't belong here in core code.
+That test?  What patch?  Please be explicit, I deal with thousands of
+patches and have no short term memory...
 
-Likewise the mdelay probably should be in the device specific bits or
-controlled by a flag as not all hardware is so braindead.
+> Again today I have tested with 3.15.5 kernel with below patch applied,
+> & I don't see the BIOS getting updated. The BIOS update always failed
+> with below patch.  
+> 
+> I'm not sure why the patch is getting committed even upon failure.
 
-> @@ -1330,6 +1356,20 @@ static void serial8250_start_tx(struct uart_port *port)
->  	if (up->dma && !serial8250_tx_dma(up)) {
+Because in that long and winding email thread I thought you said this
+patch _worked_.  Obviously I was wrong, sorry, please suggest an
+alternative.
 
-Ditto
-
-> +int serial8250_probe_rs485(struct uart_8250_port *up,
-> +		struct device *dev)
-> +{
-> +	struct serial_rs485 *rs485conf = &up->rs485;
-> +	struct device_node *np = dev->of_node;
-> +	u32 rs485_delay[2];
-> +	enum of_gpio_flags flags;
-> +	int ret;
-> +
-> +	rs485conf->flags = 0;
-> +	if (!np)
-> +		return 0;
-> +
-> +	/* check for tx enable gpio */
-> +	up->rts_gpio = of_get_named_gpio_flags(np, "rts-gpio", 0, &flags);
-
-No of_ dependencies in core 8250.c either please. That looks a perfectly
-good implementation of serial8250_of_probe_rs485 however, just belongs in
-the right place.
-
-> +static int serial8250_ioctl(struct uart_port *port, unsigned int cmd,
-> +		unsigned long arg)
-> +{
-> +	struct serial_rs485 rs485conf;
-> +	struct uart_8250_port *up;
-> +
-> +	up = container_of(port, struct uart_8250_port, port);
-> +	switch (cmd) {
-> +	case TIOCSRS485:
-> +		if (!gpio_is_valid(up->rts_gpio))
-> +			return -ENODEV;
-
-GPIO assumption again needs to go
-
-
-> diff --git a/include/linux/serial_8250.h b/include/linux/serial_8250.h
-> index 0ec21ec..056a73f 100644
-> --- a/include/linux/serial_8250.h
-> +++ b/include/linux/serial_8250.h
-> @@ -78,6 +78,7 @@ struct uart_8250_port {
->  	unsigned char		acr;
->  	unsigned char		ier;
->  	unsigned char		lcr;
-> +	unsigned char		fcr;
->  	unsigned char		mcr;
->  	unsigned char		mcr_mask;	/* mask of user bits */
->  	unsigned char		mcr_force;	/* mask of forced bits */
-> @@ -94,6 +95,9 @@ struct uart_8250_port {
->  	unsigned char		msr_saved_flags;
->  
->  	struct uart_8250_dma	*dma;
-> +	struct serial_rs485	rs485;
-> +	int			rts_gpio;
-> +	bool			rts_gpio_valid;
-
-Keeping the gpio here doesn't look unreasonable if one is in use.
-
-Alan
+greg k-h
