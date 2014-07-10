@@ -1,73 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911AbaGJUIX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 16:08:23 -0400
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:17180 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847AbaGJUIW (ORCPT
+	id S1752966AbaGJUIj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 16:08:39 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:59186 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752942AbaGJUIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 16:08:22 -0400
-X-IronPort-AV: E=Sophos;i="5.01,639,1400050800"; 
-   d="scan'208";a="38906501"
-Message-ID: <53BEF2A6.6050103@broadcom.com>
-Date: Thu, 10 Jul 2014 22:08:06 +0200
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 10 Jul 2014 16:08:35 -0400
+Date: Thu, 10 Jul 2014 13:06:55 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Sasha Levin <sasha.levin@oracle.com>
+cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Vlastimil Babka <vbabka@suse.cz>, akpm@linux-foundation.org,
+        davej@redhat.com, koct9i@gmail.com, lczerner@redhat.com,
+        stable@vger.kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: + shmem-fix-faulting-into-a-hole-while-its-punched-take-2.patch
+ added to -mm tree
+In-Reply-To: <alpine.LSU.2.11.1407101131310.19154@eggly.anvils>
+Message-ID: <alpine.LSU.2.11.1407101301230.20929@eggly.anvils>
+References: <53b45c9b.2rlA0uGYBLzlXEeS%akpm@linux-foundation.org> <53BCBF1F.1000506@oracle.com> <alpine.LSU.2.11.1407082309040.7374@eggly.anvils> <53BD1053.5020401@suse.cz> <53BD39FC.7040205@oracle.com> <53BD67DC.9040700@oracle.com>
+ <alpine.LSU.2.11.1407092358090.18131@eggly.anvils> <53BE8B1B.3000808@oracle.com> <53BECBA4.3010508@oracle.com> <alpine.LSU.2.11.1407101033280.18934@eggly.anvils> <53BED7F6.4090502@oracle.com> <alpine.LSU.2.11.1407101131310.19154@eggly.anvils>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-To: Tom Gundersen <teg@jklm.no>, <netdev@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>,
-        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        "Brett Rudley" <brudley@broadcom.com>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        John Linville <linville@tuxdriver.com>,
-        <linux-wireless@vger.kernel.org>, <brcm80211-dev-list@broadcom.com>
-Subject: Re: [PATCH v7 29/33] net: brcmfmac - set name assign type
-References: <1404980258-30853-1-git-send-email-teg@jklm.no> <1404980258-30853-30-git-send-email-teg@jklm.no>
-In-Reply-To: <1404980258-30853-30-git-send-email-teg@jklm.no>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10-07-14 10:17, Tom Gundersen wrote:
-> The name is given by the firmware, so we assume it is predictable.
-
-How about the scenario where one would have multiple broadcom wifi
-devices in the system. Both driver instances would alloc_netdev with
-predictable but also the same ifname. Wondering whether we should ignore
-the firmware ifname altogether.
-
-Regards,
-Arend
-
-> Signed-off-by: Tom Gundersen <teg@jklm.no>
-> Cc: Brett Rudley <brudley@broadcom.com>
-> Cc: Arend van Spriel <arend@broadcom.com>
-> Cc: "Franky (Zhenhui) Lin" <frankyl@broadcom.com>
-> Cc: Hante Meuleman <meuleman@broadcom.com>
-> Cc: John Linville <linville@tuxdriver.com>
-> Cc: linux-wireless@vger.kernel.org
-> Cc: brcm80211-dev-list@broadcom.com
-> ---
->  drivers/net/wireless/brcm80211/brcmfmac/fweh.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+On Thu, 10 Jul 2014, Hugh Dickins wrote:
 > 
-> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/fweh.c b/drivers/net/wireless/brcm80211/brcmfmac/fweh.c
-> index f6990f2..8d32721 100644
-> --- a/drivers/net/wireless/brcm80211/brcmfmac/fweh.c
-> +++ b/drivers/net/wireless/brcm80211/brcmfmac/fweh.c
-> @@ -201,7 +201,8 @@ static void brcmf_fweh_handle_if_event(struct brcmf_pub *drvr,
->  		brcmf_dbg(EVENT, "adding %s (%pM)\n", emsg->ifname,
->  			  emsg->addr);
->  		ifp = brcmf_add_if(drvr, ifevent->bssidx, ifevent->ifidx,
-> -				   emsg->ifname, NET_NAME_UNKNOWN, emsg->addr);
-> +				   emsg->ifname, NET_NAME_PREDICTABLE,
-> +				   emsg->addr);
->  		if (IS_ERR(ifp))
->  			return;
->  		brcmf_fws_add_interface(ifp);
-> 
+> I'll pore over the new log.  It does help to know that its base kernel
+> is more stable: thanks so much.  But whether I can work out any more...
 
+Actually, today's log is not much use to me: for a tenth of a second
+it just shows "NNN printk messages dropped" instead of task traces.
+Do you have a better one?
+
+Hugh
