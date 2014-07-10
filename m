@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307AbaGJTC6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 15:02:58 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:65532 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877AbaGJTC4 (ORCPT
+	id S1752454AbaGJTDP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 15:03:15 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:50433 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752381AbaGJTDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 15:02:56 -0400
+	Thu, 10 Jul 2014 15:03:13 -0400
+Message-ID: <53BEE345.4090203@oracle.com>
+Date: Thu, 10 Jul 2014 15:02:29 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <53BEE172.4050208@infradead.org>
-References: <1405017830-31194-1-git-send-email-standby24x7@gmail.com>
-	<53BEE172.4050208@infradead.org>
-Date: Fri, 11 Jul 2014 04:02:55 +0900
-Message-ID: <CALLJCT1scGgj_1m7WCAO_RUb-TD5hhFWadNFAr6bfJ1YPXusBg@mail.gmail.com>
-Subject: Re: [PATCH] Documentation: Docbook: Fix files location change of
- kernel/[hr]timer.c in device-drivers.tmpl
-From: Masanari Iida <standby24x7@gmail.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: tglx@linutronix.de,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        john.stultz@linaro.org, linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>
+CC: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Vlastimil Babka <vbabka@suse.cz>, akpm@linux-foundation.org,
+        davej@redhat.com, koct9i@gmail.com, lczerner@redhat.com,
+        stable@vger.kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: + shmem-fix-faulting-into-a-hole-while-its-punched-take-2.patch
+ added to -mm tree
+References: <53b45c9b.2rlA0uGYBLzlXEeS%akpm@linux-foundation.org> <53BCBF1F.1000506@oracle.com> <alpine.LSU.2.11.1407082309040.7374@eggly.anvils> <53BD1053.5020401@suse.cz> <53BD39FC.7040205@oracle.com> <53BD67DC.9040700@oracle.com> <alpine.LSU.2.11.1407092358090.18131@eggly.anvils> <53BE8B1B.3000808@oracle.com> <53BECBA4.3010508@oracle.com> <alpine.LSU.2.11.1407101033280.18934@eggly.anvils> <53BED7F6.4090502@oracle.com> <alpine.LSU.2.11.1407101131310.19154@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.11.1407101131310.19154@eggly.anvils>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am testing on linux-next 10th/july version.
+On 07/10/2014 02:52 PM, Hugh Dickins wrote:
+> On Thu, 10 Jul 2014, Sasha Levin wrote:
+>> > On 07/10/2014 01:55 PM, Hugh Dickins wrote:
+>>>> > >> And finally, (not) holding the i_mmap_mutex:
+>>> > > I don't understand what prompts you to show this particular task.
+>>> > > I imagine the dump shows lots of other tasks which are waiting to get an
+>>> > > i_mmap_mutex, and quite a lot of other tasks which are neither waiting
+>>> > > for nor holding an i_mmap_mutex.
+>>> > > 
+>>> > > Why are you showing this one in particular?  Because it looks like the
+>>> > > one you fingered yesterday?  But I didn't see a good reason to finger
+>>> > > that one either.
+>> > 
+>> > There are a few more tasks like this one, my criteria was tasks that lockdep
+>> > claims were holding i_mmap_mutex, but are actually not.
+> You and Vlastimil enlightened me yesterday that lockdep shows tasks as
+> holding i_mmap_mutex when they are actually waiting to get i_mmap_mutex.
+> Hundreds of those in yesterday's log, hundreds of them in today's.
+
+What if we move lockdep's acquisition point to after it actually got the
+lock?
+
+We'd miss deadlocks, but we don't care about them right now. Anyways, doesn't
+lockdep have anything built in to allow us to separate between locks which
+we attempt to acquire and locks that are actually acquired?
+
+(cc PeterZ)
+
+We can treat locks that are in the process of being acquired the same as
+acquired locks to avoid races, but when we print something out it would
+be nice to have annotation of the read state of the lock.
 
 
-On Fri, Jul 11, 2014 at 3:54 AM, Randy Dunlap <rdunlap@infradead.org> wrote:
-> On 07/10/2014 11:43 AM, Masanari Iida wrote:
->> make xmldocs failed because of file location change
->> from kernel/[hr]timer.c to kernel/time/[hr]timer.c.
->
-> When does this change happen?  I don't see it in Linus's current git tree.
->
-
-I am testing on linux-next 20140710
-I believe 5cee964597260237dd2cabb3ec22bba0da24b25d is the
-commit which moves the files in linux-next tree.
-
-Thanks
-
-> Thanks.
->
->> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
->> ---
->>  Documentation/DocBook/device-drivers.tmpl | 4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/Documentation/DocBook/device-drivers.tmpl b/Documentation/DocBook/device-drivers.tmpl
->> index dd3f278..f213058 100644
->> --- a/Documentation/DocBook/device-drivers.tmpl
->> +++ b/Documentation/DocBook/device-drivers.tmpl
->> @@ -54,7 +54,7 @@
->>  !Ikernel/sched/cpupri.c
->>  !Ikernel/sched/fair.c
->>  !Iinclude/linux/completion.h
->> -!Ekernel/timer.c
->> +!Ekernel/time/timer.c
->>       </sect1>
->>       <sect1><title>Wait queues and Wake events</title>
->>  !Iinclude/linux/wait.h
->> @@ -63,7 +63,7 @@
->>       <sect1><title>High-resolution timers</title>
->>  !Iinclude/linux/ktime.h
->>  !Iinclude/linux/hrtimer.h
->> -!Ekernel/hrtimer.c
->> +!Ekernel/time/hrtimer.c
->>       </sect1>
->>       <sect1><title>Workqueues and Kevents</title>
->>  !Ekernel/workqueue.c
->>
->
->
-> --
-> ~Randy
+Thanks,
+Sasha
