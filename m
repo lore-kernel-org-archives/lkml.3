@@ -1,135 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850AbaGJVCO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 17:02:14 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:53691 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622AbaGJVB3 (ORCPT
+	id S1753031AbaGJVCu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 17:02:50 -0400
+Received: from mail-bn1lp0139.outbound.protection.outlook.com ([207.46.163.139]:21372
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753008AbaGJVCq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 17:01:29 -0400
-From: Tom Gundersen <teg@jklm.no>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        Tom Gundersen <teg@jklm.no>
-Subject: [PATCH v8 4/4] net: rtnetlink - make create_link take name_assign_type
-Date: Thu, 10 Jul 2014 23:01:06 +0200
-Message-Id: <1405026066-2547-5-git-send-email-teg@jklm.no>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1405026066-2547-1-git-send-email-teg@jklm.no>
-References: <1405026066-2547-1-git-send-email-teg@jklm.no>
+	Thu, 10 Jul 2014 17:02:46 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: James Bottomley <jbottomley@parallels.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mkp@mkp.net" <mkp@mkp.net>, "hch@infradead.org" <hch@infradead.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+Thread-Topic: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+Thread-Index: AQHPmwbc2vh72TcerE+9u7O+On3hT5uXbYYAgACybACAAH8bAP//jcAwgACcZoCAAQTgMA==
+Date: Thu, 10 Jul 2014 21:02:40 +0000
+Message-ID: <a51690cc47b1475ab9ca2d871cc97115@BY2PR03MB299.namprd03.prod.outlook.com>
+References: <1404866789-26910-1-git-send-email-kys@microsoft.com>
+	 <1404866812-26950-1-git-send-email-kys@microsoft.com>
+	 <1404866812-26950-4-git-send-email-kys@microsoft.com>
+	 <20140709084300.GD6012@infradead.org>
+	 <a31a45eddb544024a7538458b98c3611@BY2PR03MB299.namprd03.prod.outlook.com>
+	 <1404935792.2184.5.camel@dabdike.int.hansenpartnership.com>
+	 <2f3ae589e6f149acbe4c5dd79f905971@BY2PR03MB299.namprd03.prod.outlook.com>
+ <1404944843.2184.8.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1404944843.2184.8.camel@dabdike.int.hansenpartnership.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [131.107.160.237]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:
+x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+x-forefront-prvs: 0268246AE7
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(51704005)(199002)(189002)(13464003)(377454003)(377424004)(24454002)(19580395003)(99396002)(83322001)(50986999)(106116001)(2656002)(19580405001)(54356999)(64706001)(4396001)(101416001)(80022001)(93886003)(46102001)(99286002)(105586002)(31966008)(74316001)(92566001)(85306003)(95666004)(86612001)(66066001)(74502001)(77982001)(21056001)(33646001)(81542001)(20776003)(85852003)(76576001)(86362001)(107046002)(83072002)(74662001)(76176999)(106356001)(81342001)(87936001)(79102001)(76482001)(110136001)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB299;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This passes down NET_NAME_USER (or NET_NAME_ENUM) to alloc_netdev(),
-for any device created over rtnetlink.
 
-Signed-off-by: Tom Gundersen <teg@jklm.no>
----
- drivers/net/veth.c      | 11 ++++++++---
- include/net/rtnetlink.h |  1 +
- net/core/rtnetlink.c    | 12 ++++++++----
- 3 files changed, 17 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/veth.c b/drivers/net/veth.c
-index b4a10bc..5058700 100644
---- a/drivers/net/veth.c
-+++ b/drivers/net/veth.c
-@@ -319,6 +319,7 @@ static int veth_newlink(struct net *src_net, struct net_device *dev,
- 	struct nlattr *peer_tb[IFLA_MAX + 1], **tbp;
- 	struct ifinfomsg *ifmp;
- 	struct net *net;
-+	unsigned char name_assign_type;
- 
- 	/*
- 	 * create and register peer first
-@@ -344,16 +345,20 @@ static int veth_newlink(struct net *src_net, struct net_device *dev,
- 		tbp = tb;
- 	}
- 
--	if (tbp[IFLA_IFNAME])
-+	if (tbp[IFLA_IFNAME]) {
- 		nla_strlcpy(ifname, tbp[IFLA_IFNAME], IFNAMSIZ);
--	else
-+		name_assign_type = NET_NAME_USER;
-+	} else {
- 		snprintf(ifname, IFNAMSIZ, DRV_NAME "%%d");
-+		name_assign_type = NET_NAME_ENUM;
-+	}
- 
- 	net = rtnl_link_get_net(src_net, tbp);
- 	if (IS_ERR(net))
- 		return PTR_ERR(net);
- 
--	peer = rtnl_create_link(net, ifname, &veth_link_ops, tbp);
-+	peer = rtnl_create_link(net, ifname, name_assign_type,
-+				&veth_link_ops, tbp);
- 	if (IS_ERR(peer)) {
- 		put_net(net);
- 		return PTR_ERR(peer);
-diff --git a/include/net/rtnetlink.h b/include/net/rtnetlink.h
-index 72240e5..e21b9f9 100644
---- a/include/net/rtnetlink.h
-+++ b/include/net/rtnetlink.h
-@@ -136,6 +136,7 @@ void rtnl_af_unregister(struct rtnl_af_ops *ops);
- 
- struct net *rtnl_link_get_net(struct net *src_net, struct nlattr *tb[]);
- struct net_device *rtnl_create_link(struct net *net, char *ifname,
-+				    unsigned char name_assign_type,
- 				    const struct rtnl_link_ops *ops,
- 				    struct nlattr *tb[]);
- int rtnl_configure_link(struct net_device *dev, const struct ifinfomsg *ifm);
-diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-index 899de40..09456ff 100644
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -1805,7 +1805,8 @@ int rtnl_configure_link(struct net_device *dev, const struct ifinfomsg *ifm)
- EXPORT_SYMBOL(rtnl_configure_link);
- 
- struct net_device *rtnl_create_link(struct net *net,
--	char *ifname, const struct rtnl_link_ops *ops, struct nlattr *tb[])
-+	char *ifname, unsigned char name_assign_type,
-+	const struct rtnl_link_ops *ops, struct nlattr *tb[])
- {
- 	int err;
- 	struct net_device *dev;
-@@ -1823,7 +1824,7 @@ struct net_device *rtnl_create_link(struct net *net,
- 		num_rx_queues = ops->get_num_rx_queues();
- 
- 	err = -ENOMEM;
--	dev = alloc_netdev_mqs(ops->priv_size, ifname, NET_NAME_UNKNOWN,
-+	dev = alloc_netdev_mqs(ops->priv_size, ifname, name_assign_type,
- 			       ops->setup, num_tx_queues, num_rx_queues);
- 	if (!dev)
- 		goto err;
-@@ -1889,6 +1890,7 @@ static int rtnl_newlink(struct sk_buff *skb, struct nlmsghdr *nlh)
- 	char ifname[IFNAMSIZ];
- 	struct nlattr *tb[IFLA_MAX+1];
- 	struct nlattr *linkinfo[IFLA_INFO_MAX+1];
-+	unsigned char name_assign_type = NET_NAME_USER;
- 	int err;
- 
- #ifdef CONFIG_MODULES
-@@ -2038,14 +2040,16 @@ replay:
- 			return -EOPNOTSUPP;
- 		}
- 
--		if (!ifname[0])
-+		if (!ifname[0]) {
- 			snprintf(ifname, IFNAMSIZ, "%s%%d", ops->kind);
-+			name_assign_type = NET_NAME_ENUM;
-+		}
- 
- 		dest_net = rtnl_link_get_net(net, tb);
- 		if (IS_ERR(dest_net))
- 			return PTR_ERR(dest_net);
- 
--		dev = rtnl_create_link(dest_net, ifname, ops, tb);
-+		dev = rtnl_create_link(dest_net, ifname, name_assign_type, ops, tb);
- 		if (IS_ERR(dev)) {
- 			err = PTR_ERR(dev);
- 			goto out;
--- 
-1.9.3
+> -----Original Message-----
+> From: James Bottomley [mailto:jbottomley@parallels.com]
+> Sent: Wednesday, July 9, 2014 3:27 PM
+> To: KY Srinivasan
+> Cc: linux-kernel@vger.kernel.org; mkp@mkp.net; hch@infradead.org;
+> devel@linuxdriverproject.org; apw@canonical.com; stable@vger.kernel.org;
+> linux-scsi@vger.kernel.org; ohering@suse.com; jasowang@redhat.com
+> Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+> 
+> On Wed, 2014-07-09 at 21:14 +0000, KY Srinivasan wrote:
+> >
+> > > -----Original Message-----
+> > > From: James Bottomley [mailto:jbottomley@parallels.com]
+> > > Sent: Wednesday, July 9, 2014 12:57 PM
+> > > To: KY Srinivasan
+> > > Cc: linux-kernel@vger.kernel.org; hch@infradead.org;
+> > > devel@linuxdriverproject.org; apw@canonical.com;
+> > > stable@vger.kernel.org; linux-scsi@vger.kernel.org;
+> > > ohering@suse.com; jasowang@redhat.com
+> > > Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter
+> > > WRITE_SAME_16
+> > >
+> > > On Wed, 2014-07-09 at 19:52 +0000, KY Srinivasan wrote:
+> > > >
+> > > > > -----Original Message-----
+> > > > > From: Christoph Hellwig [mailto:hch@infradead.org]
+> > > > > Sent: Wednesday, July 9, 2014 1:43 AM
+> > > > > To: KY Srinivasan
+> > > > > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> > > > > ohering@suse.com; jbottomley@parallels.com;
+> jasowang@redhat.com;
+> > > > > apw@canonical.com; linux-scsi@vger.kernel.org;
+> > > > > stable@vger.kernel.org
+> > > > > Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter
+> > > > > WRITE_SAME_16
+> > > > >
+> > > > > On Tue, Jul 08, 2014 at 05:46:48PM -0700, K. Y. Srinivasan wrote:
+> > > > > > Host does not handle WRITE_SAME_16; filter this command out.
+> > > > > > This patch is required to handle large devices (greater than 2 TB
+> disks).
+> > > > >
+> > > > > Storvsc already sets the no_write_same flag, where is the
+> > > > > command coming from?
+> > > >
+> > > > In spite of this flag,  I see WRITE_SAME_16 being issued when I
+> > > > format a device bigger than 2 TB; I tried both xfs and ext4.
+> > > > Windows hosts currently do not handle unsupported commands
+> > > > correctly - The information returned is not sufficient to effect recovery
+> in the Linux guest.
+> > > While this may be addressed in future hosts, this patch fixes the problem.
+> > >
+> > > What Christoph means is that this looks like a bug somewhere in SCSI
+> itself.
+> > > That means we need to find it and kill it, not add workarounds to
+> > > every driver that sets no_write_same ...
+> >
+> > James,
+> >
+> > I will try to isolate this issue in the SCSI stack. If it is ok with
+> > you guys, I would still want to filter WRITE_SAME_16 (as we currently
+> > do WRITE_SAME) in our driver since this would address the problem for a
+> large number of customers on our platform.
+> 
+> If we fix it at source, why would there be any need to filter?  That's the
+> reason the no_write_same flag was introduced.  If we can find and fix the
+> bug, it can go back into the stable trees as a bug fix, hence nothing should
+> ever emit write_same(10 or 16) and additional driver code is redundant (and
+> counter productive, since if this ever breaks again you're our best canary).
+> 
+> This looks like it might be the problem but Martin should confirm (I think the
+> problem comes to us from the RC16 code which unconditionally sets WS16).
+> 
+> James
+
+James,
+
+This patch works for me; are you planning on committing this patch.
+
+Regards,
+
+K. Y
+> 
+> ---
+> 
+> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c index 6825eda..8353a4c
+> 100644
+> --- a/drivers/scsi/sd.c
+> +++ b/drivers/scsi/sd.c
+> @@ -634,6 +634,23 @@ static void sd_config_discard(struct scsi_disk *sdkp,
+> unsigned int mode)
+>  		max(sdkp->physical_block_size,
+>  		    sdkp->unmap_granularity * logical_block_size);
+> 
+> +	if (sdkp->device->host->no_write_same) {
+> +		switch(mode) {
+> +
+> +		case SD_LBP_WS16:
+> +		case SD_LBP_WS10:
+> +		case SD_LBP_ZERO:
+> +			/*
+> +			 * filter out all the WRITE SAME modes and map them
+> +			 * directly to UNMAP
+> +			 */
+> +			mode = SD_LBP_UNMAP;
+> +			/* fall through */
+> +		default:
+> +			/* everything else is OK */
+> +			break;
+> +		}
+> +	}
+>  	sdkp->provisioning_mode = mode;
+> 
+>  	switch (mode) {
 
