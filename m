@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101AbaGJROy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 13:14:54 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:57621 "EHLO
+	id S1752075AbaGJROm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 13:14:42 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:57609 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751944AbaGJROj (ORCPT
+	with ESMTP id S1751877AbaGJROh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 13:14:39 -0400
+	Thu, 10 Jul 2014 13:14:37 -0400
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -20,9 +20,9 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v4 7/7] ARM: at91: remove old irq material
-Date: Thu, 10 Jul 2014 19:14:22 +0200
-Message-Id: <1405012462-766-8-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v4 6/7] ARM: at91: make use of the new AIC driver for dt enabled boards
+Date: Thu, 10 Jul 2014 19:14:21 +0200
+Message-Id: <1405012462-766-7-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1405012462-766-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1405012462-766-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -30,349 +30,171 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove all the material related to AIC5 support: this interrupt controller
-driver is now implemented in drivers/irqchip/atmel-aic.c.
+Remove selection of OLD_IRQ_AT91 when selecting dt boards.
+Select ATMEL_AIC_IRQ for sama5 SoCs (a kernel compiled for this SoC will
+always use ATMEL_AIC_IRQ driver).
+Select ATMEL_AIC_IRQ for at91rm9200 and at91sam9 SoCs only if OLD_IRQ_AT91
+is not selected (which means we are compiling a pure DT kernel, without
+any legacy board support).
+
+Remove specific irq init code in all dt board files: this init procedure
+is automatically handled in of_irq_init which is called by the arm irq core
+code and is in charge of calling the appropriate aic init functions.
 
 Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- arch/arm/mach-at91/irq.c | 270 ++---------------------------------------------
- 1 file changed, 6 insertions(+), 264 deletions(-)
+ arch/arm/mach-at91/Kconfig           |  6 +++---
+ arch/arm/mach-at91/board-dt-rm9200.c | 13 -------------
+ arch/arm/mach-at91/board-dt-sam9.c   | 13 -------------
+ arch/arm/mach-at91/board-dt-sama5.c  | 13 -------------
+ 4 files changed, 3 insertions(+), 42 deletions(-)
 
-diff --git a/arch/arm/mach-at91/irq.c b/arch/arm/mach-at91/irq.c
-index 3d192c5..cdb3ec9 100644
---- a/arch/arm/mach-at91/irq.c
-+++ b/arch/arm/mach-at91/irq.c
-@@ -48,11 +48,6 @@ void __iomem *at91_aic_base;
- static struct irq_domain *at91_aic_domain;
- static struct device_node *at91_aic_np;
- static unsigned int n_irqs = NR_AIC_IRQS;
--static unsigned long at91_aic_caps = 0;
--
--/* AIC5 introduces a Source Select Register */
--#define AT91_AIC_CAP_AIC5	(1 << 0)
--#define has_aic5()		(at91_aic_caps & AT91_AIC_CAP_AIC5)
+diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+index 8e5ea10..676b7b2 100644
+--- a/arch/arm/mach-at91/Kconfig
++++ b/arch/arm/mach-at91/Kconfig
+@@ -50,12 +50,14 @@ config HAVE_AT91_SMD
+ config SOC_AT91SAM9
+ 	bool
+ 	select AT91_SAM9_TIME
++	select ATMEL_AIC_IRQ if !OLD_IRQ_AT91
+ 	select CPU_ARM926T
+ 	select GENERIC_CLOCKEVENTS
  
- #ifdef CONFIG_PM
+ config SOC_SAMA5
+ 	bool
+ 	select AT91_SAM9_TIME
++	select ATMEL_AIC5_IRQ
+ 	select CPU_V7
+ 	select GENERIC_CLOCKEVENTS
+ 	select USE_OF
+@@ -108,6 +110,7 @@ endif
+ if SOC_SAM_V4_V5
+ config SOC_AT91RM9200
+ 	bool "AT91RM9200"
++	select ATMEL_AIC_IRQ if !OLD_IRQ_AT91
+ 	select CPU_ARM920T
+ 	select GENERIC_CLOCKEVENTS
+ 	select HAVE_AT91_DBGU0
+@@ -197,7 +200,6 @@ comment "Generic Board Type"
+ config MACH_AT91RM9200_DT
+ 	bool "Atmel AT91RM9200 Evaluation Kits with device-tree support"
+ 	depends on SOC_AT91RM9200
+-	select OLD_IRQ_AT91
+ 	select USE_OF
+ 	help
+ 	  Select this if you want to experiment device-tree with
+@@ -206,7 +208,6 @@ config MACH_AT91RM9200_DT
+ config MACH_AT91SAM9_DT
+ 	bool "Atmel AT91SAM Evaluation Kits with device-tree support"
+ 	depends on SOC_AT91SAM9
+-	select OLD_IRQ_AT91
+ 	select USE_OF
+ 	help
+ 	  Select this if you want to experiment device-tree with
+@@ -215,7 +216,6 @@ config MACH_AT91SAM9_DT
+ config MACH_SAMA5_DT
+ 	bool "Atmel SAMA5 Evaluation Kits with device-tree support"
+ 	depends on SOC_SAMA5
+-	select OLD_IRQ_AT91
+ 	select USE_OF
+ 	select PHYLIB if NETDEVICES
+ 	help
+diff --git a/arch/arm/mach-at91/board-dt-rm9200.c b/arch/arm/mach-at91/board-dt-rm9200.c
+index 3a185fa..61ea214 100644
+--- a/arch/arm/mach-at91/board-dt-rm9200.c
++++ b/arch/arm/mach-at91/board-dt-rm9200.c
+@@ -24,17 +24,6 @@
+ #include "at91_aic.h"
+ #include "generic.h"
  
-@@ -92,50 +87,14 @@ static int at91_aic_set_wake(struct irq_data *d, unsigned value)
- 
- void at91_irq_suspend(void)
- {
--	int bit = -1;
 -
--	if (has_aic5()) {
--		/* disable enabled irqs */
--		while ((bit = find_next_bit(backups, n_irqs, bit + 1)) < n_irqs) {
--			at91_aic_write(AT91_AIC5_SSR,
--				       bit & AT91_AIC5_INTSEL_MSK);
--			at91_aic_write(AT91_AIC5_IDCR, 1);
--		}
--		/* enable wakeup irqs */
--		bit = -1;
--		while ((bit = find_next_bit(wakeups, n_irqs, bit + 1)) < n_irqs) {
--			at91_aic_write(AT91_AIC5_SSR,
--				       bit & AT91_AIC5_INTSEL_MSK);
--			at91_aic_write(AT91_AIC5_IECR, 1);
--		}
--	} else {
--		at91_aic_write(AT91_AIC_IDCR, *backups);
--		at91_aic_write(AT91_AIC_IECR, *wakeups);
--	}
-+	at91_aic_write(AT91_AIC_IDCR, *backups);
-+	at91_aic_write(AT91_AIC_IECR, *wakeups);
- }
- 
- void at91_irq_resume(void)
- {
--	int bit = -1;
--
--	if (has_aic5()) {
--		/* disable wakeup irqs */
--		while ((bit = find_next_bit(wakeups, n_irqs, bit + 1)) < n_irqs) {
--			at91_aic_write(AT91_AIC5_SSR,
--				       bit & AT91_AIC5_INTSEL_MSK);
--			at91_aic_write(AT91_AIC5_IDCR, 1);
--		}
--		/* enable irqs disabled for suspend */
--		bit = -1;
--		while ((bit = find_next_bit(backups, n_irqs, bit + 1)) < n_irqs) {
--			at91_aic_write(AT91_AIC5_SSR,
--				       bit & AT91_AIC5_INTSEL_MSK);
--			at91_aic_write(AT91_AIC5_IECR, 1);
--		}
--	} else {
--		at91_aic_write(AT91_AIC_IDCR, *wakeups);
--		at91_aic_write(AT91_AIC_IECR, *backups);
--	}
-+	at91_aic_write(AT91_AIC_IDCR, *wakeups);
-+	at91_aic_write(AT91_AIC_IECR, *backups);
- }
- 
- #else
-@@ -169,21 +128,6 @@ at91_aic_handle_irq(struct pt_regs *regs)
- 		handle_IRQ(irqnr, regs);
- }
- 
--asmlinkage void __exception_irq_entry
--at91_aic5_handle_irq(struct pt_regs *regs)
--{
--	u32 irqnr;
--	u32 irqstat;
--
--	irqnr = at91_aic_read(AT91_AIC5_IVR);
--	irqstat = at91_aic_read(AT91_AIC5_ISR);
--
--	if (!irqstat)
--		at91_aic_write(AT91_AIC5_EOICR, 0);
--	else
--		handle_IRQ(irqnr, regs);
--}
--
- static void at91_aic_mask_irq(struct irq_data *d)
- {
- 	/* Disable interrupt on AIC */
-@@ -192,15 +136,6 @@ static void at91_aic_mask_irq(struct irq_data *d)
- 	clear_backup(d->hwirq);
- }
- 
--static void __maybe_unused at91_aic5_mask_irq(struct irq_data *d)
--{
--	/* Disable interrupt on AIC5 */
--	at91_aic_write(AT91_AIC5_SSR, d->hwirq & AT91_AIC5_INTSEL_MSK);
--	at91_aic_write(AT91_AIC5_IDCR, 1);
--	/* Update ISR cache */
--	clear_backup(d->hwirq);
--}
--
- static void at91_aic_unmask_irq(struct irq_data *d)
- {
- 	/* Enable interrupt on AIC */
-@@ -209,15 +144,6 @@ static void at91_aic_unmask_irq(struct irq_data *d)
- 	set_backup(d->hwirq);
- }
- 
--static void __maybe_unused at91_aic5_unmask_irq(struct irq_data *d)
--{
--	/* Enable interrupt on AIC5 */
--	at91_aic_write(AT91_AIC5_SSR, d->hwirq & AT91_AIC5_INTSEL_MSK);
--	at91_aic_write(AT91_AIC5_IECR, 1);
--	/* Update ISR cache */
--	set_backup(d->hwirq);
--}
--
- static void at91_aic_eoi(struct irq_data *d)
- {
- 	/*
-@@ -227,11 +153,6 @@ static void at91_aic_eoi(struct irq_data *d)
- 	at91_aic_write(AT91_AIC_EOICR, 0);
- }
- 
--static void __maybe_unused at91_aic5_eoi(struct irq_data *d)
--{
--	at91_aic_write(AT91_AIC5_EOICR, 0);
--}
--
- static unsigned long *at91_extern_irq;
- 
- u32 at91_get_extern_irq(void)
-@@ -282,16 +203,8 @@ static int at91_aic_set_type(struct irq_data *d, unsigned type)
- 	if (srctype < 0)
- 		return srctype;
- 
--	if (has_aic5()) {
--		at91_aic_write(AT91_AIC5_SSR,
--			       d->hwirq & AT91_AIC5_INTSEL_MSK);
--		smr = at91_aic_read(AT91_AIC5_SMR) & ~AT91_AIC_SRCTYPE;
--		at91_aic_write(AT91_AIC5_SMR, smr | srctype);
--	} else {
--		smr = at91_aic_read(AT91_AIC_SMR(d->hwirq))
--		      & ~AT91_AIC_SRCTYPE;
--		at91_aic_write(AT91_AIC_SMR(d->hwirq), smr | srctype);
--	}
-+	smr = at91_aic_read(AT91_AIC_SMR(d->hwirq)) & ~AT91_AIC_SRCTYPE;
-+	at91_aic_write(AT91_AIC_SMR(d->hwirq), smr | srctype);
- 
- 	return 0;
- }
-@@ -331,177 +244,6 @@ static void __init at91_aic_hw_init(unsigned int spu_vector)
- 	at91_aic_write(AT91_AIC_ICCR, 0xFFFFFFFF);
- }
- 
--static void __init __maybe_unused at91_aic5_hw_init(unsigned int spu_vector)
--{
--	int i;
--
--	/*
--	 * Perform 8 End Of Interrupt Command to make sure AIC
--	 * will not Lock out nIRQ
--	 */
--	for (i = 0; i < 8; i++)
--		at91_aic_write(AT91_AIC5_EOICR, 0);
--
--	/*
--	 * Spurious Interrupt ID in Spurious Vector Register.
--	 * When there is no current interrupt, the IRQ Vector Register
--	 * reads the value stored in AIC_SPU
--	 */
--	at91_aic_write(AT91_AIC5_SPU, spu_vector);
--
--	/* No debugging in AIC: Debug (Protect) Control Register */
--	at91_aic_write(AT91_AIC5_DCR, 0);
--
--	/* Disable and clear all interrupts initially */
--	for (i = 0; i < n_irqs; i++) {
--		at91_aic_write(AT91_AIC5_SSR, i & AT91_AIC5_INTSEL_MSK);
--		at91_aic_write(AT91_AIC5_IDCR, 1);
--		at91_aic_write(AT91_AIC5_ICCR, 1);
--	}
--}
--
--#if defined(CONFIG_OF)
--static unsigned int *at91_aic_irq_priorities;
--
--static int at91_aic_irq_map(struct irq_domain *h, unsigned int virq,
--							irq_hw_number_t hw)
--{
--	/* Put virq number in Source Vector Register */
--	at91_aic_write(AT91_AIC_SVR(hw), virq);
--
--	/* Active Low interrupt, with priority */
--	at91_aic_write(AT91_AIC_SMR(hw),
--		       AT91_AIC_SRCTYPE_LOW | at91_aic_irq_priorities[hw]);
--
--	irq_set_chip_and_handler(virq, &at91_aic_chip, handle_fasteoi_irq);
--	set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
--
--	return 0;
--}
--
--static int at91_aic5_irq_map(struct irq_domain *h, unsigned int virq,
--		irq_hw_number_t hw)
--{
--	at91_aic_write(AT91_AIC5_SSR, hw & AT91_AIC5_INTSEL_MSK);
--
--	/* Put virq number in Source Vector Register */
--	at91_aic_write(AT91_AIC5_SVR, virq);
--
--	/* Active Low interrupt, with priority */
--	at91_aic_write(AT91_AIC5_SMR,
--		       AT91_AIC_SRCTYPE_LOW | at91_aic_irq_priorities[hw]);
--
--	irq_set_chip_and_handler(virq, &at91_aic_chip, handle_fasteoi_irq);
--	set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
--
--	return 0;
--}
--
--static int at91_aic_irq_domain_xlate(struct irq_domain *d, struct device_node *ctrlr,
--				const u32 *intspec, unsigned int intsize,
--				irq_hw_number_t *out_hwirq, unsigned int *out_type)
--{
--	if (WARN_ON(intsize < 3))
--		return -EINVAL;
--	if (WARN_ON(intspec[0] >= n_irqs))
--		return -EINVAL;
--	if (WARN_ON((intspec[2] < AT91_AIC_IRQ_MIN_PRIORITY)
--		    || (intspec[2] > AT91_AIC_IRQ_MAX_PRIORITY)))
--		return -EINVAL;
--
--	*out_hwirq = intspec[0];
--	*out_type = intspec[1] & IRQ_TYPE_SENSE_MASK;
--	at91_aic_irq_priorities[*out_hwirq] = intspec[2];
--
--	return 0;
--}
--
--static struct irq_domain_ops at91_aic_irq_ops = {
--	.map	= at91_aic_irq_map,
--	.xlate	= at91_aic_irq_domain_xlate,
+-static const struct of_device_id irq_of_match[] __initconst = {
+-	{ .compatible = "atmel,at91rm9200-aic", .data = at91_aic_of_init },
+-	{ /*sentinel*/ }
 -};
 -
--int __init at91_aic_of_common_init(struct device_node *node,
--				    struct device_node *parent)
+-static void __init at91rm9200_dt_init_irq(void)
 -{
--	struct property *prop;
--	const __be32 *p;
--	u32 val;
--
--	at91_extern_irq = kzalloc(BITS_TO_LONGS(n_irqs)
--				  * sizeof(*at91_extern_irq), GFP_KERNEL);
--	if (!at91_extern_irq)
--		return -ENOMEM;
--
--	if (at91_aic_pm_init()) {
--		kfree(at91_extern_irq);
--		return -ENOMEM;
--	}
--
--	at91_aic_irq_priorities = kzalloc(n_irqs
--					  * sizeof(*at91_aic_irq_priorities),
--					  GFP_KERNEL);
--	if (!at91_aic_irq_priorities)
--		return -ENOMEM;
--
--	at91_aic_base = of_iomap(node, 0);
--	at91_aic_np = node;
--
--	at91_aic_domain = irq_domain_add_linear(at91_aic_np, n_irqs,
--						&at91_aic_irq_ops, NULL);
--	if (!at91_aic_domain)
--		panic("Unable to add AIC irq domain (DT)\n");
--
--	of_property_for_each_u32(node, "atmel,external-irqs", prop, p, val) {
--		if (val >= n_irqs)
--			pr_warn("AIC: external irq %d >= %d skip it\n",
--				val, n_irqs);
--		else
--			set_bit(val, at91_extern_irq);
--	}
--
--	irq_set_default_host(at91_aic_domain);
--
--	return 0;
+-	of_irq_init(irq_of_match);
 -}
 -
--int __init at91_aic_of_init(struct device_node *node,
--				     struct device_node *parent)
+ static const char *at91rm9200_dt_board_compat[] __initdata = {
+ 	"atmel,at91rm9200",
+ 	NULL
+@@ -43,8 +32,6 @@ static const char *at91rm9200_dt_board_compat[] __initdata = {
+ DT_MACHINE_START(at91rm9200_dt, "Atmel AT91RM9200 (Device Tree)")
+ 	.init_time      = at91rm9200_timer_init,
+ 	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+ 	.init_early	= at91rm9200_dt_initialize,
+-	.init_irq	= at91rm9200_dt_init_irq,
+ 	.dt_compat	= at91rm9200_dt_board_compat,
+ MACHINE_END
+diff --git a/arch/arm/mach-at91/board-dt-sam9.c b/arch/arm/mach-at91/board-dt-sam9.c
+index 575b0be..dfa8d48 100644
+--- a/arch/arm/mach-at91/board-dt-sam9.c
++++ b/arch/arm/mach-at91/board-dt-sam9.c
+@@ -34,17 +34,6 @@ static void __init sam9_dt_timer_init(void)
+ 	at91sam926x_pit_init();
+ }
+ 
+-static const struct of_device_id irq_of_match[] __initconst = {
+-
+-	{ .compatible = "atmel,at91rm9200-aic", .data = at91_aic_of_init },
+-	{ /*sentinel*/ }
+-};
+-
+-static void __init at91_dt_init_irq(void)
 -{
--	int err;
--
--	err = at91_aic_of_common_init(node, parent);
--	if (err)
--		return err;
--
--	at91_aic_hw_init(n_irqs);
--
--	return 0;
+-	of_irq_init(irq_of_match);
 -}
 -
--int __init at91_aic5_of_init(struct device_node *node,
--				     struct device_node *parent)
+ static const char *at91_dt_board_compat[] __initdata = {
+ 	"atmel,at91sam9",
+ 	NULL
+@@ -54,8 +43,6 @@ DT_MACHINE_START(at91sam_dt, "Atmel AT91SAM (Device Tree)")
+ 	/* Maintainer: Atmel */
+ 	.init_time	= sam9_dt_timer_init,
+ 	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+ 	.init_early	= at91_dt_initialize,
+-	.init_irq	= at91_dt_init_irq,
+ 	.dt_compat	= at91_dt_board_compat,
+ MACHINE_END
+diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
+index 075ec05..d6fe04b 100644
+--- a/arch/arm/mach-at91/board-dt-sama5.c
++++ b/arch/arm/mach-at91/board-dt-sama5.c
+@@ -35,17 +35,6 @@ static void __init sama5_dt_timer_init(void)
+ 	at91sam926x_pit_init();
+ }
+ 
+-static const struct of_device_id irq_of_match[] __initconst = {
+-
+-	{ .compatible = "atmel,sama5d3-aic", .data = at91_aic5_of_init },
+-	{ /*sentinel*/ }
+-};
+-
+-static void __init at91_dt_init_irq(void)
 -{
--	int err;
--
--	at91_aic_caps |= AT91_AIC_CAP_AIC5;
--	n_irqs = NR_AIC5_IRQS;
--	at91_aic_chip.irq_ack           = at91_aic5_mask_irq;
--	at91_aic_chip.irq_mask		= at91_aic5_mask_irq;
--	at91_aic_chip.irq_unmask	= at91_aic5_unmask_irq;
--	at91_aic_chip.irq_eoi		= at91_aic5_eoi;
--	at91_aic_irq_ops.map		= at91_aic5_irq_map;
--
--	err = at91_aic_of_common_init(node, parent);
--	if (err)
--		return err;
--
--	at91_aic5_hw_init(n_irqs);
--
--	return 0;
+-	of_irq_init(irq_of_match);
 -}
--#endif
 -
- /*
-  * Initialize the AIC interrupt controller.
-  */
+ static int ksz9021rn_phy_fixup(struct phy_device *phy)
+ {
+ 	int value;
+@@ -82,9 +71,7 @@ DT_MACHINE_START(sama5_dt, "Atmel SAMA5 (Device Tree)")
+ 	/* Maintainer: Atmel */
+ 	.init_time	= sama5_dt_timer_init,
+ 	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic5_handle_irq,
+ 	.init_early	= at91_dt_initialize,
+-	.init_irq	= at91_dt_init_irq,
+ 	.init_machine	= sama5_dt_device_init,
+ 	.dt_compat	= sama5_dt_board_compat,
+ MACHINE_END
 -- 
 1.8.3.2
 
