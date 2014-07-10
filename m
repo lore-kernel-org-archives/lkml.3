@@ -1,59 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956AbaGJVdf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 17:33:35 -0400
-Received: from mail-bn1blp0190.outbound.protection.outlook.com ([207.46.163.190]:32554
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751343AbaGJVde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 17:33:34 -0400
-X-WSS-ID: 0N8IMJS-07-IUH-02
-X-M-MSG: 
-From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-To: <herrmann.der.user@googlemail.com>, <jdelvare@suse.de>,
-        <linux@roeck-us.net>, <lm-sensors@lm-sensors.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-Subject: [PATCH] hwmon, fam15h_power: Remove needless pci dev id
-Date: Thu, 10 Jul 2014 17:16:00 -0500
-Message-ID: <1405030560-2128-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1752198AbaGJVgm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 17:36:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40531 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751431AbaGJVgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 17:36:40 -0400
+Date: Thu, 10 Jul 2014 16:36:20 -0500
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Oleg Nesterov <oleg@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Seth Jennings <sjenning@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [RFC][PATCH 0/3] ftrace: Add dynamically allocated trampolines
+Message-ID: <20140710213620.GA19858@treble.redhat.com>
+References: <20140703200750.648550267@goodmis.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(189002)(199002)(101416001)(50986999)(46102001)(92566001)(77156001)(62966002)(105586002)(19580405001)(68736004)(77096002)(44976005)(74662001)(80022001)(99396002)(74502001)(85852003)(102836001)(36756003)(76482001)(31966008)(48376002)(87936001)(89996001)(81342001)(88136002)(81542001)(21056001)(64706001)(4396001)(79102001)(97736001)(53416004)(50226001)(2201001)(92726001)(86362001)(229853001)(93916002)(107046002)(104166001)(77982001)(20776003)(83322001)(95666004)(50466002)(84676001)(85306003)(47776003)(106466001)(83072002)(19580395003)(2101003);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR02MB037;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0268246AE7
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140703200750.648550267@goodmis.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PCI_DEVICE_ID_AMD_16H_NB_F4 can be obtained from it's
-definition in pci_ids.h. So we don't have to define it
-again here.
+On Thu, Jul 03, 2014 at 04:07:50PM -0400, Steven Rostedt wrote:
+> [ NOT READY FOR INCLUSION! ]
+> 
+> Note, this is based off of my remove ftrace_start/stop() patch set.
+> 
+> I've been wanting to do this for years, and just never gotten around to it.
+> But with all this talk of kpatch and kgraft live kernel patching using
+> the ftrace infrastructure, it seems like a good time to do it.
+> 
+> The way the function callback mechanism works in ftrace is that if there's
+> only one function callback registered, it will set the mcount/fentry
+> trampoline to call that function directly. But as soon as you register
+> another callback, the mcount trampoline calls a loop function that iterates
+> over all the registered callbacks (ftrace_ops) checking their hash tables
+> to see if the called function matches the ops before calling its callback.
+> This happens even if the two registered functions are not even tracing
+> the same function!
+> 
+> This really sucks if you are tracing all functions, and then add a kprobe
+> or perf event that traces a single function. That will cause all the
+> other functions being traced to perform the loop test.
+> 
+> Ideally, if only a single callback (ftrace_ops) is registered to a
+> function, than that function should call a trampoline that will only
+> call that one callback without doing any other tests.
 
-Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
----
- drivers/hwmon/fam15h_power.c | 3 ---
- 1 file changed, 3 deletions(-)
+Hi Steven,
 
-diff --git a/drivers/hwmon/fam15h_power.c b/drivers/hwmon/fam15h_power.c
-index 6040121..d442000 100644
---- a/drivers/hwmon/fam15h_power.c
-+++ b/drivers/hwmon/fam15h_power.c
-@@ -31,9 +31,6 @@ MODULE_DESCRIPTION("AMD Family 15h CPU processor power monitor");
- MODULE_AUTHOR("Andreas Herrmann <herrmann.der.user@googlemail.com>");
- MODULE_LICENSE("GPL");
- 
--/* Family 16h Northbridge's function 4 PCI ID */
--#define PCI_DEVICE_ID_AMD_16H_NB_F4	0x1534
--
- /* D18F3 */
- #define REG_NORTHBRIDGE_CAP		0xe8
- 
+I did some testing with kpatch and I found one minor issue.  The dynamically
+allocated trampoline seems to confuse dump_stack() somewhat.
+
+I added a dump_stack() call in my ftrace_ops callback function
+(kpatch_ftrace_handler) which had a filter on meminfo_proc_show().
+
+Without this patch set (3.14):
+
+  [ 1533.256720]  [<ffffffff816ef90e>] dump_stack+0x45/0x56
+  [ 1533.256725]  [<ffffffff8125cc80>] ? meminfo_proc_open+0x30/0x30
+  [ 1533.256731]  [<ffffffffa07d1494>] kpatch_ftrace_handler+0x14/0xf0 [kpatch]
+  [ 1533.256734]  [<ffffffff8125cc80>] ? meminfo_proc_open+0x30/0x30
+  [ 1533.256739]  [<ffffffff81137a76>] ftrace_ops_list_func+0xf6/0x110
+  [ 1533.256744]  [<ffffffff816ff9c2>] ftrace_regs_call+0x5/0x77
+  [ 1533.256748]  [<ffffffff8120d4ce>] ? seq_read+0x2de/0x3b0
+  [ 1533.256751]  [<ffffffff8120d4ce>] ? seq_read+0x2de/0x3b0
+  [ 1533.256755]  [<ffffffff8125cc85>] ? meminfo_proc_show+0x5/0x5e0
+  [ 1533.256757]  [<ffffffff8125cc85>] ? meminfo_proc_show+0x5/0x5e0
+  [ 1533.256760]  [<ffffffff8120d35a>] ? seq_read+0x16a/0x3b0
+  [ 1533.256764]  [<ffffffff81253f1d>] proc_reg_read+0x3d/0x80
+  [ 1533.256769]  [<ffffffff811e93cb>] vfs_read+0x9b/0x160
+  [ 1533.256772]  [<ffffffff811e9ed5>] SyS_read+0x55/0xd0
+  [ 1533.256776]  [<ffffffff816ffc29>] system_call_fastpath+0x16/0x1b
+
+With this patch set:
+
+  [  934.546013]  [<ffffffff81700312>] dump_stack+0x45/0x56
+  [  934.546020]  [<ffffffff8125f5b0>] ? meminfo_proc_open+0x30/0x30
+  [  934.546027]  [<ffffffffa080a494>] kpatch_ftrace_handler+0x14/0xf0 [kpatch]
+  [  934.546058]  [<ffffffff812143ae>] ? seq_read+0x2de/0x3b0
+  [  934.546062]  [<ffffffff812143ae>] ? seq_read+0x2de/0x3b0
+  [  934.546067]  [<ffffffff8125f5b5>] ? meminfo_proc_show+0x5/0x5e0
+  [  934.546071]  [<ffffffff8125f5b5>] ? meminfo_proc_show+0x5/0x5e0
+  [  934.546075]  [<ffffffff8121423a>] ? seq_read+0x16a/0x3b0
+  [  934.546081]  [<ffffffff8125768d>] ? proc_reg_read+0x3d/0x80
+  [  934.546088]  [<ffffffff811f0668>] ? vfs_read+0x98/0x170
+  [  934.546093]  [<ffffffff811f1345>] ? SyS_read+0x55/0xd0
+  [  934.546099]  [<ffffffff81707969>] ? system_call_fastpath+0x16/0x1b
+
+It correctly shows the traced function's callers, but they're shown as
+unreliable (question marks).  I'm not sure why that happens, but if
+something goes wrong in a callback, this could make the reported stack
+traces confusing.  It could also cause trouble for code which relies on
+reliable stack traces (e.g. kpatch).
+
+> 
+> This patch set adds this functionality to x86_64. If a callback is
+> registered to a function and there's no other callback registered to
+> that function that ftrace_ops will get its own trampoline allocated
+> for it that will call the function directly.
+> 
+> Note, for dynamically allocated ftrace_ops (kprobes, perf, instance
+> directory function tracing), the dynamic trampoline will only be created
+> if CONFIG_PREEMPT is not set. That's because, until Paul finishes his
+> rcu_call_task() code, there's no safe way to know if a task was preempted
+> while on the trampoline and is waiting to run on it some more.
+> 
+> I need to write up a bunch of tests for this code, but currently it works
+> on the few tests I did manually. I didn't even run this code yet under
+> my full test suite, so it may very well have bugs in it that might be
+> easily triggered. But I wanted to get the code out for review to see
+> if anyone has any other idea to help enhance this feature.
+> 
+> If you want a git repo to play with this, you can get it from below.
+> That repo will rebase often, so do not build against it.
+> 
+> Enjoy,
+> 
+> -- Steve
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+> rfc/trampoline
+> 
+> Head SHA1: 4d781e010842a56f8e7c1bbe309e38075c277c45
+> 
+> 
+> Steven Rostedt (Red Hat) (3):
+>       ftrace/x86: Add dynamic allocated trampoline for ftrace_ops
+>       ftrace/x86: Show trampoline call function in enabled_functions
+>       ftrace/x86: Allow !CONFIG_PREEMPT dynamic ops to use allocated trampolines
+> 
+> ----
+>  arch/x86/kernel/ftrace.c    | 240 ++++++++++++++++++++++++++++++++++++++++++--
+>  arch/x86/kernel/mcount_64.S |  26 ++++-
+>  include/linux/ftrace.h      |   8 ++
+>  kernel/trace/ftrace.c       |  86 +++++++++++++++-
+>  4 files changed, 344 insertions(+), 16 deletions(-)
+> 
+
 -- 
-1.8.1.2
-
+Josh
