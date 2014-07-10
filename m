@@ -1,186 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666AbaGJOT1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 10:19:27 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:44874 "EHLO
+	id S1753866AbaGJOTn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 10:19:43 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:45489 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753600AbaGJOTZ (ORCPT
+	with ESMTP id S1753744AbaGJOTl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 10:19:25 -0400
+	Thu, 10 Jul 2014 10:19:41 -0400
 From: "Javi Merino" <javi.merino@arm.com>
 To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: punit.agrawal@arm.com, broonie@kernel.org,
-        Javi Merino <javi.merino@arm.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: [RFC PATCH v5 03/10] tools lib traceevent: Add support for __print_u{8,16,32,64}_array()
-Date: Thu, 10 Jul 2014 15:18:41 +0100
-Message-Id: <1405001928-12697-4-git-send-email-javi.merino@arm.com>
+        Javi Merino <javi.merino@arm.com>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <edubezval@gmail.com>
+Subject: [RFC PATCH v5 05/10] thermal: let governors have private data for each thermal zone
+Date: Thu, 10 Jul 2014 15:18:43 +0100
+Message-Id: <1405001928-12697-6-git-send-email-javi.merino@arm.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405001928-12697-1-git-send-email-javi.merino@arm.com>
 References: <1405001928-12697-1-git-send-email-javi.merino@arm.com>
-X-OriginalArrivalTime: 10 Jul 2014 14:19:21.0549 (UTC) FILETIME=[F1833FD0:01CF9C49]
-X-MC-Unique: 114071015192307601
+X-OriginalArrivalTime: 10 Jul 2014 14:19:36.0096 (UTC) FILETIME=[FA2EF200:01CF9C49]
+X-MC-Unique: 114071015193900701
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s6AEJd8L009818
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s6AEJkWI009825
 
-Trace can now generate traces with u8, u16, u32 and u64 dynamic
-arrays.  Add support to parse them.
+A governor may need to store its current state between calls to
+throttle().  That state depends on the thermal zone, so store it as
+private data in struct thermal_zone_device.
 
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Steven Rostedt <srostedt@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
+The governors may have two new ops: bind_to_tz() and unbind_from_tz().
+When provided, these functions let governors do some initialization
+and teardown when they are bound/unbound to a tz and possibly store that
+information in the governor_data field of the struct
+thermal_zone_device.
+
+Cc: Zhang Rui <rui.zhang@intel.com>
+Cc: Eduardo Valentin <edubezval@gmail.com>
 Signed-off-by: Javi Merino <javi.merino@arm.com>
 ---
- tools/lib/traceevent/event-parse.c | 62 +++++++++++++++++++++++++++++++++++---
- tools/lib/traceevent/event-parse.h |  4 +++
- 2 files changed, 61 insertions(+), 5 deletions(-)
+ drivers/thermal/thermal_core.c | 83 ++++++++++++++++++++++++++++++++++++++----
+ include/linux/thermal.h        |  9 +++++
+ 2 files changed, 84 insertions(+), 8 deletions(-)
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 8a0a8749df4c..8f25903d6e72 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -753,6 +753,10 @@ static void free_arg(struct print_arg *arg)
- 		free_arg(arg->symbol.field);
- 		free_flag_sym(arg->symbol.symbols);
- 		break;
-+	case PRINT_U8:
-+	case PRINT_U16:
-+	case PRINT_U32:
-+	case PRINT_U64:
- 	case PRINT_HEX:
- 		free_arg(arg->num.field);
- 		free_arg(arg->num.size);
-@@ -2827,6 +2831,22 @@ process_function(struct event_format *event, struct print_arg *arg,
- 		free_token(token);
- 		return process_hex(event, arg, tok);
+diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+index 71b0ec0c370d..3da99dd80ad5 100644
+--- a/drivers/thermal/thermal_core.c
++++ b/drivers/thermal/thermal_core.c
+@@ -72,6 +72,58 @@ static struct thermal_governor *__find_governor(const char *name)
+ 	return NULL;
+ }
+ 
++/**
++ * bind_previous_governor() - bind the previous governor of the thermal zone
++ * @tz:		a valid pointer to a struct thermal_zone_device
++ * @failed_gov_name:	the name of the governor that failed to register
++ *
++ * Register the previous governor of the thermal zone after a new
++ * governor has failed to be bound.
++ */
++static void bind_previous_governor(struct thermal_zone_device *tz,
++				const char *failed_gov_name)
++{
++	if (tz->governor && tz->governor->bind_to_tz) {
++		if (tz->governor->bind_to_tz(tz)) {
++			dev_warn(&tz->device,
++				"governor %s failed to bind and the previous one (%s) failed to register again, thermal zone %s has no governor\n",
++				failed_gov_name, tz->governor->name, tz->type);
++			tz->governor = NULL;
++		}
++	}
++}
++
++/**
++ * thermal_set_governor() - Switch to another governor
++ * @tz:		a valid pointer to a struct thermal_zone_device
++ * @new_gov:	pointer to the new governor
++ *
++ * Change the governor of thermal zone @tz.
++ *
++ * Return: 0 on success, an error if the new governor's bind_to_tz() failed.
++ */
++static int thermal_set_governor(struct thermal_zone_device *tz,
++				struct thermal_governor *new_gov)
++{
++	int ret = 0;
++
++	if (tz->governor && tz->governor->unbind_from_tz)
++		tz->governor->unbind_from_tz(tz);
++
++	if (new_gov && new_gov->bind_to_tz) {
++		ret = new_gov->bind_to_tz(tz);
++		if (ret) {
++			bind_previous_governor(tz, new_gov->name);
++
++			return ret;
++		}
++	}
++
++	tz->governor = new_gov;
++
++	return ret;
++}
++
+ int thermal_register_governor(struct thermal_governor *governor)
+ {
+ 	int err;
+@@ -104,8 +156,15 @@ int thermal_register_governor(struct thermal_governor *governor)
+ 
+ 		name = pos->tzp->governor_name;
+ 
+-		if (!strnicmp(name, governor->name, THERMAL_NAME_LENGTH))
+-			pos->governor = governor;
++		if (!strnicmp(name, governor->name, THERMAL_NAME_LENGTH)) {
++			int ret;
++
++			ret = thermal_set_governor(pos, governor);
++			if (ret)
++				dev_warn(&pos->device,
++					"Failed to set governor %s for thermal zone %s: %d\n",
++					governor->name, pos->type, ret);
++		}
  	}
-+	if (strcmp(token, "__print_u8_array") == 0) {
-+		free_token(token);
-+		return process_num(event, arg, tok, PRINT_U8);
-+	}
-+	if (strcmp(token, "__print_u16_array") == 0) {
-+		free_token(token);
-+		return process_num(event, arg, tok, PRINT_U16);
-+	}
-+	if (strcmp(token, "__print_u32_array") == 0) {
-+		free_token(token);
-+		return process_num(event, arg, tok, PRINT_U32);
-+	}
-+	if (strcmp(token, "__print_u64_array") == 0) {
-+		free_token(token);
-+		return process_num(event, arg, tok, PRINT_U64);
-+	}
- 	if (strcmp(token, "__get_str") == 0) {
- 		free_token(token);
- 		return process_str(event, arg, tok);
-@@ -3355,6 +3375,10 @@ eval_num_arg(void *data, int size, struct event_format *event, struct print_arg
- 		break;
- 	case PRINT_FLAGS:
- 	case PRINT_SYMBOL:
-+	case PRINT_U8:
-+	case PRINT_U16:
-+	case PRINT_U32:
-+	case PRINT_U64:
- 	case PRINT_HEX:
- 		break;
- 	case PRINT_TYPE:
-@@ -3660,7 +3684,7 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
- 	unsigned long long val, fval;
- 	unsigned long addr;
- 	char *str;
--	unsigned char *hex;
-+	void *num;
- 	int print;
- 	int i, len;
  
-@@ -3739,13 +3763,17 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
- 			}
- 		}
- 		break;
-+	case PRINT_U8:
-+	case PRINT_U16:
-+	case PRINT_U32:
-+	case PRINT_U64:
- 	case PRINT_HEX:
- 		if (arg->num.field->type == PRINT_DYNAMIC_ARRAY) {
- 			unsigned long offset;
- 			offset = pevent_read_number(pevent,
- 				data + arg->num.field->dynarray.field->offset,
- 				arg->num.field->dynarray.field->size);
--			hex = data + (offset & 0xffff);
-+			num = data + (offset & 0xffff);
- 		} else {
- 			field = arg->num.field->field.field;
- 			if (!field) {
-@@ -3755,13 +3783,24 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
- 					goto out_warning_field;
- 				arg->num.field->field.field = field;
- 			}
--			hex = data + field->offset;
-+			num = data + field->offset;
- 		}
- 		len = eval_num_arg(data, size, event, arg->num.size);
- 		for (i = 0; i < len; i++) {
- 			if (i)
- 				trace_seq_putc(s, ' ');
--			trace_seq_printf(s, "%02x", hex[i]);
-+			if (arg->type == PRINT_HEX)
-+				trace_seq_printf(s, "%02x",
-+						((uint8_t *)num)[i]);
-+			else if (arg->type == PRINT_U8)
-+				trace_seq_printf(s, "%u", ((uint8_t *)num)[i]);
-+			else if (arg->type == PRINT_U16)
-+				trace_seq_printf(s, "%u", ((uint16_t *)num)[i]);
-+			else if (arg->type == PRINT_U32)
-+				trace_seq_printf(s, "%u", ((uint32_t *)num)[i]);
-+			else    /* PRINT_U64 */
-+				trace_seq_printf(s, "%lu",
-+						((uint64_t *)num)[i]);
- 		}
- 		break;
+ 	mutex_unlock(&thermal_list_lock);
+@@ -131,7 +190,7 @@ void thermal_unregister_governor(struct thermal_governor *governor)
+ 	list_for_each_entry(pos, &thermal_tz_list, node) {
+ 		if (!strnicmp(pos->governor->name, governor->name,
+ 						THERMAL_NAME_LENGTH))
+-			pos->governor = NULL;
++			thermal_set_governor(pos, NULL);
+ 	}
  
-@@ -4922,7 +4961,20 @@ static void print_args(struct print_arg *args)
- 		printf(")");
- 		break;
- 	case PRINT_HEX:
--		printf("__print_hex(");
-+	case PRINT_U8:
-+	case PRINT_U16:
-+	case PRINT_U32:
-+	case PRINT_U64:
-+		if (args->type == PRINT_HEX)
-+			printf("__print_hex(");
-+		else if (args->type == PRINT_U8)
-+			printf("__print_u8_array(");
-+		else if (args->type == PRINT_U16)
-+			printf("__print_u16_array(");
-+		else if (args->type == PRINT_U32)
-+			printf("__print_u32_array(");
-+		else /* PRINT_U64 */
-+			printf("__print_u64_array(");
- 		print_args(args->num.field);
- 		printf(", ");
- 		print_args(args->num.size);
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 2bf72e908a74..51f1f0f0a3b5 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -272,6 +272,10 @@ enum print_arg_type {
- 	PRINT_FIELD,
- 	PRINT_FLAGS,
- 	PRINT_SYMBOL,
-+	PRINT_U8,
-+	PRINT_U16,
-+	PRINT_U32,
-+	PRINT_U64,
- 	PRINT_HEX,
- 	PRINT_TYPE,
- 	PRINT_STRING,
+ 	mutex_unlock(&thermal_list_lock);
+@@ -756,8 +815,9 @@ policy_store(struct device *dev, struct device_attribute *attr,
+ 	if (!gov)
+ 		goto exit;
+ 
+-	tz->governor = gov;
+-	ret = count;
++	ret = thermal_set_governor(tz, gov);
++	if (!ret)
++		ret = count;
+ 
+ exit:
+ 	mutex_unlock(&thermal_governor_lock);
+@@ -1452,6 +1512,7 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
+ 	int result;
+ 	int count;
+ 	int passive = 0;
++	struct thermal_governor *governor;
+ 
+ 	if (type && strlen(type) >= THERMAL_NAME_LENGTH)
+ 		return ERR_PTR(-EINVAL);
+@@ -1542,9 +1603,15 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
+ 	mutex_lock(&thermal_governor_lock);
+ 
+ 	if (tz->tzp)
+-		tz->governor = __find_governor(tz->tzp->governor_name);
++		governor = __find_governor(tz->tzp->governor_name);
+ 	else
+-		tz->governor = def_governor;
++		governor = def_governor;
++
++	result = thermal_set_governor(tz, governor);
++	if (result) {
++		mutex_unlock(&thermal_governor_lock);
++		goto unregister;
++	}
+ 
+ 	mutex_unlock(&thermal_governor_lock);
+ 
+@@ -1634,7 +1701,7 @@ void thermal_zone_device_unregister(struct thermal_zone_device *tz)
+ 		device_remove_file(&tz->device, &dev_attr_mode);
+ 	device_remove_file(&tz->device, &dev_attr_policy);
+ 	remove_trip_attrs(tz);
+-	tz->governor = NULL;
++	thermal_set_governor(tz, NULL);
+ 
+ 	thermal_remove_hwmon_sysfs(tz);
+ 	release_idr(&thermal_tz_idr, &thermal_idr_lock, tz->id);
+diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+index 0305cde21a74..1124b7a9358a 100644
+--- a/include/linux/thermal.h
++++ b/include/linux/thermal.h
+@@ -187,6 +187,7 @@ struct thermal_attr {
+  * @ops:	operations this &thermal_zone_device supports
+  * @tzp:	thermal zone parameters
+  * @governor:	pointer to the governor for this thermal zone
++ * @governor_data:	private pointer for governor data
+  * @thermal_instances:	list of &struct thermal_instance of this thermal zone
+  * @idr:	&struct idr to generate unique id for this zone's cooling
+  *		devices
+@@ -213,6 +214,7 @@ struct thermal_zone_device {
+ 	struct thermal_zone_device_ops *ops;
+ 	const struct thermal_zone_params *tzp;
+ 	struct thermal_governor *governor;
++	void *governor_data;
+ 	struct list_head thermal_instances;
+ 	struct idr idr;
+ 	struct mutex lock;
+@@ -223,12 +225,19 @@ struct thermal_zone_device {
+ /**
+  * struct thermal_governor - structure that holds thermal governor information
+  * @name:	name of the governor
++ * @bind_to_tz: callback called when binding to a thermal zone.  If it
++ *		returns 0, the governor is bound to the thermal zone,
++ *		otherwise it fails.
++ * @unbind_from_tz:	callback called when a governor is unbound from a
++ *			thermal zone.
+  * @throttle:	callback called for every trip point even if temperature is
+  *		below the trip point temperature
+  * @governor_list:	node in thermal_governor_list (in thermal_core.c)
+  */
+ struct thermal_governor {
+ 	char name[THERMAL_NAME_LENGTH];
++	int (*bind_to_tz)(struct thermal_zone_device *tz);
++	void (*unbind_from_tz)(struct thermal_zone_device *tz);
+ 	int (*throttle)(struct thermal_zone_device *tz, int trip);
+ 	struct list_head	governor_list;
+ };
 -- 
 1.9.1
 
