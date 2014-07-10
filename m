@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198AbaGJV4w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 17:56:52 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:60788 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752101AbaGJV4r (ORCPT
+	id S1753758AbaGJWD1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 18:03:27 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:37936 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751879AbaGJV4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 17:56:47 -0400
+	Thu, 10 Jul 2014 17:56:51 -0400
 From: Oded Gabbay <oded.gabbay@gmail.com>
 X-Google-Original-From: Oded Gabbay <oded.gabbay@amd.com>
 To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
@@ -14,12 +14,10 @@ To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
 Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         John Bridgman <John.Bridgman@amd.com>,
         Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>,
-        Ben Goz <ben.goz@amd.com>, Evgeny Pinchuk <evgeny.pinchuk@amd.com>,
-        Alexey Skidanov <Alexey.Skidanov@amd.com>, linux-api@vger.kernel.org
-Subject: [PATCH 60/83] hsa/radeon: Rearrange structures in kfd_ioctl.h
-Date: Fri, 11 Jul 2014 00:54:16 +0300
-Message-Id: <1405029279-6894-32-git-send-email-oded.gabbay@amd.com>
+        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>
+Subject: [PATCH 61/83] hsa/radeon: change another pr_info to pr_debug
+Date: Fri, 11 Jul 2014 00:54:17 +0300
+Message-Id: <1405029279-6894-33-git-send-email-oded.gabbay@amd.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405029279-6894-1-git-send-email-oded.gabbay@amd.com>
 References: <1405029279-6894-1-git-send-email-oded.gabbay@amd.com>
@@ -27,128 +25,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch rearranges the structures defined in kfd_ioctl.h so that
-all the uint64_t variables are located at the start of each structure and
-then all the uint32_t variables are located.
-
 Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
 ---
- include/uapi/linux/kfd_ioctl.h | 51 ++++++++++++++++++++++--------------------
- 1 file changed, 27 insertions(+), 24 deletions(-)
+ drivers/gpu/hsa/radeon/kfd_topology.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/uapi/linux/kfd_ioctl.h b/include/uapi/linux/kfd_ioctl.h
-index 509c4a0..3cedd1a 100644
---- a/include/uapi/linux/kfd_ioctl.h
-+++ b/include/uapi/linux/kfd_ioctl.h
-@@ -42,15 +42,15 @@ struct kfd_ioctl_get_version_args {
+diff --git a/drivers/gpu/hsa/radeon/kfd_topology.c b/drivers/gpu/hsa/radeon/kfd_topology.c
+index 213ae7b..059b7db 100644
+--- a/drivers/gpu/hsa/radeon/kfd_topology.c
++++ b/drivers/gpu/hsa/radeon/kfd_topology.c
+@@ -1121,7 +1121,7 @@ int kfd_topology_add_device(struct kfd_dev *gpu)
  
- struct kfd_ioctl_create_queue_args {
- 	uint64_t ring_base_address;	/* to KFD */
-+	uint64_t write_pointer_address;	/* from KFD */
-+	uint64_t read_pointer_address;	/* from KFD */
-+	uint64_t doorbell_address;	/* from KFD */
-+
- 	uint32_t ring_size;		/* to KFD */
- 	uint32_t gpu_id;		/* to KFD */
- 	uint32_t queue_type;		/* to KFD */
- 	uint32_t queue_percentage;	/* to KFD */
- 	uint32_t queue_priority;	/* to KFD */
--
--	uint64_t write_pointer_address;	/* from KFD */
--	uint64_t read_pointer_address;	/* from KFD */
--	uint64_t doorbell_address;	/* from KFD */
- 	uint32_t queue_id;		/* from KFD */
- };
+ 	gpu_id = kfd_generate_gpu_id(gpu);
  
-@@ -59,8 +59,9 @@ struct kfd_ioctl_destroy_queue_args {
- };
+-	pr_info("Adding new GPU (ID: 0x%x) to topology\n", gpu_id);
++	pr_debug("kfd: Adding new GPU (ID: 0x%x) to topology\n", gpu_id);
  
- struct kfd_ioctl_update_queue_args {
--	uint32_t queue_id;		/* to KFD */
- 	uint64_t ring_base_address;	/* to KFD */
-+
-+	uint32_t queue_id;		/* to KFD */
- 	uint32_t ring_size;		/* to KFD */
- 	uint32_t queue_percentage;	/* to KFD */
- 	uint32_t queue_priority;	/* to KFD */
-@@ -71,31 +72,33 @@ struct kfd_ioctl_update_queue_args {
- #define KFD_IOC_CACHE_POLICY_NONCOHERENT 1
- 
- struct kfd_ioctl_set_memory_policy_args {
-+	uint64_t alternate_aperture_base;	/* to KFD */
-+	uint64_t alternate_aperture_size;	/* to KFD */
-+
- 	uint32_t gpu_id;			/* to KFD */
- 	uint32_t default_policy;		/* to KFD */
- 	uint32_t alternate_policy;		/* to KFD */
--	uint64_t alternate_aperture_base;	/* to KFD */
--	uint64_t alternate_aperture_size;	/* to KFD */
- };
- 
- struct kfd_ioctl_get_clock_counters_args {
--	uint32_t gpu_id;		/* to KFD */
- 	uint64_t gpu_clock_counter;	/* from KFD */
- 	uint64_t cpu_clock_counter;	/* from KFD */
- 	uint64_t system_clock_counter;	/* from KFD */
- 	uint64_t system_clock_freq;	/* from KFD */
-+
-+	uint32_t gpu_id;		/* to KFD */
- };
- 
- #define NUM_OF_SUPPORTED_GPUS 7
- 
- struct kfd_process_device_apertures {
--	uint64_t lds_base;/* from KFD */
--	uint64_t lds_limit;/* from KFD */
--	uint64_t scratch_base;/* from KFD */
--	uint64_t scratch_limit;/* from KFD */
--	uint64_t gpuvm_base;/* from KFD */
--	uint64_t gpuvm_limit;/* from KFD */
--	uint32_t gpu_id;/* from KFD */
-+	uint64_t lds_base;		/* from KFD */
-+	uint64_t lds_limit;		/* from KFD */
-+	uint64_t scratch_base;		/* from KFD */
-+	uint64_t scratch_limit;		/* from KFD */
-+	uint64_t gpuvm_base;		/* from KFD */
-+	uint64_t gpuvm_limit;		/* from KFD */
-+	uint32_t gpu_id;		/* from KFD */
- };
- 
- struct kfd_ioctl_get_process_apertures_args {
-@@ -104,24 +107,24 @@ struct kfd_ioctl_get_process_apertures_args {
- };
- 
- struct kfd_ioctl_pmc_acquire_access_args {
--	uint32_t gpu_id;	/* to KFD */
--	uint64_t trace_id;	/* to KFD */
-+	uint64_t trace_id;		/* to KFD */
-+	uint32_t gpu_id;		/* to KFD */
- };
- 
- struct kfd_ioctl_pmc_release_access_args {
--	uint32_t gpu_id;	/* to KFD */
--	uint64_t trace_id;	/* to KFD */
-+	uint64_t trace_id;		/* to KFD */
-+	uint32_t gpu_id;		/* to KFD */
- };
- 
- #define KFD_IOC_MAGIC 'K'
- 
--#define KFD_IOC_GET_VERSION	_IOR(KFD_IOC_MAGIC, 1, struct kfd_ioctl_get_version_args)
--#define KFD_IOC_CREATE_QUEUE	_IOWR(KFD_IOC_MAGIC, 2, struct kfd_ioctl_create_queue_args)
--#define KFD_IOC_DESTROY_QUEUE	_IOWR(KFD_IOC_MAGIC, 3, struct kfd_ioctl_destroy_queue_args)
-+#define KFD_IOC_GET_VERSION		_IOR(KFD_IOC_MAGIC, 1, struct kfd_ioctl_get_version_args)
-+#define KFD_IOC_CREATE_QUEUE		_IOWR(KFD_IOC_MAGIC, 2, struct kfd_ioctl_create_queue_args)
-+#define KFD_IOC_DESTROY_QUEUE		_IOWR(KFD_IOC_MAGIC, 3, struct kfd_ioctl_destroy_queue_args)
- #define KFD_IOC_SET_MEMORY_POLICY	_IOW(KFD_IOC_MAGIC, 4, struct kfd_ioctl_set_memory_policy_args)
- #define KFD_IOC_GET_CLOCK_COUNTERS	_IOWR(KFD_IOC_MAGIC, 5, struct kfd_ioctl_get_clock_counters_args)
--#define KFD_IOC_GET_PROCESS_APERTURES _IOR(KFD_IOC_MAGIC, 6, struct kfd_ioctl_get_process_apertures_args)
--#define KFD_IOC_UPDATE_QUEUE	_IOW(KFD_IOC_MAGIC, 7, struct kfd_ioctl_update_queue_args)
-+#define KFD_IOC_GET_PROCESS_APERTURES	_IOR(KFD_IOC_MAGIC, 6, struct kfd_ioctl_get_process_apertures_args)
-+#define KFD_IOC_UPDATE_QUEUE		_IOW(KFD_IOC_MAGIC, 7, struct kfd_ioctl_update_queue_args)
- #define KFD_IOC_PMC_ACQUIRE_ACCESS	_IOW(KFD_IOC_MAGIC, 12, struct kfd_ioctl_pmc_acquire_access_args)
- #define KFD_IOC_PMC_RELEASE_ACCESS	_IOW(KFD_IOC_MAGIC, 13, struct kfd_ioctl_pmc_release_access_args)
- 
+ 	down_write(&topology_lock);
+ 	/*
 -- 
 1.9.1
 
