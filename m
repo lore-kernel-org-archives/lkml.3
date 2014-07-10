@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753050AbaGJMNS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 08:13:18 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:60320 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945AbaGJMNQ (ORCPT
+	id S1753422AbaGJMN2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 08:13:28 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:46134 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752681AbaGJMN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 08:13:16 -0400
+	Thu, 10 Jul 2014 08:13:26 -0400
 From: sanjeev sharma <sanjeevsharmaengg@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: rmfrfs@gmail.com, peter.senna@gmail.com, teobaluta@gmail.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         sanjeev sharma <sanjeev_sharma@mentor.com>,
         Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
-Subject: [PATCH v4 1/4] staging: rtl8192u: Remove useless return statement
-Date: Thu, 10 Jul 2014 17:54:54 +0530
-Message-Id: <1404995097-12689-2-git-send-email-sanjeevsharmaengg@gmail.com>
+Subject: [PATCH v4 4/4] staging: rtl8192u: Fixed too long line
+Date: Thu, 10 Jul 2014 17:54:57 +0530
+Message-Id: <1404995097-12689-5-git-send-email-sanjeevsharmaengg@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1404995097-12689-1-git-send-email-sanjeevsharmaengg@gmail.com>
 References: <20140708100142.GR25934@mwanda>
@@ -26,115 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: sanjeev sharma <sanjeev_sharma@mentor.com>
 
-This patch will remove unneeded return statements in
-code.
+This patch will fix too long lines warning
+reported by checkpatch.pl.
 
 Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
 ---
- drivers/staging/rtl8192u/r819xU_phy.c | 13 -------------
- 1 file changed, 13 deletions(-)
+ drivers/staging/rtl8192u/r819xU_phy.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/staging/rtl8192u/r819xU_phy.c b/drivers/staging/rtl8192u/r819xU_phy.c
-index 02554c9..0bcdd4e 100644
+index 3155616..b2d81e9 100644
 --- a/drivers/staging/rtl8192u/r819xU_phy.c
 +++ b/drivers/staging/rtl8192u/r819xU_phy.c
-@@ -101,7 +101,6 @@ void rtl8192_setBBreg(struct net_device *dev, u32 reg_addr, u32 bitmask,
- 	} else {
- 		write_nic_dword(dev, reg_addr, data);
+@@ -1236,7 +1236,8 @@ static u8 rtl8192_phy_SetSwChnlCmdArray(SwChnlCmd *CmdTable, u32 CmdTableIdx,
+ 		return false;
  	}
--	return;
- }
- 
- /******************************************************************************
-@@ -281,7 +280,6 @@ static void rtl8192_phy_RFSerialWrite(struct net_device *dev,
- 					 priv->RfReg0Value[eRFPath] << 16);
- 		}
+ 	if (CmdTableIdx >= CmdTableSz) {
+-		RT_TRACE(COMP_ERR, "%s(): Access invalid index, please check size of the table, CmdTableIdx:%d, CmdTableSz:%d\n",
++		RT_TRACE(COMP_ERR,
++			 "%s():invalid index,CmdTableIdx:%d, CmdTableSz:%d\n",
+ 			 __func__, CmdTableIdx, CmdTableSz);
+ 		return false;
  	}
--	return;
+@@ -1697,7 +1698,8 @@ void InitialGain819xUsb(struct net_device *dev,	u8 Operation)
+ 	priv->InitialGainOperateType = Operation;
+ 
+ 	if (priv->up)
+-		queue_delayed_work(priv->priv_wq, &priv->initialgain_operate_wq, 0);
++		queue_delayed_work(priv->priv_wq,
++				   &priv->initialgain_operate_wq, 0);
  }
  
- /******************************************************************************
-@@ -332,7 +330,6 @@ void rtl8192_phy_SetRFReg(struct net_device *dev, RF90_RADIO_PATH_E eRFPath,
- 			rtl8192_phy_RFSerialWrite(dev, eRFPath, reg_addr, data);
- 		}
- 	}
--	return;
- }
+ void InitialGainOperateWorkItemCallBack(struct work_struct *work)
+@@ -1786,7 +1788,8 @@ void InitialGainOperateWorkItemCallBack(struct work_struct *work)
+ 		RT_TRACE(COMP_SCAN, "Scan BBInitialGainRestore 0xa0a is %x\n",
+ 			 priv->initgain_backup.cca);
  
- /******************************************************************************
-@@ -513,7 +510,6 @@ void rtl8192_phy_configmac(struct net_device *dev)
- 		rtl8192_setBBreg(dev, pdwArray[i], pdwArray[i+1],
- 				 pdwArray[i+2]);
- 	}
--	return;
- }
+-		rtl8192_phy_setTxPower(dev, priv->ieee80211->current_network.channel);
++		rtl8192_phy_setTxPower(dev,
++					priv->ieee80211->current_network.channel);
  
- /******************************************************************************
-@@ -559,7 +555,6 @@ void rtl8192_phyConfigBB(struct net_device *dev, u8 ConfigType)
- 				 rtl819XAGCTAB_Array[i+1]);
- 		}
- 	}
--	return;
- }
- 
- /******************************************************************************
-@@ -846,7 +841,6 @@ static void rtl8192_BB_Config_ParaFile(struct net_device *dev)
- 	priv->bCckHighPower = (u8)rtl8192_QueryBBReg(dev,
- 						     rFPGA0_XA_HSSIParameter2,
- 						     0x200);
--	return;
- }
- 
- /******************************************************************************
-@@ -864,7 +858,6 @@ void rtl8192_BBConfig(struct net_device *dev)
- 	 * implemented, so use file first.
- 	 * FIXME: should implement it for hardcode? */
- 	rtl8192_BB_Config_ParaFile(dev);
--	return;
- }
- 
- 
-@@ -912,8 +905,6 @@ void rtl8192_phy_getTxPower(struct net_device *dev)
- 
- 	/* Read SIFS (save the value read fome MACPHY_REG.txt) */
- 	read_nic_word(dev, SIFS, &priv->SifsTime);
--
--	return;
- }
- 
- /******************************************************************************
-@@ -942,7 +933,6 @@ void rtl8192_phy_setTxPower(struct net_device *dev, u8 channel)
- 			 __func__);
- 		break;
- 	}
--	return;
- }
- 
- /******************************************************************************
-@@ -963,7 +953,6 @@ void rtl8192_phy_RFConfig(struct net_device *dev)
- 			RT_TRACE(COMP_ERR, "error chip id\n");
- 			break;
- 	}
--	return;
- }
- 
- /******************************************************************************
-@@ -974,7 +963,6 @@ void rtl8192_phy_RFConfig(struct net_device *dev)
-  ******************************************************************************/
- void rtl8192_phy_updateInitGain(struct net_device *dev)
- {
--	return;
- }
- 
- /******************************************************************************
-@@ -1094,7 +1082,6 @@ static void rtl8192_SetTxPowerLevel(struct net_device *dev, u8 channel)
- 		RT_TRACE(COMP_ERR, "unknown rf chip ID in %s()\n", __func__);
- 		break;
- 	}
--	return;
- }
- 
- /******************************************************************************
+ 		if (dm_digtable.dig_algorithm == DIG_ALGO_BY_FALSE_ALARM)
+ 			/* FW DIG ON */
 -- 
 1.7.11.7
 
