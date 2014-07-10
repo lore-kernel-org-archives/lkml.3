@@ -1,148 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510AbaGJWMe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 18:12:34 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:35624 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753000AbaGJVvW (ORCPT
+	id S1753657AbaGJWM5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 18:12:57 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:46907 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753295AbaGJWMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 17:51:22 -0400
-From: Oded Gabbay <oded.gabbay@gmail.com>
-X-Google-Original-From: Oded Gabbay <oded.gabbay@amd.com>
-To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <j.glisse@gmail.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        John Bridgman <John.Bridgman@amd.com>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>
-Subject: [PATCH 10/83] hsa/radeon: Add initialization and unmapping of doorbell aperture
-Date: Fri, 11 Jul 2014 00:50:10 +0300
-Message-Id: <1405029027-6085-9-git-send-email-oded.gabbay@amd.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
-References: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
+	Thu, 10 Jul 2014 18:12:53 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: "kys@microsoft.com" <kys@microsoft.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mkp@mkp.net" <mkp@mkp.net>, "apw@canonical.com" <apw@canonical.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+Thread-Topic: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+Thread-Index: AQHPmwbc2vh72TcerE+9u7O+On3hT5uXbYYAgACybACAAH8bAP//jcAwgACcZoCAAQTgMIAAiV6A
+Date: Thu, 10 Jul 2014 22:12:46 +0000
+Message-ID: <1405030365.2851.2.camel@jarvis.lan>
+References: <1404866789-26910-1-git-send-email-kys@microsoft.com>
+	 <1404866812-26950-1-git-send-email-kys@microsoft.com>
+	 <1404866812-26950-4-git-send-email-kys@microsoft.com>
+	 <20140709084300.GD6012@infradead.org>
+	 <a31a45eddb544024a7538458b98c3611@BY2PR03MB299.namprd03.prod.outlook.com>
+	 <1404935792.2184.5.camel@dabdike.int.hansenpartnership.com>
+	 <2f3ae589e6f149acbe4c5dd79f905971@BY2PR03MB299.namprd03.prod.outlook.com>
+	 <1404944843.2184.8.camel@dabdike.int.hansenpartnership.com>
+	 <a51690cc47b1475ab9ca2d871cc97115@BY2PR03MB299.namprd03.prod.outlook.com>
+In-Reply-To: <a51690cc47b1475ab9ca2d871cc97115@BY2PR03MB299.namprd03.prod.outlook.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.46.103.107]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <07553DE5B9811A41B231046AE692FFFB@sw.swsoft.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6AMD7kG013667
 
-This patch adds initialization of the doorbell aperture when
-initializing a kfd device.
+On Thu, 2014-07-10 at 21:02 +0000, KY Srinivasan wrote:
+> 
+> > -----Original Message-----
+> > From: James Bottomley [mailto:jbottomley@parallels.com]
+> > Sent: Wednesday, July 9, 2014 3:27 PM
+> > To: KY Srinivasan
+> > Cc: linux-kernel@vger.kernel.org; mkp@mkp.net; hch@infradead.org;
+> > devel@linuxdriverproject.org; apw@canonical.com; stable@vger.kernel.org;
+> > linux-scsi@vger.kernel.org; ohering@suse.com; jasowang@redhat.com
+> > Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+> > 
+> > On Wed, 2014-07-09 at 21:14 +0000, KY Srinivasan wrote:
+> > >
+> > > > -----Original Message-----
+> > > > From: James Bottomley [mailto:jbottomley@parallels.com]
+> > > > Sent: Wednesday, July 9, 2014 12:57 PM
+> > > > To: KY Srinivasan
+> > > > Cc: linux-kernel@vger.kernel.org; hch@infradead.org;
+> > > > devel@linuxdriverproject.org; apw@canonical.com;
+> > > > stable@vger.kernel.org; linux-scsi@vger.kernel.org;
+> > > > ohering@suse.com; jasowang@redhat.com
+> > > > Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter
+> > > > WRITE_SAME_16
+> > > >
+> > > > On Wed, 2014-07-09 at 19:52 +0000, KY Srinivasan wrote:
+> > > > >
+> > > > > > -----Original Message-----
+> > > > > > From: Christoph Hellwig [mailto:hch@infradead.org]
+> > > > > > Sent: Wednesday, July 9, 2014 1:43 AM
+> > > > > > To: KY Srinivasan
+> > > > > > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> > > > > > ohering@suse.com; jbottomley@parallels.com;
+> > jasowang@redhat.com;
+> > > > > > apw@canonical.com; linux-scsi@vger.kernel.org;
+> > > > > > stable@vger.kernel.org
+> > > > > > Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter
+> > > > > > WRITE_SAME_16
+> > > > > >
+> > > > > > On Tue, Jul 08, 2014 at 05:46:48PM -0700, K. Y. Srinivasan wrote:
+> > > > > > > Host does not handle WRITE_SAME_16; filter this command out.
+> > > > > > > This patch is required to handle large devices (greater than 2 TB
+> > disks).
+> > > > > >
+> > > > > > Storvsc already sets the no_write_same flag, where is the
+> > > > > > command coming from?
+> > > > >
+> > > > > In spite of this flag,  I see WRITE_SAME_16 being issued when I
+> > > > > format a device bigger than 2 TB; I tried both xfs and ext4.
+> > > > > Windows hosts currently do not handle unsupported commands
+> > > > > correctly - The information returned is not sufficient to effect recovery
+> > in the Linux guest.
+> > > > While this may be addressed in future hosts, this patch fixes the problem.
+> > > >
+> > > > What Christoph means is that this looks like a bug somewhere in SCSI
+> > itself.
+> > > > That means we need to find it and kill it, not add workarounds to
+> > > > every driver that sets no_write_same ...
+> > >
+> > > James,
+> > >
+> > > I will try to isolate this issue in the SCSI stack. If it is ok with
+> > > you guys, I would still want to filter WRITE_SAME_16 (as we currently
+> > > do WRITE_SAME) in our driver since this would address the problem for a
+> > large number of customers on our platform.
+> > 
+> > If we fix it at source, why would there be any need to filter?  That's the
+> > reason the no_write_same flag was introduced.  If we can find and fix the
+> > bug, it can go back into the stable trees as a bug fix, hence nothing should
+> > ever emit write_same(10 or 16) and additional driver code is redundant (and
+> > counter productive, since if this ever breaks again you're our best canary).
+> > 
+> > This looks like it might be the problem but Martin should confirm (I think the
+> > problem comes to us from the RC16 code which unconditionally sets WS16).
+> > 
+> > James
+> 
+> James,
+> 
+> This patch works for me; are you planning on committing this patch.
 
-It also adds a call to unmap the doorbell when a process unbinds
-from the kfd
+OK, if we go with this we can add your tested by.
 
-Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
----
- drivers/gpu/hsa/radeon/Makefile       |  3 +-
- drivers/gpu/hsa/radeon/kfd_device.c   |  2 +
- drivers/gpu/hsa/radeon/kfd_doorbell.c | 72 +++++++++++++++++++++++++++++++++++
- 3 files changed, 76 insertions(+), 1 deletion(-)
- create mode 100644 drivers/gpu/hsa/radeon/kfd_doorbell.c
+It's not going in until Martin takes a look because there may be a
+better way of doing this.
 
-diff --git a/drivers/gpu/hsa/radeon/Makefile b/drivers/gpu/hsa/radeon/Makefile
-index ba16a09..989518a 100644
---- a/drivers/gpu/hsa/radeon/Makefile
-+++ b/drivers/gpu/hsa/radeon/Makefile
-@@ -3,6 +3,7 @@
- #
- 
- radeon_kfd-y	:= kfd_module.o kfd_device.o kfd_chardev.o \
--		kfd_pasid.o kfd_topology.o kfd_process.o
-+		kfd_pasid.o kfd_topology.o kfd_process.o \
-+		kfd_doorbell.o
- 
- obj-$(CONFIG_HSA_RADEON)	+= radeon_kfd.o
-diff --git a/drivers/gpu/hsa/radeon/kfd_device.c b/drivers/gpu/hsa/radeon/kfd_device.c
-index d122920..4e9fe6c 100644
---- a/drivers/gpu/hsa/radeon/kfd_device.c
-+++ b/drivers/gpu/hsa/radeon/kfd_device.c
-@@ -123,6 +123,8 @@ bool kgd2kfd_device_init(struct kfd_dev *kfd,
- 
- 	kfd->regs = gpu_resources->mmio_registers;
- 
-+	radeon_kfd_doorbell_init(kfd);
-+
- 	if (!device_iommu_pasid_init(kfd))
- 		return false;
- 
-diff --git a/drivers/gpu/hsa/radeon/kfd_doorbell.c b/drivers/gpu/hsa/radeon/kfd_doorbell.c
-new file mode 100644
-index 0000000..79a9d4b
---- /dev/null
-+++ b/drivers/gpu/hsa/radeon/kfd_doorbell.c
-@@ -0,0 +1,72 @@
-+/*
-+ * Copyright 2014 Advanced Micro Devices, Inc.
-+ *
-+ * Permission is hereby granted, free of charge, to any person obtaining a
-+ * copy of this software and associated documentation files (the "Software"),
-+ * to deal in the Software without restriction, including without limitation
-+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
-+ * and/or sell copies of the Software, and to permit persons to whom the
-+ * Software is furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-+ * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
-+ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-+ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-+ * OTHER DEALINGS IN THE SOFTWARE.
-+ */
-+
-+#include "kfd_priv.h"
-+#include <linux/mm.h>
-+#include <linux/mman.h>
-+
-+/*
-+ * Each device exposes a doorbell aperture, a PCI MMIO aperture that
-+ * receives 32-bit writes that are passed to queues as wptr values.
-+ * The doorbells are intended to be written by applications as part
-+ * of queueing work on user-mode queues.
-+ * We assign doorbells to applications in PAGE_SIZE-sized and aligned chunks.
-+ * We map the doorbell address space into user-mode when a process creates
-+ * its first queue on each device.
-+ * Although the mapping is done by KFD, it is equivalent to an mmap of
-+ * the /dev/kfd with the particular device encoded in the mmap offset.
-+ * There will be other uses for mmap of /dev/kfd, so only a range of
-+ * offsets (KFD_MMAP_DOORBELL_START-END) is used for doorbells.
-+ */
-+
-+/* # of doorbell bytes allocated for each process. */
-+static inline size_t doorbell_process_allocation(void)
-+{
-+	return roundup(sizeof(doorbell_t) * MAX_PROCESS_QUEUES, PAGE_SIZE);
-+}
-+
-+/* Doorbell calculations for device init. */
-+void radeon_kfd_doorbell_init(struct kfd_dev *kfd)
-+{
-+	size_t doorbell_start_offset;
-+	size_t doorbell_aperture_size;
-+	size_t doorbell_process_limit;
-+
-+	/* We start with calculations in bytes because the input data might only be byte-aligned.
-+	** Only after we have done the rounding can we assume any alignment. */
-+
-+	doorbell_start_offset = roundup(kfd->shared_resources.doorbell_start_offset,
-+					doorbell_process_allocation());
-+	doorbell_aperture_size = rounddown(kfd->shared_resources.doorbell_aperture_size,
-+					doorbell_process_allocation());
-+
-+	if (doorbell_aperture_size > doorbell_start_offset)
-+		doorbell_process_limit =
-+			(doorbell_aperture_size - doorbell_start_offset) / doorbell_process_allocation();
-+	else
-+		doorbell_process_limit = 0;
-+
-+	kfd->doorbell_base = kfd->shared_resources.doorbell_physical_address + doorbell_start_offset;
-+	kfd->doorbell_id_offset = doorbell_start_offset / sizeof(doorbell_t);
-+	kfd->doorbell_process_limit = doorbell_process_limit;
-+}
-+
--- 
-1.9.1
+James
 
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
