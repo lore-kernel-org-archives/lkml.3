@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184AbaGJIoc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 04:44:32 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:42390 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751420AbaGJIoa convert rfc822-to-8bit (ORCPT
+	id S1752245AbaGJIpd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 04:45:33 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:42831 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751985AbaGJIpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 04:44:30 -0400
-Date: Thu, 10 Jul 2014 10:44:21 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Fabio Coatti <fabio.coatti@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, eranian@google.com, mingo@elte.hu,
-        acme@redhat.com, ak@linux.intel.com, zheng.z.yan@intel.com
-Subject: Re: WARNING: CPU: 2 PID: 1 at arch/x86/mm/ioremap.c:171
- __ioremap_caller+0x290/0x2fa()
-Message-ID: <20140710084421.GT3935@laptop>
-References: <CADpTngUm7d88RJS9OV=64t6QrJU4r3M_Z8eV1QYWPeeB5SX5-w@mail.gmail.com>
- <1502740.TF1NxA0qsa@calvin>
- <20140709185421.GB20302@kroah.com>
- <2494065.iTji0DZuR5@calvin>
+	Thu, 10 Jul 2014 04:45:30 -0400
+Date: Thu, 10 Jul 2014 16:45:14 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Amit Shah <amit.shah@redhat.com>, linux-kernel@vger.kernel.org,
+        Virtualization List <virtualization@lists.linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, keescook@chromium.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] virtio: rng: ensure reads happen after successful
+ probe
+Message-ID: <20140710084514.GA15418@gondor.apana.org.au>
+References: <cover.1404538109.git.amit.shah@redhat.com>
+ <f64852e0dd8a439193db4c7da1d3022d029cc85d.1404538109.git.amit.shah@redhat.com>
+ <20140709161836.GQ13433@titan.lakedaemon.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <2494065.iTji0DZuR5@calvin>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140709161836.GQ13433@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 12:48:05PM -0700, Fabio Coatti wrote:
-> In data mercoledì 9 luglio 2014 11:54:21, Greg Kroah-Hartman ha scritto:
+On Wed, Jul 09, 2014 at 12:18:36PM -0400, Jason Cooper wrote:
+> On Sat, Jul 05, 2014 at 11:04:53AM +0530, Amit Shah wrote:
+> > The hwrng core asks for random data in the hwrng_register() call itself
+> > from commit d9e7972619.  This doesn't play well with virtio -- the
+> > DRIVER_OK bit is only set by virtio core on a successful probe, and
+> > we're not yet out of our probe routine when this call is made.  This
+> > causes the host to not acknowledge any requests we put in the virtqueue,
+> > and the insmod or kernel boot process just waits for data to arrive from
+> > the host, which never happens.
+> > 
+> > CC: Kees Cook <keescook@chromium.org>
+> > CC: Jason Cooper <jason@lakedaemon.net>
+> > CC: Herbert Xu <herbert@gondor.apana.org.au>
+> > CC: <stable@vger.kernel.org> # For v3.15+
+> > Signed-off-by: Amit Shah <amit.shah@redhat.com>
+> > ---
+> >  drivers/char/hw_random/core.c       |  6 ++++++
+> >  drivers/char/hw_random/virtio-rng.c | 10 ++++++++++
+> >  2 files changed, 16 insertions(+)
 > 
-> > Try cc:ing everyone on that patch, with the original information you
-> > provided, and the linux-kernel mailing list.  Those developers should be
-> > able to help you out properly.
+> Yeah, I don't think there's any viable way to get random data out of
+> virtio-rng at probe time...  :-(
 > 
-> Ok, here you can find the description of a problem that I'm experiencing on 
-> latest kernels, since 3.15.0.  (this report comes from 3.15.4)
-> 
-> lug 07 22:08:00 calvin kernel: resource map sanity check conflict: 0xfed10000 
-> 0xfed15fff 0xfed10000 0xfed13fff reserved
-> lug 07 22:08:00 calvin kernel: ------------[ cut here ]------------
+> Reviewed-by: Jason Cooper <jason@lakedaemon.net>
 
-I think this is a 'known' issue on Thinkpad (iirc). For some obscure
-reason its BIOS has funny ideas about resources etc.
+OK, if there are no more objections I will take these two patches.
 
-I couldn't quickly find the prvious thread, maybe Stephane knows.
+Thanks!
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
