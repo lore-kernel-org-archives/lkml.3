@@ -1,61 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500AbaGJWCo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 18:02:44 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:40587 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753596AbaGJWCg (ORCPT
+	id S1754198AbaGJV4w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 17:56:52 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:60788 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752101AbaGJV4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 18:02:36 -0400
-Date: Thu, 10 Jul 2014 16:02:33 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pci: Add include guard to include/linux/pci_ids.h
-Message-ID: <20140710220233.GA21053@google.com>
-References: <1404993911-10544-1-git-send-email-linux@rasmusvillemoes.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404993911-10544-1-git-send-email-linux@rasmusvillemoes.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 10 Jul 2014 17:56:47 -0400
+From: Oded Gabbay <oded.gabbay@gmail.com>
+X-Google-Original-From: Oded Gabbay <oded.gabbay@amd.com>
+To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <j.glisse@gmail.com>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        John Bridgman <John.Bridgman@amd.com>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>,
+        Ben Goz <ben.goz@amd.com>, Evgeny Pinchuk <evgeny.pinchuk@amd.com>,
+        Alexey Skidanov <Alexey.Skidanov@amd.com>, linux-api@vger.kernel.org
+Subject: [PATCH 60/83] hsa/radeon: Rearrange structures in kfd_ioctl.h
+Date: Fri, 11 Jul 2014 00:54:16 +0300
+Message-Id: <1405029279-6894-32-git-send-email-oded.gabbay@amd.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405029279-6894-1-git-send-email-oded.gabbay@amd.com>
+References: <1405029279-6894-1-git-send-email-oded.gabbay@amd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 02:05:11PM +0200, Rasmus Villemoes wrote:
-> Adding an include guard frees the preprocessor from reparsing over
-> 2600 #defines in the cases where pci_ids.h is somehow included more
-> than once. This gives a tiny-but-measurable performance improvement
-> when compiling such files.
-> 
-> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+This patch rearranges the structures defined in kfd_ioctl.h so that
+all the uint64_t variables are located at the start of each structure and
+then all the uint32_t variables are located.
 
-Applied to pci/misc for v3.17, thanks!
+Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+---
+ include/uapi/linux/kfd_ioctl.h | 51 ++++++++++++++++++++++--------------------
+ 1 file changed, 27 insertions(+), 24 deletions(-)
 
-> ---
->  include/linux/pci_ids.h | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-> index 7fa3173..6ed0bb7 100644
-> --- a/include/linux/pci_ids.h
-> +++ b/include/linux/pci_ids.h
-> @@ -6,6 +6,8 @@
->   *	Do not add new entries to this file unless the definitions
->   *	are shared between multiple drivers.
->   */
-> +#ifndef _LINUX_PCI_IDS_H
-> +#define _LINUX_PCI_IDS_H
->  
->  /* Device classes and subclasses */
->  
-> @@ -2968,3 +2970,5 @@
->  #define PCI_DEVICE_ID_XEN_PLATFORM	0x0001
->  
->  #define PCI_VENDOR_ID_OCZ		0x1b85
-> +
-> +#endif /* _LINUX_PCI_IDS_H */
-> -- 
-> 1.9.2
-> 
+diff --git a/include/uapi/linux/kfd_ioctl.h b/include/uapi/linux/kfd_ioctl.h
+index 509c4a0..3cedd1a 100644
+--- a/include/uapi/linux/kfd_ioctl.h
++++ b/include/uapi/linux/kfd_ioctl.h
+@@ -42,15 +42,15 @@ struct kfd_ioctl_get_version_args {
+ 
+ struct kfd_ioctl_create_queue_args {
+ 	uint64_t ring_base_address;	/* to KFD */
++	uint64_t write_pointer_address;	/* from KFD */
++	uint64_t read_pointer_address;	/* from KFD */
++	uint64_t doorbell_address;	/* from KFD */
++
+ 	uint32_t ring_size;		/* to KFD */
+ 	uint32_t gpu_id;		/* to KFD */
+ 	uint32_t queue_type;		/* to KFD */
+ 	uint32_t queue_percentage;	/* to KFD */
+ 	uint32_t queue_priority;	/* to KFD */
+-
+-	uint64_t write_pointer_address;	/* from KFD */
+-	uint64_t read_pointer_address;	/* from KFD */
+-	uint64_t doorbell_address;	/* from KFD */
+ 	uint32_t queue_id;		/* from KFD */
+ };
+ 
+@@ -59,8 +59,9 @@ struct kfd_ioctl_destroy_queue_args {
+ };
+ 
+ struct kfd_ioctl_update_queue_args {
+-	uint32_t queue_id;		/* to KFD */
+ 	uint64_t ring_base_address;	/* to KFD */
++
++	uint32_t queue_id;		/* to KFD */
+ 	uint32_t ring_size;		/* to KFD */
+ 	uint32_t queue_percentage;	/* to KFD */
+ 	uint32_t queue_priority;	/* to KFD */
+@@ -71,31 +72,33 @@ struct kfd_ioctl_update_queue_args {
+ #define KFD_IOC_CACHE_POLICY_NONCOHERENT 1
+ 
+ struct kfd_ioctl_set_memory_policy_args {
++	uint64_t alternate_aperture_base;	/* to KFD */
++	uint64_t alternate_aperture_size;	/* to KFD */
++
+ 	uint32_t gpu_id;			/* to KFD */
+ 	uint32_t default_policy;		/* to KFD */
+ 	uint32_t alternate_policy;		/* to KFD */
+-	uint64_t alternate_aperture_base;	/* to KFD */
+-	uint64_t alternate_aperture_size;	/* to KFD */
+ };
+ 
+ struct kfd_ioctl_get_clock_counters_args {
+-	uint32_t gpu_id;		/* to KFD */
+ 	uint64_t gpu_clock_counter;	/* from KFD */
+ 	uint64_t cpu_clock_counter;	/* from KFD */
+ 	uint64_t system_clock_counter;	/* from KFD */
+ 	uint64_t system_clock_freq;	/* from KFD */
++
++	uint32_t gpu_id;		/* to KFD */
+ };
+ 
+ #define NUM_OF_SUPPORTED_GPUS 7
+ 
+ struct kfd_process_device_apertures {
+-	uint64_t lds_base;/* from KFD */
+-	uint64_t lds_limit;/* from KFD */
+-	uint64_t scratch_base;/* from KFD */
+-	uint64_t scratch_limit;/* from KFD */
+-	uint64_t gpuvm_base;/* from KFD */
+-	uint64_t gpuvm_limit;/* from KFD */
+-	uint32_t gpu_id;/* from KFD */
++	uint64_t lds_base;		/* from KFD */
++	uint64_t lds_limit;		/* from KFD */
++	uint64_t scratch_base;		/* from KFD */
++	uint64_t scratch_limit;		/* from KFD */
++	uint64_t gpuvm_base;		/* from KFD */
++	uint64_t gpuvm_limit;		/* from KFD */
++	uint32_t gpu_id;		/* from KFD */
+ };
+ 
+ struct kfd_ioctl_get_process_apertures_args {
+@@ -104,24 +107,24 @@ struct kfd_ioctl_get_process_apertures_args {
+ };
+ 
+ struct kfd_ioctl_pmc_acquire_access_args {
+-	uint32_t gpu_id;	/* to KFD */
+-	uint64_t trace_id;	/* to KFD */
++	uint64_t trace_id;		/* to KFD */
++	uint32_t gpu_id;		/* to KFD */
+ };
+ 
+ struct kfd_ioctl_pmc_release_access_args {
+-	uint32_t gpu_id;	/* to KFD */
+-	uint64_t trace_id;	/* to KFD */
++	uint64_t trace_id;		/* to KFD */
++	uint32_t gpu_id;		/* to KFD */
+ };
+ 
+ #define KFD_IOC_MAGIC 'K'
+ 
+-#define KFD_IOC_GET_VERSION	_IOR(KFD_IOC_MAGIC, 1, struct kfd_ioctl_get_version_args)
+-#define KFD_IOC_CREATE_QUEUE	_IOWR(KFD_IOC_MAGIC, 2, struct kfd_ioctl_create_queue_args)
+-#define KFD_IOC_DESTROY_QUEUE	_IOWR(KFD_IOC_MAGIC, 3, struct kfd_ioctl_destroy_queue_args)
++#define KFD_IOC_GET_VERSION		_IOR(KFD_IOC_MAGIC, 1, struct kfd_ioctl_get_version_args)
++#define KFD_IOC_CREATE_QUEUE		_IOWR(KFD_IOC_MAGIC, 2, struct kfd_ioctl_create_queue_args)
++#define KFD_IOC_DESTROY_QUEUE		_IOWR(KFD_IOC_MAGIC, 3, struct kfd_ioctl_destroy_queue_args)
+ #define KFD_IOC_SET_MEMORY_POLICY	_IOW(KFD_IOC_MAGIC, 4, struct kfd_ioctl_set_memory_policy_args)
+ #define KFD_IOC_GET_CLOCK_COUNTERS	_IOWR(KFD_IOC_MAGIC, 5, struct kfd_ioctl_get_clock_counters_args)
+-#define KFD_IOC_GET_PROCESS_APERTURES _IOR(KFD_IOC_MAGIC, 6, struct kfd_ioctl_get_process_apertures_args)
+-#define KFD_IOC_UPDATE_QUEUE	_IOW(KFD_IOC_MAGIC, 7, struct kfd_ioctl_update_queue_args)
++#define KFD_IOC_GET_PROCESS_APERTURES	_IOR(KFD_IOC_MAGIC, 6, struct kfd_ioctl_get_process_apertures_args)
++#define KFD_IOC_UPDATE_QUEUE		_IOW(KFD_IOC_MAGIC, 7, struct kfd_ioctl_update_queue_args)
+ #define KFD_IOC_PMC_ACQUIRE_ACCESS	_IOW(KFD_IOC_MAGIC, 12, struct kfd_ioctl_pmc_acquire_access_args)
+ #define KFD_IOC_PMC_RELEASE_ACCESS	_IOW(KFD_IOC_MAGIC, 13, struct kfd_ioctl_pmc_release_access_args)
+ 
+-- 
+1.9.1
+
