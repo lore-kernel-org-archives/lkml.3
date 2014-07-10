@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754330AbaGJV5a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 17:57:30 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:46148 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754321AbaGJV5Z (ORCPT
+	id S1752480AbaGJV7t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 17:59:49 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:62800 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754326AbaGJV51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 17:57:25 -0400
+	Thu, 10 Jul 2014 17:57:27 -0400
 From: Oded Gabbay <oded.gabbay@gmail.com>
 X-Google-Original-From: Oded Gabbay <oded.gabbay@amd.com>
 To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         Andrew Lewycky <Andrew.Lewycky@amd.com>,
         Joerg Roedel <joro@8bytes.org>, Ben Goz <ben.goz@amd.com>,
         Oded Gabbay <oded.gabbay@amd.com>
-Subject: [PATCH 74/83] hsa/radeon: Adding some error messages
-Date: Fri, 11 Jul 2014 00:54:30 +0300
-Message-Id: <1405029279-6894-46-git-send-email-oded.gabbay@amd.com>
+Subject: [PATCH 75/83] hsa/radeon: Fixing minor issues with kernel queues (DIQ)
+Date: Fri, 11 Jul 2014 00:54:31 +0300
+Message-Id: <1405029279-6894-47-git-send-email-oded.gabbay@amd.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405029279-6894-1-git-send-email-oded.gabbay@amd.com>
 References: <1405029279-6894-1-git-send-email-oded.gabbay@amd.com>
@@ -28,34 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ben Goz <ben.goz@amd.com>
 
+* re-execute runlist on kernel queues destruction.
+* delete kernel queues from pqm's queues list on pqm unint
+
 Signed-off-by: Ben Goz <ben.goz@amd.com>
 Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
 ---
- drivers/gpu/hsa/radeon/kfd_chardev.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/gpu/hsa/radeon/kfd_device_queue_manager.c  | 4 ++++
+ drivers/gpu/hsa/radeon/kfd_process_queue_manager.c | 2 +-
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/hsa/radeon/kfd_chardev.c b/drivers/gpu/hsa/radeon/kfd_chardev.c
-index 09c9a61..be89d26 100644
---- a/drivers/gpu/hsa/radeon/kfd_chardev.c
-+++ b/drivers/gpu/hsa/radeon/kfd_chardev.c
-@@ -137,11 +137,15 @@ kfd_ioctl_create_queue(struct file *filep, struct kfd_process *p, void __user *a
- 	if (copy_from_user(&args, arg, sizeof(args)))
- 		return -EFAULT;
+diff --git a/drivers/gpu/hsa/radeon/kfd_device_queue_manager.c b/drivers/gpu/hsa/radeon/kfd_device_queue_manager.c
+index 4c53e57..12b8b33 100644
+--- a/drivers/gpu/hsa/radeon/kfd_device_queue_manager.c
++++ b/drivers/gpu/hsa/radeon/kfd_device_queue_manager.c
+@@ -759,6 +759,10 @@ static void destroy_kernel_queue_cpsch(struct device_queue_manager *dqm,
+ {
+ 	BUG_ON(!dqm || !kq);
  
--	if (!access_ok(VERIFY_WRITE, args.read_pointer_address, sizeof(qptr_t)))
-+	if (!access_ok(VERIFY_WRITE, args.read_pointer_address, sizeof(qptr_t))) {
-+		pr_err("kfd: can't access read pointer");
- 		return -EFAULT;
-+	}
++	pr_debug("kfd: In %s\n", __func__);
++
++	dqm->destroy_queues(dqm);
++
+ 	mutex_lock(&dqm->lock);
+ 	list_del(&kq->list);
+ 	dqm->queue_count--;
+diff --git a/drivers/gpu/hsa/radeon/kfd_process_queue_manager.c b/drivers/gpu/hsa/radeon/kfd_process_queue_manager.c
+index 89461ab..5d7c46d 100644
+--- a/drivers/gpu/hsa/radeon/kfd_process_queue_manager.c
++++ b/drivers/gpu/hsa/radeon/kfd_process_queue_manager.c
+@@ -273,10 +273,10 @@ int pqm_destroy_queue(struct process_queue_manager *pqm, unsigned int qid)
+ 		if (retval != 0)
+ 			return retval;
  
--	if (!access_ok(VERIFY_WRITE, args.write_pointer_address, sizeof(qptr_t)))
-+	if (!access_ok(VERIFY_WRITE, args.write_pointer_address, sizeof(qptr_t))) {
-+		pr_err("kfd: can't access write pointer");
- 		return -EFAULT;
-+	}
+-		list_del(&pqn->process_queue_list);
+ 		uninit_queue(pqn->q);
+ 	}
  
- 	q_properties.is_interop = false;
- 	q_properties.queue_percent = args.queue_percentage;
++	list_del(&pqn->process_queue_list);
+ 	kfree(pqn);
+ 	clear_bit(qid, pqm->queue_slot_bitmap);
+ 
 -- 
 1.9.1
 
