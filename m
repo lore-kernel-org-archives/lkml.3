@@ -1,81 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354AbaGJKLU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 06:11:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47437 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751517AbaGJKLQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 06:11:16 -0400
-Date: Thu, 10 Jul 2014 12:11:51 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH 1/3] PCI/MSI: Add pci_enable_msi_partial()
-Message-ID: <20140710101151.GA21629@dhcp-26-207.brq.redhat.com>
-References: <cover.1402405331.git.agordeev@redhat.com>
- <4fef62a2e647a7c38e9f2a1ea4244b3506a85e2b.1402405331.git.agordeev@redhat.com>
- <20140702202201.GA28852@google.com>
- <20140704085741.GA12247@dhcp-26-207.brq.redhat.com>
- <CAErSpo6f6RXWv0DEtLBZX0jXoSUYJeWrSm7mubSJ_F-O7tQp6w@mail.gmail.com>
- <20140708122606.GB6270@dhcp-26-207.brq.redhat.com>
- <CAErSpo4oiabgoOjsGdWZpCMPnmopK4xRzB2f3tM0AiUFrdhFww@mail.gmail.com>
+	id S1753259AbaGJKMv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 06:12:51 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:58082 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915AbaGJKMt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 06:12:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo4oiabgoOjsGdWZpCMPnmopK4xRzB2f3tM0AiUFrdhFww@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [84.208.72.173]
+In-Reply-To: <87pphdh85q.fsf@nemi.mork.no>
+References: <1404980258-30853-1-git-send-email-teg@jklm.no>
+ <1404980258-30853-11-git-send-email-teg@jklm.no> <87pphdh85q.fsf@nemi.mork.no>
+From: Tom Gundersen <teg@jklm.no>
+Date: Thu, 10 Jul 2014 12:12:28 +0200
+Message-ID: <CAG-2HqWSRRfW1EygXd_1=eYFsTeDd3SsJBfF3BuH35hgGxogxA@mail.gmail.com>
+Subject: Re: [PATCH v7 10/33] net: dummy - set name assign type
+To: =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        dingtianhong <dingtianhong@huawei.com>,
+        Tan Xiaojun <tanxiaojun@huawei.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 10:06:48AM -0600, Bjorn Helgaas wrote:
-> Out of curiosity, do you have a pointer to this?  It looks like it
+On Thu, Jul 10, 2014 at 11:31 AM, Bjørn Mork <bjorn@mork.no> wrote:
+> Tom Gundersen <teg@jklm.no> writes:
+>
+>> A fixed number of indistinguishable dummy devices are allocated at module init time,
+>> the names are therefore PREDICTABLE rather than ENUM.
+>
+> OK?  So if I go do
+>
+>  modprobe dummy numdummies=2
+>  ip link add type dummy
+>  ip link add type dummy
+>
+> then I'd have dummy0 and dummy1 with NET_NAME_PREDICTABLE, but dummy2 and
+> dummy3 with NET_NAME_ENUM (from your rtnetlink patch).
 
-I.e. ICH8 chapter 12.1.30 or ICH10 chapter 14.1.27
+Correct. Granted, this is definitely a grey area (the distinction
+between the name assign types is less important for virtual devices),
+but I still think this makes sense:
 
-> uses one vector per port, and I'm wondering if the reason it requests
-> 16 is because there's some possibility of a part with more than 8
-> ports.
+The result of
 
-I doubt that is the reason. The only allowed MME values (powers of two)
-are 0b000, 0b001, 0b010 and 0b100. As you can see, only one bit is used -
-I would speculate it suits nicely to some hardware logic.
+modprobe dummy numdummies=2
 
-BTW, apart from AHCI, it seems the reason MSI is not going to disappear
-(in a decade at least) is it is way cheaper to implement than MSI-X.
+is to create dummy0 and dummy1, always with the same names.
 
-> > No, this is not an erratum. The value of 8 vectors is reserved and could
-> > cause undefined results if used.
-> 
-> As I read the spec (PCI 3.0, sec 6.8.1.3), if MMC contains 0b100
-> (requesting 16 vectors), the OS is allowed to allocate 1, 2, 4, 8, or
-> 16 vectors.  If allocating 8 vectors and writing 0b011 to MME causes
-> undefined results, I'd say that's a chipset defect.
+The result of
 
-Well, the PCI spec does not prevent devices to have their own specs on top
-of it. Undefined results are meant on the device side here. On the MSI side
-these results are likely perfectly within the PCI spec. I feel speaking as
-a lawer here ;)
+ip link add type dummy
 
-> Interrupt vector space is the issue I would worry about, but I think
-> I'm going to put this on the back burner until it actually becomes a
-> problem.
+is to create dummyX, where X depends on what came before.
 
-I plan to try get rid of arch_msi_check_device() hook. Should I repost
-this series afterwards?
+> I think this just demonstrates that there aren't that many different
+> name types.  There is no real difference between your NET_NAME_ENUM and
+> NET_NAME_PREDICTABLE, resulting in arbitrary choices like this one.
 
-Thanks!
+It is true that in some cases the distinction is less important, but
+that does not negate the usefulness: For instance, the kernel may
+assign names to interfaces based on information provided by their
+firmware. These names may be useful to keep, and it may be important
+for userspace to be told that they are backed by something sensible.
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+> The same goes for NET_NAME_USER and NET_NAME_RENAMED. These are the same
+> from a kernel point of view.
+
+You mean to collapse the two, and just label renamed interfaces
+NET_NAME_USER instead?
+
+> If userspace wants to keep track of device
+> name history then it is free to do so without any need for a RENAMED
+> type.
+
+Just for the record, I don't see how userspace can keep track of
+device name history (as some of the history may predate userspace
+being around). Getting the history is not important though, what we
+care about is the nature of the current name.
+
+Cheers,
+
+Tom
