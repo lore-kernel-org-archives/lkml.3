@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320AbaGJNZp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:25:45 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:61772 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752460AbaGJNZm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:25:42 -0400
-Date: Thu, 10 Jul 2014 14:25:34 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: amit daniel kachhap <amit.daniel@samsung.com>
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
-        LAK <linux-arm-kernel@lists.infradead.org>, devicetree@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 15/23] regulator: max77686: Setup DVS-related GPIOs on
- probe
-Message-ID: <20140710132534.GD11948@lee--X1>
-References: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
- <1404467722-26687-16-git-send-email-javier.martinez@collabora.co.uk>
- <CADGdYn4EURaHinWVksQSPzVr=CkZYcrqvWsO7mKDz_gY9XB__Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CADGdYn4EURaHinWVksQSPzVr=CkZYcrqvWsO7mKDz_gY9XB__Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753641AbaGJN0R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:26:17 -0400
+Received: from 8bytes.org ([85.214.48.195]:52020 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753418AbaGJN0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 09:26:00 -0400
+From: Joerg Roedel <joro@8bytes.org>
+To: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Cc: Oded.Gabbay@amd.com, Joerg Roedel <jroedel@suse.de>
+Subject: [PATCH 2/9] iommu/amd: Don't call mmu_notifer_unregister in __unbind_pasid
+Date: Thu, 10 Jul 2014 15:25:43 +0200
+Message-Id: <1404998750-15536-3-git-send-email-joro@8bytes.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1404998750-15536-1-git-send-email-joro@8bytes.org>
+References: <1404998750-15536-1-git-send-email-joro@8bytes.org>
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Thu Jul 10 15:25:58 2014
+X-DSPAM-Confidence: 0.9993
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 53be946620864868219607
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Jul 2014, amit daniel kachhap wrote:
+From: Joerg Roedel <jroedel@suse.de>
 
-> On Fri, Jul 4, 2014 at 3:25 PM, Javier Martinez Canillas
-> <javier.martinez@collabora.co.uk> wrote:
-> > MAX77686 PMIC support Dyamic Voltage Scaling (DVS) on a set
-> > of Buck regulators. A number of GPIO are connected to these
-> > lines and are requested by the mfd driver. Setup the GPIO
-> > pins from the regulator driver.
+This function is called only in the mn_release() path, so
+there is no need to unregister the mmu_notifer here.
 
-> If possible merge this patch with patch 8. Both are adding DVS
-> support. Put regmap_copy dependency patch in very beginning.
+Signed-off-by: Joerg Roedel <jroedel@suse.de>
+Tested-by: Oded Gabbay <Oded.Gabbay@amd.com>
+---
+ drivers/iommu/amd_iommu_v2.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-You want to merge two patches which deal with different subsystems?
-
-That's the opposite of what we usually try and achieve.
-
-> > Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> > ---
-> >  drivers/regulator/max77686.c | 34 ++++++++++++++++++++++++++++++++++
-> >  1 file changed, 34 insertions(+)
-
+diff --git a/drivers/iommu/amd_iommu_v2.c b/drivers/iommu/amd_iommu_v2.c
+index 0e29f6f..1fdd22c 100644
+--- a/drivers/iommu/amd_iommu_v2.c
++++ b/drivers/iommu/amd_iommu_v2.c
+@@ -313,8 +313,6 @@ static void __unbind_pasid(struct pasid_state *pasid_state)
+ 	/* Make sure no more pending faults are in the queue */
+ 	flush_workqueue(iommu_wq);
+ 
+-	mmu_notifier_unregister(&pasid_state->mn, pasid_state->mm);
+-
+ 	put_pasid_state(pasid_state); /* Reference taken in bind() function */
+ }
+ 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.9.5
+
+
