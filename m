@@ -1,201 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770AbaGJOs6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 10:48:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19559 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753170AbaGJOsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 10:48:55 -0400
-Date: Thu, 10 Jul 2014 10:48:42 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Vitaly Kuznetsov <vkuznets@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Andrew Jones <drjones@redhat.com>, xen-devel@lists.xenproject.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] mmap_vmcore: skip non-ram pages reported by
- hypervisors
-Message-ID: <20140710144842.GB24941@redhat.com>
-References: <1404906022-487-1-git-send-email-vkuznets@redhat.com>
+	id S1753078AbaGJOwY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 10:52:24 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57825 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945AbaGJOwW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 10:52:22 -0400
+Date: Thu, 10 Jul 2014 16:50:23 +0200
+From: Mark Brown <broonie@kernel.org>
+To: Keerthy <a0393675@ti.com>
+Cc: Keerthy <j-keerthy@ti.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        mark.rutland@arm.com, galak@codeaurora.org, robh+dt@kernel.org,
+        linux@arm.linux.org.uk, balbi@ti.com, tony@atomide.com, kishon@ti.com
+Message-ID: <20140710145023.GH30458@sirena.org.uk>
+References: <1404884193-20580-2-git-send-email-j-keerthy@ti.com>
+ <1404901379-30135-1-git-send-email-j-keerthy@ti.com>
+ <20140710121210.GF30458@sirena.org.uk>
+ <53BE90CF.5060407@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="U/fatWn3w9i48dtV"
 Content-Disposition: inline
-In-Reply-To: <1404906022-487-1-git-send-email-vkuznets@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53BE90CF.5060407@ti.com>
+X-Cookie: You look tired.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 82.127.83.212
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v4] regulator: tps65218: Add fixed_uV fields for dcdc5
+ and dcdc6
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 01:40:22PM +0200, Vitaly Kuznetsov wrote:
-> We have a special check in read_vmcore() handler to check if the page was
-> reported as ram or not by the hypervisor (pfn_is_ram()). However, when
-> vmcore is read with mmap() no such check is performed. That can lead to
-> unpredictable results, e.g. when running Xen PVHVM guest memcpy() after
-> mmap() on /proc/vmcore will hang processing HVMMEM_mmio_dm pages creating
-> enormous load in both DomU and Dom0.
-> 
-> Fix the issue by mapping each non-ram page to the zero page. Keep direct
-> path with remap_oldmem_pfn_range() to avoid looping through all pages on
-> bare metal.
-> 
-> The issue can also be solved by overriding remap_oldmem_pfn_range() in
-> xen-specific code, as remap_oldmem_pfn_range() was been designed for.
-> That, however, would involve non-obvious xen code path for all x86 builds
-> with CONFIG_XEN_PVHVM=y and would prevent all other hypervisor-specific
-> code on x86 arch from doing the same override.
-> 
-> Changes from v1:
-> - comment style changes
-> - change remap_oldmem_pfn_checked() interface to closer match the
->   remap_oldmem_pfn() interface
-> - preserve formal parameters within the loop, make the loop conditions
->   easier to understand
-> - use my_zero_pfn() for the zero page
-> - return remapped length instead of new offset
-> 
-> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
-> Reviewed-by: Andrew Jones <drjones@redhat.com>
-> ---
->  fs/proc/vmcore.c | 89 ++++++++++++++++++++++++++++++++++++++++++++++++++++----
->  1 file changed, 84 insertions(+), 5 deletions(-)
-> 
-> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-> index 382aa89..5cd13f8 100644
-> --- a/fs/proc/vmcore.c
-> +++ b/fs/proc/vmcore.c
-> @@ -328,6 +328,67 @@ static inline char *alloc_elfnotes_buf(size_t notes_sz)
->   * virtually contiguous user-space in ELF layout.
->   */
->  #ifdef CONFIG_MMU
-> +/*
-> + * remap_oldmem_pfn_checked - do remap_oldmem_pfn replacing all pages reported
-> + * as not being ram with the zero page.
-> + *
-> + * @vma: vm_area_struct describing requested mapping
-> + * @vma_addr: start remapping from
-> + * @pfn: page frame number to start remapping to
-> + * @size: remapping size
-> + *
-> + * Returns the remapped length. If no errors were hit during the remapping it
-> + * should be equal to size.
-> + */
 
-Hi,
+--U/fatWn3w9i48dtV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-So we are returning length of successful mapping so that it can be
-unmapped in outer loop in case of failure? If yes, can't we handle
-failure in this function itself instead of relying on outer function.
+On Thu, Jul 10, 2014 at 06:40:39PM +0530, Keerthy wrote:
+> On Thursday 10 July 2014 05:42 PM, Mark Brown wrote:
 
-IOW, why not unmap whatever we have mapped in this function and return
-the error code. That sounds simpler to me.
+> >Applied, but don't bury new patches into the middle of old threads -
+> >it's a good way to get your patch ignored.
 
-> +static u64 remap_oldmem_pfn_checked(struct vm_area_struct *vma,
-> +				    unsigned long vma_addr, unsigned long pfn,
-> +				    unsigned long size)
-> +{
-> +	size_t map_size;
-> +	unsigned long pos_start, pos_end, pos;
-> +	unsigned long zeropage_pfn = my_zero_pfn(0);
-> +	u64 len = 0;
-> +
-> +	pos_start = pfn;
-> +	pos_end = pfn + (size >> PAGE_SHIFT);
-> +
-> +	for (pos = pos_start; pos < pos_end; ++pos) {
-> +		if (!pfn_is_ram(pos)) {
-> +			/* We hit a page which is not ram. Remap the continuous
-> +			 * region between pos_start and pos-1 and replace
-> +			 * the non-ram page at pos with the zero page.
-> +			 */
-> +			if (pos > pos_start) {
-> +				/* Remap continuous region */
-> +				map_size = (pos - pos_start) << PAGE_SHIFT;
-> +				if (remap_oldmem_pfn_range(vma, vma_addr + len,
-> +							   pos_start, map_size,
-> +							   vma->vm_page_prot))
-> +					return len;
-> +				len += map_size;
-> +			}
-> +			/* Remap the zero page */
-> +			if (remap_oldmem_pfn_range(vma, vma_addr + len,
-> +						   zeropage_pfn,
-> +						   PAGE_SIZE,
-> +						   vma->vm_page_prot))
-> +				return len;
-> +			len += PAGE_SIZE;
-> +			pos_start = pos + 1;
-> +		}
-> +	}
-> +	if (pos > pos_start) {
-> +		/* Remap the rest */
-> +		map_size = (pos - pos_start) << PAGE_SHIFT;
-> +		if (remap_oldmem_pfn_range(vma, vma_addr + len, pos_start,
-> +					   map_size,
-> +					   vma->vm_page_prot))
-> +			return len;
-> +		len += map_size;
-> +	}
-> +	return len;
-> +}
-> +
->  static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
->  {
->  	size_t size = vma->vm_end - vma->vm_start;
-> @@ -387,13 +448,31 @@ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
->  
->  			tsz = min_t(size_t, m->offset + m->size - start, size);
->  			paddr = m->paddr + start - m->offset;
-> -			if (remap_oldmem_pfn_range(vma, vma->vm_start + len,
-> -						   paddr >> PAGE_SHIFT, tsz,
-> -						   vma->vm_page_prot))
-> -				goto fail;
-> +
-> +			/* Check if oldmem_pfn_is_ram was registered to avoid
-> +			   looping over all pages without a reason. */
-> +			if (oldmem_pfn_is_ram) {
-> +				u64 original_len;
-> +				unsigned long pfn, vma_addr;
-> +
-> +				pfn = paddr >> PAGE_SHIFT;
-> +				vma_addr = vma->vm_start + len;
-> +				original_len = len;
-> +				len += remap_oldmem_pfn_checked(vma, vma_addr,
+> Okay. I thought only one patch had to be redone on top of the other branch
+> so did it this way. I will resend a new series next time onwards. Thanks.
 
-How about keeping argument list same as remap_oldmem_pfn_range()? Just
-becomes easier to read.
+For something like this where there's actually no dependencies it's OK
+to resend the patch as a standalone thing.
 
-> +								pfn, tsz);
-> +				if (len != original_len + tsz)
-> +					goto fail;
+--U/fatWn3w9i48dtV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-If remap_oldmem_pfn_checked() can take care of internal error handling
-then this should simplify too.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-> +			} else {
-> +				if (remap_oldmem_pfn_range(vma,
-> +							   vma->vm_start + len,
-> +							   paddr >> PAGE_SHIFT,
-> +							   tsz,
-> +							   vma->vm_page_prot))
-> +					goto fail;
-> +				len += tsz;
-> +			}
+iQIcBAEBAgAGBQJTvqglAAoJELSic+t+oim9WQQP/2onpD/UaN80vD+apvUOM1B7
+G+PRdRLnnMLy5IOXAaFOCYDMwHGHSUaZ2VoZNRrZG2IufR2gc3ME8WAht7oGkSMc
+/ZC8eEQCTb7tJ+sSTgg8d2IEeAe8pKoPSz0//zva0ThtrTW3I8gMtMkNnRohL8aZ
+JfmEIOeXOMaCjsdc3Obx/fzbil1gnua9Ks4pBda2UnOj5d5aMTIIGeQzP37hQeqm
+t6MrhyohYZB0yFHN5W2EmoeN3vr15Y3Gp58ljeA0ekZTKbH1VyWbPLUSYVqK2/BB
+qEdq1ON4lRjyVXTBZTvwQb1l+AwslWqNdkTf0VopHQQWpcT0CKuuwHQwJIpltMbq
+CShZafowYIItpdQ2ZIncR5PVw3FVexzyZO2FELBiFITnpyhxqzWS6zPh3uGAeS1j
+MnHTsyu/kCepe3mZh9/Lq8eCND1kw7BitS/dJ5MC1qya6jzmjlH9yCwYt3HNuK8/
+soZOG8k3MQx8jpdu/Wf7aKowXfuDLhlXIZKmq2fUprqMGTSAtvR6A5i8f5/Z0zKx
+ZtnInxRDlh7sAnv0VAYQr/O1xEWXDIKYExS23osbRoXHM9/O/E3nHHAi0YZH89Dd
+iT4me5gq7VvkCmr+M2Hrpqzu430DE3f/be7BujeNLw6K2iOUz0oxbH8mmWJ5mX70
+a/7UMczr4ve4BMLonQzc
+=DftR
+-----END PGP SIGNATURE-----
 
-Can we move this code inside another wrapper function? This is looking
-little ugly inline.
-
-May be something like.
-
-vmcore_remap_pfn_range() {
-	if (oldmem_pfn_is_ram)
-		remap_oldmem_pfn_checked()
-	else
-		remap_pfn_range();
-}
-
-This will also reduce the depth of braces and you might not have to use
-5 lines to pass arguments to remap_oldmem_pfn_range().
-
-Thanks
-Vivek
+--U/fatWn3w9i48dtV--
