@@ -1,75 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877AbaGJJZV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 05:25:21 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:47739 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752286AbaGJJZN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 05:25:13 -0400
+	id S1752765AbaGJJ1V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 05:27:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6886 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751746AbaGJJ1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 05:27:19 -0400
+Date: Thu, 10 Jul 2014 11:26:09 +0200
+From: Igor Mammedov <imammedo@redhat.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>,
+        <x86@kernel.org>, <toshi.kani@hp.com>, <bp@alien8.de>,
+        <huawei.libin@huawei.com>, <paul.gortmaker@windriver.com>,
+        <linux-kernel@vger.kernel.org>, <srivatsa.bhat@linux.vnet.ibm.com>,
+        <umgwanakikbuti@gmail.com>, <peterz@infradead.org>
+Subject: Re: [PATCH] x86,cpu-hotplug: assign same CPU number to readded CPU
+Message-ID: <20140710112609.0b0eb294@nial.usersys.redhat.com>
+In-Reply-To: <53BE51CE.40208@jp.fujitsu.com>
+References: <53BE51CE.40208@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20140709185549.GB4866@redhat.com>
-References: <1403911380-27787-1-git-send-email-keescook@chromium.org>
-	<1403911380-27787-10-git-send-email-keescook@chromium.org>
-	<20140709184215.GA4866@redhat.com>
-	<20140709185549.GB4866@redhat.com>
-Date: Thu, 10 Jul 2014 02:25:12 -0700
-X-Google-Sender-Auth: sQAH1XjXNSSrDt6A530PBSvtI74
-Message-ID: <CAGXu5jL6q1d16uA1Yu+QO4eV7zWwcWEWgkZrwmsfymbMvEr6+Q@mail.gmail.com>
-Subject: Re: [PATCH v9 09/11] seccomp: introduce writer locking
-From: Kees Cook <keescook@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 9, 2014 at 11:55 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 07/09, Oleg Nesterov wrote:
->>
->> On 06/27, Kees Cook wrote:
->> >
->> >  static u32 seccomp_run_filters(int syscall)
->> >  {
->> > -   struct seccomp_filter *f;
->> > +   struct seccomp_filter *f = ACCESS_ONCE(current->seccomp.filter);
->>
->> I am not sure...
->>
->> This is fine if this ->filter is the 1st (and only) one, in this case
->> we can rely on rmb() in the caller.
->>
->> But the new filter can be installed at any moment. Say, right after that
->> rmb() although this doesn't matter. Either we need smp_read_barrier_depends()
->> after that, or smp_load_acquire() like the previous version did?
->
-> Wait... and it seems that seccomp_sync_threads() needs smp_store_release()
-> when it sets thread->filter = current->filter by the same reason?
->
-> OTOH. smp_store_release() in seccomp_attach_filter() can die, "current"
-> doesn't need a barrier to serialize with itself.
+On Thu, 10 Jul 2014 17:41:50 +0900
+Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com> wrote:
 
-I have lost track of what you're suggesting to change. :)
+> llc_shared_map is not cleared even if CPU is offline or hot removed.
+> So when hot-plugging CPU and assigning new CPU number to hot-added CPU,
+> the mask has wrong value. The mask is used by CSF schduler to create
+> sched_domain. So it breaks CFS scheduler.
+> 
+> Here is a example on my system.
+> My system has 4 sockets and each socket has 15 cores and HT is enabled.
+> In this case, each core of sockes is numbered as follows:
+> 
+>           | CPU#
+> Socket#0 | 0-14 , 60-74
+> Socket#1 | 15-29, 75-89
+> Socket#2 | 30-44, 90-104
+> Socket#3 | 45-59, 105-119
+> 
+> Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
+> It means that last level cache of Socket#2 is shared with
+> CPU#30-44 and 90-104.
+> 
+> When hot-removing socket#2 and #3, each core of sockets is numbered
+> as follows:
+> 
+>           | CPU#
+> Socket#0 | 0-14 , 60-74
+> Socket#1 | 15-29, 75-89
+> 
+> But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30 remains
+> having 0x3fff80000001fffc0000000.
+> 
+> After that, when hot-adding socket#2 and #3, each core of sockets is
+> numbered as follows:
+> 
+>           | CPU#
+> Socket#0 | 0-14 , 60-74
+> Socket#1 | 15-29, 75-89
+> Socket#2 | 30-59
+> Socket#3 | 90-119
+> 
+> Then llc_shared_mask of CPU#30 becomes 0x3fff8000fffffffc0000000.
+> It means that last level cache of Socket#2 is shared with CPU#30-59
+> and 90-104. So the mask has wrong value.
+> 
+> At first, I cleared hot-removed CPU number's bit from llc_shared_map
+> when hot removing CPU. But Borislav suggested that the problem will
+> disappear if readded CPU is assigned same CPU number. And llc_shared_map
+> must not be changed.
+> 
+> So the patch assigns same CPU number to readded CPU by linking CPU
+> number to APIC ID. And by the patch, the problem disappers.
+> 
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Suggested-by: Borislav Petkov <bp@alien8.de1>
+> ---
+>   arch/x86/kernel/apic/apic.c | 32 +++++++++++++++++++++++++++++++-
+>   1 file changed, 31 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+> index ad28db7..1cc715b 100644
+> --- a/arch/x86/kernel/apic/apic.c
+> +++ b/arch/x86/kernel/apic/apic.c
+> @@ -220,6 +220,22 @@ static void apic_pm_activate(void);
+>   static unsigned long apic_phys;
+> 
+>   /*
+> + * Bind ACPI ID to CPU ID
+> + * CPU ID to APIC ID does not change by this array even if CPU is
+> + * hotplugged. So don't clear the array even if CPU is hot-removed
+> + */
+> +static int apicid_to_cpuid[MAX_LOCAL_APIC] = {
+> +	[0 ... MAX_LOCAL_APIC-1] = -1,
+> +};
+> +
+> +/*
+> + * Represent CPU ID bound to APIC
+> + * Don't clear a bit even if CPU is hot-removed
+> + */
+> +static DECLARE_BITMAP(cpu_used_bits, CONFIG_NR_CPUS);
+> +static struct cpumask *const cpu_used_mask = to_cpumask(cpu_used_bits);
+> +
+> +/*
+>    * Get the LAPIC version
+>    */
+>   static inline int lapic_get_version(void)
+> @@ -2122,6 +2138,17 @@ void disconnect_bsp_APIC(int virt_wire_setup)
+>   	apic_write(APIC_LVT1, value);
+>   }
+> 
+> +static int get_cpuid(int apicid)
+> +{
+> +	int cpuid;
+> +
+> +	cpuid = apicid_to_cpuid[apicid];
+> +	if (cpuid < 0)
+> +		cpuid = cpumask_next_zero(-1, cpu_used_mask);
+Why do you need additional cpu bitmask?
+How about just finding the first apicid_to_cpuid[apicid] < 0
+and dropping not needed anymore bitmask.
 
-Since rmb() happens before run_filters, isn't the ACCESS_ONCE
-sufficient? We only care that TIF_SECCOMP, mode, and some filter is
-valid. In a tsync thread race, it's okay to use not use the deepest
-filter node in the list, it just needs A filter.
+> +
+> +	return cpuid;
+> +}
+> +
+>   int generic_processor_info(int apicid, int version)
+>   {
+>   	int cpu, max = nr_cpu_ids;
+> @@ -2199,7 +2226,9 @@ int generic_processor_info(int apicid, int version)
+>   		 */
+>   		cpu = 0;
+>   	} else
+> -		cpu = cpumask_next_zero(-1, cpu_present_mask);
+> +		cpu = get_cpuid(apicid);
+> +
+> +	apicid_to_cpuid[apicid] = cpu;
+> 
+>   	/*
+>   	 * Validate version
+> @@ -2228,6 +2257,7 @@ int generic_processor_info(int apicid, int version)
+>   	early_per_cpu(x86_cpu_to_logical_apicid, cpu) =
+>   		apic->x86_32_early_logical_apicid(cpu);
+>   #endif
+> +	cpumask_set_cpu(cpu, cpu_used_mask);
+>   	set_cpu_possible(cpu, true);
+>   	set_cpu_present(cpu, true);
+> 
+> 
 
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
