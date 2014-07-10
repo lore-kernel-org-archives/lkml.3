@@ -1,148 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753412AbaGJNG4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:06:56 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:20899 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752092AbaGJNGw (ORCPT
+	id S1753539AbaGJNIJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:08:09 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:33862 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752374AbaGJNIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:06:52 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-6f-53be8fe90012
-Message-id: <53BE8EA5.2030402@samsung.com>
-Date: Thu, 10 Jul 2014 17:01:25 +0400
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org
-Cc: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
-        Alexey Preobrazhensky <preobr@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Michal Marek <mmarek@suse.cz>, Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        x86@kernel.org, linux-mm@kvack.org,
-        Dave Hansen <dave.hansen@intel.com>
-Subject: Re: [RFC/PATCH RESEND -next 01/21] Add kernel address sanitizer
- infrastructure.
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1404905415-9046-2-git-send-email-a.ryabinin@samsung.com>
- <53BE7F29.20304@oracle.com>
-In-reply-to: <53BE7F29.20304@oracle.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsVy+t/xa7ov+/cFG/zosbT4vXcmq8Wc9WvY
-	LK5/e8No8enlA0aLCQ/b2C1WdjezWWx/9pbJYmXnA1aLTY+vsVr82bWDyeLyrjlsFvfW/Ge1
-	uH2Z1+LSgQVMFi37LjBZtH3+x2qxb+V5IGvJRiaLxUduM1u8ezaZ2WLzpqnMFj82PGZ1EPNo
-	ae5h89g56y67x4JNpR6L97xk8ti0qpPNY9OnSeweXW+vMHm8O3eO3ePEjN8sHk+uTGfy2Lyk
-	3uPj01ssHu/3XWXzOLPgCLvH501yAfxRXDYpqTmZZalF+nYJXBmPLnIWzFKq+L7gJlsD4wHp
-	LkZODgkBE4m7x6awQNhiEhfurWcDsYUEljJK3Dmv2cXIBWQ3M0l8efGOESTBK6AlMe/MV7Ai
-	FgFViS9PXzGB2GwCehL/Zm0Hi4sKREgc6HvGClEvKPFj8j2wBSICbhL7DlxmARnKLHCNVWL6
-	v4PMIAlhgSiJnudnGCG2zWeUOPV3Glg3p4CGxOZbX8BsZgEdif2t09ggbHmJzWveMk9gFJiF
-	ZMksJGWzkJQtYGRexSiaWppcUJyUnmukV5yYW1yal66XnJ+7iRES2193MC49ZnWIUYCDUYmH
-	98XuPcFCrIllxZW5hxglOJiVRHiz6vYFC/GmJFZWpRblxxeV5qQWH2Jk4uCUamDcJ5HJterD
-	/JjV8+w39L7plP3Lfry+5a43z5TOw62VWpK7apZWxyc7pVw/FK5iGHGybemC3pdK7NN590x5
-	tUN11o2G2m1vfD7eC/yc+YHFe/oNqznK9X4KHyaJv5fjjlpfUVqgt8OsYFnI8dLcIp4e46/3
-	vbkZ/upkOW++qONx597ERz+0YzOVWIozEg21mIuKEwFoOtHIywIAAA==
+	Thu, 10 Jul 2014 09:08:06 -0400
+Date: Thu, 10 Jul 2014 15:08:01 +0200 (CEST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>, Colin Cross <ccross@google.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v3] clocksource: document some basic timekeeping
+ concepts
+In-Reply-To: <1404978747-20869-1-git-send-email-linus.walleij@linaro.org>
+Message-ID: <alpine.DEB.2.10.1407101507060.3596@Yrabib>
+References: <1404978747-20869-1-git-send-email-linus.walleij@linaro.org>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/14 15:55, Sasha Levin wrote:
-> On 07/09/2014 07:29 AM, Andrey Ryabinin wrote:
->> Address sanitizer for kernel (kasan) is a dynamic memory error detector.
->>
->> The main features of kasan is:
->>  - is based on compiler instrumentation (fast),
->>  - detects out of bounds for both writes and reads,
->>  - provides use after free detection,
->>
->> This patch only adds infrastructure for kernel address sanitizer. It's not
->> available for use yet. The idea and some code was borrowed from [1].
->>
->> This feature requires pretty fresh GCC (revision r211699 from 2014-06-16 or
->> latter).
->>
->> Implementation details:
->> The main idea of KASAN is to use shadow memory to record whether each byte of memory
->> is safe to access or not, and use compiler's instrumentation to check the shadow memory
->> on each memory access.
->>
->> Address sanitizer dedicates 1/8 of the low memory to the shadow memory and uses direct
->> mapping with a scale and offset to translate a memory address to its corresponding
->> shadow address.
->>
->> Here is function to translate address to corresponding shadow address:
->>
->>      unsigned long kasan_mem_to_shadow(unsigned long addr)
->>      {
->>                 return ((addr - PAGE_OFFSET) >> KASAN_SHADOW_SCALE_SHIFT)
->>                              + kasan_shadow_start;
->>      }
->>
->> where KASAN_SHADOW_SCALE_SHIFT = 3.
->>
->> So for every 8 bytes of lowmemory there is one corresponding byte of shadow memory.
->> The following encoding used for each shadow byte: 0 means that all 8 bytes of the
->> corresponding memory region are valid for access; k (1 <= k <= 7) means that
->> the first k bytes are valid for access, and other (8 - k) bytes are not;
->> Any negative value indicates that the entire 8-bytes are unaccessible.
->> Different negative values used to distinguish between different kinds of
->> unaccessible memory (redzones, freed memory) (see mm/kasan/kasan.h).
->>
->> To be able to detect accesses to bad memory we need a special compiler.
->> Such compiler inserts a specific function calls (__asan_load*(addr), __asan_store*(addr))
->> before each memory access of size 1, 2, 4, 8 or 16.
->>
->> These functions check whether memory region is valid to access or not by checking
->> corresponding shadow memory. If access is not valid an error printed.
->>
->> [1] https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
->>
->> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-> 
-> I gave it a spin, and it seems that it fails for what you might call a "regular"
-> memory size these days, in my case it was 18G:
-> 
-> [    0.000000] Kernel panic - not syncing: ERROR: Failed to allocate 0xe0c00000 bytes below 0x0.
-> [    0.000000]
-> [    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.16.0-rc4-next-20140710-sasha-00044-gb7b0579-dirty #784
-> [    0.000000]  ffffffffb9c2d3c8 cd9ce91adea4379a 0000000000000000 ffffffffb9c2d3c8
-> [    0.000000]  ffffffffb9c2d330 ffffffffb7fe89b7 ffffffffb93c8c28 ffffffffb9c2d3b8
-> [    0.000000]  ffffffffb7fcff1d 0000000000000018 ffffffffb9c2d3c8 ffffffffb9c2d360
-> [    0.000000] Call Trace:
-> [    0.000000] <UNK> dump_stack (lib/dump_stack.c:52)
-> [    0.000000] panic (kernel/panic.c:119)
-> [    0.000000] memblock_alloc_base (mm/memblock.c:1092)
-> [    0.000000] memblock_alloc (mm/memblock.c:1097)
-> [    0.000000] kasan_alloc_shadow (mm/kasan/kasan.c:151)
-> [    0.000000] zone_sizes_init (arch/x86/mm/init.c:684)
-> [    0.000000] paging_init (arch/x86/mm/init_64.c:677)
-> [    0.000000] setup_arch (arch/x86/kernel/setup.c:1168)
-> [    0.000000] ? printk (kernel/printk/printk.c:1839)
-> [    0.000000] start_kernel (include/linux/mm_types.h:462 init/main.c:533)
-> [    0.000000] ? early_idt_handlers (arch/x86/kernel/head_64.S:344)
-> [    0.000000] x86_64_start_reservations (arch/x86/kernel/head64.c:194)
-> [    0.000000] x86_64_start_kernel (arch/x86/kernel/head64.c:183)
-> 
-> It got better when I reduced memory to 1GB, but then my system just failed to boot
-> at all because that's not enough to bring everything up.
-> 
+On Thu, 10 Jul 2014, Linus Walleij wrote:
 
-Thanks.
-I think memory size is not a problem here. I tested on my desktop with 16G.
-Seems it's a problem with memory holes cited by Dave.
-kasan tries to allocate ~3.5G. It means that lowmemsize is 28G in your case.
-
-
+> This adds some documentation about clock sources, clock events,
+> the weak sched_clock() function and delay timers that answers
+> questions that repeatedly arise on the mailing lists.
 > 
-> Thanks,
-> Sasha
-> 
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Nicolas Pitre <nico@fluxnic.net>
+> Cc: Colin Cross <ccross@google.com>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
+Acked-by: Nicolas Pitre <nico@linaro.org>
+
+> ---
+> ChangeLog v2->v3:
+> - Minor spelling and tweak comments (PeterZ)
+> - Emphasize clocksource_register_[k]hz (John Stultz)
+> - Spelling fixes (Randy Dunlap)
+> ChangeLog v1->v2:
+> - Included paragraphs and minor edits to account for PeterZ's
+>   comments on addressing SMP use cases, which makes especially
+>   the semantics of sched_clock() much clearer.
+> ---
+>  Documentation/timers/00-INDEX        |   2 +
+>  Documentation/timers/timekeeping.txt | 179 +++++++++++++++++++++++++++++++++++
+>  2 files changed, 181 insertions(+)
+>  create mode 100644 Documentation/timers/timekeeping.txt
+> 
+> diff --git a/Documentation/timers/00-INDEX b/Documentation/timers/00-INDEX
+> index 6d042dc1cce0..ee212a27772f 100644
+> --- a/Documentation/timers/00-INDEX
+> +++ b/Documentation/timers/00-INDEX
+> @@ -12,6 +12,8 @@ Makefile
+>  	- Build and link hpet_example
+>  NO_HZ.txt
+>  	- Summary of the different methods for the scheduler clock-interrupts management.
+> +timekeeping.txt
+> +	- Clock sources, clock events, sched_clock() and delay timer notes
+>  timers-howto.txt
+>  	- how to insert delays in the kernel the right (tm) way.
+>  timer_stats.txt
+> diff --git a/Documentation/timers/timekeeping.txt b/Documentation/timers/timekeeping.txt
+> new file mode 100644
+> index 000000000000..f3a8cf28f802
+> --- /dev/null
+> +++ b/Documentation/timers/timekeeping.txt
+> @@ -0,0 +1,179 @@
+> +Clock sources, Clock events, sched_clock() and delay timers
+> +-----------------------------------------------------------
+> +
+> +This document tries to briefly explain some basic kernel timekeeping
+> +abstractions. It partly pertains to the drivers usually found in
+> +drivers/clocksource in the kernel tree, but the code may be spread out
+> +across the kernel.
+> +
+> +If you grep through the kernel source you will find a number of architecture-
+> +specific implementations of clock sources, clockevents and several likewise
+> +architecture-specific overrides of the sched_clock() function and some
+> +delay timers.
+> +
+> +To provide timekeeping for your platform, the clock source provides
+> +the basic timeline, whereas clock events shoot interrupts on certain points
+> +on this timeline, providing facilities such as high-resolution timers.
+> +sched_clock() is used for scheduling and timestamping, and delay timers
+> +provide an accurate delay source using hardware counters.
+> +
+> +
+> +Clock sources
+> +-------------
+> +
+> +The purpose of the clock source is to provide a timeline for the system that
+> +tells you where you are in time. For example issuing the command 'date' on
+> +a Linux system will eventually read the clock source to determine exactly
+> +what time it is.
+> +
+> +Typically the clock source is a monotonic, atomic counter which will provide
+> +n bits which count from 0 to 2^(n-1) and then wraps around to 0 and start over.
+> +It will ideally NEVER stop ticking as long as the system is running. It
+> +may stop during system suspend.
+> +
+> +The clock source shall have as high resolution as possible, and the frequency
+> +shall be as stable and correct as possible as compared to a real-world wall
+> +clock. It should not move unpredictably back and forth in time or miss a few
+> +cycles here and there.
+> +
+> +It must be immune to the kind of effects that occur in hardware where e.g.
+> +the counter register is read in two phases on the bus lowest 16 bits first
+> +and the higher 16 bits in a second bus cycle with the counter bits
+> +potentially being updated in between leading to the risk of very strange
+> +values from the counter.
+> +
+> +When the wall-clock accuracy of the clock source isn't satisfactory, there
+> +are various quirks and layers in the timekeeping code for e.g. synchronizing
+> +the user-visible time to RTC clocks in the system or against networked time
+> +servers using NTP, but all they do basically is update an offset against
+> +the clock source, which provides the fundamental timeline for the system.
+> +These measures does not affect the clock source per se, they only adapt the
+> +system to the shortcomings of it.
+> +
+> +The clock source struct shall provide means to translate the provided counter
+> +into a nanosecond value as an unsigned long long (unsigned 64 bit) number.
+> +Since this operation may be invoked very often, doing this in a strict
+> +mathematical sense is not desirable: instead the number is taken as close as
+> +possible to a nanosecond value using only the arithmetic operations
+> +multiply and shift, so in clocksource_cyc2ns() you find:
+> +
+> +  ns ~= (clocksource * mult) >> shift
+> +
+> +You will find a number of helper functions in the clock source code intended
+> +to aid in providing these mult and shift values, such as
+> +clocksource_khz2mult(), clocksource_hz2mult() that help determine the
+> +mult factor from a fixed shift, and clocksource_register_hz() and
+> +clocksource_register_khz() which will help out assigning both shift and mult
+> +factors using the frequency of the clock source as the only input.
+> +
+> +For real simple clock sources accessed from a single I/O memory location
+> +there is nowadays even clocksource_mmio_init() which will take a memory
+> +location, bit width, a parameter telling whether the counter in the
+> +register counts up or down, and the timer clock rate, and then conjure all
+> +necessary parameters.
+> +
+> +Since a 32-bit counter at say 100 MHz will wrap around to zero after some 43
+> +seconds, the code handling the clock source will have to compensate for this.
+> +That is the reason why the clock source struct also contains a 'mask'
+> +member telling how many bits of the source are valid. This way the timekeeping
+> +code knows when the counter will wrap around and can insert the necessary
+> +compensation code on both sides of the wrap point so that the system timeline
+> +remains monotonic.
+> +
+> +
+> +Clock events
+> +------------
+> +
+> +Clock events are the conceptual reverse of clock sources: they take a
+> +desired time specification value and calculate the values to poke into
+> +hardware timer registers.
+> +
+> +Clock events are orthogonal to clock sources. The same hardware
+> +and register range may be used for the clock event, but it is essentially
+> +a different thing. The hardware driving clock events has to be able to
+> +fire interrupts, so as to trigger events on the system timeline. On an SMP
+> +system, it is ideal (and customary) to have one such event driving timer per
+> +CPU core, so that each core can trigger events independently of any other
+> +core.
+> +
+> +You will notice that the clock event device code is based on the same basic
+> +idea about translating counters to nanoseconds using mult and shift
+> +arithmetic, and you find the same family of helper functions again for
+> +assigning these values. The clock event driver does not need a 'mask'
+> +attribute however: the system will not try to plan events beyond the time
+> +horizon of the clock event.
+> +
+> +
+> +sched_clock()
+> +-------------
+> +
+> +In addition to the clock sources and clock events there is a special weak
+> +function in the kernel called sched_clock(). This function shall return the
+> +number of nanoseconds since the system was started. An architecture may or
+> +may not provide an implementation of sched_clock() on its own. If a local
+> +implementation is not provided, the system jiffy counter will be used as
+> +sched_clock().
+> +
+> +As the name suggests, sched_clock() is used for scheduling the system,
+> +determining the absolute timeslice for a certain process in the CFS scheduler
+> +for example. It is also used for printk timestamps when you have selected to
+> +include time information in printk for things like bootcharts.
+> +
+> +Compared to clock sources, sched_clock() has to be very fast: it is called
+> +much more often, especially by the scheduler. If you have to do trade-offs
+> +between accuracy compared to the clock source, you may sacrifice accuracy
+> +for speed in sched_clock(). It however requires some of the same basic
+> +characteristics as the clock source, i.e. it should be monotonic.
+> +
+> +The sched_clock() function may wrap only on unsigned long long boundaries,
+> +i.e. after 64 bits. Since this is a nanosecond value this will mean it wraps
+> +after circa 585 years. (For most practical systems this means "never".)
+> +
+> +If an architecture does not provide its own implementation of this function,
+> +it will fall back to using jiffies, making its maximum resolution 1/HZ of the
+> +jiffy frequency for the architecture. This will affect scheduling accuracy
+> +and will likely show up in system benchmarks.
+> +
+> +The clock driving sched_clock() may stop or reset to zero during system
+> +suspend/sleep. This does not matter to the function it serves of scheduling
+> +events on the system. However it may result in interesting timestamps in
+> +printk().
+> +
+> +The sched_clock() function should be callable in any context, IRQ- and
+> +NMI-safe and return a sane value in any context.
+> +
+> +Some architectures may have a limited set of time sources and lack a nice
+> +counter to derive a 64-bit nanosecond value, so for example on the ARM
+> +architecture, special helper functions have been created to provide a
+> +sched_clock() nanosecond base from a 16- or 32-bit counter. Sometimes the
+> +same counter that is also used as clock source is used for this purpose.
+> +
+> +On SMP systems, it is crucial for performance that sched_clock() can be called
+> +independently on each CPU without any synchronization performance hits.
+> +Some hardware (such as the x86 TSC) will cause the sched_clock() function to
+> +drift between the CPUs on the system. The kernel can work around this by
+> +enabling the CONFIG_HAVE_UNSTABLE_SCHED_CLOCK option. This is another aspect
+> +that makes sched_clock() different from the ordinary clock source.
+> +
+> +
+> +Delay timers (some architectures only)
+> +--------------------------------------
+> +
+> +On systems with variable CPU frequency, the various kernel delay() functions
+> +will sometimes behave strangely. Basically these delays usually use a hard
+> +loop to delay a certain number of jiffy fractions using a "lpj" (loops per
+> +jiffy) value, calibrated on boot.
+> +
+> +Let's hope that your system is running on maximum frequency when this value
+> +is calibrated: as an effect when the frequency is geared down to half the
+> +full frequency, any delay() will be twice as long. Usually this does not
+> +hurt, as you're commonly requesting that amount of delay *or more*. But
+> +basically the semantics are quite unpredictable on such systems.
+> +
+> +Enter timer-based delays. Using these, a timer read may be used instead of
+> +a hard-coded loop for providing the desired delay.
+> +
+> +This is done by declaring a struct delay_timer and assigning the appropriate
+> +function pointers and rate settings for this delay timer.
+> +
+> +This is available on some architectures like OpenRISC or ARM.
+> -- 
+> 1.9.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
