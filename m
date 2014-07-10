@@ -1,138 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554AbaGJNcP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:32:15 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:28760 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752263AbaGJNcN (ORCPT
+	id S1753694AbaGJNcw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:32:52 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:36796 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753595AbaGJNct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:32:13 -0400
-Message-ID: <53BE959A.4010206@oracle.com>
-Date: Thu, 10 Jul 2014 09:31:06 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Andrey Ryabinin <a.ryabinin@samsung.com>, linux-kernel@vger.kernel.org
-CC: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
-        Alexey Preobrazhensky <preobr@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Michal Marek <mmarek@suse.cz>, Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        x86@kernel.org, linux-mm@kvack.org,
-        Dave Hansen <dave.hansen@intel.com>
-Subject: Re: [RFC/PATCH RESEND -next 01/21] Add kernel address sanitizer infrastructure.
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com> <1404905415-9046-2-git-send-email-a.ryabinin@samsung.com> <53BE7F29.20304@oracle.com> <53BE8EA5.2030402@samsung.com>
-In-Reply-To: <53BE8EA5.2030402@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Thu, 10 Jul 2014 09:32:49 -0400
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Mike Turquette <mturquette@linaro.org>, rabin@rab.in,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, tomasz.figa@gmail.com
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Subject: [RFC v3 1/5] clk: Add temporary mapping to the existing API
+Date: Thu, 10 Jul 2014 15:32:22 +0200
+Message-Id: <1404999146-32691-2-git-send-email-tomeu.vizoso@collabora.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1404999146-32691-1-git-send-email-tomeu.vizoso@collabora.com>
+References: <1404999146-32691-1-git-send-email-tomeu.vizoso@collabora.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2014 09:01 AM, Andrey Ryabinin wrote:
-> On 07/10/14 15:55, Sasha Levin wrote:
->> > On 07/09/2014 07:29 AM, Andrey Ryabinin wrote:
->>> >> Address sanitizer for kernel (kasan) is a dynamic memory error detector.
->>> >>
->>> >> The main features of kasan is:
->>> >>  - is based on compiler instrumentation (fast),
->>> >>  - detects out of bounds for both writes and reads,
->>> >>  - provides use after free detection,
->>> >>
->>> >> This patch only adds infrastructure for kernel address sanitizer. It's not
->>> >> available for use yet. The idea and some code was borrowed from [1].
->>> >>
->>> >> This feature requires pretty fresh GCC (revision r211699 from 2014-06-16 or
->>> >> latter).
->>> >>
->>> >> Implementation details:
->>> >> The main idea of KASAN is to use shadow memory to record whether each byte of memory
->>> >> is safe to access or not, and use compiler's instrumentation to check the shadow memory
->>> >> on each memory access.
->>> >>
->>> >> Address sanitizer dedicates 1/8 of the low memory to the shadow memory and uses direct
->>> >> mapping with a scale and offset to translate a memory address to its corresponding
->>> >> shadow address.
->>> >>
->>> >> Here is function to translate address to corresponding shadow address:
->>> >>
->>> >>      unsigned long kasan_mem_to_shadow(unsigned long addr)
->>> >>      {
->>> >>                 return ((addr - PAGE_OFFSET) >> KASAN_SHADOW_SCALE_SHIFT)
->>> >>                              + kasan_shadow_start;
->>> >>      }
->>> >>
->>> >> where KASAN_SHADOW_SCALE_SHIFT = 3.
->>> >>
->>> >> So for every 8 bytes of lowmemory there is one corresponding byte of shadow memory.
->>> >> The following encoding used for each shadow byte: 0 means that all 8 bytes of the
->>> >> corresponding memory region are valid for access; k (1 <= k <= 7) means that
->>> >> the first k bytes are valid for access, and other (8 - k) bytes are not;
->>> >> Any negative value indicates that the entire 8-bytes are unaccessible.
->>> >> Different negative values used to distinguish between different kinds of
->>> >> unaccessible memory (redzones, freed memory) (see mm/kasan/kasan.h).
->>> >>
->>> >> To be able to detect accesses to bad memory we need a special compiler.
->>> >> Such compiler inserts a specific function calls (__asan_load*(addr), __asan_store*(addr))
->>> >> before each memory access of size 1, 2, 4, 8 or 16.
->>> >>
->>> >> These functions check whether memory region is valid to access or not by checking
->>> >> corresponding shadow memory. If access is not valid an error printed.
->>> >>
->>> >> [1] https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
->>> >>
->>> >> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
->> > 
->> > I gave it a spin, and it seems that it fails for what you might call a "regular"
->> > memory size these days, in my case it was 18G:
->> > 
->> > [    0.000000] Kernel panic - not syncing: ERROR: Failed to allocate 0xe0c00000 bytes below 0x0.
->> > [    0.000000]
->> > [    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.16.0-rc4-next-20140710-sasha-00044-gb7b0579-dirty #784
->> > [    0.000000]  ffffffffb9c2d3c8 cd9ce91adea4379a 0000000000000000 ffffffffb9c2d3c8
->> > [    0.000000]  ffffffffb9c2d330 ffffffffb7fe89b7 ffffffffb93c8c28 ffffffffb9c2d3b8
->> > [    0.000000]  ffffffffb7fcff1d 0000000000000018 ffffffffb9c2d3c8 ffffffffb9c2d360
->> > [    0.000000] Call Trace:
->> > [    0.000000] <UNK> dump_stack (lib/dump_stack.c:52)
->> > [    0.000000] panic (kernel/panic.c:119)
->> > [    0.000000] memblock_alloc_base (mm/memblock.c:1092)
->> > [    0.000000] memblock_alloc (mm/memblock.c:1097)
->> > [    0.000000] kasan_alloc_shadow (mm/kasan/kasan.c:151)
->> > [    0.000000] zone_sizes_init (arch/x86/mm/init.c:684)
->> > [    0.000000] paging_init (arch/x86/mm/init_64.c:677)
->> > [    0.000000] setup_arch (arch/x86/kernel/setup.c:1168)
->> > [    0.000000] ? printk (kernel/printk/printk.c:1839)
->> > [    0.000000] start_kernel (include/linux/mm_types.h:462 init/main.c:533)
->> > [    0.000000] ? early_idt_handlers (arch/x86/kernel/head_64.S:344)
->> > [    0.000000] x86_64_start_reservations (arch/x86/kernel/head64.c:194)
->> > [    0.000000] x86_64_start_kernel (arch/x86/kernel/head64.c:183)
->> > 
->> > It got better when I reduced memory to 1GB, but then my system just failed to boot
->> > at all because that's not enough to bring everything up.
->> > 
-> Thanks.
-> I think memory size is not a problem here. I tested on my desktop with 16G.
-> Seems it's a problem with memory holes cited by Dave.
-> kasan tries to allocate ~3.5G. It means that lowmemsize is 28G in your case.
+To preserve git-bisectability, add aliases from the future provider API to the
+existing public API.
 
-That's correct (I've mistyped and got 18 instead of 28 above).
+Also includes clk-provider.h and clk-dev.h in a few places so the right
+functions are defined.
 
-However, I'm a bit confused here, I thought highmem/lowmem split was a 32bit
-thing, so I'm not sure how it applies here.
+Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+---
+ drivers/clk/berlin/bg2.c                      |  1 +
+ drivers/clk/berlin/bg2q.c                     |  1 +
+ drivers/clk/clkdev.c                          |  1 +
+ drivers/media/platform/exynos4-is/media-dev.c |  1 +
+ include/linux/clk-provider.h                  | 22 ++++++++++++++++++++++
+ include/linux/clk/zynq.h                      |  1 +
+ 6 files changed, 27 insertions(+)
 
-Anyways, the machine won't boot with more than 1GB of RAM, is there a solution to
-get KASAN running on my machine?
-
-
-Thanks,
-Sasha
+diff --git a/drivers/clk/berlin/bg2.c b/drivers/clk/berlin/bg2.c
+index 515fb13..4c81e09 100644
+--- a/drivers/clk/berlin/bg2.c
++++ b/drivers/clk/berlin/bg2.c
+@@ -19,6 +19,7 @@
+ 
+ #include <linux/clk.h>
+ #include <linux/clk-provider.h>
++#include <linux/clkdev.h>
+ #include <linux/kernel.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+diff --git a/drivers/clk/berlin/bg2q.c b/drivers/clk/berlin/bg2q.c
+index 21784e4..748da9b 100644
+--- a/drivers/clk/berlin/bg2q.c
++++ b/drivers/clk/berlin/bg2q.c
+@@ -19,6 +19,7 @@
+ 
+ #include <linux/clk.h>
+ #include <linux/clk-provider.h>
++#include <linux/clkdev.h>
+ #include <linux/kernel.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
+index f890b90..000c1ae 100644
+--- a/drivers/clk/clkdev.c
++++ b/drivers/clk/clkdev.c
+@@ -18,6 +18,7 @@
+ #include <linux/string.h>
+ #include <linux/mutex.h>
+ #include <linux/clk.h>
++#include <linux/clk-provider.h>
+ #include <linux/clkdev.h>
+ #include <linux/of.h>
+ 
+diff --git a/drivers/media/platform/exynos4-is/media-dev.c b/drivers/media/platform/exynos4-is/media-dev.c
+index 344718d..2620c48 100644
+--- a/drivers/media/platform/exynos4-is/media-dev.c
++++ b/drivers/media/platform/exynos4-is/media-dev.c
+@@ -13,6 +13,7 @@
+ #include <linux/bug.h>
+ #include <linux/clk.h>
+ #include <linux/clk-provider.h>
++#include <linux/clkdev.h>
+ #include <linux/device.h>
+ #include <linux/errno.h>
+ #include <linux/i2c.h>
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 0c287db..06d56c9 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -16,6 +16,28 @@
+ 
+ #ifdef CONFIG_COMMON_CLK
+ 
++/* Temporarily map the to-be-added API to the old API, just so stuff compiles */
++#define clk_core			clk
++
++#define __clk_create_clk
++
++#define clk_provider_get		clk_get
++#define clk_provider_get_sys		clk_get_sys
++#define devm_clk_provider_get		devm_clk_get
++#define of_clk_provider_get		of_clk_get
++#define of_clk_provider_get_by_name	of_clk_get_by_name
++
++#define clk_provider_set_rate		clk_set_rate
++#define clk_provider_get_rate		clk_get_rate
++#define clk_provider_set_parent		clk_set_parent
++#define clk_provider_get_parent		clk_get_parent
++#define clk_provider_prepare		clk_prepare
++#define clk_provider_unprepare		clk_unprepare
++#define clk_provider_enable		clk_enable
++#define clk_provider_disable		clk_disable
++#define clk_provider_prepare_enable	clk_prepare_enable
++#define clk_provider_disable_unprepare	clk_unprepare
++
+ /*
+  * flags used across common struct clk.  these flags should only affect the
+  * top-level framework.  custom flags for dealing with hardware specifics
+diff --git a/include/linux/clk/zynq.h b/include/linux/clk/zynq.h
+index 7a5633b..a990a59 100644
+--- a/include/linux/clk/zynq.h
++++ b/include/linux/clk/zynq.h
+@@ -21,6 +21,7 @@
+ #define __LINUX_CLK_ZYNQ_H_
+ 
+ #include <linux/spinlock.h>
++#include <linux/clk-provider.h>
+ 
+ void zynq_clock_init(void);
+ 
+-- 
+1.9.3
 
