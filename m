@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527AbaGJOce (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 10:32:34 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40924 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753402AbaGJOcc (ORCPT
+	id S1753586AbaGJOfF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 10:35:05 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:33530 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528AbaGJOfC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 10:32:32 -0400
-Date: Thu, 10 Jul 2014 15:31:57 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        linux-serial@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Aaron Sierra <asierra@xes-inc.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH V8 2/2] serial/uart/8250: Add tunable RX interrupt
- trigger I/F of FIFO buffers
-Message-ID: <20140710153157.57902972@alan.etchedpixels.co.uk>
-In-Reply-To: <20140710002837.GA5429@kroah.com>
-References: <20140530061617.21929.25777.stgit@yunodevel>
-	<20140530061622.21929.82083.stgit@yunodevel>
-	<20140710002837.GA5429@kroah.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Thu, 10 Jul 2014 10:35:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1404992799-3705-9-git-send-email-wsa@the-dreams.de>
+References: <1404992799-3705-1-git-send-email-wsa@the-dreams.de>
+	<1404992799-3705-9-git-send-email-wsa@the-dreams.de>
+Date: Thu, 10 Jul 2014 16:35:01 +0200
+Message-ID: <CACRpkdZ9WpHVcv8vX8rVzxRaB=-BgHApUrHYZqwkr=m6d2pjGg@mail.gmail.com>
+Subject: Re: [PATCH 08/16] i2c: i2c-nomadik: Drop class based scanning to
+ improve bootup time
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alessandro Rubini <rubini@unipv.it>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I really don't like the way that the tty core has been changed to handle
-> multiple attribute groups, as I feel tty drivers shouldn't be creating
-> "special" sysfs files, depending on what driver is bound to them.
+On Thu, Jul 10, 2014 at 1:46 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
 
-The intent isn't that it is "special" but that it can be propogated to
-others as and when they wish to provide it.
- 
-> Usually we have handled this using tools like 'stty' and ioctls, right?
-> Surely there is an ioctl to control the interrupt level, right?  Hasn't
-> this been covered before somehow?
+> This driver has been flagged to drop class based instantiation. The removal
+> improves boot-up time and is unneeded for embedded controllers. Users have been
+> warned to switch for some time now, so we can actually do the removal. Keep the
+> DEPRECATED flag, so the core can inform users that the behaviour finally
+> changed now. After another transition period, this flag can go, too.
+> While we are here, remove the indentation for the array setup because
+> such things always break after some time.
+>
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 
-No, and the direction when this started was to use sysfs as we have also
-been moving all the other attributes towards sysfs and has been since
-2012.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-TTY devices do have lots of strange attributes and right now many of them
-are only programmable by using device tree and rebooting.
-
-Alan
+Yours,
+Linus Walleij
