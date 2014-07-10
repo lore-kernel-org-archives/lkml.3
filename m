@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485AbaGJVvj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 17:51:39 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:36531 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753420AbaGJVvf (ORCPT
+	id S1753509AbaGJVv5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 17:51:57 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:44818 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753491AbaGJVvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 17:51:35 -0400
+	Thu, 10 Jul 2014 17:51:54 -0400
 From: Oded Gabbay <oded.gabbay@gmail.com>
 X-Google-Original-From: Oded Gabbay <oded.gabbay@amd.com>
 To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
@@ -14,12 +14,10 @@ To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
 Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         John Bridgman <John.Bridgman@amd.com>,
         Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>,
-        Alexey Skidanov <Alexey.Skidanov@amd.com>, Ben Goz <ben.goz@amd.com>,
-        Evgeny Pinchuk <evgeny.pinchuk@amd.com>, linux-api@vger.kernel.org
-Subject: [PATCH 13/83] hsa/radeon: Add 2 new IOCTL to kfd, CREATE_QUEUE and DESTROY_QUEUE
-Date: Fri, 11 Jul 2014 00:50:13 +0300
-Message-Id: <1405029027-6085-12-git-send-email-oded.gabbay@amd.com>
+        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>
+Subject: [PATCH 15/83] hsa/radeon: Add interrupt handling module
+Date: Fri, 11 Jul 2014 00:50:15 +0300
+Message-Id: <1405029027-6085-14-git-send-email-oded.gabbay@amd.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
 References: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
@@ -27,236 +25,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds 2 new IOCTL to kfd driver.
+This patch adds the interrupt handling module, in kfd_interrupt.c,
+and its related members in different data structures to the KFD
+driver.
 
-The first IOCTL is KFD_IOC_CREATE_QUEUE that is used by the user-mode
-application to create a compute queue on the GPU.
+The KFD interrupt module maintains an internal interrupt ring per kfd
+device. The internal interrupt ring contains interrupts that needs further
+handling.The extra handling is deferred to a later time through a workqueue.
 
-The second IOCTL is KFD_IOC_DESTROY_QUEUE that is used by the
-user-mode application to destroy an existing compute queue on the GPU.
+There's no acknowledgment for the interrupts we use. The hardware simply queues a new interrupt each time without waiting.
+
+The fixed-size internal queue means that it's possible for us to lose interrupts because we have no back-pressure to the hardware.
 
 Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
 ---
- drivers/gpu/hsa/radeon/kfd_chardev.c  | 155 ++++++++++++++++++++++++++++++++++
- drivers/gpu/hsa/radeon/kfd_doorbell.c |  11 +++
- include/uapi/linux/kfd_ioctl.h        |  69 +++++++++++++++
- 3 files changed, 235 insertions(+)
- create mode 100644 include/uapi/linux/kfd_ioctl.h
+ drivers/gpu/hsa/radeon/Makefile        |   2 +-
+ drivers/gpu/hsa/radeon/kfd_device.c    |   1 +
+ drivers/gpu/hsa/radeon/kfd_interrupt.c | 179 +++++++++++++++++++++++++++++++++
+ drivers/gpu/hsa/radeon/kfd_priv.h      |  18 ++++
+ drivers/gpu/hsa/radeon/kfd_scheduler.h |   3 +
+ 5 files changed, 202 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/gpu/hsa/radeon/kfd_interrupt.c
 
-diff --git a/drivers/gpu/hsa/radeon/kfd_chardev.c b/drivers/gpu/hsa/radeon/kfd_chardev.c
-index 0b5bc74..4e7d5d0 100644
---- a/drivers/gpu/hsa/radeon/kfd_chardev.c
-+++ b/drivers/gpu/hsa/radeon/kfd_chardev.c
-@@ -27,11 +27,13 @@
- #include <linux/sched.h>
- #include <linux/slab.h>
- #include <linux/uaccess.h>
-+#include <uapi/linux/kfd_ioctl.h>
- #include "kfd_priv.h"
- #include "kfd_scheduler.h"
+diff --git a/drivers/gpu/hsa/radeon/Makefile b/drivers/gpu/hsa/radeon/Makefile
+index 28da10c..5422e6a 100644
+--- a/drivers/gpu/hsa/radeon/Makefile
++++ b/drivers/gpu/hsa/radeon/Makefile
+@@ -5,6 +5,6 @@
+ radeon_kfd-y	:= kfd_module.o kfd_device.o kfd_chardev.o \
+ 		kfd_pasid.o kfd_topology.o kfd_process.o \
+ 		kfd_doorbell.o kfd_sched_cik_static.o kfd_registers.o \
+-		kfd_vidmem.o
++		kfd_vidmem.o kfd_interrupt.o
  
- static long kfd_ioctl(struct file *, unsigned int, unsigned long);
- static int kfd_open(struct inode *, struct file *);
-+static int kfd_mmap(struct file *, struct vm_area_struct *);
+ obj-$(CONFIG_HSA_RADEON)	+= radeon_kfd.o
+diff --git a/drivers/gpu/hsa/radeon/kfd_device.c b/drivers/gpu/hsa/radeon/kfd_device.c
+index 465c822..b2d2861 100644
+--- a/drivers/gpu/hsa/radeon/kfd_device.c
++++ b/drivers/gpu/hsa/radeon/kfd_device.c
+@@ -30,6 +30,7 @@
+ static const struct kfd_device_info bonaire_device_info = {
+ 	.scheduler_class = &radeon_kfd_cik_static_scheduler_class,
+ 	.max_pasid_bits = 16,
++	.ih_ring_entry_size = 4 * sizeof(uint32_t)
+ };
  
- static const char kfd_dev_name[] = "kfd";
- 
-@@ -108,17 +110,170 @@ kfd_open(struct inode *inode, struct file *filep)
- 	return 0;
- }
- 
-+static long
-+kfd_ioctl_create_queue(struct file *filep, struct kfd_process *p, void __user *arg)
-+{
-+	struct kfd_ioctl_create_queue_args args;
-+	struct kfd_dev *dev;
-+	int err = 0;
-+	unsigned int queue_id;
-+	struct kfd_queue *queue;
-+	struct kfd_process_device *pdd;
-+
-+	if (copy_from_user(&args, arg, sizeof(args)))
-+		return -EFAULT;
-+
-+	dev = radeon_kfd_device_by_id(args.gpu_id);
-+	if (dev == NULL)
-+		return -EINVAL;
-+
-+	queue = kzalloc(
-+		offsetof(struct kfd_queue, scheduler_queue) + dev->device_info->scheduler_class->queue_size,
-+		GFP_KERNEL);
-+
-+	if (!queue)
-+		return -ENOMEM;
-+
-+	queue->dev = dev;
-+
-+	mutex_lock(&p->mutex);
-+
-+	pdd = radeon_kfd_bind_process_to_device(dev, p);
-+	if (IS_ERR(pdd) < 0) {
-+		err = PTR_ERR(pdd);
-+		goto err_bind_pasid;
-+	}
-+
-+	pr_debug("kfd: creating queue number %d for PASID %d on GPU 0x%x\n",
-+			pdd->queue_count,
-+			p->pasid,
-+			dev->id);
-+
-+	if (pdd->queue_count++ == 0) {
-+		err = dev->device_info->scheduler_class->register_process(dev->scheduler, p, &pdd->scheduler_process);
-+		if (err < 0)
-+			goto err_register_process;
-+	}
-+
-+	if (!radeon_kfd_allocate_queue_id(p, &queue_id))
-+		goto err_allocate_queue_id;
-+
-+	err = dev->device_info->scheduler_class->create_queue(dev->scheduler, pdd->scheduler_process,
-+							      &queue->scheduler_queue,
-+							      (void __user *)args.ring_base_address,
-+							      args.ring_size,
-+							      (void __user *)args.read_pointer_address,
-+							      (void __user *)args.write_pointer_address,
-+							      radeon_kfd_queue_id_to_doorbell(dev, p, queue_id));
-+	if (err)
-+		goto err_create_queue;
-+
-+	radeon_kfd_install_queue(p, queue_id, queue);
-+
-+	args.queue_id = queue_id;
-+	args.doorbell_address = (uint64_t)(uintptr_t)radeon_kfd_get_doorbell(filep, p, dev, queue_id);
-+
-+	if (copy_to_user(arg, &args, sizeof(args))) {
-+		err = -EFAULT;
-+		goto err_copy_args_out;
-+	}
-+
-+	mutex_unlock(&p->mutex);
-+
-+	pr_debug("kfd: queue id %d was created successfully.\n"
-+		 "     ring buffer address == 0x%016llX\n"
-+		 "     read ptr address    == 0x%016llX\n"
-+		 "     write ptr address   == 0x%016llX\n"
-+		 "     doorbell address    == 0x%016llX\n",
-+			args.queue_id,
-+			args.ring_base_address,
-+			args.read_pointer_address,
-+			args.write_pointer_address,
-+			args.doorbell_address);
-+
-+	return 0;
-+
-+err_copy_args_out:
-+	dev->device_info->scheduler_class->destroy_queue(dev->scheduler, &queue->scheduler_queue);
-+err_create_queue:
-+	radeon_kfd_remove_queue(p, queue_id);
-+err_allocate_queue_id:
-+	if (--pdd->queue_count == 0) {
-+		dev->device_info->scheduler_class->deregister_process(dev->scheduler, pdd->scheduler_process);
-+		pdd->scheduler_process = NULL;
-+	}
-+err_register_process:
-+err_bind_pasid:
-+	kfree(queue);
-+	mutex_unlock(&p->mutex);
-+	return err;
-+}
-+
-+static int
-+kfd_ioctl_destroy_queue(struct file *filp, struct kfd_process *p, void __user *arg)
-+{
-+	struct kfd_ioctl_destroy_queue_args args;
-+	struct kfd_queue *queue;
-+	struct kfd_dev *dev;
-+	struct kfd_process_device *pdd;
-+
-+	if (copy_from_user(&args, arg, sizeof(args)))
-+		return -EFAULT;
-+
-+	mutex_lock(&p->mutex);
-+
-+	queue = radeon_kfd_get_queue(p, args.queue_id);
-+	if (!queue) {
-+		mutex_unlock(&p->mutex);
-+		return -EINVAL;
-+	}
-+
-+	dev = queue->dev;
-+
-+	pr_debug("kfd: destroying queue id %d for PASID %d\n",
-+			args.queue_id,
-+			p->pasid);
-+
-+	radeon_kfd_remove_queue(p, args.queue_id);
-+	dev->device_info->scheduler_class->destroy_queue(dev->scheduler, &queue->scheduler_queue);
-+
-+	kfree(queue);
-+
-+	pdd = radeon_kfd_get_process_device_data(dev, p);
-+	BUG_ON(pdd == NULL); /* Because a queue exists. */
-+
-+	if (--pdd->queue_count == 0) {
-+		dev->device_info->scheduler_class->deregister_process(dev->scheduler, pdd->scheduler_process);
-+		pdd->scheduler_process = NULL;
-+	}
-+
-+	mutex_unlock(&p->mutex);
-+	return 0;
-+}
- 
- static long
- kfd_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
- {
-+	struct kfd_process *process;
- 	long err = -EINVAL;
- 
- 	dev_info(kfd_device,
- 		 "ioctl cmd 0x%x (#%d), arg 0x%lx\n",
- 		 cmd, _IOC_NR(cmd), arg);
- 
-+	process = radeon_kfd_get_process(current);
-+	if (IS_ERR(process))
-+		return PTR_ERR(process);
-+
- 	switch (cmd) {
-+	case KFD_IOC_CREATE_QUEUE:
-+		err = kfd_ioctl_create_queue(filep, process, (void __user *)arg);
-+		break;
-+
-+	case KFD_IOC_DESTROY_QUEUE:
-+		err = kfd_ioctl_destroy_queue(filep, process, (void __user *)arg);
-+		break;
-+
- 	default:
- 		dev_err(kfd_device,
- 			"unknown ioctl cmd 0x%x, arg 0x%lx)\n",
-diff --git a/drivers/gpu/hsa/radeon/kfd_doorbell.c b/drivers/gpu/hsa/radeon/kfd_doorbell.c
-index e1d8506..3de8a02 100644
---- a/drivers/gpu/hsa/radeon/kfd_doorbell.c
-+++ b/drivers/gpu/hsa/radeon/kfd_doorbell.c
-@@ -155,3 +155,14 @@ doorbell_t __user *radeon_kfd_get_doorbell(struct file *devkfd, struct kfd_proce
- 	return &pdd->doorbell_mapping[doorbell_index];
- }
- 
-+/*
-+ * queue_ids are in the range [0,MAX_PROCESS_QUEUES) and are mapped 1:1
-+ * to doorbells with the process's doorbell page
-+ */
-+unsigned int radeon_kfd_queue_id_to_doorbell(struct kfd_dev *kfd, struct kfd_process *process, unsigned int queue_id)
-+{
-+	/* doorbell_id_offset accounts for doorbells taken by KGD.
-+	 * pasid * doorbell_process_allocation/sizeof(doorbell_t) adjusts to the process's doorbells */
-+	return kfd->doorbell_id_offset + process->pasid * (doorbell_process_allocation()/sizeof(doorbell_t)) + queue_id;
-+}
-+
-diff --git a/include/uapi/linux/kfd_ioctl.h b/include/uapi/linux/kfd_ioctl.h
+ struct kfd_deviceid {
+diff --git a/drivers/gpu/hsa/radeon/kfd_interrupt.c b/drivers/gpu/hsa/radeon/kfd_interrupt.c
 new file mode 100644
-index 0000000..dcc5fe0
+index 0000000..2179780
 --- /dev/null
-+++ b/include/uapi/linux/kfd_ioctl.h
-@@ -0,0 +1,69 @@
++++ b/drivers/gpu/hsa/radeon/kfd_interrupt.c
+@@ -0,0 +1,179 @@
 +/*
 + * Copyright 2014 Advanced Micro Devices, Inc.
 + *
@@ -279,53 +99,225 @@ index 0000000..dcc5fe0
 + * OTHER DEALINGS IN THE SOFTWARE.
 + */
 +
-+#ifndef KFD_IOCTL_H_INCLUDED
-+#define KFD_IOCTL_H_INCLUDED
++/*
++ * KFD Interrupts.
++ *
++ * AMD GPUs deliver interrupts by pushing an interrupt description onto the
++ * interrupt ring and then sending an interrupt. KGD receives the interrupt
++ * in ISR and sends us a pointer to each new entry on the interrupt ring.
++ *
++ * We generally can't process interrupt-signaled events from ISR, so we call
++ * out to each interrupt client module (currently only the scheduler) to ask if
++ * each interrupt is interesting. If they return true, then it requires further
++ * processing so we copy it to an internal interrupt ring and call each
++ * interrupt client again from a work-queue.
++ *
++ * There's no acknowledgment for the interrupts we use. The hardware simply
++ * queues a new interrupt each time without waiting.
++ *
++ * The fixed-size internal queue means that it's possible for us to lose
++ * interrupts because we have no back-pressure to the hardware.
++ */
 +
-+#include <linux/types.h>
-+#include <linux/ioctl.h>
++#include <linux/slab.h>
++#include <linux/device.h>
++#include "kfd_priv.h"
++#include "kfd_scheduler.h"
 +
-+#define KFD_IOCTL_CURRENT_VERSION 1
++#define KFD_INTERRUPT_RING_SIZE 256
 +
-+/* The 64-bit ABI is the authoritative version. */
-+#pragma pack(push, 8)
++static void interrupt_wq(struct work_struct *);
 +
-+struct kfd_ioctl_get_version_args {
-+	uint32_t min_supported_version;	/* from KFD */
-+	uint32_t max_supported_version;	/* from KFD */
-+};
++int
++radeon_kfd_interrupt_init(struct kfd_dev *kfd)
++{
++	void *interrupt_ring = kmalloc_array(KFD_INTERRUPT_RING_SIZE,
++					kfd->device_info->ih_ring_entry_size,
++					GFP_KERNEL);
++	if (!interrupt_ring)
++		return -ENOMEM;
 +
-+/* For kfd_ioctl_create_queue_args.queue_type. */
-+#define KFD_IOC_QUEUE_TYPE_COMPUTE   0
-+#define KFD_IOC_QUEUE_TYPE_SDMA      1
++	kfd->interrupt_ring = interrupt_ring;
++	kfd->interrupt_ring_size =
++		KFD_INTERRUPT_RING_SIZE * kfd->device_info->ih_ring_entry_size;
++	atomic_set(&kfd->interrupt_ring_wptr, 0);
++	atomic_set(&kfd->interrupt_ring_rptr, 0);
 +
-+struct kfd_ioctl_create_queue_args {
-+	uint64_t ring_base_address;	/* to KFD */
-+	uint32_t ring_size;		/* to KFD */
-+	uint32_t gpu_id;		/* to KFD */
-+	uint32_t queue_type;		/* to KFD */
-+	uint32_t queue_percentage;	/* to KFD */
-+	uint32_t queue_priority;	/* to KFD */
-+	uint64_t write_pointer_address;	/* to KFD */
-+	uint64_t read_pointer_address;	/* to KFD */
++	spin_lock_init(&kfd->interrupt_lock);
 +
-+	uint64_t doorbell_address;	/* from KFD */
-+	uint32_t queue_id;		/* from KFD */
-+};
++	INIT_WORK(&kfd->interrupt_work, interrupt_wq);
 +
-+struct kfd_ioctl_destroy_queue_args {
-+	uint32_t queue_id;		/* to KFD */
-+};
++	kfd->interrupts_active = true;
 +
-+#define KFD_IOC_MAGIC 'K'
++	/*
++	 * After this function returns, the interrupt will be enabled. This
++	 * barrier ensures that the interrupt running on a different processor
++	 * sees all the above writes.
++	 */
++	smp_wmb();
 +
-+#define KFD_IOC_GET_VERSION	_IOR(KFD_IOC_MAGIC, 1, struct kfd_ioctl_get_version_args)
-+#define KFD_IOC_CREATE_QUEUE	_IOWR(KFD_IOC_MAGIC, 2, struct kfd_ioctl_create_queue_args)
-+#define KFD_IOC_DESTROY_QUEUE	_IOWR(KFD_IOC_MAGIC, 3, struct kfd_ioctl_destroy_queue_args)
++	return 0;
++}
 +
-+#pragma pack(pop)
++void
++radeon_kfd_interrupt_exit(struct kfd_dev *kfd)
++{
++	/*
++	 * Stop the interrupt handler from writing to the ring and scheduling
++	 * workqueue items. The spinlock ensures that any interrupt running
++	 * after we have unlocked sees interrupts_active = false.
++	 */
++	unsigned long flags;
 +
-+#endif
++	spin_lock_irqsave(&kfd->interrupt_lock, flags);
++	kfd->interrupts_active = false;
++	spin_unlock_irqrestore(&kfd->interrupt_lock, flags);
++
++	/*
++	 * Flush_scheduled_work ensures that there are no outstanding work-queue
++	 * items that will access interrupt_ring. New work items can't be
++	 * created because we stopped interrupt handling above.
++	 */
++	flush_scheduled_work();
++
++	kfree(kfd->interrupt_ring);
++}
++
++/*
++ * This assumes that it can't be called concurrently with itself
++ * but only with dequeue_ih_ring_entry.
++ */
++static bool
++enqueue_ih_ring_entry(struct kfd_dev *kfd, const void *ih_ring_entry)
++{
++	unsigned int rptr = atomic_read(&kfd->interrupt_ring_rptr);
++	unsigned int wptr = atomic_read(&kfd->interrupt_ring_wptr);
++
++	if ((rptr - wptr) % kfd->interrupt_ring_size == kfd->device_info->ih_ring_entry_size) {
++		/* This is very bad, the system is likely to hang. */
++		dev_err_ratelimited(radeon_kfd_chardev(),
++			"Interrupt ring overflow, dropping interrupt.\n");
++		return false;
++	}
++
++	memcpy(kfd->interrupt_ring + wptr, ih_ring_entry, kfd->device_info->ih_ring_entry_size);
++	wptr = (wptr + kfd->device_info->ih_ring_entry_size) % kfd->interrupt_ring_size;
++	smp_wmb(); /* Ensure memcpy'd data is visible before wptr update. */
++	atomic_set(&kfd->interrupt_ring_wptr, wptr);
++
++	return true;
++}
++
++/*
++ * This assumes that it can't be called concurrently with itself
++ * but only with enqueue_ih_ring_entry.
++ */
++static bool
++dequeue_ih_ring_entry(struct kfd_dev *kfd, void *ih_ring_entry)
++{
++	/*
++	 * Assume that wait queues have an implicit barrier, i.e. anything that
++	 * happened in the ISR before it queued work is visible.
++	 */
++
++	unsigned int wptr = atomic_read(&kfd->interrupt_ring_wptr);
++	unsigned int rptr = atomic_read(&kfd->interrupt_ring_rptr);
++
++	if (rptr == wptr)
++		return false;
++
++	memcpy(ih_ring_entry, kfd->interrupt_ring + rptr, kfd->device_info->ih_ring_entry_size);
++	rptr = (rptr + kfd->device_info->ih_ring_entry_size) % kfd->interrupt_ring_size;
++	smp_mb(); /* Ensure the rptr write update is not visible until memcpy has finished reading. */
++	atomic_set(&kfd->interrupt_ring_rptr, rptr);
++
++	return true;
++}
++
++static void interrupt_wq(struct work_struct *work)
++{
++	struct kfd_dev *dev = container_of(work, struct kfd_dev, interrupt_work);
++
++	uint32_t ih_ring_entry[DIV_ROUND_UP(dev->device_info->ih_ring_entry_size, sizeof(uint32_t))];
++
++	while (dequeue_ih_ring_entry(dev, ih_ring_entry))
++		dev->device_info->scheduler_class->interrupt_wq(dev->scheduler, ih_ring_entry);
++}
++
++/* This is called directly from KGD at ISR. */
++void kgd2kfd_interrupt(struct kfd_dev *kfd, const void *ih_ring_entry)
++{
++	spin_lock(&kfd->interrupt_lock);
++
++	if (kfd->interrupts_active
++	    && kfd->device_info->scheduler_class->interrupt_isr(kfd->scheduler, ih_ring_entry)
++	    && enqueue_ih_ring_entry(kfd, ih_ring_entry))
++		schedule_work(&kfd->interrupt_work);
++
++	spin_unlock(&kfd->interrupt_lock);
++}
+diff --git a/drivers/gpu/hsa/radeon/kfd_priv.h b/drivers/gpu/hsa/radeon/kfd_priv.h
+index 1d1dbcf..5b6611f 100644
+--- a/drivers/gpu/hsa/radeon/kfd_priv.h
++++ b/drivers/gpu/hsa/radeon/kfd_priv.h
+@@ -28,6 +28,9 @@
+ #include <linux/mutex.h>
+ #include <linux/radeon_kfd.h>
+ #include <linux/types.h>
++#include <linux/atomic.h>
++#include <linux/workqueue.h>
++#include <linux/spinlock.h>
+ 
+ struct kfd_scheduler_class;
+ 
+@@ -63,6 +66,7 @@ typedef u32 doorbell_t;
+ struct kfd_device_info {
+ 	const struct kfd_scheduler_class *scheduler_class;
+ 	unsigned int max_pasid_bits;
++	size_t ih_ring_entry_size;
+ };
+ 
+ struct kfd_dev {
+@@ -90,6 +94,15 @@ struct kfd_dev {
+ 	struct kgd2kfd_shared_resources shared_resources;
+ 
+ 	struct kfd_scheduler *scheduler;
++
++	/* Interrupts of interest to KFD are copied from the HW ring into a SW ring. */
++	bool interrupts_active;
++	void *interrupt_ring;
++	size_t interrupt_ring_size;
++	atomic_t interrupt_ring_rptr;
++	atomic_t interrupt_ring_wptr;
++	struct work_struct interrupt_work;
++	spinlock_t interrupt_lock;
+ };
+ 
+ /* KGD2KFD callbacks */
+@@ -229,4 +242,9 @@ struct kfd_dev *radeon_kfd_device_by_pci_dev(const struct pci_dev *pdev);
+ void radeon_kfd_write_reg(struct kfd_dev *dev, uint32_t reg, uint32_t value);
+ uint32_t radeon_kfd_read_reg(struct kfd_dev *dev, uint32_t reg);
+ 
++/* Interrupts */
++int radeon_kfd_interrupt_init(struct kfd_dev *dev);
++void radeon_kfd_interrupt_exit(struct kfd_dev *dev);
++void kgd2kfd_interrupt(struct kfd_dev *dev, const void *ih_ring_entry);
++
+ #endif
+diff --git a/drivers/gpu/hsa/radeon/kfd_scheduler.h b/drivers/gpu/hsa/radeon/kfd_scheduler.h
+index 48a032f..e5a93c4 100644
+--- a/drivers/gpu/hsa/radeon/kfd_scheduler.h
++++ b/drivers/gpu/hsa/radeon/kfd_scheduler.h
+@@ -55,6 +55,9 @@ struct kfd_scheduler_class {
+ 			    unsigned int doorbell);
+ 
+ 	void (*destroy_queue)(struct kfd_scheduler *, struct kfd_scheduler_queue *);
++
++	bool (*interrupt_isr)(struct kfd_scheduler *, const void *ih_ring_entry);
++	void (*interrupt_wq)(struct kfd_scheduler *, const void *ih_ring_entry);
+ };
+ 
+ extern const struct kfd_scheduler_class radeon_kfd_cik_static_scheduler_class;
 -- 
 1.9.1
 
