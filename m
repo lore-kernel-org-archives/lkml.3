@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751083AbaGJEe6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 00:34:58 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:58184 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823AbaGJEe5 (ORCPT
+	id S1751173AbaGJEh6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 00:37:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50982 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750702AbaGJEh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 00:34:57 -0400
-Message-ID: <53BE17AE.7080301@linaro.org>
-Date: Thu, 10 Jul 2014 06:33:50 +0200
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 10 Jul 2014 00:37:57 -0400
+Date: Wed, 9 Jul 2014 21:37:38 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: WANG Chao <chaowang@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v2] mm/vmalloc.c: clean up map_vm_area third argument
+Message-ID: <20140710043738.GA13532@kroah.com>
+References: <1404721943-6506-1-git-send-email-chaowang@redhat.com>
+ <1404966367-7599-1-git-send-email-chaowang@redhat.com>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "wad@chromium.org" <wad@chromium.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND PATCH v4 2/2] arm64: Add seccomp support
-References: <1404459115-8292-1-git-send-email-takahiro.akashi@linaro.org> <1404459115-8292-3-git-send-email-takahiro.akashi@linaro.org> <20140709111239.GH9485@arm.com>
-In-Reply-To: <20140709111239.GH9485@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404966367-7599-1-git-send-email-chaowang@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will,
+On Thu, Jul 10, 2014 at 12:26:07PM +0800, WANG Chao wrote:
+> Currently map_vm_area() takes (struct page *** pages) as third argument,
+> and after mapping, it moves (*pages) to point to (*pages + nr_mappped_pages).
+> 
+> It looks like this kind of increment is useless to its caller these
+> days. The callers don't care about the increments and actually they're
+> trying to avoid this by passing another copy to map_vm_area().
+> 
+> The caller can always guarantee all the pages can be mapped into
+> vm_area as specified in first argument and the caller only cares about
+> whether map_vm_area() fails or not.
+> 
+> This patch cleans up the pointer movement in map_vm_area() and updates
+> its callers accordingly.
+> 
+> v2: Fix arch/tile/kernel/module.c::module_alloc().
+> 
+> Signed-off-by: WANG Chao <chaowang@redhat.com>
+> ---
+>  arch/tile/kernel/module.c        |  2 +-
+>  drivers/lguest/core.c            |  7 ++-----
+>  drivers/staging/android/binder.c |  4 +---
+>  include/linux/vmalloc.h          |  2 +-
+>  mm/vmalloc.c                     | 14 +++++---------
+>  mm/zsmalloc.c                    |  2 +-
+>  6 files changed, 11 insertions(+), 20 deletions(-)
 
- >  (1) Updating syscallno based on w8, but this ties us to the current ABI
- >      and could get messy if this register changes in the future.
+Staging code:
 
-So, is this the conclusion that I should follow?
-
--Takahiro AKASHI
-
-
-On 07/09/2014 01:12 PM, Will Deacon wrote:
-> Hi Akashi,
->
-> On Fri, Jul 04, 2014 at 08:31:55AM +0100, AKASHI Takahiro wrote:
->> secure_computing() should always be called first in syscall_trace_enter().
->> If it returns non-zero, we should stop further handling. Then that system
->> call may eventually fail, be trapped or the process itself be killed
->> depending on loaded rules.
->> In this case, syscall_trace_enter() returns a dedicated value in order to
->> skip a normal syscall table lookup because a seccomp rule may have already
->> overridden errno.
->
-> [...]
->
->> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
->> index 70526cf..baab5fc 100644
->> --- a/arch/arm64/kernel/ptrace.c
->> +++ b/arch/arm64/kernel/ptrace.c
->> @@ -21,12 +21,14 @@
->>
->>   #include <linux/audit.h>
->>   #include <linux/compat.h>
->> +#include <linux/errno.h>
->>   #include <linux/kernel.h>
->>   #include <linux/sched.h>
->>   #include <linux/mm.h>
->>   #include <linux/smp.h>
->>   #include <linux/ptrace.h>
->>   #include <linux/user.h>
->> +#include <linux/seccomp.h>
->>   #include <linux/security.h>
->>   #include <linux/init.h>
->>   #include <linux/signal.h>
->> @@ -1109,6 +1111,10 @@ static void tracehook_report_syscall(struct pt_regs *regs,
->>
->>   asmlinkage int syscall_trace_enter(struct pt_regs *regs)
->>   {
->> +	if (secure_computing(regs->syscallno) == -1)
->> +		/* seccomp failures shouldn't expose any additional code. */
->> +		return -EPERM;
->> +
->>   	if (test_thread_flag(TIF_SYSCALL_TRACE))
->>   		tracehook_report_syscall(regs, PTRACE_SYSCALL_ENTER);
->
-> We return regs->syscallno immediately after this, so we have the same issue
-> that Kees identified for arch/arm/. Did you follow the discussion I had with
-> Andy?
->
-> Will
->
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
