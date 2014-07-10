@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751435AbaGJFdc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 01:33:32 -0400
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:54074
+	id S1751376AbaGJFdb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 01:33:31 -0400
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:54264
 	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751225AbaGJFd2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751229AbaGJFd2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 Jul 2014 01:33:28 -0400
 x-originating-ip: 72.167.245.219
 From: "K. Y. Srinivasan" <kys@microsoft.com>
@@ -13,19 +13,19 @@ To: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         ohering@suse.com, jbottomley@parallels.com, hch@infradead.org,
         jasowang@redhat.com, apw@canonical.com, linux-scsi@vger.kernel.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>, <stable@vger.kernel.org>
-Subject: [PATCH V2 1/8] Drivers: scsi: storvsc: Change the limits to reflect the values on the host
-Date: Wed,  9 Jul 2014 23:33:45 -0700
-Message-Id: <1404974032-5023-1-git-send-email-kys@microsoft.com>
+Subject: [PATCH V2 8/8] drivers: scsi: storvsc: Correctly handle TEST_UNIT_READY failure
+Date: Wed,  9 Jul 2014 23:33:52 -0700
+Message-Id: <1404974032-5023-8-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1404974008-4984-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1404974032-5023-1-git-send-email-kys@microsoft.com>
 References: <1404974008-4984-1-git-send-email-kys@microsoft.com>
+ <1404974032-5023-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hyper-V hosts can support multiple targets and multiple channels and larger number of
-LUNs per target. Update the code to reflect this. With this patch we can correctly
-enumerate all the paths in a multi-path storage environment.
+On some Windows hosts on FC SANs, TEST_UNIT_READY can return SRB_STATUS_ERROR.
+Correctly handle this.
 
 In this version of the patch I have addressed comments from
 Christoph Hellwig <hch@infradead.org>
@@ -33,90 +33,27 @@ Christoph Hellwig <hch@infradead.org>
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Cc: <stable@vger.kernel.org>
 ---
- drivers/scsi/storvsc_drv.c |   47 +++++++++++++++++++++++++++++---------------
- 1 files changed, 31 insertions(+), 16 deletions(-)
+ drivers/scsi/storvsc_drv.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-index 9969fa1..8938b13 100644
+index 84b9b39..6fed0dd 100644
 --- a/drivers/scsi/storvsc_drv.c
 +++ b/drivers/scsi/storvsc_drv.c
-@@ -330,17 +330,17 @@ static int storvsc_timeout = 180;
- 
- static void storvsc_on_channel_callback(void *context);
- 
--/*
-- * In Hyper-V, each port/path/target maps to 1 scsi host adapter.  In
-- * reality, the path/target is not used (ie always set to 0) so our
-- * scsi host adapter essentially has 1 bus with 1 target that contains
-- * up to 256 luns.
-- */
--#define STORVSC_MAX_LUNS_PER_TARGET			64
--#define STORVSC_MAX_TARGETS				1
--#define STORVSC_MAX_CHANNELS				1
-+#define STORVSC_MAX_LUNS_PER_TARGET			255
-+#define STORVSC_MAX_TARGETS				2
-+#define STORVSC_MAX_CHANNELS				8
- 
-+#define STORVSC_FC_MAX_LUNS_PER_TARGET			255
-+#define STORVSC_FC_MAX_TARGETS				128
-+#define STORVSC_FC_MAX_CHANNELS				8
- 
-+#define STORVSC_IDE_MAX_LUNS_PER_TARGET			64
-+#define STORVSC_IDE_MAX_TARGETS				1
-+#define STORVSC_IDE_MAX_CHANNELS			1
- 
- struct storvsc_cmd_request {
- 	struct list_head entry;
-@@ -1691,7 +1691,6 @@ static struct scsi_host_template scsi_driver = {
- 	.slave_destroy =	storvsc_device_destroy,
- 	.slave_configure =	storvsc_device_configure,
- 	.cmd_per_lun =		1,
--	/* 64 max_queue * 1 target */
- 	.can_queue =		STORVSC_MAX_IO_REQUESTS*STORVSC_MAX_TARGETS,
- 	.this_id =		-1,
- 	/* no use setting to 0 since ll_blk_rw reset it to 1 */
-@@ -1756,6 +1755,9 @@ static int storvsc_probe(struct hv_device *device,
- 	}
- 
- 
-+	if (dev_id->driver_data == SFC_GUID)
-+		scsi_driver.can_queue = (STORVSC_MAX_IO_REQUESTS *
-+					 STORVSC_FC_MAX_TARGETS);
- 	host = scsi_host_alloc(&scsi_driver,
- 			       sizeof(struct hv_host_device));
- 	if (!host)
-@@ -1789,12 +1791,25 @@ static int storvsc_probe(struct hv_device *device,
- 	host_dev->path = stor_device->path_id;
- 	host_dev->target = stor_device->target_id;
- 
--	/* max # of devices per target */
--	host->max_lun = STORVSC_MAX_LUNS_PER_TARGET;
--	/* max # of targets per channel */
--	host->max_id = STORVSC_MAX_TARGETS;
--	/* max # of channels */
--	host->max_channel = STORVSC_MAX_CHANNELS - 1;
-+	switch (dev_id->driver_data) {
-+	case SFC_GUID:
-+		host->max_lun = STORVSC_FC_MAX_LUNS_PER_TARGET;
-+		host->max_id = STORVSC_FC_MAX_TARGETS;
-+		host->max_channel = STORVSC_FC_MAX_CHANNELS - 1;
-+		break;
-+
-+	case SCSI_GUID:
-+		host->max_lun = STORVSC_MAX_LUNS_PER_TARGET;
-+		host->max_id = STORVSC_MAX_TARGETS;
-+		host->max_channel = STORVSC_MAX_CHANNELS - 1;
-+		break;
-+
-+	default:
-+		host->max_lun = STORVSC_IDE_MAX_LUNS_PER_TARGET;
-+		host->max_id = STORVSC_IDE_MAX_TARGETS;
-+		host->max_channel = STORVSC_IDE_MAX_CHANNELS - 1;
-+		break;
-+	}
- 	/* max cmd length */
- 	host->max_cmd_len = STORVSC_MAX_CMD_LEN;
- 
+@@ -1020,6 +1020,13 @@ static void storvsc_handle_error(struct vmscsi_request *vm_srb,
+ 		case ATA_12:
+ 			set_host_byte(scmnd, DID_PASSTHROUGH);
+ 			break;
++		/*
++		 * On Some Windows hosts TEST_UNIT_READY command can return
++		 * SRB_STATUS_ERROR, let the upper level code deal with it
++		 * based on the sense information.
++		 */
++		case TEST_UNIT_READY:
++			break;
+ 		default:
+ 			set_host_byte(scmnd, DID_TARGET_FAILURE);
+ 		}
 -- 
 1.7.4.1
 
