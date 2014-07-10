@@ -1,86 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508AbaGJTQc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 15:16:32 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:34466 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717AbaGJTQa (ORCPT
+	id S1752222AbaGJTTl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 15:19:41 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:42618 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499AbaGJTTk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 15:16:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140630144624.GA2604@quad>
-References: <20140630144624.GA2604@quad>
-Date: Thu, 10 Jul 2014 21:16:30 +0200
-Message-ID: <CABPqkBRBF6TXf3Q5+MvWneKrgtrjZMv3FzW6rVMygz2QvWgowg@mail.gmail.com>
-Subject: Re: [PATCH] perf/x86/uncore: fix SNB-EP/IVT Cbox filter mappings
-From: Stephane Eranian <eranian@google.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 10 Jul 2014 15:19:40 -0400
+Date: Thu, 10 Jul 2014 12:19:37 -0700 (PDT)
+Message-Id: <20140710.121937.888036537035743904.davem@davemloft.net>
+To: teg@jklm.no
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dh.herrmann@gmail.com, kay@vrfy.org
+Subject: Re: [PATCH v7 00/33] Provide netdev naming-policy via sysfs
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAG-2HqUPRqFgn1PfDoYzuyoYRcfB=RQCVg3PJZvaakiVtK07yw@mail.gmail.com>
+References: <1404980258-30853-1-git-send-email-teg@jklm.no>
+	<20140710.014355.387392730830362973.davem@davemloft.net>
+	<CAG-2HqUPRqFgn1PfDoYzuyoYRcfB=RQCVg3PJZvaakiVtK07yw@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 10 Jul 2014 12:19:39 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 4:46 PM, Stephane Eranian <eranian@google.com> wrote:
->
-> This patch fixes the SNB-EP and IVT Cbox filter mapping
-> table. The table controls which filters are supported by
-> which events. There were several mistakes in those tables
-> causing some filters to be ignored, such as NID on
-> TOR_INSERTS.
->
-> Signed-off-by: Stephane Eranian <eranian@google.com>
+From: Tom Gundersen <teg@jklm.no>
+Date: Thu, 10 Jul 2014 11:19:42 +0200
 
-Any comment on this patch?
+> Thanks for the quick answer.
+> 
+> On Thu, Jul 10, 2014 at 10:43 AM, David Miller <davem@davemloft.net> wrote:
+>> It is not reasonable to expect people to review such a large number of
+>> patches at one time.
+>>
+>> Split your series up into logical, and more reasonably sized chunks.
+>>
+>> I'd say 14 or 15 at a time is the limit.
+>>
+>> I'm not even looking at this series until you submit it more reasonably.
+>>
+>> Thank you.
+> 
+> Ok. I suggest you review patches 1-7, as these are the generic ones.
+> Then once they have been applied I can resubmit the subsequent patches
+> individually.
+> 
+> Do you want me to resubmit patches 1-7, or do you just want to pick
+> them from this series as they are?
 
-> ---
->  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 11 ++++++-----
->  1 file changed, 6 insertions(+), 5 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> index 65bbbea..ae6552a 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> @@ -550,16 +550,16 @@ static struct extra_reg snbep_uncore_cbox_extra_regs[] = {
->         SNBEP_CBO_EVENT_EXTRA_REG(0x4134, 0xffff, 0x6),
->         SNBEP_CBO_EVENT_EXTRA_REG(0x0135, 0xffff, 0x8),
->         SNBEP_CBO_EVENT_EXTRA_REG(0x0335, 0xffff, 0x8),
-> -       SNBEP_CBO_EVENT_EXTRA_REG(0x4135, 0xffff, 0xc),
-> -       SNBEP_CBO_EVENT_EXTRA_REG(0x4335, 0xffff, 0xc),
-> +       SNBEP_CBO_EVENT_EXTRA_REG(0x4135, 0xffff, 0xa),
-> +       SNBEP_CBO_EVENT_EXTRA_REG(0x4335, 0xffff, 0xa),
->         SNBEP_CBO_EVENT_EXTRA_REG(0x4435, 0xffff, 0x2),
->         SNBEP_CBO_EVENT_EXTRA_REG(0x4835, 0xffff, 0x2),
->         SNBEP_CBO_EVENT_EXTRA_REG(0x4a35, 0xffff, 0x2),
->         SNBEP_CBO_EVENT_EXTRA_REG(0x5035, 0xffff, 0x2),
->         SNBEP_CBO_EVENT_EXTRA_REG(0x0136, 0xffff, 0x8),
->         SNBEP_CBO_EVENT_EXTRA_REG(0x0336, 0xffff, 0x8),
-> -       SNBEP_CBO_EVENT_EXTRA_REG(0x4136, 0xffff, 0xc),
-> -       SNBEP_CBO_EVENT_EXTRA_REG(0x4336, 0xffff, 0xc),
-> +       SNBEP_CBO_EVENT_EXTRA_REG(0x4136, 0xffff, 0xa),
-> +       SNBEP_CBO_EVENT_EXTRA_REG(0x4336, 0xffff, 0xa),
->         SNBEP_CBO_EVENT_EXTRA_REG(0x4436, 0xffff, 0x2),
->         SNBEP_CBO_EVENT_EXTRA_REG(0x4836, 0xffff, 0x2),
->         SNBEP_CBO_EVENT_EXTRA_REG(0x4a36, 0xffff, 0x2),
-> @@ -1222,6 +1222,7 @@ static struct extra_reg ivt_uncore_cbox_extra_regs[] = {
->         SNBEP_CBO_EVENT_EXTRA_REG(SNBEP_CBO_PMON_CTL_TID_EN,
->                                   SNBEP_CBO_PMON_CTL_TID_EN, 0x1),
->         SNBEP_CBO_EVENT_EXTRA_REG(0x1031, 0x10ff, 0x2),
-> +
->         SNBEP_CBO_EVENT_EXTRA_REG(0x1134, 0xffff, 0x4),
->         SNBEP_CBO_EVENT_EXTRA_REG(0x4134, 0xffff, 0xc),
->         SNBEP_CBO_EVENT_EXTRA_REG(0x5134, 0xffff, 0xc),
-> @@ -1245,7 +1246,7 @@ static struct extra_reg ivt_uncore_cbox_extra_regs[] = {
->         SNBEP_CBO_EVENT_EXTRA_REG(0x8335, 0xffff, 0x10),
->         SNBEP_CBO_EVENT_EXTRA_REG(0x0136, 0xffff, 0x10),
->         SNBEP_CBO_EVENT_EXTRA_REG(0x0336, 0xffff, 0x10),
-> -       SNBEP_CBO_EVENT_EXTRA_REG(0x2336, 0xffff, 0x10),
-> +       SNBEP_CBO_EVENT_EXTRA_REG(0x2136, 0xffff, 0x10),
->         SNBEP_CBO_EVENT_EXTRA_REG(0x2336, 0xffff, 0x10),
->         SNBEP_CBO_EVENT_EXTRA_REG(0x4136, 0xffff, 0x18),
->         SNBEP_CBO_EVENT_EXTRA_REG(0x4336, 0xffff, 0x18),
-> --
-> 1.8.3.2
->
+I said submit it more reasonably, what do you think that means?
