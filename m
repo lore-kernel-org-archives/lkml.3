@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751927AbaGJSAJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 14:00:09 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:49788 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438AbaGJSAH (ORCPT
+	id S1751953AbaGJSBg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 14:01:36 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:42783 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751361AbaGJSBf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 14:00:07 -0400
+	Thu, 10 Jul 2014 14:01:35 -0400
+Date: Thu, 10 Jul 2014 14:01:25 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Cc: <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [for-next][PATCH 04/21] ftrace: Optimize function graph to be
+ called directly
+Message-ID: <20140710140125.0f585a84@gandalf.local.home>
+In-Reply-To: <53BED155.9040607@nvidia.com>
+References: <20140703160503.006976702@goodmis.org>
+	<20140703161224.062459692@goodmis.org>
+	<53BED155.9040607@nvidia.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20140709182651.GB15932@console-pimps.org>
-References: <1402773821-15995-1-git-send-email-yinghai@kernel.org>
-	<20140618142819.GN24049@console-pimps.org>
-	<20140709182651.GB15932@console-pimps.org>
-Date: Thu, 10 Jul 2014 11:00:06 -0700
-X-Google-Sender-Auth: a1oSXIUoQeKUbTo_s6Nu2hq57q4
-Message-ID: <CAE9FiQVP6d5GhFBBmX5HDo0w0oKJSizdKvepq5t6vhGNj=W9sg@mail.gmail.com>
-Subject: Re: [PATCH] x86, eboot: Support initrd loaded above 4G
-From: Yinghai Lu <yinghai@kernel.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Matt Fleming <matt.fleming@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-efi@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 9, 2014 at 11:26 AM, Matt Fleming <matt@console-pimps.org> wrote:
-> On Wed, 18 Jun, at 03:28:19PM, Matt Fleming wrote:
->> On Sat, 14 Jun, at 12:23:41PM, Yinghai Lu wrote:
->> > For boot efi kernel directly without bootloader.
->> > If the kernel support XLF_CAN_BE_LOADED_ABOVE_4G, we should
->> > not limit initrd under hdr->initrd_add_max.
->
-> Well, fooey. This patch breaks one of my ASUS machines. It appears some
-> firmware implementations exhibit issues reading directly into a buffer
-> above the 4GB mark.
->
-> I haven't diagnosed exactly what goes wrong with the buffer (i.e. in
-> what way it becomes corrupt), but I should really do that before
-> thinking of how to fix this.
->
-> I'll keep you posted, I just wanted to give you a heads up that things
-> are screwy in this area.
+On Thu, 10 Jul 2014 20:45:57 +0300
+Tuomas Tynkkynen <ttynkkynen@nvidia.com> wrote:
 
-Oh, no.
 
-so efi could allocate buffer above 4g but can not access it?
+> This commit (79922b8) breaks the function graph tracer on today's -next. 
+> This is on an ARM Tegra board.
+> 
+> I'm using ftrace with this script:
+> 
+> #!/bin/sh
+> echo function_graph > /d/tracing/current_tracer
+> echo clear > /d/tracing/trace
+> echo $$ > /d/tracing/set_ftrace_pid
+> exec "$@"
+> 
+> ...and a simple './trace.sh ls' crashes with no console output. SysRq is 
+> not responsive either.
 
-Yinghai
+Thanks for the report. I'll boot up one of my arm boards and see if I
+can reproduce it. I'll try to get to it either this week or next.
+
+-- Steve
+
