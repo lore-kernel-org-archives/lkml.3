@@ -1,127 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752918AbaGJM3F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 08:29:05 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41032 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752173AbaGJM3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 08:29:03 -0400
-Message-ID: <53BE91ED.9020305@ti.com>
-Date: Thu, 10 Jul 2014 16:15:25 +0300
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>, <netdev@vger.kernel.org>
-CC: <prabhakar.csengg@gmail.com>, Sekhar Nori <nsekhar@ti.com>,
-        Rob Herring <robh+dt@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>
-Subject: Re: [PATCH 2/2] net: davinci_mdio: allow to create phys from dt
-References: <1404911451-9921-1-git-send-email-grygorii.strashko@ti.com> <1404911451-9921-3-git-send-email-grygorii.strashko@ti.com> <53BD5066.4000500@ti.com>
-In-Reply-To: <53BD5066.4000500@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1752489AbaGJMc7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 08:32:59 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:51755 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417AbaGJMc6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 08:32:58 -0400
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+Cc: m.chehab@samsung.com, isely@pobox.com, dcb314@hotmail.com,
+        Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Subject: [PATCH] media: pvrusb2: make logging code sane
+Date: Thu, 10 Jul 2014 15:32:25 +0300
+Message-Id: <1404995545-4286-1-git-send-email-andrey.krieger.utkin@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2014 05:23 PM, Santosh Shilimkar wrote:
-> On Wednesday 09 July 2014 09:10 AM, Grygorii Strashko wrote:
->> This patch allows to create PHYs from DT in case
->> if they are explicitly defined. The of_mdiobus_register() is
->> used for such purposes.
->>
->> For backward compatibility, call  of_mdiobus_register() only in case
->> if at least one PHY's child is defined in DT, otherwise rollback to
->> mdiobus_register().
->>
->> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->> ---
->>   drivers/net/ethernet/ti/davinci_mdio.c |   18 ++++++++++++++++--
->>   1 file changed, 16 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/net/ethernet/ti/davinci_mdio.c b/drivers/net/ethernet/ti/davinci_mdio.c
->> index 735dc53..22d3dab 100644
->> --- a/drivers/net/ethernet/ti/davinci_mdio.c
->> +++ b/drivers/net/ethernet/ti/davinci_mdio.c
->> @@ -38,6 +38,7 @@
->>   #include <linux/davinci_emac.h>
->>   #include <linux/of.h>
->>   #include <linux/of_device.h>
->> +#include <linux/of_mdio.h>
->>   #include <linux/pinctrl/consumer.h>
->>   
->>   /*
->> @@ -95,6 +96,7 @@ struct davinci_mdio_data {
->>   	struct mii_bus	*bus;
->>   	bool		suspended;
->>   	unsigned long	access_time; /* jiffies */
+The issue was discovered by static analysis. It turns out that code is
+somewhat insane, being
+if (x) {...} else { if (x) {...} }
 
-	/*
-	 * Indicates that driver shouldn't modify phy_mask in case
-	 * if MDIO bus is registered from DT.
-	 */
+Edited it to do the only reasonable thing, which is to log the
+information about the failed call. The most descriptive logging commands
+set is taken from original code.
 
->> +	bool		skip_scan;
-> The vairiable name is not too intutive so probably add a little
-> bit description on what are you skipping with it.
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=79801
+Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+---
+ drivers/media/usb/pvrusb2/pvrusb2-v4l2.c | 12 +++---------
+ 1 file changed, 3 insertions(+), 9 deletions(-)
 
-
-Now the Davinci MDIO driver updates mii_bus->phy_mask from
-its reset routine to limit number of phy addresses to be scanned.
-
-The MDIO bus scanning has to be skipped at all in case of DT MDIO registration.
-And of_mdiobus_register() maintain mii_bus->phy_mask by itself,
-thus driver shouldn't touch it.
-
-I'll add above comment. Is it ok?
-
-
-> 
->>   };
->>   
->>   static void __davinci_mdio_reset(struct davinci_mdio_data *data)
->> @@ -144,6 +146,9 @@ static int davinci_mdio_reset(struct mii_bus *bus)
->>   	dev_info(data->dev, "davinci mdio revision %d.%d\n",
->>   		 (ver >> 8) & 0xff, ver & 0xff);
->>   
->> +	if (data->skip_scan)
->> +		return 0;
->> +
->>   	/* get phy mask from the alive register */
->>   	phy_mask = __raw_readl(&data->regs->alive);
->>   	if (phy_mask) {
->> @@ -369,8 +374,17 @@ static int davinci_mdio_probe(struct platform_device *pdev)
->>   		goto bail_out;
->>   	}
->>   
->> -	/* register the mii bus */
->> -	ret = mdiobus_register(data->bus);
->> +	/* register the mii bus
->> +	 * Create PHYs from DT only in case if PHY child nodes are explicitly
->> +	 * defined to support backward compatibility with DTs which assume that
->> +	 * Davinci MDIO will always scan the bus for PHYs detection.
->> +	 */
-> multi line comment is not as per coding style. Please fix that.
-> Patch as such looks good to me so with those minor fixes, feel
-> free to append my review tag.
-
-will fix it.
-
-> 
-> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> 
->> +	if (dev->of_node && of_get_child_count(dev->of_node)) {
->> +		data->skip_scan = true;
->> +		ret = of_mdiobus_register(data->bus, dev->of_node);
->> +	} else {
->> +		ret = mdiobus_register(data->bus);
->> +	}
->>   	if (ret)
->>   		goto bail_out;
->>   
->>
-> 
+diff --git a/drivers/media/usb/pvrusb2/pvrusb2-v4l2.c b/drivers/media/usb/pvrusb2/pvrusb2-v4l2.c
+index 7c280f3..1b158f1 100644
+--- a/drivers/media/usb/pvrusb2/pvrusb2-v4l2.c
++++ b/drivers/media/usb/pvrusb2/pvrusb2-v4l2.c
+@@ -951,15 +951,9 @@ static long pvr2_v4l2_ioctl(struct file *file,
+ 	if (ret < 0) {
+ 		if (pvrusb2_debug & PVR2_TRACE_V4LIOCTL) {
+ 			pvr2_trace(PVR2_TRACE_V4LIOCTL,
+-				   "pvr2_v4l2_do_ioctl failure, ret=%ld", ret);
+-		} else {
+-			if (pvrusb2_debug & PVR2_TRACE_V4LIOCTL) {
+-				pvr2_trace(PVR2_TRACE_V4LIOCTL,
+-					   "pvr2_v4l2_do_ioctl failure, ret=%ld"
+-					   " command was:", ret);
+-				v4l_printk_ioctl(pvr2_hdw_get_driver_name(hdw),
+-						cmd);
+-			}
++				   "pvr2_v4l2_do_ioctl failure, ret=%ld"
++				   " command was:", ret);
++			v4l_printk_ioctl(pvr2_hdw_get_driver_name(hdw), cmd);
+ 		}
+ 	} else {
+ 		pvr2_trace(PVR2_TRACE_V4LIOCTL,
+-- 
+1.8.3.2
 
