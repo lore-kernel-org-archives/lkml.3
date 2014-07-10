@@ -1,216 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750945AbaGJEUH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 00:20:07 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:40125 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702AbaGJEUE (ORCPT
+	id S1751154AbaGJEXs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 00:23:48 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:26610 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750702AbaGJEXq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 00:20:04 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-d2-53be1471bd4e
-From: Chao Yu <chao2.yu@samsung.com>
-To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>
-Cc: "'Changman Lee'" <cm224.lee@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <000001cf95b5$eac71ad0$c0555070$@samsung.com>
- <20140705064313.GA35795@jmac.local>
- <005f01cf9982$4b8920f0$e29b62d0$@samsung.com>
- <20140708055613.GA37622@jmac.local>
- <006201cf9b21$afe7e4f0$0fb7aed0$@samsung.com> <20140709134741.GB4926@jmac>
-In-reply-to: <20140709134741.GB4926@jmac>
-Subject: RE: [f2fs-dev][PATCH 1/2] f2fs: check name_len of dir entry to prevent
- from deadloop
-Date: Thu, 10 Jul 2014 12:18:36 +0800
-Message-id: <001c01cf9bf6$32e5ba10$98b12e30$@samsung.com>
+	Thu, 10 Jul 2014 00:23:46 -0400
+X-AuditID: cbfee690-b7fb56d000003439-77-53be154f20ea
+Message-id: <53BE1550.3060608@samsung.com>
+Date: Thu, 10 Jul 2014 13:23:44 +0900
+From: Joonyoung Shim <jy0922.shim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
 MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
+To: linux-usb@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: gregkh@linuxfoundation.org,
+        "Marek Szyprowski/Poland R&D Center-Linux (MSD)/./????" 
+	<m.szyprowski@samsung.com>,
+        broonie@linaro.org, tobetter@gmail.com,
+        Joonyoung Shim <jy0922.shim@samsung.com>
+Subject: [PATCH 0/3] usb: fix and support PM for usb3503
+Content-type: text/plain; charset=ISO-8859-1
 Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQKymfVu0+WUXrYrr8JlZT05gEW09QJiWoK9AtujIywB+9GhiwLvavIyAhZlaP6ZcKsd0A==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrILMWRmVeSWpSXmKPExsVy+t9jAd1CkX3BBmsfyltc29fIZPFk/Sxm
-	i0uL3C327D3JYnF51xw2B1aPTas62Tx2L/jM5NG3ZRWjx+dNcgEsUVw2Kak5mWWpRfp2CVwZ
-	N5deYy1YYVCxbOEOpgbGPSpdjJwcEgImEnefNbNC2GISF+6tZ+ti5OIQEljEKLHufAcrhPOD
-	UWL+yhksIFVsAioSyzv+M4HYIgJqEr37pjCBFDELTGaUmNV3FywhJNDEJNE4PQbE5hTQlLi+
-	6TzYCmGBeIkbc+8zgtgsAqoSV16eZwOxeQUsJaZ3z2eHsAUlfky+B7aMWUBLYv3O40wQtrzE
-	5jVvmSFOVZDYcfY1I8QRERLrN/2FqhGX2HjkFssERqFZSEbNQjJqFpJRs5C0LGBkWcUomlqQ
-	XFCclJ5rpFecmFtcmpeul5yfu4kRHBHPpHcwrmqwOMQowMGoxMPb0LM3WIg1say4MvcQowQH
-	s5IIr8d/oBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeg63WgUIC6YklqdmpqQWpRTBZJg5OqQZG
-	jhWLp7Uul/Mz8Lfkfjj90Q+pvvueykaW3g9uXZRymrlFqfiCe4PMYmHdooLU3dwBzgJuv+6p
-	pfbc0H3L1zz5cexDHqdjK9XPzdrn1zD3+dTZf1it+hZe0nll5WOXEHRm6nJDZ7Gr2Z9WrUs+
-	3fhSv7U7b7PVtWvxRunbZ4UXzGG+uNq3cQG3EktxRqKhFnNRcSIAJRDhloQCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCIsWRmVeSWpSXmKPExsWyRsSkSNdfdF+wwd4HRhabrl9ntWhevJ7N
+	4sW9iywWl3fNYbNYtKyV2WLtkbvsFvser2F2YPfYOesuu8eda3vYPPbPXcPu0bdlFaPH501y
+	AaxRXDYpqTmZZalF+nYJXBmnpu1hLNjEXDFr8TymBsYLTF2MnBwSAiYSjU872SFsMYkL99az
+	dTFycQgJLGWUmD/1F2MXIwdY0aQT5RDx6YwS57efB2sWEnjFKPHlvDJIDa+AlsSVBlkQk0VA
+	VaLhkjVIBZuAnsSdbcfBqkUFwiSmnrjKAmLzCghK/Jh8D8wWEYiU6Hr7FGwts8ApRonf5z4z
+	gySEBSwklt/aB2YzC+hI7G+dxgZhy0tsXvOWGaRBQmAXu8TrH1vAEiwCAhLfJh9igbhZVmLT
+	AWaIvyQlDq64wTKBUWQWkt2zkIydhWTsAkbmVYyiqQXJBcVJ6UUmesWJucWleel6yfm5mxiB
+	MXT637MJOxjvHbA+xJgMtHIis5Rocj4wBvNK4g2NzYwsTE1MjY3MLc1IE1YS51V7lBQkJJCe
+	WJKanZpakFoUX1Sak1p8iJGJg1OqgXGiQOv5RbMXzNHd1m026/faj4s/TrZpiF7p/1Fk8pLX
+	X9UrMzeszttSX3Vpo5KiP/OnmkPRBwK7T28/I7FXj7fjqfkPw5fKx9anccbNPNq8+37VqQSh
+	S4WSk3buzLt86M+ksOI5Le+4Agt+Hz6gUKHjqXT7UIz4QuOsVsfohzNVkraa7Yut4cxRYinO
+	SDTUYi4qTgQA3IHK8bcCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsVy+t9jQV1/0X3BBlt2aFtsun6d1aJ58Xo2
+	ixf3LrJYXN41h81i0bJWZou1R+6yW+x7vIbZgd1j56y77B53ru1h89g/dw27R9+WVYwenzfJ
+	BbBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gDd
+	oaRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHMODVtD2PBJuaKWYvnMTUw
+	XmDqYuTgkBAwkZh0oryLkRPIFJO4cG89WxcjF4eQwHRGifPbzzOBJIQEXjFKfDmvDFLPK6Al
+	caVBFsRkEVCVaLhkDVLBJqAncWfbcbBqUYEwiaknrrKA2LwCghI/Jt8Ds0UEIiW63j4FG88s
+	cIpR4ve5z8wgCWEBC4nlt/aB2cwCOhL7W6exQdjyEpvXvGWewMg3C8msWUjKZiEpW8DIvIpR
+	NLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOEKfSe9gXNVgcYhRgINRiYe3oWdvsBBrYllxZe4h
+	RgkOZiURXo//QCHelMTKqtSi/Pii0pzU4kOMpkCfTmSWEk3OByaPvJJ4Q2MTMyNLI3NDCyNj
+	cyVx3oOt1oFCAumJJanZqakFqUUwfUwcnFINjHNOCMq/tRa0tKxS1V5crNB16U/r4iNnPoSd
+	/SazqeFR6guuM3lPYs/UhATs2bKMad9d2Z8G+/dmc5hJ5jHdZGFk+h/Y7VfDEWPte1vnV9eU
+	beGXPYKTphzvfL7/eozNj0u7Yl8xVL6f4Pgl+WjbvHP9hj2Bjj/KJOxPbFyw/P4ZaxXbU6tP
+	fFZiKc5INNRiLipOBACa7dT65gIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jaegeuk,
+Hello,
 
-> -----Original Message-----
-> From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> Sent: Wednesday, July 09, 2014 9:48 PM
-> To: Chao Yu
-> Cc: 'Changman Lee'; linux-f2fs-devel@lists.sourceforge.net; linux-fsdevel@vger.kernel.org;
-> linux-kernel@vger.kernel.org
-> Subject: Re: [f2fs-dev][PATCH 1/2] f2fs: check name_len of dir entry to prevent from deadloop
-> 
-> Hi Chao,
-> 
-> On Wed, Jul 09, 2014 at 10:57:43AM +0800, Chao Yu wrote:
-> > Hi,
-> >
-> > > -----Original Message-----
-> > > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> > > Sent: Tuesday, July 08, 2014 1:56 PM
-> > > To: Chao Yu
-> > > Cc: 'Changman Lee'; linux-f2fs-devel@lists.sourceforge.net; linux-fsdevel@vger.kernel.org;
-> > > linux-kernel@vger.kernel.org
-> > > Subject: Re: [f2fs-dev][PATCH 1/2] f2fs: check name_len of dir entry to prevent from deadloop
-> > >
-> > > On Mon, Jul 07, 2014 at 09:24:05AM +0800, Chao Yu wrote:
-> > > > Hi Jaegeuk,
-> > > >
-> > > > > -----Original Message-----
-> > > > > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> > > > > Sent: Saturday, July 05, 2014 2:43 PM
-> > > > > To: Chao Yu
-> > > > > Cc: Changman Lee; linux-f2fs-devel@lists.sourceforge.net;
-> linux-fsdevel@vger.kernel.org;
-> > > > > linux-kernel@vger.kernel.org
-> > > > > Subject: Re: [f2fs-dev][PATCH 1/2] f2fs: check name_len of dir entry to prevent from
-> deadloop
-> > > > >
-> > > > > Hi Chao,
-> > > > >
-> > > > > On Wed, Jul 02, 2014 at 01:23:47PM +0800, Chao Yu wrote:
-> > > > > > We assume that modification of some special application could result in zeroed
-> > > > > > name_len, or it is consciously made by somebody. We will deadloop in
-> > > > > > find_in_block when name_len of dir entry is zero.
-> > > > >
-> > > > > Could you explain this a little bit more?
-> > > > > I'm not sure how it can happen.
-> > > >
-> > > > IMO,
-> > > > On one hand, programs like mkfs/fsck/img2simg and f2fs could directly operate
-> > > > the raw device, so bugs of these software may be triggered to generate the
-> > > > corrupt data such as zeroed name_len.
-> > >
-> > > Well...
-> > > If such the programs try to corrupt the f2fs image crucially, the bug should be
-> > > fixed inside the programs, not from the workaround through f2fs.
-> >
-> > IMO, software should have ability of self fault-tolerant, but not depend on correctness
-> > of other related software. And I will hope there are no more other software which could
-> > directly operate the raw device, to provide us such corrupted data as input.
-> >
-> > How about swifting to BUG_ON here?
-> 
-> Well, IMO, it would be good to add f2fs_bug_on() here with a specific comment.
+This patchset is simple just to fix and support PM for usb3503. They was
+tested on odroid U3 board.
 
-Ok, I will modify this patch and resend it.
+Thanks.
 
-> 
-> In the current phase of f2fs, it is more important to investigate the file
-> system bugs, rather than workarounds for any corrupted images.
-> And, definitely it needs to stop the kernel if any corrupted image was mounted,
-> so that we can figure out where the bugs are occurred.
+Joonyoung Shim (3):
+      usb: usb3503: fix build warning
+      usb: usb3503: add PM functions
+      USB: add reset resume quirk for usb3503
 
-All right, I got it.
-Thanks for the review and explanation in patience. :)
-
-Regards,
-Yu
-
-> 
-> Thanks,
-> 
-> >
-> > >
-> > > As I mentioned, even though f2fs avoids such the dead loop whatever at that
-> > > moment, it will be operating with inconsistent file system status, resulting
-> > > in system crash in the near furture finally.
-> >
-> > Agreed, we should avoid this. Previous solution with "break" is not suitable here.
-> > Thanks for you reminder.
-> >
-> > >
-> > > Why should we avoid this specific case only?
-> >
-> > Hmm... I just found this case could cause some issue when I review Gu's last patch.
-> > As I check, several error cases of find_data_page in find_in_level could also cause
-> > inconsistent status of fs as you said.
-> >
-> > > It seems that it is a kinda intentional user-made case.
-> > > Is it really normal?
-> >
-> > It's really rare.
-> >
-> > >
-> > > > On the other hand, it' could be treated as a potential security problem, because
-> > > > user could crafted such a malicious image include zeroed name_len for hacking purpose.
-> > >
-> > > If user can try to do something like that, why do they write zeroed name_len only?
-> > > To crash the system, they can do everything.
-> >
-> > If they have the whole right to access the system, certainly they do not have to do such
-> > thing. I just assume that they only have the right to upload the crafted image, then use
-> > social engineering in next "do mount" step. Or it's no need to worry about this?
-> >
-> > Thanks,
-> > Yu
-> >
-> > >
-> > > Thanks,
-> > >
-> > > > Once such special image is being mounted, deadloop could be triggered, finally will
-> > > > result in effecting on linux system's running.
-> > > >
-> > > > Thanks,
-> > > > Yu
-> > > >
-> > > > > I think the zeroed name_len would cause some problems in f2fs_add_link.
-> > > > >
-> > > > > Thanks,
-> > > > >
-> > > > > >
-> > > > > > This patch is added for preventing deadloop in above scenario.
-> > > > > >
-> > > > > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > > > > > ---
-> > > > > >  fs/f2fs/dir.c |   10 ++++++++++
-> > > > > >  1 file changed, 10 insertions(+)
-> > > > > >
-> > > > > > diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
-> > > > > > index be8c7af..4316ec5 100644
-> > > > > > --- a/fs/f2fs/dir.c
-> > > > > > +++ b/fs/f2fs/dir.c
-> > > > > > @@ -121,6 +121,16 @@ static struct f2fs_dir_entry *find_in_block(struct page
-> *dentry_page,
-> > > > > >  			}
-> > > > > >  		}
-> > > > > >
-> > > > > > +		/* check name_len to prevent from deadloop here */
-> > > > > > +		if (unlikely(de->name_len == 0)) {
-> > > > > > +			struct inode *inode = dentry_page->mapping->host;
-> > > > > > +
-> > > > > > +			f2fs_msg(inode->i_sb, KERN_ERR,
-> > > > > > +				"zero-length dir entry, ino = %lu, name = %s",
-> > > > > > +				(unsigned long)inode->i_ino, name->name);
-> > > > > > +			break;
-> > > > > > +		}
-> > > > > > +
-> > > > > >  		bit_start = bit_pos
-> > > > > >  				+ GET_DENTRY_SLOTS(le16_to_cpu(de->name_len));
-> > > > > >  	}
-> > > > > > --
-> > > > > > 1.7.9.5
-> > > > >
-> > > > > --
-> > > > > Jaegeuk Kim
-> > >
-> > > --
-> > > Jaegeuk Kim
-> 
-> --
-> Jaegeuk Kim
-
+ drivers/usb/core/quirks.c  |  3 +++
+ drivers/usb/misc/usb3503.c | 37 ++++++++++++++++++++++++++++++++++---
+ 2 files changed, 37 insertions(+), 3 deletions(-)
