@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844AbaGJVyx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 17:54:53 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:33822 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753025AbaGJVyu (ORCPT
+	id S1753549AbaGJVwI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 17:52:08 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:49401 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753531AbaGJVwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 17:54:50 -0400
+	Thu, 10 Jul 2014 17:52:05 -0400
 From: Oded Gabbay <oded.gabbay@gmail.com>
 X-Google-Original-From: Oded Gabbay <oded.gabbay@amd.com>
 To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
@@ -15,67 +15,70 @@ Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         John Bridgman <John.Bridgman@amd.com>,
         Andrew Lewycky <Andrew.Lewycky@amd.com>,
         Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>
-Subject: [PATCH 30/83] hsa/radeon: Fix list of supported devices
-Date: Fri, 11 Jul 2014 00:53:46 +0300
-Message-Id: <1405029279-6894-2-git-send-email-oded.gabbay@amd.com>
+Subject: [PATCH 19/83] hsa/radeon: Enable/Disable KFD interrupt module
+Date: Fri, 11 Jul 2014 00:50:19 +0300
+Message-Id: <1405029027-6085-18-git-send-email-oded.gabbay@amd.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405029279-6894-1-git-send-email-oded.gabbay@amd.com>
-References: <1405029279-6894-1-git-send-email-oded.gabbay@amd.com>
+In-Reply-To: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
+References: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch add calls to initialize and finalize the KFD interrupt
+module.
+
+The calls are done per device initialize/finalize inside the kgd-->kfd
+interface.
+
 Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
 ---
- drivers/gpu/hsa/radeon/kfd_device.c | 28 +++++++++++++++++++++++-----
- 1 file changed, 23 insertions(+), 5 deletions(-)
+ drivers/gpu/hsa/radeon/cik_regs.h   |  1 +
+ drivers/gpu/hsa/radeon/kfd_device.c | 10 ++++++++--
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/gpu/hsa/radeon/cik_regs.h b/drivers/gpu/hsa/radeon/cik_regs.h
+index 9c3ce97..813cdc4 100644
+--- a/drivers/gpu/hsa/radeon/cik_regs.h
++++ b/drivers/gpu/hsa/radeon/cik_regs.h
+@@ -73,6 +73,7 @@
+ #define CP_PQ_WPTR_POLL_CNTL				0xC20C
+ #define	WPTR_POLL_EN					(1 << 31)
+ 
++#define CPC_INT_CNTL					0xC2D0
+ #define CP_ME1_PIPE0_INT_CNTL				0xC214
+ #define CP_ME1_PIPE1_INT_CNTL				0xC218
+ #define CP_ME1_PIPE2_INT_CNTL				0xC21C
 diff --git a/drivers/gpu/hsa/radeon/kfd_device.c b/drivers/gpu/hsa/radeon/kfd_device.c
-index b627e57..a21c095 100644
+index b2d2861..b627e57 100644
 --- a/drivers/gpu/hsa/radeon/kfd_device.c
 +++ b/drivers/gpu/hsa/radeon/kfd_device.c
-@@ -27,7 +27,7 @@
- #include "kfd_priv.h"
- #include "kfd_scheduler.h"
+@@ -127,6 +127,9 @@ bool kgd2kfd_device_init(struct kfd_dev *kfd,
  
--static const struct kfd_device_info bonaire_device_info = {
-+static const struct kfd_device_info kaveri_device_info = {
- 	.scheduler_class = &radeon_kfd_cik_static_scheduler_class,
- 	.max_pasid_bits = 16,
- 	.ih_ring_entry_size = 4 * sizeof(uint32_t)
-@@ -40,10 +40,28 @@ struct kfd_deviceid {
+ 	radeon_kfd_doorbell_init(kfd);
  
- /* Please keep this sorted by increasing device id. */
- static const struct kfd_deviceid supported_devices[] = {
--	{ 0x1305, &bonaire_device_info },	/* Kaveri */
--	{ 0x1307, &bonaire_device_info },	/* Kaveri */
--	{ 0x130F, &bonaire_device_info },	/* Kaveri */
--	{ 0x665C, &bonaire_device_info },	/* Bonaire */
-+	{ 0x1304, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1305, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1306, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1307, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1309, &kaveri_device_info },	/* Kaveri */
-+	{ 0x130A, &kaveri_device_info },	/* Kaveri */
-+	{ 0x130B, &kaveri_device_info },	/* Kaveri */
-+	{ 0x130C, &kaveri_device_info },	/* Kaveri */
-+	{ 0x130D, &kaveri_device_info },	/* Kaveri */
-+	{ 0x130E, &kaveri_device_info },	/* Kaveri */
-+	{ 0x130F, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1310, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1311, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1312, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1313, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1315, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1316, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1317, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1318, &kaveri_device_info },	/* Kaveri */
-+	{ 0x131B, &kaveri_device_info },	/* Kaveri */
-+	{ 0x131C, &kaveri_device_info },	/* Kaveri */
-+	{ 0x131D, &kaveri_device_info },	/* Kaveri */
- };
++	if (radeon_kfd_interrupt_init(kfd))
++		return false;
++
+ 	if (!device_iommu_pasid_init(kfd))
+ 		return false;
  
- static const struct kfd_device_info *
+@@ -155,10 +158,13 @@ void kgd2kfd_device_exit(struct kfd_dev *kfd)
+ 
+ 	BUG_ON(err != 0);
+ 
+-	if (kfd->init_complete) {
++	if (kfd->init_complete)
+ 		kfd->device_info->scheduler_class->stop(kfd->scheduler);
+-		kfd->device_info->scheduler_class->destroy(kfd->scheduler);
+ 
++	radeon_kfd_interrupt_exit(kfd);
++
++	if (kfd->init_complete) {
++		kfd->device_info->scheduler_class->destroy(kfd->scheduler);
+ 		amd_iommu_free_device(kfd->pdev);
+ 	}
+ 
 -- 
 1.9.1
 
