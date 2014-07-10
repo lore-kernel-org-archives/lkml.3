@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715AbaGJBAF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 21:00:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49702 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739AbaGJBAD (ORCPT
+	id S1754151AbaGJBF5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 21:05:57 -0400
+Received: from mail-ie0-f201.google.com ([209.85.223.201]:51006 "EHLO
+	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739AbaGJBFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 21:00:03 -0400
-Date: Wed, 9 Jul 2014 17:59:45 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: navin patidar <navin.patidar@gmail.com>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>, devel@driverdev.osuosl.org,
+	Wed, 9 Jul 2014 21:05:53 -0400
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Julius Werner <jwerner@chromium.org>, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] staging: rtl8188eu: Remove WEXT_PRIV private ioctl
- handlers
-Message-ID: <20140710005945.GA17129@kroah.com>
-References: <1404234313-21634-1-git-send-email-navin.patidar@gmail.com>
- <20140709190419.GA14346@kroah.com>
- <CAPV97yeBsA3A9m=troMHgqUcG2=idCKUWh4sPS+ob0w8VGC76g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPV97yeBsA3A9m=troMHgqUcG2=idCKUWh4sPS+ob0w8VGC76g@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Cc: linux-tegra@vger.kernel.org, Andrew Bresticker <abrestic@chromium.org>
+Subject: [PATCH 0/4] Allow xHCI drivers to be built as separate modules
+Date: Wed,  9 Jul 2014 18:05:46 -0700
+Message-Id: <1404954350-26343-1-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 06:24:21AM +0530, navin patidar wrote:
-> On Thu, Jul 10, 2014 at 12:34 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Tue, Jul 01, 2014 at 10:35:09PM +0530, navin patidar wrote:
-> >> Remove WEXT_PRIV (non-standard) ioctl handlers.
-> >>
-> >> Signed-off-by: navin patidar <navin.patidar@gmail.com>
-> >> ---
-> >>  drivers/staging/rtl8188eu/os_dep/ioctl_linux.c | 6335 +++---------------------
-> >>  1 file changed, 744 insertions(+), 5591 deletions(-)
-> >
-> > This patch fails to apply :(
-> >
-> > Can you refresh it, and resend this series?
-> 
-> Please apply following patches.
-> 
-> [PATCH v2 1/3] staging: rtl8188eu: re-use mac_pton() helper
-> [PATCH v2 2/3] staging: rtl8188eu: substitute custom hex2bin()
-> [PATCH v2 3/3] staging: rtl8188eu: re-use hex_to_bin() instead of custom code
-> 
-> Then try again to apply my patches.
+It was suggested in the review of the Tegra xHCI driver [1] that we
+allow xHCI drivers to be built as individual modules (like EHCI) instead
+of building them all into the single xhci-hcd module as they are today.
 
-I don't have those, sorry, my patch queue for staging patches are now
-empty as of everything sent up to yesterday.  Please resend what you
-want me to apply, in the order in which you want me to apply it.
+Patches 1-3 prepare for making the xHCI PCI and platform drivers able
+to be built as individual modules and patch 4 actually creates the 3
+separate modules (core, platform, PCI).
 
-thanks,
+Based on 3.16-rc4.
 
-greg k-h
+[1] http://patchwork.ozlabs.org/patch/361265/
+
+Andrew Bresticker (4):
+  xhci: Introduce xhci_init_driver()
+  xhci: Check for XHCI_COMP_MODE_QUIRK when disabling D3cold
+  xhci: Export symbols used by host-controller drivers
+  xhci: Allow xHCI drivers to be built as separate modules
+
+ drivers/usb/host/Kconfig     |  5 +++
+ drivers/usb/host/Makefile    | 10 ++---
+ drivers/usb/host/xhci-dbg.c  |  1 +
+ drivers/usb/host/xhci-pci.c  | 80 +++++++-----------------------------
+ drivers/usb/host/xhci-plat.c | 69 +++++--------------------------
+ drivers/usb/host/xhci.c      | 96 +++++++++++++++++++++++++++++++++-----------
+ drivers/usb/host/xhci.h      | 23 +----------
+ 7 files changed, 111 insertions(+), 173 deletions(-)
+
+-- 
+2.0.0.526.g5318336
+
