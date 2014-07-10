@@ -1,132 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167AbaGJIS2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 04:18:28 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:61034 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119AbaGJISP (ORCPT
+	id S1753004AbaGJIbw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 04:31:52 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:48947 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124AbaGJISW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 04:18:15 -0400
-From: Tom Gundersen <teg@jklm.no>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        Tom Gundersen <teg@jklm.no>
-Subject: [PATCH v7 07/33] net: rtnetlink - make create_link take name_assign_type
-Date: Thu, 10 Jul 2014 10:17:12 +0200
-Message-Id: <1404980258-30853-8-git-send-email-teg@jklm.no>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1404980258-30853-1-git-send-email-teg@jklm.no>
-References: <1404980258-30853-1-git-send-email-teg@jklm.no>
+	Thu, 10 Jul 2014 04:18:22 -0400
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: [PATCH v2 1/2] clk: qcom: add clocks necessary for apq8064 sdcc
+Date: Thu, 10 Jul 2014 09:18:13 +0100
+Message-Id: <1404980293-6072-1-git-send-email-srinivas.kandagatla@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404980193-5967-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1404980193-5967-1-git-send-email-srinivas.kandagatla@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Tom Gundersen <teg@jklm.no>
----
- drivers/net/veth.c      | 11 ++++++++---
- include/net/rtnetlink.h |  1 +
- net/core/rtnetlink.c    | 12 ++++++++----
- 3 files changed, 17 insertions(+), 7 deletions(-)
+This patch adds clocks necessary for SD card controller on apq8064 SOC.
+Without this patch the clocks are not visible to the sdcc driver.
 
-diff --git a/drivers/net/veth.c b/drivers/net/veth.c
-index b4a10bc..5058700 100644
---- a/drivers/net/veth.c
-+++ b/drivers/net/veth.c
-@@ -319,6 +319,7 @@ static int veth_newlink(struct net *src_net, struct net_device *dev,
- 	struct nlattr *peer_tb[IFLA_MAX + 1], **tbp;
- 	struct ifinfomsg *ifmp;
- 	struct net *net;
-+	unsigned char name_assign_type;
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Reviewed-by: Kumar Gala <galak@codeaurora.org>
+---
+ drivers/clk/qcom/gcc-msm8960.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/drivers/clk/qcom/gcc-msm8960.c b/drivers/clk/qcom/gcc-msm8960.c
+index f4ffd91..4cb2927 100644
+--- a/drivers/clk/qcom/gcc-msm8960.c
++++ b/drivers/clk/qcom/gcc-msm8960.c
+@@ -2876,6 +2876,18 @@ static struct clk_regmap *gcc_apq8064_clks[] = {
+ 	[GSBI7_QUP_SRC] = &gsbi7_qup_src.clkr,
+ 	[GSBI7_QUP_CLK] = &gsbi7_qup_clk.clkr,
+ 	[GSBI7_H_CLK] = &gsbi7_h_clk.clkr,
++	[SDC1_SRC] = &sdc1_src.clkr,
++	[SDC1_CLK] = &sdc1_clk.clkr,
++	[SDC2_SRC] = &sdc2_src.clkr,
++	[SDC2_CLK] = &sdc2_clk.clkr,
++	[SDC3_SRC] = &sdc3_src.clkr,
++	[SDC3_CLK] = &sdc3_clk.clkr,
++	[SDC4_SRC] = &sdc4_src.clkr,
++	[SDC4_CLK] = &sdc4_clk.clkr,
++	[SDC1_H_CLK] = &sdc1_h_clk.clkr,
++	[SDC2_H_CLK] = &sdc2_h_clk.clkr,
++	[SDC3_H_CLK] = &sdc3_h_clk.clkr,
++	[SDC4_H_CLK] = &sdc4_h_clk.clkr,
+ };
  
- 	/*
- 	 * create and register peer first
-@@ -344,16 +345,20 @@ static int veth_newlink(struct net *src_net, struct net_device *dev,
- 		tbp = tb;
- 	}
- 
--	if (tbp[IFLA_IFNAME])
-+	if (tbp[IFLA_IFNAME]) {
- 		nla_strlcpy(ifname, tbp[IFLA_IFNAME], IFNAMSIZ);
--	else
-+		name_assign_type = NET_NAME_USER;
-+	} else {
- 		snprintf(ifname, IFNAMSIZ, DRV_NAME "%%d");
-+		name_assign_type = NET_NAME_ENUM;
-+	}
- 
- 	net = rtnl_link_get_net(src_net, tbp);
- 	if (IS_ERR(net))
- 		return PTR_ERR(net);
- 
--	peer = rtnl_create_link(net, ifname, &veth_link_ops, tbp);
-+	peer = rtnl_create_link(net, ifname, name_assign_type,
-+				&veth_link_ops, tbp);
- 	if (IS_ERR(peer)) {
- 		put_net(net);
- 		return PTR_ERR(peer);
-diff --git a/include/net/rtnetlink.h b/include/net/rtnetlink.h
-index 72240e5..e21b9f9 100644
---- a/include/net/rtnetlink.h
-+++ b/include/net/rtnetlink.h
-@@ -136,6 +136,7 @@ void rtnl_af_unregister(struct rtnl_af_ops *ops);
- 
- struct net *rtnl_link_get_net(struct net *src_net, struct nlattr *tb[]);
- struct net_device *rtnl_create_link(struct net *net, char *ifname,
-+				    unsigned char name_assign_type,
- 				    const struct rtnl_link_ops *ops,
- 				    struct nlattr *tb[]);
- int rtnl_configure_link(struct net_device *dev, const struct ifinfomsg *ifm);
-diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-index 899de40..09456ff 100644
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -1805,7 +1805,8 @@ int rtnl_configure_link(struct net_device *dev, const struct ifinfomsg *ifm)
- EXPORT_SYMBOL(rtnl_configure_link);
- 
- struct net_device *rtnl_create_link(struct net *net,
--	char *ifname, const struct rtnl_link_ops *ops, struct nlattr *tb[])
-+	char *ifname, unsigned char name_assign_type,
-+	const struct rtnl_link_ops *ops, struct nlattr *tb[])
- {
- 	int err;
- 	struct net_device *dev;
-@@ -1823,7 +1824,7 @@ struct net_device *rtnl_create_link(struct net *net,
- 		num_rx_queues = ops->get_num_rx_queues();
- 
- 	err = -ENOMEM;
--	dev = alloc_netdev_mqs(ops->priv_size, ifname, NET_NAME_UNKNOWN,
-+	dev = alloc_netdev_mqs(ops->priv_size, ifname, name_assign_type,
- 			       ops->setup, num_tx_queues, num_rx_queues);
- 	if (!dev)
- 		goto err;
-@@ -1889,6 +1890,7 @@ static int rtnl_newlink(struct sk_buff *skb, struct nlmsghdr *nlh)
- 	char ifname[IFNAMSIZ];
- 	struct nlattr *tb[IFLA_MAX+1];
- 	struct nlattr *linkinfo[IFLA_INFO_MAX+1];
-+	unsigned char name_assign_type = NET_NAME_USER;
- 	int err;
- 
- #ifdef CONFIG_MODULES
-@@ -2038,14 +2040,16 @@ replay:
- 			return -EOPNOTSUPP;
- 		}
- 
--		if (!ifname[0])
-+		if (!ifname[0]) {
- 			snprintf(ifname, IFNAMSIZ, "%s%%d", ops->kind);
-+			name_assign_type = NET_NAME_ENUM;
-+		}
- 
- 		dest_net = rtnl_link_get_net(net, tb);
- 		if (IS_ERR(dest_net))
- 			return PTR_ERR(dest_net);
- 
--		dev = rtnl_create_link(dest_net, ifname, ops, tb);
-+		dev = rtnl_create_link(dest_net, ifname, name_assign_type, ops, tb);
- 		if (IS_ERR(dev)) {
- 			err = PTR_ERR(dev);
- 			goto out;
+ static const struct regmap_config gcc_msm8960_regmap_config = {
 -- 
-1.9.3
+1.9.1
 
