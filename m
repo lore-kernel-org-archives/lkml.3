@@ -1,118 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865AbaGJMv4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 08:51:56 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:47995 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751662AbaGJMvy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 08:51:54 -0400
+	id S1753284AbaGJMwc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 08:52:32 -0400
+Received: from sauhun.de ([89.238.76.85]:57572 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752162AbaGJMwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 08:52:31 -0400
+Date: Thu, 10 Jul 2014 14:52:28 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PULL REQUEST] i2c for 3.16
+Message-ID: <20140710125223.GA4910@katana>
 MIME-Version: 1.0
-In-Reply-To: <53BD64E4.5060504@st.com>
-References: <1404918461-25390-1-git-send-email-peter.griffin@linaro.org>
-	<53BD64E4.5060504@st.com>
-Date: Thu, 10 Jul 2014 14:51:53 +0200
-Message-ID: <CAPDyKFqpqa-nA3i8Z4k3oBqgo7OpppxM5tSCSz-mhxyHRJtZTw@mail.gmail.com>
-Subject: Re: [PATCH v4 00/10] Add SDHCI support for ST Microelectronics SoCs
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Maxime Coquelin <maxime.coquelin@st.com>
-Cc: Peter Griffin <peter.griffin@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Ball <chris@printf.net>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ikeVEW9yuYc//A+q"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 July 2014 17:51, Maxime Coquelin <maxime.coquelin@st.com> wrote:
->
->
-> On 07/09/2014 05:07 PM, Peter Griffin wrote:
->>
->> This series adds a SDHCI platform driver for ST SoCs, along with
->> the additional device tree bindings and configuration to enable
->> the controller to work properly.
->>
->> Initially it supports the stih416 and stih415 SoCs, and has
->> been tested on a stih416-b2020 board.
->>
->> regards,
->>
->> Peter.
->>
->> Changes since v1
->> - Whitespace cleanups
->> - Use readl_relaxed io accessor
->> - Add update to MAINTAINERS
->> - Remove reset controller code from platform driver
->> - Remove #ifdef around sleep ops
->> - Use sdhci_pltfm_clk_get_max_clock lib function
->> - Pass bus-width etc through board device tree node
->> - Remove unncessary header
->> - Remove / change some debug messages
->> - Remove final break from switch case
->>
->> Changes since v2
->> - Update CC list with alkml and lkml lists
->>
->> Changes since v3
->> - Rebased on v3.16-rc4
->> - Use sdhci_set_bus_width lib function for set_bus_width
->> - Remove sdhci_st_8bit_width function
->> - Use sdhci_set_clock lib function for set_clock
->>
->> Peter Griffin (10):
->>    mmc: sdhci-st: Intial support for ST SDHCI controller
->>    mmc: sdhci-st: ST Microelectronics SDHCI binding documentation.
->>    ARM: STi: DT: Add sdhci pins for stih416
->>    ARM: STi: DT: Add sdhci controller for stih416
->>    ARM: STi: DT: Add sdhci pin configuration for stih415
->>    ARM: STi: DT: Add sdhci controller for stih415
->>    ARM: STi: DT: Enable mmc0 for both stih415 and stih416 SoCs
->>    ARM: STi: DT: Enable second sdhci controller for stih416 b2020 boards.
->>    ARM: update multi_v7_defconfig for STI
->>    MAINTAINERS: Add sdhci-st file to ARCH/STI architecture
->>
->>   Documentation/devicetree/bindings/mmc/sdhci-st.txt |  33 ++++
->>   MAINTAINERS                                        |   1 +
->>   arch/arm/boot/dts/stih415-pinctrl.dtsi             |  21 +++
->>   arch/arm/boot/dts/stih415.dtsi                     |  12 ++
->>   arch/arm/boot/dts/stih416-b2020.dts                |   8 +
->>   arch/arm/boot/dts/stih416-b2020e.dts               |   6 +
->>   arch/arm/boot/dts/stih416-pinctrl.dtsi             |  39 +++++
->>   arch/arm/boot/dts/stih416.dtsi                     |  24 +++
->>   arch/arm/boot/dts/stih41x-b2020.dtsi               |   4 +
->>   arch/arm/boot/dts/stih41x-b2020x.dtsi              |   4 +
->>   arch/arm/configs/multi_v7_defconfig                |   1 +
->>   drivers/mmc/host/Kconfig                           |  12 ++
->>   drivers/mmc/host/Makefile                          |   1 +
->>   drivers/mmc/host/sdhci-st.c                        | 176
->> +++++++++++++++++++++
->>   14 files changed, 342 insertions(+)
->>   create mode 100644 Documentation/devicetree/bindings/mmc/sdhci-st.txt
->>   create mode 100644 drivers/mmc/host/sdhci-st.c
->>
->
-> Thanks Peter.
->
-> DT patches queued to git://git.stlinux.com/devel/kernel/linux-sti.git
-> sti-dt-for-v3.17-1
 
-What about patch9 and 10? Did you take them as well?
+--ikeVEW9yuYc//A+q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-You may add my ack for them, for whatever it's worth.
+Linus,
 
-Kind regards
-Uffe
+here is one buildfix for the i2c subsystem. While here, I decided to add
+the header cleanup as well. Please pull.
 
->
-> Regards,
-> Maxime
+Thanks,
+
+   Wolfram
+
+
+The following changes since commit a497c3ba1d97fc69c1e78e7b96435ba8c2cb42ee:
+
+  Linux 3.16-rc2 (2014-06-21 19:02:54 -1000)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git i2c/for-current
+
+for you to fetch changes up to 098aebc30292c10b31f6aa58bf4fe2c4b26001f6:
+
+  i2c: sun6i-p2wi: Remove duplicate inclusion of module.h (2014-06-27 14:39:36 +0200)
+
+----------------------------------------------------------------
+Linus Walleij (1):
+      i2c: mux: pca954x: fix dependencies
+
+Sachin Kamat (1):
+      i2c: sun6i-p2wi: Remove duplicate inclusion of module.h
+
+ drivers/i2c/busses/i2c-sun6i-p2wi.c | 1 -
+ drivers/i2c/muxes/Kconfig           | 1 +
+ 2 files changed, 1 insertion(+), 1 deletion(-)
+
+--ikeVEW9yuYc//A+q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTvoyHAAoJEBQN5MwUoCm2GZsP/22INYvNK3XtgfWwnjf4osD1
+gt/1VweuijCJEEIfxIrl0vkAxxiGpkt6KSYRg9c94ZWCdoLbGSZl+0Be5kMykwUK
+ziLKz7y1+kejbAKIifnmv3g1rw+WOP91yC1ZXrEcl8w0aL4KsjSYtpz47XepkXBm
+yS1xFwxzUmlTMaNPQ0McSwnZuq/TkYjno7V3vcmtvI1QN8FfP+QcV0m3fTofMNH1
+c9TKBPXbM6I+JuUzgaeV4kcZ36vhRswonkDKU5Z866eNUWZPJgMeC8Q4bkqBcItU
+bqVDnFW45PKL3QihLSECqNOH/77coUG4lePkjC1YDwBmZYJjqjNK6eN0DOWuV7Ut
+1yaR7k9nyRiv4XrnxD0RMV9JJvs7i0h59nEl27CUB0QsHKQhG98tfyhuq/jCHfB8
+2XJZYKVLHyxtZDxAWPhvoE9QntZC8wbpUNTAJsNOFL0Al/58fAxZjxFMBp+X2tpX
+C3Mi46oTV27f3Ax52jDqAmF+Dny4glNJx8YJKRATdZHti8owVgItEjRLsF6TiCfv
+SIoDhSl3gPsQVhun1c8hyKCpdxfY/uPfAFazAv0usOw0355clYMd2xi5h3+vUShf
+fPgBqloZznWtqdUZ143EbfwuK6tGkQP+NVthUTfB4F7hxp9FvLvkIdPiW/xRXe19
+a6DN/82qZXD895DYl/FC
+=is4R
+-----END PGP SIGNATURE-----
+
+--ikeVEW9yuYc//A+q--
