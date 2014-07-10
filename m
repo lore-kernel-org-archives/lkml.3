@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751943AbaGJKdX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 06:33:23 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:37764 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053AbaGJKdU (ORCPT
+	id S1752106AbaGJKeU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 06:34:20 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:43041 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053AbaGJKeS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 06:33:20 -0400
+	Thu, 10 Jul 2014 06:34:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdU2HyCwXBJTAyswyj7XqhzhHQ24MamGLLVgMwU4xi0kxQ@mail.gmail.com>
-References: <1404982207-4707-1-git-send-email-harinik@xilinx.com>
-	<1404982207-4707-2-git-send-email-harinik@xilinx.com>
-	<CAMuHMdXO-PkQ+07F=aZEjvH1Kh7uhWK8i3V9w+1aHvvtg7wDoQ@mail.gmail.com>
-	<CAFcVECJ93Lw1MRVU-=zLRbB6To--zmAxz8OLObu=mhV84-FTNA@mail.gmail.com>
-	<CAMuHMdU2HyCwXBJTAyswyj7XqhzhHQ24MamGLLVgMwU4xi0kxQ@mail.gmail.com>
-Date: Thu, 10 Jul 2014 16:03:19 +0530
-Message-ID: <CAFcVEC+-bM91WmfwweDdTvJ7KwH+dxKDLkzsT82snWKhukLeYQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/2] spi: Add support for Zynq QSPI controller
-From: Harini Katakam <harinikatakamlinux@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Mark Brown <broonie@kernel.org>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        linux-spi <linux-spi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        =?UTF-8?B?TWFyZWsgVmHFoXV0?= <marex@denx.de>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jingoo Han <jg1.han@samsung.com>, Sourav Poddar <sourav.poddar@ti.com>,
-        "michals@xilinx.com" <michals@xilinx.com>,
-        Punnaiah Choudary Kalluri <punnaia@xilinx.com>
+X-Originating-IP: [84.208.72.173]
+In-Reply-To: <CANq1E4TCW_bnbTYacnfJHRvZAcOYnSgqxytHk26EaWeQKkphGA@mail.gmail.com>
+References: <1404980258-30853-1-git-send-email-teg@jklm.no>
+ <1404980258-30853-11-git-send-email-teg@jklm.no> <87pphdh85q.fsf@nemi.mork.no>
+ <CAG-2HqWSRRfW1EygXd_1=eYFsTeDd3SsJBfF3BuH35hgGxogxA@mail.gmail.com> <CANq1E4TCW_bnbTYacnfJHRvZAcOYnSgqxytHk26EaWeQKkphGA@mail.gmail.com>
+From: Tom Gundersen <teg@jklm.no>
+Date: Thu, 10 Jul 2014 12:33:57 +0200
+Message-ID: <CAG-2HqV0LV_ZtK=S-nLsWAfQ_ayOuGZHcGC495pAkMijeSzx3Q@mail.gmail.com>
+Subject: Re: [PATCH v7 10/33] net: dummy - set name assign type
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>,
+        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Kay Sievers <kay@vrfy.org>,
+        dingtianhong <dingtianhong@huawei.com>,
+        Tan Xiaojun <tanxiaojun@huawei.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
-
-On Thu, Jul 10, 2014 at 3:12 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> Hi Harini,
+On Thu, Jul 10, 2014 at 12:26 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi
 >
-> On Thu, Jul 10, 2014 at 11:31 AM, Harini Katakam
-> <harinikatakamlinux@gmail.com> wrote:
->>>> +       master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_RX_DUAL | SPI_RX_QUAD |
->>>> +                           SPI_TX_DUAL | SPI_TX_QUAD;
->>>
->>> Your driver advertises Dual/Quad SPI Transfer capabilities, but it doesn't
->>> check spi_transfer.[tr]x_nbits? How can it determine when to enable Dual/Quad?
+>>> The same goes for NET_NAME_USER and NET_NAME_RENAMED. These are the same
+>>> from a kernel point of view.
 >>
->> Here the driver is just giving information that the controller support it.
->> The MTD layer enables dual/quad based on what the flash supports; quad
->> being the first priority
->> I understand that the spi core reads rx, tx-bus-width property and
->> master support flags and
->> performs the necessary checks.
+>> You mean to collapse the two, and just label renamed interfaces
+>> NET_NAME_USER instead?
 >
-> That's correct: as long as the rx, tx-bus-width  properties do not indicate a
-> Dual or Quad wiring, it won't be used.
->
-> However, based on schematics, someone may set the rx, tx-bus-width properties
-> to 4, which is correct, as DT describes the hardware. But this will fail to
-> work.
-> So I think it's safer not to announce Dual/Quad support in the driver until
-> the actual driver support is there.
->
+> I have no real objections to merging NAME_USER and NAME_RENAMED. Both
+> values imply that there is a user-space authority that applied some
+> kind of rules to the naming-scheme. Therefore, anyone reacting to
+> those names should better treat them equally and fix the
+> naming-authority instead of overwriting it.
 
-OK. Correct me if I'm wrong but announcing this support in master->flags is
-just to say the controller supports it - Like Punnaiah mentioned in the other
-mail, nothing specific needs to be done from the controller driver to enable
-dual/quad support. This is at the SOC/IP level.
-I agree it might or might not be supported at board-level.
-But that's based on the user's hardware. Should master->flags
-really take this into consideration?
+I basically agree. There is no strong reason to keep these separate,
+so I would not object strongly to merging them.
 
-BTW, I dint see master->mode_bits being used anywhere at the moment.
+However, I also don't see any harm in keeping the distinction. If
+userspace wants to treat them the same, it easily can. However, if a
+usecase appears in the future where the distinction is important, we
+can no longer split them apart again. For that reason, I'd slightly
+prefer keeping them separate, unless there is a compelling reason not
+to...
 
-Regards,
-Harini
+Cheers,
+
+Tom
