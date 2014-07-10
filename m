@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680AbaGJT7o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 15:59:44 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:51759 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752212AbaGJT7m (ORCPT
+	id S1752762AbaGJUAD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 16:00:03 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58618 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752686AbaGJUAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 15:59:42 -0400
-Message-ID: <53BEF0A8.7010608@kernel.dk>
-Date: Thu, 10 Jul 2014 21:59:36 +0200
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>, Benjamin LaHaise <bcrl@kvack.org>
-CC: "Elliott\, Robert \(Server Storage\)" <Elliott@hp.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "dgilbert@interlog.com" <dgilbert@interlog.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Bart Van Assche <bvanassche@fusionio.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: scsi-mq V2
-References: <1403715121-1201-1-git-send-email-hch@lst.de>	<20140708144829.GA5539@infradead.org> <53BD7041.5010300@interlog.com>	<53BD9A24.7010203@kernel.dk>	<94D0CD8314A33A4D9D801C0FE68B402958B9628B@G9W0745.americas.hpqcorp.net>	<20140710062040.GB20146@infradead.org>	<20140710133609.GO12478@kvack.org>	<20140710135051.GA28227@infradead.org> <53BE9AB1.6090603@kernel.dk>	<94D0CD8314A33A4D9D801C0FE68B402958B96CF0@G9W0745.americas.hpqcorp.net>	<20140710144539.GU12478@kvack.org> <x49k37l1c6p.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49k37l1c6p.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Jul 2014 16:00:00 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Florian Fainelli <f.fainelli@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH v3 0/2] ARM: at91: remove phy fixup for sama5d3xek boards
+Date: Thu, 10 Jul 2014 21:59:52 +0200
+Message-Id: <1405022394-8311-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-07-10 17:11, Jeff Moyer wrote:
-> Benjamin LaHaise <bcrl@kvack.org> writes:
->
->>>
->>> [  186.339064] ioctx_alloc: nr_events=-2 aio_max_nr=65536
->>> [  186.339065] ioctx_alloc: nr_events=-2 aio_max_nr=65536
->>> [  186.339067] ioctx_alloc: nr_events=-2 aio_max_nr=65536
->>> [  186.339068] ioctx_alloc: nr_events=-2 aio_max_nr=65536
->>> [  186.339069] ioctx_alloc: nr_events=-2 aio_max_nr=65536
->>
->> Something is horribly wrong here.  There is no way that value for nr_events
->> should be passed in to ioctx_alloc().  This implies that userland is calling
->> io_setup() with an impossibly large value for nr_events.  Can you post the
->> actual diff for your fs/aio.c relative to linus' tree?
->>
->
-> fio does exactly this!  it passes INT_MAX.
+Hello,
 
-That's correct, I had actually forgotten about this. It was a change 
-made a few years back, in correlation with the aio optimizations posted 
-then, basically telling aio to ignore that silly (and broken) user ring.
+This patch removes a board specific hook for sama5d3xek boards from the
+sama5d3 generic DT board file.
+
+This hook (which register a phy fixup configuring board specific delays
+in the ksz9021 ethernet phy) is now replaced by the appropriate DT
+properties definitions in the sama5d3xcm.dtsi file.
+
+Best Regards,
+
+Boris
+
+Changes since v2:
+ - define 2 phy nodes to handle Ronetix and Embest HW designs
+
+Changes since v1:
+ - fix txc-skew-ps and rxc-skew-ps delays
+ - remove phy address info to handle Ronetix and Embest HW designs
+
+Boris BREZILLON (2):
+  ARM: at91/dt: describe rgmii ethernet phy connected to sama5d3xek
+    boards
+  ARM: at91: remove phy fixup for sama5d3xek boards
+
+ arch/arm/boot/dts/sama5d3xcm.dtsi   | 30 ++++++++++++++++++++++++++++++
+ arch/arm/mach-at91/board-dt-sama5.c | 22 ----------------------
+ 2 files changed, 30 insertions(+), 22 deletions(-)
 
 -- 
-Jens Axboe
+1.8.3.2
 
