@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499AbaGJP4z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 11:56:55 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:52482 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752009AbaGJP4x convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 11:56:53 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'One Thousand Gnomes'" <gnomes@lxorguk.ukuu.org.uk>
-CC: "'Olivier Sobrie'" <olivier@sobrie.be>, David Miller <davem@davemloft.net>,
-        "j.dumon@option.com" <j.dumon@option.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/2] hso: fix deadlock when receiving bursts of data
-Thread-Topic: [PATCH 2/2] hso: fix deadlock when receiving bursts of data
-Thread-Index: AQHPnEsixGodlQaSuk2Kj0YtzGiNipuZYB6ggAADwYCAABFtoA==
-Date: Thu, 10 Jul 2014 15:55:16 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D17270187@AcuExch.aculab.com>
-References: <1404723967-24245-1-git-send-email-olivier@sobrie.be>
-	<1404723967-24245-2-git-send-email-olivier@sobrie.be>
-	<20140708.161633.2130069042930765600.davem@davemloft.net>
-	<20140710142848.GA28056@hposo>
-	<063D6719AE5E284EB5DD2968C1650D6D17270044@AcuExch.aculab.com>
- <20140710165003.0309924e@alan.etchedpixels.co.uk>
-In-Reply-To: <20140710165003.0309924e@alan.etchedpixels.co.uk>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S1753579AbaGJP6K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 11:58:10 -0400
+Received: from mga02.intel.com ([134.134.136.20]:25852 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752605AbaGJP6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 11:58:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,638,1400050800"; 
+   d="scan'208";a="541506619"
+Message-ID: <53BEB77A.6020003@intel.com>
+Date: Thu, 10 Jul 2014 08:55:38 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
+To: Andrey Ryabinin <a.ryabinin@samsung.com>, linux-kernel@vger.kernel.org
+CC: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
+        Alexey Preobrazhensky <preobr@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        x86@kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC/PATCH RESEND -next 01/21] Add kernel address sanitizer infrastructure.
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com> <1404905415-9046-2-git-send-email-a.ryabinin@samsung.com> <53BDA568.5030607@intel.com> <53BE8333.6060404@samsung.com>
+In-Reply-To: <53BE8333.6060404@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: One Thousand Gnomes
-> On Thu, 10 Jul 2014 14:37:37 +0000
-> David Laight <David.Laight@ACULAB.COM> wrote:
+On 07/10/2014 05:12 AM, Andrey Ryabinin wrote:
+> On 07/10/14 00:26, Dave Hansen wrote:
+>> On 07/09/2014 04:29 AM, Andrey Ryabinin wrote:
+>>> Address sanitizer dedicates 1/8 of the low memory to the shadow memory and uses direct
+>>> mapping with a scale and offset to translate a memory address to its corresponding
+>>> shadow address.
+>>>
+>>> Here is function to translate address to corresponding shadow address:
+>>>
+>>>      unsigned long kasan_mem_to_shadow(unsigned long addr)
+>>>      {
+>>>                 return ((addr - PAGE_OFFSET) >> KASAN_SHADOW_SCALE_SHIFT)
+>>>                              + kasan_shadow_start;
+>>>      }
+>>
+>> How does this interact with vmalloc() addresses or those from a kmap()?
+>> 
+> It's used only for lowmem:
 > 
-> > From: Olivier Sobrie
-> > ...
-> > > The function put_rxbuf_data() is called from the urb completion handler.
-> > > It puts the data of the urb transfer in the tty buffer with
-> > > tty_insert_flip_string_flags() and schedules a work queue in order to
-> > > push the data to the ldisc.
-> > > Problem is that we are in a urb completion handler so we can't wait
-> > > until there is room in the tty buffer.
-> 
-> The tty provides the input queue, if the queue is full then just chuck
-> the data in the bitbucket.  hso is trying to be far too clever.
-> 
-> If hso is fast enough that the buffering isn't sufficient on the tty side
-> then we need to fix the tty buffer size.
+> static inline bool addr_is_in_mem(unsigned long addr)
+> {
+> 	return likely(addr >= PAGE_OFFSET && addr < (unsigned long)high_memory);
+> }
 
-You really want to apply flow control back over the 'serial' link.
-That may just cause data discards earlier on the local system.
-But it is possible that not resubmitting the receive urb will cause the
-modem to flow control back to the sender.
-In which case there is some chance that data won't be lost.
+That's fine, and definitely covers the common cases.  Could you make
+sure to call this out explicitly?  Also, there's nothing to _keep_ this
+approach working for things out of the direct map, right?  It would just
+be a matter of updating the shadow memory to have entries for the other
+virtual address ranges.
 
-	David
+addr_is_in_mem() is a pretty bad name for what it's doing. :)
 
-> 
-> Arguably what we need are tty fastpaths for non N_TTY but thats rather
-> more work. There's no fundamental reason that hso can't throw the buffer
-> at buffer straight at the PPP ldisc and straight into the network stack -
-> just that
-> 
-> 1. The tty mid layer glue is standing in the way
-> 2. The change of line discipline code has to lock against it
-> 
-> Alan
-
-
+I'd probably call it something like kasan_tracks_vaddr().
