@@ -1,109 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474AbaGJPKs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 11:10:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53018 "EHLO mx1.redhat.com"
+	id S1753763AbaGJPL7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 11:11:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22616 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751969AbaGJPKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 11:10:45 -0400
-Date: Thu, 10 Jul 2014 17:08:32 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH v9 11/11] seccomp: implement SECCOMP_FILTER_FLAG_TSYNC
-Message-ID: <20140710150832.GA20861@redhat.com>
-References: <1403911380-27787-1-git-send-email-keescook@chromium.org> <1403911380-27787-12-git-send-email-keescook@chromium.org> <20140709180520.GA2560@redhat.com> <CAGXu5jLUqz-T1tRBCpPLkzWijyAF-Vjw_7PnQ1EvUh4urwyaUg@mail.gmail.com>
+	id S1751517AbaGJPL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 11:11:58 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: "Elliott\, Robert \(Server Storage\)" <Elliott@hp.com>,
+        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
+        "dgilbert\@interlog.com" <dgilbert@interlog.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Bart Van Assche <bvanassche@fusionio.com>,
+        "linux-scsi\@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: scsi-mq V2
+References: <1403715121-1201-1-git-send-email-hch@lst.de>
+	<20140708144829.GA5539@infradead.org> <53BD7041.5010300@interlog.com>
+	<53BD9A24.7010203@kernel.dk>
+	<94D0CD8314A33A4D9D801C0FE68B402958B9628B@G9W0745.americas.hpqcorp.net>
+	<20140710062040.GB20146@infradead.org>
+	<20140710133609.GO12478@kvack.org>
+	<20140710135051.GA28227@infradead.org> <53BE9AB1.6090603@kernel.dk>
+	<94D0CD8314A33A4D9D801C0FE68B402958B96CF0@G9W0745.americas.hpqcorp.net>
+	<20140710144539.GU12478@kvack.org>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 10 Jul 2014 11:11:10 -0400
+In-Reply-To: <20140710144539.GU12478@kvack.org> (Benjamin LaHaise's message of
+	"Thu, 10 Jul 2014 10:45:39 -0400")
+Message-ID: <x49k37l1c6p.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jLUqz-T1tRBCpPLkzWijyAF-Vjw_7PnQ1EvUh4urwyaUg@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10, Kees Cook wrote:
+Benjamin LaHaise <bcrl@kvack.org> writes:
+
+>> 
+>> [  186.339064] ioctx_alloc: nr_events=-2 aio_max_nr=65536
+>> [  186.339065] ioctx_alloc: nr_events=-2 aio_max_nr=65536
+>> [  186.339067] ioctx_alloc: nr_events=-2 aio_max_nr=65536
+>> [  186.339068] ioctx_alloc: nr_events=-2 aio_max_nr=65536
+>> [  186.339069] ioctx_alloc: nr_events=-2 aio_max_nr=65536
 >
-> On Wed, Jul 9, 2014 at 11:05 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> >> +     /*
-> >> +      * Make sure we cannot change seccomp or nnp state via TSYNC
-> >> +      * while another thread is in the middle of calling exec.
-> >> +      */
-> >> +     if (flags & SECCOMP_FILTER_FLAG_TSYNC &&
-> >> +         mutex_lock_killable(&current->signal->cred_guard_mutex))
-> >> +             goto out_free;
-> >
-> > -EINVAL looks a bit confusing in this case, but this is cosemtic because
-> > userspace won't see this error-code anyway.
+> Something is horribly wrong here.  There is no way that value for nr_events 
+> should be passed in to ioctx_alloc().  This implies that userland is calling 
+> io_setup() with an impossibly large value for nr_events.  Can you post the 
+> actual diff for your fs/aio.c relative to linus' tree?
 >
-> Happy to use whatever since, as you say, it's cosmetic. Perhaps -EAGAIN?
 
-Or -EINTR. I do not really mind, I only mentioned this because I had another
-nit.
+fio does exactly this!  it passes INT_MAX.
 
-> >>       spin_lock_irq(&current->sighand->siglock);
-> >> +     if (unlikely(signal_group_exit(current->signal))) {
-> >> +             /* If thread is dying, return to process the signal. */
-> >
-> > OK, this doesn't hurt, but why?
-> >
-> > You could check __fatal_signal_pending() with the same effect. And since
-> > we hold this mutex, exec (de_thread) can be the source of that SIGKILL.
-> > We take this mutex specially to avoid the race with exec.
-> >
-> > So why do we need to abort if we race with kill() or exit_grouo() ?
->
-> In my initial code inspection that we could block waiting for the
-> cred_guard mutex, with exec holding it, exec would schedule death in
-> de_thread, and then once it released, the tsync thread would try to
-> keep running.
->
-> However, in looking at this again, now I'm concerned this produces a
-> dead-lock in de_thread, since it waits for all threads to actually
-> die, but tsync will be waiting with the killable mutex.
-
-That is why you should always use _killable (or _interruptible) if you
-want to take ->cred_guard_mutex.
-
-If this thread races with de_thread() which holds this mutex, it will
-be killed and mutex_lock_killable() will fail.
-
-(to clarify; this deadlock is not "fatal", de_thread() can be killed too,
- but this doesn't really matter).
-
-> So I think I got too defensive when I read the top of de_thread where
-> it checks for pending signals itself.
->
-> It seems like I can just safely remove the singal_group_exit checks?
-> The other paths (non-tsync seccomp_set_mode_filter, and
-> seccomp_set_mode_strict)
-
-Yes, I missed another signal_group_exit() in seccomp_set_mode_strict().
-It looks equally unneeded.
-
-> I can't decide which feels cleaner: just letting stuff
-> clean up naturally on death or to short-circuit after taking
-> sighand->siglock.
-
-I'd prefer to simply remove the singal_group_exit checks.
-
-I won't argue if you prefer to keep them, but then please add a comment
-to explain that this is not needed for correctness.
-
-Because otherwise the code looks confusing, as if there is a subtle reason
-why we must not do this if killed.
-
-Oleg.
-
+Cheers,
+Jeff
