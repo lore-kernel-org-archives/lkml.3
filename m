@@ -1,144 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665AbaGJTcu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 15:32:50 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58440 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751205AbaGJTcs (ORCPT
+	id S1752695AbaGJTdP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 15:33:15 -0400
+Received: from mga11.intel.com ([192.55.52.93]:16606 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751271AbaGJTdN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 15:32:48 -0400
-Date: Thu, 10 Jul 2014 21:32:40 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>, netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Shen, Voice" <Voice.Shen@atmel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 1/2] ARM: at91/dt: describe rgmii ethernet phy
- connected to sama5d3xek boards
-Message-ID: <20140710213240.3a5a540f@bbrezillon>
-In-Reply-To: <CAGVrzcawPiJgQF-=18ZvFGr3LhZgS1ZSZMYA3i5x874S6=jcXw@mail.gmail.com>
-References: <1403777615-25685-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1403777615-25685-2-git-send-email-boris.brezillon@free-electrons.com>
-	<CAGVrzcbYAEMsU1SFSH761H0isQ4z1M++KK_GLf0OAbGS48YUmw@mail.gmail.com>
-	<53AC7BFD.2070806@free-electrons.com>
-	<53AD22D8.2090301@atmel.com>
-	<20140710110720.03f437eb@bbrezillon>
-	<CAGVrzcZD1SqwX1KqaMpZmBjOWGuvTSVaye0fkFXW_=h-N_d7WA@mail.gmail.com>
-	<20140710191927.56a3ead5@bbrezillon>
-	<CAGVrzcawPiJgQF-=18ZvFGr3LhZgS1ZSZMYA3i5x874S6=jcXw@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Jul 2014 15:33:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,639,1400050800"; 
+   d="scan'208";a="568086929"
+From: "Moore, Robert" <robert.moore@intel.com>
+To: "Lan, Tianyu" <tianyu.lan@intel.com>, "Zheng, Lv" <lv.zheng@intel.com>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "lenb@kernel.org" <lenb@kernel.org>
+CC: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [RFC PATCH 1/2] ACPICA: Add acpi_check_gpe_method() to check
+ GPE method
+Thread-Topic: [RFC PATCH 1/2] ACPICA: Add acpi_check_gpe_method() to check
+ GPE method
+Thread-Index: AQHPmnow8s51vcRz4Uq7IzFAtFT1gJuZtYwQ
+Date: Thu, 10 Jul 2014 19:32:42 +0000
+Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E37D1BFA16@ORSMSX112.amr.corp.intel.com>
+References: <1404802679-24019-1-git-send-email-tianyu.lan@intel.com>
+In-Reply-To: <1404802679-24019-1-git-send-email-tianyu.lan@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Jul 2014 10:46:21 -0700
-Florian Fainelli <f.fainelli@gmail.com> wrote:
+Since what is returned by this interface is essentially a piece of information about the particular GPE, I think that it might be better to generalize this interface to a "GetInfo" type of interface that returns a few pieces of information about the GPE.
 
-> 2014-07-10 10:19 GMT-07:00 Boris BREZILLON <boris.brezillon@free-electrons.com>:
-> > On Thu, 10 Jul 2014 08:35:15 -0700
-> > Florian Fainelli <f.fainelli@gmail.com> wrote:
-> >
-> >> 2014-07-10 2:07 GMT-07:00 Boris BREZILLON <boris.brezillon@free-electrons.com>:
-> >> > On Fri, 27 Jun 2014 09:52:56 +0200
-> >> > Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
-> >> >
-> >> >> On 26/06/2014 22:01, Boris BREZILLON :
-> >> >> > Hi Florian,
-> >> >> >
-> >> >> > On 26/06/2014 20:15, Florian Fainelli wrote:
-> >> >> >> Hi Boris,
-> >> >> >>
-> >> >> >> 2014-06-26 3:13 GMT-07:00 Boris BREZILLON <boris.brezillon@free-electrons.com>:
-> >> >> >>> Add ethernet-phy node and specify phy interrupt (connected to pin PB25).
-> >> >> >>>
-> >> >> >>> The PHY address is not specified here because atmel have 2 different
-> >> >> >>> designs
-> >> >> >>> for its CPU modules: one is connecting PHYAD[0-2] pins to pull up resistors
-> >> >> >>> (Embest design) and the other one is connection PHYAD0 to a pull up
-> >> >> >>> resistor and PHYAD[1-2] to pull down resistors (Ronetix design).
-> >> >> >>> As a result, Ronetix design will have its PHY available at address 0x1 and
-> >> >> >>> Embest design at 0x7.
-> >> >> >>> Let the net PHY core automatically detect the PHY address by scanning the
-> >> >> >>> MDIO bus.
-> >> >> >> I though the compatible string was listed as a required property, but
-> >> >> >> it is not. The 'reg' property however is listed as required, although
-> >> >> >> the of_miodbus_register() works just fine without it, although that is
-> >> >> >> a Linux-specific implementation detail.
-> >> >> >
-> >> >> > Indeed, it's listed in the required property list of the DT binding doc,
-> >> >> > but the code implement auto detection if reg is missing.
-> >> >> > However this line [1] clearly shows that specifying the reg property is
-> >> >> > the preferred way of doing things.
-> >> >> >
-> >> >> > I could define 2 different sama5d3xcm.dtsi (sama5d3xcm-ronetix.dtsi and
-> >> >> > sama5d3xcm-embest.dtsi) to avoid this dirty hack,
-> >> >> > but then we would have 2 more dtb and the user would have to determine
-> >> >> > which CPU module he owns to choose the appropriate dtb.
-> >> >> > If at91, arm-soc and DT maintainers agree with this approach I can
-> >> >> > definitely propose something.
-> >> >>
-> >> >> Yes Boris, I definitively prefer not to add another .dtsi file for this
-> >> >> series if we can avoid it.
-> >> >>
-> >> >
-> >> > Okay, now that I don't specify the reg property I have a bunch of
-> >> > noisy logs (which is exactly what the developer of of_mdio.c wanted in
-> >> > order to force people to specify the reg property).
-> >> >
-> >> > It seems to be a problem for atmel users (all these logs make them
-> >> > think there is something wrong with the net device).
-> >> >
-> >> > Apart from the dts/dtsi split solution, which Nicolas wants to avoid, I
-> >> > see two solutions here:
-> >> >
-> >> > 1) remove the logs (or use dev_dbg instead of dev_info) from of_mdio.c.
-> >> > But I'm pretty sure this solution won't be accepted :-).
-> >>
-> >> I am fine with using dev_dbg() instead of dev_info() for that sort of
-> >> messages, provided that you state the rationale of this change
-> >> (spewing the log console with probing messages) and specify tha the
-> >> 'reg' property is optional.
-> >>
-> >> >
-> >> > 2) define 2 ethernet phys (one for each possible solution). I tested it
-> >> > and it works fine (only the available PHY is registered and there is no
-> >> > noisy logs anymore).
-> >>
-> >> One advantage of that solution is that you'll get slightly faster boot
-> >> times since you won't have to auto-probe for the PHYs on the MDIO bus,
-> >> the time savings get bigger as you start using higher PHY addresses.
-> >
-> > Yes I prefer this solution too, but is it acceptable to define 2 phy
-> > nodes even if only one is really available ?
+
+
+> -----Original Message-----
+> From: Lan, Tianyu
+> Sent: Monday, July 07, 2014 11:58 PM
+> To: Moore, Robert; Zheng, Lv; Wysocki, Rafael J; lenb@kernel.org
+> Cc: Lan, Tianyu; linux-acpi@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: [RFC PATCH 1/2] ACPICA: Add acpi_check_gpe_method() to check GPE
+> method
 > 
-> One or the other machine .dts should have to set the status property
-> accordingly so there is only effectively one PHY declared, assuming
-> this is possible based on your .dtsi layout?
+> This patch is to expose acpi_check_gpe_method() to check whether there is
+> a GPE method for the given gpe. Enabling ACPI button devices' gpes will
+> depend on the new function's result.
+> 
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> ---
+>  drivers/acpi/acpica/evxface.c | 39
+> ++++++++++++++++++++++++++++++++++++++-
+>  include/acpi/acpixf.h         |  3 +++
+>  2 files changed, 41 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/acpi/acpica/evxface.c b/drivers/acpi/acpica/evxface.c
+> index 11e5803..0fcb248 100644
+> --- a/drivers/acpi/acpica/evxface.c
+> +++ b/drivers/acpi/acpica/evxface.c
+> @@ -717,6 +717,44 @@ ACPI_EXPORT_SYMBOL(acpi_remove_fixed_event_handler)
+> 
+> 
+> /*************************************************************************
+> ******
+>   *
+> + * FUNCTION:    acpi_check_gpe_method
+> + *
+> + * PARAMETERS:  gpe_device      - Namespace node for the GPE (NULL for
+> FADT
+> + *                                defined GPEs)
+> + *              gpe_number      - The event to remove a handler
+> + *
+> + * RETURN:      Status
+> + *
+> + * DESCRIPTION: Check whether the given GPE has associated event method.
+> + *
+> +
+> +***********************************************************************
+> +*******/
+> +acpi_status
+> +acpi_check_gpe_method(acpi_handle gpe_device, u32 gpe_number) {
+> +	struct acpi_gpe_event_info *gpe_event_info;
+> +	acpi_status status = AE_NOT_EXIST;
+> +	acpi_cpu_flags flags;
+> +
+> +	ACPI_FUNCTION_TRACE(acpi_check_gpe_method);
+> +
+> +	flags = acpi_os_acquire_lock(acpi_gbl_gpe_lock);
+> +	gpe_event_info = acpi_ev_get_gpe_event_info(gpe_device, gpe_number);
+> +	if (!gpe_event_info) {
+> +		status = AE_ERROR;
+> +		goto unlock_and_exit;
+> +	}
+> +
+> +	if (gpe_event_info->flags & ACPI_GPE_DISPATCH_METHOD)
+> +		status = AE_OK;
+> +
+> +unlock_and_exit:
+> +	acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
+> +	return status;
+> +}
+> +ACPI_EXPORT_SYMBOL(acpi_check_gpe_method)
+> +
+> +/**********************************************************************
+> +*********
+> + *
+>   * FUNCTION:    acpi_install_gpe_handler
+>   *
+>   * PARAMETERS:  gpe_device      - Namespace node for the GPE (NULL for
+> FADT
+> @@ -821,7 +859,6 @@ free_and_exit:
+>  	ACPI_FREE(handler);
+>  	goto unlock_and_exit;
+>  }
+> -
+>  ACPI_EXPORT_SYMBOL(acpi_install_gpe_handler)
+> 
+> 
+> /*************************************************************************
+> ******
+> diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h index
+> 35b525c..5b475c6 100644
+> --- a/include/acpi/acpixf.h
+> +++ b/include/acpi/acpixf.h
+> @@ -554,6 +554,9 @@ ACPI_HW_DEPENDENT_RETURN_STATUS(acpi_status
+>  							  address,
+>  							  void *context))
+>  ACPI_HW_DEPENDENT_RETURN_STATUS(acpi_status
+> +				acpi_check_gpe_method(acpi_handle gpe_device,
+> +							u32 gpe_number))
+> +ACPI_HW_DEPENDENT_RETURN_STATUS(acpi_status
+>  				 acpi_remove_gpe_handler(acpi_handle gpe_device,
+>  							 u32 gpe_number,
+>  							 acpi_gpe_handler
+> --
+> 1.8.4.rc0.1.g8f6a3e5.dirty
 
-This is exactly what Nicolas wants to avoid (duplication of dts files
-to handle Embest and Ronetix designs).
-
-> If not, provided by the
-> phy-handle properties are correct, I can't see any problem with having
-> an unused PHY specified in DT.
-
-Okay, then I'll go for that solution.
-
-Thanks,
-
-Boris
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
