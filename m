@@ -1,121 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932171AbaGJEXw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 00:23:52 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:24881 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751209AbaGJEXt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 00:23:49 -0400
-X-AuditID: cbfee691-b7f2f6d0000040c4-bb-53be15534cc1
-From: Joonyoung Shim <jy0922.shim@samsung.com>
-To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, m.szyprowski@samsung.com, broonie@linaro.org,
-        tobetter@gmail.com, jy0922.shim@samsung.com
-Subject: [PATCH 2/3] usb: usb3503: add PM functions
-Date: Thu, 10 Jul 2014 13:23:47 +0900
-Message-id: <1404966228-29133-2-git-send-email-jy0922.shim@samsung.com>
-X-Mailer: git-send-email 1.8.1.2
-In-reply-to: <1404966228-29133-1-git-send-email-jy0922.shim@samsung.com>
-References: <1404966228-29133-1-git-send-email-jy0922.shim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKLMWRmVeSWpSXmKPExsWyRsSkUDdYdF+wwb23Ohabrl9ntWhevJ7N
-	4sW9iywWl3fNYbNYtKyV2WLtkbvsFvser2F2YPfYOesuu8eda3vYPPbPXcPu0bdlFaPH501y
-	AaxRXDYpqTmZZalF+nYJXBkf705mKljDX3Hi5AvWBsZ7PF2MHBwSAiYSe69odjFyApliEhfu
-	rWfrYuTiEBJYyijR3DSNHSJhInHh3yN2iMQiRokrnf9YIJxWJokXK96wgFSxCehJ3Nl2nAlk
-	qoiAtUTfwSCQMLNAtcT/9feYQGxhAWOJrgPPmUFsFgFViTVvX4Et4BVwl+jadI4VYpmCxM/L
-	J9hAbE4BD4nbG36CjRcCqllxvgXsCAmBeewSN5Z/ZYIYJCDxbfIhFohvZCU2HWCGmCMpcXDF
-	DZYJjMILGBlWMYqmFiQXFCelF5nqFSfmFpfmpesl5+duYgQG+el/zybuYLx/wPoQYzLQuInM
-	UqLJ+cAoySuJNzQ2M7IwNTE1NjK3NCNNWEmcN/1RUpCQQHpiSWp2ampBalF8UWlOavEhRiYO
-	TqkGxhmB0w5P1ffYERV64AG3S5dhRkVMT8q2ggeMN8I/HdD1Vmz3SxT+onDj6PfD5VUGjiYq
-	j2I6eD/opn3uCpbSMZ6xjIfL2/tP4KM3nXcFxeQ25t31TvyV8uDgR+P9R0sZN/q/iQt/y7O9
-	Me74Y4Gdtbq7OurfeyUtzeqOzZ69fMmdzLMpRx5eVGIpzkg01GIuKk4EAPrt7G+IAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKIsWRmVeSWpSXmKPExsVy+t9jAd1g0X3BBnOXqFpsun6d1aJ58Xo2
-	ixf3LrJYXN41h81i0bJWZou1R+6yW+x7vIbZgd1j56y77B53ru1h89g/dw27R9+WVYwenzfJ
-	BbBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gDd
-	oaRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHM+Hh3MlPBGv6KEydfsDYw
-	3uPpYuTkkBAwkbjw7xE7hC0mceHeerYuRi4OIYFFjBJXOv+xQDitTBIvVrxhAaliE9CTuLPt
-	OFMXIweHiIC1RN/BIJAws0C1xP/195hAbGEBY4muA8+ZQWwWAVWJNW9fgS3gFXCX6Np0jhVi
-	mYLEz8sn2EBsTgEPidsbfoKNFwKqWXG+hX0CI+8CRoZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ
-	+bmbGMFR9Ex6B+OqBotDjAIcjEo8vA09e4OFWBPLiitzDzFKcDArifB6/AcK8aYkVlalFuXH
-	F5XmpBYfYjQFumois5Rocj4wwvNK4g2NTcyMLI3MDS2MjM2VxHkPtloHCgmkJ5akZqemFqQW
-	wfQxcXBKNTA673G5nmr3VnIZz9s1/3o/+TzRdb/s+v/p2nX7UuvXT3Flf889ofzP0auzblwq
-	LMhxVPK6N3U77+ROe+mKIu2rv65+t5qyvPzZzRUdzhfdH0r58sku5JHx27WNWcLieVm5ittX
-	toXPJd+u0QsJ0W+4FTFz7rXlPa7aLMeVrrkZSgvW7OhVXzRTiaU4I9FQi7moOBEAviyPPrgC	AAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S932428AbaGJE01 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 00:26:27 -0400
+Received: from elasmtp-galgo.atl.sa.earthlink.net ([209.86.89.61]:52358 "EHLO
+	elasmtp-galgo.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750733AbaGJE00 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 00:26:26 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=dk20050327; d=mindspring.com;
+  b=WlbbTB97BAAipluxv63dmvnXB9DkGxMicjfDtRSvqJnmYvGDgKTZooGKkx4OJ4SX;
+  h=Received:From:To:Cc:References:In-Reply-To:Subject:Date:Message-ID:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Mailer:Thread-Index:Content-Language:X-Antivirus-Status:X-ELNK-Trace:X-Originating-IP;
+From: "Frank Filz" <ffilzlnx@mindspring.com>
+To: "'Trond Myklebust'" <trond.myklebust@primarydata.com>
+Cc: "'Linux NFS Mailing List'" <linux-nfs@vger.kernel.org>,
+        "'Linux Kernel mailing list'" <linux-kernel@vger.kernel.org>
+References: <1404942892-18323-1-git-send-email-ffilzlnx@mindspring.com>	<CAHQdGtSUwScEdUeKT1w+-ynqNz-e1=YvDBtdu_k=_6yndFZSVQ@mail.gmail.com>	<033801cf9bc7$0d7ee190$287ca4b0$@mindspring.com>	<CAHQdGtQjCYV2jE7FGu-J+02xp25uaUUVv8uzcs5sfbKXBbVk6A@mail.gmail.com> <CAHQdGtTkTh4MQJk6bec46OjsyZHnEGGws3b_2HA+kszzOHM-pw@mail.gmail.com>
+In-Reply-To: <CAHQdGtTkTh4MQJk6bec46OjsyZHnEGGws3b_2HA+kszzOHM-pw@mail.gmail.com>
+Subject: RE: [PATCH 1/1] Fix permission checking by NFS client for open-create with mode 000
+Date: Wed, 9 Jul 2014 21:26:23 -0700
+Message-ID: <037801cf9bf7$1c039d20$540ad760$@mindspring.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Microsoft Outlook 15.0
+Thread-Index: AQGbOTJ6MUf6FOx4w+cyNjCBvBXZJAJkOHk0AgwpNNsCL2Qw8AGAxr2Um8BwAYA=
+Content-Language: en-us
+X-Antivirus: avast! (VPS 140709-1, 07/09/2014), Outbound message
+X-Antivirus-Status: Clean
+X-ELNK-Trace: 136157f01908a8929c7f779228e2f6aeda0071232e20db4dbfb858fdd61e003bf11811d49272b917350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
+X-Originating-IP: 71.236.153.111
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The usb3503 needs to switch to standby mode while suspending and should
-switch to hub mode when resumed. Also we can control clock on PM
-function.
+> On Wed, Jul 9, 2014 at 7:06 PM, Trond Myklebust
+> <trond.myklebust@primarydata.com> wrote:
+> > On Wed, Jul 9, 2014 at 6:42 PM, Frank Filz <ffilzlnx@mindspring.com>
+> wrote:
+> >>> On Wed, Jul 9, 2014 at 5:54 PM, Frank S. Filz
+> >>> <ffilzlnx@mindspring.com>
+> >>> wrote:
+> >>> > From: "Frank S. Filz" <ffilzlnx@mindspring.com>
+> >>> >
+> >>> > The NFS v4 client sends a COMPOUND with an OPEN and an ACCESS.
+> >>> >
+> >>> > The ACCESS is required to verify an open for read is actually
+> >>> > allowed because RFC 3530 indicates OPEN for read only must succeed
+> >>> > for an execute only file.
+> >>> >
+> >>> > The old code expected to have read access if the requested access
+> >>> > was O_RDWR.
+> >>> >
+> >>> > We can expect the OPEN to properly permission check as long as the
+> >>> > open is O_WRONLY or O_RDWR.
+> >>> >
+> >>> > Signed-off-by: Frank S. Filz <ffilzlnx@mindspring.com>
+> >>> > ---
+> >>> >  fs/nfs/nfs4proc.c | 25 ++++++++++++++++++++-----
+> >>> >  1 file changed, 20 insertions(+), 5 deletions(-)
+> >>> >
+> >>> > diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c index
+> >>> > 4bf3d97..9742054 100644
+> >>> > --- a/fs/nfs/nfs4proc.c
+> >>> > +++ b/fs/nfs/nfs4proc.c
+> >>> > @@ -1966,15 +1966,30 @@ static int nfs4_opendata_access(struct
+> >>> rpc_cred *cred,
+> >>> >                 return 0;
+> >>> >
+> >>> >         mask = 0;
+> >>> > -       /* don't check MAY_WRITE - a newly created file may not have
+> >>> > -        * write mode bits, but POSIX allows the creating process to write.
+> >>> > -        * use openflags to check for exec, because fmode won't
+> >>> > -        * always have FMODE_EXEC set when file open for exec. */
+> >>> > +       /* Don't trust the permission check on OPEN if open for exec or
+> for
+> >>> > +        * read only. Since FMODE_EXEC doesn't go across the wire, the
+> server
+> >>> > +        * has no way to distinguish between an open to read an
+> >>> > + executable
+> >>> file
+> >>> > +        * and an open to read a readable file. Write access is properly
+> checked
+> >>> > +        * and permission SHOULD always be granted if the file was
+> >>> > + created as
+> >>> a
+> >>> > +        * result of this OPEN, no matter what mode the file was created
+> with.
+> >>> > +        *
+> >>> > +        * NOTE: If the case of a OPEN CREATE READ-ONLY with a
+> >>> > + mode that
+> >>> does
+> >>> > +        *       not allow read access, this test will produce an incorrect
+> >>> > +        *       EACCES error.
+> >>> > +        */
+> >>> >         if (openflags & __FMODE_EXEC) {
+> >>> >                 /* ONLY check for exec rights */
+> >>> >                 mask = MAY_EXEC;
+> >>> > -       } else if (fmode & FMODE_READ)
+> >>> > +       } else if (!(fmode & FMODE_WRITE)) {
+> >>> > +               /* In case the file was execute only, check for read permission
+> >>> > +                * ONLY if write access was not requested. It is expected that
+> >>> > +                * an OPEN for write will fail if the file is execute only.
+> >>> > +                * Note that if the file was newly created, the fmode SHOULD
+> >>> > +                * include FMODE_WRITE, especially if the file will be created
+> >>> > +                * with a restrictive mode.
+> >>> > +                */
+> >>> >                 mask = MAY_READ;
+> >>> > +       }
+> >>>
+> >>> This looks wrong. AFAICS it will allow you to open an existing file
+> >>> which has - wx permissions (i.e. no read permissions) for O_RDWR.
+> >>> That should not be permitted under POSIX rules.
+> >>
+> >> The server permission checks the OPEN, this only affects the subsequent
+> ACCESS.
+> >>
+> >> The server will fail the OPEN with NFS4_ERR_ACCESS if the open is for
+> read/write and the file has write-execute permission.
+> >
+> > RFC3530bis draft 33 (6.2.1.3.1.  Discussion of Mask Attributes) states
+> > that for both the OPEN and the READ operations, "Servers SHOULD allow
+> > a user the ability to read the data of the file when only the
+> > ACE4_EXECUTE access mask bit is allowed". RFC5561 has the same
+> > language.
+> 
+> Oops. Sorry, the correct sub-sub-sub-sub-....paragraph is this one:
+> 
+>          Permission to execute a file.
+> 
+>          Servers SHOULD allow a user the ability to read the data of the
+>          file when only the ACE4_EXECUTE access mask bit is allowed.
+>          This is because there is no way to execute a file without
+>          reading the contents.  Though a server may treat ACE4_EXECUTE
+>          and ACE4_READ_DATA bits identically when deciding to permit a
+>          READ operation, it SHOULD still allow the two bits to be set
+>          independently in ACLs, and MUST distinguish between them when
+>          replying to ACCESS operations.  In particular, servers SHOULD
+>          NOT silently turn on one of the two bits when the other is set,
+>          as that would make it impossible for the client to correctly
+>          enforce the distinction between read and execute permissions.
+> 
+> 
+> > To me that translates as saying that the server SHOULD accept an
+> > OPEN(SHARE_ACCESS_READ|SHARE_ACCESS_WRITE) request in the above
+> > situation.
+> 
+> Same conclusion, though....
 
-Signed-off-by: Joonyoung Shim <jy0922.shim@samsung.com>
----
- drivers/usb/misc/usb3503.c | 34 ++++++++++++++++++++++++++++++++--
- 1 file changed, 32 insertions(+), 2 deletions(-)
+When I read that paragraph, my interpretation is that OPEN (and READ) should be permission checked normally, however, if ONLY execute permission is granted, and the OPEN is read only (and READ of course is read only) then permission would be granted for the purpose of execution. But if any other combination of bits was allowed, then the paragraph doesn't apply. Thus an OPEN SHARE_ACCESS_READ | SHARE_ACCESS_WRITE must fail since write access was not granted (if it was, the exception doesn't apply to my reading).
 
-diff --git a/drivers/usb/misc/usb3503.c b/drivers/usb/misc/usb3503.c
-index 652855b..47cb143 100644
---- a/drivers/usb/misc/usb3503.c
-+++ b/drivers/usb/misc/usb3503.c
-@@ -149,8 +149,6 @@ static int usb3503_switch_mode(struct usb3503 *hub, enum usb3503_mode mode)
- 
- 	case USB3503_MODE_STANDBY:
- 		usb3503_reset(hub, 0);
--
--		hub->mode = mode;
- 		dev_info(dev, "switched to STANDBY mode\n");
- 		break;
- 
-@@ -347,6 +345,37 @@ static int usb3503_platform_probe(struct platform_device *pdev)
- 	return usb3503_probe(hub);
- }
- 
-+#ifdef CONFIG_PM_SLEEP
-+static int usb3503_i2c_suspend(struct device *dev)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	struct usb3503 *hub = i2c_get_clientdata(client);
-+
-+	usb3503_switch_mode(hub, USB3503_MODE_STANDBY);
-+
-+	if (hub->clk)
-+		clk_disable_unprepare(hub->clk);
-+
-+	return 0;
-+}
-+
-+static int usb3503_i2c_resume(struct device *dev)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	struct usb3503 *hub = i2c_get_clientdata(client);
-+
-+	if (hub->clk)
-+		clk_prepare_enable(hub->clk);
-+
-+	usb3503_switch_mode(hub, hub->mode);
-+
-+	return 0;
-+}
-+#endif
-+
-+static SIMPLE_DEV_PM_OPS(usb3503_i2c_pm_ops, usb3503_i2c_suspend,
-+		usb3503_i2c_resume);
-+
- static const struct i2c_device_id usb3503_id[] = {
- 	{ USB3503_I2C_NAME, 0 },
- 	{ }
-@@ -365,6 +394,7 @@ MODULE_DEVICE_TABLE(of, usb3503_of_match);
- static struct i2c_driver usb3503_i2c_driver = {
- 	.driver = {
- 		.name = USB3503_I2C_NAME,
-+		.pm = &usb3503_i2c_pm_ops,
- 		.of_match_table = of_match_ptr(usb3503_of_match),
- 	},
- 	.probe		= usb3503_i2c_probe,
--- 
-1.8.1.2
+The trouble is if we require the ACCESS to always be used to distinguish read from execute, we have no way of allowing an open("foo", O_CREAT, 0) system call.
+
+It's a real shame we don't have a SHARE_ACCESS_EXECUTE so we wouldn't have to have the exception for OPEN...
+
+Another option would be to have some hint that the OPEN was responsible for creating the file (in which case the ACCESS results could be ignored), but that's more protocol wishful thinking (and not so easy for the server to implement).
+
+Frank
+
 
