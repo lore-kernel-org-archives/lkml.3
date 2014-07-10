@@ -1,50 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887AbaGJNu7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:50:59 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:48052 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753845AbaGJNu6 (ORCPT
+	id S1753923AbaGJNva (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:51:30 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:56213 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752455AbaGJNv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:50:58 -0400
-Date: Thu, 10 Jul 2014 06:50:51 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Benjamin LaHaise <bcrl@kvack.org>
-Cc: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        "dgilbert@interlog.com" <dgilbert@interlog.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Bart Van Assche <bvanassche@fusionio.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: scsi-mq V2
-Message-ID: <20140710135051.GA28227@infradead.org>
-References: <1403715121-1201-1-git-send-email-hch@lst.de>
- <20140708144829.GA5539@infradead.org>
- <53BD7041.5010300@interlog.com>
- <53BD9A24.7010203@kernel.dk>
- <94D0CD8314A33A4D9D801C0FE68B402958B9628B@G9W0745.americas.hpqcorp.net>
- <20140710062040.GB20146@infradead.org>
- <20140710133609.GO12478@kvack.org>
+	Thu, 10 Jul 2014 09:51:28 -0400
+Date: Thu, 10 Jul 2014 15:51:24 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        gregkh@linuxfoundation.org, Peter.Chen@freescale.com, kishon@ti.com,
+        stern@rowland.harvard.edu, alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] usb: chipidea: add support to the PHY framework for
+ ChipIdea
+Message-ID: <20140710135124.GB32462@kwain>
+References: <1404901036-27682-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1404901036-27682-5-git-send-email-antoine.tenart@free-electrons.com>
+ <20140710134227.GL15340@saruman.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20140710133609.GO12478@kvack.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140710134227.GL15340@saruman.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 09:36:09AM -0400, Benjamin LaHaise wrote:
-> There is one possible concern that could be exacerbated by other changes in 
-> the system: if the application is running close to the bare minimum number 
-> of requests allocated in io_setup(), the per cpu reference counters will 
-> have a hard time batching things.  It might be worth testing with an 
-> increased number of requests being allocated if this is the case.
+On Thu, Jul 10, 2014 at 08:42:27AM -0500, Felipe Balbi wrote:
+> On Wed, Jul 09, 2014 at 12:17:16PM +0200, Antoine Ténart wrote:
+> > This patch adds the support to the PHY framework for ChipIdea drivers
+> > while keeping the USB PHY compatibility. Changes are done in both the
+> > ChipIdea common code and in the drivers accessing the PHY. This is done
+> > by renaming 'phy' into 'usb_phy' and adding a new 'phy' member into the
+> > ci_hdrc structre.
+> > 
+> > Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+> > ---
+> >  drivers/usb/chipidea/ci.h          |  4 ++-
+> >  drivers/usb/chipidea/ci_hdrc_imx.c |  2 +-
+> >  drivers/usb/chipidea/ci_hdrc_msm.c |  6 ++--
+> >  drivers/usb/chipidea/core.c        | 67 +++++++++++++++++++++++++++++++-------
+> >  drivers/usb/chipidea/debug.c       |  4 ++-
+> >  drivers/usb/chipidea/host.c        | 17 ++++++----
+> >  drivers/usb/chipidea/otg_fsm.c     |  6 ++--
+> >  drivers/usb/chipidea/udc.c         |  4 +--
+> >  include/linux/usb/chipidea.h       |  4 ++-
+> >  9 files changed, 86 insertions(+), 28 deletions(-)
+> > 
+> > diff --git a/drivers/usb/chipidea/ci.h b/drivers/usb/chipidea/ci.h
+> > index 9563cb56d564..139589c8ab90 100644
+> > --- a/drivers/usb/chipidea/ci.h
+> > +++ b/drivers/usb/chipidea/ci.h
+> > @@ -201,7 +201,9 @@ struct ci_hdrc {
+> >  
+> >  	struct ci_hdrc_platform_data	*platdata;
+> >  	int				vbus_active;
+> > -	struct usb_phy			*transceiver;
+> > +	struct phy			*transceiver;
+> > +	/* old usb_phy interface */
+> > +	struct usb_phy			*usb_transceiver;
+> 
+> while at that, do you mind calling all struct usb_phy pointers
+> 'usb_phy' ?
 
-Well, Robert said reverting the two aio commits didn't help.  Either he
-didn't manage to boot into the right kernel, or we need to look
-elsewhere for the culprit.
+Not at all.
+With s/usb_transceiver/usb_phy/, what about 'transceiver'?
 
+
+Antoine
+
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
