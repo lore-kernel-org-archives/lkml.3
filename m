@@ -1,127 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751008AbaGJEnl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 00:43:41 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:39729 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702AbaGJEnk (ORCPT
+	id S1751275AbaGJEwu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 00:52:50 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:57751 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbaGJEwt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 00:43:40 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: Mike Cardwell <mike.cardwell@grepular.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelianov <xemul@parallels.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-References: <CACVxJT8U-E+vYjGPbiop-7Fqcwt0sWhMtmuCRQHLAnALU+5AgQ@mail.gmail.com>
-	<CACVxJT8+9oJa5r2acCdNe5+PjDxYVmASMY2Pcb=FyzB4x+0Naw@mail.gmail.com>
-Date: Wed, 09 Jul 2014 21:40:07 -0700
-In-Reply-To: <CACVxJT8+9oJa5r2acCdNe5+PjDxYVmASMY2Pcb=FyzB4x+0Naw@mail.gmail.com>
-	(Alexey Dobriyan's message of "Wed, 9 Jul 2014 15:20:53 +0300")
-Message-ID: <87fvi925eg.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Thu, 10 Jul 2014 00:52:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19Z/TgR26e3DTiTzbdmRWRjg1ekAMxCTTM=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4602]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.2 T_XMDrugObfuBody_14 obfuscated drug references
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;Alexey Dobriyan <adobriyan@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: Procfs race condition bug
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+In-Reply-To: <1404966228-29133-1-git-send-email-jy0922.shim@samsung.com>
+References: <1404966228-29133-1-git-send-email-jy0922.shim@samsung.com>
+Date: Thu, 10 Jul 2014 10:22:46 +0530
+Message-ID: <CAK5sBcFKOc-_aGuC8QQu_NHc67AfZGz0MUeURqVr8P6K3Zzzmg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] usb: usb3503: fix build warning
+From: Sachin Kamat <spk.linux@gmail.com>
+To: Joonyoung Shim <jy0922.shim@samsung.com>
+Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mark Brown <broonie@linaro.org>, tobetter@gmail.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexey Dobriyan <adobriyan@gmail.com> writes:
+Hi Joonyoung,
 
-> [broken email]
+On Thu, Jul 10, 2014 at 9:53 AM, Joonyoung Shim <jy0922.shim@samsung.com> wrote:
+> This fixes below build warning.
 >
-> On Wed, Jul 9, 2014 at 3:17 PM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
->>> I originally posted this two years ago (*) but received no response.
->>> I just had a look and the problem still exists on the 3.14 kernel
->>> I am currently running.
->>>
->>> I *think* I've uncovered a race condition bug in procfs.
->>> If I attempt to open a file in /proc/net, eg "/proc/net/tcp"
->>> it works fine, but if I spawn a POSIX thread and attempt to do it
->>> from there, it *usually* fails with a "No such file or directory",
->>> but some times succeeds. If I do a system call inside the thread
->>> to look up the thread ID and then open "/proc/THREADID/net/tcp"
->>> instead, it works fine.
->>>
->>> There are more details and some example code
->>> so you can replicate the problem on a stack overflow question
->>> I asked previously here:
->>> http://stackoverflow.com/questions/11580020/opening-proc-net-tcp-in-c-from-a-posix-thread-fails-most-of-the-time
->>>
->>> (*) https://lkml.org/lkml/2012/7/20/331
->>
->> Mike,
->>
->> as was correctly notes on SO, what's happening is that original thread exits
->> before spawned thread does open().
->>
->> ->lookup
->> proc_tgid_net_lookup
->> get_proc_task_net
->> nsproxy = NULL          <== thread is dead
->> ENOENT
->>
->> This was probably broken when /proc/net became symlink:
->>
->> commit e9720acd728a46cb40daa52c99a979f7c4ff195c
->> Author: Pavel Emelyanov <xemul@openvz.org>
->> Date:   Fri Mar 7 11:08:40 2008 -0800
->>
->>     [NET]: Make /proc/net a symlink on /proc/self/net (v3)
->>
->>
->> So, userspace has two solutions:
->> 1) original thread doesn't exit too early
->> 2) spawned thread uses /proc/$TID
->>
->>
->> So,
->> we definitely broke /proc/net/tcp somewhere after netns concept was introduced.
->>
->> But,
->> you'd have very same problem with other /proc files (anything under
->> /proc/$PID/).
+> drivers/usb/misc/usb3503.c: In function ‘usb3503_probe’:
+> drivers/usb/misc/usb3503.c:195:11: warning: ‘err’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>     dev_err(dev, "unable to request refclk (%d)\n", err);
+>            ^
 
+This has been fixed and availabe in Greg's usb-next tree.
+https://git.kernel.org/cgit/linux/kernel/git/gregkh/usb.git/commit/?h=usb-next&id=ec5734c41bee2ee7c938a8f34853d31cada7e67a
 
-Agreed it is a /proc/$TGID vs /proc/$TID issue.
-
-In principle this is fixable by creating a /proc/current symlink that
-always points to the proc directory for the current thread and then
-pointing /proc/net and /proc/mounts at it.
-
-This is one of those weird cases it so that /proc/net or /proc/mounts
-resolves may actually break an existing userspace application, because
-different threads can point at different values.  (I very much dislike
-what the linux pthread support did to /proc/self).
-
-I tilted at that windmill once and ran out of steam.  While I can write
-the patch I don't have the energy to test and see if there are any
-pthread programs that will break if /proc/net points to
-/proc/current/net instead of /proc/self/net.
-
-Frankly new applications should be using netlink and not /proc/net so I
-personally don't think this is worth fixing for the /proc/net case.  Are
-there real world applications that are broken by the kernel change in
-behavior?  The stackoverflow discussion sounds like it was just an
-investigation into weird kernel behavior.
-
-Eric
+-- 
+Regards,
+Sachin.
