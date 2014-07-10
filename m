@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653AbaGJNQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:16:58 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:33671 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753191AbaGJNQ5 (ORCPT
+	id S1753700AbaGJNSv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:18:51 -0400
+Received: from e24smtp03.br.ibm.com ([32.104.18.24]:34158 "EHLO
+	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752802AbaGJNSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:16:57 -0400
-Date: Thu, 10 Jul 2014 15:16:46 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, preeti@linux.vnet.ibm.com,
-        Morten.Rasmussen@arm.com, efault@gmx.de, nicolas.pitre@linaro.org,
-        linaro-kernel@lists.linaro.org, daniel.lezcano@linaro.org,
-        dietmar.eggemann@arm.com
-Subject: Re: [PATCH v3 09/12] Revert "sched: Put rq's sched_avg under
- CONFIG_FAIR_GROUP_SCHED"
-Message-ID: <20140710131646.GB3935@laptop>
-References: <1404144343-18720-1-git-send-email-vincent.guittot@linaro.org>
- <1404144343-18720-10-git-send-email-vincent.guittot@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404144343-18720-10-git-send-email-vincent.guittot@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 10 Jul 2014 09:18:50 -0400
+From: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Frank Haverkamp <haver@linux.vnet.ibm.com>,
+        Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+Subject: [PATCH] GenWQE: Remove unnecessary include
+Date: Thu, 10 Jul 2014 10:17:08 -0300
+Message-Id: <1404998228-2148-1-git-send-email-klebers@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.1
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14071013-9564-0000-0000-0000013FD8E0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 06:05:40PM +0200, Vincent Guittot wrote:
-> This reverts commit f5f9739d7a0ccbdcf913a0b3604b134129d14f7e.
-> 
-> We are going to use runnable_avg_sum and runnable_avg_period in order to get
-> the utilization of the CPU. This statistic includes all tasks that run the CPU
-> and not only CFS tasks.
+The include for the UAPI header file from card_base.c can be removed
+since it's already included on card_base.h.
 
-But this rq->avg is not the one that is migration aware, right? So why
-use this?
+Signed-off-by: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+---
+ drivers/misc/genwqe/card_base.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-We already compensate cpu_capacity for !fair tasks, so I don't see why
-we can't use the migration aware one (and kill this one as Yuyang keeps
-proposing) and compensate with the capacity factor.
+diff --git a/drivers/misc/genwqe/card_base.c b/drivers/misc/genwqe/card_base.c
+index abb7961..dc8c04a 100644
+--- a/drivers/misc/genwqe/card_base.c
++++ b/drivers/misc/genwqe/card_base.c
+@@ -38,7 +38,6 @@
+ #include <linux/notifier.h>
+ #include <linux/device.h>
+ #include <linux/log2.h>
+-#include <linux/genwqe/genwqe_card.h>
+ 
+ #include "card_base.h"
+ #include "card_ddcb.h"
+-- 
+1.7.1
+
