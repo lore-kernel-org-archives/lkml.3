@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565AbaGJNBb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:01:31 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:36841 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752992AbaGJNB1 (ORCPT
+	id S1753647AbaGJNB7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:01:59 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:38230 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753436AbaGJNB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:01:27 -0400
+	Thu, 10 Jul 2014 09:01:26 -0400
 From: Alex Elder <elder@linaro.org>
 To: akpm@linux-foundation.org
 Cc: ak@linux.intel.com, bp@suse.de, jack@suse.cz, john.stultz@linaro.org,
         pmladek@suse.cz, rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/4] printk: fix some comments
-Date: Thu, 10 Jul 2014 08:01:22 -0500
-Message-Id: <1404997284-20844-3-git-send-email-elder@linaro.org>
+Subject: [PATCH v2 1/4] printk: rename DEFAULT_MESSAGE_LOGLEVEL
+Date: Thu, 10 Jul 2014 08:01:21 -0500
+Message-Id: <1404997284-20844-2-git-send-email-elder@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404997284-20844-1-git-send-email-elder@linaro.org>
 References: <1404997284-20844-1-git-send-email-elder@linaro.org>
@@ -21,87 +21,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a few comments that don't accurately describe their
-corresponding code.  It also fixes some minor typographical errors.
+This commit:
+    a8fe19eb kernel/printk: use symbolic defines for console loglevels
+makes consistent use of symbolic values for printk() log levels.
+
+The naming scheme used is different from the one used for
+DEFAULT_MESSAGE_LOGLEVEL though.  Change that symbol name to be
+MESSAGE_LOGLEVEL_DEFAULT for consistency.  And because the value
+of that symbol comes from a similarly-named config option, rename
+CONFIG_DEFAULT_MESSAGE_LOGLEVEL as well.
 
 Signed-off-by: Alex Elder <elder@linaro.org>
-Reviewed-by: Petr Mladek <pmladek@suse.cz>
 ---
- kernel/printk/printk.c | 23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
+ include/linux/printk.h | 2 +-
+ kernel/printk/printk.c | 2 +-
+ lib/Kconfig.debug      | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index 319ff7e..0990997 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -31,7 +31,7 @@ static inline const char *printk_skip_level(const char *buffer)
+ }
+ 
+ /* printk's without a loglevel use this.. */
+-#define DEFAULT_MESSAGE_LOGLEVEL CONFIG_DEFAULT_MESSAGE_LOGLEVEL
++#define MESSAGE_LOGLEVEL_DEFAULT CONFIG_MESSAGE_LOGLEVEL_DEFAULT
+ 
+ /* We show everything that is MORE important than this.. */
+ #define CONSOLE_LOGLEVEL_SILENT  0 /* Mum's the word */
 diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index ac2b64e..646146c 100644
+index 13e839d..ac2b64e 100644
 --- a/kernel/printk/printk.c
 +++ b/kernel/printk/printk.c
-@@ -113,9 +113,9 @@ static int __down_trylock_console_sem(unsigned long ip)
-  * This is used for debugging the mess that is the VT code by
-  * keeping track if we have the console semaphore held. It's
-  * definitely not the perfect debug tool (we don't know if _WE_
-- * hold it are racing, but it helps tracking those weird code
-- * path in the console code where we end up in places I want
-- * locked without the console sempahore held
-+ * hold it and are racing, but it helps tracking those weird code
-+ * paths in the console code where we end up in places I want
-+ * locked without the console sempahore held).
-  */
- static int console_locked, console_suspended;
+@@ -56,7 +56,7 @@
  
-@@ -146,8 +146,8 @@ static int console_may_schedule;
-  * the overall length of the record.
-  *
-  * The heads to the first and last entry in the buffer, as well as the
-- * sequence numbers of these both entries are maintained when messages
-- * are stored..
-+ * sequence numbers of these entries are maintained when messages are
-+ * stored.
-  *
-  * If the heads indicate available messages, the length in the header
-  * tells the start next message. A length == 0 for the next message
-@@ -344,7 +344,7 @@ static int log_make_free_space(u32 msg_size)
- 	while (log_first_seq < log_next_seq) {
- 		if (logbuf_has_space(msg_size, false))
- 			return 0;
--		/* drop old messages until we have enough continuous space */
-+		/* drop old messages until we have enough contiguous space */
- 		log_first_idx = log_next(log_first_idx);
- 		log_first_seq++;
- 	}
-@@ -1476,7 +1476,7 @@ static struct cont {
- 	struct task_struct *owner;	/* task of first print*/
- 	u64 ts_nsec;			/* time of first print */
- 	u8 level;			/* log level of first message */
--	u8 facility;			/* log level of first message */
-+	u8 facility;			/* log facility of first message */
- 	enum log_flags flags;		/* prefix, newline flags */
- 	bool flushed:1;			/* buffer sealed and committed */
- } cont;
-@@ -1881,11 +1881,12 @@ static int __add_preferred_console(char *name, int idx, char *options,
- 	return 0;
- }
- /*
-- * Set up a list of consoles.  Called from init/main.c
-+ * Set up a console.  Called via do_early_param() in init/main.c
-+ * for each "console=" parameter in the boot command line.
-  */
- static int __init console_setup(char *str)
- {
--	char buf[sizeof(console_cmdline[0].name) + 4]; /* 4 for index */
-+	char buf[sizeof(console_cmdline[0].name) + 4]; /* 4 for "ttyS" */
- 	char *s, *options, *brl_options = NULL;
- 	int idx;
+ int console_printk[4] = {
+ 	CONSOLE_LOGLEVEL_DEFAULT,	/* console_loglevel */
+-	DEFAULT_MESSAGE_LOGLEVEL,	/* default_message_loglevel */
++	MESSAGE_LOGLEVEL_DEFAULT,	/* default_message_loglevel */
+ 	CONSOLE_LOGLEVEL_MIN,		/* minimum_console_loglevel */
+ 	CONSOLE_LOGLEVEL_DEFAULT,	/* default_console_loglevel */
+ };
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 7a638aa..fd939e1 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -15,7 +15,7 @@ config PRINTK_TIME
+ 	  The behavior is also controlled by the kernel command line
+ 	  parameter printk.time=1. See Documentation/kernel-parameters.txt
  
-@@ -2045,8 +2046,8 @@ EXPORT_SYMBOL(console_lock);
- /**
-  * console_trylock - try to lock the console system for exclusive use.
-  *
-- * Tried to acquire a lock which guarantees that the caller has
-- * exclusive access to the console system and the console_drivers list.
-+ * Try to acquire a lock which guarantees that the caller has exclusive
-+ * access to the console system and the console_drivers list.
-  *
-  * returns 1 on success, and 0 on failure to acquire the lock.
-  */
+-config DEFAULT_MESSAGE_LOGLEVEL
++config MESSAGE_LOGLEVEL_DEFAULT
+ 	int "Default message log level (1-7)"
+ 	range 1 7
+ 	default "4"
 -- 
 1.9.1
 
