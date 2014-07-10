@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199AbaGJQOs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 12:14:48 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:40765 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752850AbaGJQOr (ORCPT
+	id S1753848AbaGJQPm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 12:15:42 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43627 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751709AbaGJQPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 12:14:47 -0400
-Date: Thu, 10 Jul 2014 09:14:38 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        "dgilbert@interlog.com" <dgilbert@interlog.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Bart Van Assche <bvanassche@fusionio.com>,
-        Benjamin LaHaise <bcrl@kvack.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: scsi-mq V2
-Message-ID: <20140710161438.GA30792@infradead.org>
-References: <1403715121-1201-1-git-send-email-hch@lst.de>
- <20140708144829.GA5539@infradead.org>
- <53BD7041.5010300@interlog.com>
- <53BD9A24.7010203@kernel.dk>
- <94D0CD8314A33A4D9D801C0FE68B402958B9628B@G9W0745.americas.hpqcorp.net>
- <20140710062040.GB20146@infradead.org>
- <94D0CD8314A33A4D9D801C0FE68B402958B96E3B@G9W0745.americas.hpqcorp.net>
- <20140710160422.GA13728@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140710160422.GA13728@infradead.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 10 Jul 2014 12:15:40 -0400
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: lee.jones@linaro.org
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2 RESEND] mfd: arizona: Update DT binding to support LDO1 init_data
+Date: Thu, 10 Jul 2014 17:04:08 +0100
+Message-Id: <1405008249-4370-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 09:04:22AM -0700, Christoph Hellwig wrote:
-> It's starting to look weird.  I'll prepare another two bisect branches
-> around some MM changes, which seems the only other possible candidate.
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ Documentation/devicetree/bindings/mfd/arizona.txt |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-I've pushed out scsi-mq.3-bisect-3 and scsi-mq.3-bisect-4 for you.
+Hi,
+
+These seem to have got missed when the regualtor changes
+that accompanied them were merged.
+
+Thanks,
+Charles
+
+diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
+index 36a0c3d..fd51988 100644
+--- a/Documentation/devicetree/bindings/mfd/arizona.txt
++++ b/Documentation/devicetree/bindings/mfd/arizona.txt
+@@ -42,6 +42,14 @@ Optional properties:
+     the chip default will be used.  If present exactly five values must
+     be specified.
+ 
++  - DCVDD-supply : Power supply, only needs to be specified if DCVDD is being
++    externally supplied. As covered in
++    Documentation/devicetree/bindings/regulator/regulator.txt
++
++Optional subnodes:
++  - ldo1 : Initial data for the LDO1 regulator, as covered in
++    Documentation/devicetree/bindings/regulator/regulator.txt
++
+ Example:
+ 
+ codec: wm5102@1a {
+-- 
+1.7.2.5
+
