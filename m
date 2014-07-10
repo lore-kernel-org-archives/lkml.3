@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829AbaGJVVD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 17:21:03 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:41437 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119AbaGJVVA (ORCPT
+	id S1752881AbaGJVW7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 17:22:59 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:8099 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750915AbaGJVW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 17:21:00 -0400
-Date: Thu, 10 Jul 2014 22:20:30 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: "'Olivier Sobrie'" <olivier@sobrie.be>, David Miller <davem@davemloft.net>,
-        "j.dumon@option.com" <j.dumon@option.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] hso: fix deadlock when receiving bursts of data
-Message-ID: <20140710222030.0a194b1b@alan.etchedpixels.co.uk>
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D17270187@AcuExch.aculab.com>
-References: <1404723967-24245-1-git-send-email-olivier@sobrie.be>
-	<1404723967-24245-2-git-send-email-olivier@sobrie.be>
-	<20140708.161633.2130069042930765600.davem@davemloft.net>
-	<20140710142848.GA28056@hposo>
-	<063D6719AE5E284EB5DD2968C1650D6D17270044@AcuExch.aculab.com>
-	<20140710165003.0309924e@alan.etchedpixels.co.uk>
-	<063D6719AE5E284EB5DD2968C1650D6D17270187@AcuExch.aculab.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Thu, 10 Jul 2014 17:22:57 -0400
+From: Josef Bacik <jbacik@fb.com>
+To: <linux-kernel@vger.kernel.org>, <rostedt@goodmis.org>
+Subject: [RFC] trace-cmd: add the ability to install libtracecmd
+Date: Thu, 10 Jul 2014 17:22:45 -0400
+Message-ID: <1405027367-26570-1-git-send-email-jbacik@fb.com>
+X-Mailer: git-send-email 1.8.3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-07-10_07:2014-07-10,2014-07-10,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=2.39887054664933e-10 kscore.compositescore=0
+ circleOfTrustscore=22.4078557653337 compositescore=0.997695897463551
+ urlsuspect_oldscore=0.997695897463551 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.997695897463551 spamscore=0
+ recipient_to_sender_domain_totalscore=6 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1407100242
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> You really want to apply flow control back over the 'serial' link.
-> That may just cause data discards earlier on the local system.
-> But it is possible that not resubmitting the receive urb will cause the
-> modem to flow control back to the sender.
-> In which case there is some chance that data won't be lost.
+Hello,
 
-If you are doing PPP and you can't keep up the sooner you chuck data the
-better. Flow control actually works against performance and good network
-behaviour. It's counter intuitive but TCP/IP works best if any
-performance bottlenecks are immediately visible and not covered over.
+I'm trying to build some custom tracing tools on top of trace-cmd but they
+aren't really usefull outside of Facebook so I don't want to shove them into the
+actual trace-cmd project.  Instead I'd like to be able to just build libtracecmd
+and install that as well as the necessary header files and just link my tools
+against that.  I'm shit at userspace stuff like this, so I've just hacked
+something together that works for me.  I'm mostly hoping somebody will look at
+the Makefile horribleness that I came up with and tell me how to do it right (or
+better yet do it for me!)  The second patch just cleans up some stuff to make
+the shared library more library esque.  Any feedback would be great.  Thanks,
 
-Alan
+Josef
+
