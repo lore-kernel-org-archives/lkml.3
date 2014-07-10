@@ -1,81 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186AbaGJDF0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 23:05:26 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:46451 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755386AbaGJDFV (ORCPT
+	id S1755584AbaGJDLD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 23:11:03 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:47164 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751778AbaGJDLB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 23:05:21 -0400
-X-Sasl-enc: 61XQu4v4B9z5GaBsJ8l6RLx+OyvhFrJF3rNLdpnzqQhs 1404961520
-Date: Wed, 9 Jul 2014 20:09:45 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Magnus Damm <damm+renesas@opensource.se>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the staging tree
-Message-ID: <20140710030945.GA8364@kroah.com>
-References: <20140620141807.45761bd0@canb.auug.org.au>
- <20140620165353.GA3433@kroah.com>
- <20140710102700.65ff2c14@canb.auug.org.au>
+	Wed, 9 Jul 2014 23:11:01 -0400
+Date: Wed, 9 Jul 2014 23:10:58 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [ANNOUNCE] 3.12.24-rt37
+Message-ID: <20140709231058.4ecf2d8d@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140710102700.65ff2c14@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 10:27:00AM +1000, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> On Fri, 20 Jun 2014 09:53:53 -0700 Greg KH <greg@kroah.com> wrote:
-> >
-> > On Fri, Jun 20, 2014 at 02:18:07PM +1000, Stephen Rothwell wrote:
-> > > Hi Greg,
-> > > 
-> > > After merging the staging tree, today's linux-next build (powerpc
-> > > allyesconfig) failed like this:
-> > > 
-> > > drivers/staging/board/board.c: In function 'find_by_address':
-> > > drivers/staging/board/board.c:14:3: error: implicit declaration of function 'of_can_translate_address' [-Werror=implicit-function-declaration]
-> > >    if (of_can_translate_address(dn)
-> > >    ^
-> > > 
-> > > Caused by commit 382063d91e15 ("staging: board: Initial board staging
-> > > support").
-> > > 
-> > > I have disabled that driver for today.
-> > > 
-> > > From: Stephen Rothwell <sfr@canb.auug.org.au>
-> > > Date: Fri, 20 Jun 2014 14:14:17 +1000
-> > > Subject: [PATCH] staging: board: disable
-> > > 
-> > > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> > > ---
-> > >  drivers/staging/board/Kconfig | 1 +
-> > >  1 file changed, 1 insertion(+)
-> > > 
-> > > diff --git a/drivers/staging/board/Kconfig b/drivers/staging/board/Kconfig
-> > > index 09d94b48c9c9..7eda0b8b7aab 100644
-> > > --- a/drivers/staging/board/Kconfig
-> > > +++ b/drivers/staging/board/Kconfig
-> > > @@ -1,6 +1,7 @@
-> > >  config STAGING_BOARD
-> > >  	boolean "Staging Board Support"
-> > >  	depends on OF_ADDRESS
-> > > +	depends on BROKEN
-> > >  	help
-> > >  	  Select to enable per-board staging support code.
-> > >  
-> > 
-> > Magnus, can you send me a proper patch for this to get the code back to
-> > building condition?
-> 
-> Ping?
 
-Magnus went quiet...
+Dear RT Folks,
 
-Magnus?
+I'm pleased to announce the 3.12.24-rt37 stable release.
+
+
+This release is just an update to the new stable 3.12.24 version
+and no RT specific changes have been made.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  branch: v3.12-rt
+  Head SHA1: 09523f99794f9ec158411c6565162d8432303d8a
+
+
+Or to build 3.12.24-rt37 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.12.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.12.24.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.12/patch-3.12.24-rt37.patch.xz
+
+
+
+
+Enjoy,
+
+-- Steve
 
