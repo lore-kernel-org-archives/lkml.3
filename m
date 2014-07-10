@@ -1,65 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405AbaGJKNY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 06:13:24 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:33521 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167AbaGJKNV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 06:13:21 -0400
-Date: Thu, 10 Jul 2014 03:13:20 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "jbottomley@parallels.com" <jbottomley@parallels.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 6/8] Drivers: scsi: storvsc: Implement an abort handler
-Message-ID: <20140710101320.GB1151@infradead.org>
-References: <1404866789-26910-1-git-send-email-kys@microsoft.com>
- <1404866812-26950-1-git-send-email-kys@microsoft.com>
- <1404866812-26950-6-git-send-email-kys@microsoft.com>
- <20140709084415.GF6012@infradead.org>
- <9b76360fb30745d3941b6d56bdae268f@BY2PR03MB299.namprd03.prod.outlook.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <9b76360fb30745d3941b6d56bdae268f@BY2PR03MB299.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1753410AbaGJKNy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 06:13:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51061 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750896AbaGJKNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 06:13:07 -0400
+From: Amit Shah <amit.shah@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
+        keescook@chromium.org, jason@lakedaemon.net,
+        Amit Shah <amit.shah@redhat.com>, <stable@vger.kernel.org>
+Subject: [PATCH v3 1/2] hwrng: fetch randomness only after device init
+Date: Thu, 10 Jul 2014 15:42:34 +0530
+Message-Id: <8cf671af94c4747765ebec91a2a4f034a65aef2e.1404987133.git.amit.shah@redhat.com>
+In-Reply-To: <cover.1404987133.git.amit.shah@redhat.com>
+References: <cover.1404987133.git.amit.shah@redhat.com>
+In-Reply-To: <cover.1404987133.git.amit.shah@redhat.com>
+References: <cover.1404987133.git.amit.shah@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 06:51:38PM +0000, KY Srinivasan wrote:
-> On Azure, we sometimes have unbounded I/O latencies and some distributions
-> (such as SLES12) based on recent kernels are invoking the "Abort Handler".
+Commit d9e7972619334 "hwrng: add randomness to system from rng sources"
+added a call to rng_get_data() from the hwrng_register() function.
+However, some rng devices need initialization before data can be read
+from them.
 
-Any kernel will invoke the abort handler if present, and then escalate
-to the various resets.
+This commit makes the call to rng_get_data() depend on no init fn
+pointer being registered by the device.  If an init function is
+registered, this call is made after device init.
 
-> Unfortunately, our scsi emulation on the host does not support aborting 
-> a command. The issue I have seen is that the upper level scsi code attempts
-> error recovery when the command times out and finally frees up the command.
-> The host subsequently responds to the command that has timed out and since
-> the memory has been freed up, we end up touching freed memory in this
-> driver. Since the host is also doing error recovery, by just delaying the
-> error handler in the guest until we can account for all the in-flight 
-> commands, we can get around the problem.
+CC: Kees Cook <keescook@chromium.org>
+CC: Jason Cooper <jason@lakedaemon.net>
+CC: Herbert Xu <herbert@gondor.apana.org.au>
+CC: <stable@vger.kernel.org> # For v3.15+
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+---
+ drivers/char/hw_random/core.c | 41 +++++++++++++++++++++++++++++++++--------
+ 1 file changed, 33 insertions(+), 8 deletions(-)
 
-The storvsc driver does implement an bus reset error handler, and
-after that completes successfully the midlayer frees the commands,
-and the driver has to deal with this and not call scsi_done after
-the reset finished (normally you'd expect the hardware to not complete
-requests after an reset).
-
-Note that you could increase the timeout and/or implement an
-eh_timed_out handler that just returns BLK_EH_RESET_TIMER, but if the
-completion takes too long the expectation is that a command will
-eventually finish instead of beeing delayed by an unmound amount.
+diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
+index 334601c..2a451b1 100644
+--- a/drivers/char/hw_random/core.c
++++ b/drivers/char/hw_random/core.c
+@@ -55,16 +55,35 @@ static DEFINE_MUTEX(rng_mutex);
+ static int data_avail;
+ static u8 *rng_buffer;
+ 
++static inline int rng_get_data(struct hwrng *rng, u8 *buffer, size_t size,
++			       int wait);
++
+ static size_t rng_buffer_size(void)
+ {
+ 	return SMP_CACHE_BYTES < 32 ? 32 : SMP_CACHE_BYTES;
+ }
+ 
++static void add_early_randomness(struct hwrng *rng)
++{
++	unsigned char bytes[16];
++	int bytes_read;
++
++	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
++	if (bytes_read > 0)
++		add_device_randomness(bytes, bytes_read);
++}
++
+ static inline int hwrng_init(struct hwrng *rng)
+ {
+-	if (!rng->init)
+-		return 0;
+-	return rng->init(rng);
++	if (rng->init) {
++		int ret;
++
++		ret =  rng->init(rng);
++		if (ret)
++			return ret;
++	}
++	add_early_randomness(rng);
++	return 0;
+ }
+ 
+ static inline void hwrng_cleanup(struct hwrng *rng)
+@@ -304,8 +323,6 @@ int hwrng_register(struct hwrng *rng)
+ {
+ 	int err = -EINVAL;
+ 	struct hwrng *old_rng, *tmp;
+-	unsigned char bytes[16];
+-	int bytes_read;
+ 
+ 	if (rng->name == NULL ||
+ 	    (rng->data_read == NULL && rng->read == NULL))
+@@ -347,9 +364,17 @@ int hwrng_register(struct hwrng *rng)
+ 	INIT_LIST_HEAD(&rng->list);
+ 	list_add_tail(&rng->list, &rng_list);
+ 
+-	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
+-	if (bytes_read > 0)
+-		add_device_randomness(bytes, bytes_read);
++	if (old_rng && !rng->init) {
++		/*
++		 * Use a new device's input to add some randomness to
++		 * the system.  If this rng device isn't going to be
++		 * used right away, its init function hasn't been
++		 * called yet; so only use the randomness from devices
++		 * that don't need an init callback.
++		 */
++		add_early_randomness(rng);
++	}
++
+ out_unlock:
+ 	mutex_unlock(&rng_mutex);
+ out:
+-- 
+1.9.3
 
