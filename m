@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752347AbaGJIud (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 04:50:33 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:22124 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553AbaGJIu0 (ORCPT
+	id S1752545AbaGJIu4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 04:50:56 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:53322 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752460AbaGJIuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 04:50:26 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-5a-53be53cf6c81
-Message-id: <53BE528A.1080104@samsung.com>
-Date: Thu, 10 Jul 2014 12:44:58 +0400
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Christoph Lameter <cl@gentwo.org>
-Cc: linux-kernel@vger.kernel.org, Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Alexey Preobrazhensky <preobr@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        x86@kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC/PATCH RESEND -next 13/21] mm: slub: add allocation size field
- to struct kmem_cache
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1404905415-9046-14-git-send-email-a.ryabinin@samsung.com>
- <alpine.DEB.2.11.1407090933170.1384@gentwo.org>
-In-reply-to: <alpine.DEB.2.11.1407090933170.1384@gentwo.org>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsVy+t/xa7rng/cFG3y5qmvxe+9MVos569ew
-	WSyfM5fJYsLDNnaLld3NbBbbn71lsljZ+YDVYtPja6wWf3btYLK4vGsOm8W9Nf9ZLW5f5rW4
-	dGABk0XLvgtMFm2f/7Fa7Ft5HshaspHJYvGR28wW755NZrbYvGkqs8WPDY9ZHUQ9Wpp72Dz2
-	Hy7y2DnrLrvHgk2lHptWdbJ5bPo0id2j6+0VJo93586xe5yY8ZvFY/OSeo+PT2+xeLzfd5XN
-	48yCI+wenzfJBfBFcdmkpOZklqUW6dslcGVcfbeNteAwS0XDqZgGxgvMXYycHBICJhInD6xm
-	grDFJC7cW8/WxcjFISSwlFFi49nvTBBOM5PEx7kQHbwCWhJX1p8Fs1kEVCV6Fi4A62YT0JP4
-	N2s7G4gtKhAhcaDvGStEvaDEj8n3WEBsEaD66zNPg21gFrjMKtH94ipYkbBAmsSyG49YIbZt
-	YZRo3z0JbAOngI3Exas9YEXMAjoS+1unsUHY8hKb17xlnsAoMAvJkllIymYhKVvAyLyKUTS1
-	NLmgOCk910ivODG3uDQvXS85P3cTIySOv+5gXHrM6hCjAAejEg/vi917goVYE8uKK3MPMUpw
-	MCuJ8G6z2xcsxJuSWFmVWpQfX1Sak1p8iJGJg1OqgZH1c6/BIu6ny+Wba9oPL/aSnhj5cNet
-	mKLcOX9+VwiubnFS1b0rrP/+lZ708TDpr66OwptkxLt2+6TeW2r/M4Blcf0RNvY1LsX/RSJs
-	bp7cEzT9nG7QtoNL9AJMTaSO375cOftk2AanSRL3t55Sb+CY91HocwXD+QwRtevmq5esMn66
-	TaRGoV2JpTgj0VCLuag4EQDDHZ9swQIAAA==
+	Thu, 10 Jul 2014 04:50:50 -0400
+From: Harini Katakam <harinik@xilinx.com>
+To: broonie@kernel.org, grant.likely@linaro.org, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        dwmw2@infradead.org, computersforpeace@gmail.com, marex@denx.de,
+        artem.bityutskiy@linux.intel.com, geert+renesas@linux-m68k.org,
+        s.hauer@pengutronix.de, jg1.han@samsung.com, sourav.poddar@ti.com
+Cc: michals@xilinx.com, punnaia@xilinx.com, harinikatakamlinux@gmail.com,
+        Harini Katakam <harinik@xilinx.com>
+Subject: [RFC PATCH 2/2] devicetree: Add devicetree bindings documentation for Zynq QSPI
+Date: Thu, 10 Jul 2014 14:20:07 +0530
+Message-Id: <1404982207-4707-3-git-send-email-harinik@xilinx.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1404982207-4707-1-git-send-email-harinik@xilinx.com>
+References: <1404982207-4707-1-git-send-email-harinik@xilinx.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/14 18:33, Christoph Lameter wrote:
-> On Wed, 9 Jul 2014, Andrey Ryabinin wrote:
-> 
->> When caller creates new kmem_cache, requested size of kmem_cache
->> will be stored in alloc_size. Later alloc_size will be used by
->> kerenel address sanitizer to mark alloc_size of slab object as
->> accessible and the rest of its size as redzone.
-> 
-> I think this patch is not needed since object_size == alloc_size right?
-> 
+Add bindings documentation for Zynq QSPI driver.
 
-I vaguely remember there was a reason for this patch, but I can't see/recall it now.
-Probably I misunderstood something. I'll drop this patch
+Signed-off-by: Harini Katakam <harinik@xilinx.com>
+---
+ .../devicetree/bindings/spi/spi-zynq-qspi.txt      |   28 ++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/spi/spi-zynq-qspi.txt
+
+diff --git a/Documentation/devicetree/bindings/spi/spi-zynq-qspi.txt b/Documentation/devicetree/bindings/spi/spi-zynq-qspi.txt
+new file mode 100644
+index 0000000..288c551
+--- /dev/null
++++ b/Documentation/devicetree/bindings/spi/spi-zynq-qspi.txt
+@@ -0,0 +1,28 @@
++Xilinx Zynq QSPI controller Device Tree Bindings
++-------------------------------------------------
++
++Required properties:
++- compatible		: Should be "xlnx,zynq-qspi-1.0".
++- reg			: Physical base address and size of QSPI registers map.
++- interrupts		: Property with a value describing the interrupt
++			  number.
++- interrupt-parent	: Must be core interrupt controller
++- clock-names		: List of input clock names - "ref_clk", "pclk"
++			  (See clock bindings for details).
++- clocks		: Clock phandles (see clock bindings for details).
++
++Optional properties:
++- num-cs		: Number of chip selects used.
++- xlnx,qspi-mode	: Single - 0; Dual Stacked - 1; Dual Parallel - 2.
++
++Example:
++	qspi@e000d000 {
++		compatible = "xlnx,zynq-qspi-1.0";
++		clock-names = "ref_clk", "pclk";
++		clocks = <&clkc 10>, <&clkc 43>;
++		interrupt-parent = <&intc>;
++		interrupts = <0 19 4>;
++		num-cs = <1>;
++		xlnx,qspi-mode = <0x0>;
++		reg = <0xe000d000 0x1000>;
++	} ;
+-- 
+1.7.9.5
+
