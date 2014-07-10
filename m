@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752294AbaGJISy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 04:18:54 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:55583 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752229AbaGJISu (ORCPT
+	id S1752258AbaGJISt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 04:18:49 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:49298 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752219AbaGJISl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 04:18:50 -0400
+	Thu, 10 Jul 2014 04:18:41 -0400
 From: Tom Gundersen <teg@jklm.no>
 To: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
         David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        Tom Gundersen <teg@jklm.no>, Pravin Shelar <pshelar@nicira.com>,
-        dev@openvswitch.org
-Subject: [PATCH v7 23/33] net: openvswitch - set name assign type
-Date: Thu, 10 Jul 2014 10:17:28 +0200
-Message-Id: <1404980258-30853-24-git-send-email-teg@jklm.no>
+        Tom Gundersen <teg@jklm.no>, Karsten Keil <isdn@linux-pingi.de>
+Subject: [PATCH v7 19/33] net: isdn - set name assign type
+Date: Thu, 10 Jul 2014 10:17:24 +0200
+Message-Id: <1404980258-30853-20-git-send-email-teg@jklm.no>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1404980258-30853-1-git-send-email-teg@jklm.no>
 References: <1404980258-30853-1-git-send-email-teg@jklm.no>
@@ -24,59 +23,92 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Tom Gundersen <teg@jklm.no>
-Cc: Pravin Shelar <pshelar@nicira.com>
-Cc: dev@openvswitch.org
+Cc: Karsten Keil <isdn@linux-pingi.de>
 ---
- net/openvswitch/datapath.c           | 1 +
- net/openvswitch/vport-internal_dev.c | 2 +-
- net/openvswitch/vport.h              | 2 ++
- 3 files changed, 4 insertions(+), 1 deletion(-)
+ drivers/isdn/i4l/isdn_common.c |  4 ++--
+ drivers/isdn/i4l/isdn_net.c    | 10 +++++-----
+ drivers/isdn/i4l/isdn_net.h    |  4 ++--
+ 3 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/net/openvswitch/datapath.c b/net/openvswitch/datapath.c
-index 0d407bc..f216eca 100644
---- a/net/openvswitch/datapath.c
-+++ b/net/openvswitch/datapath.c
-@@ -1370,6 +1370,7 @@ static int ovs_dp_cmd_new(struct sk_buff *skb, struct genl_info *info)
- 
- 	/* Set up our datapath device. */
- 	parms.name = nla_data(a[OVS_DP_ATTR_NAME]);
-+	parms.name_assign_type = NET_NAME_USER;
- 	parms.type = OVS_VPORT_TYPE_INTERNAL;
- 	parms.options = NULL;
- 	parms.dp = dp;
-diff --git a/net/openvswitch/vport-internal_dev.c b/net/openvswitch/vport-internal_dev.c
-index 0a5e077..ceb098c 100644
---- a/net/openvswitch/vport-internal_dev.c
-+++ b/net/openvswitch/vport-internal_dev.c
-@@ -159,7 +159,7 @@ static struct vport *internal_dev_create(const struct vport_parms *parms)
- 	netdev_vport = netdev_vport_priv(vport);
- 
- 	netdev_vport->dev = alloc_netdev(sizeof(struct internal_dev),
--					 parms->name, NET_NAME_UNKNOWN,
-+					 parms->name, parms->name_assign_type,
- 					 do_setup);
- 	if (!netdev_vport->dev) {
- 		err = -ENOMEM;
-diff --git a/net/openvswitch/vport.h b/net/openvswitch/vport.h
-index 8d721e6..a9d7480 100644
---- a/net/openvswitch/vport.h
-+++ b/net/openvswitch/vport.h
-@@ -97,6 +97,7 @@ struct vport {
-  * struct vport_parms - parameters for creating a new vport
-  *
-  * @name: New vport's name.
-+ * @name_assign_type: New vport's name's origin.
-  * @type: New vport's type.
-  * @options: %OVS_VPORT_ATTR_OPTIONS attribute from Netlink message, %NULL if
-  * none was supplied.
-@@ -105,6 +106,7 @@ struct vport {
+diff --git a/drivers/isdn/i4l/isdn_common.c b/drivers/isdn/i4l/isdn_common.c
+index 9b856e1..67840ca 100644
+--- a/drivers/isdn/i4l/isdn_common.c
++++ b/drivers/isdn/i4l/isdn_common.c
+@@ -1364,7 +1364,7 @@ isdn_ioctl(struct file *file, uint cmd, ulong arg)
+ 			}
+ 			ret = mutex_lock_interruptible(&dev->mtx);
+ 			if (ret) return ret;
+-			if ((s = isdn_net_new(s, NULL))) {
++			if ((s = isdn_net_new(s, NET_NAME_USER, NULL))) {
+ 				if (copy_to_user(argp, s, strlen(s) + 1)) {
+ 					ret = -EFAULT;
+ 				} else {
+@@ -1383,7 +1383,7 @@ isdn_ioctl(struct file *file, uint cmd, ulong arg)
+ 				return -EINVAL;
+ 			ret = mutex_lock_interruptible(&dev->mtx);
+ 			if (ret) return ret;
+-			if ((s = isdn_net_newslave(bname))) {
++			if ((s = isdn_net_newslave(bname, NET_NAME_USER))) {
+ 				if (copy_to_user(argp, s, strlen(s) + 1)) {
+ 					ret = -EFAULT;
+ 				} else {
+diff --git a/drivers/isdn/i4l/isdn_net.c b/drivers/isdn/i4l/isdn_net.c
+index c2ed624..d16fec0 100644
+--- a/drivers/isdn/i4l/isdn_net.c
++++ b/drivers/isdn/i4l/isdn_net.c
+@@ -2573,7 +2573,7 @@ static void _isdn_setup(struct net_device *dev)
+  * Allocate a new network-interface and initialize its data structures.
   */
- struct vport_parms {
- 	const char *name;
-+	unsigned char name_assign_type;
- 	enum ovs_vport_type type;
- 	struct nlattr *options;
+ char *
+-isdn_net_new(char *name, struct net_device *master)
++isdn_net_new(char *name, unsigned char name_assign_type, struct net_device *master)
+ {
+ 	isdn_net_dev *netdev;
  
+@@ -2588,8 +2588,8 @@ isdn_net_new(char *name, struct net_device *master)
+ 		printk(KERN_WARNING "isdn_net: Could not allocate net-device\n");
+ 		return NULL;
+ 	}
+-	netdev->dev = alloc_netdev(sizeof(isdn_net_local), name,
+-				   NET_NAME_UNKNOWN, _isdn_setup);
++	netdev->dev = alloc_netdev(sizeof(isdn_net_local), name, name_assign_type,
++				   _isdn_setup);
+ 	if (!netdev->dev) {
+ 		printk(KERN_WARNING "isdn_net: Could not allocate network device\n");
+ 		kfree(netdev);
+@@ -2637,7 +2637,7 @@ isdn_net_new(char *name, struct net_device *master)
+ }
+ 
+ char *
+-isdn_net_newslave(char *parm)
++isdn_net_newslave(char *parm, unsigned char name_assign_type)
+ {
+ 	char *p = strchr(parm, ',');
+ 	isdn_net_dev *n;
+@@ -2658,7 +2658,7 @@ isdn_net_newslave(char *parm)
+ 		/* Master must not be started yet */
+ 		if (isdn_net_device_started(n))
+ 			return NULL;
+-		return (isdn_net_new(newname, n->dev));
++		return (isdn_net_new(newname, name_assign_type, n->dev));
+ 	}
+ 	return NULL;
+ }
+diff --git a/drivers/isdn/i4l/isdn_net.h b/drivers/isdn/i4l/isdn_net.h
+index cca6d68..99f0c47 100644
+--- a/drivers/isdn/i4l/isdn_net.h
++++ b/drivers/isdn/i4l/isdn_net.h
+@@ -31,8 +31,8 @@
+ #define CISCO_SLARP_REPLY     1
+ #define CISCO_SLARP_KEEPALIVE 2
+ 
+-extern char *isdn_net_new(char *, struct net_device *);
+-extern char *isdn_net_newslave(char *);
++extern char *isdn_net_new(char *, unsigned char, struct net_device *);
++extern char *isdn_net_newslave(char *, unsigned char);
+ extern int isdn_net_rm(char *);
+ extern int isdn_net_rmall(void);
+ extern int isdn_net_stat_callback(int, isdn_ctrl *);
 -- 
 1.9.3
 
