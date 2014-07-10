@@ -1,81 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986AbaGJOzD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 10:55:03 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:46874 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753322AbaGJOzA (ORCPT
+	id S1753994AbaGJOzo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 10:55:44 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49321 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751591AbaGJOzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 10:55:00 -0400
-Date: Thu, 10 Jul 2014 10:54:54 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] workqueue fixes for v3.16-rc4
-Message-ID: <20140710145454.GC6609@htj.dyndns.org>
+	Thu, 10 Jul 2014 10:55:42 -0400
+Message-ID: <53BEA967.4070200@linutronix.de>
+Date: Thu, 10 Jul 2014 16:55:35 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: linux-omap@vger.kernel.org
+CC: linux-arm-kernel@lists.infradead.org, Tony Lindgren <tony@atomide.com>,
+        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH 2/6] tty: serial: 8250 core: allow to overwrite & export
+ serial8250_startup()
+References: <1404928177-26554-1-git-send-email-bigeasy@linutronix.de> <1404928177-26554-3-git-send-email-bigeasy@linutronix.de>
+In-Reply-To: <1404928177-26554-3-git-send-email-bigeasy@linutronix.de>
+X-Enigmail-Version: 1.6+git0.20140323
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+On 07/09/2014 07:49 PM, Sebastian Andrzej Siewior wrote:
+> The OMAP version of the 8250 can actually use 1:1 serial8250_startup().
+> However it needs to be extended by a wakeup irq which should to be
+> requested & enabled at ->startup() time and disabled at ->shutdown() time.
+> 
+> v1…v2: add shutdown callback
 
-One patch to fix a typo in percpu section name.  Given how long the
-bug has been there and that there hasn't been any report of brekage,
-it's unlikely to cause actual issues.
+forgot to copy the callbacks in serial8250_register_8250_port().
 
-Thanks.
-
-The following changes since commit ebe06187bf2aec10d537ce4595e416035367d703:
-
-  epoll: fix use-after-free in eventpoll_release_file (2014-06-16 17:21:59 -1000)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-3.16-fixes
-
-for you to fetch changes up to 330d282216d6e4d845a21b72572dc4df4122e8fa:
-
-  core: fix typo in percpu read_mostly section (2014-07-01 16:45:22 -0400)
-
-----------------------------------------------------------------
-Zhengyu He (1):
-      core: fix typo in percpu read_mostly section
-
- include/asm-generic/vmlinux.lds.h | 2 +-
- include/linux/percpu-defs.h       | 4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index 471ba48..c1c0b0c 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -693,7 +693,7 @@
- 	. = ALIGN(PAGE_SIZE);						\
- 	*(.data..percpu..page_aligned)					\
- 	. = ALIGN(cacheline);						\
--	*(.data..percpu..readmostly)					\
-+	*(.data..percpu..read_mostly)					\
- 	. = ALIGN(cacheline);						\
- 	*(.data..percpu)						\
- 	*(.data..percpu..shared_aligned)				\
-diff --git a/include/linux/percpu-defs.h b/include/linux/percpu-defs.h
-index a5fc7d0..dec01d6 100644
---- a/include/linux/percpu-defs.h
-+++ b/include/linux/percpu-defs.h
-@@ -146,10 +146,10 @@
-  * Declaration/definition used for per-CPU variables that must be read mostly.
-  */
- #define DECLARE_PER_CPU_READ_MOSTLY(type, name)			\
--	DECLARE_PER_CPU_SECTION(type, name, "..readmostly")
-+	DECLARE_PER_CPU_SECTION(type, name, "..read_mostly")
- 
- #define DEFINE_PER_CPU_READ_MOSTLY(type, name)				\
--	DEFINE_PER_CPU_SECTION(type, name, "..readmostly")
-+	DEFINE_PER_CPU_SECTION(type, name, "..read_mostly")
- 
- /*
-  * Intermodule exports for per-CPU variables.  sparse forgets about
+Sebastian
