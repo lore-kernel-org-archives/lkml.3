@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752495AbaGJNsF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:48:05 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:56170 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751015AbaGJNsD (ORCPT
+	id S1753035AbaGJNsQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:48:16 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:56676 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751205AbaGJNsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:48:03 -0400
-Date: Thu, 10 Jul 2014 15:47:58 +0200
-From: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        gregkh@linuxfoundation.org, Peter.Chen@freescale.com, kishon@ti.com,
-        stern@rowland.harvard.edu, alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] usb: move the OTG state from the USB PHY to the OTG
- structure
-Message-ID: <20140710134758.GA32462@kwain>
-References: <1404901036-27682-1-git-send-email-antoine.tenart@free-electrons.com>
- <1404901036-27682-2-git-send-email-antoine.tenart@free-electrons.com>
- <20140710134023.GJ15340@saruman.home>
+	Thu, 10 Jul 2014 09:48:12 -0400
+Message-ID: <53BE999A.6060309@kernel.dk>
+Date: Thu, 10 Jul 2014 15:48:10 +0200
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140710134023.GJ15340@saruman.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Benjamin LaHaise <bcrl@kvack.org>
+CC: Christoph Hellwig <hch@infradead.org>,
+        "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        "dgilbert@interlog.com" <dgilbert@interlog.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Bart Van Assche <bvanassche@fusionio.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: scsi-mq V2
+References: <1403715121-1201-1-git-send-email-hch@lst.de> <20140708144829.GA5539@infradead.org> <53BD7041.5010300@interlog.com> <53BD9A24.7010203@kernel.dk> <94D0CD8314A33A4D9D801C0FE68B402958B9628B@G9W0745.americas.hpqcorp.net> <20140710062040.GB20146@infradead.org> <20140710133609.GO12478@kvack.org> <53BE97AD.9080306@kernel.dk> <20140710134439.GP12478@kvack.org>
+In-Reply-To: <20140710134439.GP12478@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
+On 2014-07-10 15:44, Benjamin LaHaise wrote:
+> On Thu, Jul 10, 2014 at 03:39:57PM +0200, Jens Axboe wrote:
+>> That's how fio always runs, it sets up the context with the exact queue
+>> depth that it needs. Do we have a good enough understanding of other aio
+>> use cases to say that this isn't the norm? I would expect it to be, it's
+>> the way that the API would most obviously be used.
+>
+> The problem with this approach is that it works very poorly with per cpu
+> reference counting's batching of references, which is pretty much a
+> requirement now that many core systems are the norm.  Allocating the bare
+> minimum is not the right thing to do today.  That said, the default limits
+> on the number of requests probably needs to be raised.
 
-On Thu, Jul 10, 2014 at 08:40:23AM -0500, Felipe Balbi wrote:
-> On Wed, Jul 09, 2014 at 12:17:13PM +0200, Antoine Ténart wrote:
-> > Before using the PHY framework instead of the USB PHY one, we need to
-> > move the OTG state into another place, since it won't be available when
-> > USB PHY isn't used. This patch moves the OTG state into the OTG
-> > structure, and makes all the needed modifications in the drivers
-> > using the OTG state.
-> > 
-> > Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-> 
-> This looks good to me. I'm interested in what will be the best way to
-> merge this series :-)
+Sorry, that's a complete cop-out. Then you handle this internally, 
+allocate a bigger pool and cap the limit if you need to. Look at the 
+API. You pass in the number of requests you will use. Do you expect 
+anyone to double up, just in case? Will never happen.
 
-I was asking myself the same question :) If splits or squashes are needed
-please ask. At least, I'll split the s/phy/usb_phy/ and the generic PHY
-addition in two patches as Alan asked.
-
-Antoine
-
+But all of this is side stepping the point that there's a real bug 
+reported here. The above could potentially explain the "it's using X 
+more CPU, or it's Y slower". The above is a softlock, it never completes.
 
 -- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Jens Axboe
+
