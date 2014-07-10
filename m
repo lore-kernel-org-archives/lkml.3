@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470AbaGJBGe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 21:06:34 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:45054 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752198AbaGJBGa (ORCPT
+	id S1755625AbaGJBHF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 21:07:05 -0400
+Received: from mail-yh0-f74.google.com ([209.85.213.74]:53830 "EHLO
+	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852AbaGJBFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 21:06:30 -0400
-Date: Wed, 9 Jul 2014 18:04:51 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Vlastimil Babka <vbabka@suse.cz>
-cc: Sasha Levin <sasha.levin@oracle.com>, akpm@linux-foundation.org,
-        davej@redhat.com, koct9i@gmail.com, lczerner@redhat.com,
-        stable@vger.kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: + shmem-fix-faulting-into-a-hole-while-its-punched-take-2.patch
- added to -mm tree
-In-Reply-To: <alpine.LSU.2.11.1407091000410.11705@eggly.anvils>
-Message-ID: <alpine.LSU.2.11.1407091801160.16410@eggly.anvils>
-References: <53b45c9b.2rlA0uGYBLzlXEeS%akpm@linux-foundation.org> <53BCBF1F.1000506@oracle.com> <alpine.LSU.2.11.1407082309040.7374@eggly.anvils> <53BD1053.5020401@suse.cz> <53BD39FC.7040205@oracle.com> <53BD67DC.9040700@oracle.com> <53BD6F4E.6030003@suse.cz>
- <alpine.LSU.2.11.1407091000410.11705@eggly.anvils>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 9 Jul 2014 21:05:55 -0400
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Julius Werner <jwerner@chromium.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: linux-tegra@vger.kernel.org, Andrew Bresticker <abrestic@chromium.org>
+Subject: [PATCH 2/4] xhci: Check for XHCI_COMP_MODE_QUIRK when disabling D3cold
+Date: Wed,  9 Jul 2014 18:05:48 -0700
+Message-Id: <1404954350-26343-3-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
+In-Reply-To: <1404954350-26343-1-git-send-email-abrestic@chromium.org>
+References: <1404954350-26343-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Jul 2014, Hugh Dickins wrote:
-> On Wed, 9 Jul 2014, Vlastimil Babka wrote:
-> > On 07/09/2014 06:03 PM, Sasha Levin wrote:
-> > > 
-> > > We can see that it's not blocked since it's in the middle of a spinlock
-> > > unlock
-> > > call, and we can guess it's been in that function for a while because of
-> > > the hung
-> > > task timer, and other processes waiting on that i_mmap_mutex:
-> > 
-> > Hm, zap_pte_range has potentially an endless loop due to the 'goto again'
-> > path. Could it be a somewhat similar situation to the fallocate problem, but
-> > where parallel faulters on shared memory are preventing a process from
-> > exiting? Although they don't fault the pages into the same address space,
-> > they could maybe somehow interact through the TLB flushing code? And only
-> > after fixing the original problem we can observe this one?
-> 
-> That's a good thought.  It ought to make forward progress nonetheless,
-> but I believe (please check, I'm rushing) that there's an off-by-one in
-> that path which could leave us hanging - but only when __tlb_remove_page()
-> repeatedly fails, which would only happen if exceptionally low on memory??
-> 
-> Does this patch look good, and does it make any difference to the hang?
+Instead of calling xhci_compliance_mode_recovery_timer_quirk_check() again
+in the PCI suspend path, just check for XHCI_COMP_MODE_QUIRK which will
+have been set based on xhci_compliance_mode_recovery_timer_quirk_check()
+in xhci_init().
 
-I should add that I think that this patch is correct in itself, but
-won't actually make any difference to anything.  I'm still looking
-through Sasha's log for clues (but shall have to give up soon).
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+---
+ drivers/usb/host/xhci-pci.c | 2 +-
+ drivers/usb/host/xhci.c     | 3 ++-
+ drivers/usb/host/xhci.h     | 3 ---
+ 3 files changed, 3 insertions(+), 5 deletions(-)
 
-Hugh
+diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+index 97648e4..d06ffe7 100644
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -277,7 +277,7 @@ static int xhci_pci_suspend(struct usb_hcd *hcd, bool do_wakeup)
+ 	 * Systems with the TI redriver that loses port status change events
+ 	 * need to have the registers polled during D3, so avoid D3cold.
+ 	 */
+-	if (xhci_compliance_mode_recovery_timer_quirk_check())
++	if (xhci->quirks & XHCI_COMP_MODE_QUIRK)
+ 		pdev->no_d3cold = true;
+ 
+ 	return xhci_suspend(xhci);
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 8de75b7..f681087 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -491,7 +491,7 @@ static void compliance_mode_recovery_timer_init(struct xhci_hcd *xhci)
+  * Systems:
+  * Vendor: Hewlett-Packard -> System Models: Z420, Z620 and Z820
+  */
+-bool xhci_compliance_mode_recovery_timer_quirk_check(void)
++static bool xhci_compliance_mode_recovery_timer_quirk_check(void)
+ {
+ 	const char *dmi_product_name, *dmi_sys_vendor;
+ 
+@@ -4936,6 +4936,7 @@ static const struct hc_driver xhci_hc_driver = {
+ 
+ void xhci_init_driver(struct hc_driver *drv, int (*setup_fn)(struct usb_hcd *))
+ {
++	BUG_ON(!setup_fn);
+ 	*drv = xhci_hc_driver;
+ 	drv->reset = setup_fn;
+ }
+diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+index 0d9b2cf..902f55b 100644
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1886,7 +1886,4 @@ struct xhci_input_control_ctx *xhci_get_input_control_ctx(struct xhci_hcd *xhci,
+ struct xhci_slot_ctx *xhci_get_slot_ctx(struct xhci_hcd *xhci, struct xhci_container_ctx *ctx);
+ struct xhci_ep_ctx *xhci_get_ep_ctx(struct xhci_hcd *xhci, struct xhci_container_ctx *ctx, unsigned int ep_index);
+ 
+-/* xHCI quirks */
+-bool xhci_compliance_mode_recovery_timer_quirk_check(void);
+-
+ #endif /* __LINUX_XHCI_HCD_H */
+-- 
+2.0.0.526.g5318336
 
-> 
-> --- mmotm/mm/memory.c	2014-07-02 15:32:22.212311544 -0700
-> +++ linux/mm/memory.c	2014-07-09 09:56:33.724159443 -0700
-> @@ -1145,6 +1145,7 @@ again:
->  			if (unlikely(page_mapcount(page) < 0))
->  				print_bad_pte(vma, addr, ptent, page);
->  			if (unlikely(!__tlb_remove_page(tlb, page))) {
-> +				addr += PAGE_SIZE;
->  				force_flush = 1;
->  				break;
->  			}
