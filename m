@@ -1,106 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934AbaGJQAz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 12:00:55 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:60630 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752461AbaGJQAU (ORCPT
+	id S1752746AbaGJQD4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 12:03:56 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:60633 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751591AbaGJQDz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 12:00:20 -0400
-X-IronPort-AV: E=Sophos;i="5.00,869,1396972800"; 
-   d="scan'208";a="33107679"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 1/3] workqueue: remove the first check and the return value of maybe_create_worker()
-Date: Fri, 11 Jul 2014 00:01:03 +0800
-Message-ID: <1405008074-11031-2-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1405008074-11031-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1405008074-11031-1-git-send-email-laijs@cn.fujitsu.com>
+	Thu, 10 Jul 2014 12:03:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.103]
+In-Reply-To: <20140710150832.GA20861@redhat.com>
+References: <1403911380-27787-1-git-send-email-keescook@chromium.org>
+	<1403911380-27787-12-git-send-email-keescook@chromium.org>
+	<20140709180520.GA2560@redhat.com>
+	<CAGXu5jLUqz-T1tRBCpPLkzWijyAF-Vjw_7PnQ1EvUh4urwyaUg@mail.gmail.com>
+	<20140710150832.GA20861@redhat.com>
+Date: Thu, 10 Jul 2014 09:03:50 -0700
+X-Google-Sender-Auth: nVp9CbmgbGU1uPKFt_FQNOnvRqs
+Message-ID: <CAGXu5jK_BBAexok1G1vbxL6764n+7h1kLRSu074MMFzF0QrafQ@mail.gmail.com>
+Subject: Re: [PATCH v9 11/11] seccomp: implement SECCOMP_FILTER_FLAG_TSYNC
+From: Kees Cook <keescook@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pool->lock is kept locked during the time the worker_thread() checks the
-condition and maybe_create_worker() is called, therefore, the condition
-is unchanged and the first condition check is unneeded.
+On Thu, Jul 10, 2014 at 8:08 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 07/10, Kees Cook wrote:
+>>
+>> On Wed, Jul 9, 2014 at 11:05 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> >
+>> >> +     /*
+>> >> +      * Make sure we cannot change seccomp or nnp state via TSYNC
+>> >> +      * while another thread is in the middle of calling exec.
+>> >> +      */
+>> >> +     if (flags & SECCOMP_FILTER_FLAG_TSYNC &&
+>> >> +         mutex_lock_killable(&current->signal->cred_guard_mutex))
+>> >> +             goto out_free;
+>> >
+>> > -EINVAL looks a bit confusing in this case, but this is cosemtic because
+>> > userspace won't see this error-code anyway.
+>>
+>> Happy to use whatever since, as you say, it's cosmetic. Perhaps -EAGAIN?
+>
+> Or -EINTR. I do not really mind, I only mentioned this because I had another
+> nit.
+>
+>> >>       spin_lock_irq(&current->sighand->siglock);
+>> >> +     if (unlikely(signal_group_exit(current->signal))) {
+>> >> +             /* If thread is dying, return to process the signal. */
+>> >
+>> > OK, this doesn't hurt, but why?
+>> >
+>> > You could check __fatal_signal_pending() with the same effect. And since
+>> > we hold this mutex, exec (de_thread) can be the source of that SIGKILL.
+>> > We take this mutex specially to avoid the race with exec.
+>> >
+>> > So why do we need to abort if we race with kill() or exit_grouo() ?
+>>
+>> In my initial code inspection that we could block waiting for the
+>> cred_guard mutex, with exec holding it, exec would schedule death in
+>> de_thread, and then once it released, the tsync thread would try to
+>> keep running.
+>>
+>> However, in looking at this again, now I'm concerned this produces a
+>> dead-lock in de_thread, since it waits for all threads to actually
+>> die, but tsync will be waiting with the killable mutex.
+>
+> That is why you should always use _killable (or _interruptible) if you
+> want to take ->cred_guard_mutex.
+>
+> If this thread races with de_thread() which holds this mutex, it will
+> be killed and mutex_lock_killable() will fail.
+>
+> (to clarify; this deadlock is not "fatal", de_thread() can be killed too,
+>  but this doesn't really matter).
+>
+>> So I think I got too defensive when I read the top of de_thread where
+>> it checks for pending signals itself.
+>>
+>> It seems like I can just safely remove the singal_group_exit checks?
+>> The other paths (non-tsync seccomp_set_mode_filter, and
+>> seccomp_set_mode_strict)
+>
+> Yes, I missed another signal_group_exit() in seccomp_set_mode_strict().
+> It looks equally unneeded.
+>
+>> I can't decide which feels cleaner: just letting stuff
+>> clean up naturally on death or to short-circuit after taking
+>> sighand->siglock.
+>
+> I'd prefer to simply remove the singal_group_exit checks.
+>
+> I won't argue if you prefer to keep them, but then please add a comment
+> to explain that this is not needed for correctness.
+>
+> Because otherwise the code looks confusing, as if there is a subtle reason
+> why we must not do this if killed.
 
-After this unneeded check is removed, maybe_create_worker() only returns
-true, so we remove the return value of it and adjust the call-site.
+Sounds good! I'll clean it all up for v10.
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- kernel/workqueue.c |   18 +++++-------------
- 1 files changed, 5 insertions(+), 13 deletions(-)
+-Kees
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index f344334..92f7ea0c 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1887,17 +1887,11 @@ static void pool_mayday_timeout(unsigned long __pool)
-  * spin_lock_irq(pool->lock) which may be released and regrabbed
-  * multiple times.  Does GFP_KERNEL allocations.  Called only from
-  * manager.
-- *
-- * Return:
-- * %false if no action was taken and pool->lock stayed locked, %true
-- * otherwise.
-  */
--static bool maybe_create_worker(struct worker_pool *pool)
-+static void maybe_create_worker(struct worker_pool *pool)
- __releases(&pool->lock)
- __acquires(&pool->lock)
- {
--	if (!need_to_create_worker(pool))
--		return false;
- restart:
- 	spin_unlock_irq(&pool->lock);
- 
-@@ -1914,7 +1908,7 @@ restart:
- 			start_worker(worker);
- 			if (WARN_ON_ONCE(need_to_create_worker(pool)))
- 				goto restart;
--			return true;
-+			return;
- 		}
- 
- 		if (!need_to_create_worker(pool))
-@@ -1930,7 +1924,6 @@ restart:
- 	spin_lock_irq(&pool->lock);
- 	if (need_to_create_worker(pool))
- 		goto restart;
--	return true;
- }
- 
- /**
-@@ -1959,7 +1952,6 @@ restart:
- static bool manage_workers(struct worker *worker)
- {
- 	struct worker_pool *pool = worker->pool;
--	bool ret = false;
- 
- 	/*
- 	 * Anyone who successfully grabs manager_arb wins the arbitration
-@@ -1972,12 +1964,12 @@ static bool manage_workers(struct worker *worker)
- 	 * actual management, the pool may stall indefinitely.
- 	 */
- 	if (!mutex_trylock(&pool->manager_arb))
--		return ret;
-+		return false;
- 
--	ret |= maybe_create_worker(pool);
-+	maybe_create_worker(pool);
- 
- 	mutex_unlock(&pool->manager_arb);
--	return ret;
-+	return true;
- }
- 
- /**
 -- 
-1.7.4.4
-
+Kees Cook
+Chrome OS Security
