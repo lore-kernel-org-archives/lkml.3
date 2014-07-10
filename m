@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751263AbaGJXY7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 19:24:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60495 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919AbaGJXY6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 19:24:58 -0400
-Date: Thu, 10 Jul 2014 16:29:24 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: David Miller <davem@davemloft.net>
-Cc: peter@hurleysoftware.com, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, sethb@digi.com, aaro.koskinen@iki.fi,
-        sam@ravnborg.org, tsbogend@alpha.franken.de
-Subject: Re: [PATCH 0/2] fixes for empty tx buffer breakage
-Message-ID: <20140710232924.GA9954@kroah.com>
-References: <20140609205917.GA913@drone.musicnaut.iki.fi>
- <1404660593-12172-1-git-send-email-peter@hurleysoftware.com>
- <20140710231432.GA9423@kroah.com>
- <20140710.161205.2079073830695357277.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140710.161205.2079073830695357277.davem@davemloft.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751331AbaGJXb4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 19:31:56 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:33572 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750886AbaGJXbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 19:31:55 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] staging: gdm724x: fix leak at failure path in init_usb()
+Date: Thu, 10 Jul 2014 19:31:41 -0400
+Message-Id: <1405035101-6864-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 04:12:05PM -0700, David Miller wrote:
-> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Date: Thu, 10 Jul 2014 16:14:32 -0700
-> 
-> > On Sun, Jul 06, 2014 at 11:29:51AM -0400, Peter Hurley wrote:
-> >> Cc: Seth Bollinger <sethb@digi.com>
-> >> Cc: Aaro Koskinen <aaro.koskinen@iki.fi>
-> >> Cc: Sam Ravnborg <sam@ravnborg.org>
-> >> Cc: "David S. Miller" <davem@davemloft.net>
-> >> Cc: Thomas Bogendoerfer <tsbogend@alpha.franken.de>
-> >> 
-> >> Greg,
-> >> 
-> >> I completed the audit of serial drivers after reports that
-> >> several Sun serial drivers were broken by
-> >> commit 717f3bbab3c7628736ef738fdbf3d9a28578c26c,
-> >> 'serial_core: Fix conditional start_tx on ring buffer not empty'.
-> >> 
-> >> I apologize for not submitting this sooner. The delay was due to
-> >> an ongoing analysis of serial flow control prompted by Sam Ravnborg's
-> >> question:
-> >> 
-> >> On 06/10/2014 03:24 PM, Sam Ravnborg wrote:
-> >> > I also noticed the typical pattern is:
-> >> > 
-> >> >      if (uart_circ_empty(xmit) || uart_tx_stopped(port))
-> >> > 
-> >> > Should you use this pattern also in sunsab.c?
-> >> 
-> >> Unfortunately, that analysis revealed that tx flow control is
-> >> largely SMP-unsafe, and it's fairly easy to corrupt the hardware
-> >> state wrt. the tty flow control state.
-> >> 
-> >> I'm still working on the solutions to that; they're too
-> >> extensive to submit for 3.16 anyway.
-> > 
-> > So these should go into 3.16-final?  Or 3.17?
-> 
-> Definitely 3.16, this regression is several releases old.
+If an allocation in init_usb() failed, it returns without
+deallocation of already allocated resources.
 
-Ok, will queue it up, thanks.
+The patch fix it and replaces GFP_ATOMIC by GFP_KERNEL in
+alloc_tx_sdu_struct() and alloc_rx_struct() as long as
+they are called from probe only.
 
-gre gk-h
+Found by Linux Driver Verification project (linuxtesting.org).
+
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/staging/gdm724x/gdm_usb.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/staging/gdm724x/gdm_usb.c b/drivers/staging/gdm724x/gdm_usb.c
+index ee6e40facca7..ea89d530ff3f 100644
+--- a/drivers/staging/gdm724x/gdm_usb.c
++++ b/drivers/staging/gdm724x/gdm_usb.c
+@@ -125,11 +125,11 @@ static struct usb_tx_sdu *alloc_tx_sdu_struct(void)
+ {
+ 	struct usb_tx_sdu *t_sdu;
+ 
+-	t_sdu = kzalloc(sizeof(struct usb_tx_sdu), GFP_ATOMIC);
++	t_sdu = kzalloc(sizeof(struct usb_tx_sdu), GFP_KERNEL);
+ 	if (!t_sdu)
+ 		return NULL;
+ 
+-	t_sdu->buf = kmalloc(SDU_BUF_SIZE, GFP_ATOMIC);
++	t_sdu->buf = kmalloc(SDU_BUF_SIZE, GFP_KERNEL);
+ 	if (!t_sdu->buf) {
+ 		kfree(t_sdu);
+ 		return NULL;
+@@ -183,14 +183,14 @@ static struct usb_rx *alloc_rx_struct(void)
+ 	struct usb_rx *r = NULL;
+ 	int ret = 0;
+ 
+-	r = kmalloc(sizeof(struct usb_rx), GFP_ATOMIC);
++	r = kmalloc(sizeof(struct usb_rx), GFP_KERNEL);
+ 	if (!r) {
+ 		ret = -ENOMEM;
+ 		goto out;
+ 	}
+ 
+-	r->urb = usb_alloc_urb(0, GFP_ATOMIC);
+-	r->buf = kmalloc(RX_BUF_SIZE, GFP_ATOMIC);
++	r->urb = usb_alloc_urb(0, GFP_KERNEL);
++	r->buf = kmalloc(RX_BUF_SIZE, GFP_KERNEL);
+ 	if (!r->urb || !r->buf) {
+ 		ret = -ENOMEM;
+ 		goto out;
+@@ -366,6 +366,7 @@ static int init_usb(struct lte_udev *udev)
+ 	INIT_DELAYED_WORK(&udev->work_rx, do_rx);
+ 	return 0;
+ fail:
++	release_usb(udev);
+ 	return ret;
+ }
+ 
+-- 
+1.9.1
+
