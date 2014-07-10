@@ -1,859 +1,373 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982AbaGJVNI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 17:13:08 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45919 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751556AbaGJVNF (ORCPT
+	id S1752780AbaGJVPO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 17:15:14 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:46184 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119AbaGJVPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 17:13:05 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <2997c5e4-07c2-4850-9002-3c1b12ed4daf@email.android.com>
-References: <1405012653.8161.26.camel@sanws1.rosetechnology.dk> <2997c5e4-07c2-4850-9002-3c1b12ed4daf@email.android.com>
+	Thu, 10 Jul 2014 17:15:10 -0400
+Date: Thu, 10 Jul 2014 17:05:44 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Gustavo Padovan <gustavo@padovan.org>, linux-wireless@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: pull request: bluetooth-next 2014-07-09
+Message-ID: <20140710210543.GA23249@tuxdriver.com>
+References: <20140709144957.GA1932@joana>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH] iio: adc: Add Support for more MCP ADCs
-From: Jonathan Cameron <jic23@kernel.org>
-Date: Thu, 10 Jul 2014 22:12:54 +0100
-To: =?ISO-8859-1?Q?S=F8ren_Andersen?= <san@rosetechnology.dk>
-CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <29dcda77-3ded-420a-b607-5e3f68d58a11@email.android.com>
+In-Reply-To: <20140709144957.GA1932@joana>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Pulling now...
+
+On Wed, Jul 09, 2014 at 11:49:57AM -0300, Gustavo Padovan wrote:
+> Hi John,
+> 
+> A lot of patches to 3.17. The bulk of changes here are for LE support.
+> The 6loWPAN over Bluetooth now has it own module, we also have support for
+> background auto-connection and passive scanning, Bluetooth device address
+> provisioning, support for reading Bluetooth clock values and LE connection
+> parameters plus many many fixes.
+> 
+> Also you will note that we have some wireless.git patches in here, we had to
+> pull bluetooth.git into bluetooth-next. You may want to pull from wireless.git
+> first.
+> 
+> Please pull! or let me know of any issues. Thanks!
+> 
+> 	Gustavo
+> 
+> ---
+> The following changes since commit 15be8e89cdd999124a2307ffd6dacb895c3b802e:
+> 
+>   b43: add more bcma cores (2014-07-01 14:29:39 -0400)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
+> 
+> for you to fetch changes up to 6fea7ad1d338dba592d65423427a997f1b7ff485:
+> 
+>   Bluetooth: Don't send ERTM configuration option when disabled (2014-07-09 13:53:36 +0300)
+> 
+> ----------------------------------------------------------------
+> Adam Lee (1):
+>       Bluetooth: ath3k: reduce pipe setting times in ath3k_load_fwfile()
+> 
+> Anantha Krishnan (1):
+>       Bluetooth: Add support for Acer [13D3:3432]
+> 
+> Andre Guedes (6):
+>       Bluetooth: Use macro instead of hard-coded value
+>       Bluetooth: Connection parameters check helper
+>       Bluetooth: Connection Parameter Update Procedure
+>       Bluetooth: Move LE event mask setting into init3 phase
+>       Bluetooth: Enable new LE meta event
+>       Bluetooth: Introduce "New Connection Parameter" Event
+> 
+> Bing Zhao (1):
+>       Bluetooth: btmrvl: indicate pscan scheduling instant in a debug event
+> 
+> Chin-Ran Lo (2):
+>       mwifiex: fix tx_info/rx_info overlap with PCIe dma_mapping
+>       Bluetooth: btmrvl: wait for HOST_SLEEP_ENABLE event in suspend
+> 
+> Fabian Frederick (1):
+>       Bluetooth: constify seq_operations
+> 
+> Johan Hedberg (113):
+>       Bluetooth: Fix incorrectly overriding conn->src_type
+>       Bluetooth: Fix check for connection encryption
+>       Bluetooth: Fix SSP acceptor just-works confirmation without MITM
+>       Bluetooth: Add clarifying comment for conn->auth_type
+>       Bluetooth: Fix setting correct authentication information for SMP STK
+>       Bluetooth: Fix indicating discovery state when canceling inquiry
+>       Bluetooth: Refactor discovery stopping into its own function
+>       Bluetooth: Reuse hci_stop_discovery function when cleaning up HCI state
+>       Bluetooth: Fix locking of hdev when calling into SMP code
+>       Bluetooth: Fix overriding higher security level in SMP
+>       Bluetooth: Refactor authentication method lookup into its own function
+>       Bluetooth: Fix rejecting pairing in case of insufficient capabilities
+>       Bluetooth: Fix missing NULL check for smp_chan_create() return value
+>       Bluetooth: Remove unnecessary SMP STK define
+>       Bluetooth: Remove HCI prefix from SMP LTK defines
+>       Bluetooth: Remove unused LTK authentication defines
+>       Bluetooth: Convert SMP flags into an enum
+>       Bluetooth: Add flexible buffer byte order swapping function
+>       Bluetooth: Fix validating IO capability values in mgmt commands
+>       Bluetooth: Fix checking for master LTKs
+>       Bluetooth: Update hci_add_link_key() to return pointer to key
+>       Bluetooth: Move mgmt event sending out from hci_add_link_key()
+>       Bluetooth: Rename HCI_DEBUG_KEYS to HCI_KEEP_DEBUG_KEYS
+>       Bluetooth: Don't store debug keys if flag for them is not set
+>       Bluetooth: Convert hcon->flush_key to a proper flag
+>       Bluetooth: Fix ignoring debug keys in mgmt_load_link_keys
+>       Bluetooth: Add a new HCI_USE_DEBUG_KEYS flag
+>       Bluetooth: Add support for mode 0x02 for mgmt_set_debug_keys
+>       Bluetooth: Convert hci_conn->link_mode into flags
+>       Bluetooth: Fix missing hdev locking in smp_cmd_ident_addr_info
+>       Bluetooth: Add dedicated AES instance for each SMP context
+>       Bluetooth: Update SMP crypto functions to take the SMP context
+>       Bluetooth: Remove unnecessary hci_dev_unlock for smp_user_confirm_reply
+>       Bluetooth: Fix missing check for SMP session in smp_user_confirm_reply
+>       Bluetooth: Remove unnecessary hcon->smp_conn variable
+>       Bluetooth: Use kzalloc instead of kmalloc for pending mgmt commands
+>       Bluetooth: Add tracking of local and piconet clock values
+>       Bluetooth: Add support for Get Clock Info mgmt command
+>       Bluetooth: Allow L2CAP getpeername() for BT_CONFIG state
+>       Bluetooth: Fix redundant encryption when receiving Security Request
+>       Bluetooth: Add flag to track STK encryption
+>       Bluetooth: Allow re-encryption with LTK when STK is in use
+>       Bluetooth: Fix redundant device (un)blocked events
+>       Bluetooth: Centralize looking up blocked devices to l2cap_recv_frame
+>       Bluetooth: Drop LE connections for blocked devices
+>       Bluetooth: Fix sparse warning with btmrvl driver
+>       Bluetooth: Rename hci_conn_params_clear to hci_conn_params_clear_all
+>       Bluetooth: Add specific connection parameter clear functions
+>       Bluetooth: Add new auto_conn value matching mgmt action 0x00
+>       Bluetooth: Remove only enabled entries with Remove Device command
+>       Bluetooth: Add Load Connection Parameters command
+>       Bluetooth: Fix missing update of conn params
+>       Bluetooth: Make hci_le_conn_update return the store hint
+>       Bluetooth: Pass store hint to mgmt_new_conn_param
+>       Bluetooth: Make is_identity_address a global function
+>       Bluetooth: Don't send connection parameters without identity address
+>       Bluetooth: Track number of added devices with HCI_AUTO_CONN_REPORT
+>       Bluetooth: Allow mgmt_device_found events for kernel-side scanning
+>       Bluetooth: Add support for background LE scanning
+>       Bluetooth: Support scanning for devices using RPA
+>       Bluetooth: Fix buffer overflow with variable length commands
+>       Bluetooth: Fix missing update of pend_le_reports
+>       Bluetooth: Remove redundant IRK lookup
+>       Bluetooth: Use hci_conn_params in pend_le_conns
+>       Bluetooth: Remove unnecessary checks for auto-connected devices
+>       Bluetooth: Add identity address check in param lookup functions
+>       Bluetooth: Fix missing return statement in process_adv_report
+>       Bluetooth: Convert pend_le_conn list to a generic action list
+>       Bluetooth: Convert pend_le_reports into a list
+>       Bluetooth: Simplify use of hci_pend_le_conns_clear()
+>       Bluetooth: Don't bother doing anything if auto_connect doesn't change
+>       Bluetooth: Simplify hci_conn_params->action list usage
+>       Bluetooth: Remove unused hci_pend_le_conn_del() function
+>       Bluetooth: Fix clearing and restarting all LE actions on power cycle
+>       Bluetooth: Remove unnecessary usage of hci_pend_le_conn_add
+>       Bluetooth: Remove unused hci_pend_le_conn_add function
+>       Bluetooth: Make hci_pend_le_conn_lookup more general purposed
+>       Bluetooth: Use hci_pend_le_action_lookup to look up report entries
+>       Bluetooth: Don't take actions on blocked devices when scanning
+>       Bluetooth: Use list_del when freeing the list entry
+>       Bluetooth: Restrict blocked device check in l2cap_recv_frame to LE
+>       Bluetooth: Fix sending Device Removed when clearing all parameters
+>       Bluetooth: Use lower timeout for LE auto-connections
+>       Bluetooth: Fix updating background scan for LE connect complete
+>       Bluetooth: Fix connecting devices during LE device discovery
+>       Bluetooth: Remove redundant IRK lookup in mgmt_device_found()
+>       Bluetooth: Remove unnecessary return value from check_pending_le_conn
+>       Bluetooth: Update discovery state earlier in hci_discovery_set_state
+>       Bluetooth: Don't let background scanning interfering with discovery
+>       Bluetooth: Enable passive scanning whenever we're connectable
+>       Bluetooth: Remove auth_type parameter from hci_connect_le()
+>       Bluetooth: Pass desired connection role to hci_connect_le()
+>       Bluetooth: Don't try background scanning if LE is not enabled
+>       Bluetooth: Add flag to track the real advertising state
+>       Bluetooth: Remove unnecessary mgmt_advertising function
+>       Bluetooth: Use real advertising state to random address update decision
+>       Bluetooth: Simplify usage of the enable_advertising function
+>       Bluetooth: Use the correct flag to decide to disable advertising
+>       Bluetooth: Stop advertising always before initiating a connection
+>       Bluetooth: Fix advertising and active scanning co-existence
+>       Bluetooth: Fix check for re-enabling advertising
+>       Bluetooth: Fix setting STOPPING state for discovery
+>       Bluetooth: Fix connectable and discoverable supported settings values
+>       Bluetooth: Fix toggling background scan when changing connectable state
+>       Bluetooth: Fix clearing HCI_LE_ADV for LE connections
+>       Bluetooth: Unify helpers for bdaddr_list manipulations
+>       Bluetooth: Introduce a whitelist for BR/EDR devices
+>       Bluetooth: Update page scan when necessary for Add/Remove Device
+>       Bluetooth: Fix incorrectly setting HCI_CONNECTABLE
+>       Bluetooth: Refactor connection request handling
+>       Bluetooth: Enable page scan also if there are white list entries
+>       Bluetooth: Add white list lookup for incoming connection requests
+>       Bluetooth: Fix setting HCI_CONNECTABLE from ioctl code
+> 
+> John W. Linville (1):
+>       Merge branch 'for-upstream' of git://git.kernel.org/.../bluetooth/bluetooth
+> 
+> Jukka Rissanen (5):
+>       Bluetooth: Provide L2CAP ops callback for memcpy_fromiovec
+>       Bluetooth: 6LoWPAN: Use connected oriented channel instead of fixed one
+>       Bluetooth: 6LoWPAN: Create a kernel module
+>       Bluetooth: 6LoWPAN: Count module usage
+>       Bluetooth: 6LoWPAN: Remove network devices when unloading
+> 
+> Jukka Taimisto (1):
+>       Bluetooth: Fix deadlock in l2cap_conn_del()
+> 
+> Loic Poulain (2):
+>       Bluetooth: Ignore H5 non-link packets in non-active state
+>       Bluetooth: Remove redundant calls to h5_reset_rx
+> 
+> Lukasz Rymanowski (1):
+>       Bluetooth: Fix for ACL disconnect when pairing fails
+> 
+> Marcel Holtmann (82):
+>       Revert "Bluetooth: Add a new PID/VID 0cf3/e005 for AR3012."
+>       Merge git://git.kernel.org/.../bluetooth/bluetooth
+>       Bluetooth: Use const for struct l2cap_ops field
+>       Bluetooth: Assign L2CAP socket priority when allocating SKB
+>       Bluetooth: Shrink size of struct l2cap_ctrl fields
+>       Bluetooth: Use explicit header and body length for L2CAP SKB allocation
+>       Bluetooth: Use struct delayed_work for HCI command timeout
+>       Bluetooth: Use separate dbg_flags to special debugfs options
+>       Bluetooth: Store current LE connection parameters in hci_conn struct
+>       Bluetooth: Track LE connection parameter update event
+>       Bluetooth: Set default min/max connection interval for LE slaves
+>       Bluetooth: Add support LE slave connection update procedure
+>       Bluetooth: Remove ssp_debug_mode debugfs option
+>       Bluetooth: Remove reason parameter from hci_amp_disconn function
+>       Bluetooth: Remove unneeded hci_conn_disconnect abstraction
+>       Bluetooth: Send HCI_Read_Clock_Offset before disconnecting
+>       Bluetooth: Increment management interface revision
+>       Bluetooth: Restrict access for raw-only controllers
+>       Bluetooth: Don't use non-resolvable private address for passive scanning
+>       Bluetooth: Move hci_pend_le_conn_* functions to different location
+>       Bluetooth: Clear pending connections from hci_conn_params_clear
+>       Bluetooth: Update background scanning from hci_conn_params_clear
+>       Bluetooth: Store latency and supervision timeout in connection params
+>       Bluetooth: Use LE connection parameters if known
+>       Bluetooth: Add support for Add/Remove Device management commands
+>       Bluetooth: Replace le_auto_conn debugfs with device_list entry
+>       Bluetooth: Add Device Added and Device Removed management events
+>       Bluetooth: Provide defaults for LE connection latency and timeout
+>       Bluetooth: Expose default connection latency setting via debugfs
+>       Bluetooth: Expose default supervision timeout setting via debugfs
+>       Bluetooth: Provide function to create and set connection parameters
+>       Bluetooth: Add default connection parameters before pairing
+>       Bluetooth: Start background scanning only when controller is ready
+>       Bluetooth: Use bool for smp_ltk_encrypt return value
+>       Bluetooth: Change hci_conn_params_add to return the parameter struct
+>       Bluetooth: Use hci_conn_params_add within hci_conn_params_set
+>       Bluetooth: Remove connection interval parameters from hci_conn_params_set
+>       Bluetooth: Fix merge of advertising data and scan response data
+>       Bluetooth: Provide flags parameter direct to mgmt_device_found
+>       Bluetooth: Add support for Not Connectable flag for Device Found events
+>       Bluetooth: Do not trigger background scanning when HCI_AUTO_OFF is set
+>       Bluetooth: Ensure that background scanning gets enabled on power on
+>       Bluetooth: Add support for hdev->set_bdaddr callback handling
+>       Bluetooth: Add public address configration for Broadcom USB devices
+>       Bluetooth: Add public address configration for Intel USB devices
+>       Bluetooth: Default to internal use manufacturer identifier
+>       Bluetooth: Check for default address of Intel USB controllers
+>       Bluetooth: Check for default address of Broadcom BCM20702A0 controllers
+>       Bluetooth: Introduce unconfigured controller state
+>       Bluetooth: Add support for Unconfigured Index Added events
+>       Bluetooth: Add support for Unconfigured Index Removed events
+>       Bluetooth: Add support for Read Unconfigured Index List command
+>       Bluetooth: Support HCI_QUIRK_RAW_DEVICE for hci_vhci driver
+>       Bluetooth: Add support for controller configuration info command
+>       Bluetooth: Fix constant for public address configuration
+>       Bluetooth: Document the existing device quirks
+>       Bluetooth: Add quirk for invalid controller address setting
+>       Bluetooth: Set HCI_QUIRK_INVALID_BADDR for Intel USB default address
+>       Bluetooth: Set HCI_QUIRK_INVALID_BADDR for BCM20702A0 default address
+>       Bluetooth: Allow reading configuration info when unconfigured
+>       Bluetooth: Add quirk for external configuration requirement
+>       Bluetooth: Fix quirks that are valid during setup driver callback
+>       Bluetooth: Support HCI_QUIRK_EXTERNAL_CONFIG for hci_vhci driver
+>       Bluetooth: Add support for Set External Configuration management command
+>       Bluetooth: Move mgmt_event helper function to different location
+>       Bluetooth: Add support for New Configuration Options management event
+>       Bluetooth: Use a more simpler style for HCI event callbacks
+>       Bluetooth: Run special init procedure for unconfigured controllers
+>       Bluetooth: Store Bluetooth address from controller setup
+>       Bluetooth: Run controller setup after external configuration
+>       Bluetooth: Add support for changing the public device address
+>       Bluetooth: Clear HCI_RAW flag when controller becomes configured
+>       Bluetooth: Add support for Intel bootloader devices
+>       Bluetooth: Skip unconfigured init procedure for raw-only devices
+>       Bluetooth: Remove module parameters for ignoring USB devices
+>       Bluetooth: Handle Intel USB bootloader with buggy interrupt
+>       Bluetooth: Ignore isochronous endpoints for Intel USB bootloader
+>       Bluetooth: Fix memory leaking when hdev->send returns an error
+>       Bluetooth: Enforce providing hdev->send driver callback
+>       Bluetooth: Use BTUSB_BROKEN_ISOC flag for CSR USB sniffer devices
+>       Bluetooth: Fix enabling Authenticated Payload Timeout Expired event
+>       Bluetooth: Don't send ERTM configuration option when disabled
+> 
+> Marcin Kraglak (1):
+>       Bluetooth: Allow change security level on ATT_CID in slave role
+> 
+> Michael Braun (2):
+>       rt2800usb:fix efuse detection
+>       rt2800usb:fix hang during firmware load
+> 
+> Nick Pelly (1):
+>       Bluetooth: Fallback to SCO on error code 0x10 (Connection Accept Timeout)
+> 
+> Rafał Miłecki (3):
+>       b43: disable 5 GHz on G-PHY
+>       b43: fix typo in Kconfig (make B43_BUSES_BCMA_AND_SSB the default for real)
+>       b43: fix frequency reported on G-PHY with /new/ firmware
+> 
+> Stanislaw Gruszka (2):
+>       rt2x00: disable TKIP on USB
+>       rt2x00: fix rfkill regression on rt2500pci
+> 
+> Stephan Gabert (1):
+>       Bluetooth: Remove trailing whitespaces from Kconfig
+> 
+>  drivers/bluetooth/Kconfig               |   12 +-
+>  drivers/bluetooth/ath3k.c               |    8 +-
+>  drivers/bluetooth/btmrvl_drv.h          |    3 +
+>  drivers/bluetooth/btmrvl_main.c         |   44 +-
+>  drivers/bluetooth/btmrvl_sdio.c         |    5 +
+>  drivers/bluetooth/btmrvl_sdio.h         |    2 +
+>  drivers/bluetooth/btusb.c               |  188 ++++++-
+>  drivers/bluetooth/hci_h5.c              |    5 +-
+>  drivers/bluetooth/hci_vhci.c            |   34 +-
+>  drivers/net/wireless/b43/Kconfig        |    2 +-
+>  drivers/net/wireless/b43/main.c         |    1 +
+>  drivers/net/wireless/b43/xmit.c         |   10 +-
+>  drivers/net/wireless/mwifiex/pcie.c     |    4 +-
+>  drivers/net/wireless/mwifiex/util.h     |   43 +-
+>  drivers/net/wireless/rt2x00/rt2500pci.c |    7 +-
+>  drivers/net/wireless/rt2x00/rt2800usb.c |   39 +-
+>  drivers/net/wireless/rt2x00/rt2x00.h    |    1 +
+>  drivers/net/wireless/rt2x00/rt2x00dev.c |   24 +-
+>  drivers/net/wireless/rt2x00/rt2x00mac.c |    2 +
+>  drivers/net/wireless/rt2x00/rt2x00usb.h |    1 +
+>  include/net/bluetooth/bluetooth.h       |   18 +-
+>  include/net/bluetooth/hci.h             |  135 ++++-
+>  include/net/bluetooth/hci_core.h        |  134 +++--
+>  include/net/bluetooth/l2cap.h           |   36 +-
+>  include/net/bluetooth/mgmt.h            |   99 ++++
+>  net/bluetooth/6lowpan.c                 |  857 ++++++++++++++++++++++-------
+>  net/bluetooth/6lowpan.h                 |   47 --
+>  net/bluetooth/Kconfig                   |    6 +-
+>  net/bluetooth/Makefile                  |    4 +-
+>  net/bluetooth/a2mp.c                    |    8 +-
+>  net/bluetooth/af_bluetooth.c            |    2 +-
+>  net/bluetooth/hci_conn.c                |  181 ++++--
+>  net/bluetooth/hci_core.c                |  909 ++++++++++++++++---------------
+>  net/bluetooth/hci_event.c               |  715 +++++++++++++++++-------
+>  net/bluetooth/hci_sock.c                |   12 +-
+>  net/bluetooth/l2cap_core.c              |  152 +++---
+>  net/bluetooth/l2cap_sock.c              |   51 +-
+>  net/bluetooth/mgmt.c                    | 1330 +++++++++++++++++++++++++++++++++++++--------
+>  net/bluetooth/smp.c                     |  244 +++++----
+>  net/bluetooth/smp.h                     |    7 +
+>  40 files changed, 3883 insertions(+), 1499 deletions(-)
+>  delete mode 100644 net/bluetooth/6lowpan.h
+> 
 
 
-On July 10, 2014 9:53:15 PM GMT+01:00, Jonathan Cameron <jic23@kernel.org> wrote:
->
->
->On July 10, 2014 6:17:33 PM GMT+01:00, "Søren Andersen"
-><san@rosetechnology.dk> wrote:
->>Support for booth 10 and 12 Bits spi Microchip ADCs from 1 to 8
->>channels CHIPS
->>The original driver only have support for 4 and 8 channels
->>Add device tree support too. 
->> 
->>Signed-off-by: Soeren Andersen <san at rosetechnology.dk>
->Hi Soeren
->
->As a quick initial comment please do not rename an existing driver. The
->name does
-> not need to reflect all the parts supported.
->Ideally it would not have had a wild card in the first place but its
->too late now.
->Note in particular that the config symbol rename will brake any
->existing users kernel builds.
->
->Renaming the files is also an unnecessary change.  
->
->Is this a complete rewrite or an adaption of the existing driver?
-Ideally this probably wants to be split into a number of patches.
-1. Redactor the code as necessary to be able to add additional devices
-2. Add additional devices
-3. Add device tree support.
-
-Each step is then easier to review and any effects on existing device support will be much easier to identify. 
-
-Thanks
-
-J
->
->Jonathan
->>---
->> Documentation/devicetree/bindings/iio/adc/mcp3x0x.txt |  29
->++++++++++
->> drivers/iio/adc/Kconfig                               |   9 ++--
->> drivers/iio/adc/Makefile                              |   2 +-
->>drivers/iio/adc/mcp320x.c                             | 249
->>--------------------------------------------------------------------------------------
->>drivers/iio/adc/mcp3x0x.c                             | 431
->>+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->> 5 files changed, 466 insertions(+), 254 deletions(-)
->>
->>diff --git a/Documentation/devicetree/bindings/iio/adc/mcp3x0x.txt
->>b/Documentation/devicetree/bindings/iio/adc/mcp3x0x.txt
->>new file mode 100644
->>index 0000000..56f06d0
->>--- /dev/null
->>+++ b/Documentation/devicetree/bindings/iio/adc/mcp3x0x.txt
->>@@ -0,0 +1,29 @@
->>+* Microchip Analog to Digital Converter (ADC)
->>+
->>+The node for this driver must be a child node of a SPI controller,
->>hence
->>+all mandatory properties described in
->>+
->>+        Documentation/devicetree/bindings/spi/spi-bus.txt
->>+
->>+must be specified.
->>+
->>+Required properties:
->>+		- compatible:  	Must be one of the following, depending on the
->>+			model:
->>+				"mcp3001"
->>+				"mcp3002"
->>+				"mcp3004"
->>+				"mcp3008"
->>+				"mcp3201"
->>+				"mcp3202"
->>+				"mcp3204"
->>+				"mcp3208"
->>+
->>+
->>+Examples:
->>+spi_controller {
->>+	mcp3x0x@0 {
->>+		compatible = "mcp3002";
->>+		reg = <0>;
->>+		spi-max-frequency = <1000000>;
->>+	};
->>diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
->>index a80d236..8b3d3c7 100644
->>--- a/drivers/iio/adc/Kconfig
->>+++ b/drivers/iio/adc/Kconfig
->>@@ -147,15 +147,16 @@ config MAX1363
->> 	  max11646, max11647) Provides direct access via sysfs and buffered
->> 	  data via the iio dev interface.
->> 
->>-config MCP320X
->>-	tristate "Microchip Technology MCP3204/08"
->>+config MCP3X0X
->>+	tristate "Microchip Technology MCP3x01/02/04/08"
->> 	depends on SPI
->> 	help
->>-	  Say yes here to build support for Microchip Technology's MCP3204
->or
->>+	  Say yes here to build support for Microchip Technology's
->>+	  MCP3001, MCP3002, MCP3004, MCP3008, MCP3201, MCP3202, MCP3204 or
->> 	  MCP3208 analog to digital converter.
->> 
->>	  This driver can also be built as a module. If so, the module will
->be
->>-	  called mcp320x.
->>+	  called mcp3x0x.
->> 
->> config MCP3422
->> 	tristate "Microchip Technology MCP3422/3/4/6/7/8 driver"
->>diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
->>index 9d60f2d..f25bd54 100644
->>--- a/drivers/iio/adc/Makefile
->>+++ b/drivers/iio/adc/Makefile
->>@@ -16,7 +16,7 @@ obj-$(CONFIG_AT91_ADC) += at91_adc.o
->> obj-$(CONFIG_EXYNOS_ADC) += exynos_adc.o
->> obj-$(CONFIG_LP8788_ADC) += lp8788_adc.o
->> obj-$(CONFIG_MAX1363) += max1363.o
->>-obj-$(CONFIG_MCP320X) += mcp320x.o
->>+obj-$(CONFIG_MCP3X0X) += mcp3x0x.o
->> obj-$(CONFIG_MCP3422) += mcp3422.o
->> obj-$(CONFIG_MEN_Z188_ADC) += men_z188_adc.o
->> obj-$(CONFIG_NAU7802) += nau7802.o
->>diff --git a/drivers/iio/adc/mcp320x.c b/drivers/iio/adc/mcp320x.c
->>deleted file mode 100644
->>index 28a086e..0000000
->>--- a/drivers/iio/adc/mcp320x.c
->>+++ /dev/null
->>@@ -1,249 +0,0 @@
->>-/*
->>- * Copyright (C) 2013 Oskar Andero <oskar.andero@gmail.com>
->>- *
->>- * Driver for Microchip Technology's MCP3204 and MCP3208 ADC chips.
->>- * Datasheet can be found here:
->>- * http://ww1.microchip.com/downloads/en/devicedoc/21298c.pdf
->>- *
->>- * This program is free software; you can redistribute it and/or
->>modify
->>- * it under the terms of the GNU General Public License version 2 as
->>- * published by the Free Software Foundation.
->>- */
->>-
->>-#include <linux/err.h>
->>-#include <linux/spi/spi.h>
->>-#include <linux/module.h>
->>-#include <linux/iio/iio.h>
->>-#include <linux/regulator/consumer.h>
->>-
->>-#define MCP_SINGLE_ENDED	(1 << 3)
->>-#define MCP_START_BIT		(1 << 4)
->>-
->>-enum {
->>-	mcp3204,
->>-	mcp3208,
->>-};
->>-
->>-struct mcp320x {
->>-	struct spi_device *spi;
->>-	struct spi_message msg;
->>-	struct spi_transfer transfer[2];
->>-
->>-	u8 tx_buf;
->>-	u8 rx_buf[2];
->>-
->>-	struct regulator *reg;
->>-	struct mutex lock;
->>-};
->>-
->>-static int mcp320x_adc_conversion(struct mcp320x *adc, u8 msg)
->>-{
->>-	int ret;
->>-
->>-	adc->tx_buf = msg;
->>-	ret = spi_sync(adc->spi, &adc->msg);
->>-	if (ret < 0)
->>-		return ret;
->>-
->>-	return ((adc->rx_buf[0] & 0x3f) << 6)  |
->>-		(adc->rx_buf[1] >> 2);
->>-}
->>-
->>-static int mcp320x_read_raw(struct iio_dev *indio_dev,
->>-			    struct iio_chan_spec const *channel, int *val,
->>-			    int *val2, long mask)
->>-{
->>-	struct mcp320x *adc = iio_priv(indio_dev);
->>-	int ret = -EINVAL;
->>-
->>-	mutex_lock(&adc->lock);
->>-
->>-	switch (mask) {
->>-	case IIO_CHAN_INFO_RAW:
->>-		if (channel->differential)
->>-			ret = mcp320x_adc_conversion(adc,
->>-				MCP_START_BIT | channel->address);
->>-		else
->>-			ret = mcp320x_adc_conversion(adc,
->>-				MCP_START_BIT | MCP_SINGLE_ENDED |
->>-				channel->address);
->>-		if (ret < 0)
->>-			goto out;
->>-
->>-		*val = ret;
->>-		ret = IIO_VAL_INT;
->>-		break;
->>-
->>-	case IIO_CHAN_INFO_SCALE:
->>-		/* Digital output code = (4096 * Vin) / Vref */
->>-		ret = regulator_get_voltage(adc->reg);
->>-		if (ret < 0)
->>-			goto out;
->>-
->>-		*val = ret / 1000;
->>-		*val2 = 12;
->>-		ret = IIO_VAL_FRACTIONAL_LOG2;
->>-		break;
->>-
->>-	default:
->>-		break;
->>-	}
->>-
->>-out:
->>-	mutex_unlock(&adc->lock);
->>-
->>-	return ret;
->>-}
->>-
->>-#define MCP320X_VOLTAGE_CHANNEL(num)				\
->>-	{							\
->>-		.type = IIO_VOLTAGE,				\
->>-		.indexed = 1,					\
->>-		.channel = (num),				\
->>-		.address = (num),				\
->>-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),	\
->>-		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE) \
->>-	}
->>-
->>-#define MCP320X_VOLTAGE_CHANNEL_DIFF(num)			\
->>-	{							\
->>-		.type = IIO_VOLTAGE,				\
->>-		.indexed = 1,					\
->>-		.channel = (num * 2),				\
->>-		.channel2 = (num * 2 + 1),			\
->>-		.address = (num * 2),				\
->>-		.differential = 1,				\
->>-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),	\
->>-		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE) \
->>-	}
->>-
->>-static const struct iio_chan_spec mcp3204_channels[] = {
->>-	MCP320X_VOLTAGE_CHANNEL(0),
->>-	MCP320X_VOLTAGE_CHANNEL(1),
->>-	MCP320X_VOLTAGE_CHANNEL(2),
->>-	MCP320X_VOLTAGE_CHANNEL(3),
->>-	MCP320X_VOLTAGE_CHANNEL_DIFF(0),
->>-	MCP320X_VOLTAGE_CHANNEL_DIFF(1),
->>-};
->>-
->>-static const struct iio_chan_spec mcp3208_channels[] = {
->>-	MCP320X_VOLTAGE_CHANNEL(0),
->>-	MCP320X_VOLTAGE_CHANNEL(1),
->>-	MCP320X_VOLTAGE_CHANNEL(2),
->>-	MCP320X_VOLTAGE_CHANNEL(3),
->>-	MCP320X_VOLTAGE_CHANNEL(4),
->>-	MCP320X_VOLTAGE_CHANNEL(5),
->>-	MCP320X_VOLTAGE_CHANNEL(6),
->>-	MCP320X_VOLTAGE_CHANNEL(7),
->>-	MCP320X_VOLTAGE_CHANNEL_DIFF(0),
->>-	MCP320X_VOLTAGE_CHANNEL_DIFF(1),
->>-	MCP320X_VOLTAGE_CHANNEL_DIFF(2),
->>-	MCP320X_VOLTAGE_CHANNEL_DIFF(3),
->>-};
->>-
->>-static const struct iio_info mcp320x_info = {
->>-	.read_raw = mcp320x_read_raw,
->>-	.driver_module = THIS_MODULE,
->>-};
->>-
->>-struct mcp3208_chip_info {
->>-	const struct iio_chan_spec *channels;
->>-	unsigned int num_channels;
->>-};
->>-
->>-static const struct mcp3208_chip_info mcp3208_chip_infos[] = {
->>-	[mcp3204] = {
->>-		.channels = mcp3204_channels,
->>-		.num_channels = ARRAY_SIZE(mcp3204_channels)
->>-	},
->>-	[mcp3208] = {
->>-		.channels = mcp3208_channels,
->>-		.num_channels = ARRAY_SIZE(mcp3208_channels)
->>-	},
->>-};
->>-
->>-static int mcp320x_probe(struct spi_device *spi)
->>-{
->>-	struct iio_dev *indio_dev;
->>-	struct mcp320x *adc;
->>-	const struct mcp3208_chip_info *chip_info;
->>-	int ret;
->>-
->>-	indio_dev = devm_iio_device_alloc(&spi->dev, sizeof(*adc));
->>-	if (!indio_dev)
->>-		return -ENOMEM;
->>-
->>-	adc = iio_priv(indio_dev);
->>-	adc->spi = spi;
->>-
->>-	indio_dev->dev.parent = &spi->dev;
->>-	indio_dev->name = spi_get_device_id(spi)->name;
->>-	indio_dev->modes = INDIO_DIRECT_MODE;
->>-	indio_dev->info = &mcp320x_info;
->>-
->>-	chip_info =
->&mcp3208_chip_infos[spi_get_device_id(spi)->driver_data];
->>-	indio_dev->channels = chip_info->channels;
->>-	indio_dev->num_channels = chip_info->num_channels;
->>-
->>-	adc->transfer[0].tx_buf = &adc->tx_buf;
->>-	adc->transfer[0].len = sizeof(adc->tx_buf);
->>-	adc->transfer[1].rx_buf = adc->rx_buf;
->>-	adc->transfer[1].len = sizeof(adc->rx_buf);
->>-
->>-	spi_message_init_with_transfers(&adc->msg, adc->transfer,
->>-					ARRAY_SIZE(adc->transfer));
->>-
->>-	adc->reg = devm_regulator_get(&spi->dev, "vref");
->>-	if (IS_ERR(adc->reg))
->>-		return PTR_ERR(adc->reg);
->>-
->>-	ret = regulator_enable(adc->reg);
->>-	if (ret < 0)
->>-		return ret;
->>-
->>-	mutex_init(&adc->lock);
->>-
->>-	ret = iio_device_register(indio_dev);
->>-	if (ret < 0)
->>-		goto reg_disable;
->>-
->>-	return 0;
->>-
->>-reg_disable:
->>-	regulator_disable(adc->reg);
->>-
->>-	return ret;
->>-}
->>-
->>-static int mcp320x_remove(struct spi_device *spi)
->>-{
->>-	struct iio_dev *indio_dev = spi_get_drvdata(spi);
->>-	struct mcp320x *adc = iio_priv(indio_dev);
->>-
->>-	iio_device_unregister(indio_dev);
->>-	regulator_disable(adc->reg);
->>-
->>-	return 0;
->>-}
->>-
->>-static const struct spi_device_id mcp320x_id[] = {
->>-	{ "mcp3204", mcp3204 },
->>-	{ "mcp3208", mcp3208 },
->>-	{ }
->>-};
->>-MODULE_DEVICE_TABLE(spi, mcp320x_id);
->>-
->>-static struct spi_driver mcp320x_driver = {
->>-	.driver = {
->>-		.name = "mcp320x",
->>-		.owner = THIS_MODULE,
->>-	},
->>-	.probe = mcp320x_probe,
->>-	.remove = mcp320x_remove,
->>-	.id_table = mcp320x_id,
->>-};
->>-module_spi_driver(mcp320x_driver);
->>-
->>-MODULE_AUTHOR("Oskar Andero <oskar.andero@gmail.com>");
->>-MODULE_DESCRIPTION("Microchip Technology MCP3204/08");
->>-MODULE_LICENSE("GPL v2");
->>diff --git a/drivers/iio/adc/mcp3x0x.c b/drivers/iio/adc/mcp3x0x.c
->>new file mode 100644
->>index 0000000..f431e5c
->>--- /dev/null
->>+++ b/drivers/iio/adc/mcp3x0x.c
->>@@ -0,0 +1,431 @@
->>+/*
->>+ * Copyright (C) 2013 Oskar Andero <oskar.andero@gmail.com>
->>+ * Copyright (C) 2014 Allan Bendorff Jensen <abj@rosetechnology.dk>
->>+ *
->>+ * Driver for following ADC chips from Microchip Technology's:
->>+ * 10 Bit converter
->>+ * MCP3001
->>+ * MCP3002
->>+ * MCP3004
->>+ * MCP3008
->>+ * ------------
->>+ * 12 bit converter
->>+ * MCP3201
->>+ * MCP3202
->>+ * MCP3204
->>+ * MCP3208
->>+ * ------------
->>+ * Datasheet can be found here:
->>+ * http://www.microchip.com/
->>+ *
->>+ * This program is free software; you can redistribute it and/or
->>modify
->>+ * it under the terms of the GNU General Public License version 2 as
->>+ * published by the Free Software Foundation.
->>+ */
->>+
->>+#include <linux/err.h>
->>+#include <linux/spi/spi.h>
->>+#include <linux/module.h>
->>+#include <linux/iio/iio.h>
->>+#include <linux/regulator/consumer.h>
->>+
->>+static int mcp3x0x_read_raw(struct iio_dev *indio_dev,
->>+			struct iio_chan_spec const *channel, int *val,
->>+			int *val2, long mask);
->>+
->>+enum {
->>+	mcp3001,
->>+	mcp3002,
->>+	mcp3004,
->>+	mcp3008,
->>+	mcp3201,
->>+	mcp3202,
->>+	mcp3204,
->>+	mcp3208,
->>+};
->>+
->>+struct mcp3x0x {
->>+	struct spi_device *spi;
->>+	struct spi_message msg;
->>+	struct spi_transfer transfer[2];
->>+
->>+	u8 tx_buf;
->>+	u8 rx_buf[2];
->>+
->>+	struct regulator *reg;
->>+	struct mutex lock;
->>+};
->>+
->>+#define MCP3X0X_VOLTAGE_CHANNEL(num)					\
->>+	{								\
->>+		.type = IIO_VOLTAGE,					\
->>+		.indexed = 1,						\
->>+		.channel = (num),					\
->>+		.address = (num),					\
->>+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),		\
->>+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE)	\
->>+	}
->>+
->>+#define MCP3X0X_VOLTAGE_CHANNEL_DIFF(num)				\
->>+	{								\
->>+		.type = IIO_VOLTAGE,					\
->>+		.indexed = 1,						\
->>+		.channel = (num * 2),					\
->>+		.channel2 = (num * 2 + 1),				\
->>+		.address = (num * 2),					\
->>+		.differential = 1,					\
->>+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),		\
->>+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE)	\
->>+	}
->>+
->>+static const struct iio_chan_spec mcp3x01_channels[] = {
->>+	MCP3X0X_VOLTAGE_CHANNEL_DIFF(0),
->>+};
->>+
->>+static const struct iio_chan_spec mcp3x02_channels[] = {
->>+	MCP3X0X_VOLTAGE_CHANNEL(0),
->>+	MCP3X0X_VOLTAGE_CHANNEL(1),
->>+	MCP3X0X_VOLTAGE_CHANNEL_DIFF(0),
->>+};
->>+
->>+static const struct iio_chan_spec mcp3x04_channels[] = {
->>+	MCP3X0X_VOLTAGE_CHANNEL(0),
->>+	MCP3X0X_VOLTAGE_CHANNEL(1),
->>+	MCP3X0X_VOLTAGE_CHANNEL(2),
->>+	MCP3X0X_VOLTAGE_CHANNEL(3),
->>+	MCP3X0X_VOLTAGE_CHANNEL_DIFF(0),
->>+	MCP3X0X_VOLTAGE_CHANNEL_DIFF(1),
->>+};
->>+
->>+static const struct iio_chan_spec mcp3x08_channels[] = {
->>+	MCP3X0X_VOLTAGE_CHANNEL(0),
->>+	MCP3X0X_VOLTAGE_CHANNEL(1),
->>+	MCP3X0X_VOLTAGE_CHANNEL(2),
->>+	MCP3X0X_VOLTAGE_CHANNEL(3),
->>+	MCP3X0X_VOLTAGE_CHANNEL(4),
->>+	MCP3X0X_VOLTAGE_CHANNEL(5),
->>+	MCP3X0X_VOLTAGE_CHANNEL(6),
->>+	MCP3X0X_VOLTAGE_CHANNEL(7),
->>+	MCP3X0X_VOLTAGE_CHANNEL_DIFF(0),
->>+	MCP3X0X_VOLTAGE_CHANNEL_DIFF(1),
->>+	MCP3X0X_VOLTAGE_CHANNEL_DIFF(2),
->>+	MCP3X0X_VOLTAGE_CHANNEL_DIFF(3),
->>+};
->>+
->>+static const struct iio_info mcp3x0x_info = {
->>+	.read_raw = mcp3x0x_read_raw,
->>+	.driver_module = THIS_MODULE,
->>+};
->>+
->>+struct mcp3X0X_chip_info {
->>+	const struct iio_chan_spec *channels;
->>+	unsigned int num_channels;
->>+	unsigned int resolution;
->>+};
->>+
->>+static const struct mcp3X0X_chip_info mcp3X0X_chip_infos[] = {
->>+	[mcp3001] = {
->>+		.channels = mcp3x01_channels,
->>+		.num_channels = ARRAY_SIZE(mcp3x01_channels)
->>+	},
->>+	[mcp3002] = {
->>+		.channels = mcp3x02_channels,
->>+		.num_channels = ARRAY_SIZE(mcp3x02_channels)
->>+	},
->>+	[mcp3004] = {
->>+		.channels = mcp3x04_channels,
->>+		.num_channels = ARRAY_SIZE(mcp3x04_channels)
->>+	},
->>+	[mcp3008] = {
->>+		.channels = mcp3x08_channels,
->>+		.num_channels = ARRAY_SIZE(mcp3x08_channels)
->>+	},
->>+	[mcp3201] = {
->>+		.channels = mcp3x01_channels,
->>+		.num_channels = ARRAY_SIZE(mcp3x01_channels)
->>+	},
->>+	[mcp3202] = {
->>+		.channels = mcp3x02_channels,
->>+		.num_channels = ARRAY_SIZE(mcp3x02_channels)
->>+	},
->>+	[mcp3204] = {
->>+		.channels = mcp3x04_channels,
->>+		.num_channels = ARRAY_SIZE(mcp3x04_channels)
->>+	},
->>+	[mcp3208] = {
->>+		.channels = mcp3x08_channels,
->>+		.num_channels = ARRAY_SIZE(mcp3x08_channels)
->>+	},
->>+};
->>+
->>+static int channel_to_tx_data(const struct mcp3X0X_chip_info
->>*chip_info,
->>+			const unsigned int channel, bool differential)
->>+{
->>+	unsigned int tx_data = 0;
->>+
->>+	if (chip_info->num_channels - 1 == 2) {
->>+		tx_data = 0x12 | (differential ? 0 << 3 : 1 << 3) |
->>+				((channel & 0x01) << 2);
->>+	} else if (chip_info->num_channels - 2 == 4) {
->>+		tx_data = 0x20 | (differential ? 0 << 4 : 1 << 4) |
->>+				((channel & 0x03) << 1);
->>+	} else if (chip_info->num_channels - 4 == 8) {
->>+		tx_data = 0x20 | (differential ? 0 << 4 : 1 << 4) |
->>+				((channel & 0x07) << 1);
->>+	}
->>+
->>+	return tx_data;
->>+}
->>+
->>+static int mcp3x0x_adc_conversion(struct mcp3x0x *adc, u8 channel,
->>+			bool differential, int device_index)
->>+{
->>+	int ret;
->>+	u16 adc_value;
->>+	__be16 buf;
->>+
->>+	const struct mcp3X0X_chip_info *chip_info = NULL;
->>+
->>+	if (device_index == -1)
->>+		return -1;
->>+
->>+	chip_info = &mcp3X0X_chip_infos[device_index];
->>+	if (chip_info == NULL)
->>+		return -1;
->>+
->>+	adc->rx_buf[0] = 0;
->>+	adc->rx_buf[1] = 0;
->>+	adc->tx_buf = channel_to_tx_data(chip_info, channel, differential);
->>+
->>+	if (device_index != mcp3001 && device_index != mcp3201) {
->>+		ret = spi_sync(adc->spi, &adc->msg);
->>+		if (ret < 0)
->>+			return ret;
->>+	} else {
->>+		ret = spi_read(adc->spi, (u8 *)&buf, 2);
->>+		if (ret < 0)
->>+			return ret;
->>+	}
->>+
->>+	switch (device_index) {
->>+	case mcp3001:
->>+		adc_value = (be16_to_cpu(buf) >> 3);
->>+		break;
->>+	case mcp3002:
->>+		spi_sync(adc->spi, &adc->msg);
->>+		adc_value = adc->rx_buf[0];
->>+		adc_value = ((adc_value << 2) |
->>+			((adc->rx_buf[1] & 0xC0) >> 6)) & 0x03ff;
->>+		break;
->>+	case mcp3004:
->>+	case mcp3008:
->>+		adc_value = adc->rx_buf[0] & 0x7f;
->>+		adc_value = ((adc_value << 3) |
->>+			((adc->rx_buf[1] & 0xe0) >> 5)) & 0x03ff;
->>+		break;
->>+	case mcp3201:
->>+		adc_value = (be16_to_cpu(buf) >> 1);
->>+		break;
->>+	case mcp3202:
->>+		adc_value = adc->rx_buf[0];
->>+		adc_value = ((adc_value << 4) |
->>+			((adc->rx_buf[1] & 0xf0) >> 4)) & 0x0fff;
->>+		break;
->>+	case mcp3204:
->>+	case mcp3208:
->>+		adc_value = adc->rx_buf[0] & 0x7f;
->>+		adc_value = ((adc_value << 5) |
->>+			((adc->rx_buf[1] & 0xf8) >> 3)) & 0x0fff;
->>+		break;
->>+	default:
->>+		adc_value = 0;
->>+		break;
->>+	}
->>+
->>+	return adc_value;
->>+}
->>+
->>+static int mcp3x0x_read_raw(struct iio_dev *indio_dev,
->>+			struct iio_chan_spec const *channel, int *val,
->>+			int *val2, long mask)
->>+{
->>+	struct mcp3x0x *adc = iio_priv(indio_dev);
->>+	int ret = -EINVAL;
->>+	int device_index = 0;
->>+
->>+	mutex_lock(&adc->lock);
->>+
->>+	device_index = spi_get_device_id(adc->spi)->driver_data;
->>+
->>+	if (device_index == -1)
->>+		goto out;
->>+
->>+	switch (mask) {
->>+	case IIO_CHAN_INFO_RAW:
->>+		ret = mcp3x0x_adc_conversion(adc, channel->address,
->>+			channel->differential, device_index);
->>+
->>+		if (ret < 0)
->>+			goto out;
->>+
->>+		*val = ret;
->>+		ret = IIO_VAL_INT;
->>+		break;
->>+
->>+	case IIO_CHAN_INFO_SCALE:
->>+		/*
->>+		 * Digital output code = (resolution * Vin) / Vref
->>+		 * Get regulator output voltage in uV.
->>+		 */
->>+		ret = regulator_get_voltage(adc->reg);
->>+		if (ret < 0)
->>+			goto out;
->>+
->>+		/* convert regulator output voltage to mV */
->>+		*val  = ret / 1000;
->>+		*val2 = -1;
->>+		if (device_index == mcp3001 || device_index == mcp3002 ||
->>+			device_index == mcp3004 || device_index == mcp3008)
->>+			*val2 = 10;
->>+		else if (device_index == mcp3201 || device_index == mcp3202 ||
->>+			device_index == mcp3204 || device_index == mcp3208)
->>+			*val2 = 12;
->>+		else
->>+			goto out;
->>+
->>+		ret = IIO_VAL_FRACTIONAL_LOG2;
->>+		break;
->>+
->>+	default:
->>+		break;
->>+	}
->>+
->>+out:
->>+	mutex_unlock(&adc->lock);
->>+
->>+	return ret;
->>+}
->>+
->>+static int mcp3x0x_probe(struct spi_device *spi)
->>+{
->>+	struct iio_dev *indio_dev;
->>+	struct mcp3x0x *adc;
->>+	const struct mcp3X0X_chip_info *chip_info;
->>+	int ret;
->>+
->>+	indio_dev = devm_iio_device_alloc(&spi->dev, sizeof(*adc));
->>+	if (!indio_dev)
->>+		return -ENOMEM;
->>+
->>+	adc = iio_priv(indio_dev);
->>+	adc->spi = spi;
->>+
->>+	indio_dev->dev.parent = &spi->dev;
->>+	indio_dev->name = spi_get_device_id(spi)->name;
->>+	indio_dev->modes = INDIO_DIRECT_MODE;
->>+	indio_dev->info = &mcp3x0x_info;
->>+
->>+	chip_info =
->&mcp3X0X_chip_infos[spi_get_device_id(spi)->driver_data];
->>+	indio_dev->channels = chip_info->channels;
->>+	indio_dev->num_channels = chip_info->num_channels;
->>+
->>+	adc->transfer[0].tx_buf = &adc->tx_buf;
->>+	adc->transfer[0].len = sizeof(adc->tx_buf);
->>+	adc->transfer[1].rx_buf = adc->rx_buf;
->>+	adc->transfer[1].len = sizeof(adc->rx_buf);
->>+
->>+	spi_message_init_with_transfers(&adc->msg, adc->transfer,
->>+					ARRAY_SIZE(adc->transfer));
->>+
->>+	adc->reg = devm_regulator_get(&spi->dev, "vref");
->>+	if (IS_ERR(adc->reg))
->>+		return PTR_ERR(adc->reg);
->>+
->>+	ret = regulator_enable(adc->reg);
->>+	if (ret < 0)
->>+		return ret;
->>+
->>+	mutex_init(&adc->lock);
->>+
->>+	ret = iio_device_register(indio_dev);
->>+	if (ret < 0)
->>+		goto reg_disable;
->>+
->>+	return 0;
->>+
->>+reg_disable:
->>+	regulator_disable(adc->reg);
->>+
->>+	return ret;
->>+}
->>+
->>+static int mcp3x0x_remove(struct spi_device *spi)
->>+{
->>+	struct iio_dev *indio_dev = spi_get_drvdata(spi);
->>+	struct mcp3x0x *adc = iio_priv(indio_dev);
->>+
->>+	iio_device_unregister(indio_dev);
->>+	regulator_disable(adc->reg);
->>+
->>+	return 0;
->>+}
->>+
->>+#if defined(CONFIG_OF)
->>+static const struct of_device_id mcp3x0x_dt_ids[] = {
->>+	{
->>+		.compatible = "mcp3001",
->>+		.data = &mcp3X0X_chip_infos[mcp3001],
->>+	}, {
->>+		.compatible = "mcp3002",
->>+		.data = &mcp3X0X_chip_infos[mcp3002],
->>+	}, {
->>+		.compatible = "mcp3004",
->>+		.data = &mcp3X0X_chip_infos[mcp3004],
->>+	}, {
->>+		.compatible = "mcp3008",
->>+		.data = &mcp3X0X_chip_infos[mcp3004],
->>+	}, {
->>+		.compatible = "mcp3201",
->>+		.data = &mcp3X0X_chip_infos[mcp3201],
->>+	}, {
->>+		.compatible = "mcp3202",
->>+		.data = &mcp3X0X_chip_infos[mcp3202],
->>+	}, {
->>+		.compatible = "mcp3204",
->>+		.data = &mcp3X0X_chip_infos[mcp3204],
->>+	}, {
->>+		.compatible = "mcp3008",
->>+		.data = &mcp3X0X_chip_infos[mcp3208],
->>+	}, {
->>+	}
->>+};
->>+MODULE_DEVICE_TABLE(of, mcp3x0x_dt_ids);
->>+#endif
->>+
->>+static const struct spi_device_id mcp3x0x_id[] = {
->>+	{ "mcp3001", mcp3001 },
->>+	{ "mcp3002", mcp3002 },
->>+	{ "mcp3004", mcp3004 },
->>+	{ "mcp3008", mcp3008 },
->>+	{ "mcp3201", mcp3201 },
->>+	{ "mcp3202", mcp3202 },
->>+	{ "mcp3204", mcp3204 },
->>+	{ "mcp3208", mcp3208 },
->>+	{ }
->>+};
->>+MODULE_DEVICE_TABLE(spi, mcp3x0x_id);
->>+
->>+static struct spi_driver mcp3x0x_driver = {
->>+	.driver = {
->>+		.name = "mcp3x0x",
->>+		.owner = THIS_MODULE,
->>+	},
->>+	.probe = mcp3x0x_probe,
->>+	.remove = mcp3x0x_remove,
->>+	.id_table = mcp3x0x_id,
->>+};
->>+module_spi_driver(mcp3x0x_driver);
->>+
->>+MODULE_AUTHOR("Allan Bendorff Jensen <abj@rosetechnology.dk>");
->>+MODULE_DESCRIPTION("Microchip Technology MCP3x01/02/04/08");
->>+MODULE_LICENSE("GPL v2");
->>
->>
->>--
->>To unsubscribe from this list: send the line "unsubscribe linux-iio"
->in
->>the body of a message to majordomo@vger.kernel.org
->>More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 -- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
