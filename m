@@ -1,49 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751426AbaGJGGX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 02:06:23 -0400
-Received: from verein.lst.de ([213.95.11.211]:55616 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750750AbaGJGGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 02:06:22 -0400
-Date: Thu, 10 Jul 2014 08:06:17 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Hannes Reinecke <hare@suse.de>
-Cc: Christoph Hellwig <hch@lst.de>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        Bart Van Assche <bvanassche@fusionio.com>,
-        Robert Elliott <Elliott@hp.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/14] scsi: fix the {host,target,device}_blocked
-	counter mess
-Message-ID: <20140710060617.GB7675@lst.de>
-References: <1403715121-1201-1-git-send-email-hch@lst.de> <1403715121-1201-10-git-send-email-hch@lst.de> <53BD2391.90800@suse.de>
+	id S1751128AbaGJGTx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 02:19:53 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:22460 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708AbaGJGTv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 02:19:51 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18U95cPUUUjcoR6/f0xDAsZ
+Date: Wed, 9 Jul 2014 23:19:49 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Lokesh Vutla <lokeshvutla@ti.com>
+Cc: Sricharan R <r.sricharan@ti.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, santosh.shilimkar@ti.com, nm@ti.com,
+        rnayak@ti.com, linux@arm.linux.org.uk, tglx@linutronix.de,
+        jason@lakedaemon.net, joe@perches.com,
+        Benoit Cousson <bcousson@baylibre.com>
+Subject: Re: [PATCH V4 2/2] arm: dts: dra7: add crossbar device binding
+Message-ID: <20140710061949.GE28884@atomide.com>
+References: <1403767532-19290-1-git-send-email-r.sricharan@ti.com>
+ <1403767532-19290-3-git-send-email-r.sricharan@ti.com>
+ <20140626074417.GF28884@atomide.com>
+ <53ABDA9A.8000108@ti.com>
+ <20140626102650.GH28884@atomide.com>
+ <20140709154417.GC28884@atomide.com>
+ <53BE2B6D.1090602@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53BD2391.90800@suse.de>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <53BE2B6D.1090602@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 01:12:17PM +0200, Hannes Reinecke wrote:
-> Hmm. I guess there is a race window between
-> atomic_read() and atomic_set().
-> Doesn't this cause issues when someone calls atomic_set() just before the 
-> call to atomic_read?
+* Lokesh Vutla <lokeshvutla@ti.com> [140709 23:00]:
+> Hi Tony,
+> On Wednesday 09 July 2014 09:14 PM, Tony Lindgren wrote:
+> > * Tony Lindgren <tony@atomide.com> [140626 03:28]:
+> >> * Sricharan R <r.sricharan@ti.com> [140626 01:36]:
+> >>> Hi Tony,
+> >>>
+> >>> On Thursday 26 June 2014 01:14 PM, Tony Lindgren wrote:
+> >>>> * Sricharan R <r.sricharan@ti.com> [140626 00:29]:
+> >>>>> From: R Sricharan <r.sricharan@ti.com>
+> >>>>>
+> >>>>> There is a IRQ crossbar device in the soc, which
+> >>>>> maps the irq requests from the peripherals to the
+> >>>>> mpu interrupt controller's inputs. The Peripheral irq
+> >>>>> requests are connected to only one crossbar
+> >>>>> input and the output of the crossbar is connected to only one
+> >>>>> controller's input line. The crossbar device is used to map
+> >>>>> a peripheral input to a free mpu's interrupt controller line.
+> >>>>>
+> >>>>> Here, adding a new crossbar device node and replacing all the peripheral
+> >>>>> interrupt numbers with its fixed crossbar input lines.
+> >>>>
+> >>>> I think these two patches need to be a single patch to avoid
+> >>>> breaking booting for git bisect inbetween these patches?
+> >>>   This does not cause booting issues. irq_desc gets allocated linearly,
+> >>>    but that does not create boot issues.
+> >>
+> >> OK
+> > 
+> > These are now applied on top of Jason's immutable irqchip branch
+> > and merged and pushed out into omap-for-v3.17/dt. Can you guys
+> > please test?
+> I have tested omap-for-v3.17/dt on DRA7 EVM. Crossbar is working fine.
+> Looks good to me.
+> 
+> lokesh@a0131933lt:~/working/mainline/linux$ git describe 
+> v3.16-rc1-34-g6464099
+> 
+> Please find the logs here: http://paste.ubuntu.com/7773616/
 
-There is a race window just _after_ the atomic_read, but it's harmless.
-The whole _blocked scheme is a backoff to avoid resubmitting I/O all
-the time when the HBA or target returned a busy status.  If we race
-an incorrectly reset it we will submit I/O and just get a busy indicator
-again.
+OK great thanks!
 
-On the other hand doing the atomic_set all the time introduces three atomic
-in the I/O completion part that are entirely pointless most of the time.
-
-I guess I should add something like this as a comment to the code..
-
-Note that the old code didn't use any sort of synchronization either.
-
+Tony
