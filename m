@@ -1,56 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753035AbaGJNsQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:48:16 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:56676 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205AbaGJNsM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:48:12 -0400
-Message-ID: <53BE999A.6060309@kernel.dk>
-Date: Thu, 10 Jul 2014 15:48:10 +0200
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753423AbaGJNtd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:49:33 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:44704 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753235AbaGJNtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 09:49:31 -0400
+Date: Thu, 10 Jul 2014 08:48:59 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 4/4] USB: PHY: tegra: Call tegra_usb_phy_close only on
+ device removal
+Message-ID: <20140710134859.GM15340@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1404436179-10745-1-git-send-email-ttynkkynen@nvidia.com>
+ <1404436179-10745-5-git-send-email-ttynkkynen@nvidia.com>
 MIME-Version: 1.0
-To: Benjamin LaHaise <bcrl@kvack.org>
-CC: Christoph Hellwig <hch@infradead.org>,
-        "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
-        "dgilbert@interlog.com" <dgilbert@interlog.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Bart Van Assche <bvanassche@fusionio.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: scsi-mq V2
-References: <1403715121-1201-1-git-send-email-hch@lst.de> <20140708144829.GA5539@infradead.org> <53BD7041.5010300@interlog.com> <53BD9A24.7010203@kernel.dk> <94D0CD8314A33A4D9D801C0FE68B402958B9628B@G9W0745.americas.hpqcorp.net> <20140710062040.GB20146@infradead.org> <20140710133609.GO12478@kvack.org> <53BE97AD.9080306@kernel.dk> <20140710134439.GP12478@kvack.org>
-In-Reply-To: <20140710134439.GP12478@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EOHJn1TVIJfeVXv2"
+Content-Disposition: inline
+In-Reply-To: <1404436179-10745-5-git-send-email-ttynkkynen@nvidia.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-07-10 15:44, Benjamin LaHaise wrote:
-> On Thu, Jul 10, 2014 at 03:39:57PM +0200, Jens Axboe wrote:
->> That's how fio always runs, it sets up the context with the exact queue
->> depth that it needs. Do we have a good enough understanding of other aio
->> use cases to say that this isn't the norm? I would expect it to be, it's
->> the way that the API would most obviously be used.
->
-> The problem with this approach is that it works very poorly with per cpu
-> reference counting's batching of references, which is pretty much a
-> requirement now that many core systems are the norm.  Allocating the bare
-> minimum is not the right thing to do today.  That said, the default limits
-> on the number of requests probably needs to be raised.
+--EOHJn1TVIJfeVXv2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sorry, that's a complete cop-out. Then you handle this internally, 
-allocate a bigger pool and cap the limit if you need to. Look at the 
-API. You pass in the number of requests you will use. Do you expect 
-anyone to double up, just in case? Will never happen.
+Hi,
 
-But all of this is side stepping the point that there's a real bug 
-reported here. The above could potentially explain the "it's using X 
-more CPU, or it's Y slower". The above is a softlock, it never completes.
+On Fri, Jul 04, 2014 at 04:09:39AM +0300, Tuomas Tynkkynen wrote:
+> tegra_usb_phy_close() is supposed to undo the effects of
+> tegra_usb_phy_init(). It is also currently added as the USB PHY shutdown
+> callback, which is wrong, since tegra_usb_phy_init() is only called
 
--- 
-Jens Axboe
+you could just make tegra_usb_phy_init() be called as u_phy->init().
+That way you even delay enabling clocks and regulators to the point
+where they are more likely to be needed. Also, if EHCI is never loaded,
+you won't power up the PHY for no reason.
 
+> during probing wheras the shutdown callback can get called multiple
+> times. This then leads to warnings about unbalanced regulator_disable if
+> the EHCI driver is unbound and bound again at runtime.
+>=20
+> Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+
+I suppose this has no dependencies with the rest of the series ?
+
+--=20
+balbi
+
+--EOHJn1TVIJfeVXv2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTvpnLAAoJEIaOsuA1yqREJxcP/A9JLCAOpspUWYp+jTJnY+kz
+f3UKdp/1M2Phrs7YWdjoJb+INYErWCCOqR8dBfoSXetU8ZVV/gVf8Tp958kaYXsn
+mIOeP9Tc/YSD+hTJvgTkFvuVh9dFtSpREJz/1Au5SKOsGPlW+sr9Oih9pvIvhzLB
+shnKeAb0i5XheYxkLbc18/RvoRj4u4u0yAXz4H0DTnbnzsfMgDxtJM2uYL2jddkP
+/7Hg7A8Esl2D+wWvUkxTiNdRlocCK8BQKqVD4qgiAGiqxI8RDe+8A3D4QqHwlr1Y
+AMKCdf1i+MdyrVNUETGOvHj59WkIUTeTLPZYV+Xv/NM3Cvq1SRD033ynCsKokjC5
+sjVSdh3fmsHtgu0g3aBg5pkuB5+7rX8QFeZLe2TRwzT745M7or3he2Jx47ZkCwBM
+BEhTyauaumRLxr16xdvJB0Cz98famlgMuCJRHOHjoQzFvhAvB+/Mt1vNL+/OGeCC
+pDI96a/P0CsLV5vUcMpuMinG2rIkdxeZuwCXO+1VaOt1BHi7IoKHylE+nYMb1wOd
+gxnwVfJVdYS19rXanV9SHulVW/Ylt8RJEy0KwWFZtXIBtOXu1E3MtaY3xUc38Qb2
+LZeKC+RzV42t7m4xMcNMQI/BD5RGfzSPWjjlEKuRnDjRMT00tV/FXDX7KwEfL05o
+qVztcGO41cC7px//u0uB
+=HY2Z
+-----END PGP SIGNATURE-----
+
+--EOHJn1TVIJfeVXv2--
