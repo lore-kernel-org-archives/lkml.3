@@ -1,58 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697AbaGJLNu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 07:13:50 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:42966 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752527AbaGJLNr (ORCPT
+	id S1752304AbaGJLSc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 07:18:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43845 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751021AbaGJLSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 07:13:47 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX184lUYcNBUX04EFmF/k806iyl+Pccyn+lE=
-X-DKIM: OpenDKIM Filter v2.0.1 titan C4F8F5A76FF
-Date: Thu, 10 Jul 2014 07:13:38 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
-        keescook@chromium.org, stable@vger.kernel.org
-Subject: Re: [PATCH v3 1/2] hwrng: fetch randomness only after device init
-Message-ID: <20140710111338.GR13433@titan.lakedaemon.net>
-References: <cover.1404987133.git.amit.shah@redhat.com>
- <8cf671af94c4747765ebec91a2a4f034a65aef2e.1404987133.git.amit.shah@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8cf671af94c4747765ebec91a2a4f034a65aef2e.1404987133.git.amit.shah@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 10 Jul 2014 07:18:31 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Alex Smith <alex.smith@imgtec.com>
+Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Luis Henriques <luis.henriques@canonical.com>,
+        kernel-team@lists.ubuntu.com
+Subject: [3.11.y.z extended stable] Patch "recordmcount/MIPS: Fix possible incorrect mcount_loc table entries in modules" has been added to staging queue
+Date: Thu, 10 Jul 2014 12:18:29 +0100
+Message-Id: <1404991109-13707-1-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 03:42:34PM +0530, Amit Shah wrote:
-> Commit d9e7972619334 "hwrng: add randomness to system from rng sources"
-> added a call to rng_get_data() from the hwrng_register() function.
-> However, some rng devices need initialization before data can be read
-> from them.
-> 
-> This commit makes the call to rng_get_data() depend on no init fn
-> pointer being registered by the device.  If an init function is
-> registered, this call is made after device init.
-> 
-> CC: Kees Cook <keescook@chromium.org>
-> CC: Jason Cooper <jason@lakedaemon.net>
-> CC: Herbert Xu <herbert@gondor.apana.org.au>
-> CC: <stable@vger.kernel.org> # For v3.15+
-> Signed-off-by: Amit Shah <amit.shah@redhat.com>
-> ---
->  drivers/char/hw_random/core.c | 41 +++++++++++++++++++++++++++++++++--------
->  1 file changed, 33 insertions(+), 8 deletions(-)
+This is a note to let you know that I have just added a patch titled
 
-Reviewed-by: Jason Cooper <jason@lakedaemon.net>
+    recordmcount/MIPS: Fix possible incorrect mcount_loc table entries in modules
 
-thx,
+to the linux-3.11.y-queue branch of the 3.11.y.z extended stable tree 
+which can be found at:
 
-Jason.
+ http://kernel.ubuntu.com/git?p=ubuntu/linux.git;a=shortlog;h=refs/heads/linux-3.11.y-queue
+
+If you, or anyone else, feels it should not be added to this tree, please 
+reply to this email.
+
+For more information about the 3.11.y.z tree, see
+https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
+
+Thanks.
+-Luis
+
+------
+
+>From 9674dc6fec1073bec5f84b91f59808cb7c020552 Mon Sep 17 00:00:00 2001
+From: Alex Smith <alex.smith@imgtec.com>
+Date: Tue, 17 Jun 2014 10:39:53 +0100
+Subject: recordmcount/MIPS: Fix possible incorrect mcount_loc table entries in
+ modules
+
+commit 91ad11d7cc6f4472ebf177a6252fbf0fd100d798 upstream.
+
+On MIPS calls to _mcount in modules generate 2 instructions to load
+the _mcount address (and therefore 2 relocations). The mcount_loc
+table should only reference the first of these, so the second is
+filtered out by checking the relocation offset and ignoring ones that
+immediately follow the previous one seen.
+
+However if a module has an _mcount call at offset 0, the second
+relocation would not be filtered out due to old_r_offset == 0
+being taken to mean that the current relocation is the first one
+seen, and both would end up in the mcount_loc table.
+
+This results in ftrace_make_nop() patching both (adjacent)
+instructions to branches over the _mcount call sequence like so:
+
+  0xffffffffc08a8000:  04 00 00 10     b       0xffffffffc08a8014
+  0xffffffffc08a8004:  04 00 00 10     b       0xffffffffc08a8018
+  0xffffffffc08a8008:  2d 08 e0 03     move    at,ra
+  ...
+
+The second branch is in the delay slot of the first, which is
+defined to be unpredictable - on the platform on which this bug was
+encountered, it triggers a reserved instruction exception.
+
+Fix by initializing old_r_offset to ~0 and using that instead of 0
+to determine whether the current relocation is the first seen.
+
+Signed-off-by: Alex Smith <alex.smith@imgtec.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/7098/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ scripts/recordmcount.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
+index 9d1421e63ff8..49b582a225b0 100644
+--- a/scripts/recordmcount.h
++++ b/scripts/recordmcount.h
+@@ -163,11 +163,11 @@ static int mcount_adjust = 0;
+
+ static int MIPS_is_fake_mcount(Elf_Rel const *rp)
+ {
+-	static Elf_Addr old_r_offset;
++	static Elf_Addr old_r_offset = ~(Elf_Addr)0;
+ 	Elf_Addr current_r_offset = _w(rp->r_offset);
+ 	int is_fake;
+
+-	is_fake = old_r_offset &&
++	is_fake = (old_r_offset != ~(Elf_Addr)0) &&
+ 		(current_r_offset - old_r_offset == MIPS_FAKEMCOUNT_OFFSET);
+ 	old_r_offset = current_r_offset;
+
+--
+1.9.1
+
