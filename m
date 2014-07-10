@@ -1,176 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692AbaGJNDF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:03:05 -0400
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:59051 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752374AbaGJNDC convert rfc822-to-8bit (ORCPT
+	id S1753728AbaGJNEn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:04:43 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:38413 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752173AbaGJNEk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:03:02 -0400
+	Thu, 10 Jul 2014 09:04:40 -0400
+Date: Thu, 10 Jul 2014 15:04:49 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Ben Skeggs <bskeggs@redhat.com>, David Airlie <airlied@linux.ie>,
+        David Herrmann <dh.herrmann@gmail.com>, Lucas Stach <dev@lynxeye.de>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org
+Subject: Re: [Nouveau] [PATCH v4 4/6] drm/nouveau: synchronize BOs when
+ required
+Message-ID: <20140710130449.GG17271@phenom.ffwll.local>
+Mail-Followup-To: Alexandre Courbot <acourbot@nvidia.com>,
+	Ben Skeggs <bskeggs@redhat.com>, David Airlie <airlied@linux.ie>,
+	David Herrmann <dh.herrmann@gmail.com>,
+	Lucas Stach <dev@lynxeye.de>,
+	Thierry Reding <thierry.reding@gmail.com>,
+	Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+	nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org
+References: <1404807961-30530-1-git-send-email-acourbot@nvidia.com>
+ <1404807961-30530-5-git-send-email-acourbot@nvidia.com>
 MIME-Version: 1.0
-X-Originating-IP: [84.208.72.173]
-In-Reply-To: <87ha2ph2ow.fsf@nemi.mork.no>
-References: <1404980258-30853-1-git-send-email-teg@jklm.no>
- <1404980258-30853-4-git-send-email-teg@jklm.no> <87tx6ph8u5.fsf@nemi.mork.no>
- <CAG-2HqVvW2dh5y8xn9v-B29ohFTcPGgY3NY-P5y_xZu0SGgG3g@mail.gmail.com> <87ha2ph2ow.fsf@nemi.mork.no>
-From: Tom Gundersen <teg@jklm.no>
-Date: Thu, 10 Jul 2014 15:02:41 +0200
-Message-ID: <CAG-2HqXZe26RVnWCKpCfkPmP+OOA5fnrUL-o3+258KLTHPoxOA@mail.gmail.com>
-Subject: Re: [PATCH v7 03/33] net: set name_assign_type in alloc_netdev()
-To: =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404807961-30530-5-git-send-email-acourbot@nvidia.com>
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 1:29 PM, Bjørn Mork <bjorn@mork.no> wrote:
-> Tom Gundersen <teg@jklm.no> writes:
->> On Thu, Jul 10, 2014 at 11:16 AM, Bjørn Mork <bjorn@mork.no> wrote:
->>> Tom Gundersen <teg@jklm.no> writes:
->>>
->>>> diff --git a/net/ethernet/eth.c b/net/ethernet/eth.c
->>>> index 5dc638c..f405e05 100644
->>>> --- a/net/ethernet/eth.c
->>>> +++ b/net/ethernet/eth.c
->>>> @@ -390,7 +390,8 @@ EXPORT_SYMBOL(ether_setup);
->>>>  struct net_device *alloc_etherdev_mqs(int sizeof_priv, unsigned int txqs,
->>>>                                     unsigned int rxqs)
->>>>  {
->>>> -     return alloc_netdev_mqs(sizeof_priv, "eth%d", ether_setup, txqs, rxqs);
->>>> +     return alloc_netdev_mqs(sizeof_priv, "eth%d", NET_NAME_UNKNOWN,
->>>> +                             ether_setup, txqs, rxqs);
->>>>  }
->>>>  EXPORT_SYMBOL(alloc_etherdev_mqs);
->>>
->>> I believe this chunk makes the rest of this exercise pretty pointless.
->>>
->>> bjorn@nemi:/usr/local/src/git/linux$ git grep alloc_etherdev drivers/net/|wc -l
->>> 283
->>>
->>> I don't care enough to go look, but I'd be surprised if none of those
->>> drivers rename the device before registering it.
->>
->> I did look for that, and I only found devices being renamed to the
->> same name assign type as eth%d (wlan%d, etc).
->
-> You explain the vlan patch as follows:
->
->  "When deriving the name from the real device, inherit the assign type, otherwise
->   set PREDICTABLE as the name will be uniquely determined by the VLANID."
->
->
-> How come the same doesn't apply here?:
->
-> struct net_device * hostap_add_interface(struct local_info *local,
->                                          int type, int rtnl_locked,
->                                          const char *prefix,
->                                          const char *name)
-> {
->         struct net_device *dev, *mdev;
->         struct hostap_interface *iface;
->         int ret;
->
->         dev = alloc_etherdev(sizeof(struct hostap_interface));
->         if (dev == NULL)
->                 return NULL;
->
->         iface = netdev_priv(dev);
->         iface->dev = dev;
->         iface->local = local;
->         iface->type = type;
->         list_add(&iface->list, &local->hostap_interfaces);
->
->         mdev = local->dev;
->         eth_hw_addr_inherit(dev, mdev);
->         dev->base_addr = mdev->base_addr;
->         dev->irq = mdev->irq;
->         dev->mem_start = mdev->mem_start;
->         dev->mem_end = mdev->mem_end;
->
->         hostap_setup_dev(dev, local, type);
->         dev->destructor = free_netdev;
->
->         sprintf(dev->name, "%s%s", prefix, name);
-> ..
->
-> when this is called as
->
->         dev = hostap_add_interface(local, HOSTAP_INTERFACE_WDS, rtnl_locked,
->                                    local->ddev->name, "wds%d");
->
-> ..
->         local->apdev = hostap_add_interface(local, HOSTAP_INTERFACE_AP,
->                                             rtnl_locked, local->ddev->name,
->                                             "ap");
-> ..
->         local->stadev = hostap_add_interface(local, HOSTAP_INTERFACE_STA,
->                                              rtnl_locked, local->ddev->name,
->                                              "sta");
->
->
-> ?
->
-> Yes, this is an exception.  But so are every instance of alloc_netdev
-> ending up with something different from NET_NAME_ENUM...
+On Tue, Jul 08, 2014 at 05:25:59PM +0900, Alexandre Courbot wrote:
+> On architectures for which access to GPU memory is non-coherent,
+> caches need to be flushed and invalidated explicitly when BO control
+> changes between CPU and GPU.
+> 
+> This patch adds buffer synchronization functions which invokes the
+> correct API (PCI or DMA) to ensure synchronization is effective.
+> 
+> Based on the TTM DMA cache helper patches by Lucas Stach.
+> 
+> Signed-off-by: Lucas Stach <dev@lynxeye.de>
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> ---
+>  drivers/gpu/drm/nouveau/nouveau_bo.c  | 56 +++++++++++++++++++++++++++++++++++
+>  drivers/gpu/drm/nouveau/nouveau_bo.h  |  2 ++
+>  drivers/gpu/drm/nouveau/nouveau_gem.c | 12 ++++++++
+>  3 files changed, 70 insertions(+)
+> 
+> diff --git a/drivers/gpu/drm/nouveau/nouveau_bo.c b/drivers/gpu/drm/nouveau/nouveau_bo.c
+> index 67e9e8e2e2ec..47e4e8886769 100644
+> --- a/drivers/gpu/drm/nouveau/nouveau_bo.c
+> +++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
+> @@ -402,6 +402,60 @@ nouveau_bo_unmap(struct nouveau_bo *nvbo)
+>  		ttm_bo_kunmap(&nvbo->kmap);
+>  }
+>  
+> +void
+> +nouveau_bo_sync_for_device(struct nouveau_bo *nvbo)
+> +{
+> +	struct nouveau_drm *drm = nouveau_bdev(nvbo->bo.bdev);
+> +	struct nouveau_device *device = nouveau_dev(drm->dev);
+> +	struct ttm_dma_tt *ttm_dma = (struct ttm_dma_tt *)nvbo->bo.ttm;
+> +	int i;
+> +
+> +	if (!ttm_dma)
+> +		return;
+> +
+> +	if (nv_device_is_cpu_coherent(device) || nvbo->force_coherent)
+> +		return;
 
-Indeed, I missed this case. And given I missed that one, you are
-probably right there are others.
+Is the is_cpu_coherent check really required? On coherent platforms the
+sync_for_foo should be a noop. It's the dma api's job to encapsulate this
+knowledge so that drivers can be blissfully ignorant. The explicit
+is_coherent check makes this a bit leaky. And same comment that underlying
+the bus-specifics dma-mapping functions are identical.
+-Daniel
 
-> How much would this patchset reduce to if you just set
-> dev->name_assign_type = NET_NAME_UNKNOWN in alloc_netdev() and changed
-> it only in the few places where you actually *know* the name_assign_type?
+> +
+> +	if (nv_device_is_pci(device)) {
+> +		for (i = 0; i < ttm_dma->ttm.num_pages; i++)
+> +			pci_dma_sync_single_for_device(device->pdev,
+> +				ttm_dma->dma_address[i], PAGE_SIZE,
+> +				PCI_DMA_TODEVICE);
+> +	} else {
+> +		for (i = 0; i < ttm_dma->ttm.num_pages; i++)
+> +			dma_sync_single_for_device(nv_device_base(device),
+> +				ttm_dma->dma_address[i], PAGE_SIZE,
+> +				DMA_TO_DEVICE);
+> +	}
+> +}
+> +
+> +void
+> +nouveau_bo_sync_for_cpu(struct nouveau_bo *nvbo)
+> +{
+> +	struct nouveau_drm *drm = nouveau_bdev(nvbo->bo.bdev);
+> +	struct nouveau_device *device = nouveau_dev(drm->dev);
+> +	struct ttm_dma_tt *ttm_dma = (struct ttm_dma_tt *)nvbo->bo.ttm;
+> +	int i;
+> +
+> +	if (!ttm_dma)
+> +		return;
+> +
+> +	if (nv_device_is_cpu_coherent(device) || nvbo->force_coherent)
+> +		return;
+> +
+> +	if (nv_device_is_pci(device)) {
+> +		for (i = 0; i < ttm_dma->ttm.num_pages; i++)
+> +			pci_dma_sync_single_for_cpu(device->pdev,
+> +				ttm_dma->dma_address[i], PAGE_SIZE,
+> +				PCI_DMA_FROMDEVICE);
+> +	} else {
+> +		for (i = 0; i < ttm_dma->ttm.num_pages; i++)
+> +			dma_sync_single_for_cpu(nv_device_base(device),
+> +				ttm_dma->dma_address[i], PAGE_SIZE,
+> +				DMA_FROM_DEVICE);
+> +	}
+> +}
+> +
+>  int
+>  nouveau_bo_validate(struct nouveau_bo *nvbo, bool interruptible,
+>  		    bool no_wait_gpu)
+> @@ -418,6 +472,8 @@ nouveau_bo_validate(struct nouveau_bo *nvbo, bool interruptible,
+>  	if (!ttm)
+>  		return ret;
+>  
+> +	nouveau_bo_sync_for_device(nvbo);
+> +
+>  	device = nouveau_dev(nouveau_bdev(ttm->bdev)->dev);
+>  	nv_wr32(device, 0x70004, 0x00000001);
+>  	if (!nv_wait(device, 0x070004, 0x00000001, 0x00000000))
+> diff --git a/drivers/gpu/drm/nouveau/nouveau_bo.h b/drivers/gpu/drm/nouveau/nouveau_bo.h
+> index ff17c1f432fc..fa42298d2dca 100644
+> --- a/drivers/gpu/drm/nouveau/nouveau_bo.h
+> +++ b/drivers/gpu/drm/nouveau/nouveau_bo.h
+> @@ -81,6 +81,8 @@ void nouveau_bo_wr32(struct nouveau_bo *, unsigned index, u32 val);
+>  void nouveau_bo_fence(struct nouveau_bo *, struct nouveau_fence *);
+>  int  nouveau_bo_validate(struct nouveau_bo *, bool interruptible,
+>  			 bool no_wait_gpu);
+> +void nouveau_bo_sync_for_device(struct nouveau_bo *nvbo);
+> +void nouveau_bo_sync_for_cpu(struct nouveau_bo *nvbo);
+>  
+>  struct nouveau_vma *
+>  nouveau_bo_vma_find(struct nouveau_bo *, struct nouveau_vm *);
+> diff --git a/drivers/gpu/drm/nouveau/nouveau_gem.c b/drivers/gpu/drm/nouveau/nouveau_gem.c
+> index c90c0dc0afe8..08829a720891 100644
+> --- a/drivers/gpu/drm/nouveau/nouveau_gem.c
+> +++ b/drivers/gpu/drm/nouveau/nouveau_gem.c
+> @@ -896,6 +896,7 @@ nouveau_gem_ioctl_cpu_prep(struct drm_device *dev, void *data,
+>  	spin_lock(&nvbo->bo.bdev->fence_lock);
+>  	ret = ttm_bo_wait(&nvbo->bo, true, true, no_wait);
+>  	spin_unlock(&nvbo->bo.bdev->fence_lock);
+> +	nouveau_bo_sync_for_cpu(nvbo);
+>  	drm_gem_object_unreference_unlocked(gem);
+>  	return ret;
+>  }
+> @@ -904,6 +905,17 @@ int
+>  nouveau_gem_ioctl_cpu_fini(struct drm_device *dev, void *data,
+>  			   struct drm_file *file_priv)
+>  {
+> +	struct drm_nouveau_gem_cpu_fini *req = data;
+> +	struct drm_gem_object *gem;
+> +	struct nouveau_bo *nvbo;
+> +
+> +	gem = drm_gem_object_lookup(dev, file_priv, req->handle);
+> +	if (!gem)
+> +		return -ENOENT;
+> +	nvbo = nouveau_gem_object(gem);
+> +
+> +	nouveau_bo_sync_for_device(nvbo);
+> +	drm_gem_object_unreference_unlocked(gem);
+>  	return 0;
+>  }
+>  
+> -- 
+> 2.0.0
+> 
+> _______________________________________________
+> Nouveau mailing list
+> Nouveau@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/nouveau
 
-This is what David Herrmann's initial patch-set did. I do tend to
-agree with David Miller that changing the alloc_netdev() API makes it
-easier to review which cases we have covered, and which remain.
-
-I agree that we should absolutely leave NET_NAME_UNKNOWN in the places
-where we are not certain though.
-
-> My fear wrt this pathset is that the 'name_assign_type' will end up as
-> yet another useless field like 'addr_assign_type' and 'type'. There is
-> no way the kernel will be able to set these with 100% confidence, and
-> the value is therefore next to nothing.  If userspace is stupid enough
-> to trust them, then you end up with extremely hard to fix errors in the
-> cases where the driver/kernel guesswork is wrong.
-
-Well, if the kernel doesn't know, then userspace certainly does not.
-So I think the best thing we can do is to expose this information as
-best we can from the kernel, and make userspace follow. That said, I'm
-absolutely ok with the kernel exposing "don't know", and let userspace
-deal with that as best they can (which probably means it will assume
-the kernel name (or hwaddr) is useless and assign its own).
-
-> Just one example of this, affecting the 'type': Huawei happens to use
-> the same device IDs for modems requiring userspace management (should
-> have a wwan_type) and modems with built-in management (should have a
-> default type).  So which 'type' should we choose for this device?
-> userspace can figure out by careful probing, but if it trusts the 'type'
-> set by the driver then it will get it wrong. The field provides no value
-> at all.
-
-Sounds to me the kernel in this case should simply set some other type
-indicating "don't know"?
-
-> But if you limit the scope of the 'name_assign_type' patches to only
-> those cases where you actually have some information, then I guess it
-> might provide some value for userspace.
-
-What I suggest to do is:
-
-Leave NET_NAME_UNKNOWN in alloc_etherdev() (and any similar
-constructs), but in the cases where we know that the final name set
-before netdev_register() is some template, I'd still set this to
-NET_NAME_ENUM as we do now to make it clear which cases have been
-reviewed. So the patchset does not change much, but it would eliminate
-any risk of false positives.
-
-Does that sound reasonable to you?
-
-Cheers,
-
-Tom
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
