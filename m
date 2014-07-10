@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924AbaGJIFx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 04:05:53 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:61518 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321AbaGJIFp (ORCPT
+	id S1751965AbaGJIGH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 04:06:07 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:44502 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321AbaGJIF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 04:05:45 -0400
+	Thu, 10 Jul 2014 04:05:57 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
+Cc: Anton Vorontsov <anton.vorontsov@linaro.org>, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
         linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
         Colin Cross <ccross@android.com>, kernel-team@android.com,
         Rob Herring <robherring2@gmail.com>,
         Linus Walleij <linus.walleij@linaro.org>,
@@ -21,10 +20,11 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
         Catalin Marinas <catalin.marinas@arm.com>,
         Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Nicolas Pitre <nico@linaro.org>
-Subject: [PATCH v8 1/4] arm: fiq: Add callbacks to manage FIQ routings
-Date: Thu, 10 Jul 2014 09:03:44 +0100
-Message-Id: <1404979427-12943-2-git-send-email-daniel.thompson@linaro.org>
+        Nicolas Pitre <nico@linaro.org>,
+        Daniel Thompson <daniel.thompson@linaro.org>
+Subject: [PATCH v8 3/4] ARM: Move some macros from entry-armv to entry-header
+Date: Thu, 10 Jul 2014 09:03:46 +0100
+Message-Id: <1404979427-12943-4-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1404979427-12943-1-git-send-email-daniel.thompson@linaro.org>
 References: <1404118391-3850-1-git-send-email-daniel.thompson@linaro.org>
@@ -33,201 +33,390 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently enable_fiq/disable_fiq use a simple offset to convert an IRQ
-virq into a FIQ virq. This is too inflexible for multi-platform kernels
-and makes runtime error checking impossible.
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
 
-We solve this by introducing a flexible mapping that allows interrupt
-controllers that support FIQ to register those mappings. This, in turn,
-makes it much possible for drivers in DT kernels to install FIQ handlers
-without knowing anything about the interrupt controller.
+Just move the macros into header file as we would want to use them for
+KGDB FIQ entry code.
 
+The following macros were moved:
+
+ - svc_entry
+ - usr_entry
+ - kuser_cmpxchg_check
+ - vector_stub
+
+To make kuser_cmpxchg_check actually work across different files, we
+also have to make kuser_cmpxchg64_fixup global.
+
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
 Acked-by: Nicolas Pitre <nico@linaro.org>
 Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Fabio Estevam <festevam@gmail.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- arch/arm/include/asm/fiq.h |   8 ++++
- arch/arm/kernel/fiq.c      | 103 ++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 109 insertions(+), 2 deletions(-)
+ arch/arm/kernel/entry-armv.S   | 151 +------------------------------------
+ arch/arm/kernel/entry-header.S | 164 +++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 165 insertions(+), 150 deletions(-)
 
-diff --git a/arch/arm/include/asm/fiq.h b/arch/arm/include/asm/fiq.h
-index d493d0b..ed44528 100644
---- a/arch/arm/include/asm/fiq.h
-+++ b/arch/arm/include/asm/fiq.h
-@@ -16,8 +16,14 @@
- #ifndef __ASM_FIQ_H
- #define __ASM_FIQ_H
+diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+index 52a949a..4172cd6 100644
+--- a/arch/arm/kernel/entry-armv.S
++++ b/arch/arm/kernel/entry-armv.S
+@@ -140,53 +140,6 @@ ENDPROC(__und_invalid)
+  * SVC mode handlers
+  */
  
-+#include <linux/irq.h>
- #include <asm/ptrace.h>
+-#if defined(CONFIG_AEABI) && (__LINUX_ARM_ARCH__ >= 5)
+-#define SPFIX(code...) code
+-#else
+-#define SPFIX(code...)
+-#endif
+-
+-	.macro	svc_entry, stack_hole=0
+- UNWIND(.fnstart		)
+- UNWIND(.save {r0 - pc}		)
+-	sub	sp, sp, #(S_FRAME_SIZE + \stack_hole - 4)
+-#ifdef CONFIG_THUMB2_KERNEL
+- SPFIX(	str	r0, [sp]	)	@ temporarily saved
+- SPFIX(	mov	r0, sp		)
+- SPFIX(	tst	r0, #4		)	@ test original stack alignment
+- SPFIX(	ldr	r0, [sp]	)	@ restored
+-#else
+- SPFIX(	tst	sp, #4		)
+-#endif
+- SPFIX(	subeq	sp, sp, #4	)
+-	stmia	sp, {r1 - r12}
+-
+-	ldmia	r0, {r3 - r5}
+-	add	r7, sp, #S_SP - 4	@ here for interlock avoidance
+-	mov	r6, #-1			@  ""  ""      ""       ""
+-	add	r2, sp, #(S_FRAME_SIZE + \stack_hole - 4)
+- SPFIX(	addeq	r2, r2, #4	)
+-	str	r3, [sp, #-4]!		@ save the "real" r0 copied
+-					@ from the exception stack
+-
+-	mov	r3, lr
+-
+-	@
+-	@ We are now ready to fill in the remaining blanks on the stack:
+-	@
+-	@  r2 - sp_svc
+-	@  r3 - lr_svc
+-	@  r4 - lr_<exception>, already fixed up for correct return/restart
+-	@  r5 - spsr_<exception>
+-	@  r6 - orig_r0 (see pt_regs definition in ptrace.h)
+-	@
+-	stmia	r7, {r2 - r6}
+-
+-#ifdef CONFIG_TRACE_IRQFLAGS
+-	bl	trace_hardirqs_off
+-#endif
+-	.endm
+-
+ 	.align	5
+ __dabt_svc:
+ 	svc_entry
+@@ -306,73 +259,8 @@ ENDPROC(__pabt_svc)
  
-+struct fiq_chip {
-+	void (*fiq_enable)(struct irq_data *data);
-+	void (*fiq_disable)(struct irq_data *data);
-+};
-+
- struct fiq_handler {
- 	struct fiq_handler *next;
- 	/* Name
-@@ -38,6 +44,8 @@ extern void release_fiq(struct fiq_handler *f);
- extern void set_fiq_handler(void *start, unsigned int length);
- extern void enable_fiq(int fiq);
- extern void disable_fiq(int fiq);
-+extern bool has_fiq(int fiq);
-+extern void fiq_register_mapping(int irq, struct fiq_chip *chip);
+ /*
+  * User mode handlers
+- *
+- * EABI note: sp_svc is always 64-bit aligned here, so should S_FRAME_SIZE
+  */
  
- /* helpers defined in fiqasm.S: */
- extern void __set_fiq_regs(unsigned long const *regs);
-diff --git a/arch/arm/kernel/fiq.c b/arch/arm/kernel/fiq.c
-index 918875d..5d831cf 100644
---- a/arch/arm/kernel/fiq.c
-+++ b/arch/arm/kernel/fiq.c
-@@ -40,6 +40,9 @@
- #include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/seq_file.h>
-+#include <linux/irq.h>
-+#include <linux/radix-tree.h>
-+#include <linux/slab.h>
+-#if defined(CONFIG_AEABI) && (__LINUX_ARM_ARCH__ >= 5) && (S_FRAME_SIZE & 7)
+-#error "sizeof(struct pt_regs) must be a multiple of 8"
+-#endif
+-
+-	.macro	usr_entry
+- UNWIND(.fnstart	)
+- UNWIND(.cantunwind	)	@ don't unwind the user space
+-	sub	sp, sp, #S_FRAME_SIZE
+- ARM(	stmib	sp, {r1 - r12}	)
+- THUMB(	stmia	sp, {r0 - r12}	)
+-
+-	ldmia	r0, {r3 - r5}
+-	add	r0, sp, #S_PC		@ here for interlock avoidance
+-	mov	r6, #-1			@  ""  ""     ""        ""
+-
+-	str	r3, [sp]		@ save the "real" r0 copied
+-					@ from the exception stack
+-
+-	@
+-	@ We are now ready to fill in the remaining blanks on the stack:
+-	@
+-	@  r4 - lr_<exception>, already fixed up for correct return/restart
+-	@  r5 - spsr_<exception>
+-	@  r6 - orig_r0 (see pt_regs definition in ptrace.h)
+-	@
+-	@ Also, separately save sp_usr and lr_usr
+-	@
+-	stmia	r0, {r4 - r6}
+- ARM(	stmdb	r0, {sp, lr}^			)
+- THUMB(	store_user_sp_lr r0, r1, S_SP - S_PC	)
+-
+-	@
+-	@ Enable the alignment trap while in kernel mode
+-	@
+-	alignment_trap r0, .LCcralign
+-
+-	@
+-	@ Clear FP to mark the first stack frame
+-	@
+-	zero_fp
+-
+-#ifdef CONFIG_IRQSOFF_TRACER
+-	bl	trace_hardirqs_off
+-#endif
+-	ct_user_exit save = 0
+-	.endm
+-
+-	.macro	kuser_cmpxchg_check
+-#if !defined(CONFIG_CPU_32v6K) && defined(CONFIG_KUSER_HELPERS) && \
+-    !defined(CONFIG_NEEDS_SYSCALL_FOR_CMPXCHG)
+-#ifndef CONFIG_MMU
+-#warning "NPTL on non MMU needs fixing"
+-#else
+-	@ Make sure our user space atomic helper is restarted
+-	@ if it was interrupted in a critical region.  Here we
+-	@ perform a quick test inline since it should be false
+-	@ 99.9999% of the time.  The rest is done out of line.
+-	cmp	r4, #TASK_SIZE
+-	blhs	kuser_cmpxchg64_fixup
+-#endif
+-#endif
+-	.endm
+-
+ 	.align	5
+ __dabt_usr:
+ 	usr_entry
+@@ -823,6 +711,7 @@ __kuser_cmpxchg64:				@ 0xffff0f60
+ 	ldmfd	sp!, {r4, r5, r6, pc}
  
- #include <asm/cacheflush.h>
- #include <asm/cp15.h>
-@@ -52,7 +55,15 @@
- 		(unsigned)&vector_fiq_offset;		\
- 	})
+ 	.text
++	.global kuser_cmpxchg64_fixup
+ kuser_cmpxchg64_fixup:
+ 	@ Called from kuser_cmpxchg_fixup.
+ 	@ r4 = address of interrupted insn (must be preserved).
+@@ -964,44 +853,6 @@ __kuser_helper_end:
+  * SP points to a minimal amount of processor-private memory, the address
+  * of which is copied into r0 for the mode specific abort handler.
+  */
+-	.macro	vector_stub, name, mode, correction=0
+-	.align	5
+-
+-vector_\name:
+-	.if \correction
+-	sub	lr, lr, #\correction
+-	.endif
+-
+-	@
+-	@ Save r0, lr_<exception> (parent PC) and spsr_<exception>
+-	@ (parent CPSR)
+-	@
+-	stmia	sp, {r0, lr}		@ save r0, lr
+-	mrs	lr, spsr
+-	str	lr, [sp, #8]		@ save spsr
+-
+-	@
+-	@ Prepare for SVC32 mode.  IRQs remain disabled.
+-	@
+-	mrs	r0, cpsr
+-	eor	r0, r0, #(\mode ^ SVC_MODE | PSR_ISETSTATE)
+-	msr	spsr_cxsf, r0
+-
+-	@
+-	@ the branch table must immediately follow this code
+-	@
+-	and	lr, lr, #0x0f
+- THUMB(	adr	r0, 1f			)
+- THUMB(	ldr	lr, [r0, lr, lsl #2]	)
+-	mov	r0, sp
+- ARM(	ldr	lr, [pc, lr, lsl #2]	)
+-	movs	pc, lr			@ branch to handler in SVC mode
+-ENDPROC(vector_\name)
+-
+-	.align	2
+-	@ handler addresses follow this label
+-1:
+-	.endm
  
-+struct fiq_data {
-+	struct fiq_chip *fiq_chip;
-+	struct irq_data *irq_data;
-+};
+ 	.section .stubs, "ax", %progbits
+ __stubs_start:
+diff --git a/arch/arm/kernel/entry-header.S b/arch/arm/kernel/entry-header.S
+index 5d702f8..eb2c426 100644
+--- a/arch/arm/kernel/entry-header.S
++++ b/arch/arm/kernel/entry-header.S
+@@ -356,3 +356,167 @@ scno	.req	r7		@ syscall number
+ tbl	.req	r8		@ syscall table pointer
+ why	.req	r8		@ Linux syscall (!= 0)
+ tsk	.req	r9		@ current thread_info
 +
- static unsigned long no_fiq_insn;
-+static int fiq_start = -1;
-+static RADIX_TREE(fiq_data_tree, GFP_KERNEL);
-+static DEFINE_MUTEX(fiq_data_mutex);
- 
- /* Default reacquire function
-  * - we always relinquish FIQ control
-@@ -127,18 +138,65 @@ void release_fiq(struct fiq_handler *f)
- 	while (current_fiq->fiq_op(current_fiq->dev_id, 0));
- }
- 
--static int fiq_start;
-+static struct fiq_data *lookup_fiq_data(int fiq)
-+{
-+	struct fiq_data *data;
-+
-+	rcu_read_lock();
-+	data = radix_tree_lookup(&fiq_data_tree, fiq);
-+	rcu_read_unlock();
-+
-+	return data;
-+}
- 
- void enable_fiq(int fiq)
- {
-+	struct fiq_data *data = lookup_fiq_data(fiq);
-+
-+	if (data) {
-+		if (data->fiq_chip->fiq_enable)
-+			data->fiq_chip->fiq_enable(data->irq_data);
-+		enable_irq(fiq);
-+		return;
-+	}
-+
-+	if (WARN_ON(fiq_start == -1))
-+		return;
-+
- 	enable_irq(fiq + fiq_start);
- }
- 
- void disable_fiq(int fiq)
- {
-+	struct fiq_data *data = lookup_fiq_data(fiq);
-+
-+	if (data) {
-+		if (data->fiq_chip->fiq_disable)
-+			data->fiq_chip->fiq_disable(data->irq_data);
-+		disable_irq(fiq);
-+		return;
-+	}
-+
-+	if (WARN_ON(fiq_start == -1))
-+		return;
-+
- 	disable_irq(fiq + fiq_start);
- }
- 
-+bool has_fiq(int fiq)
-+{
-+	struct fiq_data *data = lookup_fiq_data(fiq);
-+
-+	if (data)
-+		return true;
-+
-+	if (fiq_start == -1)
-+		return false;
-+
-+	return fiq >= fiq_start;
-+}
-+EXPORT_SYMBOL(has_fiq);
-+
- EXPORT_SYMBOL(set_fiq_handler);
- EXPORT_SYMBOL(__set_fiq_regs);	/* defined in fiqasm.S */
- EXPORT_SYMBOL(__get_fiq_regs);	/* defined in fiqasm.S */
-@@ -147,9 +205,50 @@ EXPORT_SYMBOL(release_fiq);
- EXPORT_SYMBOL(enable_fiq);
- EXPORT_SYMBOL(disable_fiq);
- 
 +/*
-+ * Add a mapping from a Linux irq to the fiq data.
++ * SVC mode handler macros
 + */
-+void fiq_register_mapping(int irq, struct fiq_chip *chip)
-+{
-+	struct fiq_data *fiq_data = NULL;
-+	int res;
 +
-+	/* fiq_register_mapping can't be mixed with init_FIQ */
-+	BUG_ON(fiq_start != -1);
++#if defined(CONFIG_AEABI) && (__LINUX_ARM_ARCH__ >= 5)
++#define SPFIX(code...) code
++#else
++#define SPFIX(code...)
++#endif
 +
-+	fiq_data = kmalloc(sizeof(*fiq_data), GFP_KERNEL);
-+	if (!fiq_data)
-+		goto err;
++	.macro	svc_entry, stack_hole=0
++ UNWIND(.fnstart		)
++ UNWIND(.save {r0 - pc}		)
++	sub	sp, sp, #(S_FRAME_SIZE + \stack_hole - 4)
++#ifdef CONFIG_THUMB2_KERNEL
++ SPFIX(	str	r0, [sp]	)	@ temporarily saved
++ SPFIX(	mov	r0, sp		)
++ SPFIX(	tst	r0, #4		)	@ test original stack alignment
++ SPFIX(	ldr	r0, [sp]	)	@ restored
++#else
++ SPFIX(	tst	sp, #4		)
++#endif
++ SPFIX(	subeq	sp, sp, #4	)
++	stmia	sp, {r1 - r12}
 +
-+	fiq_data->fiq_chip = chip;
-+	fiq_data->irq_data = irq_get_irq_data(irq);
-+	BUG_ON(!fiq_data->irq_data);
++	ldmia	r0, {r3 - r5}
++	add	r7, sp, #S_SP - 4	@ here for interlock avoidance
++	mov	r6, #-1			@  ""  ""      ""       ""
++	add	r2, sp, #(S_FRAME_SIZE + \stack_hole - 4)
++ SPFIX(	addeq	r2, r2, #4	)
++	str	r3, [sp, #-4]!		@ save the "real" r0 copied
++					@ from the exception stack
 +
-+	mutex_lock(&fiq_data_mutex);
-+	res = radix_tree_insert(&fiq_data_tree, irq, fiq_data);
-+	mutex_unlock(&fiq_data_mutex);
-+	if (res)
-+		goto err;
++	mov	r3, lr
 +
-+	return;
++	@
++	@ We are now ready to fill in the remaining blanks on the stack:
++	@
++	@  r2 - sp_svc
++	@  r3 - lr_svc
++	@  r4 - lr_<exception>, already fixed up for correct return/restart
++	@  r5 - spsr_<exception>
++	@  r6 - orig_r0 (see pt_regs definition in ptrace.h)
++	@
++	stmia	r7, {r2 - r6}
 +
-+err:
-+	kfree(fiq_data);
-+	pr_err("fiq: Cannot register mapping %d\n", irq);
-+}
++#ifdef CONFIG_TRACE_IRQFLAGS
++	bl	trace_hardirqs_off
++#endif
++	.endm
 +
 +/*
-+ * Set the offset between normal IRQs and their FIQ shadows.
++ * User mode handler macros
++ *
++ * EABI note: sp_svc is always 64-bit aligned here, so should S_FRAME_SIZE
 + */
- void __init init_FIQ(int start)
- {
-+	fiq_start = start;
-+}
 +
-+static int __init init_default_fiq_handler(void)
-+{
- 	unsigned offset = FIQ_OFFSET;
- 	no_fiq_insn = *(unsigned long *)(0xffff0000 + offset);
--	fiq_start = start;
-+	return 0;
- }
-+pure_initcall(init_default_fiq_handler);
++#if defined(CONFIG_AEABI) && (__LINUX_ARM_ARCH__ >= 5) && (S_FRAME_SIZE & 7)
++#error "sizeof(struct pt_regs) must be a multiple of 8"
++#endif
++
++	.macro	usr_entry
++ UNWIND(.fnstart	)
++ UNWIND(.cantunwind	)	@ don't unwind the user space
++	sub	sp, sp, #S_FRAME_SIZE
++ ARM(	stmib	sp, {r1 - r12}	)
++ THUMB(	stmia	sp, {r0 - r12}	)
++
++	ldmia	r0, {r3 - r5}
++	add	r0, sp, #S_PC		@ here for interlock avoidance
++	mov	r6, #-1			@  ""  ""     ""        ""
++
++	str	r3, [sp]		@ save the "real" r0 copied
++					@ from the exception stack
++
++	@
++	@ We are now ready to fill in the remaining blanks on the stack:
++	@
++	@  r4 - lr_<exception>, already fixed up for correct return/restart
++	@  r5 - spsr_<exception>
++	@  r6 - orig_r0 (see pt_regs definition in ptrace.h)
++	@
++	@ Also, separately save sp_usr and lr_usr
++	@
++	stmia	r0, {r4 - r6}
++ ARM(	stmdb	r0, {sp, lr}^			)
++ THUMB(	store_user_sp_lr r0, r1, S_SP - S_PC	)
++
++	@
++	@ Enable the alignment trap while in kernel mode
++	@
++	alignment_trap r0, .LCcralign
++
++	@
++	@ Clear FP to mark the first stack frame
++	@
++	zero_fp
++
++#ifdef CONFIG_IRQSOFF_TRACER
++	bl	trace_hardirqs_off
++#endif
++	ct_user_exit save = 0
++	.endm
++
++	.macro	kuser_cmpxchg_check
++#if !defined(CONFIG_CPU_32v6K) && defined(CONFIG_KUSER_HELPERS) && \
++    !defined(CONFIG_NEEDS_SYSCALL_FOR_CMPXCHG)
++#ifndef CONFIG_MMU
++#warning "NPTL on non MMU needs fixing"
++#else
++	@ Make sure our user space atomic helper is restarted
++	@ if it was interrupted in a critical region.  Here we
++	@ perform a quick test inline since it should be false
++	@ 99.9999% of the time.  The rest is done out of line.
++	cmp	r4, #TASK_SIZE
++	blhs	kuser_cmpxchg64_fixup
++#endif
++#endif
++	.endm
++
++/*
++ * Vector stubs macro.
++ */
++	.macro	vector_stub, name, mode, correction=0
++	.align	5
++
++vector_\name:
++	.if \correction
++	sub	lr, lr, #\correction
++	.endif
++
++	@
++	@ Save r0, lr_<exception> (parent PC) and spsr_<exception>
++	@ (parent CPSR)
++	@
++	stmia	sp, {r0, lr}		@ save r0, lr
++	mrs	lr, spsr
++	str	lr, [sp, #8]		@ save spsr
++
++	@
++	@ Prepare for SVC32 mode.  IRQs remain disabled.
++	@
++	mrs	r0, cpsr
++	eor	r0, r0, #(\mode ^ SVC_MODE | PSR_ISETSTATE)
++	msr	spsr_cxsf, r0
++
++	@
++	@ the branch table must immediately follow this code
++	@
++	and	lr, lr, #0x0f
++ THUMB(	adr	r0, 1f			)
++ THUMB(	ldr	lr, [r0, lr, lsl #2]	)
++	mov	r0, sp
++ ARM(	ldr	lr, [pc, lr, lsl #2]	)
++	movs	pc, lr			@ branch to handler in SVC mode
++ENDPROC(vector_\name)
++
++	.align	2
++	@ handler addresses follow this label
++1:
++	.endm
++
++
 -- 
 1.9.3
 
