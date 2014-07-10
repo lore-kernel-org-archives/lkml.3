@@ -1,127 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536AbaGJSvH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 14:51:07 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:54674 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752484AbaGJSvD convert rfc822-to-8bit (ORCPT
+	id S1752027AbaGJSxr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 14:53:47 -0400
+Received: from smtprelay0029.hostedemail.com ([216.40.44.29]:39381 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750877AbaGJSxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 14:51:03 -0400
-From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-To: Christoph Hellwig <hch@infradead.org>
-CC: Jens Axboe <axboe@kernel.dk>,
-        "dgilbert@interlog.com" <dgilbert@interlog.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Bart Van Assche <bvanassche@fusionio.com>,
-        Benjamin LaHaise <bcrl@kvack.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: scsi-mq V2
-Thread-Topic: scsi-mq V2
-Thread-Index: AQHPkJV9pCazJa2BBk+bOfxdnvD3mpuWVjGAgAGxWICAADHvAIAAUqSAgABg3QCAAJeNgIAAC4gAgAAC3wCAACkIIA==
-Date: Thu, 10 Jul 2014 18:49:55 +0000
-Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958B971BB@G9W0745.americas.hpqcorp.net>
-References: <1403715121-1201-1-git-send-email-hch@lst.de>
- <20140708144829.GA5539@infradead.org> <53BD7041.5010300@interlog.com>
- <53BD9A24.7010203@kernel.dk>
- <94D0CD8314A33A4D9D801C0FE68B402958B9628B@G9W0745.americas.hpqcorp.net>
- <20140710062040.GB20146@infradead.org>
- <94D0CD8314A33A4D9D801C0FE68B402958B96E3B@G9W0745.americas.hpqcorp.net>
- <20140710160422.GA13728@infradead.org> <20140710161438.GA30792@infradead.org>
-In-Reply-To: <20140710161438.GA30792@infradead.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.37]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 10 Jul 2014 14:53:46 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:982:988:989:1260:1345:1437:1534:1538:1566:1711:1714:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3865:3866:3868:5007:6261:10004:10026:10848:11026:11658:11914:12043:12291:12296:12517:12519:12679:12683:13311:13357:14095:14110:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: crown08_3daa362b6d512
+X-Filterd-Recvd-Size: 1104
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] checkpatch: More --fix insert/delete lines for BRACES
+Date: Thu, 10 Jul 2014 11:53:37 -0700
+Message-Id: <cover.1405018255.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+A bit of neatening and add a few patch/file corrections for
+misplaced braces
 
+Joe Perches (4):
+  checkpatch: Add fix_insert_line and fix_delete_line helpers
+  checkpatch: Use the correct indentation for which()
+  checkpatch: Add --fix option for a couple OPEN_BRACE misuses
+  checkpatch: Fix brace style misuses of else and while
 
-> -----Original Message-----
-> From: Christoph Hellwig [mailto:hch@infradead.org]
-> Sent: Thursday, 10 July, 2014 11:15 AM
-> To: Elliott, Robert (Server Storage)
-> Cc: Jens Axboe; dgilbert@interlog.com; James Bottomley; Bart Van Assche;
-> Benjamin LaHaise; linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: scsi-mq V2
-> 
-> On Thu, Jul 10, 2014 at 09:04:22AM -0700, Christoph Hellwig wrote:
-> > It's starting to look weird.  I'll prepare another two bisect branches
-> > around some MM changes, which seems the only other possible candidate.
-> 
-> I've pushed out scsi-mq.3-bisect-3 
+ scripts/checkpatch.pl | 148 +++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 93 insertions(+), 55 deletions(-)
 
-Good.
-
-> and scsi-mq.3-bisect-4 for you.
-
-Bad.
-
-Note: I had to apply the vdso2c.h patch to build this -rc3 based kernel:
-diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
-index df95a2f..11b65d4 100644
---- a/arch/x86/vdso/vdso2c.h
-+++ b/arch/x86/vdso/vdso2c.h
-@@ -93,6 +93,9 @@ static void BITSFUNC(copy_section)(struct BITSFUNC(fake_sections) *out,
-	uint64_t flags = GET_LE(&in->sh_flags);
-
-	bool copy = flags & SHF_ALLOC &&
-+		(GET_LE(&in->sh_size) ||
-+		(GET_LE(&in->sh_type) != SHT_RELA &&
-+		GET_LE(&in->sh_type) != SHT_REL)) &&
-		strcmp(name, ".altinstructions") &&
-		strcmp(name, ".altinstr_replacement");
-
-Results: fio started OK, getting 900K IOPS, but ^C led to 0 IOPS and
-an fio hang, with one CPU (CPU 0) stuck in io_submit loops.
-
-perf top shows lookup_ioctx function alongside io_submit and
-do_io_submit this time:
- 14.96%  [kernel]             [k] lookup_ioctx
- 14.71%  libaio.so.1.0.1      [.] io_submit
- 13.78%  [kernel]             [k] system_call
- 10.79%  [kernel]             [k] system_call_after_swapgs
- 10.17%  [kernel]             [k] do_io_submit
-  8.91%  [kernel]             [k] copy_user_generic_string
-  4.24%  [kernel]             [k] io_submit_one
-  3.93%  [kernel]             [k] blk_flush_plug_list
-  3.32%  fio                  [.] fio_libaio_commit
-  2.84%  [kernel]             [k] sysret_check
-  2.06%  [kernel]             [k] blk_finish_plug
-  1.89%  [kernel]             [k] SyS_io_submit
-  1.48%  [kernel]             [k] blk_start_plug
-  1.04%  fio                  [.] io_submit@plt
-  0.84%  [kernel]             [k] __get_user_4
-  0.74%  [kernel]             [k] system_call_fastpath
-  0.60%  [kernel]             [k] _copy_from_user
-  0.51%  diff                 [.] 0x0000000000007abb
-
-ftrace on CPU 0 shows similar repetition to before:
-             fio-4107  [000] ....   389.992300: lookup_ioctx <-do_io_submit
-             fio-4107  [000] ....   389.992300: blk_start_plug <-do_io_submit
-             fio-4107  [000] ....   389.992300: io_submit_one <-do_io_submit
-             fio-4107  [000] ....   389.992300: blk_finish_plug <-do_io_submit
-             fio-4107  [000] ....   389.992300: blk_flush_plug_list <-blk_finish_plug
-             fio-4107  [000] ....   389.992301: SyS_io_submit <-system_call_fastpath
-             fio-4107  [000] ....   389.992301: do_io_submit <-SyS_io_submit
-             fio-4107  [000] ....   389.992301: lookup_ioctx <-do_io_submit
-             fio-4107  [000] ....   389.992301: blk_start_plug <-do_io_submit
-             fio-4107  [000] ....   389.992301: io_submit_one <-do_io_submit
-             fio-4107  [000] ....   389.992301: blk_finish_plug <-do_io_submit
-             fio-4107  [000] ....   389.992301: blk_flush_plug_list <-blk_finish_plug
-             fio-4107  [000] ....   389.992301: SyS_io_submit <-system_call_fastpath
-             fio-4107  [000] ....   389.992302: do_io_submit <-SyS_io_submit
-             fio-4107  [000] ....   389.992302: lookup_ioctx <-do_io_submit
-             fio-4107  [000] ....   389.992302: blk_start_plug <-do_io_submit
-             fio-4107  [000] ....   389.992302: io_submit_one <-do_io_submit
-             fio-4107  [000] ....   389.992302: blk_finish_plug <-do_io_submit
-             fio-4107  [000] ....   389.992302: blk_flush_plug_list <-blk_finish_plug
-
-
+-- 
+1.8.1.2.459.gbcd45b4.dirty
 
