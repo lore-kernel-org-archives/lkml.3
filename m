@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985AbaGJJmJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 05:42:09 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:36311 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752923AbaGJJmE (ORCPT
+	id S1753023AbaGJJnH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 05:43:07 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:3804 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752092AbaGJJnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 05:42:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAFcVECJ93Lw1MRVU-=zLRbB6To--zmAxz8OLObu=mhV84-FTNA@mail.gmail.com>
-References: <1404982207-4707-1-git-send-email-harinik@xilinx.com>
-	<1404982207-4707-2-git-send-email-harinik@xilinx.com>
-	<CAMuHMdXO-PkQ+07F=aZEjvH1Kh7uhWK8i3V9w+1aHvvtg7wDoQ@mail.gmail.com>
-	<CAFcVECJ93Lw1MRVU-=zLRbB6To--zmAxz8OLObu=mhV84-FTNA@mail.gmail.com>
-Date: Thu, 10 Jul 2014 11:42:01 +0200
-X-Google-Sender-Auth: ukN832l1tJ_K8-I-t6NixX_cp0I
-Message-ID: <CAMuHMdU2HyCwXBJTAyswyj7XqhzhHQ24MamGLLVgMwU4xi0kxQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/2] spi: Add support for Zynq QSPI controller
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Harini Katakam <harinikatakamlinux@gmail.com>
-Cc: Mark Brown <broonie@kernel.org>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        linux-spi <linux-spi@vger.kernel.org>,
+	Thu, 10 Jul 2014 05:43:04 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 10 Jul 2014 02:36:00 -0700
+Date: Thu, 10 Jul 2014 12:43:00 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Alexandre Courbot <acourbot@nvidia.com>
+CC: Ben Skeggs <bskeggs@redhat.com>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        =?UTF-8?B?TWFyZWsgVmHFoXV0?= <marex@denx.de>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jingoo Han <jg1.han@samsung.com>, Sourav Poddar <sourav.poddar@ti.com>,
-        "michals@xilinx.com" <michals@xilinx.com>,
-        Punnaiah Choudary Kalluri <punnaia@xilinx.com>
-Content-Type: text/plain; charset=UTF-8
+        "gnurou@gmail.com" <gnurou@gmail.com>
+Subject: Re: [PATCH 0/3] drm/gk20a: support for reclocking
+Message-ID: <20140710094300.GP23218@tbergstrom-lnx.Nvidia.com>
+References: <1404977677-22248-1-git-send-email-acourbot@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1404977677-22248-1-git-send-email-acourbot@nvidia.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Harini,
+On Thu, Jul 10, 2014 at 09:34:34AM +0200, Alexandre Courbot wrote:
+> This series adds support for reclocking on GK20A. The first two patches touch
+> the clock subsystem to allow GK20A to operate, by making the presence of the
+> thermal and voltage devices optional, and allowing pstates to be provided
+> directly instead of being probed using the BIOS (which Tegra does not have).
+> 
+> The last patch adds the GK20A clock device. Arguably the clock can be seen as a
+> stripped-down version of what is seen on NVE0, however instead of using NVE0
+> support has been written from scratch using the ChromeOS kernel as a basis.
+> There are several reasons for this:
+> 
+> - The ChromeOS driver uses a lookup table for the P coefficient which I could
+>   not find in the NVE0 driver,
+> - Some registers that NVE0 expects to find are not present on GK20A (e.g.
+>   0x137120 and 0x137140),
+> - Calculation of MNP is done differently from what is performed in
+>   nva3_pll_calc(), and it might be interesting to compare the two methods,
+> - All the same, the programming sequence is done differently in the ChromeOS
+>   driver and NVE0 could possibly benefit from it (?)
+> 
+> It would be interesting to try and merge both, but for now I prefer to have the
+> two coexisting to ensure proper operation on GK20A and besure I don't break
+> dGPU support. :)
+> 
+> Regarding the first patch, one might argue that I could as well add thermal
+> and voltage devices to GK20A. The reason this is not done is because these
+> currently depend heavily on the presence of a BIOS, and will require a rework
+> similar to that done in patch 2 for clocks. I would like to make sure this
+> approach is approved because applying it to other subdevs.
 
-On Thu, Jul 10, 2014 at 11:31 AM, Harini Katakam
-<harinikatakamlinux@gmail.com> wrote:
->>> +       master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_RX_DUAL | SPI_RX_QUAD |
->>> +                           SPI_TX_DUAL | SPI_TX_QUAD;
->>
->> Your driver advertises Dual/Quad SPI Transfer capabilities, but it doesn't
->> check spi_transfer.[tr]x_nbits? How can it determine when to enable Dual/Quad?
->
-> Here the driver is just giving information that the controller support it.
-> The MTD layer enables dual/quad based on what the flash supports; quad
-> being the first priority
-> I understand that the spi core reads rx, tx-bus-width property and
-> master support flags and
-> performs the necessary checks.
+I think this should use CCF so we can use pre and post rate change notifiers
+to hookup vdd_gpu DVS.
 
-That's correct: as long as the rx, tx-bus-width  properties do not indicate a
-Dual or Quad wiring, it won't be used.
+Thanks,
 
-However, based on schematics, someone may set the rx, tx-bus-width properties
-to 4, which is correct, as DT describes the hardware. But this will fail to
-work.
-So I think it's safer not to announce Dual/Quad support in the driver until
-the actual driver support is there.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Peter.
