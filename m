@@ -1,198 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877AbaGJNei (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:34:38 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:45681 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752240AbaGJNef (ORCPT
+	id S1753937AbaGJNgL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:36:11 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:57260 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753197AbaGJNgI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:34:35 -0400
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>, rabin@rab.in,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, tomasz.figa@gmail.com
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [RFC v3 4/5] clk: per-user clock accounting for debug
-Date: Thu, 10 Jul 2014 15:32:25 +0200
-Message-Id: <1404999146-32691-5-git-send-email-tomeu.vizoso@collabora.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1404999146-32691-1-git-send-email-tomeu.vizoso@collabora.com>
-References: <1404999146-32691-1-git-send-email-tomeu.vizoso@collabora.com>
+	Thu, 10 Jul 2014 09:36:08 -0400
+Message-ID: <53BE9713.8090700@arm.com>
+Date: Thu, 10 Jul 2014 14:37:23 +0100
+From: Sudeep Holla <sudeep.holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Sudeep Holla <sudeep.holla@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Rob Herring <robh@kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux390@de.ibm.com" <linux390@de.ibm.com>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/9] drivers: base: support cpu cache information interface
+ to userspace via sysfs
+References: <1403717444-23559-1-git-send-email-sudeep.holla@arm.com> <1403717444-23559-3-git-send-email-sudeep.holla@arm.com> <20140710000905.GA18025@kroah.com>
+In-Reply-To: <20140710000905.GA18025@kroah.com>
+X-OriginalArrivalTime: 10 Jul 2014 13:36:05.0020 (UTC) FILETIME=[E5DC5DC0:01CF9C43]
+X-MC-Unique: 114071014360512501
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a clock has multiple users, the WARNING on imbalance of
-enable/disable may not show the guilty party since although they may
-have commited the error earlier, the warning is emitted later when some
-other user, presumably innocent, disables the clock.
+Hi Greg,
 
-Provide per-user clock enable/disable accounting and disabler tracking
-in order to help debug these problems.
+Thanks for reviewing this.
 
-Based on previous work by Rabin Vincent <rabin@rab.in>.
+On 10/07/14 01:09, Greg Kroah-Hartman wrote:
+> On Wed, Jun 25, 2014 at 06:30:37PM +0100, Sudeep Holla wrote:
+>> +static const struct device_attribute *cache_optional_attrs[] = {
+>> +	&dev_attr_coherency_line_size,
+>> +	&dev_attr_ways_of_associativity,
+>> +	&dev_attr_number_of_sets,
+>> +	&dev_attr_size,
+>> +	&dev_attr_attributes,
+>> +	&dev_attr_physical_line_partition,
+>> +	NULL
+>> +};
+>> +
+>> +static int device_add_attrs(struct device *dev,
+>> +			    const struct device_attribute **dev_attrs)
+>> +{
+>> +	int i, error = 0;
+>> +	struct device_attribute *dev_attr;
+>> +	char *buf;
+>> +
+>> +	if (!dev_attrs)
+>> +		return 0;
+>> +
+>> +	buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
+>> +	if (!buf)
+>> +		return -ENOMEM;
+>> +
+>> +	for (i = 0; dev_attrs[i]; i++) {
+>> +		dev_attr = (struct device_attribute *)dev_attrs[i];
+>> +
+>> +		/* create attributes that provides meaningful value */
+>> +		if (dev_attr->show(dev, dev_attr, buf) < 0)
+>> +			continue;
+>> +
+>> +		error = device_create_file(dev, dev_attrs[i]);
+>> +		if (error) {
+>> +			while (--i >= 0)
+>> +				device_remove_file(dev, dev_attrs[i]);
+>> +			break;
+>> +		}
+>> +	}
+>> +
+>> +	kfree(buf);
+>> +	return error;
+>> +}
+>
+> Ick, why create your own function for this when the driver core has this
+> functionality built into it?  Look at the is_visible() callback, and how
+> it is use for an attribute group please.
+>
 
-Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
----
- drivers/clk/clk.c           | 35 +++++++++++++++++++++++++++++++----
- drivers/clk/clk.h           |  3 ++-
- drivers/clk/clkdev.c        | 16 ++++++++++++----
- include/linux/clk-private.h |  4 ++++
- 4 files changed, 49 insertions(+), 9 deletions(-)
+I agree even I added this function hesitantly as didn't realize that I can use
+is_visible for this purpose. Thanks for pointing that out I will have a look
+at it.
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index cc1d09b..9d51900 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -568,7 +568,8 @@ static int clk_disable_unused(void)
- }
- late_initcall_sync(clk_disable_unused);
- 
--struct clk *__clk_create_clk(struct clk_core *clk_core)
-+struct clk *__clk_create_clk(struct clk_core *clk_core, const char *dev,
-+			     const char *con)
- {
- 	struct clk *clk;
- 
-@@ -581,6 +582,8 @@ struct clk *__clk_create_clk(struct clk_core *clk_core)
- 		return ERR_PTR(-ENOMEM);
- 
- 	clk->core = clk_core;
-+	clk->dev_id = dev;
-+	clk->con_id = con;
- 
- 	return clk;
- }
-@@ -955,7 +958,20 @@ EXPORT_SYMBOL_GPL(clk_provider_disable);
-  */
- void clk_disable(struct clk *clk_user)
- {
--	clk_provider_disable(clk_to_clk_core(clk_user));
-+	struct clk_core *clk = clk_to_clk_core(clk_user);
-+	unsigned long flags;
-+
-+	flags = clk_enable_lock();
-+	if (!WARN(clk_user->enable_count == 0,
-+		  "incorrect disable clk dev %s con %s last disabler %pF\n",
-+		  clk_user->dev_id, clk_user->con_id, clk_user->last_disable)) {
-+
-+		clk_user->last_disable = __builtin_return_address(0);
-+		clk_user->enable_count--;
-+
-+		__clk_disable(clk);
-+	}
-+	clk_enable_unlock(flags);
- }
- EXPORT_SYMBOL_GPL(clk_disable);
- 
-@@ -1016,7 +1032,17 @@ EXPORT_SYMBOL_GPL(clk_provider_enable);
-  */
- int clk_enable(struct clk *clk_user)
- {
--	return clk_provider_enable(clk_to_clk_core(clk_user));
-+	struct clk_core *clk = clk_to_clk_core(clk_user);
-+	unsigned long flags;
-+	int ret;
-+
-+	flags = clk_enable_lock();
-+	ret = __clk_enable(clk);
-+	if (!ret)
-+		clk_user->enable_count++;
-+	clk_enable_unlock(flags);
-+
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(clk_enable);
- 
-@@ -1692,8 +1718,9 @@ EXPORT_SYMBOL_GPL(clk_provider_get_parent);
- struct clk *clk_get_parent(struct clk *clk_user)
- {
- 	struct clk_core *clk = clk_to_clk_core(clk_user);
-+	struct clk_core *parent = clk_provider_get_parent(clk);
- 
--	return __clk_create_clk(clk_provider_get_parent(clk));
-+	return __clk_create_clk(parent, clk_user->dev_id, clk_user->con_id);
- }
- EXPORT_SYMBOL_GPL(clk_get_parent);
- 
-diff --git a/drivers/clk/clk.h b/drivers/clk/clk.h
-index 4d7398f..3987594 100644
---- a/drivers/clk/clk.h
-+++ b/drivers/clk/clk.h
-@@ -23,5 +23,6 @@ static inline struct clk_core *clk_to_clk_core(struct clk *clk)
- {
- 	return clk->core;
- }
--struct clk *__clk_create_clk(struct clk_core *clk_core);
-+struct clk *__clk_create_clk(struct clk_core *clk_core, const char *dev,
-+			     const char *con);
- #endif
-diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-index 10020b2..6ea91bf 100644
---- a/drivers/clk/clkdev.c
-+++ b/drivers/clk/clkdev.c
-@@ -76,7 +76,9 @@ struct clk_core *of_clk_provider_get(struct device_node *np, int index)
- 
- struct clk *of_clk_get(struct device_node *np, int index)
- {
--	return __clk_create_clk(of_clk_provider_get(np, index));
-+	struct clk_core *clk = of_clk_provider_get(np, index);
-+
-+	return __clk_create_clk(clk, np->full_name, NULL);
- }
- EXPORT_SYMBOL(of_clk_get);
- 
-@@ -128,7 +130,9 @@ struct clk_core *of_clk_provider_get_by_name(struct device_node *np, const char
-  */
- struct clk *of_clk_get_by_name(struct device_node *np, const char *name)
- {
--	return __clk_create_clk(of_clk_provider_get_by_name(np, name));
-+	struct clk_core *clk = of_clk_provider_get_by_name(np, name);
-+
-+	return __clk_create_clk(clk, np->full_name, NULL);
- }
- EXPORT_SYMBOL(of_clk_get_by_name);
- #endif
-@@ -195,7 +199,9 @@ EXPORT_SYMBOL_GPL(clk_provider_get_sys);
- 
- struct clk *clk_get_sys(const char *dev_id, const char *con_id)
- {
--	return __clk_create_clk(clk_provider_get_sys(dev_id, con_id));
-+	struct clk_core *clk = clk_provider_get_sys(dev_id, con_id);
-+
-+	return __clk_create_clk(clk, dev_id, con_id);
- }
- EXPORT_SYMBOL(clk_get_sys);
- 
-@@ -218,7 +224,9 @@ EXPORT_SYMBOL(clk_provider_get);
- 
- struct clk *clk_get(struct device *dev, const char *con_id)
- {
--	return __clk_create_clk(clk_provider_get(dev, con_id));
-+	const char *dev_id = dev ? dev_name(dev) : NULL;
-+
-+	return __clk_create_clk(clk_provider_get(dev, con_id), dev_id, con_id);
- }
- EXPORT_SYMBOL(clk_get);
- 
-diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
-index 2c1ece9..9657fc8 100644
---- a/include/linux/clk-private.h
-+++ b/include/linux/clk-private.h
-@@ -57,6 +57,10 @@ struct clk_core {
- 
- struct clk {
- 	struct clk_core	*core;
-+	unsigned int	enable_count;
-+	const char	*dev_id;
-+	const char	*con_id;
-+	void		*last_disable;
- };
- 
- /*
--- 
-1.9.3
+>> +static void device_remove_attrs(struct device *dev,
+>> +				const struct device_attribute **dev_attrs)
+>> +{
+>> +	int i;
+>> +
+>> +	if (!dev_attrs)
+>> +		return;
+>> +
+>> +	for (i = 0; dev_attrs[i]; dev_attrs++, i++)
+>> +		device_remove_file(dev, dev_attrs[i]);
+>> +}
+>
+> You should just remove a whole group at once, not individually.
+>
+
+Right, I must be able to get rid of these 2 functions once I use
+is_visible callback.
+
+>> +
+>> +const struct device_attribute **
+>> +__weak cache_get_priv_attr(struct device *cache_idx_dev)
+>> +{
+>> +	return NULL;
+>> +}
+>> +
+>> +/* Add/Remove cache interface for CPU device */
+>> +static void cpu_cache_sysfs_exit(unsigned int cpu)
+>> +{
+>> +	int i;
+>> +	struct device *tmp_dev;
+>> +	const struct device_attribute **ci_priv_attr;
+>> +
+>> +	if (per_cpu_index_dev(cpu)) {
+>> +		for (i = 0; i < cache_leaves(cpu); i++) {
+>> +			tmp_dev = per_cache_index_dev(cpu, i);
+>> +			if (!tmp_dev)
+>> +				continue;
+>> +			ci_priv_attr = cache_get_priv_attr(tmp_dev);
+>> +			device_remove_attrs(tmp_dev, ci_priv_attr);
+>> +			device_remove_attrs(tmp_dev, cache_optional_attrs);
+>> +			device_unregister(tmp_dev);
+>> +		}
+>> +		kfree(per_cpu_index_dev(cpu));
+>> +		per_cpu_index_dev(cpu) = NULL;
+>> +	}
+>> +	device_unregister(per_cpu_cache_dev(cpu));
+>> +	per_cpu_cache_dev(cpu) = NULL;
+>> +}
+>> +
+>> +static int cpu_cache_sysfs_init(unsigned int cpu)
+>> +{
+>> +	struct device *dev = get_cpu_device(cpu);
+>> +
+>> +	if (per_cpu_cacheinfo(cpu) == NULL)
+>> +		return -ENOENT;
+>> +
+>> +	per_cpu_cache_dev(cpu) = device_create(dev->class, dev, cpu,
+>> +					       NULL, "cache");
+>> +	if (IS_ERR_OR_NULL(per_cpu_cache_dev(cpu)))
+>> +		return PTR_ERR(per_cpu_cache_dev(cpu));
+>> +
+>> +	/* Allocate all required memory */
+>> +	per_cpu_index_dev(cpu) = kzalloc(sizeof(struct device *) *
+>> +					 cache_leaves(cpu), GFP_KERNEL);
+>> +	if (unlikely(per_cpu_index_dev(cpu) == NULL))
+>> +		goto err_out;
+>> +
+>> +	return 0;
+>> +
+>> +err_out:
+>> +	cpu_cache_sysfs_exit(cpu);
+>> +	return -ENOMEM;
+>> +}
+>> +
+>> +static int cache_add_dev(unsigned int cpu)
+>> +{
+>> +	unsigned short i;
+>> +	int rc;
+>> +	struct device *tmp_dev, *parent;
+>> +	struct cacheinfo *this_leaf;
+>> +	const struct device_attribute **ci_priv_attr;
+>> +	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
+>> +
+>> +	rc = cpu_cache_sysfs_init(cpu);
+>> +	if (unlikely(rc < 0))
+>> +		return rc;
+>> +
+>> +	parent = per_cpu_cache_dev(cpu);
+>> +	for (i = 0; i < cache_leaves(cpu); i++) {
+>> +		this_leaf = this_cpu_ci->info_list + i;
+>> +		if (this_leaf->disable_sysfs)
+>> +			continue;
+>> +		tmp_dev = device_create_with_groups(parent->class, parent, i,
+>> +						    this_leaf,
+>> +						    cache_default_groups,
+>> +						    "index%1u", i);
+>> +		if (IS_ERR_OR_NULL(tmp_dev)) {
+>> +			rc = PTR_ERR(tmp_dev);
+>> +			goto err;
+>> +		}
+>> +
+>> +		rc = device_add_attrs(tmp_dev, cache_optional_attrs);
+>> +		if (unlikely(rc))
+>> +			goto err;
+>> +
+>> +		ci_priv_attr = cache_get_priv_attr(tmp_dev);
+>> +		rc = device_add_attrs(tmp_dev, ci_priv_attr);
+>> +		if (unlikely(rc))
+>> +			goto err;
+>
+> You just raced with userspace here, creating these files _after_ the
+> device was announced to userspace, causing problems with anyone wanting
+> to read these attributes :(
+>
+> I think if you fix up the is_visible() thing above, these calls will go
+> away, right?
+>
+
+Yes I agree.
+
+Regards,
+Sudeep
 
