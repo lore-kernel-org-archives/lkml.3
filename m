@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751761AbaGJHiF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 03:38:05 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:63155 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793AbaGJHiD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 03:38:03 -0400
+	id S1752025AbaGJHif (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 03:38:35 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:48739 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751808AbaGJHid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 03:38:33 -0400
+Message-ID: <53BE42F6.2090004@mm-sol.com>
+Date: Thu, 10 Jul 2014 10:38:30 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <20140709224647.GA23929@kroah.com>
-References: <1401731125-19780-1-git-send-email-emilgoode@gmail.com>
-	<20140709224647.GA23929@kroah.com>
-Date: Thu, 10 Jul 2014 09:38:00 +0200
-X-Google-Sender-Auth: RAnYHducSNTE9yKSwgS9PCCp-5A
-Message-ID: <CAMuHMdVq3BX=NwaCsma-N5iTdTkCS-rsX16dQL1Qr9Sepo8qww@mail.gmail.com>
-Subject: Re: [PATCH] usb: usb5303: make use of uninitialized err variable
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Emil Goode <emilgoode@gmail.com>, Mark Brown <broonie@linaro.org>,
-        Olof Johansson <olof@lixom.net>, Dongjin Kim <tobetter@gmail.com>,
-        Julius Werner <jwerner@chromium.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        USB list <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Josh Cartwright <joshc@codeaurora.org>
+Subject: Re: [RFC PATCH v2 3/5] rtc: add qpnp rtc driver
+References: <1404393243-7324-1-git-send-email-svarbanov@mm-sol.com> <1404393243-7324-4-git-send-email-svarbanov@mm-sol.com> <53BD84E1.4030602@codeaurora.org>
+In-Reply-To: <53BD84E1.4030602@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Hi Stephen,
 
-On Thu, Jul 10, 2014 at 12:46 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Mon, Jun 02, 2014 at 07:45:25PM +0200, Emil Goode wrote:
->> The variable err is not initialized here, this patch uses it
->> to store an eventual error value from devm_clk_get().
+On 07/09/2014 09:07 PM, Stephen Boyd wrote:
+> On 07/03/14 06:14, Stanimir Varbanov wrote:
+>> A 32bits RTC is housed inside PMIC. The RTC driver uses QPNP
+>> SPMI interface to communicate with the PMIC RTC module.
 >>
->> Signed-off-by: Emil Goode <emilgoode@gmail.com>
->> Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
->> ---
->>  drivers/usb/misc/usb3503.c |   10 +++++++---
->>  1 file changed, 7 insertions(+), 3 deletions(-)
+>> The RTC device is divided into two sub-peripherals:
+>>  - RTC read-write peripheral having basic RTC registers
+>>  - alarm peripheral for controlling alarm
+>>
+>> These two RTC peripherals are childrens of QPNP SPMI bus. They
+>> use regmap to read/write to its registers into PMIC.
+>>
+> 
+> What happened to using Josh's patch for rtc-pm8xxx.c[1]? That seems
+> easier than adding an entire new driver for almost the same hardware.
+> 
 
-> This patch fails to apply to my tree :(
+Ups, I completely forgot about Josh's patch, thanks for the reminder.
+Nevermind, the intention of the patch set was to get agreement on the
+approach of the qpnp-spmi driver. The rtc is just slightly reworked to
+platform driver downstream rtc driver. And last but not least I've used
+rtc to test the approach and as a example of PMIC function/peripheral
+driver.
 
-You've already applied
-commit ec5734c41bee2ee7c938a8f34853d31cada7e67a
-Author: Tushar Behera <tushar.b@samsung.com>
-Date:   Tue Jun 17 16:38:50 2014 +0530
+I will see what efforts are needed to reuse rtc-pm8xxx.
 
-    usb: misc: usb3503: Update error code in print message
+> [1]
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2013-October/207665.html
+> 
 
-    'err' is uninitialized, rather print the error code directly.
-
-which fixes it slightly different.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+regards,
+Stan
