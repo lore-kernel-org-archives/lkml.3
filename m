@@ -1,70 +1,409 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753421AbaGJMPv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 08:15:51 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57438 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752173AbaGJMPs (ORCPT
+	id S1753504AbaGJMQR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 08:16:17 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:35942 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752190AbaGJMQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 08:15:48 -0400
-Date: Thu, 10 Jul 2014 14:12:10 +0200
-From: Mark Brown <broonie@kernel.org>
-To: Keerthy <j-keerthy@ti.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, mark.rutland@arm.com, galak@codeaurora.org,
-        robh+dt@kernel.org, linux@arm.linux.org.uk, balbi@ti.com,
-        tony@atomide.com, kishon@ti.com
-Message-ID: <20140710121210.GF30458@sirena.org.uk>
-References: <1404884193-20580-2-git-send-email-j-keerthy@ti.com>
- <1404901379-30135-1-git-send-email-j-keerthy@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="l+LxDeyHMCBjwres"
-Content-Disposition: inline
-In-Reply-To: <1404901379-30135-1-git-send-email-j-keerthy@ti.com>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 82.127.83.212
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v4] regulator: tps65218: Add fixed_uV fields for dcdc5
- and dcdc6
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Thu, 10 Jul 2014 08:16:14 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-53-53be840b37b9
+Message-id: <53BE82C6.1030206@samsung.com>
+Date: Thu, 10 Jul 2014 16:10:46 +0400
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Alexey Preobrazhensky <preobr@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        x86@kernel.org, linux-mm@kvack.org, dave.hansen@intel.com
+Subject: Re: [RFC/PATCH RESEND -next 01/21] Add kernel address sanitizer
+ infrastructure.
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1404905415-9046-2-git-send-email-a.ryabinin@samsung.com>
+ <87pphenxex.fsf@tassilo.jf.intel.com>
+In-reply-to: <87pphenxex.fsf@tassilo.jf.intel.com>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrEIsWRmVeSWpSXmKPExsVy+t/xy7rcLfuCDX7c1bL4vXcmq8Wc9WvY
+	LI5c+85ucf3bG0aLTy8fMFpMeNjGbrGyu5nNYvuzt0wWKzsfsFpsenyN1eLPrh1MFpd3zWGz
+	uLfmP6vF7cu8FpcOLGCyaNl3gcmi7fM/Vot9K88DWUs2MlksPnKb2eLds8nMFps3TWW2+LHh
+	MauDuEdLcw+bx/ydHxk9ds66y+6xYFOpx+I9L5k8Nq3qZPPY9GkSu0fX2ytMHu/OnWP3ODHj
+	N4vHkyvTmTw2L6n3+Pj0FovH+31X2TzOLDjC7vF5k1yAQBSXTUpqTmZZapG+XQJXxuJbn9kL
+	moIqbvZvYm1g/OXQxcjJISFgIvH740RGCFtM4sK99WxdjFwcQgJLGSUWnfrKCOE0M0kc29zI
+	AlLFK6AlcebhfqAqDg4WAVWJ/Z9kQMJsAnoS/2ZtZwOxRQUiJA70PWOFKBeU+DH5HgtIuYiA
+	isTxU3wgI5kFJrBJ/F84jx2kRlggSqLn+RmoXSsZJT5NXAfWzClgJLF7xlSw65gF1CUmzVvE
+	DGHLS2xe85Z5AqPALCQ7ZiEpm4WkbAEj8ypG0dTS5ILipPRcQ73ixNzi0rx0veT83E2MkHj/
+	soNx8TGrQ4wCHIxKPLwatbuDhVgTy4orcw8xSnAwK4nwZtXtCxbiTUmsrEotyo8vKs1JLT7E
+	yMTBKdXAKPDo/9FMjmaj4IIdGu57f7Srfz/yJKmyOWSXe3nyj9Jp+e9dqx9s6lmn5N2QIvZK
+	MO7p/91Ff+J/3MznnGcp9oxPtnn6JOl3/nM//Pt8kKfbvlBaldnt70tOVZUzR4/cOPqz4XCX
+	ueHM1/vU3c58nD9/5ybt81M647QKCtk+fxJTuPlvSpJusxJLcUaioRZzUXEiAASj9ArVAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/09/14 23:29, Andi Kleen wrote:
+> Andrey Ryabinin <a.ryabinin@samsung.com> writes:
+> 
+> Seems like a useful facility. Thanks for working on it. Overall the code
+> looks fairly good. Some comments below.
+> 
+> 
+>> +
+>> +Address sanitizer for kernel (KASAN) is a dynamic memory error detector. It provides
+>> +fast and comprehensive solution for finding use-after-free and out-of-bounds bugs.
+>> +
+>> +KASAN is better than all of CONFIG_DEBUG_PAGEALLOC, because it:
+>> + - is based on compiler instrumentation (fast),
+>> + - detects OOB for both writes and reads,
+>> + - provides UAF detection,
+> 
+> Please expand the acronym.
+> 
+Sure, will do.
 
---l+LxDeyHMCBjwres
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+>> +
+>> +|--------|        |--------|
+>> +| Memory |----    | Memory |
+>> +|--------|    \   |--------|
+>> +| Shadow |--   -->| Shadow |
+>> +|--------|  \     |--------|
+>> +|   Bad  |   ---->|  Bad   |
+>> +|--------|  /     |--------|
+>> +| Shadow |--   -->| Shadow |
+>> +|--------|    /   |--------|
+>> +| Memory |----    | Memory |
+>> +|--------|        |--------|
+> 
+> I guess this implies it's incompatible with memory hotplug, as the 
+> shadow couldn't be extended?
+> 
+> That's fine, but you should exclude that in Kconfig.
+> 
+> There are likely more exclude dependencies for Kconfig too.
+> Neds dependencies on the right sparse mem options?
+> Does it work with kmemcheck? If not exclude.
+> 
+> Perhaps try to boot it with all other debug options and see which ones break.
+> 
 
-On Wed, Jul 09, 2014 at 03:52:59PM +0530, Keerthy wrote:
-> Add fixed_uV fields for dcdc5 and dcdc6.
+Besides Kconfig dependencies I might need to disable instrumentation in some places.
+For example kasan doesn't play well with kmemleak. Kmemleak may look for pointers inside redzones
+and kasan treats this as an error.
 
-Applied, but don't bury new patches into the middle of old threads -
-it's a good way to get your patch ignored.
+>> diff --git a/Makefile b/Makefile
+>> index 64ab7b3..08a07f2 100644
+>> --- a/Makefile
+>> +++ b/Makefile
+>> @@ -384,6 +384,12 @@ LDFLAGS_MODULE  =
+>>  CFLAGS_KERNEL	=
+>>  AFLAGS_KERNEL	=
+>>  CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
+>> +CFLAGS_KASAN	= -fsanitize=address --param asan-stack=0 \
+>> +			--param asan-use-after-return=0 \
+>> +			--param asan-globals=0 \
+>> +			--param asan-memintrin=0 \
+>> +			--param asan-instrumentation-with-call-threshold=0 \
+> 
+> Hardcoding --param is not very nice. They can change from compiler
+> to compiler version. Need some version checking?
+> 
+> Also you should probably have some check that the compiler supports it
+> (and print some warning if not)
+> Otherwise randconfig builds will be broken if the compiler doesn't.
+> 
+> Also does the kernel really build/work without the other patches?
+> If not please move this patchkit to the end of the series, to keep
+> the patchkit bisectable (this may need moving parts of the includes
+> into a separate patch)
+> 
+It's buildable. At this point you can't select CONFIG_KASAN = y because there is no
+arch that supports kasan (HAVE_ARCH_KASAN config). But after x86 patches kernel could be
+build and run with kasan. At that point kasan will be able to catch only "wild" memory
+accesses (when someone outside mm/kasan/* tries to access shadow memory).
 
---l+LxDeyHMCBjwres
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+>> diff --git a/commit b/commit
+>> new file mode 100644
+>> index 0000000..134f4dd
+>> --- /dev/null
+>> +++ b/commit
+>> @@ -0,0 +1,3 @@
+>> +
+>> +I'm working on address sanitizer for kernel.
+>> +fuck this bloody.
+>> \ No newline at end of file
+> 
+> Heh. Please remove.
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Oops. No idea how it get there :)
 
-iQIcBAEBAgAGBQJTvoMXAAoJELSic+t+oim91KgP/3UuZL9YYznaM1SFatPN0ACe
-VVEO2KuB72o+u+MVDYoMYE3n7GDOcousFUoT0yFKhjVvnvRIihaleoxZNiBIXyaw
-FKqVp0zSSHLKPt4HyE/MZ9t0E14aLhgZ1EE8OyiEfBce+cGxnBnl9X+EGn8cXaqO
-x8EEv86Ozvvq0YaaF6VSrhG2ZFtLUZFikrTqui/8IWFEkiwtQmKOaqADQbLlnxNC
-M+Exa1ofxBAufd47+JGtkpdYf4e5GESlmY7dJDg7QemEpno1AiLzUEYIrrR5a7ta
-EB+pKUDfdstjt9NkJJKmh9iQkfU0vD4lCtgDT53MzuMigdHKamuabwx7TquYSzOY
-4I59+ailTITVUzcYgkKjBvUIa6H1txww/Vbct/I+hNHeydw44yeko+JjIYEyZ2U+
-/5FlR0x3lA2uPCVrfRDDp8zieqVba5S3+VF1zdUXww36uOW9oF99cQbDPHfrCSsi
-P19EjBd6wPsl++AuDNaKKsmgR+evdWh4rpPTnO+o2bqRuhwDI8Oy1Siz9i1UDEYg
-8drw4abiykPHTjCFKeCeF/yGZYZfiuzlzHJcywwjLsSGtGGxOFFvfN3EqwRyZcu5
-5F7V/7RyrJKW1bGPBdoBiuSlpuB+3UCszEN7FnZ3mgsI8BeD/PCN8cVESra/+FVe
-tDfbpL+scmBHSLkcxRc4
-=2YNl
------END PGP SIGNATURE-----
+>> diff --git a/lib/Kconfig.kasan b/lib/Kconfig.kasan
+>> new file mode 100644
+>> index 0000000..2bfff78
+>> --- /dev/null
+>> +++ b/lib/Kconfig.kasan
+>> @@ -0,0 +1,20 @@
+>> +config HAVE_ARCH_KASAN
+>> +	bool
+>> +
+>> +if HAVE_ARCH_KASAN
+>> +
+>> +config KASAN
+>> +	bool "AddressSanitizer: dynamic memory error detector"
+>> +	default n
+>> +	help
+>> +	  Enables AddressSanitizer - dynamic memory error detector,
+>> +	  that finds out-of-bounds and use-after-free bugs.
+> 
+> Needs much more description.
+> 
+>> +
+>> +config KASAN_SANITIZE_ALL
+>> +	bool "Instrument entire kernel"
+>> +	depends on KASAN
+>> +	default y
+>> +	help
+>> +	  This enables compiler intrumentation for entire kernel
+>> +
+> 
+> Same.
+> 
+> 
+>> diff --git a/mm/kasan/kasan.c b/mm/kasan/kasan.c
+>> new file mode 100644
+>> index 0000000..e2cd345
+>> --- /dev/null
+>> +++ b/mm/kasan/kasan.c
+>> @@ -0,0 +1,292 @@
+>> +/*
+>> + *
+> 
+> Add one line here what the file does. Same for other files.
+> 
+>> + * Copyright (c) 2014 Samsung Electronics Co., Ltd.
+>> + * Author: Andrey Ryabinin <a.ryabinin@samsung.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> +#include "kasan.h"
+>> +#include "../slab.h"
+> 
+> That's ugly, but ok.
+Hm... "../slab.h" is not needed in this file. linux/slab.h is enough here.
 
---l+LxDeyHMCBjwres--
+> 
+>> +
+>> +static bool __read_mostly kasan_initialized;
+> 
+> It would be better to use a static_key, but I guess your initialization
+> is too early?
+
+No, not too early. kasan_init_shadow which switches this flag called just after jump_label_init,
+so it's not a problem for static_key, but there is another one.
+I tried static key here. I works really well for arm, but it has some problems on x86.
+While switching static key by calling static_key_slow_inc, the first byte of static key is replaced with
+breakpoint (look at text_poke_bp()). After that, at first memory access __asan_load/__asan_store called and
+we are executing this breakpoint from the code that trying to update that instruction.
+
+text_poke_bp()
+{
+	....
+	//replace first byte with breakpoint
+		....
+			___asan_load*()
+				....
+				if (static_key_false(&kasan_initlized)) <-- static key update still in progress
+		....
+	//patching code done
+}
+
+To make static_key work on x86 I need to disable instrumentation in text_poke_bp() and in any other functions that called from it.
+It might be a big problem if text_poke_bp uses some very generic functions.
+
+Another better option would be to get rid of kasan_initilized check in kasan_enabled():
+static inline bool kasan_enabled(void)
+{
+	return likely(kasan_initialized
+		&& !current->kasan_depth);
+}
+
+
+> 
+> Of course the proposal to move it into start_kernel and get rid of the
+> flag would be best.
+>
+
+that's the plan for future.
+
+
+>> +
+>> +unsigned long kasan_shadow_start;
+>> +unsigned long kasan_shadow_end;
+>> +
+>> +/* equals to (kasan_shadow_start - PAGE_OFFSET/KASAN_SHADOW_SCALE_SIZE) */
+>> +unsigned long __read_mostly kasan_shadow_offset; /* it's not a very good name for this variable */
+> 
+> Do these all need to be global?
+> 
+
+For now only  kasan_shadow_start and kasan_shadow_offset need to be global.
+It also should be possible to get rid of using kasan_shadow_start in kasan_shadow_to_mem(), and make it static
+
+>> +
+>> +
+>> +static inline bool addr_is_in_mem(unsigned long addr)
+>> +{
+>> +	return likely(addr >= PAGE_OFFSET && addr < (unsigned long)high_memory);
+>> +}
+> 
+> Of course there are lots of cases where this doesn't work (like large
+> holes), but I assume this has been checked elsewhere?
+> 
+Seems I need to do some work for sparsemem configurations.
+
+> 
+>> +
+>> +void kasan_enable_local(void)
+>> +{
+>> +	if (likely(kasan_initialized))
+>> +		current->kasan_depth--;
+>> +}
+>> +
+>> +void kasan_disable_local(void)
+>> +{
+>> +	if (likely(kasan_initialized))
+>> +		current->kasan_depth++;
+>> +}
+> 
+> Couldn't this be done without checking the flag?
+> 
+Not sure. Do we always have current available? I assume it should be initialized at some point of boot process.
+I will check that.
+
+
+> 
+>> +		return;
+>> +
+>> +	if (unlikely(addr < TASK_SIZE)) {
+>> +		info.access_addr = addr;
+>> +		info.access_size = size;
+>> +		info.is_write = write;
+>> +		info.ip = _RET_IP_;
+>> +		kasan_report_user_access(&info);
+>> +		return;
+>> +	}
+> 
+> How about vsyscall pages here?
+> 
+
+Not sure what do you mean. Could you please elaborate?
+
+>> +
+>> +	if (!addr_is_in_mem(addr))
+>> +		return;
+>> +
+>> +	access_addr = memory_is_poisoned(addr, size);
+>> +	if (likely(access_addr == 0))
+>> +		return;
+>> +
+>> +	info.access_addr = access_addr;
+>> +	info.access_size = size;
+>> +	info.is_write = write;
+>> +	info.ip = _RET_IP_;
+>> +	kasan_report_error(&info);
+>> +}
+>> +
+>> +void __init kasan_alloc_shadow(void)
+>> +{
+>> +	unsigned long lowmem_size = (unsigned long)high_memory - PAGE_OFFSET;
+>> +	unsigned long shadow_size;
+>> +	phys_addr_t shadow_phys_start;
+>> +
+>> +	shadow_size = lowmem_size >> KASAN_SHADOW_SCALE_SHIFT;
+>> +
+>> +	shadow_phys_start = memblock_alloc(shadow_size, PAGE_SIZE);
+>> +	if (!shadow_phys_start) {
+>> +		pr_err("Unable to reserve shadow memory\n");
+>> +		return;
+> 
+> Wouldn't this crash&burn later? panic?
+> 
+
+As already Sasha reported it will panic in memblock_alloc.
+
+>> +void *kasan_memcpy(void *dst, const void *src, size_t len)
+>> +{
+>> +	if (unlikely(len == 0))
+>> +		return dst;
+>> +
+>> +	check_memory_region((unsigned long)src, len, false);
+>> +	check_memory_region((unsigned long)dst, len, true);
+> 
+> I assume this handles negative len?
+> Also check for overlaps?
+> 
+Will do.
+
+>> +
+>> +static inline void *virt_to_obj(struct kmem_cache *s, void *slab_start, void *x)
+>> +{
+>> +	return x - ((x - slab_start) % s->size);
+>> +}
+> 
+> This should be in the respective slab headers, not hard coded.
+> 
+Agreed.
+
+>> +void kasan_report_error(struct access_info *info)
+>> +{
+>> +	kasan_disable_local();
+>> +	pr_err("================================="
+>> +		"=================================\n");
+>> +	print_error_description(info);
+>> +	print_address_description(info);
+>> +	print_shadow_for_address(info->access_addr);
+>> +	pr_err("================================="
+>> +		"=================================\n");
+>> +	kasan_enable_local();
+>> +}
+>> +
+>> +void kasan_report_user_access(struct access_info *info)
+>> +{
+>> +	kasan_disable_local();
+> 
+> Should print the same prefix oopses use, a lot of log grep tools
+> look for that. 
+> 
+Ok
+
+> Also you may want some lock to prevent multiple
+> reports mixing. 
+
+I think hiding it into
+ if (spin_trylock) { ... }
+
+would be enough.
+I think it might be a good idea to add option for reporting only first error.
+It will be usefull for some cases (for example strlen on not null terminated string makes kasan crazy)
+
+Thanks for review
+
+> 
+> -Andi
+> 
+
