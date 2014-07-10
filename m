@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356AbaGJLrz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 07:47:55 -0400
-Received: from sauhun.de ([89.238.76.85]:57120 "EHLO pokefinder.org"
+	id S1753380AbaGJLs3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 07:48:29 -0400
+Received: from sauhun.de ([89.238.76.85]:57108 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753167AbaGJLrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 07:47:06 -0400
+	id S1752955AbaGJLq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 07:46:59 -0400
 From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-i2c@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, Wolfram Sang <wsa@the-dreams.de>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 16/16] i2c: i2c-xiic: Drop class based scanning to improve bootup time
-Date: Thu, 10 Jul 2014 13:46:36 +0200
-Message-Id: <1404992799-3705-17-git-send-email-wsa@the-dreams.de>
+Subject: [PATCH 11/16] i2c: i2c-rcar: Drop class based scanning to improve bootup time
+Date: Thu, 10 Jul 2014 13:46:31 +0200
+Message-Id: <1404992799-3705-12-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404992799-3705-1-git-send-email-wsa@the-dreams.de>
 References: <1404992799-3705-1-git-send-email-wsa@the-dreams.de>
@@ -30,34 +30,33 @@ such things always break after some time.
 
 Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 ---
- drivers/i2c/busses/i2c-xiic.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/i2c/busses/i2c-rcar.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-xiic.c b/drivers/i2c/busses/i2c-xiic.c
-index 7731f1795869..ade9223912d3 100644
---- a/drivers/i2c/busses/i2c-xiic.c
-+++ b/drivers/i2c/busses/i2c-xiic.c
-@@ -677,15 +677,15 @@ static u32 xiic_func(struct i2c_adapter *adap)
- }
+diff --git a/drivers/i2c/busses/i2c-rcar.c b/drivers/i2c/busses/i2c-rcar.c
+index 899405923678..f3c7139dfa25 100644
+--- a/drivers/i2c/busses/i2c-rcar.c
++++ b/drivers/i2c/busses/i2c-rcar.c
+@@ -541,13 +541,13 @@ static int rcar_i2c_probe(struct platform_device *pdev)
+ 	irq = platform_get_irq(pdev, 0);
+ 	init_waitqueue_head(&priv->wait);
  
- static const struct i2c_algorithm xiic_algorithm = {
--	.master_xfer	= xiic_xfer,
--	.functionality	= xiic_func,
-+	.master_xfer = xiic_xfer,
-+	.functionality = xiic_func,
- };
- 
- static struct i2c_adapter xiic_adapter = {
--	.owner		= THIS_MODULE,
--	.name		= DRIVER_NAME,
--	.class		= I2C_CLASS_HWMON | I2C_CLASS_SPD | I2C_CLASS_DEPRECATED,
--	.algo		= &xiic_algorithm,
-+	.owner = THIS_MODULE,
-+	.name = DRIVER_NAME,
-+	.class = I2C_CLASS_DEPRECATED,
-+	.algo = &xiic_algorithm,
- };
- 
+-	adap			= &priv->adap;
+-	adap->nr		= pdev->id;
+-	adap->algo		= &rcar_i2c_algo;
+-	adap->class		= I2C_CLASS_HWMON | I2C_CLASS_SPD | I2C_CLASS_DEPRECATED;
+-	adap->retries		= 3;
+-	adap->dev.parent	= dev;
+-	adap->dev.of_node	= dev->of_node;
++	adap = &priv->adap;
++	adap->nr = pdev->id;
++	adap->algo = &rcar_i2c_algo;
++	adap->class = I2C_CLASS_DEPRECATED;
++	adap->retries = 3;
++	adap->dev.parent = dev;
++	adap->dev.of_node = dev->of_node;
+ 	i2c_set_adapdata(adap, priv);
+ 	strlcpy(adap->name, pdev->name, sizeof(adap->name));
  
 -- 
 2.0.0
