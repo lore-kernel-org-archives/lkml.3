@@ -1,141 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064AbaGJJtS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 05:49:18 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:49406 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752008AbaGJJtP (ORCPT
+	id S1753095AbaGJJuW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 05:50:22 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:1247 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752136AbaGJJuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 05:49:15 -0400
-Date: Thu, 10 Jul 2014 11:49:10 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
-        Joerg Roedel <joro@8bytes.org>, Cho KyongHo <pullip.cho@samsung.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Olav Haugan <ohaugan@codeaurora.org>,
-        Varun Sethi <varun.sethi@freescale.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] devicetree: Add generic IOMMU device tree bindings
-Message-ID: <20140710094909.GA21583@ulmo>
-References: <1404487757-18829-1-git-send-email-thierry.reding@gmail.com>
- <20140709134050.GN9485@arm.com>
- <20140709142125.GB3262@ulmo>
- <20140709181048.GX9485@arm.com>
+	Thu, 10 Jul 2014 05:50:21 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 10 Jul 2014 02:39:27 -0700
+Message-ID: <53BE61D9.4020202@nvidia.com>
+Date: Thu, 10 Jul 2014 12:50:17 +0300
+From: Mikko Perttunen <mperttunen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6c2NcOVqGQ03X4Wi"
-Content-Disposition: inline
-In-Reply-To: <20140709181048.GX9485@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Alexandre Courbot <acourbot@nvidia.com>, Ben Skeggs <bskeggs@redhat.com>
+CC: "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gnurou@gmail.com" <gnurou@gmail.com>
+Subject: Re: [PATCH 0/3] drm/gk20a: support for reclocking
+References: <1404977677-22248-1-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <1404977677-22248-1-git-send-email-acourbot@nvidia.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Does GK20A itself have any kind of thermal protection capabilities? 
+Upstream SOCTHERM support is not yet available (though I have a driver 
+in my tree), so we are thinking of disabling CPU DVFS on boards that 
+don't have always-on active cooling for now. Same might be necessary for 
+GPU as well.
 
---6c2NcOVqGQ03X4Wi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, Jul 09, 2014 at 07:10:48PM +0100, Will Deacon wrote:
-> Hi Thierry,
->=20
-> On Wed, Jul 09, 2014 at 03:21:27PM +0100, Thierry Reding wrote:
-> > On Wed, Jul 09, 2014 at 02:40:50PM +0100, Will Deacon wrote:
-> > > I would like to move the ARM SMMU driver over to this for 3.18, if po=
-ssible.
-> > > One use-case there is the ability to describe groups of masters behin=
-d a
-> > > multi-master IOMMU but which must be part of the same domain (i.e. an
-> > > iommu_group). This is useful for presenting devices to a guest with a
-> > > virtual SMMU, where the physical devices share a stage-2 context.
-> > >=20
-> > > With your binding, does this simply mean determining the set of maste=
-r IDs
-> > > in the group, then describing the complete set for each master?
-> >=20
-> > I'm not sure I properly understand what you're trying to do, but I don't
-> > think the binding is designed to cover that. Rather the goal was to
-> > describe the IDs belonging to each master, so that an IOMMU can be
-> > properly configured.
->=20
-> This is directly related to that problem, see below.
->=20
-> > Anything beyond that (e.g. logical grouping of masters) isn't directly
-> > within the scope of the binding (it doesn't describe hardware but some
-> > policy pertaining to some specific use-case).
->=20
-> This *is* for hardware. I can use PCI as an example, but this could equal=
-ly
-> apply to other types of bus. If you have a bunch of PCI master devices
-> sitting being a non-transparent bridge, they can end up sharing the same
-> master device ID (requester ID). This means that there is no way in the
-> IOMMU to initialise a translation for one of these devices without also
-> affecting the others. We currently have iommu_groups to deal with this, b=
-ut
-> it *is* a property of the hardware and we absolutely need a way to descri=
-be
-> it. I'm happy to add it later, but we need to think about it now to avoid
-> merging something that can't easily be extended.
->=20
-> For PCI, the topology is probable but even then, we need this information=
- to
-> describe the resulting master device ID emitted by the bridge for the
-> upstream group. One way to do this with your binding would be to treat all
-> of the upstream masters as having the same device ID.
-
-Yes, I think that makes most sense. After all from the IOMMU's point of
-view requests from all devices behind the bridge will originate from the
-same ID.
-
-So technically it's not really correct to encode the master ID within
-each of the devices, but rather they should be inheriting the ID from
-the non-transparent bridge.
-
-> With virtualisation, we may want to assign a group of devices to a guest =
-but
-> without emulating the bridge. This would need something the device-tree to
-> describe that they are grouped together.
-
-But that's also a software decision, isn't it? Virtualization doesn't
-have anything to do with the hardware description. Or am I missing
-something? Of course I guess you could generate a DTB for the guest and
-group device together, in which case you're pretty much free to do what
-you want since you're essentially defining your own hardware.
-
-Thierry
-
---6c2NcOVqGQ03X4Wi
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTvmGVAAoJEN0jrNd/PrOhkkgQAK9Oh++C2Hiqj8BoR+GbjFXn
-zKw+5tmSV7JzSf6DraSBeLEkhPOtmJy+fqhDSQxW2BO0QsPUDqbrrbYEXxdPRdDr
-10Vk2ZPXsCpSH8PMsYpXANroA91kCtv3dExof3pGuw5rzMjHrLnPsk+YJCc4FEko
-gHpfT+wmA1dT37xQLkTZo8n3UxTrfLWCMR4cVvBeoLO9IFvhhEjLbGgyq2Hzvve5
-W6ZeEP9V+YL286Q0/ax01G3QCke7FIKJGYpb0Y+6VIdnd6KFykbnkabuFJ7IGYox
-RgWDyYtEJg/jnLIsolyPjhcL5MA34Fyi5UUsR92qq8HxMs4/QziUIKtHtYjHSJ41
-tM9TqO5F51oyV2GrDssOgjlg3n3EGP4sj0iBV7w/kTe+Nt4TscQB+GFnumgJWvsI
-Uyhgsr14xBjOaZp/VT1UeHcSXyINEnmyl/KV5XuWsWVb99YzlxhNIdFlj7v3mKEh
-guymycJKDq36QeOQBziLbBPdkRR8DbzsS4GFPE3zb3yaznEYwKDSVSxTS/Dvgtnw
-L6PVhK2YXvXyZoXh1uLLtcRVxKLdmPqjvj6+QSJV6ok6mf3xFjm1ZRPsBQN2E16N
-i5M+vWFyKYpZZtVQwBq/dBusiYlZdEeQ0VuhmKOLisVy1oqFgnFEEDnkCK9BpOmG
-bZcB5Ik1aDuJggkR+D5s
-=lHv3
------END PGP SIGNATURE-----
-
---6c2NcOVqGQ03X4Wi--
+On 10/07/14 10:34, Alexandre Courbot wrote:
+> This series adds support for reclocking on GK20A. The first two patches touch
+> the clock subsystem to allow GK20A to operate, by making the presence of the
+> thermal and voltage devices optional, and allowing pstates to be provided
+> directly instead of being probed using the BIOS (which Tegra does not have).
+>
+> The last patch adds the GK20A clock device. Arguably the clock can be seen as a
+> stripped-down version of what is seen on NVE0, however instead of using NVE0
+> support has been written from scratch using the ChromeOS kernel as a basis.
+> There are several reasons for this:
+>
+> - The ChromeOS driver uses a lookup table for the P coefficient which I could
+>    not find in the NVE0 driver,
+> - Some registers that NVE0 expects to find are not present on GK20A (e.g.
+>    0x137120 and 0x137140),
+> - Calculation of MNP is done differently from what is performed in
+>    nva3_pll_calc(), and it might be interesting to compare the two methods,
+> - All the same, the programming sequence is done differently in the ChromeOS
+>    driver and NVE0 could possibly benefit from it (?)
+>
+> It would be interesting to try and merge both, but for now I prefer to have the
+> two coexisting to ensure proper operation on GK20A and besure I don't break
+> dGPU support. :)
+>
+> Regarding the first patch, one might argue that I could as well add thermal
+> and voltage devices to GK20A. The reason this is not done is because these
+> currently depend heavily on the presence of a BIOS, and will require a rework
+> similar to that done in patch 2 for clocks. I would like to make sure this
+> approach is approved because applying it to other subdevs.
+>
+> Alexandre Courbot (3):
+>    drm/nouveau/clk: make therm and volt devices optional
+>    drm/nouveau/clk: support for non-BIOS pstates
+>    drm/gk20a: reclocking support
+>
+>   drivers/gpu/drm/nouveau/Makefile                   |   1 +
+>   drivers/gpu/drm/nouveau/core/engine/device/nve0.c  |   1 +
+>   .../gpu/drm/nouveau/core/include/subdev/clock.h    |   9 +-
+>   drivers/gpu/drm/nouveau/core/subdev/clock/base.c   |  52 +-
+>   drivers/gpu/drm/nouveau/core/subdev/clock/gk20a.c  | 670 +++++++++++++++++++++
+>   drivers/gpu/drm/nouveau/core/subdev/clock/nv04.c   |   4 +-
+>   drivers/gpu/drm/nouveau/core/subdev/clock/nv40.c   |   4 +-
+>   drivers/gpu/drm/nouveau/core/subdev/clock/nv50.c   |   2 +-
+>   drivers/gpu/drm/nouveau/core/subdev/clock/nva3.c   |   4 +-
+>   drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c   |   4 +-
+>   drivers/gpu/drm/nouveau/core/subdev/clock/nvc0.c   |   4 +-
+>   drivers/gpu/drm/nouveau/core/subdev/clock/nve0.c   |   4 +-
+>   12 files changed, 725 insertions(+), 34 deletions(-)
+>   create mode 100644 drivers/gpu/drm/nouveau/core/subdev/clock/gk20a.c
+>
