@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422AbaGJMN2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 08:13:28 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:46134 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752681AbaGJMN0 (ORCPT
+	id S1753397AbaGJMNZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 08:13:25 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:60495 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752681AbaGJMNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 08:13:26 -0400
+	Thu, 10 Jul 2014 08:13:20 -0400
 From: sanjeev sharma <sanjeevsharmaengg@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: rmfrfs@gmail.com, peter.senna@gmail.com, teobaluta@gmail.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         sanjeev sharma <sanjeev_sharma@mentor.com>,
         Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
-Subject: [PATCH v4 4/4] staging: rtl8192u: Fixed too long line
-Date: Thu, 10 Jul 2014 17:54:57 +0530
-Message-Id: <1404995097-12689-5-git-send-email-sanjeevsharmaengg@gmail.com>
+Subject: [PATCH v4 2/4] staging: rtl8192u: Removed unnecessary whitespace & tab warning
+Date: Thu, 10 Jul 2014 17:54:55 +0530
+Message-Id: <1404995097-12689-3-git-send-email-sanjeevsharmaengg@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1404995097-12689-1-git-send-email-sanjeevsharmaengg@gmail.com>
 References: <20140708100142.GR25934@mwanda>
@@ -26,48 +26,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: sanjeev sharma <sanjeev_sharma@mentor.com>
 
-This patch will fix too long lines warning
-reported by checkpatch.pl.
+This patch will remove whitespace and tabs reported by
+checkpatch.pl script.
 
 Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
 ---
- drivers/staging/rtl8192u/r819xU_phy.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/staging/rtl8192u/r819xU_phy.c | 23 ++++++++++++-----------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/staging/rtl8192u/r819xU_phy.c b/drivers/staging/rtl8192u/r819xU_phy.c
-index 3155616..b2d81e9 100644
+index 0bcdd4e..0fcb673 100644
 --- a/drivers/staging/rtl8192u/r819xU_phy.c
 +++ b/drivers/staging/rtl8192u/r819xU_phy.c
-@@ -1236,7 +1236,8 @@ static u8 rtl8192_phy_SetSwChnlCmdArray(SwChnlCmd *CmdTable, u32 CmdTableIdx,
- 		return false;
- 	}
- 	if (CmdTableIdx >= CmdTableSz) {
--		RT_TRACE(COMP_ERR, "%s(): Access invalid index, please check size of the table, CmdTableIdx:%d, CmdTableSz:%d\n",
-+		RT_TRACE(COMP_ERR,
-+			 "%s():invalid index,CmdTableIdx:%d, CmdTableSz:%d\n",
- 			 __func__, CmdTableIdx, CmdTableSz);
- 		return false;
- 	}
-@@ -1697,7 +1698,8 @@ void InitialGain819xUsb(struct net_device *dev,	u8 Operation)
- 	priv->InitialGainOperateType = Operation;
+@@ -106,10 +106,10 @@ void rtl8192_setBBreg(struct net_device *dev, u32 reg_addr, u32 bitmask,
+ /******************************************************************************
+  * function:  This function reads specific bits from BB register
+  * input:     net_device	*dev
+- *            u32	 	reg_addr   //target addr to be readback
+- *            u32	 	bitmask    //taget bit pos to be readback
+- * output:    none
+- * return:    u32	 	data       //the readback register value
++ * u32		reg_addr   //target addr to be readback
++ * u32		bitmask    //taget bit pos to be readback
++ * output:	none
++ * return:	u32		data       //the readback register value
+  * notice:
+  ******************************************************************************/
+ u32 rtl8192_QueryBBReg(struct net_device *dev, u32 reg_addr, u32 bitmask)
+@@ -478,9 +478,9 @@ static void phy_FwRFSerialWrite(struct net_device *dev,
+ /******************************************************************************
+  * function:  This function reads BB parameters from header file we generate,
+  *            and do register read/write
+- * input:     net_device 	*dev
+- * output:    none
+- * return:    none
++ * input:	net_device	*dev
++ * output:	none
++ * return:	none
+  * notice:    BB parameters may change all the time, so please make
+  *            sure it has been synced with the newest.
+  *****************************************************************************/
+@@ -900,7 +900,7 @@ void rtl8192_phy_getTxPower(struct net_device *dev)
+ 	read_nic_byte(dev, rOFDM0_RxDetector3, &priv->framesync);
+ 	read_nic_byte(dev, rOFDM0_RxDetector2, &tmp);
+ 	priv->framesyncC34 = tmp;
+-	RT_TRACE(COMP_INIT, "Default framesync (0x%x) = 0x%x \n",
++	RT_TRACE(COMP_INIT, "Default framesync (0x%x) = 0x%x\n",
+ 		rOFDM0_RxDetector3, priv->framesync);
  
- 	if (priv->up)
--		queue_delayed_work(priv->priv_wq, &priv->initialgain_operate_wq, 0);
-+		queue_delayed_work(priv->priv_wq,
-+				   &priv->initialgain_operate_wq, 0);
- }
- 
- void InitialGainOperateWorkItemCallBack(struct work_struct *work)
-@@ -1786,7 +1788,8 @@ void InitialGainOperateWorkItemCallBack(struct work_struct *work)
- 		RT_TRACE(COMP_SCAN, "Scan BBInitialGainRestore 0xa0a is %x\n",
+ 	/* Read SIFS (save the value read fome MACPHY_REG.txt) */
+@@ -1463,6 +1463,7 @@ void rtl8192_SwChnl_WorkItem(struct net_device *dev)
+ u8 rtl8192_phy_SwChnl(struct net_device *dev, u8 channel)
+ {
+ 	struct r8192_priv *priv = ieee80211_priv(dev);
++
+ 	RT_TRACE(COMP_CH, "%s(), SwChnlInProgress: %d\n", __func__,
+ 		 priv->SwChnlInProgress);
+ 	if (!priv->up)
+@@ -1745,13 +1746,13 @@ void InitialGainOperateWorkItemCallBack(struct work_struct *work)
+ 		RT_TRACE(COMP_SCAN, "Scan InitialGainBackup 0xa0a is %x\n",
  			 priv->initgain_backup.cca);
  
--		rtl8192_phy_setTxPower(dev, priv->ieee80211->current_network.channel);
-+		rtl8192_phy_setTxPower(dev,
-+					priv->ieee80211->current_network.channel);
- 
- 		if (dm_digtable.dig_algorithm == DIG_ALGO_BY_FALSE_ALARM)
- 			/* FW DIG ON */
+-		RT_TRACE(COMP_SCAN, "Write scan initial gain = 0x%x \n",
++		RT_TRACE(COMP_SCAN, "Write scan initial gain = 0x%x\n",
+ 			 initial_gain);
+ 		write_nic_byte(dev, rOFDM0_XAAGCCore1, initial_gain);
+ 		write_nic_byte(dev, rOFDM0_XBAGCCore1, initial_gain);
+ 		write_nic_byte(dev, rOFDM0_XCAGCCore1, initial_gain);
+ 		write_nic_byte(dev, rOFDM0_XDAGCCore1, initial_gain);
+-		RT_TRACE(COMP_SCAN, "Write scan 0xa0a = 0x%x \n",
++		RT_TRACE(COMP_SCAN, "Write scan 0xa0a = 0x%x\n",
+ 			 POWER_DETECTION_TH);
+ 		write_nic_byte(dev, 0xa0a, POWER_DETECTION_TH);
+ 		break;
+@@ -1792,7 +1793,7 @@ void InitialGainOperateWorkItemCallBack(struct work_struct *work)
+ 			rtl8192_setBBreg(dev, UFWP, bMaskByte1, 0x1);
+ 		break;
+ 	default:
+-		RT_TRACE(COMP_SCAN, "Unknown IG Operation. \n");
++		RT_TRACE(COMP_SCAN, "Unknown IG Operation.\n");
+ 		break;
+ 	}
+ }
 -- 
 1.7.11.7
 
