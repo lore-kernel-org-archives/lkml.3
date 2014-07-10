@@ -1,54 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825AbaGJASe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 20:18:34 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:41427 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756697AbaGJASc (ORCPT
+	id S1756827AbaGJAVj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 20:21:39 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:57317 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751942AbaGJAVh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 20:18:32 -0400
+	Wed, 9 Jul 2014 20:21:37 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAOesGMiu_azMYt3L5OgZSFRgrJQvXvkvSOtr0eLam22CQ5SwuA@mail.gmail.com>
-References: <2CC2A0A4A178534D93D5159BF3BCB661A17A3E48F2@EAPEX1MAIL1.st.com>
-	<CAOesGMiu_azMYt3L5OgZSFRgrJQvXvkvSOtr0eLam22CQ5SwuA@mail.gmail.com>
-Date: Thu, 10 Jul 2014 05:48:31 +0530
-Message-ID: <CAKohpon0KkW+GqTGriioXCRLet0wBzT-7=+_VUBczJtfgTgJqQ@mail.gmail.com>
-Subject: Re: [GIT PULL] ARM: SPEAr1310 PCIe updates
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: Mohit KUMAR DCG <Mohit.KUMAR@st.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Pratyush ANAND <pratyush.anand@st.com>,
-        "'Bjorn Helgaas' (bhelgaas@google.com)" <bhelgaas@google.com>,
-        spear-devel <spear-devel@list.st.com>,
+In-Reply-To: <1402277876-25949-1-git-send-email-fwu@marvell.com>
+References: <1402277876-25949-1-git-send-email-fwu@marvell.com>
+Date: Wed, 9 Jul 2014 17:21:37 -0700
+Message-ID: <CAJAp7OjhjkRZvAb8DvURCasQr_=yCvW7npWnNyOzHZH5ndKdrg@mail.gmail.com>
+Subject: Re: [PATCH v6] pinctrl: to avoid duplicated calling
+ enable_pinmux_setting for a pin
+From: Bjorn Andersson <bjorn@kryo.se>
+To: fwu@marvell.com
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tony Lindgren <tony@atomide.com>, plagnioj@jcrosoft.com,
+        Kukjin Kim <kgene.kim@samsung.com>, heiko@sntech.de,
+        Tomasz Figa <t.figa@samsung.com>, thomas.abraham@linaro.org,
+        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
+        patrice.chotard@st.com, thierry.reding@gmail.com, baohua@kernel.org,
+        viresh.linux@gmail.com, Matt Porter <matt.porter@linaro.org>,
+        syin@broadcom.com, jg1.han@samsung.com, Rongjun.Ying@csr.com,
+        Rong.Wang@csr.com, linux@prisktech.co.nz,
+        yongjun_wei@trendmicro.com.cn, laurent.navet@gmail.com,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Mark Nicholson <mark@nicholnet.com>,
-        "FTPAdmin Kernel.org" <ftpadmin@kernel.org>
+        Stephen Warren <swarren@nvidia.com>, cxie4@marvell.com,
+        ylmao@marvell.com, njiang1@marvell.com, tianxf@marvell.com,
+        fswu@marvell.com
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 July 2014 23:39, Olof Johansson <olof@lixom.net> wrote:
-> * Why are you sending a pull request for a repo that is not yours?
+On Sun, Jun 8, 2014 at 6:37 PM,  <fwu@marvell.com> wrote:
+> From: Fan Wu <fwu@marvell.com>
+[...]
+> diff --git a/drivers/pinctrl/pinctrl-msm.c b/drivers/pinctrl/pinctrl-msm.c
+> index df6dda4c..bdfaba4 100644
+> --- a/drivers/pinctrl/pinctrl-msm.c
+> +++ b/drivers/pinctrl/pinctrl-msm.c
+> @@ -165,36 +165,11 @@ static int msm_pinmux_enable(struct pinctrl_dev *pctldev,
+>         return 0;
+>  }
+>
+> -static void msm_pinmux_disable(struct pinctrl_dev *pctldev,
+> -                              unsigned function,
+> -                              unsigned group)
+> -{
+> -       struct msm_pinctrl *pctrl = pinctrl_dev_get_drvdata(pctldev);
+> -       const struct msm_pingroup *g;
+> -       unsigned long flags;
+> -       u32 val;
+> -
+> -       g = &pctrl->soc->groups[group];
+> -
+> -       if (WARN_ON(g->mux_bit < 0))
+> -               return;
+> -
+> -       spin_lock_irqsave(&pctrl->lock, flags);
+> -
+> -       /* Clear the mux bits to select gpio mode */
+> -       val = readl(pctrl->regs + g->ctl_reg);
+> -       val &= ~(0x7 << g->mux_bit);
+> -       writel(val, pctrl->regs + g->ctl_reg);
+> -
+> -       spin_unlock_irqrestore(&pctrl->lock, flags);
+> -}
+> -
+>  static const struct pinmux_ops msm_pinmux_ops = {
+>         .get_functions_count    = msm_get_functions_count,
+>         .get_function_name      = msm_get_function_name,
+>         .get_function_groups    = msm_get_function_groups,
+>         .enable                 = msm_pinmux_enable,
+> -       .disable                = msm_pinmux_disable,
+>  };
+>
 
-Because Mohit/Pratyush were facing some issues in pushing patches
-to the SPEAr public git repo. And so I tried to help them out publicly
-and nobody objected then:
+Sorry for being so late to the game. Totally missed when this until Linus today
+told me that 'disable' is gone.
 
-https://lkml.org/lkml/2014/7/8/10
+Given the following dt snippet:
 
-> * Why is Viresh the git committer but hasn't signed off on the patches?
+        active: active {
+                foo {
+                        pins = "pin1";
+                        function = "function";
+                };
+        };
 
-I didn't sign-off because I haven't even looked closed at many of the
-patches around PCI and Acked whatever I could understand.
+        sleep: sleep {
+                foo {
+                        pins = "pin1";
+                };
+        };
 
-But yeah, this committer thing is what I missed. Because of that I might
-be required to signoff it.
+Calling:
+        pinctrl_select_state(&active);
+        pinctrl_select_state(&sleep);
 
-> Are you sharing accounts on kernel.org? (Adding kernel.org admin on cc
-> just in case).
+If I understand the code correctly after your change there will be no pinmux
+operations performed during this transition. As you can see from the comment
+above the Qualcomm driver relies on this fact to disable muxing; i.e. select
+gpio function.
 
-Obviously not. I am alone the user of this account.
+So most likely I have misunderstood what the disable function was supposed to
+do, and we would need to add an explicit "gpio" function to all pingroups as
+well as explicitly specifying that for every gpio-configured pin in the device
+tree.
+
+I.e. the lack of the string 'function = "gpio"' in below example makes the
+state incomplete:
+
+foo {
+        bar {
+                pins = "pin1";
+                bias-pull-up;
+        };
+};
+
+Is this assumption correct?
+
+Regards,
+Bjorn
