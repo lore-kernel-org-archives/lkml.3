@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755397AbaGJBjM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 21:39:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49832 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082AbaGJBjL (ORCPT
+	id S1755062AbaGJC0V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 22:26:21 -0400
+Received: from nasmtp01.atmel.com ([192.199.1.246]:23307 "EHLO
+	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751472AbaGJC0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 21:39:11 -0400
-Date: Wed, 9 Jul 2014 18:38:52 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: navin patidar <navin.patidar@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: [PATCH 1/5] staging: rtl8188eu: Remove WEXT_PRIV private ioctl
- handlers
-Message-ID: <20140710013852.GA2099@kroah.com>
-References: <1404234313-21634-1-git-send-email-navin.patidar@gmail.com>
- <20140709190419.GA14346@kroah.com>
- <CAPV97yeBsA3A9m=troMHgqUcG2=idCKUWh4sPS+ob0w8VGC76g@mail.gmail.com>
- <20140710005945.GA17129@kroah.com>
- <CAPV97yfNhKFLx0zyppcyX0dQF+iYnhTopavvRGddQQLEGVDQKw@mail.gmail.com>
+	Wed, 9 Jul 2014 22:26:20 -0400
+Message-ID: <53BDF946.7060404@atmel.com>
+Date: Thu, 10 Jul 2014 10:24:06 +0800
+From: Bo Shen <voice.shen@atmel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPV97yfNhKFLx0zyppcyX0dQF+iYnhTopavvRGddQQLEGVDQKw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: Re: [PATCH v2 0/2] ARM: at91: remove phy fixup for sama5d3xek boards
+References: <1403777615-25685-1-git-send-email-boris.brezillon@free-electrons.com> <20140709183442.14b8aef8@bbrezillon>
+In-Reply-To: <20140709183442.14b8aef8@bbrezillon>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 06:56:39AM +0530, navin patidar wrote:
-> On Thu, Jul 10, 2014 at 6:29 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Thu, Jul 10, 2014 at 06:24:21AM +0530, navin patidar wrote:
-> >> On Thu, Jul 10, 2014 at 12:34 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> > On Tue, Jul 01, 2014 at 10:35:09PM +0530, navin patidar wrote:
-> >> >> Remove WEXT_PRIV (non-standard) ioctl handlers.
-> >> >>
-> >> >> Signed-off-by: navin patidar <navin.patidar@gmail.com>
-> >> >> ---
-> >> >>  drivers/staging/rtl8188eu/os_dep/ioctl_linux.c | 6335 +++---------------------
-> >> >>  1 file changed, 744 insertions(+), 5591 deletions(-)
-> >> >
-> >> > This patch fails to apply :(
-> >> >
-> >> > Can you refresh it, and resend this series?
-> >>
-> >> Please apply following patches.
-> >>
-> >> [PATCH v2 1/3] staging: rtl8188eu: re-use mac_pton() helper
-> >> [PATCH v2 2/3] staging: rtl8188eu: substitute custom hex2bin()
-> >> [PATCH v2 3/3] staging: rtl8188eu: re-use hex_to_bin() instead of custom code
-> >>
-> >> Then try again to apply my patches.
-> >
-> > I don't have those, sorry, my patch queue for staging patches are now
-> > empty as of everything sent up to yesterday.  Please resend what you
-> > want me to apply, in the order in which you want me to apply it.
-> 
-> Is it okay if i send you a single patch set having my three patch set and
-> Andy Shevchenko's patches ?
+Hi Boris,
 
-I don't care :)
+On 07/10/2014 12:34 AM, Boris BREZILLON wrote:
+> Hello Bo,
+>
+> I know you're quite busy, but if you have some time could you test this
+> series on both CPU Modules (Embest and Ronetix): I only own the Embest
+> one.
+>
+> Best Regards,
+>
+> Boris
+>
+> On Thu, 26 Jun 2014 12:13:33 +0200
+> Boris BREZILLON <boris.brezillon@free-electrons.com> wrote:
+>
+>> Hello,
+>>
+>> This patch removes a board specific hook for sama5d3xek boards from the
+>> sama5d3 generic DT board file.
+>>
+>> This hook (which register a phy fixup configuring board specific delays
+>> in the ksz9021 ethernet phy) is now replaced by the appropriate DT
+>> properties definitions in the sama5d3xcm.dtsi file.
+>>
+>> Best Regards,
+>>
+>> Boris
+>>
+>> Changes since v1:
+>>   - fix txc-skew-ps and rxc-skew-ps delays
+>>   - remove phy address info to handle Ronetix and Embest HW designs
+>>
+>> Boris BREZILLON (2):
+>>    ARM: at91/dt: describe rgmii ethernet phy connected to sama5d3xek
+>>      boards
+>>    ARM: at91: remove phy fixup for sama5d3xek boards
+>>
+>>   arch/arm/boot/dts/sama5d3xcm.dtsi   | 15 +++++++++++++++
+>>   arch/arm/mach-at91/board-dt-sama5.c | 22 ----------------------
+>>   2 files changed, 15 insertions(+), 22 deletions(-)
+>>
+
+For this series, test OK on sama5d33ek (Ronetix) and sama5d34ek (Embest).
+
+Tested-by: Bo Shen <voice.shen@atmel.com>
+
+Best Regards,
+Bo Shen
+
