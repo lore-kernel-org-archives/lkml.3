@@ -1,136 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753657AbaGJWM5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 18:12:57 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:46907 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753295AbaGJWMx (ORCPT
+	id S1753830AbaGJWNn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 18:13:43 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:42157 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753091AbaGJVuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 18:12:53 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: "kys@microsoft.com" <kys@microsoft.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mkp@mkp.net" <mkp@mkp.net>, "apw@canonical.com" <apw@canonical.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
-Thread-Topic: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
-Thread-Index: AQHPmwbc2vh72TcerE+9u7O+On3hT5uXbYYAgACybACAAH8bAP//jcAwgACcZoCAAQTgMIAAiV6A
-Date: Thu, 10 Jul 2014 22:12:46 +0000
-Message-ID: <1405030365.2851.2.camel@jarvis.lan>
-References: <1404866789-26910-1-git-send-email-kys@microsoft.com>
-	 <1404866812-26950-1-git-send-email-kys@microsoft.com>
-	 <1404866812-26950-4-git-send-email-kys@microsoft.com>
-	 <20140709084300.GD6012@infradead.org>
-	 <a31a45eddb544024a7538458b98c3611@BY2PR03MB299.namprd03.prod.outlook.com>
-	 <1404935792.2184.5.camel@dabdike.int.hansenpartnership.com>
-	 <2f3ae589e6f149acbe4c5dd79f905971@BY2PR03MB299.namprd03.prod.outlook.com>
-	 <1404944843.2184.8.camel@dabdike.int.hansenpartnership.com>
-	 <a51690cc47b1475ab9ca2d871cc97115@BY2PR03MB299.namprd03.prod.outlook.com>
-In-Reply-To: <a51690cc47b1475ab9ca2d871cc97115@BY2PR03MB299.namprd03.prod.outlook.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [50.46.103.107]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <07553DE5B9811A41B231046AE692FFFB@sw.swsoft.com>
-MIME-Version: 1.0
+	Thu, 10 Jul 2014 17:50:51 -0400
+From: Oded Gabbay <oded.gabbay@gmail.com>
+X-Google-Original-From: Oded Gabbay <oded.gabbay@amd.com>
+To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <j.glisse@gmail.com>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        John Bridgman <John.Bridgman@amd.com>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>,
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
+Subject: [PATCH 04/83] drm/radeon: Add radeon <--> kfd interface
+Date: Fri, 11 Jul 2014 00:50:04 +0300
+Message-Id: <1405029027-6085-3-git-send-email-oded.gabbay@amd.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
+References: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6AMD7kG013667
 
-On Thu, 2014-07-10 at 21:02 +0000, KY Srinivasan wrote:
-> 
-> > -----Original Message-----
-> > From: James Bottomley [mailto:jbottomley@parallels.com]
-> > Sent: Wednesday, July 9, 2014 3:27 PM
-> > To: KY Srinivasan
-> > Cc: linux-kernel@vger.kernel.org; mkp@mkp.net; hch@infradead.org;
-> > devel@linuxdriverproject.org; apw@canonical.com; stable@vger.kernel.org;
-> > linux-scsi@vger.kernel.org; ohering@suse.com; jasowang@redhat.com
-> > Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
-> > 
-> > On Wed, 2014-07-09 at 21:14 +0000, KY Srinivasan wrote:
-> > >
-> > > > -----Original Message-----
-> > > > From: James Bottomley [mailto:jbottomley@parallels.com]
-> > > > Sent: Wednesday, July 9, 2014 12:57 PM
-> > > > To: KY Srinivasan
-> > > > Cc: linux-kernel@vger.kernel.org; hch@infradead.org;
-> > > > devel@linuxdriverproject.org; apw@canonical.com;
-> > > > stable@vger.kernel.org; linux-scsi@vger.kernel.org;
-> > > > ohering@suse.com; jasowang@redhat.com
-> > > > Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter
-> > > > WRITE_SAME_16
-> > > >
-> > > > On Wed, 2014-07-09 at 19:52 +0000, KY Srinivasan wrote:
-> > > > >
-> > > > > > -----Original Message-----
-> > > > > > From: Christoph Hellwig [mailto:hch@infradead.org]
-> > > > > > Sent: Wednesday, July 9, 2014 1:43 AM
-> > > > > > To: KY Srinivasan
-> > > > > > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> > > > > > ohering@suse.com; jbottomley@parallels.com;
-> > jasowang@redhat.com;
-> > > > > > apw@canonical.com; linux-scsi@vger.kernel.org;
-> > > > > > stable@vger.kernel.org
-> > > > > > Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter
-> > > > > > WRITE_SAME_16
-> > > > > >
-> > > > > > On Tue, Jul 08, 2014 at 05:46:48PM -0700, K. Y. Srinivasan wrote:
-> > > > > > > Host does not handle WRITE_SAME_16; filter this command out.
-> > > > > > > This patch is required to handle large devices (greater than 2 TB
-> > disks).
-> > > > > >
-> > > > > > Storvsc already sets the no_write_same flag, where is the
-> > > > > > command coming from?
-> > > > >
-> > > > > In spite of this flag,  I see WRITE_SAME_16 being issued when I
-> > > > > format a device bigger than 2 TB; I tried both xfs and ext4.
-> > > > > Windows hosts currently do not handle unsupported commands
-> > > > > correctly - The information returned is not sufficient to effect recovery
-> > in the Linux guest.
-> > > > While this may be addressed in future hosts, this patch fixes the problem.
-> > > >
-> > > > What Christoph means is that this looks like a bug somewhere in SCSI
-> > itself.
-> > > > That means we need to find it and kill it, not add workarounds to
-> > > > every driver that sets no_write_same ...
-> > >
-> > > James,
-> > >
-> > > I will try to isolate this issue in the SCSI stack. If it is ok with
-> > > you guys, I would still want to filter WRITE_SAME_16 (as we currently
-> > > do WRITE_SAME) in our driver since this would address the problem for a
-> > large number of customers on our platform.
-> > 
-> > If we fix it at source, why would there be any need to filter?  That's the
-> > reason the no_write_same flag was introduced.  If we can find and fix the
-> > bug, it can go back into the stable trees as a bug fix, hence nothing should
-> > ever emit write_same(10 or 16) and additional driver code is redundant (and
-> > counter productive, since if this ever breaks again you're our best canary).
-> > 
-> > This looks like it might be the problem but Martin should confirm (I think the
-> > problem comes to us from the RC16 code which unconditionally sets WS16).
-> > 
-> > James
-> 
-> James,
-> 
-> This patch works for me; are you planning on committing this patch.
+This patch adds the interface between the radeon driver and the kfd
+driver. The interface implementation is contained in
+radeon_kfd.c and radeon_kfd.h.
 
-OK, if we go with this we can add your tested by.
+The interface itself is represented by a pointer to struct
+kfd_dev. The pointer is located inside radeon_device structure.
 
-It's not going in until Martin takes a look because there may be a
-better way of doing this.
+Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+---
+ drivers/gpu/drm/radeon/Makefile     |  1 +
+ drivers/gpu/drm/radeon/radeon.h     |  3 ++
+ drivers/gpu/drm/radeon/radeon_kfd.c | 94 +++++++++++++++++++++++++++++++++++++
+ include/linux/radeon_kfd.h          | 67 ++++++++++++++++++++++++++
+ 4 files changed, 165 insertions(+)
+ create mode 100644 drivers/gpu/drm/radeon/radeon_kfd.c
+ create mode 100644 include/linux/radeon_kfd.h
 
-James
+diff --git a/drivers/gpu/drm/radeon/Makefile b/drivers/gpu/drm/radeon/Makefile
+index 1b04002..a1c913d 100644
+--- a/drivers/gpu/drm/radeon/Makefile
++++ b/drivers/gpu/drm/radeon/Makefile
+@@ -104,6 +104,7 @@ radeon-y += \
+ 	radeon_vce.o \
+ 	vce_v1_0.o \
+ 	vce_v2_0.o \
++	radeon_kfd.o
+ 
+ radeon-$(CONFIG_COMPAT) += radeon_ioc32.o
+ radeon-$(CONFIG_VGA_SWITCHEROO) += radeon_atpx_handler.o
+diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
+index 4e7e41f..90f66bb 100644
+--- a/drivers/gpu/drm/radeon/radeon.h
++++ b/drivers/gpu/drm/radeon/radeon.h
+@@ -2340,6 +2340,9 @@ struct radeon_device {
+ 
+ 	struct dev_pm_domain vga_pm_domain;
+ 	bool have_disp_power_ref;
++
++	/* HSA KFD interface */
++	struct kfd_dev		*kfd;
+ };
+ 
+ bool radeon_is_px(struct drm_device *dev);
+diff --git a/drivers/gpu/drm/radeon/radeon_kfd.c b/drivers/gpu/drm/radeon/radeon_kfd.c
+new file mode 100644
+index 0000000..7c7f808
+--- /dev/null
++++ b/drivers/gpu/drm/radeon/radeon_kfd.c
+@@ -0,0 +1,94 @@
++/*
++ * Copyright 2014 Advanced Micro Devices, Inc.
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, including without limitation
++ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
++ * and/or sell copies of the Software, and to permit persons to whom the
++ * Software is furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++ * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
++ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
++ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ * OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++#include <linux/module.h>
++#include <linux/radeon_kfd.h>
++#include <drm/drmP.h>
++#include "radeon.h"
++
++static const struct kfd2kgd_calls kfd2kgd = {
++};
++
++static const struct kgd2kfd_calls *kgd2kfd;
++
++bool radeon_kfd_init(void)
++{
++	bool (*kgd2kfd_init_p)(unsigned, const struct kfd2kgd_calls*,
++				const struct kgd2kfd_calls**);
++
++	kgd2kfd_init_p = symbol_request(kgd2kfd_init);
++
++	if (kgd2kfd_init_p == NULL)
++		return false;
++
++	if (!kgd2kfd_init_p(KFD_INTERFACE_VERSION, &kfd2kgd, &kgd2kfd)) {
++		symbol_put(kgd2kfd_init);
++		kgd2kfd = NULL;
++
++		return false;
++	}
++
++	return true;
++}
++
++void radeon_kfd_fini(void)
++{
++	if (kgd2kfd) {
++		kgd2kfd->exit();
++		symbol_put(kgd2kfd_init);
++	}
++}
++
++void radeon_kfd_device_probe(struct radeon_device *rdev)
++{
++	if (kgd2kfd)
++		rdev->kfd = kgd2kfd->probe((struct kgd_dev *)rdev, rdev->pdev);
++}
++
++void radeon_kfd_device_init(struct radeon_device *rdev)
++{
++	if (rdev->kfd) {
++		struct kgd2kfd_shared_resources gpu_resources = {
++			.mmio_registers = rdev->rmmio,
++
++			.compute_vmid_bitmap = 0xFF00,
++
++			.first_compute_pipe = 1,
++			.compute_pipe_count = 8 - 1,
++		};
++
++		radeon_doorbell_get_kfd_info(rdev,
++				&gpu_resources.doorbell_physical_address,
++				&gpu_resources.doorbell_aperture_size,
++				&gpu_resources.doorbell_start_offset);
++
++		kgd2kfd->device_init(rdev->kfd, &gpu_resources);
++	}
++}
++
++void radeon_kfd_device_fini(struct radeon_device *rdev)
++{
++	if (rdev->kfd) {
++		kgd2kfd->device_exit(rdev->kfd);
++		rdev->kfd = NULL;
++	}
++}
+diff --git a/include/linux/radeon_kfd.h b/include/linux/radeon_kfd.h
+new file mode 100644
+index 0000000..59785e9
+--- /dev/null
++++ b/include/linux/radeon_kfd.h
+@@ -0,0 +1,67 @@
++/*
++ * Copyright 2014 Advanced Micro Devices, Inc.
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, including without limitation
++ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
++ * and/or sell copies of the Software, and to permit persons to whom the
++ * Software is furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++ * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
++ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
++ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ * OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/*
++ * radeon_kfd.h defines the private interface between the
++ * AMD kernel graphics drivers and the AMD radeon KFD.
++ */
++
++#ifndef RADEON_KFD_H_INCLUDED
++#define RADEON_KFD_H_INCLUDED
++
++#include <linux/types.h>
++struct pci_dev;
++
++#define KFD_INTERFACE_VERSION 1
++
++struct kfd_dev;
++struct kgd_dev;
++
++struct kgd2kfd_shared_resources {
++	void __iomem *mmio_registers; /* Mapped pointer to GFX MMIO registers. */
++
++	unsigned int compute_vmid_bitmap; /* Bit n == 1 means VMID n is available for KFD. */
++
++	unsigned int first_compute_pipe; /* Compute pipes are counted starting from MEC0/pipe0 as 0. */
++	unsigned int compute_pipe_count; /* Number of MEC pipes available for KFD. */
++
++	phys_addr_t doorbell_physical_address; /* Base address of doorbell aperture. */
++	size_t doorbell_aperture_size; /* Size in bytes of doorbell aperture. */
++	size_t doorbell_start_offset; /* Number of bytes at start of aperture reserved for KGD. */
++};
++
++struct kgd2kfd_calls {
++	void (*exit)(void);
++	struct kfd_dev* (*probe)(struct kgd_dev *kgd, struct pci_dev *pdev);
++	bool (*device_init)(struct kfd_dev *kfd, const struct kgd2kfd_shared_resources *gpu_resources);
++	void (*device_exit)(struct kfd_dev *kfd);
++};
++
++struct kfd2kgd_calls {
++};
++
++bool kgd2kfd_init(unsigned interface_version,
++		  const struct kfd2kgd_calls *f2g,
++		  const struct kgd2kfd_calls **g2f);
++
++#endif
++
+-- 
+1.9.1
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
