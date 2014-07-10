@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586AbaGJJBc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 05:01:32 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:21121 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751819AbaGJJBa (ORCPT
+	id S1752366AbaGJJCP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 05:02:15 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:51689 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751841AbaGJJCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 05:01:30 -0400
-X-IronPort-AV: E=Sophos;i="5.01,636,1400025600"; 
-   d="scan'208";a="151573178"
-Message-ID: <1404982886.30660.4.camel@hastur.hellion.org.uk>
-Subject: Re: [PATCH v7 15/33] net: xen-netback - set name assign type
-From: Ian Campbell <ian.campbell@citrix.com>
-To: Tom Gundersen <teg@jklm.no>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        Wei Liu <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>
-Date: Thu, 10 Jul 2014 10:01:26 +0100
-In-Reply-To: <1404980258-30853-16-git-send-email-teg@jklm.no>
-References: <1404980258-30853-1-git-send-email-teg@jklm.no>
-	 <1404980258-30853-16-git-send-email-teg@jklm.no>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1 
+	Thu, 10 Jul 2014 05:02:12 -0400
+Date: Thu, 10 Jul 2014 11:02:04 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Liang, Kan" <kan.liang@intel.com>
+Cc: "andi@firstfloor.org" <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [PATCH V4 1/2] perf ignore LBR and extra_regs.
+Message-ID: <20140710090204.GU3935@laptop>
+References: <1404838181-3911-1-git-send-email-kan.liang@intel.com>
+ <20140709141631.GE9918@twins.programming.kicks-ass.net>
+ <37D7C6CF3E00A74B8858931C1DB2F077014D2005@SHSMSX103.ccr.corp.intel.com>
+ <20140709145809.GG9918@twins.programming.kicks-ass.net>
+ <37D7C6CF3E00A74B8858931C1DB2F077014D2729@SHSMSX103.ccr.corp.intel.com>
+ <20140709164146.GH9918@twins.programming.kicks-ass.net>
+ <37D7C6CF3E00A74B8858931C1DB2F077014D361B@SHSMSX103.ccr.corp.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <37D7C6CF3E00A74B8858931C1DB2F077014D361B@SHSMSX103.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-07-10 at 10:17 +0200, Tom Gundersen wrote:
-> The name contains then xen handle, which is not guaranteed to be
-> stable between restarts, so label this NET_NAME_ENUM.
+/me reminds you of 78 char text wrap.
 
-FWIW the N'th interface for domain with domid D will always be named
-vifD.N.
+On Wed, Jul 09, 2014 at 07:32:09PM +0000, Liang, Kan wrote:
+> > Sure; but what I meant was, check_msr() is broken when ran on such a
+> > kernel. You need to fix check_msr() to return failure on these 'ignored'
+> > MSRs, after all they don't function as expected, they're effectively broken.
+> 
+> The function is designed to check if the MSRs can be safely accessed
+> (no #GP). It cannot guarantee the correctness of the MSRs.  If KVM
+> applied patch 2 and guest applied patch 1, from the guest's
+> perspective, the MSRs can be accessed (no #GP triggered). So return
+> true is expected. It should not be a broken. 
 
-If you reboot domain D then it's domid will change to E and the new
-device will be vifE.N.
+You're not understanding. I know you wrote that function to do that. I'm
+saying that's wrong.
 
-I don't know if that counts as predictable as far as the interface you
-are introducing is concerned.
+Look at check_hw_exists() it explicitly checks for fake MSRs and reports
+them broken.
 
-Ian.
+These fake MSRs _ARE_ broken, they do not behave as expected. Not
+crashing is not the right consideration here, we're interested in higher
+order correct behaviour.
 
+> The only unexpected
+> thing for guest is that the counting/sampling result for LBR/extra reg
+> is always 0. But the patch is a short term fix to stop things from
+> crashing. I think it should be acceptable.
+
+Patch 2 is fine, patch 1, in particular your check_msr() routine is not.
