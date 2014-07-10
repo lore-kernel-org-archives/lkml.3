@@ -1,119 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410AbaGJKNy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 06:13:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51061 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750896AbaGJKNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 06:13:07 -0400
-From: Amit Shah <amit.shah@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
-        keescook@chromium.org, jason@lakedaemon.net,
-        Amit Shah <amit.shah@redhat.com>, <stable@vger.kernel.org>
-Subject: [PATCH v3 1/2] hwrng: fetch randomness only after device init
-Date: Thu, 10 Jul 2014 15:42:34 +0530
-Message-Id: <8cf671af94c4747765ebec91a2a4f034a65aef2e.1404987133.git.amit.shah@redhat.com>
-In-Reply-To: <cover.1404987133.git.amit.shah@redhat.com>
-References: <cover.1404987133.git.amit.shah@redhat.com>
-In-Reply-To: <cover.1404987133.git.amit.shah@redhat.com>
-References: <cover.1404987133.git.amit.shah@redhat.com>
+	id S1751213AbaGJKRQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 06:17:16 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:34289 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019AbaGJKRO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 06:17:14 -0400
+Date: Thu, 10 Jul 2014 03:17:13 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [PATCH 7/8] drivers: scsi: storvsc: Set srb_flags in all cases
+Message-ID: <20140710101713.GC1151@infradead.org>
+References: <1404866789-26910-1-git-send-email-kys@microsoft.com>
+ <1404866812-26950-1-git-send-email-kys@microsoft.com>
+ <1404866812-26950-7-git-send-email-kys@microsoft.com>
+ <20140709084453.GG6012@infradead.org>
+ <651b6b11c6d6415cb0046ce03b6b2c63@BY2PR03MB299.namprd03.prod.outlook.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <651b6b11c6d6415cb0046ce03b6b2c63@BY2PR03MB299.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit d9e7972619334 "hwrng: add randomness to system from rng sources"
-added a call to rng_get_data() from the hwrng_register() function.
-However, some rng devices need initialization before data can be read
-from them.
+On Wed, Jul 09, 2014 at 06:40:09PM +0000, KY Srinivasan wrote:
+> > On Tue, Jul 08, 2014 at 05:46:51PM -0700, K. Y. Srinivasan wrote:
+> > > Correctly set SRB flags for all valid I/O directions. Some IHV drivers
+> > > on the Windows host require this.
+> > 
+> > What are IHV drivers?
+> 
+> If the target is a SAN device, the host simply passes the request over to the native driver stack on the host. Some specific hardware (IHV - independent hadware vendor) drivers on Windows require that SRB flags be correctly set in all cases.
+> 
 
-This commit makes the call to rng_get_data() depend on no init fn
-pointer being registered by the device.  If an init function is
-registered, this call is made after device init.
-
-CC: Kees Cook <keescook@chromium.org>
-CC: Jason Cooper <jason@lakedaemon.net>
-CC: Herbert Xu <herbert@gondor.apana.org.au>
-CC: <stable@vger.kernel.org> # For v3.15+
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
----
- drivers/char/hw_random/core.c | 41 +++++++++++++++++++++++++++++++++--------
- 1 file changed, 33 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-index 334601c..2a451b1 100644
---- a/drivers/char/hw_random/core.c
-+++ b/drivers/char/hw_random/core.c
-@@ -55,16 +55,35 @@ static DEFINE_MUTEX(rng_mutex);
- static int data_avail;
- static u8 *rng_buffer;
- 
-+static inline int rng_get_data(struct hwrng *rng, u8 *buffer, size_t size,
-+			       int wait);
-+
- static size_t rng_buffer_size(void)
- {
- 	return SMP_CACHE_BYTES < 32 ? 32 : SMP_CACHE_BYTES;
- }
- 
-+static void add_early_randomness(struct hwrng *rng)
-+{
-+	unsigned char bytes[16];
-+	int bytes_read;
-+
-+	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
-+	if (bytes_read > 0)
-+		add_device_randomness(bytes, bytes_read);
-+}
-+
- static inline int hwrng_init(struct hwrng *rng)
- {
--	if (!rng->init)
--		return 0;
--	return rng->init(rng);
-+	if (rng->init) {
-+		int ret;
-+
-+		ret =  rng->init(rng);
-+		if (ret)
-+			return ret;
-+	}
-+	add_early_randomness(rng);
-+	return 0;
- }
- 
- static inline void hwrng_cleanup(struct hwrng *rng)
-@@ -304,8 +323,6 @@ int hwrng_register(struct hwrng *rng)
- {
- 	int err = -EINVAL;
- 	struct hwrng *old_rng, *tmp;
--	unsigned char bytes[16];
--	int bytes_read;
- 
- 	if (rng->name == NULL ||
- 	    (rng->data_read == NULL && rng->read == NULL))
-@@ -347,9 +364,17 @@ int hwrng_register(struct hwrng *rng)
- 	INIT_LIST_HEAD(&rng->list);
- 	list_add_tail(&rng->list, &rng_list);
- 
--	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
--	if (bytes_read > 0)
--		add_device_randomness(bytes, bytes_read);
-+	if (old_rng && !rng->init) {
-+		/*
-+		 * Use a new device's input to add some randomness to
-+		 * the system.  If this rng device isn't going to be
-+		 * used right away, its init function hasn't been
-+		 * called yet; so only use the randomness from devices
-+		 * that don't need an init callback.
-+		 */
-+		add_early_randomness(rng);
-+	}
-+
- out_unlock:
- 	mutex_unlock(&rng_mutex);
- out:
--- 
-1.9.3
+I'm fine with putting this in, but treating I/O request from guests as
+trusted in a hypervisor doesn't seem like a good idea in general..
 
