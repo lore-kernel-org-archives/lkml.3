@@ -1,146 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023AbaGJNyV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:54:21 -0400
-Received: from zimbra13.linbit.com ([212.69.166.240]:46764 "EHLO
-	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685AbaGJNyU (ORCPT
+	id S1753191AbaGJN4H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:56:07 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:60004 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751728AbaGJN4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:54:20 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Cc: drbd-dev@lists.linbit.com
-Subject: [GIT PULL] DRBD updates for your for-3.17/drivers branch
-Date: Thu, 10 Jul 2014 15:54:16 +0200
-Message-ID: <14195494.KgRksUidBS@fat-tyre>
-User-Agent: KMail/4.13.2 (Linux/3.13.0-24-lowlatency; KDE/4.13.2; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Thu, 10 Jul 2014 09:56:04 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-4e-53be9b708cfe
+Message-id: <53BE9A2B.5090104@samsung.com>
+Date: Thu, 10 Jul 2014 17:50:35 +0400
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org
+Cc: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
+        Alexey Preobrazhensky <preobr@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Michal Marek <mmarek@suse.cz>, Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        x86@kernel.org, linux-mm@kvack.org,
+        Dave Hansen <dave.hansen@intel.com>
+Subject: Re: [RFC/PATCH RESEND -next 01/21] Add kernel address sanitizer
+ infrastructure.
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1404905415-9046-2-git-send-email-a.ryabinin@samsung.com>
+ <53BE7F29.20304@oracle.com> <53BE8EA5.2030402@samsung.com>
+ <53BE959A.4010206@oracle.com>
+In-reply-to: <53BE959A.4010206@oracle.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsVy+t/xy7oFs/cFG3Tc0rH4vXcmq8Wc9WvY
+	LK5/e8No8enlA0aLCQ/b2C1WdjezWWx/9pbJYmXnA1aLTY+vsVr82bWDyeLyrjlsFvfW/Ge1
+	uH2Z1+LSgQVMFi37LjBZtH3+x2qxb+V5IGvJRiaLxUduM1u8ezaZ2WLzpqnMFj82PGZ1EPNo
+	ae5h89g56y67x4JNpR6L97xk8ti0qpPNY9OnSeweXW+vMHm8O3eO3ePEjN8sHk+uTGfy2Lyk
+	3uPj01ssHu/3XWXzOLPgCLvH501yAfxRXDYpqTmZZalF+nYJXBlP969jK1igUbF/92v2BsY7
+	Cl2MHBwSAiYS9zfodDFyApliEhfurWfrYuTiEBJYyiixtmMRI4TTzCTx5thEZpAqXgEtiVdH
+	rzODNLMIqEqs/mwEEmYT0JP4N2s7G4gtKhAhcaDvGStEuaDEj8n3WEBsEQE3iX0HLrOAzGQW
+	uMYqMf3fQbCZwgJREj3Pz0Atu8cosef6VLAEJ9CyJ1NOg01iFtCR2N86jQ3ClpfYvOYt8wRG
+	gVlIlsxCUjYLSdkCRuZVjKKppckFxUnpuYZ6xYm5xaV56XrJ+bmbGCGx/WUH4+JjVocYBTgY
+	lXh4NWp3BwuxJpYVV+YeYpTgYFYS4X01dV+wEG9KYmVValF+fFFpTmrxIUYmDk6pBkZL61fz
+	1my0O71qX+rdGj0165NZ6UcW7C85pnunOudRt5TZ5NAI1+7d81Zfezj73nXrU8f2M85eynNn
+	e45tBv9Hj+nnXuyYKhkyyaD1ttINB+cWm/ezy/i89JT6/PfVBAu9/7t758/N/x1DHRgcVlc4
+	fHj89cz6v1t23bIObFtVLG24VX5fOpOmEktxRqKhFnNRcSIA2aeTrssCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens,
+On 07/10/14 17:31, Sasha Levin wrote:
+> On 07/10/2014 09:01 AM, Andrey Ryabinin wrote:
+>> On 07/10/14 15:55, Sasha Levin wrote:
+>>>> On 07/09/2014 07:29 AM, Andrey Ryabinin wrote:
+>>>>>> Address sanitizer for kernel (kasan) is a dynamic memory error detector.
+>>>>>>
+>>>>>> The main features of kasan is:
+>>>>>>  - is based on compiler instrumentation (fast),
+>>>>>>  - detects out of bounds for both writes and reads,
+>>>>>>  - provides use after free detection,
+>>>>>>
+>>>>>> This patch only adds infrastructure for kernel address sanitizer. It's not
+>>>>>> available for use yet. The idea and some code was borrowed from [1].
+>>>>>>
+>>>>>> This feature requires pretty fresh GCC (revision r211699 from 2014-06-16 or
+>>>>>> latter).
+>>>>>>
+>>>>>> Implementation details:
+>>>>>> The main idea of KASAN is to use shadow memory to record whether each byte of memory
+>>>>>> is safe to access or not, and use compiler's instrumentation to check the shadow memory
+>>>>>> on each memory access.
+>>>>>>
+>>>>>> Address sanitizer dedicates 1/8 of the low memory to the shadow memory and uses direct
+>>>>>> mapping with a scale and offset to translate a memory address to its corresponding
+>>>>>> shadow address.
+>>>>>>
+>>>>>> Here is function to translate address to corresponding shadow address:
+>>>>>>
+>>>>>>      unsigned long kasan_mem_to_shadow(unsigned long addr)
+>>>>>>      {
+>>>>>>                 return ((addr - PAGE_OFFSET) >> KASAN_SHADOW_SCALE_SHIFT)
+>>>>>>                              + kasan_shadow_start;
+>>>>>>      }
+>>>>>>
+>>>>>> where KASAN_SHADOW_SCALE_SHIFT = 3.
+>>>>>>
+>>>>>> So for every 8 bytes of lowmemory there is one corresponding byte of shadow memory.
+>>>>>> The following encoding used for each shadow byte: 0 means that all 8 bytes of the
+>>>>>> corresponding memory region are valid for access; k (1 <= k <= 7) means that
+>>>>>> the first k bytes are valid for access, and other (8 - k) bytes are not;
+>>>>>> Any negative value indicates that the entire 8-bytes are unaccessible.
+>>>>>> Different negative values used to distinguish between different kinds of
+>>>>>> unaccessible memory (redzones, freed memory) (see mm/kasan/kasan.h).
+>>>>>>
+>>>>>> To be able to detect accesses to bad memory we need a special compiler.
+>>>>>> Such compiler inserts a specific function calls (__asan_load*(addr), __asan_store*(addr))
+>>>>>> before each memory access of size 1, 2, 4, 8 or 16.
+>>>>>>
+>>>>>> These functions check whether memory region is valid to access or not by checking
+>>>>>> corresponding shadow memory. If access is not valid an error printed.
+>>>>>>
+>>>>>> [1] https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
+>>>>>>
+>>>>>> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+>>>>
+>>>> I gave it a spin, and it seems that it fails for what you might call a "regular"
+>>>> memory size these days, in my case it was 18G:
+>>>>
+>>>> [    0.000000] Kernel panic - not syncing: ERROR: Failed to allocate 0xe0c00000 bytes below 0x0.
+>>>> [    0.000000]
+>>>> [    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.16.0-rc4-next-20140710-sasha-00044-gb7b0579-dirty #784
+>>>> [    0.000000]  ffffffffb9c2d3c8 cd9ce91adea4379a 0000000000000000 ffffffffb9c2d3c8
+>>>> [    0.000000]  ffffffffb9c2d330 ffffffffb7fe89b7 ffffffffb93c8c28 ffffffffb9c2d3b8
+>>>> [    0.000000]  ffffffffb7fcff1d 0000000000000018 ffffffffb9c2d3c8 ffffffffb9c2d360
+>>>> [    0.000000] Call Trace:
+>>>> [    0.000000] <UNK> dump_stack (lib/dump_stack.c:52)
+>>>> [    0.000000] panic (kernel/panic.c:119)
+>>>> [    0.000000] memblock_alloc_base (mm/memblock.c:1092)
+>>>> [    0.000000] memblock_alloc (mm/memblock.c:1097)
+>>>> [    0.000000] kasan_alloc_shadow (mm/kasan/kasan.c:151)
+>>>> [    0.000000] zone_sizes_init (arch/x86/mm/init.c:684)
+>>>> [    0.000000] paging_init (arch/x86/mm/init_64.c:677)
+>>>> [    0.000000] setup_arch (arch/x86/kernel/setup.c:1168)
+>>>> [    0.000000] ? printk (kernel/printk/printk.c:1839)
+>>>> [    0.000000] start_kernel (include/linux/mm_types.h:462 init/main.c:533)
+>>>> [    0.000000] ? early_idt_handlers (arch/x86/kernel/head_64.S:344)
+>>>> [    0.000000] x86_64_start_reservations (arch/x86/kernel/head64.c:194)
+>>>> [    0.000000] x86_64_start_kernel (arch/x86/kernel/head64.c:183)
+>>>>
+>>>> It got better when I reduced memory to 1GB, but then my system just failed to boot
+>>>> at all because that's not enough to bring everything up.
+>>>>
+>> Thanks.
+>> I think memory size is not a problem here. I tested on my desktop with 16G.
+>> Seems it's a problem with memory holes cited by Dave.
+>> kasan tries to allocate ~3.5G. It means that lowmemsize is 28G in your case.
+> 
+> That's correct (I've mistyped and got 18 instead of 28 above).
+> 
+> However, I'm a bit confused here, I thought highmem/lowmem split was a 32bit
+> thing, so I'm not sure how it applies here.
+> 
+> Anyways, the machine won't boot with more than 1GB of RAM, is there a solution to
+> get KASAN running on my machine?
+> 
 
-here is the pull request for the patches that I sent for review
-on June 30, July 1st and 3rd. The suggested improvement is amended.
+It's not boot with the same Failed to allocate error?
 
-The important news are:
-* Debugfs hierarchy for DRBD.  It unveils a lot of information 
-  about timing of states/stages of IO requests.
-* The bitmap updates during resync got restructured, to be form
-  a much nicer IO pattern. No longer updates to the same sector.
-  Now issued in bursts every 2 seconds.
-
--phil
-
-The following changes since commit 6a27b656fc0210e976db362e1368c56db05c8f08:
-
-  block: virtio-blk: support multi virt queues per virtio-blk device (2014-07-01 10:51:03 -0600)
-
-are available in the git repository at:
-
-  git://git.linbit.com/linux-drbd.git for-3.17
-
-for you to fetch changes up to 3f500c97166a2cdd7c15743c77c5ba3c766904de:
-
-  drbd: silence underflow warning in read_in_block() (2014-07-10 15:27:04 +0200)
-
-----------------------------------------------------------------
-Andreas Gruenbacher (1):
-      drbd: Remove unnecessary/unused code
-
-Dan Carpenter (1):
-      drbd: silence underflow warning in read_in_block()
-
-Joe Perches (1):
-      block: Convert last uses of __FUNCTION__ to __func__
-
-Lars Ellenberg (52):
-      drbd: reduce number of spinlock drop/re-aquire cycles
-      drbd: refactor use of first_peer_device()
-      drbd: allow write-ordering policy to be bumped up again
-      drbd: get rid of atomic update on disk bitmap works
-      drbd: fix a race stopping the worker thread
-      drbd: fix resync finished detection
-      drbd: stop the meta data sync timer before open coded meta data sync
-      drbd: re-add lost conf_mutex protection in drbd_set_role
-      drbd: trigger tcp_push_pending_frames() for PING and PING_ACK
-      drbd: move set_disk_ro() to after we persisted the new role
-      drbd: explicitly submit meta data requests with REQ_NOIDLE
-      drbd: close race when detaching from disk
-      drbd: make sure disk cleanup happens in worker context
-      drbd: use drbd_device_post_work() in more places
-      drbd: get rid of drbd_queue_work_front
-      drbd: drop wrong debugging aid
-      drbd: silence -Wmissing-prototypes warnings
-      drbd: fix bogus resync stats in /proc/drbd
-      drbd: don't implicitly resize Diskless node beyond end of device
-      drbd: implement csums-after-crash-only
-      drbd: application writes may set-in-sync in protocol != C
-      drbd: short-circuit in maybe_pull_ahead
-      drbd: improve resync request throttling due to sendbuf size
-      drbd: clear CRASHED_PRIMARY only after successful resync
-      drbd: cosmetic: change all printk(level, ...) to pr_<level>(...)
-      drbd: drbd_rs_number_requests: fix unit mismatch in comparison
-      drbd: add drbd_queue_work_if_unqueued helper
-      drbd: drop drbd_md_flush
-      drbd: consistently use list_add_tail for peer_request tracking
-      drbd: also keep track of trim -> zero-out fallback peer_requests
-      drbd: poison free'd device, resource and connection structs
-      drbd: fix drbd_destroy_device reference count updates
-      drbd: track meta data IO intent, start and submit time
-      drbd: gather detailed timing statistics for drbd_requests
-      drbd: add lists to find oldest pending requests
-      drbd: add caching oldest request pointers for replication stages
-      drbd: improve throttling decisions of background resynchronisation
-      drbd: track timing details of peer_requests
-      drbd: register peer requests on read_ee early
-      drbd: track details of bitmap IO
-      drbd: debugfs: add basic hierarchy
-      drbd: debugfs: add in_flight_summary data
-      drbd: debugfs: deal with destructor racing with open of debugfs file
-      drbd: debugfs: Add in_flight_summary
-      drbd: debugfs: add callback_history
-      drbd: debugfs: add per volume oldest_requests
-      drbd: debugfs: add version tag to debugfs files
-      drbd: debugfs: add per connection oldest requests
-      drbd: debugfs: add per device data_gen_id
-      drbd: resync should only lock out specific ranges
-      drbd: drop spurious parameters from _drbd_md_sync_page_io
-      drbd: implicitly truncate cpu-mask
-
-Monam Agarwal (1):
-      drivers/block: Use RCU_INIT_POINTER(x, NULL) in drbd/drbd_state.c
-
-Philipp Reisner (5):
-      drbd: Move write_ordering from connection to resource
-      drbd: device->ldev is not guaranteed on an D_ATTACHING disk
-      drbd: rename drbd_free_bc() to drbd_free_ldev()
-      drbd: Limit the time we are waiting for the first packet on an accepted socket
-      drbd: New net configuration option socket-check-timeout
-
- drivers/block/drbd/Makefile        |   1 +
- drivers/block/drbd/drbd_actlog.c   | 518 +++++++++++++-------------------
- drivers/block/drbd/drbd_bitmap.c   | 140 +++------
- drivers/block/drbd/drbd_debugfs.c  | 958 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/block/drbd/drbd_debugfs.h  |  39 +++
- drivers/block/drbd/drbd_int.h      | 383 ++++++++++++++++--------
- drivers/block/drbd/drbd_interval.h |   4 +-
- drivers/block/drbd/drbd_main.c     | 302 ++++++++-----------
- drivers/block/drbd/drbd_nl.c       | 110 ++++---
- drivers/block/drbd/drbd_proc.c     | 125 +++++---
- drivers/block/drbd/drbd_receiver.c | 316 +++++++++++++-------
- drivers/block/drbd/drbd_req.c      | 527 ++++++++++++++++++++++----------
- drivers/block/drbd/drbd_req.h      |   1 +
- drivers/block/drbd/drbd_state.c    |  90 +++---
- drivers/block/drbd/drbd_worker.c   | 348 +++++++++++++++++-----
- include/linux/drbd.h               |   4 +-
- include/linux/drbd_genl.h          |   4 +
- include/linux/drbd_limits.h        |   6 +
- lib/lru_cache.c                    |  23 +-
- 19 files changed, 2689 insertions(+), 1210 deletions(-)
- create mode 100644 drivers/block/drbd/drbd_debugfs.c
- create mode 100644 drivers/block/drbd/drbd_debugfs.h
+> 
+> Thanks,
+> Sasha
+> 
+> 
 
