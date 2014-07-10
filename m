@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753842AbaGJOIp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 10:08:45 -0400
-Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:34221 "EHLO
-	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752056AbaGJOIn (ORCPT
+	id S1752323AbaGJONK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 10:13:10 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:57032 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051AbaGJONI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 10:08:43 -0400
-Date: Thu, 10 Jul 2014 09:08:40 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-cc: linux-kernel@vger.kernel.org, Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Alexey Preobrazhensky <preobr@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        x86@kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC/PATCH RESEND -next 12/21] mm: util: move krealloc/kzfree
- to slab_common.c
-In-Reply-To: <53BE4412.6030707@samsung.com>
-Message-ID: <alpine.DEB.2.11.1407100908090.12483@gentwo.org>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com> <1404905415-9046-13-git-send-email-a.ryabinin@samsung.com> <alpine.DEB.2.11.1407090931350.1384@gentwo.org> <53BE4412.6030707@samsung.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 10 Jul 2014 10:13:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140710140704.GG2970@pd.tnic>
+References: <9e68cba2bf41923630ea93de7c3d17637f175895.1403772686.git.viresh.kumar@linaro.org>
+	<20140710114828.GA3254@pd.tnic>
+	<CAKohpom0Qwbj5Ma_zCE5juk=1JjbBDLZJcBXZMgnkDVPiTvRCA@mail.gmail.com>
+	<20140710115934.GF2970@pd.tnic>
+	<CAKohpok0M1_khYB=AobfAuPM9Tf8wi63K5o6NCQ+sC=STP5HMw@mail.gmail.com>
+	<20140710140704.GG2970@pd.tnic>
+Date: Thu, 10 Jul 2014 19:43:07 +0530
+Message-ID: <CAKohpok-ZdxJMCsLMGVA1yhmCjQyTwhCTu7PuXU47wpLQQyxEg@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: report driver's successful {un}registration
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Jul 2014, Andrey Ryabinin wrote:
+On 10 July 2014 19:37, Borislav Petkov <bp@alien8.de> wrote:
+> On Thu, Jul 10, 2014 at 05:38:23PM +0530, Viresh Kumar wrote:
+>> The problem with that is: CPUFreq may not be compiled in at all and we
+>> wouldn't know the difference between success and absence.
+>
+> Of course you would: /sys/devices/system/cpu/cpufreq/
 
-> Should I send another patch to move this to slab_common.c?
+Yeah, with a local board its easily detectable.
 
-Send one patch that is separte from this patchset to all slab
-maintainers and include my ack.
-
+But I faced the issue when I had to see some test reports from
+the automated stuff and wanted to see if cpufreq is up and running.
