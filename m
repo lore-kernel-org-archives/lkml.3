@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166AbaGJJvM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 05:51:12 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:40667 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752068AbaGJJvJ (ORCPT
+	id S1753196AbaGJJv3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 05:51:29 -0400
+Received: from 62.53-244-23.rdns.scalabledns.com ([23.244.53.62]:44347 "EHLO
+	smtp2.170shouyou.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753170AbaGJJvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 05:51:09 -0400
+	Thu, 10 Jul 2014 05:51:25 -0400
+X-Greylist: delayed 588 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Jul 2014 05:51:25 EDT
+Date: Thu, 10 Jul 2014 17:41:33 +0800
+From: "Emma" <kingbirdsales07@live.cn>
+Reply-To: sales@kingbirdmachinery.com
+Reply-To: kingbirdsales07@live.cn
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: SUPPLY MARINE thruster
+Message-ID: <201407101741331406913@smtp2.170shouyou.net>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
 MIME-Version: 1.0
-In-Reply-To: <20140709130017.GL9485@arm.com>
-References: <1404803213-10653-1-git-send-email-zlim.lnx@gmail.com>
-	<20140709130017.GL9485@arm.com>
-Date: Thu, 10 Jul 2014 11:51:08 +0200
-Message-ID: <CAMEtUuwuQzYknOm4qqYFa2By=zCOpkk4_zp=_2BuPavg-rPc-A@mail.gmail.com>
-Subject: Re: [PATCH RFCv2] arm64: eBPF JIT compiler
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Zi Shen Lim <zlim.lnx@gmail.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset="GB2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6A9pepW007365
 
-On Wed, Jul 9, 2014 at 3:00 PM, Will Deacon <will.deacon@arm.com> wrote:
-> On Tue, Jul 08, 2014 at 08:06:53AM +0100, Zi Shen Lim wrote:
->>
->> 1. Implement remaining classes of eBPF instructions: ST|MEM, STX|XADD
->>    which currently do not have corresponding test cases in test_bpf.
->
-> I can help out with atomics, if you need it. Are the memory barrier
-> semantics well-defined for eBPF?
+Dear Sir/Madam, 
+We are marine parts supplier with our own factory and warehouse,wondering if we have chance to cooperate with marine thruster  products?
+And about marine air compressor, our company has many types,including marine engine, outboard,propeller  etc.
+May be you are already have your own supplier ,it¡¯s ok ,just give a chance to be your second choice,if you like ,i can send you the detailed catalogue to refer.ok?
+Best regards
 
-There are no barrier or cmpxchg instructions in eBPF, since such use case
-doesn't exist yet. There is only xadd that is equivalent to atomic_add
-which can be JITed as exclusive load/store on arm64.
+
+Emma
+
+Marine Power & Propulsion Department
+
+------------------------------------------------------
+
+Kingbird Marine Parts group  
+
+Tel: 86-023-63017612-803  
+
+Skype: kingbirdsales09
+
+website: www.kingbirdmachinery.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
