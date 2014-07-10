@@ -1,37 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925AbaGJHpR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 03:45:17 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:38920 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751488AbaGJHpP (ORCPT
+	id S1752033AbaGJHqr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 03:46:47 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:52977 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751658AbaGJHqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 03:45:15 -0400
-X-Sasl-enc: TjV/4WGpB2NwLWpWnvpg6l1NFnGgT9DtO1dcqBGMogNc 1404978311
-Message-ID: <1404978309.2609.27.camel@perseus.fritz.box>
-Subject: Re: [PATCH 0/6] autofs4: support RCU-walk
-From: Ian Kent <raven@themaw.net>
-To: NeilBrown <neilb@suse.de>
-Cc: autofs@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 10 Jul 2014 15:45:09 +0800
-In-Reply-To: <1404978220.2609.25.camel@perseus.fritz.box>
-References: <20140709233541.4525.25151.stgit@notabene.brown>
-	 <1404978220.2609.25.camel@perseus.fritz.box>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	Thu, 10 Jul 2014 03:46:46 -0400
+Message-ID: <53BE44DB.8080400@linux.vnet.ibm.com>
+Date: Thu, 10 Jul 2014 13:16:35 +0530
+From: Madhusudanan Kandasamy <kmadhu@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] powerpc: Fail remap_4k_pfn() if PFN doesn't fit inside
+ PTE
+References: <53BD68FF.7000307@linux.vnet.ibm.com> <20140710084911.22cb58d4@canb.auug.org.au>
+In-Reply-To: <20140710084911.22cb58d4@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14071007-8256-0000-0000-00000E62BF5E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-07-10 at 15:43 +0800, Ian Kent wrote:
+Hi Stephen,
+
+Thanks for the suggestion, I'll send a new patch.
+
+On Thursday 10 July 2014 04:19 AM, Stephen Rothwell wrote:
+> Hi Madhusudanan,
 > 
-> Thanks for your effort Bruce,
-
-Oh boy, where did that come from, sorry Neil, ;)
-
-> Ian
+> On Wed, 09 Jul 2014 21:38:31 +0530 Madhusudanan Kandasamy <kmadhu@linux.vnet.ibm.com> wrote:
+>>
+>> diff --git a/arch/powerpc/include/asm/pte-hash64-64k.h b/arch/powerpc/include/asm/pte-hash64-64k.h
+>> index d836d94..10af7f1 100644
+>> --- a/arch/powerpc/include/asm/pte-hash64-64k.h
+>> +++ b/arch/powerpc/include/asm/pte-hash64-64k.h
+>> @@ -74,8 +74,15 @@
+>>  #define pte_pagesize_index(mm, addr, pte)	\
+>>  	(((pte) & _PAGE_COMBO)? MMU_PAGE_4K: MMU_PAGE_64K)
+>>
+>> +static inline int bad_4k_pfn(void)
+>> +{
+>> +	WARN_ON(1);
+>> +	return -EINVAL;
+>> +}
+>> +
+>>  #define remap_4k_pfn(vma, addr, pfn, prot)				\
+>> -	remap_pfn_range((vma), (addr), (pfn), PAGE_SIZE,		\
+>> -			__pgprot(pgprot_val((prot)) | _PAGE_4K_PFN))
+>> +	((pfn >= (1UL << (64 - PTE_RPN_SHIFT))) ? bad_4k_pfn() :	\
+>> +		remap_pfn_range((vma), (addr), (pfn), PAGE_SIZE,	\
+>> +			__pgprot(pgprot_val((prot)) | _PAGE_4K_PFN)))
+>>
+>>  #endif	/* __ASSEMBLY__ */
 > 
-
+> WARN_ON() returns the value it is passed, so no helper is needed:
+> 
+>  #define remap_4k_pfn(vma, addr, pfn, prot)				\
+> -	remap_pfn_range((vma), (addr), (pfn), PAGE_SIZE,		\
+> -			__pgprot(pgprot_val((prot)) | _PAGE_4K_PFN))
+> +	WARN_ON(((pfn >= (1UL << (64 - PTE_RPN_SHIFT)))) ? -EINVAL :	\
+> +		remap_pfn_range((vma), (addr), (pfn), PAGE_SIZE,	\
+> +			__pgprot(pgprot_val((prot)) | _PAGE_4K_PFN)))
+> 
 
