@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299AbaGJWG0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 18:06:26 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:33272 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754015AbaGJVzt (ORCPT
+	id S1754032AbaGJVzq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 17:55:46 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:36860 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754015AbaGJVzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 17:55:49 -0400
+	Thu, 10 Jul 2014 17:55:42 -0400
 From: Oded Gabbay <oded.gabbay@gmail.com>
 X-Google-Original-From: Oded Gabbay <oded.gabbay@amd.com>
 To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
@@ -14,11 +14,14 @@ To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
 Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         John Bridgman <John.Bridgman@amd.com>,
         Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Joerg Roedel <joro@8bytes.org>, Ben Goz <ben.goz@amd.com>,
-        Oded Gabbay <oded.gabbay@amd.com>
-Subject: [PATCH 46/83] hsa/radeon: Add queue and hw_pointer_store modules
-Date: Fri, 11 Jul 2014 00:54:02 +0300
-Message-Id: <1405029279-6894-18-git-send-email-oded.gabbay@amd.com>
+        Joerg Roedel <joro@8bytes.org>,
+        Alexey Skidanov <Alexey.Skidanov@amd.com>,
+        Oded Gabbay <oded.gabbay@amd.com>,
+        Evgeny Pinchuk <evgeny.pinchuk@amd.com>, Ben Goz <ben.goz@amd.com>,
+        linux-api@vger.kernel.org
+Subject: [PATCH 44/83] hsa/radeon: HSA64/HSA32 modes support
+Date: Fri, 11 Jul 2014 00:54:00 +0300
+Message-Id: <1405029279-6894-16-git-send-email-oded.gabbay@amd.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405029279-6894-1-git-send-email-oded.gabbay@amd.com>
 References: <1405029279-6894-1-git-send-email-oded.gabbay@amd.com>
@@ -26,44 +29,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Goz <ben.goz@amd.com>
+From: Alexey Skidanov <Alexey.Skidanov@amd.com>
 
-The queue module enables allocating and initializing queues uniformly.
-The hw_pointer_store module handles allocation and assignment of read and write
-pointers to user HSA queues.
+Added apertures initialization and appropriate ioctl
 
-Signed-off-by: Ben Goz <ben.goz@amd.com>
+Signed-off-by: Alexey Skidanov <Alexey.Skidanov@amd.com>
 Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
 ---
- drivers/gpu/hsa/radeon/Makefile               |   3 +-
- drivers/gpu/hsa/radeon/kfd_hw_pointer_store.c | 150 ++++++++++++++++++++++++++
- drivers/gpu/hsa/radeon/kfd_hw_pointer_store.h |  65 +++++++++++
- drivers/gpu/hsa/radeon/kfd_priv.h             |  55 ++++++++++
- drivers/gpu/hsa/radeon/kfd_queue.c            | 110 +++++++++++++++++++
- 5 files changed, 382 insertions(+), 1 deletion(-)
- create mode 100644 drivers/gpu/hsa/radeon/kfd_hw_pointer_store.c
- create mode 100644 drivers/gpu/hsa/radeon/kfd_hw_pointer_store.h
- create mode 100644 drivers/gpu/hsa/radeon/kfd_queue.c
+ drivers/gpu/hsa/radeon/Makefile               |   2 +-
+ drivers/gpu/hsa/radeon/kfd_aperture.c         | 124 ++++++++++++++++++++++++++
+ drivers/gpu/hsa/radeon/kfd_chardev.c          |  58 +++++++++++-
+ drivers/gpu/hsa/radeon/kfd_priv.h             |  18 ++++
+ drivers/gpu/hsa/radeon/kfd_process.c          |  17 ++++
+ drivers/gpu/hsa/radeon/kfd_sched_cik_static.c |   3 +-
+ drivers/gpu/hsa/radeon/kfd_topology.c         |  27 ++++++
+ include/uapi/linux/kfd_ioctl.h                |  18 ++++
+ 8 files changed, 264 insertions(+), 3 deletions(-)
+ create mode 100644 drivers/gpu/hsa/radeon/kfd_aperture.c
 
 diff --git a/drivers/gpu/hsa/radeon/Makefile b/drivers/gpu/hsa/radeon/Makefile
-index 813b31f..18e1639 100644
+index 5422e6a..813b31f 100644
 --- a/drivers/gpu/hsa/radeon/Makefile
 +++ b/drivers/gpu/hsa/radeon/Makefile
-@@ -5,6 +5,7 @@
+@@ -5,6 +5,6 @@
  radeon_kfd-y	:= kfd_module.o kfd_device.o kfd_chardev.o \
  		kfd_pasid.o kfd_topology.o kfd_process.o \
  		kfd_doorbell.o kfd_sched_cik_static.o kfd_registers.o \
--		kfd_vidmem.o kfd_interrupt.o kfd_aperture.o
-+		kfd_vidmem.o kfd_interrupt.o kfd_aperture.o \
-+		kfd_queue.o kfd_hw_pointer_store.o
+-		kfd_vidmem.o kfd_interrupt.o
++		kfd_vidmem.o kfd_interrupt.o kfd_aperture.o
  
  obj-$(CONFIG_HSA_RADEON)	+= radeon_kfd.o
-diff --git a/drivers/gpu/hsa/radeon/kfd_hw_pointer_store.c b/drivers/gpu/hsa/radeon/kfd_hw_pointer_store.c
+diff --git a/drivers/gpu/hsa/radeon/kfd_aperture.c b/drivers/gpu/hsa/radeon/kfd_aperture.c
 new file mode 100644
-index 0000000..1372fb2
+index 0000000..9e2d6da
 --- /dev/null
-+++ b/drivers/gpu/hsa/radeon/kfd_hw_pointer_store.c
-@@ -0,0 +1,150 @@
++++ b/drivers/gpu/hsa/radeon/kfd_aperture.c
+@@ -0,0 +1,124 @@
 +/*
 + * Copyright 2014 Advanced Micro Devices, Inc.
 + *
@@ -85,407 +86,359 @@ index 0000000..1372fb2
 + * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 + * OTHER DEALINGS IN THE SOFTWARE.
 + *
-+ * Author: Ben Goz
 + */
 +
-+#include <linux/types.h>
-+#include <linux/version.h>
-+#include <linux/kernel.h>
-+#include <linux/mutex.h>
-+#include <linux/mm.h>
-+#include <linux/mman.h>
++#include <linux/device.h>
++#include <linux/export.h>
++#include <linux/err.h>
++#include <linux/fs.h>
++#include <linux/sched.h>
 +#include <linux/slab.h>
-+#include <linux/io.h>
-+#include "kfd_hw_pointer_store.h"
++#include <linux/uaccess.h>
++#include <linux/compat.h>
++#include <uapi/linux/kfd_ioctl.h>
++#include <linux/time.h>
 +#include "kfd_priv.h"
++#include "kfd_scheduler.h"
++#include <linux/mm.h>
++#include <uapi/asm-generic/mman-common.h>
++#include <asm/processor.h>
 +
-+/* do the same trick as in map_doorbells() */
-+static int hw_pointer_store_map(struct hw_pointer_store_properties *ptr,
-+		struct file *devkfd)
++
++#define MAKE_GPUVM_APP_BASE(gpu_num) (((uint64_t)(gpu_num) << 61) + 0x1000000000000)
++#define MAKE_GPUVM_APP_LIMIT(base) (((uint64_t)(base) & 0xFFFFFF0000000000) | 0xFFFFFFFFFF)
++#define MAKE_SCRATCH_APP_BASE(gpu_num) (((uint64_t)(gpu_num) << 61) + 0x100000000)
++#define MAKE_SCRATCH_APP_LIMIT(base) (((uint64_t)base & 0xFFFFFFFF00000000) | 0xFFFFFFFF)
++#define MAKE_LDS_APP_BASE(gpu_num) (((uint64_t)(gpu_num) << 61) + 0x0)
++#define MAKE_LDS_APP_LIMIT(base) (((uint64_t)(base) & 0xFFFFFFFF00000000) | 0xFFFFFFFF)
++
++#define HSA_32BIT_LDS_APP_SIZE 0x10000
++#define HSA_32BIT_LDS_APP_ALIGNMENT 0x10000
++
++static unsigned long kfd_reserve_aperture(struct kfd_process *process, unsigned long len, unsigned long alignment)
 +{
-+	qptr_t __user *user_address;
 +
-+	BUG_ON(!ptr || !devkfd);
++	unsigned long addr = 0;
++	unsigned long start_address;
 +
-+	if (!ptr->page_mapping) {
-+		if (!ptr->page_address)
-+			return -EINVAL;
-+
-+		user_address = (qptr_t __user *)vm_mmap(devkfd, 0, PAGE_SIZE,
-+			PROT_WRITE | PROT_READ , MAP_SHARED, ptr->offset);
-+
-+		if (IS_ERR(user_address))
-+			return PTR_ERR(user_address);
-+
-+		ptr->page_mapping = user_address;
++	/*
++	 * Go bottom up and find the first available aligned address.
++	 * We may narrow space to scan by getting mmap range limits.
++	 */
++	for (start_address =  alignment; start_address < (TASK_SIZE - alignment); start_address += alignment) {
++		addr = vm_mmap(NULL, start_address, len, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, 0);
++		if (!IS_ERR_VALUE(addr)) {
++			if (addr == start_address)
++				return addr;
++			vm_munmap(addr, len);
++		}
 +	}
++	return 0;
++
++}
++
++int kfd_init_apertures(struct kfd_process *process)
++{
++	uint8_t id  = 0;
++	struct kfd_dev *dev;
++	struct kfd_process_device *pdd;
++
++	mutex_lock(&process->mutex);
++
++	/*Iterating over all devices*/
++	while ((dev = kfd_topology_enum_kfd_devices(id)) != NULL && id < NUM_OF_SUPPORTED_GPUS) {
++
++		pdd = radeon_kfd_get_process_device_data(dev, process);
++
++		/*for 64 bit process aperture will be statically reserved in the non canonical process address space
++		 *for 32 bit process the aperture will be reserved in the process address space
++		 */
++		if (process->is_32bit_user_mode) {
++			/*try to reserve aperture. continue on failure, just put the aperture size to be 0*/
++			pdd->lds_base = kfd_reserve_aperture(
++						process,
++						HSA_32BIT_LDS_APP_SIZE,
++						HSA_32BIT_LDS_APP_ALIGNMENT);
++
++			if (pdd->lds_base)
++				pdd->lds_limit = pdd->lds_base + HSA_32BIT_LDS_APP_SIZE - 1;
++			else
++				pdd->lds_limit = 0;
++
++			/*GPUVM and Scratch apertures are not supported*/
++			pdd->gpuvm_base = pdd->gpuvm_limit = pdd->scratch_base = pdd->scratch_limit = 0;
++		} else {
++			/*node id couldn't be 0 - the three MSB bits of aperture shoudn't be 0*/
++			pdd->lds_base = MAKE_LDS_APP_BASE(id + 1);
++			pdd->lds_limit = MAKE_LDS_APP_LIMIT(pdd->lds_base);
++			pdd->gpuvm_base = MAKE_GPUVM_APP_BASE(id + 1);
++			pdd->gpuvm_limit = MAKE_GPUVM_APP_LIMIT(pdd->gpuvm_base);
++			pdd->scratch_base = MAKE_SCRATCH_APP_BASE(id + 1);
++			pdd->scratch_limit = MAKE_SCRATCH_APP_LIMIT(pdd->scratch_base);
++		}
++
++		dev_dbg(kfd_device, "node id %u, gpu id %u, lds_base %llX lds_limit %llX gpuvm_base %llX gpuvm_limit %llX scratch_base %llX scratch_limit %llX",
++				id, pdd->dev->id, pdd->lds_base, pdd->lds_limit, pdd->gpuvm_base, pdd->gpuvm_limit, pdd->scratch_base, pdd->scratch_limit);
++
++		id++;
++	}
++
++	mutex_unlock(&process->mutex);
 +
 +	return 0;
 +}
 +
-+int hw_pointer_store_init(struct hw_pointer_store_properties *ptr,
-+		enum hw_pointer_store_type type)
++
+diff --git a/drivers/gpu/hsa/radeon/kfd_chardev.c b/drivers/gpu/hsa/radeon/kfd_chardev.c
+index e95d597..07cac88 100644
+--- a/drivers/gpu/hsa/radeon/kfd_chardev.c
++++ b/drivers/gpu/hsa/radeon/kfd_chardev.c
+@@ -32,6 +32,9 @@
+ #include <linux/time.h>
+ #include "kfd_priv.h"
+ #include "kfd_scheduler.h"
++#include <linux/mm.h>
++#include <uapi/asm-generic/mman-common.h>
++#include <asm/processor.h>
+ 
+ static long kfd_ioctl(struct file *, unsigned int, unsigned long);
+ static int kfd_open(struct inode *, struct file *);
+@@ -107,9 +110,13 @@ kfd_open(struct inode *inode, struct file *filep)
+ 	process = radeon_kfd_create_process(current);
+ 	if (IS_ERR(process))
+ 		return PTR_ERR(process);
++
+ 	process->is_32bit_user_mode = is_compat_task();
++
+ 	dev_info(kfd_device, "process %d opened, compat mode (32 bit) - %d\n",
+-				process->pasid, process->is_32bit_user_mode);
++			process->pasid, process->is_32bit_user_mode);
++
++	kfd_init_apertures(process);
+ 
+ 	return 0;
+ }
+@@ -321,6 +328,51 @@ kfd_ioctl_get_clock_counters(struct file *filep, struct kfd_process *p, void __u
+ 	return 0;
+ }
+ 
++
++static int kfd_ioctl_get_process_apertures(struct file *filp, struct kfd_process *p, void __user *arg)
 +{
-+	unsigned long *addr;
++	struct kfd_ioctl_get_process_apertures_args args;
++	struct kfd_process_device *pdd;
 +
-+	BUG_ON(!ptr);
++	dev_dbg(kfd_device, "get apertures for PASID %d", p->pasid);
 +
-+	/* using the offset value as a hint for mmap to distinguish between page types */
-+	if (type == KFD_HW_POINTER_STORE_TYPE_RPTR)
-+		ptr->offset = KFD_MMAP_RPTR_START << PAGE_SHIFT;
-+	else if (type == KFD_HW_POINTER_STORE_TYPE_WPTR)
-+		ptr->offset = KFD_MMAP_WPTR_START << PAGE_SHIFT;
-+	else
-+		return -EINVAL;
++	if (copy_from_user(&args, arg, sizeof(args)))
++		return -EFAULT;
 +
-+	addr = (unsigned long *)get_zeroed_page(GFP_KERNEL);
-+	if (!addr) {
-+		pr_debug("Error allocating page\n");
-+		return -ENOMEM;
++	args.num_of_nodes = 0;
++
++	mutex_lock(&p->mutex);
++
++	/*if the process-device list isn't empty*/
++	if (kfd_has_process_device_data(p)) {
++		/* Run over all pdd of the process */
++		pdd = kfd_get_first_process_device_data(p);
++		do {
++
++			args.process_apertures[args.num_of_nodes].gpu_id = pdd->dev->id;
++			args.process_apertures[args.num_of_nodes].lds_base = pdd->lds_base;
++			args.process_apertures[args.num_of_nodes].lds_limit = pdd->lds_limit;
++			args.process_apertures[args.num_of_nodes].gpuvm_base = pdd->gpuvm_base;
++			args.process_apertures[args.num_of_nodes].gpuvm_limit = pdd->gpuvm_limit;
++			args.process_apertures[args.num_of_nodes].scratch_base = pdd->scratch_base;
++			args.process_apertures[args.num_of_nodes].scratch_limit = pdd->scratch_limit;
++
++			dev_dbg(kfd_device, "node id %u, gpu id %u, lds_base %llX lds_limit %llX gpuvm_base %llX gpuvm_limit %llX scratch_base %llX scratch_limit %llX",
++					args.num_of_nodes, pdd->dev->id, pdd->lds_base, pdd->lds_limit, pdd->gpuvm_base, pdd->gpuvm_limit, pdd->scratch_base, pdd->scratch_limit);
++			args.num_of_nodes++;
++		} while ((pdd = kfd_get_next_process_device_data(p, pdd)) != NULL &&
++				(args.num_of_nodes < NUM_OF_SUPPORTED_GPUS));
 +	}
 +
-+	ptr->page_address = addr;
-+	ptr->page_mapping = NULL;
++	mutex_unlock(&p->mutex);
++
++	if (copy_to_user(arg, &args, sizeof(args)))
++		return -EFAULT;
 +
 +	return 0;
 +}
 +
-+void hw_pointer_store_destroy(struct hw_pointer_store_properties *ptr)
-+{
-+	BUG_ON(!ptr);
-+	pr_debug("kfd in func: %s\n", __func__);
-+	if (ptr->page_address)
-+		free_page((unsigned long)ptr->page_address);
-+	if (ptr->page_mapping)
-+		vm_munmap((uintptr_t)ptr->page_mapping, PAGE_SIZE);
-+	ptr->page_address = NULL;
-+	ptr->page_mapping = NULL;
-+}
 +
-+qptr_t __user *
-+hw_pointer_store_create_queue(struct hw_pointer_store_properties *ptr,
-+		unsigned int queue_id, struct file *devkfd)
-+{
-+	BUG_ON(!ptr || queue_id >= MAX_PROCESS_QUEUES);
+ static long
+ kfd_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
+ {
+@@ -352,6 +404,10 @@ kfd_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
+ 		err = kfd_ioctl_get_clock_counters(filep, process, (void __user *)arg);
+ 		break;
+ 
++	case KFD_IOC_GET_PROCESS_APERTURES:
++		err = kfd_ioctl_get_process_apertures(filep, process, (void __user *)arg);
++		break;
 +
-+	/* mapping value to user space*/
-+	hw_pointer_store_map(ptr, devkfd);
-+
-+	/* User process address */
-+	if (!ptr->page_mapping) {
-+		pr_debug(KERN_ERR "kfd: hw pointer store doesn't mapped to user space\n");
-+		return NULL;
-+	}
-+
-+	ptr->page_mapping[queue_id] = 0;
-+
-+	return ptr->page_mapping + queue_id;
-+}
-+
-+unsigned long *hw_pointer_store_get_address
-+	(struct hw_pointer_store_properties *ptr, unsigned int queue_id)
-+{
-+	return ptr->page_address + queue_id;
-+}
-+
-+int radeon_kfd_hw_pointer_store_mmap(struct hw_pointer_store_properties *ptr,
-+		struct vm_area_struct *vma)
-+{
-+	BUG_ON(!ptr || !vma);
-+
-+	if (vma->vm_end - vma->vm_start != PAGE_SIZE) {
-+		pr_debug("start address(0x%lx) - end address(0x%lx) != len(0x%lx)\n",
-+				vma->vm_end, vma->vm_start, PAGE_SIZE);
-+		return -EINVAL;
-+	}
-+
-+	vma->vm_flags |= VM_IO | VM_DONTCOPY | VM_DONTEXPAND | VM_NORESERVE
-+		       | VM_DONTDUMP | VM_PFNMAP;
-+
-+	pr_debug("kfd: mapping hw pointer page in radeon_kfd_hw_pointer_store_mmap\n"
-+			 "     target user address == 0x%016llX\n"
-+			 "     physical address    == 0x%016lX\n"
-+			 "     vm_flags            == 0x%08lX\n"
-+			 "     size                == 0x%08lX\n",
-+			 (long long unsigned int) vma->vm_start,
-+			 __pa(ptr->page_address), vma->vm_flags, PAGE_SIZE);
-+
-+	/* mapping the page to user process */
-+	return remap_pfn_range(vma, vma->vm_start, __pa(ptr->page_address) >> PAGE_SHIFT, PAGE_SIZE, vma->vm_page_prot);
-+}
-+
-diff --git a/drivers/gpu/hsa/radeon/kfd_hw_pointer_store.h b/drivers/gpu/hsa/radeon/kfd_hw_pointer_store.h
-new file mode 100644
-index 0000000..be1d6cb
---- /dev/null
-+++ b/drivers/gpu/hsa/radeon/kfd_hw_pointer_store.h
-@@ -0,0 +1,65 @@
-+/*
-+ * Copyright 2014 Advanced Micro Devices, Inc.
-+ *
-+ * Permission is hereby granted, free of charge, to any person obtaining a
-+ * copy of this software and associated documentation files (the "Software"),
-+ * to deal in the Software without restriction, including without limitation
-+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
-+ * and/or sell copies of the Software, and to permit persons to whom the
-+ * Software is furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-+ * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
-+ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-+ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-+ * OTHER DEALINGS IN THE SOFTWARE.
-+ *
-+ * Author: Ben Goz
-+ */
-+
-+#ifndef HW_POINTER_STORE_H_
-+#define HW_POINTER_STORE_H_
-+
-+#include <linux/mutex.h>
-+
-+/* Type that represents a HW doorbell slot. and read/write HW pointers */
-+typedef u32 qptr_t;
-+
-+/* Hw Pointer Store */
-+enum hw_pointer_store_type {
-+	KFD_HW_POINTER_STORE_TYPE_RPTR = 0,
-+	KFD_HW_POINTER_STORE_TYPE_WPTR
-+};
-+
-+struct hw_pointer_store_properties {
-+	qptr_t __user		*page_mapping;
-+	unsigned long		*page_address;
-+	unsigned long		offset;
-+};
-+
-+int
-+hw_pointer_store_init(struct hw_pointer_store_properties *ptr,
-+		enum hw_pointer_store_type type);
-+
-+void
-+hw_pointer_store_destroy(struct hw_pointer_store_properties *ptr);
-+
-+qptr_t __user *
-+hw_pointer_store_create_queue(struct hw_pointer_store_properties *ptr,
-+		unsigned int queue_id, struct file *devkfd);
-+
-+unsigned long *
-+hw_pointer_store_get_address(struct hw_pointer_store_properties *ptr,
-+		unsigned int queue_id);
-+
-+int
-+radeon_kfd_hw_pointer_store_mmap(struct hw_pointer_store_properties *ptr,
-+		struct vm_area_struct *vma);
-+
-+
-+#endif /* HW_POINTER_STORE_H_ */
+ 	default:
+ 		dev_err(kfd_device,
+ 			"unknown ioctl cmd 0x%x, arg 0x%lx)\n",
 diff --git a/drivers/gpu/hsa/radeon/kfd_priv.h b/drivers/gpu/hsa/radeon/kfd_priv.h
-index 28155bc..14a3f9b 100644
+index 9d3b1fc..28155bc 100644
 --- a/drivers/gpu/hsa/radeon/kfd_priv.h
 +++ b/drivers/gpu/hsa/radeon/kfd_priv.h
-@@ -31,6 +31,7 @@
- #include <linux/atomic.h>
- #include <linux/workqueue.h>
- #include <linux/spinlock.h>
-+#include "kfd_hw_pointer_store.h"
+@@ -171,6 +171,16 @@ struct kfd_process_device {
  
- struct kfd_scheduler_class;
- 
-@@ -49,6 +50,10 @@ struct kfd_scheduler_class;
- ** We figure out what type of memory the caller wanted by comparing the mmap page offset to known ranges. */
- #define KFD_MMAP_DOORBELL_START	(((1ULL << 32)*1) >> PAGE_SHIFT)
- #define KFD_MMAP_DOORBELL_END	(((1ULL << 32)*2) >> PAGE_SHIFT)
-+#define KFD_MMAP_RPTR_START	KFD_MMAP_DOORBELL_END
-+#define KFD_MMAP_RPTR_END	(((1ULL << 32)*3) >> PAGE_SHIFT)
-+#define KFD_MMAP_WPTR_START	KFD_MMAP_RPTR_END
-+#define KFD_MMAP_WPTR_END	(((1ULL << 32)*4) >> PAGE_SHIFT)
- 
- /* GPU ID hash width in bits */
- #define KFD_GPU_ID_HASH_WIDTH 16
-@@ -155,6 +160,49 @@ struct kfd_queue {
- 	struct kfd_scheduler_queue scheduler_queue;
+ 	/* Is this process/pasid bound to this device? (amd_iommu_bind_pasid) */
+ 	bool bound;
++
++	/*Apertures*/
++	uint64_t lds_base;
++	uint64_t lds_limit;
++	uint64_t gpuvm_base;
++	uint64_t gpuvm_limit;
++	uint64_t scratch_base;
++	uint64_t scratch_limit;
++
++
  };
  
-+enum kfd_queue_type  {
-+	KFD_QUEUE_TYPE_COMPUTE,
-+	KFD_QUEUE_TYPE_SDMA,
-+	KFD_QUEUE_TYPE_HIQ,
-+	KFD_QUEUE_TYPE_DIQ
-+};
-+
-+struct queue_properties {
-+	enum kfd_queue_type type;
-+	unsigned int queue_id;
-+	uint64_t queue_address;
-+	uint64_t  queue_size;
-+	uint32_t priority;
-+	uint32_t queue_percent;
-+	qptr_t *read_ptr;
-+	qptr_t *write_ptr;
-+	qptr_t *doorbell_ptr;
-+	qptr_t doorbell_off;
-+	bool is_interop;
-+	bool is_active;
-+	/* Not relevant for user mode queues in cp scheduling */
-+	unsigned int vmid;
-+};
-+
-+struct queue {
-+	struct list_head list;
-+	void *mqd;
-+	/* kfd_mem_obj contains the mqd */
-+	kfd_mem_obj mqd_mem_obj;
-+	uint64_t gart_mqd_addr; /* needed for cp scheduling */
-+	struct queue_properties properties;
-+
-+	/* Used by the queue device manager to track the hqd slot per queue
-+	 * when using no cp scheduling
-+	 */
-+	uint32_t mec;
-+	uint32_t pipe;
-+	uint32_t queue;
-+
-+	struct kfd_process	*process;
-+	struct kfd_dev		*device;
-+};
-+
- /* Data that is per-process-per device. */
- struct kfd_process_device {
- 	/* List of all per-device data for a process. Starts from kfd_process.per_device_data. */
-@@ -271,4 +319,11 @@ int kgd2kfd_resume(struct kfd_dev *dev);
- /*HSA apertures*/
- int kfd_init_apertures(struct kfd_process *process);
+ /* Process data */
+@@ -212,6 +222,10 @@ void radeon_kfd_install_queue(struct kfd_process *p, unsigned int queue_id, stru
+ void radeon_kfd_remove_queue(struct kfd_process *p, unsigned int queue_id);
+ struct kfd_queue *radeon_kfd_get_queue(struct kfd_process *p, unsigned int queue_id);
  
-+/* Queue Context Management */
-+
-+int init_queue(struct queue **q, struct queue_properties properties);
-+void uninit_queue(struct queue *q);
-+void print_queue_properties(struct queue_properties *q);
-+void print_queue(struct queue *q);
++/* Process device data iterator */
++struct kfd_process_device *kfd_get_first_process_device_data(struct kfd_process *p);
++struct kfd_process_device *kfd_get_next_process_device_data(struct kfd_process *p, struct kfd_process_device *pdd);
++bool kfd_has_process_device_data(struct kfd_process *p);
+ 
+ /* PASIDs */
+ int radeon_kfd_pasid_init(void);
+@@ -237,6 +251,7 @@ int kfd_topology_add_device(struct kfd_dev *gpu);
+ int kfd_topology_remove_device(struct kfd_dev *gpu);
+ struct kfd_dev *radeon_kfd_device_by_id(uint32_t gpu_id);
+ struct kfd_dev *radeon_kfd_device_by_pci_dev(const struct pci_dev *pdev);
++struct kfd_dev *kfd_topology_enum_kfd_devices(uint8_t idx);
+ 
+ /* MMIO registers */
+ #define WRITE_REG(dev, reg, value) radeon_kfd_write_reg((dev), (reg), (value))
+@@ -253,4 +268,7 @@ void kgd2kfd_interrupt(struct kfd_dev *dev, const void *ih_ring_entry);
+ void kgd2kfd_suspend(struct kfd_dev *dev);
+ int kgd2kfd_resume(struct kfd_dev *dev);
+ 
++/*HSA apertures*/
++int kfd_init_apertures(struct kfd_process *process);
 +
  #endif
-diff --git a/drivers/gpu/hsa/radeon/kfd_queue.c b/drivers/gpu/hsa/radeon/kfd_queue.c
-new file mode 100644
-index 0000000..78fe180
---- /dev/null
-+++ b/drivers/gpu/hsa/radeon/kfd_queue.c
-@@ -0,0 +1,110 @@
+diff --git a/drivers/gpu/hsa/radeon/kfd_process.c b/drivers/gpu/hsa/radeon/kfd_process.c
+index f89f855..80136e6 100644
+--- a/drivers/gpu/hsa/radeon/kfd_process.c
++++ b/drivers/gpu/hsa/radeon/kfd_process.c
+@@ -397,3 +397,20 @@ struct kfd_queue *radeon_kfd_get_queue(struct kfd_process *p, unsigned int queue
+ 		test_bit(queue_id, p->allocated_queue_bitmap)) ?
+ 			p->queues[queue_id] : NULL;
+ }
++
++struct kfd_process_device *kfd_get_first_process_device_data(struct kfd_process *p)
++{
++	return list_first_entry(&p->per_device_data, struct kfd_process_device, per_device_list);
++}
++
++struct kfd_process_device *kfd_get_next_process_device_data(struct kfd_process *p, struct kfd_process_device *pdd)
++{
++	if (list_is_last(&pdd->per_device_list, &p->per_device_data))
++		return NULL;
++	return list_next_entry(pdd, per_device_list);
++}
++
++bool kfd_has_process_device_data(struct kfd_process *p)
++{
++	return !(list_empty(&p->per_device_data));
++}
+diff --git a/drivers/gpu/hsa/radeon/kfd_sched_cik_static.c b/drivers/gpu/hsa/radeon/kfd_sched_cik_static.c
+index 7ee8125..30561a6 100644
+--- a/drivers/gpu/hsa/radeon/kfd_sched_cik_static.c
++++ b/drivers/gpu/hsa/radeon/kfd_sched_cik_static.c
+@@ -627,7 +627,8 @@ static void cik_static_deregister_process(struct kfd_scheduler *scheduler,
+ 	struct cik_static_private *priv = kfd_scheduler_to_private(scheduler);
+ 	struct cik_static_process *pp = kfd_process_to_private(scheduler_process);
+ 
+-	if (priv && pp) {
++
++	if (priv && pp)	{
+ 		release_vmid(priv, pp->vmid);
+ 		kfree(pp);
+ 	}
+diff --git a/drivers/gpu/hsa/radeon/kfd_topology.c b/drivers/gpu/hsa/radeon/kfd_topology.c
+index 21bb66e..213ae7b 100644
+--- a/drivers/gpu/hsa/radeon/kfd_topology.c
++++ b/drivers/gpu/hsa/radeon/kfd_topology.c
+@@ -1201,3 +1201,30 @@ int kfd_topology_remove_device(struct kfd_dev *gpu)
+ 
+ 	return res;
+ }
++
 +/*
-+ * Copyright 2014 Advanced Micro Devices, Inc.
-+ *
-+ * Permission is hereby granted, free of charge, to any person obtaining a
-+ * copy of this software and associated documentation files (the "Software"),
-+ * to deal in the Software without restriction, including without limitation
-+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
-+ * and/or sell copies of the Software, and to permit persons to whom the
-+ * Software is furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-+ * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
-+ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-+ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-+ * OTHER DEALINGS IN THE SOFTWARE.
-+ *
-+ * Author: Ben Goz
++ * When idx is out of bounds, the function will return NULL
 + */
-+
-+#include <linux/slab.h>
-+#include "kfd_priv.h"
-+
-+void print_queue_properties(struct queue_properties *q)
++struct kfd_dev *kfd_topology_enum_kfd_devices(uint8_t idx)
 +{
-+	if (!q)
-+		return;
 +
-+	pr_debug("Printing queue properties\n"
-+			"Queue Type: %u\n"
-+			"Queue Size: %llu\n"
-+			"Queue percent: %u\n"
-+			"Queue Address: 0x%llX\n"
-+			"Queue Id: %u\n"
-+			"Queue Process Vmid: %u\n"
-+			"Queue Read Pointer: 0x%p\n"
-+			"Queue Write Pointer: 0x%p\n"
-+			"Queue Doorbell Pointer: 0x%p\n"
-+			"Queue Doorbell Offset: %u\n",  q->type,
-+							q->queue_size,
-+							q->queue_percent,
-+							q->queue_address,
-+							q->queue_id,
-+							q->vmid,
-+							q->read_ptr,
-+							q->write_ptr,
-+							q->doorbell_ptr,
-+							q->doorbell_off);
++	struct kfd_topology_device *top_dev;
++	struct kfd_dev *device = NULL;
++	uint8_t device_idx = 0;
++
++	down_read(&topology_lock);
++
++	list_for_each_entry(top_dev, &topology_device_list, list) {
++		if (device_idx == idx) {
++			device = top_dev->gpu;
++			break;
++		}
++
++		device_idx++;
++	}
++
++	up_read(&topology_lock);
++
++	return device;
++
 +}
+diff --git a/include/uapi/linux/kfd_ioctl.h b/include/uapi/linux/kfd_ioctl.h
+index a7c3abd..e5fcb8b 100644
+--- a/include/uapi/linux/kfd_ioctl.h
++++ b/include/uapi/linux/kfd_ioctl.h
+@@ -78,6 +78,23 @@ struct kfd_ioctl_get_clock_counters_args {
+ 	uint64_t system_clock_freq;	/* from KFD */
+ };
+ 
++#define NUM_OF_SUPPORTED_GPUS 7
 +
-+void print_queue(struct queue *q)
-+{
-+	if (!q)
-+		return;
-+	pr_debug("Printing queue\n"
-+			"Queue Type: %u\n"
-+			"Queue Size: %llu\n"
-+			"Queue percent: %u\n"
-+			"Queue Address: 0x%llX\n"
-+			"Queue Id: %u\n"
-+			"Queue Process Vmid: %u\n"
-+			"Queue Read Pointer: 0x%p\n"
-+			"Queue Write Pointer: 0x%p\n"
-+			"Queue Doorbell Pointer: 0x%p\n"
-+			"Queue Doorbell Offset: %u\n"
-+			"Queue MQD Address: 0x%p\n"
-+			"Queue MQD Gart: 0x%p\n"
-+			"Queue Process Address: 0x%p\n"
-+			"Queue Device Address: 0x%p\n",
-+					q->properties.type,
-+					q->properties.queue_size,
-+					q->properties.queue_percent,
-+					q->properties.queue_address,
-+					q->properties.queue_id,
-+					q->properties.vmid,
-+					q->properties.read_ptr,
-+					q->properties.write_ptr,
-+					q->properties.doorbell_ptr,
-+					q->properties.doorbell_off,
-+					q->mqd,
-+					q->gart_mqd_addr,
-+					q->process,
-+					q->device);
-+}
++struct kfd_process_device_apertures {
++	uint64_t lds_base;/* from KFD */
++	uint64_t lds_limit;/* from KFD */
++	uint64_t scratch_base;/* from KFD */
++	uint64_t scratch_limit;/* from KFD */
++	uint64_t gpuvm_base;/* from KFD */
++	uint64_t gpuvm_limit;/* from KFD */
++	uint32_t gpu_id;/* from KFD */
++};
 +
-+int init_queue(struct queue **q, struct queue_properties properties)
-+{
-+	struct queue *tmp;
++struct kfd_ioctl_get_process_apertures_args {
++	struct kfd_process_device_apertures process_apertures[NUM_OF_SUPPORTED_GPUS];/* from KFD */
++	uint8_t num_of_nodes; /* from KFD, should be in the range [1 - NUM_OF_SUPPORTED_GPUS]*/
++};
 +
-+	BUG_ON(!q);
-+
-+	tmp = kzalloc(sizeof(struct queue), GFP_KERNEL);
-+	if (!tmp)
-+		return -ENOMEM;
-+
-+	memset(&tmp->properties, 0, sizeof(struct queue_properties));
-+	memcpy(&tmp->properties, &properties, sizeof(struct queue_properties));
-+
-+	*q = tmp;
-+	return 0;
-+}
-+
-+void uninit_queue(struct queue *q)
-+{
-+	kfree(q);
-+}
+ #define KFD_IOC_MAGIC 'K'
+ 
+ #define KFD_IOC_GET_VERSION	_IOR(KFD_IOC_MAGIC, 1, struct kfd_ioctl_get_version_args)
+@@ -85,6 +102,7 @@ struct kfd_ioctl_get_clock_counters_args {
+ #define KFD_IOC_DESTROY_QUEUE	_IOWR(KFD_IOC_MAGIC, 3, struct kfd_ioctl_destroy_queue_args)
+ #define KFD_IOC_SET_MEMORY_POLICY	_IOW(KFD_IOC_MAGIC, 4, struct kfd_ioctl_set_memory_policy_args)
+ #define KFD_IOC_GET_CLOCK_COUNTERS	_IOWR(KFD_IOC_MAGIC, 5, struct kfd_ioctl_get_clock_counters_args)
++#define KFD_IOC_GET_PROCESS_APERTURES _IOR(KFD_IOC_MAGIC, 6, struct kfd_ioctl_get_process_apertures_args)
+ 
+ #pragma pack(pop)
+ 
 -- 
 1.9.1
 
