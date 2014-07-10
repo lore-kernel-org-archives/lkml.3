@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752003AbaGJK02 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 06:26:28 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:41445 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008AbaGJK00 (ORCPT
+	id S1751875AbaGJK1e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 06:27:34 -0400
+Received: from rslrsmtp2.opaltelecom.net ([62.24.128.202]:11041 "EHLO
+	iprslrsmtp2msp.cpwnetworks.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750966AbaGJK1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 06:26:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAG-2HqWSRRfW1EygXd_1=eYFsTeDd3SsJBfF3BuH35hgGxogxA@mail.gmail.com>
-References: <1404980258-30853-1-git-send-email-teg@jklm.no>
-	<1404980258-30853-11-git-send-email-teg@jklm.no>
-	<87pphdh85q.fsf@nemi.mork.no>
-	<CAG-2HqWSRRfW1EygXd_1=eYFsTeDd3SsJBfF3BuH35hgGxogxA@mail.gmail.com>
-Date: Thu, 10 Jul 2014 12:26:25 +0200
-Message-ID: <CANq1E4TCW_bnbTYacnfJHRvZAcOYnSgqxytHk26EaWeQKkphGA@mail.gmail.com>
-Subject: Re: [PATCH v7 10/33] net: dummy - set name assign type
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Tom Gundersen <teg@jklm.no>
-Cc: =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>,
-        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Kay Sievers <kay@vrfy.org>,
-        dingtianhong <dingtianhong@huawei.com>,
-        Tan Xiaojun <tanxiaojun@huawei.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 10 Jul 2014 06:27:33 -0400
+X-Greylist: delayed 640 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Jul 2014 06:27:32 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AsgEAMBmvlM+GID9/2dsb2JhbABZhymtAo8sh1GBIXWELVY1AiYCLjEBEohGrkqZLheBLI4Ygn6BTAWiD4RBiEWDRA
+X-IPAS-Result: AsgEAMBmvlM+GID9/2dsb2JhbABZhymtAo8sh1GBIXWELVY1AiYCLjEBEohGrkqZLheBLI4Ygn6BTAWiD4RBiEWDRA
+X-IronPort-AV: E=Sophos;i="5.01,637,1400022000"; 
+   d="scan'208";a="481251859"
+Message-ID: <1404987355.23201.65.camel@samson1.armitage.org.uk>
+Subject: [PATCH] cpufreq: kirkwood: Reinstate cpufreq driver for
+ ARCH_KIRKWOOD
+From: Quentin Armitage <quentin@armitage.org.uk>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Lunn <andrew@lunn.ch>
+Date: Thu, 10 Jul 2014 11:15:55 +0100
+Organization: The Armitage family
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Commit ff1f0018cf66080d8e6f59791e552615648a033a ("drivers: Enable
+building of Kirkwood drivers for mach-mvebu") added Kirkwood into
+mach-mvebu, adding MACH_KIRKWOOD to ARCH_KIRKWOOD in the KConfig files.
 
->> The same goes for NET_NAME_USER and NET_NAME_RENAMED. These are the same
->> from a kernel point of view.
->
-> You mean to collapse the two, and just label renamed interfaces
-> NET_NAME_USER instead?
+The change for ARM_KIRKWOOD_CPUFREQ replaced ARCH_KIRKWOOD with
+MACH_KIRKWOOD, whereas all the other changes were ARCH_KIRKWOOD ||
+MACH_KIRKWOOD.
 
-I have no real objections to merging NAME_USER and NAME_RENAMED. Both
-values imply that there is a user-space authority that applied some
-kind of rules to the naming-scheme. Therefore, anyone reacting to
-those names should better treat them equally and fix the
-naming-authority instead of overwriting it.
+As a consequence of this change, the cpufreq driver is no longer enabled
+for ARCH_KIRKWOOD. This patch reinstates ARM_KIRKWOOD_CPUFREQ for
+ARCH_KIRKWOOD.
 
-However, at the same time I think there's no real harm in keeping them
-separate, either. My original thinking was to provide a second layer
-for anyone overwriting system defaults. For instance, if there's a
-user-space given name and a system-administrator wants to rename that
-for administrative purposes, they can safely match on NAME_USER and be
-sure, it wasn't renamed, yet. If it is set to NAME_RENAMED, though,
-then the administrator has some kind of safety-net that tells him he
-already has a rule that renamed the device and he shouldn't add
-another one (like placing one in initrd and one in the real root).
+Signed-off-by: Quentin Armitage <quentin@armitage.org.uk>
+---
+diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+index ebac671..24778f0 100644
+--- a/drivers/cpufreq/Kconfig.arm
++++ b/drivers/cpufreq/Kconfig.arm
+@@ -118,7 +118,7 @@ config ARM_INTEGRATOR
+          If in doubt, say Y.
 
-Anyhow, if no-one cares about that, please go ahead and squash both
-into NET_NAME_USER.
+ config ARM_KIRKWOOD_CPUFREQ
+-       def_bool MACH_KIRKWOOD
++       def_bool ARCH_KIRKWOOD || MACH_KIRKWOOD
+        help
+          This adds the CPUFreq driver for Marvell Kirkwood
+          SoCs.
+ 
 
-Thanks
-David
+
+
+
+
