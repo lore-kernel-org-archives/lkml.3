@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751652AbaGJKjg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 06:39:36 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:55078 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750778AbaGJKje (ORCPT
+	id S1751976AbaGJKlm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 06:41:42 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57044 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750989AbaGJKll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 06:39:34 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thierry Reding <thierry.reding@gmail.com>
-Subject: Re: [PATCH 1/3] asm-generic/io.h: Implement generic {read,write}s*()
-Date: Thu, 10 Jul 2014 12:38:55 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1404918699-17284-1-git-send-email-thierry.reding@gmail.com>
-In-Reply-To: <1404918699-17284-1-git-send-email-thierry.reding@gmail.com>
+	Thu, 10 Jul 2014 06:41:41 -0400
+Date: Thu, 10 Jul 2014 12:40:05 +0200
+From: Mark Brown <broonie@kernel.org>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20140710104005.GA30458@sirena.org.uk>
+References: <1404941228-9922-1-git-send-email-geert+renesas@glider.be>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201407101238.56081.arnd@arndb.de>
-X-Provags-ID: V02:K0:b8eDdKY5e1KXirLoEI1zZQpQlfrvPzcrwuMPgi8Idg/
- zFWPdWQpWViKnSM/235WqsX7P/FQIa8AFr+gntwsIkUsYKH01W
- jb1nCNSUfOAQv4+GQ++7hB+FDmdwLYE8As+npXw0FfxqmFnjXz
- Dz2triLmt4mBTGiH1YugVyuvvWrqwpYh3Zadhmu1hZMAujUF7G
- ubu79ZBprZtQA8TsyGeLTXylhm4sTGDAW686cCmK93ouF/bQzW
- +3MigeHDNbkMYOjQWkIJq9X0sMNhyQshBcYc4+GHEBIMyaJ6AF
- bGWFbB7OUkQ1BJ7ZHWiYfYpsP7iUXKrTgNGDqNRoqdRQhco6wU
- zSWpk8uWnkWJYZqb9YKsr/W/XjN9DcTBoCpRv0XvV
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SuGb6p5JEpzYJdwO"
+Content-Disposition: inline
+In-Reply-To: <1404941228-9922-1-git-send-email-geert+renesas@glider.be>
+X-Cookie: You look tired.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 82.127.83.212
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] spi: rspi: Relax DMA dependency and increase build
+ coverage
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 09 July 2014, Thierry Reding wrote:
-> 
-> From: Thierry Reding <treding@nvidia.com>
-> 
-> This patch implements generic versions of readsb(), readsw(), readsl(),
-> readsq(), writesb(), writesw(), writesl() and writesq(). Variants of
-> these string functions for I/O accesses (ins*() and outs*() as well as
-> ioread*_rep() and iowrite*_rep()) are now implemented in terms of the
-> new functions.
-> 
-> While at it, also make sure that any of the functions provided as
-> fallback for architectures that don't override them can't be overridden
-> subsequently.
-> 
-> This is compile- and runtime-tested on 32-bit and 64-bit ARM and compile
-> tested on Microblaze, s390, SPARC and Xtensa. For ARC, Blackfin, Metag,
-> OpenRISC, Score and Unicore32 which also use asm-generic/io.h I couldn't
-> find or build a cross-compiler that would run on my system. But by code
-> inspection they shouldn't break with this patch.
-> 
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+--SuGb6p5JEpzYJdwO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks for doing this!
+On Wed, Jul 09, 2014 at 11:27:07PM +0200, Geert Uytterhoeven wrote:
+> As of commit ab116a4df4942c78c189d9b0744dd940ab9e00b9 ("dmaengine:
+> shdma: fix a build failure on platforms with no DMA support"), the DMA
+> filter function shdma_chan_filter() is sufficiently abstracted to allow
+> building without DMA support. Hence drop the SH_DMAE_BASE dependency on
+> SUPERH.
 
-Not sure how to best merge the series, but for the asm-generic patch,
-I'd suggest to keep it together with the follow-on patches in one
-branch and merge it either through Russell's arm32 tree or through
-Catalin's arm64 tree.
+Applied both, thanks.
 
-The easiest way would probably be to take patches 1 and 3 for arm64 in
-3.17 and merge patch 2 in 3.18, unless Russell wants to see this earlier,
-in which case we could have a branch that is shared between arm32 and
-arm64.
+--SuGb6p5JEpzYJdwO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-	Arnd
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTvm2CAAoJELSic+t+oim9GZYP/1jWu0d24zWkF7U6XdDurZJY
+17EvfkjetLgueU1IvI5QXsM966xvLuLIik8m3OfCjtg6zpFdvIFxqsRDZoFXGNeY
+fO0RpoiBz9NzQUDUMkgbl9lOer20x7uIYaKb0ZmJ4/CacDaf3wD5MhMvoI/0c7wh
+bEEvBnqzkXTndl5R0BtZImQ5tiXj7ycUSysb2nu+pTUfmo0Bljg6/vnobwr7vR7I
+64aiU+XZV/IVUCmS8+GGgq8vj9fWfdTlu0ZUTTnUCdobm5ziPb6sB4Q3yNQ6T98W
+sSvq19JW0fuwDU9tKXV4gupOVTHTg7Ibfa0r5UPQn6FBGjsWEOTPurKCQZdQG0tP
+bLskiYquo/wYjo0RDOXYfa8gnY3fF82Qlby53Qc9oBz5Lw92MC8Gebv+eY4q7e7P
+MKC/VFrg8xG/TZgtFJRY8HoYIVk8Z9v89oPKeJC7cmtJNXnp/Kc+RMWcGNzKW8zr
+zRIpoK1dMYJKPKjgfyi0fvadTScB5nFS4KECDoIMd1WhP3IhPGu86IRG+XLakVWD
+4HmRzTYWGlAugUeZu6gXCuIH0De6qqSX9OqB9bByRY5QAnCDxzpjz2lCLiR/JOLF
+ADYpCLBKBlIQW2XdF3Pb0ofPR+ndEWqQoHdSlsSysLfWe8zE5Jt5U4erish23qRa
+NtFhWnxLz78b5tl60W0o
+=k6Cz
+-----END PGP SIGNATURE-----
+
+--SuGb6p5JEpzYJdwO--
