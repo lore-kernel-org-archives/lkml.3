@@ -1,134 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291AbaGJKIi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 06:08:38 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:44672 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752751AbaGJKI2 (ORCPT
+	id S1753308AbaGJKJF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 06:09:05 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:58071 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752525AbaGJKJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 06:08:28 -0400
+	Thu, 10 Jul 2014 06:09:03 -0400
+Date: Thu, 10 Jul 2014 12:08:59 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: bsegall@google.com
+Cc: Yuyang Du <yuyang.du@intel.com>, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com,
+        arjan.van.de.ven@intel.com, len.brown@intel.com, alan.cox@intel.com,
+        mark.gross@intel.com, pjt@google.com, fengguang.wu@intel.com
+Subject: Re: [PATCH 2/2] sched: Rewrite per entity runnable load average
+ tracking
+Message-ID: <20140710100859.GW3935@laptop>
+References: <1404268256-3019-1-git-send-email-yuyang.du@intel.com>
+ <1404268256-3019-2-git-send-email-yuyang.du@intel.com>
+ <20140707104646.GK6758@twins.programming.kicks-ass.net>
+ <xm26r41wyfgc.fsf@sword-of-the-dawn.mtv.corp.google.com>
+ <20140708000840.GB25653@intel.com>
+ <xm26k37nye7d.fsf@sword-of-the-dawn.mtv.corp.google.com>
+ <20140709010753.GD25653@intel.com>
+ <20140709184543.GI9918@twins.programming.kicks-ass.net>
+ <xm26bnsyxsf7.fsf@sword-of-the-dawn.mtv.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <1404467722-26687-16-git-send-email-javier.martinez@collabora.co.uk>
-References: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
-	<1404467722-26687-16-git-send-email-javier.martinez@collabora.co.uk>
-Date: Thu, 10 Jul 2014 15:38:27 +0530
-X-Google-Sender-Auth: i8314IBVO6goWETcshIF8lbzKbw
-Message-ID: <CADGdYn4EURaHinWVksQSPzVr=CkZYcrqvWsO7mKDz_gY9XB__Q@mail.gmail.com>
-Subject: Re: [PATCH v6 15/23] regulator: max77686: Setup DVS-related GPIOs on probe
-From: amit daniel kachhap <amit.daniel@samsung.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
-        LAK <linux-arm-kernel@lists.infradead.org>, devicetree@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <xm26bnsyxsf7.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 4, 2014 at 3:25 PM, Javier Martinez Canillas
-<javier.martinez@collabora.co.uk> wrote:
-> MAX77686 PMIC support Dyamic Voltage Scaling (DVS) on a set
-> of Buck regulators. A number of GPIO are connected to these
-> lines and are requested by the mfd driver. Setup the GPIO
-> pins from the regulator driver.
-If possible merge this patch with patch 8. Both are adding DVS
-support. Put regmap_copy dependency patch in very beginning.
->
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> ---
->  drivers/regulator/max77686.c | 34 ++++++++++++++++++++++++++++++++++
->  1 file changed, 34 insertions(+)
->
-> diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
-> index ef1af2d..ecce77a 100644
-> --- a/drivers/regulator/max77686.c
-> +++ b/drivers/regulator/max77686.c
-> @@ -435,6 +435,12 @@ static int max77686_pmic_dt_parse_pdata(struct platform_device *pdev,
->  }
->  #endif /* CONFIG_OF */
->
-> +static inline bool max77686_is_dvs_buck(int id)
-> +{
-> +       /* BUCK 2,3 and 4 support DVS */
-> +       return (id >= MAX77686_BUCK2 && id <= MAX77686_BUCK4);
-I am just wondering if along with above check, SELB gpios (if present)
-can be used to confirm if BUCK's are DVS based or not.
-> +}
-> +
->  static int max77686_pmic_probe(struct platform_device *pdev)
->  {
->         struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
-> @@ -442,6 +448,9 @@ static int max77686_pmic_probe(struct platform_device *pdev)
->         struct max77686_data *max77686;
->         int i, ret = 0;
->         struct regulator_config config = { };
-> +       unsigned int reg;
-> +       int buck_default_idx;
-> +       int buck_old_idx;
->
->         dev_dbg(&pdev->dev, "%s\n", __func__);
->
-> @@ -472,13 +481,34 @@ static int max77686_pmic_probe(struct platform_device *pdev)
->         config.driver_data = max77686;
->         platform_set_drvdata(pdev, max77686);
->
-> +       buck_default_idx = pdata->buck_default_idx;
-> +       buck_old_idx = max77686_read_gpios(pdata);
-> +
->         for (i = 0; i < MAX77686_REGULATORS; i++) {
->                 struct regulator_dev *rdev;
-> +               int id = pdata->regulators[i].id;
->
->                 config.init_data = pdata->regulators[i].initdata;
->                 config.of_node = pdata->regulators[i].of_node;
->
->                 max77686->opmode[i] = regulators[i].enable_mask;
-> +
-> +               if (max77686_is_dvs_buck(id)) {
-> +                       /* Try to copy over data so we keep firmware settings */
-> +                       reg = regulators[i].vsel_reg;
-> +
-> +                       ret = regmap_reg_copy(iodev->regmap,
-> +                                             reg + buck_default_idx,
-> +                                             reg + buck_old_idx);
-> +
-> +                       if (ret)
-> +                               dev_warn(&pdev->dev, "Copy err %d => %d (%d)\n",
-> +                                        reg + buck_old_idx,
-> +                                        reg + buck_default_idx, ret);
-> +
-> +                       regulators[i].vsel_reg += buck_default_idx;
-> +               }
-> +
->                 rdev = devm_regulator_register(&pdev->dev,
->                                                 &regulators[i], &config);
->                 if (IS_ERR(rdev)) {
-> @@ -488,6 +518,10 @@ static int max77686_pmic_probe(struct platform_device *pdev)
->                 }
->         }
->
-> +       ret = max77686_setup_gpios(iodev->dev);
-> +       if (ret)
-> +               return ret;
-> +
->         return 0;
->  }
->
-> --
-> 2.0.0.rc2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On Wed, Jul 09, 2014 at 12:07:08PM -0700, bsegall@google.com wrote:
+> Peter Zijlstra <peterz@infradead.org> writes:
+> 
+> > On Wed, Jul 09, 2014 at 09:07:53AM +0800, Yuyang Du wrote:
+> >> That is chalenging... Can someone (Peter) grant us a lock of the remote rq? :)
+> >
+> > Nope :-).. we got rid of that lock for a good reason.
+> >
+> > Also, this is one area where I feel performance really trumps
+> > correctness, we can fudge the blocked load a little. So the
+> > sched_clock_cpu() difference is a strict upper bound on the
+> > rq_clock_task() difference (and under 'normal' circumstances shouldn't
+> > be much off).
+> 
+> Well, unless IRQ_TIME_ACCOUNTING or such is on, in which case you lose.
+> Or am I misunderstanding the suggestion?
+
+If its on its still an upper bound, and typically the difference is not
+too large I think.
+
+Since clock_task is the regular clock minus some local amount, the
+difference between two regular clock reads is always a strict upper
+bound on clock_task differences.
+
+> Actually the simplest thing
+> would probably be to grab last_update_time (which on 32-bit could be
+> done with the _copy hack) and use that. Then I think the accuracy is
+> only worse than current in that you can lose runnable load as well as
+> blocked load, and that it isn't as easily corrected - currently if the
+> blocked tasks wake up they'll add the correct numbers to
+> runnable_load_avg, even if blocked_load_avg is screwed up and hit zero.
+> This code would have to wait until it stabilized again.
+
+The problem with that is that last_update_time is measured in
+clock_task, and you cannot transfer these values between CPUs.
+clock_task can drift unbounded between CPUs.
+
