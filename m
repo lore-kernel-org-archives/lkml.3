@@ -1,116 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830AbaGJIZd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 04:25:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59361 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751846AbaGJIZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 04:25:26 -0400
-Date: Thu, 10 Jul 2014 18:25:19 +1000
-From: NeilBrown <neilb@suse.de>
-To: Ian Kent <raven@themaw.net>
-Cc: autofs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] autofs4: support RCU-walk
-Message-ID: <20140710182519.79120b90@notabene.brown>
-In-Reply-To: <1404978220.2609.25.camel@perseus.fritz.box>
-References: <20140709233541.4525.25151.stgit@notabene.brown>
-	<1404978220.2609.25.camel@perseus.fritz.box>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/6_S0IDb.PbJmwE_p+Hjy7NX"; protocol="application/pgp-signature"
+	id S1752769AbaGJIYs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 04:24:48 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:36204 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752227AbaGJISp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 04:18:45 -0400
+From: Tom Gundersen <teg@jklm.no>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Tom Gundersen <teg@jklm.no>,
+        Marek Lindner <mareklindner@neomailbox.ch>,
+        Simon Wunderlich <sw@simonwunderlich.de>,
+        Antonio Quartulli <antonio@meshcoding.com>,
+        b.a.t.m.a.n@lists.open-mesh.org
+Subject: [PATCH v7 21/33] net: batman-adv - set name assign type
+Date: Thu, 10 Jul 2014 10:17:26 +0200
+Message-Id: <1404980258-30853-22-git-send-email-teg@jklm.no>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1404980258-30853-1-git-send-email-teg@jklm.no>
+References: <1404980258-30853-1-git-send-email-teg@jklm.no>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/6_S0IDb.PbJmwE_p+Hjy7NX
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Tom Gundersen <teg@jklm.no>
+Cc: Marek Lindner <mareklindner@neomailbox.ch>
+Cc: Simon Wunderlich <sw@simonwunderlich.de>
+Cc: Antonio Quartulli <antonio@meshcoding.com>
+Cc: b.a.t.m.a.n@lists.open-mesh.org
+---
+ net/batman-adv/hard-interface.c | 5 +++--
+ net/batman-adv/hard-interface.h | 3 ++-
+ net/batman-adv/soft-interface.c | 9 ++++++---
+ net/batman-adv/soft-interface.h | 2 +-
+ net/batman-adv/sysfs.c          | 2 +-
+ 5 files changed, 13 insertions(+), 8 deletions(-)
 
-On Thu, 10 Jul 2014 15:43:40 +0800 Ian Kent <raven@themaw.net> wrote:
+diff --git a/net/batman-adv/hard-interface.c b/net/batman-adv/hard-interface.c
+index fbda6b5..b25241f 100644
+--- a/net/batman-adv/hard-interface.c
++++ b/net/batman-adv/hard-interface.c
+@@ -365,7 +365,8 @@ static int batadv_master_del_slave(struct batadv_hard_iface *slave,
+ }
+ 
+ int batadv_hardif_enable_interface(struct batadv_hard_iface *hard_iface,
+-				   const char *iface_name)
++				   const char *iface_name,
++				   unsigned char name_assign_type)
+ {
+ 	struct batadv_priv *bat_priv;
+ 	struct net_device *soft_iface, *master;
+@@ -382,7 +383,7 @@ int batadv_hardif_enable_interface(struct batadv_hard_iface *hard_iface,
+ 	soft_iface = dev_get_by_name(&init_net, iface_name);
+ 
+ 	if (!soft_iface) {
+-		soft_iface = batadv_softif_create(iface_name);
++		soft_iface = batadv_softif_create(iface_name, name_assign_type);
+ 
+ 		if (!soft_iface) {
+ 			ret = -ENOMEM;
+diff --git a/net/batman-adv/hard-interface.h b/net/batman-adv/hard-interface.h
+index 1918cd5..45dc1ba 100644
+--- a/net/batman-adv/hard-interface.h
++++ b/net/batman-adv/hard-interface.h
+@@ -44,7 +44,8 @@ bool batadv_is_wifi_iface(int ifindex);
+ struct batadv_hard_iface*
+ batadv_hardif_get_by_netdev(const struct net_device *net_dev);
+ int batadv_hardif_enable_interface(struct batadv_hard_iface *hard_iface,
+-				   const char *iface_name);
++				   const char *iface_name,
++				   unsigned char name_assign_type);
+ void batadv_hardif_disable_interface(struct batadv_hard_iface *hard_iface,
+ 				     enum batadv_hard_if_cleanup autodel);
+ void batadv_hardif_remove_interfaces(void);
+diff --git a/net/batman-adv/soft-interface.c b/net/batman-adv/soft-interface.c
+index d551e63..6de7ae3 100644
+--- a/net/batman-adv/soft-interface.c
++++ b/net/batman-adv/soft-interface.c
+@@ -790,7 +790,8 @@ static int batadv_softif_slave_add(struct net_device *dev,
+ 	if (!hard_iface || hard_iface->soft_iface != NULL)
+ 		goto out;
+ 
+-	ret = batadv_hardif_enable_interface(hard_iface, dev->name);
++	ret = batadv_hardif_enable_interface(hard_iface, dev->name,
++					     dev->name_assign_type);
+ 
+ out:
+ 	if (hard_iface)
+@@ -889,13 +890,15 @@ static void batadv_softif_init_early(struct net_device *dev)
+ 	memset(priv, 0, sizeof(*priv));
+ }
+ 
+-struct net_device *batadv_softif_create(const char *name)
++struct net_device *batadv_softif_create(const char *name,
++					unsigned char name_assign_type)
+ {
+ 	struct net_device *soft_iface;
+ 	int ret;
+ 
+ 	soft_iface = alloc_netdev(sizeof(struct batadv_priv), name,
+-				  NET_NAME_UNKNOWN, batadv_softif_init_early);
++				  name_assign_type,
++				  batadv_softif_init_early);
+ 	if (!soft_iface)
+ 		return NULL;
+ 
+diff --git a/net/batman-adv/soft-interface.h b/net/batman-adv/soft-interface.h
+index dbab22f..1ea6f05 100644
+--- a/net/batman-adv/soft-interface.h
++++ b/net/batman-adv/soft-interface.h
+@@ -22,7 +22,7 @@ int batadv_skb_head_push(struct sk_buff *skb, unsigned int len);
+ void batadv_interface_rx(struct net_device *soft_iface,
+ 			 struct sk_buff *skb, struct batadv_hard_iface *recv_if,
+ 			 int hdr_size, struct batadv_orig_node *orig_node);
+-struct net_device *batadv_softif_create(const char *name);
++struct net_device *batadv_softif_create(const char *name, unsigned char name_assign_type);
+ void batadv_softif_destroy_sysfs(struct net_device *soft_iface);
+ int batadv_softif_is_valid(const struct net_device *net_dev);
+ extern struct rtnl_link_ops batadv_link_ops;
+diff --git a/net/batman-adv/sysfs.c b/net/batman-adv/sysfs.c
+index fc47baa..f2295c1 100644
+--- a/net/batman-adv/sysfs.c
++++ b/net/batman-adv/sysfs.c
+@@ -797,7 +797,7 @@ static ssize_t batadv_store_mesh_iface(struct kobject *kobj,
+ 		batadv_hardif_disable_interface(hard_iface,
+ 						BATADV_IF_CLEANUP_AUTO);
+ 
+-	ret = batadv_hardif_enable_interface(hard_iface, buff);
++	ret = batadv_hardif_enable_interface(hard_iface, buff, NET_NAME_USER);
+ 
+ unlock:
+ 	rtnl_unlock();
+-- 
+1.9.3
 
-> On Thu, 2014-07-10 at 09:41 +1000, NeilBrown wrote:
-> > autofs4 currently doesn't support RCU-walk - it immediately
-> > aborts any attempt at RCU-walk to force REF-walk for path name
-> > lookup.
-> >=20
-> > This can cause a significant performance impact on multi-core
-> > systems.
-> > I have a client with a test case which spends >80% of its time
-> > waiting for spinlocks with a "make -j 40" on a 40 core system.
->=20
-> Right, sounds worth the effort.
->=20
-> >=20
-> > This patchset aims to remove most of these spinlocks.  To be fully
-> > effective in the particular case it needs a second patch set which
-> > makes NFS RCU-walk friendly, but one thing at a time.
-> >=20
-> > This has only been lightly tested so far so I'm really after feed-back
-> > rather than to have the patch set accepted, though the first two
-> > patches are trivial and could be taken immediately.
->=20
-> I've only scanned the patches so far, I'll need to spend a bit more time
-> on them before I can comment.
->=20
-> I'm going to be pressed for time for at least several days so I won't be
-> able to get to this right away.
->=20
-> I expect the submount_test I use to stress path walking and expire to
-> mount transitions will likely be a good test to use. I haven't used it
-> in my personal environment for quite a while now so I'll need to have a
-> look around and see if I can still find a suitable set of scripts.
-> Otherwise I'll need to decouple it from the RedHat automated test
-> environment.
->=20
-> >=20
-> > The last two patches are the most interesting so review comments on
-> > those are particularly welcome.
->=20
-> Again I haven't looked closely at these but don't you mean the last
-> three patches or am I just fussing over an obviously straight forward
-> patch 3?
-
-Exactly right - that thirds last patch was "obviously straight forward", so
-is naturally the one that I have already found a bug in (the patch assumes
-that autofs4_check_leaves returns a different dentry, which clearly isn't
-true).
-
-I'll repost it, probably on Monday.
-
->=20
-> Thanks for your effort Bruce,
-> Ian
->=20
-
-    http://www.youtube.com/watch?v=3D_f_p0CgPeyA
-
-(Usually when people get my name wrong they call me "Ian", so you calling me
-Bruce is both slightly ironic and quite refreshing!)
-
-Thanks,
-NeilBrown
-
---Sig_/6_S0IDb.PbJmwE_p+Hjy7NX
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBU75N7znsnt1WYoG5AQLg/Q//S9cmPIEJSSuHqRW8g6+UkW7SrK4UzFVs
-R0MokL1o3JpJTWDGymRZUwHwJM0x2oycGynPIi/EKQiSUtIizkvo5fCrFc1iwwf0
-/MNXsXR1wylgOO4iRw1zZR4Zcj51QxMSf6oSOWS7YJdF+rSWIk+aArOlRya/F0qk
-wkns5O7J+Y0yRtg6P8fE8eH2y3uRh2m7GVxqYqoL8g0yC9C5N840DkY56oKwO16o
-qudU6vBcl2mQZbhvr6gRoRwJcIdM5OVylp738uz8euTzoEmnVEMAH08Awh0kLn6F
-RjVE5PAlc7+zQfckMK9I3BJWl3aSvV+W+uNHIiAitopgowFQ0s9VsZWp4GCNceQz
-uJpdg6ixH/TXCzHH1za1h7ga99G8W9CfELLOy/FGNXArQSQCoiK9dbSMeal5AB/b
-tTySJLGbT8lqTslCj90Vt1eU9PMsj2nWbZLAFWV7gvLK6Ip9IS5GkhPQwCoIpkYc
-7pNBuz6LSKCNKSmqwTtebNT5pNbl4ZRQdB1iJYmUWCqZJ9NNR+ENg/EXMnb/k1c3
-0zKuUsMMmfekUYY3Z44fCQtmPXhfDG4UUNyeIQK0eJRZ4Gir6oPyB9a3IiMhBDi+
-4BlgINOtLrYayCimblePJmZNaosEanH3gO5FYVll69+6wseVi7ur53FiD1PVLSfo
-51QgjEHEHJY=
-=ErsM
------END PGP SIGNATURE-----
-
---Sig_/6_S0IDb.PbJmwE_p+Hjy7NX--
