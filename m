@@ -1,74 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752479AbaGJTaN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 15:30:13 -0400
-Received: from www.linutronix.de ([62.245.132.108]:50676 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791AbaGJTaL (ORCPT
+	id S1752665AbaGJTcu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 15:32:50 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58440 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751205AbaGJTcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 15:30:11 -0400
-Date: Thu, 10 Jul 2014 21:30:06 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Randy Dunlap <rdunlap@infradead.org>
-cc: Masanari Iida <standby24x7@gmail.com>, linux-kernel@vger.kernel.org,
-        john.stultz@linaro.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH] Documentation: Docbook: Fix files location change of
- kernel/[hr]timer.c in device-drivers.tmpl
-In-Reply-To: <53BEE172.4050208@infradead.org>
-Message-ID: <alpine.DEB.2.10.1407102129400.4357@nanos>
-References: <1405017830-31194-1-git-send-email-standby24x7@gmail.com> <53BEE172.4050208@infradead.org>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 10 Jul 2014 15:32:48 -0400
+Date: Thu, 10 Jul 2014 21:32:40 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Shen, Voice" <Voice.Shen@atmel.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] ARM: at91/dt: describe rgmii ethernet phy
+ connected to sama5d3xek boards
+Message-ID: <20140710213240.3a5a540f@bbrezillon>
+In-Reply-To: <CAGVrzcawPiJgQF-=18ZvFGr3LhZgS1ZSZMYA3i5x874S6=jcXw@mail.gmail.com>
+References: <1403777615-25685-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1403777615-25685-2-git-send-email-boris.brezillon@free-electrons.com>
+	<CAGVrzcbYAEMsU1SFSH761H0isQ4z1M++KK_GLf0OAbGS48YUmw@mail.gmail.com>
+	<53AC7BFD.2070806@free-electrons.com>
+	<53AD22D8.2090301@atmel.com>
+	<20140710110720.03f437eb@bbrezillon>
+	<CAGVrzcZD1SqwX1KqaMpZmBjOWGuvTSVaye0fkFXW_=h-N_d7WA@mail.gmail.com>
+	<20140710191927.56a3ead5@bbrezillon>
+	<CAGVrzcawPiJgQF-=18ZvFGr3LhZgS1ZSZMYA3i5x874S6=jcXw@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Jul 2014, Randy Dunlap wrote:
+On Thu, 10 Jul 2014 10:46:21 -0700
+Florian Fainelli <f.fainelli@gmail.com> wrote:
 
-> On 07/10/2014 11:43 AM, Masanari Iida wrote:
-> > make xmldocs failed because of file location change
-> > from kernel/[hr]timer.c to kernel/time/[hr]timer.c.
+> 2014-07-10 10:19 GMT-07:00 Boris BREZILLON <boris.brezillon@free-electrons.com>:
+> > On Thu, 10 Jul 2014 08:35:15 -0700
+> > Florian Fainelli <f.fainelli@gmail.com> wrote:
+> >
+> >> 2014-07-10 2:07 GMT-07:00 Boris BREZILLON <boris.brezillon@free-electrons.com>:
+> >> > On Fri, 27 Jun 2014 09:52:56 +0200
+> >> > Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+> >> >
+> >> >> On 26/06/2014 22:01, Boris BREZILLON :
+> >> >> > Hi Florian,
+> >> >> >
+> >> >> > On 26/06/2014 20:15, Florian Fainelli wrote:
+> >> >> >> Hi Boris,
+> >> >> >>
+> >> >> >> 2014-06-26 3:13 GMT-07:00 Boris BREZILLON <boris.brezillon@free-electrons.com>:
+> >> >> >>> Add ethernet-phy node and specify phy interrupt (connected to pin PB25).
+> >> >> >>>
+> >> >> >>> The PHY address is not specified here because atmel have 2 different
+> >> >> >>> designs
+> >> >> >>> for its CPU modules: one is connecting PHYAD[0-2] pins to pull up resistors
+> >> >> >>> (Embest design) and the other one is connection PHYAD0 to a pull up
+> >> >> >>> resistor and PHYAD[1-2] to pull down resistors (Ronetix design).
+> >> >> >>> As a result, Ronetix design will have its PHY available at address 0x1 and
+> >> >> >>> Embest design at 0x7.
+> >> >> >>> Let the net PHY core automatically detect the PHY address by scanning the
+> >> >> >>> MDIO bus.
+> >> >> >> I though the compatible string was listed as a required property, but
+> >> >> >> it is not. The 'reg' property however is listed as required, although
+> >> >> >> the of_miodbus_register() works just fine without it, although that is
+> >> >> >> a Linux-specific implementation detail.
+> >> >> >
+> >> >> > Indeed, it's listed in the required property list of the DT binding doc,
+> >> >> > but the code implement auto detection if reg is missing.
+> >> >> > However this line [1] clearly shows that specifying the reg property is
+> >> >> > the preferred way of doing things.
+> >> >> >
+> >> >> > I could define 2 different sama5d3xcm.dtsi (sama5d3xcm-ronetix.dtsi and
+> >> >> > sama5d3xcm-embest.dtsi) to avoid this dirty hack,
+> >> >> > but then we would have 2 more dtb and the user would have to determine
+> >> >> > which CPU module he owns to choose the appropriate dtb.
+> >> >> > If at91, arm-soc and DT maintainers agree with this approach I can
+> >> >> > definitely propose something.
+> >> >>
+> >> >> Yes Boris, I definitively prefer not to add another .dtsi file for this
+> >> >> series if we can avoid it.
+> >> >>
+> >> >
+> >> > Okay, now that I don't specify the reg property I have a bunch of
+> >> > noisy logs (which is exactly what the developer of of_mdio.c wanted in
+> >> > order to force people to specify the reg property).
+> >> >
+> >> > It seems to be a problem for atmel users (all these logs make them
+> >> > think there is something wrong with the net device).
+> >> >
+> >> > Apart from the dts/dtsi split solution, which Nicolas wants to avoid, I
+> >> > see two solutions here:
+> >> >
+> >> > 1) remove the logs (or use dev_dbg instead of dev_info) from of_mdio.c.
+> >> > But I'm pretty sure this solution won't be accepted :-).
+> >>
+> >> I am fine with using dev_dbg() instead of dev_info() for that sort of
+> >> messages, provided that you state the rationale of this change
+> >> (spewing the log console with probing messages) and specify tha the
+> >> 'reg' property is optional.
+> >>
+> >> >
+> >> > 2) define 2 ethernet phys (one for each possible solution). I tested it
+> >> > and it works fine (only the available PHY is registered and there is no
+> >> > noisy logs anymore).
+> >>
+> >> One advantage of that solution is that you'll get slightly faster boot
+> >> times since you won't have to auto-probe for the PHYs on the MDIO bus,
+> >> the time savings get bigger as you start using higher PHY addresses.
+> >
+> > Yes I prefer this solution too, but is it acceptable to define 2 phy
+> > nodes even if only one is really available ?
 > 
-> When does this change happen?  I don't see it in Linus's current git tree.
+> One or the other machine .dts should have to set the status property
+> accordingly so there is only effectively one PHY declared, assuming
+> this is possible based on your .dtsi layout?
 
-It's in my timer tree. I forgot about that. Will pick it up.
- 
-> Thanks.
-> 
-> > Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> > ---
-> >  Documentation/DocBook/device-drivers.tmpl | 4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/Documentation/DocBook/device-drivers.tmpl b/Documentation/DocBook/device-drivers.tmpl
-> > index dd3f278..f213058 100644
-> > --- a/Documentation/DocBook/device-drivers.tmpl
-> > +++ b/Documentation/DocBook/device-drivers.tmpl
-> > @@ -54,7 +54,7 @@
-> >  !Ikernel/sched/cpupri.c
-> >  !Ikernel/sched/fair.c
-> >  !Iinclude/linux/completion.h
-> > -!Ekernel/timer.c
-> > +!Ekernel/time/timer.c
-> >       </sect1>
-> >       <sect1><title>Wait queues and Wake events</title>
-> >  !Iinclude/linux/wait.h
-> > @@ -63,7 +63,7 @@
-> >       <sect1><title>High-resolution timers</title>
-> >  !Iinclude/linux/ktime.h
-> >  !Iinclude/linux/hrtimer.h
-> > -!Ekernel/hrtimer.c
-> > +!Ekernel/time/hrtimer.c
-> >       </sect1>
-> >       <sect1><title>Workqueues and Kevents</title>
-> >  !Ekernel/workqueue.c
-> > 
-> 
-> 
-> -- 
-> ~Randy
-> 
+This is exactly what Nicolas wants to avoid (duplication of dts files
+to handle Embest and Ronetix designs).
+
+> If not, provided by the
+> phy-handle properties are correct, I can't see any problem with having
+> an unused PHY specified in DT.
+
+Okay, then I'll go for that solution.
+
+Thanks,
+
+Boris
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
