@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260AbaGJSpX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 14:45:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41760 "EHLO mx1.redhat.com"
+	id S1752777AbaGJSpc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 14:45:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17596 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751279AbaGJSpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 14:45:21 -0400
+	id S1752324AbaGJSp3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 14:45:29 -0400
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Przemo Firszt <przemo@firszt.eu>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Jiri Kosina <jkosina@suse.cz>, Ping Cheng <pinglinux@gmail.com>,
         Jason Gerecke <killertofu@gmail.com>
 Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH 0/5] Input - wacom: battery enhancements and unifying hid-wacom and wacom
-Date: Thu, 10 Jul 2014 14:44:55 -0400
-Message-Id: <1405017900-16024-1-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH 2/5] Input - wacom: use a specific name for the battery device
+Date: Thu, 10 Jul 2014 14:44:57 -0400
+Message-Id: <1405017900-16024-3-git-send-email-benjamin.tissoires@redhat.com>
+In-Reply-To: <1405017900-16024-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1405017900-16024-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+The current implementation uses "wacom_battery" as a generic name for
+batteries. This prevents us to have two Wacom devices with a battery
+attached as the power system will complain about the name which is already
+registered.
 
-Continuing on the Wacom cleanup, here are 5 patches.
+Use a specific name for each type of battery attached.
 
-The first two enhance the battery reporting for the Wireless receiver by
-adding the status of the battery (discharging, full, charging) - inspired by
-the code found in hid-wacom.c, and also by adding notifications to the power
-system so that upower knows when the battery changed.
+A bug in upower prevents us to use spaces in the power name, so replace
+each space by '_'.
 
-The last three are the handling of the two Wacom Bluetooth devices in wacom.ko.
-Some enhancements here:
-- Intuos4 now supports other tools than just the plain stylus (mouse, artpen, ...)
-- one less driver for Wacom (~700 lines of code less in total)
-- unifying access to LEDs/OLEDs from Bluetooth and USB devices
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
+ drivers/input/tablet/wacom_sys.c | 13 ++++++++++---
+ drivers/input/tablet/wacom_wac.h |  1 +
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
-However, I did not backport the speed attribute and the ac power device (which
-is infered by the battery status). I don't know if there are users of those two,
-so I let them aside for now. Przemo, any ideas if this is actually used?
-
-This whole code is based on top of the previous HID conversion patches.
-I pushed a branch with all I have queued on the list here:
-https://github.com/bentiss/linux/commits/hid-wacom-legacy-3.16-rc4
-
-Again, given that there has been no answer on how this can be merged upstream
-(Jiri? Dmitry?), I just piled those on top of the previous.
-I wouldn't to resplit the input and hid specific changes if this is the choice
-that is made.
-
-Cheers,
-Benjamin
-
-Benjamin Tissoires (5):
-  Input - wacom: enhance Wireless Receiver battery reporting
-  Input - wacom: use a specific name for the battery device
-  Input - wacom: handle Graphire BT tablets in wacom.ko
-  Input - wacom: handle Intuos 4 BT in wacom.ko
-  HID: remove hid-wacom Bluetooth driver
-
- drivers/hid/Kconfig              |   8 -
- drivers/hid/Makefile             |   1 -
- drivers/hid/hid-core.c           |   2 -
- drivers/hid/hid-wacom.c          | 973 ---------------------------------------
- drivers/input/tablet/wacom.h     |   6 +
- drivers/input/tablet/wacom_sys.c | 114 ++++-
- drivers/input/tablet/wacom_wac.c | 189 +++++++-
- drivers/input/tablet/wacom_wac.h |   8 +
- 8 files changed, 303 insertions(+), 998 deletions(-)
- delete mode 100644 drivers/hid/hid-wacom.c
-
+diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
+index 1888709..b5d75a4 100644
+--- a/drivers/input/tablet/wacom_sys.c
++++ b/drivers/input/tablet/wacom_sys.c
+@@ -803,15 +803,21 @@ static int wacom_battery_get_property(struct power_supply *psy,
+ 	return ret;
+ }
+ 
+-static int wacom_initialize_battery(struct wacom *wacom)
++static int wacom_initialize_battery(struct wacom *wacom, const char *name)
+ {
+ 	int error = 0;
++	int i;
+ 
+ 	if (wacom->wacom_wac.features.quirks & WACOM_QUIRK_MONITOR) {
+ 		wacom->battery.properties = wacom_battery_props;
+ 		wacom->battery.num_properties = ARRAY_SIZE(wacom_battery_props);
+ 		wacom->battery.get_property = wacom_battery_get_property;
+-		wacom->battery.name = "wacom_battery";
++		sprintf(wacom->wacom_wac.bat_name, "%s battery", name);
++		for (i=0; i < strlen(wacom->wacom_wac.bat_name); i++) {
++			if (wacom->wacom_wac.bat_name[i] == ' ')
++				wacom->wacom_wac.bat_name[i] = '_';
++		}
++		wacom->battery.name = wacom->wacom_wac.bat_name;
+ 		wacom->battery.type = POWER_SUPPLY_TYPE_BATTERY;
+ 		wacom->battery.use_for_apm = 0;
+ 
+@@ -1012,7 +1018,8 @@ static void wacom_wireless_work(struct work_struct *work)
+ 				wacom_wac->shared->touch_input = wacom_wac2->input;
+ 		}
+ 
+-		error = wacom_initialize_battery(wacom);
++		error = wacom_initialize_battery(wacom,
++				wacom_wac1->features.name);
+ 		if (error)
+ 			goto fail;
+ 	}
+diff --git a/drivers/input/tablet/wacom_wac.h b/drivers/input/tablet/wacom_wac.h
+index 68cf257..7565be5 100644
+--- a/drivers/input/tablet/wacom_wac.h
++++ b/drivers/input/tablet/wacom_wac.h
+@@ -153,6 +153,7 @@ struct wacom_shared {
+ struct wacom_wac {
+ 	char name[WACOM_NAME_MAX];
+ 	char pad_name[WACOM_NAME_MAX];
++	char bat_name[WACOM_NAME_MAX];
+ 	unsigned char data[WACOM_PKGLEN_MAX];
+ 	int tool[2];
+ 	int id[2];
 -- 
 2.0.0
 
