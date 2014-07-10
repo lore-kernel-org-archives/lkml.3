@@ -1,133 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849AbaGJJsG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 05:48:06 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:58675 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517AbaGJJsD convert rfc822-to-8bit (ORCPT
+	id S1753064AbaGJJtS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 05:49:18 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:49406 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752008AbaGJJtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 05:48:03 -0400
-Date: Thu, 10 Jul 2014 10:47:58 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci <linux-pci@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 6/9] pci: Introduce a domain number for
- pci_host_bridge.
-Message-ID: <20140710094758.GA6501@e106497-lin.cambridge.arm.com>
-References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
- <1404240214-9804-7-git-send-email-Liviu.Dudau@arm.com>
- <20140708005954.GC22939@google.com>
- <20140708104655.GC6501@e106497-lin.cambridge.arm.com>
- <CAErSpo75ovmGoeSHKJN0nckGDy-0gpn8kLPfHQ79CtcXxhPydw@mail.gmail.com>
- <20140708224847.GC4980@e106497-lin.cambridge.arm.com>
- <CAErSpo5rBt0iF2HGeDD-UH6_sPCoC647VCw0Q1v_0Rdpvcir-w@mail.gmail.com>
+	Thu, 10 Jul 2014 05:49:15 -0400
+Date: Thu, 10 Jul 2014 11:49:10 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
+        Joerg Roedel <joro@8bytes.org>, Cho KyongHo <pullip.cho@samsung.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Olav Haugan <ohaugan@codeaurora.org>,
+        Varun Sethi <varun.sethi@freescale.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] devicetree: Add generic IOMMU device tree bindings
+Message-ID: <20140710094909.GA21583@ulmo>
+References: <1404487757-18829-1-git-send-email-thierry.reding@gmail.com>
+ <20140709134050.GN9485@arm.com>
+ <20140709142125.GB3262@ulmo>
+ <20140709181048.GX9485@arm.com>
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo5rBt0iF2HGeDD-UH6_sPCoC647VCw0Q1v_0Rdpvcir-w@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 10 Jul 2014 09:47:59.0320 (UTC) FILETIME=[088C4580:01CF9C24]
-X-MC-Unique: 114071010480000401
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6c2NcOVqGQ03X4Wi"
 Content-Disposition: inline
+In-Reply-To: <20140709181048.GX9485@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 04:10:04PM +0100, Bjorn Helgaas wrote:
-> On Tue, Jul 8, 2014 at 4:48 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> > On Tue, Jul 08, 2014 at 07:41:50PM +0100, Bjorn Helgaas wrote:
-> >> On Tue, Jul 8, 2014 at 4:46 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> >> > On Tue, Jul 08, 2014 at 01:59:54AM +0100, Bjorn Helgaas wrote:
-> >>
-> >> >> I wonder if it would help to make a weak pci_domain_nr() function that
-> >> >> returns "bridge->domain_nr".  Then each arch could individually drop its
-> >> >> pci_domain_nr() definition as it was converted, e.g., something like this:
-> >> >>
-> >> >>   - Convert every arch pci_domain_nr() from a #define to a non-inline
-> >> >>     function
-> >> >>   - Add bridge.domain_nr, initialized from pci_domain_nr()
-> >> >>   - Add a weak generic pci_domain_nr() that returns bridge.domain_nr
-> >> >>   - Add a way to create a host bridge in a specified domain, so we can
-> >> >>     initialize bridge.domain_nr without using pci_domain_nr()
-> >> >>   - Convert each arch to use the new creation mechanism and drop its
-> >> >>     pci_domain_nr() implementation
-> >> >
-> >> > I will try to propose a patch implementing this.
-> >>
-> >> I think this is more of an extra credit, cleanup sort of thing.  I
-> >> don't think it advances your primary goal of (I think) getting arm64
-> >> PCI support in.  So my advice is to not worry about unifying domain
-> >> handling until later.
-> >
-> > Getting arm64 supported *is* my main goal. But like you have stated in your
-> > review of v7, you wanted to see another architecture converted as a guarantee
-> > of "genericity" (for lack of a better word) for my patches. The one architecture
-> > I've set my eyes on is microblaze, and that one uses pci_scan_root_bus()
-> > rather than pci_create_root_bus() so I don't have any opportunity to pass the
-> > domain number or any additional info (like the sysdata pointer that we were
-> > talking about) to the pci_host_bridge structure unless I do this cleanup.
-> 
-> I think maybe I was too harsh about that, or maybe we had different
-> ideas about what "conversion" involved.  My comment was in response to
-> "pci: Introduce pci_register_io_range() helper function", and I don't
-> remember why I was concerned about that; it's not even in drivers/pci,
-> and it doesn't have an obvious connection to putting the domain number
-> in struct pci_host_bridge.
 
-Well, to be honest I did move some of the code (as mentioned in the Changelog) from
-drivers/pci into drivers/of. It makes more sense to be in OF, as it mostly concerns
-architectures that use it.
+--6c2NcOVqGQ03X4Wi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> The thing I'm more concerned about is adding new PCI interfaces, e.g.,
-> pci_create_root_bus_in_domain(), that are only used by one
-> architecture.  Then it's hard to be sure that it's going to be useful
-> for other arches.  If you can add arm64 using the existing PCI
-> interfaces, I don't any problem with that.
+On Wed, Jul 09, 2014 at 07:10:48PM +0100, Will Deacon wrote:
+> Hi Thierry,
+>=20
+> On Wed, Jul 09, 2014 at 03:21:27PM +0100, Thierry Reding wrote:
+> > On Wed, Jul 09, 2014 at 02:40:50PM +0100, Will Deacon wrote:
+> > > I would like to move the ARM SMMU driver over to this for 3.18, if po=
+ssible.
+> > > One use-case there is the ability to describe groups of masters behin=
+d a
+> > > multi-master IOMMU but which must be part of the same domain (i.e. an
+> > > iommu_group). This is useful for presenting devices to a guest with a
+> > > virtual SMMU, where the physical devices share a stage-2 context.
+> > >=20
+> > > With your binding, does this simply mean determining the set of maste=
+r IDs
+> > > in the group, then describing the complete set for each master?
+> >=20
+> > I'm not sure I properly understand what you're trying to do, but I don't
+> > think the binding is designed to cover that. Rather the goal was to
+> > describe the IDs belonging to each master, so that an IOMMU can be
+> > properly configured.
+>=20
+> This is directly related to that problem, see below.
+>=20
+> > Anything beyond that (e.g. logical grouping of masters) isn't directly
+> > within the scope of the binding (it doesn't describe hardware but some
+> > policy pertaining to some specific use-case).
+>=20
+> This *is* for hardware. I can use PCI as an example, but this could equal=
+ly
+> apply to other types of bus. If you have a bunch of PCI master devices
+> sitting being a non-transparent bridge, they can end up sharing the same
+> master device ID (requester ID). This means that there is no way in the
+> IOMMU to initialise a translation for one of these devices without also
+> affecting the others. We currently have iommu_groups to deal with this, b=
+ut
+> it *is* a property of the hardware and we absolutely need a way to descri=
+be
+> it. I'm happy to add it later, but we need to think about it now to avoid
+> merging something that can't easily be extended.
+>=20
+> For PCI, the topology is probable but even then, we need this information=
+ to
+> describe the resulting master device ID emitted by the bridge for the
+> upstream group. One way to do this with your binding would be to treat all
+> of the upstream masters as having the same device ID.
 
-(No blame here or reproaches, I'm just restating the situation:) I (mostly) did try
-that in my v7 series but it also got NAK-ed by Arnd and Catalin as it had too much
-arm64 specific code in there.
+Yes, I think that makes most sense. After all from the IOMMU's point of
+view requests from all devices behind the bridge will originate from the
+same ID.
 
-I don't see a way out of adding new PCI interfaces if we want to have support in
-the PCI framework for unifying existing architectures. Of course, there is the painful
-alternative of changing the existing APIs and fixing arches in one go, but like you've
-said is going to be messy. I don't think I (or the people and companies wanting PCIe
-on arm64) should cop out and pick a quick fix that adds sysdata structure into arm64
-just to avoid new APIs, as this is not going to help anyone in long term. What I can
-do is to create a set of parallel APIs for pci_{scan,create}_root_bus() that take
-a pci_host_bridge pointer and start converting architectures one by one to that API
-while deprecating the existing one. That way we can add arm64 easily as it would be
-the first architecture to use new code without breaking things *and* we provide a
-migration path.
+So technically it's not really correct to encode the master ID within
+each of the devices, but rather they should be inheriting the ID from
+the non-transparent bridge.
 
-Best regards,
-Liviu
+> With virtualisation, we may want to assign a group of devices to a guest =
+but
+> without emulating the bridge. This would need something the device-tree to
+> describe that they are grouped together.
 
-> 
-> Bjorn
-> 
+But that's also a software decision, isn't it? Virtualization doesn't
+have anything to do with the hardware description. Or am I missing
+something? Of course I guess you could generate a DTB for the guest and
+group device together, in which case you're pretty much free to do what
+you want since you're essentially defining your own hardware.
 
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+Thierry
 
+--6c2NcOVqGQ03X4Wi
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTvmGVAAoJEN0jrNd/PrOhkkgQAK9Oh++C2Hiqj8BoR+GbjFXn
+zKw+5tmSV7JzSf6DraSBeLEkhPOtmJy+fqhDSQxW2BO0QsPUDqbrrbYEXxdPRdDr
+10Vk2ZPXsCpSH8PMsYpXANroA91kCtv3dExof3pGuw5rzMjHrLnPsk+YJCc4FEko
+gHpfT+wmA1dT37xQLkTZo8n3UxTrfLWCMR4cVvBeoLO9IFvhhEjLbGgyq2Hzvve5
+W6ZeEP9V+YL286Q0/ax01G3QCke7FIKJGYpb0Y+6VIdnd6KFykbnkabuFJ7IGYox
+RgWDyYtEJg/jnLIsolyPjhcL5MA34Fyi5UUsR92qq8HxMs4/QziUIKtHtYjHSJ41
+tM9TqO5F51oyV2GrDssOgjlg3n3EGP4sj0iBV7w/kTe+Nt4TscQB+GFnumgJWvsI
+Uyhgsr14xBjOaZp/VT1UeHcSXyINEnmyl/KV5XuWsWVb99YzlxhNIdFlj7v3mKEh
+guymycJKDq36QeOQBziLbBPdkRR8DbzsS4GFPE3zb3yaznEYwKDSVSxTS/Dvgtnw
+L6PVhK2YXvXyZoXh1uLLtcRVxKLdmPqjvj6+QSJV6ok6mf3xFjm1ZRPsBQN2E16N
+i5M+vWFyKYpZZtVQwBq/dBusiYlZdEeQ0VuhmKOLisVy1oqFgnFEEDnkCK9BpOmG
+bZcB5Ik1aDuJggkR+D5s
+=lHv3
+-----END PGP SIGNATURE-----
+
+--6c2NcOVqGQ03X4Wi--
