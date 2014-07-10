@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962AbaGJSDt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 14:03:49 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:38584 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751294AbaGJSDr (ORCPT
+	id S1752035AbaGJSD4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 14:03:56 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:7905 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751919AbaGJSDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 14:03:47 -0400
+	Thu, 10 Jul 2014 14:03:53 -0400
+Date: Thu, 10 Jul 2014 14:03:50 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Javi Merino" <javi.merino@arm.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Punit Agrawal <Punit.Agrawal@arm.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <edubezval@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [RFC PATCH v5 09/10] thermal: add trace events to the power
+ allocator governor
+Message-ID: <20140710140350.5c75fee9@gandalf.local.home>
+In-Reply-To: <20140710162014.GB2622@e104805>
+References: <1405001928-12697-1-git-send-email-javi.merino@arm.com>
+	<1405001928-12697-10-git-send-email-javi.merino@arm.com>
+	<20140710114451.4bbf6785@gandalf.local.home>
+	<20140710162014.GB2622@e104805>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20140710164151.GA5603@pd.tnic>
-References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
-	<1404925766-32253-5-git-send-email-hskinnemoen@google.com>
-	<20140710164151.GA5603@pd.tnic>
-Date: Thu, 10 Jul 2014 11:03:43 -0700
-Message-ID: <CAFQmdRbguE7O16diTNMXMU-3E8Zeu=Y=vcXVHKRyxzbq09TfzQ@mail.gmail.com>
-Subject: Re: [PATCH 4/6] x86-mce: Add spinlocks to prevent duplicated MCP and
- CMCI reports.
-From: Havard Skinnemoen <hskinnemoen@google.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Tony Luck <tony.luck@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ewout van Bekkum <ewout@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 9:41 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Wed, Jul 09, 2014 at 10:09:24AM -0700, Havard Skinnemoen wrote:
->> @@ -617,14 +620,28 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
->>
->>               this_cpu_write(mce_polled_error, 1);
->>               /*
->> +              * Optimize for the common case where no MCEs are found.
->> +              */
->> +             spin_lock_irqsave(&mce_banks[i].poll_spinlock, irq_flags);
->
-> This is pretty heavy - we're disabling interrupts for *every* bank and
-> with shorter polling intervals, this could become problematic fast.
+On Thu, 10 Jul 2014 17:20:14 +0100
+"Javi Merino" <javi.merino@arm.com> wrote:
 
-The lock is only taken if there are actual MCEs to be handled. The
-following check is left in place above this:
 
-        m.status = mce_rdmsrl(MSR_IA32_MCx_STATUS(i));
-        if (!(m.status & MCI_STATUS_VAL))
-                continue;
+> > 
+> > How many CPUs are you saving load_cpu on? A trace event can't be bigger
+> > than a page. And the data is actually a little less than that with the
+> > required headers.
+> 
+> The biggest system I've tested it on is an 8 cpu system (with
+> NR_CPUS==8).  So yes, small and we haven't seen any issues.
+> 
+> Are you saying that we are siphoning too much data through ftrace?  He
+> find it really valuable to collect information during run and process
+> it afterwards but I can see how this may not be feasible for systems
+> with thousands of cpus.
 
-But yeah, if there are lots of errors happening, it might get expensive.
+Only too much for a single event. Perhaps have the tracepoint post per
+CPU? Then you wouldn't need that array.
 
-> What's wrong with doing this with cheap atomic_inc/dec_and_test?
-
-For non-shared banks, we might risk some CPUs not being able to poll
-their banks in a long time if they happen to be more or less
-synchronized with a different CPU. This will also get worse with
-shorter polling intervals, and with larger numbers of CPUs.
-
-Havard
+-- Steve
