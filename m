@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752215AbaGJLNN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 07:13:13 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:60943 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285AbaGJLNL (ORCPT
+	id S1752392AbaGJLNa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 07:13:30 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54397 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752295AbaGJLN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 07:13:11 -0400
-Date: Thu, 10 Jul 2014 13:12:53 +0200
-From: Emil Goode <emilgoode@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Dongjin Kim <tobetter@gmail.com>, Julius Werner <jwerner@chromium.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        USB list <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-Subject: Re: [PATCH] usb: usb5303: make use of uninitialized err variable
-Message-ID: <20140710111253.GA5352@lianli>
-References: <1401731125-19780-1-git-send-email-emilgoode@gmail.com>
- <20140709224647.GA23929@kroah.com>
- <CAMuHMdVq3BX=NwaCsma-N5iTdTkCS-rsX16dQL1Qr9Sepo8qww@mail.gmail.com>
+	Thu, 10 Jul 2014 07:13:29 -0400
+Date: Thu, 10 Jul 2014 12:12:59 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Haojian Zhuang <haojian.zhuang@linaro.org>
+Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
+        "andreas.herrmann@calxeda.com" <andreas.herrmann@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: mm: fix the boundary checking on bitmaps
+Message-ID: <20140710111259.GL2449@arm.com>
+References: <1404959313-15198-1-git-send-email-haojian.zhuang@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMuHMdVq3BX=NwaCsma-N5iTdTkCS-rsX16dQL1Qr9Sepo8qww@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1404959313-15198-1-git-send-email-haojian.zhuang@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Greg and Geert,
+On Thu, Jul 10, 2014 at 03:28:33AM +0100, Haojian Zhuang wrote:
+> The issue of boundary checking on bitmaps is introduced by this commit
+> in below.
+> 
+> commit 4d852ef8c2544ce21ae41414099a7504c61164a0
+> Author: Andreas Herrmann <andreas.herrmann@calxeda.com>
+> Date:   Tue Feb 25 13:09:53 2014 +0100
+> 
+>     arm: dma-mapping: Add support to extend DMA IOMMU mappings
+> 
+> Multiple bitmaps were introduced as extension. If it needs to extend
+> a bitmap, it still check whether the allocation exceeding the total
+> size, not current bitmap size. So change the condition from
+> mapping->bits to PAGE_SIZE.
+> 
+> Signed-off-by: Haojian Zhuang <haojian.zhuang@linaro.org>
+> ---
+>  arch/arm/mm/dma-mapping.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+> index 4c88935..d7da5c3 100644
+> --- a/arch/arm/mm/dma-mapping.c
+> +++ b/arch/arm/mm/dma-mapping.c
+> @@ -1089,9 +1089,9 @@ static inline dma_addr_t __alloc_iova(struct dma_iommu_mapping *mapping,
+>  	spin_lock_irqsave(&mapping->lock, flags);
+>  	for (i = 0; i < mapping->nr_bitmaps; i++) {
+>  		start = bitmap_find_next_zero_area(mapping->bitmaps[i],
+> -				mapping->bits, 0, count, align);
+> +				PAGE_SIZE, 0, count, align);
 
-On Thu, Jul 10, 2014 at 09:38:00AM +0200, Geert Uytterhoeven wrote:
-> Hi Greg,
-> 
-> On Thu, Jul 10, 2014 at 12:46 AM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > On Mon, Jun 02, 2014 at 07:45:25PM +0200, Emil Goode wrote:
-> >> The variable err is not initialized here, this patch uses it
-> >> to store an eventual error value from devm_clk_get().
-> >>
-> >> Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> >> Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> >> ---
-> >>  drivers/usb/misc/usb3503.c |   10 +++++++---
-> >>  1 file changed, 7 insertions(+), 3 deletions(-)
-> 
-> > This patch fails to apply to my tree :(
-> 
-> You've already applied
-> commit ec5734c41bee2ee7c938a8f34853d31cada7e67a
-> Author: Tushar Behera <tushar.b@samsung.com>
-> Date:   Tue Jun 17 16:38:50 2014 +0530
-> 
->     usb: misc: usb3503: Update error code in print message
-> 
->     'err' is uninitialized, rather print the error code directly.
-> 
-> which fixes it slightly different.
+I'm probably just missing something, but what guarantees that the bitmap is
+PAGE_SIZE? It looks to me like we could easily go off the end of the bitmap
+if arm_iommu_create_mapping is called with a small size parameter.
 
-Yes, my patch was sent about two weeks earlier, but of course please pick
-the one you think is best.
-
-Best regards,
-
-Emil Goode
+Will
