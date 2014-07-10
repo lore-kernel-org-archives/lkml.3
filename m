@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753725AbaGJP0y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 11:26:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16672 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750778AbaGJP0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 11:26:52 -0400
-Date: Thu, 10 Jul 2014 17:24:18 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH v9 09/11] seccomp: introduce writer locking
-Message-ID: <20140710152418.GB20861@redhat.com>
-References: <1403911380-27787-1-git-send-email-keescook@chromium.org> <1403911380-27787-10-git-send-email-keescook@chromium.org> <20140709184215.GA4866@redhat.com> <20140709185549.GB4866@redhat.com> <CAGXu5jL6q1d16uA1Yu+QO4eV7zWwcWEWgkZrwmsfymbMvEr6+Q@mail.gmail.com>
+	id S1754046AbaGJP1o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 11:27:44 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:34057 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751517AbaGJP1l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 11:27:41 -0400
+Date: Thu, 10 Jul 2014 11:27:37 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: [GIT PULL] libata fixes for v3.16-rc4
+Message-ID: <20140710152737.GG6609@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGXu5jL6q1d16uA1Yu+QO4eV7zWwcWEWgkZrwmsfymbMvEr6+Q@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10, Kees Cook wrote:
->
-> On Wed, Jul 9, 2014 at 11:55 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > On 07/09, Oleg Nesterov wrote:
-> >>
-> >> On 06/27, Kees Cook wrote:
-> >> >
-> >> >  static u32 seccomp_run_filters(int syscall)
-> >> >  {
-> >> > -   struct seccomp_filter *f;
-> >> > +   struct seccomp_filter *f = ACCESS_ONCE(current->seccomp.filter);
-> >>
-> >> I am not sure...
-> >>
-> >> This is fine if this ->filter is the 1st (and only) one, in this case
-> >> we can rely on rmb() in the caller.
-> >>
-> >> But the new filter can be installed at any moment. Say, right after that
-> >> rmb() although this doesn't matter. Either we need smp_read_barrier_depends()
-> >> after that, or smp_load_acquire() like the previous version did?
-> >
-> > Wait... and it seems that seccomp_sync_threads() needs smp_store_release()
-> > when it sets thread->filter = current->filter by the same reason?
-> >
-> > OTOH. smp_store_release() in seccomp_attach_filter() can die, "current"
-> > doesn't need a barrier to serialize with itself.
->
-> I have lost track of what you're suggesting to change. :)
+Hey,
 
-Perhaps I am just trying to confuse you and myself ;)
+Nothing too interesting.  All fixes are ahci_platform related.
 
-But,
+Thanks.
 
-> Since rmb() happens before run_filters, isn't the ACCESS_ONCE
-> sufficient?
+The following changes since commit ebe06187bf2aec10d537ce4595e416035367d703:
 
-Yes. But see above. ACCESS_ONCE is sufficient if we read the first filter
-installed by another thread, in this case rmb() pairs with mb_before_atomic()
-before set_bit(TIF_SECCOMP).
+  epoll: fix use-after-free in eventpoll_release_file (2014-06-16 17:21:59 -1000)
 
-IOW, if this threads sees TIF_SECCOMP, it should also see all modifications
-which were done before set_bit, including the data in ->filter points to.
+are available in the git repository at:
 
-> We only care that TIF_SECCOMP, mode, and some filter is
-> valid. In a tsync thread race, it's okay to use not use the deepest
-> filter node in the list,
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata.git for-3.16-fixes
 
-Yes, it is fine if we miss yet another filter which was just installed by
-another thread.
+for you to fetch changes up to 2a0bdff6b958d1b2523d2754b6cd5e0ea4053016:
 
-But, unless I missed something, the problem is that we can get this new
-filter.
+  ahci_xgene: fix the dma state machine lockup for the IDENTIFY DEVICE PIO mode command. (2014-07-08 11:46:05 -0400)
 
-Just to simplify. Suppose TIF_SECCOMP was set a long ago. This thread
-has a single filter F1 and it enters seccomp_run_filters().
+----------------------------------------------------------------
+Kefeng Wang (1):
+      ahci: disable ncq feature for hisilicon sata
 
-Right before it does ACCESS_ONCE() to read the pointer, another thread
-does seccomp_sync_threads() and sets .filter = F2.
+Mikko Perttunen (1):
+      libahci_platform: Fail when PHY required but PHY support disabled
 
-If ACCESS_ONCE() returns F1 - everything is fine. But it can see the new
-pointer F2, and in this case we need a barrier to ensure that, say,
-LOAD(F2->prog) will see all the preceding changes in this memory.
+Russell King (1):
+      ata: ahci_imx: warn when disabling ahci link
 
-Oleg.
+Shawn Guo (1):
+      ahci: imx: manage only sata_ref_clk in imx_sata_enable[disable]
 
+Suman Tripathi (2):
+      libahci: export ahci_qc_issue() and ahci_start_fix_rx()
+      ahci_xgene: fix the dma state machine lockup for the IDENTIFY DEVICE PIO mode command.
+
+ drivers/ata/ahci.h             |  2 ++
+ drivers/ata/ahci_imx.c         | 38 +++++++++++++++++++++++---
+ drivers/ata/ahci_platform.c    |  2 +-
+ drivers/ata/ahci_xgene.c       | 60 +++++++++++++++++++++++++++++++++---------
+ drivers/ata/libahci.c          |  7 ++---
+ drivers/ata/libahci_platform.c |  7 ++++-
+ 6 files changed, 94 insertions(+), 22 deletions(-)
+
+-- 
+tejun
