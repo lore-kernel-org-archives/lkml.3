@@ -1,131 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914AbaGJM6L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 08:58:11 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:53661 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751484AbaGJM6I (ORCPT
+	id S1753376AbaGJM6n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 08:58:43 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:36979 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752721AbaGJM6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 08:58:08 -0400
-Message-ID: <53BE8DA8.6@st.com>
-Date: Thu, 10 Jul 2014 14:57:12 +0200
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 10 Jul 2014 08:58:40 -0400
+Date: Thu, 10 Jul 2014 14:58:49 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Ben Skeggs <bskeggs@redhat.com>, David Airlie <airlied@linux.ie>,
+        David Herrmann <dh.herrmann@gmail.com>, Lucas Stach <dev@lynxeye.de>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org
+Subject: Re: [Nouveau] [PATCH v4 2/6] drm/nouveau: map pages using DMA API on
+ platform devices
+Message-ID: <20140710125849.GF17271@phenom.ffwll.local>
+Mail-Followup-To: Alexandre Courbot <acourbot@nvidia.com>,
+	Ben Skeggs <bskeggs@redhat.com>, David Airlie <airlied@linux.ie>,
+	David Herrmann <dh.herrmann@gmail.com>,
+	Lucas Stach <dev@lynxeye.de>,
+	Thierry Reding <thierry.reding@gmail.com>,
+	Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+	nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org
+References: <1404807961-30530-1-git-send-email-acourbot@nvidia.com>
+ <1404807961-30530-3-git-send-email-acourbot@nvidia.com>
 MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Peter Griffin <peter.griffin@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Ball <chris@printf.net>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Subject: Re: [PATCH v4 00/10] Add SDHCI support for ST Microelectronics SoCs
-References: <1404918461-25390-1-git-send-email-peter.griffin@linaro.org>	<53BD64E4.5060504@st.com> <CAPDyKFqpqa-nA3i8Z4k3oBqgo7OpppxM5tSCSz-mhxyHRJtZTw@mail.gmail.com>
-In-Reply-To: <CAPDyKFqpqa-nA3i8Z4k3oBqgo7OpppxM5tSCSz-mhxyHRJtZTw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-07-10_04:2014-07-10,2014-07-10,1970-01-01 signatures=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404807961-30530-3-git-send-email-acourbot@nvidia.com>
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 08, 2014 at 05:25:57PM +0900, Alexandre Courbot wrote:
+> page_to_phys() is not the correct way to obtain the DMA address of a
+> buffer on a non-PCI system. Use the DMA API functions for this, which
+> are portable and will allow us to use other DMA API functions for
+> buffer synchronization.
+> 
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> ---
+>  drivers/gpu/drm/nouveau/core/engine/device/base.c | 8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/gpu/drm/nouveau/core/engine/device/base.c b/drivers/gpu/drm/nouveau/core/engine/device/base.c
+> index 18c8c7245b73..e4e9e64988fe 100644
+> --- a/drivers/gpu/drm/nouveau/core/engine/device/base.c
+> +++ b/drivers/gpu/drm/nouveau/core/engine/device/base.c
+> @@ -489,7 +489,10 @@ nv_device_map_page(struct nouveau_device *device, struct page *page)
+>  		if (pci_dma_mapping_error(device->pdev, ret))
+>  			ret = 0;
+>  	} else {
+> -		ret = page_to_phys(page);
+> +		ret = dma_map_page(&device->platformdev->dev, page, 0,
+> +				   PAGE_SIZE, DMA_BIDIRECTIONAL);
+> +		if (dma_mapping_error(&device->platformdev->dev, ret))
+> +			ret = 0;
+>  	}
+>  
+>  	return ret;
+> @@ -501,6 +504,9 @@ nv_device_unmap_page(struct nouveau_device *device, dma_addr_t addr)
+>  	if (nv_device_is_pci(device))
+>  		pci_unmap_page(device->pdev, addr, PAGE_SIZE,
+>  			       PCI_DMA_BIDIRECTIONAL);
 
+pci_map/unmap alias to dma_unmap/map when called on the underlying struct
+device embedded in pci_device (like for platform drivers). Dunno whether
+it's worth to track a pointer to the struct device directly and always
+call dma_unmap/map.
 
-On 07/10/2014 02:51 PM, Ulf Hansson wrote:
-> On 9 July 2014 17:51, Maxime Coquelin <maxime.coquelin@st.com> wrote:
->>
->>
->> On 07/09/2014 05:07 PM, Peter Griffin wrote:
->>>
->>> This series adds a SDHCI platform driver for ST SoCs, along with
->>> the additional device tree bindings and configuration to enable
->>> the controller to work properly.
->>>
->>> Initially it supports the stih416 and stih415 SoCs, and has
->>> been tested on a stih416-b2020 board.
->>>
->>> regards,
->>>
->>> Peter.
->>>
->>> Changes since v1
->>> - Whitespace cleanups
->>> - Use readl_relaxed io accessor
->>> - Add update to MAINTAINERS
->>> - Remove reset controller code from platform driver
->>> - Remove #ifdef around sleep ops
->>> - Use sdhci_pltfm_clk_get_max_clock lib function
->>> - Pass bus-width etc through board device tree node
->>> - Remove unncessary header
->>> - Remove / change some debug messages
->>> - Remove final break from switch case
->>>
->>> Changes since v2
->>> - Update CC list with alkml and lkml lists
->>>
->>> Changes since v3
->>> - Rebased on v3.16-rc4
->>> - Use sdhci_set_bus_width lib function for set_bus_width
->>> - Remove sdhci_st_8bit_width function
->>> - Use sdhci_set_clock lib function for set_clock
->>>
->>> Peter Griffin (10):
->>>     mmc: sdhci-st: Intial support for ST SDHCI controller
->>>     mmc: sdhci-st: ST Microelectronics SDHCI binding documentation.
->>>     ARM: STi: DT: Add sdhci pins for stih416
->>>     ARM: STi: DT: Add sdhci controller for stih416
->>>     ARM: STi: DT: Add sdhci pin configuration for stih415
->>>     ARM: STi: DT: Add sdhci controller for stih415
->>>     ARM: STi: DT: Enable mmc0 for both stih415 and stih416 SoCs
->>>     ARM: STi: DT: Enable second sdhci controller for stih416 b2020 boards.
->>>     ARM: update multi_v7_defconfig for STI
->>>     MAINTAINERS: Add sdhci-st file to ARCH/STI architecture
->>>
->>>    Documentation/devicetree/bindings/mmc/sdhci-st.txt |  33 ++++
->>>    MAINTAINERS                                        |   1 +
->>>    arch/arm/boot/dts/stih415-pinctrl.dtsi             |  21 +++
->>>    arch/arm/boot/dts/stih415.dtsi                     |  12 ++
->>>    arch/arm/boot/dts/stih416-b2020.dts                |   8 +
->>>    arch/arm/boot/dts/stih416-b2020e.dts               |   6 +
->>>    arch/arm/boot/dts/stih416-pinctrl.dtsi             |  39 +++++
->>>    arch/arm/boot/dts/stih416.dtsi                     |  24 +++
->>>    arch/arm/boot/dts/stih41x-b2020.dtsi               |   4 +
->>>    arch/arm/boot/dts/stih41x-b2020x.dtsi              |   4 +
->>>    arch/arm/configs/multi_v7_defconfig                |   1 +
->>>    drivers/mmc/host/Kconfig                           |  12 ++
->>>    drivers/mmc/host/Makefile                          |   1 +
->>>    drivers/mmc/host/sdhci-st.c                        | 176
->>> +++++++++++++++++++++
->>>    14 files changed, 342 insertions(+)
->>>    create mode 100644 Documentation/devicetree/bindings/mmc/sdhci-st.txt
->>>    create mode 100644 drivers/mmc/host/sdhci-st.c
->>>
->>
->> Thanks Peter.
->>
->> DT patches queued to git://git.stlinux.com/devel/kernel/linux-sti.git
->> sti-dt-for-v3.17-1
->
-> What about patch9 and 10? Did you take them as well?
->
-> You may add my ack for them, for whatever it's worth.
+Just drive-by comment since I'm interested in how you solve this - i915
+has similar fun with buffer sharing and coherent and non-coherent
+platforms. Although we don't have fun with pci and non-pci based
+platforms.
+-Daniel
 
-Yes I will take them too.
+> +	else
+> +		dma_unmap_page(&device->platformdev->dev, addr,
+> +			       PAGE_SIZE, DMA_BIDIRECTIONAL);
+>  }
+>  
+>  int
+> -- 
+> 2.0.0
+> 
+> _______________________________________________
+> Nouveau mailing list
+> Nouveau@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/nouveau
 
-Regards,
-Maxime
-
->
-> Kind regards
-> Uffe
->
->>
->> Regards,
->> Maxime
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
