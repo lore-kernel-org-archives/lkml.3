@@ -1,319 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306AbaGJVps (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 17:45:48 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:47442 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889AbaGJVpp (ORCPT
+	id S1753062AbaGJVno (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 17:43:44 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:13936 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023AbaGJVnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 17:45:45 -0400
-From: Oded Gabbay <oded.gabbay@gmail.com>
-X-Google-Original-From: Oded Gabbay <oded.gabbay@amd.com>
-To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <j.glisse@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, John Bridgman <John.Bridgman@amd.com>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>
-Subject: [PATCH 00/83] AMD HSA kernel driver
-Date: Fri, 11 Jul 2014 00:45:27 +0300
-Message-Id: <1405028727-5276-1-git-send-email-oded.gabbay@amd.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 10 Jul 2014 17:43:41 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 10 Jul 2014 14:32:45 -0700
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+To: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-pm@vger.kernel.org>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>, <devicetree@vger.kernel.org>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Subject: [PATCH 07/13] clk: tegra: Save/restore CCLKG_BURST_POLICY on suspend
+Date: Fri, 11 Jul 2014 00:42:43 +0300
+Message-ID: <1405028569-14253-8-git-send-email-ttynkkynen@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1405028569-14253-1-git-send-email-ttynkkynen@nvidia.com>
+References: <1405028569-14253-1-git-send-email-ttynkkynen@nvidia.com>
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set implements a Heterogeneous System Architecture (HSA) driver 
-for radeon-family GPUs. 
+Save and restore this register since the LP1 restore assembly routines
+fiddle with it. Otherwise the CPU would keep running on PLLX after
+resume from suspend even when DFLL was the original clocksource.
 
-HSA allows different processor types (CPUs, DSPs, GPUs, etc..) to share 
-system resources more effectively via HW features including shared pageable 
-memory, userspace-accessible work queues, and platform-level atomics. In 
-addition to the memory protection mechanisms in GPUVM and IOMMUv2, the Sea 
-Islands family of GPUs also performs HW-level validation of commands passed 
-in through the queues (aka rings).
+Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+---
+ drivers/clk/tegra/clk-tegra124.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-The code in this patch set is intended to serve both as a sample driver for 
-other HSA-compatible hardware devices and as a production driver for 
-radeon-family processors. The code is architected to support multiple CPUs 
-each with connected GPUs, although the current implementation focuses on a 
-single Kaveri/Berlin APU, and works alongside the existing radeon kernel 
-graphics driver (kgd). 
-
-AMD GPUs designed for use with HSA (Sea Islands and up) share some hardware 
-functionality between HSA compute and regular gfx/compute (memory, 
-interrupts, registers), while other functionality has been added 
-specifically for HSA compute  (hw scheduler for virtualized compute rings). 
-All shared hardware is owned by the radeon graphics driver, and an interface 
-between kfd and kgd allows the kfd to make use of those shared resources, 
-while HSA-specific functionality is managed directly by kfd by submitting 
-packets into an HSA-specific command queue (the "HIQ").
-
-During kfd module initialization a char device node (/dev/kfd) is created 
-(surviving until module exit), with ioctls for queue creation & management, 
-and data structures are initialized for managing HSA device topology. 
-
-The rest of the initialization is driven by calls from the radeon kgd at 
-the following points :
-
-- radeon_init (kfd_init)
-- radeon_exit (kfd_fini)
-- radeon_driver_load_kms (kfd_device_probe, kfd_device_init)
-- radeon_driver_unload_kms (kfd_device_fini)
-
-During the probe and init processing per-device data structures are 
-established which connect to the associated graphics kernel driver. This 
-information is exposed to userspace via sysfs, along with a version number 
-allowing userspace to determine if a topology change has occurred while it 
-was reading from sysfs. 
-
-The interface between kfd and kgd also allows the kfd to request buffer 
-management services from kgd, and allows kgd to route interrupt requests to 
-kfd code since the interrupt block is shared between regular 
-graphics/compute and HSA compute subsystems in the GPU.
-
-The kfd code works with an open source usermode library ("libhsakmt") which 
-is in the final stages of IP review and should be published in a separate 
-repo over the next few days. 
-
-The code operates in one of three modes, selectable via the sched_policy 
-module parameter :
-
-- sched_policy=0 uses a hardware scheduler running in the MEC block within 
-CP, and allows oversubscription (more queues than HW slots) 
-
-- sched_policy=1 also uses HW scheduling but does not allow 
-oversubscription, so create_queue requests fail when we run out of HW slots 
-
-- sched_policy=2 does not use HW scheduling, so the driver manually assigns 
-queues to HW slots by programming registers
-
-The "no HW scheduling" option is for debug & new hardware bringup only, so 
-has less test coverage than the other options. Default in the current code 
-is "HW scheduling without oversubscription" since that is where we have the 
-most test coverage but we expect to change the default to "HW scheduling 
-with oversubscription" after further testing. This effectively removes the 
-HW limit on the number of work queues available to applications.
-
-Programs running on the GPU are associated with an address space through the 
-VMID field, which is translated to a unique PASID at access time via a set 
-of 16 VMID-to-PASID mapping registers. The available VMIDs (currently 16) 
-are partitioned (under control of the radeon kgd) between current 
-gfx/compute and HSA compute, with each getting 8 in the current code. The 
-VMID-to-PASID mapping registers are updated by the HW scheduler when used, 
-and by driver code if HW scheduling is not being used.  
-
-The Sea Islands compute queues use a new "doorbell" mechanism instead of the 
-earlier kernel-managed write pointer registers. Doorbells use a separate BAR 
-dedicated for this purpose, and pages within the doorbell aperture are 
-mapped to userspace (each page mapped to only one user address space). 
-Writes to the doorbell aperture are intercepted by GPU hardware, allowing 
-userspace code to safely manage work queues (rings) without requiring a 
-kernel call for every ring update. 
-
-First step for an application process is to open the kfd device. Calls to 
-open create a kfd "process" structure only for the first thread of the 
-process. Subsequent open calls are checked to see if they are from processes 
-using the same mm_struct and, if so, don't do anything. The kfd per-process 
-data lives as long as the mm_struct exists. Each mm_struct is associated 
-with a unique PASID, allowing the IOMMUv2 to make userspace process memory 
-accessible to the GPU. 
-
-Next step is for the application to collect topology information via sysfs. 
-This gives userspace enough information to be able to identify specific 
-nodes (processors) in subsequent queue management calls. Application 
-processes can create queues on multiple processors, and processors support 
-queues from multiple processes. 
-
-At this point the application can create work queues in userspace memory and 
-pass them through the usermode library to kfd to have them mapped onto HW 
-queue slots so that commands written to the queues can be executed by the 
-GPU. Queue operations specify a processor node, and so the bulk of this code 
-is device-specific. 
-
-Written by John Bridgman <John.Bridgman@amd.com>
-
-Alexey Skidanov (4):
-  hsa/radeon: 32-bit processes support
-  hsa/radeon: NULL pointer dereference bug workaround
-  hsa/radeon: HSA64/HSA32 modes support
-  hsa/radeon: Add local memory to topology
-
-Andrew Lewycky (3):
-  hsa/radeon: Make binding of process to device permanent
-  hsa/radeon: Implement hsaKmtSetMemoryPolicy
-  mm: Change timing of notification to IOMMUs about a page to be
-    invalidated
-
-Ben Goz (20):
-  hsa/radeon: Add queue and hw_pointer_store modules
-  hsa/radeon: Add support allocating kernel doorbells
-  hsa/radeon: Add mqd_manager module
-  hsa/radeon: Add kernel queue support for KFD
-  hsa/radeon: Add module parameter of scheduling policy
-  hsa/radeon: Add packet manager module
-  hsa/radeon: Add process queue manager module
-  hsa/radeon: Add device queue manager module
-  hsa/radeon: Switch to new queue scheduler
-  hsa/radeon: Add IOCTL for update queue
-  hsa/radeon: Queue Management integration with Memory Management
-  hsa/radeon: update queue fault handling
-  hsa/radeon: fixing a bug to support 32b processes
-  hsa/radeon: Fix number of pipes per ME
-  hsa/radeon: Removing hw pointer store module
-  hsa/radeon: Adding some error messages
-  hsa/radeon: Fixing minor issues with kernel queues (DIQ)
-  drm/radeon: Add register access functions to kfd2kgd interface
-  hsa/radeon: Eliminating all direct register accesses
-  drm/radeon: Remove lock functions from kfd2kgd interface
-
-Evgeny Pinchuk (9):
-  hsa/radeon: fix the OEMID assignment in kfd_topology
-  drm/radeon: extending kfd-kgd interface
-  hsa/radeon: implementing IOCTL for clock counters
-  drm/radeon: adding synchronization for GRBM GFX
-  hsa/radeon: fixing clock counters bug
-  drm/radeon: Extending kfd interface
-  hsa/radeon: Adding max clock speeds to topology
-  hsa/radeon: Alternating the source of max clock
-  hsa/radeon: Exclusive access for perf. counters
-
-Michael Varga (1):
-  hsa/radeon: debugging print statements
-
-Oded Gabbay (45):
-  mm: Add kfd_process pointer to mm_struct
-  drm/radeon: reduce number of free VMIDs and pipes in KV
-  drm/radeon: Report doorbell configuration to kfd
-  drm/radeon: Add radeon <--> kfd interface
-  drm/radeon: Add kfd-->kgd interface to get virtual ram size
-  drm/radeon: Add kfd-->kgd interfaces of memory allocation/mapping
-  drm/radeon: Add kfd-->kgd interface of locking srbm_gfx_cntl register
-  drm/radeon: Add calls to initialize and finalize kfd from radeon
-  hsa/radeon: Add code base of hsa driver for AMD's GPUs
-  hsa/radeon: Add initialization and unmapping of doorbell aperture
-  hsa/radeon: Add scheduler code
-  hsa/radeon: Add kfd mmap handler
-  hsa/radeon: Add 2 new IOCTL to kfd, CREATE_QUEUE and DESTROY_QUEUE
-  hsa/radeon: Update MAINTAINERS and CREDITS files
-  hsa/radeon: Add interrupt handling module
-  hsa/radeon: Add the isr function of the KFD scehduler
-  hsa/radeon: Handle deactivation of queues using interrupts
-  hsa/radeon: Enable interrupts in KFD scheduler
-  hsa/radeon: Enable/Disable KFD interrupt module
-  hsa/radeon: Add interrupt callback function to kgd2kfd interface
-  hsa/radeon: Add kgd-->kfd interfaces for suspend and resume
-  drm/radeon: Add calls to suspend and resume of kfd driver
-  drm/radeon/cik: Don't touch int of pipes 1-7
-  drm/radeon/cik: Call kfd isr function
-  hsa/radeon: Fix memory size allocated for HPD
-  hsa/radeon: Fix list of supported devices
-  hsa/radeon: Fix coding style in cik_int.h
-  hsa/radeon: Print ioctl commnad only in debug mode
-  hsa/radeon: Print ISR info only in debug mode
-  hsa/radeon: Workaround for a bug in amd_iommu
-  hsa/radeon: Eliminate warnings in compilation
-  hsa/radeon: Various kernel styling fixes
-  hsa/radeon: Rearrange structures in kfd_ioctl.h
-  hsa/radeon: change another pr_info to pr_debug
-  hsa/radeon: Fix timeout calculation in sync_with_hw
-  hsa/radeon: Update module information and version
-  hsa/radeon: Update module version to 0.6.0
-  hsa/radeon: Fix initialization of sh_mem registers
-  hsa/radeon: Fix compilation warnings
-  hsa/radeon: Remove old scheduler code
-  hsa/radeon: Static analysis (smatch) fixes
-  hsa/radeon: Check oversubscription before destroying runlist
-  hsa/radeon: Don't verify cksum when parsing CRAT table
-  hsa/radeon: Update module version to 0.6.1
-  hsa/radeon: Update module version to 0.6.2
-
-Yair Shachar (1):
-  hsa/radeon: Adding qcm fence return status
-
- CREDITS                                            |    7 +
- MAINTAINERS                                        |    8 +
- drivers/Kconfig                                    |    2 +
- drivers/gpu/Makefile                               |    1 +
- drivers/gpu/drm/radeon/Makefile                    |    1 +
- drivers/gpu/drm/radeon/cik.c                       |  156 +--
- drivers/gpu/drm/radeon/cikd.h                      |   51 +-
- drivers/gpu/drm/radeon/radeon.h                    |    9 +
- drivers/gpu/drm/radeon/radeon_device.c             |   32 +
- drivers/gpu/drm/radeon/radeon_drv.c                |    6 +
- drivers/gpu/drm/radeon/radeon_kfd.c                |  630 ++++++++++
- drivers/gpu/drm/radeon/radeon_kms.c                |    9 +
- drivers/gpu/hsa/Kconfig                            |   20 +
- drivers/gpu/hsa/Makefile                           |    1 +
- drivers/gpu/hsa/radeon/Makefile                    |   12 +
- drivers/gpu/hsa/radeon/cik_int.h                   |   50 +
- drivers/gpu/hsa/radeon/cik_mqds.h                  |  250 ++++
- drivers/gpu/hsa/radeon/cik_regs.h                  |  220 ++++
- drivers/gpu/hsa/radeon/kfd_aperture.c              |  123 ++
- drivers/gpu/hsa/radeon/kfd_chardev.c               |  530 +++++++++
- drivers/gpu/hsa/radeon/kfd_crat.h                  |  294 +++++
- drivers/gpu/hsa/radeon/kfd_device.c                |  244 ++++
- drivers/gpu/hsa/radeon/kfd_device_queue_manager.c  |  981 ++++++++++++++++
- drivers/gpu/hsa/radeon/kfd_device_queue_manager.h  |  101 ++
- drivers/gpu/hsa/radeon/kfd_doorbell.c              |  242 ++++
- drivers/gpu/hsa/radeon/kfd_interrupt.c             |  177 +++
- drivers/gpu/hsa/radeon/kfd_kernel_queue.c          |  305 +++++
- drivers/gpu/hsa/radeon/kfd_kernel_queue.h          |   66 ++
- drivers/gpu/hsa/radeon/kfd_module.c                |  130 +++
- drivers/gpu/hsa/radeon/kfd_mqd_manager.c           |  290 +++++
- drivers/gpu/hsa/radeon/kfd_mqd_manager.h           |   54 +
- drivers/gpu/hsa/radeon/kfd_packet_manager.c        |  488 ++++++++
- drivers/gpu/hsa/radeon/kfd_pasid.c                 |   97 ++
- drivers/gpu/hsa/radeon/kfd_pm4_headers.h           |  682 +++++++++++
- drivers/gpu/hsa/radeon/kfd_pm4_opcodes.h           |  107 ++
- drivers/gpu/hsa/radeon/kfd_priv.h                  |  475 ++++++++
- drivers/gpu/hsa/radeon/kfd_process.c               |  391 +++++++
- drivers/gpu/hsa/radeon/kfd_process_queue_manager.c |  343 ++++++
- drivers/gpu/hsa/radeon/kfd_queue.c                 |  109 ++
- drivers/gpu/hsa/radeon/kfd_scheduler.h             |   72 ++
- drivers/gpu/hsa/radeon/kfd_topology.c              | 1207 ++++++++++++++++++++
- drivers/gpu/hsa/radeon/kfd_topology.h              |  168 +++
- drivers/gpu/hsa/radeon/kfd_vidmem.c                |   97 ++
- include/linux/mm_types.h                           |   14 +
- include/linux/radeon_kfd.h                         |  106 ++
- include/uapi/linux/kfd_ioctl.h                     |  133 +++
- mm/rmap.c                                          |    8 +-
- 47 files changed, 9402 insertions(+), 97 deletions(-)
- create mode 100644 drivers/gpu/drm/radeon/radeon_kfd.c
- create mode 100644 drivers/gpu/hsa/Kconfig
- create mode 100644 drivers/gpu/hsa/Makefile
- create mode 100644 drivers/gpu/hsa/radeon/Makefile
- create mode 100644 drivers/gpu/hsa/radeon/cik_int.h
- create mode 100644 drivers/gpu/hsa/radeon/cik_mqds.h
- create mode 100644 drivers/gpu/hsa/radeon/cik_regs.h
- create mode 100644 drivers/gpu/hsa/radeon/kfd_aperture.c
- create mode 100644 drivers/gpu/hsa/radeon/kfd_chardev.c
- create mode 100644 drivers/gpu/hsa/radeon/kfd_crat.h
- create mode 100644 drivers/gpu/hsa/radeon/kfd_device.c
- create mode 100644 drivers/gpu/hsa/radeon/kfd_device_queue_manager.c
- create mode 100644 drivers/gpu/hsa/radeon/kfd_device_queue_manager.h
- create mode 100644 drivers/gpu/hsa/radeon/kfd_doorbell.c
- create mode 100644 drivers/gpu/hsa/radeon/kfd_interrupt.c
- create mode 100644 drivers/gpu/hsa/radeon/kfd_kernel_queue.c
- create mode 100644 drivers/gpu/hsa/radeon/kfd_kernel_queue.h
- create mode 100644 drivers/gpu/hsa/radeon/kfd_module.c
- create mode 100644 drivers/gpu/hsa/radeon/kfd_mqd_manager.c
- create mode 100644 drivers/gpu/hsa/radeon/kfd_mqd_manager.h
- create mode 100644 drivers/gpu/hsa/radeon/kfd_packet_manager.c
- create mode 100644 drivers/gpu/hsa/radeon/kfd_pasid.c
- create mode 100644 drivers/gpu/hsa/radeon/kfd_pm4_headers.h
- create mode 100644 drivers/gpu/hsa/radeon/kfd_pm4_opcodes.h
- create mode 100644 drivers/gpu/hsa/radeon/kfd_priv.h
- create mode 100644 drivers/gpu/hsa/radeon/kfd_process.c
- create mode 100644 drivers/gpu/hsa/radeon/kfd_process_queue_manager.c
- create mode 100644 drivers/gpu/hsa/radeon/kfd_queue.c
- create mode 100644 drivers/gpu/hsa/radeon/kfd_scheduler.h
- create mode 100644 drivers/gpu/hsa/radeon/kfd_topology.c
- create mode 100644 drivers/gpu/hsa/radeon/kfd_topology.h
- create mode 100644 drivers/gpu/hsa/radeon/kfd_vidmem.c
- create mode 100644 include/linux/radeon_kfd.h
- create mode 100644 include/uapi/linux/kfd_ioctl.h
-
+diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
+index 77fbf38..758a4cf 100644
+--- a/drivers/clk/tegra/clk-tegra124.c
++++ b/drivers/clk/tegra/clk-tegra124.c
+@@ -89,6 +89,8 @@
+ #define PMC_PLLM_WB0_OVERRIDE 0x1dc
+ #define PMC_PLLM_WB0_OVERRIDE_2 0x2b0
+ 
++#define CCLKG_BURST_POLICY 0x368
++
+ #define UTMIP_PLL_CFG2 0x488
+ #define UTMIP_PLL_CFG2_STABLE_COUNT(x) (((x) & 0xffff) << 6)
+ #define UTMIP_PLL_CFG2_ACTIVE_DLY_COUNT(x) (((x) & 0x3f) << 18)
+@@ -121,6 +123,8 @@
+ #ifdef CONFIG_PM_SLEEP
+ static struct cpu_clk_suspend_context {
+ 	u32 clk_csite_src;
++	u32 cclkg_burst;
++	u32 cclkg_divider;
+ } tegra124_cpu_clk_sctx;
+ #endif
+ 
+@@ -1318,12 +1322,22 @@ static void tegra124_cpu_clock_suspend(void)
+ 	tegra124_cpu_clk_sctx.clk_csite_src =
+ 				readl(clk_base + CLK_SOURCE_CSITE);
+ 	writel(3 << 30, clk_base + CLK_SOURCE_CSITE);
++
++	tegra124_cpu_clk_sctx.cclkg_burst =
++				readl(clk_base + CCLKG_BURST_POLICY);
++	tegra124_cpu_clk_sctx.cclkg_divider =
++				readl(clk_base + CCLKG_BURST_POLICY + 4);
+ }
+ 
+ static void tegra124_cpu_clock_resume(void)
+ {
+ 	writel(tegra124_cpu_clk_sctx.clk_csite_src,
+ 				clk_base + CLK_SOURCE_CSITE);
++
++	writel(tegra124_cpu_clk_sctx.cclkg_burst,
++					clk_base + CCLKG_BURST_POLICY);
++	writel(tegra124_cpu_clk_sctx.cclkg_divider,
++					clk_base + CCLKG_BURST_POLICY + 4);
+ }
+ #endif
+ 
 -- 
-1.9.1
+1.8.1.5
 
