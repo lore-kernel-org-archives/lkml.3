@@ -1,238 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411AbaGJWUg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 18:20:36 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:27472 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751358AbaGJWUf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 18:20:35 -0400
-Date: Thu, 10 Jul 2014 15:20:30 -0700
-From: Martin Lau <kafai@fb.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: <linux-kernel@vger.kernel.org>, <clm@fb.com>
-Subject: Re: [PATCH] ring-buffer: Fix polling on trace_pipe
-Message-ID: <20140710222030.GC12717@devbig242.prn2.facebook.com>
-References: <20140610060637.GA14045@devbig242.prn2.facebook.com>
- <20140610114915.5fe24841@gandalf.local.home>
- <20140611055814.GA30265@devbig242.prn2.facebook.com>
- <20140626183445.GA2663@devbig242.prn2.facebook.com>
- <20140626205327.5b526302@gandalf.local.home>
- <20140627065243.GA2826@devbig242.prn2.facebook.com>
+	id S1752912AbaGJWWJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 18:22:09 -0400
+Received: from 8bytes.org ([85.214.48.195]:53098 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750941AbaGJWWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 18:22:07 -0400
+Date: Fri, 11 Jul 2014 00:22:00 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Oded Gabbay <oded.gabbay@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, David Airlie <airlied@linux.ie>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <j.glisse@gmail.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, John Bridgman <John.Bridgman@amd.com>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>, linux-mm <linux-mm@kvack.org>,
+        Oded Gabbay <oded.gabbay@amd.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Cyrill Gorcunov <gorcunov@openvz.org>,
+        =?iso-8859-1?B?Suly9G1l?= Glisse <jglisse@redhat.com>,
+        Jianyu Zhan <nasa4836@gmail.com>
+Subject: Re: [PATCH 28/83] mm: Change timing of notification to IOMMUs about
+ a page to be invalidated
+Message-ID: <20140710222200.GZ1958@8bytes.org>
+References: <1405029208-6703-1-git-send-email-oded.gabbay@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140627065243.GA2826@devbig242.prn2.facebook.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-07-10_07:2014-07-10,2014-07-10,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=7.60674856437049e-12 kscore.compositescore=0
- circleOfTrustscore=22.4078557653337 compositescore=0.997695897463551
- urlsuspect_oldscore=0.997695897463551 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=62764
- rbsscore=0.997695897463551 spamscore=0
- recipient_to_sender_domain_totalscore=6 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1407100256
-X-FB-Internal: deliver
+In-Reply-To: <1405029208-6703-1-git-send-email-oded.gabbay@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Fri Jul 11 00:22:04 2014
+X-DSPAM-Confidence: 0.9996
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 53bf120c20862285113473
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve,
+On Fri, Jul 11, 2014 at 12:53:26AM +0300, Oded Gabbay wrote:
+>  mm/rmap.c | 8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/rmap.c b/mm/rmap.c
+> index 196cd0c..73d4c3d 100644
+> --- a/mm/rmap.c
+> +++ b/mm/rmap.c
+> @@ -1231,13 +1231,17 @@ static int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
+>  	} else
+>  		dec_mm_counter(mm, MM_FILEPAGES);
+>  
+> +	pte_unmap_unlock(pte, ptl);
+> +
+> +	mmu_notifier_invalidate_page(vma, address, event);
+> +
+>  	page_remove_rmap(page);
+>  	page_cache_release(page);
+>  
+> +	return ret;
+> +
+>  out_unmap:
+>  	pte_unmap_unlock(pte, ptl);
+> -	if (ret != SWAP_FAIL && !(flags & TTU_MUNLOCK))
+> -		mmu_notifier_invalidate_page(vma, address, event);
+>  out:
+>  	return ret;
 
-Do you have a chance to give it another try?
+I think there is no bug. In that function the page is just unmapped,
+removed from the rmap (page_remove_rmap), and the LRU list
+(page_cache_release). The page itself is not released in this function,
+so the call mmu_notifier_invalidate_page() at the end is fine.
 
-Thanks,
-Martin
 
-On Thu, Jun 26, 2014 at 11:52:44PM -0700, Martin Lau wrote:
-> Hi Steve,
-> 
-> I retried the test program (with the kernel patch).  It does block from
-> time to time.  I spotted the ee.events is not set to EPOLLIN before
-> calling epll_ctl(eft, EPOLL_CTL_ADD,...).  I fixed it and ran
-> the test in a bash-loop.
-> 
-> I have the kafai-2 version attached (with some more logging in case
-> if it still blocks).
-> 
-> Can you retry?
-> 
-> Thanks,
-> Martin
-> 
-> On Thu, Jun 26, 2014 at 08:53:27PM -0400, Steven Rostedt wrote:
-> > On Thu, 26 Jun 2014 11:34:46 -0700
-> > Martin Lau <kafai@fb.com> wrote:
-> > 
-> > > Hi Steve,
-> > > 
-> > > Can the modified test program reproduce the problem in your test setup?
-> > 
-> > Ah sorry, got distracted by other work.
-> > 
-> > OK, I just tried it out, and here's my results:
-> > 
-> > I ran you code with my current kernel and this is what I got:
-> > 
-> > # ./ftrace-test-epoll-kafai 
-> >            <...>-3183  [002] ...1    81.777891: tracing_mark_write:
-> > some data 3183: waitting for more data......
-> > 3184: written more data
-> > 
-> > And it just hung there.
-> > 
-> > 
-> > Then I applied your patch, compiled and booted it, and ran the test
-> > again, and I got this:
-> > 
-> > # ./ftrace-test-epoll-kafai
-> > 
-> > It just hung there. No forward progress.
-> > 
-> > I don't think that was the result you intended.
-> > 
-> > -- Steve
-> > 
-> > 
+	Joerg
 
-> #include <stdio.h>
-> #include <stdlib.h>
-> #include <string.h>
-> #include <sys/types.h>
-> #include <sys/stat.h>
-> #include <sys/epoll.h>
-> #include <fcntl.h>
-> #include <unistd.h>
-> #include <assert.h>
-> 
-> static const char * debugfs_list[] = {
-> 	"/debug/tracing",
-> 	"/sys/kernel/debug/tracing",
-> 	"/d/tracing",
-> 	NULL,
-> };
-> 
-> static const char *debugfs;
-> static int markfd;
-> static int trace_pipe_fd;
-> 
-> static void alog(const char *name, int ret)
-> {
-> 	printf("%d: %s: %d\n", getpid(), name, ret);
-> }
-> 
-> static const char *find_debugfs(void)
-> {
-> 	struct stat st;
-> 	int i;
-> 	int r;
-> 
-> 	for (i = 0; debugfs_list[i]; i++) {
-> 		r = stat(debugfs_list[i], &st);
-> 		if (r < 0)
-> 			continue;
-> 		if (S_ISDIR(st.st_mode))
-> 			return debugfs_list[i];
-> 	}
-> 	return NULL;
-> }
-> 
-> static char * make_path(const char *file)
-> {
-> 	char *path;
-> 	int size;
-> 
-> 	size = strlen(debugfs) + strlen(file) + 2;
-> 	path = malloc(size);
-> 	if (!path) {
-> 		perror("malloc");
-> 		exit(-1);
-> 	}
-> 	sprintf(path, "%s/%s", debugfs, file);
-> 	return path;
-> }
-> 
-> static void mark_write(const char *str)
-> {
-> 	int ret;
-> 	ret = write(markfd, str, strlen(str));
-> 	alog("write(markfd)", ret);
-> }
-> 
-> static void read_trace_pipe(void)
-> {
-> 	char buf[1024];
-> 	int r;
-> 
-> 	while ((r = read(trace_pipe_fd, buf, 1024)) > 0)
-> 		printf("%.*s", r, buf);
-> }
-> 
-> int main (int argc, char **argv)
-> {
-> 	struct epoll_event ee;
-> 	char *marker;
-> 	char *pipe;
-> 	int efd;
-> 	int ret;
-> 	pid_t dwrt_pid;
-> 
-> 	debugfs = find_debugfs();
-> 	if (!debugfs) {
-> 		fprintf(stderr, "Could not find debugfs\n");
-> 		exit(-1);
-> 	}
-> 
-> 	marker = make_path("trace_marker");
-> 	pipe = make_path("trace_pipe");
-> 
-> 	markfd = open(marker, O_WRONLY);
-> 	if (markfd < 0) {
-> 		perror("marker");
-> 		exit(-1);
-> 	}
-> 	trace_pipe_fd = open(pipe, O_RDONLY|O_NONBLOCK);
-> 	if (trace_pipe_fd < 0) {
-> 		perror("trace_pipe");
-> 		exit(-1);
-> 	}
-> 
-> 	efd = epoll_create(1);
-> 	if (efd < 0) {
-> 		perror("epoll_create");
-> 		exit(-1);
-> 	}
-> 
-> 	mark_write("some data");
-> 	memset(&ee, 0, sizeof(ee));
-> 	ee.events = EPOLLIN;
-> 	ret = epoll_ctl(efd, EPOLL_CTL_ADD, trace_pipe_fd, &ee);
-> 	if (ret < 0) {
-> 		perror("epoll_ctl");
-> 		exit(-1);
-> 	}
-> 	alog("waiting data......", 0);
-> 	ret = epoll_wait(efd, &ee, 1, -1);
-> 	alog("epoll_wait()", ret);
-> 	read_trace_pipe();
-> 	dwrt_pid = fork();
-> 	assert(dwrt_pid != -1);
-> 	if (dwrt_pid == 0) {
-> 		sleep(10);
-> 		mark_write("more data");
-> 	} else {
-> 		alog("waiting form more data......", 0);
-> 		ret = epoll_wait(efd, &ee, 1, -1);
-> 		alog("epoll_wait()", ret);
-> 		read_trace_pipe();
-> 		wait(NULL);
-> 	}
-> 	return 0;
-> }
 
