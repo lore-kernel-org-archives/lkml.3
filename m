@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481AbaGJGZZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 02:25:25 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:39200 "EHLO bear.ext.ti.com"
+	id S1751720AbaGJG0I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 02:26:08 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:38436 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751321AbaGJGZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 02:25:23 -0400
+	id S1751492AbaGJGZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 02:25:27 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <gregkh@linuxfoundation.org>
 CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/5] phy: sun4i: depend on RESET_CONTROLLER
-Date: Thu, 10 Jul 2014 11:54:59 +0530
-Message-ID: <1404973503-3310-2-git-send-email-kishon@ti.com>
+Subject: [PATCH 4/5] phy: core: Fix error path in phy_create()
+Date: Thu, 10 Jul 2014 11:55:02 +0530
+Message-ID: <1404973503-3310-5-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1404973503-3310-1-git-send-email-kishon@ti.com>
 References: <1404973503-3310-1-git-send-email-kishon@ti.com>
@@ -21,30 +21,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
+From: Roger Quadros <rogerq@ti.com>
 
-The driver depend on the reset framework in a mandatory way. Make sure
-reset_control_get is defined by adding this dependency in Kconfig
+Prevent resources from being freed twice in case device_add() call
+fails within phy_create(). Also use ida_simple_remove() instead of
+ida_remove() as we had used ida_simple_get() to allocate the ida.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Reported-by: Arnd Bergmann <arnd@arndb.de>
+Cc: 3.13+ <stable@vger.kernel.org> # 3.13+
+Signed-off-by: Roger Quadros <rogerq@ti.com>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/phy/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/phy/phy-core.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-index 16a2f06..1d8099a 100644
---- a/drivers/phy/Kconfig
-+++ b/drivers/phy/Kconfig
-@@ -112,6 +112,7 @@ config PHY_EXYNOS5250_SATA
- config PHY_SUN4I_USB
- 	tristate "Allwinner sunxi SoC USB PHY driver"
- 	depends on ARCH_SUNXI && HAS_IOMEM && OF
-+	depends on RESET_CONTROLLER
- 	select GENERIC_PHY
- 	help
- 	  Enable this to support the transceiver that is part of Allwinner
+diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+index c64a2f3..49c4465 100644
+--- a/drivers/phy/phy-core.c
++++ b/drivers/phy/phy-core.c
+@@ -614,8 +614,9 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
+ 	return phy;
+ 
+ put_dev:
+-	put_device(&phy->dev);
+-	ida_remove(&phy_ida, phy->id);
++	put_device(&phy->dev);  /* calls phy_release() which frees resources */
++	return ERR_PTR(ret);
++
+ free_phy:
+ 	kfree(phy);
+ 	return ERR_PTR(ret);
+@@ -799,7 +800,7 @@ static void phy_release(struct device *dev)
+ 
+ 	phy = to_phy(dev);
+ 	dev_vdbg(dev, "releasing '%s'\n", dev_name(dev));
+-	ida_remove(&phy_ida, phy->id);
++	ida_simple_remove(&phy_ida, phy->id);
+ 	kfree(phy);
+ }
+ 
 -- 
 1.7.9.5
 
