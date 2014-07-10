@@ -1,84 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751358AbaGJEjJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 00:39:09 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:43679 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750804AbaGJEjH (ORCPT
+	id S1751008AbaGJEnl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 00:43:41 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:39729 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750702AbaGJEnk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 00:39:07 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-f8-53be18e9e9be
-From: Chao Yu <chao2.yu@samsung.com>
-To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [f2fs-dev][PATCH 1/2 v2] f2fs: check name_len of dir entry to prevent
- from deadloop
-Date: Thu, 10 Jul 2014 12:37:46 +0800
-Message-id: <001d01cf9bf8$df92faa0$9eb8efe0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac+b9nm0GCymw5xQS+y8/IkzzaTL5Q==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsVy+t9jAd2XEvuCDaZcMLG4tq+RyeLJ+lnM
-	FpcWuVvs2XuSxeLyrjlsDqwem1Z1snnsXvCZyaNvyypGj8+b5AJYorhsUlJzMstSi/TtErgy
-	Dr7vZC44xF2x9OsBtgbG2ZxdjBwcEgImEnc6sroYOYFMMYkL99azdTFycQgJLGKUmLB/GwtI
-	QkjgB6PEmeXWIDabgIrE8o7/TCC2iICXxKT9J8BqmAUyJe41zWAGsYUF4iTeP7rMCDKfRUBV
-	om1ZIUiYV8BSYtHmhcwQtqDEj8n3oFq1JNbvPM4EYctLbF7zlhniHgWJHWdfg40REdCTeHEj
-	F6JEXGLjkVssExgFZiGZNAvJpFlIJs1C0rKAkWUVo2hqQXJBcVJ6rpFecWJucWleul5yfu4m
-	RnBYP5PewbiqweIQowAHoxIPb0PP3mAh1sSy4srcQ4wSHMxKIrwe/4FCvCmJlVWpRfnxRaU5
-	qcWHGKU5WJTEeQ+2WgcKCaQnlqRmp6YWpBbBZJk4OKUaGM3+K8Tv+x3AU5LQ/F5XUWreop3G
-	htsCRIrf1+TN22rNOFd+bnbmVQUJl9cCdzVnTngZGquQxCyaK8CauaTVairTvSMqb5X7mO8Y
-	zA973p7TnNGVfGqxsyn74n8fz3pnpQnpHNlx5dfZ7JJb0gm2b6+z/rv+/6Bx4Xs2Nad/mU23
-	jnqoiZQfVWIpzkg01GIuKk4EADr4FRxnAgAA
+	Thu, 10 Jul 2014 00:43:40 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Mike Cardwell <mike.cardwell@grepular.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelianov <xemul@parallels.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+References: <CACVxJT8U-E+vYjGPbiop-7Fqcwt0sWhMtmuCRQHLAnALU+5AgQ@mail.gmail.com>
+	<CACVxJT8+9oJa5r2acCdNe5+PjDxYVmASMY2Pcb=FyzB4x+0Naw@mail.gmail.com>
+Date: Wed, 09 Jul 2014 21:40:07 -0700
+In-Reply-To: <CACVxJT8+9oJa5r2acCdNe5+PjDxYVmASMY2Pcb=FyzB4x+0Naw@mail.gmail.com>
+	(Alexey Dobriyan's message of "Wed, 9 Jul 2014 15:20:53 +0300")
+Message-ID: <87fvi925eg.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19Z/TgR26e3DTiTzbdmRWRjg1ekAMxCTTM=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4602]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.2 T_XMDrugObfuBody_14 obfuscated drug references
+X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Alexey Dobriyan <adobriyan@gmail.com>
+X-Spam-Relay-Country: 
+Subject: Re: Procfs race condition bug
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We assume that modification of some special application could result in zeroed
-name_len, or it is consciously made by somebody. We will deadloop in
-find_in_block when name_len of dir entry is zero.
+Alexey Dobriyan <adobriyan@gmail.com> writes:
 
-This patch is added for preventing deadloop in above scenario.
+> [broken email]
+>
+> On Wed, Jul 9, 2014 at 3:17 PM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
+>>> I originally posted this two years ago (*) but received no response.
+>>> I just had a look and the problem still exists on the 3.14 kernel
+>>> I am currently running.
+>>>
+>>> I *think* I've uncovered a race condition bug in procfs.
+>>> If I attempt to open a file in /proc/net, eg "/proc/net/tcp"
+>>> it works fine, but if I spawn a POSIX thread and attempt to do it
+>>> from there, it *usually* fails with a "No such file or directory",
+>>> but some times succeeds. If I do a system call inside the thread
+>>> to look up the thread ID and then open "/proc/THREADID/net/tcp"
+>>> instead, it works fine.
+>>>
+>>> There are more details and some example code
+>>> so you can replicate the problem on a stack overflow question
+>>> I asked previously here:
+>>> http://stackoverflow.com/questions/11580020/opening-proc-net-tcp-in-c-from-a-posix-thread-fails-most-of-the-time
+>>>
+>>> (*) https://lkml.org/lkml/2012/7/20/331
+>>
+>> Mike,
+>>
+>> as was correctly notes on SO, what's happening is that original thread exits
+>> before spawned thread does open().
+>>
+>> ->lookup
+>> proc_tgid_net_lookup
+>> get_proc_task_net
+>> nsproxy = NULL          <== thread is dead
+>> ENOENT
+>>
+>> This was probably broken when /proc/net became symlink:
+>>
+>> commit e9720acd728a46cb40daa52c99a979f7c4ff195c
+>> Author: Pavel Emelyanov <xemul@openvz.org>
+>> Date:   Fri Mar 7 11:08:40 2008 -0800
+>>
+>>     [NET]: Make /proc/net a symlink on /proc/self/net (v3)
+>>
+>>
+>> So, userspace has two solutions:
+>> 1) original thread doesn't exit too early
+>> 2) spawned thread uses /proc/$TID
+>>
+>>
+>> So,
+>> we definitely broke /proc/net/tcp somewhere after netns concept was introduced.
+>>
+>> But,
+>> you'd have very same problem with other /proc files (anything under
+>> /proc/$PID/).
 
-change log from v1:
- o use f2fs_bug_on rather than break out from searching dir entry suggested by
-Jaegeuk Kim.
 
-Jaegeuk describe:
-"Well, IMO, it would be good to add f2fs_bug_on() here with a specific comment.
-In the current phase of f2fs, it is more important to investigate the file
-system bugs, rather than workarounds for any corrupted images.
-And, definitely it needs to stop the kernel if any corrupted image was mounted,
-so that we can figure out where the bugs are occurred."
+Agreed it is a /proc/$TGID vs /proc/$TID issue.
 
-Suggested-by: Jaegeuk Kim <jaegeuk@kernel.org>
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
----
- fs/f2fs/dir.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+In principle this is fixable by creating a /proc/current symlink that
+always points to the proc directory for the current thread and then
+pointing /proc/net and /proc/mounts at it.
 
-diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
-index e84e880..bcf893c 100644
---- a/fs/f2fs/dir.c
-+++ b/fs/f2fs/dir.c
-@@ -121,6 +121,13 @@ static struct f2fs_dir_entry *find_in_block(struct page *dentry_page,
- 			*max_slots = max_len;
- 			max_len = 0;
- 		}
-+
-+		/*
-+		 * For the most part, it should be a bug when name_len is zero.
-+		 * We stop here for figuring out where the bugs are occurred.
-+		 */
-+		f2fs_bug_on(!de->name_len);
-+
- 		bit_pos += GET_DENTRY_SLOTS(le16_to_cpu(de->name_len));
- 	}
- 
--- 
-2.0.1.474.g72c7794
+This is one of those weird cases it so that /proc/net or /proc/mounts
+resolves may actually break an existing userspace application, because
+different threads can point at different values.  (I very much dislike
+what the linux pthread support did to /proc/self).
 
+I tilted at that windmill once and ran out of steam.  While I can write
+the patch I don't have the energy to test and see if there are any
+pthread programs that will break if /proc/net points to
+/proc/current/net instead of /proc/self/net.
 
+Frankly new applications should be using netlink and not /proc/net so I
+personally don't think this is worth fixing for the /proc/net case.  Are
+there real world applications that are broken by the kernel change in
+behavior?  The stackoverflow discussion sounds like it was just an
+investigation into weird kernel behavior.
+
+Eric
