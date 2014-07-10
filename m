@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424AbaGJSlx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 14:41:53 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:46338 "EHLO smtp.outflux.net"
+	id S1752227AbaGJSlZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 14:41:25 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:57892 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752110AbaGJSlu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 14:41:50 -0400
+	id S1751779AbaGJSlU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 14:41:20 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: Kees Cook <keescook@chromium.org>, Oleg Nesterov <oleg@redhat.com>,
@@ -18,9 +18,9 @@ Cc: Kees Cook <keescook@chromium.org>, Oleg Nesterov <oleg@redhat.com>,
         linux-api@vger.kernel.org, x86@kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
         linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: [PATCH v10 04/11] seccomp: add "seccomp" syscall
-Date: Thu, 10 Jul 2014 11:40:24 -0700
-Message-Id: <1405017631-27346-5-git-send-email-keescook@chromium.org>
+Subject: [PATCH v10 07/11] sched: move no_new_privs into new atomic flags
+Date: Thu, 10 Jul 2014 11:40:27 -0700
+Message-Id: <1405017631-27346-8-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1405017631-27346-1-git-send-email-keescook@chromium.org>
 References: <1405017631-27346-1-git-send-email-keescook@chromium.org>
@@ -29,233 +29,136 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds the new "seccomp" syscall with both an "operation" and "flags"
-parameter for future expansion. The third argument is a pointer value,
-used with the SECCOMP_SET_MODE_FILTER operation. Currently, flags must
-be 0. This is functionally equivalent to prctl(PR_SET_SECCOMP, ...).
-
-In addition to the TSYNC flag later in this patch series, there is a
-non-zero chance that this syscall could be used for configuring a fixed
-argument area for seccomp-tracer-aware processes to pass syscall arguments
-in the future. Hence, the use of "seccomp" not simply "seccomp_add_filter"
-for this syscall. Additionally, this syscall uses operation, flags,
-and user pointer for arguments because strictly passing arguments via
-a user pointer would mean seccomp itself would be unable to trivially
-filter the seccomp syscall itself.
+Since seccomp transitions between threads requires updates to the
+no_new_privs flag to be atomic, the flag must be part of an atomic flag
+set. This moves the nnp flag into a separate task field, and introduces
+accessors.
 
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- arch/Kconfig                      |    1 +
- arch/x86/syscalls/syscall_32.tbl  |    1 +
- arch/x86/syscalls/syscall_64.tbl  |    1 +
- include/linux/syscalls.h          |    2 ++
- include/uapi/asm-generic/unistd.h |    4 ++-
- include/uapi/linux/seccomp.h      |    4 +++
- kernel/seccomp.c                  |   55 +++++++++++++++++++++++++++++++++----
- kernel/sys_ni.c                   |    3 ++
- 8 files changed, 65 insertions(+), 6 deletions(-)
+ fs/exec.c                  |    4 ++--
+ include/linux/sched.h      |   18 +++++++++++++++---
+ kernel/seccomp.c           |    2 +-
+ kernel/sys.c               |    4 ++--
+ security/apparmor/domain.c |    4 ++--
+ 5 files changed, 22 insertions(+), 10 deletions(-)
 
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 97ff872c7acc..0eae9df35b88 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -321,6 +321,7 @@ config HAVE_ARCH_SECCOMP_FILTER
- 	  - secure_computing is called from a ptrace_event()-safe context
- 	  - secure_computing return value is checked and a return value of -1
- 	    results in the system call being skipped immediately.
-+	  - seccomp syscall wired up
+diff --git a/fs/exec.c b/fs/exec.c
+index a3d33fe592d6..0f5c272410f6 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1234,7 +1234,7 @@ static void check_unsafe_exec(struct linux_binprm *bprm)
+ 	 * This isn't strictly necessary, but it makes it harder for LSMs to
+ 	 * mess up.
+ 	 */
+-	if (current->no_new_privs)
++	if (task_no_new_privs(current))
+ 		bprm->unsafe |= LSM_UNSAFE_NO_NEW_PRIVS;
  
- config SECCOMP_FILTER
- 	def_bool y
-diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
-index d6b867921612..7527eac24122 100644
---- a/arch/x86/syscalls/syscall_32.tbl
-+++ b/arch/x86/syscalls/syscall_32.tbl
-@@ -360,3 +360,4 @@
- 351	i386	sched_setattr		sys_sched_setattr
- 352	i386	sched_getattr		sys_sched_getattr
- 353	i386	renameat2		sys_renameat2
-+354	i386	seccomp			sys_seccomp
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index ec255a1646d2..16272a6c12b7 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -323,6 +323,7 @@
- 314	common	sched_setattr		sys_sched_setattr
- 315	common	sched_getattr		sys_sched_getattr
- 316	common	renameat2		sys_renameat2
-+317	common	seccomp			sys_seccomp
+ 	t = p;
+@@ -1272,7 +1272,7 @@ int prepare_binprm(struct linux_binprm *bprm)
+ 	bprm->cred->egid = current_egid();
  
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index b0881a0ed322..1713977ee26f 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -866,4 +866,6 @@ asmlinkage long sys_process_vm_writev(pid_t pid,
- asmlinkage long sys_kcmp(pid_t pid1, pid_t pid2, int type,
- 			 unsigned long idx1, unsigned long idx2);
- asmlinkage long sys_finit_module(int fd, const char __user *uargs, int flags);
-+asmlinkage long sys_seccomp(unsigned int op, unsigned int flags,
-+			    const char __user *uargs);
- #endif
-diff --git a/include/uapi/asm-generic/unistd.h b/include/uapi/asm-generic/unistd.h
-index 333640608087..65acbf0e2867 100644
---- a/include/uapi/asm-generic/unistd.h
-+++ b/include/uapi/asm-generic/unistd.h
-@@ -699,9 +699,11 @@ __SYSCALL(__NR_sched_setattr, sys_sched_setattr)
- __SYSCALL(__NR_sched_getattr, sys_sched_getattr)
- #define __NR_renameat2 276
- __SYSCALL(__NR_renameat2, sys_renameat2)
-+#define __NR_seccomp 277
-+__SYSCALL(__NR_seccomp, sys_seccomp)
+ 	if (!(bprm->file->f_path.mnt->mnt_flags & MNT_NOSUID) &&
+-	    !current->no_new_privs &&
++	    !task_no_new_privs(current) &&
+ 	    kuid_has_mapping(bprm->cred->user_ns, inode->i_uid) &&
+ 	    kgid_has_mapping(bprm->cred->user_ns, inode->i_gid)) {
+ 		/* Set-uid? */
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 306f4f0c987a..0fd19055bb64 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1307,13 +1307,12 @@ struct task_struct {
+ 				 * execve */
+ 	unsigned in_iowait:1;
  
- #undef __NR_syscalls
--#define __NR_syscalls 277
-+#define __NR_syscalls 278
+-	/* task may not gain privileges */
+-	unsigned no_new_privs:1;
+-
+ 	/* Revert to default priority/policy when forking */
+ 	unsigned sched_reset_on_fork:1;
+ 	unsigned sched_contributes_to_load:1;
  
- /*
-  * All syscalls below here should go away really,
-diff --git a/include/uapi/linux/seccomp.h b/include/uapi/linux/seccomp.h
-index ac2dc9f72973..b258878ba754 100644
---- a/include/uapi/linux/seccomp.h
-+++ b/include/uapi/linux/seccomp.h
-@@ -10,6 +10,10 @@
- #define SECCOMP_MODE_STRICT	1 /* uses hard-coded filter. */
- #define SECCOMP_MODE_FILTER	2 /* uses user-supplied filter. */
++	unsigned long atomic_flags; /* Flags needing atomic access. */
++
+ 	pid_t pid;
+ 	pid_t tgid;
  
-+/* Valid operations for seccomp syscall. */
-+#define SECCOMP_SET_MODE_STRICT	0
-+#define SECCOMP_SET_MODE_FILTER	1
+@@ -1967,6 +1966,19 @@ static inline void memalloc_noio_restore(unsigned int flags)
+ 	current->flags = (current->flags & ~PF_MEMALLOC_NOIO) | flags;
+ }
+ 
++/* Per-process atomic flags. */
++#define PFA_NO_NEW_PRIVS 0x00000001	/* May not gain new privileges. */
++
++static inline bool task_no_new_privs(struct task_struct *p)
++{
++	return test_bit(PFA_NO_NEW_PRIVS, &p->atomic_flags);
++}
++
++static inline void task_set_no_new_privs(struct task_struct *p)
++{
++	set_bit(PFA_NO_NEW_PRIVS, &p->atomic_flags);
++}
 +
  /*
-  * All BPF programs must return a 32-bit value.
-  * The bottom 16-bits are for optional return data.
+  * task->jobctl flags
+  */
 diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-index 812cea2e7ffb..2f83496d6016 100644
+index 2f83496d6016..137e40c7ae3b 100644
 --- a/kernel/seccomp.c
 +++ b/kernel/seccomp.c
-@@ -18,6 +18,7 @@
- #include <linux/compat.h>
- #include <linux/sched.h>
- #include <linux/seccomp.h>
-+#include <linux/syscalls.h>
+@@ -241,7 +241,7 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
+ 	 * This avoids scenarios where unprivileged tasks can affect the
+ 	 * behavior of privileged children.
+ 	 */
+-	if (!current->no_new_privs &&
++	if (!task_no_new_privs(current) &&
+ 	    security_capable_noaudit(current_cred(), current_user_ns(),
+ 				     CAP_SYS_ADMIN) != 0)
+ 		return -EACCES;
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 66a751ebf9d9..ce8129192a26 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1990,12 +1990,12 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 		if (arg2 != 1 || arg3 || arg4 || arg5)
+ 			return -EINVAL;
  
- /* #define SECCOMP_DEBUG 1 */
+-		current->no_new_privs = 1;
++		task_set_no_new_privs(current);
+ 		break;
+ 	case PR_GET_NO_NEW_PRIVS:
+ 		if (arg2 || arg3 || arg4 || arg5)
+ 			return -EINVAL;
+-		return current->no_new_privs ? 1 : 0;
++		return task_no_new_privs(current) ? 1 : 0;
+ 	case PR_GET_THP_DISABLE:
+ 		if (arg2 || arg3 || arg4 || arg5)
+ 			return -EINVAL;
+diff --git a/security/apparmor/domain.c b/security/apparmor/domain.c
+index 452567d3a08e..d97cba3e3849 100644
+--- a/security/apparmor/domain.c
++++ b/security/apparmor/domain.c
+@@ -621,7 +621,7 @@ int aa_change_hat(const char *hats[], int count, u64 token, bool permtest)
+ 	 * There is no exception for unconfined as change_hat is not
+ 	 * available.
+ 	 */
+-	if (current->no_new_privs)
++	if (task_no_new_privs(current))
+ 		return -EPERM;
  
-@@ -314,7 +315,7 @@ free_prog:
-  *
-  * Returns 0 on success and non-zero otherwise.
-  */
--static long seccomp_attach_user_filter(char __user *user_filter)
-+static long seccomp_attach_user_filter(const char __user *user_filter)
- {
- 	struct sock_fprog fprog;
- 	long ret = -EFAULT;
-@@ -517,6 +518,7 @@ out:
- #ifdef CONFIG_SECCOMP_FILTER
- /**
-  * seccomp_set_mode_filter: internal function for setting seccomp filter
-+ * @flags:  flags to change filter behavior
-  * @filter: struct sock_fprog containing filter
-  *
-  * This function may be called repeatedly to install additional filters.
-@@ -527,11 +529,16 @@ out:
-  *
-  * Returns 0 on success or -EINVAL on failure.
-  */
--static long seccomp_set_mode_filter(char __user *filter)
-+static long seccomp_set_mode_filter(unsigned int flags,
-+				    const char __user *filter)
- {
- 	const unsigned long seccomp_mode = SECCOMP_MODE_FILTER;
- 	long ret = -EINVAL;
- 
-+	/* Validate flags. */
-+	if (flags != 0)
-+		goto out;
-+
- 	if (!seccomp_check_mode(seccomp_mode))
- 		goto out;
- 
-@@ -544,12 +551,35 @@ out:
- 	return ret;
- }
- #else
--static inline long seccomp_set_mode_filter(char __user *filter)
-+static inline long seccomp_set_mode_filter(unsigned int flags,
-+					   const char __user *filter)
- {
- 	return -EINVAL;
- }
- #endif
- 
-+/* Common entry point for both prctl and syscall. */
-+static long do_seccomp(unsigned int op, unsigned int flags,
-+		       const char __user *uargs)
-+{
-+	switch (op) {
-+	case SECCOMP_SET_MODE_STRICT:
-+		if (flags != 0 || uargs != NULL)
-+			return -EINVAL;
-+		return seccomp_set_mode_strict();
-+	case SECCOMP_SET_MODE_FILTER:
-+		return seccomp_set_mode_filter(flags, uargs);
-+	default:
-+		return -EINVAL;
-+	}
-+}
-+
-+SYSCALL_DEFINE3(seccomp, unsigned int, op, unsigned int, flags,
-+			 const char __user *, uargs)
-+{
-+	return do_seccomp(op, flags, uargs);
-+}
-+
- /**
-  * prctl_set_seccomp: configures current->seccomp.mode
-  * @seccomp_mode: requested mode to use
-@@ -559,12 +589,27 @@ static inline long seccomp_set_mode_filter(char __user *filter)
-  */
- long prctl_set_seccomp(unsigned long seccomp_mode, char __user *filter)
- {
-+	unsigned int op;
-+	char __user *uargs;
-+
- 	switch (seccomp_mode) {
- 	case SECCOMP_MODE_STRICT:
--		return seccomp_set_mode_strict();
-+		op = SECCOMP_SET_MODE_STRICT;
-+		/*
-+		 * Setting strict mode through prctl always ignored filter,
-+		 * so make sure it is always NULL here to pass the internal
-+		 * check in do_seccomp().
-+		 */
-+		uargs = NULL;
-+		break;
- 	case SECCOMP_MODE_FILTER:
--		return seccomp_set_mode_filter(filter);
-+		op = SECCOMP_SET_MODE_FILTER;
-+		uargs = filter;
-+		break;
- 	default:
- 		return -EINVAL;
+ 	/* released below */
+@@ -776,7 +776,7 @@ int aa_change_profile(const char *ns_name, const char *hname, bool onexec,
+ 	 * no_new_privs is set because this aways results in a reduction
+ 	 * of permissions.
+ 	 */
+-	if (current->no_new_privs && !unconfined(profile)) {
++	if (task_no_new_privs(current) && !unconfined(profile)) {
+ 		put_cred(cred);
+ 		return -EPERM;
  	}
-+
-+	/* prctl interface doesn't have flags, so they are always zero. */
-+	return do_seccomp(op, 0, uargs);
- }
-diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
-index 36441b51b5df..2904a2105914 100644
---- a/kernel/sys_ni.c
-+++ b/kernel/sys_ni.c
-@@ -213,3 +213,6 @@ cond_syscall(compat_sys_open_by_handle_at);
- 
- /* compare kernel pointers */
- cond_syscall(sys_kcmp);
-+
-+/* operate on Secure Computing state */
-+cond_syscall(sys_seccomp);
 -- 
 1.7.9.5
 
