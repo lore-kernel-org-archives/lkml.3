@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754097AbaGJWCE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 18:02:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52720 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753765AbaGJWCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 18:02:00 -0400
-Date: Thu, 10 Jul 2014 17:01:37 -0500
-From: Josh Poimboeuf <jpoimboe@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Oleg Nesterov <oleg@redhat.com>, Seth Jennings <sjenning@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [RFC][PATCH 0/3] ftrace: Add dynamically allocated trampolines
-Message-ID: <20140710220137.GB19858@treble.redhat.com>
-References: <20140703200750.648550267@goodmis.org>
- <20140710213620.GA19858@treble.redhat.com>
- <alpine.LNX.2.00.1407102342050.8779@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1407102342050.8779@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1754238AbaGJWCh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 18:02:37 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:63434 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754204AbaGJV4y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 17:56:54 -0400
+From: Oded Gabbay <oded.gabbay@gmail.com>
+X-Google-Original-From: Oded Gabbay <oded.gabbay@amd.com>
+To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <j.glisse@gmail.com>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        John Bridgman <John.Bridgman@amd.com>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>
+Subject: [PATCH 63/83] hsa/radeon: Update module information and version
+Date: Fri, 11 Jul 2014 00:54:19 +0300
+Message-Id: <1405029279-6894-35-git-send-email-oded.gabbay@amd.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405029279-6894-1-git-send-email-oded.gabbay@amd.com>
+References: <1405029279-6894-1-git-send-email-oded.gabbay@amd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 11:44:43PM +0200, Jiri Kosina wrote:
-> On Thu, 10 Jul 2014, Josh Poimboeuf wrote:
-> 
-> > I did some testing with kpatch and I found one minor issue.  The dynamically
-> > allocated trampoline seems to confuse dump_stack() somewhat.
-> > 
-> > I added a dump_stack() call in my ftrace_ops callback function
-> > (kpatch_ftrace_handler) which had a filter on meminfo_proc_show().
-> 
-> Interesting. Are you using dwarf2 unwinder for stack dumping by any 
-> chance?
+Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+---
+ drivers/gpu/hsa/radeon/kfd_module.c | 19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
-I think so (but not sure).  How can I check?  I do see the following
-macros being defined in my kernel build:
-
-  -DCONFIG_AS_CFI=1 -DCONFIG_AS_CFI_SIGNAL_FRAME=1 -DCONFIG_AS_CFI_SECTIONS=1
-
-> It seems to get things right here. Will look into it more tomorrow.
-
-Thanks, please let me know what you find...
-
+diff --git a/drivers/gpu/hsa/radeon/kfd_module.c b/drivers/gpu/hsa/radeon/kfd_module.c
+index 85069c5..fbfcce6 100644
+--- a/drivers/gpu/hsa/radeon/kfd_module.c
++++ b/drivers/gpu/hsa/radeon/kfd_module.c
+@@ -27,11 +27,13 @@
+ #include <linux/device.h>
+ #include "kfd_priv.h"
+ 
+-#define DRIVER_AUTHOR		"Andrew Lewycky, Oded Gabbay, Evgeny Pinchuk, others."
++#define KFD_DRIVER_AUTHOR	"AMD Inc. and others"
+ 
+-#define DRIVER_NAME		"kfd"
+-#define DRIVER_DESC		"AMD HSA Kernel Fusion Driver"
+-#define DRIVER_DATE		"20140127"
++#define KFD_DRIVER_DESC		"Standalone HSA driver for AMD's GPUs"
++#define KFD_DRIVER_DATE		"20140424"
++#define KFD_DRIVER_MAJOR	0
++#define KFD_DRIVER_MINOR	5
++#define KFD_DRIVER_PATCHLEVEL	0
+ 
+ const struct kfd2kgd_calls *kfd2kgd;
+ static const struct kgd2kfd_calls kgd2kfd = {
+@@ -120,6 +122,9 @@ static void __exit kfd_module_exit(void)
+ module_init(kfd_module_init);
+ module_exit(kfd_module_exit);
+ 
+-MODULE_AUTHOR(DRIVER_AUTHOR);
+-MODULE_DESCRIPTION(DRIVER_DESC);
+-MODULE_LICENSE("GPL");
++MODULE_AUTHOR(KFD_DRIVER_AUTHOR);
++MODULE_DESCRIPTION(KFD_DRIVER_DESC);
++MODULE_LICENSE("GPL and additional rights");
++MODULE_VERSION(__stringify(KFD_DRIVER_MAJOR) "."
++	       __stringify(KFD_DRIVER_MINOR) "."
++	       __stringify(KFD_DRIVER_PATCHLEVEL));
 -- 
-Josh
+1.9.1
+
