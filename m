@@ -1,124 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509AbaGJMmW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 08:42:22 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:55241 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685AbaGJMmU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 08:42:20 -0400
+	id S1753329AbaGJMoN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 08:44:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35484 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752904AbaGJMoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 08:44:12 -0400
+Date: Thu, 10 Jul 2014 13:44:07 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 5/6] mm: page_alloc: Abort fair zone allocation policy
+ when remotes nodes are encountered
+Message-ID: <20140710124407.GH10819@suse.de>
+References: <1404893588-21371-1-git-send-email-mgorman@suse.de>
+ <1404893588-21371-6-git-send-email-mgorman@suse.de>
+ <20140710121419.GM29639@cmpxchg.org>
 MIME-Version: 1.0
-In-Reply-To: <037d01cf9bfe$e411e450$ac35acf0$@mindspring.com>
-References: <1404942892-18323-1-git-send-email-ffilzlnx@mindspring.com>
-	<CAHQdGtSUwScEdUeKT1w+-ynqNz-e1=YvDBtdu_k=_6yndFZSVQ@mail.gmail.com>
-	<033801cf9bc7$0d7ee190$287ca4b0$@mindspring.com>
-	<CAHQdGtQjCYV2jE7FGu-J+02xp25uaUUVv8uzcs5sfbKXBbVk6A@mail.gmail.com>
-	<CAHQdGtTkTh4MQJk6bec46OjsyZHnEGGws3b_2HA+kszzOHM-pw@mail.gmail.com>
-	<037801cf9bf7$1c039d20$540ad760$@mindspring.com>
-	<CAHQdGtSmEO8pyw+1FMmQcRgHwRufedzLRwonksueWcFSf4cm8A@mail.gmail.com>
-	<037d01cf9bfe$e411e450$ac35acf0$@mindspring.com>
-Date: Thu, 10 Jul 2014 08:42:19 -0400
-Message-ID: <CAHQdGtRk+MLLV=v5oyzqvhUYhrv9sV+AW9Fh0QY8vK=5EKriPA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] Fix permission checking by NFS client for open-create
- with mode 000
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Frank Filz <ffilzlnx@mindspring.com>
-Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140710121419.GM29639@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> >> Oops. Sorry, the correct sub-sub-sub-sub-....paragraph is this one:
->> >>
->> >>          Permission to execute a file.
->> >>
->> >>          Servers SHOULD allow a user the ability to read the data of the
->> >>          file when only the ACE4_EXECUTE access mask bit is allowed.
->> >>          This is because there is no way to execute a file without
->> >>          reading the contents.  Though a server may treat ACE4_EXECUTE
->> >>          and ACE4_READ_DATA bits identically when deciding to permit a
->> >>          READ operation, it SHOULD still allow the two bits to be set
->> >>          independently in ACLs, and MUST distinguish between them when
->> >>          replying to ACCESS operations.  In particular, servers SHOULD
->> >>          NOT silently turn on one of the two bits when the other is set,
->> >>          as that would make it impossible for the client to correctly
->> >>          enforce the distinction between read and execute permissions.
->> >>
->> >>
->> >> > To me that translates as saying that the server SHOULD accept an
->> >> > OPEN(SHARE_ACCESS_READ|SHARE_ACCESS_WRITE) request in the
->> above
->> >> > situation.
->> >>
->> >> Same conclusion, though....
->> >
->> > When I read that paragraph, my interpretation is that OPEN (and READ)
->> should be permission checked normally, however, if ONLY execute
->> permission is granted, and the OPEN is read only (and READ of course is read
->> only) then permission would be granted for the purpose of execution. But if
->> any other combination of bits was allowed, then the paragraph doesn't
->> apply. Thus an OPEN SHARE_ACCESS_READ | SHARE_ACCESS_WRITE must
->> fail since write access was not granted (if it was, the exception doesn't apply
->> to my reading).
->> >
->>
->> Where does that paragraph say anything about SHARE_WRITE, or even
->> mention the word "only"?
->>
->> All it says is that as far as the OPEN and READ operations are concerned,
->> ACE4_EXECUTE == ACE4_READ_DATA, whereas for the ACCESS operation,
->> they differ.
->
-> I'm reading the "only" in the first sentence:
->
-> "Servers SHOULD allow a user the ability to read the data of the file when only the ACE4_EXECUTE access mask bit is allowed."
+On Thu, Jul 10, 2014 at 08:14:19AM -0400, Johannes Weiner wrote:
+> On Wed, Jul 09, 2014 at 09:13:07AM +0100, Mel Gorman wrote:
+> > The purpose of numa_zonelist_order=zone is to preserve lower zones
+> > for use with 32-bit devices. If locality is preferred then the
+> > numa_zonelist_order=node policy should be used. Unfortunately, the fair
+> > zone allocation policy overrides this by skipping zones on remote nodes
+> > until the lower one is found. While this makes sense from a page aging
+> > and performance perspective, it breaks the expected zonelist policy. This
+> > patch restores the expected behaviour for zone-list ordering.
+> > 
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> 
+> 32-bit NUMA? :-)
 
-How does that support your assertion that setting a SHARE_BOTH mode
-turns off the exception? There is no mention of share modes there. All
-it says is that you should grant read permissions when the execute bit
-is set in the ACL.
+I'm tempted to just say "it can go on fire" but realistically speaking
+they should be configured to use node ordering. I was very tempted to
+always force node ordering but I didn't have good data on how often lowmem
+allocations are required on NUMA machines.
 
+> Anyway, this change also cuts down the fair pass
+> overhead on bigger NUMA machines, so I'm all for it.
+> 
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 
-> But to entertain the idea that I'm reading too much into that sentence, let's go back to the situation:
->
-> File does not already exist
-> Application on client makes an open("/nfs4mnt/foo", O_CREAT | O_RDWR, 0) system call
->
-> What can we do between the server and client to assure success of that call. It works on local filesystems. It works over NFS v3. But it fails, at least with the Linux NFS v4 client.
->
-> With the Linux NFS v4 client, the following does succeed (because actual read access was granted):
->
-> open("/nfs4mnt/foo", O_CREAT | O_RDWR, 0400)
->
-> And the client can write to the file.
->
-> On the other hand, going back to my interpretation of the sentence, that is indeed the interpretation the Linux knfsd server is taking, because my little test case works as I expect it with the changes I proposed, in that and open("/nfs4mnt/foo", O_RDWR) fails even if the file has -wx------ permissions (and looking at wireshark traces, I see that indeed the OPEN fails if read permission is not granted, but execute permission is granted and write access was requested.
->
-> Ok, here is the relevant code from fs/nfsd/vfs.c:
->
->         /* Allow read access to binaries even when mode 111 */
->         if (err == -EACCES && S_ISREG(inode->i_mode) &&
->              (acc == (NFSD_MAY_READ | NFSD_MAY_OWNER_OVERRIDE) ||
->               acc == (NFSD_MAY_READ | NFSD_MAY_READ_IF_EXEC)))
->                 err = inode_permission(inode, MAY_EXEC);
->
-> So if the caller had requested write access, it does not check for MAY_EXEC.
-
-That's example code from one server implementation. It's not from
-authoritative source.
-
-
-Frank, the bottom line is that I'm not going to accept that patch as
-it stands, because it is wrong.
-The right fix here seems rather to be to put in an exception if the
-data->file_created flag is set. I'll write a patch.
+Thanks for the reviews!
 
 -- 
-Trond Myklebust
-
-Linux NFS client maintainer, PrimaryData
-
-trond.myklebust@primarydata.com
+Mel Gorman
+SUSE Labs
