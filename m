@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062AbaGJVno (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 17:43:44 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:13936 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753023AbaGJVnl (ORCPT
+	id S1753397AbaGJVqq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 17:46:46 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:17565 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752879AbaGJVne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 17:43:41 -0400
+	Thu, 10 Jul 2014 17:43:34 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 10 Jul 2014 14:32:45 -0700
+	by hqnvupgp07.nvidia.com on Thu, 10 Jul 2014 14:32:39 -0700
 From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 To: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-pm@vger.kernel.org>
@@ -19,10 +19,11 @@ CC: Stephen Warren <swarren@wwwdotorg.org>,
         Mike Turquette <mturquette@linaro.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Viresh Kumar <viresh.kumar@linaro.org>, <devicetree@vger.kernel.org>,
+        Paul Walmsley <pwalmsley@nvidia.com>,
         Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH 07/13] clk: tegra: Save/restore CCLKG_BURST_POLICY on suspend
-Date: Fri, 11 Jul 2014 00:42:43 +0300
-Message-ID: <1405028569-14253-8-git-send-email-ttynkkynen@nvidia.com>
+Subject: [PATCH 05/13] clk: tegra: Add DFLL DVCO reset control for Tegra124
+Date: Fri, 11 Jul 2014 00:42:41 +0300
+Message-ID: <1405028569-14253-6-git-send-email-ttynkkynen@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1405028569-14253-1-git-send-email-ttynkkynen@nvidia.com>
 References: <1405028569-14253-1-git-send-email-ttynkkynen@nvidia.com>
@@ -33,59 +34,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Save and restore this register since the LP1 restore assembly routines
-fiddle with it. Otherwise the CPU would keep running on PLLX after
-resume from suspend even when DFLL was the original clocksource.
+From: Paul Walmsley <pwalmsley@nvidia.com>
 
+The DVCO present in the DFLL IP block has a separate reset line,
+exposed via the CAR IP block.  This reset line is asserted upon SoC
+reset.  Unless something (such as the DFLL driver) deasserts this
+line, the DVCO will not oscillate, although reads and writes to the
+DFLL IP block will complete.
+
+Thanks to Aleksandr Frid <afrid@nvidia.com> for identifying this and
+saving hours of debugging time.
+
+Signed-off-by: Paul Walmsley <pwalmsley@nvidia.com>
+[ttynkkynen: ported to tegra124 from tegra114]
 Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 ---
- drivers/clk/tegra/clk-tegra124.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/clk/tegra/clk-tegra124.c | 47 ++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/tegra/clk.h          |  3 +++
+ 2 files changed, 50 insertions(+)
 
 diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
-index 77fbf38..758a4cf 100644
+index 80efe51..77fbf38 100644
 --- a/drivers/clk/tegra/clk-tegra124.c
 +++ b/drivers/clk/tegra/clk-tegra124.c
-@@ -89,6 +89,8 @@
- #define PMC_PLLM_WB0_OVERRIDE 0x1dc
- #define PMC_PLLM_WB0_OVERRIDE_2 0x2b0
+@@ -31,6 +31,9 @@
+ #define CLK_SOURCE_CSITE 0x1d4
+ #define CLK_SOURCE_EMC 0x19c
  
-+#define CCLKG_BURST_POLICY 0x368
++#define RST_DFLL_DVCO			0x2f4
++#define DVFS_DFLL_RESET_SHIFT		0
 +
- #define UTMIP_PLL_CFG2 0x488
- #define UTMIP_PLL_CFG2_STABLE_COUNT(x) (((x) & 0xffff) << 6)
- #define UTMIP_PLL_CFG2_ACTIVE_DLY_COUNT(x) (((x) & 0x3f) << 18)
-@@ -121,6 +123,8 @@
- #ifdef CONFIG_PM_SLEEP
- static struct cpu_clk_suspend_context {
- 	u32 clk_csite_src;
-+	u32 cclkg_burst;
-+	u32 cclkg_divider;
- } tegra124_cpu_clk_sctx;
- #endif
- 
-@@ -1318,12 +1322,22 @@ static void tegra124_cpu_clock_suspend(void)
- 	tegra124_cpu_clk_sctx.clk_csite_src =
- 				readl(clk_base + CLK_SOURCE_CSITE);
- 	writel(3 << 30, clk_base + CLK_SOURCE_CSITE);
-+
-+	tegra124_cpu_clk_sctx.cclkg_burst =
-+				readl(clk_base + CCLKG_BURST_POLICY);
-+	tegra124_cpu_clk_sctx.cclkg_divider =
-+				readl(clk_base + CCLKG_BURST_POLICY + 4);
+ #define PLLC_BASE 0x80
+ #define PLLC_OUT 0x84
+ #define PLLC_MISC2 0x88
+@@ -1378,6 +1381,50 @@ static void __init tegra124_clock_apply_init_table(void)
+ 	tegra_init_from_table(init_table, clks, TEGRA124_CLK_CLK_MAX);
  }
  
- static void tegra124_cpu_clock_resume(void)
++/**
++ * tegra124_car_barrier - wait for pending writes to the CAR to complete
++ *
++ * Wait for any outstanding writes to the CAR MMIO space from this CPU
++ * to complete before continuing execution.  No return value.
++ */
++static void tegra124_car_barrier(void)
++{
++	readl_relaxed(clk_base + RST_DFLL_DVCO);
++}
++
++/**
++ * tegra124_clock_assert_dfll_dvco_reset - assert the DFLL's DVCO reset
++ *
++ * Assert the reset line of the DFLL's DVCO.  No return value.
++ */
++void tegra124_clock_assert_dfll_dvco_reset(void)
++{
++	u32 v;
++
++	v = readl_relaxed(clk_base + RST_DFLL_DVCO);
++	v |= (1 << DVFS_DFLL_RESET_SHIFT);
++	writel_relaxed(v, clk_base + RST_DFLL_DVCO);
++	tegra124_car_barrier();
++}
++EXPORT_SYMBOL(tegra124_clock_assert_dfll_dvco_reset);
++
++/**
++ * tegra124_clock_deassert_dfll_dvco_reset - deassert the DFLL's DVCO reset
++ *
++ * Deassert the reset line of the DFLL's DVCO, allowing the DVCO to
++ * operate.  No return value.
++ */
++void tegra124_clock_deassert_dfll_dvco_reset(void)
++{
++	u32 v;
++
++	v = readl_relaxed(clk_base + RST_DFLL_DVCO);
++	v &= ~(1 << DVFS_DFLL_RESET_SHIFT);
++	writel_relaxed(v, clk_base + RST_DFLL_DVCO);
++	tegra124_car_barrier();
++}
++EXPORT_SYMBOL(tegra124_clock_deassert_dfll_dvco_reset);
++
+ static void __init tegra124_clock_init(struct device_node *np)
  {
- 	writel(tegra124_cpu_clk_sctx.clk_csite_src,
- 				clk_base + CLK_SOURCE_CSITE);
+ 	struct device_node *node;
+diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
+index 16ec8d6..4b3f3d0 100644
+--- a/drivers/clk/tegra/clk.h
++++ b/drivers/clk/tegra/clk.h
+@@ -627,6 +627,9 @@ void tegra114_clock_tune_cpu_trimmers_init(void);
+ void tegra114_clock_assert_dfll_dvco_reset(void);
+ void tegra114_clock_deassert_dfll_dvco_reset(void);
+ 
++void tegra124_clock_assert_dfll_dvco_reset(void);
++void tegra124_clock_deassert_dfll_dvco_reset(void);
 +
-+	writel(tegra124_cpu_clk_sctx.cclkg_burst,
-+					clk_base + CCLKG_BURST_POLICY);
-+	writel(tegra124_cpu_clk_sctx.cclkg_divider,
-+					clk_base + CCLKG_BURST_POLICY + 4);
- }
- #endif
+ typedef void (*tegra_clk_apply_init_table_func)(void);
+ extern tegra_clk_apply_init_table_func tegra_clk_apply_init_table;
  
 -- 
 1.8.1.5
