@@ -1,90 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124AbaGJOBO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 10:01:14 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:56309 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751685AbaGJOBM (ORCPT
+	id S1753417AbaGJODG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 10:03:06 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:15065 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051AbaGJODE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 10:01:12 -0400
-Date: Thu, 10 Jul 2014 16:01:08 +0200
-From: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        gregkh@linuxfoundation.org, Peter.Chen@freescale.com, kishon@ti.com,
-        stern@rowland.harvard.edu, alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] usb: chipidea: add support to the PHY framework for
- ChipIdea
-Message-ID: <20140710140108.GC32462@kwain>
-References: <1404901036-27682-1-git-send-email-antoine.tenart@free-electrons.com>
- <1404901036-27682-5-git-send-email-antoine.tenart@free-electrons.com>
- <20140710134227.GL15340@saruman.home>
- <20140710135124.GB32462@kwain>
- <20140710135600.GN15340@saruman.home>
+	Thu, 10 Jul 2014 10:03:04 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 10 Jul 2014 06:52:09 -0700
+Message-ID: <53BE9D13.6000102@nvidia.com>
+Date: Thu, 10 Jul 2014 17:02:59 +0300
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140710135600.GN15340@saruman.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "balbi@ti.com" <balbi@ti.com>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 4/4] USB: PHY: tegra: Call tegra_usb_phy_close only
+ on device removal
+References: <1404436179-10745-1-git-send-email-ttynkkynen@nvidia.com> <1404436179-10745-5-git-send-email-ttynkkynen@nvidia.com> <20140710134859.GM15340@saruman.home>
+In-Reply-To: <20140710134859.GM15340@saruman.home>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 08:56:00AM -0500, Felipe Balbi wrote:
-> On Thu, Jul 10, 2014 at 03:51:24PM +0200, Antoine Ténart wrote:
-> > On Thu, Jul 10, 2014 at 08:42:27AM -0500, Felipe Balbi wrote:
-> > > On Wed, Jul 09, 2014 at 12:17:16PM +0200, Antoine Ténart wrote:
-> > > > This patch adds the support to the PHY framework for ChipIdea drivers
-> > > > while keeping the USB PHY compatibility. Changes are done in both the
-> > > > ChipIdea common code and in the drivers accessing the PHY. This is done
-> > > > by renaming 'phy' into 'usb_phy' and adding a new 'phy' member into the
-> > > > ci_hdrc structre.
-> > > > 
-> > > > Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-> > > > ---
-> > > >  drivers/usb/chipidea/ci.h          |  4 ++-
-> > > >  drivers/usb/chipidea/ci_hdrc_imx.c |  2 +-
-> > > >  drivers/usb/chipidea/ci_hdrc_msm.c |  6 ++--
-> > > >  drivers/usb/chipidea/core.c        | 67 +++++++++++++++++++++++++++++++-------
-> > > >  drivers/usb/chipidea/debug.c       |  4 ++-
-> > > >  drivers/usb/chipidea/host.c        | 17 ++++++----
-> > > >  drivers/usb/chipidea/otg_fsm.c     |  6 ++--
-> > > >  drivers/usb/chipidea/udc.c         |  4 +--
-> > > >  include/linux/usb/chipidea.h       |  4 ++-
-> > > >  9 files changed, 86 insertions(+), 28 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/usb/chipidea/ci.h b/drivers/usb/chipidea/ci.h
-> > > > index 9563cb56d564..139589c8ab90 100644
-> > > > --- a/drivers/usb/chipidea/ci.h
-> > > > +++ b/drivers/usb/chipidea/ci.h
-> > > > @@ -201,7 +201,9 @@ struct ci_hdrc {
-> > > >  
-> > > >  	struct ci_hdrc_platform_data	*platdata;
-> > > >  	int				vbus_active;
-> > > > -	struct usb_phy			*transceiver;
-> > > > +	struct phy			*transceiver;
-> > > > +	/* old usb_phy interface */
-> > > > +	struct usb_phy			*usb_transceiver;
-> > > 
-> > > while at that, do you mind calling all struct usb_phy pointers
-> > > 'usb_phy' ?
-> > 
-> > Not at all.
-> > With s/usb_transceiver/usb_phy/, what about 'transceiver'?
-> 
-> perhaps call it phy ? That way all drivers have similar naming scheme.
-> Plus, I rather type 3 letters than 11 :-p
 
-I'll update then :)
+On 10/07/14 16:48, Felipe Balbi wrote:
+> * PGP Signed by an unknown key
+>
+> Hi,
+>
+> On Fri, Jul 04, 2014 at 04:09:39AM +0300, Tuomas Tynkkynen wrote:
+>> tegra_usb_phy_close() is supposed to undo the effects of
+>> tegra_usb_phy_init(). It is also currently added as the USB PHY shutdown
+>> callback, which is wrong, since tegra_usb_phy_init() is only called
+>
+> you could just make tegra_usb_phy_init() be called as u_phy->init().
 
+Apart from enabling pll_u and vbus, that function mostly fetches clocks 
+etc. from the device tree and as such should preferably fail the probe() 
+and not when the EHCI driver enables the PHY. (Renaming it would 
+probably be a good idea.)
+
+> That way you even delay enabling clocks and regulators to the point
+> where they are more likely to be needed. Also, if EHCI is never loaded,
+> you won't power up the PHY for no reason.
+>
+
+That's true, but due to the above that'd be a bigger refactoring.
+
+>> during probing wheras the shutdown callback can get called multiple
+>> times. This then leads to warnings about unbalanced regulator_disable if
+>> the EHCI driver is unbound and bound again at runtime.
+>>
+>> Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+>
+> I suppose this has no dependencies with the rest of the series ?
+>
+
+No. But Greg apparently applied these to his tree earlier today.
+
+Thanks,
+Tuomas.
 
 -- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+nvpublic
