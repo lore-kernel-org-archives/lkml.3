@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752244AbaGJUZK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 16:25:10 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:52082 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847AbaGJUZI (ORCPT
+	id S1752193AbaGJUeA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 16:34:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59059 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103AbaGJUd7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 16:25:08 -0400
+	Thu, 10 Jul 2014 16:33:59 -0400
+Date: Thu, 10 Jul 2014 13:38:25 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: [PATCH] staging: r8821ae: avoid leaking format string
+Message-ID: <20140710203825.GA31985@kroah.com>
+References: <20140710201611.GA31972@www.outflux.net>
 MIME-Version: 1.0
-X-Originating-IP: [84.208.72.173]
-In-Reply-To: <53BEF2A6.6050103@broadcom.com>
-References: <1404980258-30853-1-git-send-email-teg@jklm.no>
- <1404980258-30853-30-git-send-email-teg@jklm.no> <53BEF2A6.6050103@broadcom.com>
-From: Tom Gundersen <teg@jklm.no>
-Date: Thu, 10 Jul 2014 22:24:46 +0200
-Message-ID: <CAG-2HqVnUwPpRwRwNpMXVN4zP4k3zUvJX5E4p-roi6BKpHTgNQ@mail.gmail.com>
-Subject: Re: [PATCH v7 29/33] net: brcmfmac - set name assign type
-To: Arend van Spriel <arend@broadcom.com>
-Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        Brett Rudley <brudley@broadcom.com>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        John Linville <linville@tuxdriver.com>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        brcm80211-dev-list@broadcom.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140710201611.GA31972@www.outflux.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 10:08 PM, Arend van Spriel <arend@broadcom.com> wrote:
-> On 10-07-14 10:17, Tom Gundersen wrote:
->> The name is given by the firmware, so we assume it is predictable.
->
-> How about the scenario where one would have multiple broadcom wifi
-> devices in the system. Both driver instances would alloc_netdev with
-> predictable but also the same ifname. Wondering whether we should ignore
-> the firmware ifname altogether.
+On Thu, Jul 10, 2014 at 01:16:11PM -0700, Kees Cook wrote:
+> This make sure a format string cannot leak into the work queue name nor
+> the printk buffer.
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+> This is the third time this set of macros has entered the kernel:
+> 
+> drivers/net/wireless/rtlwifi/btcoexist/halbtcoutsrc.h
+> drivers/staging/rtl8192ee/btcoexist/halbtcoutsrc.h
+> drivers/staging/rtl8821ae/btcoexist/halbtcoutsrc.h
+> 
+> Can we extract these macros to some common place and keep them from returning?
 
-Hm, that would just fail irrespective of this patch, right? Sounds
-like ignoring the firmware names is the right thing to do.
+I wish.  These are all from the same company.  Each new version of their
+hardware consists of a whole dump of a wireless stack.  People are
+working on addressing this issue, by writing "real" drivers for the
+hardware, and working with the company to not keep doing this.  But odds
+are, I'll get a new driver for the next chip from them that does the
+same thing :(
 
-Cheers,
+thanks for the patch, I'll queue it up.
 
-Tom
+greg k-h
