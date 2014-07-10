@@ -1,111 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbaGJLL7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 07:11:59 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:58062 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751015AbaGJLL5 (ORCPT
+	id S1752215AbaGJLNN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 07:13:13 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:60943 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285AbaGJLNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 07:11:57 -0400
+	Thu, 10 Jul 2014 07:13:11 -0400
+Date: Thu, 10 Jul 2014 13:12:53 +0200
+From: Emil Goode <emilgoode@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Brown <broonie@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Dongjin Kim <tobetter@gmail.com>, Julius Werner <jwerner@chromium.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        USB list <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+Subject: Re: [PATCH] usb: usb5303: make use of uninitialized err variable
+Message-ID: <20140710111253.GA5352@lianli>
+References: <1401731125-19780-1-git-send-email-emilgoode@gmail.com>
+ <20140709224647.GA23929@kroah.com>
+ <CAMuHMdVq3BX=NwaCsma-N5iTdTkCS-rsX16dQL1Qr9Sepo8qww@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <20140710093101.21765.96636.stgit@localhost.localdomain>
-References: <20140710093101.21765.96636.stgit@localhost.localdomain>
-Date: Thu, 10 Jul 2014 13:11:56 +0200
-Message-ID: <CAJfpegutNSn-z2P754L-C_K1Ly_19ERw6ccpPpepAYRtANX9_w@mail.gmail.com>
-Subject: Re: [PATCH] fuse: remove WARN_ON writeback on dead inode
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdVq3BX=NwaCsma-N5iTdTkCS-rsX16dQL1Qr9Sepo8qww@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 11:32 AM, Maxim Patlasov
-<MPatlasov@parallels.com> wrote:
-> FUSE has an architectural peculiarity: it cannot write to an inode, unless it
-> has an associated file open for write. Since the beginning (Apr 30 2008, commit
-> 3be5a52b), FUSE BUG_ON (later WARN_ON) the case when it has to process
-> writeback, but all associated files are closed. The latest relevant commit is
-> 72523425:
->
->>   Don't bug if there's no writable files found for page writeback.  If ever
->>   this is triggered, a WARN_ON helps debugging it much better then a BUG_ON.
->>
->>   Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
->
-> But that situation can happen in quite a legal way: for example, let's mmap a
-> file, then issue O_DIRECT read to mmapped region and immediately close file
-> and munmap. O_DIRECT will pin some pages, execute IO to them and then mark
-> pages dirty. Here we are.
+Hello Greg and Geert,
 
-Something's not right. Fuse assumes that the file can only be modified
-if there's at least one open file for read-write, otherwise  the page
-can't be written back, resulting in fs corruption.
+On Thu, Jul 10, 2014 at 09:38:00AM +0200, Geert Uytterhoeven wrote:
+> Hi Greg,
+> 
+> On Thu, Jul 10, 2014 at 12:46 AM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Mon, Jun 02, 2014 at 07:45:25PM +0200, Emil Goode wrote:
+> >> The variable err is not initialized here, this patch uses it
+> >> to store an eventual error value from devm_clk_get().
+> >>
+> >> Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> >> Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> >> ---
+> >>  drivers/usb/misc/usb3503.c |   10 +++++++---
+> >>  1 file changed, 7 insertions(+), 3 deletions(-)
+> 
+> > This patch fails to apply to my tree :(
+> 
+> You've already applied
+> commit ec5734c41bee2ee7c938a8f34853d31cada7e67a
+> Author: Tushar Behera <tushar.b@samsung.com>
+> Date:   Tue Jun 17 16:38:50 2014 +0530
+> 
+>     usb: misc: usb3503: Update error code in print message
+> 
+>     'err' is uninitialized, rather print the error code directly.
+> 
+> which fixes it slightly different.
 
-The VFS also assumes in the read-only remount code that if no files
-are open for write then the filesystem can safely be remounted
-read-only and no modifications can occur after that.
+Yes, my patch was sent about two weeks earlier, but of course please pick
+the one you think is best.
 
-The situation you describe above contradict those assumptions.
+Best regards,
 
-Removing the warning only makes the problem worse, since now the
-corruption will happen silently.
-
-CC-ing linux-fsdevel and linux-mm.  Anyone has a better insight into this?
-
-Thanks,
-Miklos
-
-
-
-
->
-> Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
-> ---
->  fs/fuse/file.c |   14 +++-----------
->  1 file changed, 3 insertions(+), 11 deletions(-)
->
-> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-> index 6e16dad..3a47aa2 100644
-> --- a/fs/fuse/file.c
-> +++ b/fs/fuse/file.c
-> @@ -1624,8 +1624,8 @@ static void fuse_writepage_end(struct fuse_conn *fc, struct fuse_req *req)
->         fuse_writepage_free(fc, req);
->  }
->
-> -static struct fuse_file *__fuse_write_file_get(struct fuse_conn *fc,
-> -                                              struct fuse_inode *fi)
-> +static struct fuse_file *fuse_write_file_get(struct fuse_conn *fc,
-> +                                            struct fuse_inode *fi)
->  {
->         struct fuse_file *ff = NULL;
->
-> @@ -1640,14 +1640,6 @@ static struct fuse_file *__fuse_write_file_get(struct fuse_conn *fc,
->         return ff;
->  }
->
-> -static struct fuse_file *fuse_write_file_get(struct fuse_conn *fc,
-> -                                            struct fuse_inode *fi)
-> -{
-> -       struct fuse_file *ff = __fuse_write_file_get(fc, fi);
-> -       WARN_ON(!ff);
-> -       return ff;
-> -}
-> -
->  int fuse_write_inode(struct inode *inode, struct writeback_control *wbc)
->  {
->         struct fuse_conn *fc = get_fuse_conn(inode);
-> @@ -1655,7 +1647,7 @@ int fuse_write_inode(struct inode *inode, struct writeback_control *wbc)
->         struct fuse_file *ff;
->         int err;
->
-> -       ff = __fuse_write_file_get(fc, fi);
-> +       ff = fuse_write_file_get(fc, fi);
->         err = fuse_flush_times(inode, ff);
->         if (ff)
->                 fuse_file_put(ff, 0);
->
+Emil Goode
