@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171AbaGJNUv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:20:51 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:40217 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379AbaGJNUu (ORCPT
+	id S1753320AbaGJNZp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:25:45 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:61772 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752460AbaGJNZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:20:50 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-c0-53be932edad4
-Message-id: <53BE91E9.9090408@samsung.com>
-Date: Thu, 10 Jul 2014 17:15:21 +0400
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Alexey Preobrazhensky <preobr@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        x86@kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC/PATCH RESEND -next 05/21] x86: cpu: don't sanitize early
- stages of a secondary CPU boot
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1404905415-9046-6-git-send-email-a.ryabinin@samsung.com>
- <87egxunx8j.fsf@tassilo.jf.intel.com>
-In-reply-to: <87egxunx8j.fsf@tassilo.jf.intel.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsVy+t/xq7p6k/cFG8x7Ym3xe+9MVos569ew
-	WRy59p3d4vq3N4wWEx62sVus7G5ms9j+7C2TxcrOB6wWmx5fY7X4s2sHk8XlXXPYLO6t+c9q
-	cfsyr8WlAwuYLFr2XWCyaPv8j9Vi38rzQNaSjUwWi4/cZrZ492wys8XmTVOZLX5seMzqIObR
-	0tzD5jF/50dGj52z7rJ7LNhU6rFpVSebx6ZPk9g9ut5eYfJ4d+4cu8eJGb9ZPJ5cmc7ksXlJ
-	vcfHp7dYPN7vu8rmcWbBEXaPz5vkAvijuGxSUnMyy1KL9O0SuDL61qxhKdjIUvH2ZgtTA+NG
-	5i5GTg4JAROJGSt6oGwxiQv31rOB2EICSxklfm7l62LkArKbmSR+/HzLCJLgFdCSuLVnEzuI
-	zSKgKnG+6yULiM0moCfxb9Z2sGZRgQiJA33PWCHqBSV+TL4HVMPBISKgInH8FNhMZoHvrBLr
-	2w+A1QsLZEtc/9vFBLFsJaPE2ylHwZo5BYwkZr/vZwKxmQXUJSbNW8QMYctLbF7zlnkCo8As
-	JDtmISmbhaRsASPzKkbR1NLkguKk9FwjveLE3OLSvHS95PzcTYyQ2P66g3HpMatDjAIcjEo8
-	vC927wkWYk0sK67MPcQowcGsJMKbVbcvWIg3JbGyKrUoP76oNCe1+BAjEwenVAOjoyF//vMp
-	Ns/n1d9f1r3DLfjb3HuT9bPkYy4/2Gn6zkudaRrTk0Tbg7v75rgEzedecdZ7m92W/7vceLhm
-	WYdZ7/wgVKMTs2+HAcfKOY7TNz1UKf3Rv/rF1yud0c+nfe1Qm263+YHJm9mTz3SFvjxx06au
-	8UCy4RoRXqf1gi8c+I7bKJzfJShuq8RSnJFoqMVcVJwIAEk3TNbLAgAA
+	Thu, 10 Jul 2014 09:25:42 -0400
+Date: Thu, 10 Jul 2014 14:25:34 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: amit daniel kachhap <amit.daniel@samsung.com>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
+        LAK <linux-arm-kernel@lists.infradead.org>, devicetree@vger.kernel.org,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 15/23] regulator: max77686: Setup DVS-related GPIOs on
+ probe
+Message-ID: <20140710132534.GD11948@lee--X1>
+References: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1404467722-26687-16-git-send-email-javier.martinez@collabora.co.uk>
+ <CADGdYn4EURaHinWVksQSPzVr=CkZYcrqvWsO7mKDz_gY9XB__Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CADGdYn4EURaHinWVksQSPzVr=CkZYcrqvWsO7mKDz_gY9XB__Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/14 23:33, Andi Kleen wrote:
-> Andrey Ryabinin <a.ryabinin@samsung.com> writes:
-> 
->> Instrumentation of this files may result in unbootable machine.
-> 
-> This doesn't make sense. Is the code not NMI safe? 
-> If yes that would need to be fixed because
-> 
-> Please debug more.
-> 
+On Thu, 10 Jul 2014, amit daniel kachhap wrote:
 
-Sure.
-It turns out that  KASAN_SANITIZE_perf_event.o := n is not needed here.
-The problem only with common.c
+> On Fri, Jul 4, 2014 at 3:25 PM, Javier Martinez Canillas
+> <javier.martinez@collabora.co.uk> wrote:
+> > MAX77686 PMIC support Dyamic Voltage Scaling (DVS) on a set
+> > of Buck regulators. A number of GPIO are connected to these
+> > lines and are requested by the mfd driver. Setup the GPIO
+> > pins from the regulator driver.
 
-> perf is a common source of bugs (see Vice Weaver's fuzzer results),
-> so it would be good to have this functionality for it.
-> 
-> -Andi
-> 
+> If possible merge this patch with patch 8. Both are adding DVS
+> support. Put regmap_copy dependency patch in very beginning.
 
+You want to merge two patches which deal with different subsystems?
+
+That's the opposite of what we usually try and achieve.
+
+> > Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> > ---
+> >  drivers/regulator/max77686.c | 34 ++++++++++++++++++++++++++++++++++
+> >  1 file changed, 34 insertions(+)
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
