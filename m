@@ -1,62 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437AbaGJMNz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 08:13:55 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:62099 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753300AbaGJMNX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 08:13:23 -0400
-From: sanjeev sharma <sanjeevsharmaengg@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: rmfrfs@gmail.com, peter.senna@gmail.com, teobaluta@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        sanjeev sharma <sanjeev_sharma@mentor.com>,
-        Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
-Subject: [PATCH v4 3/4] staging: rtl8192u: Fixed switch and case indentation error
-Date: Thu, 10 Jul 2014 17:54:56 +0530
-Message-Id: <1404995097-12689-4-git-send-email-sanjeevsharmaengg@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1404995097-12689-1-git-send-email-sanjeevsharmaengg@gmail.com>
-References: <20140708100142.GR25934@mwanda>
- <1404995097-12689-1-git-send-email-sanjeevsharmaengg@gmail.com>
+	id S1753456AbaGJMO0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 08:14:26 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:53549 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752495AbaGJMOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 08:14:23 -0400
+Date: Thu, 10 Jul 2014 08:14:19 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 5/6] mm: page_alloc: Abort fair zone allocation policy
+ when remotes nodes are encountered
+Message-ID: <20140710121419.GM29639@cmpxchg.org>
+References: <1404893588-21371-1-git-send-email-mgorman@suse.de>
+ <1404893588-21371-6-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404893588-21371-6-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: sanjeev sharma <sanjeev_sharma@mentor.com>
+On Wed, Jul 09, 2014 at 09:13:07AM +0100, Mel Gorman wrote:
+> The purpose of numa_zonelist_order=zone is to preserve lower zones
+> for use with 32-bit devices. If locality is preferred then the
+> numa_zonelist_order=node policy should be used. Unfortunately, the fair
+> zone allocation policy overrides this by skipping zones on remote nodes
+> until the lower one is found. While this makes sense from a page aging
+> and performance perspective, it breaks the expected zonelist policy. This
+> patch restores the expected behaviour for zone-list ordering.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-This patch will fix switch and case indentation Error
-reported by checkpatch script.
+32-bit NUMA? :-) Anyway, this change also cuts down the fair pass
+overhead on bigger NUMA machines, so I'm all for it.
 
-Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
----
- drivers/staging/rtl8192u/r819xU_phy.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/staging/rtl8192u/r819xU_phy.c b/drivers/staging/rtl8192u/r819xU_phy.c
-index 0fcb673..3155616 100644
---- a/drivers/staging/rtl8192u/r819xU_phy.c
-+++ b/drivers/staging/rtl8192u/r819xU_phy.c
-@@ -946,12 +946,12 @@ void rtl8192_phy_RFConfig(struct net_device *dev)
- 	struct r8192_priv *priv = ieee80211_priv(dev);
- 
- 	switch (priv->rf_chip) {
--		case RF_8256:
--			PHY_RF8256_Config(dev);
--			break;
--		default:
--			RT_TRACE(COMP_ERR, "error chip id\n");
--			break;
-+	case RF_8256:
-+		PHY_RF8256_Config(dev);
-+		break;
-+	default:
-+		RT_TRACE(COMP_ERR, "error chip id\n");
-+		break;
- 	}
- }
- 
--- 
-1.7.11.7
-
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
