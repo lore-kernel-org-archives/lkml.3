@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923AbaGJNva (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:51:30 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:56213 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752455AbaGJNv2 (ORCPT
+	id S1753220AbaGJNwJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:52:09 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:53920 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945AbaGJNwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:51:28 -0400
-Date: Thu, 10 Jul 2014 15:51:24 +0200
-From: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        gregkh@linuxfoundation.org, Peter.Chen@freescale.com, kishon@ti.com,
-        stern@rowland.harvard.edu, alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] usb: chipidea: add support to the PHY framework for
- ChipIdea
-Message-ID: <20140710135124.GB32462@kwain>
-References: <1404901036-27682-1-git-send-email-antoine.tenart@free-electrons.com>
- <1404901036-27682-5-git-send-email-antoine.tenart@free-electrons.com>
- <20140710134227.GL15340@saruman.home>
+	Thu, 10 Jul 2014 09:52:06 -0400
+Message-ID: <53BE9A0A.7040502@ti.com>
+Date: Thu, 10 Jul 2014 19:20:02 +0530
+From: Keerthy <a0393675@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140710134227.GL15340@saruman.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tony Lindgren <tony@atomide.com>, <broonie@kernel.org>
+CC: Keerthy <j-keerthy@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <mark.rutland@arm.com>, <galak@codeaurora.org>, <robh+dt@kernel.org>,
+        <linux@arm.linux.org.uk>, <balbi@ti.com>, <kishon@ti.com>
+Subject: Re: [PATCH v3 0/7] ARM: dts: AM43x: Add devcice tree nodes
+References: <1404884193-20580-1-git-send-email-j-keerthy@ti.com> <20140709083114.GH28884@atomide.com> <53BD208E.6000507@ti.com> <20140709115106.GV28884@atomide.com> <53BE9442.4070101@ti.com>
+In-Reply-To: <53BE9442.4070101@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 08:42:27AM -0500, Felipe Balbi wrote:
-> On Wed, Jul 09, 2014 at 12:17:16PM +0200, Antoine Ténart wrote:
-> > This patch adds the support to the PHY framework for ChipIdea drivers
-> > while keeping the USB PHY compatibility. Changes are done in both the
-> > ChipIdea common code and in the drivers accessing the PHY. This is done
-> > by renaming 'phy' into 'usb_phy' and adding a new 'phy' member into the
-> > ci_hdrc structre.
-> > 
-> > Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-> > ---
-> >  drivers/usb/chipidea/ci.h          |  4 ++-
-> >  drivers/usb/chipidea/ci_hdrc_imx.c |  2 +-
-> >  drivers/usb/chipidea/ci_hdrc_msm.c |  6 ++--
-> >  drivers/usb/chipidea/core.c        | 67 +++++++++++++++++++++++++++++++-------
-> >  drivers/usb/chipidea/debug.c       |  4 ++-
-> >  drivers/usb/chipidea/host.c        | 17 ++++++----
-> >  drivers/usb/chipidea/otg_fsm.c     |  6 ++--
-> >  drivers/usb/chipidea/udc.c         |  4 +--
-> >  include/linux/usb/chipidea.h       |  4 ++-
-> >  9 files changed, 86 insertions(+), 28 deletions(-)
-> > 
-> > diff --git a/drivers/usb/chipidea/ci.h b/drivers/usb/chipidea/ci.h
-> > index 9563cb56d564..139589c8ab90 100644
-> > --- a/drivers/usb/chipidea/ci.h
-> > +++ b/drivers/usb/chipidea/ci.h
-> > @@ -201,7 +201,9 @@ struct ci_hdrc {
-> >  
-> >  	struct ci_hdrc_platform_data	*platdata;
-> >  	int				vbus_active;
-> > -	struct usb_phy			*transceiver;
-> > +	struct phy			*transceiver;
-> > +	/* old usb_phy interface */
-> > +	struct usb_phy			*usb_transceiver;
-> 
-> while at that, do you mind calling all struct usb_phy pointers
-> 'usb_phy' ?
+On Thursday 10 July 2014 06:55 PM, Keerthy wrote:
+> On Wednesday 09 July 2014 05:21 PM, Tony Lindgren wrote:
+>> * Keerthy <a0393675@ti.com> [140709 04:03]:
+>>> On Wednesday 09 July 2014 02:01 PM, Tony Lindgren wrote:
+>>>> * Keerthy <j-keerthy@ti.com> [140708 22:40]:
+>>>>> The patch series adds the device tree nodes and the corresponding
+>>>>> documentation. The series also enabled tps65218 config options
+>>>>> in the omap2plus_defconfig.
+>>>>>
+>>>>> The series is boot tested on both AM43x-epos-evm and AM437x-gp-evm.
+>>>> Are the .dts changes safe to apply separately without breaking
+>>>> anything?
+>>> Tony,
+>>>
+>>> Patch 1/7 had to be re-based on Mark's latest branch for tps65218.
+>>> Other patches can be taken as is. These patches are boot tested on
+>>> both am437x-gp-evm and am43x-epos-evm.
+>> OK thanks applying patches 4 - 7 into omap-for-v3.17/dt.
+>>
+>> Tony
+>
+> Thanks Tony.
+>
+> Mark,
+>
+> Could you please pull patch 2 and patch 3? The documentation is missing.
+>
 
-Not at all.
-With s/usb_transceiver/usb_phy/, what about 'transceiver'?
+https://patchwork.kernel.org/patch/4511721/
+and
+https://patchwork.kernel.org/patch/4511751/
 
+Regards,
+Keerthy
+> Kind Regards,
+> Keerthy
 
-Antoine
-
--- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
