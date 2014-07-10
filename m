@@ -1,88 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498AbaGJTJx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 15:09:53 -0400
-Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:45382 "EHLO
-	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752380AbaGJTJw (ORCPT
+	id S1752524AbaGJTMJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 15:12:09 -0400
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:57546 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717AbaGJTMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 15:09:52 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqgMACLkvlNbsHe//2dsb2JhbABZgw6tIAUBAQEBAQEFAW6bPIEOF3WEMS8jgRo3iC4DFQG0G4t/FYcQF4V6iHkBAU8dhC0FkBGKb5QVg0U7gTo
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Evgeniy Dushistov <dushistov@mail.ru>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] fs/ufs/inode.c: kernel-doc warning fixes.
-Date: Thu, 10 Jul 2014 21:09:47 +0200
-Message-Id: <1405019387-5546-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.1
+	Thu, 10 Jul 2014 15:12:07 -0400
+MIME-Version: 1.0
+X-Originating-IP: [84.208.72.173]
+In-Reply-To: <CAG-2HqUPRqFgn1PfDoYzuyoYRcfB=RQCVg3PJZvaakiVtK07yw@mail.gmail.com>
+References: <1404980258-30853-1-git-send-email-teg@jklm.no>
+ <20140710.014355.387392730830362973.davem@davemloft.net> <CAG-2HqUPRqFgn1PfDoYzuyoYRcfB=RQCVg3PJZvaakiVtK07yw@mail.gmail.com>
+From: Tom Gundersen <teg@jklm.no>
+Date: Thu, 10 Jul 2014 21:11:46 +0200
+Message-ID: <CAG-2HqVLE=P6KTPnZY4d6jzkQ5_1C-ETJRu6AH0KcY9FAFBASA@mail.gmail.com>
+Subject: Re: [PATCH v7 00/33] Provide netdev naming-policy via sysfs
+To: David Miller <davem@davemloft.net>
+Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Evgeniy Dushistov <dushistov@mail.ru>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/ufs/inode.c | 32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+On Thu, Jul 10, 2014 at 11:19 AM, Tom Gundersen <teg@jklm.no> wrote:
+> Thanks for the quick answer.
+>
+> On Thu, Jul 10, 2014 at 10:43 AM, David Miller <davem@davemloft.net> wrote:
+>> It is not reasonable to expect people to review such a large number of
+>> patches at one time.
+>>
+>> Split your series up into logical, and more reasonably sized chunks.
+>>
+>> I'd say 14 or 15 at a time is the limit.
+>>
+>> I'm not even looking at this series until you submit it more reasonably.
+>>
+>> Thank you.
+>
+> Ok. I suggest you review patches 1-7, as these are the generic ones.
+> Then once they have been applied I can resubmit the subsequent patches
+> individually.
+>
+> Do you want me to resubmit patches 1-7, or do you just want to pick
+> them from this series as they are?
 
-diff --git a/fs/ufs/inode.c b/fs/ufs/inode.c
-index 61e8a9b..7c580c9 100644
---- a/fs/ufs/inode.c
-+++ b/fs/ufs/inode.c
-@@ -158,16 +158,16 @@ out:
- 
- /**
-  * ufs_inode_getfrag() - allocate new fragment(s)
-- * @inode - pointer to inode
-- * @fragment - number of `fragment' which hold pointer
-+ * @inode: pointer to inode
-+ * @fragment: number of `fragment' which hold pointer
-  *   to new allocated fragment(s)
-- * @new_fragment - number of new allocated fragment(s)
-- * @required - how many fragment(s) we require
-- * @err - we set it if something wrong
-- * @phys - pointer to where we save physical number of new allocated fragments,
-+ * @new_fragment: number of new allocated fragment(s)
-+ * @required: how many fragment(s) we require
-+ * @err: we set it if something wrong
-+ * @phys: pointer to where we save physical number of new allocated fragments,
-  *   NULL if we allocate not data(indirect blocks for example).
-- * @new - we set it if we allocate new block
-- * @locked_page - for ufs_new_fragments()
-+ * @new: we set it if we allocate new block
-+ * @locked_page: for ufs_new_fragments()
-  */
- static struct buffer_head *
- ufs_inode_getfrag(struct inode *inode, u64 fragment,
-@@ -315,16 +315,16 @@ repeat2:
- 
- /**
-  * ufs_inode_getblock() - allocate new block
-- * @inode - pointer to inode
-- * @bh - pointer to block which hold "pointer" to new allocated block
-- * @fragment - number of `fragment' which hold pointer
-+ * @inode: pointer to inode
-+ * @bh: pointer to block which hold "pointer" to new allocated block
-+ * @fragment: number of `fragment' which hold pointer
-  *   to new allocated block
-- * @new_fragment - number of new allocated fragment
-+ * @new_fragment: number of new allocated fragment
-  *  (block will hold this fragment and also uspi->s_fpb-1)
-- * @err - see ufs_inode_getfrag()
-- * @phys - see ufs_inode_getfrag()
-- * @new - see ufs_inode_getfrag()
-- * @locked_page - see ufs_inode_getfrag()
-+ * @err: see ufs_inode_getfrag()
-+ * @phys: see ufs_inode_getfrag()
-+ * @new: see ufs_inode_getfrag()
-+ * @locked_page: see ufs_inode_getfrag()
-  */
- static struct buffer_head *
- ufs_inode_getblock(struct inode *inode, struct buffer_head *bh,
--- 
-1.9.1
+I'll redo the first few patches based on the comments received so far,
+and resend them in a shorter series, so no need to review the current
+one.
 
+Thanks.
+
+Tom
