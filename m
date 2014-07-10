@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbaGJLuX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 07:50:23 -0400
-Received: from sauhun.de ([89.238.76.85]:57088 "EHLO pokefinder.org"
+	id S1752648AbaGJLuq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 07:50:46 -0400
+Received: from sauhun.de ([89.238.76.85]:57081 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752859AbaGJLqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 07:46:51 -0400
+	id S1752741AbaGJLqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 07:46:48 -0400
 From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-i2c@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, Wolfram Sang <wsa@the-dreams.de>,
-        Sekhar Nori <nsekhar@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        davinci-linux-open-source@linux.davincidsp.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 05/16] i2c: i2c-davinci: Drop class based scanning to improve bootup time
-Date: Thu, 10 Jul 2014 13:46:25 +0200
-Message-Id: <1404992799-3705-6-git-send-email-wsa@the-dreams.de>
+Subject: [PATCH 03/16] i2c: i2c-bcm2835: Drop class based scanning to improve bootup time
+Date: Thu, 10 Jul 2014 13:46:23 +0200
+Message-Id: <1404992799-3705-4-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404992799-3705-1-git-send-email-wsa@the-dreams.de>
 References: <1404992799-3705-1-git-send-email-wsa@the-dreams.de>
@@ -31,21 +28,21 @@ changed now. After another transition period, this flag can go, too.
 
 Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 ---
- drivers/i2c/busses/i2c-davinci.c | 2 +-
+ drivers/i2c/busses/i2c-bcm2835.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
-index 389bc68c55ad..4d9614719128 100644
---- a/drivers/i2c/busses/i2c-davinci.c
-+++ b/drivers/i2c/busses/i2c-davinci.c
-@@ -712,7 +712,7 @@ static int davinci_i2c_probe(struct platform_device *pdev)
- 	adap = &dev->adapter;
- 	i2c_set_adapdata(adap, dev);
+diff --git a/drivers/i2c/busses/i2c-bcm2835.c b/drivers/i2c/busses/i2c-bcm2835.c
+index 214ff9700efe..4b8ecd0b3661 100644
+--- a/drivers/i2c/busses/i2c-bcm2835.c
++++ b/drivers/i2c/busses/i2c-bcm2835.c
+@@ -277,7 +277,7 @@ static int bcm2835_i2c_probe(struct platform_device *pdev)
+ 	adap = &i2c_dev->adapter;
+ 	i2c_set_adapdata(adap, i2c_dev);
  	adap->owner = THIS_MODULE;
 -	adap->class = I2C_CLASS_HWMON | I2C_CLASS_DEPRECATED;
 +	adap->class = I2C_CLASS_DEPRECATED;
- 	strlcpy(adap->name, "DaVinci I2C adapter", sizeof(adap->name));
- 	adap->algo = &i2c_davinci_algo;
+ 	strlcpy(adap->name, "bcm2835 I2C adapter", sizeof(adap->name));
+ 	adap->algo = &bcm2835_i2c_algo;
  	adap->dev.parent = &pdev->dev;
 -- 
 2.0.0
