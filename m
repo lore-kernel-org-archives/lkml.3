@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752002AbaGJLHF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 07:07:05 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:41185 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019AbaGJLHD (ORCPT
+	id S1752144AbaGJLI5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 07:08:57 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:60724 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751083AbaGJLIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 07:07:03 -0400
-Date: Thu, 10 Jul 2014 13:06:44 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, preeti@linux.vnet.ibm.com,
-        Morten.Rasmussen@arm.com, efault@gmx.de, nicolas.pitre@linaro.org,
-        linaro-kernel@lists.linaro.org, daniel.lezcano@linaro.org,
-        dietmar.eggemann@arm.com
-Subject: Re: [PATCH v3 07/12] sched: test the cpu's capacity in wake affine
-Message-ID: <20140710110644.GX3935@laptop>
-References: <1404144343-18720-1-git-send-email-vincent.guittot@linaro.org>
- <1404144343-18720-8-git-send-email-vincent.guittot@linaro.org>
+	Thu, 10 Jul 2014 07:08:55 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "Li, Aubrey" <aubrey.li@linux.intel.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] GPIO button wth wakeup attribute is supposed to wake the system up
+Date: Thu, 10 Jul 2014 13:27:02 +0200
+Message-ID: <1614271.1peg23gJZx@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53BDFA22.2000409@linux.intel.com>
+References: <53A2340D.9030503@linux.intel.com> <4301161.i6ArOLmcsg@vostro.rjw.lan> <53BDFA22.2000409@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404144343-18720-8-git-send-email-vincent.guittot@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 06:05:38PM +0200, Vincent Guittot wrote:
-> Currently the task always wakes affine on this_cpu if the latter is idle.
-> Before waking up the task on this_cpu, we check that this_cpu capacity is not
-> significantly reduced because of RT tasks or irq activity.
+On Thursday, July 10, 2014 10:27:46 AM Li, Aubrey wrote:
+> On 2014/7/9 20:45, Rafael J. Wysocki wrote:
+> > On Tuesday, July 08, 2014 05:54:35 PM Dmitry Torokhov wrote:
+> >> On Wed, Jul 09, 2014 at 02:59:33AM +0200, Rafael J. Wysocki wrote:
+> >>> On Tuesday, July 08, 2014 05:15:06 PM Dmitry Torokhov wrote:
+> >>>> On Wed, Jul 09, 2014 at 01:06:07AM +0200, Rafael J. Wysocki wrote:
+> > 
+> > [cut]
+> > 
+> >>>>
+> >>>> When device driver marks IRQ as a wakeup source I believe it is prepared
+> >>>> to handle it (or it would shut it off explicitly).
+> >>>
+> >>> I can agree with that.
+> >>>
+> >>> Are you suggesting that __disable_irq() should check irq_data for
+> >>> IRQD_WAKEUP_STATE and skip the IRQ (in the 'suspend' case) if that is set?
+> >>
+> >> Yes, something like that.
+> > 
+> > OK
 > 
-> Use case where the number of irq and/or the time spent under irq is important
-> will take benefit of this because the task that is woken up by irq or softirq
-> will not use the same CPU than irq (and softirq) but a idle one which share
-> its cache.
+> Many thanks to you both for the discussion.
+> > 
+> > Aubrey, can you please check if the appended patch helps on the T100?
+> 
+> I verified this patch on T100, it works as expected, freeze can be waken
+> up by reverting my patch and applying this one.
 
-The above, doesn't seem to explain:
+Thanks!
 
-> +	} else if (!(sd->flags & SD_SHARE_PKG_RESOURCES)) {
-> +		this_eff_load = 0;
-> +	}
-> +
-> +	balanced = this_eff_load <= prev_eff_load;
+> Is this a final solution?
 
-this. Why would you unconditionally allow wake_affine across cache
-domains?
+I hope so.  I'll resend it with a proper changelog later today.
+
+Rafael
+
