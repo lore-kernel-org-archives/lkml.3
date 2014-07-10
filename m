@@ -1,66 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144AbaGJLI5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 07:08:57 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:60724 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751083AbaGJLIz (ORCPT
+	id S1752044AbaGJLL7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 07:11:59 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:58062 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015AbaGJLL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 07:08:55 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "Li, Aubrey" <aubrey.li@linux.intel.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] GPIO button wth wakeup attribute is supposed to wake the system up
-Date: Thu, 10 Jul 2014 13:27:02 +0200
-Message-ID: <1614271.1peg23gJZx@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53BDFA22.2000409@linux.intel.com>
-References: <53A2340D.9030503@linux.intel.com> <4301161.i6ArOLmcsg@vostro.rjw.lan> <53BDFA22.2000409@linux.intel.com>
+	Thu, 10 Jul 2014 07:11:57 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+X-Originating-IP: [46.139.80.5]
+In-Reply-To: <20140710093101.21765.96636.stgit@localhost.localdomain>
+References: <20140710093101.21765.96636.stgit@localhost.localdomain>
+Date: Thu, 10 Jul 2014 13:11:56 +0200
+Message-ID: <CAJfpegutNSn-z2P754L-C_K1Ly_19ERw6ccpPpepAYRtANX9_w@mail.gmail.com>
+Subject: Re: [PATCH] fuse: remove WARN_ON writeback on dead inode
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Maxim Patlasov <MPatlasov@parallels.com>
+Cc: fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 10, 2014 10:27:46 AM Li, Aubrey wrote:
-> On 2014/7/9 20:45, Rafael J. Wysocki wrote:
-> > On Tuesday, July 08, 2014 05:54:35 PM Dmitry Torokhov wrote:
-> >> On Wed, Jul 09, 2014 at 02:59:33AM +0200, Rafael J. Wysocki wrote:
-> >>> On Tuesday, July 08, 2014 05:15:06 PM Dmitry Torokhov wrote:
-> >>>> On Wed, Jul 09, 2014 at 01:06:07AM +0200, Rafael J. Wysocki wrote:
-> > 
-> > [cut]
-> > 
-> >>>>
-> >>>> When device driver marks IRQ as a wakeup source I believe it is prepared
-> >>>> to handle it (or it would shut it off explicitly).
-> >>>
-> >>> I can agree with that.
-> >>>
-> >>> Are you suggesting that __disable_irq() should check irq_data for
-> >>> IRQD_WAKEUP_STATE and skip the IRQ (in the 'suspend' case) if that is set?
-> >>
-> >> Yes, something like that.
-> > 
-> > OK
-> 
-> Many thanks to you both for the discussion.
-> > 
-> > Aubrey, can you please check if the appended patch helps on the T100?
-> 
-> I verified this patch on T100, it works as expected, freeze can be waken
-> up by reverting my patch and applying this one.
+On Thu, Jul 10, 2014 at 11:32 AM, Maxim Patlasov
+<MPatlasov@parallels.com> wrote:
+> FUSE has an architectural peculiarity: it cannot write to an inode, unless it
+> has an associated file open for write. Since the beginning (Apr 30 2008, commit
+> 3be5a52b), FUSE BUG_ON (later WARN_ON) the case when it has to process
+> writeback, but all associated files are closed. The latest relevant commit is
+> 72523425:
+>
+>>   Don't bug if there's no writable files found for page writeback.  If ever
+>>   this is triggered, a WARN_ON helps debugging it much better then a BUG_ON.
+>>
+>>   Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+>
+> But that situation can happen in quite a legal way: for example, let's mmap a
+> file, then issue O_DIRECT read to mmapped region and immediately close file
+> and munmap. O_DIRECT will pin some pages, execute IO to them and then mark
+> pages dirty. Here we are.
 
-Thanks!
+Something's not right. Fuse assumes that the file can only be modified
+if there's at least one open file for read-write, otherwise  the page
+can't be written back, resulting in fs corruption.
 
-> Is this a final solution?
+The VFS also assumes in the read-only remount code that if no files
+are open for write then the filesystem can safely be remounted
+read-only and no modifications can occur after that.
 
-I hope so.  I'll resend it with a proper changelog later today.
+The situation you describe above contradict those assumptions.
 
-Rafael
+Removing the warning only makes the problem worse, since now the
+corruption will happen silently.
 
+CC-ing linux-fsdevel and linux-mm.  Anyone has a better insight into this?
+
+Thanks,
+Miklos
+
+
+
+
+>
+> Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+> ---
+>  fs/fuse/file.c |   14 +++-----------
+>  1 file changed, 3 insertions(+), 11 deletions(-)
+>
+> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+> index 6e16dad..3a47aa2 100644
+> --- a/fs/fuse/file.c
+> +++ b/fs/fuse/file.c
+> @@ -1624,8 +1624,8 @@ static void fuse_writepage_end(struct fuse_conn *fc, struct fuse_req *req)
+>         fuse_writepage_free(fc, req);
+>  }
+>
+> -static struct fuse_file *__fuse_write_file_get(struct fuse_conn *fc,
+> -                                              struct fuse_inode *fi)
+> +static struct fuse_file *fuse_write_file_get(struct fuse_conn *fc,
+> +                                            struct fuse_inode *fi)
+>  {
+>         struct fuse_file *ff = NULL;
+>
+> @@ -1640,14 +1640,6 @@ static struct fuse_file *__fuse_write_file_get(struct fuse_conn *fc,
+>         return ff;
+>  }
+>
+> -static struct fuse_file *fuse_write_file_get(struct fuse_conn *fc,
+> -                                            struct fuse_inode *fi)
+> -{
+> -       struct fuse_file *ff = __fuse_write_file_get(fc, fi);
+> -       WARN_ON(!ff);
+> -       return ff;
+> -}
+> -
+>  int fuse_write_inode(struct inode *inode, struct writeback_control *wbc)
+>  {
+>         struct fuse_conn *fc = get_fuse_conn(inode);
+> @@ -1655,7 +1647,7 @@ int fuse_write_inode(struct inode *inode, struct writeback_control *wbc)
+>         struct fuse_file *ff;
+>         int err;
+>
+> -       ff = __fuse_write_file_get(fc, fi);
+> +       ff = fuse_write_file_get(fc, fi);
+>         err = fuse_flush_times(inode, ff);
+>         if (ff)
+>                 fuse_file_put(ff, 0);
+>
