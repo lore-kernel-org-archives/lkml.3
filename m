@@ -1,117 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331AbaGJPKI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 11:10:08 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:56899 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750945AbaGJPKG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 11:10:06 -0400
-Date: Thu, 10 Jul 2014 17:09:45 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+	id S1753474AbaGJPKs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 11:10:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53018 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751969AbaGJPKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 11:10:45 -0400
+Date: Thu, 10 Jul 2014 17:08:32 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: a case for a common efuse API?
-Message-ID: <20140710150945.GF27469@lukather>
-References: <53BC4DD7.20906@codeaurora.org>
- <20140709083509.GQ13423@lukather>
- <53BDD0F3.7040906@codeaurora.org>
- <20140710142616.GD27469@lukather>
- <53BEB443.9000606@ti.com>
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH v9 11/11] seccomp: implement SECCOMP_FILTER_FLAG_TSYNC
+Message-ID: <20140710150832.GA20861@redhat.com>
+References: <1403911380-27787-1-git-send-email-keescook@chromium.org> <1403911380-27787-12-git-send-email-keescook@chromium.org> <20140709180520.GA2560@redhat.com> <CAGXu5jLUqz-T1tRBCpPLkzWijyAF-Vjw_7PnQ1EvUh4urwyaUg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="l+goss899txtYvYf"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53BEB443.9000606@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAGXu5jLUqz-T1tRBCpPLkzWijyAF-Vjw_7PnQ1EvUh4urwyaUg@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/10, Kees Cook wrote:
+>
+> On Wed, Jul 9, 2014 at 11:05 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> >> +     /*
+> >> +      * Make sure we cannot change seccomp or nnp state via TSYNC
+> >> +      * while another thread is in the middle of calling exec.
+> >> +      */
+> >> +     if (flags & SECCOMP_FILTER_FLAG_TSYNC &&
+> >> +         mutex_lock_killable(&current->signal->cred_guard_mutex))
+> >> +             goto out_free;
+> >
+> > -EINVAL looks a bit confusing in this case, but this is cosemtic because
+> > userspace won't see this error-code anyway.
+>
+> Happy to use whatever since, as you say, it's cosmetic. Perhaps -EAGAIN?
 
---l+goss899txtYvYf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Or -EINTR. I do not really mind, I only mentioned this because I had another
+nit.
 
-On Thu, Jul 10, 2014 at 06:41:55PM +0300, Grygorii Strashko wrote:
-> On 07/10/2014 05:26 PM, Maxime Ripard wrote:
-> >On Wed, Jul 09, 2014 at 04:32:03PM -0700, Stephen Boyd wrote:
-> >>On 07/09/14 01:35, Maxime Ripard wrote:
-> >>>Hi Stephen,
-> >>>
-> >>>On Tue, Jul 08, 2014 at 01:00:23PM -0700, Stephen Boyd wrote:
-> >>>>Hi,
-> >>>>
-> >>>>On MSM chips we have some efuses (called qfprom) where we store things
-> >>>>like calibration data, speed bins, etc. We need to read out data from
-> >>>>the efuses in various drivers like the cpufreq, thermal, etc. This
-> >>>>essentially boils down to a bunch of readls on the efuse from a handf=
-ul
-> >>>>of different drivers. In devicetree this looks a little odd because
-> >>>>these drivers end up having an extra reg property (or two) that points
-> >>>>to a register in the efuse and some length, i.e you see this:
-> >>>>
-> >>>>	thermal-sensor@34000 {
-> >>>>		compatible =3D "sensor";
-> >>>>		reg =3D <0x34000 0x1000>, <0x10018 0xc>;
-> >>>>		reg-names =3D "sensor", "efuse_calib";
-> >>>>	}
-> >>>>
-> >>>>
-> >>>>I imagine in DT we want something more like this:
-> >>>>
-> >>>>	efuse: efuse@10000 {
-> >>>>		compatible =3D "efuse";
-> >>>>		reg =3D <0x10000 0x1000>;
-> >>>>	}
-> >>>>
-> >>>>	thermal-sensor@34000 {
-> >>>>		compatible =3D "sensor";
-> >>>>		reg =3D <0x34000 0x1000>;
-> >>>>		efuse =3D <&efuse 0x18>;
-> >>>>	}
->=20
-> Why don't use "syscon" framework for your needs? (mfd/syscon.c)
+> >>       spin_lock_irq(&current->sighand->siglock);
+> >> +     if (unlikely(signal_group_exit(current->signal))) {
+> >> +             /* If thread is dying, return to process the signal. */
+> >
+> > OK, this doesn't hurt, but why?
+> >
+> > You could check __fatal_signal_pending() with the same effect. And since
+> > we hold this mutex, exec (de_thread) can be the source of that SIGKILL.
+> > We take this mutex specially to avoid the race with exec.
+> >
+> > So why do we need to abort if we race with kill() or exit_grouo() ?
+>
+> In my initial code inspection that we could block waiting for the
+> cred_guard mutex, with exec holding it, exec would schedule death in
+> de_thread, and then once it released, the tsync thread would try to
+> keep running.
+>
+> However, in looking at this again, now I'm concerned this produces a
+> dead-lock in de_thread, since it waits for all threads to actually
+> die, but tsync will be waiting with the killable mutex.
 
-Because syscon is restricted to MMIO, and not really meant to be used
-for this.
+That is why you should always use _killable (or _interruptible) if you
+want to take ->cred_guard_mutex.
 
-Maxime
+If this thread races with de_thread() which holds this mutex, it will
+be killed and mutex_lock_killable() will fail.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+(to clarify; this deadlock is not "fatal", de_thread() can be killed too,
+ but this doesn't really matter).
 
---l+goss899txtYvYf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> So I think I got too defensive when I read the top of de_thread where
+> it checks for pending signals itself.
+>
+> It seems like I can just safely remove the singal_group_exit checks?
+> The other paths (non-tsync seccomp_set_mode_filter, and
+> seccomp_set_mode_strict)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Yes, I missed another signal_group_exit() in seccomp_set_mode_strict().
+It looks equally unneeded.
 
-iQIcBAEBAgAGBQJTvqy5AAoJEBx+YmzsjxAg9FEP/AzTKdqhMRjA29BuXRb3H+w4
-faFCHslPItZ4KDb84Wy+UT3SI7DTTzg+oUFH4csXHUhm4xWEGcKstOQA/c3SULgC
-CBAnFlqLRdExiKticYxmtjnqI1K70DwnkjH/Lts9ICdHqaOhvwcs77C5dc46jsAs
-sKd15NAAvFTXidNwtU37iOR2ZY3DiWJfAcpSeUa1TtK+GzSMskTxX8Tnm0q97hFG
-MgHjDLCXsHbM2t1en5zCCAgJ5GXw9p3B2urweEvQW/bzc1ybTxp/mfvHLIvM93vF
-K9ie02+ErG3ML4K80Ts/OXbskNa2Q4GT7CPIleHC2Ic/urfsJrsWv7cJpCUXU29S
-wuPSHfGdbtfIgbsTpIrF/TzqKEFmcoLTqHdS2umhrweAg9l/lnLiL8Ffk56wbbD5
-oUlpwJtB8vKCEwTvbv82hJKHyq0bmgjiiD7md6XbsgjDhMtzVCziJOBndHozVbEM
-m7cm396lA9L38pRiBCYuPxwqnDO83McyZERtZDognUh3eH4aLCkqA1EQQxYBGyvG
-hiX6LqjSx1HvnvLtFMgq5GXDzfmk0fXnptxwm4TQgrUqWR6X2yHzyw2aN15FO0Bi
-mMuY13Fq1jyOKATZMxwIO9ZTNogWK5+vjLb2Ss/OrsEMPOEIDmXDBPc+i8MZs+OM
-pQTmDg/2NFF6CohLfrX7
-=BgiY
------END PGP SIGNATURE-----
+> I can't decide which feels cleaner: just letting stuff
+> clean up naturally on death or to short-circuit after taking
+> sighand->siglock.
 
---l+goss899txtYvYf--
+I'd prefer to simply remove the singal_group_exit checks.
+
+I won't argue if you prefer to keep them, but then please add a comment
+to explain that this is not needed for correctness.
+
+Because otherwise the code looks confusing, as if there is a subtle reason
+why we must not do this if killed.
+
+Oleg.
+
