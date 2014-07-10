@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733AbaGJJRJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 05:17:09 -0400
-Received: from canardo.mork.no ([148.122.252.1]:55424 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752199AbaGJJRG convert rfc822-to-8bit (ORCPT
+	id S1752774AbaGJJRe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 05:17:34 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:46834 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752030AbaGJJRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 05:17:06 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Tom Gundersen <teg@jklm.no>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Miller <davem@davemloft.net>,
-        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [PATCH v7 03/33] net: set name_assign_type in alloc_netdev()
-Organization: m
-References: <1404980258-30853-1-git-send-email-teg@jklm.no>
-	<1404980258-30853-4-git-send-email-teg@jklm.no>
-Date: Thu, 10 Jul 2014 11:16:50 +0200
-In-Reply-To: <1404980258-30853-4-git-send-email-teg@jklm.no> (Tom Gundersen's
-	message of "Thu, 10 Jul 2014 10:17:08 +0200")
-Message-ID: <87tx6ph8u5.fsf@nemi.mork.no>
-User-Agent: Gnus/5.130011 (Ma Gnus v0.11) Emacs/24.3 (gnu/linux)
+	Thu, 10 Jul 2014 05:17:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CACRpkdbaah=y22UAuWXQN2kDddD-pa7JS52hXT6Bx9dUmbSyMw@mail.gmail.com>
+References: <1404817356-21568-1-git-send-email-harinik@xilinx.com>
+	<CACRpkdbaah=y22UAuWXQN2kDddD-pa7JS52hXT6Bx9dUmbSyMw@mail.gmail.com>
+Date: Thu, 10 Jul 2014 14:47:29 +0530
+Message-ID: <CAFcVEC+vydShChhKvD6ugbUBfLwd7=XbujjrcVLx6r1xjjkK3g@mail.gmail.com>
+Subject: Re: [PATCH v3 1/2] gpio: Add driver for Zynq GPIO controller
+From: Harini Katakam <harinikatakamlinux@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Michal Simek <michal.simek@xilinx.com>,
+        =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Harini Katakam <harini.katakam@xilinx.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tom Gundersen <teg@jklm.no> writes:
+On Thu, Jul 10, 2014 at 2:42 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Tue, Jul 8, 2014 at 1:02 PM, Harini Katakam <harinik@xilinx.com> wrote:
+>
+>> From: Harini Katakam <harini.katakam@xilinx.com>
+>>
+>> Add support for GPIO controller used by Xilinx Zynq.
+>>
+>> Signed-off-by: Harini Katakam <harinik@xilinx.com>
+>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+>
+> Patch applied! Thanks for your patient work on this Harini!
+>
 
-> diff --git a/net/ethernet/eth.c b/net/ethernet/eth.c
-> index 5dc638c..f405e05 100644
-> --- a/net/ethernet/eth.c
-> +++ b/net/ethernet/eth.c
-> @@ -390,7 +390,8 @@ EXPORT_SYMBOL(ether_setup);
->  struct net_device *alloc_etherdev_mqs(int sizeof_priv, unsigned int txqs,
->  				      unsigned int rxqs)
->  {
-> -	return alloc_netdev_mqs(sizeof_priv, "eth%d", ether_setup, txqs, rxqs);
-> +	return alloc_netdev_mqs(sizeof_priv, "eth%d", NET_NAME_UNKNOWN,
-> +				ether_setup, txqs, rxqs);
->  }
->  EXPORT_SYMBOL(alloc_etherdev_mqs);
-
-I believe this chunk makes the rest of this exercise pretty pointless.
-
-bjorn@nemi:/usr/local/src/git/linux$ git grep alloc_etherdev drivers/net/|wc -l
-283
-
-I don't care enough to go look, but I'd be surprised if none of those
-drivers rename the device before registering it.
-
-
-Bjørn
+Thanks Linus.
+@Soren Thanks.
