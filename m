@@ -1,58 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801AbaGJXFL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 19:05:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60337 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751474AbaGJXFJ (ORCPT
+	id S1752339AbaGJXH3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 19:07:29 -0400
+Received: from si-002-i42.relay.mailchannels.net ([184.154.112.207]:2260 "EHLO
+	relay.mailchannels.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750938AbaGJXH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 19:05:09 -0400
-Date: Thu, 10 Jul 2014 16:09:36 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Karsten Keil <isdn@linux-pingi.de>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH tty-next 14/22] tty: Remove
- tty_wait_until_sent_from_close()
-Message-ID: <20140710230936.GA31181@kroah.com>
-References: <1402924639-5164-1-git-send-email-peter@hurleysoftware.com>
- <1402924639-5164-15-git-send-email-peter@hurleysoftware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402924639-5164-15-git-send-email-peter@hurleysoftware.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 10 Jul 2014 19:07:27 -0400
+X-Greylist: delayed 5819 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Jul 2014 19:07:26 EDT
+X-Sender-Id: arvixe|x-authuser|przemo@firszt.eu
+X-Sender-Id: arvixe|x-authuser|przemo@firszt.eu
+X-MC-Relay: Neutral
+X-MailChannels-SenderId: arvixe|x-authuser|przemo@firszt.eu
+X-MailChannels-Auth-Id: arvixe
+Message-ID: <1405027816.2613.17.camel@fedora-lan>
+Subject: Re: [Linuxwacom-devel] [PATCH 00/15] Input - Wacom: switch from an
+ USB to a HID driver
+From: Przemo Firszt <przemo@firszt.eu>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
+        linuxwacom-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Date: Thu, 10 Jul 2014 22:30:16 +0100
+In-Reply-To: <1404163586-29582-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1404163586-29582-1-git-send-email-benjamin.tissoires@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-AuthUser: przemo@firszt.eu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 09:17:11AM -0400, Peter Hurley wrote:
-> tty_wait_until_sent_from_close() drops the tty lock while waiting
-> for the tty driver to finish sending previously accepted data (ie.,
-> data remaining in its write buffer and transmit fifo).
-> 
-> However, dropping the tty lock is a hold-over from when the tty
-> lock was system-wide; ie., one lock for all ttys.
-> 
-> Since commit 89c8d91e31f267703e365593f6bfebb9f6d2ad01,
-> 'tty: localise the lock', dropping the tty lock has not been necessary.
-> 
-> CC: Karsten Keil <isdn@linux-pingi.de>
-> CC: linuxppc-dev@lists.ozlabs.org
-> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-> ---
->  drivers/isdn/i4l/isdn_tty.c   |  2 +-
->  drivers/tty/hvc/hvc_console.c |  2 +-
->  drivers/tty/hvc/hvcs.c        |  2 +-
->  drivers/tty/tty_port.c        | 11 ++---------
->  include/linux/tty.h           | 18 ------------------
->  5 files changed, 5 insertions(+), 30 deletions(-)
+Hi Benjamin,
+I'm having some problems to cleanly apply your patches - can you double
+check that they are OK?
+--
+Regards,
+Przemo
 
-I've applied the first 13 patches in this series, as it looks like you
-were going to split things up from here, right?  Can you refresh these
-and resend when you have that done?
-
-thanks,
-
-greg k-h
