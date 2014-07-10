@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552AbaGJMTA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 08:19:00 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:40644 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753536AbaGJMS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 08:18:56 -0400
-Message-ID: <1404994709.16296.22.camel@iivanov-dev>
-Subject: Re: [PATCH v3] pinctrl: msm: move all qualcomm drivers to subdir
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Bjorn Andersson <bjorn@kryo.se>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
+	id S1753573AbaGJMT2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 08:19:28 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:58435 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751881AbaGJMT0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 08:19:26 -0400
+From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
+To: Greg KH <gregkh@linuxfoundation.org>,
+        sanjeev sharma <sanjeevsharmaengg@gmail.com>
+CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "peter.senna@gmail.com" <peter.senna@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-gpio@vger.kernel.org,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Date: Thu, 10 Jul 2014 15:18:29 +0300
-In-Reply-To: <CAJAp7Oi-UH4SUHNw_gHtm=P8EYG3+BsA=hPAsZZWjfG5KCMJeA@mail.gmail.com>
-References: <1404910216-2170-1-git-send-email-linus.walleij@linaro.org>
-	 <CAJAp7Oi-UH4SUHNw_gHtm=P8EYG3+BsA=hPAsZZWjfG5KCMJeA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        "rmfrfs@gmail.com" <rmfrfs@gmail.com>,
+        "teobaluta@gmail.com" <teobaluta@gmail.com>
+Subject: RE: [PATCH v3 1/4] staging: rtl8192u: Remove useless return
+ statements.
+Thread-Topic: [PATCH v3 1/4] staging: rtl8192u: Remove useless return
+ statements.
+Thread-Index: AQHPm251kAU+EhUpWkqJnR/otjZ+jZuYDzyAgAEsGpA=
+Date: Thu, 10 Jul 2014 12:19:23 +0000
+Message-ID: <FDC088D3B5555644AE135ED28A7ABDE938EFFA8F@EU-MBX-04.mgc.mentorg.com>
+References: <20140708100142.GR25934@mwanda>
+ <1404908382-7043-1-git-send-email-sanjeevsharmaengg@gmail.com>
+ <1404908382-7043-2-git-send-email-sanjeevsharmaengg@gmail.com>
+ <20140709192441.GB4593@kroah.com>
+In-Reply-To: <20140709192441.GB4593@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [137.202.0.76]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginalArrivalTime: 10 Jul 2014 12:19:25.0771 (UTC) FILETIME=[307EA9B0:01CF9C39]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-09 at 15:16 -0700, Bjorn Andersson wrote:
-> On Wed, Jul 9, 2014 at 5:50 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> > We have four Qualcomm-related pin control drivers, and now there
-> > are drivers coming in for the PMICs on these systems, so let's
-> > create a qcom subdirectory to hold all the Qualcomm stuff.
-> >
-> > Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> > Cc: Ivan T. Ivanov <iivanov@mm-sol.com>
-> > Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> 
-> Nice initiative.
-> 
-> Acked-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Thanks Greg for review.
 
-+1 from me.
+Change has been just pushed now with version 4.
 
-Acked-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+Regards
+Sanjeev Sharma
 
+-----Original Message-----
+From: Greg KH [mailto:gregkh@linuxfoundation.org] 
+Sent: Thursday, July 10, 2014 12:55 AM
+To: sanjeev sharma
+Cc: devel@driverdev.osuosl.org; peter.senna@gmail.com; linux-kernel@vger.kernel.org; rmfrfs@gmail.com; teobaluta@gmail.com; Sharma, Sanjeev
+Subject: Re: [PATCH v3 1/4] staging: rtl8192u: Remove useless return statements.
 
+On Wed, Jul 09, 2014 at 05:49:39PM +0530, sanjeev sharma wrote:
+> From: sanjeev sharma <sanjeev_sharma@mentor.com>
+
+No "S" characters?
+
+And your 0/4 Subject: was really odd, please fix up and resend all of these.
+
+greg k-h
