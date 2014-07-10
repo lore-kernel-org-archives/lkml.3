@@ -1,102 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868AbaGJNmo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:42:44 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:57405 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752263AbaGJNmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:42:43 -0400
-Date: Thu, 10 Jul 2014 08:42:27 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <Peter.Chen@freescale.com>,
-        <kishon@ti.com>, <stern@rowland.harvard.edu>,
-        <alexandre.belloni@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <jszhang@marvell.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] usb: chipidea: add support to the PHY framework for
- ChipIdea
-Message-ID: <20140710134227.GL15340@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1404901036-27682-1-git-send-email-antoine.tenart@free-electrons.com>
- <1404901036-27682-5-git-send-email-antoine.tenart@free-electrons.com>
+	id S1753442AbaGJNnf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:43:35 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:63517 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751728AbaGJNnd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 09:43:33 -0400
+Date: Thu, 10 Jul 2014 15:43:30 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 15/16] i2c: i2c-tegra: Drop class based scanning to
+ improve bootup time
+Message-ID: <20140710134329.GB14961@ulmo>
+References: <1404992799-3705-1-git-send-email-wsa@the-dreams.de>
+ <1404992799-3705-16-git-send-email-wsa@the-dreams.de>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VBq/nvTu32OVLBUP"
+	protocol="application/pgp-signature"; boundary="eJnRUKwClWJh1Khz"
 Content-Disposition: inline
-In-Reply-To: <1404901036-27682-5-git-send-email-antoine.tenart@free-electrons.com>
+In-Reply-To: <1404992799-3705-16-git-send-email-wsa@the-dreams.de>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---VBq/nvTu32OVLBUP
-Content-Type: text/plain; charset=iso-8859-1
+
+--eJnRUKwClWJh1Khz
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, Jul 09, 2014 at 12:17:16PM +0200, Antoine T=E9nart wrote:
-> This patch adds the support to the PHY framework for ChipIdea drivers
-> while keeping the USB PHY compatibility. Changes are done in both the
-> ChipIdea common code and in the drivers accessing the PHY. This is done
-> by renaming 'phy' into 'usb_phy' and adding a new 'phy' member into the
-> ci_hdrc structre.
+On Thu, Jul 10, 2014 at 01:46:35PM +0200, Wolfram Sang wrote:
+> This driver has been flagged to drop class based instantiation. The remov=
+al
+> improves boot-up time and is unneeded for embedded controllers. Users hav=
+e been
+> warned to switch for some time now, so we can actually do the removal. Ke=
+ep the
+> DEPRECATED flag, so the core can inform users that the behaviour finally
+> changed now. After another transition period, this flag can go, too.
 >=20
-> Signed-off-by: Antoine T=E9nart <antoine.tenart@free-electrons.com>
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 > ---
->  drivers/usb/chipidea/ci.h          |  4 ++-
->  drivers/usb/chipidea/ci_hdrc_imx.c |  2 +-
->  drivers/usb/chipidea/ci_hdrc_msm.c |  6 ++--
->  drivers/usb/chipidea/core.c        | 67 +++++++++++++++++++++++++++++++-=
-------
->  drivers/usb/chipidea/debug.c       |  4 ++-
->  drivers/usb/chipidea/host.c        | 17 ++++++----
->  drivers/usb/chipidea/otg_fsm.c     |  6 ++--
->  drivers/usb/chipidea/udc.c         |  4 +--
->  include/linux/usb/chipidea.h       |  4 ++-
->  9 files changed, 86 insertions(+), 28 deletions(-)
->=20
-> diff --git a/drivers/usb/chipidea/ci.h b/drivers/usb/chipidea/ci.h
-> index 9563cb56d564..139589c8ab90 100644
-> --- a/drivers/usb/chipidea/ci.h
-> +++ b/drivers/usb/chipidea/ci.h
-> @@ -201,7 +201,9 @@ struct ci_hdrc {
-> =20
->  	struct ci_hdrc_platform_data	*platdata;
->  	int				vbus_active;
-> -	struct usb_phy			*transceiver;
-> +	struct phy			*transceiver;
-> +	/* old usb_phy interface */
-> +	struct usb_phy			*usb_transceiver;
+>  drivers/i2c/busses/i2c-tegra.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-while at that, do you mind calling all struct usb_phy pointers
-'usb_phy' ?
+It looks as though this currently doesn't do anything on !X86 anyway and
+I'll trust Mikko's testing, so:
 
---=20
-balbi
+Acked-by: Thierry Reding <treding@nvidia.com>
 
---VBq/nvTu32OVLBUP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--eJnRUKwClWJh1Khz
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v2
 
-iQIcBAEBAgAGBQJTvphDAAoJEIaOsuA1yqRE4mkQAJM1XlVl04i+o0eMHsvlkm4m
-aNY3w9WLNfQpt5yfPYa+R7C+A4koF3qA6inu/lz9zegr4TqPAF+1Y5U5gVvIKKEL
-4lb5zgcizWdXVuOV3VEfoWhbnsecuTRm1f6kdpnj/SxlyydmB7nXhAHFIZPL9OTc
-bP+VeQs2r1i1wY58hx0OwB2IUNJiyRzLaHtIc+6saUZUE+/8iQaAdYMRo+hXv1tX
-wAcGsYH6oQj/2gZ0d3Zs/NghdJST68wonq7OJnsYG+MQmzfZ3DgCJfODHEvKXDuU
-bOhijPo2pxmuYZ0mqbGuXNH9kZDZ7HbJhFcztxpMAyQra4drQZwi8C2O1Mq0aWDR
-NGCgCZjMEpayjq8dCdolewh8fx6XVlIT+xHekRJ/ZBHeU9ST9tPo/EdbZCyuRAv3
-UKnzDM8MBIRaFsI9DC8opm0BrJ2o83qRW76NItcIPonfD9KDA9WpT6yLYMd69JxD
-uBElLkUZTOdgql+3TeMG+1VWmLcz0YjwwLdLwBKxL3ZiS6qah6gO1Ru7j/EcJZ6w
-lsm/zFBeOdzVWvqgvvLoOQGUR2C2dVKOyLxNnrRo3ILZy22doo3FGe5HQExYtXBo
-Bfv4KC+2C/LwRA3ZfZzGJ3Bu6k6uqFYSeAAzuo3pNOuVtduAPJr4Y+WXav1auWZ4
-37x4fgMBIgZ1B5ASH09U
-=ltVS
+iQIcBAEBAgAGBQJTvpiBAAoJEN0jrNd/PrOhDb8P/2DQMSn8ZMMHOcqMf1h8sv7S
+Ymo+qUhJoood5RKsgXWriAJBs9A5wOS+Kl9+JN/FDMFCs8gGCEb9/ur+QYY5ySps
+TR1+RO6rE19IdXzZZpVaL58H5H/oTC9BcadRni3Rd3ZAivOeE4ikW+4VIAX4CpPi
+WA0DVIWLhiCqUQEg8CyrGmBaZGbHf2BDuNuvz19HOjrL/R0DeBEnXwk91rjLHpi8
+IqeqZQLoAwnF1+RAnbflZeSXFUVtKxb8tf45la2E3scXOax+nAcaJvBKERYj4wWh
+3QYTwKKNqHrVFbCUMmi/CTbtFPoYI2yOZkEo1ygISt1Grc5g+c9EsKTVo02+dVWF
+uuIQtnY7ao4UROHg2rhUDt0Z5iYvvk6NWkdL3iBDelT+rZn75RrJVC0xOZ6a9et4
+K3DiOUaqckBqCCcmuCOMnloZJ7N7H60jukTNP1Uw2oaEoqs/IQU7KEM55818qJsH
+0lEhxVW/2aB5PvxEICl3Lwyeqmu2hgQ5Ef8nLXthsqUxamHyPJXEkOI0bm7MgfaQ
+OHfrGs+QHPLWaeWz4nzbdwEliwQpjXAuVyCc6HLqomB9saGmC8VvXFSkx1bYqCL5
+ufDvmvagQ8+legtUhHwmg3IJLFkXvmEOWM7yslRDSOtnH7fcrSzmNmwkwYg0i7WB
+qae1z5Va6b7NyeL/a/Gh
+=jyu0
 -----END PGP SIGNATURE-----
 
---VBq/nvTu32OVLBUP--
+--eJnRUKwClWJh1Khz--
