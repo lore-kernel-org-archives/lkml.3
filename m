@@ -1,42 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838AbaGJQMe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 12:12:34 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:52139 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751882AbaGJQMc (ORCPT
+	id S1752608AbaGJQOh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 12:14:37 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:59981 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119AbaGJQOg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 12:12:32 -0400
-X-Sasl-enc: z5igM7I/POZ3IF+JITT5N8BXJyzjWkeQj/Anr/Sk/Z7W 1405008746
-Date: Thu, 10 Jul 2014 09:12:05 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sachin Kamat <sachin.kamat@samsung.com>
-Subject: Re: linux-next: manual merge of the akpm tree with the staging tree
-Message-ID: <20140710161205.GB20239@kroah.com>
-References: <20140710162750.60496f52@canb.auug.org.au>
+	Thu, 10 Jul 2014 12:14:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140710162750.60496f52@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53BEB951.2040207@ti.com>
+References: <1404928177-26554-1-git-send-email-bigeasy@linutronix.de>
+	<1404928177-26554-7-git-send-email-bigeasy@linutronix.de>
+	<20140710070948.GH28884@atomide.com>
+	<53BEB5AF.7010604@linutronix.de>
+	<53BEB951.2040207@ti.com>
+Date: Thu, 10 Jul 2014 11:14:28 -0500
+Message-ID: <CAGo_u6r57s6kpF81W-hq96PFizOp3m+XEh3bmzJOp0oPHYRNCg@mail.gmail.com>
+Subject: Re: [PATCH 6/6] tty: serial: Add 8250-core based omap driver
+From: "menon.nishanth@gmail.com" <menon.nishanth@gmail.com>
+To: Carlos Hernandez <ceh@ti.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Tony Lindgren <tony@atomide.com>, lkml <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, linux-serial@vger.kernel.org,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 04:27:50PM +1000, Stephen Rothwell wrote:
-> Hi Andrew,
-> 
-> Today's linux-next merge of the akpm tree got a conflict in
-> drivers/staging/emxx_udc/emxx_udc.c between commit 6de2a1a7b9e2
-> ("staging: emxx_udc: Fix build error") from the staging tree and commit
-> "drivers/staging/emxx_udc/emxx_udc.c: replace strict_strto() with
-> kstrto()" from the akpm tree.
-> 
-> I fixed it up (I just used the version from the staging tree) and can
-> carry the fix as necessary (no action is required).
-
-Sounds good, thanks.
-
-greg k-h
+On Thu, Jul 10, 2014 at 11:03 AM, Carlos Hernandez <ceh@ti.com> wrote:
+> 1) Append no_console_suspend to bootargs
+Not needed. ideally with pinctrl wakeup capability, this should work.
+if you do no_console_suspend, the module is not powered down.
