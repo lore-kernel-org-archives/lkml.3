@@ -1,99 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387AbaGJKNR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 06:13:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5689 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752978AbaGJKNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 06:13:08 -0400
-From: Amit Shah <amit.shah@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
-        keescook@chromium.org, jason@lakedaemon.net,
-        Amit Shah <amit.shah@redhat.com>, <stable@vger.kernel.org>
-Subject: [PATCH v3 2/2] virtio: rng: ensure reads happen after successful probe
-Date: Thu, 10 Jul 2014 15:42:35 +0530
-Message-Id: <ceb5d72a2e27e95bc9570ce259c45b35f0e23462.1404987133.git.amit.shah@redhat.com>
-In-Reply-To: <cover.1404987133.git.amit.shah@redhat.com>
-References: <cover.1404987133.git.amit.shah@redhat.com>
-In-Reply-To: <cover.1404987133.git.amit.shah@redhat.com>
-References: <cover.1404987133.git.amit.shah@redhat.com>
+	id S1753405AbaGJKNY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 06:13:24 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:33521 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167AbaGJKNV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 06:13:21 -0400
+Date: Thu, 10 Jul 2014 03:13:20 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 6/8] Drivers: scsi: storvsc: Implement an abort handler
+Message-ID: <20140710101320.GB1151@infradead.org>
+References: <1404866789-26910-1-git-send-email-kys@microsoft.com>
+ <1404866812-26950-1-git-send-email-kys@microsoft.com>
+ <1404866812-26950-6-git-send-email-kys@microsoft.com>
+ <20140709084415.GF6012@infradead.org>
+ <9b76360fb30745d3941b6d56bdae268f@BY2PR03MB299.namprd03.prod.outlook.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9b76360fb30745d3941b6d56bdae268f@BY2PR03MB299.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hwrng core asks for random data in the hwrng_register() call itself
-from commit d9e7972619.  This doesn't play well with virtio -- the
-DRIVER_OK bit is only set by virtio core on a successful probe, and
-we're not yet out of our probe routine when this call is made.  This
-causes the host to not acknowledge any requests we put in the virtqueue,
-and the insmod or kernel boot process just waits for data to arrive from
-the host, which never happens.
+On Wed, Jul 09, 2014 at 06:51:38PM +0000, KY Srinivasan wrote:
+> On Azure, we sometimes have unbounded I/O latencies and some distributions
+> (such as SLES12) based on recent kernels are invoking the "Abort Handler".
 
-CC: Kees Cook <keescook@chromium.org>
-CC: Jason Cooper <jason@lakedaemon.net>
-CC: Herbert Xu <herbert@gondor.apana.org.au>
-CC: <stable@vger.kernel.org> # For v3.15+
-Reviewed-by: Jason Cooper <jason@lakedaemon.net>
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
----
- drivers/char/hw_random/core.c       |  6 ++++++
- drivers/char/hw_random/virtio-rng.c | 10 ++++++++++
- 2 files changed, 16 insertions(+)
+Any kernel will invoke the abort handler if present, and then escalate
+to the various resets.
 
-diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-index 2a451b1..c4419ea 100644
---- a/drivers/char/hw_random/core.c
-+++ b/drivers/char/hw_random/core.c
-@@ -68,6 +68,12 @@ static void add_early_randomness(struct hwrng *rng)
- 	unsigned char bytes[16];
- 	int bytes_read;
- 
-+	/*
-+	 * Currently only virtio-rng cannot return data during device
-+	 * probe, and that's handled in virtio-rng.c itself.  If there
-+	 * are more such devices, this call to rng_get_data can be
-+	 * made conditional here instead of doing it per-device.
-+	 */
- 	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
- 	if (bytes_read > 0)
- 		add_device_randomness(bytes, bytes_read);
-diff --git a/drivers/char/hw_random/virtio-rng.c b/drivers/char/hw_random/virtio-rng.c
-index f3e7150..e9b15bc 100644
---- a/drivers/char/hw_random/virtio-rng.c
-+++ b/drivers/char/hw_random/virtio-rng.c
-@@ -38,6 +38,8 @@ struct virtrng_info {
- 	int index;
- };
- 
-+static bool probe_done;
-+
- static void random_recv_done(struct virtqueue *vq)
- {
- 	struct virtrng_info *vi = vq->vdev->priv;
-@@ -67,6 +69,13 @@ static int virtio_read(struct hwrng *rng, void *buf, size_t size, bool wait)
- 	int ret;
- 	struct virtrng_info *vi = (struct virtrng_info *)rng->priv;
- 
-+	/*
-+	 * Don't ask host for data till we're setup.  This call can
-+	 * happen during hwrng_register(), after commit d9e7972619.
-+	 */
-+	if (unlikely(!probe_done))
-+		return 0;
-+
- 	if (!vi->busy) {
- 		vi->busy = true;
- 		init_completion(&vi->have_data);
-@@ -137,6 +146,7 @@ static int probe_common(struct virtio_device *vdev)
- 		return err;
- 	}
- 
-+	probe_done = true;
- 	return 0;
- }
- 
--- 
-1.9.3
+> Unfortunately, our scsi emulation on the host does not support aborting 
+> a command. The issue I have seen is that the upper level scsi code attempts
+> error recovery when the command times out and finally frees up the command.
+> The host subsequently responds to the command that has timed out and since
+> the memory has been freed up, we end up touching freed memory in this
+> driver. Since the host is also doing error recovery, by just delaying the
+> error handler in the guest until we can account for all the in-flight 
+> commands, we can get around the problem.
+
+The storvsc driver does implement an bus reset error handler, and
+after that completes successfully the midlayer frees the commands,
+and the driver has to deal with this and not call scsi_done after
+the reset finished (normally you'd expect the hardware to not complete
+requests after an reset).
+
+Note that you could increase the timeout and/or implement an
+eh_timed_out handler that just returns BLK_EH_RESET_TIMER, but if the
+completion takes too long the expectation is that a command will
+eventually finish instead of beeing delayed by an unmound amount.
 
