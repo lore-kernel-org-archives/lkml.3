@@ -1,167 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756795AbaGJAYO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 20:24:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49487 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235AbaGJAYM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 20:24:12 -0400
-Date: Wed, 9 Jul 2014 17:28:37 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Stephen Warren <swarren@nvidia.com>, Alan <gnomes@lxorguk.ukuu.org.uk>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        linux-serial@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Aaron Sierra <asierra@xes-inc.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH V8 2/2] serial/uart/8250: Add tunable RX interrupt
- trigger I/F of FIFO buffers
-Message-ID: <20140710002837.GA5429@kroah.com>
-References: <20140530061617.21929.25777.stgit@yunodevel>
- <20140530061622.21929.82083.stgit@yunodevel>
+	id S1756857AbaGJA1Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 20:27:16 -0400
+Received: from ozlabs.org ([103.22.144.67]:53012 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751766AbaGJA1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jul 2014 20:27:14 -0400
+Date: Thu, 10 Jul 2014 10:27:00 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Magnus Damm <damm+renesas@opensource.se>
+Subject: Re: linux-next: build failure after merge of the staging tree
+Message-ID: <20140710102700.65ff2c14@canb.auug.org.au>
+In-Reply-To: <20140620165353.GA3433@kroah.com>
+References: <20140620141807.45761bd0@canb.auug.org.au>
+	<20140620165353.GA3433@kroah.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140530061622.21929.82083.stgit@yunodevel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/.NwpoSHR+4vRS9rpXIVqAkf"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 03:16:22PM +0900, Yoshihiro YUNOMAE wrote:
-> Add tunable RX interrupt trigger I/F of FIFO buffers.
-> 
-> Serial devices are used as not only message communication devices but control
-> or sending communication devices. For the latter uses, normally small data
-> will be exchanged, so user applications want to receive data unit as soon as
-> possible for real-time tendency. If we have a sensor which sends a 1 byte data
-> each time and must control a device based on the sensor feedback, the RX
-> interrupt should be triggered for each data.
-> 
-> According to HW specification of serial UART devices, RX interrupt trigger
-> can be changed, but the trigger is hard-coded. For example, RX interrupt trigger
-> in 16550A can be set to 1, 4, 8, or 14 bytes for HW, but current driver sets
-> the trigger to only 8bytes.
-> 
-> This patch makes some devices change RX interrupt trigger from userland.
-> 
-> <How to use>
-> - Read current setting
->  # cat /sys/class/tty/ttyS0/rx_trig_bytes
->  8
-> 
-> - Write user setting
->  # echo 1 > /sys/class/tty/ttyS0/rx_trig_bytes
->  # cat /sys/class/tty/ttyS0/rx_trig_bytes
->  1
-> 
-> <Support uart devices>
-> - 16550A and Tegra (1, 4, 8, or 14 bytes)
-> - 16650V2 (8, 16, 24, or 28 bytes)
-> - 16654 (8, 16, 56, or 60 bytes)
-> - 16750 (1, 16, 32, or 56 bytes)
-> 
-> Changed in V2:
->  - Use _IOW for TIOCSFIFORTRIG definition
->  - Pass the interrupt trigger value itself
-> 
-> Changes in V3:
->  - Change I/F from ioctl(2) to sysfs(rx_int_trig)
-> 
-> Changes in V4:
->  - Introduce fifo_bug flag in uart_8250_port structure
->    This is enabled only when parity is enabled and UART_BUG_PARITY is enabled
->    for up->bugs. If this flag is enabled, user cannot set RX trigger.
->  - Return -EOPNOTSUPP when it does not support device at convert_fcr2val() and
->    at convert_val2rxtrig()
->  - Set the nearest lower RX trigger when users input a meaningless value at
->    convert_val2rxtrig()
->  - Check whether p->fcr is existing at serial8250_clear_and_reinit_fifos()
->  - Set fcr = up->fcr in the begging of serial8250_do_set_termios()
-> 
-> Changes in V5:
->  - Support Tegra, 16650V2, 16654, and 16750
->  - Store default FCR value to up->fcr when the port is first created
->  - Add rx_trig_byte[] in uart_config[] for each device and use rx_trig_byte[]
->    in convert_fcr2val() and convert_val2rxtrig()
-> 
-> Changes in V5.1:
->  - Fix FCR_RX_TRIG_MAX_STATE definition
-> 
-> Changes in V6:
->  - Move FCR_RX_TRIG_* definition in 8250.h to include/uapi/linux/serial_reg.h,
->    rename those to UART_FCR_R_TRIG_*, and use UART_FCR_TRIGGER_MASK to
->    UART_FCR_R_TRIG_BITS()
->  - Change following function names:
->     convert_fcr2val() => fcr_get_rxtrig_bytes()
->     convert_val2rxtrig() => bytes_to_fcr_rxtrig()
->  - Fix typo in serial8250_do_set_termios()
->  - Delete the verbose error message pr_info() in bytes_to_fcr_rxtrig()
->  - Rename *rx_int_trig/rx_trig* to *rxtrig* for several functions or variables
->    (but UI remains rx_int_trig)
->  - Change the meaningless variable name 'val' to 'bytes' following functions:
->     fcr_get_rxtrig_bytes(), bytes_to_fcr_rxtrig(), do_set_rxtrig(),
->     do_serial8250_set_rxtrig(), and serial8250_set_attr_rxtrig()
->  - Use up->fcr in order to get rxtrig_bytes instead of rx_trig_raw in
->    fcr_get_rxtrig_bytes()
->  - Use conf_type->rxtrig_bytes[0] instead of switch statement for support check
->    in register_dev_spec_attr_grp()
->  - Delete the checking whether a user changed FCR or not when minimum buffer
->    is needed in serial8250_do_set_termios()
-> 
-> Changes in V7:
->  - Add Documentation
->  - Change I/F name from rx_int_trig to rx_trig_bytes because the name
->    rx_int_trig is hard to understand how users specify the value
-> 
-> Changes in V8:
->  - Divide this patch from V7's patch based on Greg's comment
-> 
-> Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-> ---
->  Documentation/ABI/testing/sysfs-tty |   16 +++
->  drivers/tty/serial/8250/8250.h      |    2 
->  drivers/tty/serial/8250/8250_core.c |  173 ++++++++++++++++++++++++++++++++---
->  include/linux/serial_8250.h         |    2 
->  include/uapi/linux/serial_reg.h     |    5 +
->  5 files changed, 183 insertions(+), 15 deletions(-)
-> 
-> diff --git a/Documentation/ABI/testing/sysfs-tty b/Documentation/ABI/testing/sysfs-tty
-> index ad22fb0..9eb3c2b 100644
-> --- a/Documentation/ABI/testing/sysfs-tty
-> +++ b/Documentation/ABI/testing/sysfs-tty
-> @@ -138,3 +138,19 @@ Description:
->  
->  		 These sysfs values expose the TIOCGSERIAL interface via
->  		 sysfs rather than via ioctls.
-> +
-> +What:		/sys/class/tty/ttyS0/rx_trig_bytes
-> +Date:		May 2014
-> +Contact:	Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-> +Description:
-> +		 Shows current RX interrupt trigger bytes or sets the
-> +		 user specified value to change it for the FIFO buffer.
-> +		 Users can show or set this value regardless of opening the
-> +		 serial device file or not.
-> +
-> +		 The RX trigger can be set one of four kinds of values for UART
-> +		 serials. When users input a meaning less value to this I/F,
-> +		 the RX trigger is changed to the nearest lower value for the
-> +		 device specification. For example, when user sets 7bytes on
-> +		 16550A, which has 1/4/8/14 bytes trigger, the RX trigger is
-> +		 automatically changed to 4 bytes.
+--Sig_/.NwpoSHR+4vRS9rpXIVqAkf
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I really don't like the way that the tty core has been changed to handle
-multiple attribute groups, as I feel tty drivers shouldn't be creating
-"special" sysfs files, depending on what driver is bound to them.
+Hi Greg,
 
-Usually we have handled this using tools like 'stty' and ioctls, right?
-Surely there is an ioctl to control the interrupt level, right?  Hasn't
-this been covered before somehow?
+On Fri, 20 Jun 2014 09:53:53 -0700 Greg KH <greg@kroah.com> wrote:
+>
+> On Fri, Jun 20, 2014 at 02:18:07PM +1000, Stephen Rothwell wrote:
+> > Hi Greg,
+> >=20
+> > After merging the staging tree, today's linux-next build (powerpc
+> > allyesconfig) failed like this:
+> >=20
+> > drivers/staging/board/board.c: In function 'find_by_address':
+> > drivers/staging/board/board.c:14:3: error: implicit declaration of func=
+tion 'of_can_translate_address' [-Werror=3Dimplicit-function-declaration]
+> >    if (of_can_translate_address(dn)
+> >    ^
+> >=20
+> > Caused by commit 382063d91e15 ("staging: board: Initial board staging
+> > support").
+> >=20
+> > I have disabled that driver for today.
+> >=20
+> > From: Stephen Rothwell <sfr@canb.auug.org.au>
+> > Date: Fri, 20 Jun 2014 14:14:17 +1000
+> > Subject: [PATCH] staging: board: disable
+> >=20
+> > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> > ---
+> >  drivers/staging/board/Kconfig | 1 +
+> >  1 file changed, 1 insertion(+)
+> >=20
+> > diff --git a/drivers/staging/board/Kconfig b/drivers/staging/board/Kcon=
+fig
+> > index 09d94b48c9c9..7eda0b8b7aab 100644
+> > --- a/drivers/staging/board/Kconfig
+> > +++ b/drivers/staging/board/Kconfig
+> > @@ -1,6 +1,7 @@
+> >  config STAGING_BOARD
+> >  	boolean "Staging Board Support"
+> >  	depends on OF_ADDRESS
+> > +	depends on BROKEN
+> >  	help
+> >  	  Select to enable per-board staging support code.
+> > =20
+>=20
+> Magnus, can you send me a proper patch for this to get the code back to
+> building condition?
 
-thanks,
+Ping?
 
-greg k-h
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/.NwpoSHR+4vRS9rpXIVqAkf
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTvd3eAAoJEMDTa8Ir7ZwVoLMP/iEmZZbFF0ZOAmFc8k7g43QZ
+cYNhC6q04pWnF9N+PKq3c/QG8HHQvH2P66u+7WOrulAzexOIJtDQfnwHTLObt/72
+ZqYsLSFWlyi6/aC/FUs5ZzrybWY49zlg8FKKTFOAobpxQepdppZvYdOVCDW+HtMb
+9s3OyetxsLK6rMYZGO6eqHKwB8qMk1bU7v98ofGge8re5CCPkP4Wi4V3XzsKSLLt
+Cc6/XqCSv7/hTNVekmvnqkAB+IIxVi8huKIcAX21906ggYBARyWkCO8V7D6TfnXc
+6F3jBxv0J6Q1x+r0KD5P7kgwjwO6tqT/U6tVZE6txEO8Xo4Cp1g1Q0u9AXNLU96S
+UeLjCG/ABLHGLYB56N3TNcKiwRncQVtaMtQekA1YbD2ay0n5+QkSVHXWgGSMzst9
+lVG9yFz+A2J6eFQnEmRvdDj5pZNsO5Pj6OSXT+O6BcEPgt5UT1lEWQOjTCvOp/JY
+BTiDtsADVCqf4Cle/AbQNp0ZsqVLNkOgVViobjQImo+f/CCWEtDH4BAmXNAqksLz
+DBMwFfQ2xc4whZeemQvLbT33Pf6ZcrccD63q08DJX20a+xB4NIg0CXUMF39pWtdk
+R70ZFiowAEiZz0nT235lOVqC/dMx/EbvjsisrCswd521EFespqHyjuEGWtl5IhFI
+hn14piuhdgZw3P/6S2Yh
+=5EGT
+-----END PGP SIGNATURE-----
+
+--Sig_/.NwpoSHR+4vRS9rpXIVqAkf--
