@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074AbaGJLrA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 07:47:00 -0400
-Received: from sauhun.de ([89.238.76.85]:57100 "EHLO pokefinder.org"
+	id S1753206AbaGJLrG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 07:47:06 -0400
+Received: from sauhun.de ([89.238.76.85]:57111 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752976AbaGJLq5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 07:46:57 -0400
+	id S1753083AbaGJLrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 07:47:03 -0400
 From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-i2c@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, Wolfram Sang <wsa@the-dreams.de>,
-        Peter Korsgaard <jacmet@sunsite.dk>, linux-kernel@vger.kernel.org
-Subject: [PATCH 09/16] i2c: i2c-ocores: Drop class based scanning to improve bootup time
-Date: Thu, 10 Jul 2014 13:46:29 +0200
-Message-Id: <1404992799-3705-10-git-send-email-wsa@the-dreams.de>
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 12/16] i2c: i2c-s3c2410: Drop class based scanning to improve bootup time
+Date: Thu, 10 Jul 2014 13:46:32 +0200
+Message-Id: <1404992799-3705-13-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404992799-3705-1-git-send-email-wsa@the-dreams.de>
 References: <1404992799-3705-1-git-send-email-wsa@the-dreams.de>
@@ -30,35 +31,29 @@ such things always break after some time.
 
 Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 ---
- drivers/i2c/busses/i2c-ocores.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/i2c/busses/i2c-s3c2410.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-ocores.c b/drivers/i2c/busses/i2c-ocores.c
-index 0e10cc6182f0..2a4fe0b7cfb7 100644
---- a/drivers/i2c/busses/i2c-ocores.c
-+++ b/drivers/i2c/busses/i2c-ocores.c
-@@ -239,15 +239,15 @@ static u32 ocores_func(struct i2c_adapter *adap)
- }
+diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
+index e828a1dba0e5..6252c051525a 100644
+--- a/drivers/i2c/busses/i2c-s3c2410.c
++++ b/drivers/i2c/busses/i2c-s3c2410.c
+@@ -1128,11 +1128,11 @@ static int s3c24xx_i2c_probe(struct platform_device *pdev)
+ 		s3c24xx_i2c_parse_dt(pdev->dev.of_node, i2c);
  
- static const struct i2c_algorithm ocores_algorithm = {
--	.master_xfer	= ocores_xfer,
--	.functionality	= ocores_func,
-+	.master_xfer = ocores_xfer,
-+	.functionality = ocores_func,
- };
+ 	strlcpy(i2c->adap.name, "s3c2410-i2c", sizeof(i2c->adap.name));
+-	i2c->adap.owner   = THIS_MODULE;
+-	i2c->adap.algo    = &s3c24xx_i2c_algorithm;
++	i2c->adap.owner = THIS_MODULE;
++	i2c->adap.algo = &s3c24xx_i2c_algorithm;
+ 	i2c->adap.retries = 2;
+-	i2c->adap.class   = I2C_CLASS_HWMON | I2C_CLASS_SPD | I2C_CLASS_DEPRECATED;
+-	i2c->tx_setup     = 50;
++	i2c->adap.class = I2C_CLASS_DEPRECATED;
++	i2c->tx_setup = 50;
  
- static struct i2c_adapter ocores_adapter = {
--	.owner		= THIS_MODULE,
--	.name		= "i2c-ocores",
--	.class		= I2C_CLASS_HWMON | I2C_CLASS_SPD | I2C_CLASS_DEPRECATED,
--	.algo		= &ocores_algorithm,
-+	.owner = THIS_MODULE,
-+	.name = "i2c-ocores",
-+	.class = I2C_CLASS_DEPRECATED,
-+	.algo = &ocores_algorithm,
- };
+ 	init_waitqueue_head(&i2c->wait);
  
- static const struct of_device_id ocores_i2c_match[] = {
 -- 
 2.0.0
 
