@@ -1,94 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751684AbaGJKXe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 06:23:34 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53311 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750941AbaGJKXc (ORCPT
+	id S1751865AbaGJKZA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 06:25:00 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:36241 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751022AbaGJKY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 06:23:32 -0400
-Date: Thu, 10 Jul 2014 11:23:34 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
-        Joerg Roedel <joro@8bytes.org>, Cho KyongHo <pullip.cho@samsung.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Olav Haugan <ohaugan@codeaurora.org>,
-        Varun Sethi <varun.sethi@freescale.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] devicetree: Add generic IOMMU device tree bindings
-Message-ID: <20140710102334.GG2449@arm.com>
-References: <1404487757-18829-1-git-send-email-thierry.reding@gmail.com>
- <20140709134050.GN9485@arm.com>
- <20140709142125.GB3262@ulmo>
- <20140709181048.GX9485@arm.com>
- <20140710094909.GA21583@ulmo>
+	Thu, 10 Jul 2014 06:24:58 -0400
+Date: Thu, 10 Jul 2014 03:24:57 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        ohering@suse.com, jbottomley@parallels.com, hch@infradead.org,
+        jasowang@redhat.com, apw@canonical.com, linux-scsi@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH V2 2/8] Drivers: scsi: storvsc: Set cmd_per_lun to
+ reflect value supported by the Host
+Message-ID: <20140710102457.GA31692@infradead.org>
+References: <1404974008-4984-1-git-send-email-kys@microsoft.com>
+ <1404974032-5023-1-git-send-email-kys@microsoft.com>
+ <1404974032-5023-2-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140710094909.GA21583@ulmo>
+In-Reply-To: <1404974032-5023-2-git-send-email-kys@microsoft.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 10:49:10AM +0100, Thierry Reding wrote:
-> On Wed, Jul 09, 2014 at 07:10:48PM +0100, Will Deacon wrote:
-> > On Wed, Jul 09, 2014 at 03:21:27PM +0100, Thierry Reding wrote:
-> > > Anything beyond that (e.g. logical grouping of masters) isn't directly
-> > > within the scope of the binding (it doesn't describe hardware but some
-> > > policy pertaining to some specific use-case).
-> > 
-> > This *is* for hardware. I can use PCI as an example, but this could equally
-> > apply to other types of bus. If you have a bunch of PCI master devices
-> > sitting being a non-transparent bridge, they can end up sharing the same
-> > master device ID (requester ID). This means that there is no way in the
-> > IOMMU to initialise a translation for one of these devices without also
-> > affecting the others. We currently have iommu_groups to deal with this, but
-> > it *is* a property of the hardware and we absolutely need a way to describe
-> > it. I'm happy to add it later, but we need to think about it now to avoid
-> > merging something that can't easily be extended.
-> > 
-> > For PCI, the topology is probable but even then, we need this information to
-> > describe the resulting master device ID emitted by the bridge for the
-> > upstream group. One way to do this with your binding would be to treat all
-> > of the upstream masters as having the same device ID.
-> 
-> Yes, I think that makes most sense. After all from the IOMMU's point of
-> view requests from all devices behind the bridge will originate from the
-> same ID.
-> 
-> So technically it's not really correct to encode the master ID within
-> each of the devices, but rather they should be inheriting the ID from
-> the non-transparent bridge.
+> -	.cmd_per_lun =		1,
+> +	.cmd_per_lun =		255,
+>  	.can_queue =		STORVSC_MAX_IO_REQUESTS*STORVSC_MAX_TARGETS,
 
-Indeed. Is that possible with your binding, or would we just duplicate the
-IDs between the masters?
+slave_configure immediately adjusts this down to STORVSC_MAX_IO_REQUESTS
+(250), any reson to start out with the magic 255 here?
 
-> > With virtualisation, we may want to assign a group of devices to a guest but
-> > without emulating the bridge. This would need something the device-tree to
-> > describe that they are grouped together.
-> 
-> But that's also a software decision, isn't it? Virtualization doesn't
-> have anything to do with the hardware description. Or am I missing
-> something? Of course I guess you could generate a DTB for the guest and
-> group device together, in which case you're pretty much free to do what
-> you want since you're essentially defining your own hardware.
-
-If you're doing device passthrough and you want to allow the guest to
-program the IOMMU, I think that virtualisation is directly related to the
-hardware description, since the guest will be bound by physical properties
-of the system.
-
-Will
