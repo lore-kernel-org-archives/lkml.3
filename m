@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524AbaGJTMJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 15:12:09 -0400
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:57546 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717AbaGJTMH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 15:12:07 -0400
+	id S1752573AbaGJTMd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 15:12:33 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:41025 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752111AbaGJTMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 15:12:32 -0400
+Date: Thu, 10 Jul 2014 21:12:24 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: Havard Skinnemoen <hskinnemoen@google.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ewout van Bekkum <ewout@google.com>
+Subject: Re: [PATCH 4/6] x86-mce: Add spinlocks to prevent duplicated MCP and
+ CMCI reports.
+Message-ID: <20140710191224.GF5603@pd.tnic>
+References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
+ <1404925766-32253-5-git-send-email-hskinnemoen@google.com>
+ <20140710164151.GA5603@pd.tnic>
+ <CAFQmdRbguE7O16diTNMXMU-3E8Zeu=Y=vcXVHKRyxzbq09TfzQ@mail.gmail.com>
+ <20140710184416.GE5603@pd.tnic>
+ <CA+8MBbKNQEk5UQnVf-G8zeMiYE2FpyztHE6_RoDs3RM_8mrVow@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [84.208.72.173]
-In-Reply-To: <CAG-2HqUPRqFgn1PfDoYzuyoYRcfB=RQCVg3PJZvaakiVtK07yw@mail.gmail.com>
-References: <1404980258-30853-1-git-send-email-teg@jklm.no>
- <20140710.014355.387392730830362973.davem@davemloft.net> <CAG-2HqUPRqFgn1PfDoYzuyoYRcfB=RQCVg3PJZvaakiVtK07yw@mail.gmail.com>
-From: Tom Gundersen <teg@jklm.no>
-Date: Thu, 10 Jul 2014 21:11:46 +0200
-Message-ID: <CAG-2HqVLE=P6KTPnZY4d6jzkQ5_1C-ETJRu6AH0KcY9FAFBASA@mail.gmail.com>
-Subject: Re: [PATCH v7 00/33] Provide netdev naming-policy via sysfs
-To: David Miller <davem@davemloft.net>
-Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CA+8MBbKNQEk5UQnVf-G8zeMiYE2FpyztHE6_RoDs3RM_8mrVow@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 11:19 AM, Tom Gundersen <teg@jklm.no> wrote:
-> Thanks for the quick answer.
->
-> On Thu, Jul 10, 2014 at 10:43 AM, David Miller <davem@davemloft.net> wrote:
->> It is not reasonable to expect people to review such a large number of
->> patches at one time.
->>
->> Split your series up into logical, and more reasonably sized chunks.
->>
->> I'd say 14 or 15 at a time is the limit.
->>
->> I'm not even looking at this series until you submit it more reasonably.
->>
->> Thank you.
->
-> Ok. I suggest you review patches 1-7, as these are the generic ones.
-> Then once they have been applied I can resubmit the subsequent patches
-> individually.
->
-> Do you want me to resubmit patches 1-7, or do you just want to pick
-> them from this series as they are?
+On Thu, Jul 10, 2014 at 11:57:06AM -0700, Tony Luck wrote:
+> You don't know if the bank is shared or not. If it is not shared, then
+> the above code might skip reading the bank because some other cpu is
+> busy reading that bank number - and seeing its own private bank.
 
-I'll redo the first few patches based on the comments received so far,
-and resend them in a shorter series, so no need to review the current
-one.
+Grrr, I see what you mean.
 
-Thanks.
+Hmm, can we serialize machine_check_poll per CPU in a cheaper way?
+Disabling interrupts around the reads is certainly fine but still too
+heavy-handed IMO.
 
-Tom
+I'll think about it more tomorrow - my brain is twisted enough for
+today. :-)
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
