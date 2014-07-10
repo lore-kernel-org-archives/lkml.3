@@ -1,87 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201AbaGJD1X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 23:27:23 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:63859 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751861AbaGJD1W (ORCPT
+	id S1756013AbaGJDc0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 23:32:26 -0400
+Received: from regular1.263xmail.com ([211.150.99.132]:44704 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755386AbaGJDcX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 23:27:22 -0400
-Date: Thu, 10 Jul 2014 12:26:04 +0900
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: lidza.louina@gmail.com
-Cc: markh@compro.net, gregkh@linuxfoundation.org,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH V2] staging: dgap: removes redundant null check and change
- paramter for dgap_maxcps_room()
-Message-ID: <20140710032603.GA5576@devel.8.8.4.4>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Wed, 9 Jul 2014 23:32:23 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: addy.ke@rock-chips.com
+X-FST-TO: robh+dt@kernel.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: addy.ke@rock-chips.com
+X-UNIQUE-TAG: <9cba7001b5d7be8110a8ed7d2aa9506f>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Addy Ke <addy.ke@rock-chips.com>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, tgih.jun@samsung.com, jh80.chung@samsung.com,
+        chris@printf.net, ulf.hansson@linaro.org, dinguyen@altera.com,
+        heiko@sntech.de, olof@lixom.net
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        zyf@rock-chips.com, Addy Ke <addy.ke@rock-chips.com>
+Subject: [PATCH v2] mmc: dw_mmc: add support for RK3288
+Date: Thu, 10 Jul 2014 11:31:49 +0800
+Message-Id: <1404963109-3906-1-git-send-email-addy.ke@rock-chips.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1404565174-2923-1-git-send-email-addy.ke@rock-chips.com>
+References: <1404565174-2923-1-git-send-email-addy.ke@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Null checks for tty, un and ch are already done by caller,
-so replace parameter "tty" with "ch" and "un".
+This patch focuses on clock setting for RK3288 mmc controller.
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+In RK3288 mmc controller, CLKDIV register can only be set 0 or 1,
+and if DDR 8bit mode, CLKDIV register must be set 1.
+
+Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
 ---
-V2: revert return type from int to void.
-leave it originally.
+changes since v1:
+- dw_mci_rk3288_setup_clock: do not call clk_get_rate(), just use the
+  host->bus_hz which is already called by dw_mmc.c, suggested by Jaehoon Chung
 
- drivers/staging/dgap/dgap.c |   21 ++++-----------------
- 1 files changed, 4 insertions(+), 17 deletions(-)
+ .../devicetree/bindings/mmc/rockchip-dw-mshc.txt   |  4 +-
+ drivers/mmc/host/dw_mmc-pltfm.c                    | 50 +++++++++++++++++++++-
+ 2 files changed, 51 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index cc21dd2..9affc5b 100644
---- a/drivers/staging/dgap/dgap.c
-+++ b/drivers/staging/dgap/dgap.c
-@@ -2507,22 +2507,9 @@ static int dgap_wait_for_drain(struct tty_struct *tty)
-  * returns the new bytes_available.  This only affects printer
-  * output.
-  */
--static int dgap_maxcps_room(struct tty_struct *tty, int bytes_available)
-+static int dgap_maxcps_room(struct channel_t *ch, struct un_t *un,
-+			    int bytes_available)
+diff --git a/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt b/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt
+index c559f3f..e3f95cd 100644
+--- a/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt
++++ b/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt
+@@ -10,7 +10,9 @@ extensions to the Synopsys Designware Mobile Storage Host Controller.
+ Required Properties:
+ 
+ * compatible: should be
+-	- "rockchip,rk2928-dw-mshc": for Rockchip RK2928 and following
++	- "rockchip,rk2928-dw-mshc": for Rockchip RK2928 and following,
++							before RK3288
++	- "rockchip,rk3288-dw-mshc": for Rockchip RK3288
+ 
+ Example:
+ 
+diff --git a/drivers/mmc/host/dw_mmc-pltfm.c b/drivers/mmc/host/dw_mmc-pltfm.c
+index d4a47a9..809c28b 100644
+--- a/drivers/mmc/host/dw_mmc-pltfm.c
++++ b/drivers/mmc/host/dw_mmc-pltfm.c
+@@ -21,17 +21,61 @@
+ #include <linux/mmc/mmc.h>
+ #include <linux/mmc/dw_mmc.h>
+ #include <linux/of.h>
++#include <linux/clk.h>
+ 
+ #include "dw_mmc.h"
+ #include "dw_mmc-pltfm.h"
+ 
++#define RK3288_CLKGEN_DIV	2
++
+ static void dw_mci_pltfm_prepare_command(struct dw_mci *host, u32 *cmdr)
  {
--	struct channel_t *ch;
--	struct un_t *un;
--
--	if (!tty)
--		return bytes_available;
--
--	un = tty->driver_data;
--	if (!un || un->magic != DGAP_UNIT_MAGIC)
--		return bytes_available;
--
--	ch = un->un_ch;
--	if (!ch || ch->magic != DGAP_CHANNEL_MAGIC)
--		return bytes_available;
--
- 	/*
- 	 * If its not the Transparent print device, return
- 	 * the full data amount.
-@@ -2624,7 +2611,7 @@ static int dgap_tty_write_room(struct tty_struct *tty)
- 		ret += ch->ch_tsize;
+ 	*cmdr |= SDMMC_CMD_USE_HOLD_REG;
+ }
  
- 	/* Limit printer to maxcps */
--	ret = dgap_maxcps_room(tty, ret);
-+	ret = dgap_maxcps_room(ch, un, ret);
+-static const struct dw_mci_drv_data rockchip_drv_data = {
++static int dw_mci_rk3288_setup_clock(struct dw_mci *host)
++{
++	host->bus_hz /= RK3288_CLKGEN_DIV;
++
++	return 0;
++}
++
++static void dw_mci_rk3288_set_ios(struct dw_mci *host, struct mmc_ios *ios)
++{
++	int ret;
++	unsigned int cclkin;
++
++	/*
++	 * cclkin: source clock of mmc controller.
++	 * bus_hz: card interface clock generated by CLKGEN.
++	 * bus_hz = cclkin / RK3288_CLKGEN_DIV;
++	 * ios->clock = (div == 0) ? bus_hz : (bus_hz / (2 * div))
++	 *
++	 * Note: div can only be 0 or 1
++	 *       if DDR50 8bit mode, div must be set 1
++	 */
++	if ((ios->bus_width == MMC_BUS_WIDTH_8) &&
++	    (ios->timing == MMC_TIMING_UHS_DDR50 ||
++	     ios->timing == MMC_TIMING_MMC_DDR52))
++		cclkin = 2 * ios->clock * RK3288_CLKGEN_DIV;
++	else
++		cclkin = ios->clock * RK3288_CLKGEN_DIV;
++
++	ret = clk_set_rate(host->ciu_clk, cclkin);
++	if (ret)
++		dev_warn(host->dev, "failed to set rate %uHz\n", ios->clock);
++
++	host->bus_hz = clk_get_rate(host->ciu_clk) / RK3288_CLKGEN_DIV;
++}
++
++static const struct dw_mci_drv_data rk2928_drv_data = {
++	.prepare_command	= dw_mci_pltfm_prepare_command,
++};
++
++static const struct dw_mci_drv_data rk3288_drv_data = {
+ 	.prepare_command	= dw_mci_pltfm_prepare_command,
++	.set_ios	= dw_mci_rk3288_set_ios,
++	.setup_clock	= dw_mci_rk3288_setup_clock,
+ };
  
- 	/*
- 	 * If we are printer device, leave space for
-@@ -2729,7 +2716,7 @@ static int dgap_tty_write(struct tty_struct *tty, const unsigned char *buf,
- 	 * Limit printer output to maxcps overall, with bursts allowed
- 	 * up to bufsize characters.
- 	 */
--	bufcount = dgap_maxcps_room(tty, bufcount);
-+	bufcount = dgap_maxcps_room(ch, un, bufcount);
- 
- 	/*
- 	 * Take minimum of what the user wants to send, and the
+ static const struct dw_mci_drv_data socfpga_drv_data = {
+@@ -95,7 +139,9 @@ EXPORT_SYMBOL_GPL(dw_mci_pltfm_pmops);
+ static const struct of_device_id dw_mci_pltfm_match[] = {
+ 	{ .compatible = "snps,dw-mshc", },
+ 	{ .compatible = "rockchip,rk2928-dw-mshc",
+-		.data = &rockchip_drv_data },
++		.data = &rk2928_drv_data },
++	{ .compatible = "rockchip,rk3288-dw-mshc",
++		.data = &rk3288_drv_data },
+ 	{ .compatible = "altr,socfpga-dw-mshc",
+ 		.data = &socfpga_drv_data },
+ 	{},
 -- 
-1.7.1
+1.8.3.2
+
 
