@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141AbaGJSej (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 14:34:39 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:45235 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818AbaGJSeh (ORCPT
+	id S1751818AbaGJSgp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 14:36:45 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58146 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750768AbaGJSgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 14:34:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <1404954350-26343-5-git-send-email-abrestic@chromium.org>
-References: <1404954350-26343-1-git-send-email-abrestic@chromium.org>
-	<1404954350-26343-5-git-send-email-abrestic@chromium.org>
-Date: Thu, 10 Jul 2014 11:34:36 -0700
-X-Google-Sender-Auth: EnqeD3uK_CPisjo0Iz4l2glPWrE
-Message-ID: <CAODwPW9FORb2jnxFi6US6CUJvJzKyUkT8cuSzkPues41hJe+Jw@mail.gmail.com>
-Subject: Re: [PATCH 4/4] xhci: Allow xHCI drivers to be built as separate modules
-From: Julius Werner <jwerner@chromium.org>
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Julius Werner <jwerner@chromium.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-tegra@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 10 Jul 2014 14:36:44 -0400
+Date: Thu, 10 Jul 2014 20:36:41 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] irqchip: atmel-aic: Add irq RTC fixups
+Message-ID: <20140710203641.2e17de80@bbrezillon>
+In-Reply-To: <20140710203249.23dd6444@bbrezillon>
+References: <1405016741-2407-1-git-send-email-boris.brezillon@free-electrons.com>
+	<20140710203249.23dd6444@bbrezillon>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
-> index af89a90..bafba71 100644
-> --- a/drivers/usb/host/Makefile
-> +++ b/drivers/usb/host/Makefile
-> @@ -15,19 +15,19 @@ fhci-$(CONFIG_FHCI_DEBUG) += fhci-dbg.o
->  xhci-hcd-y := xhci.o xhci-mem.o
->  xhci-hcd-y += xhci-ring.o xhci-hub.o xhci-dbg.o
->  xhci-hcd-y += xhci-trace.o
-> -xhci-hcd-$(CONFIG_PCI) += xhci-pci.o
->
-> -ifneq ($(CONFIG_USB_XHCI_PLATFORM), )
-> -       xhci-hcd-y              += xhci-plat.o
-> +xhci-plat-hcd-y := xhci-plat.o
->  ifneq ($(CONFIG_USB_XHCI_MVEBU), )
-> -       xhci-hcd-y              += xhci-mvebu.o
-> -endif
+On Thu, 10 Jul 2014 20:32:49 +0200
+Boris BREZILLON <boris.brezillon@free-electrons.com> wrote:
 
-nit: Can do this even simpler now, just
-"xhci-plat-hcd-$(CONFIG_USB_XHCI_MVEBU) += xhci-mvebu.o" without the
-ifneq.
+> On Thu, 10 Jul 2014 20:25:38 +0200
+> Boris BREZILLON <boris.brezillon@free-electrons.com> wrote:
+> 
+> > Hello,
+> > 
+> > This patch series introduce the notion of irq fixups for atmel SoCs.
+> > 
+> > In most at91 SoCs the first interrupt line is shared by several IPs, and
+> > some of these HW blocks might be in an unknown state when booting the
+> > Linux kernel.
+> > Hence these IPs might generate spurious interrupts if they've not masked
+> > their irqs and the shared irq line is requested by another peripheral.
+> > 
+> > These fixups were previously done in arch/arm/mach-at91/sysirq_mask.c
+> > but as we're trying to use standard implementation (IRQCHIP_DECLARE and
+> > automatic call of irqchip_init within arch/arm/kernel/irq.c) we need to
+> > do those fixups in the irqchip driver.
+> 
+> This is what I was talking about:
+> 
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/271425.htm
+> 
+> 
 
-> +       xhci-plat-hcd-y         += xhci-mvebu.o
->  endif
->
->  obj-$(CONFIG_USB_WHCI_HCD)     += whci/
->
->  obj-$(CONFIG_PCI)              += pci-quirks.o
->
-> +obj-$(CONFIG_USB_XHCI_PCI)     += xhci-pci.o
-> +obj-$(CONFIG_USB_XHCI_PLATFORM) += xhci-plat-hcd.o
-> +
->  obj-$(CONFIG_USB_EHCI_HCD)     += ehci-hcd.o
->  obj-$(CONFIG_USB_EHCI_PCI)     += ehci-pci.o
->  obj-$(CONFIG_USB_EHCI_HCD_PLATFORM)    += ehci-platform.o
+Oops, sorry this is not the appropriate thread: I meant to send this
+reply to this series:
 
-Great patch series, thank you!
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/271413.html
+
+
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
