@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751392AbaGJFYH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 01:24:07 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:55346 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281AbaGJFYF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 01:24:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAOesGMjdAYoFLsqCNMUp7_KbiT8xKn6nkUxX=4V7wojsMp_-2Q@mail.gmail.com>
-References: <2CC2A0A4A178534D93D5159BF3BCB661A17A3E48F2@EAPEX1MAIL1.st.com>
-	<CAOesGMiu_azMYt3L5OgZSFRgrJQvXvkvSOtr0eLam22CQ5SwuA@mail.gmail.com>
-	<CAKohpon0KkW+GqTGriioXCRLet0wBzT-7=+_VUBczJtfgTgJqQ@mail.gmail.com>
-	<CAOesGMjdAYoFLsqCNMUp7_KbiT8xKn6nkUxX=4V7wojsMp_-2Q@mail.gmail.com>
-Date: Thu, 10 Jul 2014 10:54:03 +0530
-Message-ID: <CAKohpom79td__V9r68YmOTS_Ws4PKXDAaHLhYeLZcAcHRsjYig@mail.gmail.com>
-Subject: Re: [GIT PULL] ARM: SPEAr1310 PCIe updates
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: Mohit KUMAR DCG <Mohit.KUMAR@st.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Pratyush ANAND <pratyush.anand@st.com>,
-        "'Bjorn Helgaas' (bhelgaas@google.com)" <bhelgaas@google.com>,
-        spear-devel <spear-devel@list.st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Mark Nicholson <mark@nicholnet.com>,
-        "FTPAdmin Kernel.org" <ftpadmin@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1751181AbaGJFdN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 01:33:13 -0400
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:54074
+	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750708AbaGJFdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 01:33:09 -0400
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        ohering@suse.com, jbottomley@parallels.com, hch@infradead.org,
+        jasowang@redhat.com, apw@canonical.com, linux-scsi@vger.kernel.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH V2 0/8] Drivers: scsi: storvsc: Bug fixes and improvements
+Date: Wed,  9 Jul 2014 23:33:28 -0700
+Message-Id: <1404974008-4984-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 July 2014 10:47, Olof Johansson <olof@lixom.net> wrote:
->> I didn't sign-off because I haven't even looked closed at many of the
->> patches around PCI and Acked whatever I could understand.
->
-> Thanks, good to know that the series hasn't been fully reviewed. That
-> makes me even more hesitant to apply it at the moment, given all the
-> other issues around it.
+In this patch set I have fixed a few bugs and implemented some enhancements.
 
-Its not that the series hasn't been fully reviewed, it is.
+In this version of the patch I have addressed comments from
+Christoph Hellwig <hch@infradead.org>
 
-Arnd has reviewed and Acked the complete series. I have Acked SPEAr
-specific parts and Bjorn have Acked PCI specific stuff.
+K. Y. Srinivasan (8):
+  Drivers: scsi: storvsc: Change the limits to reflect the values on
+    the host
+  Drivers: scsi: storvsc: Set cmd_per_lun to reflect value supported by
+    the Host
+  Drivers: scsi: storvsc: Filter commands based on the storage protocol
+    version
+  Drivers: scsi: storvsc: Fix a bug in handling VMBUS protocol version
+  Drivers: scsi: storvsc: Fix a bug in the handling of SRB status flags
+  Drivers: scsi: storvsc: Implement an abort handler
+  drivers: scsi: storvsc: Set srb_flags in all cases
+  drivers: scsi: storvsc: Correctly handle TEST_UNIT_READY failure
 
->> But yeah, this committer thing is what I missed. Because of that I might
->> be required to signoff it.
->
-> Anyone touching the patch, forwarding it or applying it needs to sign
-> off. It's quite simple, and well documented.
+ drivers/scsi/storvsc_drv.c |  128 ++++++++++++++++++++++++++++++++------------
+ 1 files changed, 93 insertions(+), 35 deletions(-)
 
-Yeah, my mistake. Accepted.
+-- 
+1.7.4.1
+
