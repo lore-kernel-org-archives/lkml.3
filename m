@@ -1,156 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765AbaGJJ1V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 05:27:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6886 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751746AbaGJJ1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 05:27:19 -0400
-Date: Thu, 10 Jul 2014 11:26:09 +0200
-From: Igor Mammedov <imammedo@redhat.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>,
-        <x86@kernel.org>, <toshi.kani@hp.com>, <bp@alien8.de>,
-        <huawei.libin@huawei.com>, <paul.gortmaker@windriver.com>,
-        <linux-kernel@vger.kernel.org>, <srivatsa.bhat@linux.vnet.ibm.com>,
-        <umgwanakikbuti@gmail.com>, <peterz@infradead.org>
-Subject: Re: [PATCH] x86,cpu-hotplug: assign same CPU number to readded CPU
-Message-ID: <20140710112609.0b0eb294@nial.usersys.redhat.com>
-In-Reply-To: <53BE51CE.40208@jp.fujitsu.com>
-References: <53BE51CE.40208@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752704AbaGJJ3s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 05:29:48 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:64285 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751942AbaGJJ3p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 05:29:45 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-3a-53be5d06a4e8
+Message-id: <53BE5BC1.6050802@samsung.com>
+Date: Thu, 10 Jul 2014 13:24:17 +0400
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Christoph Lameter <cl@gentwo.org>
+Cc: linux-kernel@vger.kernel.org, Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Alexey Preobrazhensky <preobr@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        x86@kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC/PATCH RESEND -next 15/21] mm: slub: add kernel address
+ sanitizer hooks to slub allocator
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1404905415-9046-16-git-send-email-a.ryabinin@samsung.com>
+ <alpine.DEB.2.11.1407090947020.1384@gentwo.org>
+In-reply-to: <alpine.DEB.2.11.1407090947020.1384@gentwo.org>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsVy+t/xa7pssfuCDc5eULL4vXcmq8Wc9WvY
+	LJbPmctkMeFhG7vFyu5mNovtz94yWazsfMBqsenxNVaLP7t2MFlc3jWHzeLemv+sFrcv81pc
+	OrCAyaJl3wUmi7bP/1gt9q08D2Qt2chksfjIbWaLd88mM1ts3jSV2eLHhsesDqIeLc09bB77
+	Dxd57Jx1l91jwaZSj02rOtk8Nn2axO7R9fYKk8e7c+fYPU7M+M3isXlJvcfHp7dYPN7vu8rm
+	cWbBEXaPz5vkAviiuGxSUnMyy1KL9O0SuDJWnX3PXvCLs6JrxSWmBsZeji5GTg4JAROJd382
+	MULYYhIX7q1n62Lk4hASWMooce9WFyuE08wkMaf/AitIFa+AlsTurp/sIDaLgKrEinefmUBs
+	NgE9iX+ztrOB2KICERIH+p5B1QtK/Jh8jwXEFgGqvz7zNNgGZoHLrBLdL64CFXFwCAvkSGzZ
+	GgyxbAujxIxNl8FO4hSwkXjeegnMZhbQkdjfOo0NwpaX2LzmLfMERoFZSHbMQlI2C0nZAkbm
+	VYyiqaXJBcVJ6blGesWJucWleel6yfm5mxghcfx1B+PSY1aHGAU4GJV4eF/s3hMsxJpYVlyZ
+	e4hRgoNZSYR3m92+YCHelMTKqtSi/Pii0pzU4kOMTBycUg2Mnqz2QVI/9go08qVZ7PZ0kmMw
+	S/vLoPG3cyVHaHmasw3r3ca9C9jCpPdObVhpe3WOx+mzZkaumb80nwc/Cmg90sz+snJ357O5
+	1XI9UuH/9UU4UzsFt83bVv/ffyHPt5mySxc+MAg49VjYM0sj8rLJ4hv3DqpcnMwqdyTBR9tw
+	5b9/B75O07uhxFKckWioxVxUnAgAwl18Z8ECAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Jul 2014 17:41:50 +0900
-Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com> wrote:
-
-> llc_shared_map is not cleared even if CPU is offline or hot removed.
-> So when hot-plugging CPU and assigning new CPU number to hot-added CPU,
-> the mask has wrong value. The mask is used by CSF schduler to create
-> sched_domain. So it breaks CFS scheduler.
+On 07/09/14 18:48, Christoph Lameter wrote:
+> On Wed, 9 Jul 2014, Andrey Ryabinin wrote:
 > 
-> Here is a example on my system.
-> My system has 4 sockets and each socket has 15 cores and HT is enabled.
-> In this case, each core of sockes is numbered as follows:
+>> With this patch kasan will be able to catch bugs in memory allocated
+>> by slub.
+>> Allocated slab page, this whole page marked as unaccessible
+>> in corresponding shadow memory.
+>> On allocation of slub object requested allocation size marked as
+>> accessible, and the rest of the object (including slub's metadata)
+>> marked as redzone (unaccessible).
+>>
+>> We also mark object as accessible if ksize was called for this object.
+>> There is some places in kernel where ksize function is called to inquire
+>> size of really allocated area. Such callers could validly access whole
+>> allocated memory, so it should be marked as accessible by kasan_krealloc call.
 > 
->           | CPU#
-> Socket#0 | 0-14 , 60-74
-> Socket#1 | 15-29, 75-89
-> Socket#2 | 30-44, 90-104
-> Socket#3 | 45-59, 105-119
-> 
-> Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
-> It means that last level cache of Socket#2 is shared with
-> CPU#30-44 and 90-104.
-> 
-> When hot-removing socket#2 and #3, each core of sockets is numbered
-> as follows:
-> 
->           | CPU#
-> Socket#0 | 0-14 , 60-74
-> Socket#1 | 15-29, 75-89
-> 
-> But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30 remains
-> having 0x3fff80000001fffc0000000.
-> 
-> After that, when hot-adding socket#2 and #3, each core of sockets is
-> numbered as follows:
-> 
->           | CPU#
-> Socket#0 | 0-14 , 60-74
-> Socket#1 | 15-29, 75-89
-> Socket#2 | 30-59
-> Socket#3 | 90-119
-> 
-> Then llc_shared_mask of CPU#30 becomes 0x3fff8000fffffffc0000000.
-> It means that last level cache of Socket#2 is shared with CPU#30-59
-> and 90-104. So the mask has wrong value.
-> 
-> At first, I cleared hot-removed CPU number's bit from llc_shared_map
-> when hot removing CPU. But Borislav suggested that the problem will
-> disappear if readded CPU is assigned same CPU number. And llc_shared_map
-> must not be changed.
-> 
-> So the patch assigns same CPU number to readded CPU by linking CPU
-> number to APIC ID. And by the patch, the problem disappers.
-> 
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Suggested-by: Borislav Petkov <bp@alien8.de1>
-> ---
->   arch/x86/kernel/apic/apic.c | 32 +++++++++++++++++++++++++++++++-
->   1 file changed, 31 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-> index ad28db7..1cc715b 100644
-> --- a/arch/x86/kernel/apic/apic.c
-> +++ b/arch/x86/kernel/apic/apic.c
-> @@ -220,6 +220,22 @@ static void apic_pm_activate(void);
->   static unsigned long apic_phys;
-> 
->   /*
-> + * Bind ACPI ID to CPU ID
-> + * CPU ID to APIC ID does not change by this array even if CPU is
-> + * hotplugged. So don't clear the array even if CPU is hot-removed
-> + */
-> +static int apicid_to_cpuid[MAX_LOCAL_APIC] = {
-> +	[0 ... MAX_LOCAL_APIC-1] = -1,
-> +};
-> +
-> +/*
-> + * Represent CPU ID bound to APIC
-> + * Don't clear a bit even if CPU is hot-removed
-> + */
-> +static DECLARE_BITMAP(cpu_used_bits, CONFIG_NR_CPUS);
-> +static struct cpumask *const cpu_used_mask = to_cpumask(cpu_used_bits);
-> +
-> +/*
->    * Get the LAPIC version
->    */
->   static inline int lapic_get_version(void)
-> @@ -2122,6 +2138,17 @@ void disconnect_bsp_APIC(int virt_wire_setup)
->   	apic_write(APIC_LVT1, value);
->   }
-> 
-> +static int get_cpuid(int apicid)
-> +{
-> +	int cpuid;
-> +
-> +	cpuid = apicid_to_cpuid[apicid];
-> +	if (cpuid < 0)
-> +		cpuid = cpumask_next_zero(-1, cpu_used_mask);
-Why do you need additional cpu bitmask?
-How about just finding the first apicid_to_cpuid[apicid] < 0
-and dropping not needed anymore bitmask.
-
-> +
-> +	return cpuid;
-> +}
-> +
->   int generic_processor_info(int apicid, int version)
->   {
->   	int cpu, max = nr_cpu_ids;
-> @@ -2199,7 +2226,9 @@ int generic_processor_info(int apicid, int version)
->   		 */
->   		cpu = 0;
->   	} else
-> -		cpu = cpumask_next_zero(-1, cpu_present_mask);
-> +		cpu = get_cpuid(apicid);
-> +
-> +	apicid_to_cpuid[apicid] = cpu;
-> 
->   	/*
->   	 * Validate version
-> @@ -2228,6 +2257,7 @@ int generic_processor_info(int apicid, int version)
->   	early_per_cpu(x86_cpu_to_logical_apicid, cpu) =
->   		apic->x86_32_early_logical_apicid(cpu);
->   #endif
-> +	cpumask_set_cpu(cpu, cpu_used_mask);
->   	set_cpu_possible(cpu, true);
->   	set_cpu_present(cpu, true);
-> 
+> Do you really need to go through all of this? Add the hooks to
+> kmem_cache_alloc_trace() instead and use the existing instrumentation
+> that is there for other purposes?
 > 
 
+I could move kasan_kmalloc hooks kmem_cache_alloc_trace(), and I think it will look better.
+Hovewer I will require two hooks instead of one (for CONFIG_TRACING=y and CONFIG_TRACING=n).
+
+Btw, seems I broke CONFIG_SL[AO]B configurations in this patch by  introducing __ksize function
+which used in krealloc now.
