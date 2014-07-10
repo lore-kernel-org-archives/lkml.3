@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258AbaGJISt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 04:18:49 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:49298 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752219AbaGJISl (ORCPT
+	id S1752396AbaGJITH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 04:19:07 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:42222 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752300AbaGJITD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 04:18:41 -0400
+	Thu, 10 Jul 2014 04:19:03 -0400
 From: Tom Gundersen <teg@jklm.no>
 To: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
         David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        Tom Gundersen <teg@jklm.no>, Karsten Keil <isdn@linux-pingi.de>
-Subject: [PATCH v7 19/33] net: isdn - set name assign type
-Date: Thu, 10 Jul 2014 10:17:24 +0200
-Message-Id: <1404980258-30853-20-git-send-email-teg@jklm.no>
+        Tom Gundersen <teg@jklm.no>, Brett Rudley <brudley@broadcom.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        John Linville <linville@tuxdriver.com>, linux-wireless@vger.kernel.org,
+        brcm80211-dev-list@broadcom.com
+Subject: [PATCH v7 29/33] net: brcmfmac - set name assign type
+Date: Thu, 10 Jul 2014 10:17:34 +0200
+Message-Id: <1404980258-30853-30-git-send-email-teg@jklm.no>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1404980258-30853-1-git-send-email-teg@jklm.no>
 References: <1404980258-30853-1-git-send-email-teg@jklm.no>
@@ -22,93 +27,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Tom Gundersen <teg@jklm.no>
-Cc: Karsten Keil <isdn@linux-pingi.de>
----
- drivers/isdn/i4l/isdn_common.c |  4 ++--
- drivers/isdn/i4l/isdn_net.c    | 10 +++++-----
- drivers/isdn/i4l/isdn_net.h    |  4 ++--
- 3 files changed, 9 insertions(+), 9 deletions(-)
+The name is given by the firmware, so we assume it is predictable.
 
-diff --git a/drivers/isdn/i4l/isdn_common.c b/drivers/isdn/i4l/isdn_common.c
-index 9b856e1..67840ca 100644
---- a/drivers/isdn/i4l/isdn_common.c
-+++ b/drivers/isdn/i4l/isdn_common.c
-@@ -1364,7 +1364,7 @@ isdn_ioctl(struct file *file, uint cmd, ulong arg)
- 			}
- 			ret = mutex_lock_interruptible(&dev->mtx);
- 			if (ret) return ret;
--			if ((s = isdn_net_new(s, NULL))) {
-+			if ((s = isdn_net_new(s, NET_NAME_USER, NULL))) {
- 				if (copy_to_user(argp, s, strlen(s) + 1)) {
- 					ret = -EFAULT;
- 				} else {
-@@ -1383,7 +1383,7 @@ isdn_ioctl(struct file *file, uint cmd, ulong arg)
- 				return -EINVAL;
- 			ret = mutex_lock_interruptible(&dev->mtx);
- 			if (ret) return ret;
--			if ((s = isdn_net_newslave(bname))) {
-+			if ((s = isdn_net_newslave(bname, NET_NAME_USER))) {
- 				if (copy_to_user(argp, s, strlen(s) + 1)) {
- 					ret = -EFAULT;
- 				} else {
-diff --git a/drivers/isdn/i4l/isdn_net.c b/drivers/isdn/i4l/isdn_net.c
-index c2ed624..d16fec0 100644
---- a/drivers/isdn/i4l/isdn_net.c
-+++ b/drivers/isdn/i4l/isdn_net.c
-@@ -2573,7 +2573,7 @@ static void _isdn_setup(struct net_device *dev)
-  * Allocate a new network-interface and initialize its data structures.
-  */
- char *
--isdn_net_new(char *name, struct net_device *master)
-+isdn_net_new(char *name, unsigned char name_assign_type, struct net_device *master)
- {
- 	isdn_net_dev *netdev;
- 
-@@ -2588,8 +2588,8 @@ isdn_net_new(char *name, struct net_device *master)
- 		printk(KERN_WARNING "isdn_net: Could not allocate net-device\n");
- 		return NULL;
- 	}
--	netdev->dev = alloc_netdev(sizeof(isdn_net_local), name,
--				   NET_NAME_UNKNOWN, _isdn_setup);
-+	netdev->dev = alloc_netdev(sizeof(isdn_net_local), name, name_assign_type,
-+				   _isdn_setup);
- 	if (!netdev->dev) {
- 		printk(KERN_WARNING "isdn_net: Could not allocate network device\n");
- 		kfree(netdev);
-@@ -2637,7 +2637,7 @@ isdn_net_new(char *name, struct net_device *master)
- }
- 
- char *
--isdn_net_newslave(char *parm)
-+isdn_net_newslave(char *parm, unsigned char name_assign_type)
- {
- 	char *p = strchr(parm, ',');
- 	isdn_net_dev *n;
-@@ -2658,7 +2658,7 @@ isdn_net_newslave(char *parm)
- 		/* Master must not be started yet */
- 		if (isdn_net_device_started(n))
- 			return NULL;
--		return (isdn_net_new(newname, n->dev));
-+		return (isdn_net_new(newname, name_assign_type, n->dev));
- 	}
- 	return NULL;
- }
-diff --git a/drivers/isdn/i4l/isdn_net.h b/drivers/isdn/i4l/isdn_net.h
-index cca6d68..99f0c47 100644
---- a/drivers/isdn/i4l/isdn_net.h
-+++ b/drivers/isdn/i4l/isdn_net.h
-@@ -31,8 +31,8 @@
- #define CISCO_SLARP_REPLY     1
- #define CISCO_SLARP_KEEPALIVE 2
- 
--extern char *isdn_net_new(char *, struct net_device *);
--extern char *isdn_net_newslave(char *);
-+extern char *isdn_net_new(char *, unsigned char, struct net_device *);
-+extern char *isdn_net_newslave(char *, unsigned char);
- extern int isdn_net_rm(char *);
- extern int isdn_net_rmall(void);
- extern int isdn_net_stat_callback(int, isdn_ctrl *);
+Signed-off-by: Tom Gundersen <teg@jklm.no>
+Cc: Brett Rudley <brudley@broadcom.com>
+Cc: Arend van Spriel <arend@broadcom.com>
+Cc: "Franky (Zhenhui) Lin" <frankyl@broadcom.com>
+Cc: Hante Meuleman <meuleman@broadcom.com>
+Cc: John Linville <linville@tuxdriver.com>
+Cc: linux-wireless@vger.kernel.org
+Cc: brcm80211-dev-list@broadcom.com
+---
+ drivers/net/wireless/brcm80211/brcmfmac/fweh.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/brcm80211/brcmfmac/fweh.c b/drivers/net/wireless/brcm80211/brcmfmac/fweh.c
+index f6990f2..8d32721 100644
+--- a/drivers/net/wireless/brcm80211/brcmfmac/fweh.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/fweh.c
+@@ -201,7 +201,8 @@ static void brcmf_fweh_handle_if_event(struct brcmf_pub *drvr,
+ 		brcmf_dbg(EVENT, "adding %s (%pM)\n", emsg->ifname,
+ 			  emsg->addr);
+ 		ifp = brcmf_add_if(drvr, ifevent->bssidx, ifevent->ifidx,
+-				   emsg->ifname, NET_NAME_UNKNOWN, emsg->addr);
++				   emsg->ifname, NET_NAME_PREDICTABLE,
++				   emsg->addr);
+ 		if (IS_ERR(ifp))
+ 			return;
+ 		brcmf_fws_add_interface(ifp);
 -- 
 1.9.3
 
