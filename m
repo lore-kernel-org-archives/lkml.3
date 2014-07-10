@@ -1,107 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751533AbaGJRqB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 13:46:01 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:6480 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076AbaGJRqA (ORCPT
+	id S1751875AbaGJRrE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 13:47:04 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:38816 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154AbaGJRrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 13:46:00 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 10 Jul 2014 10:35:05 -0700
-Message-ID: <53BED155.9040607@nvidia.com>
-Date: Thu, 10 Jul 2014 20:45:57 +0300
-From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 10 Jul 2014 13:47:02 -0400
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>, <linux-kernel@vger.kernel.org>
-CC: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [for-next][PATCH 04/21] ftrace: Optimize function graph to be
- called directly
-References: <20140703160503.006976702@goodmis.org> <20140703161224.062459692@goodmis.org>
-In-Reply-To: <20140703161224.062459692@goodmis.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140710191927.56a3ead5@bbrezillon>
+References: <1403777615-25685-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1403777615-25685-2-git-send-email-boris.brezillon@free-electrons.com>
+ <CAGVrzcbYAEMsU1SFSH761H0isQ4z1M++KK_GLf0OAbGS48YUmw@mail.gmail.com>
+ <53AC7BFD.2070806@free-electrons.com> <53AD22D8.2090301@atmel.com>
+ <20140710110720.03f437eb@bbrezillon> <CAGVrzcZD1SqwX1KqaMpZmBjOWGuvTSVaye0fkFXW_=h-N_d7WA@mail.gmail.com>
+ <20140710191927.56a3ead5@bbrezillon>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Thu, 10 Jul 2014 10:46:21 -0700
+Message-ID: <CAGVrzcawPiJgQF-=18ZvFGr3LhZgS1ZSZMYA3i5x874S6=jcXw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] ARM: at91/dt: describe rgmii ethernet phy
+ connected to sama5d3xek boards
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Shen, Voice" <Voice.Shen@atmel.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/14 19:05, Steven Rostedt wrote:
-> From: "Steven Rostedt (Red Hat)"<rostedt@goodmis.org>
+2014-07-10 10:19 GMT-07:00 Boris BREZILLON <boris.brezillon@free-electrons.com>:
+> On Thu, 10 Jul 2014 08:35:15 -0700
+> Florian Fainelli <f.fainelli@gmail.com> wrote:
 >
-> Function graph tracing is a bit different than the function tracers, as
-> it is processed after either the ftrace_caller or ftrace_regs_caller
-> and we only have one place to modify the jump to ftrace_graph_caller,
-> the jump needs to happen after the restore of registeres.
+>> 2014-07-10 2:07 GMT-07:00 Boris BREZILLON <boris.brezillon@free-electrons.com>:
+>> > On Fri, 27 Jun 2014 09:52:56 +0200
+>> > Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+>> >
+>> >> On 26/06/2014 22:01, Boris BREZILLON :
+>> >> > Hi Florian,
+>> >> >
+>> >> > On 26/06/2014 20:15, Florian Fainelli wrote:
+>> >> >> Hi Boris,
+>> >> >>
+>> >> >> 2014-06-26 3:13 GMT-07:00 Boris BREZILLON <boris.brezillon@free-electrons.com>:
+>> >> >>> Add ethernet-phy node and specify phy interrupt (connected to pin PB25).
+>> >> >>>
+>> >> >>> The PHY address is not specified here because atmel have 2 different
+>> >> >>> designs
+>> >> >>> for its CPU modules: one is connecting PHYAD[0-2] pins to pull up resistors
+>> >> >>> (Embest design) and the other one is connection PHYAD0 to a pull up
+>> >> >>> resistor and PHYAD[1-2] to pull down resistors (Ronetix design).
+>> >> >>> As a result, Ronetix design will have its PHY available at address 0x1 and
+>> >> >>> Embest design at 0x7.
+>> >> >>> Let the net PHY core automatically detect the PHY address by scanning the
+>> >> >>> MDIO bus.
+>> >> >> I though the compatible string was listed as a required property, but
+>> >> >> it is not. The 'reg' property however is listed as required, although
+>> >> >> the of_miodbus_register() works just fine without it, although that is
+>> >> >> a Linux-specific implementation detail.
+>> >> >
+>> >> > Indeed, it's listed in the required property list of the DT binding doc,
+>> >> > but the code implement auto detection if reg is missing.
+>> >> > However this line [1] clearly shows that specifying the reg property is
+>> >> > the preferred way of doing things.
+>> >> >
+>> >> > I could define 2 different sama5d3xcm.dtsi (sama5d3xcm-ronetix.dtsi and
+>> >> > sama5d3xcm-embest.dtsi) to avoid this dirty hack,
+>> >> > but then we would have 2 more dtb and the user would have to determine
+>> >> > which CPU module he owns to choose the appropriate dtb.
+>> >> > If at91, arm-soc and DT maintainers agree with this approach I can
+>> >> > definitely propose something.
+>> >>
+>> >> Yes Boris, I definitively prefer not to add another .dtsi file for this
+>> >> series if we can avoid it.
+>> >>
+>> >
+>> > Okay, now that I don't specify the reg property I have a bunch of
+>> > noisy logs (which is exactly what the developer of of_mdio.c wanted in
+>> > order to force people to specify the reg property).
+>> >
+>> > It seems to be a problem for atmel users (all these logs make them
+>> > think there is something wrong with the net device).
+>> >
+>> > Apart from the dts/dtsi split solution, which Nicolas wants to avoid, I
+>> > see two solutions here:
+>> >
+>> > 1) remove the logs (or use dev_dbg instead of dev_info) from of_mdio.c.
+>> > But I'm pretty sure this solution won't be accepted :-).
+>>
+>> I am fine with using dev_dbg() instead of dev_info() for that sort of
+>> messages, provided that you state the rationale of this change
+>> (spewing the log console with probing messages) and specify tha the
+>> 'reg' property is optional.
+>>
+>> >
+>> > 2) define 2 ethernet phys (one for each possible solution). I tested it
+>> > and it works fine (only the available PHY is registered and there is no
+>> > noisy logs anymore).
+>>
+>> One advantage of that solution is that you'll get slightly faster boot
+>> times since you won't have to auto-probe for the PHYs on the MDIO bus,
+>> the time savings get bigger as you start using higher PHY addresses.
 >
-> The function graph tracer is dependent on the function tracer, where
-> even if the function graph tracing is going on by itself, the save and
-> restore of registers is still done for function tracing regardless of
-> if function tracing is happening, before it calls the function graph
-> code.
->
-> If there's no function tracing happening, it is possible to just call
-> the function graph tracer directly, and avoid the wasted effort to save
-> and restore regs for function tracing.
->
-> This requires adding new flags to the dyn_ftrace records:
->
->    FTRACE_FL_TRAMP
->    FTRACE_FL_TRAMP_EN
->
-> The first is set if the count for the record is one, and the ftrace_ops
-> associated to that record has its own trampoline. That way the mcount code
-> can call that trampoline directly.
->
-> In the future, trampolines can be added to arbitrary ftrace_ops, where you
-> can have two or more ftrace_ops registered to ftrace (like kprobes and perf)
-> and if they are not tracing the same functions, then instead of doing a
-> loop to check all registered ftrace_ops against their hashes, just call the
-> ftrace_ops trampoline directly, which would call the registered ftrace_ops
-> function directly.
->
-> Without this patch perf showed:
->
->    0.05%  hackbench  [kernel.kallsyms]  [k] ftrace_caller
->    0.05%  hackbench  [kernel.kallsyms]  [k] arch_local_irq_save
->    0.05%  hackbench  [kernel.kallsyms]  [k] native_sched_clock
->    0.04%  hackbench  [kernel.kallsyms]  [k] __buffer_unlock_commit
->    0.04%  hackbench  [kernel.kallsyms]  [k] preempt_trace
->    0.04%  hackbench  [kernel.kallsyms]  [k] prepare_ftrace_return
->    0.04%  hackbench  [kernel.kallsyms]  [k] __this_cpu_preempt_check
->    0.04%  hackbench  [kernel.kallsyms]  [k] ftrace_graph_caller
->
-> See that the ftrace_caller took up more time than the ftrace_graph_caller
-> did.
->
-> With this patch:
->
->    0.05%  hackbench  [kernel.kallsyms]  [k] __buffer_unlock_commit
->    0.04%  hackbench  [kernel.kallsyms]  [k] call_filter_check_discard
->    0.04%  hackbench  [kernel.kallsyms]  [k] ftrace_graph_caller
->    0.04%  hackbench  [kernel.kallsyms]  [k] sched_clock
->
-> The ftrace_caller is no where to be found and ftrace_graph_caller still
-> takes up the same percentage.
->
-> Signed-off-by: Steven Rostedt<rostedt@goodmis.org>
-> ---
->   arch/x86/kernel/mcount_64.S |   5 +
->   include/linux/ftrace.h      |  19 +++-
->   kernel/trace/ftrace.c       | 242 ++++++++++++++++++++++++++++++++++++++++++--
->   3 files changed, 254 insertions(+), 12 deletions(-)
->
+> Yes I prefer this solution too, but is it acceptable to define 2 phy
+> nodes even if only one is really available ?
 
-This commit (79922b8) breaks the function graph tracer on today's -next. 
-This is on an ARM Tegra board.
-
-I'm using ftrace with this script:
-
-#!/bin/sh
-echo function_graph > /d/tracing/current_tracer
-echo clear > /d/tracing/trace
-echo $$ > /d/tracing/set_ftrace_pid
-exec "$@"
-
-...and a simple './trace.sh ls' crashes with no console output. SysRq is 
-not responsive either.
+One or the other machine .dts should have to set the status property
+accordingly so there is only effectively one PHY declared, assuming
+this is possible based on your .dtsi layout? If not, provided by the
+phy-handle properties are correct, I can't see any problem with having
+an unused PHY specified in DT.
+--
+Florian
