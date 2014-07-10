@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753004AbaGJIbw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 04:31:52 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:48947 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124AbaGJISW (ORCPT
+	id S1752986AbaGJIbu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 04:31:50 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:58251 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752132AbaGJISY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 04:18:22 -0400
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH v2 1/2] clk: qcom: add clocks necessary for apq8064 sdcc
-Date: Thu, 10 Jul 2014 09:18:13 +0100
-Message-Id: <1404980293-6072-1-git-send-email-srinivas.kandagatla@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1404980193-5967-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1404980193-5967-1-git-send-email-srinivas.kandagatla@linaro.org>
+	Thu, 10 Jul 2014 04:18:24 -0400
+From: Tom Gundersen <teg@jklm.no>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Tom Gundersen <teg@jklm.no>, Ralf Baechle <ralf@linux-mips.org>,
+        linux-hams@vger.kernel.org
+Subject: [PATCH v7 11/33] net: af_netrom - set name assign type
+Date: Thu, 10 Jul 2014 10:17:16 +0200
+Message-Id: <1404980258-30853-12-git-send-email-teg@jklm.no>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1404980258-30853-1-git-send-email-teg@jklm.no>
+References: <1404980258-30853-1-git-send-email-teg@jklm.no>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds clocks necessary for SD card controller on apq8064 SOC.
-Without this patch the clocks are not visible to the sdcc driver.
+A given number of indistinguishable interfaces are allocated at init time, so
+consider their names predictable.
 
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Reviewed-by: Kumar Gala <galak@codeaurora.org>
+Signed-off-by: Tom Gundersen <teg@jklm.no>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-hams@vger.kernel.org
 ---
- drivers/clk/qcom/gcc-msm8960.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ net/netrom/af_netrom.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/clk/qcom/gcc-msm8960.c b/drivers/clk/qcom/gcc-msm8960.c
-index f4ffd91..4cb2927 100644
---- a/drivers/clk/qcom/gcc-msm8960.c
-+++ b/drivers/clk/qcom/gcc-msm8960.c
-@@ -2876,6 +2876,18 @@ static struct clk_regmap *gcc_apq8064_clks[] = {
- 	[GSBI7_QUP_SRC] = &gsbi7_qup_src.clkr,
- 	[GSBI7_QUP_CLK] = &gsbi7_qup_clk.clkr,
- 	[GSBI7_H_CLK] = &gsbi7_h_clk.clkr,
-+	[SDC1_SRC] = &sdc1_src.clkr,
-+	[SDC1_CLK] = &sdc1_clk.clkr,
-+	[SDC2_SRC] = &sdc2_src.clkr,
-+	[SDC2_CLK] = &sdc2_clk.clkr,
-+	[SDC3_SRC] = &sdc3_src.clkr,
-+	[SDC3_CLK] = &sdc3_clk.clkr,
-+	[SDC4_SRC] = &sdc4_src.clkr,
-+	[SDC4_CLK] = &sdc4_clk.clkr,
-+	[SDC1_H_CLK] = &sdc1_h_clk.clkr,
-+	[SDC2_H_CLK] = &sdc2_h_clk.clkr,
-+	[SDC3_H_CLK] = &sdc3_h_clk.clkr,
-+	[SDC4_H_CLK] = &sdc4_h_clk.clkr,
- };
+diff --git a/net/netrom/af_netrom.c b/net/netrom/af_netrom.c
+index 71cf1bf..beb7cbe 100644
+--- a/net/netrom/af_netrom.c
++++ b/net/netrom/af_netrom.c
+@@ -1418,7 +1418,7 @@ static int __init nr_proto_init(void)
+ 		struct net_device *dev;
  
- static const struct regmap_config gcc_msm8960_regmap_config = {
+ 		sprintf(name, "nr%d", i);
+-		dev = alloc_netdev(0, name, NET_NAME_UNKNOWN, nr_setup);
++		dev = alloc_netdev(0, name, NET_NAME_PREDICTABLE, nr_setup);
+ 		if (!dev) {
+ 			printk(KERN_ERR "NET/ROM: nr_proto_init - unable to allocate device structure\n");
+ 			goto fail;
 -- 
-1.9.1
+1.9.3
 
