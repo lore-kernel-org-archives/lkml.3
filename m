@@ -1,244 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327AbaGJKKV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 06:10:21 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:63689 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752970AbaGJKKT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 06:10:19 -0400
+	id S1753354AbaGJKLU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 06:11:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47437 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751517AbaGJKLQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 06:11:16 -0400
+Date: Thu, 10 Jul 2014 12:11:51 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH 1/3] PCI/MSI: Add pci_enable_msi_partial()
+Message-ID: <20140710101151.GA21629@dhcp-26-207.brq.redhat.com>
+References: <cover.1402405331.git.agordeev@redhat.com>
+ <4fef62a2e647a7c38e9f2a1ea4244b3506a85e2b.1402405331.git.agordeev@redhat.com>
+ <20140702202201.GA28852@google.com>
+ <20140704085741.GA12247@dhcp-26-207.brq.redhat.com>
+ <CAErSpo6f6RXWv0DEtLBZX0jXoSUYJeWrSm7mubSJ_F-O7tQp6w@mail.gmail.com>
+ <20140708122606.GB6270@dhcp-26-207.brq.redhat.com>
+ <CAErSpo4oiabgoOjsGdWZpCMPnmopK4xRzB2f3tM0AiUFrdhFww@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140710073510.GO2635@lee--X1>
-References: <1404822480-31525-1-git-send-email-amit.daniel@samsung.com>
-	<1404822480-31525-2-git-send-email-amit.daniel@samsung.com>
-	<CADGdYn74xRxznqHxHOjRHe9bGv1-KPjRF0UAS=OyxWCg-iXBbw@mail.gmail.com>
-	<20140710073510.GO2635@lee--X1>
-Date: Thu, 10 Jul 2014 15:40:18 +0530
-X-Google-Sender-Auth: 0lgzWfcmjIQaWfzb6RuX3n7_DoA
-Message-ID: <CADGdYn6_dAW0=8n2=KHt0-LE4EEwiyHsfTri8RYo_yUuq153mg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] regulator: s2mpa01: Optimize the regulator
- description macro
-From: amit daniel kachhap <amit.daniel@samsung.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo4oiabgoOjsGdWZpCMPnmopK4xRzB2f3tM0AiUFrdhFww@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 1:05 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> On Thu, 10 Jul 2014, amit daniel kachhap wrote:
->> Adding MFD maintainers.
->
-> Why, what for?
-Sorry not needed for this patch.
->
->> On Tue, Jul 8, 2014 at 5:57 PM, Amit Daniel Kachhap
->> <amit.daniel@samsung.com> wrote:
->> > This patch makes the regulator description macro take minimum and
->> > steps voltage as parameter. In this way many repeated macros can be
->> > removed. Now these macros are repeated only if the the LDO/BUCK ctrl
->> > registers have non-linear positions. The good thing is these ctrl registers
->> > are mostly linear so they are not passed as parameters.
->> >
->> > This patch reduces the code size and also allow easy addition of more
->> > s2mpxxx PMIC drivers which differs a lot in minimum/step voltages.
->> >
->> > Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
->> > ---
->> >  drivers/regulator/s2mpa01.c | 136 ++++++++++++--------------------------------
->> >  1 file changed, 37 insertions(+), 99 deletions(-)
->> >
->> > diff --git a/drivers/regulator/s2mpa01.c b/drivers/regulator/s2mpa01.c
->> > index 962c5f1..8073466 100644
->> > --- a/drivers/regulator/s2mpa01.c
->> > +++ b/drivers/regulator/s2mpa01.c
->> > @@ -235,28 +235,14 @@ static struct regulator_ops s2mpa01_buck_ops = {
->> >         .set_ramp_delay         = s2mpa01_set_ramp_delay,
->> >  };
->> >
->> > -#define regulator_desc_ldo1(num)       {               \
->> > +#define regulator_desc_ldo(num, min, step)     {       \
->> >         .name           = "LDO"#num,                    \
->> >         .id             = S2MPA01_LDO##num,             \
->> >         .ops            = &s2mpa01_ldo_ops,             \
->> >         .type           = REGULATOR_VOLTAGE,            \
->> >         .owner          = THIS_MODULE,                  \
->> > -       .min_uV         = MIN_800_MV,                   \
->> > -       .uV_step        = STEP_50_MV,                   \
->> > -       .n_voltages     = S2MPA01_LDO_N_VOLTAGES,       \
->> > -       .vsel_reg       = S2MPA01_REG_L1CTRL + num - 1, \
->> > -       .vsel_mask      = S2MPA01_LDO_VSEL_MASK,        \
->> > -       .enable_reg     = S2MPA01_REG_L1CTRL + num - 1, \
->> > -       .enable_mask    = S2MPA01_ENABLE_MASK           \
->> > -}
->> > -#define regulator_desc_ldo2(num)       {               \
->> > -       .name           = "LDO"#num,                    \
->> > -       .id             = S2MPA01_LDO##num,             \
->> > -       .ops            = &s2mpa01_ldo_ops,             \
->> > -       .type           = REGULATOR_VOLTAGE,            \
->> > -       .owner          = THIS_MODULE,                  \
->> > -       .min_uV         = MIN_800_MV,                   \
->> > -       .uV_step        = STEP_25_MV,                   \
->> > +       .min_uV         = min,                          \
->> > +       .uV_step        = step,                         \
->> >         .n_voltages     = S2MPA01_LDO_N_VOLTAGES,       \
->> >         .vsel_reg       = S2MPA01_REG_L1CTRL + num - 1, \
->> >         .vsel_mask      = S2MPA01_LDO_VSEL_MASK,        \
->> > @@ -296,14 +282,14 @@ static struct regulator_ops s2mpa01_buck_ops = {
->> >         .enable_mask    = S2MPA01_ENABLE_MASK                   \
->> >  }
->> >
->> > -#define regulator_desc_buck6_7(num)    {                       \
->> > +#define regulator_desc_buck6_10(num, min, step)        {               \
->> >         .name           = "BUCK"#num,                           \
->> >         .id             = S2MPA01_BUCK##num,                    \
->> >         .ops            = &s2mpa01_buck_ops,                    \
->> >         .type           = REGULATOR_VOLTAGE,                    \
->> >         .owner          = THIS_MODULE,                          \
->> > -       .min_uV         = MIN_600_MV,                           \
->> > -       .uV_step        = STEP_6_25_MV,                         \
->> > +       .min_uV         = min,                                  \
->> > +       .uV_step        = step,                                 \
->> >         .n_voltages     = S2MPA01_BUCK_N_VOLTAGES,              \
->> >         .ramp_delay     = S2MPA01_RAMP_DELAY,                   \
->> >         .vsel_reg       = S2MPA01_REG_B6CTRL2 + (num - 6) * 2,  \
->> > @@ -312,91 +298,43 @@ static struct regulator_ops s2mpa01_buck_ops = {
->> >         .enable_mask    = S2MPA01_ENABLE_MASK                   \
->> >  }
->> >
->> > -#define regulator_desc_buck8   {                               \
->> > -       .name           = "BUCK8",                              \
->> > -       .id             = S2MPA01_BUCK8,                        \
->> > -       .ops            = &s2mpa01_buck_ops,                    \
->> > -       .type           = REGULATOR_VOLTAGE,                    \
->> > -       .owner          = THIS_MODULE,                          \
->> > -       .min_uV         = MIN_800_MV,                           \
->> > -       .uV_step        = STEP_12_5_MV,                         \
->> > -       .n_voltages     = S2MPA01_BUCK_N_VOLTAGES,              \
->> > -       .ramp_delay     = S2MPA01_RAMP_DELAY,                   \
->> > -       .vsel_reg       = S2MPA01_REG_B8CTRL2,                  \
->> > -       .vsel_mask      = S2MPA01_BUCK_VSEL_MASK,               \
->> > -       .enable_reg     = S2MPA01_REG_B8CTRL1,                  \
->> > -       .enable_mask    = S2MPA01_ENABLE_MASK                   \
->> > -}
->> > -
->> > -#define regulator_desc_buck9   {                               \
->> > -       .name           = "BUCK9",                              \
->> > -       .id             = S2MPA01_BUCK9,                        \
->> > -       .ops            = &s2mpa01_buck_ops,                    \
->> > -       .type           = REGULATOR_VOLTAGE,                    \
->> > -       .owner          = THIS_MODULE,                          \
->> > -       .min_uV         = MIN_1500_MV,                          \
->> > -       .uV_step        = STEP_12_5_MV,                         \
->> > -       .n_voltages     = S2MPA01_BUCK_N_VOLTAGES,              \
->> > -       .ramp_delay     = S2MPA01_RAMP_DELAY,                   \
->> > -       .vsel_reg       = S2MPA01_REG_B9CTRL2,                  \
->> > -       .vsel_mask      = S2MPA01_BUCK_VSEL_MASK,               \
->> > -       .enable_reg     = S2MPA01_REG_B9CTRL1,                  \
->> > -       .enable_mask    = S2MPA01_ENABLE_MASK                   \
->> > -}
->> > -
->> > -#define regulator_desc_buck10  {                               \
->> > -       .name           = "BUCK10",                             \
->> > -       .id             = S2MPA01_BUCK10,                       \
->> > -       .ops            = &s2mpa01_buck_ops,                    \
->> > -       .type           = REGULATOR_VOLTAGE,                    \
->> > -       .owner          = THIS_MODULE,                          \
->> > -       .min_uV         = MIN_1000_MV,                          \
->> > -       .uV_step        = STEP_12_5_MV,                         \
->> > -       .n_voltages     = S2MPA01_BUCK_N_VOLTAGES,              \
->> > -       .ramp_delay     = S2MPA01_RAMP_DELAY,                   \
->> > -       .vsel_reg       = S2MPA01_REG_B10CTRL2,                 \
->> > -       .vsel_mask      = S2MPA01_BUCK_VSEL_MASK,               \
->> > -       .enable_reg     = S2MPA01_REG_B10CTRL1,                 \
->> > -       .enable_mask    = S2MPA01_ENABLE_MASK                   \
->> > -}
->> > -
->> >  static struct regulator_desc regulators[] = {
->> > -       regulator_desc_ldo2(1),
->> > -       regulator_desc_ldo1(2),
->> > -       regulator_desc_ldo1(3),
->> > -       regulator_desc_ldo1(4),
->> > -       regulator_desc_ldo1(5),
->> > -       regulator_desc_ldo2(6),
->> > -       regulator_desc_ldo1(7),
->> > -       regulator_desc_ldo1(8),
->> > -       regulator_desc_ldo1(9),
->> > -       regulator_desc_ldo1(10),
->> > -       regulator_desc_ldo2(11),
->> > -       regulator_desc_ldo1(12),
->> > -       regulator_desc_ldo1(13),
->> > -       regulator_desc_ldo1(14),
->> > -       regulator_desc_ldo1(15),
->> > -       regulator_desc_ldo1(16),
->> > -       regulator_desc_ldo1(17),
->> > -       regulator_desc_ldo1(18),
->> > -       regulator_desc_ldo1(19),
->> > -       regulator_desc_ldo1(20),
->> > -       regulator_desc_ldo1(21),
->> > -       regulator_desc_ldo2(22),
->> > -       regulator_desc_ldo2(23),
->> > -       regulator_desc_ldo1(24),
->> > -       regulator_desc_ldo1(25),
->> > -       regulator_desc_ldo1(26),
->> > +       regulator_desc_ldo(1, MIN_800_MV, STEP_25_MV),
->> > +       regulator_desc_ldo(2, MIN_800_MV, STEP_50_MV),
->> > +       regulator_desc_ldo(3, MIN_800_MV, STEP_50_MV),
->> > +       regulator_desc_ldo(4, MIN_800_MV, STEP_50_MV),
->> > +       regulator_desc_ldo(5, MIN_800_MV, STEP_50_MV),
->> > +       regulator_desc_ldo(6, MIN_800_MV, STEP_25_MV),
->> > +       regulator_desc_ldo(7, MIN_800_MV, STEP_50_MV),
->> > +       regulator_desc_ldo(8, MIN_800_MV, STEP_50_MV),
->> > +       regulator_desc_ldo(9, MIN_800_MV, STEP_50_MV),
->> > +       regulator_desc_ldo(10, MIN_800_MV, STEP_50_MV),
->> > +       regulator_desc_ldo(11, MIN_800_MV, STEP_25_MV),
->> > +       regulator_desc_ldo(12, MIN_800_MV, STEP_50_MV),
->> > +       regulator_desc_ldo(13, MIN_800_MV, STEP_50_MV),
->> > +       regulator_desc_ldo(14, MIN_800_MV, STEP_50_MV),
->> > +       regulator_desc_ldo(15, MIN_800_MV, STEP_50_MV),
->> > +       regulator_desc_ldo(16, MIN_800_MV, STEP_50_MV),
->> > +       regulator_desc_ldo(17, MIN_800_MV, STEP_50_MV),
->> > +       regulator_desc_ldo(18, MIN_800_MV, STEP_50_MV),
->> > +       regulator_desc_ldo(19, MIN_800_MV, STEP_50_MV),
->> > +       regulator_desc_ldo(20, MIN_800_MV, STEP_50_MV),
->> > +       regulator_desc_ldo(21, MIN_800_MV, STEP_50_MV),
->> > +       regulator_desc_ldo(22, MIN_800_MV, STEP_25_MV),
->> > +       regulator_desc_ldo(23, MIN_800_MV, STEP_25_MV),
->> > +       regulator_desc_ldo(24, MIN_800_MV, STEP_50_MV),
->> > +       regulator_desc_ldo(25, MIN_800_MV, STEP_50_MV),
->> > +       regulator_desc_ldo(26, MIN_800_MV, STEP_50_MV),
->> >         regulator_desc_buck1_4(1),
->> >         regulator_desc_buck1_4(2),
->> >         regulator_desc_buck1_4(3),
->> >         regulator_desc_buck1_4(4),
->> >         regulator_desc_buck5,
->> > -       regulator_desc_buck6_7(6),
->> > -       regulator_desc_buck6_7(7),
->> > -       regulator_desc_buck8,
->> > -       regulator_desc_buck9,
->> > -       regulator_desc_buck10,
->> > +       regulator_desc_buck6_10(6, MIN_600_MV, STEP_6_25_MV),
->> > +       regulator_desc_buck6_10(7, MIN_600_MV, STEP_6_25_MV),
->> > +       regulator_desc_buck6_10(8, MIN_800_MV, STEP_12_5_MV),
->> > +       regulator_desc_buck6_10(9, MIN_1500_MV, STEP_12_5_MV),
->> > +       regulator_desc_buck6_10(10, MIN_1000_MV, STEP_12_5_MV),
->> >  };
->> >
->> >  static int s2mpa01_pmic_probe(struct platform_device *pdev)
->> >
->
-> --
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On Wed, Jul 09, 2014 at 10:06:48AM -0600, Bjorn Helgaas wrote:
+> Out of curiosity, do you have a pointer to this?  It looks like it
+
+I.e. ICH8 chapter 12.1.30 or ICH10 chapter 14.1.27
+
+> uses one vector per port, and I'm wondering if the reason it requests
+> 16 is because there's some possibility of a part with more than 8
+> ports.
+
+I doubt that is the reason. The only allowed MME values (powers of two)
+are 0b000, 0b001, 0b010 and 0b100. As you can see, only one bit is used -
+I would speculate it suits nicely to some hardware logic.
+
+BTW, apart from AHCI, it seems the reason MSI is not going to disappear
+(in a decade at least) is it is way cheaper to implement than MSI-X.
+
+> > No, this is not an erratum. The value of 8 vectors is reserved and could
+> > cause undefined results if used.
+> 
+> As I read the spec (PCI 3.0, sec 6.8.1.3), if MMC contains 0b100
+> (requesting 16 vectors), the OS is allowed to allocate 1, 2, 4, 8, or
+> 16 vectors.  If allocating 8 vectors and writing 0b011 to MME causes
+> undefined results, I'd say that's a chipset defect.
+
+Well, the PCI spec does not prevent devices to have their own specs on top
+of it. Undefined results are meant on the device side here. On the MSI side
+these results are likely perfectly within the PCI spec. I feel speaking as
+a lawer here ;)
+
+> Interrupt vector space is the issue I would worry about, but I think
+> I'm going to put this on the back burner until it actually becomes a
+> problem.
+
+I plan to try get rid of arch_msi_check_device() hook. Should I repost
+this series afterwards?
+
+Thanks!
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
