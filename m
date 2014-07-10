@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802AbaGJPPD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 11:15:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56681 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334AbaGJPPB (ORCPT
+	id S1753940AbaGJPPi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 11:15:38 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:38092 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753286AbaGJPPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 11:15:01 -0400
-Date: Thu, 10 Jul 2014 08:14:41 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Documentation: devres: Sort managed interfaces
-Message-ID: <20140710151441.GB19022@kroah.com>
-References: <1404919578-4457-1-git-send-email-geert+renesas@glider.be>
- <20140709233248.GA12171@kroah.com>
- <CAMuHMdUCo8xmRnSPcUeCVwuWf-9MEWMh+BbnThA2H4nVTv0-KA@mail.gmail.com>
+	Thu, 10 Jul 2014 11:15:36 -0400
+Message-ID: <53BEAE01.7000401@linux.vnet.ibm.com>
+Date: Thu, 10 Jul 2014 20:45:13 +0530
+From: Madhusudanan Kandasamy <kmadhu@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdUCo8xmRnSPcUeCVwuWf-9MEWMh+BbnThA2H4nVTv0-KA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org
+Subject: [PATCH V3] powerpc : Fail remap_4k_pfn() if PFN doesn't fit inside
+ PTE
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14071015-3864-0000-0000-00000F633F81
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 09:34:33AM +0200, Geert Uytterhoeven wrote:
-> Hi Greg,
-> 
-> On Thu, Jul 10, 2014 at 1:32 AM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > On Wed, Jul 09, 2014 at 05:26:18PM +0200, Geert Uytterhoeven wrote:
-> >> Sort the list of managed interfaces and their lists of methods
-> >> alphabetically, to reduce the risk of merge conflicts and duplicates.
-> >>
-> >> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-> >> ---
-> >> I got annoyed by the merge conflicts when merging several for-next
-> >> branches a while ago, so I sorted the list after everything became
-> >> quiet.
-> >> ---
-> >>  Documentation/driver-model/devres.txt | 108 +++++++++++++++++-----------------
-> >>  1 file changed, 54 insertions(+), 54 deletions(-)
-> >
-> > What tree/version is this against?  I get merge issues with my
-> > driver-core-next tree :(
-> 
-> Ah, I hadn't merged in your driver-core-next tree.
-> So it's against v3.16-rc4.
-> 
-> You have on top:
-> 
-> commit b23b35445ec82cde8afac8ba86b57a66a5fa1734
-> Author: Daniel Thompson <daniel.thompson@linaro.org>
-> Date:   Thu Jul 3 10:05:02 2014 +0100
-> 
->     Documentation: devres: Add devm_kmalloc() et al
-> 
-> commit c9d53c0f2d23c792e4b9cf1551b63de4516f839e
-> Author: Jingoo Han <jg1.han@samsung.com>
-> Date:   Wed Jun 11 14:00:05 2014 +0900
-> 
->     devres: remove devm_request_and_ioremap()
-> 
-> Shall I update and resend?
+remap_4k_pfn() silently truncates upper bits of input 4K PFN
+if it cannot be contained in PTE. This leads invalid memory mapping and could
+result in a system crash when the memory is accessed. This patch fails
+remap_4k_pfn() and returns -EINVAL if the input 4K PFN cannot be contained in
+PTE.
 
-Yes, please do.
+V3 : Added parentheses to protect 'pfn' and entire macro as suggested by Brian.
+V2 : Rewritten to avoid helper function as suggested by Stephen Rothwell.
 
-thanks,
+Signed-off-by: Madhusudanan Kandasamy <kmadhu@linux.vnet.ibm.com>
+---
+ arch/powerpc/include/asm/pte-hash64-64k.h | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-greg k-h
+diff --git a/arch/powerpc/include/asm/pte-hash64-64k.h b/arch/powerpc/include/asm/pte-hash64-64k.h
+index d836d94..b6d2d42 100644
+--- a/arch/powerpc/include/asm/pte-hash64-64k.h
++++ b/arch/powerpc/include/asm/pte-hash64-64k.h
+@@ -75,7 +75,8 @@
+ 	(((pte) & _PAGE_COMBO)? MMU_PAGE_4K: MMU_PAGE_64K)
+
+ #define remap_4k_pfn(vma, addr, pfn, prot)				\
+-	remap_pfn_range((vma), (addr), (pfn), PAGE_SIZE,		\
+-			__pgprot(pgprot_val((prot)) | _PAGE_4K_PFN))
++	(WARN_ON(((pfn) >= (1UL << (64 - PTE_RPN_SHIFT)))) ? -EINVAL :	\
++		remap_pfn_range((vma), (addr), (pfn), PAGE_SIZE,	\
++			__pgprot(pgprot_val((prot)) | _PAGE_4K_PFN)))
+
+ #endif	/* __ASSEMBLY__ */
+-- 
+2.0.1
+
