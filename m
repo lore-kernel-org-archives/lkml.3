@@ -1,70 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818AbaGJSgp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 14:36:45 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58146 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750768AbaGJSgo (ORCPT
+	id S1751943AbaGJSiq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 14:38:46 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:54870 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095AbaGJSio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 14:36:44 -0400
-Date: Thu, 10 Jul 2014 20:36:41 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] irqchip: atmel-aic: Add irq RTC fixups
-Message-ID: <20140710203641.2e17de80@bbrezillon>
-In-Reply-To: <20140710203249.23dd6444@bbrezillon>
-References: <1405016741-2407-1-git-send-email-boris.brezillon@free-electrons.com>
-	<20140710203249.23dd6444@bbrezillon>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Jul 2014 14:38:44 -0400
+Date: Thu, 10 Jul 2014 12:38:40 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Keith Busch <keith.busch@intel.com>
+Cc: linux-pci@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
+        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] Let device drivers disable msi on shutdown
+Message-ID: <20140710183840.GA12663@google.com>
+References: <1403628537-16367-1-git-send-email-keith.busch@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403628537-16367-1-git-send-email-keith.busch@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Jul 2014 20:32:49 +0200
-Boris BREZILLON <boris.brezillon@free-electrons.com> wrote:
+[+cc LKML, Greg KH for driver core async shutdown question]
 
-> On Thu, 10 Jul 2014 20:25:38 +0200
-> Boris BREZILLON <boris.brezillon@free-electrons.com> wrote:
+On Tue, Jun 24, 2014 at 10:48:57AM -0600, Keith Busch wrote:
+> I'd like to do shutdowns asynchronously so I can shutdown multiple
+> devices in parallel, but the pci-driver disables interrupts after my
+> driver returns from its '.shutdown', though it needs to rely on these
+> interrupts in its asynchronously scheduled shutdown.
 > 
-> > Hello,
-> > 
-> > This patch series introduce the notion of irq fixups for atmel SoCs.
-> > 
-> > In most at91 SoCs the first interrupt line is shared by several IPs, and
-> > some of these HW blocks might be in an unknown state when booting the
-> > Linux kernel.
-> > Hence these IPs might generate spurious interrupts if they've not masked
-> > their irqs and the shared irq line is requested by another peripheral.
-> > 
-> > These fixups were previously done in arch/arm/mach-at91/sysirq_mask.c
-> > but as we're trying to use standard implementation (IRQCHIP_DECLARE and
-> > automatic call of irqchip_init within arch/arm/kernel/irq.c) we need to
-> > do those fixups in the irqchip driver.
+> I tracked the reason for pci disabling msi to ...
 > 
-> This is what I was talking about:
+> | commit d52877c7b1afb8c37ebe17e2005040b79cb618b0
+> | Author: Yinghai Lu <yhlu.kernel.send@gmail.com>
+> | Date:   Wed Apr 23 14:58:09 2008 -0700
+> |
+> |     pci/irq: let pci_device_shutdown to call pci_msi_shutdown v2
 > 
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/271425.htm
+> ... because mptfusion doesn't disable msi in its shutdown path.
 > 
+> Any reason we can't let the drivers do this instead?
+
+I guess they *could*, but my general idea is that when we can do
+something in the core, we probably should, because then we're not
+depending on all the drivers to do the right thing.  So I would turn
+this around and say "we need a pretty good reason to move something
+out of the core and into the drivers."
+
+A lot of the issues in the shutdown path are related to getting the
+device to shut up so it doesn't cause problems with kexec.  So it does
+seem like a good idea to have pci_device_shutdown() disable MSI to
+remove one source of bothersome interrupts.
+
+> To provide context why I want to do this asynchronously, NVM-Express has
+> one PCI device per controller, of which there could be dozens in a system,
+> and each one may take many seconds (I've heard over ten in some cases)
+> to safely shutdown.
+
+I don't see anything in device_shutdown() that would wait for this
+sort of asynchronous shutdown to complete.  So how do we know it's
+finished before we turn off the power, reset, kexec, etc.?
+
+If we need to do asynchronous shutdown, it seems like we need some
+sort of driver core infrastructure to manage that.
+
+> In this patch, mptfusion was compile tested only; I didn't observe any
+> adverse affects from running the pci portion.
 > 
-
-Oops, sorry this is not the appropriate thread: I meant to send this
-reply to this series:
-
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/271413.html
-
-
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+> Signed-off-by: Keith Busch <keith.busch@intel.com>
+> Cc: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>
+> Cc: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> ---
+>  drivers/message/fusion/mptscsih.c |    3 +++
+>  drivers/pci/pci-driver.c          |    2 --
+>  2 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/message/fusion/mptscsih.c b/drivers/message/fusion/mptscsih.c
+> index 2a1c6f2..3186e17 100644
+> --- a/drivers/message/fusion/mptscsih.c
+> +++ b/drivers/message/fusion/mptscsih.c
+> @@ -1215,6 +1215,9 @@ mptscsih_remove(struct pci_dev *pdev)
+>  void
+>  mptscsih_shutdown(struct pci_dev *pdev)
+>  {
+> +	MPT_ADAPTER *ioc = pci_get_drvdata(pdev);
+> +	if (ioc->msi_enable)
+> +		pci_disable_msi(pdev);
+>  }
+>  
+>  #ifdef CONFIG_PM
+> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+> index 3f8e3db..8079d98 100644
+> --- a/drivers/pci/pci-driver.c
+> +++ b/drivers/pci/pci-driver.c
+> @@ -453,8 +453,6 @@ static void pci_device_shutdown(struct device *dev)
+>  
+>  	if (drv && drv->shutdown)
+>  		drv->shutdown(pci_dev);
+> -	pci_msi_shutdown(pci_dev);
+> -	pci_msix_shutdown(pci_dev);
+>  
+>  #ifdef CONFIG_KEXEC
+>  	/*
+> -- 
+> 1.7.10.4
+> 
