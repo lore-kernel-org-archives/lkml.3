@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753023AbaGJJnH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 05:43:07 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:3804 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752092AbaGJJnE (ORCPT
+	id S1752956AbaGJJoX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 05:44:23 -0400
+Received: from esgaroth.petrovitsch.at ([78.47.184.11]:4906 "EHLO
+	esgaroth.tuxoid.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751987AbaGJJoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 05:43:04 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 10 Jul 2014 02:36:00 -0700
-Date: Thu, 10 Jul 2014 12:43:00 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-CC: Ben Skeggs <bskeggs@redhat.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+	Thu, 10 Jul 2014 05:44:22 -0400
+Subject: Re: Fwd: linux-next: Tree for Jul 9
+From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+To: Nick Krause <xerofoify@gmail.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>, Guenter Roeck <linux@roeck-us.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gnurou@gmail.com" <gnurou@gmail.com>
-Subject: Re: [PATCH 0/3] drm/gk20a: support for reclocking
-Message-ID: <20140710094300.GP23218@tbergstrom-lnx.Nvidia.com>
-References: <1404977677-22248-1-git-send-email-acourbot@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1404977677-22248-1-git-send-email-acourbot@nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Date: Thu, 10 Jul 2014 11:43:27 +0200
+In-Reply-To: <CAPDOMVjPv+-9J51xA1xYc6Wn=uf8xTibjeg+-ey4hRTuVA+pZg@mail.gmail.com>
+References: <20140709183116.506ad2e4@canb.auug.org.au>
+	 <CAPDOMVjAMHOhuzfcJRL_JQ1jSKOeE7PEhppZJKJKbtR2-ixi-A@mail.gmail.com>
+	 <53BD77CC.9060606@infradead.org> <20140709184703.GA16363@roeck-us.net>
+	 <53BD8F8E.9030105@infradead.org>
+	 <CAPDOMVjBOfLF6CFWYse6-=P4wanvKBE6wmX6by=AhO0vs1jjRw@mail.gmail.com>
+	 <53BD9670.5030809@infradead.org>
+	 <CAPDOMVjPv+-9J51xA1xYc6Wn=uf8xTibjeg+-ey4hRTuVA+pZg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1404985410.12451.3.camel@thorin>
+Mime-Version: 1.0
+X-DCC-URT-Metrics: esgaroth.petrovitsch.priv.at 1060; Body=6 Fuz1=6 Fuz2=6
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	* -0.2 AWL AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 09:34:34AM +0200, Alexandre Courbot wrote:
-> This series adds support for reclocking on GK20A. The first two patches touch
-> the clock subsystem to allow GK20A to operate, by making the presence of the
-> thermal and voltage devices optional, and allowing pstates to be provided
-> directly instead of being probed using the BIOS (which Tegra does not have).
-> 
-> The last patch adds the GK20A clock device. Arguably the clock can be seen as a
-> stripped-down version of what is seen on NVE0, however instead of using NVE0
-> support has been written from scratch using the ChromeOS kernel as a basis.
-> There are several reasons for this:
-> 
-> - The ChromeOS driver uses a lookup table for the P coefficient which I could
->   not find in the NVE0 driver,
-> - Some registers that NVE0 expects to find are not present on GK20A (e.g.
->   0x137120 and 0x137140),
-> - Calculation of MNP is done differently from what is performed in
->   nva3_pll_calc(), and it might be interesting to compare the two methods,
-> - All the same, the programming sequence is done differently in the ChromeOS
->   driver and NVE0 could possibly benefit from it (?)
-> 
-> It would be interesting to try and merge both, but for now I prefer to have the
-> two coexisting to ensure proper operation on GK20A and besure I don't break
-> dGPU support. :)
-> 
-> Regarding the first patch, one might argue that I could as well add thermal
-> and voltage devices to GK20A. The reason this is not done is because these
-> currently depend heavily on the presence of a BIOS, and will require a rework
-> similar to that done in patch 2 for clocks. I would like to make sure this
-> approach is approved because applying it to other subdevs.
+Hi!
 
-I think this should use CCF so we can use pre and post rate change notifiers
-to hookup vdd_gpu DVS.
+On Mit, 2014-07-09 at 16:54 -0400, Nick Krause wrote:
+[... useless quotes deleted ...]
+> Thanks for the help. Hope this message is better makes sense to me.
 
-Thanks,
+And always quoting everything is bad mail style too - just quote just
+the relevant parts for the answer, not more, not less.
+Everyone keeps the last mails from the thread around and they also can
+be founds in public archives.
 
-Peter.
+	Bernd
+-- 
+"I dislike type abstraction if it has no real reason. And saving
+on typing is not a good reason - if your typing speed is the main
+issue when you're coding, you're doing something seriously wrong."
+    - Linus Torvalds
+
