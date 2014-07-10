@@ -1,323 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112AbaGJPoz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 11:44:55 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:35794 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751784AbaGJPoy (ORCPT
+	id S1752598AbaGJPsJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 11:48:09 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49601 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751766AbaGJPsE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 11:44:54 -0400
-Date: Thu, 10 Jul 2014 11:44:51 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Javi Merino" <javi.merino@arm.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        punit.agrawal@arm.com, broonie@kernel.org,
-        Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <edubezval@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [RFC PATCH v5 09/10] thermal: add trace events to the power
- allocator governor
-Message-ID: <20140710114451.4bbf6785@gandalf.local.home>
-In-Reply-To: <1405001928-12697-10-git-send-email-javi.merino@arm.com>
-References: <1405001928-12697-1-git-send-email-javi.merino@arm.com>
-	<1405001928-12697-10-git-send-email-javi.merino@arm.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Thu, 10 Jul 2014 11:48:04 -0400
+Message-ID: <53BEB5AF.7010604@linutronix.de>
+Date: Thu, 10 Jul 2014 17:47:59 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Tony Lindgren <tony@atomide.com>
+CC: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH 6/6] tty: serial: Add 8250-core based omap driver
+References: <1404928177-26554-1-git-send-email-bigeasy@linutronix.de> <1404928177-26554-7-git-send-email-bigeasy@linutronix.de> <20140710070948.GH28884@atomide.com>
+In-Reply-To: <20140710070948.GH28884@atomide.com>
+X-Enigmail-Version: 1.6+git0.20140323
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Jul 2014 15:18:47 +0100
-"Javi Merino" <javi.merino@arm.com> wrote:
+On 07/10/2014 09:09 AM, Tony Lindgren wrote:
+> You can test this pretty easily on beagleboard xm for example
+> using v3.16-r4:
 
-> Add trace events for the power allocator governor and the power actor
-> interface of the cpu cooling device.
+I tried this with am335x-evm, dra7-evm and beaglebone (omap5-uevm and
+am335x-evmsk didn't want to boot a kernel and omap4-blaze didn't even
+want to show MLO/U-boot) with the same result.
+
+> 1. Compile the kernel using omap2plus_defconfig and enable your
+>    driver. USB EHCI needs to be disabled and OTG port should
+>    not have a USB cable connected.
+
+EHCI was already disabled in the config. OTG was not connected.
+
+> 2. Boot with init=/bin/sh to keep user space timers to minimum
+>    at least until you have verified to hit off-idle
+
+I had network up and configured. Was that okay? I also tried
+"ifconfig eth0 down; sleep 10; ifconfig eth0 up" to see if it works.
+
+> 3. Enable UART timeouts with something like this. You may need
+>    to update it for ttyS, I just changed ttyO to ttyS here:
 > 
-> Cc: Zhang Rui <rui.zhang@intel.com>
-> Cc: Eduardo Valentin <edubezval@gmail.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Signed-off-by: Javi Merino <javi.merino@arm.com>
-> ---
->  drivers/thermal/cpu_actor.c                    |  17 ++-
->  drivers/thermal/power_allocator.c              |  22 +++-
->  include/trace/events/thermal_power_allocator.h | 138 +++++++++++++++++++++++++
->  3 files changed, 173 insertions(+), 4 deletions(-)
->  create mode 100644 include/trace/events/thermal_power_allocator.h
+>    #!/bin/bash
+>    uarts=$(find /sys/class/tty/ttyS*/device/power/ -type d)
+>    for uart in $uarts; do
+>    	echo 3000 > $uart/autosuspend_delay_ms
+>    done
 > 
-> diff --git a/drivers/thermal/cpu_actor.c b/drivers/thermal/cpu_actor.c
-> index 45ea4fa92ea0..b5ed2e80e288 100644
-> --- a/drivers/thermal/cpu_actor.c
-> +++ b/drivers/thermal/cpu_actor.c
-> @@ -28,6 +28,8 @@
->  #include <linux/printk.h>
->  #include <linux/slab.h>
->  
-> +#include <trace/events/thermal_power_allocator.h>
-> +
->  /**
->   * struct power_table - frequency to power conversion
->   * @frequency:	frequency in KHz
-> @@ -184,11 +186,12 @@ static u32 get_static_power(struct cpu_actor *cpu_actor,
->   */
->  static u32 get_dynamic_power(struct cpu_actor *cpu_actor, unsigned long freq)
->  {
-> -	int cpu;
-> -	u32 power = 0, raw_cpu_power, total_load = 0;
-> +	int i, cpu;
-> +	u32 power = 0, raw_cpu_power, total_load = 0, load_cpu[NR_CPUS];
+>    uarts=$(find /sys/class/tty/ttyS*/power/ -type d)
+>    for uart in $uarts; do
+>    	echo enabled > $uart/wakeup
+>    	echo auto > $uart/control
+>    done
+> 
+>    echo 1 > /sys/kernel/debug/pm_debug/enable_off_mode
+> 
+> 4. Wait for UART to time out and verify you hit off-idle by
+>    looking at the debugfs entry:
+> 
+>    # cat /sys/kernel/debug/pm_debug/count
+>    ...
+>    core_pwrdm (ON),OFF:6,RET:0,INA:0,ON:7,RET-LOGIC-OFF:0,RET-MEMBANK1-OFF:0,RET-MEMBANK2-OFF:0
 
-When NR_CPUS == 1024, you just killed the stack, as you added 4K to it.
-We upped the stack recently to 16k, but still.
+That core_pwrdm shows only up on dra7. However with both drivers (mine
+and the current omap serial) the UART went down after three secs (as
+expected) and didn't accept any characters while writing on the
+console. If I wrote something on it via network (like echo a >
+/dev/ttyO0) it came back and was working as long as I kept it busy. The
+thing is that RX does not wake it up. Any idea?
+Also, while it was I checked the core_pwrdm and I had ON:1 and OFF:0.
+So something is not right.
+Since Dra7 has some things missing I tried it on am335x with the same
+behavior. Should it work here?
 
+>    ...
 >  
->  	raw_cpu_power = cpu_freq_to_power(cpu_actor, freq);
->  
-> +	i = 0;
->  	for_each_cpu(cpu, &cpu_actor->cpumask) {
->  		u32 load;
->  
-> @@ -198,8 +201,15 @@ static u32 get_dynamic_power(struct cpu_actor *cpu_actor, unsigned long freq)
->  		load = get_load(cpu_actor, cpu);
->  		power += (raw_cpu_power * load) / 100;
->  		total_load += load;
-> +		load_cpu[i] = load;
-> +
-> +		i++;
->  	}
->  
-> +	trace_thermal_power_actor_cpu_get_dyn_power(&cpu_actor->cpumask, freq,
-> +						raw_cpu_power, load_cpu, i,
-> +						power);
+> I just tried testing this, but did not get far on my omap3 evm:
+> 
+> [    5.445953] Unhandled fault: external abort on non-linefetch (0x1028) at 0xfb020000
+> [    5.453674] Internal error: : 1028 [#1] SMP ARM
+> [    5.458221] Modules linked in:
+> [    5.461334] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.16.0-rc4-00006-gaab2c6a #98
+> [    5.469024] task: ce058b00 ti: ce05a000 task.ti: ce05a000
+> [    5.474456] PC is at mem32_serial_in+0xc/0x1c
+> [    5.478851] LR is at serial8250_do_startup+0xc8/0x89c
+> [    5.483917] pc : [<c0346f90>]    lr : [<c034ab2c>]    psr: 60000113
+> [    5.483917] sp : ce05bd10  ip : c0a0aba8  fp : ce275400
+> [    5.495452] r10: 00000000  r9 : cda7a680  r8 : ce27568c
+> [    5.500701] r7 : ce275400  r6 : 00000000  r5 : ce280408  r4 : c10b6234
+> [    5.507263] r3 : fb020000  r2 : 00000002  r1 : fb020000  r0 : c10b6234
+> [    5.513854] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+> [    5.521179] Control: 10c5387d  Table: 80004019  DAC: 00000015
+> [    5.526977] Process swapper/0 (pid: 1, stack limit = 0xce05a248)
+> [    5.532989] Stack: (0xce05bd10 to 0xce05c000)
+> ...
+> [    5.734771] [<c0346f90>] (mem32_serial_in) from [<c034ab2c>] (serial8250_do_startup+0xc8/0x89c)
+> [    5.743530] [<c034ab2c>] (serial8250_do_startup) from [<c03461f8>] (uart_startup.part.3+0x7c/0x1dc)
+> [    5.752624] [<c03461f8>] (uart_startup.part.3) from [<c0346d68>] (uart_open+0xe4/0x124)
+> [    5.760681] [<c0346d68>] (uart_open) from [<c032c19c>] (tty_open+0x130/0x58c)
+> [    5.767852] [<c032c19c>] (tty_open) from [<c01216f4>] (chrdev_open+0x9c/0x174)
+> [    5.775115] [<c01216f4>] (chrdev_open) from [<c011b8d4>] (do_dentry_open+0x1d0/0x310)
+> [    5.783020] [<c011b8d4>] (do_dentry_open) from [<c011bd98>] (finish_open+0x34/0x4c)
+> [    5.790710] [<c011bd98>] (finish_open) from [<c012a8f8>] (do_last.isra.27+0x5a4/0xb98)
+> [    5.798675] [<c012a8f8>] (do_last.isra.27) from [<c012afa0>] (path_openat+0xb4/0x5e4)
+> [    5.806549] [<c012afa0>] (path_openat) from [<c012b7dc>] (do_filp_open+0x2c/0x80)
+> [    5.814086] [<c012b7dc>] (do_filp_open) from [<c011cd14>] (do_sys_open+0x100/0x1d0)
+> [    5.821777] [<c011cd14>] (do_sys_open) from [<c07b7ce0>] (kernel_init_freeable+0x124/0x1c8)
+> [    5.830200] [<c07b7ce0>] (kernel_init_freeable) from [<c054eb90>] (kernel_init+0x8/0xe4)
+> [    5.838348] [<c054eb90>] (kernel_init) from [<c000e868>] (ret_from_fork+0x14/0x2c)
+> 
+> Sounds like the clocks are not enabled properly?
 
-How many CPUs are you saving load_cpu on? A trace event can't be bigger
-than a page. And the data is actually a little less than that with the
-required headers.
+puh. So after staring a while at your backtrace I realized that
+shutdown & startup callbacks are not overwritten properly. Well, thanks
+for that. Anyway, even serial8250_do_startup() has
+pm_runtime_get_sync() before first register access so I have no idea
+where this is coming from.
 
--- Steve
+> 
+> Regards,
+> 
+> Tony
+> 
 
-> +
->  	cpu_actor->last_load = total_load;
->  
->  	return power;
-> @@ -296,6 +306,9 @@ static int cpu_set_power(struct power_actor *actor,
->  		return -EINVAL;
->  	}
->  
-> +	trace_thermal_power_actor_cpu_limit(&cpu_actor->cpumask, target_freq,
-> +					cdev_state, power);
-> +
->  	return cdev->ops->set_cur_state(cdev, cdev_state);
->  }
->  
-> diff --git a/drivers/thermal/power_allocator.c b/drivers/thermal/power_allocator.c
-> index eb1797cd859b..e6793d6d1288 100644
-> --- a/drivers/thermal/power_allocator.c
-> +++ b/drivers/thermal/power_allocator.c
-> @@ -20,6 +20,9 @@
->  #include <linux/slab.h>
->  #include <linux/thermal.h>
->  
-> +#define CREATE_TRACE_POINTS
-> +#include <trace/events/thermal_power_allocator.h>
-> +
->  #include "thermal_core.h"
->  
->  #define FRAC_BITS 8
-> @@ -133,7 +136,14 @@ static u32 pid_controller(struct thermal_zone_device *tz,
->  	/* feed-forward the known sustainable dissipatable power */
->  	power_range = tz->tzp->sustainable_power + frac_to_int(power_range);
->  
-> -	return clamp(power_range, (s64)0, (s64)max_allocatable_power);
-> +	power_range = clamp(power_range, (s64)0, (s64)max_allocatable_power);
-> +
-> +	trace_thermal_power_allocator_pid(frac_to_int(err),
-> +					frac_to_int(params->err_integral),
-> +					frac_to_int(p), frac_to_int(i),
-> +					frac_to_int(d), power_range);
-> +
-> +	return power_range;
->  }
->  
->  /**
-> @@ -214,7 +224,7 @@ static int allocate_power(struct thermal_zone_device *tz,
->  	struct power_actor *actor;
->  	u32 *req_power, *max_power, *granted_power;
->  	u32 total_req_power, max_allocatable_power;
-> -	u32 power_range;
-> +	u32 total_granted_power, power_range;
->  	int i, num_actors, ret = 0;
->  
->  	mutex_lock(&tz->lock);
-> @@ -265,12 +275,20 @@ static int allocate_power(struct thermal_zone_device *tz,
->  	divvy_up_power(req_power, max_power, num_actors, total_req_power,
->  		power_range, granted_power);
->  
-> +	total_granted_power = 0;
->  	i = 0;
->  	list_for_each_entry_rcu(actor, &actor_list, actor_node) {
->  		actor->ops->set_power(actor, tz, granted_power[i]);
-> +		total_granted_power += granted_power[i];
-> +
->  		i++;
->  	}
->  
-> +	trace_thermal_power_allocator(req_power, total_req_power, granted_power,
-> +				total_granted_power, num_actors, power_range,
-> +				max_allocatable_power, current_temp,
-> +				(s32)control_temp - (s32)current_temp);
-> +
->  	devm_kfree(&tz->device, granted_power);
->  free_max_power:
->  	devm_kfree(&tz->device, max_power);
-> diff --git a/include/trace/events/thermal_power_allocator.h b/include/trace/events/thermal_power_allocator.h
-> new file mode 100644
-> index 000000000000..9140cec55c63
-> --- /dev/null
-> +++ b/include/trace/events/thermal_power_allocator.h
-> @@ -0,0 +1,138 @@
-> +#undef TRACE_SYSTEM
-> +#define TRACE_SYSTEM thermal_power_allocator
-> +
-> +#if !defined(_TRACE_THERMAL_POWER_ALLOCATOR_H) || defined(TRACE_HEADER_MULTI_READ)
-> +#define _TRACE_THERMAL_POWER_ALLOCATOR_H
-> +
-> +#include <linux/tracepoint.h>
-> +
-> +TRACE_EVENT(thermal_power_allocator,
-> +	TP_PROTO(u32 *req_power, u32 total_req_power, u32 *granted_power,
-> +		u32 total_granted_power, size_t num_actors, u32 power_range,
-> +		u32 max_allocatable_power, unsigned long current_temp,
-> +		s32 delta_temp),
-> +	TP_ARGS(req_power, total_req_power, granted_power, total_granted_power,
-> +		num_actors, power_range, max_allocatable_power, current_temp,
-> +		delta_temp),
-> +	TP_STRUCT__entry(
-> +		__dynamic_array(u32,   req_power, num_actors    )
-> +		__field(u32,           total_req_power          )
-> +		__dynamic_array(u32,   granted_power, num_actors)
-> +		__field(u32,           total_granted_power      )
-> +		__field(size_t,        num_actors               )
-> +		__field(u32,           power_range              )
-> +		__field(u32,           max_allocatable_power    )
-> +		__field(unsigned long, current_temp             )
-> +		__field(s32,           delta_temp               )
-> +	),
-> +	TP_fast_assign(
-> +		memcpy(__get_dynamic_array(req_power), req_power,
-> +			num_actors * sizeof(*req_power));
-> +		__entry->total_req_power = total_req_power;
-> +		memcpy(__get_dynamic_array(granted_power), granted_power,
-> +			num_actors * sizeof(*granted_power));
-> +		__entry->total_granted_power = total_granted_power;
-> +		__entry->num_actors = num_actors;
-> +		__entry->power_range = power_range;
-> +		__entry->max_allocatable_power = max_allocatable_power;
-> +		__entry->current_temp = current_temp;
-> +		__entry->delta_temp = delta_temp;
-> +	),
-> +
-> +	TP_printk("req_power={%s} total_req_power=%u granted_power={%s} total_granted_power=%u power_range=%u max_allocatable_power=%u current_temperature=%lu delta_temperature=%d",
-> +		__print_u32_array(__get_dynamic_array(req_power),
-> +				__entry->num_actors),
-> +		__entry->total_req_power,
-> +		__print_u32_array(__get_dynamic_array(granted_power),
-> +				__entry->num_actors),
-> +		__entry->total_granted_power, __entry->power_range,
-> +		__entry->max_allocatable_power, __entry->current_temp,
-> +		__entry->delta_temp)
-> +);
-> +
-> +TRACE_EVENT(thermal_power_allocator_pid,
-> +	TP_PROTO(s32 err, s32 err_integral, s64 p, s64 i, s64 d, s32 output),
-> +	TP_ARGS(err, err_integral, p, i, d, output),
-> +	TP_STRUCT__entry(
-> +		__field(s32, err         )
-> +		__field(s32, err_integral)
-> +		__field(s64, p           )
-> +		__field(s64, i           )
-> +		__field(s64, d           )
-> +		__field(s32, output      )
-> +	),
-> +	TP_fast_assign(
-> +		__entry->err = err;
-> +		__entry->err_integral = err_integral;
-> +		__entry->p = p;
-> +		__entry->i = i;
-> +		__entry->d = d;
-> +		__entry->output = output;
-> +	),
-> +
-> +	TP_printk("err=%d err_integral=%d p=%lld i=%lld d=%lld output=%d",
-> +		__entry->err, __entry->err_integral,
-> +		__entry->p, __entry->i, __entry->d, __entry->output)
-> +);
-> +
-> +TRACE_EVENT(thermal_power_actor_cpu_get_dyn_power,
-> +	TP_PROTO(const struct cpumask *cpus, unsigned long freq,
-> +		u32 raw_cpu_power, u32 *load, size_t load_len, u32 power),
-> +
-> +	TP_ARGS(cpus, freq, raw_cpu_power, load, load_len, power),
-> +
-> +	TP_STRUCT__entry(
-> +		__bitmask(cpumask, num_possible_cpus())
-> +		__field(unsigned long, freq          )
-> +		__field(u32,           raw_cpu_power )
-> +		__dynamic_array(u32,   load, load_len)
-> +		__field(size_t,        load_len      )
-> +		__field(u32,           power         )
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__assign_bitmask(cpumask, cpumask_bits(cpus),
-> +				num_possible_cpus());
-> +		__entry->freq = freq;
-> +		__entry->raw_cpu_power = raw_cpu_power;
-> +		memcpy(__get_dynamic_array(load), load,
-> +			load_len * sizeof(*load));
-> +		__entry->load_len = load_len;
-> +		__entry->power = power;
-> +	),
-> +
-> +	TP_printk("cpus=%s freq=%lu raw_cpu_power=%d load={%s} power=%d",
-> +		__get_bitmask(cpumask), __entry->freq, __entry->raw_cpu_power,
-> +		__print_u32_array(__get_dynamic_array(load), __entry->load_len),
-> +		__entry->power)
-> +);
-> +
-> +TRACE_EVENT(thermal_power_actor_cpu_limit,
-> +	TP_PROTO(const struct cpumask *cpus, unsigned int freq,
-> +		unsigned long cdev_state, u32 power),
-> +
-> +	TP_ARGS(cpus, freq, cdev_state, power),
-> +
-> +	TP_STRUCT__entry(
-> +		__bitmask(cpumask, num_possible_cpus())
-> +		__field(unsigned int,  freq      )
-> +		__field(unsigned long, cdev_state)
-> +		__field(u32,           power     )
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__assign_bitmask(cpumask, cpumask_bits(cpus),
-> +				num_possible_cpus());
-> +		__entry->freq = freq;
-> +		__entry->cdev_state = cdev_state;
-> +		__entry->power = power;
-> +	),
-> +
-> +	TP_printk("cpus=%s freq=%u cdev_state=%lu power=%u",
-> +		__get_bitmask(cpumask), __entry->freq, __entry->cdev_state,
-> +		__entry->power)
-> +);
-> +#endif /* _TRACE_THERMAL_POWER_ALLOCATOR_H */
-> +
-> +/* This part must be outside protection */
-> +#include <trace/define_trace.h>
-
+Sebastian
