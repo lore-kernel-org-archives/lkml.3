@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519AbaGJNB1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:01:27 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:45990 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752992AbaGJNBZ (ORCPT
+	id S1753591AbaGJNBc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:01:32 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:56694 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753025AbaGJNB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:01:25 -0400
+	Thu, 10 Jul 2014 09:01:29 -0400
 From: Alex Elder <elder@linaro.org>
 To: akpm@linux-foundation.org
 Cc: ak@linux.intel.com, bp@suse.de, jack@suse.cz, john.stultz@linaro.org,
         pmladek@suse.cz, rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/4] printk: some minor fixups
-Date: Thu, 10 Jul 2014 08:01:20 -0500
-Message-Id: <1404997284-20844-1-git-send-email-elder@linaro.org>
+Subject: [PATCH v2 3/4] printk: use a clever macro
+Date: Thu, 10 Jul 2014 08:01:23 -0500
+Message-Id: <1404997284-20844-4-git-send-email-elder@linaro.org>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404997284-20844-1-git-send-email-elder@linaro.org>
+References: <1404997284-20844-1-git-send-email-elder@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series makes some minor changes to kernel/printk/printk.c.
-I've been poking around that file and will have a few more
-substantive changes to propose soon, but I've been carrying
-around these little things for a bit and thought I should
-just get them out there.
+Use the IS_ENABLED() macro rather than #ifdef blocks to set certain
+global values.
 
-					-Alex
+Signed-off-by: Alex Elder <elder@linaro.org>
+Acked-by: Borislav Petkov <bp@suse.de>
+Reviewed-by: Petr Mladek <pmladek@suse.cz>
+---
+ kernel/printk/printk.c | 12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
 
-History:
-v2: - Renamed CONFIG_MESSAGE_LOGLEVEL_DEFAULT, as suggested
-    - Added Reviewed-by (etc.) annotations
-
-This series, based on v3.16-rc4, is available here:
-    http://git.linaro.org/landing-teams/working/broadcom/kernel.git
-    Branch review/minor-printk-fixes-v2
-
-Alex Elder (4):
-  printk: rename DEFAULT_MESSAGE_LOGLEVEL
-  printk: fix some comments
-  printk: use a clever macro
-  printk: miscellaneous cleanups
-
- include/linux/printk.h |  2 +-
- kernel/printk/printk.c | 63 ++++++++++++++++++++++----------------------------
- lib/Kconfig.debug      |  2 +-
- 3 files changed, 30 insertions(+), 37 deletions(-)
-
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 646146c..6f75e8a 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -453,11 +453,7 @@ static int log_store(int facility, int level,
+ 	return msg->text_len;
+ }
+ 
+-#ifdef CONFIG_SECURITY_DMESG_RESTRICT
+-int dmesg_restrict = 1;
+-#else
+-int dmesg_restrict;
+-#endif
++int dmesg_restrict = IS_ENABLED(CONFIG_SECURITY_DMESG_RESTRICT);
+ 
+ static int syslog_action_restricted(int type)
+ {
+@@ -947,11 +943,7 @@ static inline void boot_delay_msec(int level)
+ }
+ #endif
+ 
+-#if defined(CONFIG_PRINTK_TIME)
+-static bool printk_time = 1;
+-#else
+-static bool printk_time;
+-#endif
++static bool printk_time = IS_ENABLED(CONFIG_PRINTK_TIME);
+ module_param_named(time, printk_time, bool, S_IRUGO | S_IWUSR);
+ 
+ static size_t print_time(u64 ts, char *buf)
 -- 
 1.9.1
 
