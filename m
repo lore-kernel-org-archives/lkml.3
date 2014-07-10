@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751760AbaGJQtb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 12:49:31 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:42464 "EHLO mail.skyhub.de"
+	id S1751709AbaGJQup (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 12:50:45 -0400
+Received: from mga09.intel.com ([134.134.136.24]:15206 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750768AbaGJQt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 12:49:29 -0400
-Date: Thu, 10 Jul 2014 18:49:21 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Havard Skinnemoen <hskinnemoen@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ewout van Bekkum <ewout@google.com>
-Subject: Re: [PATCH 5/6] x86-mce: check if no_way_out applies before deciding
- not to clear MCE banks.
-Message-ID: <20140710164921.GB5603@pd.tnic>
-References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
- <1404925766-32253-6-git-send-email-hskinnemoen@google.com>
- <3908561D78D1C84285E8C5FCA982C28F328574C3@ORSMSX114.amr.corp.intel.com>
- <CAFQmdRb9vsWyF06jppS5U7Wzuc+SzRgWL+hs5+es-GC=5e_8qg@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F32857896@ORSMSX114.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F32857896@ORSMSX114.amr.corp.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1750975AbaGJQun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 12:50:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,638,1400050800"; 
+   d="scan'208";a="541537127"
+Subject: Re: [PATCH char-misc-next v2 2/8] misc: mic: add a bus driver for
+ virtual MIC devices
+From: Sudeep Dutt <sudeep.dutt@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: sudeep.dutt@intel.com, Dan Williams <dan.j.williams@intel.com>,
+        Siva Yerramreddy <yshivakrishna@gmail.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Nikhil Rao <nikhil.rao@intel.com>, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org
+In-Reply-To: <20140710004202.GC4950@kroah.com>
+References: <cover.1401397315.git.sudeep.dutt@intel.com>
+	 <6e4394a52ccac7bbd16450ace82b2c1a118440e0.1401397315.git.sudeep.dutt@intel.com>
+	 <20140710004202.GC4950@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 Jul 2014 09:43:42 -0700
+Message-ID: <1405010622.10161.34.camel@rbtaylor-desk1.amr.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 11:27:07PM +0000, Luck, Tony wrote:
-> > to run with tolerant=3, but I kind of understood the logic to be that
-> > if we're going to keep running, we need to clear the banks, and if
-> > we're going to crash, we need to leave them intact 
+On Wed, 2014-07-09 at 17:42 -0700, Greg Kroah-Hartman wrote:
+> On Thu, May 29, 2014 at 02:23:59PM -0700, Sudeep Dutt wrote:
+> > +/**
+> > + * mbus_device - representation of a device using mbus
+> > + * @priv: private pointer for the driver's use.
+> > + * @mmio_va: virtual address of mmio space
+> > + * @hw_ops: the hardware ops supported by this device.
+> > + * @id: the device type identification (used to match it with a driver).
+> > + * @dev: underlying device.
+> > + * be used to communicate with.
+> > + * @index: unique position on the mbus bus
+> > + */
+> > +struct mbus_device {
+> > +	void *priv;
 > 
-> That makes sense ... fold some text like that into the commit
-> description, and this part is:
+> What's wrong with the built-in "private" pointer that struct device has?
+> That is why it is there...
 > 
-> Acked-by: Tony Luck <tony.luck@intel.com>
 
-Yep, makes sense.
+We were using both mbus_device priv and the device driver_data fields
+unnecessarily. I have a patch which gets rid of the mbus_device priv
+field and uses only the device driver_data field via
+dev_set/get_drvdata(..). The next revision of the patch series will have
+this cleaned up.
 
-Acked-by: Borislav Petkov <bp@suse.de>
+Thanks for the review!
 
--- 
-Regards/Gruss,
-    Boris.
+Sudeep Dutt
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+> > +	void __iomem *mmio_va;
+> > +	struct mbus_hw_ops *hw_ops;
+> > +	struct mbus_device_id id;
+> > +	struct device dev;
+> > +	int index;
+> > +};
+> 
+
+
