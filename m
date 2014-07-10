@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751795AbaGJG16 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 02:27:58 -0400
-Received: from ozlabs.org ([103.22.144.67]:46167 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751119AbaGJG15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 02:27:57 -0400
-Date: Thu, 10 Jul 2014 16:27:50 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sachin Kamat <sachin.kamat@samsung.com>
-Subject: linux-next: manual merge of the akpm tree with the staging tree
-Message-ID: <20140710162750.60496f52@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1751834AbaGJG2O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 02:28:14 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:33673 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119AbaGJG2L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 02:28:11 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19tf4YDWF+ehJ9fNIIk2c0m
+Date: Wed, 9 Jul 2014 23:28:12 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, mika.westerberg@linux.intel.com
+Subject: Re: [PATCH 3/6] tty: serial: 8250 core: add runtime pm
+Message-ID: <20140710062812.GF28884@atomide.com>
+References: <1404928177-26554-1-git-send-email-bigeasy@linutronix.de>
+ <1404928177-26554-4-git-send-email-bigeasy@linutronix.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/Zh9BAejo8AA0lgYjanvu7T5"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404928177-26554-4-git-send-email-bigeasy@linutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Zh9BAejo8AA0lgYjanvu7T5
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+* Sebastian Andrzej Siewior <bigeasy@linutronix.de> [140709 10:52]:
+> While comparing the OMAP-serial and the 8250 part of this I noticed that
+> the the latter does not use runtime-pm. Here are the pieces. It is
+> basically a get before first register access and a last_busy + put after
+> last access.
+> If I understand this correct, it should do nothing as long as
+> pm_runtime_use_autosuspend() + pm_runtime_enable() isn't invoked on the
+> device.
+...
 
-Hi Andrew,
+> --- a/drivers/tty/serial/8250/8250_core.c
+> +++ b/drivers/tty/serial/8250/8250_core.c
+> @@ -571,7 +573,17 @@ static void serial8250_set_sleep(struct uart_8250_port *p, int sleep)
+>  			serial_out(p, UART_EFR, 0);
+>  			serial_out(p, UART_LCR, 0);
+>  		}
+> +
+> +		if (!device_may_wakeup(p->port.dev)) {
+> +			if (sleep)
+> +				pm_runtime_forbid(p->port.dev);
+> +			else
+> +				pm_runtime_allow(p->port.dev);
+> +		}
+>  	}
+> +out:
+> +	pm_runtime_mark_last_busy(p->port.dev);
+> +	pm_runtime_put_autosuspend(p->port.dev);
+>  }
 
-Today's linux-next merge of the akpm tree got a conflict in
-drivers/staging/emxx_udc/emxx_udc.c between commit 6de2a1a7b9e2
-("staging: emxx_udc: Fix build error") from the staging tree and commit
-"drivers/staging/emxx_udc/emxx_udc.c: replace strict_strto() with
-kstrto()" from the akpm tree.
+The device_may_wakeup logic here is wrong as I described in the
+earlier thread. For runtime PM, the wake-up events should be
+always enabled. So the device_may_wakeup checks should be only
+done for suspend and resume.
 
-I fixed it up (I just used the version from the staging tree) and can
-carry the fix as necessary (no action is required).
+Regards,
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/Zh9BAejo8AA0lgYjanvu7T5
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTvjJrAAoJEMDTa8Ir7ZwVcboP/2fPBVT5qVjQdY4x7GxR8QyK
-W1ML4ihwrXjsUN+B9EPrC00kB/1LdazhjTwaM7/FeVWqDes+lOLioBAVkLwiBHU8
-qcyLc51uAyeqlDjQohw+IoP184MmPXcm53Muuw1zI9zZ+BrVTRxRUOLH7dKQQ88J
-AXr7zoKjAnXOnx+ubFWrYbqP9Rca313LX0Y/QE4Ggn95FpVets6vrk0eL8xb+iiZ
-zpXd/f5o1ZcZQxYjLcKlVVgArLaounw9uOD0zi3hIJtY0h1LVvpGFJ/cyliT7OYm
-BHPtipllF5x3LFraxl0t4mIcMyLR4PVROYoohd7QdZU28H6WNeYeIuoSVMlnBE0b
-5rOFWsju4/JsFKVIFBNDjKcab7MM3k9iUggacxgBq50NH43b6F1Vy4EokeI1lN6d
-8EPxMdIUxheoKo1dhx7l6+SiGtroRL9Q05PzwXVfxGif6RcYiwKpySn0vYTCgEqU
-JnU7C+M3TJ+4oZ2ZvHYNngC87mPsOEqAwiIrhsmiy3D94XLl6/B1VXRtFohXnn3Y
-7qCuLNyJfAwEacicUMrmQfKfKhn9D9+OsOawr/UYtMKkxhEg5/fKmdFgzdOPkRpj
-PqK5l7X2trShUn0LWIq9z9KcGIsUcyVFVgJEZlTmn6+qPdun77HQp+/KCSQCswMu
-LGcnNJ+FU+Y3Eb003raw
-=ps0t
------END PGP SIGNATURE-----
-
---Sig_/Zh9BAejo8AA0lgYjanvu7T5--
+Tony
