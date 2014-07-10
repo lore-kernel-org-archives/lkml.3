@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958AbaGJNgZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:36:25 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:52225 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753406AbaGJNgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:36:10 -0400
-Date: Thu, 10 Jul 2014 09:36:09 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        "dgilbert@interlog.com" <dgilbert@interlog.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Bart Van Assche <bvanassche@fusionio.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: scsi-mq V2
-Message-ID: <20140710133609.GO12478@kvack.org>
-References: <1403715121-1201-1-git-send-email-hch@lst.de> <20140708144829.GA5539@infradead.org> <53BD7041.5010300@interlog.com> <53BD9A24.7010203@kernel.dk> <94D0CD8314A33A4D9D801C0FE68B402958B9628B@G9W0745.americas.hpqcorp.net> <20140710062040.GB20146@infradead.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140710062040.GB20146@infradead.org>
-User-Agent: Mutt/1.4.2.2i
+	id S1753981AbaGJNgr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:36:47 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:64904 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035AbaGJNgp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 09:36:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <53BE95B2.50606@ti.com>
+References: <cover.1404231535.git.viresh.kumar@linaro.org>
+	<1ba7771e910084cd0820c19ca5994fe1b3d6451d.1404231535.git.viresh.kumar@linaro.org>
+	<53BD5564.2060704@ti.com>
+	<CAKohpo=KUktq8XJv7Ayis1Q3ik+Wh3wb8wN6VpRAtOsbbv9XCw@mail.gmail.com>
+	<CAGo_u6rBMGO9t87w1e4KCTA+ckF8aeFr+jMw00fks-=y+9JGdA@mail.gmail.com>
+	<53BE95B2.50606@ti.com>
+Date: Thu, 10 Jul 2014 19:06:44 +0530
+Message-ID: <CAKohpommhNQ-Hme8R9CsXisMD4CZ1cTLwnFNPKFRWi02apKZnw@mail.gmail.com>
+Subject: Re: [PATCH 07/14] cpufreq: cpu0: OPPs can be populated at runtime
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Nishanth Menon <nm@ti.com>, Tony Lindgren <tony@atomide.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Tomasz Figa <t.figa@samsung.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas P Abraham <thomas.ab@samsung.com>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Sachin Kamat <spk.linux@gmail.com>, Dave Gerlach <d-gerlach@ti.com>,
+        linux-omap <linux-omap@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 11:20:40PM -0700, Christoph Hellwig wrote:
-> On Thu, Jul 10, 2014 at 12:53:36AM +0000, Elliott, Robert (Server Storage) wrote:
-> > the problem still occurs - fio results in low or 0 IOPS, with perf top 
-> > reporting unusual amounts of time spent in do_io_submit and io_submit.
-> 
-> The diff between the two version doesn't show too much other possible
-> interesting commits, the most interesting being some minor block
-> updates.
-> 
-> I guess we'll have to a manual bisect, I've pushed out a
-> scsi-mq.3-bisect-1 branch that is rebased to just before the merge of
-> the block tree, and a scsi-mq.3-bisect-2 branch that is just after
-> the merge of the block tree to get started.
+On 10 July 2014 19:01, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
+> Yep. Last time I blocked the series because all the DT conversions
+> were not done. Considering now the cpufreq-generic can work on non
+> DT platforms, I am ok to remove the omap-cpufreq.
 
-There is one possible concern that could be exacerbated by other changes in 
-the system: if the application is running close to the bare minimum number 
-of requests allocated in io_setup(), the per cpu reference counters will 
-have a hard time batching things.  It might be worth testing with an 
-increased number of requests being allocated if this is the case.
-
-		-ben
--- 
-"Thought is the essence of where you are now."
+Great.
