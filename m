@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259AbaGJKMv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 06:12:51 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:58082 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915AbaGJKMt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 06:12:49 -0400
-MIME-Version: 1.0
-X-Originating-IP: [84.208.72.173]
-In-Reply-To: <87pphdh85q.fsf@nemi.mork.no>
-References: <1404980258-30853-1-git-send-email-teg@jklm.no>
- <1404980258-30853-11-git-send-email-teg@jklm.no> <87pphdh85q.fsf@nemi.mork.no>
-From: Tom Gundersen <teg@jklm.no>
-Date: Thu, 10 Jul 2014 12:12:28 +0200
-Message-ID: <CAG-2HqWSRRfW1EygXd_1=eYFsTeDd3SsJBfF3BuH35hgGxogxA@mail.gmail.com>
-Subject: Re: [PATCH v7 10/33] net: dummy - set name assign type
-To: =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        dingtianhong <dingtianhong@huawei.com>,
-        Tan Xiaojun <tanxiaojun@huawei.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753370AbaGJKNJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 06:13:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24318 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751167AbaGJKNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 06:13:05 -0400
+From: Amit Shah <amit.shah@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
+        keescook@chromium.org, jason@lakedaemon.net,
+        Amit Shah <amit.shah@redhat.com>
+Subject: [PATCH v3 0/2] hwrng, virtio-rng: init-time fixes
+Date: Thu, 10 Jul 2014 15:42:33 +0530
+Message-Id: <cover.1404987133.git.amit.shah@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 11:31 AM, Bjørn Mork <bjorn@mork.no> wrote:
-> Tom Gundersen <teg@jklm.no> writes:
->
->> A fixed number of indistinguishable dummy devices are allocated at module init time,
->> the names are therefore PREDICTABLE rather than ENUM.
->
-> OK?  So if I go do
->
->  modprobe dummy numdummies=2
->  ip link add type dummy
->  ip link add type dummy
->
-> then I'd have dummy0 and dummy1 with NET_NAME_PREDICTABLE, but dummy2 and
-> dummy3 with NET_NAME_ENUM (from your rtnetlink patch).
+v3:
+ - Kees Cook pointed out a weird side-effect: devices which have
+   ->init() registered get their randomness added to the system each
+   time they're switched in, but devices that don't have the init
+   callback don't contribute to system randomness more than once.  The
+   weirdness is resolved here by using the randomness each time
+   hwrng_init() is attempted, irrespective of the existence of the
+   device's ->init() callback.
 
-Correct. Granted, this is definitely a grey area (the distinction
-between the name assign types is less important for virtual devices),
-but I still think this makes sense:
+v2:
+ - this now separates both the patches; the virtio-rng fix is self-contained
+ - re-work hwrng core to fetch randomness at device init time if
+   ->init() is registered by the device, instead of not calling it at all.
+ - virtio-rng: introduce a probe_done bool to ensure we don't ask host
+   for data before successful probe
 
-The result of
+Hi,
 
-modprobe dummy numdummies=2
+When booting a recent kernel under KVM with the virtio-rng device
+enabled, the boot process was stalling.  Bisect pointed to a commit
+made during the 3.15 window to fetch randomness from newly-registered
+devices in the hwrng core.  The details are in the patches.
 
-is to create dummy0 and dummy1, always with the same names.
+Turns out there were two bugs: the initial randomness was being
+fetched w/o the device being initialized in cases where the init
+callback was registered and the device wasn't the first device being
+added to the hwrng core (unrelated to the virtio-rng case).  The
+second bug is virtio can't communicate with the host without the
+device probe is successfully completed.
 
-The result of
+The impact of this change is that a sole virtio-rng device in a system 
+won't be able to contribute to the initial randomness.  If a second 
+virtio-rng device is hot-plugged, its input will be used.  Though that 
+scenario is extremely unlikely (why have two virtio-rng devices at 
+all?). 
 
-ip link add type dummy
+This isn't any different from the current behaviour, though - virtio-rng 
+currently doesn't contribute to initial system randomness, and continues 
+not to do so.  A better way to get virtio-rng to contribute initially
+to the system random pool can be worked out later.
 
-is to create dummyX, where X depends on what came before.
+Please apply,
 
-> I think this just demonstrates that there aren't that many different
-> name types.  There is no real difference between your NET_NAME_ENUM and
-> NET_NAME_PREDICTABLE, resulting in arbitrary choices like this one.
+Amit Shah (2):
+  hwrng: fetch randomness only after device init
+  virtio: rng: ensure reads happen after successful probe
 
-It is true that in some cases the distinction is less important, but
-that does not negate the usefulness: For instance, the kernel may
-assign names to interfaces based on information provided by their
-firmware. These names may be useful to keep, and it may be important
-for userspace to be told that they are backed by something sensible.
+ drivers/char/hw_random/core.c       | 47 ++++++++++++++++++++++++++++++-------
+ drivers/char/hw_random/virtio-rng.c | 10 ++++++++
+ 2 files changed, 49 insertions(+), 8 deletions(-)
 
-> The same goes for NET_NAME_USER and NET_NAME_RENAMED. These are the same
-> from a kernel point of view.
+-- 
+1.9.3
 
-You mean to collapse the two, and just label renamed interfaces
-NET_NAME_USER instead?
-
-> If userspace wants to keep track of device
-> name history then it is free to do so without any need for a RENAMED
-> type.
-
-Just for the record, I don't see how userspace can keep track of
-device name history (as some of the history may predate userspace
-being around). Getting the history is not important though, what we
-care about is the nature of the current name.
-
-Cheers,
-
-Tom
