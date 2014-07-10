@@ -1,55 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932250AbaGJAiW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 20:38:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49538 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756602AbaGJAiV (ORCPT
+	id S932286AbaGJAxS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 20:53:18 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:61497 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753923AbaGJAxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 20:38:21 -0400
-Date: Wed, 9 Jul 2014 17:42:46 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Sudeep Dutt <sudeep.dutt@intel.com>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        Siva Yerramreddy <yshivakrishna@gmail.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Nikhil Rao <nikhil.rao@intel.com>, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org
-Subject: Re: [PATCH char-misc-next v2 3/8] dma: MIC X100 DMA Driver
-Message-ID: <20140710004246.GD4950@kroah.com>
-References: <cover.1401397315.git.sudeep.dutt@intel.com>
- <334a1f0e362e9a695a2cdc8dcabb52a98e0d4643.1401397315.git.sudeep.dutt@intel.com>
+	Wed, 9 Jul 2014 20:53:16 -0400
+Date: Wed, 9 Jul 2014 17:51:38 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Vlastimil Babka <vbabka@suse.cz>, Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mm: shm: hang in shmem_fallocate
+In-Reply-To: <alpine.LSU.2.11.1407091518530.13001@eggly.anvils>
+Message-ID: <alpine.LSU.2.11.1407091732300.13483@eggly.anvils>
+References: <52AE7B10.2080201@oracle.com> <52F6898A.50101@oracle.com> <alpine.LSU.2.11.1402081841160.26825@eggly.anvils> <52F82E62.2010709@oracle.com> <539A0FC8.8090504@oracle.com> <alpine.LSU.2.11.1406151921070.2850@eggly.anvils> <53A9A7D8.2020703@suse.cz>
+ <alpine.LSU.2.11.1406251152450.1580@eggly.anvils> <53ABE479.3080508@suse.cz> <alpine.LSU.2.11.1406262108390.27670@eggly.anvils> <20140709215906.GA27323@cmpxchg.org> <alpine.LSU.2.11.1407091518530.13001@eggly.anvils>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <334a1f0e362e9a695a2cdc8dcabb52a98e0d4643.1401397315.git.sudeep.dutt@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 02:24:00PM -0700, Sudeep Dutt wrote:
-> From: Siva Yerramreddy <yshivakrishna@gmail.com>
+On Wed, 9 Jul 2014, Hugh Dickins wrote:
+> On Wed, 9 Jul 2014, Johannes Weiner wrote:
+> > On Thu, Jun 26, 2014 at 10:36:20PM -0700, Hugh Dickins wrote:
+> > > Hannes, a question for you please, I just could not make up my mind.
+> > > In mm/truncate.c truncate_inode_pages_range(), what should be done
+> > > with a failed clear_exceptional_entry() in the case of hole-punch?
+> > > Is that case currently depending on the rescan loop (that I'm about
+> > > to revert) to remove a new page, so I would need to add a retry for
+> > > that rather like the shmem_free_swap() one?  Or is it irrelevant,
+> > > and can stay unchanged as below?  I've veered back and forth,
+> > > thinking first one and then the other.
+> > 
+> > I realize you have given up on changing truncate.c in the meantime,
+> > but I'm still asking myself about the swap retry case: why retry for
+> > swap-to-page changes, yet not for page-to-page changes?
+> > 
+> > In case faults are disabled through i_size, concurrent swapin could
+> > still turn swap entries into pages, so I can see the need to retry.
+> > There is no equivalent for shadow entries, though, and they can only
+> > be turned through page faults, so no retry necessary in that case.
+> > 
+> > However, you explicitely mentioned the hole-punch case above: if that
+> > can't guarantee the hole will be reliably cleared under concurrent
+> > faults, I'm not sure why it would put in more effort to free it of
+> > swap (or shadow) entries than to free it of pages.
+> > 
+> > What am I missing?
 > 
-> This patch implements DMA Engine API for DMA controller on MIC X100
-> Coprocessors. DMA h/w is shared between host and card s/w.
-> Channels 0 to 3 are used by host and 4 to 7 are used by card.
-> Since the DMA device doesn't show up as PCIe device, a virtual bus called mic
-> bus is created and virtual devices are added on that bus to follow device model.
-> Allowed dma transfer directions are host to card, card to host and card to card.
+> In dropping the pincer effect, I am conceding that data written (via
+> mmap) racily into the hole, behind the punching cursor, between the
+> starting and the ending of the punch operation, may be allowed to
+> remain.  It will not often happen (given the two loops), but it might.
 > 
-> Reviewed-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
-> Reviewed-by: Nikhil Rao <nikhil.rao@intel.com>
-> Reviewed-by: Sudeep Dutt <sudeep.dutt@intel.com>
-> Signed-off-by: Siva Yerramreddy <yshivakrishna@gmail.com>
-> ---
->  drivers/dma/Kconfig        |  19 ++
->  drivers/dma/Makefile       |   1 +
->  drivers/dma/mic_x100_dma.c | 774 +++++++++++++++++++++++++++++++++++++++++++++
->  drivers/dma/mic_x100_dma.h | 286 +++++++++++++++++
->  4 files changed, 1080 insertions(+)
->  create mode 100644 drivers/dma/mic_x100_dma.c
->  create mode 100644 drivers/dma/mic_x100_dma.h
+> But I insist that all data in the hole at the starting of the punch
+> operation must be removed by the ending of the punch operation (though
+> of course, given the paragraph above, identical data might be written
+> in its place concurrently, via mmap, if the application chooses).
+> 
+> I think you probably agree with both of those propositions.
+> 
+> As the punching cursor moves along the radix_tree, it gathers page
+> pointers and swap entries (the emply slots are already skipped at
+> the level below; and tmpfs takes care that there is no instant in
+> switching between page and swap when the slot appears empty).
+> 
+> Dealing with the page pointers is easy: a reference is already held,
+> then shmem_undo_range takes the page lock which prevents swizzling
+> to swap, then truncates that page out of the tree.
+> 
+> But dealing with swap entries is slippery: there is no reference
+> held, and no lock to prevent swizzling to page (outside of the
+> tree_lock taken in shmem_free_swap).
+> 
+> So, as I see it, the page lock ensures that any pages present at
+> the starting of the punch operation will be removed, without any
+> need to go back and retry.  But a swap entry present at the starting
+> of the punch operation might be swizzled back to page (and, if we
+> imagine massive preemption, even back to swap again, and to page
+> again, etc) at the wrong moment: so for swap we do need to retry.
+> 
+> (What I said there is not quite correct: that swap would actually
+> have to be a locked page at the time when the first loop meets it.)
+> 
+> Does that make sense?
 
-I need some drivers/dma/ maintainers to review this one please...
+Allow me to disagree with myself: no, I now think you were right
+to press me on this, and we need also the patch below.  Do you
+agree, or do you see something more is needed?
 
+Note to onlookers: this would have no bearing on the shmem_fallocate
+hang which Sasha reported seeing on -next yesterday (in another thread),
+but is nonetheless a correction to the patch we have there - I think.
+
+Hugh
+
+--- 3.16-rc3-mm1/mm/shmem.c	2014-07-02 15:32:22.220311543 -0700
++++ linux/mm/shmem.c	2014-07-09 17:38:49.972818635 -0700
+@@ -516,6 +516,11 @@ static void shmem_undo_range(struct inod
+ 				if (page->mapping == mapping) {
+ 					VM_BUG_ON_PAGE(PageWriteback(page), page);
+ 					truncate_inode_page(mapping, page);
++				} else {
++					/* Page was replaced by swap: retry */
++					unlock_page(page);
++					index--;
++					break;
+ 				}
+ 			}
+ 			unlock_page(page);
