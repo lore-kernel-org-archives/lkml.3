@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751638AbaGJQn0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 12:43:26 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:48558 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751451AbaGJQnY (ORCPT
+	id S1751488AbaGJQqP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 12:46:15 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:56053 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149AbaGJQqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 12:43:24 -0400
-Date: Thu, 10 Jul 2014 09:38:29 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Robin Schroer <sulamiification@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/platform/chrome: coding style fixes
-Message-ID: <20140710163829.GA4378@quad.lixom.net>
-References: <20140529184507.GA10635@shodan.fritz.box>
+	Thu, 10 Jul 2014 12:46:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140529184507.GA10635@shodan.fritz.box>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140708223126.GA12035@himangi-Dell>
+References: <20140708223126.GA12035@himangi-Dell>
+From: Andreas Noever <andreas.noever@gmail.com>
+Date: Thu, 10 Jul 2014 18:45:49 +0200
+Message-ID: <CAMxnaaX6tOobPBDVbG7v-kJTvNMLYSybZWuzTqbgMdMkP50swQ@mail.gmail.com>
+Subject: Re: [PATCH v3] thunderbolt: Use kcalloc and correct the argument to sizeof
+To: Himangi Saraogi <himangi774@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        julia.lawall@lip6.fr
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 08:45:07PM +0200, Robin Schroer wrote:
-> added blank lines after declarations in some places
-> 
-> Signed-off-by: Robin Schroer <sulamiification@gmail.com>
+On Wed, Jul 9, 2014 at 12:31 AM, Himangi Saraogi <himangi774@gmail.com> wrote:
+> nhi->rx_rings does not have type as struct tb_ring *, as it is a double
+> pointer. So, the elements of the array should have pointer type, not
+> structure type. The advantage of kcalloc is, that will prevent integer
+> overflows which could result from the multiplication of number of
+> elements and size and it is also a bit nicer to read.
+>
+> The Coccinelle semantic patch that makes the first change is as follows:
+>
+> // <smpl>
+> @disable sizeof_type_expr@
+> type T;
+> T **x;
+> @@
+>
+>   x =
+>   <+...sizeof(
+> - T
+> + *x
+>   )...+>
+> // </smpl>
+>
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 > ---
->  drivers/platform/chrome/chromeos_laptop.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/platform/chrome/chromeos_laptop.c b/drivers/platform/chrome/chromeos_laptop.c
-> index 7f1a2e2..0e2785a 100644
-> --- a/drivers/platform/chrome/chromeos_laptop.c
-> +++ b/drivers/platform/chrome/chromeos_laptop.c
-> @@ -177,6 +177,7 @@ static int __find_i2c_adap(struct device *dev, void *data)
->  	const char *name = data;
->  	static const char *prefix = "i2c-";
->  	struct i2c_adapter *adapter;
-> +
->  	if (strncmp(dev_name(dev), prefix, strlen(prefix)) != 0)
->  		return 0;
->  	adapter = to_i2c_adapter(dev);
-> @@ -231,6 +232,7 @@ static struct i2c_client *add_i2c_device(const char *name,
->  						struct i2c_board_info *info)
->  {
->  	const unsigned short addr_list[] = { info->addr, I2C_CLIENT_END };
-> +
->  	return __add_probed_i2c_device(name,
->  				       find_i2c_adapter_num(type),
->  				       info,
-> @@ -464,6 +466,7 @@ static struct platform_driver cros_platform_driver = {
->  static int __init chromeos_laptop_init(void)
->  {
->  	int ret;
-> +
->  	if (!dmi_check_system(chromeos_laptop_dmi_table)) {
->  		pr_debug("%s unsupported system.\n", __func__);
->  		return -ENODEV;
-> -- 
-> 1.9.3
-> 
+> v2: Use kcalloc
+> v3: Add maintainer in To
+>  drivers/thunderbolt/nhi.c | 10 ++++------
+>  1 file changed, 4 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/thunderbolt/nhi.c b/drivers/thunderbolt/nhi.c
+> index 2054fbf..c68fe12 100644
+> --- a/drivers/thunderbolt/nhi.c
+> +++ b/drivers/thunderbolt/nhi.c
+> @@ -569,12 +569,10 @@ static int nhi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+>                          nhi->hop_count);
+>         INIT_WORK(&nhi->interrupt_work, nhi_interrupt_work);
+>
+> -       nhi->tx_rings = devm_kzalloc(&pdev->dev,
+> -                                    nhi->hop_count * sizeof(struct tb_ring),
+> -                                    GFP_KERNEL);
+> -       nhi->rx_rings = devm_kzalloc(&pdev->dev,
+> -                                    nhi->hop_count * sizeof(struct tb_ring),
+> -                                    GFP_KERNEL);
+> +       nhi->tx_rings = devm_kcalloc(&pdev->dev, nhi->hop_count,
+> +                                    sizeof(*nhi->tx_rings), GFP_KERNEL);
+> +       nhi->rx_rings = devm_kcalloc(&pdev->dev, nhi->hop_count,
+> +                                    sizeof(*nhi->rx_rings), GFP_KERNEL);
+>         if (!nhi->tx_rings || !nhi->rx_rings)
+>                 return -ENOMEM;
+>
+> --
+> 1.9.1
+>
 
-Applied, thanks.
-
-
--Olof
+Thanks for catching this.
+Acked-by: Andreas Noever <andreas.noever@gmail.com>
