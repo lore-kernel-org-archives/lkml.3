@@ -1,80 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752456AbaGJTyp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 15:54:45 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:43098 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752275AbaGJTyn (ORCPT
+	id S1751051AbaGJT6E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 15:58:04 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:38521 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225AbaGJT6C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 15:54:43 -0400
-Date: Thu, 10 Jul 2014 12:54:42 -0700 (PDT)
-Message-Id: <20140710.125442.1730351591773172988.davem@davemloft.net>
-To: jim.epost@gmail.com
-Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org
-Subject: Re: randconfig build error with next-20140710, in
- net/ipv4/ipconfig.c
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CA+r1ZhhJxs_EL3UbtL8qAK4_JAqo3sJ3fF3KJ_3=NcRhnJiYjg@mail.gmail.com>
-References: <CA+r1ZhhJxs_EL3UbtL8qAK4_JAqo3sJ3fF3KJ_3=NcRhnJiYjg@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-7
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 10 Jul 2014 12:54:43 -0700 (PDT)
+	Thu, 10 Jul 2014 15:58:02 -0400
+Date: Thu, 10 Jul 2014 12:56:21 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Sasha Levin <sasha.levin@oracle.com>
+cc: Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Vlastimil Babka <vbabka@suse.cz>, akpm@linux-foundation.org,
+        davej@redhat.com, koct9i@gmail.com, lczerner@redhat.com,
+        stable@vger.kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: + shmem-fix-faulting-into-a-hole-while-its-punched-take-2.patch
+ added to -mm tree
+In-Reply-To: <53BEE4D5.2030909@oracle.com>
+Message-ID: <alpine.LSU.2.11.1407101247300.20668@eggly.anvils>
+References: <53b45c9b.2rlA0uGYBLzlXEeS%akpm@linux-foundation.org> <53BCBF1F.1000506@oracle.com> <alpine.LSU.2.11.1407082309040.7374@eggly.anvils> <53BD1053.5020401@suse.cz> <53BD39FC.7040205@oracle.com> <53BD67DC.9040700@oracle.com>
+ <alpine.LSU.2.11.1407092358090.18131@eggly.anvils> <53BE8B1B.3000808@oracle.com> <53BECBA4.3010508@oracle.com> <alpine.LSU.2.11.1407101033280.18934@eggly.anvils> <53BED7F6.4090502@oracle.com> <alpine.LSU.2.11.1407101131310.19154@eggly.anvils>
+ <53BEE345.4090203@oracle.com> <alpine.LSU.2.11.1407101203130.19396@eggly.anvils> <53BEE4D5.2030909@oracle.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6AJsrVE012389
 
-From: Jim Davis <jim.epost@gmail.com>
-Date: Thu, 10 Jul 2014 10:07:50 -0700
-
-> Building with the attached random configuration file,
+On Thu, 10 Jul 2014, Sasha Levin wrote:
+> On 07/10/2014 03:06 PM, Hugh Dickins wrote:
+> > On Thu, 10 Jul 2014, Sasha Levin wrote:
+> >> > On 07/10/2014 02:52 PM, Hugh Dickins wrote:
+> >>> > > On Thu, 10 Jul 2014, Sasha Levin wrote:
+> >>>>> > >> > On 07/10/2014 01:55 PM, Hugh Dickins wrote:
+> >>>>>>>>> > >>>> > >> And finally, (not) holding the i_mmap_mutex:
+> >>>>>>> > >>> > > I don't understand what prompts you to show this particular task.
+> >>>>>>> > >>> > > I imagine the dump shows lots of other tasks which are waiting to get an
+> >>>>>>> > >>> > > i_mmap_mutex, and quite a lot of other tasks which are neither waiting
+> >>>>>>> > >>> > > for nor holding an i_mmap_mutex.
+> >>>>>>> > >>> > > 
+> >>>>>>> > >>> > > Why are you showing this one in particular?  Because it looks like the
+> >>>>>>> > >>> > > one you fingered yesterday?  But I didn't see a good reason to finger
+> >>>>>>> > >>> > > that one either.
+> >>>>> > >> > 
+> >>>>> > >> > There are a few more tasks like this one, my criteria was tasks that lockdep
+> >>>>> > >> > claims were holding i_mmap_mutex, but are actually not.
+> >>> > > You and Vlastimil enlightened me yesterday that lockdep shows tasks as
+> >>> > > holding i_mmap_mutex when they are actually waiting to get i_mmap_mutex.
+> >>> > > Hundreds of those in yesterday's log, hundreds of them in today's.
+> >> > 
+> >> > What if we move lockdep's acquisition point to after it actually got the
+> >> > lock?
+> >> > 
+> >> > We'd miss deadlocks, but we don't care about them right now. Anyways, doesn't
+> >> > lockdep have anything built in to allow us to separate between locks which
+> >> > we attempt to acquire and locks that are actually acquired?
+> >> > 
+> >> > (cc PeterZ)
+> >> > 
+> >> > We can treat locks that are in the process of being acquired the same as
+> >> > acquired locks to avoid races, but when we print something out it would
+> >> > be nice to have annotation of the read state of the lock.
+> > I certainly hope someone can work on improving that.  I imagine it would
+> > be easy, and well worth doing.  But won't be looking into it myself.
 > 
-> net/ipv4/ipconfig.c: In function ¡ic_dynamic¢:
-> net/ipv4/ipconfig.c:1221:3: error: ¡ic_dev_xid¢ undeclared (first use
-> in this function)
->    ic_dev_xid = d->xid;
->    ^
-> net/ipv4/ipconfig.c:1221:3: note: each undeclared identifier is
-> reported only once for each function it appears in
-> make[2]: *** [net/ipv4/ipconfig.o] Error 1
+> I'd be happy to work on that, just want Peter to confirm that there's no reason
+> that this is missing right now.
 
-Should be fixed by:
+Great, thanks.  And for this bug (and many others?) it would also be very
+helpful if those waiting on a mutex show the current mutex owner's pid.
 
->From 405fd707196d596f59a510d176dedc979c1ae34b Mon Sep 17 00:00:00 2001
-From: "David S. Miller" <davem@davemloft.net>
-Date: Wed, 9 Jul 2014 22:25:18 -0700
-Subject: [PATCH] ipconfig: Only bootp paths should reference ic_dev_xid.
+Don't worry about getting a final mergeable patch, covering all lock types:
+just something hacked up to show that i_mmap_mutex owner would help a lot.
 
-It is only tested, and declared, in the bootp code.
+But be careful, maybe owner is corrupted, or contains a now-invalid
+address, or points to something no longer a task_struct.
 
-So, in ic_dynamic() guard it's setting with IPCONFIG_BOOTP.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- net/ipv4/ipconfig.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/ipv4/ipconfig.c b/net/ipv4/ipconfig.c
-index f02f594..5bbef4f 100644
---- a/net/ipv4/ipconfig.c
-+++ b/net/ipv4/ipconfig.c
-@@ -1217,10 +1217,10 @@ static int __init ic_dynamic(void)
- 	get_random_bytes(&timeout, sizeof(timeout));
- 	timeout = CONF_BASE_TIMEOUT + (timeout % (unsigned int) CONF_TIMEOUT_RANDOM);
- 	for (;;) {
-+#ifdef IPCONFIG_BOOTP
- 		/* Track the device we are configuring */
- 		ic_dev_xid = d->xid;
- 
--#ifdef IPCONFIG_BOOTP
- 		if (do_bootp && (d->able & IC_BOOTP))
- 			ic_bootp_send_if(d, jiffies - start_jiffies);
- #endif
--- 
-1.7.11.7
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Hugh
