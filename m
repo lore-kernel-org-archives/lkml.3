@@ -1,109 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752957AbaGJVC0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 17:02:26 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:52854 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622AbaGJVCP (ORCPT
+	id S1752850AbaGJVCO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 17:02:14 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:53691 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752622AbaGJVB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 17:02:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAL_JsqJRweynpCA7LMFU4wfa71XzjGC3b8H9XKJpogf5H93h_A@mail.gmail.com>
-References: <1396907649-20212-1-git-send-email-tthayer@altera.com>
-	<1396907649-20212-2-git-send-email-tthayer@altera.com>
-	<20140408133818.GB16054@pengutronix.de>
-	<1396967390.23349.15.camel@dinh-ubuntu>
-	<20140408143327.GC16054@pengutronix.de>
-	<CANk1AXR0bDENDV673M-AVXNWHmGuee5SGc+ZnPqdBdEBwJXQXQ@mail.gmail.com>
-	<CAL_JsqJRweynpCA7LMFU4wfa71XzjGC3b8H9XKJpogf5H93h_A@mail.gmail.com>
-Date: Thu, 10 Jul 2014 16:02:14 -0500
-Message-ID: <CANk1AXSi0UrU+yHMz+B_gN-k9=DuTDHPaERQfwU+NHvWsaWDpQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM controller
-From: Alan Tull <delicious.quinoa@gmail.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Thor Thayer <tthayer@altera.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 10 Jul 2014 17:01:29 -0400
+From: Tom Gundersen <teg@jklm.no>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Tom Gundersen <teg@jklm.no>
+Subject: [PATCH v8 4/4] net: rtnetlink - make create_link take name_assign_type
+Date: Thu, 10 Jul 2014 23:01:06 +0200
+Message-Id: <1405026066-2547-5-git-send-email-teg@jklm.no>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1405026066-2547-1-git-send-email-teg@jklm.no>
+References: <1405026066-2547-1-git-send-email-teg@jklm.no>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 8, 2014 at 1:52 PM, Rob Herring <robherring2@gmail.com> wrote:
-> On Tue, Apr 8, 2014 at 11:02 AM, delicious quinoa
-> <delicious.quinoa@gmail.com> wrote:
->> On Tue, Apr 8, 2014 at 9:33 AM, Steffen Trumtrar
->> <s.trumtrar@pengutronix.de> wrote:
->>> On Tue, Apr 08, 2014 at 09:29:50AM -0500, Thor Thayer wrote:
->>>> On Tue, 2014-04-08 at 15:38 +0200, Steffen Trumtrar wrote:
->>>> > Hi!
->>>> >
->>>> > On Mon, Apr 07, 2014 at 04:54:07PM -0500, tthayer@altera.com wrote:
->>>> > > From: Thor Thayer <tthayer@altera.com>
->>>> > >
->>>> > > Addition of the Altera SDRAM controller bindings and device
->>>> > > tree changes to the Altera SoC project.
->>>> > >
->>>> [snip]
->>>> > > +
->>>> > > +Required properties:
->>>> > > +- compatible : "altr,sdr-ctl", "syscon";
->>>> > > +                Note that syscon is invoked for this device to support the FPGA
->>>> > > +         bridge driver, EDAC driver and other devices that share the
->>>> > > +         registers.
->>>> > > +- reg : Should contain 1 register ranges(address and length)
->>>> >
->>>> > I haven't really thought this through, but why would the FPGA bridge driver
->>>> > access the sdram controller? For releasing the resets in fpgaportrst ? Or is
->>>> > there more?
->>>>
->>>> Hi Steffan. No, not for resets. We need to enable the FPGA to SDRAM
->>>> path. Our SDRAM controller allows FPGA master access to the SDRAM.
->>>>
->>>
->>> Yes. But what you have to do to enable the path is let the FPGA port you use
->>> out of reset. And that is it as far as I can see. The rest happens in the
->>> bitstream. Or is there more to enable the path?
->>> The FPGA2SDRAM bridge is the one I didn't use as of yet, so if I miss something
->>> please elaborate.
->>
->> Hi Steffen,
->>
->> The sdram controller is used by two drivers.  That's why we want to
->> specify "syscon" here.  The other driver is the FPGA bridge driver.
->> Its functionality is very separate from what this driver is doing (we
->> are not enabling the bridge in this driver; we are enabling the
->> monitoring and resetting the interrupt bit of the EDAC).  We wanted to
->> specify "syscon" her so that we don't have to have to change it for
->> the other driver.
->
-> But are there actually overlapping registers which are accessed by
-> both drivers and need the protection of regmap?
+This passes down NET_NAME_USER (or NET_NAME_ENUM) to alloc_netdev(),
+for any device created over rtnetlink.
 
-No overlapping registers here.  Just various registers that are used
-by: edac driver, fpga bridge, low power modes.  So no special
-protection needed.
+Signed-off-by: Tom Gundersen <teg@jklm.no>
+---
+ drivers/net/veth.c      | 11 ++++++++---
+ include/net/rtnetlink.h |  1 +
+ net/core/rtnetlink.c    | 12 ++++++++----
+ 3 files changed, 17 insertions(+), 7 deletions(-)
 
->
-> Perhaps MFD is more appropriate than syscon?
->
-> Rob
+diff --git a/drivers/net/veth.c b/drivers/net/veth.c
+index b4a10bc..5058700 100644
+--- a/drivers/net/veth.c
++++ b/drivers/net/veth.c
+@@ -319,6 +319,7 @@ static int veth_newlink(struct net *src_net, struct net_device *dev,
+ 	struct nlattr *peer_tb[IFLA_MAX + 1], **tbp;
+ 	struct ifinfomsg *ifmp;
+ 	struct net *net;
++	unsigned char name_assign_type;
+ 
+ 	/*
+ 	 * create and register peer first
+@@ -344,16 +345,20 @@ static int veth_newlink(struct net *src_net, struct net_device *dev,
+ 		tbp = tb;
+ 	}
+ 
+-	if (tbp[IFLA_IFNAME])
++	if (tbp[IFLA_IFNAME]) {
+ 		nla_strlcpy(ifname, tbp[IFLA_IFNAME], IFNAMSIZ);
+-	else
++		name_assign_type = NET_NAME_USER;
++	} else {
+ 		snprintf(ifname, IFNAMSIZ, DRV_NAME "%%d");
++		name_assign_type = NET_NAME_ENUM;
++	}
+ 
+ 	net = rtnl_link_get_net(src_net, tbp);
+ 	if (IS_ERR(net))
+ 		return PTR_ERR(net);
+ 
+-	peer = rtnl_create_link(net, ifname, &veth_link_ops, tbp);
++	peer = rtnl_create_link(net, ifname, name_assign_type,
++				&veth_link_ops, tbp);
+ 	if (IS_ERR(peer)) {
+ 		put_net(net);
+ 		return PTR_ERR(peer);
+diff --git a/include/net/rtnetlink.h b/include/net/rtnetlink.h
+index 72240e5..e21b9f9 100644
+--- a/include/net/rtnetlink.h
++++ b/include/net/rtnetlink.h
+@@ -136,6 +136,7 @@ void rtnl_af_unregister(struct rtnl_af_ops *ops);
+ 
+ struct net *rtnl_link_get_net(struct net *src_net, struct nlattr *tb[]);
+ struct net_device *rtnl_create_link(struct net *net, char *ifname,
++				    unsigned char name_assign_type,
+ 				    const struct rtnl_link_ops *ops,
+ 				    struct nlattr *tb[]);
+ int rtnl_configure_link(struct net_device *dev, const struct ifinfomsg *ifm);
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index 899de40..09456ff 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1805,7 +1805,8 @@ int rtnl_configure_link(struct net_device *dev, const struct ifinfomsg *ifm)
+ EXPORT_SYMBOL(rtnl_configure_link);
+ 
+ struct net_device *rtnl_create_link(struct net *net,
+-	char *ifname, const struct rtnl_link_ops *ops, struct nlattr *tb[])
++	char *ifname, unsigned char name_assign_type,
++	const struct rtnl_link_ops *ops, struct nlattr *tb[])
+ {
+ 	int err;
+ 	struct net_device *dev;
+@@ -1823,7 +1824,7 @@ struct net_device *rtnl_create_link(struct net *net,
+ 		num_rx_queues = ops->get_num_rx_queues();
+ 
+ 	err = -ENOMEM;
+-	dev = alloc_netdev_mqs(ops->priv_size, ifname, NET_NAME_UNKNOWN,
++	dev = alloc_netdev_mqs(ops->priv_size, ifname, name_assign_type,
+ 			       ops->setup, num_tx_queues, num_rx_queues);
+ 	if (!dev)
+ 		goto err;
+@@ -1889,6 +1890,7 @@ static int rtnl_newlink(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 	char ifname[IFNAMSIZ];
+ 	struct nlattr *tb[IFLA_MAX+1];
+ 	struct nlattr *linkinfo[IFLA_INFO_MAX+1];
++	unsigned char name_assign_type = NET_NAME_USER;
+ 	int err;
+ 
+ #ifdef CONFIG_MODULES
+@@ -2038,14 +2040,16 @@ replay:
+ 			return -EOPNOTSUPP;
+ 		}
+ 
+-		if (!ifname[0])
++		if (!ifname[0]) {
+ 			snprintf(ifname, IFNAMSIZ, "%s%%d", ops->kind);
++			name_assign_type = NET_NAME_ENUM;
++		}
+ 
+ 		dest_net = rtnl_link_get_net(net, tb);
+ 		if (IS_ERR(dest_net))
+ 			return PTR_ERR(dest_net);
+ 
+-		dev = rtnl_create_link(dest_net, ifname, ops, tb);
++		dev = rtnl_create_link(dest_net, ifname, name_assign_type, ops, tb);
+ 		if (IS_ERR(dev)) {
+ 			err = PTR_ERR(dev);
+ 			goto out;
+-- 
+1.9.3
 
-A syscon will do fine here.  If we did a MFD, all it would be doing
-would be providing register access for this range of registers to a
-few drivers, so syscon does that without any trouble.
-
-Alan Tull
-aka
-delicious quinoa
