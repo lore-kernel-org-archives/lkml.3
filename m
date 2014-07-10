@@ -1,74 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308AbaGJKJF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 06:09:05 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:58071 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752525AbaGJKJD (ORCPT
+	id S1753327AbaGJKKV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 06:10:21 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:63689 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752970AbaGJKKT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 06:09:03 -0400
-Date: Thu, 10 Jul 2014 12:08:59 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: bsegall@google.com
-Cc: Yuyang Du <yuyang.du@intel.com>, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com,
-        arjan.van.de.ven@intel.com, len.brown@intel.com, alan.cox@intel.com,
-        mark.gross@intel.com, pjt@google.com, fengguang.wu@intel.com
-Subject: Re: [PATCH 2/2] sched: Rewrite per entity runnable load average
- tracking
-Message-ID: <20140710100859.GW3935@laptop>
-References: <1404268256-3019-1-git-send-email-yuyang.du@intel.com>
- <1404268256-3019-2-git-send-email-yuyang.du@intel.com>
- <20140707104646.GK6758@twins.programming.kicks-ass.net>
- <xm26r41wyfgc.fsf@sword-of-the-dawn.mtv.corp.google.com>
- <20140708000840.GB25653@intel.com>
- <xm26k37nye7d.fsf@sword-of-the-dawn.mtv.corp.google.com>
- <20140709010753.GD25653@intel.com>
- <20140709184543.GI9918@twins.programming.kicks-ass.net>
- <xm26bnsyxsf7.fsf@sword-of-the-dawn.mtv.corp.google.com>
+	Thu, 10 Jul 2014 06:10:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <xm26bnsyxsf7.fsf@sword-of-the-dawn.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140710073510.GO2635@lee--X1>
+References: <1404822480-31525-1-git-send-email-amit.daniel@samsung.com>
+	<1404822480-31525-2-git-send-email-amit.daniel@samsung.com>
+	<CADGdYn74xRxznqHxHOjRHe9bGv1-KPjRF0UAS=OyxWCg-iXBbw@mail.gmail.com>
+	<20140710073510.GO2635@lee--X1>
+Date: Thu, 10 Jul 2014 15:40:18 +0530
+X-Google-Sender-Auth: 0lgzWfcmjIQaWfzb6RuX3n7_DoA
+Message-ID: <CADGdYn6_dAW0=8n2=KHt0-LE4EEwiyHsfTri8RYo_yUuq153mg@mail.gmail.com>
+Subject: Re: [PATCH 2/3] regulator: s2mpa01: Optimize the regulator
+ description macro
+From: amit daniel kachhap <amit.daniel@samsung.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 12:07:08PM -0700, bsegall@google.com wrote:
-> Peter Zijlstra <peterz@infradead.org> writes:
-> 
-> > On Wed, Jul 09, 2014 at 09:07:53AM +0800, Yuyang Du wrote:
-> >> That is chalenging... Can someone (Peter) grant us a lock of the remote rq? :)
-> >
-> > Nope :-).. we got rid of that lock for a good reason.
-> >
-> > Also, this is one area where I feel performance really trumps
-> > correctness, we can fudge the blocked load a little. So the
-> > sched_clock_cpu() difference is a strict upper bound on the
-> > rq_clock_task() difference (and under 'normal' circumstances shouldn't
-> > be much off).
-> 
-> Well, unless IRQ_TIME_ACCOUNTING or such is on, in which case you lose.
-> Or am I misunderstanding the suggestion?
-
-If its on its still an upper bound, and typically the difference is not
-too large I think.
-
-Since clock_task is the regular clock minus some local amount, the
-difference between two regular clock reads is always a strict upper
-bound on clock_task differences.
-
-> Actually the simplest thing
-> would probably be to grab last_update_time (which on 32-bit could be
-> done with the _copy hack) and use that. Then I think the accuracy is
-> only worse than current in that you can lose runnable load as well as
-> blocked load, and that it isn't as easily corrected - currently if the
-> blocked tasks wake up they'll add the correct numbers to
-> runnable_load_avg, even if blocked_load_avg is screwed up and hit zero.
-> This code would have to wait until it stabilized again.
-
-The problem with that is that last_update_time is measured in
-clock_task, and you cannot transfer these values between CPUs.
-clock_task can drift unbounded between CPUs.
-
+On Thu, Jul 10, 2014 at 1:05 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Thu, 10 Jul 2014, amit daniel kachhap wrote:
+>> Adding MFD maintainers.
+>
+> Why, what for?
+Sorry not needed for this patch.
+>
+>> On Tue, Jul 8, 2014 at 5:57 PM, Amit Daniel Kachhap
+>> <amit.daniel@samsung.com> wrote:
+>> > This patch makes the regulator description macro take minimum and
+>> > steps voltage as parameter. In this way many repeated macros can be
+>> > removed. Now these macros are repeated only if the the LDO/BUCK ctrl
+>> > registers have non-linear positions. The good thing is these ctrl registers
+>> > are mostly linear so they are not passed as parameters.
+>> >
+>> > This patch reduces the code size and also allow easy addition of more
+>> > s2mpxxx PMIC drivers which differs a lot in minimum/step voltages.
+>> >
+>> > Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>> > ---
+>> >  drivers/regulator/s2mpa01.c | 136 ++++++++++++--------------------------------
+>> >  1 file changed, 37 insertions(+), 99 deletions(-)
+>> >
+>> > diff --git a/drivers/regulator/s2mpa01.c b/drivers/regulator/s2mpa01.c
+>> > index 962c5f1..8073466 100644
+>> > --- a/drivers/regulator/s2mpa01.c
+>> > +++ b/drivers/regulator/s2mpa01.c
+>> > @@ -235,28 +235,14 @@ static struct regulator_ops s2mpa01_buck_ops = {
+>> >         .set_ramp_delay         = s2mpa01_set_ramp_delay,
+>> >  };
+>> >
+>> > -#define regulator_desc_ldo1(num)       {               \
+>> > +#define regulator_desc_ldo(num, min, step)     {       \
+>> >         .name           = "LDO"#num,                    \
+>> >         .id             = S2MPA01_LDO##num,             \
+>> >         .ops            = &s2mpa01_ldo_ops,             \
+>> >         .type           = REGULATOR_VOLTAGE,            \
+>> >         .owner          = THIS_MODULE,                  \
+>> > -       .min_uV         = MIN_800_MV,                   \
+>> > -       .uV_step        = STEP_50_MV,                   \
+>> > -       .n_voltages     = S2MPA01_LDO_N_VOLTAGES,       \
+>> > -       .vsel_reg       = S2MPA01_REG_L1CTRL + num - 1, \
+>> > -       .vsel_mask      = S2MPA01_LDO_VSEL_MASK,        \
+>> > -       .enable_reg     = S2MPA01_REG_L1CTRL + num - 1, \
+>> > -       .enable_mask    = S2MPA01_ENABLE_MASK           \
+>> > -}
+>> > -#define regulator_desc_ldo2(num)       {               \
+>> > -       .name           = "LDO"#num,                    \
+>> > -       .id             = S2MPA01_LDO##num,             \
+>> > -       .ops            = &s2mpa01_ldo_ops,             \
+>> > -       .type           = REGULATOR_VOLTAGE,            \
+>> > -       .owner          = THIS_MODULE,                  \
+>> > -       .min_uV         = MIN_800_MV,                   \
+>> > -       .uV_step        = STEP_25_MV,                   \
+>> > +       .min_uV         = min,                          \
+>> > +       .uV_step        = step,                         \
+>> >         .n_voltages     = S2MPA01_LDO_N_VOLTAGES,       \
+>> >         .vsel_reg       = S2MPA01_REG_L1CTRL + num - 1, \
+>> >         .vsel_mask      = S2MPA01_LDO_VSEL_MASK,        \
+>> > @@ -296,14 +282,14 @@ static struct regulator_ops s2mpa01_buck_ops = {
+>> >         .enable_mask    = S2MPA01_ENABLE_MASK                   \
+>> >  }
+>> >
+>> > -#define regulator_desc_buck6_7(num)    {                       \
+>> > +#define regulator_desc_buck6_10(num, min, step)        {               \
+>> >         .name           = "BUCK"#num,                           \
+>> >         .id             = S2MPA01_BUCK##num,                    \
+>> >         .ops            = &s2mpa01_buck_ops,                    \
+>> >         .type           = REGULATOR_VOLTAGE,                    \
+>> >         .owner          = THIS_MODULE,                          \
+>> > -       .min_uV         = MIN_600_MV,                           \
+>> > -       .uV_step        = STEP_6_25_MV,                         \
+>> > +       .min_uV         = min,                                  \
+>> > +       .uV_step        = step,                                 \
+>> >         .n_voltages     = S2MPA01_BUCK_N_VOLTAGES,              \
+>> >         .ramp_delay     = S2MPA01_RAMP_DELAY,                   \
+>> >         .vsel_reg       = S2MPA01_REG_B6CTRL2 + (num - 6) * 2,  \
+>> > @@ -312,91 +298,43 @@ static struct regulator_ops s2mpa01_buck_ops = {
+>> >         .enable_mask    = S2MPA01_ENABLE_MASK                   \
+>> >  }
+>> >
+>> > -#define regulator_desc_buck8   {                               \
+>> > -       .name           = "BUCK8",                              \
+>> > -       .id             = S2MPA01_BUCK8,                        \
+>> > -       .ops            = &s2mpa01_buck_ops,                    \
+>> > -       .type           = REGULATOR_VOLTAGE,                    \
+>> > -       .owner          = THIS_MODULE,                          \
+>> > -       .min_uV         = MIN_800_MV,                           \
+>> > -       .uV_step        = STEP_12_5_MV,                         \
+>> > -       .n_voltages     = S2MPA01_BUCK_N_VOLTAGES,              \
+>> > -       .ramp_delay     = S2MPA01_RAMP_DELAY,                   \
+>> > -       .vsel_reg       = S2MPA01_REG_B8CTRL2,                  \
+>> > -       .vsel_mask      = S2MPA01_BUCK_VSEL_MASK,               \
+>> > -       .enable_reg     = S2MPA01_REG_B8CTRL1,                  \
+>> > -       .enable_mask    = S2MPA01_ENABLE_MASK                   \
+>> > -}
+>> > -
+>> > -#define regulator_desc_buck9   {                               \
+>> > -       .name           = "BUCK9",                              \
+>> > -       .id             = S2MPA01_BUCK9,                        \
+>> > -       .ops            = &s2mpa01_buck_ops,                    \
+>> > -       .type           = REGULATOR_VOLTAGE,                    \
+>> > -       .owner          = THIS_MODULE,                          \
+>> > -       .min_uV         = MIN_1500_MV,                          \
+>> > -       .uV_step        = STEP_12_5_MV,                         \
+>> > -       .n_voltages     = S2MPA01_BUCK_N_VOLTAGES,              \
+>> > -       .ramp_delay     = S2MPA01_RAMP_DELAY,                   \
+>> > -       .vsel_reg       = S2MPA01_REG_B9CTRL2,                  \
+>> > -       .vsel_mask      = S2MPA01_BUCK_VSEL_MASK,               \
+>> > -       .enable_reg     = S2MPA01_REG_B9CTRL1,                  \
+>> > -       .enable_mask    = S2MPA01_ENABLE_MASK                   \
+>> > -}
+>> > -
+>> > -#define regulator_desc_buck10  {                               \
+>> > -       .name           = "BUCK10",                             \
+>> > -       .id             = S2MPA01_BUCK10,                       \
+>> > -       .ops            = &s2mpa01_buck_ops,                    \
+>> > -       .type           = REGULATOR_VOLTAGE,                    \
+>> > -       .owner          = THIS_MODULE,                          \
+>> > -       .min_uV         = MIN_1000_MV,                          \
+>> > -       .uV_step        = STEP_12_5_MV,                         \
+>> > -       .n_voltages     = S2MPA01_BUCK_N_VOLTAGES,              \
+>> > -       .ramp_delay     = S2MPA01_RAMP_DELAY,                   \
+>> > -       .vsel_reg       = S2MPA01_REG_B10CTRL2,                 \
+>> > -       .vsel_mask      = S2MPA01_BUCK_VSEL_MASK,               \
+>> > -       .enable_reg     = S2MPA01_REG_B10CTRL1,                 \
+>> > -       .enable_mask    = S2MPA01_ENABLE_MASK                   \
+>> > -}
+>> > -
+>> >  static struct regulator_desc regulators[] = {
+>> > -       regulator_desc_ldo2(1),
+>> > -       regulator_desc_ldo1(2),
+>> > -       regulator_desc_ldo1(3),
+>> > -       regulator_desc_ldo1(4),
+>> > -       regulator_desc_ldo1(5),
+>> > -       regulator_desc_ldo2(6),
+>> > -       regulator_desc_ldo1(7),
+>> > -       regulator_desc_ldo1(8),
+>> > -       regulator_desc_ldo1(9),
+>> > -       regulator_desc_ldo1(10),
+>> > -       regulator_desc_ldo2(11),
+>> > -       regulator_desc_ldo1(12),
+>> > -       regulator_desc_ldo1(13),
+>> > -       regulator_desc_ldo1(14),
+>> > -       regulator_desc_ldo1(15),
+>> > -       regulator_desc_ldo1(16),
+>> > -       regulator_desc_ldo1(17),
+>> > -       regulator_desc_ldo1(18),
+>> > -       regulator_desc_ldo1(19),
+>> > -       regulator_desc_ldo1(20),
+>> > -       regulator_desc_ldo1(21),
+>> > -       regulator_desc_ldo2(22),
+>> > -       regulator_desc_ldo2(23),
+>> > -       regulator_desc_ldo1(24),
+>> > -       regulator_desc_ldo1(25),
+>> > -       regulator_desc_ldo1(26),
+>> > +       regulator_desc_ldo(1, MIN_800_MV, STEP_25_MV),
+>> > +       regulator_desc_ldo(2, MIN_800_MV, STEP_50_MV),
+>> > +       regulator_desc_ldo(3, MIN_800_MV, STEP_50_MV),
+>> > +       regulator_desc_ldo(4, MIN_800_MV, STEP_50_MV),
+>> > +       regulator_desc_ldo(5, MIN_800_MV, STEP_50_MV),
+>> > +       regulator_desc_ldo(6, MIN_800_MV, STEP_25_MV),
+>> > +       regulator_desc_ldo(7, MIN_800_MV, STEP_50_MV),
+>> > +       regulator_desc_ldo(8, MIN_800_MV, STEP_50_MV),
+>> > +       regulator_desc_ldo(9, MIN_800_MV, STEP_50_MV),
+>> > +       regulator_desc_ldo(10, MIN_800_MV, STEP_50_MV),
+>> > +       regulator_desc_ldo(11, MIN_800_MV, STEP_25_MV),
+>> > +       regulator_desc_ldo(12, MIN_800_MV, STEP_50_MV),
+>> > +       regulator_desc_ldo(13, MIN_800_MV, STEP_50_MV),
+>> > +       regulator_desc_ldo(14, MIN_800_MV, STEP_50_MV),
+>> > +       regulator_desc_ldo(15, MIN_800_MV, STEP_50_MV),
+>> > +       regulator_desc_ldo(16, MIN_800_MV, STEP_50_MV),
+>> > +       regulator_desc_ldo(17, MIN_800_MV, STEP_50_MV),
+>> > +       regulator_desc_ldo(18, MIN_800_MV, STEP_50_MV),
+>> > +       regulator_desc_ldo(19, MIN_800_MV, STEP_50_MV),
+>> > +       regulator_desc_ldo(20, MIN_800_MV, STEP_50_MV),
+>> > +       regulator_desc_ldo(21, MIN_800_MV, STEP_50_MV),
+>> > +       regulator_desc_ldo(22, MIN_800_MV, STEP_25_MV),
+>> > +       regulator_desc_ldo(23, MIN_800_MV, STEP_25_MV),
+>> > +       regulator_desc_ldo(24, MIN_800_MV, STEP_50_MV),
+>> > +       regulator_desc_ldo(25, MIN_800_MV, STEP_50_MV),
+>> > +       regulator_desc_ldo(26, MIN_800_MV, STEP_50_MV),
+>> >         regulator_desc_buck1_4(1),
+>> >         regulator_desc_buck1_4(2),
+>> >         regulator_desc_buck1_4(3),
+>> >         regulator_desc_buck1_4(4),
+>> >         regulator_desc_buck5,
+>> > -       regulator_desc_buck6_7(6),
+>> > -       regulator_desc_buck6_7(7),
+>> > -       regulator_desc_buck8,
+>> > -       regulator_desc_buck9,
+>> > -       regulator_desc_buck10,
+>> > +       regulator_desc_buck6_10(6, MIN_600_MV, STEP_6_25_MV),
+>> > +       regulator_desc_buck6_10(7, MIN_600_MV, STEP_6_25_MV),
+>> > +       regulator_desc_buck6_10(8, MIN_800_MV, STEP_12_5_MV),
+>> > +       regulator_desc_buck6_10(9, MIN_1500_MV, STEP_12_5_MV),
+>> > +       regulator_desc_buck6_10(10, MIN_1000_MV, STEP_12_5_MV),
+>> >  };
+>> >
+>> >  static int s2mpa01_pmic_probe(struct platform_device *pdev)
+>> >
+>
+> --
+> Lee Jones
+> Linaro STMicroelectronics Landing Team Lead
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
