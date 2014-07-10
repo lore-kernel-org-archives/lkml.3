@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751965AbaGJIGH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 04:06:07 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:44502 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321AbaGJIF5 (ORCPT
+	id S1752001AbaGJIGd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 04:06:33 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:50402 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719AbaGJIGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 04:05:57 -0400
+	Thu, 10 Jul 2014 04:06:04 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: Anton Vorontsov <anton.vorontsov@linaro.org>, linux-kernel@vger.kernel.org,
@@ -22,401 +22,409 @@ Cc: Anton Vorontsov <anton.vorontsov@linaro.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Nicolas Pitre <nico@linaro.org>,
         Daniel Thompson <daniel.thompson@linaro.org>
-Subject: [PATCH v8 3/4] ARM: Move some macros from entry-armv to entry-header
-Date: Thu, 10 Jul 2014 09:03:46 +0100
-Message-Id: <1404979427-12943-4-git-send-email-daniel.thompson@linaro.org>
+Subject: [PATCH v8 4/4] ARM: Add KGDB/KDB FIQ debugger generic code
+Date: Thu, 10 Jul 2014 09:03:47 +0100
+Message-Id: <1404979427-12943-5-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1404979427-12943-1-git-send-email-daniel.thompson@linaro.org>
 References: <1404118391-3850-1-git-send-email-daniel.thompson@linaro.org>
  <1404979427-12943-1-git-send-email-daniel.thompson@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 
-Just move the macros into header file as we would want to use them for
-KGDB FIQ entry code.
+The FIQ debugger may be used to debug situations when the kernel stuck
+in uninterruptable sections, e.g. the kernel infinitely loops or
+deadlocked in an interrupt or with interrupts disabled.
 
-The following macros were moved:
-
- - svc_entry
- - usr_entry
- - kuser_cmpxchg_check
- - vector_stub
-
-To make kuser_cmpxchg_check actually work across different files, we
-also have to make kuser_cmpxchg64_fixup global.
+By default KGDB FIQ is disabled in runtime, but can be enabled with
+kgdb_fiq.enable=1 kernel command line option.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
+[daniel.thompson@linaro.org: Added __fiq_abt, rewrote stack init]
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
 Acked-by: Nicolas Pitre <nico@linaro.org>
 Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: Dave Martin <Dave.Martin@arm.com>
 ---
- arch/arm/kernel/entry-armv.S   | 151 +------------------------------------
- arch/arm/kernel/entry-header.S | 164 +++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 165 insertions(+), 150 deletions(-)
+ arch/arm/Kconfig                 |   2 +
+ arch/arm/Kconfig.debug           |  18 ++++++
+ arch/arm/include/asm/kgdb.h      |   7 +++
+ arch/arm/kernel/Makefile         |   1 +
+ arch/arm/kernel/kgdb_fiq.c       | 132 +++++++++++++++++++++++++++++++++++++++
+ arch/arm/kernel/kgdb_fiq_entry.S | 130 ++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 290 insertions(+)
+ create mode 100644 arch/arm/kernel/kgdb_fiq.c
+ create mode 100644 arch/arm/kernel/kgdb_fiq_entry.S
 
-diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
-index 52a949a..4172cd6 100644
---- a/arch/arm/kernel/entry-armv.S
-+++ b/arch/arm/kernel/entry-armv.S
-@@ -140,53 +140,6 @@ ENDPROC(__und_invalid)
-  * SVC mode handlers
-  */
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 245058b..f385b27 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -297,6 +297,7 @@ choice
+ config ARCH_MULTIPLATFORM
+ 	bool "Allow multiple platforms to be selected"
+ 	depends on MMU
++	select ARCH_MIGHT_HAVE_KGDB_FIQ
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select ARM_HAS_SG_CHAIN
+ 	select ARM_PATCH_PHYS_VIRT
+@@ -346,6 +347,7 @@ config ARCH_REALVIEW
  
--#if defined(CONFIG_AEABI) && (__LINUX_ARM_ARCH__ >= 5)
--#define SPFIX(code...) code
--#else
--#define SPFIX(code...)
--#endif
--
--	.macro	svc_entry, stack_hole=0
-- UNWIND(.fnstart		)
-- UNWIND(.save {r0 - pc}		)
--	sub	sp, sp, #(S_FRAME_SIZE + \stack_hole - 4)
--#ifdef CONFIG_THUMB2_KERNEL
-- SPFIX(	str	r0, [sp]	)	@ temporarily saved
-- SPFIX(	mov	r0, sp		)
-- SPFIX(	tst	r0, #4		)	@ test original stack alignment
-- SPFIX(	ldr	r0, [sp]	)	@ restored
--#else
-- SPFIX(	tst	sp, #4		)
--#endif
-- SPFIX(	subeq	sp, sp, #4	)
--	stmia	sp, {r1 - r12}
--
--	ldmia	r0, {r3 - r5}
--	add	r7, sp, #S_SP - 4	@ here for interlock avoidance
--	mov	r6, #-1			@  ""  ""      ""       ""
--	add	r2, sp, #(S_FRAME_SIZE + \stack_hole - 4)
-- SPFIX(	addeq	r2, r2, #4	)
--	str	r3, [sp, #-4]!		@ save the "real" r0 copied
--					@ from the exception stack
--
--	mov	r3, lr
--
--	@
--	@ We are now ready to fill in the remaining blanks on the stack:
--	@
--	@  r2 - sp_svc
--	@  r3 - lr_svc
--	@  r4 - lr_<exception>, already fixed up for correct return/restart
--	@  r5 - spsr_<exception>
--	@  r6 - orig_r0 (see pt_regs definition in ptrace.h)
--	@
--	stmia	r7, {r2 - r6}
--
--#ifdef CONFIG_TRACE_IRQFLAGS
--	bl	trace_hardirqs_off
--#endif
--	.endm
--
- 	.align	5
- __dabt_svc:
- 	svc_entry
-@@ -306,73 +259,8 @@ ENDPROC(__pabt_svc)
+ config ARCH_VERSATILE
+ 	bool "ARM Ltd. Versatile family"
++	select ARCH_MIGHT_HAVE_KGDB_FIQ
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select ARM_AMBA
+ 	select ARM_TIMER_SP804
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index 26536f7..c7342b6 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -2,6 +2,24 @@ menu "Kernel hacking"
+ 
+ source "lib/Kconfig.debug"
+ 
++config ARCH_MIGHT_HAVE_KGDB_FIQ
++	bool
++
++config KGDB_FIQ
++	bool "KGDB FIQ support"
++	depends on KGDB_KDB && ARCH_MIGHT_HAVE_KGDB_FIQ && !THUMB2_KERNEL
++	select FIQ
++	help
++	  The FIQ debugger may be used to debug situations when the
++	  kernel stuck in uninterruptable sections, e.g. the kernel
++	  infinitely loops or deadlocked in an interrupt or with
++	  interrupts disabled.
++
++	  By default KGDB FIQ is disabled at runtime, but can be
++	  enabled with kgdb_fiq.enable=1 kernel command line option.
++
++	  If unsure, say N.
++
+ config ARM_PTDUMP
+ 	bool "Export kernel pagetable layout to userspace via debugfs"
+ 	depends on DEBUG_KERNEL
+diff --git a/arch/arm/include/asm/kgdb.h b/arch/arm/include/asm/kgdb.h
+index 0a9d5dd..5de21f01 100644
+--- a/arch/arm/include/asm/kgdb.h
++++ b/arch/arm/include/asm/kgdb.h
+@@ -11,7 +11,9 @@
+ #define __ARM_KGDB_H__
+ 
+ #include <linux/ptrace.h>
++#include <linux/linkage.h>
+ #include <asm/opcodes.h>
++#include <asm/exception.h>
  
  /*
-  * User mode handlers
-- *
-- * EABI note: sp_svc is always 64-bit aligned here, so should S_FRAME_SIZE
-  */
+  * GDB assumes that we're a user process being debugged, so
+@@ -48,6 +50,11 @@ static inline void arch_kgdb_breakpoint(void)
+ extern void kgdb_handle_bus_error(void);
+ extern int kgdb_fault_expected;
  
--#if defined(CONFIG_AEABI) && (__LINUX_ARM_ARCH__ >= 5) && (S_FRAME_SIZE & 7)
--#error "sizeof(struct pt_regs) must be a multiple of 8"
--#endif
--
--	.macro	usr_entry
-- UNWIND(.fnstart	)
-- UNWIND(.cantunwind	)	@ don't unwind the user space
--	sub	sp, sp, #S_FRAME_SIZE
-- ARM(	stmib	sp, {r1 - r12}	)
-- THUMB(	stmia	sp, {r0 - r12}	)
--
--	ldmia	r0, {r3 - r5}
--	add	r0, sp, #S_PC		@ here for interlock avoidance
--	mov	r6, #-1			@  ""  ""     ""        ""
--
--	str	r3, [sp]		@ save the "real" r0 copied
--					@ from the exception stack
--
--	@
--	@ We are now ready to fill in the remaining blanks on the stack:
--	@
--	@  r4 - lr_<exception>, already fixed up for correct return/restart
--	@  r5 - spsr_<exception>
--	@  r6 - orig_r0 (see pt_regs definition in ptrace.h)
--	@
--	@ Also, separately save sp_usr and lr_usr
--	@
--	stmia	r0, {r4 - r6}
-- ARM(	stmdb	r0, {sp, lr}^			)
-- THUMB(	store_user_sp_lr r0, r1, S_SP - S_PC	)
--
--	@
--	@ Enable the alignment trap while in kernel mode
--	@
--	alignment_trap r0, .LCcralign
--
--	@
--	@ Clear FP to mark the first stack frame
--	@
--	zero_fp
--
--#ifdef CONFIG_IRQSOFF_TRACER
--	bl	trace_hardirqs_off
--#endif
--	ct_user_exit save = 0
--	.endm
--
--	.macro	kuser_cmpxchg_check
--#if !defined(CONFIG_CPU_32v6K) && defined(CONFIG_KUSER_HELPERS) && \
--    !defined(CONFIG_NEEDS_SYSCALL_FOR_CMPXCHG)
--#ifndef CONFIG_MMU
--#warning "NPTL on non MMU needs fixing"
--#else
--	@ Make sure our user space atomic helper is restarted
--	@ if it was interrupted in a critical region.  Here we
--	@ perform a quick test inline since it should be false
--	@ 99.9999% of the time.  The rest is done out of line.
--	cmp	r4, #TASK_SIZE
--	blhs	kuser_cmpxchg64_fixup
--#endif
--#endif
--	.endm
--
- 	.align	5
- __dabt_usr:
- 	usr_entry
-@@ -823,6 +711,7 @@ __kuser_cmpxchg64:				@ 0xffff0f60
- 	ldmfd	sp!, {r4, r5, r6, pc}
- 
- 	.text
-+	.global kuser_cmpxchg64_fixup
- kuser_cmpxchg64_fixup:
- 	@ Called from kuser_cmpxchg_fixup.
- 	@ r4 = address of interrupted insn (must be preserved).
-@@ -964,44 +853,6 @@ __kuser_helper_end:
-  * SP points to a minimal amount of processor-private memory, the address
-  * of which is copied into r0 for the mode specific abort handler.
-  */
--	.macro	vector_stub, name, mode, correction=0
--	.align	5
--
--vector_\name:
--	.if \correction
--	sub	lr, lr, #\correction
--	.endif
--
--	@
--	@ Save r0, lr_<exception> (parent PC) and spsr_<exception>
--	@ (parent CPSR)
--	@
--	stmia	sp, {r0, lr}		@ save r0, lr
--	mrs	lr, spsr
--	str	lr, [sp, #8]		@ save spsr
--
--	@
--	@ Prepare for SVC32 mode.  IRQs remain disabled.
--	@
--	mrs	r0, cpsr
--	eor	r0, r0, #(\mode ^ SVC_MODE | PSR_ISETSTATE)
--	msr	spsr_cxsf, r0
--
--	@
--	@ the branch table must immediately follow this code
--	@
--	and	lr, lr, #0x0f
-- THUMB(	adr	r0, 1f			)
-- THUMB(	ldr	lr, [r0, lr, lsl #2]	)
--	mov	r0, sp
-- ARM(	ldr	lr, [pc, lr, lsl #2]	)
--	movs	pc, lr			@ branch to handler in SVC mode
--ENDPROC(vector_\name)
--
--	.align	2
--	@ handler addresses follow this label
--1:
--	.endm
- 
- 	.section .stubs, "ax", %progbits
- __stubs_start:
-diff --git a/arch/arm/kernel/entry-header.S b/arch/arm/kernel/entry-header.S
-index 5d702f8..eb2c426 100644
---- a/arch/arm/kernel/entry-header.S
-+++ b/arch/arm/kernel/entry-header.S
-@@ -356,3 +356,167 @@ scno	.req	r7		@ syscall number
- tbl	.req	r8		@ syscall table pointer
- why	.req	r8		@ Linux syscall (!= 0)
- tsk	.req	r9		@ current thread_info
++extern char kgdb_fiq_handler;
++extern char kgdb_fiq_handler_end;
++asmlinkage void __exception_irq_entry kgdb_fiq_do_handle(struct pt_regs *regs);
++extern int kgdb_register_fiq(unsigned int fiq);
 +
+ #endif /* !__ASSEMBLY__ */
+ 
+ /*
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index 38ddd9f..30ee8f3 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -68,6 +68,7 @@ endif
+ obj-$(CONFIG_OABI_COMPAT)	+= sys_oabi-compat.o
+ obj-$(CONFIG_ARM_THUMBEE)	+= thumbee.o
+ obj-$(CONFIG_KGDB)		+= kgdb.o
++obj-$(CONFIG_KGDB_FIQ)		+= kgdb_fiq_entry.o kgdb_fiq.o
+ obj-$(CONFIG_ARM_UNWIND)	+= unwind.o
+ obj-$(CONFIG_HAVE_TCM)		+= tcm.o
+ obj-$(CONFIG_OF)		+= devtree.o
+diff --git a/arch/arm/kernel/kgdb_fiq.c b/arch/arm/kernel/kgdb_fiq.c
+new file mode 100644
+index 0000000..a894dde
+--- /dev/null
++++ b/arch/arm/kernel/kgdb_fiq.c
+@@ -0,0 +1,132 @@
 +/*
-+ * SVC mode handler macros
++ * KGDB FIQ
++ *
++ * Copyright 2010 Google, Inc.
++ *		  Arve Hjønnevåg <arve@android.com>
++ *		  Colin Cross <ccross@android.com>
++ * Copyright 2012 Linaro Ltd.
++ *		  Anton Vorontsov <anton.vorontsov@linaro.org>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published
++ * by the Free Software Foundation.
 + */
 +
-+#if defined(CONFIG_AEABI) && (__LINUX_ARM_ARCH__ >= 5)
-+#define SPFIX(code...) code
-+#else
-+#define SPFIX(code...)
-+#endif
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/errno.h>
++#include <linux/hardirq.h>
++#include <linux/atomic.h>
++#include <linux/kdb.h>
++#include <linux/kgdb.h>
++#include <asm/fiq.h>
++#include <asm/exception.h>
 +
-+	.macro	svc_entry, stack_hole=0
-+ UNWIND(.fnstart		)
-+ UNWIND(.save {r0 - pc}		)
-+	sub	sp, sp, #(S_FRAME_SIZE + \stack_hole - 4)
-+#ifdef CONFIG_THUMB2_KERNEL
-+ SPFIX(	str	r0, [sp]	)	@ temporarily saved
-+ SPFIX(	mov	r0, sp		)
-+ SPFIX(	tst	r0, #4		)	@ test original stack alignment
-+ SPFIX(	ldr	r0, [sp]	)	@ restored
-+#else
-+ SPFIX(	tst	sp, #4		)
-+#endif
-+ SPFIX(	subeq	sp, sp, #4	)
-+	stmia	sp, {r1 - r12}
++static int kgdb_fiq_enabled;
++module_param_named(enable, kgdb_fiq_enabled, int, 0600);
++MODULE_PARM_DESC(enable, "set to 1 to enable FIQ KGDB");
 +
-+	ldmia	r0, {r3 - r5}
-+	add	r7, sp, #S_SP - 4	@ here for interlock avoidance
-+	mov	r6, #-1			@  ""  ""      ""       ""
-+	add	r2, sp, #(S_FRAME_SIZE + \stack_hole - 4)
-+ SPFIX(	addeq	r2, r2, #4	)
-+	str	r3, [sp, #-4]!		@ save the "real" r0 copied
-+					@ from the exception stack
++static unsigned int kgdb_fiq;
 +
-+	mov	r3, lr
++struct fiq_stack {
++	u32 fiq[3];
++} ____cacheline_aligned;
 +
-+	@
-+	@ We are now ready to fill in the remaining blanks on the stack:
-+	@
-+	@  r2 - sp_svc
-+	@  r3 - lr_svc
-+	@  r4 - lr_<exception>, already fixed up for correct return/restart
-+	@  r5 - spsr_<exception>
-+	@  r6 - orig_r0 (see pt_regs definition in ptrace.h)
-+	@
-+	stmia	r7, {r2 - r6}
++static struct fiq_stack stacks[NR_CPUS];
++
++asmlinkage void __exception_irq_entry kgdb_fiq_do_handle(struct pt_regs *regs)
++{
++	int actual;
++
++	nmi_enter();
++	actual = ack_fiq(kgdb_fiq);
++	WARN_ON(actual != kgdb_fiq);
++
++	/* there's no harm in doing this regardless of the above WARN_ON() */
++	if (kgdb_nmi_poll_knock())
++		kgdb_handle_exception(1, 0, 0, regs);
++
++	eoi_fiq(actual);
++	nmi_exit();
++}
++
++static struct fiq_handler kgdb_fiq_desc = {
++	.name = "kgdb",
++};
++
++static long kgdb_fiq_setup_stack(void *info)
++{
++	struct pt_regs regs;
++
++	regs.ARM_sp = (unsigned long) stacks[smp_processor_id()].fiq;
++	set_fiq_regs(&regs);
++
++	return 0;
++}
++
++/**
++ * kgdb_fiq_enable_nmi - Manage NMI-triggered entry to KGDB
++ * @on: Flag to either enable or disable an NMI
++ *
++ * This function manages NMIs that usually cause KGDB to enter. That is, not
++ * all NMIs should be enabled or disabled, but only those that issue
++ * kgdb_handle_exception().
++ *
++ * The call counts disable requests, and thus allows to nest disables. But
++ * trying to enable already enabled NMI is an error.
++ */
++static void kgdb_fiq_enable_nmi(bool on)
++{
++	static atomic_t cnt;
++	int ret;
++
++	ret = atomic_add_return(on ? 1 : -1, &cnt);
++
++	/*
++	 * There should be only one instance that calls this function
++	 * in "enable, disable" order. All other users must call
++	 * disable first, then enable. If not, something is wrong.
++	 */
++	if (WARN_ON(ret > 1 && on))
++		return;
++
++	if (ret > 0)
++		enable_fiq(kgdb_fiq);
++	else
++		disable_fiq(kgdb_fiq);
++}
++
++int kgdb_register_fiq(unsigned int fiq)
++{
++	int err;
++	int cpu;
++
++	if (!kgdb_fiq_enabled)
++		return -ENODEV;
++
++	if (!has_fiq(fiq)) {
++		pr_warn(
++		    "%s: Cannot register %u (no FIQ with this number)\n",
++		    __func__, fiq);
++		return -ENODEV;
++	}
++
++	kgdb_fiq = fiq;
++
++	err = claim_fiq(&kgdb_fiq_desc);
++	if (err) {
++		pr_warn("%s: unable to claim fiq", __func__);
++		return err;
++	}
++
++	for_each_possible_cpu(cpu)
++		work_on_cpu(cpu, kgdb_fiq_setup_stack, NULL);
++
++	set_fiq_handler(&kgdb_fiq_handler,
++			&kgdb_fiq_handler_end - &kgdb_fiq_handler);
++
++	arch_kgdb_ops.enable_nmi = kgdb_fiq_enable_nmi;
++	return 0;
++}
+diff --git a/arch/arm/kernel/kgdb_fiq_entry.S b/arch/arm/kernel/kgdb_fiq_entry.S
+new file mode 100644
+index 0000000..50499c0
+--- /dev/null
++++ b/arch/arm/kernel/kgdb_fiq_entry.S
+@@ -0,0 +1,130 @@
++/*
++ * KGDB FIQ entry
++ *
++ * Copyright 1996,1997,1998 Russell King.
++ * Copyright 2012 Linaro Ltd.
++ *		  Anton Vorontsov <anton.vorontsov@linaro.org>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published
++ * by the Free Software Foundation.
++ */
++
++#include <linux/linkage.h>
++#include <asm/assembler.h>
++#include <asm/memory.h>
++#include <asm/unwind.h>
++#include "entry-header.S"
++
++	.text
++
++@ This is needed for usr_entry/alignment_trap
++.LCcralign:
++	.long	cr_alignment
++.LCdohandle:
++	.long	kgdb_fiq_do_handle
++
++	.macro	fiq_handler
++	ldr	r1, =.LCdohandle
++	mov	r0, sp
++	adr	lr, BSYM(9997f)
++	ldr	pc, [r1]
++9997:
++	.endm
++
++/*
++ * svc_exit_via_fiq
++ *
++ * This macro acts in a similar manner to svc_exit but switches to FIQ
++ * mode to restore the final part of the register state.
++ *
++ * We cannot use the normal svc_exit procedure because that would
++ * clobber spsr_svc (FIQ could be delivered during the first few instructions
++ * of vector_swi meaning its contents have not been saved anywhere).
++ */
++	.macro  svc_exit_via_fiq, rpsr
 +
 +#ifdef CONFIG_TRACE_IRQFLAGS
-+	bl	trace_hardirqs_off
-+#endif
-+	.endm
-+
-+/*
-+ * User mode handler macros
-+ *
-+ * EABI note: sp_svc is always 64-bit aligned here, so should S_FRAME_SIZE
-+ */
-+
-+#if defined(CONFIG_AEABI) && (__LINUX_ARM_ARCH__ >= 5) && (S_FRAME_SIZE & 7)
-+#error "sizeof(struct pt_regs) must be a multiple of 8"
++	tst	\rpsr, #PSR_I_BIT
++	bleq	trace_hardirqs_on
 +#endif
 +
-+	.macro	usr_entry
-+ UNWIND(.fnstart	)
-+ UNWIND(.cantunwind	)	@ don't unwind the user space
-+	sub	sp, sp, #S_FRAME_SIZE
-+ ARM(	stmib	sp, {r1 - r12}	)
-+ THUMB(	stmia	sp, {r0 - r12}	)
-+
-+	ldmia	r0, {r3 - r5}
-+	add	r0, sp, #S_PC		@ here for interlock avoidance
-+	mov	r6, #-1			@  ""  ""     ""        ""
-+
-+	str	r3, [sp]		@ save the "real" r0 copied
-+					@ from the exception stack
-+
-+	@
-+	@ We are now ready to fill in the remaining blanks on the stack:
-+	@
-+	@  r4 - lr_<exception>, already fixed up for correct return/restart
-+	@  r5 - spsr_<exception>
-+	@  r6 - orig_r0 (see pt_regs definition in ptrace.h)
-+	@
-+	@ Also, separately save sp_usr and lr_usr
-+	@
-+	stmia	r0, {r4 - r6}
-+ ARM(	stmdb	r0, {sp, lr}^			)
-+ THUMB(	store_user_sp_lr r0, r1, S_SP - S_PC	)
-+
-+	@
-+	@ Enable the alignment trap while in kernel mode
-+	@
-+	alignment_trap r0, .LCcralign
-+
-+	@
-+	@ Clear FP to mark the first stack frame
-+	@
-+	zero_fp
-+
-+#ifdef CONFIG_IRQSOFF_TRACER
-+	bl	trace_hardirqs_off
-+#endif
-+	ct_user_exit save = 0
-+	.endm
-+
-+	.macro	kuser_cmpxchg_check
-+#if !defined(CONFIG_CPU_32v6K) && defined(CONFIG_KUSER_HELPERS) && \
-+    !defined(CONFIG_NEEDS_SYSCALL_FOR_CMPXCHG)
-+#ifndef CONFIG_MMU
-+#warning "NPTL on non MMU needs fixing"
-+#else
-+	@ Make sure our user space atomic helper is restarted
-+	@ if it was interrupted in a critical region.  Here we
-+	@ perform a quick test inline since it should be false
-+	@ 99.9999% of the time.  The rest is done out of line.
-+	cmp	r4, #TASK_SIZE
-+	blhs	kuser_cmpxchg64_fixup
-+#endif
-+#endif
-+	.endm
-+
-+/*
-+ * Vector stubs macro.
-+ */
-+	.macro	vector_stub, name, mode, correction=0
-+	.align	5
-+
-+vector_\name:
-+	.if \correction
-+	sub	lr, lr, #\correction
-+	.endif
-+
-+	@
-+	@ Save r0, lr_<exception> (parent PC) and spsr_<exception>
-+	@ (parent CPSR)
-+	@
-+	stmia	sp, {r0, lr}		@ save r0, lr
-+	mrs	lr, spsr
-+	str	lr, [sp, #8]		@ save spsr
-+
-+	@
-+	@ Prepare for SVC32 mode.  IRQs remain disabled.
-+	@
-+	mrs	r0, cpsr
-+	eor	r0, r0, #(\mode ^ SVC_MODE | PSR_ISETSTATE)
-+	msr	spsr_cxsf, r0
-+
-+	@
-+	@ the branch table must immediately follow this code
-+	@
-+	and	lr, lr, #0x0f
-+ THUMB(	adr	r0, 1f			)
-+ THUMB(	ldr	lr, [r0, lr, lsl #2]	)
 +	mov	r0, sp
-+ ARM(	ldr	lr, [pc, lr, lsl #2]	)
-+	movs	pc, lr			@ branch to handler in SVC mode
-+ENDPROC(vector_\name)
-+
-+	.align	2
-+	@ handler addresses follow this label
-+1:
++	ldmib	r0, {r1 - r14}	@ abort is deadly from here onward (it will
++				@ clobber state restored below)
++	msr	cpsr_c, #FIQ_MODE | PSR_I_BIT | PSR_F_BIT
++	add	r8, r0, #S_PC
++	ldr	r9, [r0, #S_PSR]
++	msr	spsr_cxsf, r9
++	ldr	r0, [r0, #S_R0]
++	ldmia	r8, {pc}^
 +	.endm
 +
++	.align	5
++__fiq_svc:
++	svc_entry
++	fiq_handler
++	svc_exit_via_fiq r5
++ UNWIND(.fnend		)
++ENDPROC(__fiq_svc)
++	.ltorg
 +
++	.align 5
++__fiq_abt:
++	svc_entry
++
++	msr	cpsr_c, #ABT_MODE | PSR_I_BIT | PSR_F_BIT
++	mov	r0, lr		@ Save lr_abt
++	mrs	r1, spsr	@ Save spsr_abt, abort is now safe
++	msr	cpsr_c, #SVC_MODE | PSR_I_BIT | PSR_F_BIT
++	push	{r0 - r1}
++
++	fiq_handler
++
++	pop	{r0 - r1}
++	msr	cpsr_c, #ABT_MODE | PSR_I_BIT | PSR_F_BIT
++	mov	lr, r0		@ Restore lr_abt, abort is unsafe
++	msr	spsr_cxsf, r1	@ Restore spsr_abt
++	msr	cpsr_c, #SVC_MODE | PSR_I_BIT | PSR_F_BIT
++
++	svc_exit_via_fiq r5
++ UNWIND(.fnend		)
++ENDPROC(__fiq_svc)
++	.ltorg
++
++	.align	5
++__fiq_usr:
++	usr_entry
++	kuser_cmpxchg_check
++	fiq_handler
++	get_thread_info tsk
++	mov	why, #0
++	b	ret_to_user_from_irq
++ UNWIND(.fnend		)
++ENDPROC(__fiq_usr)
++	.ltorg
++
++	.global kgdb_fiq_handler
++kgdb_fiq_handler:
++
++	vector_stub	fiq, FIQ_MODE, 4
++
++	.long	__fiq_usr			@  0  (USR_26 / USR_32)
++	.long	__fiq_svc			@  1  (FIQ_26 / FIQ_32)
++	.long	__fiq_svc			@  2  (IRQ_26 / IRQ_32)
++	.long	__fiq_svc			@  3  (SVC_26 / SVC_32)
++	.long	__fiq_svc			@  4
++	.long	__fiq_svc			@  5
++	.long	__fiq_svc			@  6
++	.long	__fiq_abt			@  7
++	.long	__fiq_svc			@  8
++	.long	__fiq_svc			@  9
++	.long	__fiq_svc			@  a
++	.long	__fiq_svc			@  b
++	.long	__fiq_svc			@  c
++	.long	__fiq_svc			@  d
++	.long	__fiq_svc			@  e
++	.long	__fiq_svc			@  f
++
++	.global kgdb_fiq_handler_end
++kgdb_fiq_handler_end:
 -- 
 1.9.3
 
