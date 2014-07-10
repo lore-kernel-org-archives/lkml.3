@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645AbaGJTMq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 15:12:46 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:49342 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752044AbaGJTMo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 15:12:44 -0400
+	id S1752285AbaGJTPq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 15:15:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30087 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751553AbaGJTPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 15:15:44 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: "Elliott\, Robert \(Server Storage\)" <Elliott@hp.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@kernel.dk>,
+        "dgilbert\@interlog.com" <dgilbert@interlog.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Bart Van Assche <bvanassche@fusionio.com>,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        "linux-scsi\@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: scsi-mq V2
+References: <1403715121-1201-1-git-send-email-hch@lst.de>
+	<20140708144829.GA5539@infradead.org> <53BD7041.5010300@interlog.com>
+	<53BD9A24.7010203@kernel.dk>
+	<94D0CD8314A33A4D9D801C0FE68B402958B9628B@G9W0745.americas.hpqcorp.net>
+	<20140710062040.GB20146@infradead.org>
+	<94D0CD8314A33A4D9D801C0FE68B402958B96E3B@G9W0745.americas.hpqcorp.net>
+	<20140710160422.GA13728@infradead.org>
+	<20140710161438.GA30792@infradead.org>
+	<94D0CD8314A33A4D9D801C0FE68B402958B971BB@G9W0745.americas.hpqcorp.net>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 10 Jul 2014 15:14:29 -0400
+In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B402958B971BB@G9W0745.americas.hpqcorp.net>
+	(Robert Elliott's message of "Thu, 10 Jul 2014 18:49:55 +0000")
+Message-ID: <x497g3l10x6.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <2093681.h3dgJ8rFNA@calvin>
-References: <CADpTngUm7d88RJS9OV=64t6QrJU4r3M_Z8eV1QYWPeeB5SX5-w@mail.gmail.com>
-	<20140710085208.GD12054@laptop.lan>
-	<20140710085448.GE12054@laptop.lan>
-	<2093681.h3dgJ8rFNA@calvin>
-Date: Thu, 10 Jul 2014 21:12:44 +0200
-Message-ID: <CABPqkBTu9vk_wsmYVrO6OOxgbwsLDG-A8f7dzutKwYXmoGsqnw@mail.gmail.com>
-Subject: Re: WARNING: CPU: 2 PID: 1 at arch/x86/mm/ioremap.c:171 __ioremap_caller+0x290/0x2fa()
-From: Stephane Eranian <eranian@google.com>
-To: Fabio Coatti <fabio.coatti@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 2:13 PM, Fabio Coatti <fabio.coatti@gmail.com> wrote:
-> In data giovedì 10 luglio 2014 10:54:48, Peter Zijlstra ha scritto:
->> On Thu, Jul 10, 2014 at 10:52:08AM +0200, Peter Zijlstra wrote:
->> > On Thu, Jul 10, 2014 at 10:44:21AM +0200, Peter Zijlstra wrote:
->> > > On Wed, Jul 09, 2014 at 12:48:05PM -0700, Fabio Coatti wrote:
->> > > > In data mercoledì 9 luglio 2014 11:54:21, Greg Kroah-Hartman ha
-> scritto:
->> > > > > Try cc:ing everyone on that patch, with the original information you
->> > > > > provided, and the linux-kernel mailing list.  Those developers
->> > > > > should be
->> > > > > able to help you out properly.
->> > > >
->> > > > Ok, here you can find the description of a problem that I'm
->> > > > experiencing on
->> > > > latest kernels, since 3.15.0.  (this report comes from 3.15.4)
->> > > >
->> > > > lug 07 22:08:00 calvin kernel: resource map sanity check conflict:
->> > > > 0xfed10000 0xfed15fff 0xfed10000 0xfed13fff reserved
->> > > > lug 07 22:08:00 calvin kernel: ------------[ cut here ]------------
->> > >
->> > > I think this is a 'known' issue on Thinkpad (iirc). For some obscure
->> > > reason its BIOS has funny ideas about resources etc.
->> > >
->> > > I couldn't quickly find the prvious thread, maybe Stephane knows.
->> >
->> > Found it:
->> >   lkml.kernel.org/r/20140224162400.GE16457@pd.tnic
->>
->> Ok, reread that thread and no definite conclusion was found I think.
->> Just Thinkpad firmware having overlapping resources.
+"Elliott, Robert (Server Storage)" <Elliott@hp.com> writes:
+
+>> -----Original Message-----
+>> From: Christoph Hellwig [mailto:hch@infradead.org]
+>> Sent: Thursday, 10 July, 2014 11:15 AM
+>> To: Elliott, Robert (Server Storage)
+>> Cc: Jens Axboe; dgilbert@interlog.com; James Bottomley; Bart Van Assche;
+>> Benjamin LaHaise; linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org
+>> Subject: Re: scsi-mq V2
+>> 
+>> On Thu, Jul 10, 2014 at 09:04:22AM -0700, Christoph Hellwig wrote:
+>> > It's starting to look weird.  I'll prepare another two bisect branches
+>> > around some MM changes, which seems the only other possible candidate.
+>> 
+>> I've pushed out scsi-mq.3-bisect-3 
 >
+> Good.
 >
-> So I guess that this happens also for HP Folio 9470m, not only in thinkpads. I
-> wonder how many machines shares this behaviour...
+>> and scsi-mq.3-bisect-4 for you.
 >
-Somehow, I thought that Bjorn had proposed a fix for this.
+> Bad.
+>
+> Note: I had to apply the vdso2c.h patch to build this -rc3 based kernel:
+> diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
+> index df95a2f..11b65d4 100644
+> --- a/arch/x86/vdso/vdso2c.h
+> +++ b/arch/x86/vdso/vdso2c.h
+> @@ -93,6 +93,9 @@ static void BITSFUNC(copy_section)(struct BITSFUNC(fake_sections) *out,
+> 	uint64_t flags = GET_LE(&in->sh_flags);
+>
+> 	bool copy = flags & SHF_ALLOC &&
+> +		(GET_LE(&in->sh_size) ||
+> +		(GET_LE(&in->sh_type) != SHT_RELA &&
+> +		GET_LE(&in->sh_type) != SHT_REL)) &&
+> 		strcmp(name, ".altinstructions") &&
+> 		strcmp(name, ".altinstr_replacement");
+>
+> Results: fio started OK, getting 900K IOPS, but ^C led to 0 IOPS and
+> an fio hang, with one CPU (CPU 0) stuck in io_submit loops.
+
+Hi, Rob,
+
+Can you get sysrq-t output for me?  I don't know how/why we'd continue
+to get io_submits for an exiting process.
+
+Thanks,
+Jeff
