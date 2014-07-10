@@ -1,68 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571AbaGJIaZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 04:30:25 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:57279 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752108AbaGJIS2 (ORCPT
+	id S1752931AbaGJIaw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 04:30:52 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:38090 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752645AbaGJIas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 04:18:28 -0400
-From: Tom Gundersen <teg@jklm.no>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        Tom Gundersen <teg@jklm.no>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: [PATCH v7 13/33] net: mrt - set name assign type
-Date: Thu, 10 Jul 2014 10:17:18 +0200
-Message-Id: <1404980258-30853-14-git-send-email-teg@jklm.no>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1404980258-30853-1-git-send-email-teg@jklm.no>
-References: <1404980258-30853-1-git-send-email-teg@jklm.no>
+	Thu, 10 Jul 2014 04:30:48 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: rickard_strandqvist@spectrumdigital.se, Lee Jones <lee.jones@linaro.org>,
+        Bryan Wu <cooloney@gmail.com>
+Subject: [PATCH] backlight: jornada720: Minimise code duplication and handle errors better
+Date: Thu, 10 Jul 2014 09:07:06 +0100
+Message-Id: <1404979626-10951-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have one device per routing table, so the naming is predictable.
+Rickard Strandqvi's ran a code analysis application which found that
+jornada_lcd_get_contrast(() and jornada_lcd_set_contrast() contained
+some code duplication (calling the same functions during various
+code execution paths) and failed to return errors in a consistent
+manner.  This patch aims to simplify the code, coercing it into
+behaving at a level expected of a driver in the Linux kernel.
 
-Signed-off-by: Tom Gundersen <teg@jklm.no>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
+Cc: Bryan Wu <cooloney@gmail.com>
+Suggested-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Acked-by: Jingoo Han <jg1.han@samsung.com>
+Reviewed-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- net/ipv4/ipmr.c  | 2 +-
- net/ipv6/ip6mr.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/video/backlight/jornada720_lcd.c | 37 ++++++++++++++++----------------
+ 1 file changed, 19 insertions(+), 18 deletions(-)
 
-diff --git a/net/ipv4/ipmr.c b/net/ipv4/ipmr.c
-index c803458..a0658a2 100644
---- a/net/ipv4/ipmr.c
-+++ b/net/ipv4/ipmr.c
-@@ -500,7 +500,7 @@ static struct net_device *ipmr_reg_vif(struct net *net, struct mr_table *mrt)
- 	else
- 		sprintf(name, "pimreg%u", mrt->id);
+diff --git a/drivers/video/backlight/jornada720_lcd.c b/drivers/video/backlight/jornada720_lcd.c
+index da3876c..228bc31 100644
+--- a/drivers/video/backlight/jornada720_lcd.c
++++ b/drivers/video/backlight/jornada720_lcd.c
+@@ -43,37 +43,38 @@ static int jornada_lcd_get_contrast(struct lcd_device *ld)
  
--	dev = alloc_netdev(0, name, NET_NAME_UNKNOWN, reg_vif_setup);
-+	dev = alloc_netdev(0, name, NET_NAME_PREDICTABLE, reg_vif_setup);
+ 	jornada_ssp_start();
  
- 	if (dev == NULL)
- 		return NULL;
-diff --git a/net/ipv6/ip6mr.c b/net/ipv6/ip6mr.c
-index f9a3fd3..cb25ff0 100644
---- a/net/ipv6/ip6mr.c
-+++ b/net/ipv6/ip6mr.c
-@@ -744,7 +744,7 @@ static struct net_device *ip6mr_reg_vif(struct net *net, struct mr6_table *mrt)
- 	else
- 		sprintf(name, "pim6reg%u", mrt->id);
+-	if (jornada_ssp_byte(GETCONTRAST) != TXDUMMY) {
+-		dev_err(&ld->dev, "get contrast failed\n");
+-		jornada_ssp_end();
+-		return -ETIMEDOUT;
+-	} else {
++	if (jornada_ssp_byte(GETCONTRAST) == TXDUMMY) {
+ 		ret = jornada_ssp_byte(TXDUMMY);
+-		jornada_ssp_end();
+-		return ret;
++		goto success;
+ 	}
++
++	dev_err(&ld->dev, "failed to set contrast\n");
++	ret = -ETIMEDOUT;
++
++success:
++	jornada_ssp_end();
++	return ret;
+ }
  
--	dev = alloc_netdev(0, name, NET_NAME_UNKNOWN, reg_vif_setup);
-+	dev = alloc_netdev(0, name, NET_NAME_PREDICTABLE, reg_vif_setup);
- 	if (dev == NULL)
- 		return NULL;
+ static int jornada_lcd_set_contrast(struct lcd_device *ld, int value)
+ {
+-	int ret;
++	int ret = 0;
  
+ 	jornada_ssp_start();
+ 
+ 	/* start by sending our set contrast cmd to mcu */
+-	ret = jornada_ssp_byte(SETCONTRAST);
+-
+-	/* push the new value */
+-	if (jornada_ssp_byte(value) != TXDUMMY) {
+-		dev_err(&ld->dev, "set contrast failed\n");
+-		jornada_ssp_end();
+-		return -ETIMEDOUT;
++	if (jornada_ssp_byte(SETCONTRAST) == TXDUMMY) {
++		/* if successful push the new value */
++		if (jornada_ssp_byte(value) == TXDUMMY)
++			goto success;
+ 	}
+ 
+-	/* if we get here we can assume everything went well */
+-	jornada_ssp_end();
++	dev_err(&ld->dev, "failed to set contrast\n");
++	ret = -ETIMEDOUT;
+ 
+-	return 0;
++success:
++	jornada_ssp_end();
++	return ret;
+ }
+ 
+ static int jornada_lcd_set_power(struct lcd_device *ld, int power)
 -- 
-1.9.3
+1.8.3.2
 
