@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265AbaGJUE7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 16:04:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:1470 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751587AbaGJUE5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 16:04:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,639,1400050800"; 
-   d="scan'208";a="541627635"
-Message-ID: <53BEF1E5.2000502@intel.com>
-Date: Thu, 10 Jul 2014 13:04:53 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752455AbaGJUFc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 16:05:32 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:40233 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752422AbaGJUFa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 16:05:30 -0400
+Date: Thu, 10 Jul 2014 14:05:27 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Fabio Coatti <fabio.coatti@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: Re: WARNING: CPU: 2 PID: 1 at arch/x86/mm/ioremap.c:171
+ __ioremap_caller+0x290/0x2fa()
+Message-ID: <20140710200527.GA15190@google.com>
+References: <CADpTngUm7d88RJS9OV=64t6QrJU4r3M_Z8eV1QYWPeeB5SX5-w@mail.gmail.com>
+ <20140710085208.GD12054@laptop.lan>
+ <20140710085448.GE12054@laptop.lan>
+ <2093681.h3dgJ8rFNA@calvin>
+ <CABPqkBTu9vk_wsmYVrO6OOxgbwsLDG-A8f7dzutKwYXmoGsqnw@mail.gmail.com>
 MIME-Version: 1.0
-To: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-CC: Andrey Ryabinin <a.ryabinin@samsung.com>, linux-kernel@vger.kernel.org,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Alexey Preobrazhensky <preobr@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        x86@kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC/PATCH RESEND -next 01/21] Add kernel address sanitizer infrastructure.
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>	<1404905415-9046-2-git-send-email-a.ryabinin@samsung.com>	<53BDA568.5030607@intel.com>	<53BE8333.6060404@samsung.com>	<53BEB77A.6020003@intel.com> <CAPAsAGwYZ9AVUoOMipZEe8jdmJfd=aULR+yoVH5FqzW1Qa75AQ@mail.gmail.com>
-In-Reply-To: <CAPAsAGwYZ9AVUoOMipZEe8jdmJfd=aULR+yoVH5FqzW1Qa75AQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABPqkBTu9vk_wsmYVrO6OOxgbwsLDG-A8f7dzutKwYXmoGsqnw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2014 12:48 PM, Andrey Ryabinin wrote:
->>>> How does this interact with vmalloc() addresses or those from a kmap()?
->>>>
->>> It's used only for lowmem:
->>>
->>> static inline bool addr_is_in_mem(unsigned long addr)
->>> {
->>>       return likely(addr >= PAGE_OFFSET && addr < (unsigned long)high_memory);
->>> }
->>
->> That's fine, and definitely covers the common cases.  Could you make
->> sure to call this out explicitly?  Also, there's nothing to _keep_ this
->> approach working for things out of the direct map, right?  It would just
->> be a matter of updating the shadow memory to have entries for the other
->> virtual address ranges.
-> 
-> Why do you want shadow for things out of the direct map? If you want
-> to catch use-after-free in vmalloc than DEBUG_PAGEALLOC will be
-> enough. If you want catch out-of-bounds in vmalloc you don't need
-> anything, because vmalloc allocates guarding hole in the end. Or do
-> you want something else?
+On Thu, Jul 10, 2014 at 09:12:44PM +0200, Stephane Eranian wrote:
+> On Thu, Jul 10, 2014 at 2:13 PM, Fabio Coatti <fabio.coatti@gmail.com> wrote:
+> > In data giovedì 10 luglio 2014 10:54:48, Peter Zijlstra ha scritto:
+> >> On Thu, Jul 10, 2014 at 10:52:08AM +0200, Peter Zijlstra wrote:
+> >> > On Thu, Jul 10, 2014 at 10:44:21AM +0200, Peter Zijlstra wrote:
+> >> > > On Wed, Jul 09, 2014 at 12:48:05PM -0700, Fabio Coatti wrote:
+> >> > > > In data mercoledì 9 luglio 2014 11:54:21, Greg Kroah-Hartman ha
+> > scritto:
+> >> > > > > Try cc:ing everyone on that patch, with the original information you
+> >> > > > > provided, and the linux-kernel mailing list.  Those developers
+> >> > > > > should be
+> >> > > > > able to help you out properly.
+> >> > > >
+> >> > > > Ok, here you can find the description of a problem that I'm
+> >> > > > experiencing on
+> >> > > > latest kernels, since 3.15.0.  (this report comes from 3.15.4)
+> >> > > >
+> >> > > > lug 07 22:08:00 calvin kernel: resource map sanity check conflict:
+> >> > > > 0xfed10000 0xfed15fff 0xfed10000 0xfed13fff reserved
+> >> > > > lug 07 22:08:00 calvin kernel: ------------[ cut here ]------------
+> >> > >
+> >> > > I think this is a 'known' issue on Thinkpad (iirc). For some obscure
+> >> > > reason its BIOS has funny ideas about resources etc.
+> >> > >
+> >> > > I couldn't quickly find the prvious thread, maybe Stephane knows.
+> >> >
+> >> > Found it:
+> >> >   lkml.kernel.org/r/20140224162400.GE16457@pd.tnic
+> >>
+> >> Ok, reread that thread and no definite conclusion was found I think.
+> >> Just Thinkpad firmware having overlapping resources.
+> >
+> >
+> > So I guess that this happens also for HP Folio 9470m, not only in thinkpads. I
+> > wonder how many machines shares this behaviour...
+> >
+> Somehow, I thought that Bjorn had proposed a fix for this.
 
-That's all true for page-size accesses.  Address sanitizer's biggest
-advantage over using the page tables is that it can do checks at
-sub-page granularity.  But, we don't have any APIs that I can think of
-that _care_ about <PAGE_SIZE outside of the direct map (maybe zsmalloc,
-but that's pretty obscure).
+Yep, this [1]:
 
-So I guess it doesn't matter.
+    cb171f7abb9a PNP: Work around BIOS defects in Intel MCH area reporting
+
+which appeared in v3.15, so it should be in your kernel.  But apparently
+it didn't work.  Fabio, can you pastebin your complete dmesg log?
+
+[1] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=cb171f7abb9a
