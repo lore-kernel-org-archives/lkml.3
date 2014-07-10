@@ -1,113 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752407AbaGJStQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 14:49:16 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61101 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752279AbaGJStM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 14:49:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,639,1400050800"; 
-   d="scan'208";a="541594262"
-From: kan.liang@intel.com
-To: peterz@infradead.org
-Cc: andi@firstfloor.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Kan Liang <kan.liang@intel.com>, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH V5 2/2] kvm: ignore LBR and extra_reg
-Date: Thu, 10 Jul 2014 03:59:44 -0700
-Message-Id: <1404989984-3068-2-git-send-email-kan.liang@intel.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1404989984-3068-1-git-send-email-kan.liang@intel.com>
-References: <1404989984-3068-1-git-send-email-kan.liang@intel.com>
+	id S1752400AbaGJSuy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 14:50:54 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:57145 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993AbaGJSux (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 14:50:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <53BED94F.9020407@tilera.com>
+References: <1404534728-7345-1-git-send-email-xerofoify@gmail.com>
+	<53BED94F.9020407@tilera.com>
+Date: Thu, 10 Jul 2014 14:50:52 -0400
+Message-ID: <CAPDOMVjOh1efYMM4UHv9Ag3o0s02PewAQrbKY3FMBKf9ZGBG7Q@mail.gmail.com>
+Subject: Re: [PATCH] tile: Add underscores to defintions
+From: Nick Krause <xerofoify@gmail.com>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kan Liang <kan.liang@intel.com>
-
-With -cpu host KVM reports LBR and extra_regs support, so the perf driver may accesses the LBR and extra_regs MSRs.
-However, there is no LBR and extra_regs virtualization support yet. This could causes guest to crash.
-As a workaround, KVM just simply ignore the LBR and extra_regs MSRs to lie the guest.
-
-For reproducing the issue, please build the kernel with CONFIG_KVM_INTEL = y (for host kernel).
-And CONFIG_PARAVIRT = n and CONFIG_KVM_GUEST = n (for guest kernel).
-Start the guest with -cpu host.
-Run perf record with --branch-any or --branch-filter in guest to trigger LBR #GP.
-Run perf stat offcore events (E.g. LLC-loads/LLC-load-misses ...) in guest to trigger offcore_rsp #GP
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Kan Liang <kan.liang@intel.com>
-
-V3: add MSR_LBR_TOS
-V4: add MSR_LBR_SELECT and MSR_PEBS_LD_LAT_THRESHOLD
-V5: set_msr should return 0 to lie the guest
----
- arch/x86/kvm/pmu.c | 38 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 38 insertions(+)
-
-diff --git a/arch/x86/kvm/pmu.c b/arch/x86/kvm/pmu.c
-index cbecaa9..5fd5b44 100644
---- a/arch/x86/kvm/pmu.c
-+++ b/arch/x86/kvm/pmu.c
-@@ -331,6 +331,18 @@ bool kvm_pmu_msr(struct kvm_vcpu *vcpu, u32 msr)
- 	case MSR_CORE_PERF_GLOBAL_OVF_CTRL:
- 		ret = pmu->version > 1;
- 		break;
-+	case MSR_OFFCORE_RSP_0:
-+	case MSR_OFFCORE_RSP_1:
-+	case MSR_LBR_SELECT:
-+	case MSR_PEBS_LD_LAT_THRESHOLD:
-+	case MSR_LBR_TOS:
-+	/* At most 8-deep LBR for core and atom */
-+	case MSR_LBR_CORE_FROM ... MSR_LBR_CORE_FROM + 7:
-+	case MSR_LBR_CORE_TO ... MSR_LBR_CORE_TO + 7:
-+	/* 16-deep LBR for core i3/i5/i7 series processors */
-+	case MSR_LBR_NHM_FROM ... MSR_LBR_NHM_FROM + 15:
-+	case MSR_LBR_NHM_TO ... MSR_LBR_NHM_TO + 15:
-+		return 1; /* to avoid crashes */
- 	default:
- 		ret = get_gp_pmc(pmu, msr, MSR_IA32_PERFCTR0)
- 			|| get_gp_pmc(pmu, msr, MSR_P6_EVNTSEL0)
-@@ -358,6 +370,19 @@ int kvm_pmu_get_msr(struct kvm_vcpu *vcpu, u32 index, u64 *data)
- 	case MSR_CORE_PERF_GLOBAL_OVF_CTRL:
- 		*data = pmu->global_ovf_ctrl;
- 		return 0;
-+	case MSR_OFFCORE_RSP_0:
-+	case MSR_OFFCORE_RSP_1:
-+	case MSR_LBR_SELECT:
-+	case MSR_PEBS_LD_LAT_THRESHOLD:
-+	case MSR_LBR_TOS:
-+	/* At most 8-deep LBR for core and atom */
-+	case MSR_LBR_CORE_FROM ... MSR_LBR_CORE_FROM + 7:
-+	case MSR_LBR_CORE_TO ... MSR_LBR_CORE_TO + 7:
-+	/* 16-deep LBR for core i3/i5/i7 series processors */
-+	case MSR_LBR_NHM_FROM ... MSR_LBR_NHM_FROM + 15:
-+	case MSR_LBR_NHM_TO ... MSR_LBR_NHM_TO + 15:
-+		*data = 0;
-+		return 0;
- 	default:
- 		if ((pmc = get_gp_pmc(pmu, index, MSR_IA32_PERFCTR0)) ||
- 				(pmc = get_fixed_pmc(pmu, index))) {
-@@ -409,6 +434,19 @@ int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
- 			return 0;
- 		}
- 		break;
-+	case MSR_OFFCORE_RSP_0:
-+	case MSR_OFFCORE_RSP_1:
-+	case MSR_LBR_SELECT:
-+	case MSR_PEBS_LD_LAT_THRESHOLD:
-+	case MSR_LBR_TOS:
-+	/* At most 8-deep LBR for core and atom */
-+	case MSR_LBR_CORE_FROM ... MSR_LBR_CORE_FROM + 7:
-+	case MSR_LBR_CORE_TO ... MSR_LBR_CORE_TO + 7:
-+	/* 16-deep LBR for core i3/i5/i7 series processors */
-+	case MSR_LBR_NHM_FROM ... MSR_LBR_NHM_FROM + 15:
-+	case MSR_LBR_NHM_TO ... MSR_LBR_NHM_TO + 15:
-+		/* dummy for now */
-+		return 0;
- 	default:
- 		if ((pmc = get_gp_pmc(pmu, index, MSR_IA32_PERFCTR0)) ||
- 				(pmc = get_fixed_pmc(pmu, index))) {
--- 
-1.8.3.1
-
+On Thu, Jul 10, 2014 at 2:19 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+> On 7/5/2014 12:32 AM, Nicholas Krause wrote:
+>>
+>> In file drv_xgbe_impl.h I fixed the definitions for Size Small,
+>> Size Large, Size Jumbo to have underscores before and after to
+>> follow kernel coding style for internel defentions.
+>>
+>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>> ---
+>>   arch/tile/include/hv/drv_xgbe_impl.h | 15 +++------------
+>
+>
+> I don't think there is a kernel coding style for internal definitions.
+> It's true that double-underscores mean "more raw" in many places, like
+> for things like set_bit() vs __set_bit(), but that's not really
+> applicable here.  These files are not exported outside of the kernel
+> in any case so we don't need any special treatment for them to mark them
+> as "internal definitions".
+>
+> The comment in any case certainly is silly.  It dates back to Jan 2007
+> in our internal version control system.  The tilepro hv headers in
+> question are largely frozen at this point in our internal "upstream"
+> repository where we take these headers from, so it doesn't seem worth
+> the effort to try to improve the comments there, nor worth adding skew
+> between those headers and the community headers.
+>
+> --
+> Chris Metcalf, Tilera Corp.
+> http://www.tilera.com
+Chris ,
+Would you like me to remove this comment in a patch instead?
+Cheers Nick
