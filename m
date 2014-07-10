@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752106AbaGJKeU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 06:34:20 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:43041 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053AbaGJKeS (ORCPT
+	id S1752170AbaGJKfR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 06:35:17 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:45757 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958AbaGJKfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 06:34:18 -0400
-MIME-Version: 1.0
-X-Originating-IP: [84.208.72.173]
-In-Reply-To: <CANq1E4TCW_bnbTYacnfJHRvZAcOYnSgqxytHk26EaWeQKkphGA@mail.gmail.com>
-References: <1404980258-30853-1-git-send-email-teg@jklm.no>
- <1404980258-30853-11-git-send-email-teg@jklm.no> <87pphdh85q.fsf@nemi.mork.no>
- <CAG-2HqWSRRfW1EygXd_1=eYFsTeDd3SsJBfF3BuH35hgGxogxA@mail.gmail.com> <CANq1E4TCW_bnbTYacnfJHRvZAcOYnSgqxytHk26EaWeQKkphGA@mail.gmail.com>
-From: Tom Gundersen <teg@jklm.no>
-Date: Thu, 10 Jul 2014 12:33:57 +0200
-Message-ID: <CAG-2HqV0LV_ZtK=S-nLsWAfQ_ayOuGZHcGC495pAkMijeSzx3Q@mail.gmail.com>
-Subject: Re: [PATCH v7 10/33] net: dummy - set name assign type
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>,
-        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Kay Sievers <kay@vrfy.org>,
-        dingtianhong <dingtianhong@huawei.com>,
-        Tan Xiaojun <tanxiaojun@huawei.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 10 Jul 2014 06:35:15 -0400
+From: Vincent Heuken <me@vincentheuken.com>
+To: willy@meta-x.org, gregkh@linuxfoundation.org, armand.bastien@laposte.net,
+        domdevlin@free.fr, monamagarwal123@gmail.com, julia.lawall@lip6.fr,
+        arnd@arndb.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Vincent Heuken <me@vincentheuken.com>
+Subject: [PATCH] Staging: panel: fixed frivilous else statement warning
+Date: Thu, 10 Jul 2014 03:34:28 -0700
+Message-Id: <1404988468-8032-1-git-send-email-me@vincentheuken.com>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 12:26 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> Hi
->
->>> The same goes for NET_NAME_USER and NET_NAME_RENAMED. These are the same
->>> from a kernel point of view.
->>
->> You mean to collapse the two, and just label renamed interfaces
->> NET_NAME_USER instead?
->
-> I have no real objections to merging NAME_USER and NAME_RENAMED. Both
-> values imply that there is a user-space authority that applied some
-> kind of rules to the naming-scheme. Therefore, anyone reacting to
-> those names should better treat them equally and fix the
-> naming-authority instead of overwriting it.
+Fixed one instance of the following checkpatch.pl warning in
+panel.c:
+WARNING: else is not generally useful after a break or return
 
-I basically agree. There is no strong reason to keep these separate,
-so I would not object strongly to merging them.
+Signed-off-by: Vincent Heuken <me@vincentheuken.com>
+---
+ drivers/staging/panel/panel.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-However, I also don't see any harm in keeping the distinction. If
-userspace wants to treat them the same, it easily can. However, if a
-usecase appears in the future where the distinction is important, we
-can no longer split them apart again. For that reason, I'd slightly
-prefer keeping them separate, unless there is a compelling reason not
-to...
+diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
+index 4e92293..6d1a320 100644
+--- a/drivers/staging/panel/panel.c
++++ b/drivers/staging/panel/panel.c
+@@ -1800,11 +1800,12 @@ static inline int input_state_high(struct logical_input *input)
+ 				input->high_timer++;
+ 		}
+ 		return 1;
+-	} else {
+-		/* else signal falling down. Let's fall through. */
+-		input->state = INPUT_ST_FALLING;
+-		input->fall_timer = 0;
+ 	}
++
++	/* else signal falling down. Let's fall through. */
++	input->state = INPUT_ST_FALLING;
++	input->fall_timer = 0;
++
+ 	return 0;
+ }
+ 
+-- 
+2.0.1
 
-Cheers,
-
-Tom
