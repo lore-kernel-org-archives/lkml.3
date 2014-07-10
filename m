@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187AbaGJXEl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 19:04:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51250 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889AbaGJXEj (ORCPT
+	id S1752801AbaGJXFL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 19:05:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60337 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751474AbaGJXFJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 19:04:39 -0400
-Date: Thu, 10 Jul 2014 16:04:16 -0700
-From: tip-bot for Jan Beulich <tipbot@zytor.com>
-Message-ID: <tip-9f88b906b4455465d60ac18b8c95904f320038d5@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        boris.ostrovsky@oracle.com, jbeulich@suse.com, luto@amacapital.net,
-        akpm@linux-foundation.org, JBeulich@suse.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        boris.ostrovsky@oracle.com, jbeulich@suse.com, luto@amacapital.net,
-        akpm@linux-foundation.org, JBeulich@suse.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <53B5861E02000078000204D1@mail.emea.novell.com>
-References: <53B5861E02000078000204D1@mail.emea.novell.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86-64, vdso:
-  Fix vDSO build breakage due to empty .rela.dyn
-Git-Commit-ID: 9f88b906b4455465d60ac18b8c95904f320038d5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 10 Jul 2014 19:05:09 -0400
+Date: Thu, 10 Jul 2014 16:09:36 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Karsten Keil <isdn@linux-pingi.de>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH tty-next 14/22] tty: Remove
+ tty_wait_until_sent_from_close()
+Message-ID: <20140710230936.GA31181@kroah.com>
+References: <1402924639-5164-1-git-send-email-peter@hurleysoftware.com>
+ <1402924639-5164-15-git-send-email-peter@hurleysoftware.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1402924639-5164-15-git-send-email-peter@hurleysoftware.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9f88b906b4455465d60ac18b8c95904f320038d5
-Gitweb:     http://git.kernel.org/tip/9f88b906b4455465d60ac18b8c95904f320038d5
-Author:     Jan Beulich <JBeulich@suse.com>
-AuthorDate: Thu, 3 Jul 2014 15:34:38 +0100
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 10 Jul 2014 15:59:56 -0700
+On Mon, Jun 16, 2014 at 09:17:11AM -0400, Peter Hurley wrote:
+> tty_wait_until_sent_from_close() drops the tty lock while waiting
+> for the tty driver to finish sending previously accepted data (ie.,
+> data remaining in its write buffer and transmit fifo).
+> 
+> However, dropping the tty lock is a hold-over from when the tty
+> lock was system-wide; ie., one lock for all ttys.
+> 
+> Since commit 89c8d91e31f267703e365593f6bfebb9f6d2ad01,
+> 'tty: localise the lock', dropping the tty lock has not been necessary.
+> 
+> CC: Karsten Keil <isdn@linux-pingi.de>
+> CC: linuxppc-dev@lists.ozlabs.org
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> ---
+>  drivers/isdn/i4l/isdn_tty.c   |  2 +-
+>  drivers/tty/hvc/hvc_console.c |  2 +-
+>  drivers/tty/hvc/hvcs.c        |  2 +-
+>  drivers/tty/tty_port.c        | 11 ++---------
+>  include/linux/tty.h           | 18 ------------------
+>  5 files changed, 5 insertions(+), 30 deletions(-)
 
-x86-64, vdso: Fix vDSO build breakage due to empty .rela.dyn
+I've applied the first 13 patches in this series, as it looks like you
+were going to split things up from here, right?  Can you refresh these
+and resend when you have that done?
 
-Certain ld versions (observed with 2.20.0) put an empty .rela.dyn
-section into shared object files, breaking the assumption on the number
-of sections to be copied to the final output. Simply discard any empty
-SHT_REL and SHT_RELA sections to address this.
+thanks,
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Link: http://lkml.kernel.org/r/53B5861E02000078000204D1@mail.emea.novell.com
-Acked-by: Andy Lutomirski <luto@amacapital.net>
-Tested-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Tested-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/vdso/vdso2c.h | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
-index df95a2f..11b65d4 100644
---- a/arch/x86/vdso/vdso2c.h
-+++ b/arch/x86/vdso/vdso2c.h
-@@ -93,6 +93,9 @@ static void BITSFUNC(copy_section)(struct BITSFUNC(fake_sections) *out,
- 	uint64_t flags = GET_LE(&in->sh_flags);
- 
- 	bool copy = flags & SHF_ALLOC &&
-+		(GET_LE(&in->sh_size) ||
-+		 (GET_LE(&in->sh_type) != SHT_RELA &&
-+		  GET_LE(&in->sh_type) != SHT_REL)) &&
- 		strcmp(name, ".altinstructions") &&
- 		strcmp(name, ".altinstr_replacement");
- 
+greg k-h
