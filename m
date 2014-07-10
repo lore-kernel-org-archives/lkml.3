@@ -1,58 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066AbaGJRKT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 13:10:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57602 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751120AbaGJRKO (ORCPT
+	id S1751487AbaGJRO2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 13:14:28 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:57541 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751015AbaGJRO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 13:10:14 -0400
-Date: Thu, 10 Jul 2014 10:09:54 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Matwey V. Kornilov" <matwey@sai.msu.ru>
-Cc: linux-kernel@vger.kernel.org, linux-parport@lists.infradead.org,
-        hsommer@eso.org, matwey.kornilov@gmail.com
-Subject: Re: [PATCHv3 2/2] Add force_epp module option for parport_pc.
-Message-ID: <20140710170954.GB23544@kroah.com>
-References: <alpine.LRH.2.00.1407071101060.3492@lnfm1.sai.msu.ru>
- <20140709212910.GB26562@kroah.com>
- <alpine.LRH.2.00.1407101045510.25305@lnfm1.sai.msu.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.00.1407101045510.25305@lnfm1.sai.msu.ru>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 10 Jul 2014 13:14:27 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH v4 0/7] ARM: at91: move aic driver to drivers/irqchips
+Date: Thu, 10 Jul 2014 19:14:15 +0200
+Message-Id: <1405012462-766-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 11:56:15AM +0400, Matwey V. Kornilov wrote:
-> 
-> 
-> On Wed, 9 Jul 2014, Greg KH wrote:
-> 
-> >On Mon, Jul 07, 2014 at 11:01:51AM +0400, Matwey V. Kornilov wrote:
-> >>>From cf37d0cc4d51da5c0b368e1f5ab05082c041d1e1 Mon Sep 17 00:00:00 2001
-> >>From: "Matwey V. Kornilov" <matwey.kornilov@gmail.com>
-> >>Date: Wed, 25 Jun 2014 01:08:45 +0400
-> >>Subject: [PATCHv3 2/2] Add force_epp module option for parport_pc.
-> >>
-> >>The detection of Intel EPP bug is known to produce much false positives.
-> >>The new option is introduced to force enable EPP in spite of the test result.
-> 
-> Hi,
-> 
-> First of all, maybe I missed something fundamental, or did something wrong,
-> but I can't understand how is it going to break working systems?
+Hello,
 
-I thought you disabled the quirk test and now rely on the module option
-instead.  That would require a machine that was happily relying on the
-quirk test to now be forced to add a module option, right?
+This series moves the AIC driver to the irqchip directory and make use of
+the generic chip framework whenever possible.
 
-Or did I read the patch incorrectly?
+This driver only support DT boards (all legacy board files should be soon
+replaced by their DT versions).
 
-Why not implement Alan's suggestion?
+Since the last version AIC and AIC5 code have been split and common
+functions have been moved to irq-atmel-aic-common.c.
+I know there is not much code in this file and it could have been
+duplicated in AIC and AIC5 drivers, but I'm planning to add more common
+stuff soon (AIC irq fixups previously done in
+arch/arm/mach-at91/sysirq_mask.c).
 
-thanks,
+Jason, if everybody is fine with this version could you share a topic
+branch  containing patch 1 to 3 with Nicolas ?
 
-greg k-h
+Thanks.
+
+Best Regards,
+
+Boris
+
+Changes since v3:
+ - split AIC and AIC5 code
+
+Changes since v2:
+ - remove irq line muxing definition
+ - rework Kconfig options
+
+Changes since v1:
+ - rework the irq-mux bindings
+
+
+Boris BREZILLON (7):
+  genirq: generic chip: export irq_map_generic_chip function
+  irqchip: atmel-aic: move binding doc to interrupt-controller directory
+  irqchip: atmel-aic: Add atmel AIC/AIC5 drivers
+  ARM: at91: introduce OLD_IRQ_AT91 Kconfig option
+  ARM: at91: enclose at91_aic_xx calls in
+    IS_ENABLED(CONFIG_OLD_IRQ_AT91) blocks
+  ARM: at91: make use of the new AIC driver for dt enabled boards
+  ARM: at91: remove old irq material
+
+ .../atmel,aic.txt}                                 |   0
+ arch/arm/mach-at91/Kconfig                         |  17 +-
+ arch/arm/mach-at91/Kconfig.non_dt                  |   6 +
+ arch/arm/mach-at91/Makefile                        |   3 +-
+ arch/arm/mach-at91/board-dt-rm9200.c               |  13 -
+ arch/arm/mach-at91/board-dt-sam9.c                 |  13 -
+ arch/arm/mach-at91/board-dt-sama5.c                |  13 -
+ arch/arm/mach-at91/irq.c                           | 270 +---------------
+ arch/arm/mach-at91/pm.c                            |  32 +-
+ arch/arm/mach-at91/setup.c                         |   3 +-
+ drivers/irqchip/Kconfig                            |  14 +
+ drivers/irqchip/Makefile                           |   2 +
+ drivers/irqchip/irq-atmel-aic-common.c             | 207 +++++++++++++
+ drivers/irqchip/irq-atmel-aic-common.h             |  35 +++
+ drivers/irqchip/irq-atmel-aic.c                    | 247 +++++++++++++++
+ drivers/irqchip/irq-atmel-aic5.c                   | 341 +++++++++++++++++++++
+ include/linux/irq.h                                |   2 +
+ kernel/irq/generic-chip.c                          |   5 +-
+ 18 files changed, 896 insertions(+), 327 deletions(-)
+ rename Documentation/devicetree/bindings/{arm/atmel-aic.txt => interrupt-controller/atmel,aic.txt} (100%)
+ create mode 100644 drivers/irqchip/irq-atmel-aic-common.c
+ create mode 100644 drivers/irqchip/irq-atmel-aic-common.h
+ create mode 100644 drivers/irqchip/irq-atmel-aic.c
+ create mode 100644 drivers/irqchip/irq-atmel-aic5.c
+
+-- 
+1.8.3.2
+
