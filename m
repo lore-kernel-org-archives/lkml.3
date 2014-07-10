@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818AbaGJKWH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 06:22:07 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:33167 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750958AbaGJKWF convert rfc822-to-8bit (ORCPT
+	id S1751684AbaGJKXe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 06:23:34 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53311 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750941AbaGJKXc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 06:22:05 -0400
+	Thu, 10 Jul 2014 06:23:32 -0400
+Date: Thu, 10 Jul 2014 11:23:34 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
+        Joerg Roedel <joro@8bytes.org>, Cho KyongHo <pullip.cho@samsung.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Olav Haugan <ohaugan@codeaurora.org>,
+        Varun Sethi <varun.sethi@freescale.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] devicetree: Add generic IOMMU device tree bindings
+Message-ID: <20140710102334.GG2449@arm.com>
+References: <1404487757-18829-1-git-send-email-thierry.reding@gmail.com>
+ <20140709134050.GN9485@arm.com>
+ <20140709142125.GB3262@ulmo>
+ <20140709181048.GX9485@arm.com>
+ <20140710094909.GA21583@ulmo>
 MIME-Version: 1.0
-X-Originating-IP: [84.208.72.173]
-In-Reply-To: <87tx6ph8u5.fsf@nemi.mork.no>
-References: <1404980258-30853-1-git-send-email-teg@jklm.no>
- <1404980258-30853-4-git-send-email-teg@jklm.no> <87tx6ph8u5.fsf@nemi.mork.no>
-From: Tom Gundersen <teg@jklm.no>
-Date: Thu, 10 Jul 2014 12:21:44 +0200
-Message-ID: <CAG-2HqVvW2dh5y8xn9v-B29ohFTcPGgY3NY-P5y_xZu0SGgG3g@mail.gmail.com>
-Subject: Re: [PATCH v7 03/33] net: set name_assign_type in alloc_netdev()
-To: =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140710094909.GA21583@ulmo>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 11:16 AM, Bjørn Mork <bjorn@mork.no> wrote:
-> Tom Gundersen <teg@jklm.no> writes:
->
->> diff --git a/net/ethernet/eth.c b/net/ethernet/eth.c
->> index 5dc638c..f405e05 100644
->> --- a/net/ethernet/eth.c
->> +++ b/net/ethernet/eth.c
->> @@ -390,7 +390,8 @@ EXPORT_SYMBOL(ether_setup);
->>  struct net_device *alloc_etherdev_mqs(int sizeof_priv, unsigned int txqs,
->>                                     unsigned int rxqs)
->>  {
->> -     return alloc_netdev_mqs(sizeof_priv, "eth%d", ether_setup, txqs, rxqs);
->> +     return alloc_netdev_mqs(sizeof_priv, "eth%d", NET_NAME_UNKNOWN,
->> +                             ether_setup, txqs, rxqs);
->>  }
->>  EXPORT_SYMBOL(alloc_etherdev_mqs);
->
-> I believe this chunk makes the rest of this exercise pretty pointless.
->
-> bjorn@nemi:/usr/local/src/git/linux$ git grep alloc_etherdev drivers/net/|wc -l
-> 283
->
-> I don't care enough to go look, but I'd be surprised if none of those
-> drivers rename the device before registering it.
+On Thu, Jul 10, 2014 at 10:49:10AM +0100, Thierry Reding wrote:
+> On Wed, Jul 09, 2014 at 07:10:48PM +0100, Will Deacon wrote:
+> > On Wed, Jul 09, 2014 at 03:21:27PM +0100, Thierry Reding wrote:
+> > > Anything beyond that (e.g. logical grouping of masters) isn't directly
+> > > within the scope of the binding (it doesn't describe hardware but some
+> > > policy pertaining to some specific use-case).
+> > 
+> > This *is* for hardware. I can use PCI as an example, but this could equally
+> > apply to other types of bus. If you have a bunch of PCI master devices
+> > sitting being a non-transparent bridge, they can end up sharing the same
+> > master device ID (requester ID). This means that there is no way in the
+> > IOMMU to initialise a translation for one of these devices without also
+> > affecting the others. We currently have iommu_groups to deal with this, but
+> > it *is* a property of the hardware and we absolutely need a way to describe
+> > it. I'm happy to add it later, but we need to think about it now to avoid
+> > merging something that can't easily be extended.
+> > 
+> > For PCI, the topology is probable but even then, we need this information to
+> > describe the resulting master device ID emitted by the bridge for the
+> > upstream group. One way to do this with your binding would be to treat all
+> > of the upstream masters as having the same device ID.
+> 
+> Yes, I think that makes most sense. After all from the IOMMU's point of
+> view requests from all devices behind the bridge will originate from the
+> same ID.
+> 
+> So technically it's not really correct to encode the master ID within
+> each of the devices, but rather they should be inheriting the ID from
+> the non-transparent bridge.
 
-I did look for that, and I only found devices being renamed to the
-same name assign type as eth%d (wlan%d, etc).
+Indeed. Is that possible with your binding, or would we just duplicate the
+IDs between the masters?
 
-Cheers,
+> > With virtualisation, we may want to assign a group of devices to a guest but
+> > without emulating the bridge. This would need something the device-tree to
+> > describe that they are grouped together.
+> 
+> But that's also a software decision, isn't it? Virtualization doesn't
+> have anything to do with the hardware description. Or am I missing
+> something? Of course I guess you could generate a DTB for the guest and
+> group device together, in which case you're pretty much free to do what
+> you want since you're essentially defining your own hardware.
 
-Tom
+If you're doing device passthrough and you want to allow the guest to
+program the IOMMU, I think that virtualisation is directly related to the
+hardware description, since the guest will be bound by physical properties
+of the system.
+
+Will
