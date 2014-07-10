@@ -1,145 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219AbaGJSxv (ORCPT <rfc822;w@1wt.eu>);
+	id S1752796AbaGJSzw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 14:55:52 -0400
+Received: from mga09.intel.com ([134.134.136.24]:33358 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752108AbaGJSxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 Jul 2014 14:53:51 -0400
-Received: from smtprelay0065.hostedemail.com ([216.40.44.65]:59779 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750877AbaGJSxs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 14:53:48 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:800:960:973:982:988:989:1260:1345:1359:1437:1534:1543:1711:1730:1747:1777:1792:2197:2198:2199:2200:2393:2559:2562:3138:3139:3140:3141:3142:3354:3653:3865:3866:3874:4321:5007:6261:10004:10026:10848:11026:11232:11658:11914:12043:12291:12438:12517:12519:12555:12683:14110:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: pest99_3e12ca18bb21d
-X-Filterd-Recvd-Size: 3828
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] checkpatch: Add fix_insert_line and fix_delete_line helpers
-Date: Thu, 10 Jul 2014 11:53:38 -0700
-Message-Id: <198369a7699c05876e34ac6f743bd33354f0bc94.1405018255.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <cover.1405018255.git.joe@perches.com>
-References: <cover.1405018255.git.joe@perches.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,639,1400050800"; 
+   d="scan'208";a="541595736"
+Date: Thu, 10 Jul 2014 12:53:48 -0600 (MDT)
+From: Keith Busch <keith.busch@intel.com>
+X-X-Sender: vmware@localhost.localdom
+To: Bjorn Helgaas <bhelgaas@google.com>
+cc: Keith Busch <keith.busch@intel.com>, linux-pci@vger.kernel.org,
+        linux-scsi@vger.kernel.org,
+        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
+        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] Let device drivers disable msi on shutdown
+In-Reply-To: <20140710183840.GA12663@google.com>
+Message-ID: <alpine.LRH.2.03.1407101241010.4703@AMR>
+References: <1403628537-16367-1-git-send-email-keith.busch@intel.com> <20140710183840.GA12663@google.com>
+User-Agent: Alpine 2.03 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Neaten the uses of patch/file line insertions or deletions.
-Hide the mechanism used.
+On Thu, 10 Jul 2014, Bjorn Helgaas wrote:
+> [+cc LKML, Greg KH for driver core async shutdown question]
+> On Tue, Jun 24, 2014 at 10:48:57AM -0600, Keith Busch wrote:
+>> To provide context why I want to do this asynchronously, NVM-Express has
+>> one PCI device per controller, of which there could be dozens in a system,
+>> and each one may take many seconds (I've heard over ten in some cases)
+>> to safely shutdown.
+>
+> I don't see anything in device_shutdown() that would wait for this
+> sort of asynchronous shutdown to complete.  So how do we know it's
+> finished before we turn off the power, reset, kexec, etc.?
+>
+> If we need to do asynchronous shutdown, it seems like we need some
+> sort of driver core infrastructure to manage that.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- scripts/checkpatch.pl | 65 +++++++++++++++++++++++----------------------------
- 1 file changed, 29 insertions(+), 36 deletions(-)
+Yes, good point! To address that, I did submit this patch:
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index f3d9a88..7c29069 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -1593,6 +1593,27 @@ sub fix_inserted_deleted_lines {
- 	return @lines;
- }
- 
-+sub fix_insert_line {
-+	my ($linenr, $line) = @_;
-+
-+	my $inserted = {
-+		LINENR => $linenr,
-+		LINE => $line,
-+	};
-+	push(@fixed_inserted, $inserted);
-+}
-+
-+sub fix_delete_line {
-+	my ($linenr, $line) = @_;
-+
-+	my $deleted = {
-+		LINENR => $linenr,
-+		LINE => $line,
-+	};
-+
-+	push(@fixed_deleted, $deleted);
-+}
-+
- sub ERROR {
- 	my ($type, $msg) = @_;
- 
-@@ -2447,11 +2468,7 @@ sub process {
- 			if (CHK("LINE_SPACING",
- 				"Please use a blank line after function/struct/union/enum declarations\n" . $hereprev) &&
- 			    $fix) {
--			my $inserted = {
--				LINENR => $fixlinenr,
--				LINE => "\+",
--			};
--			push(@fixed_inserted, $inserted);
-+				fix_insert_line($fixlinenr, "\+");
- 			}
- 		}
- 
-@@ -2462,11 +2479,7 @@ sub process {
- 			if (CHK("LINE_SPACING",
- 				"Please don't use multiple blank lines\n" . $hereprev) &&
- 			    $fix) {
--			my $deleted = {
--				LINENR => $fixlinenr,
--				LINE => $rawline,
--			};
--			push(@fixed_deleted, $deleted);
-+				fix_delete_line($fixlinenr, $rawline);
- 			}
- 
- 			$last_blank_line = $linenr;
-@@ -2509,11 +2522,7 @@ sub process {
- 			if (WARN("LINE_SPACING",
- 				 "Missing a blank line after declarations\n" . $hereprev) &&
- 			    $fix) {
--			my $inserted = {
--				LINENR => $fixlinenr,
--				LINE => "\+",
--			};
--			push(@fixed_inserted, $inserted);
-+				fix_insert_line($fixlinenr, "\+");
- 			}
- 		}
- 
-@@ -2868,31 +2877,15 @@ sub process {
- 		    $prevline =~ /(?:^|[^=])=\s*$/) {
- 			if (ERROR("OPEN_BRACE",
- 				  "that open brace { should be on the previous line\n" . $hereprev) &&
--			    $fix && $prevline =~ /^\+/) {
--				my $deleted = {
--					LINENR => $fixlinenr - 1,
--					LINE => $prevrawline,
--				};
--				push(@fixed_deleted, $deleted);
--				$deleted = {
--					LINENR => $fixlinenr,
--					LINE => $rawline,
--				};
--				push(@fixed_deleted, $deleted);
-+			    $fix && $prevline =~ /^\+/ && $line =~ /^\+/) {
-+				fix_delete_line($fixlinenr - 1, $prevrawline);
-+				fix_delete_line($fixlinenr, $rawline);
- 				my $fixedline = $prevrawline;
- 				$fixedline =~ s/\s*=\s*$/ = {/;
--				my $inserted = {
--					LINENR => $fixlinenr,
--					LINE => $fixedline,
--				};
--				push(@fixed_inserted, $inserted);
-+				fix_insert_line($fixlinenr, $fixedline);
- 				$fixedline = $line;
- 				$fixedline =~ s/^(.\s*){\s*/$1/;
--				$inserted = {
--					LINENR => $fixlinenr,
--					LINE => $fixedline,
--				};
--				push(@fixed_inserted, $inserted);
-+				fix_insert_line($fixlinenr, $fixedline);
- 			}
- 		}
- 
--- 
-1.8.1.2.459.gbcd45b4.dirty
+http://lists.infradead.org/pipermail/linux-nvme/2014-May/000827.html
 
+I need to fix the EXPORT_SYMBOL_GPL usage for a v2, but before that, I
+wan't to know the reason the driver can't use MSIx in an async shutdown
+shutdown, and came to the patch mentioned above.
+
+I'd originally had the async shutdown use legacy interrupts, but I
+know some NVMe devices do not support legacy, so can't use my original
+proposal. If I can't rely on MSI/MSI-x being enabled in an async shutdown,
+then I have to add polling, which I suppose we can live with.
