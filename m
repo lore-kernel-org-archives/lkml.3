@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602AbaGJNI6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:08:58 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:54972 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753237AbaGJNI4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:08:56 -0400
+	id S1753491AbaGJNMA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:12:00 -0400
+Received: from mx1.scotdoyle.com ([69.85.92.149]:59883 "EHLO mx1.scotdoyle.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751417AbaGJNL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 09:11:59 -0400
+Date: Thu, 10 Jul 2014 14:11:52 +0100 (BST)
+From: Scot Doyle <lkml14@scotdoyle.com>
+To: Olof Johansson <olof@lixom.net>
+cc: Benson Leung <bleung@chromium.org>, gene.chen@intel.com, moch@chromium.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] platform/chrome: chromeos_laptop - Add Haswell
+ Chromebooks
+In-Reply-To: <CAOesGMieZtmyr2+eLnY7COgPCkU=sXABd35SckbZE+OMaCBO4g@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1407101349230.11676@scotdoyle.com>
+References: <1401835464-15267-1-git-send-email-bleung@chromium.org> <CAOesGMiNhNavOMhBWcH_sEbNHxJ4OM3wjVt4qeK=aZFeVVxT_g@mail.gmail.com> <CANLzEksDfdb+RBtv8Kwe0KWpi23Nf7FS3-w+kXJXqV4n5XP=WQ@mail.gmail.com> <alpine.DEB.2.02.1407010040410.29513@scotdoyle.com>
+ <CAOesGMieZtmyr2+eLnY7COgPCkU=sXABd35SckbZE+OMaCBO4g@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1404393243-7324-4-git-send-email-svarbanov@mm-sol.com>
-References: <1404393243-7324-1-git-send-email-svarbanov@mm-sol.com>
-	<1404393243-7324-4-git-send-email-svarbanov@mm-sol.com>
-Date: Thu, 10 Jul 2014 06:08:55 -0700
-Message-ID: <CAJAp7Ohis95K9Fw5ff7jfed5YFwRaMqHL-FToPqz7YU_Ux3zEg@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 3/5] rtc: add qpnp rtc driver
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Stanimir Varbanov <svarbanov@mm-sol.com>
-Cc: linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Josh Cartwright <joshc@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 3, 2014 at 6:14 AM, Stanimir Varbanov <svarbanov@mm-sol.com> wrote:
-[...]
-> +static const struct of_device_id qpnp_rtc_table[] = {
-> +       { .compatible = "qcom,qpnp-rtc", },
-> +       {}
-> +};
-> +MODULE_DEVICE_TABLE(of, rtc_qpnp_table);
+Hi Olof,
 
-We have had a lot of discussions related to how to name pm8x41
-drivers; as they obviously fall under pm8xxx in most peoples eyes.
+Have these been applied? If not, where should I watch for them?
 
-As you guys have explained, QPNP is defining the split of address
-space and how interrupts are layed out. To me this does however not
-say anything related to the actual functionality; e.g. the rtc in this
-case.
+Thank you,
+Scot
 
-Are you by this patch saying that this is the one and only rtc
-hardware that will ever be spun under the QPNP umbrella?
-I would expect the naming to be more specific; and definitely the
-compatible to be specific.
+On Mon, 30 Jun 2014, Olof Johansson wrote:
 
-This concern goes for all the qpnp drivers.
-
-Regards,
-Bjorn
+> No, not yet. I'll do a pass of merges of this (and arm-soc) on Wednesday.
+>
+>
+> -Olof
+>
+> On Mon, Jun 30, 2014 at 5:05 PM, Scot Doyle <lkml14@scotdoyle.com> wrote:
+>> Hi Olof, did you apply these patches? I haven't seen them in 3.16-rc3,
+>> linux-next, kernel/git/olof/chrome-platform, kernel/git/olof/misc, or
+>> kernel/git/arm/arm-soc.
+>>
+>> Thanks,
+>> Scot
+>>
+>>
+>> On Tue, 17 Jun 2014, Benson Leung wrote:
+>>>
+>>> Looks like -rc1 is here, so I'll respin these and send them out again.
+>>>
+>>> On Tue, Jun 3, 2014 at 3:59 PM, Olof Johansson <olof@lixom.net> wrote:
+>>>>
+>>>> Hi,
+>>>>
+>>>> On Tue, Jun 3, 2014 at 3:44 PM, Benson Leung <bleung@chromium.org> wrote:
+>>>>>
+>>>>> This patch series should be applied after Mika Westerberg's patch here:
+>>>>> https://patchwork.kernel.org/patch/4288591/
+>>>>>
+>>>>> It will add support for the cypress touchpads on the HP Chromebook 14,
+>>>>> Dell Chromebook 11, and Toshiba CB35.
+>>>>>
+>>>>> [PATCH 1/3] platform/chrome: chromeos_laptop - Add HP Chromebook 14
+>>>>> [PATCH 2/3] platform/chrome: chromeos_laptop - Add Dell Chromebook 11
+>>>>> Touch
+>>>>> [PATCH 3/3] platform/chrome: chromeos_laptop - Add Toshiba CB35 Touch
+>>>>
+>>>>
+>>>> The 3.16 merge window is open, please resend after -rc1 and I'll queue it
+>>>> up.
+>>>>
+>>>>
+>>>> -Olof
