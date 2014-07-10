@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836AbaGJNNP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:13:15 -0400
-Received: from sauhun.de ([89.238.76.85]:57708 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753251AbaGJNNN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:13:13 -0400
-Date: Thu, 10 Jul 2014 15:13:07 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Lothar =?utf-8?Q?Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-Cc: linux-i2c@vger.kernel.org, davinci-linux-open-source@linux.davincidsp.com,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        adi-buildroot-devel@lists.sourceforge.net, linux-tegra@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 00/16] i2c: drop class based instantiaion for selected
- drivers
-Message-ID: <20140710131307.GI2728@katana>
-References: <1404992799-3705-1-git-send-email-wsa@the-dreams.de>
- <20140710143837.558c1d07@ipc1.ka-ro>
+	id S1753601AbaGJNO6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:14:58 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:61921 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752992AbaGJNO4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 09:14:56 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH 3/3] arm64: Use include/asm-generic/io.h
+Date: Thu, 10 Jul 2014 15:14:16 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1404918699-17284-1-git-send-email-thierry.reding@gmail.com> <1404918699-17284-3-git-send-email-thierry.reding@gmail.com> <20140710110034.GI16137@arm.com>
+In-Reply-To: <20140710110034.GI16137@arm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="l0l+eSofNeLXHSnY"
-Content-Disposition: inline
-In-Reply-To: <20140710143837.558c1d07@ipc1.ka-ro>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201407101514.16530.arnd@arndb.de>
+X-Provags-ID: V02:K0:omDcwEmR4Ej4KEsP77vvfL3HWrU1yfeSXLMETHnF627
+ 5Ds79FwwhmhRibo5QhzZE51CZxbNFM9N/7Ts1Xfb6FhGaOrhTR
+ D+OAuQMd4VEOXba4lKMkf+Xz6NEXunDHikTn5mv8I7OTLi9Slc
+ XVQuObZZrMKugPem20EmGdZxZvLFI7051URIVHQz03HlFM+LQS
+ 8Fz1zczck6VAlJA9zgtxwtNmpZQ8/SA7gZylW70TCGCJzGzXsP
+ ap9/G2Y2+5o3MABRUN1IdW074GPh4yBJztAG3Bn3yzNJEgDhep
+ E/9BEsAqqapWC63uiPBZMdysuahhfxnj8bnfkFmErcGh9Ub3gp
+ 4S7vageMVkIt0P10l+nZO8M/K3Txk+nYDR/vvAxQ5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday 10 July 2014, Catalin Marinas wrote:
+> > @@ -235,8 +155,7 @@ extern void __iomem *ioremap_cache(phys_addr_t phys_addr, size_t size);
+> >  #define ioremap_wc(addr, size)               __ioremap((addr), (size), __pgprot(PROT_NORMAL_NC))
+> >  #define iounmap                              __iounmap
+> >  
+> > -#define ARCH_HAS_IOREMAP_WC
+> > -#include <asm-generic/iomap.h>
+> > +#include <asm-generic/io.h>
+> 
+> We don't currently have PCIe support in mainline for arm64 but what I
+> had in mind with the generic iomap is that functions like ioread32_rep
+> first check whether the address is an IO address or a memory one and
+> calls the insl or mmio_insl accordingly. With your generic
+> implementation, this check disappears.
+> 
+> The question is whether this functionality would still be needed.
 
---l0l+eSofNeLXHSnY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I think it's much better not to have that check on architectures that have a memory
+mapped I/O space like arm64. The main advantage is that ioread32() is just a trivial
+alias for readl(). The only reason for needing generic_iomap is architectures that
+do something very different for I/O ports.
 
-
-> > +	/* Warn that the adapter lost class based instantiation */
-> > +	if (adapter->class == I2C_CLASS_DEPRECATED) {
-> > +		dev_dbg(&adapter->dev,
-> > +			"This adapter dropped support for I2C classes and "
-> > +			"won't auto-detect %s devices anymore. If you need it, check "
-> > +			"'Documentation/i2c/instantiating-devices' for alternatives.\n",
-> >
-> It's usually a bad idea to split kernel messages across source lines
-
-Yes, "usually". Not for this message, though, it's specific. The lines
-would have been quite long.
-
-> You could at least do the split at the sentence boundary.
-
-OK, this would have been a compromise.
-
-
---l0l+eSofNeLXHSnY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTvpFjAAoJEBQN5MwUoCm2kUQQAKG2LIG6MzewzMHuFwCTeoFS
-idHvMdE1d5HF8BUL/GE/IepNikzy9bvTQu1IPBhnaGcQQMQ0wSU9U5K1EClj1zgv
-3s+n9hHLH/d3plLDM5ZRmf00DEjDGkHxX63vFctuyaWw20bRXeD86bvYAvZrc58n
-+hed8FyF6KKzDS61jfoWA70LEG39Xssj/QIPDt5+bn3pUPK9OiTX234U1n5M9SV6
-cfi7apgrT+KH2SIUzYsB8n8FXNH/QfrPjdIPIT3c7OZDrNIDzCP6kG68L4MPCT7v
-+nET25q1MxMhYkrd1HaXkUNA3RFe4ZV7TuL7zhZCBetHDOe5Pg1NbloNwZiSkw+2
-mMlvNyJBrmeRXVv3Ahbhpczh/WCi0pcLDmmeZEgBykB9Rz3atFQg9iCt5TA38kmf
-xzbAU3h7la9b3FsvgUcfQ2v27g7uO5jv1WEdU59GXceEqDHcIq05Oop3XLBdNLeR
-c1FAsJaMtiIlhsUMrx/o0Ex01NQFRdTdjAKjAzRifaAR7kCtDL93hR+sbdMyvyLq
-2CJ+p/0mwVFkQuajN0zvmL/Rrs4PqF6Rs84Hq2hrqMF1C2PDqE9gBhMRzPCGljOz
-RYauUQq0ZVOrpw5DQziLNF4eIh979umxHcq7EtSEY6D+H0Tai2VprqY1j/bwFAJi
-3GxX/ks54HgF7b9PO+Aw
-=/pKZ
------END PGP SIGNATURE-----
-
---l0l+eSofNeLXHSnY--
+	Arnd
