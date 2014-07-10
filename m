@@ -1,104 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407AbaGJCts (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jul 2014 22:49:48 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:9745 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232AbaGJCtp (ORCPT
+	id S1755543AbaGJC7Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jul 2014 22:59:16 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:54508 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751778AbaGJC7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jul 2014 22:49:45 -0400
-X-AuditID: cbfee68e-b7fb96d000004bfc-ed-53bdff455da2
-From: Joonyoung Shim <jy0922.shim@samsung.com>
-To: netdev@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: steve.glendinning@shawell.net, drake@endlessm.com
-Subject: [PATCH] usbnet: smsc95xx: add reset_resume function with reset
- operation
-Date: Thu, 10 Jul 2014 11:49:42 +0900
-Message-id: <1404960582-28096-1-git-send-email-jy0922.shim@samsung.com>
-X-Mailer: git-send-email 1.8.1.2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBLMWRmVeSWpSXmKPExsWyRsSkQNft/95gg909LBaP5j9mtri8aw6b
-	xaJlrcwWxxaIWTR/esXkwOqx6HuWx//myywenzfJBTBHcdmkpOZklqUW6dslcGXsW9fPVvCL
-	r2L7hbQGxpk8XYycHBICJhIPz51hgrDFJC7cW8/WxcjFISSwlFFi/4qFbDBFW7ddY4ZITGeU
-	+Np4jAXCaWWS+PTvGgtIFZuAnsSdbcfBRokIhEocv/yTFcRmFjCV+HLxB1hcWCBY4tO9U8wg
-	NouAqsTT2e1gNbwC7hJTXvxggdimIPHz8gmwMyQEbrNJbHgKcQaLgIDEt8mHgIo4gBKyEpsO
-	MEPUS0ocXHGDZQKj4AJGhlWMoqkFyQXFSelFRnrFibnFpXnpesn5uZsYgaF4+t+zvh2MNw9Y
-	H2JMBho3kVlKNDkfGMp5JfGGxmZGFqYmpsZG5pZmpAkrifMuepgUJCSQnliSmp2aWpBaFF9U
-	mpNafIiRiYNTqoFx/a71lstv/VhZ5WoTUJHacnvRdIMv2wW2RuROmjCx+PWzuw6pZxUW7wjc
-	WSkgcXnC9rhTsheevojpZD7+YLrRJEtX8XIH59sWgfsM09QESucdYpVd+z9A8lSelFPlzScp
-	k82qZVl3Ki4ovboh8ZyQ/z4JK1+hC6XZa4Jbbh//ERvUZyfDp6GmxFKckWioxVxUnAgAPLee
-	e1sCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOLMWRmVeSWpSXmKPExsVy+t9jQV3X/3uDDTqWWVk8mv+Y2eLyrjls
-	FouWtTJbHFsgZtH86RWTA6vHou9ZHv+bL7N4fN4kF8Ac1cBok5GamJJapJCal5yfkpmXbqvk
-	HRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0UUmhLDGnFCgUkFhcrKRvh2lCaIibrgVM
-	Y4Sub0gQXI+RARpIWMOYsW9dP1vBL76K7RfSGhhn8nQxcnJICJhIbN12jRnCFpO4cG89Wxcj
-	F4eQwHRGia+Nx1ggnFYmiU//rrGAVLEJ6Enc2XacCcQWEQiVOH75JyuIzSxgKvHl4g+wuLBA
-	sMSne6fAprIIqEo8nd0OVsMr4C4x5cUPFohtChI/L59gm8DIvYCRYRWjaGpBckFxUnqukV5x
-	Ym5xaV66XnJ+7iZGcKA/k97BuKrB4hCjAAejEg9vQ8/eYCHWxLLiytxDjBIczEoivLdKgEK8
-	KYmVValF+fFFpTmpxYcYTYG2T2SWEk3OB0ZhXkm8obGJmZGlkbmhhZGxuZI478FW60AhgfTE
-	ktTs1NSC1CKYPiYOTqkGxox6/gczTZeqT25e9JA18JqiQUzV9pOiHzZO2hDQ3H3jzeX8K92P
-	94qJfV5+aIPgbObVfD2TlTMedcRJN2tHczYfeSc7eZ9pdLWa3ez1M7jz36Xd6nfkqFy7Vf3Q
-	w8zuPzabduu213IkSRkqTJ76/GHec57dEifly750xyQu+/+fLb957zyXJCWW4oxEQy3mouJE
-	AJ2vPhWKAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 9 Jul 2014 22:59:14 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s6A2xBPM024567, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+Subject: [PATCH net-next v2] r8152: support jumbo frame for RTL8153
+Date: Thu, 10 Jul 2014 10:58:54 +0800
+Message-ID: <1394712342-15778-9-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <1394712342-15778-8-Taiwan-albertk@realtek.com>
+References: <1394712342-15778-8-Taiwan-albertk@realtek.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The smsc95xx needs to resume with reset operation. Otherwise it causes
-system hang by network error like below after resume. This case appears
-on odroid u3 board.
+The maximum jumbo frame size for RTL8153 is 9K bytes.
+Change the max rx packet size to 9K.
+Change the use of the shared fifo from 6K (default) to 12K for tx.
 
-[    9.727600] smsc95xx 1-2:1.0 eth0: kevent 2 may have been dropped
-[    9.727648] smsc95xx 1-2:1.0 eth0: kevent 2 may have been dropped
-[    9.727689] smsc95xx 1-2:1.0 eth0: kevent 2 may have been dropped
-[    9.727728] smsc95xx 1-2:1.0 eth0: kevent 2 may have been dropped
-[    9.729486] PM: resume of devices complete after 2011.219 msecs
-[   10.117609] Restarting tasks ... done.
-[   11.725099] smsc95xx 1-2:1.0 eth0: kevent 2 may have been dropped
-[   13.480846] smsc95xx 1-2:1.0 eth0: kevent 2 may have been dropped
-[   13.481361] smsc95xx 1-2:1.0 eth0: kevent 2 may have been dropped
-...
-
-Signed-off-by: Joonyoung Shim <jy0922.shim@samsung.com>
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 ---
- drivers/net/usb/smsc95xx.c | 14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ drivers/net/usb/r8152.c | 36 ++++++++++++++++++++++++++++++++----
+ 1 file changed, 32 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/usb/smsc95xx.c b/drivers/net/usb/smsc95xx.c
-index 424db65e..d07bf4c 100644
---- a/drivers/net/usb/smsc95xx.c
-+++ b/drivers/net/usb/smsc95xx.c
-@@ -1714,6 +1714,18 @@ static int smsc95xx_resume(struct usb_interface *intf)
- 	return ret;
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index e9685ce..7d2dd80 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -59,6 +59,7 @@
+ #define PLA_WDT6_CTRL		0xe428
+ #define PLA_TCR0		0xe610
+ #define PLA_TCR1		0xe612
++#define PLA_MTPS		0xe615
+ #define PLA_TXFIFO_CTRL		0xe618
+ #define PLA_RSTTALLY		0xe800
+ #define PLA_CR			0xe813
+@@ -180,6 +181,10 @@
+ /* PLA_TCR1 */
+ #define VERSION_MASK		0x7cf0
+ 
++/* PLA_MTPS */
++#define MTPS_JUMBO		(12 * 1024 / 64)
++#define MTPS_DEFAULT		(6 * 1024 / 64)
++
+ /* PLA_RSTTALLY */
+ #define TALLY_RESET		0x0001
+ 
+@@ -440,7 +445,10 @@ enum rtl_register_content {
+ #define BYTE_EN_START_MASK	0x0f
+ #define BYTE_EN_END_MASK	0xf0
+ 
++#define RTL8153_MAX_PACKET	9216 /* 9K */
++#define RTL8153_MAX_MTU		(RTL8153_MAX_PACKET - VLAN_ETH_HLEN - VLAN_HLEN)
+ #define RTL8152_RMS		(VLAN_ETH_FRAME_LEN + VLAN_HLEN)
++#define RTL8153_RMS		RTL8153_MAX_PACKET
+ #define RTL8152_TX_TIMEOUT	(5 * HZ)
+ 
+ /* rtl8152 flags */
+@@ -2522,7 +2530,8 @@ static void r8153_first_init(struct r8152 *tp)
+ 	ocp_data &= ~CPCR_RX_VLAN;
+ 	ocp_write_word(tp, MCU_TYPE_PLA, PLA_CPCR, ocp_data);
+ 
+-	ocp_write_word(tp, MCU_TYPE_PLA, PLA_RMS, RTL8152_RMS);
++	ocp_write_word(tp, MCU_TYPE_PLA, PLA_RMS, RTL8153_RMS);
++	ocp_write_byte(tp, MCU_TYPE_PLA, PLA_MTPS, MTPS_JUMBO);
+ 
+ 	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_TCR0);
+ 	ocp_data |= TCR0_AUTO_FIFO;
+@@ -2572,7 +2581,7 @@ static void r8153_enter_oob(struct r8152 *tp)
+ 		mdelay(1);
+ 	}
+ 
+-	ocp_write_word(tp, MCU_TYPE_PLA, PLA_RMS, RTL8152_RMS);
++	ocp_write_word(tp, MCU_TYPE_PLA, PLA_RMS, RTL8153_RMS);
+ 
+ 	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_TEREDO_CFG);
+ 	ocp_data &= ~TEREDO_WAKE_MASK;
+@@ -3284,6 +3293,26 @@ out:
+ 	return res;
  }
  
-+static int smsc95xx_reset_resume(struct usb_interface *intf)
++static int rtl8152_change_mtu(struct net_device *dev, int new_mtu)
 +{
-+	struct usbnet *dev = usb_get_intfdata(intf);
-+	int ret;
++	struct r8152 *tp = netdev_priv(dev);
 +
-+	ret = smsc95xx_reset(dev);
-+	if (ret < 0)
-+		return ret;
++	switch (tp->version) {
++	case RTL_VER_01:
++	case RTL_VER_02:
++		return eth_change_mtu(dev, new_mtu);
++	default:
++		break;
++	}
 +
-+	return smsc95xx_resume(intf);
++	if (new_mtu < 68 || new_mtu > RTL8153_MAX_MTU)
++		return -EINVAL;
++
++	dev->mtu = new_mtu;
++
++	return 0;
 +}
 +
- static void smsc95xx_rx_csum_offload(struct sk_buff *skb)
- {
- 	skb->csum = *(u16 *)(skb_tail_pointer(skb) - 2);
-@@ -2004,7 +2016,7 @@ static struct usb_driver smsc95xx_driver = {
- 	.probe		= usbnet_probe,
- 	.suspend	= smsc95xx_suspend,
- 	.resume		= smsc95xx_resume,
--	.reset_resume	= smsc95xx_resume,
-+	.reset_resume	= smsc95xx_reset_resume,
- 	.disconnect	= usbnet_disconnect,
- 	.disable_hub_initiated_lpm = 1,
- 	.supports_autosuspend = 1,
+ static const struct net_device_ops rtl8152_netdev_ops = {
+ 	.ndo_open		= rtl8152_open,
+ 	.ndo_stop		= rtl8152_close,
+@@ -3292,8 +3321,7 @@ static const struct net_device_ops rtl8152_netdev_ops = {
+ 	.ndo_tx_timeout		= rtl8152_tx_timeout,
+ 	.ndo_set_rx_mode	= rtl8152_set_rx_mode,
+ 	.ndo_set_mac_address	= rtl8152_set_mac_address,
+-
+-	.ndo_change_mtu		= eth_change_mtu,
++	.ndo_change_mtu		= rtl8152_change_mtu,
+ 	.ndo_validate_addr	= eth_validate_addr,
+ };
+ 
 -- 
-1.8.1.2
+1.9.3
 
