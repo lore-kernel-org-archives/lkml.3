@@ -1,182 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782AbaGJOwv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 10:52:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30501 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753566AbaGJOwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 10:52:49 -0400
-Date: Thu, 10 Jul 2014 10:52:38 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Vitaly Kuznetsov <vkuznets@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Andrew Jones <drjones@redhat.com>, xen-devel@lists.xenproject.org,
-        linux-kernel@vger.kernel.org,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Subject: Re: [PATCH v2] mmap_vmcore: skip non-ram pages reported by
- hypervisors
-Message-ID: <20140710145238.GC24941@redhat.com>
-References: <1404906022-487-1-git-send-email-vkuznets@redhat.com>
+	id S1753894AbaGJOxR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 10:53:17 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40956 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752391AbaGJOxO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 10:53:14 -0400
+Date: Thu, 10 Jul 2014 15:52:15 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCH 5/6] tty: serial: 8250-core: add rs485 support
+Message-ID: <20140710155215.3e17ca08@alan.etchedpixels.co.uk>
+In-Reply-To: <1404928177-26554-6-git-send-email-bigeasy@linutronix.de>
+References: <1404928177-26554-1-git-send-email-bigeasy@linutronix.de>
+	<1404928177-26554-6-git-send-email-bigeasy@linutronix.de>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404906022-487-1-git-send-email-vkuznets@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 01:40:22PM +0200, Vitaly Kuznetsov wrote:
-> We have a special check in read_vmcore() handler to check if the page was
-> reported as ram or not by the hypervisor (pfn_is_ram()). However, when
-> vmcore is read with mmap() no such check is performed. That can lead to
-> unpredictable results, e.g. when running Xen PVHVM guest memcpy() after
-> mmap() on /proc/vmcore will hang processing HVMMEM_mmio_dm pages creating
-> enormous load in both DomU and Dom0.
-> 
-> Fix the issue by mapping each non-ram page to the zero page. Keep direct
-> path with remap_oldmem_pfn_range() to avoid looping through all pages on
-> bare metal.
-> 
-> The issue can also be solved by overriding remap_oldmem_pfn_range() in
-> xen-specific code, as remap_oldmem_pfn_range() was been designed for.
-> That, however, would involve non-obvious xen code path for all x86 builds
-> with CONFIG_XEN_PVHVM=y and would prevent all other hypervisor-specific
-> code on x86 arch from doing the same override.
-> 
-> Changes from v1:
-> - comment style changes
-> - change remap_oldmem_pfn_checked() interface to closer match the
->   remap_oldmem_pfn() interface
-> - preserve formal parameters within the loop, make the loop conditions
->   easier to understand
-> - use my_zero_pfn() for the zero page
-> - return remapped length instead of new offset
-> 
-> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
-> Reviewed-by: Andrew Jones <drjones@redhat.com>
-
-Also please cc HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> in next
-posting. He did the mmap() work and might be interested in having a
-look at the patch.
-
-Thanks
-Vivek
-
-> ---
->  fs/proc/vmcore.c | 89 ++++++++++++++++++++++++++++++++++++++++++++++++++++----
->  1 file changed, 84 insertions(+), 5 deletions(-)
-> 
-> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-> index 382aa89..5cd13f8 100644
-> --- a/fs/proc/vmcore.c
-> +++ b/fs/proc/vmcore.c
-> @@ -328,6 +328,67 @@ static inline char *alloc_elfnotes_buf(size_t notes_sz)
->   * virtually contiguous user-space in ELF layout.
->   */
->  #ifdef CONFIG_MMU
-> +/*
-> + * remap_oldmem_pfn_checked - do remap_oldmem_pfn replacing all pages reported
-> + * as not being ram with the zero page.
-> + *
-> + * @vma: vm_area_struct describing requested mapping
-> + * @vma_addr: start remapping from
-> + * @pfn: page frame number to start remapping to
-> + * @size: remapping size
-> + *
-> + * Returns the remapped length. If no errors were hit during the remapping it
-> + * should be equal to size.
-> + */
-> +static u64 remap_oldmem_pfn_checked(struct vm_area_struct *vma,
-> +				    unsigned long vma_addr, unsigned long pfn,
-> +				    unsigned long size)
-> +{
-> +	size_t map_size;
-> +	unsigned long pos_start, pos_end, pos;
-> +	unsigned long zeropage_pfn = my_zero_pfn(0);
-> +	u64 len = 0;
-> +
-> +	pos_start = pfn;
-> +	pos_end = pfn + (size >> PAGE_SHIFT);
-> +
-> +	for (pos = pos_start; pos < pos_end; ++pos) {
-> +		if (!pfn_is_ram(pos)) {
-> +			/* We hit a page which is not ram. Remap the continuous
-> +			 * region between pos_start and pos-1 and replace
-> +			 * the non-ram page at pos with the zero page.
-> +			 */
-> +			if (pos > pos_start) {
-> +				/* Remap continuous region */
-> +				map_size = (pos - pos_start) << PAGE_SHIFT;
-> +				if (remap_oldmem_pfn_range(vma, vma_addr + len,
-> +							   pos_start, map_size,
-> +							   vma->vm_page_prot))
-> +					return len;
-> +				len += map_size;
-> +			}
-> +			/* Remap the zero page */
-> +			if (remap_oldmem_pfn_range(vma, vma_addr + len,
-> +						   zeropage_pfn,
-> +						   PAGE_SIZE,
-> +						   vma->vm_page_prot))
-> +				return len;
-> +			len += PAGE_SIZE;
-> +			pos_start = pos + 1;
-> +		}
-> +	}
-> +	if (pos > pos_start) {
-> +		/* Remap the rest */
-> +		map_size = (pos - pos_start) << PAGE_SHIFT;
-> +		if (remap_oldmem_pfn_range(vma, vma_addr + len, pos_start,
-> +					   map_size,
-> +					   vma->vm_page_prot))
-> +			return len;
-> +		len += map_size;
-> +	}
-> +	return len;
-> +}
-> +
->  static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+>  static inline void __stop_tx(struct uart_8250_port *p)
 >  {
->  	size_t size = vma->vm_end - vma->vm_start;
-> @@ -387,13 +448,31 @@ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
->  
->  			tsz = min_t(size_t, m->offset + m->size - start, size);
->  			paddr = m->paddr + start - m->offset;
-> -			if (remap_oldmem_pfn_range(vma, vma->vm_start + len,
-> -						   paddr >> PAGE_SHIFT, tsz,
-> -						   vma->vm_page_prot))
-> -				goto fail;
+> +	if (p->rs485.flags & SER_RS485_ENABLED) {
+> +		int ret;
 > +
-> +			/* Check if oldmem_pfn_is_ram was registered to avoid
-> +			   looping over all pages without a reason. */
-> +			if (oldmem_pfn_is_ram) {
-> +				u64 original_len;
-> +				unsigned long pfn, vma_addr;
+> +		ret = (p->rs485.flags & SER_RS485_RTS_AFTER_SEND) ? 1 : 0;
+> +		if (gpio_get_value(p->rts_gpio) != ret) {
+> +			if (p->rs485.delay_rts_after_send > 0)
+> +				mdelay(p->rs485.delay_rts_after_send);
+> +			gpio_set_value(p->rts_gpio, ret);
+> +		}
+
+RTS is not normally a GPIO. We should be controlling the UART RTS here,
+and if the UART has a magic special case RTS wired to a GPIO then really
+the hardware specific part should handle that gunge. I don't care whether
+the drive does it via serial_out magic or a more explicit hook but it
+doesn't belong here in core code.
+
+Likewise the mdelay probably should be in the device specific bits or
+controlled by a flag as not all hardware is so braindead.
+
+> @@ -1330,6 +1356,20 @@ static void serial8250_start_tx(struct uart_port *port)
+>  	if (up->dma && !serial8250_tx_dma(up)) {
+
+Ditto
+
+> +int serial8250_probe_rs485(struct uart_8250_port *up,
+> +		struct device *dev)
+> +{
+> +	struct serial_rs485 *rs485conf = &up->rs485;
+> +	struct device_node *np = dev->of_node;
+> +	u32 rs485_delay[2];
+> +	enum of_gpio_flags flags;
+> +	int ret;
 > +
-> +				pfn = paddr >> PAGE_SHIFT;
-> +				vma_addr = vma->vm_start + len;
-> +				original_len = len;
-> +				len += remap_oldmem_pfn_checked(vma, vma_addr,
-> +								pfn, tsz);
-> +				if (len != original_len + tsz)
-> +					goto fail;
-> +			} else {
-> +				if (remap_oldmem_pfn_range(vma,
-> +							   vma->vm_start + len,
-> +							   paddr >> PAGE_SHIFT,
-> +							   tsz,
-> +							   vma->vm_page_prot))
-> +					goto fail;
-> +				len += tsz;
-> +			}
->  			size -= tsz;
->  			start += tsz;
-> -			len += tsz;
+> +	rs485conf->flags = 0;
+> +	if (!np)
+> +		return 0;
+> +
+> +	/* check for tx enable gpio */
+> +	up->rts_gpio = of_get_named_gpio_flags(np, "rts-gpio", 0, &flags);
+
+No of_ dependencies in core 8250.c either please. That looks a perfectly
+good implementation of serial8250_of_probe_rs485 however, just belongs in
+the right place.
+
+> +static int serial8250_ioctl(struct uart_port *port, unsigned int cmd,
+> +		unsigned long arg)
+> +{
+> +	struct serial_rs485 rs485conf;
+> +	struct uart_8250_port *up;
+> +
+> +	up = container_of(port, struct uart_8250_port, port);
+> +	switch (cmd) {
+> +	case TIOCSRS485:
+> +		if (!gpio_is_valid(up->rts_gpio))
+> +			return -ENODEV;
+
+GPIO assumption again needs to go
+
+
+> diff --git a/include/linux/serial_8250.h b/include/linux/serial_8250.h
+> index 0ec21ec..056a73f 100644
+> --- a/include/linux/serial_8250.h
+> +++ b/include/linux/serial_8250.h
+> @@ -78,6 +78,7 @@ struct uart_8250_port {
+>  	unsigned char		acr;
+>  	unsigned char		ier;
+>  	unsigned char		lcr;
+> +	unsigned char		fcr;
+>  	unsigned char		mcr;
+>  	unsigned char		mcr_mask;	/* mask of user bits */
+>  	unsigned char		mcr_force;	/* mask of forced bits */
+> @@ -94,6 +95,9 @@ struct uart_8250_port {
+>  	unsigned char		msr_saved_flags;
 >  
->  			if (size == 0)
->  				return 0;
-> -- 
-> 1.9.3
+>  	struct uart_8250_dma	*dma;
+> +	struct serial_rs485	rs485;
+> +	int			rts_gpio;
+> +	bool			rts_gpio_valid;
+
+Keeping the gpio here doesn't look unreasonable if one is in use.
+
+Alan
