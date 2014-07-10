@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662AbaGJTP7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 15:15:59 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:29754 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023AbaGJTP6 (ORCPT
+	id S1752508AbaGJTQc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 15:16:32 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:34466 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717AbaGJTQa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 15:15:58 -0400
-X-CheckPoint: {53BEE66D-7-2100090A-C0000000}
-Message-ID: <53BEE66C.1080505@tilera.com>
-Date: Thu, 10 Jul 2014 15:15:56 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 10 Jul 2014 15:16:30 -0400
 MIME-Version: 1.0
-To: Nick Krause <xerofoify@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tile: Add underscores to defintions
-References: <1404534728-7345-1-git-send-email-xerofoify@gmail.com>	<53BED94F.9020407@tilera.com> <CAPDOMVjOh1efYMM4UHv9Ag3o0s02PewAQrbKY3FMBKf9ZGBG7Q@mail.gmail.com>
-In-Reply-To: <CAPDOMVjOh1efYMM4UHv9Ag3o0s02PewAQrbKY3FMBKf9ZGBG7Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [108.20.112.127]
+In-Reply-To: <20140630144624.GA2604@quad>
+References: <20140630144624.GA2604@quad>
+Date: Thu, 10 Jul 2014 21:16:30 +0200
+Message-ID: <CABPqkBRBF6TXf3Q5+MvWneKrgtrjZMv3FzW6rVMygz2QvWgowg@mail.gmail.com>
+Subject: Re: [PATCH] perf/x86/uncore: fix SNB-EP/IVT Cbox filter mappings
+From: Stephane Eranian <eranian@google.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/10/2014 2:50 PM, Nick Krause wrote:
-> On Thu, Jul 10, 2014 at 2:19 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
->> On 7/5/2014 12:32 AM, Nicholas Krause wrote:
->>> In file drv_xgbe_impl.h I fixed the definitions for Size Small,
->>> Size Large, Size Jumbo to have underscores before and after to
->>> follow kernel coding style for internel defentions.
->>>
->>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
->>> ---
->>>    arch/tile/include/hv/drv_xgbe_impl.h | 15 +++------------
->>
->> I don't think there is a kernel coding style for internal definitions.
->> It's true that double-underscores mean "more raw" in many places, like
->> for things like set_bit() vs __set_bit(), but that's not really
->> applicable here.  These files are not exported outside of the kernel
->> in any case so we don't need any special treatment for them to mark them
->> as "internal definitions".
->>
->> The comment in any case certainly is silly.  It dates back to Jan 2007
->> in our internal version control system.  The tilepro hv headers in
->> question are largely frozen at this point in our internal "upstream"
->> repository where we take these headers from, so it doesn't seem worth
->> the effort to try to improve the comments there, nor worth adding skew
->> between those headers and the community headers.
->>
->> --
->> Chris Metcalf, Tilera Corp.
->> http://www.tilera.com
-> Chris ,
-> Would you like me to remove this comment in a patch instead?
-> Cheers Nick
+On Mon, Jun 30, 2014 at 4:46 PM, Stephane Eranian <eranian@google.com> wrote:
+>
+> This patch fixes the SNB-EP and IVT Cbox filter mapping
+> table. The table controls which filters are supported by
+> which events. There were several mistakes in those tables
+> causing some filters to be ignored, such as NID on
+> TOR_INSERTS.
+>
+> Signed-off-by: Stephane Eranian <eranian@google.com>
 
-No, as I said, better not to add skew between our internal copies
-of the header and the community version.  Thanks anyway.
+Any comment on this patch?
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 11 ++++++-----
+>  1 file changed, 6 insertions(+), 5 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> index 65bbbea..ae6552a 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> @@ -550,16 +550,16 @@ static struct extra_reg snbep_uncore_cbox_extra_regs[] = {
+>         SNBEP_CBO_EVENT_EXTRA_REG(0x4134, 0xffff, 0x6),
+>         SNBEP_CBO_EVENT_EXTRA_REG(0x0135, 0xffff, 0x8),
+>         SNBEP_CBO_EVENT_EXTRA_REG(0x0335, 0xffff, 0x8),
+> -       SNBEP_CBO_EVENT_EXTRA_REG(0x4135, 0xffff, 0xc),
+> -       SNBEP_CBO_EVENT_EXTRA_REG(0x4335, 0xffff, 0xc),
+> +       SNBEP_CBO_EVENT_EXTRA_REG(0x4135, 0xffff, 0xa),
+> +       SNBEP_CBO_EVENT_EXTRA_REG(0x4335, 0xffff, 0xa),
+>         SNBEP_CBO_EVENT_EXTRA_REG(0x4435, 0xffff, 0x2),
+>         SNBEP_CBO_EVENT_EXTRA_REG(0x4835, 0xffff, 0x2),
+>         SNBEP_CBO_EVENT_EXTRA_REG(0x4a35, 0xffff, 0x2),
+>         SNBEP_CBO_EVENT_EXTRA_REG(0x5035, 0xffff, 0x2),
+>         SNBEP_CBO_EVENT_EXTRA_REG(0x0136, 0xffff, 0x8),
+>         SNBEP_CBO_EVENT_EXTRA_REG(0x0336, 0xffff, 0x8),
+> -       SNBEP_CBO_EVENT_EXTRA_REG(0x4136, 0xffff, 0xc),
+> -       SNBEP_CBO_EVENT_EXTRA_REG(0x4336, 0xffff, 0xc),
+> +       SNBEP_CBO_EVENT_EXTRA_REG(0x4136, 0xffff, 0xa),
+> +       SNBEP_CBO_EVENT_EXTRA_REG(0x4336, 0xffff, 0xa),
+>         SNBEP_CBO_EVENT_EXTRA_REG(0x4436, 0xffff, 0x2),
+>         SNBEP_CBO_EVENT_EXTRA_REG(0x4836, 0xffff, 0x2),
+>         SNBEP_CBO_EVENT_EXTRA_REG(0x4a36, 0xffff, 0x2),
+> @@ -1222,6 +1222,7 @@ static struct extra_reg ivt_uncore_cbox_extra_regs[] = {
+>         SNBEP_CBO_EVENT_EXTRA_REG(SNBEP_CBO_PMON_CTL_TID_EN,
+>                                   SNBEP_CBO_PMON_CTL_TID_EN, 0x1),
+>         SNBEP_CBO_EVENT_EXTRA_REG(0x1031, 0x10ff, 0x2),
+> +
+>         SNBEP_CBO_EVENT_EXTRA_REG(0x1134, 0xffff, 0x4),
+>         SNBEP_CBO_EVENT_EXTRA_REG(0x4134, 0xffff, 0xc),
+>         SNBEP_CBO_EVENT_EXTRA_REG(0x5134, 0xffff, 0xc),
+> @@ -1245,7 +1246,7 @@ static struct extra_reg ivt_uncore_cbox_extra_regs[] = {
+>         SNBEP_CBO_EVENT_EXTRA_REG(0x8335, 0xffff, 0x10),
+>         SNBEP_CBO_EVENT_EXTRA_REG(0x0136, 0xffff, 0x10),
+>         SNBEP_CBO_EVENT_EXTRA_REG(0x0336, 0xffff, 0x10),
+> -       SNBEP_CBO_EVENT_EXTRA_REG(0x2336, 0xffff, 0x10),
+> +       SNBEP_CBO_EVENT_EXTRA_REG(0x2136, 0xffff, 0x10),
+>         SNBEP_CBO_EVENT_EXTRA_REG(0x2336, 0xffff, 0x10),
+>         SNBEP_CBO_EVENT_EXTRA_REG(0x4136, 0xffff, 0x18),
+>         SNBEP_CBO_EVENT_EXTRA_REG(0x4336, 0xffff, 0x18),
+> --
+> 1.8.3.2
+>
