@@ -1,80 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894AbaGJOst (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 10:48:49 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:27144 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685AbaGJOsr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 10:48:47 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-a8-53bea7cd58bb
-Message-id: <53BEA780.5050602@samsung.com>
-Date: Thu, 10 Jul 2014 17:47:28 +0300
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>, David Howells <dhowells@redhat.com>
-Cc: keyrings <keyrings@linux-nfs.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Josh Boyer <jwboyer@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Subject: Re: [PATCH v6 0/6] ima: extending secure boot certificate chain of
- trust
-References: <1404924054.14643.36.camel@dhcp-9-2-203-236.watson.ibm.com>
- <1403620852-16476-1-git-send-email-zohar@linux.vnet.ibm.com>
- <24144.1404919879@warthog.procyon.org.uk>
- <8975.1404932208@warthog.procyon.org.uk>
- <1404941347.14643.57.camel@dhcp-9-2-203-236.watson.ibm.com>
-In-reply-to: <1404941347.14643.57.camel@dhcp-9-2-203-236.watson.ibm.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Originating-IP: [106.122.1.121]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJLMWRmVeSWpSXmKPExsVy+t/xK7pnl+8LNng8n8PiXdNvFosvS+ss
-	Drx7wmIxe9dDFovLu+awWXzoecRmcfXhbBaLTysmMTtweOycdZfdY9qJZSweDw5tZvF4v+8q
-	m8e6G1/ZPT5vkgtgi+KySUnNySxLLdK3S+DKeNDoVXCWo+LFmZPMDYx/2boYOTkkBEwkHv97
-	BGWLSVy4tx7I5uIQEljKKLG/5wgjhNPIJDH7yE9WkCohgVmMEq8OuIDYvAJaEhfvP2IHsVkE
-	VCVudr5nBrHZBPQkNjT/AIuLCkRIHOh7xgpRLyjxY/I9FhBbRMBP4uGZF2D1zAJ9TBJ3Nol2
-	MXJwCAsES5x9pw+xajaTxKmjFiA2p4CHxMrz+6HK1SUmzVsEZctLbF7zlhmiXlWie+1aqGcU
-	JU5PPsc8gVF4FpLNs5C0z0LSvoCReRWjaGppckFxUnqukV5xYm5xaV66XnJ+7iZGSPR83cG4
-	9JjVIUYBDkYlHt4Xu/cEC7EmlhVX5h5ilOBgVhLhvbJoX7AQb0piZVVqUX58UWlOavEhRiYO
-	TqkGRkH9/a5O4pd/7VxhOIv1ucavVWFR6ddc9vOtPrrAa7pfkLKYyctrmgv6L9ev3nFMkf/S
-	3gd1F11aUxcZqvpNfX/kWE7GhndlEbsMkznnFWlplmzOLOzxkhP/8mDLrteZM3mzDJ9zn3oS
-	xHM+1fGetZvj6x2HpD7fslR0fmGw9I9c/ZpJwVkLTiixFGckGmoxFxUnAgAx8zMHfAIAAA==
+	id S1753770AbaGJOs6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 10:48:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19559 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753170AbaGJOsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 10:48:55 -0400
+Date: Thu, 10 Jul 2014 10:48:42 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Vitaly Kuznetsov <vkuznets@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Andrew Jones <drjones@redhat.com>, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] mmap_vmcore: skip non-ram pages reported by
+ hypervisors
+Message-ID: <20140710144842.GB24941@redhat.com>
+References: <1404906022-487-1-git-send-email-vkuznets@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404906022-487-1-git-send-email-vkuznets@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On Wed, Jul 09, 2014 at 01:40:22PM +0200, Vitaly Kuznetsov wrote:
+> We have a special check in read_vmcore() handler to check if the page was
+> reported as ram or not by the hypervisor (pfn_is_ram()). However, when
+> vmcore is read with mmap() no such check is performed. That can lead to
+> unpredictable results, e.g. when running Xen PVHVM guest memcpy() after
+> mmap() on /proc/vmcore will hang processing HVMMEM_mmio_dm pages creating
+> enormous load in both DomU and Dom0.
+> 
+> Fix the issue by mapping each non-ram page to the zero page. Keep direct
+> path with remap_oldmem_pfn_range() to avoid looping through all pages on
+> bare metal.
+> 
+> The issue can also be solved by overriding remap_oldmem_pfn_range() in
+> xen-specific code, as remap_oldmem_pfn_range() was been designed for.
+> That, however, would involve non-obvious xen code path for all x86 builds
+> with CONFIG_XEN_PVHVM=y and would prevent all other hypervisor-specific
+> code on x86 arch from doing the same override.
+> 
+> Changes from v1:
+> - comment style changes
+> - change remap_oldmem_pfn_checked() interface to closer match the
+>   remap_oldmem_pfn() interface
+> - preserve formal parameters within the loop, make the loop conditions
+>   easier to understand
+> - use my_zero_pfn() for the zero page
+> - return remapped length instead of new offset
+> 
+> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+> Reviewed-by: Andrew Jones <drjones@redhat.com>
+> ---
+>  fs/proc/vmcore.c | 89 ++++++++++++++++++++++++++++++++++++++++++++++++++++----
+>  1 file changed, 84 insertions(+), 5 deletions(-)
+> 
+> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+> index 382aa89..5cd13f8 100644
+> --- a/fs/proc/vmcore.c
+> +++ b/fs/proc/vmcore.c
+> @@ -328,6 +328,67 @@ static inline char *alloc_elfnotes_buf(size_t notes_sz)
+>   * virtually contiguous user-space in ELF layout.
+>   */
+>  #ifdef CONFIG_MMU
+> +/*
+> + * remap_oldmem_pfn_checked - do remap_oldmem_pfn replacing all pages reported
+> + * as not being ram with the zero page.
+> + *
+> + * @vma: vm_area_struct describing requested mapping
+> + * @vma_addr: start remapping from
+> + * @pfn: page frame number to start remapping to
+> + * @size: remapping size
+> + *
+> + * Returns the remapped length. If no errors were hit during the remapping it
+> + * should be equal to size.
+> + */
 
-If patches from integrity/next-trusted-keys goes via your tree, then I
-suggest that you re-base your patches on the top of our
-patchset, because it is unclear how long review of PE, PKCS7 patches
-will take and if they will be pulled...
+Hi,
 
-I would do it with different pull requests.
+So we are returning length of successful mapping so that it can be
+unmapped in outer loop in case of failure? If yes, can't we handle
+failure in this function itself instead of relying on outer function.
 
-- Dmitry
+IOW, why not unmap whatever we have mapped in this function and return
+the error code. That sounds simpler to me.
 
+> +static u64 remap_oldmem_pfn_checked(struct vm_area_struct *vma,
+> +				    unsigned long vma_addr, unsigned long pfn,
+> +				    unsigned long size)
+> +{
+> +	size_t map_size;
+> +	unsigned long pos_start, pos_end, pos;
+> +	unsigned long zeropage_pfn = my_zero_pfn(0);
+> +	u64 len = 0;
+> +
+> +	pos_start = pfn;
+> +	pos_end = pfn + (size >> PAGE_SHIFT);
+> +
+> +	for (pos = pos_start; pos < pos_end; ++pos) {
+> +		if (!pfn_is_ram(pos)) {
+> +			/* We hit a page which is not ram. Remap the continuous
+> +			 * region between pos_start and pos-1 and replace
+> +			 * the non-ram page at pos with the zero page.
+> +			 */
+> +			if (pos > pos_start) {
+> +				/* Remap continuous region */
+> +				map_size = (pos - pos_start) << PAGE_SHIFT;
+> +				if (remap_oldmem_pfn_range(vma, vma_addr + len,
+> +							   pos_start, map_size,
+> +							   vma->vm_page_prot))
+> +					return len;
+> +				len += map_size;
+> +			}
+> +			/* Remap the zero page */
+> +			if (remap_oldmem_pfn_range(vma, vma_addr + len,
+> +						   zeropage_pfn,
+> +						   PAGE_SIZE,
+> +						   vma->vm_page_prot))
+> +				return len;
+> +			len += PAGE_SIZE;
+> +			pos_start = pos + 1;
+> +		}
+> +	}
+> +	if (pos > pos_start) {
+> +		/* Remap the rest */
+> +		map_size = (pos - pos_start) << PAGE_SHIFT;
+> +		if (remap_oldmem_pfn_range(vma, vma_addr + len, pos_start,
+> +					   map_size,
+> +					   vma->vm_page_prot))
+> +			return len;
+> +		len += map_size;
+> +	}
+> +	return len;
+> +}
+> +
+>  static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+>  {
+>  	size_t size = vma->vm_end - vma->vm_start;
+> @@ -387,13 +448,31 @@ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+>  
+>  			tsz = min_t(size_t, m->offset + m->size - start, size);
+>  			paddr = m->paddr + start - m->offset;
+> -			if (remap_oldmem_pfn_range(vma, vma->vm_start + len,
+> -						   paddr >> PAGE_SHIFT, tsz,
+> -						   vma->vm_page_prot))
+> -				goto fail;
+> +
+> +			/* Check if oldmem_pfn_is_ram was registered to avoid
+> +			   looping over all pages without a reason. */
+> +			if (oldmem_pfn_is_ram) {
+> +				u64 original_len;
+> +				unsigned long pfn, vma_addr;
+> +
+> +				pfn = paddr >> PAGE_SHIFT;
+> +				vma_addr = vma->vm_start + len;
+> +				original_len = len;
+> +				len += remap_oldmem_pfn_checked(vma, vma_addr,
 
-On 10/07/14 00:29, Mimi Zohar wrote:
-> On Wed, 2014-07-09 at 19:56 +0100, David Howells wrote: 
->> Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
->>
->>> Yes, that's fine.  My concern, however, is that the trusted keyring
->>> patches are independent of the other patches being upstreamed and should
->>> be upstreamed regardless of the other patches.
->> There is overlap in the X.509 certificate request function that you took from
->> my pkcs#7 patches.
-> Right, x509_request_asymmetric_key() is the same as
-> pkcs7_request_asymmetric_key().
->
-> Mimi
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+How about keeping argument list same as remap_oldmem_pfn_range()? Just
+becomes easier to read.
 
+> +								pfn, tsz);
+> +				if (len != original_len + tsz)
+> +					goto fail;
+
+If remap_oldmem_pfn_checked() can take care of internal error handling
+then this should simplify too.
+
+> +			} else {
+> +				if (remap_oldmem_pfn_range(vma,
+> +							   vma->vm_start + len,
+> +							   paddr >> PAGE_SHIFT,
+> +							   tsz,
+> +							   vma->vm_page_prot))
+> +					goto fail;
+> +				len += tsz;
+> +			}
+
+Can we move this code inside another wrapper function? This is looking
+little ugly inline.
+
+May be something like.
+
+vmcore_remap_pfn_range() {
+	if (oldmem_pfn_is_ram)
+		remap_oldmem_pfn_checked()
+	else
+		remap_pfn_range();
+}
+
+This will also reduce the depth of braces and you might not have to use
+5 lines to pass arguments to remap_oldmem_pfn_range().
+
+Thanks
+Vivek
