@@ -1,82 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751356AbaGJRBq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 13:01:46 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:33245 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781AbaGJRBo (ORCPT
+	id S1751508AbaGJRCs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 13:02:48 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:40563 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751364AbaGJRCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 13:01:44 -0400
-From: bsegall@google.com
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Yuyang Du <yuyang.du@intel.com>, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com,
-        arjan.van.de.ven@intel.com, len.brown@intel.com, alan.cox@intel.com,
-        mark.gross@intel.com, pjt@google.com, fengguang.wu@intel.com
-Subject: Re: [PATCH 2/2] sched: Rewrite per entity runnable load average tracking
-References: <1404268256-3019-1-git-send-email-yuyang.du@intel.com>
-	<1404268256-3019-2-git-send-email-yuyang.du@intel.com>
-	<20140707104646.GK6758@twins.programming.kicks-ass.net>
-	<xm26r41wyfgc.fsf@sword-of-the-dawn.mtv.corp.google.com>
-	<20140708000840.GB25653@intel.com>
-	<xm26k37nye7d.fsf@sword-of-the-dawn.mtv.corp.google.com>
-	<20140709010753.GD25653@intel.com>
-	<20140709184543.GI9918@twins.programming.kicks-ass.net>
-	<xm26bnsyxsf7.fsf@sword-of-the-dawn.mtv.corp.google.com>
-	<20140710100859.GW3935@laptop>
-Date: Thu, 10 Jul 2014 10:01:42 -0700
-In-Reply-To: <20140710100859.GW3935@laptop> (Peter Zijlstra's message of "Thu,
-	10 Jul 2014 12:08:59 +0200")
-Message-ID: <xm267g3lxi4p.fsf@sword-of-the-dawn.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Thu, 10 Jul 2014 13:02:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20140710101151.GA21629@dhcp-26-207.brq.redhat.com>
+References: <cover.1402405331.git.agordeev@redhat.com> <4fef62a2e647a7c38e9f2a1ea4244b3506a85e2b.1402405331.git.agordeev@redhat.com>
+ <20140702202201.GA28852@google.com> <20140704085741.GA12247@dhcp-26-207.brq.redhat.com>
+ <CAErSpo6f6RXWv0DEtLBZX0jXoSUYJeWrSm7mubSJ_F-O7tQp6w@mail.gmail.com>
+ <20140708122606.GB6270@dhcp-26-207.brq.redhat.com> <CAErSpo4oiabgoOjsGdWZpCMPnmopK4xRzB2f3tM0AiUFrdhFww@mail.gmail.com>
+ <20140710101151.GA21629@dhcp-26-207.brq.redhat.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 10 Jul 2014 11:02:24 -0600
+Message-ID: <CAErSpo6p=teHx+ZG9yritgcBvOer-FNtug4-WQQQkHhPhTLjZw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] PCI/MSI: Add pci_enable_msi_partial()
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
+On Thu, Jul 10, 2014 at 4:11 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
+> On Wed, Jul 09, 2014 at 10:06:48AM -0600, Bjorn Helgaas wrote:
+>> Out of curiosity, do you have a pointer to this?  It looks like it
+>
+> I.e. ICH8 chapter 12.1.30 or ICH10 chapter 14.1.27
+>
+>> uses one vector per port, and I'm wondering if the reason it requests
+>> 16 is because there's some possibility of a part with more than 8
+>> ports.
+>
+> I doubt that is the reason. The only allowed MME values (powers of two)
+> are 0b000, 0b001, 0b010 and 0b100. As you can see, only one bit is used -
+> I would speculate it suits nicely to some hardware logic.
+>
+> BTW, apart from AHCI, it seems the reason MSI is not going to disappear
+> (in a decade at least) is it is way cheaper to implement than MSI-X.
+>
+>> > No, this is not an erratum. The value of 8 vectors is reserved and could
+>> > cause undefined results if used.
+>>
+>> As I read the spec (PCI 3.0, sec 6.8.1.3), if MMC contains 0b100
+>> (requesting 16 vectors), the OS is allowed to allocate 1, 2, 4, 8, or
+>> 16 vectors.  If allocating 8 vectors and writing 0b011 to MME causes
+>> undefined results, I'd say that's a chipset defect.
+>
+> Well, the PCI spec does not prevent devices to have their own specs on top
+> of it. Undefined results are meant on the device side here. On the MSI side
+> these results are likely perfectly within the PCI spec. I feel speaking as
+> a lawer here ;)
 
-> On Wed, Jul 09, 2014 at 12:07:08PM -0700, bsegall@google.com wrote:
->> Peter Zijlstra <peterz@infradead.org> writes:
->> 
->> > On Wed, Jul 09, 2014 at 09:07:53AM +0800, Yuyang Du wrote:
->> >> That is chalenging... Can someone (Peter) grant us a lock of the remote rq? :)
->> >
->> > Nope :-).. we got rid of that lock for a good reason.
->> >
->> > Also, this is one area where I feel performance really trumps
->> > correctness, we can fudge the blocked load a little. So the
->> > sched_clock_cpu() difference is a strict upper bound on the
->> > rq_clock_task() difference (and under 'normal' circumstances shouldn't
->> > be much off).
->> 
->> Well, unless IRQ_TIME_ACCOUNTING or such is on, in which case you lose.
->> Or am I misunderstanding the suggestion?
->
-> If its on its still an upper bound, and typically the difference is not
-> too large I think.
->
-> Since clock_task is the regular clock minus some local amount, the
-> difference between two regular clock reads is always a strict upper
-> bound on clock_task differences.
->
->> Actually the simplest thing
->> would probably be to grab last_update_time (which on 32-bit could be
->> done with the _copy hack) and use that. Then I think the accuracy is
->> only worse than current in that you can lose runnable load as well as
->> blocked load, and that it isn't as easily corrected - currently if the
->> blocked tasks wake up they'll add the correct numbers to
->> runnable_load_avg, even if blocked_load_avg is screwed up and hit zero.
->> This code would have to wait until it stabilized again.
->
-> The problem with that is that last_update_time is measured in
-> clock_task, and you cannot transfer these values between CPUs.
-> clock_task can drift unbounded between CPUs.
+I disagree about this part.  The reason MSI is in the PCI spec is so
+the OS can have generic support for it without having to put
+device-specific support in every driver.  The PCI spec is clear that
+the OS can allocate any number of vectors less than or equal to the
+number requested via MMC.  The SATA device requests 16, and it should
+be perfectly legal for the OS to give it 8.
 
-Yes, but we don't need to - we just use the remote last_update_time to
-do a final update on p->se.avg, and then subtract that from cfs_rq->avg
-with atomics (and then set p->se.avg.last_update_time to 0 as now). This
-throws away any time since last_update_time, but that's no worse than
-current, which throws away any time since decay_counter, and they're
-both called from enqueue/dequeue/tick/update_blocked_averages.
+It's interesting that the ICH10 spec (sec 14.1.27, thanks for the
+reference) says MMC 100b means "8 MSI Capable".  That smells like a
+hardware bug.  The PCI spec says:
+
+  000 => 1 vector
+  001 => 2 vectors
+  010 => 4 vectors
+  011 => 8 vectors
+  100 => 16 vectors
+
+The ICH10 spec seems to think 100 means 8 vectors (not 16 as the PCI
+spec says), and that would fit with the rest of the ICH10 MME info.
+If ICH10 was built assuming this table:
+
+  000 => 1 vector
+  001 => 2 vectors
+  010 => 4 vectors
+  100 => 8 vectors
+
+then everything makes sense: the device requests 8 vectors, and the
+behavior is defined in all possible MME cases (1, 2, 4, or 8 vectors
+assigned).  The "Values '011b' to '111b' are reserved" part is still
+slightly wrong, because the 100b value is in that range but is not
+reserved, but that's a tangent.
+
+So my guess (speculation, I admit) is that the intent was for ICH SATA
+to request only 8 vectors, but because of this error, it requests 16.
+Maybe some early MSI proposal used a different encoding for MMC and
+MME, and ICH was originally designed using that.
+
+>> Interrupt vector space is the issue I would worry about, but I think
+>> I'm going to put this on the back burner until it actually becomes a
+>> problem.
+>
+> I plan to try get rid of arch_msi_check_device() hook. Should I repost
+> this series afterwards?
+
+Honestly, I'm still not inclined to pursue this because of the API
+complication and lack of concrete benefit.
+
+Bjorn
