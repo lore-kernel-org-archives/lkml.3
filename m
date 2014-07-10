@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992AbaGJVzi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 17:55:38 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:43308 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753939AbaGJVzc (ORCPT
+	id S1753004AbaGJWHg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 18:07:36 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:48567 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753946AbaGJVz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 17:55:32 -0400
+	Thu, 10 Jul 2014 17:55:26 -0400
 From: Oded Gabbay <oded.gabbay@gmail.com>
 X-Google-Original-From: Oded Gabbay <oded.gabbay@amd.com>
 To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
@@ -15,12 +15,12 @@ Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         John Bridgman <John.Bridgman@amd.com>,
         Andrew Lewycky <Andrew.Lewycky@amd.com>,
         Joerg Roedel <joro@8bytes.org>,
-        Alexey Skidanov <Alexey.Skidanov@amd.com>,
-        Oded Gabbay <oded.gabbay@amd.com>, Ben Goz <ben.goz@amd.com>,
-        Evgeny Pinchuk <evgeny.pinchuk@amd.com>, linux-api@vger.kernel.org
-Subject: [PATCH 42/83] hsa/radeon: 32-bit processes support
-Date: Fri, 11 Jul 2014 00:53:58 +0300
-Message-Id: <1405029279-6894-14-git-send-email-oded.gabbay@amd.com>
+        Evgeny Pinchuk <evgeny.pinchuk@amd.com>,
+        Oded Gabbay <oded.gabbay@amd.com>,
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
+Subject: [PATCH 41/83] hsa/radeon: Alternating the source of max clock
+Date: Fri, 11 Jul 2014 00:53:57 +0300
+Message-Id: <1405029279-6894-13-git-send-email-oded.gabbay@amd.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405029279-6894-1-git-send-email-oded.gabbay@amd.com>
 References: <1405029279-6894-1-git-send-email-oded.gabbay@amd.com>
@@ -28,78 +28,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexey Skidanov <Alexey.Skidanov@amd.com>
+From: Evgeny Pinchuk <evgeny.pinchuk@amd.com>
 
-Initializing compat_ioctl properly. All ioctls args are packed.
+Changing the source of the max engine clock value.
 
-Signed-off-by: Alexey Skidanov <Alexey.Skidanov@amd.com>
+Signed-off-by: Evgeny Pinchuk <evgeny.pinchuk@amd.com>
 Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
 ---
- drivers/gpu/hsa/radeon/kfd_chardev.c | 7 +++++--
- drivers/gpu/hsa/radeon/kfd_priv.h    | 4 ++++
- include/uapi/linux/kfd_ioctl.h       | 2 +-
- 3 files changed, 10 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/radeon_kfd.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/hsa/radeon/kfd_chardev.c b/drivers/gpu/hsa/radeon/kfd_chardev.c
-index 75fe11f..e95d597 100644
---- a/drivers/gpu/hsa/radeon/kfd_chardev.c
-+++ b/drivers/gpu/hsa/radeon/kfd_chardev.c
-@@ -27,6 +27,7 @@
- #include <linux/sched.h>
- #include <linux/slab.h>
- #include <linux/uaccess.h>
-+#include <linux/compat.h>
- #include <uapi/linux/kfd_ioctl.h>
- #include <linux/time.h>
- #include "kfd_priv.h"
-@@ -41,6 +42,7 @@ static const char kfd_dev_name[] = "kfd";
- static const struct file_operations kfd_fops = {
- 	.owner = THIS_MODULE,
- 	.unlocked_ioctl = kfd_ioctl,
-+	.compat_ioctl = kfd_ioctl,
- 	.open = kfd_open,
- 	.mmap = kfd_mmap,
- };
-@@ -105,8 +107,9 @@ kfd_open(struct inode *inode, struct file *filep)
- 	process = radeon_kfd_create_process(current);
- 	if (IS_ERR(process))
- 		return PTR_ERR(process);
--
--	pr_debug("\nkfd: process %d opened dev/kfd", process->pasid);
-+	process->is_32bit_user_mode = is_compat_task();
-+	dev_info(kfd_device, "process %d opened, compat mode (32 bit) - %d\n",
-+				process->pasid, process->is_32bit_user_mode);
+diff --git a/drivers/gpu/drm/radeon/radeon_kfd.c b/drivers/gpu/drm/radeon/radeon_kfd.c
+index 8b6d497..a28cf6b 100644
+--- a/drivers/gpu/drm/radeon/radeon_kfd.c
++++ b/drivers/gpu/drm/radeon/radeon_kfd.c
+@@ -316,5 +316,5 @@ static uint32_t get_max_engine_clock_in_mhz(struct kgd_dev *kgd)
+ 	struct radeon_device *rdev = (struct radeon_device *)kgd;
  
- 	return 0;
+ 	/* The sclk is in quantas of 10kHz */
+-	return rdev->pm.power_state->clock_info->sclk / 100;
++	return rdev->pm.dpm.dyn_state.max_clock_voltage_on_ac.sclk / 100;
  }
-diff --git a/drivers/gpu/hsa/radeon/kfd_priv.h b/drivers/gpu/hsa/radeon/kfd_priv.h
-index 8b877ca..9d3b1fc 100644
---- a/drivers/gpu/hsa/radeon/kfd_priv.h
-+++ b/drivers/gpu/hsa/radeon/kfd_priv.h
-@@ -194,6 +194,10 @@ struct kfd_process {
- 	size_t queue_array_size;
- 	struct kfd_queue **queues;	/* Size is queue_array_size, up to MAX_PROCESS_QUEUES. */
- 	unsigned long allocated_queue_bitmap[DIV_ROUND_UP(MAX_PROCESS_QUEUES, BITS_PER_LONG)];
-+
-+	/*Is the user space process 32 bit?*/
-+	bool is_32bit_user_mode;
-+
- };
- 
- struct kfd_process *radeon_kfd_create_process(const struct task_struct *);
-diff --git a/include/uapi/linux/kfd_ioctl.h b/include/uapi/linux/kfd_ioctl.h
-index 5b9517e..a7c3abd 100644
---- a/include/uapi/linux/kfd_ioctl.h
-+++ b/include/uapi/linux/kfd_ioctl.h
-@@ -29,7 +29,7 @@
- #define KFD_IOCTL_CURRENT_VERSION 1
- 
- /* The 64-bit ABI is the authoritative version. */
--#pragma pack(push, 8)
-+#pragma pack(push, 1)
- 
- struct kfd_ioctl_get_version_args {
- 	uint32_t min_supported_version;	/* from KFD */
 -- 
 1.9.1
 
