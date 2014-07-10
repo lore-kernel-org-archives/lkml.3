@@ -1,77 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491AbaGJNMA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:12:00 -0400
-Received: from mx1.scotdoyle.com ([69.85.92.149]:59883 "EHLO mx1.scotdoyle.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751417AbaGJNL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:11:59 -0400
-Date: Thu, 10 Jul 2014 14:11:52 +0100 (BST)
-From: Scot Doyle <lkml14@scotdoyle.com>
-To: Olof Johansson <olof@lixom.net>
-cc: Benson Leung <bleung@chromium.org>, gene.chen@intel.com, moch@chromium.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] platform/chrome: chromeos_laptop - Add Haswell
- Chromebooks
-In-Reply-To: <CAOesGMieZtmyr2+eLnY7COgPCkU=sXABd35SckbZE+OMaCBO4g@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1407101349230.11676@scotdoyle.com>
-References: <1401835464-15267-1-git-send-email-bleung@chromium.org> <CAOesGMiNhNavOMhBWcH_sEbNHxJ4OM3wjVt4qeK=aZFeVVxT_g@mail.gmail.com> <CANLzEksDfdb+RBtv8Kwe0KWpi23Nf7FS3-w+kXJXqV4n5XP=WQ@mail.gmail.com> <alpine.DEB.2.02.1407010040410.29513@scotdoyle.com>
- <CAOesGMieZtmyr2+eLnY7COgPCkU=sXABd35SckbZE+OMaCBO4g@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753676AbaGJNMr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:12:47 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:51861 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752630AbaGJNMq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 09:12:46 -0400
+Message-ID: <53BE90CF.5060407@ti.com>
+Date: Thu, 10 Jul 2014 18:40:39 +0530
+From: Keerthy <a0393675@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: Mark Brown <broonie@kernel.org>
+CC: Keerthy <j-keerthy@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <mark.rutland@arm.com>, <galak@codeaurora.org>, <robh+dt@kernel.org>,
+        <linux@arm.linux.org.uk>, <balbi@ti.com>, <tony@atomide.com>,
+        <kishon@ti.com>
+Subject: Re: [PATCH v4] regulator: tps65218: Add fixed_uV fields for dcdc5
+ and dcdc6
+References: <1404884193-20580-2-git-send-email-j-keerthy@ti.com> <1404901379-30135-1-git-send-email-j-keerthy@ti.com> <20140710121210.GF30458@sirena.org.uk>
+In-Reply-To: <20140710121210.GF30458@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Olof,
+On Thursday 10 July 2014 05:42 PM, Mark Brown wrote:
+> On Wed, Jul 09, 2014 at 03:52:59PM +0530, Keerthy wrote:
+>> Add fixed_uV fields for dcdc5 and dcdc6.
+> Applied, but don't bury new patches into the middle of old threads -
+> it's a good way to get your patch ignored.
 
-Have these been applied? If not, where should I watch for them?
+Okay. I thought only one patch had to be redone on top of the other branch
+so did it this way. I will resend a new series next time onwards. Thanks.
 
-Thank you,
-Scot
-
-On Mon, 30 Jun 2014, Olof Johansson wrote:
-
-> No, not yet. I'll do a pass of merges of this (and arm-soc) on Wednesday.
->
->
-> -Olof
->
-> On Mon, Jun 30, 2014 at 5:05 PM, Scot Doyle <lkml14@scotdoyle.com> wrote:
->> Hi Olof, did you apply these patches? I haven't seen them in 3.16-rc3,
->> linux-next, kernel/git/olof/chrome-platform, kernel/git/olof/misc, or
->> kernel/git/arm/arm-soc.
->>
->> Thanks,
->> Scot
->>
->>
->> On Tue, 17 Jun 2014, Benson Leung wrote:
->>>
->>> Looks like -rc1 is here, so I'll respin these and send them out again.
->>>
->>> On Tue, Jun 3, 2014 at 3:59 PM, Olof Johansson <olof@lixom.net> wrote:
->>>>
->>>> Hi,
->>>>
->>>> On Tue, Jun 3, 2014 at 3:44 PM, Benson Leung <bleung@chromium.org> wrote:
->>>>>
->>>>> This patch series should be applied after Mika Westerberg's patch here:
->>>>> https://patchwork.kernel.org/patch/4288591/
->>>>>
->>>>> It will add support for the cypress touchpads on the HP Chromebook 14,
->>>>> Dell Chromebook 11, and Toshiba CB35.
->>>>>
->>>>> [PATCH 1/3] platform/chrome: chromeos_laptop - Add HP Chromebook 14
->>>>> [PATCH 2/3] platform/chrome: chromeos_laptop - Add Dell Chromebook 11
->>>>> Touch
->>>>> [PATCH 3/3] platform/chrome: chromeos_laptop - Add Toshiba CB35 Touch
->>>>
->>>>
->>>> The 3.16 merge window is open, please resend after -rc1 and I'll queue it
->>>> up.
->>>>
->>>>
->>>> -Olof
+Regards,
+Keerthy
