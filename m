@@ -1,115 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815AbaGJLzW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 07:55:22 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:51852 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945AbaGJLzU (ORCPT
+	id S1752814AbaGJL4h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 07:56:37 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:18277 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051AbaGJL4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 07:55:20 -0400
+	Thu, 10 Jul 2014 07:56:35 -0400
+Message-ID: <53BE7F29.20304@oracle.com>
+Date: Thu, 10 Jul 2014 07:55:21 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdVcBBNQfA--vOqwsyypwdL4HGs7YuR-SkZPttxeMeRn5g@mail.gmail.com>
-References: <1404982207-4707-1-git-send-email-harinik@xilinx.com>
-	<1404982207-4707-2-git-send-email-harinik@xilinx.com>
-	<CAMuHMdXO-PkQ+07F=aZEjvH1Kh7uhWK8i3V9w+1aHvvtg7wDoQ@mail.gmail.com>
-	<CAFcVECJ93Lw1MRVU-=zLRbB6To--zmAxz8OLObu=mhV84-FTNA@mail.gmail.com>
-	<CAMuHMdU2HyCwXBJTAyswyj7XqhzhHQ24MamGLLVgMwU4xi0kxQ@mail.gmail.com>
-	<CAFcVEC+-bM91WmfwweDdTvJ7KwH+dxKDLkzsT82snWKhukLeYQ@mail.gmail.com>
-	<CAMuHMdVcBBNQfA--vOqwsyypwdL4HGs7YuR-SkZPttxeMeRn5g@mail.gmail.com>
-Date: Thu, 10 Jul 2014 17:25:19 +0530
-Message-ID: <CAFcVECLMNH9GM-ScWunoMrn9AEEZD-ZYP9yYmFsCWqOYVTGNcg@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/2] spi: Add support for Zynq QSPI controller
-From: Harini Katakam <harinikatakamlinux@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Mark Brown <broonie@kernel.org>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        linux-spi <linux-spi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        =?UTF-8?B?TWFyZWsgVmHFoXV0?= <marex@denx.de>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jingoo Han <jg1.han@samsung.com>, Sourav Poddar <sourav.poddar@ti.com>,
-        "michals@xilinx.com" <michals@xilinx.com>,
-        Punnaiah Choudary Kalluri <punnaia@xilinx.com>
-Content-Type: text/plain; charset=UTF-8
+To: Andrey Ryabinin <a.ryabinin@samsung.com>, linux-kernel@vger.kernel.org
+CC: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
+        Alexey Preobrazhensky <preobr@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Michal Marek <mmarek@suse.cz>, Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        x86@kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC/PATCH RESEND -next 01/21] Add kernel address sanitizer infrastructure.
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com> <1404905415-9046-2-git-send-email-a.ryabinin@samsung.com>
+In-Reply-To: <1404905415-9046-2-git-send-email-a.ryabinin@samsung.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+On 07/09/2014 07:29 AM, Andrey Ryabinin wrote:
+> Address sanitizer for kernel (kasan) is a dynamic memory error detector.
+> 
+> The main features of kasan is:
+>  - is based on compiler instrumentation (fast),
+>  - detects out of bounds for both writes and reads,
+>  - provides use after free detection,
+> 
+> This patch only adds infrastructure for kernel address sanitizer. It's not
+> available for use yet. The idea and some code was borrowed from [1].
+> 
+> This feature requires pretty fresh GCC (revision r211699 from 2014-06-16 or
+> latter).
+> 
+> Implementation details:
+> The main idea of KASAN is to use shadow memory to record whether each byte of memory
+> is safe to access or not, and use compiler's instrumentation to check the shadow memory
+> on each memory access.
+> 
+> Address sanitizer dedicates 1/8 of the low memory to the shadow memory and uses direct
+> mapping with a scale and offset to translate a memory address to its corresponding
+> shadow address.
+> 
+> Here is function to translate address to corresponding shadow address:
+> 
+>      unsigned long kasan_mem_to_shadow(unsigned long addr)
+>      {
+>                 return ((addr - PAGE_OFFSET) >> KASAN_SHADOW_SCALE_SHIFT)
+>                              + kasan_shadow_start;
+>      }
+> 
+> where KASAN_SHADOW_SCALE_SHIFT = 3.
+> 
+> So for every 8 bytes of lowmemory there is one corresponding byte of shadow memory.
+> The following encoding used for each shadow byte: 0 means that all 8 bytes of the
+> corresponding memory region are valid for access; k (1 <= k <= 7) means that
+> the first k bytes are valid for access, and other (8 - k) bytes are not;
+> Any negative value indicates that the entire 8-bytes are unaccessible.
+> Different negative values used to distinguish between different kinds of
+> unaccessible memory (redzones, freed memory) (see mm/kasan/kasan.h).
+> 
+> To be able to detect accesses to bad memory we need a special compiler.
+> Such compiler inserts a specific function calls (__asan_load*(addr), __asan_store*(addr))
+> before each memory access of size 1, 2, 4, 8 or 16.
+> 
+> These functions check whether memory region is valid to access or not by checking
+> corresponding shadow memory. If access is not valid an error printed.
+> 
+> [1] https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
+> 
+> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
 
-On Thu, Jul 10, 2014 at 4:55 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> Hi Harini,
->
-> On Thu, Jul 10, 2014 at 12:33 PM, Harini Katakam
-> <harinikatakamlinux@gmail.com> wrote:
->> On Thu, Jul 10, 2014 at 3:12 PM, Geert Uytterhoeven
->> <geert@linux-m68k.org> wrote:
->>> On Thu, Jul 10, 2014 at 11:31 AM, Harini Katakam
->>> <harinikatakamlinux@gmail.com> wrote:
->>>>>> +       master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_RX_DUAL | SPI_RX_QUAD |
->>>>>> +                           SPI_TX_DUAL | SPI_TX_QUAD;
->>>>>
->>>>> Your driver advertises Dual/Quad SPI Transfer capabilities, but it doesn't
->>>>> check spi_transfer.[tr]x_nbits? How can it determine when to enable Dual/Quad?
->>>>
->>>> Here the driver is just giving information that the controller support it.
->>>> The MTD layer enables dual/quad based on what the flash supports; quad
->>>> being the first priority
->>>> I understand that the spi core reads rx, tx-bus-width property and
->>>> master support flags and
->>>> performs the necessary checks.
->>>
->>> That's correct: as long as the rx, tx-bus-width  properties do not indicate a
->>> Dual or Quad wiring, it won't be used.
->>>
->>> However, based on schematics, someone may set the rx, tx-bus-width properties
->>> to 4, which is correct, as DT describes the hardware. But this will fail to
->>> work.
->>> So I think it's safer not to announce Dual/Quad support in the driver until
->>> the actual driver support is there.
->>
->> OK. Correct me if I'm wrong but announcing this support in master->flags is
->> just to say the controller supports it - Like Punnaiah mentioned in the other
->> mail, nothing specific needs to be done from the controller driver to enable
->> dual/quad support. This is at the SOC/IP level.
->> I agree it might or might not be supported at board-level.
->
-> IC. So this is not a generic SPI controller, but a controller meant for QSPI
-> FLASHes? I.e. if you would connect a different device, the controller may
-> unexpectedly use Dual or Quad mode if it sees a byte fly by that looks like
-> a Quad SPI FLASH read command?
->
+I gave it a spin, and it seems that it fails for what you might call a "regular"
+memory size these days, in my case it was 18G:
 
-Yes. It would.
+[    0.000000] Kernel panic - not syncing: ERROR: Failed to allocate 0xe0c00000 bytes below 0x0.
+[    0.000000]
+[    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.16.0-rc4-next-20140710-sasha-00044-gb7b0579-dirty #784
+[    0.000000]  ffffffffb9c2d3c8 cd9ce91adea4379a 0000000000000000 ffffffffb9c2d3c8
+[    0.000000]  ffffffffb9c2d330 ffffffffb7fe89b7 ffffffffb93c8c28 ffffffffb9c2d3b8
+[    0.000000]  ffffffffb7fcff1d 0000000000000018 ffffffffb9c2d3c8 ffffffffb9c2d360
+[    0.000000] Call Trace:
+[    0.000000] <UNK> dump_stack (lib/dump_stack.c:52)
+[    0.000000] panic (kernel/panic.c:119)
+[    0.000000] memblock_alloc_base (mm/memblock.c:1092)
+[    0.000000] memblock_alloc (mm/memblock.c:1097)
+[    0.000000] kasan_alloc_shadow (mm/kasan/kasan.c:151)
+[    0.000000] zone_sizes_init (arch/x86/mm/init.c:684)
+[    0.000000] paging_init (arch/x86/mm/init_64.c:677)
+[    0.000000] setup_arch (arch/x86/kernel/setup.c:1168)
+[    0.000000] ? printk (kernel/printk/printk.c:1839)
+[    0.000000] start_kernel (include/linux/mm_types.h:462 init/main.c:533)
+[    0.000000] ? early_idt_handlers (arch/x86/kernel/head_64.S:344)
+[    0.000000] x86_64_start_reservations (arch/x86/kernel/head64.c:194)
+[    0.000000] x86_64_start_kernel (arch/x86/kernel/head64.c:183)
 
->> But that's based on the user's hardware. Should master->flags
->> really take this into consideration?
->
-> You mean master->mode_bits?
+It got better when I reduced memory to 1GB, but then my system just failed to boot
+at all because that's not enough to bring everything up.
 
-Yes, i mean mode_bits. That was typo.
 
->
->> BTW, I dint see master->mode_bits being used anywhere at the moment.
->
-> It is used to match SPI controller and slave features, cfr. spi_setup() in
-> drivers/spi/spi.c.
->
-> If Dual/Quad is supported, the bits should be set. Else spi_setup() will
-> clear the bits in the SPI slave's mode field, disabling Dual/Quad transfers.
->
-
-OK.
-
-Regards,
-Harini
+Thanks,
+Sasha
