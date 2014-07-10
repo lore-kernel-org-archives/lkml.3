@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751841AbaGJSUD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 14:20:03 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:60650 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459AbaGJSUB (ORCPT
+	id S1751950AbaGJSXP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 14:23:15 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42000 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751345AbaGJSXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 14:20:01 -0400
-X-CheckPoint: {53BED950-6-2100090A-C0000000}
-Message-ID: <53BED94F.9020407@tilera.com>
-Date: Thu, 10 Jul 2014 14:19:59 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 10 Jul 2014 14:23:13 -0400
+Date: Thu, 10 Jul 2014 14:23:11 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Peter Griffin <peter.griffin@linaro.org>
+cc: linux-arm-kernel@lists.infradead.org,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        <maxime.coquelin@st.com>, <patrice.chotard@st.com>,
+        <gregkh@linuxfoundation.org>, <srinivas.kandagatla@gmail.com>,
+        USB list <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <lee.jones@linaro.org>
+Subject: Re: [PATCH 1/3] usb: host: st-hcd: Add USB HCD support for STi SoCs
+In-Reply-To: <1405005486-26355-2-git-send-email-peter.griffin@linaro.org>
+Message-ID: <Pine.LNX.4.44L0.1407101154070.1492-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Nicholas Krause <xerofoify@gmail.com>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tile: Add underscores to defintions
-References: <1404534728-7345-1-git-send-email-xerofoify@gmail.com>
-In-Reply-To: <1404534728-7345-1-git-send-email-xerofoify@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [108.20.112.127]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/5/2014 12:32 AM, Nicholas Krause wrote:
-> In file drv_xgbe_impl.h I fixed the definitions for Size Small,
-> Size Large, Size Jumbo to have underscores before and after to
-> follow kernel coding style for internel defentions.
->
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> ---
->   arch/tile/include/hv/drv_xgbe_impl.h | 15 +++------------
+On Thu, 10 Jul 2014, Peter Griffin wrote:
 
-I don't think there is a kernel coding style for internal definitions.
-It's true that double-underscores mean "more raw" in many places, like
-for things like set_bit() vs __set_bit(), but that's not really
-applicable here.  These files are not exported outside of the kernel
-in any case so we don't need any special treatment for them to mark them
-as "internal definitions".
+> This driver adds support for the USB HCD present in STi
+> SoC's from STMicroelectronics. It has been tested on the
+> stih416-b2020 board.
 
-The comment in any case certainly is silly.  It dates back to Jan 2007
-in our internal version control system.  The tilepro hv headers in
-question are largely frozen at this point in our internal "upstream"
-repository where we take these headers from, so it doesn't seem worth
-the effort to try to improve the comments there, nor worth adding skew
-between those headers and the community headers.
+This driver file, along with the Kconfig changes, belongs in the
+arch/platform-specific source directory.  Not in drivers/usb/host/.  
+It is, after all, a platform driver that registers two platform
+devices.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+> +++ b/drivers/usb/host/Kconfig
+> @@ -753,6 +753,23 @@ config USB_HCD_SSB
+>  
+>  	  If unsure, say N.
+>  
+> +config USB_HCD_ST
+> +	tristate "STMicroelectronics STi family HCD support"
+
+Why does this need to be tristate?  Why not always build it into the 
+kernel?  Or at least make it boolean rather than tristate.
+
+> +	depends on ARCH_STI
+> +	select USB_OHCI_HCD_PLATFORM if USB_OHCI_HCD
+> +	select USB_EHCI_HCD_PLATFORM if USB_EHCI_HCD
+> +	select MFD_SYSCON
+> +	select GENERIC_PHY
+> +	help
+> +	  Enable support for the EHCI and OCHI host controller on ST
+
+s/OCHI/OHCI/
+
+> + 	  consumer electronics SoCs.
+> +
+> + 	  It converts the ST driver into two platform device drivers
+
+It converts the ST driver?  That doesn't sound right at all.  You could 
+eliminate this paragraph completely and nobody would miss it.
+
+> + 	  for EHCI and OHCI and provides bus configuration, clock and power
+> + 	  management for the combined hardware block.
+
+Alan Stern
 
