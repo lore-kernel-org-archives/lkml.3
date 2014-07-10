@@ -1,95 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007AbaGJJb7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 05:31:59 -0400
-Received: from mga02.intel.com ([134.134.136.20]:56100 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752982AbaGJJb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 05:31:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,636,1400050800"; 
-   d="asc'?scan'208";a="541341827"
-Date: Thu, 10 Jul 2014 05:01:51 -0400
-From: "Chen, Gong" <gong.chen@linux.intel.com>
-To: Havard Skinnemoen <hskinnemoen@google.com>
-Cc: Borislav Petkov <bp@alien8.de>, Tony Luck <tony.luck@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ewout van Bekkum <ewout@google.com>
-Subject: Re: [PATCH 1/6] x86-mce: Modify CMCI poll interval to adjust for
- small check_interval values.
-Message-ID: <20140710090150.GB10182@gchen.bj.intel.com>
-References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
- <1404925766-32253-2-git-send-email-hskinnemoen@google.com>
- <20140709191747.GB5249@pd.tnic>
- <CAFQmdRa5Spr0nX6qwzhDGEU9+H1_0vaCtF_NRV=p=OBDwin78A@mail.gmail.com>
+	id S1753034AbaGJJcJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 05:32:09 -0400
+Received: from relay.parallels.com ([195.214.232.42]:55509 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753012AbaGJJcF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 05:32:05 -0400
+Subject: [PATCH] fuse: remove WARN_ON writeback on dead inode
+To: miklos@szeredi.hu
+From: Maxim Patlasov <MPatlasov@parallels.com>
+Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Date: Thu, 10 Jul 2014 13:32:02 +0400
+Message-ID: <20140710093101.21765.96636.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lEGEL1/lMxI0MVQ2"
-Content-Disposition: inline
-In-Reply-To: <CAFQmdRa5Spr0nX6qwzhDGEU9+H1_0vaCtF_NRV=p=OBDwin78A@mail.gmail.com>
-X-PGP-Key-ID: A43922C7
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+FUSE has an architectural peculiarity: it cannot write to an inode, unless it
+has an associated file open for write. Since the beginning (Apr 30 2008, commit
+3be5a52b), FUSE BUG_ON (later WARN_ON) the case when it has to process
+writeback, but all associated files are closed. The latest relevant commit is
+72523425:
 
---lEGEL1/lMxI0MVQ2
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>   Don't bug if there's no writable files found for page writeback.  If ever
+>   this is triggered, a WARN_ON helps debugging it much better then a BUG_ON.
+>
+>   Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 
-On Wed, Jul 09, 2014 at 02:24:31PM -0700, Havard Skinnemoen wrote:
-> Date:	Wed, 9 Jul 2014 14:24:31 -0700
-> From: Havard Skinnemoen <hskinnemoen@google.com>
-> To: Borislav Petkov <bp@alien8.de>
-> Cc: Tony Luck <tony.luck@intel.com>, Linux Kernel
->  <linux-kernel@vger.kernel.org>, Ewout van Bekkum <ewout@google.com>
-> Subject: Re: [PATCH 1/6] x86-mce: Modify CMCI poll interval to adjust for
->  small check_interval values.
->=20
-> On Wed, Jul 9, 2014 at 12:17 PM, Borislav Petkov <bp@alien8.de> wrote:
-> >
-> > On Wed, Jul 09, 2014 at 10:09:21AM -0700, Havard Skinnemoen wrote:
-> > > From: Ewout van Bekkum <ewout@google.com>
-> > >
-> > > The CMCI poll interval was updated to pick the minimum interval betwe=
-en
-> > > the original 30 seconds and the check_interval divided by 8 (minimum =
-of
-> > > 3 polls).
-> >
-> > Why min 3 polls? How do you come up with exactly that frequency?
->=20
-> The idea is that if we make it equal to check_interval, it might
-> bounce back and forth a lot. So we need to divide by something, and 8
-> seems like a nice, safe value, and it seems to work well. We're not
-> opposed to considering other values, of course (e.g. 2 and 4 might
-> work well too, but with somewhat higher risk of ping-ponging).
-That value looks chosen a little bit at will. How about updating
-CMCI_POLL_INTERVAL when check_interval is changed to ensure
-CMCI_POLL_INTERVAL <=3D check_interval always.
+But that situation can happen in quite a legal way: for example, let's mmap a
+file, then issue O_DIRECT read to mmapped region and immediately close file
+and munmap. O_DIRECT will pin some pages, execute IO to them and then mark
+pages dirty. Here we are.
 
---lEGEL1/lMxI0MVQ2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+---
+ fs/fuse/file.c |   14 +++-----------
+ 1 file changed, 3 insertions(+), 11 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index 6e16dad..3a47aa2 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1624,8 +1624,8 @@ static void fuse_writepage_end(struct fuse_conn *fc, struct fuse_req *req)
+ 	fuse_writepage_free(fc, req);
+ }
+ 
+-static struct fuse_file *__fuse_write_file_get(struct fuse_conn *fc,
+-					       struct fuse_inode *fi)
++static struct fuse_file *fuse_write_file_get(struct fuse_conn *fc,
++					     struct fuse_inode *fi)
+ {
+ 	struct fuse_file *ff = NULL;
+ 
+@@ -1640,14 +1640,6 @@ static struct fuse_file *__fuse_write_file_get(struct fuse_conn *fc,
+ 	return ff;
+ }
+ 
+-static struct fuse_file *fuse_write_file_get(struct fuse_conn *fc,
+-					     struct fuse_inode *fi)
+-{
+-	struct fuse_file *ff = __fuse_write_file_get(fc, fi);
+-	WARN_ON(!ff);
+-	return ff;
+-}
+-
+ int fuse_write_inode(struct inode *inode, struct writeback_control *wbc)
+ {
+ 	struct fuse_conn *fc = get_fuse_conn(inode);
+@@ -1655,7 +1647,7 @@ int fuse_write_inode(struct inode *inode, struct writeback_control *wbc)
+ 	struct fuse_file *ff;
+ 	int err;
+ 
+-	ff = __fuse_write_file_get(fc, fi);
++	ff = fuse_write_file_get(fc, fi);
+ 	err = fuse_flush_times(inode, ff);
+ 	if (ff)
+ 		fuse_file_put(ff, 0);
 
-iQIcBAEBAgAGBQJTvlZ+AAoJEI01n1+kOSLHnZ0QAJ1wOsCSjsfbcynQSG+r8Nbw
-51VUhupIZWSrFSPEuz9uTop7crxS+wUgCPPyrfZ17sjeGBMopRJPce7NLeK2oeux
-QYaiNCeFHq+W+GY1xBgLoXbOnV+0GOmZFJ9V7znm4QXmzIEhls/Oz1z+8aUYoQlI
-ijIeR3e2m2WCzK4GPqRKMMoUFYyXXPo5PLGrp4Pv/XBoEI20QEe3+bkKsLFOqN13
-62m/RElJkFUdpRAyshYQQguj39YieOo8fHosqrpBVUumGoKkEDoQ1qUNbssw2qcD
-IFw4T0QGv1Pz4OsBG/qBijRp7QHduhUGBXRRD3to3YyOHm0RmOlzJ2dWRJ9O9f+s
-u7f/4yLAlYVbJqQIv20wQgUytJfgHKc2gyEW1M9Nd/ciAy/LR7DFOVKHT5SQ03MI
-6IUqXEWLpxR8Pg12tvdPFUIsbS+IXtruNB0B1CsNJvsGW9GyMBYPx9xgfJx4UdRx
-Se8kdhFOCoapTT4igTx6VZs7jNRPFDZL17uIqLZ3tFer4k2RFG1TOfRORMBwD0md
-zsG6vGpdvcXEnD7zGSA9S6gHbD4eVwu1A4r23649JNx0Uhm3UOLd9CYm9NreFlZl
-NaXOAcpB+S9DVoBZf6xv891kkSlYFeSB74qYUXlQtIBLZ6uWq/pCgCDhjYRqM4VD
-epAYR2dTrrUF9z9qhPEm
-=RzCx
------END PGP SIGNATURE-----
-
---lEGEL1/lMxI0MVQ2--
