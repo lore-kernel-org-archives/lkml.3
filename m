@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878AbaGJQAZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 12:00:25 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:31651 "EHLO
+	id S1753760AbaGJQAX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 12:00:23 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:60630 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752750AbaGJQAV (ORCPT
+	with ESMTP id S1753425AbaGJQAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 Jul 2014 12:00:21 -0400
 X-IronPort-AV: E=Sophos;i="5.00,869,1396972800"; 
-   d="scan'208";a="33107680"
+   d="scan'208";a="33107681"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: <linux-kernel@vger.kernel.org>
 CC: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 2/3] workqueue: remove the guarantee and the retrying of maybe_create_worker()
-Date: Fri, 11 Jul 2014 00:01:04 +0800
-Message-ID: <1405008074-11031-3-git-send-email-laijs@cn.fujitsu.com>
+Subject: [PATCH 3/3] workqueue: unfold start_worker() into create_worker()
+Date: Fri, 11 Jul 2014 00:01:05 +0800
+Message-ID: <1405008074-11031-4-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1405008074-11031-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1405008074-11031-1-git-send-email-laijs@cn.fujitsu.com>
@@ -25,113 +25,153 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-maybe_create_worker() has a strong guarantee that there has at least
-one idle worker on return from this function.  This guarantee is guaranteed
-via the check and the retrying in this function.
+Simply unfold the code of start_worker() into create_worker() and
+remove the original start_worker() and create_and_start_worker().
 
-But the caller (worker_thread()) also has the same check and retrying,
-so the guarantee is not really required and the check and the retrying in
-maybe_create_worker() are unnecessary and redundant.
+maybe_create_worker() also becomes decently shorter.
 
-So we remove the guarantee as well as the check and the retrying.  The caller
-takes responsibility to retry when needed.
-
-The only trade-off is that the mayday timer will be removed and re-added
-across retrying. Since retrying is expected as rare case, the trade-off
-is acceptible.
+The only trade-off is the introduced overhead that the pool->lock
+is released and regrabbed after the newly worker is started.
+The overhead is acceptible since the manager is slow path.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- kernel/workqueue.c |   49 ++++++++++++++++++-------------------------------
- 1 files changed, 18 insertions(+), 31 deletions(-)
+ kernel/workqueue.c |   68 ++++++++++------------------------------------------
+ 1 files changed, 13 insertions(+), 55 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 92f7ea0c..4fdd6d0 100644
+index 4fdd6d0..c820057 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -1875,14 +1875,17 @@ static void pool_mayday_timeout(unsigned long __pool)
-  * @pool: pool to create a new worker for
+@@ -1553,7 +1553,7 @@ static void worker_enter_idle(struct worker *worker)
+ 			 (worker->hentry.next || worker->hentry.pprev)))
+ 		return;
+ 
+-	/* can't use worker_set_flags(), also called from start_worker() */
++	/* can't use worker_set_flags(), also called from create_worker() */
+ 	worker->flags |= WORKER_IDLE;
+ 	pool->nr_idle++;
+ 	worker->last_active = jiffies;
+@@ -1674,8 +1674,7 @@ static void worker_detach_from_pool(struct worker *worker,
+  * create_worker - create a new workqueue worker
+  * @pool: pool the new worker will belong to
   *
-  * Create a new worker for @pool if necessary.  @pool is guaranteed to
-- * have at least one idle worker on return from this function.  If
-- * creating a new worker takes longer than MAYDAY_INTERVAL, mayday is
-+ * make some progresses on return from this function.
-+ *   1) success to create a new idle worker.  Or
-+ *   2) cool down a while after it failed.  Or
-+ *   3) condition changed (no longer need to create worker) after it failed.
-+ * In any case, the caller will recheck the condition and retry when needed,
-+ * so this function doesn't need to retry.
-+ *
-+ * If creating a new worker takes longer than MAYDAY_INTERVAL, mayday is
-  * sent to all rescuers with works scheduled on @pool to resolve
-  * possible allocation deadlock.
+- * Create a new worker which is attached to @pool.  The new worker must be
+- * started by start_worker().
++ * Create and start a new worker which is attached to @pool.
   *
-- * On return, need_to_create_worker() is guaranteed to be %false and
-- * may_start_working() %true.
+  * CONTEXT:
+  * Might sleep.  Does GFP_KERNEL allocations.
+@@ -1720,6 +1719,13 @@ static struct worker *create_worker(struct worker_pool *pool)
+ 	/* successful, attach the worker to the pool */
+ 	worker_attach_to_pool(worker, pool);
+ 
++	/* start the newly created worker */
++	spin_lock_irq(&pool->lock);
++	worker->pool->nr_workers++;
++	worker_enter_idle(worker);
++	wake_up_process(worker->task);
++	spin_unlock_irq(&pool->lock);
++
+ 	return worker;
+ 
+ fail:
+@@ -1730,44 +1736,6 @@ fail:
+ }
+ 
+ /**
+- * start_worker - start a newly created worker
+- * @worker: worker to start
 - *
-  * LOCKING:
-  * spin_lock_irq(pool->lock) which may be released and regrabbed
-  * multiple times.  Does GFP_KERNEL allocations.  Called only from
-@@ -1892,38 +1895,26 @@ static void maybe_create_worker(struct worker_pool *pool)
+- * Make the pool aware of @worker and start it.
+- *
+- * CONTEXT:
+- * spin_lock_irq(pool->lock).
+- */
+-static void start_worker(struct worker *worker)
+-{
+-	worker->pool->nr_workers++;
+-	worker_enter_idle(worker);
+-	wake_up_process(worker->task);
+-}
+-
+-/**
+- * create_and_start_worker - create and start a worker for a pool
+- * @pool: the target pool
+- *
+- * Grab the managership of @pool and create and start a new worker for it.
+- *
+- * Return: 0 on success. A negative error code otherwise.
+- */
+-static int create_and_start_worker(struct worker_pool *pool)
+-{
+-	struct worker *worker;
+-
+-	worker = create_worker(pool);
+-	if (worker) {
+-		spin_lock_irq(&pool->lock);
+-		start_worker(worker);
+-		spin_unlock_irq(&pool->lock);
+-	}
+-
+-	return worker ? 0 : -ENOMEM;
+-}
+-
+-/**
+  * destroy_worker - destroy a workqueue worker
+  * @worker: worker to be destroyed
+  *
+@@ -1895,22 +1863,12 @@ static void maybe_create_worker(struct worker_pool *pool)
  __releases(&pool->lock)
  __acquires(&pool->lock)
  {
--restart:
-+	struct worker *worker;
-+
+-	struct worker *worker;
+-
  	spin_unlock_irq(&pool->lock);
  
  	/* if we don't make progress in MAYDAY_INITIAL_TIMEOUT, call for help */
  	mod_timer(&pool->mayday_timer, jiffies + MAYDAY_INITIAL_TIMEOUT);
  
--	while (true) {
--		struct worker *worker;
--
--		worker = create_worker(pool);
--		if (worker) {
--			del_timer_sync(&pool->mayday_timer);
--			spin_lock_irq(&pool->lock);
--			start_worker(worker);
--			if (WARN_ON_ONCE(need_to_create_worker(pool)))
--				goto restart;
--			return;
--		}
--
--		if (!need_to_create_worker(pool))
--			break;
-+	worker = create_worker(pool);
-+	if (worker) {
-+		del_timer_sync(&pool->mayday_timer);
-+		spin_lock_irq(&pool->lock);
-+		start_worker(worker);
-+		return;
-+	}
- 
-+	if (need_to_create_worker(pool))
- 		schedule_timeout_interruptible(CREATE_COOLDOWN);
- 
--		if (!need_to_create_worker(pool))
--			break;
+-	worker = create_worker(pool);
+-	if (worker) {
+-		del_timer_sync(&pool->mayday_timer);
+-		spin_lock_irq(&pool->lock);
+-		start_worker(worker);
+-		return;
 -	}
 -
- 	del_timer_sync(&pool->mayday_timer);
- 	spin_lock_irq(&pool->lock);
 -	if (need_to_create_worker(pool))
--		goto restart;
- }
++	if (!create_worker(pool) && need_to_create_worker(pool))
+ 		schedule_timeout_interruptible(CREATE_COOLDOWN);
  
- /**
-@@ -1934,10 +1925,6 @@ restart:
-  * to.  At any given time, there can be only zero or one manager per
-  * pool.  The exclusion is handled automatically by this function.
-  *
-- * The caller can safely start processing works on false return.  On
-- * true return, it's guaranteed that need_to_create_worker() is false
-- * and may_start_working() is true.
-- *
-  * CONTEXT:
-  * spin_lock_irq(pool->lock) which may be released and regrabbed
-  * multiple times.  Does GFP_KERNEL allocations.
+ 	del_timer_sync(&pool->mayday_timer);
+@@ -3524,7 +3482,7 @@ static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
+ 		goto fail;
+ 
+ 	/* create and start the initial worker */
+-	if (create_and_start_worker(pool) < 0)
++	if (!create_worker(pool))
+ 		goto fail;
+ 
+ 	/* install */
+@@ -4598,7 +4556,7 @@ static int workqueue_cpu_up_callback(struct notifier_block *nfb,
+ 		for_each_cpu_worker_pool(pool, cpu) {
+ 			if (pool->nr_workers)
+ 				continue;
+-			if (create_and_start_worker(pool) < 0)
++			if (!create_worker(pool))
+ 				return NOTIFY_BAD;
+ 		}
+ 		break;
+@@ -4898,7 +4856,7 @@ static int __init init_workqueues(void)
+ 
+ 		for_each_cpu_worker_pool(pool, cpu) {
+ 			pool->flags &= ~POOL_DISASSOCIATED;
+-			BUG_ON(create_and_start_worker(pool) < 0);
++			BUG_ON(!create_worker(pool));
+ 		}
+ 	}
+ 
 -- 
 1.7.4.4
 
