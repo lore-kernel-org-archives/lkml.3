@@ -1,66 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752388AbaGJJDZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 05:03:25 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:54000 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344AbaGJJDW (ORCPT
+	id S1752100AbaGJJHd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 05:07:33 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:33833 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751901AbaGJJH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 05:03:22 -0400
-Date: Thu, 10 Jul 2014 17:03:14 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Crypto Fixes for 3.16
-Message-ID: <20140710090314.GA15729@gondor.apana.org.au>
-References: <20110328071322.GA6569@gondor.apana.org.au>
- <20110629235153.GA16559@gondor.apana.org.au>
- <20120126024342.GA12492@gondor.apana.org.au>
- <20120823083242.GA23102@gondor.apana.org.au>
- <20121109093005.GA25632@gondor.apana.org.au>
- <20130328082841.GA7425@gondor.apana.org.au>
- <20131203124129.GA12067@gondor.apana.org.au>
- <20131209115705.GA1361@gondor.apana.org.au>
- <20140101061016.GA22579@gondor.apana.org.au>
- <20140203125944.GA31446@gondor.apana.org.au>
+	Thu, 10 Jul 2014 05:07:26 -0400
+Message-ID: <53BE57CA.9020807@kernel.dk>
+Date: Thu, 10 Jul 2014 11:07:22 +0200
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140203125944.GA31446@gondor.apana.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Philipp Reisner <philipp.reisner@linbit.com>, linux-kernel@vger.kernel.org
+CC: drbd-dev@lists.linbit.com
+Subject: Re: [PATCH] drbd: fix regression 'out of mem, failed to invoke fence-peer
+ helper'
+References: <1404933512-5166-1-git-send-email-philipp.reisner@linbit.com> <1404933512-5166-2-git-send-email-philipp.reisner@linbit.com>
+In-Reply-To: <1404933512-5166-2-git-send-email-philipp.reisner@linbit.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+On 2014-07-09 21:18, Philipp Reisner wrote:
+> From: Lars Ellenberg <lars.ellenberg@linbit.com>
+>
+> Since linux kernel 3.13, kthread_run() internally uses
+> wait_for_completion_killable().  We sometimes may use kthread_run()
+> while we still have a signal pending, which we used to kick our threads
+> out of potentially blocking network functions, causing kthread_run() to
+> mistake that as a new fatal signal and fail.
+>
+> Fix: flush_signals() before kthread_run().
 
-This push fixes an error in sha512_ssse3 that leads to incorrect
-output as well as a memory leak in caam_jr when the module is
-unloaded.
+Applied - should this have been marked stable, if it affects 3..13+ kernels?
 
-Please pull from
-
-git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-or
-
-master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-
-Cristian Stoica (1):
-      crypto: caam - fix memleak in caam_jr module
-
-Jussi Kivilinna (1):
-      crypto: sha512_ssse3 - fix byte count to bit count conversion
-
- arch/x86/crypto/sha512_ssse3_glue.c |    2 +-
- drivers/crypto/caam/jr.c            |    8 +++-----
- 2 files changed, 4 insertions(+), 6 deletions(-)
-
-Thanks,
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Jens Axboe
+
