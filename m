@@ -1,69 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750AbaGJUG7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 16:06:59 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:48417 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224AbaGJUG6 (ORCPT
+	id S1752809AbaGJUHL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 16:07:11 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:46196 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225AbaGJUHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 16:06:58 -0400
-Message-ID: <53BEF25C.5030607@kernel.dk>
-Date: Thu, 10 Jul 2014 22:06:52 +0200
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 10 Jul 2014 16:07:05 -0400
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: Benjamin LaHaise <bcrl@kvack.org>,
-        "Elliott\, Robert \(Server Storage\)" <Elliott@hp.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "dgilbert@interlog.com" <dgilbert@interlog.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Bart Van Assche <bvanassche@fusionio.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: scsi-mq V2
-References: <1403715121-1201-1-git-send-email-hch@lst.de>	<20140708144829.GA5539@infradead.org> <53BD7041.5010300@interlog.com>	<53BD9A24.7010203@kernel.dk>	<94D0CD8314A33A4D9D801C0FE68B402958B9628B@G9W0745.americas.hpqcorp.net>	<20140710062040.GB20146@infradead.org>	<20140710133609.GO12478@kvack.org>	<20140710135051.GA28227@infradead.org> <53BE9AB1.6090603@kernel.dk>	<94D0CD8314A33A4D9D801C0FE68B402958B96CF0@G9W0745.americas.hpqcorp.net>	<20140710144539.GU12478@kvack.org>	<x49k37l1c6p.fsf@segfault.boston.devel.redhat.com>	<53BEF0A8.7010608@kernel.dk> <x49r41tyo7l.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49r41tyo7l.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAF03EBdBMphBLkGj4=_kGADF4iq_uUpyBbRJ7O63OvSHcR5hSw@mail.gmail.com>
+References: <1403730927-16163-1-git-send-email-tthayer@altera.com>
+	<1403730927-16163-3-git-send-email-tthayer@altera.com>
+	<20140626094507.GM15240@leverpostej>
+	<CAF03EBdBMphBLkGj4=_kGADF4iq_uUpyBbRJ7O63OvSHcR5hSw@mail.gmail.com>
+Date: Thu, 10 Jul 2014 15:07:04 -0500
+Message-ID: <CANk1AXQ1Aw-8Et_XE9BSL42r_DGxLiwOdyjA7YxMJMw6Fc=YUg@mail.gmail.com>
+Subject: Re: [PATCHv7 2/3] devicetree: Addition of the Altera SDRAM EDAC.
+From: Alan Tull <delicious.quinoa@gmail.com>
+To: Thor Thayer <tthayer.linux@gmail.com>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        "tthayer@altera.com" <tthayer@altera.com>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "dinguyen@altera.com" <dinguyen@altera.com>,
+        "dougthompson@xmission.com" <dougthompson@xmission.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "bp@alien8.de" <bp@alien8.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-07-10 22:05, Jeff Moyer wrote:
-> Jens Axboe <axboe@kernel.dk> writes:
+On Wed, Jul 9, 2014 at 3:07 PM, Thor Thayer <tthayer.linux@gmail.com> wrote:
 >
->> On 2014-07-10 17:11, Jeff Moyer wrote:
->>> Benjamin LaHaise <bcrl@kvack.org> writes:
->>>
->>>>>
->>>>> [  186.339064] ioctx_alloc: nr_events=-2 aio_max_nr=65536
->>>>> [  186.339065] ioctx_alloc: nr_events=-2 aio_max_nr=65536
->>>>> [  186.339067] ioctx_alloc: nr_events=-2 aio_max_nr=65536
->>>>> [  186.339068] ioctx_alloc: nr_events=-2 aio_max_nr=65536
->>>>> [  186.339069] ioctx_alloc: nr_events=-2 aio_max_nr=65536
->>>>
->>>> Something is horribly wrong here.  There is no way that value for nr_events
->>>> should be passed in to ioctx_alloc().  This implies that userland is calling
->>>> io_setup() with an impossibly large value for nr_events.  Can you post the
->>>> actual diff for your fs/aio.c relative to linus' tree?
->>>>
->>>
->>> fio does exactly this!  it passes INT_MAX.
->>
->> That's correct, I had actually forgotten about this. It was a change
->> made a few years back, in correlation with the aio optimizations
->> posted then, basically telling aio to ignore that silly (and broken)
->> user ring.
+> On Thu, Jun 26, 2014 at 4:45 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+> > On Wed, Jun 25, 2014 at 10:15:26PM +0100, tthayer@altera.com wrote:
+> >> From: Thor Thayer <tthayer@altera.com>
+> >>
+> >> Add the Altera SDRAM EDAC bindings and device tree changes to the Altera SoC project.
+> >>
+> >> Signed-off-by: Thor Thayer <tthayer@altera.com>
+> >> ---
+> >> v2: Changes to SoC EDAC source code.
+> >>
+> >> v3: Fix typo in device tree documentation.
+> >>
+> >> v4,v5: No changes - bump version for consistency.
+> >>
+> >> v6: Assign ECC registers in SDRAM controller to EDAC
+> >>
+> >> v7: Fix SDRAM EDAC base address.
+> >> ---
+> >>  .../bindings/arm/altera/socfpga-sdram-edac.txt     |   15 +++++++++++++++
+> >>  arch/arm/boot/dts/socfpga.dtsi                     |    6 ++++++
+> >>  2 files changed, 21 insertions(+)
+> >>  create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
+> >>
+> >> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
+> >> new file mode 100644
+> >> index 0000000..d68e033
+> >> --- /dev/null
+> >> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
+> >> @@ -0,0 +1,15 @@
+> >> +Altera SOCFPGA SDRAM Error Detection & Correction [EDAC]
+> >> +
+> >> +Required properties:
+> >> +- compatible : should contain "altr,sdram-edac";
+> >> +- reg : should contain the ECC register range in sdram
+> >> +        controller (address and length).
+> >> +- interrupts : Should contain the SDRAM ECC IRQ in the
+> >> +     appropriate format for the IRQ controller.
+> >> +
+> >> +Example:
+> >> +     sdramedac@ffc2502c {
+> >> +             compatible = "altr,sdram-edac";
+> >> +             reg = <0xffc2502c 0x28>;
+> >> +             interrupts = <0 39 4>;
+> >> +     };
+> >> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+> >> index 310292e..da0785d 100644
+> >> --- a/arch/arm/boot/dts/socfpga.dtsi
+> >> +++ b/arch/arm/boot/dts/socfpga.dtsi
+> >> @@ -687,6 +687,12 @@
+> >>                       reg = <0xffc25000 0x4>;
+> >>               };
+> >>
+> >> +             sdramedac@ffc2502c {
+> >> +                     compatible = "altr,sdram-edac";
+> >> +                     reg = <0xffc2502c 0x28>;
+> >> +                     interrupts = <0 39 4>;
+> >> +             };
+> >
+> > I'm not sure I understand this. The ECC register existing within the
+> > SDRAM controller, which we have a binding for. Why do we need a separate
+> > binding for a subset of registers within an IP block?
+> >
+> > Why can we not have a single binding for the entire SDRAM controlelr and
+> > decompse that within Linux as it makes sense for the appropriate
+> > subsystyems?
+> >
+> > Leaking Linux design into bindings is a bad idea; it makes it harder to
+> > change things.
+> >
+> > Mark.
 >
-> I still don't see how you accomplish that.  Making it bigger doesn't get
-> rid of it.  ;-)
+> Hi Mark,
+>
+> How would we decompose this within Linux. MFD? Is there an example
+> that I can look at?
+>
+> We originally used syscon for the entire sdram controller register
+> block but we got dinged on it.
 
-See the patches from back then - INT_MAX basically just meant the same 
-as 0, but 0 could not be used because of the (silly) setup with the 
-wrappers around the syscalls. So INT_MAX was overloaded to mean "no ring 
-events, I don't care".
+I think it is good feedback that we don't want the devicetree to break
+up this register range (unless someone wants to argue that).
 
--- 
-Jens Axboe
+The problem we need to solve here is that the sdram controller
+register range has registers that are needed for at least 3 different
+functions/drivers: edac, fpga bridges, and loe power mode (putting ddr
+in self-refresh).  We would not want to do that in one driver.
+Originally we had the whole sdram controller as 'syscon' and that was
+frowned upon.  I think someone suggested a MFD.  We can do that and
+will do that if that will move things forward.  But that would just be
+a mfd that ioremaps the range and provides read/write functions for
+other drivers to use (which starts looking very similar to syscon
+except that it adds more code to the kernel to do what syscon does).
+It seems like that's what syscon was for (looking at
+Documentation/devicetree/bindings/mfd/syscon.txt).
 
+So can we have a consensus here on syscon or a very minimal mfd or
+some other clear way of moving forward?
+
+Alan
+
+>
+> Thanks for your help.
+>
+> Thor
