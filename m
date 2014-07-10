@@ -1,70 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750998AbaGJFdI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 01:33:08 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:38921 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708AbaGJFdF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 01:33:05 -0400
-From: behanw@converseincode.com
-To: linux@arm.linux.org.uk, mingo@redhat.com, rostedt@goodmis.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        dwmw2@infradead.org, Behan Webster <behanw@converseincode.com>
-Subject: [PATCH] arm: LLVMLinux: use static inline in ARM ftrace.h
-Date: Wed,  9 Jul 2014 22:32:52 -0700
-Message-Id: <1404970372-5026-1-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.9.1
+	id S1751435AbaGJFdc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 01:33:32 -0400
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:54074
+	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751225AbaGJFd2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 01:33:28 -0400
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        ohering@suse.com, jbottomley@parallels.com, hch@infradead.org,
+        jasowang@redhat.com, apw@canonical.com, linux-scsi@vger.kernel.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, <stable@vger.kernel.org>
+Subject: [PATCH V2 1/8] Drivers: scsi: storvsc: Change the limits to reflect the values on the host
+Date: Wed,  9 Jul 2014 23:33:45 -0700
+Message-Id: <1404974032-5023-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1404974008-4984-1-git-send-email-kys@microsoft.com>
+References: <1404974008-4984-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Behan Webster <behanw@converseincode.com>
+Hyper-V hosts can support multiple targets and multiple channels and larger number of
+LUNs per target. Update the code to reflect this. With this patch we can correctly
+enumerate all the paths in a multi-path storage environment.
 
-With compilers which follow the C99 standard (like modern versions of gcc and
-clang), "extern inline" does the wrong thing (emits code for an externally
-linkable version of the inline function). In this case using static inline
-and removing the NULL version of return_address in return_address.c does
-the right thing.
+In this version of the patch I have addressed comments from
+Christoph Hellwig <hch@infradead.org>
 
-Signed-off-by: Behan Webster <behanw@converseincode.com>
-Reviewed-by: Mark Charlebois <charlebm@gmail.com>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-CC: linux@arm.linux.org.uk
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Cc: <stable@vger.kernel.org>
 ---
- arch/arm/include/asm/ftrace.h    | 2 +-
- arch/arm/kernel/return_address.c | 5 -----
- 2 files changed, 1 insertion(+), 6 deletions(-)
+ drivers/scsi/storvsc_drv.c |   47 +++++++++++++++++++++++++++++---------------
+ 1 files changed, 31 insertions(+), 16 deletions(-)
 
-diff --git a/arch/arm/include/asm/ftrace.h b/arch/arm/include/asm/ftrace.h
-index 39eb16b..bfe2a2f 100644
---- a/arch/arm/include/asm/ftrace.h
-+++ b/arch/arm/include/asm/ftrace.h
-@@ -45,7 +45,7 @@ void *return_address(unsigned int);
+diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+index 9969fa1..8938b13 100644
+--- a/drivers/scsi/storvsc_drv.c
++++ b/drivers/scsi/storvsc_drv.c
+@@ -330,17 +330,17 @@ static int storvsc_timeout = 180;
  
- #else
+ static void storvsc_on_channel_callback(void *context);
  
--extern inline void *return_address(unsigned int level)
-+static inline void *return_address(unsigned int level)
- {
- 	return NULL;
- }
-diff --git a/arch/arm/kernel/return_address.c b/arch/arm/kernel/return_address.c
-index fafedd8..f6aa84d 100644
---- a/arch/arm/kernel/return_address.c
-+++ b/arch/arm/kernel/return_address.c
-@@ -63,11 +63,6 @@ void *return_address(unsigned int level)
- #warning "TODO: return_address should use unwind tables"
- #endif
+-/*
+- * In Hyper-V, each port/path/target maps to 1 scsi host adapter.  In
+- * reality, the path/target is not used (ie always set to 0) so our
+- * scsi host adapter essentially has 1 bus with 1 target that contains
+- * up to 256 luns.
+- */
+-#define STORVSC_MAX_LUNS_PER_TARGET			64
+-#define STORVSC_MAX_TARGETS				1
+-#define STORVSC_MAX_CHANNELS				1
++#define STORVSC_MAX_LUNS_PER_TARGET			255
++#define STORVSC_MAX_TARGETS				2
++#define STORVSC_MAX_CHANNELS				8
  
--void *return_address(unsigned int level)
--{
--	return NULL;
--}
--
- #endif /* if defined(CONFIG_FRAME_POINTER) && !defined(CONFIG_ARM_UNWIND) / else */
++#define STORVSC_FC_MAX_LUNS_PER_TARGET			255
++#define STORVSC_FC_MAX_TARGETS				128
++#define STORVSC_FC_MAX_CHANNELS				8
  
- EXPORT_SYMBOL_GPL(return_address);
++#define STORVSC_IDE_MAX_LUNS_PER_TARGET			64
++#define STORVSC_IDE_MAX_TARGETS				1
++#define STORVSC_IDE_MAX_CHANNELS			1
+ 
+ struct storvsc_cmd_request {
+ 	struct list_head entry;
+@@ -1691,7 +1691,6 @@ static struct scsi_host_template scsi_driver = {
+ 	.slave_destroy =	storvsc_device_destroy,
+ 	.slave_configure =	storvsc_device_configure,
+ 	.cmd_per_lun =		1,
+-	/* 64 max_queue * 1 target */
+ 	.can_queue =		STORVSC_MAX_IO_REQUESTS*STORVSC_MAX_TARGETS,
+ 	.this_id =		-1,
+ 	/* no use setting to 0 since ll_blk_rw reset it to 1 */
+@@ -1756,6 +1755,9 @@ static int storvsc_probe(struct hv_device *device,
+ 	}
+ 
+ 
++	if (dev_id->driver_data == SFC_GUID)
++		scsi_driver.can_queue = (STORVSC_MAX_IO_REQUESTS *
++					 STORVSC_FC_MAX_TARGETS);
+ 	host = scsi_host_alloc(&scsi_driver,
+ 			       sizeof(struct hv_host_device));
+ 	if (!host)
+@@ -1789,12 +1791,25 @@ static int storvsc_probe(struct hv_device *device,
+ 	host_dev->path = stor_device->path_id;
+ 	host_dev->target = stor_device->target_id;
+ 
+-	/* max # of devices per target */
+-	host->max_lun = STORVSC_MAX_LUNS_PER_TARGET;
+-	/* max # of targets per channel */
+-	host->max_id = STORVSC_MAX_TARGETS;
+-	/* max # of channels */
+-	host->max_channel = STORVSC_MAX_CHANNELS - 1;
++	switch (dev_id->driver_data) {
++	case SFC_GUID:
++		host->max_lun = STORVSC_FC_MAX_LUNS_PER_TARGET;
++		host->max_id = STORVSC_FC_MAX_TARGETS;
++		host->max_channel = STORVSC_FC_MAX_CHANNELS - 1;
++		break;
++
++	case SCSI_GUID:
++		host->max_lun = STORVSC_MAX_LUNS_PER_TARGET;
++		host->max_id = STORVSC_MAX_TARGETS;
++		host->max_channel = STORVSC_MAX_CHANNELS - 1;
++		break;
++
++	default:
++		host->max_lun = STORVSC_IDE_MAX_LUNS_PER_TARGET;
++		host->max_id = STORVSC_IDE_MAX_TARGETS;
++		host->max_channel = STORVSC_IDE_MAX_CHANNELS - 1;
++		break;
++	}
+ 	/* max cmd length */
+ 	host->max_cmd_len = STORVSC_MAX_CMD_LEN;
+ 
 -- 
-1.9.1
+1.7.4.1
 
