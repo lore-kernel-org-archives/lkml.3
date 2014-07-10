@@ -1,40 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865AbaGJKZA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 06:25:00 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:36241 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022AbaGJKY6 (ORCPT
+	id S1752003AbaGJK02 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 06:26:28 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:41445 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751008AbaGJK00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 06:24:58 -0400
-Date: Thu, 10 Jul 2014 03:24:57 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        ohering@suse.com, jbottomley@parallels.com, hch@infradead.org,
-        jasowang@redhat.com, apw@canonical.com, linux-scsi@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH V2 2/8] Drivers: scsi: storvsc: Set cmd_per_lun to
- reflect value supported by the Host
-Message-ID: <20140710102457.GA31692@infradead.org>
-References: <1404974008-4984-1-git-send-email-kys@microsoft.com>
- <1404974032-5023-1-git-send-email-kys@microsoft.com>
- <1404974032-5023-2-git-send-email-kys@microsoft.com>
+	Thu, 10 Jul 2014 06:26:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404974032-5023-2-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <CAG-2HqWSRRfW1EygXd_1=eYFsTeDd3SsJBfF3BuH35hgGxogxA@mail.gmail.com>
+References: <1404980258-30853-1-git-send-email-teg@jklm.no>
+	<1404980258-30853-11-git-send-email-teg@jklm.no>
+	<87pphdh85q.fsf@nemi.mork.no>
+	<CAG-2HqWSRRfW1EygXd_1=eYFsTeDd3SsJBfF3BuH35hgGxogxA@mail.gmail.com>
+Date: Thu, 10 Jul 2014 12:26:25 +0200
+Message-ID: <CANq1E4TCW_bnbTYacnfJHRvZAcOYnSgqxytHk26EaWeQKkphGA@mail.gmail.com>
+Subject: Re: [PATCH v7 10/33] net: dummy - set name assign type
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Tom Gundersen <teg@jklm.no>
+Cc: =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>,
+        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Kay Sievers <kay@vrfy.org>,
+        dingtianhong <dingtianhong@huawei.com>,
+        Tan Xiaojun <tanxiaojun@huawei.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -	.cmd_per_lun =		1,
-> +	.cmd_per_lun =		255,
->  	.can_queue =		STORVSC_MAX_IO_REQUESTS*STORVSC_MAX_TARGETS,
+Hi
 
-slave_configure immediately adjusts this down to STORVSC_MAX_IO_REQUESTS
-(250), any reson to start out with the magic 255 here?
+>> The same goes for NET_NAME_USER and NET_NAME_RENAMED. These are the same
+>> from a kernel point of view.
+>
+> You mean to collapse the two, and just label renamed interfaces
+> NET_NAME_USER instead?
 
+I have no real objections to merging NAME_USER and NAME_RENAMED. Both
+values imply that there is a user-space authority that applied some
+kind of rules to the naming-scheme. Therefore, anyone reacting to
+those names should better treat them equally and fix the
+naming-authority instead of overwriting it.
+
+However, at the same time I think there's no real harm in keeping them
+separate, either. My original thinking was to provide a second layer
+for anyone overwriting system defaults. For instance, if there's a
+user-space given name and a system-administrator wants to rename that
+for administrative purposes, they can safely match on NAME_USER and be
+sure, it wasn't renamed, yet. If it is set to NAME_RENAMED, though,
+then the administrator has some kind of safety-net that tells him he
+already has a rule that renamed the device and he shouldn't add
+another one (like placing one in initrd and one in the real root).
+
+Anyhow, if no-one cares about that, please go ahead and squash both
+into NET_NAME_USER.
+
+Thanks
+David
