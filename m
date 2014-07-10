@@ -1,45 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487AbaGJNol (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:44:41 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:52236 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750945AbaGJNok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:44:40 -0400
-Date: Thu, 10 Jul 2014 09:44:39 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
-        "dgilbert@interlog.com" <dgilbert@interlog.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Bart Van Assche <bvanassche@fusionio.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: scsi-mq V2
-Message-ID: <20140710134439.GP12478@kvack.org>
-References: <1403715121-1201-1-git-send-email-hch@lst.de> <20140708144829.GA5539@infradead.org> <53BD7041.5010300@interlog.com> <53BD9A24.7010203@kernel.dk> <94D0CD8314A33A4D9D801C0FE68B402958B9628B@G9W0745.americas.hpqcorp.net> <20140710062040.GB20146@infradead.org> <20140710133609.GO12478@kvack.org> <53BE97AD.9080306@kernel.dk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53BE97AD.9080306@kernel.dk>
-User-Agent: Mutt/1.4.2.2i
+	id S1753811AbaGJNou (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:44:50 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:50016 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945AbaGJNor (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 09:44:47 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-31-53be98cba943
+Message-id: <53BE9786.4060700@samsung.com>
+Date: Thu, 10 Jul 2014 17:39:18 +0400
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org
+Cc: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
+        Alexey Preobrazhensky <preobr@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Michal Marek <mmarek@suse.cz>, Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        x86@kernel.org, linux-mm@kvack.org,
+        Dave Hansen <dave.hansen@intel.com>
+Subject: Re: [RFC/PATCH RESEND -next 01/21] Add kernel address sanitizer
+ infrastructure.
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1404905415-9046-2-git-send-email-a.ryabinin@samsung.com>
+ <53BE7F29.20304@oracle.com> <53BE8EA5.2030402@samsung.com>
+ <53BE959A.4010206@oracle.com>
+In-reply-to: <53BE959A.4010206@oracle.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsVy+t/xq7qnZ+wLNni5xNLi996ZrBZz1q9h
+	s7j+7Q2jxaeXDxgtJjxsY7dY2d3MZrH92Vsmi5WdD1gtNj2+xmrxZ9cOJovLu+awWdxb85/V
+	4vZlXotLBxYwWbTsu8Bk0fb5H6vFvpXngawlG5ksFh+5zWzx7tlkZovNm6YyW/zY8JjVQcyj
+	pbmHzWPnrLvsHgs2lXos3vOSyWPTqk42j02fJrF7dL29wuTx7tw5do8TM36zeDy5Mp3JY/OS
+	eo+PT2+xeLzfd5XN48yCI+wenzfJBfBHcdmkpOZklqUW6dslcGU0P1jJXNCgVfHp1HnWBsZ+
+	pS5GTg4JAROJL/PbmCBsMYkL99azdTFycQgJLGWUeH4Uxmlmktj4cQMrSBWvgJZE68+ZbCA2
+	i4CqxIRtDewgNpuAnsS/WdvB4qICERIH+p5B1QtK/Jh8jwXEFhFwk9h34DILyFBmgWusEtP/
+	HWQGSQgLREn0PD/DCLHtHqPEnutTwRKcQNueTDkNNolZQEdif+s0NghbXmLzmrfMExgFZiFZ
+	MgtJ2SwkZQsYmVcxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn525ihMT3lx2Mi49ZHWIU4GBU4uHV
+	qN0dLMSaWFZcmXuIUYKDWUmE99XUfcFCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGGPnRlyetWcd
+	36T2Yx4soZ7fPvLaOqQflXHIsD9cm6mwyOhkTCpj8gSDbZGcS/9kX+VZ9kbl+Z09d+3K113a
+	fviBSJhi1Z2y6Tu/FVSpHWe5nfTEXnM27/SdJXaTmx7mH9y6JHI158d3z/sLXDXar7yunxCy
+	xi3kna2TQtzJDWYeUU0ddoG2z5VYijMSDbWYi4oTAcZC3cXNAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 03:39:57PM +0200, Jens Axboe wrote:
-> That's how fio always runs, it sets up the context with the exact queue 
-> depth that it needs. Do we have a good enough understanding of other aio 
-> use cases to say that this isn't the norm? I would expect it to be, it's 
-> the way that the API would most obviously be used.
+On 07/10/14 17:31, Sasha Levin wrote:
+> On 07/10/2014 09:01 AM, Andrey Ryabinin wrote:
+>> On 07/10/14 15:55, Sasha Levin wrote:
+>>>> On 07/09/2014 07:29 AM, Andrey Ryabinin wrote:
+>>>>>> Address sanitizer for kernel (kasan) is a dynamic memory error detector.
+>>>>>>
+>>>>>> The main features of kasan is:
+>>>>>>  - is based on compiler instrumentation (fast),
+>>>>>>  - detects out of bounds for both writes and reads,
+>>>>>>  - provides use after free detection,
+>>>>>>
+>>>>>> This patch only adds infrastructure for kernel address sanitizer. It's not
+>>>>>> available for use yet. The idea and some code was borrowed from [1].
+>>>>>>
+>>>>>> This feature requires pretty fresh GCC (revision r211699 from 2014-06-16 or
+>>>>>> latter).
+>>>>>>
+>>>>>> Implementation details:
+>>>>>> The main idea of KASAN is to use shadow memory to record whether each byte of memory
+>>>>>> is safe to access or not, and use compiler's instrumentation to check the shadow memory
+>>>>>> on each memory access.
+>>>>>>
+>>>>>> Address sanitizer dedicates 1/8 of the low memory to the shadow memory and uses direct
+>>>>>> mapping with a scale and offset to translate a memory address to its corresponding
+>>>>>> shadow address.
+>>>>>>
+>>>>>> Here is function to translate address to corresponding shadow address:
+>>>>>>
+>>>>>>      unsigned long kasan_mem_to_shadow(unsigned long addr)
+>>>>>>      {
+>>>>>>                 return ((addr - PAGE_OFFSET) >> KASAN_SHADOW_SCALE_SHIFT)
+>>>>>>                              + kasan_shadow_start;
+>>>>>>      }
+>>>>>>
+>>>>>> where KASAN_SHADOW_SCALE_SHIFT = 3.
+>>>>>>
+>>>>>> So for every 8 bytes of lowmemory there is one corresponding byte of shadow memory.
+>>>>>> The following encoding used for each shadow byte: 0 means that all 8 bytes of the
+>>>>>> corresponding memory region are valid for access; k (1 <= k <= 7) means that
+>>>>>> the first k bytes are valid for access, and other (8 - k) bytes are not;
+>>>>>> Any negative value indicates that the entire 8-bytes are unaccessible.
+>>>>>> Different negative values used to distinguish between different kinds of
+>>>>>> unaccessible memory (redzones, freed memory) (see mm/kasan/kasan.h).
+>>>>>>
+>>>>>> To be able to detect accesses to bad memory we need a special compiler.
+>>>>>> Such compiler inserts a specific function calls (__asan_load*(addr), __asan_store*(addr))
+>>>>>> before each memory access of size 1, 2, 4, 8 or 16.
+>>>>>>
+>>>>>> These functions check whether memory region is valid to access or not by checking
+>>>>>> corresponding shadow memory. If access is not valid an error printed.
+>>>>>>
+>>>>>> [1] https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
+>>>>>>
+>>>>>> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+>>>>
+>>>> I gave it a spin, and it seems that it fails for what you might call a "regular"
+>>>> memory size these days, in my case it was 18G:
+>>>>
+>>>> [    0.000000] Kernel panic - not syncing: ERROR: Failed to allocate 0xe0c00000 bytes below 0x0.
+>>>> [    0.000000]
+>>>> [    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.16.0-rc4-next-20140710-sasha-00044-gb7b0579-dirty #784
+>>>> [    0.000000]  ffffffffb9c2d3c8 cd9ce91adea4379a 0000000000000000 ffffffffb9c2d3c8
+>>>> [    0.000000]  ffffffffb9c2d330 ffffffffb7fe89b7 ffffffffb93c8c28 ffffffffb9c2d3b8
+>>>> [    0.000000]  ffffffffb7fcff1d 0000000000000018 ffffffffb9c2d3c8 ffffffffb9c2d360
+>>>> [    0.000000] Call Trace:
+>>>> [    0.000000] <UNK> dump_stack (lib/dump_stack.c:52)
+>>>> [    0.000000] panic (kernel/panic.c:119)
+>>>> [    0.000000] memblock_alloc_base (mm/memblock.c:1092)
+>>>> [    0.000000] memblock_alloc (mm/memblock.c:1097)
+>>>> [    0.000000] kasan_alloc_shadow (mm/kasan/kasan.c:151)
+>>>> [    0.000000] zone_sizes_init (arch/x86/mm/init.c:684)
+>>>> [    0.000000] paging_init (arch/x86/mm/init_64.c:677)
+>>>> [    0.000000] setup_arch (arch/x86/kernel/setup.c:1168)
+>>>> [    0.000000] ? printk (kernel/printk/printk.c:1839)
+>>>> [    0.000000] start_kernel (include/linux/mm_types.h:462 init/main.c:533)
+>>>> [    0.000000] ? early_idt_handlers (arch/x86/kernel/head_64.S:344)
+>>>> [    0.000000] x86_64_start_reservations (arch/x86/kernel/head64.c:194)
+>>>> [    0.000000] x86_64_start_kernel (arch/x86/kernel/head64.c:183)
+>>>>
+>>>> It got better when I reduced memory to 1GB, but then my system just failed to boot
+>>>> at all because that's not enough to bring everything up.
+>>>>
+>> Thanks.
+>> I think memory size is not a problem here. I tested on my desktop with 16G.
+>> Seems it's a problem with memory holes cited by Dave.
+>> kasan tries to allocate ~3.5G. It means that lowmemsize is 28G in your case.
+> 
+> That's correct (I've mistyped and got 18 instead of 28 above).
+> 
+> However, I'm a bit confused here, I thought highmem/lowmem split was a 32bit
+> thing, so I'm not sure how it applies here.
+> 
+Right. By lowmemsize here I mean size of direct
+mapping of all phys. memory (which usually called as lowmem on 32bit systems).
 
-The problem with this approach is that it works very poorly with per cpu 
-reference counting's batching of references, which is pretty much a 
-requirement now that many core systems are the norm.  Allocating the bare 
-minimum is not the right thing to do today.  That said, the default limits 
-on the number of requests probably needs to be raised.
 
-		-ben
--- 
-"Thought is the essence of where you are now."
+
+> Anyways, the machine won't boot with more than 1GB of RAM, is there a solution to
+> get KASAN running on my machine?
+> 
+Could you share you .config? I'll try to boot it by myself. It could be that some options conflicting with kasan.
+Also boot cmdline might help.
+
+> 
+> Thanks,
+> Sasha
+> 
+> 
+
