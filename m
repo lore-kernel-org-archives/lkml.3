@@ -1,161 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191AbaGJN4H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 09:56:07 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:60004 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728AbaGJN4E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 09:56:04 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-4e-53be9b708cfe
-Message-id: <53BE9A2B.5090104@samsung.com>
-Date: Thu, 10 Jul 2014 17:50:35 +0400
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org
-Cc: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
-        Alexey Preobrazhensky <preobr@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Michal Marek <mmarek@suse.cz>, Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        x86@kernel.org, linux-mm@kvack.org,
-        Dave Hansen <dave.hansen@intel.com>
-Subject: Re: [RFC/PATCH RESEND -next 01/21] Add kernel address sanitizer
- infrastructure.
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1404905415-9046-2-git-send-email-a.ryabinin@samsung.com>
- <53BE7F29.20304@oracle.com> <53BE8EA5.2030402@samsung.com>
- <53BE959A.4010206@oracle.com>
-In-reply-to: <53BE959A.4010206@oracle.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsVy+t/xy7oFs/cFG3Tc0rH4vXcmq8Wc9WvY
-	LK5/e8No8enlA0aLCQ/b2C1WdjezWWx/9pbJYmXnA1aLTY+vsVr82bWDyeLyrjlsFvfW/Ge1
-	uH2Z1+LSgQVMFi37LjBZtH3+x2qxb+V5IGvJRiaLxUduM1u8ezaZ2WLzpqnMFj82PGZ1EPNo
-	ae5h89g56y67x4JNpR6L97xk8ti0qpPNY9OnSeweXW+vMHm8O3eO3ePEjN8sHk+uTGfy2Lyk
-	3uPj01ssHu/3XWXzOLPgCLvH501yAfxRXDYpqTmZZalF+nYJXBlP969jK1igUbF/92v2BsY7
-	Cl2MHBwSAiYS9zfodDFyApliEhfurWfrYuTiEBJYyiixtmMRI4TTzCTx5thEZpAqXgEtiVdH
-	rzODNLMIqEqs/mwEEmYT0JP4N2s7G4gtKhAhcaDvGStEuaDEj8n3WEBsEQE3iX0HLrOAzGQW
-	uMYqMf3fQbCZwgJREj3Pz0Atu8cosef6VLAEJ9CyJ1NOg01iFtCR2N86jQ3ClpfYvOYt8wRG
-	gVlIlsxCUjYLSdkCRuZVjKKppckFxUnpuYZ6xYm5xaV56XrJ+bmbGCGx/WUH4+JjVocYBTgY
-	lXh4NWp3BwuxJpYVV+YeYpTgYFYS4X01dV+wEG9KYmVValF+fFFpTmrxIUYmDk6pBkZL61fz
-	1my0O71qX+rdGj0165NZ6UcW7C85pnunOudRt5TZ5NAI1+7d81Zfezj73nXrU8f2M85eynNn
-	e45tBv9Hj+nnXuyYKhkyyaD1ttINB+cWm/ezy/i89JT6/PfVBAu9/7t758/N/x1DHRgcVlc4
-	fHj89cz6v1t23bIObFtVLG24VX5fOpOmEktxRqKhFnNRcSIA2aeTrssCAAA=
+	id S1753604AbaGJN4U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 09:56:20 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45063 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753249AbaGJN4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 09:56:16 -0400
+Date: Thu, 10 Jul 2014 08:56:00 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+CC: Felipe Balbi <balbi@ti.com>, <gregkh@linuxfoundation.org>,
+        <Peter.Chen@freescale.com>, <kishon@ti.com>,
+        <stern@rowland.harvard.edu>, <alexandre.belloni@free-electrons.com>,
+        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
+        <jszhang@marvell.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] usb: chipidea: add support to the PHY framework for
+ ChipIdea
+Message-ID: <20140710135600.GN15340@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1404901036-27682-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1404901036-27682-5-git-send-email-antoine.tenart@free-electrons.com>
+ <20140710134227.GL15340@saruman.home>
+ <20140710135124.GB32462@kwain>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8MZM6zh5Bb05FW+3"
+Content-Disposition: inline
+In-Reply-To: <20140710135124.GB32462@kwain>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/14 17:31, Sasha Levin wrote:
-> On 07/10/2014 09:01 AM, Andrey Ryabinin wrote:
->> On 07/10/14 15:55, Sasha Levin wrote:
->>>> On 07/09/2014 07:29 AM, Andrey Ryabinin wrote:
->>>>>> Address sanitizer for kernel (kasan) is a dynamic memory error detector.
->>>>>>
->>>>>> The main features of kasan is:
->>>>>>  - is based on compiler instrumentation (fast),
->>>>>>  - detects out of bounds for both writes and reads,
->>>>>>  - provides use after free detection,
->>>>>>
->>>>>> This patch only adds infrastructure for kernel address sanitizer. It's not
->>>>>> available for use yet. The idea and some code was borrowed from [1].
->>>>>>
->>>>>> This feature requires pretty fresh GCC (revision r211699 from 2014-06-16 or
->>>>>> latter).
->>>>>>
->>>>>> Implementation details:
->>>>>> The main idea of KASAN is to use shadow memory to record whether each byte of memory
->>>>>> is safe to access or not, and use compiler's instrumentation to check the shadow memory
->>>>>> on each memory access.
->>>>>>
->>>>>> Address sanitizer dedicates 1/8 of the low memory to the shadow memory and uses direct
->>>>>> mapping with a scale and offset to translate a memory address to its corresponding
->>>>>> shadow address.
->>>>>>
->>>>>> Here is function to translate address to corresponding shadow address:
->>>>>>
->>>>>>      unsigned long kasan_mem_to_shadow(unsigned long addr)
->>>>>>      {
->>>>>>                 return ((addr - PAGE_OFFSET) >> KASAN_SHADOW_SCALE_SHIFT)
->>>>>>                              + kasan_shadow_start;
->>>>>>      }
->>>>>>
->>>>>> where KASAN_SHADOW_SCALE_SHIFT = 3.
->>>>>>
->>>>>> So for every 8 bytes of lowmemory there is one corresponding byte of shadow memory.
->>>>>> The following encoding used for each shadow byte: 0 means that all 8 bytes of the
->>>>>> corresponding memory region are valid for access; k (1 <= k <= 7) means that
->>>>>> the first k bytes are valid for access, and other (8 - k) bytes are not;
->>>>>> Any negative value indicates that the entire 8-bytes are unaccessible.
->>>>>> Different negative values used to distinguish between different kinds of
->>>>>> unaccessible memory (redzones, freed memory) (see mm/kasan/kasan.h).
->>>>>>
->>>>>> To be able to detect accesses to bad memory we need a special compiler.
->>>>>> Such compiler inserts a specific function calls (__asan_load*(addr), __asan_store*(addr))
->>>>>> before each memory access of size 1, 2, 4, 8 or 16.
->>>>>>
->>>>>> These functions check whether memory region is valid to access or not by checking
->>>>>> corresponding shadow memory. If access is not valid an error printed.
->>>>>>
->>>>>> [1] https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
->>>>>>
->>>>>> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
->>>>
->>>> I gave it a spin, and it seems that it fails for what you might call a "regular"
->>>> memory size these days, in my case it was 18G:
->>>>
->>>> [    0.000000] Kernel panic - not syncing: ERROR: Failed to allocate 0xe0c00000 bytes below 0x0.
->>>> [    0.000000]
->>>> [    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.16.0-rc4-next-20140710-sasha-00044-gb7b0579-dirty #784
->>>> [    0.000000]  ffffffffb9c2d3c8 cd9ce91adea4379a 0000000000000000 ffffffffb9c2d3c8
->>>> [    0.000000]  ffffffffb9c2d330 ffffffffb7fe89b7 ffffffffb93c8c28 ffffffffb9c2d3b8
->>>> [    0.000000]  ffffffffb7fcff1d 0000000000000018 ffffffffb9c2d3c8 ffffffffb9c2d360
->>>> [    0.000000] Call Trace:
->>>> [    0.000000] <UNK> dump_stack (lib/dump_stack.c:52)
->>>> [    0.000000] panic (kernel/panic.c:119)
->>>> [    0.000000] memblock_alloc_base (mm/memblock.c:1092)
->>>> [    0.000000] memblock_alloc (mm/memblock.c:1097)
->>>> [    0.000000] kasan_alloc_shadow (mm/kasan/kasan.c:151)
->>>> [    0.000000] zone_sizes_init (arch/x86/mm/init.c:684)
->>>> [    0.000000] paging_init (arch/x86/mm/init_64.c:677)
->>>> [    0.000000] setup_arch (arch/x86/kernel/setup.c:1168)
->>>> [    0.000000] ? printk (kernel/printk/printk.c:1839)
->>>> [    0.000000] start_kernel (include/linux/mm_types.h:462 init/main.c:533)
->>>> [    0.000000] ? early_idt_handlers (arch/x86/kernel/head_64.S:344)
->>>> [    0.000000] x86_64_start_reservations (arch/x86/kernel/head64.c:194)
->>>> [    0.000000] x86_64_start_kernel (arch/x86/kernel/head64.c:183)
->>>>
->>>> It got better when I reduced memory to 1GB, but then my system just failed to boot
->>>> at all because that's not enough to bring everything up.
->>>>
->> Thanks.
->> I think memory size is not a problem here. I tested on my desktop with 16G.
->> Seems it's a problem with memory holes cited by Dave.
->> kasan tries to allocate ~3.5G. It means that lowmemsize is 28G in your case.
-> 
-> That's correct (I've mistyped and got 18 instead of 28 above).
-> 
-> However, I'm a bit confused here, I thought highmem/lowmem split was a 32bit
-> thing, so I'm not sure how it applies here.
-> 
-> Anyways, the machine won't boot with more than 1GB of RAM, is there a solution to
-> get KASAN running on my machine?
-> 
+--8MZM6zh5Bb05FW+3
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It's not boot with the same Failed to allocate error?
+On Thu, Jul 10, 2014 at 03:51:24PM +0200, Antoine T=E9nart wrote:
+> On Thu, Jul 10, 2014 at 08:42:27AM -0500, Felipe Balbi wrote:
+> > On Wed, Jul 09, 2014 at 12:17:16PM +0200, Antoine T=E9nart wrote:
+> > > This patch adds the support to the PHY framework for ChipIdea drivers
+> > > while keeping the USB PHY compatibility. Changes are done in both the
+> > > ChipIdea common code and in the drivers accessing the PHY. This is do=
+ne
+> > > by renaming 'phy' into 'usb_phy' and adding a new 'phy' member into t=
+he
+> > > ci_hdrc structre.
+> > >=20
+> > > Signed-off-by: Antoine T=E9nart <antoine.tenart@free-electrons.com>
+> > > ---
+> > >  drivers/usb/chipidea/ci.h          |  4 ++-
+> > >  drivers/usb/chipidea/ci_hdrc_imx.c |  2 +-
+> > >  drivers/usb/chipidea/ci_hdrc_msm.c |  6 ++--
+> > >  drivers/usb/chipidea/core.c        | 67 ++++++++++++++++++++++++++++=
++++-------
+> > >  drivers/usb/chipidea/debug.c       |  4 ++-
+> > >  drivers/usb/chipidea/host.c        | 17 ++++++----
+> > >  drivers/usb/chipidea/otg_fsm.c     |  6 ++--
+> > >  drivers/usb/chipidea/udc.c         |  4 +--
+> > >  include/linux/usb/chipidea.h       |  4 ++-
+> > >  9 files changed, 86 insertions(+), 28 deletions(-)
+> > >=20
+> > > diff --git a/drivers/usb/chipidea/ci.h b/drivers/usb/chipidea/ci.h
+> > > index 9563cb56d564..139589c8ab90 100644
+> > > --- a/drivers/usb/chipidea/ci.h
+> > > +++ b/drivers/usb/chipidea/ci.h
+> > > @@ -201,7 +201,9 @@ struct ci_hdrc {
+> > > =20
+> > >  	struct ci_hdrc_platform_data	*platdata;
+> > >  	int				vbus_active;
+> > > -	struct usb_phy			*transceiver;
+> > > +	struct phy			*transceiver;
+> > > +	/* old usb_phy interface */
+> > > +	struct usb_phy			*usb_transceiver;
+> >=20
+> > while at that, do you mind calling all struct usb_phy pointers
+> > 'usb_phy' ?
+>=20
+> Not at all.
+> With s/usb_transceiver/usb_phy/, what about 'transceiver'?
 
-> 
-> Thanks,
-> Sasha
-> 
-> 
+perhaps call it phy ? That way all drivers have similar naming scheme.
+Plus, I rather type 3 letters than 11 :-p
 
+--=20
+balbi
+
+--8MZM6zh5Bb05FW+3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTvptwAAoJEIaOsuA1yqRET3kP/0Gjmhsh2qdSidiFTc73VOuC
+/Mu/jc428b3TPVlH8UeRfGbGq9ycpIShmNoxhXdwAN5Gmuy3nDqaYlQXZqi897cr
+cNW3wFGb930bPwNB/Bts6qRhjmbAyP2THpC9oywwJyF/bkzjHWnmtR2xCzu3gjWa
+wKNCT+oyKkJTtU5BMibULP+/CmVvJxRTenp6nwnsIM2YOQDgiHFk0CaeO7+KxI44
+PpTDPUnUSXvlks8Kf9E2F6tdj88psIv8TsIC84BKt+F8gjA2SEptWe+sbitPvUvw
+THV1tnvvsaFESTWkwuApM031dmEN73J9YzSX+rEfvaV5h16neGQcfrZ1Ydn4sMOJ
+3IpG/ySTGf1BdwWvbsSswIUwOKEgtq9AeeeRyLwyCYM+LxXcbqMZ1YBRZWevTSxW
+48pwZqyaZROfIWSm7hQOo5hNHUzhsdaFLzf7ZPkPujFNyYnYU6GZmm9XQzf6FUV+
+r1D9I2PufrhZZvhoDJy15N83Z9gr91e9ZteQS+sbOd1KSliF+2zBZGGahrTM5Xf7
+D8O4mgmt4pZy9s4bbX9QKxSUXTSp0pCW1e0A/H/3kJh7CoKMy0FdKtxG745NNcr+
+UT8nZzspAQSH+yVKlL2srHMWt88vRGw/G/t8TCIqRSE2TZ1gPjy7aPzq6JacAWt1
+v65ELHGY9rua8SKXswtt
+=JPj2
+-----END PGP SIGNATURE-----
+
+--8MZM6zh5Bb05FW+3--
