@@ -1,132 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751762AbaGKBeI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 21:34:08 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:37622 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751095AbaGKBeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 21:34:06 -0400
-Date: Fri, 11 Jul 2014 02:34:02 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm driver fixes
-Message-ID: <alpine.DEB.2.00.1407110229460.21365@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1751984AbaGKBiz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 21:38:55 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:7881 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751443AbaGKBix (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jul 2014 21:38:53 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 10 Jul 2014 18:27:57 -0700
+Message-ID: <53BF4029.5060301@nvidia.com>
+Date: Fri, 11 Jul 2014 10:38:49 +0900
+From: Alexandre Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-23196957-1405042442=:21365"
+To: Ben Skeggs <skeggsb@gmail.com>
+CC: Ben Skeggs <bskeggs@redhat.com>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [Nouveau] [PATCH 0/3] drm/gk20a: support for reclocking
+References: <1404977677-22248-1-git-send-email-acourbot@nvidia.com> <CACAvsv7cxHbXaF-0wi=cijACUBdrH_rqamM+=okrb0+cJxYAsw@mail.gmail.com>
+In-Reply-To: <CACAvsv7cxHbXaF-0wi=cijACUBdrH_rqamM+=okrb0+cJxYAsw@mail.gmail.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi Ben,
 
---29444707-23196957-1405042442=:21365
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+On 07/11/2014 10:07 AM, Ben Skeggs wrote:
+> On Thu, Jul 10, 2014 at 5:34 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>> This series adds support for reclocking on GK20A. The first two patches touch
+>> the clock subsystem to allow GK20A to operate, by making the presence of the
+>> thermal and voltage devices optional, and allowing pstates to be provided
+>> directly instead of being probed using the BIOS (which Tegra does not have).
+> Hey Alex,
+>
+> I mentioned a while back I had some stuff in-progress to make
+> implementing this a bit cleaner for you, but as you can probably tell,
+> I didn't get to it yet.  It's likely I won't manage to before the next
+> merge window either.  So, I'll likely take these patches as-is
+> (assuming no objections on reviews here) and rebase my stuff on top.
 
+Thanks. You will probably notice that these patches won't apply to your 
+tree and require some tweaking. I will probably end up sending a v2 
+anyway, so maybe you should wait for it. If you want to try this version 
+anyway, I have fixed-up patches against your tree.
 
-Hi Linus,
+Note that your tree currently won't build against -next because it uses 
+drm_sysfs_connector_add/remove which are not available anymore (replaced 
+by drm_connector_register/unregister I believe).
 
-Nothing too scary, we have one outstanding i915 regression but Daniel has 
-promised the fix as soon as he's finished testing it a bit.
+Oh and while I'm at it, there seems to be a typo in line 131 of clock.h, 
+which should read _nouveau_clock_fini and not _nouveau_clock_init.
 
-Fixes for the main x86 drivers:
-radeon: dpm fixes, displayport regression fix
-i915: quirks for backlight regression, edp reboot fix, valleyview black 
-screen fixes
-nouveau: display port regression fixes, fix for memory reclocking.
+>>
+>> The last patch adds the GK20A clock device. Arguably the clock can be seen as a
+>> stripped-down version of what is seen on NVE0, however instead of using NVE0
+>> support has been written from scratch using the ChromeOS kernel as a basis.
+>> There are several reasons for this:
+>>
+>> - The ChromeOS driver uses a lookup table for the P coefficient which I could
+>>    not find in the NVE0 driver,
+> Interesting.  Can you give more details on how "PL" works exactly,
+> we'd been operating on the assumption (mainly inherited from code that
+> appeared in xf86-video-nv) that it was always a straight division.
 
-Dave.
+The pl_to_div table in clock/gk20a.c should give the right coefficients, 
+but I have seen contradictory information in our docs. Let me ask the 
+right people so we can get to the bottom of this.
 
-The following changes since commit 4f440cd534359f689cb577c68f8491d1eddf0b76:
+>
+>> - Some registers that NVE0 expects to find are not present on GK20A (e.g.
+>>    0x137120 and 0x137140),
+>> - Calculation of MNP is done differently from what is performed in
+>>    nva3_pll_calc(), and it might be interesting to compare the two methods,
+>> - All the same, the programming sequence is done differently in the ChromeOS
+>>    driver and NVE0 could possibly benefit from it (?)
+>>
+>> It would be interesting to try and merge both, but for now I prefer to have the
+>> two coexisting to ensure proper operation on GK20A and besure I don't break
+>> dGPU support. :)
+> It's something we can look to achieving down the road, but won't block
+> merging the support.
 
-  Merge tag 'pci-v3.16-fixes-1' of git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci (2014-07-09 16:18:18 -0700)
+Great, thanks!
 
-are available in the git repository at:
+>
+>>
+>> Regarding the first patch, one might argue that I could as well add thermal
+>> and voltage devices to GK20A. The reason this is not done is because these
+>> currently depend heavily on the presence of a BIOS, and will require a rework
+>> similar to that done in patch 2 for clocks. I would like to make sure this
+>> approach is approved because applying it to other subdevs.
+> They don't *need* to depend on the BIOS, you can opt for an
+> implementation that doesn't use the base classes that the rest of the
+> dGPU implementations do.  But, it's fine to take the approach you've
+> taken.
 
+At first I did not use the base classes for the gk20a clock 
+implementation, but it resulted in replicating some init code and I was 
+concerned that this might be a source of bugs in the future (e.g. clock 
+base clock init gets updated but not the gk20a init). So I preferred the 
+current approach which keeps everything in the same place.
 
-  git://people.freedesktop.org/~airlied/linux drm-fixes
+Since you have no concern with it I will apply the same to volt and 
+therm, and we can then get rid of patch 1. Then I should probably send 
+you a v2 once the PL thing is cleared.
 
-for you to fetch changes up to bf38b025d3f58f4c1273714ff1be5bfbf99574a4:
-
-  Merge branch 'drm-fixes-3.16' of git://people.freedesktop.org/~agd5f/linux into drm-fixes (2014-07-11 11:24:13 +1000)
-
-----------------------------------------------------------------
-
-Alex Deucher (3):
-      drm/radeon/dp: return -EIO for flags not zero case
-      drm/radeon: fix typo in golden register setup on evergreen
-      drm/radeon: fix typo in ci_stop_dpm()
-
-Alexandre Demers (1):
-      drm/radeon/dpm: Reenabling SS on Cayman
-
-Ben Skeggs (6):
-      drm/gk104/ram: bash mpll bit 31 on
-      drm/nv50-/kms: pass a non-zero value for head to sor dpms methods
-      drm/nouveau/kms: restore fbcon after display has been resumed
-      drm/nouveau/dp: fix required link bandwidth calculations
-      drm/nouveau/dp: workaround broken display
-      drm/nouveau/ram: fix test for gpio presence
-
-Christian König (1):
-      drm/radeon: only print meaningful VM faults
-
-Clint Taylor (1):
-      drm/i915/vlv: T12 eDP panel timing enforcement during reboot
-
-Daniel Vetter (1):
-      drm/i915: Only unbind vgacon, not other console drivers
-
-Dave Airlie (3):
-      Merge branch 'drm-nouveau-next' of git://anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes
-      Merge tag 'drm-intel-fixes-2014-07-09' of git://anongit.freedesktop.org/drm-intel into drm-fixes
-      Merge branch 'drm-fixes-3.16' of git://people.freedesktop.org/~agd5f/linux into drm-fixes
-
-Scot Doyle (3):
-      drm/i915: quirk asserts controllable backlight presence, overriding VBT
-      drm/i915: Acer C720 and C720P have controllable backlights
-      drm/i915: Toshiba CB35 has a controllable backlight
-
-Shobhit Kumar (2):
-      drm/i915/vlv: DPI FIFO empty check is not needed
-      drm/i915/vlv: Update the DSI ULPS entry/exit sequence
-
-Stéphane Marchesin (1):
-      drm/nouveau/fb: Prevent inlining of ramfuc_reg
-
-Ville Syrjälä (1):
-      drm/i915: Don't clobber the GTT when it's within stolen memory
-
- drivers/gpu/drm/i915/i915_dma.c                    |  5 ++-
- drivers/gpu/drm/i915/i915_drv.h                    |  1 +
- drivers/gpu/drm/i915/i915_gem_stolen.c             | 44 ++++++++++++++++++++++
- drivers/gpu/drm/i915/i915_reg.h                    |  3 ++
- drivers/gpu/drm/i915/intel_display.c               | 14 +++++++
- drivers/gpu/drm/i915/intel_dp.c                    | 42 +++++++++++++++++++++
- drivers/gpu/drm/i915/intel_drv.h                   |  2 +
- drivers/gpu/drm/i915/intel_dsi.c                   | 29 +++++++-------
- drivers/gpu/drm/i915/intel_dsi_cmd.c               |  6 ---
- drivers/gpu/drm/i915/intel_panel.c                 |  8 +++-
- drivers/gpu/drm/nouveau/core/engine/disp/nv50.c    |  6 +--
- drivers/gpu/drm/nouveau/core/engine/disp/nvd0.c    |  6 +--
- drivers/gpu/drm/nouveau/core/engine/disp/outpdp.c  |  8 ++--
- drivers/gpu/drm/nouveau/core/engine/disp/sornv50.c |  1 +
- drivers/gpu/drm/nouveau/core/subdev/fb/ramfuc.h    |  4 +-
- drivers/gpu/drm/nouveau/core/subdev/fb/ramnve0.c   |  1 +
- drivers/gpu/drm/nouveau/nouveau_drm.c              | 17 +++++----
- drivers/gpu/drm/nouveau/nouveau_fbcon.c            | 13 ++-----
- drivers/gpu/drm/nouveau/nouveau_fbcon.h            |  1 -
- drivers/gpu/drm/nouveau/nv50_display.c             |  3 +-
- drivers/gpu/drm/radeon/atombios_dp.c               |  2 +-
- drivers/gpu/drm/radeon/ci_dpm.c                    |  2 +-
- drivers/gpu/drm/radeon/cik.c                       |  6 ++-
- drivers/gpu/drm/radeon/evergreen.c                 | 14 ++++---
- drivers/gpu/drm/radeon/rv770_dpm.c                 |  6 ---
- drivers/gpu/drm/radeon/si.c                        |  6 ++-
- 26 files changed, 177 insertions(+), 73 deletions(-)
---29444707-23196957-1405042442=:21365--
+Cheers,
+Alex.
