@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688AbaGKOBr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 10:01:47 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56031 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753873AbaGKNoD (ORCPT
+	id S1754692AbaGKOCc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 10:02:32 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53178 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941AbaGKOCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:44:03 -0400
-Message-Id: <20140711133705.401147885@linutronix.de>
-User-Agent: quilt/0.63-1
-Date: Fri, 11 Jul 2014 13:44:01 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 02/55] timekeeping: Simplify arch_gettimeoffset()
-References: <20140711133623.530368377@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=timekeeping-simplify-arch-offset.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 11 Jul 2014 10:02:31 -0400
+Message-ID: <1405087244.4630.15.camel@weser.hi.pengutronix.de>
+Subject: Re: [PATCH] can: flexcan: add vf61x support for flexcan
+From: Lucas Stach <l.stach@pengutronix.de>
+To: Stefan Agner <stefan@agner.ch>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-can@vger.kernel.org, wg@grandegger.com, kernel@pengutronix.de,
+        shawn.guo@freescale.com
+Date: Fri, 11 Jul 2014 16:00:44 +0200
+In-Reply-To: <dac76ccd134f41b86f00352d10cfae4b@agner.ch>
+References: <1405075933-22317-1-git-send-email-stefan@agner.ch>
+	 <53BFD401.8030101@pengutronix.de>
+	 <dac76ccd134f41b86f00352d10cfae4b@agner.ch>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:fa0f:41ff:fe58:4010
+X-SA-Exim-Mail-From: l.stach@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide a default stub function instead of having the extra
-conditional. Cuts binary size on a m68k build by ~100 bytes.
+Am Freitag, den 11.07.2014, 15:58 +0200 schrieb Stefan Agner:
+> Hi Marc,
+> 
+> Am 2014-07-11 14:09, schrieb Marc Kleine-Budde:
+> > IMHO it should be 4 seperate patches:
+> > - dt
+> > - clocks
+> > - flexcan_get_berr_counter fixes
+> > - your flexcan enhancements
+> 
+> Ok, will split.
+> 
+> >> @@ -362,7 +374,7 @@
+> >>
+> >>  			esdhc1: esdhc@400b2000 {
+> >>  				compatible = "fsl,imx53-esdhc";
+> >> -				reg = <0x400b2000 0x4000>;
+> >> +				reg = <0x400b2000 0x1000>;
+> > 
+> > What's that doing here? :)
+> 
+> That's an error I just stumbled upon. I know it's not related but it's
+> such a small change... Do I need to make a separate patch for that or
+> can I include it in the FlexCAN dt commit?
+> 
+Upstream changes are meant to be traceable by reading the git log. Thus
+no drive-by changes are allowed in unrelated commits. This absolutely
+needs to be a separate patch.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/time/timekeeping.c |   18 ++++++------------
- 1 file changed, 6 insertions(+), 12 deletions(-)
-
-Index: tip/kernel/time/timekeeping.c
-===================================================================
---- tip.orig/kernel/time/timekeeping.c
-+++ tip/kernel/time/timekeeping.c
-@@ -153,16 +153,10 @@ static void tk_setup_internals(struct ti
- /* Timekeeper helper functions. */
- 
- #ifdef CONFIG_ARCH_USES_GETTIMEOFFSET
--u32 (*arch_gettimeoffset)(void);
--
--u32 get_arch_timeoffset(void)
--{
--	if (likely(arch_gettimeoffset))
--		return arch_gettimeoffset();
--	return 0;
--}
-+static u32 default_arch_gettimeoffset(void) { return 0; }
-+u32 (*arch_gettimeoffset)(void) = default_arch_gettimeoffset;
- #else
--static inline u32 get_arch_timeoffset(void) { return 0; }
-+static inline u32 arch_gettimeoffset(void) { return 0; }
- #endif
- 
- static inline s64 timekeeping_get_ns(struct timekeeper *tk)
-@@ -182,7 +176,7 @@ static inline s64 timekeeping_get_ns(str
- 	nsec >>= tk->shift;
- 
- 	/* If arch requires, add in get_arch_timeoffset() */
--	return nsec + get_arch_timeoffset();
-+	return nsec + arch_gettimeoffset();
- }
- 
- static inline s64 timekeeping_get_ns_raw(struct timekeeper *tk)
-@@ -202,7 +196,7 @@ static inline s64 timekeeping_get_ns_raw
- 	nsec = clocksource_cyc2ns(cycle_delta, clock->mult, clock->shift);
- 
- 	/* If arch requires, add in get_arch_timeoffset() */
--	return nsec + get_arch_timeoffset();
-+	return nsec + arch_gettimeoffset();
- }
- 
- static RAW_NOTIFIER_HEAD(pvclock_gtod_chain);
-@@ -282,7 +276,7 @@ static void timekeeping_forward_now(stru
- 	tk->xtime_nsec += cycle_delta * tk->mult;
- 
- 	/* If arch requires, add in get_arch_timeoffset() */
--	tk->xtime_nsec += (u64)get_arch_timeoffset() << tk->shift;
-+	tk->xtime_nsec += (u64)arch_gettimeoffset() << tk->shift;
- 
- 	tk_normalize_xtime(tk);
- 
-
+Regards,
+Lucas 
+-- 
+Pengutronix e.K.             | Lucas Stach                 |
+Industrial Linux Solutions   | http://www.pengutronix.de/  |
 
