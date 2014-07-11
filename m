@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751844AbaGKILu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 04:11:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18845 "EHLO mx1.redhat.com"
+	id S1752045AbaGKIPB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 04:15:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63604 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750936AbaGKILq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 04:11:46 -0400
-Date: Fri, 11 Jul 2014 10:11:07 +0200
+	id S1751119AbaGKIO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 04:14:59 -0400
+Date: Fri, 11 Jul 2014 10:14:25 +0200
 From: Jiri Olsa <jolsa@redhat.com>
 To: Stephane Eranian <eranian@google.com>
 Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
         ak@linux.intel.com, acme@redhat.com, namhyung@kernel.org
 Subject: Re: [PATCH 1/4] perf: add ability to sample machine state on
  interrupt
-Message-ID: <20140711081107.GB21557@krava.redhat.com>
+Message-ID: <20140711081424.GA31646@krava.redhat.com>
 References: <1404857759-25105-1-git-send-email-eranian@google.com>
  <1404857759-25105-2-git-send-email-eranian@google.com>
 MIME-Version: 1.0
@@ -35,18 +35,31 @@ On Wed, Jul 09, 2014 at 12:15:56AM +0200, Stephane Eranian wrote:
 > To sample interrupt machine state, the 
 > PERF_SAMPLE_INTR_REGS must be passed in
 > sample_type.
-> 
-> The list of available registers is arch
-> dependent and provided by asm/perf_regs.h
-> 
-> Registers are laid out as u64 in the order
-> of the bit order of sample_intr_regs.
-                      ^^^ sample_regs_intr
 
-just crossed my ming we want to use 'kernel' here and call it 'sample_regs_kernel',
-since we already have sample_regs_user. Also for events other than HW, the sample
-does not happen in interrupt..  anyway:
+SNIP
 
-Reviewed-by: Jiri Olsa <jolsa@kernel.org>
+> index 57e9190..018939c 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -4296,7 +4296,7 @@ perf_output_sample_regs(struct perf_output_handle *handle,
+>  	}
+>  }
+>  
+> -static void perf_sample_regs_user(struct perf_regs_user *regs_user,
+> +static void perf_sample_regs_user(struct perf_regs *regs_user,
+>  				  struct pt_regs *regs)
+>  {
+>  	if (!user_mode(regs)) {
+> @@ -4312,6 +4312,14 @@ static void perf_sample_regs_user(struct perf_regs_user *regs_user,
+>  	}
+>  }
+>  
+> +static void perf_sample_regs_intr(struct perf_regs *regs_user,
+> +				  struct pt_regs *regs)
+> +{
+> +	regs_user->regs = regs;
+> +	regs_user->abi  = perf_reg_abi(current);
+
+             ^^^ regs_intr
 
 jirka
