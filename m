@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752479AbaGKJdV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 05:33:21 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:57684 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751402AbaGKJdU (ORCPT
+	id S1752765AbaGKJdd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 05:33:33 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:46740 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392AbaGKJdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 05:33:20 -0400
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: ks.giri@samsung.com, arnd@arndb.de, ijc+devicetree@hellion.org.uk,
-        mark.rutland@arm.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        courtney.cavin@sonymobile.com, mporter@linaro.org,
-        slapdau@yahoo.com.au, lftan.linux@gmail.com, loic.pallardy@st.com,
-        s-anna@ti.com, ashwin.chaugule@linaro.org, bjorn@kryo.se,
-        patches@linaro.org, Mollie.Wu@tw.fujitsu.com,
-        t.takinishi@jp.fujitsu.com
-Subject: [PATCHv8 0/2] Common Mailbox Framework
-Date: Fri, 11 Jul 2014 15:02:47 +0530
-Message-Id: <1405071167-14503-1-git-send-email-jaswinder.singh@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
+	Fri, 11 Jul 2014 05:33:31 -0400
+Date: Fri, 11 Jul 2014 10:33:25 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kishon <kishon@ti.com>, "kernel@stlinux.com" <kernel@stlinux.com>
+Subject: Re: [PATCH v3 2/5] phy: miphy365x: Add MiPHY365x header file for DT
+ x Driver defines
+Message-ID: <20140711093325.GB30519@lee--X1>
+References: <1404906074-31992-1-git-send-email-lee.jones@linaro.org>
+ <1404906074-31992-3-git-send-email-lee.jones@linaro.org>
+ <CAG374jD=DOVveEOxvddxMZYrEk0Paj4on3cnzSM8kZstSUrwcA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAG374jD=DOVveEOxvddxMZYrEk0Paj4on3cnzSM8kZstSUrwcA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-  Here is the next revision of Mailbox framwork.
+On Fri, 11 Jul 2014, Gabriel Fernandez wrote:
 
-Changes since v7:
- o Added documentation and example usage.
- o Merged all patches into one that create api, bindings and
-   documentation.
+> Hi Lee
+> 
+> On 9 July 2014 13:41, Lee Jones <lee.jones@linaro.org> wrote:
+> > This provides the shared header file which will be reference from both
+> > the MiPHY365x driver and its associated Device Tree node(s).
+> >
+> > Cc: Kishon Vijay Abraham I <kishon@ti.com>
+> > Acked-by: Mark Rutland <mark.rutland@arm.com>
+> > Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > ---
+> >  include/dt-bindings/phy/phy-miphy365x.h | 14 ++++++++++++++
+> >  1 file changed, 14 insertions(+)
+> >  create mode 100644 include/dt-bindings/phy/phy-miphy365x.h
+> >
+> > diff --git a/include/dt-bindings/phy/phy-miphy365x.h b/include/dt-bindings/phy/phy-miphy365x.h
+> > new file mode 100644
+> > index 0000000..8ef8aba
+> > --- /dev/null
+> > +++ b/include/dt-bindings/phy/phy-miphy365x.h
+> > @@ -0,0 +1,14 @@
+> > +/*
+> > + * This header provides constants for the phy framework
+> > + * based on the STMicroelectronics MiPHY365x.
+> > + *
+> > + * Author: Lee Jones <lee.jones@linaro.org>
+> > + */
+> > +#ifndef _DT_BINDINGS_PHY_MIPHY
+> > +#define _DT_BINDINGS_PHY_MIPHY
+> > +
+> > +#define MIPHY_TYPE_SATA                1
+> 
+> why it start to 1 ? for my side i prefer 0.
 
-Changes since v6:
- o Separate out generic DT bindings patch.
- o Discard unnecessary aligned attributes.
+Because 0 is a default state after using devm_kzalloc(), meaning
+'unset', which would be an error.
 
-Changes since v5:
- o Use standard error types instead of special type mbox_result.
- o Constify client struct in request_channel
- o Use reinit_completion instead of init_completion every time.
- o Improve commentary in bindings and code.
+> > +#define MIPHY_TYPE_PCIE                2
+> > +#define MIPHY_TYPE_USB         3
+> > +
+> > +#endif /* _DT_BINDINGS_PHY_MIPHY */
+> >
+> >
+> > _______________________________________________
+> > linux-arm-kernel mailing list
+> > linux-arm-kernel@lists.infradead.org
+> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-Changes since v4:
- o Common DT binding for Controller and Client drivers
-    As a result, discard string based channel matching
- o Provide for an atomic 'peek' api, that a client could
-    call to trigger the controller driver push data upwards.
- o OMAP and Highbank conversion to new api is left out, which
-    can be converted later by the developers.
-
-Changes since v3:
- o Change name of symbols from ipc to mbox
- o Return real types instead of void *
- o Align structures
- o Change some symbol names
-	rxcb -> rx_callback
-	txcb -> tx_done
- o Added kernel-doc for exported API
- o Dropped the cl_id and use clients pointer for callbacks.
- o Fixed locking of channel pool
- o Return negative error code for unsuccessful ipc_send_message()
- o Module referencing during mailbox assignment to a client.
- o Made error code symbols specific to mailbox.
-
-Thanks
-Jassi
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
