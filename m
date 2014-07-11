@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754958AbaGKQY7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 12:24:59 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:34088 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754859AbaGKQYz (ORCPT
+	id S1754317AbaGKQ1A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 12:27:00 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:37417 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752072AbaGKQ07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 12:24:55 -0400
-Date: Fri, 11 Jul 2014 12:24:51 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Jianyu Zhan <nasa4836@gmail.com>, malc <av1474@comtv.ru>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Fabian Frederick <fabf@skynet.be>, Tony Luck <tony.luck@intel.com>,
-        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC Patch V1 07/30] mm: Use cpu_to_mem()/numa_mem_id() to
- support memoryless node
-Message-ID: <20140711162451.GD30865@htj.dyndns.org>
-References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
- <1405064267-11678-8-git-send-email-jiang.liu@linux.intel.com>
- <20140711144205.GA27706@htj.dyndns.org>
- <alpine.DEB.2.11.1407111012210.25527@gentwo.org>
- <20140711152156.GB29137@htj.dyndns.org>
- <alpine.DEB.2.11.1407111056060.27349@gentwo.org>
- <20140711160152.GC30865@htj.dyndns.org>
- <alpine.DEB.2.11.1407111117560.27592@gentwo.org>
+	Fri, 11 Jul 2014 12:26:59 -0400
+Date: Sat, 12 Jul 2014 01:25:42 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: joe@perches.com, davem@davemloft.net, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        markh@compro.net, dan.carpenter@oracle.com, lidza.louina@gmail.com
+Subject: [PATCH] MAINTAINERS: Adds Daeseok Youn to maintainers list for dgap
+Message-ID: <20140711162542.GA24088@devel.8.8.4.4>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1407111117560.27592@gentwo.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 11:19:14AM -0500, Christoph Lameter wrote:
-> Yes that works. But if we want a consistent node to allocate from (and
-> avoid the fallbacks) then we need this patch. I think this is up to those
-> needing memoryless nodes to figure out what semantics they need.
+Adds "Daeseok Youn" to maintainers list for dgap driver.
 
-I'm not following what you're saying.  Are you saying that we need to
-spread numa_mem_id() all over the place for GFP_THISNODE users on
-memless nodes?  There aren't that many users of GFP_THISNODE.
-Wouldn't it make far more sense to just change them?  Or just
-introduce a new GFP flag GFP_CLOSE_OR_BUST which allows falling back
-to the nearest local node for memless nodes.  There's no reason to
-leak this information outside allocator proper.
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+Suggested-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ MAINTAINERS |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Thanks.
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index e3a5176..053ac24 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2861,6 +2861,7 @@ F:	drivers/staging/dgnc/
+ DIGI EPCA PCI PRODUCTS
+ M:	Lidza Louina <lidza.louina@gmail.com>
+ M:	Mark Hounschell <markh@compro.net>
++M:	Daeseok Youn <daeseok.youn@gmail.com>
+ L:	driverdev-devel@linuxdriverproject.org
+ S:	Maintained
+ F:	drivers/staging/dgap/
 -- 
-tejun
+1.7.1
+
