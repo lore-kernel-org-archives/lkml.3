@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907AbaGKUkO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 16:40:14 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60796 "EHLO arroyo.ext.ti.com"
+	id S1753452AbaGKUkt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 16:40:49 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:49703 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754629AbaGKUiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 16:38:06 -0400
+	id S1752636AbaGKUiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 16:38:03 -0400
 From: Murali Karicheri <m-karicheri2@ti.com>
 To: <linux-arm-kernel@lists.infradead.org>, <linux-pci@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
@@ -22,42 +22,22 @@ CC: Murali Karicheri <m-karicheri2@ti.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
         Randy Dunlap <rdunlap@infradead.org>
-Subject: [PATCH v4 0/6] Add Keystone PCIe controller driver
-Date: Fri, 11 Jul 2014 16:36:29 -0400
-Message-ID: <1405110995-24676-1-git-send-email-m-karicheri2@ti.com>
+Subject: [PATCH v4 6/6] PCI: keystone: Update maintainer information
+Date: Fri, 11 Jul 2014 16:36:35 -0400
+Message-ID: <1405110995-24676-7-git-send-email-m-karicheri2@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1405110995-24676-1-git-send-email-m-karicheri2@ti.com>
+References: <1405110995-24676-1-git-send-email-m-karicheri2@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add PCIe controller driver for keystone SoCs. This is based on v3
-of the series posted to the mailing list. Keystone PCI controller is based on
-version 3.65 of the DW hardware. This driver re-uses some of the DW core driver
-functions and required modification in some to support the old DW h/w based
-keystone driver.
-
-Testing:
-=======
-
-Testing of the driver is done on TI's K2HK EVM inserted to a Elma blu!eco
-MicroTCA chassis AMC slot with JumpGen SEM-200 AMC SATA Storage and Dual
-Ethernet Card Express inserted on another AMC slot. The e1000e driver available
-on intel's website is patched to the kernel source tree and build. e1000e.ko
-is dynamically loaded and executed ping and iperf tests to test the
-functionality.
-
-Thanks to all of you who have contributed by reviewing and offering valuable
-comments. If you want me to add your "Reviewed-by", please let me know so that
-I can add it to the commit log and re-send. I am still missing some mandatory
-acked-by from maintainers (from the designware against 3/6 and 4/6 and DT
-maintainers against 4/6 and 5/6). If you can provide them at the earliest, it
-will be appreciated.
-
-Thanks
+Update the MAINTAINERS file for the keystone PCIe driver
 
 Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
 CC: Russell King <linux@arm.linux.org.uk>
 CC: Grant Likely <grant.likely@linaro.org>
@@ -76,77 +56,28 @@ CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
 CC: Kumar Gala <galak@codeaurora.org>
 CC: Randy Dunlap <rdunlap@infradead.org>
 CC: Grant Likely <grant.likely@linaro.org>
+---
+ MAINTAINERS |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Changelog:
-
-v4
- - Addressed comments against 5/5.
- - Added a patch 6/6 for Maintainer information
- - Added couple of Acked-By:
- - Rebased to latest Linux 3.16-rc4
-v3
- - DW application register handling code is now part of
-   Keystone PCI driver. RFC had this code part of Keystone
-   PCI driver, then V1 moved this to a separate file to
-   re-use on other platforms that uses this version of the
-   DW h/w. Then based on comments against v2, this is moved
-   back to Keystone driver.
- - Keystone SerDes phy driver is removed from this series so that
-   this can be merged independent of that patch
- - added msi_set_irq()/clear_irq() API's to support Keystone
-
-V2
- - Split the designware pcie enhancement patch to multiple
-   patches based on functionality added
- - Remove the quirk code and add a patch to fix mps/mrss
-   tuning for ARM. Use kernel command line parameter
-   pci=pcie_bus_perf to work with Keystone PCI Controller.
-   Following patch addressed this.
-     [PATCH v1] ARM: pci: add call to pcie_bus_configure_settings()
- - Add documentation for device tree bindings
- - Add separate interrupt controller nodes for MSI and Legacy
-   IRQs and use irq map for legacy IRQ
- - Use compatibility to identify v3.65 version of the DW hardware
-   and use it to customize the designware common code.
- - Use reg property for configuration space instead of range
- - Other minor updates based on code inspection. 
-
-V1
- - Add an interrupt controller node for Legacy irq chip and use
-   interrupt map/map-mask property to map legacy IRQs A/B/C/D
- - Add a Phy driver to replace the original serdes driver
- - Move common application register handling code to a separate
-   file to allow re-use across other platforms that use older
-   DW PCIe h/w
- - PCI quirk for maximum read request size. Check and override only
-   if the maximum is higher than what controller can handle.
- - Converted to a module platform driver.
-
-Murali Karicheri (6):
-  PCI: designware: add rd[wr]_other_conf API
-  PCI: designware: refactor MSI code to work with v3.65 dw hardware
-  PCI: designware: refactor host init code to re-use on keystone PCI
-  PCI: designware: enhance dw core driver to support keystone PCI host
-    controller
-  PCI: add PCI controller for keystone PCIe h/w
-  PCI: keystone: Update maintainer information
-
- .../devicetree/bindings/pci/designware-pcie.txt    |    2 +
- .../devicetree/bindings/pci/pci-keystone.txt       |   69 +++
- MAINTAINERS                                        |    7 +
- drivers/pci/host/Kconfig                           |    5 +
- drivers/pci/host/Makefile                          |    1 +
- drivers/pci/host/pci-keystone-dw.c                 |  519 ++++++++++++++++++++
- drivers/pci/host/pci-keystone.c                    |  383 +++++++++++++++
- drivers/pci/host/pci-keystone.h                    |   56 +++
- drivers/pci/host/pcie-designware.c                 |  206 ++++++--
- drivers/pci/host/pcie-designware.h                 |   17 +-
- 10 files changed, 1212 insertions(+), 53 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pci/pci-keystone.txt
- create mode 100644 drivers/pci/host/pci-keystone-dw.c
- create mode 100644 drivers/pci/host/pci-keystone.c
- create mode 100644 drivers/pci/host/pci-keystone.h
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index c411c40..0a17971 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6793,6 +6793,13 @@ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+ S:	Maintained
+ F:	drivers/pci/host/*imx6*
+ 
++PCI DRIVER FOR keystone
++M:	Murali Karicheri <m-karicheri2@ti.com>
++L:	linux-pci@vger.kernel.org
++L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
++S:	Maintained
++F:	drivers/pci/host/*keystone*
++
+ PCI DRIVER FOR MVEBU (Marvell Armada 370 and Armada XP SOC support)
+ M:	Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+ M:	Jason Cooper <jason@lakedaemon.net>
 -- 
 1.7.9.5
 
