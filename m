@@ -1,307 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754347AbaGKOEg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 10:04:36 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:49142 "EHLO
+	id S1754696AbaGKOEo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 10:04:44 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:49151 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754057AbaGKOEd (ORCPT
+	with ESMTP id S1754357AbaGKOEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 10:04:33 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-d4-53bfeeeeaa6c
+	Fri, 11 Jul 2014 10:04:39 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-74-53bfeef5fdf6
 From: Jacek Anaszewski <j.anaszewski@samsung.com>
 To: linux-leds@vger.kernel.org, devicetree@vger.kernel.org,
         linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
-        Jacek Anaszewski <j.anaszewski@samsung.com>
-Subject: [PATCH/RFC v4 00/21] LED / flash API integration
-Date: Fri, 11 Jul 2014 16:04:03 +0200
-Message-id: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
+        Jacek Anaszewski <j.anaszewski@samsung.com>,
+        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>
+Subject: [PATCH/RFC v4 02/21] leds: implement sysfs interface locking mechanism
+Date: Fri, 11 Jul 2014 16:04:05 +0200
+Message-id: <1405087464-13762-3-git-send-email-j.anaszewski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNJMWRmVeSWpSXmKPExsVy+t9jQd337/YHG6xYxmSxccZ6Vov5R86x
-	WvRefc5ocbbpDbvF5V1z2Cy2vlnHaNGzYSurA7tH35ZVjB6fN8kFMEVx2aSk5mSWpRbp2yVw
-	ZVy8uIq9YGpaxZUZ91kbGL97dzFyckgImEjs3vmOHcIWk7hwbz1bFyMXh5DAdEaJydN+MYIk
-	hATamSR+LpYEsdkEDCV+vnjNBGKLCJRL9Lx/xgZiMwukSaxZfx+sXljAUmLt/cVgNSwCqhJL
-	+lrA4rwCHhLbr/YBxTmAlilIzJlkM4GRewEjwypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M
-	4CB4Jr2DcVWDxSFGAQ5GJR7eE2v2BQuxJpYVV+YeYpTgYFYS4b36Zn+wEG9KYmVValF+fFFp
-	TmrxIUZpDhYlcd6DrdaBQgLpiSWp2ampBalFMFkmDk6pBkbNEh/x9PtJO/g73kz6+pvng8wq
-	rWOqtc65olZe066IXM58XZWm/KUzgn/Zzfq06TNXHTuT9eFSorzY2mNTjl5uuDmnOnF1t+wS
-	fkO9xRMad93qqArY1MBy+FnmR9cFvXHMYvUuZ17vcN4Uf7rG9UiU5bPEI6eOPT9m27NNSpGN
-	afajiX9VOXWVWIozEg21mIuKEwErdXzH/gEAAA==
+In-reply-to: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
+References: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBLMWRmVeSWpSXmKPExsVy+t9jQd2v7/YHG1zaJmaxccZ6VoujOycy
+	Wcw/co7Vovfqc0aLs01v2C0u75rDZrH1zTpGi54NW1ktdu96yurA6bFz1l12jz3zf7B69G1Z
+	xejxeZNcAEsUl01Kak5mWWqRvl0CV8bpO33sBR90Kvbu/8jYwLhAtYuRk0NCwERiyrXVLBC2
+	mMSFe+vZuhi5OIQEpjNKXP/0iBXCaWeSeLvpLStIFZuAocTPF6+ZQGwRgXKJnvfPwDqYBVYz
+	StzZ+hWsSFjAX2Jx40ygsRwcLAKqEls3BICEeQU8JM69b2AFCUsIKEjMmWQDEuYU8JQ42H+T
+	DcQWAip5uPYE+wRG3gWMDKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxgsPrmdQOxpUNFocY
+	BTgYlXh4FdbvCxZiTSwrrsw9xCjBwawkwnv1zf5gId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rwH
+	Wq0DhQTSE0tSs1NTC1KLYLJMHJxSDYwzQwu+KFaHmS2accN1sazhafbg5xG+K2oelN9/O2Um
+	7xl3n19tumsY3Ra2R/hfKXWfWzRr1S4T/ts2s35ssAqzbH5a3xPdH3eRI8vRz0ktpPbp+vy8
+	Y9vX//q20+eInpepieink7Pe6TD8iV6lWfO9XKZ305cXHZbGP6My8rXK/D7syb6o/laJpTgj
+	0VCLuag4EQDt3pgYKwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is is the fourth version of the patch series being a follow up
-of the discussion on Media summit 2013-10-23, related to the
-LED / flash API integration (the notes from the discussion were
-enclosed in the message [1], paragraph 5).
-The series is based on linux-next-20140707
+Add mechanism for locking LED subsystem sysfs interface.
+This patch prepares ground for addition of LED Flash Class extension.
 
-Description of the proposed modifications according to
-the kernel components they are relevant to:
-    - LED subsystem modifications
-        * added led_flash module which, when enabled in the config,
-          registers flash specific sysfs attributes, if the driver
-	  declares related features:
-            - flash_brightness
-            - max_flash_brightness
-            - indicator_brightness
-            - max_indicator_brightness
-            - flash_timeout
-            - max_flash_timeout
-            - flash_strobe
-            - external_strobe
-            - flash_fault
-          and exposes kernel internal API:
-            - led_classdev_flash_register
-            - led_classdev_flash_unregister
-            - led_set_flash_strobe
-            - led_get_flash_strobe
-            - led_set_flash_brightness
-            - led_update_flash_brightness
-            - led_set_indicator_brightness
-            - led_update_indicator_brightness
-            - led_set_flash_timeout
-            - led_get_flash_fault
-            - led_set_external_strobe
-            - led_sysfs_lock
-            - led_sysfs_unlock
-        * added Flash Manager functionality, available when
-          led_flash module is enable in the config;
-          if the device tree node of a flash led device contains
-          relevant subnodes, it registers following sysfs attributes:
-            - strobe_provider
-            - strobe_providerN
-            - blocking_strobe
-          following kernel internal API is exposed by the flash manager:
-            - led_flash_manager_register_flash
-            - led_flash_manager_unregister_flash 
-            - led_flash_manager_setup_strobe
-            - led_flash_manager_bind_async_mux
-            - led_flash_manager_unbind_async_mux
-    - Addition of a V4L2 Flash sub-device registration helpers
-        * added v4l2-flash.c and v4l2-flash.h files with helper
-          functions that facilitate registration/unregistration
-          of a subdevice, which wrapps a LED subsystem device and
-          exposes V4L2 Flash control interface
-    - Addition of a LED Flash Class driver for the flash cell of
-      the MAX77693 mfd
-    - Addition of a LED Flash Class driver for the AAT1290 current
-      regulator for flash leds along with its DT binding for the
-      exynos4412-trats2 board, where standalone multiplexer is
-      used for modifying strobe signal routing - either from the SoC
-      GPIO or from a camera sensor. This arrangment is handled
-      by the newly introduced Flash Manager functionality.
-    - Update of the max77693.txt DT bindings documentation
-    - Update of the common leds DT bindings documentation
+Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Bryan Wu <cooloney@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+---
+ drivers/leds/led-class.c    |   13 +++++++++++--
+ drivers/leds/led-core.c     |   18 ++++++++++++++++++
+ drivers/leds/led-triggers.c |   11 ++++++++---
+ include/linux/leds.h        |   31 +++++++++++++++++++++++++++++++
+ 4 files changed, 68 insertions(+), 5 deletions(-)
 
-================
-Changes since v2
-================
-
-    - refactored the code so that it is possible to build
-      led-core without led-flash module
-    - added v4l2-flash ops which slackens dependency from
-      the led-flash module
-    - implemented led_clamp_align_val function and led_ctrl
-      structure which allows to align led control values
-      in the manner compatible with V4L2 Flash controls;
-      the flash brightness and timeout units have been defined
-      as microamperes and microseconds respectively to properly
-      support devices which define current and time levels
-      as fractions of 1/1000.
-    - added support for the flash privacy leds
-    - modified LED sysfs locking mechanism - now it locks/unlocks
-      the interface on V4L2 Flash sub-device file open/close
-    - changed hw_triggered attribute name to external_strobe,
-      which maps on the V4L2_FLASH_STROBE_SOURCE_EXTERNAL name 
-      more intuitively
-    - made external_strobe and indicator related sysfs attributes
-      created optionally only if related features are declared
-      by the led device driver
-    - removed from the series patches modifying exynos4-is media
-      controller - a proposal for "flash manager" which will take
-      care of flash devices registration is due to be submitted
-    - removed modifications to the LED class devices documentation,
-      it will be covered after the whole functionality is accepted
-
-================
-Changes since v3
-================
-
-    - added Flash Manager feature
-      - added generic LED Flash Class gpio mux driver
-      - added sample async mux driver
-      - added of helpers for parsing Flash Manager related
-        device tree data
-    - added V4L2_CID_FLASH_STROBE_PROVIDER control
-    - introduced struct led_classdev_flash, which wrapps
-      struct led_classdev
-    - made all flash ops, except strobe_set, optional; if an op
-      is absent the related sysfs attribute isn't created
-    - added LED_DEV_CAP* flags
-    - modified v4l2-flash helpers to create v4l2_device
-      for v4l2_flash subdevices to register in it
-    - modified max77693-flash driver and its DT bindings
-      to allow for registering either one or two LED Flash
-      Class devices, depending on the device tree settings.
-    - added new API for setting torch_brightness
-    - extended leds common DT binding documentation
-
-Issues:
-
-1) Who should register V4L2 Flash sub-device?
-
-LED Flash Class devices, after introduction of the Flash Manager,
-are not tightly coupled with any media controller. They are maintained
-by the Flash Manager and made available for dynamic assignment to
-any media system they are connected to through multiplexing devices.
-
-In the proposed rough solution, when support for V4L2 Flash sub-devices
-is enabled, there is a v4l2_device created for them to register in.
-This however implies that V4L2 Flash device will not be available
-in any media controller, which calls its existence into question.
-
-Therefore I'd like to consult possible ways of solving this issue.
-The option I see is implementing a mechanism for moving V4L2 Flash
-sub-devices between media controllers. A V4L2 Flash sub-device
-would initially be assigned to one media system in the relevant
-device tree binding, but it could be dynamically reassigned to
-the other one. However I'm not sure if media controller design
-is prepared for dynamic modifications of its graph and how many
-modifications in the existing drivers this solution would require.
-
-2) Consequences of locking the Flash Manager during flash strobe
-
-In case a LED Flash Class device depends on muxes involved in
-routing the other LED Flash Class device's strobe signals,
-the Flash Manager must be locked for the time of strobing
-to prevent reconfiguration of the strobe signal routing
-by the other device.
-
-A blocking_strobe sysfs attribute was added to indicate whether
-this is the case for the device.
-
-Nonetheless, this modifies behaviour of led_set_external_strobe
-API, which also must block the caller for the time of strobing
-to protect the strobe signal routing while the external strobe
-signal provider asserts the flash_en pin.
-
-Use case for user space application would be following in this case:
-  - spawn a new thread in which external strobe is activated
-  - in the parent thread instruct the external strobe provider
-    to strobe the flash
-
-As an improvement there could be an op added for notifying
-the application that the strobe signal routing has been
-set up. It would have to be called from the function
-led_flash_manager_setup_strobe after led_flash_manager_set_external_strobe
-returns.
-
-The blocking_strobe attribute would have to be also
-mapped to a new V4L2 Flash control. Unfortunately it poses
-a problem for the existing users of the V4L2 Flash API
-which are not aware that setting V4L2_CID_FLASH_STROBE_SOURCE
-may be blocking.
-
-As a solution led_set_external_strobe API could be extended
-by a parameter telling whether the caller is prepared for
-the blocking call. led_flash_manager_setup_strobe should
-be extended accordingly then.
-In V4L2 "V4L2_FLASH_STROBE_SOURCE_EXTERNAL_BLOCKING" menu item
-could be added to handle this.
-With existing V4L2_FLASH_STROBE_SOURCE_EXTERNAL the flash manager
-wouldn't protect muxes against reconfiguration.
-
-TODO:
-  - switch to using V4L2 array controls 
-  - add s_power op to the LED Flash Class
-
-
-I will be off-line for three weeks from now on and will respond
-to any questions after getting back.
-
-
-Thanks,
-Jacek Anaszewski
-
-Jacek Anaszewski (21):
-  leds: make brightness type consistent across whole subsystem
-  leds: implement sysfs interface locking mechanism
-  leds: Improve and export led_update_brightness
-  leds: Reorder include directives
-  leds: avoid using deprecated DEVICE_ATTR macro
-  leds: add API for setting torch brightness
-  of: add of_node_ncmp wrapper
-  leds: Add sysfs and kernel internal API for flash LEDs
-  Documentation: leds: Add description of LED Flash Class extension
-  Documentation: leds: add exemplary asynchronous mux driver
-  DT: leds: Add flash led devices related properties
-  DT: Add documentation for LED Class Flash Manger
-  v4l2-device: add v4l2_device_register_subdev_node API
-  v4l2-ctrls: add control for flash strobe signal providers
-  media: Add registration helpers for V4L2 flash
-  leds: Add support for max77693 mfd flash cell
-  DT: Add documentation for the mfd Maxim max77693
-  leds: Add driver for AAT1290 current regulator
-  of: Add Skyworks Solutions, Inc. vendor prefix
-  DT: Add documentation for the Skyworks AAT1290
-  ARM: dts: add aat1290 current regulator device node
-
- Documentation/DocBook/media/v4l/controls.xml       |   11 +
- Documentation/devicetree/bindings/leds/common.txt  |   16 +
- .../devicetree/bindings/leds/leds-aat1290.txt      |   17 +
- .../bindings/leds/leds-flash-manager.txt           |  165 +++
- Documentation/devicetree/bindings/mfd/max77693.txt |   62 ++
- .../devicetree/bindings/vendor-prefixes.txt        |    1 +
- Documentation/leds/leds-async-mux.c                |   65 ++
- Documentation/leds/leds-class-flash.txt            |  126 +++
- arch/arm/boot/dts/exynos4412-trats2.dts            |   24 +
- drivers/leds/Kconfig                               |   28 +
- drivers/leds/Makefile                              |    7 +
- drivers/leds/led-class-flash.c                     |  715 +++++++++++++
- drivers/leds/led-class.c                           |   58 +-
- drivers/leds/led-core.c                            |   51 +-
- drivers/leds/led-flash-gpio-mux.c                  |  102 ++
- drivers/leds/led-flash-manager.c                   |  698 +++++++++++++
- drivers/leds/led-triggers.c                        |   16 +-
- drivers/leds/leds-aat1290.c                        |  455 +++++++++
- drivers/leds/leds-max77693.c                       | 1070 ++++++++++++++++++++
- drivers/leds/of_led_flash_manager.c                |  155 +++
- drivers/media/v4l2-core/Kconfig                    |   11 +
- drivers/media/v4l2-core/Makefile                   |    2 +
- drivers/media/v4l2-core/v4l2-ctrls.c               |    2 +
- drivers/media/v4l2-core/v4l2-device.c              |   63 +-
- drivers/media/v4l2-core/v4l2-flash.c               |  580 +++++++++++
- drivers/mfd/max77693.c                             |    5 +-
- include/linux/led-class-flash.h                    |  290 ++++++
- include/linux/led-flash-gpio-mux.h                 |   68 ++
- include/linux/led-flash-manager.h                  |  121 +++
- include/linux/leds.h                               |   73 +-
- include/linux/mfd/max77693.h                       |   40 +
- include/linux/of.h                                 |    1 +
- include/linux/of_led_flash_manager.h               |   80 ++
- include/media/v4l2-device.h                        |    7 +
- include/media/v4l2-flash.h                         |  137 +++
- include/uapi/linux/v4l2-controls.h                 |    2 +
- 36 files changed, 5272 insertions(+), 52 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/leds/leds-aat1290.txt
- create mode 100644 Documentation/devicetree/bindings/leds/leds-flash-manager.txt
- create mode 100644 Documentation/leds/leds-async-mux.c
- create mode 100644 Documentation/leds/leds-class-flash.txt
- create mode 100644 drivers/leds/led-class-flash.c
- create mode 100644 drivers/leds/led-flash-gpio-mux.c
- create mode 100644 drivers/leds/led-flash-manager.c
- create mode 100644 drivers/leds/leds-aat1290.c
- create mode 100644 drivers/leds/leds-max77693.c
- create mode 100644 drivers/leds/of_led_flash_manager.c
- create mode 100644 drivers/media/v4l2-core/v4l2-flash.c
- create mode 100644 include/linux/led-class-flash.h
- create mode 100644 include/linux/led-flash-gpio-mux.h
- create mode 100644 include/linux/led-flash-manager.h
- create mode 100644 include/linux/of_led_flash_manager.h
- create mode 100644 include/media/v4l2-flash.h
-
+diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+index aa29198..ea04891 100644
+--- a/drivers/leds/led-class.c
++++ b/drivers/leds/led-class.c
+@@ -45,17 +45,23 @@ static ssize_t brightness_store(struct device *dev,
+ {
+ 	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+ 	unsigned long state;
+-	ssize_t ret = -EINVAL;
++	ssize_t ret;
++
++	mutex_lock(&led_cdev->led_lock);
+ 
+ 	ret = kstrtoul(buf, 10, &state);
+ 	if (ret)
+-		return ret;
++		goto unlock;
+ 
+ 	if (state == LED_OFF)
+ 		led_trigger_remove(led_cdev);
+ 	__led_set_brightness(led_cdev, state);
+ 
+ 	return size;
++	ret = size;
++unlock:
++	mutex_unlock(&led_cdev->led_lock);
++	return ret;
+ }
+ static DEVICE_ATTR_RW(brightness);
+ 
+@@ -219,6 +225,7 @@ int led_classdev_register(struct device *parent, struct led_classdev *led_cdev)
+ #ifdef CONFIG_LEDS_TRIGGERS
+ 	init_rwsem(&led_cdev->trigger_lock);
+ #endif
++	mutex_init(&led_cdev->led_lock);
+ 	/* add to the list of leds */
+ 	down_write(&leds_list_lock);
+ 	list_add_tail(&led_cdev->node, &leds_list);
+@@ -272,6 +279,8 @@ void led_classdev_unregister(struct led_classdev *led_cdev)
+ 	down_write(&leds_list_lock);
+ 	list_del(&led_cdev->node);
+ 	up_write(&leds_list_lock);
++
++	mutex_destroy(&led_cdev->led_lock);
+ }
+ EXPORT_SYMBOL_GPL(led_classdev_unregister);
+ 
+diff --git a/drivers/leds/led-core.c b/drivers/leds/led-core.c
+index 71b40d3..4d7cb31 100644
+--- a/drivers/leds/led-core.c
++++ b/drivers/leds/led-core.c
+@@ -126,3 +126,21 @@ void led_set_brightness(struct led_classdev *led_cdev,
+ 	__led_set_brightness(led_cdev, brightness);
+ }
+ EXPORT_SYMBOL(led_set_brightness);
++
++/* Caller must ensure led_cdev->led_lock held */
++void led_sysfs_lock(struct led_classdev *led_cdev)
++{
++	WARN_ON(!mutex_is_locked(&led_cdev->led_lock));
++
++	led_cdev->flags |= LED_SYSFS_LOCK;
++}
++EXPORT_SYMBOL_GPL(led_sysfs_lock);
++
++/* Caller must ensure led_cdev->led_lock held */
++void led_sysfs_unlock(struct led_classdev *led_cdev)
++{
++	WARN_ON(!mutex_is_locked(&led_cdev->led_lock));
++
++	led_cdev->flags &= ~LED_SYSFS_LOCK;
++}
++EXPORT_SYMBOL_GPL(led_sysfs_unlock);
+diff --git a/drivers/leds/led-triggers.c b/drivers/leds/led-triggers.c
+index c3734f1..0545530 100644
+--- a/drivers/leds/led-triggers.c
++++ b/drivers/leds/led-triggers.c
+@@ -37,6 +37,9 @@ ssize_t led_trigger_store(struct device *dev, struct device_attribute *attr,
+ 	char trigger_name[TRIG_NAME_MAX];
+ 	struct led_trigger *trig;
+ 	size_t len;
++	int ret = count;
++
++	mutex_lock(&led_cdev->led_lock);
+ 
+ 	trigger_name[sizeof(trigger_name) - 1] = '\0';
+ 	strncpy(trigger_name, buf, sizeof(trigger_name) - 1);
+@@ -47,7 +50,7 @@ ssize_t led_trigger_store(struct device *dev, struct device_attribute *attr,
+ 
+ 	if (!strcmp(trigger_name, "none")) {
+ 		led_trigger_remove(led_cdev);
+-		return count;
++		goto exit_unlock;
+ 	}
+ 
+ 	down_read(&triggers_list_lock);
+@@ -58,12 +61,14 @@ ssize_t led_trigger_store(struct device *dev, struct device_attribute *attr,
+ 			up_write(&led_cdev->trigger_lock);
+ 
+ 			up_read(&triggers_list_lock);
+-			return count;
++			goto exit_unlock;
+ 		}
+ 	}
+ 	up_read(&triggers_list_lock);
+ 
+-	return -EINVAL;
++exit_unlock:
++	mutex_unlock(&led_cdev->led_lock);
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(led_trigger_store);
+ 
+diff --git a/include/linux/leds.h b/include/linux/leds.h
+index 995f933..da7c6b5 100644
+--- a/include/linux/leds.h
++++ b/include/linux/leds.h
+@@ -13,6 +13,7 @@
+ #define __LINUX_LEDS_H_INCLUDED
+ 
+ #include <linux/list.h>
++#include <linux/mutex.h>
+ #include <linux/spinlock.h>
+ #include <linux/rwsem.h>
+ #include <linux/timer.h>
+@@ -42,6 +43,7 @@ struct led_classdev {
+ #define LED_BLINK_ONESHOT	(1 << 17)
+ #define LED_BLINK_ONESHOT_STOP	(1 << 18)
+ #define LED_BLINK_INVERT	(1 << 19)
++#define LED_SYSFS_LOCK		(1 << 20)
+ 
+ 	/* Set LED brightness level */
+ 	/* Must not sleep, use a workqueue if needed */
+@@ -85,6 +87,9 @@ struct led_classdev {
+ 	/* true if activated - deactivate routine uses it to do cleanup */
+ 	bool			activated;
+ #endif
++
++	/* Ensures consistent access to the LED Flash Class device */
++	struct mutex		led_lock;
+ };
+ 
+ extern int led_classdev_register(struct device *parent,
+@@ -140,6 +145,32 @@ extern void led_blink_set_oneshot(struct led_classdev *led_cdev,
+  */
+ extern void led_set_brightness(struct led_classdev *led_cdev,
+ 			       enum led_brightness brightness);
++/**
++ * led_sysfs_lock - lock LED sysfs interface
++ * @led_cdev: the LED to set
++ *
++ * Lock the LED's sysfs interface
++ */
++extern void led_sysfs_lock(struct led_classdev *led_cdev);
++
++/**
++ * led_sysfs_unlock - unlock LED sysfs interface
++ * @led_cdev: the LED to set
++ *
++ * Unlock the LED's sysfs interface
++ */
++extern void led_sysfs_unlock(struct led_classdev *led_cdev);
++
++/**
++ * led_sysfs_is_locked
++ * @led_cdev: the LED to query
++ *
++ * Returns: true if the sysfs interface of the led is locked
++ */
++static inline bool led_sysfs_is_locked(struct led_classdev *led_cdev)
++{
++	return led_cdev->flags & LED_SYSFS_LOCK;
++}
+ 
+ /*
+  * LED Triggers
 -- 
 1.7.9.5
 
