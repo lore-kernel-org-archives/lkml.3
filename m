@@ -1,93 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156AbaGKXJe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 19:09:34 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:21280 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866AbaGKXJc (ORCPT
+	id S1754397AbaGKXM2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 19:12:28 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:55456 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775AbaGKXM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 19:09:32 -0400
-Message-Id: <201407112309.s6BN9MFb016118@aserz7022.oracle.com>
-Date: Fri, 11 Jul 2014 19:09:02 -0400
-Subject: Re: [PATCH] xen: Introduce 'xen_nopv' to disable PV extensions for
- HVM guests.
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: xen-devel@lists.xenproject.org, konrad@kernel.org,
-        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org,
-        david.vrabel@citrix.com
+	Fri, 11 Jul 2014 19:12:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <CAGXu5jKVuE34Ly3g885270gLQavyA0UdQZaV41HoNunRDPOC4A@mail.gmail.com>
+References: <cover.1405023592.git.rgb@redhat.com> <13645924.XpBzvDVILV@sifl>
+ <1405103466.2357.5.camel@flatline.rdu.redhat.com> <1433620.8yKm3TZIWM@sifl> <CAGXu5jKVuE34Ly3g885270gLQavyA0UdQZaV41HoNunRDPOC4A@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 11 Jul 2014 16:12:05 -0700
+Message-ID: <CALCETrUaEcBJEzDRRX2G9e=EiSzkRYz7esx4xyqxr-aDkANdKQ@mail.gmail.com>
+Subject: Re: [PATCH 2/3] [RFC] seccomp: give BPF x32 bit when restoring x32 filter
+To: Kees Cook <keescook@chromium.org>
+Cc: Stephane Graber <stgraber@ubuntu.com>, Paul Moore <pmoore@redhat.com>,
+        Chris Evans <cevans@google.com>, Tyler Hicks <tyhicks@canonical.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-audit@redhat.com, Will Drewry <wad@chromium.org>,
+        Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
+        Al Viro <aviro@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6BN9uMK024572
 
+On Jul 11, 2014 3:48 PM, "Kees Cook" <keescook@chromium.org> wrote:
+>
+> On Fri, Jul 11, 2014 at 12:36 PM, Paul Moore <pmoore@redhat.com> wrote:
+> > Anyway, getting back to the idea I mentioned earlier ... as many of you may
+> > know, Kees (added to the CC line) is working on some seccomp filter
+> > improvements which will result in a new seccomp syscall.  Perhaps one way
+> > forward is to preserve everything as it is currently with the prctl()
+> > interface, but with the new seccomp() based interface we fixup x32 and use the
+> > new AUDIT_ARCH_X32 token?  It might result in a bit of ugliness in some of the
+> > kernel, but I don't think it would be too bad, and I think it would address
+> > both our concerns.
+>
+> Adding AUDIT_ARCH_X32: yes please. (On that note, the comment "/* Both
+> x32 and x86_64 are considered "64-bit". */" should be changed...)
+>
 
-On Jul 11, 2014 6:52 PM, "H. Peter Anvin" <hpa@zytor.com> wrote:
->
-> On 07/11/2014 12:53 PM, konrad@kernel.org wrote: 
-> > 
-> > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt 
-> > index c1b9aa8..5dcfa6e 100644 
-> > --- a/Documentation/kernel-parameters.txt 
-> > +++ b/Documentation/kernel-parameters.txt 
-> > @@ -3691,6 +3691,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted. 
-> >Â  Disables the ticketlock slowpath using Xen PV 
-> >Â  optimizations. 
-> >Â  
-> > + xen_nopv [X86,XEN] 
-> > + Disables the PV optimizations forcing the guest to run 
-> > + as generic HVM guest with no PV drivers. 
-> > + 
-> >Â  xirc2ps_cs= [NET,PCMCIA] 
-> >Â  Format: 
-> >Â  <irq>,<irq_mask>,<io>,<full_duplex>,<do_sound>,<lockup_hack>[,<irq2>[,<irq3>[,<irq4>]]] 
-> > diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c 
-> > index ffb101e..eb82239 100644 
-> > --- a/arch/x86/xen/enlighten.c 
-> > +++ b/arch/x86/xen/enlighten.c 
-> > @@ -1826,8 +1826,19 @@ static void __init xen_hvm_guest_init(void) 
-> >Â  xen_hvm_init_mmu_ops(); 
-> >Â  } 
-> >Â  
-> > +static bool xen_nopv = false; 
-> > +static __init int xen_parse_nopv(char *arg) 
-> > +{ 
-> > +Â Â Â Â Â Â  xen_nopv = true; 
-> > +Â Â Â Â Â Â  return 0; 
-> > +} 
-> > +early_param("xen_nopv", xen_parse_nopv); 
-> > + 
-> >Â  static uint32_t __init xen_hvm_platform(void) 
-> >Â  { 
-> > + if (xen_nopv) 
-> > + return 0; 
-> > + 
-> >Â  if (xen_pv_domain()) 
-> >Â  return 0; 
-> >Â  
-> > @@ -1836,6 +1847,8 @@ static uint32_t __init xen_hvm_platform(void) 
-> >Â  
-> >Â  bool xen_hvm_need_lapic(void) 
-> >Â  { 
-> > + if (xen_nopv) 
-> > + return false; 
-> >Â  if (xen_pv_domain()) 
-> >Â  return false; 
-> >Â  if (!xen_hvm_domain()) 
-> > 
->
-> Any reason to not simply let xen_pv_domain() return false here?
+I admit I'm not convinced that the current situation is really wrong.
+The "audit arch" uniquely defines a mapping between the actual syscall
+and nr and the regs.  The natural way to convert between seccomp_data
+and the syscall entry and regs is completely correct.
 
-It does return false already.
+For things like ARM OABI, the situation is different: OABI and EABI
+really do work differently wrt the interpretation of the syscall regs.
+This isn't the case for x32.
 
-Did you mean to collapse them together?
->
-> Also, the latter seems a bit odd? 
->
-> -hpa 
->
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Of course, the audit code screws this up completely, but audit is
+disabled for x32.  My upcoming seccomp patchset will clean it up a
+little.  IMO there's no actual audit ABI to preserve for x32, because
+that code has never been anything other than terminally fvcked.
+
+--Andy
