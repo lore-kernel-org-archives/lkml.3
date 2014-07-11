@@ -1,89 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751317AbaGJXpu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 19:45:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52396 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011AbaGJXpt (ORCPT
+	id S1751846AbaGKADa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 20:03:30 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:49401 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751353AbaGKAD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 19:45:49 -0400
-Date: Thu, 10 Jul 2014 16:45:33 -0700
-From: tip-bot for Jan Beulich <tipbot@zytor.com>
-Message-ID: <tip-d093601be5e97d2729614419d0d256ed3b6a56b0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        boris.ostrovsky@oracle.com, jbeulich@suse.com, luto@amacapital.net,
-        akpm@linux-foundation.org, JBeulich@suse.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        boris.ostrovsky@oracle.com, jbeulich@suse.com, luto@amacapital.net,
-        akpm@linux-foundation.org, JBeulich@suse.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <53B5863B02000078000204D5@mail.emea.novell.com>
-References: <53B5863B02000078000204D5@mail.emea.novell.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86-32, vdso:
-  Fix vDSO build error due to missing align_vdso_addr()
-Git-Commit-ID: d093601be5e97d2729614419d0d256ed3b6a56b0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 10 Jul 2014 20:03:29 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Apelete Seketeli <apelete@seketeli.net>, linux-mmc@vger.kernel.org
+Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Alex Smith <alex.smith@imgtec.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] mmc: jz4740: add dma infrastructure for data transfers
+Date: Fri, 11 Jul 2014 02:03:27 +0200
+Message-ID: <26025372.ALyVZ87vgl@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.12.21-gentoo-r1; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1405031246-16365-2-git-send-email-apelete@seketeli.net>
+References: <1405031246-16365-1-git-send-email-apelete@seketeli.net> <1405031246-16365-2-git-send-email-apelete@seketeli.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d093601be5e97d2729614419d0d256ed3b6a56b0
-Gitweb:     http://git.kernel.org/tip/d093601be5e97d2729614419d0d256ed3b6a56b0
-Author:     Jan Beulich <JBeulich@suse.com>
-AuthorDate: Thu, 3 Jul 2014 15:35:07 +0100
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 10 Jul 2014 16:06:04 -0700
+Hi Apelete,
 
-x86-32, vdso: Fix vDSO build error due to missing align_vdso_addr()
+Thank you for the patch.
 
-Relying on static functions used just once to get inlined (and
-subsequently have dead code paths eliminated) is wrong: Compilers are
-free to decide whether they do this, regardless of optimization level.
-With this not happening for vdso_addr() (observed with gcc 4.1.x), an
-unresolved reference to align_vdso_addr() causes the build to fail.
+On Friday 11 July 2014 00:27:26 Apelete Seketeli wrote:
+> Until now the MMC driver for JZ4740 SoC was relying on PIO mode only
+> for data transfers.
+> This patch allows the use of DMA for data trasnfers in addition to PIO
+> mode by relying on DMA Engine.
+> 
+> DMA tranfers performance might be further improved by taking advantage
+> of the asynchronous request capability of the MMC framework.
+> 
+> Signed-off-by: Apelete Seketeli <apelete@seketeli.net>
+> ---
+> drivers/mmc/host/jz4740_mmc.c |  172 +++++++++++++++++++++++++++++++++++++--
+> 1 file changed, 164
+> insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/jz4740_mmc.c b/drivers/mmc/host/jz4740_mmc.c
+> index 537d6c7..2897b49 100644
+> --- a/drivers/mmc/host/jz4740_mmc.c
+> +++ b/drivers/mmc/host/jz4740_mmc.c
 
-[ hpa: vdso_addr() is never actually used on x86-32, as calculate_addr
-  in map_vdso() is always false.  It ought to be possible to clean
-  this up further, but this fixes the immediate problem. ]
+[snip]
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Link: http://lkml.kernel.org/r/53B5863B02000078000204D5@mail.emea.novell.com
-Acked-by: Andy Lutomirski <luto@amacapital.net>
-Tested-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Tested-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/vdso/vma.c | 4 ++++
- 1 file changed, 4 insertions(+)
+> +static void jz4740_dma_unmap(struct jz4740_mmc_host *host,
+> +			     struct mmc_data *data)
+> +{
+> +	enum dma_data_direction dir = jz4740_get_dma_dir(data);
+> +
+> +	dma_unmap_sg(mmc_dev(host->mmc), data->sg, data->sg_len, dir);
+> +}
+> +
+> +static int jz4740_start_dma_transfer(struct jz4740_mmc_host *host,
+> +				     struct mmc_data *data)
+> +{
+> +	struct dma_chan *chan;
+> +	struct dma_async_tx_descriptor *desc;
+> +	struct dma_slave_config conf = {
+> +		.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES,
+> +		.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES,
+> +		.src_maxburst = JZ4740_MMC_FIFO_HALF_SIZE,
+> +		.dst_maxburst = JZ4740_MMC_FIFO_HALF_SIZE,
+> +	};
+> +	enum dma_data_direction dir = jz4740_get_dma_dir(data);
+> +
+> +	host->sg_len = dma_map_sg(mmc_dev(host->mmc),
 
-diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index e1513c4..5a5176d 100644
---- a/arch/x86/vdso/vma.c
-+++ b/arch/x86/vdso/vma.c
-@@ -62,6 +62,9 @@ struct linux_binprm;
-    Only used for the 64-bit and x32 vdsos. */
- static unsigned long vdso_addr(unsigned long start, unsigned len)
- {
-+#ifdef CONFIG_X86_32
-+	return 0;
-+#else
- 	unsigned long addr, end;
- 	unsigned offset;
- 	end = (start + PMD_SIZE - 1) & PMD_MASK;
-@@ -83,6 +86,7 @@ static unsigned long vdso_addr(unsigned long start, unsigned len)
- 	addr = align_vdso_addr(addr);
- 
- 	return addr;
-+#endif
- }
- 
- static int map_vdso(const struct vdso_image *image, bool calculate_addr)
+You should use the DMA engine device here, not the MMC device, as the memory 
+transfers will be performed by the DMA engine. Same for the dma_unmap_sg() 
+call above.
+
+> +				  data->sg,
+> +				  data->sg_len,
+> +				  dir);
+> +
+> +	if (host->sg_len < 0) {
+> +		dev_err(mmc_dev(host->mmc),
+> +			 "Failed to map scatterlist for DMA operation\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	if (dir == DMA_TO_DEVICE) {
+> +		conf.direction = DMA_MEM_TO_DEV;
+> +		conf.dst_addr = host->mem_res->start + JZ_REG_MMC_TXFIFO;
+> +		conf.slave_id = JZ4740_DMA_TYPE_MMC_TRANSMIT;
+> +		chan = host->dma_tx;
+> +	} else {
+> +		conf.direction = DMA_DEV_TO_MEM;
+> +		conf.src_addr = host->mem_res->start + JZ_REG_MMC_RXFIFO;
+> +		conf.slave_id = JZ4740_DMA_TYPE_MMC_RECEIVE;
+> +		chan = host->dma_rx;
+> +	}
+> +
+> +	dmaengine_slave_config(chan, &conf);
+> +	desc = dmaengine_prep_slave_sg(chan,
+> +				       data->sg,
+> +				       host->sg_len,
+> +				       conf.direction,
+> +				       DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+> +	if (!desc) {
+> +		dev_err(mmc_dev(host->mmc),
+> +			 "Failed to allocate DMA %s descriptor",
+> +			 conf.direction == DMA_MEM_TO_DEV ? "TX" : "RX");
+> +		goto dma_unmap;
+> +	}
+> +
+> +	dmaengine_submit(desc);
+> +	dma_async_issue_pending(chan);
+> +
+> +	return 0;
+> +
+> +dma_unmap:
+> +	jz4740_dma_unmap(host, data);
+> +	return -ENOMEM;
+> +}
+> +
+> +/*-------------------------------------------------------------------------
+> ---*/ +
+>  static void jz4740_mmc_set_irq_enabled(struct jz4740_mmc_host *host,
+>  	unsigned int irq, bool enabled)
+>  {
+
+[snip]
+
+> @@ -784,10 +922,17 @@ static int jz4740_mmc_probe(struct platform_device*
+> pdev) goto err_free_host;
+>  	}
+> 
+> -	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	host->base = devm_ioremap_resource(&pdev->dev, res);
+> +	host->mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (!host->mem_res) {
+> +		ret = -EBUSY;
+> +		dev_err(&pdev->dev, "Failed to request memory region\n");
+> +		goto err_free_host;
+
+The devm_ioremap_resource() call below will handle the mem_res == NULL case 
+and print a message, so you could remove this check.
+
+> +	}
+> +
+> +	host->base = devm_ioremap_resource(&pdev->dev, host->mem_res);
+>  	if (IS_ERR(host->base)) {
+>  		ret = PTR_ERR(host->base);
+> +		dev_err(&pdev->dev, "Failed to ioremap base memory\n");
+>  		goto err_free_host;
+>  	}
+> 
+
+[snip]
+
+-- 
+Regards,
+
+Laurent Pinchart
+
