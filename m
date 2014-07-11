@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782AbaGKR3g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 13:29:36 -0400
-Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:35506
-	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752072AbaGKR3e (ORCPT
+	id S1754853AbaGKRaD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 13:30:03 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:60019 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752072AbaGKRaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 13:29:34 -0400
-Date: Fri, 11 Jul 2014 12:29:30 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Tejun Heo <tj@kernel.org>
-cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Jianyu Zhan <nasa4836@gmail.com>, malc <av1474@comtv.ru>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Fabian Frederick <fabf@skynet.be>, Tony Luck <tony.luck@intel.com>,
-        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
+	Fri, 11 Jul 2014 13:30:00 -0400
+Message-ID: <53C01F15.2090702@semaphore.gr>
+Date: Fri, 11 Jul 2014 20:29:57 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Pavel Machek <pavel@ucw.cz>
+CC: rjw@rjwysocki.net, viresh.kumar@linaro.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC Patch V1 07/30] mm: Use cpu_to_mem()/numa_mem_id() to
- support memoryless node
-In-Reply-To: <20140711162451.GD30865@htj.dyndns.org>
-Message-ID: <alpine.DEB.2.11.1407111220410.4511@gentwo.org>
-References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com> <1405064267-11678-8-git-send-email-jiang.liu@linux.intel.com> <20140711144205.GA27706@htj.dyndns.org> <alpine.DEB.2.11.1407111012210.25527@gentwo.org> <20140711152156.GB29137@htj.dyndns.org>
- <alpine.DEB.2.11.1407111056060.27349@gentwo.org> <20140711160152.GC30865@htj.dyndns.org> <alpine.DEB.2.11.1407111117560.27592@gentwo.org> <20140711162451.GD30865@htj.dyndns.org>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Subject: Re: [PATCH 2/2] cpufreq: ondemand: Eliminate the deadband effect
+References: <1404147574-17422-1-git-send-email-stratosk@semaphore.gr> <1404147574-17422-3-git-send-email-stratosk@semaphore.gr> <20140711165710.GA18033@amd.pavel.ucw.cz>
+In-Reply-To: <20140711165710.GA18033@amd.pavel.ucw.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jul 2014, Tejun Heo wrote:
+Hi Pavel!
 
-> On Fri, Jul 11, 2014 at 11:19:14AM -0500, Christoph Lameter wrote:
-> > Yes that works. But if we want a consistent node to allocate from (and
-> > avoid the fallbacks) then we need this patch. I think this is up to those
-> > needing memoryless nodes to figure out what semantics they need.
->
-> I'm not following what you're saying.  Are you saying that we need to
-> spread numa_mem_id() all over the place for GFP_THISNODE users on
-> memless nodes?  There aren't that many users of GFP_THISNODE.
+On 11/07/2014 07:57 μμ, Pavel Machek wrote:
+> Hi!
+> 
+>> Tested on Intel i7-3770 CPU @ 3.40GHz and on ARM quad core 1500MHz Krait
+>> (Android smartphone).
+>> Benchmarks on Intel i7 shows a performance improvement on low and medium
+>> work loads with lower power consumption. Specifics:
+>>
+>> Phoronix Linux Kernel Compilation 3.1:
+>> Time: -0.40%, energy: -0.07%
+>> Phoronix Apache:
+>> Time: -4.98%, energy: -2.35%
+>> Phoronix FFMPEG:
+>> Time: -6.29%, energy: -4.02%
+> 
+> Hmm. Intel i7 should be race-to-idle machine. So basically rule like
+> if (load > 0) go to max frequency else go to lowest frequency would do
+> the right thing in your test, right?
 
-GFP_THISNODE is mostly used by allocators that need memory from specific
-nodes. The use of numa_mem_id() there is useful because one will not
-get any memory at all when attempting to allocate from a memoryless
-node using GFP_THISNODE.
+I don't think that "if (load > 0) go to max" will work even on i7.
+For low load this will have impact on energy consumption.
+On my tests, a simple mp3 decoding (very low load on my machine) have no
+difference with and without this patch.
 
-I meant that the relying on fallback to the neighboring nodes without
-GFP_THISNODE using numa_node_id() is one approach that may prevent memory
-allocators from caching objects for that node because every allocation may
-choose a different neighboring node. And the other is the use of
-numa_mem_id() which will always use a specific node and avoid fallback to
-different node.
+> So... should we do that, or do we need better benchmark?
 
-The choice is up to those having an interest in memoryless nodes. Which
-again I find a pretty strange thing to have that has already proven itself
-difficult to maintain in the kernel given the the notion of memory
-nodes that should have memory but surprisingly have none. Then there are
-the esoteric fallback conditions and special cases introduced. Its a mess.
+I'm sorry. I'm not sure I understood exactly what do you mean by "better
+benchmark".
+Of course, we should do as many benchmarks as we can.
+I usually do these 5 sets of benchmarks on my i7 that IMHO give a good
+indication about the changes in different CPU loads.
 
-The best solution may be to just get rid of the whole thing and require
-all processors to have a node with memory that is local to them. Current
-"memoryless" hardware can simply decide on bootup to pick a memory node
-that is local and thus we do not have to deal with it in the core.
+1) Linux kernel compilation (about 85% busy CPU)
+2) Apache (about 32% busy CPU)
+3) ffmpeg (about 24% busy CPU)
+4) mp3 decoding (about 0.3% CPU)
+5) Idle system (about 0.06% CPU)
+
+The patch was also tested on a Android smartphone (kernel 3.4). The kernel
+distributed to 1000+ users.
+Unfortunately I have no benchmarks, but no regressions reported on
+consumption. Actually, there reports for better performance and
+lower power consumption, but of course we can't rely on these reports. :)
+
+
+Thanks for your comments!
+
+Stratos
+
 
