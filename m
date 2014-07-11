@@ -1,193 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647AbaGKHoT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 03:44:19 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:63658 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752843AbaGKHgo (ORCPT
+	id S1753688AbaGKHo0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 03:44:26 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:39861 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753658AbaGKHoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 03:36:44 -0400
-From: varkabhadram@gmail.com
-To: netdev@vger.kernel.org
-Cc: Thomas.Lendacky@amd.com, geert+renesas@linux-m68k.org,
-        ebiederm@xmission.com, macro@linux-mips.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        Varka Bhadram <varkab@cdac.in>
-Subject: [PATCH net-next 3/8] ethernet: amd: dynamic debug fixes
-Date: Fri, 11 Jul 2014 13:05:05 +0530
-Message-Id: <1405064110-22579-4-git-send-email-varkabhadram@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1405064110-22579-1-git-send-email-varkabhadram@gmail.com>
-References: <1405064110-22579-1-git-send-email-varkabhadram@gmail.com>
+	Fri, 11 Jul 2014 03:44:23 -0400
+Date: Fri, 11 Jul 2014 08:44:17 +0100
+From: Peter Griffin <peter.griffin@linaro.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        maxime.coquelin@st.com, patrice.chotard@st.com,
+        gregkh@linuxfoundation.org, srinivas.kandagatla@gmail.com,
+        USB list <linux-usb@vger.kernel.org>, devicetree@vger.kernel.org,
+        lee.jones@linaro.org
+Subject: Re: [PATCH 1/3] usb: host: st-hcd: Add USB HCD support for STi SoCs
+Message-ID: <20140711074417.GA8233@griffinp-ThinkPad-X1-Carbon-2nd>
+References: <1405005486-26355-2-git-send-email-peter.griffin@linaro.org>
+ <Pine.LNX.4.44L0.1407101154070.1492-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1407101154070.1492-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Varka Bhadram <varkab@cdac.in>
+Hi Alan,
 
-This patch convert printk() to netdev_dbg/info/err or dev_info/err/dbg
+Thanks for reviewing.
 
-Signed-off-by: Varka Bhadram <varkab@cdac.in>
----
- drivers/net/ethernet/amd/amd8111e.c |   58 ++++++++++++++++-------------------
- 1 file changed, 26 insertions(+), 32 deletions(-)
+On Thu, 10 Jul 2014, Alan Stern wrote:
 
-diff --git a/drivers/net/ethernet/amd/amd8111e.c b/drivers/net/ethernet/amd/amd8111e.c
-index 433107c..2d3a55e 100644
---- a/drivers/net/ethernet/amd/amd8111e.c
-+++ b/drivers/net/ethernet/amd/amd8111e.c
-@@ -501,8 +501,7 @@ static int amd8111e_restart(struct net_device *dev)
- 
- 	/* Enable interrupt coalesce */
- 	if(lp->options & OPTION_INTR_COAL_ENABLE){
--		printk(KERN_INFO "%s: Interrupt Coalescing Enabled.\n",
--								dev->name);
-+		netdev_info(dev, "Interrupt Coalescing Enabled");
- 		amd8111e_set_coalesce(dev,ENABLE_COAL);
- 	}
- 
-@@ -860,16 +859,19 @@ static int amd8111e_link_change(struct net_device* dev)
- 		else if(speed == PHY_SPEED_100)
- 			lp->link_config.speed = SPEED_100;
- 
--		printk(KERN_INFO "%s: Link is Up. Speed is %s Mbps %s Duplex\n",			dev->name,
--		       (lp->link_config.speed == SPEED_100) ? "100": "10",
--		       (lp->link_config.duplex == DUPLEX_FULL)? "Full": "Half");
-+		netdev_info(dev, "Link is Up. Speed is %s Mbps %s Duplex\n",
-+			    (lp->link_config.speed == SPEED_100) ?
-+							"100" : "10",
-+			    (lp->link_config.duplex == DUPLEX_FULL) ?
-+							"Full" : "Half");
-+
- 		netif_carrier_on(dev);
- 	}
- 	else{
- 		lp->link_config.speed = SPEED_INVALID;
- 		lp->link_config.duplex = DUPLEX_INVALID;
- 		lp->link_config.autoneg = AUTONEG_INVALID;
--		printk(KERN_INFO "%s: Link is Down.\n",dev->name);
-+		netdev_info(dev, "Link is Down.\n");
- 		netif_carrier_off(dev);
- 	}
- 
-@@ -1168,7 +1170,7 @@ static irqreturn_t amd8111e_interrupt(int irq, void *dev_id)
- 			/* Schedule a polling routine */
- 			__napi_schedule(&lp->napi);
- 		} else if (intren0 & RINTEN0) {
--			printk("************Driver bug! interrupt while in poll\n");
-+			netdev_dbg(dev, "************Driver bug! interrupt while in poll\n");
- 			/* Fix by disable receive interrupts */
- 			writel(RINTEN0, mmio + INTEN0);
- 		}
-@@ -1264,7 +1266,7 @@ static int amd8111e_open(struct net_device * dev )
- 	/* Start ipg timer */
- 	if(lp->options & OPTION_DYN_IPG_ENABLE){
- 		add_timer(&lp->ipg_data.ipg_timer);
--		printk(KERN_INFO "%s: Dynamic IPG Enabled.\n",dev->name);
-+		netdev_info(dev, "Dynamic IPG Enabled\n");
- 	}
- 
- 	lp->opened = 1;
-@@ -1623,8 +1625,8 @@ static void amd8111e_tx_timeout(struct net_device *dev)
- 	struct amd8111e_priv* lp = netdev_priv(dev);
- 	int err;
- 
--	printk(KERN_ERR "%s: transmit timed out, resetting\n",
--	 					      dev->name);
-+	netdev_err(dev, "transmit timed out, resetting\n");
-+
- 	spin_lock_irq(&lp->lock);
- 	err = amd8111e_restart(dev);
- 	spin_unlock_irq(&lp->lock);
-@@ -1807,22 +1809,19 @@ static int amd8111e_probe_one(struct pci_dev *pdev,
- 
- 	err = pci_enable_device(pdev);
- 	if(err){
--		printk(KERN_ERR "amd8111e: Cannot enable new PCI device, "
--			"exiting.\n");
-+		dev_err(&pdev->dev, "Cannot enable new PCI device\n");
- 		return err;
- 	}
- 
- 	if(!(pci_resource_flags(pdev, 0) & IORESOURCE_MEM)){
--		printk(KERN_ERR "amd8111e: Cannot find PCI base address, "
--		       "exiting.\n");
-+		dev_err(&pdev->dev, "Cannot find PCI base address\n");
- 		err = -ENODEV;
- 		goto err_disable_pdev;
- 	}
- 
- 	err = pci_request_regions(pdev, MODULE_NAME);
- 	if(err){
--		printk(KERN_ERR "amd8111e: Cannot obtain PCI resources, "
--		       "exiting.\n");
-+		dev_err(&pdev->dev, "Cannot obtain PCI resources\n");
- 		goto err_disable_pdev;
- 	}
- 
-@@ -1830,16 +1829,14 @@ static int amd8111e_probe_one(struct pci_dev *pdev,
- 
- 	/* Find power-management capability. */
- 	if (!pdev->pm_cap) {
--		printk(KERN_ERR "amd8111e: No Power Management capability, "
--		       "exiting.\n");
-+		dev_err(&pdev->dev, "No Power Management capability\n");
- 		err = -ENODEV;
- 		goto err_free_reg;
- 	}
- 
- 	/* Initialize DMA */
- 	if (pci_set_dma_mask(pdev, DMA_BIT_MASK(32)) < 0) {
--		printk(KERN_ERR "amd8111e: DMA not supported,"
--			"exiting.\n");
-+		dev_err(&pdev->dev, "DMA not supported\n");
- 		err = -ENODEV;
- 		goto err_free_reg;
- 	}
-@@ -1868,8 +1865,7 @@ static int amd8111e_probe_one(struct pci_dev *pdev,
- 
- 	lp->mmio = devm_ioremap(&pdev->dev, reg_addr, reg_len);
- 	if (!lp->mmio) {
--		printk(KERN_ERR "amd8111e: Cannot map device registers, "
--		       "exiting\n");
-+		dev_err(&pdev->dev, "Cannot map device registers\n");
- 		err = -ENOMEM;
- 		goto err_free_dev;
- 	}
-@@ -1911,8 +1907,7 @@ static int amd8111e_probe_one(struct pci_dev *pdev,
- 
- 	err = register_netdev(dev);
- 	if (err) {
--		printk(KERN_ERR "amd8111e: Cannot register net device, "
--		       "exiting.\n");
-+		dev_err(&pdev->dev, "Cannot register net device\n");
- 		goto err_free_dev;
- 	}
- 
-@@ -1932,16 +1927,15 @@ static int amd8111e_probe_one(struct pci_dev *pdev,
- 	/*  display driver and device information */
- 
-     	chip_version = (readl(lp->mmio + CHIPID) & 0xf0000000)>>28;
--	printk(KERN_INFO "%s: AMD-8111e Driver Version: %s\n",
--	       dev->name,MODULE_VERS);
--	printk(KERN_INFO "%s: [ Rev %x ] PCI 10/100BaseT Ethernet %pM\n",
--	       dev->name, chip_version, dev->dev_addr);
-+	dev_info(&pdev->dev, "AMD-8111e Driver Version: %s\n", MODULE_VERS);
-+	dev_info(&pdev->dev, "[ Rev %x ] PCI 10/100BaseT Ethernet %pM\n",
-+		 chip_version, dev->dev_addr);
- 	if (lp->ext_phy_id)
--		printk(KERN_INFO "%s: Found MII PHY ID 0x%08x at address 0x%02x\n",
--		       dev->name, lp->ext_phy_id, lp->ext_phy_addr);
-+		dev_info(&pdev->dev, "Found MII PHY ID 0x%08x at address 0x%02x\n",
-+			 lp->ext_phy_id, lp->ext_phy_addr);
- 	else
--		printk(KERN_INFO "%s: Couldn't detect MII PHY, assuming address 0x01\n",
--		       dev->name);
-+		dev_info(&pdev->dev, "Couldn't detect MII PHY, assuming address 0x01\n");
-+
-     	return 0;
- 
- err_free_dev:
--- 
-1.7.9.5
+> On Thu, 10 Jul 2014, Peter Griffin wrote:
+> 
+> > This driver adds support for the USB HCD present in STi
+> > SoC's from STMicroelectronics. It has been tested on the
+> > stih416-b2020 board.
+> 
+> This driver file, along with the Kconfig changes, belongs in the
+> arch/platform-specific source directory.  Not in drivers/usb/host/.  
+> It is, after all, a platform driver that registers two platform
+> devices.
 
+Why do think that?
+
+AFAIK certainly for ARM we are trying NOT to add code
+under the arch/platform directorys and get the code into the relevant subsystems.
+
+In order to prove the above if you look in drivers/usb/host/ there are many other 
+similar platform drivers for other SoC families: -
+bcma-hcd.c
+ehci-atmel.c
+ssb-hcd.c
+ehci-exynos.c
+ehci-fsl.c
+ehci-mxc.c 
+ehci-omap.c
+ehci-orion.c
+ohci-nxp.c
+and more, but you get the idea. In short I believe this to be the correct directory :-)
+
+> 
+> > +++ b/drivers/usb/host/Kconfig
+> > @@ -753,6 +753,23 @@ config USB_HCD_SSB
+> >  
+> >  	  If unsure, say N.
+> >  
+> > +config USB_HCD_ST
+> > +	tristate "STMicroelectronics STi family HCD support"
+> 
+> Why does this need to be tristate?  Why not always build it into the 
+> kernel?  Or at least make it boolean rather than tristate.
+
+Building as a module is useful on these embedded SoCs usually as a mechanism for speeding up boot time.
+Anything which isn't critical to getting the core functionality of the device going (in this case decoding
+TV and outputting on HDMI), can be deffered to a later point. Things like USB drivers, can then be loaded in
+after that point (deffered module loading), to give the appearence of 'instant on' (which in consumer electronics
+is what everyone wishes to achieve).
+
+Going back to my examples above, most of these platforms are also defined as tristate.
+
+> 
+> > +	depends on ARCH_STI
+> > +	select USB_OHCI_HCD_PLATFORM if USB_OHCI_HCD
+> > +	select USB_EHCI_HCD_PLATFORM if USB_EHCI_HCD
+> > +	select MFD_SYSCON
+> > +	select GENERIC_PHY
+> > +	help
+> > +	  Enable support for the EHCI and OCHI host controller on ST
+> 
+> s/OCHI/OHCI/
+
+Good spot, will fix in V2
+
+> 
+> > + 	  consumer electronics SoCs.
+> > +
+> > + 	  It converts the ST driver into two platform device drivers
+> 
+> It converts the ST driver?  That doesn't sound right at all.  You could 
+> eliminate this paragraph completely and nobody would miss it.
+
+I agree the wording is a little off there, I can remove or re-phrase it. What it is trying to express
+is that it is slightly different to some other platform drivers, in that it creates two platform drivers one
+for the ehci controller and the other for the OHCI controller. From looking at other drivers in this directory 
+this driver is quite similar to USB_HCD_BCMA, which also deemed it noteworthy to mention in the help, although
+phrased somewhat more succinctly.
+
+regards,
+
+Peter.
