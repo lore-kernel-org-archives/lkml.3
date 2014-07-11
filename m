@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500AbaGKPPO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 11:15:14 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:58963 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752751AbaGKPPK (ORCPT
+	id S1753974AbaGKPRq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 11:17:46 -0400
+Received: from qmta14.emeryville.ca.mail.comcast.net ([76.96.27.212]:43577
+	"EHLO qmta14.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752561AbaGKPRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 11:15:10 -0400
-Date: Fri, 11 Jul 2014 17:15:02 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 12/13] cpufreq: Add cpufreq driver for Tegra124
-Message-ID: <20140711151501.GA25810@ulmo>
-References: <1405028569-14253-1-git-send-email-ttynkkynen@nvidia.com>
- <1405028569-14253-13-git-send-email-ttynkkynen@nvidia.com>
- <CAKohpom9ORXFiUU4=V+CxgN0ZOFLMEhEjHiU8HsYUYDybNXgHQ@mail.gmail.com>
- <20140711091207.GY23218@tbergstrom-lnx.Nvidia.com>
- <20140711145735.GB6523@ulmo>
- <53BFFEAD.7000405@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9jxsPFA5p3P2qPhR"
-Content-Disposition: inline
-In-Reply-To: <53BFFEAD.7000405@nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 11 Jul 2014 11:17:45 -0400
+Date: Fri, 11 Jul 2014 10:17:41 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: akpm@linux-foundation.org, Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
+        viresh.kumar@linaro.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org
+Subject: Re: vmstat: On demand vmstat workers V8
+In-Reply-To: <20140711135854.GD26045@localhost.localdomain>
+Message-ID: <alpine.DEB.2.11.1407111016040.26485@gentwo.org>
+References: <alpine.DEB.2.11.1407100903130.12483@gentwo.org> <20140711132032.GB26045@localhost.localdomain> <alpine.DEB.2.11.1407110855030.25432@gentwo.org> <20140711135854.GD26045@localhost.localdomain>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 11 Jul 2014, Frederic Weisbecker wrote:
 
---9jxsPFA5p3P2qPhR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Fri, Jul 11, 2014 at 06:11:41PM +0300, Tuomas Tynkkynen wrote:
-> On 11/07/14 17:57, Thierry Reding wrote:
->=20
-> >>I don't think that's going to work? The voltage scaling is handled in h=
-w.
+> > Converted what? We still need to keep a cpumask around that tells us which
+> > processor have vmstat running and which do not.
 > >
-> >Do we have to handle it in hardware or can we opt to do it in software,
-> >too?
-> >
->=20
-> With the PLLX, voltage scaling is done entirely in SW. With the DFLL,
-> it's possible to stay in open-loop mode and do it in SW, but there's
-> not much point in that.
+>
+> Converted to cpumask_var_t.
+>
+> I mean we spent dozens emails on that...
 
-It's kind of ugly how we need to pass the address of the PMU and the
-offset of the voltage control register to the DFLL which will then
-initiate I2C transactions itself. I'm wondering if that plays well with
-the I2C traffic originating from within the kernel.
 
-Thierry
+Oh there is this outstanding fix, right.
 
---9jxsPFA5p3P2qPhR
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Subject: on demand vmstat: Do not open code alloc_cpumask_var
 
-iQIcBAEBAgAGBQJTv/91AAoJEN0jrNd/PrOhFNwQAIXLfSWwPMY5HAIXrK8Ka1kx
-t8Sl5AcX14LkS0dL8rOOal9z7DPBL1FuuDioHSkdSYxH8Cx+Sw+FEehffe4/v9/i
-vOyXeHzp4SPw4t/fRSdnt0iwMV5RsCTfpK435mxy8NjO1gg1uIONiTEqyR1iXFCV
-BsFirbkGIKyY6WObSpkwcjvEEZZaNFfChk7QQJuSzEKezAn2eOg8lCYNtj767afM
-zxGpIKOYiA2hS2jmt2maunIfiOF3J/KY3Y+3y4zjnAmImCnM0Dc0mS1R8XwRfl4P
-+ziB5VK83Cppaf+Ao0NVvn1TXJbuHAHT2I3yA0Ly/PMXzBhVAj5GTc1Ers8zhhfG
-A4A13Fz/m4GKNhxqzU/3ouimZfHINRU6EXJnuXiA7QG64qRHAIgrEVK+rubeLkPM
-OEIqSByjSjvIkuTEBN1568d/WTATC5dZGOaNA7w6VlrGUMBSJcBNMtWv44rGAS48
-i3XACCdGa9o9YwQGiJwi2LZeQ+PsCBrC0hRtNCVyjuRakM3t/p/eoaEl/wzYKv46
-V9t5SJr7O5kzPCGPGZd508OlpKbr8UbnqKSfWQfXMQ1on5uBIO3YLX/0dN7iCE47
-ZNjA/9V1/KZgN5Sl255K7c8vx10WN4BK2sIOBXBO45MerzXEWTN0X1JrLGVTvJME
-3UsBBt3F5CwYLt0KwDKS
-=wrKt
------END PGP SIGNATURE-----
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
---9jxsPFA5p3P2qPhR--
+Index: linux/mm/vmstat.c
+===================================================================
+--- linux.orig/mm/vmstat.c	2014-07-11 10:15:55.356856916 -0500
++++ linux/mm/vmstat.c	2014-07-11 10:15:55.352856994 -0500
+@@ -1244,7 +1244,7 @@
+ #ifdef CONFIG_SMP
+ static DEFINE_PER_CPU(struct delayed_work, vmstat_work);
+ int sysctl_stat_interval __read_mostly = HZ;
+-struct cpumask *cpu_stat_off;
++cpumask_var_t cpu_stat_off;
+
+ static void vmstat_update(struct work_struct *w)
+ {
+@@ -1338,7 +1338,8 @@
+ 		INIT_DEFERRABLE_WORK(per_cpu_ptr(&vmstat_work, cpu),
+ 			vmstat_update);
+
+-	cpu_stat_off = kmalloc(cpumask_size(), GFP_KERNEL);
++	if (!alloc_cpumask_var(&cpu_stat_off, GFP_KERNEL))
++		BUG();
+ 	cpumask_copy(cpu_stat_off, cpu_online_mask);
+
+ 	schedule_delayed_work(&shepherd,
