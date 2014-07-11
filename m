@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111AbaGKP4R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 11:56:17 -0400
-Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:48416 "EHLO
-	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753503AbaGKP4N (ORCPT
+	id S932095AbaGKP4c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 11:56:32 -0400
+Received: from andre.telenet-ops.be ([195.130.132.53]:35138 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752301AbaGKP41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 11:56:13 -0400
-Date: Fri, 11 Jul 2014 10:55:59 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Tejun Heo <tj@kernel.org>
-cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Jianyu Zhan <nasa4836@gmail.com>, malc <av1474@comtv.ru>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Fabian Frederick <fabf@skynet.be>, Tony Luck <tony.luck@intel.com>,
-        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC Patch V1 07/30] mm: Use cpu_to_mem()/numa_mem_id() to
- support memoryless node
-In-Reply-To: <20140711153302.GA30865@htj.dyndns.org>
-Message-ID: <alpine.DEB.2.11.1407111054190.27349@gentwo.org>
-References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com> <1405064267-11678-8-git-send-email-jiang.liu@linux.intel.com> <20140711144205.GA27706@htj.dyndns.org> <alpine.DEB.2.11.1407111012210.25527@gentwo.org> <20140711152156.GB29137@htj.dyndns.org>
- <20140711153302.GA30865@htj.dyndns.org>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 11 Jul 2014 11:56:27 -0400
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: Mark Brown <broonie@kernel.org>, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Cc: dmaengine@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH v2 1/2] dmaengine: Clarify device parameter for dma_sync_*_for_*()
+Date: Fri, 11 Jul 2014 17:56:21 +0200
+Message-Id: <1405094182-13962-1-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jul 2014, Tejun Heo wrote:
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+---
+v2:
+  - New
+---
+ Documentation/dmaengine.txt | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-> On Fri, Jul 11, 2014 at 11:21:56AM -0400, Tejun Heo wrote:
-> > Even if that's the case, there's no reason to burden everyone with
-> > this distinction.  Most users just wanna say "I'm on this node.
-> > Please allocate considering that".  There's nothing wrong with using
-> > numa_node_id() for that.
->
-> Also, this is minor but don't we also lose fallback information by
-> doing this from the caller?  Please consider the following topology
-> where each hop is the same distance.
->
->    A - B - X - C - D
->
-> Where X is the memless node.  num_mem_id() on X would return either B
-> or C, right?  If B or C can't satisfy the allocation, the allocator
-> would fallback to A from B and D for C, both of which aren't optimal.
-> It should first fall back to C or B respectively, which the allocator
-> can't do anymoe because the information is lost when the caller side
-> performs numa_mem_id().
-
-True but the advantage is that the numa_mem_id() allows the use of a
-consitent sort of "local" node which increases allocator performance due
-to the abillity to cache objects from that node.
-
-> Seems pretty misguided to me.
-
-IMHO the whole concept of a memoryless node looks pretty misguided to me.
+diff --git a/Documentation/dmaengine.txt b/Documentation/dmaengine.txt
+index 879b6e31e2da..87d3f192e160 100644
+--- a/Documentation/dmaengine.txt
++++ b/Documentation/dmaengine.txt
+@@ -100,8 +100,10 @@ The slave DMA usage consists of following steps:
+    The peripheral driver is expected to have mapped the scatterlist for
+    the DMA operation prior to calling device_prep_slave_sg, and must
+    keep the scatterlist mapped until the DMA operation has completed.
+-   The scatterlist must be mapped using the DMA struct device.  So,
+-   normal setup should look like this:
++   The scatterlist must be mapped using the DMA struct device.
++   If a mapping needs to be synchronized later, dma_sync_*_for_*() must be
++   called using the DMA struct device, too.
++   So, normal setup should look like this:
+ 
+ 	nr_sg = dma_map_sg(chan->device->dev, sgl, sg_len);
+ 	if (nr_sg == 0)
+-- 
+1.9.1
 
