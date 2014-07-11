@@ -1,196 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754361AbaGKNpR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:45:17 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56278 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754289AbaGKNpM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:45:12 -0400
-Message-Id: <20140711133709.317078209@linutronix.de>
-User-Agent: quilt/0.63-1
-Date: Fri, 11 Jul 2014 13:45:10 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [patch 48/55] drm: i915: Use nsec based interfaces
-References: <20140711133623.530368377@linutronix.de>
+	id S932090AbaGKNp6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:45:58 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:60276 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753832AbaGKNpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 09:45:55 -0400
+Message-ID: <53BFEA6A.4020501@ti.com>
+Date: Fri, 11 Jul 2014 16:45:14 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=drm-i915-use-nsec-interfaces.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Rostislav Lisovy <lisovy@gmail.com>, Tony Lindgren <tony@atomide.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Kevin Hilman <khilman@deeprootsystems.com>,
+        Russell King <linux@arm.linux.org.uk>, Pekon Gupta <pekon@ti.com>,
+        Michal Vokac <vokac.m@gmail.com>, Michal Sojka <sojkam1@fel.cvut.cz>,
+        Rostislav Lisovy <lisovy@merica.cz>
+Subject: Re: [PATCH] ARM: omap2+: gpmc-nand: Use dynamic platform_device_alloc()
+References: <1401891875-27843-1-git-send-email-lisovy@merica.cz>
+In-Reply-To: <1401891875-27843-1-git-send-email-lisovy@merica.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No point in converting timespecs back and forth.
+On 06/04/2014 05:24 PM, Rostislav Lisovy wrote:
+> GPMC controller supports up to 8 memory devices connected to it.
+> Since there is one statically allocated "struct platform_device
+> gpmc_nand_device" it is not possible to configure the system to
+> use more than one NAND device connected to the GPMC. This
+> modification makes it possible to use up to 8 NAND devices
+> connected to the GPMC controller.
+> 
+> Signed-off-by: Rostislav Lisovy <lisovy@merica.cz>
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
----
- drivers/gpu/drm/i915/i915_drv.h |    2 +-
- drivers/gpu/drm/i915/i915_gem.c |   33 ++++++++++++---------------------
- drivers/gpu/drm/i915/intel_pm.c |   12 +++++-------
- 3 files changed, 18 insertions(+), 29 deletions(-)
+pushed to git@github.com:rogerq/linux.git	for-v3.17/gpmc-omap
 
-Index: tip/drivers/gpu/drm/i915/i915_drv.h
-===================================================================
---- tip.orig/drivers/gpu/drm/i915/i915_drv.h
-+++ tip/drivers/gpu/drm/i915/i915_drv.h
-@@ -931,7 +931,7 @@ struct intel_ilk_power_mgmt {
- 	unsigned long last_time1;
- 	unsigned long chipset_power;
- 	u64 last_count2;
--	struct timespec last_time2;
-+	u64 last_time2;
- 	unsigned long gfx_power;
- 	u8 corr;
- 
-Index: tip/drivers/gpu/drm/i915/i915_gem.c
-===================================================================
---- tip.orig/drivers/gpu/drm/i915/i915_gem.c
-+++ tip/drivers/gpu/drm/i915/i915_gem.c
-@@ -1149,16 +1149,16 @@ static bool can_wait_boost(struct drm_i9
- static int __wait_seqno(struct intel_engine_cs *ring, u32 seqno,
- 			unsigned reset_counter,
- 			bool interruptible,
--			struct timespec *timeout,
-+			s64 *timeout,
- 			struct drm_i915_file_private *file_priv)
- {
- 	struct drm_device *dev = ring->dev;
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	const bool irq_test_in_progress =
- 		ACCESS_ONCE(dev_priv->gpu_error.test_irq_rings) & intel_ring_flag(ring);
--	struct timespec before, now;
- 	DEFINE_WAIT(wait);
- 	unsigned long timeout_expire;
-+	s64 before, now;
- 	int ret;
- 
- 	WARN(dev_priv->pm.irqs_disabled, "IRQs disabled\n");
-@@ -1166,7 +1166,7 @@ static int __wait_seqno(struct intel_eng
- 	if (i915_seqno_passed(ring->get_seqno(ring, true), seqno))
- 		return 0;
- 
--	timeout_expire = timeout ? jiffies + timespec_to_jiffies_timeout(timeout) : 0;
-+	timeout_expire = timeout ? jiffies + nsecs_to_jiffies((u64)timeout) : 0;
- 
- 	if (INTEL_INFO(dev)->gen >= 6 && can_wait_boost(file_priv)) {
- 		gen6_rps_boost(dev_priv);
-@@ -1181,7 +1181,7 @@ static int __wait_seqno(struct intel_eng
- 
- 	/* Record current time in case interrupted by signal, or wedged */
- 	trace_i915_gem_request_wait_begin(ring, seqno);
--	getrawmonotonic(&before);
-+	before = ktime_get_raw_ns();
- 	for (;;) {
- 		struct timer_list timer;
- 
-@@ -1230,7 +1230,7 @@ static int __wait_seqno(struct intel_eng
- 			destroy_timer_on_stack(&timer);
- 		}
- 	}
--	getrawmonotonic(&now);
-+	now = ktime_get_raw_ns();
- 	trace_i915_gem_request_wait_end(ring, seqno);
- 
- 	if (!irq_test_in_progress)
-@@ -1239,10 +1239,9 @@ static int __wait_seqno(struct intel_eng
- 	finish_wait(&ring->irq_queue, &wait);
- 
- 	if (timeout) {
--		struct timespec sleep_time = timespec_sub(now, before);
--		*timeout = timespec_sub(*timeout, sleep_time);
--		if (!timespec_valid(timeout)) /* i.e. negative time remains */
--			set_normalized_timespec(timeout, 0, 0);
-+		s64 tres = *timeout - (now - before);
-+
-+		*timeout = tres < 0 ? 0 : tres;
- 	}
- 
- 	return ret;
-@@ -2753,16 +2752,10 @@ i915_gem_wait_ioctl(struct drm_device *d
- 	struct drm_i915_gem_wait *args = data;
- 	struct drm_i915_gem_object *obj;
- 	struct intel_engine_cs *ring = NULL;
--	struct timespec timeout_stack, *timeout = NULL;
- 	unsigned reset_counter;
- 	u32 seqno = 0;
- 	int ret = 0;
- 
--	if (args->timeout_ns >= 0) {
--		timeout_stack = ns_to_timespec(args->timeout_ns);
--		timeout = &timeout_stack;
--	}
--
- 	ret = i915_mutex_lock_interruptible(dev);
- 	if (ret)
- 		return ret;
-@@ -2787,9 +2780,9 @@ i915_gem_wait_ioctl(struct drm_device *d
- 		 goto out;
- 
- 	/* Do this after OLR check to make sure we make forward progress polling
--	 * on this IOCTL with a 0 timeout (like busy ioctl)
-+	 * on this IOCTL with a timeout <=0 (like busy ioctl)
- 	 */
--	if (!args->timeout_ns) {
-+	if (args->timeout_ns <= 0) {
- 		ret = -ETIME;
- 		goto out;
- 	}
-@@ -2798,10 +2791,8 @@ i915_gem_wait_ioctl(struct drm_device *d
- 	reset_counter = atomic_read(&dev_priv->gpu_error.reset_counter);
- 	mutex_unlock(&dev->struct_mutex);
- 
--	ret = __wait_seqno(ring, seqno, reset_counter, true, timeout, file->driver_priv);
--	if (timeout)
--		args->timeout_ns = timespec_to_ns(timeout);
--	return ret;
-+	return __wait_seqno(ring, seqno, reset_counter, true, &args->timeout_ns,
-+			    file->driver_priv);
- 
- out:
- 	drm_gem_object_unreference(&obj->base);
-Index: tip/drivers/gpu/drm/i915/intel_pm.c
-===================================================================
---- tip.orig/drivers/gpu/drm/i915/intel_pm.c
-+++ tip/drivers/gpu/drm/i915/intel_pm.c
-@@ -2993,7 +2993,7 @@ static void ironlake_enable_drps(struct
- 		I915_READ(0x112e0);
- 	dev_priv->ips.last_time1 = jiffies_to_msecs(jiffies);
- 	dev_priv->ips.last_count2 = I915_READ(0x112f4);
--	getrawmonotonic(&dev_priv->ips.last_time2);
-+	dev_priv->ips.last_time2 = ktime_get_raw_ns();
- 
- 	spin_unlock_irq(&mchdev_lock);
- }
-@@ -4314,18 +4314,16 @@ static u16 pvid_to_extvid(struct drm_i91
- 
- static void __i915_update_gfx_val(struct drm_i915_private *dev_priv)
- {
--	struct timespec now, diff1;
--	u64 diff;
--	unsigned long diffms;
-+	u64 now, diff, diffms;
- 	u32 count;
- 
- 	assert_spin_locked(&mchdev_lock);
- 
--	getrawmonotonic(&now);
--	diff1 = timespec_sub(now, dev_priv->ips.last_time2);
-+	now = ktime_get_raw_ns();
-+	diffms = now - dev_priv->ips.last_time2;
-+	do_div(diffms, NSEC_PER_MSEC);
- 
- 	/* Don't divide by 0 */
--	diffms = diff1.tv_sec * 1000 + diff1.tv_nsec / 1000000;
- 	if (!diffms)
- 		return;
- 
+Tony,
 
+You can please pull all omap-gpmc patches for 3.17 from there. Thanks.
+
+cheers,
+-roger
+
+> ---
+> 
+> Tested on custom AM335x board with two different NAND chips
+> (128 + 256 MiB) using GPMC configuration in FDT -- behaves
+> correctly.
+> 
+> 
+>  arch/arm/mach-omap2/gpmc-nand.c | 79 +++++++++++++++++++----------------------
+>  1 file changed, 37 insertions(+), 42 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/gpmc-nand.c b/arch/arm/mach-omap2/gpmc-nand.c
+> index 4349e82..c5481a8 100644
+> --- a/arch/arm/mach-omap2/gpmc-nand.c
+> +++ b/arch/arm/mach-omap2/gpmc-nand.c
+> @@ -24,25 +24,6 @@
+>  /* minimum size for IO mapping */
+>  #define	NAND_IO_SIZE	4
+>  
+> -static struct resource gpmc_nand_resource[] = {
+> -	{
+> -		.flags		= IORESOURCE_MEM,
+> -	},
+> -	{
+> -		.flags		= IORESOURCE_IRQ,
+> -	},
+> -	{
+> -		.flags		= IORESOURCE_IRQ,
+> -	},
+> -};
+> -
+> -static struct platform_device gpmc_nand_device = {
+> -	.name		= "omap2-nand",
+> -	.id		= 0,
+> -	.num_resources	= ARRAY_SIZE(gpmc_nand_resource),
+> -	.resource	= gpmc_nand_resource,
+> -};
+> -
+>  static bool gpmc_hwecc_bch_capable(enum omap_ecc ecc_opt)
+>  {
+>  	/* platforms which support all ECC schemes */
+> @@ -93,43 +74,41 @@ int gpmc_nand_init(struct omap_nand_platform_data *gpmc_nand_data,
+>  {
+>  	int err	= 0;
+>  	struct gpmc_settings s;
+> -	struct device *dev = &gpmc_nand_device.dev;
+> -
+> -	memset(&s, 0, sizeof(struct gpmc_settings));
+> +	struct platform_device *pdev;
+> +	struct resource gpmc_nand_res[] = {
+> +		{ .flags = IORESOURCE_MEM, },
+> +		{ .flags = IORESOURCE_IRQ, },
+> +		{ .flags = IORESOURCE_IRQ, },
+> +	};
+>  
+> -	gpmc_nand_device.dev.platform_data = gpmc_nand_data;
+> +	BUG_ON(gpmc_nand_data->cs >= GPMC_CS_NUM);
+>  
+>  	err = gpmc_cs_request(gpmc_nand_data->cs, NAND_IO_SIZE,
+> -				(unsigned long *)&gpmc_nand_resource[0].start);
+> +			      (unsigned long *)&gpmc_nand_res[0].start);
+>  	if (err < 0) {
+> -		dev_err(dev, "Cannot request GPMC CS %d, error %d\n",
+> -			gpmc_nand_data->cs, err);
+> +		pr_err("omap2-gpmc: Cannot request GPMC CS %d, error %d\n",
+> +		       gpmc_nand_data->cs, err);
+>  		return err;
+>  	}
+> -
+> -	gpmc_nand_resource[0].end = gpmc_nand_resource[0].start +
+> -							NAND_IO_SIZE - 1;
+> -
+> -	gpmc_nand_resource[1].start =
+> -				gpmc_get_client_irq(GPMC_IRQ_FIFOEVENTENABLE);
+> -	gpmc_nand_resource[2].start =
+> -				gpmc_get_client_irq(GPMC_IRQ_COUNT_EVENT);
+> +	gpmc_nand_res[0].end = gpmc_nand_res[0].start + NAND_IO_SIZE - 1;
+> +	gpmc_nand_res[1].start = gpmc_get_client_irq(GPMC_IRQ_FIFOEVENTENABLE);
+> +	gpmc_nand_res[2].start = gpmc_get_client_irq(GPMC_IRQ_COUNT_EVENT);
+>  
+>  	if (gpmc_t) {
+>  		err = gpmc_cs_set_timings(gpmc_nand_data->cs, gpmc_t);
+>  		if (err < 0) {
+> -			dev_err(dev, "Unable to set gpmc timings: %d\n", err);
+> +			pr_err("omap2-gpmc: Unable to set gpmc timings: %d\n", err);
+>  			return err;
+>  		}
+>  	}
+>  
+> +	memset(&s, 0, sizeof(struct gpmc_settings));
+>  	if (gpmc_nand_data->of_node)
+>  		gpmc_read_settings_dt(gpmc_nand_data->of_node, &s);
+>  	else
+>  		gpmc_set_legacy(gpmc_nand_data, &s);
+>  
+>  	s.device_nand = true;
+> -
+>  	err = gpmc_cs_program_settings(gpmc_nand_data->cs, &s);
+>  	if (err < 0)
+>  		goto out_free_cs;
+> @@ -141,18 +120,34 @@ int gpmc_nand_init(struct omap_nand_platform_data *gpmc_nand_data,
+>  	gpmc_update_nand_reg(&gpmc_nand_data->reg, gpmc_nand_data->cs);
+>  
+>  	if (!gpmc_hwecc_bch_capable(gpmc_nand_data->ecc_opt)) {
+> -		dev_err(dev, "Unsupported NAND ECC scheme selected\n");
+> -		return -EINVAL;
+> +		pr_err("omap2-nand: Unsupported NAND ECC scheme selected\n");
+> +		err = -EINVAL;
+> +		goto out_free_cs;
+>  	}
+>  
+> -	err = platform_device_register(&gpmc_nand_device);
+> -	if (err < 0) {
+> -		dev_err(dev, "Unable to register NAND device\n");
+> -		goto out_free_cs;
+> +
+> +	pdev = platform_device_alloc("omap2-nand", gpmc_nand_data->cs);
+> +	if (pdev) {
+> +		err = platform_device_add_resources(pdev, gpmc_nand_res,
+> +						    ARRAY_SIZE(gpmc_nand_res));
+> +		if (!err)
+> +			pdev->dev.platform_data = gpmc_nand_data;
+> +	} else {
+> +		err = -ENOMEM;
+> +	}
+> +	if (err)
+> +		goto out_free_pdev;
+> +
+> +	err = platform_device_add(pdev);
+> +	if (err) {
+> +		dev_err(&pdev->dev, "Unable to register NAND device\n");
+> +		goto out_free_pdev;
+>  	}
+>  
+>  	return 0;
+>  
+> +out_free_pdev:
+> +	platform_device_put(pdev);
+>  out_free_cs:
+>  	gpmc_cs_free(gpmc_nand_data->cs);
+>  
+> 
 
