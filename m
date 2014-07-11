@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068AbaGKA7K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 20:59:10 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:35731 "EHLO
+	id S1752124AbaGKA7e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 20:59:34 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:35714 "EHLO
 	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751394AbaGKA6j (ORCPT
+	with ESMTP id S1751280AbaGKA6f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 20:58:39 -0400
-X-AuditID: 85900ec0-d3b2cb9000001514-9d-53bf36bccf54
-Subject: [PATCH V4 4/5] trace-cmd/virt-server: Add --dom option which makes
- a domain directory to virt-server
+	Thu, 10 Jul 2014 20:58:35 -0400
+X-AuditID: 85900ec0-d312bb9000001514-9b-53bf36b78778
+Subject: [PATCH V4 2/5] trace-cmd/msg: Use poll(2) to wait for a message
 From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         yrl.pp-manager.tt@hitachi.com, linux-kernel@vger.kernel.org,
         Aaron Fabbri <aaronx.j.fabbri@intel.com>
-Date: Fri, 11 Jul 2014 00:58:34 +0000
-Message-ID: <20140711005834.25516.24950.stgit@yuno-kbuild.novalocal>
+Date: Fri, 11 Jul 2014 00:58:29 +0000
+Message-ID: <20140711005829.25516.75538.stgit@yuno-kbuild.novalocal>
 In-Reply-To: <20140711005824.25516.24498.stgit@yuno-kbuild.novalocal>
 References: <20140711005824.25516.24498.stgit@yuno-kbuild.novalocal>
 User-Agent: StGit/0.17-dirty
@@ -29,381 +28,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add --dom option which makes a domain directory to virt-server. When a user
-already knows domain name of a guest before running virt-server, trace-cmd
-should automatically set up I/Fs of the guest. By adding --dom option,
-trace-cmd creates a domain directory with 0710 and qemu group.
+Use poll(2) to wait for a message. If a client/server cannot send a message for
+any reasons, the current server/client will wait in a blocking read operation.
+So, we use poll(2) for avoiding remaining in a blocking state.
 
-This patch adds additional options for --dom as follows:
-
--m <permission>
-   This option changes the permission of domain directory. If you don't use
-   this option, the default permission is 0710.
-
--g <group>
-   This option changes group of domain directory. If you don't use this option,
-   the default group is qemu.
-
--c <cpu>
-   This option creates trace data I/Fs(trace-path-cpu*.{in,out}) for each CPU
-   of 'domain'. If you don't use this option, those files are not created.
-
-Here, an example you use this option is written as follows:
-
-- trace-cmd creates a guest1 directory with trace data I/Fs of 2 CPUs.
-   # trace-cmd virt-server --dom guest1 -c 2
-
-- trace-cmd creates guest2 and guest3 directories
-   # trace-cmd virt-server --dom guest2 -c 3 --dom guest3 -c 1
-
-Changes in V4: Introduce parse_args_virt()
-               Add usage of virt-server in trace-usage.c
+Changes in V4: Change the argument of tracecmd_msg_recv_wait()
+               Fix some typos
 
 Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 ---
- Documentation/trace-cmd-virt-server.1.txt |   56 ++++++++---
- trace-listen.c                            |  151 ++++++++++++++++++++++++++---
- trace-usage.c                             |    5 +
- 3 files changed, 178 insertions(+), 34 deletions(-)
+ trace-msg.c |   42 ++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 36 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/trace-cmd-virt-server.1.txt b/Documentation/trace-cmd-virt-server.1.txt
-index 4168a04..fbd0ad6 100644
---- a/Documentation/trace-cmd-virt-server.1.txt
-+++ b/Documentation/trace-cmd-virt-server.1.txt
-@@ -34,40 +34,64 @@ OPTIONS
- *-l* 'filename'::
-     This option writes the output messages to a log file instead of standard output.
- 
-+*--dom* 'domain'::
-+    This option makes a directory for the 'domain'. You can use additional options
-+    *-m*, *-g*, *-c* after this option for the 'domain'. If you don't use these
-+    additional options, the directory is made as 0710 and qemu group and
-+    trace data I/Fs(trace-path-cpu*.{in,out}) are not created.
-+
-+*-m* 'permission'::
-+    This option changes the permission of 'domain' directory. If you don't use
-+    this option, the default permission is 0710.
-+
-+*-g* 'group'::
-+    This option changes group of 'domain' directory. If you don't use this option,
-+    the default group is qemu.
-+
-+*-c* 'cpu'::
-+    This option creates trace data I/Fs(trace-path-cpu*.{in,out}) for each CPU
-+    of 'domain'. If you don't use this option, those files are not created.
-+
- SET UP
- ------
- Here, an example is written as follows:
- 
- 1. Run virt-server on a host
--   # trace-cmd virt-server
--
--2. Make guest domain directory
--   # mkdir -p /tmp/trace-cmd/virt/<DOMAIN>
--   # chmod 710 /tmp/trace-cmd/virt/<DOMAIN>
--   # chgrp qemu /tmp/trace-cmd/virt/<DOMAIN>
--
--3. Make FIFO on the host
--   # mkfifo /tmp/trace-cmd/virt/<DOMAIN>/trace-path-cpu{0,1,...,X}.{in,out}
-+   # trace-cmd virt-server --dom guest1 -c 2
- 
--4. Set up of virtio-serial pipe of a guest on the host
-+2. Set up of virtio-serial pipe of guest1 on the host
-    Add the following tags to domain XML files.
--   # virsh edit <guest domain>
-+   # virsh edit guest1
-    <channel type='unix'>
-       <source mode='connect' path='/tmp/trace-cmd/virt/agent-ctl-path'/>
-       <target type='virtio' name='agent-ctl-path'/>
-    </channel>
-    <channel type='pipe'>
--      <source path='/tmp/trace-cmd/virt/<DOMAIN>/trace-path-cpu0'/>
-+      <source path='/tmp/trace-cmd/virt/guest1/trace-path-cpu0'/>
-       <target type='virtio' name='trace-path-cpu0'/>
-    </channel>
--   ... (cpu1, cpu2, ...)
-+   <channel type='pipe'>
-+      <source path='/tmp/trace-cmd/virt/guest1/trace-path-cpu1'/>
-+      <target type='virtio' name='trace-path-cpu1'/>
-+   </channel>
- 
--5. Boot the guest
--   # virsh start <DOMAIN>
-+3. Boot the guest
-+   # virsh start guest1
- 
--6. Run the guest's client(see trace-cmd-record(1) with the *--virt* option)
-+4. Run the guest1's client(see trace-cmd-record(1) with the *--virt* option)
-    # trace-cmd record -e sched* --virt
- 
-+If you want to boot another guest sends trace-data via virtio-serial,
-+you will manually make the guest domain directory and trace data I/Fs.
-+
-+- Make guest domain directory on the host
-+   # mkdir -p /tmp/trace-cmd/virt/<DOMAIN>
-+   # chmod 710 /tmp/trace-cmd/virt/<DOMAIN>
-+   # chgrp qemu /tmp/trace-cmd/virt/<DOMAIN>
-+
-+- Make FIFO on the host
-+   # mkfifo /tmp/trace-cmd/virt/<DOMAIN>/trace-path-cpu{0,1,...,X}.{in,out}
-+
- SEE ALSO
- --------
- trace-cmd(1), trace-cmd-record(1), trace-cmd-report(1), trace-cmd-start(1),
-diff --git a/trace-listen.c b/trace-listen.c
-index 01b7ebf..e424c2a 100644
---- a/trace-listen.c
-+++ b/trace-listen.c
-@@ -54,11 +54,21 @@ static int backlog = 5;
- 
- static int proto_ver;
- 
-+struct domain_dir {
-+	struct domain_dir *next;
-+	char *name;
-+	char *group;
-+	mode_t perms;
-+	int cpu;
-+};
-+
- enum {
- 	NET	= 1,
- 	VIRT	= 2,
- };
- 
-+struct domain_dir *dom_dir_list;
-+
- #define  TEMP_FILE_STR_NET "%s.%s:%s.cpu%d", output_file, host, port, cpu
- #define  TEMP_FILE_STR_VIRT "%s.%s:%d.cpu%d", output_file, domain, virtpid, cpu
- static char *get_temp_file(const char *host, const char *port,
-@@ -382,7 +392,9 @@ static int open_udp(const char *node, const char *port, int *pid,
- #define TRACE_CMD_DIR		"/tmp/trace-cmd/"
- #define VIRT_DIR		TRACE_CMD_DIR "virt/"
- #define VIRT_TRACE_CTL_SOCK	VIRT_DIR "agent-ctl-path"
--#define TRACE_PATH_DOMAIN_CPU	VIRT_DIR "%s/trace-path-cpu%d.out"
-+#define VIRT_DOMAIN_DIR		VIRT_DIR "%s/"
-+#define TRACE_PATH_DOMAIN_CPU_O	VIRT_DOMAIN_DIR "trace-path-cpu%d.out"
-+#define TRACE_PATH_DOMAIN_CPU_I	VIRT_DOMAIN_DIR "trace-path-cpu%d.in"
- 
- static int open_virtio_serial_pipe(int *pid, int cpu, int pagesize,
- 				   const char *domain, int virtpid)
-@@ -390,7 +402,7 @@ static int open_virtio_serial_pipe(int *pid, int cpu, int pagesize,
- 	char buf[PATH_MAX];
- 	int fd;
- 
--	snprintf(buf, PATH_MAX, TRACE_PATH_DOMAIN_CPU, domain, cpu);
-+	snprintf(buf, PATH_MAX, TRACE_PATH_DOMAIN_CPU_O, domain, cpu);
- 	fd = open(buf, O_RDONLY | O_NONBLOCK);
- 	if (fd < 0) {
- 		warning("open %s", buf);
-@@ -995,27 +1007,89 @@ static void do_listen_net(char *port)
- 	kill_clients();
+diff --git a/trace-msg.c b/trace-msg.c
+index 08fa2a6..db48365 100644
+--- a/trace-msg.c
++++ b/trace-msg.c
+@@ -395,6 +395,27 @@ error:
+ 	return -ENOMSG;
  }
  
--static void make_virt_if_dir(void)
-+#define for_each_domain(i) for (i = dom_dir_list; i; i = (i)->next)
++#define MSG_WAIT_MSEC	5000
 +
-+static void make_dir_virt(const char *path, mode_t perms, const char *gr_name)
++/*
++ * A return value of 0 indicates time-out
++ */
++static int tracecmd_msg_recv_wait(int fd, struct tracecmd_msg *msg)
++{
++	struct pollfd pfd;
++	int ret;
++
++	pfd.fd = fd;
++	pfd.events = POLLIN;
++	ret = poll(&pfd, 1, MSG_WAIT_MSEC);
++	if (ret < 0)
++		return -errno;
++	else if (ret == 0)
++		return -ETIMEDOUT;
++
++	return tracecmd_msg_recv(fd, msg);
++}
++
+ static void *tracecmd_msg_buf_access(struct tracecmd_msg *msg, int offset)
  {
- 	struct group *group;
+ 	return (void *)msg + offset;
+@@ -405,9 +426,12 @@ static int tracecmd_msg_wait_for_msg(int fd, struct tracecmd_msg *msg)
+ 	u32 cmd;
+ 	int ret;
  
--	if (mkdir(TRACE_CMD_DIR, 0710) < 0) {
-+	if (mkdir(path, perms) < 0) {
- 		if (errno != EEXIST)
--			pdie("mkdir %s", TRACE_CMD_DIR);
-+			pdie("mkdir %s", path);
- 	}
--	/* QEMU operates as qemu:qemu */
--	chmod(TRACE_CMD_DIR, 0710);
--	group = getgrnam("qemu");
--	if (chown(TRACE_CMD_DIR, -1, group->gr_gid) < 0)
--		pdie("chown %s", TRACE_CMD_DIR);
-+	chmod(path, perms);
- 
--	if (mkdir(VIRT_DIR, 0710) < 0) {
--		if (errno != EEXIST)
--			pdie("mkdir %s", VIRT_DIR);
-+	group = getgrnam(gr_name);
-+	if (!group)
-+		pdie("getgrnam %s", gr_name);
-+	if (chown(path, -1, group->gr_gid) < 0)
-+		pdie("chown %s", path);
-+}
-+
-+static void make_traceif_in_dom_dir(const char *name, int cpu)
-+{
-+	char fifo_in[PATH_MAX];
-+	char fifo_out[PATH_MAX];
-+	int i;
-+
-+	for (i = 0; i < cpu; i++) {
-+		snprintf(fifo_in, PATH_MAX, TRACE_PATH_DOMAIN_CPU_I, name, i);
-+		snprintf(fifo_out, PATH_MAX, TRACE_PATH_DOMAIN_CPU_O, name, i);
-+		if (mkfifo(fifo_in, 0644) < 0) {
-+			if (errno != EEXIST)
-+				pdie("mkfifo %s", fifo_in);
-+		}
-+		if (mkfifo(fifo_out, 0644) < 0) {
-+			if (errno != EEXIST)
-+				pdie("mkfifo %s", fifo_out);
-+		}
- 	}
--	chmod(VIRT_DIR, 0710);
--	if (chown(VIRT_DIR, -1, group->gr_gid) < 0)
--		pdie("chown %s", VIRT_DIR);
-+	plog("CPUS: %d\n", cpu);
-+}
-+
-+static void make_domain_dirs(void)
-+{
-+	struct domain_dir *dom_dir;
-+	char gr_name[5] = "qemu";
-+	char buf[PATH_MAX];
-+	mode_t perms;
-+
-+	for_each_domain(dom_dir) {
-+		snprintf(buf, PATH_MAX, VIRT_DOMAIN_DIR, dom_dir->name);
-+
-+		if (dom_dir->perms)
-+			perms = dom_dir->perms;
-+		else
-+			perms = 0710;
-+
-+		if (dom_dir->group)
-+			make_dir_virt(buf, perms, dom_dir->group);
-+		else
-+			make_dir_virt(buf, perms, gr_name);
-+
-+		plog("---\n"
-+		     "Process Directory: %s\n"
-+		     "Directory permission: %o\n"
-+		     "Group: %s\n", buf, perms, dom_dir->group ? dom_dir->group : gr_name);
-+
-+		if (dom_dir->cpu)
-+			make_traceif_in_dom_dir(dom_dir->name, dom_dir->cpu);
+-	ret = tracecmd_msg_recv(fd, msg);
+-	if (ret < 0)
++	ret = tracecmd_msg_recv_wait(fd, msg);
++	if (ret < 0) {
++		if (ret == -ETIMEDOUT)
++			warning("Connection timed out\n");
+ 		return ret;
 +	}
-+
-+	plog("---\n");
-+	free(dom_dir_list);
-+}
-+
-+static void make_virt_if_dir(void)
-+{
-+	char gr_name[5] = "qemu";
-+
-+	/* QEMU operates as qemu:qemu */
-+	make_dir_virt(TRACE_CMD_DIR, 0710, gr_name);
-+	make_dir_virt(VIRT_DIR, 0710, gr_name);
-+
-+	if (dom_dir_list)
-+		make_domain_dirs();
- }
  
- static void do_listen_virt(void)
-@@ -1057,7 +1131,14 @@ static void start_daemon(void)
- 		die("starting daemon");
- }
+ 	cmd = ntohl(msg->cmd);
+ 	if (cmd == MSG_CLOSE)
+@@ -487,9 +511,12 @@ int tracecmd_msg_initial_setting(int fd, int *cpus, int *pagesize)
+ 	u32 cmd;
  
-+static void add_dom_dir(struct domain_dir *dom_dir)
-+{
-+	dom_dir->next = dom_dir_list;
-+	dom_dir_list = dom_dir;
-+}
-+
- enum {
-+	OPT_dom		= 254,
- 	OPT_debug	= 255,
- };
- 
-@@ -1072,6 +1153,37 @@ static void parse_args_net(int c, char **argv, char **port)
- 	}
- }
- 
-+static void parse_args_virt(int c, char **argv)
-+{
-+	static struct domain_dir *dom_dir;
-+
-+	switch (c) {
-+	case 'm':
-+		if (!dom_dir)
-+			die("-m needs --dom <domain>");
-+		dom_dir->perms = strtol(optarg, NULL, 8);
-+		break;
-+	case 'g':
-+		if (!dom_dir)
-+			die("-g needs --dom <domain>");
-+		dom_dir->group = optarg;
-+		break;
-+	case 'c':
-+		if (!dom_dir)
-+			die("-c needs --dom <domain>");
-+		dom_dir->cpu = atoi(optarg);
-+		break;
-+	case OPT_dom:
-+		dom_dir = malloc_or_die(sizeof(*dom_dir));
-+		memset(dom_dir, 0, sizeof(*dom_dir));
-+		dom_dir->name = optarg;
-+		add_dom_dir(dom_dir);
-+		break;
-+	default:
-+		usage(argv);
+ 	msg = (struct tracecmd_msg *)buf;
+-	ret = tracecmd_msg_recv(fd, msg);
+-	if (ret < 0)
++	ret = tracecmd_msg_recv_wait(fd, msg);
++	if (ret < 0) {
++		if (ret == -ETIMEDOUT)
++			warning("Connection timed out\n");
+ 		return ret;
 +	}
-+}
-+
- void trace_listen(int argc, char **argv)
- {
- 	char *logfile = NULL;
-@@ -1094,12 +1206,13 @@ void trace_listen(int argc, char **argv)
- 		int option_index = 0;
- 		static struct option long_options[] = {
- 			{"port", required_argument, NULL, 'p'},
-+			{"dom", required_argument, NULL, OPT_dom},
- 			{"help", no_argument, NULL, '?'},
- 			{"debug", no_argument, NULL, OPT_debug},
- 			{NULL, 0, NULL, 0}
- 		};
  
--		c = getopt_long (argc-1, argv+1, "+hp:o:d:l:D",
-+		c = getopt_long (argc-1, argv+1, "+hp:o:d:l:Dm:g:c:",
- 			long_options, &option_index);
- 		if (c == -1)
- 			break;
-@@ -1125,12 +1238,14 @@ void trace_listen(int argc, char **argv)
- 		default:
- 			if (mode == NET)
- 				parse_args_net(c, argv, &port);
-+			else if (mode == VIRT)
-+				parse_args_virt(c, argv);
- 			else
- 				usage(argv);
+ 	cmd = ntohl(msg->cmd);
+ 	if (cmd != MSG_TINIT) {
+@@ -627,9 +654,12 @@ int tracecmd_msg_collect_metadata(int ifd, int ofd)
+ 	msg = (struct tracecmd_msg *)buf;
+ 
+ 	do {
+-		ret = tracecmd_msg_recv(ifd, msg);
++		ret = tracecmd_msg_recv_wait(ifd, msg);
+ 		if (ret < 0) {
+-			warning("reading client");
++			if (ret == -ETIMEDOUT)
++				warning("Connection timed out\n");
++			else
++				warning("reading client");
+ 			return ret;
  		}
- 	}
  
--	if (!port && mode == NET)
-+	if (!port && (mode == NET))
- 		usage(argv);
- 
- 	if ((argc - optind) >= 2)
-diff --git a/trace-usage.c b/trace-usage.c
-index 0411cb4..f96a5ba 100644
---- a/trace-usage.c
-+++ b/trace-usage.c
-@@ -186,11 +186,16 @@ static struct usage_help usage_help[] = {
- 		"virt-server",
- 		"listen on a virtio-serial for trace clients",
- 		" %s virt-server [-o file][-d dir][-l logfile]\n"
-+		"                [--dom domain [-m permisson] [-g group] [-c cpu]]\n"
- 		"          Creates a socket to listen for clients.\n"
- 		"          -D create it in daemon mode.\n"
- 		"          -o file name to use for clients.\n"
- 		"          -d diretory to store client files.\n"
- 		"	   -l logfile to write messages to.\n"
-+		"          --dom create domain direcroty in /tmp/trace-cmd/virt and folling directory permissions/group names and FIFO files will be changed here\n"
-+		"	   -m changes the permission of domain directory.\n"
-+		"	   -g changes group of domain directory.\n"
-+		"	   -c creates trace data I/F(trace-path-cpu*.{in, out} files) in domain directory.\n"
- 	},
- 	{
- 		"list",
 
