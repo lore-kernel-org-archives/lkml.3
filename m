@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307AbaGKLg4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 07:36:56 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:33603 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752969AbaGKLgG (ORCPT
+	id S1753376AbaGKLhm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 07:37:42 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:54532 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752805AbaGKLgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 07:36:06 -0400
+	Fri, 11 Jul 2014 07:36:01 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, patches@linaro.org,
+Cc: Anton Vorontsov <anton.vorontsov@linaro.org>, patches@linaro.org,
         linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@redhat.com>, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
         Colin Cross <ccross@android.com>, kernel-team@android.com,
-        kgdb-bugreport@lists.sourceforge.net
-Subject: [RESEND PATCH v5 3.16-rc4 8/8] kdb: Allow access to sensitive commands to be restricted by default
-Date: Fri, 11 Jul 2014 12:33:38 +0100
-Message-Id: <1405078418-14070-9-git-send-email-daniel.thompson@linaro.org>
+        kgdb-bugreport@lists.sourceforge.net,
+        Daniel Thompson <daniel.thompson@linaro.org>,
+        Mike Travis <travis@sgi.com>
+Subject: [RESEND PATCH v5 3.16-rc4 2/8] kdb: Rename kdb_repeat_t to kdb_cmdflags_t, cmd_repeat to cmd_flags
+Date: Fri, 11 Jul 2014 12:33:32 +0100
+Message-Id: <1405078418-14070-3-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1405078418-14070-1-git-send-email-daniel.thompson@linaro.org>
 References: <1399381429-16194-1-git-send-email-daniel.thompson@linaro.org>
@@ -29,67 +30,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently kiosk mode must be explicitly requested by the bootloader or
-userspace. It is convenient to be able to change the default value in a
-similar manner to CONFIG_MAGIC_SYSRQ_DEFAULT_MASK.
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
 
+We're about to add more options for command behaviour, so let's expand
+the meaning of kdb_repeat_t.
+
+So far we just do various renames, there should be no functional changes.
+
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
 Cc: Jason Wessel <jason.wessel@windriver.com>
+Cc: Mike Travis <travis@sgi.com>
 Cc: kgdb-bugreport@lists.sourceforge.net
 ---
- kernel/debug/kdb/kdb_main.c |  2 +-
- lib/Kconfig.kgdb            | 25 +++++++++++++++++++++++++
- 2 files changed, 26 insertions(+), 1 deletion(-)
+ include/linux/kdb.h            | 6 +++---
+ kernel/debug/kdb/kdb_main.c    | 6 +++---
+ kernel/debug/kdb/kdb_private.h | 2 +-
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
+diff --git a/include/linux/kdb.h b/include/linux/kdb.h
+index 290db12..e650f79 100644
+--- a/include/linux/kdb.h
++++ b/include/linux/kdb.h
+@@ -17,7 +17,7 @@ typedef enum {
+ 	KDB_REPEAT_NONE = 0,	/* Do not repeat this command */
+ 	KDB_REPEAT_NO_ARGS,	/* Repeat the command without arguments */
+ 	KDB_REPEAT_WITH_ARGS,	/* Repeat the command including its arguments */
+-} kdb_repeat_t;
++} kdb_cmdflags_t;
+ 
+ typedef int (*kdb_func_t)(int, const char **);
+ 
+@@ -147,7 +147,7 @@ static inline const char *kdb_walk_kallsyms(loff_t *pos)
+ /* Dynamic kdb shell command registration */
+ extern int kdb_register(char *, kdb_func_t, char *, char *, short);
+ extern int kdb_register_repeat(char *, kdb_func_t, char *, char *,
+-			       short, kdb_repeat_t);
++			       short, kdb_cmdflags_t);
+ extern int kdb_unregister(char *);
+ #else /* ! CONFIG_KGDB_KDB */
+ static inline __printf(1, 2) int kdb_printf(const char *fmt, ...) { return 0; }
+@@ -156,7 +156,7 @@ static inline int kdb_register(char *cmd, kdb_func_t func, char *usage,
+ 			       char *help, short minlen) { return 0; }
+ static inline int kdb_register_repeat(char *cmd, kdb_func_t func, char *usage,
+ 				      char *help, short minlen,
+-				      kdb_repeat_t repeat) { return 0; }
++				      kdb_cmdflags_t flags) { return 0; }
+ static inline int kdb_unregister(char *cmd) { return 0; }
+ #endif	/* CONFIG_KGDB_KDB */
+ enum {
 diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index c670fe4..a11a26b 100644
+index 0b28bb0..05c4abc 100644
 --- a/kernel/debug/kdb/kdb_main.c
 +++ b/kernel/debug/kdb/kdb_main.c
-@@ -47,7 +47,7 @@
- #undef	MODULE_PARAM_PREFIX
- #define	MODULE_PARAM_PREFIX "kdb."
+@@ -1008,7 +1008,7 @@ int kdb_parse(const char *cmdstr)
+ 		if (result && ignore_errors && result > KDB_CMD_GO)
+ 			result = 0;
+ 		KDB_STATE_CLEAR(CMD);
+-		switch (tp->cmd_repeat) {
++		switch (tp->cmd_flags) {
+ 		case KDB_REPEAT_NONE:
+ 			argc = 0;
+ 			if (argv[0])
+@@ -2646,7 +2646,7 @@ int kdb_register_repeat(char *cmd,
+ 			char *usage,
+ 			char *help,
+ 			short minlen,
+-			kdb_repeat_t repeat)
++			kdb_cmdflags_t flags)
+ {
+ 	int i;
+ 	kdbtab_t *kp;
+@@ -2695,7 +2695,7 @@ int kdb_register_repeat(char *cmd,
+ 	kp->cmd_usage  = usage;
+ 	kp->cmd_help   = help;
+ 	kp->cmd_minlen = minlen;
+-	kp->cmd_repeat = repeat;
++	kp->cmd_flags  = flags;
  
--static int kdb_cmd_enabled;
-+static int kdb_cmd_enabled = CONFIG_KDB_DEFAULT_ENABLE;
- module_param_named(cmd_enable, kdb_cmd_enabled, int, 0600);
+ 	return 0;
+ }
+diff --git a/kernel/debug/kdb/kdb_private.h b/kernel/debug/kdb/kdb_private.h
+index c4c46c7..eaacd16 100644
+--- a/kernel/debug/kdb/kdb_private.h
++++ b/kernel/debug/kdb/kdb_private.h
+@@ -174,7 +174,7 @@ typedef struct _kdbtab {
+ 	char    *cmd_help;		/* Help message for this command */
+ 	short    cmd_minlen;		/* Minimum legal # command
+ 					 * chars required */
+-	kdb_repeat_t cmd_repeat;	/* Does command auto repeat on enter? */
++	kdb_cmdflags_t cmd_flags;	/* Command behaviour flags */
+ } kdbtab_t;
  
- #define GREP_LEN 256
-diff --git a/lib/Kconfig.kgdb b/lib/Kconfig.kgdb
-index 358eb81..fbbcff6 100644
---- a/lib/Kconfig.kgdb
-+++ b/lib/Kconfig.kgdb
-@@ -73,6 +73,31 @@ config KGDB_KDB
- 	help
- 	  KDB frontend for kernel
- 
-+config KDB_DEFAULT_ENABLE
-+	hex "KDB: Select kdb command functions to be enabled by default"
-+	depends on KGDB_KDB
-+	default 0x1
-+	help
-+	  Specifiers which kdb commands are enabled by default. This may
-+	  be set to 1 or 0 to enable all commands or disable almost all
-+	  commands.
-+
-+	  Alternatively the following bitmask applies:
-+
-+	    0x0002 - allow arbitrary reads from memory and symbol lookup
-+	    0x0004 - allow arbitrary writes to memory
-+	    0x0008 - allow current register state to be inspected
-+	    0x0010 - allow current register state to be modified
-+	    0x0020 - allow passive inspection (backtrace, process list, lsmod)
-+	    0x0040 - allow flow control management (breakpoint, single step)
-+	    0x0080 - enable signalling of processes
-+	    0x0100 - allow machine to be rebooted
-+
-+	  The config option merely sets the default at boot time. Both
-+	  issuing 'echo X > /sys/module/kdb/parameters/kdb.cmd_enable' or
-+          setting with kdb.cmd_enable=X kernel command line option will
-+	  override the default settings.
-+
- config KDB_KEYBOARD
- 	bool "KGDB_KDB: keyboard as input device"
- 	depends on VT && KGDB_KDB
+ extern int kdb_bt(int, const char **);	/* KDB display back trace */
 -- 
 1.9.3
 
