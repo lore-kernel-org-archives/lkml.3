@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166AbaGKTGm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 15:06:42 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:43983 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754549AbaGKTGl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 15:06:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140711092454.GA17083@pd.tnic>
-References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
-	<1404925766-32253-5-git-send-email-hskinnemoen@google.com>
-	<20140710164151.GA5603@pd.tnic>
-	<CAFQmdRbguE7O16diTNMXMU-3E8Zeu=Y=vcXVHKRyxzbq09TfzQ@mail.gmail.com>
-	<20140710184416.GE5603@pd.tnic>
-	<CA+8MBbKNQEk5UQnVf-G8zeMiYE2FpyztHE6_RoDs3RM_8mrVow@mail.gmail.com>
-	<20140710191224.GF5603@pd.tnic>
-	<20140711092454.GA17083@pd.tnic>
-Date: Fri, 11 Jul 2014 12:06:40 -0700
-Message-ID: <CA+8MBbKYo_Tmb3Zk4W9gBZmZqBpCu4uLUu9M5C2MZAYZEb16Vg@mail.gmail.com>
-Subject: Re: [PATCH 4/6] x86-mce: Add spinlocks to prevent duplicated MCP and
- CMCI reports.
-From: Tony Luck <tony.luck@gmail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Havard Skinnemoen <hskinnemoen@google.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ewout van Bekkum <ewout@google.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1755191AbaGKTHV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 15:07:21 -0400
+Received: from mail.kernel.org ([198.145.19.201]:46723 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753611AbaGKTHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 15:07:19 -0400
+From: konrad@kernel.org
+To: xen-devel@lists.xenproject.org, david.vrabel@citrix.com,
+        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org
+Subject: [PATCH v4] PCI back fixes for 3.17.
+Date: Fri, 11 Jul 2014 16:08:47 -0400
+Message-Id: <1405109332-31659-1-git-send-email-konrad@kernel.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +               if (atomic_add_unless(&mce_banks[i].poll_reader, 1, 1)) {
-> +                       m.status = mce_rdmsrl(MSR_IA32_MCx_STATUS(i));
+Please see this set of patches which are fixes to Xen pciback
+for 3.17. They are also located at:
 
-Same as yesterday. You may skip reading a bank because someone else
-is reading the same bank number, even though you don't share that bank
-with them.
+ git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git devel/pciback-3.17.v4 
 
-If we are willing to be rather flexible amount when polling happens,
-and not allow very fast poll rates. Then we could do something like
-have the lowest numbered online cpu be the only one that sets a
-timer. When it goes off, it scans its own banks, and then uses an
-async cross-processor call to poke the next highest numbered
-online cpu to have it scan banks and poke the next guy.
+These patches do not include the PCI bus reset/slot code as we are still
+discussing that.
 
-That way we know that two cpus can't be polling at the same time,
-because we convoy them all one at a time.
+Konrad Rzeszutek Wilk (5):
+      xen-pciback: Document the various parameters and attributes in SysFS
+      xen/pciback: Don't deadlock when unbinding.
+      xen/pciback: Include the domain id if removing the device whilst still in use
+      xen/pciback: Print out the domain owning the device.
+      xen/pciback: Remove tons of dereferences
 
-Fast poll rates would be a problem on very large systems. Might
-need to have the highest numbered cpu notice that it is at the
-end of the chain and set some flag so the lowest one can tell
-whether it is safe to begin the next ripple.
+                                                                                                                                                                                        Documentation/ABI/testing/sysfs-driver-pciback |   25 +++++++++++++++
+ drivers/xen/xen-pciback/passthrough.c          |    9 ++++-
+ drivers/xen/xen-pciback/pci_stub.c             |   41 +++++++++++++------------
+ drivers/xen/xen-pciback/pciback.h              |    7 ++--
+ drivers/xen/xen-pciback/vpci.c                 |    9 ++++-
+ drivers/xen/xen-pciback/xenbus.c               |    4 +-
+ 6 files changed, 67 insertions(+), 28 deletions(-)
 
--Tony
