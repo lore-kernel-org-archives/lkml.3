@@ -1,80 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248AbaGKUKZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 16:10:25 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:50598 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751313AbaGKUKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 16:10:23 -0400
-Date: Fri, 11 Jul 2014 22:10:12 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Havard Skinnemoen <hskinnemoen@google.com>
-Cc: Tony Luck <tony.luck@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ewout van Bekkum <ewout@google.com>,
-        linux-edac <linux-edac@vger.kernel.org>
-Subject: Re: [PATCH 1/6] x86-mce: Modify CMCI poll interval to adjust for
- small check_interval values.
-Message-ID: <20140711201012.GB18246@pd.tnic>
-References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
- <1404925766-32253-2-git-send-email-hskinnemoen@google.com>
- <20140709191747.GB5249@pd.tnic>
- <CAFQmdRa5Spr0nX6qwzhDGEU9+H1_0vaCtF_NRV=p=OBDwin78A@mail.gmail.com>
- <20140710114222.GE2970@pd.tnic>
- <CAFQmdRZ1D4OWqkL-zpsiEjuGQaSBBmk36HqSw=q+hHNCRWZCKQ@mail.gmail.com>
- <CA+8MBbJ+FeQKZC9oVZsvrBptaY+24rVKWUXT02ETHMMoA-omuA@mail.gmail.com>
- <CAFQmdRY1=Yg7T15kQmiA+S0j1-xNKsF6Sze49BN7-VzbwW7V4w@mail.gmail.com>
- <20140711153541.GD17083@pd.tnic>
- <CAFQmdRajEjtGB4xXVzCmaUPA=qEjrzQTskJtpmD0cqKhKsEYsg@mail.gmail.com>
+	id S1755352AbaGKUK7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 16:10:59 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39107 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755213AbaGKUK4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 16:10:56 -0400
+Date: Fri, 11 Jul 2014 22:10:54 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jeff Moyer <jmoyer@redhat.com>, Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        akpm@linux-foundation.org, viro@ZenIV.linux.org.uk,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Subject: Re: IMA: kernel reading files opened with O_DIRECT
+Message-ID: <20140711201054.GB18033@amd.pavel.ucw.cz>
+References: <53B3D3AA.3000408@samsung.com>
+ <x49y4wbu54y.fsf@segfault.boston.devel.redhat.com>
+ <20140702184050.GA24583@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFQmdRajEjtGB4xXVzCmaUPA=qEjrzQTskJtpmD0cqKhKsEYsg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140702184050.GA24583@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm going to reply with multiple mails so that we can keep the things
-separate and not let replies grow out of proportion.
-
-On Fri, Jul 11, 2014 at 11:56:11AM -0700, Havard Skinnemoen wrote:
-> So a short burst of CMCIs would send us instantly into polling mode,
-> which would probably be suboptimal if things are quiet after that.
-> Counting is a lot more robust against this.
-
-Yes, but CMCI_STORM_THRESHOLD is arbitrary too. How is getting 15 CMCIs
-per second an interrupt storm? Apparently boxes can handle couple of
-hundred CMCIs per second just fine...
-
-> If we see two errors every 2 seconds (for example due to a bug causing
-> us to see duplicate MCEs), we'd ping-pong back and forth between CMCI
-> and polling mode on every error, polling 51 times per second on
-> average. This seems a lot more expensive than just staying in CMCI
-> mode. And we risk losing information if there are instead, say, 4
-> errors every 2 seconds.
+On Wed 2014-07-02 11:40:50, Christoph Hellwig wrote:
+> On Wed, Jul 02, 2014 at 11:55:41AM -0400, Jeff Moyer wrote:
+> > It's acceptable.
 > 
-> > After a second where we haven't seen any errors, we switch back to CMCI.
-> > check_interval relaxes back to 5 min and all gets to its normal boring
-> > existence. Otherwise, we enter storm mode quickly again.
+> It's not because it will then also affect other reads going on at the
+> same time.
 > 
-> Since the storm detection is now independent of check_interval, we
-> don't need to place any restrictions on it right?
+> The whole concept of ima is just broken, and if you want to do these
+> sort of verification they need to happen inside the filesystem and not
+> above it.
 
-Ok, so my initial storm detection was dumb, ok. Counting the way we do
-it now is purely sucked out of thin air too.
-
-Instead, the criteria should probably be something like: what is the
-number of CMCIs per second which we can process while leaving system
-operation relatively unaffected? Anything above that number constitutes
-a CMCI storm.
-
-Now, how we'll come up with an answer to that question is a whole
-another story...
-
+...and doing it at filesystem layer would also permit verification of
+per-block (64KB? 1MB?) hashes. Reading entire iso image when I run
+"file foo.iso" is anti-social..
+									Pavel
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
