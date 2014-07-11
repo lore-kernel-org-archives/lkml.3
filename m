@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932300AbaGKTKx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 15:10:53 -0400
-Received: from mail.kernel.org ([198.145.19.201]:46734 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755175AbaGKTHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 15:07:20 -0400
-From: konrad@kernel.org
-To: xen-devel@lists.xenproject.org, david.vrabel@citrix.com,
-        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v4 1/5] xen-pciback: Document the various parameters and attributes in SysFS
-Date: Fri, 11 Jul 2014 16:08:48 -0400
-Message-Id: <1405109332-31659-2-git-send-email-konrad@kernel.org>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1405109332-31659-1-git-send-email-konrad@kernel.org>
-References: <1405109332-31659-1-git-send-email-konrad@kernel.org>
+	id S932329AbaGKTLL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 15:11:11 -0400
+Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:44232 "EHLO
+	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932309AbaGKTLG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 15:11:06 -0400
+Date: Fri, 11 Jul 2014 14:11:02 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Tejun Heo <tj@kernel.org>
+cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Jianyu Zhan <nasa4836@gmail.com>, malc <av1474@comtv.ru>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Fabian Frederick <fabf@skynet.be>, Tony Luck <tony.luck@intel.com>,
+        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC Patch V1 07/30] mm: Use cpu_to_mem()/numa_mem_id() to
+ support memoryless node
+In-Reply-To: <20140711182814.GE30865@htj.dyndns.org>
+Message-ID: <alpine.DEB.2.11.1407111405280.5070@gentwo.org>
+References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com> <1405064267-11678-8-git-send-email-jiang.liu@linux.intel.com> <20140711144205.GA27706@htj.dyndns.org> <alpine.DEB.2.11.1407111012210.25527@gentwo.org> <20140711152156.GB29137@htj.dyndns.org>
+ <alpine.DEB.2.11.1407111056060.27349@gentwo.org> <20140711160152.GC30865@htj.dyndns.org> <alpine.DEB.2.11.1407111117560.27592@gentwo.org> <20140711162451.GD30865@htj.dyndns.org> <alpine.DEB.2.11.1407111220410.4511@gentwo.org>
+ <20140711182814.GE30865@htj.dyndns.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+On Fri, 11 Jul 2014, Tejun Heo wrote:
 
-Which hadn't been done with the initial commit.
+> On Fri, Jul 11, 2014 at 12:29:30PM -0500, Christoph Lameter wrote:
+> > GFP_THISNODE is mostly used by allocators that need memory from specific
+> > nodes. The use of numa_mem_id() there is useful because one will not
+> > get any memory at all when attempting to allocate from a memoryless
+> > node using GFP_THISNODE.
+>
+> As long as it's in allocator proper, it doesn't matter all that much
+> but the changes are clearly not contained, are they?
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
-v2: Dropped the parameters and one that is unlikeable.
----
- Documentation/ABI/testing/sysfs-driver-pciback |   25 ++++++++++++++++++++++++
- 1 files changed, 25 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-driver-pciback
-
-diff --git a/Documentation/ABI/testing/sysfs-driver-pciback b/Documentation/ABI/testing/sysfs-driver-pciback
-new file mode 100644
-index 0000000..e482240
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-driver-pciback
-@@ -0,0 +1,25 @@
-+What:           /sys/bus/pci/drivers/pciback/quirks
-+Date:           Oct 2011
-+KernelVersion:  3.1
-+Contact:        xen-devel@lists.xenproject.org
-+Description:
-+                If the permissive attribute is set, then writing a string in
-+                the format of DDDD:BB:DD.F-REG:SIZE:MASK will allow the guest
-+                to write and read from the PCI device. That is Domain:Bus:
-+                Device.Function-Register:Size:Mask (Domain is optional).
-+                For example:
-+                #echo 00:19.0-E0:2:FF > /sys/bus/pci/drivers/pciback/quirks
-+                will allow the guest to read and write to the configuration
-+                register 0x0E.
-+
-+What:           /sys/bus/pci/drivers/pciback/irq_handlers
-+Date:           Oct 2011
-+KernelVersion:  3.1
-+Contact:        xen-devel@lists.xenproject.org
-+Description:
-+                A list of all of the PCI devices owned by Xen PCI back and
-+                whether Xen PCI backend will acknowledge the interrupts received
-+                and the amount of interrupts received. Xen PCI back acknowledges
-+                said interrupts only when they are level, shared with another
-+                guest, and enabled by the guest.
-+
--- 
-1.7.7.6
+Well there is a proliferation of memory allocators recently. NUMA is often
+a second thought in those.
 
