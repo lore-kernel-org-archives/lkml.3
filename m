@@ -1,102 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655AbaGKQBj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 12:01:39 -0400
-Received: from baptiste.telenet-ops.be ([195.130.132.51]:52986 "EHLO
-	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754584AbaGKQBZ (ORCPT
+	id S1754713AbaGKQB6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 12:01:58 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:37192 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128AbaGKQB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 12:01:25 -0400
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Mark Brown <broonie@kernel.org>
-Cc: Laurent Pinchart <Laurent.pinchart@ideasonboard.com>,
-        linux-spi@vger.kernel.org, dmaengine@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH v2 2/2] spi: sh-msiof: Handle dmaengine_prep_slave_single() failures gracefully
-Date: Fri, 11 Jul 2014 18:01:17 +0200
-Message-Id: <1405094477-14192-2-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1405094477-14192-1-git-send-email-geert+renesas@glider.be>
-References: <1405094477-14192-1-git-send-email-geert+renesas@glider.be>
+	Fri, 11 Jul 2014 12:01:56 -0400
+Date: Fri, 11 Jul 2014 12:01:52 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Jianyu Zhan <nasa4836@gmail.com>, malc <av1474@comtv.ru>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Fabian Frederick <fabf@skynet.be>, Tony Luck <tony.luck@intel.com>,
+        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC Patch V1 07/30] mm: Use cpu_to_mem()/numa_mem_id() to
+ support memoryless node
+Message-ID: <20140711160152.GC30865@htj.dyndns.org>
+References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
+ <1405064267-11678-8-git-send-email-jiang.liu@linux.intel.com>
+ <20140711144205.GA27706@htj.dyndns.org>
+ <alpine.DEB.2.11.1407111012210.25527@gentwo.org>
+ <20140711152156.GB29137@htj.dyndns.org>
+ <alpine.DEB.2.11.1407111056060.27349@gentwo.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1407111056060.27349@gentwo.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As typically a shmobile SoC has less DMA channels than devices that can use
-DMA, we may want to prioritize access to the DMA channels in the future.
-This means that dmaengine_prep_slave_single() may start failing
-arbitrarily.
+On Fri, Jul 11, 2014 at 10:58:52AM -0500, Christoph Lameter wrote:
+> > But, GFP_THISNODE + numa_mem_id() is identical to numa_node_id() +
+> > nearest node with memory fallback.  Is there any case where the user
+> > would actually want to always fail if it's on the memless node?
+> 
+> GFP_THISNODE allocatios must fail if there is no memory available on
+> the node. No fallback allowed.
 
-Handle dmaengine_prep_slave_single() failures gracefully by falling back to
-PIO. This requires moving DMA-specific configuration of the MSIOF device
-after the call(s) to dmaengine_prep_slave_single().
+I don't know.  The intention is that the caller wants something on
+this node or the caller will fail or fallback ourselves, right?  For
+most use cases just considering the nearest memory node as "local" for
+memless nodes should work and serve the intentions of the users close
+enough.  Whether that'd be better or we'd be better off with something
+else depends on the details for sure.
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
----
-v2:
-  - Add Acked-by
----
- drivers/spi/spi-sh-msiof.c | 23 +++++++++++++++--------
- 1 file changed, 15 insertions(+), 8 deletions(-)
+Thanks.
 
-diff --git a/drivers/spi/spi-sh-msiof.c b/drivers/spi/spi-sh-msiof.c
-index 6f449b24704a..2a4354dcd661 100644
---- a/drivers/spi/spi-sh-msiof.c
-+++ b/drivers/spi/spi-sh-msiof.c
-@@ -636,12 +636,6 @@ static int sh_msiof_dma_once(struct sh_msiof_spi_priv *p, const void *tx,
- 	dma_cookie_t cookie;
- 	int ret;
- 
--	/* 1 stage FIFO watermarks for DMA */
--	sh_msiof_write(p, FCTR, FCTR_TFWM_1 | FCTR_RFWM_1);
--
--	/* setup msiof transfer mode registers (32-bit words) */
--	sh_msiof_spi_set_mode_regs(p, tx, rx, 32, len / 4);
--
- 	if (tx) {
- 		ier_bits |= IER_TDREQE | IER_TDMAE;
- 		dma_sync_single_for_device(p->master->dma_tx->device->dev,
-@@ -650,7 +644,7 @@ static int sh_msiof_dma_once(struct sh_msiof_spi_priv *p, const void *tx,
- 					p->tx_dma_addr, len, DMA_TO_DEVICE,
- 					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 		if (!desc_tx)
--			return -EIO;
-+			return -EAGAIN;
- 	}
- 
- 	if (rx) {
-@@ -659,8 +653,15 @@ static int sh_msiof_dma_once(struct sh_msiof_spi_priv *p, const void *tx,
- 					p->rx_dma_addr, len, DMA_FROM_DEVICE,
- 					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 		if (!desc_rx)
--			return -EIO;
-+			return -EAGAIN;
- 	}
-+
-+	/* 1 stage FIFO watermarks for DMA */
-+	sh_msiof_write(p, FCTR, FCTR_TFWM_1 | FCTR_RFWM_1);
-+
-+	/* setup msiof transfer mode registers (32-bit words) */
-+	sh_msiof_spi_set_mode_regs(p, tx, rx, 32, len / 4);
-+
- 	sh_msiof_write(p, IER, ier_bits);
- 
- 	reinit_completion(&p->done);
-@@ -823,6 +824,12 @@ static int sh_msiof_transfer_one(struct spi_master *master,
- 			copy32(p->tx_dma_page, tx_buf, l / 4);
- 
- 		ret = sh_msiof_dma_once(p, tx_buf, rx_buf, l);
-+		if (ret == -EAGAIN) {
-+			pr_warn_once("%s %s: DMA not available, falling back to PIO\n",
-+				     dev_driver_string(&p->pdev->dev),
-+				     dev_name(&p->pdev->dev));
-+			break;
-+		}
- 		if (ret)
- 			return ret;
- 
 -- 
-1.9.1
-
+tejun
