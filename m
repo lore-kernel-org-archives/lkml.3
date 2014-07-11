@@ -1,73 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579AbaGKVER (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 17:04:17 -0400
-Received: from mail-bl2lp0211.outbound.protection.outlook.com ([207.46.163.211]:20755
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753291AbaGKVEP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 17:04:15 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Christoph Hellwig <hch@infradead.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "jbottomley@parallels.com" <jbottomley@parallels.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: RE: [PATCH 7/8] drivers: scsi: storvsc: Set srb_flags in all cases
-Thread-Topic: [PATCH 7/8] drivers: scsi: storvsc: Set srb_flags in all cases
-Thread-Index: AQHPmwbgHQRbrGSDW0yYxe5G8grckJuZGqCAgADG0hA=
-Date: Fri, 11 Jul 2014 21:03:52 +0000
-Message-ID: <f7789b309ce84187b64760e3885f7cfa@BY2PR03MB299.namprd03.prod.outlook.com>
-References: <1404866789-26910-1-git-send-email-kys@microsoft.com>
- <1404866812-26950-1-git-send-email-kys@microsoft.com>
- <1404866812-26950-7-git-send-email-kys@microsoft.com>
- <20140710101849.GD1151@infradead.org>
-In-Reply-To: <20140710101849.GD1151@infradead.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [131.107.174.207]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:
-x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-x-forefront-prvs: 02698DF457
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(51704005)(13464003)(377454003)(189002)(199002)(19580405001)(76576001)(76482001)(81542001)(46102001)(92566001)(107046002)(74502001)(86612001)(21056001)(93886003)(85306003)(31966008)(83322001)(77982001)(64706001)(83072002)(4396001)(87936001)(79102001)(50986999)(81342001)(101416001)(20776003)(80022001)(74316001)(33646001)(2656002)(95666004)(76176999)(110136001)(99286002)(86362001)(106356001)(105586002)(19580395003)(54356999)(85852003)(106116001)(74662001)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB300;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
+	id S1754263AbaGKVF0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 17:05:26 -0400
+Received: from mga03.intel.com ([143.182.124.21]:38263 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753767AbaGKVFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 17:05:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,645,1400050800"; 
+   d="scan'208";a="456056344"
+From: Sudeep Dutt <sudeep.dutt@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Williams <dan.j.williams@intel.com>
+Cc: Siva Yerramreddy <yshivakrishna@gmail.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Nikhil Rao <nikhil.rao@intel.com>, Sudeep Dutt <sudeep.dutt@intel.com>,
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
+Subject: [PATCH char-misc-next v3 7/8] misc: mic: add dma support in card driver
+Date: Fri, 11 Jul 2014 14:04:25 -0700
+Message-Id: <e9e4c52739434c71c34b7dc507b927c91b09c3e9.1405109402.git.sudeep.dutt@intel.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <cover.1405109401.git.sudeep.dutt@intel.com>
+References: <cover.1405109401.git.sudeep.dutt@intel.com>
+In-Reply-To: <cover.1405109401.git.sudeep.dutt@intel.com>
+References: <cover.1405109401.git.sudeep.dutt@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Siva Yerramreddy <yshivakrishna@gmail.com>
 
+This patch adds a dma device on the mic virtual bus
 
-> -----Original Message-----
-> From: Christoph Hellwig [mailto:hch@infradead.org]
-> Sent: Thursday, July 10, 2014 3:19 AM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> ohering@suse.com; jbottomley@parallels.com; jasowang@redhat.com;
-> apw@canonical.com; linux-scsi@vger.kernel.org; stable@vger.kernel.org
-> Subject: Re: [PATCH 7/8] drivers: scsi: storvsc: Set srb_flags in all cases
-> 
-> >  	default:
-> >  		vm_srb->data_in = UNKNOWN_TYPE;
-> > -		vm_srb->win8_extension.srb_flags = 0;
-> > +		vm_srb->win8_extension.srb_flags |=
-> (SRB_FLAGS_DATA_IN |
-> > +						     SRB_FLAGS_DATA_OUT);
-> 
-> This would usually be a command that doesn't transfer data (e.g.
-> TEST_UNIT_READY or SYNCHRONIZE_CACHE), do you really want to set the in
-> and out flags here?
+Reviewed-by: Nikhil Rao <nikhil.rao@intel.com>
+Signed-off-by: Sudeep Dutt <sudeep.dutt@intel.com>
+Signed-off-by: Siva Yerramreddy <yshivakrishna@gmail.com>
+Signed-off-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
+---
+ drivers/misc/mic/Kconfig           |  2 +-
+ drivers/misc/mic/card/mic_device.h |  8 ++++--
+ drivers/misc/mic/card/mic_x100.c   | 55 +++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 61 insertions(+), 4 deletions(-)
 
-On the host, before they forward the command to the native driver stack, I am told they validate that the flags be correctly set because of some bugs in the Emulex driver.
+diff --git a/drivers/misc/mic/Kconfig b/drivers/misc/mic/Kconfig
+index bf76313..cc4eef0 100644
+--- a/drivers/misc/mic/Kconfig
++++ b/drivers/misc/mic/Kconfig
+@@ -39,7 +39,7 @@ comment "Intel MIC Card Driver"
+ 
+ config INTEL_MIC_CARD
+ 	tristate "Intel MIC Card Driver"
+-	depends on 64BIT && X86
++	depends on 64BIT && X86 && INTEL_MIC_BUS
+ 	select VIRTIO
+ 	help
+ 	  This enables card driver support for the Intel Many Integrated
+diff --git a/drivers/misc/mic/card/mic_device.h b/drivers/misc/mic/card/mic_device.h
+index e12a0c2..844be8f 100644
+--- a/drivers/misc/mic/card/mic_device.h
++++ b/drivers/misc/mic/card/mic_device.h
+@@ -31,6 +31,7 @@
+ #include <linux/io.h>
+ #include <linux/irqreturn.h>
+ #include <linux/interrupt.h>
++#include <linux/mic_bus.h>
+ 
+ /**
+  * struct mic_intr_info - Contains h/w specific interrupt sources info
+@@ -71,6 +72,7 @@ struct mic_device {
+  * @hotplug_work: Hot plug work for adding/removing virtio devices.
+  * @irq_info: The OS specific irq information
+  * @intr_info: H/W specific interrupt information.
++ * @dma_mbdev: dma device on the MIC virtual bus.
+  */
+ struct mic_driver {
+ 	char name[20];
+@@ -81,6 +83,7 @@ struct mic_driver {
+ 	struct work_struct hotplug_work;
+ 	struct mic_irq_info irq_info;
+ 	struct mic_intr_info intr_info;
++	struct mbus_device *dma_mbdev;
+ };
+ 
+ /**
+@@ -117,8 +120,9 @@ mic_mmio_write(struct mic_mw *mw, u32 val, u32 offset)
+ int mic_driver_init(struct mic_driver *mdrv);
+ void mic_driver_uninit(struct mic_driver *mdrv);
+ int mic_next_card_db(void);
+-struct mic_irq *mic_request_card_irq(irq_handler_t handler,
+-	irq_handler_t thread_fn, const char *name, void *data, int intr_src);
++struct mic_irq *
++mic_request_card_irq(irq_handler_t handler, irq_handler_t thread_fn,
++		     const char *name, void *data, int intr_src);
+ void mic_free_card_irq(struct mic_irq *cookie, void *data);
+ u32 mic_read_spad(struct mic_device *mdev, unsigned int idx);
+ void mic_send_intr(struct mic_device *mdev, int doorbell);
+diff --git a/drivers/misc/mic/card/mic_x100.c b/drivers/misc/mic/card/mic_x100.c
+index 2868945..55c9465 100644
+--- a/drivers/misc/mic/card/mic_x100.c
++++ b/drivers/misc/mic/card/mic_x100.c
+@@ -148,6 +148,47 @@ void mic_card_unmap(struct mic_device *mdev, void __iomem *addr)
+ 	iounmap(addr);
+ }
+ 
++static inline struct mic_driver *mbdev_to_mdrv(struct mbus_device *mbdev)
++{
++	return dev_get_drvdata(mbdev->dev.parent);
++}
++
++static struct mic_irq *
++_mic_request_threaded_irq(struct mbus_device *mbdev,
++			  irq_handler_t handler, irq_handler_t thread_fn,
++			  const char *name, void *data, int intr_src)
++{
++	int rc = 0;
++	unsigned int irq = intr_src;
++	unsigned long cookie = irq;
++
++	rc  = request_threaded_irq(irq, handler, thread_fn, 0, name, data);
++	if (rc) {
++		dev_err(mbdev_to_mdrv(mbdev)->dev,
++			"request_threaded_irq failed rc = %d\n", rc);
++		return ERR_PTR(rc);
++	}
++	return (struct mic_irq *)cookie;
++}
++
++static void _mic_free_irq(struct mbus_device *mbdev,
++			  struct mic_irq *cookie, void *data)
++{
++	unsigned long irq = (unsigned long)cookie;
++	free_irq(irq, data);
++}
++
++static void _mic_ack_interrupt(struct mbus_device *mbdev, int num)
++{
++	mic_ack_interrupt(&mbdev_to_mdrv(mbdev)->mdev);
++}
++
++static struct mbus_hw_ops mbus_hw_ops = {
++	.request_threaded_irq = _mic_request_threaded_irq,
++	.free_irq = _mic_free_irq,
++	.ack_interrupt = _mic_ack_interrupt,
++};
++
+ static int __init mic_probe(struct platform_device *pdev)
+ {
+ 	struct mic_driver *mdrv = &g_drv;
+@@ -166,13 +207,24 @@ static int __init mic_probe(struct platform_device *pdev)
+ 		goto done;
+ 	}
+ 	mic_hw_intr_init(mdrv);
++	platform_set_drvdata(pdev, mdrv);
++	mdrv->dma_mbdev = mbus_register_device(mdrv->dev, MBUS_DEV_DMA_MIC,
++					       NULL, &mbus_hw_ops,
++					       mdrv->mdev.mmio.va);
++	if (IS_ERR(mdrv->dma_mbdev)) {
++		rc = PTR_ERR(mdrv->dma_mbdev);
++		dev_err(&pdev->dev, "mbus_add_device failed rc %d\n", rc);
++		goto iounmap;
++	}
+ 	rc = mic_driver_init(mdrv);
+ 	if (rc) {
+ 		dev_err(&pdev->dev, "mic_driver_init failed rc %d\n", rc);
+-		goto iounmap;
++		goto remove_dma;
+ 	}
+ done:
+ 	return rc;
++remove_dma:
++	mbus_unregister_device(mdrv->dma_mbdev);
+ iounmap:
+ 	iounmap(mdev->mmio.va);
+ 	return rc;
+@@ -184,6 +236,7 @@ static int mic_remove(struct platform_device *pdev)
+ 	struct mic_device *mdev = &mdrv->mdev;
+ 
+ 	mic_driver_uninit(mdrv);
++	mbus_unregister_device(mdrv->dma_mbdev);
+ 	iounmap(mdev->mmio.va);
+ 	return 0;
+ }
+-- 
+1.8.2.1
 
-K. Y
