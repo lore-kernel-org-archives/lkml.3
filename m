@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750AbaGKKTq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 06:19:46 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:40531 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438AbaGKKTp (ORCPT
+	id S1752862AbaGKKXI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 06:23:08 -0400
+Received: from nasmtp01.atmel.com ([192.199.1.246]:18108 "EHLO
+	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751897AbaGKKXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 06:19:45 -0400
+	Fri, 11 Jul 2014 06:23:07 -0400
+From: Bo Shen <voice.shen@atmel.com>
+To: <nicolas.ferre@atmel.com>, <boris.brezillon@free-electrons.com>,
+        <jiri.prchal@aksignal.cz>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Bo Shen <voice.shen@atmel.com>
+Subject: [PATCH] ARM: at91: at91sam9x5: add clocks for usb device
+Date: Fri, 11 Jul 2014 18:22:55 +0800
+Message-ID: <1405074175-22444-1-git-send-email-voice.shen@atmel.com>
+X-Mailer: git-send-email 1.8.5.2
 MIME-Version: 1.0
-In-Reply-To: <1405072301-8719-1-git-send-email-bp@alien8.de>
-References: <1405072301-8719-1-git-send-email-bp@alien8.de>
-Date: Fri, 11 Jul 2014 12:19:43 +0200
-X-Google-Sender-Auth: h8whtMDok2DTvBVW4Tsl7Vwm1eU
-Message-ID: <CAMuHMdXz9dYaWizBo1hxuPx_-Y40tx+TfzuTihR6BySU6a+3qw@mail.gmail.com>
-Subject: Re: [PATCH] x86: Get rid of __HAVE_ARCH_CMPXCHG
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 11:51 AM, Borislav Petkov <bp@alien8.de> wrote:
-> From: Borislav Petkov <bp@suse.de>
->
-> Both the 32-bit and 64-bit cmpxchg.h header define __HAVE_ARCH_CMPXCHG
-> and there's ifdeffery which checks it. But since both bitness define it,
-> we can just as well drop it and simpify a bit of code in doing that.
->
-> Signed-off-by: Borislav Petkov <bp@suse.de>
-> ---
->  arch/x86/include/asm/cmpxchg.h     |  2 --
->  arch/x86/include/asm/cmpxchg_32.h  |  2 --
->  arch/x86/include/asm/cmpxchg_64.h  |  2 --
->  arch/x86/include/asm/mc146818rtc.h |  2 +-
->  arch/x86/include/asm/mutex_32.h    | 16 ++--------------
->  arch/x86/kernel/acpi/boot.c        |  4 ----
->  kernel/locking/rtmutex.c           |  2 +-
->  7 files changed, 4 insertions(+), 26 deletions(-)
+Add clocks for usb device, or else switch to CCF, the gadget
+won't work.
 
-> --- a/kernel/locking/rtmutex.c
-> +++ b/kernel/locking/rtmutex.c
-> @@ -73,7 +73,7 @@ static void fixup_rt_mutex_waiters(struct rt_mutex *lock)
->   * We can speed up the acquire/release, if the architecture
->   * supports cmpxchg and if there's no debugging state to be set up
->   */
-> -#if defined(__HAVE_ARCH_CMPXCHG) && !defined(CONFIG_DEBUG_RT_MUTEXES)
-> +#ifndef CONFIG_DEBUG_RT_MUTEXES
->  # define rt_mutex_cmpxchg(l,c,n)       (cmpxchg(&l->owner, c, n) == c)
->  static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
->  {
+Reported-by: Jiří Prchal <jiri.prchal@aksignal.cz>
+Signed-off-by: Bo Shen <voice.shen@atmel.com>
+---
+ arch/arm/boot/dts/at91sam9x5.dtsi | 2 ++
+ 1 file changed, 2 insertions(+)
 
-What about non-x86? __HAVE_ARCH_CMPXCHG isn't always defined.
+diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
+index d6133f4..2ebc421 100644
+--- a/arch/arm/boot/dts/at91sam9x5.dtsi
++++ b/arch/arm/boot/dts/at91sam9x5.dtsi
+@@ -1045,6 +1045,8 @@
+ 				reg = <0x00500000 0x80000
+ 				       0xf803c000 0x400>;
+ 				interrupts = <23 IRQ_TYPE_LEVEL_HIGH 0>;
++				clocks = <&usb>, <&udphs_clk>;
++				clock-names = "hclk", "pclk";
+ 				status = "disabled";
+ 
+ 				ep0 {
+-- 
+1.8.5.2
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
