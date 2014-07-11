@@ -1,97 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932207AbaGKVIn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 17:08:43 -0400
-Received: from mail.efficios.com ([78.47.125.74]:58789 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752373AbaGKVIm convert rfc822-to-8bit (ORCPT
+	id S1754657AbaGKVJm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 17:09:42 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:64208 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752331AbaGKVJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 17:08:42 -0400
-Date: Fri, 11 Jul 2014 21:08:44 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: linux-kernel@vger.kernel.org
-Cc: submission@tracingsummit.org
-Message-ID: <108406797.13221.1405112924516.JavaMail.zimbra@efficios.com>
-In-Reply-To: <1637700547.13216.1405112800501.JavaMail.zimbra@efficios.com>
-Subject: =?utf-8?Q?[CFP]_Tracing_Summit_2014_Call_for_Presentat?=
- =?utf-8?Q?ions,_October_13th,_2014,_D=C3=BCsseldorf,_Germany?=
+	Fri, 11 Jul 2014 17:09:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [173.246.29.13]
-X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF30 (Linux)/8.0.7_GA_6021)
-Thread-Topic: Tracing Summit 2014 Call for Presentations, October 13th, 2014, =?utf-8?Q?D=C3=BCsseldorf=2C?= Germany
-Thread-Index: V4GKTDiDly09LZ3McNoHfMnND8F18w==
+In-Reply-To: <1405111021.2796.23.camel@joe-AO725>
+References: <1405110617-16498-1-git-send-email-bobby.prani@gmail.com> <1405111021.2796.23.camel@joe-AO725>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Fri, 11 Jul 2014 17:09:09 -0400
+Message-ID: <CAJhHMCAS=_f9C=CpFhpbCt1Jg63hhecbZzSqJN-+VeH=ajfanw@mail.gmail.com>
+Subject: Re: [PATCH 1/1] rcutorture: fixes for printing message buffer
+To: Joe Perches <joe@perches.com>
+Cc: Josh Triplett <josh@freedesktop.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Iulia Manda <iulia.manda21@gmail.com>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Jul 11, 2014 at 4:37 PM, Joe Perches <joe@perches.com> wrote:
+> On Fri, 2014-07-11 at 16:30 -0400, Pranith Kumar wrote:
+>> Use snprintf() instead of sprintf() for writing to the message buffer.
+>> Also use vmalloc() for the allocation of the message buffer. Since pr_alert() is
+>> limited to print LOG_LINE_MAX characters at a time, we print the buffer in a
+>> loop one line at a time.
+>>
+>> I tested this using the parse-torture.sh script as follows:
+>
+> Did you see the patch I sent you?
+> https://lkml.org/lkml/2014/6/20/604
+>
+> It doesn't need a vmalloc.
+> What is wrong with that approach?
+>
+>
 
-We are organizing a tracing summit in Düsseldorf, Germany, on
-October 13, 2014, at the Congress Centre Düsseldorf. This event is 
-colocated with LinuxCon Europe 2014.
- 
-This event focuses on the tracing area, gathering people involved in
-development and end-users of tracing tools as well as trace analysis
-tools. The main target of this Tracing Summit is to provide room for
-discussion between people in the various areas that benefit from
-tracing, namely parallel, distributed and/or real-time systems, as well
-as kernel development.
+I was trying to stay as close to the original code as possible by
+using a buffer instead of using pr_alert/pr_cont throughout the code.
 
-If you are interested to present, please submit a proposal to
-submission@tracingsummit.org before August 31, 2014, at 23:59 EST.
-Please provide a title, abstract describing the proposed talk
-(900 characters maximum), short biography (900 characters maximum),
-and describe the targeted audience (900 characters maximum).
+I see nothing wrong with what you proposed, but I like having one
+pr_alert instead of lots sprinkled. Also avoiding vmalloc/vfree using
+your approach seems like a win.
 
-We are welcoming presentations from both end users and developers, on
-topics covering, but not limited to:
-
- * Trace collection and extraction,
- * Trace filtering,
- * Trace aggregation,
- * Trace formats,
- * Tracing multi-core systems,
- * Trace abstraction,
- * Trace modeling,
- * Automated trace analysis (e.g. dependency analysis),
- * Tracing large clusters and distributed systems,
- * Hardware-level tracing (e.g. DSP, GPU, bare-metal),
- * Trace visualisation,
- * Interaction between debugging and tracing,
- * Tracing remote control,
- * Analysis of large trace datasets,
- * Cloud trace collection and analysis,
- * Integration between trace tools,
- * Live tracing & monitoring.
-
-Those can cover recently available technologies, ongoing work, and yet
-non-existing technologies (which are compellingly interesting to
-end-users).
-
-There is a single track, containing presentations between 30 and 45
-minutes per subject with discussion. 
-
-Registration to LinuxCon Europe 2014 or CloudOpen Europe 2014 is
-required in order to register to the Tracing Summit 2014. All
-registration passes, including the new Attendee Networking Pass
-registration, will allow you to register for the Tracing Summit. The
-Tracing Summit registration access code will be provided on your
-LinuxCon/CloudOpen registration confirmation page. The Tracing Summit
-2014 has no entrance fees for LinuxCon/CouldOpen attendees.
-
-We recommend you register to either or both events before August 1st,
-2014 to benefit from early registration fees.
-
-See the Tracing Summit 2014 wiki at
-http://www.tracingsummit.org/wiki/TracingSummit2014 for details.
-
-Thank you,
-
-Dominique Toupin & Mathieu Desnoyers
+I will let Paul decide.
 
 -- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+Pranith
