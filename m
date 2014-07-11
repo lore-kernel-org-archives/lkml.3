@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454AbaGKN1M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:27:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4819 "EHLO mx1.redhat.com"
+	id S1753642AbaGKN1h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:27:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55540 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751343AbaGKN1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:27:09 -0400
-Date: Fri, 11 Jul 2014 18:56:26 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: linux-kernel@vger.kernel.org,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
-        keescook@chromium.org, stable@vger.kernel.org
-Subject: Re: [RFC PATCH] hwrng: sysfs entry rng_seed_kernel, was: "Re: [PATCH
- v2 1/2] hwrng: fetch randomness only after device init"
-Message-ID: <20140711132626.GB17415@grmbl.mre>
-References: <cover.1404538109.git.amit.shah@redhat.com>
- <515a12ecc5fca5452bf0bfda4d54546d8fb5829c.1404538109.git.amit.shah@redhat.com>
- <20140709115317.GM13433@titan.lakedaemon.net>
- <20140709130822.GA4553@grmbl.mre>
- <20140709131737.GO13433@titan.lakedaemon.net>
- <20140709132524.GB4667@grmbl.mre>
- <20140709160725.GP13433@titan.lakedaemon.net>
+	id S1753523AbaGKN1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 09:27:36 -0400
+Date: Fri, 11 Jul 2014 15:27:34 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Tejun Heo <tj@kernel.org>, Fengguang Wu <fengguang.wu@intel.com>
+cc: Jet Chen <jet.chen@intel.com>, Su Tao <tao.su@intel.com>,
+        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [workqueue] WARNING: CPU: 0 PID: 76 at drivers/block/floppy.c:968
+ schedule_bh()
+In-Reply-To: <alpine.LNX.2.00.1407081656290.1655@pobox.suse.cz>
+Message-ID: <alpine.LNX.2.00.1407111526430.8779@pobox.suse.cz>
+References: <20140708021149.GA12956@localhost> <20140708140430.GE4979@htj.dyndns.org> <20140708144632.GF4979@htj.dyndns.org> <alpine.LNX.2.00.1407081656290.1655@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140709160725.GP13433@titan.lakedaemon.net>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Wed) 09 Jul 2014 [12:07:25], Jason Cooper wrote:
-> Amit, Kees,
+On Tue, 8 Jul 2014, Jiri Kosina wrote:
 
-(snip)
-
-> I'm cooling to the idea of the init function for virtio-rng, and it
-> might be best just to admit that there's no way to seed the entropy pool
-> from the virtio-rng at probe time.  After all, once userspace is up, the
-> system should take advantage of /dev/hwrng for the generation of
-> long-term keys.  Either via rngd feeding /dev/random, or directly.
+> > > Hmmm... this is schedule_bh() in floppy.c complaining that the work
+> > > item is already pending.  The cond_resched() addition by b22ce2785d97
+> > > doesn't change the semantics around work item execution although it
+> > > could have exposed an existing problem in the floppy driver.  I'll
+> > > look into how this could happen.
+> > 
+> > It doesn't reproduce here and nothing really stands out to me.  It
+> > probably involves floppy_work requeueing itself and something else
+> > getting executed inbetween which wouldn't have happend before, but I
+> > can't figure out what that could be and either can I follow the
+> > control flow the driver. :)
+> >
+> > 
+> > Jiri, any ideas?
 > 
-> As for the follow-on patch you asked about, I think that's fine.  More
-> entropy can't hurt.
-> 
-> The below patch might be worth considering so that the user of a system
-> with only virtio-rng can kick the entropy pool as they see fit.  It's
-> probably not too kosher as is, but if the idea is liked, I could clean
-> it up and submit.
-> 
-> The advantage is that users don't need to have rngd installed and
-> running on the system in order to jump-start the entropy pool.
+> I will take a look. Could this be a bad bisect though due to this actually 
+> being a race condition perhaps?
 
-... so a udev rule that looks for the new sysfs file, and asks the
-kernel to do its thing?
+Fengguang, is it possible for you to confirm the bisection result (i.e. 
+revert the patch and check)?
 
-And maybe even a patch to rngd that looks for this file and does a
-similar thing?
-
-There's also the option to use a delayed workqueue item, that will
-succeed if probe has finished.  This method doesn't have userspace
-dependencies.
+I am having hard time seeing how it could cause this (and I am not able to 
+reproduce the problem myself).
 
 Thanks,
 
-		Amit
+-- 
+Jiri Kosina
+SUSE Labs
