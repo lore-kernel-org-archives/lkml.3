@@ -1,102 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753661AbaGKUyP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 16:54:15 -0400
-Received: from seketeli.net ([94.23.218.202]:58758 "EHLO ms.seketeli.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751705AbaGKUyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 16:54:14 -0400
-From: Apelete Seketeli <apelete@seketeli.net>
-To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Alex Smith <alex.smith@imgtec.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        linux-mmc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v4] Use DMA for data transfers in JZ4740 MMC driver
-Date: Fri, 11 Jul 2014 22:54:48 +0200
-Message-Id: <1405112089-17500-1-git-send-email-apelete@seketeli.net>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754166AbaGKUzT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 16:55:19 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:56271 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751088AbaGKUzP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 16:55:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <1404487757-18829-1-git-send-email-thierry.reding@gmail.com>
+References: <1404487757-18829-1-git-send-email-thierry.reding@gmail.com>
+Date: Fri, 11 Jul 2014 16:55:14 -0400
+Message-ID: <CAF6AEGv2P_Uq8CHgm1YdaUeMSNdH62ZwjLnT83Fr5GnxEAhTMw@mail.gmail.com>
+Subject: Re: [PATCH v4] devicetree: Add generic IOMMU device tree bindings
+From: Rob Clark <robdclark@gmail.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
+        Will Deacon <will.deacon@arm.com>, Joerg Roedel <joro@8bytes.org>,
+        Olav Haugan <ohaugan@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Grundler <grundler@chromium.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Varun Sethi <varun.sethi@freescale.com>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        Dave Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Jul 4, 2014 at 11:29 AM, Thierry Reding
+<thierry.reding@gmail.com> wrote:
+> From: Thierry Reding <treding@nvidia.com>
+>
+> This commit introduces a generic device tree binding for IOMMU devices.
+> Only a very minimal subset is described here, but it is enough to cover
+> the requirements of both the Exynos System MMU and Tegra SMMU as
+> discussed here:
+>
+>     https://lkml.org/lkml/2014/4/27/346
+>
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
+> ---
+> Changes in v4:
+> - clarify that disabling an IOMMU DT node may not disable translation
+> - be more explicit that examples are only examples
+> - add multi-ID master example
+>
+> Changes in v3:
+> - use #iommu-cells instead of #address-cells/#size-cells
+> - drop optional iommu-names property
+>
+> Changes in v2:
+> - add notes about "dma-ranges" property (drop note from commit message)
+> - document priorities of "iommus" property vs. "dma-ranges" property
+> - drop #iommu-cells in favour of #address-cells and #size-cells
+> - remove multiple-master device example
+>
+>  Documentation/devicetree/bindings/iommu/iommu.txt | 172 ++++++++++++++++++++++
+>  1 file changed, 172 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/iommu/iommu.txt
+>
+> diff --git a/Documentation/devicetree/bindings/iommu/iommu.txt b/Documentation/devicetree/bindings/iommu/iommu.txt
+> new file mode 100644
+> index 000000000000..464a81eaaf61
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/iommu/iommu.txt
+> @@ -0,0 +1,172 @@
+> +This document describes the generic device tree binding for IOMMUs and their
+> +master(s).
+> +
+> +
+> +IOMMU device node:
+> +==================
+> +
+> +An IOMMU can provide the following services:
+> +
+> +* Remap address space to allow devices to access physical memory ranges that
+> +  they otherwise wouldn't be capable of accessing.
+> +
+> +  Example: 32-bit DMA to 64-bit physical addresses
+> +
+> +* Implement scatter-gather at page level granularity so that the device does
+> +  not have to.
+> +
+> +* Provide system protection against "rogue" DMA by forcing all accesses to go
+> +  through the IOMMU and faulting when encountering accesses to unmapped
+> +  address regions.
+> +
+> +* Provide address space isolation between multiple contexts.
+> +
+> +  Example: Virtualization
+> +
+> +Device nodes compatible with this binding represent hardware with some of the
+> +above capabilities.
+> +
+> +IOMMUs can be single-master or multiple-master. Single-master IOMMU devices
+> +typically have a fixed association to the master device, whereas multiple-
+> +master IOMMU devices can translate accesses from more than one master.
+> +
+> +The device tree node of the IOMMU device's parent bus must contain a valid
+> +"dma-ranges" property that describes how the physical address space of the
+> +IOMMU maps to memory. An empty "dma-ranges" property means that there is a
+> +1:1 mapping from IOMMU to memory.
+> +
+> +Required properties:
+> +--------------------
+> +- #iommu-cells: The number of cells in an IOMMU specifier needed to encode an
+> +  address.
+> +
+> +The meaning of the IOMMU specifier is defined by the device tree binding of
+> +the specific IOMMU. Below are a few examples of typical use-cases:
+> +
+> +- #iommu-cells = <0>: Single master IOMMU devices are not configurable and
+> +  therefore no additional information needs to be encoded in the specifier.
+> +  This may also apply to multiple master IOMMU devices that do not allow the
+> +  association of masters to be configured. Note that an IOMMU can by design
+> +  be multi-master yet only expose a single master in a given configuration.
+> +  In such cases the number of cells will usually be 1 as in the next case.
+> +- #iommu-cells = <1>: Multiple master IOMMU devices may need to be configured
+> +  in order to enable translation for a given master. In such cases the single
+> +  address cell corresponds to the master device's ID. In some cases more than
+> +  one cell can be required to represent a single master ID.
+> +- #iommu-cells = <4>: Some IOMMU devices allow the DMA window for masters to
+> +  be configured. The first cell of the address in this may contain the master
+> +  device's ID for example, while the second cell could contain the start of
+> +  the DMA window for the given device. The length of the DMA window is given
+> +  by the third and fourth cells.
+> +
+> +Note that these are merely examples and real-world use-cases may use different
+> +definitions to represent their individual needs. Always refer to the specific
+> +IOMMU binding for the exact meaning of the cells that make up the specifier.
+> +
+> +
+> +IOMMU master node:
+> +==================
+> +
+> +Devices that access memory through an IOMMU are called masters. A device can
+> +have multiple master interfaces (to one or more IOMMU devices).
+> +
+> +Required properties:
+> +--------------------
+> +- iommus: A list of phandle and IOMMU specifier pairs that describe the IOMMU
+> +  master interfaces of the device. One entry in the list describes one master
+> +  interface of the device.
+> +
+> +When an "iommus" property is specified in a device tree node, the IOMMU will
+> +be used for address translation. If a "dma-ranges" property exists in the
+> +device's parent node it will be ignored. An exception to this rule is if the
+> +referenced IOMMU is disabled, in which case the "dma-ranges" property of the
+> +parent shall take effect. Note that merely disabling a device tree node does
+> +not guarantee that the IOMMU is really disabled since the hardware may not
+> +have a means to turn off translation.
+> +
+> +
+> +Notes:
+> +======
+> +
+> +One possible extension to the above is to use an "iommus" property along with
+> +a "dma-ranges" property in a bus device node (such as PCI host bridges). This
+> +can be useful to describe how children on the bus relate to the IOMMU if they
+> +are not explicitly listed in the device tree (e.g. PCI devices). However, the
+> +requirements of that use-case haven't been fully determined yet. Implementing
+> +this is therefore not recommended without further discussion and extension of
+> +this binding.
+> +
+> +
+> +Examples:
+> +=========
+> +
+> +Single-master IOMMU:
+> +--------------------
+> +
+> +       iommu {
+> +               #iommu-cells = <0>;
+> +       };
+> +
+> +       master {
+> +               iommus = <&/iommu>;
+> +       };
+> +
+> +Multiple-master IOMMU with fixed associations:
+> +----------------------------------------------
+> +
+> +       /* multiple-master IOMMU */
+> +       iommu {
+> +               /*
+> +                * Masters are statically associated with this IOMMU and
+> +                * address translation is always enabled.
+> +                */
+> +               #iommu-cells = <0>;
+> +       };
+> +
+> +       /* static association with IOMMU */
+> +       master@1 {
+> +               reg = <1>;
+> +               iommus = <&/iommu>;
+> +       };
+> +
+> +       /* static association with IOMMU */
+> +       master@2 {
+> +               reg = <2>;
+> +               iommus = <&/iommu>;
+> +       };
+> +
+> +Multiple-master IOMMU:
+> +----------------------
+> +
+> +       iommu {
+> +               /* the specifier represents the ID of the master */
+> +               #iommu-cells = <1>;
+> +       };
+> +
+> +       master@1 {
+> +               /* device has master ID 42 in the IOMMU */
+> +               iommus = <&/iommu 42>;
+> +       };
+> +
+> +       master@2 {
+> +               /* device has master IDs 23 and 24 in the IOMMU */
+> +               iommus = <&/iommu 23>, <&/iommu 24>;
+> +       };
+> +
+> +Multiple-master IOMMU with configurable DMA window:
+> +---------------------------------------------------
+> +
+> +       / {
+> +               #address-cells = <1>;
+> +               #size-cells = <1>;
+> +
+> +               iommu {
+> +                       /* master ID, address and length of DMA window */
+> +                       #iommu-cells = <4>;
+> +               };
+> +
+> +               master {
+> +                       /* master ID 42, 4 GiB DMA window starting at 0 */
+> +                       iommus = <&/iommu  42  0  0x1 0x0>;
+> +               };
+> +       };
 
-MMC driver for JZ4740 SoC is currently relying on PIO mode only for
-data transfers.
 
-The patch that comes as a follow-up of this message allows the use of
-DMA for data transfers.
+ok, so I was working through this to try to convert my
+{qcom,msm}-iommu-v0 RFC over to using these bindings.  For background,
+I was initially using something that looked a bit more like the
+current arm-smmu bindings:
 
-Changes since v3:
-  - use DMA engine device instead of MMC device in dma_map_sg() and
-    dma_unmap_sg() as the memory transfers will be performed by the
-    DMA engine,
+        gpu {
+            #stream-id-cells = <16>;
+            ...
+        };
 
-  - remove unnecessary mem_res == NULL check in jz4740_mmc_probe()
-    since devm_ioremap_resource() handles the mem_res == NULL case and
-    print a message,
+        gfx3d: qcom,iommu@7c00000 {
+            compatible = "qcom,iommu-v0";
+            ...
+            mmu-masters =
+                /* gfx3d_user: */
+                <&gpu 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15>,
+                /* gfx3d_priv: */
+                <&gpu 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31>;
+        };
 
-  - added a check to host->use_dma in jz4740_mmc_remove() to avoid
-    calling jz4740_release_dma_channels() unnecessarily.
+        gfx3d1: qcom,iommu@7d00000 {
+            compatible = "qcom,iommu-v0";
+            ...
+            mmu-masters =
+                /* gfx3d_user: */
+                <&gpu 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15>,
+                /* gfx3d_priv: */
+                <&gpu 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31>;
+        };
 
-Changes since v2:
-  - declare sg_len member of struct jz4740_mmc_host as int instead of
-    unsigned int.
+With my current arrangement, I have everything I need when the iommu
+device is probed to set up each of the context banks
 
-Changes since v1:
-  - remove blank line added by mistake in jz_mmc_prepare_data_transfer().
+This proposal inverts that relationship.  Which forces me to do a lot
+more (including DT parsing) on device attach.  Which I'm not a huge
+fan of.  Ie. if I even wanted to try to implement per-process
+pagetables for gpu without completely going behind the IOMMU API's
+back, I would want attach/detach to be as lightweight as possible.
 
-According to the following DMA vs PIO benchmarks there seems to be a
-slight improvement in transfer speed with the Ben NanoNote booting
-from SD card, while load average seems to be roughly on par:
+Was there actually a good reason for having the device link to the
+iommu rather than the other way around?  How much would people hate it
+if I just ignore the generic bindings and use something that works for
+me instead.  I mean, it isn't exactly like there is going to be .dts
+re-use across different SoC's..  and at least with current IOMMU API
+some sort of of_get_named_iommu() API doesn't really make sense.
 
-* With DMA:
+Maybe I'm missing something, I kinda jumped into the discussion late.
 
-Test cases |             root@BenNanoNote:/# uptime              |   root@BenNanoNote:/# time zcat root/fedora-16.iso.gz > /dev/null && uptime
------------|----------------------------------------------------------------------------------------------------------------------------------
-Test run 1 | 00:20:55 up 1 min,  load average: 1.26, 0.42, 0.14  |  00:26:10 up 6 min,  load average: 2.89, 1.94, 0.89
-Test run 2 | 00:30:22 up 1 min,  load average: 1.16, 0.38, 0.13  |  00:35:34 up 6 min,  load average: 2.68, 1.86, 0.85
-Test run 3 | 00:39:56 up 1 min,  load average: 1.16, 0.38, 0.13  |  00:45:06 up 6 min,  load average: 2.57, 1.76, 0.81
------------|----------------------------------------------------------------------------------------------------------------------------------
-  Average  |             1 min,  load average: 1.19, 0.39, 0.13  |              6 min,  load average: 2.71, 1.85, 0.85
-
-
-* With PIO:
-
-Test cases |             root@BenNanoNote:/# uptime              |   root@BenNanoNote:/# time zcat root/fedora-16.iso.gz > /dev/null && uptime
-----------------------------------------------------------------------------------------------------------------------------------------------
-Test run 1 | 00:50:47 up 1 min,  load average: 1.42, 0.49, 0.17  |  00:56:52 up 7 min,  load average: 2.47, 2.00, 0.98
-Test run 2 | 01:00:19 up 1 min,  load average: 1.21, 0.39, 0.14  |  01:06:29 up 7 min,  load average: 2.45, 1.96, 0.96
-Test run 3 | 01:11:27 up 1 min,  load average: 1.15, 0.36, 0.12  |  01:17:33 up 7 min,  load average: 2.63, 2.01, 0.97
------------|----------------------------------------------------------------------------------------------------------------------------------
-  Average  |             1 min,  load average: 1.26, 0.41, 0.14  |              7 min,  load average: 2.52, 1.99, 0.97
+BR,
+-R
 
 
-DMA transfers performance might be further improved with a latter patch
-by taking advantage of the asynchronous request capability of the MMC
-framework.
-
-Changes were rebased on top of linux master branch, built and tested
-successfully.
-
-The following changes since commit cd3de83:
-
-  Linux 3.16-rc4
-
-are available in the git repository at:
-
-  git://git.seketeli.net/~apelete/linux.git jz4740-mmc-dma
-
-Apelete Seketeli (1):
-  mmc: jz4740: add dma infrastructure for data transfers
-
- drivers/mmc/host/jz4740_mmc.c |  174 +++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 166 insertions(+), 8 deletions(-)
-
--- 
-1.7.10.4
-
+> --
+> 2.0.1
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
