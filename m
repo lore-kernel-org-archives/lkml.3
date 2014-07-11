@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753105AbaGKGXz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 02:23:55 -0400
-Received: from mga11.intel.com ([192.55.52.93]:55697 "EHLO mga11.intel.com"
+	id S1752000AbaGKGRF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 02:17:05 -0400
+Received: from mga11.intel.com ([192.55.52.93]:55688 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751133AbaGKGRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 02:17:06 -0400
+	id S1751133AbaGKGRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 02:17:03 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,642,1400050800"; 
-   d="scan'208";a="560333069"
+   d="scan'208";a="560333034"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
         Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
@@ -20,206 +20,86 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
         iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
         linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
         dmaengine@vger.kernel.org
-Subject: [Patch Part3 V4 03/21] iommu/vt-d: Introduce helper functions to improve code readability
-Date: Fri, 11 Jul 2014 14:19:27 +0800
-Message-Id: <1405059585-10620-4-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch Part3 V4 00/21] Enable support of Intel DMAR device hotplug
+Date: Fri, 11 Jul 2014 14:19:24 +0800
+Message-Id: <1405059585-10620-1-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1405059585-10620-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1405059585-10620-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce domain_type_is_vm() and domain_type_is_vm_or_si() to improve
-code readability.
+When hot plugging a descrete IOH or a physical processor with embedded
+IIO, we need to handle DMAR(or IOMMU) unit in the PCIe host bridge if
+DMAR is in use. This patch set tries to enhance current DMAR/IOMMU/IR
+drivers to support hotplug and is based on latest Joerg's iommu/next
+branch.
 
-Also kill useless macro DOMAIN_FLAG_P2P_MULTIPLE_DEVICES.
+Patch 1-13 are bugfixes and code improvement for current drivers.
+Patch 14-17 enhances DMAR framework to support hotplug
+Patch 18 enhances Intel interrupt remapping driver to support hotplug
+Patch 19 enhances error handling in Intel IR driver
+Patch 20 enhance Intel IOMMU to support hotplug
+Patch 21 enhance ACPI pci_root driver to handle DMAR units
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- drivers/iommu/intel-iommu.c |   59 +++++++++++++++++++------------------------
- 1 file changed, 26 insertions(+), 33 deletions(-)
+This patch set has been tested on Intel development machine.
+Appreciate any comments and tests. With this patch set and
+another IOAPIC hotplug patch set(http://www.mail-archive.com/linux-kernel
+@vger.kernel.org/msg671316.html) applied, we could support full functional
+socket hotplug on x86 platforms now.
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index d77009bdade5..52250b3e58d1 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -320,16 +320,13 @@ static inline int first_pte_in_page(struct dma_pte *pte)
- static struct dmar_domain *si_domain;
- static int hw_pass_through = 1;
- 
--/* devices under the same p2p bridge are owned in one domain */
--#define DOMAIN_FLAG_P2P_MULTIPLE_DEVICES (1 << 0)
--
- /* domain represents a virtual machine, more than one devices
-  * across iommus may be owned in one domain, e.g. kvm guest.
-  */
--#define DOMAIN_FLAG_VIRTUAL_MACHINE	(1 << 1)
-+#define DOMAIN_FLAG_VIRTUAL_MACHINE	(1 << 0)
- 
- /* si_domain contains mulitple devices */
--#define DOMAIN_FLAG_STATIC_IDENTITY	(1 << 2)
-+#define DOMAIN_FLAG_STATIC_IDENTITY	(1 << 1)
- 
- /* define the limit of IOMMUs supported in each domain */
- #ifdef	CONFIG_X86
-@@ -539,6 +536,16 @@ void free_iova_mem(struct iova *iova)
- 	kmem_cache_free(iommu_iova_cache, iova);
- }
- 
-+static inline int domain_type_is_vm(struct dmar_domain *domain)
-+{
-+	return domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE;
-+}
-+
-+static inline int domain_type_is_vm_or_si(struct dmar_domain *domain)
-+{
-+	return domain->flags & (DOMAIN_FLAG_VIRTUAL_MACHINE |
-+				DOMAIN_FLAG_STATIC_IDENTITY);
-+}
- 
- static int __iommu_calculate_agaw(struct intel_iommu *iommu, int max_gaw)
- {
-@@ -579,9 +586,7 @@ static struct intel_iommu *domain_get_iommu(struct dmar_domain *domain)
- 	int iommu_id;
- 
- 	/* si_domain and vm domain should not get here. */
--	BUG_ON(domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE);
--	BUG_ON(domain->flags & DOMAIN_FLAG_STATIC_IDENTITY);
--
-+	BUG_ON(domain_type_is_vm_or_si(domain));
- 	iommu_id = find_first_bit(domain->iommu_bmp, g_num_of_iommus);
- 	if (iommu_id < 0 || iommu_id >= g_num_of_iommus)
- 		return NULL;
-@@ -1497,7 +1502,7 @@ static void free_dmar_iommu(struct intel_iommu *iommu)
- 	free_context_table(iommu);
- }
- 
--static struct dmar_domain *alloc_domain(bool vm)
-+static struct dmar_domain *alloc_domain(int flags)
- {
- 	/* domain id for virtual machine, it won't be set in context */
- 	static atomic_t vm_domid = ATOMIC_INIT(0);
-@@ -1507,16 +1512,13 @@ static struct dmar_domain *alloc_domain(bool vm)
- 	if (!domain)
- 		return NULL;
- 
-+	memset(domain, 0, sizeof(*domain));
- 	domain->nid = -1;
--	domain->iommu_count = 0;
--	memset(domain->iommu_bmp, 0, sizeof(domain->iommu_bmp));
--	domain->flags = 0;
-+	domain->flags = flags;
- 	spin_lock_init(&domain->iommu_lock);
- 	INIT_LIST_HEAD(&domain->devices);
--	if (vm) {
-+	if (flags & DOMAIN_FLAG_VIRTUAL_MACHINE)
- 		domain->id = atomic_inc_return(&vm_domid);
--		domain->flags = DOMAIN_FLAG_VIRTUAL_MACHINE;
--	}
- 
- 	return domain;
- }
-@@ -1704,7 +1706,7 @@ static void domain_exit(struct dmar_domain *domain)
- 	/* clear attached or cached domains */
- 	rcu_read_lock();
- 	for_each_active_iommu(iommu, drhd)
--		if (domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE ||
-+		if (domain_type_is_vm(domain) ||
- 		    test_bit(iommu->seq_id, domain->iommu_bmp))
- 			iommu_detach_domain(domain, iommu);
- 	rcu_read_unlock();
-@@ -1746,8 +1748,7 @@ static int domain_context_mapping_one(struct dmar_domain *domain,
- 	id = domain->id;
- 	pgd = domain->pgd;
- 
--	if (domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE ||
--	    domain->flags & DOMAIN_FLAG_STATIC_IDENTITY) {
-+	if (domain_type_is_vm_or_si(domain)) {
- 		int found = 0;
- 
- 		/* find an available domain id for this device in iommu */
-@@ -2094,7 +2095,7 @@ static void domain_remove_dev_info(struct dmar_domain *domain)
- 		iommu_disable_dev_iotlb(info);
- 		iommu_detach_dev(info->iommu, info->bus, info->devfn);
- 
--		if (domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE) {
-+		if (domain_type_is_vm(domain)) {
- 			iommu_detach_dependent_devices(info->iommu, info->dev);
- 			/* clear this iommu in iommu_bmp, update iommu count
- 			 * and capabilities
-@@ -2160,8 +2161,6 @@ static struct dmar_domain *dmar_insert_dev_info(struct intel_iommu *iommu,
- 	info->dev = dev;
- 	info->domain = domain;
- 	info->iommu = iommu;
--	if (!dev)
--		domain->flags |= DOMAIN_FLAG_P2P_MULTIPLE_DEVICES;
- 
- 	spin_lock_irqsave(&device_domain_lock, flags);
- 	if (dev)
-@@ -2233,7 +2232,7 @@ static struct dmar_domain *get_domain_for_dev(struct device *dev, int gaw)
- 	}
- 
- 	/* Allocate and initialize new domain for the device */
--	domain = alloc_domain(false);
-+	domain = alloc_domain(0);
- 	if (!domain)
- 		return NULL;
- 
-@@ -2408,12 +2407,10 @@ static int __init si_domain_init(int hw)
- 	struct intel_iommu *iommu;
- 	int nid, ret = 0;
- 
--	si_domain = alloc_domain(false);
-+	si_domain = alloc_domain(DOMAIN_FLAG_STATIC_IDENTITY);
- 	if (!si_domain)
- 		return -EFAULT;
- 
--	si_domain->flags = DOMAIN_FLAG_STATIC_IDENTITY;
--
- 	for_each_active_iommu(iommu, drhd) {
- 		ret = iommu_attach_domain(si_domain, iommu);
- 		if (ret) {
-@@ -3860,9 +3857,7 @@ static int device_notifier(struct notifier_block *nb,
- 
- 	down_read(&dmar_global_lock);
- 	domain_remove_one_dev_info(domain, dev);
--	if (!(domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE) &&
--	    !(domain->flags & DOMAIN_FLAG_STATIC_IDENTITY) &&
--	    list_empty(&domain->devices))
-+	if (!domain_type_is_vm_or_si(domain) && list_empty(&domain->devices))
- 		domain_exit(domain);
- 	up_read(&dmar_global_lock);
- 
-@@ -4167,8 +4162,7 @@ static void domain_remove_one_dev_info(struct dmar_domain *domain,
- 		domain_update_iommu_cap(domain);
- 		spin_unlock_irqrestore(&domain->iommu_lock, tmp_flags);
- 
--		if (!(domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE) &&
--		    !(domain->flags & DOMAIN_FLAG_STATIC_IDENTITY)) {
-+		if (!domain_type_is_vm_or_si(domain)) {
- 			spin_lock_irqsave(&iommu->lock, tmp_flags);
- 			clear_bit(domain->id, iommu->domain_ids);
- 			iommu->domains[domain->id] = NULL;
-@@ -4206,7 +4200,7 @@ static int intel_iommu_domain_init(struct iommu_domain *domain)
- {
- 	struct dmar_domain *dmar_domain;
- 
--	dmar_domain = alloc_domain(true);
-+	dmar_domain = alloc_domain(DOMAIN_FLAG_VIRTUAL_MACHINE);
- 	if (!dmar_domain) {
- 		printk(KERN_ERR
- 			"intel_iommu_domain_init: dmar_domain == NULL\n");
-@@ -4250,8 +4244,7 @@ static int intel_iommu_attach_device(struct iommu_domain *domain,
- 
- 		old_domain = find_domain(dev);
- 		if (old_domain) {
--			if (dmar_domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE ||
--			    dmar_domain->flags & DOMAIN_FLAG_STATIC_IDENTITY)
-+			if (domain_type_is_vm_or_si(dmar_domain))
- 				domain_remove_one_dev_info(old_domain, dev);
- 			else
- 				domain_remove_dev_info(old_domain);
+V3->V4:
+1) rebase onto iommu/next branch to solve conflicts
+2) refine commit messages according to Bjorn's suggestion.
+
+V2->V3:
+1) rebase to latest v3.16-rc2
+2) fix a bug in detecting super page support when hot-adding IOMMU
+
+V1->V2:
+1) enhance the way to simplify intel_unmap_sg()
+2) rename dmar_device_hotplug() to dmar_device_add/remove()
+3) coding style improvment
+
+Best Regards!
+
+Jiang Liu (21):
+  iommu/vt-d: Match segment number when searching for dev_iotlb capable
+    devices
+  iommu/vt-d: Use correct domain id to flush virtual machine domains
+  iommu/vt-d: Introduce helper functions to improve code readability
+  iommu/vt-d: Introduce helper functions to make code symmetric for
+    readability
+  iommu/vt-d: Allocate dynamic domain id for virtual domains only
+  iommu/vt-d: Fix possible invalid memory access caused by
+    free_dmar_iommu()
+  iommu/vt-d: Avoid freeing virtual machine domain in free_dmar_iommu()
+  iommu/vt-d: Simplify include/linux/dmar.h
+  iommu/vt-d: Change iommu_enable/disable_translation to return void
+  iommu/vt-d: Simplify intel_unmap_sg() and kill duplicated code
+  iommu/vt-d: Introduce helper domain_pfn_within_range() to simplify
+    code
+  iommu/vt-d: Introduce helper function iova_size() to improve code
+    readability
+  iommu/vt-d: Fix issue in computing domain's iommu_snooping flag
+  iommu/vt-d: Introduce helper function dmar_walk_resources()
+  iommu/vt-d: Dynamically allocate and free seq_id for DMAR units
+  iommu/vt-d: Implement DMAR unit hotplug framework
+  iommu/vt-d: Search for ACPI _DSM method for DMAR hotplug
+  iommu/vt-d: Enhance intel_irq_remapping driver to support DMAR unit
+    hotplug
+  iommu/vt-d: Enhance error recovery in function
+    intel_enable_irq_remapping()
+  iommu/vt-d: Enhance intel-iommu driver to support DMAR unit hotplug
+  pci, ACPI, iommu: Enhance pci_root to support DMAR device hotplug
+
+ drivers/acpi/pci_root.c             |   16 +-
+ drivers/iommu/dmar.c                |  531 ++++++++++++++++++++------
+ drivers/iommu/intel-iommu.c         |  720 +++++++++++++++++++++--------------
+ drivers/iommu/intel_irq_remapping.c |  233 +++++++++---
+ include/linux/dmar.h                |   86 +++--
+ include/linux/iova.h                |    5 +
+ 6 files changed, 1104 insertions(+), 487 deletions(-)
+
 -- 
 1.7.10.4
 
