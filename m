@@ -1,175 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751797AbaGKHd3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 03:33:29 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:61971 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341AbaGKHd0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 03:33:26 -0400
-X-AuditID: cbfee690-b7fb56d000003439-dd-53bf9343cab9
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Tanmay Inamdar'" <tinamdar@apm.com>,
-        "'Liviu Dudau'" <Liviu.Dudau@arm.com>
-Cc: "'Rob Herring'" <robherring2@gmail.com>,
-        "'linux-pci'" <linux-pci@vger.kernel.org>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "'Catalin Marinas'" <Catalin.Marinas@arm.com>,
-        "'Will Deacon'" <Will.Deacon@arm.com>,
-        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'linaro-kernel'" <linaro-kernel@lists.linaro.org>,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Sinan Kaya'" <okaya@codeaurora.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Suravee Suthikulanit'" <suravee.suthikulpanit@amd.com>,
-        "'Device Tree ML'" <devicetree@vger.kernel.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'LAKML'" <linux-arm-kernel@lists.infradead.org>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
- <CAL_JsqK_CfagmiFOpOXVYGry22nGnCZL0ZXeJhYxb9zp=P2fsQ@mail.gmail.com>
- <20140708171828.GM6501@e106497-lin.cambridge.arm.com>
- <CACoXjcn3b7otcbxdr+RAVNHHjHyVsvw0QcmK5jd-QBF8SQX5iw@mail.gmail.com>
-In-reply-to: <CACoXjcn3b7otcbxdr+RAVNHHjHyVsvw0QcmK5jd-QBF8SQX5iw@mail.gmail.com>
-Subject: Re: [PATCH v8 0/9] Support for creating generic PCI host bridges from
- DT
-Date: Fri, 11 Jul 2014 16:33:23 +0900
-Message-id: <004501cf9cda$65703610$3050a230$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac+coVXJ6D3BoZmXTR2ult6qu0iseAAOJmGg
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHKsWRmVeSWpSXmKPExsVy+t8zQ13nyfuDDd6s5bL4O+kYu8WHplZm
-	iyVNGRbvl/UwWsw/co7V4tWZjWwWlxdeYrXoXXCVzeL9oWfMFpseX2O1uLxrDpvF2XnH2SwO
-	LG1nsWictI3J4vu3b2wWE38sYLR4/ukTi8XLjydYHIQ8Wi/9ZfP4uP4To8eaeWsYPX7/msTo
-	cbmvl8lj56y77B4LNpV69LxpYfXYvKTe4/a/x8wefVtWMXr8fKnj8XmTXABvFJdNSmpOZllq
-	kb5dAlfGrUNvGQuOyFZcnPKJtYHxt1gXIyeHhICJREPDNxYIW0ziwr31bF2MXBxCAssYJe5f
-	7mKHKzr4ixEisYhR4vyDi1DOb0aJQ6d2g7WzCahJfPlyGKxDRMBHYvXZ1ywgRcwCJ1glDv34
-	zAzR0cEk8XXXBUaQKk6BYIkVm64CVXFwCAPZW+cbgYRZBFQlfv99CzaUV8BW4uO+6cwQtqDE
-	j8n3wOLMAuoSk+YtYoawtSWevLvACjJGAij+6K8uxA1GEs+WbGKDKBGR2PfiHdjREgIfOCTO
-	vVzJCLFLQOLb5EMsEL2yEpsOMEN8LClxcMUNlgmMErOQbJ6FZPMsJJtnIVmxgJFlFaNoakFy
-	QXFSepGJXnFibnFpXrpecn7uJkZI2pmwg/HeAetDjMlA6ycyS4km5wPTVl5JvKGxmZGFqYmp
-	sZG5pRlpwkrivGqPkoKEBNITS1KzU1MLUovii0pzUosPMTJxcEo1MIau3DFDX9EnkPHapime
-	hqsO9bldqT2046X/gVvM6Z4fzNmOfwk6MjXKIexys9kno/Ux7HzJmj8evlxtodw6KbRhunHl
-	B+3Dux3dOpepvj6/5uUTh/Ypdz/dvb1tzpegRJ/7riduhLm9TZh7NfHgErujf1cHKv7mCt1t
-	t1DqYPvNnSw7mk3S0zcrsRRnJBpqMRcVJwIAKZnxz1EDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLKsWRmVeSWpSXmKPExsVy+t9jAV3nyfuDDQ4cY7H4O+kYu8WHplZm
-	iyVNGRbvl/UwWsw/co7V4tWZjWwWlxdeYrXoXXCVzeL9oWfMFpseX2O1uLxrDpvF2XnH2SwO
-	LG1nsWictI3J4vu3b2wWE38sYLR4/ukTi8XLjydYHIQ8Wi/9ZfP4uP4To8eaeWsYPX7/msTo
-	cbmvl8lj56y77B4LNpV69LxpYfXYvKTe4/a/x8wefVtWMXr8fKnj8XmTXABvVAOjTUZqYkpq
-	kUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Qi0oKZYk5pUChgMTi
-	YiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjFuH3jIWHJGtuDjlE2sD42+xLkZODgkBE4mG
-	g78YIWwxiQv31rN1MXJxCAksYpQ4/+AiI4Tzm1Hi0KndLCBVbAJqEl++HGYHsUUEfCRWn33N
-	AlLELHCCVeLQj8/MEB0dTBJfd10Am8spECyxYtNVoCoODmEge+t8I5Awi4CqxO+/b8GG8grY
-	SnzcN50ZwhaU+DH5HlicWUBdYtK8RcwQtrbEk3cXWEHGSADFH/3VhbjBSOLZkk1sECUiEvte
-	vGOcwCg0C8mkWUgmzUIyaRaSlgWMLKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgpPaM+kd
-	jKsaLA4xCnAwKvHwnlizL1iINbGsuDL3EKMEB7OSCO+T+v3BQrwpiZVVqUX58UWlOanFhxhN
-	gR6dyCwlmpwPTLh5JfGGxiZmRpZGZhZGJubmSuK8B1utA4UE0hNLUrNTUwtSi2D6mDg4pRoY
-	ix918tleMRIK0fkkxn7g0bfn6h+ZVy8/va1dqMPc9vq0g8urJppdY2XvCT+dqHRifVjVLMWf
-	9+YlfNHzrnVXypozK2jb/0tNwe1SZ09Iihl/lubPPa1Q9unFshaduzHSXx9mamVaHZzYdn+l
-	Zdu5y/WsdjPWSjyey6rmVr5c4fOH5L8npaJClFiKMxINtZiLihMBjruw0IADAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1752028AbaGKHfQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 03:35:16 -0400
+Received: from mga02.intel.com ([134.134.136.20]:32879 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751352AbaGKHfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 03:35:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,642,1400050800"; 
+   d="scan'208";a="571589207"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
+        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [RFC Patch V1 00/30] Enable memoryless node on x86 platforms
+Date: Fri, 11 Jul 2014 15:37:17 +0800
+Message-Id: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 11, 2014 9:44 AM, Tanmay Inamdar wrote:
-> On Tue, Jul 8, 2014 at 10:18 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> > On Sun, Jul 06, 2014 at 04:23:43PM +0100, Rob Herring wrote:
-> >> On Tue, Jul 1, 2014 at 1:43 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> >> > This is my resurected attempt at adding support for generic PCI host
-> >> > bridge controllers that make use of device tree information to
-> >> > configure themselves. I've tagged it as v8 although the patches
-> >> > have now been reshuffled in order to ease adoption so referring to
-> >> > the older versions might be a bit of a hoop jumping exercise.
-> >> >
-> >> > Changes from v7:
-> >> >   - Reordered the patches so that fixes and non-controversial patches
-> >> >     from v7 can be accepted more easily. If agreed I can split the
-> >> >     series again into patches that can be upstreamed easily and ones
-> >> >     that still need discussion.
-> >> >   - Moved the of_create_host_bridge() function to drivers/of/of_pci.c
-> >> >     to better reflect its target use.
-> >> >   - Added the function to remap the bus I/O resources that used to be
-> >> >     provided in my arm64 patch series and (re)named it pci_remap_iospace()
-> >> >   - Removed error code checking from parsing and mapping of IRQ from DT
-> >> >     in recognition that some PCI devices will not have legacy IRQ mappings.
-> >> >
-> >> > v7 thread here with all the historic information: https://lkml.org/lkml/2014/3/14/279
-> >>
-> >> Can you publish a branch for this series please.
-> >>
-> >> Rob
-> >>
-> >
-> > Hi Rob,
-> >
-> > I have pushed a brach that matches my v8 patchset +1 obvious missing header include
-> > here: http://www.linux-arm.org/git?p=linux-ld.git;a=shortlog;h=refs/heads/for-upstream/pci_v8
-> >
-> 
-> I was still getting following compilation error after applying arm64
-> pci headers. Please let me know if I am missing something.
-> 
-> linux-git/drivers/of/of_pci.c: In function ‘pci_host_bridge_of_get_ranges’:
-> linux-git/drivers/of/of_pci.c:114:22: error: storage size of ‘range’ isn’t known
->   struct of_pci_range range;
->                       ^
-> linux-git/drivers/of/of_pci.c:115:29: error: storage size of ‘parser’
-> isn’t known
->   struct of_pci_range_parser parser;
->                              ^
-> linux-git/drivers/of/of_pci.c:121:2: error: implicit declaration of
-> function ‘of_pci_range_parser_init’
-> [-Werror=implicit-function-declaration]
->   err = of_pci_range_parser_init(&parser, dev);
-> 
-> 
-> Below patch fixes the errors.
-> 
-> diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
-> index 55d8320..da88dac 100644
-> --- a/drivers/of/of_pci.c
-> +++ b/drivers/of/of_pci.c
-> @@ -2,6 +2,7 @@
->  #include <linux/export.h>
->  #include <linux/of.h>
->  #include <linux/of_pci.h>
-> +#include <linux/of_address.h>
+Previously we have posted a patch fix a memory crash issue caused by
+memoryless node on x86 platforms, please refer to
+http://comments.gmane.org/gmane.linux.kernel/1687425
 
-Yes, right. I also found the build errors as above mentioned.
-"of_address.h" should be included, in order to fix the build errors.
-However, for readability, the following would be better.
+As suggested by David Rientjes, the most suitable fix for the issue
+should be to use cpu_to_mem() rather than cpu_to_node() in the caller.
+So this is the patchset according to David's suggestion.
 
- #include <linux/of.h>
-+#include <linux/of_address.h>
- #include <linux/of_pci.h>
+Patch 1-26 prepare for enabling memoryless node on x86 platforms by
+replacing cpu_to_node()/numa_node_id() with cpu_to_mem()/numa_mem_id().
+Patch 27-29 enable support of memoryless node on x86 platforms.
+Patch 30 tunes order to online NUMA node when doing CPU hot-addition.
 
-Best regards,
-Jingoo Han
+This patchset fixes the issue mentioned by Mike Galbraith that CPUs
+are associated with wrong node after adding memory to a memoryless
+node.
 
-> 
->  static inline int __of_pci_pci_compare(struct device_node *node,
->                                        unsigned int data)
-> 
-> 
-> > Best regards,
-> > Liviu
-> >
-> >
-> > --
-> > ====================
-> > | I would like to |
-> > | fix the world,  |
-> > | but they're not |
-> > | giving me the   |
-> >  \ source code!  /
-> >   ---------------
-> >     ¯\_(ツ)_/¯
-> >
+With support of memoryless node enabled, it will correctly report system
+hardware topology for nodes without memory installed.
+root@bkd01sdp:~# numactl --hardware
+available: 4 nodes (0-3)
+node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74
+node 0 size: 15725 MB
+node 0 free: 15129 MB
+node 1 cpus: 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89
+node 1 size: 15862 MB
+node 1 free: 15627 MB
+node 2 cpus: 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104
+node 2 size: 0 MB
+node 2 free: 0 MB
+node 3 cpus: 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119
+node 3 size: 0 MB
+node 3 free: 0 MB
+node distances:
+node   0   1   2   3
+  0:  10  21  21  21
+  1:  21  10  21  21
+  2:  21  21  10  21
+  3:  21  21  21  10
+
+With memoryless node enabled, CPUs are correctly associated with node 2
+after memory hot-addition to node 2.
+root@bkd01sdp:/sys/devices/system/node/node2# numactl --hardware
+available: 4 nodes (0-3)
+node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74
+node 0 size: 15725 MB
+node 0 free: 14872 MB
+node 1 cpus: 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89
+node 1 size: 15862 MB
+node 1 free: 15641 MB
+node 2 cpus: 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104
+node 2 size: 128 MB
+node 2 free: 127 MB
+node 3 cpus: 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119
+node 3 size: 0 MB
+node 3 free: 0 MB
+node distances:
+node   0   1   2   3
+  0:  10  21  21  21
+  1:  21  10  21  21
+  2:  21  21  10  21
+  3:  21  21  21  10
+
+The patchset is based on the latest mainstream kernel and has been
+tested on a 4-socket Intel platform with CPU/memory hot-addition
+capability.
+
+Any comments are welcomed!
+
+Jiang Liu (30):
+  mm, kernel: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+  mm, sched: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+  mm, net: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+  mm, netfilter: Use cpu_to_mem()/numa_mem_id() to support memoryless
+    node
+  mm, perf: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+  mm, tracing: Use cpu_to_mem()/numa_mem_id() to support memoryless
+    node
+  mm: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+  mm, thp: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+  mm, memcg: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+  mm, xfrm: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+  mm, char/mspec.c: Use cpu_to_mem()/numa_mem_id() to support
+    memoryless node
+  mm, IB/qib: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+  mm, i40e: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+  mm, i40evf: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+  mm, igb: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+  mm, ixgbe: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+  mm, intel_powerclamp: Use cpu_to_mem()/numa_mem_id() to support
+    memoryless node
+  mm, bnx2fc: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+  mm, bnx2i: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+  mm, fcoe: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+  mm, irqchip: Use cpu_to_mem()/numa_mem_id() to support memoryless
+    node
+  mm, of: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+  mm, x86: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+  mm, x86/platform/uv: Use cpu_to_mem()/numa_mem_id() to support
+    memoryless node
+  mm, x86, kvm: Use cpu_to_mem()/numa_mem_id() to support memoryless
+    node
+  mm, x86, perf: Use cpu_to_mem()/numa_mem_id() to support memoryless
+    node
+  x86, numa: Kill useless code to improve code readability
+  mm: Update _mem_id_[] for every possible CPU when memory
+    configuration changes
+  mm, x86: Enable memoryless node support to better support CPU/memory
+    hotplug
+  x86, NUMA: Online node earlier when doing CPU hot-addition
+
+ arch/x86/Kconfig                              |    3 ++
+ arch/x86/kernel/acpi/boot.c                   |    6 ++-
+ arch/x86/kernel/apic/io_apic.c                |   10 ++---
+ arch/x86/kernel/cpu/perf_event_amd.c          |    2 +-
+ arch/x86/kernel/cpu/perf_event_amd_uncore.c   |    2 +-
+ arch/x86/kernel/cpu/perf_event_intel.c        |    2 +-
+ arch/x86/kernel/cpu/perf_event_intel_ds.c     |    6 +--
+ arch/x86/kernel/cpu/perf_event_intel_rapl.c   |    2 +-
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |    2 +-
+ arch/x86/kernel/devicetree.c                  |    2 +-
+ arch/x86/kernel/irq_32.c                      |    4 +-
+ arch/x86/kernel/smpboot.c                     |    2 +
+ arch/x86/kvm/vmx.c                            |    2 +-
+ arch/x86/mm/numa.c                            |   52 +++++++++++++++++--------
+ arch/x86/platform/uv/tlb_uv.c                 |    2 +-
+ arch/x86/platform/uv/uv_nmi.c                 |    3 +-
+ arch/x86/platform/uv/uv_time.c                |    2 +-
+ drivers/char/mspec.c                          |    2 +-
+ drivers/infiniband/hw/qib/qib_file_ops.c      |    4 +-
+ drivers/infiniband/hw/qib/qib_init.c          |    2 +-
+ drivers/irqchip/irq-clps711x.c                |    2 +-
+ drivers/irqchip/irq-gic.c                     |    2 +-
+ drivers/net/ethernet/intel/i40e/i40e_txrx.c   |    2 +-
+ drivers/net/ethernet/intel/i40evf/i40e_txrx.c |    2 +-
+ drivers/net/ethernet/intel/igb/igb_main.c     |    4 +-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    4 +-
+ drivers/of/base.c                             |    2 +-
+ drivers/scsi/bnx2fc/bnx2fc_fcoe.c             |    2 +-
+ drivers/scsi/bnx2i/bnx2i_init.c               |    2 +-
+ drivers/scsi/fcoe/fcoe.c                      |    2 +-
+ drivers/thermal/intel_powerclamp.c            |    4 +-
+ include/linux/gfp.h                           |    6 +--
+ kernel/events/callchain.c                     |    2 +-
+ kernel/events/core.c                          |    2 +-
+ kernel/events/ring_buffer.c                   |    2 +-
+ kernel/rcu/rcutorture.c                       |    2 +-
+ kernel/sched/core.c                           |    8 ++--
+ kernel/sched/deadline.c                       |    2 +-
+ kernel/sched/fair.c                           |    4 +-
+ kernel/sched/rt.c                             |    6 +--
+ kernel/smp.c                                  |    2 +-
+ kernel/smpboot.c                              |    2 +-
+ kernel/taskstats.c                            |    2 +-
+ kernel/timer.c                                |    2 +-
+ kernel/trace/ring_buffer.c                    |   12 +++---
+ kernel/trace/trace_uprobe.c                   |    2 +-
+ mm/huge_memory.c                              |    6 +--
+ mm/memcontrol.c                               |    2 +-
+ mm/memory.c                                   |    2 +-
+ mm/page_alloc.c                               |   10 ++---
+ mm/percpu-vm.c                                |    2 +-
+ mm/vmalloc.c                                  |    2 +-
+ net/core/dev.c                                |    6 +--
+ net/core/flow.c                               |    2 +-
+ net/core/pktgen.c                             |   10 ++---
+ net/core/sysctl_net_core.c                    |    2 +-
+ net/netfilter/x_tables.c                      |    8 ++--
+ net/xfrm/xfrm_ipcomp.c                        |    2 +-
+ 58 files changed, 139 insertions(+), 111 deletions(-)
+
+-- 
+1.7.10.4
 
