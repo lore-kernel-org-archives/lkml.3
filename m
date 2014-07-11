@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754319AbaGKPo3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 11:44:29 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:37951 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751923AbaGKPo0 (ORCPT
+	id S1754511AbaGKPox (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 11:44:53 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:41417 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753503AbaGKPow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 11:44:26 -0400
+	Fri, 11 Jul 2014 11:44:52 -0400
+Date: Fri, 11 Jul 2014 17:44:43 +0200
+From: Simon Horman <horms@verge.net.au>
+To: Nick Krause <xerofoify@gmail.com>
+Cc: Magnus Damm <magnus.damm@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: mach-shmobile: FIXME message in file pm-sh732.c
+Message-ID: <20140711154443.GD1777@verge.net.au>
+References: <CAPDOMViqzoX_VAJKFB34LXLBVUBTbs4hWq-K_8+bC-m2NmahCQ@mail.gmail.com>
+ <20140711093450.GA26660@verge.net.au>
+ <CAPDOMVgi-GMQp101eZewVBOK_nFD8UJ04UydQ6bxa6Y5FP_VgQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140711153717.GT23001@mwanda>
-References: <20140711102434.GA22355@devel.8.8.4.4>
-	<20140711132020.GZ25880@mwanda>
-	<CAHb8M2CKbbhZ51_iorB7TLxb9JgEmVze1PQ_-WzpU4_uT2EsiQ@mail.gmail.com>
-	<20140711153717.GT23001@mwanda>
-Date: Sat, 12 Jul 2014 00:44:26 +0900
-Message-ID: <CAHb8M2DL26EP1hHGiqO5Rc2NTABNtOb-nf=mYNqUZwAsE9uz3g@mail.gmail.com>
-Subject: Re: [PATCH 9/9] staging: dgap: removes redundant null check and
- change paramter for dgap_tty_digisetcustombaud()
-From: DaeSeok Youn <daeseok.youn@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: lidza.louina@gmail.com, gregkh@linuxfoundation.org,
-        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, Mark Hounschell <markh@compro.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPDOMVgi-GMQp101eZewVBOK_nFD8UJ04UydQ6bxa6Y5FP_VgQ@mail.gmail.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-07-12 0:37 GMT+09:00, Dan Carpenter <dan.carpenter@oracle.com>:
-> On Sat, Jul 12, 2014 at 12:23:16AM +0900, DaeSeok Youn wrote:
->> Can I modify the MAINTAINERS file for adding myself?
->
-> Yes.  Just send a patch to add yourself.
-OK. I will.
+On Fri, Jul 11, 2014 at 11:24:12AM -0400, Nick Krause wrote:
+> On Fri, Jul 11, 2014 at 5:34 AM, Simon Horman <horms@verge.net.au> wrote:
+> > On Fri, Jul 04, 2014 at 12:34:58AM -0400, Nick Krause wrote:
+> >> While searching for FIX ME messages when using cscope on the latest kernels I
+> >> get a message on 68 of this file and was wondering what I need to define SMFRAM
+> >> as in order for it to point to things needed to support this portion
+> >> of the  hardware.
+> >
+> > Hi Nick,
+> >
+> > while I don't have a technical answer to your question I do believe
+> > that the code in question will be removed in the not too distant future
+> > along with support for the sh7372 SoC.
+> 
+> Why are we removing support for this SoC? Is there any reason?
 
-Thanks.
-
-Regards,
-Daeseok Youn.
->
-> git log -p MAINTAINERS
->
-> regards,
-> dan carpenter
->
->
+Because it is rather old hardware which is most likely not used against
+mainline by anyone other than those maintaining the code and moving it over
+to use multiplatform, CCF, and the like appears to be more work thank it is
+worth.
