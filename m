@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441AbaGKME3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 08:04:29 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:59923 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753395AbaGKME0 (ORCPT
+	id S1753480AbaGKMEd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 08:04:33 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:51258 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753395AbaGKMEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 08:04:26 -0400
+	Fri, 11 Jul 2014 08:04:30 -0400
 From: Tushar Behera <tushar.b@samsung.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org
 Cc: kgene.kim@samsung.com, mturquette@linaro.org, t.figa@samsung.com,
         trblinux@gmail.com
-Subject: [PATCH V2 1/3] clk: exynos-audss: Simplify code to get clock names
-Date: Fri, 11 Jul 2014 17:30:33 +0530
-Message-Id: <1405080036-6651-2-git-send-email-tushar.b@samsung.com>
+Subject: [PATCH V2 2/3] clk: samsung: Add API to unregister clocks
+Date: Fri, 11 Jul 2014 17:30:34 +0530
+Message-Id: <1405080036-6651-3-git-send-email-tushar.b@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1405080036-6651-1-git-send-email-tushar.b@samsung.com>
 References: <1405080036-6651-1-git-send-email-tushar.b@samsung.com>
@@ -22,85 +22,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of getting the clock names individually, it would be good to put
-the logic within a loop.
+Added an API to unregister all the clocks defined within a context. This
+is helpful in case where the clock is registered through a platform
+driver and we want to unregister the clocks during remove callback.
 
 Signed-off-by: Tushar Behera <tushar.b@samsung.com>
 ---
-Changes for V2:
-* Calling clk_put as soon as the clock is not required anymore
+Changelog:
+This is new patch required because of changes to patch 3/3.
 
- drivers/clk/samsung/clk-exynos-audss.c |   35 +++++++++++++++++---------------
- 1 file changed, 19 insertions(+), 16 deletions(-)
+ drivers/clk/samsung/clk.c |   19 +++++++++++++++++++
+ drivers/clk/samsung/clk.h |    2 ++
+ 2 files changed, 21 insertions(+)
 
-diff --git a/drivers/clk/samsung/clk-exynos-audss.c b/drivers/clk/samsung/clk-exynos-audss.c
-index 13eae14c..1a5294c 100644
---- a/drivers/clk/samsung/clk-exynos-audss.c
-+++ b/drivers/clk/samsung/clk-exynos-audss.c
-@@ -80,10 +80,14 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
- {
- 	int i, ret = 0;
- 	struct resource *res;
-+	struct clk *tmp;
-+	const char *clk_name_ref[] = {
-+		"pll_ref", "pll_in", "cdclk", "sclk_audio", "sclk_pcm_in" };
-+	const char *clk_name_actual[] = {
-+		"fin_pll", "fout_epll", "cdclk0", "sclk_audio0", "sclk_pcm0"};
- 	const char *mout_audss_p[] = {"fin_pll", "fout_epll"};
- 	const char *mout_i2s_p[] = {"mout_audss", "cdclk0", "sclk_audio0"};
- 	const char *sclk_pcm_p = "sclk_pcm0";
--	struct clk *pll_ref, *pll_in, *cdclk, *sclk_audio, *sclk_pcm_in;
- 	const struct of_device_id *match;
- 	enum exynos_audss_clk_type variant;
+diff --git a/drivers/clk/samsung/clk.c b/drivers/clk/samsung/clk.c
+index 49629c7..b9310b9 100644
+--- a/drivers/clk/samsung/clk.c
++++ b/drivers/clk/samsung/clk.c
+@@ -83,6 +83,25 @@ struct samsung_clk_provider *__init samsung_clk_init(struct device_node *np,
+ 	return ctx;
+ }
  
-@@ -111,23 +115,25 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
- 	else
- 		clk_data.clk_num = EXYNOS_AUDSS_MAX_CLKS - 1;
- 
--	pll_ref = devm_clk_get(&pdev->dev, "pll_ref");
--	pll_in = devm_clk_get(&pdev->dev, "pll_in");
--	if (!IS_ERR(pll_ref))
--		mout_audss_p[0] = __clk_get_name(pll_ref);
--	if (!IS_ERR(pll_in))
--		mout_audss_p[1] = __clk_get_name(pll_in);
-+	for (i = 0; i < ARRAY_SIZE(clk_name_ref); i++) {
-+		tmp = clk_get(&pdev->dev, clk_name_ref[i]);
-+		if (!IS_ERR(tmp)) {
-+			clk_name_actual[i] = __clk_get_name(tmp);
-+			clk_put(tmp);
-+		}
-+	}
++/* API to remove a clock provider */
++void samsung_clk_exit(struct device_node *np, struct samsung_clk_provider *ctx)
++{
++	int i;
 +
-+	mout_audss_p[0] = clk_name_actual[0];
-+	mout_audss_p[1] = clk_name_actual[1];
-+	mout_i2s_p[1] = clk_name_actual[2];
-+	mout_i2s_p[2] = clk_name_actual[3];
-+	sclk_pcm_p = clk_name_actual[4];
++	if (np)
++		of_clk_del_provider(np);
 +
- 	clk_table[EXYNOS_MOUT_AUDSS] = clk_register_mux(NULL, "mout_audss",
- 				mout_audss_p, ARRAY_SIZE(mout_audss_p),
- 				CLK_SET_RATE_NO_REPARENT,
- 				reg_base + ASS_CLK_SRC, 0, 1, 0, &lock);
- 
--	cdclk = devm_clk_get(&pdev->dev, "cdclk");
--	sclk_audio = devm_clk_get(&pdev->dev, "sclk_audio");
--	if (!IS_ERR(cdclk))
--		mout_i2s_p[1] = __clk_get_name(cdclk);
--	if (!IS_ERR(sclk_audio))
--		mout_i2s_p[2] = __clk_get_name(sclk_audio);
- 	clk_table[EXYNOS_MOUT_I2S] = clk_register_mux(NULL, "mout_i2s",
- 				mout_i2s_p, ARRAY_SIZE(mout_i2s_p),
- 				CLK_SET_RATE_NO_REPARENT,
-@@ -161,9 +167,6 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
- 				 "sclk_pcm", CLK_SET_RATE_PARENT,
- 				reg_base + ASS_CLK_GATE, 4, 0, &lock);
- 
--	sclk_pcm_in = devm_clk_get(&pdev->dev, "sclk_pcm_in");
--	if (!IS_ERR(sclk_pcm_in))
--		sclk_pcm_p = __clk_get_name(sclk_pcm_in);
- 	clk_table[EXYNOS_SCLK_PCM] = clk_register_gate(NULL, "sclk_pcm",
- 				sclk_pcm_p, CLK_SET_RATE_PARENT,
- 				reg_base + ASS_CLK_GATE, 5, 0, &lock);
++	if (!ctx)
++		return;
++
++	for (i = 0; i < ctx->clk_data.clk_num; i++)
++		if (!IS_ERR(ctx->clk_data.clks[i]))
++			clk_unregister(ctx->clk_data.clks[i]);
++
++	kfree(ctx->clk_data.clks);
++	kfree(ctx);
++}
++
+ /* add a clock instance to the clock lookup table used for dt based lookup */
+ void samsung_clk_add_lookup(struct samsung_clk_provider *ctx, struct clk *clk,
+ 				unsigned int id)
+diff --git a/drivers/clk/samsung/clk.h b/drivers/clk/samsung/clk.h
+index 9693b80..8ecc85a 100644
+--- a/drivers/clk/samsung/clk.h
++++ b/drivers/clk/samsung/clk.h
+@@ -327,6 +327,8 @@ struct samsung_pll_clock {
+ extern struct samsung_clk_provider *__init samsung_clk_init(
+ 			struct device_node *np, void __iomem *base,
+ 			unsigned long nr_clks);
++extern void samsung_clk_exit(struct device_node *np,
++			struct samsung_clk_provider *ctx);
+ extern void __init samsung_clk_of_register_fixed_ext(
+ 			struct samsung_clk_provider *ctx,
+ 			struct samsung_fixed_rate_clock *fixed_rate_clk,
 -- 
 1.7.9.5
 
