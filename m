@@ -1,340 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755326AbaGKT5Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 15:57:25 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:52453 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753832AbaGKT5Y (ORCPT
+	id S1755232AbaGKUCF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 16:02:05 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52199 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754456AbaGKUCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 15:57:24 -0400
-Date: Fri, 11 Jul 2014 15:57:19 -0400
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Oded Gabbay <oded.gabbay@gmail.com>
-Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        John Bridgman <John.Bridgman@amd.com>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>
-Subject: Re: [PATCH 15/83] hsa/radeon: Add interrupt handling module
-Message-ID: <20140711195717.GQ1870@gmail.com>
-References: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
- <1405029027-6085-14-git-send-email-oded.gabbay@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1405029027-6085-14-git-send-email-oded.gabbay@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 11 Jul 2014 16:02:03 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Rob Clark <robdclark@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH] clk: qcom: Support bypass RCG configuration
+Date: Fri, 11 Jul 2014 13:01:55 -0700
+Message-Id: <1405108915-19234-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
+In-Reply-To: <1405106207-26638-1-git-send-email-robdclark@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 12:50:15AM +0300, Oded Gabbay wrote:
-> This patch adds the interrupt handling module, in kfd_interrupt.c,
-> and its related members in different data structures to the KFD
-> driver.
-> 
-> The KFD interrupt module maintains an internal interrupt ring per kfd
-> device. The internal interrupt ring contains interrupts that needs further
-> handling.The extra handling is deferred to a later time through a workqueue.
-> 
-> There's no acknowledgment for the interrupts we use. The hardware simply queues a new interrupt each time without waiting.
-> 
-> The fixed-size internal queue means that it's possible for us to lose interrupts because we have no back-pressure to the hardware.
-> 
-> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
-> ---
->  drivers/gpu/hsa/radeon/Makefile        |   2 +-
->  drivers/gpu/hsa/radeon/kfd_device.c    |   1 +
->  drivers/gpu/hsa/radeon/kfd_interrupt.c | 179 +++++++++++++++++++++++++++++++++
->  drivers/gpu/hsa/radeon/kfd_priv.h      |  18 ++++
->  drivers/gpu/hsa/radeon/kfd_scheduler.h |   3 +
->  5 files changed, 202 insertions(+), 1 deletion(-)
->  create mode 100644 drivers/gpu/hsa/radeon/kfd_interrupt.c
-> 
-> diff --git a/drivers/gpu/hsa/radeon/Makefile b/drivers/gpu/hsa/radeon/Makefile
-> index 28da10c..5422e6a 100644
-> --- a/drivers/gpu/hsa/radeon/Makefile
-> +++ b/drivers/gpu/hsa/radeon/Makefile
-> @@ -5,6 +5,6 @@
->  radeon_kfd-y	:= kfd_module.o kfd_device.o kfd_chardev.o \
->  		kfd_pasid.o kfd_topology.o kfd_process.o \
->  		kfd_doorbell.o kfd_sched_cik_static.o kfd_registers.o \
-> -		kfd_vidmem.o
-> +		kfd_vidmem.o kfd_interrupt.o
->  
->  obj-$(CONFIG_HSA_RADEON)	+= radeon_kfd.o
-> diff --git a/drivers/gpu/hsa/radeon/kfd_device.c b/drivers/gpu/hsa/radeon/kfd_device.c
-> index 465c822..b2d2861 100644
-> --- a/drivers/gpu/hsa/radeon/kfd_device.c
-> +++ b/drivers/gpu/hsa/radeon/kfd_device.c
-> @@ -30,6 +30,7 @@
->  static const struct kfd_device_info bonaire_device_info = {
->  	.scheduler_class = &radeon_kfd_cik_static_scheduler_class,
->  	.max_pasid_bits = 16,
-> +	.ih_ring_entry_size = 4 * sizeof(uint32_t)
->  };
->  
->  struct kfd_deviceid {
-> diff --git a/drivers/gpu/hsa/radeon/kfd_interrupt.c b/drivers/gpu/hsa/radeon/kfd_interrupt.c
-> new file mode 100644
-> index 0000000..2179780
-> --- /dev/null
-> +++ b/drivers/gpu/hsa/radeon/kfd_interrupt.c
-> @@ -0,0 +1,179 @@
-> +/*
-> + * Copyright 2014 Advanced Micro Devices, Inc.
-> + *
-> + * Permission is hereby granted, free of charge, to any person obtaining a
-> + * copy of this software and associated documentation files (the "Software"),
-> + * to deal in the Software without restriction, including without limitation
-> + * the rights to use, copy, modify, merge, publish, distribute, sublicense,
-> + * and/or sell copies of the Software, and to permit persons to whom the
-> + * Software is furnished to do so, subject to the following conditions:
-> + *
-> + * The above copyright notice and this permission notice shall be included in
-> + * all copies or substantial portions of the Software.
-> + *
-> + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-> + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-> + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-> + * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
-> + * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-> + * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-> + * OTHER DEALINGS IN THE SOFTWARE.
-> + */
-> +
-> +/*
-> + * KFD Interrupts.
-> + *
-> + * AMD GPUs deliver interrupts by pushing an interrupt description onto the
-> + * interrupt ring and then sending an interrupt. KGD receives the interrupt
-> + * in ISR and sends us a pointer to each new entry on the interrupt ring.
-> + *
-> + * We generally can't process interrupt-signaled events from ISR, so we call
-> + * out to each interrupt client module (currently only the scheduler) to ask if
-> + * each interrupt is interesting. If they return true, then it requires further
-> + * processing so we copy it to an internal interrupt ring and call each
-> + * interrupt client again from a work-queue.
-> + *
-> + * There's no acknowledgment for the interrupts we use. The hardware simply
-> + * queues a new interrupt each time without waiting.
-> + *
-> + * The fixed-size internal queue means that it's possible for us to lose
-> + * interrupts because we have no back-pressure to the hardware.
-> + */
-> +
-> +#include <linux/slab.h>
-> +#include <linux/device.h>
-> +#include "kfd_priv.h"
-> +#include "kfd_scheduler.h"
-> +
-> +#define KFD_INTERRUPT_RING_SIZE 256
-> +
-> +static void interrupt_wq(struct work_struct *);
-> +
-> +int
-> +radeon_kfd_interrupt_init(struct kfd_dev *kfd)
-> +{
-> +	void *interrupt_ring = kmalloc_array(KFD_INTERRUPT_RING_SIZE,
-> +					kfd->device_info->ih_ring_entry_size,
-> +					GFP_KERNEL);
-> +	if (!interrupt_ring)
-> +		return -ENOMEM;
-> +
-> +	kfd->interrupt_ring = interrupt_ring;
-> +	kfd->interrupt_ring_size =
-> +		KFD_INTERRUPT_RING_SIZE * kfd->device_info->ih_ring_entry_size;
-> +	atomic_set(&kfd->interrupt_ring_wptr, 0);
-> +	atomic_set(&kfd->interrupt_ring_rptr, 0);
-> +
-> +	spin_lock_init(&kfd->interrupt_lock);
-> +
-> +	INIT_WORK(&kfd->interrupt_work, interrupt_wq);
-> +
-> +	kfd->interrupts_active = true;
-> +
-> +	/*
-> +	 * After this function returns, the interrupt will be enabled. This
-> +	 * barrier ensures that the interrupt running on a different processor
-> +	 * sees all the above writes.
-> +	 */
-> +	smp_wmb();
-> +
-> +	return 0;
-> +}
-> +
-> +void
-> +radeon_kfd_interrupt_exit(struct kfd_dev *kfd)
-> +{
-> +	/*
-> +	 * Stop the interrupt handler from writing to the ring and scheduling
-> +	 * workqueue items. The spinlock ensures that any interrupt running
-> +	 * after we have unlocked sees interrupts_active = false.
-> +	 */
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&kfd->interrupt_lock, flags);
-> +	kfd->interrupts_active = false;
-> +	spin_unlock_irqrestore(&kfd->interrupt_lock, flags);
-> +
-> +	/*
-> +	 * Flush_scheduled_work ensures that there are no outstanding work-queue
-> +	 * items that will access interrupt_ring. New work items can't be
-> +	 * created because we stopped interrupt handling above.
-> +	 */
-> +	flush_scheduled_work();
-> +
-> +	kfree(kfd->interrupt_ring);
-> +}
-> +
-> +/*
-> + * This assumes that it can't be called concurrently with itself
-> + * but only with dequeue_ih_ring_entry.
-> + */
-> +static bool
-> +enqueue_ih_ring_entry(struct kfd_dev *kfd, const void *ih_ring_entry)
-> +{
-> +	unsigned int rptr = atomic_read(&kfd->interrupt_ring_rptr);
-> +	unsigned int wptr = atomic_read(&kfd->interrupt_ring_wptr);
-> +
-> +	if ((rptr - wptr) % kfd->interrupt_ring_size == kfd->device_info->ih_ring_entry_size) {
-> +		/* This is very bad, the system is likely to hang. */
-> +		dev_err_ratelimited(radeon_kfd_chardev(),
-> +			"Interrupt ring overflow, dropping interrupt.\n");
+In the case of HDMI clocks, we want to bypass the RCG's ability
+to divide the output clock and pass through the parent HDMI PLL
+rate through. Add a simple set of clk_ops to configure the RCG to
+do this. This removes the need to keep adding more frequency
+entries to the tv_src clock whenever we want to support a new
+rate.
 
-Why is it that bad ? What are those interrupt use for ? I would assume that
-worst case some queue do not see there job progressing but isn't there is a
-way for them to manualy pull information after some time out ?
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
 
-Because afaict there is way to trigger interrupt from shader and i assume
-those can reach this hsa code and thus rogue userspace can irq bomb hsa.
-Hence i would like to understand what could go wrong.
+On 07/11, Rob Clark wrote:
+> It would probably be better to get rid of the fixed table, which
+> duplicates the set of fixed frequences in the hdmi pll clk (in
+> drm/msm/hdmi).  But I'll leave that as an exercise for someone
+> who knows the clk driver better than myself.  Until then, this
+> trivial fix is useful.
 
-Cheers,
-Jérôme
+Here's a quick attempt at that. Let me know if this works.
 
-> +		return false;
-> +	}
-> +
-> +	memcpy(kfd->interrupt_ring + wptr, ih_ring_entry, kfd->device_info->ih_ring_entry_size);
-> +	wptr = (wptr + kfd->device_info->ih_ring_entry_size) % kfd->interrupt_ring_size;
-> +	smp_wmb(); /* Ensure memcpy'd data is visible before wptr update. */
-> +	atomic_set(&kfd->interrupt_ring_wptr, wptr);
-> +
-> +	return true;
-> +}
-> +
-> +/*
-> + * This assumes that it can't be called concurrently with itself
-> + * but only with enqueue_ih_ring_entry.
-> + */
-> +static bool
-> +dequeue_ih_ring_entry(struct kfd_dev *kfd, void *ih_ring_entry)
-> +{
-> +	/*
-> +	 * Assume that wait queues have an implicit barrier, i.e. anything that
-> +	 * happened in the ISR before it queued work is visible.
-> +	 */
-> +
-> +	unsigned int wptr = atomic_read(&kfd->interrupt_ring_wptr);
-> +	unsigned int rptr = atomic_read(&kfd->interrupt_ring_rptr);
-> +
-> +	if (rptr == wptr)
-> +		return false;
-> +
-> +	memcpy(ih_ring_entry, kfd->interrupt_ring + rptr, kfd->device_info->ih_ring_entry_size);
-> +	rptr = (rptr + kfd->device_info->ih_ring_entry_size) % kfd->interrupt_ring_size;
-> +	smp_mb(); /* Ensure the rptr write update is not visible until memcpy has finished reading. */
-> +	atomic_set(&kfd->interrupt_ring_rptr, rptr);
-> +
-> +	return true;
-> +}
-> +
-> +static void interrupt_wq(struct work_struct *work)
-> +{
-> +	struct kfd_dev *dev = container_of(work, struct kfd_dev, interrupt_work);
-> +
-> +	uint32_t ih_ring_entry[DIV_ROUND_UP(dev->device_info->ih_ring_entry_size, sizeof(uint32_t))];
-> +
-> +	while (dequeue_ih_ring_entry(dev, ih_ring_entry))
-> +		dev->device_info->scheduler_class->interrupt_wq(dev->scheduler, ih_ring_entry);
-> +}
-> +
-> +/* This is called directly from KGD at ISR. */
-> +void kgd2kfd_interrupt(struct kfd_dev *kfd, const void *ih_ring_entry)
-> +{
-> +	spin_lock(&kfd->interrupt_lock);
-> +
-> +	if (kfd->interrupts_active
-> +	    && kfd->device_info->scheduler_class->interrupt_isr(kfd->scheduler, ih_ring_entry)
-> +	    && enqueue_ih_ring_entry(kfd, ih_ring_entry))
-> +		schedule_work(&kfd->interrupt_work);
-> +
-> +	spin_unlock(&kfd->interrupt_lock);
-> +}
-> diff --git a/drivers/gpu/hsa/radeon/kfd_priv.h b/drivers/gpu/hsa/radeon/kfd_priv.h
-> index 1d1dbcf..5b6611f 100644
-> --- a/drivers/gpu/hsa/radeon/kfd_priv.h
-> +++ b/drivers/gpu/hsa/radeon/kfd_priv.h
-> @@ -28,6 +28,9 @@
->  #include <linux/mutex.h>
->  #include <linux/radeon_kfd.h>
->  #include <linux/types.h>
-> +#include <linux/atomic.h>
-> +#include <linux/workqueue.h>
-> +#include <linux/spinlock.h>
->  
->  struct kfd_scheduler_class;
->  
-> @@ -63,6 +66,7 @@ typedef u32 doorbell_t;
->  struct kfd_device_info {
->  	const struct kfd_scheduler_class *scheduler_class;
->  	unsigned int max_pasid_bits;
-> +	size_t ih_ring_entry_size;
->  };
->  
->  struct kfd_dev {
-> @@ -90,6 +94,15 @@ struct kfd_dev {
->  	struct kgd2kfd_shared_resources shared_resources;
->  
->  	struct kfd_scheduler *scheduler;
-> +
-> +	/* Interrupts of interest to KFD are copied from the HW ring into a SW ring. */
-> +	bool interrupts_active;
-> +	void *interrupt_ring;
-> +	size_t interrupt_ring_size;
-> +	atomic_t interrupt_ring_rptr;
-> +	atomic_t interrupt_ring_wptr;
-> +	struct work_struct interrupt_work;
-> +	spinlock_t interrupt_lock;
->  };
->  
->  /* KGD2KFD callbacks */
-> @@ -229,4 +242,9 @@ struct kfd_dev *radeon_kfd_device_by_pci_dev(const struct pci_dev *pdev);
->  void radeon_kfd_write_reg(struct kfd_dev *dev, uint32_t reg, uint32_t value);
->  uint32_t radeon_kfd_read_reg(struct kfd_dev *dev, uint32_t reg);
->  
-> +/* Interrupts */
-> +int radeon_kfd_interrupt_init(struct kfd_dev *dev);
-> +void radeon_kfd_interrupt_exit(struct kfd_dev *dev);
-> +void kgd2kfd_interrupt(struct kfd_dev *dev, const void *ih_ring_entry);
-> +
->  #endif
-> diff --git a/drivers/gpu/hsa/radeon/kfd_scheduler.h b/drivers/gpu/hsa/radeon/kfd_scheduler.h
-> index 48a032f..e5a93c4 100644
-> --- a/drivers/gpu/hsa/radeon/kfd_scheduler.h
-> +++ b/drivers/gpu/hsa/radeon/kfd_scheduler.h
-> @@ -55,6 +55,9 @@ struct kfd_scheduler_class {
->  			    unsigned int doorbell);
->  
->  	void (*destroy_queue)(struct kfd_scheduler *, struct kfd_scheduler_queue *);
-> +
-> +	bool (*interrupt_isr)(struct kfd_scheduler *, const void *ih_ring_entry);
-> +	void (*interrupt_wq)(struct kfd_scheduler *, const void *ih_ring_entry);
->  };
->  
->  extern const struct kfd_scheduler_class radeon_kfd_cik_static_scheduler_class;
-> -- 
-> 1.9.1
-> 
+ drivers/clk/qcom/clk-rcg.c      | 51 +++++++++++++++++++++++++++++++++++------
+ drivers/clk/qcom/clk-rcg.h      |  1 +
+ drivers/clk/qcom/mmcc-msm8960.c |  9 ++------
+ 3 files changed, 47 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/clk/qcom/clk-rcg.c b/drivers/clk/qcom/clk-rcg.c
+index abfc2b675aea..b638c5846dbf 100644
+--- a/drivers/clk/qcom/clk-rcg.c
++++ b/drivers/clk/qcom/clk-rcg.c
+@@ -417,20 +417,25 @@ static long clk_dyn_rcg_determine_rate(struct clk_hw *hw, unsigned long rate,
+ 	return _freq_tbl_determine_rate(hw, rcg->freq_tbl, rate, p_rate, p);
+ }
+ 
+-static int clk_rcg_set_rate(struct clk_hw *hw, unsigned long rate,
+-			    unsigned long parent_rate)
++static long clk_rcg_bypass_determine_rate(struct clk_hw *hw, unsigned long rate,
++		unsigned long *p_rate, struct clk **p)
+ {
+ 	struct clk_rcg *rcg = to_clk_rcg(hw);
+-	const struct freq_tbl *f;
++	const struct freq_tbl *f = rcg->freq_tbl;
++
++	*p = clk_get_parent_by_index(hw->clk, f->src);
++	*p_rate = __clk_round_rate(*p, rate);
++
++	return *p_rate;
++}
++
++static int __clk_rcg_set_rate(struct clk_rcg *rcg, const struct freq_tbl *f)
++{
+ 	u32 ns, md, ctl;
+ 	struct mn *mn = &rcg->mn;
+ 	u32 mask = 0;
+ 	unsigned int reset_reg;
+ 
+-	f = find_freq(rcg->freq_tbl, rate);
+-	if (!f)
+-		return -EINVAL;
+-
+ 	if (rcg->mn.reset_in_cc)
+ 		reset_reg = rcg->clkr.enable_reg;
+ 	else
+@@ -466,6 +471,27 @@ static int clk_rcg_set_rate(struct clk_hw *hw, unsigned long rate,
+ 	return 0;
+ }
+ 
++static int clk_rcg_set_rate(struct clk_hw *hw, unsigned long rate,
++			    unsigned long parent_rate)
++{
++	struct clk_rcg *rcg = to_clk_rcg(hw);
++	const struct freq_tbl *f;
++
++	f = find_freq(rcg->freq_tbl, rate);
++	if (!f)
++		return -EINVAL;
++
++	return __clk_rcg_set_rate(rcg, f);
++}
++
++static int clk_rcg_bypass_set_rate(struct clk_hw *hw, unsigned long rate,
++				unsigned long parent_rate)
++{
++	struct clk_rcg *rcg = to_clk_rcg(hw);
++
++	return __clk_rcg_set_rate(rcg, rcg->freq_tbl);
++}
++
+ static int __clk_dyn_rcg_set_rate(struct clk_hw *hw, unsigned long rate)
+ {
+ 	struct clk_dyn_rcg *rcg = to_clk_dyn_rcg(hw);
+@@ -503,6 +529,17 @@ const struct clk_ops clk_rcg_ops = {
+ };
+ EXPORT_SYMBOL_GPL(clk_rcg_ops);
+ 
++const struct clk_ops clk_rcg_bypass_ops = {
++	.enable = clk_enable_regmap,
++	.disable = clk_disable_regmap,
++	.get_parent = clk_rcg_get_parent,
++	.set_parent = clk_rcg_set_parent,
++	.recalc_rate = clk_rcg_recalc_rate,
++	.determine_rate = clk_rcg_bypass_determine_rate,
++	.set_rate = clk_rcg_bypass_set_rate,
++};
++EXPORT_SYMBOL_GPL(clk_rcg_bypass_ops);
++
+ const struct clk_ops clk_dyn_rcg_ops = {
+ 	.enable = clk_enable_regmap,
+ 	.is_enabled = clk_is_enabled_regmap,
+diff --git a/drivers/clk/qcom/clk-rcg.h b/drivers/clk/qcom/clk-rcg.h
+index b9ec11dfd1b4..ba0523cefd2e 100644
+--- a/drivers/clk/qcom/clk-rcg.h
++++ b/drivers/clk/qcom/clk-rcg.h
+@@ -95,6 +95,7 @@ struct clk_rcg {
+ };
+ 
+ extern const struct clk_ops clk_rcg_ops;
++extern const struct clk_ops clk_rcg_bypass_ops;
+ 
+ #define to_clk_rcg(_hw) container_of(to_clk_regmap(_hw), struct clk_rcg, clkr)
+ 
+diff --git a/drivers/clk/qcom/mmcc-msm8960.c b/drivers/clk/qcom/mmcc-msm8960.c
+index 12f3c0b64fcd..14eeeba005f3 100644
+--- a/drivers/clk/qcom/mmcc-msm8960.c
++++ b/drivers/clk/qcom/mmcc-msm8960.c
+@@ -1218,12 +1218,7 @@ static const char *mmcc_pxo_hdmi[] = {
+ };
+ 
+ static struct freq_tbl clk_tbl_tv[] = {
+-	{  25200000, P_HDMI_PLL, 1, 0, 0 },
+-	{  27000000, P_HDMI_PLL, 1, 0, 0 },
+-	{  27030000, P_HDMI_PLL, 1, 0, 0 },
+-	{  74250000, P_HDMI_PLL, 1, 0, 0 },
+-	{ 108000000, P_HDMI_PLL, 1, 0, 0 },
+-	{ 148500000, P_HDMI_PLL, 1, 0, 0 },
++	{  .src = P_HDMI_PLL, .pre_div = 1 },
+ 	{ }
+ };
+ 
+@@ -1254,7 +1249,7 @@ static struct clk_rcg tv_src = {
+ 			.name = "tv_src",
+ 			.parent_names = mmcc_pxo_hdmi,
+ 			.num_parents = 2,
+-			.ops = &clk_rcg_ops,
++			.ops = &clk_rcg_bypass_ops,
+ 			.flags = CLK_SET_RATE_PARENT,
+ 		},
+ 	},
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
