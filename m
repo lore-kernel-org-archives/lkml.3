@@ -1,105 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165AbaGKP2j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 11:28:39 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:36456 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751861AbaGKP2i (ORCPT
+	id S1754276AbaGKP3L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 11:29:11 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:16103 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753894AbaGKP3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 11:28:38 -0400
-Date: Fri, 11 Jul 2014 08:28:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 2/2] rcu: Don't offload callbacks unless
- specifically requested
-Message-ID: <20140711152832.GM16041@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140707224841.GA10101@linux.vnet.ibm.com>
- <1405085703-14822-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1405085703-14822-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140711134736.GC26045@localhost.localdomain>
+	Fri, 11 Jul 2014 11:29:07 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 11 Jul 2014 08:21:58 -0700
+Message-ID: <53C002BE.90805@nvidia.com>
+Date: Fri, 11 Jul 2014 18:29:02 +0300
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140711134736.GC26045@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14071115-0928-0000-0000-0000034CA653
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 12/13] cpufreq: Add cpufreq driver for Tegra124
+References: <1405028569-14253-1-git-send-email-ttynkkynen@nvidia.com> <1405028569-14253-13-git-send-email-ttynkkynen@nvidia.com> <CAKohpom9ORXFiUU4=V+CxgN0ZOFLMEhEjHiU8HsYUYDybNXgHQ@mail.gmail.com> <20140711091207.GY23218@tbergstrom-lnx.Nvidia.com> <20140711145735.GB6523@ulmo> <53BFFEAD.7000405@nvidia.com> <20140711151501.GA25810@ulmo>
+In-Reply-To: <20140711151501.GA25810@ulmo>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 03:47:37PM +0200, Frederic Weisbecker wrote:
-> On Fri, Jul 11, 2014 at 06:35:03AM -0700, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > 
-> > Enabling NO_HZ_FULL currently has the side effect of enabling callback
-> > offloading on all CPUs.  This results in lots of additional rcuo kthreads,
-> > and can also increase context switching and wakeups, even in cases where
-> > callback offloading is neither needed nor particularly desirable.  This
-> > commit therefore enables callback offloading on a given CPU only if
-> > specifically requested at build time or boot time, or if that CPU has
-> > been specifically designated (again, either at build time or boot time)
-> > as a nohz_full CPU.
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> ACK.
 
-I thought you might like this one.  ;-)
 
-							Thanx, Paul
+On 11/07/14 18:15, Thierry Reding wrote:
+> * PGP Signed by an unknown key
+>
+> On Fri, Jul 11, 2014 at 06:11:41PM +0300, Tuomas Tynkkynen wrote:
+>> On 11/07/14 17:57, Thierry Reding wrote:
+>>
+>>>> I don't think that's going to work? The voltage scaling is handled in hw.
+>>>
+>>> Do we have to handle it in hardware or can we opt to do it in software,
+>>> too?
+>>>
+>>
+>> With the PLLX, voltage scaling is done entirely in SW. With the DFLL,
+>> it's possible to stay in open-loop mode and do it in SW, but there's
+>> not much point in that.
+>
+> It's kind of ugly how we need to pass the address of the PMU and the
+> offset of the voltage control register to the DFLL which will then
+> initiate I2C transactions itself. I'm wondering if that plays well with
+> the I2C traffic originating from within the kernel.
+>
 
-> > ---
-> >  init/Kconfig             | 4 ++--
-> >  kernel/rcu/tree_plugin.h | 3 +++
-> >  2 files changed, 5 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/init/Kconfig b/init/Kconfig
-> > index 9d76b99af1b9..9332d33346ac 100644
-> > --- a/init/Kconfig
-> > +++ b/init/Kconfig
-> > @@ -737,7 +737,7 @@ choice
-> >  
-> >  config RCU_NOCB_CPU_NONE
-> >  	bool "No build_forced no-CBs CPUs"
-> > -	depends on RCU_NOCB_CPU && !NO_HZ_FULL
-> > +	depends on RCU_NOCB_CPU && !NO_HZ_FULL_ALL
-> >  	help
-> >  	  This option does not force any of the CPUs to be no-CBs CPUs.
-> >  	  Only CPUs designated by the rcu_nocbs= boot parameter will be
-> > @@ -751,7 +751,7 @@ config RCU_NOCB_CPU_NONE
-> >  
-> >  config RCU_NOCB_CPU_ZERO
-> >  	bool "CPU 0 is a build_forced no-CBs CPU"
-> > -	depends on RCU_NOCB_CPU && !NO_HZ_FULL
-> > +	depends on RCU_NOCB_CPU && !NO_HZ_FULL_ALL
-> >  	help
-> >  	  This option forces CPU 0 to be a no-CBs CPU, so that its RCU
-> >  	  callbacks are invoked by a per-CPU kthread whose name begins
-> > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> > index b27b86c7bbfa..17eed0856b03 100644
-> > --- a/kernel/rcu/tree_plugin.h
-> > +++ b/kernel/rcu/tree_plugin.h
-> > @@ -2473,6 +2473,9 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
-> >  
-> >  	if (rcu_nocb_mask == NULL)
-> >  		return;
-> > +#ifdef CONFIG_NO_HZ_FULL
-> > +	cpumask_or(rcu_nocb_mask, rcu_nocb_mask, tick_nohz_full_mask);
-> > +#endif /* #ifdef CONFIG_NO_HZ_FULL */
-> >  	if (ls == -1) {
-> >  		ls = int_sqrt(nr_cpu_ids);
-> >  		rcu_nocb_leader_stride = ls;
-> > -- 
-> > 1.8.1.5
-> > 
-> 
+On the hardware level, the two I2C controllers sharing the same pins
+have knowledge of each other and won't start transmitting if the bus
+is busy (something different from the usual I2C arbitration, that is).
+I guess on the kernel side there could be a problem if the voltage 
+register is marked cached in the PMIC driver's regmap.
 
+-- 
+nvpublic
