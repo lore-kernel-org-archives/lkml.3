@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755214AbaGKUUr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 16:20:47 -0400
-Received: from fieldses.org ([174.143.236.118]:34886 "EHLO fieldses.org"
+	id S1755311AbaGKUVX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 16:21:23 -0400
+Received: from mga14.intel.com ([192.55.52.115]:14845 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751014AbaGKUUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 16:20:45 -0400
-Date: Fri, 11 Jul 2014 16:20:44 -0400
-To: Trond Myklebust <trond.myklebust@primarydata.com>
-Cc: Frank Filz <ffilzlnx@mindspring.com>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] Fix permission checking by NFS client for
- open-create with mode 000
-Message-ID: <20140711202044.GD11931@fieldses.org>
-References: <1404942892-18323-1-git-send-email-ffilzlnx@mindspring.com>
- <CAHQdGtSUwScEdUeKT1w+-ynqNz-e1=YvDBtdu_k=_6yndFZSVQ@mail.gmail.com>
- <033801cf9bc7$0d7ee190$287ca4b0$@mindspring.com>
- <CAHQdGtQjCYV2jE7FGu-J+02xp25uaUUVv8uzcs5sfbKXBbVk6A@mail.gmail.com>
- <CAHQdGtTkTh4MQJk6bec46OjsyZHnEGGws3b_2HA+kszzOHM-pw@mail.gmail.com>
+	id S1752541AbaGKUVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 16:21:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,644,1400050800"; 
+   d="scan'208";a="560664560"
+From: Andi Kleen <andi@firstfloor.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Tony Luck <tony.luck@intel.com>, linux-mm@kvack.org,
+        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC Patch V1 00/30] Enable memoryless node on x86 platforms
+References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
+	<20140711082956.GC20603@laptop.programming.kicks-ass.net>
+	<20140711153314.GA6155@kroah.com>
+Date: Fri, 11 Jul 2014 13:20:51 -0700
+In-Reply-To: <20140711153314.GA6155@kroah.com> (Greg KH's message of "Fri, 11
+	Jul 2014 08:33:14 -0700")
+Message-ID: <8761j3ve8s.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHQdGtTkTh4MQJk6bec46OjsyZHnEGGws3b_2HA+kszzOHM-pw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 07:12:09PM -0400, Trond Myklebust wrote:
-> Oops. Sorry, the correct sub-sub-sub-sub-....paragraph is this one:
-> 
->          Permission to execute a file.
-> 
->          Servers SHOULD allow a user the ability to read the data of the
->          file when only the ACE4_EXECUTE access mask bit is allowed.
->          This is because there is no way to execute a file without
->          reading the contents.  Though a server may treat ACE4_EXECUTE
->          and ACE4_READ_DATA bits identically when deciding to permit a
->          READ operation, it SHOULD still allow the two bits to be set
->          independently in ACLs, and MUST distinguish between them when
->          replying to ACCESS operations.  In particular, servers SHOULD
->          NOT silently turn on one of the two bits when the other is set,
->          as that would make it impossible for the client to correctly
->          enforce the distinction between read and execute permissions.
-> 
-> 
-> > To me that translates as saying that the server SHOULD accept an
-> > OPEN(SHARE_ACCESS_READ|SHARE_ACCESS_WRITE) request in the above
-> > situation.
-> 
-> Same conclusion, though....
+Greg KH <gregkh@linuxfoundation.org> writes:
 
-Are we sure that's not just a spec bug?
+> On Fri, Jul 11, 2014 at 10:29:56AM +0200, Peter Zijlstra wrote:
+>> On Fri, Jul 11, 2014 at 03:37:17PM +0800, Jiang Liu wrote:
+>> > Any comments are welcomed!
+>> 
+>> Why would anybody _ever_ have a memoryless node? That's ridiculous.
+>
+> I'm with Peter here, why would this be a situation that we should even
+> support?  Are there machines out there shipping like this?
 
-Allowing OPEN(BOTH) on a -wx file seems like a pretty weird result.
+We've always had memory nodes.
 
---b.
+A classic case in the old days was a two socket system where someone
+didn't populate any DIMMs on the second socket.
+
+There are other cases too.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
