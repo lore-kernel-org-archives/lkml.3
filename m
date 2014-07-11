@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563AbaGKMI4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 08:08:56 -0400
-Received: from mga11.intel.com ([192.55.52.93]:63047 "EHLO mga11.intel.com"
+	id S1753590AbaGKMJA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 08:09:00 -0400
+Received: from mga03.intel.com ([143.182.124.21]:8681 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752729AbaGKMIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 08:08:53 -0400
+	id S1753559AbaGKMI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 08:08:58 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,642,1400050800"; 
-   d="scan'208";a="568463153"
+   d="scan'208";a="455872331"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Tadeusz Struk <tadeusz.struk@intel.com>,
         Herbert Xu <herbert@gondor.apana.org.au>,
@@ -18,9 +18,9 @@ To: Tadeusz Struk <tadeusz.struk@intel.com>,
         Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
         Joe Perches <joe@perches.com>, Marek Vasut <marex@denx.de>
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v2 4/5] parisc: use seq_hex_dump() to dump buffers
-Date: Fri, 11 Jul 2014 15:08:45 +0300
-Message-Id: <1405080526-6319-5-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v2 2/5] saa7164: convert to seq_hex_dump()
+Date: Fri, 11 Jul 2014 15:08:43 +0300
+Message-Id: <1405080526-6319-3-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <1405080526-6319-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1405080526-6319-1-git-send-email-andriy.shevchenko@linux.intel.com>
@@ -28,73 +28,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of custom approach let's use recently introduced seq_hex_dump() helper.
-
-In one case it changes the output from
-	1111111122222222333333334444444455555555666666667777777788888888
-to
-	11111111 22222222 33333333 44444444 55555555 66666666 77777777 88888888
-
-though it seems it prints same data (by meaning) in both cases. I decide to
-choose to use the space divided one.
+Instead of custom approach let's use recently added seq_hex_dump() helper.
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Reviewed-by: Steven Toth <stoth@kernellabs.com>
 ---
- drivers/parisc/ccio-dma.c  | 14 +++-----------
- drivers/parisc/sba_iommu.c | 11 +++--------
- 2 files changed, 6 insertions(+), 19 deletions(-)
+ drivers/media/pci/saa7164/saa7164-core.c | 31 ++++---------------------------
+ 1 file changed, 4 insertions(+), 27 deletions(-)
 
-diff --git a/drivers/parisc/ccio-dma.c b/drivers/parisc/ccio-dma.c
-index 8b490d7..9d353d2 100644
---- a/drivers/parisc/ccio-dma.c
-+++ b/drivers/parisc/ccio-dma.c
-@@ -1101,20 +1101,12 @@ static const struct file_operations ccio_proc_info_fops = {
+diff --git a/drivers/media/pci/saa7164/saa7164-core.c b/drivers/media/pci/saa7164/saa7164-core.c
+index 1bf0697..6f81584 100644
+--- a/drivers/media/pci/saa7164/saa7164-core.c
++++ b/drivers/media/pci/saa7164/saa7164-core.c
+@@ -1065,7 +1065,6 @@ static int saa7164_proc_show(struct seq_file *m, void *v)
+ 	struct saa7164_dev *dev;
+ 	struct tmComResBusInfo *b;
+ 	struct list_head *list;
+-	int i, c;
  
- static int ccio_proc_bitmap_info(struct seq_file *m, void *p)
- {
--	int len = 0;
- 	struct ioc *ioc = ioc_list;
+ 	if (saa7164_devcount == 0)
+ 		return 0;
+@@ -1089,35 +1088,13 @@ static int saa7164_proc_show(struct seq_file *m, void *v)
  
- 	while (ioc != NULL) {
--		u32 *res_ptr = (u32 *)ioc->res_map;
--		int j;
+ 		seq_printf(m, " .m_pdwGetReadPos  = 0x%x (0x%08x)\n",
+ 			b->m_dwGetWritePos, saa7164_readl(b->m_dwGetWritePos));
+-		c = 0;
+ 		seq_printf(m, "\n  Set Ring:\n");
+-		seq_printf(m, "\n addr  00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n");
+-		for (i = 0; i < b->m_dwSizeSetRing; i++) {
+-			if (c == 0)
+-				seq_printf(m, " %04x:", i);
++		seq_hex_dump(m, " ", DUMP_PREFIX_OFFSET, 16, 1,
++			     b->m_pdwSetRing, b->m_dwSizeSetRing, false);
+ 
+-			seq_printf(m, " %02x", *(b->m_pdwSetRing + i));
 -
--		for (j = 0; j < (ioc->res_size / sizeof(u32)); j++) {
--			if ((j & 7) == 0)
--				len += seq_puts(m, "\n   ");
--			len += seq_printf(m, "%08x", *res_ptr);
--			res_ptr++;
+-			if (++c == 16) {
+-				seq_printf(m, "\n");
+-				c = 0;
+-			}
 -		}
--		len += seq_puts(m, "\n\n");
-+		seq_hex_dump(m, "   ", DUMP_PREFIX_NONE, 32, 4, ioc->res_map,
-+			     ioc->res_size, false);
-+		seq_putc(m, '\n');
- 		ioc = ioc->next;
- 		break; /* XXX - remove me */
- 	}
-diff --git a/drivers/parisc/sba_iommu.c b/drivers/parisc/sba_iommu.c
-index 1ff1b67..fbc4db9 100644
---- a/drivers/parisc/sba_iommu.c
-+++ b/drivers/parisc/sba_iommu.c
-@@ -1857,15 +1857,10 @@ sba_proc_bitmap_info(struct seq_file *m, void *p)
- {
- 	struct sba_device *sba_dev = sba_list;
- 	struct ioc *ioc = &sba_dev->ioc[0];	/* FIXME: Multi-IOC support! */
--	unsigned int *res_ptr = (unsigned int *)ioc->res_map;
--	int i, len = 0;
+-
+-		c = 0;
+ 		seq_printf(m, "\n  Get Ring:\n");
+-		seq_printf(m, "\n addr  00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n");
+-		for (i = 0; i < b->m_dwSizeGetRing; i++) {
+-			if (c == 0)
+-				seq_printf(m, " %04x:", i);
+-
+-			seq_printf(m, " %02x", *(b->m_pdwGetRing + i));
+-
+-			if (++c == 16) {
+-				seq_printf(m, "\n");
+-				c = 0;
+-			}
+-		}
++		seq_hex_dump(m, " ", DUMP_PREFIX_OFFSET, 16, 1,
++			     b->m_pdwGetRing, b->m_dwSizeGetRing, false);
  
--	for (i = 0; i < (ioc->res_size/sizeof(unsigned int)); ++i, ++res_ptr) {
--		if ((i & 7) == 0)
--			len += seq_printf(m, "\n   ");
--		len += seq_printf(m, " %08x", *res_ptr);
--	}
--	len += seq_printf(m, "\n");
-+	seq_hex_dump(m, "   ", DUMP_PREFIX_NONE, 32, 4, ioc->res_map,
-+		     ioc->res_size, false);
-+	seq_printf(m, "\n");
+ 		mutex_unlock(&b->lock);
  
- 	return 0;
- }
 -- 
 2.0.1
 
