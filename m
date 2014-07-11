@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325AbaGKVxS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 17:53:18 -0400
+	id S1754420AbaGKVxZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 17:53:25 -0400
 Received: from us-mx2.synaptics.com ([192.147.44.131]:64491 "EHLO
 	us-mx2.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918AbaGKVxQ (ORCPT
+	with ESMTP id S1754272AbaGKVxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 17:53:16 -0400
+	Fri, 11 Jul 2014 17:53:18 -0400
 X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Jul 2014 17:53:16 EDT
 X-PGP-Universal: processed;
-	by securemail.synaptics.com on Fri, 11 Jul 2014 14:51:20 -0700
+	by securemail.synaptics.com on Fri, 11 Jul 2014 14:51:35 -0700
 From: Andrew Duggan <aduggan@synaptics.com>
 To: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: Andrew Duggan <aduggan@synaptics.com>, Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Subject: [PATCH] HID: rmi: add additional checks for the existence of optional queries in order to compute the address of Query 12.
-Date: Fri, 11 Jul 2014 14:35:50 -0700
-Message-ID: <1405114551-24354-1-git-send-email-aduggan@synaptics.com>
+        =?UTF-8?q?Benjamin=20Tissoires=20=C2=A0?= 
+	<benjamin.tissoires@redhat.com>
+Subject: [PATCH] HID: rmi: change logging level of log messages related to unexpected reports
+Date: Fri, 11 Jul 2014 14:35:51 -0700
+Message-ID: <1405114551-24354-2-git-send-email-aduggan@synaptics.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405114551-24354-1-git-send-email-aduggan@synaptics.com>
+References: <1405114551-24354-1-git-send-email-aduggan@synaptics.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.2.20.38]
@@ -25,73 +28,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are additional queries which are optional and may not be present depending on the configuration of the firmware. Knowing which queries are present is needed to properly compute the address of Query 12 and all subsequent queries. Additional bits in Query 1 are used to indicate the presence of these optional queries.
+Userspace tools may use hidraw to perform operations on the device from userspace while
+hid-rmi is bound to the device. This can cause hid-rmi to print error messages when its
+->raw_event() callback gets called as the reports pass through the HID stack. In this case
+receiving responses which were not initiated by hid-rmi is not actually an error so the resulting
+error messages are incorrect and misleading. This patch changes the log messages to debug so
+that the messages can be turned on in the event that there is a problem and there is not
+a userspace tool running.
 
 Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
 ---
- drivers/hid/hid-rmi.c | 35 +++++++++++++++++++++++++----------
- 1 file changed, 25 insertions(+), 10 deletions(-)
+ drivers/hid/hid-rmi.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
-index 578bbe6..3221a95 100644
+index 578bbe6..25f571a 100644
 --- a/drivers/hid/hid-rmi.c
 +++ b/drivers/hid/hid-rmi.c
-@@ -549,10 +549,12 @@ static int rmi_populate_f11(struct hid_device *hdev)
- 	u8 buf[20];
- 	int ret;
- 	bool has_query9;
--	bool has_query10;
-+	bool has_query10 = false;
- 	bool has_query11;
- 	bool has_query12;
- 	bool has_physical_props;
-+	bool has_gestures;
-+	bool has_rel;
- 	unsigned x_size, y_size;
- 	u16 query12_offset;
+@@ -377,7 +377,7 @@ static int rmi_input_event(struct hid_device *hdev, u8 *data, int size)
+ 	irq_mask |= hdata->f30.irq_mask;
  
-@@ -589,19 +591,32 @@ static int rmi_populate_f11(struct hid_device *hdev)
- 		return -ENODEV;
+ 	if (data[1] & ~irq_mask)
+-		hid_warn(hdev, "unknown intr source:%02lx %s:%d\n",
++		hid_dbg(hdev, "unknown intr source:%02lx %s:%d\n",
+ 			data[1] & ~irq_mask, __FILE__, __LINE__);
+ 
+ 	if (hdata->f11.interrupt_base < hdata->f30.interrupt_base) {
+@@ -400,7 +400,7 @@ static int rmi_read_data_event(struct hid_device *hdev, u8 *data, int size)
+ 	struct rmi_data *hdata = hid_get_drvdata(hdev);
+ 
+ 	if (!test_bit(RMI_READ_REQUEST_PENDING, &hdata->flags)) {
+-		hid_err(hdev, "no read request pending\n");
++		hid_dbg(hdev, "no read request pending\n");
+ 		return 0;
  	}
  
--	/* query 8 to find out if query 10 exists */
--	ret = rmi_read(hdev, data->f11.query_base_addr + 8, buf);
--	if (ret) {
--		hid_err(hdev, "can not read gesture information: %d.\n", ret);
--		return ret;
-+	has_rel = !!(buf[0] & BIT(3));
-+	has_gestures = !!(buf[0] & BIT(5));
-+
-+	if (has_gestures) {
-+		/* query 8 to find out if query 10 exists */
-+		ret = rmi_read(hdev, data->f11.query_base_addr + 8, buf);
-+		if (ret) {
-+			hid_err(hdev, "can not read gesture information: %d.\n",
-+				ret);
-+			return ret;
-+		}
-+		has_query10 = !!(buf[0] & BIT(2));
- 	}
--	has_query10 = !!(buf[0] & BIT(2));
- 
- 	/*
--	 * At least 8 queries are guaranteed to be present in F11
--	 * +1 for query12.
-+	 * At least 4 queries are guaranteed to be present in F11
-+	 * +1 for query 5 which is present since absolute events are
-+	 * reported and +1 for query 12.
- 	 */
--	query12_offset = 9;
-+	query12_offset = 6;
-+
-+	if (has_rel)
-+		++query12_offset; /* query 6 is present */
-+
-+	if (has_gestures)
-+		query12_offset += 2; /* query 7 and 8 are present */
- 
- 	if (has_query9)
- 		++query12_offset;
 -- 
 1.9.1
 
