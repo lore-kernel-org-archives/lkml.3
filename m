@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303AbaGKGRX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 02:17:23 -0400
+	id S1752461AbaGKGRf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 02:17:35 -0400
 Received: from mga11.intel.com ([192.55.52.93]:55697 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751190AbaGKGRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 02:17:20 -0400
+	id S1752374AbaGKGRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 02:17:32 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,642,1400050800"; 
-   d="scan'208";a="560333195"
+   d="scan'208";a="560333253"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
         Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
@@ -20,9 +20,9 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
         iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
         linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
         dmaengine@vger.kernel.org
-Subject: [Patch Part3 V4 08/21] iommu/vt-d: Simplify include/linux/dmar.h
-Date: Fri, 11 Jul 2014 14:19:32 +0800
-Message-Id: <1405059585-10620-9-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch Part3 V4 11/21] iommu/vt-d: Introduce helper domain_pfn_within_range() to simplify code
+Date: Fri, 11 Jul 2014 14:19:35 +0800
+Message-Id: <1405059585-10620-12-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405059585-10620-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1405059585-10620-1-git-send-email-jiang.liu@linux.intel.com>
@@ -30,86 +30,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simplify include/linux/dmar.h a bit based on the fact that
-both CONFIG_INTEL_IOMMU and CONFIG_IRQ_REMAP select CONFIG_DMAR_TABLE.
+Introduce helper function domain_pfn_within_range() to simplify code
+and improve readability.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- include/linux/dmar.h |   50 ++++++++++++++++++--------------------------------
- 1 file changed, 18 insertions(+), 32 deletions(-)
+ drivers/iommu/intel-iommu.c |   30 ++++++++++++++++--------------
+ 1 file changed, 16 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/dmar.h b/include/linux/dmar.h
-index 23c8db129560..1deece46a0ca 100644
---- a/include/linux/dmar.h
-+++ b/include/linux/dmar.h
-@@ -114,22 +114,30 @@ extern int dmar_remove_dev_scope(struct dmar_pci_notify_info *info,
- /* Intel IOMMU detection */
- extern int detect_intel_iommu(void);
- extern int enable_drhd_fault_handling(void);
--#else
--struct dmar_pci_notify_info;
--static inline int detect_intel_iommu(void)
-+
-+#ifdef CONFIG_INTEL_IOMMU
-+extern int iommu_detected, no_iommu;
-+extern int intel_iommu_init(void);
-+extern int dmar_parse_one_rmrr(struct acpi_dmar_header *header);
-+extern int dmar_parse_one_atsr(struct acpi_dmar_header *header);
-+extern int dmar_iommu_notify_scope_dev(struct dmar_pci_notify_info *info);
-+#else /* !CONFIG_INTEL_IOMMU: */
-+static inline int intel_iommu_init(void) { return -ENODEV; }
-+static inline int dmar_parse_one_rmrr(struct acpi_dmar_header *header)
- {
--	return -ENODEV;
-+	return 0;
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 0852b7021e4a..c9e65edaa2ad 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -549,6 +549,14 @@ static inline int domain_type_is_vm_or_si(struct dmar_domain *domain)
+ 				DOMAIN_FLAG_STATIC_IDENTITY);
  }
--
--static inline int dmar_table_init(void)
-+static inline int dmar_parse_one_atsr(struct acpi_dmar_header *header)
- {
--	return -ENODEV;
-+	return 0;
- }
--static inline int enable_drhd_fault_handling(void)
-+static inline int dmar_iommu_notify_scope_dev(struct dmar_pci_notify_info *info)
- {
--	return -1;
-+	return 0;
- }
--#endif /* !CONFIG_DMAR_TABLE */
-+#endif /* CONFIG_INTEL_IOMMU */
-+
-+#endif /* CONFIG_DMAR_TABLE */
  
- struct irte {
- 	union {
-@@ -177,26 +185,4 @@ extern int dmar_set_interrupt(struct intel_iommu *iommu);
- extern irqreturn_t dmar_fault(int irq, void *dev_id);
- extern int arch_setup_dmar_msi(unsigned int irq);
++static inline int domain_pfn_supported(struct dmar_domain *domain,
++				       unsigned long pfn)
++{
++	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
++
++	return !(addr_width < BITS_PER_LONG && pfn >> addr_width);
++}
++
+ static int __iommu_calculate_agaw(struct intel_iommu *iommu, int max_gaw)
+ {
+ 	unsigned long sagaw;
+@@ -822,14 +830,13 @@ out:
+ static struct dma_pte *pfn_to_dma_pte(struct dmar_domain *domain,
+ 				      unsigned long pfn, int *target_level)
+ {
+-	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
+ 	struct dma_pte *parent, *pte = NULL;
+ 	int level = agaw_to_level(domain->agaw);
+ 	int offset;
  
--#ifdef CONFIG_INTEL_IOMMU
--extern int iommu_detected, no_iommu;
--extern int dmar_parse_one_rmrr(struct acpi_dmar_header *header);
--extern int dmar_parse_one_atsr(struct acpi_dmar_header *header);
--extern int dmar_iommu_notify_scope_dev(struct dmar_pci_notify_info *info);
--extern int intel_iommu_init(void);
--#else /* !CONFIG_INTEL_IOMMU: */
--static inline int intel_iommu_init(void) { return -ENODEV; }
--static inline int dmar_parse_one_rmrr(struct acpi_dmar_header *header)
--{
--	return 0;
--}
--static inline int dmar_parse_one_atsr(struct acpi_dmar_header *header)
--{
--	return 0;
--}
--static inline int dmar_iommu_notify_scope_dev(struct dmar_pci_notify_info *info)
--{
--	return 0;
--}
--#endif /* CONFIG_INTEL_IOMMU */
+ 	BUG_ON(!domain->pgd);
+ 
+-	if (addr_width < BITS_PER_LONG && pfn >> addr_width)
++	if (!domain_pfn_supported(domain, pfn))
+ 		/* Address beyond IOMMU's addressing capabilities. */
+ 		return NULL;
+ 
+@@ -912,12 +919,11 @@ static void dma_pte_clear_range(struct dmar_domain *domain,
+ 				unsigned long start_pfn,
+ 				unsigned long last_pfn)
+ {
+-	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
+ 	unsigned int large_page = 1;
+ 	struct dma_pte *first_pte, *pte;
+ 
+-	BUG_ON(addr_width < BITS_PER_LONG && start_pfn >> addr_width);
+-	BUG_ON(addr_width < BITS_PER_LONG && last_pfn >> addr_width);
++	BUG_ON(!domain_pfn_supported(domain, start_pfn));
++	BUG_ON(!domain_pfn_supported(domain, last_pfn));
+ 	BUG_ON(start_pfn > last_pfn);
+ 
+ 	/* we don't need lock here; nobody else touches the iova range */
+@@ -978,10 +984,8 @@ static void dma_pte_free_pagetable(struct dmar_domain *domain,
+ 				   unsigned long start_pfn,
+ 				   unsigned long last_pfn)
+ {
+-	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
 -
- #endif /* __DMAR_H__ */
+-	BUG_ON(addr_width < BITS_PER_LONG && start_pfn >> addr_width);
+-	BUG_ON(addr_width < BITS_PER_LONG && last_pfn >> addr_width);
++	BUG_ON(!domain_pfn_supported(domain, start_pfn));
++	BUG_ON(!domain_pfn_supported(domain, last_pfn));
+ 	BUG_ON(start_pfn > last_pfn);
+ 
+ 	dma_pte_clear_range(domain, start_pfn, last_pfn);
+@@ -1083,11 +1087,10 @@ struct page *domain_unmap(struct dmar_domain *domain,
+ 			  unsigned long start_pfn,
+ 			  unsigned long last_pfn)
+ {
+-	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
+ 	struct page *freelist = NULL;
+ 
+-	BUG_ON(addr_width < BITS_PER_LONG && start_pfn >> addr_width);
+-	BUG_ON(addr_width < BITS_PER_LONG && last_pfn >> addr_width);
++	BUG_ON(!domain_pfn_supported(domain, start_pfn));
++	BUG_ON(!domain_pfn_supported(domain, last_pfn));
+ 	BUG_ON(start_pfn > last_pfn);
+ 
+ 	/* we don't need lock here; nobody else touches the iova range */
+@@ -1974,12 +1977,11 @@ static int __domain_mapping(struct dmar_domain *domain, unsigned long iov_pfn,
+ {
+ 	struct dma_pte *first_pte = NULL, *pte = NULL;
+ 	phys_addr_t uninitialized_var(pteval);
+-	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
+ 	unsigned long sg_res;
+ 	unsigned int largepage_lvl = 0;
+ 	unsigned long lvl_pages = 0;
+ 
+-	BUG_ON(addr_width < BITS_PER_LONG && (iov_pfn + nr_pages - 1) >> addr_width);
++	BUG_ON(!domain_pfn_supported(domain, iov_pfn + nr_pages - 1));
+ 
+ 	if ((prot & (DMA_PTE_READ|DMA_PTE_WRITE)) == 0)
+ 		return -EINVAL;
 -- 
 1.7.10.4
 
