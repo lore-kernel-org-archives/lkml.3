@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797AbaGKQPw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 12:15:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39000 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754744AbaGKQPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 12:15:51 -0400
-From: Paul Moore <pmoore@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, Al Viro <aviro@redhat.com>,
-        Will Drewry <wad@chromium.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 1/3] [RFC] audit: add AUDIT_ARCH_X86_X32 arch definition
-Date: Fri, 11 Jul 2014 12:15:46 -0400
-Message-ID: <36980406.O4hutv41J6@sifl>
-Organization: Red Hat
-User-Agent: KMail/4.13.2 (Linux/3.14.8-gentoo; KDE/4.13.2; x86_64; ; )
-In-Reply-To: <b6655cee4250a69330ecbc6657a4df0d52ebd7da.1405023592.git.rgb@redhat.com>
-References: <cover.1405023592.git.rgb@redhat.com> <b6655cee4250a69330ecbc6657a4df0d52ebd7da.1405023592.git.rgb@redhat.com>
+	id S1754829AbaGKQP5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 12:15:57 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:47880 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754807AbaGKQPz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 12:15:55 -0400
+Message-ID: <53C00DB5.600@hurleysoftware.com>
+Date: Fri, 11 Jul 2014 12:15:49 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH tty-next 21/22] serial: core: Remove superfluous ldisc
+ flush from uart_close()
+References: <1402924639-5164-1-git-send-email-peter@hurleysoftware.com> <1402924639-5164-22-git-send-email-peter@hurleysoftware.com>
+In-Reply-To: <1402924639-5164-22-git-send-email-peter@hurleysoftware.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 10, 2014 11:38:12 PM Richard Guy Briggs wrote:
-> Add a definition for 32-bit native system calls under 64-bit x86
-> architectures. This is distict from 32-bit emulation under 64-bit x86
-> architectures.
-> 
-> Cc: Paul Moore <pmoore@redhat.com>
-> Cc: Eric Paris <eparis@redhat.com>
-> Cc: Al Viro <aviro@redhat.com>
-> Cc: Will Drewry <wad@chromium.org>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+On 06/16/2014 09:17 AM, Peter Hurley wrote:
+> The tty_ldisc_flush() after port hardware shutdown is unnecessary;
+> the ldisc flush was just performed before the hardware shutdown
+> in tty_port_close_start() and the ldisc will be released when
+> uart_close() returns (because the last port close implies the
+> last tty close).
+>
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 > ---
->  include/uapi/linux/audit.h |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
-> index e15d6fc..4f5607f 100644
-> --- a/include/uapi/linux/audit.h
-> +++ b/include/uapi/linux/audit.h
-> @@ -374,6 +374,7 @@ enum {
->  #define AUDIT_ARCH_SPARC	(EM_SPARC)
->  #define AUDIT_ARCH_SPARC64	(EM_SPARCV9|__AUDIT_ARCH_64BIT)
->  #define AUDIT_ARCH_X86_64	(EM_X86_64|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
-> +#define AUDIT_ARCH_X86_X32	(EM_X86_64|__AUDIT_ARCH_LE)
-> 
->  #define AUDIT_PERM_EXEC		1
->  #define AUDIT_PERM_WRITE	2
+>   drivers/tty/serial/serial_core.c | 3 ---
+>   1 file changed, 3 deletions(-)
+>
+> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+> index 212ee07..15212d7 100644
+> --- a/drivers/tty/serial/serial_core.c
+> +++ b/drivers/tty/serial/serial_core.c
+> @@ -1351,9 +1351,6 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
+>
+>   	mutex_lock(&port->mutex);
+>   	uart_shutdown(tty, state);
+> -
+> -	tty_ldisc_flush(tty);
+> -
 
-While I'm opposed to the other patches in this series (comments to follow), I 
-think this is a worthwhile addition and arguably should have been done when 
-x32 was merged.
+This isn't exactly correct. There is a small window of time between the
+ldisc flush being performed in tty_port_close_start() and the
+subsequent stop_rx() in uart_close(). This might allow for data to be
+received, and a racing tty reopen to receive that stale data. Unlikely, but
+possible.
 
-That said, this change should probably be included in whatever patch first 
-makes use of this new value as this patch does nothing by itself.
-
--- 
-paul moore
-security and virtualization @ redhat
+>   	tty_port_tty_set(port, NULL);
+>   	tty->closing = 0;
+>   	spin_lock_irqsave(&port->lock, flags);
+>
 
