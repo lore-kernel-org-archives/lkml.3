@@ -1,264 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099AbaGKIgb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 04:36:31 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:38203 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750AbaGKIg2 (ORCPT
+	id S1752291AbaGKIi4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 04:38:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39926 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099AbaGKIiy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 04:36:28 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s6B8QH6B023098, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <nic_swsd@realtek.com>
-Subject: [PATCH net-next 3/3] r8169: support IPv6
-Date: Fri, 11 Jul 2014 16:25:58 +0800
-Message-ID: <1394712342-15778-13-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <1394712342-15778-10-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-10-Taiwan-albertk@realtek.com>
+	Fri, 11 Jul 2014 04:38:54 -0400
+Date: Fri, 11 Jul 2014 10:38:50 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, akpm@linux-foundation.org,
+        davej@redhat.com, koct9i@gmail.com, lczerner@redhat.com,
+        stable@vger.kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: + shmem-fix-faulting-into-a-hole-while-its-punched-take-2.patch
+ added to -mm tree
+Message-ID: <20140711083850.GE20603@laptop.programming.kicks-ass.net>
+References: <53BD67DC.9040700@oracle.com>
+ <alpine.LSU.2.11.1407092358090.18131@eggly.anvils>
+ <53BE8B1B.3000808@oracle.com>
+ <53BECBA4.3010508@oracle.com>
+ <alpine.LSU.2.11.1407101033280.18934@eggly.anvils>
+ <53BED7F6.4090502@oracle.com>
+ <alpine.LSU.2.11.1407101131310.19154@eggly.anvils>
+ <53BEE345.4090203@oracle.com>
+ <20140711082500.GB20603@laptop.programming.kicks-ass.net>
+ <53BFA14B.4010203@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53BFA14B.4010203@suse.cz>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support the IPv6 hw checksum for RTL8111C and later chips. Note
-that the hw has the limitation for the transport offset. The
-checksum must be calculated by sw, when the transport offset is
-out of the range which the hw accepts.
+On Fri, Jul 11, 2014 at 10:33:15AM +0200, Vlastimil Babka wrote:
+> Quoting Hugh from previous mail in this thread:
+> 
+> >>>
+> >>> [  363.600969] INFO: task trinity-c327:9203 blocked for more than 120 seconds.
+> >>> [  363.605359]       Not tainted 3.16.0-rc4-next-20140708-sasha-00022-g94c7290-dirty #772
+> >>> [  363.609730] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> >>> [  363.615861] trinity-c327    D 000000000000000b 13496  9203   8559 0x10000004
+> >>> [  363.620284]  ffff8800b857bce8 0000000000000002 ffffffff9dc11b10 0000000000000001
+> >>> [  363.624468]  ffff880104860000 ffff8800b857bfd8 00000000001d7740 00000000001d7740
+> >>> [  363.629118]  ffff880104863000 ffff880104860000 ffff8800b857bcd8 ffff8801eaed8868
+> >>> [  363.633879] Call Trace:
+> >>> [  363.635442]  [<ffffffff9a4dc535>] schedule+0x65/0x70
+> >>> [  363.638638]  [<ffffffff9a4dc948>] schedule_preempt_disabled+0x18/0x30
+> >>> [  363.642833]  [<ffffffff9a4df0a5>] mutex_lock_nested+0x2e5/0x550
+> >>> [  363.646599]  [<ffffffff972a4d7c>] ? shmem_fallocate+0x6c/0x350
+> >>> [  363.651319]  [<ffffffff9719b721>] ? get_parent_ip+0x11/0x50
+> >>> [  363.654683]  [<ffffffff972a4d7c>] ? shmem_fallocate+0x6c/0x350
+> >>> [  363.658264]  [<ffffffff972a4d7c>] shmem_fallocate+0x6c/0x350
+> >
+> >So it's trying to acquire i_mutex at shmem_fallocate+0x6c...
+> >
+> >>> [  363.662010]  [<ffffffff971bd96e>] ? put_lock_stats.isra.12+0xe/0x30
+> >>> [  363.665866]  [<ffffffff9730c043>] do_fallocate+0x153/0x1d0
+> >>> [  363.669381]  [<ffffffff972b472f>] SyS_madvise+0x33f/0x970
+> >>> [  363.672906]  [<ffffffff9a4e3f13>] tracesys+0xe1/0xe6
+> >>> [  363.682900] 2 locks held by trinity-c327/9203:
+> >>> [  363.684928]  #0:  (sb_writers#12){.+.+.+}, at: [<ffffffff9730c02d>] do_fallocate+0x13d/0x1d0
+> >>> [  363.715102]  #1:  (&sb->s_type->i_mutex_key#16){+.+.+.}, at: [<ffffffff972a4d7c>] shmem_fallocate+0x6c/0x350
+> >
+> >...but it already holds i_mutex, acquired at shmem_fallocate+0x6c.
+> >Am I reading that correctly?
+> 
+> The output looks like mutex #1 is already taken, but actually the process is
+> sleeping when trying to take it. It appears that the output has taken
+> mutex_acquire_nest() action into account, but doesn't distinguish if
+> lock_acquired() already happened or not.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/ethernet/realtek/r8169.c | 157 ++++++++++++++++++++++++++++++++---
- 1 file changed, 145 insertions(+), 12 deletions(-)
+The call trace is very clear on it that its not. I've never found this
+to be a problem in practise. You need to engage your brain anyhow, this
+little bit extra isn't going to make a difference or not.
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index e5a0bdb..51c78ce 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -27,6 +27,8 @@
- #include <linux/firmware.h>
- #include <linux/pci-aspm.h>
- #include <linux/prefetch.h>
-+#include <linux/ipv6.h>
-+#include <net/ip6_checksum.h>
- 
- #include <asm/io.h>
- #include <asm/irq.h>
-@@ -628,11 +630,16 @@ enum rtl_tx_desc_bit_0 {
- enum rtl_tx_desc_bit_1 {
- 	/* First doubleword. */
- 	TD1_GTSENV4	= (1 << 26),		/* Giant Send for IPv4 */
-+	TD1_GTSENV6	= (1 << 25),		/* Giant Send for IPv6 */
- #define GTTCPHO_SHIFT			18
-+#define GTTCPHO_MAX			0x7fU
- 
- 	/* Second doubleword. */
-+#define TCPHO_SHIFT			18
-+#define TCPHO_MAX			0x3ffU
- #define TD1_MSS_SHIFT			18	/* MSS position (11 bits) */
--	TD1_IP_CS	= (1 << 29),		/* Calculate IP checksum */
-+	TD1_IPv6_CS	= (1 << 28),		/* Calculate IPv6 checksum */
-+	TD1_IPv4_CS	= (1 << 29),		/* Calculate IPv4 checksum */
- 	TD1_TCP_CS	= (1 << 30),		/* Calculate TCP/IP checksum */
- 	TD1_UDP_CS	= (1 << 31),		/* Calculate UDP/IP checksum */
- };
-@@ -5920,6 +5927,82 @@ static bool rtl_test_hw_pad_bug(struct rtl8169_private *tp, struct sk_buff *skb)
- 	return skb->len < ETH_ZLEN && tp->mac_version == RTL_GIGA_MAC_VER_34;
- }
- 
-+static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
-+				      struct net_device *dev);
-+/* r8169_csum_workaround()
-+ * The hw limites the value the transport offset. When the offset is out of the
-+ * range, calculate the checksum by sw.
-+ */
-+static void r8169_csum_workaround(struct rtl8169_private *tp,
-+				  struct sk_buff *skb)
-+{
-+	if (skb_shinfo(skb)->gso_size) {
-+		netdev_features_t features = tp->dev->features;
-+		struct sk_buff *segs, *nskb;
-+
-+		features &= ~(NETIF_F_SG | NETIF_F_IPV6_CSUM | NETIF_F_TSO6);
-+		segs = skb_gso_segment(skb, features);
-+		if (IS_ERR(segs) || !segs)
-+			goto drop;
-+
-+		do {
-+			nskb = segs;
-+			segs = segs->next;
-+			nskb->next = NULL;
-+			rtl8169_start_xmit(nskb, tp->dev);
-+		} while (segs);
-+
-+		dev_kfree_skb(skb);
-+	} else if (skb->ip_summed == CHECKSUM_PARTIAL) {
-+		if (skb_checksum_help(skb) < 0)
-+			goto drop;
-+
-+		rtl8169_start_xmit(skb, tp->dev);
-+	} else {
-+		struct net_device_stats *stats;
-+
-+drop:
-+		stats = &tp->dev->stats;
-+		stats->tx_dropped++;
-+		dev_kfree_skb(skb);
-+	}
-+}
-+
-+/* msdn_giant_send_check()
-+ * According to the document of microsoft, the TCP Pseudo Header excludes the
-+ * packet length for IPv6 TCP large packets.
-+ */
-+static int msdn_giant_send_check(struct sk_buff *skb)
-+{
-+	const struct ipv6hdr *ipv6h;
-+	struct tcphdr *th;
-+	int ret;
-+
-+	ret = skb_cow_head(skb, 0);
-+	if (ret)
-+		return ret;
-+
-+	ipv6h = ipv6_hdr(skb);
-+	th = tcp_hdr(skb);
-+
-+	th->check = 0;
-+	th->check = ~tcp_v6_check(0, &ipv6h->saddr, &ipv6h->daddr, 0);
-+
-+	return ret;
-+}
-+
-+static inline __be16 get_protocol(struct sk_buff *skb)
-+{
-+	__be16 protocol;
-+
-+	if (skb->protocol == htons(ETH_P_8021Q))
-+		protocol = vlan_eth_hdr(skb)->h_vlan_encapsulated_proto;
-+	else
-+		protocol = skb->protocol;
-+
-+	return protocol;
-+}
-+
- static bool rtl8169_tso_csum_v1(struct rtl8169_private *tp,
- 				struct sk_buff *skb, u32 *opts)
- {
-@@ -5949,21 +6032,69 @@ static bool rtl8169_tso_csum_v2(struct rtl8169_private *tp,
- 	u32 mss = skb_shinfo(skb)->gso_size;
- 
- 	if (mss) {
--		opts[0] |= TD1_GTSENV4;
-+		if (transport_offset > GTTCPHO_MAX) {
-+			netif_warn(tp, tx_err, tp->dev,
-+				   "Invalid transport offset 0x%x for TSO\n",
-+				   transport_offset);
-+			return false;
-+		}
-+
-+		switch (get_protocol(skb)) {
-+		case htons(ETH_P_IP):
-+			opts[0] |= TD1_GTSENV4;
-+			break;
-+
-+		case htons(ETH_P_IPV6):
-+			if (msdn_giant_send_check(skb))
-+				return false;
-+
-+			opts[0] |= TD1_GTSENV6;
-+			break;
-+
-+		default:
-+			WARN_ON_ONCE(1);
-+			break;
-+		}
-+
- 		opts[0] |= transport_offset << GTTCPHO_SHIFT;
- 		opts[1] |= min(mss, TD_MSS_MAX) << TD1_MSS_SHIFT;
- 	} else if (skb->ip_summed == CHECKSUM_PARTIAL) {
--		const struct iphdr *ip = ip_hdr(skb);
-+		u8 ip_protocol;
- 
- 		if (unlikely(rtl_test_hw_pad_bug(tp, skb)))
- 			return skb_checksum_help(skb) == 0 && rtl_skb_pad(skb);
- 
--		if (ip->protocol == IPPROTO_TCP)
--			opts[1] |= TD1_IP_CS | TD1_TCP_CS;
--		else if (ip->protocol == IPPROTO_UDP)
--			opts[1] |= TD1_IP_CS | TD1_UDP_CS;
-+		if (transport_offset > TCPHO_MAX) {
-+			netif_warn(tp, tx_err, tp->dev,
-+				   "Invalid transport offset 0x%x\n",
-+				   transport_offset);
-+			return false;
-+		}
-+
-+		switch (get_protocol(skb)) {
-+		case htons(ETH_P_IP):
-+			opts[1] |= TD1_IPv4_CS;
-+			ip_protocol = ip_hdr(skb)->protocol;
-+			break;
-+
-+		case htons(ETH_P_IPV6):
-+			opts[1] |= TD1_IPv6_CS;
-+			ip_protocol = ipv6_hdr(skb)->nexthdr;
-+			break;
-+
-+		default:
-+			ip_protocol = IPPROTO_RAW;
-+			break;
-+		}
-+
-+		if (ip_protocol == IPPROTO_TCP)
-+			opts[1] |= TD1_TCP_CS;
-+		else if (ip_protocol == IPPROTO_UDP)
-+			opts[1] |= TD1_UDP_CS;
- 		else
- 			WARN_ON_ONCE(1);
-+
-+		opts[1] |= transport_offset << TCPHO_SHIFT;
- 	} else {
- 		if (unlikely(rtl_test_hw_pad_bug(tp, skb)))
- 			return rtl_skb_pad(skb);
-@@ -5996,8 +6127,10 @@ static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
- 	opts[1] = cpu_to_le32(rtl8169_tx_vlan_tag(skb));
- 	opts[0] = DescOwn;
- 
--	if (!tp->tso_csum(tp, skb, opts))
--		goto err_update_stats;
-+	if (!tp->tso_csum(tp, skb, opts)) {
-+		r8169_csum_workaround(tp, skb);
-+		return NETDEV_TX_OK;
-+	}
- 
- 	len = skb_headlen(skb);
- 	mapping = dma_map_single(d, skb->data, len, DMA_TO_DEVICE);
-@@ -6062,7 +6195,6 @@ err_dma_1:
- 	rtl8169_unmap_tx_skb(d, tp->tx_skb + entry, txd);
- err_dma_0:
- 	dev_kfree_skb_any(skb);
--err_update_stats:
- 	dev->stats.tx_dropped++;
- 	return NETDEV_TX_OK;
- 
-@@ -7149,9 +7281,10 @@ rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 
- 	if (tp->txd_version == RTL_TD_0)
- 		tp->tso_csum = rtl8169_tso_csum_v1;
--	else if (tp->txd_version == RTL_TD_1)
-+	else if (tp->txd_version == RTL_TD_1) {
- 		tp->tso_csum = rtl8169_tso_csum_v2;
--	else
-+		dev->hw_features |= NETIF_F_IPV6_CSUM | NETIF_F_TSO6;
-+	} else
- 		WARN_ON_ONCE(1);
- 
- 	dev->hw_features |= NETIF_F_RXALL;
--- 
-1.9.3
 
