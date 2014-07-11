@@ -1,90 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754169AbaGKQJs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 12:09:48 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:23312 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750973AbaGKQJq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 12:09:46 -0400
-Date: Fri, 11 Jul 2014 17:09:25 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci <linux-pci@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 6/9] pci: Introduce a domain number for
- pci_host_bridge.
-Message-ID: <20140711160925.GD16321@arm.com>
-References: <1404240214-9804-7-git-send-email-Liviu.Dudau@arm.com>
- <20140708005954.GC22939@google.com>
- <20140708104655.GC6501@e106497-lin.cambridge.arm.com>
- <CAErSpo75ovmGoeSHKJN0nckGDy-0gpn8kLPfHQ79CtcXxhPydw@mail.gmail.com>
- <20140708224847.GC4980@e106497-lin.cambridge.arm.com>
- <CAErSpo5rBt0iF2HGeDD-UH6_sPCoC647VCw0Q1v_0Rdpvcir-w@mail.gmail.com>
- <20140710094758.GA6501@e106497-lin.cambridge.arm.com>
- <CAErSpo5ZNCY31NztT0cLFbRVsBZqMsZ0LbTFNOTQCZUU3F7qJA@mail.gmail.com>
- <20140711141115.GB16321@arm.com>
- <20140711150823.GU6501@e106497-lin.cambridge.arm.com>
+	id S1754384AbaGKQLn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 12:11:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8121 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753874AbaGKQLm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 12:11:42 -0400
+From: Paul Moore <pmoore@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Richard Guy Briggs <rgb@redhat.com>, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>,
+        Al Viro <aviro@redhat.com>, Will Drewry <wad@chromium.org>
+Subject: Re: [PATCH 2/3] [RFC] seccomp: give BPF x32 bit when restoring x32 filter
+Date: Fri, 11 Jul 2014 12:11:37 -0400
+Message-ID: <1458762.ra4TnS54ZN@sifl>
+Organization: Red Hat
+User-Agent: KMail/4.13.2 (Linux/3.14.8-gentoo; KDE/4.13.2; x86_64; ; )
+In-Reply-To: <53BF62AA.20105@zytor.com>
+References: <cover.1405023592.git.rgb@redhat.com> <6a69eb94b4cfac5f94b229c2eb2ebc402aac722a.1405023592.git.rgb@redhat.com> <53BF62AA.20105@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140711150823.GU6501@e106497-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 04:08:23PM +0100, Liviu Dudau wrote:
-> On Fri, Jul 11, 2014 at 03:11:16PM +0100, Catalin Marinas wrote:
-> > On Thu, Jul 10, 2014 at 11:36:10PM +0100, Bjorn Helgaas wrote:
-> > > Most of the rest of the v7 discussion was about "Introduce a domain
-> > > number for pci_host_bridge."  I think we should add arm64 using the
-> > > existing pci_scan_root_bus() and keep the domain number in the arm64
-> > > sysdata structure like every other arch does.  Isn't that feasible?
-> > > We can worry about domain unification later.
-> > 
-> > I think that's what we were trying to avoid, adding an arm64-specific
-> > pci_sys_data structure (and arm64-specific API). IIUC, avoiding this
-> > would allow the host controller drivers to use the sysdata pointer for
-> > their own private data structures.
-> > 
-> > Also since you can specify the domain number via DT (and in Liviu's
-> > v8 patches read by of_create_pci_host_bridge), I think it would make
-> > sense to have it stored in some generic data structures (e.g.
-> > pci_host_bridge) rather than in an arm64 private sysdata.
-> > 
-> > (Liviu is thinking of an alternative API but maybe he could briefly
-> > describe it here before posting a new series)
-> 
-> My plan is to keep the domain number in the pci_host_bridge and split
-> the creation of the pci_host_bridge out of the pci_create_root_bus().
+On Thursday, July 10, 2014 09:06:02 PM H. Peter Anvin wrote:
+> Incidentally: do seccomp users know that on an x86-64 system you can
+> recevie system calls from any of the x86 architectures, regardless of
+> how the program is invoked?  (This is unusual, so normally denying those
+> "alien" calls is the right thing to do.)
 
-Wouldn't it make more sense to add domain_nr to the pci_bus structure
-(well, only needed for the root bus)? It would simplify pci_domain_nr()
-as well which only takes a pci_bus parameter.
-
-> The new function (tentatively called pci_create_new_root_bus()) will
-> no longer call pci_alloc_host_bridge() but will accept it as a
-> parameter, allowing one to be able to set the domain_nr ahead of the
-> root bus creation.
-
-If we place domain_nr in pci_bus, this split wouldn't help but we still
-need your original pci_create_root_bus_in_domain(). Are there other uses
-of your proposal above?
-
-Yet another alternative is to ignore PCI domains altogether (domain 0
-always).
+I obviously can't speak for all seccomp users, but libseccomp handles this by 
+checking the seccomp_data->arch value at the start of the filter and killing 
+(by default) any non-native architectures.  If you want, you can change this 
+default behavior or add support for other architectures (e.g. create a filter 
+that allows both x86-64 and x32 but disallows x86, or any combination of the 
+three for that matter).
 
 -- 
-Catalin
+paul moore
+security and virtualization @ redhat
+
