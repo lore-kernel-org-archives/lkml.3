@@ -1,106 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751717AbaGKHNa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 03:13:30 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:35086 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300AbaGKHN2 (ORCPT
+	id S1752010AbaGKHOt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 03:14:49 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:16361 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751515AbaGKHOq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 03:13:28 -0400
-Date: Fri, 11 Jul 2014 08:13:23 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: Re: No uart output on my snowball board
-Message-ID: <20140711071323.GG11948@lee--X1>
-References: <20140710223021.6e9c857f@gandalf.local.home>
+	Fri, 11 Jul 2014 03:14:46 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 11 Jul 2014 00:03:49 -0700
+Message-ID: <53BF8EE2.4070702@nvidia.com>
+Date: Fri, 11 Jul 2014 10:14:42 +0300
+From: Mikko Perttunen <mperttunen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140710223021.6e9c857f@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 10/13] ARM: tegra: Enable the DFLL on the Jetson TK1
+References: <1405028569-14253-1-git-send-email-ttynkkynen@nvidia.com> <1405028569-14253-11-git-send-email-ttynkkynen@nvidia.com>
+In-Reply-To: <1405028569-14253-11-git-send-email-ttynkkynen@nvidia.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I decided to play with my snowball board as that's the easiest arm
-> board I have to do testing on, and it was reported to me that I broke
-> function graph tracing on the arm boards. But I haven't booted my
-> snowball since 3.8. When I tried with the latest kernel, it didn't give
-> me *any* output. I figured something was up with the uart, but the
-> board also didn't boot.
-> 
-> I did a bisect to find out where the uart stopped working (I also
-> stumbled on where the board stopped booting, but still need to find
-> that commit). The uart died with this commit:
-> 
-> commit a0998b8321eb5f53ef51924f5ab6c69237ac1025
-> Author: Lee Jones <lee.jones@linaro.org>
-> Date:   Thu Aug 22 16:18:56 2013 +0100
-> 
->     ARM: ux500: Remove UART support when booting without Device Tree
->     
->     It's time to remove all ATAG support from ux500 and rely solely on
->     Device Tree booting. This patch is part of that endeavour.
->     
->     Signed-off-by: Lee Jones <lee.jones@linaro.org>
->     Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> 
-> This happened between 3.12 and 3.13.
-> 
-> Does this mean that I need to get device tree support for this. I have
-> no idea how to fix it as a device tree to me is a christmas tree (a
-> tree with little lighty devices on it). Thus I'll just go and throw
-> this out at you.
+It might look nicer if the voltage table was in a separate file. A bit 
+of a border case, maybe.
 
-This is a very slimmed down of my Makefile.  It should bootstrap you
-with what you need.  If there are any issues with that that you can't
-fix, ping me and I'll test it as-is.  Bear in mind that some of these
-config options are probably deprecated by now.  If there are any holes
-I'm sure LinusW will spot them.
-
-CROSS_COMPILE	?= arm-linux-gnueabi-
-build_dir       := $(CURDIR)/build-snowball
-config_file     := $(build_dir)/.config
-devicetree	:= $(build_dir)/arch/arm/boot/dts/ste-snowball.dtb
-defconfig	:= u8500_defconfig
-cpus		:= 4
-
-make_options := -f Makefile \
-                ARCH=arm \
-                CROSS_COMPILE=$(CROSS_COMPILE) \
-                KBUILD_OUTPUT=$(build_dir)
-
-config-devicetree: config-base FORCE
-	# Configure in the optional device tree if available
-	@if [ -r $(devicetree) ] ; then \
-	$(CURDIR)/scripts/config --file $(config_file) \
-	  --enable USE_OF \
-	  --enable ARM_APPENDED_DTB \
-	  --enable ARM_ATAG_DTB_COMPAT \
-	  --enable PROC_DEVICETREE \
-	  --set-str ARM_APPENDED_DTB_FILE $(devicetree) ; \
-	else \
-	  echo "$(devicetree) not found, or not readable" ; \
-	fi
-
-build: config-devicetree FORCE
-	@mkdir -p $(build_dir)
-	$(MAKE) $(make_options) dtbs
-	$(MAKE) $(make_options) $(defconfig)
-	$(MAKE) $(make_options) -j $(cpus) zImage
-	cat $(devicetree) >> $(build_dir)/arch/arm/boot/zImage
-
-	mkimage -A arm -O linux -T kernel -C none \
-	-a 0x00008000 -e 0x00008000 -n "Linux" 	  \
-	-d $(build_dir)/arch/arm/boot/zImage	  \
-	$(build_dir)/uImage
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+On 11/07/14 00:42, Tuomas Tynkkynen wrote:
+> ...
+> +		nvidia,pmic-voltage-table =
+> +			<0x1e 700000>,
+> +			<0x1f 710000>,
+> +			<0x20 720000>,
+> +			<0x21 730000>,
+> +			<0x22 740000>,
+> +			<0x23 750000>,
+> +			<0x24 760000>,
+> +			<0x25 770000>,
+> +			<0x26 780000>,
+> +			<0x27 790000>,
+> +			<0x28 800000>,
+> +			<0x29 810000>,
+> +			<0x2a 820000>,
+> +			<0x2b 830000>,
+> +			<0x2c 840000>,
+> +			<0x2d 850000>,
+> +			<0x2e 860000>,
+> +			<0x2f 870000>,
+> +			<0x30 880000>,
+> +			<0x31 890000>,
+> +			<0x32 900000>,
+> +			<0x33 910000>,
+> +			<0x34 920000>,
+> +			<0x35 930000>,
+> +			<0x36 940000>,
+> +			<0x37 950000>,
+> +			<0x38 960000>,
+> +			<0x39 970000>,
+> +			<0x3a 980000>,
+> +			<0x3b 990000>,
+> +			<0x3c 1000000>,
+> +			<0x3d 1010000>,
+> +			<0x3e 1020000>,
+> +			<0x3f 1030000>,
+> +			<0x40 1040000>,
+> +			<0x41 1050000>,
+> +			<0x42 1060000>,
+> +			<0x43 1070000>,
+> +			<0x44 1080000>,
+> +			<0x45 1090000>,
+> +			<0x46 1100000>,
+> +			<0x47 1110000>,
+> +			<0x48 1120000>,
+> +			<0x49 1130000>,
+> +			<0x4a 1140000>,
+> +			<0x4b 1150000>,
+> +			<0x4c 1160000>,
+> +			<0x4d 1170000>,
+> +			<0x4e 1180000>,
+> +			<0x4f 1190000>,
+> +			<0x50 1200000>,
+> +			<0x51 1210000>,
+> +			<0x52 1220000>,
+> +			<0x53 1230000>,
+> +			<0x54 1240000>,
+> +			<0x55 1250000>,
+> +			<0x56 1260000>,
+> +			<0x57 1270000>,
+> +			<0x58 1280000>,
+> +			<0x59 1290000>,
+> +			<0x5a 1300000>,
+> +			<0x5b 1310000>,
+> +			<0x5c 1320000>,
+> +			<0x5d 1330000>,
+> +			<0x5e 1340000>,
+> +			<0x5f 1350000>,
+> +			<0x60 1360000>,
+> +			<0x61 1370000>,
+> +			<0x62 1380000>,
+> +			<0x63 1390000>,
+> +			<0x64 1400000>;
+ > ...
