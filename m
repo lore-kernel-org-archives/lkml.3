@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932067AbaGKNpL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:45:11 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56259 "EHLO
+	id S932194AbaGKNsk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:48:40 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56286 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754311AbaGKNpH (ORCPT
+	with ESMTP id S1754343AbaGKNpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:45:07 -0400
-Message-Id: <20140711133709.078582080@linutronix.de>
+	Fri, 11 Jul 2014 09:45:14 -0400
+Message-Id: <20140711133709.406722105@linutronix.de>
 User-Agent: quilt/0.63-1
-Date: Fri, 11 Jul 2014 13:45:05 -0000
+Date: Fri, 11 Jul 2014 13:45:12 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 45/55] timekeeping: Use ktime_get_boottime() for
- get_monotonic_boottime()
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Hellstrom <thellstrom@vmware.com>
+Subject: [patch 49/55] drm: vmwgfx: Use nsec based interfaces
 References: <20140711133623.530368377@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline;
- filename=timekeeping-simplify-get-monotonic-boottime.patch
+Content-Disposition: inline; filename=drm-vmwgfx-use-nsec-raw.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -28,86 +27,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get_monotonic_boottime() is not used in fast pathes, so the extra
-timespec conversion is not problematic.
+No point in converting timespecs back and forth.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Thomas Hellstrom <thellstrom@vmware.com>
 ---
- include/linux/timekeeping.h |    9 ++++++++-
- kernel/time/timekeeping.c   |   34 ----------------------------------
- 2 files changed, 8 insertions(+), 35 deletions(-)
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.h    |    4 +--
+ drivers/gpu/drm/vmwgfx/vmwgfx_marker.c |   44 ++++++++++-----------------------
+ 2 files changed, 16 insertions(+), 32 deletions(-)
 
-Index: tip/include/linux/timekeeping.h
+Index: tip/drivers/gpu/drm/vmwgfx/vmwgfx_drv.h
 ===================================================================
---- tip.orig/include/linux/timekeeping.h
-+++ tip/include/linux/timekeeping.h
-@@ -27,7 +27,6 @@ struct timespec __current_kernel_time(vo
-  */
- struct timespec get_monotonic_coarse(void);
- extern void getrawmonotonic(struct timespec *ts);
--extern void get_monotonic_boottime(struct timespec *ts);
- extern void ktime_get_ts64(struct timespec64 *ts);
+--- tip.orig/drivers/gpu/drm/vmwgfx/vmwgfx_drv.h
++++ tip/drivers/gpu/drm/vmwgfx/vmwgfx_drv.h
+@@ -159,8 +159,8 @@ struct vmw_surface {
  
- extern int __getnstimeofday64(struct timespec64 *tv);
-@@ -160,6 +159,14 @@ static inline u64 ktime_get_boot_ns(void
- }
+ struct vmw_marker_queue {
+ 	struct list_head head;
+-	struct timespec lag;
+-	struct timespec lag_time;
++	u64 lag;
++	u64 lag_time;
+ 	spinlock_t lock;
+ };
  
- /*
-+ * Timespec interfaces utilizing the ktime based ones
-+ */
-+static inline void get_monotonic_boottime(struct timespec *ts)
-+{
-+	*ts = ktime_to_timespec(ktime_get_boottime());
-+}
-+
-+/*
-  * RTC specific
-  */
- extern void timekeeping_inject_sleeptime(struct timespec *delta);
-Index: tip/kernel/time/timekeeping.c
+Index: tip/drivers/gpu/drm/vmwgfx/vmwgfx_marker.c
 ===================================================================
---- tip.orig/kernel/time/timekeeping.c
-+++ tip/kernel/time/timekeeping.c
-@@ -1540,40 +1540,6 @@ void getboottime(struct timespec *ts)
- }
- EXPORT_SYMBOL_GPL(getboottime);
+--- tip.orig/drivers/gpu/drm/vmwgfx/vmwgfx_marker.c
++++ tip/drivers/gpu/drm/vmwgfx/vmwgfx_marker.c
+@@ -31,14 +31,14 @@
+ struct vmw_marker {
+ 	struct list_head head;
+ 	uint32_t seqno;
+-	struct timespec submitted;
++	u64 submitted;
+ };
  
--/**
-- * get_monotonic_boottime - Returns monotonic time since boot
-- * @ts:		pointer to the timespec to be set
-- *
-- * Returns the monotonic time since boot in a timespec.
-- *
-- * This is similar to CLOCK_MONTONIC/ktime_get_ts, but also
-- * includes the time spent in suspend.
-- */
--void get_monotonic_boottime(struct timespec *ts)
--{
--	struct timekeeper *tk = &tk_core.timekeeper;
--	struct timespec64 tomono, sleep, ret;
--	s64 nsec;
--	unsigned int seq;
--
--	WARN_ON(timekeeping_suspended);
--
--	do {
--		seq = read_seqcount_begin(&tk_core.seq);
--		ret.tv_sec = tk->xtime_sec;
--		nsec = timekeeping_get_ns(tk);
--		tomono = tk->wall_to_monotonic;
--		sleep = tk->total_sleep_time;
--
--	} while (read_seqcount_retry(&tk_core.seq, seq));
--
--	ret.tv_sec += tomono.tv_sec + sleep.tv_sec;
--	ret.tv_nsec = 0;
--	timespec64_add_ns(&ret, nsec + tomono.tv_nsec + sleep.tv_nsec);
--	*ts = timespec64_to_timespec(ret);
--}
--EXPORT_SYMBOL_GPL(get_monotonic_boottime);
--
- unsigned long get_seconds(void)
+ void vmw_marker_queue_init(struct vmw_marker_queue *queue)
  {
- 	struct timekeeper *tk = &tk_core.timekeeper;
+ 	INIT_LIST_HEAD(&queue->head);
+-	queue->lag = ns_to_timespec(0);
+-	getrawmonotonic(&queue->lag_time);
++	queue->lag = 0;
++	queue->lag_time = ktime_get_raw_ns();
+ 	spin_lock_init(&queue->lock);
+ }
+ 
+@@ -62,7 +62,7 @@ int vmw_marker_push(struct vmw_marker_qu
+ 		return -ENOMEM;
+ 
+ 	marker->seqno = seqno;
+-	getrawmonotonic(&marker->submitted);
++	marker->submitted = ktime_get_raw_ns();
+ 	spin_lock(&queue->lock);
+ 	list_add_tail(&marker->head, &queue->head);
+ 	spin_unlock(&queue->lock);
+@@ -74,14 +74,14 @@ int vmw_marker_pull(struct vmw_marker_qu
+ 		   uint32_t signaled_seqno)
+ {
+ 	struct vmw_marker *marker, *next;
+-	struct timespec now;
+ 	bool updated = false;
++	u64 now;
+ 
+ 	spin_lock(&queue->lock);
+-	getrawmonotonic(&now);
++	now = ktime_get_raw_ns();
+ 
+ 	if (list_empty(&queue->head)) {
+-		queue->lag = ns_to_timespec(0);
++		queue->lag = 0;
+ 		queue->lag_time = now;
+ 		updated = true;
+ 		goto out_unlock;
+@@ -91,7 +91,7 @@ int vmw_marker_pull(struct vmw_marker_qu
+ 		if (signaled_seqno - marker->seqno > (1 << 30))
+ 			continue;
+ 
+-		queue->lag = timespec_sub(now, marker->submitted);
++		queue->lag = now - marker->submitted;
+ 		queue->lag_time = now;
+ 		updated = true;
+ 		list_del(&marker->head);
+@@ -104,27 +104,13 @@ out_unlock:
+ 	return (updated) ? 0 : -EBUSY;
+ }
+ 
+-static struct timespec vmw_timespec_add(struct timespec t1,
+-					struct timespec t2)
++static u64 vmw_fifo_lag(struct vmw_marker_queue *queue)
+ {
+-	t1.tv_sec += t2.tv_sec;
+-	t1.tv_nsec += t2.tv_nsec;
+-	if (t1.tv_nsec >= 1000000000L) {
+-		t1.tv_sec += 1;
+-		t1.tv_nsec -= 1000000000L;
+-	}
+-
+-	return t1;
+-}
+-
+-static struct timespec vmw_fifo_lag(struct vmw_marker_queue *queue)
+-{
+-	struct timespec now;
++	u64 now;
+ 
+ 	spin_lock(&queue->lock);
+-	getrawmonotonic(&now);
+-	queue->lag = vmw_timespec_add(queue->lag,
+-				      timespec_sub(now, queue->lag_time));
++	now = ktime_get_raw_ns();
++	queue->lag += now - queue->lag_time;
+ 	queue->lag_time = now;
+ 	spin_unlock(&queue->lock);
+ 	return queue->lag;
+@@ -134,11 +120,9 @@ static struct timespec vmw_fifo_lag(stru
+ static bool vmw_lag_lt(struct vmw_marker_queue *queue,
+ 		       uint32_t us)
+ {
+-	struct timespec lag, cond;
++	u64 cond = (u64) us * NSEC_PER_USEC;
+ 
+-	cond = ns_to_timespec((s64) us * 1000);
+-	lag = vmw_fifo_lag(queue);
+-	return (timespec_compare(&lag, &cond) < 1);
++	return vmw_fifo_lag(queue) <= cond;
+ }
+ 
+ int vmw_wait_lag(struct vmw_private *dev_priv,
 
 
