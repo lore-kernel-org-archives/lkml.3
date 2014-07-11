@@ -1,96 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754751AbaGKXl6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 19:41:58 -0400
-Received: from us-mx2.synaptics.com ([192.147.44.131]:15096 "EHLO
-	us-mx2.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751012AbaGKXl5 (ORCPT
+	id S1754565AbaGKXq2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 19:46:28 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:30141 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221AbaGKXq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 19:41:57 -0400
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Fri, 11 Jul 2014 16:49:44 -0700
-From: Andrew Duggan <aduggan@synaptics.com>
-To: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Andrew Duggan <aduggan@synaptics.com>, Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Vincent Huang <vincent.huang@tw.synaptics.com>
-Subject: [PATCH] HID: i2c-hid: call the hid driver's suspend and resume callbacks
-Date: Fri, 11 Jul 2014 16:34:18 -0700
-Message-ID: <1405121658-3853-1-git-send-email-aduggan@synaptics.com>
-X-Mailer: git-send-email 1.9.1
+	Fri, 11 Jul 2014 19:46:27 -0400
+Date: Sat, 12 Jul 2014 01:45:48 +0200
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        xen-devel@lists.xenproject.org, andrew.cooper3@citrix.com,
+        david.vrabel@citrix.com, hpa@zytor.com, ian.campbell@citrix.com,
+        jbeulich@suse.com, jeremy@goop.org, konrad.wilk@oracle.com,
+        matt.fleming@intel.com, mingo@redhat.com,
+        stefano.stabellini@eu.citrix.com, tglx@linutronix.de
+Subject: Re: [PATCH 2/2] arch/x86/xen: Silence compiler warnings
+Message-ID: <20140711234548.GM13620@olila.local.net-space.pl>
+References: <1405108461-3223-1-git-send-email-daniel.kiper@oracle.com>
+ <1405108461-3223-3-git-send-email-daniel.kiper@oracle.com>
+ <53C04322.1050000@oracle.com>
+ <20140711201050.GJ13620@olila.local.net-space.pl>
+ <53C049DB.3050904@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.2.20.38]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53C049DB.3050904@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the i2c-hid driver does not call the suspend, resume, and
-reset_resume callbacks in the hid_driver struct when those events occur.
-This means that HID drivers for i2c-hid devices will not be able to execute
-commands which may be needed during suspend or resume. One example is when a
-touchpad using the hid-multitouch driver gets reset by i2c-hid coming out of
-resume. Since the reset_resume callback never gets called the device is never
-put back into the correct input mode. This patch calls the suspend and resume
-callbacks and tries to duplicate the functionality of the usb-hid driver.
+On Fri, Jul 11, 2014 at 04:32:27PM -0400, Boris Ostrovsky wrote:
+> On 07/11/2014 04:10 PM, Daniel Kiper wrote:
+> >On Fri, Jul 11, 2014 at 04:03:46PM -0400, Boris Ostrovsky wrote:
+> >>On 07/11/2014 03:54 PM, Daniel Kiper wrote:
+> >>>Compiler complains in the following way when x86 32-bit kernel
+> >>>with Xen support is build:
+> >>>
+> >>>   CC      arch/x86/xen/enlighten.o
+> >>>arch/x86/xen/enlighten.c: In function ‘xen_start_kernel’:
+> >>>arch/x86/xen/enlighten.c:1726:3: warning: right shift count >= width of type [enabled by default]
+> >>>
+> >>>Such line contains following EFI initialization code:
+> >>>
+> >>>boot_params.efi_info.efi_systab_hi = (__u32)(__pa(efi_systab_xen) >> 32);
+> >>>
+> >>>There is no issue if x86 64-bit kernel is build. However, 32-bit case
+> >>>generate warning (even if that code will not be executed because Xen
+> >>>does not work on 32-bit EFI platforms) due to __pa() returning unsigned long
+> >>>type which has 32-bits width. So move whole EFI initialization stuff
+> >>>to separate function and build its body conditionally to avoid above
+> >>>mentioned warning on x86 32-bit architecture.
+> >>>
+> >>>Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+> >>>---
+> >>>  arch/x86/xen/enlighten.c |   35 ++++++++++++++++++++++-------------
+> >>>  1 file changed, 22 insertions(+), 13 deletions(-)
+> >>>
+> >>>diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> >>>index bc89647..6abec74 100644
+> >>>--- a/arch/x86/xen/enlighten.c
+> >>>+++ b/arch/x86/xen/enlighten.c
+> >>>@@ -1516,12 +1516,32 @@ static void __init xen_pvh_early_guest_init(void)
+> >>>  #endif
+> >>>  }
+> >>>+static void __init xen_efi_init(void)
+> >>>+{
+> >>>+#ifdef CONFIG_XEN_EFI
+> >>>+	efi_system_table_t *efi_systab_xen;
+> >>>+
+> >>>+	efi_systab_xen = xen_efi_probe();
+> >>>+
+> >>>+	if (efi_systab_xen == NULL)
+> >>>+		return;
+> >>>+
+> >>>+	strncpy((char *)&boot_params.efi_info.efi_loader_signature, "Xen",
+> >>>+			sizeof(boot_params.efi_info.efi_loader_signature));
+> >>>+	boot_params.efi_info.efi_systab = (__u32)__pa(efi_systab_xen);
+> >>>+	boot_params.efi_info.efi_systab_hi = (__u32)(__pa(efi_systab_xen) >> 32);
+> >>>+
+> >>>+	set_bit(EFI_BOOT, &efi.flags);
+> >>>+	set_bit(EFI_PARAVIRT, &efi.flags);
+> >>>+	set_bit(EFI_64BIT, &efi.flags);
+> >>>+#endif
+> >>>+}
+> >>>+
+> >>>  /* First C function to be called on Xen boot */
+> >>>  asmlinkage __visible void __init xen_start_kernel(void)
+> >>>  {
+> >>>  	struct physdev_set_iopl set_iopl;
+> >>>  	int rc;
+> >>>-	efi_system_table_t *efi_systab_xen;
+> >>>  	if (!xen_start_info)
+> >>>  		return;
+> >>>@@ -1717,18 +1737,7 @@ asmlinkage __visible void __init xen_start_kernel(void)
+> >>>  	xen_setup_runstate_info(0);
+> >>>-	efi_systab_xen = xen_efi_probe();
+> >>>-
+> >>>-	if (efi_systab_xen) {
+> >>>-		strncpy((char *)&boot_params.efi_info.efi_loader_signature, "Xen",
+> >>>-				sizeof(boot_params.efi_info.efi_loader_signature));
+> >>>-		boot_params.efi_info.efi_systab = (__u32)__pa(efi_systab_xen);
+> >>>-		boot_params.efi_info.efi_systab_hi = (__u32)(__pa(efi_systab_xen) >> 32);
+> >>>-
+> >>>-		set_bit(EFI_BOOT, &efi.flags);
+> >>>-		set_bit(EFI_PARAVIRT, &efi.flags);
+> >>>-		set_bit(EFI_64BIT, &efi.flags);
+> >>>-	}
+> >>>+	xen_efi_init();
+> >>I'd put ifdef CONFIG_XEN_EFI around the call instead of having it
+> >>inside the routine.
+> >Well, I thought about that a bit and I prefer function like Konrad.
+> >Could you agree with him which solution do you (as maintainers) prefer?
+> >
+>
+> I am not arguing against having a separate routine. All I am saying
+> is that calling xen_efi_init() when CONFIG_XEN_EFI is not defined
+> doesn't look logical. It will also add an unnecessary call (although
 
-Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
-Signed-off-by: Vincent Huang <vincent.huang@tw.synaptics.com>
----
-Hi Benjamin,
+Ahh... I misunderstood you. However, your proposal, as below:
 
-This is the patch which Vincent and I came up with to fix the behavior which we were seeing with touchpads not being operational after resuming. We only use the reset_resume callback since i2c_hid_resume is always doing a hardware reset and it doesn't seem like there is a condition in which the standard resume callback would be appropriate. Also, is a full hardware reset always needed when resuming?
+#ifdef CONFIG_XEN_EFI
+  xen_efi_init();
+#endif
 
- drivers/hid/i2c-hid/i2c-hid.c | 15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+does not solve the problem because this vulnerable shift will be still
+visible for compiler during x86 32-bit kernel build.
 
-diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-index 21aafc8..747d544 100644
---- a/drivers/hid/i2c-hid/i2c-hid.c
-+++ b/drivers/hid/i2c-hid/i2c-hid.c
-@@ -1054,21 +1054,29 @@ static int i2c_hid_remove(struct i2c_client *client)
- static int i2c_hid_suspend(struct device *dev)
- {
- 	struct i2c_client *client = to_i2c_client(dev);
-+	struct i2c_hid *ihid = i2c_get_clientdata(client);
-+	struct hid_device *hid = ihid->hid;
-+	int ret = 0;
- 
- 	disable_irq(client->irq);
- 	if (device_may_wakeup(&client->dev))
- 		enable_irq_wake(client->irq);
- 
-+	if (hid->driver && hid->driver->suspend)
-+		ret = hid->driver->suspend(hid, PMSG_SUSPEND);
-+
- 	/* Save some power */
- 	i2c_hid_set_power(client, I2C_HID_PWR_SLEEP);
- 
--	return 0;
-+	return ret;
- }
- 
- static int i2c_hid_resume(struct device *dev)
- {
- 	int ret;
- 	struct i2c_client *client = to_i2c_client(dev);
-+	struct i2c_hid *ihid = i2c_get_clientdata(client);
-+	struct hid_device *hid = ihid->hid;
- 
- 	enable_irq(client->irq);
- 	ret = i2c_hid_hwreset(client);
-@@ -1078,6 +1086,11 @@ static int i2c_hid_resume(struct device *dev)
- 	if (device_may_wakeup(&client->dev))
- 		disable_irq_wake(client->irq);
- 
-+	if (hid->driver && hid->driver->reset_resume) {
-+		ret = hid->driver->reset_resume(hid);
-+		return ret;
-+	}
-+
- 	return 0;
- }
- #endif
--- 
-1.9.1
+> compiler may optimize it out).
 
+Please loot at arch/x86/xen/enlighten.c:xen_check_mwait() and
+arch/x86/xen/enlighten.c:xen_boot_params_init_edd() (probably
+there are more stuff like that around). As I can see this is fairly
+common solution and probably compiler cope with it quite well.
+
+Have a nice weekend,
+
+Daniel
