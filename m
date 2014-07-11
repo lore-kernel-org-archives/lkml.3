@@ -1,93 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448AbaGKMoL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 08:44:11 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:47976 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753235AbaGKMoJ (ORCPT
+	id S1753231AbaGKMzH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 08:55:07 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:38019 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000AbaGKMzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 08:44:09 -0400
-Message-ID: <53BFDBC0.8000705@gmail.com>
-Date: Fri, 11 Jul 2014 18:12:40 +0530
-From: Varka Bhadram <varkabhadram@gmail.com>
-Organization: CDAC-HYD
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 11 Jul 2014 08:55:04 -0400
+To: "hch\@infradead.org" <hch@infradead.org>
+Cc: James Bottomley <jbottomley@parallels.com>,
+        "kys\@microsoft.com" <kys@microsoft.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel\@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw\@canonical.com" <apw@canonical.com>,
+        "stable\@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-scsi\@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ohering\@suse.com" <ohering@suse.com>,
+        "jasowang\@redhat.com" <jasowang@redhat.com>
+Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle
+References: <1404866789-26910-1-git-send-email-kys@microsoft.com>
+	<1404866812-26950-1-git-send-email-kys@microsoft.com>
+	<1404866812-26950-4-git-send-email-kys@microsoft.com>
+	<20140709084300.GD6012@infradead.org>
+	<a31a45eddb544024a7538458b98c3611@BY2PR03MB299.namprd03.prod.outlook.com>
+	<1404935792.2184.5.camel@dabdike.int.hansenpartnership.com>
+	<2f3ae589e6f149acbe4c5dd79f905971@BY2PR03MB299.namprd03.prod.outlook.com>
+	<1404944843.2184.8.camel@dabdike.int.hansenpartnership.com>
+	<20140711063216.GA20660@infradead.org>
+Date: Fri, 11 Jul 2014 08:54:18 -0400
+In-Reply-To: <20140711063216.GA20660@infradead.org> (hch@infradead.org's
+	message of "Thu, 10 Jul 2014 23:32:16 -0700")
+Message-ID: <yq1vbr42gzp.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-To: Ethan Zhao <ethan.zhao@oracle.com>, bhelgaas@google.com,
-        konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com, gleb@kernel.org, pbonzini@redhat.com,
-        jeffrey.t.kirsher@intel.com, jesse.brandeburg@intel.com,
-        bruce.w.allan@intel.com, carolyn.wyborny@intel.com,
-        donald.c.skidmore@intel.com, gregory.v.rose@intel.com,
-        alexander.h.duyck@intel.com, john.ronciak@intel.com,
-        mitch.a.williams@intel.com, alex.williamson@redhat.com
-CC: linux-pci@vger.kernel.org, kvm@vger.kernel.org, linux.nics@intel.com,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ethan.kernel@gmail.com,
-        vaughan.cao@oracle.com
-Subject: Re: [PATCH 2/2 V3] PCI: implement VFs assignment reference counter
-References: <1405081802-419-1-git-send-email-ethan.zhao@oracle.com> <1405081802-419-2-git-send-email-ethan.zhao@oracle.com>
-In-Reply-To: <1405081802-419-2-git-send-email-ethan.zhao@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2014 06:00 PM, Ethan Zhao wrote:
-> Current implementation of helper function pci_vfs_assigned() is a
-> little complex, to get sum of VFs that assigned to VM, access low
-> level configuration space register and then loop in traversing
-> device tree.
+>>>>> "hch" == hch@infradead org <hch@infradead.org> writes:
 
-(...)
+(Back from vacation: Bear with me while I'm catching up on two weeks of
+linux-scsi stuff...)
 
-> @@ -650,6 +630,11 @@ EXPORT_SYMBOL_GPL(pci_vfs_assigned);
->   void pci_iov_assign_device(struct pci_dev *pdev)
->   {
->   	pdev->dev_flags |= PCI_DEV_FLAGS_ASSIGNED;
-> +	if (pdev->is_virtfn && !pdev->is_physfn)
-> +		if (pdev->physfn)
-> +			if (pdev->physfn->sriov)
+hch> I think the problem is a differnet one.  If we have the logical
+hch> provisioning EVPD it configures what method to use, but if we don't
+hch> have one we simply check for a max unmap blocks field, and if
+hch> that's not present use WRITE SAME.
 
-Why don't we make last two 'if' conditions into single 'if'
+Yeah, that was done to accommodate the devices out there that predate
+the LBP VPD. There sadly are several still. And it's hard to motivate
+people to update their storage array firmware even when updates are
+readily available.
 
-if (pdev->physfn && pdev->physfn->sriov)
+hch> The patch checks the no_write_same flag before doing that, for
+hch> which we also have to do the write_same setup before the discard
+hch> setup in sd_revalidate_disk.
 
-> +				atomic_inc(&pdev->physfn->sriov->
-> +					VFs_assigned_cnt);
->   }
->   EXPORT_SYMBOL_GPL(pci_iov_assign_device);
->   
-> @@ -660,6 +645,11 @@ EXPORT_SYMBOL_GPL(pci_iov_assign_device);
->   void pci_iov_deassign_device(struct pci_dev *pdev)
->   {
->   	pdev->dev_flags &= ~PCI_DEV_FLAGS_ASSIGNED;
-> +	if (pdev->is_virtfn && !pdev->is_physfn)
-> +		if (pdev->physfn)
-> +			if (pdev->physfn->sriov)
+The no_write_same was introduced to disable the REQ_WRITE_SAME use case
+where we have no INQUIRY/READ CAPACITY/VPD flags to key off of to
+determine whether it is safe to send the commands.
 
-same...
+no_write_same does not preclude the REQ_DISCARD variants of
+WRITE_SAME. Those are gated by the discard heuristics exclusively.
 
-> +				atomic_dec(&pdev->physfn->sriov->
-> +					VFs_assigned_cnt);
->   }
->   EXPORT_SYMBOL_GPL(pci_iov_deassign_device);
->   
-> diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-> index 6bd0822..d17bda2 100644
-> --- a/drivers/pci/pci.h
-> +++ b/drivers/pci/pci.h
-> @@ -235,6 +235,7 @@ struct pci_sriov {
->   	u32 pgsz;		/* page size for BAR alignment */
->   	u8 link;		/* Function Dependency Link */
->   	u16 driver_max_VFs;	/* max num VFs driver supports */
-> +	atomic_t VFs_assigned_cnt; /* counter of VFs assigned to VM */
->   	struct pci_dev *dev;	/* lowest numbered PF */
->   	struct pci_dev *self;	/* this PF */
->   	struct mutex lock;	/* lock for VF bus */
+So first of all I'd like to know whether it's a WRITE SAME(16) or a
+WRITE SAME(16) with the UNMAP bit set that's coming down.
+
+hch> Ky: does hyperv support UNMAP?  If so any idea why it doesn't set
+hch> the maximum unmap block count field in the EVPD?
+
+We shouldn't be sending down WRITE SAME(16) with the UNMAP bit set
+unless the device sets LBPME=1 in the READ CAPACITY(16) response.
+
+So what does the storsvc report as its thin provisioning capabilities?
 
 -- 
-Regards,
-Varka Bhadram.
-
+Martin K. Petersen	Oracle Linux Engineering
