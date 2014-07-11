@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932178AbaGKNsW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:48:22 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56292 "EHLO
+	id S932067AbaGKNpL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:45:11 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56259 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752229AbaGKNpQ (ORCPT
+	with ESMTP id S1754311AbaGKNpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:45:16 -0400
-Message-Id: <20140711133709.494634177@linutronix.de>
+	Fri, 11 Jul 2014 09:45:07 -0400
+Message-Id: <20140711133709.078582080@linutronix.de>
 User-Agent: quilt/0.63-1
-Date: Fri, 11 Jul 2014 13:45:13 -0000
+Date: Fri, 11 Jul 2014 13:45:05 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        QCA ath9k Development <ath9k-devel@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [patch 50/55] wireless: ath9k: Get rid of timespec conversions
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [patch 45/55] timekeeping: Use ktime_get_boottime() for
+ get_monotonic_boottime()
 References: <20140711133623.530368377@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=wireless-ath9-use-proper-interfaces.patch
+Content-Disposition: inline;
+ filename=timekeeping-simplify-get-monotonic-boottime.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -28,47 +28,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have interfaces. Remove the open coded cruft. Reduces text size
-along with the code.
+get_monotonic_boottime() is not used in fast pathes, so the extra
+timespec conversion is not problematic.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: QCA ath9k Development <ath9k-devel@qca.qualcomm.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>
 ---
- drivers/net/wireless/ath/ath9k/hw.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ include/linux/timekeeping.h |    9 ++++++++-
+ kernel/time/timekeeping.c   |   34 ----------------------------------
+ 2 files changed, 8 insertions(+), 35 deletions(-)
 
-Index: tip/drivers/net/wireless/ath/ath9k/hw.c
+Index: tip/include/linux/timekeeping.h
 ===================================================================
---- tip.orig/drivers/net/wireless/ath/ath9k/hw.c
-+++ tip/drivers/net/wireless/ath/ath9k/hw.c
-@@ -1734,7 +1734,6 @@ int ath9k_hw_reset(struct ath_hw *ah, st
- 		   struct ath9k_hw_cal_data *caldata, bool fastcc)
+--- tip.orig/include/linux/timekeeping.h
++++ tip/include/linux/timekeeping.h
+@@ -27,7 +27,6 @@ struct timespec __current_kernel_time(vo
+  */
+ struct timespec get_monotonic_coarse(void);
+ extern void getrawmonotonic(struct timespec *ts);
+-extern void get_monotonic_boottime(struct timespec *ts);
+ extern void ktime_get_ts64(struct timespec64 *ts);
+ 
+ extern int __getnstimeofday64(struct timespec64 *tv);
+@@ -160,6 +159,14 @@ static inline u64 ktime_get_boot_ns(void
+ }
+ 
+ /*
++ * Timespec interfaces utilizing the ktime based ones
++ */
++static inline void get_monotonic_boottime(struct timespec *ts)
++{
++	*ts = ktime_to_timespec(ktime_get_boottime());
++}
++
++/*
+  * RTC specific
+  */
+ extern void timekeeping_inject_sleeptime(struct timespec *delta);
+Index: tip/kernel/time/timekeeping.c
+===================================================================
+--- tip.orig/kernel/time/timekeeping.c
++++ tip/kernel/time/timekeeping.c
+@@ -1540,40 +1540,6 @@ void getboottime(struct timespec *ts)
+ }
+ EXPORT_SYMBOL_GPL(getboottime);
+ 
+-/**
+- * get_monotonic_boottime - Returns monotonic time since boot
+- * @ts:		pointer to the timespec to be set
+- *
+- * Returns the monotonic time since boot in a timespec.
+- *
+- * This is similar to CLOCK_MONTONIC/ktime_get_ts, but also
+- * includes the time spent in suspend.
+- */
+-void get_monotonic_boottime(struct timespec *ts)
+-{
+-	struct timekeeper *tk = &tk_core.timekeeper;
+-	struct timespec64 tomono, sleep, ret;
+-	s64 nsec;
+-	unsigned int seq;
+-
+-	WARN_ON(timekeeping_suspended);
+-
+-	do {
+-		seq = read_seqcount_begin(&tk_core.seq);
+-		ret.tv_sec = tk->xtime_sec;
+-		nsec = timekeeping_get_ns(tk);
+-		tomono = tk->wall_to_monotonic;
+-		sleep = tk->total_sleep_time;
+-
+-	} while (read_seqcount_retry(&tk_core.seq, seq));
+-
+-	ret.tv_sec += tomono.tv_sec + sleep.tv_sec;
+-	ret.tv_nsec = 0;
+-	timespec64_add_ns(&ret, nsec + tomono.tv_nsec + sleep.tv_nsec);
+-	*ts = timespec64_to_timespec(ret);
+-}
+-EXPORT_SYMBOL_GPL(get_monotonic_boottime);
+-
+ unsigned long get_seconds(void)
  {
- 	struct ath_common *common = ath9k_hw_common(ah);
--	struct timespec ts;
- 	u32 saveLedState;
- 	u32 saveDefAntenna;
- 	u32 macStaId1;
-@@ -1784,8 +1783,7 @@ int ath9k_hw_reset(struct ath_hw *ah, st
- 
- 	/* Save TSF before chip reset, a cold reset clears it */
- 	tsf = ath9k_hw_gettsf64(ah);
--	getrawmonotonic(&ts);
--	usec = ts.tv_sec * 1000000ULL + ts.tv_nsec / 1000;
-+	usec = ktime_to_us(ktime_get_raw());
- 
- 	saveLedState = REG_READ(ah, AR_CFG_LED) &
- 		(AR_CFG_LED_ASSOC_CTL | AR_CFG_LED_MODE_SEL |
-@@ -1818,8 +1816,7 @@ int ath9k_hw_reset(struct ath_hw *ah, st
- 	}
- 
- 	/* Restore TSF */
--	getrawmonotonic(&ts);
--	usec = ts.tv_sec * 1000000ULL + ts.tv_nsec / 1000 - usec;
-+	usec = ktime_to_us(ktime_get_raw()) - usec;
- 	ath9k_hw_settsf64(ah, tsf + usec);
- 
- 	if (AR_SREV_9280_20_OR_LATER(ah))
+ 	struct timekeeper *tk = &tk_core.timekeeper;
 
 
