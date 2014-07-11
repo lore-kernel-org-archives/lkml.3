@@ -1,106 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616AbaGKJaO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 05:30:14 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:58973 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752568AbaGKJaL convert rfc822-to-8bit (ORCPT
+	id S1752634AbaGKJbw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 05:31:52 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:62407 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255AbaGKJbu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 05:30:11 -0400
-Date: Fri, 11 Jul 2014 10:30:07 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci <linux-pci@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 6/9] pci: Introduce a domain number for
- pci_host_bridge.
-Message-ID: <20140711093007.GN6501@e106497-lin.cambridge.arm.com>
-References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
- <1404240214-9804-7-git-send-email-Liviu.Dudau@arm.com>
- <20140708005954.GC22939@google.com>
- <20140708104655.GC6501@e106497-lin.cambridge.arm.com>
- <CAErSpo75ovmGoeSHKJN0nckGDy-0gpn8kLPfHQ79CtcXxhPydw@mail.gmail.com>
- <20140708224847.GC4980@e106497-lin.cambridge.arm.com>
- <CAErSpo5rBt0iF2HGeDD-UH6_sPCoC647VCw0Q1v_0Rdpvcir-w@mail.gmail.com>
- <20140710094758.GA6501@e106497-lin.cambridge.arm.com>
- <CAErSpo5ZNCY31NztT0cLFbRVsBZqMsZ0LbTFNOTQCZUU3F7qJA@mail.gmail.com>
+	Fri, 11 Jul 2014 05:31:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo5ZNCY31NztT0cLFbRVsBZqMsZ0LbTFNOTQCZUU3F7qJA@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 11 Jul 2014 09:30:08.0073 (UTC) FILETIME=[B472B390:01CF9CEA]
-X-MC-Unique: 114071110300808701
+In-Reply-To: <53BF45D4.2000302@collabora.co.uk>
+References: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
+	<1404467722-26687-16-git-send-email-javier.martinez@collabora.co.uk>
+	<CADGdYn4EURaHinWVksQSPzVr=CkZYcrqvWsO7mKDz_gY9XB__Q@mail.gmail.com>
+	<53BF45D4.2000302@collabora.co.uk>
+Date: Fri, 11 Jul 2014 15:01:46 +0530
+X-Google-Sender-Auth: xdQLevDw9mp4FohgbsgAX3ckXU4
+Message-ID: <CADGdYn6k8U84Amh_MRAxHFTNNXKy9NKQzV0B-e20v4bjhD-MnA@mail.gmail.com>
+Subject: Re: [PATCH v6 15/23] regulator: max77686: Setup DVS-related GPIOs on probe
+From: amit daniel kachhap <amit.daniel@samsung.com>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
+        LAK <linux-arm-kernel@lists.infradead.org>, devicetree@vger.kernel.org,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 11:36:10PM +0100, Bjorn Helgaas wrote:
-> On Thu, Jul 10, 2014 at 3:47 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> 
-> > I don't see a way out of adding new PCI interfaces if we want to have support in
-> > the PCI framework for unifying existing architectures. Of course, there is the painful
-> > alternative of changing the existing APIs and fixing arches in one go, but like you've
-> > said is going to be messy. I don't think I (or the people and companies wanting PCIe
-> > on arm64) should cop out and pick a quick fix that adds sysdata structure into arm64
-> > just to avoid new APIs, as this is not going to help anyone in long term. What I can
-> > do is to create a set of parallel APIs for pci_{scan,create}_root_bus() that take
-> > a pci_host_bridge pointer and start converting architectures one by one to that API
-> > while deprecating the existing one. That way we can add arm64 easily as it would be
-> > the first architecture to use new code without breaking things *and* we provide a
-> > migration path.
-> 
-> A lot of the v7 discussion was about pci_register_io_range().  I
-> apologize, because I think I really derailed things there and it was
-> unwarranted.  Arnd was right that migrating other arches should be a
-> separate effort.  I *think* I was probably thinking about the proposal
-> of adding pci_create_root_bus_in_domain(), and my reservations about
-> that got transferred to the pci_register_io_range() discussion.  In
-> any case, I'm completely fine with pci_register_io_range() now.
-> 
-> Most of the rest of the v7 discussion was about "Introduce a domain
-> number for pci_host_bridge."  I think we should add arm64 using the
-> existing pci_scan_root_bus() and keep the domain number in the arm64
-> sysdata structure like every other arch does.  Isn't that feasible?
-> We can worry about domain unification later.
-
-Thanks!
-
-I'm really not that keen to add sysdata support in the arch code as it
-requires initialisation code that I have tried to eliminate. What I'm
-going to suggest for my v9 is a parallel set of APIs that arm64 will
-be the first to use without changing the existing pci_{scan,create}_bus()
-functions and then the conversion process will migrate arches to the new API.
-
-Best regards,
-Liviu
-
-> 
-> I haven't followed closely enough to know what other objections people had.
-> 
-> Bjorn
-> 
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+On Fri, Jul 11, 2014 at 7:33 AM, Javier Martinez Canillas
+<javier.martinez@collabora.co.uk> wrote:
+> Hello Amit,
+>
+> On 07/10/2014 12:08 PM, amit daniel kachhap wrote:
+>> On Fri, Jul 4, 2014 at 3:25 PM, Javier Martinez Canillas
+>> <javier.martinez@collabora.co.uk> wrote:
+>>> MAX77686 PMIC support Dyamic Voltage Scaling (DVS) on a set
+>>> of Buck regulators. A number of GPIO are connected to these
+>>> lines and are requested by the mfd driver. Setup the GPIO
+>>> pins from the regulator driver.
+>> If possible merge this patch with patch 8. Both are adding DVS
+>> support. Put regmap_copy dependency patch in very beginning.
+>
+> As Lee already said, I split the changes to minimize the cross-subsystem churn.
+Yes agreed. This comment doesn't hold.
+>
+>>>
+>>> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+>>> ---
+>>>  drivers/regulator/max77686.c | 34 ++++++++++++++++++++++++++++++++++
+>>>  1 file changed, 34 insertions(+)
+>>>
+>>> diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
+>>> index ef1af2d..ecce77a 100644
+>>> --- a/drivers/regulator/max77686.c
+>>> +++ b/drivers/regulator/max77686.c
+>>> @@ -435,6 +435,12 @@ static int max77686_pmic_dt_parse_pdata(struct platform_device *pdev,
+>>>  }
+>>>  #endif /* CONFIG_OF */
+>>>
+>>> +static inline bool max77686_is_dvs_buck(int id)
+>>> +{
+>>> +       /* BUCK 2,3 and 4 support DVS */
+>>> +       return (id >= MAX77686_BUCK2 && id <= MAX77686_BUCK4);
+>> I am just wondering if along with above check, SELB gpios (if present)
+>> can be used to confirm if BUCK's are DVS based or not.
+>
+> I don't know if SELB gpios being present or not should be used to determine
+> whether a BUCK includes the DVS feature. AFAIK boards could have some of these
+> lines hardwired and pulled high or low instead of using a GPIO.
+As per the max77686 data sheet, selb2.3.4 uses logic high for no DVS
+and logic low for DVS enabled.
+So may be if DT is supplying selb gpios then the above checks can be
+put otherwise not required.
+Anyway from your other comments, since this patch series is not
+handling complete DVS scenario.
+So putting this check is not useful in this stage.
+>
+>>> +}
+>>> +
+>>>  static int max77686_pmic_probe(struct platform_device *pdev)
+>>>  {
+>>>         struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
+>>> @@ -442,6 +448,9 @@ static int max77686_pmic_probe(struct platform_device *pdev)
+>>>         struct max77686_data *max77686;
+>>>         int i, ret = 0;
+>>>         struct regulator_config config = { };
+>>> +       unsigned int reg;
+>>> +       int buck_default_idx;
+>>> +       int buck_old_idx;
+>>>
+>>>         dev_dbg(&pdev->dev, "%s\n", __func__);
+>>>
+>>> @@ -472,13 +481,34 @@ static int max77686_pmic_probe(struct platform_device *pdev)
+>>>         config.driver_data = max77686;
+>>>         platform_set_drvdata(pdev, max77686);
+>>>
+>>> +       buck_default_idx = pdata->buck_default_idx;
+>>> +       buck_old_idx = max77686_read_gpios(pdata);
+>>> +
+>>>         for (i = 0; i < MAX77686_REGULATORS; i++) {
+>>>                 struct regulator_dev *rdev;
+>>> +               int id = pdata->regulators[i].id;
+>>>
+>>>                 config.init_data = pdata->regulators[i].initdata;
+>>>                 config.of_node = pdata->regulators[i].of_node;
+>>>
+>>>                 max77686->opmode[i] = regulators[i].enable_mask;
+>>> +
+>>> +               if (max77686_is_dvs_buck(id)) {
+>>> +                       /* Try to copy over data so we keep firmware settings */
+>>> +                       reg = regulators[i].vsel_reg;
+>>> +
+>>> +                       ret = regmap_reg_copy(iodev->regmap,
+>>> +                                             reg + buck_default_idx,
+>>> +                                             reg + buck_old_idx);
+>>> +
+>>> +                       if (ret)
+>>> +                               dev_warn(&pdev->dev, "Copy err %d => %d (%d)\n",
+>>> +                                        reg + buck_old_idx,
+>>> +                                        reg + buck_default_idx, ret);
+>>> +
+>>> +                       regulators[i].vsel_reg += buck_default_idx;
+>>> +               }
+>>> +
+>>>                 rdev = devm_regulator_register(&pdev->dev,
+>>>                                                 &regulators[i], &config);
+>>>                 if (IS_ERR(rdev)) {
+>>> @@ -488,6 +518,10 @@ static int max77686_pmic_probe(struct platform_device *pdev)
+>>>                 }
+>>>         }
+>>>
+>>> +       ret = max77686_setup_gpios(iodev->dev);
+>>> +       if (ret)
+>>> +               return ret;
+>>> +
+>>>         return 0;
+>>>  }
+>>>
+>>> --
+>>> 2.0.0.rc2
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>
+> Best regards,
+> Javier
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
