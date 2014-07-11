@@ -1,89 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480AbaGKN4H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:56:07 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56111 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754027AbaGKNoZ (ORCPT
+	id S1754535AbaGKN4N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:56:13 -0400
+Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:37484 "EHLO
+	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754027AbaGKN4J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:44:25 -0400
-Message-Id: <20140711133706.693681619@linutronix.de>
-User-Agent: quilt/0.63-1
-Date: Fri, 11 Jul 2014 13:44:23 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 17/55] timekeeping: Use ktime_t based data for ktime_get_real()
-References: <20140711133623.530368377@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline;
- filename=timekeeping-use-ktime-based-for-ktime-get-real.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 11 Jul 2014 09:56:09 -0400
+Date: Fri, 11 Jul 2014 08:56:04 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: akpm@linux-foundation.org, Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
+        viresh.kumar@linaro.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org
+Subject: Re: vmstat: On demand vmstat workers V8
+In-Reply-To: <20140711132032.GB26045@localhost.localdomain>
+Message-ID: <alpine.DEB.2.11.1407110855030.25432@gentwo.org>
+References: <alpine.DEB.2.11.1407100903130.12483@gentwo.org> <20140711132032.GB26045@localhost.localdomain>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Speed up the readout.
+On Fri, 11 Jul 2014, Frederic Weisbecker wrote:
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- include/linux/timekeeping.h |    9 ++++++++-
- kernel/time/timekeeping.c   |   15 ---------------
- 2 files changed, 8 insertions(+), 16 deletions(-)
+> > @@ -1228,20 +1244,105 @@ static const struct file_operations proc
+> >  #ifdef CONFIG_SMP
+> >  static DEFINE_PER_CPU(struct delayed_work, vmstat_work);
+> >  int sysctl_stat_interval __read_mostly = HZ;
+> > +struct cpumask *cpu_stat_off;
+>
+> I thought you converted it?
 
-Index: tip/include/linux/timekeeping.h
-===================================================================
---- tip.orig/include/linux/timekeeping.h
-+++ tip/include/linux/timekeeping.h
-@@ -108,11 +108,18 @@ enum tk_offsets {
- 
- extern ktime_t ktime_get(void);
- extern ktime_t ktime_get_with_offset(enum tk_offsets offs);
--extern ktime_t ktime_get_real(void);
- extern ktime_t ktime_get_boottime(void);
- extern ktime_t ktime_get_monotonic_offset(void);
- extern ktime_t ktime_get_clocktai(void);
- 
-+/**
-+ * ktime_get_real - get the real (wall-) time in ktime_t format
-+ */
-+static inline ktime_t ktime_get_real(void)
-+{
-+	return ktime_get_with_offset(TK_OFFS_REAL);
-+}
-+
- /*
-  * RTC specific
-  */
-Index: tip/kernel/time/timekeeping.c
-===================================================================
---- tip.orig/kernel/time/timekeeping.c
-+++ tip/kernel/time/timekeeping.c
-@@ -773,21 +773,6 @@ int timekeeping_notify(struct clocksourc
- }
- 
- /**
-- * ktime_get_real - get the real (wall-) time in ktime_t format
-- *
-- * returns the time in ktime_t format
-- */
--ktime_t ktime_get_real(void)
--{
--	struct timespec64 now;
--
--	getnstimeofday64(&now);
--
--	return timespec64_to_ktime(now);
--}
--EXPORT_SYMBOL_GPL(ktime_get_real);
--
--/**
-  * getrawmonotonic - Returns the raw monotonic time in a timespec
-  * @ts:		pointer to the timespec to be set
-  *
-
+Converted what? We still need to keep a cpumask around that tells us which
+processor have vmstat running and which do not.
 
