@@ -1,319 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750AbaGKGSv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 02:18:51 -0400
-Received: from mga01.intel.com ([192.55.52.88]:4757 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752647AbaGKGSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 02:18:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,642,1400050800"; 
-   d="scan'208";a="560333526"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
-        Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org
-Subject: [Patch Part3 V4 20/21] iommu/vt-d: Enhance intel-iommu driver to support DMAR unit hotplug
-Date: Fri, 11 Jul 2014 14:19:44 +0800
-Message-Id: <1405059585-10620-21-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1405059585-10620-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1405059585-10620-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1752774AbaGKGTG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 02:19:06 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:36101 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857AbaGKGTB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 02:19:01 -0400
+Message-ID: <53BF81CE.60507@gmail.com>
+Date: Fri, 11 Jul 2014 11:48:54 +0530
+From: Tushar Behera <trblinux@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Mike Turquette <mturquette@linaro.org>,
+        Tushar Behera <tushar.b@samsung.com>
+CC: Mark Rutland <mark.rutland@arm.com>,
+        ML Devicetree <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Tomasz Figa <t.figa@samsung.com>, lkml <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>, Doug Anderson <dianders@google.com>,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Shaik Ameer Basha <shaik.ameer@samsung.com>,
+        ML Arch-Arm <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/3] clk: exynos-audss: Keep the parent of mout_audss
+ always enabled
+References: <1402464739-19044-1-git-send-email-tushar.b@samsung.com> <1402464739-19044-2-git-send-email-tushar.b@samsung.com> <20140611165027.6562.64928@quantum> <CAC5m3BwR9WhiiDqUw1A6FjmzAnQ02xCBxOeAaY2nt3CRqTz+oQ@mail.gmail.com> <20140612210920.6562.96815@quantum>
+In-Reply-To: <20140612210920.6562.96815@quantum>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement required callback functions for intel-iommu driver
-to support DMAR unit hotplug.
+On 06/13/2014 02:39 AM, Mike Turquette wrote:
+> Quoting Tushar Behera (2014-06-12 00:29:23)
+>> On Wed, Jun 11, 2014 at 10:20 PM, Mike Turquette <mturquette@linaro.org> wrote:
+>>> Quoting Tushar Behera (2014-06-10 22:32:17)
+>>>> When the output clock of AUDSS mux is disabled, we are getting kernel
+>>>> oops while doing a clk_get() on other clocks provided by AUDSS. Though
+>>>> user manual doesn't specify this dependency, we came across this issue
+>>>> while disabling the parent of AUDSS mux clocks.
+>>>
+>>> Hi Tushar,
+>>>
+>>> Can you help me understand better what the actual problem is? What is
+>>> the root cause of the kernel oops?
+>>
+>> Currently AUDSS mux has two parents, XXTI crystal and MAU_EPLL clock.
+>> As per observation, when the output of AUDSS mux is gated, we are not
+>> able to do any operation on the clocks provided by MAU block (mostly
+>> the clocks used by ADMA and audio blocks).
+> 
+> I tried to get a datasheet for Exynos 54xx but could not find it. I even
+> looked at the public 5250 data sheet, but it is completely missing
+> Chapter 34, "Audio Subsystem", which apparently contains Figure 34-3,
+> "Clock names and clock tree diagram of MAUDIO_BLK".
+> 
+> So without any clue about your hardware (not for lack of trying) I would
+> guess that somewhere in the parent hierarchy you have an interface clock
+> which must be enabled in order for you to touch the registers pertaining
+> to the downstream audio clocks.
+> 
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- drivers/iommu/intel-iommu.c |  206 +++++++++++++++++++++++++++++++------------
- 1 file changed, 151 insertions(+), 55 deletions(-)
+Yes, right. As per observation, we need to keep the output of AUDSS mux
+enabled to access the registers present in MAU block.
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index d35141ab62c3..fb805caf9774 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -1125,8 +1125,11 @@ static int iommu_alloc_root_entry(struct intel_iommu *iommu)
- 	unsigned long flags;
- 
- 	root = (struct root_entry *)alloc_pgtable_page(iommu->node);
--	if (!root)
-+	if (!root) {
-+		pr_err("IOMMU: allocating root entry for %s failed\n",
-+			iommu->name);
- 		return -ENOMEM;
-+	}
- 
- 	__iommu_flush_cache(iommu, root, ROOT_SIZE);
- 
-@@ -1466,7 +1469,7 @@ static int iommu_init_domains(struct intel_iommu *iommu)
- 	return 0;
- }
- 
--static void free_dmar_iommu(struct intel_iommu *iommu)
-+static void disable_dmar_iommu(struct intel_iommu *iommu)
- {
- 	struct dmar_domain *domain;
- 	int i;
-@@ -1490,11 +1493,16 @@ static void free_dmar_iommu(struct intel_iommu *iommu)
- 
- 	if (iommu->gcmd & DMA_GCMD_TE)
- 		iommu_disable_translation(iommu);
-+}
- 
--	kfree(iommu->domains);
--	kfree(iommu->domain_ids);
--	iommu->domains = NULL;
--	iommu->domain_ids = NULL;
-+static void free_dmar_iommu(struct intel_iommu *iommu)
-+{
-+	if ((iommu->domains) && (iommu->domain_ids)) {
-+		kfree(iommu->domains);
-+		kfree(iommu->domain_ids);
-+		iommu->domains = NULL;
-+		iommu->domain_ids = NULL;
-+	}
- 
- 	g_iommus[iommu->seq_id] = NULL;
- 
-@@ -2677,6 +2685,41 @@ static int __init iommu_prepare_static_identity_mapping(int hw)
- 	return 0;
- }
- 
-+static void intel_iommu_init_qi(struct intel_iommu *iommu)
-+{
-+	/*
-+	 * Start from the sane iommu hardware state.
-+	 * If the queued invalidation is already initialized by us
-+	 * (for example, while enabling interrupt-remapping) then
-+	 * we got the things already rolling from a sane state.
-+	 */
-+	if (!iommu->qi) {
-+		/*
-+		 * Clear any previous faults.
-+		 */
-+		dmar_fault(-1, iommu);
-+		/*
-+		 * Disable queued invalidation if supported and already enabled
-+		 * before OS handover.
-+		 */
-+		dmar_disable_qi(iommu);
-+	}
-+
-+	if (dmar_enable_qi(iommu)) {
-+		/*
-+		 * Queued Invalidate not enabled, use Register Based Invalidate
-+		 */
-+		iommu->flush.flush_context = __iommu_flush_context;
-+		iommu->flush.flush_iotlb = __iommu_flush_iotlb;
-+		pr_info("IOMMU: %s using Register based invalidation\n",
-+			iommu->name);
-+	} else {
-+		iommu->flush.flush_context = qi_flush_context;
-+		iommu->flush.flush_iotlb = qi_flush_iotlb;
-+		pr_info("IOMMU: %s using Queued invalidation\n", iommu->name);
-+	}
-+}
-+
- static int __init init_dmars(void)
- {
- 	struct dmar_drhd_unit *drhd;
-@@ -2705,6 +2748,10 @@ static int __init init_dmars(void)
- 			  DMAR_UNITS_SUPPORTED);
- 	}
- 
-+	/* Preallocate enough resources for IOMMU hot-addition */
-+	if (g_num_of_iommus < DMAR_UNITS_SUPPORTED)
-+		g_num_of_iommus = DMAR_UNITS_SUPPORTED;
-+
- 	g_iommus = kcalloc(g_num_of_iommus, sizeof(struct intel_iommu *),
- 			GFP_KERNEL);
- 	if (!g_iommus) {
-@@ -2733,58 +2780,14 @@ static int __init init_dmars(void)
- 		 * among all IOMMU's. Need to Split it later.
- 		 */
- 		ret = iommu_alloc_root_entry(iommu);
--		if (ret) {
--			printk(KERN_ERR "IOMMU: allocate root entry failed\n");
-+		if (ret)
- 			goto free_iommu;
--		}
- 		if (!ecap_pass_through(iommu->ecap))
- 			hw_pass_through = 0;
- 	}
- 
--	/*
--	 * Start from the sane iommu hardware state.
--	 */
--	for_each_active_iommu(iommu, drhd) {
--		/*
--		 * If the queued invalidation is already initialized by us
--		 * (for example, while enabling interrupt-remapping) then
--		 * we got the things already rolling from a sane state.
--		 */
--		if (iommu->qi)
--			continue;
--
--		/*
--		 * Clear any previous faults.
--		 */
--		dmar_fault(-1, iommu);
--		/*
--		 * Disable queued invalidation if supported and already enabled
--		 * before OS handover.
--		 */
--		dmar_disable_qi(iommu);
--	}
--
--	for_each_active_iommu(iommu, drhd) {
--		if (dmar_enable_qi(iommu)) {
--			/*
--			 * Queued Invalidate not enabled, use Register Based
--			 * Invalidate
--			 */
--			iommu->flush.flush_context = __iommu_flush_context;
--			iommu->flush.flush_iotlb = __iommu_flush_iotlb;
--			printk(KERN_INFO "IOMMU %d 0x%Lx: using Register based "
--			       "invalidation\n",
--				iommu->seq_id,
--			       (unsigned long long)drhd->reg_base_addr);
--		} else {
--			iommu->flush.flush_context = qi_flush_context;
--			iommu->flush.flush_iotlb = qi_flush_iotlb;
--			printk(KERN_INFO "IOMMU %d 0x%Lx: using Queued "
--			       "invalidation\n",
--				iommu->seq_id,
--			       (unsigned long long)drhd->reg_base_addr);
--		}
--	}
-+	for_each_active_iommu(iommu, drhd)
-+		intel_iommu_init_qi(iommu);
- 
- 	if (iommu_pass_through)
- 		iommu_identity_mapping |= IDENTMAP_ALL;
-@@ -2870,8 +2873,10 @@ static int __init init_dmars(void)
- 	return 0;
- 
- free_iommu:
--	for_each_active_iommu(iommu, drhd)
-+	for_each_active_iommu(iommu, drhd) {
-+		disable_dmar_iommu(iommu);
- 		free_dmar_iommu(iommu);
-+	}
- 	kfree(deferred_flush);
- free_g_iommus:
- 	kfree(g_iommus);
-@@ -3777,9 +3782,100 @@ int dmar_check_one_atsr(struct acpi_dmar_header *hdr, void *arg)
- 	return 0;
- }
- 
-+static int intel_iommu_add(struct dmar_drhd_unit *dmaru)
-+{
-+	int sp, ret = 0;
-+	struct intel_iommu *iommu = dmaru->iommu;
-+
-+	if (g_iommus[iommu->seq_id])
-+		return 0;
-+
-+	if (hw_pass_through && !ecap_pass_through(iommu->ecap)) {
-+		pr_warn("IOMMU: %s doesn't support hardware pass through.\n",
-+			iommu->name);
-+		return -ENXIO;
-+	}
-+	if (!ecap_sc_support(iommu->ecap) &&
-+	    domain_update_iommu_snooping(iommu)) {
-+		pr_warn("IOMMU: %s doesn't support snooping.\n",
-+			iommu->name);
-+		return -ENXIO;
-+	}
-+	sp = domain_update_iommu_superpage(iommu) - 1;
-+	if (sp >= 0 && !(cap_super_page_val(iommu->cap) & (1 << sp))) {
-+		pr_warn("IOMMU: %s doesn't support large page.\n",
-+			iommu->name);
-+		return -ENXIO;
-+	}
-+
-+	/*
-+	 * Disable translation if already enabled prior to OS handover.
-+	 */
-+	if (iommu->gcmd & DMA_GCMD_TE)
-+		iommu_disable_translation(iommu);
-+
-+	g_iommus[iommu->seq_id] = iommu;
-+	ret = iommu_init_domains(iommu);
-+	if (ret == 0)
-+		ret = iommu_alloc_root_entry(iommu);
-+	if (ret)
-+		goto out;
-+
-+	if (dmaru->ignored) {
-+		/*
-+		 * we always have to disable PMRs or DMA may fail on this device
-+		 */
-+		if (force_on)
-+			iommu_disable_protect_mem_regions(iommu);
-+		return 0;
-+	}
-+
-+	intel_iommu_init_qi(iommu);
-+	iommu_flush_write_buffer(iommu);
-+	ret = dmar_set_interrupt(iommu);
-+	if (ret)
-+		goto disable_iommu;
-+
-+	iommu_set_root_entry(iommu);
-+	iommu->flush.flush_context(iommu, 0, 0, 0, DMA_CCMD_GLOBAL_INVL);
-+	iommu->flush.flush_iotlb(iommu, 0, 0, 0, DMA_TLB_GLOBAL_FLUSH);
-+	iommu_enable_translation(iommu);
-+
-+	if (si_domain) {
-+		ret = iommu_attach_domain(si_domain, iommu);
-+		if (ret < 0 || si_domain->id != ret)
-+			goto disable_iommu;
-+		domain_attach_iommu(si_domain, iommu);
-+	}
-+
-+	iommu_disable_protect_mem_regions(iommu);
-+	return 0;
-+
-+disable_iommu:
-+	disable_dmar_iommu(iommu);
-+out:
-+	free_dmar_iommu(iommu);
-+	return ret;
-+}
-+
- int dmar_iommu_hotplug(struct dmar_drhd_unit *dmaru, bool insert)
- {
--	return intel_iommu_enabled ? -ENOSYS : 0;
-+	int ret = 0;
-+	struct intel_iommu *iommu = dmaru->iommu;
-+
-+	if (!intel_iommu_enabled)
-+		return 0;
-+	if (iommu == NULL)
-+		return -EINVAL;
-+
-+	if (insert) {
-+		ret = intel_iommu_add(dmaru);
-+	} else {
-+		disable_dmar_iommu(iommu);
-+		free_dmar_iommu(iommu);
-+	}
-+
-+	return ret;
- }
- 
- static void intel_iommu_free_dmars(void)
+> The right way to handle this requires two steps:
+> 
+> 1) model your interface clock in the Linux clock framework if you
+> haven't already (I assume it is a gate clock, or the child of a gate
+> clock)
+> 
+
+The interface clock is already part of the clock framework.
+
+> 2) the clk_ops callbacks for the affected audio clocks should wrap their
+> operations (i.e. critical secion) with a clk_enable/clk_disable pair,
+> where the clock being enables/disable is the interface clock mentioned
+> above in #1
+> 
+> The CCF is reentrant, so you can do this by simply using the top-level
+> clk.h API from within your clk_ops callbacks.
+> 
+
+Right now, the clocks are registered with clk_register_mux,
+clk_register_div and clk_register_gate calls which in turn set
+appropriate clk_ops callbacks. If I need to wrap the register access
+during these clk_ops callbacks with clk_enable/clk_disable of interface
+lock, I would have to reimplement the clk_ops callbacks in
+clk-exynos-audss driver.
+
+Is that the approach that you are suggesting?
+
+> I might be totally wrong about the cause of the hang, but that's my best
+> guess based on everyone's bug reports.
+> 
+
+There are 5 gate clocks within MAU block. While disabling the unused
+clocks, if CLK_MAU_EPLL is disabled first, then we are getting this
+system hang.
+
+
+> Regards,
+> Mike
+> 
+>>
+>>>
+>>> You mention calling clk_get on child clocks of the AUDSS mux fails, but
+>>> I cannot imagine why. How can the enable/disable state of a clock affect
+>>> the ability to clk_get other clocks?
+>>>
+>>
+>> I might have a little vogue while updating the commit message
+>> (mentioning about clk_get which surely is only a s/w operation), but
+>> there is definitely some issue with handling those clocks under given
+>> scenario.
+>>
+>> I am on leave till end of this week, so I will update you more with
+>> the logs on Monday.
+>>
+>> Thanks,
+>> --
+>> Tushar
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
+
+
 -- 
-1.7.10.4
-
+Tushar Behera
