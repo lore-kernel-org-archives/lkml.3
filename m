@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074AbaGKNob (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:44:31 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56128 "EHLO
+	id S1754522AbaGKNy7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:54:59 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56135 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753734AbaGKNo3 (ORCPT
+	with ESMTP id S1754061AbaGKNob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:44:29 -0400
-Message-Id: <20140711133706.969220744@linutronix.de>
+	Fri, 11 Jul 2014 09:44:31 -0400
+Message-Id: <20140711133707.059183163@linutronix.de>
 User-Agent: quilt/0.63-1
-Date: Fri, 11 Jul 2014 13:44:28 -0000
+Date: Fri, 11 Jul 2014 13:44:29 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 20/55] timekeeping: Use ktime_t data for
- ktime_get_update_offsets_now()
+Subject: [patch 21/55] timekeeping;
+ Use ktime based data for ktime_get_update_offsets_tick()
 References: <20140711133623.530368377@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Disposition: inline;
- filename=timekeeping-use-ktime-for-hrtimer-if.patch
+ filename=timekeeping-use-ktime-for-hrtimer-if-2.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -32,41 +32,41 @@ No need to juggle with timespecs.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/time/timekeeping.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ kernel/time/timekeeping.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
 Index: tip/kernel/time/timekeeping.c
 ===================================================================
 --- tip.orig/kernel/time/timekeeping.c
 +++ tip/kernel/time/timekeeping.c
-@@ -1672,14 +1672,14 @@ ktime_t ktime_get_update_offsets_now(kti
+@@ -1640,22 +1640,22 @@ ktime_t ktime_get_update_offsets_tick(kt
  							ktime_t *offs_tai)
  {
  	struct timekeeper *tk = &tk_core.timekeeper;
+-	struct timespec64 ts;
 -	ktime_t now;
  	unsigned int seq;
--	u64 secs, nsecs;
 +	ktime_t base;
 +	u64 nsecs;
  
  	do {
  		seq = read_seqcount_begin(&tk_core.seq);
  
--		secs = tk->xtime_sec;
+-		ts = tk_xtime(tk);
 +		base = tk->base_mono;
- 		nsecs = timekeeping_get_ns(tk);
- 
++		nsecs = tk->xtime_nsec >> tk->shift;
++
  		*offs_real = tk->offs_real;
-@@ -1687,9 +1687,7 @@ ktime_t ktime_get_update_offsets_now(kti
+ 		*offs_boot = tk->offs_boot;
  		*offs_tai = tk->offs_tai;
  	} while (read_seqcount_retry(&tk_core.seq, seq));
  
--	now = ktime_add_ns(ktime_set(secs, 0), nsecs);
+-	now = ktime_set(ts.tv_sec, ts.tv_nsec);
 -	now = ktime_sub(now, *offs_real);
 -	return now;
 +	return ktime_add_ns(base, nsecs);
  }
- #endif
  
+ #ifdef CONFIG_HIGH_RES_TIMERS
 
 
