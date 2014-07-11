@@ -1,126 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932129AbaGKVFn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 17:05:43 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:45839 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754133AbaGKVFl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 17:05:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140711203607.GD18246@pd.tnic>
-References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
-	<1404925766-32253-2-git-send-email-hskinnemoen@google.com>
-	<20140709191747.GB5249@pd.tnic>
-	<CAFQmdRa5Spr0nX6qwzhDGEU9+H1_0vaCtF_NRV=p=OBDwin78A@mail.gmail.com>
-	<20140710114222.GE2970@pd.tnic>
-	<CAFQmdRZ1D4OWqkL-zpsiEjuGQaSBBmk36HqSw=q+hHNCRWZCKQ@mail.gmail.com>
-	<CA+8MBbJ+FeQKZC9oVZsvrBptaY+24rVKWUXT02ETHMMoA-omuA@mail.gmail.com>
-	<CAFQmdRY1=Yg7T15kQmiA+S0j1-xNKsF6Sze49BN7-VzbwW7V4w@mail.gmail.com>
-	<20140711153541.GD17083@pd.tnic>
-	<CAFQmdRajEjtGB4xXVzCmaUPA=qEjrzQTskJtpmD0cqKhKsEYsg@mail.gmail.com>
-	<20140711203607.GD18246@pd.tnic>
-Date: Fri, 11 Jul 2014 14:05:40 -0700
-Message-ID: <CAFQmdRaBWqxHjDEM2QMRirrpLUAzYHdJcNaD85-c_ZtoMTEHgg@mail.gmail.com>
-Subject: Re: [PATCH 1/6] x86-mce: Modify CMCI poll interval to adjust for
- small check_interval values.
-From: Havard Skinnemoen <hskinnemoen@google.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Tony Luck <tony.luck@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ewout van Bekkum <ewout@google.com>,
-        linux-edac <linux-edac@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1754058AbaGKVFX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 17:05:23 -0400
+Received: from mga03.intel.com ([143.182.124.21]:38263 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751568AbaGKVFS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 17:05:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,645,1400050800"; 
+   d="scan'208";a="456056337"
+From: Sudeep Dutt <sudeep.dutt@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Williams <dan.j.williams@intel.com>
+Cc: Siva Yerramreddy <yshivakrishna@gmail.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Nikhil Rao <nikhil.rao@intel.com>, Sudeep Dutt <sudeep.dutt@intel.com>,
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
+Subject: [PATCH char-misc-next v3 0/8] Enable dma driver for MIC X100 Coprocessors
+Date: Fri, 11 Jul 2014 14:04:18 -0700
+Message-Id: <cover.1405109401.git.sudeep.dutt@intel.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 1:36 PM, Borislav Petkov <bp@alien8.de> wrote:
-> On Fri, Jul 11, 2014 at 11:56:11AM -0700, Havard Skinnemoen wrote:
->> > Basically the scheme becomes the following:
->> >
->> > * We switch to polling if we detect a second CMCI under an interval X
->> > * We poll Y times, each polling with a duration Z.
->> > * If during those Y*Z msec of polling, we've encountered errors, we
->> > enlarge the polling interval to additional Y*Z msec.
->> >
->> >
->> > check_interval will be capped on the low end to something bigger than
->> > the polling duration Y*Z and only the storm detection code will be
->> > allowed to go to lower intervals and switch to polling.
->> >
->> > At least something like that. In general, I'd like to make it more
->> > robust for every system without the need for user interaction, i.e.
->> > adjusting check_interval and where it just works.
->>
->> But at the same time, this scheme introduces even more variables that
->> need careful tuning, e.g. storm polling interval and storm duration,
->> while not really doing anything to make check_interval superfluous. Do
->
-> Oh, we can't make check_interval superfluous - it is API to userspace
-> for a long time now.
+ChangeLog:
+=========
+v2 => v3:
+a) MIC bus device private pointer cleanup as per feedback from
+   Greg Kroah-Hartman.
+b) Fixed minor Makefile conflict after rebasing to v3.16-rc2
 
-Oh, I guess I misunderstood. I thought you were actually talking about
-removing that knob.
+v1 => v2: https://lkml.org/lkml/2014/5/29/981
+a) MIC bus driver cleanups and device release callback fix in patch 2,
+   as per feedback from Greg Kroah-Hartman.
 
->> you really think we can tune these variables correctly for every
->> system out there?
->
-> Right, I was trying to figure out a scheme first where polling intervals
-> and thresholds would actually make sense and not be arbitrary.
->
-> We probably won't be able to have the exact values for each system but a
-> smart approximation could do the job nicely enough.
+v1: Initial post @ https://lkml.org/lkml/2014/5/27/819
 
-Sounds good, but we need to limit the complexity (which is why we
-can't get exact values).
+These patches are being sent to char-misc because there is a dependency
+between the patches for dma driver and other drivers.
 
->> Or if we want to be generous: How about we just hardcode
->> check_interval to 5 seconds. Would that be fine with everyone?
->
-> We could but again, it is an API to userspace exported through sysfs.
->
-> Besides, on a healthy system, you see errors so seldomly that 5sec is
-> pure waste of energy.
+Description:
+============
+This set of patches add support for MIC X100 dma driver.
+MIC PCIe card has a dma controller with 8 channels. These channels are
+shared between the host s/w and the card s/w. 0 to 3 are used by host
+nd 4 to 7 by card. As the dma device doesn't show up as PCIe device,
+a virtual bus called mic bus is created and virtual dma devices are
+created on it by the host/card drivers. On host the channels are private
+and used only by the host driver to transfer data for the virtio devices.
 
-True, but it sometimes makes sense to turn it down to a seemingly
-insane value, e.g. during hardware testing and qualification. Which is
-why I want to make sure values in that range work.
+Here is a higher level block diagram.
+                                      |
+               +----------+           |             +----------+
+               | Card OS  |           |             | Host OS  |
+               +----------+           |             +----------+
+                                      |
+        +-------+ +--------+ +------+ | +---------+  +--------+ +--------+
+        | Virtio| |Virtio  | |Virtio| | |Virtio   |  |Virtio  | |Virtio  |
+        | Net   | |Console | |Block | | |Net      |  |Console | |Block   |
+        | Driver| |Driver  | |Driver| | |backend  |  |backend | |backend |
+        +-------+ +--------+ +------+ | +---------+  +--------+ +--------+
+            |         |         |     |      |            |         |
+            |         |         |     |User  |            |         |
+            |         |         |     |------|------------|---------|-------
+            +-------------------+     |Kernel +--------------------------+
+                      |               |       | Virtio over PCIe IOCTLs  |
+                      |               |       +--------------------------+
++-----------+         |               |                   |  +-----------+
+| MIC DMA   |         |               |                   |  | MIC DMA   |
+| Driver    |         |               |                   |  | Driver    |
++-----------+         |               |                   |  +-----------+
+      |               |               |                   |        |
++---------------+     |               |                   |  +----------------+
+|MIC virtual Bus|     |               |                   |  |MIC virtual Bus |
++---------------+     |               |                   |  +----------------+
+      |               |               |                   |              |
+      |   +--------------+            |            +---------------+     |
+      |   |Intel MIC     |            |            |Intel MIC      |     |
+      +---|Card Driver   |            |            |Host Driver    |     |
+          +--------------+            |            +---------------+-----+
+                      |               |                   |
+             +-------------------------------------------------------------+
+             |                                                             |
+             |                    PCIe Bus                                 |
+             +-------------------------------------------------------------+
 
-But please disregard my suggestion to hardcode check_interval -- it's
-a bad idea and we're not going to remove that knob anyway.
+The following series of patches are partitioned as follows:
 
->> > I don't know whether any of the above makes sense - I hope that the
->> > gist of it at least shows what IO think we should be doing: instead
->> > of letting users configure the check_interval and influence the CMCI
->> > polling interval, we should rely purely on machine characteristics to
->> > set minimum values under which we poll and above which, we do the normal
->> > duration enlarging dance.
->>
->> I think the scheme may work, although I'm worried about the burstiness
->> mentioned above.
->>
->> But I don't really buy that pulling a handful of numbers out of thin
->> air and saying it should work for everyone is going to work.
->
-> No no, absolutely not. This is exactly what I think should be fixed as
-> the current numbers are likely pulled out of thin air. Simply because
-> figuring the optimal ones is a very hard task, as we come to realize.
->
->> Either we need solid data to back up those numbers, or we need to make
->> them configurable so people can experiment and find what works best
->> for them.
->
-> ..., or, we could measure them on each system and approximate them to
-> the ones close to optimal for that particular system, over the course of
-> its runtime.
+Patch 1: Add mic bus and dma driver documentation.
+Patch 2: Add a bus driver for virtual MIC devices.
+Patch 3: MIC X100 DMA Driver.
+Patch 4: Add threaded irq support in host driver.
+	 This is needed as the dma driver uses threaded irq.
+Patch 5: Use dma to transfer data between MIC and host.
+	 Authors: Siva Yerramreddy, Ashutosh Dixit
+Patch 6: Add threaded irq support in mic_request_card_irq.
+	 This is needed as the dma driver uses threaded irq.
+Patch 7: Add dma device on mic bus.
+Patch 8: Modify the mpss script to load/unload mic_x100_dma.ko.
 
-I like the idea, but I'm worried about the complexity. Maybe what you
-said elsewhere makes sense -- I'll have to look at it more closely.
+The patches have been compiled/validated against v3.16-rc2. Tested using
+dmatest module with module parameter "threads_per_chan=60". These patches
+have also been scanned by Fengguang Wu's 0-day infrastructure and no
+issues have been reported.
 
-> Thanks for taking the time and humouring me with that crazy
-> brainstorming!
+Thanks to Dan Williams, Vinod Koul, Jon Mason, Dave Jiang for the initial
+review.
 
-You're welcome, and likewise :)
+Siva Yerramreddy (7):
+  misc: mic: Add mic bus and dma driver documentation
+  dma: MIC X100 DMA Driver
+  misc: mic: add threaded irq support in host driver
+  misc: mic: add dma support in host driver
+  misc: mic: add threaded irq support in card driver
+  misc: mic: add dma support in card driver
+  misc: mic: add support for loading/unloading dma driver
 
-Havard
+Sudeep Dutt (1):
+  misc: mic: add a bus driver for virtual MIC devices
+
+ Documentation/mic/mic_overview.txt |  67 ++--
+ Documentation/mic/mpssd/mpss       |  14 +-
+ drivers/dma/Kconfig                |  19 +
+ drivers/dma/Makefile               |   1 +
+ drivers/dma/mic_x100_dma.c         | 774 +++++++++++++++++++++++++++++++++++++
+ drivers/dma/mic_x100_dma.h         | 286 ++++++++++++++
+ drivers/misc/mic/Kconfig           |  21 +-
+ drivers/misc/mic/Makefile          |   1 +
+ drivers/misc/mic/bus/Makefile      |   5 +
+ drivers/misc/mic/bus/mic_bus.c     | 218 +++++++++++
+ drivers/misc/mic/card/mic_device.c |  23 +-
+ drivers/misc/mic/card/mic_device.h |   9 +-
+ drivers/misc/mic/card/mic_virtio.c |   7 +-
+ drivers/misc/mic/card/mic_x100.c   |  55 ++-
+ drivers/misc/mic/host/mic_boot.c   |  83 +++-
+ drivers/misc/mic/host/mic_device.h |  24 ++
+ drivers/misc/mic/host/mic_intr.c   | 121 +++---
+ drivers/misc/mic/host/mic_intr.h   |  27 +-
+ drivers/misc/mic/host/mic_main.c   |   5 +-
+ drivers/misc/mic/host/mic_virtio.c | 187 +++++++--
+ drivers/misc/mic/host/mic_virtio.h |  21 +-
+ drivers/misc/mic/host/mic_x100.c   |   8 +
+ include/linux/mic_bus.h            | 110 ++++++
+ 23 files changed, 1935 insertions(+), 151 deletions(-)
+ create mode 100644 drivers/dma/mic_x100_dma.c
+ create mode 100644 drivers/dma/mic_x100_dma.h
+ create mode 100644 drivers/misc/mic/bus/Makefile
+ create mode 100644 drivers/misc/mic/bus/mic_bus.c
+ create mode 100644 include/linux/mic_bus.h
+
+-- 
+1.8.2.1
+
