@@ -1,229 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841AbaGKNN6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:13:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60038 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753123AbaGKNN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:13:56 -0400
-Message-ID: <1405084407.4098.59.camel@ul30vt.home>
-Subject: Re: [PATCH 1/2 V3] PCI: introduce device assignment interface and
- refactory related code
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Ethan Zhao <ethan.zhao@oracle.com>
-Cc: bhelgaas@google.com, konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com, gleb@kernel.org, pbonzini@redhat.com,
-        jeffrey.t.kirsher@intel.com, jesse.brandeburg@intel.com,
-        bruce.w.allan@intel.com, carolyn.wyborny@intel.com,
-        donald.c.skidmore@intel.com, gregory.v.rose@intel.com,
-        alexander.h.duyck@intel.com, john.ronciak@intel.com,
-        mitch.a.williams@intel.com, linux-pci@vger.kernel.org,
-        kvm@vger.kernel.org, linux.nics@intel.com,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ethan.kernel@gmail.com,
-        vaughan.cao@oracle.com
-Date: Fri, 11 Jul 2014 07:13:27 -0600
-In-Reply-To: <1405081802-419-1-git-send-email-ethan.zhao@oracle.com>
-References: <1405081802-419-1-git-send-email-ethan.zhao@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753858AbaGKNOe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:14:34 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:47327 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753513AbaGKNOc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 09:14:32 -0400
+Date: Fri, 11 Jul 2014 15:14:22 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Andrzej Hajda <a.hajda@samsung.com>,
+        Terje Bergstrom <tbergstrom@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-tegra@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        gnurou@gmail.com
+Subject: Re: [PATCH v3 4/4] ARM: tegra: roth: add display DT node
+Message-ID: <20140711131421.GD10827@ulmo>
+References: <1404822734-8603-1-git-send-email-acourbot@nvidia.com>
+ <1404822734-8603-5-git-send-email-acourbot@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="11Y7aswkeuHtSBEs"
+Content-Disposition: inline
+In-Reply-To: <1404822734-8603-5-git-send-email-acourbot@nvidia.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-11 at 20:30 +0800, Ethan Zhao wrote:
-> This patch introduces two new device assignment functions
-> 
-> pci_iov_assign_device(),
-> pci_iov_deassign_device()
-> 
-> along with the existed one
-> 
-> pci_vfs_assigned()
-> 
-> They construct the VFs assignment management interface, used to assign/
-> deassign device to VM and query the VFs reference counter. instead of
-> direct manipulation of device flag.
-> 
-> This patch refashioned the related code and make them atomic.
-> 
-> v3: change the naming of device assignment helpers, because they work
-> for all kind of PCI device, not only SR-IOV (david.vrabel@citrix.com)
-> 
-> v2: reorder the patchset and make it bisectable and atomic, steps clear
-> between interface defination and implemenation according to the
-> suggestion from alex.williamson@redhat.com
-> 
-> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+
+--11Y7aswkeuHtSBEs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Tue, Jul 08, 2014 at 09:32:14PM +0900, Alexandre Courbot wrote:
+> Tegra DSI support has been fixed to support continuous clock behavior that
+> the panel used on SHIELD requires, so finally add its device tree node
+> since it is functional.
+>=20
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 > ---
+>  arch/arm/boot/dts/tegra114-roth.dts | 22 +++++++++++++++++++---
+>  1 file changed, 19 insertions(+), 3 deletions(-)
 
-- Use a cover patch to describe the series
+I've applied this to Tegra's for-3.17/dt branch. Thanks.
 
-- Version information goes here, below the "---", not above it
+Thierry
 
-- I stand by the patch breakdown I suggested originally, there are too
-many logical changes here in patch 1.  There are easily 3 separate
-patches here.
+--11Y7aswkeuHtSBEs
+Content-Type: application/pgp-signature
 
-- Renaming s/sriov/iov/ doesn't address the problem David raised.  The
-name is still synonymous with SR-IOV and it's defined on
-drivers/pci/iov.c, which is only built with CONFIG_PCI_IOV.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-- PCI_DEV_FLAGS_ASSIGNED should be unused after this series, why is it
-not removed?
+iQIcBAEBAgAGBQJTv+MtAAoJEN0jrNd/PrOhUcQQAJFUrru8mU40w0L9H6Cu7cVb
+ljJ23wwc81SJo4QzIJIbhIXL0LQkIZ50vt+sgYC7Jzlr9WQ8OU/wvUkvrtUIAPVI
+bf9SoR5zbOi6K+1ih1/5nCFFyhlCQ8Ovp3VHy54fIuG8kI2yPgLchR/9sP0NKZTu
+dYfudFla9bpGpOkGvdXBGMRU18JCQ5P//MN+azjB80qCB79NaQyFAXZMUwiyc5fO
+g/vuFep9+CGDZF6+6vvLcgvBAXK0fu0UXSI3Vl0Lbb2/Wy/3aUqwsgDZ+rU4ORjD
+8c3yY3hwQ9AgAqNORIn7MlB7RlCfMqA1r369CQOwVXIWr7wxuQLJKrADH5kUtPre
+uLL0Lk1YQ7bzuAinI875tKmnKIyN2N/G7f4dmqvFRI9zzw4Qhs2QtuC1eV72MXqG
+CTy38tR0HhQIzEW5GABImH8W/F0QDY98wuh7xFCAWVKPr8LycGtpc8XJvSeFjKzV
+6TWV8PM+cWwU3SuHEBWVYQjRbxgS9hx+VCcS9tl9fnoTls3X+sIg5bDJxgfSPjAf
+cojezho0Yyhi42VCel7XAYX0IJ9FEoW8WUQIlhFQ5Bc+w3W8CpcBNTPj1oL3wS+i
+vicU9kAQCPVcIk8I/z8yGBBsSgKF6psG4Keor/CVLNAd4T4/K9E9a38p00F5qQbR
+1FqiyZ3LqPcgme9nG8oo
+=o2Q7
+-----END PGP SIGNATURE-----
 
->  drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c |   17 ++---------------
->  drivers/pci/iov.c                                  |   20 ++++++++++++++++++++
->  drivers/xen/xen-pciback/pci_stub.c                 |    4 ++--
->  include/linux/pci.h                                |    4 ++++
->  virt/kvm/assigned-dev.c                            |    2 +-
->  virt/kvm/iommu.c                                   |    4 ++--
-
-- This patch touch 4 separate logical code areas, who do you expect to
-ack and commit it?  Split it up.
-
->  6 files changed, 31 insertions(+), 20 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c b/drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c
-> index 02c11a7..781040e 100644
-> --- a/drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c
-> +++ b/drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c
-> @@ -693,22 +693,9 @@ complete_reset:
->  static bool i40e_vfs_are_assigned(struct i40e_pf *pf)
->  {
->  	struct pci_dev *pdev = pf->pdev;
-> -	struct pci_dev *vfdev;
-> -
-> -	/* loop through all the VFs to see if we own any that are assigned */
-> -	vfdev = pci_get_device(PCI_VENDOR_ID_INTEL, I40E_DEV_ID_VF , NULL);
-> -	while (vfdev) {
-> -		/* if we don't own it we don't care */
-> -		if (vfdev->is_virtfn && pci_physfn(vfdev) == pdev) {
-> -			/* if it is assigned we cannot release it */
-> -			if (vfdev->dev_flags & PCI_DEV_FLAGS_ASSIGNED)
-> -				return true;
-> -		}
->  
-> -		vfdev = pci_get_device(PCI_VENDOR_ID_INTEL,
-> -				       I40E_DEV_ID_VF,
-> -				       vfdev);
-> -	}
-> +	if (pci_vfs_assigned(pdev))
-> +		return true;
->  
->  	return false;
->  }
-> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-> index de7a747..090f827 100644
-> --- a/drivers/pci/iov.c
-> +++ b/drivers/pci/iov.c
-> @@ -644,6 +644,26 @@ int pci_vfs_assigned(struct pci_dev *dev)
->  EXPORT_SYMBOL_GPL(pci_vfs_assigned);
->  
->  /**
-> + * pci_iov_assign_device - assign device to VM
-> + * @pdev: the device to be assigned.
-> + */
-> +void pci_iov_assign_device(struct pci_dev *pdev)
-> +{
-> +	pdev->dev_flags |= PCI_DEV_FLAGS_ASSIGNED;
-> +}
-> +EXPORT_SYMBOL_GPL(pci_iov_assign_device);
-> +
-> +/**
-> + * pci_iov_deassign_device - deasign device from VM
-> + * @pdev: the device to be deassigned.
-> + */
-> +void pci_iov_deassign_device(struct pci_dev *pdev)
-> +{
-> +	pdev->dev_flags &= ~PCI_DEV_FLAGS_ASSIGNED;
-> +}
-> +EXPORT_SYMBOL_GPL(pci_iov_deassign_device);
-> +
-> +/**
->   * pci_sriov_set_totalvfs -- reduce the TotalVFs available
->   * @dev: the PCI PF device
->   * @numvfs: number that should be used for TotalVFs supported
-> diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
-> index 62fcd48..27e00d1 100644
-> --- a/drivers/xen/xen-pciback/pci_stub.c
-> +++ b/drivers/xen/xen-pciback/pci_stub.c
-> @@ -133,7 +133,7 @@ static void pcistub_device_release(struct kref *kref)
->  	xen_pcibk_config_free_dyn_fields(dev);
->  	xen_pcibk_config_free_dev(dev);
->  
-> -	dev->dev_flags &= ~PCI_DEV_FLAGS_ASSIGNED;
-> +	pci_iov_deassign_device(dev);
->  	pci_dev_put(dev);
->  
->  	kfree(psdev);
-> @@ -404,7 +404,7 @@ static int pcistub_init_device(struct pci_dev *dev)
->  	dev_dbg(&dev->dev, "reset device\n");
->  	xen_pcibk_reset_device(dev);
->  
-> -	dev->dev_flags |= PCI_DEV_FLAGS_ASSIGNED;
-> +	pci_iov_assign_device(dev);
->  	return 0;
->  
->  config_release:
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index aab57b4..5ece6d6 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -1603,6 +1603,8 @@ int pci_num_vf(struct pci_dev *dev);
->  int pci_vfs_assigned(struct pci_dev *dev);
->  int pci_sriov_set_totalvfs(struct pci_dev *dev, u16 numvfs);
->  int pci_sriov_get_totalvfs(struct pci_dev *dev);
-> +void pci_iov_assign_device(struct pci_dev *dev);
-> +void pci_iov_deassign_device(struct pci_dev *dev);
->  #else
->  static inline int pci_enable_sriov(struct pci_dev *dev, int nr_virtfn)
->  { return -ENODEV; }
-> @@ -1614,6 +1616,8 @@ static inline int pci_sriov_set_totalvfs(struct pci_dev *dev, u16 numvfs)
->  { return 0; }
->  static inline int pci_sriov_get_totalvfs(struct pci_dev *dev)
->  { return 0; }
-> +static inline void pci_iov_assign_device(struct pci_dev *dev) { }
-> +static inline void pci_iov_deassign_device(struct pci_dev *dev) { }
->  #endif
->  
->  #if defined(CONFIG_HOTPLUG_PCI) || defined(CONFIG_HOTPLUG_PCI_MODULE)
-> diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
-> index bf06577..7fac58d 100644
-> --- a/virt/kvm/assigned-dev.c
-> +++ b/virt/kvm/assigned-dev.c
-> @@ -302,7 +302,7 @@ static void kvm_free_assigned_device(struct kvm *kvm,
->  	else
->  		pci_restore_state(assigned_dev->dev);
->  
-> -	assigned_dev->dev->dev_flags &= ~PCI_DEV_FLAGS_ASSIGNED;
-> +	pci_iov_deassign_device(assigned_dev->dev);
->  
->  	pci_release_regions(assigned_dev->dev);
->  	pci_disable_device(assigned_dev->dev);
-> diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
-> index 0df7d4b..641ee73 100644
-> --- a/virt/kvm/iommu.c
-> +++ b/virt/kvm/iommu.c
-> @@ -194,7 +194,7 @@ int kvm_assign_device(struct kvm *kvm,
->  			goto out_unmap;
->  	}
->  
-> -	pdev->dev_flags |= PCI_DEV_FLAGS_ASSIGNED;
-> +	pci_iov_assign_device(pdev);
->  
->  	dev_info(&pdev->dev, "kvm assign device\n");
->  
-> @@ -220,7 +220,7 @@ int kvm_deassign_device(struct kvm *kvm,
->  
->  	iommu_detach_device(domain, &pdev->dev);
->  
-> -	pdev->dev_flags &= ~PCI_DEV_FLAGS_ASSIGNED;
-> +	pci_iov_deassign_device(pdev);
->  
->  	dev_info(&pdev->dev, "kvm deassign device\n");
->  
-
-
-
+--11Y7aswkeuHtSBEs--
