@@ -1,81 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180AbaGKKL7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 06:11:59 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:55039 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752000AbaGKKL6 (ORCPT
+	id S1753291AbaGKKNj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 06:13:39 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:42209 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760AbaGKKNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 06:11:58 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-4b-53bfb86b55dd
-Message-id: <53BFB84A.900@samsung.com>
-Date: Fri, 11 Jul 2014 12:11:22 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Sachin Kamat <sachin.kamat@samsung.com>,
-        open list <linux-kernel@vger.kernel.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sachin Kamat <spk.linux@gmail.com>
-Subject: Re: [PATCH 1/1] MAINTAINERS: Update Samsung pin control entry
-References: <1405069190-13986-1-git-send-email-sachin.kamat@samsung.com>
- <CAK5sBcFXo3YVeJ7U94f9_UuAuzCwmeOdCCJTE8D8pZEZfaOZbg@mail.gmail.com>
-In-reply-to: <CAK5sBcFXo3YVeJ7U94f9_UuAuzCwmeOdCCJTE8D8pZEZfaOZbg@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPLMWRmVeSWpSXmKPExsVy+t/xy7rZO/YHG8x7aWkxZ/0aNospf5Yz
-	WVzeNYfN4sqlU2wWLV/PsTiweuycdZfd4861PWweJ2b8ZvHo27KK0ePzJrkA1igum5TUnMyy
-	1CJ9uwSujMvb7Au6OSuuT1/G3sC4kL2LkZNDQsBE4ti1O4wQtpjEhXvr2boYuTiEBJYySiy/
-	sg7K+cwo0T31K1gHr4CaxPPJ89hAbBYBVYkXr1+A2WxA8c8Nj8BsfgEtiTVN11m6GDk4RAUi
-	JB5fEIJoFZT4MfkeC4gtIhAuserQV7DFzAK1Ekt3zmMFsYUF3CRaP55ghdjbzyjRMfETM0iC
-	UyBYYvnlI8wQDeoSk+YtgrLlJTavecs8gVFwFpIds5CUzUJStoCReRWjaGppckFxUnquoV5x
-	Ym5xaV66XnJ+7iZGSKB/2cG4+JjVIUYBDkYlHl6N2t3BQqyJZcWVuYcYJTiYlUR4n9TvDxbi
-	TUmsrEotyo8vKs1JLT7EyMTBKdXAmLHHWnGb7J+i+bPjLUTLxLonfQ8/Espa/mG6+54975bf
-	rA99yX7+bpKltICpaVTIAT1bXfUAS8VNucy5VvX5YlWGnzf3cDyqcPzh8qPAsLJa9TNX3bEI
-	X2te/deihq03vwullNfM0mnJP7gsQ9a0qnr7BA1X9ve6C/b2ThH37vz8ssFJ5YMSS3FGoqEW
-	c1FxIgDCsFG9UgIAAA==
+	Fri, 11 Jul 2014 06:13:37 -0400
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Cc: gregkh@linuxfoundation.org, hsweeten@visionengravers.com,
+        abbotti@mev.co.uk, dcb314@hotmail.com,
+        Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Subject: [PATCH] drivers/staging/comedi/drivers/ni_atmio16d.c: remove pointless condition
+Date: Fri, 11 Jul 2014 13:13:23 +0300
+Message-Id: <1405073603-21468-1-git-send-email-andrey.krieger.utkin@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.07.2014 11:57, Sachin Kamat wrote:
-> + Tomasz
-> 
-> Sorry for missing the maintainer himself :)
-> 
-> On Fri, Jul 11, 2014 at 2:29 PM, Sachin Kamat <sachin.kamat@samsung.com> wrote:
->> Update to reflect the recent file movement to a sub-directory.
->>
->> Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
->> ---
->>  MAINTAINERS |    4 +---
->>  1 file changed, 1 insertion(+), 3 deletions(-)
->>
->> diff --git a/MAINTAINERS b/MAINTAINERS
->> index e3a517635eb4..898cf76f8837 100644
->> --- a/MAINTAINERS
->> +++ b/MAINTAINERS
->> @@ -6943,9 +6943,7 @@ M:        Thomas Abraham <thomas.abraham@linaro.org>
->>  L:     linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
->>  L:     linux-samsung-soc@vger.kernel.org (moderated for non-subscribers)
->>  S:     Maintained
->> -F:     drivers/pinctrl/pinctrl-exynos.*
->> -F:     drivers/pinctrl/pinctrl-s3c*
->> -F:     drivers/pinctrl/pinctrl-samsung.*
->> +F:     drivers/pinctrl/samsung/
->>
->>  PIN CONTROLLER - ST SPEAR
->>  M:     Viresh Kumar <viresh.linux@gmail.com>
->> --
->> 1.7.9.5
->>
-> 
+The issue was discovered with static analysis and has two instances in
+this file. The code looks like this
+if (x < 65536000) {
+	...
+} else if (x < 655360000) {
+	...
+} else if (x <= 0xffffffff /* 6553600000 */) {
+	...
+} else if (x <= 0xffffffff /* 65536000000 */) {
+	...
+}
 
-Acked-by: Tomasz Figa <t.figa@samsung.com>
+The meaning of this block is to select appropriate clock frequency for
+interval timer basing on "x", which is amount of time.
 
---
-Best regards,
-Tomasz
+Notes:
+1. That last condition matches previous one - that's the issue.
+2. Decimal numbers in comments don't match hex numbers in expressions.
+But in first case the numbers have same order, while in the second case
+the hex number is the same, and the decimal one is 10 times bigger.
+3. Actually type of "x" is "unsigned int", so its exact upper limit is
+not obviously known.
+4. There's no "else" block.
+
+So it makes sense to make an "else" block from last "else if" case. The
+code inside the block seems correct for such usage.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=79871
+Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+---
+ drivers/staging/comedi/drivers/ni_atmio16d.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/ni_atmio16d.c b/drivers/staging/comedi/drivers/ni_atmio16d.c
+index 6ad27f5..895b56d 100644
+--- a/drivers/staging/comedi/drivers/ni_atmio16d.c
++++ b/drivers/staging/comedi/drivers/ni_atmio16d.c
+@@ -338,7 +338,7 @@ static int atmio16d_ai_cmd(struct comedi_device *dev,
+ 	} else if (cmd->convert_arg <= 0xffffffff /* 6553600000 */) {
+ 		base_clock = CLOCK_10_KHZ;
+ 		timer = cmd->convert_arg / 100000;
+-	} else if (cmd->convert_arg <= 0xffffffff /* 65536000000 */) {
++	} else {
+ 		base_clock = CLOCK_1_KHZ;
+ 		timer = cmd->convert_arg / 1000000;
+ 	}
+@@ -406,7 +406,7 @@ static int atmio16d_ai_cmd(struct comedi_device *dev,
+ 		} else if (cmd->scan_begin_arg < 0xffffffff /* 6553600000 */) {
+ 			base_clock = CLOCK_10_KHZ;
+ 			timer = cmd->scan_begin_arg / 100000;
+-		} else if (cmd->scan_begin_arg < 0xffffffff /* 65536000000 */) {
++		} else {
+ 			base_clock = CLOCK_1_KHZ;
+ 			timer = cmd->scan_begin_arg / 1000000;
+ 		}
+-- 
+1.8.3.2
+
