@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753642AbaGKN1h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:27:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55540 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753523AbaGKN1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:27:36 -0400
-Date: Fri, 11 Jul 2014 15:27:34 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Tejun Heo <tj@kernel.org>, Fengguang Wu <fengguang.wu@intel.com>
-cc: Jet Chen <jet.chen@intel.com>, Su Tao <tao.su@intel.com>,
-        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [workqueue] WARNING: CPU: 0 PID: 76 at drivers/block/floppy.c:968
- schedule_bh()
-In-Reply-To: <alpine.LNX.2.00.1407081656290.1655@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1407111526430.8779@pobox.suse.cz>
-References: <20140708021149.GA12956@localhost> <20140708140430.GE4979@htj.dyndns.org> <20140708144632.GF4979@htj.dyndns.org> <alpine.LNX.2.00.1407081656290.1655@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753755AbaGKN2s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:28:48 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:54490 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392AbaGKN2q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 09:28:46 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1405027816.2613.17.camel@fedora-lan>
+References: <1404163586-29582-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1405027816.2613.17.camel@fedora-lan>
+Date: Fri, 11 Jul 2014 09:28:44 -0400
+Message-ID: <CAN+gG=HVhcdP3WJ-sX_jXuMVpQJH2+f80NDGuUEStnATf2h_Nw@mail.gmail.com>
+Subject: Re: [Linuxwacom-devel] [PATCH 00/15] Input - Wacom: switch from an
+ USB to a HID driver
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Przemo Firszt <przemo@firszt.eu>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, Ping Cheng <pinglinux@gmail.com>,
+        Jason Gerecke <killertofu@gmail.com>,
+        linuxwacom-devel <linuxwacom-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-input <linux-input@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Jul 2014, Jiri Kosina wrote:
+Hi Przemo,
 
-> > > Hmmm... this is schedule_bh() in floppy.c complaining that the work
-> > > item is already pending.  The cond_resched() addition by b22ce2785d97
-> > > doesn't change the semantics around work item execution although it
-> > > could have exposed an existing problem in the floppy driver.  I'll
-> > > look into how this could happen.
-> > 
-> > It doesn't reproduce here and nothing really stands out to me.  It
-> > probably involves floppy_work requeueing itself and something else
-> > getting executed inbetween which wouldn't have happend before, but I
-> > can't figure out what that could be and either can I follow the
-> > control flow the driver. :)
-> >
-> > 
-> > Jiri, any ideas?
-> 
-> I will take a look. Could this be a bad bisect though due to this actually 
-> being a race condition perhaps?
+On Thu, Jul 10, 2014 at 5:30 PM, Przemo Firszt <przemo@firszt.eu> wrote:
+> Hi Benjamin,
+> I'm having some problems to cleanly apply your patches - can you double
+> check that they are OK?
 
-Fengguang, is it possible for you to confirm the bisection result (i.e. 
-revert the patch and check)?
+These patches relies on a previous patchset I sent earlier. So they do
+not apply cleanly on top of Dmitry's tree as long as the previous
+patch set has not been merged :(
 
-I am having hard time seeing how it could cause this (and I am not able to 
-reproduce the problem myself).
+As I mentioned in the last series I sent, I pushed a git tree with the
+various series applied:
+https://github.com/bentiss/linux/commits/hid-wacom-legacy-3.16-rc4
 
-Thanks,
+First series is the split of the pad input + various cleanups:
+719eaed64c...003c44a74840
 
--- 
-Jiri Kosina
-SUSE Labs
+Then this series:
+71d0261b7b...9be3b169b23
+
+And the last series I sent yesterday:
+4fabeed121...f01c5684e6
+
+This is not an ideal solution, but I hope we will figure out soon
+enough the way we can merge this upstream (through the HID tree or the
+Input tree).
+
+Anyway, I am planing of re-sending the whole various patch series soon
+so the maintainer can pick them directly instead of having to dig in
+the linux-input archives.
+
+Cheers,
+Benjamin
+
+> --
+> Regards,
+> Przemo
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
