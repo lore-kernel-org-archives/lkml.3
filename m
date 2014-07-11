@@ -1,122 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932071AbaGKOL2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 10:11:28 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:29312 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754169AbaGKOEm (ORCPT
+	id S1754597AbaGKOLk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 10:11:40 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:40554 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753960AbaGKOLh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 10:04:42 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-76-53bfeef8622b
-From: Jacek Anaszewski <j.anaszewski@samsung.com>
-To: linux-leds@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
-        Jacek Anaszewski <j.anaszewski@samsung.com>,
-        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>
-Subject: [PATCH/RFC v4 03/21] leds: Improve and export led_update_brightness
-Date: Fri, 11 Jul 2014 16:04:06 +0200
-Message-id: <1405087464-13762-4-git-send-email-j.anaszewski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
-References: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJLMWRmVeSWpSXmKPExsVy+t9jQd0f7/YHG6y4YmCxccZ6VoujOycy
-	Wcw/co7Vovfqc0aLs01v2C0u75rDZrH1zTpGi54NW1ktdu96yurA6bFz1l12jz3zf7B69G1Z
-	xejxeZNcAEsUl01Kak5mWWqRvl0CV8aV+dvYCjrEKt7fv83ewLhJqIuRk0NCwERi+tNzLBC2
-	mMSFe+vZuhi5OIQEpjNKzG8/yQzhtDNJbL2/lhmkik3AUOLni9dMILaIQLlEz/tnYB3MAqsZ
-	Je5s/coKkhAW8JF4+m0m2FgWAVWJ2X+/g8V5BTwkti79AdTAAbROQWLOJBuQMKeAp8TB/pts
-	ILYQUMnDtSfYJzDyLmBkWMUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHGDPpHYwrmywOMQo
-	wMGoxMOrsH5fsBBrYllxZe4hRgkOZiUR3qtv9gcL8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Q
-	ah0oJJCeWJKanZpakFoEk2Xi4JRqYGR52G72u1/1nEVgM6+Byqo8+7A3HZlOhR5FEh/6Pe/c
-	LZ1opJdrvNxdYQtvymIRsx+8iey/z14XqlBbLyloPCc29zFr37118bql60LuWq5/M3d2nkDs
-	t8iP2xUvhsVMvLL9QChPREXjBHa2ZWpv2nyavj05v3jpoTa3YzsT7m/883SZ5bL/ZkosxRmJ
-	hlrMRcWJAGwAq/csAgAA
+	Fri, 11 Jul 2014 10:11:37 -0400
+Date: Fri, 11 Jul 2014 15:11:16 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 6/9] pci: Introduce a domain number for
+ pci_host_bridge.
+Message-ID: <20140711141115.GB16321@arm.com>
+References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
+ <1404240214-9804-7-git-send-email-Liviu.Dudau@arm.com>
+ <20140708005954.GC22939@google.com>
+ <20140708104655.GC6501@e106497-lin.cambridge.arm.com>
+ <CAErSpo75ovmGoeSHKJN0nckGDy-0gpn8kLPfHQ79CtcXxhPydw@mail.gmail.com>
+ <20140708224847.GC4980@e106497-lin.cambridge.arm.com>
+ <CAErSpo5rBt0iF2HGeDD-UH6_sPCoC647VCw0Q1v_0Rdpvcir-w@mail.gmail.com>
+ <20140710094758.GA6501@e106497-lin.cambridge.arm.com>
+ <CAErSpo5ZNCY31NztT0cLFbRVsBZqMsZ0LbTFNOTQCZUU3F7qJA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo5ZNCY31NztT0cLFbRVsBZqMsZ0LbTFNOTQCZUU3F7qJA@mail.gmail.com>
+Thread-Topic: [PATCH v8 6/9] pci: Introduce a domain number for
+ pci_host_bridge.
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+acceptlanguage: en-GB, en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-led_update_brightness helper function used to be exploited only locally
-in the led-class.c module, where its result was being passed to the
-brightness_show sysfs callback. With the introduction of v4l2-flash
-subdevice the same functionality became required for reading current
-brightness from a LED device. This patch adds checking of return value
-of the brightness_get callback and moves the led_update_brightness()
-function to the LED subsystem public API.
+On Thu, Jul 10, 2014 at 11:36:10PM +0100, Bjorn Helgaas wrote:
+> Most of the rest of the v7 discussion was about "Introduce a domain
+> number for pci_host_bridge."  I think we should add arm64 using the
+> existing pci_scan_root_bus() and keep the domain number in the arm64
+> sysdata structure like every other arch does.  Isn't that feasible?
+> We can worry about domain unification later.
 
-Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Bryan Wu <cooloney@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
----
- drivers/leds/led-class.c |    6 ------
- drivers/leds/led-core.c  |   15 +++++++++++++++
- include/linux/leds.h     |   10 ++++++++++
- 3 files changed, 25 insertions(+), 6 deletions(-)
+I think that's what we were trying to avoid, adding an arm64-specific
+pci_sys_data structure (and arm64-specific API). IIUC, avoiding this
+would allow the host controller drivers to use the sysdata pointer for
+their own private data structures.
 
-diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
-index ea04891..da79bbb 100644
---- a/drivers/leds/led-class.c
-+++ b/drivers/leds/led-class.c
-@@ -23,12 +23,6 @@
- 
- static struct class *leds_class;
- 
--static void led_update_brightness(struct led_classdev *led_cdev)
--{
--	if (led_cdev->brightness_get)
--		led_cdev->brightness = led_cdev->brightness_get(led_cdev);
--}
--
- static ssize_t brightness_show(struct device *dev,
- 		struct device_attribute *attr, char *buf)
- {
-diff --git a/drivers/leds/led-core.c b/drivers/leds/led-core.c
-index 4d7cb31..0ac06ed 100644
---- a/drivers/leds/led-core.c
-+++ b/drivers/leds/led-core.c
-@@ -127,6 +127,21 @@ void led_set_brightness(struct led_classdev *led_cdev,
- }
- EXPORT_SYMBOL(led_set_brightness);
- 
-+int led_update_brightness(struct led_classdev *led_cdev)
-+{
-+	int ret = 0;
-+
-+	if (led_cdev->brightness_get) {
-+		ret = led_cdev->brightness_get(led_cdev);
-+		if (ret >= 0) {
-+			led_cdev->brightness = ret;
-+			return 0;
-+		}
-+	}
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(led_update_brightness);
- /* Caller must ensure led_cdev->led_lock held */
- void led_sysfs_lock(struct led_classdev *led_cdev)
- {
-diff --git a/include/linux/leds.h b/include/linux/leds.h
-index da7c6b5..e9b025d 100644
---- a/include/linux/leds.h
-+++ b/include/linux/leds.h
-@@ -146,6 +146,16 @@ extern void led_blink_set_oneshot(struct led_classdev *led_cdev,
- extern void led_set_brightness(struct led_classdev *led_cdev,
- 			       enum led_brightness brightness);
- /**
-+ * led_update_brightness - update LED brightness
-+ * @led_cdev: the LED to query
-+ *
-+ * Get an LED's current brightness and update led_cdev->brightness
-+ * member with the obtained value.
-+ *
-+ * Returns: 0 on success or negative error value on failure
-+ */
-+extern int led_update_brightness(struct led_classdev *led_cdev);
-+
-  * led_sysfs_lock - lock LED sysfs interface
-  * @led_cdev: the LED to set
-  *
+Also since you can specify the domain number via DT (and in Liviu's
+v8 patches read by of_create_pci_host_bridge), I think it would make
+sense to have it stored in some generic data structures (e.g.
+pci_host_bridge) rather than in an arm64 private sysdata.
+
+(Liviu is thinking of an alternative API but maybe he could briefly
+describe it here before posting a new series)
+
 -- 
-1.7.9.5
-
+Catalin
