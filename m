@@ -1,176 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753375AbaGKMEL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 08:04:11 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:53984 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752246AbaGKMEI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 08:04:08 -0400
-Message-ID: <53BFD26C.6080609@ti.com>
-Date: Fri, 11 Jul 2014 15:02:52 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Rostislav Lisovy <lisovy@gmail.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-CC: Pekon Gupta <pekon@ti.com>, Michal Vokac <vokac.m@gmail.com>,
-        Michal Sojka <sojkam1@fel.cvut.cz>,
-        Rostislav Lisovy <lisovy@merica.cz>
-Subject: Re: [PATCH] ARM: omap2+: gpmc-nand: Use dynamic platform_device_alloc()
-References: <1401891875-27843-1-git-send-email-lisovy@merica.cz> <53BD3A56.9050302@ti.com>
-In-Reply-To: <53BD3A56.9050302@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1753441AbaGKME3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 08:04:29 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:59923 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753395AbaGKME0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 08:04:26 -0400
+From: Tushar Behera <tushar.b@samsung.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: kgene.kim@samsung.com, mturquette@linaro.org, t.figa@samsung.com,
+        trblinux@gmail.com
+Subject: [PATCH V2 1/3] clk: exynos-audss: Simplify code to get clock names
+Date: Fri, 11 Jul 2014 17:30:33 +0530
+Message-Id: <1405080036-6651-2-git-send-email-tushar.b@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1405080036-6651-1-git-send-email-tushar.b@samsung.com>
+References: <1405080036-6651-1-git-send-email-tushar.b@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2014 03:49 PM, Roger Quadros wrote:
-> Hi Rostislav,
-> 
-> On 06/04/2014 05:24 PM, Rostislav Lisovy wrote:
->> GPMC controller supports up to 8 memory devices connected to it.
->> Since there is one statically allocated "struct platform_device
->> gpmc_nand_device" it is not possible to configure the system to
->> use more than one NAND device connected to the GPMC. This
->> modification makes it possible to use up to 8 NAND devices
->> connected to the GPMC controller.
->>
->> Signed-off-by: Rostislav Lisovy <lisovy@merica.cz>
->> ---
->>
->> Tested on custom AM335x board with two different NAND chips
->> (128 + 256 MiB) using GPMC configuration in FDT -- behaves
->> correctly.
->>
->>
->>  arch/arm/mach-omap2/gpmc-nand.c | 79 +++++++++++++++++++----------------------
->>  1 file changed, 37 insertions(+), 42 deletions(-)
->>
->> diff --git a/arch/arm/mach-omap2/gpmc-nand.c b/arch/arm/mach-omap2/gpmc-nand.c
->> index 4349e82..c5481a8 100644
->> --- a/arch/arm/mach-omap2/gpmc-nand.c
->> +++ b/arch/arm/mach-omap2/gpmc-nand.c
->> @@ -24,25 +24,6 @@
->>  /* minimum size for IO mapping */
->>  #define	NAND_IO_SIZE	4
->>  
->> -static struct resource gpmc_nand_resource[] = {
->> -	{
->> -		.flags		= IORESOURCE_MEM,
->> -	},
->> -	{
->> -		.flags		= IORESOURCE_IRQ,
->> -	},
->> -	{
->> -		.flags		= IORESOURCE_IRQ,
->> -	},
->> -};
->> -
->> -static struct platform_device gpmc_nand_device = {
->> -	.name		= "omap2-nand",
->> -	.id		= 0,
->> -	.num_resources	= ARRAY_SIZE(gpmc_nand_resource),
->> -	.resource	= gpmc_nand_resource,
->> -};
->> -
->>  static bool gpmc_hwecc_bch_capable(enum omap_ecc ecc_opt)
->>  {
->>  	/* platforms which support all ECC schemes */
->> @@ -93,43 +74,41 @@ int gpmc_nand_init(struct omap_nand_platform_data *gpmc_nand_data,
->>  {
->>  	int err	= 0;
->>  	struct gpmc_settings s;
->> -	struct device *dev = &gpmc_nand_device.dev;
->> -
->> -	memset(&s, 0, sizeof(struct gpmc_settings));
->> +	struct platform_device *pdev;
->> +	struct resource gpmc_nand_res[] = {
->> +		{ .flags = IORESOURCE_MEM, },
->> +		{ .flags = IORESOURCE_IRQ, },
->> +		{ .flags = IORESOURCE_IRQ, },
->> +	};
->>  
->> -	gpmc_nand_device.dev.platform_data = gpmc_nand_data;
->> +	BUG_ON(gpmc_nand_data->cs >= GPMC_CS_NUM);
->>  
->>  	err = gpmc_cs_request(gpmc_nand_data->cs, NAND_IO_SIZE,
->> -				(unsigned long *)&gpmc_nand_resource[0].start);
->> +			      (unsigned long *)&gpmc_nand_res[0].start);
->>  	if (err < 0) {
->> -		dev_err(dev, "Cannot request GPMC CS %d, error %d\n",
->> -			gpmc_nand_data->cs, err);
->> +		pr_err("omap2-gpmc: Cannot request GPMC CS %d, error %d\n",
->> +		       gpmc_nand_data->cs, err);
->>  		return err;
->>  	}
->> -
->> -	gpmc_nand_resource[0].end = gpmc_nand_resource[0].start +
->> -							NAND_IO_SIZE - 1;
->> -
->> -	gpmc_nand_resource[1].start =
->> -				gpmc_get_client_irq(GPMC_IRQ_FIFOEVENTENABLE);
->> -	gpmc_nand_resource[2].start =
->> -				gpmc_get_client_irq(GPMC_IRQ_COUNT_EVENT);
->> +	gpmc_nand_res[0].end = gpmc_nand_res[0].start + NAND_IO_SIZE - 1;
->> +	gpmc_nand_res[1].start = gpmc_get_client_irq(GPMC_IRQ_FIFOEVENTENABLE);
->> +	gpmc_nand_res[2].start = gpmc_get_client_irq(GPMC_IRQ_COUNT_EVENT);
->>  
->>  	if (gpmc_t) {
->>  		err = gpmc_cs_set_timings(gpmc_nand_data->cs, gpmc_t);
->>  		if (err < 0) {
->> -			dev_err(dev, "Unable to set gpmc timings: %d\n", err);
->> +			pr_err("omap2-gpmc: Unable to set gpmc timings: %d\n", err);
->>  			return err;
->>  		}
->>  	}
->>  
->> +	memset(&s, 0, sizeof(struct gpmc_settings));
->>  	if (gpmc_nand_data->of_node)
->>  		gpmc_read_settings_dt(gpmc_nand_data->of_node, &s);
->>  	else
->>  		gpmc_set_legacy(gpmc_nand_data, &s);
->>  
->>  	s.device_nand = true;
->> -
->>  	err = gpmc_cs_program_settings(gpmc_nand_data->cs, &s);
->>  	if (err < 0)
->>  		goto out_free_cs;
->> @@ -141,18 +120,34 @@ int gpmc_nand_init(struct omap_nand_platform_data *gpmc_nand_data,
->>  	gpmc_update_nand_reg(&gpmc_nand_data->reg, gpmc_nand_data->cs);
->>  
->>  	if (!gpmc_hwecc_bch_capable(gpmc_nand_data->ecc_opt)) {
->> -		dev_err(dev, "Unsupported NAND ECC scheme selected\n");
->> -		return -EINVAL;
->> +		pr_err("omap2-nand: Unsupported NAND ECC scheme selected\n");
->> +		err = -EINVAL;
->> +		goto out_free_cs;
->>  	}
->>  
->> -	err = platform_device_register(&gpmc_nand_device);
->> -	if (err < 0) {
->> -		dev_err(dev, "Unable to register NAND device\n");
->> -		goto out_free_cs;
->> +
->> +	pdev = platform_device_alloc("omap2-nand", gpmc_nand_data->cs);
->> +	if (pdev) {
->> +		err = platform_device_add_resources(pdev, gpmc_nand_res,
->> +						    ARRAY_SIZE(gpmc_nand_res));
->> +		if (!err)
->> +			pdev->dev.platform_data = gpmc_nand_data;
->> +	} else {
->> +		err = -ENOMEM;
->> +	}
->> +	if (err)
->> +		goto out_free_pdev;
-> 
-> There is a slight problem here. If platform_device_alloc() fails,
-> we must jump to 'out_free_cs' and not 'out_free_pdev'.
+Instead of getting the clock names individually, it would be good to put
+the logic within a loop.
 
-Nevermind. It shouldn't be a problem as platform_device_put() checks for NULL pdev.
+Signed-off-by: Tushar Behera <tushar.b@samsung.com>
+---
+Changes for V2:
+* Calling clk_put as soon as the clock is not required anymore
 
-cheers,
--roger
+ drivers/clk/samsung/clk-exynos-audss.c |   35 +++++++++++++++++---------------
+ 1 file changed, 19 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/clk/samsung/clk-exynos-audss.c b/drivers/clk/samsung/clk-exynos-audss.c
+index 13eae14c..1a5294c 100644
+--- a/drivers/clk/samsung/clk-exynos-audss.c
++++ b/drivers/clk/samsung/clk-exynos-audss.c
+@@ -80,10 +80,14 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
+ {
+ 	int i, ret = 0;
+ 	struct resource *res;
++	struct clk *tmp;
++	const char *clk_name_ref[] = {
++		"pll_ref", "pll_in", "cdclk", "sclk_audio", "sclk_pcm_in" };
++	const char *clk_name_actual[] = {
++		"fin_pll", "fout_epll", "cdclk0", "sclk_audio0", "sclk_pcm0"};
+ 	const char *mout_audss_p[] = {"fin_pll", "fout_epll"};
+ 	const char *mout_i2s_p[] = {"mout_audss", "cdclk0", "sclk_audio0"};
+ 	const char *sclk_pcm_p = "sclk_pcm0";
+-	struct clk *pll_ref, *pll_in, *cdclk, *sclk_audio, *sclk_pcm_in;
+ 	const struct of_device_id *match;
+ 	enum exynos_audss_clk_type variant;
+ 
+@@ -111,23 +115,25 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
+ 	else
+ 		clk_data.clk_num = EXYNOS_AUDSS_MAX_CLKS - 1;
+ 
+-	pll_ref = devm_clk_get(&pdev->dev, "pll_ref");
+-	pll_in = devm_clk_get(&pdev->dev, "pll_in");
+-	if (!IS_ERR(pll_ref))
+-		mout_audss_p[0] = __clk_get_name(pll_ref);
+-	if (!IS_ERR(pll_in))
+-		mout_audss_p[1] = __clk_get_name(pll_in);
++	for (i = 0; i < ARRAY_SIZE(clk_name_ref); i++) {
++		tmp = clk_get(&pdev->dev, clk_name_ref[i]);
++		if (!IS_ERR(tmp)) {
++			clk_name_actual[i] = __clk_get_name(tmp);
++			clk_put(tmp);
++		}
++	}
++
++	mout_audss_p[0] = clk_name_actual[0];
++	mout_audss_p[1] = clk_name_actual[1];
++	mout_i2s_p[1] = clk_name_actual[2];
++	mout_i2s_p[2] = clk_name_actual[3];
++	sclk_pcm_p = clk_name_actual[4];
++
+ 	clk_table[EXYNOS_MOUT_AUDSS] = clk_register_mux(NULL, "mout_audss",
+ 				mout_audss_p, ARRAY_SIZE(mout_audss_p),
+ 				CLK_SET_RATE_NO_REPARENT,
+ 				reg_base + ASS_CLK_SRC, 0, 1, 0, &lock);
+ 
+-	cdclk = devm_clk_get(&pdev->dev, "cdclk");
+-	sclk_audio = devm_clk_get(&pdev->dev, "sclk_audio");
+-	if (!IS_ERR(cdclk))
+-		mout_i2s_p[1] = __clk_get_name(cdclk);
+-	if (!IS_ERR(sclk_audio))
+-		mout_i2s_p[2] = __clk_get_name(sclk_audio);
+ 	clk_table[EXYNOS_MOUT_I2S] = clk_register_mux(NULL, "mout_i2s",
+ 				mout_i2s_p, ARRAY_SIZE(mout_i2s_p),
+ 				CLK_SET_RATE_NO_REPARENT,
+@@ -161,9 +167,6 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
+ 				 "sclk_pcm", CLK_SET_RATE_PARENT,
+ 				reg_base + ASS_CLK_GATE, 4, 0, &lock);
+ 
+-	sclk_pcm_in = devm_clk_get(&pdev->dev, "sclk_pcm_in");
+-	if (!IS_ERR(sclk_pcm_in))
+-		sclk_pcm_p = __clk_get_name(sclk_pcm_in);
+ 	clk_table[EXYNOS_SCLK_PCM] = clk_register_gate(NULL, "sclk_pcm",
+ 				sclk_pcm_p, CLK_SET_RATE_PARENT,
+ 				reg_base + ASS_CLK_GATE, 5, 0, &lock);
+-- 
+1.7.9.5
+
