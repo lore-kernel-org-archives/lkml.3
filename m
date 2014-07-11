@@ -1,304 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752960AbaGKI2R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 04:28:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51063 "EHLO mx2.suse.de"
+	id S1752665AbaGKI3l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 04:29:41 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:47869 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752926AbaGKI2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 04:28:11 -0400
-Message-ID: <53BFA016.6040906@suse.cz>
-Date: Fri, 11 Jul 2014 10:28:06 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751734AbaGKI3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 04:29:39 -0400
+Message-ID: <53BFA038.5010903@ti.com>
+Date: Fri, 11 Jul 2014 11:28:40 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 05/13] mm, compaction: report compaction as contended
- only due to lock contention
-References: <1403279383-5862-1-git-send-email-vbabka@suse.cz> <1403279383-5862-6-git-send-email-vbabka@suse.cz> <20140623013903.GA12413@bbox>
-In-Reply-To: <20140623013903.GA12413@bbox>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: "Gupta, Pekon" <pekon@ti.com>, Tony Lindgren <tony@atomide.com>
+CC: "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
+        "javier@dowhile0.org" <javier@dowhile0.org>,
+        "ezequiel.garcia@free-electrons.com" 
+	<ezequiel.garcia@free-electrons.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "jg1.han@samsung.com" <jg1.han@samsung.com>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 00/10] OMAP: GPMC: NAND: Introduce GPMC APIs for OMAP
+ NAND
+References: <1404909450-11970-1-git-send-email-rogerq@ti.com> <20140711065211.GK28884@atomide.com> <20980858CB6D3A4BAE95CA194937D5E73EB01DD5@DBDE04.ent.ti.com>
+In-Reply-To: <20980858CB6D3A4BAE95CA194937D5E73EB01DD5@DBDE04.ent.ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2014 03:39 AM, Minchan Kim wrote:
-> Hello Vlastimil,
->
-> On Fri, Jun 20, 2014 at 05:49:35PM +0200, Vlastimil Babka wrote:
->> Async compaction aborts when it detects zone lock contention or need_resched()
->> is true. David Rientjes has reported that in practice, most direct async
->> compactions for THP allocation abort due to need_resched(). This means that a
->> second direct compaction is never attempted, which might be OK for a page
->> fault, but khugepaged is intended to attempt a sync compaction in such case and
->> in these cases it won't.
->>
->> This patch replaces "bool contended" in compact_control with an enum that
->> distinguieshes between aborting due to need_resched() and aborting due to lock
->> contention. This allows propagating the abort through all compaction functions
->> as before, but declaring the direct compaction as contended only when lock
->> contention has been detected.
->>
->> A second problem is that try_to_compact_pages() did not act upon the reported
->> contention (both need_resched() or lock contention) and could proceed with
->> another zone from the zonelist. When need_resched() is true, that means
->> initializing another zone compaction, only to check again need_resched() in
->> isolate_migratepages() and aborting. For zone lock contention, the unintended
->> consequence is that the contended status reported back to the allocator
->> is decided from the last zone where compaction was attempted, which is rather
->> arbitrary.
->>
->> This patch fixes the problem in the following way:
->> - need_resched() being true after async compaction returned from a zone means
->>    that further zones should not be tried. We do a cond_resched() so that we
->>    do not hog the CPU, and abort. "contended" is reported as false, since we
->>    did not fail due to lock contention.
->> - aborting zone compaction due to lock contention means we can still try
->>    another zone, since it has different locks. We report back "contended" as
->>    true only if *all* zones where compaction was attempted, it aborted due to
->>    lock contention.
->>
->> As a result of these fixes, khugepaged will proceed with second sync compaction
->> as intended, when the preceding async compaction aborted due to need_resched().
->> Page fault compactions aborting due to need_resched() will spare some cycles
->> previously wasted by initializing another zone compaction only to abort again.
->> Lock contention will be reported only when compaction in all zones aborted due
->> to lock contention, and therefore it's not a good idea to try again after
->> reclaim.
->>
->> Reported-by: David Rientjes <rientjes@google.com>
->> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
->> Cc: Minchan Kim <minchan@kernel.org>
->> Cc: Mel Gorman <mgorman@suse.de>
->> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->> Cc: Michal Nazarewicz <mina86@mina86.com>
->> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
->> Cc: Christoph Lameter <cl@linux.com>
->> Cc: Rik van Riel <riel@redhat.com>
->> ---
->>   mm/compaction.c | 48 +++++++++++++++++++++++++++++++++++++++---------
->>   mm/internal.h   | 15 +++++++++++----
->>   2 files changed, 50 insertions(+), 13 deletions(-)
->>
->> diff --git a/mm/compaction.c b/mm/compaction.c
->> index ebe30c9..e8cfac9 100644
->> --- a/mm/compaction.c
->> +++ b/mm/compaction.c
->> @@ -180,9 +180,14 @@ static void update_pageblock_skip(struct compact_control *cc,
->>   }
->>   #endif /* CONFIG_COMPACTION */
->>
->> -static inline bool should_release_lock(spinlock_t *lock)
->> +enum compact_contended should_release_lock(spinlock_t *lock)
->>   {
->> -	return need_resched() || spin_is_contended(lock);
->> +	if (spin_is_contended(lock))
->> +		return COMPACT_CONTENDED_LOCK;
->> +	else if (need_resched())
->> +		return COMPACT_CONTENDED_SCHED;
->> +	else
->> +		return COMPACT_CONTENDED_NONE;
->
-> If you want to raise priority of lock contention than need_resched
-> intentionally, please write it down on comment.
->
->>   }
->>
->>   /*
->> @@ -197,7 +202,9 @@ static inline bool should_release_lock(spinlock_t *lock)
->>   static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
->>   				      bool locked, struct compact_control *cc)
->>   {
->> -	if (should_release_lock(lock)) {
->> +	enum compact_contended contended = should_release_lock(lock);
->> +
->> +	if (contended) {
->>   		if (locked) {
->>   			spin_unlock_irqrestore(lock, *flags);
->>   			locked = false;
->> @@ -205,7 +212,7 @@ static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
->>
->>   		/* async aborts if taking too long or contended */
->>   		if (cc->mode == MIGRATE_ASYNC) {
->> -			cc->contended = true;
->> +			cc->contended = contended;
->>   			return false;
->>   		}
->
->
->>
->> @@ -231,7 +238,7 @@ static inline bool compact_should_abort(struct compact_control *cc)
->>   	/* async compaction aborts if contended */
->>   	if (need_resched()) {
->>   		if (cc->mode == MIGRATE_ASYNC) {
->> -			cc->contended = true;
->> +			cc->contended = COMPACT_CONTENDED_SCHED;
->>   			return true;
->>   		}
->>
->> @@ -1101,7 +1108,8 @@ static unsigned long compact_zone_order(struct zone *zone, int order,
->>   	VM_BUG_ON(!list_empty(&cc.freepages));
->>   	VM_BUG_ON(!list_empty(&cc.migratepages));
->>
->> -	*contended = cc.contended;
->> +	/* We only signal lock contention back to the allocator */
->> +	*contended = cc.contended == COMPACT_CONTENDED_LOCK;
->
-> Please write down *WHY* as well as your intention we can know by looking at code.
->
->>   	return ret;
->>   }
->>
->> @@ -1132,6 +1140,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
->>   	struct zone *zone;
->>   	int rc = COMPACT_SKIPPED;
->>   	int alloc_flags = 0;
->> +	bool all_zones_contended = true;
->>
->>   	/* Check if the GFP flags allow compaction */
->>   	if (!order || !may_enter_fs || !may_perform_io)
->> @@ -1146,6 +1155,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
->>   	for_each_zone_zonelist_nodemask(zone, z, zonelist, high_zoneidx,
->>   								nodemask) {
->>   		int status;
->> +		bool zone_contended;
->>
->>   		if (compaction_deferred(zone, order))
->>   			continue;
->> @@ -1153,8 +1163,9 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
->>   		*deferred = false;
->>
->>   		status = compact_zone_order(zone, order, gfp_mask, mode,
->> -						contended);
->> +							&zone_contended);
->>   		rc = max(status, rc);
->> +		all_zones_contended &= zone_contended;
->>
->>   		/* If a normal allocation would succeed, stop compacting */
->>   		if (zone_watermark_ok(zone, order, low_wmark_pages(zone), 0,
->> @@ -1168,12 +1179,31 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
->>   			 * succeeding after all, it will be reset.
->>   			 */
->>   			defer_compaction(zone, order);
->> +			/*
->> +			 * If we stopped compacting due to need_resched(), do
->> +			 * not try further zones and yield the CPU.
->> +			 */
->
-> For what? It would make your claim more clear.
->
->> +			if (need_resched()) {
->
-> compact_zone_order returns true state of contended only if it was lock contention
-> so it couldn't return true state of contended by need_resched so you made
-> need_resched check in here. It's fragile to me because it could be not a result
-> from ahead compact_zone_order call. More clear thing is compact_zone_order
-> should return zone_contended as enum, not bool and in here, you could check it.
->
-> It means you could return enum in compact_zone_order and make the result bool
-> in try_to_compact_pages.
->
->> +				/*
->> +				 * We might not have tried all the zones, so
->> +				 * be conservative and assume they are not
->> +				 * all lock contended.
->> +				 */
->> +				all_zones_contended = false;
->> +				cond_resched();
->> +				break;
->> +			}
->>   		}
->>   	}
->>
->> -	/* If at least one zone wasn't deferred, we count a compaction stall */
->> -	if (!*deferred)
->> +	/*
->> +	 * If at least one zone wasn't deferred, we count a compaction stall
->> +	 * and we report if all zones that were tried were contended.
->> +	 */
->> +	if (!*deferred) {
->>   		count_compact_event(COMPACTSTALL);
->> +		*contended = all_zones_contended;
->
-> Why don't you initialize contended as *false* in function's intro?
->
->> +	}
->>
->>   	return rc;
->>   }
->> diff --git a/mm/internal.h b/mm/internal.h
->> index a1b651b..2c187d2 100644
->> --- a/mm/internal.h
->> +++ b/mm/internal.h
->> @@ -117,6 +117,13 @@ extern int user_min_free_kbytes;
->>
->>   #if defined CONFIG_COMPACTION || defined CONFIG_CMA
->>
->> +/* Used to signal whether compaction detected need_sched() or lock contention */
->> +enum compact_contended {
->> +	COMPACT_CONTENDED_NONE = 0, /* no contention detected */
->> +	COMPACT_CONTENDED_SCHED,    /* need_sched() was true */
->> +	COMPACT_CONTENDED_LOCK,     /* zone lock or lru_lock was contended */
->> +};
->> +
->>   /*
->>    * in mm/compaction.c
->>    */
->> @@ -144,10 +151,10 @@ struct compact_control {
->>   	int order;			/* order a direct compactor needs */
->>   	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
->>   	struct zone *zone;
->> -	bool contended;			/* True if a lock was contended, or
->> -					 * need_resched() true during async
->> -					 * compaction
->> -					 */
->> +	enum compact_contended contended; /* Signal need_sched() or lock
->> +					   * contention detected during
->> +					   * compaction
->> +					   */
->>   };
->>
->>   unsigned long
->> --
->
-> Anyway, most big concern is that you are changing current behavior as
-> I said earlier.
+Hi Pekon,
 
-Well that behavior is pretty new, introduced recently by David's patches 
-and now he himself is saying that it makes page fault THP allocations 
-very unsuccessful and the need_resched() is not a good termination 
-criterion. But OK, I can restrict this to khugepaged...
+On 07/11/2014 10:27 AM, Gupta, Pekon wrote:
+> Hi Roger,
+> 
+>> From: Tony Lindgren [mailto:tony@atomide.com]
+>>> * Roger Quadros <rogerq@ti.com> [140709 05:39]:
+>>> Hi,
+>>>
+>>> The following hardware modules/registers are meant for NAND controller driver
+>>> usage:
+>>> - NAND I/O control (NAND address, data, command registers)
+>>> - Prefetch/Write-post engine
+>>> - ECC/BCH engine
+>>>
+>>> However, these registers sit in the GPMC controller's register space and there
+>>> need to be some sane way to access them from the OMAP NAND controller driver.
+>>>
+>>> Till now the GPMC driver was populating a data structure (struct gpmc_nand_regs)
+>>> with the register addresses and passing it to the OMAP NAND driver via platform
+>>> data. This mechanism cannot be used for true Device tree support as custom
+>>> platform data passing mechanism doesn't seem to work. Moreover, direct
+>>> access to these registers must be limited to the GPMC driver. This calls for
+>>> a few custom OMAP GPMC specific APIs that the OMAP NAND driver can use
+>>> to access these GPMC space registers.
+>>>
+>>> This series attempts to add the following new APIs and gets rid of
+>>> 'struct gpmc_nand_regs' and 'gpmc_update_nand_regs()'.
+>>>
+>>> -For NAND I/O control registers
+>>> u32 omap_gpmc_read_reg(int cs, enum omap_gpmc_reg reg);
+>>> void omap_gpmc_write_reg(int cs, enum omap_gpmc_reg reg, u32 val);
+>>>
+>>> -For Prefetch engine
+>>> int omap_gpmc_prefetch_start(int cs, int fifo_th, bool dma,
+>>> 			     u32 count, int is_write);
+>>> int omap_gpmc_prefetch_stop(int cs);
+>>> u32 omap_gpmc_get_prefetch_count(void);
+>>> u32 omap_gpmc_get_prefetch_fifo_count(void);
+>>>
+>>> -For ECC/BCH engine
+>>> void omap_gpmc_ecc_disable(void);
+>>> void omap_gpmc_ecc_configure_enable(int cs, bool ecc16, u8 ecc_size0,
+>>> 				    u8 ecc_size1, bool use_bch,
+>>> 				    enum omap_gpmc_bch_type bch_type,
+>>> 				    u8 bch_sectors, u8 bch_wrap_mode);
+> 
+> I think this one has too big argument list.
+> And also this interface will become inconsistent when you will expand the
+> NAND driver to support devices with larger page-size(like 8K NAND devices)
+> Why can't we just use 
+> 	omap_gpmc_write_reg(int cs, enum omap_gpmc_reg reg);
+> as already defined above?
 
-> Old behavior in THP page fault when it consumes own timeslot was just
-> abort and fallback 4K page but with your patch, new behavior is
-> take a rest when it founds need_resched and goes to another round with
-> async, not sync compaction. I'm not sure we need another round with
-> async compaction at the cost of increasing latency rather than fallback
-> 4 page.
- >
-> It might be okay if the VMA has MADV_HUGEPAGE which is good hint to
-> indicate non-temporal VMA so latency would be trade-off but it's not
-> for temporal big memory allocation in HUGEPAGE_ALWAYS system.
+omap_gpmc_write_reg will not be optimal for reading larger result blocks
+and does not create enough abstraction between the clearly separate blocks
+i.e. prefetch engine and ecc engine.
 
-Yeah that could be useful hint when we eventually move away from 
-need_resched() to a fixed/tunable work per compaction attempt. But I'll 
-rather not introduce it in the series.
+> This is one-time configuration per read/write cycle so using
+> 'omap_gpmc_write_reg()' shouldn't be much of issue. And this will
+> automatically plugin to current chip->ecc.hwctl() calls.
+> 
 
-> If you really want to go this, could you show us numbers?
->
-> 1. How many could we can be successful in direct compaction by this patch?
+hwctl() doesn't take care of ECC. Those are done by
+chip->ecc.correct() and chip->ecc.calculate().
 
-Doesn't seem to help. I'll drop it.
+> 
+> 
+>>> void omap_gpmc_ecc_get_result(int length, u32 *result);
+> Can you please rename it to "omap_gpmc_ecc_get_hamming_result()"
+> Just to keep it consistent with "omap_gpmc_ecc_get_bch_result()"
+> 
 
-> 2. How long could we increase latency for temporal allocation
->     for HUGEPAGE_ALWAYS system?
+OK. Sounds reasonable.
 
-Don't have the data.
+>>> void omap_gpmc_ecc_get_bch_result(int length, u8 sector, u32 *result);
+>>
+> This one looks good, but you should also take in int 'ecc-scheme'.
+
+Could you please explain why?
+
+> 
+> Actually you can just move omap_calculate_ecc_bch(...) out of NAND
+> driver into GPMC driver and rename it, because support of ECC
+> scheme is property of hardware controller not NAND driver.
+> What ecc-schemes GPMC controller supports should be inside GPMC driver,
+> and NAND driver should just attach them to appropriate interfaces. Right ?
+> 
+> Same way just think of moving chip->ecc.hwctl() callbacks implementations
+> out of NAND driver into GPMC driver. Then you would _not_ need to
+> export any GPMC registers into NAND driver.
+
+I don't agree with moving anything nand_chip related (i.e. ecc.hwctl(), ecc.calculate()
+or ecc.correct()) to GMPC driver because they are supposed to be implemented by
+the NAND driver. ECC is a functionality of NAND controller not of GPMC controller.
+It is just a IP design mistake that they smudged the ECC registers so badly
+in the GPMC register space.
+
+Could you please explain your view point as to why you want me to move these ecc.*()
+to GPMC driver other than being extensively tested?
+
+We can extensively test the new changes before merging any code to mainline as well.
+
+cheers,
+-roger
