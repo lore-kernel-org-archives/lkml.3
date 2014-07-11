@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754976AbaGKOGW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 10:06:22 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:59500 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754926AbaGKOFx (ORCPT
+	id S1755009AbaGKOGr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 10:06:47 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:49236 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752861AbaGKOFq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 10:05:53 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-4d-53bfef3f88d9
+	Fri, 11 Jul 2014 10:05:46 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-c9-53bfef384597
 From: Jacek Anaszewski <j.anaszewski@samsung.com>
 To: linux-leds@vger.kernel.org, devicetree@vger.kernel.org,
         linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
         Jacek Anaszewski <j.anaszewski@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH/RFC v4 21/21] ARM: dts: add aat1290 current regulator device
- node
-Date: Fri, 11 Jul 2014 16:04:24 +0200
-Message-id: <1405087464-13762-22-git-send-email-j.anaszewski@samsung.com>
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: [PATCH/RFC v4 19/21] of: Add Skyworks Solutions, Inc. vendor prefix
+Date: Fri, 11 Jul 2014 16:04:22 +0200
+Message-id: <1405087464-13762-20-git-send-email-j.anaszewski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
 References: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupiluLIzCtJLcpLzFFi42I5/e+xoK79+/3BBjeXaltsnLGe1WL+kXOs
-	Fr1XnzNa9C64ymZxtukNu8XlXXPYLLa+Wcdo0bNhK6sDh0ffllWMHp83yQUwRXHZpKTmZJal
-	FunbJXBlzHyxnqVgIVfF8lc3WBoYl3B0MXJySAiYSHw7dJUVwhaTuHBvPVsXIxeHkMB0Rom3
-	h5pYIJx2JomzjY3sIFVsAoYSP1+8ZgKxRQTKJXrePwPrYBboYpSY8/cdI0hCWCBYorV7KQuI
-	zSKgKnFucxcbiM0r4Cmx+sIcoGYOoHUKEnMm2YCEOYHCB/tvgpUICXhIPFx7gn0CI+8CRoZV
-	jKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMEh9Ex6B+OqBotDjAIcjEo8vCfW7AsWYk0sK67M
-	PcQowcGsJMJ79c3+YCHelMTKqtSi/Pii0pzU4kOM0hwsSuK8B1utA4UE0hNLUrNTUwtSi2Cy
-	TBycUg2M1dM21YpZ3Pxtu05DusZ5zaRFK/Se37Bse7Ls7X6BNbqlCjESN8//dhKSn/dN8ek7
-	18UHf08693HpgavrfPdmbBcMd+Zskoozrr7WqPV/0+l7izPvz23d011gpxMdyF4Q23x5b/7n
-	aRM4TYwt4hz5JmWp/du5wDRE8wezctRWppmpked21KmbKLEUZyQaajEXFScCAGhgZLYdAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPLMWRmVeSWpSXmKPExsVy+t9jQV2L9/uDDXru8ltsnLGe1WL+kXOs
+	Fv1vFrJanHu1ktGi9+pzRouzTW/YLS7vmsNmsfXNOkaLng1bWS2WXr/IZDFh+loWi9a9R9gd
+	eDzWzFvD6HG5r5fJY+XyL2wem1Z1snn0bVnF6PF5k1wAWxSXTUpqTmZZapG+XQJXxq1rm5kK
+	1nBUfF1V2MA4g72LkYNDQsBE4vMbuy5GTiBTTOLCvfVsXYxcHEIC0xklPu67xgrhtDNJLFt8
+	kB2kik3AUOLni9dMILaIQLlEz/tnYB3MAouZJKb2vGADSQgL+Eh8vvwVrIhFQFViyew7bCDb
+	eAU8Jdb0yUAsVpCYM8kGpIITKHqw/yZYp5CAh8TDtSfYJzDyLmBkWMUomlqQXFCclJ5rqFec
+	mFtcmpeul5yfu4kRHIzPpHYwrmywOMQowMGoxMOrsH5fsBBrYllxZe4hRgkOZiUR3qtv9gcL
+	8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Qah0oJJCeWJKanZpakFoEk2Xi4JRqYFz/rIuvw2it
+	3NePV3zfi/NU3nkQuW+powtbRbwW7xexX3IZd+Zev/SncvMjlprjq9au+Vpr7VQf3r7G4+u5
+	qKLglV8n+uzaJXT/lHRCfOucys/bdFdM+jFx2cRoh5SJesHtK69sD9V3+bH8Dv9NfwnHuR09
+	34Tz1C3eXxa7IPT3s5WUT11+6D8lluKMREMt5qLiRAAVPKQHQgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device node for AAT1290 1.5A Step-Up Current Regulator
-for Flash LEDs along with flash_muxes node containing
-information about a multiplexer that is used for switching
-between software and external strobe signal source.
+Use "skyworks" as the vendor prefix for the
+Skyworks Solutions, Inc.
 
 Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
 ---
- arch/arm/boot/dts/exynos4412-trats2.dts |   24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/boot/dts/exynos4412-trats2.dts b/arch/arm/boot/dts/exynos4412-trats2.dts
-index 7787844..cbb76ba 100644
---- a/arch/arm/boot/dts/exynos4412-trats2.dts
-+++ b/arch/arm/boot/dts/exynos4412-trats2.dts
-@@ -785,4 +785,28 @@
- 		pulldown-ohm = <100000>; /* 100K */
- 		io-channels = <&adc 2>;  /* Battery temperature */
- 	};
-+
-+	flash_muxes {
-+		flash_mux1: mux1 {
-+			gpios = <&gpj1 0 0>;
-+		};
-+	};
-+
-+	aat1290 {
-+		compatible = "skyworks,aat1290";
-+		gpios = <&gpj1 1 0>, <&gpj1 2 0>;
-+		flash-timeout = <1940000>;
-+		status = "okay";
-+
-+		gate-software-strobe {
-+			mux = <&flash_mux1>;
-+			mux-line-id = <0>;
-+		};
-+
-+		gate-external-strobe {
-+			strobe-provider = <&s5c73m3_spi>;
-+			mux = <&flash_mux1>;
-+			mux-line-id = <1>;
-+		};
-+	};
- };
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index 5d27e5a..8d0df4e 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -113,6 +113,7 @@ renesas	Renesas Electronics Corporation
+ ricoh	Ricoh Co. Ltd.
+ rockchip	Fuzhou Rockchip Electronics Co., Ltd
+ samsung	Samsung Semiconductor
++skyworks	Skyworks Solutions, Inc.
+ sbs	Smart Battery System
+ schindler	Schindler
+ seagate	Seagate Technology PLC
 -- 
 1.7.9.5
 
