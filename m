@@ -1,98 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411AbaGKJ3f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 05:29:35 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:51848 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290AbaGKJ3d (ORCPT
+	id S1752616AbaGKJaO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 05:30:14 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:58973 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752568AbaGKJaL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 05:29:33 -0400
-Date: Fri, 11 Jul 2014 11:29:22 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        mingo@kernel.org, Waiman.Long@hp.com, davidlohr@hp.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, riel@redhat.com,
-        rostedt@goodmis.org, akpm@linux-foundation.org, hpa@zytor.com,
-        tim.c.chen@linux.intel.com, konrad.wilk@oracle.com, aswin@hp.com,
-        scott.norton@hp.com, chegu_vinod@hp.com
-Subject: Re: [PATCH 4/4] rwsem: Reduce the size of struct rw_semaphore
-Message-ID: <20140711092922.GG20603@laptop.programming.kicks-ass.net>
-References: <1404759019-4268-1-git-send-email-jason.low2@hp.com>
- <1404759019-4268-5-git-send-email-jason.low2@hp.com>
+	Fri, 11 Jul 2014 05:30:11 -0400
+Date: Fri, 11 Jul 2014 10:30:07 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci <linux-pci@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 6/9] pci: Introduce a domain number for
+ pci_host_bridge.
+Message-ID: <20140711093007.GN6501@e106497-lin.cambridge.arm.com>
+References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
+ <1404240214-9804-7-git-send-email-Liviu.Dudau@arm.com>
+ <20140708005954.GC22939@google.com>
+ <20140708104655.GC6501@e106497-lin.cambridge.arm.com>
+ <CAErSpo75ovmGoeSHKJN0nckGDy-0gpn8kLPfHQ79CtcXxhPydw@mail.gmail.com>
+ <20140708224847.GC4980@e106497-lin.cambridge.arm.com>
+ <CAErSpo5rBt0iF2HGeDD-UH6_sPCoC647VCw0Q1v_0Rdpvcir-w@mail.gmail.com>
+ <20140710094758.GA6501@e106497-lin.cambridge.arm.com>
+ <CAErSpo5ZNCY31NztT0cLFbRVsBZqMsZ0LbTFNOTQCZUU3F7qJA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+In-Reply-To: <CAErSpo5ZNCY31NztT0cLFbRVsBZqMsZ0LbTFNOTQCZUU3F7qJA@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 11 Jul 2014 09:30:08.0073 (UTC) FILETIME=[B472B390:01CF9CEA]
+X-MC-Unique: 114071110300808701
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1404759019-4268-5-git-send-email-jason.low2@hp.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 07, 2014 at 11:50:19AM -0700, Jason Low wrote:
-> Recent optimistic spinning additions to rwsem provide significant performance
-> benefits on many workloads on large machines. The cost of it was increasing
-> the size of the rwsem structure by up to 128 bits.
+On Thu, Jul 10, 2014 at 11:36:10PM +0100, Bjorn Helgaas wrote:
+> On Thu, Jul 10, 2014 at 3:47 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
 > 
-> However, now that the previous patches in this series bring the overhead of
-> struct optimistic_spin_queue to 32 bits, this patch reorders some fields in
-> struct rw_semaphore such that we can reduce the overhead of the rwsem structure
-> by 64 bits (on 64 bit systems).
+> > I don't see a way out of adding new PCI interfaces if we want to have support in
+> > the PCI framework for unifying existing architectures. Of course, there is the painful
+> > alternative of changing the existing APIs and fixing arches in one go, but like you've
+> > said is going to be messy. I don't think I (or the people and companies wanting PCIe
+> > on arm64) should cop out and pick a quick fix that adds sysdata structure into arm64
+> > just to avoid new APIs, as this is not going to help anyone in long term. What I can
+> > do is to create a set of parallel APIs for pci_{scan,create}_root_bus() that take
+> > a pci_host_bridge pointer and start converting architectures one by one to that API
+> > while deprecating the existing one. That way we can add arm64 easily as it would be
+> > the first architecture to use new code without breaking things *and* we provide a
+> > migration path.
 > 
-> The extra overhead required for rwsem optimistic spinning would now be up
-> to 8 additional bytes instead of up to 16 bytes. Additionally, the size of
-> rwsem would now be more in line with mutexes.
+> A lot of the v7 discussion was about pci_register_io_range().  I
+> apologize, because I think I really derailed things there and it was
+> unwarranted.  Arnd was right that migrating other arches should be a
+> separate effort.  I *think* I was probably thinking about the proposal
+> of adding pci_create_root_bus_in_domain(), and my reservations about
+> that got transferred to the pci_register_io_range() discussion.  In
+> any case, I'm completely fine with pci_register_io_range() now.
 > 
-> Signed-off-by: Jason Low <jason.low2@hp.com>
-> ---
->  include/linux/rwsem.h |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
+> Most of the rest of the v7 discussion was about "Introduce a domain
+> number for pci_host_bridge."  I think we should add arm64 using the
+> existing pci_scan_root_bus() and keep the domain number in the arm64
+> sysdata structure like every other arch does.  Isn't that feasible?
+> We can worry about domain unification later.
+
+Thanks!
+
+I'm really not that keen to add sysdata support in the arch code as it
+requires initialisation code that I have tried to eliminate. What I'm
+going to suggest for my v9 is a parallel set of APIs that arm64 will
+be the first to use without changing the existing pci_{scan,create}_bus()
+functions and then the conversion process will migrate arches to the new API.
+
+Best regards,
+Liviu
+
 > 
-> diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-> index 9fdcdd0..f6c54c0 100644
-> --- a/include/linux/rwsem.h
-> +++ b/include/linux/rwsem.h
-> @@ -24,15 +24,15 @@ struct rw_semaphore;
->  /* All arch specific implementations share the same struct */
->  struct rw_semaphore {
->  	long count;
-> -	raw_spinlock_t wait_lock;
->  	struct list_head wait_list;
-> +	raw_spinlock_t wait_lock;
->  #ifdef CONFIG_SMP
-> +	struct optimistic_spin_queue osq; /* spinner MCS lock */
->  	/*
->  	 * Write owner. Used as a speculative check to see
->  	 * if the owner is running on the cpu.
->  	 */
->  	struct task_struct *owner;
-> -	struct optimistic_spin_queue osq; /* spinner MCS lock */
->  #endif
->  #ifdef CONFIG_DEBUG_LOCK_ALLOC
->  	struct lockdep_map	dep_map;
-> @@ -66,10 +66,10 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
->  #if defined(CONFIG_SMP) && !defined(CONFIG_RWSEM_GENERIC_SPINLOCK)
->  #define __RWSEM_INITIALIZER(name)			\
->  	{ RWSEM_UNLOCKED_VALUE,				\
-> -	  __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),	\
->  	  LIST_HEAD_INIT((name).wait_list),		\
-> +	  __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),	\
-> +	  { ATOMIC_INIT(OSQ_UNLOCKED_VAL) }, /* osq */	\
->  	  NULL, /* owner */				\
-> -	  { ATOMIC_INIT(OSQ_UNLOCKED_VAL) } /* osq */   \
->  	  __RWSEM_DEP_MAP_INIT(name) }
->  #else
->  #define __RWSEM_INITIALIZER(name)			\
+> I haven't followed closely enough to know what other objections people had.
+> 
+> Bjorn
+> 
 
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
-This gets me:
-
-../init/init_task.c:14:44: error: expected expression before ‘,’ token
-
-          { ATOMIC_INIT(OSQ_UNLOCKED_VAL) }, /* osq */  \
--         NULL, /* owner */                             \
-+         NULL /* owner */                              \
-          __RWSEM_DEP_MAP_INIT(name) }
-
-Makes it work again.
