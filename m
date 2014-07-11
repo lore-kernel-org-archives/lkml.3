@@ -1,87 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711AbaGKKyd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 06:54:33 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:7434 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752327AbaGKKyb (ORCPT
+	id S1752942AbaGKKzX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 06:55:23 -0400
+Received: from router.aksignal.cz ([188.175.113.102]:53465 "EHLO
+	router.aksignal.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751974AbaGKKzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 06:54:31 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 11 Jul 2014 03:47:23 -0700
-Date: Fri, 11 Jul 2014 13:54:27 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Alex Courbot <acourbot@nvidia.com>
-CC: Ben Skeggs <bskeggs@redhat.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gnurou@gmail.com" <gnurou@gmail.com>
-Subject: Re: [PATCH 0/3] drm/gk20a: support for reclocking
-Message-ID: <20140711105427.GZ23218@tbergstrom-lnx.Nvidia.com>
-References: <1404977677-22248-1-git-send-email-acourbot@nvidia.com>
- <20140710094300.GP23218@tbergstrom-lnx.Nvidia.com>
- <53BF4292.1060009@nvidia.com>
+	Fri, 11 Jul 2014 06:55:22 -0400
+Message-ID: <53BFC294.4050502@aksignal.cz>
+Date: Fri, 11 Jul 2014 12:55:16 +0200
+From: =?UTF-8?B?SmnFmcOtIFByY2hhbA==?= <jiri.prchal@aksignal.cz>
+Reply-To: jiri.prchal@aksignal.cz
+Organization: AK signal Brno
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <53BF4292.1060009@nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Bo Shen <voice.shen@atmel.com>
+CC: nicolas.ferre@atmel.com, boris.brezillon@free-electrons.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: at91: at91sam9x5: add clocks for usb device
+References: <1405074175-22444-1-git-send-email-voice.shen@atmel.com> <20140711104755.GA3112@piout.net>
+In-Reply-To: <20140711104755.GA3112@piout.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 03:49:06AM +0200, Alex Courbot wrote:
-> On 07/10/2014 06:43 PM, Peter De Schrijver wrote:
-> > On Thu, Jul 10, 2014 at 09:34:34AM +0200, Alexandre Courbot wrote:
-> >> This series adds support for reclocking on GK20A. The first two patches touch
-> >> the clock subsystem to allow GK20A to operate, by making the presence of the
-> >> thermal and voltage devices optional, and allowing pstates to be provided
-> >> directly instead of being probed using the BIOS (which Tegra does not have).
-> >>
-> >> The last patch adds the GK20A clock device. Arguably the clock can be seen as a
-> >> stripped-down version of what is seen on NVE0, however instead of using NVE0
-> >> support has been written from scratch using the ChromeOS kernel as a basis.
-> >> There are several reasons for this:
-> >>
-> >> - The ChromeOS driver uses a lookup table for the P coefficient which I could
-> >>    not find in the NVE0 driver,
-> >> - Some registers that NVE0 expects to find are not present on GK20A (e.g.
-> >>    0x137120 and 0x137140),
-> >> - Calculation of MNP is done differently from what is performed in
-> >>    nva3_pll_calc(), and it might be interesting to compare the two methods,
-> >> - All the same, the programming sequence is done differently in the ChromeOS
-> >>    driver and NVE0 could possibly benefit from it (?)
-> >>
-> >> It would be interesting to try and merge both, but for now I prefer to have the
-> >> two coexisting to ensure proper operation on GK20A and besure I don't break
-> >> dGPU support. :)
-> >>
-> >> Regarding the first patch, one might argue that I could as well add thermal
-> >> and voltage devices to GK20A. The reason this is not done is because these
-> >> currently depend heavily on the presence of a BIOS, and will require a rework
-> >> similar to that done in patch 2 for clocks. I would like to make sure this
-> >> approach is approved because applying it to other subdevs.
-> >
-> > I think this should use CCF so we can use pre and post rate change notifiers
-> > to hookup vdd_gpu DVS.
-> 
-> Do you mean that we should turn the Nouveau gk20a clock driver into a 
-> consumer of this CCF clock? I have nothing against this, but note that 
-> Nouveau can also perform DVS on its own, as the pstates can also contain 
-> a voltage to be applied to the volt device (not yet implemented in this 
-> series).
-> 
+Thanks, it works now.
 
-Yes. For Tegra I think it makes sense to move DVS out of the individual
-drivers. Then we can share the code which has to deal with building the OPP
-tables with other DVS rails (eg. vdd_core) for example. Often there are also
-chip specific quirks to be dealt with (such as the maximum allowed voltage step
-or voltage relationships between rails), which are easier to handle in common
-code.
-
-Cheers,
-
-Peter.
+Dne 11.7.2014 12:47, Alexandre Belloni napsal(a):
+> On 11/07/2014 at 18:22:55 +0800, Bo Shen wrote :
+>> Add clocks for usb device, or else switch to CCF, the gadget
+>> won't work.
+>>
+>> Reported-by: Jiří Prchal <jiri.prchal@aksignal.cz>
+>> Signed-off-by: Bo Shen <voice.shen@atmel.com>
+> Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Tested-by: Jiri Prchal <jiri.prchal@aksignal.cz>
+>
+>> ---
+>>   arch/arm/boot/dts/at91sam9x5.dtsi | 2 ++
+>>   1 file changed, 2 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
+>> index d6133f4..2ebc421 100644
+>> --- a/arch/arm/boot/dts/at91sam9x5.dtsi
+>> +++ b/arch/arm/boot/dts/at91sam9x5.dtsi
+>> @@ -1045,6 +1045,8 @@
+>>   				reg = <0x00500000 0x80000
+>>   				       0xf803c000 0x400>;
+>>   				interrupts = <23 IRQ_TYPE_LEVEL_HIGH 0>;
+>> +				clocks = <&usb>, <&udphs_clk>;
+>> +				clock-names = "hclk", "pclk";
+>>   				status = "disabled";
+>>
+>>   				ep0 {
+>> --
+>> 1.8.5.2
+>>
+>>
+>> _______________________________________________
+>> linux-arm-kernel mailing list
+>> linux-arm-kernel@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
