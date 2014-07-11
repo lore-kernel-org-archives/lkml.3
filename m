@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813AbaGKQ2O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 12:28:14 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:52169 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754515AbaGKQ2J (ORCPT
+	id S1754676AbaGKQ3e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 12:29:34 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:56378 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977AbaGKQ3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 12:28:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <1405028569-14253-2-git-send-email-ttynkkynen@nvidia.com>
-References: <1405028569-14253-1-git-send-email-ttynkkynen@nvidia.com>
-	<1405028569-14253-2-git-send-email-ttynkkynen@nvidia.com>
-Date: Fri, 11 Jul 2014 09:28:09 -0700
-X-Google-Sender-Auth: nde1zOyThVGHV96M-1aUzUECzas
-Message-ID: <CAL1qeaFF0ZpUFovxTuLXrBPRg2Lbf-754Z=ztD5HFZPbfnDsAw@mail.gmail.com>
-Subject: Re: [PATCH 01/13] clk: tegra: Add binding for the Tegra124 DFLL clocksource
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-pm@vger.kernel.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Thierry Reding <thierry.reding@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 11 Jul 2014 12:29:33 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 0/2] x86_64,signal: Fix the set of saved segment registers
+Date: Fri, 11 Jul 2014 09:29:21 -0700
+Message-Id: <cover.1405095200.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 2:42 PM, Tuomas Tynkkynen <ttynkkynen@nvidia.com> wrote:
-> The DFLL is the main clocksource for the fast CPU cluster on Tegra124
-> and also provides automatic CPU rail voltage scaling as well. The DFLL
-> is a separate IP block from the usual Tegra124 clock-and-reset
-> controller, so it gets its own node in the device tree.
+The x86_64 signal code claims to save and restore CS, FS, and GS,
+and it further claims that this is the minimal set that's needed.
 
-> diff --git a/Documentation/devicetree/bindings/clock/nvidia,tegra124-dfll.txt b/Documentation/devicetree/bindings/clock/nvidia,tegra124-dfll.txt
+Neither of these claims is true.  The code does not, and AFAICT
+never has, saved or restored FS and GS, nor does it need to.  On the
+other hand, all 64-bit syscalls (and rt_sigreturn in particular)
+clobber SS, making it impossible for signal handlers to correctly
+restore SS without using a trampoline or ptracing themselves.
 
-> +- nvidia,pmic-voltage-table: Array of 2-tuples.  Each entry should have the
-> +  form <register-value voltage-in-uV>, indicating the register value that
-> +  needs to be programmed to the PMIC for changing the VDD_CPU voltage to
-> +  the specified voltage. The table must be in ascending order by the voltage.
+This patchset saves and restores SS in the __pad0 slot and renames
+the FS and GS slots __pad1 and __pad2 to more accurately document
+their purpose.
 
-Instead of listing the register values for each voltage in the DT,
-can't you use regulator_list_voltage() to create this map?
+I discovered this while writing a test for espfix64.
+
+Andy Lutomirski (2):
+  x86_64,signal: Save and restore SS in signal frames
+  x86_64,signal: Remove 'fs' and 'gs' from sigcontext
+
+ arch/x86/include/asm/sigcontext.h      |  6 +++---
+ arch/x86/include/uapi/asm/sigcontext.h |  6 +++---
+ arch/x86/kernel/signal.c               | 12 +++---------
+ 3 files changed, 9 insertions(+), 15 deletions(-)
+
+-- 
+1.9.3
+
