@@ -1,111 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750AbaGKQcK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 12:32:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10399 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751043AbaGKQcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 12:32:08 -0400
-From: Paul Moore <pmoore@redhat.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Richard Guy Briggs <rgb@redhat.com>,
-        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        Al Viro <aviro@redhat.com>, Will Drewry <wad@chromium.org>
-Subject: Re: [PATCH 2/3] [RFC] seccomp: give BPF x32 bit when restoring x32 filter
-Date: Fri, 11 Jul 2014 12:32:05 -0400
-Message-ID: <13645924.XpBzvDVILV@sifl>
-Organization: Red Hat
-User-Agent: KMail/4.13.2 (Linux/3.14.8-gentoo; KDE/4.13.2; x86_64; ; )
-In-Reply-To: <1405095813.2357.3.camel@flatline.rdu.redhat.com>
-References: <cover.1405023592.git.rgb@redhat.com> <14055169.hesOIjNJgN@sifl> <1405095813.2357.3.camel@flatline.rdu.redhat.com>
+	id S1754864AbaGKQcl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 12:32:41 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:48187 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754106AbaGKQcj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 12:32:39 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: "chenhanxiao\@cn.fujitsu.com" <chenhanxiao@cn.fujitsu.com>,
+        "Serge Hallyn \(serge.hallyn\@ubuntu.com\)" <serge.hallyn@ubuntu.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "containers\@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <5871495633F38949900D2BF2DC04883E562293@G08CNEXMBPEKD02.g08.fujitsu.local>
+	<20140711142806.GA26441@mail.hallyn.com>
+Date: Fri, 11 Jul 2014 09:29:05 -0700
+In-Reply-To: <20140711142806.GA26441@mail.hallyn.com> (Serge E. Hallyn's
+	message of "Fri, 11 Jul 2014 16:28:06 +0200")
+Message-ID: <87ha2nyi3y.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/dO+nBKvpxMSJRSlYw7gyfRkfDb6fzHkw=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
+	*      [score: 0.3171]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.5 XM_Body_Dirty_Words Contains a dirty word
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
+X-Spam-Relay-Country: 
+Subject: Re: Could not mount sysfs when enable userns but disable netns
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 11, 2014 12:23:33 PM Eric Paris wrote:
-> On Fri, 2014-07-11 at 12:21 -0400, Paul Moore wrote:
-> > On Friday, July 11, 2014 12:16:47 PM Eric Paris wrote:
-> > > On Fri, 2014-07-11 at 12:11 -0400, Paul Moore wrote:
-> > > > On Thursday, July 10, 2014 09:06:02 PM H. Peter Anvin wrote:
-> > > > > Incidentally: do seccomp users know that on an x86-64 system you can
-> > > > > recevie system calls from any of the x86 architectures, regardless
-> > > > > of
-> > > > > how the program is invoked?  (This is unusual, so normally denying
-> > > > > those
-> > > > > "alien" calls is the right thing to do.)
-> > > > 
-> > > > I obviously can't speak for all seccomp users, but libseccomp handles
-> > > > this
-> > > > by checking the seccomp_data->arch value at the start of the filter
-> > > > and
-> > > > killing (by default) any non-native architectures.  If you want, you
-> > > > can
-> > > > change this default behavior or add support for other architectures
-> > > > (e.g.
-> > > > create a filter that allows both x86-64 and x32 but disallows x86, or
-> > > > any
-> > > > combination of the three for that matter).
-> > > 
-> > > Maybe libseccomp does some HORRIFIC contortions under the hood, but the
-> > > interface is crap...  Since seccomp_data->arch can't distinguish between
-> > > X32 and X86_64.  If I write a seccomp filter which says
-> > > 
-> > > KILL arch != x86_64
-> > > KILL init_module
-> > > ALLOW everything else
-> > > 
-> > > I can still call init_module, I just have to use the X32 variant.
-> > > 
-> > > If libseccomp is translating:
-> > > 
-> > > KILL arch != x86_64 into:
-> > > 
-> > > KILL arch != x86_64
-> > > KILL syscall_nr >= 2000
-> > > 
-> > > That's just showing how dumb the kernel interface is...   Good for you
-> > > guys, but the kernel is just being dumb   :)
-> > 
-> > You're not going to hear me ever say that I like how the x32 ABI was done,
-> > it is a real mess from a seccomp filter point of view and we have to do
-> > some nasty stuff in libseccomp to make it all work correctly (see my
-> > comments on the libseccomp-devel list regarding my severe displeasure
-> > over x32), but what's done is done.
-> > 
-> > I think it's too late to change the x32 seccomp filter ABI.
-> 
-> So we have a security interface that is damn near impossible to get
-> right.  Perfect.
+"Serge E. Hallyn" <serge@hallyn.com> writes:
 
-What?  Having to do two comparisons instead of one is "damn near impossible"?  
-I think that might be a bit of an overreaction don't you think?
+> Quoting chenhanxiao@cn.fujitsu.com (chenhanxiao@cn.fujitsu.com):
+>> Hello,
+>> 
+>> How to reproduce:
+>> 1. Prepare a container, enable userns and disable netns
+>> 2. use libvirt-lxc to start a container
+>> 3. libvirt could not mount sysfs then failed to start.
+>> 
+>> Then I found that
+>> commit 7dc5dbc879bd0779924b5132a48b731a0bc04a1e says:
+>> "Don't allow mounting sysfs unless the caller has CAP_SYS_ADMIN rights
+>> over the net namespace."
+>> 
+>> But why should we check sysfs mouont permission over net namespace?
+>> We've already checked CAP_SYS_ADMIN though.
 
-> I think this explains exactly why I support this idea.  Make X32 look
-> like everyone else ...
+We already checked capable(CAP_SYS_ADMIN) and it failed.
 
-You do realize that this patch set makes x32 the odd man out by having 
-syscall_get_nr() return a different syscall number than what was used to make 
-the syscall?  I don't understand how that makes "x32 look like everyone else".
+>> What the relationship between sysfs and net namespace,
+>> or this check is a little redundant?
 
-> ... and put these custom horrific hacks in seccomp if we are unwilling to
-> 'do it right'
+You want a bind mount not a new fresh mount.
 
-If you want to add the new x32 audit arch #define, go for it, like I said that 
-was something that I feel should have been in there from the beginning.  As 
-far as I'm concerned you can even put a hack in kernel/seccomp.c to rewrite 
-the arch token value if it makes your life easier.
+When looking at how evil actors could abuse things it turned out that in
+some circumstances the root user (before a user namespace is created)
+needs to control the policy on which filesystems may be mounted.  There
+are files in sysfs and in proc that you never want to see in a chroot
+jail, as they just create more surface area to attack.
 
-> Honestly, how many people are using seccomp on X32 and would be horribly
-> pissed if we just fixed it?
+The only reason for creating a new fresh mount of sysfs is to get access
+to /sys/class/net.  So to keep things simple we restrict creation of
+that mount to cases where the mounter has permisions over the network
+namespace, and cases where nothing interesing is mounted on top of
+sysfs.
 
-Okay, please stop suggesting we break the x32 kernel/user interface to 
-workaround a flaw in audit.  I get that it sucks for audit, I really do, but 
-this is audit's problem.
+If a new /sys/class/net is not needed it is possible to bind mount the
+existing copy of sysfs to the new location without loss of
+functionality.
 
--- 
-paul moore
-security and virtualization @ redhat
+> It is not redundant.  The whole point is that after clone(CLONE_NEWUSER)
+> you get a newly filled set of capabilities.  But you should not have
+> privileges over the host's network namesapce.  After you unshare a new
+> network namespace, you *should* have privilege over it.  So the fact
+> that we've already check CAP_SYS_ADMIN means nothing, because the
+> capabilities need to be targeted.
 
+Exactly the tests are failing because the caller is not the global root
+and so the code is properly failing the permission checks.
+
+Eric
