@@ -1,139 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937AbaGKJLn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 05:11:43 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:27452 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752242AbaGKJKm (ORCPT
+	id S1753069AbaGKJMI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 05:12:08 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:50993 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752888AbaGKJLn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 05:10:42 -0400
-X-AuditID: cbfee690-b7fb56d000003439-2b-53bfaa0f978b
-From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-To: linux-iio@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        devicetree@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, cw00.choi@samsung.com,
-        gregkh@linuxfoundation.org, naveenkrishna.ch@gmail.com,
-        lars@metafoo.de, cpgs@samsung.com, grundler@chromium.org
-Subject: [PATCH 3/4] Documentation: dt-bindings: update exynos-adc.txt with
- syscon handle
-Date: Fri, 11 Jul 2014 14:36:28 +0530
-Message-id: <1405069589-10388-4-git-send-email-ch.naveen@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1405069589-10388-1-git-send-email-ch.naveen@samsung.com>
-References: <1405069589-10388-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkkeLIzCtJLcpLzFFi42JZI2JSq8u/an+wwYfJ1hYvD2laXP/ynNVi
-	/pFzrBbNi9ezWbw68oPJYsnk+awW8468Y7G4vGsOm8WM8/uYLBZt+8/swOUxu+Eii8fOWXfZ
-	PfbPXcPuseTNIVaPvi2rGD0+b5ILYIvisklJzcksSy3St0vgyrgzuZu9YK14xatDa1gbGN8I
-	dTFyckgImEj0Pn/FBGGLSVy4t56ti5GLQ0hgKaPE64bLzDBFr7deYYRITGeUOHXqIguE088k
-	0b3oIDtIFZuAmcTBRavBbBGBOIkPl/vZQYqYBdYySrRtuwqWEBaIlvh3ahPYWBYBVYl/258A
-	jeXg4BVwlbj41wnElBBQkJgzyQakglPATeLbv0awaiGgii23usH2SgjsYpc4dWEfO8QYAYlv
-	kw+xQPTKSmw6AHW0pMTBFTdYJjAKL2BkWMUomlqQXFCclF5kolecmFtcmpeul5yfu4kRGA2n
-	/z2bsIPx3gHrQ4zJQOMmMkuJJucDoymvJN7Q2MzIwtTE1NjI3NKMNGElcV61R0lBQgLpiSWp
-	2ampBalF8UWlOanFhxiZODilGhjFfBLzErye3HCs3OA7je3P/fTlHgw3N0yt3jLVM7mb+1PE
-	IUXdvuSrpsZnLNc0sF2fppborCaTeOdus8VsgzPc/Ql3Ork2+zb4blws3Dkj+IbsCXf2KapP
-	nsz/fcN6g7iv6drnOqonXq5eP7t6n6L/2SqeGfWvhI9N/60gs3MO+8qtm96tNIhQYinOSDTU
-	Yi4qTgQAynKXtpwCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsVy+t9jQd2fK/cHGzQu4bd4eUjT4vqX56wW
-	84+cY7VoXryezeLVkR9MFksmz2e1mHfkHYvF5V1z2CxmnN/HZLFo239mBy6P2Q0XWTx2zrrL
-	7rF/7hp2jyVvDrF69G1ZxejxeZNcAFtUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGu
-	oaWFuZJCXmJuqq2Si0+ArltmDtBpSgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM
-	0EDCGsaMO5O72QvWile8OrSGtYHxjVAXIyeHhICJxOutVxghbDGJC/fWs3UxcnEICUxnlDh1
-	6iILhNPPJNG96CA7SBWbgJnEwUWrwWwRgTiJD5f72UGKmAXWMkq0bbsKlhAWiJb4d2oTM4jN
-	IqAq8W/7E6AVHBy8Aq4SF/86gZgSAgoScybZgFRwCrhJfPvXCFYtBFSx5VY3ywRG3gWMDKsY
-	RVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxgmPtmdQOxpUNFocYBTgYlXh4FdbvCxZiTSwrrsw9
-	xCjBwawkwvukfn+wEG9KYmVValF+fFFpTmrxIUZToJsmMkuJJucD00BeSbyhsYm5qbGppYmF
-	iZmlkjjvgVbrQCGB9MSS1OzU1ILUIpg+Jg5OqQZGa0fFI/IRilKX9r9d2PnhyYFHZ498Mg6P
-	OPmG45dFW9AMNt02bveP9nUvu5wd1/yb/fTgs59TQz8GPeZd+OqgZ6plqUz7zmezrdQ+v1we
-	Irp71k0vu39hhkwTrf++KTrV6pzGuDj39o/lXZs6Cr+nPCmUrTXuExFfLC5m9OJtSOG7OycX
-	NRtsVmIpzkg01GIuKk4EAM+CbNDLAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 11 Jul 2014 05:11:43 -0400
+Date: Fri, 11 Jul 2014 10:11:39 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Tanmay Inamdar'" <tinamdar@apm.com>,
+        "'Rob Herring'" <robherring2@gmail.com>,
+        "'linux-pci'" <linux-pci@vger.kernel.org>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'linaro-kernel'" <linaro-kernel@lists.linaro.org>,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Sinan Kaya'" <okaya@codeaurora.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Suravee Suthikulanit'" <suravee.suthikulpanit@amd.com>,
+        "'Device Tree ML'" <devicetree@vger.kernel.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'LAKML'" <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 0/9] Support for creating generic PCI host bridges
+ from DT
+Message-ID: <20140711091139.GM6501@e106497-lin.cambridge.arm.com>
+References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
+ <CAL_JsqK_CfagmiFOpOXVYGry22nGnCZL0ZXeJhYxb9zp=P2fsQ@mail.gmail.com>
+ <20140708171828.GM6501@e106497-lin.cambridge.arm.com>
+ <CACoXjcn3b7otcbxdr+RAVNHHjHyVsvw0QcmK5jd-QBF8SQX5iw@mail.gmail.com>
+ <004501cf9cda$65703610$3050a230$%han@samsung.com>
+MIME-Version: 1.0
+In-Reply-To: <004501cf9cda$65703610$3050a230$%han@samsung.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 11 Jul 2014 09:11:40.0228 (UTC) FILETIME=[201EF840:01CF9CE8]
+X-MC-Unique: 114071110114102701
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch updates the DT bindings in exynos-adc.txt with the
-syscon phandle to the ADC nodes.
+On Fri, Jul 11, 2014 at 08:33:23AM +0100, Jingoo Han wrote:
+> On Friday, July 11, 2014 9:44 AM, Tanmay Inamdar wrote:
+> > On Tue, Jul 8, 2014 at 10:18 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> > > On Sun, Jul 06, 2014 at 04:23:43PM +0100, Rob Herring wrote:
+> > >> On Tue, Jul 1, 2014 at 1:43 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> > >> > This is my resurected attempt at adding support for generic PCI host
+> > >> > bridge controllers that make use of device tree information to
+> > >> > configure themselves. I've tagged it as v8 although the patches
+> > >> > have now been reshuffled in order to ease adoption so referring to
+> > >> > the older versions might be a bit of a hoop jumping exercise.
+> > >> >
+> > >> > Changes from v7:
+> > >> >   - Reordered the patches so that fixes and non-controversial patches
+> > >> >     from v7 can be accepted more easily. If agreed I can split the
+> > >> >     series again into patches that can be upstreamed easily and ones
+> > >> >     that still need discussion.
+> > >> >   - Moved the of_create_host_bridge() function to drivers/of/of_pci.c
+> > >> >     to better reflect its target use.
+> > >> >   - Added the function to remap the bus I/O resources that used to be
+> > >> >     provided in my arm64 patch series and (re)named it pci_remap_iospace()
+> > >> >   - Removed error code checking from parsing and mapping of IRQ from DT
+> > >> >     in recognition that some PCI devices will not have legacy IRQ mappings.
+> > >> >
+> > >> > v7 thread here with all the historic information: https://lkml.org/lkml/2014/3/14/279
+> > >>
+> > >> Can you publish a branch for this series please.
+> > >>
+> > >> Rob
+> > >>
+> > >
+> > > Hi Rob,
+> > >
+> > > I have pushed a brach that matches my v8 patchset +1 obvious missing header include
+> > > here: http://www.linux-arm.org/git?p=linux-ld.git;a=shortlog;h=refs/heads/for-upstream/pci_v8
+> > >
+> > 
+> > I was still getting following compilation error after applying arm64
+> > pci headers. Please let me know if I am missing something.
+> > 
+> > linux-git/drivers/of/of_pci.c: In function ‘pci_host_bridge_of_get_ranges’:
+> > linux-git/drivers/of/of_pci.c:114:22: error: storage size of ‘range’ isn’t known
+> >   struct of_pci_range range;
+> >                       ^
+> > linux-git/drivers/of/of_pci.c:115:29: error: storage size of ‘parser’
+> > isn’t known
+> >   struct of_pci_range_parser parser;
+> >                              ^
+> > linux-git/drivers/of/of_pci.c:121:2: error: implicit declaration of
+> > function ‘of_pci_range_parser_init’
+> > [-Werror=implicit-function-declaration]
+> >   err = of_pci_range_parser_init(&parser, dev);
+> > 
+> > 
+> > Below patch fixes the errors.
+> > 
+> > diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
+> > index 55d8320..da88dac 100644
+> > --- a/drivers/of/of_pci.c
+> > +++ b/drivers/of/of_pci.c
+> > @@ -2,6 +2,7 @@
+> >  #include <linux/export.h>
+> >  #include <linux/of.h>
+> >  #include <linux/of_pci.h>
+> > +#include <linux/of_address.h>
+> 
+> Yes, right. I also found the build errors as above mentioned.
+> "of_address.h" should be included, in order to fix the build errors.
+> However, for readability, the following would be better.
+> 
+>  #include <linux/of.h>
+> +#include <linux/of_address.h>
+>  #include <linux/of_pci.h>
+> 
+> Best regards,
+> Jingoo Han
 
-Also removes the 2nd "reg" property, which used to carry the
-ADC_PHY regiser base from PMU.
 
-Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-To: devicetree@vger.kernel.org
----
- .../devicetree/bindings/iio/adc/exynos-adc.txt     |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+Thanks, guys! Like I've said, it was not my day when I've submitted v8 series.
+I've cherry picked the patches into a clean branch but forgot to be thorough
+and was compiling in the old working directory.
 
-diff --git a/Documentation/devicetree/bindings/iio/adc/exynos-adc.txt b/Documentation/devicetree/bindings/iio/adc/exynos-adc.txt
-index b87749a..808bbfa 100644
---- a/Documentation/devicetree/bindings/iio/adc/exynos-adc.txt
-+++ b/Documentation/devicetree/bindings/iio/adc/exynos-adc.txt
-@@ -1,10 +1,11 @@
- Samsung Exynos Analog to Digital Converter bindings
- 
- The devicetree bindings are for the new ADC driver written for
--Exynos4 and upward SoCs from Samsung.
-+Exynos4 and Exynos5 series SoCs from Samsung.
-+Now supports Exynos3250 too.
- 
- New driver handles the following
--1. Supports ADC IF found on EXYNOS4412/EXYNOS5250
-+1. Supports ADC IF found on Exynos3250/EXYNOS4412/EXYNOS5 series
-    and future SoCs from Samsung
- 2. Add ADC driver under iio/adc framework
- 3. Also adds the Documentation for device tree bindings
-@@ -18,7 +19,7 @@ Required properties:
- 				for controllers compatible with ADC of
- 				Exynos3250.
- - reg:			Contains ADC register address range (base address and
--			length) and the address of the phy enable register.
-+			length)
- - interrupts: 		Contains the interrupt information for the timer. The
- 			format is being dependent on which interrupt controller
- 			the Samsung device uses.
-@@ -31,6 +32,8 @@ Required properties:
- 			- "sclk_adc" : ADC special clock (only for Exynos3250
- 				       and compatible ADC block)
- - vdd-supply		VDD input supply.
-+- samsung,syscon-phandle Contains the PMU system controller node
-+			(To access the ADC_PHY register)
- 
- Note: child nodes can be added for auto probing from device tree.
- 
-@@ -38,7 +41,7 @@ Example: adding device info in dtsi file
- 
- adc: adc@12D10000 {
- 	compatible = "samsung,exynos-adc-v1";
--	reg = <0x12D10000 0x100>, <0x10040718 0x4>;
-+	reg = <0x12D10000 0x100>;
- 	interrupts = <0 106 0>;
- 	#io-channel-cells = <1>;
- 	io-channel-ranges;
-@@ -47,13 +50,14 @@ adc: adc@12D10000 {
- 	clock-names = "adc";
- 
- 	vdd-supply = <&buck5_reg>;
-+	samsung,syscon-phandle = <&pmu_system_controller>;
- };
- 
- Example: adding device info in dtsi file for Exynos3250 with additional sclk
- 
- adc: adc@126C0000 {
- 	compatible = "samsung,exynos3250-adc-v2";
--	reg = <0x126C0000 0x100>, <0x10020718 0x4>;
-+	reg = <0x126C0000 0x100>;
- 	interrupts = <0 137 0>;
- 	#io-channel-cells = <1>;
- 	io-channel-ranges;
-@@ -62,6 +66,7 @@ adc: adc@126C0000 {
- 	clock-names = "adc", "sclk_adc";
- 
- 	vdd-supply = <&buck5_reg>;
-+	samsung,syscon-phandle = <&pmu_system_controller>;
- };
- 
- Example: Adding child nodes in dts file
+Sorry,
+Liviu
+
+> 
+> > 
+> >  static inline int __of_pci_pci_compare(struct device_node *node,
+> >                                        unsigned int data)
+> > 
+> > 
+> > > Best regards,
+> > > Liviu
+
 -- 
-1.7.9.5
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
