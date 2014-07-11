@@ -1,75 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755057AbaGKS2T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 14:28:19 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:48936 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736AbaGKS2S (ORCPT
+	id S1755085AbaGKS33 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 14:29:29 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:50109 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751661AbaGKS32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 14:28:18 -0400
-Date: Fri, 11 Jul 2014 14:28:14 -0400
-From: Tejun Heo <tj@kernel.org>
+	Fri, 11 Jul 2014 14:29:28 -0400
+Date: Fri, 11 Jul 2014 11:29:21 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Christoph Lameter <cl@gentwo.org>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Jianyu Zhan <nasa4836@gmail.com>, malc <av1474@comtv.ru>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Fabian Frederick <fabf@skynet.be>, Tony Luck <tony.luck@intel.com>,
-        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC Patch V1 07/30] mm: Use cpu_to_mem()/numa_mem_id() to
- support memoryless node
-Message-ID: <20140711182814.GE30865@htj.dyndns.org>
-References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
- <1405064267-11678-8-git-send-email-jiang.liu@linux.intel.com>
- <20140711144205.GA27706@htj.dyndns.org>
- <alpine.DEB.2.11.1407111012210.25527@gentwo.org>
- <20140711152156.GB29137@htj.dyndns.org>
- <alpine.DEB.2.11.1407111056060.27349@gentwo.org>
- <20140711160152.GC30865@htj.dyndns.org>
- <alpine.DEB.2.11.1407111117560.27592@gentwo.org>
- <20140711162451.GD30865@htj.dyndns.org>
- <alpine.DEB.2.11.1407111220410.4511@gentwo.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, oleg@redhat.com,
+        sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 11/17] rcu: Bind grace-period kthreads to
+ non-NO_HZ_FULL CPUs
+Message-ID: <20140711182921.GP16041@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140707223756.GA7187@linux.vnet.ibm.com>
+ <1404772701-8804-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1404772701-8804-11-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140708152358.GF6571@localhost.localdomain>
+ <20140708154723.GN4603@linux.vnet.ibm.com>
+ <20140708183846.GJ6571@localhost.localdomain>
+ <alpine.DEB.2.11.1407111309150.4777@gentwo.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1407111220410.4511@gentwo.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <alpine.DEB.2.11.1407111309150.4777@gentwo.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14071118-1344-0000-0000-000002C59464
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Jul 11, 2014 at 01:10:41PM -0500, Christoph Lameter wrote:
+> On Tue, 8 Jul 2014, Frederic Weisbecker wrote:
+> 
+> > > I was figuring that a fair number of the kthreads might eventually
+> > > be using this, not just for the grace-period kthreads.
+> >
+> > Ok makes sense. But can we just rename the cpumask to housekeeping_mask?
+> 
+> That would imply that all no-nohz processors are housekeeping? So all
+> processors with a tick are housekeeping?
+> 
+> Could we make that set configurable? Ideally I'd like to have the ability
+> restrict the housekeeping to one processor.
 
-On Fri, Jul 11, 2014 at 12:29:30PM -0500, Christoph Lameter wrote:
-> GFP_THISNODE is mostly used by allocators that need memory from specific
-> nodes. The use of numa_mem_id() there is useful because one will not
-> get any memory at all when attempting to allocate from a memoryless
-> node using GFP_THISNODE.
+We have a housekeeping_affine() in -rcu that currently assumes that all
+no-nohz CPUs are housekeeping CPUs.  It would not be hard to add the
+ability to restrict the housekeeping CPUs further.  Coming to agreement
+on exactly how to go about doing it might be hard, but read on!  ;-)
 
-As long as it's in allocator proper, it doesn't matter all that much
-but the changes are clearly not contained, are they?
+Here are some possibilities that come to mind:
 
-Also, unless this is done where the falling back is actually
-happening, numa_mem_id() seems like the wrong interface because you
-end up losing information of the originating node.  Given that this
-isn't a wide spread use case, maybe we can do with something like
-numa_mem_id() as a compromise but if we're doing that let's at least
-make it clear that it's something ugly (give it an ugly name, not
-something as generic as numa_mem_id()) and not expose it outside
-allocators.
+1.	Have a housekeeping= boot parameter that takes the list of
+	housekeeping CPUs.  You have full control: You break it,
+	you get to keep the pieces.
 
-Thanks.
+2.	As above, but eliminate any nohz_full= CPUs from the
+	housekeeping= list (probably with a splat).
 
--- 
-tejun
+	This of course raises the question about what to do if the
+	resulting housekeeping set is empty:
+
+	a.	Complain and let housekeeping tasks run anywhere.
+
+	b.	Complain and restrict housekeeping tasks to !nohz CPUs.
+
+3.	Have a housekeeping= boot parameter that specifies the number
+	of housekeeping CPUs, which are taken from the !nohz_full
+	list in order.  If too many are specified, complain and either:
+
+	a.	Restrict to !nohz_full CPUs.
+
+	b.	Use the specified number of nohz_full CPUs as
+		housekeeping CPUs.
+
+Thoughts?
+
+							Thanx, Paul
+
