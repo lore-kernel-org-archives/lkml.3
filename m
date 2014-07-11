@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404AbaGKVG2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 17:06:28 -0400
-Received: from mga03.intel.com ([143.182.124.21]:38269 "EHLO mga03.intel.com"
+	id S1754335AbaGKVG1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 17:06:27 -0400
+Received: from mga03.intel.com ([143.182.124.21]:38263 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753819AbaGKVFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753857AbaGKVFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Jul 2014 17:05:21 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,645,1400050800"; 
-   d="scan'208";a="456056342"
+   d="scan'208";a="456056340"
 From: Sudeep Dutt <sudeep.dutt@intel.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Dan Williams <dan.j.williams@intel.com>
@@ -16,9 +16,9 @@ Cc: Siva Yerramreddy <yshivakrishna@gmail.com>,
         Ashutosh Dixit <ashutosh.dixit@intel.com>,
         Nikhil Rao <nikhil.rao@intel.com>, Sudeep Dutt <sudeep.dutt@intel.com>,
         linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Subject: [PATCH char-misc-next v3 5/8] misc: mic: add dma support in host driver
-Date: Fri, 11 Jul 2014 14:04:23 -0700
-Message-Id: <2ee2a23b791987b265c6c8eef2ce4c6b6211b998.1405109402.git.sudeep.dutt@intel.com>
+Subject: [PATCH char-misc-next v3 3/8] dma: MIC X100 DMA Driver
+Date: Fri, 11 Jul 2014 14:04:21 -0700
+Message-Id: <5ece7b7320491521bbfc167517a50d2620ccc276.1405109402.git.sudeep.dutt@intel.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <cover.1405109401.git.sudeep.dutt@intel.com>
 References: <cover.1405109401.git.sudeep.dutt@intel.com>
@@ -30,589 +30,1137 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Siva Yerramreddy <yshivakrishna@gmail.com>
 
-This patch adds a dma device on the mic virtual bus and uses this dmaengine
-to transfer data for virtio devices
+This patch implements DMA Engine API for DMA controller on MIC X100
+Coprocessors. DMA h/w is shared between host and card s/w.
+Channels 0 to 3 are used by host and 4 to 7 are used by card.
+Since the DMA device doesn't show up as PCIe device, a virtual bus called mic
+bus is created and virtual devices are added on that bus to follow device model.
+Allowed dma transfer directions are host to card, card to host and card to card.
 
+Reviewed-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
 Reviewed-by: Nikhil Rao <nikhil.rao@intel.com>
-Signed-off-by: Sudeep Dutt <sudeep.dutt@intel.com>
-Signed-off-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
+Reviewed-by: Sudeep Dutt <sudeep.dutt@intel.com>
 Signed-off-by: Siva Yerramreddy <yshivakrishna@gmail.com>
 ---
- drivers/misc/mic/Kconfig           |   2 +-
- drivers/misc/mic/host/mic_boot.c   |  83 ++++++++++++++++-
- drivers/misc/mic/host/mic_device.h |  24 +++++
- drivers/misc/mic/host/mic_intr.h   |   3 +-
- drivers/misc/mic/host/mic_virtio.c | 181 +++++++++++++++++++++++++++++--------
- drivers/misc/mic/host/mic_virtio.h |  21 ++++-
- drivers/misc/mic/host/mic_x100.c   |   8 ++
- 7 files changed, 281 insertions(+), 41 deletions(-)
+ drivers/dma/Kconfig        |  19 ++
+ drivers/dma/Makefile       |   1 +
+ drivers/dma/mic_x100_dma.c | 774 +++++++++++++++++++++++++++++++++++++++++++++
+ drivers/dma/mic_x100_dma.h | 286 +++++++++++++++++
+ 4 files changed, 1080 insertions(+)
+ create mode 100644 drivers/dma/mic_x100_dma.c
+ create mode 100644 drivers/dma/mic_x100_dma.h
 
-diff --git a/drivers/misc/mic/Kconfig b/drivers/misc/mic/Kconfig
-index ee1d2ac..bf76313 100644
---- a/drivers/misc/mic/Kconfig
-+++ b/drivers/misc/mic/Kconfig
-@@ -19,7 +19,7 @@ comment "Intel MIC Host Driver"
+diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+index 1eca7b9..7c8b8c4 100644
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -33,6 +33,25 @@ if DMADEVICES
  
- config INTEL_MIC_HOST
- 	tristate "Intel MIC Host Driver"
--	depends on 64BIT && PCI && X86
-+	depends on 64BIT && PCI && X86 && INTEL_MIC_BUS
- 	select VHOST_RING
- 	help
- 	  This enables Host Driver support for the Intel Many Integrated
-diff --git a/drivers/misc/mic/host/mic_boot.c b/drivers/misc/mic/host/mic_boot.c
-index b75c6b5..ff2b0fb 100644
---- a/drivers/misc/mic/host/mic_boot.c
-+++ b/drivers/misc/mic/host/mic_boot.c
-@@ -23,11 +23,70 @@
- #include <linux/pci.h>
+ comment "DMA Devices"
  
- #include <linux/mic_common.h>
-+#include <linux/mic_bus.h>
- #include "../common/mic_dev.h"
- #include "mic_device.h"
- #include "mic_smpt.h"
- #include "mic_virtio.h"
- 
-+static inline struct mic_device *mbdev_to_mdev(struct mbus_device *mbdev)
-+{
-+	return dev_get_drvdata(mbdev->dev.parent);
-+}
++config INTEL_MIC_X100_DMA
++	tristate "Intel MIC X100 DMA Driver"
++	depends on 64BIT && X86 && INTEL_MIC_BUS
++	select DMAENGINE
++	default N
++	help
++	  This enables DMA support for the Intel Many Integrated Core
++	  (MIC) family of PCIe form factor coprocessor X100 devices that
++	  run a 64 bit Linux OS. This driver will be used by both MIC
++	  host and card drivers.
 +
-+static dma_addr_t
-+mic_dma_map_page(struct device *dev, struct page *page,
-+		 unsigned long offset, size_t size, enum dma_data_direction dir,
-+		 struct dma_attrs *attrs)
-+{
-+	void *va = phys_to_virt(page_to_phys(page)) + offset;
-+	struct mic_device *mdev = dev_get_drvdata(dev->parent);
++	  If you are building host kernel with a MIC device or a card
++	  kernel for a MIC device, then say M (recommended) or Y, else
++	  say N. If unsure say N.
 +
-+	return mic_map_single(mdev, va, size);
-+}
++	  More information about the Intel MIC family as well as the Linux
++	  OS and tools for MIC to use with this driver are available from
++	  <http://software.intel.com/en-us/mic-developer>.
 +
-+static void
-+mic_dma_unmap_page(struct device *dev, dma_addr_t dma_addr,
-+		   size_t size, enum dma_data_direction dir,
-+		   struct dma_attrs *attrs)
-+{
-+	struct mic_device *mdev = dev_get_drvdata(dev->parent);
-+	mic_unmap_single(mdev, dma_addr, size);
-+}
+ config INTEL_MID_DMAC
+ 	tristate "Intel MID DMA support for Peripheral DMA controllers"
+ 	depends on PCI && X86
+diff --git a/drivers/dma/Makefile b/drivers/dma/Makefile
+index c779e1e..bd9e7fa 100644
+--- a/drivers/dma/Makefile
++++ b/drivers/dma/Makefile
+@@ -47,3 +47,4 @@ obj-$(CONFIG_MOXART_DMA) += moxart-dma.o
+ obj-$(CONFIG_FSL_EDMA) += fsl-edma.o
+ obj-$(CONFIG_QCOM_BAM_DMA) += qcom_bam_dma.o
+ obj-y += xilinx/
++obj-$(CONFIG_INTEL_MIC_X100_DMA) += mic_x100_dma.o
+diff --git a/drivers/dma/mic_x100_dma.c b/drivers/dma/mic_x100_dma.c
+new file mode 100644
+index 0000000..6de2e67
+--- /dev/null
++++ b/drivers/dma/mic_x100_dma.c
+@@ -0,0 +1,774 @@
++/*
++ * Intel MIC Platform Software Stack (MPSS)
++ *
++ * Copyright(c) 2014 Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License, version 2, as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++ * General Public License for more details.
++ *
++ * The full GNU General Public License is included in this distribution in
++ * the file called "COPYING".
++ *
++ * Intel MIC X100 DMA Driver.
++ *
++ * Adapted from IOAT dma driver.
++ */
++#include <linux/module.h>
++#include <linux/io.h>
++#include <linux/seq_file.h>
 +
-+static struct dma_map_ops mic_dma_ops = {
-+	.map_page = mic_dma_map_page,
-+	.unmap_page = mic_dma_unmap_page,
++#include "mic_x100_dma.h"
++
++#define MIC_DMA_MAX_XFER_SIZE_CARD  (1 * 1024 * 1024 -\
++				       MIC_DMA_ALIGN_BYTES)
++#define MIC_DMA_MAX_XFER_SIZE_HOST  (1 * 1024 * 1024 >> 1)
++#define MIC_DMA_DESC_TYPE_SHIFT	60
++#define MIC_DMA_MEMCPY_LEN_SHIFT 46
++#define MIC_DMA_STAT_INTR_SHIFT 59
++
++/* high-water mark for pushing dma descriptors */
++static int mic_dma_pending_level = 4;
++
++/* Status descriptor is used to write a 64 bit value to a memory location */
++enum mic_dma_desc_format_type {
++	MIC_DMA_MEMCPY = 1,
++	MIC_DMA_STATUS,
 +};
 +
-+static struct mic_irq *
-+_mic_request_threaded_irq(struct mbus_device *mbdev,
-+			  irq_handler_t handler, irq_handler_t thread_fn,
-+			  const char *name, void *data, int intr_src)
++static inline u32 mic_dma_hw_ring_inc(u32 val)
 +{
-+	return mic_request_threaded_irq(mbdev_to_mdev(mbdev), handler,
-+					thread_fn, name, data,
-+					intr_src, MIC_INTR_DMA);
++	return (val + 1) % MIC_DMA_DESC_RX_SIZE;
 +}
 +
-+static void _mic_free_irq(struct mbus_device *mbdev,
-+			  struct mic_irq *cookie, void *data)
++static inline u32 mic_dma_hw_ring_dec(u32 val)
 +{
-+	return mic_free_irq(mbdev_to_mdev(mbdev), cookie, data);
++	return val ? val - 1 : MIC_DMA_DESC_RX_SIZE - 1;
 +}
 +
-+static void _mic_ack_interrupt(struct mbus_device *mbdev, int num)
++static inline void mic_dma_hw_ring_inc_head(struct mic_dma_chan *ch)
 +{
-+	struct mic_device *mdev = mbdev_to_mdev(mbdev);
-+	mdev->ops->intr_workarounds(mdev);
++	ch->head = mic_dma_hw_ring_inc(ch->head);
 +}
 +
-+static struct mbus_hw_ops mbus_hw_ops = {
-+	.request_threaded_irq = _mic_request_threaded_irq,
-+	.free_irq = _mic_free_irq,
-+	.ack_interrupt = _mic_ack_interrupt,
-+};
-+
- /**
-  * mic_reset - Reset the MIC device.
-  * @mdev: pointer to mic_device instance
-@@ -95,9 +154,21 @@ retry:
- 		 */
- 		goto retry;
- 	}
-+	mdev->dma_mbdev = mbus_register_device(mdev->sdev->parent,
-+					       MBUS_DEV_DMA_HOST, &mic_dma_ops,
-+					       &mbus_hw_ops, mdev->mmio.va);
-+	if (IS_ERR(mdev->dma_mbdev)) {
-+		rc = PTR_ERR(mdev->dma_mbdev);
-+		goto unlock_ret;
-+	}
-+	mdev->dma_ch = mic_request_dma_chan(mdev);
-+	if (!mdev->dma_ch) {
-+		rc = -ENXIO;
-+		goto dma_remove;
-+	}
- 	rc = mdev->ops->load_mic_fw(mdev, buf);
- 	if (rc)
--		goto unlock_ret;
-+		goto dma_release;
- 	mic_smpt_restore(mdev);
- 	mic_intr_restore(mdev);
- 	mdev->intr_ops->enable_interrupts(mdev);
-@@ -105,6 +176,11 @@ retry:
- 	mdev->ops->write_spad(mdev, MIC_DPHI_SPAD, mdev->dp_dma_addr >> 32);
- 	mdev->ops->send_firmware_intr(mdev);
- 	mic_set_state(mdev, MIC_ONLINE);
-+	goto unlock_ret;
-+dma_release:
-+	dma_release_channel(mdev->dma_ch);
-+dma_remove:
-+	mbus_unregister_device(mdev->dma_mbdev);
- unlock_ret:
- 	mutex_unlock(&mdev->mic_mutex);
- 	return rc;
-@@ -122,6 +198,11 @@ void mic_stop(struct mic_device *mdev, bool force)
- 	mutex_lock(&mdev->mic_mutex);
- 	if (MIC_OFFLINE != mdev->state || force) {
- 		mic_virtio_reset_devices(mdev);
-+		if (mdev->dma_ch) {
-+			dma_release_channel(mdev->dma_ch);
-+			mdev->dma_ch = NULL;
-+		}
-+		mbus_unregister_device(mdev->dma_mbdev);
- 		mic_bootparam_init(mdev);
- 		mic_reset(mdev);
- 		if (MIC_RESET_FAILED == mdev->state)
-diff --git a/drivers/misc/mic/host/mic_device.h b/drivers/misc/mic/host/mic_device.h
-index 0398c69..016bd15 100644
---- a/drivers/misc/mic/host/mic_device.h
-+++ b/drivers/misc/mic/host/mic_device.h
-@@ -25,6 +25,8 @@
- #include <linux/idr.h>
- #include <linux/notifier.h>
- #include <linux/irqreturn.h>
-+#include <linux/dmaengine.h>
-+#include <linux/mic_bus.h>
- 
- #include "mic_intr.h"
- 
-@@ -87,6 +89,8 @@ enum mic_stepping {
-  * @cdev: Character device for MIC.
-  * @vdev_list: list of virtio devices.
-  * @pm_notifier: Handles PM notifications from the OS.
-+ * @dma_mbdev: MIC BUS DMA device.
-+ * @dma_ch: DMA channel reserved by this driver for use by virtio devices.
-  */
- struct mic_device {
- 	struct mic_mw mmio;
-@@ -124,6 +128,8 @@ struct mic_device {
- 	struct cdev cdev;
- 	struct list_head vdev_list;
- 	struct notifier_block pm_notifier;
-+	struct mbus_device *dma_mbdev;
-+	struct dma_chan *dma_ch;
- };
- 
- /**
-@@ -144,6 +150,7 @@ struct mic_device {
-  * @load_mic_fw: Load firmware segments required to boot the card
-  * into card memory. This includes the kernel, command line, ramdisk etc.
-  * @get_postcode: Get post code status from firmware.
-+ * @dma_filter: DMA filter function to be used.
-  */
- struct mic_hw_ops {
- 	u8 aper_bar;
-@@ -159,6 +166,7 @@ struct mic_hw_ops {
- 	void (*send_firmware_intr)(struct mic_device *mdev);
- 	int (*load_mic_fw)(struct mic_device *mdev, const char *buf);
- 	u32 (*get_postcode)(struct mic_device *mdev);
-+	bool (*dma_filter)(struct dma_chan *chan, void *param);
- };
- 
- /**
-@@ -187,6 +195,22 @@ mic_mmio_write(struct mic_mw *mw, u32 val, u32 offset)
- 	iowrite32(val, mw->va + offset);
- }
- 
-+static inline struct dma_chan *mic_request_dma_chan(struct mic_device *mdev)
++/* Prepare a memcpy desc */
++static inline void mic_dma_memcpy_desc(struct mic_dma_desc *desc,
++	dma_addr_t src_phys, dma_addr_t dst_phys, u64 size)
 +{
-+	dma_cap_mask_t mask;
-+	struct dma_chan *chan;
++	u64 qw0, qw1;
 +
-+	dma_cap_zero(mask);
-+	dma_cap_set(DMA_MEMCPY, mask);
-+	chan = dma_request_channel(mask, mdev->ops->dma_filter,
-+				   mdev->sdev->parent);
-+	if (chan)
-+		return chan;
-+	dev_err(mdev->sdev->parent, "%s %d unable to acquire channel\n",
-+		__func__, __LINE__);
-+	return NULL;
++	qw0 = src_phys;
++	qw0 |= (size >> MIC_DMA_ALIGN_SHIFT) << MIC_DMA_MEMCPY_LEN_SHIFT;
++	qw1 = MIC_DMA_MEMCPY;
++	qw1 <<= MIC_DMA_DESC_TYPE_SHIFT;
++	qw1 |= dst_phys;
++	desc->qw0 = qw0;
++	desc->qw1 = qw1;
 +}
 +
- void mic_sysfs_init(struct mic_device *mdev);
- int mic_start(struct mic_device *mdev, const char *buf);
- void mic_stop(struct mic_device *mdev, bool force);
-diff --git a/drivers/misc/mic/host/mic_intr.h b/drivers/misc/mic/host/mic_intr.h
-index b1334dd..9f783d4a 100644
---- a/drivers/misc/mic/host/mic_intr.h
-+++ b/drivers/misc/mic/host/mic_intr.h
-@@ -27,8 +27,9 @@
-  * The minimum number of msix vectors required for normal operation.
-  * 3 for virtio network, console and block devices.
-  * 1 for card shutdown notifications.
-+ * 4 for host owned DMA channels.
-  */
--#define MIC_MIN_MSIX 4
-+#define MIC_MIN_MSIX 8
- #define MIC_NUM_OFFSETS 32
- 
- /**
-diff --git a/drivers/misc/mic/host/mic_virtio.c b/drivers/misc/mic/host/mic_virtio.c
-index aba3e83..a020e4e 100644
---- a/drivers/misc/mic/host/mic_virtio.c
-+++ b/drivers/misc/mic/host/mic_virtio.c
-@@ -21,60 +21,157 @@
- #include <linux/pci.h>
- #include <linux/sched.h>
- #include <linux/uaccess.h>
--
-+#include <linux/dmaengine.h>
- #include <linux/mic_common.h>
++/* Prepare a status desc. with @data to be written at @dst_phys */
++static inline void mic_dma_prep_status_desc(struct mic_dma_desc *desc, u64 data,
++	dma_addr_t dst_phys, bool generate_intr)
++{
++	u64 qw0, qw1;
 +
- #include "../common/mic_dev.h"
- #include "mic_device.h"
- #include "mic_smpt.h"
- #include "mic_virtio.h"
- 
- /*
-- * Initiates the copies across the PCIe bus from card memory to
-- * a user space buffer.
-+ * Size of the internal buffer used during DMA's as an intermediate buffer
-+ * for copy to/from user.
-  */
--static int mic_virtio_copy_to_user(struct mic_vdev *mvdev,
--		void __user *ubuf, size_t len, u64 addr)
-+#define MIC_INT_DMA_BUF_SIZE PAGE_ALIGN(64 * 1024ULL)
++	qw0 = data;
++	qw1 = (u64) MIC_DMA_STATUS << MIC_DMA_DESC_TYPE_SHIFT | dst_phys;
++	if (generate_intr)
++		qw1 |= (1ULL << MIC_DMA_STAT_INTR_SHIFT);
++	desc->qw0 = qw0;
++	desc->qw1 = qw1;
++}
 +
-+static int mic_sync_dma(struct mic_device *mdev, dma_addr_t dst,
-+			dma_addr_t src, size_t len)
- {
--	int err;
--	void __iomem *dbuf = mvdev->mdev->aper.va + addr;
--	/*
--	 * We are copying from IO below an should ideally use something
--	 * like copy_to_user_fromio(..) if it existed.
--	 */
--	if (copy_to_user(ubuf, (void __force *)dbuf, len)) {
--		err = -EFAULT;
--		dev_err(mic_dev(mvdev), "%s %d err %d\n",
-+	int err = 0;
++static void mic_dma_cleanup(struct mic_dma_chan *ch)
++{
 +	struct dma_async_tx_descriptor *tx;
-+	struct dma_chan *mic_ch = mdev->dma_ch;
++	u32 tail;
++	u32 last_tail;
 +
-+	if (!mic_ch) {
-+		err = -EBUSY;
-+		goto error;
++	spin_lock(&ch->cleanup_lock);
++	tail = mic_dma_read_cmp_cnt(ch);
++	/*
++	 * This is the barrier pair for smp_wmb() in fn.
++	 * mic_dma_tx_submit_unlock. It's required so that we read the
++	 * updated cookie value from tx->cookie.
++	 */
++	smp_rmb();
++	for (last_tail = ch->last_tail; tail != last_tail;) {
++		tx = &ch->tx_array[last_tail];
++		if (tx->cookie) {
++			dma_cookie_complete(tx);
++			if (tx->callback) {
++				tx->callback(tx->callback_param);
++				tx->callback = NULL;
++			}
++		}
++		last_tail = mic_dma_hw_ring_inc(last_tail);
++	}
++	/* finish all completion callbacks before incrementing tail */
++	smp_mb();
++	ch->last_tail = last_tail;
++	spin_unlock(&ch->cleanup_lock);
++}
++
++static u32 mic_dma_ring_count(u32 head, u32 tail)
++{
++	u32 count;
++
++	if (head >= tail)
++		count = (tail - 0) + (MIC_DMA_DESC_RX_SIZE - head);
++	else
++		count = tail - head;
++	return count - 1;
++}
++
++/* Returns the num. of free descriptors on success, -ENOMEM on failure */
++static int mic_dma_avail_desc_ring_space(struct mic_dma_chan *ch, int required)
++{
++	struct device *dev = mic_dma_ch_to_device(ch);
++	u32 count;
++
++	count = mic_dma_ring_count(ch->head, ch->last_tail);
++	if (count < required) {
++		mic_dma_cleanup(ch);
++		count = mic_dma_ring_count(ch->head, ch->last_tail);
 +	}
 +
-+	tx = mic_ch->device->device_prep_dma_memcpy(mic_ch, dst, src, len,
-+						    DMA_PREP_FENCE);
-+	if (!tx) {
-+		err = -ENOMEM;
-+		goto error;
++	if (count < required) {
++		dev_dbg(dev, "Not enough desc space");
++		dev_dbg(dev, "%s %d required=%u, avail=%u\n",
++			__func__, __LINE__, required, count);
++		return -ENOMEM;
 +	} else {
-+		dma_cookie_t cookie = tx->tx_submit(tx);
-+
-+		err = dma_submit_error(cookie);
-+		if (err)
-+			goto error;
-+		err = dma_sync_wait(mic_ch, cookie);
++		return count;
 +	}
-+error:
-+	if (err)
-+		dev_err(mdev->sdev->parent, "%s %d err %d\n",
- 			__func__, __LINE__, err);
--		goto err;
-+	return err;
++}
++
++/* Program memcpy descriptors into the descriptor ring and update s/w head ptr*/
++static int mic_dma_prog_memcpy_desc(struct mic_dma_chan *ch, dma_addr_t src,
++				    dma_addr_t dst, size_t len)
++{
++	size_t current_transfer_len;
++	size_t max_xfer_size = to_mic_dma_dev(ch)->max_xfer_size;
++	/* 3 is added to make sure we have enough space for status desc */
++	int num_desc = len / max_xfer_size + 3;
++	int ret;
++
++	if (len % max_xfer_size)
++		num_desc++;
++
++	ret = mic_dma_avail_desc_ring_space(ch, num_desc);
++	if (ret < 0)
++		return ret;
++	do {
++		current_transfer_len = min(len, max_xfer_size);
++		mic_dma_memcpy_desc(&ch->desc_ring[ch->head],
++				    src, dst, current_transfer_len);
++		mic_dma_hw_ring_inc_head(ch);
++		len -= current_transfer_len;
++		dst = dst + current_transfer_len;
++		src = src + current_transfer_len;
++	} while (len > 0);
++	return 0;
++}
++
++/* It's a h/w quirk and h/w needs 2 status descriptors for every status desc */
++static void mic_dma_prog_intr(struct mic_dma_chan *ch)
++{
++	mic_dma_prep_status_desc(&ch->desc_ring[ch->head], 0,
++				 ch->status_dest_micpa, false);
++	mic_dma_hw_ring_inc_head(ch);
++	mic_dma_prep_status_desc(&ch->desc_ring[ch->head], 0,
++				 ch->status_dest_micpa, true);
++	mic_dma_hw_ring_inc_head(ch);
++}
++
++/* Wrapper function to program memcpy descriptors/status descriptors */
++static int mic_dma_do_dma(struct mic_dma_chan *ch, int flags, dma_addr_t src,
++			  dma_addr_t dst, size_t len)
++{
++	if (-ENOMEM == mic_dma_prog_memcpy_desc(ch, src, dst, len))
++		return -ENOMEM;
++	/* Above mic_dma_prog_memcpy_desc() makes sure we have enough space */
++	if (flags & DMA_PREP_FENCE) {
++		mic_dma_prep_status_desc(&ch->desc_ring[ch->head], 0,
++					 ch->status_dest_micpa, false);
++		mic_dma_hw_ring_inc_head(ch);
++	}
++
++	if (flags & DMA_PREP_INTERRUPT)
++		mic_dma_prog_intr(ch);
++
++	return 0;
++}
++
++static inline void mic_dma_issue_pending(struct dma_chan *ch)
++{
++	struct mic_dma_chan *mic_ch = to_mic_dma_chan(ch);
++
++	spin_lock(&mic_ch->issue_lock);
++	/*
++	 * Write to head triggers h/w to act on the descriptors.
++	 * On MIC, writing the same head value twice causes
++	 * a h/w error. On second write, h/w assumes we filled
++	 * the entire ring & overwrote some of the descriptors.
++	 */
++	if (mic_ch->issued == mic_ch->submitted)
++		goto out;
++	mic_ch->issued = mic_ch->submitted;
++	/*
++	 * make descriptor updates visible before advancing head,
++	 * this is purposefully not smp_wmb() since we are also
++	 * publishing the descriptor updates to a dma device
++	 */
++	wmb();
++	mic_dma_write_reg(mic_ch, MIC_DMA_REG_DHPR, mic_ch->issued);
++out:
++	spin_unlock(&mic_ch->issue_lock);
++}
++
++static inline void mic_dma_update_pending(struct mic_dma_chan *ch)
++{
++	if (mic_dma_ring_count(ch->issued, ch->submitted)
++			> mic_dma_pending_level)
++		mic_dma_issue_pending(&ch->api_ch);
++}
++
++static dma_cookie_t mic_dma_tx_submit_unlock(struct dma_async_tx_descriptor *tx)
++{
++	struct mic_dma_chan *mic_ch = to_mic_dma_chan(tx->chan);
++	dma_cookie_t cookie;
++
++	dma_cookie_assign(tx);
++	cookie = tx->cookie;
++	/*
++	 * We need an smp write barrier here because another CPU might see
++	 * an update to submitted and update h/w head even before we
++	 * assigned a cookie to this tx.
++	 */
++	smp_wmb();
++	mic_ch->submitted = mic_ch->head;
++	spin_unlock(&mic_ch->prep_lock);
++	mic_dma_update_pending(mic_ch);
++	return cookie;
++}
++
++static inline struct dma_async_tx_descriptor *
++allocate_tx(struct mic_dma_chan *ch)
++{
++	u32 idx = mic_dma_hw_ring_dec(ch->head);
++	struct dma_async_tx_descriptor *tx = &ch->tx_array[idx];
++
++	dma_async_tx_descriptor_init(tx, &ch->api_ch);
++	tx->tx_submit = mic_dma_tx_submit_unlock;
++	return tx;
 +}
 +
 +/*
-+ * Initiates the copies across the PCIe bus from card memory to a user
-+ * space buffer. When transfers are done using DMA, source/destination
-+ * addresses and transfer length must follow the alignment requirements of
-+ * the MIC DMA engine.
++ * Prepare a memcpy descriptor to be added to the ring.
++ * Note that the temporary descriptor adds an extra overhead of copying the
++ * descriptor to ring. So, we copy directly to the descriptor ring
 + */
-+static int mic_virtio_copy_to_user(struct mic_vdev *mvdev, void __user *ubuf,
-+				   size_t len, u64 daddr, size_t dlen,
-+				   int vr_idx)
++static struct dma_async_tx_descriptor *
++mic_dma_prep_memcpy_lock(struct dma_chan *ch, dma_addr_t dma_dest,
++			 dma_addr_t dma_src, size_t len, unsigned long flags)
 +{
-+	struct mic_device *mdev = mvdev->mdev;
-+	void __iomem *dbuf = mdev->aper.va + daddr;
-+	struct mic_vringh *mvr = &mvdev->mvr[vr_idx];
-+	size_t dma_alignment = 1 << mdev->dma_ch->device->copy_align;
-+	size_t dma_offset;
-+	size_t partlen;
-+	int err;
++	struct mic_dma_chan *mic_ch = to_mic_dma_chan(ch);
++	struct device *dev = mic_dma_ch_to_device(mic_ch);
++	int result;
 +
-+	dma_offset = daddr - round_down(daddr, dma_alignment);
-+	daddr -= dma_offset;
-+	len += dma_offset;
++	if (!len && !flags)
++		return NULL;
 +
-+	while (len) {
-+		partlen = min_t(size_t, len, MIC_INT_DMA_BUF_SIZE);
-+
-+		err = mic_sync_dma(mdev, mvr->buf_da, daddr,
-+				   ALIGN(partlen, dma_alignment));
-+		if (err)
-+			goto err;
-+
-+		if (copy_to_user(ubuf, mvr->buf + dma_offset,
-+				 partlen - dma_offset)) {
-+			err = -EFAULT;
-+			goto err;
-+		}
-+		daddr += partlen;
-+		ubuf += partlen;
-+		dbuf += partlen;
-+		mvdev->in_bytes_dma += partlen;
-+		mvdev->in_bytes += partlen;
-+		len -= partlen;
-+		dma_offset = 0;
- 	}
--	mvdev->in_bytes += len;
--	err = 0;
-+	return 0;
- err:
-+	dev_err(mic_dev(mvdev), "%s %d err %d\n", __func__, __LINE__, err);
- 	return err;
- }
- 
- /*
-- * Initiates copies across the PCIe bus from a user space
-- * buffer to card memory.
-+ * Initiates copies across the PCIe bus from a user space buffer to card
-+ * memory. When transfers are done using DMA, source/destination addresses
-+ * and transfer length must follow the alignment requirements of the MIC
-+ * DMA engine.
-  */
--static int mic_virtio_copy_from_user(struct mic_vdev *mvdev,
--		void __user *ubuf, size_t len, u64 addr)
-+static int mic_virtio_copy_from_user(struct mic_vdev *mvdev, void __user *ubuf,
-+				     size_t len, u64 daddr, size_t dlen,
-+				     int vr_idx)
- {
-+	struct mic_device *mdev = mvdev->mdev;
-+	void __iomem *dbuf = mdev->aper.va + daddr;
-+	struct mic_vringh *mvr = &mvdev->mvr[vr_idx];
-+	size_t dma_alignment = 1 << mdev->dma_ch->device->copy_align;
-+	size_t partlen;
- 	int err;
--	void __iomem *dbuf = mvdev->mdev->aper.va + addr;
-+
-+	if (daddr & (dma_alignment - 1)) {
-+		mvdev->tx_dst_unaligned += len;
-+		goto memcpy;
-+	} else if (ALIGN(len, dma_alignment) > dlen) {
-+		mvdev->tx_len_unaligned += len;
-+		goto memcpy;
-+	}
-+
-+	while (len) {
-+		partlen = min_t(size_t, len, MIC_INT_DMA_BUF_SIZE);
-+
-+		if (copy_from_user(mvr->buf, ubuf, partlen)) {
-+			err = -EFAULT;
-+			goto err;
-+		}
-+		err = mic_sync_dma(mdev, daddr, mvr->buf_da,
-+				   ALIGN(partlen, dma_alignment));
-+		if (err)
-+			goto err;
-+		daddr += partlen;
-+		ubuf += partlen;
-+		dbuf += partlen;
-+		mvdev->out_bytes_dma += partlen;
-+		mvdev->out_bytes += partlen;
-+		len -= partlen;
-+	}
-+memcpy:
- 	/*
- 	 * We are copying to IO below and should ideally use something
- 	 * like copy_from_user_toio(..) if it existed.
- 	 */
- 	if (copy_from_user((void __force *)dbuf, ubuf, len)) {
- 		err = -EFAULT;
--		dev_err(mic_dev(mvdev), "%s %d err %d\n",
--			__func__, __LINE__, err);
- 		goto err;
- 	}
- 	mvdev->out_bytes += len;
--	err = 0;
-+	return 0;
- err:
-+	dev_err(mic_dev(mvdev), "%s %d err %d\n", __func__, __LINE__, err);
- 	return err;
- }
- 
-@@ -110,7 +207,8 @@ static inline u32 mic_vringh_iov_consumed(struct vringh_kiov *iov)
-  * way to override the VRINGH xfer(..) routines as of v3.10.
-  */
- static int mic_vringh_copy(struct mic_vdev *mvdev, struct vringh_kiov *iov,
--	void __user *ubuf, size_t len, bool read, size_t *out_len)
-+			void __user *ubuf, size_t len, bool read, int vr_idx,
-+			size_t *out_len)
- {
- 	int ret = 0;
- 	size_t partlen, tot_len = 0;
-@@ -118,13 +216,15 @@ static int mic_vringh_copy(struct mic_vdev *mvdev, struct vringh_kiov *iov,
- 	while (len && iov->i < iov->used) {
- 		partlen = min(iov->iov[iov->i].iov_len, len);
- 		if (read)
--			ret = mic_virtio_copy_to_user(mvdev,
--				ubuf, partlen,
--				(u64)iov->iov[iov->i].iov_base);
-+			ret = mic_virtio_copy_to_user(mvdev, ubuf, partlen,
-+						(u64)iov->iov[iov->i].iov_base,
-+						iov->iov[iov->i].iov_len,
-+						vr_idx);
- 		else
--			ret = mic_virtio_copy_from_user(mvdev,
--				ubuf, partlen,
--				(u64)iov->iov[iov->i].iov_base);
-+			ret = mic_virtio_copy_from_user(mvdev, ubuf, partlen,
-+						(u64)iov->iov[iov->i].iov_base,
-+						iov->iov[iov->i].iov_len,
-+						vr_idx);
- 		if (ret) {
- 			dev_err(mic_dev(mvdev), "%s %d err %d\n",
- 				__func__, __LINE__, ret);
-@@ -192,8 +292,8 @@ static int _mic_virtio_copy(struct mic_vdev *mvdev,
- 			ubuf = iov.iov_base;
- 		}
- 		/* Issue all the read descriptors first */
--		ret = mic_vringh_copy(mvdev, riov, ubuf, len,
--			MIC_VRINGH_READ, &out_len);
-+		ret = mic_vringh_copy(mvdev, riov, ubuf, len, MIC_VRINGH_READ,
-+				      copy->vr_idx, &out_len);
- 		if (ret) {
- 			dev_err(mic_dev(mvdev), "%s %d err %d\n",
- 				__func__, __LINE__, ret);
-@@ -203,8 +303,8 @@ static int _mic_virtio_copy(struct mic_vdev *mvdev,
- 		ubuf += out_len;
- 		copy->out_len += out_len;
- 		/* Issue the write descriptors next */
--		ret = mic_vringh_copy(mvdev, wiov, ubuf, len,
--			!MIC_VRINGH_READ, &out_len);
-+		ret = mic_vringh_copy(mvdev, wiov, ubuf, len, !MIC_VRINGH_READ,
-+				      copy->vr_idx, &out_len);
- 		if (ret) {
- 			dev_err(mic_dev(mvdev), "%s %d err %d\n",
- 				__func__, __LINE__, ret);
-@@ -589,6 +689,10 @@ int mic_virtio_add_device(struct mic_vdev *mvdev,
- 		dev_dbg(mdev->sdev->parent,
- 			"%s %d index %d va %p info %p vr_size 0x%x\n",
- 			__func__, __LINE__, i, vr->va, vr->info, vr_size);
-+		mvr->buf = (void *)__get_free_pages(GFP_KERNEL,
-+					get_order(MIC_INT_DMA_BUF_SIZE));
-+		mvr->buf_da = mic_map_single(mvdev->mdev, mvr->buf,
-+					  MIC_INT_DMA_BUF_SIZE);
- 	}
- 
- 	snprintf(irqname, sizeof(irqname), "mic%dvirtio%d", mdev->id,
-@@ -673,6 +777,11 @@ skip_hot_remove:
- 	vqconfig = mic_vq_config(mvdev->dd);
- 	for (i = 0; i < mvdev->dd->num_vq; i++) {
- 		struct mic_vringh *mvr = &mvdev->mvr[i];
-+
-+		mic_unmap_single(mvdev->mdev, mvr->buf_da,
-+				 MIC_INT_DMA_BUF_SIZE);
-+		free_pages((unsigned long)mvr->buf,
-+			   get_order(MIC_INT_DMA_BUF_SIZE));
- 		vringh_kiov_cleanup(&mvr->riov);
- 		vringh_kiov_cleanup(&mvr->wiov);
- 		mic_unmap_single(mdev, le64_to_cpu(vqconfig[i].address),
-diff --git a/drivers/misc/mic/host/mic_virtio.h b/drivers/misc/mic/host/mic_virtio.h
-index 184f3c8..d574efb 100644
---- a/drivers/misc/mic/host/mic_virtio.h
-+++ b/drivers/misc/mic/host/mic_virtio.h
-@@ -46,18 +46,23 @@
-  * @vrh: The host VRINGH used for accessing the card vrings.
-  * @riov: The VRINGH read kernel IOV.
-  * @wiov: The VRINGH write kernel IOV.
-- * @head: The VRINGH head index address passed to vringh_getdesc_kern(..).
-  * @vr_mutex: Mutex for synchronizing access to the VRING.
-+ * @buf: Temporary kernel buffer used to copy in/out data
-+ * from/to the card via DMA.
-+ * @buf_da: dma address of buf.
-  * @mvdev: Back pointer to MIC virtio device for vringh_notify(..).
-+ * @head: The VRINGH head index address passed to vringh_getdesc_kern(..).
-  */
- struct mic_vringh {
- 	struct mic_vring vring;
- 	struct vringh vrh;
- 	struct vringh_kiov riov;
- 	struct vringh_kiov wiov;
--	u16 head;
- 	struct mutex vr_mutex;
-+	void *buf;
-+	dma_addr_t buf_da;
- 	struct mic_vdev *mvdev;
-+	u16 head;
- };
- 
- /**
-@@ -69,6 +74,14 @@ struct mic_vringh {
-  * @poll_wake - Used for waking up threads blocked in poll.
-  * @out_bytes - Debug stats for number of bytes copied from host to card.
-  * @in_bytes - Debug stats for number of bytes copied from card to host.
-+ * @out_bytes_dma - Debug stats for number of bytes copied from host to card
-+ * using DMA.
-+ * @in_bytes_dma - Debug stats for number of bytes copied from card to host
-+ * using DMA.
-+ * @tx_len_unaligned - Debug stats for number of bytes copied to the card where
-+ * the transfer length did not have the required DMA alignment.
-+ * @tx_dst_unaligned - Debug stats for number of bytes copied where the
-+ * destination address on the card did not have the required DMA alignment.
-  * @mvr - Store per VRING data structures.
-  * @virtio_bh_work - Work struct used to schedule virtio bottom half handling.
-  * @dd - Virtio device descriptor.
-@@ -84,6 +97,10 @@ struct mic_vdev {
- 	int poll_wake;
- 	unsigned long out_bytes;
- 	unsigned long in_bytes;
-+	unsigned long out_bytes_dma;
-+	unsigned long in_bytes_dma;
-+	unsigned long tx_len_unaligned;
-+	unsigned long tx_dst_unaligned;
- 	struct mic_vringh mvr[MIC_MAX_VRINGS];
- 	struct work_struct virtio_bh_work;
- 	struct mic_device_desc *dd;
-diff --git a/drivers/misc/mic/host/mic_x100.c b/drivers/misc/mic/host/mic_x100.c
-index 5562fdd..b7a21e1 100644
---- a/drivers/misc/mic/host/mic_x100.c
-+++ b/drivers/misc/mic/host/mic_x100.c
-@@ -549,6 +549,13 @@ struct mic_smpt_ops mic_x100_smpt_ops = {
- 	.set = mic_x100_smpt_set,
- };
- 
-+static bool mic_x100_dma_filter(struct dma_chan *chan, void *param)
-+{
-+	if (chan->device->dev->parent == (struct device *)param)
-+		return true;
-+	return false;
++	spin_lock(&mic_ch->prep_lock);
++	result = mic_dma_do_dma(mic_ch, flags, dma_src, dma_dest, len);
++	if (result >= 0)
++		return allocate_tx(mic_ch);
++	dev_err(dev, "Error enqueueing dma, error=%d\n", result);
++	spin_unlock(&mic_ch->prep_lock);
++	return NULL;
 +}
 +
- struct mic_hw_ops mic_x100_ops = {
- 	.aper_bar = MIC_X100_APER_BAR,
- 	.mmio_bar = MIC_X100_MMIO_BAR,
-@@ -563,6 +570,7 @@ struct mic_hw_ops mic_x100_ops = {
- 	.send_firmware_intr = mic_x100_send_firmware_intr,
- 	.load_mic_fw = mic_x100_load_firmware,
- 	.get_postcode = mic_x100_get_postcode,
-+	.dma_filter = mic_x100_dma_filter,
- };
- 
- struct mic_hw_intr_ops mic_x100_intr_ops = {
++static struct dma_async_tx_descriptor *
++mic_dma_prep_interrupt_lock(struct dma_chan *ch, unsigned long flags)
++{
++	struct mic_dma_chan *mic_ch = to_mic_dma_chan(ch);
++	int ret;
++
++	spin_lock(&mic_ch->prep_lock);
++	ret = mic_dma_do_dma(mic_ch, flags, 0, 0, 0);
++	if (!ret)
++		return allocate_tx(mic_ch);
++	spin_unlock(&mic_ch->prep_lock);
++	return NULL;
++}
++
++/* Return the status of the transaction */
++static enum dma_status
++mic_dma_tx_status(struct dma_chan *ch, dma_cookie_t cookie,
++		  struct dma_tx_state *txstate)
++{
++	struct mic_dma_chan *mic_ch = to_mic_dma_chan(ch);
++
++	if (DMA_COMPLETE != dma_cookie_status(ch, cookie, txstate))
++		mic_dma_cleanup(mic_ch);
++
++	return dma_cookie_status(ch, cookie, txstate);
++}
++
++static irqreturn_t mic_dma_thread_fn(int irq, void *data)
++{
++	mic_dma_cleanup((struct mic_dma_chan *)data);
++	return IRQ_HANDLED;
++}
++
++static irqreturn_t mic_dma_intr_handler(int irq, void *data)
++{
++	struct mic_dma_chan *ch = ((struct mic_dma_chan *)data);
++
++	mic_dma_ack_interrupt(ch);
++	return IRQ_WAKE_THREAD;
++}
++
++static int mic_dma_alloc_desc_ring(struct mic_dma_chan *ch)
++{
++	u64 desc_ring_size = MIC_DMA_DESC_RX_SIZE * sizeof(*ch->desc_ring);
++	struct device *dev = &to_mbus_device(ch)->dev;
++
++	desc_ring_size = ALIGN(desc_ring_size, MIC_DMA_ALIGN_BYTES);
++	ch->desc_ring = kzalloc(desc_ring_size, GFP_KERNEL);
++
++	if (!ch->desc_ring)
++		return -ENOMEM;
++
++	ch->desc_ring_micpa = dma_map_single(dev, ch->desc_ring,
++					     desc_ring_size, DMA_BIDIRECTIONAL);
++	if (dma_mapping_error(dev, ch->desc_ring_micpa))
++		goto map_error;
++
++	ch->tx_array = vzalloc(MIC_DMA_DESC_RX_SIZE * sizeof(*ch->tx_array));
++	if (!ch->tx_array)
++		goto tx_error;
++	return 0;
++tx_error:
++	dma_unmap_single(dev, ch->desc_ring_micpa, desc_ring_size,
++			 DMA_BIDIRECTIONAL);
++map_error:
++	kfree(ch->desc_ring);
++	return -ENOMEM;
++}
++
++static void mic_dma_free_desc_ring(struct mic_dma_chan *ch)
++{
++	u64 desc_ring_size = MIC_DMA_DESC_RX_SIZE * sizeof(*ch->desc_ring);
++
++	vfree(ch->tx_array);
++	desc_ring_size = ALIGN(desc_ring_size, MIC_DMA_ALIGN_BYTES);
++	dma_unmap_single(&to_mbus_device(ch)->dev, ch->desc_ring_micpa,
++			 desc_ring_size, DMA_BIDIRECTIONAL);
++	kfree(ch->desc_ring);
++	ch->desc_ring = NULL;
++}
++
++static void mic_dma_free_status_dest(struct mic_dma_chan *ch)
++{
++	dma_unmap_single(&to_mbus_device(ch)->dev, ch->status_dest_micpa,
++			 L1_CACHE_BYTES, DMA_BIDIRECTIONAL);
++	kfree(ch->status_dest);
++}
++
++static int mic_dma_alloc_status_dest(struct mic_dma_chan *ch)
++{
++	struct device *dev = &to_mbus_device(ch)->dev;
++
++	ch->status_dest = kzalloc(L1_CACHE_BYTES, GFP_KERNEL);
++	if (!ch->status_dest)
++		return -ENOMEM;
++	ch->status_dest_micpa = dma_map_single(dev, ch->status_dest,
++					L1_CACHE_BYTES, DMA_BIDIRECTIONAL);
++	if (dma_mapping_error(dev, ch->status_dest_micpa)) {
++		kfree(ch->status_dest);
++		ch->status_dest = NULL;
++		return -ENOMEM;
++	}
++	return 0;
++}
++
++static int mic_dma_check_chan(struct mic_dma_chan *ch)
++{
++	if (mic_dma_read_reg(ch, MIC_DMA_REG_DCHERR) ||
++	    mic_dma_read_reg(ch, MIC_DMA_REG_DSTAT) & MIC_DMA_CHAN_QUIESCE) {
++		mic_dma_disable_chan(ch);
++		mic_dma_chan_mask_intr(ch);
++		dev_err(mic_dma_ch_to_device(ch),
++			"%s %d error setting up mic dma chan %d\n",
++			__func__, __LINE__, ch->ch_num);
++		return -EBUSY;
++	}
++	return 0;
++}
++
++static int mic_dma_chan_setup(struct mic_dma_chan *ch)
++{
++	if (MIC_DMA_CHAN_MIC == ch->owner)
++		mic_dma_chan_set_owner(ch);
++	mic_dma_disable_chan(ch);
++	mic_dma_chan_mask_intr(ch);
++	mic_dma_write_reg(ch, MIC_DMA_REG_DCHERRMSK, 0);
++	mic_dma_chan_set_desc_ring(ch);
++	ch->last_tail = mic_dma_read_reg(ch, MIC_DMA_REG_DTPR);
++	ch->head = ch->last_tail;
++	ch->issued = 0;
++	mic_dma_chan_unmask_intr(ch);
++	mic_dma_enable_chan(ch);
++	return mic_dma_check_chan(ch);
++}
++
++static void mic_dma_chan_destroy(struct mic_dma_chan *ch)
++{
++	mic_dma_disable_chan(ch);
++	mic_dma_chan_mask_intr(ch);
++}
++
++static void mic_dma_unregister_dma_device(struct mic_dma_device *mic_dma_dev)
++{
++	dma_async_device_unregister(&mic_dma_dev->dma_dev);
++}
++
++static int mic_dma_setup_irq(struct mic_dma_chan *ch)
++{
++	ch->cookie =
++		to_mbus_hw_ops(ch)->request_threaded_irq(to_mbus_device(ch),
++			mic_dma_intr_handler, mic_dma_thread_fn,
++			"mic dma_channel", ch, ch->ch_num);
++	if (IS_ERR(ch->cookie))
++		return IS_ERR(ch->cookie);
++	return 0;
++}
++
++static inline void mic_dma_free_irq(struct mic_dma_chan *ch)
++{
++	to_mbus_hw_ops(ch)->free_irq(to_mbus_device(ch), ch->cookie, ch);
++}
++
++static int mic_dma_chan_init(struct mic_dma_chan *ch)
++{
++	int ret = mic_dma_alloc_desc_ring(ch);
++
++	if (ret)
++		goto ring_error;
++	ret = mic_dma_alloc_status_dest(ch);
++	if (ret)
++		goto status_error;
++	ret = mic_dma_chan_setup(ch);
++	if (ret)
++		goto chan_error;
++	return ret;
++chan_error:
++	mic_dma_free_status_dest(ch);
++status_error:
++	mic_dma_free_desc_ring(ch);
++ring_error:
++	return ret;
++}
++
++static int mic_dma_drain_chan(struct mic_dma_chan *ch)
++{
++	struct dma_async_tx_descriptor *tx;
++	int err = 0;
++	dma_cookie_t cookie;
++
++	tx = mic_dma_prep_memcpy_lock(&ch->api_ch, 0, 0, 0, DMA_PREP_FENCE);
++	if (!tx) {
++		err = -ENOMEM;
++		goto error;
++	}
++
++	cookie = tx->tx_submit(tx);
++	if (dma_submit_error(cookie))
++		err = -ENOMEM;
++	else
++		err = dma_sync_wait(&ch->api_ch, cookie);
++	if (err) {
++		dev_err(mic_dma_ch_to_device(ch), "%s %d TO chan 0x%x\n",
++			__func__, __LINE__, ch->ch_num);
++		err = -EIO;
++	}
++error:
++	mic_dma_cleanup(ch);
++	return err;
++}
++
++static inline void mic_dma_chan_uninit(struct mic_dma_chan *ch)
++{
++	mic_dma_chan_destroy(ch);
++	mic_dma_cleanup(ch);
++	mic_dma_free_status_dest(ch);
++	mic_dma_free_desc_ring(ch);
++}
++
++static int mic_dma_init(struct mic_dma_device *mic_dma_dev,
++			enum mic_dma_chan_owner owner)
++{
++	int i, first_chan = mic_dma_dev->start_ch;
++	struct mic_dma_chan *ch;
++	int ret;
++
++	for (i = first_chan; i < first_chan + MIC_DMA_NUM_CHAN; i++) {
++		unsigned long data;
++		ch = &mic_dma_dev->mic_ch[i];
++		data = (unsigned long)ch;
++		ch->ch_num = i;
++		ch->owner = owner;
++		spin_lock_init(&ch->cleanup_lock);
++		spin_lock_init(&ch->prep_lock);
++		spin_lock_init(&ch->issue_lock);
++		ret = mic_dma_setup_irq(ch);
++		if (ret)
++			goto error;
++	}
++	return 0;
++error:
++	for (i = i - 1; i >= first_chan; i--)
++		mic_dma_free_irq(ch);
++	return ret;
++}
++
++static void mic_dma_uninit(struct mic_dma_device *mic_dma_dev)
++{
++	int i, first_chan = mic_dma_dev->start_ch;
++	struct mic_dma_chan *ch;
++
++	for (i = first_chan; i < first_chan + MIC_DMA_NUM_CHAN; i++) {
++		ch = &mic_dma_dev->mic_ch[i];
++		mic_dma_free_irq(ch);
++	}
++}
++
++static int mic_dma_alloc_chan_resources(struct dma_chan *ch)
++{
++	int ret = mic_dma_chan_init(to_mic_dma_chan(ch));
++	if (ret)
++		return ret;
++	return MIC_DMA_DESC_RX_SIZE;
++}
++
++static void mic_dma_free_chan_resources(struct dma_chan *ch)
++{
++	struct mic_dma_chan *mic_ch = to_mic_dma_chan(ch);
++	mic_dma_drain_chan(mic_ch);
++	mic_dma_chan_uninit(mic_ch);
++}
++
++/* Set the fn. handlers and register the dma device with dma api */
++static int mic_dma_register_dma_device(struct mic_dma_device *mic_dma_dev,
++				       enum mic_dma_chan_owner owner)
++{
++	int i, first_chan = mic_dma_dev->start_ch;
++
++	dma_cap_zero(mic_dma_dev->dma_dev.cap_mask);
++	/*
++	 * This dma engine is not capable of host memory to host memory
++	 * transfers
++	 */
++	dma_cap_set(DMA_MEMCPY, mic_dma_dev->dma_dev.cap_mask);
++
++	if (MIC_DMA_CHAN_HOST == owner)
++		dma_cap_set(DMA_PRIVATE, mic_dma_dev->dma_dev.cap_mask);
++	mic_dma_dev->dma_dev.device_alloc_chan_resources =
++		mic_dma_alloc_chan_resources;
++	mic_dma_dev->dma_dev.device_free_chan_resources =
++		mic_dma_free_chan_resources;
++	mic_dma_dev->dma_dev.device_tx_status = mic_dma_tx_status;
++	mic_dma_dev->dma_dev.device_prep_dma_memcpy = mic_dma_prep_memcpy_lock;
++	mic_dma_dev->dma_dev.device_prep_dma_interrupt =
++		mic_dma_prep_interrupt_lock;
++	mic_dma_dev->dma_dev.device_issue_pending = mic_dma_issue_pending;
++	mic_dma_dev->dma_dev.copy_align = MIC_DMA_ALIGN_SHIFT;
++	INIT_LIST_HEAD(&mic_dma_dev->dma_dev.channels);
++	for (i = first_chan; i < first_chan + MIC_DMA_NUM_CHAN; i++) {
++		mic_dma_dev->mic_ch[i].api_ch.device = &mic_dma_dev->dma_dev;
++		dma_cookie_init(&mic_dma_dev->mic_ch[i].api_ch);
++		list_add_tail(&mic_dma_dev->mic_ch[i].api_ch.device_node,
++			      &mic_dma_dev->dma_dev.channels);
++	}
++	return dma_async_device_register(&mic_dma_dev->dma_dev);
++}
++
++/*
++ * Initializes dma channels and registers the dma device with the
++ * dma engine api.
++ */
++static struct mic_dma_device *mic_dma_dev_reg(struct mbus_device *mbdev,
++					      enum mic_dma_chan_owner owner)
++{
++	struct mic_dma_device *mic_dma_dev;
++	int ret;
++	struct device *dev = &mbdev->dev;
++
++	mic_dma_dev = kzalloc(sizeof(*mic_dma_dev), GFP_KERNEL);
++	if (!mic_dma_dev) {
++		ret = -ENOMEM;
++		goto alloc_error;
++	}
++	mic_dma_dev->mbdev = mbdev;
++	mic_dma_dev->dma_dev.dev = dev;
++	mic_dma_dev->mmio = mbdev->mmio_va;
++	if (MIC_DMA_CHAN_HOST == owner) {
++		mic_dma_dev->start_ch = 0;
++		mic_dma_dev->max_xfer_size = MIC_DMA_MAX_XFER_SIZE_HOST;
++	} else {
++		mic_dma_dev->start_ch = 4;
++		mic_dma_dev->max_xfer_size = MIC_DMA_MAX_XFER_SIZE_CARD;
++	}
++	ret = mic_dma_init(mic_dma_dev, owner);
++	if (ret)
++		goto init_error;
++	ret = mic_dma_register_dma_device(mic_dma_dev, owner);
++	if (ret)
++		goto reg_error;
++	return mic_dma_dev;
++reg_error:
++	mic_dma_uninit(mic_dma_dev);
++init_error:
++	kfree(mic_dma_dev);
++	mic_dma_dev = NULL;
++alloc_error:
++	dev_err(dev, "Error at %s %d ret=%d\n", __func__, __LINE__, ret);
++	return mic_dma_dev;
++}
++
++static void mic_dma_dev_unreg(struct mic_dma_device *mic_dma_dev)
++{
++	mic_dma_unregister_dma_device(mic_dma_dev);
++	mic_dma_uninit(mic_dma_dev);
++	kfree(mic_dma_dev);
++}
++
++/* DEBUGFS CODE */
++static int mic_dma_reg_seq_show(struct seq_file *s, void *pos)
++{
++	struct mic_dma_device *mic_dma_dev = s->private;
++	int i, chan_num, first_chan = mic_dma_dev->start_ch;
++	struct mic_dma_chan *ch;
++
++	seq_printf(s, "SBOX_DCR: %#x\n",
++		   mic_dma_mmio_read(&mic_dma_dev->mic_ch[first_chan],
++				     MIC_DMA_SBOX_BASE + MIC_DMA_SBOX_DCR));
++	seq_puts(s, "DMA Channel Registers\n");
++	seq_printf(s, "%-10s| %-10s %-10s %-10s %-10s %-10s",
++		   "Channel", "DCAR", "DTPR", "DHPR", "DRAR_HI", "DRAR_LO");
++	seq_printf(s, " %-11s %-14s %-10s\n", "DCHERR", "DCHERRMSK", "DSTAT");
++	for (i = first_chan; i < first_chan + MIC_DMA_NUM_CHAN; i++) {
++		ch = &mic_dma_dev->mic_ch[i];
++		chan_num = ch->ch_num;
++		seq_printf(s, "%-10i| %-#10x %-#10x %-#10x %-#10x",
++			   chan_num,
++			   mic_dma_read_reg(ch, MIC_DMA_REG_DCAR),
++			   mic_dma_read_reg(ch, MIC_DMA_REG_DTPR),
++			   mic_dma_read_reg(ch, MIC_DMA_REG_DHPR),
++			   mic_dma_read_reg(ch, MIC_DMA_REG_DRAR_HI));
++		seq_printf(s, " %-#10x %-#10x %-#14x %-#10x\n",
++			   mic_dma_read_reg(ch, MIC_DMA_REG_DRAR_LO),
++			   mic_dma_read_reg(ch, MIC_DMA_REG_DCHERR),
++			   mic_dma_read_reg(ch, MIC_DMA_REG_DCHERRMSK),
++			   mic_dma_read_reg(ch, MIC_DMA_REG_DSTAT));
++	}
++	return 0;
++}
++
++static int mic_dma_reg_debug_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, mic_dma_reg_seq_show, inode->i_private);
++}
++
++static int mic_dma_reg_debug_release(struct inode *inode, struct file *file)
++{
++	return single_release(inode, file);
++}
++
++static const struct file_operations mic_dma_reg_ops = {
++	.owner   = THIS_MODULE,
++	.open    = mic_dma_reg_debug_open,
++	.read    = seq_read,
++	.llseek  = seq_lseek,
++	.release = mic_dma_reg_debug_release
++};
++
++/* Debugfs parent dir */
++static struct dentry *mic_dma_dbg;
++
++static int mic_dma_driver_probe(struct mbus_device *mbdev)
++{
++	struct mic_dma_device *mic_dma_dev;
++	enum mic_dma_chan_owner owner;
++
++	if (MBUS_DEV_DMA_MIC == mbdev->id.device)
++		owner = MIC_DMA_CHAN_MIC;
++	else
++		owner = MIC_DMA_CHAN_HOST;
++
++	mic_dma_dev = mic_dma_dev_reg(mbdev, owner);
++	dev_set_drvdata(&mbdev->dev, mic_dma_dev);
++
++	if (mic_dma_dbg) {
++		mic_dma_dev->dbg_dir = debugfs_create_dir(dev_name(&mbdev->dev),
++							  mic_dma_dbg);
++		if (mic_dma_dev->dbg_dir)
++			debugfs_create_file("mic_dma_reg", 0444,
++					    mic_dma_dev->dbg_dir, mic_dma_dev,
++					    &mic_dma_reg_ops);
++	}
++	return 0;
++}
++
++static void mic_dma_driver_remove(struct mbus_device *mbdev)
++{
++	struct mic_dma_device *mic_dma_dev;
++
++	mic_dma_dev = dev_get_drvdata(&mbdev->dev);
++	debugfs_remove_recursive(mic_dma_dev->dbg_dir);
++	mic_dma_dev_unreg(mic_dma_dev);
++}
++
++static struct mbus_device_id id_table[] = {
++	{MBUS_DEV_DMA_MIC, MBUS_DEV_ANY_ID},
++	{MBUS_DEV_DMA_HOST, MBUS_DEV_ANY_ID},
++	{0},
++};
++
++static struct mbus_driver mic_dma_driver = {
++	.driver.name =	KBUILD_MODNAME,
++	.driver.owner =	THIS_MODULE,
++	.id_table = id_table,
++	.probe = mic_dma_driver_probe,
++	.remove = mic_dma_driver_remove,
++};
++
++static int __init mic_x100_dma_init(void)
++{
++	int rc = mbus_register_driver(&mic_dma_driver);
++	if (rc)
++		return rc;
++	mic_dma_dbg = debugfs_create_dir(KBUILD_MODNAME, NULL);
++	return 0;
++}
++
++static void __exit mic_x100_dma_exit(void)
++{
++	debugfs_remove_recursive(mic_dma_dbg);
++	mbus_unregister_driver(&mic_dma_driver);
++}
++
++module_init(mic_x100_dma_init);
++module_exit(mic_x100_dma_exit);
++
++MODULE_DEVICE_TABLE(mbus, id_table);
++MODULE_AUTHOR("Intel Corporation");
++MODULE_DESCRIPTION("Intel(R) MIC X100 DMA Driver");
++MODULE_LICENSE("GPL v2");
+diff --git a/drivers/dma/mic_x100_dma.h b/drivers/dma/mic_x100_dma.h
+new file mode 100644
+index 0000000..f663b0b
+--- /dev/null
++++ b/drivers/dma/mic_x100_dma.h
+@@ -0,0 +1,286 @@
++/*
++ * Intel MIC Platform Software Stack (MPSS)
++ *
++ * Copyright(c) 2014 Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License, version 2, as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++ * General Public License for more details.
++ *
++ * The full GNU General Public License is included in this distribution in
++ * the file called "COPYING".
++ *
++ * Intel MIC X100 DMA Driver.
++ *
++ * Adapted from IOAT dma driver.
++ */
++#ifndef _MIC_X100_DMA_H_
++#define _MIC_X100_DMA_H_
++
++#include <linux/kernel.h>
++#include <linux/delay.h>
++#include <linux/sched.h>
++#include <linux/debugfs.h>
++#include <linux/slab.h>
++#include <linux/interrupt.h>
++#include <linux/mic_bus.h>
++
++#include "dmaengine.h"
++
++/*
++ * MIC has a total of 8 dma channels.
++ * Four channels are assigned for host SW use & the remaining for MIC SW.
++ * MIC DMA transfer size & addresses need to be 64 byte aligned.
++ */
++#define MIC_DMA_MAX_NUM_CHAN	8
++#define MIC_DMA_NUM_CHAN	4
++#define MIC_DMA_ALIGN_SHIFT	6
++#define MIC_DMA_ALIGN_BYTES	(1 << MIC_DMA_ALIGN_SHIFT)
++#define MIC_DMA_DESC_RX_SIZE	(128 * 1024 - 4)
++
++/*
++ * Register descriptions
++ * All the registers are 32 bit registers.
++ * DCR is a global register and all others are per-channel.
++ * DCR - bits 0, 2, 4, 6, 8, 10, 12, 14 - enable bits for channels 0 to 7
++ *	 bits 1, 3, 5, 7, 9, 11, 13, 15 - owner bits for channels 0 to 7
++ * DCAR - bit 24 & 25 interrupt masks for mic owned & host owned channels
++ * DHPR - head of the descriptor ring updated by s/w
++ * DTPR - tail of the descriptor ring updated by h/w
++ * DRAR_LO - lower 32 bits of descriptor ring's mic address
++ * DRAR_HI - 3:0 - remaining 4 bits of descriptor ring's mic address
++ *	     20:4 descriptor ring size
++ *	     25:21 mic smpt entry number
++ * DSTAT - 16:0 h/w completion count; 31:28 dma engine status
++ * DCHERR - this register is non-zero on error
++ * DCHERRMSK - interrupt mask register
++ */
++#define MIC_DMA_HW_CMP_CNT_MASK		0x1ffff
++#define MIC_DMA_CHAN_QUIESCE		0x20000000
++#define MIC_DMA_SBOX_BASE		0x00010000
++#define MIC_DMA_SBOX_DCR		0x0000A280
++#define MIC_DMA_SBOX_CH_BASE		0x0001A000
++#define MIC_DMA_SBOX_CHAN_OFF		0x40
++#define MIC_DMA_SBOX_DCAR_IM0		(0x1 << 24)
++#define MIC_DMA_SBOX_DCAR_IM1		(0x1 << 25)
++#define MIC_DMA_SBOX_DRARHI_SYS_MASK	(0x1 << 26)
++#define MIC_DMA_REG_DCAR		0
++#define MIC_DMA_REG_DHPR		4
++#define MIC_DMA_REG_DTPR		8
++#define MIC_DMA_REG_DRAR_LO		20
++#define MIC_DMA_REG_DRAR_HI		24
++#define MIC_DMA_REG_DSTAT		32
++#define MIC_DMA_REG_DCHERR		44
++#define MIC_DMA_REG_DCHERRMSK		48
++
++/* HW dma desc */
++struct mic_dma_desc {
++	u64 qw0;
++	u64 qw1;
++};
++
++enum mic_dma_chan_owner {
++	MIC_DMA_CHAN_MIC = 0,
++	MIC_DMA_CHAN_HOST
++};
++
++/*
++ * mic_dma_chan - channel specific information
++ * @ch_num: channel number
++ * @owner: owner of this channel
++ * @last_tail: cached value of descriptor ring tail
++ * @head: index of next descriptor in desc_ring
++ * @issued: hardware notification point
++ * @submitted: index that will be used to submit descriptors to h/w
++ * @api_ch: dma engine api channel
++ * @desc_ring: dma descriptor ring
++ * @desc_ring_micpa: mic physical address of desc_ring
++ * @status_dest: destination for status (fence) descriptor
++ * @status_dest_micpa: mic address for status_dest,
++ *		       DMA controller uses this address
++ * @tx_array: array of async_tx
++ * @cleanup_lock: lock held when processing completed tx
++ * @prep_lock: lock held in prep_memcpy & released in tx_submit
++ * @issue_lock: lock used to synchronize writes to head
++ * @cookie: mic_irq cookie used with mic irq request
++ */
++struct mic_dma_chan {
++	int ch_num;
++	enum mic_dma_chan_owner owner;
++	u32 last_tail;
++	u32 head;
++	u32 issued;
++	u32 submitted;
++	struct dma_chan api_ch;
++	struct mic_dma_desc *desc_ring;
++	dma_addr_t desc_ring_micpa;
++	u64 *status_dest;
++	dma_addr_t status_dest_micpa;
++	struct dma_async_tx_descriptor *tx_array;
++	spinlock_t cleanup_lock;
++	spinlock_t prep_lock;
++	spinlock_t issue_lock;
++	struct mic_irq *cookie;
++};
++
++/*
++ * struct mic_dma_device - per mic device
++ * @mic_ch: dma channels
++ * @dma_dev: underlying dma device
++ * @mbdev: mic bus dma device
++ * @mmio: virtual address of the mmio space
++ * @dbg_dir: debugfs directory
++ * @start_ch: first channel number that can be used
++ * @max_xfer_size: maximum transfer size per dma descriptor
++ */
++struct mic_dma_device {
++	struct mic_dma_chan mic_ch[MIC_DMA_MAX_NUM_CHAN];
++	struct dma_device dma_dev;
++	struct mbus_device *mbdev;
++	void __iomem *mmio;
++	struct dentry *dbg_dir;
++	int start_ch;
++	size_t max_xfer_size;
++};
++
++static inline struct mic_dma_chan *to_mic_dma_chan(struct dma_chan *ch)
++{
++	return container_of(ch, struct mic_dma_chan, api_ch);
++}
++
++static inline struct mic_dma_device *to_mic_dma_dev(struct mic_dma_chan *ch)
++{
++	return
++	container_of((const typeof(((struct mic_dma_device *)0)->mic_ch)*)
++		     (ch - ch->ch_num), struct mic_dma_device, mic_ch);
++}
++
++static inline struct mbus_device *to_mbus_device(struct mic_dma_chan *ch)
++{
++	return to_mic_dma_dev(ch)->mbdev;
++}
++
++static inline struct mbus_hw_ops *to_mbus_hw_ops(struct mic_dma_chan *ch)
++{
++	return to_mbus_device(ch)->hw_ops;
++}
++
++static inline struct device *mic_dma_ch_to_device(struct mic_dma_chan *ch)
++{
++	return to_mic_dma_dev(ch)->dma_dev.dev;
++}
++
++static inline void __iomem *mic_dma_chan_to_mmio(struct mic_dma_chan *ch)
++{
++	return to_mic_dma_dev(ch)->mmio;
++}
++
++static inline u32 mic_dma_read_reg(struct mic_dma_chan *ch, u32 reg)
++{
++	return ioread32(mic_dma_chan_to_mmio(ch) + MIC_DMA_SBOX_CH_BASE +
++			ch->ch_num * MIC_DMA_SBOX_CHAN_OFF + reg);
++}
++
++static inline void mic_dma_write_reg(struct mic_dma_chan *ch, u32 reg, u32 val)
++{
++	iowrite32(val, mic_dma_chan_to_mmio(ch) + MIC_DMA_SBOX_CH_BASE +
++		  ch->ch_num * MIC_DMA_SBOX_CHAN_OFF + reg);
++}
++
++static inline u32 mic_dma_mmio_read(struct mic_dma_chan *ch, u32 offset)
++{
++	return ioread32(mic_dma_chan_to_mmio(ch) + offset);
++}
++
++static inline void mic_dma_mmio_write(struct mic_dma_chan *ch, u32 val,
++				      u32 offset)
++{
++	iowrite32(val, mic_dma_chan_to_mmio(ch) + offset);
++}
++
++static inline u32 mic_dma_read_cmp_cnt(struct mic_dma_chan *ch)
++{
++	return mic_dma_read_reg(ch, MIC_DMA_REG_DSTAT) &
++	       MIC_DMA_HW_CMP_CNT_MASK;
++}
++
++static inline void mic_dma_chan_set_owner(struct mic_dma_chan *ch)
++{
++	u32 dcr = mic_dma_mmio_read(ch, MIC_DMA_SBOX_BASE + MIC_DMA_SBOX_DCR);
++	u32 chan_num = ch->ch_num;
++
++	dcr = (dcr & ~(0x1 << (chan_num * 2))) | (ch->owner << (chan_num * 2));
++	mic_dma_mmio_write(ch, dcr, MIC_DMA_SBOX_BASE + MIC_DMA_SBOX_DCR);
++}
++
++static inline void mic_dma_enable_chan(struct mic_dma_chan *ch)
++{
++	u32 dcr = mic_dma_mmio_read(ch, MIC_DMA_SBOX_BASE + MIC_DMA_SBOX_DCR);
++
++	dcr |= 2 << (ch->ch_num << 1);
++	mic_dma_mmio_write(ch, dcr, MIC_DMA_SBOX_BASE + MIC_DMA_SBOX_DCR);
++}
++
++static inline void mic_dma_disable_chan(struct mic_dma_chan *ch)
++{
++	u32 dcr = mic_dma_mmio_read(ch, MIC_DMA_SBOX_BASE + MIC_DMA_SBOX_DCR);
++
++	dcr &= ~(2 << (ch->ch_num << 1));
++	mic_dma_mmio_write(ch, dcr, MIC_DMA_SBOX_BASE + MIC_DMA_SBOX_DCR);
++}
++
++static void mic_dma_chan_set_desc_ring(struct mic_dma_chan *ch)
++{
++	u32 drar_hi;
++	dma_addr_t desc_ring_micpa = ch->desc_ring_micpa;
++
++	drar_hi = (MIC_DMA_DESC_RX_SIZE & 0x1ffff) << 4;
++	if (MIC_DMA_CHAN_MIC == ch->owner) {
++		drar_hi |= (desc_ring_micpa >> 32) & 0xf;
++	} else {
++		drar_hi |= MIC_DMA_SBOX_DRARHI_SYS_MASK;
++		drar_hi |= ((desc_ring_micpa >> 34)
++			    & 0x1f) << 21;
++		drar_hi |= (desc_ring_micpa >> 32) & 0x3;
++	}
++	mic_dma_write_reg(ch, MIC_DMA_REG_DRAR_LO, (u32) desc_ring_micpa);
++	mic_dma_write_reg(ch, MIC_DMA_REG_DRAR_HI, drar_hi);
++}
++
++static inline void mic_dma_chan_mask_intr(struct mic_dma_chan *ch)
++{
++	u32 dcar = mic_dma_read_reg(ch, MIC_DMA_REG_DCAR);
++
++	if (MIC_DMA_CHAN_MIC == ch->owner)
++		dcar |= MIC_DMA_SBOX_DCAR_IM0;
++	else
++		dcar |= MIC_DMA_SBOX_DCAR_IM1;
++	mic_dma_write_reg(ch, MIC_DMA_REG_DCAR, dcar);
++}
++
++static inline void mic_dma_chan_unmask_intr(struct mic_dma_chan *ch)
++{
++	u32 dcar = mic_dma_read_reg(ch, MIC_DMA_REG_DCAR);
++
++	if (MIC_DMA_CHAN_MIC == ch->owner)
++		dcar &= ~MIC_DMA_SBOX_DCAR_IM0;
++	else
++		dcar &= ~MIC_DMA_SBOX_DCAR_IM1;
++	mic_dma_write_reg(ch, MIC_DMA_REG_DCAR, dcar);
++}
++
++static void mic_dma_ack_interrupt(struct mic_dma_chan *ch)
++{
++	if (MIC_DMA_CHAN_MIC == ch->owner) {
++		/* HW errata */
++		mic_dma_chan_mask_intr(ch);
++		mic_dma_chan_unmask_intr(ch);
++	}
++	to_mbus_hw_ops(ch)->ack_interrupt(to_mbus_device(ch), ch->ch_num);
++}
++#endif
 -- 
 1.8.2.1
 
