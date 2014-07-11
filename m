@@ -1,64 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829AbaGKQP5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 12:15:57 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:47880 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754807AbaGKQPz (ORCPT
+	id S1754854AbaGKQQk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 12:16:40 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:57386 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754399AbaGKQQj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 12:15:55 -0400
-Message-ID: <53C00DB5.600@hurleysoftware.com>
-Date: Fri, 11 Jul 2014 12:15:49 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 11 Jul 2014 12:16:39 -0400
+Date: Fri, 11 Jul 2014 12:16:34 -0400
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Oded Gabbay <oded.gabbay@gmail.com>
+Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        John Bridgman <John.Bridgman@amd.com>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>,
+        Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>
+Subject: Re: [PATCH 03/83] drm/radeon: Report doorbell configuration to kfd
+Message-ID: <20140711161632.GD1870@gmail.com>
+References: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
+ <1405029027-6085-2-git-send-email-oded.gabbay@amd.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH tty-next 21/22] serial: core: Remove superfluous ldisc
- flush from uart_close()
-References: <1402924639-5164-1-git-send-email-peter@hurleysoftware.com> <1402924639-5164-22-git-send-email-peter@hurleysoftware.com>
-In-Reply-To: <1402924639-5164-22-git-send-email-peter@hurleysoftware.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1405029027-6085-2-git-send-email-oded.gabbay@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2014 09:17 AM, Peter Hurley wrote:
-> The tty_ldisc_flush() after port hardware shutdown is unnecessary;
-> the ldisc flush was just performed before the hardware shutdown
-> in tty_port_close_start() and the ldisc will be released when
-> uart_close() returns (because the last port close implies the
-> last tty close).
->
-> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+On Fri, Jul 11, 2014 at 12:50:03AM +0300, Oded Gabbay wrote:
+> Radeon and KFD share the doorbell aperture.
+> Radeon sets it up, takes the doorbells required for its own rings
+> and reports the setup to KFD.
+> Radeon reserved doorbells are at the start of the doorbell aperture.
+> 
+> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+
+I would need some refreshing on doorbell. You want to map it to userspace
+but at the same time it is use by the radeon kernel driver when dispatching
+on the compute ring (iirc the gfx ring does not use it).
+
+So now my worry is, given usermapping is done on page granularity, what
+would block one process from writting to another process doorbell ? Again
+iirc the doorbell is actualy the wptr for the ring buffer associated with
+said doorbell (thought i forget how doorbell are associated with a ring).
+
+This sounds really bad.
+
+Cheers,
+Jérôme
+
 > ---
->   drivers/tty/serial/serial_core.c | 3 ---
->   1 file changed, 3 deletions(-)
->
-> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-> index 212ee07..15212d7 100644
-> --- a/drivers/tty/serial/serial_core.c
-> +++ b/drivers/tty/serial/serial_core.c
-> @@ -1351,9 +1351,6 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
->
->   	mutex_lock(&port->mutex);
->   	uart_shutdown(tty, state);
-> -
-> -	tty_ldisc_flush(tty);
-> -
-
-This isn't exactly correct. There is a small window of time between the
-ldisc flush being performed in tty_port_close_start() and the
-subsequent stop_rx() in uart_close(). This might allow for data to be
-received, and a racing tty reopen to receive that stale data. Unlikely, but
-possible.
-
->   	tty_port_tty_set(port, NULL);
->   	tty->closing = 0;
->   	spin_lock_irqsave(&port->lock, flags);
->
-
+>  drivers/gpu/drm/radeon/radeon.h        |  4 ++++
+>  drivers/gpu/drm/radeon/radeon_device.c | 31 +++++++++++++++++++++++++++++++
+>  2 files changed, 35 insertions(+)
+> 
+> diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
+> index 7cda75d..4e7e41f 100644
+> --- a/drivers/gpu/drm/radeon/radeon.h
+> +++ b/drivers/gpu/drm/radeon/radeon.h
+> @@ -676,6 +676,10 @@ struct radeon_doorbell {
+>  
+>  int radeon_doorbell_get(struct radeon_device *rdev, u32 *page);
+>  void radeon_doorbell_free(struct radeon_device *rdev, u32 doorbell);
+> +void radeon_doorbell_get_kfd_info(struct radeon_device *rdev,
+> +				  phys_addr_t *aperture_base,
+> +				  size_t *aperture_size,
+> +				  size_t *start_offset);
+>  
+>  /*
+>   * IRQS.
+> diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
+> index 03686fa..98538d2 100644
+> --- a/drivers/gpu/drm/radeon/radeon_device.c
+> +++ b/drivers/gpu/drm/radeon/radeon_device.c
+> @@ -328,6 +328,37 @@ void radeon_doorbell_free(struct radeon_device *rdev, u32 doorbell)
+>  		__clear_bit(doorbell, rdev->doorbell.used);
+>  }
+>  
+> +/**
+> + * radeon_doorbell_get_kfd_info - Report doorbell configuration required to
+> + *                                setup KFD
+> + *
+> + * @rdev: radeon_device pointer
+> + * @aperture_base: output returning doorbell aperture base physical address
+> + * @aperture_size: output returning doorbell aperture size in bytes
+> + * @start_offset: output returning # of doorbell bytes reserved for radeon.
+> + *
+> + * Radeon and the KFD share the doorbell aperture. Radeon sets it up,
+> + * takes doorbells required for its own rings and reports the setup to KFD.
+> + * Radeon reserved doorbells are at the start of the doorbell aperture.
+> + */
+> +void radeon_doorbell_get_kfd_info(struct radeon_device *rdev,
+> +				  phys_addr_t *aperture_base,
+> +				  size_t *aperture_size,
+> +				  size_t *start_offset)
+> +{
+> +	/* The first num_doorbells are used by radeon.
+> +	 * KFD takes whatever's left in the aperture. */
+> +	if (rdev->doorbell.size > rdev->doorbell.num_doorbells * sizeof(u32)) {
+> +		*aperture_base = rdev->doorbell.base;
+> +		*aperture_size = rdev->doorbell.size;
+> +		*start_offset = rdev->doorbell.num_doorbells * sizeof(u32);
+> +	} else {
+> +		*aperture_base = 0;
+> +		*aperture_size = 0;
+> +		*start_offset = 0;
+> +	}
+> +}
+> +
+>  /*
+>   * radeon_wb_*()
+>   * Writeback is the the method by which the the GPU updates special pages
+> -- 
+> 1.9.1
+> 
