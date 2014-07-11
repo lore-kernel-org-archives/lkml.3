@@ -1,100 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754864AbaGKQcl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 12:32:41 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:48187 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754106AbaGKQcj (ORCPT
+	id S1755021AbaGKQcp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 12:32:45 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:58430 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089AbaGKQcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 12:32:39 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: "chenhanxiao\@cn.fujitsu.com" <chenhanxiao@cn.fujitsu.com>,
-        "Serge Hallyn \(serge.hallyn\@ubuntu.com\)" <serge.hallyn@ubuntu.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "containers\@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <5871495633F38949900D2BF2DC04883E562293@G08CNEXMBPEKD02.g08.fujitsu.local>
-	<20140711142806.GA26441@mail.hallyn.com>
-Date: Fri, 11 Jul 2014 09:29:05 -0700
-In-Reply-To: <20140711142806.GA26441@mail.hallyn.com> (Serge E. Hallyn's
-	message of "Fri, 11 Jul 2014 16:28:06 +0200")
-Message-ID: <87ha2nyi3y.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Fri, 11 Jul 2014 12:32:43 -0400
+Date: Fri, 11 Jul 2014 12:32:38 -0400
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Oded Gabbay <oded.gabbay@gmail.com>
+Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        John Bridgman <John.Bridgman@amd.com>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>,
+        Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>
+Subject: Re: [PATCH 06/83] drm/radeon: Add kfd-->kgd interfaces of memory
+ allocation/mapping
+Message-ID: <20140711163237.GG1870@gmail.com>
+References: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
+ <1405029027-6085-5-git-send-email-oded.gabbay@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/dO+nBKvpxMSJRSlYw7gyfRkfDb6fzHkw=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.3171]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.5 XM_Body_Dirty_Words Contains a dirty word
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
-X-Spam-Relay-Country: 
-Subject: Re: Could not mount sysfs when enable userns but disable netns
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1405029027-6085-5-git-send-email-oded.gabbay@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serge@hallyn.com> writes:
+On Fri, Jul 11, 2014 at 12:50:06AM +0300, Oded Gabbay wrote:
+> This patch adds new interfaces to kfd2kgd_calls structure.
+> 
+> The new interfaces allow the kfd driver to :
+> 
+> 1. Allocated video memory through the radeon driver
+> 2. Map and unmap video memory with GPUVM through the radeon driver
+> 3. Map and unmap system memory with GPUVM through the radeon driver
+> 
+> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+> ---
+>  drivers/gpu/drm/radeon/radeon_kfd.c | 129 ++++++++++++++++++++++++++++++++++++
+>  include/linux/radeon_kfd.h          |  23 +++++++
+>  2 files changed, 152 insertions(+)
+> 
+> diff --git a/drivers/gpu/drm/radeon/radeon_kfd.c b/drivers/gpu/drm/radeon/radeon_kfd.c
+> index 1b859b5..66ee36b 100644
+> --- a/drivers/gpu/drm/radeon/radeon_kfd.c
+> +++ b/drivers/gpu/drm/radeon/radeon_kfd.c
+> @@ -25,9 +25,31 @@
+>  #include <drm/drmP.h>
+>  #include "radeon.h"
+>  
+> +struct kgd_mem {
+> +	struct radeon_bo *bo;
+> +	u32 domain;
+> +};
+> +
+> +static int allocate_mem(struct kgd_dev *kgd, size_t size, size_t alignment,
+> +		enum kgd_memory_pool pool, struct kgd_mem **memory_handle);
+> +
+> +static void free_mem(struct kgd_dev *kgd, struct kgd_mem *memory_handle);
+> +
+> +static int gpumap_mem(struct kgd_dev *kgd, struct kgd_mem *mem, uint64_t *vmid0_address);
+> +static void ungpumap_mem(struct kgd_dev *kgd, struct kgd_mem *mem);
+> +
+> +static int kmap_mem(struct kgd_dev *kgd, struct kgd_mem *mem, void **ptr);
+> +static void unkmap_mem(struct kgd_dev *kgd, struct kgd_mem *mem);
+> +
+>  static uint64_t get_vmem_size(struct kgd_dev *kgd);
+>  
+>  static const struct kfd2kgd_calls kfd2kgd = {
+> +	.allocate_mem = allocate_mem,
+> +	.free_mem = free_mem,
+> +	.gpumap_mem = gpumap_mem,
+> +	.ungpumap_mem = ungpumap_mem,
+> +	.kmap_mem = kmap_mem,
+> +	.unkmap_mem = unkmap_mem,
+>  	.get_vmem_size = get_vmem_size,
+>  };
+>  
+> @@ -96,6 +118,113 @@ void radeon_kfd_device_fini(struct radeon_device *rdev)
+>  	}
+>  }
+>  
+> +static u32 pool_to_domain(enum kgd_memory_pool p)
+> +{
+> +	switch (p) {
+> +	case KGD_POOL_FRAMEBUFFER: return RADEON_GEM_DOMAIN_VRAM;
+> +	default: return RADEON_GEM_DOMAIN_GTT;
+> +	}
+> +}
+> +
+> +static int allocate_mem(struct kgd_dev *kgd, size_t size, size_t alignment,
+> +		enum kgd_memory_pool pool, struct kgd_mem **memory_handle)
+> +{
+> +	struct radeon_device *rdev = (struct radeon_device *)kgd;
+> +	struct kgd_mem *mem;
+> +	int r;
+> +
+> +	mem = kzalloc(sizeof(struct kgd_mem), GFP_KERNEL);
+> +	if (!mem)
+> +		return -ENOMEM;
+> +
+> +	mem->domain = pool_to_domain(pool);
+> +
+> +	r = radeon_bo_create(rdev, size, alignment, true, mem->domain, NULL, &mem->bo);
+> +	if (r) {
+> +		kfree(mem);
+> +		return r;
+> +	}
+> +
+> +	*memory_handle = mem;
+> +	return 0;
+> +}
+> +
+> +static void free_mem(struct kgd_dev *kgd, struct kgd_mem *mem)
+> +{
+> +	/* Assume that KFD will never free gpumapped or kmapped memory. This is not quite settled. */
+> +	radeon_bo_unref(&mem->bo);
+> +	kfree(mem);
+> +}
+> +
+> +static int gpumap_mem(struct kgd_dev *kgd, struct kgd_mem *mem, uint64_t *vmid0_address)
+> +{
+> +	int r;
+> +
+> +	r = radeon_bo_reserve(mem->bo, true);
+> +
+> +	/*
+> +	 * ttm_bo_reserve can only fail if the buffer reservation lock
+> +	 * is held in circumstances that would deadlock
+> +	 */
+> +	BUG_ON(r != 0);
+> +	r = radeon_bo_pin(mem->bo, mem->domain, vmid0_address);
+> +	radeon_bo_unreserve(mem->bo);
+> +
+> +	return r;
+> +}
 
-> Quoting chenhanxiao@cn.fujitsu.com (chenhanxiao@cn.fujitsu.com):
->> Hello,
->> 
->> How to reproduce:
->> 1. Prepare a container, enable userns and disable netns
->> 2. use libvirt-lxc to start a container
->> 3. libvirt could not mount sysfs then failed to start.
->> 
->> Then I found that
->> commit 7dc5dbc879bd0779924b5132a48b731a0bc04a1e says:
->> "Don't allow mounting sysfs unless the caller has CAP_SYS_ADMIN rights
->> over the net namespace."
->> 
->> But why should we check sysfs mouont permission over net namespace?
->> We've already checked CAP_SYS_ADMIN though.
+What is lifetime of such object ? Are they limited in size and number ? How
+can the GFX side ie radeon force unmap them ?
 
-We already checked capable(CAP_SYS_ADMIN) and it failed.
+Because pining is a big NO we only pin a handfull of buffer and the only
+thing we allow userspace to pin are front buffer associated with crtc
+which means there is a limited number of such buffer and there is a
+legitimate use for pining them.
 
->> What the relationship between sysfs and net namespace,
->> or this check is a little redundant?
+To me this looks like anyone can pin vram and thus starve the GFX side,
+read DDOS.
 
-You want a bind mount not a new fresh mount.
+Cheers,
+Jérôme
 
-When looking at how evil actors could abuse things it turned out that in
-some circumstances the root user (before a user namespace is created)
-needs to control the policy on which filesystems may be mounted.  There
-are files in sysfs and in proc that you never want to see in a chroot
-jail, as they just create more surface area to attack.
-
-The only reason for creating a new fresh mount of sysfs is to get access
-to /sys/class/net.  So to keep things simple we restrict creation of
-that mount to cases where the mounter has permisions over the network
-namespace, and cases where nothing interesing is mounted on top of
-sysfs.
-
-If a new /sys/class/net is not needed it is possible to bind mount the
-existing copy of sysfs to the new location without loss of
-functionality.
-
-> It is not redundant.  The whole point is that after clone(CLONE_NEWUSER)
-> you get a newly filled set of capabilities.  But you should not have
-> privileges over the host's network namesapce.  After you unshare a new
-> network namespace, you *should* have privilege over it.  So the fact
-> that we've already check CAP_SYS_ADMIN means nothing, because the
-> capabilities need to be targeted.
-
-Exactly the tests are failing because the caller is not the global root
-and so the code is properly failing the permission checks.
-
-Eric
+> +
+> +static void ungpumap_mem(struct kgd_dev *kgd, struct kgd_mem *mem)
+> +{
+> +	int r;
+> +
+> +	r = radeon_bo_reserve(mem->bo, true);
+> +
+> +	/*
+> +	 * ttm_bo_reserve can only fail if the buffer reservation lock
+> +	 * is held in circumstances that would deadlock
+> +	 */
+> +	BUG_ON(r != 0);
+> +	r = radeon_bo_unpin(mem->bo);
+> +
+> +	/*
+> +	 * This unpin only removed NO_EVICT placement flags
+> +	 * and should never fail
+> +	 */
+> +	BUG_ON(r != 0);
+> +	radeon_bo_unreserve(mem->bo);
+> +}
+> +
+> +static int kmap_mem(struct kgd_dev *kgd, struct kgd_mem *mem, void **ptr)
+> +{
+> +	int r;
+> +
+> +	r = radeon_bo_reserve(mem->bo, true);
+> +
+> +	/*
+> +	 * ttm_bo_reserve can only fail if the buffer reservation lock
+> +	 * is held in circumstances that would deadlock
+> +	 */
+> +	BUG_ON(r != 0);
+> +	r = radeon_bo_kmap(mem->bo, ptr);
+> +	radeon_bo_unreserve(mem->bo);
+> +
+> +	return r;
+> +}
+> +
+> +static void unkmap_mem(struct kgd_dev *kgd, struct kgd_mem *mem)
+> +{
+> +	int r;
+> +
+> +	r = radeon_bo_reserve(mem->bo, true);
+> +	/*
+> +	 * ttm_bo_reserve can only fail if the buffer reservation lock
+> +	 * is held in circumstances that would deadlock
+> +	 */
+> +	BUG_ON(r != 0);
+> +	radeon_bo_kunmap(mem->bo);
+> +	radeon_bo_unreserve(mem->bo);
+> +}
+> +
+>  static uint64_t get_vmem_size(struct kgd_dev *kgd)
+>  {
+>  	struct radeon_device *rdev = (struct radeon_device *)kgd;
+> diff --git a/include/linux/radeon_kfd.h b/include/linux/radeon_kfd.h
+> index 28cddf5..c7997d4 100644
+> --- a/include/linux/radeon_kfd.h
+> +++ b/include/linux/radeon_kfd.h
+> @@ -36,6 +36,14 @@ struct pci_dev;
+>  struct kfd_dev;
+>  struct kgd_dev;
+>  
+> +struct kgd_mem;
+> +
+> +enum kgd_memory_pool {
+> +	KGD_POOL_SYSTEM_CACHEABLE = 1,
+> +	KGD_POOL_SYSTEM_WRITECOMBINE = 2,
+> +	KGD_POOL_FRAMEBUFFER = 3,
+> +};
+> +
+>  struct kgd2kfd_shared_resources {
+>  	void __iomem *mmio_registers; /* Mapped pointer to GFX MMIO registers. */
+>  
+> @@ -57,6 +65,21 @@ struct kgd2kfd_calls {
+>  };
+>  
+>  struct kfd2kgd_calls {
+> +	/* Memory management. */
+> +	int (*allocate_mem)(struct kgd_dev *kgd,
+> +				size_t size,
+> +				size_t alignment,
+> +				enum kgd_memory_pool pool,
+> +				struct kgd_mem **memory_handle);
+> +
+> +	void (*free_mem)(struct kgd_dev *kgd, struct kgd_mem *memory_handle);
+> +
+> +	int (*gpumap_mem)(struct kgd_dev *kgd, struct kgd_mem *mem, uint64_t *vmid0_address);
+> +	void (*ungpumap_mem)(struct kgd_dev *kgd, struct kgd_mem *mem);
+> +
+> +	int (*kmap_mem)(struct kgd_dev *kgd, struct kgd_mem *mem, void **ptr);
+> +	void (*unkmap_mem)(struct kgd_dev *kgd, struct kgd_mem *mem);
+> +
+>  	uint64_t (*get_vmem_size)(struct kgd_dev *kgd);
+>  };
+>  
+> -- 
+> 1.9.1
+> 
