@@ -1,104 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754179AbaGKPmk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 11:42:40 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:64270 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938AbaGKPmi (ORCPT
+	id S1754082AbaGKPoU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 11:44:20 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:51243 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750938AbaGKPoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 11:42:38 -0400
-Date: Fri, 11 Jul 2014 11:42:32 -0400
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Oded Gabbay <oded.gabbay@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, David Airlie <airlied@linux.ie>,
-        Alex Deucher <alexander.deucher@amd.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, John Bridgman <John.Bridgman@amd.com>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Joerg Roedel <joro@8bytes.org>, linux-mm <linux-mm@kvack.org>,
-        Oded Gabbay <oded.gabbay@amd.com>, Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>, Peter Zijlstra <peterz@infradead.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        =?iso-8859-1?B?Suly9G1l?= Glisse <jglisse@redhat.com>,
-        Michel Lespinasse <walken@google.com>
-Subject: Re: [PATCH 01/83] mm: Add kfd_process pointer to mm_struct
-Message-ID: <20140711154231.GB1870@gmail.com>
-References: <1405028848-5660-1-git-send-email-oded.gabbay@amd.com>
+	Fri, 11 Jul 2014 11:44:18 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19V2yXUWfHctZGCKXOklFT8BSb4qaCHI+Y=
+X-DKIM: OpenDKIM Filter v2.0.1 titan DB7B85A8A8D
+Date: Fri, 11 Jul 2014 11:44:07 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Virtualization List <virtualization@lists.linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
+        keescook@chromium.org, stable@vger.kernel.org
+Subject: Re: [RFC PATCH] hwrng: sysfs entry rng_seed_kernel, was: "Re:
+ [PATCH v2 1/2] hwrng: fetch randomness only after device init"
+Message-ID: <20140711154407.GD13108@titan.lakedaemon.net>
+References: <cover.1404538109.git.amit.shah@redhat.com>
+ <515a12ecc5fca5452bf0bfda4d54546d8fb5829c.1404538109.git.amit.shah@redhat.com>
+ <20140709115317.GM13433@titan.lakedaemon.net>
+ <20140709130822.GA4553@grmbl.mre>
+ <20140709131737.GO13433@titan.lakedaemon.net>
+ <20140709132524.GB4667@grmbl.mre>
+ <20140709160725.GP13433@titan.lakedaemon.net>
+ <20140711132626.GB17415@grmbl.mre>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1405028848-5660-1-git-send-email-oded.gabbay@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140711132626.GB17415@grmbl.mre>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 12:47:26AM +0300, Oded Gabbay wrote:
-> This patch enables the KFD to retrieve the kfd_process
-> object from the process's mm_struct. This is needed because kfd_process
-> lifespan is bound to the process's mm_struct lifespan.
+On Fri, Jul 11, 2014 at 06:56:26PM +0530, Amit Shah wrote:
+> On (Wed) 09 Jul 2014 [12:07:25], Jason Cooper wrote:
+> > Amit, Kees,
 > 
-> When KFD is notified about an mm_struct tear-down, it checks if the
-> kfd_process pointer is valid. If so, it releases the kfd_process object
-> and all relevant resources.
+> (snip)
 > 
-> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
-> ---
->  include/linux/mm_types.h | 14 ++++++++++++++
->  1 file changed, 14 insertions(+)
+> > I'm cooling to the idea of the init function for virtio-rng, and it
+> > might be best just to admit that there's no way to seed the entropy pool
+> > from the virtio-rng at probe time.  After all, once userspace is up, the
+> > system should take advantage of /dev/hwrng for the generation of
+> > long-term keys.  Either via rngd feeding /dev/random, or directly.
+> > 
+> > As for the follow-on patch you asked about, I think that's fine.  More
+> > entropy can't hurt.
+> > 
+> > The below patch might be worth considering so that the user of a system
+> > with only virtio-rng can kick the entropy pool as they see fit.  It's
+> > probably not too kosher as is, but if the idea is liked, I could clean
+> > it up and submit.
+> > 
+> > The advantage is that users don't need to have rngd installed and
+> > running on the system in order to jump-start the entropy pool.
 > 
-> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-> index 678097c..6179107 100644
-> --- a/include/linux/mm_types.h
-> +++ b/include/linux/mm_types.h
-> @@ -20,6 +20,10 @@
->  struct hmm;
->  #endif
->  
-> +#ifdef CONFIG_HSA_RADEON
-> +struct kfd_process;
-> +#endif
-> +
->  #ifndef AT_VECTOR_SIZE_ARCH
->  #define AT_VECTOR_SIZE_ARCH 0
->  #endif
-> @@ -439,6 +443,16 @@ struct mm_struct {
->  	 */
->  	struct hmm *hmm;
->  #endif
-> +#if defined(CONFIG_HSA_RADEON) || defined(CONFIG_HSA_RADEON_MODULE)
-> +	/*
-> +	 * kfd always register an mmu_notifier we rely on mmu notifier to keep
-> +	 * refcount on mm struct as well as forbiding registering kfd on a
-> +	 * dying mm
-> +	 *
-> +	 * This field is set with mmap_sem old in write mode.
-> +	 */
-> +	struct kfd_process *kfd_process;
-> +#endif
+> ... so a udev rule that looks for the new sysfs file, and asks the
+> kernel to do its thing?
 
-I understand the need to bind kfd to mm life time but this is wrong
-on several level. First we do not want per driver define flag here.
-Second this should be a IOMMU/PASID pointer of some sort, i am sure
-that Intel will want to add itself too to mm_struct so instead of
-having each IOMMU add a pointer here, i would rather see a generic
-pointer to a generic IOMMU struct and have this use generic IOMMU
-code that can then call specific user dispatch function.
+Or, as simple as:
 
-I know this add a layer but this is not a critical code path and
-should never be.
+[ -e /sys/.../rng_seed_kernel ] && echo "0" >/sys/.../rng_seed_kernel
 
-I am adding Jesse as he might have thought on that.
+in the initrd.  It needs to run *before* any init scripts which may create
+keys.
 
-So this one is NAK
+> And maybe even a patch to rngd that looks for this file and does a
+> similar thing?
 
-Cheers,
-Jérôme
+I'm not opposed to that, but it doesn't fit the problem I'm trying to
+solve.  Basically, average systems, not trying to be Ft Knox-secure, but
+needing to generate long-term keys at first boot.  These systems won't
+have an hwrng installed, but should use one if available.  eg
+virtio-rng, or any of the on-die SoC hwrngs.
 
->  #if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
->  	pgtable_t pmd_huge_pte; /* protected by page_table_lock */
->  #endif
-> -- 
-> 1.9.1
-> 
+> There's also the option to use a delayed workqueue item, that will
+> succeed if probe has finished.  This method doesn't have userspace
+> dependencies.
+
+Hmm, I like that idea better.  No ABI change to maintain, no userspace
+changes...  You obviously know virtio-rng better than I do, care to take
+a crack at it?
+
+thx,
+
+Jason.
