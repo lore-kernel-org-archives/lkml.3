@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089AbaGKGRH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 02:17:07 -0400
-Received: from mga11.intel.com ([192.55.52.93]:55684 "EHLO mga11.intel.com"
+	id S1752303AbaGKGRX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 02:17:23 -0400
+Received: from mga11.intel.com ([192.55.52.93]:55697 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751190AbaGKGRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 02:17:03 -0400
+	id S1751190AbaGKGRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 02:17:20 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,642,1400050800"; 
-   d="scan'208";a="560333046"
+   d="scan'208";a="560333195"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
         Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
@@ -20,9 +20,9 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
         iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
         linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
         dmaengine@vger.kernel.org
-Subject: [Patch Part3 V4 01/21] iommu/vt-d: Match segment number when searching for dev_iotlb capable devices
-Date: Fri, 11 Jul 2014 14:19:25 +0800
-Message-Id: <1405059585-10620-2-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch Part3 V4 08/21] iommu/vt-d: Simplify include/linux/dmar.h
+Date: Fri, 11 Jul 2014 14:19:32 +0800
+Message-Id: <1405059585-10620-9-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405059585-10620-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1405059585-10620-1-git-send-email-jiang.liu@linux.intel.com>
@@ -30,30 +30,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For virtual machine and static identity domains, there may be devices
-from different PCI segments associated with the same domain.
-So function iommu_support_dev_iotlb() should also match PCI segment
-number (iommu unit) when searching for dev_iotlb capable devices.
+Simplify include/linux/dmar.h a bit based on the fact that
+both CONFIG_INTEL_IOMMU and CONFIG_IRQ_REMAP select CONFIG_DMAR_TABLE.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- drivers/iommu/intel-iommu.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ include/linux/dmar.h |   50 ++++++++++++++++++--------------------------------
+ 1 file changed, 18 insertions(+), 32 deletions(-)
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 3664d0d00338..147ab1c0b573 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -1272,7 +1272,8 @@ iommu_support_dev_iotlb (struct dmar_domain *domain, struct intel_iommu *iommu,
+diff --git a/include/linux/dmar.h b/include/linux/dmar.h
+index 23c8db129560..1deece46a0ca 100644
+--- a/include/linux/dmar.h
++++ b/include/linux/dmar.h
+@@ -114,22 +114,30 @@ extern int dmar_remove_dev_scope(struct dmar_pci_notify_info *info,
+ /* Intel IOMMU detection */
+ extern int detect_intel_iommu(void);
+ extern int enable_drhd_fault_handling(void);
+-#else
+-struct dmar_pci_notify_info;
+-static inline int detect_intel_iommu(void)
++
++#ifdef CONFIG_INTEL_IOMMU
++extern int iommu_detected, no_iommu;
++extern int intel_iommu_init(void);
++extern int dmar_parse_one_rmrr(struct acpi_dmar_header *header);
++extern int dmar_parse_one_atsr(struct acpi_dmar_header *header);
++extern int dmar_iommu_notify_scope_dev(struct dmar_pci_notify_info *info);
++#else /* !CONFIG_INTEL_IOMMU: */
++static inline int intel_iommu_init(void) { return -ENODEV; }
++static inline int dmar_parse_one_rmrr(struct acpi_dmar_header *header)
+ {
+-	return -ENODEV;
++	return 0;
+ }
+-
+-static inline int dmar_table_init(void)
++static inline int dmar_parse_one_atsr(struct acpi_dmar_header *header)
+ {
+-	return -ENODEV;
++	return 0;
+ }
+-static inline int enable_drhd_fault_handling(void)
++static inline int dmar_iommu_notify_scope_dev(struct dmar_pci_notify_info *info)
+ {
+-	return -1;
++	return 0;
+ }
+-#endif /* !CONFIG_DMAR_TABLE */
++#endif /* CONFIG_INTEL_IOMMU */
++
++#endif /* CONFIG_DMAR_TABLE */
  
- 	spin_lock_irqsave(&device_domain_lock, flags);
- 	list_for_each_entry(info, &domain->devices, link)
--		if (info->bus == bus && info->devfn == devfn) {
-+		if (info->iommu == iommu && info->bus == bus &&
-+		    info->devfn == devfn) {
- 			found = 1;
- 			break;
- 		}
+ struct irte {
+ 	union {
+@@ -177,26 +185,4 @@ extern int dmar_set_interrupt(struct intel_iommu *iommu);
+ extern irqreturn_t dmar_fault(int irq, void *dev_id);
+ extern int arch_setup_dmar_msi(unsigned int irq);
+ 
+-#ifdef CONFIG_INTEL_IOMMU
+-extern int iommu_detected, no_iommu;
+-extern int dmar_parse_one_rmrr(struct acpi_dmar_header *header);
+-extern int dmar_parse_one_atsr(struct acpi_dmar_header *header);
+-extern int dmar_iommu_notify_scope_dev(struct dmar_pci_notify_info *info);
+-extern int intel_iommu_init(void);
+-#else /* !CONFIG_INTEL_IOMMU: */
+-static inline int intel_iommu_init(void) { return -ENODEV; }
+-static inline int dmar_parse_one_rmrr(struct acpi_dmar_header *header)
+-{
+-	return 0;
+-}
+-static inline int dmar_parse_one_atsr(struct acpi_dmar_header *header)
+-{
+-	return 0;
+-}
+-static inline int dmar_iommu_notify_scope_dev(struct dmar_pci_notify_info *info)
+-{
+-	return 0;
+-}
+-#endif /* CONFIG_INTEL_IOMMU */
+-
+ #endif /* __DMAR_H__ */
 -- 
 1.7.10.4
 
