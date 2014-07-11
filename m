@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752954AbaGKKbM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 06:31:12 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:33871 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751875AbaGKKbK (ORCPT
+	id S1752842AbaGKKfr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 06:35:47 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:34664 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000AbaGKKfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 06:31:10 -0400
-Date: Fri, 11 Jul 2014 11:31:04 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Peter Griffin <peter.griffin@linaro.org>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com
-Subject: Re: [STLinux Kernel] [PATCH v3 0/5] phy: miphy365x: Introduce
- support for MiPHY365x
-Message-ID: <20140711103104.GC30519@lee--X1>
-References: <1404906074-31992-1-git-send-email-lee.jones@linaro.org>
- <53BD572C.4060406@ti.com>
- <20140710153548.GB26886@griffinp-ThinkPad-X1-Carbon-2nd>
+	Fri, 11 Jul 2014 06:35:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140710153548.GB26886@griffinp-ThinkPad-X1-Carbon-2nd>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140711102844.GA17147@pd.tnic>
+References: <1405072301-8719-1-git-send-email-bp@alien8.de>
+	<CAMuHMdXz9dYaWizBo1hxuPx_-Y40tx+TfzuTihR6BySU6a+3qw@mail.gmail.com>
+	<20140711102844.GA17147@pd.tnic>
+Date: Fri, 11 Jul 2014 12:35:43 +0200
+X-Google-Sender-Auth: 5qJ6Bet00J4_OYuPTgRs7xkUCWQ
+Message-ID: <CAMuHMdVNKD2DsmhrHGxyhGSQZX8MXFOHkr__jx-A9PWvrFCSpQ@mail.gmail.com>
+Subject: Re: [PATCH] x86: Get rid of __HAVE_ARCH_CMPXCHG
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> One small point, patch 5 which adds the DT nodes may not apply as the file got
-> renamed from stih416-b2020-revE.dts to stih416-b2020e.dts.
+On Fri, Jul 11, 2014 at 12:28 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Fri, Jul 11, 2014 at 12:19:43PM +0200, Geert Uytterhoeven wrote:
+>> What about non-x86? __HAVE_ARCH_CMPXCHG isn't always defined.
+>
+> Bah, this hunk was definitely not supposed to be there. Thanks for the
+> catch!
 
-Not required, Git should handle this seamlessly.
+IC.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+In that case you also want to add a (new) "#define __HAVE_ARCH_CMPXCHG 1"
+to one of the shared x86 header files, right?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
