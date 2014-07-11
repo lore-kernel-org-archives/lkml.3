@@ -1,93 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488AbaGKNth (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:49:37 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:38692 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754191AbaGKNte (ORCPT
+	id S1754308AbaGKNpG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:45:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56240 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753634AbaGKNpC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:49:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <1405079306-1406-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1405079306-1406-1-git-send-email-srinivas.kandagatla@linaro.org>
-Date: Fri, 11 Jul 2014 15:49:34 +0200
-Message-ID: <CACRpkdZdU3PBt+tCqhtWutjwaqdM9yWQi-3bzELV1Xnd9w_EEw@mail.gmail.com>
-Subject: Re: [RFC PATCH] mmc: mmci: Add qcom dml support to the driver.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+	Fri, 11 Jul 2014 09:45:02 -0400
+Message-Id: <20140711133708.760127423@linutronix.de>
+User-Agent: quilt/0.63-1
+Date: Fri, 11 Jul 2014 13:44:59 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>,
         Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        linux-arm-kernel@lists.infradead.org
+Subject: [patch 41/55] arm: bL_switcher:k Use ktime_get_real_ns()
+References: <20140711133623.530368377@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=arm-bL_switcher-use-ktime_get_ns.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 1:48 PM, Srinivas Kandagatla
-<srinivas.kandagatla@linaro.org> wrote:
+Use the nanoseconds based interface instead of converting from a
+timespec.
 
-> On Qualcomm APQ8064 SOCs, SD card controller has an additional glue
-> called DML (Data Mover Local/Lite) to assist dma transfers.
-> This hardware needs to be setup before any dma transfer is requested.
-> DML itself is not a DMA engine, its just a gule between the SD card
-> controller and dma controller.
->
-> Most of this code has been ported from qualcomm's 3.4 kernel.
->
-> This patch adds the code necessary to intialize the hardware and setup
-> before doing any dma transfers.
->
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org
+---
+ arch/arm/common/bL_switcher.c |   16 +++-------------
+ 1 file changed, 3 insertions(+), 13 deletions(-)
 
-Pretty cool :-)
+Index: tip/arch/arm/common/bL_switcher.c
+===================================================================
+--- tip.orig/arch/arm/common/bL_switcher.c
++++ tip/arch/arm/common/bL_switcher.c
+@@ -58,16 +58,6 @@ static int read_mpidr(void)
+ }
+ 
+ /*
+- * Get a global nanosecond time stamp for tracing.
+- */
+-static s64 get_ns(void)
+-{
+-	struct timespec ts;
+-	getnstimeofday(&ts);
+-	return timespec_to_ns(&ts);
+-}
+-
+-/*
+  * bL switcher core code.
+  */
+ 
+@@ -224,7 +214,7 @@ static int bL_switch_to(unsigned int new
+ 	 */
+ 	local_irq_disable();
+ 	local_fiq_disable();
+-	trace_cpu_migrate_begin(get_ns(), ob_mpidr);
++	trace_cpu_migrate_begin(ktime_get_real_ns(), ob_mpidr);
+ 
+ 	/* redirect GIC's SGIs to our counterpart */
+ 	gic_migrate_target(bL_gic_id[ib_cpu][ib_cluster]);
+@@ -267,7 +257,7 @@ static int bL_switch_to(unsigned int new
+ 					  tdev->evtdev->next_event, 1);
+ 	}
+ 
+-	trace_cpu_migrate_finish(get_ns(), ib_mpidr);
++	trace_cpu_migrate_finish(ktime_get_real_ns(), ib_mpidr);
+ 	local_fiq_enable();
+ 	local_irq_enable();
+ 
+@@ -558,7 +548,7 @@ int bL_switcher_get_logical_index(u32 mp
+ 
+ static void bL_switcher_trace_trigger_cpu(void *__always_unused info)
+ {
+-	trace_cpu_migrate_current(get_ns(), read_mpidr());
++	trace_cpu_migrate_current(ktime_get_real_ns(), read_mpidr());
+ }
+ 
+ int bL_switcher_trace_trigger(void)
 
->  drivers/mmc/host/mmci.c     |  19 ++++-
->  drivers/mmc/host/qcom_dml.c | 171 ++++++++++++++++++++++++++++++++++++++++++++
->  drivers/mmc/host/qcom_dml.h |  17 +++++
 
-Please call this file mmci-qcom-dml.c/h so we know that these files
-have a strong
-dependence.
-
-> +config MMC_QCOM_DML
-> +       tristate "Qualcomm Data Mover for SD Card Controller"
-> +       depends on MMC_ARMMMCI && ARCH_QCOM
-
-The way I get it is that this only makes sense when the qualcomm
-DMA engine is used so should it not be
-
-depends on MMC_ARMMMCI && QCOM_BAM_DMA
-
-?
-
-Or maybe we should be less specific?
-
-depends on MMC_ARMMMCI && DMA_ENGINE
-
-?
-
->  /*
-> @@ -569,6 +579,7 @@ static int __mmci_dma_prep_data(struct mmci_host *host, struct mmc_data *data,
->         struct dma_async_tx_descriptor *desc;
->         enum dma_data_direction buffer_dirn;
->         int nr_sg;
-> +       u32 flags = DMA_CTRL_ACK;
->
->         if (data->flags & MMC_DATA_READ) {
->                 conf.direction = DMA_DEV_TO_MEM;
-> @@ -593,9 +604,12 @@ static int __mmci_dma_prep_data(struct mmci_host *host, struct mmc_data *data,
->         if (nr_sg == 0)
->                 return -EINVAL;
->
-> +       if (host->variant->qcom_dml)
-> +               flags |= DMA_PREP_INTERRUPT;
-
-Is this correct? That augments every incoming DMA request to try to
-do an interrupt callback. Why is that necessary? The interrupt
-callback still isn't registered, so this isn't used for anything?
-
-If it's still needed it would be a bug in the DMA engine I think.
-
-Yours,
-Linus Walleij
