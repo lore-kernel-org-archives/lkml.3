@@ -1,75 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034AbaGKGXD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 02:23:03 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:57778 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752998AbaGKGXA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 02:23:00 -0400
-X-IronPort-AV: E=Sophos;i="5.00,873,1396972800"; 
-   d="scan'208";a="33138996"
-Message-ID: <53BF82F8.5070707@cn.fujitsu.com>
-Date: Fri, 11 Jul 2014 14:23:52 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: <gleb@kernel.org>, <mtosatti@redhat.com>, <nadav.amit@gmail.com>
-CC: Tang Chen <tangchen@cn.fujitsu.com>, <kvm@vger.kernel.org>,
-        <laijs@cn.fujitsu.com>, <isimatu.yasuaki@jp.fujitsu.com>,
-        <guz.fnst@cn.fujitsu.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/5] kvm, mem-hotplug: Do not pin ept identity pagetable
- and apic access page.
-References: <1404824492-30095-1-git-send-email-tangchen@cn.fujitsu.com>
-In-Reply-To: <1404824492-30095-1-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.99]
+	id S1753105AbaGKGXz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 02:23:55 -0400
+Received: from mga11.intel.com ([192.55.52.93]:55697 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751133AbaGKGRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 02:17:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,642,1400050800"; 
+   d="scan'208";a="560333069"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
+        Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
+        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org
+Subject: [Patch Part3 V4 03/21] iommu/vt-d: Introduce helper functions to improve code readability
+Date: Fri, 11 Jul 2014 14:19:27 +0800
+Message-Id: <1405059585-10620-4-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1405059585-10620-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1405059585-10620-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Gleb, Marcelo, Nadav,
+Introduce domain_type_is_vm() and domain_type_is_vm_or_si() to improve
+code readability.
 
-Would you please help to review these patches ?
+Also kill useless macro DOMAIN_FLAG_P2P_MULTIPLE_DEVICES.
 
-Thanks. :)
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ drivers/iommu/intel-iommu.c |   59 +++++++++++++++++++------------------------
+ 1 file changed, 26 insertions(+), 33 deletions(-)
 
-On 07/08/2014 09:01 PM, Tang Chen wrote:
-> ept identity pagetable and apic access page in kvm are pinned in memory.
-> As a result, they cannot be migrated/hot-removed.
->
-> But actually they don't need to be pinned in memory.
->
-> [For ept identity page]
-> Just do not pin it. When it is migrated, guest will be able to find the
-> new page in the next ept violation.
->
-> [For apic access page]
-> The hpa of apic access page is stored in VMCS APIC_ACCESS_ADDR pointer.
-> When apic access page is migrated, we update VMCS APIC_ACCESS_ADDR pointer
-> for each vcpu in addition.
->
-> Change log v1 ->  v2:
-> 1. Add [PATCH 4/5] to remove unnecessary kvm_arch->ept_identity_pagetable.
-> 2. In [PATCH 3/5], only introduce KVM_REQ_APIC_PAGE_RELOAD request.
-> 3. In [PATCH 3/5], add set_apic_access_page_addr() for svm.
->
->
-> Tang Chen (5):
->    kvm: Add gfn_to_page_no_pin() to translate gfn to page without
->      pinning.
->    kvm: Use APIC_DEFAULT_PHYS_BASE macro as the apic access page address.
->    kvm, mem-hotplug: Do not pin ept identity pagetable in memory.
->    kvm: Remove ept_identity_pagetable from struct kvm_arch.
->    kvm, mem-hotplug: Do not pin apic access page in memory.
->
->   arch/x86/include/asm/kvm_host.h |  2 +-
->   arch/x86/kvm/mmu.c              | 11 +++++++++++
->   arch/x86/kvm/svm.c              |  9 ++++++++-
->   arch/x86/kvm/vmx.c              | 40 ++++++++++++++++++++++------------------
->   arch/x86/kvm/x86.c              | 16 ++++++++++++++--
->   include/linux/kvm_host.h        |  3 +++
->   virt/kvm/kvm_main.c             | 29 ++++++++++++++++++++++++++++-
->   7 files changed, 87 insertions(+), 23 deletions(-)
->
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index d77009bdade5..52250b3e58d1 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -320,16 +320,13 @@ static inline int first_pte_in_page(struct dma_pte *pte)
+ static struct dmar_domain *si_domain;
+ static int hw_pass_through = 1;
+ 
+-/* devices under the same p2p bridge are owned in one domain */
+-#define DOMAIN_FLAG_P2P_MULTIPLE_DEVICES (1 << 0)
+-
+ /* domain represents a virtual machine, more than one devices
+  * across iommus may be owned in one domain, e.g. kvm guest.
+  */
+-#define DOMAIN_FLAG_VIRTUAL_MACHINE	(1 << 1)
++#define DOMAIN_FLAG_VIRTUAL_MACHINE	(1 << 0)
+ 
+ /* si_domain contains mulitple devices */
+-#define DOMAIN_FLAG_STATIC_IDENTITY	(1 << 2)
++#define DOMAIN_FLAG_STATIC_IDENTITY	(1 << 1)
+ 
+ /* define the limit of IOMMUs supported in each domain */
+ #ifdef	CONFIG_X86
+@@ -539,6 +536,16 @@ void free_iova_mem(struct iova *iova)
+ 	kmem_cache_free(iommu_iova_cache, iova);
+ }
+ 
++static inline int domain_type_is_vm(struct dmar_domain *domain)
++{
++	return domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE;
++}
++
++static inline int domain_type_is_vm_or_si(struct dmar_domain *domain)
++{
++	return domain->flags & (DOMAIN_FLAG_VIRTUAL_MACHINE |
++				DOMAIN_FLAG_STATIC_IDENTITY);
++}
+ 
+ static int __iommu_calculate_agaw(struct intel_iommu *iommu, int max_gaw)
+ {
+@@ -579,9 +586,7 @@ static struct intel_iommu *domain_get_iommu(struct dmar_domain *domain)
+ 	int iommu_id;
+ 
+ 	/* si_domain and vm domain should not get here. */
+-	BUG_ON(domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE);
+-	BUG_ON(domain->flags & DOMAIN_FLAG_STATIC_IDENTITY);
+-
++	BUG_ON(domain_type_is_vm_or_si(domain));
+ 	iommu_id = find_first_bit(domain->iommu_bmp, g_num_of_iommus);
+ 	if (iommu_id < 0 || iommu_id >= g_num_of_iommus)
+ 		return NULL;
+@@ -1497,7 +1502,7 @@ static void free_dmar_iommu(struct intel_iommu *iommu)
+ 	free_context_table(iommu);
+ }
+ 
+-static struct dmar_domain *alloc_domain(bool vm)
++static struct dmar_domain *alloc_domain(int flags)
+ {
+ 	/* domain id for virtual machine, it won't be set in context */
+ 	static atomic_t vm_domid = ATOMIC_INIT(0);
+@@ -1507,16 +1512,13 @@ static struct dmar_domain *alloc_domain(bool vm)
+ 	if (!domain)
+ 		return NULL;
+ 
++	memset(domain, 0, sizeof(*domain));
+ 	domain->nid = -1;
+-	domain->iommu_count = 0;
+-	memset(domain->iommu_bmp, 0, sizeof(domain->iommu_bmp));
+-	domain->flags = 0;
++	domain->flags = flags;
+ 	spin_lock_init(&domain->iommu_lock);
+ 	INIT_LIST_HEAD(&domain->devices);
+-	if (vm) {
++	if (flags & DOMAIN_FLAG_VIRTUAL_MACHINE)
+ 		domain->id = atomic_inc_return(&vm_domid);
+-		domain->flags = DOMAIN_FLAG_VIRTUAL_MACHINE;
+-	}
+ 
+ 	return domain;
+ }
+@@ -1704,7 +1706,7 @@ static void domain_exit(struct dmar_domain *domain)
+ 	/* clear attached or cached domains */
+ 	rcu_read_lock();
+ 	for_each_active_iommu(iommu, drhd)
+-		if (domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE ||
++		if (domain_type_is_vm(domain) ||
+ 		    test_bit(iommu->seq_id, domain->iommu_bmp))
+ 			iommu_detach_domain(domain, iommu);
+ 	rcu_read_unlock();
+@@ -1746,8 +1748,7 @@ static int domain_context_mapping_one(struct dmar_domain *domain,
+ 	id = domain->id;
+ 	pgd = domain->pgd;
+ 
+-	if (domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE ||
+-	    domain->flags & DOMAIN_FLAG_STATIC_IDENTITY) {
++	if (domain_type_is_vm_or_si(domain)) {
+ 		int found = 0;
+ 
+ 		/* find an available domain id for this device in iommu */
+@@ -2094,7 +2095,7 @@ static void domain_remove_dev_info(struct dmar_domain *domain)
+ 		iommu_disable_dev_iotlb(info);
+ 		iommu_detach_dev(info->iommu, info->bus, info->devfn);
+ 
+-		if (domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE) {
++		if (domain_type_is_vm(domain)) {
+ 			iommu_detach_dependent_devices(info->iommu, info->dev);
+ 			/* clear this iommu in iommu_bmp, update iommu count
+ 			 * and capabilities
+@@ -2160,8 +2161,6 @@ static struct dmar_domain *dmar_insert_dev_info(struct intel_iommu *iommu,
+ 	info->dev = dev;
+ 	info->domain = domain;
+ 	info->iommu = iommu;
+-	if (!dev)
+-		domain->flags |= DOMAIN_FLAG_P2P_MULTIPLE_DEVICES;
+ 
+ 	spin_lock_irqsave(&device_domain_lock, flags);
+ 	if (dev)
+@@ -2233,7 +2232,7 @@ static struct dmar_domain *get_domain_for_dev(struct device *dev, int gaw)
+ 	}
+ 
+ 	/* Allocate and initialize new domain for the device */
+-	domain = alloc_domain(false);
++	domain = alloc_domain(0);
+ 	if (!domain)
+ 		return NULL;
+ 
+@@ -2408,12 +2407,10 @@ static int __init si_domain_init(int hw)
+ 	struct intel_iommu *iommu;
+ 	int nid, ret = 0;
+ 
+-	si_domain = alloc_domain(false);
++	si_domain = alloc_domain(DOMAIN_FLAG_STATIC_IDENTITY);
+ 	if (!si_domain)
+ 		return -EFAULT;
+ 
+-	si_domain->flags = DOMAIN_FLAG_STATIC_IDENTITY;
+-
+ 	for_each_active_iommu(iommu, drhd) {
+ 		ret = iommu_attach_domain(si_domain, iommu);
+ 		if (ret) {
+@@ -3860,9 +3857,7 @@ static int device_notifier(struct notifier_block *nb,
+ 
+ 	down_read(&dmar_global_lock);
+ 	domain_remove_one_dev_info(domain, dev);
+-	if (!(domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE) &&
+-	    !(domain->flags & DOMAIN_FLAG_STATIC_IDENTITY) &&
+-	    list_empty(&domain->devices))
++	if (!domain_type_is_vm_or_si(domain) && list_empty(&domain->devices))
+ 		domain_exit(domain);
+ 	up_read(&dmar_global_lock);
+ 
+@@ -4167,8 +4162,7 @@ static void domain_remove_one_dev_info(struct dmar_domain *domain,
+ 		domain_update_iommu_cap(domain);
+ 		spin_unlock_irqrestore(&domain->iommu_lock, tmp_flags);
+ 
+-		if (!(domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE) &&
+-		    !(domain->flags & DOMAIN_FLAG_STATIC_IDENTITY)) {
++		if (!domain_type_is_vm_or_si(domain)) {
+ 			spin_lock_irqsave(&iommu->lock, tmp_flags);
+ 			clear_bit(domain->id, iommu->domain_ids);
+ 			iommu->domains[domain->id] = NULL;
+@@ -4206,7 +4200,7 @@ static int intel_iommu_domain_init(struct iommu_domain *domain)
+ {
+ 	struct dmar_domain *dmar_domain;
+ 
+-	dmar_domain = alloc_domain(true);
++	dmar_domain = alloc_domain(DOMAIN_FLAG_VIRTUAL_MACHINE);
+ 	if (!dmar_domain) {
+ 		printk(KERN_ERR
+ 			"intel_iommu_domain_init: dmar_domain == NULL\n");
+@@ -4250,8 +4244,7 @@ static int intel_iommu_attach_device(struct iommu_domain *domain,
+ 
+ 		old_domain = find_domain(dev);
+ 		if (old_domain) {
+-			if (dmar_domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE ||
+-			    dmar_domain->flags & DOMAIN_FLAG_STATIC_IDENTITY)
++			if (domain_type_is_vm_or_si(dmar_domain))
+ 				domain_remove_one_dev_info(old_domain, dev);
+ 			else
+ 				domain_remove_dev_info(old_domain);
+-- 
+1.7.10.4
+
