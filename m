@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754427AbaGKPJh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 11:09:37 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:42323 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644AbaGKPJf (ORCPT
+	id S1754039AbaGKPLs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 11:11:48 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:15554 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752688AbaGKPLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 11:09:35 -0400
-Date: Fri, 11 Jul 2014 17:09:22 +0200
-From: Simon Horman <horms@verge.net.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 10/13] [RFC] ARM: dts: Add shmobile platform device tree
- bindings documentation
-Message-ID: <20140711150921.GA1777@verge.net.au>
-References: <1404908623-909-1-git-send-email-geert+renesas@glider.be>
- <1404908623-909-11-git-send-email-geert+renesas@glider.be>
- <20140711091720.GO12420@verge.net.au>
- <CAMuHMdXP6GfO7OEnXU8x4Sn5j8_tA2nnrFANr1sriB-B4BYoOQ@mail.gmail.com>
+	Fri, 11 Jul 2014 11:11:45 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 11 Jul 2014 08:04:37 -0700
+Message-ID: <53BFFEAD.7000405@nvidia.com>
+Date: Fri, 11 Jul 2014 18:11:41 +0300
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdXP6GfO7OEnXU8x4Sn5j8_tA2nnrFANr1sriB-B4BYoOQ@mail.gmail.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Viresh Kumar <viresh.kumar@linaro.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 12/13] cpufreq: Add cpufreq driver for Tegra124
+References: <1405028569-14253-1-git-send-email-ttynkkynen@nvidia.com> <1405028569-14253-13-git-send-email-ttynkkynen@nvidia.com> <CAKohpom9ORXFiUU4=V+CxgN0ZOFLMEhEjHiU8HsYUYDybNXgHQ@mail.gmail.com> <20140711091207.GY23218@tbergstrom-lnx.Nvidia.com> <20140711145735.GB6523@ulmo>
+In-Reply-To: <20140711145735.GB6523@ulmo>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 04:26:03PM +0200, Geert Uytterhoeven wrote:
-> Hi Simon,
-> 
-> On Fri, Jul 11, 2014 at 11:17 AM, Simon Horman <horms@verge.net.au> wrote:
-> > On Wed, Jul 09, 2014 at 02:23:40PM +0200, Geert Uytterhoeven wrote:
-> >> Add Renesas SH-Mobile, R-Mobile, and R-Car Platform Device Tree Bindings
-> >> Documentation, listing supported SoCs and boards.
-> >>
-> >> This allows to use checkpatch to validate DTSes referring to Renesas
-> >> shmobile SoCs, and boards containing those SoCs.
-> >>
-> >> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-> >> Cc: linux-arm-kernel@lists.infradead.org
-> >
-> > Thanks Geert,
-> >
-> > from my point of view this seems nice. Is there a reason it is marked as an RFC?
-> 
-> >From the cover letter:
-> 
-> "The last 4 patches contain compatible strings for new R-Car Gen2 SoCs,
->  which are not yet in active use, hence the RFC status."
+On 11/07/14 17:57, Thierry Reding wrote:
 
-Thanks, sorry for missing that.
+>> I don't think that's going to work? The voltage scaling is handled in hw.
+>
+> Do we have to handle it in hardware or can we opt to do it in software,
+> too?
+>
+
+With the PLLX, voltage scaling is done entirely in SW. With the DFLL,
+it's possible to stay in open-loop mode and do it in SW, but there's
+not much point in that.
+
+-- 
+nvpublic
