@@ -1,124 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754501AbaGKOJg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 10:09:36 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:59423 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753857AbaGKOFI (ORCPT
+	id S1754767AbaGKOFB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 10:05:01 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:29322 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753718AbaGKOE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 10:05:08 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-95-53bfef12ab88
+	Fri, 11 Jul 2014 10:04:56 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-05-53bfef068541
 From: Jacek Anaszewski <j.anaszewski@samsung.com>
 To: linux-leds@vger.kernel.org, devicetree@vger.kernel.org,
         linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
         Jacek Anaszewski <j.anaszewski@samsung.com>,
-        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>
-Subject: [PATCH/RFC v4 10/21] Documentation: leds: add exemplary asynchronous
- mux driver
-Date: Fri, 11 Jul 2014 16:04:13 +0200
-Message-id: <1405087464-13762-11-git-send-email-j.anaszewski@samsung.com>
+        Grant Likely <grant.likely@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michal Simek <monstr@monstr.eu>
+Subject: [PATCH/RFC v4 07/21] of: add of_node_ncmp wrapper
+Date: Fri, 11 Jul 2014 16:04:10 +0200
+Message-id: <1405087464-13762-8-git-send-email-j.anaszewski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
 References: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBLMWRmVeSWpSXmKPExsVy+t9jQV2h9/uDDTbs5bPYOGM9q8XRnROZ
-	LOYfOcdq0Xv1OaPF2aY37BaXd81hs9j6Zh2jRc+GrawWu3c9ZXXg9Ng56y67x575P1g9+ras
-	YvT4vEkugCWKyyYlNSezLLVI3y6BK6N1y1XmgifCFT9PH2ZrYHwh0MXIySEhYCKx8vwcFghb
-	TOLCvfVsXYxcHEIC0xklvvWvZ4dw2pkkHu28xQxSxSZgKPHzxWsmEFtEoFyi5/0zsA5mgdWM
-	Ene2fmUFSQgLREnM6wLp5uRgEVCVaNxyHaiZg4NXwFPi5hYpEFNCQEFiziQbkApOoOjB/pts
-	ILaQgIfEw7Un2Ccw8i5gZFjFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJERxez6R2MK5ssDjE
-	KMDBqMTDq7B+X7AQa2JZcWXuIUYJDmYlEd6rb/YHC/GmJFZWpRblxxeV5qQWH2KU5mBREuc9
-	0GodKCSQnliSmp2aWpBaBJNl4uCUamAs0wjk1TCZdKBVltfhTeCRFWv+Fq448b9gq2Ge6+7j
-	uSemsmhqXNb4asPeEeKzJXeuqTZrz43apOjFBybscO/W8b1y6EuJ6LoGNY17EmVHeTd+vnFy
-	nseUvk//lb/253RM2ZT/UcVhwb8KPe1qi/JEFqdnM7QX3nvnWnmdZeKp8CcSLX0qwexKLMUZ
-	iYZazEXFiQDoSdZzKwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMLMWRmVeSWpSXmKPExsVy+t9jQV329/uDDabfYrHYOGM9q8WHplZm
+	i/lHzrFaHPizg9Gi9+pzRouzTW/YLS7vmsNmsfXNOkaLng1bWS2efDzN4sDl0fOmhdXjzrU9
+	bB5/u6Ywe/RtWcXo8XmTXABrFJdNSmpOZllqkb5dAlfGj55dzAVT2Cu+3FzN3MDYwtbFyMkh
+	IWAiceDZf1YIW0ziwr31QHEuDiGB6YwS948vY4Jw2pkkNm3dxQRSxSZgKPHzxWswW0SgXKLn
+	/TOwDmaBF4wSO5vXMYIkhAWsJA6caQEbyyKgKnFuwQJ2EJtXwENi/oJFLF2MHEDrFCTmTLIB
+	CXMKeEoc7L8JdpEQUMnDtSfYJzDyLmBkWMUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHHTP
+	pHcwrmqwOMQowMGoxMN7Ys2+YCHWxLLiytxDjBIczEoivFff7A8W4k1JrKxKLcqPLyrNSS0+
+	xCjNwaIkznuw1TpQSCA9sSQ1OzW1ILUIJsvEwSnVwOja96nu1ecbzteYWj7ctDtfM+/BF7W3
+	hjWXt+z5WDOb2XRmwcYNB7lvlJ/hMrpV6lm5cLaYq+wRi8NcQk8iF1fqPX+rmHrqv/GvzzMP
+	yqxhOcPUdeLaszjjqkca926xB39Um5npba69KU6r58zjc3U3hC69cK0qOua649k+a94yI7mU
+	qWoFMrVKLMUZiYZazEXFiQDQ+pfdNgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Exemplary driver showing usage of the Flash Manager API
-for registering/unregistering asynchronous multiplexers
+The wrapper for strnicmp is required for checking whether a node has
+expected prefix.
 
 Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Bryan Wu <cooloney@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Michal Simek <monstr@monstr.eu>
 ---
- Documentation/leds/leds-async-mux.c |   65 +++++++++++++++++++++++++++++++++++
- 1 file changed, 65 insertions(+)
- create mode 100644 Documentation/leds/leds-async-mux.c
+ include/linux/of.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/Documentation/leds/leds-async-mux.c b/Documentation/leds/leds-async-mux.c
-new file mode 100644
-index 0000000..ee35d2f
---- /dev/null
-+++ b/Documentation/leds/leds-async-mux.c
-@@ -0,0 +1,65 @@
-+/*
-+ * Exemplary driver showing usage of the Flash Manager API
-+ * for registering/unregistering asynchronous multiplexers.
-+ *
-+ *	Copyright (C) 2014, Samsung Electronics Co., Ltd.
-+ *	Author: Jacek Anaszewski <j.anaszewski@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2 as published by the Free Software Foundation.
-+ */
-+
-+#include <linux/platform_device.h>
-+#include <linux/module.h>
-+#include <linux/led-class-flash.h>
-+#include <linux/led-flash-manager.h>
-+#include <linux/leds.h>
-+#include <linux/of.h>
-+
-+static int led_async_mux_select_line(u32 line_id, void *mux)
-+{
-+	pr_info("led_async_mux_select_line line_id: %d\n", line_id);
-+	return 0;
-+}
-+
-+struct led_flash_mux_ops mux_ops = {
-+	.select_line = led_async_mux_select_line,
-+};
-+
-+static int led_async_mux_probe(struct platform_device *pdev)
-+{
-+	struct led_flash_mux mux;
-+
-+	mux.ops = &mux_ops;
-+	mux.owner = THIS_MODULE;
-+	mux.node = pdev->dev->of_node;
-+
-+	return led_flash_manager_bind_async_mux(&mux);
-+}
-+
-+static int led_async_mux_remove(struct platform_device *pdev)
-+{
-+	return led_flash_manager_unbind_async_mux(pdev->dev->of_node);
-+}
-+
-+static struct of_device_id led_async_mux_dt_match[] = {
-+	{.compatible = "led-async-mux"},
-+	{},
-+};
-+
-+static struct platform_driver led_async_mux_driver = {
-+	.probe		= led_async_mux_probe,
-+	.remove		= led_async_mux_remove,
-+	.driver		= {
-+		.name		= "led-async-mux",
-+		.owner		= THIS_MODULE,
-+		.of_match_table = led_async_mux_dt_match,
-+	},
-+};
-+
-+module_platform_driver(led_async_mux_driver);
-+
-+MODULE_AUTHOR("Jacek Anaszewski <j.anaszewski@samsung.com>");
-+MODULE_DESCRIPTION("LED async mux");
-+MODULE_LICENSE("GPL");
+diff --git a/include/linux/of.h b/include/linux/of.h
+index 692b56c..9a53eea 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -199,6 +199,7 @@ static inline unsigned long of_read_ulong(const __be32 *cell, int size)
+ #define of_compat_cmp(s1, s2, l)	strcasecmp((s1), (s2))
+ #define of_prop_cmp(s1, s2)		strcmp((s1), (s2))
+ #define of_node_cmp(s1, s2)		strcasecmp((s1), (s2))
++#define of_node_ncmp(s1, s2, n)		strnicmp((s1), (s2), (n))
+ #endif
+ 
+ /* flag descriptions */
 -- 
 1.7.9.5
 
