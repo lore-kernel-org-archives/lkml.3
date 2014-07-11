@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382AbaGKUMp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 16:12:45 -0400
-Received: from casper.infradead.org ([85.118.1.10]:42639 "EHLO
+	id S1755398AbaGKUPR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 16:15:17 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42663 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755138AbaGKUMo (ORCPT
+	with ESMTP id S1754839AbaGKUPN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 16:12:44 -0400
-Date: Fri, 11 Jul 2014 22:12:38 +0200
+	Fri, 11 Jul 2014 16:15:13 -0400
+Date: Fri, 11 Jul 2014 22:15:07 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>
-Subject: Re: [PATCH v3 09/12] Revert "sched: Put rq's sched_avg under
- CONFIG_FAIR_GROUP_SCHED"
-Message-ID: <20140711201238.GY20603@laptop.programming.kicks-ass.net>
-References: <1404144343-18720-1-git-send-email-vincent.guittot@linaro.org>
- <1404144343-18720-10-git-send-email-vincent.guittot@linaro.org>
- <20140710131646.GB3935@laptop>
- <CAKfTPtDzxyrzVmX016VB8j_y19wcCBVB1Rj46FYngMA+Ajft6g@mail.gmail.com>
- <20140711151304.GD3935@laptop>
- <CAKfTPtCL6mta75k9eoK724wCm7S3w7E+psa1XDrxhN1YVDONPw@mail.gmail.com>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, oleg@redhat.com,
+        sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 11/17] rcu: Bind grace-period kthreads to
+ non-NO_HZ_FULL CPUs
+Message-ID: <20140711201507.GZ20603@laptop.programming.kicks-ass.net>
+References: <20140707223756.GA7187@linux.vnet.ibm.com>
+ <1404772701-8804-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1404772701-8804-11-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140708152358.GF6571@localhost.localdomain>
+ <20140708154723.GN4603@linux.vnet.ibm.com>
+ <20140708183846.GJ6571@localhost.localdomain>
+ <alpine.DEB.2.11.1407111309150.4777@gentwo.org>
+ <20140711182541.GF26045@localhost.localdomain>
+ <alpine.DEB.2.11.1407111403090.5070@gentwo.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKfTPtCL6mta75k9eoK724wCm7S3w7E+psa1XDrxhN1YVDONPw@mail.gmail.com>
+In-Reply-To: <alpine.DEB.2.11.1407111403090.5070@gentwo.org>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 07:39:29PM +0200, Vincent Guittot wrote:
-> In my mind, arch_scale_cpu_freq was intend to scale the capacity of
-> the CPU according to the current dvfs operating point.
-> As it's no more use anywhere now that we have arch_scale_cpu, we could
-> probably remove it .. and see when it will become used.
+On Fri, Jul 11, 2014 at 02:05:08PM -0500, Christoph Lameter wrote:
+> The use case is pretty straightforward because we are trying to keep as
+> much OS noise as possible off most processors. Processor 0 is the
+> sacrificial lamb that will be used for all OS processing and hopefully all
+> high latency operations will occur there. Processors 1-X have a tick but
+> we still try to keep latencies sane. And then there is X-Y where tick is
+> off.
 
-I probably should have written comments when I wrote that code, but it
-was meant to be used only where, as described above, we limit things.
-Ondemand and such, which will temporarily decrease freq, will ramp it up
-again at demand, and therefore lowering the capacity will skew things.
-
-You'll put less load on because its run slower, and then you'll run it
-slower because there's less load on -> cyclic FAIL.
-
-> > In that same discussion ISTR a suggestion about adding avg_running time,
-> > as opposed to the current avg_runnable. The sum of avg_running should be
-> > much more accurate, and still react correctly to migrations.
-> 
-> I haven't look in details but I agree that avg_running would be much
-> more accurate than avg_runnable and should probably fit the
-> requirement. Does it means that we could re-add the avg_running (or
-> something similar) that has disappeared during the review of load avg
-> tracking patchset ?
-
-Sure, I think we killed it there because there wasn't an actual use for
-it and I'm always in favour of stripping everything to their bare bones,
-esp big and complex things.
-
-And then later, add things back once we have need for it.
+So the problem is -- and this isn't too hard to create -- when we
+saturate/overload cpu0 with just the housekeeping. At that point it
+would be good if we could scale and use multiple housekeepers.
