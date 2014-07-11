@@ -1,314 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166AbaGKUzT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 16:55:19 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:56271 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088AbaGKUzP (ORCPT
+	id S1752449AbaGKVAT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 17:00:19 -0400
+Received: from g5t1625.atlanta.hp.com ([15.192.137.8]:49653 "EHLO
+	g5t1625.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191AbaGKVAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 16:55:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <1404487757-18829-1-git-send-email-thierry.reding@gmail.com>
-References: <1404487757-18829-1-git-send-email-thierry.reding@gmail.com>
-Date: Fri, 11 Jul 2014 16:55:14 -0400
-Message-ID: <CAF6AEGv2P_Uq8CHgm1YdaUeMSNdH62ZwjLnT83Fr5GnxEAhTMw@mail.gmail.com>
-Subject: Re: [PATCH v4] devicetree: Add generic IOMMU device tree bindings
-From: Rob Clark <robdclark@gmail.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
-        Will Deacon <will.deacon@arm.com>, Joerg Roedel <joro@8bytes.org>,
-        Olav Haugan <ohaugan@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grant Grundler <grundler@chromium.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Varun Sethi <varun.sethi@freescale.com>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Dave Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 11 Jul 2014 17:00:16 -0400
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: a.p.zijlstra@chello.nl
+Cc: mingo@kernel.org, jason.low2@hp.com, davidlohr@hp.com, aswin@hp.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH peterz-queue:locking/core 2/2] locking/rwsem: Add CONFIG_RWSEM_SPIN_ON_OWNER
+Date: Fri, 11 Jul 2014 14:00:06 -0700
+Message-Id: <1405112406-13052-2-git-send-email-davidlohr@hp.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1405112406-13052-1-git-send-email-davidlohr@hp.com>
+References: <1405112406-13052-1-git-send-email-davidlohr@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 4, 2014 at 11:29 AM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
-> From: Thierry Reding <treding@nvidia.com>
->
-> This commit introduces a generic device tree binding for IOMMU devices.
-> Only a very minimal subset is described here, but it is enough to cover
-> the requirements of both the Exynos System MMU and Tegra SMMU as
-> discussed here:
->
->     https://lkml.org/lkml/2014/4/27/346
->
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
-> ---
-> Changes in v4:
-> - clarify that disabling an IOMMU DT node may not disable translation
-> - be more explicit that examples are only examples
-> - add multi-ID master example
->
-> Changes in v3:
-> - use #iommu-cells instead of #address-cells/#size-cells
-> - drop optional iommu-names property
->
-> Changes in v2:
-> - add notes about "dma-ranges" property (drop note from commit message)
-> - document priorities of "iommus" property vs. "dma-ranges" property
-> - drop #iommu-cells in favour of #address-cells and #size-cells
-> - remove multiple-master device example
->
->  Documentation/devicetree/bindings/iommu/iommu.txt | 172 ++++++++++++++++++++++
->  1 file changed, 172 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/iommu/iommu.txt
->
-> diff --git a/Documentation/devicetree/bindings/iommu/iommu.txt b/Documentation/devicetree/bindings/iommu/iommu.txt
-> new file mode 100644
-> index 000000000000..464a81eaaf61
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/iommu/iommu.txt
-> @@ -0,0 +1,172 @@
-> +This document describes the generic device tree binding for IOMMUs and their
-> +master(s).
-> +
-> +
-> +IOMMU device node:
-> +==================
-> +
-> +An IOMMU can provide the following services:
-> +
-> +* Remap address space to allow devices to access physical memory ranges that
-> +  they otherwise wouldn't be capable of accessing.
-> +
-> +  Example: 32-bit DMA to 64-bit physical addresses
-> +
-> +* Implement scatter-gather at page level granularity so that the device does
-> +  not have to.
-> +
-> +* Provide system protection against "rogue" DMA by forcing all accesses to go
-> +  through the IOMMU and faulting when encountering accesses to unmapped
-> +  address regions.
-> +
-> +* Provide address space isolation between multiple contexts.
-> +
-> +  Example: Virtualization
-> +
-> +Device nodes compatible with this binding represent hardware with some of the
-> +above capabilities.
-> +
-> +IOMMUs can be single-master or multiple-master. Single-master IOMMU devices
-> +typically have a fixed association to the master device, whereas multiple-
-> +master IOMMU devices can translate accesses from more than one master.
-> +
-> +The device tree node of the IOMMU device's parent bus must contain a valid
-> +"dma-ranges" property that describes how the physical address space of the
-> +IOMMU maps to memory. An empty "dma-ranges" property means that there is a
-> +1:1 mapping from IOMMU to memory.
-> +
-> +Required properties:
-> +--------------------
-> +- #iommu-cells: The number of cells in an IOMMU specifier needed to encode an
-> +  address.
-> +
-> +The meaning of the IOMMU specifier is defined by the device tree binding of
-> +the specific IOMMU. Below are a few examples of typical use-cases:
-> +
-> +- #iommu-cells = <0>: Single master IOMMU devices are not configurable and
-> +  therefore no additional information needs to be encoded in the specifier.
-> +  This may also apply to multiple master IOMMU devices that do not allow the
-> +  association of masters to be configured. Note that an IOMMU can by design
-> +  be multi-master yet only expose a single master in a given configuration.
-> +  In such cases the number of cells will usually be 1 as in the next case.
-> +- #iommu-cells = <1>: Multiple master IOMMU devices may need to be configured
-> +  in order to enable translation for a given master. In such cases the single
-> +  address cell corresponds to the master device's ID. In some cases more than
-> +  one cell can be required to represent a single master ID.
-> +- #iommu-cells = <4>: Some IOMMU devices allow the DMA window for masters to
-> +  be configured. The first cell of the address in this may contain the master
-> +  device's ID for example, while the second cell could contain the start of
-> +  the DMA window for the given device. The length of the DMA window is given
-> +  by the third and fourth cells.
-> +
-> +Note that these are merely examples and real-world use-cases may use different
-> +definitions to represent their individual needs. Always refer to the specific
-> +IOMMU binding for the exact meaning of the cells that make up the specifier.
-> +
-> +
-> +IOMMU master node:
-> +==================
-> +
-> +Devices that access memory through an IOMMU are called masters. A device can
-> +have multiple master interfaces (to one or more IOMMU devices).
-> +
-> +Required properties:
-> +--------------------
-> +- iommus: A list of phandle and IOMMU specifier pairs that describe the IOMMU
-> +  master interfaces of the device. One entry in the list describes one master
-> +  interface of the device.
-> +
-> +When an "iommus" property is specified in a device tree node, the IOMMU will
-> +be used for address translation. If a "dma-ranges" property exists in the
-> +device's parent node it will be ignored. An exception to this rule is if the
-> +referenced IOMMU is disabled, in which case the "dma-ranges" property of the
-> +parent shall take effect. Note that merely disabling a device tree node does
-> +not guarantee that the IOMMU is really disabled since the hardware may not
-> +have a means to turn off translation.
-> +
-> +
-> +Notes:
-> +======
-> +
-> +One possible extension to the above is to use an "iommus" property along with
-> +a "dma-ranges" property in a bus device node (such as PCI host bridges). This
-> +can be useful to describe how children on the bus relate to the IOMMU if they
-> +are not explicitly listed in the device tree (e.g. PCI devices). However, the
-> +requirements of that use-case haven't been fully determined yet. Implementing
-> +this is therefore not recommended without further discussion and extension of
-> +this binding.
-> +
-> +
-> +Examples:
-> +=========
-> +
-> +Single-master IOMMU:
-> +--------------------
-> +
-> +       iommu {
-> +               #iommu-cells = <0>;
-> +       };
-> +
-> +       master {
-> +               iommus = <&/iommu>;
-> +       };
-> +
-> +Multiple-master IOMMU with fixed associations:
-> +----------------------------------------------
-> +
-> +       /* multiple-master IOMMU */
-> +       iommu {
-> +               /*
-> +                * Masters are statically associated with this IOMMU and
-> +                * address translation is always enabled.
-> +                */
-> +               #iommu-cells = <0>;
-> +       };
-> +
-> +       /* static association with IOMMU */
-> +       master@1 {
-> +               reg = <1>;
-> +               iommus = <&/iommu>;
-> +       };
-> +
-> +       /* static association with IOMMU */
-> +       master@2 {
-> +               reg = <2>;
-> +               iommus = <&/iommu>;
-> +       };
-> +
-> +Multiple-master IOMMU:
-> +----------------------
-> +
-> +       iommu {
-> +               /* the specifier represents the ID of the master */
-> +               #iommu-cells = <1>;
-> +       };
-> +
-> +       master@1 {
-> +               /* device has master ID 42 in the IOMMU */
-> +               iommus = <&/iommu 42>;
-> +       };
-> +
-> +       master@2 {
-> +               /* device has master IDs 23 and 24 in the IOMMU */
-> +               iommus = <&/iommu 23>, <&/iommu 24>;
-> +       };
-> +
-> +Multiple-master IOMMU with configurable DMA window:
-> +---------------------------------------------------
-> +
-> +       / {
-> +               #address-cells = <1>;
-> +               #size-cells = <1>;
-> +
-> +               iommu {
-> +                       /* master ID, address and length of DMA window */
-> +                       #iommu-cells = <4>;
-> +               };
-> +
-> +               master {
-> +                       /* master ID 42, 4 GiB DMA window starting at 0 */
-> +                       iommus = <&/iommu  42  0  0x1 0x0>;
-> +               };
-> +       };
+Just like with mutexes (CONFIG_MUTEX_SPIN_ON_OWNER),
+encapsulate the dependencies for rwsem optimistic spinning.
+No logical changes here as it continues to depend on both
+SMP and the XADD algorithm variant.
 
+Acked-by: Jason Low <jason.low2@hp.com>
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+---
+Based on previous discussion (https://lkml.org/lkml/2014/6/6/461):
+  rebased & included ifdefs around #include <linux/osq_lock.h>
 
-ok, so I was working through this to try to convert my
-{qcom,msm}-iommu-v0 RFC over to using these bindings.  For background,
-I was initially using something that looked a bit more like the
-current arm-smmu bindings:
+ include/linux/rwsem.h       | 6 ++++--
+ kernel/Kconfig.locks        | 4 ++++
+ kernel/locking/rwsem-xadd.c | 4 ++--
+ kernel/locking/rwsem.c      | 2 +-
+ 4 files changed, 11 insertions(+), 5 deletions(-)
 
-        gpu {
-            #stream-id-cells = <16>;
-            ...
-        };
+diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+index 5d40884..03dbec7 100644
+--- a/include/linux/rwsem.h
++++ b/include/linux/rwsem.h
+@@ -14,7 +14,9 @@
+ #include <linux/list.h>
+ #include <linux/spinlock.h>
+ #include <linux/atomic.h>
++#ifdef CONFIG_RWSEM_SPIN_ON_OWNER
+ #include <linux/osq_lock.h>
++#endif
+ 
+ struct rw_semaphore;
+ 
+@@ -26,7 +28,7 @@ struct rw_semaphore {
+ 	long count;
+ 	struct list_head wait_list;
+ 	raw_spinlock_t wait_lock;
+-#ifdef CONFIG_SMP
++#ifdef CONFIG_RWSEM_SPIN_ON_OWNER
+ 	struct optimistic_spin_queue osq; /* spinner MCS lock */
+ 	/*
+ 	 * Write owner. Used as a speculative check to see
+@@ -63,7 +65,7 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
+ # define __RWSEM_DEP_MAP_INIT(lockname)
+ #endif
+ 
+-#if defined(CONFIG_SMP) && !defined(CONFIG_RWSEM_GENERIC_SPINLOCK)
++#ifdef CONFIG_RWSEM_SPIN_ON_OWNER
+ #define __RWSEM_OPT_INIT(lockname)	, .owner = NULL, .osq = { ATOMIC_INIT(OSQ_UNLOCKED_VAL) }
+ #else
+ #define __RWSEM_OPT_INIT(lockname)
+diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
+index 35536d9..e4c3162 100644
+--- a/kernel/Kconfig.locks
++++ b/kernel/Kconfig.locks
+@@ -224,6 +224,10 @@ config MUTEX_SPIN_ON_OWNER
+ 	def_bool y
+ 	depends on SMP && !DEBUG_MUTEXES
+ 
++config RWSEM_SPIN_ON_OWNER
++       def_bool y
++       depends on SMP && RWSEM_XCHGADD_ALGORITHM
++
+ config ARCH_USE_QUEUE_RWLOCK
+ 	bool
+ 
+diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
+index a673bba..b3d0e9f 100644
+--- a/kernel/locking/rwsem-xadd.c
++++ b/kernel/locking/rwsem-xadd.c
+@@ -82,7 +82,7 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
+ 	sem->count = RWSEM_UNLOCKED_VALUE;
+ 	raw_spin_lock_init(&sem->wait_lock);
+ 	INIT_LIST_HEAD(&sem->wait_list);
+-#ifdef CONFIG_SMP
++#ifdef CONFIG_RWSEM_SPIN_ON_OWNER
+ 	sem->owner = NULL;
+ 	atomic_set(&sem->osq.tail, OSQ_UNLOCKED_VAL);
+ #endif
+@@ -262,7 +262,7 @@ static inline bool rwsem_try_write_lock(long count, struct rw_semaphore *sem)
+ 	return false;
+ }
+ 
+-#ifdef CONFIG_SMP
++#ifdef CONFIG_RWSEM_SPIN_ON_OWNER
+ /*
+  * Try to acquire write lock before the writer has been put on wait queue.
+  */
+diff --git a/kernel/locking/rwsem.c b/kernel/locking/rwsem.c
+index 42f806d..e2d3bc7 100644
+--- a/kernel/locking/rwsem.c
++++ b/kernel/locking/rwsem.c
+@@ -12,7 +12,7 @@
+ 
+ #include <linux/atomic.h>
+ 
+-#if defined(CONFIG_SMP) && defined(CONFIG_RWSEM_XCHGADD_ALGORITHM)
++#ifdef CONFIG_RWSEM_SPIN_ON_OWNER
+ static inline void rwsem_set_owner(struct rw_semaphore *sem)
+ {
+ 	sem->owner = current;
+-- 
+1.8.1.4
 
-        gfx3d: qcom,iommu@7c00000 {
-            compatible = "qcom,iommu-v0";
-            ...
-            mmu-masters =
-                /* gfx3d_user: */
-                <&gpu 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15>,
-                /* gfx3d_priv: */
-                <&gpu 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31>;
-        };
-
-        gfx3d1: qcom,iommu@7d00000 {
-            compatible = "qcom,iommu-v0";
-            ...
-            mmu-masters =
-                /* gfx3d_user: */
-                <&gpu 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15>,
-                /* gfx3d_priv: */
-                <&gpu 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31>;
-        };
-
-With my current arrangement, I have everything I need when the iommu
-device is probed to set up each of the context banks
-
-This proposal inverts that relationship.  Which forces me to do a lot
-more (including DT parsing) on device attach.  Which I'm not a huge
-fan of.  Ie. if I even wanted to try to implement per-process
-pagetables for gpu without completely going behind the IOMMU API's
-back, I would want attach/detach to be as lightweight as possible.
-
-Was there actually a good reason for having the device link to the
-iommu rather than the other way around?  How much would people hate it
-if I just ignore the generic bindings and use something that works for
-me instead.  I mean, it isn't exactly like there is going to be .dts
-re-use across different SoC's..  and at least with current IOMMU API
-some sort of of_get_named_iommu() API doesn't really make sense.
-
-Maybe I'm missing something, I kinda jumped into the discussion late.
-
-BR,
--R
-
-
-> --
-> 2.0.1
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
