@@ -1,52 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634AbaGKMA5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 08:00:57 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:33866 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404AbaGKMA4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 08:00:56 -0400
+	id S1753227AbaGKMBX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 08:01:23 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:58852 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752976AbaGKMBV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 08:01:21 -0400
+Message-ID: <53BFD1FF.20309@mev.co.uk>
+Date: Fri, 11 Jul 2014 13:01:03 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20140710223021.6e9c857f@gandalf.local.home>
-References: <20140710223021.6e9c857f@gandalf.local.home>
-Date: Fri, 11 Jul 2014 14:00:55 +0200
-Message-ID: <CACRpkdZM5NECaPbFC1aGH2zD4T_8g9TYRy1HkbDVAQvjJs5E5w@mail.gmail.com>
-Subject: Re: No uart output on my snowball board
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Content-Type: text/plain; charset=UTF-8
+To: Andrey Utkin <andrey.krieger.utkin@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>,
+        <devel@driverdev.osuosl.org>
+CC: <gregkh@linuxfoundation.org>, <hsweeten@visionengravers.com>,
+        <dcb314@hotmail.com>
+Subject: Re: [PATCH] drivers/staging/comedi/drivers/ni_atmio16d.c: remove
+ pointless condition
+References: <1405073603-21468-1-git-send-email-andrey.krieger.utkin@gmail.com>
+In-Reply-To: <1405073603-21468-1-git-send-email-andrey.krieger.utkin@gmail.com>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
+ (10.0.0.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 4:30 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> commit a0998b8321eb5f53ef51924f5ab6c69237ac1025
-> Author: Lee Jones <lee.jones@linaro.org>
-> Date:   Thu Aug 22 16:18:56 2013 +0100
+On 2014-07-11 11:13, Andrey Utkin wrote:
+> The issue was discovered with static analysis and has two instances in
+> this file. The code looks like this
+> if (x < 65536000) {
+> 	...
+> } else if (x < 655360000) {
+> 	...
+> } else if (x <= 0xffffffff /* 6553600000 */) {
+> 	...
+> } else if (x <= 0xffffffff /* 65536000000 */) {
+> 	...
+> }
 >
->     ARM: ux500: Remove UART support when booting without Device Tree
+> The meaning of this block is to select appropriate clock frequency for
+> interval timer basing on "x", which is amount of time.
 >
->     It's time to remove all ATAG support from ux500 and rely solely on
->     Device Tree booting. This patch is part of that endeavour.
+> Notes:
+> 1. That last condition matches previous one - that's the issue.
+> 2. Decimal numbers in comments don't match hex numbers in expressions.
+> But in first case the numbers have same order, while in the second case
+> the hex number is the same, and the decimal one is 10 times bigger.
+> 3. Actually type of "x" is "unsigned int", so its exact upper limit is
+> not obviously known.
+> 4. There's no "else" block.
 >
->     Signed-off-by: Lee Jones <lee.jones@linaro.org>
->     Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> So it makes sense to make an "else" block from last "else if" case. The
+> code inside the block seems correct for such usage.
+>
+> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=79871
+> Reported-by: David Binderman <dcb314@hotmail.com>
+> Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+> ---
+>   drivers/staging/comedi/drivers/ni_atmio16d.c | 4 ++--
+>   1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/staging/comedi/drivers/ni_atmio16d.c b/drivers/staging/comedi/drivers/ni_atmio16d.c
+> index 6ad27f5..895b56d 100644
+> --- a/drivers/staging/comedi/drivers/ni_atmio16d.c
+> +++ b/drivers/staging/comedi/drivers/ni_atmio16d.c
+> @@ -338,7 +338,7 @@ static int atmio16d_ai_cmd(struct comedi_device *dev,
+>   	} else if (cmd->convert_arg <= 0xffffffff /* 6553600000 */) {
+>   		base_clock = CLOCK_10_KHZ;
+>   		timer = cmd->convert_arg / 100000;
+> -	} else if (cmd->convert_arg <= 0xffffffff /* 65536000000 */) {
+> +	} else {
+>   		base_clock = CLOCK_1_KHZ;
+>   		timer = cmd->convert_arg / 1000000;
+>   	}
 
-I hate that I didn't spot the speling mistake in the subject,
-its ATAG support we're removing, not UART :-)
+Since 0xffffffff is the maximum value 'cmd->convert_arg' can be, the 
+final else can be moved to the 'base_clock = CLOCK_10_KHZ' block and the 
+'base_clock = CLOCK_1_KHZ' block can be removed altogether.
 
-Anyway, I think you got enough hints on how we do this
-with appended devicetrees instead, Lee's snippet should
-work or check out this page that I also posted to your
-G+ post:
-http://www.df.lth.se/~triad/krad/ux00/
+> @@ -406,7 +406,7 @@ static int atmio16d_ai_cmd(struct comedi_device *dev,
+>   		} else if (cmd->scan_begin_arg < 0xffffffff /* 6553600000 */) {
+>   			base_clock = CLOCK_10_KHZ;
+>   			timer = cmd->scan_begin_arg / 100000;
+> -		} else if (cmd->scan_begin_arg < 0xffffffff /* 65536000000 */) {
+> +		} else {
+>   			base_clock = CLOCK_1_KHZ;
+>   			timer = cmd->scan_begin_arg / 1000000;
+>   		}
+>
 
-Yours,
-Linus Walleij
+Same here as well for 'cmd->scan_begin_arg'.  (And I think the original 
+code should have used '<= 0xffffffff' rather than '< 0xffffffff'.)
+
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
