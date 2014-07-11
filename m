@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711AbaGKIZK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 04:25:10 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:49605 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751875AbaGKIZH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 04:25:07 -0400
-Date: Fri, 11 Jul 2014 10:25:00 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Hugh Dickins <hughd@google.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Vlastimil Babka <vbabka@suse.cz>, akpm@linux-foundation.org,
-        davej@redhat.com, koct9i@gmail.com, lczerner@redhat.com,
-        stable@vger.kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: + shmem-fix-faulting-into-a-hole-while-its-punched-take-2.patch
- added to -mm tree
-Message-ID: <20140711082500.GB20603@laptop.programming.kicks-ass.net>
-References: <53BD1053.5020401@suse.cz>
- <53BD39FC.7040205@oracle.com>
- <53BD67DC.9040700@oracle.com>
- <alpine.LSU.2.11.1407092358090.18131@eggly.anvils>
- <53BE8B1B.3000808@oracle.com>
- <53BECBA4.3010508@oracle.com>
- <alpine.LSU.2.11.1407101033280.18934@eggly.anvils>
- <53BED7F6.4090502@oracle.com>
- <alpine.LSU.2.11.1407101131310.19154@eggly.anvils>
- <53BEE345.4090203@oracle.com>
+	id S1752132AbaGKIZr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 04:25:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53858 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750776AbaGKIZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 04:25:44 -0400
+Date: Fri, 11 Jul 2014 10:25:12 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        ak@linux.intel.com, acme@redhat.com, namhyung@kernel.org
+Subject: Re: [PATCH 3/4] perf tools: add core support for sampling intr
+ machine state regs
+Message-ID: <20140711082512.GC31646@krava.redhat.com>
+References: <1404857759-25105-1-git-send-email-eranian@google.com>
+ <1404857759-25105-4-git-send-email-eranian@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53BEE345.4090203@oracle.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1404857759-25105-4-git-send-email-eranian@google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 03:02:29PM -0400, Sasha Levin wrote:
-> What if we move lockdep's acquisition point to after it actually got the
-> lock?
-
-NAK, you want to do deadlock detection _before_ you're stuck in a
-deadlock.
-
-> We'd miss deadlocks, but we don't care about them right now. Anyways, doesn't
-> lockdep have anything built in to allow us to separate between locks which
-> we attempt to acquire and locks that are actually acquired?
+On Wed, Jul 09, 2014 at 12:15:58AM +0200, Stephane Eranian wrote:
+> Add the infrastructure to setup, collect and report the interrupt
+> machine state regs which can be captured by the kernel.
 > 
-> (cc PeterZ)
-> 
-> We can treat locks that are in the process of being acquired the same as
-> acquired locks to avoid races, but when we print something out it would
-> be nice to have annotation of the read state of the lock.
 
-I'm missing the problem here I think.
+SNIP
+
+> index 8606175..00e45d1 100644
+> --- a/tools/perf/util/evsel.c
+> +++ b/tools/perf/util/evsel.c
+> @@ -626,6 +626,11 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
+>  	if (opts->call_graph_enabled)
+>  		perf_evsel__config_callgraph(evsel, opts);
+>  
+> +	if (opts->sample_intr_regs) {
+> +		attr->sample_regs_intr = PERF_REGS_MASK;
+> +		perf_evsel__set_sample_bit(evsel, REGS_INTR);
+> +	}
+> +
+>  	if (target__has_cpu(&opts->target))
+>  		perf_evsel__set_sample_bit(evsel, CPU);
+>  
+> @@ -979,6 +984,7 @@ static size_t perf_event_attr__fprintf(struct perf_event_attr *attr, FILE *fp)
+>  	ret += PRINT_ATTR_X64(branch_sample_type);
+>  	ret += PRINT_ATTR_X64(sample_regs_user);
+>  	ret += PRINT_ATTR_U32(sample_stack_user);
+> +	ret += PRINT_ATTR_X64(sample_regs_intr);
+>  
+>  	ret += fprintf(fp, "%.60s\n", graph_dotted_line);
+>  
+> @@ -1468,6 +1474,23 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+>  		array++;
+>  	}
+>  
+> +	data->intr_regs.abi = PERF_SAMPLE_REGS_ABI_NONE;
+
+not necessary, data is zeroed in the top
+
+jirka
