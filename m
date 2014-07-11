@@ -1,35 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460AbaGKWFN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 18:05:13 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35635 "EHLO arroyo.ext.ti.com"
+	id S1754600AbaGKWFZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 18:05:25 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:53260 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754298AbaGKWFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 18:05:10 -0400
+	id S1754471AbaGKWFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 18:05:22 -0400
 From: Suman Anna <s-anna@ti.com>
 To: Tony Lindgren <tony@atomide.com>
 CC: Jassi Brar <jaswinder.singh@linaro.org>, Dave Gerlach <d-gerlach@ti.com>,
         Pavel Machek <pavel@ucw.cz>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, Suman Anna <s-anna@ti.com>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
         Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>
-Subject: [PATCHv2 1/5] Documentation: dt: add omap mailbox bindings
-Date: Fri, 11 Jul 2014 17:04:08 -0500
-Message-ID: <1405116252-53612-2-git-send-email-s-anna@ti.com>
+Subject: [PATCHv2 3/5] ARM: dts: OMAP2+: Add sub mailboxes device node information
+Date: Fri, 11 Jul 2014 17:04:10 -0500
+Message-ID: <1405116252-53612-4-git-send-email-s-anna@ti.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1405116252-53612-1-git-send-email-s-anna@ti.com>
 References: <1405116252-53612-1-git-send-email-s-anna@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the device tree bindings document for OMAP2+ mailbox.
+The sub-mailbox devices are added to the Mailbox DT nodes on
+OMAP2420, OMAP2430, OMAP3, AM33xx, AM43xx, OMAP4 and OMAP5
+family of SoCs. This data represents the same mailboxes that
+used to be represented in hwmod attribute data previously.
+The node name is chosen based on the .name field of
+omap_mbox_dev_info structure used in the hwmod data.
 
+Cc: "Benoît Cousson" <bcousson@baylibre.com>
 Cc: Rob Herring <robh+dt@kernel.org>
 Cc: Pawel Moll <pawel.moll@arm.com>
 Cc: Mark Rutland <mark.rutland@arm.com>
@@ -37,127 +45,132 @@ Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
 Cc: Kumar Gala <galak@codeaurora.org>
 Signed-off-by: Suman Anna <s-anna@ti.com>
 ---
- .../devicetree/bindings/mailbox/omap-mailbox.txt   | 111 +++++++++++++++++++++
- 1 file changed, 111 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mailbox/omap-mailbox.txt
+ arch/arm/boot/dts/am33xx.dtsi   | 4 ++++
+ arch/arm/boot/dts/am4372.dtsi   | 4 ++++
+ arch/arm/boot/dts/omap2420.dtsi | 8 ++++++++
+ arch/arm/boot/dts/omap2430.dtsi | 4 ++++
+ arch/arm/boot/dts/omap3.dtsi    | 4 ++++
+ arch/arm/boot/dts/omap4.dtsi    | 8 ++++++++
+ arch/arm/boot/dts/omap5.dtsi    | 8 ++++++++
+ 7 files changed, 40 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/mailbox/omap-mailbox.txt b/Documentation/devicetree/bindings/mailbox/omap-mailbox.txt
-new file mode 100644
-index 0000000..31fe01d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mailbox/omap-mailbox.txt
-@@ -0,0 +1,111 @@
-+OMAP2+ Mailbox Driver
-+=====================
-+
-+The OMAP mailbox hardware facilitates communication between different processors
-+using a queued mailbox interrupt mechanism. The IP block is external to the
-+various processor subsystems and is connected on an interconnect bus. The
-+communication is achieved through a set of registers for message storage and
-+interrupt configuration registers.
-+
-+Each mailbox IP block has a certain number of h/w fifo queues and output
-+interrupt lines. An output interrupt line is routed to an interrupt controller
-+within a processor subsystem, and there can be more than one line going to a
-+specific processor's interrupt controller. The interrupt line connections are
-+fixed for an instance and are dictated by the IP integration into the SoC
-+(excluding the SoCs that have a Interrupt Crossbar IP). Each interrupt line is
-+programmable through a set of interrupt configuration registers, and have a rx
-+and tx interrupt source per h/w fifo. Communication between different processors
-+is achieved through the appropriate programming of the rx and tx interrupt
-+sources on the appropriate interrupt lines.
-+
-+The number of h/w fifo queues and interrupt lines dictate the usable registers.
-+All the current OMAP SoCs except for the newest DRA7xx SoC has a single IP
-+instance. DRA7xx has multiple instances with different number of h/w fifo queues
-+and interrupt lines between different instances. The interrupt lines can also be
-+routed to different processor sub-systems on DRA7xx as they are routed through
-+the Crossbar, a kind of interrupt router/multiplexer.
-+
-+Mailbox Device Node:
-+====================
-+A Mailbox device node is used to represent a Mailbox IP instance within a SoC.
-+The sub-mailboxes are represented as child node of this parent node.
-+
-+Required properties:
-+--------------------
-+- compatible:		Should be one of the following,
-+			    "ti,omap2-mailbox" for OMAP2420, OMAP2430 SoCs
-+			    "ti,omap3-mailbox" for OMAP3430, OMAP3630 SoCs
-+			    "ti,am3352-mailbox" for AM33xx SoCs
-+			    "ti,am4372-mailbox" for AM43xx SoCs
-+			    "ti,omap4-mailbox" for OMAP44xx, OMAP54xx SoCs and
-+						   DRA7xx Mailbox1 instance
-+			    "ti,dra7-mailbox" for DRA7xx (except for Mailbox1
-+							  instance)
-+- reg:			Contains the mailbox register address range (base
-+			address and length)
-+- interrupts: 		Contains the interrupt information for the mailbox
-+			device. The format is dependent on which interrupt
-+			controller the OMAP device uses
-+- ti,hwmods:		Name of the hwmod associated with the mailbox
-+- ti,mbox-num-users:	Number of targets (processor devices) that the mailbox
-+			device can interrupt
-+- ti,mbox-num-fifos:	Number of h/w fifo queues within the mailbox IP block
-+
-+Child Nodes:
-+============
-+A child node is used for representing the actual sub-mailbox device that is
-+used for the communication between the host processor and a remote processor.
-+Each child node should have a unique node name.
-+
-+Required properties:
-+--------------------
-+- ti,mbox-tx:		sub-mailbox descriptor property defining a Tx fifo
-+- ti,mbox-rx:		sub-mailbox descriptor property defining a Rx fifo
-+
-+Sub-mailbox Descriptor Data
-+---------------------------
-+Each of the above ti,mbox-tx and ti,mbox-rx properties should have 3 cells of
-+data that represent the following:
-+    Cell #1 (fifo_id) - mailbox fifo id used either for transmitting
-+                        (ti,mbox-tx) or for receiving (ti,mbox-rx)
-+    Cell #2 (irq_id)  - irq identifier index number to use from the parent's
-+                        interrupts data. Should be 0 for most of the cases, a
-+                        positive index value is seen only on mailboxes that have
-+                        multiple interrupt lines connected to the MPU processor.
-+    Cell #3 (usr_id)  - mailbox user id for identifying the interrupt line
-+                        associated with generating a tx/rx fifo interrupt.
-+
-+Example:
-+--------
-+
-+/* OMAP4 */
-+mailbox: mailbox@4a0f4000 {
-+	compatible = "ti,omap4-mailbox";
-+	reg = <0x4a0f4000 0x200>;
-+	interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
-+	ti,hwmods = "mailbox";
-+	ti,mbox-num-users = <3>;
-+	ti,mbox-num-fifos = <8>;
-+	mbox_ipu: mbox_ipu {
-+		ti,mbox-tx = <0 0 0>;
-+		ti,mbox-rx = <1 0 0>;
-+	};
-+	mbox_dsp: mbox_dsp {
-+		ti,mbox-tx = <3 0 0>;
-+		ti,mbox-rx = <2 0 0>;
-+	};
-+};
-+
-+/* AM33xx */
-+mailbox: mailbox@480C8000 {
-+	compatible = "ti,am3352-mailbox";
-+	reg = <0x480C8000 0x200>;
-+	interrupts = <77>;
-+	ti,hwmods = "mailbox";
-+	ti,mbox-num-users = <4>;
-+	ti,mbox-num-fifos = <8>;
-+	mbox_wkupm3: wkup_m3 {
-+		ti,mbox-tx = <0 0 0>;
-+		ti,mbox-rx = <0 0 3>;
-+	};
-+};
+diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+index 3a0a161..e4f165a 100644
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -354,6 +354,10 @@
+ 			ti,hwmods = "mailbox";
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <8>;
++			mbox_wkupm3: wkup_m3 {
++				ti,mbox-tx = <0 0 0>;
++				ti,mbox-rx = <0 0 3>;
++			};
+ 		};
+ 
+ 		timer1: timer@44e31000 {
+diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
+index c9aee0e..3be2a87 100644
+--- a/arch/arm/boot/dts/am4372.dtsi
++++ b/arch/arm/boot/dts/am4372.dtsi
+@@ -168,6 +168,10 @@
+ 			ti,hwmods = "mailbox";
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <8>;
++			mbox_wkupm3: wkup_m3 {
++				ti,mbox-tx = <0 0 0>;
++				ti,mbox-rx = <0 0 3>;
++			};
+ 		};
+ 
+ 		timer1: timer@44e31000 {
+diff --git a/arch/arm/boot/dts/omap2420.dtsi b/arch/arm/boot/dts/omap2420.dtsi
+index 6d21994..d14f16c 100644
+--- a/arch/arm/boot/dts/omap2420.dtsi
++++ b/arch/arm/boot/dts/omap2420.dtsi
+@@ -159,6 +159,14 @@
+ 			ti,hwmods = "mailbox";
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <6>;
++			mbox_dsp: dsp {
++				ti,mbox-tx = <0 0 0>;
++				ti,mbox-rx = <1 0 0>;
++			};
++			mbox_iva: iva {
++				ti,mbox-tx = <2 1 3>;
++				ti,mbox-rx = <3 1 3>;
++			};
+ 		};
+ 
+ 		timer1: timer@48028000 {
+diff --git a/arch/arm/boot/dts/omap2430.dtsi b/arch/arm/boot/dts/omap2430.dtsi
+index aa6a354..db02be2 100644
+--- a/arch/arm/boot/dts/omap2430.dtsi
++++ b/arch/arm/boot/dts/omap2430.dtsi
+@@ -249,6 +249,10 @@
+ 			ti,hwmods = "mailbox";
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <6>;
++			mbox_dsp: dsp {
++				ti,mbox-tx = <0 0 0>;
++				ti,mbox-rx = <1 0 0>;
++			};
+ 		};
+ 
+ 		timer1: timer@49018000 {
+diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
+index 575a49b..b2ae8b8 100644
+--- a/arch/arm/boot/dts/omap3.dtsi
++++ b/arch/arm/boot/dts/omap3.dtsi
+@@ -334,6 +334,10 @@
+ 			interrupts = <26>;
+ 			ti,mbox-num-users = <2>;
+ 			ti,mbox-num-fifos = <2>;
++			mbox_dsp: dsp {
++				ti,mbox-tx = <0 0 0>;
++				ti,mbox-rx = <1 0 0>;
++			};
+ 		};
+ 
+ 		mcspi1: spi@48098000 {
+diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+index 69408b5..bc54d66 100644
+--- a/arch/arm/boot/dts/omap4.dtsi
++++ b/arch/arm/boot/dts/omap4.dtsi
+@@ -656,6 +656,14 @@
+ 			ti,hwmods = "mailbox";
+ 			ti,mbox-num-users = <3>;
+ 			ti,mbox-num-fifos = <8>;
++			mbox_ipu: mbox_ipu {
++				ti,mbox-tx = <0 0 0>;
++				ti,mbox-rx = <1 0 0>;
++			};
++			mbox_dsp: mbox_dsp {
++				ti,mbox-tx = <3 0 0>;
++				ti,mbox-rx = <2 0 0>;
++			};
+ 		};
+ 
+ 		timer1: timer@4a318000 {
+diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+index 0e8336e..f7ec4cd 100644
+--- a/arch/arm/boot/dts/omap5.dtsi
++++ b/arch/arm/boot/dts/omap5.dtsi
+@@ -643,6 +643,14 @@
+ 			ti,hwmods = "mailbox";
+ 			ti,mbox-num-users = <3>;
+ 			ti,mbox-num-fifos = <8>;
++			mbox_ipu: mbox_ipu {
++				ti,mbox-tx = <0 0 0>;
++				ti,mbox-rx = <1 0 0>;
++			};
++			mbox_dsp: mbox_dsp {
++				ti,mbox-tx = <3 0 0>;
++				ti,mbox-rx = <2 0 0>;
++			};
+ 		};
+ 
+ 		timer1: timer@4ae18000 {
 -- 
 2.0.0
 
