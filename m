@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751874AbaGKA6f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 20:58:35 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:60473 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751394AbaGKA6c (ORCPT
+	id S1751976AbaGKA6l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 20:58:41 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:35722 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751886AbaGKA6h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 20:58:32 -0400
-X-AuditID: 85900ec0-d0927b9000001514-9a-53bf36b50e76
-Subject: [PATCH V4 1/5] trace-cmd/listen: Apply the trace-msg protocol for
- communication between a server and clients
+	Thu, 10 Jul 2014 20:58:37 -0400
+X-AuditID: 85900ec0-d3b2cb9000001514-9c-53bf36ba959f
+Subject: [PATCH V4 3/5] trace-cmd/virt-server: Add virt-server mode for a
+ virtualization environment
 From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         yrl.pp-manager.tt@hitachi.com, linux-kernel@vger.kernel.org,
         Aaron Fabbri <aaronx.j.fabbri@intel.com>
-Date: Fri, 11 Jul 2014 00:58:26 +0000
-Message-ID: <20140711005826.25516.77711.stgit@yuno-kbuild.novalocal>
+Date: Fri, 11 Jul 2014 00:58:31 +0000
+Message-ID: <20140711005831.25516.52411.stgit@yuno-kbuild.novalocal>
 In-Reply-To: <20140711005824.25516.24498.stgit@yuno-kbuild.novalocal>
 References: <20140711005824.25516.24498.stgit@yuno-kbuild.novalocal>
 User-Agent: StGit/0.17-dirty
@@ -29,64 +29,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apply trace-msg protocol for communication between a server and clients.
+Add the virt-server mode for a virtualization environment based on the listen
+mode for networking. This mode works like client/server mode over TCP/UDP,
+but it uses virtio-serial channel instead of IP network. Using networking for
+collecting trace data of guests is generally high overhead caused by processing
+of the network stack.
 
-Currently, trace-listen(server) and trace-record -N(client) operate as follows:
+We use virtio-serial for collecting trace data of guests. virtio-serial is a
+simple communication path between the guest and the host. Moreover,
+since virtio-serial and ftrace can use splice(2), memory copying is not
+occurred on the guests. Therefore, total overhead for collecting trace data
+of the guests will be reduced. The implementation of clients will be shown
+in another patch.
 
-     <server>                 <client>
-      listen to socket fd
-                              connect to socket fd
-      accept the client
-      send "tracecmd"
-               +------------> receive "tracecmd"
-                              check "tracecmd"
-                              send cpus
-      receive cpus <------------+
-      print "cpus=XXX"
-                              send pagesize
-                                |
-      receive pagesize <--------+
-      print "pagesize=XXX"
-                              send option
-                                |
-      receive option <----------+
-      understand option
-      send port_array
-               +------------> receive port_array
-                              understand port_array
-                              send meta data
-      receive meta data <-------+
-      record meta data
-                        (snip)
-      read block
-     --- start sending trace data on child processes ---
+virt-server uses two kinds of virtio-serial I/Fs:
+(1) agent-ctl-path(UNIX domain socket)
+    => control path of an agent trace-cmd each guest
+(2) trace-path-cpuX(named pipe)
+    => trace data path each vcpu
 
-     --- When client finishes sending trace data ---
-                              close(socket fd)
-      read size = 0
-      close(socket fd)
+Those I/Fs must be defined as below paths:
+(1) /tmp/trace-cmd/virt/agent-ctl-path
+(2) /tmp/trace-cmd/virt/<guest domain>/trace-path-cpuX
 
-All messages are unstructured character strings, so server(client) using the
-protocol must parse the unstructured messages. Since it is hard to
-add complex contents in the protocol, structured binary message trace-msg
-is introduced as the communication protocol.
+If we run virt-server, agent-ctl-path I/F is automatically created because
+virt-server operates as a server mode of UNIX domain socket. However,
+trace-path-cpuX is not automatically created because we need to separate
+trace data for each guests.
 
-By applying this patch, server and client operate as follows:
+When the client uses virtio-serial, the client must notify the server of the
+connection. This is because a virtio-serial I/F on the guest is a just character
+device. In other words, the server cannot understand whether the client exists
+or not even if the client opens the I/F. So, the server using virtio-serial
+waits for the connection message MSG_TCONNECT from the client.
+The server and the client operate as follows:
 
      <server>                 <client>
-      listen to socket fd
-                              connect to socket fd
-      accept the client
-      send "tracecmd"
-               +------------> receive "tracecmd"
-                              check "tracecmd"
-                              send "V2\0<MAGIC_NUMBER>\00" as the v2 protocol
-      receive "V2" <------------+
-      check "V2"
-      read "<MAGIC_NUMBER>\00"
-      send "V2"
-            +---------------> receive "V2"
-                              check "V2"
+      wait for MSG_TCONNECT
+                              open virtio-serial I/F
+                              send MSG_TCONNECT
+      receive MSG_TCONNECT <----+
+      send MSG_RCONNECT
+            +---------------> receive MSG_RCONNECT
+                              check "tracecmd-V2"
                               send cpus,pagesize,option(MSG_TINIT)
       receive MSG_TINIT <-------+
       print "cpus=XXX"
@@ -110,1231 +95,1227 @@ By applying this patch, server and client operate as follows:
       receive MSG_CLOSE <-------+
       close(socket fd)        close(socket fd)
 
-By introducing the v2 protocol, after the client checks "tracecmd", the client
-will send "V2\0<MAGIC_NUMBER>\00\0". This complex message is used when the
-new client tries to connect to the old server. The new client wants to check
-whether the reply message from the server is "V2" or not. However, the old
-server does not respond to the client before receiving cpu numbers, page size,
-and options. Each message is separated with "\0" in the old server, so the
-client send "V2" as cpu numbers, "<MAGIC_NUMBER>" as page size, and "0" as
-no options. On the other hands, the old server will understand the messages
-as cpus=0, pagesize=<MAGIC_NUMBER>, and options=0, and then the server will
-send the message "\0" as port numbers. Then, the message which the client
-receives is not "V2" but "\0", so the client will reconnect to the old server
-as the v1 protocol.
+<How to set up>
+1. Run virt-server on a host before booting guests
+   # trace-cmd virt-server
 
-<How to test>
-[1] Backward compatability checks
- We need to test backward compatability of this patch for old
- trace-cmds(client/server). So, this patch was tested for [2] command checks in
- following 3 types:
+2. Make guest domain directory
+   # mkdir -p /tmp/trace-cmd/virt/<domain>
+   # chmod 710 /tmp/trace-cmd/virt/<domain>
+   # chgrp qemu /tmp/trace-cmd/virt/<domain>
 
-	<client>	<server>
-	  new		  old
-	  old		  new
-	  new		  new
+3. Make FIFO on the host
+   # mkfifo /tmp/trace-cmd/virt/<domain>/trace-path-cpu{0,1,...,X}.{in,out}
 
-[2] Command checks
-- server (common)
-	# trace-cmd listen -p 12345
+4. Set up of virtio-serial pipe of a guest on the host
+   Add the following tags to domain XML files.
+   # virsh edit <domain>
+   <channel type='unix'>
+      <source mode='connect' path='/tmp/trace-cmd/virt/agent-ctl-path'/>
+      <target type='virtio' name='agent-ctl-path'/>
+   </channel>
+   <channel type='pipe'>
+      <source path='/tmp/trace-cmd/virt/<domain>/trace-path-cpu0'/>
+      <target type='virtio' name='trace-path-cpu0'/>
+   </channel>
+   ... (cpu1, cpu2, ...)
 
-1) record
-- client
-	# trace-cmd record -e sched -N <server IP>:12345
-	^C
+5. Boot the guest
+   # virsh start <domain>
 
-2) record + multiple buffers
-- client
-	# trace-cmd record -B foo -e sched -N <server IP>:12345
-	^C
+6. Check I/F of virtio-serial on the guest
+   # ls /dev/virtio-ports
+     ...
+     agent-ctl-path
+     ...
+     trace-path-cpu0
+     ...
 
-3) extract
-- client
-	# ./trace-cmd start -e sched
-	# sleep 5
-	# ./trace-cmd extract -N <server IP>:12345
+Next, the user will run trace-cmd with record --virt options or other options
+for virtualization on the guest.
 
-4) extract + snapshot
-- client
-	# ./trace-cmd start -e sched
-	# sleep 5
-	# ./trace-cmd snapshot -s
-	# ./trace-cmd extract -N <server IP>:12345 -s
+This patch adds only minimum features of virt-server as follows:
+<Features>
+ - virt-server subcommand
+ - Create I/F directory(/tmp/trace-cmd/virt/)
+ - Use named pipe I/Fs of virtio-serial for trace data paths
+ - Use UNIX domain socket for connecting clients on guests
+ - Use splice(2) for collecting trace data of guests
 
-Changes in V4: Fix some typos, cleanups and rebase for current trace-cmd-v2.4
-               Change the argument of tracecmd_msg_recv()
-Changes in V3: Change the license of trace-msg.c to LGPL v2.1
-Changes in V2: Regacy porotocol support in order to keep backward compatibility
+<Restrictions>
+ - Use libvirt when we boot guests
+
+Changes in V4: Fix some typos and cleanup
+Changes in V3: Change _nw/_NW to _net/_NET
 
 Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 ---
- Makefile       |    2 
- trace-cmd.h    |   11 +
- trace-listen.c |  133 +++++++----
- trace-msg.c    |  684 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- trace-msg.h    |   27 ++
- trace-output.c |    4 
- trace-record.c |   85 ++++++-
- 7 files changed, 880 insertions(+), 66 deletions(-)
- create mode 100644 trace-msg.c
- create mode 100644 trace-msg.h
+ Documentation/trace-cmd-virt-server.1.txt |   89 ++++++
+ trace-cmd.c                               |    3 
+ trace-cmd.h                               |    2 
+ trace-listen.c                            |  467 ++++++++++++++++++++++++-----
+ trace-msg.c                               |  106 ++++++-
+ trace-recorder.c                          |   50 ++-
+ trace-usage.c                             |   10 +
+ 7 files changed, 624 insertions(+), 103 deletions(-)
+ create mode 100644 Documentation/trace-cmd-virt-server.1.txt
 
-diff --git a/Makefile b/Makefile
-index cbe0eb9..9977528 100644
---- a/Makefile
-+++ b/Makefile
-@@ -318,7 +318,7 @@ KERNEL_SHARK_OBJS = $(TRACE_VIEW_OBJS) $(TRACE_GRAPH_OBJS) $(TRACE_GUI_OBJS) \
- PEVENT_LIB_OBJS = event-parse.o trace-seq.o parse-filter.o parse-utils.o
- TCMD_LIB_OBJS = $(PEVENT_LIB_OBJS) trace-util.o trace-input.o trace-ftrace.o \
- 			trace-output.o trace-recorder.o trace-restore.o trace-usage.o \
--			trace-blk-hack.o kbuffer-parse.o event-plugin.o
-+			trace-blk-hack.o kbuffer-parse.o event-plugin.o trace-msg.o
- 
- PLUGIN_OBJS =
- PLUGIN_OBJS += plugin_jbd2.o
+diff --git a/Documentation/trace-cmd-virt-server.1.txt b/Documentation/trace-cmd-virt-server.1.txt
+new file mode 100644
+index 0000000..4168a04
+--- /dev/null
++++ b/Documentation/trace-cmd-virt-server.1.txt
+@@ -0,0 +1,89 @@
++TRACE-CMD-VIRT-SERVER(1)
++========================
++
++NAME
++----
++trace-cmd-virt-server - listen for incoming connection to record tracing of
++                        guests' clients
++
++SYNOPSIS
++--------
++*trace-cmd virt-server ['OPTIONS']
++
++DESCRIPTION
++-----------
++The trace-cmd(1) virt-server sets up UNIX domain socket I/F for communicating
++with guests' clients that run 'trace-cmd-record(1)' with the *--virt* option.
++When a connection is made, and the guest's client sends data, it will create a
++file called 'trace.DOMAIN.dat'. Where DOMAIN is the name of the guest named
++by libvirt.
++
++OPTIONS
++-------
++*-D*::
++    This options causes trace-cmd listen to go into a daemon mode and run in
++    the background.
++
++*-d* 'dir'::
++    This option specifies a directory to write the data files into.
++
++*-o* 'filename'::
++    This option overrides the default 'trace' in the 'trace.DOMAIN.dat' that
++    is created when guest's client connects.
++
++*-l* 'filename'::
++    This option writes the output messages to a log file instead of standard output.
++
++SET UP
++------
++Here, an example is written as follows:
++
++1. Run virt-server on a host
++   # trace-cmd virt-server
++
++2. Make guest domain directory
++   # mkdir -p /tmp/trace-cmd/virt/<DOMAIN>
++   # chmod 710 /tmp/trace-cmd/virt/<DOMAIN>
++   # chgrp qemu /tmp/trace-cmd/virt/<DOMAIN>
++
++3. Make FIFO on the host
++   # mkfifo /tmp/trace-cmd/virt/<DOMAIN>/trace-path-cpu{0,1,...,X}.{in,out}
++
++4. Set up of virtio-serial pipe of a guest on the host
++   Add the following tags to domain XML files.
++   # virsh edit <guest domain>
++   <channel type='unix'>
++      <source mode='connect' path='/tmp/trace-cmd/virt/agent-ctl-path'/>
++      <target type='virtio' name='agent-ctl-path'/>
++   </channel>
++   <channel type='pipe'>
++      <source path='/tmp/trace-cmd/virt/<DOMAIN>/trace-path-cpu0'/>
++      <target type='virtio' name='trace-path-cpu0'/>
++   </channel>
++   ... (cpu1, cpu2, ...)
++
++5. Boot the guest
++   # virsh start <DOMAIN>
++
++6. Run the guest's client(see trace-cmd-record(1) with the *--virt* option)
++   # trace-cmd record -e sched* --virt
++
++SEE ALSO
++--------
++trace-cmd(1), trace-cmd-record(1), trace-cmd-report(1), trace-cmd-start(1),
++trace-cmd-stop(1), trace-cmd-extract(1), trace-cmd-reset(1),
++trace-cmd-split(1), trace-cmd-list(1)
++
++AUTHOR
++------
++Written by Yoshihiro YUNOMAE, <yoshihiro.yunomae.ex@hitachi.com>
++
++RESOURCES
++---------
++git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/trace-cmd.git
++
++COPYING
++-------
++Copyright \(C) 2013 Hitachi, Ltd. Free use of this software is granted under
++the terms of the GNU Public License (GPL).
++
+diff --git a/trace-cmd.c b/trace-cmd.c
+index ebf9c7a..be7172e 100644
+--- a/trace-cmd.c
++++ b/trace-cmd.c
+@@ -420,7 +420,8 @@ int main (int argc, char **argv)
+ 	} else if (strcmp(argv[1], "mem") == 0) {
+ 		trace_mem(argc, argv);
+ 		exit(0);
+-	} else if (strcmp(argv[1], "listen") == 0) {
++	} else if (strcmp(argv[1], "listen") == 0 ||
++		   strcmp(argv[1], "virt-server") == 0) {
+ 		trace_listen(argc, argv);
+ 		exit(0);
+ 	} else if (strcmp(argv[1], "split") == 0) {
 diff --git a/trace-cmd.h b/trace-cmd.h
-index 92b4ff2..f65f29e 100644
+index f65f29e..c4e5beb 100644
 --- a/trace-cmd.h
 +++ b/trace-cmd.h
-@@ -248,6 +248,17 @@ void tracecmd_stop_recording(struct tracecmd_recorder *recorder);
- void tracecmd_stat_cpu(struct trace_seq *s, int cpu);
- long tracecmd_flush_recording(struct tracecmd_recorder *recorder);
+@@ -242,6 +242,7 @@ struct tracecmd_recorder *tracecmd_create_recorder_maxkb(const char *file, int c
+ struct tracecmd_recorder *tracecmd_create_buffer_recorder_fd(int fd, int cpu, unsigned flags, const char *buffer);
+ struct tracecmd_recorder *tracecmd_create_buffer_recorder(const char *file, int cpu, unsigned flags, const char *buffer);
+ struct tracecmd_recorder *tracecmd_create_buffer_recorder_maxkb(const char *file, int cpu, unsigned flags, const char *buffer, int maxkb);
++struct tracecmd_recorder *tracecmd_create_recorder_virt(const char *file, int cpu, int trace_fd);
  
-+/* for clients */
-+int tracecmd_msg_send_init_data(int fd);
-+int tracecmd_msg_metadata_send(int fd, char *buf, int size);
-+int tracecmd_msg_finish_sending_metadata(int fd);
-+void tracecmd_msg_send_close_msg(void);
-+
-+/* for server */
-+int tracecmd_msg_initial_setting(int fd, int *cpus, int *pagesize);
-+int tracecmd_msg_send_port_array(int fd, int total_cpus, int *ports);
-+int tracecmd_msg_collect_metadata(int ifd, int ofd);
-+
- /* --- Plugin handling --- */
- extern struct plugin_option trace_ftrace_options[];
+ int tracecmd_start_recording(struct tracecmd_recorder *recorder, unsigned long sleep);
+ void tracecmd_stop_recording(struct tracecmd_recorder *recorder);
+@@ -255,6 +256,7 @@ int tracecmd_msg_finish_sending_metadata(int fd);
+ void tracecmd_msg_send_close_msg(void);
  
+ /* for server */
++int tracecmd_msg_set_connection(int fd, const char *domain);
+ int tracecmd_msg_initial_setting(int fd, int *cpus, int *pagesize);
+ int tracecmd_msg_send_port_array(int fd, int total_cpus, int *ports);
+ int tracecmd_msg_collect_metadata(int ifd, int ofd);
 diff --git a/trace-listen.c b/trace-listen.c
-index 18672b0..5dbd0db 100644
+index 5dbd0db..01b7ebf 100644
 --- a/trace-listen.c
 +++ b/trace-listen.c
-@@ -33,6 +33,7 @@
- #include <errno.h>
+@@ -23,9 +23,13 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <getopt.h>
++#include <grp.h>
++#include <sys/stat.h>
+ #include <sys/types.h>
+ #include <sys/socket.h>
+ #include <sys/wait.h>
++#include <sys/epoll.h>
++#include <sys/un.h>
+ #include <netdb.h>
+ #include <unistd.h>
+ #include <fcntl.h>
+@@ -50,19 +54,42 @@ static int backlog = 5;
  
- #include "trace-local.h"
-+#include "trace-msg.h"
+ static int proto_ver;
  
- #define MAX_OPTION_SIZE 4096
- 
-@@ -45,10 +46,10 @@ static FILE *logfp;
- 
- static int debug;
- 
--static int use_tcp;
--
- static int backlog = 5;
- 
-+static int proto_ver;
+-#define  TEMP_FILE_STR "%s.%s:%s.cpu%d", output_file, host, port, cpu
+-static char *get_temp_file(const char *host, const char *port, int cpu)
++enum {
++	NET	= 1,
++	VIRT	= 2,
++};
 +
- #define  TEMP_FILE_STR "%s.%s:%s.cpu%d", output_file, host, port, cpu
- static char *get_temp_file(const char *host, const char *port, int cpu)
++#define  TEMP_FILE_STR_NET "%s.%s:%s.cpu%d", output_file, host, port, cpu
++#define  TEMP_FILE_STR_VIRT "%s.%s:%d.cpu%d", output_file, domain, virtpid, cpu
++static char *get_temp_file(const char *host, const char *port,
++			   const char *domain, int virtpid, int cpu, int mode)
  {
-@@ -112,10 +113,9 @@ static int process_option(char *option)
+ 	char *file = NULL;
+ 	int size;
+ 
+-	size = snprintf(file, 0, TEMP_FILE_STR);
+-	file = malloc_or_die(size + 1);
+-	sprintf(file, TEMP_FILE_STR);
++	if (mode == NET) {
++		size = snprintf(file, 0, TEMP_FILE_STR_NET);
++		file = malloc_or_die(size + 1);
++		sprintf(file, TEMP_FILE_STR_NET);
++	} else if (mode == VIRT) {
++		size = snprintf(file, 0, TEMP_FILE_STR_VIRT);
++		file = malloc_or_die(size + 1);
++		sprintf(file, TEMP_FILE_STR_VIRT);
++	}
+ 
+ 	return file;
+ }
+ 
++static char *get_temp_file_net(const char *host, const char *port, int cpu)
++{
++	return  get_temp_file(host, port, NULL, 0, cpu, NET);
++}
++
++static char *get_temp_file_virt(const char *domain, int virtpid, int cpu)
++{
++	return  get_temp_file(NULL, NULL, domain, virtpid, cpu, VIRT);
++}
++
+ static void put_temp_file(char *file)
+ {
+ 	free(file);
+@@ -81,11 +108,15 @@ static void signal_setup(int sig, sighandler_t handle)
+ 	sigaction(sig, &action, NULL);
+ }
+ 
+-static void delete_temp_file(const char *host, const char *port, int cpu)
++static void delete_temp_file(const char *host, const char *port,
++			     const char *domain, int virtpid, int cpu, int mode)
+ {
+ 	char file[MAX_PATH];
+ 
+-	snprintf(file, MAX_PATH, TEMP_FILE_STR);
++	if (mode == NET)
++		snprintf(file, MAX_PATH, TEMP_FILE_STR_NET);
++	else if (mode == VIRT)
++		snprintf(file, MAX_PATH, TEMP_FILE_STR_VIRT);
+ 	unlink(file);
+ }
+ 
+@@ -113,8 +144,12 @@ static int process_option(char *option)
  	return 0;
  }
  
--static int done;
++static struct tracecmd_recorder *recorder;
++
  static void finish(int sig)
  {
--	done = 1;
-+	done = true;
++	if (recorder)
++		tracecmd_stop_recording(recorder);
+ 	done = true;
  }
  
- #define LOG_BUF_SIZE 1024
-@@ -144,7 +144,7 @@ static void __plog(const char *prefix, const char *fmt, va_list ap,
- 	fprintf(fp, "%.*s", r, buf);
+@@ -184,7 +219,7 @@ static void process_udp_child(int sfd, const char *host, const char *port,
+ 
+ 	signal_setup(SIGUSR1, finish);
+ 
+-	tempfile = get_temp_file(host, port, cpu);
++	tempfile = get_temp_file_net(host, port, cpu);
+ 	fd = open(tempfile, O_WRONLY | O_TRUNC | O_CREAT, 0644);
+ 	if (fd < 0)
+ 		pdie("creating %s", tempfile);
+@@ -225,6 +260,28 @@ static void process_udp_child(int sfd, const char *host, const char *port,
+ 	exit(0);
  }
  
--static void plog(const char *fmt, ...)
-+void plog(const char *fmt, ...)
- {
- 	va_list ap;
- 
-@@ -153,7 +153,7 @@ static void plog(const char *fmt, ...)
- 	va_end(ap);
- }
- 
--static void pdie(const char *fmt, ...)
-+void pdie(const char *fmt, ...)
- {
- 	va_list ap;
- 	char *str = "";
-@@ -324,56 +324,78 @@ static int communicate_with_client(int fd, int *cpus, int *pagesize)
- 
- 	*cpus = atoi(buf);
- 
--	plog("cpus=%d\n", *cpus);
--	if (*cpus < 0)
--		return -1;
-+	/* Is the client using the new protocol? */
-+	if (!*cpus) {
-+		if (memcmp(buf, "V2", 2) != 0) {
-+			plog("Cannot handle the protocol %s", buf);
-+			return -1;
-+		}
- 
--	/* next read the page size */
--	n = read_string(fd, buf, BUFSIZ);
--	if (n == BUFSIZ)
--		/** ERROR **/
--		return -1;
-+		/* read the rest of dummy data, but not use */
-+		read(fd, buf, sizeof(V2_MAGIC)+1);
- 
--	*pagesize = atoi(buf);
-+		proto_ver = V2_PROTOCOL;
- 
--	plog("pagesize=%d\n", *pagesize);
--	if (*pagesize <= 0)
--		return -1;
-+		/* Let the client know we use v2 protocol */
-+		write(fd, "V2", 2);
- 
--	/* Now the number of options */
--	n = read_string(fd, buf, BUFSIZ);
--	if (n == BUFSIZ)
--		/** ERROR **/
--		return -1;
-+		/* read the CPU count, the page size, and options */
-+		if (tracecmd_msg_initial_setting(fd, cpus, pagesize) < 0)
-+			return -1;
-+	} else {
-+		/* The client is using the v1 protocol */
- 
--	options = atoi(buf);
-+		plog("cpus=%d\n", *cpus);
-+		if (*cpus < 0)
-+			return -1;
- 
--	for (i = 0; i < options; i++) {
--		/* next is the size of the options */
-+		/* next read the page size */
- 		n = read_string(fd, buf, BUFSIZ);
- 		if (n == BUFSIZ)
- 			/** ERROR **/
- 			return -1;
--		size = atoi(buf);
--		/* prevent a client from killing us */
--		if (size > MAX_OPTION_SIZE)
++#define SLEEP_DEFAULT	1000
 +
-+		*pagesize = atoi(buf);
-+
-+		plog("pagesize=%d\n", *pagesize);
-+		if (*pagesize <= 0)
- 			return -1;
--		option = malloc_or_die(size);
--		do {
--			t = size;
--			s = 0;
--			s = read(fd, option+s, t);
--			if (s <= 0)
--				return -1;
--			t -= s;
--			s = size - t;
--		} while (t);
- 
--		s = process_option(option);
--		free(option);
--		/* do we understand this option? */
--		if (!s)
-+		/* Now the number of options */
-+		n = read_string(fd, buf, BUFSIZ);
-+		if (n == BUFSIZ)
-+			/** ERROR **/
- 			return -1;
-+
-+		options = atoi(buf);
-+
-+		for (i = 0; i < options; i++) {
-+			/* next is the size of the options */
-+			n = read_string(fd, buf, BUFSIZ);
-+			if (n == BUFSIZ)
-+				/** ERROR **/
-+				return -1;
-+			size = atoi(buf);
-+			/* prevent a client from killing us */
-+			if (size > MAX_OPTION_SIZE)
-+				return -1;
-+			option = malloc_or_die(size);
-+			do {
-+				t = size;
-+				s = 0;
-+				s = read(fd, option+s, t);
-+				if (s <= 0)
-+					return -1;
-+				t -= s;
-+				s = size - t;
-+			} while (t);
-+
-+			s = process_option(option);
-+			free(option);
-+			/* do we understand this option? */
-+			if (!s)
-+				return -1;
-+		}
- 	}
- 
- 	if (use_tcp)
-@@ -442,14 +464,20 @@ static int *create_all_readers(int cpus, const char *node, const char *port,
- 		start_port = udp_port + 1;
- 	}
- 
--	/* send the client a comma deliminated set of port numbers */
--	for (cpu = 0; cpu < cpus; cpu++) {
--		snprintf(buf, BUFSIZ, "%s%d",
--			 cpu ? "," : "", port_array[cpu]);
--		write(fd, buf, strlen(buf));
-+	if (proto_ver == V2_PROTOCOL) {
-+		/* send set of port numbers to the client */
-+		if (tracecmd_msg_send_port_array(fd, cpus, port_array) < 0)
-+			goto out_free;
-+	} else {
-+		/* send the client a comma deliminated set of port numbers */
-+		for (cpu = 0; cpu < cpus; cpu++) {
-+			snprintf(buf, BUFSIZ, "%s%d",
-+				 cpu ? "," : "", port_array[cpu]);
-+			write(fd, buf, strlen(buf));
-+		}
-+		/* end with null terminator */
-+		write(fd, "\0", 1);
- 	}
--	/* end with null terminator */
--	write(fd, "\0", 1);
- 
- 	return pid_array;
- 
-@@ -528,7 +556,10 @@ static void process_client(const char *node, const char *port, int fd)
- 		return;
- 
- 	/* Now we are ready to start reading data from the client */
--	collect_metadata_from_client(fd, ofd);
-+	if (proto_ver == V2_PROTOCOL)
-+		tracecmd_msg_collect_metadata(fd, ofd);
-+	else
-+		collect_metadata_from_client(fd, ofd);
- 
- 	/* wait a little to let our readers finish reading */
- 	sleep(1);
-diff --git a/trace-msg.c b/trace-msg.c
-new file mode 100644
-index 0000000..08fa2a6
---- /dev/null
-+++ b/trace-msg.c
-@@ -0,0 +1,684 @@
-+/*
-+ * trace-msg.c : define message protocol for communication between clients and
-+ *               a server
-+ *
-+ * Copyright (C) 2013 Hitachi, Ltd.
-+ * Created by Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU Lesser General Public
-+ * License as published by the Free Software Foundation;
-+ * version 2.1 of the License (not later!)
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU Lesser General Public
-+ * License along with this program; if not,  see <http://www.gnu.org/licenses>
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ */
-+
-+#include <errno.h>
-+#include <poll.h>
-+#include <fcntl.h>
-+#include <limits.h>
-+#include <stddef.h>
-+#include <stdio.h>
-+#include <unistd.h>
-+#include <arpa/inet.h>
-+#include <sys/types.h>
-+#include <linux/types.h>
-+
-+#include "trace-cmd-local.h"
-+#include "trace-msg.h"
-+
-+typedef __u32 u32;
-+typedef __be32 be32;
-+
-+#define TRACECMD_MSG_MAX_LEN		BUFSIZ
-+
-+					/* size + cmd */
-+#define TRACECMD_MSG_HDR_LEN		((sizeof(be32)) + (sizeof(be32)))
-+
-+					/* + size of the metadata */
-+#define TRACECMD_MSG_META_MIN_LEN	\
-+				((TRACECMD_MSG_HDR_LEN) + (sizeof(be32)))
-+
-+					/* - header size for error msg */
-+#define TRACECMD_MSG_META_MAX_LEN	\
-+((TRACECMD_MSG_MAX_LEN) - (TRACECMD_MSG_META_MIN_LEN) - TRACECMD_MSG_HDR_LEN)
-+
-+					/* size + opt_cmd + size of str */
-+#define TRACECMD_OPT_MIN_LEN		\
-+			((sizeof(be32)) + (sizeof(be32)) + (sizeof(be32)))
-+
-+
-+#define CPU_MAX				256
-+
-+/* for both client and server */
-+bool use_tcp;
-+int cpu_count;
-+
-+/* for client */
-+static int psfd;
-+unsigned int page_size;
-+int *client_ports;
-+bool send_metadata;
-+
-+/* for server */
-+static int *port_array;
-+bool done;
-+
-+struct tracecmd_msg_str {
-+	be32 size;
-+	char *buf;
-+} __attribute__((packed));
-+
-+struct tracecmd_msg_opt {
-+	be32 size;
-+	be32 opt_cmd;
-+	struct tracecmd_msg_str str;
-+};
-+
-+struct tracecmd_msg_tinit {
-+	be32 cpus;
-+	be32 page_size;
-+	be32 opt_num;
-+	struct tracecmd_msg_opt *opt;
-+} __attribute__((packed));
-+
-+struct tracecmd_msg_rinit {
-+	be32 cpus;
-+	be32 port_array[CPU_MAX];
-+} __attribute__((packed));
-+
-+struct tracecmd_msg_meta {
-+	struct tracecmd_msg_str str;
-+};
-+
-+struct tracecmd_msg_error {
-+	be32 size;
-+	be32 cmd;
-+	union {
-+		struct tracecmd_msg_tinit tinit;
-+		struct tracecmd_msg_rinit rinit;
-+		struct tracecmd_msg_meta meta;
-+	} data;
-+} __attribute__((packed));
-+
-+enum tracecmd_msg_cmd {
-+	MSG_CLOSE	= 1,
-+	MSG_TINIT	= 4,
-+	MSG_RINIT	= 5,
-+	MSG_SENDMETA	= 6,
-+	MSG_FINMETA	= 7,
-+};
-+
-+struct tracecmd_msg {
-+	be32 size;
-+	be32 cmd;
-+	union {
-+		struct tracecmd_msg_tinit tinit;
-+		struct tracecmd_msg_rinit rinit;
-+		struct tracecmd_msg_meta meta;
-+		struct tracecmd_msg_error err;
-+	} data;
-+} __attribute__((packed));
-+
-+struct tracecmd_msg *errmsg;
-+
-+static ssize_t msg_do_write_check(int fd, struct tracecmd_msg *msg)
++static void process_virt_child(int fd, int cpu, int pagesize,
++			       const char *domain, int virtpid)
 +{
-+	return __do_write_check(fd, msg, ntohl(msg->size));
-+}
++	char *tempfile;
 +
-+static void tracecmd_msg_init(u32 cmd, u32 len, struct tracecmd_msg *msg)
-+{
-+	memset(msg, 0, len);
-+	msg->size = htonl(len);
-+	msg->cmd = htonl(cmd);
-+}
++	signal_setup(SIGUSR1, finish);
++	tempfile = get_temp_file_virt(domain, virtpid, cpu);
 +
-+static int tracecmd_msg_alloc(u32 cmd, u32 len, struct tracecmd_msg **msg)
-+{
-+	len += TRACECMD_MSG_HDR_LEN;
-+	*msg = malloc(len);
-+	if (!*msg)
-+		return -ENOMEM;
-+
-+	tracecmd_msg_init(cmd, len, *msg);
-+	return 0;
-+}
-+
-+static void bufcpy(void *dest, u32 offset, const void *buf, u32 buflen)
-+{
-+	memcpy(dest+offset, buf, buflen);
-+}
-+
-+enum msg_opt_command {
-+	MSGOPT_USETCP = 1,
-+};
-+
-+static int add_option_to_tinit(u32 cmd, const char *buf,
-+			       struct tracecmd_msg *msg, int offset)
-+{
-+	struct tracecmd_msg_opt *opt;
-+	u32 len = TRACECMD_OPT_MIN_LEN;
-+	u32 buflen = 0;
-+
-+	if (buf) {
-+		buflen = strlen(buf);
-+		len += buflen;
-+	}
-+
-+	opt = malloc(len);
-+	if (!opt)
-+		return -ENOMEM;
-+
-+	opt->size = htonl(len);
-+	opt->opt_cmd = htonl(cmd);
-+	opt->str.size = htonl(buflen);
-+
-+	if (buf)
-+		bufcpy(opt, TRACECMD_OPT_MIN_LEN, buf, buflen);
-+
-+	/* add option to msg */
-+	bufcpy(msg, offset, opt, ntohl(opt->size));
-+
-+	free(opt);
-+	return len;
-+}
-+
-+static int add_options_to_tinit(struct tracecmd_msg *msg)
-+{
-+	int offset = offsetof(struct tracecmd_msg, data.tinit.opt);
-+	int ret;
-+
-+	if (use_tcp) {
-+		ret = add_option_to_tinit(MSGOPT_USETCP, NULL, msg, offset);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int make_tinit(struct tracecmd_msg *msg)
-+{
-+	int opt_num = 0;
-+	int ret = 0;
-+
-+	if (use_tcp)
-+		opt_num++;
-+
-+	if (opt_num) {
-+		ret = add_options_to_tinit(msg);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	msg->data.tinit.cpus = htonl(cpu_count);
-+	msg->data.tinit.page_size = htonl(page_size);
-+	msg->data.tinit.opt_num = htonl(opt_num);
-+
-+	return 0;
-+}
-+
-+static int make_rinit(struct tracecmd_msg *msg)
-+{
-+	int i;
-+	u32 offset = TRACECMD_MSG_HDR_LEN;
-+	be32 port;
-+
-+	msg->data.rinit.cpus = htonl(cpu_count);
-+
-+	for (i = 0; i < cpu_count; i++) {
-+		/* + rrqports->cpus or rrqports->port_array[i] */
-+		offset += sizeof(be32);
-+		port = htonl(port_array[i]);
-+		bufcpy(msg, offset, &port, sizeof(be32) * cpu_count);
-+	}
-+
-+	return 0;
-+}
-+
-+static u32 tracecmd_msg_get_body_length(u32 cmd)
-+{
-+	struct tracecmd_msg *msg;
-+	u32 len = 0;
-+
-+	switch (cmd) {
-+	case MSG_TINIT:
-+		len = sizeof(msg->data.tinit.cpus)
-+		      + sizeof(msg->data.tinit.page_size)
-+		      + sizeof(msg->data.tinit.opt_num);
-+
-+		/*
-+		 * If we are using IPV4 and our page size is greater than
-+		 * or equal to 64K, we need to punt and use TCP. :-(
-+		 */
-+
-+		/* TODO, test for ipv4 */
-+		if (page_size >= UDP_MAX_PACKET) {
-+			warning("page size too big for UDP using TCP in live read");
-+			use_tcp = true;
-+		}
-+
-+		if (use_tcp)
-+			len += TRACECMD_OPT_MIN_LEN;
-+
-+		return len;
-+	case MSG_RINIT:
-+		return sizeof(msg->data.rinit.cpus)
-+		       + sizeof(msg->data.rinit.port_array);
-+	case MSG_SENDMETA:
-+		return TRACECMD_MSG_MAX_LEN - TRACECMD_MSG_HDR_LEN;
-+	case MSG_CLOSE:
-+	case MSG_FINMETA:
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
-+static int tracecmd_msg_make_body(u32 cmd, struct tracecmd_msg *msg)
-+{
-+	switch (cmd) {
-+	case MSG_TINIT:
-+		return make_tinit(msg);
-+	case MSG_RINIT:
-+		return make_rinit(msg);
-+	case MSG_CLOSE:
-+	case MSG_SENDMETA: /* meta data is not stored here. */
-+	case MSG_FINMETA:
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
-+static int tracecmd_msg_create(u32 cmd, struct tracecmd_msg **msg)
-+{
-+	u32 len = 0;
-+	int ret = 0;
-+
-+	len = tracecmd_msg_get_body_length(cmd);
-+	if (len > (TRACECMD_MSG_MAX_LEN - TRACECMD_MSG_HDR_LEN)) {
-+		plog("Exceed maximum message size cmd=%d\n", cmd);
-+		return -EINVAL;
-+	}
-+
-+	ret = tracecmd_msg_alloc(cmd, len, msg);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = tracecmd_msg_make_body(cmd, *msg);
-+	if (ret < 0)
-+		free(*msg);
-+
-+	return ret;
-+}
-+
-+static int tracecmd_msg_send(int fd, u32 cmd)
-+{
-+	struct tracecmd_msg *msg = NULL;
-+	int ret = 0;
-+
-+	if (cmd > MSG_FINMETA) {
-+		plog("Unsupported command: %d\n", cmd);
-+		return -EINVAL;
-+	}
-+
-+	ret = tracecmd_msg_create(cmd, &msg);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = msg_do_write_check(fd, msg);
-+	if (ret < 0)
-+		ret = -ECOMM;
-+
-+	free(msg);
-+	return ret;
-+}
-+
-+static int tracecmd_msg_read_extra(int fd, void *buf, u32 size, int *n)
-+{
-+	int r = 0;
++	recorder = tracecmd_create_recorder_virt(tempfile, cpu, fd);
 +
 +	do {
-+		r = read(fd, buf + *n, size);
-+		if (r < 0) {
-+			if (errno == EINTR)
-+				continue;
-+			return -errno;
-+		} else if (!r)
-+			return -ENOTCONN;
-+		size -= r;
-+		*n += r;
-+	} while (size);
++		if (tracecmd_start_recording(recorder, SLEEP_DEFAULT) < 0)
++			break;
++	} while (!done);
 +
-+	return 0;
++	tracecmd_free_recorder(recorder);
++	put_temp_file(tempfile);
++	exit(0);
 +}
 +
-+/*
-+ * Read header information of msg first, then read all data
-+ */
-+static int tracecmd_msg_recv(int fd, struct tracecmd_msg *msg)
+ #define START_PORT_SEARCH 1500
+ #define MAX_PORT_SEARCH 6000
+ 
+@@ -272,20 +329,37 @@ static int udp_bind_a_port(int start_port, int *sfd)
+ 	return num_port;
+ }
+ 
+-static void fork_udp_reader(int sfd, const char *node, const char *port,
+-			    int *pid, int cpu, int pagesize)
++static void fork_reader(int sfd, const char *node, const char *port,
++			int *pid, int cpu, int pagesize, const char *domain,
++			int virtpid, int mode)
+ {
+ 	*pid = fork();
+ 
+ 	if (*pid < 0)
+-		pdie("creating udp reader");
++		pdie("creating reader");
+ 
+-	if (!*pid)
+-		process_udp_child(sfd, node, port, cpu, pagesize);
++	if (!*pid) {
++		if (mode == NET)
++			process_udp_child(sfd, node, port, cpu, pagesize);
++		else if (mode == VIRT)
++			process_virt_child(sfd, cpu, pagesize, domain, virtpid);
++	}
+ 
+ 	close(sfd);
+ }
+ 
++static void fork_udp_reader(int sfd, const char *node, const char *port,
++			    int *pid, int cpu, int pagesize)
 +{
-+	u32 size = 0;
-+	int n = 0;
-+	int ret;
++	fork_reader(sfd, node, port, pid, cpu, pagesize, NULL, 0, NET);
++}
 +
-+	ret = tracecmd_msg_read_extra(fd, msg, TRACECMD_MSG_HDR_LEN, &n);
-+	if (ret < 0)
-+		return ret;
++static void fork_virt_reader(int sfd, int *pid, int cpu, int pagesize,
++			     const char *domain, int virtpid)
++{
++	fork_reader(sfd, NULL, NULL, pid, cpu, pagesize, domain, virtpid, VIRT);
++}
 +
-+	size = ntohl(msg->size);
-+	if (size > TRACECMD_MSG_MAX_LEN)
-+		/* too big */
-+		goto error;
-+	else if (size < TRACECMD_MSG_HDR_LEN)
-+		/* too small */
-+		goto error;
-+	else if (size > TRACECMD_MSG_HDR_LEN) {
-+		size -= TRACECMD_MSG_HDR_LEN;
-+		return tracecmd_msg_read_extra(fd, msg, size, &n);
+ static int open_udp(const char *node, const char *port, int *pid,
+ 		    int cpu, int pagesize, int start_port)
+ {
+@@ -305,7 +379,30 @@ static int open_udp(const char *node, const char *port, int *pid,
+ 	return num_port;
+ }
+ 
+-static int communicate_with_client(int fd, int *cpus, int *pagesize)
++#define TRACE_CMD_DIR		"/tmp/trace-cmd/"
++#define VIRT_DIR		TRACE_CMD_DIR "virt/"
++#define VIRT_TRACE_CTL_SOCK	VIRT_DIR "agent-ctl-path"
++#define TRACE_PATH_DOMAIN_CPU	VIRT_DIR "%s/trace-path-cpu%d.out"
++
++static int open_virtio_serial_pipe(int *pid, int cpu, int pagesize,
++				   const char *domain, int virtpid)
++{
++	char buf[PATH_MAX];
++	int fd;
++
++	snprintf(buf, PATH_MAX, TRACE_PATH_DOMAIN_CPU, domain, cpu);
++	fd = open(buf, O_RDONLY | O_NONBLOCK);
++	if (fd < 0) {
++		warning("open %s", buf);
++		return fd;
 +	}
 +
++	fork_virt_reader(fd, pid, cpu, pagesize, domain, virtpid);
++
++	return fd;
++}
++
++static int communicate_with_client_net(int fd, int *cpus, int *pagesize)
+ {
+ 	char buf[BUFSIZ];
+ 	char *option;
+@@ -404,12 +501,32 @@ static int communicate_with_client(int fd, int *cpus, int *pagesize)
+ 	return 0;
+ }
+ 
+-static int create_client_file(const char *node, const char *port)
++static int communicate_with_client_virt(int fd, const char *domain,  int *cpus, int *pagesize)
++{
++	proto_ver = V2_PROTOCOL;
++
++	if (tracecmd_msg_set_connection(fd, domain) < 0)
++		return -1;
++
++	/* read the CPU count, the page size, and options */
++	if (tracecmd_msg_initial_setting(fd, cpus, pagesize) < 0)
++		return -1;
++
 +	return 0;
-+error:
-+	plog("Receive an invalid message(size=%d)\n", size);
-+	return -ENOMSG;
 +}
 +
-+static void *tracecmd_msg_buf_access(struct tracecmd_msg *msg, int offset)
-+{
-+	return (void *)msg + offset;
++static int create_client_file(const char *node, const char *port,
++			      const char *domain, int pid, int mode)
+ {
+ 	char buf[BUFSIZ];
+ 	int ofd;
+ 
+-	snprintf(buf, BUFSIZ, "%s.%s:%s.dat", output_file, node, port);
++	if (mode == NET)
++		snprintf(buf, BUFSIZ, "%s.%s:%s.dat", output_file, node, port);
++	else if (mode == VIRT)
++		snprintf(buf, BUFSIZ, "%s.%s:%d.dat", output_file, domain, pid);
++	else
++		plog("create_client_file: Unsupported mode %d", mode);
+ 
+ 	ofd = open(buf, O_RDWR | O_CREAT | O_TRUNC, 0644);
+ 	if (ofd < 0)
+@@ -418,7 +535,8 @@ static int create_client_file(const char *node, const char *port)
+ }
+ 
+ static void destroy_all_readers(int cpus, int *pid_array, const char *node,
+-				const char *port)
++				const char *port, const char *domain,
++				int virtpid, int mode)
+ {
+ 	int cpu;
+ 
+@@ -426,42 +544,50 @@ static void destroy_all_readers(int cpus, int *pid_array, const char *node,
+ 		if (pid_array[cpu] > 0) {
+ 			kill(pid_array[cpu], SIGKILL);
+ 			waitpid(pid_array[cpu], NULL, 0);
+-			delete_temp_file(node, port, cpu);
++			delete_temp_file(node, port, domain, virtpid, cpu, mode);
+ 			pid_array[cpu] = 0;
+ 		}
+ 	}
+ }
+ 
+ static int *create_all_readers(int cpus, const char *node, const char *port,
+-			       int pagesize, int fd)
++			       const char *domain, int virtpid, int pagesize,
++			       int fd, int mode)
+ {
+ 	char buf[BUFSIZ];
+-	int *port_array;
++	int *port_array = NULL;
+ 	int *pid_array;
+ 	int start_port;
+ 	int udp_port;
+ 	int cpu;
+ 	int pid;
+ 
+-	port_array = malloc_or_die(sizeof(int) * cpus);
++	if (mode == NET) {
++		port_array = malloc_or_die(sizeof(int) * cpus);
++		start_port = START_PORT_SEARCH;
++	}
+ 	pid_array = malloc_or_die(sizeof(int) * cpus);
+ 	memset(pid_array, 0, sizeof(int) * cpus);
+ 
+-	start_port = START_PORT_SEARCH;
+-
+-	/* Now create a UDP port for each CPU */
++	/* Now create a reader for each CPU */
+ 	for (cpu = 0; cpu < cpus; cpu++) {
+-		udp_port = open_udp(node, port, &pid, cpu,
+-				    pagesize, start_port);
+-		if (udp_port < 0)
+-			goto out_free;
+-		port_array[cpu] = udp_port;
++		if (node) {
++			udp_port = open_udp(node, port, &pid, cpu,
++					    pagesize, start_port);
++			if (udp_port < 0)
++				goto out_free;
++			port_array[cpu] = udp_port;
++			/*
++			 * Due to some bugging finding ports,
++			 * force search after last port
++			 */
++			start_port = udp_port + 1;
++		} else {
++			if (open_virtio_serial_pipe(&pid, cpu, pagesize,
++						    domain, virtpid) < 0)
++				goto out_free;
++		}
+ 		pid_array[cpu] = pid;
+-		/*
+-		 * Due to some bugging finding ports,
+-		 * force search after last port
+-		 */
+-		start_port = udp_port + 1;
+ 	}
+ 
+ 	if (proto_ver == V2_PROTOCOL) {
+@@ -482,7 +608,7 @@ static int *create_all_readers(int cpus, const char *node, const char *port,
+ 	return pid_array;
+ 
+  out_free:
+-	destroy_all_readers(cpus, pid_array, node, port);
++	destroy_all_readers(cpus, pid_array, node, port, domain, virtpid, mode);
+ 	return NULL;
+ }
+ 
+@@ -524,7 +650,8 @@ static void stop_all_readers(int cpus, int *pid_array)
+ }
+ 
+ static void put_together_file(int cpus, int ofd, const char *node,
+-			      const char *port)
++			      const char *port, const char *domain, int virtpid,
++			      int mode)
+ {
+ 	char **temp_files;
+ 	int cpu;
+@@ -533,25 +660,33 @@ static void put_together_file(int cpus, int ofd, const char *node,
+ 	temp_files = malloc_or_die(sizeof(*temp_files) * cpus);
+ 
+ 	for (cpu = 0; cpu < cpus; cpu++)
+-		temp_files[cpu] = get_temp_file(node, port, cpu);
++		temp_files[cpu] = get_temp_file(node, port, domain,
++						virtpid, cpu, mode);
+ 
+ 	tracecmd_attach_cpu_data_fd(ofd, cpus, temp_files);
+ 	free(temp_files);
+ }
+ 
+-static void process_client(const char *node, const char *port, int fd)
++static void process_client(int fd, const char *node, const char *port,
++			   const char *domain, int virtpid, int mode)
+ {
+ 	int *pid_array;
+ 	int pagesize;
+ 	int cpus;
+ 	int ofd;
+ 
+-	if (communicate_with_client(fd, &cpus, &pagesize) < 0)
+-		return;
+-
+-	ofd = create_client_file(node, port);
+-
+-	pid_array = create_all_readers(cpus, node, port, pagesize, fd);
++	if (mode == NET) {
++		if (communicate_with_client_net(fd, &cpus, &pagesize) < 0)
++			return;
++	} else if (mode == VIRT) {
++		if (communicate_with_client_virt(fd, domain, &cpus, &pagesize) < 0)
++			return;
++	} else
++		pdie("process_client: Unsupported mode %d", mode);
++
++	ofd = create_client_file(node, port, domain, virtpid, mode);
++	pid_array = create_all_readers(cpus, node, port, domain, virtpid,
++				       pagesize, fd, mode);
+ 	if (!pid_array)
+ 		return;
+ 
+@@ -570,9 +705,22 @@ static void process_client(const char *node, const char *port, int fd)
+ 	/* wait a little to have the readers clean up */
+ 	sleep(1);
+ 
+-	put_together_file(cpus, ofd, node, port);
++	put_together_file(cpus, ofd, node, port, domain, virtpid, mode);
++
++	destroy_all_readers(cpus, pid_array, node, port, domain, virtpid, mode);
 +}
 +
-+static int tracecmd_msg_wait_for_msg(int fd, struct tracecmd_msg *msg)
++static void process_client_net(int fd, const char *node, const char *port)
 +{
++	process_client(fd, node, port, NULL, 0, NET);
++}
+ 
+-	destroy_all_readers(cpus, pid_array, node, port);
++static void process_client_virt(int fd, const char *domain, int virtpid)
++{
++	/* keep connection to qemu if clients on guests finish operation */
++	do {
++		process_client(fd, NULL, NULL, domain, virtpid, VIRT);
++	} while (!done);
+ }
+ 
+ static int do_fork(int cfd)
+@@ -599,32 +747,104 @@ static int do_fork(int cfd)
+ 	return 0;
+ }
+ 
+-static int do_connection(int cfd, struct sockaddr_storage *peer_addr,
+-			  socklen_t peer_addr_len)
++static int get_virtpid(int cfd)
+ {
+-	char host[NI_MAXHOST], service[NI_MAXSERV];
+-	int s;
++	struct ucred cr;
++	socklen_t cl;
+ 	int ret;
+ 
+-	ret = do_fork(cfd);
+-	if (ret)
++	cl = sizeof(cr);
++	ret = getsockopt(cfd, SOL_SOCKET, SO_PEERCRED, &cr, &cl);
++	if (ret < 0)
+ 		return ret;
+ 
+-	s = getnameinfo((struct sockaddr *)peer_addr, peer_addr_len,
+-			host, NI_MAXHOST,
+-			service, NI_MAXSERV, NI_NUMERICSERV);
++	return cr.pid;
++}
+ 
+-	if (s == 0)
+-		plog("Connected with %s:%s\n",
+-		       host, service);
+-	else {
+-		plog("Error with getnameinfo: %s\n",
+-		       gai_strerror(s));
+-		close(cfd);
+-		return -1;
++#define LIBVIRT_DOMAIN_PATH     "/var/run/libvirt/qemu/"
++
++/* We can convert pid to domain name of a guest when we use libvirt. */
++static char *get_guest_domain_from_pid(int pid)
++{
++	struct dirent *dirent;
++	char file_name[NAME_MAX];
++	char *file_name_ret, *domain;
++	char buf[BUFSIZ];
++	DIR *dir;
++	size_t doml;
++	int fd;
++
++	dir = opendir(LIBVIRT_DOMAIN_PATH);
++	if (!dir) {
++		if (errno == ENOENT)
++			warning("Only support for using libvirt");
++		return NULL;
++	}
++
++	for (dirent = readdir(dir); dirent != NULL; dirent = readdir(dir)) {
++		snprintf(file_name, NAME_MAX, LIBVIRT_DOMAIN_PATH"%s",
++			 dirent->d_name);
++		file_name_ret = strstr(file_name, ".pid");
++		if (file_name_ret) {
++			fd = open(file_name, O_RDONLY);
++			if (fd < 0)
++				return NULL;
++			if (read(fd, buf, BUFSIZ) < 0)
++				return NULL;
++
++			if (pid == atoi(buf)) {
++				/* not include /var/run/libvirt/qemu */
++				doml = (size_t)(file_name_ret - file_name)
++					- strlen(LIBVIRT_DOMAIN_PATH);
++				domain = strndup(file_name +
++						 strlen(LIBVIRT_DOMAIN_PATH),
++						 doml);
++				plog("start %s:%d\n", domain, pid);
++				return domain;
++			}
++		}
+ 	}
+ 
+-	process_client(host, service, cfd);
++	return NULL;
++}
++
++static int do_connection(int cfd, struct sockaddr *peer_addr,
++			 socklen_t peer_addr_len, int mode)
++{
++	char host[NI_MAXHOST], service[NI_MAXSERV];
++	int s, ret, virtpid;
++	char *domain = NULL;
++
++	if (mode == VIRT) {
++		virtpid = get_virtpid(cfd);
++		if (virtpid < 0)
++			return virtpid;
++
++		domain = get_guest_domain_from_pid(virtpid);
++		if (!domain)
++			return -1;
++	}
++
++	ret = do_fork(cfd);
++	if (ret)
++		return ret;
++
++	if (mode == NET) {
++		s = getnameinfo(peer_addr, peer_addr_len, host, NI_MAXHOST,
++				service, NI_MAXSERV, NI_NUMERICSERV);
++
++		if (s == 0)
++			plog("Connected with %s:%s\n",
++			       host, service);
++		else {
++			plog("Error with getnameinfo: %s\n",
++			       gai_strerror(s));
++			close(cfd);
++			return -1;
++		}
++		process_client_net(cfd, host, service);
++	} else if (mode == VIRT)
++		process_client_virt(cfd, domain, virtpid);
+ 
+ 	close(cfd);
+ 
+@@ -678,12 +898,11 @@ static void remove_process(int pid)
+ 
+ static void kill_clients(void)
+ {
+-	int status;
+ 	int i;
+ 
+ 	for (i = 0; i < saved_pids; i++) {
+ 		kill(client_pids[i], SIGINT);
+-		waitpid(client_pids[i], &status, 0);
++		waitpid(client_pids[i], NULL, 0);
+ 	}
+ 
+ 	saved_pids = 0;
+@@ -702,31 +921,38 @@ static void clean_up(int sig)
+ 	} while (ret > 0);
+ }
+ 
+-static void do_accept_loop(int sfd)
++static void do_accept_loop(int sfd, int mode)
+ {
+-	struct sockaddr_storage peer_addr;
+-	socklen_t peer_addr_len;
++	struct sockaddr addr;
++	socklen_t addrlen;
+ 	int cfd, pid;
+ 
+-	peer_addr_len = sizeof(peer_addr);
++	if (mode == NET)
++		addrlen = sizeof(struct sockaddr_storage);
++	else if (mode == VIRT)
++		addrlen = sizeof(struct sockaddr_un);
++	else
++		pdie("do_accept_loop: Unsupported mode %d", mode);
+ 
+ 	do {
+-		cfd = accept(sfd, (struct sockaddr *)&peer_addr,
+-			     &peer_addr_len);
++		cfd = accept(sfd, &addr, &addrlen);
+ 		printf("connected!\n");
+ 		if (cfd < 0 && errno == EINTR)
+ 			continue;
+ 		if (cfd < 0)
+ 			pdie("connecting");
+ 
+-		pid = do_connection(cfd, &peer_addr, peer_addr_len);
++		if (mode == NET)
++			pid = do_connection(cfd, &addr, addrlen, mode);
++		else if (mode == VIRT)
++			pid = do_connection(cfd, NULL, 0, mode);
+ 		if (pid > 0)
+ 			add_process(pid);
+ 
+ 	} while (!done);
+ }
+ 
+-static void do_listen(char *port)
++static void do_listen_net(char *port)
+ {
+ 	struct addrinfo hints;
+ 	struct addrinfo *result, *rp;
+@@ -764,8 +990,64 @@ static void do_listen(char *port)
+ 	if (listen(sfd, backlog) < 0)
+ 		pdie("listen");
+ 
+-	do_accept_loop(sfd);
++	do_accept_loop(sfd, NET);
++
++	kill_clients();
++}
++
++static void make_virt_if_dir(void)
++{
++	struct group *group;
++
++	if (mkdir(TRACE_CMD_DIR, 0710) < 0) {
++		if (errno != EEXIST)
++			pdie("mkdir %s", TRACE_CMD_DIR);
++	}
++	/* QEMU operates as qemu:qemu */
++	chmod(TRACE_CMD_DIR, 0710);
++	group = getgrnam("qemu");
++	if (chown(TRACE_CMD_DIR, -1, group->gr_gid) < 0)
++		pdie("chown %s", TRACE_CMD_DIR);
++
++	if (mkdir(VIRT_DIR, 0710) < 0) {
++		if (errno != EEXIST)
++			pdie("mkdir %s", VIRT_DIR);
++	}
++	chmod(VIRT_DIR, 0710);
++	if (chown(VIRT_DIR, -1, group->gr_gid) < 0)
++		pdie("chown %s", VIRT_DIR);
++}
++
++static void do_listen_virt(void)
++{
++	struct sockaddr_un un_server;
++	struct group *group;
++	socklen_t slen;
++	int sfd;
++
++	make_virt_if_dir();
++
++	slen = sizeof(un_server);
++	sfd = socket(AF_UNIX, SOCK_STREAM, 0);
++	if (sfd < 0)
++		pdie("socket");
++
++	un_server.sun_family = AF_UNIX;
++	snprintf(un_server.sun_path, PATH_MAX, VIRT_TRACE_CTL_SOCK);
++
++	if (bind(sfd, (struct sockaddr *)&un_server, slen) < 0)
++		pdie("bind");
++	chmod(VIRT_TRACE_CTL_SOCK, 0660);
++	group = getgrnam("qemu");
++	if (chown(VIRT_TRACE_CTL_SOCK, -1, group->gr_gid) < 0)
++		pdie("fchown %s", VIRT_TRACE_CTL_SOCK);
++
++	if (listen(sfd, backlog) < 0)
++		pdie("listen");
++
++	do_accept_loop(sfd, VIRT);
+ 
++	unlink(VIRT_TRACE_CTL_SOCK);
+ 	kill_clients();
+ }
+ 
+@@ -779,17 +1061,33 @@ enum {
+ 	OPT_debug	= 255,
+ };
+ 
++static void parse_args_net(int c, char **argv, char **port)
++{
++	switch (c) {
++	case 'p':
++		*port = optarg;
++		break;
++	default:
++		usage(argv);
++	}
++}
++
+ void trace_listen(int argc, char **argv)
+ {
+ 	char *logfile = NULL;
+ 	char *port = NULL;
+ 	int daemon = 0;
++	int mode = 0;
+ 	int c;
+ 
+ 	if (argc < 2)
+ 		usage(argv);
+ 
+-	if (strcmp(argv[1], "listen") != 0)
++	if (strcmp(argv[1], "listen") == 0)
++		mode = NET;
++	else if (strcmp(argv[1], "virt-server") == 0)
++		mode = VIRT;
++	else
+ 		usage(argv);
+ 
+ 	for (;;) {
+@@ -809,9 +1107,6 @@ void trace_listen(int argc, char **argv)
+ 		case 'h':
+ 			usage(argv);
+ 			break;
+-		case 'p':
+-			port = optarg;
+-			break;
+ 		case 'd':
+ 			output_dir = optarg;
+ 			break;
+@@ -828,11 +1123,14 @@ void trace_listen(int argc, char **argv)
+ 			debug = 1;
+ 			break;
+ 		default:
+-			usage(argv);
++			if (mode == NET)
++				parse_args_net(c, argv, &port);
++			else
++				usage(argv);
+ 		}
+ 	}
+ 
+-	if (!port)
++	if (!port && mode == NET)
+ 		usage(argv);
+ 
+ 	if ((argc - optind) >= 2)
+@@ -860,7 +1158,12 @@ void trace_listen(int argc, char **argv)
+ 	signal_setup(SIGINT, finish);
+ 	signal_setup(SIGTERM, finish);
+ 
+-	do_listen(port);
++	if (mode == NET)
++		do_listen_net(port);
++	else if (mode == VIRT)
++		do_listen_virt();
++	else
++		; /* Not reached */
+ 
+ 	return;
+ }
+diff --git a/trace-msg.c b/trace-msg.c
+index db48365..0d606dc 100644
+--- a/trace-msg.c
++++ b/trace-msg.c
+@@ -59,6 +59,11 @@ typedef __be32 be32;
+ 
+ #define CPU_MAX				256
+ 
++/* use CONNECTION_MSG as a protocol version of trace-msg */
++#define MSG_VERSION		"V2"
++#define CONNECTION_MSG		"tracecmd-" MSG_VERSION
++#define CONNECTION_MSGSIZE	sizeof(CONNECTION_MSG)
++
+ /* for both client and server */
+ bool use_tcp;
+ int cpu_count;
+@@ -78,6 +83,10 @@ struct tracecmd_msg_str {
+ 	char *buf;
+ } __attribute__((packed));
+ 
++struct tracecmd_msg_rconnect {
++	struct tracecmd_msg_str str;
++};
++
+ struct tracecmd_msg_opt {
+ 	be32 size;
+ 	be32 opt_cmd;
+@@ -104,6 +113,7 @@ struct tracecmd_msg_error {
+ 	be32 size;
+ 	be32 cmd;
+ 	union {
++		struct tracecmd_msg_rconnect rconnect;
+ 		struct tracecmd_msg_tinit tinit;
+ 		struct tracecmd_msg_rinit rinit;
+ 		struct tracecmd_msg_meta meta;
+@@ -111,7 +121,10 @@ struct tracecmd_msg_error {
+ } __attribute__((packed));
+ 
+ enum tracecmd_msg_cmd {
++	MSG_ERROR	= 0,
+ 	MSG_CLOSE	= 1,
++	MSG_TCONNECT	= 2,
++	MSG_RCONNECT	= 3,
+ 	MSG_TINIT	= 4,
+ 	MSG_RINIT	= 5,
+ 	MSG_SENDMETA	= 6,
+@@ -122,6 +135,7 @@ struct tracecmd_msg {
+ 	be32 size;
+ 	be32 cmd;
+ 	union {
++		struct tracecmd_msg_rconnect rconnect;
+ 		struct tracecmd_msg_tinit tinit;
+ 		struct tracecmd_msg_rinit rinit;
+ 		struct tracecmd_msg_meta meta;
+@@ -159,6 +173,16 @@ static void bufcpy(void *dest, u32 offset, const void *buf, u32 buflen)
+ 	memcpy(dest+offset, buf, buflen);
+ }
+ 
++static int make_rconnect(const char *buf, int buflen, struct tracecmd_msg *msg)
++{
++	u32 offset = offsetof(struct tracecmd_msg, data.rconnect.str.buf);
++
++	msg->data.rconnect.str.size = htonl(buflen);
++	bufcpy(msg, offset, buf, buflen);
++
++	return 0;
++}
++
+ enum msg_opt_command {
+ 	MSGOPT_USETCP = 1,
+ };
+@@ -236,11 +260,13 @@ static int make_rinit(struct tracecmd_msg *msg)
+ 
+ 	msg->data.rinit.cpus = htonl(cpu_count);
+ 
+-	for (i = 0; i < cpu_count; i++) {
+-		/* + rrqports->cpus or rrqports->port_array[i] */
+-		offset += sizeof(be32);
+-		port = htonl(port_array[i]);
+-		bufcpy(msg, offset, &port, sizeof(be32) * cpu_count);
++	if (port_array) {
++		for (i = 0; i < cpu_count; i++) {
++			/* + rrqports->cpus or rrqports->port_array[i] */
++			offset += sizeof(be32);
++			port = htonl(port_array[i]);
++			bufcpy(msg, offset, &port, sizeof(be32) * cpu_count);
++		}
+ 	}
+ 
+ 	return 0;
+@@ -252,6 +278,8 @@ static u32 tracecmd_msg_get_body_length(u32 cmd)
+ 	u32 len = 0;
+ 
+ 	switch (cmd) {
++	case MSG_RCONNECT:
++		return sizeof(msg->data.rconnect.str.size) + CONNECTION_MSGSIZE;
+ 	case MSG_TINIT:
+ 		len = sizeof(msg->data.tinit.cpus)
+ 		      + sizeof(msg->data.tinit.page_size)
+@@ -288,6 +316,8 @@ static u32 tracecmd_msg_get_body_length(u32 cmd)
+ static int tracecmd_msg_make_body(u32 cmd, struct tracecmd_msg *msg)
+ {
+ 	switch (cmd) {
++	case MSG_RCONNECT:
++		return make_rconnect(CONNECTION_MSG, CONNECTION_MSGSIZE, msg);
+ 	case MSG_TINIT:
+ 		return make_tinit(msg);
+ 	case MSG_RINIT:
+@@ -423,6 +453,8 @@ static void *tracecmd_msg_buf_access(struct tracecmd_msg *msg, int offset)
+ 
+ static int tracecmd_msg_wait_for_msg(int fd, struct tracecmd_msg *msg)
+ {
++	int offset = TRACECMD_MSG_HDR_LEN;
++	char *buf;
+ 	u32 cmd;
+ 	int ret;
+ 
+@@ -434,8 +466,20 @@ static int tracecmd_msg_wait_for_msg(int fd, struct tracecmd_msg *msg)
+ 	}
+ 
+ 	cmd = ntohl(msg->cmd);
+-	if (cmd == MSG_CLOSE)
++	switch (cmd) {
++	case MSG_RCONNECT:
++		offset += sizeof(msg->data.rconnect.str.size);
++		buf = tracecmd_msg_buf_access(msg, offset);
++		/* Make sure the server is the tracecmd server */
++		if (memcmp(buf, CONNECTION_MSG,
++		    ntohl(msg->data.rconnect.str.size) - 1) != 0) {
++			warning("server not tracecmd server");
++			return -EPROTONOSUPPORT;
++		}
++		break;
++	case MSG_CLOSE:
+ 		return -ECONNABORTED;
++	}
+ 
+ 	return 0;
+ }
+@@ -494,7 +538,55 @@ static void error_operation_for_server(struct tracecmd_msg *msg)
+ 
+ 	cmd = ntohl(msg->cmd);
+ 
+-	warning("Message: cmd=%d size=%d\n", cmd, ntohl(msg->size));
++	if (cmd == MSG_ERROR)
++		plog("Receive error message: cmd=%d size=%d\n",
++		     ntohl(msg->data.err.cmd), ntohl(msg->data.err.size));
++	else
++		warning("Message: cmd=%d size=%d\n", cmd, ntohl(msg->size));
++}
++
++int tracecmd_msg_set_connection(int fd, const char *domain)
++{
++	struct tracecmd_msg *msg;
++	char buf[TRACECMD_MSG_MAX_LEN] = {};
 +	u32 cmd;
 +	int ret;
 +
++	msg = (struct tracecmd_msg *)buf;
++
++	/*
++	 * Wait for connection msg by a client first.
++	 * If a client uses virtio-serial, a connection message will
++	 * not be sent immediately after accept(). connect() is called
++	 * in QEMU, so the client can send the connection message
++	 * after guest boots. Therefore, the virt-server patiently
++	 * waits for the connection request of a client.
++	 */
 +	ret = tracecmd_msg_recv(fd, msg);
-+	if (ret < 0)
-+		return ret;
++	if (ret < 0) {
++		if (!buf[0]) {
++			/* No data means QEMU has already died. */
++			close(fd);
++			die("Connection refuesd: %s", domain);
++		}
++		return -ENOMSG;
++	}
 +
 +	cmd = ntohl(msg->cmd);
 +	if (cmd == MSG_CLOSE)
 +		return -ECONNABORTED;
++	else if (cmd != MSG_TCONNECT)
++		return -EINVAL;
 +
-+	return 0;
-+}
-+
-+static int tracecmd_msg_send_and_wait_for_msg(int fd, u32 cmd, struct tracecmd_msg *msg)
-+{
-+	int ret;
-+
-+	ret = tracecmd_msg_send(fd, cmd);
++	ret = tracecmd_msg_send(fd, MSG_RCONNECT);
 +	if (ret < 0)
-+		return ret;
-+
-+	ret = tracecmd_msg_wait_for_msg(fd, msg);
-+	if (ret < 0)
-+		return ret;
-+
-+	return 0;
-+}
-+
-+int tracecmd_msg_send_init_data(int fd)
-+{
-+	char buf[TRACECMD_MSG_MAX_LEN];
-+	struct tracecmd_msg *msg;
-+	int i, cpus;
-+	int ret;
-+
-+	msg = (struct tracecmd_msg *)buf;
-+	ret = tracecmd_msg_send_and_wait_for_msg(fd, MSG_TINIT, msg);
-+	if (ret < 0)
-+		return ret;
-+
-+	cpus = ntohl(msg->data.rinit.cpus);
-+	client_ports = malloc_or_die(sizeof(int) * cpus);
-+	for (i = 0; i < cpus; i++)
-+		client_ports[i] = ntohl(msg->data.rinit.port_array[i]);
-+
-+	/* Next, send meta data */
-+	send_metadata = true;
-+
-+	return 0;
-+}
-+
-+static bool process_option(struct tracecmd_msg_opt *opt)
-+{
-+	/* currently the only option we have is to us TCP */
-+	if (ntohl(opt->opt_cmd) == MSGOPT_USETCP) {
-+		use_tcp = true;
-+		return true;
-+	}
-+	return false;
-+}
-+
-+static void error_operation_for_server(struct tracecmd_msg *msg)
-+{
-+	u32 cmd;
-+
-+	cmd = ntohl(msg->cmd);
-+
-+	warning("Message: cmd=%d size=%d\n", cmd, ntohl(msg->size));
-+}
-+
-+#define MAX_OPTION_SIZE 4096
-+
-+int tracecmd_msg_initial_setting(int fd, int *cpus, int *pagesize)
-+{
-+	struct tracecmd_msg *msg;
-+	struct tracecmd_msg_opt *opt;
-+	char buf[TRACECMD_MSG_MAX_LEN];
-+	int offset = offsetof(struct tracecmd_msg, data.tinit.opt);
-+	int options, i, s;
-+	int ret;
-+	u32 size = 0;
-+	u32 cmd;
-+
-+	msg = (struct tracecmd_msg *)buf;
-+	ret = tracecmd_msg_recv(fd, msg);
-+	if (ret < 0)
-+		return ret;
-+
-+	cmd = ntohl(msg->cmd);
-+	if (cmd != MSG_TINIT) {
-+		ret = -EINVAL;
 +		goto error;
-+	}
-+
-+	*cpus = ntohl(msg->data.tinit.cpus);
-+	plog("cpus=%d\n", *cpus);
-+	if (*cpus < 0) {
-+		ret = -EINVAL;
-+		goto error;
-+	}
-+
-+	*pagesize = ntohl(msg->data.tinit.page_size);
-+	plog("pagesize=%d\n", *pagesize);
-+	if (*pagesize <= 0) {
-+		ret = -EINVAL;
-+		goto error;
-+	}
-+
-+	options = ntohl(msg->data.tinit.opt_num);
-+	for (i = 0; i < options; i++) {
-+		offset += size;
-+		opt = tracecmd_msg_buf_access(msg, offset);
-+		size = ntohl(opt->size);
-+		/* prevent a client from killing us */
-+		if (size > MAX_OPTION_SIZE) {
-+			plog("Exceed MAX_OPTION_SIZE\n");
-+			ret = -EINVAL;
-+			goto error;
-+		}
-+		s = process_option(opt);
-+		/* do we understand this option? */
-+		if (!s) {
-+			plog("Cannot understand(%d:%d:%d)\n",
-+			     i, ntohl(opt->size), ntohl(opt->opt_cmd));
-+			ret = -EINVAL;
-+			goto error;
-+		}
-+	}
 +
 +	return 0;
 +
 +error:
 +	error_operation_for_server(msg);
 +	return ret;
-+}
-+
-+int tracecmd_msg_send_port_array(int fd, int total_cpus, int *ports)
-+{
-+	int ret;
-+
-+	cpu_count = total_cpus;
-+	port_array = ports;
-+
-+	ret = tracecmd_msg_send(fd, MSG_RINIT);
-+	if (ret < 0)
-+		return ret;
-+
-+	return 0;
-+}
-+
-+void tracecmd_msg_send_close_msg(void)
-+{
-+	tracecmd_msg_send(psfd, MSG_CLOSE);
-+}
-+
-+static void make_meta(const char *buf, int buflen, struct tracecmd_msg *msg)
-+{
-+	int offset = offsetof(struct tracecmd_msg, data.meta.str.buf);
-+
-+	msg->data.meta.str.size = htonl(buflen);
-+	bufcpy(msg, offset, buf, buflen);
-+}
-+
-+int tracecmd_msg_metadata_send(int fd, char *buf, int size)
-+{
-+	struct tracecmd_msg *msg;
-+	int n, len;
-+	int ret;
-+	int count = 0;
-+
-+	ret = tracecmd_msg_create(MSG_SENDMETA, &msg);
-+	if (ret < 0)
-+		return ret;
-+
-+	n = size;
-+	do {
-+		if (n > TRACECMD_MSG_META_MAX_LEN) {
-+			make_meta(buf+count, TRACECMD_MSG_META_MAX_LEN, msg);
-+			n -= TRACECMD_MSG_META_MAX_LEN;
-+			count += TRACECMD_MSG_META_MAX_LEN;
-+		} else {
-+			make_meta(buf+count, n, msg);
-+			/*
-+			 * TRACECMD_MSG_META_MAX_LEN is stored in msg->size,
-+			 * so update the size to the correct value.
-+			 */
-+			len = TRACECMD_MSG_META_MIN_LEN + n;
-+			msg->size = htonl(len);
-+			n = 0;
-+		}
-+
-+		ret = msg_do_write_check(fd, msg);
-+		if (ret < 0)
-+			break;
-+	} while (n);
-+
-+	free(msg);
-+	return ret;
-+}
-+
-+int tracecmd_msg_finish_sending_metadata(int fd)
-+{
-+	int ret;
-+
-+	ret = tracecmd_msg_send(fd, MSG_FINMETA);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* psfd will be used for closing */
-+	psfd = fd;
-+	return 0;
-+}
-+
-+int tracecmd_msg_collect_metadata(int ifd, int ofd)
-+{
-+	struct tracecmd_msg *msg;
-+	char buf[TRACECMD_MSG_MAX_LEN];
-+	u32 s, t, n, cmd;
-+	int offset = TRACECMD_MSG_META_MIN_LEN;
-+	int ret;
-+
-+	msg = (struct tracecmd_msg *)buf;
-+
-+	do {
-+		ret = tracecmd_msg_recv(ifd, msg);
-+		if (ret < 0) {
-+			warning("reading client");
-+			return ret;
-+		}
-+
-+		cmd = ntohl(msg->cmd);
-+		if (cmd == MSG_FINMETA) {
-+			/* Finish receiving meta data */
-+			break;
-+		} else if (cmd != MSG_SENDMETA)
-+			goto error;
-+
-+		n = ntohl(msg->data.meta.str.size);
-+		t = n;
-+		s = 0;
-+		do {
-+			s = write(ofd, buf+s+offset, t);
-+			if (s < 0) {
-+				if (errno == EINTR)
-+					continue;
-+				warning("writing to file");
-+				return -errno;
-+			}
-+			t -= s;
-+			s = n - t;
-+		} while (t);
-+	} while (cmd == MSG_SENDMETA);
-+
-+	/* check the finish message of the client */
-+	while (!done) {
-+		ret = tracecmd_msg_recv(ifd, msg);
-+		if (ret < 0) {
-+			warning("reading client");
-+			return ret;
-+		}
-+
-+		msg = (struct tracecmd_msg *)buf;
-+		cmd = ntohl(msg->cmd);
-+		if (cmd == MSG_CLOSE)
-+			/* Finish this connection */
-+			break;
-+		else {
-+			warning("Not accept the message %d", ntohl(msg->cmd));
-+			ret = -EINVAL;
-+			goto error;
-+		}
+ }
+ 
+ #define MAX_OPTION_SIZE 4096
+diff --git a/trace-recorder.c b/trace-recorder.c
+index 247bb2d..6670b6a 100644
+--- a/trace-recorder.c
++++ b/trace-recorder.c
+@@ -149,19 +149,23 @@ tracecmd_create_buffer_recorder_fd2(int fd, int fd2, int cpu, unsigned flags,
+ 	recorder->fd1 = fd;
+ 	recorder->fd2 = fd2;
+ 
+-	path = malloc_or_die(strlen(buffer) + 40);
+-	if (!path)
+-		goto out_free;
++	if (buffer) {
++		path = malloc_or_die(strlen(buffer) + 40);
++		if (!path)
++			goto out_free;
+ 
+-	if (flags & TRACECMD_RECORD_SNAPSHOT)
+-		sprintf(path, "%s/per_cpu/cpu%d/snapshot_raw", buffer, cpu);
+-	else
+-		sprintf(path, "%s/per_cpu/cpu%d/trace_pipe_raw", buffer, cpu);
+-	recorder->trace_fd = open(path, O_RDONLY);
+-	if (recorder->trace_fd < 0)
+-		goto out_free;
++		if (flags & TRACECMD_RECORD_SNAPSHOT)
++			sprintf(path, "%s/per_cpu/cpu%d/snapshot_raw",
++				buffer, cpu);
++		else
++			sprintf(path, "%s/per_cpu/cpu%d/trace_pipe_raw",
++				buffer, cpu);
++		recorder->trace_fd = open(path, O_RDONLY);
++		if (recorder->trace_fd < 0)
++			goto out_free;
+ 
+-	free(path);
++		free(path);
 +	}
-+
-+	return 0;
-+
-+error:
-+	error_operation_for_server(msg);
-+	return ret;
-+}
-diff --git a/trace-msg.h b/trace-msg.h
-new file mode 100644
-index 0000000..b23e72b
---- /dev/null
-+++ b/trace-msg.h
-@@ -0,0 +1,27 @@
-+#ifndef _TRACE_MSG_H_
-+#define _TRACE_MSG_H_
-+
-+#include <stdbool.h>
-+
-+#define UDP_MAX_PACKET	(65536 - 20)
-+#define V2_MAGIC	"677768\0"
-+
-+#define V1_PROTOCOL	1
-+#define V2_PROTOCOL	2
-+
-+/* for both client and server */
-+extern bool use_tcp;
-+extern int cpu_count;
-+
-+/* for client */
-+extern unsigned int page_size;
-+extern int *client_ports;
-+extern bool send_metadata;
-+
-+/* for server */
-+extern bool done;
-+
-+void plog(const char *fmt, ...);
-+void pdie(const char *fmt, ...);
-+
-+#endif /* _TRACE_MSG_H_ */
-diff --git a/trace-output.c b/trace-output.c
-index b033baa..4661870 100644
---- a/trace-output.c
-+++ b/trace-output.c
-@@ -37,6 +37,7 @@
  
- #include "trace-cmd-local.h"
- #include "list.h"
-+#include "trace-msg.h"
- #include "version.h"
- 
- /* We can't depend on the host size for size_t, all must be 64 bit */
-@@ -82,6 +83,9 @@ struct list_event_system {
- static stsize_t
- do_write_check(struct tracecmd_output *handle, void *data, tsize_t size)
- {
-+	if (send_metadata)
-+		return tracecmd_msg_metadata_send(handle->fd, data, size);
-+
- 	return __do_write_check(handle->fd, data, size);
+ 	if ((recorder->flags & TRACECMD_RECORD_NOSPLICE) == 0) {
+ 		ret = pipe(recorder->brass);
+@@ -184,8 +188,9 @@ tracecmd_create_buffer_recorder_fd(int fd, int cpu, unsigned flags, const char *
+ 	return tracecmd_create_buffer_recorder_fd2(fd, -1, cpu, flags, buffer, 0);
  }
  
-diff --git a/trace-record.c b/trace-record.c
-index 3e5def2..79ce3a1 100644
---- a/trace-record.c
-+++ b/trace-record.c
-@@ -45,6 +45,7 @@
- #include <errno.h>
- 
- #include "trace-local.h"
-+#include "trace-msg.h"
- 
- #define _STR(x) #x
- #define STR(x) _STR(x)
-@@ -59,25 +60,17 @@
- #define STAMP		"stamp"
- #define FUNC_STACK_TRACE "func_stack_trace"
- 
--#define UDP_MAX_PACKET (65536 - 20)
--
- static int rt_prio;
- 
--static int use_tcp;
--
--static unsigned int page_size;
--
- static const char *output_file = "trace.dat";
- 
- static int latency;
- static int sleep_time = 1000;
--static int cpu_count;
- static int recorder_threads;
- static int *pids;
- static int buffers;
- 
- static char *host;
--static int *client_ports;
- static int sfd;
- static struct tracecmd_output *network_handle;
- 
-@@ -99,6 +92,7 @@ static unsigned recorder_flags;
- /* Try a few times to get an accurate date */
- static int date2ts_tries = 5;
- 
-+static int proto_ver = V2_PROTOCOL;
- static struct func_list *graph_funcs;
- 
- static int func_stack;
-@@ -1817,20 +1811,26 @@ static int create_recorder(struct buffer_instance *instance, int cpu, int extrac
- 	exit(0);
+-struct tracecmd_recorder *
+-tracecmd_create_buffer_recorder(const char *file, int cpu, unsigned flags, const char *buffer)
++static struct tracecmd_recorder *
++__tracecmd_create_buffer_recorder(const char *file, int cpu, unsigned flags,
++				  const char *buffer)
+ {
+ 	struct tracecmd_recorder *recorder;
+ 	int fd;
+@@ -248,6 +253,25 @@ tracecmd_create_buffer_recorder_maxkb(const char *file, int cpu, unsigned flags,
+ 	goto out;
  }
  
--static void communicate_with_listener(int fd)
-+static void check_first_msg_from_server(int fd)
- {
- 	char buf[BUFSIZ];
--	ssize_t n;
--	int cpu, i;
- 
--	n = read(fd, buf, 8);
-+	read(fd, buf, 8);
- 
- 	/* Make sure the server is the tracecmd server */
- 	if (memcmp(buf, "tracecmd", 8) != 0)
- 		die("server not tracecmd server");
-+}
- 
--	/* write the number of CPUs we have (in ASCII) */
-+static void communicate_with_listener_v1(int fd)
++struct tracecmd_recorder *
++tracecmd_create_buffer_recorder(const char *file, int cpu, unsigned flags,
++				const char *buffer)
 +{
-+	char buf[BUFSIZ];
-+	ssize_t n;
-+	int cpu, i;
-+
-+	check_first_msg_from_server(fd);
- 
-+	/* write the number of CPUs we have (in ASCII) */
- 	sprintf(buf, "%d", cpu_count);
- 
- 	/* include \0 */
-@@ -1885,6 +1885,46 @@ static void communicate_with_listener(int fd)
- 	}
- }
- 
-+static void communicate_with_listener_v2(int fd)
-+{
-+	if (tracecmd_msg_send_init_data(fd) < 0)
-+		die("Cannot communicate with server");
++	return __tracecmd_create_buffer_recorder(file, cpu, flags, buffer);
 +}
 +
-+static void check_protocol_version(int fd)
++struct tracecmd_recorder *
++tracecmd_create_recorder_virt(const char *file, int cpu, int trace_fd)
 +{
-+	char buf[BUFSIZ];
++	struct tracecmd_recorder *recorder;
 +
-+	check_first_msg_from_server(fd);
++	recorder = __tracecmd_create_buffer_recorder(file, cpu, 0, NULL);
++	if (recorder)
++		recorder->trace_fd = trace_fd;
 +
-+	/*
-+	 * Write the protocol version, the magic number, and the dummy
-+	 * option(0) (in ASCII). The client understands whether the client
-+	 * uses the v2 protocol or not by checking a reply message from the
-+	 * server. If the message is "V2", the server uses v2 protocol. On the
-+	 * other hands, if the message is just number strings, the server
-+	 * returned port numbers. So, in that time, the client understands the
-+	 * server uses the v1 protocol. However, the old server tells the
-+	 * client port numbers after reading cpu_count, page_size, and option.
-+	 * So, we add the dummy number (the magic number and 0 option) to the
-+	 * first client message.
-+	 */
-+	write(fd, "V2\0"V2_MAGIC"0", sizeof(V2_MAGIC)+4);
-+
-+	/* read a reply message */
-+	read(fd, buf, BUFSIZ);
-+
-+	if (!buf[0]) {
-+		/* the server uses the v1 protocol, so we'll use it */
-+		proto_ver = V1_PROTOCOL;
-+		plog("Use the v1 protocol\n");
-+	} else {
-+		if (memcmp(buf, "V2", 2) != 0)
-+			die("Cannot handle the protocol %s", buf);
-+		/* OK, let's use v2 protocol */
-+	}
++	return recorder;
 +}
 +
- static void setup_network(void)
+ struct tracecmd_recorder *tracecmd_create_recorder_fd(int fd, int cpu, unsigned flags)
  {
- 	struct addrinfo hints;
-@@ -1912,6 +1952,7 @@ static void setup_network(void)
- 	hints.ai_family = AF_UNSPEC;
- 	hints.ai_socktype = SOCK_STREAM;
- 
-+again:
- 	s = getaddrinfo(server, port, &hints, &result);
- 	if (s != 0)
- 		die("getaddrinfo: %s", gai_strerror(s));
-@@ -1932,16 +1973,32 @@ static void setup_network(void)
- 
- 	freeaddrinfo(result);
- 
--	communicate_with_listener(sfd);
-+	if (proto_ver == V2_PROTOCOL) {
-+		check_protocol_version(sfd);
-+		if (proto_ver == V1_PROTOCOL) {
-+			/* reconnect to the server for using the v1 protocol */
-+			close(sfd);
-+			goto again;
-+		}
-+		communicate_with_listener_v2(sfd);
-+	}
-+
-+	if (proto_ver == V1_PROTOCOL)
-+		communicate_with_listener_v1(sfd);
- 
- 	/* Now create the handle through this socket */
- 	network_handle = tracecmd_create_init_fd_glob(sfd, listed_events);
- 
-+	if (proto_ver == V2_PROTOCOL)
-+		tracecmd_msg_finish_sending_metadata(sfd);
-+
- 	/* OK, we are all set, let'r rip! */
- }
- 
- static void finish_network(void)
- {
-+	if (proto_ver == V2_PROTOCOL)
-+		tracecmd_msg_send_close_msg();
- 	close(sfd);
- 	free(host);
- }
+ 	char *tracing;
+diff --git a/trace-usage.c b/trace-usage.c
+index 0dec87e..0411cb4 100644
+--- a/trace-usage.c
++++ b/trace-usage.c
+@@ -183,6 +183,16 @@ static struct usage_help usage_help[] = {
+ 		"	   -l logfile to write messages to.\n"
+ 	},
+ 	{
++		"virt-server",
++		"listen on a virtio-serial for trace clients",
++		" %s virt-server [-o file][-d dir][-l logfile]\n"
++		"          Creates a socket to listen for clients.\n"
++		"          -D create it in daemon mode.\n"
++		"          -o file name to use for clients.\n"
++		"          -d diretory to store client files.\n"
++		"	   -l logfile to write messages to.\n"
++	},
++	{
+ 		"list",
+ 		"list the available events, plugins or options",
+ 		" %s list [-e [regex]][-t][-o][-f [regex]]\n"
 
