@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753412AbaGKM5E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 08:57:04 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:44775 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752391AbaGKM5B (ORCPT
+	id S1753529AbaGKM62 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 08:58:28 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:53914 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752824AbaGKM6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 08:57:01 -0400
-Message-ID: <53BFDF22.1020302@linaro.org>
-Date: Fri, 11 Jul 2014 07:57:06 -0500
-From: Alex Elder <elder@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 11 Jul 2014 08:58:25 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH 3/3] arm64: Use include/asm-generic/io.h
+Date: Fri, 11 Jul 2014 14:58:09 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1404918699-17284-1-git-send-email-thierry.reding@gmail.com> <201407101514.16530.arnd@arndb.de> <20140711121923.GE11473@arm.com>
+In-Reply-To: <20140711121923.GE11473@arm.com>
 MIME-Version: 1.0
-To: heikki.krogerus@linux.intel.com
-CC: Greg KH <gregkh@linuxfoundation.org>, david.daney@cavium.com,
-        loic.poulain@intel.com, linux-serial@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Subject: dw8250_set_termios() questions
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201407111458.09884.arnd@arndb.de>
+X-Provags-ID: V02:K0:JhfbXeILLur5R7tUpMrzlOKWJcguPIO+SxMESpLAEuZ
+ F9pMpH2mrwM4U2dPlP6u+uYAHdi54pz6GZf4wkIK0pw3fXiw43
+ 3kgSFIBykIxn2FoHIT5fxvV5f5fqqH4zwFRMs3qkPk3zbVspAn
+ AAOfqijjZkOSRpXV9lfPC6mBX9S6tdWq36AfOgMgL/b8HCVRYe
+ Zrqyktz8/21VlFUkkrK4XckdhH4qJtYg5QiTFK2Njjj7vQpG2c
+ PnFk0Py32ySImzB+u1BqLydW1X8+4Osv0v/R9zIZ0fYV3O3cw7
+ m3/4aDuvEITtklH1LqdP+98lK5Dj1bOPKLh4pQeIDZ7WBNLzPB
+ TnfyPe6l3NqYrHzIQLAN75UefOvdtXCh/cp8oVzEy
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Heikki, I have not been a subscriber of the linux-serial
-mailing list and didn't see this patch go by:
-    serial: 8250_dw: clock rate handling for all ACPI platforms
-    http://www.spinics.net/lists/linux-serial/msg12861.html
+On Friday 11 July 2014, Catalin Marinas wrote:
+> ioread32() is indeed an alias for readl on arm64 but if the address it
+> gets as argument looks like an I/O port, it adds PCI_IOBASE (via the inl
+> macro). This would no longer happen with Thierry's patches.
+> 
+> So I guess that for this patch to work, we also need ioport_map() to
+> return an address from the PCI_IOBASE range. Should we merge this now as
+> well:
+> 
+> http://linux-arm.org/git?p=linux-ld.git;a=commitdiff;h=3423064d8e42a38164a8436bcdf7434cf9cd2192
 
-I had been working on doing something very similar for some
-Broadcom device tree based devices and it might have been
-helpful for me to have seen it.  What I ended up with was
-*very* similar to what you did.  Here is the last version
-of the patch I posted:
-    https://lkml.org/lkml/2014/7/1/323
+This is also part of patch 1/3 in Thierry's series.
 
-There *are* some differences, and I'd like to inquire about
-them before I simply use the code you have for my purpose.
-
-These first two relate to whether I can use your
-code as-is:
-- Why do you skip setting the clock if a null "old"
-  pointer is supplied?
-- I don't believe it's necessary to surround the clock
-  rate change with clk_disable_unprepare() and
-  clk_prepare_enable().  Do you believe otherwise?
-
-This one is addressed to how your code is used now:
-- Alan Cox had this question about my patch, and
-  it seems to apply to your code as well:
-    "This assumes an arbitarily configurable clock,
-    which is not I think the usual case."
-    https://lkml.org/lkml/2014/6/28/91
-  His point is that the clock, if adjustable, may
-  not support a rate that produces an acceptable
-  signal rate.  Put another way, there may be a
-  better frequency than what the clock framework
-  selects that (in combination with the UART
-  divisor latch registers) produces the best--or
-  even a good--signal.  Is there any chance any
-  ACPI platforms will suffer this problem?
-
-Thanks.
-
-					-Alex
+	Arnd
