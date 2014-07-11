@@ -1,291 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995AbaGKNoT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:44:19 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56078 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753976AbaGKNoQ (ORCPT
+	id S1754618AbaGKN6X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:58:23 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:45505 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754505AbaGKN6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:44:16 -0400
-Message-Id: <20140711133706.153705054@linutronix.de>
-User-Agent: quilt/0.63-1
-Date: Fri, 11 Jul 2014 13:44:14 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 11/55] timekeeping: Provide timespec64 based interfaces
-References: <20140711133623.530368377@linutronix.de>
+	Fri, 11 Jul 2014 09:58:20 -0400
+Date: Fri, 11 Jul 2014 14:58:13 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Subject: Re: No uart output on my snowball board
+Message-ID: <20140711135813.GD2954@lee--X1>
+References: <20140710223021.6e9c857f@gandalf.local.home>
+ <CACRpkdZM5NECaPbFC1aGH2zD4T_8g9TYRy1HkbDVAQvjJs5E5w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=timekeeping-provide-ts64-interfaces.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdZM5NECaPbFC1aGH2zD4T_8g9TYRy1HkbDVAQvjJs5E5w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To convert callers of the core code to timespec64 we need to provide
-the proper interfaces.
+On Fri, 11 Jul 2014, Linus Walleij wrote:
+> On Fri, Jul 11, 2014 at 4:30 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> > commit a0998b8321eb5f53ef51924f5ab6c69237ac1025
+> > Author: Lee Jones <lee.jones@linaro.org>
+> > Date:   Thu Aug 22 16:18:56 2013 +0100
+> >
+> >     ARM: ux500: Remove UART support when booting without Device Tree
+> >
+> >     It's time to remove all ATAG support from ux500 and rely solely on
+> >     Device Tree booting. This patch is part of that endeavour.
+> >
+> >     Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> >     Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> I hate that I didn't spot the speling mistake in the subject,
+> its ATAG support we're removing, not UART :-)
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- include/linux/timekeeping.h |   66 ++++++++++++++++++++++++++++++++++++++++----
- kernel/time/ntp.c           |    7 ++--
- kernel/time/timekeeping.c   |   47 ++++++++++++++-----------------
- 3 files changed, 87 insertions(+), 33 deletions(-)
+Now you're going coo-coo. :)
 
-Index: tip/include/linux/timekeeping.h
-===================================================================
---- tip.orig/include/linux/timekeeping.h
-+++ tip/include/linux/timekeeping.h
-@@ -29,15 +29,71 @@ struct timespec get_monotonic_coarse(voi
- extern void getrawmonotonic(struct timespec *ts);
- extern void monotonic_to_bootbased(struct timespec *ts);
- extern void get_monotonic_boottime(struct timespec *ts);
--extern void ktime_get_ts(struct timespec *ts);
-+extern void ktime_get_ts64(struct timespec64 *ts);
-+
-+extern int __getnstimeofday64(struct timespec64 *tv);
-+extern void getnstimeofday64(struct timespec64 *tv);
-+
-+#if BITS_PER_LONG == 64
-+static inline int __getnstimeofday(struct timespec *ts)
-+{
-+	return __getnstimeofday64(ts);
-+}
-+
-+static inline void getnstimeofday(struct timespec *ts)
-+{
-+	getnstimeofday64(ts);
-+}
-+
-+static inline void ktime_get_ts(struct timespec *ts)
-+{
-+	ktime_get_ts64(ts);
-+}
-+
-+static inline void ktime_get_real_ts(struct timespec *ts)
-+{
-+	getnstimeofday64(ts);
-+}
-+
-+#else
-+static inline int __getnstimeofday(struct timespec *ts)
-+{
-+	struct timespec64 ts64;
-+	int ret = __getnstimeofday64(&ts64);
-+
-+	*ts = timespec64_to_timespec(ts64);
-+	return ret;
-+}
-+
-+static inline void getnstimeofday(struct timespec *ts)
-+{
-+	struct timespec64 ts64;
-+
-+	getnstimeofday64(&ts64);
-+	*ts = timespec64_to_timespec(ts64);
-+}
-+
-+static inline void ktime_get_ts(struct timespec *ts)
-+{
-+	struct timespec64 ts64;
-+
-+	ktime_get_ts64(&ts64);
-+	*ts = timespec64_to_timespec(ts64);
-+}
-+
-+static inline void ktime_get_real_ts(struct timespec *ts)
-+{
-+	struct timespec64 ts64;
-+
-+	getnstimeofday64(&ts64);
-+	*ts = timespec64_to_timespec(ts64);
-+}
-+#endif
- 
--extern int __getnstimeofday(struct timespec *tv);
--extern void getnstimeofday(struct timespec *tv);
- extern void getboottime(struct timespec *ts);
- 
- #define do_posix_clock_monotonic_gettime(ts) ktime_get_ts(ts)
--#define ktime_get_real_ts(ts)	getnstimeofday(ts)
--
-+#define ktime_get_real_ts64(ts)	getnstimeofday64(ts)
- 
- /*
-  * ktime_t based interfaces
-Index: tip/kernel/time/ntp.c
-===================================================================
---- tip.orig/kernel/time/ntp.c
-+++ tip/kernel/time/ntp.c
-@@ -466,7 +466,8 @@ static DECLARE_DELAYED_WORK(sync_cmos_wo
- 
- static void sync_cmos_clock(struct work_struct *work)
- {
--	struct timespec now, next;
-+	struct timespec64 now;
-+	struct timespec next;
- 	int fail = 1;
- 
- 	/*
-@@ -485,9 +486,9 @@ static void sync_cmos_clock(struct work_
- 		return;
- 	}
- 
--	getnstimeofday(&now);
-+	getnstimeofday64(&now);
- 	if (abs(now.tv_nsec - (NSEC_PER_SEC / 2)) <= tick_nsec * 5) {
--		struct timespec adjust = now;
-+		struct timespec adjust = timespec64_to_timespec(now);
- 
- 		fail = -ENODEV;
- 		if (persistent_clock_is_local)
-Index: tip/kernel/time/timekeeping.c
-===================================================================
---- tip.orig/kernel/time/timekeeping.c
-+++ tip/kernel/time/timekeeping.c
-@@ -285,13 +285,13 @@ static void timekeeping_forward_now(stru
- }
- 
- /**
-- * __getnstimeofday - Returns the time of day in a timespec.
-+ * __getnstimeofday64 - Returns the time of day in a timespec64.
-  * @ts:		pointer to the timespec to be set
-  *
-  * Updates the time of day in the timespec.
-  * Returns 0 on success, or -ve when suspended (timespec will be undefined).
-  */
--int __getnstimeofday(struct timespec *ts)
-+int __getnstimeofday64(struct timespec64 *ts)
- {
- 	struct timekeeper *tk = &timekeeper;
- 	unsigned long seq;
-@@ -306,7 +306,7 @@ int __getnstimeofday(struct timespec *ts
- 	} while (read_seqcount_retry(&timekeeper_seq, seq));
- 
- 	ts->tv_nsec = 0;
--	timespec_add_ns(ts, nsecs);
-+	timespec64_add_ns(ts, nsecs);
- 
- 	/*
- 	 * Do not bail out early, in case there were callers still using
-@@ -316,19 +316,19 @@ int __getnstimeofday(struct timespec *ts
- 		return -EAGAIN;
- 	return 0;
- }
--EXPORT_SYMBOL(__getnstimeofday);
-+EXPORT_SYMBOL(__getnstimeofday64);
- 
- /**
-- * getnstimeofday - Returns the time of day in a timespec.
-+ * getnstimeofday64 - Returns the time of day in a timespec64.
-  * @ts:		pointer to the timespec to be set
-  *
-  * Returns the time of day in a timespec (WARN if suspended).
-  */
--void getnstimeofday(struct timespec *ts)
-+void getnstimeofday64(struct timespec64 *ts)
- {
--	WARN_ON(__getnstimeofday(ts));
-+	WARN_ON(__getnstimeofday64(ts));
- }
--EXPORT_SYMBOL(getnstimeofday);
-+EXPORT_SYMBOL(getnstimeofday64);
- 
- ktime_t ktime_get(void)
- {
-@@ -350,17 +350,17 @@ ktime_t ktime_get(void)
- EXPORT_SYMBOL_GPL(ktime_get);
- 
- /**
-- * ktime_get_ts - get the monotonic clock in timespec format
-+ * ktime_get_ts64 - get the monotonic clock in timespec64 format
-  * @ts:		pointer to timespec variable
-  *
-  * The function calculates the monotonic clock from the realtime
-  * clock and the wall_to_monotonic offset and stores the result
-  * in normalized timespec format in the variable pointed to by @ts.
-  */
--void ktime_get_ts(struct timespec *ts)
-+void ktime_get_ts64(struct timespec64 *ts)
- {
- 	struct timekeeper *tk = &timekeeper;
--	struct timespec64 ts64, tomono;
-+	struct timespec64 tomono;
- 	s64 nsec;
- 	unsigned int seq;
- 
-@@ -368,18 +368,17 @@ void ktime_get_ts(struct timespec *ts)
- 
- 	do {
- 		seq = read_seqcount_begin(&timekeeper_seq);
--		ts64.tv_sec = tk->xtime_sec;
-+		ts->tv_sec = tk->xtime_sec;
- 		nsec = timekeeping_get_ns(tk);
- 		tomono = tk->wall_to_monotonic;
- 
- 	} while (read_seqcount_retry(&timekeeper_seq, seq));
- 
--	ts64.tv_sec += tomono.tv_sec;
--	ts64.tv_nsec = 0;
--	timespec64_add_ns(&ts64, nsec + tomono.tv_nsec);
--	*ts = timespec64_to_timespec(ts64);
-+	ts->tv_sec += tomono.tv_sec;
-+	ts->tv_nsec = 0;
-+	timespec64_add_ns(ts, nsec + tomono.tv_nsec);
- }
--EXPORT_SYMBOL_GPL(ktime_get_ts);
-+EXPORT_SYMBOL_GPL(ktime_get_ts64);
- 
- 
- /**
-@@ -473,9 +472,9 @@ EXPORT_SYMBOL(getnstime_raw_and_real);
-  */
- void do_gettimeofday(struct timeval *tv)
- {
--	struct timespec now;
-+	struct timespec64 now;
- 
--	getnstimeofday(&now);
-+	getnstimeofday64(&now);
- 	tv->tv_sec = now.tv_sec;
- 	tv->tv_usec = now.tv_nsec/1000;
- }
-@@ -680,11 +679,11 @@ int timekeeping_notify(struct clocksourc
-  */
- ktime_t ktime_get_real(void)
- {
--	struct timespec now;
-+	struct timespec64 now;
- 
--	getnstimeofday(&now);
-+	getnstimeofday64(&now);
- 
--	return timespec_to_ktime(now);
-+	return timespec64_to_ktime(now);
- }
- EXPORT_SYMBOL_GPL(ktime_get_real);
- 
-@@ -1689,7 +1688,6 @@ int do_adjtimex(struct timex *txc)
- 	struct timekeeper *tk = &timekeeper;
- 	unsigned long flags;
- 	struct timespec64 ts;
--	struct timespec tmp;
- 	s32 orig_tai, tai;
- 	int ret;
- 
-@@ -1709,8 +1707,7 @@ int do_adjtimex(struct timex *txc)
- 			return ret;
- 	}
- 
--	getnstimeofday(&tmp);
--	ts = timespec_to_timespec64(tmp);
-+	getnstimeofday64(&ts);
- 
- 	raw_spin_lock_irqsave(&timekeeper_lock, flags);
- 	write_seqcount_begin(&timekeeper_seq);
+The subject line is fine.  Take a look at the patch.
 
+> Anyway, I think you got enough hints on how we do this
+> with appended devicetrees instead, Lee's snippet should
+> work or check out this page that I also posted to your
+> G+ post:
+> http://www.df.lth.se/~triad/krad/ux00/
 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
