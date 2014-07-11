@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034AbaGKWST (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 18:18:19 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:38312 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752262AbaGKWSS (ORCPT
+	id S1754236AbaGKWWK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 18:22:10 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:43249 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752137AbaGKWWI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 18:18:18 -0400
-Subject: [PATCH] MIPS: bugfix: missed cache flush of TLB refill handler
-To: <linux-mips@linux-mips.org>
-From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-CC: <paul.gortmaker@windriver.com>, <jchandra@broadcom.com>,
-        <linux-kernel@vger.kernel.org>, <ralf@linux-mips.org>,
-        <david.daney@cavium.com>
-Date: Fri, 11 Jul 2014 15:18:05 -0700
-Message-ID: <20140711221805.17764.743.stgit@linux-yegoshin>
-User-Agent: StGit/0.15
+	Fri, 11 Jul 2014 18:22:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.65.146]
+In-Reply-To: <20140711201054.GB18033@amd.pavel.ucw.cz>
+References: <53B3D3AA.3000408@samsung.com>
+	<x49y4wbu54y.fsf@segfault.boston.devel.redhat.com>
+	<20140702184050.GA24583@infradead.org>
+	<20140711201054.GB18033@amd.pavel.ucw.cz>
+Date: Sat, 12 Jul 2014 01:22:04 +0300
+Message-ID: <CACE9dm8TW1+7bq6hJiOmoAw+w+ZD8Ma=Sf6a5ZM2HZ5X1Lcifw@mail.gmail.com>
+Subject: Re: IMA: kernel reading files opened with O_DIRECT
+From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Christoph Hellwig <hch@infradead.org>, Jeff Moyer <jmoyer@redhat.com>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        akpm@linux-foundation.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit
+On 11 July 2014 23:10, Pavel Machek <pavel@ucw.cz> wrote:
+> On Wed 2014-07-02 11:40:50, Christoph Hellwig wrote:
+>> On Wed, Jul 02, 2014 at 11:55:41AM -0400, Jeff Moyer wrote:
+>> > It's acceptable.
+>>
+>> It's not because it will then also affect other reads going on at the
+>> same time.
+>>
+>> The whole concept of ima is just broken, and if you want to do these
+>> sort of verification they need to happen inside the filesystem and not
+>> above it.
+>
+> ...and doing it at filesystem layer would also permit verification of
+> per-block (64KB? 1MB?) hashes.
 
-    Commit 1d40cfcd3442a53e98468cdb3e6d4d9a568d76cf
-    Author: Ralf Baechle <ralf@linux-mips.org>
-    Date:   Fri Jul 15 15:23:23 2005 +0000
+Please design one single and the best universal filesystem which does it.
 
-    Avoid SMP cacheflushes.  This is a minor optimization of startup but
-    will also avoid smp_call_function from doing stupid things when called
-    from a CPU that is not yet marked online.
+> Reading entire iso image when I run
+> "file foo.iso" is anti-social..
+>                                                                         Pavel
 
-missed an appropriate cache flush of TLB refill handler because that time it was
-at fixed location CAC_BASE. After years the refill handler in EBASE vector
-is not at that location and can be allocated in some another memory and needs
-I-cache sync as other TLB exception vectors.
+Please make the policy which does not make anti-social.
 
-Besides that, the new function - local_flash_icache_range() was introduced
-to avoid SMP cacheflushes.
+It is all about use-case.
 
-Signed-off-by: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
----
- arch/mips/mm/tlbex.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+- Dmitry
 
-diff --git a/arch/mips/mm/tlbex.c b/arch/mips/mm/tlbex.c
-index e80e10b..661bc3d 100644
---- a/arch/mips/mm/tlbex.c
-+++ b/arch/mips/mm/tlbex.c
-@@ -429,6 +429,7 @@ static void build_r3000_tlb_refill_handler(void)
- 		 (unsigned int)(p - tlb_handler));
- 
- 	memcpy((void *)ebase, tlb_handler, 0x80);
-+	local_flush_icache_range(ebase, ebase + 0x80);
- 
- 	dump_handler("r3000_tlb_refill", (u32 *)ebase, 32);
- }
-@@ -1415,6 +1416,7 @@ static void build_r4000_tlb_refill_handler(void)
- 		 final_len);
- 
- 	memcpy((void *)ebase, final_handler, 0x100);
-+	local_flush_icache_range(ebase, ebase + 0x100);
- 
- 	dump_handler("r4000_tlb_refill", (u32 *)ebase, 64);
- }
-
+> --
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
