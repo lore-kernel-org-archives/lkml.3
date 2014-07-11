@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755046AbaGKQfD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 12:35:03 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:5972 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752520AbaGKQfB (ORCPT
+	id S1755012AbaGKQfu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 12:35:50 -0400
+Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:33173 "EHLO
+	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751107AbaGKQft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 12:35:01 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: <linux-arm-kernel@lists.infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, ARM Maintainers <arm@kernel.org>
-CC: Bo Shen <voice.shen@atmel.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        <jiri.prchal@aksignal.cz>, <linux-kernel@vger.kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] ARM: at91: at91sam9x5: add clocks for usb device
-Date: Fri, 11 Jul 2014 18:34:56 +0200
-Message-ID: <1405096496-4139-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
+	Fri, 11 Jul 2014 12:35:49 -0400
+Message-ID: <53C01264.3020604@akamai.com>
+Date: Fri, 11 Jul 2014 12:35:48 -0400
+From: Jason Baron <jbaron@akamai.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Remove soon to be dead email address
+References: <20140711161341.GF12054@laptop.lan> <CAMuHMdWj=aJsxZJPM=v-z8+=yTAopPWYe5T-+ovnnuEydFuGvA@mail.gmail.com> <20140711162153.GV20603@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140711162153.GV20603@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bo Shen <voice.shen@atmel.com>
+On 07/11/2014 12:21 PM, Peter Zijlstra wrote:
+> On Fri, Jul 11, 2014 at 06:17:31PM +0200, Geert Uytterhoeven wrote:
+>> On Fri, Jul 11, 2014 at 6:13 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>> My Red Hat email address will soon cease to be; remove it from the
+>>> tree in order to save the interweb some bounces.
+>>
+>>> --- a/include/linux/jump_label.h
+>>> +++ b/include/linux/jump_label.h
+>>> @@ -4,8 +4,8 @@
+>>>  /*
+>>>   * Jump label support
+>>>   *
+>>> - * Copyright (C) 2009-2012 Jason Baron <jbaron@redhat.com>
+>>> - * Copyright (C) 2011-2012 Peter Zijlstra <pzijlstr@redhat.com>
+>>> + * Copyright (C) 2009-2012 Red Hat, Inc., Jason Baron <jbaron@redhat.com>
+>>
+>> Change not mentioned in comment (there are a few more of these).
+>>
+>>> + * Copyright (C) 2011-2012 Red Hat, Inc., Peter Zijlstra
+> 
+> Oh, right.. my bad. I should also have Cc'ed Jason I suppose.
+> 
+> The thing is, those were copyright RedHat (implicitly by the @redhat and
+> my copyright assingment to employer at the time etc..) But if I remove
+> the email address there is nothing that reflects that.
+> 
+> The same is true for Jason, but let me copy him.
+> 
 
-Add clocks for usb device, or else switch to CCF, the gadget
-won't work.
+Thanks - feel free to remove my address there too. Otherwise, I can
+follow-up with a separate posting.
 
-Reported-by: Jiri Prchal <jiri.prchal@aksignal.cz>
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Tested-by: Jiri Prchal <jiri.prchal@aksignal.cz>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
-Arnd, Olof, Kevin,
+Thanks,
 
-This fix is the only one that I have for 3.16-rc currently. Can you please
-take it as a patch and queue it? It can go on top of already sent AT91 fixes
-for 3.16 or a 3.16-rc4.
-
-Best regards,
-
- arch/arm/boot/dts/at91sam9x5.dtsi | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
-index d6133f497207..2ebc42140ea6 100644
---- a/arch/arm/boot/dts/at91sam9x5.dtsi
-+++ b/arch/arm/boot/dts/at91sam9x5.dtsi
-@@ -1045,6 +1045,8 @@
- 				reg = <0x00500000 0x80000
- 				       0xf803c000 0x400>;
- 				interrupts = <23 IRQ_TYPE_LEVEL_HIGH 0>;
-+				clocks = <&usb>, <&udphs_clk>;
-+				clock-names = "hclk", "pclk";
- 				status = "disabled";
- 
- 				ep0 {
--- 
-1.8.2.2
-
+-Jason
