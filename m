@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903AbaGKNop (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:44:45 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56176 "EHLO
+	id S1754242AbaGKNox (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:44:53 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56204 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754159AbaGKNon (ORCPT
+	with ESMTP id S1754179AbaGKNou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:44:43 -0400
-Message-Id: <20140711133707.761089416@linutronix.de>
+	Fri, 11 Jul 2014 09:44:50 -0400
+Message-Id: <20140711133708.172184240@linutronix.de>
 User-Agent: quilt/0.63-1
-Date: Fri, 11 Jul 2014 13:44:41 -0000
+Date: Fri, 11 Jul 2014 13:44:49 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 29/55] sched: Make task->real_start_time nanoseconds based
+        Peter Zijlstra <peterz@infradead.org>,
+        Evgeniy Polyakov <zbr@ioremap.net>
+Subject: [patch 34/55] connector: Use ktime_get_ns()
 References: <20140711133623.530368377@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=sched-make-real-start-time-ktime-t.patch
+Content-Disposition: inline;
+ filename=connector-remove-silly-timestamp-dance.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -26,61 +28,183 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simplify the only user of this data by removing the timespec
-conversion.
+Replace the ever recurring:
+        ts = ktime_get_ts();
+        ns = timespec_to_ns(&ts);
+with
+        ns = ktime_get_ns();
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Evgeniy Polyakov <zbr@ioremap.net>
 ---
- fs/proc/array.c       |    7 +------
- include/linux/sched.h |    2 +-
- kernel/fork.c         |    3 +--
- 3 files changed, 3 insertions(+), 9 deletions(-)
+ drivers/connector/cn_proc.c |   36 +++++++++---------------------------
+ 1 file changed, 9 insertions(+), 27 deletions(-)
 
-Index: tip/fs/proc/array.c
+Index: tip/drivers/connector/cn_proc.c
 ===================================================================
---- tip.orig/fs/proc/array.c
-+++ tip/fs/proc/array.c
-@@ -473,13 +473,8 @@ static int do_task_stat(struct seq_file
- 	priority = task_prio(task);
- 	nice = task_nice(task);
+--- tip.orig/drivers/connector/cn_proc.c
++++ tip/drivers/connector/cn_proc.c
+@@ -69,7 +69,6 @@ void proc_fork_connector(struct task_str
+ 	struct cn_msg *msg;
+ 	struct proc_event *ev;
+ 	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
+-	struct timespec ts;
+ 	struct task_struct *parent;
  
--	/* Temporary variable needed for gcc-2.96 */
--	/* convert timespec -> nsec*/
--	start_time =
--		(unsigned long long)task->real_start_time.tv_sec * NSEC_PER_SEC
--				+ task->real_start_time.tv_nsec;
- 	/* convert nsec -> ticks */
--	start_time = nsec_to_clock_t(start_time);
-+	start_time = nsec_to_clock_t(task->real_start_time);
+ 	if (atomic_read(&proc_event_num_listeners) < 1)
+@@ -79,8 +78,7 @@ void proc_fork_connector(struct task_str
+ 	ev = (struct proc_event *)msg->data;
+ 	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	get_seq(&msg->seq, &ev->cpu);
+-	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+-	ev->timestamp_ns = timespec_to_ns(&ts);
++	ev->timestamp_ns = ktime_get_ns();
+ 	ev->what = PROC_EVENT_FORK;
+ 	rcu_read_lock();
+ 	parent = rcu_dereference(task->real_parent);
+@@ -102,7 +100,6 @@ void proc_exec_connector(struct task_str
+ {
+ 	struct cn_msg *msg;
+ 	struct proc_event *ev;
+-	struct timespec ts;
+ 	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
  
- 	seq_printf(m, "%d (%s) %c", pid_nr_ns(pid, ns), tcomm, state);
- 	seq_put_decimal_ll(m, ' ', ppid);
-Index: tip/include/linux/sched.h
-===================================================================
---- tip.orig/include/linux/sched.h
-+++ tip/include/linux/sched.h
-@@ -1368,7 +1368,7 @@ struct task_struct {
- #endif
- 	unsigned long nvcsw, nivcsw; /* context switch counts */
- 	struct timespec start_time; 		/* monotonic time */
--	struct timespec real_start_time;	/* boot based time */
-+	u64 real_start_time;	/* boot based time in nsec */
- /* mm fault and swap info: this can arguably be seen as either mm-specific or thread-specific */
- 	unsigned long min_flt, maj_flt;
+ 	if (atomic_read(&proc_event_num_listeners) < 1)
+@@ -112,8 +109,7 @@ void proc_exec_connector(struct task_str
+ 	ev = (struct proc_event *)msg->data;
+ 	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	get_seq(&msg->seq, &ev->cpu);
+-	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+-	ev->timestamp_ns = timespec_to_ns(&ts);
++	ev->timestamp_ns = ktime_get_ns();
+ 	ev->what = PROC_EVENT_EXEC;
+ 	ev->event_data.exec.process_pid = task->pid;
+ 	ev->event_data.exec.process_tgid = task->tgid;
+@@ -130,7 +126,6 @@ void proc_id_connector(struct task_struc
+ 	struct cn_msg *msg;
+ 	struct proc_event *ev;
+ 	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
+-	struct timespec ts;
+ 	const struct cred *cred;
  
-Index: tip/kernel/fork.c
-===================================================================
---- tip.orig/kernel/fork.c
-+++ tip/kernel/fork.c
-@@ -1263,8 +1263,7 @@ static struct task_struct *copy_process(
- 	posix_cpu_timers_init(p);
+ 	if (atomic_read(&proc_event_num_listeners) < 1)
+@@ -156,8 +151,7 @@ void proc_id_connector(struct task_struc
+ 	}
+ 	rcu_read_unlock();
+ 	get_seq(&msg->seq, &ev->cpu);
+-	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+-	ev->timestamp_ns = timespec_to_ns(&ts);
++	ev->timestamp_ns = ktime_get_ns();
  
- 	ktime_get_ts(&p->start_time);
--	p->real_start_time = p->start_time;
--	monotonic_to_bootbased(&p->real_start_time);
-+	p->real_start_time = ktime_get_boot_ns();
- 	p->io_context = NULL;
- 	p->audit_context = NULL;
- 	if (clone_flags & CLONE_THREAD)
+ 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
+ 	msg->ack = 0; /* not used */
+@@ -170,7 +164,6 @@ void proc_sid_connector(struct task_stru
+ {
+ 	struct cn_msg *msg;
+ 	struct proc_event *ev;
+-	struct timespec ts;
+ 	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
+ 
+ 	if (atomic_read(&proc_event_num_listeners) < 1)
+@@ -180,8 +173,7 @@ void proc_sid_connector(struct task_stru
+ 	ev = (struct proc_event *)msg->data;
+ 	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	get_seq(&msg->seq, &ev->cpu);
+-	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+-	ev->timestamp_ns = timespec_to_ns(&ts);
++	ev->timestamp_ns = ktime_get_ns();
+ 	ev->what = PROC_EVENT_SID;
+ 	ev->event_data.sid.process_pid = task->pid;
+ 	ev->event_data.sid.process_tgid = task->tgid;
+@@ -197,7 +189,6 @@ void proc_ptrace_connector(struct task_s
+ {
+ 	struct cn_msg *msg;
+ 	struct proc_event *ev;
+-	struct timespec ts;
+ 	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
+ 
+ 	if (atomic_read(&proc_event_num_listeners) < 1)
+@@ -207,8 +198,7 @@ void proc_ptrace_connector(struct task_s
+ 	ev = (struct proc_event *)msg->data;
+ 	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	get_seq(&msg->seq, &ev->cpu);
+-	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+-	ev->timestamp_ns = timespec_to_ns(&ts);
++	ev->timestamp_ns = ktime_get_ns();
+ 	ev->what = PROC_EVENT_PTRACE;
+ 	ev->event_data.ptrace.process_pid  = task->pid;
+ 	ev->event_data.ptrace.process_tgid = task->tgid;
+@@ -232,7 +222,6 @@ void proc_comm_connector(struct task_str
+ {
+ 	struct cn_msg *msg;
+ 	struct proc_event *ev;
+-	struct timespec ts;
+ 	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
+ 
+ 	if (atomic_read(&proc_event_num_listeners) < 1)
+@@ -242,8 +231,7 @@ void proc_comm_connector(struct task_str
+ 	ev = (struct proc_event *)msg->data;
+ 	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	get_seq(&msg->seq, &ev->cpu);
+-	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+-	ev->timestamp_ns = timespec_to_ns(&ts);
++	ev->timestamp_ns = ktime_get_ns();
+ 	ev->what = PROC_EVENT_COMM;
+ 	ev->event_data.comm.process_pid  = task->pid;
+ 	ev->event_data.comm.process_tgid = task->tgid;
+@@ -261,7 +249,6 @@ void proc_coredump_connector(struct task
+ 	struct cn_msg *msg;
+ 	struct proc_event *ev;
+ 	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
+-	struct timespec ts;
+ 
+ 	if (atomic_read(&proc_event_num_listeners) < 1)
+ 		return;
+@@ -270,8 +257,7 @@ void proc_coredump_connector(struct task
+ 	ev = (struct proc_event *)msg->data;
+ 	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	get_seq(&msg->seq, &ev->cpu);
+-	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+-	ev->timestamp_ns = timespec_to_ns(&ts);
++	ev->timestamp_ns = ktime_get_ns();
+ 	ev->what = PROC_EVENT_COREDUMP;
+ 	ev->event_data.coredump.process_pid = task->pid;
+ 	ev->event_data.coredump.process_tgid = task->tgid;
+@@ -288,7 +274,6 @@ void proc_exit_connector(struct task_str
+ 	struct cn_msg *msg;
+ 	struct proc_event *ev;
+ 	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
+-	struct timespec ts;
+ 
+ 	if (atomic_read(&proc_event_num_listeners) < 1)
+ 		return;
+@@ -297,8 +282,7 @@ void proc_exit_connector(struct task_str
+ 	ev = (struct proc_event *)msg->data;
+ 	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	get_seq(&msg->seq, &ev->cpu);
+-	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+-	ev->timestamp_ns = timespec_to_ns(&ts);
++	ev->timestamp_ns = ktime_get_ns();
+ 	ev->what = PROC_EVENT_EXIT;
+ 	ev->event_data.exit.process_pid = task->pid;
+ 	ev->event_data.exit.process_tgid = task->tgid;
+@@ -325,7 +309,6 @@ static void cn_proc_ack(int err, int rcv
+ 	struct cn_msg *msg;
+ 	struct proc_event *ev;
+ 	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
+-	struct timespec ts;
+ 
+ 	if (atomic_read(&proc_event_num_listeners) < 1)
+ 		return;
+@@ -334,8 +317,7 @@ static void cn_proc_ack(int err, int rcv
+ 	ev = (struct proc_event *)msg->data;
+ 	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	msg->seq = rcvd_seq;
+-	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+-	ev->timestamp_ns = timespec_to_ns(&ts);
++	ev->timestamp_ns = ktime_get_ns();
+ 	ev->cpu = -1;
+ 	ev->what = PROC_EVENT_NONE;
+ 	ev->event_data.ack.err = err;
 
 
