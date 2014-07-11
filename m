@@ -1,104 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651AbaGKLfo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 07:35:44 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:35730 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235AbaGKLfm (ORCPT
+	id S1752774AbaGKLf6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 07:35:58 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:53801 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751235AbaGKLf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 07:35:42 -0400
+	Fri, 11 Jul 2014 07:35:56 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, patches@linaro.org,
+Cc: Anton Vorontsov <anton.vorontsov@linaro.org>, patches@linaro.org,
         linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@redhat.com>, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
         Colin Cross <ccross@android.com>, kernel-team@android.com,
-        kgdb-bugreport@lists.sourceforge.net
-Subject: [RESEND PATCH v5 3.16-rc4 0/8] kdb: Allow selective reduction in capabilities
-Date: Fri, 11 Jul 2014 12:33:30 +0100
-Message-Id: <1405078418-14070-1-git-send-email-daniel.thompson@linaro.org>
+        kgdb-bugreport@lists.sourceforge.net,
+        Daniel Thompson <daniel.thompson@liaro.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [RESEND PATCH v5 3.16-rc4 1/8] kdb: Remove currently unused kdbtab_t->cmd_flags
+Date: Fri, 11 Jul 2014 12:33:31 +0100
+Message-Id: <1405078418-14070-2-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1399381429-16194-1-git-send-email-daniel.thompson@linaro.org>
+In-Reply-To: <1405078418-14070-1-git-send-email-daniel.thompson@linaro.org>
 References: <1399381429-16194-1-git-send-email-daniel.thompson@linaro.org>
+ <1405078418-14070-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset implements restricted modes for the KDB debugger. It is a
-continuation of previous work of Anton Vorontsov. There are no
-outstanding review comments for this patchset.
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
 
-It provides a means for the root user to choose the set of kdb commands
-that are available on the kdb console. It is implemented similarly to
-the existing code to mask the available magic SysRq commands with modes
-for disable-all (0), enable-all(1) and a bitmask to enable/disable
-groups of functionality.
+The struct member is never used in the code, so we can remove it.
 
-The implementation of the mask check includes a feature to allow a
-command to change which group it belongs to based on whether or not the
-command has arguments (for example, go without arguments is a very safe
-command whilst go with an argument allows arbitrary changes to the
-program counter).
+We will introduce real flags soon by renaming cmd_repeat to cmd_flags.
 
-There are a few patches, some are just cleanups, some are churn-ish
-cleanups, but inevitable. And the rest implements the mode -- after all
-the preparations, everything is pretty straightforward.
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Daniel Thompson <daniel.thompson@liaro.org>
+Cc: Jason Wessel <jason.wessel@windriver.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: kgdb-bugreport@lists.sourceforge.net
+---
+ kernel/debug/kdb/kdb_main.c    | 1 -
+ kernel/debug/kdb/kdb_private.h | 1 -
+ 2 files changed, 2 deletions(-)
 
-Changes since v4:
- * Drop patches to avoid deadlock on sysrq spin lock (Rik van Riel's
-   984d74a72076... is a much better approach).
-
-Changes since v3:
- * Improved commenting on safety of calls to __handle_sysrq_nolock
- * Remove magic shift value in the command categorization values and
-   expressed the flags using shifts to make code review of the defined
-   shift value easier.
-
-Changes since v2:
- * Fixed stupid build error when CONFIG_KDB[_KIOSK]_DEFAULT_ENABLE was not
-   defined.
- * Increase flexibility by allowing the userspace greater control over the
-   commands to be restricted.
- * Removed the "kiosk" terminology. Its confusing.
-
-Changes since v1 (circa 2012):
-
- * ef (Display exception frame) is essentially an overly complex peek
-   and has therefore been marked unsafe
- * bt (Stack traceback) has been marked safe only with no arguments
- * sr (Magic SysRq key) honours the sysrq mask when called in kiosk
-   mode
- * Fixed over-zealous blocking of macro commands
- * Symbol lookup is forbidden by kdbgetaddrarg (more robust, better
-   error reporting to user)
- * Fix deadlock in sr (Magic SysRq key)
- * Better help text in kiosk mode
- * Default (kiosk on/off) can be changed From the config file.
-
-Anton Vorontsov (6):
-  kdb: Remove currently unused kdbtab_t->cmd_flags
-  kdb: Rename kdb_repeat_t to kdb_cmdflags_t, cmd_repeat to cmd_flags
-  kdb: Rename kdb_register_repeat() to kdb_register_flags()
-  kdb: Use KDB_REPEAT_* values as flags
-  kdb: Remove KDB_REPEAT_NONE flag
-  kdb: Add enable mask for groups of commands
-
-Daniel Thompson (2):
-  kdb: Categorize kdb commands (similar to SysRq categorization)
-  kdb: Allow access to sensitive commands to be restricted by default
-
- include/linux/kdb.h            |  62 ++++++++--
- kernel/debug/kdb/kdb_bp.c      |  37 +++---
- kernel/debug/kdb/kdb_main.c    | 263 ++++++++++++++++++++++++++---------------
- kernel/debug/kdb/kdb_private.h |   3 +-
- kernel/trace/trace_kdb.c       |   4 +-
- lib/Kconfig.kgdb               |  25 ++++
- 6 files changed, 271 insertions(+), 123 deletions(-)
-
---
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index 2f7c760..0b28bb0 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -2694,7 +2694,6 @@ int kdb_register_repeat(char *cmd,
+ 	kp->cmd_func   = func;
+ 	kp->cmd_usage  = usage;
+ 	kp->cmd_help   = help;
+-	kp->cmd_flags  = 0;
+ 	kp->cmd_minlen = minlen;
+ 	kp->cmd_repeat = repeat;
+ 
+diff --git a/kernel/debug/kdb/kdb_private.h b/kernel/debug/kdb/kdb_private.h
+index 7afd3c8..c4c46c7 100644
+--- a/kernel/debug/kdb/kdb_private.h
++++ b/kernel/debug/kdb/kdb_private.h
+@@ -172,7 +172,6 @@ typedef struct _kdbtab {
+ 	kdb_func_t cmd_func;		/* Function to execute command */
+ 	char    *cmd_usage;		/* Usage String for this command */
+ 	char    *cmd_help;		/* Help message for this command */
+-	short    cmd_flags;		/* Parsing flags */
+ 	short    cmd_minlen;		/* Minimum legal # command
+ 					 * chars required */
+ 	kdb_repeat_t cmd_repeat;	/* Does command auto repeat on enter? */
+-- 
 1.9.3
 
