@@ -1,134 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520AbaGKWyL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 18:54:11 -0400
-Received: from lhrrgout.huawei.com ([194.213.3.17]:56578 "EHLO
-	lhrrgout.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719AbaGKWyJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 18:54:09 -0400
-X-Greylist: delayed 376 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Jul 2014 18:54:06 EDT
-From: Liu Hua <sdu.liu@huawei.com>
-To: <tglx@linutronix.de>, <jason@lakedaemon.net>, <nicolas.pitre@linaro.org>,
-        <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
-        <ebiederm@xmission.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <wangnan0@huawei.com>, <liuxueliu.liu@huawei.com>,
-        <peifeiyue@huawei.com>, <liusdu@huawei.com>,
-        Liu Hua <sdu.liu@huawei.com>
-Subject: [RFC PATCH 2/2] irqchip: GIC: introduce method to deactive interupts
-Date: Fri, 11 Jul 2014 14:46:17 +0800
-Message-ID: <1405061177-43834-3-git-send-email-sdu.liu@huawei.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1405061177-43834-1-git-send-email-sdu.liu@huawei.com>
-References: <1405061177-43834-1-git-send-email-sdu.liu@huawei.com>
+	id S1754692AbaGKWyl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 18:54:41 -0400
+Received: from mail-bn1lp0142.outbound.protection.outlook.com ([207.46.163.142]:42784
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751144AbaGKWyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 18:54:39 -0400
+X-WSS-ID: 0N8KKYW-08-UPH-02
+X-M-MSG: 
+From: "Bridgman, John" <John.Bridgman@amd.com>
+To: Ilyes Gouta <ilyes.gouta@gmail.com>
+CC: Alex Deucher <alexdeucher@gmail.com>,
+        "Koenig, Christian" <Christian.Koenig@amd.com>,
+        Oded Gabbay <oded.gabbay@gmail.com>,
+        "Deucher, Alexander" <Alexander.Deucher@amd.com>,
+        "Lewycky, Andrew" <Andrew.Lewycky@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Maling list - DRI developers" <dri-devel@lists.freedesktop.org>
+Subject: RE: [PATCH 02/83] drm/radeon: reduce number of free VMIDs and pipes
+ in KV
+Thread-Topic: [PATCH 02/83] drm/radeon: reduce number of free VMIDs and
+ pipes in KV
+Thread-Index: AQHPnIkE5u7uzYXY9UmcyTqCh3tvUpubTcyAgAADzgCAAAEXAP//xj7QgABU4oCAAA6vQA==
+Date: Fri, 11 Jul 2014 22:54:31 +0000
+Message-ID: <D89D60253BB73A4E8C62F9FD18A939CA01031F22@storexdag02.amd.com>
+References: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
+ <20140711160516.GC1870@gmail.com> <53C00E6E.4040908@amd.com>
+ <CADnq5_NkXJuaeMWv8HogykiH8ida17U90gO0Ec7DMRxMcLbrkA@mail.gmail.com>
+ <D89D60253BB73A4E8C62F9FD18A939CA01031826@storexdag02.amd.com>
+ <CAL4m05UPDBrSOaHdyVSws9c3i=NPmSfVYQ=4emehyctN1+9r0g@mail.gmail.com>
+In-Reply-To: <CAL4m05UPDBrSOaHdyVSws9c3i=NPmSfVYQ=4emehyctN1+9r0g@mail.gmail.com>
+Accept-Language: en-CA, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.34.48]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(979002)(6009001)(428002)(24454002)(377454003)(189002)(51704005)(199002)(110136001)(50466002)(4396001)(19580405001)(19580395003)(2656002)(97736001)(107046002)(46102001)(33656002)(106466001)(105586002)(93886003)(80022001)(85852003)(55846006)(53416004)(85306003)(83322001)(79102001)(83072002)(77982001)(87936001)(77096002)(81542001)(21056001)(92566001)(44976005)(50986999)(92726001)(54356999)(99396002)(101416001)(81342001)(76176999)(86362001)(74662001)(20776003)(47776003)(68736004)(23676002)(64706001)(106116001)(31966008)(76482001)(95666004)(74502001)(84676001)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:;SCL:1;SRVR:CO1PR02MB144;H:atltwp02.amd.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02698DF457
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=John.Bridgman@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6BMspkI024513
 
-When using kdump on ARM platform, if kernel panics in interrupt handler
-(maybe PPI or SPI), the capture kernel can not recive certain interrupt,
-and fails to boot.
+>From: Ilyes Gouta [mailto:ilyes.gouta@gmail.com] 
+>Sent: Friday, July 11, 2014 2:00 PM
+>To: Bridgman, John
+>Cc: Alex Deucher; Koenig, Christian; Oded Gabbay; Deucher, Alexander; Lewycky, Andrew; LKML; Maling list - DRI developers
+>Subject: Re: [PATCH 02/83] drm/radeon: reduce number of free VMIDs and pipes in KV
+>
+>Hi,
+>
+>Just a side question (for information),
+>
+>On Fri, Jul 11, 2014 at 6:07 PM, Bridgman, John <John.Bridgman@amd.com> wrote:
+>
+>Right. The SET_RESOURCES packet (kfd_pm4_headers.h, added in patch 49) allocates a range of HW queues, VMIDs and GDS to the HW scheduler, then >the scheduler uses the allocated VMIDs to support a potentially larger number of user processes by dynamically mapping PASIDs to VMIDs and memory >queue descriptors (MQDs) to HW queues.
+>
+>Are there any documentation/specifications online describing these mechanisms?
 
-On this situation, We have read register GICC_IAR. But we have no chance
-to write relative bit to register GICC_EOIR(kernel paniced before). So
-the state of this type interrupt remains active. Ant that makes gic not
-deliver this type interrupt to cpu interface.
-
-So we should not assume that all interruts state of GIC is inactive when
-kernel initailize the GIC. This patch identifies this type interrupts
-and deactives them;
-
-Signed-off-by: Liu Hua <sdu.liu@huawei.com>
----
- drivers/irqchip/irq-gic.c | 57 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 57 insertions(+)
-
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index ddee133..d8620cf 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -352,12 +352,68 @@ static u8 gic_get_cpumask(struct gic_chip_data *gic)
- 	return mask;
- }
- 
-+void gic_v1_eois(u32 active, void __iomem *cpu_base)
-+{
-+	int bit = -1;
-+
-+	while ((bit = find_next_bit((unsigned long *) &active,
-+						32, bit + 1)) < 32) {
-+		writel_relaxed(bit, cpu_base + GIC_CPU_EOI);
-+	}
-+}
-+
-+void gic_v1_clear_active(void __iomem *dist_base,
-+			void __iomem *cpu_base, int gic_irqs)
-+{
-+	int irq, offset;
-+	u32 active;
-+
-+	for (irq = 0; irq < gic_irqs; irq += 32) {
-+		offset = GIC_DIST_ACTIVE_SET + irq * 4 / 32;
-+		active = readl_relaxed(dist_base + offset);
-+		if (!active)
-+			continue;
-+		gic_v1_eois(active, cpu_base);
-+	}
-+}
-+
-+void gic_v2_clear_active(void __iomem *dist_base, int gic_irqs)
-+{
-+	int irq, offset;
-+	u32 active;
-+
-+	for (irq = 0; irq < gic_irqs; irq += 32) {
-+		offset = irq * 4 / 32 + GIC_DIST_ACTIVE_SET;
-+		active = readl_relaxed(dist_base + offset);
-+		if (!active)
-+			continue;
-+		offset = irq * 4 / 32 + GIC_DIST_ACTIVE_CLEAR;
-+		writel_relaxed(active, dist_base + offset);
-+	}
-+}
-+
-+void __init gic_dist_clear_active(void __iomem *dist_base,
-+					void __iomem *cpu_base, int gic_irqs)
-+{
-+	u32 ArchRev;
-+
-+	ArchRev = readl_relaxed(dist_base + GIC_DIST_ICPIDR2);
-+	ArchRev = (ArchRev >> 4) & 0xF;
-+
-+	if (ArchRev == 0x1) {
-+		gic_v1_clear_active(dist_base, cpu_base, gic_irqs);
-+	} else {
-+		gic_v2_clear_active(dist_base, gic_irqs);
-+	}
-+}
-+
- static void __init gic_dist_init(struct gic_chip_data *gic)
- {
- 	unsigned int i;
- 	u32 cpumask;
- 	unsigned int gic_irqs = gic->gic_irqs;
- 	void __iomem *base = gic_data_dist_base(gic);
-+	void __iomem *cpu_base = gic_data_cpu_base(gic);
- 
- 	writel_relaxed(0, base + GIC_DIST_CTRL);
- 
-@@ -371,6 +427,7 @@ static void __init gic_dist_init(struct gic_chip_data *gic)
- 		writel_relaxed(cpumask, base + GIC_DIST_TARGET + i * 4 / 4);
- 
- 	gic_dist_config(base, gic_irqs, NULL);
-+	gic_dist_clear_active(base, cpu_base, gic_irqs);
- 
- 	writel_relaxed(1, base + GIC_DIST_CTRL);
- }
--- 
-1.9.0
-
+Nothing yet, but we should write some docco for this similar to what was written for the gfx blocks. I'll add that to the list, thanks.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
