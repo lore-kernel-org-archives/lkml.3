@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615AbaGKR2l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 13:28:41 -0400
-Received: from smtprelay0208.hostedemail.com ([216.40.44.208]:38351 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751386AbaGKR2k (ORCPT
+	id S1754782AbaGKR3g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 13:29:36 -0400
+Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:35506
+	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752072AbaGKR3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 13:28:40 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1
-X-HE-Tag: queen36_680164ec1213e
-X-Filterd-Recvd-Size: 2258
-Message-ID: <1405099712.2796.19.camel@joe-AO725>
-Subject: Re: [PATCH 09/83] hsa/radeon: Add code base of hsa driver for AMD's
- GPUs
-From: Joe Perches <joe@perches.com>
-To: Jerome Glisse <j.glisse@gmail.com>
-Cc: Oded Gabbay <oded.gabbay@gmail.com>, David Airlie <airlied@linux.ie>,
-        Alex Deucher <alexander.deucher@amd.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, John Bridgman <John.Bridgman@amd.com>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Sandeep Nair <sandeep_n@ti.com>,
-        Kenneth Heitke <kheitke@codeaurora.org>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Andreas Noever <andreas.noever@gmail.com>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Date: Fri, 11 Jul 2014 10:28:32 -0700
-In-Reply-To: <20140711170411.GJ1870@gmail.com>
-References: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
-	 <1405029027-6085-8-git-send-email-oded.gabbay@amd.com>
-	 <20140711170411.GJ1870@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Jul 2014 13:29:34 -0400
+Date: Fri, 11 Jul 2014 12:29:30 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Tejun Heo <tj@kernel.org>
+cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Jianyu Zhan <nasa4836@gmail.com>, malc <av1474@comtv.ru>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Fabian Frederick <fabf@skynet.be>, Tony Luck <tony.luck@intel.com>,
+        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC Patch V1 07/30] mm: Use cpu_to_mem()/numa_mem_id() to
+ support memoryless node
+In-Reply-To: <20140711162451.GD30865@htj.dyndns.org>
+Message-ID: <alpine.DEB.2.11.1407111220410.4511@gentwo.org>
+References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com> <1405064267-11678-8-git-send-email-jiang.liu@linux.intel.com> <20140711144205.GA27706@htj.dyndns.org> <alpine.DEB.2.11.1407111012210.25527@gentwo.org> <20140711152156.GB29137@htj.dyndns.org>
+ <alpine.DEB.2.11.1407111056060.27349@gentwo.org> <20140711160152.GC30865@htj.dyndns.org> <alpine.DEB.2.11.1407111117560.27592@gentwo.org> <20140711162451.GD30865@htj.dyndns.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-11 at 13:04 -0400, Jerome Glisse wrote:
-> On Fri, Jul 11, 2014 at 12:50:09AM +0300, Oded Gabbay wrote:
-[]
-> > +static long kfd_ioctl(struct file *, unsigned int, unsigned long);
-> 
-> Nitpick, avoid unsigned int just use unsigned.
+On Fri, 11 Jul 2014, Tejun Heo wrote:
 
-I suggest unsigned int is much more common (and better)
-than just unsigned.
+> On Fri, Jul 11, 2014 at 11:19:14AM -0500, Christoph Lameter wrote:
+> > Yes that works. But if we want a consistent node to allocate from (and
+> > avoid the fallbacks) then we need this patch. I think this is up to those
+> > needing memoryless nodes to figure out what semantics they need.
+>
+> I'm not following what you're saying.  Are you saying that we need to
+> spread numa_mem_id() all over the place for GFP_THISNODE users on
+> memless nodes?  There aren't that many users of GFP_THISNODE.
 
-$ git grep -P '\bunsigned\s+(?!long|int|short|char)' -- "*.[ch]" | wc -l
-20778
+GFP_THISNODE is mostly used by allocators that need memory from specific
+nodes. The use of numa_mem_id() there is useful because one will not
+get any memory at all when attempting to allocate from a memoryless
+node using GFP_THISNODE.
 
-$ git grep -P "\bunsigned\s+int\b" -- "*.[ch]" | wc -l
-98068
+I meant that the relying on fallback to the neighboring nodes without
+GFP_THISNODE using numa_node_id() is one approach that may prevent memory
+allocators from caching objects for that node because every allocation may
+choose a different neighboring node. And the other is the use of
+numa_mem_id() which will always use a specific node and avoid fallback to
+different node.
 
-> > +static int kfd_open(struct inode *, struct file *);
+The choice is up to those having an interest in memoryless nodes. Which
+again I find a pretty strange thing to have that has already proven itself
+difficult to maintain in the kernel given the the notion of memory
+nodes that should have memory but surprisingly have none. Then there are
+the esoteric fallback conditions and special cases introduced. Its a mess.
 
-It's also generally better to use types and names tno
-improve how a human reads and understands the code.
-
+The best solution may be to just get rid of the whole thing and require
+all processors to have a node with memory that is local to them. Current
+"memoryless" hardware can simply decide on bootup to pick a memory node
+that is local and thus we do not have to deal with it in the core.
 
