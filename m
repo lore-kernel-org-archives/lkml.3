@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753227AbaGKUdA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 16:33:00 -0400
+	id S1753298AbaGKUdE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 16:33:04 -0400
 Received: from mga09.intel.com ([134.134.136.24]:53143 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753073AbaGKUc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 16:32:58 -0400
+	id S1753230AbaGKUdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 16:33:01 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,644,1400050800"; 
-   d="scan'208";a="542196783"
-Subject: [PATCH v4 3/7] crypto: SHA1 multibuffer submit and flush routines
- for AVX2
+   d="scan'208";a="542196813"
+Subject: [PATCH v4 4/7] crypto: SHA1 multibuffer crypto computation (x8
+ AVX2)
 From: Tim Chen <tim.c.chen@linux.intel.com>
 To: Herbert Xu <herbert@gondor.apana.org.au>, "H. Peter Anvin" <hpa@zytor.com>,
         "David S.Miller" <davem@davemloft.net>,
@@ -25,8 +25,8 @@ Cc: Chandramouli Narayanan <mouli@linux.intel.com>,
 In-Reply-To: <cover.1405074379.git.tim.c.chen@linux.intel.com>
 References: <cover.1405074379.git.tim.c.chen@linux.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 Jul 2014 13:32:53 -0700
-Message-ID: <1405110773.2970.652.camel@schen9-DESK>
+Date: Fri, 11 Jul 2014 13:32:57 -0700
+Message-ID: <1405110777.2970.653.camel@schen9-DESK>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
@@ -34,28 +34,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the routines used to submit and flush buffers
-belonging to SHA1 crypto jobs to the SHA1 multibuffer algorithm.  It is
-implemented mostly in assembly optimized with AVX2 instructions.
+This patch introduces the assembly routines to do SHA1 computation on
+buffers belonging to serveral jobs at once.  The assembly routines are
+optimized with AVX2 instructions that have 8 data lanes and using AVX2
+registers.
 
 Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
 ---
- arch/x86/crypto/sha-mb/sha1_mb_mgr_flush_avx2.S  | 327 +++++++++++++++++++++++
- arch/x86/crypto/sha-mb/sha1_mb_mgr_init_avx2.c   |  64 +++++
- arch/x86/crypto/sha-mb/sha1_mb_mgr_submit_avx2.S | 228 ++++++++++++++++
- 3 files changed, 619 insertions(+)
- create mode 100644 arch/x86/crypto/sha-mb/sha1_mb_mgr_flush_avx2.S
- create mode 100644 arch/x86/crypto/sha-mb/sha1_mb_mgr_init_avx2.c
- create mode 100644 arch/x86/crypto/sha-mb/sha1_mb_mgr_submit_avx2.S
+ arch/x86/crypto/sha-mb/sha1_x8_avx2.S | 472 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 472 insertions(+)
+ create mode 100644 arch/x86/crypto/sha-mb/sha1_x8_avx2.S
 
-diff --git a/arch/x86/crypto/sha-mb/sha1_mb_mgr_flush_avx2.S b/arch/x86/crypto/sha-mb/sha1_mb_mgr_flush_avx2.S
+diff --git a/arch/x86/crypto/sha-mb/sha1_x8_avx2.S b/arch/x86/crypto/sha-mb/sha1_x8_avx2.S
 new file mode 100644
-index 0000000..85c4e1c
+index 0000000..8e1b477
 --- /dev/null
-+++ b/arch/x86/crypto/sha-mb/sha1_mb_mgr_flush_avx2.S
-@@ -0,0 +1,327 @@
++++ b/arch/x86/crypto/sha-mb/sha1_x8_avx2.S
+@@ -0,0 +1,472 @@
 +/*
-+ * Flush routine for SHA1 multibuffer
++ * Multi-buffer SHA1 algorithm hash compute routine
 + *
 + * This file is provided under a dual BSD/GPLv2 license.  When using or
 + * redistributing this file, you may do so under either license.
@@ -107,584 +104,425 @@ index 0000000..85c4e1c
 + *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 + * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 + */
++
 +#include <linux/linkage.h>
 +#include "sha1_mb_mgr_datastruct.S"
 +
++## code to compute oct SHA1 using SSE-256
++## outer calling routine takes care of save and restore of XMM registers
 +
-+.extern sha1_x8_avx2
-+
-+# LINUX register definitions
-+#define arg1    %rdi
-+#define arg2    %rsi
-+
-+# Common definitions
-+#define state   arg1
-+#define job     arg2
-+#define len2    arg2
-+
-+# idx must be a register not clobbered by sha1_x8_avx2
-+#define idx		%r8
-+#define DWORD_idx	%r8d
-+
-+#define unused_lanes    %rbx
-+#define lane_data       %rbx
-+#define tmp2            %rbx
-+#define tmp2_w		%ebx
-+
-+#define job_rax         %rax
-+#define tmp1            %rax
-+#define size_offset     %rax
-+#define tmp             %rax
-+#define start_offset    %rax
-+
-+#define tmp3            %arg1
-+
-+#define extra_blocks    %arg2
-+#define p               %arg2
++## Function clobbers: rax, rcx, rdx,   rbx, rsi, rdi, r9-r15# ymm0-15
++##
++## Linux clobbers:    rax rbx rcx rdx rsi            r9 r10 r11 r12 r13 r14 r15
++## Linux preserves:                       rdi rbp r8
++##
++## clobbers ymm0-15
 +
 +
-+# STACK_SPACE needs to be an odd multiple of 8
-+_XMM_SAVE_SIZE  = 10*16
-+_GPR_SAVE_SIZE  = 8*8
-+_ALIGN_SIZE     = 8
++# TRANSPOSE8 r0, r1, r2, r3, r4, r5, r6, r7, t0, t1
++# "transpose" data in {r0...r7} using temps {t0...t1}
++# Input looks like: {r0 r1 r2 r3 r4 r5 r6 r7}
++# r0 = {a7 a6 a5 a4   a3 a2 a1 a0}
++# r1 = {b7 b6 b5 b4   b3 b2 b1 b0}
++# r2 = {c7 c6 c5 c4   c3 c2 c1 c0}
++# r3 = {d7 d6 d5 d4   d3 d2 d1 d0}
++# r4 = {e7 e6 e5 e4   e3 e2 e1 e0}
++# r5 = {f7 f6 f5 f4   f3 f2 f1 f0}
++# r6 = {g7 g6 g5 g4   g3 g2 g1 g0}
++# r7 = {h7 h6 h5 h4   h3 h2 h1 h0}
++#
++# Output looks like: {r0 r1 r2 r3 r4 r5 r6 r7}
++# r0 = {h0 g0 f0 e0   d0 c0 b0 a0}
++# r1 = {h1 g1 f1 e1   d1 c1 b1 a1}
++# r2 = {h2 g2 f2 e2   d2 c2 b2 a2}
++# r3 = {h3 g3 f3 e3   d3 c3 b3 a3}
++# r4 = {h4 g4 f4 e4   d4 c4 b4 a4}
++# r5 = {h5 g5 f5 e5   d5 c5 b5 a5}
++# r6 = {h6 g6 f6 e6   d6 c6 b6 a6}
++# r7 = {h7 g7 f7 e7   d7 c7 b7 a7}
++#
 +
-+_XMM_SAVE       = 0
-+_GPR_SAVE       = _XMM_SAVE + _XMM_SAVE_SIZE
-+STACK_SPACE     = _GPR_SAVE + _GPR_SAVE_SIZE + _ALIGN_SIZE
++.macro TRANSPOSE8 r0 r1 r2 r3 r4 r5 r6 r7 t0 t1
++	# process top half (r0..r3) {a...d}
++	vshufps  $0x44, \r1, \r0, \t0 # t0 = {b5 b4 a5 a4   b1 b0 a1 a0}
++	vshufps  $0xEE, \r1, \r0, \r0 # r0 = {b7 b6 a7 a6   b3 b2 a3 a2}
++	vshufps  $0x44, \r3, \r2, \t1 # t1 = {d5 d4 c5 c4   d1 d0 c1 c0}
++	vshufps  $0xEE, \r3, \r2, \r2 # r2 = {d7 d6 c7 c6   d3 d2 c3 c2}
++	vshufps  $0xDD, \t1, \t0, \r3 # r3 = {d5 c5 b5 a5   d1 c1 b1 a1}
++	vshufps  $0x88, \r2, \r0, \r1 # r1 = {d6 c6 b6 a6   d2 c2 b2 a2}
++	vshufps  $0xDD, \r2, \r0, \r0 # r0 = {d7 c7 b7 a7   d3 c3 b3 a3}
++	vshufps  $0x88, \t1, \t0, \t0 # t0 = {d4 c4 b4 a4   d0 c0 b0 a0}
 +
-+.macro LABEL prefix n
-+\prefix\n\():
++	# use r2 in place of t0
++	# process bottom half (r4..r7) {e...h}
++	vshufps  $0x44, \r5, \r4, \r2 # r2 = {f5 f4 e5 e4   f1 f0 e1 e0}
++	vshufps  $0xEE, \r5, \r4, \r4 # r4 = {f7 f6 e7 e6   f3 f2 e3 e2}
++	vshufps  $0x44, \r7, \r6, \t1 # t1 = {h5 h4 g5 g4   h1 h0 g1 g0}
++	vshufps  $0xEE, \r7, \r6, \r6 # r6 = {h7 h6 g7 g6   h3 h2 g3 g2}
++	vshufps  $0xDD, \t1, \r2, \r7 # r7 = {h5 g5 f5 e5   h1 g1 f1 e1}
++	vshufps  $0x88, \r6, \r4, \r5 # r5 = {h6 g6 f6 e6   h2 g2 f2 e2}
++	vshufps  $0xDD, \r6, \r4, \r4 # r4 = {h7 g7 f7 e7   h3 g3 f3 e3}
++	vshufps  $0x88, \t1, \r2, \t1 # t1 = {h4 g4 f4 e4   h0 g0 f0 e0}
++
++	vperm2f128      $0x13, \r1, \r5, \r6  # h6...a6
++	vperm2f128      $0x02, \r1, \r5, \r2  # h2...a2
++	vperm2f128      $0x13, \r3, \r7, \r5  # h5...a5
++	vperm2f128      $0x02, \r3, \r7, \r1  # h1...a1
++	vperm2f128      $0x13, \r0, \r4, \r7  # h7...a7
++	vperm2f128      $0x02, \r0, \r4, \r3  # h3...a3
++	vperm2f128      $0x13, \t0, \t1, \r4  # h4...a4
++	vperm2f128      $0x02, \t0, \t1, \r0  # h0...a0
++
++.endm
++##
++## Magic functions defined in FIPS 180-1
++##
++# macro MAGIC_F0 F,B,C,D,T   ## F = (D ^ (B & (C ^ D)))
++.macro MAGIC_F0 regF regB regC regD regT
++    vpxor \regD, \regC, \regF
++    vpand \regB, \regF, \regF
++    vpxor \regD, \regF, \regF
 +.endm
 +
-+.macro JNE_SKIP i
-+jne     skip_\i
++# macro MAGIC_F1 F,B,C,D,T   ## F = (B ^ C ^ D)
++.macro MAGIC_F1 regF regB regC regD regT
++    vpxor  \regC, \regD, \regF
++    vpxor  \regB, \regF, \regF
 +.endm
 +
-+.altmacro
-+.macro SET_OFFSET _offset
-+offset = \_offset
++# macro MAGIC_F2 F,B,C,D,T   ## F = ((B & C) | (B & D) | (C & D))
++.macro MAGIC_F2 regF regB regC regD regT
++    vpor  \regC, \regB, \regF
++    vpand \regC, \regB, \regT
++    vpand \regD, \regF, \regF
++    vpor  \regT, \regF, \regF
 +.endm
-+.noaltmacro
 +
-+# JOB* sha1_mb_mgr_flush_avx2(MB_MGR *state)
-+# arg 1 : rcx : state
-+ENTRY(sha1_mb_mgr_flush_avx2)
-+	mov	%rsp, %r10
-+	sub     $STACK_SPACE, %rsp
-+	and     $~31, %rsp
-+	mov     %rbx, _GPR_SAVE(%rsp)
-+	mov     %r10, _GPR_SAVE+8*1(%rsp) #save rsp
-+	mov	%rbp, _GPR_SAVE+8*3(%rsp)
-+	mov	%r12, _GPR_SAVE+8*4(%rsp)
-+	mov	%r13, _GPR_SAVE+8*5(%rsp)
-+	mov	%r14, _GPR_SAVE+8*6(%rsp)
-+	mov	%r15, _GPR_SAVE+8*7(%rsp)
++# macro MAGIC_F3 F,B,C,D,T   ## F = (B ^ C ^ D)
++.macro MAGIC_F3 regF regB regC regD regT
++    MAGIC_F1 \regF,\regB,\regC,\regD,\regT
++.endm
 +
-+	# If bit (32+3) is set, then all lanes are empty
-+	mov     _unused_lanes(state), unused_lanes
-+	bt      $32+3, unused_lanes
-+	jc      return_null
++# PROLD reg, imm, tmp
++.macro PROLD reg imm tmp
++	vpsrld  $(32-\imm), \reg, \tmp
++	vpslld  $\imm, \reg, \reg
++	vpor    \tmp, \reg, \reg
++.endm
 +
-+	# find a lane with a non-null job
-+	xor     idx, idx
-+	offset = (_ldata + 1 * _LANE_DATA_size + _job_in_lane)
-+	cmpq    $0, offset(state)
-+	cmovne  one(%rip), idx
-+	offset = (_ldata + 2 * _LANE_DATA_size + _job_in_lane)
-+	cmpq    $0, offset(state)
-+	cmovne  two(%rip), idx
-+	offset = (_ldata + 3 * _LANE_DATA_size + _job_in_lane)
-+	cmpq    $0, offset(state)
-+	cmovne  three(%rip), idx
-+	offset = (_ldata + 4 * _LANE_DATA_size + _job_in_lane)
-+	cmpq    $0, offset(state)
-+	cmovne  four(%rip), idx
-+	offset = (_ldata + 5 * _LANE_DATA_size + _job_in_lane)
-+	cmpq    $0, offset(state)
-+	cmovne  five(%rip), idx
-+	offset = (_ldata + 6 * _LANE_DATA_size + _job_in_lane)
-+	cmpq    $0, offset(state)
-+	cmovne  six(%rip), idx
-+	offset = (_ldata + 7 * _LANE_DATA_size + _job_in_lane)
-+	cmpq    $0, offset(state)
-+	cmovne  seven(%rip), idx
++.macro PROLD_nd reg imm tmp src
++	vpsrld  $(32-\imm), \src, \tmp
++	vpslld  $\imm, \src, \reg
++	vpor	\tmp, \reg, \reg
++.endm
 +
-+	# copy idx to empty lanes
-+copy_lane_data:
-+	offset =  (_args + _data_ptr)
-+	mov     offset(state,idx,8), tmp
++.macro SHA1_STEP_00_15 regA regB regC regD regE regT regF memW immCNT MAGIC
++	vpaddd	\immCNT, \regE, \regE
++	vpaddd	\memW*32(%rsp), \regE, \regE
++	PROLD_nd \regT, 5, \regF, \regA
++	vpaddd	\regT, \regE, \regE
++	\MAGIC  \regF, \regB, \regC, \regD, \regT
++        PROLD   \regB, 30, \regT
++        vpaddd  \regF, \regE, \regE
++.endm
 +
-+	I = 0
-+.rep 8
-+	offset =  (_ldata + I * _LANE_DATA_size + _job_in_lane)
-+	cmpq    $0, offset(state)
-+.altmacro
-+	JNE_SKIP %I
-+	offset =  (_args + _data_ptr + 8*I)
-+	mov     tmp, offset(state)
-+	offset =  (_lens + 4*I)
-+	movl    $0xFFFFFFFF, offset(state)
-+LABEL skip_ %I
++.macro SHA1_STEP_16_79 regA regB regC regD regE regT regF memW immCNT MAGIC
++	vpaddd	\immCNT, \regE, \regE
++	offset = ((\memW - 14) & 15) * 32
++	vmovdqu offset(%rsp), W14
++	vpxor	W14, W16, W16
++	offset = ((\memW -  8) & 15) * 32
++	vpxor	offset(%rsp), W16, W16
++	offset = ((\memW -  3) & 15) * 32
++	vpxor	offset(%rsp), W16, W16
++	vpsrld	$(32-1), W16, \regF
++	vpslld	$1, W16, W16
++	vpor	W16, \regF, \regF
++
++	ROTATE_W
++
++	offset = ((\memW - 0) & 15) * 32
++	vmovdqu	\regF, offset(%rsp)
++	vpaddd	\regF, \regE, \regE
++	PROLD_nd \regT, 5, \regF, \regA
++	vpaddd	\regT, \regE, \regE
++	\MAGIC \regF,\regB,\regC,\regD,\regT      ## FUN  = MAGIC_Fi(B,C,D)
++	PROLD   \regB,30, \regT
++	vpaddd  \regF, \regE, \regE
++.endm
++
++########################################################################
++########################################################################
++########################################################################
++
++## FRAMESZ plus pushes must be an odd multiple of 8
++YMM_SAVE = (15-15)*32
++FRAMESZ = 32*16 + YMM_SAVE
++_YMM  =   FRAMESZ - YMM_SAVE
++
++#define VMOVPS   vmovups
++
++IDX  = %rax
++inp0 = %r9
++inp1 = %r10
++inp2 = %r11
++inp3 = %r12
++inp4 = %r13
++inp5 = %r14
++inp6 = %r15
++inp7 = %rcx
++arg1 = %rdi
++arg2 = %rsi
++RSP_SAVE = %rdx
++
++# ymm0 A
++# ymm1 B
++# ymm2 C
++# ymm3 D
++# ymm4 E
++# ymm5         F       AA
++# ymm6         T0      BB
++# ymm7         T1      CC
++# ymm8         T2      DD
++# ymm9         T3      EE
++# ymm10                T4      TMP
++# ymm11                T5      FUN
++# ymm12                T6      K
++# ymm13                T7      W14
++# ymm14                T8      W15
++# ymm15                T9      W16
++
++
++A  =     %ymm0
++B  =     %ymm1
++C  =     %ymm2
++D  =     %ymm3
++E  =     %ymm4
++F  =     %ymm5
++T0 =	 %ymm6
++T1 =     %ymm7
++T2 =     %ymm8
++T3 =     %ymm9
++T4 =     %ymm10
++T5 =     %ymm11
++T6 =     %ymm12
++T7 =     %ymm13
++T8  =     %ymm14
++T9  =     %ymm15
++
++AA  =     %ymm5
++BB  =     %ymm6
++CC  =     %ymm7
++DD  =     %ymm8
++EE  =     %ymm9
++TMP =     %ymm10
++FUN =     %ymm11
++K   =     %ymm12
++W14 =     %ymm13
++W15 =     %ymm14
++W16 =     %ymm15
++
++.macro ROTATE_ARGS
++ TMP_ = E
++ E = D
++ D = C
++ C = B
++ B = A
++ A = TMP_
++.endm
++
++.macro ROTATE_W
++TMP_  = W16
++W16  = W15
++W15  = W14
++W14  = TMP_
++.endm
++
++# 8 streams x 5 32bit words per digest x 4 bytes per word
++#define DIGEST_SIZE (8*5*4)
++
++.align 32
++
++# void sha1_x8_avx2(void **input_data, UINT128 *digest, UINT32 size)
++# arg 1 : pointer to array[4] of pointer to input data
++# arg 2 : size (in blocks) ;; assumed to be >= 1
++#
++ENTRY(sha1_x8_avx2)
++
++	push	RSP_SAVE
++
++	#save rsp
++	mov	%rsp, RSP_SAVE
++	sub     $FRAMESZ, %rsp
++
++	#align rsp to 32 Bytes
++	and	$~0x1F, %rsp
++
++	## Initialize digests
++	vmovdqu  0*32(arg1), A
++	vmovdqu  1*32(arg1), B
++	vmovdqu  2*32(arg1), C
++	vmovdqu  3*32(arg1), D
++	vmovdqu  4*32(arg1), E
++
++	## transpose input onto stack
++	mov     _data_ptr+0*8(arg1),inp0
++	mov     _data_ptr+1*8(arg1),inp1
++	mov     _data_ptr+2*8(arg1),inp2
++	mov     _data_ptr+3*8(arg1),inp3
++	mov     _data_ptr+4*8(arg1),inp4
++	mov     _data_ptr+5*8(arg1),inp5
++	mov     _data_ptr+6*8(arg1),inp6
++	mov     _data_ptr+7*8(arg1),inp7
++
++	xor     IDX, IDX
++lloop:
++	vmovdqu  PSHUFFLE_BYTE_FLIP_MASK(%rip), F
++	I=0
++.rep 2
++	VMOVPS   (inp0, IDX), T0
++	VMOVPS   (inp1, IDX), T1
++	VMOVPS   (inp2, IDX), T2
++	VMOVPS   (inp3, IDX), T3
++	VMOVPS   (inp4, IDX), T4
++	VMOVPS   (inp5, IDX), T5
++	VMOVPS   (inp6, IDX), T6
++	VMOVPS   (inp7, IDX), T7
++
++	TRANSPOSE8       T0, T1, T2, T3, T4, T5, T6, T7, T8, T9
++	vpshufb  F, T0, T0
++	vmovdqu  T0, (I*8)*32(%rsp)
++	vpshufb  F, T1, T1
++	vmovdqu  T1, (I*8+1)*32(%rsp)
++	vpshufb  F, T2, T2
++	vmovdqu  T2, (I*8+2)*32(%rsp)
++	vpshufb  F, T3, T3
++	vmovdqu  T3, (I*8+3)*32(%rsp)
++	vpshufb  F, T4, T4
++	vmovdqu  T4, (I*8+4)*32(%rsp)
++	vpshufb  F, T5, T5
++	vmovdqu  T5, (I*8+5)*32(%rsp)
++	vpshufb  F, T6, T6
++	vmovdqu  T6, (I*8+6)*32(%rsp)
++	vpshufb  F, T7, T7
++	vmovdqu  T7, (I*8+7)*32(%rsp)
++	add     $32, IDX
 +	I = (I+1)
-+.noaltmacro
++.endr
++	# save old digests
++	vmovdqu  A,AA
++	vmovdqu  B,BB
++	vmovdqu  C,CC
++	vmovdqu  D,DD
++	vmovdqu  E,EE
++
++##
++## perform 0-79 steps
++##
++	vmovdqu  K00_19(%rip), K
++## do rounds 0...15
++	I = 0
++.rep 16
++	SHA1_STEP_00_15 A,B,C,D,E, TMP,FUN, I, K, MAGIC_F0
++	ROTATE_ARGS
++	I = (I+1)
 +.endr
 +
-+	# Find min length
-+	vmovdqa _lens+0*16(state), %xmm0
-+	vmovdqa _lens+1*16(state), %xmm1
++## do rounds 16...19
++	vmovdqu  ((16 - 16) & 15) * 32 (%rsp), W16
++	vmovdqu  ((16 - 15) & 15) * 32 (%rsp), W15
++.rep 4
++	SHA1_STEP_16_79 A,B,C,D,E, TMP,FUN, I, K, MAGIC_F0
++	ROTATE_ARGS
++	I = (I+1)
++.endr
 +
-+	vpminud %xmm1, %xmm0, %xmm2     # xmm2 has {D,C,B,A}
-+	vpalignr $8, %xmm2, %xmm3, %xmm3   # xmm3 has {x,x,D,C}
-+	vpminud %xmm3, %xmm2, %xmm2        # xmm2 has {x,x,E,F}
-+	vpalignr $4, %xmm2, %xmm3, %xmm3    # xmm3 has {x,x,x,E}
-+	vpminud %xmm3, %xmm2, %xmm2        # xmm2 has min value in low dword
++## do rounds 20...39
++	vmovdqu  K20_39(%rip), K
++.rep 20
++	SHA1_STEP_16_79 A,B,C,D,E, TMP,FUN, I, K, MAGIC_F1
++	ROTATE_ARGS
++	I = (I+1)
++.endr
 +
-+	vmovd   %xmm2, DWORD_idx
-+	mov	idx, len2
-+	and	$0xF, idx
-+	shr	$4, len2
-+	jz	len_is_0
++## do rounds 40...59
++	vmovdqu  K40_59(%rip), K
++.rep 20
++	SHA1_STEP_16_79 A,B,C,D,E, TMP,FUN, I, K, MAGIC_F2
++	ROTATE_ARGS
++	I = (I+1)
++.endr
 +
-+	vpand   clear_low_nibble(%rip), %xmm2, %xmm2
-+	vpshufd $0, %xmm2, %xmm2
++## do rounds 60...79
++	vmovdqu  K60_79(%rip), K
++.rep 20
++	SHA1_STEP_16_79 A,B,C,D,E, TMP,FUN, I, K, MAGIC_F3
++	ROTATE_ARGS
++	I = (I+1)
++.endr
 +
-+	vpsubd  %xmm2, %xmm0, %xmm0
-+	vpsubd  %xmm2, %xmm1, %xmm1
++	vpaddd   AA,A,A
++	vpaddd   BB,B,B
++	vpaddd   CC,C,C
++	vpaddd   DD,D,D
++	vpaddd   EE,E,E
 +
-+	vmovdqa %xmm0, _lens+0*16(state)
-+	vmovdqa %xmm1, _lens+1*16(state)
++	sub     $1, arg2
++	jne     lloop
 +
-+	# "state" and "args" are the same address, arg1
-+	# len is arg2
-+	call	sha1_x8_avx2
-+	# state and idx are intact
++	# write out digests
++	vmovdqu  A, 0*32(arg1)
++	vmovdqu  B, 1*32(arg1)
++	vmovdqu  C, 2*32(arg1)
++	vmovdqu  D, 3*32(arg1)
++	vmovdqu  E, 4*32(arg1)
 +
++	# update input pointers
++	add     IDX, inp0
++	add     IDX, inp1
++	add     IDX, inp2
++	add     IDX, inp3
++	add     IDX, inp4
++	add     IDX, inp5
++	add     IDX, inp6
++	add     IDX, inp7
++	mov     inp0, _data_ptr (arg1)
++	mov     inp1, _data_ptr + 1*8(arg1)
++	mov     inp2, _data_ptr + 2*8(arg1)
++	mov     inp3, _data_ptr + 3*8(arg1)
++	mov     inp4, _data_ptr + 4*8(arg1)
++	mov     inp5, _data_ptr + 5*8(arg1)
++	mov     inp6, _data_ptr + 6*8(arg1)
++	mov     inp7, _data_ptr + 7*8(arg1)
 +
-+len_is_0:
-+	# process completed job "idx"
-+	imul    $_LANE_DATA_size, idx, lane_data
-+	lea     _ldata(state, lane_data), lane_data
++	################
++	## Postamble
 +
-+	mov     _job_in_lane(lane_data), job_rax
-+	movq    $0, _job_in_lane(lane_data)
-+	movl    $STS_COMPLETED, _status(job_rax)
-+	mov     _unused_lanes(state), unused_lanes
-+	shl     $4, unused_lanes
-+	or      idx, unused_lanes
-+	mov     unused_lanes, _unused_lanes(state)
-+
-+	movl	$0xFFFFFFFF, _lens(state, idx, 4)
-+
-+	vmovd    _args_digest(state , idx, 4) , %xmm0
-+	vpinsrd  $1, _args_digest+1*32(state, idx, 4), %xmm0, %xmm0
-+	vpinsrd  $2, _args_digest+2*32(state, idx, 4), %xmm0, %xmm0
-+	vpinsrd  $3, _args_digest+3*32(state, idx, 4), %xmm0, %xmm0
-+	movl    _args_digest+4*32(state, idx, 4), tmp2_w
-+
-+	vmovdqu  %xmm0, _result_digest(job_rax)
-+	offset =  (_result_digest + 1*16)
-+	mov     tmp2_w, offset(job_rax)
-+
-+return:
-+
-+	mov     _GPR_SAVE(%rsp), %rbx
-+	mov     _GPR_SAVE+8*1(%rsp), %r10 #saved rsp
-+	mov	_GPR_SAVE+8*3(%rsp), %rbp
-+	mov	_GPR_SAVE+8*4(%rsp), %r12
-+	mov	_GPR_SAVE+8*5(%rsp), %r13
-+	mov	_GPR_SAVE+8*6(%rsp), %r14
-+	mov	_GPR_SAVE+8*7(%rsp), %r15
-+	mov     %r10, %rsp
-+
-+	ret
-+
-+return_null:
-+	xor     job_rax, job_rax
-+	jmp     return
-+ENDPROC(sha1_mb_mgr_flush_avx2)
-+
-+
-+#################################################################
-+
-+.align 16
-+ENTRY(sha1_mb_mgr_get_comp_job_avx2)
-+	push    %rbx
-+
-+	## if bit 32+3 is set, then all lanes are empty
-+	mov     _unused_lanes(state), unused_lanes
-+	bt      $(32+3), unused_lanes
-+	jc      .return_null
-+
-+	# Find min length
-+	vmovdqa _lens(state), %xmm0
-+	vmovdqa _lens+1*16(state), %xmm1
-+
-+	vpminud %xmm1, %xmm0, %xmm2        # xmm2 has {D,C,B,A}
-+	vpalignr $8, %xmm2, %xmm3, %xmm3   # xmm3 has {x,x,D,C}
-+	vpminud %xmm3, %xmm2, %xmm2        # xmm2 has {x,x,E,F}
-+	vpalignr $4, %xmm2, %xmm3, %xmm3    # xmm3 has {x,x,x,E}
-+	vpminud %xmm3, %xmm2, %xmm2        # xmm2 has min value in low dword
-+
-+	vmovd   %xmm2, DWORD_idx
-+	test    $~0xF, idx
-+	jnz     .return_null
-+
-+	# process completed job "idx"
-+	imul    $_LANE_DATA_size, idx, lane_data
-+	lea     _ldata(state, lane_data), lane_data
-+
-+	mov     _job_in_lane(lane_data), job_rax
-+	movq    $0,  _job_in_lane(lane_data)
-+	movl    $STS_COMPLETED, _status(job_rax)
-+	mov     _unused_lanes(state), unused_lanes
-+	shl     $4, unused_lanes
-+	or      idx, unused_lanes
-+	mov     unused_lanes, _unused_lanes(state)
-+
-+	movl    $0xFFFFFFFF, _lens(state,  idx, 4)
-+
-+	vmovd   _args_digest(state, idx, 4), %xmm0
-+	vpinsrd $1, _args_digest+1*32(state, idx, 4), %xmm0, %xmm0
-+	vpinsrd $2, _args_digest+2*32(state, idx, 4), %xmm0, %xmm0
-+	vpinsrd $3, _args_digest+3*32(state, idx, 4), %xmm0, %xmm0
-+	movl    _args_digest+4*32(state, idx, 4), tmp2_w
-+
-+	vmovdqu %xmm0, _result_digest(job_rax)
-+	movl    tmp2_w, _result_digest+1*16(job_rax)
-+
-+	pop     %rbx
++	mov     RSP_SAVE, %rsp
++	pop	RSP_SAVE
 +
 +	ret
++ENDPROC(sha1_x8_avx2)
 +
-+.return_null:
-+	xor     job_rax, job_rax
-+	pop     %rbx
-+	ret
-+ENDPROC(sha1_mb_mgr_get_comp_job_avx2)
 +
 +.data
 +
-+.align 16
-+clear_low_nibble:
-+.octa	0x000000000000000000000000FFFFFFF0
-+one:
-+.quad  1
-+two:
-+.quad  2
-+three:
-+.quad  3
-+four:
-+.quad  4
-+five:
-+.quad  5
-+six:
-+.quad  6
-+seven:
-+.quad  7
-diff --git a/arch/x86/crypto/sha-mb/sha1_mb_mgr_init_avx2.c b/arch/x86/crypto/sha-mb/sha1_mb_mgr_init_avx2.c
-new file mode 100644
-index 0000000..4ca7e16
---- /dev/null
-+++ b/arch/x86/crypto/sha-mb/sha1_mb_mgr_init_avx2.c
-@@ -0,0 +1,64 @@
-+/*
-+ * Initialization code for multi buffer SHA1 algorithm for AVX2
-+ *
-+ * This file is provided under a dual BSD/GPLv2 license.  When using or
-+ * redistributing this file, you may do so under either license.
-+ *
-+ * GPL LICENSE SUMMARY
-+ *
-+ *  Copyright(c) 2014 Intel Corporation.
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of version 2 of the GNU General Public License as
-+ *  published by the Free Software Foundation.
-+ *
-+ *  This program is distributed in the hope that it will be useful, but
-+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ *  General Public License for more details.
-+ *
-+ *  Contact Information:
-+ *	Tim Chen <tim.c.chen@linux.intel.com>
-+ *
-+ *  BSD LICENSE
-+ *
-+ *  Copyright(c) 2014 Intel Corporation.
-+ *
-+ *  Redistribution and use in source and binary forms, with or without
-+ *  modification, are permitted provided that the following conditions
-+ *  are met:
-+ *
-+ *    * Redistributions of source code must retain the above copyright
-+ *      notice, this list of conditions and the following disclaimer.
-+ *    * Redistributions in binary form must reproduce the above copyright
-+ *      notice, this list of conditions and the following disclaimer in
-+ *      the documentation and/or other materials provided with the
-+ *      distribution.
-+ *    * Neither the name of Intel Corporation nor the names of its
-+ *      contributors may be used to endorse or promote products derived
-+ *      from this software without specific prior written permission.
-+ *
-+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+ *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+ *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+ *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+ *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+ *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ */
-+
-+#include "sha_mb_mgr.h"
-+
-+void sha1_mb_mgr_init_avx2(struct sha1_mb_mgr *state)
-+{
-+	unsigned int j;
-+	state->unused_lanes = 0xF76543210;
-+	for (j = 0; j < 8; j++) {
-+		state->lens[j] = 0xFFFFFFFF;
-+		state->ldata[j].job_in_lane = NULL;
-+	}
-+}
-diff --git a/arch/x86/crypto/sha-mb/sha1_mb_mgr_submit_avx2.S b/arch/x86/crypto/sha-mb/sha1_mb_mgr_submit_avx2.S
-new file mode 100644
-index 0000000..2ab9560
---- /dev/null
-+++ b/arch/x86/crypto/sha-mb/sha1_mb_mgr_submit_avx2.S
-@@ -0,0 +1,228 @@
-+/*
-+ * Buffer submit code for multi buffer SHA1 algorithm
-+ *
-+ * This file is provided under a dual BSD/GPLv2 license.  When using or
-+ * redistributing this file, you may do so under either license.
-+ *
-+ * GPL LICENSE SUMMARY
-+ *
-+ *  Copyright(c) 2014 Intel Corporation.
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of version 2 of the GNU General Public License as
-+ *  published by the Free Software Foundation.
-+ *
-+ *  This program is distributed in the hope that it will be useful, but
-+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ *  General Public License for more details.
-+ *
-+ *  Contact Information:
-+ *      James Guilford <james.guilford@intel.com>
-+ *	Tim Chen <tim.c.chen@linux.intel.com>
-+ *
-+ *  BSD LICENSE
-+ *
-+ *  Copyright(c) 2014 Intel Corporation.
-+ *
-+ *  Redistribution and use in source and binary forms, with or without
-+ *  modification, are permitted provided that the following conditions
-+ *  are met:
-+ *
-+ *    * Redistributions of source code must retain the above copyright
-+ *      notice, this list of conditions and the following disclaimer.
-+ *    * Redistributions in binary form must reproduce the above copyright
-+ *      notice, this list of conditions and the following disclaimer in
-+ *      the documentation and/or other materials provided with the
-+ *      distribution.
-+ *    * Neither the name of Intel Corporation nor the names of its
-+ *      contributors may be used to endorse or promote products derived
-+ *      from this software without specific prior written permission.
-+ *
-+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+ *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+ *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+ *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+ *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+ *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ */
-+
-+#include <linux/linkage.h>
-+#include "sha1_mb_mgr_datastruct.S"
-+
-+
-+.extern sha1_x8_avx
-+
-+# LINUX register definitions
-+arg1    = %rdi
-+arg2    = %rsi
-+size_offset	= %rcx
-+tmp2		= %rcx
-+extra_blocks	= %rdx
-+
-+# Common definitions
-+#define state   arg1
-+#define job     %rsi
-+#define len2    arg2
-+#define p2      arg2
-+
-+# idx must be a register not clobberred by sha1_x8_avx2
-+idx		= %r8
-+DWORD_idx	= %r8d
-+last_len	= %r8
-+
-+p               = %r11
-+start_offset    = %r11
-+
-+unused_lanes    = %rbx
-+BYTE_unused_lanes = %bl
-+
-+job_rax         = %rax
-+len             = %rax
-+DWORD_len	= %eax
-+
-+lane            = %rbp
-+tmp3            = %rbp
-+
-+tmp             = %r9
-+DWORD_tmp	= %r9d
-+
-+lane_data       = %r10
-+
-+# STACK_SPACE needs to be an odd multiple of 8
-+STACK_SPACE     = 8*8 + 16*10 + 8
-+
-+# JOB* submit_mb_mgr_submit_avx2(MB_MGR *state, job_sha1 *job)
-+# arg 1 : rcx : state
-+# arg 2 : rdx : job
-+ENTRY(sha1_mb_mgr_submit_avx2)
-+
-+	mov	%rsp, %r10
-+	sub     $STACK_SPACE, %rsp
-+	and	$~31, %rsp
-+
-+	mov     %rbx, (%rsp)
-+	mov	%r10, 8*2(%rsp)	#save old rsp
-+	mov     %rbp, 8*3(%rsp)
-+	mov	%r12, 8*4(%rsp)
-+	mov	%r13, 8*5(%rsp)
-+	mov	%r14, 8*6(%rsp)
-+	mov	%r15, 8*7(%rsp)
-+
-+	mov     _unused_lanes(state), unused_lanes
-+	mov	unused_lanes, lane
-+	and	$0xF, lane
-+	shr     $4, unused_lanes
-+	imul    $_LANE_DATA_size, lane, lane_data
-+	movl    $STS_BEING_PROCESSED, _status(job)
-+	lea     _ldata(state, lane_data), lane_data
-+	mov     unused_lanes, _unused_lanes(state)
-+	movl    _len(job),  DWORD_len
-+
-+	mov	job, _job_in_lane(lane_data)
-+	shl	$4, len
-+	or	lane, len
-+
-+	movl    DWORD_len,  _lens(state , lane, 4)
-+
-+	# Load digest words from result_digest
-+	vmovdqu	_result_digest(job), %xmm0
-+	mov	_result_digest+1*16(job), DWORD_tmp
-+	vmovd    %xmm0, _args_digest(state, lane, 4)
-+	vpextrd  $1, %xmm0, _args_digest+1*32(state , lane, 4)
-+	vpextrd  $2, %xmm0, _args_digest+2*32(state , lane, 4)
-+	vpextrd  $3, %xmm0, _args_digest+3*32(state , lane, 4)
-+	movl    DWORD_tmp, _args_digest+4*32(state , lane, 4)
-+
-+	mov     _buffer(job), p
-+	mov     p, _args_data_ptr(state, lane, 8)
-+
-+	cmp     $0xF, unused_lanes
-+	jne     return_null
-+
-+start_loop:
-+	# Find min length
-+	vmovdqa _lens(state), %xmm0
-+	vmovdqa _lens+1*16(state), %xmm1
-+
-+	vpminud %xmm1, %xmm0, %xmm2        # xmm2 has {D,C,B,A}
-+	vpalignr $8, %xmm2, %xmm3, %xmm3   # xmm3 has {x,x,D,C}
-+	vpminud %xmm3, %xmm2, %xmm2        # xmm2 has {x,x,E,F}
-+	vpalignr $4, %xmm2, %xmm3, %xmm3   # xmm3 has {x,x,x,E}
-+	vpminud %xmm3, %xmm2, %xmm2        # xmm2 has min value in low dword
-+
-+	vmovd   %xmm2, DWORD_idx
-+	mov    idx, len2
-+	and    $0xF, idx
-+	shr    $4, len2
-+	jz     len_is_0
-+
-+	vpand   clear_low_nibble(%rip), %xmm2, %xmm2
-+	vpshufd $0, %xmm2, %xmm2
-+
-+	vpsubd  %xmm2, %xmm0, %xmm0
-+	vpsubd  %xmm2, %xmm1, %xmm1
-+
-+	vmovdqa %xmm0, _lens + 0*16(state)
-+	vmovdqa %xmm1, _lens + 1*16(state)
-+
-+
-+	# "state" and "args" are the same address, arg1
-+	# len is arg2
-+	call    sha1_x8_avx2
-+
-+	# state and idx are intact
-+
-+len_is_0:
-+	# process completed job "idx"
-+	imul    $_LANE_DATA_size, idx, lane_data
-+	lea     _ldata(state, lane_data), lane_data
-+
-+	mov     _job_in_lane(lane_data), job_rax
-+	mov     _unused_lanes(state), unused_lanes
-+	movq    $0, _job_in_lane(lane_data)
-+	movl    $STS_COMPLETED, _status(job_rax)
-+	shl     $4, unused_lanes
-+	or      idx, unused_lanes
-+	mov     unused_lanes, _unused_lanes(state)
-+
-+	movl	$0xFFFFFFFF, _lens(state, idx, 4)
-+
-+	vmovd    _args_digest(state, idx, 4), %xmm0
-+	vpinsrd  $1, _args_digest+1*32(state , idx, 4), %xmm0, %xmm0
-+	vpinsrd  $2, _args_digest+2*32(state , idx, 4), %xmm0, %xmm0
-+	vpinsrd  $3, _args_digest+3*32(state , idx, 4), %xmm0, %xmm0
-+	movl    4*32(state, idx, 4), DWORD_tmp
-+
-+	vmovdqu  %xmm0, _result_digest(job_rax)
-+	movl    DWORD_tmp, _result_digest+1*16(job_rax)
-+
-+return:
-+
-+	mov     (%rsp), %rbx
-+	mov	8*2(%rsp), %r10	#save old rsp
-+	mov     8*3(%rsp), %rbp
-+	mov	8*4(%rsp), %r12
-+	mov	8*5(%rsp), %r13
-+	mov	8*6(%rsp), %r14
-+	mov	8*7(%rsp), %r15
-+	mov     %r10, %rsp
-+
-+	ret
-+
-+return_null:
-+	xor     job_rax, job_rax
-+	jmp     return
-+
-+ENDPROC(sha1_mb_mgr_submit_avx2)
-+
-+.data
-+
-+.align 16
-+clear_low_nibble:
-+	.octa	0x000000000000000000000000FFFFFFF0
++.align 32
++K00_19:
++.octa 0x5A8279995A8279995A8279995A827999
++.octa 0x5A8279995A8279995A8279995A827999
++K20_39:
++.octa 0x6ED9EBA16ED9EBA16ED9EBA16ED9EBA1
++.octa 0x6ED9EBA16ED9EBA16ED9EBA16ED9EBA1
++K40_59:
++.octa 0x8F1BBCDC8F1BBCDC8F1BBCDC8F1BBCDC
++.octa 0x8F1BBCDC8F1BBCDC8F1BBCDC8F1BBCDC
++K60_79:
++.octa 0xCA62C1D6CA62C1D6CA62C1D6CA62C1D6
++.octa 0xCA62C1D6CA62C1D6CA62C1D6CA62C1D6
++PSHUFFLE_BYTE_FLIP_MASK:
++.octa 0x0c0d0e0f08090a0b0405060700010203
++.octa 0x0c0d0e0f08090a0b0405060700010203
 -- 
 1.7.11.7
 
