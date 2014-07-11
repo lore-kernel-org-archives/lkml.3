@@ -1,27 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752314AbaGKHfq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 03:35:46 -0400
+	id S1752231AbaGKHfj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 03:35:39 -0400
 Received: from mga09.intel.com ([134.134.136.24]:36890 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752190AbaGKHfi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 03:35:38 -0400
+	id S1751341AbaGKHfg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 03:35:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,642,1400050800"; 
-   d="scan'208";a="571589416"
+   d="scan'208";a="571589388"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
         David Rientjes <rientjes@google.com>,
         Mike Galbraith <umgwanakikbuti@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>
 Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
         linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC Patch V1 06/30] mm, tracing: Use cpu_to_mem()/numa_mem_id() to support memoryless node
-Date: Fri, 11 Jul 2014 15:37:23 +0800
-Message-Id: <1405064267-11678-7-git-send-email-jiang.liu@linux.intel.com>
+        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org
+Subject: [RFC Patch V1 04/30] mm, netfilter: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+Date: Fri, 11 Jul 2014 15:37:21 +0800
+Message-Id: <1405064267-11678-5-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
@@ -40,78 +44,39 @@ is the same as cpu_to_node()/numa_node_id().
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- kernel/trace/ring_buffer.c  |   12 ++++++------
- kernel/trace/trace_uprobe.c |    2 +-
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ net/netfilter/x_tables.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 7c56c3d06943..38c51583f968 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -1124,13 +1124,13 @@ static int __rb_allocate_pages(int nr_pages, struct list_head *pages, int cpu)
- 		 */
- 		bpage = kzalloc_node(ALIGN(sizeof(*bpage), cache_line_size()),
- 				    GFP_KERNEL | __GFP_NORETRY,
--				    cpu_to_node(cpu));
-+				    cpu_to_mem(cpu));
- 		if (!bpage)
- 			goto free_pages;
+diff --git a/net/netfilter/x_tables.c b/net/netfilter/x_tables.c
+index 227aa11e8409..6e7d4bc81422 100644
+--- a/net/netfilter/x_tables.c
++++ b/net/netfilter/x_tables.c
+@@ -692,10 +692,10 @@ struct xt_table_info *xt_alloc_table_info(unsigned int size)
+ 		if (size <= PAGE_SIZE)
+ 			newinfo->entries[cpu] = kmalloc_node(size,
+ 							GFP_KERNEL,
+-							cpu_to_node(cpu));
++							cpu_to_mem(cpu));
+ 		else
+ 			newinfo->entries[cpu] = vmalloc_node(size,
+-							cpu_to_node(cpu));
++							cpu_to_mem(cpu));
  
- 		list_add(&bpage->list, pages);
- 
--		page = alloc_pages_node(cpu_to_node(cpu),
-+		page = alloc_pages_node(cpu_to_mem(cpu),
- 					GFP_KERNEL | __GFP_NORETRY, 0);
- 		if (!page)
- 			goto free_pages;
-@@ -1183,7 +1183,7 @@ rb_allocate_cpu_buffer(struct ring_buffer *buffer, int nr_pages, int cpu)
- 	int ret;
- 
- 	cpu_buffer = kzalloc_node(ALIGN(sizeof(*cpu_buffer), cache_line_size()),
--				  GFP_KERNEL, cpu_to_node(cpu));
-+				  GFP_KERNEL, cpu_to_mem(cpu));
- 	if (!cpu_buffer)
- 		return NULL;
- 
-@@ -1198,14 +1198,14 @@ rb_allocate_cpu_buffer(struct ring_buffer *buffer, int nr_pages, int cpu)
- 	init_waitqueue_head(&cpu_buffer->irq_work.waiters);
- 
- 	bpage = kzalloc_node(ALIGN(sizeof(*bpage), cache_line_size()),
--			    GFP_KERNEL, cpu_to_node(cpu));
-+			    GFP_KERNEL, cpu_to_mem(cpu));
- 	if (!bpage)
- 		goto fail_free_buffer;
- 
- 	rb_check_bpage(cpu_buffer, bpage);
- 
- 	cpu_buffer->reader_page = bpage;
--	page = alloc_pages_node(cpu_to_node(cpu), GFP_KERNEL, 0);
-+	page = alloc_pages_node(cpu_to_mem(cpu), GFP_KERNEL, 0);
- 	if (!page)
- 		goto fail_free_reader;
- 	bpage->page = page_address(page);
-@@ -4378,7 +4378,7 @@ void *ring_buffer_alloc_read_page(struct ring_buffer *buffer, int cpu)
- 	struct buffer_data_page *bpage;
- 	struct page *page;
- 
--	page = alloc_pages_node(cpu_to_node(cpu),
-+	page = alloc_pages_node(cpu_to_mem(cpu),
- 				GFP_KERNEL | __GFP_NORETRY, 0);
- 	if (!page)
- 		return NULL;
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 3c9b97e6b1f4..e585fb67472b 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -692,7 +692,7 @@ static int uprobe_buffer_init(void)
- 		return -ENOMEM;
- 
+ 		if (newinfo->entries[cpu] == NULL) {
+ 			xt_free_table_info(newinfo);
+@@ -801,10 +801,10 @@ static int xt_jumpstack_alloc(struct xt_table_info *i)
  	for_each_possible_cpu(cpu) {
--		struct page *p = alloc_pages_node(cpu_to_node(cpu),
-+		struct page *p = alloc_pages_node(cpu_to_mem(cpu),
- 						  GFP_KERNEL, 0);
- 		if (p == NULL) {
- 			err_cpu = cpu;
+ 		if (size > PAGE_SIZE)
+ 			i->jumpstack[cpu] = vmalloc_node(size,
+-				cpu_to_node(cpu));
++				cpu_to_mem(cpu));
+ 		else
+ 			i->jumpstack[cpu] = kmalloc_node(size,
+-				GFP_KERNEL, cpu_to_node(cpu));
++				GFP_KERNEL, cpu_to_mem(cpu));
+ 		if (i->jumpstack[cpu] == NULL)
+ 			/*
+ 			 * Freeing will be done later on by the callers. The
 -- 
 1.7.10.4
 
