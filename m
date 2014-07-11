@@ -1,63 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580AbaGKXwN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 19:52:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40473 "EHLO mail.zytor.com"
+	id S1754913AbaGKX7a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 19:59:30 -0400
+Received: from mga03.intel.com ([143.182.124.21]:64479 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751056AbaGKXwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 19:52:11 -0400
-Message-ID: <53C07865.2040103@zytor.com>
-Date: Fri, 11 Jul 2014 16:51:01 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>, Greg KH <gregkh@linuxfoundation.org>
-CC: Jiang Liu <jiang.liu@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Tony Luck <tony.luck@intel.com>, linux-mm@kvack.org,
-        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC Patch V1 00/30] Enable memoryless node on x86 platforms
-References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>	<20140711082956.GC20603@laptop.programming.kicks-ass.net>	<20140711153314.GA6155@kroah.com> <8761j3ve8s.fsf@tassilo.jf.intel.com>
-In-Reply-To: <8761j3ve8s.fsf@tassilo.jf.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751078AbaGKX73 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 19:59:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,646,1400050800"; 
+   d="scan'208";a="456101495"
+From: Andi Kleen <andi@firstfloor.org>
+To: jolsa@redhat.com
+Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 02/11] perf, tools: Add support for text descriptions of events and alias add
+Date: Fri, 11 Jul 2014 16:59:16 -0700
+Message-Id: <1405123165-22666-3-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1405123165-22666-1-git-send-email-andi@firstfloor.org>
+References: <1405123165-22666-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2014 01:20 PM, Andi Kleen wrote:
-> Greg KH <gregkh@linuxfoundation.org> writes:
-> 
->> On Fri, Jul 11, 2014 at 10:29:56AM +0200, Peter Zijlstra wrote:
->>> On Fri, Jul 11, 2014 at 03:37:17PM +0800, Jiang Liu wrote:
->>>> Any comments are welcomed!
->>>
->>> Why would anybody _ever_ have a memoryless node? That's ridiculous.
->>
->> I'm with Peter here, why would this be a situation that we should even
->> support?  Are there machines out there shipping like this?
-> 
-> We've always had memory nodes.
-> 
-> A classic case in the old days was a two socket system where someone
-> didn't populate any DIMMs on the second socket.
-> 
-> There are other cases too.
-> 
+From: Andi Kleen <ak@linux.intel.com>
 
-Yes, like a node controller-based system where the system can be
-populated with either memory cards or CPU cards, for example.  Now you
-can have both memoryless nodes and memory-only nodes...
+Change pmu.c to allow descriptions of events and add interfaces
+to add aliases at runtime from another file. To be used by jevents in
+a followon patch
 
-Memory-only nodes also happen in real life.  In some cases they are done
-by permanently putting low-frequency CPUs to sleep for their memory
-controllers.
-	
-	-hpa
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+v2: Move perf list changes to other patch.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/util/pmu.c | 43 ++++++++++++++++++++++++++++++-------------
+ 1 file changed, 30 insertions(+), 13 deletions(-)
 
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 7a811eb..f9c7046 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -14,6 +14,7 @@
+ 
+ struct perf_pmu_alias {
+ 	char *name;
++	char *desc;
+ 	struct list_head terms;
+ 	struct list_head list;
+ 	char unit[UNIT_MAX_LEN+1];
+@@ -171,17 +172,12 @@ error:
+ 	return -1;
+ }
+ 
+-static int perf_pmu__new_alias(struct list_head *list, char *dir, char *name, FILE *file)
++static int __perf_pmu__new_alias(struct list_head *list, char *name,
++				 char *dir, char *desc, char *val)
+ {
+ 	struct perf_pmu_alias *alias;
+-	char buf[256];
+ 	int ret;
+ 
+-	ret = fread(buf, 1, sizeof(buf), file);
+-	if (ret == 0)
+-		return -EINVAL;
+-	buf[ret] = 0;
+-
+ 	alias = malloc(sizeof(*alias));
+ 	if (!alias)
+ 		return -ENOMEM;
+@@ -190,24 +186,45 @@ static int perf_pmu__new_alias(struct list_head *list, char *dir, char *name, FI
+ 	alias->scale = 1.0;
+ 	alias->unit[0] = '\0';
+ 
+-	ret = parse_events_terms(&alias->terms, buf);
++	ret = parse_events_terms(&alias->terms, val);
+ 	if (ret) {
++		pr_err("Cannot parse alias %s: %d\n", val, ret);
+ 		free(alias);
+ 		return ret;
+ 	}
+ 
+ 	alias->name = strdup(name);
+-	/*
+-	 * load unit name and scale if available
+-	 */
+-	perf_pmu__parse_unit(alias, dir, name);
+-	perf_pmu__parse_scale(alias, dir, name);
+ 
++	if (dir) {
++		/*
++		 * load unit name and scale if available
++		 */
++		perf_pmu__parse_unit(alias, dir, name);
++		perf_pmu__parse_scale(alias, dir, name);
++	}
++
++	alias->desc = desc ? strdup(desc) : NULL;
+ 	list_add_tail(&alias->list, list);
+ 
+ 	return 0;
+ }
+ 
++static int perf_pmu__new_alias(struct list_head *list,
++			       char *dir,
++			       char *name,
++			       FILE *file)
++{
++	char buf[256];
++	int ret;
++
++	ret = fread(buf, 1, sizeof(buf), file);
++	if (ret == 0)
++		return -EINVAL;
++	buf[ret] = 0;
++
++	return __perf_pmu__new_alias(list, name, dir, NULL, buf);
++}
++
+ /*
+  * Process all the sysfs attributes located under the directory
+  * specified in 'dir' parameter.
+-- 
+1.9.3
 
