@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862AbaGKKXI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 06:23:08 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.246]:18108 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751897AbaGKKXH (ORCPT
+	id S1753063AbaGKKXV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 06:23:21 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:44515 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752877AbaGKKXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 06:23:07 -0400
-From: Bo Shen <voice.shen@atmel.com>
-To: <nicolas.ferre@atmel.com>, <boris.brezillon@free-electrons.com>,
-        <jiri.prchal@aksignal.cz>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Bo Shen <voice.shen@atmel.com>
-Subject: [PATCH] ARM: at91: at91sam9x5: add clocks for usb device
-Date: Fri, 11 Jul 2014 18:22:55 +0800
-Message-ID: <1405074175-22444-1-git-send-email-voice.shen@atmel.com>
-X-Mailer: git-send-email 1.8.5.2
+	Fri, 11 Jul 2014 06:23:18 -0400
+Date: Fri, 11 Jul 2014 19:22:04 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: lidza.louina@gmail.com
+Cc: markh@compro.net, gregkh@linuxfoundation.org,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/9] staging: dgap: redundant NULL and magic check in
+ dgap_get_modem_info()
+Message-ID: <20140711102204.GA22311@devel.8.8.4.4>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add clocks for usb device, or else switch to CCF, the gadget
-won't work.
+The "ch" is already checking in caller.
 
-Reported-by: Jiří Prchal <jiri.prchal@aksignal.cz>
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 ---
- arch/arm/boot/dts/at91sam9x5.dtsi | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/staging/dgap/dgap.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
-index d6133f4..2ebc421 100644
---- a/arch/arm/boot/dts/at91sam9x5.dtsi
-+++ b/arch/arm/boot/dts/at91sam9x5.dtsi
-@@ -1045,6 +1045,8 @@
- 				reg = <0x00500000 0x80000
- 				       0xf803c000 0x400>;
- 				interrupts = <23 IRQ_TYPE_LEVEL_HIGH 0>;
-+				clocks = <&usb>, <&udphs_clk>;
-+				clock-names = "hclk", "pclk";
- 				status = "disabled";
+diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+index 9affc5b..79ea116 100644
+--- a/drivers/staging/dgap/dgap.c
++++ b/drivers/staging/dgap/dgap.c
+@@ -3061,9 +3061,6 @@ static int dgap_get_modem_info(struct channel_t *ch, unsigned int __user *value)
+ 	ulong lock_flags;
+ 	int rc;
  
- 				ep0 {
+-	if (!ch || ch->magic != DGAP_CHANNEL_MAGIC)
+-		return -EIO;
+-
+ 	spin_lock_irqsave(&ch->ch_lock, lock_flags);
+ 
+ 	mstat = readb(&(ch->ch_bs->m_stat));
 -- 
-1.8.5.2
+1.7.1
 
