@@ -1,217 +1,391 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685AbaGKLsc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 07:48:32 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:28812 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752229AbaGKLs3 (ORCPT
+	id S1752871AbaGKLsm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 07:48:42 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:52314 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751404AbaGKLsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 07:48:29 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-ef-53bfcf0a0974
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-To: zohar@linux.vnet.ibm.com, linux-ima-devel@lists.sourceforge.net,
-        linux-security-module@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, dmitry.kasatkin@gmail.com,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH v1 3/3] ima: pass 'opened' flag to identify newly created files
-Date: Fri, 11 Jul 2014 14:47:01 +0300
-Message-id: <c24beb8d1cc2cc0c4986f430eb0c84fe28470f66.1405078844.git.d.kasatkin@samsung.com>
+	Fri, 11 Jul 2014 07:48:40 -0400
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+To: linux-mmc@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@linaro.org>, Chris Ball <chris@printf.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Subject: [RFC PATCH] mmc: mmci: Add qcom dml support to the driver.
+Date: Fri, 11 Jul 2014 12:48:26 +0100
+Message-Id: <1405079306-1406-1-git-send-email-srinivas.kandagatla@linaro.org>
 X-Mailer: git-send-email 1.9.1
-In-reply-to: <cover.1405078844.git.d.kasatkin@samsung.com>
-References: <cover.1405078844.git.d.kasatkin@samsung.com>
-In-reply-to: <cover.1405078844.git.d.kasatkin@samsung.com>
-References: <cover.1405078844.git.d.kasatkin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBLMWRmVeSWpSXmKPExsVy+t/xq7pc5/cHG6z+IWNx6+9eZosvS+ss
-	9uw9yWLxcsY8dovLu+awWXzoecRmcf7vcVaLTysmMTtweOycdZfd48GhzSweuxd8ZvLo27KK
-	0ePzJjmPTU/eMgWwRXHZpKTmZJalFunbJXBlHNrxk7lgjUnF9p3HmRsYP2l2MXJySAiYSDTM
-	OMkMYYtJXLi3nq2LkYtDSGApo8TrWfPZIZxOJol3vV/AqtgE9CQ2NP9gB7FFBHIkJp25wAxS
-	xCywkFHi/9SlrCAJYQF/iQ8dF5hAbBYBVYkZh6+C2bwCcRJ35pxnh1gnJ3Hy2GSwek4BK4kP
-	izrBbCEBS4n1s77hFJ/AyL+AkWEVo2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkhoft3BuPSY
-	1SFGAQ5GJR7eGcn7g4VYE8uKK3MPMUpwMCuJ8JqfBQrxpiRWVqUW5ccXleakFh9iZOLglGpg
-	rIyLsPAOqvMyvnHPbcPtM6/4ni22aKs4u3e/ctqjDzxF0iveblq7Ltlvm+Cr5fKzRW5/uHvs
-	46nGHX8KHfVWWK2qvcSifjfQuHfFmcLfC394rZPdY3W4crm0qG3e7N7y+KAKo8D9L9n4Zm2/
-	HKPvGuT+/ufsiWoXd35ftfDLJb6m9cVn/WexnFZiKc5INNRiLipOBAAyJBfxKwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Empty file size and missing xattrs do not guaranty that file
-was just created. It could be originally made empty and labeled
-with needed LSM labels. Current implementation makes it possible
-to remove security.ima, and set arbitrary LSM related attribute.
-On open, IMA would be forced to update security.evm to 'fake' LSM
-xattrs.
+On Qualcomm APQ8064 SOCs, SD card controller has an additional glue
+called DML (Data Mover Local/Lite) to assist dma transfers.
+This hardware needs to be setup before any dma transfer is requested.
+DML itself is not a DMA engine, its just a gule between the SD card
+controller and dma controller.
 
-This patch passes FILE_CREATED flag to IMA to reliably identify new
-files.
+Most of this code has been ported from qualcomm's 3.4 kernel.
 
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+This patch adds the code necessary to intialize the hardware and setup
+before doing any dma transfers.
+
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 ---
- fs/namei.c                            |  2 +-
- fs/nfsd/vfs.c                         |  2 +-
- include/linux/ima.h                   |  4 ++--
- security/integrity/ima/ima.h          |  4 ++--
- security/integrity/ima/ima_appraise.c |  4 ++--
- security/integrity/ima/ima_main.c     | 14 +++++++-------
- 6 files changed, 15 insertions(+), 15 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 985c6f3..005771f 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -3058,7 +3058,7 @@ opened:
- 	error = open_check_o_direct(file);
- 	if (error)
- 		goto exit_fput;
--	error = ima_file_check(file, op->acc_mode);
-+	error = ima_file_check(file, op->acc_mode, *opened);
- 	if (error)
- 		goto exit_fput;
+Hi All, 
+
+DMA support for Qualcomm SD card controller is missing in my last patchset, the
+reason to post this patch separately is because of the unusual glue logic
+between card controller and the dma-controller. This glue logic is called DML
+(Data mover local/lite).
+
+DML assists dma transfers between sd card controller and dma-controller. As this
+DML gule is part of SD controller IP and needs configuring for every transfer,
+So I thought of keeping it close to driver in drivers/mmc/ directory is more
+usefull, than trying to find a infrastructure to fit it. DML itself is not a DMA
+controller but an logic present on SD card controller and it resides in SD card
+controller IP.
+
+I would like to get your opnion on overall correctness of the approch.
+
+Thanks in advance.
+srini
+
+
+ drivers/mmc/host/Kconfig    |  11 +++
+ drivers/mmc/host/Makefile   |   1 +
+ drivers/mmc/host/mmci.c     |  19 ++++-
+ drivers/mmc/host/qcom_dml.c | 171 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/mmc/host/qcom_dml.h |  17 +++++
+ 5 files changed, 218 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/mmc/host/qcom_dml.c
+ create mode 100644 drivers/mmc/host/qcom_dml.h
+
+diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+index a565254..f50ccbb 100644
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -14,6 +14,17 @@ config MMC_ARMMMCI
  
-diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
-index 140c496..d49c778 100644
---- a/fs/nfsd/vfs.c
-+++ b/fs/nfsd/vfs.c
-@@ -709,7 +709,7 @@ nfsd_open(struct svc_rqst *rqstp, struct svc_fh *fhp, umode_t type,
- 		host_err = PTR_ERR(*filp);
- 		*filp = NULL;
- 	} else {
--		host_err = ima_file_check(*filp, may_flags);
-+		host_err = ima_file_check(*filp, may_flags, 0);
+ 	  If unsure, say N.
  
- 		if (may_flags & NFSD_MAY_64BIT_COOKIE)
- 			(*filp)->f_mode |= FMODE_64BITHASH;
-diff --git a/include/linux/ima.h b/include/linux/ima.h
-index 1b7f268..23a87a4 100644
---- a/include/linux/ima.h
-+++ b/include/linux/ima.h
-@@ -15,7 +15,7 @@ struct linux_binprm;
++config MMC_QCOM_DML
++	tristate "Qualcomm Data Mover for SD Card Controller"
++	depends on MMC_ARMMMCI && ARCH_QCOM
++	default y
++	help
++	  This selects the Qualcomm Data Mover lite/local on SD Card controller.
++	  This option will enable the dma to work correctly, if you are using
++	  Qcom SOCs and MMC, you would probably need this option to get DMA working.
++
++	  if unsure, say N.
++
+ config MMC_PXA
+ 	tristate "Intel PXA25x/26x/27x Multimedia Card Interface support"
+ 	depends on ARCH_PXA
+diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
+index 7f81ddf..e6a14ac 100644
+--- a/drivers/mmc/host/Makefile
++++ b/drivers/mmc/host/Makefile
+@@ -3,6 +3,7 @@
+ #
  
- #ifdef CONFIG_IMA
- extern int ima_bprm_check(struct linux_binprm *bprm);
--extern int ima_file_check(struct file *file, int mask);
-+extern int ima_file_check(struct file *file, int mask, int opened);
- extern void ima_file_free(struct file *file);
- extern int ima_file_mmap(struct file *file, unsigned long prot);
- extern int ima_module_check(struct file *file);
-@@ -26,7 +26,7 @@ static inline int ima_bprm_check(struct linux_binprm *bprm)
- 	return 0;
- }
+ obj-$(CONFIG_MMC_ARMMMCI)	+= mmci.o
++obj-$(CONFIG_MMC_QCOM_DML)	+= qcom_dml.o
+ obj-$(CONFIG_MMC_PXA)		+= pxamci.o
+ obj-$(CONFIG_MMC_MXC)		+= mxcmmc.o
+ obj-$(CONFIG_MMC_MXS)		+= mxs-mmc.o
+diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+index b66b351..c537296 100644
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -43,6 +43,7 @@
+ #include <asm/sizes.h>
  
--static inline int ima_file_check(struct file *file, int mask)
-+static inline int ima_file_check(struct file *file, int mask, int opened)
- {
- 	return 0;
- }
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 3e9be3d..9337aa9 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -175,7 +175,7 @@ void ima_delete_rules(void);
- int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
- 			     struct file *file, const unsigned char *filename,
- 			     struct evm_ima_xattr_data *xattr_value,
--			     int xattr_len);
-+			     int xattr_len, int opened);
- int ima_must_appraise(struct inode *inode, int mask, enum ima_hooks func);
- void ima_update_xattr(struct integrity_iint_cache *iint, struct file *file);
- enum integrity_status ima_get_cache_status(struct integrity_iint_cache *iint,
-@@ -191,7 +191,7 @@ static inline int ima_appraise_measurement(int func,
- 					   struct file *file,
- 					   const unsigned char *filename,
- 					   struct evm_ima_xattr_data *xattr_value,
--					   int xattr_len)
-+					   int xattr_len, int opened)
- {
- 	return INTEGRITY_UNKNOWN;
- }
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 3a4beb3..10679c8 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -175,7 +175,7 @@ int ima_read_xattr(struct dentry *dentry,
- int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
- 			     struct file *file, const unsigned char *filename,
- 			     struct evm_ima_xattr_data *xattr_value,
--			     int xattr_len)
-+			     int xattr_len, int opened)
- {
- 	static const char op[] = "appraise_data";
- 	char *cause = "unknown";
-@@ -195,7 +195,7 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+ #include "mmci.h"
++#include "qcom_dml.h"
  
- 		cause = "missing-hash";
- 		status = INTEGRITY_NOLABEL;
--		if (inode->i_size == 0) {
-+		if (opened & FILE_CREATED) {
- 			iint->flags |= IMA_NEW_FILE;
- 			status = INTEGRITY_PASS;
- 		}
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index 5a870e7..3384036 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -157,7 +157,7 @@ void ima_file_free(struct file *file)
- }
+ #define DRIVER_NAME "mmci-pl18x"
  
- static int process_measurement(struct file *file, const char *filename,
--			       int mask, int function)
-+			       int mask, int function, int opened)
- {
- 	struct inode *inode = file_inode(file);
- 	struct integrity_iint_cache *iint;
-@@ -238,7 +238,7 @@ static int process_measurement(struct file *file, const char *filename,
- 	if (action & IMA_APPRAISE_SUBMASK) {
- 		mutex_lock(&inode->i_mutex);
- 		rc = ima_appraise_measurement(_func, iint, file, pathname,
--					      xattr_value, xattr_len);
-+					      xattr_value, xattr_len, opened);
- 		mutex_unlock(&inode->i_mutex);
- 	}
- 	if (action & IMA_AUDIT)
-@@ -269,7 +269,7 @@ out_unlocked:
- int ima_file_mmap(struct file *file, unsigned long prot)
- {
- 	if (file && (prot & PROT_EXEC))
--		return process_measurement(file, NULL, MAY_EXEC, MMAP_CHECK);
-+		return process_measurement(file, NULL, MAY_EXEC, MMAP_CHECK, 0);
- 	return 0;
- }
- 
-@@ -291,7 +291,7 @@ int ima_bprm_check(struct linux_binprm *bprm)
- 	return process_measurement(bprm->file,
- 				   (strcmp(bprm->filename, bprm->interp) == 0) ?
- 				   bprm->filename : bprm->interp,
--				   MAY_EXEC, BPRM_CHECK);
-+				   MAY_EXEC, BPRM_CHECK, 0);
- }
- 
- /**
-@@ -304,12 +304,12 @@ int ima_bprm_check(struct linux_binprm *bprm)
-  * On success return 0.  On integrity appraisal error, assuming the file
-  * is in policy and IMA-appraisal is in enforcing mode, return -EACCES.
+@@ -74,6 +75,7 @@ static unsigned int fmax = 515633;
+  * @pwrreg_nopower: bits in MMCIPOWER don't controls ext. power supply
+  * @explicit_mclk_control: enable explicit mclk control in driver.
+  * @qcom_fifo: enables qcom specific fifo pio read logic.
++ * @qcom_dml: enables qcom specific dml glue for dma transfers.
   */
--int ima_file_check(struct file *file, int mask)
-+int ima_file_check(struct file *file, int mask, int opened)
+ struct variant_data {
+ 	unsigned int		clkreg;
+@@ -97,6 +99,7 @@ struct variant_data {
+ 	bool			pwrreg_nopower;
+ 	bool			explicit_mclk_control;
+ 	bool			qcom_fifo;
++	bool			qcom_dml;
+ };
+ 
+ static struct variant_data variant_arm = {
+@@ -205,6 +208,7 @@ static struct variant_data variant_qcom = {
+ 	.f_max			= 208000000,
+ 	.explicit_mclk_control	= true,
+ 	.qcom_fifo		= true,
++	.qcom_dml		= true,
+ };
+ 
+ static int mmci_card_busy(struct mmc_host *mmc)
+@@ -418,6 +422,7 @@ static void mmci_dma_setup(struct mmci_host *host)
  {
- 	ima_rdwr_violation_check(file);
- 	return process_measurement(file, NULL,
- 				   mask & (MAY_READ | MAY_WRITE | MAY_EXEC),
--				   FILE_CHECK);
-+				   FILE_CHECK, opened);
- }
- EXPORT_SYMBOL_GPL(ima_file_check);
+ 	const char *rxname, *txname;
+ 	dma_cap_mask_t mask;
++	struct variant_data *variant = host->variant;
  
-@@ -332,7 +332,7 @@ int ima_module_check(struct file *file)
- #endif
- 		return 0;	/* We rely on module signature checking */
+ 	host->dma_rx_channel = dma_request_slave_channel(mmc_dev(host->mmc), "rx");
+ 	host->dma_tx_channel = dma_request_slave_channel(mmc_dev(host->mmc), "tx");
+@@ -468,6 +473,11 @@ static void mmci_dma_setup(struct mmci_host *host)
+ 		if (max_seg_size < host->mmc->max_seg_size)
+ 			host->mmc->max_seg_size = max_seg_size;
  	}
--	return process_measurement(file, NULL, MAY_EXEC, MODULE_CHECK);
-+	return process_measurement(file, NULL, MAY_EXEC, MODULE_CHECK, 0);
++
++	if (variant->qcom_dml && host->dma_rx_channel && host->dma_tx_channel) {
++		if (dml_hw_init(host, host->mmc->parent->of_node))
++			variant->qcom_dml = false;
++	}
  }
  
- static int __init init_ima(void)
+ /*
+@@ -569,6 +579,7 @@ static int __mmci_dma_prep_data(struct mmci_host *host, struct mmc_data *data,
+ 	struct dma_async_tx_descriptor *desc;
+ 	enum dma_data_direction buffer_dirn;
+ 	int nr_sg;
++	u32 flags = DMA_CTRL_ACK;
+ 
+ 	if (data->flags & MMC_DATA_READ) {
+ 		conf.direction = DMA_DEV_TO_MEM;
+@@ -593,9 +604,12 @@ static int __mmci_dma_prep_data(struct mmci_host *host, struct mmc_data *data,
+ 	if (nr_sg == 0)
+ 		return -EINVAL;
+ 
++	if (host->variant->qcom_dml)
++		flags |= DMA_PREP_INTERRUPT;
++
+ 	dmaengine_slave_config(chan, &conf);
+ 	desc = dmaengine_prep_slave_sg(chan, data->sg, nr_sg,
+-					    conf.direction, DMA_CTRL_ACK);
++					    conf.direction, flags);
+ 	if (!desc)
+ 		goto unmap_exit;
+ 
+@@ -644,6 +658,9 @@ static int mmci_dma_start_data(struct mmci_host *host, unsigned int datactrl)
+ 	dmaengine_submit(host->dma_desc_current);
+ 	dma_async_issue_pending(host->dma_current);
+ 
++	if (host->variant->qcom_dml)
++		dml_start_xfer(host, data);
++
+ 	datactrl |= MCI_DPSM_DMAENABLE;
+ 
+ 	/* Trigger the DMA transfer */
+diff --git a/drivers/mmc/host/qcom_dml.c b/drivers/mmc/host/qcom_dml.c
+new file mode 100644
+index 0000000..e2ecd07
+--- /dev/null
++++ b/drivers/mmc/host/qcom_dml.c
+@@ -0,0 +1,171 @@
++#include <linux/of.h>
++#include <linux/of_dma.h>
++#include <linux/bitops.h>
++#include <linux/mmc/host.h>
++#include <linux/mmc/card.h>
++#include "mmci.h"
++
++/* Registers */
++#define DML_CONFIG			0x00
++#define PRODUCER_CRCI_MSK		GENMASK(1, 0)
++#define PRODUCER_CRCI_DISABLE		0
++#define PRODUCER_CRCI_X_SEL		BIT(0)
++#define PRODUCER_CRCI_Y_SEL		BIT(1)
++#define CONSUMER_CRCI_MSK		GENMASK(3, 2)
++#define CONSUMER_CRCI_DISABLE		0
++#define CONSUMER_CRCI_X_SEL		BIT(2)
++#define CONSUMER_CRCI_Y_SEL		BIT(3)
++#define PRODUCER_TRANS_END_EN		BIT(4)
++#define BYPASS				BIT(16)
++#define DIRECT_MODE			BIT(17)
++#define INFINITE_CONS_TRANS		BIT(18)
++
++#define DML_SW_RESET			0x08
++#define DML_PRODUCER_START		0x0c
++#define DML_CONSUMER_START		0x10
++#define DML_PRODUCER_PIPE_LOGICAL_SIZE	0x14
++#define DML_CONSUMER_PIPE_LOGICAL_SIZE	0x18
++#define DML_PIPE_ID			0x1c
++#define PRODUCER_PIPE_ID_SHFT		0
++#define PRODUCER_PIPE_ID_MSK		GENMASK(4, 0)
++#define CONSUMER_PIPE_ID_SHFT		16
++#define CONSUMER_PIPE_ID_MSK		GENMASK(20, 16)
++
++#define DML_PRODUCER_BAM_BLOCK_SIZE	0x24
++#define DML_PRODUCER_BAM_TRANS_SIZE	0x28
++
++/* other definitions */
++#define PRODUCER_PIPE_LOGICAL_SIZE	4096
++#define CONSUMER_PIPE_LOGICAL_SIZE	4096
++
++#define DML_OFFSET			0x800
++
++void dml_start_xfer(struct mmci_host *host, struct mmc_data *data)
++{
++	u32 config;
++	void __iomem *dml_base;
++
++	dml_base = host->base + DML_OFFSET;
++
++	if (data->flags & MMC_DATA_READ) {
++		/* Read operation: configure DML for producer operation */
++		/* Set producer CRCI-x and disable consumer CRCI */
++		config = readl(dml_base + DML_CONFIG);
++		config = (config & ~PRODUCER_CRCI_MSK) | PRODUCER_CRCI_X_SEL;
++		config = (config & ~CONSUMER_CRCI_MSK) | CONSUMER_CRCI_DISABLE;
++		writel(config, (dml_base + DML_CONFIG));
++
++		/* Set the Producer BAM block size */
++		writel(data->blksz, (dml_base +	DML_PRODUCER_BAM_BLOCK_SIZE));
++
++		/* Set Producer BAM Transaction size */
++		writel(data->blocks * data->blksz,
++			(dml_base + DML_PRODUCER_BAM_TRANS_SIZE));
++		/* Set Producer Transaction End bit */
++		writel((readl_relaxed(dml_base + DML_CONFIG) |
++			PRODUCER_TRANS_END_EN),
++			(dml_base + DML_CONFIG));
++		/* Trigger producer */
++		writel(1, (dml_base + DML_PRODUCER_START));
++	} else {
++		/* Write operation: configure DML for consumer operation */
++		/* Set consumer CRCI-x and disable producer CRCI*/
++		config = readl(dml_base + DML_CONFIG);
++		config = (config & ~CONSUMER_CRCI_MSK) | CONSUMER_CRCI_X_SEL;
++		config = (config & ~PRODUCER_CRCI_MSK) | PRODUCER_CRCI_DISABLE;
++		writel(config, (dml_base + DML_CONFIG));
++		/* Clear Producer Transaction End bit */
++		writel((readl_relaxed(dml_base + DML_CONFIG)
++			& ~PRODUCER_TRANS_END_EN),
++			(dml_base + DML_CONFIG));
++		/* Trigger consumer */
++		writel(1, (dml_base + DML_CONSUMER_START));
++	}
++}
++
++static int of_get_dml_pipe_index(struct device_node *np, const char *name)
++{
++	int count, i;
++	const char *s;
++	struct of_phandle_args	dma_spec;
++
++	if (!np || !name)
++		return -ENODEV;
++
++	count = of_property_count_strings(np, "dma-names");
++	if (count < 0)
++		return -ENODEV;
++
++	for (i = 0; i < count; i++) {
++
++		if (of_property_read_string_index(np, "dma-names", i, &s))
++			continue;
++
++		if (strcmp(name, s))
++			continue;
++
++		if (of_parse_phandle_with_args(np, "dmas", "#dma-cells", i,
++				       &dma_spec))
++			continue;
++
++		if (dma_spec.args_count)
++			return dma_spec.args[0];
++	}
++
++	return -ENODEV;
++}
++
++/* Initialize the dml hardware connected to SD Card controller */
++int dml_hw_init(struct mmci_host *host, struct device_node *np)
++{
++	u32 config = 0;
++	void __iomem *dml_base;
++	u32 consumer_id = 0, producer_id = 0;
++
++	consumer_id = of_get_dml_pipe_index(np, "tx");
++	producer_id = of_get_dml_pipe_index(np, "rx");
++
++	if (IS_ERR_VALUE(producer_id) || IS_ERR_VALUE(consumer_id))
++		return -ENODEV;
++
++	dml_base = host->base + DML_OFFSET;
++
++	/* Reset the DML block */
++	writel(1, (dml_base + DML_SW_RESET));
++
++	/* Disable the producer and consumer CRCI */
++	config = (PRODUCER_CRCI_DISABLE | CONSUMER_CRCI_DISABLE);
++	/*
++	 * Disable the bypass mode. Bypass mode will only be used
++	 * if data transfer is to happen in PIO mode and don't
++	 * want the BAM interface to connect with SDCC-DML.
++	 */
++	config &= ~BYPASS;
++	/*
++	 * Disable direct mode as we don't DML to MASTER the AHB bus.
++	 * BAM connected with DML should MASTER the AHB bus.
++	 */
++	config &= ~DIRECT_MODE;
++	/*
++	 * Disable infinite mode transfer as we won't be doing any
++	 * infinite size data transfers. All data transfer will be
++	 * of finite data size.
++	 */
++	config &= ~INFINITE_CONS_TRANS;
++	writel(config, (dml_base + DML_CONFIG));
++
++	/*
++	 * Initialize the logical BAM pipe size for producer
++	 * and consumer.
++	 */
++	writel(PRODUCER_PIPE_LOGICAL_SIZE,
++		(dml_base + DML_PRODUCER_PIPE_LOGICAL_SIZE));
++	writel(CONSUMER_PIPE_LOGICAL_SIZE,
++		(dml_base + DML_CONSUMER_PIPE_LOGICAL_SIZE));
++
++	/* Initialize Producer/consumer pipe id */
++	writel(producer_id | (consumer_id << CONSUMER_PIPE_ID_SHFT),
++		(dml_base + DML_PIPE_ID));
++
++	return 0;
++}
+diff --git a/drivers/mmc/host/qcom_dml.h b/drivers/mmc/host/qcom_dml.h
+new file mode 100644
+index 0000000..d2c5aa45
+--- /dev/null
++++ b/drivers/mmc/host/qcom_dml.h
+@@ -0,0 +1,17 @@
++#ifndef __MMC_QCOM_DML_H__
++#define __MMC_QCOM_DML_H__
++
++#ifdef CONFIG_MMC_QCOM_DML
++int dml_hw_init(struct mmci_host *host, struct device_node *np);
++void dml_start_xfer(struct mmci_host *host, struct mmc_data *data);
++#else
++static inline int dml_hw_init(struct mmci_host *host, struct device_node *np)
++{
++	return -ENOSYS;
++}
++static inline void dml_start_xfer(struct mmci_host *host, struct mmc_data *data)
++{
++}
++#endif /* CONFIG_MMC_QCOM_DML */
++
++#endif /* __MMC_QCOM_DML_H__ */
 -- 
 1.9.1
 
