@@ -1,95 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754184AbaGKPC6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 11:02:58 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:63582 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753931AbaGKPC4 (ORCPT
+	id S1754049AbaGKPCr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 11:02:47 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:45156 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751962AbaGKPCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 11:02:56 -0400
-Date: Fri, 11 Jul 2014 11:02:52 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] workqueue: remove the guarantee and the retrying of
- maybe_create_worker()
-Message-ID: <20140711150252.GE27706@htj.dyndns.org>
-References: <1405008074-11031-1-git-send-email-laijs@cn.fujitsu.com>
- <1405008074-11031-3-git-send-email-laijs@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405008074-11031-3-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 11 Jul 2014 11:02:45 -0400
+Message-ID: <1405090954.32598.60.camel@hornet>
+Subject: Re: [PATCH] bus: ARM CCN PMU driver
+From: Pawel Moll <pawel.moll@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Rob Herring <robh+dt@kernel.org>, Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Fri, 11 Jul 2014 16:02:34 +0100
+In-Reply-To: <20140711142135.GA21766@n2100.arm.linux.org.uk>
+References: <1405088056-29181-1-git-send-email-pawel.moll@arm.com>
+	 <20140711142135.GA21766@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 12:01:04AM +0800, Lai Jiangshan wrote:
-> maybe_create_worker() has a strong guarantee that there has at least
-> one idle worker on return from this function.  This guarantee is guaranteed
-> via the check and the retrying in this function.
+On Fri, 2014-07-11 at 15:21 +0100, Russell King - ARM Linux wrote:
+> On Fri, Jul 11, 2014 at 03:14:16PM +0100, Pawel Moll wrote:
+> > diff --git a/drivers/bus/Kconfig b/drivers/bus/Kconfig
+> > index 1f37d98..6ab2a62 100644
+> > --- a/drivers/bus/Kconfig
+> > +++ b/drivers/bus/Kconfig
+> > @@ -4,14 +4,6 @@
+> >  
+> >  menu "Bus devices"
+> >  
+> > -config BRCMSTB_GISB_ARB
+> > -	bool "Broadcom STB GISB bus arbiter"
+> > -	depends on ARM
+> > -	help
+> > -	  Driver for the Broadcom Set Top Box System-on-a-chip internal bus
+> > -	  arbiter. This driver provides timeout and target abort error handling
+> > -	  and internal bus master decoding.
+> > -
+> ...
+> > diff --git a/drivers/bus/Makefile b/drivers/bus/Makefile
+> > index 6a4ea7e..493b4ff 100644
+> > --- a/drivers/bus/Makefile
+> > +++ b/drivers/bus/Makefile
+> > @@ -2,14 +2,15 @@
+> >  # Makefile for the bus drivers.
+> >  #
+> >  
+> > -obj-$(CONFIG_BRCMSTB_GISB_ARB)	+= brcmstb_gisb.o
 > 
-> But the caller (worker_thread()) also has the same check and retrying,
-> so the guarantee is not really required and the check and the retrying in
-> maybe_create_worker() are unnecessary and redundant.
-> 
-> So we remove the guarantee as well as the check and the retrying.  The caller
-> takes responsibility to retry when needed.
-> 
-> The only trade-off is that the mayday timer will be removed and re-added
-> across retrying. Since retrying is expected as rare case, the trade-off
-> is acceptible.
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
->  kernel/workqueue.c |   49 ++++++++++++++++++-------------------------------
->  1 files changed, 18 insertions(+), 31 deletions(-)
-> 
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 92f7ea0c..4fdd6d0 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -1875,14 +1875,17 @@ static void pool_mayday_timeout(unsigned long __pool)
->   * @pool: pool to create a new worker for
->   *
->   * Create a new worker for @pool if necessary.  @pool is guaranteed to
-> - * have at least one idle worker on return from this function.  If
-> - * creating a new worker takes longer than MAYDAY_INTERVAL, mayday is
-> + * make some progresses on return from this function.
+> I assume that as these exist in the patch, you haven't looked through
+> the patch to check what you're actually submitting... 
 
-Hmmm.... not really.
+This is, obviously, my bad and lack of attention after last minute
+rebase, for which I apologise.
 
-> + *   1) success to create a new idle worker.  Or
+> how can we be
+> sure that the rest of the patch is what you intend to submit?
 
-Another work item can race and occupy that worker before this worker
-regrabs pool->lock, which is safe because
+Of course you can't be sure, unless you are willing to take my word for
+it. Maybe the fact that 46% of the added lines contains upper- or
+lowercase string "CCN" matching the subject can support my plea.
 
-> + *   2) cool down a while after it failed.  Or
-> + *   3) condition changed (no longer need to create worker) after it failed.
-> + * In any case, the caller will recheck the condition and retry when needed,
-> + * so this function doesn't need to retry.
+Pawel
 
-the caller checks the condition again but the above 1/2/3 are
-confusing at best.
-
-...
-> +	worker = create_worker(pool);
-> +	if (worker) {
-> +		del_timer_sync(&pool->mayday_timer);
-> +		spin_lock_irq(&pool->lock);
-> +		start_worker(worker);
-> +		return;
-> +	}
->  
-> +	if (need_to_create_worker(pool))
->  		schedule_timeout_interruptible(CREATE_COOLDOWN);
-
-Ugh, so we're now inserting delay in the inner function and looping
-from the outside?  That's messy.  I'd prefer removing the outer loop
-instead.
-
-Thanks.
-
--- 
-tejun
