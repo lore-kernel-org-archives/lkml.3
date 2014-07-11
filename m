@@ -1,30 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752455AbaGKHgA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 03:36:00 -0400
+	id S1752500AbaGKHgE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 03:36:04 -0400
 Received: from mga09.intel.com ([134.134.136.24]:36972 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752412AbaGKHf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 03:35:57 -0400
+	id S1752412AbaGKHgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 03:36:00 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,642,1400050800"; 
-   d="scan'208";a="571589555"
+   d="scan'208";a="571589569"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
         David Rientjes <rientjes@google.com>,
         Mike Galbraith <umgwanakikbuti@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Bob Liu <lliubbo@gmail.com>
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>
 Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
         linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC Patch V1 08/30] mm, thp: Use cpu_to_mem()/numa_mem_id() to support memoryless node
-Date: Fri, 11 Jul 2014 15:37:25 +0800
-Message-Id: <1405064267-11678-9-git-send-email-jiang.liu@linux.intel.com>
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: [RFC Patch V1 09/30] mm, memcg: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+Date: Fri, 11 Jul 2014 15:37:26 +0800
+Message-Id: <1405064267-11678-10-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
@@ -43,40 +40,22 @@ is the same as cpu_to_node()/numa_node_id().
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- mm/huge_memory.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ mm/memcontrol.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 33514d88fef9..3307dd840873 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -822,7 +822,7 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		return 0;
- 	}
- 	page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
--			vma, haddr, numa_node_id(), 0);
-+			vma, haddr, numa_mem_id(), 0);
- 	if (unlikely(!page)) {
- 		count_vm_event(THP_FAULT_FALLBACK);
- 		return VM_FAULT_FALLBACK;
-@@ -1111,7 +1111,7 @@ alloc:
- 	if (transparent_hugepage_enabled(vma) &&
- 	    !transparent_hugepage_debug_cow())
- 		new_page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
--					      vma, haddr, numa_node_id(), 0);
-+					      vma, haddr, numa_mem_id(), 0);
- 	else
- 		new_page = NULL;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index a2c7bcb0e6eb..d6c4b7255ca9 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1933,7 +1933,7 @@ int mem_cgroup_select_victim_node(struct mem_cgroup *memcg)
+ 	 * we use curret node.
+ 	 */
+ 	if (unlikely(node == MAX_NUMNODES))
+-		node = numa_node_id();
++		node = numa_mem_id();
  
-@@ -1255,7 +1255,7 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	struct anon_vma *anon_vma = NULL;
- 	struct page *page;
- 	unsigned long haddr = addr & HPAGE_PMD_MASK;
--	int page_nid = -1, this_nid = numa_node_id();
-+	int page_nid = -1, this_nid = numa_mem_id();
- 	int target_nid, last_cpupid = -1;
- 	bool page_locked;
- 	bool migrated = false;
+ 	memcg->last_scanned_node = node;
+ 	return node;
 -- 
 1.7.10.4
 
