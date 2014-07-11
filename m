@@ -1,142 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754453AbaGKPOR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 11:14:17 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:56972 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754445AbaGKPOM (ORCPT
+	id S1754500AbaGKPPO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 11:15:14 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:58963 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752751AbaGKPPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 11:14:12 -0400
-Date: Fri, 11 Jul 2014 08:14:05 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Jens Axboe <axboe@kernel.dk>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jan Kara <jack@suse.cz>,
-        Ingo Molnar <mingo@kernel.org>, Christoph Hellwig <hch@infradead.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Roman Gushchin <klamm@yandex-team.ru>, Xie XiuQi <xiexiuqi@huawei.com>,
-        Tony Luck <tony.luck@intel.com>, linux-mm@kvack.org,
-        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC Patch V1 01/30] mm, kernel: Use cpu_to_mem()/numa_mem_id()
- to support memoryless node
-Message-ID: <20140711151405.GK16041@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
- <1405064267-11678-2-git-send-email-jiang.liu@linux.intel.com>
+	Fri, 11 Jul 2014 11:15:10 -0400
+Date: Fri, 11 Jul 2014 17:15:02 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 12/13] cpufreq: Add cpufreq driver for Tegra124
+Message-ID: <20140711151501.GA25810@ulmo>
+References: <1405028569-14253-1-git-send-email-ttynkkynen@nvidia.com>
+ <1405028569-14253-13-git-send-email-ttynkkynen@nvidia.com>
+ <CAKohpom9ORXFiUU4=V+CxgN0ZOFLMEhEjHiU8HsYUYDybNXgHQ@mail.gmail.com>
+ <20140711091207.GY23218@tbergstrom-lnx.Nvidia.com>
+ <20140711145735.GB6523@ulmo>
+ <53BFFEAD.7000405@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9jxsPFA5p3P2qPhR"
 Content-Disposition: inline
-In-Reply-To: <1405064267-11678-2-git-send-email-jiang.liu@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14071115-3532-0000-0000-0000031566C4
+In-Reply-To: <53BFFEAD.7000405@nvidia.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 03:37:18PM +0800, Jiang Liu wrote:
-> When CONFIG_HAVE_MEMORYLESS_NODES is enabled, cpu_to_node()/numa_node_id()
-> may return a node without memory, and later cause system failure/panic
-> when calling kmalloc_node() and friends with returned node id.
-> So use cpu_to_mem()/numa_mem_id() instead to get the nearest node with
-> memory for the/current cpu.
-> 
-> If CONFIG_HAVE_MEMORYLESS_NODES is disabled, cpu_to_mem()/numa_mem_id()
-> is the same as cpu_to_node()/numa_node_id().
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 
-For the rcutorture piece:
+--9jxsPFA5p3P2qPhR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+On Fri, Jul 11, 2014 at 06:11:41PM +0300, Tuomas Tynkkynen wrote:
+> On 11/07/14 17:57, Thierry Reding wrote:
+>=20
+> >>I don't think that's going to work? The voltage scaling is handled in h=
+w.
+> >
+> >Do we have to handle it in hardware or can we opt to do it in software,
+> >too?
+> >
+>=20
+> With the PLLX, voltage scaling is done entirely in SW. With the DFLL,
+> it's possible to stay in open-loop mode and do it in SW, but there's
+> not much point in that.
 
-Or if you separate the kernel/rcu/rcutorture.c portion into a separate
-patch, I will queue it separately.
+It's kind of ugly how we need to pass the address of the PMU and the
+offset of the voltage control register to the DFLL which will then
+initiate I2C transactions itself. I'm wondering if that plays well with
+the I2C traffic originating from within the kernel.
 
-							Thanx, Paul
+Thierry
 
-> ---
->  kernel/rcu/rcutorture.c |    2 +-
->  kernel/smp.c            |    2 +-
->  kernel/smpboot.c        |    2 +-
->  kernel/taskstats.c      |    2 +-
->  kernel/timer.c          |    2 +-
->  5 files changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
-> index 7fa34f86e5ba..f593762d3214 100644
-> --- a/kernel/rcu/rcutorture.c
-> +++ b/kernel/rcu/rcutorture.c
-> @@ -1209,7 +1209,7 @@ static int rcutorture_booster_init(int cpu)
->  	mutex_lock(&boost_mutex);
->  	VERBOSE_TOROUT_STRING("Creating rcu_torture_boost task");
->  	boost_tasks[cpu] = kthread_create_on_node(rcu_torture_boost, NULL,
-> -						  cpu_to_node(cpu),
-> +						  cpu_to_mem(cpu),
->  						  "rcu_torture_boost");
->  	if (IS_ERR(boost_tasks[cpu])) {
->  		retval = PTR_ERR(boost_tasks[cpu]);
-> diff --git a/kernel/smp.c b/kernel/smp.c
-> index 80c33f8de14f..2f3b84aef159 100644
-> --- a/kernel/smp.c
-> +++ b/kernel/smp.c
-> @@ -41,7 +41,7 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
->  	case CPU_UP_PREPARE:
->  	case CPU_UP_PREPARE_FROZEN:
->  		if (!zalloc_cpumask_var_node(&cfd->cpumask, GFP_KERNEL,
-> -				cpu_to_node(cpu)))
-> +				cpu_to_mem(cpu)))
->  			return notifier_from_errno(-ENOMEM);
->  		cfd->csd = alloc_percpu(struct call_single_data);
->  		if (!cfd->csd) {
-> diff --git a/kernel/smpboot.c b/kernel/smpboot.c
-> index eb89e1807408..9c08e68e48a9 100644
-> --- a/kernel/smpboot.c
-> +++ b/kernel/smpboot.c
-> @@ -171,7 +171,7 @@ __smpboot_create_thread(struct smp_hotplug_thread *ht, unsigned int cpu)
->  	if (tsk)
->  		return 0;
-> 
-> -	td = kzalloc_node(sizeof(*td), GFP_KERNEL, cpu_to_node(cpu));
-> +	td = kzalloc_node(sizeof(*td), GFP_KERNEL, cpu_to_mem(cpu));
->  	if (!td)
->  		return -ENOMEM;
->  	td->cpu = cpu;
-> diff --git a/kernel/taskstats.c b/kernel/taskstats.c
-> index 13d2f7cd65db..cf5cba1e7fbe 100644
-> --- a/kernel/taskstats.c
-> +++ b/kernel/taskstats.c
-> @@ -304,7 +304,7 @@ static int add_del_listener(pid_t pid, const struct cpumask *mask, int isadd)
->  	if (isadd == REGISTER) {
->  		for_each_cpu(cpu, mask) {
->  			s = kmalloc_node(sizeof(struct listener),
-> -					GFP_KERNEL, cpu_to_node(cpu));
-> +					GFP_KERNEL, cpu_to_mem(cpu));
->  			if (!s) {
->  				ret = -ENOMEM;
->  				goto cleanup;
-> diff --git a/kernel/timer.c b/kernel/timer.c
-> index 3bb01a323b2a..5831a38b5681 100644
-> --- a/kernel/timer.c
-> +++ b/kernel/timer.c
-> @@ -1546,7 +1546,7 @@ static int init_timers_cpu(int cpu)
->  			 * The APs use this path later in boot
->  			 */
->  			base = kzalloc_node(sizeof(*base), GFP_KERNEL,
-> -					    cpu_to_node(cpu));
-> +					    cpu_to_mem(cpu));
->  			if (!base)
->  				return -ENOMEM;
-> 
-> -- 
-> 1.7.10.4
-> 
+--9jxsPFA5p3P2qPhR
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTv/91AAoJEN0jrNd/PrOhFNwQAIXLfSWwPMY5HAIXrK8Ka1kx
+t8Sl5AcX14LkS0dL8rOOal9z7DPBL1FuuDioHSkdSYxH8Cx+Sw+FEehffe4/v9/i
+vOyXeHzp4SPw4t/fRSdnt0iwMV5RsCTfpK435mxy8NjO1gg1uIONiTEqyR1iXFCV
+BsFirbkGIKyY6WObSpkwcjvEEZZaNFfChk7QQJuSzEKezAn2eOg8lCYNtj767afM
+zxGpIKOYiA2hS2jmt2maunIfiOF3J/KY3Y+3y4zjnAmImCnM0Dc0mS1R8XwRfl4P
++ziB5VK83Cppaf+Ao0NVvn1TXJbuHAHT2I3yA0Ly/PMXzBhVAj5GTc1Ers8zhhfG
+A4A13Fz/m4GKNhxqzU/3ouimZfHINRU6EXJnuXiA7QG64qRHAIgrEVK+rubeLkPM
+OEIqSByjSjvIkuTEBN1568d/WTATC5dZGOaNA7w6VlrGUMBSJcBNMtWv44rGAS48
+i3XACCdGa9o9YwQGiJwi2LZeQ+PsCBrC0hRtNCVyjuRakM3t/p/eoaEl/wzYKv46
+V9t5SJr7O5kzPCGPGZd508OlpKbr8UbnqKSfWQfXMQ1on5uBIO3YLX/0dN7iCE47
+ZNjA/9V1/KZgN5Sl255K7c8vx10WN4BK2sIOBXBO45MerzXEWTN0X1JrLGVTvJME
+3UsBBt3F5CwYLt0KwDKS
+=wrKt
+-----END PGP SIGNATURE-----
+
+--9jxsPFA5p3P2qPhR--
