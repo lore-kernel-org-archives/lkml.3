@@ -1,119 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854AbaGKQQk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 12:16:40 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:57386 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754399AbaGKQQj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 12:16:39 -0400
-Date: Fri, 11 Jul 2014 12:16:34 -0400
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Oded Gabbay <oded.gabbay@gmail.com>
-Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        John Bridgman <John.Bridgman@amd.com>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>,
-        Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>
-Subject: Re: [PATCH 03/83] drm/radeon: Report doorbell configuration to kfd
-Message-ID: <20140711161632.GD1870@gmail.com>
-References: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
- <1405029027-6085-2-git-send-email-oded.gabbay@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1405029027-6085-2-git-send-email-oded.gabbay@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754876AbaGKQQx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 12:16:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21692 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754399AbaGKQQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 12:16:51 -0400
+Message-ID: <1405095407.2357.1.camel@flatline.rdu.redhat.com>
+Subject: Re: [PATCH 2/3] [RFC] seccomp: give BPF x32 bit when restoring x32
+ filter
+From: Eric Paris <eparis@redhat.com>
+To: Paul Moore <pmoore@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Richard Guy Briggs <rgb@redhat.com>,
+        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        Al Viro <aviro@redhat.com>, Will Drewry <wad@chromium.org>
+Date: Fri, 11 Jul 2014 12:16:47 -0400
+In-Reply-To: <1458762.ra4TnS54ZN@sifl>
+References: <cover.1405023592.git.rgb@redhat.com>
+	 <6a69eb94b4cfac5f94b229c2eb2ebc402aac722a.1405023592.git.rgb@redhat.com>
+	 <53BF62AA.20105@zytor.com> <1458762.ra4TnS54ZN@sifl>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 12:50:03AM +0300, Oded Gabbay wrote:
-> Radeon and KFD share the doorbell aperture.
-> Radeon sets it up, takes the doorbells required for its own rings
-> and reports the setup to KFD.
-> Radeon reserved doorbells are at the start of the doorbell aperture.
+On Fri, 2014-07-11 at 12:11 -0400, Paul Moore wrote:
+> On Thursday, July 10, 2014 09:06:02 PM H. Peter Anvin wrote:
+> > Incidentally: do seccomp users know that on an x86-64 system you can
+> > recevie system calls from any of the x86 architectures, regardless of
+> > how the program is invoked?  (This is unusual, so normally denying those
+> > "alien" calls is the right thing to do.)
 > 
-> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+> I obviously can't speak for all seccomp users, but libseccomp handles this by 
+> checking the seccomp_data->arch value at the start of the filter and killing 
+> (by default) any non-native architectures.  If you want, you can change this 
+> default behavior or add support for other architectures (e.g. create a filter 
+> that allows both x86-64 and x32 but disallows x86, or any combination of the 
+> three for that matter).
 
-I would need some refreshing on doorbell. You want to map it to userspace
-but at the same time it is use by the radeon kernel driver when dispatching
-on the compute ring (iirc the gfx ring does not use it).
+Maybe libseccomp does some HORRIFIC contortions under the hood, but the
+interface is crap...  Since seccomp_data->arch can't distinguish between
+X32 and X86_64.  If I write a seccomp filter which says
 
-So now my worry is, given usermapping is done on page granularity, what
-would block one process from writting to another process doorbell ? Again
-iirc the doorbell is actualy the wptr for the ring buffer associated with
-said doorbell (thought i forget how doorbell are associated with a ring).
+KILL arch != x86_64
+KILL init_module
+ALLOW everything else
 
-This sounds really bad.
+I can still call init_module, I just have to use the X32 variant.
 
-Cheers,
-Jérôme
+If libseccomp is translating:
 
-> ---
->  drivers/gpu/drm/radeon/radeon.h        |  4 ++++
->  drivers/gpu/drm/radeon/radeon_device.c | 31 +++++++++++++++++++++++++++++++
->  2 files changed, 35 insertions(+)
-> 
-> diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
-> index 7cda75d..4e7e41f 100644
-> --- a/drivers/gpu/drm/radeon/radeon.h
-> +++ b/drivers/gpu/drm/radeon/radeon.h
-> @@ -676,6 +676,10 @@ struct radeon_doorbell {
->  
->  int radeon_doorbell_get(struct radeon_device *rdev, u32 *page);
->  void radeon_doorbell_free(struct radeon_device *rdev, u32 doorbell);
-> +void radeon_doorbell_get_kfd_info(struct radeon_device *rdev,
-> +				  phys_addr_t *aperture_base,
-> +				  size_t *aperture_size,
-> +				  size_t *start_offset);
->  
->  /*
->   * IRQS.
-> diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
-> index 03686fa..98538d2 100644
-> --- a/drivers/gpu/drm/radeon/radeon_device.c
-> +++ b/drivers/gpu/drm/radeon/radeon_device.c
-> @@ -328,6 +328,37 @@ void radeon_doorbell_free(struct radeon_device *rdev, u32 doorbell)
->  		__clear_bit(doorbell, rdev->doorbell.used);
->  }
->  
-> +/**
-> + * radeon_doorbell_get_kfd_info - Report doorbell configuration required to
-> + *                                setup KFD
-> + *
-> + * @rdev: radeon_device pointer
-> + * @aperture_base: output returning doorbell aperture base physical address
-> + * @aperture_size: output returning doorbell aperture size in bytes
-> + * @start_offset: output returning # of doorbell bytes reserved for radeon.
-> + *
-> + * Radeon and the KFD share the doorbell aperture. Radeon sets it up,
-> + * takes doorbells required for its own rings and reports the setup to KFD.
-> + * Radeon reserved doorbells are at the start of the doorbell aperture.
-> + */
-> +void radeon_doorbell_get_kfd_info(struct radeon_device *rdev,
-> +				  phys_addr_t *aperture_base,
-> +				  size_t *aperture_size,
-> +				  size_t *start_offset)
-> +{
-> +	/* The first num_doorbells are used by radeon.
-> +	 * KFD takes whatever's left in the aperture. */
-> +	if (rdev->doorbell.size > rdev->doorbell.num_doorbells * sizeof(u32)) {
-> +		*aperture_base = rdev->doorbell.base;
-> +		*aperture_size = rdev->doorbell.size;
-> +		*start_offset = rdev->doorbell.num_doorbells * sizeof(u32);
-> +	} else {
-> +		*aperture_base = 0;
-> +		*aperture_size = 0;
-> +		*start_offset = 0;
-> +	}
-> +}
-> +
->  /*
->   * radeon_wb_*()
->   * Writeback is the the method by which the the GPU updates special pages
-> -- 
-> 1.9.1
-> 
+KILL arch != x86_64 into:
+
+KILL arch != x86_64
+KILL syscall_nr >= 2000
+
+That's just showing how dumb the kernel interface is...   Good for you
+guys, but the kernel is just being dumb   :)
+
+
