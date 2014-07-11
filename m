@@ -1,161 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753587AbaGKHn3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 03:43:29 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:33668 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753349AbaGKHnX (ORCPT
+	id S1753620AbaGKHnx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 03:43:53 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42875 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753290AbaGKHnv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 03:43:23 -0400
-X-AuditID: cbfee68e-b7fb96d000004bfc-55-53bf959983e4
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Liviu Dudau'" <Liviu.Dudau@arm.com>
-Cc: "'linux-pci'" <linux-pci@vger.kernel.org>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "'Catalin Marinas'" <Catalin.Marinas@arm.com>,
-        "'Will Deacon'" <Will.Deacon@arm.com>,
-        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'linaro-kernel'" <linaro-kernel@lists.linaro.org>,
-        "'Tanmay Inamdar'" <tinamdar@apm.com>,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Sinan Kaya'" <okaya@codeaurora.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Suravee Suthikulanit'" <suravee.suthikulpanit@amd.com>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Device Tree ML'" <devicetree@vger.kernel.org>,
-        "'LAKML'" <linux-arm-kernel@lists.infradead.org>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
- <1404240214-9804-9-git-send-email-Liviu.Dudau@arm.com>
-In-reply-to: <1404240214-9804-9-git-send-email-Liviu.Dudau@arm.com>
-Subject: Re: [PATCH v8 8/9] pci: Add support for creating a generic host_bridge
- from device tree
-Date: Fri, 11 Jul 2014 16:43:21 +0900
-Message-id: <004601cf9cdb$ca08f7f0$5e1ae7d0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac+VXH1fDZvKLuATQz24Iuyh7TFKYQHful/A
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIKsWRmVeSWpSXmKPExsVy+t8zQ92ZU/cHG0zdLmXxd9IxdosPTa3M
-	FkuaMizeL+thtJh/5ByrxaszG9ksLi+8xGrRu+Aqm8X7Q8+YLTY9vsZqcXnXHDaLs/OOs1kc
-	WNrOYtE4aRuTxcQfCxgtnn/6xGLx8uMJFgdBj9ZLf9k8Pq7/xOixZt4aRo/fvyYxelzu62Xy
-	WLCp1KPnTQurx+Yl9R63/z1m9ujbsorR4+dLHY/Pm+QCeKK4bFJSczLLUov07RK4MmYsmMBc
-	0CRaMXkfVwPjL4EuRk4OCQETiYnXP7FB2GISF+6tB7K5OIQEljFKvNlxlRGmqOPcY0aIxHRG
-	iTXvTrFCOL8ZJc7OmQfWziagJvHly2F2EFtEQF3i7pNjLCBFzALHWCX6Lm8CGyUkUC3RsPER
-	UBEHB6eAs8T1PVkgprBAksSG7VUgFSwCqhLzJ0xiBrF5BWwlNsxvY4ewBSV+TL7HAmIzC2hJ
-	rN95nAnClpfYvOYtM8gYCaC1j/7qQlxgJLGrZyMzRImIxL4X78DulxB4wiGxbNEeJohdAhLf
-	Jh9igeiVldh0gBniX0mJgytusExglJiFZPMsJJtnIdk8C8mKBYwsqxhFUwuSC4qT0ouM9IoT
-	c4tL89L1kvNzNzFCkkvfDsabB6wPMSYDrZ/ILCWanA9MTnkl8YbGZkYWpiamxkbmlmakCSuJ
-	8y56mBQkJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgbFt1+MTtoE8Kv07lu+w3pRsv36a8tJa
-	5kZ113M7z9w+vSnM7JSO8v6WV66+gWva90253PDh0c3jk2z1ma4UeS4LmPWx8bGv56GZRoUL
-	VjNcCs9aqZV561Tu9cUHdwumL5jAfmjd0v2LXr9YK5hhZxTJqM6573y/+vK/vByz9K9wX656
-	suuFVpCuEktxRqKhFnNRcSIAfOwulkQDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAKsWRmVeSWpSXmKPExsVy+t9jQd2ZU/cHGyyfIWrxd9IxdosPTa3M
-	FkuaMizeL+thtJh/5ByrxaszG9ksLi+8xGrRu+Aqm8X7Q8+YLTY9vsZqcXnXHDaLs/OOs1kc
-	WNrOYtE4aRuTxcQfCxgtnn/6xGLx8uMJFgdBj9ZLf9k8Pq7/xOixZt4aRo/fvyYxelzu62Xy
-	WLCp1KPnTQurx+Yl9R63/z1m9ujbsorR4+dLHY/Pm+QCeKIaGG0yUhNTUosUUvOS81My89Jt
-	lbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgB5TUihLzCkFCgUkFhcr6dthmhAa4qZr
-	AdMYoesbEgTXY2SABhLWMWbMWDCBuaBJtGLyPq4Gxl8CXYycHBICJhId5x4zQthiEhfurWfr
-	YuTiEBKYziix5t0pVgjnN6PE2Tnz2ECq2ATUJL58OcwOYosIqEvcfXKMBaSIWeAYq0Tf5U1g
-	o4QEqiUaNj4CKuLg4BRwlri+JwvEFBZIktiwvQqkgkVAVWL+hEnMIDavgK3Ehvlt7BC2oMSP
-	yfdYQGxmAS2J9TuPM0HY8hKb17xlBhkjAbT20V9diAuMJHb1bGSGKBGR2PfiHeMERqFZSCbN
-	QjJpFpJJs5C0LGBkWcUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRnLqeSe9gXNVgcYhRgINR
-	iYf3xJp9wUKsiWXFlbmHGCU4mJVEeJ/U7w8W4k1JrKxKLcqPLyrNSS0+xGgK9OhEZinR5Hxg
-	Ws0riTc0NjEzsjQyszAyMTdXEuc92GodKCSQnliSmp2aWpBaBNPHxMEp1cBo/pfRXjHm19cL
-	QtvmiFxt+HX0xzHFKZP9duZzua6wD3NK3bVx+1WXw2qv1rE9vCPEwmT+noXhO7O5h+UdO4Uk
-	r7DFi7o3nwqzrzfP8G6MYDPcHxP/+uRqxc/La7gYlsS+ufHJ6uFC3bJ5GaU7UzddPJuky5u1
-	7qFOp433N8PXsRuSHfapPmhWYinOSDTUYi4qTgQAbZWYaHMDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 11 Jul 2014 03:43:51 -0400
+From: "Gupta, Pekon" <pekon@ti.com>
+To: "Quadros, Roger" <rogerq@ti.com>, "tony@atomide.com" <tony@atomide.com>,
+        "computersforpeace@gmail.com" <computersforpeace@gmail.com>
+CC: "javier@dowhile0.org" <javier@dowhile0.org>,
+        "ezequiel.garcia@free-electrons.com" 
+	<ezequiel.garcia@free-electrons.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "jg1.han@samsung.com" <jg1.han@samsung.com>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [RFC PATCH 02/10] mtd: nand: omap: Always use chip->ecc.steps
+ for BCH sector count
+Thread-Topic: [RFC PATCH 02/10] mtd: nand: omap: Always use chip->ecc.steps
+ for BCH sector count
+Thread-Index: AQHPm3KVDz8e8zy1kUmTJ61wG/WsCpuafKXQ
+Date: Fri, 11 Jul 2014 07:43:13 +0000
+Message-ID: <20980858CB6D3A4BAE95CA194937D5E73EB01DF7@DBDE04.ent.ti.com>
+References: <1404909450-11970-1-git-send-email-rogerq@ti.com>
+ <1404909450-11970-3-git-send-email-rogerq@ti.com>
+In-Reply-To: <1404909450-11970-3-git-send-email-rogerq@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 02, 2014 3:44 AM, Liviu Dudau wrote:
-> 
-> Several platforms use a rather generic version of parsing
-> the device tree to find the host bridge ranges. Move the common code
-> into the generic PCI code and use it to create a pci_host_bridge
-> structure that can be used by arch code.
-> 
-> Based on early attempts by Andrew Murray to unify the code.
-> Used powerpc and microblaze PCI code as starting point.
-> 
-> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> Tested-by: Tanmay Inamdar <tinamdar@apm.com>
-> ---
->  drivers/of/of_pci.c       | 135 ++++++++++++++++++++++++++++++++++++++++++++++
->  drivers/pci/host-bridge.c |  18 +++++++
->  include/linux/of_pci.h    |  10 ++++
->  include/linux/pci.h       |   8 +++
->  4 files changed, 171 insertions(+)
-> 
-> diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
-> index 8481996..55d8320 100644
-> --- a/drivers/of/of_pci.c
-> +++ b/drivers/of/of_pci.c
+>From: Quadros, Roger
+>
+>Instead of hardcoding use the pre-calculated chip->ecc.steps for
+>configuring number of sectors to process with the BCH algorithm.
+>
+>This also avoids unnecessary access to the ECC_CONFIG register in
+>omap_calculate_ecc_bch().
+>
+>Signed-off-by: Roger Quadros <rogerq@ti.com>
+>---
+> drivers/mtd/nand/omap2.c | 9 +++------
+> 1 file changed, 3 insertions(+), 6 deletions(-)
+>
+>diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
+>index 5b8739c..6f3d7cd 100644
+>--- a/drivers/mtd/nand/omap2.c
+>+++ b/drivers/mtd/nand/omap2.c
+>@@ -1066,10 +1066,10 @@ static void __maybe_unused omap_enable_hwecc_bch(struct mtd_info
+>*mtd, int mode)
+> 	unsigned int ecc_size1, ecc_size0;
+>
+> 	/* GPMC configurations for calculating ECC */
+>+	nsectors = chip->ecc.steps;
+> 	switch (ecc_opt) {
+> 	case OMAP_ECC_BCH4_CODE_HW_DETECTION_SW:
+> 		bch_type = 0;
+>-		nsectors = 1;
+> 		if (mode == NAND_ECC_READ) {
+> 			wr_mode	  = BCH_WRAPMODE_6;
+> 			ecc_size0 = BCH_ECC_SIZE0;
+>@@ -1082,7 +1082,6 @@ static void __maybe_unused omap_enable_hwecc_bch(struct mtd_info
+>*mtd, int mode)
+> 		break;
+> 	case OMAP_ECC_BCH4_CODE_HW:
+> 		bch_type = 0;
+>-		nsectors = chip->ecc.steps;
+> 		if (mode == NAND_ECC_READ) {
+> 			wr_mode	  = BCH_WRAPMODE_1;
+> 			ecc_size0 = BCH4R_ECC_SIZE0;
+>@@ -1095,7 +1094,6 @@ static void __maybe_unused omap_enable_hwecc_bch(struct mtd_info
+>*mtd, int mode)
+> 		break;
+> 	case OMAP_ECC_BCH8_CODE_HW_DETECTION_SW:
+> 		bch_type = 1;
+>-		nsectors = 1;
+> 		if (mode == NAND_ECC_READ) {
+> 			wr_mode	  = BCH_WRAPMODE_6;
+> 			ecc_size0 = BCH_ECC_SIZE0;
+>@@ -1108,7 +1106,6 @@ static void __maybe_unused omap_enable_hwecc_bch(struct mtd_info
+>*mtd, int mode)
+> 		break;
+> 	case OMAP_ECC_BCH8_CODE_HW:
+> 		bch_type = 1;
+>-		nsectors = chip->ecc.steps;
+> 		if (mode == NAND_ECC_READ) {
+> 			wr_mode	  = BCH_WRAPMODE_1;
+> 			ecc_size0 = BCH8R_ECC_SIZE0;
+>@@ -1121,7 +1118,6 @@ static void __maybe_unused omap_enable_hwecc_bch(struct mtd_info
+>*mtd, int mode)
+> 		break;
+> 	case OMAP_ECC_BCH16_CODE_HW:
+> 		bch_type = 0x2;
+>-		nsectors = chip->ecc.steps;
+> 		if (mode == NAND_ECC_READ) {
+> 			wr_mode	  = 0x01;
+> 			ecc_size0 = 52; /* ECC bits in nibbles per sector */
+>@@ -1176,6 +1172,7 @@ static int __maybe_unused omap_calculate_ecc_bch(struct mtd_info *mtd,
+> {
+> 	struct omap_nand_info *info = container_of(mtd, struct omap_nand_info,
+> 						   mtd);
+>+	struct nand_chip *chip = mtd->priv;
+> 	int eccbytes	= info->nand.ecc.bytes;
+> 	struct gpmc_nand_regs	*gpmc_regs = &info->reg;
+> 	u8 *ecc_code;
+>@@ -1183,7 +1180,7 @@ static int __maybe_unused omap_calculate_ecc_bch(struct mtd_info *mtd,
+> 	u32 val;
+> 	int i, j;
+>
+>-	nsectors = ((readl(info->reg.gpmc_ecc_config) >> 4) & 0x7) + 1;
+>+	nsectors = chip->ecc.steps;
 
-[.....]
+Sorry NAK.. I'm sure you are breaking something here :-)
 
-> +struct pci_host_bridge *
-> +of_create_pci_host_bridge(struct device *parent, struct pci_ops *ops, void *host_data)
-> +{
-> +	int err, domain, busno;
-> +	struct resource *bus_range;
-> +	struct pci_bus *root_bus;
-> +	struct pci_host_bridge *bridge;
-> +	resource_size_t io_base;
-> +	LIST_HEAD(res);
-> +
-> +	bus_range = kzalloc(sizeof(*bus_range), GFP_KERNEL);
-> +	if (!bus_range)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	domain = of_alias_get_id(parent->of_node, "pci-domain");
-> +	if (domain == -ENODEV)
-> +		domain = atomic_inc_return(&domain_nr);
-> +
-> +	err = of_pci_parse_bus_range(parent->of_node, bus_range);
-> +	if (err) {
-> +		dev_info(parent, "No bus range for %s, using default [0-255]\n",
-> +			parent->of_node->full_name);
-> +		bus_range->start = 0;
-> +		bus_range->end = 255;
-> +		bus_range->flags = IORESOURCE_BUS;
-> +	}
-> +	busno = bus_range->start;
-> +	pci_add_resource(&res, bus_range);
-> +
-> +	/* now parse the rest of host bridge bus ranges */
-> +	err = pci_host_bridge_of_get_ranges(parent->of_node, &res, &io_base);
-> +	if (err)
-> +		goto err_create;
-> +
-> +	/* then create the root bus */
-> +	root_bus = pci_create_root_bus_in_domain(parent, domain, busno,
-> +						ops, host_data, &res);
-> +	if (IS_ERR(root_bus)) {
-> +		err = PTR_ERR(root_bus);
-> +		goto err_create;
-> +	}
-> +
-> +	bridge = to_pci_host_bridge(root_bus->bridge);
-> +	bridge->io_base = io_base;
+NAND driver supports multiple ECC schemes like;
+OMAP_ECC_CODE_HAM1_HW (support for legacy reasons)
+OMAP_ECC_CODE_BCH4_HW_DETECTION_SW (needed for OMAP3 and AM35xx)
+OMAP_ECC_CODE_BCH4_HW
+OMAP_ECC_CODE_BCH8_HW
+OMAP_ECC_CODE_BCH8_HW_DETECTION_SW  (needed for OMAP3 and AM35xx)
+OMAP_ECC_CODE_BCH16_HW
 
-Hi Liviu Dudau,
+IIRC ..
+- software based ecc-schemes OMAP_ECC_CODE_BCHx_HW_DETECTION_SW
+  Reads/Write in per-sector granularity. (here nsector != chip->ecc.steps)
 
-Would you fix the following warning?
+- hardware based ecc-schemes OMAP_ECC_CODE_BCHx_HW, perform
+  Reads/Write in per-page granularity (or something like this).
+  Therefore you have custom implementation of 
+  chip->ecc.read_page = omap_read_page_bch()
+ Also if you change the configurations here, it will break the compatibility with
+ u-boot, so images flashed via u-boot will stop to boot in kernel and vice-versa.
 
-drivers/of/of_pci.c: In function 'of_create_pci_host_bridge'
-drivers/of/of_pci.c:218:18: warning: 'of_base' may be used uninitialized in this function [-Wmaybe-uninitialized]
-  bridge->io_base = io_base;
+I suggest, please refrain from these tweaks for now..
+All these optimizations have been tested on multiple scenario so please test
+all ecc-schemes before doing anything, otherwise you will end-up in
+a bad loop of breaking and fixing NAND driver :-).
 
-Best regards,
-Jingoo Han
 
-[.....]
-
+with regards, pekon
