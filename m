@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754465AbaGKP6o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 11:58:44 -0400
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:40813 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998AbaGKP6m (ORCPT
+	id S932123AbaGKP7L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 11:59:11 -0400
+Received: from qmta13.emeryville.ca.mail.comcast.net ([76.96.27.243]:46568
+	"EHLO qmta13.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753869AbaGKP7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 11:58:42 -0400
-Date: Fri, 11 Jul 2014 11:58:38 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+	Fri, 11 Jul 2014 11:59:09 -0400
+Date: Fri, 11 Jul 2014 10:58:52 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Tejun Heo <tj@kernel.org>
+cc: Jiang Liu <jiang.liu@linux.intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
         Mike Galbraith <umgwanakikbuti@gmail.com>,
@@ -29,39 +29,41 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>,
         linux-kernel@vger.kernel.org
 Subject: Re: [RFC Patch V1 07/30] mm: Use cpu_to_mem()/numa_mem_id() to
  support memoryless node
-Message-ID: <20140711155838.GB30865@htj.dyndns.org>
-References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
- <1405064267-11678-8-git-send-email-jiang.liu@linux.intel.com>
- <20140711144205.GA27706@htj.dyndns.org>
- <alpine.DEB.2.11.1407111012210.25527@gentwo.org>
+In-Reply-To: <20140711152156.GB29137@htj.dyndns.org>
+Message-ID: <alpine.DEB.2.11.1407111056060.27349@gentwo.org>
+References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com> <1405064267-11678-8-git-send-email-jiang.liu@linux.intel.com> <20140711144205.GA27706@htj.dyndns.org> <alpine.DEB.2.11.1407111012210.25527@gentwo.org>
  <20140711152156.GB29137@htj.dyndns.org>
- <20140711153302.GA30865@htj.dyndns.org>
- <alpine.DEB.2.11.1407111054190.27349@gentwo.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1407111054190.27349@gentwo.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 10:55:59AM -0500, Christoph Lameter wrote:
-> > Where X is the memless node.  num_mem_id() on X would return either B
-> > or C, right?  If B or C can't satisfy the allocation, the allocator
-> > would fallback to A from B and D for C, both of which aren't optimal.
-> > It should first fall back to C or B respectively, which the allocator
-> > can't do anymoe because the information is lost when the caller side
-> > performs numa_mem_id().
-> 
-> True but the advantage is that the numa_mem_id() allows the use of a
-> consitent sort of "local" node which increases allocator performance due
-> to the abillity to cache objects from that node.
+On Fri, 11 Jul 2014, Tejun Heo wrote:
 
-But the allocator can do the mapping the same.  I really don't see why
-we'd push the distinction to the individual users.
+> Hello,
+>
+> On Fri, Jul 11, 2014 at 10:13:57AM -0500, Christoph Lameter wrote:
+> > Allocators typically fall back but they wont in some cases if you say
+> > that you want memory from a particular node. A GFP_THISNODE would force a
+> > failure of the alloc. In other cases it should fall back. I am not sure
+> > that all allocations obey these conventions though.
+>
+> But, GFP_THISNODE + numa_mem_id() is identical to numa_node_id() +
+> nearest node with memory fallback.  Is there any case where the user
+> would actually want to always fail if it's on the memless node?
 
-Thanks.
+GFP_THISNODE allocatios must fail if there is no memory available on
+the node. No fallback allowed.
 
--- 
-tejun
+If the allocator performs caching for a particular node (like SLAB) then
+the allocator *cannnot* accept memory from another node and the alloc via
+the page allocator  must fail so that the allocator can then pick another
+node for keeping track of the allocations.
+
+> Even if that's the case, there's no reason to burden everyone with
+> this distinction.  Most users just wanna say "I'm on this node.
+> Please allocate considering that".  There's nothing wrong with using
+> numa_node_id() for that.
+
+Well yes that speaks for this patch.
+
