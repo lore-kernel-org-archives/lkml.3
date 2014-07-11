@@ -1,80 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090AbaGKBSJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 21:18:09 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:56139 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771AbaGKBSH (ORCPT
+	id S1752012AbaGKBVS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 21:21:18 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:55151 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095AbaGKBVP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 21:18:07 -0400
+	Thu, 10 Jul 2014 21:21:15 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140709195650.GZ4603@linux.vnet.ibm.com>
-References: <1404860145-16450-1-git-send-email-bobby.prani@gmail.com>
- <20140709000701.GJ4603@linux.vnet.ibm.com> <CAJhHMCBS2y_f28UO6SOp7LjnX3owm+C5_qCjzYANEaU__8jxng@mail.gmail.com>
- <20140709195650.GZ4603@linux.vnet.ibm.com>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Thu, 10 Jul 2014 21:17:33 -0400
-Message-ID: <CAJhHMCCO9aR6YvVHnc7XFXGv1REW5tGtNqSEosf+x+8O=tVy3w@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/1] rcu: use atomic_read(v) instead of
- atomic_add_return(0, v)
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+In-Reply-To: <1403557039-1487-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1403557039-1487-1-git-send-email-benjamin.tissoires@redhat.com>
+Date: Thu, 10 Jul 2014 18:21:13 -0700
+Message-ID: <CANRwn3QsdGOnmuH3=PP=YaX1NpXrZwcB_1ccnTZ_bg2au=KJXg@mail.gmail.com>
+Subject: Re: [PATCH 0/5] Input - wacom: split out pad data from the stylus
+ input device
+From: Jason Gerecke <killertofu@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Ping Cheng <pinglinux@gmail.com>,
+        Linux Input <linux-input@vger.kernel.org>,
+        linux-kernel@vger.kernel.org,
+        linuxwacom-devel <linuxwacom-devel@lists.sourceforge.net>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 9, 2014 at 3:56 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-<snip>
-> OK, so ->dynticks_snap is accessed by only one task, namely the
-> corresponding RCU grace-period kthread.  So it can be accessed without
-> any atomic instructions or memory barriers, since all accesses to it are
-> single-threaded.  On the other hand, ->dynticks is written by one CPU
-> and potentially accessed from any CPU.  Therefore, accesses to it must
-> take concurrency into account.  Especially given that any confusion can
-> fool RCU into thinking that a CPU is idle when it really is not, which
-> could result in too-short grace periods, which could in turn result in
-> random memory corruption.
+On Mon, Jun 23, 2014 at 1:57 PM, Benjamin Tissoires
+<benjamin.tissoires@redhat.com> wrote:
+> Hi,
+>
+> This patch series aims at simplifying the handling of Wacom devices from the user
+> space point of view. As mentioned in the commit message from 1/5, the pad data
+> are interleaved into the stylus input for some devices, and into the touch input
+> for others.
+>
+> It doesn't makes real sense to interleave pad with stylus because pad data are
+> not linked to the absolute position of a stylus (or its presence). It is a
+> device by itself which should have its own input node.
+>
+> It will also help the handling of the old Wacom Graphire 4 which shares its
+> BTN_LEFT and BTN_RIGHT in its pad and in the mouse.
+>
+> Again, it's not a problem right now because the user space is currently dealing
+> with it, but for the Wayland libinput implementation, having something clear
+> will really help.
+>
+> This patch series does not break current X11 behavior, the only change from the
+> user will be that an input device will appear as "Wacom ... Pad pad".
+>
+> I tried to test/debug it as extensively as possible, but I do not guarantee any
+> mistake :(
+>
+> Tested on:
+> - Bamboo 16FG 4x5
+> - Bamboo 2FG
+> - BambooFun 4x5
+> - Bamboo
+> - Cintiq 12WX
+> - Cintiq 21UX2
+> - Cintiq 21UX
+> - Cintiq 22HD
+> - Cintiq 22HDT
+> - Cintiq 24HD
+> - DTU2231
+> - Graphire3
+> - Intuos3 9x12
+> - Intuos4 WL
+> - Intuos5 touch M
+> - Intuos Pro S
+>
+> Note: this patch series might requesting to apply the patch for input->phys
+> I just sent:
+> https://patchwork.kernel.org/patch/4404391/
+>
+>
+> Cheers,
+> Benjamin
+>
+> Benjamin Tissoires (5):
+>   Input - wacom: create a separate input device for pads
+>   Input - wacom: split out the pad device for Intuos/Cintiq
+>   Input - wacom: split out the pad device for Bamboos
+>   Input - wacom: split out the pad device for DTUS
+>   Input - wacom: split out the pad device for Graphire G4 and MO
+>
+>  drivers/input/tablet/wacom.h     |   2 +
+>  drivers/input/tablet/wacom_sys.c |  63 +++++++-
+>  drivers/input/tablet/wacom_wac.c | 328 ++++++++++++++++++++++++---------------
+>  drivers/input/tablet/wacom_wac.h |   2 +
+>  4 files changed, 259 insertions(+), 136 deletions(-)
+>
+> --
+> 1.9.0
 >
 
-Yes, I missed reading the call-chain for accessing dynticks_snap. It
-does not need any synchronization/barriers.
+These look fine to me as well (aside from the one minor comment):
 
-Here since we are reading ->dynticks, doesn't having one barrier
-before reading make sense? like
+Reviewed-by: Jason Gerecke <killertofu@gmail.com>
 
-smp_mb();
-dynticks_snap = atomic_read(...->dynticks);
-
-instead of having two barriers with atomic_add_return()? i.e.,
-why is the second barrier necessary?
-
-On a related note, I see that dynticks is a per-cpu variable _and_
-atomic. Is there such a need for that?
-
-Digging into history I see that the change to an atomic variable was
-made in the commit 23b5c8fa01b723c70a which says:
-
-<quote>
-
-In addition, the old dyntick-idle synchronization depended on the fact
-that grace periods were many milliseconds in duration, so that it could
-be assumed that no dyntick-idle CPU could reorder a memory reference
-across an entire grace period.  Unfortunately for this design, the
-addition of expedited grace periods breaks this assumption, which has
-the unfortunate side-effect of requiring atomic operations in the
-functions that track dyntick-idle state for RCU.
-
-</quote>
-
-Sorry to ask you about such an old change. But I am not able to see
-why we need atomic_t for dynticks here since per-cpu operations are
-guaranteed to be atomic.
-
-It gets twisted pretty fast trying to understand the RCU code. No
-wonder people say that rcu is scary black magic :)
-
--- 
-Pranith
+Jason
+---
+Now instead of four in the eights place /
+you’ve got three, ‘Cause you added one  /
+(That is to say, eight) to the two,     /
+But you can’t take seven from three,    /
+So you look at the sixty-fours....
