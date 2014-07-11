@@ -1,94 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082AbaGKPoU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 11:44:20 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:51243 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938AbaGKPoS (ORCPT
+	id S1754319AbaGKPo3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 11:44:29 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:37951 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751923AbaGKPo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 11:44:18 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19V2yXUWfHctZGCKXOklFT8BSb4qaCHI+Y=
-X-DKIM: OpenDKIM Filter v2.0.1 titan DB7B85A8A8D
-Date: Fri, 11 Jul 2014 11:44:07 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
-        keescook@chromium.org, stable@vger.kernel.org
-Subject: Re: [RFC PATCH] hwrng: sysfs entry rng_seed_kernel, was: "Re:
- [PATCH v2 1/2] hwrng: fetch randomness only after device init"
-Message-ID: <20140711154407.GD13108@titan.lakedaemon.net>
-References: <cover.1404538109.git.amit.shah@redhat.com>
- <515a12ecc5fca5452bf0bfda4d54546d8fb5829c.1404538109.git.amit.shah@redhat.com>
- <20140709115317.GM13433@titan.lakedaemon.net>
- <20140709130822.GA4553@grmbl.mre>
- <20140709131737.GO13433@titan.lakedaemon.net>
- <20140709132524.GB4667@grmbl.mre>
- <20140709160725.GP13433@titan.lakedaemon.net>
- <20140711132626.GB17415@grmbl.mre>
+	Fri, 11 Jul 2014 11:44:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140711132626.GB17415@grmbl.mre>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140711153717.GT23001@mwanda>
+References: <20140711102434.GA22355@devel.8.8.4.4>
+	<20140711132020.GZ25880@mwanda>
+	<CAHb8M2CKbbhZ51_iorB7TLxb9JgEmVze1PQ_-WzpU4_uT2EsiQ@mail.gmail.com>
+	<20140711153717.GT23001@mwanda>
+Date: Sat, 12 Jul 2014 00:44:26 +0900
+Message-ID: <CAHb8M2DL26EP1hHGiqO5Rc2NTABNtOb-nf=mYNqUZwAsE9uz3g@mail.gmail.com>
+Subject: Re: [PATCH 9/9] staging: dgap: removes redundant null check and
+ change paramter for dgap_tty_digisetcustombaud()
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: lidza.louina@gmail.com, gregkh@linuxfoundation.org,
+        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, Mark Hounschell <markh@compro.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 06:56:26PM +0530, Amit Shah wrote:
-> On (Wed) 09 Jul 2014 [12:07:25], Jason Cooper wrote:
-> > Amit, Kees,
-> 
-> (snip)
-> 
-> > I'm cooling to the idea of the init function for virtio-rng, and it
-> > might be best just to admit that there's no way to seed the entropy pool
-> > from the virtio-rng at probe time.  After all, once userspace is up, the
-> > system should take advantage of /dev/hwrng for the generation of
-> > long-term keys.  Either via rngd feeding /dev/random, or directly.
-> > 
-> > As for the follow-on patch you asked about, I think that's fine.  More
-> > entropy can't hurt.
-> > 
-> > The below patch might be worth considering so that the user of a system
-> > with only virtio-rng can kick the entropy pool as they see fit.  It's
-> > probably not too kosher as is, but if the idea is liked, I could clean
-> > it up and submit.
-> > 
-> > The advantage is that users don't need to have rngd installed and
-> > running on the system in order to jump-start the entropy pool.
-> 
-> ... so a udev rule that looks for the new sysfs file, and asks the
-> kernel to do its thing?
+2014-07-12 0:37 GMT+09:00, Dan Carpenter <dan.carpenter@oracle.com>:
+> On Sat, Jul 12, 2014 at 12:23:16AM +0900, DaeSeok Youn wrote:
+>> Can I modify the MAINTAINERS file for adding myself?
+>
+> Yes.  Just send a patch to add yourself.
+OK. I will.
 
-Or, as simple as:
+Thanks.
 
-[ -e /sys/.../rng_seed_kernel ] && echo "0" >/sys/.../rng_seed_kernel
-
-in the initrd.  It needs to run *before* any init scripts which may create
-keys.
-
-> And maybe even a patch to rngd that looks for this file and does a
-> similar thing?
-
-I'm not opposed to that, but it doesn't fit the problem I'm trying to
-solve.  Basically, average systems, not trying to be Ft Knox-secure, but
-needing to generate long-term keys at first boot.  These systems won't
-have an hwrng installed, but should use one if available.  eg
-virtio-rng, or any of the on-die SoC hwrngs.
-
-> There's also the option to use a delayed workqueue item, that will
-> succeed if probe has finished.  This method doesn't have userspace
-> dependencies.
-
-Hmm, I like that idea better.  No ABI change to maintain, no userspace
-changes...  You obviously know virtio-rng better than I do, care to take
-a crack at it?
-
-thx,
-
-Jason.
+Regards,
+Daeseok Youn.
+>
+> git log -p MAINTAINERS
+>
+> regards,
+> dan carpenter
+>
+>
