@@ -1,54 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146AbaGKMnv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 08:43:51 -0400
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:3887 "EHLO
-	esgaroth.tuxoid.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751964AbaGKMnu (ORCPT
+	id S1753448AbaGKMoL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 08:44:11 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:47976 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753235AbaGKMoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 08:43:50 -0400
-Subject: Re: [PATCH] drivers/staging/comedi/drivers/ni_atmio16d.c: remove
- pointless condition
-From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-To: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org,
-        OSUOSL Drivers <devel@driverdev.osuosl.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        hsweeten@visionengravers.com, dcb314@hotmail.com
-Date: Fri, 11 Jul 2014 14:43:12 +0200
-In-Reply-To: <CANZNk82rsdbg+zQGQODmNMpScaHZiZ8MeooGWabWZPGwzErCyQ@mail.gmail.com>
-References: <1405073603-21468-1-git-send-email-andrey.krieger.utkin@gmail.com>
-	 <53BFD1FF.20309@mev.co.uk>
-	 <CANZNk82rsdbg+zQGQODmNMpScaHZiZ8MeooGWabWZPGwzErCyQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+	Fri, 11 Jul 2014 08:44:09 -0400
+Message-ID: <53BFDBC0.8000705@gmail.com>
+Date: Fri, 11 Jul 2014 18:12:40 +0530
+From: Varka Bhadram <varkabhadram@gmail.com>
+Organization: CDAC-HYD
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Ethan Zhao <ethan.zhao@oracle.com>, bhelgaas@google.com,
+        konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, gleb@kernel.org, pbonzini@redhat.com,
+        jeffrey.t.kirsher@intel.com, jesse.brandeburg@intel.com,
+        bruce.w.allan@intel.com, carolyn.wyborny@intel.com,
+        donald.c.skidmore@intel.com, gregory.v.rose@intel.com,
+        alexander.h.duyck@intel.com, john.ronciak@intel.com,
+        mitch.a.williams@intel.com, alex.williamson@redhat.com
+CC: linux-pci@vger.kernel.org, kvm@vger.kernel.org, linux.nics@intel.com,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ethan.kernel@gmail.com,
+        vaughan.cao@oracle.com
+Subject: Re: [PATCH 2/2 V3] PCI: implement VFs assignment reference counter
+References: <1405081802-419-1-git-send-email-ethan.zhao@oracle.com> <1405081802-419-2-git-send-email-ethan.zhao@oracle.com>
+In-Reply-To: <1405081802-419-2-git-send-email-ethan.zhao@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-ID: <1405082594.21735.1.camel@thorin>
-Mime-Version: 1.0
-X-DCC-wuwien-Metrics: esgaroth.petrovitsch.priv.at 1290; Body=8 Fuz1=8 Fuz2=8
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	* -0.2 AWL AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On 07/11/2014 06:00 PM, Ethan Zhao wrote:
+> Current implementation of helper function pci_vfs_assigned() is a
+> little complex, to get sum of VFs that assigned to VM, access low
+> level configuration space register and then loop in traversing
+> device tree.
 
-On Fre, 2014-07-11 at 15:30 +0300, Andrey Utkin wrote:
-[...]
-> Could you please substantiate this? I see that convert_arg has type
-> "unsigned int" which may be 8 bytes on 64-bit platform. I haven't
+(...)
 
-At least in the x86_64 world, "unsigned int" has 32bit.
-TTBOMK, it is similar on all other 64bit - otherwise there is no way to
-address 32bit ("short int" is usually 16 bit).
+> @@ -650,6 +630,11 @@ EXPORT_SYMBOL_GPL(pci_vfs_assigned);
+>   void pci_iov_assign_device(struct pci_dev *pdev)
+>   {
+>   	pdev->dev_flags |= PCI_DEV_FLAGS_ASSIGNED;
+> +	if (pdev->is_virtfn && !pdev->is_physfn)
+> +		if (pdev->physfn)
+> +			if (pdev->physfn->sriov)
 
-	Bernd
+Why don't we make last two 'if' conditions into single 'if'
+
+if (pdev->physfn && pdev->physfn->sriov)
+
+> +				atomic_inc(&pdev->physfn->sriov->
+> +					VFs_assigned_cnt);
+>   }
+>   EXPORT_SYMBOL_GPL(pci_iov_assign_device);
+>   
+> @@ -660,6 +645,11 @@ EXPORT_SYMBOL_GPL(pci_iov_assign_device);
+>   void pci_iov_deassign_device(struct pci_dev *pdev)
+>   {
+>   	pdev->dev_flags &= ~PCI_DEV_FLAGS_ASSIGNED;
+> +	if (pdev->is_virtfn && !pdev->is_physfn)
+> +		if (pdev->physfn)
+> +			if (pdev->physfn->sriov)
+
+same...
+
+> +				atomic_dec(&pdev->physfn->sriov->
+> +					VFs_assigned_cnt);
+>   }
+>   EXPORT_SYMBOL_GPL(pci_iov_deassign_device);
+>   
+> diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+> index 6bd0822..d17bda2 100644
+> --- a/drivers/pci/pci.h
+> +++ b/drivers/pci/pci.h
+> @@ -235,6 +235,7 @@ struct pci_sriov {
+>   	u32 pgsz;		/* page size for BAR alignment */
+>   	u8 link;		/* Function Dependency Link */
+>   	u16 driver_max_VFs;	/* max num VFs driver supports */
+> +	atomic_t VFs_assigned_cnt; /* counter of VFs assigned to VM */
+>   	struct pci_dev *dev;	/* lowest numbered PF */
+>   	struct pci_dev *self;	/* this PF */
+>   	struct mutex lock;	/* lock for VF bus */
+
 -- 
-"I dislike type abstraction if it has no real reason. And saving
-on typing is not a good reason - if your typing speed is the main
-issue when you're coding, you're doing something seriously wrong."
-    - Linus Torvalds
+Regards,
+Varka Bhadram.
 
