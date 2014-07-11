@@ -1,103 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281AbaGKUwI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 16:52:08 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:50596 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689AbaGKUwG (ORCPT
+	id S1753356AbaGKUwy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 16:52:54 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:61594 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751336AbaGKUwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 16:52:06 -0400
-Message-ID: <53C04EF8.8050601@oracle.com>
-Date: Fri, 11 Jul 2014 16:54:16 -0400
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: konrad@kernel.org, xen-devel@lists.xenproject.org, david.vrabel@citrix.com,
-        linux-kernel@vger.kernel.org
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v4 5/5] xen/pciback: Remove tons of dereferences
-References: <1405109332-31659-1-git-send-email-konrad@kernel.org> <1405109332-31659-6-git-send-email-konrad@kernel.org>
-In-Reply-To: <1405109332-31659-6-git-send-email-konrad@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Fri, 11 Jul 2014 16:52:53 -0400
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>, rostedt@goodmis.org,
+        paulmck@linux.vnet.ibm.com
+Subject: [PATCH v2] rcu: define tracepoint strings only if CONFIG_TRACING is set
+Date: Fri, 11 Jul 2014 22:50:45 +0200
+Message-Id: <1405111845-3588-1-git-send-email-ard.biesheuvel@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2014 04:08 PM, konrad@kernel.org wrote:
-> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->
-> A little cleanup. No functional difference.
+Commit f7f7bac9cb1c ("rcu: Have the RCU tracepoints use the tracepoint_string
+infrastructure") unconditionally populates the __tracepoint_str input section,
+but this section is not assigned an output section if CONFIG_TRACING is not set.
+This results in the __tracepoint_str turning up in unexpected places, i.e.,
+after _edata.
 
-Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: rostedt@goodmis.org
+Cc: paulmck@linux.vnet.ibm.com
+---
+v2:
+- s/DEFINE_TPS/DEFINE_RCU_TPS/
 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->   drivers/xen/xen-pciback/pci_stub.c |   20 +++++++++++---------
->   1 files changed, 11 insertions(+), 9 deletions(-)
->
-> diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
-> index efcb73b..cf0b3c1 100644
-> --- a/drivers/xen/xen-pciback/pci_stub.c
-> +++ b/drivers/xen/xen-pciback/pci_stub.c
-> @@ -630,10 +630,12 @@ static pci_ers_result_t common_process(struct pcistub_device *psdev,
->   {
->   	pci_ers_result_t res = result;
->   	struct xen_pcie_aer_op *aer_op;
-> +	struct xen_pcibk_device *pdev = psdev->pdev;
-> +	struct xen_pci_sharedinfo *sh_info = pdev->sh_info;
->   	int ret;
->   
->   	/*with PV AER drivers*/
-> -	aer_op = &(psdev->pdev->sh_info->aer_op);
-> +	aer_op = &(sh_info->aer_op);
->   	aer_op->cmd = aer_cmd ;
->   	/*useful for error_detected callback*/
->   	aer_op->err = state;
-> @@ -654,36 +656,36 @@ static pci_ers_result_t common_process(struct pcistub_device *psdev,
->   	* this flag to judge whether we need to check pci-front give aer
->   	* service ack signal
->   	*/
-> -	set_bit(_PCIB_op_pending, (unsigned long *)&psdev->pdev->flags);
-> +	set_bit(_PCIB_op_pending, (unsigned long *)&pdev->flags);
->   
->   	/*It is possible that a pcifront conf_read_write ops request invokes
->   	* the callback which cause the spurious execution of wake_up.
->   	* Yet it is harmless and better than a spinlock here
->   	*/
->   	set_bit(_XEN_PCIB_active,
-> -		(unsigned long *)&psdev->pdev->sh_info->flags);
-> +		(unsigned long *)&sh_info->flags);
->   	wmb();
-> -	notify_remote_via_irq(psdev->pdev->evtchn_irq);
-> +	notify_remote_via_irq(pdev->evtchn_irq);
->   
->   	ret = wait_event_timeout(xen_pcibk_aer_wait_queue,
->   				 !(test_bit(_XEN_PCIB_active, (unsigned long *)
-> -				 &psdev->pdev->sh_info->flags)), 300*HZ);
-> +				 &sh_info->flags)), 300*HZ);
->   
->   	if (!ret) {
->   		if (test_bit(_XEN_PCIB_active,
-> -			(unsigned long *)&psdev->pdev->sh_info->flags)) {
-> +			(unsigned long *)&sh_info->flags)) {
->   			dev_err(&psdev->dev->dev,
->   				"pcifront aer process not responding!\n");
->   			clear_bit(_XEN_PCIB_active,
-> -			  (unsigned long *)&psdev->pdev->sh_info->flags);
-> +			  (unsigned long *)&sh_info->flags);
->   			aer_op->err = PCI_ERS_RESULT_NONE;
->   			return res;
->   		}
->   	}
-> -	clear_bit(_PCIB_op_pending, (unsigned long *)&psdev->pdev->flags);
-> +	clear_bit(_PCIB_op_pending, (unsigned long *)&pdev->flags);
->   
->   	if (test_bit(_XEN_PCIF_active,
-> -		(unsigned long *)&psdev->pdev->sh_info->flags)) {
-> +		(unsigned long *)&sh_info->flags)) {
->   		dev_dbg(&psdev->dev->dev,
->   			"schedule pci_conf service in " DRV_NAME "\n");
->   		xen_pcibk_test_and_schedule_op(psdev->pdev);
+ kernel/rcu/tree.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index f1ba77363fbb..eec9f3d6f506 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -79,9 +79,16 @@ static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
+  * the tracing userspace tools to be able to decipher the string
+  * address to the matching string.
+  */
++#ifdef CONFIG_TRACING
++#define DEFINE_RCU_TPS(sname) \
++static const char *tp_##sname##_varname __used __tracepoint_string = sname##_varname;
++#else
++#define DEFINE_RCU_TPS(sname)
++#endif
++
+ #define RCU_STATE_INITIALIZER(sname, sabbr, cr) \
+ static char sname##_varname[] = #sname; \
+-static const char *tp_##sname##_varname __used __tracepoint_string = sname##_varname; \
++DEFINE_RCU_TPS(sname) \
+ struct rcu_state sname##_state = { \
+ 	.level = { &sname##_state.node[0] }, \
+ 	.call = cr, \
+-- 
+1.8.3.2
 
