@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291AbaGKTm0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 15:42:26 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:48704 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755142AbaGKTmZ (ORCPT
+	id S1755314AbaGKTmk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 15:42:40 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:52938 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755294AbaGKTmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 15:42:25 -0400
-Date: Fri, 11 Jul 2014 15:42:06 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Tian, Kevin" <kevin.tian@intel.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "airlied@linux.ie" <airlied@linux.ie>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "Chen, Tiejun" <tiejun.chen@intel.com>,
-        "Kay, Allen M" <allen.m.kay@intel.com>
-Subject: Re: [Xen-devel] [Intel-gfx] [RFC][PATCH]
- gpu:drm:i915:intel_detect_pch: back to check devfn instead of check class
- type
-Message-ID: <20140711194206.GI23257@laptop.dumpdata.com>
-References: <53A42DAA.80406@redhat.com>
- <53A692F9.3060200@intel.com>
- <53AA70C0.2000806@redhat.com>
- <20140707144917.GZ5821@phenom.ffwll.local>
- <53BAB569.5000709@redhat.com>
- <20140707175402.GS5821@phenom.ffwll.local>
- <53BADFC6.9060101@redhat.com>
- <20140707184006.GU5821@phenom.ffwll.local>
- <AADFC41AFE54684AB9EE6CBC0274A5D125FCA7FF@SHSMSX101.ccr.corp.intel.com>
- <20140711062956.GP17271@phenom.ffwll.local>
+	Fri, 11 Jul 2014 15:42:38 -0400
+Message-ID: <53C03E27.3000003@linaro.org>
+Date: Fri, 11 Jul 2014 20:42:31 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140711062956.GP17271@phenom.ffwll.local>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+CC: Kishon Vijay Abraham I <kishon@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] phy: qcom: Add driver for QCOM APQ8064 SATA PHY
+References: <1404903807-26032-1-git-send-email-srinivas.kandagatla@linaro.org> <1828880.cILxhDlkNH@amdc1032> <53BFE8F9.7050700@linaro.org> <2632799.IFO1aEjqtg@amdc1032>
+In-Reply-To: <2632799.IFO1aEjqtg@amdc1032>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 08:29:56AM +0200, Daniel Vetter wrote:
-> On Thu, Jul 10, 2014 at 09:08:24PM +0000, Tian, Kevin wrote:
-> > actually I'm curious whether it's still necessary to __detect__ PCH. Could
-> > we assume a 1:1 mapping between GPU and PCH, e.g. BDW already hard
-> > code the knowledge:
-> > 
-> >               } else if (IS_BROADWELL(dev)) {
-> >                       dev_priv->pch_type = PCH_LPT;
-> >                       dev_priv->pch_id =
-> >                               INTEL_PCH_LPT_LP_DEVICE_ID_TYPE;
-> >                       DRM_DEBUG_KMS("This is Broadwell, assuming "
-> >                                     "LynxPoint LP PCH\n");
-> > 
-> > Or if there is real usage on non-fixed mapping (not majority), could it be a 
-> > better option to have fixed mapping as a fallback instead of leaving as 
-> > PCH_NONE? Then even when Qemu doesn't provide a special tweaked PCH,
-> > the majority case just works.
-> 
-> I guess we can do it, at least I haven't seen any strange combinations in
-> the wild outside of Intel ...
+Thanks Bartlomiej for the advice,
 
-How big is the QA matrix for this? Would it make sense to just
-include the latest hardware (say going two generations back)
-and ignore the older one?
+I will give it a try and see.
+
+On 11/07/14 15:33, Bartlomiej Zolnierkiewicz wrote:
+>>>> struct qcom_apq8064_sata_phy {
+>>>> > >>+	void __iomem *mmio;
+>>>> > >>+	struct clk *cfg_clk;
+>>>> > >>+	struct device *dev;
+>>>> > >>+};
+>>>> > >>+
+>>>> > >>+/* Helper function to do poll and timeout */
+>>>> > >>+static int read_poll_timeout(void __iomem *addr, u32 mask)
+>>>> > >>+{
+>>>> > >>+	unsigned long timeout = jiffies + msecs_to_jiffies(TIMEOUT_MS);
+>>>> > >>+	u32 val;
+>>>> > >>+
+>>>> > >>+	do {
+>>>> > >>+		cpu_relax();
+>>>> > >>+		val = readl_relaxed(addr);
+>>>> > >>+		if (val & mask)
+>>>> > >>+			break;
+>>>> > >>+	} while (!time_after(jiffies, timeout));
+>>> > >
+>>> > >It would be better to use usleep_[range]() (or even msleep() if needed)
+>>> > >instead of just using cpu_relax().
+>> >
+>> >We really want to poll the register here, usleep/msleep would be useful
+>> >if we know already know how much delay is required, but in this case the
+>> >its not true.
+> I don't mean replacing the whole function, you can still do polling with
+> i.e. doing usleep_range(1000, 2000) with 1000 retries.  The advantage of
+> doing it this way would be that processor could do some useful work or
+> sleep during wait time instead of just busy waiting.
+>
+> One example of many how to do it:
+>
+> drivers/i2c/busses/i2c-s3c2410.c:
+>
+> static bool is_ack(struct s3c24xx_i2c *i2c)
+> {
+>          int tries;
+>
+>          for (tries = 50; tries; --tries) {
+>                  if (readl(i2c->regs + S3C2410_IICCON)
+>                          & S3C2410_IICCON_IRQPEND) {
+>                          if (!(readl(i2c->regs + S3C2410_IICSTAT)
+>                                  & S3C2410_IICSTAT_LASTBIT))
+>                                  return true;
+>                  }
+>                  usleep_range(1000, 2000);
+>          }
+>          dev_err(i2c->dev, "ack was not recieved\n");
+>          return false;
+> }
+
+
+thanks,
+srini
