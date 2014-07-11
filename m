@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752774AbaGKLf6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 07:35:58 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:53801 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235AbaGKLf4 (ORCPT
+	id S1752937AbaGKLgE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 07:36:04 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:58606 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751235AbaGKLf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 07:35:56 -0400
+	Fri, 11 Jul 2014 07:35:59 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Jason Wessel <jason.wessel@windriver.com>
 Cc: Anton Vorontsov <anton.vorontsov@linaro.org>, patches@linaro.org,
@@ -17,11 +17,11 @@ Cc: Anton Vorontsov <anton.vorontsov@linaro.org>, patches@linaro.org,
         Ingo Molnar <mingo@redhat.com>, John Stultz <john.stultz@linaro.org>,
         Colin Cross <ccross@android.com>, kernel-team@android.com,
         kgdb-bugreport@lists.sourceforge.net,
-        Daniel Thompson <daniel.thompson@liaro.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [RESEND PATCH v5 3.16-rc4 1/8] kdb: Remove currently unused kdbtab_t->cmd_flags
-Date: Fri, 11 Jul 2014 12:33:31 +0100
-Message-Id: <1405078418-14070-2-git-send-email-daniel.thompson@linaro.org>
+        Daniel Thompson <daniel.thompson@linaro.org>,
+        Mike Travis <travis@sgi.com>
+Subject: [RESEND PATCH v5 3.16-rc4 4/8] kdb: Use KDB_REPEAT_* values as flags
+Date: Fri, 11 Jul 2014 12:33:34 +0100
+Message-Id: <1405078418-14070-5-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1405078418-14070-1-git-send-email-daniel.thompson@linaro.org>
 References: <1399381429-16194-1-git-send-email-daniel.thompson@linaro.org>
@@ -32,45 +32,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 
-The struct member is never used in the code, so we can remove it.
+The actual values of KDB_REPEAT_* enum values and overall logic stayed
+the same, but we now treat the values as flags.
 
-We will introduce real flags soon by renaming cmd_repeat to cmd_flags.
+This makes it possible to add other flags and combine them, plus makes
+the code a lot simpler and shorter. But functionality-wise, there should
+be no changes.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Daniel Thompson <daniel.thompson@liaro.org>
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
 Cc: Jason Wessel <jason.wessel@windriver.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Mike Travis <travis@sgi.com>
 Cc: kgdb-bugreport@lists.sourceforge.net
 ---
- kernel/debug/kdb/kdb_main.c    | 1 -
- kernel/debug/kdb/kdb_private.h | 1 -
- 2 files changed, 2 deletions(-)
+ include/linux/kdb.h         |  4 ++--
+ kernel/debug/kdb/kdb_main.c | 21 +++++++--------------
+ 2 files changed, 9 insertions(+), 16 deletions(-)
 
+diff --git a/include/linux/kdb.h b/include/linux/kdb.h
+index 32d2f40..90aed7c 100644
+--- a/include/linux/kdb.h
++++ b/include/linux/kdb.h
+@@ -15,8 +15,8 @@
+ 
+ typedef enum {
+ 	KDB_REPEAT_NONE = 0,	/* Do not repeat this command */
+-	KDB_REPEAT_NO_ARGS,	/* Repeat the command without arguments */
+-	KDB_REPEAT_WITH_ARGS,	/* Repeat the command including its arguments */
++	KDB_REPEAT_NO_ARGS	= 0x1, /* Repeat the command w/o arguments */
++	KDB_REPEAT_WITH_ARGS	= 0x2, /* Repeat the command w/ its arguments */
+ } kdb_cmdflags_t;
+ 
+ typedef int (*kdb_func_t)(int, const char **);
 diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index 2f7c760..0b28bb0 100644
+index 6b33f9c..7a0a65c 100644
 --- a/kernel/debug/kdb/kdb_main.c
 +++ b/kernel/debug/kdb/kdb_main.c
-@@ -2694,7 +2694,6 @@ int kdb_register_repeat(char *cmd,
- 	kp->cmd_func   = func;
- 	kp->cmd_usage  = usage;
- 	kp->cmd_help   = help;
--	kp->cmd_flags  = 0;
- 	kp->cmd_minlen = minlen;
- 	kp->cmd_repeat = repeat;
+@@ -1008,20 +1008,13 @@ int kdb_parse(const char *cmdstr)
+ 		if (result && ignore_errors && result > KDB_CMD_GO)
+ 			result = 0;
+ 		KDB_STATE_CLEAR(CMD);
+-		switch (tp->cmd_flags) {
+-		case KDB_REPEAT_NONE:
+-			argc = 0;
+-			if (argv[0])
+-				*(argv[0]) = '\0';
+-			break;
+-		case KDB_REPEAT_NO_ARGS:
+-			argc = 1;
+-			if (argv[1])
+-				*(argv[1]) = '\0';
+-			break;
+-		case KDB_REPEAT_WITH_ARGS:
+-			break;
+-		}
++
++		if (tp->cmd_flags & KDB_REPEAT_WITH_ARGS)
++			return result;
++
++		argc = tp->cmd_flags & KDB_REPEAT_NO_ARGS ? 1 : 0;
++		if (argv[argc])
++			*(argv[argc]) = '\0';
+ 		return result;
+ 	}
  
-diff --git a/kernel/debug/kdb/kdb_private.h b/kernel/debug/kdb/kdb_private.h
-index 7afd3c8..c4c46c7 100644
---- a/kernel/debug/kdb/kdb_private.h
-+++ b/kernel/debug/kdb/kdb_private.h
-@@ -172,7 +172,6 @@ typedef struct _kdbtab {
- 	kdb_func_t cmd_func;		/* Function to execute command */
- 	char    *cmd_usage;		/* Usage String for this command */
- 	char    *cmd_help;		/* Help message for this command */
--	short    cmd_flags;		/* Parsing flags */
- 	short    cmd_minlen;		/* Minimum legal # command
- 					 * chars required */
- 	kdb_repeat_t cmd_repeat;	/* Does command auto repeat on enter? */
 -- 
 1.9.3
 
