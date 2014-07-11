@@ -1,103 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064AbaGKCt6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 22:49:58 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:36598 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751364AbaGKCt4 (ORCPT
+	id S1752223AbaGKCuP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 22:50:15 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:40986 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752023AbaGKCuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 22:49:56 -0400
-X-Sasl-enc: Va7MpBf9QUJ9YRrR53U+r+t93JTgKNf2b54RklCqlVZj 1405046995
-Message-ID: <1405046992.2574.10.camel@perseus.fritz.box>
-Subject: Re: [PATCH 0/6] autofs4: support RCU-walk
-From: Ian Kent <raven@themaw.net>
-To: NeilBrown <neilb@suse.de>
-Cc: autofs@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 11 Jul 2014 10:49:52 +0800
-In-Reply-To: <20140710182519.79120b90@notabene.brown>
-References: <20140709233541.4525.25151.stgit@notabene.brown>
-	 <1404978220.2609.25.camel@perseus.fritz.box>
-	 <20140710182519.79120b90@notabene.brown>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Jul 2014 22:50:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <53BF4D6B.70904@nvidia.com>
+References: <1404807961-30530-1-git-send-email-acourbot@nvidia.com>
+	<1404807961-30530-3-git-send-email-acourbot@nvidia.com>
+	<20140710125849.GF17271@phenom.ffwll.local>
+	<53BF4D6B.70904@nvidia.com>
+Date: Fri, 11 Jul 2014 12:50:09 +1000
+Message-ID: <CACAvsv7eER4VmbR81Ym=YE7fQZ9cNuJsb5372SAuSX+PQfYyrQ@mail.gmail.com>
+Subject: Re: [Nouveau] [PATCH v4 2/6] drm/nouveau: map pages using DMA API on
+ platform devices
+From: Ben Skeggs <skeggsb@gmail.com>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Daniel Vetter <daniel@ffwll.ch>, Alexandre Courbot <gnurou@gmail.com>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Ben Skeggs <bskeggs@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-07-10 at 18:25 +1000, NeilBrown wrote:
-> On Thu, 10 Jul 2014 15:43:40 +0800 Ian Kent <raven@themaw.net> wrote:
-> 
-> > On Thu, 2014-07-10 at 09:41 +1000, NeilBrown wrote:
-> > > autofs4 currently doesn't support RCU-walk - it immediately
-> > > aborts any attempt at RCU-walk to force REF-walk for path name
-> > > lookup.
-> > > 
-> > > This can cause a significant performance impact on multi-core
-> > > systems.
-> > > I have a client with a test case which spends >80% of its time
-> > > waiting for spinlocks with a "make -j 40" on a 40 core system.
-> > 
-> > Right, sounds worth the effort.
-> > 
-> > > 
-> > > This patchset aims to remove most of these spinlocks.  To be fully
-> > > effective in the particular case it needs a second patch set which
-> > > makes NFS RCU-walk friendly, but one thing at a time.
-> > > 
-> > > This has only been lightly tested so far so I'm really after feed-back
-> > > rather than to have the patch set accepted, though the first two
-> > > patches are trivial and could be taken immediately.
-> > 
-> > I've only scanned the patches so far, I'll need to spend a bit more time
-> > on them before I can comment.
-> > 
-> > I'm going to be pressed for time for at least several days so I won't be
-> > able to get to this right away.
-> > 
-> > I expect the submount_test I use to stress path walking and expire to
-> > mount transitions will likely be a good test to use. I haven't used it
-> > in my personal environment for quite a while now so I'll need to have a
-> > look around and see if I can still find a suitable set of scripts.
-> > Otherwise I'll need to decouple it from the RedHat automated test
-> > environment.
-> > 
-> > > 
-> > > The last two patches are the most interesting so review comments on
-> > > those are particularly welcome.
-> > 
-> > Again I haven't looked closely at these but don't you mean the last
-> > three patches or am I just fussing over an obviously straight forward
-> > patch 3?
-> 
-> Exactly right - that thirds last patch was "obviously straight forward", so
-> is naturally the one that I have already found a bug in (the patch assumes
-> that autofs4_check_leaves returns a different dentry, which clearly isn't
-> true).
+On Fri, Jul 11, 2014 at 12:35 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+> On 07/10/2014 09:58 PM, Daniel Vetter wrote:
+>>
+>> On Tue, Jul 08, 2014 at 05:25:57PM +0900, Alexandre Courbot wrote:
+>>>
+>>> page_to_phys() is not the correct way to obtain the DMA address of a
+>>> buffer on a non-PCI system. Use the DMA API functions for this, which
+>>> are portable and will allow us to use other DMA API functions for
+>>> buffer synchronization.
+>>>
+>>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>>> ---
+>>>   drivers/gpu/drm/nouveau/core/engine/device/base.c | 8 +++++++-
+>>>   1 file changed, 7 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/drivers/gpu/drm/nouveau/core/engine/device/base.c
+>>> b/drivers/gpu/drm/nouveau/core/engine/device/base.c
+>>> index 18c8c7245b73..e4e9e64988fe 100644
+>>> --- a/drivers/gpu/drm/nouveau/core/engine/device/base.c
+>>> +++ b/drivers/gpu/drm/nouveau/core/engine/device/base.c
+>>> @@ -489,7 +489,10 @@ nv_device_map_page(struct nouveau_device *device,
+>>> struct page *page)
+>>>                 if (pci_dma_mapping_error(device->pdev, ret))
+>>>                         ret = 0;
+>>>         } else {
+>>> -               ret = page_to_phys(page);
+>>> +               ret = dma_map_page(&device->platformdev->dev, page, 0,
+>>> +                                  PAGE_SIZE, DMA_BIDIRECTIONAL);
+>>> +               if (dma_mapping_error(&device->platformdev->dev, ret))
+>>> +                       ret = 0;
+>>>         }
+>>>
+>>>         return ret;
+>>> @@ -501,6 +504,9 @@ nv_device_unmap_page(struct nouveau_device *device,
+>>> dma_addr_t addr)
+>>>         if (nv_device_is_pci(device))
+>>>                 pci_unmap_page(device->pdev, addr, PAGE_SIZE,
+>>>                                PCI_DMA_BIDIRECTIONAL);
+>>
+>>
+>> pci_map/unmap alias to dma_unmap/map when called on the underlying struct
+>> device embedded in pci_device (like for platform drivers). Dunno whether
+>> it's worth to track a pointer to the struct device directly and always
+>> call dma_unmap/map.
+>
+>
+> Isn't it (theoretically) possible to have a platform that does not use the
+> DMA API for its PCI implementation and thus requires the pci_* functions to
+> be called? I could not find such a case in -next, which suggests that all
+> PCI platforms have been converted to the DMA API already and that we could
+> indeed refactor this to always use the DMA functions.
+>
+> But at the same time the way we use APIs should not be directed by their
+> implementation, but by their intent - and unless the PCI API has been
+> deprecated in some way (something I am not aware of), the rule is still that
+> you should use it on a PCI device.
+>
+>
+>>
+>> Just drive-by comment since I'm interested in how you solve this - i915
+>> has similar fun with buffer sharing and coherent and non-coherent
+>> platforms. Although we don't have fun with pci and non-pci based
+>> platforms.
+>
+>
+> Yeah, I am not familiar with i915 but it seems like we are on a similar boat
+> here (excepted ARM is more constrained as to its memory mappings). The
+> strategy in this series is, map buffers used by user-space cached and
+> explicitly synchronize them (since the ownership transition from user to GPU
+> is always clearly performed by syscalls), and use coherent mappings for
+> buffers used by the kernel which are accessed more randomly. This has solved
+> all our coherency issues and resulted in the best performance so far.
+I wonder if we might want to use unsnooped cached mappings of pages on
+non-ARM platforms also, to avoid the overhead of the cache snooping?
 
-Ha, IIRC that was to support the old pseudo direct mounts that would
-expire the leaves of a tree independently. That was a long time ago now
-and probably isn't used but it should remain think.
-
-I'll need to have a look at that too, to refresh my memory.
-
-> 
-> I'll repost it, probably on Monday.
-> 
-> > 
-> > Thanks for your effort Bruce,
-> > Ian
-> > 
-> 
->     http://www.youtube.com/watch?v=_f_p0CgPeyA
-> 
-> (Usually when people get my name wrong they call me "Ian", so you calling me
-> Bruce is both slightly ironic and quite refreshing!)
-
-LOL, but I have a lame excuse!
-I was thinking Bruce Fields when replying since have the impression you
-both work in similar areas.
-
-Ian
-
+>
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
