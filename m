@@ -1,65 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932081AbaGKSIA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 14:08:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40665 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314AbaGKSH7 (ORCPT
+	id S932127AbaGKSI4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 14:08:56 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:56165 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754588AbaGKSIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 14:07:59 -0400
-Date: Fri, 11 Jul 2014 11:12:27 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>, Joe Perches <joe@perches.com>,
-        Kay Sievers <kay@vrfy.org>
-Subject: Re: [PATCH v2] drivers/base: Fix length checks in
- create_syslog_header()/dev_vprintk_emit()
-Message-ID: <20140711181227.GA25757@kroah.com>
-References: <1402267903.23860.45.camel@deadeye.wl.decadent.org.uk>
- <20140709235736.GA31914@kroah.com>
- <1405099258.26540.79.camel@deadeye.wl.decadent.org.uk>
+	Fri, 11 Jul 2014 14:08:55 -0400
+X-Sasl-enc: lrWKASObGMEjZlb9xDRYrzyGhMbDmU9sMv2D98DZhdSZ 1405102134
+Date: Fri, 11 Jul 2014 11:13:21 -0700
+From: Greg Kroah-Hartman <greg@kroah.com>
+To: Andreas Noever <andreas.noever@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        julia.lawall@lip6.fr, Himangi Saraogi <himangi774@gmail.com>
+Subject: Re: [PATCH v3] thunderbolt: Use kcalloc and correct the argument to
+ sizeof
+Message-ID: <20140711181321.GB25757@kroah.com>
+References: <20140708223126.GA12035@himangi-Dell>
+ <CAMxnaaX6tOobPBDVbG7v-kJTvNMLYSybZWuzTqbgMdMkP50swQ@mail.gmail.com>
+ <CAMxnaaXJ_eYvUwPV=-w_eZW-EChhe1eW5Q5ctru4mhWyt3ZhuQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1405099258.26540.79.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <CAMxnaaXJ_eYvUwPV=-w_eZW-EChhe1eW5Q5ctru4mhWyt3ZhuQ@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 06:20:58PM +0100, Ben Hutchings wrote:
-> On Wed, 2014-07-09 at 16:57 -0700, Greg Kroah-Hartman wrote:
-> > On Sun, Jun 08, 2014 at 11:51:43PM +0100, Ben Hutchings wrote:
-> > > snprintf() returns the number of bytes that could have been written
-> > > (excluding the null), not the actual number of bytes written.  Given a
-> > > long enough subsystem or device name, these functions will advance
-> > > beyond the end of the on-stack buffer in dev_vprintk_exit(), resulting
-> > > in an information leak or stack corruption.  I don't know whether such
-> > > a long name is currently possible.
-> > > 
-> > > In case snprintf() returns a value >= the buffer size, do not add
-> > > structured logging information.  Also WARN if this happens, so we can
-> > > fix the driver or increase the buffer size.
-> > > 
-> > > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> > > ---
-> > > v2: use dev_WARN() not dev_WARN_ON()
-> > 
-> > This patch breaks the build in a huge way:
-> > 
-> > drivers/base/core.c: In function ‘create_syslog_header’:
-> > drivers/base/core.c:2049:16: error: expected ‘)’ before numeric constant
-> >   dev_WARN(dev, 1, "device/subsystem name too long");
-> >                   ^
-> > 
-> > is the start of it, it goes on for a page or so after that :(
-> 
-> Sorry about that, I must not have committed the working version before
-> mailing it.  If you delete the '1, ' it should work.  If you've already
-> deleted the patch, I'll check and send the working version.
+On Fri, Jul 11, 2014 at 07:14:23PM +0200, Andreas Noever wrote:
+> Greg, can you add this to your char-misc tree (instead of the kzalloc
+> patch, or do you need a rebased patch)?
 
-It's long gone, can you please fix and resend?
+I need a patch on top of my char-misc tree as the kzalloc version is
+already applied there.
 
 thanks,
 
