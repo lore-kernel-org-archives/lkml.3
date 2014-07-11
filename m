@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724AbaGKImP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 04:42:15 -0400
-Received: from 8bytes.org ([85.214.48.195]:54553 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751911AbaGKImO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 04:42:14 -0400
-Date: Fri, 11 Jul 2014 10:42:09 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Oded Gabbay <oded.gabbay@gmail.com>
-Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <j.glisse@gmail.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, John Bridgman <John.Bridgman@amd.com>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Oded Gabbay <oded.gabbay@amd.com>
-Subject: Re: [PATCH 38/83] hsa/radeon: Workaround for a bug in amd_iommu
-Message-ID: <20140711084209.GA1958@8bytes.org>
-References: <1405029279-6894-1-git-send-email-oded.gabbay@amd.com>
- <1405029279-6894-10-git-send-email-oded.gabbay@amd.com>
+	id S1752078AbaGKIrS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 04:47:18 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39968 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119AbaGKIrN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 04:47:13 -0400
+Date: Fri, 11 Jul 2014 10:47:09 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yuyang Du <yuyang.du@intel.com>
+Cc: bsegall@google.com, mingo@redhat.com, linux-kernel@vger.kernel.org,
+        rafael.j.wysocki@intel.com, arjan.van.de.ven@intel.com,
+        len.brown@intel.com, alan.cox@intel.com, mark.gross@intel.com,
+        pjt@google.com, fengguang.wu@intel.com
+Subject: Re: [PATCH 2/2] sched: Rewrite per entity runnable load average
+ tracking
+Message-ID: <20140711084709.GF20603@laptop.programming.kicks-ass.net>
+References: <1404268256-3019-2-git-send-email-yuyang.du@intel.com>
+ <20140707104646.GK6758@twins.programming.kicks-ass.net>
+ <xm26r41wyfgc.fsf@sword-of-the-dawn.mtv.corp.google.com>
+ <20140708000840.GB25653@intel.com>
+ <xm26k37nye7d.fsf@sword-of-the-dawn.mtv.corp.google.com>
+ <20140709010753.GD25653@intel.com>
+ <20140709184543.GI9918@twins.programming.kicks-ass.net>
+ <xm26bnsyxsf7.fsf@sword-of-the-dawn.mtv.corp.google.com>
+ <20140710100859.GW3935@laptop>
+ <20140710232207.GC12984@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1405029279-6894-10-git-send-email-oded.gabbay@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Fri Jul 11 10:42:11 2014
-X-DSPAM-Confidence: 0.9994
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 53bfa36320862332416787
+In-Reply-To: <20140710232207.GC12984@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 12:53:54AM +0300, Oded Gabbay wrote:
-> This patch creates a workaround for a bug in amd_iommu driver, where
-> the driver doesn't save all necessary information when going to
-> suspend.  The workaround removes a device from the IOMMU device list
-> on suspend and register a resumed device in the IOMMU device list.
-> 
-> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+On Fri, Jul 11, 2014 at 07:22:07AM +0800, Yuyang Du wrote:
+> On Thu, Jul 10, 2014 at 12:08:59PM +0200, Peter Zijlstra wrote:
+> > 
+> > Since clock_task is the regular clock minus some local amount, the
+> > difference between two regular clock reads is always a strict upper
+> > bound on clock_task differences.
+> > 
+> This is inspiring. Regarding the clock source in load avg tracking,
+> should we simply use rq_clock_task instead of cfs_rq_clock_task.
 
-Which bug do you workaround here? It needs to be fixed in the AMD IOMMU
-driver instead of being wrapped in KFD.
+Oh *groan* I forgot about that thing. But no, it obviously doesn't
+matter for running time, because if you're throttled you're nor running
+and therefore it all doesn't matter, but it can make a huge difference
+for blocked time accounting I suppose.
 
+> For the bandwidth control case, just update/increase the last_update_time when
+> unthrottled by this throttled time, so the time would look like freezed. Am I
+> understanding right?
 
-	Joerg
+Yes, it stops the clock when throttled.
 
+> Not sure how much bandwidth control is used, but even not used, every time
+> we read cfs_rq_clock_task, will burn useless cycles here.
 
+Yep, nothing much you can do about that.
+
+In any case, it is still the case that a normal clock difference is an
+upper bound.
