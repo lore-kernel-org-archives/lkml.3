@@ -1,72 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755194AbaGKTbr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 15:31:47 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38123 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752043AbaGKTbq (ORCPT
+	id S1755243AbaGKTbz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 15:31:55 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:51720 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754936AbaGKTbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 15:31:46 -0400
-Date: Fri, 11 Jul 2014 21:31:44 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Sebastian Reichel <sre@debian.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: /proc/cpuinfo: Use DT machine name when possible
-Message-ID: <20140711193144.GC20015@amd.pavel.ucw.cz>
-References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
- <20140618190108.GI32514@n2100.arm.linux.org.uk>
- <201406182109.59059@pali>
- <20140618195908.GJ32514@n2100.arm.linux.org.uk>
+	Fri, 11 Jul 2014 15:31:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140618195908.GJ32514@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140711175345.19079.28143.stgit@gimli.home>
+References: <20140711175345.19079.28143.stgit@gimli.home>
+Date: Fri, 11 Jul 2014 12:31:51 -0700
+Message-ID: <CAG7+5M3Er0bd2pnuGjzp8z8MMBJG9bKTpsCQ_SrZASnjcwLW5A@mail.gmail.com>
+Subject: Re: [PATCH] KVM: x86 emulator: emulate MOVNTDQ
+From: Eric Northup <digitaleric@google.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: KVM <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2014-06-18 20:59:08, Russell King - ARM Linux wrote:
-> On Wed, Jun 18, 2014 at 09:09:58PM +0200, Pali Rohár wrote:
-> > On Wednesday 18 June 2014 21:01:09 Russell King - ARM Linux 
-> > wrote:
-> > > On Wed, Jun 18, 2014 at 06:54:24PM +0200, Pali Rohár wrote:
-> > > > Machine name from board description is some generic name on
-> > > > DT kernel. DT provides machine name property which is
-> > > > specific for board, so use it instead generic one when
-> > > > possible.
-> > > 
-> > > http://archive.arm.linux.org.uk/lurker/message/20130726.132850
-> > > .53d47576.en.html
-> > > 
-> > > "If userspace wants to get at the DT information about a
-> > > platform, we already have ways that can happen already - we
-> > > export the DT stuff so that kexec's tools can get at it."
-> > 
-> > Userspace application does not know that kernel using DT. And 
-> > also it does not want to get DT information. Only board/machine 
-> > name. So existing applications stop working after migration to 
-> > DT. And because legacy board boot code (without DT) is going to 
-> > be removed for ARM in near future this will permanently break 
-> > existing applications.
-> 
-> We're already breaking the userspace API through moving to DT, because
-> all the device names in /sys/devices are changing.  Userspace is going
-> to have to cope with change as we move towards DT.  This is just
-> another aspect of moving towards DT, and one which userspace is going
-> to have to deal with.
+On Fri, Jul 11, 2014 at 10:56 AM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> Windows 8.1 guest with NVIDIA driver and GPU fails to boot with an
+> emulation failure.  The KVM spew suggests the fault is with lack of
+> movntdq emulation (courtesy of Paolo):
+>
+> Code=02 00 00 b8 08 00 00 00 f3 0f 6f 44 0a f0 f3 0f 6f 4c 0a e0 <66> 0f e7 41 f0 66 0f e7 49 e0 48 83 e9 40 f3 0f 6f 44 0a 10 f3 0f 6f 0c 0a 66 0f e7 41 10
+>
+> $ as -o a.out
+>         .section .text
+>         .byte 0x66, 0x0f, 0xe7, 0x41, 0xf0
+>         .byte 0x66, 0x0f, 0xe7, 0x49, 0xe0
+> $ objdump -d a.out
+>     0:  66 0f e7 41 f0          movntdq %xmm0,-0x10(%rcx)
+>     5:  66 0f e7 49 e0          movntdq %xmm1,-0x20(%rcx)
+>
+> Add the necessary emulation.
+>
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> Cc: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>
+> Hope I got all the flags correct from copying similar MOV ops, but it
+> allows the guest to boot, so I suspect it's ok.
+>
+>  arch/x86/kvm/emulate.c |    7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+> index e4e833d..ae39f08 100644
+> --- a/arch/x86/kvm/emulate.c
+> +++ b/arch/x86/kvm/emulate.c
+> @@ -3681,6 +3681,10 @@ static const struct gprefix pfx_0f_28_0f_29 = {
+>         I(Aligned, em_mov), I(Aligned, em_mov), N, N,
+>  };
+>
+> +static const struct gprefix pfx_0f_e7 = {
+> +       N, I(Sse, em_mov), N, N,
 
-You don't _have_ to break /proc/cpuinfo.  No, "DT breaks stuff" should
-not be reason to "break more stuff".  (Actually, I'm not aware of
-anything DT would have to break.)
+I think you need 'Aligned' flag in here - from my reading of the
+manual, this instruction will #GP if the memory operand isn't aligned.
 
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> +};
+> +
+>  static const struct escape escape_d9 = { {
+>         N, N, N, N, N, N, N, I(DstMem, em_fnstcw),
+>  }, {
+> @@ -3951,7 +3955,8 @@ static const struct opcode twobyte_table[256] = {
+>         /* 0xD0 - 0xDF */
+>         N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N,
+>         /* 0xE0 - 0xEF */
+> -       N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N,
+> +       N, N, N, N, N, N, N, GP(SrcReg | DstMem | ModRM | Mov, &pfx_0f_e7),
+> +       N, N, N, N, N, N, N, N,
+>         /* 0xF0 - 0xFF */
+>         N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N
+>  };
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
