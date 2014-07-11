@@ -1,37 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652AbaGKHgV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 03:36:21 -0400
-Received: from mga09.intel.com ([134.134.136.24]:37029 "EHLO mga09.intel.com"
+	id S1753003AbaGKHs3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 03:48:29 -0400
+Received: from mga09.intel.com ([134.134.136.24]:36972 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752614AbaGKHgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 03:36:17 -0400
+	id S1752460AbaGKHgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 03:36:11 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,642,1400050800"; 
-   d="scan'208";a="571589643"
+   d="scan'208";a="571589620"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
         David Rientjes <rientjes@google.com>,
         Mike Galbraith <umgwanakikbuti@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Mitch Williams <mitch.a.williams@intel.com>,
-        Linux NICS <linux.nics@intel.com>
+        Mike Marciniszyn <infinipath@intel.com>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>
 Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
         linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        netdev@vger.kernel.org
-Subject: [RFC Patch V1 13/30] mm, i40e: Use cpu_to_mem()/numa_mem_id() to support memoryless node
-Date: Fri, 11 Jul 2014 15:37:30 +0800
-Message-Id: <1405064267-11678-14-git-send-email-jiang.liu@linux.intel.com>
+        linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org
+Subject: [RFC Patch V1 12/30] mm, IB/qib: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+Date: Fri, 11 Jul 2014 15:37:29 +0800
+Message-Id: <1405064267-11678-13-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
@@ -50,22 +42,38 @@ is the same as cpu_to_node()/numa_node_id().
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- drivers/net/ethernet/intel/i40e/i40e_txrx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/infiniband/hw/qib/qib_file_ops.c |    4 ++--
+ drivers/infiniband/hw/qib/qib_init.c     |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/i40e/i40e_txrx.c b/drivers/net/ethernet/intel/i40e/i40e_txrx.c
-index e49f31dbd5d8..e9f6f9efd944 100644
---- a/drivers/net/ethernet/intel/i40e/i40e_txrx.c
-+++ b/drivers/net/ethernet/intel/i40e/i40e_txrx.c
-@@ -1342,7 +1342,7 @@ static int i40e_clean_rx_irq(struct i40e_ring *rx_ring, int budget)
- 	unsigned int total_rx_bytes = 0, total_rx_packets = 0;
- 	u16 rx_packet_len, rx_header_len, rx_sph, rx_hbo;
- 	u16 cleaned_count = I40E_DESC_UNUSED(rx_ring);
--	const int current_node = numa_node_id();
-+	const int current_node = numa_mem_id();
- 	struct i40e_vsi *vsi = rx_ring->vsi;
- 	u16 i = rx_ring->next_to_clean;
- 	union i40e_rx_desc *rx_desc;
+diff --git a/drivers/infiniband/hw/qib/qib_file_ops.c b/drivers/infiniband/hw/qib/qib_file_ops.c
+index b15e34eeef68..55540295e0e3 100644
+--- a/drivers/infiniband/hw/qib/qib_file_ops.c
++++ b/drivers/infiniband/hw/qib/qib_file_ops.c
+@@ -1312,8 +1312,8 @@ static int setup_ctxt(struct qib_pportdata *ppd, int ctxt,
+ 	assign_ctxt_affinity(fp, dd);
+ 
+ 	numa_id = qib_numa_aware ? ((fd->rec_cpu_num != -1) ?
+-		cpu_to_node(fd->rec_cpu_num) :
+-		numa_node_id()) : dd->assigned_node_id;
++		cpu_to_mem(fd->rec_cpu_num) : numa_mem_id()) :
++		dd->assigned_node_id;
+ 
+ 	rcd = qib_create_ctxtdata(ppd, ctxt, numa_id);
+ 
+diff --git a/drivers/infiniband/hw/qib/qib_init.c b/drivers/infiniband/hw/qib/qib_init.c
+index 8d3c78ddc906..85ff56ad1075 100644
+--- a/drivers/infiniband/hw/qib/qib_init.c
++++ b/drivers/infiniband/hw/qib/qib_init.c
+@@ -133,7 +133,7 @@ int qib_create_ctxts(struct qib_devdata *dd)
+ 	int local_node_id = pcibus_to_node(dd->pcidev->bus);
+ 
+ 	if (local_node_id < 0)
+-		local_node_id = numa_node_id();
++		local_node_id = numa_mem_id();
+ 	dd->assigned_node_id = local_node_id;
+ 
+ 	/*
 -- 
 1.7.10.4
 
