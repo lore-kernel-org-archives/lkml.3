@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932329AbaGKTLL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 15:11:11 -0400
-Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:44232 "EHLO
-	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932309AbaGKTLG (ORCPT
+	id S932353AbaGKTL0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 15:11:26 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:35142 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932309AbaGKTLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 15:11:06 -0400
-Date: Fri, 11 Jul 2014 14:11:02 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Tejun Heo <tj@kernel.org>
-cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Jianyu Zhan <nasa4836@gmail.com>, malc <av1474@comtv.ru>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Fabian Frederick <fabf@skynet.be>, Tony Luck <tony.luck@intel.com>,
-        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC Patch V1 07/30] mm: Use cpu_to_mem()/numa_mem_id() to
- support memoryless node
-In-Reply-To: <20140711182814.GE30865@htj.dyndns.org>
-Message-ID: <alpine.DEB.2.11.1407111405280.5070@gentwo.org>
-References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com> <1405064267-11678-8-git-send-email-jiang.liu@linux.intel.com> <20140711144205.GA27706@htj.dyndns.org> <alpine.DEB.2.11.1407111012210.25527@gentwo.org> <20140711152156.GB29137@htj.dyndns.org>
- <alpine.DEB.2.11.1407111056060.27349@gentwo.org> <20140711160152.GC30865@htj.dyndns.org> <alpine.DEB.2.11.1407111117560.27592@gentwo.org> <20140711162451.GD30865@htj.dyndns.org> <alpine.DEB.2.11.1407111220410.4511@gentwo.org>
- <20140711182814.GE30865@htj.dyndns.org>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 11 Jul 2014 15:11:23 -0400
+Date: Fri, 11 Jul 2014 21:11:15 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 11/17] rcu: Bind grace-period kthreads to
+ non-NO_HZ_FULL CPUs
+Message-ID: <20140711191113.GI26045@localhost.localdomain>
+References: <20140707223756.GA7187@linux.vnet.ibm.com>
+ <1404772701-8804-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1404772701-8804-11-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140708152358.GF6571@localhost.localdomain>
+ <20140708154723.GN4603@linux.vnet.ibm.com>
+ <20140708183846.GJ6571@localhost.localdomain>
+ <alpine.DEB.2.11.1407111309150.4777@gentwo.org>
+ <20140711182541.GF26045@localhost.localdomain>
+ <alpine.DEB.2.11.1407111403090.5070@gentwo.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1407111403090.5070@gentwo.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jul 2014, Tejun Heo wrote:
+On Fri, Jul 11, 2014 at 02:05:08PM -0500, Christoph Lameter wrote:
+> On Fri, 11 Jul 2014, Frederic Weisbecker wrote:
+> 
+> > > That would imply that all no-nohz processors are housekeeping? So all
+> > > processors with a tick are housekeeping?
+> >
+> > Well, now that I think about it again, I would really like to keep housekeeping
+> > to CPU 0 when nohz_full= is passed.
+> 
+> Yeah.
+> 
+> > > Could we make that set configurable? Ideally I'd like to have the ability
+> > > restrict the housekeeping to one processor.
+> >
+> > Ah, I'm curious about your usecase. But I think we can do that. And we should.
+> 
+> The use case is pretty straightforward because we are trying to keep as
+> much OS noise as possible off most processors. Processor 0 is the
+> sacrificial lamb that will be used for all OS processing and hopefully all
+> high latency operations will occur there. Processors 1-X have a tick but
+> we still try to keep latencies sane. And then there is X-Y where tick is
+> off.
 
-> On Fri, Jul 11, 2014 at 12:29:30PM -0500, Christoph Lameter wrote:
-> > GFP_THISNODE is mostly used by allocators that need memory from specific
-> > nodes. The use of numa_mem_id() there is useful because one will not
-> > get any memory at all when attempting to allocate from a memoryless
-> > node using GFP_THISNODE.
->
-> As long as it's in allocator proper, it doesn't matter all that much
-> but the changes are clearly not contained, are they?
+Ok. I don't entirely get why you need 1-X but I can easily imagine some non-latency-critical
+stuff running there.
 
-Well there is a proliferation of memory allocators recently. NUMA is often
-a second thought in those.
-
+Paul proposed "housekeeping=". If we ever go there, I'd rather vote for "sacrifical_lamb="
