@@ -1,93 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818AbaGKNNE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:13:04 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:52019 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359AbaGKNNC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:13:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <1405026844.2613.15.camel@fedora-lan>
-References: <1405017900-16024-1-git-send-email-benjamin.tissoires@redhat.com>
-	<1405026844.2613.15.camel@fedora-lan>
-Date: Fri, 11 Jul 2014 09:13:00 -0400
-Message-ID: <CAN+gG=Ev+ZuEkLFRxvDT2qRnjfcnAxKCzCjazimVKjRxZ2N7-g@mail.gmail.com>
-Subject: Re: [PATCH 0/5] Input - wacom: battery enhancements and unifying
- hid-wacom and wacom
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Przemo Firszt <przemo@firszt.eu>
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Ping Cheng <pinglinux@gmail.com>,
-        Jason Gerecke <killertofu@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-input <linux-input@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753841AbaGKNN6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:13:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60038 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753123AbaGKNN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 09:13:56 -0400
+Message-ID: <1405084407.4098.59.camel@ul30vt.home>
+Subject: Re: [PATCH 1/2 V3] PCI: introduce device assignment interface and
+ refactory related code
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Ethan Zhao <ethan.zhao@oracle.com>
+Cc: bhelgaas@google.com, konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, gleb@kernel.org, pbonzini@redhat.com,
+        jeffrey.t.kirsher@intel.com, jesse.brandeburg@intel.com,
+        bruce.w.allan@intel.com, carolyn.wyborny@intel.com,
+        donald.c.skidmore@intel.com, gregory.v.rose@intel.com,
+        alexander.h.duyck@intel.com, john.ronciak@intel.com,
+        mitch.a.williams@intel.com, linux-pci@vger.kernel.org,
+        kvm@vger.kernel.org, linux.nics@intel.com,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ethan.kernel@gmail.com,
+        vaughan.cao@oracle.com
+Date: Fri, 11 Jul 2014 07:13:27 -0600
+In-Reply-To: <1405081802-419-1-git-send-email-ethan.zhao@oracle.com>
+References: <1405081802-419-1-git-send-email-ethan.zhao@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Przemo,
+On Fri, 2014-07-11 at 20:30 +0800, Ethan Zhao wrote:
+> This patch introduces two new device assignment functions
+> 
+> pci_iov_assign_device(),
+> pci_iov_deassign_device()
+> 
+> along with the existed one
+> 
+> pci_vfs_assigned()
+> 
+> They construct the VFs assignment management interface, used to assign/
+> deassign device to VM and query the VFs reference counter. instead of
+> direct manipulation of device flag.
+> 
+> This patch refashioned the related code and make them atomic.
+> 
+> v3: change the naming of device assignment helpers, because they work
+> for all kind of PCI device, not only SR-IOV (david.vrabel@citrix.com)
+> 
+> v2: reorder the patchset and make it bisectable and atomic, steps clear
+> between interface defination and implemenation according to the
+> suggestion from alex.williamson@redhat.com
+> 
+> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+> ---
 
-On Thu, Jul 10, 2014 at 5:14 PM, Przemo Firszt <przemo@firszt.eu> wrote:
-> Dnia 2014-07-10, czw o godzinie 14:44 -0400, Benjamin Tissoires pisze:
-> [..]
-> Hi Benjamin,
->> However, I did not backport the speed attribute and the ac power
->> device (which
->> is infered by the battery status). I don't know if there are users of
->> those two,
->> so I let them aside for now. Przemo, any ideas if this is actually
->> used?
-> Both tablets that I had (Graphire Wireless and Intuos4 Wireless)
-> supports slow and fast reporting. Slow reporting is necessary with older
-> bluetooth receivers otherwise the lag between pen movement and cursor
-> movement made devices unusable.
+- Use a cover patch to describe the series
 
-Alright
+- Version information goes here, below the "---", not above it
 
->
-> I tried to expose all events reported by hardware and I think AC
-> reporting should stay in the kernel.
+- I stand by the patch breakdown I suggested originally, there are too
+many logical changes here in patch 1.  There are easily 3 separate
+patches here.
 
-Ok, I'll send a v2 next week with these two things fixed.
+- Renaming s/sriov/iov/ doesn't address the problem David raised.  The
+name is still synonymous with SR-IOV and it's defined on
+drivers/pci/iov.c, which is only built with CONFIG_PCI_IOV.
 
-Cheers,
-Benjamin
+- PCI_DEV_FLAGS_ASSIGNED should be unused after this series, why is it
+not removed?
 
->
-> Intuos4 Wireless
-> AC power disconnected:
-> bash-4.2$ cat /sys/class/power_supply/wacom_ac/uevent
-> POWER_SUPPLY_NAME=wacom_ac
-> POWER_SUPPLY_PRESENT=0
-> POWER_SUPPLY_ONLINE=0
-> POWER_SUPPLY_SCOPE=Device
-> bash-4.2$ cat /sys/class/power_supply/wacom_battery/uevent
-> POWER_SUPPLY_NAME=wacom_battery
-> POWER_SUPPLY_PRESENT=1
-> POWER_SUPPLY_CAPACITY=85
-> POWER_SUPPLY_SCOPE=Device
-> POWER_SUPPLY_STATUS=Discharging
->
-> AC power connected:
-> bash-4.2$ cat /sys/class/power_supply/wacom_ac/uevent
-> POWER_SUPPLY_NAME=wacom_ac
-> POWER_SUPPLY_PRESENT=1
-> POWER_SUPPLY_ONLINE=1
-> POWER_SUPPLY_SCOPE=Device
-> bash-4.2$ cat /sys/class/power_supply/wacom_battery/uevent
-> POWER_SUPPLY_NAME=wacom_battery
-> POWER_SUPPLY_PRESENT=1
-> POWER_SUPPLY_CAPACITY=85
-> POWER_SUPPLY_SCOPE=Device
-> POWER_SUPPLY_STATUS=Charging
-> --
-> Kind regards,
-> Przemo Firszt
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>  drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c |   17 ++---------------
+>  drivers/pci/iov.c                                  |   20 ++++++++++++++++++++
+>  drivers/xen/xen-pciback/pci_stub.c                 |    4 ++--
+>  include/linux/pci.h                                |    4 ++++
+>  virt/kvm/assigned-dev.c                            |    2 +-
+>  virt/kvm/iommu.c                                   |    4 ++--
+
+- This patch touch 4 separate logical code areas, who do you expect to
+ack and commit it?  Split it up.
+
+>  6 files changed, 31 insertions(+), 20 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c b/drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c
+> index 02c11a7..781040e 100644
+> --- a/drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c
+> +++ b/drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c
+> @@ -693,22 +693,9 @@ complete_reset:
+>  static bool i40e_vfs_are_assigned(struct i40e_pf *pf)
+>  {
+>  	struct pci_dev *pdev = pf->pdev;
+> -	struct pci_dev *vfdev;
+> -
+> -	/* loop through all the VFs to see if we own any that are assigned */
+> -	vfdev = pci_get_device(PCI_VENDOR_ID_INTEL, I40E_DEV_ID_VF , NULL);
+> -	while (vfdev) {
+> -		/* if we don't own it we don't care */
+> -		if (vfdev->is_virtfn && pci_physfn(vfdev) == pdev) {
+> -			/* if it is assigned we cannot release it */
+> -			if (vfdev->dev_flags & PCI_DEV_FLAGS_ASSIGNED)
+> -				return true;
+> -		}
+>  
+> -		vfdev = pci_get_device(PCI_VENDOR_ID_INTEL,
+> -				       I40E_DEV_ID_VF,
+> -				       vfdev);
+> -	}
+> +	if (pci_vfs_assigned(pdev))
+> +		return true;
+>  
+>  	return false;
+>  }
+> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+> index de7a747..090f827 100644
+> --- a/drivers/pci/iov.c
+> +++ b/drivers/pci/iov.c
+> @@ -644,6 +644,26 @@ int pci_vfs_assigned(struct pci_dev *dev)
+>  EXPORT_SYMBOL_GPL(pci_vfs_assigned);
+>  
+>  /**
+> + * pci_iov_assign_device - assign device to VM
+> + * @pdev: the device to be assigned.
+> + */
+> +void pci_iov_assign_device(struct pci_dev *pdev)
+> +{
+> +	pdev->dev_flags |= PCI_DEV_FLAGS_ASSIGNED;
+> +}
+> +EXPORT_SYMBOL_GPL(pci_iov_assign_device);
+> +
+> +/**
+> + * pci_iov_deassign_device - deasign device from VM
+> + * @pdev: the device to be deassigned.
+> + */
+> +void pci_iov_deassign_device(struct pci_dev *pdev)
+> +{
+> +	pdev->dev_flags &= ~PCI_DEV_FLAGS_ASSIGNED;
+> +}
+> +EXPORT_SYMBOL_GPL(pci_iov_deassign_device);
+> +
+> +/**
+>   * pci_sriov_set_totalvfs -- reduce the TotalVFs available
+>   * @dev: the PCI PF device
+>   * @numvfs: number that should be used for TotalVFs supported
+> diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
+> index 62fcd48..27e00d1 100644
+> --- a/drivers/xen/xen-pciback/pci_stub.c
+> +++ b/drivers/xen/xen-pciback/pci_stub.c
+> @@ -133,7 +133,7 @@ static void pcistub_device_release(struct kref *kref)
+>  	xen_pcibk_config_free_dyn_fields(dev);
+>  	xen_pcibk_config_free_dev(dev);
+>  
+> -	dev->dev_flags &= ~PCI_DEV_FLAGS_ASSIGNED;
+> +	pci_iov_deassign_device(dev);
+>  	pci_dev_put(dev);
+>  
+>  	kfree(psdev);
+> @@ -404,7 +404,7 @@ static int pcistub_init_device(struct pci_dev *dev)
+>  	dev_dbg(&dev->dev, "reset device\n");
+>  	xen_pcibk_reset_device(dev);
+>  
+> -	dev->dev_flags |= PCI_DEV_FLAGS_ASSIGNED;
+> +	pci_iov_assign_device(dev);
+>  	return 0;
+>  
+>  config_release:
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index aab57b4..5ece6d6 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -1603,6 +1603,8 @@ int pci_num_vf(struct pci_dev *dev);
+>  int pci_vfs_assigned(struct pci_dev *dev);
+>  int pci_sriov_set_totalvfs(struct pci_dev *dev, u16 numvfs);
+>  int pci_sriov_get_totalvfs(struct pci_dev *dev);
+> +void pci_iov_assign_device(struct pci_dev *dev);
+> +void pci_iov_deassign_device(struct pci_dev *dev);
+>  #else
+>  static inline int pci_enable_sriov(struct pci_dev *dev, int nr_virtfn)
+>  { return -ENODEV; }
+> @@ -1614,6 +1616,8 @@ static inline int pci_sriov_set_totalvfs(struct pci_dev *dev, u16 numvfs)
+>  { return 0; }
+>  static inline int pci_sriov_get_totalvfs(struct pci_dev *dev)
+>  { return 0; }
+> +static inline void pci_iov_assign_device(struct pci_dev *dev) { }
+> +static inline void pci_iov_deassign_device(struct pci_dev *dev) { }
+>  #endif
+>  
+>  #if defined(CONFIG_HOTPLUG_PCI) || defined(CONFIG_HOTPLUG_PCI_MODULE)
+> diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
+> index bf06577..7fac58d 100644
+> --- a/virt/kvm/assigned-dev.c
+> +++ b/virt/kvm/assigned-dev.c
+> @@ -302,7 +302,7 @@ static void kvm_free_assigned_device(struct kvm *kvm,
+>  	else
+>  		pci_restore_state(assigned_dev->dev);
+>  
+> -	assigned_dev->dev->dev_flags &= ~PCI_DEV_FLAGS_ASSIGNED;
+> +	pci_iov_deassign_device(assigned_dev->dev);
+>  
+>  	pci_release_regions(assigned_dev->dev);
+>  	pci_disable_device(assigned_dev->dev);
+> diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
+> index 0df7d4b..641ee73 100644
+> --- a/virt/kvm/iommu.c
+> +++ b/virt/kvm/iommu.c
+> @@ -194,7 +194,7 @@ int kvm_assign_device(struct kvm *kvm,
+>  			goto out_unmap;
+>  	}
+>  
+> -	pdev->dev_flags |= PCI_DEV_FLAGS_ASSIGNED;
+> +	pci_iov_assign_device(pdev);
+>  
+>  	dev_info(&pdev->dev, "kvm assign device\n");
+>  
+> @@ -220,7 +220,7 @@ int kvm_deassign_device(struct kvm *kvm,
+>  
+>  	iommu_detach_device(domain, &pdev->dev);
+>  
+> -	pdev->dev_flags &= ~PCI_DEV_FLAGS_ASSIGNED;
+> +	pci_iov_deassign_device(pdev);
+>  
+>  	dev_info(&pdev->dev, "kvm deassign device\n");
+>  
+
+
+
