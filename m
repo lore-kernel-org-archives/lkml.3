@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932255AbaGKNxj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:53:39 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56172 "EHLO
+	id S1754119AbaGKNoh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:44:37 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56150 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753734AbaGKNol (ORCPT
+	with ESMTP id S1753734AbaGKNof (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:44:41 -0400
-Message-Id: <20140711133707.671837404@linutronix.de>
+	Fri, 11 Jul 2014 09:44:35 -0400
+Message-Id: <20140711133707.310481362@linutronix.de>
 User-Agent: quilt/0.63-1
-Date: Fri, 11 Jul 2014 13:44:40 -0000
+Date: Fri, 11 Jul 2014 13:44:34 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 28/55] time-export-nsecs-to-jiffies.patch
+Subject: [patch 24/55] input: evdev: Use ktime_mono_to_real()
 References: <20140711133623.530368377@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=time-export-nsecs-to-jiffies.patch
+Content-Disposition: inline; filename=input-evdev-use-ktime-mono-to-real.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -26,22 +26,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Convert the monotonic timestamp with ktime_mono_to_real() in
+evdev_events().
+
+In evdev_queue_syn_dropped() we can call either ktime_get() or
+ktime_get_real() depending on the clkid. No point in having two calls
+for CLOCK_REALTIME.
+
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/time/time.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/input/evdev.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-Index: tip/kernel/time/time.c
+Index: tip/drivers/input/evdev.c
 ===================================================================
---- tip.orig/kernel/time/time.c
-+++ tip/kernel/time/time.c
-@@ -757,6 +757,7 @@ unsigned long nsecs_to_jiffies(u64 n)
- {
- 	return (unsigned long)nsecs_to_jiffies64(n);
- }
-+EXPORT_SYMBOL_GPL(nsecs_to_jiffies);
+--- tip.orig/drivers/input/evdev.c
++++ tip/drivers/input/evdev.c
+@@ -108,9 +108,8 @@ static void evdev_queue_syn_dropped(stru
+ 	struct input_event ev;
+ 	ktime_t time;
  
- /*
-  * Add two timespec values and do a safety check for overflow.
+-	time = ktime_get();
+-	if (client->clkid != CLOCK_MONOTONIC)
+-		time = ktime_sub(time, ktime_get_monotonic_offset());
++	time = (client->clkid == CLOCK_MONOTONIC) ?
++		ktime_get() : ktime_get_real();
+ 
+ 	ev.time = ktime_to_timeval(time);
+ 	ev.type = EV_SYN;
+@@ -202,7 +201,7 @@ static void evdev_events(struct input_ha
+ 	ktime_t time_mono, time_real;
+ 
+ 	time_mono = ktime_get();
+-	time_real = ktime_sub(time_mono, ktime_get_monotonic_offset());
++	time_real = ktime_mono_to_real(time_mono);
+ 
+ 	rcu_read_lock();
+ 
 
 
