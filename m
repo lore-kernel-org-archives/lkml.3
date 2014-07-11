@@ -1,120 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685AbaGKUbE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 16:31:04 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:41590 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751934AbaGKUbC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 16:31:02 -0400
-Message-ID: <53C049DB.3050904@oracle.com>
-Date: Fri, 11 Jul 2014 16:32:27 -0400
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Daniel Kiper <daniel.kiper@oracle.com>
-CC: linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xenproject.org, andrew.cooper3@citrix.com,
-        david.vrabel@citrix.com, hpa@zytor.com, ian.campbell@citrix.com,
-        jbeulich@suse.com, jeremy@goop.org, konrad.wilk@oracle.com,
-        matt.fleming@intel.com, mingo@redhat.com,
-        stefano.stabellini@eu.citrix.com, tglx@linutronix.de
-Subject: Re: [PATCH 2/2] arch/x86/xen: Silence compiler warnings
-References: <1405108461-3223-1-git-send-email-daniel.kiper@oracle.com> <1405108461-3223-3-git-send-email-daniel.kiper@oracle.com> <53C04322.1050000@oracle.com> <20140711201050.GJ13620@olila.local.net-space.pl>
-In-Reply-To: <20140711201050.GJ13620@olila.local.net-space.pl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1752975AbaGKUcs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 16:32:48 -0400
+Received: from mga02.intel.com ([134.134.136.20]:61432 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752169AbaGKUcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 16:32:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,644,1400050800"; 
+   d="scan'208";a="542196655"
+Subject: [PATCH v4 0/7] crypto: SHA1 multibuffer implementation
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "H. Peter Anvin" <hpa@zytor.com>,
+        "David S.Miller" <davem@davemloft.net>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Cc: Chandramouli Narayanan <mouli@linux.intel.com>,
+        Vinodh Gopal <vinodh.gopal@intel.com>,
+        James Guilford <james.guilford@intel.com>,
+        Wajdi Feghali <wajdi.k.feghali@intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <cover.1405074379.git.tim.c.chen@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 11 Jul 2014 13:32:39 -0700
+Message-ID: <1405110759.2970.649.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 8bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2014 04:10 PM, Daniel Kiper wrote:
-> On Fri, Jul 11, 2014 at 04:03:46PM -0400, Boris Ostrovsky wrote:
->> On 07/11/2014 03:54 PM, Daniel Kiper wrote:
->>> Compiler complains in the following way when x86 32-bit kernel
->>> with Xen support is build:
->>>
->>>    CC      arch/x86/xen/enlighten.o
->>> arch/x86/xen/enlighten.c: In function ‘xen_start_kernel’:
->>> arch/x86/xen/enlighten.c:1726:3: warning: right shift count >= width of type [enabled by default]
->>>
->>> Such line contains following EFI initialization code:
->>>
->>> boot_params.efi_info.efi_systab_hi = (__u32)(__pa(efi_systab_xen) >> 32);
->>>
->>> There is no issue if x86 64-bit kernel is build. However, 32-bit case
->>> generate warning (even if that code will not be executed because Xen
->>> does not work on 32-bit EFI platforms) due to __pa() returning unsigned long
->>> type which has 32-bits width. So move whole EFI initialization stuff
->>> to separate function and build its body conditionally to avoid above
->>> mentioned warning on x86 32-bit architecture.
->>>
->>> Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
->>> ---
->>>   arch/x86/xen/enlighten.c |   35 ++++++++++++++++++++++-------------
->>>   1 file changed, 22 insertions(+), 13 deletions(-)
->>>
->>> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
->>> index bc89647..6abec74 100644
->>> --- a/arch/x86/xen/enlighten.c
->>> +++ b/arch/x86/xen/enlighten.c
->>> @@ -1516,12 +1516,32 @@ static void __init xen_pvh_early_guest_init(void)
->>>   #endif
->>>   }
->>> +static void __init xen_efi_init(void)
->>> +{
->>> +#ifdef CONFIG_XEN_EFI
->>> +	efi_system_table_t *efi_systab_xen;
->>> +
->>> +	efi_systab_xen = xen_efi_probe();
->>> +
->>> +	if (efi_systab_xen == NULL)
->>> +		return;
->>> +
->>> +	strncpy((char *)&boot_params.efi_info.efi_loader_signature, "Xen",
->>> +			sizeof(boot_params.efi_info.efi_loader_signature));
->>> +	boot_params.efi_info.efi_systab = (__u32)__pa(efi_systab_xen);
->>> +	boot_params.efi_info.efi_systab_hi = (__u32)(__pa(efi_systab_xen) >> 32);
->>> +
->>> +	set_bit(EFI_BOOT, &efi.flags);
->>> +	set_bit(EFI_PARAVIRT, &efi.flags);
->>> +	set_bit(EFI_64BIT, &efi.flags);
->>> +#endif
->>> +}
->>> +
->>>   /* First C function to be called on Xen boot */
->>>   asmlinkage __visible void __init xen_start_kernel(void)
->>>   {
->>>   	struct physdev_set_iopl set_iopl;
->>>   	int rc;
->>> -	efi_system_table_t *efi_systab_xen;
->>>   	if (!xen_start_info)
->>>   		return;
->>> @@ -1717,18 +1737,7 @@ asmlinkage __visible void __init xen_start_kernel(void)
->>>   	xen_setup_runstate_info(0);
->>> -	efi_systab_xen = xen_efi_probe();
->>> -
->>> -	if (efi_systab_xen) {
->>> -		strncpy((char *)&boot_params.efi_info.efi_loader_signature, "Xen",
->>> -				sizeof(boot_params.efi_info.efi_loader_signature));
->>> -		boot_params.efi_info.efi_systab = (__u32)__pa(efi_systab_xen);
->>> -		boot_params.efi_info.efi_systab_hi = (__u32)(__pa(efi_systab_xen) >> 32);
->>> -
->>> -		set_bit(EFI_BOOT, &efi.flags);
->>> -		set_bit(EFI_PARAVIRT, &efi.flags);
->>> -		set_bit(EFI_64BIT, &efi.flags);
->>> -	}
->>> +	xen_efi_init();
->> I'd put ifdef CONFIG_XEN_EFI around the call instead of having it
->> inside the routine.
-> Well, I thought about that a bit and I prefer function like Konrad.
-> Could you agree with him which solution do you (as maintainers) prefer?
->
+Herbert,
 
-I am not arguing against having a separate routine. All I am saying is 
-that calling xen_efi_init() when CONFIG_XEN_EFI is not defined doesn't 
-look logical. It will also add an unnecessary call (although compiler 
-may optimize it out).
+I've updated my implementation from v3 to flush the jobs early when cpu goes to idle.
+The flush routine was moved out of the notifier path to the crypto
+thread.  To check that there's no other jobs running, I've added the
+nr_running_cpu function to obtain the information.  I've also cleaned
+up the shash_ahash_mcryptd_digest to mcryptd.c as you have suggested.
+Please note also that a separate bug fix to the crypto scatter gather list walk
+for the null string needs to be incorporated, which I encountered during
+my testing: http://marc.info/?l=linux-crypto-vger&m=140503429412699&w=2
 
--boris
+In this patch series, we introduce the multi-buffer crypto algorithm on
+x86_64 and apply it to SHA1 hash computation.  The multi-buffer technique
+takes advantage of the 8 data lanes in the AVX2 registers and allows
+computation to be performed on data from multiple jobs in parallel.
+This allows us to parallelize computations when data inter-dependency in
+a single crypto job prevents us to fully parallelize our computations.
+The algorithm can be extended to other hashing and encryption schemes
+in the future.
+
+On multi-buffer SHA1 computation with AVX2, we see throughput increase
+up to 2.2x over the existing x86_64 single buffer AVX2 algorithm.
+
+The multi-buffer crypto algorithm is described in the following paper:
+Processing Multiple Buffers in Parallel to Increase Performance on
+Intel® Architecture Processors
+http://www.intel.com/content/www/us/en/communications/communications-ia-multi-buffer-paper.html
+
+The outline of the algorithm is sketched below:
+Any driver requesting the crypto service will place an async crypto
+request on the workqueue.  The multi-buffer crypto daemon will pull
+request from work queue and put each request in an empty data lane for
+multi-buffer crypto computation.  When all the empty lanes are filled,
+computation will commence on the jobs in parallel and the job with the
+shortest remaining buffer will get completed and be returned.  To prevent
+prolonged stall when there is no new jobs arriving, we will flush a
+crypto job if it has not been completed after a maximum allowable delay,
+or when cpu becomes idle and cpu cycles become available.
+
+The multi-buffer algorithm necessitates mapping multiple scatter gather
+buffers to linear addresses simultaneously. The crypto daemon may need
+to sleep and yield the cpu to work on something else from time to time.
+We made a change to not use kmap_atomic to do scatter-gather buffer
+mapping and take advantage of the fact that we can directly translate
+address the buffer's address to its linear address with x86_64.
+To accommodate the fragmented nature of scatter-gather, we will keep
+submitting the next scatter-buffer fragment for a job for multi-buffer
+computation until a job is completed and no more buffer fragments remain.
+At that time we will pull a new job to fill the now empty data slot.
+We call a get_completed_job function to check whether there are other
+jobs that have been completed when we job when we have no new job arrival
+to prevent extraneous delay in returning any completed jobs.
+
+The multi-buffer algorithm should be used for cases where crypto jobs
+submissions are at a reasonable high rate.  For low crypto job submission
+rate, this algorithm will not be beneficial. The reason is at low rate,
+we do not fill out the data lanes before flushing the jobs instead of
+processing them with all the data lanes full.  We will miss the benefit
+of parallel computation, and adding delay to the processing of the crypto
+job at the same time.  Some tuning of the maximum latency parameter may
+be needed to get the best performance.
+
+Note that the tcrypt SHA1 speed test, we wait for a previous job to
+be completed before submitting a new job.  Hence this is not a valid
+test for multi-buffer algorithm as it requires multiple outstanding jobs
+submitted to fill the all data lanes to be effective (i.e. 8 outstanding
+jobs for the AVX2 case).
+
+Feedbacks and testings will be most welcomed.
+
+Tim Chen
+
+Change log:
+v4
+1. Move the early flush of jobs when cpu becomes idle to crypto thread.
+2. Move shash_ahash_mcryptd_digest to mcryptd.c 
+
+v3
+1. Add notifier to multi-buffer algorithm to flush job when the cpu
+goes to idle to take advantage of available cpu cycles. 
+2. Clean up of error messages.
+http://marc.info/?l=linux-crypto-vger&m=140252063401632&w=2
+
+v2
+1. Change the sha1 crypto walk to use the new crypto_ahash_walk
+interface for proper kmap.
+2. Drop the hack that map buffer in crypto_hash_walk without kmap_atomic
+as the new crypto_ahash_walk interface is merged.
+3. Reorganize some
+of the mcryptd hash interface code from ahash.c to mcryptd.c
+http://marc.info/?l=linux-crypto-vger&m=140088627927559&w=2
+
+v1
+refer to: http://www.spinics.net/lists/linux-crypto/msg10993.html
+
+
+Tim Chen (7):
+  crypto: SHA1 multibuffer crypto hash infrastructure
+  crypto: SHA1 multibuffer algorithm data structures
+  crypto: SHA1 multibuffer submit and flush routines for AVX2
+  crypto: SHA1 multibuffer crypto computation (x8 AVX2)
+  crypto: SHA1 multibuffer scheduler
+  sched: add function nr_running_cpu to expose number of tasks running
+    on     cpu
+  crypto: SHA1 multibuffer - flush the jobs early if cpu becomes idle
+
+ arch/x86/crypto/Makefile                         |    2 +
+ arch/x86/crypto/sha-mb/Makefile                  |   11 +
+ arch/x86/crypto/sha-mb/sha1_mb.c                 | 1004 ++++++++++++++++++++++
+ arch/x86/crypto/sha-mb/sha1_mb_mgr_datastruct.S  |  287 +++++++
+ arch/x86/crypto/sha-mb/sha1_mb_mgr_flush_avx2.S  |  327 +++++++
+ arch/x86/crypto/sha-mb/sha1_mb_mgr_init_avx2.c   |   64 ++
+ arch/x86/crypto/sha-mb/sha1_mb_mgr_submit_avx2.S |  228 +++++
+ arch/x86/crypto/sha-mb/sha1_x8_avx2.S            |  472 ++++++++++
+ arch/x86/crypto/sha-mb/sha_mb_ctx.h              |  136 +++
+ arch/x86/crypto/sha-mb/sha_mb_mgr.h              |  110 +++
+ crypto/Kconfig                                   |   30 +
+ crypto/Makefile                                  |    1 +
+ crypto/mcryptd.c                                 |  622 ++++++++++++++
+ include/crypto/internal/hash.h                   |    9 +
+ include/crypto/mcryptd.h                         |  110 +++
+ include/linux/sched.h                            |    1 +
+ kernel/sched/core.c                              |    8 +
+ 17 files changed, 3422 insertions(+)
+ create mode 100644 arch/x86/crypto/sha-mb/Makefile
+ create mode 100644 arch/x86/crypto/sha-mb/sha1_mb.c
+ create mode 100644 arch/x86/crypto/sha-mb/sha1_mb_mgr_datastruct.S
+ create mode 100644 arch/x86/crypto/sha-mb/sha1_mb_mgr_flush_avx2.S
+ create mode 100644 arch/x86/crypto/sha-mb/sha1_mb_mgr_init_avx2.c
+ create mode 100644 arch/x86/crypto/sha-mb/sha1_mb_mgr_submit_avx2.S
+ create mode 100644 arch/x86/crypto/sha-mb/sha1_x8_avx2.S
+ create mode 100644 arch/x86/crypto/sha-mb/sha_mb_ctx.h
+ create mode 100644 arch/x86/crypto/sha-mb/sha_mb_mgr.h
+ create mode 100644 crypto/mcryptd.c
+ create mode 100644 include/crypto/mcryptd.h
+
+-- 
+1.7.11.7
+
+
