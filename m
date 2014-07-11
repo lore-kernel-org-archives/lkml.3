@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754377AbaGKNwR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:52:17 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56200 "EHLO
+	id S1754198AbaGKNos (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:44:48 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56185 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754204AbaGKNot (ORCPT
+	with ESMTP id S1754159AbaGKNoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:44:49 -0400
-Message-Id: <20140711133708.084581358@linutronix.de>
+	Fri, 11 Jul 2014 09:44:46 -0400
+Message-Id: <20140711133707.937311024@linutronix.de>
 User-Agent: quilt/0.63-1
-Date: Fri, 11 Jul 2014 13:44:47 -0000
+Date: Fri, 11 Jul 2014 13:44:44 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>, Arnd Bergmann <arnd@arndb.de>
-Subject: [patch 33/55] powerpc: cell: Use ktime_get_ns()
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [patch 31/55] delayacct: Make accounting nanosecond based
 References: <20140711133623.530368377@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline;
- filename=powerpc-cell-remove-silly-timespec-dance.patch
+Content-Disposition: inline; filename=delayacct-use-ktimet.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -27,126 +26,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace the ever recurring:
-	ts = ktime_get_ts();
-	ns = timespec_to_ns(&ts);
-with
-	ns = ktime_get_ns();
+Kill the timespec juggling and calculate with plain nanoseconds.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/powerpc/platforms/cell/spu_base.c      |   11 +++--------
- arch/powerpc/platforms/cell/spufs/context.c |    4 +---
- arch/powerpc/platforms/cell/spufs/file.c    |    4 +---
- arch/powerpc/platforms/cell/spufs/sched.c   |    4 +---
- 4 files changed, 6 insertions(+), 17 deletions(-)
+ include/linux/sched.h |    4 ++--
+ kernel/delayacct.c    |   34 ++++++++++++----------------------
+ 2 files changed, 14 insertions(+), 24 deletions(-)
 
-Index: tip/arch/powerpc/platforms/cell/spu_base.c
+Index: tip/include/linux/sched.h
 ===================================================================
---- tip.orig/arch/powerpc/platforms/cell/spu_base.c
-+++ tip/arch/powerpc/platforms/cell/spu_base.c
-@@ -611,7 +611,6 @@ static int __init create_spu(void *data)
- 	int ret;
- 	static int number;
- 	unsigned long flags;
--	struct timespec ts;
- 
- 	ret = -ENOMEM;
- 	spu = kzalloc(sizeof (*spu), GFP_KERNEL);
-@@ -652,8 +651,7 @@ static int __init create_spu(void *data)
- 	mutex_unlock(&spu_full_list_mutex);
- 
- 	spu->stats.util_state = SPU_UTIL_IDLE_LOADED;
--	ktime_get_ts(&ts);
--	spu->stats.tstamp = timespec_to_ns(&ts);
-+	spu->stats.tstamp = ktime_get_ns();
- 
- 	INIT_LIST_HEAD(&spu->aff_list);
- 
-@@ -676,7 +674,6 @@ static const char *spu_state_names[] = {
- static unsigned long long spu_acct_time(struct spu *spu,
- 		enum spu_utilization_state state)
- {
--	struct timespec ts;
- 	unsigned long long time = spu->stats.times[state];
- 
- 	/*
-@@ -684,10 +681,8 @@ static unsigned long long spu_acct_time(
- 	 * statistics are not updated.  Apply the time delta from the
- 	 * last recorded state of the spu.
+--- tip.orig/include/linux/sched.h
++++ tip/include/linux/sched.h
+@@ -813,7 +813,7 @@ struct task_delay_info {
+ 	 * associated with the operation is added to XXX_delay.
+ 	 * XXX_delay contains the accumulated delay time in nanoseconds.
  	 */
--	if (spu->stats.util_state == state) {
--		ktime_get_ts(&ts);
--		time += timespec_to_ns(&ts) - spu->stats.tstamp;
--	}
-+	if (spu->stats.util_state == state)
-+		time += ktime_get_ns() - spu->stats.tstamp;
+-	struct timespec blkio_start, blkio_end;	/* Shared by blkio, swapin */
++	u64 blkio_start;	/* Shared by blkio, swapin */
+ 	u64 blkio_delay;	/* wait for sync block io completion */
+ 	u64 swapin_delay;	/* wait for swapin block io completion */
+ 	u32 blkio_count;	/* total count of the number of sync block */
+@@ -821,7 +821,7 @@ struct task_delay_info {
+ 	u32 swapin_count;	/* total count of the number of swapin block */
+ 				/* io operations performed */
  
- 	return time / NSEC_PER_MSEC;
+-	struct timespec freepages_start, freepages_end;
++	u64 freepages_start;
+ 	u64 freepages_delay;	/* wait for memory reclaim */
+ 	u32 freepages_count;	/* total count of memory reclaim */
+ };
+Index: tip/kernel/delayacct.c
+===================================================================
+--- tip.orig/kernel/delayacct.c
++++ tip/kernel/delayacct.c
+@@ -46,32 +46,25 @@ void __delayacct_tsk_init(struct task_st
  }
-Index: tip/arch/powerpc/platforms/cell/spufs/context.c
-===================================================================
---- tip.orig/arch/powerpc/platforms/cell/spufs/context.c
-+++ tip/arch/powerpc/platforms/cell/spufs/context.c
-@@ -36,7 +36,6 @@ atomic_t nr_spu_contexts = ATOMIC_INIT(0
- struct spu_context *alloc_spu_context(struct spu_gang *gang)
- {
- 	struct spu_context *ctx;
--	struct timespec ts;
  
- 	ctx = kzalloc(sizeof *ctx, GFP_KERNEL);
- 	if (!ctx)
-@@ -67,8 +66,7 @@ struct spu_context *alloc_spu_context(st
- 	__spu_update_sched_info(ctx);
- 	spu_set_timeslice(ctx);
- 	ctx->stats.util_state = SPU_UTIL_IDLE_LOADED;
--	ktime_get_ts(&ts);
--	ctx->stats.tstamp = timespec_to_ns(&ts);
-+	ctx->stats.tstamp = ktime_get_ns();
- 
- 	atomic_inc(&nr_spu_contexts);
- 	goto out;
-Index: tip/arch/powerpc/platforms/cell/spufs/file.c
-===================================================================
---- tip.orig/arch/powerpc/platforms/cell/spufs/file.c
-+++ tip/arch/powerpc/platforms/cell/spufs/file.c
-@@ -2338,7 +2338,6 @@ static const char *ctx_state_names[] = {
- static unsigned long long spufs_acct_time(struct spu_context *ctx,
- 		enum spu_utilization_state state)
+ /*
+- * Finish delay accounting for a statistic using
+- * its timestamps (@start, @end), accumalator (@total) and @count
++ * Finish delay accounting for a statistic using its timestamps (@start),
++ * accumalator (@total) and @count
+  */
+-
+-static void delayacct_end(struct timespec *start, struct timespec *end,
+-				u64 *total, u32 *count)
++static void delayacct_end(u64 *start, u64 *total, u32 *count)
  {
 -	struct timespec ts;
- 	unsigned long long time = ctx->stats.times[state];
+-	s64 ns;
++	s64 ns = ktime_get_ns() - *start;
+ 	unsigned long flags;
  
- 	/*
-@@ -2351,8 +2350,7 @@ static unsigned long long spufs_acct_tim
- 	 * of the spu context.
- 	 */
- 	if (ctx->spu && ctx->stats.util_state == state) {
--		ktime_get_ts(&ts);
--		time += timespec_to_ns(&ts) - ctx->stats.tstamp;
-+		time += ktime_get_ns() - ctx->stats.tstamp;
- 	}
+-	ktime_get_ts(end);
+-	ts = timespec_sub(*end, *start);
+-	ns = timespec_to_ns(&ts);
+-	if (ns < 0)
+-		return;
+-
+-	spin_lock_irqsave(&current->delays->lock, flags);
+-	*total += ns;
+-	(*count)++;
+-	spin_unlock_irqrestore(&current->delays->lock, flags);
++	if (ns > 0) {
++		spin_lock_irqsave(&current->delays->lock, flags);
++		*total += ns;
++		(*count)++;
++		spin_unlock_irqrestore(&current->delays->lock, flags);
++	}
+ }
  
- 	return time / NSEC_PER_MSEC;
-Index: tip/arch/powerpc/platforms/cell/spufs/sched.c
-===================================================================
---- tip.orig/arch/powerpc/platforms/cell/spufs/sched.c
-+++ tip/arch/powerpc/platforms/cell/spufs/sched.c
-@@ -1039,13 +1039,11 @@ void spuctx_switch_state(struct spu_cont
+ void __delayacct_blkio_start(void)
  {
- 	unsigned long long curtime;
- 	signed long long delta;
--	struct timespec ts;
- 	struct spu *spu;
- 	enum spu_utilization_state old_state;
- 	int node;
+-	ktime_get_ts(&current->delays->blkio_start);
++	current->delays->blkio_start = ktime_get_ns();
+ }
  
--	ktime_get_ts(&ts);
--	curtime = timespec_to_ns(&ts);
-+	curtime = ktime_get_ns();
- 	delta = curtime - ctx->stats.tstamp;
+ void __delayacct_blkio_end(void)
+@@ -79,12 +72,10 @@ void __delayacct_blkio_end(void)
+ 	if (current->delays->flags & DELAYACCT_PF_SWAPIN)
+ 		/* Swapin block I/O */
+ 		delayacct_end(&current->delays->blkio_start,
+-			&current->delays->blkio_end,
+ 			&current->delays->swapin_delay,
+ 			&current->delays->swapin_count);
+ 	else	/* Other block I/O */
+ 		delayacct_end(&current->delays->blkio_start,
+-			&current->delays->blkio_end,
+ 			&current->delays->blkio_delay,
+ 			&current->delays->blkio_count);
+ }
+@@ -159,13 +150,12 @@ __u64 __delayacct_blkio_ticks(struct tas
  
- 	WARN_ON(!mutex_is_locked(&ctx->state_mutex));
+ void __delayacct_freepages_start(void)
+ {
+-	ktime_get_ts(&current->delays->freepages_start);
++	current->delays->freepages_start = ktime_get_ns();
+ }
+ 
+ void __delayacct_freepages_end(void)
+ {
+ 	delayacct_end(&current->delays->freepages_start,
+-			&current->delays->freepages_end,
+ 			&current->delays->freepages_delay,
+ 			&current->delays->freepages_count);
+ }
 
 
