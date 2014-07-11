@@ -1,71 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180AbaGKJWa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 05:22:30 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:48991 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751638AbaGKJW2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 05:22:28 -0400
+	id S1752029AbaGKJZI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 05:25:08 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42474 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751142AbaGKJZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 05:25:06 -0400
+Date: Fri, 11 Jul 2014 11:24:54 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: Havard Skinnemoen <hskinnemoen@google.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ewout van Bekkum <ewout@google.com>
+Subject: Re: [PATCH 4/6] x86-mce: Add spinlocks to prevent duplicated MCP and
+ CMCI reports.
+Message-ID: <20140711092454.GA17083@pd.tnic>
+References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
+ <1404925766-32253-5-git-send-email-hskinnemoen@google.com>
+ <20140710164151.GA5603@pd.tnic>
+ <CAFQmdRbguE7O16diTNMXMU-3E8Zeu=Y=vcXVHKRyxzbq09TfzQ@mail.gmail.com>
+ <20140710184416.GE5603@pd.tnic>
+ <CA+8MBbKNQEk5UQnVf-G8zeMiYE2FpyztHE6_RoDs3RM_8mrVow@mail.gmail.com>
+ <20140710191224.GF5603@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <CAK5sBcFvPo38LtWAhee0xO=KONM5V-UEDzgjCc=uEXtG32NowA@mail.gmail.com>
-References: <1405069589-10388-1-git-send-email-ch.naveen@samsung.com>
- <1405069589-10388-3-git-send-email-ch.naveen@samsung.com> <CAK5sBcFvPo38LtWAhee0xO=KONM5V-UEDzgjCc=uEXtG32NowA@mail.gmail.com>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Fri, 11 Jul 2014 14:52:07 +0530
-Message-ID: <CAHfPSqCZqefvqe3DZiBN_g1O6mvhTLbJXLikuBw2YiTtVYeBmg@mail.gmail.com>
-Subject: Re: [PATCH 2/4] Documentation: dt-bindings: move exynos-adc.txt to
- more iio/adc/
-To: Sachin Kamat <spk.linux@gmail.com>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-iio@vger.kernel.org,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lars-Peter Clausen <lars@metafoo.de>, cpgs@samsung.com,
-        grundler@chromium.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140710191224.GF5603@pd.tnic>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sachin,
+On Thu, Jul 10, 2014 at 09:12:24PM +0200, Borislav Petkov wrote:
+> I'll think about it more tomorrow - my brain is twisted enough for
+> today. :-)
 
-On 11 July 2014 14:47, Sachin Kamat <spk.linux@gmail.com> wrote:
-> Hi Naveen,
->
-> On Fri, Jul 11, 2014 at 2:36 PM, Naveen Krishna Chatradhi
-> <ch.naveen@samsung.com> wrote:
->> The DT bindings in exynos-adc.txt applies to the ADC
->> driver (exynos-adc.c) developed based on IIO framework.
->>
->> The bindings are more appropriate to be under
->> Documentation/devicetree/bindings/iio/adc/
->>
->> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
->> To: devicetree@vger.kernel.org
->> ---
->>  .../devicetree/bindings/arm/samsung/exynos-adc.txt |   82 --------------------
->>  .../devicetree/bindings/iio/adc/exynos-adc.txt     |   82 ++++++++++++++++++++
->>  2 files changed, 82 insertions(+), 82 deletions(-)
->>  delete mode 100644 Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
->>  create mode 100644 Documentation/devicetree/bindings/iio/adc/exynos-adc.txt
->>
->
-> Tip: For only a file move or rename please use "-M" with git
-> format-patch. That will make the
-> patch concise.
+Ok, new day, new luck. :-)
 
-Sure, Thanks.
->
-> --
-> Regards,
-> Sachin.
+So, following yesterday's discussion, our problem is IMHO that shared
+banks could be read multiple times before they're finally cleared,
+leading to repeated MCE records.
+
+Now, staring at machine_check_poll, the processing is controlled by one
+bit - MCI_STATUS_VAL - which decides what happens next.
+
+So how about we change processing around this one bit: we let only one
+reader access MSR_IA32_MCx_STATUS(i) and clear it right afterwards by
+saving its contents to m.status previously.
+
+Concurrent callers of machine_check_poll will not read the MCI_STATUS
+MSR and since they look at the local copy m.status which is 0, they'll
+go to the next bank.
+
+And this for the cost of a locked CMPXCHG when we have to inc
+poll_reader which should be cheaper than disabling IRQs everytime.
+
+I.e., something like that. Hmm...
+
+---
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-internal.h b/arch/x86/kernel/cpu/mcheck/mce-internal.h
+index 09edd0b65fef..5483b507025a 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce-internal.h
++++ b/arch/x86/kernel/cpu/mcheck/mce-internal.h
+@@ -19,6 +19,7 @@ struct mce_bank {
+ 	unsigned char init;				/* initialise bank? */
+ 	struct device_attribute attr;			/* device attribute */
+ 	char			attrname[ATTR_LEN];	/* attribute name */
++	atomic_t		poll_reader;		/* sync for polled shared banks */
+ };
+ 
+ int mce_severity(struct mce *a, int tolerant, char **msg);
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index bb92f38153b2..443861da86e4 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -609,9 +609,20 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+ 		m.addr = 0;
+ 		m.bank = i;
+ 		m.tsc = 0;
++		m.status = 0;
+ 
+ 		barrier();
+-		m.status = mce_rdmsrl(MSR_IA32_MCx_STATUS(i));
++
++		if (atomic_add_unless(&mce_banks[i].poll_reader, 1, 1)) {
++			m.status = mce_rdmsrl(MSR_IA32_MCx_STATUS(i));
++
++			if (m.status & MCI_STATUS_VAL)
++				/* clear status register for this bank */
++				mce_wrmsrl(MSR_IA32_MCx_STATUS(i), 0);
++
++			atomic_dec(&mce_banks[i].poll_reader);
++		}
++
+ 		if (!(m.status & MCI_STATUS_VAL))
+ 			continue;
+ 
+@@ -637,17 +648,12 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+ 		if (!(flags & MCP_DONTLOG) && !mca_cfg.dont_log_ce)
+ 			mce_log(&m);
+ 
+-		/*
+-		 * Clear state for this bank.
+-		 */
+-		mce_wrmsrl(MSR_IA32_MCx_STATUS(i), 0);
+ 	}
+ 
+ 	/*
+ 	 * Don't clear MCG_STATUS here because it's only defined for
+ 	 * exceptions.
+ 	 */
+-
+ 	sync_core();
+ }
+ EXPORT_SYMBOL_GPL(machine_check_poll);
 
 
 
 -- 
-Shine bright,
-(: Nav :)
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
