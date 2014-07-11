@@ -1,173 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232AbaGKUCF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 16:02:05 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52199 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754456AbaGKUCD (ORCPT
+	id S1755275AbaGKUCQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 16:02:16 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:21420 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755027AbaGKUCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 16:02:03 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Rob Clark <robdclark@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH] clk: qcom: Support bypass RCG configuration
-Date: Fri, 11 Jul 2014 13:01:55 -0700
-Message-Id: <1405108915-19234-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
-In-Reply-To: <1405106207-26638-1-git-send-email-robdclark@gmail.com>
+	Fri, 11 Jul 2014 16:02:15 -0400
+Message-ID: <53C04322.1050000@oracle.com>
+Date: Fri, 11 Jul 2014 16:03:46 -0400
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Daniel Kiper <daniel.kiper@oracle.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, xen-devel@lists.xenproject.org
+CC: andrew.cooper3@citrix.com, david.vrabel@citrix.com, hpa@zytor.com,
+        ian.campbell@citrix.com, jbeulich@suse.com, jeremy@goop.org,
+        konrad.wilk@oracle.com, matt.fleming@intel.com, mingo@redhat.com,
+        stefano.stabellini@eu.citrix.com, tglx@linutronix.de
+Subject: Re: [PATCH 2/2] arch/x86/xen: Silence compiler warnings
+References: <1405108461-3223-1-git-send-email-daniel.kiper@oracle.com> <1405108461-3223-3-git-send-email-daniel.kiper@oracle.com>
+In-Reply-To: <1405108461-3223-3-git-send-email-daniel.kiper@oracle.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the case of HDMI clocks, we want to bypass the RCG's ability
-to divide the output clock and pass through the parent HDMI PLL
-rate through. Add a simple set of clk_ops to configure the RCG to
-do this. This removes the need to keep adding more frequency
-entries to the tv_src clock whenever we want to support a new
-rate.
+On 07/11/2014 03:54 PM, Daniel Kiper wrote:
+> Compiler complains in the following way when x86 32-bit kernel
+> with Xen support is build:
+>
+>    CC      arch/x86/xen/enlighten.o
+> arch/x86/xen/enlighten.c: In function ‘xen_start_kernel’:
+> arch/x86/xen/enlighten.c:1726:3: warning: right shift count >= width of type [enabled by default]
+>
+> Such line contains following EFI initialization code:
+>
+> boot_params.efi_info.efi_systab_hi = (__u32)(__pa(efi_systab_xen) >> 32);
+>
+> There is no issue if x86 64-bit kernel is build. However, 32-bit case
+> generate warning (even if that code will not be executed because Xen
+> does not work on 32-bit EFI platforms) due to __pa() returning unsigned long
+> type which has 32-bits width. So move whole EFI initialization stuff
+> to separate function and build its body conditionally to avoid above
+> mentioned warning on x86 32-bit architecture.
+>
+> Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+> ---
+>   arch/x86/xen/enlighten.c |   35 ++++++++++++++++++++++-------------
+>   1 file changed, 22 insertions(+), 13 deletions(-)
+>
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index bc89647..6abec74 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1516,12 +1516,32 @@ static void __init xen_pvh_early_guest_init(void)
+>   #endif
+>   }
+>   
+> +static void __init xen_efi_init(void)
+> +{
+> +#ifdef CONFIG_XEN_EFI
+> +	efi_system_table_t *efi_systab_xen;
+> +
+> +	efi_systab_xen = xen_efi_probe();
+> +
+> +	if (efi_systab_xen == NULL)
+> +		return;
+> +
+> +	strncpy((char *)&boot_params.efi_info.efi_loader_signature, "Xen",
+> +			sizeof(boot_params.efi_info.efi_loader_signature));
+> +	boot_params.efi_info.efi_systab = (__u32)__pa(efi_systab_xen);
+> +	boot_params.efi_info.efi_systab_hi = (__u32)(__pa(efi_systab_xen) >> 32);
+> +
+> +	set_bit(EFI_BOOT, &efi.flags);
+> +	set_bit(EFI_PARAVIRT, &efi.flags);
+> +	set_bit(EFI_64BIT, &efi.flags);
+> +#endif
+> +}
+> +
+>   /* First C function to be called on Xen boot */
+>   asmlinkage __visible void __init xen_start_kernel(void)
+>   {
+>   	struct physdev_set_iopl set_iopl;
+>   	int rc;
+> -	efi_system_table_t *efi_systab_xen;
+>   
+>   	if (!xen_start_info)
+>   		return;
+> @@ -1717,18 +1737,7 @@ asmlinkage __visible void __init xen_start_kernel(void)
+>   
+>   	xen_setup_runstate_info(0);
+>   
+> -	efi_systab_xen = xen_efi_probe();
+> -
+> -	if (efi_systab_xen) {
+> -		strncpy((char *)&boot_params.efi_info.efi_loader_signature, "Xen",
+> -				sizeof(boot_params.efi_info.efi_loader_signature));
+> -		boot_params.efi_info.efi_systab = (__u32)__pa(efi_systab_xen);
+> -		boot_params.efi_info.efi_systab_hi = (__u32)(__pa(efi_systab_xen) >> 32);
+> -
+> -		set_bit(EFI_BOOT, &efi.flags);
+> -		set_bit(EFI_PARAVIRT, &efi.flags);
+> -		set_bit(EFI_64BIT, &efi.flags);
+> -	}
+> +	xen_efi_init();
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
+I'd put ifdef CONFIG_XEN_EFI around the call instead of having it inside 
+the routine.
 
-On 07/11, Rob Clark wrote:
-> It would probably be better to get rid of the fixed table, which
-> duplicates the set of fixed frequences in the hdmi pll clk (in
-> drm/msm/hdmi).  But I'll leave that as an exercise for someone
-> who knows the clk driver better than myself.  Until then, this
-> trivial fix is useful.
+-boris
 
-Here's a quick attempt at that. Let me know if this works.
-
- drivers/clk/qcom/clk-rcg.c      | 51 +++++++++++++++++++++++++++++++++++------
- drivers/clk/qcom/clk-rcg.h      |  1 +
- drivers/clk/qcom/mmcc-msm8960.c |  9 ++------
- 3 files changed, 47 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/clk/qcom/clk-rcg.c b/drivers/clk/qcom/clk-rcg.c
-index abfc2b675aea..b638c5846dbf 100644
---- a/drivers/clk/qcom/clk-rcg.c
-+++ b/drivers/clk/qcom/clk-rcg.c
-@@ -417,20 +417,25 @@ static long clk_dyn_rcg_determine_rate(struct clk_hw *hw, unsigned long rate,
- 	return _freq_tbl_determine_rate(hw, rcg->freq_tbl, rate, p_rate, p);
- }
- 
--static int clk_rcg_set_rate(struct clk_hw *hw, unsigned long rate,
--			    unsigned long parent_rate)
-+static long clk_rcg_bypass_determine_rate(struct clk_hw *hw, unsigned long rate,
-+		unsigned long *p_rate, struct clk **p)
- {
- 	struct clk_rcg *rcg = to_clk_rcg(hw);
--	const struct freq_tbl *f;
-+	const struct freq_tbl *f = rcg->freq_tbl;
-+
-+	*p = clk_get_parent_by_index(hw->clk, f->src);
-+	*p_rate = __clk_round_rate(*p, rate);
-+
-+	return *p_rate;
-+}
-+
-+static int __clk_rcg_set_rate(struct clk_rcg *rcg, const struct freq_tbl *f)
-+{
- 	u32 ns, md, ctl;
- 	struct mn *mn = &rcg->mn;
- 	u32 mask = 0;
- 	unsigned int reset_reg;
- 
--	f = find_freq(rcg->freq_tbl, rate);
--	if (!f)
--		return -EINVAL;
--
- 	if (rcg->mn.reset_in_cc)
- 		reset_reg = rcg->clkr.enable_reg;
- 	else
-@@ -466,6 +471,27 @@ static int clk_rcg_set_rate(struct clk_hw *hw, unsigned long rate,
- 	return 0;
- }
- 
-+static int clk_rcg_set_rate(struct clk_hw *hw, unsigned long rate,
-+			    unsigned long parent_rate)
-+{
-+	struct clk_rcg *rcg = to_clk_rcg(hw);
-+	const struct freq_tbl *f;
-+
-+	f = find_freq(rcg->freq_tbl, rate);
-+	if (!f)
-+		return -EINVAL;
-+
-+	return __clk_rcg_set_rate(rcg, f);
-+}
-+
-+static int clk_rcg_bypass_set_rate(struct clk_hw *hw, unsigned long rate,
-+				unsigned long parent_rate)
-+{
-+	struct clk_rcg *rcg = to_clk_rcg(hw);
-+
-+	return __clk_rcg_set_rate(rcg, rcg->freq_tbl);
-+}
-+
- static int __clk_dyn_rcg_set_rate(struct clk_hw *hw, unsigned long rate)
- {
- 	struct clk_dyn_rcg *rcg = to_clk_dyn_rcg(hw);
-@@ -503,6 +529,17 @@ const struct clk_ops clk_rcg_ops = {
- };
- EXPORT_SYMBOL_GPL(clk_rcg_ops);
- 
-+const struct clk_ops clk_rcg_bypass_ops = {
-+	.enable = clk_enable_regmap,
-+	.disable = clk_disable_regmap,
-+	.get_parent = clk_rcg_get_parent,
-+	.set_parent = clk_rcg_set_parent,
-+	.recalc_rate = clk_rcg_recalc_rate,
-+	.determine_rate = clk_rcg_bypass_determine_rate,
-+	.set_rate = clk_rcg_bypass_set_rate,
-+};
-+EXPORT_SYMBOL_GPL(clk_rcg_bypass_ops);
-+
- const struct clk_ops clk_dyn_rcg_ops = {
- 	.enable = clk_enable_regmap,
- 	.is_enabled = clk_is_enabled_regmap,
-diff --git a/drivers/clk/qcom/clk-rcg.h b/drivers/clk/qcom/clk-rcg.h
-index b9ec11dfd1b4..ba0523cefd2e 100644
---- a/drivers/clk/qcom/clk-rcg.h
-+++ b/drivers/clk/qcom/clk-rcg.h
-@@ -95,6 +95,7 @@ struct clk_rcg {
- };
- 
- extern const struct clk_ops clk_rcg_ops;
-+extern const struct clk_ops clk_rcg_bypass_ops;
- 
- #define to_clk_rcg(_hw) container_of(to_clk_regmap(_hw), struct clk_rcg, clkr)
- 
-diff --git a/drivers/clk/qcom/mmcc-msm8960.c b/drivers/clk/qcom/mmcc-msm8960.c
-index 12f3c0b64fcd..14eeeba005f3 100644
---- a/drivers/clk/qcom/mmcc-msm8960.c
-+++ b/drivers/clk/qcom/mmcc-msm8960.c
-@@ -1218,12 +1218,7 @@ static const char *mmcc_pxo_hdmi[] = {
- };
- 
- static struct freq_tbl clk_tbl_tv[] = {
--	{  25200000, P_HDMI_PLL, 1, 0, 0 },
--	{  27000000, P_HDMI_PLL, 1, 0, 0 },
--	{  27030000, P_HDMI_PLL, 1, 0, 0 },
--	{  74250000, P_HDMI_PLL, 1, 0, 0 },
--	{ 108000000, P_HDMI_PLL, 1, 0, 0 },
--	{ 148500000, P_HDMI_PLL, 1, 0, 0 },
-+	{  .src = P_HDMI_PLL, .pre_div = 1 },
- 	{ }
- };
- 
-@@ -1254,7 +1249,7 @@ static struct clk_rcg tv_src = {
- 			.name = "tv_src",
- 			.parent_names = mmcc_pxo_hdmi,
- 			.num_parents = 2,
--			.ops = &clk_rcg_ops,
-+			.ops = &clk_rcg_bypass_ops,
- 			.flags = CLK_SET_RATE_PARENT,
- 		},
- 	},
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+>   
+>   	/* Start the world */
+>   #ifdef CONFIG_X86_32
 
