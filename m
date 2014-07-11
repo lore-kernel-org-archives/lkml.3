@@ -1,184 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159AbaGKTWc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 15:22:32 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:64998 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754776AbaGKTWb (ORCPT
+	id S1755189AbaGKTW4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 15:22:56 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:38607 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755170AbaGKTWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 15:22:31 -0400
-From: Ionut Alexa <ionut.m.alexa@gmail.com>
-To: tj@kernel.org
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ionut Alexa <johnnyalexa@yahoo.com>
-Subject: [PATCH] kernel:cgroup :fixed coding style issues
-Date: Fri, 11 Jul 2014 22:23:53 +0300
-Message-Id: <1405106633-7938-1-git-send-email-ionut.m.alexa@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 11 Jul 2014 15:22:54 -0400
+Date: Fri, 11 Jul 2014 15:22:49 -0400
+From: Jerome Glisse <j.glisse@gmail.com>
+To: "Bridgman, John" <John.Bridgman@amd.com>
+Cc: Oded Gabbay <oded.gabbay@gmail.com>, David Airlie <airlied@linux.ie>,
+        "Deucher, Alexander" <Alexander.Deucher@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "Lewycky, Andrew" <Andrew.Lewycky@amd.com>,
+        Joerg Roedel <joro@8bytes.org>, "Gabbay, Oded" <Oded.Gabbay@amd.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Sandeep Nair <sandeep_n@ti.com>,
+        Kenneth Heitke <kheitke@codeaurora.org>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Andreas Noever <andreas.noever@gmail.com>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: Re: [PATCH 09/83] hsa/radeon: Add code base of hsa driver for AMD's
+ GPUs
+Message-ID: <20140711192248.GP1870@gmail.com>
+References: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
+ <1405029027-6085-8-git-send-email-oded.gabbay@amd.com>
+ <20140711170411.GJ1870@gmail.com>
+ <D89D60253BB73A4E8C62F9FD18A939CA01031B37@storexdag02.amd.com>
+ <20140711181053.GK1870@gmail.com>
+ <D89D60253BB73A4E8C62F9FD18A939CA01031C4E@storexdag02.amd.com>
+ <20140711185138.GN1870@gmail.com>
+ <D89D60253BB73A4E8C62F9FD18A939CA01031CAD@storexdag02.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <D89D60253BB73A4E8C62F9FD18A939CA01031CAD@storexdag02.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ionut Alexa <johnnyalexa@yahoo.com>
+On Fri, Jul 11, 2014 at 06:56:12PM +0000, Bridgman, John wrote:
+> >From: Jerome Glisse [mailto:j.glisse@gmail.com]
+> >Sent: Friday, July 11, 2014 2:52 PM
+> >To: Bridgman, John
+> >Cc: Oded Gabbay; David Airlie; Deucher, Alexander; linux-
+> >kernel@vger.kernel.org; dri-devel@lists.freedesktop.org; Lewycky, Andrew;
+> >Joerg Roedel; Gabbay, Oded; Greg Kroah-Hartman; Rafael J. Wysocki; Kishon
+> >Vijay Abraham I; Sandeep Nair; Kenneth Heitke; Srinivas Pandruvada;
+> >Santosh Shilimkar; Andreas Noever; Lucas Stach; Philipp Zabel
+> >Subject: Re: [PATCH 09/83] hsa/radeon: Add code base of hsa driver for
+> >AMD's GPUs
+> >
+> >On Fri, Jul 11, 2014 at 06:46:30PM +0000, Bridgman, John wrote:
+> >> >From: Jerome Glisse [mailto:j.glisse@gmail.com]
+> >> >Sent: Friday, July 11, 2014 2:11 PM
+> >> >To: Bridgman, John
+> >> >Cc: Oded Gabbay; David Airlie; Deucher, Alexander; linux-
+> >> >kernel@vger.kernel.org; dri-devel@lists.freedesktop.org; Lewycky,
+> >> >Andrew; Joerg Roedel; Gabbay, Oded; Greg Kroah-Hartman; Rafael J.
+> >> >Wysocki; Kishon Vijay Abraham I; Sandeep Nair; Kenneth Heitke;
+> >> >Srinivas Pandruvada; Santosh Shilimkar; Andreas Noever; Lucas Stach;
+> >> >Philipp Zabel
+> >> >Subject: Re: [PATCH 09/83] hsa/radeon: Add code base of hsa driver
+> >> >for AMD's GPUs
+> >> >
+> >> >On Fri, Jul 11, 2014 at 06:02:39PM +0000, Bridgman, John wrote:
+> >> >> >From: Jerome Glisse [mailto:j.glisse@gmail.com]
+> >> >> >Sent: Friday, July 11, 2014 1:04 PM
+> >> >> >To: Oded Gabbay
+> >> >> >Cc: David Airlie; Deucher, Alexander;
+> >> >> >linux-kernel@vger.kernel.org;
+> >> >> >dri- devel@lists.freedesktop.org; Bridgman, John; Lewycky, Andrew;
+> >> >> >Joerg Roedel; Gabbay, Oded; Greg Kroah-Hartman; Rafael J. Wysocki;
+> >> >> >Kishon Vijay Abraham I; Sandeep Nair; Kenneth Heitke; Srinivas
+> >> >> >Pandruvada; Santosh Shilimkar; Andreas Noever; Lucas Stach;
+> >> >> >Philipp Zabel
+> >> >> >Subject: Re: [PATCH 09/83] hsa/radeon: Add code base of hsa driver
+> >> >> >for AMD's GPUs
+> >> >> >
+> >> >> >On Fri, Jul 11, 2014 at 12:50:09AM +0300, Oded Gabbay wrote:
+> >> >> >> This patch adds the code base of the hsa driver for AMD's GPUs.
+> >> >> >>
+> >> >> >> This driver is called kfd.
+> >> >> >>
+> >> >> >> This initial version supports the first HSA chip, Kaveri.
+> >> >> >>
+> >> >> >> This driver is located in a new directory structure under drivers/gpu.
+> >> >> >>
+> >> >> >> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+> >> >> >
+> >> >> >There is too coding style issues. While we have been lax on the
+> >> >> >enforcing the scripts/checkpatch.pl rules i think there is a limit
+> >> >> >to that. I am not strict on the 80chars per line but others things
+> >> >> >needs fixing
+> >> >so we stay inline.
+> >> >> >
+> >> >> >Also i am a bit worried about the license, given top comment in
+> >> >> >each of the files i am not sure this is GPL2 compatible. I would
+> >> >> >need to ask lawyer to review that.
+> >> >> >
+> >> >>
+> >> >> Hi Jerome,
+> >> >>
+> >> >> Which line in the license are you concerned about ? In theory we're
+> >> >> using
+> >> >the same license as the initial code pushes for radeon, and I just
+> >> >did a side-by side compare with the license header on cik.c in the
+> >> >radeon tree and confirmed that the two licenses are identical.
+> >> >>
+> >> >> The cik.c header has an additional "Authors:" line which the kfd
+> >> >> files do
+> >> >not, but AFAIK that is not part of the license text proper.
+> >> >>
+> >> >
+> >> >You can not claim GPL if you want to use this license. radeon is
+> >> >weird best for historical reasons as we wanted to share code with BSD
+> >> >thus it is dual licensed and this is reflected with :
+> >> >MODULE_LICENSE("GPL and additional rights");
+> >> >
+> >> >inside radeon_drv.c
+> >> >
+> >> >So if you want to have MODULE_LICENSE(GPL) then you should have
+> >> >header that use the GPL license wording and no wording from BSD like
+> >license.
+> >> >Otherwise change the MODULE_LICENSE and it would also be good to say
+> >> >dual licensed at top of each files (or least next to each license) so
+> >> >that it is clear this is BSD & GPL license.
+> >>
+> >> Got it. Missed that we had a different MODULE_LICENSE.
+> >>
+> >> Since the goal is license compatibility with radeon so we can update the
+> >interface and move code between the drivers in future I guess my
+> >preference would be to update MODULE_LICENSE in the kfd code to "GPL and
+> >additional rights", do you think that would be OK ?
+> >
+> >I am not a lawyer and nothing that i said should be considered as legal advice
+> >(on the contrary ;)) I think you need to be more clear with each license to
+> >clear says GPLv2 or BSD ie dual licensed but the dual license is a beast you
+> >would definitly want to talk to lawyer about.
+> 
+> Yeah, dual license seems horrid in its implications for developers so we've always tried to avoid it. GPL hurts us for porting to other OSes so the X11 / "GPL with additional rights" combo seemed like the ideal solution and we made it somewhat of a corporate standard. Hope that doesn't come back to haunt us. 
+> 
+> Meditate on this I will. Thanks !
 
-Fixed coding style issues.
+Just to be explicit, my point is that is you claim GPL in MODULE_LICENSE
+then this is a GPL licensed code, if you claim GPL with additional rights
+than this is dual licensed code. This is how i read and interpret this
+with additional rights. In all the case the radeon code is considered
+dual license ie GPL+BSD (at least this is how i consider that code).
 
-Signed-off-by: Ionut Alexa <johnnyalexa@yahoo.com>
----
- kernel/cgroup.c |   36 ++++++++++++++++++++++--------------
- 1 file changed, 22 insertions(+), 14 deletions(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 70776ae..fb6a4fd 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -83,8 +83,8 @@
-  */
- #ifdef CONFIG_PROVE_RCU
- DEFINE_MUTEX(cgroup_mutex);
--DECLARE_RWSEM(css_set_rwsem);
- EXPORT_SYMBOL_GPL(cgroup_mutex);
-+DECLARE_RWSEM(css_set_rwsem);
- EXPORT_SYMBOL_GPL(css_set_rwsem);
- #else
- static DEFINE_MUTEX(cgroup_mutex);
-@@ -106,7 +106,7 @@ static DEFINE_SPINLOCK(release_agent_path_lock);
- #define cgroup_assert_mutex_or_rcu_locked()				\
- 	rcu_lockdep_assert(rcu_read_lock_held() ||			\
- 			   lockdep_is_held(&cgroup_mutex),		\
--			   "cgroup_mutex or RCU read lock required");
-+			   "cgroup_mutex or RCU read lock required")
- 
- /*
-  * cgroup destruction makes heavy use of work items and there can be a lot
-@@ -123,15 +123,17 @@ static struct workqueue_struct *cgroup_destroy_wq;
- static struct workqueue_struct *cgroup_pidlist_destroy_wq;
- 
- /* generate an array of cgroup subsystem pointers */
--#define SUBSYS(_x) [_x ## _cgrp_id] = &_x ## _cgrp_subsys,
-+#define SUBSYS(_x)							\
-+		[_x ## _cgrp_id] = &_x ## _cgrp_subsys,
- static struct cgroup_subsys *cgroup_subsys[] = {
- #include <linux/cgroup_subsys.h>
- };
- #undef SUBSYS
- 
- /* array of cgroup subsystem names */
--#define SUBSYS(_x) [_x ## _cgrp_id] = #_x,
--static const char *cgroup_subsys_name[] = {
-+#define SUBSYS(_x)							\
-+		[_x ## _cgrp_id] = #_x,
-+static const char * const cgroup_subsys_name[] = {
- #include <linux/cgroup_subsys.h>
- };
- #undef SUBSYS
-@@ -1325,6 +1327,7 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
- 			/* Must match [\w.-]+ */
- 			for (i = 0; i < strlen(name); i++) {
- 				char c = name[i];
-+
- 				if (isalnum(c))
- 					continue;
- 				if ((c == '.') || (c == '-') || (c == '_'))
-@@ -1694,7 +1697,7 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 
- 		if (!percpu_ref_tryget_live(&ss->root->cgrp.self.refcnt)) {
- 			mutex_unlock(&cgroup_mutex);
--			msleep(10);
-+			usleep_range(10000, 11000);
- 			ret = restart_syscall();
- 			goto out_free;
- 		}
-@@ -1758,7 +1761,7 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 			mutex_unlock(&cgroup_mutex);
- 			if (!IS_ERR_OR_NULL(pinned_sb))
- 				deactivate_super(pinned_sb);
--			msleep(10);
-+			usleep_range(10000, 11000);
- 			ret = restart_syscall();
- 			goto out_free;
- 		}
-@@ -2191,7 +2194,7 @@ static int cgroup_migrate(struct cgroup *cgrp, struct task_struct *leader,
- 		if (list_empty(&cset->mg_dst_cset->mg_node))
- 			list_move_tail(&cset->mg_dst_cset->mg_node,
- 				       &tset.dst_csets);
--	next:
-+next:
- 		if (!threadgroup)
- 			break;
- 	} while_each_thread(leader, task);
-@@ -2764,6 +2767,7 @@ err_undo_css:
- 
- 		cgroup_for_each_live_child(child, cgrp) {
- 			struct cgroup_subsys_state *css = cgroup_css(child, ss);
-+
- 			if (css)
- 				kill_css(css);
- 		}
-@@ -2800,12 +2804,16 @@ static ssize_t cgroup_file_write(struct kernfs_open_file *of, char *buf,
- 
- 	if (cft->write_u64) {
- 		unsigned long long v;
-+
- 		ret = kstrtoull(buf, 0, &v);
-+
- 		if (!ret)
- 			ret = cft->write_u64(css, cft, v);
- 	} else if (cft->write_s64) {
- 		long long v;
-+
- 		ret = kstrtoll(buf, 0, &v);
-+
- 		if (!ret)
- 			ret = cft->write_s64(css, cft, v);
- 	} else {
-@@ -3954,6 +3962,7 @@ static void *cgroup_pidlist_start(struct seq_file *s, loff_t *pos)
- 
- 		while (index < end) {
- 			int mid = (index + end) / 2;
-+
- 			if (cgroup_pid_fry(cgrp, l->list[mid]) == pid) {
- 				index = mid;
- 				break;
-@@ -4682,7 +4691,7 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss, bool early)
- {
- 	struct cgroup_subsys_state *css;
- 
--	printk(KERN_INFO "Initializing cgroup subsys %s\n", ss->name);
-+	pr_info("Initializing cgroup subsys %s\n", ss->name);
- 
- 	mutex_lock(&cgroup_mutex);
- 
-@@ -4736,8 +4745,8 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss, bool early)
-  */
- int __init cgroup_init_early(void)
- {
--	static struct cgroup_sb_opts __initdata opts =
--		{ .flags = CGRP_ROOT_SANE_BEHAVIOR };
-+	static struct cgroup_sb_opts opts __initdata =	{
-+		.flags = CGRP_ROOT_SANE_BEHAVIOR };
- 	struct cgroup_subsys *ss;
- 	int i;
- 
-@@ -5195,8 +5204,7 @@ static int __init cgroup_disable(char *str)
- 		for_each_subsys(ss, i) {
- 			if (!strcmp(token, ss->name)) {
- 				ss->disabled = 1;
--				printk(KERN_INFO "Disabling %s control group"
--					" subsystem\n", ss->name);
-+				pr_info("Disabling %s control group subsystem\n", ss->name);
- 				break;
- 			}
- 		}
-@@ -5350,7 +5358,7 @@ static int cgroup_css_links_read(struct seq_file *seq, void *v)
- 			seq_printf(seq, "  task %d\n", task_pid_vnr(task));
- 		}
- 		continue;
--	overflow:
-+overflow:
- 		seq_puts(seq, "  ...\n");
- 	}
- 	up_read(&css_set_rwsem);
--- 
-1.7.10.4
-
+Cheers,
+Jérôme
