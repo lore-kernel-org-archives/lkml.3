@@ -1,78 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599AbaGKNJy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:09:54 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60022 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752892AbaGKNJx (ORCPT
+	id S1753695AbaGKNLb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:11:31 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:46389 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753373AbaGKNLa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:09:53 -0400
-Date: Fri, 11 Jul 2014 14:09:01 +0100
-From: Mark Brown <broonie@kernel.org>
-To: James Ban <james.ban.opensource@diasemi.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        Support Opensource <support.opensource@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
-Message-ID: <20140711130901.GS30458@sirena.org.uk>
-References: <201407110248.s6B2mRIU038328@krsrvapps-01.diasemi.com>
+	Fri, 11 Jul 2014 09:11:30 -0400
+Date: Fri, 11 Jul 2014 16:11:04 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>,
+        OSUOSL Drivers <devel@driverdev.osuosl.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        kernel-janitors@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dcb314@hotmail.com
+Subject: Re: [PATCH] drivers/staging/comedi/drivers/ni_atmio16d.c: remove
+ pointless condition
+Message-ID: <20140711131104.GY25880@mwanda>
+References: <1405073603-21468-1-git-send-email-andrey.krieger.utkin@gmail.com>
+ <53BFD1FF.20309@mev.co.uk>
+ <CANZNk82rsdbg+zQGQODmNMpScaHZiZ8MeooGWabWZPGwzErCyQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zvf7DYrKnARJlhgd"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201407110248.s6B2mRIU038328@krsrvapps-01.diasemi.com>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 188.29.165.240
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V5] regulator: DA9211 : new regulator driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <CANZNk82rsdbg+zQGQODmNMpScaHZiZ8MeooGWabWZPGwzErCyQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 11, 2014 at 03:30:15PM +0300, Andrey Utkin wrote:
+> 2014-07-11 15:01 GMT+03:00 Ian Abbott <abbotti@mev.co.uk>:
+> > On 2014-07-11 11:13, Andrey Utkin wrote:
+> >>
+> >> The issue was discovered with static analysis and has two instances in
+> >> this file. The code looks like this
+> >> if (x < 65536000) {
+> >>         ...
+> >> } else if (x < 655360000) {
+> >>         ...
+> >> } else if (x <= 0xffffffff /* 6553600000 */) {
+> >>         ...
+> >> } else if (x <= 0xffffffff /* 65536000000 */) {
+> >>         ...
+> >> }
+> >>
+> >> The meaning of this block is to select appropriate clock frequency for
+> >> interval timer basing on "x", which is amount of time.
+> >>
+> >> Notes:
+> >> 1. That last condition matches previous one - that's the issue.
+> >> 2. Decimal numbers in comments don't match hex numbers in expressions.
+> >> But in first case the numbers have same order, while in the second case
+> >> the hex number is the same, and the decimal one is 10 times bigger.
+> >> 3. Actually type of "x" is "unsigned int", so its exact upper limit is
+> >> not obviously known.
+> >> 4. There's no "else" block.
+> >>
+> >> So it makes sense to make an "else" block from last "else if" case. The
+> >> code inside the block seems correct for such usage.
+> >>
+> >> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=79871
+> >> Reported-by: David Binderman <dcb314@hotmail.com>
+> >> Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+> >> ---
+> >>   drivers/staging/comedi/drivers/ni_atmio16d.c | 4 ++--
+> >>   1 file changed, 2 insertions(+), 2 deletions(-)
+> >>
+> >> diff --git a/drivers/staging/comedi/drivers/ni_atmio16d.c
+> >> b/drivers/staging/comedi/drivers/ni_atmio16d.c
+> >> index 6ad27f5..895b56d 100644
+> >> --- a/drivers/staging/comedi/drivers/ni_atmio16d.c
+> >> +++ b/drivers/staging/comedi/drivers/ni_atmio16d.c
+> >> @@ -338,7 +338,7 @@ static int atmio16d_ai_cmd(struct comedi_device *dev,
+> >>         } else if (cmd->convert_arg <= 0xffffffff /* 6553600000 */) {
+> >>                 base_clock = CLOCK_10_KHZ;
+> >>                 timer = cmd->convert_arg / 100000;
+> >> -       } else if (cmd->convert_arg <= 0xffffffff /* 65536000000 */) {
+> >> +       } else {
+> >>                 base_clock = CLOCK_1_KHZ;
+> >>                 timer = cmd->convert_arg / 1000000;
+> >>         }
+> >
+> >
+> > Since 0xffffffff is the maximum value 'cmd->convert_arg' can be,
+> 
+> Could you please substantiate this? I see that convert_arg has type
+> "unsigned int" which may be 8 bytes on 64-bit platform.
 
---zvf7DYrKnARJlhgd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+No.  On linux unsigned int is always 32 bits.
 
-On Fri, Jul 11, 2014 at 11:30:58AM +0900, James Ban wrote:
+regards,
+dan carpenter
 
-> +	if (chip->chip_irq != 0) {
-> +		ret = devm_request_threaded_irq(chip->dev, chip->chip_irq, NULL,
-> +					da9211_irq_handler,
-> +					IRQF_TRIGGER_LOW|IRQF_ONESHOT,
-> +					"da9211", chip);
-> +		if (ret != 0) {
-> +			dev_err(chip->dev, "Failed to request IRQ: %d\n",
-> +				chip->chip_irq);
-> +			return ret;
-> +		}
-> +		dev_info(chip->dev, "# IRQ configured [%d]\n", chip->chip_irq);
 
-As previously noted please remove this print, it's not adding anything.
-
---zvf7DYrKnARJlhgd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTv+HqAAoJELSic+t+oim9sQEP/1i85HvVN/S1fg/0THS3JY26
-DFoA0EjptpyqNg/d3pkH5hE0MwActHpCpDDx3fWeu0Hv/ri+EQMdIMoEpzN9urnt
-vFsmrYmexUIH7Y/0iQN5aQZa6g+wGoYdxF6a2C+lzvTi3pz5Gllx9a25Ve9O7zjs
-a1Q5Tx/U02/iv9nHBi7lRLetpUdn9ZEvx4jRD+xZthKKLU+p4AaX/9bnZd/NYur2
-SbHb+FEBOnR8faYM8P6zZ3MUdmXSz+A6rky1uDJPK4msmUPXPDDmEU57g4NsiAHv
-Fckf0bIdrWUCzu0gc5S01ofZl1O2ieIvjjGm9HbiQOk33z4xxemshKKXbXAZUtJx
-vPXkbeQkTvg19DdfhC1Hlg3xmpaEDFltXYAV2cJew4CJ2DH8V9uti/UEA1R0JpSZ
-a9DMNQrYS6tczDrnB44eBgsNOdfY3qQDKc2B0/MEizjP4j9rbxSL6lgCz48nFyU5
-rZVtEfHyxBC8hJHfF/CQ8mVu3weWkVnii3t5RjrOO1u1g8ngqoCqAVjFoHzUlptt
-boU7wo0XiHF7ow9uEeuIEvqIdDdCdAuhJq3P7v2GRxL4vaYy/t9luIyAQZhbjhuu
-ZiDdkX4i73dQ5bp64sclCSe21DlbdDiTetd16IiU97tNr/bO3sYJaZ8hJ/POEgLQ
-jsXhwZmuFbXI+8/SVZga
-=9j3j
------END PGP SIGNATURE-----
-
---zvf7DYrKnARJlhgd--
