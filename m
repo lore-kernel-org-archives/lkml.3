@@ -1,70 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276AbaGKP3L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 11:29:11 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:16103 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753894AbaGKP3H (ORCPT
+	id S1754279AbaGKPaO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 11:30:14 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:53908 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753010AbaGKPaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 11:29:07 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 11 Jul 2014 08:21:58 -0700
-Message-ID: <53C002BE.90805@nvidia.com>
-Date: Fri, 11 Jul 2014 18:29:02 +0300
-From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 11 Jul 2014 11:30:12 -0400
+Date: Fri, 11 Jul 2014 11:30:10 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>, linux-kernel@vger.kernel.org,
+        dipankar@in.ibm.com
+Subject: Re: [PATCH] rcu: define tracepoint strings only if CONFIG_TRACING
+ is set
+Message-ID: <20140711113010.4ca2c8d9@gandalf.local.home>
+In-Reply-To: <20140711151239.GJ16041@linux.vnet.ibm.com>
+References: <1405078692-29957-1-git-send-email-ard.biesheuvel@linaro.org>
+	<20140711151239.GJ16041@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 12/13] cpufreq: Add cpufreq driver for Tegra124
-References: <1405028569-14253-1-git-send-email-ttynkkynen@nvidia.com> <1405028569-14253-13-git-send-email-ttynkkynen@nvidia.com> <CAKohpom9ORXFiUU4=V+CxgN0ZOFLMEhEjHiU8HsYUYDybNXgHQ@mail.gmail.com> <20140711091207.GY23218@tbergstrom-lnx.Nvidia.com> <20140711145735.GB6523@ulmo> <53BFFEAD.7000405@nvidia.com> <20140711151501.GA25810@ulmo>
-In-Reply-To: <20140711151501.GA25810@ulmo>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 11 Jul 2014 08:12:40 -0700
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+
+> On Fri, Jul 11, 2014 at 01:38:12PM +0200, Ard Biesheuvel wrote:
+> > Commit f7f7bac9cb1c ("rcu: Have the RCU tracepoints use the tracepoint_string
+> > infrastructure") unconditionally populates the __tracepoint_str input section,
+> > but this section is not assigned an output section if CONFIG_TRACING is not set.
+> > This results in the __tracepoint_str turning up in unexpected places, i.e.,
+> > after _edata.
+> > 
+> > Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+> > Cc: rostedt@goodmis.org
+> > Cc: dipankar@in.ibm.com
+> > Cc: paulmck@linux.vnet.ibm.com
+> 
+> If you get a Reviewed-by from Steven Rostedt, I will be happy to queue
+> this one.
+
+I'm fine with it, but it should add a comment.
 
 
-On 11/07/14 18:15, Thierry Reding wrote:
-> * PGP Signed by an unknown key
->
-> On Fri, Jul 11, 2014 at 06:11:41PM +0300, Tuomas Tynkkynen wrote:
->> On 11/07/14 17:57, Thierry Reding wrote:
->>
->>>> I don't think that's going to work? The voltage scaling is handled in hw.
->>>
->>> Do we have to handle it in hardware or can we opt to do it in software,
->>> too?
->>>
->>
->> With the PLLX, voltage scaling is done entirely in SW. With the DFLL,
->> it's possible to stay in open-loop mode and do it in SW, but there's
->> not much point in that.
->
-> It's kind of ugly how we need to pass the address of the PMU and the
-> offset of the voltage control register to the DFLL which will then
-> initiate I2C transactions itself. I'm wondering if that plays well with
-> the I2C traffic originating from within the kernel.
->
+> 
+> 							Thanx, Paul
+> 
+> > ---
+> >  kernel/rcu/tree.c | 9 ++++++++-
+> >  1 file changed, 8 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> > index f1ba77363fbb..ac1984149eb5 100644
+> > --- a/kernel/rcu/tree.c
+> > +++ b/kernel/rcu/tree.c
+> > @@ -79,9 +79,16 @@ static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
+> >   * the tracing userspace tools to be able to decipher the string
+> >   * address to the matching string.
+> >   */
+> > +#ifdef CONFIG_TRACING
 
-On the hardware level, the two I2C controllers sharing the same pins
-have knowledge of each other and won't start transmitting if the bus
-is busy (something different from the usual I2C arbitration, that is).
-I guess on the kernel side there could be a problem if the voltage 
-register is marked cached in the PMIC driver's regmap.
+/*
+ * When tracing is enabled, DEFINE_TPS() will export the string to
+ * userspace via the tracing debugfs directory. This allows userspace
+ * tools to read the binary tracepoints that reference the pointer
+ * to the string and not the string itself.
+ */
 
--- 
-nvpublic
+
+> > +#define DEFINE_TPS(sname) \
+> > +static const char *tp_##sname##_varname __used __tracepoint_string = sname##_varname;
+> > +#else
+> > +#define DEFINE_TPS(sname)
+> > +#endif
+
+Also, perhaps we should call it:
+
+ DEFINE_RCU_TPS()
+
+Other than that, I'm fine with the patch.
+
+I'll review v2 ;-)
+
+-- Steve
+
+> > +
+> >  #define RCU_STATE_INITIALIZER(sname, sabbr, cr) \
+> >  static char sname##_varname[] = #sname; \
+> > -static const char *tp_##sname##_varname __used __tracepoint_string = sname##_varname; \
+> > +DEFINE_TPS(sname) \
+> >  struct rcu_state sname##_state = { \
+> >  	.level = { &sname##_state.node[0] }, \
+> >  	.call = cr, \
+> > -- 
+> > 1.8.3.2
+> > 
+
