@@ -1,292 +1,322 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525AbaGKUxw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 16:53:52 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:55174 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751705AbaGKUxt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 16:53:49 -0400
-Message-ID: <53C04ED9.6030508@codeaurora.org>
-Date: Fri, 11 Jul 2014 13:53:45 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Georgi Djakov <gdjakov@mm-sol.com>
-CC: mturquette@linaro.org, linux@arm.linux.org.uk, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v1] clk: qcom: Add APQ8084 Multimedia Clock Controller
- (MMCC) support
-References: <1402591302-12100-1-git-send-email-gdjakov@mm-sol.com>
-In-Reply-To: <1402591302-12100-1-git-send-email-gdjakov@mm-sol.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753817AbaGKUyQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 16:54:16 -0400
+Received: from seketeli.net ([94.23.218.202]:58759 "EHLO ms.seketeli.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752035AbaGKUyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 16:54:14 -0400
+From: Apelete Seketeli <apelete@seketeli.net>
+To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Alex Smith <alex.smith@imgtec.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        linux-mmc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH v4] mmc: jz4740: add dma infrastructure for data transfers
+Date: Fri, 11 Jul 2014 22:54:49 +0200
+Message-Id: <1405112089-17500-2-git-send-email-apelete@seketeli.net>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1405112089-17500-1-git-send-email-apelete@seketeli.net>
+References: <1405112089-17500-1-git-send-email-apelete@seketeli.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/14 09:41, Georgi Djakov wrote:
-> Add support for the multimedia clock controller found on the APQ8084
-> based platforms. This will allow the multimedia device drivers to
-> control their clocks.
->
-> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
-> ---
+Until now the MMC driver for JZ4740 SoC was relying on PIO mode only
+for data transfers.
+This patch allows the use of DMA for data trasnfers in addition to PIO
+mode by relying on DMA Engine.
 
-I started picking up the qcom clock patches from the list. I see that
-this one has a small problem though:
+DMA tranfers performance might be further improved by taking advantage
+of the asynchronous request capability of the MMC framework.
 
-drivers/clk/qcom/mmcc-apq8084.c:169:10: warning: Initializer entry
-defined twice
-drivers/clk/qcom/mmcc-apq8084.c:170:10:   also defined here
-drivers/clk/qcom/mmcc-apq8084.c:185:10: warning: Initializer entry
-defined twice
-drivers/clk/qcom/mmcc-apq8084.c:187:10:   also defined here
-drivers/clk/qcom/mmcc-apq8084.c:203:10: warning: Initializer entry
-defined twice
-drivers/clk/qcom/mmcc-apq8084.c:205:10:   also defined here
+Signed-off-by: Apelete Seketeli <apelete@seketeli.net>
+---
+ drivers/mmc/host/jz4740_mmc.c |  174 +++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 166 insertions(+), 8 deletions(-)
 
-> diff --git a/drivers/clk/qcom/mmcc-apq8084.c b/drivers/clk/qcom/mmcc-apq8084.c
-> new file mode 100644
-> index 0000000..9cc956a
-> --- /dev/null
-> +++ b/drivers/clk/qcom/mmcc-apq8084.c
-> @@ -0,0 +1,3352 @@
-> +/*
-> + * Copyright (c) 2014, The Linux Foundation. All rights reserved.
-> + *
-> + * This software is licensed under the terms of the GNU General Public
-> + * License version 2, as published by the Free Software Foundation, and
-> + * may be copied, distributed, and modified under those terms.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/module.h>
-> +#include <linux/regmap.h>
-> +#include <linux/reset-controller.h>
-> +
-> +#include <dt-bindings/clock/qcom,mmcc-apq8084.h>
-> +#include <dt-bindings/reset/qcom,mmcc-apq8084.h>
-> +
-> +#include "common.h"
-> +#include "clk-regmap.h"
-> +#include "clk-pll.h"
-> +#include "clk-rcg.h"
-> +#include "clk-branch.h"
-> +#include "reset.h"
-> +
-> +#define P_XO		0
-> +#define P_MMPLL0	1
-> +#define P_EDPLINK	1
-> +#define P_MMPLL1	2
-> +#define P_HDMIPLL	2
-> +#define P_GPLL0		3
-> +#define P_EDPVCO	3
-> +#define P_MMPLL4	3
-
-Seems that these are shared in the same parent map table. I'm not sure
-the best way to fix this yet because it's pretty annoying to come up
-with an optimal order. Maybe the whole scheme should be thrown out and
-we should just loop over the parent map looking for a particular enum
-value, and then have that enum map to the actual register value. We lose
-the direct indexing into the array, but it sure makes things a lot
-easier and avoids this whole mess.
-
-> +#define P_GPLL1		4
-> +#define P_DSI0PLL	4
-> +#define P_DSI0PLL_BYTE	4
-> +#define P_MMPLL2	4
-> +#define P_MMPLL3	4
-> +#define P_DSI1PLL	5
-> +#define P_DSI1PLL_BYTE	5
-> +#define P_MMSLEEP	6
-> +
-> +static const u8 mmcc_xo_mmpll0_mmpll1_gpll0_map[] = {
-> +	[P_XO]		= 0,
-> +	[P_MMPLL0]	= 1,
-> +	[P_MMPLL1]	= 2,
-> +	[P_GPLL0]	= 5,
-> +};
-> +
-> +static const char *mmcc_xo_mmpll0_mmpll1_gpll0[] = {
-> +	"xo",
-> +	"mmpll0_vote",
-> +	"mmpll1_vote",
-> +	"mmss_gpll0_vote",
-> +};
-> +
-> +static const u8 mmcc_xo_mmpll0_dsi_hdmi_gpll0_map[] = {
-> +	[P_XO]		= 0,
-> +	[P_MMPLL0]	= 1,
-> +	[P_HDMIPLL]	= 4,
-> +	[P_GPLL0]	= 5,
-> +	[P_DSI0PLL]	= 2,
-> +	[P_DSI1PLL]	= 3,
-> +};
-> +
-> +static const char *mmcc_xo_mmpll0_dsi_hdmi_gpll0[] = {
-> +	"xo",
-> +	"mmpll0_vote",
-> +	"hdmipll",
-> +	"mmss_gpll0_vote",
-> +	"dsi0pll",
-> +	"dsi1pll",
-> +};
-> +
-> +static const u8 mmcc_xo_mmpll0_1_2_gpll0_map[] = {
-> +	[P_XO]		= 0,
-> +	[P_MMPLL0]	= 1,
-> +	[P_MMPLL1]	= 2,
-> +	[P_GPLL0]	= 5,
-> +	[P_MMPLL2]	= 3,
-> +};
-> +
-> +static const char *mmcc_xo_mmpll0_1_2_gpll0[] = {
-> +	"xo",
-> +	"mmpll0_vote",
-> +	"mmpll1_vote",
-> +	"mmss_gpll0_vote",
-> +	"mmpll2",
-> +};
-> +
-> +static const u8 mmcc_xo_mmpll0_1_3_gpll0_map[] = {
-> +	[P_XO]		= 0,
-> +	[P_MMPLL0]	= 1,
-> +	[P_MMPLL1]	= 2,
-> +	[P_GPLL0]	= 5,
-> +	[P_MMPLL3]	= 3,
-> +};
-> +
-> +static const char *mmcc_xo_mmpll0_1_3_gpll0[] = {
-> +	"xo",
-> +	"mmpll0_vote",
-> +	"mmpll1_vote",
-> +	"mmss_gpll0_vote",
-> +	"mmpll3",
-> +};
-> +
-> +static const u8 mmcc_xo_dsi_hdmi_edp_map[] = {
-> +	[P_XO]		= 0,
-> +	[P_EDPLINK]	= 4,
-> +	[P_HDMIPLL]	= 3,
-> +	[P_EDPVCO]	= 5,
-> +	[P_DSI0PLL]	= 1,
-> +	[P_DSI1PLL]	= 2,
-> +};
-> +
-> +static const char *mmcc_xo_dsi_hdmi_edp[] = {
-> +	"xo",
-> +	"edp_link_clk",
-> +	"hdmipll",
-> +	"edp_vco_div",
-> +	"dsi0pll",
-> +	"dsi1pll",
-> +};
-> +
-> +static const u8 mmcc_xo_dsi_hdmi_edp_gpll0_map[] = {
-> +	[P_XO]		= 0,
-> +	[P_EDPLINK]	= 4,
-> +	[P_HDMIPLL]	= 3,
-> +	[P_GPLL0]	= 5,
-> +	[P_DSI0PLL]	= 1,
-> +	[P_DSI1PLL]	= 2,
-> +};
-> +
-> +static const char *mmcc_xo_dsi_hdmi_edp_gpll0[] = {
-> +	"xo",
-> +	"edp_link_clk",
-> +	"hdmipll",
-> +	"gpll0_vote",
-> +	"dsi0pll",
-> +	"dsi1pll",
-> +};
-> +
-> +static const u8 mmcc_xo_dsibyte_hdmi_edp_gpll0_map[] = {
-> +	[P_XO]			= 0,
-> +	[P_EDPLINK]		= 4,
-> +	[P_HDMIPLL]		= 3,
-> +	[P_GPLL0]		= 5,
-> +	[P_DSI0PLL_BYTE]	= 1,
-> +	[P_DSI1PLL_BYTE]	= 2,
-> +};
-> +
-> +static const char *mmcc_xo_dsibyte_hdmi_edp_gpll0[] = {
-> +	"xo",
-> +	"edp_link_clk",
-> +	"hdmipll",
-> +	"gpll0_vote",
-> +	"dsi0pllbyte",
-> +	"dsi1pllbyte",
-> +};
-> +
-> +static const u8 mmcc_xo_mmpll0_1_4_gpll0_map[] = {
-> +	[P_XO]		= 0,
-> +	[P_MMPLL0]	= 1,
-> +	[P_MMPLL1]	= 2,
-> +	[P_MMPLL4]	= 3,
-> +	[P_GPLL0]	= 5,
-> +};
-> +
-> +static const char *mmcc_xo_mmpll0_1_4_gpll0[] = {
-> +	"xo",
-> +	"mmpll0",
-> +	"mmpll1",
-> +	"mmpll4",
-> +	"gpll0",
-> +};
-> +
-> +static const u8 mmcc_xo_mmpll0_1_4_gpll1_0_map[] = {
-> +	[P_XO]		= 0,
-> +	[P_MMPLL0]	= 1,
-> +	[P_MMPLL1]	= 2,
-> +	[P_MMPLL4]	= 3,
-> +	[P_GPLL1]	= 4,
-> +	[P_GPLL0]	= 5,
-> +};
-> +
-> +static const char *mmcc_xo_mmpll0_1_4_gpll1_0[] = {
-> +	"xo",
-> +	"mmpll0",
-> +	"mmpll1",
-> +	"mmpll4",
-> +	"gpll1",
-> +	"gpll0",
-> +};
-> +
-> +static const u8 mmcc_xo_mmpll0_1_4_gpll1_0_sleep_map[] = {
-> +	[P_XO]		= 0,
-> +	[P_MMPLL0]	= 1,
-> +	[P_MMPLL1]	= 2,
-> +	[P_MMPLL4]	= 3,
-> +	[P_GPLL1]	= 4,
-> +	[P_GPLL0]	= 5,
-> +	[P_MMSLEEP]	= 6,
-> +};
-> +
-> +static const char *mmcc_xo_mmpll0_1_4_gpll1_0_sleep[] = {
-> +	"xo",
-> +	"mmpll0",
-> +	"mmpll1",
-> +	"mmpll4",
-> +	"gpll1",
-> +	"gpll0",
-> +	"sleep_clk_src",
-> +};
-> +
->
-
-
+diff --git a/drivers/mmc/host/jz4740_mmc.c b/drivers/mmc/host/jz4740_mmc.c
+index 537d6c7..22f9705 100644
+--- a/drivers/mmc/host/jz4740_mmc.c
++++ b/drivers/mmc/host/jz4740_mmc.c
+@@ -30,7 +30,9 @@
+ #include <asm/mach-jz4740/gpio.h>
+ #include <asm/cacheflush.h>
+ #include <linux/dma-mapping.h>
++#include <linux/dmaengine.h>
+ 
++#include <asm/mach-jz4740/dma.h>
+ #include <asm/mach-jz4740/jz4740_mmc.h>
+ 
+ #define JZ_REG_MMC_STRPCL	0x00
+@@ -122,6 +124,7 @@ struct jz4740_mmc_host {
+ 	int card_detect_irq;
+ 
+ 	void __iomem *base;
++	struct resource *mem_res;
+ 	struct mmc_request *req;
+ 	struct mmc_command *cmd;
+ 
+@@ -136,8 +139,138 @@ struct jz4740_mmc_host {
+ 	struct timer_list timeout_timer;
+ 	struct sg_mapping_iter miter;
+ 	enum jz4740_mmc_state state;
++
++	/* DMA support */
++	struct dma_chan *dma_rx;
++	struct dma_chan *dma_tx;
++	bool use_dma;
++	int sg_len;
++
++/* The DMA trigger level is 8 words, that is to say, the DMA read
++ * trigger is when data words in MSC_RXFIFO is >= 8 and the DMA write
++ * trigger is when data words in MSC_TXFIFO is < 8.
++ */
++#define JZ4740_MMC_FIFO_HALF_SIZE 8
+ };
+ 
++/*----------------------------------------------------------------------------*/
++/* DMA infrastructure */
++
++static void jz4740_release_dma_channels(struct jz4740_mmc_host *host)
++{
++	if (!host->use_dma)
++		return;
++
++	dma_release_channel(host->dma_tx);
++	dma_release_channel(host->dma_rx);
++}
++
++static int jz4740_acquire_dma_channels(struct jz4740_mmc_host *host)
++{
++	dma_cap_mask_t mask;
++
++	dma_cap_zero(mask);
++	dma_cap_set(DMA_SLAVE, mask);
++
++	host->dma_tx = dma_request_channel(mask, NULL, host);
++	if (!host->dma_tx) {
++		dev_err(mmc_dev(host->mmc), "Failed to get dma_tx channel\n");
++		return -ENODEV;
++	}
++
++	host->dma_rx = dma_request_channel(mask, NULL, host);
++	if (!host->dma_rx) {
++		dev_err(mmc_dev(host->mmc), "Failed to get dma_rx channel\n");
++		goto free_master_write;
++	}
++
++	return 0;
++
++free_master_write:
++	dma_release_channel(host->dma_tx);
++	return -ENODEV;
++}
++
++static inline int jz4740_get_dma_dir(struct mmc_data *data)
++{
++	return (data->flags & MMC_DATA_READ) ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
++}
++
++static void jz4740_dma_unmap(struct jz4740_mmc_host *host,
++			     struct mmc_data *data)
++{
++	struct dma_chan *chan;
++	enum dma_data_direction dir = jz4740_get_dma_dir(data);
++
++	if (dir == DMA_TO_DEVICE)
++		chan = host->dma_tx;
++	else
++		chan = host->dma_rx;
++
++	dma_unmap_sg(chan->device->dev, data->sg, data->sg_len, dir);
++}
++
++static int jz4740_start_dma_transfer(struct jz4740_mmc_host *host,
++				     struct mmc_data *data)
++{
++	struct dma_chan *chan;
++	struct dma_async_tx_descriptor *desc;
++	struct dma_slave_config conf = {
++		.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES,
++		.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES,
++		.src_maxburst = JZ4740_MMC_FIFO_HALF_SIZE,
++		.dst_maxburst = JZ4740_MMC_FIFO_HALF_SIZE,
++	};
++	enum dma_data_direction dir = jz4740_get_dma_dir(data);
++
++	if (dir == DMA_TO_DEVICE) {
++		conf.direction = DMA_MEM_TO_DEV;
++		conf.dst_addr = host->mem_res->start + JZ_REG_MMC_TXFIFO;
++		conf.slave_id = JZ4740_DMA_TYPE_MMC_TRANSMIT;
++		chan = host->dma_tx;
++	} else {
++		conf.direction = DMA_DEV_TO_MEM;
++		conf.src_addr = host->mem_res->start + JZ_REG_MMC_RXFIFO;
++		conf.slave_id = JZ4740_DMA_TYPE_MMC_RECEIVE;
++		chan = host->dma_rx;
++	}
++
++	host->sg_len = dma_map_sg(chan->device->dev,
++				  data->sg,
++				  data->sg_len,
++				  dir);
++
++	if (host->sg_len < 0) {
++		dev_err(mmc_dev(host->mmc),
++			 "Failed to map scatterlist for DMA operation\n");
++		return -EINVAL;
++	}
++
++	dmaengine_slave_config(chan, &conf);
++	desc = dmaengine_prep_slave_sg(chan,
++				       data->sg,
++				       host->sg_len,
++				       conf.direction,
++				       DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
++	if (!desc) {
++		dev_err(mmc_dev(host->mmc),
++			 "Failed to allocate DMA %s descriptor",
++			 conf.direction == DMA_MEM_TO_DEV ? "TX" : "RX");
++		goto dma_unmap;
++	}
++
++	dmaengine_submit(desc);
++	dma_async_issue_pending(chan);
++
++	return 0;
++
++dma_unmap:
++	jz4740_dma_unmap(host, data);
++	return -ENOMEM;
++}
++
++/*----------------------------------------------------------------------------*/
++
+ static void jz4740_mmc_set_irq_enabled(struct jz4740_mmc_host *host,
+ 	unsigned int irq, bool enabled)
+ {
+@@ -442,6 +575,8 @@ static void jz4740_mmc_send_command(struct jz4740_mmc_host *host,
+ 			cmdat |= JZ_MMC_CMDAT_WRITE;
+ 		if (cmd->data->flags & MMC_DATA_STREAM)
+ 			cmdat |= JZ_MMC_CMDAT_STREAM;
++		if (host->use_dma)
++			cmdat |= JZ_MMC_CMDAT_DMA_EN;
+ 
+ 		writew(cmd->data->blksz, host->base + JZ_REG_MMC_BLKLEN);
+ 		writew(cmd->data->blocks, host->base + JZ_REG_MMC_NOB);
+@@ -474,6 +609,7 @@ static irqreturn_t jz_mmc_irq_worker(int irq, void *devid)
+ 	struct jz4740_mmc_host *host = (struct jz4740_mmc_host *)devid;
+ 	struct mmc_command *cmd = host->req->cmd;
+ 	struct mmc_request *req = host->req;
++	struct mmc_data *data = cmd->data;
+ 	bool timeout = false;
+ 
+ 	if (cmd->error)
+@@ -484,23 +620,32 @@ static irqreturn_t jz_mmc_irq_worker(int irq, void *devid)
+ 		if (cmd->flags & MMC_RSP_PRESENT)
+ 			jz4740_mmc_read_response(host, cmd);
+ 
+-		if (!cmd->data)
++		if (!data)
+ 			break;
+ 
+ 		jz_mmc_prepare_data_transfer(host);
+ 
+ 	case JZ4740_MMC_STATE_TRANSFER_DATA:
+-		if (cmd->data->flags & MMC_DATA_READ)
+-			timeout = jz4740_mmc_read_data(host, cmd->data);
++		if (host->use_dma) {
++			/* Use DMA if enabled, data transfer direction was
++			 * defined  before in jz_mmc_prepare_data_transfer().
++			 */
++			timeout = jz4740_start_dma_transfer(host, data);
++			data->bytes_xfered = data->blocks * data->blksz;
++		} else if (data->flags & MMC_DATA_READ)
++			/* If DMA is not enabled, rely on data flags
++			 * to establish data transfer direction.
++			 */
++			timeout = jz4740_mmc_read_data(host, data);
+ 		else
+-			timeout = jz4740_mmc_write_data(host, cmd->data);
++			timeout = jz4740_mmc_write_data(host, data);
+ 
+ 		if (unlikely(timeout)) {
+ 			host->state = JZ4740_MMC_STATE_TRANSFER_DATA;
+ 			break;
+ 		}
+ 
+-		jz4740_mmc_transfer_check_state(host, cmd->data);
++		jz4740_mmc_transfer_check_state(host, data);
+ 
+ 		timeout = jz4740_mmc_poll_irq(host, JZ_MMC_IRQ_DATA_TRAN_DONE);
+ 		if (unlikely(timeout)) {
+@@ -757,7 +902,6 @@ static int jz4740_mmc_probe(struct platform_device* pdev)
+ 	struct mmc_host *mmc;
+ 	struct jz4740_mmc_host *host;
+ 	struct jz4740_mmc_platform_data *pdata;
+-	struct resource *res;
+ 
+ 	pdata = pdev->dev.platform_data;
+ 
+@@ -784,10 +928,11 @@ static int jz4740_mmc_probe(struct platform_device* pdev)
+ 		goto err_free_host;
+ 	}
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	host->base = devm_ioremap_resource(&pdev->dev, res);
++	host->mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	host->base = devm_ioremap_resource(&pdev->dev, host->mem_res);
+ 	if (IS_ERR(host->base)) {
+ 		ret = PTR_ERR(host->base);
++		dev_err(&pdev->dev, "Failed to ioremap base memory\n");
+ 		goto err_free_host;
+ 	}
+ 
+@@ -834,6 +979,10 @@ static int jz4740_mmc_probe(struct platform_device* pdev)
+ 	/* It is not important when it times out, it just needs to timeout. */
+ 	set_timer_slack(&host->timeout_timer, HZ);
+ 
++	host->use_dma = true;
++	if (host->use_dma && jz4740_acquire_dma_channels(host) != 0)
++		host->use_dma = false;
++
+ 	platform_set_drvdata(pdev, host);
+ 	ret = mmc_add_host(mmc);
+ 
+@@ -843,6 +992,10 @@ static int jz4740_mmc_probe(struct platform_device* pdev)
+ 	}
+ 	dev_info(&pdev->dev, "JZ SD/MMC card driver registered\n");
+ 
++	dev_info(&pdev->dev, "Using %s, %d-bit mode\n",
++		 host->use_dma ? "DMA" : "PIO",
++		 (mmc->caps & MMC_CAP_4_BIT_DATA) ? 4 : 1);
++
+ 	return 0;
+ 
+ err_free_irq:
+@@ -850,6 +1003,8 @@ err_free_irq:
+ err_free_gpios:
+ 	jz4740_mmc_free_gpios(pdev);
+ err_gpio_bulk_free:
++	if (host->use_dma)
++		jz4740_release_dma_channels(host);
+ 	jz_gpio_bulk_free(jz4740_mmc_pins, jz4740_mmc_num_pins(host));
+ err_free_host:
+ 	mmc_free_host(mmc);
+@@ -872,6 +1027,9 @@ static int jz4740_mmc_remove(struct platform_device *pdev)
+ 	jz4740_mmc_free_gpios(pdev);
+ 	jz_gpio_bulk_free(jz4740_mmc_pins, jz4740_mmc_num_pins(host));
+ 
++	if (host->use_dma)
++		jz4740_release_dma_channels(host);
++
+ 	mmc_free_host(host->mmc);
+ 
+ 	return 0;
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.7.10.4
 
