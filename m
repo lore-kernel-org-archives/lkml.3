@@ -1,151 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956AbaGKFxh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 01:53:37 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:27785 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042AbaGKFxe (ORCPT
+	id S1751776AbaGKF7w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 01:59:52 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:58184 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751081AbaGKF7u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 01:53:34 -0400
-From: Ethan Zhao <ethan.zhao@oracle.com>
-To: bhelgaas@google.com, konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com, gleb@kernel.org, pbonzini@redhat.com,
-        jeffrey.t.kirsher@intel.com, jesse.brandeburg@intel.com,
-        bruce.w.allan@intel.com, carolyn.wyborny@intel.com,
-        donald.c.skidmore@intel.com, gregory.v.rose@intel.com,
-        alexander.h.duyck@intel.com, john.ronciak@intel.com,
-        mitch.a.williams@intel.com, alex.williamson@redhat.com
-Cc: linux-pci@vger.kernel.org, kvm@vger.kernel.org, linux.nics@intel.com,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ethan.kernel@gmail.com,
-        vaughan.cao@oracle.com, Ethan Zhao <ethan.zhao@oracle.com>
-Subject: [PATCH 2/2 V2] PCI: implement VFs assignment reference counter
-Date: Fri, 11 Jul 2014 13:52:41 +0800
-Message-Id: <1405057961-7234-2-git-send-email-ethan.zhao@oracle.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1405057961-7234-1-git-send-email-ethan.zhao@oracle.com>
-References: <1405057961-7234-1-git-send-email-ethan.zhao@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Fri, 11 Jul 2014 01:59:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <1404992799-3705-13-git-send-email-wsa@the-dreams.de>
+References: <1404992799-3705-1-git-send-email-wsa@the-dreams.de>
+	<1404992799-3705-13-git-send-email-wsa@the-dreams.de>
+Date: Fri, 11 Jul 2014 11:29:46 +0530
+Message-ID: <CAK5sBcG_bWS5frTkTCwUeSEe_oNrVP9QDtFjWzwfhv2KWSN3HQ@mail.gmail.com>
+Subject: Re: [PATCH 12/16] i2c: i2c-s3c2410: Drop class based scanning to
+ improve bootup time
+From: Sachin Kamat <spk.linux@gmail.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-i2c@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current implementation of helper function pci_vfs_assigned() is a
-little complex, to get sum of VFs that assigned to VM, access low
-level configuration space register and then loop in traversing
-device tree.
+Hi Wolfram,
 
-This patch introduces an atomic reference counter for VFs those
-were assigned to VM in struct pci_sriov. and simplify the code in
-pci_vfs_assigned().
+On Thu, Jul 10, 2014 at 5:16 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
+> This driver has been flagged to drop class based instantiation. The removal
+> improves boot-up time and is unneeded for embedded controllers. Users have been
+> warned to switch for some time now, so we can actually do the removal. Keep the
+> DEPRECATED flag, so the core can inform users that the behaviour finally
+> changed now. After another transition period, this flag can go, too.
+> While we are here, remove the indentation for the array setup because
+> such things always break after some time.
+>
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> ---
+>  drivers/i2c/busses/i2c-s3c2410.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
+> index e828a1dba0e5..6252c051525a 100644
+> --- a/drivers/i2c/busses/i2c-s3c2410.c
+> +++ b/drivers/i2c/busses/i2c-s3c2410.c
+> @@ -1128,11 +1128,11 @@ static int s3c24xx_i2c_probe(struct platform_device *pdev)
+>                 s3c24xx_i2c_parse_dt(pdev->dev.of_node, i2c);
+>
+>         strlcpy(i2c->adap.name, "s3c2410-i2c", sizeof(i2c->adap.name));
+> -       i2c->adap.owner   = THIS_MODULE;
+> -       i2c->adap.algo    = &s3c24xx_i2c_algorithm;
+> +       i2c->adap.owner = THIS_MODULE;
+> +       i2c->adap.algo = &s3c24xx_i2c_algorithm;
+>         i2c->adap.retries = 2;
+> -       i2c->adap.class   = I2C_CLASS_HWMON | I2C_CLASS_SPD | I2C_CLASS_DEPRECATED;
+> -       i2c->tx_setup     = 50;
+> +       i2c->adap.class = I2C_CLASS_DEPRECATED;
+> +       i2c->tx_setup = 50;
+>
+>         init_waitqueue_head(&i2c->wait);
+>
+> --
 
-v2: reorder the patchset according to the suggestion from
-alex.williamson@redhat.com
+Tested on Exynos 5250 boards.
+Tested-by: Sachin Kamat <sachin.kamat@samsung.com>
 
-Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
----
- drivers/pci/iov.c |   45 +++++++++++++++++----------------------------
- drivers/pci/pci.h |    1 +
- 2 files changed, 18 insertions(+), 28 deletions(-)
-
-diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-index c082523..5478a0c 100644
---- a/drivers/pci/iov.c
-+++ b/drivers/pci/iov.c
-@@ -382,6 +382,7 @@ found:
- 	iov->nres = nres;
- 	iov->ctrl = ctrl;
- 	iov->total_VFs = total;
-+	atomic_set(&iov->VFs_assigned_cnt, 0);
- 	iov->offset = offset;
- 	iov->stride = stride;
- 	iov->pgsz = pgsz;
-@@ -603,43 +604,21 @@ int pci_num_vf(struct pci_dev *dev)
- EXPORT_SYMBOL_GPL(pci_num_vf);
- 
- /**
-- * pci_vfs_assigned - returns number of VFs are assigned to a guest
-- * @dev: the PCI device
-+ * pci_vfs_assigned - returns number of VFs are assigned to VM
-+ * @dev: the physical PCI device that contains the VFs.
-  *
-- * Returns number of VFs belonging to this device that are assigned to a guest.
-+ * Returns number of VFs belonging to this device that are assigned to VM.
-  * If device is not a physical function returns 0.
-  */
- int pci_vfs_assigned(struct pci_dev *dev)
- {
--	struct pci_dev *vfdev;
--	unsigned int vfs_assigned = 0;
--	unsigned short dev_id;
--
- 	/* only search if we are a PF */
- 	if (!dev->is_physfn)
- 		return 0;
- 
--	/*
--	 * determine the device ID for the VFs, the vendor ID will be the
--	 * same as the PF so there is no need to check for that one
--	 */
--	pci_read_config_word(dev, dev->sriov->pos + PCI_SRIOV_VF_DID, &dev_id);
--
--	/* loop through all the VFs to see if we own any that are assigned */
--	vfdev = pci_get_device(dev->vendor, dev_id, NULL);
--	while (vfdev) {
--		/*
--		 * It is considered assigned if it is a virtual function with
--		 * our dev as the physical function and the assigned bit is set
--		 */
--		if (vfdev->is_virtfn && (vfdev->physfn == dev) &&
--		    (vfdev->dev_flags & PCI_DEV_FLAGS_ASSIGNED))
--			vfs_assigned++;
--
--		vfdev = pci_get_device(dev->vendor, dev_id, vfdev);
--	}
--
--	return vfs_assigned;
-+	if (dev->sriov)
-+		return atomic_read(&dev->sriov->VFs_assigned_cnt);
-+	return 0;
- }
- EXPORT_SYMBOL_GPL(pci_vfs_assigned);
- 
-@@ -650,6 +629,11 @@ EXPORT_SYMBOL_GPL(pci_vfs_assigned);
- void pci_sriov_assign_device(struct pci_dev *pdev)
- {
- 	pdev->dev_flags |= PCI_DEV_FLAGS_ASSIGNED;
-+	if (pdev->is_virtfn && !pdev->is_physfn)
-+		if (pdev->physfn)
-+			if (pdev->physfn->sriov)
-+				atomic_inc(&pdev->physfn->sriov->
-+					VFs_assigned_cnt);
- }
- EXPORT_SYMBOL_GPL(pci_sriov_assign_device);
- 
-@@ -660,6 +644,11 @@ EXPORT_SYMBOL_GPL(pci_sriov_assign_device);
- void pci_sriov_deassign_device(struct pci_dev *pdev)
- {
- 	pdev->dev_flags &= ~PCI_DEV_FLAGS_ASSIGNED;
-+	if (pdev->is_virtfn && !pdev->is_physfn)
-+		if (pdev->physfn)
-+			if (pdev->physfn->sriov)
-+				atomic_dec(&pdev->physfn->sriov->
-+					VFs_assigned_cnt);
- }
- EXPORT_SYMBOL_GPL(pci_sriov_deassign_device);      
- 
-diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-index 6bd0822..d17bda2 100644
---- a/drivers/pci/pci.h
-+++ b/drivers/pci/pci.h
-@@ -235,6 +235,7 @@ struct pci_sriov {
- 	u32 pgsz;		/* page size for BAR alignment */
- 	u8 link;		/* Function Dependency Link */
- 	u16 driver_max_VFs;	/* max num VFs driver supports */
-+	atomic_t VFs_assigned_cnt; /* counter of VFs assigned to VM */
- 	struct pci_dev *dev;	/* lowest numbered PF */
- 	struct pci_dev *self;	/* this PF */
- 	struct mutex lock;	/* lock for VF bus */
 -- 
-1.7.1
-
+Regards,
+Sachin.
