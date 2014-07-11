@@ -1,122 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751453AbaGKAoL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 20:44:11 -0400
-Received: from exprod5og106.obsmtp.com ([64.18.0.182]:52099 "HELO
-	exprod5og106.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750896AbaGKAoJ convert rfc822-to-8bit (ORCPT
+	id S1751704AbaGKApS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 20:45:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32889 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223AbaGKApO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 20:44:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140708171828.GM6501@e106497-lin.cambridge.arm.com>
-References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
-	<CAL_JsqK_CfagmiFOpOXVYGry22nGnCZL0ZXeJhYxb9zp=P2fsQ@mail.gmail.com>
-	<20140708171828.GM6501@e106497-lin.cambridge.arm.com>
-Date: Thu, 10 Jul 2014 17:44:07 -0700
-Message-ID: <CACoXjcn3b7otcbxdr+RAVNHHjHyVsvw0QcmK5jd-QBF8SQX5iw@mail.gmail.com>
-Subject: Re: [PATCH v8 0/9] Support for creating generic PCI host bridges from DT
-From: Tanmay Inamdar <tinamdar@apm.com>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: Rob Herring <robherring2@gmail.com>, linux-pci <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 10 Jul 2014 20:45:14 -0400
+Date: Thu, 10 Jul 2014 17:44:25 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Wim Van Sebroeck <wim@iguana.be>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonas Jensen <jonas.jensen@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tomasz Figa <t.figa@samsung.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/7] kernel: Add support for restart notifier call
+ chain
+Message-Id: <20140710174425.2f3fea98.akpm@linux-foundation.org>
+In-Reply-To: <53BF2CB5.5080602@roeck-us.net>
+References: <1404877083-6552-1-git-send-email-linux@roeck-us.net>
+	<20140710160907.da1024914366de947ebdf384@linux-foundation.org>
+	<53BF2CB5.5080602@roeck-us.net>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 10 Jul 2014 17:15:49 -0700 Guenter Roeck <linux@roeck-us.net> wrote:
 
-On Tue, Jul 8, 2014 at 10:18 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> On Sun, Jul 06, 2014 at 04:23:43PM +0100, Rob Herring wrote:
->> On Tue, Jul 1, 2014 at 1:43 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
->> > This is my resurected attempt at adding support for generic PCI host
->> > bridge controllers that make use of device tree information to
->> > configure themselves. I've tagged it as v8 although the patches
->> > have now been reshuffled in order to ease adoption so referring to
->> > the older versions might be a bit of a hoop jumping exercise.
->> >
->> > Changes from v7:
->> >   - Reordered the patches so that fixes and non-controversial patches
->> >     from v7 can be accepted more easily. If agreed I can split the
->> >     series again into patches that can be upstreamed easily and ones
->> >     that still need discussion.
->> >   - Moved the of_create_host_bridge() function to drivers/of/of_pci.c
->> >     to better reflect its target use.
->> >   - Added the function to remap the bus I/O resources that used to be
->> >     provided in my arm64 patch series and (re)named it pci_remap_iospace()
->> >   - Removed error code checking from parsing and mapping of IRQ from DT
->> >     in recognition that some PCI devices will not have legacy IRQ mappings.
->> >
->> > v7 thread here with all the historic information: https://lkml.org/lkml/2014/3/14/279
->>
->> Can you publish a branch for this series please.
->>
->> Rob
->>
->
-> Hi Rob,
->
-> I have pushed a brach that matches my v8 patchset +1 obvious missing header include
-> here: http://www.linux-arm.org/git?p=linux-ld.git;a=shortlog;h=refs/heads/for-upstream/pci_v8
->
+> Error on my part - I thought lower numbers would
+> have higher priority, but after looking into the code again that
+> is wrong.
 
-I was still getting following compilation error after applying arm64
-pci headers. Please let me know if I am missing something.
+You shouldn't have needed to look into the code :( Maybe a
+documentation patch for notifier_block.priority for the next person?
 
-linux-git/drivers/of/of_pci.c: In function ‘pci_host_bridge_of_get_ranges’:
-linux-git/drivers/of/of_pci.c:114:22: error: storage size of ‘range’ isn’t known
-  struct of_pci_range range;
-                      ^
-linux-git/drivers/of/of_pci.c:115:29: error: storage size of ‘parser’
-isn’t known
-  struct of_pci_range_parser parser;
-                             ^
-linux-git/drivers/of/of_pci.c:121:2: error: implicit declaration of
-function ‘of_pci_range_parser_init’
-[-Werror=implicit-function-declaration]
-  err = of_pci_range_parser_init(&parser, dev);
+> To avoid making things too complicated, maybe it would make sense to
+> specify guidelines for notifier priorities, such as
+> 0   - restart notifier of last resort, with least reset capabilities
+> 128 - default; use if no other notifier is expected to be available
+>        and/or if restart functionality is acceptable
+> 255 - highest priority notifier which _must_ be used
+> 
+> Would that make sense and be acceptable ? In this context, I would then
+> set the notifier priorities for the callers in the patch set to 128.
 
-
-Below patch fixes the errors.
-
-diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
-index 55d8320..da88dac 100644
---- a/drivers/of/of_pci.c
-+++ b/drivers/of/of_pci.c
-@@ -2,6 +2,7 @@
- #include <linux/export.h>
- #include <linux/of.h>
- #include <linux/of_pci.h>
-+#include <linux/of_address.h>
-
- static inline int __of_pci_pci_compare(struct device_node *node,
-                                       unsigned int data)
-
-
-> Best regards,
-> Liviu
->
->
-> --
-> ====================
-> | I would like to |
-> | fix the world,  |
-> | but they're not |
-> | giving me the   |
->  \ source code!  /
->   ---------------
->     ¯\_(ツ)_/¯
->
+Yep, that sounds nice.  It's unlikely to see a lot of use, but at least
+we showed we thought about it ;)
