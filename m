@@ -1,50 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239AbaGKTH1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 15:07:27 -0400
-Received: from mail.kernel.org ([198.145.19.201]:46763 "EHLO mail.kernel.org"
+	id S1755264AbaGKTH4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 15:07:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20495 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755222AbaGKTHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 15:07:25 -0400
-From: konrad@kernel.org
-To: xen-devel@lists.xenproject.org, david.vrabel@citrix.com,
-        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v4 4/5] xen/pciback: Print out the domain owning the device.
-Date: Fri, 11 Jul 2014 16:08:51 -0400
-Message-Id: <1405109332-31659-5-git-send-email-konrad@kernel.org>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1405109332-31659-1-git-send-email-konrad@kernel.org>
-References: <1405109332-31659-1-git-send-email-konrad@kernel.org>
+	id S1751979AbaGKTHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 15:07:55 -0400
+Date: Fri, 11 Jul 2014 21:06:22 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/7] tracing: instance_rmdir() leaks
+	ftrace_event_file->filter
+Message-ID: <20140711190622.GA19499@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Hello,
 
-We had been printing it only if the device was built with
-debug enabled. But this information is useful in the field
-to troubleshoot.
+Sorry for delay, I was distracted by other problems.
 
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/xen/xen-pciback/xenbus.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+To remind, we discussed the potential uprobes "mix perf/ftrace" changes and
+found some off-topic problems. Lets start with ->filter fixes/cleanups.
 
-diff --git a/drivers/xen/xen-pciback/xenbus.c b/drivers/xen/xen-pciback/xenbus.c
-index 065aae8..0f80760 100644
---- a/drivers/xen/xen-pciback/xenbus.c
-+++ b/drivers/xen/xen-pciback/xenbus.c
-@@ -246,7 +246,7 @@ static int xen_pcibk_export_device(struct xen_pcibk_device *pdev,
- 	if (err)
- 		goto out;
+So far I didn't even try to test this series, although it looks simple except
+perhaps the last patch. I'll try to somehow test this tomorrow, but I do not
+really now how.
+
+So please review, these patches need acks anyway.
+
+As for 1/7, I added BUG_ON(file->filter) into remove_event_file_dir() before
+kmem_cache_free() to verify that yes, the leak does exist. Perhaps this patch
+should go to stable, or at least to v3.16.
+
+--------------------------------------------------------------------------------
+And could someone explain me why apply_subsystem_event_filter("0") clears
+->filter_string first, then the whole ->filter? It seems that the only
+thing filter_free_subsystem_preds() should do is filter_disable(), no?
+IOW, why the patch below (on top of this series) is wrong?
+
+Oleg.
+
+--- x/kernel/trace/trace_events_filter.c
++++ x/kernel/trace/trace_events_filter.c
+@@ -831,17 +831,6 @@ static int __alloc_preds(struct event_filter *filter, int n_preds)
+ 	return 0;
+ }
  
--	dev_dbg(&dev->dev, "registering for %d\n", pdev->xdev->otherend_id);
-+	dev_info(&dev->dev, "registering for %d\n", pdev->xdev->otherend_id);
- 	if (xen_register_device_domain_owner(dev,
- 					     pdev->xdev->otherend_id) != 0) {
- 		dev_err(&dev->dev, "Stealing ownership from dom%d.\n",
--- 
-1.7.7.6
+-static inline void __remove_filter(struct ftrace_event_file *file)
+-{
+-	struct ftrace_event_call *call = file->event_call;
+-
+-	filter_disable(file);
+-	if (call->flags & TRACE_EVENT_FL_USE_CALL_FILTER)
+-		remove_filter_string(call->filter);
+-	else
+-		remove_filter_string(file->filter);
+-}
+-
+ static void filter_free_subsystem_preds(struct event_subsystem *system,
+ 					struct trace_array *tr)
+ {
+@@ -850,7 +839,7 @@ static void filter_free_subsystem_preds(struct event_subsystem *system,
+ 	list_for_each_entry(file, &tr->events, list) {
+ 		if (file->system->subsystem != system)
+ 			continue;
+-		__remove_filter(file);
++		filter_disable(file);
+ 	}
+ }
+ 
 
