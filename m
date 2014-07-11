@@ -1,42 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661AbaGKIXK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 04:23:10 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:47210 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573AbaGKIXI (ORCPT
+	id S1752668AbaGKIYd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 04:24:33 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:34847 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751938AbaGKIYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 04:23:08 -0400
-Date: Fri, 11 Jul 2014 10:23:02 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: Re: [PATCH] perf/x86/uncore: fix SNB-EP/IVT Cbox filter mappings
-Message-ID: <20140711082302.GA20603@laptop.programming.kicks-ass.net>
-References: <20140630144624.GA2604@quad>
- <CABPqkBRBF6TXf3Q5+MvWneKrgtrjZMv3FzW6rVMygz2QvWgowg@mail.gmail.com>
+	Fri, 11 Jul 2014 04:24:31 -0400
+Date: Fri, 11 Jul 2014 09:24:25 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Peter Griffin <peter.griffin@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        maxime.coquelin@st.com, patrice.chotard@st.com,
+        gregkh@linuxfoundation.org, srinivas.kandagatla@gmail.com,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH 2/3] usb: host: st-hcd: Add st-hcd devicetree bindings
+ documentation.
+Message-ID: <20140711082425.GJ11948@lee--X1>
+References: <1405005486-26355-1-git-send-email-peter.griffin@linaro.org>
+ <1405005486-26355-3-git-send-email-peter.griffin@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CABPqkBRBF6TXf3Q5+MvWneKrgtrjZMv3FzW6rVMygz2QvWgowg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1405005486-26355-3-git-send-email-peter.griffin@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 09:16:30PM +0200, Stephane Eranian wrote:
-> On Mon, Jun 30, 2014 at 4:46 PM, Stephane Eranian <eranian@google.com> wrote:
-> >
-> > This patch fixes the SNB-EP and IVT Cbox filter mapping
-> > table. The table controls which filters are supported by
-> > which events. There were several mistakes in those tables
-> > causing some filters to be ignored, such as NID on
-> > TOR_INSERTS.
-> >
-> > Signed-off-by: Stephane Eranian <eranian@google.com>
-> 
-> Any comment on this patch?
+On Thu, 10 Jul 2014, Peter Griffin wrote:
 
-I queued, it. I'll try and get it into tip over the weekend or so.
+> This patch documents the device tree documentation required for
+> the ST HCD controller found in STMicroelectronics SoCs.
+> 
+> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+> ---
+>  Documentation/devicetree/bindings/usb/st-hcd.txt | 51 ++++++++++++++++++++++++
+>  1 file changed, 51 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/usb/st-hcd.txt
+
+Just some nits:
+
+> +Example:
+> +
+> +usb0: usb@fe100000 {
+> +	compatible	= "st,usb-300x";
+> +	reg		= <0xfe1ffc00 0x100>,
+> +			  <0xfe1ffe00 0x100>;
+> +	reg-names	= "ohci", "ehci";
+> +
+> +	interrupts	=  <GIC_SPI 148 IRQ_TYPE_NONE>,
+> +			   <GIC_SPI 149 IRQ_TYPE_NONE>;
+> +	interrupt-names	= "ehci","ohci";
+
+s/","/", "
+
+> +	pinctrl-names	= "default";
+> +	pinctrl-0	= <&pinctrl_usb0>;
+> +	clocks		= <&clk_s_a1_ls CLK_ICN_IF_2>,
+> +			  <&clockgen_b0 0>;
+> +	clock-names	= "ic", "ohci";
+> +
+> +	resets		= <&powerdown STIH416_USB0_POWERDOWN>,
+> +			  <&softreset STIH416_USB0_SOFTRESET>;
+> +	reset-names	= "power", "softreset";
+> +
+> +	phys = <&usb2_phy>;
+> +	phy-names = "usb2-phy";
+
+Tabbing of the '='s not consistent.
+
+> +};
+> +
+> +
+
+Too many '\n' at EOF.
+
+Nothing controversial here, so once this nits are rectified:
+
+Acked-by: Lee Jones <lee.jones@linaro.org>
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
