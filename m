@@ -1,128 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754941AbaGKSvr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 14:51:47 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:56913 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919AbaGKSvq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 14:51:46 -0400
-Date: Fri, 11 Jul 2014 14:51:40 -0400
-From: Jerome Glisse <j.glisse@gmail.com>
-To: "Bridgman, John" <John.Bridgman@amd.com>
-Cc: Oded Gabbay <oded.gabbay@gmail.com>, David Airlie <airlied@linux.ie>,
-        "Deucher, Alexander" <Alexander.Deucher@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "Lewycky, Andrew" <Andrew.Lewycky@amd.com>,
-        Joerg Roedel <joro@8bytes.org>, "Gabbay, Oded" <Oded.Gabbay@amd.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Sandeep Nair <sandeep_n@ti.com>,
-        Kenneth Heitke <kheitke@codeaurora.org>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Andreas Noever <andreas.noever@gmail.com>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: Re: [PATCH 09/83] hsa/radeon: Add code base of hsa driver for AMD's
- GPUs
-Message-ID: <20140711185138.GN1870@gmail.com>
-References: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
- <1405029027-6085-8-git-send-email-oded.gabbay@amd.com>
- <20140711170411.GJ1870@gmail.com>
- <D89D60253BB73A4E8C62F9FD18A939CA01031B37@storexdag02.amd.com>
- <20140711181053.GK1870@gmail.com>
- <D89D60253BB73A4E8C62F9FD18A939CA01031C4E@storexdag02.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <D89D60253BB73A4E8C62F9FD18A939CA01031C4E@storexdag02.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755087AbaGKSwJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 14:52:09 -0400
+Received: from mail.kernel.org ([198.145.19.201]:45889 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755025AbaGKSwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 14:52:07 -0400
+From: konrad@kernel.org
+To: xen-devel@lists.xenproject.org, david.vrabel@citrix.com,
+        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH] xen: Introduce 'xen_nopv' to disable PV extensions for HVM guests.
+Date: Fri, 11 Jul 2014 15:53:39 -0400
+Message-Id: <1405108419-31576-1-git-send-email-konrad@kernel.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 06:46:30PM +0000, Bridgman, John wrote:
-> >From: Jerome Glisse [mailto:j.glisse@gmail.com]
-> >Sent: Friday, July 11, 2014 2:11 PM
-> >To: Bridgman, John
-> >Cc: Oded Gabbay; David Airlie; Deucher, Alexander; linux-
-> >kernel@vger.kernel.org; dri-devel@lists.freedesktop.org; Lewycky, Andrew;
-> >Joerg Roedel; Gabbay, Oded; Greg Kroah-Hartman; Rafael J. Wysocki; Kishon
-> >Vijay Abraham I; Sandeep Nair; Kenneth Heitke; Srinivas Pandruvada;
-> >Santosh Shilimkar; Andreas Noever; Lucas Stach; Philipp Zabel
-> >Subject: Re: [PATCH 09/83] hsa/radeon: Add code base of hsa driver for
-> >AMD's GPUs
-> >
-> >On Fri, Jul 11, 2014 at 06:02:39PM +0000, Bridgman, John wrote:
-> >> >From: Jerome Glisse [mailto:j.glisse@gmail.com]
-> >> >Sent: Friday, July 11, 2014 1:04 PM
-> >> >To: Oded Gabbay
-> >> >Cc: David Airlie; Deucher, Alexander; linux-kernel@vger.kernel.org;
-> >> >dri- devel@lists.freedesktop.org; Bridgman, John; Lewycky, Andrew;
-> >> >Joerg Roedel; Gabbay, Oded; Greg Kroah-Hartman; Rafael J. Wysocki;
-> >> >Kishon Vijay Abraham I; Sandeep Nair; Kenneth Heitke; Srinivas
-> >> >Pandruvada; Santosh Shilimkar; Andreas Noever; Lucas Stach; Philipp
-> >> >Zabel
-> >> >Subject: Re: [PATCH 09/83] hsa/radeon: Add code base of hsa driver
-> >> >for AMD's GPUs
-> >> >
-> >> >On Fri, Jul 11, 2014 at 12:50:09AM +0300, Oded Gabbay wrote:
-> >> >> This patch adds the code base of the hsa driver for AMD's GPUs.
-> >> >>
-> >> >> This driver is called kfd.
-> >> >>
-> >> >> This initial version supports the first HSA chip, Kaveri.
-> >> >>
-> >> >> This driver is located in a new directory structure under drivers/gpu.
-> >> >>
-> >> >> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
-> >> >
-> >> >There is too coding style issues. While we have been lax on the
-> >> >enforcing the scripts/checkpatch.pl rules i think there is a limit to
-> >> >that. I am not strict on the 80chars per line but others things needs fixing
-> >so we stay inline.
-> >> >
-> >> >Also i am a bit worried about the license, given top comment in each
-> >> >of the files i am not sure this is GPL2 compatible. I would need to
-> >> >ask lawyer to review that.
-> >> >
-> >>
-> >> Hi Jerome,
-> >>
-> >> Which line in the license are you concerned about ? In theory we're using
-> >the same license as the initial code pushes for radeon, and I just did a side-by
-> >side compare with the license header on cik.c in the radeon tree and
-> >confirmed that the two licenses are identical.
-> >>
-> >> The cik.c header has an additional "Authors:" line which the kfd files do
-> >not, but AFAIK that is not part of the license text proper.
-> >>
-> >
-> >You can not claim GPL if you want to use this license. radeon is weird best for
-> >historical reasons as we wanted to share code with BSD thus it is dual
-> >licensed and this is reflected with :
-> >MODULE_LICENSE("GPL and additional rights");
-> >
-> >inside radeon_drv.c
-> >
-> >So if you want to have MODULE_LICENSE(GPL) then you should have header
-> >that use the GPL license wording and no wording from BSD like license.
-> >Otherwise change the MODULE_LICENSE and it would also be good to say
-> >dual licensed at top of each files (or least next to each license) so that it is
-> >clear this is BSD & GPL license.
-> 
-> Got it. Missed that we had a different MODULE_LICENSE.
-> 
-> Since the goal is license compatibility with radeon so we can update the interface and move code between the drivers in future I guess my preference would be to update MODULE_LICENSE in the kfd code to "GPL and additional rights", do you think that would be OK ?
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-I am not a lawyer and nothing that i said should be considered as legal
-advice (on the contrary ;)) I think you need to be more clear with each
-license to clear says GPLv2 or BSD ie dual licensed but the dual license
-is a beast you would definitly want to talk to lawyer about.
+By default when CONFIG_XEN and CONFIG_XEN_PVHVM kernels are
+run, they will enable the PV extensions (drivers, interrupts, timers,
+etc) - which is the best option for the majority of
+use cases.
 
-Cheers,
-Jérôme
+However, in some cases (kexec not fully working, benchmarking)
+we want to disable Xen PV extensions. As such introduce the
+'xen_nopv' parameter that will do it.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+---
+[v2: s/off/xen_nopv/ per Boris Ostrovsky recommendation.]
+[v3: Add Reviewed-by]
+---
+ Documentation/kernel-parameters.txt |    4 ++++
+ arch/x86/xen/enlighten.c            |   13 +++++++++++++
+ 2 files changed, 17 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index c1b9aa8..5dcfa6e 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -3691,6 +3691,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			Disables the ticketlock slowpath using Xen PV
+ 			optimizations.
+ 
++	xen_nopv	[X86,XEN]
++			Disables the PV optimizations forcing the guest to run
++			as generic HVM guest with no PV drivers.
++
+ 	xirc2ps_cs=	[NET,PCMCIA]
+ 			Format:
+ 			<irq>,<irq_mask>,<io>,<full_duplex>,<do_sound>,<lockup_hack>[,<irq2>[,<irq3>[,<irq4>]]]
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index ffb101e..eb82239 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1826,8 +1826,19 @@ static void __init xen_hvm_guest_init(void)
+ 	xen_hvm_init_mmu_ops();
+ }
+ 
++static bool xen_nopv = false;
++static __init int xen_parse_nopv(char *arg)
++{
++       xen_nopv = true;
++       return 0;
++}
++early_param("xen_nopv", xen_parse_nopv);
++
+ static uint32_t __init xen_hvm_platform(void)
+ {
++	if (xen_nopv)
++		return 0;
++
+ 	if (xen_pv_domain())
+ 		return 0;
+ 
+@@ -1836,6 +1847,8 @@ static uint32_t __init xen_hvm_platform(void)
+ 
+ bool xen_hvm_need_lapic(void)
+ {
++	if (xen_nopv)
++		return false;
+ 	if (xen_pv_domain())
+ 		return false;
+ 	if (!xen_hvm_domain())
+-- 
+1.7.7.6
+
