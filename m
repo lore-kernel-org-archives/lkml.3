@@ -1,66 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753152AbaGKJM3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 05:12:29 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:1915 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753087AbaGKJMY (ORCPT
+	id S1752851AbaGKJLj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 05:11:39 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:16778 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285AbaGKJKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 05:12:24 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 11 Jul 2014 02:01:26 -0700
-Date: Fri, 11 Jul 2014 12:12:07 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "Thierry Reding" <thierry.reding@gmail.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 12/13] cpufreq: Add cpufreq driver for Tegra124
-Message-ID: <20140711091207.GY23218@tbergstrom-lnx.Nvidia.com>
-References: <1405028569-14253-1-git-send-email-ttynkkynen@nvidia.com>
- <1405028569-14253-13-git-send-email-ttynkkynen@nvidia.com>
- <CAKohpom9ORXFiUU4=V+CxgN0ZOFLMEhEjHiU8HsYUYDybNXgHQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAKohpom9ORXFiUU4=V+CxgN0ZOFLMEhEjHiU8HsYUYDybNXgHQ@mail.gmail.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 11 Jul 2014 05:10:45 -0400
+X-AuditID: cbfee691-b7f2f6d0000040c4-e7-53bfaa1015be
+From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+To: linux-iio@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        devicetree@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, cw00.choi@samsung.com,
+        gregkh@linuxfoundation.org, naveenkrishna.ch@gmail.com,
+        lars@metafoo.de, cpgs@samsung.com, grundler@chromium.org
+Subject: [PATCH 4/4] ARM: dts: exynos: Add sysreg phandle to ADC node
+Date: Fri, 11 Jul 2014 14:36:29 +0530
+Message-id: <1405069589-10388-5-git-send-email-ch.naveen@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1405069589-10388-1-git-send-email-ch.naveen@samsung.com>
+References: <1405069589-10388-1-git-send-email-ch.naveen@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkkeLIzCtJLcpLzFFi42JZI2JSoyu4an+wwbwmNouXhzQtrn95zmox
+	/8g5VovmxevZLF4d+cFksWTyfFaLeUfesVhc3jWHzWLG+X1MFou2/Wd24PKY3XCRxWPnrLvs
+	HvvnrmH3WPLmEKtH35ZVjB6fN8kFsEVx2aSk5mSWpRbp2yVwZUz4YFrwXLxi+a5HjA2Mu4S7
+	GDk5JARMJJo+LGCFsMUkLtxbz9bFyMUhJLCUUWLt8j4mmKK3Fz+yQySmM0rseziTEcLpZ5L4
+	cGMxWDubgJnEwUWr2UFsEYE4iQ+X+8E6mAXWMkq0bbsKlhAWcJU4MOkC2FgWAVWJhqMPwJp5
+	geJfHn4C2s0BtE5BYs4kG5Awp4CbxLd/jcwgthBQyZZb3SwgMyUEdrFLPDrynB1ijoDEt8mH
+	WCB6ZSU2HWCGuFpS4uCKGywTGIUXMDKsYhRNLUguKE5KLzLVK07MLS7NS9dLzs/dxAiMhtP/
+	nk3cwXj/gPUhxmSgcROZpUST84HRlFcSb2hsZmRhamJqbGRuaUaasJI4b/qjpCAhgfTEktTs
+	1NSC1KL4otKc1OJDjEwcnFINjJE6S63LmTKW/Zxisr/FKiFG6eSiHP8yzw+dYtIvj3X+u/vQ
+	fB2vsklalOXdP21uJh1L3FnmcQi+5OF+/35t7J3F/16tN+pZ7JX+YZpLy6FQVrYPVg9bZtmZ
+	vepKt/i7/6vYw8ZFsVZnrH4faPnRzb45qkJ0gdDjwyubKzm2ntv8gvXKz/ZOViWW4oxEQy3m
+	ouJEAHy/ogecAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsVy+t9jQd2/K/cHG1z+rGHx8pCmxfUvz1kt
+	5h85x2rRvHg9m8WrIz+YLJZMns9qMe/IOxaLy7vmsFnMOL+PyWLRtv/MDlwesxsusnjsnHWX
+	3WP/3DXsHkveHGL16NuyitHj8ya5ALaoBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0Nd
+	Q0sLcyWFvMTcVFslF58AXbfMHKDTlBTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZ
+	oIGENYwZEz6YFjwXr1i+6xFjA+Mu4S5GTg4JAROJtxc/skPYYhIX7q1n62Lk4hASmM4ose/h
+	TEYIp59J4sONxawgVWwCZhIHF60G6xARiJP4cLmfHaSIWWAto0TbtqtgCWEBV4kDky4wgdgs
+	AqoSDUcfgDXzAsW/PPwEtIIDaJ2CxJxJNiBhTgE3iW//GplBbCGgki23ulkmMPIuYGRYxSia
+	WpBcUJyUnmukV5yYW1yal66XnJ+7iREca8+kdzCuarA4xCjAwajEw3tizb5gIdbEsuLK3EOM
+	EhzMSiK8T+r3BwvxpiRWVqUW5ccXleakFh9iNAU6aiKzlGhyPjAN5JXEGxqbmJsam1qaWJiY
+	WSqJ8x5stQ4UEkhPLEnNTk0tSC2C6WPi4JRqYFxy/fC0zj7z1BOhN038vj6a9u3lLGerysLJ
+	ezwShWexFC/8UHli4Q6lNSUN7zs3SxnM6dvBe3Qtj4NJqFug+k7eMtWkq6fmN1encnhc2zrD
+	aFdpGI/Z1tzTHdaaBq3vDvA8yyzMP1po+nXCFd2oF/bs+/c3baqdovNx2ebp835kL9zRU9zM
+	rq7EUpyRaKjFXFScCABYzRk9ywIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 06:35:56AM +0200, Viresh Kumar wrote:
-> Hi Tuomas,
-> 
-> On 11 July 2014 03:12, Tuomas Tynkkynen <ttynkkynen@nvidia.com> wrote:
-> > Add a new cpufreq driver for Tegra124. Instead of using the PLLX as
-> > the CPU clocksource, switch immediately to the DFLL. It allows the use
-> > of higher clock rates, and will automatically scale the CPU voltage as
-> > well. We also rely on the DFLL driver to determine the CPU clock
-> > frequencies that the chip supports, so that we can directly build a
-> > cpufreq table with the OPP library helper dev_pm_opp_init_cpufreq_table.
-> >
-> > This driver is a completely independent of the old cpufreq driver
-> > (tegra-cpufreq), which is only used on Tegra20.
-> >
-> > Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-> 
-> Please reuse cpufreq-cpu0 instead of adding a new driver. Similar
-> is being adopted by all platforms now: krait, mvebu, etc..
+Instead of using the ADC_PHY register base address, use sysreg phandle
+in ADC node to control ADC_PHY configuration register.
 
-I don't think that's going to work? The voltage scaling is handled in hw.
-cpufreq-cpu0 seems to assume explicit sw control of the vdd_cpu regulator?
+This patch adds syscon node for Exynos3250, Exynos4x12, Exynos5250,
+and Exynos5420, Exynos5800.
 
-Cheers,
+Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+To: linux-samsung-soc@vger.kernel.org
+---
+ arch/arm/boot/dts/exynos3250.dtsi |    3 ++-
+ arch/arm/boot/dts/exynos4x12.dtsi |    3 ++-
+ arch/arm/boot/dts/exynos5250.dtsi |    3 ++-
+ arch/arm/boot/dts/exynos5420.dtsi |    3 ++-
+ 4 files changed, 8 insertions(+), 4 deletions(-)
 
-Peter.
+diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
+index c5e15db..51c9b0d 100644
+--- a/arch/arm/boot/dts/exynos3250.dtsi
++++ b/arch/arm/boot/dts/exynos3250.dtsi
+@@ -262,12 +262,13 @@
+ 
+ 		adc: adc@126C0000 {
+ 			compatible = "samsung,exynos3250-adc-v2";
+-			reg = <0x126C0000 0x100>, <0x10020718 0x4>;
++			reg = <0x126C0000 0x100>;
+ 			interrupts = <0 137 0>;
+ 			clock-names = "adc", "sclk_adc";
+ 			clocks = <&cmu CLK_TSADC>, <&cmu CLK_SCLK_TSADC>;
+ 			#io-channel-cells = <1>;
+ 			io-channel-ranges;
++			samsung,syscon-phandle = <&pmu_system_controller>;
+ 			status = "disabled";
+ 		};
+ 
+diff --git a/arch/arm/boot/dts/exynos4x12.dtsi b/arch/arm/boot/dts/exynos4x12.dtsi
+index c5a943d..9a18d9b 100644
+--- a/arch/arm/boot/dts/exynos4x12.dtsi
++++ b/arch/arm/boot/dts/exynos4x12.dtsi
+@@ -114,13 +114,14 @@
+ 
+ 	adc: adc@126C0000 {
+ 		compatible = "samsung,exynos-adc-v1";
+-		reg = <0x126C0000 0x100>, <0x10020718 0x4>;
++		reg = <0x126C0000 0x100>;
+ 		interrupt-parent = <&combiner>;
+ 		interrupts = <10 3>;
+ 		clocks = <&clock CLK_TSADC>;
+ 		clock-names = "adc";
+ 		#io-channel-cells = <1>;
+ 		io-channel-ranges;
++		samsung,syscon-phandle = <&pmu_system_controller>;
+ 		status = "disabled";
+ 	};
+ 
+diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
+index 834fb5a..6003777 100644
+--- a/arch/arm/boot/dts/exynos5250.dtsi
++++ b/arch/arm/boot/dts/exynos5250.dtsi
+@@ -762,12 +762,13 @@
+ 
+ 	adc: adc@12D10000 {
+ 		compatible = "samsung,exynos-adc-v1";
+-		reg = <0x12D10000 0x100>, <0x10040718 0x4>;
++		reg = <0x12D10000 0x100>
+ 		interrupts = <0 106 0>;
+ 		clocks = <&clock CLK_ADC>;
+ 		clock-names = "adc";
+ 		#io-channel-cells = <1>;
+ 		io-channel-ranges;
++		samsung,syscon-phandle = <&pmu_system_controller>;
+ 		status = "disabled";
+ 	};
+ 
+diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
+index e385322..6979da8 100644
+--- a/arch/arm/boot/dts/exynos5420.dtsi
++++ b/arch/arm/boot/dts/exynos5420.dtsi
+@@ -525,12 +525,13 @@
+ 
+ 	adc: adc@12D10000 {
+ 		compatible = "samsung,exynos-adc-v2";
+-		reg = <0x12D10000 0x100>, <0x10040720 0x4>;
++		reg = <0x12D10000 0x100>;
+ 		interrupts = <0 106 0>;
+ 		clocks = <&clock CLK_TSADC>;
+ 		clock-names = "adc";
+ 		#io-channel-cells = <1>;
+ 		io-channel-ranges;
++		samsung,syscon-phandle = <&pmu_system_controller>;
+ 		status = "disabled";
+ 	};
+ 
+-- 
+1.7.9.5
+
