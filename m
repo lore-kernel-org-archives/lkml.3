@@ -1,92 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816AbaGKSpg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 14:45:36 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:60336 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481AbaGKSpf (ORCPT
+	id S1754944AbaGKSrf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 14:47:35 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:37864 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751798AbaGKSre (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 14:45:35 -0400
-Date: Fri, 11 Jul 2014 11:45:28 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Christoph Lameter <cl@gentwo.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, oleg@redhat.com,
-        sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 11/17] rcu: Bind grace-period kthreads to
- non-NO_HZ_FULL CPUs
-Message-ID: <20140711184528.GQ16041@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140707223756.GA7187@linux.vnet.ibm.com>
- <1404772701-8804-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1404772701-8804-11-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140708152358.GF6571@localhost.localdomain>
- <20140708154723.GN4603@linux.vnet.ibm.com>
- <20140708183846.GJ6571@localhost.localdomain>
- <alpine.DEB.2.11.1407111309150.4777@gentwo.org>
- <20140711182541.GF26045@localhost.localdomain>
+	Fri, 11 Jul 2014 14:47:34 -0400
+Date: Fri, 11 Jul 2014 14:47:29 -0400
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Oded Gabbay <oded.gabbay@gmail.com>
+Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        John Bridgman <John.Bridgman@amd.com>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>
+Subject: Re: [PATCH 12/83] hsa/radeon: Add kfd mmap handler
+Message-ID: <20140711184728.GM1870@gmail.com>
+References: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
+ <1405029027-6085-11-git-send-email-oded.gabbay@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20140711182541.GF26045@localhost.localdomain>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1405029027-6085-11-git-send-email-oded.gabbay@amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14071118-1542-0000-0000-00000337F843
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 08:25:43PM +0200, Frederic Weisbecker wrote:
-> On Fri, Jul 11, 2014 at 01:10:41PM -0500, Christoph Lameter wrote:
-> > On Tue, 8 Jul 2014, Frederic Weisbecker wrote:
-> > 
-> > > > I was figuring that a fair number of the kthreads might eventually
-> > > > be using this, not just for the grace-period kthreads.
-> > >
-> > > Ok makes sense. But can we just rename the cpumask to housekeeping_mask?
-> > 
-> > That would imply that all no-nohz processors are housekeeping? So all
-> > processors with a tick are housekeeping?
+On Fri, Jul 11, 2014 at 12:50:12AM +0300, Oded Gabbay wrote:
+> This patch adds the kfd mmap handler that maps the physical address
+> of a doorbell page to a user-space virtual address. That virtual address
+> belongs to the process that uses the doorbell page.
 > 
-> Well, now that I think about it again, I would really like to keep housekeeping
-> to CPU 0 when nohz_full= is passed.
+> This mmap handler is called only from within the kernel and not to be
+> called from user-mode mmap of /dev/kfd.
 
-When CONFIG_NO_HZ_FULL_SYSIDLE=y, then housekeeping kthreads are bound to
-CPU 0.  However, doing this causes significant slowdowns according to
-Fengguang's testing, so when CONFIG_NO_HZ_FULL_SYSIDLE=n, I bind the
-housekeeping kthreads to the set of non-nohz_full CPUs.
+I think you need to modify max doorbell to be function of page size.
+You definitly want to forbid any access to other process doorbell and
+you can only map page with PAGE_SIZE granularity hence you need to
+modulate the max number of doorbell depending on page size and not
+assume page size is 4k on x86. Someone might build a kernel with
+different page size and if it wants to use this driver it will open
+several security issues.
 
-> > Could we make that set configurable? Ideally I'd like to have the ability
-> > restrict the housekeeping to one processor.
+Cheers,
+Jérôme
+
 > 
-> Ah, I'm curious about your usecase. But I think we can do that. And we should.
+> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+> ---
+>  drivers/gpu/hsa/radeon/kfd_chardev.c  | 20 +++++++++
+>  drivers/gpu/hsa/radeon/kfd_doorbell.c | 85 +++++++++++++++++++++++++++++++++++
+>  2 files changed, 105 insertions(+)
 > 
-> In fact I think that Paul could keep affining grace period kthread to CPU 0
-> for the sole case when we have nohz_full= parameter passed.
+> diff --git a/drivers/gpu/hsa/radeon/kfd_chardev.c b/drivers/gpu/hsa/radeon/kfd_chardev.c
+> index 7a56a8f..0b5bc74 100644
+> --- a/drivers/gpu/hsa/radeon/kfd_chardev.c
+> +++ b/drivers/gpu/hsa/radeon/kfd_chardev.c
+> @@ -39,6 +39,7 @@ static const struct file_operations kfd_fops = {
+>  	.owner = THIS_MODULE,
+>  	.unlocked_ioctl = kfd_ioctl,
+>  	.open = kfd_open,
+> +	.mmap = kfd_mmap,
+>  };
+>  
+>  static int kfd_char_dev_major = -1;
+> @@ -131,3 +132,22 @@ kfd_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
+>  
+>  	return err;
+>  }
+> +
+> +static int
+> +kfd_mmap(struct file *filp, struct vm_area_struct *vma)
+> +{
+> +	unsigned long pgoff = vma->vm_pgoff;
+> +	struct kfd_process *process;
+> +
+> +	process = radeon_kfd_get_process(current);
+> +	if (IS_ERR(process))
+> +		return PTR_ERR(process);
+> +
+> +	if (pgoff < KFD_MMAP_DOORBELL_START)
+> +		return -EINVAL;
+> +
+> +	if (pgoff < KFD_MMAP_DOORBELL_END)
+> +		return radeon_kfd_doorbell_mmap(process, vma);
+> +
+> +	return -EINVAL;
+> +}
+> diff --git a/drivers/gpu/hsa/radeon/kfd_doorbell.c b/drivers/gpu/hsa/radeon/kfd_doorbell.c
+> index 79a9d4b..e1d8506 100644
+> --- a/drivers/gpu/hsa/radeon/kfd_doorbell.c
+> +++ b/drivers/gpu/hsa/radeon/kfd_doorbell.c
+> @@ -70,3 +70,88 @@ void radeon_kfd_doorbell_init(struct kfd_dev *kfd)
+>  	kfd->doorbell_process_limit = doorbell_process_limit;
+>  }
+>  
+> +/* This is the /dev/kfd mmap (for doorbell) implementation. We intend that this is only called through map_doorbells,
+> +** not through user-mode mmap of /dev/kfd. */
+> +int radeon_kfd_doorbell_mmap(struct kfd_process *process, struct vm_area_struct *vma)
+> +{
+> +	unsigned int device_index;
+> +	struct kfd_dev *dev;
+> +	phys_addr_t start;
+> +
+> +	BUG_ON(vma->vm_pgoff < KFD_MMAP_DOORBELL_START || vma->vm_pgoff >= KFD_MMAP_DOORBELL_END);
+> +
+> +	/* For simplicitly we only allow mapping of the entire doorbell allocation of a single device & process. */
+> +	if (vma->vm_end - vma->vm_start != doorbell_process_allocation())
+> +		return -EINVAL;
+> +
+> +	/* device_index must be GPU ID!! */
+> +	device_index = vma->vm_pgoff - KFD_MMAP_DOORBELL_START;
+> +
+> +	dev = radeon_kfd_device_by_id(device_index);
+> +	if (dev == NULL)
+> +		return -EINVAL;
+> +
+> +	vma->vm_flags |= VM_IO | VM_DONTCOPY | VM_DONTEXPAND | VM_NORESERVE | VM_DONTDUMP | VM_PFNMAP;
+> +	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+> +
+> +	start = dev->doorbell_base + process->pasid * doorbell_process_allocation();
+> +
+> +	pr_debug("kfd: mapping doorbell page in radeon_kfd_doorbell_mmap\n"
+> +		 "     target user address == 0x%016llX\n"
+> +		 "     physical address    == 0x%016llX\n"
+> +		 "     vm_flags            == 0x%08lX\n"
+> +		 "     size                == 0x%08lX\n",
+> +		 (long long unsigned int) vma->vm_start, start, vma->vm_flags,
+> +		 doorbell_process_allocation());
+> +
+> +	return io_remap_pfn_range(vma,
+> +				vma->vm_start,
+> +				start >> PAGE_SHIFT,
+> +				doorbell_process_allocation(),
+> +				vma->vm_page_prot);
+> +}
+> +
+> +/* Map the doorbells for a single process & device. This will indirectly call radeon_kfd_doorbell_mmap.
+> +** This assumes that the process mutex is being held. */
+> +static int
+> +map_doorbells(struct file *devkfd, struct kfd_process *process, struct kfd_dev *dev)
+> +{
+> +	struct kfd_process_device *pdd = radeon_kfd_get_process_device_data(dev, process);
+> +
+> +	if (pdd == NULL)
+> +		return -ENOMEM;
+> +
+> +	if (pdd->doorbell_mapping == NULL) {
+> +		unsigned long offset = (KFD_MMAP_DOORBELL_START + dev->id) << PAGE_SHIFT;
+> +		doorbell_t __user *doorbell_mapping;
+> +
+> +		doorbell_mapping = (doorbell_t __user *)vm_mmap(devkfd, 0, doorbell_process_allocation(), PROT_WRITE,
+> +								MAP_SHARED, offset);
+> +		if (IS_ERR(doorbell_mapping))
+> +			return PTR_ERR(doorbell_mapping);
+> +
+> +		pdd->doorbell_mapping = doorbell_mapping;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/* Get the user-mode address of a doorbell. Assumes that the process mutex is being held. */
+> +doorbell_t __user *radeon_kfd_get_doorbell(struct file *devkfd, struct kfd_process *process, struct kfd_dev *dev,
+> +					   unsigned int doorbell_index)
+> +{
+> +	struct kfd_process_device *pdd;
+> +	int err;
+> +
+> +	BUG_ON(doorbell_index > MAX_DOORBELL_INDEX);
+> +
+> +	err = map_doorbells(devkfd, process, dev);
+> +	if (err)
+> +		return ERR_PTR(err);
+> +
+> +	pdd = radeon_kfd_get_process_device_data(dev, process);
+> +	BUG_ON(pdd == NULL); /* map_doorbells would have failed otherwise */
+> +
+> +	return &pdd->doorbell_mapping[doorbell_index];
+> +}
+> +
+> -- 
+> 1.9.1
 > 
-> I think the performance issues reported to him refer to CONFIG_NO_HZ_FULL=y
-> config without nohz_full= parameter passed. That's the most important to address.
-> 
-> Optimizing the "nohz_full= passed" case is probably not very useful and worse
-> it complicate things a lot.
-> 
-> What do you think Paul? Can we simplify things that way? I'm pretty sure that
-> nobody cares about optimizing the nohz_full= case. That would really simplify
-> things to stick to CPU 0.
-
-When we have CONFIG_NO_HZ_FULL_SYSIDLE=y, agreed.  In that case, having
-housekeeping CPUs on CPUs other than CPU 0 means that you never reach
-full-system-idle state.
-
-But in other cases, we appear to need more than one housekeeping CPU.
-This is especially the case when people run general workloads on systems
-that have NO_HZ_FULL=y, which appears to be a significant fraction of
-the systems these days.
-
-							Thanx, Paul
-
