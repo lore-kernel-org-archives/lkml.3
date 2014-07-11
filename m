@@ -1,148 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621AbaGKJJB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 05:09:01 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:59954 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752523AbaGKJI6 convert rfc822-to-8bit (ORCPT
+	id S1752001AbaGKJKh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 05:10:37 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:35144 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042AbaGKJKe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 05:08:58 -0400
-Date: Fri, 11 Jul 2014 10:08:51 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'linux-pci'" <linux-pci@vger.kernel.org>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'linaro-kernel'" <linaro-kernel@lists.linaro.org>,
-        "'Tanmay Inamdar'" <tinamdar@apm.com>,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Sinan Kaya'" <okaya@codeaurora.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Suravee Suthikulanit'" <suravee.suthikulpanit@amd.com>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Device Tree ML'" <devicetree@vger.kernel.org>,
-        "'LAKML'" <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 8/9] pci: Add support for creating a generic
- host_bridge from device tree
-Message-ID: <20140711090851.GL6501@e106497-lin.cambridge.arm.com>
-References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
- <1404240214-9804-9-git-send-email-Liviu.Dudau@arm.com>
- <004601cf9cdb$ca08f7f0$5e1ae7d0$%han@samsung.com>
-MIME-Version: 1.0
-In-Reply-To: <004601cf9cdb$ca08f7f0$5e1ae7d0$%han@samsung.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 11 Jul 2014 09:08:52.0183 (UTC) FILETIME=[BBF55670:01CF9CE7]
-X-MC-Unique: 114071110085513401
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	Fri, 11 Jul 2014 05:10:34 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        Jason Cooper <jason@lakedaemon.net>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: Fix preemption disable in iwmmxt_task_enable()
+Date: Fri, 11 Jul 2014 11:10:13 +0200
+Message-Id: <1405069813-9270-1-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <20140706080845.723e9787@armhf>
+References: <20140706080845.723e9787@armhf>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 08:43:21AM +0100, Jingoo Han wrote:
-> On Wednesday, July 02, 2014 3:44 AM, Liviu Dudau wrote:
-> > 
-> > Several platforms use a rather generic version of parsing
-> > the device tree to find the host bridge ranges. Move the common code
-> > into the generic PCI code and use it to create a pci_host_bridge
-> > structure that can be used by arch code.
-> > 
-> > Based on early attempts by Andrew Murray to unify the code.
-> > Used powerpc and microblaze PCI code as starting point.
-> > 
-> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> > Tested-by: Tanmay Inamdar <tinamdar@apm.com>
-> > ---
-> >  drivers/of/of_pci.c       | 135 ++++++++++++++++++++++++++++++++++++++++++++++
-> >  drivers/pci/host-bridge.c |  18 +++++++
-> >  include/linux/of_pci.h    |  10 ++++
-> >  include/linux/pci.h       |   8 +++
-> >  4 files changed, 171 insertions(+)
-> > 
-> > diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
-> > index 8481996..55d8320 100644
-> > --- a/drivers/of/of_pci.c
-> > +++ b/drivers/of/of_pci.c
-> 
-> [.....]
-> 
-> > +struct pci_host_bridge *
-> > +of_create_pci_host_bridge(struct device *parent, struct pci_ops *ops, void *host_data)
-> > +{
-> > +	int err, domain, busno;
-> > +	struct resource *bus_range;
-> > +	struct pci_bus *root_bus;
-> > +	struct pci_host_bridge *bridge;
-> > +	resource_size_t io_base;
-> > +	LIST_HEAD(res);
-> > +
-> > +	bus_range = kzalloc(sizeof(*bus_range), GFP_KERNEL);
-> > +	if (!bus_range)
-> > +		return ERR_PTR(-ENOMEM);
-> > +
-> > +	domain = of_alias_get_id(parent->of_node, "pci-domain");
-> > +	if (domain == -ENODEV)
-> > +		domain = atomic_inc_return(&domain_nr);
-> > +
-> > +	err = of_pci_parse_bus_range(parent->of_node, bus_range);
-> > +	if (err) {
-> > +		dev_info(parent, "No bus range for %s, using default [0-255]\n",
-> > +			parent->of_node->full_name);
-> > +		bus_range->start = 0;
-> > +		bus_range->end = 255;
-> > +		bus_range->flags = IORESOURCE_BUS;
-> > +	}
-> > +	busno = bus_range->start;
-> > +	pci_add_resource(&res, bus_range);
-> > +
-> > +	/* now parse the rest of host bridge bus ranges */
-> > +	err = pci_host_bridge_of_get_ranges(parent->of_node, &res, &io_base);
-> > +	if (err)
-> > +		goto err_create;
-> > +
-> > +	/* then create the root bus */
-> > +	root_bus = pci_create_root_bus_in_domain(parent, domain, busno,
-> > +						ops, host_data, &res);
-> > +	if (IS_ERR(root_bus)) {
-> > +		err = PTR_ERR(root_bus);
-> > +		goto err_create;
-> > +	}
-> > +
-> > +	bridge = to_pci_host_bridge(root_bus->bridge);
-> > +	bridge->io_base = io_base;
-> 
-> Hi Liviu Dudau,
-> 
-> Would you fix the following warning?
-> 
-> drivers/of/of_pci.c: In function 'of_create_pci_host_bridge'
-> drivers/of/of_pci.c:218:18: warning: 'of_base' may be used uninitialized in this function [-Wmaybe-uninitialized]
->   bridge->io_base = io_base;
+commit 431a84b1a4f7d1a0085d5b91330c5053cc8e8b12
+ ("ARM: 8034/1: Disable preemption in iwmmxt_task_enable()")
+introduced macros {inc,dec}_preempt_count to iwmmxt_task_enable
+to make it run with preemption disabled.
 
-Yes, I have a simple fix which is to set the initial value to zero when declaring the variable.
+Unfortunately, other functions in iwmmxt.S also use concan_{save,dump,load}
+sections located in iwmmxt_task_enable() to deal with iWMMXt coprocessor.
+This causes an unbalanced preempt_count due to excessive dec_preempt_count
+and destroyed return addresses in callers of concan_ labels due to a register
+collision:
 
-Best regards,
-Liviu
+Linux version 3.16.0-rc3-00062-gd92a333-dirty (jef@armhf) (gcc version 4.8.3 (Debian 4.8.3-4) ) #5 PREEMPT Thu Jul 3 19:46:39 CEST 2014
+CPU: ARMv7 Processor [560f5815] revision 5 (ARMv7), cr=10c5387d
+CPU: PIPT / VIPT nonaliasing data cache, PIPT instruction cache
+Machine model: SolidRun CuBox
+...
+PJ4 iWMMXt v2 coprocessor enabled.
+...
+Unable to handle kernel paging request at virtual address fffffffe
+pgd = bb25c000
+[fffffffe] *pgd=3bfde821, *pte=00000000, *ppte=00000000
+Internal error: Oops: 80000007 [#1] PREEMPT ARM
+Modules linked in:
+CPU: 0 PID: 62 Comm: startpar Not tainted 3.16.0-rc3-00062-gd92a333-dirty #5
+task: bb230b80 ti: bb256000 task.ti: bb256000
+PC is at 0xfffffffe
+LR is at iwmmxt_task_copy+0x44/0x4c
+pc : [<fffffffe>]    lr : [<800130ac>]    psr: 40000033
+sp : bb257de8  ip : 00000013  fp : bb257ea4
+r10: bb256000  r9 : fffffdfe  r8 : 76e898e6
+r7 : bb257ec8  r6 : bb256000  r5 : 7ea12760  r4 : 000000a0
+r3 : ffffffff  r2 : 00000003  r1 : bb257df8  r0 : 00000000
+Flags: nZcv  IRQs on  FIQs on  Mode SVC_32  ISA Thumb  Segment user
+Control: 10c5387d  Table: 3b25c019  DAC: 00000015
+Process startpar (pid: 62, stack limit = 0xbb256248)
 
-> 
-> Best regards,
-> Jingoo Han
-> 
-> [.....]
-> 
-> 
+This patch fixes the issue by moving concan_{save,dump,load} into separate
+code sections and make iwmmxt_task_enable() call them in the same way the
+other functions use concan_ symbols. The test for valid ownership is moved
+to concan_save and is safe for the other user of it, iwmmxt_task_disable().
+The register collision is also resolved by moving concan_ symbols as
+{inc,dec}_preempt_count are now local to iwmmxt_task_enable().
 
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Reported-by: Jean-Francois Moine <moinejf@free.fr>
+Fixes: 431a84b1a4f7 ("ARM: 8034/1: Disable preemption in iwmmxt_task_enable()")
+---
+The offending commit was intoduced past v3.15-rc1 and the corresponding fix
+should also be queued up for stable v3.15+
+
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Jean-Francois Moine <moinejf@free.fr>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arm/kernel/iwmmxt.S |   16 +++++++++-------
+ 1 files changed, 9 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/kernel/iwmmxt.S b/arch/arm/kernel/iwmmxt.S
+index a5599cf..fc95b89 100644
+--- a/arch/arm/kernel/iwmmxt.S
++++ b/arch/arm/kernel/iwmmxt.S
+@@ -94,13 +94,19 @@ ENTRY(iwmmxt_task_enable)
+ 
+ 	mrc	p15, 0, r2, c2, c0, 0
+ 	mov	r2, r2				@ cpwait
++	bl	concan_save
+ 
+-	teq	r1, #0				@ test for last ownership
+-	mov	lr, r9				@ normal exit from exception
+-	beq	concan_load			@ no owner, skip save
++#ifdef CONFIG_PREEMPT_COUNT
++	get_thread_info r10
++#endif
++4:	dec_preempt_count r10, r3
++	mov	pc, r9				@ normal exit from exception
+ 
+ concan_save:
+ 
++	teq	r1, #0				@ test for last ownership
++	beq	concan_load			@ no owner, skip save
++
+ 	tmrc	r2, wCon
+ 
+ 	@ CUP? wCx
+@@ -175,10 +181,6 @@ concan_load:
+ 	tmcr	wCon, r2
+ 
+ 3:
+-#ifdef CONFIG_PREEMPT_COUNT
+-	get_thread_info r10
+-#endif
+-4:	dec_preempt_count r10, r3
+ 	mov	pc, lr
+ 
+ /*
 -- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+1.7.2.5
 
