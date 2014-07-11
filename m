@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932192AbaGKNyH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:54:07 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56154 "EHLO
+	id S1754098AbaGKNoe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:44:34 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56140 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754093AbaGKNoh (ORCPT
+	with ESMTP id S1753734AbaGKNoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:44:37 -0400
-Message-Id: <20140711133707.403364677@linutronix.de>
+	Fri, 11 Jul 2014 09:44:32 -0400
+Message-Id: <20140711133707.136013235@linutronix.de>
 User-Agent: quilt/0.63-1
-Date: Fri, 11 Jul 2014 13:44:35 -0000
+Date: Fri, 11 Jul 2014 13:44:31 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 25/55] drm: Use ktime_mono_to_real()
+Subject: [patch 22/55] timekeeping: Provide ktime_mono_to_any()
 References: <20140711133623.530368377@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=drm-use-ktime-mono-to-real.patch
+Content-Disposition: inline;
+ filename=timekeeping-provide-ktime-mono_to-wall.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -26,65 +27,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert the monotonic timestamp with ktime_mono_to_real() in
-drm_calc_vbltimestamp_from_scanoutpos().
-
-In get_drm_timestamp we can call either ktime_get() or
-ktime_get_real() depending on drm_timestamp_monotonic. No point in
-having two calls into the core for CLOCK_REALTIME.
+ktime based conversion function to map a monotonic time stamp to a
+different CLOCK.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/gpu/drm/drm_irq.c |   16 +++-------------
- 1 file changed, 3 insertions(+), 13 deletions(-)
-Index: tip/drivers/gpu/drm/drm_irq.c
+ include/linux/timekeeping.h |    9 +++++++++
+ kernel/time/timekeeping.c   |   20 ++++++++++++++++++++
+ 2 files changed, 29 insertions(+)
+
+Index: tip/include/linux/timekeeping.h
 ===================================================================
---- tip.orig/drivers/gpu/drm/drm_irq.c
-+++ tip/drivers/gpu/drm/drm_irq.c
-@@ -542,8 +542,8 @@ int drm_calc_vbltimestamp_from_scanoutpo
- 					  const struct drm_crtc *refcrtc,
- 					  const struct drm_display_mode *mode)
- {
--	ktime_t stime, etime, mono_time_offset;
- 	struct timeval tv_etime;
-+	ktime_t stime, etime;
- 	int vbl_status;
- 	int vpos, hpos, i;
- 	int framedur_ns, linedur_ns, pixeldur_ns, delta_ns, duration_ns;
-@@ -588,13 +588,6 @@ int drm_calc_vbltimestamp_from_scanoutpo
- 		vbl_status = dev->driver->get_scanout_position(dev, crtc, flags, &vpos,
- 							       &hpos, &stime, &etime);
+--- tip.orig/include/linux/timekeeping.h
++++ tip/include/linux/timekeeping.h
+@@ -109,6 +109,7 @@ enum tk_offsets {
+ extern ktime_t ktime_get(void);
+ extern ktime_t ktime_get_with_offset(enum tk_offsets offs);
+ extern ktime_t ktime_get_monotonic_offset(void);
++extern ktime_t ktime_mono_to_any(ktime_t tmono, enum tk_offsets offs);
  
--		/*
--		 * Get correction for CLOCK_MONOTONIC -> CLOCK_REALTIME if
--		 * CLOCK_REALTIME is requested.
--		 */
--		if (!drm_timestamp_monotonic)
--			mono_time_offset = ktime_get_monotonic_offset();
--
- 		/* Return as no-op if scanout query unsupported or failed. */
- 		if (!(vbl_status & DRM_SCANOUTPOS_VALID)) {
- 			DRM_DEBUG("crtc %d : scanoutpos query failed [%d].\n",
-@@ -633,7 +626,7 @@ int drm_calc_vbltimestamp_from_scanoutpo
- 	delta_ns = vpos * linedur_ns + hpos * pixeldur_ns;
- 
- 	if (!drm_timestamp_monotonic)
--		etime = ktime_sub(etime, mono_time_offset);
-+		etime = ktime_mono_to_real(etime);
- 
- 	/* save this only for debugging purposes */
- 	tv_etime = ktime_to_timeval(etime);
-@@ -664,10 +657,7 @@ static struct timeval get_drm_timestamp(
- {
- 	ktime_t now;
- 
--	now = ktime_get();
--	if (!drm_timestamp_monotonic)
--		now = ktime_sub(now, ktime_get_monotonic_offset());
--
-+	now = drm_timestamp_monotonic ? ktime_get() : ktime_get_real();
- 	return ktime_to_timeval(now);
+ /**
+  * ktime_get_real - get the real (wall-) time in ktime_t format
+@@ -137,6 +138,14 @@ static inline ktime_t ktime_get_clocktai
+ 	return ktime_get_with_offset(TK_OFFS_TAI);
  }
  
++/**
++ * ktime_mono_to_real - Convert monotonic time to clock realtime
++ */
++static inline ktime_t ktime_mono_to_real(ktime_t mono)
++{
++	return ktime_mono_to_any(mono, TK_OFFS_REAL);
++}
++
+ /*
+  * RTC specific
+  */
+Index: tip/kernel/time/timekeeping.c
+===================================================================
+--- tip.orig/kernel/time/timekeeping.c
++++ tip/kernel/time/timekeeping.c
+@@ -450,6 +450,26 @@ ktime_t ktime_get_with_offset(enum tk_of
+ EXPORT_SYMBOL_GPL(ktime_get_with_offset);
+ 
+ /**
++ * ktime_mono_to_any() - convert mononotic time to any other time
++ * @tmono:	time to convert.
++ * @offs:	which offset to use
++ */
++ktime_t ktime_mono_to_any(ktime_t tmono, enum tk_offsets offs)
++{
++	ktime_t *offset = offsets[offs];
++	unsigned long seq;
++	ktime_t tconv;
++
++	do {
++		seq = read_seqcount_begin(&tk_core.seq);
++		tconv = ktime_add(tmono, *offset);
++	} while (read_seqcount_retry(&tk_core.seq, seq));
++
++	return tconv;
++}
++EXPORT_SYMBOL_GPL(ktime_mono_to_any);
++
++/**
+  * ktime_get_ts64 - get the monotonic clock in timespec64 format
+  * @ts:		pointer to timespec variable
+  *
 
 
