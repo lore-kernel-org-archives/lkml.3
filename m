@@ -1,84 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789AbaGKOVf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 10:21:35 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:13628 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753385AbaGKOTF (ORCPT
+	id S1754661AbaGKOSw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 10:18:52 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:35800 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754425AbaGKOSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 10:19:05 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 11 Jul 2014 07:11:56 -0700
-From: Mikko Perttunen <mperttunen@nvidia.com>
-To: <pdeschrijver@nvidia.com>, <pgaikwad@nvidia.com>, <mturquette@linaro.org>,
-        <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-tegra@vger.kernel.org>, Mikko Perttunen <mperttunen@nvidia.com>
-Subject: [PATCH 1/8] clk: tegra124: Remove old emc_mux and emc clocks
-Date: Fri, 11 Jul 2014 17:18:26 +0300
-Message-ID: <1405088313-20048-2-git-send-email-mperttunen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1405088313-20048-1-git-send-email-mperttunen@nvidia.com>
-References: <1405088313-20048-1-git-send-email-mperttunen@nvidia.com>
-X-NVConfidentiality: public
+	Fri, 11 Jul 2014 10:18:49 -0400
+Date: Fri, 11 Jul 2014 11:24:14 +0200
+From: Simon Horman <horms@verge.net.au>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: Magnus Damm <magnus.damm@gmail.com>, devicetree@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 13/13] [RFC] irqchip: renesas-irqc: Add binding docs for
+ new R-Car Gen2 SoCs
+Message-ID: <20140711092414.GR12420@verge.net.au>
+References: <1404908623-909-1-git-send-email-geert+renesas@glider.be>
+ <1404908623-909-14-git-send-email-geert+renesas@glider.be>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404908623-909-14-git-send-email-geert+renesas@glider.be>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These clocks have never been able to do anything.
+On Wed, Jul 09, 2014 at 02:23:43PM +0200, Geert Uytterhoeven wrote:
+>   - r8a7792 (R-Car V2H)
+>   - r8a7793 (R-Car M2-N)
+>   - r8a7794 (R-Car E2)
+> 
+> r8a7791 is now called "R-Car M2-W".
 
-Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
----
- drivers/clk/tegra/clk-tegra124.c | 13 -------------
- 1 file changed, 13 deletions(-)
+As per my comments on patches in this series:
 
-diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
-index 80efe51..99cc5ea 100644
---- a/drivers/clk/tegra/clk-tegra124.c
-+++ b/drivers/clk/tegra/clk-tegra124.c
-@@ -29,7 +29,6 @@
- #include "clk-id.h"
- 
- #define CLK_SOURCE_CSITE 0x1d4
--#define CLK_SOURCE_EMC 0x19c
- 
- #define PLLC_BASE 0x80
- #define PLLC_OUT 0x84
-@@ -149,11 +148,6 @@ static const char *mux_plld_out0_plld2_out0[] = {
- };
- #define mux_plld_out0_plld2_out0_idx NULL
- 
--static const char *mux_pllmcp_clkm[] = {
--	"pll_m", "pll_c", "pll_p", "clk_m", "pll_m_ud", "pll_c2", "pll_c3",
--};
--#define mux_pllmcp_clkm_idx NULL
--
- static struct div_nmp pllxc_nmp = {
- 	.divm_shift = 0,
- 	.divm_width = 8,
-@@ -789,7 +783,6 @@ static struct tegra_clk tegra124_clks[tegra_clk_max] __initdata = {
- 	[tegra_clk_i2c2] = { .dt_id = TEGRA124_CLK_I2C2, .present = true },
- 	[tegra_clk_uartc] = { .dt_id = TEGRA124_CLK_UARTC, .present = true },
- 	[tegra_clk_mipi_cal] = { .dt_id = TEGRA124_CLK_MIPI_CAL, .present = true },
--	[tegra_clk_emc] = { .dt_id = TEGRA124_CLK_EMC, .present = true },
- 	[tegra_clk_usb2] = { .dt_id = TEGRA124_CLK_USB2, .present = true },
- 	[tegra_clk_usb3] = { .dt_id = TEGRA124_CLK_USB3, .present = true },
- 	[tegra_clk_vde_8] = { .dt_id = TEGRA124_CLK_VDE, .present = true },
-@@ -1123,12 +1116,6 @@ static __init void tegra124_periph_clk_init(void __iomem *clk_base,
- 			       clk_base + PLLD2_BASE, 25, 1, 0, &pll_d2_lock);
- 	clks[TEGRA124_CLK_DSIB_MUX] = clk;
- 
--	/* emc mux */
--	clk = clk_register_mux(NULL, "emc_mux", mux_pllmcp_clkm,
--			       ARRAY_SIZE(mux_pllmcp_clkm), 0,
--			       clk_base + CLK_SOURCE_EMC,
--			       29, 3, 0, NULL);
--
- 	/* cml0 */
- 	clk = clk_register_gate(NULL, "cml0", "pll_e", 0, clk_base + PLLE_AUX,
- 				0, 0, &pll_e_lock);
--- 
-1.8.1.5
+	I don't feel strongly about this either way.  But it seems to me
+	that if we want to start using "M2-W" then we should make some
+	effort, though not necessarily immediately, to update all instances
+	of "M2" that already exist in the tree.
 
+        This seems to be in keeping with the approach we ave taken for
+        these SoCs for other drivers. And from that point of view it is
+        fine by me.  But I wonder how sure are we that the hardware on the
+        SoCs will work with this approach.
+
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> ---
+>  .../devicetree/bindings/interrupt-controller/renesas,irqc.txt        | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/interrupt-controller/renesas,irqc.txt b/Documentation/devicetree/bindings/interrupt-controller/renesas,irqc.txt
+> index f819e2a5907c..cd9d92708c21 100644
+> --- a/Documentation/devicetree/bindings/interrupt-controller/renesas,irqc.txt
+> +++ b/Documentation/devicetree/bindings/interrupt-controller/renesas,irqc.txt
+> @@ -6,7 +6,10 @@ Required properties:
+>    Examples with soctypes are:
+>      - "renesas,irqc-r8a73a4" (R-Mobile AP6)
+>      - "renesas,irqc-r8a7790" (R-Car H2)
+> -    - "renesas,irqc-r8a7791" (R-Car M2)
+> +    - "renesas,irqc-r8a7791" (R-Car M2-W)
+> +    - "renesas,irqc-r8a7792" (R-Car V2H)
+> +    - "renesas,irqc-r8a7793" (R-Car M2-N)
+> +    - "renesas,irqc-r8a7794" (R-Car E2)
+>  - #interrupt-cells: has to be <2>: an interrupt index and flags, as defined in
+>    interrupts.txt in this directory
+>  
+> -- 
+> 1.9.1
+> 
