@@ -1,824 +1,546 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885AbaGKOFf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 10:05:35 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:59460 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754110AbaGKOF3 (ORCPT
+	id S1754923AbaGKOFr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 10:05:47 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:49226 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754889AbaGKOFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 10:05:29 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-a9-53bfef261473
+	Fri, 11 Jul 2014 10:05:42 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-c5-53bfef333363
 From: Jacek Anaszewski <j.anaszewski@samsung.com>
 To: linux-leds@vger.kernel.org, devicetree@vger.kernel.org,
         linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
         Jacek Anaszewski <j.anaszewski@samsung.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [PATCH/RFC v4 15/21] media: Add registration helpers for V4L2 flash
-Date: Fri, 11 Jul 2014 16:04:18 +0200
-Message-id: <1405087464-13762-16-git-send-email-j.anaszewski@samsung.com>
+        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>
+Subject: [PATCH/RFC v4 18/21] leds: Add driver for AAT1290 current regulator
+Date: Fri, 11 Jul 2014 16:04:21 +0200
+Message-id: <1405087464-13762-19-git-send-email-j.anaszewski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
 References: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFLMWRmVeSWpSXmKPExsVy+t9jQV319/uDDaa+YLHYOGM9q8X8I+dY
-	LZb83MVk0Xv1OaPF2aY37BaXd81hs9j6Zh2jRc+GrawWZ/avZHPg9JjyeyOrx+GvC1k8+ras
-	YvT4vEkugCWKyyYlNSezLLVI3y6BK2Pxni/sBa0HGStaj9k2MM6Yz9jFyMkhIWAicfvseyhb
-	TOLCvfVsXYxcHEIC0xklnm6bxA7htDNJ/Ng1mRmkik3AUOLni9dMILaIQLlEz/tnYB3MApsZ
-	Je7ObWMBSQgL+Egc+NsKZrMIqEos7zsDtoJXwFNi6ZXXQDYH0DoFiTmTbEDCnEDhg/032UBs
-	IQEPiYdrT7BPYORdwMiwilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4xJ5J7WBc2WBxiFGA
-	g1GJh1dh/b5gIdbEsuLK3EOMEhzMSiK8V9/sDxbiTUmsrEotyo8vKs1JLT7EKM3BoiTOe6DV
-	OlBIID2xJDU7NbUgtQgmy8TBKdXAKMbQ2KskmhpddfbZ/G4ZvUa3eacmJEt0zmxItmO3uSHk
-	LPndXJ4haIEbx9HHeafuxdy7/7dKJXFV2KoHi60emP3rqHLTq71clSa4SufWSoMwJ+E9y44F
-	eBjKKnmwcoVJymxu5F9YVhfdZ+a8hGG6S7xJAruve5ngDVEdr6ToayL69f9MzymxFGckGmox
-	FxUnAgBHmycrLQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGLMWRmVeSWpSXmKPExsVy+t9jQV3j9/uDDaa0WVhsnLGe1eLozolM
+	FvOPnGO16L36nNHibNMbdovLu+awWWx9s47RomfDVlaL3buesjpweuycdZfdY8/8H6wefVtW
+	MXp83iQXwBLFZZOSmpNZllqkb5fAlXH93W3WgusFFTc7D7M1MD6K7WLk4JAQMJHov8/TxcgJ
+	ZIpJXLi3ng3EFhKYzijxa4p5FyMXkN3OJHGp9QYLSIJNwFDi54vXTCC2iEC5RM/7Z2wgRcwC
+	qxkl7mz9ygoyVFjAR2L3+1KQGhYBVYn7M44zg9i8Ap4Sn1a3sELsVZCYM8kGJMwJFD7YfxNq
+	r4fEw7Un2Ccw8i5gZFjFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJERxaz6R2MK5ssDjEKMDB
+	qMTDq7B+X7AQa2JZcWXuIUYJDmYlEd6rb/YHC/GmJFZWpRblxxeV5qQWH2KU5mBREuc90God
+	KCSQnliSmp2aWpBaBJNl4uCUamDknHomot+D57XxWVszMeXZN2zjfYyOaQsuKr72cdmO5HkC
+	7/TuKmc79Z37NmvXoTNSl4/Pini/8fL3PrUn3FuVNTQrJD4eT8i1LlT+t8XrsPR/JxarYL6m
+	yyHqqovatQ+dM2kWULrHqba3+oZq5/PIjw0cFaqpMVNvBfZVzZqn6ljT/PEPy3ElluKMREMt
+	5qLiRAAy6gXHKQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds helper functions for registering/unregistering
-LED class flash devices as V4L2 subdevs. The functions should
-be called from the LED subsystem device driver. In case the
-support for V4L2 Flash sub-devices is disabled in the kernel
-config the functions' empty versions will be used.
+This patch adds a driver for the 1.5A Step-Up
+Current Regulator for Flash LEDs. The device is
+programmed through a Skyworks' proprietary AS2Cwire
+serial digital interface.
 
 Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Sakari Ailus <sakari.ailus@iki.fi>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>
+Cc: Bryan Wu <cooloney@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
 ---
- drivers/media/v4l2-core/Kconfig      |   11 +
- drivers/media/v4l2-core/Makefile     |    2 +
- drivers/media/v4l2-core/v4l2-flash.c |  580 ++++++++++++++++++++++++++++++++++
- include/media/v4l2-flash.h           |  137 ++++++++
- 4 files changed, 730 insertions(+)
- create mode 100644 drivers/media/v4l2-core/v4l2-flash.c
- create mode 100644 include/media/v4l2-flash.h
+ drivers/leds/Kconfig        |    6 +
+ drivers/leds/Makefile       |    1 +
+ drivers/leds/leds-aat1290.c |  455 +++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 462 insertions(+)
+ create mode 100644 drivers/leds/leds-aat1290.c
 
-diff --git a/drivers/media/v4l2-core/Kconfig b/drivers/media/v4l2-core/Kconfig
-index 9ca0f8d..3ae3f0f 100644
---- a/drivers/media/v4l2-core/Kconfig
-+++ b/drivers/media/v4l2-core/Kconfig
-@@ -35,6 +35,17 @@ config V4L2_MEM2MEM_DEV
-         tristate
-         depends on VIDEOBUF2_CORE
+diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+index 794055e..ef774fd 100644
+--- a/drivers/leds/Kconfig
++++ b/drivers/leds/Kconfig
+@@ -42,6 +42,12 @@ config LEDS_88PM860X
+ 	  This option enables support for on-chip LED drivers found on Marvell
+ 	  Semiconductor 88PM8606 PMIC.
  
-+# Used by LED subsystem flash drivers
-+config V4L2_FLASH_LED_CLASS
-+	bool "Enable support for Flash sub-devices"
-+	depends on VIDEO_V4L2_SUBDEV_API
++config LEDS_AAT1290
++	tristate "LED support for the AAT1290"
 +	depends on LEDS_CLASS_FLASH
-+	---help---
-+	  Say Y here to enable support for Flash sub-devices, which allow
-+	  to control LED class devices with use of V4L2 Flash controls.
++	help
++	 This option enables support for the LEDs on the AAT1290.
 +
-+	  When in doubt, say N.
-+
- # Used by drivers that need Videobuf modules
- config VIDEOBUF_GEN
- 	tristate
-diff --git a/drivers/media/v4l2-core/Makefile b/drivers/media/v4l2-core/Makefile
-index 63d29f2..44e858c 100644
---- a/drivers/media/v4l2-core/Makefile
-+++ b/drivers/media/v4l2-core/Makefile
-@@ -22,6 +22,8 @@ obj-$(CONFIG_VIDEO_TUNER) += tuner.o
+ config LEDS_ATMEL_PWM
+ 	tristate "LED Support using Atmel PWM outputs"
+ 	depends on LEDS_CLASS
+diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
+index da1a4ba..41911aa 100644
+--- a/drivers/leds/Makefile
++++ b/drivers/leds/Makefile
+@@ -11,6 +11,7 @@ obj-$(CONFIG_LEDS_TRIGGERS)		+= led-triggers.o
  
- obj-$(CONFIG_V4L2_MEM2MEM_DEV) += v4l2-mem2mem.o
- 
-+obj-$(CONFIG_V4L2_FLASH_LED_CLASS) += v4l2-flash.o
-+
- obj-$(CONFIG_VIDEOBUF_GEN) += videobuf-core.o
- obj-$(CONFIG_VIDEOBUF_DMA_SG) += videobuf-dma-sg.o
- obj-$(CONFIG_VIDEOBUF_DMA_CONTIG) += videobuf-dma-contig.o
-diff --git a/drivers/media/v4l2-core/v4l2-flash.c b/drivers/media/v4l2-core/v4l2-flash.c
+ # LED Platform Drivers
+ obj-$(CONFIG_LEDS_88PM860X)		+= leds-88pm860x.o
++obj-$(CONFIG_LEDS_AAT1290)		+= leds-aat1290.o
+ obj-$(CONFIG_LEDS_ATMEL_PWM)		+= leds-atmel-pwm.o
+ obj-$(CONFIG_LEDS_BD2802)		+= leds-bd2802.o
+ obj-$(CONFIG_LEDS_LOCOMO)		+= leds-locomo.o
+diff --git a/drivers/leds/leds-aat1290.c b/drivers/leds/leds-aat1290.c
 new file mode 100644
-index 0000000..21080c6
+index 0000000..07d7384
 --- /dev/null
-+++ b/drivers/media/v4l2-core/v4l2-flash.c
-@@ -0,0 +1,580 @@
++++ b/drivers/leds/leds-aat1290.c
+@@ -0,0 +1,455 @@
 +/*
-+ * V4L2 Flash LED sub-device registration helpers.
++ *	LED Flash Class driver for the AAT1290
++ *	1.5A Step-Up Current Regulator for Flash LEDs
 + *
-+ *	Copyright (C) 2014 Samsung Electronics Co., Ltd
++ *	Copyright (C) 2014, Samsung Electronics Co., Ltd.
 + *	Author: Jacek Anaszewski <j.anaszewski@samsung.com>
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation."
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
 + */
 +
-+#include <linux/led-class-flash.h>
-+#include <linux/mutex.h>
-+#include <linux/of_led_flash_manager.h>
++#include <linux/delay.h>
 +#include <linux/slab.h>
++#include <linux/platform_device.h>
++#include <linux/module.h>
++#include <linux/i2c.h>
++#include <linux/led-class-flash.h>
++#include <linux/led-flash-manager.h>
++#include <linux/leds.h>
++#include <linux/mutex.h>
++#include <linux/gpio.h>
++#include <linux/of_gpio.h>
++#include <linux/of.h>
 +#include <media/v4l2-flash.h>
++#include <linux/workqueue.h>
 +
-+#define call_flash_op(v4l2_flash, op, args...)			\
-+		(v4l2_flash->ops->op  ?				\
-+			v4l2_flash->ops->op(args) :		\
-+			-EINVAL)
++#define AAT1290_LED_NAME		"aat1290"
++#define AAT1290_MOVIE_MODE_CURRENT_ADDR	17
++#define AAT1290_FLASH_SAFETY_TIMER_ADDR	18
++#define AAT1290_MOVIE_MODE_CONFIG_ADDR	19
++#define AAT1290_MM_CURRENT_RATIO_ADDR	20
++#define AAT1290_LATCH_TIME_US		500
++#define AAT1290_EN_SET_TICK_TIME_US	1
++#define AAT1290_MOVIE_MODE_OFF		1
++#define AAT1290_MOVIE_MODE_ON		3
++#define AAT1290_MAX_MM_CURR_PERCENT_0	16
++#define AAT1290_MAX_MM_CURR_PERCENT_100 1
++#define AAT1290_FLASH_TM_RATIO_STEP	16
 +
-+static struct v4l2_device *v4l2_dev;
-+static int registered_flashes;
++#define AAT1290_MM_TO_FL_1_92	1
++#define AAT1290_MM_TO_FL_3_7	2
++#define AAT1290_MM_TO_FL_5_5	3
++#define AAT1290_MM_TO_FL_7_3	4
++#define AAT1290_MM_TO_FL_9	5
++#define AAT1290_MM_TO_FL_10_7	6
++#define AAT1290_MM_TO_FL_12_4	7
++#define AAT1290_MM_TO_FL_14	8
++#define AAT1290_MM_TO_FL_15_9	9
++#define AAT1290_MM_TO_FL_17_5	10
++#define AAT1290_MM_TO_FL_19_1	11
++#define AAT1290_MM_TO_FL_20_8	12
++#define AAT1290_MM_TO_FL_22_4	13
++#define AAT1290_MM_TO_FL_24	14
++#define AAT1290_MM_TO_FL_25_6	15
++#define AAT1290_MM_TO_FL_OFF	16
 +
-+static inline enum led_brightness v4l2_flash_intensity_to_led_brightness(
-+					struct v4l2_ctrl_config *config,
-+					s32 intensity)
++static const unsigned int flash_level_to_reg[] = {
++	16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1
++};
++
++enum aat1290_led_mode {
++	MODE_OFF,
++	MODE_TORCH,
++	MODE_FLASH,
++	MODE_FLASH_EXTERNAL,
++};
++
++struct aat1290_led_settings {
++	struct led_flash_setting torch_brightness;
++	struct led_flash_setting flash_brightness;
++	struct led_flash_setting flash_timeout;
++};
++
++struct aat1290_led {
++	struct platform_device *pdev;
++	struct mutex lock;
++
++	struct led_classdev_flash ldev;
++	struct v4l2_flash *v4l2_flash;
++
++	int flen_gpio;
++	int en_set_gpio;
++
++	u32 max_flash_tm;
++	bool movie_mode;
++
++	unsigned int torch_brightness;
++	unsigned int flash_timeout;
++	struct work_struct work_brightness_set;
++};
++
++static struct aat1290_led *ldev_to_led(struct led_classdev_flash *ldev)
 +{
-+	return ((intensity - config->min) / config->step) + 1;
++	return container_of(ldev, struct aat1290_led, ldev);
 +}
 +
-+static inline s32 v4l2_flash_led_brightness_to_intensity(
-+					struct v4l2_ctrl_config *config,
++static void aat1290_as2cwire_write(struct aat1290_led *led, int addr, int value)
++{
++	int i;
++
++	gpio_set_value(led->flen_gpio, 0);
++	gpio_set_value(led->en_set_gpio, 0);
++
++	udelay(10);
++
++	/* write address */
++	for (i = 0; i < addr; ++i) {
++		udelay(AAT1290_EN_SET_TICK_TIME_US);
++		gpio_set_value(led->en_set_gpio, 0);
++		udelay(AAT1290_EN_SET_TICK_TIME_US);
++		gpio_set_value(led->en_set_gpio, 1);
++	}
++
++	udelay(AAT1290_LATCH_TIME_US);
++
++	/* write data */
++	for (i = 0; i < value; ++i) {
++		udelay(AAT1290_EN_SET_TICK_TIME_US);
++		gpio_set_value(led->en_set_gpio, 0);
++		udelay(AAT1290_EN_SET_TICK_TIME_US);
++		gpio_set_value(led->en_set_gpio, 1);
++	}
++
++	udelay(AAT1290_LATCH_TIME_US);
++}
++
++static void aat1290_set_flash_safety_timer(struct aat1290_led *led,
++					unsigned int micro_sec)
++{
++	struct led_classdev_flash *flash = &led->ldev;
++	struct led_flash_setting *flash_tm = &flash->timeout;
++	int flash_tm_divisor_reg =
++		flash_level_to_reg[(micro_sec / flash_tm->step) - 1];
++
++	aat1290_as2cwire_write(led, AAT1290_FLASH_SAFETY_TIMER_ADDR,
++						flash_tm_divisor_reg);
++}
++
++static void aat1290_brightness_set(struct aat1290_led *led,
 +					enum led_brightness brightness)
 +{
-+	return ((brightness - 1) * config->step) + config->min;
++	mutex_lock(&led->lock);
++
++	if (brightness == 0) {
++		gpio_set_value(led->flen_gpio, 0);
++		gpio_set_value(led->en_set_gpio, 0);
++		goto unlock;
++	}
++
++	if (!led->movie_mode) {
++		aat1290_as2cwire_write(led, AAT1290_MM_CURRENT_RATIO_ADDR,
++					AAT1290_MM_TO_FL_1_92);
++		led->movie_mode = true;
++	}
++
++	aat1290_as2cwire_write(led, AAT1290_MOVIE_MODE_CURRENT_ADDR,
++				AAT1290_MAX_MM_CURR_PERCENT_0 - brightness);
++	aat1290_as2cwire_write(led, AAT1290_MOVIE_MODE_CONFIG_ADDR,
++				AAT1290_MOVIE_MODE_ON);
++unlock:
++	mutex_unlock(&led->lock);
 +}
 +
-+static int v4l2_flash_g_volatile_ctrl(struct v4l2_ctrl *c)
++/* LED subsystem callbacks */
++
++static void aat1290_brightness_set_work(struct work_struct *work)
++{
++	struct aat1290_led *led =
++		container_of(work, struct aat1290_led, work_brightness_set);
++
++	aat1290_brightness_set(led, led->torch_brightness);
++}
++
++static void aat1290_led_brightness_set(struct led_classdev *led_cdev,
++					enum led_brightness brightness)
++{
++	struct led_classdev_flash *flash = lcdev_to_flash(led_cdev);
++	struct aat1290_led *led = ldev_to_led(flash);
++
++	led->torch_brightness = brightness;
++	schedule_work(&led->work_brightness_set);
++}
++
++static int aat1290_torch_brightness_set(struct led_classdev *led_cdev,
++					enum led_brightness brightness)
++{
++	struct led_classdev_flash *flash = lcdev_to_flash(led_cdev);
++	struct aat1290_led *led = ldev_to_led(flash);
++
++	aat1290_brightness_set(led, brightness);
++
++	return 0;
++}
++
++static int aat1290_led_flash_strobe_set(struct led_classdev_flash *flash,
++					 bool state)
 +
 +{
-+	struct v4l2_flash *v4l2_flash = v4l2_ctrl_to_v4l2_flash(c);
-+	struct led_classdev_flash *flash = v4l2_flash->flash;
++	struct aat1290_led *led = ldev_to_led(flash);
 +	struct led_classdev *led_cdev = &flash->led_cdev;
-+	struct v4l2_flash_ctrl_config *config = &v4l2_flash->config;
-+	struct v4l2_flash_ctrl *ctrl = &v4l2_flash->ctrl;
-+	bool is_strobing;
-+	int ret;
++	struct led_flash_setting *timeout = &flash->timeout;
 +
-+	switch (c->id) {
-+	case V4L2_CID_FLASH_TORCH_INTENSITY:
-+		/*
-+		 * Update torch brightness only if in TORCH_MODE,
-+		 * as otherwise brightness_update op returns 0,
-+		 * which would spuriously inform user space that
-+		 * V4L2_CID_FLASH_TORCH_INTENSITY control value
-+		 * has changed.
-+		 */
-+		if (ctrl->led_mode->val == V4L2_FLASH_LED_MODE_TORCH) {
-+			ret = call_flash_op(v4l2_flash, torch_brightness_update,
-+							led_cdev);
-+			if (ret < 0)
-+				return ret;
-+			ctrl->torch_intensity->val =
-+				v4l2_flash_led_brightness_to_intensity(
-+						&config->torch_intensity,
-+						led_cdev->brightness);
-+		}
-+		return 0;
-+	case V4L2_CID_FLASH_INTENSITY:
-+		ret = call_flash_op(v4l2_flash, flash_brightness_update,
-+					flash);
-+		if (ret < 0)
-+			return ret;
-+		/* no conversion is needed */
-+		c->val = flash->brightness.val;
-+		return 0;
-+	case V4L2_CID_FLASH_INDICATOR_INTENSITY:
-+		ret = call_flash_op(v4l2_flash, indicator_brightness_update,
-+						flash);
-+		if (ret < 0)
-+			return ret;
-+		/* no conversion is needed */
-+		c->val = flash->indicator_brightness->val;
-+		return 0;
-+	case V4L2_CID_FLASH_STROBE_STATUS:
-+		ret = call_flash_op(v4l2_flash, strobe_get, flash,
-+							&is_strobing);
-+		if (ret < 0)
-+			return ret;
-+		c->val = is_strobing;
-+		return 0;
-+	case V4L2_CID_FLASH_FAULT:
-+		/* led faults map directly to V4L2 flash faults */
-+		ret = call_flash_op(v4l2_flash, fault_get, flash, &c->val);
++	mutex_lock(&led->lock);
++
++	if (state == 0) {
++		gpio_set_value(led->flen_gpio, 0);
++		gpio_set_value(led->en_set_gpio, 0);
++		goto unlock;
++	}
++
++	aat1290_set_flash_safety_timer(led, timeout->val);
++
++	/*
++	 * To reenter movie mode after a flash event the part
++	 * must be cycled off and back on to reset the movie
++	 * mode and reprogrammed via the AS2Cwire. Therefore
++	 * the brightness value needs to be updated here to
++	 * reflect the actual state.
++	 */
++	led_cdev->brightness = 0;
++	led->movie_mode = false;
++
++	gpio_set_value(led->flen_gpio, 1);
++
++unlock:
++	mutex_unlock(&led->lock);
++
++	return 0;
++}
++
++static int aat1290_led_flash_timeout_set(struct led_classdev_flash *flash,
++						u32 timeout)
++{
++	/*
++	 * Don't do anything - flash timeout is cached in the led-class-flash
++	 * core and will be applied in the strobe_set op, as writing the
++	 * safety timer register spuriously turns the torch mode on.
++	 */
++
++	return 0;
++}
++
++static int aat1290_led_parse_dt(struct aat1290_led *led,
++				struct device *dev)
++{
++	int ret;
++	char *pname = "flash-timeout";
++
++	ret = of_property_read_u32(dev->of_node, pname, &led->max_flash_tm);
++	if (ret) {
++		dev_err(dev, "Unable to get property '%s'(%d)\n", pname, ret);
 +		return ret;
-+	case V4L2_CID_FLASH_STROBE_SOURCE:
-+		c->val = flash->external_strobe;
-+		return 0;
-+	case V4L2_CID_FLASH_STROBE_PROVIDER:
-+		c->val = flash->strobe_provider_id;
-+		return 0;
-+	default:
-+		return -EINVAL;
-+	}
-+}
-+
-+static int v4l2_flash_s_ctrl(struct v4l2_ctrl *c)
-+{
-+	struct v4l2_flash *v4l2_flash = v4l2_ctrl_to_v4l2_flash(c);
-+	struct led_classdev_flash *flash = v4l2_flash->flash;
-+	struct v4l2_flash_ctrl *ctrl = &v4l2_flash->ctrl;
-+	struct v4l2_flash_ctrl_config *config = &v4l2_flash->config;
-+	enum led_brightness torch_brightness;
-+	bool external_strobe;
-+	int ret;
-+
-+	switch (c->id) {
-+	case V4L2_CID_FLASH_LED_MODE:
-+		switch (c->val) {
-+		case V4L2_FLASH_LED_MODE_NONE:
-+			call_flash_op(v4l2_flash, torch_brightness_set,
-+							&flash->led_cdev, 0);
-+			return call_flash_op(v4l2_flash, strobe_set, flash,
-+							false);
-+		case V4L2_FLASH_LED_MODE_FLASH:
-+			/* Turn off torch LED */
-+			call_flash_op(v4l2_flash, torch_brightness_set,
-+							&flash->led_cdev, 0);
-+			external_strobe = (ctrl->source->val ==
-+					V4L2_FLASH_STROBE_SOURCE_EXTERNAL);
-+			return call_flash_op(v4l2_flash, external_strobe_set,
-+						flash, external_strobe);
-+		case V4L2_FLASH_LED_MODE_TORCH:
-+			/* Stop flash strobing */
-+			ret = call_flash_op(v4l2_flash, strobe_set, flash,
-+							false);
-+			if (ret)
-+				return ret;
-+
-+			torch_brightness =
-+				v4l2_flash_intensity_to_led_brightness(
-+						&config->torch_intensity,
-+						ctrl->torch_intensity->val);
-+			call_flash_op(v4l2_flash, torch_brightness_set,
-+					&flash->led_cdev, torch_brightness);
-+			return ret;
-+		}
-+		break;
-+	case V4L2_CID_FLASH_STROBE_SOURCE:
-+		external_strobe = (c->val == V4L2_FLASH_STROBE_SOURCE_EXTERNAL);
-+
-+		return call_flash_op(v4l2_flash, external_strobe_set, flash,
-+							external_strobe);
-+	case V4L2_CID_FLASH_STROBE:
-+		if (ctrl->led_mode->val != V4L2_FLASH_LED_MODE_FLASH ||
-+		    ctrl->source->val != V4L2_FLASH_STROBE_SOURCE_SOFTWARE)
-+			return -EINVAL;
-+		return call_flash_op(v4l2_flash, strobe_set, flash, true);
-+	case V4L2_CID_FLASH_STROBE_STOP:
-+		return call_flash_op(v4l2_flash, strobe_set, flash, false);
-+	case V4L2_CID_FLASH_TIMEOUT:
-+		return call_flash_op(v4l2_flash, timeout_set, flash, c->val);
-+	case V4L2_CID_FLASH_INTENSITY:
-+		/* no conversion is needed */
-+		return call_flash_op(v4l2_flash, flash_brightness_set, flash,
-+								c->val);
-+	case V4L2_CID_FLASH_INDICATOR_INTENSITY:
-+		/* no conversion is needed */
-+		return call_flash_op(v4l2_flash, indicator_brightness_set,
-+						flash, c->val);
-+	case V4L2_CID_FLASH_TORCH_INTENSITY:
-+		/*
-+		 * If not in MODE_TORCH don't call led-class brightness_set
-+		 * op, as it would result in turning the torch led on.
-+		 * Instead the value is cached only and will be written
-+		 * to the device upon transition to MODE_TORCH.
-+		 */
-+		if (ctrl->led_mode->val == V4L2_FLASH_LED_MODE_TORCH) {
-+			torch_brightness =
-+				v4l2_flash_intensity_to_led_brightness(
-+						&config->torch_intensity,
-+						ctrl->torch_intensity->val);
-+			call_flash_op(v4l2_flash, torch_brightness_set,
-+					&flash->led_cdev, torch_brightness);
-+		}
-+		return 0;
-+	case V4L2_CID_FLASH_STROBE_PROVIDER:
-+		flash->strobe_provider_id = c->val;
-+		return 0;
-+	}
-+
-+	return -EINVAL;
-+}
-+
-+static const struct v4l2_ctrl_ops v4l2_flash_ctrl_ops = {
-+	.g_volatile_ctrl = v4l2_flash_g_volatile_ctrl,
-+	.s_ctrl = v4l2_flash_s_ctrl,
-+};
-+
-+static int v4l2_flash_init_strobe_providers_menu(struct v4l2_flash *v4l2_flash)
-+{
-+	struct led_classdev_flash *flash = v4l2_flash->flash;
-+	struct led_flash_strobe_provider *provider;
-+	struct v4l2_ctrl *ctrl;
-+	int i = 0;
-+
-+	v4l2_flash->strobe_providers_menu =
-+			kzalloc(sizeof(char *) * (flash->num_strobe_providers),
-+					GFP_KERNEL);
-+	if (!v4l2_flash->strobe_providers_menu)
-+		return -ENOMEM;
-+
-+	list_for_each_entry(provider, &flash->strobe_providers, list)
-+		v4l2_flash->strobe_providers_menu[i++] =
-+						(char *) provider->name;
-+
-+	ctrl = v4l2_ctrl_new_std_menu_items(
-+		&v4l2_flash->hdl, &v4l2_flash_ctrl_ops,
-+		V4L2_CID_FLASH_STROBE_PROVIDER,
-+		flash->num_strobe_providers - 1,
-+		0, 0,
-+		(const char * const *) v4l2_flash->strobe_providers_menu);
-+
-+	if (ctrl)
-+		ctrl->flags |= V4L2_CTRL_FLAG_VOLATILE;
-+
-+	return 0;
-+}
-+
-+static int v4l2_flash_init_controls(struct v4l2_flash *v4l2_flash)
-+
-+{
-+	struct led_classdev_flash *flash = v4l2_flash->flash;
-+	const struct led_flash_ops *flash_ops = flash->ops;
-+	struct led_classdev *led_cdev = &flash->led_cdev;
-+	struct v4l2_flash_ctrl_config *config = &v4l2_flash->config;
-+	struct v4l2_ctrl *ctrl;
-+	struct v4l2_ctrl_config *ctrl_cfg;
-+	bool has_flash = led_cdev->flags & LED_DEV_CAP_FLASH;
-+	bool has_indicator = led_cdev->flags & LED_DEV_CAP_INDICATOR;
-+	bool has_strobe_providers = (flash->num_strobe_providers > 1);
-+	unsigned int mask;
-+	int ret, max, num_ctrls;
-+
-+	num_ctrls = has_flash ? 5 : 2;
-+	if (has_flash) {
-+		if (flash_ops->flash_brightness_set)
-+			++num_ctrls;
-+		if (flash_ops->timeout_set)
-+			++num_ctrls;
-+		if (flash_ops->strobe_get)
-+			++num_ctrls;
-+		if (has_indicator)
-+			++num_ctrls;
-+		if (config->flash_faults)
-+			++num_ctrls;
-+		if (has_strobe_providers)
-+			++num_ctrls;
-+	}
-+
-+	v4l2_ctrl_handler_init(&v4l2_flash->hdl, num_ctrls);
-+
-+	mask = 1 << V4L2_FLASH_LED_MODE_NONE |
-+	       1 << V4L2_FLASH_LED_MODE_TORCH;
-+	if (flash)
-+		mask |= 1 << V4L2_FLASH_LED_MODE_FLASH;
-+
-+	/* Configure FLASH_LED_MODE ctrl */
-+	v4l2_flash->ctrl.led_mode = v4l2_ctrl_new_std_menu(
-+			&v4l2_flash->hdl,
-+			&v4l2_flash_ctrl_ops, V4L2_CID_FLASH_LED_MODE,
-+			V4L2_FLASH_LED_MODE_TORCH, ~mask,
-+			V4L2_FLASH_LED_MODE_NONE);
-+
-+	/* Configure TORCH_INTENSITY ctrl */
-+	ctrl_cfg = &config->torch_intensity;
-+	ctrl = v4l2_ctrl_new_std(&v4l2_flash->hdl, &v4l2_flash_ctrl_ops,
-+				 V4L2_CID_FLASH_TORCH_INTENSITY,
-+				 ctrl_cfg->min, ctrl_cfg->max,
-+				 ctrl_cfg->step, ctrl_cfg->def);
-+	if (ctrl)
-+		ctrl->flags |= V4L2_CTRL_FLAG_VOLATILE;
-+	v4l2_flash->ctrl.torch_intensity = ctrl;
-+
-+	if (has_flash) {
-+		/* Configure FLASH_STROBE_SOURCE ctrl */
-+		mask = 1 << V4L2_FLASH_STROBE_SOURCE_SOFTWARE;
-+
-+		if (flash->has_external_strobe) {
-+			mask |= 1 << V4L2_FLASH_STROBE_SOURCE_EXTERNAL;
-+			max = V4L2_FLASH_STROBE_SOURCE_EXTERNAL;
-+		} else {
-+			max = V4L2_FLASH_STROBE_SOURCE_SOFTWARE;
-+		}
-+
-+		v4l2_flash->ctrl.source = v4l2_ctrl_new_std_menu(
-+					&v4l2_flash->hdl,
-+					&v4l2_flash_ctrl_ops,
-+					V4L2_CID_FLASH_STROBE_SOURCE,
-+					max,
-+					~mask,
-+					V4L2_FLASH_STROBE_SOURCE_SOFTWARE);
-+		if (v4l2_flash->ctrl.source)
-+			v4l2_flash->ctrl.source->flags |=
-+						V4L2_CTRL_FLAG_VOLATILE;
-+
-+		/* Configure FLASH_STROBE ctrl */
-+		ctrl = v4l2_ctrl_new_std(&v4l2_flash->hdl, &v4l2_flash_ctrl_ops,
-+					  V4L2_CID_FLASH_STROBE, 0, 1, 1, 0);
-+
-+		/* Configure FLASH_STROBE_STOP ctrl */
-+		ctrl = v4l2_ctrl_new_std(&v4l2_flash->hdl, &v4l2_flash_ctrl_ops,
-+					  V4L2_CID_FLASH_STROBE_STOP,
-+					  0, 1, 1, 0);
-+
-+		/* Configure FLASH_STROBE_STATUS ctrl */
-+		ctrl = v4l2_ctrl_new_std(&v4l2_flash->hdl, &v4l2_flash_ctrl_ops,
-+					 V4L2_CID_FLASH_STROBE_STATUS,
-+					 0, 1, 1, 1);
-+
-+		if (flash_ops->strobe_get)
-+			if (ctrl)
-+				ctrl->flags |= V4L2_CTRL_FLAG_VOLATILE |
-+					       V4L2_CTRL_FLAG_READ_ONLY;
-+
-+		if (flash_ops->timeout_set) {
-+			/* Configure FLASH_TIMEOUT ctrl */
-+			ctrl_cfg = &config->flash_timeout;
-+			ctrl = v4l2_ctrl_new_std(
-+					&v4l2_flash->hdl, &v4l2_flash_ctrl_ops,
-+					V4L2_CID_FLASH_TIMEOUT, ctrl_cfg->min,
-+					ctrl_cfg->max, ctrl_cfg->step,
-+					ctrl_cfg->def);
-+			if (ctrl)
-+				ctrl->flags |= V4L2_CTRL_FLAG_VOLATILE;
-+		}
-+
-+		if (flash_ops->flash_brightness_set) {
-+			/* Configure FLASH_INTENSITY ctrl */
-+			ctrl_cfg = &config->flash_intensity;
-+			ctrl = v4l2_ctrl_new_std(
-+					&v4l2_flash->hdl,
-+					&v4l2_flash_ctrl_ops,
-+					V4L2_CID_FLASH_INTENSITY,
-+					ctrl_cfg->min, ctrl_cfg->max,
-+					ctrl_cfg->step, ctrl_cfg->def);
-+			if (ctrl)
-+				ctrl->flags |= V4L2_CTRL_FLAG_VOLATILE;
-+		}
-+
-+		if (config->flash_faults) {
-+			/* Configure FLASH_FAULT ctrl */
-+			ctrl = v4l2_ctrl_new_std(&v4l2_flash->hdl,
-+						 &v4l2_flash_ctrl_ops,
-+						 V4L2_CID_FLASH_FAULT, 0,
-+						 config->flash_faults,
-+						 0, 0);
-+			if (ctrl)
-+				ctrl->flags |= V4L2_CTRL_FLAG_VOLATILE |
-+					       V4L2_CTRL_FLAG_READ_ONLY;
-+		}
-+		if (has_indicator) {
-+			/* Configure FLASH_INDICATOR_INTENSITY ctrl */
-+			ctrl_cfg = &config->indicator_intensity;
-+			ctrl = v4l2_ctrl_new_std(
-+					&v4l2_flash->hdl, &v4l2_flash_ctrl_ops,
-+					V4L2_CID_FLASH_INDICATOR_INTENSITY,
-+					ctrl_cfg->min, ctrl_cfg->max,
-+					ctrl_cfg->step, ctrl_cfg->def);
-+			if (ctrl)
-+				ctrl->flags |= V4L2_CTRL_FLAG_VOLATILE;
-+		}
-+
-+		if (has_strobe_providers) {
-+			/* Configure V4L2_CID_FLASH_STROBE_PROVIDERS ctrl */
-+			ret = v4l2_flash_init_strobe_providers_menu(v4l2_flash);
-+			if (ret < 0)
-+				goto error_free_handler;
-+		}
-+	}
-+
-+	if (v4l2_flash->hdl.error) {
-+		ret = v4l2_flash->hdl.error;
-+		goto error_free_handler;
-+	}
-+
-+	ret = v4l2_ctrl_handler_setup(&v4l2_flash->hdl);
-+	if (ret < 0)
-+		goto error_free_handler;
-+
-+	v4l2_flash->sd.ctrl_handler = &v4l2_flash->hdl;
-+
-+	return 0;
-+
-+error_free_handler:
-+	v4l2_ctrl_handler_free(&v4l2_flash->hdl);
-+	return ret;
-+}
-+
-+/*
-+ * V4L2 subdev internal operations
-+ */
-+
-+static int v4l2_flash_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
-+{
-+	struct v4l2_flash *v4l2_flash = v4l2_subdev_to_v4l2_flash(sd);
-+	struct led_classdev_flash *flash = v4l2_flash->flash;
-+	struct led_classdev *led_cdev = &flash->led_cdev;
-+
-+	mutex_lock(&led_cdev->led_lock);
-+	call_flash_op(v4l2_flash, sysfs_lock, led_cdev);
-+	mutex_unlock(&led_cdev->led_lock);
-+
-+	return 0;
-+}
-+
-+static int v4l2_flash_close(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
-+{
-+	struct v4l2_flash *v4l2_flash = v4l2_subdev_to_v4l2_flash(sd);
-+	struct led_classdev_flash *flash = v4l2_flash->flash;
-+	struct led_classdev *led_cdev = &flash->led_cdev;
-+
-+	mutex_lock(&led_cdev->led_lock);
-+	call_flash_op(v4l2_flash, sysfs_unlock, led_cdev);
-+	mutex_unlock(&led_cdev->led_lock);
-+
-+	return 0;
-+}
-+
-+int v4l2_flash_register(struct v4l2_flash *v4l2_flash)
-+{
-+	struct led_classdev_flash *flash = v4l2_flash->flash;
-+	struct led_classdev *led_cdev = &flash->led_cdev;
-+	int ret;
-+
-+	if (!v4l2_dev) {
-+		v4l2_dev = kzalloc(sizeof(*v4l2_dev), GFP_KERNEL);
-+		if (!v4l2_dev)
-+			return -ENOMEM;
-+
-+		strlcpy(v4l2_dev->name, "v4l2-flash-manager",
-+						sizeof(v4l2_dev->name));
-+		ret = v4l2_device_register(NULL, v4l2_dev);
-+		if (ret < 0) {
-+			dev_err(led_cdev->dev->parent,
-+				 "Failed to register v4l2_device: %d\n", ret);
-+			goto err_v4l2_device_register;
-+		}
-+	}
-+
-+	ret = v4l2_device_register_subdev(v4l2_dev, &v4l2_flash->sd);
-+	if (ret < 0) {
-+		dev_err(led_cdev->dev->parent,
-+			 "Failed to register v4l2_subdev: %d\n", ret);
-+		goto err_v4l2_device_register;
-+	}
-+
-+	ret = v4l2_device_register_subdev_node(&v4l2_flash->sd, v4l2_dev);
-+	if (ret < 0) {
-+		dev_err(led_cdev->dev->parent,
-+			 "Failed to register v4l2_subdev node: %d\n", ret);
-+		goto err_register_subdev_node;
-+	}
-+
-+	++registered_flashes;
-+
-+	return 0;
-+
-+err_register_subdev_node:
-+	v4l2_device_unregister_subdev(&v4l2_flash->sd);
-+err_v4l2_device_register:
-+	kfree(v4l2_flash->strobe_providers_menu);
-+	if (v4l2_dev && registered_flashes == 0) {
-+		v4l2_device_unregister(v4l2_dev);
-+		kfree(v4l2_dev);
-+		v4l2_dev = NULL;
 +	}
 +
 +	return ret;
 +}
 +
-+static void v4l2_flash_unregister(struct v4l2_flash *v4l2_flash)
++static void aat1290_init_flash_settings(struct aat1290_led *led,
++					 struct aat1290_led_settings *s)
 +{
-+	if (registered_flashes == 0)
-+		return;
++	struct led_flash_setting *setting;
 +
-+	v4l2_device_unregister_subdev(&v4l2_flash->sd);
++	/* Init flash intensity setting */
++	setting = &s->torch_brightness;
++	/*
++	 * Torch current is adjustable in logarithmic fashion and thus
++	 * it is not possible to define fixed step in microamperes.
++	 * Instead led brightness levels are used to make possible
++	 * setting all the supported levels from V4L2 Flash sub-device.
++	 */
++	setting->min = 1;
++	setting->max = 16;
++	setting->step = 1;
++	setting->val = setting->max;
 +
-+	--registered_flashes;
-+
-+	if (registered_flashes == 0) {
-+		v4l2_device_unregister(v4l2_dev);
-+		kfree(v4l2_dev);
-+		v4l2_dev = NULL;
-+	}
-+}
-+
-+static const struct v4l2_subdev_internal_ops v4l2_flash_subdev_internal_ops = {
-+	.open = v4l2_flash_open,
-+	.close = v4l2_flash_close,
-+};
-+
-+static const struct v4l2_subdev_core_ops v4l2_flash_core_ops = {
-+	.queryctrl = v4l2_subdev_queryctrl,
-+	.querymenu = v4l2_subdev_querymenu,
-+};
-+
-+static const struct v4l2_subdev_ops v4l2_flash_subdev_ops = {
-+	.core = &v4l2_flash_core_ops,
-+};
-+
-+int v4l2_flash_init(struct led_classdev_flash *flash,
-+		    struct v4l2_flash_ctrl_config *config,
-+		    const struct v4l2_flash_ops *flash_ops,
-+		    struct v4l2_flash **out_flash)
-+{
-+	struct v4l2_flash *v4l2_flash;
-+	struct led_classdev *led_cdev = &flash->led_cdev;
-+	struct v4l2_subdev *sd;
-+	int ret;
-+
-+	if (!flash || !config || !out_flash)
-+		return -EINVAL;
-+
-+	v4l2_flash = kzalloc(sizeof(*v4l2_flash), GFP_KERNEL);
-+	if (!v4l2_flash)
-+		return -ENOMEM;
-+
-+	sd = &v4l2_flash->sd;
-+	v4l2_flash->flash = flash;
-+	v4l2_flash->ops = flash_ops;
-+	sd->dev = led_cdev->dev->parent;
-+	v4l2_subdev_init(sd, &v4l2_flash_subdev_ops);
-+	sd->internal_ops = &v4l2_flash_subdev_internal_ops;
-+	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
-+	snprintf(sd->name, sizeof(sd->name), led_cdev->name);
-+
-+	v4l2_flash->config = *config;
-+	ret = v4l2_flash_init_controls(v4l2_flash);
-+	if (ret < 0)
-+		goto err_init_controls;
-+
-+	ret = media_entity_init(&sd->entity, 0, NULL, 0);
-+	if (ret < 0)
-+		goto err_init_entity;
-+
-+	sd->entity.type = MEDIA_ENT_T_V4L2_SUBDEV_FLASH;
-+
-+	ret = v4l2_flash_register(v4l2_flash);
-+	if (ret < 0)
-+		goto err_init_entity;
-+
-+	*out_flash = v4l2_flash;
-+
-+	return 0;
-+
-+err_init_entity:
-+	media_entity_cleanup(&sd->entity);
-+err_init_controls:
-+	v4l2_ctrl_handler_free(sd->ctrl_handler);
-+	kfree(v4l2_flash);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(v4l2_flash_init);
-+
-+void v4l2_flash_release(struct v4l2_flash *v4l2_flash)
-+{
-+	if (!v4l2_flash)
-+		return;
-+
-+	v4l2_flash_unregister(v4l2_flash);
-+	v4l2_ctrl_handler_free(v4l2_flash->sd.ctrl_handler);
-+	media_entity_cleanup(&v4l2_flash->sd.entity);
-+	kfree(v4l2_flash->strobe_providers_menu);
-+	kfree(v4l2_flash);
-+}
-+EXPORT_SYMBOL_GPL(v4l2_flash_release);
-diff --git a/include/media/v4l2-flash.h b/include/media/v4l2-flash.h
-new file mode 100644
-index 0000000..effa46b
---- /dev/null
-+++ b/include/media/v4l2-flash.h
-@@ -0,0 +1,137 @@
-+/*
-+ * V4L2 Flash LED sub-device registration helpers.
-+ *
-+ *	Copyright (C) 2014 Samsung Electronics Co., Ltd
-+ *	Author: Jacek Anaszewski <j.anaszewski@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation."
-+ */
-+
-+#ifndef _V4L2_FLASH_H
-+#define _V4L2_FLASH_H
-+
-+#include <media/v4l2-ctrls.h>
-+#include <media/v4l2-device.h>
-+#include <media/v4l2-dev.h>
-+#include <media/v4l2-event.h>
-+#include <media/v4l2-ioctl.h>
-+
-+struct led_classdev_flash;
-+struct led_classdev;
-+enum led_brightness;
-+
-+struct v4l2_flash_ops {
-+	int (*torch_brightness_set)(struct led_classdev *led_cdev,
-+					enum led_brightness brightness);
-+	int (*torch_brightness_update)(struct led_classdev *led_cdev);
-+	int (*flash_brightness_set)(struct led_classdev_flash *flash,
-+					u32 brightness);
-+	int (*flash_brightness_update)(struct led_classdev_flash *flash);
-+	int (*strobe_set)(struct led_classdev_flash *flash, bool state);
-+	int (*strobe_get)(struct led_classdev_flash *flash, bool *state);
-+	int (*timeout_set)(struct led_classdev_flash *flash, u32 timeout);
-+	int (*indicator_brightness_set)(struct led_classdev_flash *flash,
-+					u32 brightness);
-+	int (*indicator_brightness_update)(struct led_classdev_flash *flash);
-+	int (*external_strobe_set)(struct led_classdev_flash *flash,
-+					bool enable);
-+	int (*fault_get)(struct led_classdev_flash *flash, u32 *fault);
-+	void (*sysfs_lock)(struct led_classdev *led_cdev);
-+	void (*sysfs_unlock)(struct led_classdev *led_cdev);
-+};
-+
-+/**
-+ * struct v4l2_flash_ctrl - controls that define the sub-dev's state
-+ * @source:		V4L2_CID_FLASH_STROBE_SOURCE control
-+ * @led_mode:		V4L2_CID_FLASH_LED_MODE control
-+ * @torch_intensity:	V4L2_CID_FLASH_TORCH_INTENSITY control
-+ */
-+struct v4l2_flash_ctrl {
-+	struct v4l2_ctrl *source;
-+	struct v4l2_ctrl *led_mode;
-+	struct v4l2_ctrl *torch_intensity;
-+};
-+
-+/**
-+ * struct v4l2_flash_ctrl_config - V4L2 Flash controls initialization data
-+ * @torch_intensity:		V4L2_CID_FLASH_TORCH_INTENSITY constraints
-+ * @flash_intensity:		V4L2_CID_FLASH_INTENSITY constraints
-+ * @indicator_intensity:	V4L2_CID_FLASH_INDICATOR_INTENSITY constraints
-+ * @flash_timeout:		V4L2_CID_FLASH_TIMEOUT constraints
-+ * @flash_fault:		possible flash faults
-+ */
-+struct v4l2_flash_ctrl_config {
-+	struct v4l2_ctrl_config torch_intensity;
-+	struct v4l2_ctrl_config flash_intensity;
-+	struct v4l2_ctrl_config indicator_intensity;
-+	struct v4l2_ctrl_config flash_timeout;
-+	u32 flash_faults;
-+};
-+
-+/**
-+ * struct v4l2_flash - Flash sub-device context
-+ * @flash:		LED Flash Class device controlled by this sub-device
-+ * @ops:		LED Flash Class device ops
-+ * @sd:			V4L2 sub-device
-+ * @hdl:		flash controls handler
-+ * @ctrl:		state defining controls
-+ * @config:		V4L2 Flash controlsrconfiguration data
-+ * @software_strobe_gates: route to the software strobe signal
-+ * @external_strobe_gates: route to the external strobe signal
-+ * @sensors:		available external strobe sources
-+ */
-+struct v4l2_flash {
-+	struct led_classdev_flash *flash;
-+	const struct v4l2_flash_ops *ops;
-+
-+	struct v4l2_subdev sd;
-+	struct v4l2_ctrl_handler hdl;
-+	struct v4l2_flash_ctrl ctrl;
-+	struct v4l2_flash_ctrl_config config;
-+	char **strobe_providers_menu;
-+};
-+
-+static inline struct v4l2_flash *v4l2_subdev_to_v4l2_flash(
-+							struct v4l2_subdev *sd)
-+{
-+	return container_of(sd, struct v4l2_flash, sd);
-+}
-+
-+static inline struct v4l2_flash *v4l2_ctrl_to_v4l2_flash(struct v4l2_ctrl *c)
-+{
-+	return container_of(c->handler, struct v4l2_flash, hdl);
++	/* Init flash timeout setting */
++	setting = &s->flash_timeout;
++	setting->min = led->max_flash_tm / AAT1290_FLASH_TM_RATIO_STEP;
++	setting->max = setting->min * AAT1290_FLASH_TM_RATIO_STEP;
++	setting->step = setting->min;
++	setting->val = setting->max;
 +}
 +
 +#ifdef CONFIG_V4L2_FLASH_LED_CLASS
-+/**
-+ * v4l2_flash_init - initialize V4L2 flash led sub-device
-+ * @led_fdev:	the LED Flash Class device to wrap
-+ * @config:	initialization data for V4L2 Flash controls
-+ * @flash_ops:	V4L2 Flash device ops
-+ * @out_flash:	handler to the new V4L2 Flash device
-+ *
-+ * Create V4L2 subdev wrapping given LED subsystem device.
++static void aat1290_init_v4l2_ctrl_config(struct aat1290_led_settings *s,
++					struct v4l2_flash_ctrl_config *config)
++{
++	struct led_flash_setting *setting;
++	struct v4l2_ctrl_config *c;
 +
-+ * Returns: 0 on success or negative error value on failure
-+ */
-+int v4l2_flash_init(struct led_classdev_flash *led_fdev,
-+		    struct v4l2_flash_ctrl_config *config,
-+		    const struct v4l2_flash_ops *flash_ops,
-+		    struct v4l2_flash **out_flash);
++	c = &config->torch_intensity;
++	setting = &s->torch_brightness;
++	c->min = setting->min;
++	c->max = setting->max;
++	c->step = setting->step;
++	c->def = setting->val;
 +
-+/**
-+ * v4l2_flash_release - release V4L2 Flash sub-device
-+ * @flash: the V4L2 Flash device to release
-+ *
-+ * Release V4L2 flash led subdev.
-+ */
-+void v4l2_flash_release(struct v4l2_flash *v4l2_flash);
-+
++	c = &config->flash_timeout;
++	setting = &s->flash_timeout;
++	c->min = setting->min;
++	c->max = setting->max;
++	c->step = setting->step;
++	c->def = setting->val;
++}
 +#else
-+#define v4l2_flash_init(led_cdev, config, flash_ops, out_flash) (0)
-+#define v4l2_flash_release(v4l2_flash)
-+#endif /* CONFIG_V4L2_FLASH_LED_CLASS */
++#define aat1290_init_v4l2_ctrl_config(s, config)
++#endif
 +
-+#endif /* _V4L2_FLASH_H */
++const struct led_flash_ops flash_ops = {
++	.strobe_set = aat1290_led_flash_strobe_set,
++	.timeout_set = aat1290_led_flash_timeout_set,
++};
++
++static int aat1290_led_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct device_node *dev_node = pdev->dev.of_node;
++	struct aat1290_led *led;
++	struct led_classdev *led_cdev;
++	struct led_classdev_flash *flash;
++	struct v4l2_flash_ctrl_config v4l2_flash_config;
++	struct aat1290_led_settings settings;
++	int flen_gpio, enset_gpio, ret;
++
++	led = devm_kzalloc(dev, sizeof(*led), GFP_KERNEL);
++	if (!led)
++		return -ENOMEM;
++
++	led->pdev = pdev;
++	platform_set_drvdata(pdev, led);
++
++	if (!dev_node)
++		return -ENXIO;
++
++	flen_gpio = of_get_gpio(dev_node, 0);
++	if (gpio_is_valid(flen_gpio)) {
++		ret = gpio_request_one(flen_gpio, GPIOF_DIR_OUT,
++						"aat1290_flen");
++		if (ret < 0) {
++			dev_err(dev,
++				"failed to request GPIO %d, error %d\n",
++							flen_gpio, ret);
++			goto error_gpio_flen;
++		}
++	}
++	led->flen_gpio = flen_gpio;
++
++	enset_gpio = of_get_gpio(dev_node, 1);
++	if (gpio_is_valid(enset_gpio)) {
++		ret = gpio_request_one(enset_gpio, GPIOF_DIR_OUT,
++						"aat1290_en_set");
++		if (ret < 0) {
++			dev_err(dev,
++				"failed to request GPIO %d, error %d\n",
++							enset_gpio, ret);
++			goto error_gpio_en_set;
++		}
++	}
++	led->en_set_gpio = enset_gpio;
++
++	ret = aat1290_led_parse_dt(led, &pdev->dev);
++	if (ret < 0)
++		goto error_gpio_en_set;
++
++	mutex_init(&led->lock);
++
++	flash = &led->ldev;
++
++	/* Init flash settings */
++	aat1290_init_flash_settings(led, &settings);
++	/* Init V4L2 Flash controls basing on initialized settings */
++	aat1290_init_v4l2_ctrl_config(&settings, &v4l2_flash_config);
++
++	/* Init led class */
++	led_cdev = &flash->led_cdev;
++	led_cdev->name = AAT1290_LED_NAME;
++	led_cdev->brightness_set = aat1290_led_brightness_set;
++	led_cdev->torch_brightness_set = aat1290_torch_brightness_set;
++	led_cdev->max_brightness = AAT1290_MAX_MM_CURR_PERCENT_0 -
++				   AAT1290_MAX_MM_CURR_PERCENT_100;
++	led_cdev->flags |= LED_DEV_CAP_FLASH;
++
++	INIT_WORK(&led->work_brightness_set, aat1290_brightness_set_work);
++
++	flash->ops = &flash_ops;
++
++	flash->timeout = settings.flash_timeout;
++
++	/* Register in the LED subsystem. */
++	ret = led_classdev_flash_register(&pdev->dev, flash, dev->of_node);
++	if (ret < 0)
++		goto error_gpio_en_set;
++
++	/* Create V4L2 Flash subdev. */
++	ret = v4l2_flash_init(flash,
++			      &v4l2_flash_config,
++			      led_get_v4l2_flash_ops(),
++			      &led->v4l2_flash);
++	if (ret < 0)
++		goto error_v4l2_flash_init;
++
++	return ret;
++
++error_v4l2_flash_init:
++	led_classdev_flash_unregister(flash);
++error_gpio_en_set:
++	if (gpio_is_valid(enset_gpio))
++		gpio_free(enset_gpio);
++error_gpio_flen:
++	if (gpio_is_valid(flen_gpio))
++		gpio_free(flen_gpio);
++	mutex_destroy(&led->lock);
++
++	return ret;
++}
++
++static int aat1290_led_remove(struct platform_device *pdev)
++{
++	struct aat1290_led *led = platform_get_drvdata(pdev);
++
++	v4l2_flash_release(led->v4l2_flash);
++	led_classdev_flash_unregister(&led->ldev);
++	cancel_work_sync(&led->work_brightness_set);
++
++	if (gpio_is_valid(led->en_set_gpio))
++		gpio_free(led->en_set_gpio);
++	if (gpio_is_valid(led->flen_gpio))
++		gpio_free(led->flen_gpio);
++
++	mutex_destroy(&led->lock);
++
++	return 0;
++}
++
++static struct of_device_id aat1290_led_dt_match[] = {
++	{.compatible = "skyworks,aat1290"},
++	{},
++};
++
++static struct platform_driver aat1290_led_driver = {
++	.probe		= aat1290_led_probe,
++	.remove		= aat1290_led_remove,
++	.driver		= {
++		.name	= "aat1290-led",
++		.owner	= THIS_MODULE,
++		.of_match_table = aat1290_led_dt_match,
++	},
++};
++
++module_platform_driver(aat1290_led_driver);
++
++MODULE_AUTHOR("Jacek Anaszewski <j.anaszewski@samsung.com>");
++MODULE_DESCRIPTION("Skyworks Current Regulator for Flash LEDs");
++MODULE_LICENSE("GPL");
 -- 
 1.7.9.5
 
