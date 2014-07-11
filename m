@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932193AbaGKNvz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:51:55 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56209 "EHLO
+	id S1754377AbaGKNwR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:52:17 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56200 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754226AbaGKNow (ORCPT
+	with ESMTP id S1754204AbaGKNot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:44:52 -0400
-Message-Id: <20140711133708.263040802@linutronix.de>
+	Fri, 11 Jul 2014 09:44:49 -0400
+Message-Id: <20140711133708.084581358@linutronix.de>
 User-Agent: quilt/0.63-1
-Date: Fri, 11 Jul 2014 13:44:50 -0000
+Date: Fri, 11 Jul 2014 13:44:47 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [patch 35/55] mfd: cros_ec_spi: Use ktime_get_ns()
+        Peter Zijlstra <peterz@infradead.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: [patch 33/55] powerpc: cell: Use ktime_get_ns()
 References: <20140711133623.530368377@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Disposition: inline;
- filename=mfd-cros-ec-spi-remove-silly-timestamp-dance.patch
+ filename=powerpc-cell-remove-silly-timespec-dance.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -35,42 +34,119 @@ with
 	ns = ktime_get_ns();
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
 ---
- drivers/mfd/cros_ec_spi.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ arch/powerpc/platforms/cell/spu_base.c      |   11 +++--------
+ arch/powerpc/platforms/cell/spufs/context.c |    4 +---
+ arch/powerpc/platforms/cell/spufs/file.c    |    4 +---
+ arch/powerpc/platforms/cell/spufs/sched.c   |    4 +---
+ 4 files changed, 6 insertions(+), 17 deletions(-)
 
-Index: tip/drivers/mfd/cros_ec_spi.c
+Index: tip/arch/powerpc/platforms/cell/spu_base.c
 ===================================================================
---- tip.orig/drivers/mfd/cros_ec_spi.c
-+++ tip/drivers/mfd/cros_ec_spi.c
-@@ -225,7 +225,6 @@ static int cros_ec_command_spi_xfer(stru
- 	u8 *ptr;
- 	int sum;
- 	int ret = 0, final_ret;
+--- tip.orig/arch/powerpc/platforms/cell/spu_base.c
++++ tip/arch/powerpc/platforms/cell/spu_base.c
+@@ -611,7 +611,6 @@ static int __init create_spu(void *data)
+ 	int ret;
+ 	static int number;
+ 	unsigned long flags;
 -	struct timespec ts;
  
- 	/*
- 	 * We have the shared ec_dev buffer plus we do lots of separate spi_sync
-@@ -242,8 +241,7 @@ static int cros_ec_command_spi_xfer(stru
- 		struct timespec ts;
- 		unsigned long delay;	/* The delay completed so far */
+ 	ret = -ENOMEM;
+ 	spu = kzalloc(sizeof (*spu), GFP_KERNEL);
+@@ -652,8 +651,7 @@ static int __init create_spu(void *data)
+ 	mutex_unlock(&spu_full_list_mutex);
  
--		ktime_get_ts(&ts);
--		delay = timespec_to_ns(&ts) - ec_spi->last_transfer_ns;
-+		delay = ktime_get_ns() - ec_spi->last_transfer_ns;
- 		if (delay < EC_SPI_RECOVERY_TIME_NS)
- 			ndelay(EC_SPI_RECOVERY_TIME_NS - delay);
- 	}
-@@ -280,8 +278,7 @@ static int cros_ec_command_spi_xfer(stru
- 	}
- 
- 	final_ret = spi_sync(ec_spi->spi, &msg);
+ 	spu->stats.util_state = SPU_UTIL_IDLE_LOADED;
 -	ktime_get_ts(&ts);
--	ec_spi->last_transfer_ns = timespec_to_ns(&ts);
-+	ec_spi->last_transfer_ns = ktime_get_ns();
- 	if (!ret)
- 		ret = final_ret;
- 	if (ret < 0) {
+-	spu->stats.tstamp = timespec_to_ns(&ts);
++	spu->stats.tstamp = ktime_get_ns();
+ 
+ 	INIT_LIST_HEAD(&spu->aff_list);
+ 
+@@ -676,7 +674,6 @@ static const char *spu_state_names[] = {
+ static unsigned long long spu_acct_time(struct spu *spu,
+ 		enum spu_utilization_state state)
+ {
+-	struct timespec ts;
+ 	unsigned long long time = spu->stats.times[state];
+ 
+ 	/*
+@@ -684,10 +681,8 @@ static unsigned long long spu_acct_time(
+ 	 * statistics are not updated.  Apply the time delta from the
+ 	 * last recorded state of the spu.
+ 	 */
+-	if (spu->stats.util_state == state) {
+-		ktime_get_ts(&ts);
+-		time += timespec_to_ns(&ts) - spu->stats.tstamp;
+-	}
++	if (spu->stats.util_state == state)
++		time += ktime_get_ns() - spu->stats.tstamp;
+ 
+ 	return time / NSEC_PER_MSEC;
+ }
+Index: tip/arch/powerpc/platforms/cell/spufs/context.c
+===================================================================
+--- tip.orig/arch/powerpc/platforms/cell/spufs/context.c
++++ tip/arch/powerpc/platforms/cell/spufs/context.c
+@@ -36,7 +36,6 @@ atomic_t nr_spu_contexts = ATOMIC_INIT(0
+ struct spu_context *alloc_spu_context(struct spu_gang *gang)
+ {
+ 	struct spu_context *ctx;
+-	struct timespec ts;
+ 
+ 	ctx = kzalloc(sizeof *ctx, GFP_KERNEL);
+ 	if (!ctx)
+@@ -67,8 +66,7 @@ struct spu_context *alloc_spu_context(st
+ 	__spu_update_sched_info(ctx);
+ 	spu_set_timeslice(ctx);
+ 	ctx->stats.util_state = SPU_UTIL_IDLE_LOADED;
+-	ktime_get_ts(&ts);
+-	ctx->stats.tstamp = timespec_to_ns(&ts);
++	ctx->stats.tstamp = ktime_get_ns();
+ 
+ 	atomic_inc(&nr_spu_contexts);
+ 	goto out;
+Index: tip/arch/powerpc/platforms/cell/spufs/file.c
+===================================================================
+--- tip.orig/arch/powerpc/platforms/cell/spufs/file.c
++++ tip/arch/powerpc/platforms/cell/spufs/file.c
+@@ -2338,7 +2338,6 @@ static const char *ctx_state_names[] = {
+ static unsigned long long spufs_acct_time(struct spu_context *ctx,
+ 		enum spu_utilization_state state)
+ {
+-	struct timespec ts;
+ 	unsigned long long time = ctx->stats.times[state];
+ 
+ 	/*
+@@ -2351,8 +2350,7 @@ static unsigned long long spufs_acct_tim
+ 	 * of the spu context.
+ 	 */
+ 	if (ctx->spu && ctx->stats.util_state == state) {
+-		ktime_get_ts(&ts);
+-		time += timespec_to_ns(&ts) - ctx->stats.tstamp;
++		time += ktime_get_ns() - ctx->stats.tstamp;
+ 	}
+ 
+ 	return time / NSEC_PER_MSEC;
+Index: tip/arch/powerpc/platforms/cell/spufs/sched.c
+===================================================================
+--- tip.orig/arch/powerpc/platforms/cell/spufs/sched.c
++++ tip/arch/powerpc/platforms/cell/spufs/sched.c
+@@ -1039,13 +1039,11 @@ void spuctx_switch_state(struct spu_cont
+ {
+ 	unsigned long long curtime;
+ 	signed long long delta;
+-	struct timespec ts;
+ 	struct spu *spu;
+ 	enum spu_utilization_state old_state;
+ 	int node;
+ 
+-	ktime_get_ts(&ts);
+-	curtime = timespec_to_ns(&ts);
++	curtime = ktime_get_ns();
+ 	delta = curtime - ctx->stats.tstamp;
+ 
+ 	WARN_ON(!mutex_is_locked(&ctx->state_mutex));
 
 
