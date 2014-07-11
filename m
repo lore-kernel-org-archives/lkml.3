@@ -1,66 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132AbaGKIZr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 04:25:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53858 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750776AbaGKIZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 04:25:44 -0400
-Date: Fri, 11 Jul 2014 10:25:12 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        ak@linux.intel.com, acme@redhat.com, namhyung@kernel.org
-Subject: Re: [PATCH 3/4] perf tools: add core support for sampling intr
- machine state regs
-Message-ID: <20140711082512.GC31646@krava.redhat.com>
-References: <1404857759-25105-1-git-send-email-eranian@google.com>
- <1404857759-25105-4-git-send-email-eranian@google.com>
+	id S1752845AbaGKI0a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 04:26:30 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:57110 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752240AbaGKI0Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 04:26:24 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s6B8QDvX023074, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <nic_swsd@realtek.com>
+Subject: [PATCH net-next 0/3] r8169: support IPv6
+Date: Fri, 11 Jul 2014 16:25:55 +0800
+Message-ID: <1394712342-15778-10-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404857759-25105-4-git-send-email-eranian@google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 12:15:58AM +0200, Stephane Eranian wrote:
-> Add the infrastructure to setup, collect and report the interrupt
-> machine state regs which can be captured by the kernel.
-> 
+The RTL8168C and the later chips support the hardware checksum
+for IPv6. Adjust some code and add the relative code.
 
-SNIP
+Hayes Wang (3):
+  r8169: split rtl8169_tso_csum
+  r8169: use Giant Send
+  r8169: support IPv6
 
-> index 8606175..00e45d1 100644
-> --- a/tools/perf/util/evsel.c
-> +++ b/tools/perf/util/evsel.c
-> @@ -626,6 +626,11 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
->  	if (opts->call_graph_enabled)
->  		perf_evsel__config_callgraph(evsel, opts);
->  
-> +	if (opts->sample_intr_regs) {
-> +		attr->sample_regs_intr = PERF_REGS_MASK;
-> +		perf_evsel__set_sample_bit(evsel, REGS_INTR);
-> +	}
-> +
->  	if (target__has_cpu(&opts->target))
->  		perf_evsel__set_sample_bit(evsel, CPU);
->  
-> @@ -979,6 +984,7 @@ static size_t perf_event_attr__fprintf(struct perf_event_attr *attr, FILE *fp)
->  	ret += PRINT_ATTR_X64(branch_sample_type);
->  	ret += PRINT_ATTR_X64(sample_regs_user);
->  	ret += PRINT_ATTR_U32(sample_stack_user);
-> +	ret += PRINT_ATTR_X64(sample_regs_intr);
->  
->  	ret += fprintf(fp, "%.60s\n", graph_dotted_line);
->  
-> @@ -1468,6 +1474,23 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
->  		array++;
->  	}
->  
-> +	data->intr_regs.abi = PERF_SAMPLE_REGS_ABI_NONE;
+ drivers/net/ethernet/realtek/r8169.c | 220 ++++++++++++++++++++++++++++-------
+ 1 file changed, 181 insertions(+), 39 deletions(-)
 
-not necessary, data is zeroed in the top
+-- 
+1.9.3
 
-jirka
