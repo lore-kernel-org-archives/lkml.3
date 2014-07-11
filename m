@@ -1,440 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182AbaGKVFZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 17:05:25 -0400
-Received: from mga03.intel.com ([143.182.124.21]:38276 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753755AbaGKVFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 17:05:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,645,1400050800"; 
-   d="scan'208";a="456056339"
-From: Sudeep Dutt <sudeep.dutt@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Williams <dan.j.williams@intel.com>
-Cc: Siva Yerramreddy <yshivakrishna@gmail.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Nikhil Rao <nikhil.rao@intel.com>, Sudeep Dutt <sudeep.dutt@intel.com>,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Subject: [PATCH char-misc-next v3 2/8] misc: mic: add a bus driver for virtual MIC devices
-Date: Fri, 11 Jul 2014 14:04:20 -0700
-Message-Id: <9f7cf168a23057b5a1a251f79e004bd449f9cb59.1405109402.git.sudeep.dutt@intel.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <cover.1405109401.git.sudeep.dutt@intel.com>
-References: <cover.1405109401.git.sudeep.dutt@intel.com>
-In-Reply-To: <cover.1405109401.git.sudeep.dutt@intel.com>
-References: <cover.1405109401.git.sudeep.dutt@intel.com>
+	id S932129AbaGKVFn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 17:05:43 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:45839 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754133AbaGKVFl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 17:05:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140711203607.GD18246@pd.tnic>
+References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
+	<1404925766-32253-2-git-send-email-hskinnemoen@google.com>
+	<20140709191747.GB5249@pd.tnic>
+	<CAFQmdRa5Spr0nX6qwzhDGEU9+H1_0vaCtF_NRV=p=OBDwin78A@mail.gmail.com>
+	<20140710114222.GE2970@pd.tnic>
+	<CAFQmdRZ1D4OWqkL-zpsiEjuGQaSBBmk36HqSw=q+hHNCRWZCKQ@mail.gmail.com>
+	<CA+8MBbJ+FeQKZC9oVZsvrBptaY+24rVKWUXT02ETHMMoA-omuA@mail.gmail.com>
+	<CAFQmdRY1=Yg7T15kQmiA+S0j1-xNKsF6Sze49BN7-VzbwW7V4w@mail.gmail.com>
+	<20140711153541.GD17083@pd.tnic>
+	<CAFQmdRajEjtGB4xXVzCmaUPA=qEjrzQTskJtpmD0cqKhKsEYsg@mail.gmail.com>
+	<20140711203607.GD18246@pd.tnic>
+Date: Fri, 11 Jul 2014 14:05:40 -0700
+Message-ID: <CAFQmdRaBWqxHjDEM2QMRirrpLUAzYHdJcNaD85-c_ZtoMTEHgg@mail.gmail.com>
+Subject: Re: [PATCH 1/6] x86-mce: Modify CMCI poll interval to adjust for
+ small check_interval values.
+From: Havard Skinnemoen <hskinnemoen@google.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Tony Luck <tony.luck@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ewout van Bekkum <ewout@google.com>,
+        linux-edac <linux-edac@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This MIC virtual bus driver takes the responsibility of creating all
-the virtual devices connected to the PCIe device on the host and the
-platform device on the card. The MIC bus hardware operations provide
-a way to abstract certain hardware details from the base physical devices.
-Examples of devices added on the MIC virtual bus include host DMA and card DMA.
-This abstraction enables using a common DMA driver on host and card.
+On Fri, Jul 11, 2014 at 1:36 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Fri, Jul 11, 2014 at 11:56:11AM -0700, Havard Skinnemoen wrote:
+>> > Basically the scheme becomes the following:
+>> >
+>> > * We switch to polling if we detect a second CMCI under an interval X
+>> > * We poll Y times, each polling with a duration Z.
+>> > * If during those Y*Z msec of polling, we've encountered errors, we
+>> > enlarge the polling interval to additional Y*Z msec.
+>> >
+>> >
+>> > check_interval will be capped on the low end to something bigger than
+>> > the polling duration Y*Z and only the storm detection code will be
+>> > allowed to go to lower intervals and switch to polling.
+>> >
+>> > At least something like that. In general, I'd like to make it more
+>> > robust for every system without the need for user interaction, i.e.
+>> > adjusting check_interval and where it just works.
+>>
+>> But at the same time, this scheme introduces even more variables that
+>> need careful tuning, e.g. storm polling interval and storm duration,
+>> while not really doing anything to make check_interval superfluous. Do
+>
+> Oh, we can't make check_interval superfluous - it is API to userspace
+> for a long time now.
 
-Reviewed-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
-Reviewed-by: Nikhil Rao <nikhil.rao@intel.com>
-Signed-off-by: Sudeep Dutt <sudeep.dutt@intel.com>
-Signed-off-by: Siva Yerramreddy <yshivakrishna@gmail.com>
----
- drivers/misc/mic/Kconfig       |  17 ++++
- drivers/misc/mic/Makefile      |   1 +
- drivers/misc/mic/bus/Makefile  |   5 +
- drivers/misc/mic/bus/mic_bus.c | 218 +++++++++++++++++++++++++++++++++++++++++
- include/linux/mic_bus.h        | 110 +++++++++++++++++++++
- 5 files changed, 351 insertions(+)
- create mode 100644 drivers/misc/mic/bus/Makefile
- create mode 100644 drivers/misc/mic/bus/mic_bus.c
- create mode 100644 include/linux/mic_bus.h
+Oh, I guess I misunderstood. I thought you were actually talking about
+removing that knob.
 
-diff --git a/drivers/misc/mic/Kconfig b/drivers/misc/mic/Kconfig
-index 462a5b1..ee1d2ac 100644
---- a/drivers/misc/mic/Kconfig
-+++ b/drivers/misc/mic/Kconfig
-@@ -1,3 +1,20 @@
-+comment "Intel MIC Bus Driver"
-+
-+config INTEL_MIC_BUS
-+	tristate "Intel MIC Bus Driver"
-+	depends on 64BIT && PCI && X86 && X86_DEV_DMA_OPS
-+	help
-+	  This option is selected by any driver which registers a
-+	  device or driver on the MIC Bus, such as CONFIG_INTEL_MIC_HOST,
-+	  CONFIG_INTEL_MIC_CARD, CONFIG_INTEL_MIC_X100_DMA etc.
-+
-+	  If you are building a host/card kernel with an Intel MIC device
-+	  then say M (recommended) or Y, else say N. If unsure say N.
-+
-+	  More information about the Intel MIC family as well as the Linux
-+	  OS and tools for MIC to use with this driver are available from
-+	  <http://software.intel.com/en-us/mic-developer>.
-+
- comment "Intel MIC Host Driver"
- 
- config INTEL_MIC_HOST
-diff --git a/drivers/misc/mic/Makefile b/drivers/misc/mic/Makefile
-index 05b34d6..e9bf148 100644
---- a/drivers/misc/mic/Makefile
-+++ b/drivers/misc/mic/Makefile
-@@ -4,3 +4,4 @@
- #
- obj-$(CONFIG_INTEL_MIC_HOST) += host/
- obj-$(CONFIG_INTEL_MIC_CARD) += card/
-+obj-$(CONFIG_INTEL_MIC_BUS) += bus/
-diff --git a/drivers/misc/mic/bus/Makefile b/drivers/misc/mic/bus/Makefile
-new file mode 100644
-index 0000000..d85c7f2
---- /dev/null
-+++ b/drivers/misc/mic/bus/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile - Intel MIC Linux driver.
-+# Copyright(c) 2014, Intel Corporation.
-+#
-+obj-$(CONFIG_INTEL_MIC_BUS) += mic_bus.o
-diff --git a/drivers/misc/mic/bus/mic_bus.c b/drivers/misc/mic/bus/mic_bus.c
-new file mode 100644
-index 0000000..961ae90
---- /dev/null
-+++ b/drivers/misc/mic/bus/mic_bus.c
-@@ -0,0 +1,218 @@
-+/*
-+ * Intel MIC Platform Software Stack (MPSS)
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License, version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-+ * General Public License for more details.
-+ *
-+ * The full GNU General Public License is included in this distribution in
-+ * the file called "COPYING".
-+ *
-+ * Intel MIC Bus driver.
-+ *
-+ * This implementation is very similar to the the virtio bus driver
-+ * implementation @ drivers/virtio/virtio.c
-+ */
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/idr.h>
-+#include <linux/mic_bus.h>
-+
-+/* Unique numbering for mbus devices. */
-+static DEFINE_IDA(mbus_index_ida);
-+
-+static ssize_t device_show(struct device *d,
-+			   struct device_attribute *attr, char *buf)
-+{
-+	struct mbus_device *dev = dev_to_mbus(d);
-+	return sprintf(buf, "0x%04x\n", dev->id.device);
-+}
-+static DEVICE_ATTR_RO(device);
-+
-+static ssize_t vendor_show(struct device *d,
-+			   struct device_attribute *attr, char *buf)
-+{
-+	struct mbus_device *dev = dev_to_mbus(d);
-+	return sprintf(buf, "0x%04x\n", dev->id.vendor);
-+}
-+static DEVICE_ATTR_RO(vendor);
-+
-+static ssize_t modalias_show(struct device *d,
-+			     struct device_attribute *attr, char *buf)
-+{
-+	struct mbus_device *dev = dev_to_mbus(d);
-+	return sprintf(buf, "mbus:d%08Xv%08X\n",
-+		       dev->id.device, dev->id.vendor);
-+}
-+static DEVICE_ATTR_RO(modalias);
-+
-+static struct attribute *mbus_dev_attrs[] = {
-+	&dev_attr_device.attr,
-+	&dev_attr_vendor.attr,
-+	&dev_attr_modalias.attr,
-+	NULL,
-+};
-+ATTRIBUTE_GROUPS(mbus_dev);
-+
-+static inline int mbus_id_match(const struct mbus_device *dev,
-+				const struct mbus_device_id *id)
-+{
-+	if (id->device != dev->id.device && id->device != MBUS_DEV_ANY_ID)
-+		return 0;
-+
-+	return id->vendor == MBUS_DEV_ANY_ID || id->vendor == dev->id.vendor;
-+}
-+
-+/*
-+ * This looks through all the IDs a driver claims to support.  If any of them
-+ * match, we return 1 and the kernel will call mbus_dev_probe().
-+ */
-+static int mbus_dev_match(struct device *dv, struct device_driver *dr)
-+{
-+	unsigned int i;
-+	struct mbus_device *dev = dev_to_mbus(dv);
-+	const struct mbus_device_id *ids;
-+
-+	ids = drv_to_mbus(dr)->id_table;
-+	for (i = 0; ids[i].device; i++)
-+		if (mbus_id_match(dev, &ids[i]))
-+			return 1;
-+	return 0;
-+}
-+
-+static int mbus_uevent(struct device *dv, struct kobj_uevent_env *env)
-+{
-+	struct mbus_device *dev = dev_to_mbus(dv);
-+
-+	return add_uevent_var(env, "MODALIAS=mbus:d%08Xv%08X",
-+			      dev->id.device, dev->id.vendor);
-+}
-+
-+static int mbus_dev_probe(struct device *d)
-+{
-+	int err;
-+	struct mbus_device *dev = dev_to_mbus(d);
-+	struct mbus_driver *drv = drv_to_mbus(dev->dev.driver);
-+
-+	err = drv->probe(dev);
-+	if (!err)
-+		if (drv->scan)
-+			drv->scan(dev);
-+	return err;
-+}
-+
-+static int mbus_dev_remove(struct device *d)
-+{
-+	struct mbus_device *dev = dev_to_mbus(d);
-+	struct mbus_driver *drv = drv_to_mbus(dev->dev.driver);
-+
-+	drv->remove(dev);
-+	return 0;
-+}
-+
-+static struct bus_type mic_bus = {
-+	.name  = "mic_bus",
-+	.match = mbus_dev_match,
-+	.dev_groups = mbus_dev_groups,
-+	.uevent = mbus_uevent,
-+	.probe = mbus_dev_probe,
-+	.remove = mbus_dev_remove,
-+};
-+
-+int mbus_register_driver(struct mbus_driver *driver)
-+{
-+	driver->driver.bus = &mic_bus;
-+	return driver_register(&driver->driver);
-+}
-+EXPORT_SYMBOL_GPL(mbus_register_driver);
-+
-+void mbus_unregister_driver(struct mbus_driver *driver)
-+{
-+	driver_unregister(&driver->driver);
-+}
-+EXPORT_SYMBOL_GPL(mbus_unregister_driver);
-+
-+static void mbus_release_dev(struct device *d)
-+{
-+	struct mbus_device *mbdev = dev_to_mbus(d);
-+	kfree(mbdev);
-+}
-+
-+struct mbus_device *
-+mbus_register_device(struct device *pdev, int id, struct dma_map_ops *dma_ops,
-+		     struct mbus_hw_ops *hw_ops, void __iomem *mmio_va)
-+{
-+	int ret;
-+	struct mbus_device *mbdev;
-+
-+	mbdev = kzalloc(sizeof(*mbdev), GFP_KERNEL);
-+	if (!mbdev)
-+		return ERR_PTR(-ENOMEM);
-+
-+	mbdev->mmio_va = mmio_va;
-+	mbdev->dev.parent = pdev;
-+	mbdev->id.device = id;
-+	mbdev->id.vendor = MBUS_DEV_ANY_ID;
-+	mbdev->dev.archdata.dma_ops = dma_ops;
-+	mbdev->dev.dma_mask = &mbdev->dev.coherent_dma_mask;
-+	dma_set_mask(&mbdev->dev, DMA_BIT_MASK(64));
-+	mbdev->dev.release = mbus_release_dev;
-+	mbdev->hw_ops = hw_ops;
-+	mbdev->dev.bus = &mic_bus;
-+
-+	/* Assign a unique device index and hence name. */
-+	ret = ida_simple_get(&mbus_index_ida, 0, 0, GFP_KERNEL);
-+	if (ret < 0)
-+		goto free_mbdev;
-+
-+	mbdev->index = ret;
-+	dev_set_name(&mbdev->dev, "mbus-dev%u", mbdev->index);
-+	/*
-+	 * device_register() causes the bus infrastructure to look for a
-+	 * matching driver.
-+	 */
-+	ret = device_register(&mbdev->dev);
-+	if (ret)
-+		goto ida_remove;
-+	return mbdev;
-+ida_remove:
-+	ida_simple_remove(&mbus_index_ida, mbdev->index);
-+free_mbdev:
-+	kfree(mbdev);
-+	return ERR_PTR(ret);
-+}
-+EXPORT_SYMBOL_GPL(mbus_register_device);
-+
-+void mbus_unregister_device(struct mbus_device *mbdev)
-+{
-+	int index = mbdev->index; /* save for after device release */
-+
-+	device_unregister(&mbdev->dev);
-+	ida_simple_remove(&mbus_index_ida, index);
-+}
-+EXPORT_SYMBOL_GPL(mbus_unregister_device);
-+
-+static int __init mbus_init(void)
-+{
-+	return bus_register(&mic_bus);
-+}
-+
-+static void __exit mbus_exit(void)
-+{
-+	bus_unregister(&mic_bus);
-+	ida_destroy(&mbus_index_ida);
-+}
-+
-+core_initcall(mbus_init);
-+module_exit(mbus_exit);
-+
-+MODULE_AUTHOR("Intel Corporation");
-+MODULE_DESCRIPTION("Intel(R) MIC Bus driver");
-+MODULE_LICENSE("GPL v2");
-diff --git a/include/linux/mic_bus.h b/include/linux/mic_bus.h
-new file mode 100644
-index 0000000..d5b5f76
---- /dev/null
-+++ b/include/linux/mic_bus.h
-@@ -0,0 +1,110 @@
-+/*
-+ * Intel MIC Platform Software Stack (MPSS)
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License, version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-+ * General Public License for more details.
-+ *
-+ * The full GNU General Public License is included in this distribution in
-+ * the file called "COPYING".
-+ *
-+ * Intel MIC Bus driver.
-+ *
-+ * This implementation is very similar to the the virtio bus driver
-+ * implementation @ include/linux/virtio.h.
-+ */
-+#ifndef _MIC_BUS_H_
-+#define _MIC_BUS_H_
-+/*
-+ * Everything a mbus driver needs to work with any particular mbus
-+ * implementation.
-+ */
-+#include <linux/interrupt.h>
-+#include <linux/dma-mapping.h>
-+
-+struct mbus_device_id {
-+	__u32 device;
-+	__u32 vendor;
-+};
-+
-+#define MBUS_DEV_DMA_HOST 2
-+#define MBUS_DEV_DMA_MIC 3
-+#define MBUS_DEV_ANY_ID 0xffffffff
-+
-+/**
-+ * mbus_device - representation of a device using mbus
-+ * @mmio_va: virtual address of mmio space
-+ * @hw_ops: the hardware ops supported by this device.
-+ * @id: the device type identification (used to match it with a driver).
-+ * @dev: underlying device.
-+ * be used to communicate with.
-+ * @index: unique position on the mbus bus
-+ */
-+struct mbus_device {
-+	void __iomem *mmio_va;
-+	struct mbus_hw_ops *hw_ops;
-+	struct mbus_device_id id;
-+	struct device dev;
-+	int index;
-+};
-+
-+/**
-+ * mbus_driver - operations for a mbus I/O driver
-+ * @driver: underlying device driver (populate name and owner).
-+ * @id_table: the ids serviced by this driver.
-+ * @probe: the function to call when a device is found.  Returns 0 or -errno.
-+ * @remove: the function to call when a device is removed.
-+ */
-+struct mbus_driver {
-+	struct device_driver driver;
-+	const struct mbus_device_id *id_table;
-+	int (*probe)(struct mbus_device *dev);
-+	void (*scan)(struct mbus_device *dev);
-+	void (*remove)(struct mbus_device *dev);
-+};
-+
-+/**
-+ * struct mic_irq - opaque pointer used as cookie
-+ */
-+struct mic_irq;
-+
-+/**
-+ * mbus_hw_ops - Hardware operations for accessing a MIC device on the MIC bus.
-+ */
-+struct mbus_hw_ops {
-+	struct mic_irq* (*request_threaded_irq)(struct mbus_device *mbdev,
-+						irq_handler_t handler,
-+						irq_handler_t thread_fn,
-+						const char *name, void *data,
-+						int intr_src);
-+	void (*free_irq)(struct mbus_device *mbdev,
-+			 struct mic_irq *cookie, void *data);
-+	void (*ack_interrupt)(struct mbus_device *mbdev, int num);
-+};
-+
-+struct mbus_device *
-+mbus_register_device(struct device *pdev, int id, struct dma_map_ops *dma_ops,
-+		     struct mbus_hw_ops *hw_ops, void __iomem *mmio_va);
-+void mbus_unregister_device(struct mbus_device *mbdev);
-+
-+int mbus_register_driver(struct mbus_driver *drv);
-+void mbus_unregister_driver(struct mbus_driver *drv);
-+
-+static inline struct mbus_device *dev_to_mbus(struct device *_dev)
-+{
-+	return container_of(_dev, struct mbus_device, dev);
-+}
-+
-+static inline struct mbus_driver *drv_to_mbus(struct device_driver *drv)
-+{
-+	return container_of(drv, struct mbus_driver, driver);
-+}
-+
-+#endif /* _MIC_BUS_H */
--- 
-1.8.2.1
+>> you really think we can tune these variables correctly for every
+>> system out there?
+>
+> Right, I was trying to figure out a scheme first where polling intervals
+> and thresholds would actually make sense and not be arbitrary.
+>
+> We probably won't be able to have the exact values for each system but a
+> smart approximation could do the job nicely enough.
 
+Sounds good, but we need to limit the complexity (which is why we
+can't get exact values).
+
+>> Or if we want to be generous: How about we just hardcode
+>> check_interval to 5 seconds. Would that be fine with everyone?
+>
+> We could but again, it is an API to userspace exported through sysfs.
+>
+> Besides, on a healthy system, you see errors so seldomly that 5sec is
+> pure waste of energy.
+
+True, but it sometimes makes sense to turn it down to a seemingly
+insane value, e.g. during hardware testing and qualification. Which is
+why I want to make sure values in that range work.
+
+But please disregard my suggestion to hardcode check_interval -- it's
+a bad idea and we're not going to remove that knob anyway.
+
+>> > I don't know whether any of the above makes sense - I hope that the
+>> > gist of it at least shows what IO think we should be doing: instead
+>> > of letting users configure the check_interval and influence the CMCI
+>> > polling interval, we should rely purely on machine characteristics to
+>> > set minimum values under which we poll and above which, we do the normal
+>> > duration enlarging dance.
+>>
+>> I think the scheme may work, although I'm worried about the burstiness
+>> mentioned above.
+>>
+>> But I don't really buy that pulling a handful of numbers out of thin
+>> air and saying it should work for everyone is going to work.
+>
+> No no, absolutely not. This is exactly what I think should be fixed as
+> the current numbers are likely pulled out of thin air. Simply because
+> figuring the optimal ones is a very hard task, as we come to realize.
+>
+>> Either we need solid data to back up those numbers, or we need to make
+>> them configurable so people can experiment and find what works best
+>> for them.
+>
+> ..., or, we could measure them on each system and approximate them to
+> the ones close to optimal for that particular system, over the course of
+> its runtime.
+
+I like the idea, but I'm worried about the complexity. Maybe what you
+said elsewhere makes sense -- I'll have to look at it more closely.
+
+> Thanks for taking the time and humouring me with that crazy
+> brainstorming!
+
+You're welcome, and likewise :)
+
+Havard
