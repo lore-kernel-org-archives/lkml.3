@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905AbaGKNoE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:44:04 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56026 "EHLO
+	id S1754016AbaGKNoV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:44:21 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56083 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753749AbaGKNoB (ORCPT
+	with ESMTP id S1753749AbaGKNoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:44:01 -0400
-Message-Id: <20140711133705.309823897@linutronix.de>
+	Fri, 11 Jul 2014 09:44:17 -0400
+Message-Id: <20140711133706.244676153@linutronix.de>
 User-Agent: quilt/0.63-1
-Date: Fri, 11 Jul 2014 13:43:59 -0000
+Date: Fri, 11 Jul 2014 13:44:16 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 01/55] tile: Convert VDSO timekeeping to the precise mechanism
+Subject: [patch 12/55] timekeeper: Move tk_xtime to core code
 References: <20140711133623.530368377@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=tile-fix-broken-vdso.patch
+Content-Disposition: inline; filename=timekeeper-move-tk-xtime-to-core.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -26,63 +26,144 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code was only halfarsed converted to the new VSDO update mechanism
-and still uses the inaccurate base value which lacks the fractional
-part of xtime_nsec. Fix it up.
+No users outside of the core.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/tile/kernel/time.c               |    9 ++++-----
- arch/tile/kernel/vdso/vgettimeofday.c |    7 ++++---
- 2 files changed, 8 insertions(+), 8 deletions(-)
+ include/linux/timekeeper_internal.h |   18 ---------
+ kernel/time/timekeeping.c           |   70 ++++++++++++++++++++++--------------
+ 2 files changed, 43 insertions(+), 45 deletions(-)
 
-Index: tip/arch/tile/kernel/time.c
+Index: tip/include/linux/timekeeper_internal.h
 ===================================================================
---- tip.orig/arch/tile/kernel/time.c
-+++ tip/arch/tile/kernel/time.c
-@@ -260,7 +260,6 @@ void update_vsyscall_tz(void)
+--- tip.orig/include/linux/timekeeper_internal.h
++++ tip/include/linux/timekeeper_internal.h
+@@ -71,16 +71,6 @@ struct timekeeper {
  
- void update_vsyscall(struct timekeeper *tk)
- {
--	struct timespec wall_time = tk_xtime(tk);
- 	struct timespec *wtm = &tk->wall_to_monotonic;
- 	struct clocksource *clock = tk->clock;
+ };
  
-@@ -271,12 +270,12 @@ void update_vsyscall(struct timekeeper *
- 	++vdso_data->tb_update_count;
- 	smp_wmb();
- 	vdso_data->xtime_tod_stamp = clock->cycle_last;
--	vdso_data->xtime_clock_sec = wall_time.tv_sec;
--	vdso_data->xtime_clock_nsec = wall_time.tv_nsec;
-+	vdso_data->xtime_clock_sec = tk->xtime_sec;
-+	vdso_data->xtime_clock_nsec = tk->xtime_nsec;
- 	vdso_data->wtom_clock_sec = wtm->tv_sec;
- 	vdso_data->wtom_clock_nsec = wtm->tv_nsec;
--	vdso_data->mult = clock->mult;
--	vdso_data->shift = clock->shift;
-+	vdso_data->mult = tk->mult;
-+	vdso_data->shift = tk->shift;
- 	smp_wmb();
- 	++vdso_data->tb_update_count;
+-static inline struct timespec64 tk_xtime(struct timekeeper *tk)
+-{
+-	struct timespec64 ts;
+-
+-	ts.tv_sec = tk->xtime_sec;
+-	ts.tv_nsec = (long)(tk->xtime_nsec >> tk->shift);
+-	return ts;
+-}
+-
+-
+ #ifdef CONFIG_GENERIC_TIME_VSYSCALL
+ 
+ extern void update_vsyscall(struct timekeeper *tk);
+@@ -92,14 +82,6 @@ extern void update_vsyscall_old(struct t
+ 				struct clocksource *c, u32 mult);
+ extern void update_vsyscall_tz(void);
+ 
+-static inline void update_vsyscall(struct timekeeper *tk)
+-{
+-	struct timespec xt;
+-
+-	xt = tk_xtime(tk);
+-	update_vsyscall_old(&xt, &tk->wall_to_monotonic, tk->clock, tk->mult);
+-}
+-
+ #else
+ 
+ static inline void update_vsyscall(struct timekeeper *tk)
+Index: tip/kernel/time/timekeeping.c
+===================================================================
+--- tip.orig/kernel/time/timekeeping.c
++++ tip/kernel/time/timekeeping.c
+@@ -51,6 +51,15 @@ static inline void tk_normalize_xtime(st
+ 	}
  }
-Index: tip/arch/tile/kernel/vdso/vgettimeofday.c
-===================================================================
---- tip.orig/arch/tile/kernel/vdso/vgettimeofday.c
-+++ tip/arch/tile/kernel/vdso/vgettimeofday.c
-@@ -83,10 +83,11 @@ int __vdso_gettimeofday(struct timeval *
- 		if (count & 1)
- 			continue;
  
--		cycles = (get_cycles() - vdso_data->xtime_tod_stamp);
--		ns = (cycles * vdso_data->mult) >> vdso_data->shift;
- 		sec = vdso_data->xtime_clock_sec;
--		ns += vdso_data->xtime_clock_nsec;
-+		cycles = get_cycles() - vdso_data->xtime_tod_stamp;
-+		ns = (cycles * vdso_data->mult) + vdso_data->xtime_clock_nsec;
-+		ns >>= vdso_data->shift;
++static inline struct timespec64 tk_xtime(struct timekeeper *tk)
++{
++	struct timespec64 ts;
 +
- 		if (ns >= NSEC_PER_SEC) {
- 			ns -= NSEC_PER_SEC;
- 			sec += 1;
++	ts.tv_sec = tk->xtime_sec;
++	ts.tv_nsec = (long)(tk->xtime_nsec >> tk->shift);
++	return ts;
++}
++
+ static void tk_set_xtime(struct timekeeper *tk, const struct timespec64 *ts)
+ {
+ 	tk->xtime_sec = ts->tv_sec;
+@@ -199,6 +208,40 @@ static inline s64 timekeeping_get_ns_raw
+ 	return nsec + arch_gettimeoffset();
+ }
+ 
++#ifdef CONFIG_GENERIC_TIME_VSYSCALL_OLD
++
++static inline void update_vsyscall(struct timekeeper *tk)
++{
++	struct timespec xt;
++
++	xt = tk_xtime(tk);
++	update_vsyscall_old(&xt, &tk->wall_to_monotonic, tk->clock, tk->mult);
++}
++
++static inline void old_vsyscall_fixup(struct timekeeper *tk)
++{
++	s64 remainder;
++
++	/*
++	* Store only full nanoseconds into xtime_nsec after rounding
++	* it up and add the remainder to the error difference.
++	* XXX - This is necessary to avoid small 1ns inconsistnecies caused
++	* by truncating the remainder in vsyscalls. However, it causes
++	* additional work to be done in timekeeping_adjust(). Once
++	* the vsyscall implementations are converted to use xtime_nsec
++	* (shifted nanoseconds), and CONFIG_GENERIC_TIME_VSYSCALL_OLD
++	* users are removed, this can be killed.
++	*/
++	remainder = tk->xtime_nsec & ((1ULL << tk->shift) - 1);
++	tk->xtime_nsec -= remainder;
++	tk->xtime_nsec += 1ULL << tk->shift;
++	tk->ntp_error += remainder << tk->ntp_error_shift;
++	tk->ntp_error -= (1ULL << tk->shift) << tk->ntp_error_shift;
++}
++#else
++#define old_vsyscall_fixup(tk)
++#endif
++
+ static RAW_NOTIFIER_HEAD(pvclock_gtod_chain);
+ 
+ static void update_pvclock_gtod(struct timekeeper *tk, bool was_set)
+@@ -1330,33 +1373,6 @@ static cycle_t logarithmic_accumulation(
+ 	return offset;
+ }
+ 
+-#ifdef CONFIG_GENERIC_TIME_VSYSCALL_OLD
+-static inline void old_vsyscall_fixup(struct timekeeper *tk)
+-{
+-	s64 remainder;
+-
+-	/*
+-	* Store only full nanoseconds into xtime_nsec after rounding
+-	* it up and add the remainder to the error difference.
+-	* XXX - This is necessary to avoid small 1ns inconsistnecies caused
+-	* by truncating the remainder in vsyscalls. However, it causes
+-	* additional work to be done in timekeeping_adjust(). Once
+-	* the vsyscall implementations are converted to use xtime_nsec
+-	* (shifted nanoseconds), and CONFIG_GENERIC_TIME_VSYSCALL_OLD
+-	* users are removed, this can be killed.
+-	*/
+-	remainder = tk->xtime_nsec & ((1ULL << tk->shift) - 1);
+-	tk->xtime_nsec -= remainder;
+-	tk->xtime_nsec += 1ULL << tk->shift;
+-	tk->ntp_error += remainder << tk->ntp_error_shift;
+-	tk->ntp_error -= (1ULL << tk->shift) << tk->ntp_error_shift;
+-}
+-#else
+-#define old_vsyscall_fixup(tk)
+-#endif
+-
+-
+-
+ /**
+  * update_wall_time - Uses the current clocksource to increment the wall time
+  *
 
 
