@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013AbaGKR1M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 13:27:12 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:42731 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750896AbaGKR1L (ORCPT
+	id S1754615AbaGKR2l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 13:28:41 -0400
+Received: from smtprelay0208.hostedemail.com ([216.40.44.208]:38351 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751386AbaGKR2k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 13:27:11 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v2 3.16] x86,kprobes: Don't try to resolve kprobe faults from userspace
-Date: Fri, 11 Jul 2014 10:27:01 -0700
-Message-Id: <c4e339882c121aa76254f2adde3fcbdf502faec2.1405099506.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
+	Fri, 11 Jul 2014 13:28:40 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1
+X-HE-Tag: queen36_680164ec1213e
+X-Filterd-Recvd-Size: 2258
+Message-ID: <1405099712.2796.19.camel@joe-AO725>
+Subject: Re: [PATCH 09/83] hsa/radeon: Add code base of hsa driver for AMD's
+ GPUs
+From: Joe Perches <joe@perches.com>
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: Oded Gabbay <oded.gabbay@gmail.com>, David Airlie <airlied@linux.ie>,
+        Alex Deucher <alexander.deucher@amd.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, John Bridgman <John.Bridgman@amd.com>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Sandeep Nair <sandeep_n@ti.com>,
+        Kenneth Heitke <kheitke@codeaurora.org>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Andreas Noever <andreas.noever@gmail.com>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Date: Fri, 11 Jul 2014 10:28:32 -0700
+In-Reply-To: <20140711170411.GJ1870@gmail.com>
+References: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
+	 <1405029027-6085-8-git-send-email-oded.gabbay@amd.com>
+	 <20140711170411.GJ1870@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit:
+On Fri, 2014-07-11 at 13:04 -0400, Jerome Glisse wrote:
+> On Fri, Jul 11, 2014 at 12:50:09AM +0300, Oded Gabbay wrote:
+[]
+> > +static long kfd_ioctl(struct file *, unsigned int, unsigned long);
+> 
+> Nitpick, avoid unsigned int just use unsigned.
 
-    commit 6f6343f53d133bae516caf3d254bce37d8774625
-    Author: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-    Date:   Thu Apr 17 17:17:33 2014 +0900
+I suggest unsigned int is much more common (and better)
+than just unsigned.
 
-        kprobes/x86: Call exception handlers directly from do_int3/do_debug
+$ git grep -P '\bunsigned\s+(?!long|int|short|char)' -- "*.[ch]" | wc -l
+20778
 
-appears to have inadvertently dropped a check that the int3 came
-from kernel mode.  Trying to dereference addr when addr is
-user-controlled is completely bogus.
+$ git grep -P "\bunsigned\s+int\b" -- "*.[ch]" | wc -l
+98068
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
+> > +static int kfd_open(struct inode *, struct file *);
 
-Changes from v1: Fixed the changelog message
+It's also generally better to use types and names tno
+improve how a human reads and understands the code.
 
- arch/x86/kernel/kprobes/core.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
-index 7596df6..67e6d19 100644
---- a/arch/x86/kernel/kprobes/core.c
-+++ b/arch/x86/kernel/kprobes/core.c
-@@ -574,6 +574,9 @@ int kprobe_int3_handler(struct pt_regs *regs)
- 	struct kprobe *p;
- 	struct kprobe_ctlblk *kcb;
- 
-+	if (user_mode_vm(regs))
-+		return 0;
-+
- 	addr = (kprobe_opcode_t *)(regs->ip - sizeof(kprobe_opcode_t));
- 	/*
- 	 * We don't want to be preempted for the entire
--- 
-1.9.3
 
