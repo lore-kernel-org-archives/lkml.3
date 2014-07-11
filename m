@@ -1,103 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755362AbaGKUjY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 16:39:24 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:45026 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753900AbaGKUjU (ORCPT
+	id S1754784AbaGKUiH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 16:38:07 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:48088 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752930AbaGKUiF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 16:39:20 -0400
+	Fri, 11 Jul 2014 16:38:05 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Murali Karicheri <m-karicheri2@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Pratyush Anand <pratyush.anand@st.com>,
+        Richard Zhu <r65037@freescale.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: [PATCH v4 1/6] PCI: designware: add rd[wr]_other_conf API
+Date: Fri, 11 Jul 2014 16:36:30 -0400
+Message-ID: <1405110995-24676-2-git-send-email-m-karicheri2@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1405110995-24676-1-git-send-email-m-karicheri2@ti.com>
+References: <1405110995-24676-1-git-send-email-m-karicheri2@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20140711201012.GB18246@pd.tnic>
-References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
-	<1404925766-32253-2-git-send-email-hskinnemoen@google.com>
-	<20140709191747.GB5249@pd.tnic>
-	<CAFQmdRa5Spr0nX6qwzhDGEU9+H1_0vaCtF_NRV=p=OBDwin78A@mail.gmail.com>
-	<20140710114222.GE2970@pd.tnic>
-	<CAFQmdRZ1D4OWqkL-zpsiEjuGQaSBBmk36HqSw=q+hHNCRWZCKQ@mail.gmail.com>
-	<CA+8MBbJ+FeQKZC9oVZsvrBptaY+24rVKWUXT02ETHMMoA-omuA@mail.gmail.com>
-	<CAFQmdRY1=Yg7T15kQmiA+S0j1-xNKsF6Sze49BN7-VzbwW7V4w@mail.gmail.com>
-	<20140711153541.GD17083@pd.tnic>
-	<CAFQmdRajEjtGB4xXVzCmaUPA=qEjrzQTskJtpmD0cqKhKsEYsg@mail.gmail.com>
-	<20140711201012.GB18246@pd.tnic>
-Date: Fri, 11 Jul 2014 13:39:19 -0700
-Message-ID: <CAFQmdRbpVfNjvyOPHo7RZ+W=2FTA6fEw2hWBebKNBX8LMPYfeQ@mail.gmail.com>
-Subject: Re: [PATCH 1/6] x86-mce: Modify CMCI poll interval to adjust for
- small check_interval values.
-From: Havard Skinnemoen <hskinnemoen@google.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Tony Luck <tony.luck@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ewout van Bekkum <ewout@google.com>,
-        linux-edac <linux-edac@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 1:10 PM, Borislav Petkov <bp@alien8.de> wrote:
-> I'm going to reply with multiple mails so that we can keep the things
-> separate and not let replies grow out of proportion.
->
-> On Fri, Jul 11, 2014 at 11:56:11AM -0700, Havard Skinnemoen wrote:
->> So a short burst of CMCIs would send us instantly into polling mode,
->> which would probably be suboptimal if things are quiet after that.
->> Counting is a lot more robust against this.
->
-> Yes, but CMCI_STORM_THRESHOLD is arbitrary too. How is getting 15 CMCIs
-> per second an interrupt storm? Apparently boxes can handle couple of
-> hundred CMCIs per second just fine...
+v3.65 version of the designware h/w, requires application space
+registers to be configured to access the remote EP config space.
+To support this, add rd[wr]_other_conf API in the pcie_host_opts
 
-Sorry, I was being unclear. I was actually arguing the opposite:
-Getting 15 CMCIs per second is fine and shouldn't cause any switch to
-polling mode, especially if the polling will happen at 100 times per
-second. But your proposal would switch to polling if we ever see 2
-CMCIs within a period, which seems way too trigger-happy, even if the
-period is short.
+Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+Acked-by: Mohit Kumar <mohit.kumar@st.com>
+Acked-by: Jingoo Han <jg1.han@samsung.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-I do agree there are already a lot of arbitrary numbers in the code.
+CC: Russell King <linux@arm.linux.org.uk>
+CC: Grant Likely <grant.likely@linaro.org>
+CC: Rob Herring <robh+dt@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>
+CC: Pratyush Anand <pratyush.anand@st.com>
+CC: Richard Zhu <r65037@freescale.com>
+CC: Kishon Vijay Abraham I <kishon@ti.com>
+CC: Marek Vasut <marex@denx.de>
+CC: Arnd Bergmann <arnd@arndb.de>
+CC: Pawel Moll <pawel.moll@arm.com>
+CC: Mark Rutland <mark.rutland@arm.com>
+CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
+CC: Kumar Gala <galak@codeaurora.org>
+CC: Randy Dunlap <rdunlap@infradead.org>
+CC: Grant Likely <grant.likely@linaro.org> 
+---
+ drivers/pci/host/pcie-designware.c |   12 ++++++++++--
+ drivers/pci/host/pcie-designware.h |    4 ++++
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
->> If we see two errors every 2 seconds (for example due to a bug causing
->> us to see duplicate MCEs), we'd ping-pong back and forth between CMCI
->> and polling mode on every error, polling 51 times per second on
->> average. This seems a lot more expensive than just staying in CMCI
->> mode. And we risk losing information if there are instead, say, 4
->> errors every 2 seconds.
->>
->> > After a second where we haven't seen any errors, we switch back to CMCI.
->> > check_interval relaxes back to 5 min and all gets to its normal boring
->> > existence. Otherwise, we enter storm mode quickly again.
->>
->> Since the storm detection is now independent of check_interval, we
->> don't need to place any restrictions on it right?
->
-> Ok, so my initial storm detection was dumb, ok. Counting the way we do
-> it now is purely sucked out of thin air too.
->
-> Instead, the criteria should probably be something like: what is the
-> number of CMCIs per second which we can process while leaving system
-> operation relatively unaffected? Anything above that number constitutes
-> a CMCI storm.
+diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
+index 1eaf4df..d8f3af7 100644
+--- a/drivers/pci/host/pcie-designware.c
++++ b/drivers/pci/host/pcie-designware.c
+@@ -656,7 +656,11 @@ static int dw_pcie_rd_conf(struct pci_bus *bus, u32 devfn, int where,
+ 	}
+ 
+ 	if (bus->number != pp->root_bus_nr)
+-		ret = dw_pcie_rd_other_conf(pp, bus, devfn,
++		if (pp->ops->rd_other_conf)
++			ret = pp->ops->rd_other_conf(pp, bus, devfn,
++						where, size, val);
++		else
++			ret = dw_pcie_rd_other_conf(pp, bus, devfn,
+ 						where, size, val);
+ 	else
+ 		ret = dw_pcie_rd_own_conf(pp, where, size, val);
+@@ -679,7 +683,11 @@ static int dw_pcie_wr_conf(struct pci_bus *bus, u32 devfn,
+ 		return PCIBIOS_DEVICE_NOT_FOUND;
+ 
+ 	if (bus->number != pp->root_bus_nr)
+-		ret = dw_pcie_wr_other_conf(pp, bus, devfn,
++		if (pp->ops->wr_other_conf)
++			ret = pp->ops->wr_other_conf(pp, bus, devfn,
++						where, size, val);
++		else
++			ret = dw_pcie_wr_other_conf(pp, bus, devfn,
+ 						where, size, val);
+ 	else
+ 		ret = dw_pcie_wr_own_conf(pp, where, size, val);
+diff --git a/drivers/pci/host/pcie-designware.h b/drivers/pci/host/pcie-designware.h
+index 77f592f..8121901 100644
+--- a/drivers/pci/host/pcie-designware.h
++++ b/drivers/pci/host/pcie-designware.h
+@@ -61,6 +61,10 @@ struct pcie_host_ops {
+ 			u32 val, void __iomem *dbi_base);
+ 	int (*rd_own_conf)(struct pcie_port *pp, int where, int size, u32 *val);
+ 	int (*wr_own_conf)(struct pcie_port *pp, int where, int size, u32 val);
++	int (*rd_other_conf)(struct pcie_port *pp, struct pci_bus *bus,
++			unsigned int devfn, int where, int size, u32 *val);
++	int (*wr_other_conf)(struct pcie_port *pp, struct pci_bus *bus,
++			unsigned int devfn, int where, int size, u32 val);
+ 	int (*link_up)(struct pcie_port *pp);
+ 	void (*host_init)(struct pcie_port *pp);
+ };
+-- 
+1.7.9.5
 
-That sounds good to me. But now you're talking about CMCIs per second,
-which seems to imply some form of counting right?
-
-> Now, how we'll come up with an answer to that question is a whole
-> another story...
-
-Right. If we can come up with an answer, that's great, but if we
-don't, I think we're better off exporting a nice knob and letting the
-user tune his system according to his needs.
-
-Just to throw another number out, how about doing CMCI storm polling
-at a fixed interval of 100 ms? Since check_interval is an integer
-representing a number of seconds, it can never get lower than 10x this
-number, so we won't need to restrict it any further.
-
-If we see more than X CMCIs in a second, we switch to polling. If less
-than Y out of 10 polls see an error, we switch back to CMCI.
-
-Now, we still leave 3 magic numbers to be figured out...but I think
-their range is somewhat more limited.
-
-Havard
