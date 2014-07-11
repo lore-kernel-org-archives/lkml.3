@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141AbaGKNok (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:44:40 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56160 "EHLO
+	id S1752903AbaGKNop (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:44:45 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56176 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753734AbaGKNoi (ORCPT
+	with ESMTP id S1754159AbaGKNon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:44:38 -0400
-Message-Id: <20140711133707.493314165@linutronix.de>
+	Fri, 11 Jul 2014 09:44:43 -0400
+Message-Id: <20140711133707.761089416@linutronix.de>
 User-Agent: quilt/0.63-1
-Date: Fri, 11 Jul 2014 13:44:37 -0000
+Date: Fri, 11 Jul 2014 13:44:41 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 26/55] timekeeping: Remove ktime_get_monotonic_offset()
+Subject: [patch 29/55] sched: Make task->real_start_time nanoseconds based
 References: <20140711133623.530368377@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline;
- filename=timekeeping-remove-ktime_get_monotonic_offset.patch
+Content-Disposition: inline; filename=sched-make-real-start-time-ktime-t.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -27,54 +26,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No more users.
+Simplify the only user of this data by removing the timespec
+conversion.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/timekeeping.h |    1 -
- kernel/time/timekeeping.c   |   18 ------------------
- 2 files changed, 19 deletions(-)
+ fs/proc/array.c       |    7 +------
+ include/linux/sched.h |    2 +-
+ kernel/fork.c         |    3 +--
+ 3 files changed, 3 insertions(+), 9 deletions(-)
 
-Index: tip/include/linux/timekeeping.h
+Index: tip/fs/proc/array.c
 ===================================================================
---- tip.orig/include/linux/timekeeping.h
-+++ tip/include/linux/timekeeping.h
-@@ -108,7 +108,6 @@ enum tk_offsets {
+--- tip.orig/fs/proc/array.c
++++ tip/fs/proc/array.c
+@@ -473,13 +473,8 @@ static int do_task_stat(struct seq_file
+ 	priority = task_prio(task);
+ 	nice = task_nice(task);
  
- extern ktime_t ktime_get(void);
- extern ktime_t ktime_get_with_offset(enum tk_offsets offs);
--extern ktime_t ktime_get_monotonic_offset(void);
- extern ktime_t ktime_mono_to_any(ktime_t tmono, enum tk_offsets offs);
+-	/* Temporary variable needed for gcc-2.96 */
+-	/* convert timespec -> nsec*/
+-	start_time =
+-		(unsigned long long)task->real_start_time.tv_sec * NSEC_PER_SEC
+-				+ task->real_start_time.tv_nsec;
+ 	/* convert nsec -> ticks */
+-	start_time = nsec_to_clock_t(start_time);
++	start_time = nsec_to_clock_t(task->real_start_time);
  
- /**
-Index: tip/kernel/time/timekeeping.c
+ 	seq_printf(m, "%d (%s) %c", pid_nr_ns(pid, ns), tcomm, state);
+ 	seq_put_decimal_ll(m, ' ', ppid);
+Index: tip/include/linux/sched.h
 ===================================================================
---- tip.orig/kernel/time/timekeeping.c
-+++ tip/kernel/time/timekeeping.c
-@@ -1712,24 +1712,6 @@ ktime_t ktime_get_update_offsets_now(kti
+--- tip.orig/include/linux/sched.h
++++ tip/include/linux/sched.h
+@@ -1368,7 +1368,7 @@ struct task_struct {
  #endif
+ 	unsigned long nvcsw, nivcsw; /* context switch counts */
+ 	struct timespec start_time; 		/* monotonic time */
+-	struct timespec real_start_time;	/* boot based time */
++	u64 real_start_time;	/* boot based time in nsec */
+ /* mm fault and swap info: this can arguably be seen as either mm-specific or thread-specific */
+ 	unsigned long min_flt, maj_flt;
  
- /**
-- * ktime_get_monotonic_offset() - get wall_to_monotonic in ktime_t format
-- */
--ktime_t ktime_get_monotonic_offset(void)
--{
--	struct timekeeper *tk = &tk_core.timekeeper;
--	unsigned long seq;
--	struct timespec64 wtom;
--
--	do {
--		seq = read_seqcount_begin(&tk_core.seq);
--		wtom = tk->wall_to_monotonic;
--	} while (read_seqcount_retry(&tk_core.seq, seq));
--
--	return timespec64_to_ktime(wtom);
--}
--EXPORT_SYMBOL_GPL(ktime_get_monotonic_offset);
--
--/**
-  * do_adjtimex() - Accessor function to NTP __do_adjtimex function
-  */
- int do_adjtimex(struct timex *txc)
+Index: tip/kernel/fork.c
+===================================================================
+--- tip.orig/kernel/fork.c
++++ tip/kernel/fork.c
+@@ -1263,8 +1263,7 @@ static struct task_struct *copy_process(
+ 	posix_cpu_timers_init(p);
+ 
+ 	ktime_get_ts(&p->start_time);
+-	p->real_start_time = p->start_time;
+-	monotonic_to_bootbased(&p->real_start_time);
++	p->real_start_time = ktime_get_boot_ns();
+ 	p->io_context = NULL;
+ 	p->audit_context = NULL;
+ 	if (clone_flags & CLONE_THREAD)
 
 
