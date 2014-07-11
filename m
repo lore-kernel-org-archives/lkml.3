@@ -1,62 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519AbaGKMGc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 08:06:32 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:42470 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751988AbaGKMGa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 08:06:30 -0400
+	id S1753530AbaGKMHI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 08:07:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63228 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752385AbaGKMHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 08:07:06 -0400
+Date: Fri, 11 Jul 2014 08:06:53 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Vitaly Kuznetsov <vkuznets@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] mmap_vmcore: skip non-ram pages reported by
+ hypervisors
+Message-ID: <20140711120653.GA15611@redhat.com>
+References: <1405068552-19453-1-git-send-email-vkuznets@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20140711062811.GC3003@tarshish>
-References: <1403091577-10232-1-git-send-email-harinik@xilinx.com>
-	<5cc8b89b-20ff-4fa9-92dd-bb2f6d3512d8@BY2FFO11FD030.protection.gbl>
-	<CACRpkdb1M3-hrSKLKWz21LCJ1sMvsq5E-aqkpmVhy0NwOS5HhA@mail.gmail.com>
-	<20140707152309.GH4939@tarshish>
-	<CACRpkdY+3hy5iw=uRdmu665NWsoGacTMgjUq97219kEcfn7Dqw@mail.gmail.com>
-	<20140711062811.GC3003@tarshish>
-Date: Fri, 11 Jul 2014 14:06:29 +0200
-Message-ID: <CACRpkdYi_xbixsgvF0NMVdRmxbAgDVOnq-vzYVpDkLHTL8-12A@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] gpio: Add driver for Zynq GPIO controller
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Baruch Siach <baruch@tkos.co.il>
-Cc: =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Harini Katakam <harinik@xilinx.com>, Pawel Moll <pawel.moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Harini Katakam <harinikatakamlinux@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Harini Katakam <harini.katakam@xilinx.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405068552-19453-1-git-send-email-vkuznets@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 8:28 AM, Baruch Siach <baruch@tkos.co.il> wrote:
-> On Tue, Jul 08, 2014 at 11:27:57AM +0200, Linus Walleij wrote:
+On Fri, Jul 11, 2014 at 10:49:12AM +0200, Vitaly Kuznetsov wrote:
+> We have a special check in read_vmcore() handler to check if the page was
+> reported as ram or not by the hypervisor (pfn_is_ram()). However, when
+> vmcore is read with mmap() no such check is performed. That can lead to
+> unpredictable results, e.g. when running Xen PVHVM guest memcpy() after
+> mmap() on /proc/vmcore will hang processing HVMMEM_mmio_dm pages creating
+> enormous load in both DomU and Dom0.
+> 
+> Fix the issue by mapping each non-ram page to the zero page. Keep direct
+> path with remap_oldmem_pfn_range() to avoid looping through all pages on
+> bare metal.
+> 
+> The issue can also be solved by overriding remap_oldmem_pfn_range() in
+> xen-specific code, as remap_oldmem_pfn_range() was been designed for.
+> That, however, would involve non-obvious xen code path for all x86 builds
+> with CONFIG_XEN_PVHVM=y and would prevent all other hypervisor-specific
+> code on x86 arch from doing the same override.
+> 
+> Changes from v3:
+> - multi line comment style changes
+> - minor code style changes
+> 
+> Changes from v2:
+> - make remap_oldmem_pfn_checked() interface exactly match
+>   remap_oldmem_pfn_range()
+> - unmap mapped part inside remap_oldmem_pfn_checked() in case of failure so
+>   we don't need to take care of it in mmap_vmcore()
+> - create vmcore_remap_oldmem_pfn() wrapper
+> 
+> Changes from v1:
+> - comment style changes
+> - change remap_oldmem_pfn_checked() interface to closer match the
+>   remap_oldmem_pfn() interface
+> - preserve formal parameters within the loop, make the loop conditions
+>   easier to understand
+> - use my_zero_pfn() for the zero page
+> - return remapped length instead of new offset
+> 
+> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+> Reviewed-by: Andrew Jones <drjones@redhat.com>
 
->> What is the usecase here?
->
-> During boot I need to know, for example, when an FPGA is ready to be
-> programmed, and when said FPGA has finished its initialization. I also read
-> the sate of on-board DIP switches to determine the desired boot method. I find
-> the current sysfs interface quite convenient for these and similar tasks.
+This one looks good to me. Thanks.
 
-So given that an FPGA is a piece of hardware, it should have its firmware
-loaded from the kernel and a kernel driver communicating with it I guess?
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-I feel the smell of a huge bundle of userspace drivers for something that
-should be handled by the kernel.
+Vivek
 
-Yours,
-Linus Walleij
+> ---
+>  fs/proc/vmcore.c | 83 ++++++++++++++++++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 80 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+> index 382aa89..405a409 100644
+> --- a/fs/proc/vmcore.c
+> +++ b/fs/proc/vmcore.c
+> @@ -328,6 +328,83 @@ static inline char *alloc_elfnotes_buf(size_t notes_sz)
+>   * virtually contiguous user-space in ELF layout.
+>   */
+>  #ifdef CONFIG_MMU
+> +/*
+> + * remap_oldmem_pfn_checked - do remap_oldmem_pfn_range replacing all pages
+> + * reported as not being ram with the zero page.
+> + *
+> + * @vma: vm_area_struct describing requested mapping
+> + * @from: start remapping from
+> + * @pfn: page frame number to start remapping to
+> + * @size: remapping size
+> + * @prot: protection bits
+> + *
+> + * Returns zero on success, -EAGAIN on failure.
+> + */
+> +int remap_oldmem_pfn_checked(struct vm_area_struct *vma, unsigned long from,
+> +			     unsigned long pfn, unsigned long size,
+> +			     pgprot_t prot)
+> +{
+> +	size_t map_size;
+> +	unsigned long pos_start, pos_end, pos;
+> +	unsigned long zeropage_pfn = my_zero_pfn(0);
+> +	u64 len = 0;
+> +
+> +	pos_start = pfn;
+> +	pos_end = pfn + (size >> PAGE_SHIFT);
+> +
+> +	for (pos = pos_start; pos < pos_end; ++pos) {
+> +		if (!pfn_is_ram(pos)) {
+> +			/*
+> +			 * We hit a page which is not ram. Remap the continuous
+> +			 * region between pos_start and pos-1 and replace
+> +			 * the non-ram page at pos with the zero page.
+> +			 */
+> +			if (pos > pos_start) {
+> +				/* Remap continuous region */
+> +				map_size = (pos - pos_start) << PAGE_SHIFT;
+> +				if (remap_oldmem_pfn_range(vma, from + len,
+> +							   pos_start, map_size,
+> +							   prot))
+> +					goto fail;
+> +				len += map_size;
+> +			}
+> +			/* Remap the zero page */
+> +			if (remap_oldmem_pfn_range(vma, from + len,
+> +						   zeropage_pfn,
+> +						   PAGE_SIZE, prot))
+> +				goto fail;
+> +			len += PAGE_SIZE;
+> +			pos_start = pos + 1;
+> +		}
+> +	}
+> +	if (pos > pos_start) {
+> +		/* Remap the rest */
+> +		map_size = (pos - pos_start) << PAGE_SHIFT;
+> +		if (remap_oldmem_pfn_range(vma, from + len, pos_start,
+> +					   map_size, vma->vm_page_prot))
+> +			goto fail;
+> +		len += map_size;
+> +	}
+> +	return 0;
+> +fail:
+> +	do_munmap(vma->vm_mm, from, len);
+> +	return -EAGAIN;
+> +}
+> +
+> +int vmcore_remap_oldmem_pfn(struct vm_area_struct *vma,
+> +			    unsigned long from, unsigned long pfn,
+> +			    unsigned long size, pgprot_t prot)
+> +{
+> +	/*
+> +	 * Check if oldmem_pfn_is_ram was registered to avoid
+> +	 * looping over all pages without a reason.
+> +	 */
+> +	if (oldmem_pfn_is_ram)
+> +		return remap_oldmem_pfn_checked(vma, from, pfn, size, prot);
+> +	else
+> +		return remap_oldmem_pfn_range(vma, from, pfn, size, prot);
+> +}
+> +
+>  static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+>  {
+>  	size_t size = vma->vm_end - vma->vm_start;
+> @@ -387,9 +464,9 @@ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+>  
+>  			tsz = min_t(size_t, m->offset + m->size - start, size);
+>  			paddr = m->paddr + start - m->offset;
+> -			if (remap_oldmem_pfn_range(vma, vma->vm_start + len,
+> -						   paddr >> PAGE_SHIFT, tsz,
+> -						   vma->vm_page_prot))
+> +			if (vmcore_remap_oldmem_pfn(vma, vma->vm_start + len,
+> +						    paddr >> PAGE_SHIFT, tsz,
+> +						    vma->vm_page_prot))
+>  				goto fail;
+>  			size -= tsz;
+>  			start += tsz;
+> -- 
+> 1.9.3
