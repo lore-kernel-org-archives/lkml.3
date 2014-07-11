@@ -1,149 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027AbaGKAvv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 20:51:51 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:42555 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750927AbaGKAvt (ORCPT
+	id S1751694AbaGKA6b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 20:58:31 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:60469 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927AbaGKA6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 20:51:49 -0400
-Message-ID: <53BF351C.8060008@collabora.co.uk>
-Date: Fri, 11 Jul 2014 02:51:40 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Thu, 10 Jul 2014 20:58:30 -0400
+X-AuditID: 85900ec0-d1328b9000001514-99-53bf36b27444
+Subject: [PATCHV4 0/5] trace-cmd: Support the feature which guests send
+ trace data via virtio
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com, linux-kernel@vger.kernel.org,
+        Aaron Fabbri <aaronx.j.fabbri@intel.com>
+Date: Fri, 11 Jul 2014 00:58:24 +0000
+Message-ID: <20140711005824.25516.24498.stgit@yuno-kbuild.novalocal>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Lee Jones <lee.jones@linaro.org>, Alessandro Zummo <a.zummo@towertech.it>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Tushar Behera <trblinux@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>, Andreas Farber <afaerber@suse.de>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Rob Jones <rob.jones@codethink.co.uk>
-Subject: Re: [PATCH v7 08/24] mfd: max77686: Add Dynamic Voltage Scaling (DVS)
- support
-References: <1404505467-26526-1-git-send-email-javier.martinez@collabora.co.uk>	<1404505467-26526-9-git-send-email-javier.martinez@collabora.co.uk> <CACRpkdYs93snBFYZMKN6kd==b9jZehnp1eHV5bHaBNsNRt62pQ@mail.gmail.com>
-In-Reply-To: <CACRpkdYs93snBFYZMKN6kd==b9jZehnp1eHV5bHaBNsNRt62pQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
+Hi Steven,
 
-On 07/10/2014 11:46 AM, Linus Walleij wrote:
-> On Fri, Jul 4, 2014 at 10:24 PM, Javier Martinez Canillas
-> <javier.martinez@collabora.co.uk> wrote:
-> 
->> Some regulators on the MAX77686 PMIC have Dynamic Voltage Scaling
->> (DVS) support that allows output voltage to change dynamically.
->>
->> For MAX77686, these regulators are Buck regulators 2, 3 and 4.
->>
->> Each Buck output voltage is selected using a set of external
->> inputs: DVS1-3 and SELB2-4.
->>
->> DVS registers can be used to configure the output voltages for each
->> Buck regulator and which one is active is controled by DVSx lines.
->>
->> SELBx lines are used to control if individual Buck lines are ON or OFF.
->>
->> This patch adds support to configure the DVSx and SELBx lines
->> from DT and to setup and read the GPIO lines connected to them.
->>
->> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
->> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> 
-> (...)
->> +#include <linux/gpio/consumer.h>
-> 
-> THANKS for using modern interfaces!
-> 
+This is a v4 patch set to support the feature which guests send trace data via
+virtio. (Previous patch set is here: https://lkml.org/lkml/2013/12/16/688)
 
-Thanks to you and Alexandre for keep improving the GPIO subsystem!
+Any features in this V4 patch series are not changed from previous version.
+I fixed some typos, rebased for current version, and added usage in this
+version.
 
->> +static void max77686_dt_parse_dvs_gpio(struct device *dev)
->> +{
->> +       struct max77686_platform_data *pd = dev_get_platdata(dev);
->> +       int i;
->> +
->> +       /*
->> +        * NOTE: we don't consider GPIO errors fatal; board may have some lines
->> +        * directly pulled high or low and thus doesn't specify them.
->> +        */
->> +       for (i = 0; i < ARRAY_SIZE(pd->buck_gpio_dvs); i++)
->> +               pd->buck_gpio_dvs[i] =
->> +                       devm_gpiod_get_index(dev, "max77686,pmic-buck-dvs", i);
->> +
->> +       for (i = 0; i < ARRAY_SIZE(pd->buck_gpio_selb); i++)
->> +               pd->buck_gpio_selb[i] =
->> +                       devm_gpiod_get_index(dev, "max77686,pmic-buck-selb", i);
->> +}
-> 
-> Rob Jones has a patch cooking that adds gpio_get_array() so this thing
-> merits also adding devm_gpiod_get_array() I think?
-> 
+Would you review this patch series?
 
-Yes, I just asked [0] Rob on the other thread if he is already implementing the
-descriptor-based version of his devm_request_gpio_array() or if I should go and
-implement it.
+<How to use>
+1. Run virt-server on a host
+   # trace-cmd virt-server --dom guest1 -c 2
 
-Now, I wonder if that can be done in a follow-up patch (e.g: use the new
-devm_gpiod_get_array once it lands in Torvalds tree)  since this series already
-touches several subsystems (mfd, regulators, clk and rtc) so if possible I would
-prefer to not add another cross-subsystem dependency :)
+2. Set up of virtio-serial pipe of guest1 on the host
+   Add the following tags to domain XML files.
+   # virsh edit guest1
+   <channel type='unix'>
+      <source mode='connect' path='/tmp/trace-cmd/virt/agent-ctl-path'/>
+      <target type='virtio' name='agent-ctl-path'/>
+   </channel>
+   <channel type='pipe'>
+      <source path='/tmp/trace-cmd/virt/guest1/trace-path-cpu0'/>
+      <target type='virtio' name='trace-path-cpu0'/>
+   </channel>
+   <channel type='pipe'>
+      <source path='/tmp/trace-cmd/virt/guest1/trace-path-cpu1'/>
+      <target type='virtio' name='trace-path-cpu1'/>
+   </channel>
 
->> +/**
->> + * max77686_setup_gpios() - init DVS-related GPIOs
->> + * @dev: device whose platform data contains the dvs GPIOs information
->> + *
->> + * This function claims / initalizations GPIOs related to DVS if they are
->> + * defined. This may have the effect of switching voltages if the
->> + * pdata->buck_default_idx does not match the boot time state of pins.
->> + */
->> +int max77686_setup_gpios(struct device *dev)
->> +{
->> +       struct max77686_platform_data *pd = dev_get_platdata(dev);
->> +       int buck_default_idx = pd->buck_default_idx;
->> +       int ret;
->> +       int i;
->> +
->> +       /* Set all SELB high to avoid glitching while DVS is changing */
->> +       for (i = 0; i < ARRAY_SIZE(pd->buck_gpio_selb); i++) {
->> +               struct gpio_desc *gpio = pd->buck_gpio_selb[i];
->> +
->> +               /* OK if some GPIOs aren't defined */
->> +               if (IS_ERR(gpio))
->> +                       continue;
->> +
->> +               ret = gpiod_direction_output_raw(gpio, 1);
-> 
-> Why does this have to be raw? Usually that is not to be used.
-> 
+3. Boot the guest
+   # virsh start guest1
 
-Right, I can't think of a good reason why this has to be raw and not just use
-gpiod_direction_output() which will check the active-low flag and set the value
-accordingly. I'll change it on the next revision.
+4. Run the guest1's client(see trace-cmd-record(1) with the *--virt* option)
+   # trace-cmd record -e sched* --virt
 
-> Apart from this it looks OK.
-> 
+If you want to boot another guest sends trace-data via virtio-serial,
+you will manually make the guest domain directory and trace data I/Fs.
 
-Great, thanks a lot for your feedback.
+- Make guest domain directory on the host
+   # mkdir -p /tmp/trace-cmd/virt/<DOMAIN>
+   # chmod 710 /tmp/trace-cmd/virt/<DOMAIN>
+   # chgrp qemu /tmp/trace-cmd/virt/<DOMAIN>
 
-> Yours,
-> Linus Walleij
-> 
+- Make FIFO on the host
+   # mkfifo /tmp/trace-cmd/virt/<DOMAIN>/trace-path-cpu{0,1,...,X}.{in,out}
 
-Best regards,
-Javier
+<Result>
+I measured CPU usage outputted by top command on a guest when client sends
+trace data. Client means "record -N"(NW) or "record --virt"(virtio-serial).
 
-[0]: https://lkml.org/lkml/2014/7/10/722
+                      NW     virtio-serial(splice)
+client(fedora19)    ~2.9[%]       ~1.7[%]
+
+Changes in V4:
+[1/5] Fix some typos, cleanup, and rebase for current trace-cmd-v2.4
+      Change the argument of tracecmd_msg_recv()
+[2/5] Fix some typos
+      Change the argument of tracecmd_msg_recv_wait()
+[3/5] Fix some typos and cleanup
+[4/5] Introduce parse_args_virt() and add usage of virt-server in trace-usage.c
+[5/5] Rebase for current trace-cmd-v2.4 and add usage of --virt for record in
+      trace-usage.c
+      Divide tracecmd_msg_connect_to_server() into two functions
+       (tracecmd_msg_connect_to_server() and
+                  tracecmd_msg_send_init_data_virt(fd))
+
+Changes in V3:
+[2/6] Change the license of trace-msg.c to LGPL v2.1
+[4/6] Change _nw/_NW to _net/_NET
+[5/6] Change _nw/_NW to _net/_NET
+[6/6] Add this patch based on Steven's review
+      (https://lkml.org/lkml/2013/10/14/618)
+
+Changes in V2:
+[1/5] Add a comment in open_udp()
+[2/5] Regacy protocol support in order to keep backward compatibility
+
+
+Thank you,
+
+---
+
+Yoshihiro YUNOMAE (5):
+      trace-cmd/listen: Apply the trace-msg protocol for communication between a server and clients
+      trace-cmd/msg: Use poll(2) to wait for a message
+      trace-cmd/virt-server: Add virt-server mode for a virtualization environment
+      trace-cmd/virt-server: Add --dom option which makes a domain directory to virt-server
+      trace-cmd/record: Add --virt option for record mode
+
+
+ Documentation/trace-cmd-record.1.txt      |   11 
+ Documentation/trace-cmd-virt-server.1.txt |  113 ++++
+ Makefile                                  |    2 
+ trace-cmd.c                               |    3 
+ trace-cmd.h                               |   15 
+ trace-listen.c                            |  717 +++++++++++++++++++-----
+ trace-msg.c                               |  873 +++++++++++++++++++++++++++++
+ trace-msg.h                               |   31 +
+ trace-output.c                            |    4 
+ trace-record.c                            |  146 ++++-
+ trace-recorder.c                          |   50 +-
+ trace-usage.c                             |   18 +
+ 12 files changed, 1818 insertions(+), 165 deletions(-)
+ create mode 100644 Documentation/trace-cmd-virt-server.1.txt
+ create mode 100644 trace-msg.c
+ create mode 100644 trace-msg.h
+
+-- 
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
