@@ -1,305 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150AbaGKJhk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 05:37:40 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:35576 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752913AbaGKJhe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 05:37:34 -0400
+	id S1753227AbaGKJiN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 05:38:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52069 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752970AbaGKJiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 05:38:08 -0400
+Message-ID: <53BFB07C.3060902@suse.cz>
+Date: Fri, 11 Jul 2014 11:38:04 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <53BF41C8.4080304@collabora.co.uk>
-References: <1404505467-26526-1-git-send-email-javier.martinez@collabora.co.uk>
-	<1404505467-26526-9-git-send-email-javier.martinez@collabora.co.uk>
-	<CADGdYn6tyTBZOjZH8JBUVMJ1kh-tht=tkU4tA+oM=PbfTYkqGw@mail.gmail.com>
-	<53BF41C8.4080304@collabora.co.uk>
-Date: Fri, 11 Jul 2014 15:07:33 +0530
-X-Google-Sender-Auth: QQE_z99kgL5WqdPL586t7mLvdyg
-Message-ID: <CADGdYn6QmRo8o=+iRadXUJ_iimw4B9kMmZz6gFocH_ukuQpmNg@mail.gmail.com>
-Subject: Re: [PATCH v7 08/24] mfd: max77686: Add Dynamic Voltage Scaling (DVS) support
-From: amit daniel kachhap <amit.daniel@samsung.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Lee Jones <lee.jones@linaro.org>, Alessandro Zummo <a.zummo@towertech.it>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>, devicetree@vger.kernel.org,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Tushar Behera <trblinux@gmail.com>, Mark Brown <broonie@kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>, Andreas Farber <afaerber@suse.de>,
-        LAK <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Minchan Kim <minchan@kernel.org>
+CC: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 05/13] mm, compaction: report compaction as contended
+ only due to lock contention
+References: <1403279383-5862-1-git-send-email-vbabka@suse.cz> <1403279383-5862-6-git-send-email-vbabka@suse.cz> <20140623013903.GA12413@bbox> <53BFA016.6040906@suse.cz>
+In-Reply-To: <53BFA016.6040906@suse.cz>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 7:15 AM, Javier Martinez Canillas
-<javier.martinez@collabora.co.uk> wrote:
-> Hello Amit,
->
-> On 07/10/2014 11:59 AM, amit daniel kachhap wrote:
->> On Sat, Jul 5, 2014 at 1:54 AM, Javier Martinez Canillas
->> <javier.martinez@collabora.co.uk> wrote:
->>> Some regulators on the MAX77686 PMIC have Dynamic Voltage Scaling
->>> (DVS) support that allows output voltage to change dynamically.
->>>
->>> For MAX77686, these regulators are Buck regulators 2, 3 and 4.
->>>
->>> Each Buck output voltage is selected using a set of external
->>> inputs: DVS1-3 and SELB2-4.
->>>
->>> DVS registers can be used to configure the output voltages for each
->>> Buck regulator and which one is active is controled by DVSx lines.
->>>
->>> SELBx lines are used to control if individual Buck lines are ON or OFF.
->>>
->>> This patch adds support to configure the DVSx and SELBx lines
->>> from DT and to setup and read the GPIO lines connected to them.
+On 07/11/2014 10:28 AM, Vlastimil Babka wrote:
+> On 06/23/2014 03:39 AM, Minchan Kim wrote:
+>> Hello Vlastimil,
 >>
->> The entire series looks nice. Few minor comments from my side. I guess
->> still one more version in needed as per other ppls comment.
->> You may add,
->> Reviewed-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>> On Fri, Jun 20, 2014 at 05:49:35PM +0200, Vlastimil Babka wrote:
+>>> Async compaction aborts when it detects zone lock contention or need_resched()
+>>> is true. David Rientjes has reported that in practice, most direct async
+>>> compactions for THP allocation abort due to need_resched(). This means that a
+>>> second direct compaction is never attempted, which might be OK for a page
+>>> fault, but khugepaged is intended to attempt a sync compaction in such case and
+>>> in these cases it won't.
+>>>
+>>> This patch replaces "bool contended" in compact_control with an enum that
+>>> distinguieshes between aborting due to need_resched() and aborting due to lock
+>>> contention. This allows propagating the abort through all compaction functions
+>>> as before, but declaring the direct compaction as contended only when lock
+>>> contention has been detected.
+>>>
+>>> A second problem is that try_to_compact_pages() did not act upon the reported
+>>> contention (both need_resched() or lock contention) and could proceed with
+>>> another zone from the zonelist. When need_resched() is true, that means
+>>> initializing another zone compaction, only to check again need_resched() in
+>>> isolate_migratepages() and aborting. For zone lock contention, the unintended
+>>> consequence is that the contended status reported back to the allocator
+>>> is decided from the last zone where compaction was attempted, which is rather
+>>> arbitrary.
+>>>
+>>> This patch fixes the problem in the following way:
+>>> - need_resched() being true after async compaction returned from a zone means
+>>>     that further zones should not be tried. We do a cond_resched() so that we
+>>>     do not hog the CPU, and abort. "contended" is reported as false, since we
+>>>     did not fail due to lock contention.
+>>> - aborting zone compaction due to lock contention means we can still try
+>>>     another zone, since it has different locks. We report back "contended" as
+>>>     true only if *all* zones where compaction was attempted, it aborted due to
+>>>     lock contention.
+>>>
+>>> As a result of these fixes, khugepaged will proceed with second sync compaction
+>>> as intended, when the preceding async compaction aborted due to need_resched().
+>>> Page fault compactions aborting due to need_resched() will spare some cycles
+>>> previously wasted by initializing another zone compaction only to abort again.
+>>> Lock contention will be reported only when compaction in all zones aborted due
+>>> to lock contention, and therefore it's not a good idea to try again after
+>>> reclaim.
+>>>
+>>> Reported-by: David Rientjes <rientjes@google.com>
+>>> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+>>> Cc: Minchan Kim <minchan@kernel.org>
+>>> Cc: Mel Gorman <mgorman@suse.de>
+>>> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>>> Cc: Michal Nazarewicz <mina86@mina86.com>
+>>> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+>>> Cc: Christoph Lameter <cl@linux.com>
+>>> Cc: Rik van Riel <riel@redhat.com>
+>>> ---
+>>>    mm/compaction.c | 48 +++++++++++++++++++++++++++++++++++++++---------
+>>>    mm/internal.h   | 15 +++++++++++----
+>>>    2 files changed, 50 insertions(+), 13 deletions(-)
+>>>
+>>> diff --git a/mm/compaction.c b/mm/compaction.c
+>>> index ebe30c9..e8cfac9 100644
+>>> --- a/mm/compaction.c
+>>> +++ b/mm/compaction.c
+>>> @@ -180,9 +180,14 @@ static void update_pageblock_skip(struct compact_control *cc,
+>>>    }
+>>>    #endif /* CONFIG_COMPACTION */
+>>>
+>>> -static inline bool should_release_lock(spinlock_t *lock)
+>>> +enum compact_contended should_release_lock(spinlock_t *lock)
+>>>    {
+>>> -	return need_resched() || spin_is_contended(lock);
+>>> +	if (spin_is_contended(lock))
+>>> +		return COMPACT_CONTENDED_LOCK;
+>>> +	else if (need_resched())
+>>> +		return COMPACT_CONTENDED_SCHED;
+>>> +	else
+>>> +		return COMPACT_CONTENDED_NONE;
 >>
->
-> Thanks.
->
+>> If you want to raise priority of lock contention than need_resched
+>> intentionally, please write it down on comment.
+>>
+>>>    }
 >>>
->>> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
->>> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
->>> ---
+>>>    /*
+>>> @@ -197,7 +202,9 @@ static inline bool should_release_lock(spinlock_t *lock)
+>>>    static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
+>>>    				      bool locked, struct compact_control *cc)
+>>>    {
+>>> -	if (should_release_lock(lock)) {
+>>> +	enum compact_contended contended = should_release_lock(lock);
+>>> +
+>>> +	if (contended) {
+>>>    		if (locked) {
+>>>    			spin_unlock_irqrestore(lock, *flags);
+>>>    			locked = false;
+>>> @@ -205,7 +212,7 @@ static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
 >>>
->>> Changes since v6:
->>>  - Add a comment that max77686_read_gpios() function can sleep.
->>>    Sugggested by Krzysztof Kozlowski
->>> ---
->>>  drivers/mfd/max77686.c       | 119 +++++++++++++++++++++++++++++++++++++++++++
->>>  include/linux/mfd/max77686.h |  18 ++++---
->>>  2 files changed, 129 insertions(+), 8 deletions(-)
+>>>    		/* async aborts if taking too long or contended */
+>>>    		if (cc->mode == MIGRATE_ASYNC) {
+>>> -			cc->contended = true;
+>>> +			cc->contended = contended;
+>>>    			return false;
+>>>    		}
+>>
+>>
 >>>
->>> diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
->>> index 8650832..d193873 100644
->>> --- a/drivers/mfd/max77686.c
->>> +++ b/drivers/mfd/max77686.c
->>> @@ -32,8 +32,10 @@
->>>  #include <linux/mfd/core.h>
->>>  #include <linux/mfd/max77686.h>
->>>  #include <linux/mfd/max77686-private.h>
->>> +#include <linux/gpio/consumer.h>
->>>  #include <linux/err.h>
->>>  #include <linux/of.h>
->>> +#include <linux/export.h>
+>>> @@ -231,7 +238,7 @@ static inline bool compact_should_abort(struct compact_control *cc)
+>>>    	/* async compaction aborts if contended */
+>>>    	if (need_resched()) {
+>>>    		if (cc->mode == MIGRATE_ASYNC) {
+>>> -			cc->contended = true;
+>>> +			cc->contended = COMPACT_CONTENDED_SCHED;
+>>>    			return true;
+>>>    		}
 >>>
->>>  #define I2C_ADDR_RTC   (0x0C >> 1)
+>>> @@ -1101,7 +1108,8 @@ static unsigned long compact_zone_order(struct zone *zone, int order,
+>>>    	VM_BUG_ON(!list_empty(&cc.freepages));
+>>>    	VM_BUG_ON(!list_empty(&cc.migratepages));
 >>>
->>> @@ -101,9 +103,119 @@ static const struct of_device_id max77686_pmic_dt_match[] = {
->>>         {},
->>>  };
+>>> -	*contended = cc.contended;
+>>> +	/* We only signal lock contention back to the allocator */
+>>> +	*contended = cc.contended == COMPACT_CONTENDED_LOCK;
+>>
+>> Please write down *WHY* as well as your intention we can know by looking at code.
+>>
+>>>    	return ret;
+>>>    }
 >>>
->>> +static void max77686_dt_parse_dvs_gpio(struct device *dev)
->>> +{
->>> +       struct max77686_platform_data *pd = dev_get_platdata(dev);
->>> +       int i;
->>> +
->>> +       /*
->>> +        * NOTE: we don't consider GPIO errors fatal; board may have some lines
->>> +        * directly pulled high or low and thus doesn't specify them.
->>> +        */
->>> +       for (i = 0; i < ARRAY_SIZE(pd->buck_gpio_dvs); i++)
->>> +               pd->buck_gpio_dvs[i] =
->>> +                       devm_gpiod_get_index(dev, "max77686,pmic-buck-dvs", i);
->>> +
->>> +       for (i = 0; i < ARRAY_SIZE(pd->buck_gpio_selb); i++)
->>> +               pd->buck_gpio_selb[i] =
->>> +                       devm_gpiod_get_index(dev, "max77686,pmic-buck-selb", i);
->>> +}
->>> +
->>> +/**
->>> + * max77686_setup_gpios() - init DVS-related GPIOs
->>> + * @dev: device whose platform data contains the dvs GPIOs information
->>> + *
->>> + * This function claims / initalizations GPIOs related to DVS if they are
->>> + * defined. This may have the effect of switching voltages if the
->>> + * pdata->buck_default_idx does not match the boot time state of pins.
->>> + */
->>> +int max77686_setup_gpios(struct device *dev)
->>> +{
->>> +       struct max77686_platform_data *pd = dev_get_platdata(dev);
->>> +       int buck_default_idx = pd->buck_default_idx;
->>> +       int ret;
->>> +       int i;
->>> +
->>> +       /* Set all SELB high to avoid glitching while DVS is changing */
->>> +       for (i = 0; i < ARRAY_SIZE(pd->buck_gpio_selb); i++) {
->>> +               struct gpio_desc *gpio = pd->buck_gpio_selb[i];
->>> +
->>> +               /* OK if some GPIOs aren't defined */
->>> +               if (IS_ERR(gpio))
->>> +                       continue;
->>> +
->>> +               ret = gpiod_direction_output_raw(gpio, 1);
->>> +               if (ret) {
->>> +                       dev_err(dev, "can't set gpio[%d] dir: %d\n", i, ret);
->>> +                       return ret;
->>> +               }
->>> +       }
->>> +
->>> +       /* Set our initial setting */
->>> +       for (i = 0; i < ARRAY_SIZE(pd->buck_gpio_dvs); i++) {
->>> +               struct gpio_desc *gpio = pd->buck_gpio_dvs[i];
->>> +
->>> +               /* OK if some GPIOs aren't defined */
->>> +               if (IS_ERR(gpio))
->>> +                       continue;
->>> +
->>> +               /* If a GPIO is valid, set it */
->>> +               gpiod_direction_output(gpio, (buck_default_idx >> i) & 1);
->>> +               if (ret) {
->>> +                       dev_err(dev, "can't set gpio[%d]: dir %d\n", i, ret);
->>> +                       return ret;
->>> +               }
->>> +       }
->>> +
->>> +       /* Now set SELB low to take effect */
->>> +       for (i = 0; i < ARRAY_SIZE(pd->buck_gpio_selb); i++) {
->>> +               struct gpio_desc *gpio = pd->buck_gpio_selb[i];
->>> +
->>> +               if (!IS_ERR(gpio))
->>> +                       gpiod_set_value(gpio, 0);
->>> +       }
->>> +
->>> +       return 0;
->>> +}
->>> +EXPORT_SYMBOL_GPL(max77686_setup_gpios);
->>> +
->>> +/**
->>> + * max77686_read_gpios() - read the current state of the dvs GPIOs
->>> + * @pdata: platform data that contains the dvs GPIOs information
->>> + *
->>> + * We call this function at bootup to detect what slot the firmware was
->>> + * using for the DVS GPIOs.  That way we can properly preserve the firmware's
->>> + * voltage settings
->>> + *
->>> + * This function can sleep so must not be called from atomic context.
->>> + */
->>> +int max77686_read_gpios(struct max77686_platform_data *pdata)
->>> +{
->>> +       int buck_default_idx = pdata->buck_default_idx;
->>> +       int result = 0;
->>> +       int i;
->>> +
->>> +       for (i = 0; i < ARRAY_SIZE(pdata->buck_gpio_dvs); i++) {
->>> +               struct gpio_desc *gpio = pdata->buck_gpio_dvs[i];
->>> +
->>> +               /* OK if some GPIOs aren't defined; we'll use default */
->>> +               if (IS_ERR(gpio)) {
->>> +                       result |= buck_default_idx & (1 << i);
->>> +                       continue;
->>> +               }
->>> +
->>> +               if (gpiod_get_value_cansleep(gpio))
->>> +                       result |= 1 << i;
->>> +       }
->>> +
->>> +       return result;
->>> +}
->>> +EXPORT_SYMBOL_GPL(max77686_read_gpios);
->>> +
->>>  static struct max77686_platform_data *max77686_i2c_parse_dt_pdata(struct device
->>>                                                                   *dev)
->>>  {
->>> +       struct device_node *np = dev->of_node;
->>>         struct max77686_platform_data *pd;
+>>> @@ -1132,6 +1140,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>>>    	struct zone *zone;
+>>>    	int rc = COMPACT_SKIPPED;
+>>>    	int alloc_flags = 0;
+>>> +	bool all_zones_contended = true;
 >>>
->>>         pd = devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
->>> @@ -111,6 +223,13 @@ static struct max77686_platform_data *max77686_i2c_parse_dt_pdata(struct device
->>>                 return NULL;
+>>>    	/* Check if the GFP flags allow compaction */
+>>>    	if (!order || !may_enter_fs || !may_perform_io)
+>>> @@ -1146,6 +1155,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>>>    	for_each_zone_zonelist_nodemask(zone, z, zonelist, high_zoneidx,
+>>>    								nodemask) {
+>>>    		int status;
+>>> +		bool zone_contended;
 >>>
->>>         dev->platform_data = pd;
->>> +
->>> +       /* Read default index and ignore errors, since default is 0 */
->>> +       of_property_read_u32(np, "max77686,pmic-buck-default-dvs-idx",
->>> +                            &pd->buck_default_idx);
->> Any error checking code here. Say if pmic-buck-default-dvs-idx exceed 8?
->
-> I'm not a DT expert but AFAIK the kernel should expect the data in a FDT to be
-> correct and should not validate it on runtime. There is work-in-progress to add
-> a proper schema checking for DTS to the dtc so on build time it can be validated
-> that a DTS is valid.
-Hmm its fine then.
->
-> AFAIU the only thing that the kernel should check is if a required property does
-> not exist.
->
->>> +
->>> +       max77686_dt_parse_dvs_gpio(dev);
->>> +
->>>         return pd;
->>>  }
+>>>    		if (compaction_deferred(zone, order))
+>>>    			continue;
+>>> @@ -1153,8 +1163,9 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>>>    		*deferred = false;
 >>>
->>> diff --git a/include/linux/mfd/max77686.h b/include/linux/mfd/max77686.h
->>> index 4cbcc13..46a736b 100644
->>> --- a/include/linux/mfd/max77686.h
->>> +++ b/include/linux/mfd/max77686.h
->>> @@ -99,15 +99,17 @@ struct max77686_platform_data {
->>>         struct max77686_opmode_data *opmode_data;
+>>>    		status = compact_zone_order(zone, order, gfp_mask, mode,
+>>> -						contended);
+>>> +							&zone_contended);
+>>>    		rc = max(status, rc);
+>>> +		all_zones_contended &= zone_contended;
 >>>
->>>         /*
->>> -        * GPIO-DVS feature is not enabled with the current version of
->>> -        * MAX77686 driver. Buck2/3/4_voltages[0] is used as the default
->>> -        * voltage at probe. DVS/SELB gpios are set as OUTPUT-LOW.
->>> +        * GPIO-DVS feature is not fully enabled with the current version of
->>> +        * MAX77686 driver, but the driver does support using a DVS index other
->>> +        * than the default of 0.
->>>          */
->>> -       int buck234_gpio_dvs[3]; /* GPIO of [0]DVS1, [1]DVS2, [2]DVS3 */
->>> -       int buck234_gpio_selb[3]; /* [0]SELB2, [1]SELB3, [2]SELB4 */
->>> -       unsigned int buck2_voltage[8]; /* buckx_voltage in uV */
->>> -       unsigned int buck3_voltage[8];
->>> -       unsigned int buck4_voltage[8];
->> I think when DVS gpio is used all the 8 voltage levels are fetched
->> from DT during booting and the registers are programmed accordingly.
->> Any further set/get_voltage just changes the GPIO lines.
->> Any reason why this method is not used?
->
-> What are you describing is how the DT binding works for other Maxim PMICs that
-> also have DVS support right? (e.g: max8997).
->
-> The DVS binding in max77686/802 is actually a subset of the one in max8997 so it
-> let's you only choose which single DVS index is going to be used. The GPIOs in
-> "max77686,pmic-buck-dvs-gpios" should match "pmic-buck-default-dvs-idx".
->
-> To be honest I just took the DT binding that was used in the max77xxx driver
-> from the Chrome OS 3.8 kernel and didn't compare it with other Maxim PMICs DT
-> bingings.
->
-> I wonder if I should just take the DVS patches out from this initial version to
-> avoid blocking the max77802 support and then we can discuss this in more detail.
-Agreed DVS functionality can be added later.
->
->>> +       struct gpio_desc *buck_gpio_dvs[3]; /* GPIO of [0]DVS1, [1]DVS2, [2]DVS3 */
->>> +       int buck_default_idx; /* Default value of DVS1, 2, 3 */
->>> +
->>> +       struct gpio_desc *buck_gpio_selb[3]; /* Buck regulators 2, 3, 4 */
->>>  };
+>>>    		/* If a normal allocation would succeed, stop compacting */
+>>>    		if (zone_watermark_ok(zone, order, low_wmark_pages(zone), 0,
+>>> @@ -1168,12 +1179,31 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>>>    			 * succeeding after all, it will be reset.
+>>>    			 */
+>>>    			defer_compaction(zone, order);
+>>> +			/*
+>>> +			 * If we stopped compacting due to need_resched(), do
+>>> +			 * not try further zones and yield the CPU.
+>>> +			 */
+>>
+>> For what? It would make your claim more clear.
+>>
+>>> +			if (need_resched()) {
+>>
+>> compact_zone_order returns true state of contended only if it was lock contention
+>> so it couldn't return true state of contended by need_resched so you made
+>> need_resched check in here. It's fragile to me because it could be not a result
+>> from ahead compact_zone_order call. More clear thing is compact_zone_order
+>> should return zone_contended as enum, not bool and in here, you could check it.
+>>
+>> It means you could return enum in compact_zone_order and make the result bool
+>> in try_to_compact_pages.
+>>
+>>> +				/*
+>>> +				 * We might not have tried all the zones, so
+>>> +				 * be conservative and assume they are not
+>>> +				 * all lock contended.
+>>> +				 */
+>>> +				all_zones_contended = false;
+>>> +				cond_resched();
+>>> +				break;
+>>> +			}
+>>>    		}
+>>>    	}
 >>>
->>> +extern int max77686_setup_gpios(struct device *dev);
->>> +extern int max77686_read_gpios(struct max77686_platform_data *pdata);
+>>> -	/* If at least one zone wasn't deferred, we count a compaction stall */
+>>> -	if (!*deferred)
+>>> +	/*
+>>> +	 * If at least one zone wasn't deferred, we count a compaction stall
+>>> +	 * and we report if all zones that were tried were contended.
+>>> +	 */
+>>> +	if (!*deferred) {
+>>>    		count_compact_event(COMPACTSTALL);
+>>> +		*contended = all_zones_contended;
+>>
+>> Why don't you initialize contended as *false* in function's intro?
+>>
+>>> +	}
+>>>
+>>>    	return rc;
+>>>    }
+>>> diff --git a/mm/internal.h b/mm/internal.h
+>>> index a1b651b..2c187d2 100644
+>>> --- a/mm/internal.h
+>>> +++ b/mm/internal.h
+>>> @@ -117,6 +117,13 @@ extern int user_min_free_kbytes;
+>>>
+>>>    #if defined CONFIG_COMPACTION || defined CONFIG_CMA
+>>>
+>>> +/* Used to signal whether compaction detected need_sched() or lock contention */
+>>> +enum compact_contended {
+>>> +	COMPACT_CONTENDED_NONE = 0, /* no contention detected */
+>>> +	COMPACT_CONTENDED_SCHED,    /* need_sched() was true */
+>>> +	COMPACT_CONTENDED_LOCK,     /* zone lock or lru_lock was contended */
+>>> +};
 >>> +
->>>  #endif /* __LINUX_MFD_MAX77686_H */
+>>>    /*
+>>>     * in mm/compaction.c
+>>>     */
+>>> @@ -144,10 +151,10 @@ struct compact_control {
+>>>    	int order;			/* order a direct compactor needs */
+>>>    	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
+>>>    	struct zone *zone;
+>>> -	bool contended;			/* True if a lock was contended, or
+>>> -					 * need_resched() true during async
+>>> -					 * compaction
+>>> -					 */
+>>> +	enum compact_contended contended; /* Signal need_sched() or lock
+>>> +					   * contention detected during
+>>> +					   * compaction
+>>> +					   */
+>>>    };
+>>>
+>>>    unsigned long
 >>> --
->>> 2.0.0.rc2
->>>
+>>
+>> Anyway, most big concern is that you are changing current behavior as
+>> I said earlier.
 >
-> Best regards,
-> Javier
+> Well that behavior is pretty new, introduced recently by David's patches
+> and now he himself is saying that it makes page fault THP allocations
+> very unsuccessful and the need_resched() is not a good termination
+> criterion. But OK, I can restrict this to khugepaged...
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Old behavior in THP page fault when it consumes own timeslot was just
+>> abort and fallback 4K page but with your patch, new behavior is
+>> take a rest when it founds need_resched and goes to another round with
+>> async, not sync compaction. I'm not sure we need another round with
+>> async compaction at the cost of increasing latency rather than fallback
+>> 4 page.
+>   >
+>> It might be okay if the VMA has MADV_HUGEPAGE which is good hint to
+>> indicate non-temporal VMA so latency would be trade-off but it's not
+>> for temporal big memory allocation in HUGEPAGE_ALWAYS system.
+>
+> Yeah that could be useful hint when we eventually move away from
+> need_resched() to a fixed/tunable work per compaction attempt. But I'll
+> rather not introduce it in the series.
+>
+>> If you really want to go this, could you show us numbers?
+>>
+>> 1. How many could we can be successful in direct compaction by this patch?
+>
+> Doesn't seem to help. I'll drop it.
+
+Actually the patch was wrong as the need_resched() check occured under 
+if (mode != MIGRATE_ASYNC) branch. But need_resched() contention is only 
+considered in MIGRATE_ASYNC mode. Oops.
+
+>> 2. How long could we increase latency for temporal allocation
+>>      for HUGEPAGE_ALWAYS system?
+>
+> Don't have the data.
+>
+
