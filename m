@@ -1,69 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754918AbaGKOWR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 10:22:17 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35524 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754893AbaGKOWO (ORCPT
+	id S1754945AbaGKOWt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 10:22:49 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:35781 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754339AbaGKOSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 10:22:14 -0400
-Date: Fri, 11 Jul 2014 15:21:35 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] bus: ARM CCN PMU driver
-Message-ID: <20140711142135.GA21766@n2100.arm.linux.org.uk>
-References: <1405088056-29181-1-git-send-email-pawel.moll@arm.com>
+	Fri, 11 Jul 2014 10:18:37 -0400
+Date: Fri, 11 Jul 2014 11:17:20 +0200
+From: Simon Horman <horms@verge.net.au>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: Magnus Damm <magnus.damm@gmail.com>, devicetree@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 10/13] [RFC] ARM: dts: Add shmobile platform device tree
+ bindings documentation
+Message-ID: <20140711091720.GO12420@verge.net.au>
+References: <1404908623-909-1-git-send-email-geert+renesas@glider.be>
+ <1404908623-909-11-git-send-email-geert+renesas@glider.be>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1405088056-29181-1-git-send-email-pawel.moll@arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1404908623-909-11-git-send-email-geert+renesas@glider.be>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 03:14:16PM +0100, Pawel Moll wrote:
-> diff --git a/drivers/bus/Kconfig b/drivers/bus/Kconfig
-> index 1f37d98..6ab2a62 100644
-> --- a/drivers/bus/Kconfig
-> +++ b/drivers/bus/Kconfig
-> @@ -4,14 +4,6 @@
->  
->  menu "Bus devices"
->  
-> -config BRCMSTB_GISB_ARB
-> -	bool "Broadcom STB GISB bus arbiter"
-> -	depends on ARM
-> -	help
-> -	  Driver for the Broadcom Set Top Box System-on-a-chip internal bus
-> -	  arbiter. This driver provides timeout and target abort error handling
-> -	  and internal bus master decoding.
-> -
-...
-> diff --git a/drivers/bus/Makefile b/drivers/bus/Makefile
-> index 6a4ea7e..493b4ff 100644
-> --- a/drivers/bus/Makefile
-> +++ b/drivers/bus/Makefile
-> @@ -2,14 +2,15 @@
->  # Makefile for the bus drivers.
->  #
->  
-> -obj-$(CONFIG_BRCMSTB_GISB_ARB)	+= brcmstb_gisb.o
+On Wed, Jul 09, 2014 at 02:23:40PM +0200, Geert Uytterhoeven wrote:
+> Add Renesas SH-Mobile, R-Mobile, and R-Car Platform Device Tree Bindings
+> Documentation, listing supported SoCs and boards.
+> 
+> This allows to use checkpatch to validate DTSes referring to Renesas
+> shmobile SoCs, and boards containing those SoCs.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> Cc: linux-arm-kernel@lists.infradead.org
 
-I assume that as these exist in the patch, you haven't looked through
-the patch to check what you're actually submitting... how can we be
-sure that the rest of the patch is what you intend to submit?
+Thanks Geert,
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+from my point of view this seems nice. Is there a reason it is marked as an RFC?
+
+> ---
+>  Documentation/devicetree/bindings/arm/shmobile.txt | 71 ++++++++++++++++++++++
+>  1 file changed, 71 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/arm/shmobile.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/shmobile.txt b/Documentation/devicetree/bindings/arm/shmobile.txt
+> new file mode 100644
+> index 000000000000..baa25c92597d
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/shmobile.txt
+> @@ -0,0 +1,71 @@
+> +Renesas SH-Mobile, R-Mobile, and R-Car Platform Device Tree Bindings
+> +--------------------------------------------------------------------
+> +
+> +SoCs:
+> +
+> +  - Emma Mobile EV2
+> +    compatible = "renesas,emev2"
+> +  - RZ/A1H (R7S72100)
+> +    compatible = "renesas,r7s72100"
+> +  - R-Mobile APE6 (R8A73A40)
+> +    compatible = "renesas,r8a73a4"
+> +  - R-Mobile A1 (R8A77400)
+> +    compatible = "renesas,r8a7740"
+> +  - R-Car M1A (R8A77781)
+> +    compatible = "renesas,r8a7778"
+> +  - R-Car H1 (R8A77790)
+> +    compatible = "renesas,r8a7779"
+> +  - R-Car H2 (R8A77900)
+> +    compatible = "renesas,r8a7790"
+> +  - R-Car M2-W (R8A77910)
+> +    compatible = "renesas,r8a7791"
+> +  - R-Car V2H (R8A77920)
+> +    compatible = "renesas,r8a7792"
+> +  - R-Car M2-N (R8A77930)
+> +    compatible = "renesas,r8a7793"
+> +  - R-Car E2 (R8A77940)
+> +    compatible = "renesas,r8a7794"
+> +  - SH-Mobile AP4 (R8A73720/SH7372)
+> +    compatible = "renesas,sh7372"
+> +  - SH-Mobile AG5 (R8A73A00/SH73A0)
+> +    compatible = "renesas,sh73a0"
+> +
+> +
+> +Boards:
+> +
+> +  - Alt
+> +    compatible = "renesas,alt", "renesas,r8a7794"
+> +  - APE6-EVM
+> +    compatible = "renesas,ape6evm", "renesas,r8a73a4"
+> +  - APE6-EVM - Reference Device Tree Implementation
+> +    compatible = "renesas,ape6evm-reference", "renesas,r8a73a4"
+> +  - Atmark Techno Armadillo-800 EVA
+> +    compatible = "renesas,armadillo800eva"
+> +  - Atmark Techno Armadillo-800 EVA - Reference Device Tree Implementation
+> +    compatible = "renesas,armadillo800eva-reference", "renesas,r8a7740"
+> +  - BOCK-W
+> +    compatible = "renesas,bockw", "renesas,r8a7778"
+> +  - BOCK-W - Reference Device Tree Implementation
+> +    compatible = "renesas,bockw-reference", "renesas,r8a7778"
+> +  - Genmai (RTK772100BC00000BR)
+> +    compatible = "renesas,genmai", "renesas,r7s72100"
+> +  - Henninger
+> +    compatible = "renesas,henninger", "renesas,r8a7791"
+> +  - Koelsch (RTP0RC7791SEB00010S)
+> +    compatible = "renesas,koelsch", "renesas,r8a7791"
+> +  - EMEV2 KZM9D
+> +    compatible = "renesas,kzm9d", "renesas,emev2"
+> +  - KZM-A9-GT
+> +    compatible = "renesas,kzm9g", "renesas,sh73a0"
+> +  - KZM-A9-GT - Reference Device Tree Implementation
+> +    compatible = "renesas,kzm9g-reference", "renesas,sh73a0"
+> +  - Lager (RTP0RC7790SEB00010S)
+> +    compatible = "renesas,lager", "renesas,r8a7790"
+> +  - Mackerel (R0P7372LC0016RL, AP4 EVM 2nd)
+> +    compatible = "renesas,mackerel"
+> +  - Marzen
+> +    compatible = "renesas,marzen", "renesas,r8a7779"
+> +
+> +Note: Reference Device Tree Implementations are temporary implementations
+> +      to ease the migration from platform devices to Device Tree, and are
+> +      intended to be removed in the future.
+> -- 
+> 1.9.1
+> 
