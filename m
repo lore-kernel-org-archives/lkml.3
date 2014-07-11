@@ -1,117 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779AbaGKRyN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 13:54:13 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46083 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754620AbaGKRyK (ORCPT
+	id S1754840AbaGKRzA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 13:55:00 -0400
+Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:41555 "EHLO
+	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753998AbaGKRy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 13:54:10 -0400
-Message-ID: <53C024B2.60404@pengutronix.de>
-Date: Fri, 11 Jul 2014 19:53:54 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Stefan Agner <stefan@agner.ch>
-CC: wg@grandegger.com, shawn.guo@freescale.com, kernel@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org, linux-can@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] can: flexcan: add vf61x support for flexcan
-References: <1405075933-22317-1-git-send-email-stefan@agner.ch> <53BFD401.8030101@pengutronix.de> <dac76ccd134f41b86f00352d10cfae4b@agner.ch>
-In-Reply-To: <dac76ccd134f41b86f00352d10cfae4b@agner.ch>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="wmTGV3w1tD3FfUTd6RROeUavTVfDdFEEQ"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 11 Jul 2014 13:54:59 -0400
+To: lenb@kernel.org
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+From: Jason Baron <jbaron@akamai.com>
+Subject: [PATCH] intel_idle: use static_key to optimize idle enter/exit paths
+Message-Id: <20140711175458.6793B2029@prod-mail-relay06.akamai.com>
+Date: Fri, 11 Jul 2014 17:54:58 +0000 (GMT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---wmTGV3w1tD3FfUTd6RROeUavTVfDdFEEQ
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+If 'arat' is set in the cpuflags, we can avoid the checks for entering/exiting
+the tick broadcast code entirely. It would seem that this is a hot enough code
+path to make this worthwhile. I ran a few hackbench runs, and consistenly see
+reduced branches and cycles.
 
-On 07/11/2014 03:58 PM, Stefan Agner wrote:
-> Hi Marc,
->=20
-> Am 2014-07-11 14:09, schrieb Marc Kleine-Budde:
->> IMHO it should be 4 seperate patches:
->> - dt
->> - clocks
->> - flexcan_get_berr_counter fixes
->> - your flexcan enhancements
->=20
-> Ok, will split.
->=20
->>> @@ -362,7 +374,7 @@
->>>
->>>  			esdhc1: esdhc@400b2000 {
->>>  				compatible =3D "fsl,imx53-esdhc";
->>> -				reg =3D <0x400b2000 0x4000>;
->>> +				reg =3D <0x400b2000 0x1000>;
->>
->> What's that doing here? :)
->=20
-> That's an error I just stumbled upon. I know it's not related but it's
-> such a small change... Do I need to make a separate patch for that or
-> can I include it in the FlexCAN dt commit?
+Signed-off-by: Jason Baron <jbaron@akamai.com>
+---
+ drivers/idle/intel_idle.c | 29 ++++++++++++++++++++---------
+ 1 file changed, 20 insertions(+), 9 deletions(-)
 
-Yes, please post it to Shawn (& linux-arm) directly.
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+index 4d140bb..61e965c 100644
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -80,6 +80,8 @@ static unsigned int mwait_substates;
+ #define LAPIC_TIMER_ALWAYS_RELIABLE 0xFFFFFFFF
+ /* Reliable LAPIC Timer States, bit 1 for C1 etc.  */
+ static unsigned int lapic_timer_reliable_states = (1 << 1);	 /* Default to only C1 */
++/* if arat is set no sense in checking on each c-state transition */
++static struct static_key lapic_timer_unreliable __read_mostly;
+ 
+ struct idle_cpu {
+ 	struct cpuidle_state *state_table;
+@@ -507,12 +509,10 @@ static int intel_idle(struct cpuidle_device *dev,
+ {
+ 	unsigned long ecx = 1; /* break on interrupt flag */
+ 	struct cpuidle_state *state = &drv->states[index];
+-	unsigned long eax = flg2MWAIT(state->flags);
+-	unsigned int cstate;
++	unsigned long uninitialized_var(eax);
++	unsigned int uninitialized_var(cstate);
+ 	int cpu = smp_processor_id();
+ 
+-	cstate = (((eax) >> MWAIT_SUBSTATE_SIZE) & MWAIT_CSTATE_MASK) + 1;
+-
+ 	/*
+ 	 * leave_mm() to avoid costly and often unnecessary wakeups
+ 	 * for flushing the user TLB's associated with the active mm.
+@@ -520,13 +520,22 @@ static int intel_idle(struct cpuidle_device *dev,
+ 	if (state->flags & CPUIDLE_FLAG_TLB_FLUSHED)
+ 		leave_mm(cpu);
+ 
+-	if (!(lapic_timer_reliable_states & (1 << (cstate))))
+-		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
++	if (static_key_false(&lapic_timer_unreliable)) {
++		eax = flg2MWAIT(state->flags);
++		cstate = (((eax) >> MWAIT_SUBSTATE_SIZE) &
++					MWAIT_CSTATE_MASK) + 1;
++		if (!(lapic_timer_reliable_states & (1 << (cstate))))
++			clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER,
++					   &cpu);
++	}
+ 
+ 	mwait_idle_with_hints(eax, ecx);
+ 
+-	if (!(lapic_timer_reliable_states & (1 << (cstate))))
+-		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
++	if (static_key_false(&lapic_timer_unreliable)) {
++		if (!(lapic_timer_reliable_states & (1 << (cstate))))
++			clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT,
++					   &cpu);
++	}
+ 
+ 	return index;
+ }
+@@ -702,8 +711,10 @@ static int __init intel_idle_probe(void)
+ 
+ 	if (boot_cpu_has(X86_FEATURE_ARAT))	/* Always Reliable APIC Timer */
+ 		lapic_timer_reliable_states = LAPIC_TIMER_ALWAYS_RELIABLE;
+-	else
++	else {
++		static_key_slow_inc(&lapic_timer_unreliable);
+ 		on_each_cpu(__setup_broadcast_timer, (void *)true, 1);
++	}
+ 
+ 	pr_debug(PREFIX "v" INTEL_IDLE_VERSION
+ 		" model 0x%X\n", boot_cpu_data.x86_model);
+-- 
+1.8.2.rc2
 
->=20
->>> @@ -150,18 +171,20 @@
->>>   * FLEXCAN hardware feature flags
->>>   *
->>>   * Below is some version info we got:
->>> - *    SOC   Version   IP-Version  Glitch-  [TR]WRN_INT
->>> - *                                Filter?   connected?
->>> - *   MX25  FlexCAN2  03.00.00.00     no         no
->>> - *   MX28  FlexCAN2  03.00.04.00    yes        yes
->>> - *   MX35  FlexCAN2  03.00.00.00     no         no
->>> - *   MX53  FlexCAN2  03.00.00.00    yes         no
->>> - *   MX6s  FlexCAN3  10.00.12.00    yes        yes
->>> + *    SOC   Version   IP-Version  Glitch-  [TR]WRN_INT  Memory err
->>> + *                                Filter?   connected?  detection
->>> + *   MX25  FlexCAN2  03.00.00.00     no         no	   no
->>> + *   MX28  FlexCAN2  03.00.04.00    yes        yes	   no
->>> + *   MX35  FlexCAN2  03.00.00.00     no         no	   no
->>> + *   MX53  FlexCAN2  03.00.00.00    yes         no	   no
->>> + *   MX6s  FlexCAN3  10.00.12.00    yes        yes	   no
->>> + *   VFxx  FlexCAN3  ?		     no		no	  yes
->>
->> Please use either tabs or space to indent in this table.
->=20
-> Ok, btw, do you know how I can obtain the IP version?
-
-Get in touch with a freescale engineer with VHDL access, meet in a
-bar...ask her/him....Something like this :)
-
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---wmTGV3w1tD3FfUTd6RROeUavTVfDdFEEQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iEYEARECAAYFAlPAJLIACgkQjTAFq1RaXHOL2wCbBK35sXmf6GlHj+JTifZc3UoX
-rs0AnRoiBGYz54hOwl0U3NZ6YP1/LmJu
-=VJ1l
------END PGP SIGNATURE-----
-
---wmTGV3w1tD3FfUTd6RROeUavTVfDdFEEQ--
