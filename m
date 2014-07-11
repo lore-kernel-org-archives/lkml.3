@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754905AbaGKSLD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 14:11:03 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:40818 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754729AbaGKSLA (ORCPT
+	id S1754974AbaGKSMK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 14:12:10 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:56271 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754583AbaGKSMI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 14:11:00 -0400
-Date: Fri, 11 Jul 2014 14:10:54 -0400
-From: Jerome Glisse <j.glisse@gmail.com>
-To: "Bridgman, John" <John.Bridgman@amd.com>
-Cc: Oded Gabbay <oded.gabbay@gmail.com>, David Airlie <airlied@linux.ie>,
-        "Deucher, Alexander" <Alexander.Deucher@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "Lewycky, Andrew" <Andrew.Lewycky@amd.com>,
-        Joerg Roedel <joro@8bytes.org>, "Gabbay, Oded" <Oded.Gabbay@amd.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Sandeep Nair <sandeep_n@ti.com>,
-        Kenneth Heitke <kheitke@codeaurora.org>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Andreas Noever <andreas.noever@gmail.com>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: Re: [PATCH 09/83] hsa/radeon: Add code base of hsa driver for AMD's
- GPUs
-Message-ID: <20140711181053.GK1870@gmail.com>
-References: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
- <1405029027-6085-8-git-send-email-oded.gabbay@amd.com>
- <20140711170411.GJ1870@gmail.com>
- <D89D60253BB73A4E8C62F9FD18A939CA01031B37@storexdag02.amd.com>
+	Fri, 11 Jul 2014 14:12:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <D89D60253BB73A4E8C62F9FD18A939CA01031B37@storexdag02.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <3524198.dm6HbYTJqK@calvin>
+References: <CADpTngUm7d88RJS9OV=64t6QrJU4r3M_Z8eV1QYWPeeB5SX5-w@mail.gmail.com>
+ <CABPqkBTu9vk_wsmYVrO6OOxgbwsLDG-A8f7dzutKwYXmoGsqnw@mail.gmail.com>
+ <20140710200527.GA15190@google.com> <3524198.dm6HbYTJqK@calvin>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 11 Jul 2014 12:11:45 -0600
+Message-ID: <CAErSpo4xH2hpPMhm-4F+jNGKeMPjA2Tr8bQEkbWQGXpbwX6W4g@mail.gmail.com>
+Subject: Re: WARNING: CPU: 2 PID: 1 at arch/x86/mm/ioremap.c:171 __ioremap_caller+0x290/0x2fa()
+To: Fabio Coatti <fabio.coatti@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 06:02:39PM +0000, Bridgman, John wrote:
-> >From: Jerome Glisse [mailto:j.glisse@gmail.com]
-> >Sent: Friday, July 11, 2014 1:04 PM
-> >To: Oded Gabbay
-> >Cc: David Airlie; Deucher, Alexander; linux-kernel@vger.kernel.org; dri-
-> >devel@lists.freedesktop.org; Bridgman, John; Lewycky, Andrew; Joerg
-> >Roedel; Gabbay, Oded; Greg Kroah-Hartman; Rafael J. Wysocki; Kishon Vijay
-> >Abraham I; Sandeep Nair; Kenneth Heitke; Srinivas Pandruvada; Santosh
-> >Shilimkar; Andreas Noever; Lucas Stach; Philipp Zabel
-> >Subject: Re: [PATCH 09/83] hsa/radeon: Add code base of hsa driver for
-> >AMD's GPUs
-> >
-> >On Fri, Jul 11, 2014 at 12:50:09AM +0300, Oded Gabbay wrote:
-> >> This patch adds the code base of the hsa driver for
-> >> AMD's GPUs.
-> >>
-> >> This driver is called kfd.
-> >>
-> >> This initial version supports the first HSA chip, Kaveri.
-> >>
-> >> This driver is located in a new directory structure under drivers/gpu.
-> >>
-> >> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
-> >
-> >There is too coding style issues. While we have been lax on the enforcing the
-> >scripts/checkpatch.pl rules i think there is a limit to that. I am not strict
-> >on the 80chars per line but others things needs fixing so we stay inline.
-> >
-> >Also i am a bit worried about the license, given top comment in each of the
-> >files i am not sure this is GPL2 compatible. I would need to ask lawyer to
-> >review that.
-> >
-> 
-> Hi Jerome,
-> 
-> Which line in the license are you concerned about ? In theory we're using the same license as the initial code pushes for radeon, and I just did a side-by side compare with the license header on cik.c in the radeon tree and confirmed that the two licenses are identical. 
-> 
-> The cik.c header has an additional "Authors:" line which the kfd files do not, but AFAIK that is not part of the license text proper.
-> 
+On Fri, Jul 11, 2014 at 1:38 AM, Fabio Coatti <fabio.coatti@gmail.com> wrote:
+> In data giovedÃ¬ 10 luglio 2014 14:05:27, Bjorn Helgaas ha scritto:
+>> ...
+>> Fabio, can you pastebin your complete dmesg log?
+>
+> Sure, here you go:
+>
+> http://pastebin.com/FiL7N64b
 
-You can not claim GPL if you want to use this license. radeon is weird
-best for historical reasons as we wanted to share code with BSD thus it
-is dual licensed and this is reflected with :
-MODULE_LICENSE("GPL and additional rights");
+I opened this bugzilla:
+https://bugzilla.kernel.org/show_bug.cgi?id=80041 and attached your
+dmesg to it.  I see what the problem is, but I don't have a good idea
+yet for how to fix it.
 
-inside radeon_drv.c
+The problem is that we don't handle e820 and PNP device resource
+information correctly.  From the attached dmesg, we have this:
 
-So if you want to have MODULE_LICENSE(GPL) then you should have header
-that use the GPL license wording and no wording from BSD like license.
-Otherwise change the MODULE_LICENSE and it would also be good to say
-dual licensed at top of each files (or least next to each license) so
-that it is clear this is BSD & GPL license.
+  BIOS-e820: [mem 0x00000000fed10000-0x00000000fed13fff] reserved
+  system 00:00: [mem 0xfed10000-0xfed17fff] could not be reserved
 
-Cheers,
-Jérôme
+The 00:00 PNP device describes the correct 32K range for the Intel MCH
+(see [1] for details).  But the [mem 0xfed10000-0xfed13fff] entry from
+e820 was added to the resource map first, and it covers only the first
+16K of the MCH range.  This caused the subsequent PNP reservation to
+fail.  Then the snb_uncore_imc_init_box() reservation caused the
+warning, because it would be a child of the e820 entry but it covers
+more space.
+
+[1] fixed a similar issue where the PNP device described only the
+first 16K of the MCH range.  This case is slightly different because
+here it's the e820 entry that is incorrect.
+
+[1] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=cb171f7abb9a
