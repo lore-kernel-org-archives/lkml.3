@@ -1,78 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668AbaGKMHw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 08:07:52 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:40930 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751667AbaGKMHt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 08:07:49 -0400
-Message-ID: <53BFD38F.5010805@gmail.com>
-Date: Fri, 11 Jul 2014 17:37:43 +0530
-From: Tushar Behera <trblinux@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Tushar Behera <tushar.b@samsung.com>
-CC: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        robh+dt@kernel.org, grant.likely@linaro.org, kgene.kim@samsung.com,
-        mturquette@linaro.org, t.figa@samsung.com
-Subject: Re: [PATCH 2/2] clk: exynos-audss: Update as per existing framework
-References: <1405071475-31946-1-git-send-email-tushar.b@samsung.com> <1405071475-31946-3-git-send-email-tushar.b@samsung.com> <53BFBF18.3080704@samsung.com>
-In-Reply-To: <53BFBF18.3080704@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753563AbaGKMI4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 08:08:56 -0400
+Received: from mga11.intel.com ([192.55.52.93]:63047 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752729AbaGKMIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 08:08:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,642,1400050800"; 
+   d="scan'208";a="568463153"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Tadeusz Struk <tadeusz.struk@intel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Helge Deller <deller@gmx.de>,
+        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>, Marek Vasut <marex@denx.de>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v2 4/5] parisc: use seq_hex_dump() to dump buffers
+Date: Fri, 11 Jul 2014 15:08:45 +0300
+Message-Id: <1405080526-6319-5-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1405080526-6319-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1405080526-6319-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2014 04:10 PM, Sylwester Nawrocki wrote:
-> Hi Tushar,
-> 
-> On 11/07/14 11:37, Tushar Behera wrote:
->> Change exynos-audss clock driver as per existing clock framework from
->> the existing module driver framework.
-> 
-> Can you explain what's the actual issue you're trying to solve with that
-> patch ? What's the problem with this driver being a platform driver ?
-> It feels we're moving in circles here, see
-> 
-> commit b37a4224104568198b93fb9831224cfe7d83fff8
-> Author: Andrew Bresticker <abrestic@chromium.org>
-> Date:   Wed Sep 25 14:12:47 2013 -0700
-> 
->     clk: exynos-audss: convert to platform device
-> 
->     The Exynos AudioSS clock controller will later be modified to allow
->     input clocks to be specified via device-tree in order to support
->     multiple Exynos SoCs.  This will introduce a dependency on the core
->     SoC clock controller being initialized first so that the AudioSS driver
->     can look up its input clocks, but the order in which clock providers
->     are probed in of_clk_init() is not guaranteed.  Since deferred probing
->     is not supported in of_clk_init() and the AudioSS block is not the core
->     controller, we can initialize it later as a platform device.
-> 
->     Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
->     Acked-by: Tomasz Figa <t.figa@samsung.com>
->     Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
->     Acked-by: Mike Turquette <mturquette@linaro.org>
->     Acked-by: Kukjin Kim <kgene.kim@samsung.com>
->     Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-> 
-> I realize of_clk_init() now handles better clock provider dependencies,
-> nevertheless do we really need all this churn ?
-> 
+Instead of custom approach let's use recently introduced seq_hex_dump() helper.
 
-I have sent v2 of the patchset while retaining the platform driver
-infrastructure. Awaiting your review comments on that.
+In one case it changes the output from
+	1111111122222222333333334444444455555555666666667777777788888888
+to
+	11111111 22222222 33333333 44444444 55555555 66666666 77777777 88888888
 
-> --
-> Thanks,
-> Sylwester
-> 
+though it seems it prints same data (by meaning) in both cases. I decide to
+choose to use the space divided one.
 
-Thanks,
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ drivers/parisc/ccio-dma.c  | 14 +++-----------
+ drivers/parisc/sba_iommu.c | 11 +++--------
+ 2 files changed, 6 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/parisc/ccio-dma.c b/drivers/parisc/ccio-dma.c
+index 8b490d7..9d353d2 100644
+--- a/drivers/parisc/ccio-dma.c
++++ b/drivers/parisc/ccio-dma.c
+@@ -1101,20 +1101,12 @@ static const struct file_operations ccio_proc_info_fops = {
+ 
+ static int ccio_proc_bitmap_info(struct seq_file *m, void *p)
+ {
+-	int len = 0;
+ 	struct ioc *ioc = ioc_list;
+ 
+ 	while (ioc != NULL) {
+-		u32 *res_ptr = (u32 *)ioc->res_map;
+-		int j;
+-
+-		for (j = 0; j < (ioc->res_size / sizeof(u32)); j++) {
+-			if ((j & 7) == 0)
+-				len += seq_puts(m, "\n   ");
+-			len += seq_printf(m, "%08x", *res_ptr);
+-			res_ptr++;
+-		}
+-		len += seq_puts(m, "\n\n");
++		seq_hex_dump(m, "   ", DUMP_PREFIX_NONE, 32, 4, ioc->res_map,
++			     ioc->res_size, false);
++		seq_putc(m, '\n');
+ 		ioc = ioc->next;
+ 		break; /* XXX - remove me */
+ 	}
+diff --git a/drivers/parisc/sba_iommu.c b/drivers/parisc/sba_iommu.c
+index 1ff1b67..fbc4db9 100644
+--- a/drivers/parisc/sba_iommu.c
++++ b/drivers/parisc/sba_iommu.c
+@@ -1857,15 +1857,10 @@ sba_proc_bitmap_info(struct seq_file *m, void *p)
+ {
+ 	struct sba_device *sba_dev = sba_list;
+ 	struct ioc *ioc = &sba_dev->ioc[0];	/* FIXME: Multi-IOC support! */
+-	unsigned int *res_ptr = (unsigned int *)ioc->res_map;
+-	int i, len = 0;
+ 
+-	for (i = 0; i < (ioc->res_size/sizeof(unsigned int)); ++i, ++res_ptr) {
+-		if ((i & 7) == 0)
+-			len += seq_printf(m, "\n   ");
+-		len += seq_printf(m, " %08x", *res_ptr);
+-	}
+-	len += seq_printf(m, "\n");
++	seq_hex_dump(m, "   ", DUMP_PREFIX_NONE, 32, 4, ioc->res_map,
++		     ioc->res_size, false);
++	seq_printf(m, "\n");
+ 
+ 	return 0;
+ }
 -- 
-Tushar Behera
+2.0.1
+
