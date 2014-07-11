@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824AbaGKSEO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 14:04:14 -0400
-Received: from mga09.intel.com ([134.134.136.24]:46210 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751891AbaGKSEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 14:04:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,644,1400050800"; 
-   d="scan'208";a="571847342"
-From: Darren Hart <dvhart@linux.intel.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Darren Hart <dvhart@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH] Documentation: Remove reference to acpi_platform_device_ids from acpi/enumeration
-Date: Fri, 11 Jul 2014 11:03:39 +0000
-Message-Id: <96c9e6efdd200bb194bc99845a18015f8d19881d.1405076619.git.dvhart@linux.intel.com>
-X-Mailer: git-send-email 2.0.0
+	id S932081AbaGKSIA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 14:08:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40665 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314AbaGKSH7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 14:07:59 -0400
+Date: Fri, 11 Jul 2014 11:12:27 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, Joe Perches <joe@perches.com>,
+        Kay Sievers <kay@vrfy.org>
+Subject: Re: [PATCH v2] drivers/base: Fix length checks in
+ create_syslog_header()/dev_vprintk_emit()
+Message-ID: <20140711181227.GA25757@kroah.com>
+References: <1402267903.23860.45.camel@deadeye.wl.decadent.org.uk>
+ <20140709235736.GA31914@kroah.com>
+ <1405099258.26540.79.camel@deadeye.wl.decadent.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1405099258.26540.79.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As of:
+On Fri, Jul 11, 2014 at 06:20:58PM +0100, Ben Hutchings wrote:
+> On Wed, 2014-07-09 at 16:57 -0700, Greg Kroah-Hartman wrote:
+> > On Sun, Jun 08, 2014 at 11:51:43PM +0100, Ben Hutchings wrote:
+> > > snprintf() returns the number of bytes that could have been written
+> > > (excluding the null), not the actual number of bytes written.  Given a
+> > > long enough subsystem or device name, these functions will advance
+> > > beyond the end of the on-stack buffer in dev_vprintk_exit(), resulting
+> > > in an information leak or stack corruption.  I don't know whether such
+> > > a long name is currently possible.
+> > > 
+> > > In case snprintf() returns a value >= the buffer size, do not add
+> > > structured logging information.  Also WARN if this happens, so we can
+> > > fix the driver or increase the buffer size.
+> > > 
+> > > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> > > ---
+> > > v2: use dev_WARN() not dev_WARN_ON()
+> > 
+> > This patch breaks the build in a huge way:
+> > 
+> > drivers/base/core.c: In function ‘create_syslog_header’:
+> > drivers/base/core.c:2049:16: error: expected ‘)’ before numeric constant
+> >   dev_WARN(dev, 1, "device/subsystem name too long");
+> >                   ^
+> > 
+> > is the start of it, it goes on for a page or so after that :(
+> 
+> Sorry about that, I must not have committed the working version before
+> mailing it.  If you delete the '1, ' it should work.  If you've already
+> deleted the patch, I'll check and send the working version.
 
-    4845934 ACPI / scan: use platform bus type by default for _HID enumeration
+It's long gone, can you please fix and resend?
 
-ACPI uses the platform bus by default, changing the opt-in to an opt-out
-policy, eliminating the acpi_platform_device_ids table and replacing it
-with forbidden_id_list[].
+thanks,
 
-Remove the qualifying paragraph from the acpi/enumeration documentation
-as it no longer applies.
-
-Reported-by: Max Eliaser <max@meliaserlow.dyndns.tv>
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- Documentation/acpi/enumeration.txt | 6 ------
- 1 file changed, 6 deletions(-)
-
-diff --git a/Documentation/acpi/enumeration.txt b/Documentation/acpi/enumeration.txt
-index fd786ea..e182be5 100644
---- a/Documentation/acpi/enumeration.txt
-+++ b/Documentation/acpi/enumeration.txt
-@@ -60,12 +60,6 @@ If the driver needs to perform more complex initialization like getting and
- configuring GPIOs it can get its ACPI handle and extract this information
- from ACPI tables.
- 
--Currently the kernel is not able to automatically determine from which ACPI
--device it should make the corresponding platform device so we need to add
--the ACPI device explicitly to acpi_platform_device_ids list defined in
--drivers/acpi/acpi_platform.c. This limitation is only for the platform
--devices, SPI and I2C devices are created automatically as described below.
--
- DMA support
- ~~~~~~~~~~~
- DMA controllers enumerated via ACPI should be registered in the system to
--- 
-2.0.0
-
+greg k-h
