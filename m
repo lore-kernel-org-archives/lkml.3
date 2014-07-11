@@ -1,72 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913AbaGKMTw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 08:19:52 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:30845 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752461AbaGKMTu (ORCPT
+	id S1753139AbaGKMXU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 08:23:20 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:23532 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752450AbaGKMXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 08:19:50 -0400
-Date: Fri, 11 Jul 2014 13:19:23 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] arm64: Use include/asm-generic/io.h
-Message-ID: <20140711121923.GE11473@arm.com>
-References: <1404918699-17284-1-git-send-email-thierry.reding@gmail.com>
- <1404918699-17284-3-git-send-email-thierry.reding@gmail.com>
- <20140710110034.GI16137@arm.com>
- <201407101514.16530.arnd@arndb.de>
+	Fri, 11 Jul 2014 08:23:18 -0400
+Message-ID: <53BFD708.1040305@oracle.com>
+Date: Fri, 11 Jul 2014 08:22:32 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201407101514.16530.arnd@arndb.de>
-Thread-Topic: [PATCH 3/3] arm64: Use include/asm-generic/io.h
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Hugh Dickins <hughd@google.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Vlastimil Babka <vbabka@suse.cz>, akpm@linux-foundation.org,
+        davej@redhat.com, koct9i@gmail.com, lczerner@redhat.com,
+        stable@vger.kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: + shmem-fix-faulting-into-a-hole-while-its-punched-take-2.patch
+ added to -mm tree
+References: <53BD1053.5020401@suse.cz> <53BD39FC.7040205@oracle.com> <53BD67DC.9040700@oracle.com> <alpine.LSU.2.11.1407092358090.18131@eggly.anvils> <53BE8B1B.3000808@oracle.com> <53BECBA4.3010508@oracle.com> <alpine.LSU.2.11.1407101033280.18934@eggly.anvils> <53BED7F6.4090502@oracle.com> <alpine.LSU.2.11.1407101131310.19154@eggly.anvils> <53BEE345.4090203@oracle.com> <20140711082500.GB20603@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140711082500.GB20603@laptop.programming.kicks-ass.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 02:14:16PM +0100, Arnd Bergmann wrote:
-> On Thursday 10 July 2014, Catalin Marinas wrote:
-> > > @@ -235,8 +155,7 @@ extern void __iomem *ioremap_cache(phys_addr_t phys_addr, size_t size);
-> > >  #define ioremap_wc(addr, size)               __ioremap((addr), (size), __pgprot(PROT_NORMAL_NC))
-> > >  #define iounmap                              __iounmap
-> > >  
-> > > -#define ARCH_HAS_IOREMAP_WC
-> > > -#include <asm-generic/iomap.h>
-> > > +#include <asm-generic/io.h>
-> > 
-> > We don't currently have PCIe support in mainline for arm64 but what I
-> > had in mind with the generic iomap is that functions like ioread32_rep
-> > first check whether the address is an IO address or a memory one and
-> > calls the insl or mmio_insl accordingly. With your generic
-> > implementation, this check disappears.
-> > 
-> > The question is whether this functionality would still be needed.
+On 07/11/2014 04:25 AM, Peter Zijlstra wrote:
+> On Thu, Jul 10, 2014 at 03:02:29PM -0400, Sasha Levin wrote:
+>> What if we move lockdep's acquisition point to after it actually got the
+>> lock?
 > 
-> I think it's much better not to have that check on architectures that have a memory
-> mapped I/O space like arm64. The main advantage is that ioread32() is just a trivial
-> alias for readl(). The only reason for needing generic_iomap is architectures that
-> do something very different for I/O ports.
+> NAK, you want to do deadlock detection _before_ you're stuck in a
+> deadlock.
 
-ioread32() is indeed an alias for readl on arm64 but if the address it
-gets as argument looks like an I/O port, it adds PCI_IOBASE (via the inl
-macro). This would no longer happen with Thierry's patches.
+I didn't suggest to do it in the general case, but just for debugging the issue
+we have here.
 
-So I guess that for this patch to work, we also need ioport_map() to
-return an address from the PCI_IOBASE range. Should we merge this now as
-well:
+>> We'd miss deadlocks, but we don't care about them right now. Anyways, doesn't
+>> lockdep have anything built in to allow us to separate between locks which
+>> we attempt to acquire and locks that are actually acquired?
+>>
+>> (cc PeterZ)
+>>
+>> We can treat locks that are in the process of being acquired the same as
+>> acquired locks to avoid races, but when we print something out it would
+>> be nice to have annotation of the read state of the lock.
+> 
+> I'm missing the problem here I think.
 
-http://linux-arm.org/git?p=linux-ld.git;a=commitdiff;h=3423064d8e42a38164a8436bcdf7434cf9cd2192
+The problem here is that lockdep reports tasks waiting on lock as ones that
+already have the lock. So we have a list of about 500 different tasks looking
+like this:
 
--- 
-Catalin
+[  367.805809] 2 locks held by trinity-c214/9083:
+[  367.805811] #0: (sb_writers#9){.+.+.+}, at: do_fallocate (fs/open.c:298)
+[  367.805824] #1: (&sb->s_type->i_mutex_key#16){+.+.+.}, at: shmem_fallocate (mm/shmem.c:1738)
+
+While they haven't actually acquired i_mutex, but are merely blocking on it:
+
+[  367.644150] trinity-c214    D 0000000000000002 13528  9083   8490 0x00000000
+[  367.644171]  ffff880018757ce8 0000000000000002 ffffffff91a01d70 0000000000000001
+[  367.644178]  ffff880018757fd8 00000000001d7740 00000000001d7740 00000000001d7740
+[  367.644188]  ffff880006428000 ffff880018758000 ffff880018757cd8 ffff880031fdc210
+[  367.644213] Call Trace:
+[  367.644218] schedule (kernel/sched/core.c:2832)
+[  367.644229] schedule_preempt_disabled (kernel/sched/core.c:2859)
+[  367.644237] mutex_lock_nested (kernel/locking/mutex.c:535 kernel/locking/mutex.c:587)
+[  367.644240] ? shmem_fallocate (mm/shmem.c:1738)
+[  367.644248] ? get_parent_ip (kernel/sched/core.c:2546)
+[  367.644255] ? shmem_fallocate (mm/shmem.c:1738)
+[  367.644264] shmem_fallocate (mm/shmem.c:1738)
+[  367.644268] ? SyS_madvise (mm/madvise.c:334 mm/madvise.c:384 mm/madvise.c:534 mm/madvise.c:465)
+[  367.644280] ? put_lock_stats.isra.12 (./arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
+[  367.644291] ? SyS_madvise (mm/madvise.c:334 mm/madvise.c:384 mm/madvise.c:534 mm/madvise.c:465)
+[  367.644298] do_fallocate (include/linux/fs.h:1281 fs/open.c:299)
+[  367.644303] SyS_madvise (mm/madvise.c:335 mm/madvise.c:384 mm/madvise.c:534 mm/madvise.c:465)
+[  367.644309] ? context_tracking_user_exit (./arch/x86/include/asm/paravirt.h:809 (discriminator 2) kernel/context_tracking.c:184 (discriminator 2))
+[  367.644315] ? trace_hardirqs_on (kernel/locking/lockdep.c:2607)
+[  367.644321] tracesys (arch/x86/kernel/entry_64.S:543)
+
+There's no easy way to see whether a given task is actually holding a lock or
+is just blocking on it without going through all those tasks one by one and
+looking at their trace.
+
+I agree with you that "The call trace is very clear on it that its not", but
+when you have 500 call traces you really want something better than going
+through it one call trace at a time.
+
+
+Thanks,
+Sasha
