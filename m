@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020AbaGKJig (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 05:38:36 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48892 "EHLO bear.ext.ti.com"
+	id S1752780AbaGKJla (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 05:41:30 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:46383 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751169AbaGKJid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 05:38:33 -0400
-Message-ID: <53BFBB74.80104@ti.com>
-Date: Fri, 11 Jul 2014 13:24:52 +0300
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751402AbaGKJl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 05:41:26 -0400
+X-IronPort-AV: E=Sophos;i="5.01,642,1400025600"; 
+   d="scan'208";a="151710690"
+Message-ID: <53BFB13E.1060505@citrix.com>
+Date: Fri, 11 Jul 2014 10:41:18 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>, <devicetree@vger.kernel.org>
-CC: <f.fainelli@gmail.com>, <santosh.shilimkar@ti.com>,
-        <netdev@vger.kernel.org>, <prabhakar.csengg@gmail.com>,
-        <nsekhar@ti.com>, <robh+dt@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>
-Subject: Re: [PATCH 1/2] net: davinci_mdio: reuse for keystone2 arch
-References: <1404911451-9921-2-git-send-email-grygorii.strashko@ti.com>	<20140709.165232.539576872991411664.davem@davemloft.net>	<53BE8DF7.9090303@ti.com> <20140710.123900.1696373067218564684.davem@davemloft.net>
-In-Reply-To: <20140710.123900.1696373067218564684.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Ethan Zhao <ethan.zhao@oracle.com>, <bhelgaas@google.com>,
+        <konrad.wilk@oracle.com>, <boris.ostrovsky@oracle.com>,
+        <gleb@kernel.org>, <pbonzini@redhat.com>,
+        <jeffrey.t.kirsher@intel.com>, <jesse.brandeburg@intel.com>,
+        <bruce.w.allan@intel.com>, <carolyn.wyborny@intel.com>,
+        <donald.c.skidmore@intel.com>, <gregory.v.rose@intel.com>,
+        <alexander.h.duyck@intel.com>, <john.ronciak@intel.com>,
+        <mitch.a.williams@intel.com>, <alex.williamson@redhat.com>
+CC: <linux-pci@vger.kernel.org>, <kvm@vger.kernel.org>, <linux.nics@intel.com>,
+        <e1000-devel@lists.sourceforge.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <ethan.kernel@gmail.com>,
+        <vaughan.cao@oracle.com>
+Subject: Re: [PATCH 1/2 V2] PCI: introduce device assignment interface and
+ refactory related code
+References: <1405057961-7234-1-git-send-email-ethan.zhao@oracle.com>
+In-Reply-To: <1405057961-7234-1-git-send-email-ethan.zhao@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2014 10:39 PM, David Miller wrote:
-> From: Grygorii Strashko <grygorii.strashko@ti.com>
-> Date: Thu, 10 Jul 2014 15:58:31 +0300
->
->> Hi David,
->>
->> On 07/10/2014 02:52 AM, David Miller wrote:
->>> From: Grygorii Strashko <grygorii.strashko@ti.com>
->>> Date: Wed, 9 Jul 2014 16:10:50 +0300
->>>
->>>>    Required properties:
->>>> -- compatible		: Should be "ti,davinci_mdio"
->>>> +- compatible		: Should be "ti,davinci_mdio" or "ti,keystone-mdio"
->>>
->>> Why the inconsistency in naming schemes?  I don't see any reason
->>> to be different wrt. "_" vs. "-" in the name string.
->>>
->>
->> Hm. Looks like the common way is to use "-", but I can rename it if you insist.
->
-> I'm just saying, is there a strong reason to be inconsistent?
->
+On 11/07/14 06:52, Ethan Zhao wrote:
+> 
+> --- a/drivers/xen/xen-pciback/pci_stub.c
+> +++ b/drivers/xen/xen-pciback/pci_stub.c
+> @@ -133,7 +133,7 @@ static void pcistub_device_release(struct kref *kref)
+>  	xen_pcibk_config_free_dyn_fields(dev);
+>  	xen_pcibk_config_free_dev(dev);
+>  
+> -	dev->dev_flags &= ~PCI_DEV_FLAGS_ASSIGNED;
+> +	pci_sriov_deassign_device(dev);
+>  	pci_dev_put(dev);
+>  
+>  	kfree(psdev);
+> @@ -404,7 +404,7 @@ static int pcistub_init_device(struct pci_dev *dev)
+>  	dev_dbg(&dev->dev, "reset device\n");
+>  	xen_pcibk_reset_device(dev);
+>  
+> -	dev->dev_flags |= PCI_DEV_FLAGS_ASSIGNED;
+> +	pci_sriov_assign_device(dev);
+>  	return 0;
 
-I've followed the same format as for all latest compatibility strings in 
-Kernel. Also I've checked ePAPR and dash is used for all examples there.
+Xen's PCI passthrough works with all PCI devices not just SR-IOV ones,
+so the naming of the helpers isn't correct.
 
-"ti,davinci_mdio" was added 2 years ago, so possibly no strict 
-convention or review were done then. Now, I can't change 
-"ti,davinci_mdio" -> "ti,davinci-mdio" to be consistent with Kernel due 
-to compatibility issues.
-
-May be DT Gurus can say more?
-
-
-Regards,
--grygorii
+David
