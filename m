@@ -1,44 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740AbaGKQSf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 12:18:35 -0400
-Received: from andre.telenet-ops.be ([195.130.132.53]:54543 "EHLO
-	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754246AbaGKQSd (ORCPT
+	id S1754886AbaGKQSu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 12:18:50 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:52409 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751923AbaGKQSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 12:18:33 -0400
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>
-Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH] dmaengine: Remove unused definition of DMA_MAX_COOKIE
-Date: Fri, 11 Jul 2014 18:18:26 +0200
-Message-Id: <1405095506-14865-1-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 11 Jul 2014 12:18:49 -0400
+MIME-Version: 1.0
+Date: Fri, 11 Jul 2014 12:18:47 -0400
+Message-ID: <CAPDOMVgf0jfUVCycZBWMB4X5NobVqn7vU_6eh-9vi3LbzDZ=bQ@mail.gmail.com>
+Subject: Blackfin Build fixs
+From: Nick Krause <xerofoify@gmail.com>
+To: Miao Steven <realmz6@gmail.com>, adi-buildroot-devel@lists.sourceforge.net,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=001a11339ae4d2a32d04fded4b27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As of commit commit f04cd40701deace2efb9edd7120e59366bda2118 ("fsldma: fix
-controller lockups"), its last (and only ever) user is gone.
+--001a11339ae4d2a32d04fded4b27
+Content-Type: text/plain; charset=UTF-8
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
----
- include/linux/dmaengine.h | 1 -
- 1 file changed, 1 deletion(-)
+Hey Steven,
+I having been testing what builds are still failing from Steven
+Rothwell's tests and there seem to be two failing
+still for blackfin. I am tracing the issues to make it easier for you
+as a maintainer.  BF561-ACVILON_defconfig
+is failing in acvlion.c due to BFIN_NAND_PLAT_READY not being defined
+when calling gpio request in
+bfin_plat_nand_init. I would recommend defining it to the correct
+value to initialize nand on this board.
+There also seems to be some undefined syscalls for this board I would
+can either remove them or you can
+tell me how to clean them up.
 
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 3d1c2aa51530..16e829034ae9 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -37,7 +37,6 @@
-  */
- typedef s32 dma_cookie_t;
- #define DMA_MIN_COOKIE	1
--#define DMA_MAX_COOKIE	INT_MAX
- 
- static inline int dma_submit_error(dma_cookie_t cookie)
- {
--- 
-1.9.1
+I also am hitting a build failure still for blackstamp defconfig. The
+issue seems to be that when calling functions
+that need GPIO_PF0 that it's undefined as it fails whenc calling
+gpio_request that needs it be defined on line 318
+of file , arch/blackfin/mach-bf533/boards/blackstamp.c on line 480 and
+again on line 481 when calling gpio_free.
+Like the other build there seems to be undefined syscalls and they
+need to be either removed or cleaned up. I
+would like recommendations or how you want to clean up these system calls.
 
+I am also attaching the log files for these failing builds.
+
+Cheers Nick
+
+--001a11339ae4d2a32d04fded4b27
+Content-Type: application/octet-stream; name=BF561-ACVILON_defconfig
+Content-Disposition: attachment; filename=BF561-ACVILON_defconfig
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hxhp1pkv0
+
+PHN0ZGluPjoxMjIzOjI6IHdhcm5pbmc6ICN3YXJuaW5nIHN5c2NhbGwga2NtcCBub3QgaW1wbGVt
+ZW50ZWQgWy1XY3BwXQo8c3RkaW4+OjEyMjY6Mjogd2FybmluZzogI3dhcm5pbmcgc3lzY2FsbCBm
+aW5pdF9tb2R1bGUgbm90IGltcGxlbWVudGVkIFstV2NwcF0KPHN0ZGluPjoxMjI5OjI6IHdhcm5p
+bmc6ICN3YXJuaW5nIHN5c2NhbGwgc2NoZWRfc2V0YXR0ciBub3QgaW1wbGVtZW50ZWQgWy1XY3Bw
+XQo8c3RkaW4+OjEyMzI6Mjogd2FybmluZzogI3dhcm5pbmcgc3lzY2FsbCBzY2hlZF9nZXRhdHRy
+IG5vdCBpbXBsZW1lbnRlZCBbLVdjcHBdCjxzdGRpbj46MTIzNToyOiB3YXJuaW5nOiAjd2Fybmlu
+ZyBzeXNjYWxsIHJlbmFtZWF0MiBub3QgaW1wbGVtZW50ZWQgWy1XY3BwXQphcmNoL2JsYWNrZmlu
+L21hY2gtYmY1NjEvYm9hcmRzL2Fjdmlsb24uYzogSW4gZnVuY3Rpb24g4oCYYmZpbl9wbGF0X25h
+bmRfZGV2X3JlYWR54oCZOgphcmNoL2JsYWNrZmluL21hY2gtYmY1NjEvYm9hcmRzL2Fjdmlsb24u
+YzoyODM6MjogZXJyb3I6IGltcGxpY2l0IGRlY2xhcmF0aW9uIG9mIGZ1bmN0aW9uIOKAmGdwaW9f
+Z2V0X3ZhbHVl4oCZIFstV2Vycm9yPWltcGxpY2l0LWZ1bmN0aW9uLWRlY2xhcmF0aW9uXQogIHJl
+dHVybiBncGlvX2dldF92YWx1ZShCRklOX05BTkRfUExBVF9SRUFEWSk7CiAgXgphcmNoL2JsYWNr
+ZmluL21hY2gtYmY1NjEvYm9hcmRzL2Fjdmlsb24uYzogSW4gZnVuY3Rpb24g4oCYYmZpbl9wbGF0
+X25hbmRfaW5pdOKAmToKYXJjaC9ibGFja2Zpbi9tYWNoLWJmNTYxL2JvYXJkcy9hY3ZpbG9uLmM6
+MzE4OjI6IGVycm9yOiBpbXBsaWNpdCBkZWNsYXJhdGlvbiBvZiBmdW5jdGlvbiDigJhncGlvX3Jl
+cXVlc3TigJkgWy1XZXJyb3I9aW1wbGljaXQtZnVuY3Rpb24tZGVjbGFyYXRpb25dCiAgZ3Bpb19y
+ZXF1ZXN0KEJGSU5fTkFORF9QTEFUX1JFQURZLCAiYmZpbl9uYW5kX3BsYXQiKTsKICBeCmNjMTog
+c29tZSB3YXJuaW5ncyBiZWluZyB0cmVhdGVkIGFzIGVycm9ycwptYWtlWzFdOiAqKiogW2FyY2gv
+YmxhY2tmaW4vbWFjaC1iZjU2MS9ib2FyZHMvYWN2aWxvbi5vXSBFcnJvciAxCm1ha2U6ICoqKiBb
+YXJjaC9ibGFja2Zpbi9tYWNoLWJmNTYxL2JvYXJkc10gRXJyb3IgMgptYWtlOiAqKiogV2FpdGlu
+ZyBmb3IgdW5maW5pc2hlZCBqb2JzLi4uLgo=
+--001a11339ae4d2a32d04fded4b27
+Content-Type: application/octet-stream; name=BF561-ACVILON_defconfig
+Content-Disposition: attachment; filename=BF561-ACVILON_defconfig
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hxhpleor1
+
+PHN0ZGluPjoxMjIzOjI6IHdhcm5pbmc6ICN3YXJuaW5nIHN5c2NhbGwga2NtcCBub3QgaW1wbGVt
+ZW50ZWQgWy1XY3BwXQo8c3RkaW4+OjEyMjY6Mjogd2FybmluZzogI3dhcm5pbmcgc3lzY2FsbCBm
+aW5pdF9tb2R1bGUgbm90IGltcGxlbWVudGVkIFstV2NwcF0KPHN0ZGluPjoxMjI5OjI6IHdhcm5p
+bmc6ICN3YXJuaW5nIHN5c2NhbGwgc2NoZWRfc2V0YXR0ciBub3QgaW1wbGVtZW50ZWQgWy1XY3Bw
+XQo8c3RkaW4+OjEyMzI6Mjogd2FybmluZzogI3dhcm5pbmcgc3lzY2FsbCBzY2hlZF9nZXRhdHRy
+IG5vdCBpbXBsZW1lbnRlZCBbLVdjcHBdCjxzdGRpbj46MTIzNToyOiB3YXJuaW5nOiAjd2Fybmlu
+ZyBzeXNjYWxsIHJlbmFtZWF0MiBub3QgaW1wbGVtZW50ZWQgWy1XY3BwXQphcmNoL2JsYWNrZmlu
+L21hY2gtYmY1NjEvYm9hcmRzL2Fjdmlsb24uYzogSW4gZnVuY3Rpb24g4oCYYmZpbl9wbGF0X25h
+bmRfZGV2X3JlYWR54oCZOgphcmNoL2JsYWNrZmluL21hY2gtYmY1NjEvYm9hcmRzL2Fjdmlsb24u
+YzoyODM6MjogZXJyb3I6IGltcGxpY2l0IGRlY2xhcmF0aW9uIG9mIGZ1bmN0aW9uIOKAmGdwaW9f
+Z2V0X3ZhbHVl4oCZIFstV2Vycm9yPWltcGxpY2l0LWZ1bmN0aW9uLWRlY2xhcmF0aW9uXQogIHJl
+dHVybiBncGlvX2dldF92YWx1ZShCRklOX05BTkRfUExBVF9SRUFEWSk7CiAgXgphcmNoL2JsYWNr
+ZmluL21hY2gtYmY1NjEvYm9hcmRzL2Fjdmlsb24uYzogSW4gZnVuY3Rpb24g4oCYYmZpbl9wbGF0
+X25hbmRfaW5pdOKAmToKYXJjaC9ibGFja2Zpbi9tYWNoLWJmNTYxL2JvYXJkcy9hY3ZpbG9uLmM6
+MzE4OjI6IGVycm9yOiBpbXBsaWNpdCBkZWNsYXJhdGlvbiBvZiBmdW5jdGlvbiDigJhncGlvX3Jl
+cXVlc3TigJkgWy1XZXJyb3I9aW1wbGljaXQtZnVuY3Rpb24tZGVjbGFyYXRpb25dCiAgZ3Bpb19y
+ZXF1ZXN0KEJGSU5fTkFORF9QTEFUX1JFQURZLCAiYmZpbl9uYW5kX3BsYXQiKTsKICBeCmNjMTog
+c29tZSB3YXJuaW5ncyBiZWluZyB0cmVhdGVkIGFzIGVycm9ycwptYWtlWzFdOiAqKiogW2FyY2gv
+YmxhY2tmaW4vbWFjaC1iZjU2MS9ib2FyZHMvYWN2aWxvbi5vXSBFcnJvciAxCm1ha2U6ICoqKiBb
+YXJjaC9ibGFja2Zpbi9tYWNoLWJmNTYxL2JvYXJkc10gRXJyb3IgMgptYWtlOiAqKiogV2FpdGlu
+ZyBmb3IgdW5maW5pc2hlZCBqb2JzLi4uLgo=
+--001a11339ae4d2a32d04fded4b27--
