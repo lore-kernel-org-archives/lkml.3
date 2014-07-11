@@ -1,101 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753760AbaGKNML (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:12:11 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:38426 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753385AbaGKNMJ (ORCPT
+	id S1753818AbaGKNNE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:13:04 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:52019 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359AbaGKNNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:12:09 -0400
-Date: Fri, 11 Jul 2014 15:11:59 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Mike Galbraith <bitbucket@online.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [RFC PATCH 0/5] workqueue: Introduce low-level unbound wq sysfs
- cpumask v3
-Message-ID: <20140711131155.GA26045@localhost.localdomain>
-References: <1400257015-28222-1-git-send-email-fweisbec@gmail.com>
- <53BFA34F.9010800@cn.fujitsu.com>
+	Fri, 11 Jul 2014 09:13:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53BFA34F.9010800@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1405026844.2613.15.camel@fedora-lan>
+References: <1405017900-16024-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1405026844.2613.15.camel@fedora-lan>
+Date: Fri, 11 Jul 2014 09:13:00 -0400
+Message-ID: <CAN+gG=Ev+ZuEkLFRxvDT2qRnjfcnAxKCzCjazimVKjRxZ2N7-g@mail.gmail.com>
+Subject: Re: [PATCH 0/5] Input - wacom: battery enhancements and unifying
+ hid-wacom and wacom
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Przemo Firszt <przemo@firszt.eu>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, Ping Cheng <pinglinux@gmail.com>,
+        Jason Gerecke <killertofu@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-input <linux-input@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 04:41:51PM +0800, Lai Jiangshan wrote:
-> Hi, Frederic
-> 
-> I'd like to take this work unless you are still working on it.
-> I would do some cleanup at first so that it will be much slow for me.
+Hi Przemo,
 
-Hi Lai,
+On Thu, Jul 10, 2014 at 5:14 PM, Przemo Firszt <przemo@firszt.eu> wrote:
+> Dnia 2014-07-10, czw o godzinie 14:44 -0400, Benjamin Tissoires pisze:
+> [..]
+> Hi Benjamin,
+>> However, I did not backport the speed attribute and the ac power
+>> device (which
+>> is infered by the battery status). I don't know if there are users of
+>> those two,
+>> so I let them aside for now. Przemo, any ideas if this is actually
+>> used?
+> Both tablets that I had (Graphire Wireless and Intuos4 Wireless)
+> supports slow and fast reporting. Slow reporting is necessary with older
+> bluetooth receivers otherwise the lag between pen movement and cursor
+> movement made devices unusable.
 
-I was about to iterate again on that patchset but I would certainly be
-happy if you take it given the amount of stuff in my TODO list.
+Alright
 
-I suggest you to take this branch:
+>
+> I tried to expose all events reported by hardware and I think AC
+> reporting should stay in the kernel.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-	core/workqueue-v6
+Ok, I'll send a v2 next week with these two things fixed.
 
-It's a big rebase on top of latest -rc1.
+Cheers,
+Benjamin
 
-Also I suggest you to use "--patience" on git diff/log/format-patch etc...
-because the changes contain big code move (like the sysfs part) that default
-diff doesn't display well.
-
-I can still help you on this patchset BTW if you need. I believe that
-delayed workqueues weren't well handled with it, maybe I should
-check further if they need some more treatment.
-
-Thanks.
-
-> 
-> Thanks,
-> Lai
-> 
-> 
-> On 05/17/2014 12:16 AM, Frederic Weisbecker wrote:
-> > So in this version I actually save the cpumask belonging to wq (before
-> > it's intersected against the low level cpumask) in its unbounds attrs.
-> > 
-> > But the attrs passed to pwq and worker pools have the low level cpumask
-> > computed against the wq cpumask.
-> > 
-> > It makes it easier that way as the wq cpumask itself remains untouched.
-> > It's a user setting so it must stay intact. OTOH the cpumask of pwqs and
-> > worker pools only belong to the implementation so it's the right
-> > place to store the effective cpumask.
-> > 
-> > Also wq_update_unbound_numa() is fixed, and cpu_possible_mask() 
-> > is restored as a base. Thanks to Lai!
-> > 
-> > Thanks,
-> > 	Frederic
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> >         core/workqueue-v5
-> > ---
-> > 
-> > Frederic Weisbecker (4):
-> >       workqueue: Reorder sysfs code
-> >       workqueue: Create low-level unbound workqueues cpumask
-> >       workqueue: Split apply attrs code from its locking
-> >       workqueue: Allow modifying low level unbound workqueue cpumask
-> > 
-> > Lai Jiangshan (1):
-> >       workqueue: Allow changing attributions of ordered workqueues
-> > 
-> > 
-> >  kernel/workqueue.c | 1674 ++++++++++++++++++++++++++++------------------------
-> >  1 file changed, 900 insertions(+), 774 deletions(-)
-> > .
-> > 
-> 
+>
+> Intuos4 Wireless
+> AC power disconnected:
+> bash-4.2$ cat /sys/class/power_supply/wacom_ac/uevent
+> POWER_SUPPLY_NAME=wacom_ac
+> POWER_SUPPLY_PRESENT=0
+> POWER_SUPPLY_ONLINE=0
+> POWER_SUPPLY_SCOPE=Device
+> bash-4.2$ cat /sys/class/power_supply/wacom_battery/uevent
+> POWER_SUPPLY_NAME=wacom_battery
+> POWER_SUPPLY_PRESENT=1
+> POWER_SUPPLY_CAPACITY=85
+> POWER_SUPPLY_SCOPE=Device
+> POWER_SUPPLY_STATUS=Discharging
+>
+> AC power connected:
+> bash-4.2$ cat /sys/class/power_supply/wacom_ac/uevent
+> POWER_SUPPLY_NAME=wacom_ac
+> POWER_SUPPLY_PRESENT=1
+> POWER_SUPPLY_ONLINE=1
+> POWER_SUPPLY_SCOPE=Device
+> bash-4.2$ cat /sys/class/power_supply/wacom_battery/uevent
+> POWER_SUPPLY_NAME=wacom_battery
+> POWER_SUPPLY_PRESENT=1
+> POWER_SUPPLY_CAPACITY=85
+> POWER_SUPPLY_SCOPE=Device
+> POWER_SUPPLY_STATUS=Charging
+> --
+> Kind regards,
+> Przemo Firszt
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
