@@ -1,190 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932090AbaGKNp6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:45:58 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:60276 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753832AbaGKNpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:45:55 -0400
-Message-ID: <53BFEA6A.4020501@ti.com>
-Date: Fri, 11 Jul 2014 16:45:14 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S932109AbaGKNqd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:46:33 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56325 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754372AbaGKNpX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 09:45:23 -0400
+Message-Id: <20140711133709.924108628@linutronix.de>
+User-Agent: quilt/0.63-1
+Date: Fri, 11 Jul 2014 13:45:21 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: [patch 55/55] ftrace: Provide trace clocks mono and mono_raw
+References: <20140711133623.530368377@linutronix.de>
 MIME-Version: 1.0
-To: Rostislav Lisovy <lisovy@gmail.com>, Tony Lindgren <tony@atomide.com>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Kevin Hilman <khilman@deeprootsystems.com>,
-        Russell King <linux@arm.linux.org.uk>, Pekon Gupta <pekon@ti.com>,
-        Michal Vokac <vokac.m@gmail.com>, Michal Sojka <sojkam1@fel.cvut.cz>,
-        Rostislav Lisovy <lisovy@merica.cz>
-Subject: Re: [PATCH] ARM: omap2+: gpmc-nand: Use dynamic platform_device_alloc()
-References: <1401891875-27843-1-git-send-email-lisovy@merica.cz>
-In-Reply-To: <1401891875-27843-1-git-send-email-lisovy@merica.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=ftrace-use-clock-mono-raw.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2014 05:24 PM, Rostislav Lisovy wrote:
-> GPMC controller supports up to 8 memory devices connected to it.
-> Since there is one statically allocated "struct platform_device
-> gpmc_nand_device" it is not possible to configure the system to
-> use more than one NAND device connected to the GPMC. This
-> modification makes it possible to use up to 8 NAND devices
-> connected to the GPMC controller.
-> 
-> Signed-off-by: Rostislav Lisovy <lisovy@merica.cz>
+Expose the new NMI safe accessors to clock monotonic and monotonic raw
+to the tracer.
 
-pushed to git@github.com:rogerq/linux.git	for-v3.17/gpmc-omap
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+---
+ kernel/trace/trace.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-Tony,
+Index: tip/kernel/trace/trace.c
+===================================================================
+--- tip.orig/kernel/trace/trace.c
++++ tip/kernel/trace/trace.c
+@@ -806,11 +806,13 @@ static struct {
+ 	const char *name;
+ 	int in_ns;		/* is this clock in nanoseconds? */
+ } trace_clocks[] = {
+-	{ trace_clock_local,	"local",	1 },
+-	{ trace_clock_global,	"global",	1 },
+-	{ trace_clock_counter,	"counter",	0 },
+-	{ trace_clock_jiffies,	"uptime",	1 },
+-	{ trace_clock,		"perf",		1 },
++	{ trace_clock_local,		"local",	1 },
++	{ trace_clock_global,		"global",	1 },
++	{ trace_clock_counter,		"counter",	0 },
++	{ trace_clock_jiffies,		"uptime",	1 },
++	{ trace_clock,			"perf",		1 },
++	{ ktime_get_mono_fast_ns,	"mono",		1 },
++	{ ktime_get_raw_ns,		"mono_raw",	1 },
+ 	ARCH_TRACE_CLOCKS
+ };
+ 
 
-You can please pull all omap-gpmc patches for 3.17 from there. Thanks.
-
-cheers,
--roger
-
-> ---
-> 
-> Tested on custom AM335x board with two different NAND chips
-> (128 + 256 MiB) using GPMC configuration in FDT -- behaves
-> correctly.
-> 
-> 
->  arch/arm/mach-omap2/gpmc-nand.c | 79 +++++++++++++++++++----------------------
->  1 file changed, 37 insertions(+), 42 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/gpmc-nand.c b/arch/arm/mach-omap2/gpmc-nand.c
-> index 4349e82..c5481a8 100644
-> --- a/arch/arm/mach-omap2/gpmc-nand.c
-> +++ b/arch/arm/mach-omap2/gpmc-nand.c
-> @@ -24,25 +24,6 @@
->  /* minimum size for IO mapping */
->  #define	NAND_IO_SIZE	4
->  
-> -static struct resource gpmc_nand_resource[] = {
-> -	{
-> -		.flags		= IORESOURCE_MEM,
-> -	},
-> -	{
-> -		.flags		= IORESOURCE_IRQ,
-> -	},
-> -	{
-> -		.flags		= IORESOURCE_IRQ,
-> -	},
-> -};
-> -
-> -static struct platform_device gpmc_nand_device = {
-> -	.name		= "omap2-nand",
-> -	.id		= 0,
-> -	.num_resources	= ARRAY_SIZE(gpmc_nand_resource),
-> -	.resource	= gpmc_nand_resource,
-> -};
-> -
->  static bool gpmc_hwecc_bch_capable(enum omap_ecc ecc_opt)
->  {
->  	/* platforms which support all ECC schemes */
-> @@ -93,43 +74,41 @@ int gpmc_nand_init(struct omap_nand_platform_data *gpmc_nand_data,
->  {
->  	int err	= 0;
->  	struct gpmc_settings s;
-> -	struct device *dev = &gpmc_nand_device.dev;
-> -
-> -	memset(&s, 0, sizeof(struct gpmc_settings));
-> +	struct platform_device *pdev;
-> +	struct resource gpmc_nand_res[] = {
-> +		{ .flags = IORESOURCE_MEM, },
-> +		{ .flags = IORESOURCE_IRQ, },
-> +		{ .flags = IORESOURCE_IRQ, },
-> +	};
->  
-> -	gpmc_nand_device.dev.platform_data = gpmc_nand_data;
-> +	BUG_ON(gpmc_nand_data->cs >= GPMC_CS_NUM);
->  
->  	err = gpmc_cs_request(gpmc_nand_data->cs, NAND_IO_SIZE,
-> -				(unsigned long *)&gpmc_nand_resource[0].start);
-> +			      (unsigned long *)&gpmc_nand_res[0].start);
->  	if (err < 0) {
-> -		dev_err(dev, "Cannot request GPMC CS %d, error %d\n",
-> -			gpmc_nand_data->cs, err);
-> +		pr_err("omap2-gpmc: Cannot request GPMC CS %d, error %d\n",
-> +		       gpmc_nand_data->cs, err);
->  		return err;
->  	}
-> -
-> -	gpmc_nand_resource[0].end = gpmc_nand_resource[0].start +
-> -							NAND_IO_SIZE - 1;
-> -
-> -	gpmc_nand_resource[1].start =
-> -				gpmc_get_client_irq(GPMC_IRQ_FIFOEVENTENABLE);
-> -	gpmc_nand_resource[2].start =
-> -				gpmc_get_client_irq(GPMC_IRQ_COUNT_EVENT);
-> +	gpmc_nand_res[0].end = gpmc_nand_res[0].start + NAND_IO_SIZE - 1;
-> +	gpmc_nand_res[1].start = gpmc_get_client_irq(GPMC_IRQ_FIFOEVENTENABLE);
-> +	gpmc_nand_res[2].start = gpmc_get_client_irq(GPMC_IRQ_COUNT_EVENT);
->  
->  	if (gpmc_t) {
->  		err = gpmc_cs_set_timings(gpmc_nand_data->cs, gpmc_t);
->  		if (err < 0) {
-> -			dev_err(dev, "Unable to set gpmc timings: %d\n", err);
-> +			pr_err("omap2-gpmc: Unable to set gpmc timings: %d\n", err);
->  			return err;
->  		}
->  	}
->  
-> +	memset(&s, 0, sizeof(struct gpmc_settings));
->  	if (gpmc_nand_data->of_node)
->  		gpmc_read_settings_dt(gpmc_nand_data->of_node, &s);
->  	else
->  		gpmc_set_legacy(gpmc_nand_data, &s);
->  
->  	s.device_nand = true;
-> -
->  	err = gpmc_cs_program_settings(gpmc_nand_data->cs, &s);
->  	if (err < 0)
->  		goto out_free_cs;
-> @@ -141,18 +120,34 @@ int gpmc_nand_init(struct omap_nand_platform_data *gpmc_nand_data,
->  	gpmc_update_nand_reg(&gpmc_nand_data->reg, gpmc_nand_data->cs);
->  
->  	if (!gpmc_hwecc_bch_capable(gpmc_nand_data->ecc_opt)) {
-> -		dev_err(dev, "Unsupported NAND ECC scheme selected\n");
-> -		return -EINVAL;
-> +		pr_err("omap2-nand: Unsupported NAND ECC scheme selected\n");
-> +		err = -EINVAL;
-> +		goto out_free_cs;
->  	}
->  
-> -	err = platform_device_register(&gpmc_nand_device);
-> -	if (err < 0) {
-> -		dev_err(dev, "Unable to register NAND device\n");
-> -		goto out_free_cs;
-> +
-> +	pdev = platform_device_alloc("omap2-nand", gpmc_nand_data->cs);
-> +	if (pdev) {
-> +		err = platform_device_add_resources(pdev, gpmc_nand_res,
-> +						    ARRAY_SIZE(gpmc_nand_res));
-> +		if (!err)
-> +			pdev->dev.platform_data = gpmc_nand_data;
-> +	} else {
-> +		err = -ENOMEM;
-> +	}
-> +	if (err)
-> +		goto out_free_pdev;
-> +
-> +	err = platform_device_add(pdev);
-> +	if (err) {
-> +		dev_err(&pdev->dev, "Unable to register NAND device\n");
-> +		goto out_free_pdev;
->  	}
->  
->  	return 0;
->  
-> +out_free_pdev:
-> +	platform_device_put(pdev);
->  out_free_cs:
->  	gpmc_cs_free(gpmc_nand_data->cs);
->  
-> 
 
