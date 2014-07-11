@@ -1,42 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754454AbaGKNra (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:47:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55898 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752322AbaGKNr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:47:28 -0400
-Date: Fri, 11 Jul 2014 15:47:27 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-cc: Jason Gerecke <killertofu@gmail.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Ping Cheng <pinglinux@gmail.com>,
-        Linux Input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linuxwacom-devel <linuxwacom-devel@lists.sourceforge.net>
-Subject: Re: [PATCH 00/15] Input - Wacom: switch from an USB to a HID
- driver
-In-Reply-To: <CAN+gG=FY7kVAWJWsPpNW8g_vcPekLVmVeH3tHfUzxR0nTTd87w@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1407111547010.8779@pobox.suse.cz>
-References: <1404163586-29582-1-git-send-email-benjamin.tissoires@redhat.com> <CANRwn3S9NwAET06sttcniN2391fY5+W-ZGAmvOqr1c_6AJ=J6g@mail.gmail.com> <CANRwn3TP3ROaxU6AuzLobJt7cE1mAQViKhTUwg2aVw=2XoxDBg@mail.gmail.com>
- <CAN+gG=FY7kVAWJWsPpNW8g_vcPekLVmVeH3tHfUzxR0nTTd87w@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S932173AbaGKNrs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:47:48 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56297 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754351AbaGKNpQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 09:45:16 -0400
+Message-Id: <20140711133709.584242982@linutronix.de>
+User-Agent: quilt/0.63-1
+Date: Fri, 11 Jul 2014 13:45:15 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [patch 51/55] clocksource: Make delta calculation a function
+References: <20140711133623.530368377@linutronix.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline;
+ filename=clocksource-make-delta-calculation-a-function.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jul 2014, Benjamin Tissoires wrote:
+We want to move the TSC sanity check into core code to make NMI safe
+accessors to clock monotonic[_raw] possible. For this we need to
+sanity check the delta calculation. Create a helper function and
+convert all sites to use it.
 
-> Thanks Jason. That's really appreciated. As said I will resend a full
-> cleanup of these with your Rev-by and fixes, so Dmitry or Jiri can
-> take the various series.
+[ Build fix from jstultz ]
 
-Just for the record, I will be mostly offline for the upcoming 2 weeks.
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/time/clocksource.c          |   12 +++++++-----
+ kernel/time/timekeeping.c          |   27 ++++++++++++++-------------
+ kernel/time/timekeeping_internal.h |    6 ++++++
+ 3 files changed, 27 insertions(+), 18 deletions(-)
 
--- 
-Jiri Kosina
-SUSE Labs
+Index: tip/kernel/time/clocksource.c
+===================================================================
+--- tip.orig/kernel/time/clocksource.c
++++ tip/kernel/time/clocksource.c
+@@ -32,6 +32,7 @@
+ #include <linux/kthread.h>
+ 
+ #include "tick-internal.h"
++#include "timekeeping_internal.h"
+ 
+ void timecounter_init(struct timecounter *tc,
+ 		      const struct cyclecounter *cc,
+@@ -249,7 +250,7 @@ void clocksource_mark_unstable(struct cl
+ static void clocksource_watchdog(unsigned long data)
+ {
+ 	struct clocksource *cs;
+-	cycle_t csnow, wdnow;
++	cycle_t csnow, wdnow, delta;
+ 	int64_t wd_nsec, cs_nsec;
+ 	int next_cpu, reset_pending;
+ 
+@@ -282,11 +283,12 @@ static void clocksource_watchdog(unsigne
+ 			continue;
+ 		}
+ 
+-		wd_nsec = clocksource_cyc2ns((wdnow - cs->wd_last) & watchdog->mask,
+-					     watchdog->mult, watchdog->shift);
++		delta = clocksource_delta(wdnow, cs->wd_last, watchdog->mask);
++		wd_nsec = clocksource_cyc2ns(delta, watchdog->mult,
++					     watchdog->shift);
+ 
+-		cs_nsec = clocksource_cyc2ns((csnow - cs->cs_last) &
+-					     cs->mask, cs->mult, cs->shift);
++		delta = clocksource_delta(csnow, cs->cs_last, cs->mask);
++		cs_nsec = clocksource_cyc2ns(delta, cs->mult, cs->shift);
+ 		cs->cs_last = csnow;
+ 		cs->wd_last = wdnow;
+ 
+Index: tip/kernel/time/timekeeping.c
+===================================================================
+--- tip.orig/kernel/time/timekeeping.c
++++ tip/kernel/time/timekeeping.c
+@@ -197,7 +197,7 @@ static inline u32 arch_gettimeoffset(voi
+ 
+ static inline s64 timekeeping_get_ns(struct timekeeper *tk)
+ {
+-	cycle_t cycle_now, cycle_delta;
++	cycle_t cycle_now, delta;
+ 	struct clocksource *clock;
+ 	s64 nsec;
+ 
+@@ -206,9 +206,9 @@ static inline s64 timekeeping_get_ns(str
+ 	cycle_now = clock->read(clock);
+ 
+ 	/* calculate the delta since the last update_wall_time: */
+-	cycle_delta = (cycle_now - clock->cycle_last) & clock->mask;
++	delta = clocksource_delta(cycle_now, clock->cycle_last, clock->mask);
+ 
+-	nsec = cycle_delta * tk->mult + tk->xtime_nsec;
++	nsec = delta * tk->mult + tk->xtime_nsec;
+ 	nsec >>= tk->shift;
+ 
+ 	/* If arch requires, add in get_arch_timeoffset() */
+@@ -217,7 +217,7 @@ static inline s64 timekeeping_get_ns(str
+ 
+ static inline s64 timekeeping_get_ns_raw(struct timekeeper *tk)
+ {
+-	cycle_t cycle_now, cycle_delta;
++	cycle_t cycle_now, delta;
+ 	struct clocksource *clock;
+ 	s64 nsec;
+ 
+@@ -226,10 +226,10 @@ static inline s64 timekeeping_get_ns_raw
+ 	cycle_now = clock->read(clock);
+ 
+ 	/* calculate the delta since the last update_wall_time: */
+-	cycle_delta = (cycle_now - clock->cycle_last) & clock->mask;
++	delta = clocksource_delta(cycle_now, clock->cycle_last, clock->mask);
+ 
+ 	/* convert delta to nanoseconds. */
+-	nsec = clocksource_cyc2ns(cycle_delta, clock->mult, clock->shift);
++	nsec = clocksource_cyc2ns(delta, clock->mult, clock->shift);
+ 
+ 	/* If arch requires, add in get_arch_timeoffset() */
+ 	return nsec + arch_gettimeoffset();
+@@ -335,16 +335,15 @@ static void timekeeping_update(struct ti
+  */
+ static void timekeeping_forward_now(struct timekeeper *tk)
+ {
+-	cycle_t cycle_now, cycle_delta;
++	cycle_t cycle_now, delta;
+ 	struct clocksource *clock;
+ 	s64 nsec;
+ 
+ 	clock = tk->clock;
+ 	cycle_now = clock->read(clock);
+-	cycle_delta = (cycle_now - clock->cycle_last) & clock->mask;
+-	tk->cycle_last = clock->cycle_last = cycle_now;
++	delta = clocksource_delta(cycle_now, clock->cycle_last, clock->mask);
+ 
+-	tk->xtime_nsec += cycle_delta * tk->mult;
++	tk->xtime_nsec += delta * tk->mult;
+ 
+ 	/* If arch requires, add in get_arch_timeoffset() */
+ 	tk->xtime_nsec += (u64)arch_gettimeoffset() << tk->shift;
+@@ -352,7 +351,7 @@ static void timekeeping_forward_now(stru
+ 	/* Updates tk->base_mono as well */
+ 	tk_normalize_xtime(tk);
+ 
+-	nsec = clocksource_cyc2ns(cycle_delta, clock->mult, clock->shift);
++	nsec = clocksource_cyc2ns(delta, clock->mult, clock->shift);
+ 	timespec64_add_ns(&tk->raw_time, nsec);
+ 	tk->base_raw = ktime_add_ns(tk->base_raw, nsec);
+ }
+@@ -1063,7 +1062,8 @@ static void timekeeping_resume(void)
+ 		u32 shift = clock->shift;
+ 		s64 nsec = 0;
+ 
+-		cycle_delta = (cycle_now - clock->cycle_last) & clock->mask;
++		cycle_delta = clocksource_delta(cycle_now, clock->cycle_last,
++						clock->mask);
+ 
+ 		/*
+ 		 * "cycle_delta * mutl" may cause 64 bits overflow, if the
+@@ -1472,7 +1472,8 @@ void update_wall_time(void)
+ #ifdef CONFIG_ARCH_USES_GETTIMEOFFSET
+ 	offset = real_tk->cycle_interval;
+ #else
+-	offset = (clock->read(clock) - clock->cycle_last) & clock->mask;
++	offset = clocksource_delta(clock->read(clock), clock->cycle_last,
++				   clock->mask);
+ #endif
+ 
+ 	/* Check if there's really nothing to do */
+Index: tip/kernel/time/timekeeping_internal.h
+===================================================================
+--- tip.orig/kernel/time/timekeeping_internal.h
++++ tip/kernel/time/timekeeping_internal.h
+@@ -3,6 +3,7 @@
+ /*
+  * timekeeping debug functions
+  */
++#include <linux/clocksource.h>
+ #include <linux/time.h>
+ 
+ #ifdef CONFIG_DEBUG_FS
+@@ -11,4 +12,9 @@ extern void tk_debug_account_sleep_time(
+ #define tk_debug_account_sleep_time(x)
+ #endif
+ 
++static inline cycle_t clocksource_delta(cycle_t now, cycle_t last, cycle_t mask)
++{
++	return (now -last) & mask;
++}
++
+ #endif /* _TIMEKEEPING_INTERNAL_H */
+
+
