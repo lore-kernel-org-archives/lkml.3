@@ -1,178 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644AbaGKQGu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 12:06:50 -0400
-Received: from andre.telenet-ops.be ([195.130.132.53]:44305 "EHLO
-	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751684AbaGKQGr (ORCPT
+	id S1754169AbaGKQJs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 12:09:48 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:23312 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750973AbaGKQJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 12:06:47 -0400
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Mark Brown <broonie@kernel.org>
-Cc: Laurent Pinchart <Laurent.pinchart@ideasonboard.com>,
-        linux-spi@vger.kernel.org, dmaengine@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH 1/2] spi: rspi: Fix leaking of unused DMA descriptors
-Date: Fri, 11 Jul 2014 18:06:41 +0200
-Message-Id: <1405094802-14401-1-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 11 Jul 2014 12:09:46 -0400
+Date: Fri, 11 Jul 2014 17:09:25 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci <linux-pci@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 6/9] pci: Introduce a domain number for
+ pci_host_bridge.
+Message-ID: <20140711160925.GD16321@arm.com>
+References: <1404240214-9804-7-git-send-email-Liviu.Dudau@arm.com>
+ <20140708005954.GC22939@google.com>
+ <20140708104655.GC6501@e106497-lin.cambridge.arm.com>
+ <CAErSpo75ovmGoeSHKJN0nckGDy-0gpn8kLPfHQ79CtcXxhPydw@mail.gmail.com>
+ <20140708224847.GC4980@e106497-lin.cambridge.arm.com>
+ <CAErSpo5rBt0iF2HGeDD-UH6_sPCoC647VCw0Q1v_0Rdpvcir-w@mail.gmail.com>
+ <20140710094758.GA6501@e106497-lin.cambridge.arm.com>
+ <CAErSpo5ZNCY31NztT0cLFbRVsBZqMsZ0LbTFNOTQCZUU3F7qJA@mail.gmail.com>
+ <20140711141115.GB16321@arm.com>
+ <20140711150823.GU6501@e106497-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140711150823.GU6501@e106497-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If dmaengine_prep_slave_sg() or dmaengine_submit() fail, we may leak
-unused DMA descriptors.
+On Fri, Jul 11, 2014 at 04:08:23PM +0100, Liviu Dudau wrote:
+> On Fri, Jul 11, 2014 at 03:11:16PM +0100, Catalin Marinas wrote:
+> > On Thu, Jul 10, 2014 at 11:36:10PM +0100, Bjorn Helgaas wrote:
+> > > Most of the rest of the v7 discussion was about "Introduce a domain
+> > > number for pci_host_bridge."  I think we should add arm64 using the
+> > > existing pci_scan_root_bus() and keep the domain number in the arm64
+> > > sysdata structure like every other arch does.  Isn't that feasible?
+> > > We can worry about domain unification later.
+> > 
+> > I think that's what we were trying to avoid, adding an arm64-specific
+> > pci_sys_data structure (and arm64-specific API). IIUC, avoiding this
+> > would allow the host controller drivers to use the sysdata pointer for
+> > their own private data structures.
+> > 
+> > Also since you can specify the domain number via DT (and in Liviu's
+> > v8 patches read by of_create_pci_host_bridge), I think it would make
+> > sense to have it stored in some generic data structures (e.g.
+> > pci_host_bridge) rather than in an arm64 private sysdata.
+> > 
+> > (Liviu is thinking of an alternative API but maybe he could briefly
+> > describe it here before posting a new series)
+> 
+> My plan is to keep the domain number in the pci_host_bridge and split
+> the creation of the pci_host_bridge out of the pci_create_root_bus().
 
-As per Documentation/dmaengine.txt, once a DMA descriptor has been
-obtained, it must be submitted. Hence:
-  - First prepare and submit all DMA descriptors,
-  - Prepare the SPI controller for DMA,
-  - Start DMA by calling dma_async_issue_pending(),
-  - Make sure to call dmaengine_terminate_all() on all descriptors that
-    haven't completed.
+Wouldn't it make more sense to add domain_nr to the pci_bus structure
+(well, only needed for the root bus)? It would simplify pci_domain_nr()
+as well which only takes a pci_bus parameter.
 
-Reported-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
----
- drivers/spi/spi-rspi.c | 94 +++++++++++++++++++++++++++++++-------------------
- 1 file changed, 58 insertions(+), 36 deletions(-)
+> The new function (tentatively called pci_create_new_root_bus()) will
+> no longer call pci_alloc_host_bridge() but will accept it as a
+> parameter, allowing one to be able to set the domain_nr ahead of the
+> root bus creation.
 
-diff --git a/drivers/spi/spi-rspi.c b/drivers/spi/spi-rspi.c
-index c850dfdfa9e3..ad87a98f8f68 100644
---- a/drivers/spi/spi-rspi.c
-+++ b/drivers/spi/spi-rspi.c
-@@ -472,25 +472,52 @@ static int rspi_dma_transfer(struct rspi_data *rspi, struct sg_table *tx,
- 	dma_cookie_t cookie;
- 	int ret;
- 
--	if (tx) {
--		desc_tx = dmaengine_prep_slave_sg(rspi->master->dma_tx,
--					tx->sgl, tx->nents, DMA_TO_DEVICE,
--					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
--		if (!desc_tx)
--			goto no_dma;
--
--		irq_mask |= SPCR_SPTIE;
--	}
-+	/* First prepare and submit the DMA request(s), as this may fail */
- 	if (rx) {
- 		desc_rx = dmaengine_prep_slave_sg(rspi->master->dma_rx,
- 					rx->sgl, rx->nents, DMA_FROM_DEVICE,
- 					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
--		if (!desc_rx)
--			goto no_dma;
-+		if (!desc_rx) {
-+			ret = -EAGAIN;
-+			goto no_dma_rx;
-+		}
-+
-+		desc_rx->callback = rspi_dma_complete;
-+		desc_rx->callback_param = rspi;
-+		cookie = dmaengine_submit(desc_rx);
-+		if (dma_submit_error(cookie)) {
-+			ret = cookie;
-+			goto no_dma_rx;
-+		}
- 
- 		irq_mask |= SPCR_SPRIE;
- 	}
- 
-+	if (tx) {
-+		desc_tx = dmaengine_prep_slave_sg(rspi->master->dma_tx,
-+					tx->sgl, tx->nents, DMA_TO_DEVICE,
-+					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
-+		if (!desc_tx) {
-+			ret = -EAGAIN;
-+			goto no_dma_tx;
-+		}
-+
-+		if (rx) {
-+			/* No callback */
-+			desc_tx->callback = NULL;
-+		} else {
-+			desc_tx->callback = rspi_dma_complete;
-+			desc_tx->callback_param = rspi;
-+		}
-+		cookie = dmaengine_submit(desc_tx);
-+		if (dma_submit_error(cookie)) {
-+			ret = cookie;
-+			goto no_dma_tx;
-+		}
-+
-+		irq_mask |= SPCR_SPTIE;
-+	}
-+
- 	/*
- 	 * DMAC needs SPxIE, but if SPxIE is set, the IRQ routine will be
- 	 * called. So, this driver disables the IRQ while DMA transfer.
-@@ -503,34 +530,24 @@ static int rspi_dma_transfer(struct rspi_data *rspi, struct sg_table *tx,
- 	rspi_enable_irq(rspi, irq_mask);
- 	rspi->dma_callbacked = 0;
- 
--	if (rx) {
--		desc_rx->callback = rspi_dma_complete;
--		desc_rx->callback_param = rspi;
--		cookie = dmaengine_submit(desc_rx);
--		if (dma_submit_error(cookie))
--			return cookie;
-+	/* Now start DMA */
-+	if (rx)
- 		dma_async_issue_pending(rspi->master->dma_rx);
--	}
--	if (tx) {
--		if (rx) {
--			/* No callback */
--			desc_tx->callback = NULL;
--		} else {
--			desc_tx->callback = rspi_dma_complete;
--			desc_tx->callback_param = rspi;
--		}
--		cookie = dmaengine_submit(desc_tx);
--		if (dma_submit_error(cookie))
--			return cookie;
-+	if (tx)
- 		dma_async_issue_pending(rspi->master->dma_tx);
--	}
- 
- 	ret = wait_event_interruptible_timeout(rspi->wait,
- 					       rspi->dma_callbacked, HZ);
- 	if (ret > 0 && rspi->dma_callbacked)
- 		ret = 0;
--	else if (!ret)
-+	else if (!ret) {
-+		dev_err(&rspi->master->dev, "DMA timeout\n");
- 		ret = -ETIMEDOUT;
-+		if (tx)
-+			dmaengine_terminate_all(rspi->master->dma_tx);
-+		if (rx)
-+			dmaengine_terminate_all(rspi->master->dma_rx);
-+	}
- 
- 	rspi_disable_irq(rspi, irq_mask);
- 
-@@ -541,11 +558,16 @@ static int rspi_dma_transfer(struct rspi_data *rspi, struct sg_table *tx,
- 
- 	return ret;
- 
--no_dma:
--	pr_warn_once("%s %s: DMA not available, falling back to PIO\n",
--		     dev_driver_string(&rspi->master->dev),
--		     dev_name(&rspi->master->dev));
--	return -EAGAIN;
-+no_dma_tx:
-+	if (rx)
-+		dmaengine_terminate_all(rspi->master->dma_rx);
-+no_dma_rx:
-+	if (ret == -EAGAIN) {
-+		pr_warn_once("%s %s: DMA not available, falling back to PIO\n",
-+			     dev_driver_string(&rspi->master->dev),
-+			     dev_name(&rspi->master->dev));
-+	}
-+	return ret;
- }
- 
- static void rspi_receive_init(const struct rspi_data *rspi)
+If we place domain_nr in pci_bus, this split wouldn't help but we still
+need your original pci_create_root_bus_in_domain(). Are there other uses
+of your proposal above?
+
+Yet another alternative is to ignore PCI domains altogether (domain 0
+always).
+
 -- 
-1.9.1
-
+Catalin
