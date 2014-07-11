@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500AbaGKMFz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 08:05:55 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:51621 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751988AbaGKMFx (ORCPT
+	id S1753519AbaGKMGc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 08:06:32 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:42470 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751988AbaGKMGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 08:05:53 -0400
-Date: Fri, 11 Jul 2014 14:05:42 +0200
-From: Olivier Sobrie <olivier@sobrie.be>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        David Miller <davem@davemloft.net>,
-        "j.dumon@option.com" <j.dumon@option.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] hso: fix deadlock when receiving bursts of data
-Message-ID: <20140711120541.GA9528@hposo>
-Reply-To: Olivier Sobrie <olivier@sobrie.be>
-References: <1404723967-24245-1-git-send-email-olivier@sobrie.be>
- <1404723967-24245-2-git-send-email-olivier@sobrie.be>
- <20140708.161633.2130069042930765600.davem@davemloft.net>
- <20140710142848.GA28056@hposo>
- <063D6719AE5E284EB5DD2968C1650D6D17270044@AcuExch.aculab.com>
- <20140710165003.0309924e@alan.etchedpixels.co.uk>
- <20140711091803.GA19663@hposo>
- <063D6719AE5E284EB5DD2968C1650D6D1727090C@AcuExch.aculab.com>
+	Fri, 11 Jul 2014 08:06:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1727090C@AcuExch.aculab.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140711062811.GC3003@tarshish>
+References: <1403091577-10232-1-git-send-email-harinik@xilinx.com>
+	<5cc8b89b-20ff-4fa9-92dd-bb2f6d3512d8@BY2FFO11FD030.protection.gbl>
+	<CACRpkdb1M3-hrSKLKWz21LCJ1sMvsq5E-aqkpmVhy0NwOS5HhA@mail.gmail.com>
+	<20140707152309.GH4939@tarshish>
+	<CACRpkdY+3hy5iw=uRdmu665NWsoGacTMgjUq97219kEcfn7Dqw@mail.gmail.com>
+	<20140711062811.GC3003@tarshish>
+Date: Fri, 11 Jul 2014 14:06:29 +0200
+Message-ID: <CACRpkdYi_xbixsgvF0NMVdRmxbAgDVOnq-vzYVpDkLHTL8-12A@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] gpio: Add driver for Zynq GPIO controller
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Baruch Siach <baruch@tkos.co.il>
+Cc: =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Harini Katakam <harinik@xilinx.com>, Pawel Moll <pawel.moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Harini Katakam <harinikatakamlinux@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Harini Katakam <harini.katakam@xilinx.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 09:28:47AM +0000, David Laight wrote:
-> From: Olivier Sobrie Olivier Sobrie
-> > Hi Alan and Davids,
-> > 
-> > On Thu, Jul 10, 2014 at 04:50:03PM +0100, One Thousand Gnomes wrote:
-> > > On Thu, 10 Jul 2014 14:37:37 +0000
-> > > David Laight <David.Laight@ACULAB.COM> wrote:
-> > >
-> > > > From: Olivier Sobrie
-> > > > ...
-> > > > > The function put_rxbuf_data() is called from the urb completion handler.
-> > > > > It puts the data of the urb transfer in the tty buffer with
-> > > > > tty_insert_flip_string_flags() and schedules a work queue in order to
-> > > > > push the data to the ldisc.
-> > > > > Problem is that we are in a urb completion handler so we can't wait
-> > > > > until there is room in the tty buffer.
-> > >
-> > > The tty provides the input queue, if the queue is full then just chuck
-> > > the data in the bitbucket.  hso is trying to be far too clever.
-> > >
-> > > If hso is fast enough that the buffering isn't sufficient on the tty side
-> > > then we need to fix the tty buffer size.
-> > 
-> > Ok I'll adapt the patch to drop the data that can't be put in the tty
-> > buffer. I test this and resend a new patch.
-> 
-> If you are going to drop data, then ideally you want to discard entire ppp
-> packets. Depending on exactly how the interface works it might be that
-> urb are likely to contain complete packets.
+On Fri, Jul 11, 2014 at 8:28 AM, Baruch Siach <baruch@tkos.co.il> wrote:
+> On Tue, Jul 08, 2014 at 11:27:57AM +0200, Linus Walleij wrote:
 
-Indeed, urbs contains complete ppp packets. I see that the first and last
-byte are equal to 0x7e.
+>> What is the usecase here?
+>
+> During boot I need to know, for example, when an FPGA is ready to be
+> programmed, and when said FPGA has finished its initialization. I also read
+> the sate of on-board DIP switches to determine the desired boot method. I find
+> the current sysfs interface quite convenient for these and similar tasks.
 
-> 
-> So discarding entire urb might work better than discarding a few bytes.
-> (But don't even think of scanning the data stream in the usb driver - except
-> for experiments.)
+So given that an FPGA is a piece of hardware, it should have its firmware
+loaded from the kernel and a kernel driver communicating with it I guess?
 
-I will check with tty_buffer_request_room() that there is enough room to
-receive the frame before inserting the data in the tty buffer with
-tty_insert_flip_string().
+I feel the smell of a huge bundle of userspace drivers for something that
+should be handled by the kernel.
 
--- 
-Olivier
+Yours,
+Linus Walleij
