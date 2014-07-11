@@ -1,107 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171AbaGKCBF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 22:01:05 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:57683 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751503AbaGKCBD (ORCPT
+	id S1752235AbaGKCDK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 22:03:10 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:42601 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503AbaGKCDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 22:01:03 -0400
+	Thu, 10 Jul 2014 22:03:08 -0400
+Message-ID: <53BF45D4.2000302@collabora.co.uk>
+Date: Fri, 11 Jul 2014 04:03:00 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <53BF4292.1060009@nvidia.com>
-References: <1404977677-22248-1-git-send-email-acourbot@nvidia.com>
-	<20140710094300.GP23218@tbergstrom-lnx.Nvidia.com>
-	<53BF4292.1060009@nvidia.com>
-Date: Fri, 11 Jul 2014 12:01:02 +1000
-Message-ID: <CACAvsv7O-Jw_h0=V4URM7YE3TQjS3UgN=+tOo-wxb5YC6BuL8Q@mail.gmail.com>
-Subject: Re: [PATCH 0/3] drm/gk20a: support for reclocking
-From: Ben Skeggs <skeggsb@gmail.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "gnurou@gmail.com" <gnurou@gmail.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+To: amit daniel kachhap <amit.daniel@samsung.com>
+CC: Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
+        LAK <linux-arm-kernel@lists.infradead.org>, devicetree@vger.kernel.org,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 15/23] regulator: max77686: Setup DVS-related GPIOs
+ on probe
+References: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>	<1404467722-26687-16-git-send-email-javier.martinez@collabora.co.uk> <CADGdYn4EURaHinWVksQSPzVr=CkZYcrqvWsO7mKDz_gY9XB__Q@mail.gmail.com>
+In-Reply-To: <CADGdYn4EURaHinWVksQSPzVr=CkZYcrqvWsO7mKDz_gY9XB__Q@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 11:49 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> On 07/10/2014 06:43 PM, Peter De Schrijver wrote:
->>
->> On Thu, Jul 10, 2014 at 09:34:34AM +0200, Alexandre Courbot wrote:
->>>
->>> This series adds support for reclocking on GK20A. The first two patches
->>> touch
->>> the clock subsystem to allow GK20A to operate, by making the presence of
->>> the
->>> thermal and voltage devices optional, and allowing pstates to be provided
->>> directly instead of being probed using the BIOS (which Tegra does not
->>> have).
->>>
->>> The last patch adds the GK20A clock device. Arguably the clock can be
->>> seen as a
->>> stripped-down version of what is seen on NVE0, however instead of using
->>> NVE0
->>> support has been written from scratch using the ChromeOS kernel as a
->>> basis.
->>> There are several reasons for this:
->>>
->>> - The ChromeOS driver uses a lookup table for the P coefficient which I
->>> could
->>>    not find in the NVE0 driver,
->>> - Some registers that NVE0 expects to find are not present on GK20A (e.g.
->>>    0x137120 and 0x137140),
->>> - Calculation of MNP is done differently from what is performed in
->>>    nva3_pll_calc(), and it might be interesting to compare the two
->>> methods,
->>> - All the same, the programming sequence is done differently in the
->>> ChromeOS
->>>    driver and NVE0 could possibly benefit from it (?)
->>>
->>> It would be interesting to try and merge both, but for now I prefer to
->>> have the
->>> two coexisting to ensure proper operation on GK20A and besure I don't
->>> break
->>> dGPU support. :)
->>>
->>> Regarding the first patch, one might argue that I could as well add
->>> thermal
->>> and voltage devices to GK20A. The reason this is not done is because
->>> these
->>> currently depend heavily on the presence of a BIOS, and will require a
->>> rework
->>> similar to that done in patch 2 for clocks. I would like to make sure
->>> this
->>> approach is approved because applying it to other subdevs.
->>
->>
->> I think this should use CCF so we can use pre and post rate change
->> notifiers
->> to hookup vdd_gpu DVS.
->
->
-> Do you mean that we should turn the Nouveau gk20a clock driver into a
-> consumer of this CCF clock? I have nothing against this, but note that
-> Nouveau can also perform DVS on its own, as the pstates can also contain a
-> voltage to be applied to the volt device (not yet implemented in this
-> series).
->
-> The question then becomes whether we want an additional layer of abstraction
-> on these devices and whether the pre/post rate change notifiers give us any
-> advantage compared to what Nouveau currently proposes.
-I had a brief look at this, and personally I don't think the CCF is a
-very good match at all for how we're *supposed* to manage clock
-frequencies as described by a discrete GPU VBIOS, and especially for
-when we get to the point of using the PMU falcon to coordinate all the
-various bits and pieces that go towards power management.
+Hello Amit,
 
->
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+On 07/10/2014 12:08 PM, amit daniel kachhap wrote:
+> On Fri, Jul 4, 2014 at 3:25 PM, Javier Martinez Canillas
+> <javier.martinez@collabora.co.uk> wrote:
+>> MAX77686 PMIC support Dyamic Voltage Scaling (DVS) on a set
+>> of Buck regulators. A number of GPIO are connected to these
+>> lines and are requested by the mfd driver. Setup the GPIO
+>> pins from the regulator driver.
+> If possible merge this patch with patch 8. Both are adding DVS
+> support. Put regmap_copy dependency patch in very beginning.
+
+As Lee already said, I split the changes to minimize the cross-subsystem churn.
+
+>>
+>> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+>> ---
+>>  drivers/regulator/max77686.c | 34 ++++++++++++++++++++++++++++++++++
+>>  1 file changed, 34 insertions(+)
+>>
+>> diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
+>> index ef1af2d..ecce77a 100644
+>> --- a/drivers/regulator/max77686.c
+>> +++ b/drivers/regulator/max77686.c
+>> @@ -435,6 +435,12 @@ static int max77686_pmic_dt_parse_pdata(struct platform_device *pdev,
+>>  }
+>>  #endif /* CONFIG_OF */
+>>
+>> +static inline bool max77686_is_dvs_buck(int id)
+>> +{
+>> +       /* BUCK 2,3 and 4 support DVS */
+>> +       return (id >= MAX77686_BUCK2 && id <= MAX77686_BUCK4);
+> I am just wondering if along with above check, SELB gpios (if present)
+> can be used to confirm if BUCK's are DVS based or not.
+
+I don't know if SELB gpios being present or not should be used to determine
+whether a BUCK includes the DVS feature. AFAIK boards could have some of these
+lines hardwired and pulled high or low instead of using a GPIO.
+
+>> +}
+>> +
+>>  static int max77686_pmic_probe(struct platform_device *pdev)
+>>  {
+>>         struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
+>> @@ -442,6 +448,9 @@ static int max77686_pmic_probe(struct platform_device *pdev)
+>>         struct max77686_data *max77686;
+>>         int i, ret = 0;
+>>         struct regulator_config config = { };
+>> +       unsigned int reg;
+>> +       int buck_default_idx;
+>> +       int buck_old_idx;
+>>
+>>         dev_dbg(&pdev->dev, "%s\n", __func__);
+>>
+>> @@ -472,13 +481,34 @@ static int max77686_pmic_probe(struct platform_device *pdev)
+>>         config.driver_data = max77686;
+>>         platform_set_drvdata(pdev, max77686);
+>>
+>> +       buck_default_idx = pdata->buck_default_idx;
+>> +       buck_old_idx = max77686_read_gpios(pdata);
+>> +
+>>         for (i = 0; i < MAX77686_REGULATORS; i++) {
+>>                 struct regulator_dev *rdev;
+>> +               int id = pdata->regulators[i].id;
+>>
+>>                 config.init_data = pdata->regulators[i].initdata;
+>>                 config.of_node = pdata->regulators[i].of_node;
+>>
+>>                 max77686->opmode[i] = regulators[i].enable_mask;
+>> +
+>> +               if (max77686_is_dvs_buck(id)) {
+>> +                       /* Try to copy over data so we keep firmware settings */
+>> +                       reg = regulators[i].vsel_reg;
+>> +
+>> +                       ret = regmap_reg_copy(iodev->regmap,
+>> +                                             reg + buck_default_idx,
+>> +                                             reg + buck_old_idx);
+>> +
+>> +                       if (ret)
+>> +                               dev_warn(&pdev->dev, "Copy err %d => %d (%d)\n",
+>> +                                        reg + buck_old_idx,
+>> +                                        reg + buck_default_idx, ret);
+>> +
+>> +                       regulators[i].vsel_reg += buck_default_idx;
+>> +               }
+>> +
+>>                 rdev = devm_regulator_register(&pdev->dev,
+>>                                                 &regulators[i], &config);
+>>                 if (IS_ERR(rdev)) {
+>> @@ -488,6 +518,10 @@ static int max77686_pmic_probe(struct platform_device *pdev)
+>>                 }
+>>         }
+>>
+>> +       ret = max77686_setup_gpios(iodev->dev);
+>> +       if (ret)
+>> +               return ret;
+>> +
+>>         return 0;
+>>  }
+>>
+>> --
+>> 2.0.0.rc2
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+Best regards,
+Javier
