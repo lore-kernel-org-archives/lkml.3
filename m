@@ -1,103 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286AbaGKL4y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 07:56:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47662 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752991AbaGKL4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 07:56:51 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@kernel.org>,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 4/5] perf: Move event owner retrieval into perf_event_get_owner
-Date: Fri, 11 Jul 2014 13:56:21 +0200
-Message-Id: <1405079782-8139-5-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1405079782-8139-1-git-send-email-jolsa@kernel.org>
-References: <1405079782-8139-1-git-send-email-jolsa@kernel.org>
+	id S1752634AbaGKMA5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 08:00:57 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:33866 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751404AbaGKMA4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 08:00:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140710223021.6e9c857f@gandalf.local.home>
+References: <20140710223021.6e9c857f@gandalf.local.home>
+Date: Fri, 11 Jul 2014 14:00:55 +0200
+Message-ID: <CACRpkdZM5NECaPbFC1aGH2zD4T_8g9TYRy1HkbDVAQvjJs5E5w@mail.gmail.com>
+Subject: Re: No uart output on my snowball board
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving the code of getting safely event's owner into
-perf_event_get_owner function, so it could be used
-in following change.
+On Fri, Jul 11, 2014 at 4:30 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Cc: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- include/linux/perf_event.h |  1 +
- kernel/events/core.c       | 23 +++++++++++++++--------
- 2 files changed, 16 insertions(+), 8 deletions(-)
+> commit a0998b8321eb5f53ef51924f5ab6c69237ac1025
+> Author: Lee Jones <lee.jones@linaro.org>
+> Date:   Thu Aug 22 16:18:56 2013 +0100
+>
+>     ARM: ux500: Remove UART support when booting without Device Tree
+>
+>     It's time to remove all ATAG support from ux500 and rely solely on
+>     Device Tree booting. This patch is part of that endeavour.
+>
+>     Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>     Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 707617a..ec6ef94 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -784,6 +784,7 @@ extern void perf_event_enable(struct perf_event *event);
- extern void perf_event_disable(struct perf_event *event);
- extern int __perf_event_disable(void *info);
- extern void perf_event_task_tick(void);
-+extern struct task_struct *perf_event_get_owner(struct perf_event *event);
- #else /* !CONFIG_PERF_EVENTS: */
- static inline void
- perf_event_task_sched_in(struct task_struct *prev,
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index a36ebfe..faba9e0 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -3311,17 +3311,10 @@ static void free_event(struct perf_event *event)
- 	_free_event(event);
- }
- 
--/*
-- * Called when the last reference to the file is gone.
-- */
--static void put_event(struct perf_event *event)
-+struct task_struct *perf_event_get_owner(struct perf_event *event)
- {
--	struct perf_event_context *ctx = event->ctx;
- 	struct task_struct *owner;
- 
--	if (!atomic_long_dec_and_test(&event->refcount))
--		return;
--
- 	rcu_read_lock();
- 	owner = ACCESS_ONCE(event->owner);
- 	/*
-@@ -3340,7 +3333,21 @@ static void put_event(struct perf_event *event)
- 		get_task_struct(owner);
- 	}
- 	rcu_read_unlock();
-+	return owner;
-+}
-+
-+/*
-+ * Called when the last reference to the file is gone.
-+ */
-+static void put_event(struct perf_event *event)
-+{
-+	struct perf_event_context *ctx = event->ctx;
-+	struct task_struct *owner;
-+
-+	if (!atomic_long_dec_and_test(&event->refcount))
-+		return;
- 
-+	owner = perf_event_get_owner(event);
- 	if (owner) {
- 		mutex_lock(&owner->perf_event_mutex);
- 		/*
--- 
-1.8.3.1
+I hate that I didn't spot the speling mistake in the subject,
+its ATAG support we're removing, not UART :-)
 
+Anyway, I think you got enough hints on how we do this
+with appended devicetrees instead, Lee's snippet should
+work or check out this page that I also posted to your
+G+ post:
+http://www.df.lth.se/~triad/krad/ux00/
+
+Yours,
+Linus Walleij
