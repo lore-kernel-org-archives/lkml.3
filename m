@@ -1,57 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752528AbaGKUvT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 16:51:19 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:48355 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088AbaGKUvR (ORCPT
+	id S1753281AbaGKUwI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 16:52:08 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:50596 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751689AbaGKUwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 16:51:17 -0400
-Date: Fri, 11 Jul 2014 22:51:06 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Tony Luck <tony.luck@intel.com>, linux-mm@kvack.org,
-        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC Patch V1 00/30] Enable memoryless node on x86 platforms
-Message-ID: <20140711205106.GB20603@laptop.programming.kicks-ass.net>
-References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
- <20140711082956.GC20603@laptop.programming.kicks-ass.net>
- <20140711153314.GA6155@kroah.com>
- <8761j3ve8s.fsf@tassilo.jf.intel.com>
+	Fri, 11 Jul 2014 16:52:06 -0400
+Message-ID: <53C04EF8.8050601@oracle.com>
+Date: Fri, 11 Jul 2014 16:54:16 -0400
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8761j3ve8s.fsf@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: konrad@kernel.org, xen-devel@lists.xenproject.org, david.vrabel@citrix.com,
+        linux-kernel@vger.kernel.org
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v4 5/5] xen/pciback: Remove tons of dereferences
+References: <1405109332-31659-1-git-send-email-konrad@kernel.org> <1405109332-31659-6-git-send-email-konrad@kernel.org>
+In-Reply-To: <1405109332-31659-6-git-send-email-konrad@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 01:20:51PM -0700, Andi Kleen wrote:
-> Greg KH <gregkh@linuxfoundation.org> writes:
-> 
-> > On Fri, Jul 11, 2014 at 10:29:56AM +0200, Peter Zijlstra wrote:
-> >> On Fri, Jul 11, 2014 at 03:37:17PM +0800, Jiang Liu wrote:
-> >> > Any comments are welcomed!
-> >> 
-> >> Why would anybody _ever_ have a memoryless node? That's ridiculous.
-> >
-> > I'm with Peter here, why would this be a situation that we should even
-> > support?  Are there machines out there shipping like this?
-> 
-> We've always had memory nodes.
-> 
-> A classic case in the old days was a two socket system where someone
-> didn't populate any DIMMs on the second socket.
+On 07/11/2014 04:08 PM, konrad@kernel.org wrote:
+> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>
+> A little cleanup. No functional difference.
 
-That's a obvious; don't do that then case. Its silly.
+Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 
-> There are other cases too.
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>   drivers/xen/xen-pciback/pci_stub.c |   20 +++++++++++---------
+>   1 files changed, 11 insertions(+), 9 deletions(-)
+>
+> diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
+> index efcb73b..cf0b3c1 100644
+> --- a/drivers/xen/xen-pciback/pci_stub.c
+> +++ b/drivers/xen/xen-pciback/pci_stub.c
+> @@ -630,10 +630,12 @@ static pci_ers_result_t common_process(struct pcistub_device *psdev,
+>   {
+>   	pci_ers_result_t res = result;
+>   	struct xen_pcie_aer_op *aer_op;
+> +	struct xen_pcibk_device *pdev = psdev->pdev;
+> +	struct xen_pci_sharedinfo *sh_info = pdev->sh_info;
+>   	int ret;
+>   
+>   	/*with PV AER drivers*/
+> -	aer_op = &(psdev->pdev->sh_info->aer_op);
+> +	aer_op = &(sh_info->aer_op);
+>   	aer_op->cmd = aer_cmd ;
+>   	/*useful for error_detected callback*/
+>   	aer_op->err = state;
+> @@ -654,36 +656,36 @@ static pci_ers_result_t common_process(struct pcistub_device *psdev,
+>   	* this flag to judge whether we need to check pci-front give aer
+>   	* service ack signal
+>   	*/
+> -	set_bit(_PCIB_op_pending, (unsigned long *)&psdev->pdev->flags);
+> +	set_bit(_PCIB_op_pending, (unsigned long *)&pdev->flags);
+>   
+>   	/*It is possible that a pcifront conf_read_write ops request invokes
+>   	* the callback which cause the spurious execution of wake_up.
+>   	* Yet it is harmless and better than a spinlock here
+>   	*/
+>   	set_bit(_XEN_PCIB_active,
+> -		(unsigned long *)&psdev->pdev->sh_info->flags);
+> +		(unsigned long *)&sh_info->flags);
+>   	wmb();
+> -	notify_remote_via_irq(psdev->pdev->evtchn_irq);
+> +	notify_remote_via_irq(pdev->evtchn_irq);
+>   
+>   	ret = wait_event_timeout(xen_pcibk_aer_wait_queue,
+>   				 !(test_bit(_XEN_PCIB_active, (unsigned long *)
+> -				 &psdev->pdev->sh_info->flags)), 300*HZ);
+> +				 &sh_info->flags)), 300*HZ);
+>   
+>   	if (!ret) {
+>   		if (test_bit(_XEN_PCIB_active,
+> -			(unsigned long *)&psdev->pdev->sh_info->flags)) {
+> +			(unsigned long *)&sh_info->flags)) {
+>   			dev_err(&psdev->dev->dev,
+>   				"pcifront aer process not responding!\n");
+>   			clear_bit(_XEN_PCIB_active,
+> -			  (unsigned long *)&psdev->pdev->sh_info->flags);
+> +			  (unsigned long *)&sh_info->flags);
+>   			aer_op->err = PCI_ERS_RESULT_NONE;
+>   			return res;
+>   		}
+>   	}
+> -	clear_bit(_PCIB_op_pending, (unsigned long *)&psdev->pdev->flags);
+> +	clear_bit(_PCIB_op_pending, (unsigned long *)&pdev->flags);
+>   
+>   	if (test_bit(_XEN_PCIF_active,
+> -		(unsigned long *)&psdev->pdev->sh_info->flags)) {
+> +		(unsigned long *)&sh_info->flags)) {
+>   		dev_dbg(&psdev->dev->dev,
+>   			"schedule pci_conf service in " DRV_NAME "\n");
+>   		xen_pcibk_test_and_schedule_op(psdev->pdev);
 
-Are there any sane ones?
