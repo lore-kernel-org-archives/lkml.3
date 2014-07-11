@@ -1,75 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752449AbaGKIzh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 04:55:37 -0400
-Received: from mga02.intel.com ([134.134.136.20]:46285 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752211AbaGKIzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 04:55:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,642,1400050800"; 
-   d="scan'208";a="571623246"
-Date: Fri, 11 Jul 2014 08:52:01 +0800
-From: Yuyang Du <yuyang.du@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: bsegall@google.com, mingo@redhat.com, linux-kernel@vger.kernel.org,
-        rafael.j.wysocki@intel.com, arjan.van.de.ven@intel.com,
-        len.brown@intel.com, alan.cox@intel.com, mark.gross@intel.com,
-        pjt@google.com, fengguang.wu@intel.com
-Subject: Re: [PATCH 2/2] sched: Rewrite per entity runnable load average
- tracking
-Message-ID: <20140711005201.GD12984@intel.com>
-References: <20140707104646.GK6758@twins.programming.kicks-ass.net>
- <xm26r41wyfgc.fsf@sword-of-the-dawn.mtv.corp.google.com>
- <20140708000840.GB25653@intel.com>
- <xm26k37nye7d.fsf@sword-of-the-dawn.mtv.corp.google.com>
- <20140709010753.GD25653@intel.com>
- <20140709184543.GI9918@twins.programming.kicks-ass.net>
- <xm26bnsyxsf7.fsf@sword-of-the-dawn.mtv.corp.google.com>
- <20140710100859.GW3935@laptop>
- <20140710232207.GC12984@intel.com>
- <20140711084709.GF20603@laptop.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140711084709.GF20603@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752093AbaGKJDn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 05:03:43 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:37512 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042AbaGKJDl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 05:03:41 -0400
+From: Sachin Kamat <sachin.kamat@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: linus.walleij@linaro.org, akpm@linux-foundation.org, spk.linux@gmail.com
+Subject: [PATCH 1/1] MAINTAINERS: Update Samsung pin control entry
+Date: Fri, 11 Jul 2014 14:29:50 +0530
+Message-Id: <1405069190-13986-1-git-send-email-sachin.kamat@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 10:47:09AM +0200, Peter Zijlstra wrote:
-> On Fri, Jul 11, 2014 at 07:22:07AM +0800, Yuyang Du wrote:
-> > On Thu, Jul 10, 2014 at 12:08:59PM +0200, Peter Zijlstra wrote:
-> > > 
-> > > Since clock_task is the regular clock minus some local amount, the
-> > > difference between two regular clock reads is always a strict upper
-> > > bound on clock_task differences.
-> > > 
-> > This is inspiring. Regarding the clock source in load avg tracking,
-> > should we simply use rq_clock_task instead of cfs_rq_clock_task.
-> 
-> Oh *groan* I forgot about that thing. But no, it obviously doesn't
-> matter for running time, because if you're throttled you're nor running
-> and therefore it all doesn't matter, but it can make a huge difference
-> for blocked time accounting I suppose.
-> 
-> > For the bandwidth control case, just update/increase the last_update_time when
-> > unthrottled by this throttled time, so the time would look like freezed. Am I
-> > understanding right?
-> 
-> Yes, it stops the clock when throttled.
-> 
-> > Not sure how much bandwidth control is used, but even not used, every time
-> > we read cfs_rq_clock_task, will burn useless cycles here.
-> 
-> Yep, nothing much you can do about that.
-> 
-> In any case, it is still the case that a normal clock difference is an
-> upper bound.
+Update to reflect the recent file movement to a sub-directory.
 
-I meant, not for this migrating case. But completely don't use cfs_rq_clock_task
-in the entire load avg tracking (and specially compensate the throttle case). No?
+Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
+---
+ MAINTAINERS |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-Thanks,
-Yuyang
+diff --git a/MAINTAINERS b/MAINTAINERS
+index e3a517635eb4..898cf76f8837 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6943,9 +6943,7 @@ M:	Thomas Abraham <thomas.abraham@linaro.org>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+ L:	linux-samsung-soc@vger.kernel.org (moderated for non-subscribers)
+ S:	Maintained
+-F:	drivers/pinctrl/pinctrl-exynos.*
+-F:	drivers/pinctrl/pinctrl-s3c*
+-F:	drivers/pinctrl/pinctrl-samsung.*
++F:	drivers/pinctrl/samsung/
+ 
+ PIN CONTROLLER - ST SPEAR
+ M:	Viresh Kumar <viresh.linux@gmail.com>
+-- 
+1.7.9.5
+
