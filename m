@@ -1,167 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751846AbaGKADa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 20:03:30 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:49401 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751353AbaGKAD3 (ORCPT
+	id S1751499AbaGKAHa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 20:07:30 -0400
+Received: from regular1.263xmail.com ([211.150.99.133]:51829 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209AbaGKAH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 20:03:29 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Apelete Seketeli <apelete@seketeli.net>, linux-mmc@vger.kernel.org
-Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Alex Smith <alex.smith@imgtec.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] mmc: jz4740: add dma infrastructure for data transfers
-Date: Fri, 11 Jul 2014 02:03:27 +0200
-Message-ID: <26025372.ALyVZ87vgl@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.12.21-gentoo-r1; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1405031246-16365-2-git-send-email-apelete@seketeli.net>
-References: <1405031246-16365-1-git-send-email-apelete@seketeli.net> <1405031246-16365-2-git-send-email-apelete@seketeli.net>
+	Thu, 10 Jul 2014 20:07:28 -0400
+X-263anti-spam: BIG:0;KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 1
+X-KSVirus-check: 0
+X-RL-SENDER: xjq@rock-chips.com
+X-FST-TO: jim.epost@gmail.com
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: xjq@rock-chips.com
+X-UNIQUE-TAG: <ee120b370b4e3631b78d6a6cbffe5613>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+Message-ID: <53BF2AB8.7050307@rock-chips.com>
+Date: Fri, 11 Jul 2014 08:07:20 +0800
+From: Jianqun <xjq@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Jim Davis <jim.epost@gmail.com>, sfr@canb.auug.org.au,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, lgirdwood@gmail.com,
+        broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
+        grant.likely@linaro.org, robh+dt@kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: randconfig build error with next-20140710, in sound/soc/rockchip/rockchip_i2s.c
+References: <CA+r1ZhgB=BG5jsSaWBLMvRUjZ=X4gKJzv6KysyvPSOtFuUTbng@mail.gmail.com>
+In-Reply-To: <CA+r1ZhgB=BG5jsSaWBLMvRUjZ=X4gKJzv6KysyvPSOtFuUTbng@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Apelete,
+Hi Heiko:
 
-Thank you for the patch.
+Is it caused by the headfile ?
+#include <linux/module.h>
 
-On Friday 11 July 2014 00:27:26 Apelete Seketeli wrote:
-> Until now the MMC driver for JZ4740 SoC was relying on PIO mode only
-> for data transfers.
-> This patch allows the use of DMA for data trasnfers in addition to PIO
-> mode by relying on DMA Engine.
+Adviced by the maintainers, I tried not to include the headfile one by one, then to compile
+driver each time, I found that is success to compile it without module.h, of course
+I just compiled driver with command "ARCH=arm".
+
+Look up the codes, I found the functions like
+	MODULE_DESCRIPTION
+will be defined as
+	#define MODULE_DESCRIPTION(x)	/* x */
+so the code in rockchip iis driver
+	"MODULE_DESCRIPTION("ROCKCHIP IIS ASoC Interface") "
+will be defined as
+	"ROCKCHIP IIS ASoC Interface"
+that should cause the error while robot to compile.
+
+Am I right ?
+
+If it is, do I need to make a new patch or just reply to the mail ? or how ...
+
+
+On 2014年07月10日 21:53, Jim Davis wrote:
+> Building with the attached random configuration file,
 > 
-> DMA tranfers performance might be further improved by taking advantage
-> of the asynchronous request capability of the MMC framework.
+> sound/soc/rockchip/rockchip_i2s.c:526:20: error: expected declaration specifiers
+>  or ‘...’ before string constant
+>  MODULE_DESCRIPTION("ROCKCHIP IIS ASoC Interface");
+>                     ^
+> sound/soc/rockchip/rockchip_i2s.c:527:15: error: expected declaration specifiers
+>  or ‘...’ before string constant
+>  MODULE_AUTHOR("jianqun <jay.xu@rock-chips.com>");
+>                ^
+> sound/soc/rockchip/rockchip_i2s.c:528:16: error: expected declaration specifiers
+>  or ‘...’ before string constant
+>  MODULE_LICENSE("GPL v2");
+>                 ^
+> sound/soc/rockchip/rockchip_i2s.c:529:14: error: expected declaration specifiers
+>  or ‘...’ before string constant
+>  MODULE_ALIAS("platform:" DRV_NAME);
+>               ^
+> sound/soc/rockchip/rockchip_i2s.c:530:1: warning: data definition has no type or
+>  storage class [enabled by default]
+>  MODULE_DEVICE_TABLE(of, rockchip_i2s_match);
+>  ^
+> sound/soc/rockchip/rockchip_i2s.c:530:1: error: type defaults to ‘int’
+> in declaration of ‘MODULE_DEVICE_TABLE’ [-Werror=implicit-int]
+> sound/soc/rockchip/rockchip_i2s.c:530:1: warning: parameter names (without types
+> ) in function declaration [enabled by default]
+> cc1: some warnings being treated as errors
+> make[3]: *** [sound/soc/rockchip/rockchip_i2s.o] Error 1
 > 
-> Signed-off-by: Apelete Seketeli <apelete@seketeli.net>
-> ---
-> drivers/mmc/host/jz4740_mmc.c |  172 +++++++++++++++++++++++++++++++++++++--
-> 1 file changed, 164
-> insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/mmc/host/jz4740_mmc.c b/drivers/mmc/host/jz4740_mmc.c
-> index 537d6c7..2897b49 100644
-> --- a/drivers/mmc/host/jz4740_mmc.c
-> +++ b/drivers/mmc/host/jz4740_mmc.c
-
-[snip]
-
-> +static void jz4740_dma_unmap(struct jz4740_mmc_host *host,
-> +			     struct mmc_data *data)
-> +{
-> +	enum dma_data_direction dir = jz4740_get_dma_dir(data);
-> +
-> +	dma_unmap_sg(mmc_dev(host->mmc), data->sg, data->sg_len, dir);
-> +}
-> +
-> +static int jz4740_start_dma_transfer(struct jz4740_mmc_host *host,
-> +				     struct mmc_data *data)
-> +{
-> +	struct dma_chan *chan;
-> +	struct dma_async_tx_descriptor *desc;
-> +	struct dma_slave_config conf = {
-> +		.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES,
-> +		.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES,
-> +		.src_maxburst = JZ4740_MMC_FIFO_HALF_SIZE,
-> +		.dst_maxburst = JZ4740_MMC_FIFO_HALF_SIZE,
-> +	};
-> +	enum dma_data_direction dir = jz4740_get_dma_dir(data);
-> +
-> +	host->sg_len = dma_map_sg(mmc_dev(host->mmc),
-
-You should use the DMA engine device here, not the MMC device, as the memory 
-transfers will be performed by the DMA engine. Same for the dma_unmap_sg() 
-call above.
-
-> +				  data->sg,
-> +				  data->sg_len,
-> +				  dir);
-> +
-> +	if (host->sg_len < 0) {
-> +		dev_err(mmc_dev(host->mmc),
-> +			 "Failed to map scatterlist for DMA operation\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (dir == DMA_TO_DEVICE) {
-> +		conf.direction = DMA_MEM_TO_DEV;
-> +		conf.dst_addr = host->mem_res->start + JZ_REG_MMC_TXFIFO;
-> +		conf.slave_id = JZ4740_DMA_TYPE_MMC_TRANSMIT;
-> +		chan = host->dma_tx;
-> +	} else {
-> +		conf.direction = DMA_DEV_TO_MEM;
-> +		conf.src_addr = host->mem_res->start + JZ_REG_MMC_RXFIFO;
-> +		conf.slave_id = JZ4740_DMA_TYPE_MMC_RECEIVE;
-> +		chan = host->dma_rx;
-> +	}
-> +
-> +	dmaengine_slave_config(chan, &conf);
-> +	desc = dmaengine_prep_slave_sg(chan,
-> +				       data->sg,
-> +				       host->sg_len,
-> +				       conf.direction,
-> +				       DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
-> +	if (!desc) {
-> +		dev_err(mmc_dev(host->mmc),
-> +			 "Failed to allocate DMA %s descriptor",
-> +			 conf.direction == DMA_MEM_TO_DEV ? "TX" : "RX");
-> +		goto dma_unmap;
-> +	}
-> +
-> +	dmaengine_submit(desc);
-> +	dma_async_issue_pending(chan);
-> +
-> +	return 0;
-> +
-> +dma_unmap:
-> +	jz4740_dma_unmap(host, data);
-> +	return -ENOMEM;
-> +}
-> +
-> +/*-------------------------------------------------------------------------
-> ---*/ +
->  static void jz4740_mmc_set_irq_enabled(struct jz4740_mmc_host *host,
->  	unsigned int irq, bool enabled)
->  {
-
-[snip]
-
-> @@ -784,10 +922,17 @@ static int jz4740_mmc_probe(struct platform_device*
-> pdev) goto err_free_host;
->  	}
-> 
-> -	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	host->base = devm_ioremap_resource(&pdev->dev, res);
-> +	host->mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	if (!host->mem_res) {
-> +		ret = -EBUSY;
-> +		dev_err(&pdev->dev, "Failed to request memory region\n");
-> +		goto err_free_host;
-
-The devm_ioremap_resource() call below will handle the mem_res == NULL case 
-and print a message, so you could remove this check.
-
-> +	}
-> +
-> +	host->base = devm_ioremap_resource(&pdev->dev, host->mem_res);
->  	if (IS_ERR(host->base)) {
->  		ret = PTR_ERR(host->base);
-> +		dev_err(&pdev->dev, "Failed to ioremap base memory\n");
->  		goto err_free_host;
->  	}
-> 
-
-[snip]
 
 -- 
-Regards,
-
-Laurent Pinchart
+-------------
+许 剑 群 Jay
+Rockchip Electronics Co.Ltd
+****************************************************************************
+*IMPORTANT NOTICE:*This email is from Fuzhou Rockchip Electronics Co.,
+Ltd .The contents of this email and any attachments may contain
+information that is privileged, confidential and/or exempt from
+disclosure under applicable law and relevant NDA. If you are not the
+intended recipient, you are hereby notified that any disclosure,
+copying, distribution, or use of the information is STRICTLY PROHIBITED.
+Please immediately contact the sender as soon as possible and destroy
+the material in its entirety in any format. Thank you.
+****************************************************************************
 
