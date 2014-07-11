@@ -1,74 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032AbaGKQnk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 12:43:40 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:37156 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043AbaGKQni (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 12:43:38 -0400
+	id S1754471AbaGKQpD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 12:45:03 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34684 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754023AbaGKQpB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 12:45:01 -0400
+Message-ID: <53C01484.8080609@zytor.com>
+Date: Fri, 11 Jul 2014 09:44:52 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <1405088313-20048-6-git-send-email-mperttunen@nvidia.com>
-References: <1405088313-20048-1-git-send-email-mperttunen@nvidia.com>
-	<1405088313-20048-6-git-send-email-mperttunen@nvidia.com>
-Date: Fri, 11 Jul 2014 09:43:37 -0700
-X-Google-Sender-Auth: dxodq96c44Ye968P0v_LdeIOXmQ
-Message-ID: <CAL1qeaGHfjQhLHvgzt85hmbuY4FOG5-k=f80=CNvzPDEgi9_6w@mail.gmail.com>
-Subject: Re: [PATCH 5/8] of: Add Tegra124 EMC bindings
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Mikko Perttunen <mperttunen@nvidia.com>
-Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Paul Moore <pmoore@redhat.com>, Richard Guy Briggs <rgb@redhat.com>
+CC: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>, Al Viro <aviro@redhat.com>,
+        Will Drewry <wad@chromium.org>
+Subject: Re: [PATCH 2/3] [RFC] seccomp: give BPF x32 bit when restoring x32
+ filter
+References: <cover.1405023592.git.rgb@redhat.com> <6a69eb94b4cfac5f94b229c2eb2ebc402aac722a.1405023592.git.rgb@redhat.com> <8897229.50V8e7SIxg@sifl>
+In-Reply-To: <8897229.50V8e7SIxg@sifl>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 7:18 AM, Mikko Perttunen <mperttunen@nvidia.com> wrote:
-> Add binding documentation for the nvidia,tegra124-emc device tree
-> node.
+On 07/11/2014 09:36 AM, Paul Moore wrote:
+> 
+> Arguably audit is broken anyway by not correctly treating syscall numbers as 
+> 32 bit integers like everyone else.
+> 
 
-> diff --git a/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt b/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt
+That is really the root cause of the problem.  x86 is not the only
+architecture with a sparse syscall numbering scheme (in fact the x32
+method was based on the MIPS syscall numbering scheme.)
 
-> +Required properties :
-> +- compatible : "nvidia,tegra124-emc".
-> +- reg : Should contain 1 or 2 entries:
-> +  - EMC register set
-> +  - MC register set : Required only if no node with
-> +    'compatible = "nvidia,tegra124-mc"' exists. The MC register set
-> +    is first read from the MC node. If it doesn't exist, it is read
-> +    from this property.
-> +- timings : Should contain 1 entry for each supported clock rate.
-> +  Entries should be named "timing@n" where n is a 0-based increasing
-> +  number. The timings must be listed in rate-ascending order.
+What syscall_get_nr() returns becomes a matter of definition at that point.
 
-There are upcoming boards which support multiple DRAM configurations
-and require a separate set of timings for each configuration.  Could
-we instead have multiple sets of timings with the proper one selected
-at runtime by RAM code, as reported by PMC_STRAPPING_OPT_A_0?
-Something like:
+	-hpa
 
-emc {
-        emc-table@0 {
-                nvidia,ram-code = <0>;
-                timing@0 {
-                        ...
-                };
-                ...
-        };
-        emc-table@1 {
-                nvidia,ram-code = <4>;
-                timing@0 {
-                        ...
-                };
-                ...
-        };
-        ...
-};
