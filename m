@@ -1,75 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137AbaGKPCt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 11:02:49 -0400
-Received: from mail-wg0-f67.google.com ([74.125.82.67]:33167 "EHLO
-	mail-wg0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753931AbaGKPCr (ORCPT
+	id S1754184AbaGKPC6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 11:02:58 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:63582 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753931AbaGKPC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 11:02:47 -0400
-Date: Fri, 11 Jul 2014 17:02:41 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Beniamino Galvani <b.galvani@gmail.com>
-Cc: Heiko Stuebner <heiko@sntech.de>, linux-pwm@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] pwm: rockchip: document device tree bindings
-Message-ID: <20140711150241.GD6523@ulmo>
-References: <1403360528-12757-1-git-send-email-b.galvani@gmail.com>
- <1403360528-12757-3-git-send-email-b.galvani@gmail.com>
+	Fri, 11 Jul 2014 11:02:56 -0400
+Date: Fri, 11 Jul 2014 11:02:52 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] workqueue: remove the guarantee and the retrying of
+ maybe_create_worker()
+Message-ID: <20140711150252.GE27706@htj.dyndns.org>
+References: <1405008074-11031-1-git-send-email-laijs@cn.fujitsu.com>
+ <1405008074-11031-3-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="a2FkP9tdjPU2nyhF"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403360528-12757-3-git-send-email-b.galvani@gmail.com>
+In-Reply-To: <1405008074-11031-3-git-send-email-laijs@cn.fujitsu.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---a2FkP9tdjPU2nyhF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Sat, Jun 21, 2014 at 04:22:07PM +0200, Beniamino Galvani wrote:
-> This adds binding documentation for Rockchip SoC PWM driver.
->=20
-> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
+On Fri, Jul 11, 2014 at 12:01:04AM +0800, Lai Jiangshan wrote:
+> maybe_create_worker() has a strong guarantee that there has at least
+> one idle worker on return from this function.  This guarantee is guaranteed
+> via the check and the retrying in this function.
+> 
+> But the caller (worker_thread()) also has the same check and retrying,
+> so the guarantee is not really required and the check and the retrying in
+> maybe_create_worker() are unnecessary and redundant.
+> 
+> So we remove the guarantee as well as the check and the retrying.  The caller
+> takes responsibility to retry when needed.
+> 
+> The only trade-off is that the mayday timer will be removed and re-added
+> across retrying. Since retrying is expected as rare case, the trade-off
+> is acceptible.
+> 
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 > ---
->  .../devicetree/bindings/pwm/pwm-rockchip.txt          |   17 +++++++++++=
-++++++
->  1 file changed, 17 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
+>  kernel/workqueue.c |   49 ++++++++++++++++++-------------------------------
+>  1 files changed, 18 insertions(+), 31 deletions(-)
+> 
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 92f7ea0c..4fdd6d0 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -1875,14 +1875,17 @@ static void pool_mayday_timeout(unsigned long __pool)
+>   * @pool: pool to create a new worker for
+>   *
+>   * Create a new worker for @pool if necessary.  @pool is guaranteed to
+> - * have at least one idle worker on return from this function.  If
+> - * creating a new worker takes longer than MAYDAY_INTERVAL, mayday is
+> + * make some progresses on return from this function.
 
-Applied, thanks.
+Hmmm.... not really.
 
-Thierry
+> + *   1) success to create a new idle worker.  Or
 
---a2FkP9tdjPU2nyhF
-Content-Type: application/pgp-signature
+Another work item can race and occupy that worker before this worker
+regrabs pool->lock, which is safe because
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+> + *   2) cool down a while after it failed.  Or
+> + *   3) condition changed (no longer need to create worker) after it failed.
+> + * In any case, the caller will recheck the condition and retry when needed,
+> + * so this function doesn't need to retry.
 
-iQIcBAEBAgAGBQJTv/yRAAoJEN0jrNd/PrOhIykP/jaLrEw3Ed+9ADJRMV/RIvn+
-YxkdaeAe2XRWjKc5PxK4z8g93z08isLk6DQG4vOqXKuqTUza65GId2pemP22vShP
-Dxu7F8MWCfNVHwc6FLuIHZgiNP6rEGX5+DQcLQdYTSgkFwK8X1OAXVXvCLvwreth
-BjqP/9bDRKXl8j5jDrCJdjbsPP28ZkYKPz8CG6gpjsCxnMpzWWyff5IeLh3REkuR
-siAt36JvF8jGzwapUmvRWfTWrsDpotp+hF3f4+roVNrA2gCRhQ8ia28P1xR/9c7Y
-xMF4wHtfq64ck5oEZ4uJ25XaRFlkBRYEIIqCgncTT0G1kXmc7PkI7+JlqEXDPy2z
-fnKhRnCLPYDULuhBTaEqcKC1mFq93thU6vVGH3TXEhrVUJOn/ToFDSF29A97esym
-zRyOfOvKu0w6AGrjziZHtezbAN646rUh8JZ++6NroEEp40kD7hBPhwEoiu79BoeC
-1A/rtO7vGqtPj+d/WJYDTT+M6w3YT0vOzTiefG40Fslxi35Bep3gyc/VoB3+rWlf
-mKSj+ljcVXjuJn1A3LmDhc/5LUwBm8nul0rD4P6Fq+DX7a4A6LzrgNGU19aNoNrO
-3u8pdbJjEAXJB4GEYrTDagtDL6dgSGCLkr6WYy0ZPSjMMT62cz1Ck6Fko+l1WYi5
-VHh+UO65ObMgZRhpFZqK
-=HLyp
------END PGP SIGNATURE-----
+the caller checks the condition again but the above 1/2/3 are
+confusing at best.
 
---a2FkP9tdjPU2nyhF--
+...
+> +	worker = create_worker(pool);
+> +	if (worker) {
+> +		del_timer_sync(&pool->mayday_timer);
+> +		spin_lock_irq(&pool->lock);
+> +		start_worker(worker);
+> +		return;
+> +	}
+>  
+> +	if (need_to_create_worker(pool))
+>  		schedule_timeout_interruptible(CREATE_COOLDOWN);
+
+Ugh, so we're now inserting delay in the inner function and looping
+from the outside?  That's messy.  I'd prefer removing the outer loop
+instead.
+
+Thanks.
+
+-- 
+tejun
