@@ -1,89 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520AbaGKQBV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 12:01:21 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:14751 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918AbaGKQBS (ORCPT
+	id S1754721AbaGKQCn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 12:02:43 -0400
+Received: from albert.telenet-ops.be ([195.130.137.90]:57190 "EHLO
+	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753998AbaGKQBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 12:01:18 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-19-53c00a4b96ff
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-To: zohar@linux.vnet.ibm.com, dhowells@redhat.com,
-        linux-security-module@vger.kernel.org, linux-crypto@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH 0/2] Fix build break on dependency from CRYPTO
-Date: Fri, 11 Jul 2014 18:59:43 +0300
-Message-id: <cover.1405094060.git.d.kasatkin@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDJMWRmVeSWpSXmKPExsVy+t/xy7reXAeCDZ5t4bK49Xcvs8W7pt8s
-	Fl+W1lncv/eTyeLyrjlsFh96HrFZfFoxidmB3WPnrLvsHg8ObWbxeL/vKptH35ZVjB6fN8kF
-	sEZx2aSk5mSWpRbp2yVwZfTsvsBWsFakYvnWPvYGxrUCXYycHBICJhIPJh1hhbDFJC7cW8/W
-	xcjFISSwlFFi66zrLBBOJ5NE+83VLCBVbAJ6Ehuaf7B3MXJwiAhUSNy6kwUSZhZIl/g0qZcd
-	xBYWsJPYs38FM4jNIqAqMe/YEiYQm1fAUuLO2e9sEMvkJE4em8w6gZF7ASPDKkbR1NLkguKk
-	9FwjveLE3OLSvHS95PzcTYyQEPm6g3HpMatDjAIcjEo8vDOS9wcLsSaWFVfmHmKU4GBWEuG9
-	+gYoxJuSWFmVWpQfX1Sak1p8iJGJg1OqgdHTM2GhI8dKLenubq+Y9V9NxcL0S0Xlb7fMXXeq
-	1fPYuj8nc7/MZ/u079Xt7WuPrGj4GBF35tjB6szOFcIqPrenbzYLOPyy1k7qy79Aruh+/11H
-	3lkqnv3TOWklw80MRyG93PsLQitntzYoicXmJDWLlv+yVdBxE1NjEsi/G5AcxFcX7C7iocRS
-	nJFoqMVcVJwIABflKnHvAQAA
+	Fri, 11 Jul 2014 12:01:21 -0400
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: Mark Brown <broonie@kernel.org>
+Cc: Laurent Pinchart <Laurent.pinchart@ideasonboard.com>,
+        linux-spi@vger.kernel.org, dmaengine@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH v2 1/2] spi: rspi: Handle dmaengine_prep_slave_sg() failures gracefully
+Date: Fri, 11 Jul 2014 18:01:16 +0200
+Message-Id: <1405094477-14192-1-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I got a message from random config robot that he found a build break...
-It happens because certain modules which are compiled as builtin depends
-on CRYPTO=m and select required components as modules instead of making
-them builtin. Here is couple of patches to fix it.
+As typically a shmobile SoC has less DMA channels than devices that can use
+DMA, we may want to prioritize access to the DMA channels in the future.
+This means that dmaengine_prep_slave_sg() may start failing arbitrarily.
 
-config: i386-randconfig-c1-07060441 (attached as .config)
+Handle dmaengine_prep_slave_sg() failures gracefully by falling back to
+PIO.
 
-All error/warnings:
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+---
+v2:
+  - Add Acked-by
+---
+ drivers/spi/spi-rspi.c | 30 ++++++++++++++++++++++--------
+ 1 file changed, 22 insertions(+), 8 deletions(-)
 
-   security/built-in.o: In function `asymmetric_verify':
-   >> (.text+0x75b6): undefined reference to `mpi_read_raw_data'
-      security/built-in.o: In function `asymmetric_verify':
-   >> (.text+0x75d8): undefined reference to `mpi_free'
-         crypto/built-in.o: In function `public_key_destroy':
-    >> (.text+0x383): undefined reference to `mpi_free'
-	    crypto/built-in.o: In function `RSA_verify_signature':
-    >> rsa.c:(.text+0x474): undefined reference to `mpi_get_nbits'
-    >> rsa.c:(.text+0x481): undefined reference to `mpi_get_nbits'
-    >> rsa.c:(.text+0x491): undefined reference to `mpi_cmp_ui'
-    >> rsa.c:(.text+0x49f): undefined reference to `mpi_cmp'
-    >> rsa.c:(.text+0x4aa): undefined reference to `mpi_alloc'
-    >> rsa.c:(.text+0x4c4): undefined reference to `mpi_powm'
-    >> rsa.c:(.text+0x4d2): undefined reference to `mpi_free'
-    >> rsa.c:(.text+0x4f1): undefined reference to `mpi_free'
-    >> rsa.c:(.text+0x52e): undefined reference to `mpi_get_nbits'
-    >> rsa.c:(.text+0x54a): undefined reference to `mpi_get_buffer'
-    >> rsa.c:(.text+0x5fb): undefined reference to `__crypto_memneq'
-    >> rsa.c:(.text+0x618): undefined reference to `__crypto_memneq'
-       crypto/built-in.o: In function `x509_free_certificate':
-    >> (.text+0x90a): undefined reference to `mpi_free'
-         crypto/built-in.o: In function `x509_cert_parse':
-    >> (.text+0x986): undefined reference to `asn1_ber_decoder'
-      crypto/built-in.o: In function `x509_cert_parse':
-    >> (.text+0x9a1): undefined reference to `asn1_ber_decoder'
-        crypto/built-in.o: In function `x509_note_OID':
-    >> (.text+0x9e4): undefined reference to `look_up_OID'
-	   crypto/built-in.o: In function `x509_note_OID':
-   >> (.text+0xa01): undefined reference to `sprint_oid'
-       crypto/built-in.o: In function `rsa_extract_mpi':
-
-
-- Dmitry
-
-Dmitry Kasatkin (2):
-  asymmetric_keys: make crypto builtin if asymmetric keys selected as
-    builtin
-  digsig: make crypto builtin if digsig selected as builtin
-
- crypto/Kconfig                 | 6 +++++-
- crypto/asymmetric_keys/Kconfig | 2 ++
- lib/Kconfig                    | 3 ++-
- 3 files changed, 9 insertions(+), 2 deletions(-)
-
+diff --git a/drivers/spi/spi-rspi.c b/drivers/spi/spi-rspi.c
+index 38fd938d6360..c850dfdfa9e3 100644
+--- a/drivers/spi/spi-rspi.c
++++ b/drivers/spi/spi-rspi.c
+@@ -477,7 +477,7 @@ static int rspi_dma_transfer(struct rspi_data *rspi, struct sg_table *tx,
+ 					tx->sgl, tx->nents, DMA_TO_DEVICE,
+ 					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+ 		if (!desc_tx)
+-			return -EIO;
++			goto no_dma;
+ 
+ 		irq_mask |= SPCR_SPTIE;
+ 	}
+@@ -486,7 +486,7 @@ static int rspi_dma_transfer(struct rspi_data *rspi, struct sg_table *tx,
+ 					rx->sgl, rx->nents, DMA_FROM_DEVICE,
+ 					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+ 		if (!desc_rx)
+-			return -EIO;
++			goto no_dma;
+ 
+ 		irq_mask |= SPCR_SPRIE;
+ 	}
+@@ -540,6 +540,12 @@ static int rspi_dma_transfer(struct rspi_data *rspi, struct sg_table *tx,
+ 		enable_irq(rspi->rx_irq);
+ 
+ 	return ret;
++
++no_dma:
++	pr_warn_once("%s %s: DMA not available, falling back to PIO\n",
++		     dev_driver_string(&rspi->master->dev),
++		     dev_name(&rspi->master->dev));
++	return -EAGAIN;
+ }
+ 
+ static void rspi_receive_init(const struct rspi_data *rspi)
+@@ -593,8 +599,10 @@ static int rspi_common_transfer(struct rspi_data *rspi,
+ 
+ 	if (rspi->master->can_dma && __rspi_can_dma(rspi, xfer)) {
+ 		/* rx_buf can be NULL on RSPI on SH in TX-only Mode */
+-		return rspi_dma_transfer(rspi, &xfer->tx_sg,
+-					 xfer->rx_buf ? &xfer->rx_sg : NULL);
++		ret = rspi_dma_transfer(rspi, &xfer->tx_sg,
++					xfer->rx_buf ? &xfer->rx_sg : NULL);
++		if (ret != -EAGAIN)
++			return ret;
+ 	}
+ 
+ 	ret = rspi_pio_transfer(rspi, xfer->tx_buf, xfer->rx_buf, xfer->len);
+@@ -648,8 +656,11 @@ static int qspi_transfer_out(struct rspi_data *rspi, struct spi_transfer *xfer)
+ {
+ 	int ret;
+ 
+-	if (rspi->master->can_dma && __rspi_can_dma(rspi, xfer))
+-		return rspi_dma_transfer(rspi, &xfer->tx_sg, NULL);
++	if (rspi->master->can_dma && __rspi_can_dma(rspi, xfer)) {
++		ret = rspi_dma_transfer(rspi, &xfer->tx_sg, NULL);
++		if (ret != -EAGAIN)
++			return ret;
++	}
+ 
+ 	ret = rspi_pio_transfer(rspi, xfer->tx_buf, NULL, xfer->len);
+ 	if (ret < 0)
+@@ -663,8 +674,11 @@ static int qspi_transfer_out(struct rspi_data *rspi, struct spi_transfer *xfer)
+ 
+ static int qspi_transfer_in(struct rspi_data *rspi, struct spi_transfer *xfer)
+ {
+-	if (rspi->master->can_dma && __rspi_can_dma(rspi, xfer))
+-		return rspi_dma_transfer(rspi, NULL, &xfer->rx_sg);
++	if (rspi->master->can_dma && __rspi_can_dma(rspi, xfer)) {
++		int ret = rspi_dma_transfer(rspi, NULL, &xfer->rx_sg);
++		if (ret != -EAGAIN)
++			return ret;
++	}
+ 
+ 	return rspi_pio_transfer(rspi, NULL, xfer->rx_buf, xfer->len);
+ }
 -- 
 1.9.1
 
