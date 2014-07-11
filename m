@@ -1,150 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752235AbaGKCDK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 22:03:10 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:42601 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751503AbaGKCDI (ORCPT
+	id S1751834AbaGKCGz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 22:06:55 -0400
+Received: from regular1.263xmail.com ([211.150.99.132]:47133 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313AbaGKCGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 22:03:08 -0400
-Message-ID: <53BF45D4.2000302@collabora.co.uk>
-Date: Fri, 11 Jul 2014 04:03:00 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: amit daniel kachhap <amit.daniel@samsung.com>
-CC: Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
-        LAK <linux-arm-kernel@lists.infradead.org>, devicetree@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 15/23] regulator: max77686: Setup DVS-related GPIOs
- on probe
-References: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>	<1404467722-26687-16-git-send-email-javier.martinez@collabora.co.uk> <CADGdYn4EURaHinWVksQSPzVr=CkZYcrqvWsO7mKDz_gY9XB__Q@mail.gmail.com>
-In-Reply-To: <CADGdYn4EURaHinWVksQSPzVr=CkZYcrqvWsO7mKDz_gY9XB__Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Jul 2014 22:06:54 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: addy.ke@rock-chips.com
+X-FST-TO: broonie@kernel.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: addy.ke@rock-chips.com
+X-UNIQUE-TAG: <457fc2b570e61ea69a475553f49deb63>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Addy Ke <addy.ke@rock-chips.com>
+To: broonie@kernel.org, heiko@sntech.de, grant.likely@linaro.org,
+        robh+dt@kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        jogo@openwrt.org, olof@lixom.net, hj@rock-chips.com,
+        kever.yang@rock-chips.com, xjq@rock-chips.com, huangtao@rock-chips.com,
+        zyw@rock-chips.com, yzq@rock-chips.com, zhenfu.fang@rock-chips.com,
+        cf@rock-chips.com, zhangqing@rock-chips.com, hl@rock-chips.com,
+        wei.luo@rock-chips.com, Addy Ke <addy.ke@rockchip.com>
+Subject: [PATCH 0/4] patches for rockchip spi driver
+Date: Fri, 11 Jul 2014 10:06:29 +0800
+Message-Id: <1405044389-6800-1-git-send-email-addy.ke@rock-chips.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Amit,
+From: Addy Ke <addy.ke@rockchip.com>
 
-On 07/10/2014 12:08 PM, amit daniel kachhap wrote:
-> On Fri, Jul 4, 2014 at 3:25 PM, Javier Martinez Canillas
-> <javier.martinez@collabora.co.uk> wrote:
->> MAX77686 PMIC support Dyamic Voltage Scaling (DVS) on a set
->> of Buck regulators. A number of GPIO are connected to these
->> lines and are requested by the mfd driver. Setup the GPIO
->> pins from the regulator driver.
-> If possible merge this patch with patch 8. Both are adding DVS
-> support. Put regmap_copy dependency patch in very beginning.
+These patches based on:
+- git: kernel/git/broonie/spi.git
+- branch: topic/rockchip
+- commit: c15369087ae5c7db7f3e3604822eac6ab87429bd
 
-As Lee already said, I split the changes to minimize the cross-subsystem churn.
+Addy Ke (4):
+  spi/rockchip: cleanup some coding issues and uncessary output
+  spi/rockchip: call wait_for_idle() for the transfer to complete
+  spi/rockchip: master->mode_bits: remove SPI_CS_HIGH bit
+  spi/rockchip: add compatible strings for RK3188 and RK3288
 
->>
->> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
->> ---
->>  drivers/regulator/max77686.c | 34 ++++++++++++++++++++++++++++++++++
->>  1 file changed, 34 insertions(+)
->>
->> diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
->> index ef1af2d..ecce77a 100644
->> --- a/drivers/regulator/max77686.c
->> +++ b/drivers/regulator/max77686.c
->> @@ -435,6 +435,12 @@ static int max77686_pmic_dt_parse_pdata(struct platform_device *pdev,
->>  }
->>  #endif /* CONFIG_OF */
->>
->> +static inline bool max77686_is_dvs_buck(int id)
->> +{
->> +       /* BUCK 2,3 and 4 support DVS */
->> +       return (id >= MAX77686_BUCK2 && id <= MAX77686_BUCK4);
-> I am just wondering if along with above check, SELB gpios (if present)
-> can be used to confirm if BUCK's are DVS based or not.
+ drivers/spi/spi-rockchip.c | 74 ++++++++++++++++++++++++++++------------------
+ 1 file changed, 45 insertions(+), 29 deletions(-)
 
-I don't know if SELB gpios being present or not should be used to determine
-whether a BUCK includes the DVS feature. AFAIK boards could have some of these
-lines hardwired and pulled high or low instead of using a GPIO.
+-- 
+1.8.3.2
 
->> +}
->> +
->>  static int max77686_pmic_probe(struct platform_device *pdev)
->>  {
->>         struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
->> @@ -442,6 +448,9 @@ static int max77686_pmic_probe(struct platform_device *pdev)
->>         struct max77686_data *max77686;
->>         int i, ret = 0;
->>         struct regulator_config config = { };
->> +       unsigned int reg;
->> +       int buck_default_idx;
->> +       int buck_old_idx;
->>
->>         dev_dbg(&pdev->dev, "%s\n", __func__);
->>
->> @@ -472,13 +481,34 @@ static int max77686_pmic_probe(struct platform_device *pdev)
->>         config.driver_data = max77686;
->>         platform_set_drvdata(pdev, max77686);
->>
->> +       buck_default_idx = pdata->buck_default_idx;
->> +       buck_old_idx = max77686_read_gpios(pdata);
->> +
->>         for (i = 0; i < MAX77686_REGULATORS; i++) {
->>                 struct regulator_dev *rdev;
->> +               int id = pdata->regulators[i].id;
->>
->>                 config.init_data = pdata->regulators[i].initdata;
->>                 config.of_node = pdata->regulators[i].of_node;
->>
->>                 max77686->opmode[i] = regulators[i].enable_mask;
->> +
->> +               if (max77686_is_dvs_buck(id)) {
->> +                       /* Try to copy over data so we keep firmware settings */
->> +                       reg = regulators[i].vsel_reg;
->> +
->> +                       ret = regmap_reg_copy(iodev->regmap,
->> +                                             reg + buck_default_idx,
->> +                                             reg + buck_old_idx);
->> +
->> +                       if (ret)
->> +                               dev_warn(&pdev->dev, "Copy err %d => %d (%d)\n",
->> +                                        reg + buck_old_idx,
->> +                                        reg + buck_default_idx, ret);
->> +
->> +                       regulators[i].vsel_reg += buck_default_idx;
->> +               }
->> +
->>                 rdev = devm_regulator_register(&pdev->dev,
->>                                                 &regulators[i], &config);
->>                 if (IS_ERR(rdev)) {
->> @@ -488,6 +518,10 @@ static int max77686_pmic_probe(struct platform_device *pdev)
->>                 }
->>         }
->>
->> +       ret = max77686_setup_gpios(iodev->dev);
->> +       if (ret)
->> +               return ret;
->> +
->>         return 0;
->>  }
->>
->> --
->> 2.0.0.rc2
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
 
-Best regards,
-Javier
