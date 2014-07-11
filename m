@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856AbaGKRKA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 13:10:00 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:15836 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753507AbaGKRJ7 (ORCPT
+	id S1753931AbaGKROu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 13:14:50 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:59215 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751183AbaGKROt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 13:09:59 -0400
-Date: Fri, 11 Jul 2014 18:09:36 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        Jason Cooper <jason@lakedaemon.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: Fix preemption disable in iwmmxt_task_enable()
-Message-ID: <20140711170935.GG16321@arm.com>
-References: <20140706080845.723e9787@armhf>
- <1405069813-9270-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Fri, 11 Jul 2014 13:14:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405069813-9270-1-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMxnaaX6tOobPBDVbG7v-kJTvNMLYSybZWuzTqbgMdMkP50swQ@mail.gmail.com>
+References: <20140708223126.GA12035@himangi-Dell> <CAMxnaaX6tOobPBDVbG7v-kJTvNMLYSybZWuzTqbgMdMkP50swQ@mail.gmail.com>
+From: Andreas Noever <andreas.noever@gmail.com>
+Date: Fri, 11 Jul 2014 19:14:23 +0200
+Message-ID: <CAMxnaaXJ_eYvUwPV=-w_eZW-EChhe1eW5Q5ctru4mhWyt3ZhuQ@mail.gmail.com>
+Subject: Re: [PATCH v3] thunderbolt: Use kcalloc and correct the argument to sizeof
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        julia.lawall@lip6.fr, Himangi Saraogi <himangi774@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 10:10:13AM +0100, Sebastian Hesselbarth wrote:
-> commit 431a84b1a4f7d1a0085d5b91330c5053cc8e8b12
->  ("ARM: 8034/1: Disable preemption in iwmmxt_task_enable()")
-> introduced macros {inc,dec}_preempt_count to iwmmxt_task_enable
-> to make it run with preemption disabled.
-> 
-> Unfortunately, other functions in iwmmxt.S also use concan_{save,dump,load}
-> sections located in iwmmxt_task_enable() to deal with iWMMXt coprocessor.
-> This causes an unbalanced preempt_count due to excessive dec_preempt_count
-> and destroyed return addresses in callers of concan_ labels due to a register
-> collision:
+Greg, can you add this to your char-misc tree (instead of the kzalloc
+patch, or do you need a rebased patch)?
 
-Indeed, I missed this part completely.
+Thanks,
+Andreas
 
-> --- a/arch/arm/kernel/iwmmxt.S
-> +++ b/arch/arm/kernel/iwmmxt.S
-> @@ -94,13 +94,19 @@ ENTRY(iwmmxt_task_enable)
->  
->  	mrc	p15, 0, r2, c2, c0, 0
->  	mov	r2, r2				@ cpwait
-> +	bl	concan_save
->  
-> -	teq	r1, #0				@ test for last ownership
-> -	mov	lr, r9				@ normal exit from exception
-> -	beq	concan_load			@ no owner, skip save
-> +#ifdef CONFIG_PREEMPT_COUNT
-> +	get_thread_info r10
-> +#endif
-> +4:	dec_preempt_count r10, r3
-> +	mov	pc, r9				@ normal exit from exception
->  
->  concan_save:
->  
-> +	teq	r1, #0				@ test for last ownership
-> +	beq	concan_load			@ no owner, skip save
-> +
->  	tmrc	r2, wCon
->  
->  	@ CUP? wCx
-> @@ -175,10 +181,6 @@ concan_load:
->  	tmcr	wCon, r2
->  
->  3:
-> -#ifdef CONFIG_PREEMPT_COUNT
-> -	get_thread_info r10
-> -#endif
-> -4:	dec_preempt_count r10, r3
->  	mov	pc, lr
-
-It looks fine to me. One optimisation you could do is to replace a
-couple of beq 3f with moveq pc, lr.
-
--- 
-Catalin
+On Thu, Jul 10, 2014 at 6:45 PM, Andreas Noever
+<andreas.noever@gmail.com> wrote:
+> On Wed, Jul 9, 2014 at 12:31 AM, Himangi Saraogi <himangi774@gmail.com> wrote:
+>> nhi->rx_rings does not have type as struct tb_ring *, as it is a double
+>> pointer. So, the elements of the array should have pointer type, not
+>> structure type. The advantage of kcalloc is, that will prevent integer
+>> overflows which could result from the multiplication of number of
+>> elements and size and it is also a bit nicer to read.
+>>
+>> The Coccinelle semantic patch that makes the first change is as follows:
+>>
+>> // <smpl>
+>> @disable sizeof_type_expr@
+>> type T;
+>> T **x;
+>> @@
+>>
+>>   x =
+>>   <+...sizeof(
+>> - T
+>> + *x
+>>   )...+>
+>> // </smpl>
+>>
+>> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+>> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+>> ---
+>> v2: Use kcalloc
+>> v3: Add maintainer in To
+>>  drivers/thunderbolt/nhi.c | 10 ++++------
+>>  1 file changed, 4 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/thunderbolt/nhi.c b/drivers/thunderbolt/nhi.c
+>> index 2054fbf..c68fe12 100644
+>> --- a/drivers/thunderbolt/nhi.c
+>> +++ b/drivers/thunderbolt/nhi.c
+>> @@ -569,12 +569,10 @@ static int nhi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+>>                          nhi->hop_count);
+>>         INIT_WORK(&nhi->interrupt_work, nhi_interrupt_work);
+>>
+>> -       nhi->tx_rings = devm_kzalloc(&pdev->dev,
+>> -                                    nhi->hop_count * sizeof(struct tb_ring),
+>> -                                    GFP_KERNEL);
+>> -       nhi->rx_rings = devm_kzalloc(&pdev->dev,
+>> -                                    nhi->hop_count * sizeof(struct tb_ring),
+>> -                                    GFP_KERNEL);
+>> +       nhi->tx_rings = devm_kcalloc(&pdev->dev, nhi->hop_count,
+>> +                                    sizeof(*nhi->tx_rings), GFP_KERNEL);
+>> +       nhi->rx_rings = devm_kcalloc(&pdev->dev, nhi->hop_count,
+>> +                                    sizeof(*nhi->rx_rings), GFP_KERNEL);
+>>         if (!nhi->tx_rings || !nhi->rx_rings)
+>>                 return -ENOMEM;
+>>
+>> --
+>> 1.9.1
+>>
+>
+> Thanks for catching this.
+> Acked-by: Andreas Noever <andreas.noever@gmail.com>
