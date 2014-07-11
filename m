@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271AbaGKJOK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 05:14:10 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:36047 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751667AbaGKJOH (ORCPT
+	id S1752450AbaGKJR0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 05:17:26 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:46853 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402AbaGKJRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 05:14:07 -0400
+	Fri, 11 Jul 2014 05:17:22 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140711091207.GY23218@tbergstrom-lnx.Nvidia.com>
-References: <1405028569-14253-1-git-send-email-ttynkkynen@nvidia.com>
-	<1405028569-14253-13-git-send-email-ttynkkynen@nvidia.com>
-	<CAKohpom9ORXFiUU4=V+CxgN0ZOFLMEhEjHiU8HsYUYDybNXgHQ@mail.gmail.com>
-	<20140711091207.GY23218@tbergstrom-lnx.Nvidia.com>
-Date: Fri, 11 Jul 2014 14:44:07 +0530
-Message-ID: <CAKohpokGOtdY2SyJuN1QcVoDy2wsMcveiyr1e4cr0oe2j__h5g@mail.gmail.com>
-Subject: Re: [PATCH 12/13] cpufreq: Add cpufreq driver for Tegra124
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+In-Reply-To: <1405069589-10388-3-git-send-email-ch.naveen@samsung.com>
+References: <1405069589-10388-1-git-send-email-ch.naveen@samsung.com>
+	<1405069589-10388-3-git-send-email-ch.naveen@samsung.com>
+Date: Fri, 11 Jul 2014 14:47:19 +0530
+Message-ID: <CAK5sBcFvPo38LtWAhee0xO=KONM5V-UEDzgjCc=uEXtG32NowA@mail.gmail.com>
+Subject: Re: [PATCH 2/4] Documentation: dt-bindings: move exynos-adc.txt to
+ more iio/adc/
+From: Sachin Kamat <spk.linux@gmail.com>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: linux-iio@vger.kernel.org,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Naveen Krishna <naveenkrishna.ch@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, cpgs@samsung.com,
+        grundler@chromium.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 July 2014 14:42, Peter De Schrijver <pdeschrijver@nvidia.com> wrote:
-> I don't think that's going to work? The voltage scaling is handled in hw.
+Hi Naveen,
 
-Ahh..
+On Fri, Jul 11, 2014 at 2:36 PM, Naveen Krishna Chatradhi
+<ch.naveen@samsung.com> wrote:
+> The DT bindings in exynos-adc.txt applies to the ADC
+> driver (exynos-adc.c) developed based on IIO framework.
+>
+> The bindings are more appropriate to be under
+> Documentation/devicetree/bindings/iio/adc/
+>
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> To: devicetree@vger.kernel.org
+> ---
+>  .../devicetree/bindings/arm/samsung/exynos-adc.txt |   82 --------------------
+>  .../devicetree/bindings/iio/adc/exynos-adc.txt     |   82 ++++++++++++++++++++
+>  2 files changed, 82 insertions(+), 82 deletions(-)
+>  delete mode 100644 Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+>  create mode 100644 Documentation/devicetree/bindings/iio/adc/exynos-adc.txt
+>
 
-> cpufreq-cpu0 seems to assume explicit sw control of the vdd_cpu regulator?
+Tip: For only a file move or rename please use "-M" with git
+format-patch. That will make the
+patch concise.
 
-Its optional. If it fails to find a regulator, it doesn't depend or
-play with it.
+-- 
+Regards,
+Sachin.
