@@ -1,157 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356AbaGKOIY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 10:08:24 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:26527 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753880AbaGKOFW (ORCPT
+	id S1754820AbaGKOFQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 10:05:16 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:49193 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752861AbaGKOFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 10:05:22 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-1e-53bfef1f9061
+	Fri, 11 Jul 2014 10:05:12 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-99-53bfef1790c5
 From: Jacek Anaszewski <j.anaszewski@samsung.com>
 To: linux-leds@vger.kernel.org, devicetree@vger.kernel.org,
         linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
         Jacek Anaszewski <j.anaszewski@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: [PATCH/RFC v4 13/21] v4l2-device: add v4l2_device_register_subdev_node
- API
-Date: Fri, 11 Jul 2014 16:04:16 +0200
-Message-id: <1405087464-13762-14-git-send-email-j.anaszewski@samsung.com>
+        Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: [PATCH/RFC v4 11/21] DT: leds: Add flash led devices related properties
+Date: Fri, 11 Jul 2014 16:04:14 +0200
+Message-id: <1405087464-13762-12-git-send-email-j.anaszewski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
 References: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJLMWRmVeSWpSXmKPExsVy+t9jQV359/uDDbo/GlpsnLGe1WL+kXOs
-	Fkt+7mKy6L36nNHibNMbdovOiUvYLS7vmsNmsfXNOkaLng1bWR04Pab83sjqMbtjJqtH35ZV
-	jB6fN8kFsERx2aSk5mSWpRbp2yVwZfzbfo69YKJcxbKWPrYGxmbJLkZODgkBE4kTL48wQthi
-	EhfurWfrYuTiEBKYzijxcO5qZginnUli4pQZ7CBVbAKGEj9fvGYCsUUEyiV63j8D62AWOM4o
-	ceXWd2aQhLBAqETLt3NsIDaLgKrEiZubweK8Ap4S/6b/Ye1i5ABapyAxZ5INSJgTKHyw/yZY
-	uZCAh8TDtSfYJzDyLmBkWMUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHGDPpHcwrmqwOMQo
-	wMGoxMN7Ys2+YCHWxLLiytxDjBIczEoivFff7A8W4k1JrKxKLcqPLyrNSS0+xCjNwaIkznuw
-	1TpQSCA9sSQ1OzW1ILUIJsvEwSnVwBhUvS47QP80680FimvPMe2X7v98fuH73xr74vh25cVt
-	bfrTMXmXR5L2tRNRoRvUHTY0lPD7l4SsDerojb7/93fc1wkM52Pae94U7YlqFNCU+VFQsMfx
-	9eOX1RJxx82PTMq+sF9u9bSNN36qM6ft9Uq6LpQSnW10RbA1IluV/9h/2xPRvFfXnldiKc5I
-	NNRiLipOBAAbcm7HLAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsVy+t9jQV3x9/uDDX7+57XYOGM9q8X8I+dY
+	LfrfLGS1eHVmI5vFuVcrGS16rz5ntDjb9Ibd4vKuOWwWW9+sY7To2bCV1WLp9YtMFhOmr2Wx
+	aN17hN3ixvQWVgc+jzXz1jB6XO7rZfJYufwLm8emVZ1sHr3N79g8+rasYvT4+VLH4/MmuQCO
+	KC6blNSczLLUIn27BK6MbR+usRQcFKxYe0ytgfEYXxcjJ4eEgInE9AfXWSBsMYkL99azdTFy
+	cQgJTGeUaG3ZDOW0M0ls/nWbHaSKTcBQ4ueL10wgtohAuUTP+2dgRcwC35gkXv7dytzFyMEh
+	LBAgMWNzDEgNi4CqxLazi8E28Ap4Snxa/pQRpERCQEFiziQbkDAnUPhg/002EFtIwEPi4doT
+	7BMYeRcwMqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECA7aZ1I7GFc2WBxiFOBgVOLhVVi/
+	L1iINbGsuDL3EKMEB7OSCO/VN/uDhXhTEiurUovy44tKc1KLDzFKc7AoifMeaLUOFBJITyxJ
+	zU5NLUgtgskycXBKNTBeUrDzaY5+HzBDI23Rp9ZvvqvmxHBlpPyO3mvaf+Ce4uNDP0Q7/ZZ/
+	2fj3U02YwQZLuQD2jtgLtwqPhylyTtGeWLiz4qcpd/JKhZlJ0x3nMDK+/z9v16xfEY4SJ/Rn
+	pPR7BhrePdQb1vn63QYV+3bBY5osmhK2rDx2YhP0mcS+5Ab63172TUqJpTgj0VCLuag4EQBu
+	I91nVgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extract the code executed for each entry of the subdev list
-and put it to the separate function. Export it as a public API.
-It allows for registering single sub-device at a time.
+Addition of a LED Flash Class extension entails the need for flash led
+specific device tree properties. The properties being added are:
+iout-torch, iout-flash, iout-indicator and flash-timeout.
 
 Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Stephen Warren <swarren@nvidia.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
 ---
- drivers/media/v4l2-core/v4l2-device.c |   63 +++++++++++++++++++--------------
- include/media/v4l2-device.h           |    7 ++++
- 2 files changed, 44 insertions(+), 26 deletions(-)
+ Documentation/devicetree/bindings/leds/common.txt |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-diff --git a/drivers/media/v4l2-core/v4l2-device.c b/drivers/media/v4l2-core/v4l2-device.c
-index 015f92a..0e91ef7 100644
---- a/drivers/media/v4l2-core/v4l2-device.c
-+++ b/drivers/media/v4l2-core/v4l2-device.c
-@@ -216,9 +216,43 @@ static void v4l2_device_release_subdev_node(struct video_device *vdev)
- 	kfree(vdev);
- }
+diff --git a/Documentation/devicetree/bindings/leds/common.txt b/Documentation/devicetree/bindings/leds/common.txt
+index 2d88816..40f4b9a 100644
+--- a/Documentation/devicetree/bindings/leds/common.txt
++++ b/Documentation/devicetree/bindings/leds/common.txt
+@@ -3,6 +3,17 @@ Common leds properties.
+ Optional properties for child nodes:
+ - label : The label for this LED.  If omitted, the label is
+   taken from the node name (excluding the unit address).
++- iout-torch : Array of maximum intensities in microamperes of the torch
++	led currents in order from sub-led 0 to N-1, where N is the number
++	of torch sub-leds exposed by the device
++- iout-flash : Array of maximum intensities in microamperes of the flash
++	led currents in order from sub-led 0 to N-1, where N is the number
++	of flash sub-leds exposed by the device
++- iout-indicator : Array of maximum intensities in microamperes of
++	the indicator led currents in order from sub-led 0 to N-1,
++	where N is the number of indicator sub-leds exposed by the device
++- flash-timeout : timeout in microseconds after which flash led
++	is turned off
  
--int v4l2_device_register_subdev_nodes(struct v4l2_device *v4l2_dev)
-+int v4l2_device_register_subdev_node(struct v4l2_subdev *sd,
-+				     struct v4l2_device *v4l2_dev)
- {
- 	struct video_device *vdev;
-+	int err;
+ - linux,default-trigger :  This parameter, if present, is a
+     string defining the trigger assigned to the LED.  Current triggers are:
+@@ -19,5 +30,10 @@ Examples:
+ system-status {
+ 	label = "Status";
+ 	linux,default-trigger = "heartbeat";
++	iout-torch = <500 500>;
++	iout-flash = <1000 1000>;
++	iout-indicator = <100 100>;
++	flash-timeout = <1000>;
 +
-+	if (!(sd->flags & V4L2_SUBDEV_FL_HAS_DEVNODE))
-+		return 0;
-+
-+	vdev = kzalloc(sizeof(*vdev), GFP_KERNEL);
-+	if (!vdev)
-+		return -ENOMEM;
-+
-+	video_set_drvdata(vdev, sd);
-+	strlcpy(vdev->name, sd->name, sizeof(vdev->name));
-+	vdev->v4l2_dev = v4l2_dev;
-+	vdev->fops = &v4l2_subdev_fops;
-+	vdev->release = v4l2_device_release_subdev_node;
-+	vdev->ctrl_handler = sd->ctrl_handler;
-+	err = __video_register_device(vdev, VFL_TYPE_SUBDEV, -1, 1,
-+				      sd->owner);
-+	if (err < 0) {
-+		kfree(vdev);
-+		return err;
-+	}
-+#if defined(CONFIG_MEDIA_CONTROLLER)
-+	sd->entity.info.v4l.major = VIDEO_MAJOR;
-+	sd->entity.info.v4l.minor = vdev->minor;
-+#endif
-+	sd->devnode = vdev;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(v4l2_device_register_subdev_node);
-+
-+int v4l2_device_register_subdev_nodes(struct v4l2_device *v4l2_dev)
-+{
- 	struct v4l2_subdev *sd;
- 	int err;
- 
-@@ -226,32 +260,9 @@ int v4l2_device_register_subdev_nodes(struct v4l2_device *v4l2_dev)
- 	 * V4L2_SUBDEV_FL_HAS_DEVNODE flag.
- 	 */
- 	list_for_each_entry(sd, &v4l2_dev->subdevs, list) {
--		if (!(sd->flags & V4L2_SUBDEV_FL_HAS_DEVNODE))
--			continue;
--
--		vdev = kzalloc(sizeof(*vdev), GFP_KERNEL);
--		if (!vdev) {
--			err = -ENOMEM;
--			goto clean_up;
--		}
--
--		video_set_drvdata(vdev, sd);
--		strlcpy(vdev->name, sd->name, sizeof(vdev->name));
--		vdev->v4l2_dev = v4l2_dev;
--		vdev->fops = &v4l2_subdev_fops;
--		vdev->release = v4l2_device_release_subdev_node;
--		vdev->ctrl_handler = sd->ctrl_handler;
--		err = __video_register_device(vdev, VFL_TYPE_SUBDEV, -1, 1,
--					      sd->owner);
--		if (err < 0) {
--			kfree(vdev);
-+		err = v4l2_device_register_subdev_node(sd, v4l2_dev);
-+		if (err < 0)
- 			goto clean_up;
--		}
--#if defined(CONFIG_MEDIA_CONTROLLER)
--		sd->entity.info.v4l.major = VIDEO_MAJOR;
--		sd->entity.info.v4l.minor = vdev->minor;
--#endif
--		sd->devnode = vdev;
- 	}
- 	return 0;
- 
-diff --git a/include/media/v4l2-device.h b/include/media/v4l2-device.h
-index ffb69da..76594fc 100644
---- a/include/media/v4l2-device.h
-+++ b/include/media/v4l2-device.h
-@@ -114,6 +114,13 @@ int __must_check v4l2_device_register_subdev(struct v4l2_device *v4l2_dev,
-    wasn't registered. In that case it will do nothing. */
- void v4l2_device_unregister_subdev(struct v4l2_subdev *sd);
- 
-+/* Register device node for the subdev of the v4l2 device if it is marked with
-+ * the V4L2_SUBDEV_FL_HAS_DEVNODE flag.
-+ */
-+int __must_check
-+v4l2_device_register_subdev_node(struct v4l2_subdev *sd,
-+					struct v4l2_device *v4l2_dev);
-+
- /* Register device nodes for all subdev of the v4l2 device that are marked with
-  * the V4L2_SUBDEV_FL_HAS_DEVNODE flag.
-  */
+ 	...
+ };
 -- 
 1.7.9.5
 
