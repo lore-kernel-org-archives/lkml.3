@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291AbaGKKNj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 06:13:39 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:42209 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760AbaGKKNh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 06:13:37 -0400
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Cc: gregkh@linuxfoundation.org, hsweeten@visionengravers.com,
-        abbotti@mev.co.uk, dcb314@hotmail.com,
-        Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Subject: [PATCH] drivers/staging/comedi/drivers/ni_atmio16d.c: remove pointless condition
-Date: Fri, 11 Jul 2014 13:13:23 +0300
-Message-Id: <1405073603-21468-1-git-send-email-andrey.krieger.utkin@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1753013AbaGKKPg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 06:15:36 -0400
+Received: from mail.sysmocom.de ([144.76.43.93]:37880 "EHLO mail.sysmocom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751664AbaGKKPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 06:15:34 -0400
+X-Greylist: delayed 424 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Jul 2014 06:15:34 EDT
+Date: Fri, 11 Jul 2014 12:08:22 +0200
+From: Holger Hans Peter Freyther <holger@freyther.de>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Takashi Iwai <tiwai@suse.de>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        USB list <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Oliver Neukum <oneukum@suse.de>
+Subject: Re: [PATCH 02/10] xhci: 'noxhci_port_switch' kernel parameter
+Message-ID: <20140711100822.GN22956@xiaoyu.lan>
+References: <1399566363-25837-1-git-send-email-mathias.nyman@linux.intel.com>
+ <1399566363-25837-3-git-send-email-mathias.nyman@linux.intel.com>
+ <20140520010137.GA8146@kroah.com>
+ <537B24B8.9050303@linux.intel.com>
+ <s5ha9acbwwo.wl%tiwai@suse.de>
+ <CAPcyv4gg164u8Dz0RtV4KjXkDyCMvuC92j6VopqTbA1Shp_3QA@mail.gmail.com>
+ <20140520203432.GB30178@kroah.com>
+ <CAPcyv4i4jTMMbZWWdb79bJ2f5OUaSin4BN_ukWmVcv7JCiup3g@mail.gmail.com>
+ <20140524063945.GA14727@xiaoyu.lan>
+ <CAPcyv4gwc7-keYsnLGBUkryPKSgK7AyLpTzjzmRXGaJ2ZVE=RA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPcyv4gwc7-keYsnLGBUkryPKSgK7AyLpTzjzmRXGaJ2ZVE=RA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The issue was discovered with static analysis and has two instances in
-this file. The code looks like this
-if (x < 65536000) {
-	...
-} else if (x < 655360000) {
-	...
-} else if (x <= 0xffffffff /* 6553600000 */) {
-	...
-} else if (x <= 0xffffffff /* 65536000000 */) {
-	...
-}
+On Sat, May 24, 2014 at 07:13:12AM -0700, Dan Williams wrote:
 
-The meaning of this block is to select appropriate clock frequency for
-interval timer basing on "x", which is amount of time.
+Good Afternoon,
 
-Notes:
-1. That last condition matches previous one - that's the issue.
-2. Decimal numbers in comments don't match hex numbers in expressions.
-But in first case the numbers have same order, while in the second case
-the hex number is the same, and the decimal one is 10 times bigger.
-3. Actually type of "x" is "unsigned int", so its exact upper limit is
-not obviously known.
-4. There's no "else" block.
+> Let me see if I can achieve this with a debugfs interface so that
+> 'noxhci_port_switch' does not become a permanent ABI per Greg's
+> concern.
 
-So it makes sense to make an "else" block from last "else if" case. The
-code inside the block seems correct for such usage.
+I wonder if there is another non-ABI option? Couldn't the ports
+be unconditionall switched back to EHCI when unloading the xhci
+module? I know it is just a workaround (but then again I don't
+have any usb 3.0 devices). :)
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=79871
-Reported-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
----
- drivers/staging/comedi/drivers/ni_atmio16d.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/ni_atmio16d.c b/drivers/staging/comedi/drivers/ni_atmio16d.c
-index 6ad27f5..895b56d 100644
---- a/drivers/staging/comedi/drivers/ni_atmio16d.c
-+++ b/drivers/staging/comedi/drivers/ni_atmio16d.c
-@@ -338,7 +338,7 @@ static int atmio16d_ai_cmd(struct comedi_device *dev,
- 	} else if (cmd->convert_arg <= 0xffffffff /* 6553600000 */) {
- 		base_clock = CLOCK_10_KHZ;
- 		timer = cmd->convert_arg / 100000;
--	} else if (cmd->convert_arg <= 0xffffffff /* 65536000000 */) {
-+	} else {
- 		base_clock = CLOCK_1_KHZ;
- 		timer = cmd->convert_arg / 1000000;
- 	}
-@@ -406,7 +406,7 @@ static int atmio16d_ai_cmd(struct comedi_device *dev,
- 		} else if (cmd->scan_begin_arg < 0xffffffff /* 6553600000 */) {
- 			base_clock = CLOCK_10_KHZ;
- 			timer = cmd->scan_begin_arg / 100000;
--		} else if (cmd->scan_begin_arg < 0xffffffff /* 65536000000 */) {
-+		} else {
- 			base_clock = CLOCK_1_KHZ;
- 			timer = cmd->scan_begin_arg / 1000000;
- 		}
--- 
-1.8.3.2
-
+cheers
+	holger
