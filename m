@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601AbaGKNCI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:02:08 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:43471 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921AbaGKNCF (ORCPT
+	id S1753661AbaGKNCU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:02:20 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:43860 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753373AbaGKNCR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:02:05 -0400
-Date: Fri, 11 Jul 2014 15:01:59 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] arm64: Use include/asm-generic/io.h
-Message-ID: <20140711130158.GA10827@ulmo>
-References: <1404918699-17284-1-git-send-email-thierry.reding@gmail.com>
- <201407101514.16530.arnd@arndb.de>
- <20140711121923.GE11473@arm.com>
- <201407111458.09884.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IS0zKkzwUGydFO0o"
-Content-Disposition: inline
-In-Reply-To: <201407111458.09884.arnd@arndb.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 11 Jul 2014 09:02:17 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org,
+        Tobias Klauser <tklauser@distanz.ch>, Jiri Slaby <jslaby@suse.cz>,
+        linux-serial@vger.kernel.org, nios2-dev@lists.rocketboards.org
+Subject: [PATCH] serial: altera: Adopt uart_console_write()
+Date: Fri, 11 Jul 2014 14:00:11 +0100
+Message-Id: <1405083611-13828-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This driver does not currently use uart_console_write() and instead
+provides is own LF to LFCR conversion in it's console_write() method.
+We should use the library function instead.
 
---IS0zKkzwUGydFO0o
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Cmopile tested only (with ARCH=arm).
 
-On Fri, Jul 11, 2014 at 02:58:09PM +0200, Arnd Bergmann wrote:
-> On Friday 11 July 2014, Catalin Marinas wrote:
-> > ioread32() is indeed an alias for readl on arm64 but if the address it
-> > gets as argument looks like an I/O port, it adds PCI_IOBASE (via the inl
-> > macro). This would no longer happen with Thierry's patches.
-> >=20
-> > So I guess that for this patch to work, we also need ioport_map() to
-> > return an address from the PCI_IOBASE range. Should we merge this now as
-> > well:
-> >=20
-> > http://linux-arm.org/git?p=3Dlinux-ld.git;a=3Dcommitdiff;h=3D3423064d8e=
-42a38164a8436bcdf7434cf9cd2192
->=20
-> This is also part of patch 1/3 in Thierry's series.
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Tobias Klauser <tklauser@distanz.ch>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: linux-serial@vger.kernel.org
+Cc: nios2-dev@lists.rocketboards.org
+---
+ drivers/tty/serial/altera_uart.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-The hunk in my patch 1/3 is missing the "& IO_SPACE_LIMIT", I can respin
-and include that.
+diff --git a/drivers/tty/serial/altera_uart.c b/drivers/tty/serial/altera_uart.c
+index 3233766..554e2fa 100644
+--- a/drivers/tty/serial/altera_uart.c
++++ b/drivers/tty/serial/altera_uart.c
+@@ -435,7 +435,7 @@ static struct altera_uart altera_uart_ports[CONFIG_SERIAL_ALTERA_UART_MAXPORTS];
+ 
+ #if defined(CONFIG_SERIAL_ALTERA_UART_CONSOLE)
+ 
+-static void altera_uart_console_putc(struct uart_port *port, const char c)
++static void altera_uart_console_putc(struct uart_port *port, int c)
+ {
+ 	while (!(altera_uart_readl(port, ALTERA_UART_STATUS_REG) &
+ 		 ALTERA_UART_STATUS_TRDY_MSK))
+@@ -449,11 +449,7 @@ static void altera_uart_console_write(struct console *co, const char *s,
+ {
+ 	struct uart_port *port = &(altera_uart_ports + co->index)->port;
+ 
+-	for (; count; count--, s++) {
+-		altera_uart_console_putc(port, *s);
+-		if (*s == '\n')
+-			altera_uart_console_putc(port, '\r');
+-	}
++	uart_console_write(port, s, count, altera_uart_console_putc);
+ }
+ 
+ static int __init altera_uart_console_setup(struct console *co, char *options)
+-- 
+1.9.3
 
-Thierry
-
---IS0zKkzwUGydFO0o
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIbBAEBAgAGBQJTv+BGAAoJEN0jrNd/PrOhyFEP+KqkpdLYOQtehNTGpf9JPtyu
-PeptxgaKpNht/2HockC7o4RPJ1OieH/4yhL8FYPnRgsqQX/YvENnn3p6/wZft8yE
-jJb3vnL5mC25u/3cyeiXsLm0umsTlE9iRbqSjZ7sIzeG7bGMrkTeHIQ6bNdhtY/S
-/XXvbxCKEv53Ud4542Cv6zrk1zDm8l2RSuSQrr9faG605UVEvEmwPsF6UUdlZSDQ
-N5mQFhh+HWvQH7v+gciGmXUm4udaa6dbdYijtwpGN1Al4Tp2ChsNSZeHe54gEu95
-lXvF4bfru299E+Pi+FBmyN315AI97HEZhB2luc36Ek4qetTBfOVlTrSTBQMVQsZq
-u4hDvrFCC8Koc9ElwhYQWS1kZqRPa5P62dQS0Xkf34YnE0NiJ0FuqCPjOmKuDgwo
-0M1zalDe5v0Uka3d5u/ddUr4YfPRvN4BltE2VtuiuDiLlXacyZwC2buf4ZIA476T
-0NSGdt1eY26X13fMBYZDmFBfVDwHybJ3AiV9VaPpeI7AMovPJeUyRk5V+zX5nssk
-/+V0OvHBKP2q3Z/zcYtxgrwTyGGCdp86xP/OxlJcngy0eXbfnIfKm4Mh+20uZfqK
-p3v0rNpiH2hU+XsmBiz/oBSXtDAEkzsrmJu12brCSG67/8hF+o3NOD2Fo0OPPPzb
-TTwIKEzAC7/DyyVxfjw=
-=vJsf
------END PGP SIGNATURE-----
-
---IS0zKkzwUGydFO0o--
