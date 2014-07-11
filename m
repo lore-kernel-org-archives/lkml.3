@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356AbaGKMIy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 08:08:54 -0400
-Received: from mga11.intel.com ([192.55.52.93]:63047 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752112AbaGKMIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 08:08:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,642,1400050800"; 
-   d="scan'208";a="568463139"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Tadeusz Struk <tadeusz.struk@intel.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Helge Deller <deller@gmx.de>,
-        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>, Marek Vasut <marex@denx.de>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v2 0/5] fs/seq_file: introduce seq_hex_dump() helper
-Date: Fri, 11 Jul 2014 15:08:41 +0300
-Message-Id: <1405080526-6319-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 2.0.1
+	id S1752913AbaGKMTw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 08:19:52 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:30845 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752461AbaGKMTu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 08:19:50 -0400
+Date: Fri, 11 Jul 2014 13:19:23 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] arm64: Use include/asm-generic/io.h
+Message-ID: <20140711121923.GE11473@arm.com>
+References: <1404918699-17284-1-git-send-email-thierry.reding@gmail.com>
+ <1404918699-17284-3-git-send-email-thierry.reding@gmail.com>
+ <20140710110034.GI16137@arm.com>
+ <201407101514.16530.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201407101514.16530.arnd@arndb.de>
+Thread-Topic: [PATCH 3/3] arm64: Use include/asm-generic/io.h
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This introduces a new helper and switches current users to use it.
+On Thu, Jul 10, 2014 at 02:14:16PM +0100, Arnd Bergmann wrote:
+> On Thursday 10 July 2014, Catalin Marinas wrote:
+> > > @@ -235,8 +155,7 @@ extern void __iomem *ioremap_cache(phys_addr_t phys_addr, size_t size);
+> > >  #define ioremap_wc(addr, size)               __ioremap((addr), (size), __pgprot(PROT_NORMAL_NC))
+> > >  #define iounmap                              __iounmap
+> > >  
+> > > -#define ARCH_HAS_IOREMAP_WC
+> > > -#include <asm-generic/iomap.h>
+> > > +#include <asm-generic/io.h>
+> > 
+> > We don't currently have PCIe support in mainline for arm64 but what I
+> > had in mind with the generic iomap is that functions like ioread32_rep
+> > first check whether the address is an IO address or a memory one and
+> > calls the insl or mmio_insl accordingly. With your generic
+> > implementation, this check disappears.
+> > 
+> > The question is whether this functionality would still be needed.
+> 
+> I think it's much better not to have that check on architectures that have a memory
+> mapped I/O space like arm64. The main advantage is that ioread32() is just a trivial
+> alias for readl(). The only reason for needing generic_iomap is architectures that
+> do something very different for I/O ports.
 
-parisc and s390 weren't tested anyhow, the others are compile tested.
+ioread32() is indeed an alias for readl on arm64 but if the address it
+gets as argument looks like an I/O port, it adds PCI_IOBASE (via the inl
+macro). This would no longer happen with Thierry's patches.
 
-Changelog v2:
- - append Acked-by and Reviewed-by tags
- - update commit messages in patches 3/5. and 5/5
- - update line size to be 32 bytes instead of 16 in patch 3/5
- - Joe found that output is changed in patch 4/5, thus I update commit message
-   there
+So I guess that for this patch to work, we also need ioport_map() to
+return an address from the PCI_IOBASE range. Should we merge this now as
+well:
 
-Andy Shevchenko (5):
-  seq_file: provide an analogue of print_hex_dump()
-  saa7164: convert to seq_hex_dump()
-  crypto: qat - use seq_hex_dump() to dump buffers
-  parisc: use seq_hex_dump() to dump buffers
-  [S390] zcrypt: use seq_hex_dump() to dump buffers
-
- .../crypto/qat/qat_common/adf_transport_debug.c    | 16 ++--------
- drivers/media/pci/saa7164/saa7164-core.c           | 31 +++----------------
- drivers/parisc/ccio-dma.c                          | 14 ++-------
- drivers/parisc/sba_iommu.c                         | 11 ++-----
- drivers/s390/crypto/zcrypt_api.c                   | 10 +------
- fs/seq_file.c                                      | 35 ++++++++++++++++++++++
- include/linux/seq_file.h                           |  4 +++
- 7 files changed, 52 insertions(+), 69 deletions(-)
+http://linux-arm.org/git?p=linux-ld.git;a=commitdiff;h=3423064d8e42a38164a8436bcdf7434cf9cd2192
 
 -- 
-2.0.1
-
+Catalin
