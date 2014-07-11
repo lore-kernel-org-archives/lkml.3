@@ -1,101 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298AbaGKPNM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 11:13:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41510 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752342AbaGKPNK (ORCPT
+	id S1754406AbaGKPOF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 11:14:05 -0400
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:42394 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753520AbaGKPOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 11:13:10 -0400
-Date: Fri, 11 Jul 2014 17:13:04 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>
-Subject: Re: [PATCH v3 09/12] Revert "sched: Put rq's sched_avg under
- CONFIG_FAIR_GROUP_SCHED"
-Message-ID: <20140711151304.GD3935@laptop>
-References: <1404144343-18720-1-git-send-email-vincent.guittot@linaro.org>
- <1404144343-18720-10-git-send-email-vincent.guittot@linaro.org>
- <20140710131646.GB3935@laptop>
- <CAKfTPtDzxyrzVmX016VB8j_y19wcCBVB1Rj46FYngMA+Ajft6g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKfTPtDzxyrzVmX016VB8j_y19wcCBVB1Rj46FYngMA+Ajft6g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 11 Jul 2014 11:14:03 -0400
+Date: Fri, 11 Jul 2014 10:13:57 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Tejun Heo <tj@kernel.org>
+cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Jianyu Zhan <nasa4836@gmail.com>, malc <av1474@comtv.ru>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Fabian Frederick <fabf@skynet.be>, Tony Luck <tony.luck@intel.com>,
+        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC Patch V1 07/30] mm: Use cpu_to_mem()/numa_mem_id() to
+ support memoryless node
+In-Reply-To: <20140711144205.GA27706@htj.dyndns.org>
+Message-ID: <alpine.DEB.2.11.1407111012210.25527@gentwo.org>
+References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com> <1405064267-11678-8-git-send-email-jiang.liu@linux.intel.com> <20140711144205.GA27706@htj.dyndns.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 09:51:06AM +0200, Vincent Guittot wrote:
-> On 10 July 2014 15:16, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Mon, Jun 30, 2014 at 06:05:40PM +0200, Vincent Guittot wrote:
-> >> This reverts commit f5f9739d7a0ccbdcf913a0b3604b134129d14f7e.
-> >>
-> >> We are going to use runnable_avg_sum and runnable_avg_period in order to get
-> >> the utilization of the CPU. This statistic includes all tasks that run the CPU
-> >> and not only CFS tasks.
-> >
-> > But this rq->avg is not the one that is migration aware, right? So why
-> > use this?
-> 
-> Yes, it's not the one that is migration aware
-> 
-> >
-> > We already compensate cpu_capacity for !fair tasks, so I don't see why
-> > we can't use the migration aware one (and kill this one as Yuyang keeps
-> > proposing) and compensate with the capacity factor.
-> 
-> The 1st point is that cpu_capacity is compensated by both !fair_tasks
-> and frequency scaling and we should not take into account frequency
-> scaling for detecting overload
+On Fri, 11 Jul 2014, Tejun Heo wrote:
 
-dvfs could help? Also we should not use arch_scale_freq_capacity() for
-things like cpufreq-ondemand etc. Because for those the compute capacity
-is still the max. We should only use it when we hard limit things.
+> Hello,
+>
+> On Fri, Jul 11, 2014 at 03:37:24PM +0800, Jiang Liu wrote:
+> > When CONFIG_HAVE_MEMORYLESS_NODES is enabled, cpu_to_node()/numa_node_id()
+> > may return a node without memory, and later cause system failure/panic
+> > when calling kmalloc_node() and friends with returned node id.
+>
+> The patch itself looks okay to me but is this the right way to handle
+> this?  Can't we just let the allocators fall back to the nearest node
+> with memory?  Why do we need to impose this awareness of memory-less
+> node on all the users?
 
-> What we have now is the the weighted load avg that is the sum of the
-> weight load of entities on the run queue. This is not usable to detect
-> overload because of the weight. An unweighted version of this figure
-> would be more usefull but it's not as accurate as the one I use IMHO.
-> The example that has been discussed during the review of the last
-> version has shown some limitations
-> 
-> With the following schedule pattern from Morten's example
-> 
->    | 5 ms | 5 ms | 5 ms | 5 ms | 5 ms | 5 ms | 5 ms | 5 ms | 5 ms |
-> A:   run     rq     run  ----------- sleeping -------------  run
-> B:   rq      run    rq    run   ---- sleeping -------------  rq
-> 
-> The scheduler will see the following values:
-> Task A unweighted load value is 47%
-> Task B unweight load is 60%
-> The maximum Sum of unweighted load is 104%
-> rq->avg load is 60%
-> 
-> And the real CPU load is 50%
-> 
-> So we will have opposite decision depending of the used values: the
-> rq->avg or the Sum of unweighted load
-> 
-> The sum of unweighted load has the main advantage of showing
-> immediately what will be the relative impact of adding/removing a
-> task. In the example, we can see that removing task A or B will remove
-> around half the CPU load but it's not so good for giving the current
-> utilization of the CPU
-
-In that same discussion ISTR a suggestion about adding avg_running time,
-as opposed to the current avg_runnable. The sum of avg_running should be
-much more accurate, and still react correctly to migrations.
+Allocators typically fall back but they wont in some cases if you say
+that you want memory from a particular node. A GFP_THISNODE would force a
+failure of the alloc. In other cases it should fall back. I am not sure
+that all allocations obey these conventions though.
 
 
