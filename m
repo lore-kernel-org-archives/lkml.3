@@ -1,84 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776AbaGKUf0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 16:35:26 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:42242 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753308AbaGKUfW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 16:35:22 -0400
-Date: Fri, 11 Jul 2014 13:35:13 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Christoph Lameter <cl@gentwo.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, oleg@redhat.com,
-        sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 11/17] rcu: Bind grace-period kthreads to
- non-NO_HZ_FULL CPUs
-Message-ID: <20140711203513.GA10652@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140707223756.GA7187@linux.vnet.ibm.com>
- <1404772701-8804-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1404772701-8804-11-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140708152358.GF6571@localhost.localdomain>
- <20140708154723.GN4603@linux.vnet.ibm.com>
- <20140708183846.GJ6571@localhost.localdomain>
- <alpine.DEB.2.11.1407111309150.4777@gentwo.org>
- <20140711182541.GF26045@localhost.localdomain>
- <alpine.DEB.2.11.1407111403090.5070@gentwo.org>
- <20140711191113.GI26045@localhost.localdomain>
+	id S1753927AbaGKUgU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 16:36:20 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58327 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751040AbaGKUgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 16:36:19 -0400
+Date: Fri, 11 Jul 2014 22:36:07 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Havard Skinnemoen <hskinnemoen@google.com>
+Cc: Tony Luck <tony.luck@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ewout van Bekkum <ewout@google.com>,
+        linux-edac <linux-edac@vger.kernel.org>
+Subject: Re: [PATCH 1/6] x86-mce: Modify CMCI poll interval to adjust for
+ small check_interval values.
+Message-ID: <20140711203607.GD18246@pd.tnic>
+References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
+ <1404925766-32253-2-git-send-email-hskinnemoen@google.com>
+ <20140709191747.GB5249@pd.tnic>
+ <CAFQmdRa5Spr0nX6qwzhDGEU9+H1_0vaCtF_NRV=p=OBDwin78A@mail.gmail.com>
+ <20140710114222.GE2970@pd.tnic>
+ <CAFQmdRZ1D4OWqkL-zpsiEjuGQaSBBmk36HqSw=q+hHNCRWZCKQ@mail.gmail.com>
+ <CA+8MBbJ+FeQKZC9oVZsvrBptaY+24rVKWUXT02ETHMMoA-omuA@mail.gmail.com>
+ <CAFQmdRY1=Yg7T15kQmiA+S0j1-xNKsF6Sze49BN7-VzbwW7V4w@mail.gmail.com>
+ <20140711153541.GD17083@pd.tnic>
+ <CAFQmdRajEjtGB4xXVzCmaUPA=qEjrzQTskJtpmD0cqKhKsEYsg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140711191113.GI26045@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14071120-1542-0000-0000-0000033885AB
+In-Reply-To: <CAFQmdRajEjtGB4xXVzCmaUPA=qEjrzQTskJtpmD0cqKhKsEYsg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 09:11:15PM +0200, Frederic Weisbecker wrote:
-> On Fri, Jul 11, 2014 at 02:05:08PM -0500, Christoph Lameter wrote:
-> > On Fri, 11 Jul 2014, Frederic Weisbecker wrote:
-> > 
-> > > > That would imply that all no-nohz processors are housekeeping? So all
-> > > > processors with a tick are housekeeping?
-> > >
-> > > Well, now that I think about it again, I would really like to keep housekeeping
-> > > to CPU 0 when nohz_full= is passed.
-> > 
-> > Yeah.
-> > 
-> > > > Could we make that set configurable? Ideally I'd like to have the ability
-> > > > restrict the housekeeping to one processor.
-> > >
-> > > Ah, I'm curious about your usecase. But I think we can do that. And we should.
-> > 
-> > The use case is pretty straightforward because we are trying to keep as
-> > much OS noise as possible off most processors. Processor 0 is the
-> > sacrificial lamb that will be used for all OS processing and hopefully all
-> > high latency operations will occur there. Processors 1-X have a tick but
-> > we still try to keep latencies sane. And then there is X-Y where tick is
-> > off.
+On Fri, Jul 11, 2014 at 11:56:11AM -0700, Havard Skinnemoen wrote:
+> > Basically the scheme becomes the following:
+> >
+> > * We switch to polling if we detect a second CMCI under an interval X
+> > * We poll Y times, each polling with a duration Z.
+> > * If during those Y*Z msec of polling, we've encountered errors, we
+> > enlarge the polling interval to additional Y*Z msec.
+> >
+> >
+> > check_interval will be capped on the low end to something bigger than
+> > the polling duration Y*Z and only the storm detection code will be
+> > allowed to go to lower intervals and switch to polling.
+> >
+> > At least something like that. In general, I'd like to make it more
+> > robust for every system without the need for user interaction, i.e.
+> > adjusting check_interval and where it just works.
 > 
-> Ok. I don't entirely get why you need 1-X but I can easily imagine some non-latency-critical
-> stuff running there.
+> But at the same time, this scheme introduces even more variables that
+> need careful tuning, e.g. storm polling interval and storm duration,
+> while not really doing anything to make check_interval superfluous. Do
+
+Oh, we can't make check_interval superfluous - it is API to userspace
+for a long time now.
+
+> you really think we can tune these variables correctly for every
+> system out there?
+
+Right, I was trying to figure out a scheme first where polling intervals
+and thresholds would actually make sense and not be arbitrary.
+
+We probably won't be able to have the exact values for each system but a
+smart approximation could do the job nicely enough.
+
+> Or if we want to be generous: How about we just hardcode
+> check_interval to 5 seconds. Would that be fine with everyone?
+
+We could but again, it is an API to userspace exported through sysfs.
+
+Besides, on a healthy system, you see errors so seldomly that 5sec is
+pure waste of energy.
+
+> > I don't know whether any of the above makes sense - I hope that the
+> > gist of it at least shows what IO think we should be doing: instead
+> > of letting users configure the check_interval and influence the CMCI
+> > polling interval, we should rely purely on machine characteristics to
+> > set minimum values under which we poll and above which, we do the normal
+> > duration enlarging dance.
 > 
-> Paul proposed "housekeeping=". If we ever go there, I'd rather vote for "sacrifical_lamb="
+> I think the scheme may work, although I'm worried about the burstiness
+> mentioned above.
+>
+> But I don't really buy that pulling a handful of numbers out of thin
+> air and saying it should work for everyone is going to work.
 
-Given Christoph's desire for only one housekeeping CPU, I guess the
-counting version makes the most sense, so that "housekeeping=N" designates
-the first N non-nohz CPUs in numerical order as housekeeping CPUs.
-If there are fewer than N non-nohz CPUs, you get a splat at boot time
-and your request is capped at the number of non-nohz CPUs.
+No no, absolutely not. This is exactly what I think should be fixed as
+the current numbers are likely pulled out of thin air. Simply because
+figuring the optimal ones is a very hard task, as we come to realize.
 
-Seem reasonable?
+> Either we need solid data to back up those numbers, or we need to make
+> them configurable so people can experiment and find what works best
+> for them.
 
-							Thanx, Paul
+..., or, we could measure them on each system and approximate them to
+the ones close to optimal for that particular system, over the course of
+its runtime.
 
+Thanks for taking the time and humouring me with that crazy
+brainstorming!
+
+:-)
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
