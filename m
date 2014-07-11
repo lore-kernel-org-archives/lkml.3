@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358AbaGKUYQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 16:24:16 -0400
-Received: from mga02.intel.com ([134.134.136.20]:50535 "EHLO mga02.intel.com"
+	id S1755387AbaGKUZS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 16:25:18 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50710 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751014AbaGKUYO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 16:24:14 -0400
+	id S1751587AbaGKUZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 16:25:16 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,644,1400050800"; 
-   d="scan'208";a="542193042"
+   d="scan'208";a="542193607"
 From: Andi Kleen <andi@firstfloor.org>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Miklos Szeredi <mszeredi@suse.cz>
-Subject: [PATCH] vfs: Turn the unlinked inode counter into a percpu counter
-Date: Fri, 11 Jul 2014 13:23:39 -0700
-Message-Id: <1405110219-2969-1-git-send-email-andi@firstfloor.org>
+To: linux-scsi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] scsi: Remove some false sharing in Scsi_Host / Scsi_Device
+Date: Fri, 11 Jul 2014 13:25:10 -0700
+Message-Id: <1405110310-3555-1-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,159 +22,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-The unlinked open inodes super block counter that was added some time ago
-unfortunately becomes a very hot cache line in some delete heavy
-high IOPs or tmpfs workloads with enough cores, when files
-are frequently removed. With TSX it also causes plenty of aborts.
+These data structures are accessed by different CPUs and have some
+fields which are mostly read only and others which are frequently
+written. Separate some common ones into separate cache line
+to minimize false sharing while submitting a command.
 
-Turn the atomic into a percpu_counter. It's nearly perfectly
-suited for a percpu counter because it is only checked
-in very slow paths, like remount.
+This allows scsi_dispatch_cmd to do more work with shared clean
+cache lines.
 
-Original commit:
+- Move the cmd_serial_number to the end before the host data
+- Separate write common fields from read mostly fields in
+the scsi device
 
-commit 7ada4db88634429f4da690ad1c4eb73c93085f0c
-Author: Miklos Szeredi <mszeredi@suse.cz>
-Date:   Mon Nov 21 12:11:32 2011 +0100
-
-    vfs: count unlinked inodes
-
-    Add a new counter to the superblock that keeps track of unlinked but
-    not yet deleted inodes.
-
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- fs/ext2/super.c    |  2 +-
- fs/inode.c         | 14 ++++++--------
- fs/namespace.c     |  4 ++--
- fs/super.c         |  3 +++
- include/linux/fs.h |  2 +-
- 5 files changed, 13 insertions(+), 12 deletions(-)
+ include/scsi/scsi_device.h |  4 ++++
+ include/scsi/scsi_host.h   | 15 ++++++++++-----
+ 2 files changed, 14 insertions(+), 5 deletions(-)
 
-diff --git a/fs/ext2/super.c b/fs/ext2/super.c
-index 3750031..ac0ad9a 100644
---- a/fs/ext2/super.c
-+++ b/fs/ext2/super.c
-@@ -1218,7 +1218,7 @@ static int ext2_freeze(struct super_block *sb)
- 	 * because we have unattached inodes and thus filesystem is not fully
- 	 * consistent.
- 	 */
--	if (atomic_long_read(&sb->s_remove_count)) {
-+	if (percpu_counter_sum(&sb->s_remove_counters)) {
- 		ext2_sync_fs(sb, 1);
- 		return 0;
- 	}
-diff --git a/fs/inode.c b/fs/inode.c
-index f96d2a6..4820c35 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -234,10 +234,8 @@ void __destroy_inode(struct inode *inode)
- 	BUG_ON(inode_has_buffers(inode));
- 	security_inode_free(inode);
- 	fsnotify_inode_delete(inode);
--	if (!inode->i_nlink) {
--		WARN_ON(atomic_long_read(&inode->i_sb->s_remove_count) == 0);
--		atomic_long_dec(&inode->i_sb->s_remove_count);
--	}
-+	if (!inode->i_nlink)
-+		percpu_counter_dec(&inode->i_sb->s_remove_counters);
+diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
+index 5853c91..2064d47 100644
+--- a/include/scsi/scsi_device.h
++++ b/include/scsi/scsi_device.h
+@@ -98,6 +98,10 @@ struct scsi_device {
  
- #ifdef CONFIG_FS_POSIX_ACL
- 	if (inode->i_acl && inode->i_acl != ACL_NOT_CACHED)
-@@ -281,7 +279,7 @@ void drop_nlink(struct inode *inode)
- 	WARN_ON(inode->i_nlink == 0);
- 	inode->__i_nlink--;
- 	if (!inode->i_nlink)
--		atomic_long_inc(&inode->i_sb->s_remove_count);
-+		percpu_counter_inc(&inode->i_sb->s_remove_counters);
- }
- EXPORT_SYMBOL(drop_nlink);
+ 	unsigned long last_queue_ramp_up;	/* last queue ramp up time */
  
-@@ -297,7 +295,7 @@ void clear_nlink(struct inode *inode)
- {
- 	if (inode->i_nlink) {
- 		inode->__i_nlink = 0;
--		atomic_long_inc(&inode->i_sb->s_remove_count);
-+		percpu_counter_inc(&inode->i_sb->s_remove_counters);
- 	}
- }
- EXPORT_SYMBOL(clear_nlink);
-@@ -317,7 +315,7 @@ void set_nlink(struct inode *inode, unsigned int nlink)
- 	} else {
- 		/* Yes, some filesystems do change nlink from zero to one */
- 		if (inode->i_nlink == 0)
--			atomic_long_dec(&inode->i_sb->s_remove_count);
-+			percpu_counter_dec(&inode->i_sb->s_remove_counters);
++	/* Mostly read fields below. Move to own cache line to avoid false
++	 * sharing  */
++	char align1 __attribute__((aligned(SMP_CACHE_BYTES)));
++
+ 	unsigned int id, lun, channel;
  
- 		inode->__i_nlink = nlink;
- 	}
-@@ -336,7 +334,7 @@ void inc_nlink(struct inode *inode)
- {
- 	if (unlikely(inode->i_nlink == 0)) {
- 		WARN_ON(!(inode->i_state & I_LINKABLE));
--		atomic_long_dec(&inode->i_sb->s_remove_count);
-+		percpu_counter_dec(&inode->i_sb->s_remove_counters);
- 	}
+ 	unsigned int manufacturer;	/* Manufacturer of device, for using 
+diff --git a/include/scsi/scsi_host.h b/include/scsi/scsi_host.h
+index 94844fc..a9371b9 100644
+--- a/include/scsi/scsi_host.h
++++ b/include/scsi/scsi_host.h
+@@ -654,11 +654,7 @@ struct Scsi_Host {
+ 	short unsigned int sg_prot_tablesize;
+ 	short unsigned int max_sectors;
+ 	unsigned long dma_boundary;
+-	/* 
+-	 * Used to assign serial numbers to the cmds.
+-	 * Protected by the host lock.
+-	 */
+-	unsigned long cmd_serial_number;
++
+ 	
+ 	unsigned active_mode:2;
+ 	unsigned unchecked_isa_dma:1;
+@@ -761,6 +757,15 @@ struct Scsi_Host {
+ 	struct device *dma_dev;
  
- 	inode->__i_nlink++;
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 182bc41..20d33d9 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -535,7 +535,7 @@ int sb_prepare_remount_readonly(struct super_block *sb)
- 	int err = 0;
- 
- 	/* Racy optimization.  Recheck the counter under MNT_WRITE_HOLD */
--	if (atomic_long_read(&sb->s_remove_count))
-+	if (percpu_counter_sum(&sb->s_remove_counters) != 0)
- 		return -EBUSY;
- 
- 	lock_mount_hash();
-@@ -549,7 +549,7 @@ int sb_prepare_remount_readonly(struct super_block *sb)
- 			}
- 		}
- 	}
--	if (!err && atomic_long_read(&sb->s_remove_count))
-+	if (!err && percpu_counter_sum(&sb->s_remove_counters) != 0)
- 		err = -EBUSY;
- 
- 	if (!err) {
-diff --git a/fs/super.c b/fs/super.c
-index 48377f7..b7a8a45 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -142,6 +142,7 @@ static void destroy_super(struct super_block *s)
- 	list_lru_destroy(&s->s_inode_lru);
- 	for (i = 0; i < SB_FREEZE_LEVELS; i++)
- 		percpu_counter_destroy(&s->s_writers.counter[i]);
-+	percpu_counter_destroy(&s->s_remove_counters);
- 	security_sb_free(s);
- 	WARN_ON(!list_empty(&s->s_mounts));
- 	kfree(s->s_subtype);
-@@ -171,6 +172,8 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
- 	if (security_sb_alloc(s))
- 		goto fail;
- 
-+	if (percpu_counter_init(&s->s_remove_counters, 0) < 0)
-+		goto fail;
- 	for (i = 0; i < SB_FREEZE_LEVELS; i++) {
- 		if (percpu_counter_init(&s->s_writers.counter[i], 0) < 0)
- 			goto fail;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 8780312..0374552 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1240,7 +1240,7 @@ struct super_block {
- 	struct shrinker s_shrink;	/* per-sb shrinker handle */
- 
- 	/* Number of inodes with nlink == 0 but still referenced */
--	atomic_long_t s_remove_count;
-+	struct percpu_counter s_remove_counters;
- 
- 	/* Being remounted read-only */
- 	int s_readonly_remount;
+ 	/*
++	 * Used to assign serial numbers to the cmds.
++	 * Protected by the host lock.
++	 * Hot cache line, keep separate from read only fields.
++	 */
++	unsigned long cmd_serial_number
++		__attribute__((aligned(SMP_CACHE_BYTES)));
++	char pad[SMP_CACHE_BYTES - sizeof(unsigned long)];
++
++	/*
+ 	 * We should ensure that this is aligned, both for better performance
+ 	 * and also because some compilers (m68k) don't automatically force
+ 	 * alignment to a long boundary.
 -- 
 1.9.3
 
