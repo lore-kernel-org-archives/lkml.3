@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561AbaGKN4y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:56:54 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56104 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753764AbaGKNoX (ORCPT
+	id S1754577AbaGKN5C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:57:02 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:51624 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753764AbaGKN47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:44:23 -0400
-Message-Id: <20140711133706.603365447@linutronix.de>
-User-Agent: quilt/0.63-1
-Date: Fri, 11 Jul 2014 13:44:22 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 16/55] timekeeping: Provide ktime_get_with_offset()
-References: <20140711133623.530368377@linutronix.de>
+	Fri, 11 Jul 2014 09:56:59 -0400
+Date: Fri, 11 Jul 2014 15:56:53 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de
+Subject: Re: [tip:sched/core] sched/numa: Use effective_load() to balance
+ NUMA loads
+Message-ID: <20140711135653.GI20603@laptop.programming.kicks-ass.net>
+References: <1403538378-31571-3-git-send-email-riel@redhat.com>
+ <tip-6dc1a672ab15604947361dcd02e459effa09bad5@git.kernel.org>
+ <53BD677B.9050907@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=timekeeping-provide-__ktime_get.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53BD677B.9050907@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide a helper function which lets us implement ktime_t based
-interfaces for real, boot and tai clocks.
+On Wed, Jul 09, 2014 at 12:02:03PM -0400, Rik van Riel wrote:
+> On 07/05/2014 06:44 AM, tip-bot for Rik van Riel wrote:
+> > Commit-ID:  6dc1a672ab15604947361dcd02e459effa09bad5
+> > Gitweb:     http://git.kernel.org/tip/6dc1a672ab15604947361dcd02e459effa09bad5
+> > Author:     Rik van Riel <riel@redhat.com>
+> > AuthorDate: Mon, 23 Jun 2014 11:46:14 -0400
+> > Committer:  Ingo Molnar <mingo@kernel.org>
+> > CommitDate: Sat, 5 Jul 2014 11:17:35 +0200
+> > 
+> > sched/numa: Use effective_load() to balance NUMA loads
+> > 
+> > When CONFIG_FAIR_GROUP_SCHED is enabled, the load that a task places
+> > on a CPU is determined by the group the task is in. The active groups
+> > on the source and destination CPU can be different, resulting in a
+> > different load contribution by the same task at its source and at its
+> > destination. As a result, the load needs to be calculated separately
+> > for each CPU, instead of estimated once with task_h_load().
+> > 
+> > Getting this calculation right allows some workloads to converge,
+> > where previously the last thread could get stuck on another node,
+> > without being able to migrate to its final destination.
+> 
+> Self-NAK
+> 
+> This patch should be reverted.
+> 
+> It turns out that the tree I am working on was missing
+> changeset a003a25b227d59ded9197ced109517f037d01c27,
+> which makes weighted_cpuload and update_numa_stats use
+> p->se.avg.load_avg_contrib instead of p->se.load.weight.
+> 
+> This means using effective_load, which operates on the
+> load.weight is inappropriate.
+> 
+> Sorry for the noise.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- include/linux/timekeeping.h |    9 +++++++++
- kernel/time/timekeeping.c   |   27 +++++++++++++++++++++++++++
- 2 files changed, 36 insertions(+)
-
-Index: tip/include/linux/timekeeping.h
-===================================================================
---- tip.orig/include/linux/timekeeping.h
-+++ tip/include/linux/timekeeping.h
-@@ -98,7 +98,16 @@ extern void getboottime(struct timespec
- /*
-  * ktime_t based interfaces
-  */
-+
-+enum tk_offsets {
-+	TK_OFFS_REAL,
-+	TK_OFFS_BOOT,
-+	TK_OFFS_TAI,
-+	TK_OFFS_MAX,
-+};
-+
- extern ktime_t ktime_get(void);
-+extern ktime_t ktime_get_with_offset(enum tk_offsets offs);
- extern ktime_t ktime_get_real(void);
- extern ktime_t ktime_get_boottime(void);
- extern ktime_t ktime_get_monotonic_offset(void);
-Index: tip/kernel/time/timekeeping.c
-===================================================================
---- tip.orig/kernel/time/timekeeping.c
-+++ tip/kernel/time/timekeeping.c
-@@ -422,6 +422,33 @@ ktime_t ktime_get(void)
- }
- EXPORT_SYMBOL_GPL(ktime_get);
- 
-+static ktime_t *offsets[TK_OFFS_MAX] = {
-+	[TK_OFFS_REAL]	= &tk_core.timekeeper.offs_real,
-+	[TK_OFFS_BOOT]	= &tk_core.timekeeper.offs_boot,
-+	[TK_OFFS_TAI]	= &tk_core.timekeeper.offs_tai,
-+};
-+
-+ktime_t ktime_get_with_offset(enum tk_offsets offs)
-+{
-+	struct timekeeper *tk = &tk_core.timekeeper;
-+	unsigned int seq;
-+	ktime_t base, *offset = offsets[offs];
-+	s64 nsecs;
-+
-+	WARN_ON(timekeeping_suspended);
-+
-+	do {
-+		seq = read_seqcount_begin(&tk_core.seq);
-+		base = ktime_add(tk->base_mono, *offset);
-+		nsecs = timekeeping_get_ns(tk);
-+
-+	} while (read_seqcount_retry(&tk_core.seq, seq));
-+
-+	return ktime_add_ns(base, nsecs);
-+
-+}
-+EXPORT_SYMBOL_GPL(ktime_get_with_offset);
-+
- /**
-  * ktime_get_ts64 - get the monotonic clock in timespec64 format
-  * @ts:		pointer to timespec variable
-
-
+n/p I'll take it out. Thanks!
