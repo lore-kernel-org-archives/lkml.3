@@ -1,90 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159AbaGKQMq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 12:12:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18259 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750983AbaGKQMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 12:12:44 -0400
-Message-ID: <53C00CC1.1030401@redhat.com>
-Date: Fri, 11 Jul 2014 12:11:45 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-CC: Michael wang <wangyun@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Alex Shi <alex.shi@linaro.org>, Paul Turner <pjt@google.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched: select 'idle' cfs_rq per task-group to prevent
- tg-internal imbalance
-References: <53A11A89.5000602@linux.vnet.ibm.com>	 <20140623094251.GS19860@laptop.programming.kicks-ass.net>	 <53A8F1DE.2060908@linux.vnet.ibm.com>	 <20140701082020.GL6758@twins.programming.kicks-ass.net>	 <53B273A2.5050500@linux.vnet.ibm.com> <53B41B7E.8020009@redhat.com> <1404359462.5137.72.camel@marge.simpson.net>
-In-Reply-To: <1404359462.5137.72.camel@marge.simpson.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1754482AbaGKQNf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 12:13:35 -0400
+Received: from michel.telenet-ops.be ([195.130.137.88]:60572 "EHLO
+	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754047AbaGKQNd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 12:13:33 -0400
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>
+Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH v2 1/6] dmaengine: Update documentation for inline wrappers
+Date: Fri, 11 Jul 2014 18:13:23 +0200
+Message-Id: <1405095208-14642-1-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+During the last few years, several inline wrappers for DMA operations have
+been introduced:
+  - commit 16052827d98fbc13c31ebad560af4bd53e2b4dd5 ("dmaengine/dma_slave:
+    introduce inline wrappers"),
+  - commit a14acb4ac2a1486f6633c55eb7f7ded07f3ec9fc ("DMAEngine: add
+    dmaengine_prep_interleaved_dma wrapper for interleaved api"),
+  - commit 6e3ecaf0ad49de0bed829d409a164e7107c02993 ("dmaengine: add
+    wrapper functions for device control functions").
 
-On 07/02/2014 11:51 PM, Mike Galbraith wrote:
-> On Wed, 2014-07-02 at 10:47 -0400, Rik van Riel wrote:
->> On 07/01/2014 04:38 AM, Michael wang wrote:
->>> On 07/01/2014 04:20 PM, Peter Zijlstra wrote: [snip]
->>>>> 
->>>>> Just wondering could we make this another scheduler
->>>>> feature?
->>>> 
->>>> No; sched_feat() is for debugging, BIG CLUE: its guarded by 
->>>> CONFIG_SCHED_DEBUG, anybody using it in production or
->>>> anywhere else is broken.
->>>> 
->>>> If people are using it, I should remove or at least randomize
->>>> the interface.
->>> 
->>> Fair enough... but is there any suggestions on how to handle
->>> this issue?
->>> 
->>> Currently when dbench running with stress, it could only gain
->>> one CPU, and cpu-cgroup cpu.shares is meaningless, is there any
->>> good methods to address that?
->> 
->> select_idle_sibling will iterate over all of the CPUs in an LLC
->> domain if there is no idle cpu in the domain.
->> 
->> I suspect it would not take much extra code to track down the
->> idlest CPU in the LLC domain, and make sure to schedule tasks
->> there, in case no completely idle CPU was found.
->> 
->> Are there any major problems with that thinking?
-> 
-> That's full wake balance.. if that was cheap,
-> select_idle_sibling() would not exist.
+Update the documentation to use the wrappers.
 
-Full wake balance iterates over all the groups in the system,
-select_idle_sibling only over one LLC domain.
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+---
+v2:
+  - Added one more conversion in the textual explanation.
+---
+ Documentation/dmaengine.txt | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
-If no CPU in the LLC domain is idle, select_idle_sibling will
-iterate over all of them.  During this iteration, which the
-code already does, it should be possible to identify the least
-loaded of the CPUs and pick that one.
+diff --git a/Documentation/dmaengine.txt b/Documentation/dmaengine.txt
+index 87d3f192e160..11fb87ff6cd0 100644
+--- a/Documentation/dmaengine.txt
++++ b/Documentation/dmaengine.txt
+@@ -84,21 +84,21 @@ The slave DMA usage consists of following steps:
+    the given transaction.
+ 
+    Interface:
+-	struct dma_async_tx_descriptor *(*chan->device->device_prep_slave_sg)(
++	struct dma_async_tx_descriptor *dmaengine_prep_slave_sg(
+ 		struct dma_chan *chan, struct scatterlist *sgl,
+ 		unsigned int sg_len, enum dma_data_direction direction,
+ 		unsigned long flags);
+ 
+-	struct dma_async_tx_descriptor *(*chan->device->device_prep_dma_cyclic)(
++	struct dma_async_tx_descriptor *dmaengine_prep_dma_cyclic(
+ 		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+ 		size_t period_len, enum dma_data_direction direction);
+ 
+-	struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
++	struct dma_async_tx_descriptor *dmaengine_prep_interleaved_dma(
+ 		struct dma_chan *chan, struct dma_interleaved_template *xt,
+ 		unsigned long flags);
+ 
+    The peripheral driver is expected to have mapped the scatterlist for
+-   the DMA operation prior to calling device_prep_slave_sg, and must
++   the DMA operation prior to calling dmaengine_prep_slave_sg(), and must
+    keep the scatterlist mapped until the DMA operation has completed.
+    The scatterlist must be mapped using the DMA struct device.
+    If a mapping needs to be synchronized later, dma_sync_*_for_*() must be
+@@ -109,8 +109,7 @@ The slave DMA usage consists of following steps:
+ 	if (nr_sg == 0)
+ 		/* error */
+ 
+-	desc = chan->device->device_prep_slave_sg(chan, sgl, nr_sg,
+-			direction, flags);
++	desc = dmaengine_prep_slave_sg(chan, sgl, nr_sg, direction, flags);
+ 
+    Once a descriptor has been obtained, the callback information can be
+    added and the descriptor must then be submitted.  Some DMA engine
+@@ -190,11 +189,11 @@ Further APIs:
+    description of this API.
+ 
+    This can be used in conjunction with dma_async_is_complete() and
+-   the cookie returned from 'descriptor->submit()' to check for
++   the cookie returned from dmaengine_submit() to check for
+    completion of a specific DMA transaction.
+ 
+    Note:
+ 	Not all DMA engine drivers can return reliable information for
+ 	a running DMA channel.  It is recommended that DMA engine users
+-	pause or stop (via dmaengine_terminate_all) the channel before
++	pause or stop (via dmaengine_terminate_all()) the channel before
+ 	using this API.
+-- 
+1.9.1
 
-- -- 
-All rights reversed
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQEcBAEBAgAGBQJTwAzBAAoJEM553pKExN6DlrEH/RKQPdAdMFK/pxZ/2f9TCXFK
-Vq25LWZeJQhNOrH3Q6VzTTfAG06O8+Bjxfb+SR6BOHCtD4kCBqaBdwVVUDXC+MbK
-NdBa3GtCT3ahvguiYLPEHL1vugND2yzHUgnr9EhUgk6zhnLxfvhIIJj7uv+ZRsri
-o8DsLrIG1jqDGVbbu5ssZ37w6cldoFBw0FAHcVAquoM2SP+/MuatW1SCkRP31IVL
-q0dssP1CD0Nkecz+S6WSI59c0Wt0c73oWNg/q41a/kha7RI1J5VF5yNFacq/uL0g
-Xxyb0mOiJarqMtzuq5ItlOiTry+BpqY1jFhN5ZhFjt9mtvpTR1C/tcXpOw77y0Y=
-=BEJk
------END PGP SIGNATURE-----
