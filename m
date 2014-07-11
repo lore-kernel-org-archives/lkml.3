@@ -1,92 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119AbaGKUgk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 16:36:40 -0400
-Received: from mga02.intel.com ([134.134.136.20]:62130 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751088AbaGKUgj convert rfc822-to-8bit (ORCPT
+	id S1754220AbaGKUhH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 16:37:07 -0400
+Received: from smtprelay0047.hostedemail.com ([216.40.44.47]:48080 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752871AbaGKUhG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 16:36:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,645,1400050800"; 
-   d="scan'208";a="571903347"
-From: "Tian, Kevin" <kevin.tian@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "airlied@linux.ie" <airlied@linux.ie>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "Chen, Tiejun" <tiejun.chen@intel.com>,
-        "Kay, Allen M" <allen.m.kay@intel.com>
-Subject: RE: [Xen-devel] [Intel-gfx] [RFC][PATCH]
- gpu:drm:i915:intel_detect_pch: back to check devfn instead of check class
- type
-Thread-Topic: [Xen-devel] [Intel-gfx] [RFC][PATCH]
- gpu:drm:i915:intel_detect_pch: back to check devfn instead of check class
- type
-Thread-Index: AQHPmhLtddRUcHA0YU245zC1cQ8wppuZzrXAgAF9phOAAAppIA==
-Date: Fri, 11 Jul 2014 20:30:59 +0000
-Message-ID: <AADFC41AFE54684AB9EE6CBC0274A5D125FCD743@SHSMSX101.ccr.corp.intel.com>
-References: <53A42DAA.80406@redhat.com> <53A692F9.3060200@intel.com>
- <53AA70C0.2000806@redhat.com> <20140707144917.GZ5821@phenom.ffwll.local>
- <53BAB569.5000709@redhat.com> <20140707175402.GS5821@phenom.ffwll.local>
- <53BADFC6.9060101@redhat.com> <20140707184006.GU5821@phenom.ffwll.local>
- <AADFC41AFE54684AB9EE6CBC0274A5D125FCA7FF@SHSMSX101.ccr.corp.intel.com>
- <20140711062956.GP17271@phenom.ffwll.local>
- <20140711194206.GI23257@laptop.dumpdata.com>
-In-Reply-To: <20140711194206.GI23257@laptop.dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 11 Jul 2014 16:37:06 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:967:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3350:3622:3743:3865:3866:3867:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:7652:8985:9025:10004:10400:10848:11026:11232:11473:11658:11914:12043:12517:12519:12740:13069:13095:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,S
+X-HE-Tag: brake82_35ba29fddd0e
+X-Filterd-Recvd-Size: 1576
+Message-ID: <1405111021.2796.23.camel@joe-AO725>
+Subject: Re: [PATCH 1/1] rcutorture: fixes for printing message buffer
+From: Joe Perches <joe@perches.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Josh Triplett <josh@freedesktop.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Iulia Manda <iulia.manda21@gmail.com>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Fri, 11 Jul 2014 13:37:01 -0700
+In-Reply-To: <1405110617-16498-1-git-send-email-bobby.prani@gmail.com>
+References: <1405110617-16498-1-git-send-email-bobby.prani@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
-> Sent: Friday, July 11, 2014 12:42 PM
+On Fri, 2014-07-11 at 16:30 -0400, Pranith Kumar wrote:
+> Use snprintf() instead of sprintf() for writing to the message buffer.
+> Also use vmalloc() for the allocation of the message buffer. Since pr_alert() is
+> limited to print LOG_LINE_MAX characters at a time, we print the buffer in a
+> loop one line at a time.
 > 
-> On Fri, Jul 11, 2014 at 08:29:56AM +0200, Daniel Vetter wrote:
-> > On Thu, Jul 10, 2014 at 09:08:24PM +0000, Tian, Kevin wrote:
-> > > actually I'm curious whether it's still necessary to __detect__ PCH. Could
-> > > we assume a 1:1 mapping between GPU and PCH, e.g. BDW already hard
-> > > code the knowledge:
-> > >
-> > >               } else if (IS_BROADWELL(dev)) {
-> > >                       dev_priv->pch_type = PCH_LPT;
-> > >                       dev_priv->pch_id =
-> > >
-> INTEL_PCH_LPT_LP_DEVICE_ID_TYPE;
-> > >                       DRM_DEBUG_KMS("This is Broadwell,
-> assuming "
-> > >                                     "LynxPoint LP PCH\n");
-> > >
-> > > Or if there is real usage on non-fixed mapping (not majority), could it be a
-> > > better option to have fixed mapping as a fallback instead of leaving as
-> > > PCH_NONE? Then even when Qemu doesn't provide a special tweaked
-> PCH,
-> > > the majority case just works.
-> >
-> > I guess we can do it, at least I haven't seen any strange combinations in
-> > the wild outside of Intel ...
-> 
-> How big is the QA matrix for this? Would it make sense to just
-> include the latest hardware (say going two generations back)
-> and ignore the older one?
+> I tested this using the parse-torture.sh script as follows:
 
-suppose minimal or no QA effort on bare metal, if we only conservatively 
-change the fallback path which is today not supposed to function with 
-PCH_NONE. so it's only same amount of QA effort as whatever else is 
-proposed in this passthru upstreaming task. I agree no need to cover 
-older model, possibly just snb, ivb and hsw, but will leave Tiejun to answer 
-the overall goal.
+Did you see the patch I sent you?
+https://lkml.org/lkml/2014/6/20/604
 
-Thanks
-Kevin
+It doesn't need a vmalloc.
+What is wrong with that approach?
+
+
