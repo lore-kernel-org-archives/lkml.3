@@ -1,129 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376AbaGKLhm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 07:37:42 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:54532 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752805AbaGKLgB (ORCPT
+	id S1753401AbaGKLiM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 07:38:12 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:41744 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751934AbaGKLiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 07:36:01 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Anton Vorontsov <anton.vorontsov@linaro.org>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, John Stultz <john.stultz@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com,
-        kgdb-bugreport@lists.sourceforge.net,
-        Daniel Thompson <daniel.thompson@linaro.org>,
-        Mike Travis <travis@sgi.com>
-Subject: [RESEND PATCH v5 3.16-rc4 2/8] kdb: Rename kdb_repeat_t to kdb_cmdflags_t, cmd_repeat to cmd_flags
-Date: Fri, 11 Jul 2014 12:33:32 +0100
-Message-Id: <1405078418-14070-3-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1405078418-14070-1-git-send-email-daniel.thompson@linaro.org>
-References: <1399381429-16194-1-git-send-email-daniel.thompson@linaro.org>
- <1405078418-14070-1-git-send-email-daniel.thompson@linaro.org>
+	Fri, 11 Jul 2014 07:38:10 -0400
+Date: Fri, 11 Jul 2014 12:38:04 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Maxime Coquelin <maxime.coquelin@st.com>
+Cc: Peter Griffin <peter.griffin@linaro.org>, kernel@stlinux.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kishon Vijay Abraham I <kishon@ti.com>
+Subject: Re: [STLinux Kernel] [PATCH v3 0/5] phy: miphy365x: Introduce
+ support for MiPHY365x
+Message-ID: <20140711113804.GA2954@lee--X1>
+References: <1404906074-31992-1-git-send-email-lee.jones@linaro.org>
+ <53BD572C.4060406@ti.com>
+ <20140710153548.GB26886@griffinp-ThinkPad-X1-Carbon-2nd>
+ <20140711103104.GC30519@lee--X1>
+ <20140711110547.GA23439@griffinp-ThinkPad-X1-Carbon-2nd>
+ <20140711113037.GD30519@lee--X1>
+ <53BFCB83.8020304@st.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53BFCB83.8020304@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
+On Fri, 11 Jul 2014, Maxime Coquelin wrote:
+> On 07/11/2014 01:30 PM, Lee Jones wrote:
+> >On Fri, 11 Jul 2014, Peter Griffin wrote:
+> >>On Fri, 11 Jul 2014, Lee Jones wrote:
+> >>>>One small point, patch 5 which adds the DT nodes may not apply as the file got
+> >>>>renamed from stih416-b2020-revE.dts to stih416-b2020e.dts.
+> >>>
+> >>>Not required, Git should handle this seamlessly.
+> >>
+> >>I didn't ask you to do anything.
+> >
+> >Ah, I misread, my bad.
+> >
+> >>Also when I made the same mistake, GIT
+> >>did not handle it seamlessly and I got the following query
+> >>from Ulf http://www.mail-archive.com/devicetree@vger.kernel.org/msg33926.html
+> >
+> >Oh, it looks like the renaming patch went into -rc3 as part of Max's
+> >-fixes branch.  I assumed it would go in via -next.  This is
+> >different, so yes, it will have to be rebased onto -rc3.
+> >
+> >Maxime,
+> >   Do you want me to do that, or are you happy to?
+> 
+> Actually, I already rebase the next branch for DT stuff on top of -rc3.
+> This is not available on stlinux git yet because of mirroring issue.
+> I will let you know when this is fixed, then you can rebase your DT
+> patches on top of it.
 
-We're about to add more options for command behaviour, so let's expand
-the meaning of kdb_repeat_t.
+I'll rebase onto -rc3 now and submit the patch as a vX+1.
 
-So far we just do various renames, there should be no functional changes.
-
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>
-Cc: Mike Travis <travis@sgi.com>
-Cc: kgdb-bugreport@lists.sourceforge.net
----
- include/linux/kdb.h            | 6 +++---
- kernel/debug/kdb/kdb_main.c    | 6 +++---
- kernel/debug/kdb/kdb_private.h | 2 +-
- 3 files changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/include/linux/kdb.h b/include/linux/kdb.h
-index 290db12..e650f79 100644
---- a/include/linux/kdb.h
-+++ b/include/linux/kdb.h
-@@ -17,7 +17,7 @@ typedef enum {
- 	KDB_REPEAT_NONE = 0,	/* Do not repeat this command */
- 	KDB_REPEAT_NO_ARGS,	/* Repeat the command without arguments */
- 	KDB_REPEAT_WITH_ARGS,	/* Repeat the command including its arguments */
--} kdb_repeat_t;
-+} kdb_cmdflags_t;
- 
- typedef int (*kdb_func_t)(int, const char **);
- 
-@@ -147,7 +147,7 @@ static inline const char *kdb_walk_kallsyms(loff_t *pos)
- /* Dynamic kdb shell command registration */
- extern int kdb_register(char *, kdb_func_t, char *, char *, short);
- extern int kdb_register_repeat(char *, kdb_func_t, char *, char *,
--			       short, kdb_repeat_t);
-+			       short, kdb_cmdflags_t);
- extern int kdb_unregister(char *);
- #else /* ! CONFIG_KGDB_KDB */
- static inline __printf(1, 2) int kdb_printf(const char *fmt, ...) { return 0; }
-@@ -156,7 +156,7 @@ static inline int kdb_register(char *cmd, kdb_func_t func, char *usage,
- 			       char *help, short minlen) { return 0; }
- static inline int kdb_register_repeat(char *cmd, kdb_func_t func, char *usage,
- 				      char *help, short minlen,
--				      kdb_repeat_t repeat) { return 0; }
-+				      kdb_cmdflags_t flags) { return 0; }
- static inline int kdb_unregister(char *cmd) { return 0; }
- #endif	/* CONFIG_KGDB_KDB */
- enum {
-diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index 0b28bb0..05c4abc 100644
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -1008,7 +1008,7 @@ int kdb_parse(const char *cmdstr)
- 		if (result && ignore_errors && result > KDB_CMD_GO)
- 			result = 0;
- 		KDB_STATE_CLEAR(CMD);
--		switch (tp->cmd_repeat) {
-+		switch (tp->cmd_flags) {
- 		case KDB_REPEAT_NONE:
- 			argc = 0;
- 			if (argv[0])
-@@ -2646,7 +2646,7 @@ int kdb_register_repeat(char *cmd,
- 			char *usage,
- 			char *help,
- 			short minlen,
--			kdb_repeat_t repeat)
-+			kdb_cmdflags_t flags)
- {
- 	int i;
- 	kdbtab_t *kp;
-@@ -2695,7 +2695,7 @@ int kdb_register_repeat(char *cmd,
- 	kp->cmd_usage  = usage;
- 	kp->cmd_help   = help;
- 	kp->cmd_minlen = minlen;
--	kp->cmd_repeat = repeat;
-+	kp->cmd_flags  = flags;
- 
- 	return 0;
- }
-diff --git a/kernel/debug/kdb/kdb_private.h b/kernel/debug/kdb/kdb_private.h
-index c4c46c7..eaacd16 100644
---- a/kernel/debug/kdb/kdb_private.h
-+++ b/kernel/debug/kdb/kdb_private.h
-@@ -174,7 +174,7 @@ typedef struct _kdbtab {
- 	char    *cmd_help;		/* Help message for this command */
- 	short    cmd_minlen;		/* Minimum legal # command
- 					 * chars required */
--	kdb_repeat_t cmd_repeat;	/* Does command auto repeat on enter? */
-+	kdb_cmdflags_t cmd_flags;	/* Command behaviour flags */
- } kdbtab_t;
- 
- extern int kdb_bt(int, const char **);	/* KDB display back trace */
 -- 
-1.9.3
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
