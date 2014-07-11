@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493AbaGKHl7 (ORCPT <rfc822;w@1wt.eu>);
+	id S1753505AbaGKHmE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 03:42:04 -0400
+Received: from smtp4-g21.free.fr ([212.27.42.4]:19829 "EHLO smtp4-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751508AbaGKHl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Jul 2014 03:41:59 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:46475 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752958AbaGKHgv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 03:36:51 -0400
-From: varkabhadram@gmail.com
-To: netdev@vger.kernel.org
-Cc: Thomas.Lendacky@amd.com, geert+renesas@linux-m68k.org,
-        ebiederm@xmission.com, macro@linux-mips.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        Varka Bhadram <varkab@cdac.in>
-Subject: [PATCH net-next 5/8] ethernet: amd: move pci device ids
-Date: Fri, 11 Jul 2014 13:05:07 +0530
-Message-Id: <1405064110-22579-6-git-send-email-varkabhadram@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1405064110-22579-1-git-send-email-varkabhadram@gmail.com>
-References: <1405064110-22579-1-git-send-email-varkabhadram@gmail.com>
+Message-ID: <53BF953C.7030109@free.fr>
+Date: Fri, 11 Jul 2014 09:41:48 +0200
+From: Martin Peres <martin.peres@free.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Alexandre Courbot <acourbot@nvidia.com>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Ben Skeggs <bskeggs@redhat.com>, Ken Adams <KAdams@nvidia.com>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "gnurou@gmail.com" <gnurou@gmail.com>
+Subject: Re: [PATCH 0/3] drm/gk20a: support for reclocking
+References: <1404977677-22248-1-git-send-email-acourbot@nvidia.com> <53BE61D9.4020202@nvidia.com> <53BF4102.6010807@nvidia.com>
+In-Reply-To: <53BF4102.6010807@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Varka Bhadram <varkab@cdac.in>
+On 11/07/2014 03:42, Alexandre Courbot wrote:
+> On 07/10/2014 06:50 PM, Mikko Perttunen wrote:
+>> Does GK20A itself have any kind of thermal protection capabilities?
+>> Upstream SOCTHERM support is not yet available (though I have a driver
+>> in my tree), so we are thinking of disabling CPU DVFS on boards that
+>> don't have always-on active cooling for now. Same might be necessary for
+>> GPU as well.
+>
+> There is a small thermal driver ( 
+> https://android.googlesource.com/kernel/tegra/+/b445e5296764d18861a6450f6851f25b9ca59dee/drivers/video/tegra/host/gk20a/therm_gk20a.c 
+> ) but it doesn't seem to do much. I believe that for Tegra we rely in 
+> SOCTHERM instead, but maybe Ken could confirm?
 
-Normally any device ids will be above the corresponding device driver
-structure. This patch moves the pci device ids and MODULE_DEVICE_TABLE()
-above the pci driver structure.
+Unless it changed a great deal, I reverse engineered most of the 
+registers in this area (for the nv50), but some stuff didn't change that 
+much and could be used straight away (temperature reading, sending IRQs 
+on thresholds, auto downclocking when overheating). We are not really 
+using those features on nouveau right now, we just poll on the 
+temperature every second.
 
-Signed-off-by: Varka Bhadram <varkab@cdac.in>
----
- drivers/net/ethernet/amd/amd8111e.c |   16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
+If we are moving to using the PMU for thermal monitoring, we can do the 
+polling there and warn the userspace when the temperature is too high or 
+if performance is insufficient / too much. I have part of the code for 
+performance counters in PMU, it's dead simple.
 
-diff --git a/drivers/net/ethernet/amd/amd8111e.c b/drivers/net/ethernet/amd/amd8111e.c
-index e2fb9e2..c47019d 100644
---- a/drivers/net/ethernet/amd/amd8111e.c
-+++ b/drivers/net/ethernet/amd/amd8111e.c
-@@ -101,7 +101,6 @@ Revision History:
- MODULE_AUTHOR("Advanced Micro Devices, Inc.");
- MODULE_DESCRIPTION ("AMD8111 based 10/100 Ethernet Controller. Driver Version "MODULE_VERS);
- MODULE_LICENSE("GPL");
--MODULE_DEVICE_TABLE(pci, amd8111e_pci_tbl);
- module_param_array(speed_duplex, int, NULL, 0);
- MODULE_PARM_DESC(speed_duplex, "Set device speed and duplex modes, 0: Auto Negotiate, 1: 10Mbps Half Duplex, 2: 10Mbps Full Duplex, 3: 100Mbps Half Duplex, 4: 100Mbps Full Duplex");
- module_param_array(coalesce, bool, NULL, 0);
-@@ -109,14 +108,6 @@ MODULE_PARM_DESC(coalesce, "Enable or Disable interrupt coalescing, 1: Enable, 0
- module_param_array(dynamic_ipg, bool, NULL, 0);
- MODULE_PARM_DESC(dynamic_ipg, "Enable or Disable dynamic IPG, 1: Enable, 0: Disable");
- 
--static DEFINE_PCI_DEVICE_TABLE(amd8111e_pci_tbl) = {
--
--	{ PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD8111E_7462,
--	 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0UL },
--	{ 0, }
--
--};
--
- /* This function will read the PHY registers. */
- static int amd8111e_read_phy(struct amd8111e_priv* lp, int phy_id, int reg, u32* val)
- {
-@@ -1953,6 +1944,13 @@ static void amd8111e_remove_one(struct pci_dev *pdev)
- 	}
- }
- 
-+static DEFINE_PCI_DEVICE_TABLE(amd8111e_pci_tbl) = {
-+	{ PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD8111E_7462,
-+		PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0UL },
-+	{ 0, }
-+};
-+MODULE_DEVICE_TABLE(pci, amd8111e_pci_tbl);
-+
- static struct pci_driver amd8111e_driver = {
- 	.name   	= MODULE_NAME,
- 	.id_table	= amd8111e_pci_tbl,
--- 
-1.7.9.5
-
+Martin
