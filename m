@@ -1,57 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657AbaGKOAd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 10:00:33 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:15449 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753654AbaGKOAb (ORCPT
+	id S1753927AbaGKNoJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:44:09 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56046 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753654AbaGKNoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 10:00:31 -0400
-Date: Fri, 11 Jul 2014 15:00:11 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] arm64: Use include/asm-generic/io.h
-Message-ID: <20140711140011.GA16321@arm.com>
-References: <1404918699-17284-1-git-send-email-thierry.reding@gmail.com>
- <201407101514.16530.arnd@arndb.de>
- <20140711121923.GE11473@arm.com>
- <201407111458.09884.arnd@arndb.de>
- <20140711130158.GA10827@ulmo>
+	Fri, 11 Jul 2014 09:44:07 -0400
+Message-Id: <20140711133705.667910879@linutronix.de>
+User-Agent: quilt/0.63-1
+Date: Fri, 11 Jul 2014 13:44:05 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [patch 05/55] ktime: Sanitize ktime_to_us/ms conversion
+References: <20140711133623.530368377@linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140711130158.GA10827@ulmo>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=ktime-sanitize-conversion.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 02:01:59PM +0100, Thierry Reding wrote:
-> On Fri, Jul 11, 2014 at 02:58:09PM +0200, Arnd Bergmann wrote:
-> > On Friday 11 July 2014, Catalin Marinas wrote:
-> > > ioread32() is indeed an alias for readl on arm64 but if the address it
-> > > gets as argument looks like an I/O port, it adds PCI_IOBASE (via the inl
-> > > macro). This would no longer happen with Thierry's patches.
-> > > 
-> > > So I guess that for this patch to work, we also need ioport_map() to
-> > > return an address from the PCI_IOBASE range. Should we merge this now as
-> > > well:
-> > > 
-> > > http://linux-arm.org/git?p=linux-ld.git;a=commitdiff;h=3423064d8e42a38164a8436bcdf7434cf9cd2192
-> > 
-> > This is also part of patch 1/3 in Thierry's series.
-> 
-> The hunk in my patch 1/3 is missing the "& IO_SPACE_LIMIT", I can respin
-> and include that.
+With the plain nanoseconds based ktime_t we can simply use
+ktime_divns() instead of going through loops and hoops of
+timespec/timeval conversion.
 
-OK, I missed this part. In which case, the patches look fine:
+Reported-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/hrtimer.h |    6 ------
+ include/linux/ktime.h   |   12 ++++++++----
+ 2 files changed, 8 insertions(+), 10 deletions(-)
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Index: tip/include/linux/hrtimer.h
+===================================================================
+--- tip.orig/include/linux/hrtimer.h
++++ tip/include/linux/hrtimer.h
+@@ -457,12 +457,6 @@ extern void hrtimer_run_pending(void);
+ /* Bootup initialization: */
+ extern void __init hrtimers_init(void);
+ 
+-#if BITS_PER_LONG < 64
+-extern u64 ktime_divns(const ktime_t kt, s64 div);
+-#else /* BITS_PER_LONG < 64 */
+-# define ktime_divns(kt, div)		(u64)((kt).tv64 / (div))
+-#endif
+-
+ /* Show pending timers: */
+ extern void sysrq_timer_list_show(void);
+ 
+Index: tip/include/linux/ktime.h
+===================================================================
+--- tip.orig/include/linux/ktime.h
++++ tip/include/linux/ktime.h
+@@ -157,16 +157,20 @@ static inline bool ktime_before(const kt
+ 	return ktime_compare(cmp1, cmp2) < 0;
+ }
+ 
++#if BITS_PER_LONG < 64
++extern u64 ktime_divns(const ktime_t kt, s64 div);
++#else /* BITS_PER_LONG < 64 */
++# define ktime_divns(kt, div)		(u64)((kt).tv64 / (div))
++#endif
++
+ static inline s64 ktime_to_us(const ktime_t kt)
+ {
+-	struct timeval tv = ktime_to_timeval(kt);
+-	return (s64) tv.tv_sec * USEC_PER_SEC + tv.tv_usec;
++	return ktime_divns(kt, NSEC_PER_USEC);
+ }
+ 
+ static inline s64 ktime_to_ms(const ktime_t kt)
+ {
+-	struct timeval tv = ktime_to_timeval(kt);
+-	return (s64) tv.tv_sec * MSEC_PER_SEC + tv.tv_usec / USEC_PER_MSEC;
++	return ktime_divns(kt, NSEC_PER_MSEC);
+ }
+ 
+ static inline s64 ktime_us_delta(const ktime_t later, const ktime_t earlier)
 
-(I'm also happy to merge 1 and 3, whatever you prefer)
+
