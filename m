@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754388AbaGKWKV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 18:10:21 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:51300 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751029AbaGKWKU (ORCPT
+	id S1754281AbaGKWNa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 18:13:30 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:47324 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552AbaGKWN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 18:10:20 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [PATCH] Documentation: Remove reference to acpi_platform_device_ids from acpi/enumeration
-Date: Sat, 12 Jul 2014 00:28:28 +0200
-Message-ID: <18045079.o48H7sblXe@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <96c9e6efdd200bb194bc99845a18015f8d19881d.1405076619.git.dvhart@linux.intel.com>
-References: <96c9e6efdd200bb194bc99845a18015f8d19881d.1405076619.git.dvhart@linux.intel.com>
+	Fri, 11 Jul 2014 18:13:29 -0400
+Date: Fri, 11 Jul 2014 23:13:24 +0100
+From: James Hunt <james.hunt@ubuntu.com>
+To: upstart-devel@lists.ubuntu.com, linux-kernel@vger.kernel.org
+Subject: Upstart 1.13 released
+Message-ID: <20140711221324.GA22059@faire>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="/04w6evG8XlLl3ft"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 11, 2014 11:03:39 AM Darren Hart wrote:
-> As of:
-> 
->     4845934 ACPI / scan: use platform bus type by default for _HID enumeration
-> 
-> ACPI uses the platform bus by default, changing the opt-in to an opt-out
-> policy, eliminating the acpi_platform_device_ids table and replacing it
-> with forbidden_id_list[].
-> 
-> Remove the qualifying paragraph from the acpi/enumeration documentation
-> as it no longer applies.
 
-Sure thing.  I was about to do that myself, but you beat me to it. :-)
+--/04w6evG8XlLl3ft
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
 
-Applied, thanks!
 
-> Reported-by: Max Eliaser <max@meliaserlow.dyndns.tv>
-> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-> Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  Documentation/acpi/enumeration.txt | 6 ------
->  1 file changed, 6 deletions(-)
-> 
-> diff --git a/Documentation/acpi/enumeration.txt b/Documentation/acpi/enumeration.txt
-> index fd786ea..e182be5 100644
-> --- a/Documentation/acpi/enumeration.txt
-> +++ b/Documentation/acpi/enumeration.txt
-> @@ -60,12 +60,6 @@ If the driver needs to perform more complex initialization like getting and
->  configuring GPIOs it can get its ACPI handle and extract this information
->  from ACPI tables.
->  
-> -Currently the kernel is not able to automatically determine from which ACPI
-> -device it should make the corresponding platform device so we need to add
-> -the ACPI device explicitly to acpi_platform_device_ids list defined in
-> -drivers/acpi/acpi_platform.c. This limitation is only for the platform
-> -devices, SPI and I2C devices are created automatically as described below.
-> -
->  DMA support
->  ~~~~~~~~~~~
->  DMA controllers enumerated via ACPI should be registered in the system to
-> 
+Summary of changes:
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+* Fix for handling upgrade from non-stateful-re-exec instance to a
+  stateful-re-exec-capable one (LP:#1303891).
+* Disable chroot sessions by default. A new '--chroot-sessions' command-line
+  option restores the old default behaviour.
+* New tests and improved documentation.
+* Fix for Session Init umask change on re-exec (LP: #1302117).
+* Allow '--confdir' to look for system jobs in multiple locations, which also
+  adds new command-line options '--append-confdir' and '--prepend-confdir' for
+  full flexibility (LP: #1315060).
+* Allow initctl(8) commands 'set-env' and 'unset-env' to operate on multiple
+  environment variables (LP: #1324096).
+* Support for cgroups via a new 'cgroup' stanza. This makes use of cgmanager(8)
+  and is available to both System and Session Inits.  Support for cgroups can be
+  disabled at built-time if required. See init(5) for 'cgroup' stanza syntax?
+
+
+Kind regards,
+
+James.
+--
+James Hunt
+____________________________________
+#upstart on freenode
+http://upstart.ubuntu.com/cookbook
+https://lists.ubuntu.com/mailman/listinfo/upstart-devel
+
+--/04w6evG8XlLl3ft
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJTwGGEAAoJEJ1Q4UTmNXMnwLIP/2CbxHtUIHvDNYkQdRNcgWNz
+Bk2haS2iQi2ttuNt8FpkWAlEno2EmUTsvY79XDfYOKVDGuLDGGDntflUcVGDqQ6N
+HeePhfQoHvQ6EAvOEVrYdP6UukuhFYy8/b98hAY03233k/zqNQoMT8ZY3iA5Ofb8
+p82WdRBWjLZhd19Eq5qgzRx/Fyw+7AZ7CjzT9xNRxsdCP/z1xevzy/WZWzPRUjXx
+VxMTMoJqUytLI3bw75Lo41PQKgd4UeSIMILGo28jz5VPeKSZ1NpPicRXCB/MGsh/
+z6UtjLrwT+JaUnmN4hmVCGn2MioBrxKznp2yX9lv8DjraFiouwMMgAqgOW8td9oM
+/JJjrKOwM8CHbcQBsW4doJu6bT++hbkPqMxjFov+a7X4MQHkO65VLUl8kVwiwBx0
+7iKmD8j1j1gpgacmnMlDCbgbGj838MzP2Mg4OLhXCOVZUHPZKp2kR6trbwe1s8gr
+ird9OF2K03q0VF9/N2+CNZvQee5QiunX9isMvPj7ZxE2jMOS7v/TyOCXnKbMxQ+X
+E/TUyNMvqTc4vUdiJHpvyLIBt/X4k6vIlNHLk5fYrHCWo2M7cYo4U39im24il94t
+CqkplXZmBIxCzQ4fPr3B4Y5yRAwocrxQoOvp/t8FsTzUDRHreIrerAQBoH/oX3cH
+G4IMIPP8m512poMUyWNA
+=Ju25
+-----END PGP SIGNATURE-----
+
+--/04w6evG8XlLl3ft--
