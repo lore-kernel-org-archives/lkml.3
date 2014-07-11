@@ -1,93 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156AbaGKNrr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:47:47 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:38776 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932066AbaGKNro (ORCPT
+	id S932178AbaGKNsW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:48:22 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56292 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752229AbaGKNpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:47:44 -0400
-Date: Fri, 11 Jul 2014 15:47:37 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 2/2] rcu: Don't offload callbacks unless
- specifically requested
-Message-ID: <20140711134736.GC26045@localhost.localdomain>
-References: <20140707224841.GA10101@linux.vnet.ibm.com>
- <1405085703-14822-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1405085703-14822-2-git-send-email-paulmck@linux.vnet.ibm.com>
+	Fri, 11 Jul 2014 09:45:16 -0400
+Message-Id: <20140711133709.494634177@linutronix.de>
+User-Agent: quilt/0.63-1
+Date: Fri, 11 Jul 2014 13:45:13 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        QCA ath9k Development <ath9k-devel@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [patch 50/55] wireless: ath9k: Get rid of timespec conversions
+References: <20140711133623.530368377@linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405085703-14822-2-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=wireless-ath9-use-proper-interfaces.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 06:35:03AM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> 
-> Enabling NO_HZ_FULL currently has the side effect of enabling callback
-> offloading on all CPUs.  This results in lots of additional rcuo kthreads,
-> and can also increase context switching and wakeups, even in cases where
-> callback offloading is neither needed nor particularly desirable.  This
-> commit therefore enables callback offloading on a given CPU only if
-> specifically requested at build time or boot time, or if that CPU has
-> been specifically designated (again, either at build time or boot time)
-> as a nohz_full CPU.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+We have interfaces. Remove the open coded cruft. Reduces text size
+along with the code.
 
-ACK.
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: QCA ath9k Development <ath9k-devel@qca.qualcomm.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>
+---
+ drivers/net/wireless/ath/ath9k/hw.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-> ---
->  init/Kconfig             | 4 ++--
->  kernel/rcu/tree_plugin.h | 3 +++
->  2 files changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 9d76b99af1b9..9332d33346ac 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -737,7 +737,7 @@ choice
->  
->  config RCU_NOCB_CPU_NONE
->  	bool "No build_forced no-CBs CPUs"
-> -	depends on RCU_NOCB_CPU && !NO_HZ_FULL
-> +	depends on RCU_NOCB_CPU && !NO_HZ_FULL_ALL
->  	help
->  	  This option does not force any of the CPUs to be no-CBs CPUs.
->  	  Only CPUs designated by the rcu_nocbs= boot parameter will be
-> @@ -751,7 +751,7 @@ config RCU_NOCB_CPU_NONE
->  
->  config RCU_NOCB_CPU_ZERO
->  	bool "CPU 0 is a build_forced no-CBs CPU"
-> -	depends on RCU_NOCB_CPU && !NO_HZ_FULL
-> +	depends on RCU_NOCB_CPU && !NO_HZ_FULL_ALL
->  	help
->  	  This option forces CPU 0 to be a no-CBs CPU, so that its RCU
->  	  callbacks are invoked by a per-CPU kthread whose name begins
-> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> index b27b86c7bbfa..17eed0856b03 100644
-> --- a/kernel/rcu/tree_plugin.h
-> +++ b/kernel/rcu/tree_plugin.h
-> @@ -2473,6 +2473,9 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
->  
->  	if (rcu_nocb_mask == NULL)
->  		return;
-> +#ifdef CONFIG_NO_HZ_FULL
-> +	cpumask_or(rcu_nocb_mask, rcu_nocb_mask, tick_nohz_full_mask);
-> +#endif /* #ifdef CONFIG_NO_HZ_FULL */
->  	if (ls == -1) {
->  		ls = int_sqrt(nr_cpu_ids);
->  		rcu_nocb_leader_stride = ls;
-> -- 
-> 1.8.1.5
-> 
+Index: tip/drivers/net/wireless/ath/ath9k/hw.c
+===================================================================
+--- tip.orig/drivers/net/wireless/ath/ath9k/hw.c
++++ tip/drivers/net/wireless/ath/ath9k/hw.c
+@@ -1734,7 +1734,6 @@ int ath9k_hw_reset(struct ath_hw *ah, st
+ 		   struct ath9k_hw_cal_data *caldata, bool fastcc)
+ {
+ 	struct ath_common *common = ath9k_hw_common(ah);
+-	struct timespec ts;
+ 	u32 saveLedState;
+ 	u32 saveDefAntenna;
+ 	u32 macStaId1;
+@@ -1784,8 +1783,7 @@ int ath9k_hw_reset(struct ath_hw *ah, st
+ 
+ 	/* Save TSF before chip reset, a cold reset clears it */
+ 	tsf = ath9k_hw_gettsf64(ah);
+-	getrawmonotonic(&ts);
+-	usec = ts.tv_sec * 1000000ULL + ts.tv_nsec / 1000;
++	usec = ktime_to_us(ktime_get_raw());
+ 
+ 	saveLedState = REG_READ(ah, AR_CFG_LED) &
+ 		(AR_CFG_LED_ASSOC_CTL | AR_CFG_LED_MODE_SEL |
+@@ -1818,8 +1816,7 @@ int ath9k_hw_reset(struct ath_hw *ah, st
+ 	}
+ 
+ 	/* Restore TSF */
+-	getrawmonotonic(&ts);
+-	usec = ts.tv_sec * 1000000ULL + ts.tv_nsec / 1000 - usec;
++	usec = ktime_to_us(ktime_get_raw()) - usec;
+ 	ath9k_hw_settsf64(ah, tsf + usec);
+ 
+ 	if (AR_SREV_9280_20_OR_LATER(ah))
+
+
