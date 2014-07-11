@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215AbaGKHv3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 03:51:29 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:37550 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752834AbaGKHv2 (ORCPT
+	id S1752759AbaGKHyp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 03:54:45 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44071 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751815AbaGKHyo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 03:51:28 -0400
+	Fri, 11 Jul 2014 03:54:44 -0400
+From: "Gupta, Pekon" <pekon@ti.com>
+To: "Quadros, Roger" <rogerq@ti.com>, "tony@atomide.com" <tony@atomide.com>,
+        "computersforpeace@gmail.com" <computersforpeace@gmail.com>
+CC: "javier@dowhile0.org" <javier@dowhile0.org>,
+        "ezequiel.garcia@free-electrons.com" 
+	<ezequiel.garcia@free-electrons.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "jg1.han@samsung.com" <jg1.han@samsung.com>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [RFC PATCH 07/10] OMAP: GPMC: Introduce APIs for Configuring
+ ECC Engine
+Thread-Topic: [RFC PATCH 07/10] OMAP: GPMC: Introduce APIs for Configuring
+ ECC Engine
+Thread-Index: AQHPm3KfolT+TFXUakK7gKHiJMY+w5uagd9A
+Date: Fri, 11 Jul 2014 07:54:04 +0000
+Message-ID: <20980858CB6D3A4BAE95CA194937D5E73EB01E0E@DBDE04.ent.ti.com>
+References: <1404909450-11970-1-git-send-email-rogerq@ti.com>
+ <1404909450-11970-8-git-send-email-rogerq@ti.com>
+In-Reply-To: <1404909450-11970-8-git-send-email-rogerq@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20140710131646.GB3935@laptop>
-References: <1404144343-18720-1-git-send-email-vincent.guittot@linaro.org>
- <1404144343-18720-10-git-send-email-vincent.guittot@linaro.org> <20140710131646.GB3935@laptop>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Fri, 11 Jul 2014 09:51:06 +0200
-Message-ID: <CAKfTPtDzxyrzVmX016VB8j_y19wcCBVB1Rj46FYngMA+Ajft6g@mail.gmail.com>
-Subject: Re: [PATCH v3 09/12] Revert "sched: Put rq's sched_avg under CONFIG_FAIR_GROUP_SCHED"
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 July 2014 15:16, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, Jun 30, 2014 at 06:05:40PM +0200, Vincent Guittot wrote:
->> This reverts commit f5f9739d7a0ccbdcf913a0b3604b134129d14f7e.
->>
->> We are going to use runnable_avg_sum and runnable_avg_period in order to get
->> the utilization of the CPU. This statistic includes all tasks that run the CPU
->> and not only CFS tasks.
+Hi Roger,
+
+>From: Quadros, Roger
 >
-> But this rq->avg is not the one that is migration aware, right? So why
-> use this?
-
-Yes, it's not the one that is migration aware
-
+>Even though the ECC/BCH engine is meant for exclusive use by
+>the OMAP NAND controller, the ECC/BCH registers belong
+>to the GPMC controller's register space
 >
-> We already compensate cpu_capacity for !fair tasks, so I don't see why
-> we can't use the migration aware one (and kill this one as Yuyang keeps
-> proposing) and compensate with the capacity factor.
+>Add omap_gpmc_ecc_configure_enable() and omap_gpmc_ecc_disable()
+>to manage the ECC engine. OMAP NAND driver must use these APIs
+>instead of directly accessing the ECC Engine registers.
+>
+>Signed-off-by: Roger Quadros <rogerq@ti.com>
+>---
+As suggested in 
+http://lists.infradead.org/pipermail/linux-mtd/2014-July/054595.html
 
-The 1st point is that cpu_capacity is compensated by both !fair_tasks
-and frequency scaling and we should not take into account frequency
-scaling for detecting overload
+Please try to move chip->ecc.calculate() implementations like
+- omap_calculate_ecc_bch()
+- omap_calculate_ecc()
 
-What we have now is the the weighted load avg that is the sum of the
-weight load of entities on the run queue. This is not usable to detect
-overload because of the weight. An unweighted version of this figure
-would be more usefull but it's not as accurate as the one I use IMHO.
-The example that has been discussed during the review of the last
-version has shown some limitations
+>From NAND driver To GPMC driver, as that should be easy, And solve
+most of your work (no need to export GPMC registers).
+- You may rename them appropriately and change the argument list
+   if needed.
+- And NAND driver can just have some wrapper functions to match
+  the MTD interface arguments.
 
-With the following schedule pattern from Morten's example
 
-   | 5 ms | 5 ms | 5 ms | 5 ms | 5 ms | 5 ms | 5 ms | 5 ms | 5 ms |
-A:   run     rq     run  ----------- sleeping -------------  run
-B:   rq      run    rq    run   ---- sleeping -------------  rq
+with regards, pekon
 
-The scheduler will see the following values:
-Task A unweighted load value is 47%
-Task B unweight load is 60%
-The maximum Sum of unweighted load is 104%
-rq->avg load is 60%
 
-And the real CPU load is 50%
 
-So we will have opposite decision depending of the used values: the
-rq->avg or the Sum of unweighted load
-
-The sum of unweighted load has the main advantage of showing
-immediately what will be the relative impact of adding/removing a
-task. In the example, we can see that removing task A or B will remove
-around half the CPU load but it's not so good for giving the current
-utilization of the CPU
-
-Vincent
