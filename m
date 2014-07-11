@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283AbaGKT0d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 15:26:33 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38030 "EHLO
+	id S1755176AbaGKT2t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 15:28:49 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38054 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755141AbaGKT0b (ORCPT
+	with ESMTP id S1754071AbaGKT2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 15:26:31 -0400
-Date: Fri, 11 Jul 2014 21:26:30 +0200
+	Fri, 11 Jul 2014 15:28:47 -0400
+Date: Fri, 11 Jul 2014 21:28:45 +0200
 From: Pavel Machek <pavel@ucw.cz>
-To: Jiri Kosina <jkosina@suse.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux-pm mailing list <linux-pm@lists.osdl.org>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Subject: Re: 3.15-rc: regression in suspend
-Message-ID: <20140711192629.GA20015@amd.pavel.ucw.cz>
-References: <alpine.LNX.2.00.1405151727380.16459@pobox.suse.cz>
- <CAKMK7uFEjDGSpdB0xDPL09GZ8N7aFrNA530HbRLyfTPx5SkLQw@mail.gmail.com>
- <20140607120614.GB5309@amd.pavel.ucw.cz>
- <20140607231124.GA3611@amd.pavel.ucw.cz>
- <CAKMK7uEALofLiEA3m-QKjygC=YZNjaEtUMfbpbXinMoim1ygkw@mail.gmail.com>
- <20140609102328.GA25332@amd.pavel.ucw.cz>
- <alpine.LNX.2.00.1406091302560.20782@pobox.suse.cz>
- <20140625223522.GA5923@xo-6d-61-c0.localdomain>
- <alpine.LNX.2.00.1406271537000.21386@pobox.suse.cz>
- <20140707083908.GE5821@phenom.ffwll.local>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sebastian Reichel <sre@debian.org>, Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: /proc/cpuinfo: Use DT machine name when possible
+Message-ID: <20140711192845.GB20015@amd.pavel.ucw.cz>
+References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
+ <CAL_JsqKw-C6uZBU3hccGmdofXcCcUKTV6z7Af6KwYwnZiy3HoQ@mail.gmail.com>
+ <201406182122.29623@pali>
+ <20140618211038.GD558@drone.musicnaut.iki.fi>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20140707083908.GE5821@phenom.ffwll.local>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140618211038.GD558@drone.musicnaut.iki.fi>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2014-07-07 10:39:08, Daniel Vetter wrote:
-> On Fri, Jun 27, 2014 at 03:37:16PM +0200, Jiri Kosina wrote:
-> > On Thu, 26 Jun 2014, Pavel Machek wrote:
-> > 
-> > > Ok, so I have set up machines for ktest / autobisect, and found out that 
-> > > 3.16-rc1 no longer has that problem. Oh well, bisect would not be fun, 
-> > > anyway...
-> > 
-> > I am still seeing the problem with 3.16-rc2.
+On Thu 2014-06-19 00:10:39, Aaro Koskinen wrote:
+> Hi,
 > 
-> I'm confused now. Is the bisect result
+> On Wed, Jun 18, 2014 at 09:22:29PM +0200, Pali Rohár wrote:
+> > So without this patch DT migration for Nokia N900 cannot be done 
+> > without breaking userspace - which is not acceptable...
 > 
-> commit 773875bfb6737982903c42d1ee88cf60af80089c
-> Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-> Date:   Mon Jan 27 10:00:30 2014 +0100
-> 
->     drm/i915: Don't set the 8to6 dither flag when not scaling
-> 
-> now the culprit or not? Or do we have 2 different bugs at hand here?
+> I guess the fact is that the Nokia N900 proprietary userspace has
+> never worked properly with the mainline kernel without severe patching,
+> so you cannot really talk about any regression. If you cannot fix
+> those programs, you could still probably emulate the old Nokia kernel's
+> /proc/cpuinfo by providing some text file and bind mounting it, no?
 
-Three different issues, it seems. Two ring initialization problems,
-one went away in 3.16 (for me), second did not (suspend for jikos),
-third -- trivial issue with 8to6 dither.
+Actually, yes, it worked pretty well with some close-to-mainline
+kernels.
 
+And bind-mount on /proc/cpuinfo is beyond ugly, don't you think?
 									Pavel
 -- 
 (english) http://www.livejournal.com/~pavelmachek
