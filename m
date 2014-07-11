@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420AbaGKVxZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 17:53:25 -0400
-Received: from us-mx2.synaptics.com ([192.147.44.131]:64491 "EHLO
-	us-mx2.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754272AbaGKVxS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 17:53:18 -0400
-X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Jul 2014 17:53:16 EDT
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Fri, 11 Jul 2014 14:51:35 -0700
-From: Andrew Duggan <aduggan@synaptics.com>
-To: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Andrew Duggan <aduggan@synaptics.com>, Jiri Kosina <jkosina@suse.cz>,
-        =?UTF-8?q?Benjamin=20Tissoires=20=C2=A0?= 
-	<benjamin.tissoires@redhat.com>
-Subject: [PATCH] HID: rmi: change logging level of log messages related to unexpected reports
-Date: Fri, 11 Jul 2014 14:35:51 -0700
-Message-ID: <1405114551-24354-2-git-send-email-aduggan@synaptics.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405114551-24354-1-git-send-email-aduggan@synaptics.com>
-References: <1405114551-24354-1-git-send-email-aduggan@synaptics.com>
+	id S1753290AbaGKV6Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 17:58:16 -0400
+Received: from mout.gmx.net ([212.227.15.18]:53644 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751403AbaGKV6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 17:58:14 -0400
+Message-ID: <53C05DD8.9050500@gmx.de>
+Date: Fri, 11 Jul 2014 23:57:44 +0200
+From: Hartmut Knaack <knaack.h@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:29.0) Gecko/20100101 Firefox/29.0 SeaMonkey/2.26.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.2.20.38]
+To: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
+        Jonathan Cameron <jic23@kernel.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        =?UTF-8?B?ImVkZGllKOiUoeaeqyki?= <cf@rock-chips.com>,
+        huangtao@rock-chips.com
+Subject: Re: [PATCH 2/2] dt-bindings: document Rockchip saradc
+References: <2959154.xc8BQActsn@diego> <3591595.sBj6Zqo42A@diego>
+In-Reply-To: <3591595.sBj6Zqo42A@diego>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:jcKCIOPJtf1LmUk3JBzUBnHx1e1l9YwSgpKGNNeSA7RZnFCIHRR
+ RYy/8C1De+9BnKD3qUmpufJRnMUrjoCoihFmPdrG63n+g0ub+u6I6DP/As8aH23lUqvykN8
+ 57IXXPt8xsmwA+S0SejtTs1cbpltn3i92xNnJEmrKhjFaFhJ58jiW9X/vrPa11+X/7Ewslw
+ MHWcRAMmXS+OEaWdC5C1A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Userspace tools may use hidraw to perform operations on the device from userspace while
-hid-rmi is bound to the device. This can cause hid-rmi to print error messages when its
-->raw_event() callback gets called as the reports pass through the HID stack. In this case
-receiving responses which were not initiated by hid-rmi is not actually an error so the resulting
-error messages are incorrect and misleading. This patch changes the log messages to debug so
-that the messages can be turned on in the event that there is a problem and there is not
-a userspace tool running.
-
-Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
----
- drivers/hid/hid-rmi.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
-index 578bbe6..25f571a 100644
---- a/drivers/hid/hid-rmi.c
-+++ b/drivers/hid/hid-rmi.c
-@@ -377,7 +377,7 @@ static int rmi_input_event(struct hid_device *hdev, u8 *data, int size)
- 	irq_mask |= hdata->f30.irq_mask;
- 
- 	if (data[1] & ~irq_mask)
--		hid_warn(hdev, "unknown intr source:%02lx %s:%d\n",
-+		hid_dbg(hdev, "unknown intr source:%02lx %s:%d\n",
- 			data[1] & ~irq_mask, __FILE__, __LINE__);
- 
- 	if (hdata->f11.interrupt_base < hdata->f30.interrupt_base) {
-@@ -400,7 +400,7 @@ static int rmi_read_data_event(struct hid_device *hdev, u8 *data, int size)
- 	struct rmi_data *hdata = hid_get_drvdata(hdev);
- 
- 	if (!test_bit(RMI_READ_REQUEST_PENDING, &hdata->flags)) {
--		hid_err(hdev, "no read request pending\n");
-+		hid_dbg(hdev, "no read request pending\n");
- 		return 0;
- 	}
- 
--- 
-1.9.1
+Heiko Stübner schrieb:
+> This add the necessary binding documentation for the saradc found in all recent
+> processors from Rockchip.
+>
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> ---
+Spotted some typos, see inline.
+>  .../bindings/iio/adc/rockchip-saradc.txt           | 28 ++++++++++++++++++++++
+>  1 file changed, 28 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
+>
+> diff --git a/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt b/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
+> new file mode 100644
+> index 0000000..603ac9c
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
+> @@ -0,0 +1,28 @@
+> +Rockhip Successive Approximation Register (SAR) A/D Converter bindings
+Should be "Rockchip".
+> +
+> +Required properties:
+> +- compatible: Should be "rockchip,saradc"
+> +- reg: physical base address of the controller and length of memory mapped
+> +       region.
+> +- interrupts: The interrupt number to the cpu. The interrupt specifier format
+> +              depends on the interrupt controller.
+> +- clocks: Must contain an entry for each entry in clock-names.
+> +- clock-names: Shall be "saradc" for the converter-clock, and "apb_pclk" for
+> +               the peripheral clock.
+> +- vref-supply: The regulator supply ADC refrence voltage.
+... reference voltage.
+> +- #io-channel-cells: Should be 1, see ../iio-bindings.txt
+> +
+> +Optional properties :
+> +- clock-frequency : converter frequency in Hz. If omitted, 1MHz is used.
+> +
+> +Example:
+> +	saradc: saradc@2006c000 {
+> +		compatible = "rockchip,saradc";
+> +		reg = <0x2006c000 0x100>;
+> +		interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
+> +		clocks = <&cru SCLK_SARADC>, <&cru PCLK_SARADC>;
+> +		clock-names = "saradc", "apb_pclk";
+> +		#io-channel-cells = <1>;
+> +		vref-supply = <&vcc18>;
+> +		clock-frequency = <1000000>;
+> +	};
 
