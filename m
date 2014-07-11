@@ -1,49 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146AbaGKOhp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 10:37:45 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:50420 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753881AbaGKOhm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 10:37:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <53BFF132.3020700@nvidia.com>
-References: <1405028569-14253-1-git-send-email-ttynkkynen@nvidia.com>
-	<1405028569-14253-13-git-send-email-ttynkkynen@nvidia.com>
-	<CAKohpom9ORXFiUU4=V+CxgN0ZOFLMEhEjHiU8HsYUYDybNXgHQ@mail.gmail.com>
-	<53BFF132.3020700@nvidia.com>
-Date: Fri, 11 Jul 2014 20:07:42 +0530
-Message-ID: <CAKohpon_YKkRP+iYnUaE14fKmcSx_SfWVHPiA48BGiPTCPHTKA@mail.gmail.com>
-Subject: Re: [PATCH 12/13] cpufreq: Add cpufreq driver for Tegra124
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1754166AbaGKOip (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 10:38:45 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:59338 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751649AbaGKOio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 10:38:44 -0400
+From: Ian Abbott <abbotti@mev.co.uk>
+To: <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>,
+        <devel@driverdev.osuosl.org>
+Cc: <gregkh@linuxfoundation.org>, <hsweeten@visionengravers.com>,
+        <abbotti@mev.co.uk>, <dcb314@hotmail.com>,
+        Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Subject: [PATCH v3] drivers/staging/comedi/drivers/ni_atmio16d.c: remove pointless condition
+Date: Fri, 11 Jul 2014 15:38:30 +0100
+Message-Id: <1405089510-23182-1-git-send-email-abbotti@mev.co.uk>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1405089127-21646-1-git-send-email-abbotti@mev.co.uk>
+References: <1405089127-21646-1-git-send-email-abbotti@mev.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 July 2014 19:44, Tuomas Tynkkynen <ttynkkynen@nvidia.com> wrote:
-> Sure, I can do the CPU clock parent change first and then instantiate the
-> cpufreq-cpu0 driver, like highbank-cpufreq. That'll depend on the patch
-> 'cpufreq: cpu0: OPPs can be populated at runtime' from your 'Extend support
-> beyond CPU0' series though, any idea when that patch will land in?
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 
-So, after your mail I had a chat with Rafael. As this patch happens to be a
-fix, we will try to take it into 3.16 only (I am going to send few patches out
-of that series separately in few mins). Otherwise 3.17 is where most of it
-should go.
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 
-Thanks for your agreement to make our life easier :)
+The issue was discovered with static analysis and has two instances in
+this file. The code looks like this
+if (x < 65536000) {
+	...
+} else if (x < 655360000) {
+	...
+} else if (x <= 0xffffffff /* 6553600000 */) {
+	...
+} else if (x <= 0xffffffff /* 65536000000 */) {
+	...
+}
+
+The meaning of this block is to select appropriate clock frequency for
+interval timer basing on "x", which is amount of time.
+
+Notes:
+1. That last condition matches previous one - that's the issue.
+2. Decimal numbers in comments don't match hex numbers in expressions.
+But in first case the numbers have same order, while in the second case
+the hex number is the same, and the decimal one is 10 times bigger.
+3. Actually type of "x" is "unsigned int", so its exact upper limit is
+not obviously known.
+4. There's no "else" block.
+
+So it makes sense to make an "else" block from last "else if" case. The
+code inside the block seems correct for such usage.
+
+[ Actually, get rid of the final "else if" case and change the
+next-to-last "else if" case to an "else" as the upper limit of "x" _is_
+known to be 0xffffffff (UINT_MAX), which is less than 6553600000 -- Ian ]
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=79871
+Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+---
+v2: Removed final "else if" block and changed preceding "else if" block
+to "else" block as the condition is always true due to limited range of
+"unsigned int". -- Ian
+v3: Corrected subject line I messed up in v2. -- Ian
+---
+ drivers/staging/comedi/drivers/ni_atmio16d.c | 10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/ni_atmio16d.c b/drivers/staging/comedi/drivers/ni_atmio16d.c
+index 6ad27f5..b1b4744 100644
+--- a/drivers/staging/comedi/drivers/ni_atmio16d.c
++++ b/drivers/staging/comedi/drivers/ni_atmio16d.c
+@@ -335,12 +335,9 @@ static int atmio16d_ai_cmd(struct comedi_device *dev,
+ 	} else if (cmd->convert_arg < 655360000) {
+ 		base_clock = CLOCK_100_KHZ;
+ 		timer = cmd->convert_arg / 10000;
+-	} else if (cmd->convert_arg <= 0xffffffff /* 6553600000 */) {
++	} else /* cmd->convert_arg < 6553600000 */ {
+ 		base_clock = CLOCK_10_KHZ;
+ 		timer = cmd->convert_arg / 100000;
+-	} else if (cmd->convert_arg <= 0xffffffff /* 65536000000 */) {
+-		base_clock = CLOCK_1_KHZ;
+-		timer = cmd->convert_arg / 1000000;
+ 	}
+ 	outw(0xFF03, dev->iobase + AM9513A_COM_REG);
+ 	outw(base_clock, dev->iobase + AM9513A_DATA_REG);
+@@ -403,12 +400,9 @@ static int atmio16d_ai_cmd(struct comedi_device *dev,
+ 		} else if (cmd->scan_begin_arg < 655360000) {
+ 			base_clock = CLOCK_100_KHZ;
+ 			timer = cmd->scan_begin_arg / 10000;
+-		} else if (cmd->scan_begin_arg < 0xffffffff /* 6553600000 */) {
++		} else /* cmd->scan_begin_arg < 6553600000 */ {
+ 			base_clock = CLOCK_10_KHZ;
+ 			timer = cmd->scan_begin_arg / 100000;
+-		} else if (cmd->scan_begin_arg < 0xffffffff /* 65536000000 */) {
+-			base_clock = CLOCK_1_KHZ;
+-			timer = cmd->scan_begin_arg / 1000000;
+ 		}
+ 		outw(0xFF02, dev->iobase + AM9513A_COM_REG);
+ 		outw(base_clock, dev->iobase + AM9513A_DATA_REG);
+-- 
+2.0.0
+
