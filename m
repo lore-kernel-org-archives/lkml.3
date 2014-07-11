@@ -1,96 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754634AbaGKXOO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 19:14:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40213 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751221AbaGKXON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 19:14:13 -0400
-Message-ID: <53C06FB8.3040101@zytor.com>
-Date: Fri, 11 Jul 2014 16:14:00 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754720AbaGKXPo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 19:15:44 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:65027 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751509AbaGKXPn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 19:15:43 -0400
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: xen-devel@lists.xenproject.org, konrad@kernel.org,
-        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org,
-        david.vrabel@citrix.com
-Subject: Re: [PATCH] xen: Introduce 'xen_nopv' to disable PV extensions for
- HVM guests.
-References: <201407112309.s6BN9MFb016118@aserz7022.oracle.com>
-In-Reply-To: <201407112309.s6BN9MFb016118@aserz7022.oracle.com>
-X-Enigmail-Version: 1.6
+In-Reply-To: <1405116252-53612-1-git-send-email-s-anna@ti.com>
+References: <1405116252-53612-1-git-send-email-s-anna@ti.com>
+Date: Fri, 11 Jul 2014 16:15:41 -0700
+Message-ID: <CAPdLdq=ZnPBQiGVbKOk8G5soP=uPYpT7mEjigpR=W1Hc4btV3g@mail.gmail.com>
+Subject: Re: [PATCHv2 0/5] OMAP Mailbox framework adoption & DT support
+From: Markus Mayer <markus.mayer@linaro.org>
+To: Suman Anna <s-anna@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Jassi Brar <jaswinder.singh@linaro.org>,
+        Dave Gerlach <d-gerlach@ti.com>, Pavel Machek <pavel@ucw.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-omap@vger.kernel.org,
+        Device Tree List <devicetree@vger.kernel.org>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2014 04:09 PM, Konrad Rzeszutek Wilk wrote:
-> 
-> On Jul 11, 2014 6:52 PM, "H. Peter Anvin" <hpa@zytor.com> wrote:
->>
->> On 07/11/2014 12:53 PM, konrad@kernel.org wrote: 
->>>
->>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt 
->>> index c1b9aa8..5dcfa6e 100644 
->>> --- a/Documentation/kernel-parameters.txt 
->>> +++ b/Documentation/kernel-parameters.txt 
->>> @@ -3691,6 +3691,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted. 
->>>   Disables the ticketlock slowpath using Xen PV 
->>>   optimizations. 
->>>   
->>> + xen_nopv [X86,XEN] 
->>> + Disables the PV optimizations forcing the guest to run 
->>> + as generic HVM guest with no PV drivers. 
->>> + 
->>>   xirc2ps_cs= [NET,PCMCIA] 
->>>   Format: 
->>>   <irq>,<irq_mask>,<io>,<full_duplex>,<do_sound>,<lockup_hack>[,<irq2>[,<irq3>[,<irq4>]]] 
->>> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c 
->>> index ffb101e..eb82239 100644 
->>> --- a/arch/x86/xen/enlighten.c 
->>> +++ b/arch/x86/xen/enlighten.c 
->>> @@ -1826,8 +1826,19 @@ static void __init xen_hvm_guest_init(void) 
->>>   xen_hvm_init_mmu_ops(); 
->>>   } 
->>>   
->>> +static bool xen_nopv = false; 
->>> +static __init int xen_parse_nopv(char *arg) 
->>> +{ 
->>> +       xen_nopv = true; 
->>> +       return 0; 
->>> +} 
->>> +early_param("xen_nopv", xen_parse_nopv); 
->>> + 
->>>   static uint32_t __init xen_hvm_platform(void) 
->>>   { 
->>> + if (xen_nopv) 
->>> + return 0; 
->>> + 
->>>   if (xen_pv_domain()) 
->>>   return 0; 
->>>   
->>> @@ -1836,6 +1847,8 @@ static uint32_t __init xen_hvm_platform(void) 
->>>   
->>>   bool xen_hvm_need_lapic(void) 
->>>   { 
->>> + if (xen_nopv) 
->>> + return false; 
->>>   if (xen_pv_domain()) 
->>>   return false; 
->>>   if (!xen_hvm_domain()) 
->>>
->>
->> Any reason to not simply let xen_pv_domain() return false here?
-> 
-> It does return false already.
-> 
-> Did you mean to collapse them together?
+On 11 July 2014 15:04, Suman Anna <s-anna@ti.com> wrote:
+> Hi,
+>
+> This is a refresh of the OMAP Mailbox framework adoption & DT support
+> series [1], to work with the revised OMAP mailbox DT/hwmod cleanup
+> series [2].
+>
+> The series has one less patch than the previous series, with the patch
+> "mailbox/omap: add a custom of_xlate function" squashed into the OMAP
+> mailbox framework adaptation patch. The first 3 patches deal with the
+> OMAP DT bindings and parse support like previous series, and the last
+> 2 patches deal with the mailbox framework adaptation. The testing is
+> also done with the updated v8 version of mailbox framework [3] from
+> Jassi Brar, no changes are required for the v7 to v8 update.
+>
+> The AM335 PM suspend series [4] which relies on this series also does
+> not require any changes.
 
-OK, I'm confused.  The description of the option makes it look like it
-could disable things associated with PV domains, but it looks like it
-actually disables things having to do with HVM domains...
+May I ask what branch this series is based upon? I tried a number of
+branches (3.16-rcX, 3.15, linux-next), and the series won't apply to
+any of them (other than patch 1/5, which does apply fine, but that
+also contains no code).
 
-	-hpa
-
+Thanks,
+-Markus
