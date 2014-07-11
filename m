@@ -1,31 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231AbaGKHfj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 03:35:39 -0400
-Received: from mga09.intel.com ([134.134.136.24]:36890 "EHLO mga09.intel.com"
+	id S1752391AbaGKHfw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 03:35:52 -0400
+Received: from mga02.intel.com ([134.134.136.20]:33036 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751341AbaGKHfg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 03:35:36 -0400
+	id S1752339AbaGKHfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 03:35:50 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,642,1400050800"; 
-   d="scan'208";a="571589388"
+   d="scan'208";a="571589517"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
         David Rientjes <rientjes@google.com>,
         Mike Galbraith <umgwanakikbuti@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
-        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org
-Subject: [RFC Patch V1 04/30] mm, netfilter: Use cpu_to_mem()/numa_mem_id() to support memoryless node
-Date: Fri, 11 Jul 2014 15:37:21 +0800
-Message-Id: <1405064267-11678-5-git-send-email-jiang.liu@linux.intel.com>
+        Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Jianyu Zhan <nasa4836@gmail.com>, malc <av1474@comtv.ru>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Fabian Frederick <fabf@skynet.be>
+Cc: Tony Luck <tony.luck@intel.com>, linux-mm@kvack.org,
+        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [RFC Patch V1 07/30] mm: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+Date: Fri, 11 Jul 2014 15:37:24 +0800
+Message-Id: <1405064267-11678-8-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
@@ -44,39 +49,80 @@ is the same as cpu_to_node()/numa_node_id().
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- net/netfilter/x_tables.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ include/linux/gfp.h |    6 +++---
+ mm/memory.c         |    2 +-
+ mm/percpu-vm.c      |    2 +-
+ mm/vmalloc.c        |    2 +-
+ 4 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/net/netfilter/x_tables.c b/net/netfilter/x_tables.c
-index 227aa11e8409..6e7d4bc81422 100644
---- a/net/netfilter/x_tables.c
-+++ b/net/netfilter/x_tables.c
-@@ -692,10 +692,10 @@ struct xt_table_info *xt_alloc_table_info(unsigned int size)
- 		if (size <= PAGE_SIZE)
- 			newinfo->entries[cpu] = kmalloc_node(size,
- 							GFP_KERNEL,
--							cpu_to_node(cpu));
-+							cpu_to_mem(cpu));
- 		else
- 			newinfo->entries[cpu] = vmalloc_node(size,
--							cpu_to_node(cpu));
-+							cpu_to_mem(cpu));
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index 6eb1fb37de9a..56dd2043f510 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -314,7 +314,7 @@ static inline struct page *alloc_pages_node(int nid, gfp_t gfp_mask,
+ {
+ 	/* Unknown node is current node */
+ 	if (nid < 0)
+-		nid = numa_node_id();
++		nid = numa_mem_id();
  
- 		if (newinfo->entries[cpu] == NULL) {
- 			xt_free_table_info(newinfo);
-@@ -801,10 +801,10 @@ static int xt_jumpstack_alloc(struct xt_table_info *i)
- 	for_each_possible_cpu(cpu) {
- 		if (size > PAGE_SIZE)
- 			i->jumpstack[cpu] = vmalloc_node(size,
--				cpu_to_node(cpu));
-+				cpu_to_mem(cpu));
- 		else
- 			i->jumpstack[cpu] = kmalloc_node(size,
--				GFP_KERNEL, cpu_to_node(cpu));
-+				GFP_KERNEL, cpu_to_mem(cpu));
- 		if (i->jumpstack[cpu] == NULL)
- 			/*
- 			 * Freeing will be done later on by the callers. The
+ 	return __alloc_pages(gfp_mask, order, node_zonelist(nid, gfp_mask));
+ }
+@@ -340,13 +340,13 @@ extern struct page *alloc_pages_vma(gfp_t gfp_mask, int order,
+ 			int node);
+ #else
+ #define alloc_pages(gfp_mask, order) \
+-		alloc_pages_node(numa_node_id(), gfp_mask, order)
++		alloc_pages_node(numa_mem_id(), gfp_mask, order)
+ #define alloc_pages_vma(gfp_mask, order, vma, addr, node)	\
+ 	alloc_pages(gfp_mask, order)
+ #endif
+ #define alloc_page(gfp_mask) alloc_pages(gfp_mask, 0)
+ #define alloc_page_vma(gfp_mask, vma, addr)			\
+-	alloc_pages_vma(gfp_mask, 0, vma, addr, numa_node_id())
++	alloc_pages_vma(gfp_mask, 0, vma, addr, numa_mem_id())
+ #define alloc_page_vma_node(gfp_mask, vma, addr, node)		\
+ 	alloc_pages_vma(gfp_mask, 0, vma, addr, node)
+ 
+diff --git a/mm/memory.c b/mm/memory.c
+index d67fd9fcf1f2..f434d2692f70 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3074,7 +3074,7 @@ static int numa_migrate_prep(struct page *page, struct vm_area_struct *vma,
+ 	get_page(page);
+ 
+ 	count_vm_numa_event(NUMA_HINT_FAULTS);
+-	if (page_nid == numa_node_id()) {
++	if (page_nid == numa_mem_id()) {
+ 		count_vm_numa_event(NUMA_HINT_FAULTS_LOCAL);
+ 		*flags |= TNF_FAULT_LOCAL;
+ 	}
+diff --git a/mm/percpu-vm.c b/mm/percpu-vm.c
+index 3707c71ae4cd..a20b8f7d0dd0 100644
+--- a/mm/percpu-vm.c
++++ b/mm/percpu-vm.c
+@@ -115,7 +115,7 @@ static int pcpu_alloc_pages(struct pcpu_chunk *chunk,
+ 		for (i = page_start; i < page_end; i++) {
+ 			struct page **pagep = &pages[pcpu_page_idx(cpu, i)];
+ 
+-			*pagep = alloc_pages_node(cpu_to_node(cpu), gfp, 0);
++			*pagep = alloc_pages_node(cpu_to_mem(cpu), gfp, 0);
+ 			if (!*pagep) {
+ 				pcpu_free_pages(chunk, pages, populated,
+ 						page_start, page_end);
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index f64632b67196..c06f90641916 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -800,7 +800,7 @@ static struct vmap_block *new_vmap_block(gfp_t gfp_mask)
+ 	unsigned long vb_idx;
+ 	int node, err;
+ 
+-	node = numa_node_id();
++	node = numa_mem_id();
+ 
+ 	vb = kmalloc_node(sizeof(struct vmap_block),
+ 			gfp_mask & GFP_RECLAIM_MASK, node);
 -- 
 1.7.10.4
 
