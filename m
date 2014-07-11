@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044AbaGKSMW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 14:12:22 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:49447 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754979AbaGKSMP (ORCPT
+	id S1754891AbaGKSP3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 14:15:29 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:44103 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752396AbaGKSP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 14:12:15 -0400
-Date: Fri, 11 Jul 2014 20:12:12 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>, x86@kernel.org,
+	Fri, 11 Jul 2014 14:15:28 -0400
+Date: Fri, 11 Jul 2014 19:15:00 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Will Deacon <will.deacon@arm.com>, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86_64,signal: Remove 'fs' and 'gs' from sigcontext
-Message-ID: <20140711181212.GT18735@two.firstfloor.org>
-References: <cover.1405095200.git.luto@amacapital.net>
- <a13ebdd57378120348f40cbe12d9b1705d189434.1405095200.git.luto@amacapital.net>
+Subject: [GIT PULL] arm64 fixes for 3.16
+Message-ID: <20140711181452.GA20619@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <a13ebdd57378120348f40cbe12d9b1705d189434.1405095200.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/arch/x86/include/uapi/asm/sigcontext.h b/arch/x86/include/uapi/asm/sigcontext.h
-> index 076b11f..df9908b 100644
-> --- a/arch/x86/include/uapi/asm/sigcontext.h
-> +++ b/arch/x86/include/uapi/asm/sigcontext.h
+Hi Linus,
 
-I don't think renaming fields in uapi/asm is acceptable. These
-are likely used by user programs and you'll break compiles.
+Please pull the arm64 fixes below. Thanks.
 
--Andi
 
-> @@ -177,8 +177,8 @@ struct sigcontext {
->  	__u64 rip;
->  	__u64 eflags;		/* RFLAGS */
->  	__u16 cs;
-> -	__u16 gs;
-> -	__u16 fs;
-> +	__u16 __pad2;		/* Was called gs, but was always zero. */
-> +	__u16 __pad1;		/* Was called fs, but was always zero. */
->  	__u16 ss;
->  	__u64 err;
->  	__u64 trapno;
+The following changes since commit cd3de83f147601356395b57a8673e9c5ff1e59d1:
+
+  Linux 3.16-rc4 (2014-07-06 12:37:51 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm64/linux tags/arm64-fixes
+
+for you to fetch changes up to fa2ec3ea10bd377f9d55772b1dab65178425a1a2:
+
+  arm64: implement TASK_SIZE_OF (2014-07-08 17:30:59 +0100)
+
+----------------------------------------------------------------
+ARM64 implementation of TASK_SIZE_OF and exporting two functions to
+modules.
+
+----------------------------------------------------------------
+Colin Cross (1):
+      arm64: implement TASK_SIZE_OF
+
+Mark Salter (1):
+      arm64: export __cpu_{clear,copy}_user_page functions
+
+ arch/arm64/include/asm/memory.h | 2 ++
+ arch/arm64/mm/copypage.c        | 2 ++
+ 2 files changed, 4 insertions(+)
 
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+Catalin
