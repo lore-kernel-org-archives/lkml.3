@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147AbaGKOSZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 10:18:25 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:35745 "EHLO
+	id S1754236AbaGKOSc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 10:18:32 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:35766 "EHLO
 	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751684AbaGKOSW (ORCPT
+	with ESMTP id S1754115AbaGKOS3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 10:18:22 -0400
-Date: Fri, 11 Jul 2014 10:31:42 +0200
+	Fri, 11 Jul 2014 10:18:29 -0400
+Date: Fri, 11 Jul 2014 11:07:25 +0200
 From: Simon Horman <horms@verge.net.au>
 To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: Magnus Damm <magnus.damm@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-sh@vger.kernel.org, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] dmaengine: shdma: Register documentation
-Message-ID: <20140711083142.GB22753@verge.net.au>
-References: <1403267861-15609-1-git-send-email-geert+renesas@glider.be>
+Cc: Magnus Damm <magnus.damm@gmail.com>, devicetree@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 03/13] irqchip: renesas-irqc: Add DT binding documentation
+Message-ID: <20140711090725.GJ12420@verge.net.au>
+References: <1404908623-909-1-git-send-email-geert+renesas@glider.be>
+ <1404908623-909-4-git-send-email-geert+renesas@glider.be>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403267861-15609-1-git-send-email-geert+renesas@glider.be>
+In-Reply-To: <1404908623-909-4-git-send-email-geert+renesas@glider.be>
 Organisation: Horms Solutions Ltd.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+On Wed, Jul 09, 2014 at 02:23:33PM +0200, Geert Uytterhoeven wrote:
+> The renesas-irqc driver supports DT, but the DT binding documentation was
+> missing.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
 
-in order to try and create a smoother path for changes in this area to land
-I have pushed them to the shdma-for-v3.17 branch of my renesas tree
-on kernel.org. It is merged into the devel and next branches of that tree
-and should appear in linux-next in the near future.
+Acked-by: Simon Horman <horms+renesas@verge.net.au>
 
-My intention is to send a pull-request for this branch once it has sat
-in next for a short time. I hope that this approach is useful to all parties.
-
-On Fri, Jun 20, 2014 at 02:37:37PM +0200, Geert Uytterhoeven wrote:
-> This patch series adds more register documentation for shdma, and replaces
-> some hardcoded numbers by defines.
+> ---
+>  .../bindings/interrupt-controller/renesas,irqc.txt | 30 ++++++++++++++++++++++
+>  1 file changed, 30 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/interrupt-controller/renesas,irqc.txt
 > 
->   [1/4] dmaengine: shdma: Add more register documentation
->   [2/4] ARM: shmobile: dma: Use defines instead of hardcoded numbers
->   [3/4] sh: dma: Use defines instead of hardcoded numbers
->   [4/4] dmaengine: shdma: Use defines instead of hardcoded numbers
-> 
->  arch/arm/mach-shmobile/dma-register.h  |  4 +--
->  arch/sh/drivers/dma/dma-sh.c           |  2 +-
->  arch/sh/include/asm/dma-register.h     | 36 ++++++++++---------
->  arch/sh/kernel/cpu/sh4a/setup-sh7722.c | 24 ++++++-------
->  arch/sh/kernel/cpu/sh4a/setup-sh7724.c | 48 ++++++++++++-------------
->  arch/sh/kernel/cpu/sh4a/setup-sh7757.c | 64 +++++++++++++++++-----------------
->  drivers/dma/sh/shdma-arm.h             |  4 +--
->  drivers/dma/sh/shdmac.c                | 15 ++++----
->  include/linux/sh_dma.h                 | 24 +++++++------
->  9 files changed, 112 insertions(+), 109 deletions(-)
-> 
-> Thanks!
-> 
-> Gr{oetje,eeting}s,
-> 
-> 						Geert
-> 
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
-> 							    -- Linus Torvalds
+> diff --git a/Documentation/devicetree/bindings/interrupt-controller/renesas,irqc.txt b/Documentation/devicetree/bindings/interrupt-controller/renesas,irqc.txt
+> new file mode 100644
+> index 000000000000..f819e2a5907c
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/interrupt-controller/renesas,irqc.txt
+> @@ -0,0 +1,30 @@
+> +DT bindings for the R-Mobile/R-Car interrupt controller
+> +
+> +Required properties:
+> +
+> +- compatible: has to be "renesas,irqc-<soctype>", "renesas,irqc" as fallback.
+> +  Examples with soctypes are:
+> +    - "renesas,irqc-r8a73a4" (R-Mobile AP6)
+> +    - "renesas,irqc-r8a7790" (R-Car H2)
+> +    - "renesas,irqc-r8a7791" (R-Car M2)
+> +- #interrupt-cells: has to be <2>: an interrupt index and flags, as defined in
+> +  interrupts.txt in this directory
+> +
+> +Optional properties:
+> +
+> +- any properties, listed in interrupts.txt, and any standard resource allocation
+> +  properties
+> +
+> +Example:
+> +
+> +	irqc0: interrupt-controller@e61c0000 {
+> +		compatible = "renesas,irqc-r8a7790", "renesas,irqc";
+> +		#interrupt-cells = <2>;
+> +		interrupt-controller;
+> +		reg = <0 0xe61c0000 0 0x200>;
+> +		interrupts = <0 0 IRQ_TYPE_LEVEL_HIGH>,
+> +			     <0 1 IRQ_TYPE_LEVEL_HIGH>,
+> +			     <0 2 IRQ_TYPE_LEVEL_HIGH>,
+> +			     <0 3 IRQ_TYPE_LEVEL_HIGH>;
+> +	};
+> +
+> -- 
+> 1.9.1
 > 
