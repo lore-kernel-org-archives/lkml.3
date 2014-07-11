@@ -1,105 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751864AbaGKAfo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 20:35:44 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:59910 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750896AbaGKAfm (ORCPT
+	id S1751453AbaGKAoL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 20:44:11 -0400
+Received: from exprod5og106.obsmtp.com ([64.18.0.182]:52099 "HELO
+	exprod5og106.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750896AbaGKAoJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 20:35:42 -0400
+	Thu, 10 Jul 2014 20:44:09 -0400
 MIME-Version: 1.0
-X-Originating-IP: [95.21.62.104]
-In-Reply-To: <53BE7288.6060503@codethink.co.uk>
-References: <cover.1404665589.git.himangi774@gmail.com>
-	<1a1752ce7455bac8f2505a9790da891a830699f5.1404665589.git.himangi774@gmail.com>
-	<53BD2509.6070803@codethink.co.uk>
-	<CACRpkdZWfYN14aki-UqvWp1K0exVj-mMK92q431QueSVvjZFuA@mail.gmail.com>
-	<53BE7288.6060503@codethink.co.uk>
-Date: Fri, 11 Jul 2014 02:35:40 +0200
-Message-ID: <CABxcv=mhMMQxqVRM28NucnSW62v_3ghnT58JqFxvK=2bjxizdw@mail.gmail.com>
-Subject: Re: [PATCH 1/5] gpiolib: devres: Introduce the function devm_request_gpio_array
-From: Javier Martinez Canillas <javier@dowhile0.org>
-To: Rob Jones <rob.jones@codethink.co.uk>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Himangi Saraogi <himangi774@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        patches@opensource.wolfsonmicro.com,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Paul Parsons <lost.distance@yahoo.com>,
-        Julia Lawall <julia.lawall@lip6.fr>
+In-Reply-To: <20140708171828.GM6501@e106497-lin.cambridge.arm.com>
+References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
+	<CAL_JsqK_CfagmiFOpOXVYGry22nGnCZL0ZXeJhYxb9zp=P2fsQ@mail.gmail.com>
+	<20140708171828.GM6501@e106497-lin.cambridge.arm.com>
+Date: Thu, 10 Jul 2014 17:44:07 -0700
+Message-ID: <CACoXjcn3b7otcbxdr+RAVNHHjHyVsvw0QcmK5jd-QBF8SQX5iw@mail.gmail.com>
+Subject: Re: [PATCH v8 0/9] Support for creating generic PCI host bridges from DT
+From: Tanmay Inamdar <tinamdar@apm.com>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: Rob Herring <robherring2@gmail.com>, linux-pci <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Rob,
+Hi,
 
-On Thu, Jul 10, 2014 at 1:01 PM, Rob Jones <rob.jones@codethink.co.uk> wrote:
->
->
-> On 10/07/14 10:21, Linus Walleij wrote:
+On Tue, Jul 8, 2014 at 10:18 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> On Sun, Jul 06, 2014 at 04:23:43PM +0100, Rob Herring wrote:
+>> On Tue, Jul 1, 2014 at 1:43 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+>> > This is my resurected attempt at adding support for generic PCI host
+>> > bridge controllers that make use of device tree information to
+>> > configure themselves. I've tagged it as v8 although the patches
+>> > have now been reshuffled in order to ease adoption so referring to
+>> > the older versions might be a bit of a hoop jumping exercise.
+>> >
+>> > Changes from v7:
+>> >   - Reordered the patches so that fixes and non-controversial patches
+>> >     from v7 can be accepted more easily. If agreed I can split the
+>> >     series again into patches that can be upstreamed easily and ones
+>> >     that still need discussion.
+>> >   - Moved the of_create_host_bridge() function to drivers/of/of_pci.c
+>> >     to better reflect its target use.
+>> >   - Added the function to remap the bus I/O resources that used to be
+>> >     provided in my arm64 patch series and (re)named it pci_remap_iospace()
+>> >   - Removed error code checking from parsing and mapping of IRQ from DT
+>> >     in recognition that some PCI devices will not have legacy IRQ mappings.
+>> >
+>> > v7 thread here with all the historic information: https://lkml.org/lkml/2014/3/14/279
 >>
->> On Wed, Jul 9, 2014 at 1:18 PM, Rob Jones <rob.jones@codethink.co.uk>
->> wrote:
+>> Can you publish a branch for this series please.
 >>
->>> Please note that I submitted a patch on 02/07/14 to create this
->>> function which was acked by Linus Walleij on 05/07/14.
->>>
->>> Great minds think alike, and all that.
->>
->>
->> My mind certainly isn't any great :-(
->>
->
-> I doubt that :-)
->
->
->> My left hand seems to be unaware of what the right hand is doing.
->>
->> Did I ACK that for merging through some other tree then?
->>
->
-> You did: https://lkml.org/lkml/2014/7/4/715
->
->
->> And I guess if Himangi want to submit these ASoC patches, they
->> will have to go through the same tree as those patches in that case?
+>> Rob
 >>
 >
-> I don't know enough to comment.
+> Hi Rob,
 >
->
->> And would you consider implementing a gpiod version...?
->>
->
-> I will certainly consider it. I'm in the middle of something else right
-> now but I should be available in a day or two and I'll have a look.
->
+> I have pushed a brach that matches my v8 patchset +1 obvious missing header include
+> here: http://www.linux-arm.org/git?p=linux-ld.git;a=shortlog;h=refs/heads/for-upstream/pci_v8
 >
 
-I'm working on a driver for a PMIC which uses a set of GPIO to select
-a particular register. Right now I'm getting each GPIO independently
-but Linus mentioned [0] the devm_gpio_request_array() patch you
-posted.
+I was still getting following compilation error after applying arm64
+pci headers. Please let me know if I am missing something.
 
-Now, I'm not using the integer-based GPIO API but the new
-descriptor-based one so I was wondering if you are already
-implementing a devm_gpiod_get_array() or if you want me to implement
-it myself.
+linux-git/drivers/of/of_pci.c: In function ‘pci_host_bridge_of_get_ranges’:
+linux-git/drivers/of/of_pci.c:114:22: error: storage size of ‘range’ isn’t known
+  struct of_pci_range range;
+                      ^
+linux-git/drivers/of/of_pci.c:115:29: error: storage size of ‘parser’
+isn’t known
+  struct of_pci_range_parser parser;
+                             ^
+linux-git/drivers/of/of_pci.c:121:2: error: implicit declaration of
+function ‘of_pci_range_parser_init’
+[-Werror=implicit-function-declaration]
+  err = of_pci_range_parser_init(&parser, dev);
 
-Best regards,
-Javier
 
-[0]: https://lkml.org/lkml/2014/7/10/166
+Below patch fixes the errors.
+
+diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
+index 55d8320..da88dac 100644
+--- a/drivers/of/of_pci.c
++++ b/drivers/of/of_pci.c
+@@ -2,6 +2,7 @@
+ #include <linux/export.h>
+ #include <linux/of.h>
+ #include <linux/of_pci.h>
++#include <linux/of_address.h>
+
+ static inline int __of_pci_pci_compare(struct device_node *node,
+                                       unsigned int data)
+
+
+> Best regards,
+> Liviu
+>
+>
+> --
+> ====================
+> | I would like to |
+> | fix the world,  |
+> | but they're not |
+> | giving me the   |
+>  \ source code!  /
+>   ---------------
+>     ¯\_(ツ)_/¯
+>
