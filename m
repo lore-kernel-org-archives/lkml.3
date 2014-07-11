@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753661AbaGKNCU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:02:20 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:43860 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753373AbaGKNCR (ORCPT
+	id S1753729AbaGKNDt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:03:49 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59905 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752892AbaGKNDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:02:17 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Tobias Klauser <tklauser@distanz.ch>, Jiri Slaby <jslaby@suse.cz>,
-        linux-serial@vger.kernel.org, nios2-dev@lists.rocketboards.org
-Subject: [PATCH] serial: altera: Adopt uart_console_write()
-Date: Fri, 11 Jul 2014 14:00:11 +0100
-Message-Id: <1405083611-13828-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	Fri, 11 Jul 2014 09:03:48 -0400
+Date: Fri, 11 Jul 2014 13:57:27 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-spi@vger.kernel.org, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Message-ID: <20140711125727.GO30458@sirena.org.uk>
+References: <1404998973-19425-1-git-send-email-geert@linux-m68k.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8YDLdOu/DaKXZo9W"
+Content-Disposition: inline
+In-Reply-To: <1404998973-19425-1-git-send-email-geert@linux-m68k.org>
+X-Cookie: You look tired.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 188.29.165.240
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] spi: core: Fix check for dma_map_sg() failures
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver does not currently use uart_console_write() and instead
-provides is own LF to LFCR conversion in it's console_write() method.
-We should use the library function instead.
 
-Cmopile tested only (with ARCH=arm).
+--8YDLdOu/DaKXZo9W
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Tobias Klauser <tklauser@distanz.ch>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: linux-serial@vger.kernel.org
-Cc: nios2-dev@lists.rocketboards.org
----
- drivers/tty/serial/altera_uart.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+On Thu, Jul 10, 2014 at 03:29:32PM +0200, Geert Uytterhoeven wrote:
+> From: Geert Uytterhoeven <geert+renesas@glider.be>
+>=20
+> According to Documentation/DMA-API.txt, dma_map_sg() returns 0 on failure.
+> As spi_map_buf() returns an error code, convert zero into -ENOMEM.
+> Keep the existing check for negative numbers just in case.
 
-diff --git a/drivers/tty/serial/altera_uart.c b/drivers/tty/serial/altera_uart.c
-index 3233766..554e2fa 100644
---- a/drivers/tty/serial/altera_uart.c
-+++ b/drivers/tty/serial/altera_uart.c
-@@ -435,7 +435,7 @@ static struct altera_uart altera_uart_ports[CONFIG_SERIAL_ALTERA_UART_MAXPORTS];
- 
- #if defined(CONFIG_SERIAL_ALTERA_UART_CONSOLE)
- 
--static void altera_uart_console_putc(struct uart_port *port, const char c)
-+static void altera_uart_console_putc(struct uart_port *port, int c)
- {
- 	while (!(altera_uart_readl(port, ALTERA_UART_STATUS_REG) &
- 		 ALTERA_UART_STATUS_TRDY_MSK))
-@@ -449,11 +449,7 @@ static void altera_uart_console_write(struct console *co, const char *s,
- {
- 	struct uart_port *port = &(altera_uart_ports + co->index)->port;
- 
--	for (; count; count--, s++) {
--		altera_uart_console_putc(port, *s);
--		if (*s == '\n')
--			altera_uart_console_putc(port, '\r');
--	}
-+	uart_console_write(port, s, count, altera_uart_console_putc);
- }
- 
- static int __init altera_uart_console_setup(struct console *co, char *options)
--- 
-1.9.3
+Applied both, thanks.
 
+--8YDLdOu/DaKXZo9W
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTv980AAoJELSic+t+oim9sYwQAJDgKENYtsvRI454BTuk3XEV
+pX/GLnxBrRuoFA9prhYrkVRvu7maaCb7WrvEVBLVi+Utvgaes9r7LERIVtDpvbzk
+3mYMbcArcRuE5iJLIErEM4zV6YNhSTKjUDVH46hoYC/8O6VVkEl/7Mv+0iU86hLw
+C7t1FhUOJs+negEOqhNy/89icy6uBt+MiMh2/GbvzUNcYJhKmFFDunYB2MuCOyAM
+abXE4JIpvsmLrmvehllqUqj8sesaYX3o36Pwr2/6vaQBowjB9gLA7CkMNzBnaeCT
+GxFKU9pjzIwS52uRf2dPbkv62ywDg57as4HQGcLiM9h1vWO0el2uDru3amm6bGXL
+IoQ2giD9+kq1mPuPT+A/v/DRFfznuVB9lVGHt38Nyv3nuTSo18GF2AjQwVFd0uuf
+Dxchf/y0VKZNyEeg+lQbG/APjWTtVLA809G2q6/cz3k9Qlas2OTqV3/CFZUKhlAM
+yFgV3U0taP5VUWMN7wYwn967mp/Q5FXzblOUdoAJnwjmcoK5IRfqhNP2a7tmvO2j
+14K5PLLXuoNKXYRVKPTk+q+d56pzk7hRcMHYC/7cJ0YYbeGUoqt0cE2MPrytuBPL
+VjOjuneDITMZlXpwwpEgNHOACgCQ9idmi4JNYXiJ9DKeZRH7R3XTOQJesSFae3Or
+ATWefCuGYb/+7TOYnLgP
+=XEK9
+-----END PGP SIGNATURE-----
+
+--8YDLdOu/DaKXZo9W--
