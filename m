@@ -1,101 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193AbaGKIzd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 04:55:33 -0400
-Received: from ofcsgdbm.dwd.de ([141.38.3.245]:59120 "EHLO ofcsgdbm.dwd.de"
+	id S1752449AbaGKIzh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 04:55:37 -0400
+Received: from mga02.intel.com ([134.134.136.20]:46285 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751169AbaGKIz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 04:55:28 -0400
-X-Greylist: delayed 384 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Jul 2014 04:55:28 EDT
-Date: Fri, 11 Jul 2014 08:49:01 +0000 (UTC)
-From: Holger Kiehl <Holger.Kiehl@dwd.de>
-X-X-Sender: kiehl@diagnostix.dwd.de
-To: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-netdev <linux-netdev@vger.kernel.org>
-Subject: qlcnic very high TX values, as of 3.13.x
-Message-ID: <alpine.LRH.2.11.1407110758460.20203@diagnostix.dwd.de>
-User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
+	id S1752211AbaGKIzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 04:55:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,642,1400050800"; 
+   d="scan'208";a="571623246"
+Date: Fri, 11 Jul 2014 08:52:01 +0800
+From: Yuyang Du <yuyang.du@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: bsegall@google.com, mingo@redhat.com, linux-kernel@vger.kernel.org,
+        rafael.j.wysocki@intel.com, arjan.van.de.ven@intel.com,
+        len.brown@intel.com, alan.cox@intel.com, mark.gross@intel.com,
+        pjt@google.com, fengguang.wu@intel.com
+Subject: Re: [PATCH 2/2] sched: Rewrite per entity runnable load average
+ tracking
+Message-ID: <20140711005201.GD12984@intel.com>
+References: <20140707104646.GK6758@twins.programming.kicks-ass.net>
+ <xm26r41wyfgc.fsf@sword-of-the-dawn.mtv.corp.google.com>
+ <20140708000840.GB25653@intel.com>
+ <xm26k37nye7d.fsf@sword-of-the-dawn.mtv.corp.google.com>
+ <20140709010753.GD25653@intel.com>
+ <20140709184543.GI9918@twins.programming.kicks-ass.net>
+ <xm26bnsyxsf7.fsf@sword-of-the-dawn.mtv.corp.google.com>
+ <20140710100859.GW3935@laptop>
+ <20140710232207.GC12984@intel.com>
+ <20140711084709.GF20603@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140711084709.GF20603@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Jul 11, 2014 at 10:47:09AM +0200, Peter Zijlstra wrote:
+> On Fri, Jul 11, 2014 at 07:22:07AM +0800, Yuyang Du wrote:
+> > On Thu, Jul 10, 2014 at 12:08:59PM +0200, Peter Zijlstra wrote:
+> > > 
+> > > Since clock_task is the regular clock minus some local amount, the
+> > > difference between two regular clock reads is always a strict upper
+> > > bound on clock_task differences.
+> > > 
+> > This is inspiring. Regarding the clock source in load avg tracking,
+> > should we simply use rq_clock_task instead of cfs_rq_clock_task.
+> 
+> Oh *groan* I forgot about that thing. But no, it obviously doesn't
+> matter for running time, because if you're throttled you're nor running
+> and therefore it all doesn't matter, but it can make a huge difference
+> for blocked time accounting I suppose.
+> 
+> > For the bandwidth control case, just update/increase the last_update_time when
+> > unthrottled by this throttled time, so the time would look like freezed. Am I
+> > understanding right?
+> 
+> Yes, it stops the clock when throttled.
+> 
+> > Not sure how much bandwidth control is used, but even not used, every time
+> > we read cfs_rq_clock_task, will burn useless cycles here.
+> 
+> Yep, nothing much you can do about that.
+> 
+> In any case, it is still the case that a normal clock difference is an
+> upper bound.
 
-upgrading from 3.10.x to the next stable series 3.14.x I noticed that
-ifconfig reports very high TX values. Taking the qlcnic source from
-3.15.5 and compile it under 3.14.12, the problem remains. Going
-backwards always just copying the qlcnic source from the older kernels
-to the 3.14.12 tree, I noticed that the 3.12.x kernel was the last
-version that does not generate those high TX values. So the problem
-started with the qlcnic driver in 3.13.x. However, comparing 3.13.x
-and 3.14.x the numbers go higher in 3.14.x much quicker. In 3.14.x
-I get TX values in Terabytes very quickly after boot. I once even got
-Petabyte values!
-
-Hardware is the following:
-
-     HP ProLiant DL380 G7
-     2 x Intel Xeon X5690 (24 cores with hypertreading)
-     106 GByte Ram
-     1 x NC523SFP 10Gb 2-port Server Adapter Board Chip rev 0x54 (qlcnic)
-     1 x Intel Corporation 82599ES 10-Gigabit SFI/SFP+ Network Connection (ixgbe)
-
-The qlcnic and ixgbe cards are bonded together in fault-tolerance
-(active-backup) mode. And even when I switch to the Intel card, after I
-get crazy TX values on qlcnic card, the TX vaules on this card still
-go up at a very quick rate. This only stops when I reset the card
-(reload the module). Also, there is no differnce if I compile the driver
-in or use it as module. There are no strange messages in
-/var/log/messages or dmesg. Here the output with the 3.13.x driver in
-3.14.12 when system boots:
-
-    [   18.229195] QLogic 1/10 GbE Converged/Intelligent Ethernet Driver v5.3.52
-    [   18.229415] qlcnic 0000:1a:00.0: 2048KB memory map
-    [   18.854134] qlcnic 0000:1a:00.0: Default minidump capture mask 0x1f
-    [   19.602491] qlcnic 0000:1a:00.0: FW dump enabled
-    [   19.631257] qlcnic 0000:1a:00.0: Supports FW dump capability
-    [   19.667072] qlcnic 0000:1a:00.0: Driver v5.3.52, firmware v4.14.26
-    [   19.704279] qlcnic 0000:1a:00.0: Set 4 Tx rings
-    [   19.733001] qlcnic 0000:1a:00.0: Set 4 SDS rings
-    [   19.898808] qlcnic: 2c:27:d7:50:04:48: NC523SFP 10Gb 2-port Server Adapter Board Chip rev 0x54
-    [   19.949325] qlcnic 0000:1a:00.0: irq 129 for MSI/MSI-X
-    [   19.949329] qlcnic 0000:1a:00.0: irq 130 for MSI/MSI-X
-    [   19.949333] qlcnic 0000:1a:00.0: irq 131 for MSI/MSI-X
-    [   19.949336] qlcnic 0000:1a:00.0: irq 132 for MSI/MSI-X
-    [   19.949340] qlcnic 0000:1a:00.0: irq 133 for MSI/MSI-X
-    [   19.949343] qlcnic 0000:1a:00.0: irq 134 for MSI/MSI-X
-    [   19.949347] qlcnic 0000:1a:00.0: irq 135 for MSI/MSI-X
-    [   19.949350] qlcnic 0000:1a:00.0: irq 136 for MSI/MSI-X
-    [   19.949369] qlcnic 0000:1a:00.0: using msi-x interrupts
-    [   19.982782] qlcnic 0000:1a:00.0: Set 4 Tx queues
-    [   20.055099] qlcnic 0000:1a:00.0: eth2: XGbE port initialized
-    [   20.090408] qlcnic 0000:1a:00.1: 2048KB memory map
-    [   20.179836] qlcnic 0000:1a:00.1: Default minidump capture mask 0x1f
-    [   20.217848] qlcnic 0000:1a:00.1: FW dump enabled
-    [   20.246979] qlcnic 0000:1a:00.1: Supports FW dump capability
-    [   20.282318] qlcnic 0000:1a:00.1: Driver v5.3.52, firmware v4.14.26
-    [   20.320238] qlcnic 0000:1a:00.1: Set 4 Tx rings
-    [   20.350038] qlcnic 0000:1a:00.1: Set 4 SDS rings
-    [   20.429714] qlcnic 0000:1a:00.1: irq 137 for MSI/MSI-X
-    [   20.429718] qlcnic 0000:1a:00.1: irq 138 for MSI/MSI-X
-    [   20.429722] qlcnic 0000:1a:00.1: irq 139 for MSI/MSI-X
-    [   20.429726] qlcnic 0000:1a:00.1: irq 140 for MSI/MSI-X
-    [   20.429729] qlcnic 0000:1a:00.1: irq 141 for MSI/MSI-X
-    [   20.429732] qlcnic 0000:1a:00.1: irq 142 for MSI/MSI-X
-    [   20.429736] qlcnic 0000:1a:00.1: irq 143 for MSI/MSI-X
-    [   20.429739] qlcnic 0000:1a:00.1: irq 144 for MSI/MSI-X
-    [   20.429757] qlcnic 0000:1a:00.1: using msi-x interrupts
-    [   20.458895] qlcnic 0000:1a:00.1: Set 4 Tx queues
-    [   20.486907] qlcnic 0000:1a:00.1: eth3: XGbE port initialized
-
-My kernel config can be downloaded here:
-
-    ftp://ftp.dwd.de/pub/afd/test/.config
-
-Please, just ask if I need to provide more details and please CC me,
-since I am not on the list.
+I meant, not for this migrating case. But completely don't use cfs_rq_clock_task
+in the entire load avg tracking (and specially compensate the throttle case). No?
 
 Thanks,
-Holger
+Yuyang
