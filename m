@@ -1,103 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541AbaGKXb7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 19:31:59 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:27050 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775AbaGKXb6 (ORCPT
+	id S1754556AbaGKXci (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 19:32:38 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:61074 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754212AbaGKXcg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 19:31:58 -0400
-Message-Id: <201407112331.s6BNVp9C022670@aserz7021.oracle.com>
-Date: Fri, 11 Jul 2014 19:31:31 -0400
-Subject: Re: [PATCH] xen: Introduce 'xen_nopv' to disable PV extensions for
- HVM guests.
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: konrad@kernel.org, xen-devel@lists.xenproject.org,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        linux-kernel@vger.kernel.org
+	Fri, 11 Jul 2014 19:32:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <1405059756-11983-1-git-send-email-gavin.guo@canonical.com>
+References: <1405059756-11983-1-git-send-email-gavin.guo@canonical.com>
+Date: Sat, 12 Jul 2014 07:32:34 +0800
+Message-ID: <CA+eFSM0z5hUwCNHt9Qv15JJLXsrKfQSXCCCpPrtWYs+3d8gCvQ@mail.gmail.com>
+Subject: Re: [PATCH 0/1] Fixes to the USB 3.0 detection as 2.0 on AMD platform
+From: Gavin Guo <gavin.guo@canonical.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "Nyman, Mathias" <mathias.nyman@intel.com>, linux-usb@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        gregkh@linuxfoundation.org
+Cc: YK <yk@canonical.com>, Anthony Wong <anthony.wong@canonical.com>,
+        Gerald Yang <gerald.yang@canonical.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6BNWJMs024658
 
+Hi all,
 
-On Jul 11, 2014 7:14 PM, "H. Peter Anvin" <hpa@zytor.com> wrote:
+On Fri, Jul 11, 2014 at 2:22 PM, Gavin Guo <gavin.guo@canonical.com> wrote:
+> Hi Sarah and Mathias,
 >
-> On 07/11/2014 04:09 PM, Konrad Rzeszutek Wilk wrote: 
-> > 
-> > On Jul 11, 2014 6:52 PM, "H. Peter Anvin" <hpa@zytor.com> wrote: 
-> >> 
-> >> On 07/11/2014 12:53 PM, konrad@kernel.org wrote: 
-> >>> 
-> >>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt 
-> >>> index c1b9aa8..5dcfa6e 100644 
-> >>> --- a/Documentation/kernel-parameters.txt 
-> >>> +++ b/Documentation/kernel-parameters.txt 
-> >>> @@ -3691,6 +3691,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted. 
-> >>>Â Â  Disables the ticketlock slowpath using Xen PV 
-> >>>Â Â  optimizations. 
-> >>>Â Â  
-> >>> + xen_nopv [X86,XEN] 
-> >>> + Disables the PV optimizations forcing the guest to run 
-> >>> + as generic HVM guest with no PV drivers. 
-> >>> + 
-> >>>Â Â  xirc2ps_cs= [NET,PCMCIA] 
-> >>>Â Â  Format: 
-> >>>Â Â  <irq>,<irq_mask>,<io>,<full_duplex>,<do_sound>,<lockup_hack>[,<irq2>[,<irq3>[,<irq4>]]] 
-> >>> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c 
-> >>> index ffb101e..eb82239 100644 
-> >>> --- a/arch/x86/xen/enlighten.c 
-> >>> +++ b/arch/x86/xen/enlighten.c 
-> >>> @@ -1826,8 +1826,19 @@ static void __init xen_hvm_guest_init(void) 
-> >>>Â Â  xen_hvm_init_mmu_ops(); 
-> >>>Â Â  } 
-> >>>Â Â  
-> >>> +static bool xen_nopv = false; 
-> >>> +static __init int xen_parse_nopv(char *arg) 
-> >>> +{ 
-> >>> +Â Â Â Â Â Â  xen_nopv = true; 
-> >>> +Â Â Â Â Â Â  return 0; 
-> >>> +} 
-> >>> +early_param("xen_nopv", xen_parse_nopv); 
-> >>> + 
-> >>>Â Â  static uint32_t __init xen_hvm_platform(void) 
-> >>>Â Â  { 
-> >>> + if (xen_nopv) 
-> >>> + return 0; 
-> >>> + 
-> >>>Â Â  if (xen_pv_domain()) 
-> >>>Â Â  return 0; 
-> >>>Â Â  
-> >>> @@ -1836,6 +1847,8 @@ static uint32_t __init xen_hvm_platform(void) 
-> >>>Â Â  
-> >>>Â Â  bool xen_hvm_need_lapic(void) 
-> >>>Â Â  { 
-> >>> + if (xen_nopv) 
-> >>> + return false; 
-> >>>Â Â  if (xen_pv_domain()) 
-> >>>Â Â  return false; 
-> >>>Â Â  if (!xen_hvm_domain()) 
-> >>> 
-> >> 
-> >> Any reason to not simply let xen_pv_domain() return false here? 
-> > 
-> > It does return false already. 
-> > 
-> > Did you mean to collapse them together? 
+> As the discussion in http://comments.gmane.org/gmane.linux.usb.general/107011,
+> I found that [AMD] FCH USB XHCI Controller [1022:7814] the USB 3.0 disk
+> can't work in SuperSpeed after several times of hotplug. After doing some
+> experiments and bisection, I found the bug is caused by
+> 41e7e056cdc662f704fa9262e5c6e213b4ab45dd (USB: Allow USB 3.0 ports to be
+> disabled.). And the bug can be fixed by not executing the
+> hub_usb3_port_disable() function. I also found that the port status is
+> already in RxDetect before setting the port to Disabled in
+> hub_usb3_port_disable() function. So, there are 2 ways to fix the bug:
 >
-> OK, I'm confused.Â  The description of the option makes it look like it 
-> could disable things associated with PV domains, but it looks like it 
-> actually disables things having to do with HVM domains... 
+> 1) Check if the Vendor/Device id is [1022:7814] at the beginning of
+> hub_usb3_port_disable() function. If yes, return without executing the
+> remaining code.
+>
+> 2) Check if the port status is already in RxDetect, if yes, return without
+> executing the remaining code.
+>
+> The second method seems more reasonable, so the patch is the implementation
+> of the second one. But it will affect more platforms and I don't know if
+> there'll be any negative result. Otherwise, if the first one is correct,
+> I can reimplement a new one.
+>
+> I'm appreciated if you can give me some advice, or if there is any thing I missed.
+>
+> Thanks,
+> Gavin
+>
+> Gavin Guo (1):
+>   usb: Check if port status is equal to RxDetect
+>
+>  drivers/usb/core/hub.c | 19 +++++++++++++++++++
+>  1 file changed, 19 insertions(+)
+>
+> --
+> 2.0.0
 >
 
-Thank you for pointing that out. I will update the documentation to be more clear and specific. It is as you surmised only for HVM guest.
-
-The a
-> -hpa 
->
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Add Greg k-h to the list.
