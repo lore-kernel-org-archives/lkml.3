@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072AbaGKQg0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 12:36:26 -0400
-Received: from smtprelay0062.hostedemail.com ([216.40.44.62]:56985 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752811AbaGKQgZ (ORCPT
+	id S1754032AbaGKQnk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 12:43:40 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:37156 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043AbaGKQni (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 12:36:25 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:968:973:981:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2538:2553:2559:2562:2693:2731:2828:2916:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3872:3874:4321:5007:7652:9010:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13072:13311:13357:13846:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: crowd72_54baebdc9631b
-X-Filterd-Recvd-Size: 2422
-Message-ID: <1405096580.2796.12.camel@joe-AO725>
-Subject: Re: [PATCH] Remove soon to be dead email address
-From: Joe Perches <joe@perches.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>, Jason Baron <jbaron@akamai.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 11 Jul 2014 09:36:20 -0700
-In-Reply-To: <CAMuHMdWj=aJsxZJPM=v-z8+=yTAopPWYe5T-+ovnnuEydFuGvA@mail.gmail.com>
-References: <20140711161341.GF12054@laptop.lan>
-	 <CAMuHMdWj=aJsxZJPM=v-z8+=yTAopPWYe5T-+ovnnuEydFuGvA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Jul 2014 12:43:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <1405088313-20048-6-git-send-email-mperttunen@nvidia.com>
+References: <1405088313-20048-1-git-send-email-mperttunen@nvidia.com>
+	<1405088313-20048-6-git-send-email-mperttunen@nvidia.com>
+Date: Fri, 11 Jul 2014 09:43:37 -0700
+X-Google-Sender-Auth: dxodq96c44Ye968P0v_LdeIOXmQ
+Message-ID: <CAL1qeaGHfjQhLHvgzt85hmbuY4FOG5-k=f80=CNvzPDEgi9_6w@mail.gmail.com>
+Subject: Re: [PATCH 5/8] of: Add Tegra124 EMC bindings
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Mikko Perttunen <mperttunen@nvidia.com>
+Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-11 at 18:17 +0200, Geert Uytterhoeven wrote:
-> On Fri, Jul 11, 2014 at 6:13 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > My Red Hat email address will soon cease to be; remove it from the
-> > tree in order to save the interweb some bounces.
+On Fri, Jul 11, 2014 at 7:18 AM, Mikko Perttunen <mperttunen@nvidia.com> wrote:
+> Add binding documentation for the nvidia,tegra124-emc device tree
+> node.
 
-> > --- a/include/linux/jump_label.h
-[]
-> > - * Copyright (C) 2009-2012 Jason Baron <jbaron@redhat.com>
-> > - * Copyright (C) 2011-2012 Peter Zijlstra <pzijlstr@redhat.com>
-> > + * Copyright (C) 2009-2012 Red Hat, Inc., Jason Baron <jbaron@redhat.com>
-> 
-> Change not mentioned in comment (there are a few more of these).
+> diff --git a/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt b/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt
 
-Jason's redhat email address bounces.
+> +Required properties :
+> +- compatible : "nvidia,tegra124-emc".
+> +- reg : Should contain 1 or 2 entries:
+> +  - EMC register set
+> +  - MC register set : Required only if no node with
+> +    'compatible = "nvidia,tegra124-mc"' exists. The MC register set
+> +    is first read from the MC node. If it doesn't exist, it is read
+> +    from this property.
+> +- timings : Should contain 1 entry for each supported clock rate.
+> +  Entries should be named "timing@n" where n is a 0-based increasing
+> +  number. The timings must be listed in rate-ascending order.
 
-Here's a list of redhat email addresses in the kernel tree
-that haven't had any git commit log activity in the last
-couple years.
+There are upcoming boards which support multiple DRAM configurations
+and require a separate set of timings for each configuration.  Could
+we instead have multiple sets of timings with the proper one selected
+at runtime by RAM code, as reported by PMC_STRAPPING_OPT_A_0?
+Something like:
 
-Some are false positives.
-
-Just because people don't use an address doesn't mean
-it's inactive.
-
----> airlie@redhat.com
----> alan@redhat.com
----> arjanv@redhat.com
----> armbru@redhat.com
----> borkmann@redhat.com
----> csnook@redhat.com
----> davem@redhat.com
----> dm-devel@redhat.com
----> dougsland@redhat.com
----> faith@redhat.com
----> gcosta@redhat.com
----> hdeller@redhat.com
----> Jes.Sorensen@redhat.com
----> mhiramat@redhat.com
----> mitr@redhat.com
----> nhorman@redhat.com
----> pzijlstr@redhat.com
----> roland@redhat.com
----> sct@redhat.com
----> shardy@redhat.com
----> twaugh@redhat.com
-
-
+emc {
+        emc-table@0 {
+                nvidia,ram-code = <0>;
+                timing@0 {
+                        ...
+                };
+                ...
+        };
+        emc-table@1 {
+                nvidia,ram-code = <4>;
+                timing@0 {
+                        ...
+                };
+                ...
+        };
+        ...
+};
