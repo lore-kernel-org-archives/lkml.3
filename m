@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767AbaGKOFB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 10:05:01 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:29322 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753718AbaGKOE4 (ORCPT
+	id S1754732AbaGKOEw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 10:04:52 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:59385 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754709AbaGKOEt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 10:04:56 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-05-53bfef068541
+	Fri, 11 Jul 2014 10:04:49 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-7e-53bfeeff60be
 From: Jacek Anaszewski <j.anaszewski@samsung.com>
 To: linux-leds@vger.kernel.org, devicetree@vger.kernel.org,
         linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
         Jacek Anaszewski <j.anaszewski@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michal Simek <monstr@monstr.eu>
-Subject: [PATCH/RFC v4 07/21] of: add of_node_ncmp wrapper
-Date: Fri, 11 Jul 2014 16:04:10 +0200
-Message-id: <1405087464-13762-8-git-send-email-j.anaszewski@samsung.com>
+        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>
+Subject: [PATCH/RFC v4 05/21] leds: avoid using deprecated DEVICE_ATTR macro
+Date: Fri, 11 Jul 2014 16:04:08 +0200
+Message-id: <1405087464-13762-6-git-send-email-j.anaszewski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
 References: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMLMWRmVeSWpSXmKPExsVy+t9jQV329/uDDabfYrHYOGM9q8WHplZm
-	i/lHzrFaHPizg9Gi9+pzRouzTW/YLS7vmsNmsfXNOkaLng1bWS2efDzN4sDl0fOmhdXjzrU9
-	bB5/u6Ywe/RtWcXo8XmTXABrFJdNSmpOZllqkb5dAlfGj55dzAVT2Cu+3FzN3MDYwtbFyMkh
-	IWAiceDZf1YIW0ziwr31QHEuDiGB6YwS948vY4Jw2pkkNm3dxQRSxSZgKPHzxWswW0SgXKLn
-	/TOwDmaBF4wSO5vXMYIkhAWsJA6caQEbyyKgKnFuwQJ2EJtXwENi/oJFLF2MHEDrFCTmTLIB
-	CXMKeEoc7L8JdpEQUMnDtSfYJzDyLmBkWMUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHHTP
-	pHcwrmqwOMQowMGoxMN7Ys2+YCHWxLLiytxDjBIczEoivFff7A8W4k1JrKxKLcqPLyrNSS0+
-	xCjNwaIkznuw1TpQSCA9sSQ1OzW1ILUIJsvEwSnVwOja96nu1ecbzteYWj7ctDtfM+/BF7W3
-	hjWXt+z5WDOb2XRmwcYNB7lvlJ/hMrpV6lm5cLaYq+wRi8NcQk8iF1fqPX+rmHrqv/GvzzMP
-	yqxhOcPUdeLaszjjqkca926xB39Um5npba69KU6r58zjc3U3hC69cK0qOua649k+a94yI7mU
-	qWoFMrVKLMUZiYZazEXFiQDQ+pfdNgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJLMWRmVeSWpSXmKPExsVy+t9jQd3/7/YHG5z8aGKxccZ6VoujOycy
+	Wcw/co7Vovfqc0aLs01v2C0u75rDZrH1zTpGi54NW1ktdu96yurA6bFz1l12jz3zf7B69G1Z
+	xejxeZNcAEsUl01Kak5mWWqRvl0CV8b8Jd/ZC45wVnx5tZK1gXEaRxcjJ4eEgInEg0Vv2CFs
+	MYkL99azdTFycQgJTGeUeNh1C8ppZ5JY9/clI0gVm4ChxM8Xr5lAbBGBcome98/AipgFVjNK
+	3Nn6lRUkISzgI9Fy5wwbiM0ioCrxp+ki2ApeAQ+JJ2tuMHcxcgCtU5CYM8kGJMwp4ClxsP8m
+	WLkQUMnDtSfYJzDyLmBkWMUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHGDPpHYwrmywOMQo
+	wMGoxMOrsH5fsBBrYllxZe4hRgkOZiUR3qtv9gcL8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Q
+	ah0oJJCeWJKanZpakFoEk2Xi4JRqYHQw2PMtvkGW9+jS0/Pfm3ysvejFcCZtcXCZ2opvTuJ/
+	7+/KE7JXb3AVm8v59j2zaOSaTWsTtR3kDzG97PV5/LqqdHngcu+5XKIpJarvJvo1ujmes8ia
+	e2jVd5XAs3cjVOdM6dlYvMSo6uLmF7uW6/v6f/y80kFxXWq6Voy61zvpjT0xfV+l9JVYijMS
+	DbWYi4oTAbBS1tksAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The wrapper for strnicmp is required for checking whether a node has
-expected prefix.
+Make the sysfs attributes definition consistent in the whole file.
+The modification entails change of the function name:
+led_max_brightness_show -> max_brightness_show
 
 Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Michal Simek <monstr@monstr.eu>
+Cc: Bryan Wu <cooloney@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
 ---
- include/linux/of.h |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/leds/led-class.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 692b56c..9a53eea 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -199,6 +199,7 @@ static inline unsigned long of_read_ulong(const __be32 *cell, int size)
- #define of_compat_cmp(s1, s2, l)	strcasecmp((s1), (s2))
- #define of_prop_cmp(s1, s2)		strcmp((s1), (s2))
- #define of_node_cmp(s1, s2)		strcasecmp((s1), (s2))
-+#define of_node_ncmp(s1, s2, n)		strnicmp((s1), (s2), (n))
- #endif
+diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+index 0127783..a96a1a7 100644
+--- a/drivers/leds/led-class.c
++++ b/drivers/leds/led-class.c
+@@ -60,14 +60,14 @@ unlock:
+ }
+ static DEVICE_ATTR_RW(brightness);
  
- /* flag descriptions */
+-static ssize_t led_max_brightness_show(struct device *dev,
++static ssize_t max_brightness_show(struct device *dev,
+ 		struct device_attribute *attr, char *buf)
+ {
+ 	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+ 
+ 	return sprintf(buf, "%u\n", led_cdev->max_brightness);
+ }
+-static DEVICE_ATTR(max_brightness, 0444, led_max_brightness_show, NULL);
++static DEVICE_ATTR_RO(max_brightness);
+ 
+ #ifdef CONFIG_LEDS_TRIGGERS
+ static DEVICE_ATTR(trigger, 0644, led_trigger_show, led_trigger_store);
 -- 
 1.7.9.5
 
