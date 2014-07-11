@@ -1,78 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932215AbaGKSgp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 14:36:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56800 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932092AbaGKSgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 14:36:43 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Jerome Marchand <jmarchan@redhat.com>, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: [PATCH -mm v5 03/13] pagewalk: add walk_page_vma()
-Date: Fri, 11 Jul 2014 14:35:39 -0400
-Message-Id: <1405103749-23506-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1405103749-23506-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1405103749-23506-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1755209AbaGKSkH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 14:40:07 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:55772 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752974AbaGKSkD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 14:40:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140711181212.GT18735@two.firstfloor.org>
+References: <cover.1405095200.git.luto@amacapital.net> <a13ebdd57378120348f40cbe12d9b1705d189434.1405095200.git.luto@amacapital.net>
+ <20140711181212.GT18735@two.firstfloor.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 11 Jul 2014 11:39:41 -0700
+Message-ID: <CALCETrWMgTET6MZwaH4D4tOg2v1kV6ozBnjGTGrecnMWJbkUEg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] x86_64,signal: Remove 'fs' and 'gs' from sigcontext
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduces walk_page_vma(), which is useful for the callers which want to
-walk over a given vma.  It's used by later patches.
+On Fri, Jul 11, 2014 at 11:12 AM, Andi Kleen <andi@firstfloor.org> wrote:
+>> diff --git a/arch/x86/include/uapi/asm/sigcontext.h b/arch/x86/include/uapi/asm/sigcontext.h
+>> index 076b11f..df9908b 100644
+>> --- a/arch/x86/include/uapi/asm/sigcontext.h
+>> +++ b/arch/x86/include/uapi/asm/sigcontext.h
+>
+> I don't think renaming fields in uapi/asm is acceptable. These
+> are likely used by user programs and you'll break compiles.
 
-ChangeLog v3:
-- check walk_page_test's return value instead of walk->skip
+Hmm.  That's a fair point.  On the other hand, any user code that uses
+these fields explicitly may already be broken, since the current names
+of these fields rather strongly imply that they do something.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- include/linux/mm.h |  1 +
- mm/pagewalk.c      | 18 ++++++++++++++++++
- 2 files changed, 19 insertions(+)
+Is there any clear policy on minor API breaks in the UAPI headers that
+don't affect ABI?
 
-diff --git mmotm-2014-07-09-17-08.orig/include/linux/mm.h mmotm-2014-07-09-17-08/include/linux/mm.h
-index 1640cf740837..84b2a6cf45f6 100644
---- mmotm-2014-07-09-17-08.orig/include/linux/mm.h
-+++ mmotm-2014-07-09-17-08/include/linux/mm.h
-@@ -1131,6 +1131,7 @@ struct mm_walk {
- 
- int walk_page_range(unsigned long addr, unsigned long end,
- 		struct mm_walk *walk);
-+int walk_page_vma(struct vm_area_struct *vma, struct mm_walk *walk);
- void free_pgd_range(struct mmu_gather *tlb, unsigned long addr,
- 		unsigned long end, unsigned long floor, unsigned long ceiling);
- int copy_page_range(struct mm_struct *dst, struct mm_struct *src,
-diff --git mmotm-2014-07-09-17-08.orig/mm/pagewalk.c mmotm-2014-07-09-17-08/mm/pagewalk.c
-index 91810ba875ea..65fb68df3aa2 100644
---- mmotm-2014-07-09-17-08.orig/mm/pagewalk.c
-+++ mmotm-2014-07-09-17-08/mm/pagewalk.c
-@@ -272,3 +272,21 @@ int walk_page_range(unsigned long start, unsigned long end,
- 	} while (start = next, start < end);
- 	return err;
- }
-+
-+int walk_page_vma(struct vm_area_struct *vma, struct mm_walk *walk)
-+{
-+	int err;
-+
-+	if (!walk->mm)
-+		return -EINVAL;
-+
-+	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
-+	VM_BUG_ON(!vma);
-+	walk->vma = vma;
-+	err = walk_page_test(vma->vm_start, vma->vm_end, walk);
-+	if (err > 0)
-+		return 0;
-+	if (err < 0)
-+		return err;
-+	return __walk_page_range(vma->vm_start, vma->vm_end, walk);
-+}
--- 
-1.9.3
-
+--Andy
