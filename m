@@ -1,29 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245AbaGKHtu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 03:49:50 -0400
+	id S1752163AbaGKHff (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 03:35:35 -0400
 Received: from mga09.intel.com ([134.134.136.24]:36890 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752173AbaGKHfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 03:35:37 -0400
+	id S1751341AbaGKHfc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 03:35:32 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,642,1400050800"; 
-   d="scan'208";a="571589403"
+   d="scan'208";a="571589375"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
         David Rientjes <rientjes@google.com>,
         Mike Galbraith <umgwanakikbuti@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
-        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC Patch V1 05/30] mm, perf: Use cpu_to_mem()/numa_mem_id() to support memoryless node
-Date: Fri, 11 Jul 2014 15:37:22 +0800
-Message-Id: <1405064267-11678-6-git-send-email-jiang.liu@linux.intel.com>
+        "David S. Miller" <davem@davemloft.net>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Veaceslav Falico <vfalico@redhat.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        stephen hemminger <stephen@networkplumber.org>,
+        Jerry Chu <hkchu@google.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Fan Du <fan.du@windriver.com>, Mathias Krause <minipli@googlemail.com>,
+        Thomas Graf <tgraf@suug.ch>, Jiang Liu <jiang.liu@linux.intel.com>,
+        Joe Perches <joe@perches.com>, Roman Gushchin <klamm@yandex-team.ru>
+Cc: Tony Luck <tony.luck@intel.com>, linux-mm@kvack.org,
+        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [RFC Patch V1 03/30] mm, net: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+Date: Fri, 11 Jul 2014 15:37:20 +0800
+Message-Id: <1405064267-11678-4-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
@@ -42,50 +52,111 @@ is the same as cpu_to_node()/numa_node_id().
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- kernel/events/callchain.c   |    2 +-
- kernel/events/core.c        |    2 +-
- kernel/events/ring_buffer.c |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ net/core/dev.c             |    6 +++---
+ net/core/flow.c            |    2 +-
+ net/core/pktgen.c          |   10 +++++-----
+ net/core/sysctl_net_core.c |    2 +-
+ 4 files changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/kernel/events/callchain.c b/kernel/events/callchain.c
-index 97b67df8fbfe..09f470a9262e 100644
---- a/kernel/events/callchain.c
-+++ b/kernel/events/callchain.c
-@@ -77,7 +77,7 @@ static int alloc_callchain_buffers(void)
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 30eedf677913..e4c1e84374b7 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -1910,7 +1910,7 @@ static struct xps_map *expand_xps_map(struct xps_map *map,
  
- 	for_each_possible_cpu(cpu) {
- 		entries->cpu_entries[cpu] = kmalloc_node(size, GFP_KERNEL,
--							 cpu_to_node(cpu));
-+							 cpu_to_mem(cpu));
- 		if (!entries->cpu_entries[cpu])
- 			goto fail;
- 	}
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index a33d9a2bcbd7..bb1a5f326309 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7911,7 +7911,7 @@ static void perf_event_init_cpu(int cpu)
- 	if (swhash->hlist_refcount > 0) {
- 		struct swevent_hlist *hlist;
- 
--		hlist = kzalloc_node(sizeof(*hlist), GFP_KERNEL, cpu_to_node(cpu));
-+		hlist = kzalloc_node(sizeof(*hlist), GFP_KERNEL, cpu_to_mem(cpu));
- 		WARN_ON(!hlist);
- 		rcu_assign_pointer(swhash->swevent_hlist, hlist);
- 	}
-diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-index 146a5792b1d2..22128f58aa0b 100644
---- a/kernel/events/ring_buffer.c
-+++ b/kernel/events/ring_buffer.c
-@@ -265,7 +265,7 @@ static void *perf_mmap_alloc_page(int cpu)
- 	struct page *page;
- 	int node;
- 
--	node = (cpu == -1) ? cpu : cpu_to_node(cpu);
-+	node = (cpu == -1) ? NUMA_NO_NODE : cpu_to_mem(cpu);
- 	page = alloc_pages_node(node, GFP_KERNEL | __GFP_ZERO, 0);
- 	if (!page)
+ 	/* Need to allocate new map to store queue on this CPU's map */
+ 	new_map = kzalloc_node(XPS_MAP_SIZE(alloc_len), GFP_KERNEL,
+-			       cpu_to_node(cpu));
++			       cpu_to_mem(cpu));
+ 	if (!new_map)
  		return NULL;
+ 
+@@ -1973,8 +1973,8 @@ int netif_set_xps_queue(struct net_device *dev, const struct cpumask *mask,
+ 				map->queues[map->len++] = index;
+ #ifdef CONFIG_NUMA
+ 			if (numa_node_id == -2)
+-				numa_node_id = cpu_to_node(cpu);
+-			else if (numa_node_id != cpu_to_node(cpu))
++				numa_node_id = cpu_to_mem(cpu);
++			else if (numa_node_id != cpu_to_mem(cpu))
+ 				numa_node_id = -1;
+ #endif
+ 		} else if (dev_maps) {
+diff --git a/net/core/flow.c b/net/core/flow.c
+index a0348fde1fdf..4139dbb50cc0 100644
+--- a/net/core/flow.c
++++ b/net/core/flow.c
+@@ -396,7 +396,7 @@ static int flow_cache_cpu_prepare(struct flow_cache *fc, int cpu)
+ 	size_t sz = sizeof(struct hlist_head) * flow_cache_hash_size(fc);
+ 
+ 	if (!fcp->hash_table) {
+-		fcp->hash_table = kzalloc_node(sz, GFP_KERNEL, cpu_to_node(cpu));
++		fcp->hash_table = kzalloc_node(sz, GFP_KERNEL, cpu_to_mem(cpu));
+ 		if (!fcp->hash_table) {
+ 			pr_err("NET: failed to allocate flow cache sz %zu\n", sz);
+ 			return -ENOMEM;
+diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+index fc17a9d309ac..45d18f88dce4 100644
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -2653,7 +2653,7 @@ static void pktgen_finalize_skb(struct pktgen_dev *pkt_dev, struct sk_buff *skb,
+ 			   (datalen/frags) : PAGE_SIZE;
+ 		while (datalen > 0) {
+ 			if (unlikely(!pkt_dev->page)) {
+-				int node = numa_node_id();
++				int node = numa_mem_id();
+ 
+ 				if (pkt_dev->node >= 0 && (pkt_dev->flags & F_NODE))
+ 					node = pkt_dev->node;
+@@ -2698,7 +2698,7 @@ static struct sk_buff *pktgen_alloc_skb(struct net_device *dev,
+ 			    pkt_dev->pkt_overhead;
+ 
+ 	if (pkt_dev->flags & F_NODE) {
+-		int node = pkt_dev->node >= 0 ? pkt_dev->node : numa_node_id();
++		int node = pkt_dev->node >= 0 ? pkt_dev->node : numa_mem_id();
+ 
+ 		skb = __alloc_skb(NET_SKB_PAD + size, GFP_NOWAIT, 0, node);
+ 		if (likely(skb)) {
+@@ -3533,7 +3533,7 @@ static int pktgen_add_device(struct pktgen_thread *t, const char *ifname)
+ {
+ 	struct pktgen_dev *pkt_dev;
+ 	int err;
+-	int node = cpu_to_node(t->cpu);
++	int node = cpu_to_mem(t->cpu);
+ 
+ 	/* We don't allow a device to be on several threads */
+ 
+@@ -3621,7 +3621,7 @@ static int __net_init pktgen_create_thread(int cpu, struct pktgen_net *pn)
+ 	struct task_struct *p;
+ 
+ 	t = kzalloc_node(sizeof(struct pktgen_thread), GFP_KERNEL,
+-			 cpu_to_node(cpu));
++			 cpu_to_mem(cpu));
+ 	if (!t) {
+ 		pr_err("ERROR: out of memory, can't create new thread\n");
+ 		return -ENOMEM;
+@@ -3637,7 +3637,7 @@ static int __net_init pktgen_create_thread(int cpu, struct pktgen_net *pn)
+ 
+ 	p = kthread_create_on_node(pktgen_thread_worker,
+ 				   t,
+-				   cpu_to_node(cpu),
++				   cpu_to_mem(cpu),
+ 				   "kpktgend_%d", cpu);
+ 	if (IS_ERR(p)) {
+ 		pr_err("kernel_thread() failed for cpu %d\n", t->cpu);
+diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
+index cf9cd13509a7..1375447b833e 100644
+--- a/net/core/sysctl_net_core.c
++++ b/net/core/sysctl_net_core.c
+@@ -123,7 +123,7 @@ static int flow_limit_cpu_sysctl(struct ctl_table *table, int write,
+ 				kfree(cur);
+ 			} else if (!cur && cpumask_test_cpu(i, mask)) {
+ 				cur = kzalloc_node(len, GFP_KERNEL,
+-						   cpu_to_node(i));
++						   cpu_to_mem(i));
+ 				if (!cur) {
+ 					/* not unwinding previous changes */
+ 					ret = -ENOMEM;
 -- 
 1.7.10.4
 
