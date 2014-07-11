@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751776AbaGKF7w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 01:59:52 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:58184 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751081AbaGKF7u (ORCPT
+	id S1751749AbaGKGDT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 02:03:19 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:50805 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042AbaGKGDR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 01:59:50 -0400
+	Fri, 11 Jul 2014 02:03:17 -0400
+From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@kernel.dk>,
+        "dgilbert@interlog.com" <dgilbert@interlog.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Bart Van Assche <bvanassche@fusionio.com>,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: scsi-mq V2
+Thread-Topic: scsi-mq V2
+Thread-Index: AQHPnHMrpCazJa2BBk+bOfxdnvD3mpuZzE1ggACP5JA=
+Date: Fri, 11 Jul 2014 06:02:03 +0000
+Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958B979E6@G9W0745.americas.hpqcorp.net>
+References: <1403715121-1201-1-git-send-email-hch@lst.de>
+	<20140708144829.GA5539@infradead.org> <53BD7041.5010300@interlog.com>
+	<53BD9A24.7010203@kernel.dk>
+	<94D0CD8314A33A4D9D801C0FE68B402958B9628B@G9W0745.americas.hpqcorp.net>
+	<20140710062040.GB20146@infradead.org>
+	<94D0CD8314A33A4D9D801C0FE68B402958B96E3B@G9W0745.americas.hpqcorp.net>
+	<20140710160422.GA13728@infradead.org>
+	<20140710161438.GA30792@infradead.org>
+	<94D0CD8314A33A4D9D801C0FE68B402958B971BB@G9W0745.americas.hpqcorp.net>
+ <x497g3l10x6.fsf@segfault.boston.devel.redhat.com>
+ <94D0CD8314A33A4D9D801C0FE68B402958B9742E@G9W0745.americas.hpqcorp.net>
+In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B402958B9742E@G9W0745.americas.hpqcorp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1404992799-3705-13-git-send-email-wsa@the-dreams.de>
-References: <1404992799-3705-1-git-send-email-wsa@the-dreams.de>
-	<1404992799-3705-13-git-send-email-wsa@the-dreams.de>
-Date: Fri, 11 Jul 2014 11:29:46 +0530
-Message-ID: <CAK5sBcG_bWS5frTkTCwUeSEe_oNrVP9QDtFjWzwfhv2KWSN3HQ@mail.gmail.com>
-Subject: Re: [PATCH 12/16] i2c: i2c-s3c2410: Drop class based scanning to
- improve bootup time
-From: Sachin Kamat <spk.linux@gmail.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-i2c@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
 
-On Thu, Jul 10, 2014 at 5:16 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
-> This driver has been flagged to drop class based instantiation. The removal
-> improves boot-up time and is unneeded for embedded controllers. Users have been
-> warned to switch for some time now, so we can actually do the removal. Keep the
-> DEPRECATED flag, so the core can inform users that the behaviour finally
-> changed now. After another transition period, this flag can go, too.
-> While we are here, remove the indentation for the array setup because
-> such things always break after some time.
->
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-> ---
->  drivers/i2c/busses/i2c-s3c2410.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
-> index e828a1dba0e5..6252c051525a 100644
-> --- a/drivers/i2c/busses/i2c-s3c2410.c
-> +++ b/drivers/i2c/busses/i2c-s3c2410.c
-> @@ -1128,11 +1128,11 @@ static int s3c24xx_i2c_probe(struct platform_device *pdev)
->                 s3c24xx_i2c_parse_dt(pdev->dev.of_node, i2c);
->
->         strlcpy(i2c->adap.name, "s3c2410-i2c", sizeof(i2c->adap.name));
-> -       i2c->adap.owner   = THIS_MODULE;
-> -       i2c->adap.algo    = &s3c24xx_i2c_algorithm;
-> +       i2c->adap.owner = THIS_MODULE;
-> +       i2c->adap.algo = &s3c24xx_i2c_algorithm;
->         i2c->adap.retries = 2;
-> -       i2c->adap.class   = I2C_CLASS_HWMON | I2C_CLASS_SPD | I2C_CLASS_DEPRECATED;
-> -       i2c->tx_setup     = 50;
-> +       i2c->adap.class = I2C_CLASS_DEPRECATED;
-> +       i2c->tx_setup = 50;
->
->         init_waitqueue_head(&i2c->wait);
->
-> --
 
-Tested on Exynos 5250 boards.
-Tested-by: Sachin Kamat <sachin.kamat@samsung.com>
+> -----Original Message-----
+> From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
+> owner@vger.kernel.org] On Behalf Of Elliott, Robert (Server Storage)
+> 
+> I added some prints in aio_setup_ring and  ioctx_alloc and
+> rebooted.  This time it took much longer to hit the problem.  It
+> survived dozens of ^Cs.  Running a few minutes, though, IOPS
+> eventually dropped.  So, sometimes it happens immediately,
+> sometimes it takes time to develop.
+> 
+> I will rerun bisect-1 -2 and -3 for longer times to increase
+> confidence that they didn't just appear good.
 
--- 
-Regards,
-Sachin.
+Allowing longer run times before declaring success, the problem 
+does appear in all of the bisect trees.  I just let fio
+continue to run for many minutes - no ^Cs necessary.
+
+no-rebase: good for > 45 minutes (I will leave that running for
+  8 more hours)
+bisect-1: bad
+bisect-2: bad
+bisect-3: bad
+bisect-4: bad
+
+
