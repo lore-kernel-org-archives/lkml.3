@@ -1,167 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436AbaGKI00 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 04:26:26 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:57111 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983AbaGKI0Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 04:26:24 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s6B8QFsp023081, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <nic_swsd@realtek.com>
-Subject: [PATCH net-next 1/3] r8169: split rtl8169_tso_csum
-Date: Fri, 11 Jul 2014 16:25:56 +0800
-Message-ID: <1394712342-15778-11-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <1394712342-15778-10-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-10-Taiwan-albertk@realtek.com>
+	id S1752863AbaGKI1l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 04:27:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21448 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752413AbaGKI1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 04:27:39 -0400
+Date: Fri, 11 Jul 2014 10:27:06 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        ak@linux.intel.com, acme@redhat.com, namhyung@kernel.org
+Subject: Re: [PATCH 3/4] perf tools: add core support for sampling intr
+ machine state regs
+Message-ID: <20140711082706.GD31646@krava.redhat.com>
+References: <1404857759-25105-1-git-send-email-eranian@google.com>
+ <1404857759-25105-4-git-send-email-eranian@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404857759-25105-4-git-send-email-eranian@google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to the txd_version, split rtl8169_tso_csum() into
-rtl8169_tso_csum_v1() and rtl8169_tso_csum_v2().
+On Wed, Jul 09, 2014 at 12:15:58AM +0200, Stephane Eranian wrote:
+> Add the infrastructure to setup, collect and report the interrupt
+> machine state regs which can be captured by the kernel.
+> 
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> ---
+>  tools/perf/perf.h         |  1 +
+>  tools/perf/util/event.h   |  7 +++++++
+>  tools/perf/util/evsel.c   | 25 ++++++++++++++++++++++++-
+>  tools/perf/util/session.c | 26 ++++++++++++++++++++++++++
+>  4 files changed, 58 insertions(+), 1 deletion(-)
+> 
+> diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+> index 510c65f..309d956 100644
+> --- a/tools/perf/perf.h
+> +++ b/tools/perf/perf.h
+> @@ -54,6 +54,7 @@ struct record_opts {
+>  	bool	     sample_weight;
+>  	bool	     sample_time;
+>  	bool	     period;
+> +	bool	     sample_intr_regs;
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/ethernet/realtek/r8169.c | 71 +++++++++++++++++++-----------------
- 1 file changed, 37 insertions(+), 34 deletions(-)
+could you please also update tests/sample-parsing.c,
+so we get some basic automated testing of this
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index be425ad..6b7e21a 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -633,32 +633,6 @@ enum rtl_tx_desc_bit_1 {
- 	TD1_UDP_CS	= (1 << 31),		/* Calculate UDP/IP checksum */
- };
- 
--static const struct rtl_tx_desc_info {
--	struct {
--		u32 udp;
--		u32 tcp;
--	} checksum;
--	u16 mss_shift;
--	u16 opts_offset;
--} tx_desc_info [] = {
--	[RTL_TD_0] = {
--		.checksum = {
--			.udp	= TD0_IP_CS | TD0_UDP_CS,
--			.tcp	= TD0_IP_CS | TD0_TCP_CS
--		},
--		.mss_shift	= TD0_MSS_SHIFT,
--		.opts_offset	= 0
--	},
--	[RTL_TD_1] = {
--		.checksum = {
--			.udp	= TD1_IP_CS | TD1_UDP_CS,
--			.tcp	= TD1_IP_CS | TD1_TCP_CS
--		},
--		.mss_shift	= TD1_MSS_SHIFT,
--		.opts_offset	= 1
--	}
--};
--
- enum rtl_rx_desc_bit {
- 	/* Rx private */
- 	PID1		= (1 << 18), /* Protocol ID bit 1/2 */
-@@ -782,6 +756,7 @@ struct rtl8169_private {
- 	unsigned int (*phy_reset_pending)(struct rtl8169_private *tp);
- 	unsigned int (*link_ok)(void __iomem *);
- 	int (*do_ioctl)(struct rtl8169_private *tp, struct mii_ioctl_data *data, int cmd);
-+	bool (*tso_csum)(struct rtl8169_private *, struct sk_buff *, u32 *);
- 
- 	struct {
- 		DECLARE_BITMAP(flags, RTL_FLAG_MAX);
-@@ -5941,16 +5916,36 @@ static bool rtl_test_hw_pad_bug(struct rtl8169_private *tp, struct sk_buff *skb)
- 	return skb->len < ETH_ZLEN && tp->mac_version == RTL_GIGA_MAC_VER_34;
- }
- 
--static inline bool rtl8169_tso_csum(struct rtl8169_private *tp,
--				    struct sk_buff *skb, u32 *opts)
-+static bool rtl8169_tso_csum_v1(struct rtl8169_private *tp,
-+				struct sk_buff *skb, u32 *opts)
- {
--	const struct rtl_tx_desc_info *info = tx_desc_info + tp->txd_version;
- 	u32 mss = skb_shinfo(skb)->gso_size;
--	int offset = info->opts_offset;
- 
- 	if (mss) {
- 		opts[0] |= TD_LSO;
--		opts[offset] |= min(mss, TD_MSS_MAX) << info->mss_shift;
-+		opts[0] |= min(mss, TD_MSS_MAX) << TD0_MSS_SHIFT;
-+	} else if (skb->ip_summed == CHECKSUM_PARTIAL) {
-+		const struct iphdr *ip = ip_hdr(skb);
-+
-+		if (ip->protocol == IPPROTO_TCP)
-+			opts[0] |= TD0_IP_CS | TD0_TCP_CS;
-+		else if (ip->protocol == IPPROTO_UDP)
-+			opts[0] |= TD0_IP_CS | TD0_UDP_CS;
-+		else
-+			WARN_ON_ONCE(1);
-+	}
-+
-+	return true;
-+}
-+
-+static bool rtl8169_tso_csum_v2(struct rtl8169_private *tp,
-+				struct sk_buff *skb, u32 *opts)
-+{
-+	u32 mss = skb_shinfo(skb)->gso_size;
-+
-+	if (mss) {
-+		opts[0] |= TD_LSO;
-+		opts[1] |= min(mss, TD_MSS_MAX) << TD1_MSS_SHIFT;
- 	} else if (skb->ip_summed == CHECKSUM_PARTIAL) {
- 		const struct iphdr *ip = ip_hdr(skb);
- 
-@@ -5958,15 +5953,16 @@ static inline bool rtl8169_tso_csum(struct rtl8169_private *tp,
- 			return skb_checksum_help(skb) == 0 && rtl_skb_pad(skb);
- 
- 		if (ip->protocol == IPPROTO_TCP)
--			opts[offset] |= info->checksum.tcp;
-+			opts[1] |= TD1_IP_CS | TD1_TCP_CS;
- 		else if (ip->protocol == IPPROTO_UDP)
--			opts[offset] |= info->checksum.udp;
-+			opts[1] |= TD1_IP_CS | TD1_UDP_CS;
- 		else
- 			WARN_ON_ONCE(1);
- 	} else {
- 		if (unlikely(rtl_test_hw_pad_bug(tp, skb)))
- 			return rtl_skb_pad(skb);
- 	}
-+
- 	return true;
- }
- 
-@@ -5994,7 +5990,7 @@ static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
- 	opts[1] = cpu_to_le32(rtl8169_tx_vlan_tag(skb));
- 	opts[0] = DescOwn;
- 
--	if (!rtl8169_tso_csum(tp, skb, opts))
-+	if (!tp->tso_csum(tp, skb, opts))
- 		goto err_update_stats;
- 
- 	len = skb_headlen(skb);
-@@ -7145,6 +7141,13 @@ rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 		/* 8110SCd requires hardware Rx VLAN - disallow toggling */
- 		dev->hw_features &= ~NETIF_F_HW_VLAN_CTAG_RX;
- 
-+	if (tp->txd_version == RTL_TD_0)
-+		tp->tso_csum = rtl8169_tso_csum_v1;
-+	else if (tp->txd_version == RTL_TD_1)
-+		tp->tso_csum = rtl8169_tso_csum_v2;
-+	else
-+		WARN_ON_ONCE(1);
-+
- 	dev->hw_features |= NETIF_F_RXALL;
- 	dev->hw_features |= NETIF_F_RXFCS;
- 
--- 
-1.9.3
-
+thanks,
+jirka
