@@ -1,118 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464AbaGKHle (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 03:41:34 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:40670 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753435AbaGKHla (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 03:41:30 -0400
-Date: Fri, 11 Jul 2014 09:41:38 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Daniel Vetter <daniel@ffwll.ch>, Ben Skeggs <bskeggs@redhat.com>,
-        David Airlie <airlied@linux.ie>,
-        David Herrmann <dh.herrmann@gmail.com>, Lucas Stach <dev@lynxeye.de>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
-        Alexandre Courbot <gnurou@gmail.com>
-Subject: Re: [Nouveau] [PATCH v4 4/6] drm/nouveau: synchronize BOs when
- required
-Message-ID: <20140711074138.GW17271@phenom.ffwll.local>
-Mail-Followup-To: Alexandre Courbot <acourbot@nvidia.com>,
-	Ben Skeggs <bskeggs@redhat.com>, David Airlie <airlied@linux.ie>,
-	David Herrmann <dh.herrmann@gmail.com>,
-	Lucas Stach <dev@lynxeye.de>,
-	Thierry Reding <thierry.reding@gmail.com>,
-	Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-	nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-	dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
-	Alexandre Courbot <gnurou@gmail.com>
-References: <1404807961-30530-1-git-send-email-acourbot@nvidia.com>
- <1404807961-30530-5-git-send-email-acourbot@nvidia.com>
- <20140710130449.GG17271@phenom.ffwll.local>
- <53BF4E9B.7090606@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53BF4E9B.7090606@nvidia.com>
-X-Operating-System: Linux phenom 3.15.0-rc3+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752943AbaGKHgt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 03:36:49 -0400
+Received: from mga09.intel.com ([134.134.136.24]:37029 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752655AbaGKHgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 03:36:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,642,1400050800"; 
+   d="scan'208";a="571589795"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Eddie Wai <eddie.wai@broadcom.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
+        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: [RFC Patch V1 19/30] mm, bnx2i: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+Date: Fri, 11 Jul 2014 15:37:36 +0800
+Message-Id: <1405064267-11678-20-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 11:40:27AM +0900, Alexandre Courbot wrote:
-> On 07/10/2014 10:04 PM, Daniel Vetter wrote:
-> >On Tue, Jul 08, 2014 at 05:25:59PM +0900, Alexandre Courbot wrote:
-> >>On architectures for which access to GPU memory is non-coherent,
-> >>caches need to be flushed and invalidated explicitly when BO control
-> >>changes between CPU and GPU.
-> >>
-> >>This patch adds buffer synchronization functions which invokes the
-> >>correct API (PCI or DMA) to ensure synchronization is effective.
-> >>
-> >>Based on the TTM DMA cache helper patches by Lucas Stach.
-> >>
-> >>Signed-off-by: Lucas Stach <dev@lynxeye.de>
-> >>Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> >>---
-> >>  drivers/gpu/drm/nouveau/nouveau_bo.c  | 56 +++++++++++++++++++++++++++++++++++
-> >>  drivers/gpu/drm/nouveau/nouveau_bo.h  |  2 ++
-> >>  drivers/gpu/drm/nouveau/nouveau_gem.c | 12 ++++++++
-> >>  3 files changed, 70 insertions(+)
-> >>
-> >>diff --git a/drivers/gpu/drm/nouveau/nouveau_bo.c b/drivers/gpu/drm/nouveau/nouveau_bo.c
-> >>index 67e9e8e2e2ec..47e4e8886769 100644
-> >>--- a/drivers/gpu/drm/nouveau/nouveau_bo.c
-> >>+++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
-> >>@@ -402,6 +402,60 @@ nouveau_bo_unmap(struct nouveau_bo *nvbo)
-> >>  		ttm_bo_kunmap(&nvbo->kmap);
-> >>  }
-> >>
-> >>+void
-> >>+nouveau_bo_sync_for_device(struct nouveau_bo *nvbo)
-> >>+{
-> >>+	struct nouveau_drm *drm = nouveau_bdev(nvbo->bo.bdev);
-> >>+	struct nouveau_device *device = nouveau_dev(drm->dev);
-> >>+	struct ttm_dma_tt *ttm_dma = (struct ttm_dma_tt *)nvbo->bo.ttm;
-> >>+	int i;
-> >>+
-> >>+	if (!ttm_dma)
-> >>+		return;
-> >>+
-> >>+	if (nv_device_is_cpu_coherent(device) || nvbo->force_coherent)
-> >>+		return;
-> >
-> >Is the is_cpu_coherent check really required? On coherent platforms the
-> >sync_for_foo should be a noop. It's the dma api's job to encapsulate this
-> >knowledge so that drivers can be blissfully ignorant. The explicit
-> >is_coherent check makes this a bit leaky. And same comment that underlying
-> >the bus-specifics dma-mapping functions are identical.
-> 
-> I think you are right, the is_cpu_coherent check should not be needed here.
-> I still think we should have separate paths for the PCI/DMA cases though,
-> unless you can point me to a source that clearly states that the PCI API is
-> deprecated and that DMA should be used instead.
+When CONFIG_HAVE_MEMORYLESS_NODES is enabled, cpu_to_node()/numa_node_id()
+may return a node without memory, and later cause system failure/panic
+when calling kmalloc_node() and friends with returned node id.
+So use cpu_to_mem()/numa_mem_id() instead to get the nearest node with
+memory for the/current cpu.
 
-Ah, on 2nd look I've found it again. Quoting
-Documentation/DMA-API-HOWTO.txt:
+If CONFIG_HAVE_MEMORYLESS_NODES is disabled, cpu_to_mem()/numa_mem_id()
+is the same as cpu_to_node()/numa_node_id().
 
-"Note that the DMA API works with any bus independent of the underlying
-microprocessor architecture. You should use the DMA API rather than the
-bus-specific DMA API, i.e., use the dma_map_*() interfaces rather than the
-pci_map_*() interfaces."
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ drivers/scsi/bnx2i/bnx2i_init.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-The advice is fairly strong here I think ;-) And imo the idea makes sense,
-since it allows drivers like nouveau here to care much less about the
-actual bus used to get data to/from the ip block. And if you look at intel
-gfx it makes even more sense since the pci layer we have is really just a
-thin fake shim whacked on top of the hw (on SoCs at least).
-
-Cheers, Daniel
+diff --git a/drivers/scsi/bnx2i/bnx2i_init.c b/drivers/scsi/bnx2i/bnx2i_init.c
+index 80c03b452d61..f67a5a63134e 100644
+--- a/drivers/scsi/bnx2i/bnx2i_init.c
++++ b/drivers/scsi/bnx2i/bnx2i_init.c
+@@ -423,7 +423,7 @@ static void bnx2i_percpu_thread_create(unsigned int cpu)
+ 	p = &per_cpu(bnx2i_percpu, cpu);
+ 
+ 	thread = kthread_create_on_node(bnx2i_percpu_io_thread, (void *)p,
+-					cpu_to_node(cpu),
++					cpu_to_mem(cpu),
+ 					"bnx2i_thread/%d", cpu);
+ 	/* bind thread to the cpu */
+ 	if (likely(!IS_ERR(thread))) {
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.7.10.4
+
