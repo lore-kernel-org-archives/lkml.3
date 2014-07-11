@@ -1,150 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039AbaGKHuj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 03:50:39 -0400
-Received: from mga09.intel.com ([134.134.136.24]:36840 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751352AbaGKHfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 03:35:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,642,1400050800"; 
-   d="scan'208";a="571589314"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Ingo Molnar <mingo@redhat.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
-        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC Patch V1 02/30] mm, sched: Use cpu_to_mem()/numa_mem_id() to support memoryless node
-Date: Fri, 11 Jul 2014 15:37:19 +0800
-Message-Id: <1405064267-11678-3-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1753215AbaGKHv3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 03:51:29 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:37550 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752834AbaGKHv2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 03:51:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140710131646.GB3935@laptop>
+References: <1404144343-18720-1-git-send-email-vincent.guittot@linaro.org>
+ <1404144343-18720-10-git-send-email-vincent.guittot@linaro.org> <20140710131646.GB3935@laptop>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Fri, 11 Jul 2014 09:51:06 +0200
+Message-ID: <CAKfTPtDzxyrzVmX016VB8j_y19wcCBVB1Rj46FYngMA+Ajft6g@mail.gmail.com>
+Subject: Re: [PATCH v3 09/12] Revert "sched: Put rq's sched_avg under CONFIG_FAIR_GROUP_SCHED"
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CONFIG_HAVE_MEMORYLESS_NODES is enabled, cpu_to_node()/numa_node_id()
-may return a node without memory, and later cause system failure/panic
-when calling kmalloc_node() and friends with returned node id.
-So use cpu_to_mem()/numa_mem_id() instead to get the nearest node with
-memory for the/current cpu.
+On 10 July 2014 15:16, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, Jun 30, 2014 at 06:05:40PM +0200, Vincent Guittot wrote:
+>> This reverts commit f5f9739d7a0ccbdcf913a0b3604b134129d14f7e.
+>>
+>> We are going to use runnable_avg_sum and runnable_avg_period in order to get
+>> the utilization of the CPU. This statistic includes all tasks that run the CPU
+>> and not only CFS tasks.
+>
+> But this rq->avg is not the one that is migration aware, right? So why
+> use this?
 
-If CONFIG_HAVE_MEMORYLESS_NODES is disabled, cpu_to_mem()/numa_mem_id()
-is the same as cpu_to_node()/numa_node_id().
+Yes, it's not the one that is migration aware
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- kernel/sched/core.c     |    8 ++++----
- kernel/sched/deadline.c |    2 +-
- kernel/sched/fair.c     |    4 ++--
- kernel/sched/rt.c       |    6 +++---
- 4 files changed, 10 insertions(+), 10 deletions(-)
+>
+> We already compensate cpu_capacity for !fair tasks, so I don't see why
+> we can't use the migration aware one (and kill this one as Yuyang keeps
+> proposing) and compensate with the capacity factor.
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 3bdf01b494fe..27e3af246310 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5743,7 +5743,7 @@ build_overlap_sched_groups(struct sched_domain *sd, int cpu)
- 			continue;
- 
- 		sg = kzalloc_node(sizeof(struct sched_group) + cpumask_size(),
--				GFP_KERNEL, cpu_to_node(cpu));
-+				GFP_KERNEL, cpu_to_mem(cpu));
- 
- 		if (!sg)
- 			goto fail;
-@@ -6397,14 +6397,14 @@ static int __sdt_alloc(const struct cpumask *cpu_map)
- 			struct sched_group_capacity *sgc;
- 
- 		       	sd = kzalloc_node(sizeof(struct sched_domain) + cpumask_size(),
--					GFP_KERNEL, cpu_to_node(j));
-+					GFP_KERNEL, cpu_to_mem(j));
- 			if (!sd)
- 				return -ENOMEM;
- 
- 			*per_cpu_ptr(sdd->sd, j) = sd;
- 
- 			sg = kzalloc_node(sizeof(struct sched_group) + cpumask_size(),
--					GFP_KERNEL, cpu_to_node(j));
-+					GFP_KERNEL, cpu_to_mem(j));
- 			if (!sg)
- 				return -ENOMEM;
- 
-@@ -6413,7 +6413,7 @@ static int __sdt_alloc(const struct cpumask *cpu_map)
- 			*per_cpu_ptr(sdd->sg, j) = sg;
- 
- 			sgc = kzalloc_node(sizeof(struct sched_group_capacity) + cpumask_size(),
--					GFP_KERNEL, cpu_to_node(j));
-+					GFP_KERNEL, cpu_to_mem(j));
- 			if (!sgc)
- 				return -ENOMEM;
- 
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index fc4f98b1258f..95104d363a8c 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -1559,7 +1559,7 @@ void init_sched_dl_class(void)
- 
- 	for_each_possible_cpu(i)
- 		zalloc_cpumask_var_node(&per_cpu(local_cpu_mask_dl, i),
--					GFP_KERNEL, cpu_to_node(i));
-+					GFP_KERNEL, cpu_to_mem(i));
- }
- 
- #endif /* CONFIG_SMP */
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index fea7d3335e1f..26e75b8a52e6 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -7611,12 +7611,12 @@ int alloc_fair_sched_group(struct task_group *tg, struct task_group *parent)
- 
- 	for_each_possible_cpu(i) {
- 		cfs_rq = kzalloc_node(sizeof(struct cfs_rq),
--				      GFP_KERNEL, cpu_to_node(i));
-+				      GFP_KERNEL, cpu_to_mem(i));
- 		if (!cfs_rq)
- 			goto err;
- 
- 		se = kzalloc_node(sizeof(struct sched_entity),
--				  GFP_KERNEL, cpu_to_node(i));
-+				  GFP_KERNEL, cpu_to_mem(i));
- 		if (!se)
- 			goto err_free_rq;
- 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index a49083192c64..88d1315c6223 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -184,12 +184,12 @@ int alloc_rt_sched_group(struct task_group *tg, struct task_group *parent)
- 
- 	for_each_possible_cpu(i) {
- 		rt_rq = kzalloc_node(sizeof(struct rt_rq),
--				     GFP_KERNEL, cpu_to_node(i));
-+				     GFP_KERNEL, cpu_to_mem(i));
- 		if (!rt_rq)
- 			goto err;
- 
- 		rt_se = kzalloc_node(sizeof(struct sched_rt_entity),
--				     GFP_KERNEL, cpu_to_node(i));
-+				     GFP_KERNEL, cpu_to_mem(i));
- 		if (!rt_se)
- 			goto err_free_rq;
- 
-@@ -1945,7 +1945,7 @@ void __init init_sched_rt_class(void)
- 
- 	for_each_possible_cpu(i) {
- 		zalloc_cpumask_var_node(&per_cpu(local_cpu_mask, i),
--					GFP_KERNEL, cpu_to_node(i));
-+					GFP_KERNEL, cpu_to_mem(i));
- 	}
- }
- #endif /* CONFIG_SMP */
--- 
-1.7.10.4
+The 1st point is that cpu_capacity is compensated by both !fair_tasks
+and frequency scaling and we should not take into account frequency
+scaling for detecting overload
 
+What we have now is the the weighted load avg that is the sum of the
+weight load of entities on the run queue. This is not usable to detect
+overload because of the weight. An unweighted version of this figure
+would be more usefull but it's not as accurate as the one I use IMHO.
+The example that has been discussed during the review of the last
+version has shown some limitations
+
+With the following schedule pattern from Morten's example
+
+   | 5 ms | 5 ms | 5 ms | 5 ms | 5 ms | 5 ms | 5 ms | 5 ms | 5 ms |
+A:   run     rq     run  ----------- sleeping -------------  run
+B:   rq      run    rq    run   ---- sleeping -------------  rq
+
+The scheduler will see the following values:
+Task A unweighted load value is 47%
+Task B unweight load is 60%
+The maximum Sum of unweighted load is 104%
+rq->avg load is 60%
+
+And the real CPU load is 50%
+
+So we will have opposite decision depending of the used values: the
+rq->avg or the Sum of unweighted load
+
+The sum of unweighted load has the main advantage of showing
+immediately what will be the relative impact of adding/removing a
+task. In the example, we can see that removing task A or B will remove
+around half the CPU load but it's not so good for giving the current
+utilization of the CPU
+
+Vincent
