@@ -1,148 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948AbaGKBR1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jul 2014 21:17:27 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:42410 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441AbaGKBRZ convert rfc822-to-8bit (ORCPT
+	id S1752090AbaGKBSJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jul 2014 21:18:09 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:56139 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751771AbaGKBSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jul 2014 21:17:25 -0400
+	Thu, 10 Jul 2014 21:18:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <CANRwn3S9NwAET06sttcniN2391fY5+W-ZGAmvOqr1c_6AJ=J6g@mail.gmail.com>
-References: <1404163586-29582-1-git-send-email-benjamin.tissoires@redhat.com>
-	<CANRwn3S9NwAET06sttcniN2391fY5+W-ZGAmvOqr1c_6AJ=J6g@mail.gmail.com>
-Date: Thu, 10 Jul 2014 18:17:23 -0700
-Message-ID: <CANRwn3TP3ROaxU6AuzLobJt7cE1mAQViKhTUwg2aVw=2XoxDBg@mail.gmail.com>
-Subject: Re: [PATCH 00/15] Input - Wacom: switch from an USB to a HID driver
-From: Jason Gerecke <killertofu@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Ping Cheng <pinglinux@gmail.com>,
-        Linux Input <linux-input@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        linuxwacom-devel <linuxwacom-devel@lists.sourceforge.net>
+In-Reply-To: <20140709195650.GZ4603@linux.vnet.ibm.com>
+References: <1404860145-16450-1-git-send-email-bobby.prani@gmail.com>
+ <20140709000701.GJ4603@linux.vnet.ibm.com> <CAJhHMCBS2y_f28UO6SOp7LjnX3owm+C5_qCjzYANEaU__8jxng@mail.gmail.com>
+ <20140709195650.GZ4603@linux.vnet.ibm.com>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Thu, 10 Jul 2014 21:17:33 -0400
+Message-ID: <CAJhHMCCO9aR6YvVHnc7XFXGv1REW5tGtNqSEosf+x+8O=tVy3w@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/1] rcu: use atomic_read(v) instead of
+ atomic_add_return(0, v)
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 2, 2014 at 4:33 PM, Jason Gerecke <killertofu@gmail.com> wrote:
-> On Mon, Jun 30, 2014 at 2:26 PM, Benjamin Tissoires
-> <benjamin.tissoires@redhat.com> wrote:
->> Hi guys,
->>
->> this patch series is a cleanup for the Wacom USB driver.
->>
->> I started working on this topic when I saw patches floating around which
->> implemented a report descriptor parser within the wacom.ko module.
->> However, we already have a nice HID subsystem which is more generic than the
->> HID implementation we can find in this USB driver.
->> Further details of the benefits (code reduction, regression tests) are hopefully
->> explained in the commit messages of the corresponding patches.
->>
->> Also, I am working on a way to handle the new Wacom tablets in a more generic
->> way in the hid tree, so consider this patch series as a first step in this
->> direction.
->>
->> This patch series transfers the wacom.ko driver from the input tree into the hid
->> tree. I did not made the corresponding move of the files in the series hoping
->> that we will find a way to achieve it if this step is validated.
->>
->> IMO, the smoothest path would be that Jiri takes care of the wacom driver
->> in the input tree (and that we move into into the hid subfolder). This can be
->> achieve if the current pending wacom patches are applied in the hid tree too.
->>
->> Another solution could be to keep the wacom changes in the input tree and put the
->> hid changes in the hid tree by using separate commits. Once 3.17 is out, we can
->> then change the module into the hid subfolder.
->>
->> I wanted to send this patch series right now so we can figure out how we will
->> handle the transition.
->>
->> I am pretty confident the patch series does not break any existing device
->> (except for the required user space changes which can be handled correctly if
->> we tackle them right now). The USB commands are executed in the same way,
->> and the protocol handling is also done in the same way.
->>
->> Anyway, the net difference in lines of code (-307) should be enough to be of
->> interest.
->>
->> Note: This patch series requires the current pending wacom patches to be applied.
->> I set up a tree with all the patch applied if anyone wants to give a try:
->> https://github.com/bentiss/linux/commits/hid-wacom-legacy-3.16-rc3
->>
->> Cheers,
->> Benjamin
->>
->> Benjamin Tissoires (15):
->>   Input - wacom: include and use linux/hid.h
->>   Input - wacom: switch from an USB driver to a HID driver
->>   Input - wacom: use hid communication instead of plain usb
->>   Input - wacom: use HID core to actually fetch the report descriptor
->>   Input - wacom: compute the HID report size to get the actual packet
->>     size
->>   Input - wacom: install LED/OLED sysfs files in the HID device instead
->>     of USB
->>   Input - wacom: register the input devices on top of the HID one
->>   Input - wacom: remove usb dependency for siblings devices
->>   Input - wacom: register power device at the HID level
->>   Input - wacom: use hid_info instead of plain dev_info
->>   HID: uhid: add and set HID_TYPE_UHID for uhid devices
->>   Input - wacom: use in-kernel HID parser
->>   Input - wacom: use hidinput_calc_abs_res instead of duplicating its
->>     code
->>   Input - wacom: remove field pktlen declaration in the list of devices
->>   Input - wacom: keep wacom_ids ordered
->>
->>  drivers/hid/hid-core.c           |  15 +-
->>  drivers/hid/hid-wacom.c          |   2 +-
->>  drivers/hid/uhid.c               |   2 +
->>  drivers/input/tablet/wacom.h     |   7 +-
->>  drivers/input/tablet/wacom_sys.c | 908 +++++++++++++--------------------------
->>  drivers/input/tablet/wacom_wac.c | 647 ++++++++++++++--------------
->>  drivers/input/tablet/wacom_wac.h |  10 +-
->>  include/linux/hid.h              |   4 +-
->>  8 files changed, 644 insertions(+), 951 deletions(-)
->>
->> --
->> 2.0.0
->>
+On Wed, Jul 9, 2014 at 3:56 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+<snip>
+> OK, so ->dynticks_snap is accessed by only one task, namely the
+> corresponding RCU grace-period kthread.  So it can be accessed without
+> any atomic instructions or memory barriers, since all accesses to it are
+> single-threaded.  On the other hand, ->dynticks is written by one CPU
+> and potentially accessed from any CPU.  Therefore, accesses to it must
+> take concurrency into account.  Especially given that any confusion can
+> fool RCU into thinking that a CPU is idle when it really is not, which
+> could result in too-short grace periods, which could in turn result in
+> random memory corruption.
 >
-> *cracks knuckles*
->
-> Well, guess I better get to work poking and prodding at these and the
-> pad patches. A very quick review doesn't raise any significant flags,
-> though I do have a question or two that I might have for you in the
-> next few days (need to read through the code more carefully to be sure
-> I understand it correctly). My 24HDT is having some trouble
-> initializing with the patches applied, but I'll need some time to
-> track down the cause. Not sure how much I'll get done this week
-> (holiday weekend) but next week I should have some feedback.
->
-> Jason
-> ---
-> Now instead of four in the eights place /
-> you’ve got three, ‘Cause you added one  /
-> (That is to say, eight) to the two,     /
-> But you can’t take seven from three,    /
-> So you look at the sixty-fours....
 
-I've had a chance to try out a dozen tablets with these modifications
-and for the most part things seem to work fine. The 24HDT issue I
-mentioned above was due to a conflict with some other patches I was
-testing and can be ignored. Aside from the other known issues you've
-already mentioned (and my inline comments), there's not much that I
-can say (other than that I found some odd [but apparently unrelated]
-issues with wacom_w8001 and isdv4-serial-inputattach...)
+Yes, I missed reading the call-chain for accessing dynticks_snap. It
+does not need any synchronization/barriers.
 
-Reviewed-by: Jason Gerecke <killertofu@gmail.com>
-Tested-by: Jason Gerecke <killertofu@gmail.com>
+Here since we are reading ->dynticks, doesn't having one barrier
+before reading make sense? like
 
-Jason
----
-Now instead of four in the eights place /
-you’ve got three, ‘Cause you added one  /
-(That is to say, eight) to the two,     /
-But you can’t take seven from three,    /
-So you look at the sixty-fours....
+smp_mb();
+dynticks_snap = atomic_read(...->dynticks);
+
+instead of having two barriers with atomic_add_return()? i.e.,
+why is the second barrier necessary?
+
+On a related note, I see that dynticks is a per-cpu variable _and_
+atomic. Is there such a need for that?
+
+Digging into history I see that the change to an atomic variable was
+made in the commit 23b5c8fa01b723c70a which says:
+
+<quote>
+
+In addition, the old dyntick-idle synchronization depended on the fact
+that grace periods were many milliseconds in duration, so that it could
+be assumed that no dyntick-idle CPU could reorder a memory reference
+across an entire grace period.  Unfortunately for this design, the
+addition of expedited grace periods breaks this assumption, which has
+the unfortunate side-effect of requiring atomic operations in the
+functions that track dyntick-idle state for RCU.
+
+</quote>
+
+Sorry to ask you about such an old change. But I am not able to see
+why we need atomic_t for dynticks here since per-cpu operations are
+guaranteed to be atomic.
+
+It gets twisted pretty fast trying to understand the RCU code. No
+wonder people say that rcu is scary black magic :)
+
+-- 
+Pranith
