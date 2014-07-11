@@ -1,107 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977AbaGKPkg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 11:40:36 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:49668 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751603AbaGKPkf (ORCPT
+	id S1754179AbaGKPmk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 11:42:40 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:64270 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750938AbaGKPmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 11:40:35 -0400
+	Fri, 11 Jul 2014 11:42:38 -0400
+Date: Fri, 11 Jul 2014 11:42:32 -0400
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Oded Gabbay <oded.gabbay@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, David Airlie <airlied@linux.ie>,
+        Alex Deucher <alexander.deucher@amd.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, John Bridgman <John.Bridgman@amd.com>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        Joerg Roedel <joro@8bytes.org>, linux-mm <linux-mm@kvack.org>,
+        Oded Gabbay <oded.gabbay@amd.com>, Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Peter Zijlstra <peterz@infradead.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        =?iso-8859-1?B?Suly9G1l?= Glisse <jglisse@redhat.com>,
+        Michel Lespinasse <walken@google.com>
+Subject: Re: [PATCH 01/83] mm: Add kfd_process pointer to mm_struct
+Message-ID: <20140711154231.GB1870@gmail.com>
+References: <1405028848-5660-1-git-send-email-oded.gabbay@amd.com>
 MIME-Version: 1.0
-In-Reply-To: <20140711113010.4ca2c8d9@gandalf.local.home>
-References: <1405078692-29957-1-git-send-email-ard.biesheuvel@linaro.org>
-	<20140711151239.GJ16041@linux.vnet.ibm.com>
-	<20140711113010.4ca2c8d9@gandalf.local.home>
-Date: Fri, 11 Jul 2014 17:40:33 +0200
-Message-ID: <CAKv+Gu-2Tgf+gvh=LPWFpkgFAVb8qe0Gdp2Va5Br19BwLzK9yw@mail.gmail.com>
-Subject: Re: [PATCH] rcu: define tracepoint strings only if CONFIG_TRACING is set
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: paulmck <paulmck@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dipankar <dipankar@in.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1405028848-5660-1-git-send-email-oded.gabbay@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 July 2014 17:30, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Fri, 11 Jul 2014 08:12:40 -0700
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
->
->> On Fri, Jul 11, 2014 at 01:38:12PM +0200, Ard Biesheuvel wrote:
->> > Commit f7f7bac9cb1c ("rcu: Have the RCU tracepoints use the tracepoint_string
->> > infrastructure") unconditionally populates the __tracepoint_str input section,
->> > but this section is not assigned an output section if CONFIG_TRACING is not set.
->> > This results in the __tracepoint_str turning up in unexpected places, i.e.,
->> > after _edata.
->> >
->> > Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
->> > Cc: rostedt@goodmis.org
->> > Cc: dipankar@in.ibm.com
->> > Cc: paulmck@linux.vnet.ibm.com
->>
->> If you get a Reviewed-by from Steven Rostedt, I will be happy to queue
->> this one.
->
-> I'm fine with it, but it should add a comment.
->
->
->>
->>                                                       Thanx, Paul
->>
->> > ---
->> >  kernel/rcu/tree.c | 9 ++++++++-
->> >  1 file changed, 8 insertions(+), 1 deletion(-)
->> >
->> > diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
->> > index f1ba77363fbb..ac1984149eb5 100644
->> > --- a/kernel/rcu/tree.c
->> > +++ b/kernel/rcu/tree.c
->> > @@ -79,9 +79,16 @@ static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
->> >   * the tracing userspace tools to be able to decipher the string
->> >   * address to the matching string.
->> >   */
->> > +#ifdef CONFIG_TRACING
->
-> /*
->  * When tracing is enabled, DEFINE_TPS() will export the string to
->  * userspace via the tracing debugfs directory. This allows userspace
->  * tools to read the binary tracepoints that reference the pointer
->  * to the string and not the string itself.
->  */
->
->
->> > +#define DEFINE_TPS(sname) \
->> > +static const char *tp_##sname##_varname __used __tracepoint_string = sname##_varname;
->> > +#else
->> > +#define DEFINE_TPS(sname)
->> > +#endif
->
-> Also, perhaps we should call it:
->
->  DEFINE_RCU_TPS()
->
-> Other than that, I'm fine with the patch.
->
-> I'll review v2 ;-)
->
+On Fri, Jul 11, 2014 at 12:47:26AM +0300, Oded Gabbay wrote:
+> This patch enables the KFD to retrieve the kfd_process
+> object from the process's mm_struct. This is needed because kfd_process
+> lifespan is bound to the process's mm_struct lifespan.
+> 
+> When KFD is notified about an mm_struct tear-down, it checks if the
+> kfd_process pointer is valid. If so, it releases the kfd_process object
+> and all relevant resources.
+> 
+> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+> ---
+>  include/linux/mm_types.h | 14 ++++++++++++++
+>  1 file changed, 14 insertions(+)
+> 
+> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+> index 678097c..6179107 100644
+> --- a/include/linux/mm_types.h
+> +++ b/include/linux/mm_types.h
+> @@ -20,6 +20,10 @@
+>  struct hmm;
+>  #endif
+>  
+> +#ifdef CONFIG_HSA_RADEON
+> +struct kfd_process;
+> +#endif
+> +
+>  #ifndef AT_VECTOR_SIZE_ARCH
+>  #define AT_VECTOR_SIZE_ARCH 0
+>  #endif
+> @@ -439,6 +443,16 @@ struct mm_struct {
+>  	 */
+>  	struct hmm *hmm;
+>  #endif
+> +#if defined(CONFIG_HSA_RADEON) || defined(CONFIG_HSA_RADEON_MODULE)
+> +	/*
+> +	 * kfd always register an mmu_notifier we rely on mmu notifier to keep
+> +	 * refcount on mm struct as well as forbiding registering kfd on a
+> +	 * dying mm
+> +	 *
+> +	 * This field is set with mmap_sem old in write mode.
+> +	 */
+> +	struct kfd_process *kfd_process;
+> +#endif
 
-Thanks gents, v2 coming up.
+I understand the need to bind kfd to mm life time but this is wrong
+on several level. First we do not want per driver define flag here.
+Second this should be a IOMMU/PASID pointer of some sort, i am sure
+that Intel will want to add itself too to mm_struct so instead of
+having each IOMMU add a pointer here, i would rather see a generic
+pointer to a generic IOMMU struct and have this use generic IOMMU
+code that can then call specific user dispatch function.
 
--- 
-Ard.
+I know this add a layer but this is not a critical code path and
+should never be.
 
+I am adding Jesse as he might have thought on that.
 
->> > +
->> >  #define RCU_STATE_INITIALIZER(sname, sabbr, cr) \
->> >  static char sname##_varname[] = #sname; \
->> > -static const char *tp_##sname##_varname __used __tracepoint_string = sname##_varname; \
->> > +DEFINE_TPS(sname) \
->> >  struct rcu_state sname##_state = { \
->> >     .level = { &sname##_state.node[0] }, \
->> >     .call = cr, \
->> > --
->> > 1.8.3.2
->> >
->
+So this one is NAK
+
+Cheers,
+Jérôme
+
+>  #if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
+>  	pgtable_t pmd_huge_pte; /* protected by page_table_lock */
+>  #endif
+> -- 
+> 1.9.1
+> 
