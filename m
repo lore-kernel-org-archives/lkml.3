@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847AbaGKOz0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 10:55:26 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:37181 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751923AbaGKOzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 10:55:25 -0400
-Date: Fri, 11 Jul 2014 10:55:24 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Jeff Moyer <jmoyer@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        "dgilbert@interlog.com" <dgilbert@interlog.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Bart Van Assche <bvanassche@fusionio.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: scsi-mq V2
-Message-ID: <20140711145524.GB12478@kvack.org>
-References: <20140710062040.GB20146@infradead.org> <94D0CD8314A33A4D9D801C0FE68B402958B96E3B@G9W0745.americas.hpqcorp.net> <20140710160422.GA13728@infradead.org> <20140710161438.GA30792@infradead.org> <94D0CD8314A33A4D9D801C0FE68B402958B971BB@G9W0745.americas.hpqcorp.net> <x497g3l10x6.fsf@segfault.boston.devel.redhat.com> <94D0CD8314A33A4D9D801C0FE68B402958B9742E@G9W0745.americas.hpqcorp.net> <94D0CD8314A33A4D9D801C0FE68B402958B979E6@G9W0745.americas.hpqcorp.net> <20140711061441.GA29629@infradead.org> <94D0CD8314A33A4D9D801C0FE68B402958B98323@G9W0745.americas.hpqcorp.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B402958B98323@G9W0745.americas.hpqcorp.net>
-User-Agent: Mutt/1.4.2.2i
+	id S1753961AbaGKO5c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 10:57:32 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:54579 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752308AbaGKO5a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 10:57:30 -0400
+Date: Fri, 11 Jul 2014 07:55:50 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Vlastimil Babka <vbabka@suse.cz>, akpm@linux-foundation.org,
+        davej@redhat.com, koct9i@gmail.com, lczerner@redhat.com,
+        stable@vger.kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: + shmem-fix-faulting-into-a-hole-while-its-punched-take-2.patch
+ added to -mm tree
+In-Reply-To: <53BFD708.1040305@oracle.com>
+Message-ID: <alpine.LSU.2.11.1407110745430.2054@eggly.anvils>
+References: <53BD1053.5020401@suse.cz> <53BD39FC.7040205@oracle.com> <53BD67DC.9040700@oracle.com> <alpine.LSU.2.11.1407092358090.18131@eggly.anvils> <53BE8B1B.3000808@oracle.com> <53BECBA4.3010508@oracle.com> <alpine.LSU.2.11.1407101033280.18934@eggly.anvils>
+ <53BED7F6.4090502@oracle.com> <alpine.LSU.2.11.1407101131310.19154@eggly.anvils> <53BEE345.4090203@oracle.com> <20140711082500.GB20603@laptop.programming.kicks-ass.net> <53BFD708.1040305@oracle.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 02:33:12PM +0000, Elliott, Robert (Server Storage) wrote:
-> That ran 9 total hours with no problem.
+On Fri, 11 Jul 2014, Sasha Levin wrote:
 > 
-> Rather than revert in the bisect trees, I added just this single additional
-> patch to the no-rebase tree, and the problem appeared:
+> There's no easy way to see whether a given task is actually holding a lock or
+> is just blocking on it without going through all those tasks one by one and
+> looking at their trace.
+> 
+> I agree with you that "The call trace is very clear on it that its not", but
+> when you have 500 call traces you really want something better than going
+> through it one call trace at a time.
 
-Can you try the below totally untested patch instead?  It looks like
-put_reqs_available() is not irq-safe.
+Points well made, and I strongly agree with Vlastimil and Sasha.
+There is a world of difference between a lock wanted and a lock held,
+and for the display of locks "held" to conceal that difference is unhelpful.
+It just needs one greppable word to distinguish the cases.
 
-		-ben
--- 
-"Thought is the essence of where you are now."
+(Though I didn't find "The call trace is very clear on it that its not",
+I thought it too was telling me that the lock was already held somehow.)
 
-
-diff --git a/fs/aio.c b/fs/aio.c
-index 955947e..4b97180 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -830,16 +830,20 @@ void exit_aio(struct mm_struct *mm)
- static void put_reqs_available(struct kioctx *ctx, unsigned nr)
- {
- 	struct kioctx_cpu *kcpu;
-+	unsigned long flags;
- 
- 	preempt_disable();
- 	kcpu = this_cpu_ptr(ctx->cpu);
- 
-+	local_irq_save(flags);
- 	kcpu->reqs_available += nr;
-+
- 	while (kcpu->reqs_available >= ctx->req_batch * 2) {
- 		kcpu->reqs_available -= ctx->req_batch;
- 		atomic_add(ctx->req_batch, &ctx->reqs_available);
- 	}
- 
-+	local_irq_restore(flags);
- 	preempt_enable();
- }
- 
+Hugh
