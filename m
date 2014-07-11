@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752078AbaGKIrS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 04:47:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39968 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119AbaGKIrN (ORCPT
+	id S1752356AbaGKIsg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 04:48:36 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:51790 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119AbaGKIse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 04:47:13 -0400
-Date: Fri, 11 Jul 2014 10:47:09 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yuyang Du <yuyang.du@intel.com>
-Cc: bsegall@google.com, mingo@redhat.com, linux-kernel@vger.kernel.org,
-        rafael.j.wysocki@intel.com, arjan.van.de.ven@intel.com,
-        len.brown@intel.com, alan.cox@intel.com, mark.gross@intel.com,
-        pjt@google.com, fengguang.wu@intel.com
-Subject: Re: [PATCH 2/2] sched: Rewrite per entity runnable load average
- tracking
-Message-ID: <20140711084709.GF20603@laptop.programming.kicks-ass.net>
-References: <1404268256-3019-2-git-send-email-yuyang.du@intel.com>
- <20140707104646.GK6758@twins.programming.kicks-ass.net>
- <xm26r41wyfgc.fsf@sword-of-the-dawn.mtv.corp.google.com>
- <20140708000840.GB25653@intel.com>
- <xm26k37nye7d.fsf@sword-of-the-dawn.mtv.corp.google.com>
- <20140709010753.GD25653@intel.com>
- <20140709184543.GI9918@twins.programming.kicks-ass.net>
- <xm26bnsyxsf7.fsf@sword-of-the-dawn.mtv.corp.google.com>
- <20140710100859.GW3935@laptop>
- <20140710232207.GC12984@intel.com>
+	Fri, 11 Jul 2014 04:48:34 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s6B8mVjt030513, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+Subject: [PATCH net] r8152: fix r8152_csum_workaround function
+Date: Fri, 11 Jul 2014 16:48:27 +0800
+Message-ID: <1394712342-15778-14-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140710232207.GC12984@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 07:22:07AM +0800, Yuyang Du wrote:
-> On Thu, Jul 10, 2014 at 12:08:59PM +0200, Peter Zijlstra wrote:
-> > 
-> > Since clock_task is the regular clock minus some local amount, the
-> > difference between two regular clock reads is always a strict upper
-> > bound on clock_task differences.
-> > 
-> This is inspiring. Regarding the clock source in load avg tracking,
-> should we simply use rq_clock_task instead of cfs_rq_clock_task.
+The transport offset of the IPv4 packet should be fixed and wouldn't
+be out of the hw limitation, so the r8152_csum_workaround() should
+be used for IPv6 packets.
 
-Oh *groan* I forgot about that thing. But no, it obviously doesn't
-matter for running time, because if you're throttled you're nor running
-and therefore it all doesn't matter, but it can make a huge difference
-for blocked time accounting I suppose.
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/usb/r8152.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> For the bandwidth control case, just update/increase the last_update_time when
-> unthrottled by this throttled time, so the time would look like freezed. Am I
-> understanding right?
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index a795ecf..7bad2d3 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -1359,7 +1359,7 @@ static void r8152_csum_workaround(struct r8152 *tp, struct sk_buff *skb,
+ 		struct sk_buff_head seg_list;
+ 		struct sk_buff *segs, *nskb;
+ 
+-		features &= ~(NETIF_F_IP_CSUM | NETIF_F_SG | NETIF_F_TSO);
++		features &= ~(NETIF_F_SG | NETIF_F_IPV6_CSUM | NETIF_F_TSO6);
+ 		segs = skb_gso_segment(skb, features);
+ 		if (IS_ERR(segs) || !segs)
+ 			goto drop;
+-- 
+1.9.3
 
-Yes, it stops the clock when throttled.
-
-> Not sure how much bandwidth control is used, but even not used, every time
-> we read cfs_rq_clock_task, will burn useless cycles here.
-
-Yep, nothing much you can do about that.
-
-In any case, it is still the case that a normal clock difference is an
-upper bound.
