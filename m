@@ -1,39 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935AbaGKOjx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 10:39:53 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:59348 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752322AbaGKOjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 10:39:52 -0400
-Message-ID: <53BFF734.2050009@mev.co.uk>
-Date: Fri, 11 Jul 2014 15:39:48 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753876AbaGKOmL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 10:42:11 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:62465 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751294AbaGKOmJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 10:42:09 -0400
+Date: Fri, 11 Jul 2014 10:42:05 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Jianyu Zhan <nasa4836@gmail.com>, malc <av1474@comtv.ru>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Fabian Frederick <fabf@skynet.be>, Tony Luck <tony.luck@intel.com>,
+        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC Patch V1 07/30] mm: Use cpu_to_mem()/numa_mem_id() to
+ support memoryless node
+Message-ID: <20140711144205.GA27706@htj.dyndns.org>
+References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
+ <1405064267-11678-8-git-send-email-jiang.liu@linux.intel.com>
 MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>,
-        <devel@driverdev.osuosl.org>
-CC: <gregkh@linuxfoundation.org>, <hsweeten@visionengravers.com>,
-        <dcb314@hotmail.com>, Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Subject: Re: [PATCH v3] drivers/staging/comedi/drivers/ni_atmio16d.c: remove
- pointless condition
-References: <1405089127-21646-1-git-send-email-abbotti@mev.co.uk> <1405089510-23182-1-git-send-email-abbotti@mev.co.uk>
-In-Reply-To: <1405089510-23182-1-git-send-email-abbotti@mev.co.uk>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
- (10.0.0.4)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405064267-11678-8-git-send-email-jiang.liu@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-07-11 15:38, Ian Abbott wrote:
-> From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
->
-> From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Hello,
 
-Dammit!  Greg, do you want to sort that out or should I have another go?
+On Fri, Jul 11, 2014 at 03:37:24PM +0800, Jiang Liu wrote:
+> When CONFIG_HAVE_MEMORYLESS_NODES is enabled, cpu_to_node()/numa_node_id()
+> may return a node without memory, and later cause system failure/panic
+> when calling kmalloc_node() and friends with returned node id.
+
+The patch itself looks okay to me but is this the right way to handle
+this?  Can't we just let the allocators fall back to the nearest node
+with memory?  Why do we need to impose this awareness of memory-less
+node on all the users?
+
+Thanks.
 
 -- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+tejun
