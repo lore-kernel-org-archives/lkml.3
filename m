@@ -1,78 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240AbaGKJHP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 05:07:15 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:46553 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751449AbaGKJHL (ORCPT
+	id S1752409AbaGKJHa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 05:07:30 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:49457 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752247AbaGKJHY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 05:07:11 -0400
+	Fri, 11 Jul 2014 05:07:24 -0400
+Date: Fri, 11 Jul 2014 10:07:18 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Rob Herring <robh@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Josh Cartwright <joshc@codeaurora.org>
+Subject: Re: [RFC PATCH v2 1/5] mfd: qpnp: add support for Qualcomm QPNP PMICs
+Message-ID: <20140711090718.GA30519@lee--X1>
+References: <1404393243-7324-1-git-send-email-svarbanov@mm-sol.com>
+ <1404393243-7324-2-git-send-email-svarbanov@mm-sol.com>
+ <20140709143426.GC2635@lee--X1>
+ <53BD5EC5.3080801@mm-sol.com>
+ <20140710083654.GQ2635@lee--X1>
+ <53BEB1DB.6010301@mm-sol.com>
 MIME-Version: 1.0
-In-Reply-To: <1404906074-31992-3-git-send-email-lee.jones@linaro.org>
-References: <1404906074-31992-1-git-send-email-lee.jones@linaro.org>
-	<1404906074-31992-3-git-send-email-lee.jones@linaro.org>
-Date: Fri, 11 Jul 2014 11:07:10 +0200
-Message-ID: <CAG374jD=DOVveEOxvddxMZYrEk0Paj4on3cnzSM8kZstSUrwcA@mail.gmail.com>
-Subject: Re: [PATCH v3 2/5] phy: miphy365x: Add MiPHY365x header file for DT x
- Driver defines
-From: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kishon <kishon@ti.com>, "kernel@stlinux.com" <kernel@stlinux.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53BEB1DB.6010301@mm-sol.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee
+On Thu, 10 Jul 2014, Stanimir Varbanov wrote:
+> >>>> The Qualcomm QPNP PMIC chips are components used with the
+> >>>> Snapdragon 800 series SoC family.  This driver exists
+> >>>> largely as a glue mfd component, it exists to be an owner
+> >>>> of an SPMI regmap for children devices described in
+> >>>> device tree.
+> >>>>
+> >>>> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+> >>>> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+> >>>> ---
+> >>>>  drivers/mfd/Kconfig     |   15 ++++++
+> >>>>  drivers/mfd/Makefile    |    1 +
+> >>>>  drivers/mfd/qpnp-spmi.c |  129 +++++++++++++++++++++++++++++++++++++++++++++++
+> >>>>  3 files changed, 145 insertions(+), 0 deletions(-)
+> >>>>  create mode 100644 drivers/mfd/qpnp-spmi.c
+> >>>>
+> >>>> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> >>>> index ee8204c..258b733 100644
+> >>>> --- a/drivers/mfd/Kconfig
+> >>>> +++ b/drivers/mfd/Kconfig
+> >>>> @@ -524,6 +524,21 @@ config MFD_PM8921_CORE
+> >>>>  	  Say M here if you want to include support for PM8921 chip as a module.
+> >>>>  	  This will build a module called "pm8921-core".
+> >>>>  
+> >>>> +config MFD_QPNP_SPMI
+> >>>> +	tristate "Qualcomm QPNP SPMI PMIC"
+> >>>> +	depends on ARCH_QCOM || COMPILE_TEST
+> >>>> +	depends on OF
+> >>>> +	select MFD_CORE
+> >>>> +	select REGMAP_SPMI
+> >>>> +	help
+> >>>> +	  This enables support for the Qualcomm QPNP SPMI PMICs.
+> >>>> +	  These PMICs are currently used with the Snapdragon 800 series of
+> >>>> +	  SoCs.  Note, that this will only be useful paired with descriptions
+> >>>> +	  of the independent functions as children nodes in the device tree.
+> >>>
+> 
+> <snip>
+> 
+> >>>
+> >>>> + * This program is distributed in the hope that it will be useful,
+> >>>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> >>>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> >>>> + * GNU General Public License for more details.
+> >>>> + */
+> >>>> +#include <linux/kernel.h>
+> >>>> +#include <linux/module.h>
+> >>>> +#include <linux/spmi.h>
+> >>>> +#include <linux/regmap.h>
+> >>>> +#include <linux/of_address.h>
+> >>>> +#include <linux/slab.h>
+> >>>> +#include <linux/mfd/core.h>
+> >>>> +
+> >>>> +#define QPNP_RESOURCE_SIZE	256
+> >>>> +
+> >>>> +static const struct regmap_config qpnp_regmap_config = {
+> >>>> +	.reg_bits	= 16,
+> >>>> +	.val_bits	= 8,
+> >>>> +	.max_register	= 0xffff,
+> >>>> +};
+> >>>> +
+> >>>> +static int qpnp_index_to_resource(struct device_node *np, int index,
+> >>>> +				  struct resource *res)
+> >>>> +{
+> >>>> +	const char *name = NULL;
+> >>>> +	const __be32 *addrp;
+> >>>> +	u64 addr;
+> >>>> +
+> >>>> +	addrp = of_get_address(np, index, NULL, NULL);
+> >>>> +	if (!addrp)
+> >>>> +		return -EINVAL;
+> >>>> +
+> >>>> +	addr = of_read_number(addrp, 1);
+> >>>> +	if (addr == OF_BAD_ADDR)
+> >>>> +		return -EINVAL;
+> >>>> +
+> >>>> +	of_property_read_string_index(np, "reg-names", index, &name);
+> >>>> +
+> >>>> +	res->start = addr;
+> >>>> +	res->end = addr + QPNP_RESOURCE_SIZE - 1;
+> >>>> +	res->flags = IORESOURCE_REG;
+> >>>> +	res->name = name ? name : np->name;
+> >>>> +
+> >>>> +	return 0;
+> >>>> +}
+> >>>> +
+> >>>> +static int qpnp_add_device(struct spmi_device *root, struct device_node *child)
+> >>>> +{
+> >>>> +	struct mfd_cell cell = {};
+> >>>> +	struct resource *res, *r;
+> >>>> +	int num_resources = 0;
+> >>>> +	const char *compat;
+> >>>> +	int ret, i;
+> >>>> +
+> >>>> +	compat = of_get_property(child, "compatible", NULL);
+> >>>> +	if (!compat)
+> >>>> +		return -ENODEV;
+> >>>> +
+> >>>> +	while (of_get_address(child, num_resources, NULL, NULL))
+> >>>> +		num_resources++;
+> >>>> +
+> >>>> +	if (!num_resources)
+> >>>> +		return -ENODEV;
+> >>>> +
+> >>>> +	res = kcalloc(num_resources, sizeof(*res), GFP_KERNEL);
+> >>>> +	if (!res)
+> >>>> +		return -ENOMEM;
+> >>>> +
+> >>>> +	r = res;
+> >>>> +	for (i = 0; i < num_resources; i++, r++)
+> >>>> +		qpnp_index_to_resource(child, i, r);
+> >>>> +
+> >>>> +	cell.name = kasprintf(GFP_KERNEL, "%x.%04x.%s", root->usid,
+> >>>> +			      (u16)res[0].start, child->name);
+> >>>> +	cell.of_compatible = compat;
+> >>>> +	cell.num_resources = num_resources;
+> >>>> +	cell.resources = res;
+> >>>> +
+> >>>> +	ret = mfd_add_devices(&root->dev, PLATFORM_DEVID_NONE, &cell, 1,
+> >>>> +			      NULL, 0, NULL);
+> >>>> +
+> >>>> +	kfree(res);
+> >>>> +	kfree(cell.name);
+> >>>> +
+> >>>> +	return ret;
+> >>>> +}
+> >>>> +
+> >>>> +static int qpnp_probe(struct spmi_device *sdev)
+> >>>> +{
+> >>>> +	struct device_node *root = sdev->dev.of_node;
+> >>>> +	struct device_node *child;
+> >>>> +	struct regmap *regmap;
+> >>>> +
+> >>>> +	regmap = devm_regmap_init_spmi_ext(sdev, &qpnp_regmap_config);
+> >>>> +	if (IS_ERR(regmap))
+> >>>> +		return PTR_ERR(regmap);
+> >>>> +
+> >>>> +	for_each_available_child_of_node(root, child)
+> >>>> +		qpnp_add_device(sdev, child);
+> >>>
+> >>> This entire driver looks like a re-write of of_platform_populate().
+> >>>
+> >>> Why?
+> >>
+> >> of_platform_populate is not used because the PMIC function resources are
+> >> non-translatable. You can see that the resources are of type
+> >> IORESOURCE_REG (qpnp_index_to_resource()) not IORESOURCE_MEM or _IO.
+> >>
+> >> The whole point of this mfd driver is to parse devicetree to prepare
+> >> resources for every child and create platform device for it through
+> >> mfd_add_devices(). Then the PMIC function driver got its resources and
+> >> use them as register addresses passed to regmap. These register accesses
+> >> hits the SPMI controller which is the physical interface between PMIC's
+> >> and SoC.
+> > 
+> > I can't help but think that if this is required, it should be part of
+> > the core OF code, rather than doing your own thing which looks
+> > frighteningly like existing framework functionality.
+> 
+> does it make sense to have a common of_mfd code for devicetree parsing?
+> Is that discussed already? I mean presently the mfd_cell resources and
+> number of resources are passed by the mfd_add_devices users. Is it
+> possible to have common code which parses devicetree sub-nodes of the
+> parent device_node and fill resources/create platform devices for them.
 
-On 9 July 2014 13:41, Lee Jones <lee.jones@linaro.org> wrote:
-> This provides the shared header file which will be reference from both
-> the MiPHY365x driver and its associated Device Tree node(s).
->
-> Cc: Kishon Vijay Abraham I <kishon@ti.com>
-> Acked-by: Mark Rutland <mark.rutland@arm.com>
-> Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  include/dt-bindings/phy/phy-miphy365x.h | 14 ++++++++++++++
->  1 file changed, 14 insertions(+)
->  create mode 100644 include/dt-bindings/phy/phy-miphy365x.h
->
-> diff --git a/include/dt-bindings/phy/phy-miphy365x.h b/include/dt-bindings/phy/phy-miphy365x.h
-> new file mode 100644
-> index 0000000..8ef8aba
-> --- /dev/null
-> +++ b/include/dt-bindings/phy/phy-miphy365x.h
-> @@ -0,0 +1,14 @@
-> +/*
-> + * This header provides constants for the phy framework
-> + * based on the STMicroelectronics MiPHY365x.
-> + *
-> + * Author: Lee Jones <lee.jones@linaro.org>
-> + */
-> +#ifndef _DT_BINDINGS_PHY_MIPHY
-> +#define _DT_BINDINGS_PHY_MIPHY
-> +
-> +#define MIPHY_TYPE_SATA                1
+I'm not sure it does.  Normally users _either_ represent devices in
+MFD cells from within the driver _or_ populate using existing DT
+interfaces i.e. of_platform_populate().  This is the first time I've
+seen someone attempt to parse the entire MFD node structure from
+within a driver.
 
-why it start to 1 ? for my side i prefer 0.
+After searching for some documentation to try and figure this out, I
+noticed that you've also missed a patch from your set:
 
-BR.
+  mfd: qpnp-spmi: document DT bindings for Qualcomm QPNP PMICs
 
-Gabriel.
+... which might help enlighten the DT guys.
 
-> +#define MIPHY_TYPE_PCIE                2
-> +#define MIPHY_TYPE_USB         3
-> +
-> +#endif /* _DT_BINDINGS_PHY_MIPHY */
-> --
-> 1.8.3.2
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
