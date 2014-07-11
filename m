@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485AbaGKO0I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 10:26:08 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:58663 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753857AbaGKO0F (ORCPT
+	id S1753900AbaGKO2K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 10:28:10 -0400
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:52421
+	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751071AbaGKO2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 10:26:05 -0400
+	Fri, 11 Jul 2014 10:28:09 -0400
+Date: Fri, 11 Jul 2014 16:28:06 +0200
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "chenhanxiao@cn.fujitsu.com" <chenhanxiao@cn.fujitsu.com>
+Cc: "Eric W. Biederman (ebiederm@xmission.com)" <ebiederm@xmission.com>,
+        "Serge Hallyn (serge.hallyn@ubuntu.com)" <serge.hallyn@ubuntu.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Could not mount sysfs when enable userns but disable netns
+Message-ID: <20140711142806.GA26441@mail.hallyn.com>
+References: <5871495633F38949900D2BF2DC04883E562293@G08CNEXMBPEKD02.g08.fujitsu.local>
 MIME-Version: 1.0
-In-Reply-To: <20140711091720.GO12420@verge.net.au>
-References: <1404908623-909-1-git-send-email-geert+renesas@glider.be>
-	<1404908623-909-11-git-send-email-geert+renesas@glider.be>
-	<20140711091720.GO12420@verge.net.au>
-Date: Fri, 11 Jul 2014 16:26:03 +0200
-X-Google-Sender-Auth: T8O6gPcc0Os68FVSpnlzASFNEso
-Message-ID: <CAMuHMdXP6GfO7OEnXU8x4Sn5j8_tA2nnrFANr1sriB-B4BYoOQ@mail.gmail.com>
-Subject: Re: [PATCH 10/13] [RFC] ARM: dts: Add shmobile platform device tree
- bindings documentation
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Simon Horman <horms@verge.net.au>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5871495633F38949900D2BF2DC04883E562293@G08CNEXMBPEKD02.g08.fujitsu.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Simon,
+Quoting chenhanxiao@cn.fujitsu.com (chenhanxiao@cn.fujitsu.com):
+> Hello,
+> 
+> How to reproduce:
+> 1. Prepare a container, enable userns and disable netns
+> 2. use libvirt-lxc to start a container
+> 3. libvirt could not mount sysfs then failed to start.
+> 
+> Then I found that
+> commit 7dc5dbc879bd0779924b5132a48b731a0bc04a1e says:
+> "Don't allow mounting sysfs unless the caller has CAP_SYS_ADMIN rights
+> over the net namespace."
+> 
+> But why should we check sysfs mouont permission over net namespace?
+> We've already checked CAP_SYS_ADMIN though.
+> 
+> What the relationship between sysfs and net namespace,
+> or this check is a little redundant?
 
-On Fri, Jul 11, 2014 at 11:17 AM, Simon Horman <horms@verge.net.au> wrote:
-> On Wed, Jul 09, 2014 at 02:23:40PM +0200, Geert Uytterhoeven wrote:
->> Add Renesas SH-Mobile, R-Mobile, and R-Car Platform Device Tree Bindings
->> Documentation, listing supported SoCs and boards.
->>
->> This allows to use checkpatch to validate DTSes referring to Renesas
->> shmobile SoCs, and boards containing those SoCs.
->>
->> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
->> Cc: linux-arm-kernel@lists.infradead.org
->
-> Thanks Geert,
->
-> from my point of view this seems nice. Is there a reason it is marked as an RFC?
+It is not redundant.  The whole point is that after clone(CLONE_NEWUSER)
+you get a newly filled set of capabilities.  But you should not have
+privileges over the host's network namesapce.  After you unshare a new
+network namespace, you *should* have privilege over it.  So the fact
+that we've already check CAP_SYS_ADMIN means nothing, because the
+capabilities need to be targeted.
 
->From the cover letter:
-
-"The last 4 patches contain compatible strings for new R-Car Gen2 SoCs,
- which are not yet in active use, hence the RFC status."
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> Any insights on this?
+> 
+> Thanks,
+> - Chen
+> 
+> PS: codes below could be a workaround
+> 
+> @@ -34,7 +35,8 @@ static struct dentry *sysfs_mount(struct file_system_type *fs_type,
+>                 if (!capable(CAP_SYS_ADMIN) && !fs_fully_visible(fs_type))
+>                         return ERR_PTR(-EPERM);
+>  
+> -               if (!kobj_ns_current_may_mount(KOBJ_NS_TYPE_NET))
+> +               if (current->nsproxy->net_ns != &init_net &&
+> +                    !kobj_ns_current_may_mount(KOBJ_NS_TYPE_NET))
+>                         return ERR_PTR(-EPERM);
+>         }
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/containers
