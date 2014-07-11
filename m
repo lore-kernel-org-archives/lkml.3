@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119AbaGKNoh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:44:37 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56150 "EHLO
+	id S932192AbaGKNyH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:54:07 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56154 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753734AbaGKNof (ORCPT
+	with ESMTP id S1754093AbaGKNoh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:44:35 -0400
-Message-Id: <20140711133707.310481362@linutronix.de>
+	Fri, 11 Jul 2014 09:44:37 -0400
+Message-Id: <20140711133707.403364677@linutronix.de>
 User-Agent: quilt/0.63-1
-Date: Fri, 11 Jul 2014 13:44:34 -0000
+Date: Fri, 11 Jul 2014 13:44:35 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 24/55] input: evdev: Use ktime_mono_to_real()
+Subject: [patch 25/55] drm: Use ktime_mono_to_real()
 References: <20140711133623.530368377@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=input-evdev-use-ktime-mono-to-real.patch
+Content-Disposition: inline; filename=drm-use-ktime-mono-to-real.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -27,41 +27,64 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Convert the monotonic timestamp with ktime_mono_to_real() in
-evdev_events().
+drm_calc_vbltimestamp_from_scanoutpos().
 
-In evdev_queue_syn_dropped() we can call either ktime_get() or
-ktime_get_real() depending on the clkid. No point in having two calls
-for CLOCK_REALTIME.
+In get_drm_timestamp we can call either ktime_get() or
+ktime_get_real() depending on drm_timestamp_monotonic. No point in
+having two calls into the core for CLOCK_REALTIME.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/input/evdev.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
-
-Index: tip/drivers/input/evdev.c
+ drivers/gpu/drm/drm_irq.c |   16 +++-------------
+ 1 file changed, 3 insertions(+), 13 deletions(-)
+Index: tip/drivers/gpu/drm/drm_irq.c
 ===================================================================
---- tip.orig/drivers/input/evdev.c
-+++ tip/drivers/input/evdev.c
-@@ -108,9 +108,8 @@ static void evdev_queue_syn_dropped(stru
- 	struct input_event ev;
- 	ktime_t time;
+--- tip.orig/drivers/gpu/drm/drm_irq.c
++++ tip/drivers/gpu/drm/drm_irq.c
+@@ -542,8 +542,8 @@ int drm_calc_vbltimestamp_from_scanoutpo
+ 					  const struct drm_crtc *refcrtc,
+ 					  const struct drm_display_mode *mode)
+ {
+-	ktime_t stime, etime, mono_time_offset;
+ 	struct timeval tv_etime;
++	ktime_t stime, etime;
+ 	int vbl_status;
+ 	int vpos, hpos, i;
+ 	int framedur_ns, linedur_ns, pixeldur_ns, delta_ns, duration_ns;
+@@ -588,13 +588,6 @@ int drm_calc_vbltimestamp_from_scanoutpo
+ 		vbl_status = dev->driver->get_scanout_position(dev, crtc, flags, &vpos,
+ 							       &hpos, &stime, &etime);
  
--	time = ktime_get();
--	if (client->clkid != CLOCK_MONOTONIC)
--		time = ktime_sub(time, ktime_get_monotonic_offset());
-+	time = (client->clkid == CLOCK_MONOTONIC) ?
-+		ktime_get() : ktime_get_real();
+-		/*
+-		 * Get correction for CLOCK_MONOTONIC -> CLOCK_REALTIME if
+-		 * CLOCK_REALTIME is requested.
+-		 */
+-		if (!drm_timestamp_monotonic)
+-			mono_time_offset = ktime_get_monotonic_offset();
+-
+ 		/* Return as no-op if scanout query unsupported or failed. */
+ 		if (!(vbl_status & DRM_SCANOUTPOS_VALID)) {
+ 			DRM_DEBUG("crtc %d : scanoutpos query failed [%d].\n",
+@@ -633,7 +626,7 @@ int drm_calc_vbltimestamp_from_scanoutpo
+ 	delta_ns = vpos * linedur_ns + hpos * pixeldur_ns;
  
- 	ev.time = ktime_to_timeval(time);
- 	ev.type = EV_SYN;
-@@ -202,7 +201,7 @@ static void evdev_events(struct input_ha
- 	ktime_t time_mono, time_real;
+ 	if (!drm_timestamp_monotonic)
+-		etime = ktime_sub(etime, mono_time_offset);
++		etime = ktime_mono_to_real(etime);
  
- 	time_mono = ktime_get();
--	time_real = ktime_sub(time_mono, ktime_get_monotonic_offset());
-+	time_real = ktime_mono_to_real(time_mono);
+ 	/* save this only for debugging purposes */
+ 	tv_etime = ktime_to_timeval(etime);
+@@ -664,10 +657,7 @@ static struct timeval get_drm_timestamp(
+ {
+ 	ktime_t now;
  
- 	rcu_read_lock();
+-	now = ktime_get();
+-	if (!drm_timestamp_monotonic)
+-		now = ktime_sub(now, ktime_get_monotonic_offset());
+-
++	now = drm_timestamp_monotonic ? ktime_get() : ktime_get_real();
+ 	return ktime_to_timeval(now);
+ }
  
 
 
