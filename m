@@ -1,165 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634AbaGKJbw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 05:31:52 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:62407 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255AbaGKJbu (ORCPT
+	id S1752479AbaGKJdV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 05:33:21 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:57684 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402AbaGKJdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 05:31:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <53BF45D4.2000302@collabora.co.uk>
-References: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
-	<1404467722-26687-16-git-send-email-javier.martinez@collabora.co.uk>
-	<CADGdYn4EURaHinWVksQSPzVr=CkZYcrqvWsO7mKDz_gY9XB__Q@mail.gmail.com>
-	<53BF45D4.2000302@collabora.co.uk>
-Date: Fri, 11 Jul 2014 15:01:46 +0530
-X-Google-Sender-Auth: xdQLevDw9mp4FohgbsgAX3ckXU4
-Message-ID: <CADGdYn6k8U84Amh_MRAxHFTNNXKy9NKQzV0B-e20v4bjhD-MnA@mail.gmail.com>
-Subject: Re: [PATCH v6 15/23] regulator: max77686: Setup DVS-related GPIOs on probe
-From: amit daniel kachhap <amit.daniel@samsung.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
-        LAK <linux-arm-kernel@lists.infradead.org>, devicetree@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 11 Jul 2014 05:33:20 -0400
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: ks.giri@samsung.com, arnd@arndb.de, ijc+devicetree@hellion.org.uk,
+        mark.rutland@arm.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        courtney.cavin@sonymobile.com, mporter@linaro.org,
+        slapdau@yahoo.com.au, lftan.linux@gmail.com, loic.pallardy@st.com,
+        s-anna@ti.com, ashwin.chaugule@linaro.org, bjorn@kryo.se,
+        patches@linaro.org, Mollie.Wu@tw.fujitsu.com,
+        t.takinishi@jp.fujitsu.com
+Subject: [PATCHv8 0/2] Common Mailbox Framework
+Date: Fri, 11 Jul 2014 15:02:47 +0530
+Message-Id: <1405071167-14503-1-git-send-email-jaswinder.singh@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 7:33 AM, Javier Martinez Canillas
-<javier.martinez@collabora.co.uk> wrote:
-> Hello Amit,
->
-> On 07/10/2014 12:08 PM, amit daniel kachhap wrote:
->> On Fri, Jul 4, 2014 at 3:25 PM, Javier Martinez Canillas
->> <javier.martinez@collabora.co.uk> wrote:
->>> MAX77686 PMIC support Dyamic Voltage Scaling (DVS) on a set
->>> of Buck regulators. A number of GPIO are connected to these
->>> lines and are requested by the mfd driver. Setup the GPIO
->>> pins from the regulator driver.
->> If possible merge this patch with patch 8. Both are adding DVS
->> support. Put regmap_copy dependency patch in very beginning.
->
-> As Lee already said, I split the changes to minimize the cross-subsystem churn.
-Yes agreed. This comment doesn't hold.
->
->>>
->>> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
->>> ---
->>>  drivers/regulator/max77686.c | 34 ++++++++++++++++++++++++++++++++++
->>>  1 file changed, 34 insertions(+)
->>>
->>> diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
->>> index ef1af2d..ecce77a 100644
->>> --- a/drivers/regulator/max77686.c
->>> +++ b/drivers/regulator/max77686.c
->>> @@ -435,6 +435,12 @@ static int max77686_pmic_dt_parse_pdata(struct platform_device *pdev,
->>>  }
->>>  #endif /* CONFIG_OF */
->>>
->>> +static inline bool max77686_is_dvs_buck(int id)
->>> +{
->>> +       /* BUCK 2,3 and 4 support DVS */
->>> +       return (id >= MAX77686_BUCK2 && id <= MAX77686_BUCK4);
->> I am just wondering if along with above check, SELB gpios (if present)
->> can be used to confirm if BUCK's are DVS based or not.
->
-> I don't know if SELB gpios being present or not should be used to determine
-> whether a BUCK includes the DVS feature. AFAIK boards could have some of these
-> lines hardwired and pulled high or low instead of using a GPIO.
-As per the max77686 data sheet, selb2.3.4 uses logic high for no DVS
-and logic low for DVS enabled.
-So may be if DT is supplying selb gpios then the above checks can be
-put otherwise not required.
-Anyway from your other comments, since this patch series is not
-handling complete DVS scenario.
-So putting this check is not useful in this stage.
->
->>> +}
->>> +
->>>  static int max77686_pmic_probe(struct platform_device *pdev)
->>>  {
->>>         struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
->>> @@ -442,6 +448,9 @@ static int max77686_pmic_probe(struct platform_device *pdev)
->>>         struct max77686_data *max77686;
->>>         int i, ret = 0;
->>>         struct regulator_config config = { };
->>> +       unsigned int reg;
->>> +       int buck_default_idx;
->>> +       int buck_old_idx;
->>>
->>>         dev_dbg(&pdev->dev, "%s\n", __func__);
->>>
->>> @@ -472,13 +481,34 @@ static int max77686_pmic_probe(struct platform_device *pdev)
->>>         config.driver_data = max77686;
->>>         platform_set_drvdata(pdev, max77686);
->>>
->>> +       buck_default_idx = pdata->buck_default_idx;
->>> +       buck_old_idx = max77686_read_gpios(pdata);
->>> +
->>>         for (i = 0; i < MAX77686_REGULATORS; i++) {
->>>                 struct regulator_dev *rdev;
->>> +               int id = pdata->regulators[i].id;
->>>
->>>                 config.init_data = pdata->regulators[i].initdata;
->>>                 config.of_node = pdata->regulators[i].of_node;
->>>
->>>                 max77686->opmode[i] = regulators[i].enable_mask;
->>> +
->>> +               if (max77686_is_dvs_buck(id)) {
->>> +                       /* Try to copy over data so we keep firmware settings */
->>> +                       reg = regulators[i].vsel_reg;
->>> +
->>> +                       ret = regmap_reg_copy(iodev->regmap,
->>> +                                             reg + buck_default_idx,
->>> +                                             reg + buck_old_idx);
->>> +
->>> +                       if (ret)
->>> +                               dev_warn(&pdev->dev, "Copy err %d => %d (%d)\n",
->>> +                                        reg + buck_old_idx,
->>> +                                        reg + buck_default_idx, ret);
->>> +
->>> +                       regulators[i].vsel_reg += buck_default_idx;
->>> +               }
->>> +
->>>                 rdev = devm_regulator_register(&pdev->dev,
->>>                                                 &regulators[i], &config);
->>>                 if (IS_ERR(rdev)) {
->>> @@ -488,6 +518,10 @@ static int max77686_pmic_probe(struct platform_device *pdev)
->>>                 }
->>>         }
->>>
->>> +       ret = max77686_setup_gpios(iodev->dev);
->>> +       if (ret)
->>> +               return ret;
->>> +
->>>         return 0;
->>>  }
->>>
->>> --
->>> 2.0.0.rc2
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->
-> Best regards,
-> Javier
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Hello,
+  Here is the next revision of Mailbox framwork.
+
+Changes since v7:
+ o Added documentation and example usage.
+ o Merged all patches into one that create api, bindings and
+   documentation.
+
+Changes since v6:
+ o Separate out generic DT bindings patch.
+ o Discard unnecessary aligned attributes.
+
+Changes since v5:
+ o Use standard error types instead of special type mbox_result.
+ o Constify client struct in request_channel
+ o Use reinit_completion instead of init_completion every time.
+ o Improve commentary in bindings and code.
+
+Changes since v4:
+ o Common DT binding for Controller and Client drivers
+    As a result, discard string based channel matching
+ o Provide for an atomic 'peek' api, that a client could
+    call to trigger the controller driver push data upwards.
+ o OMAP and Highbank conversion to new api is left out, which
+    can be converted later by the developers.
+
+Changes since v3:
+ o Change name of symbols from ipc to mbox
+ o Return real types instead of void *
+ o Align structures
+ o Change some symbol names
+	rxcb -> rx_callback
+	txcb -> tx_done
+ o Added kernel-doc for exported API
+ o Dropped the cl_id and use clients pointer for callbacks.
+ o Fixed locking of channel pool
+ o Return negative error code for unsuccessful ipc_send_message()
+ o Module referencing during mailbox assignment to a client.
+ o Made error code symbols specific to mailbox.
+
+Thanks
+Jassi
