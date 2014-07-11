@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461AbaGKNYd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:24:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55493 "EHLO mx2.suse.de"
+	id S1753454AbaGKN1M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:27:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4819 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751695AbaGKNYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:24:32 -0400
-Date: Fri, 11 Jul 2014 15:24:28 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-cc: Josh Poimboeuf <jpoimboe@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Oleg Nesterov <oleg@redhat.com>, Seth Jennings <sjenning@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [RFC][PATCH 0/3] ftrace: Add dynamically allocated trampolines
-In-Reply-To: <53BF4B5A.3000302@hitachi.com>
-Message-ID: <alpine.LNX.2.00.1407111523270.8779@pobox.suse.cz>
-References: <20140703200750.648550267@goodmis.org> <20140710213620.GA19858@treble.redhat.com> <alpine.LNX.2.00.1407102342050.8779@pobox.suse.cz> <53BF4B5A.3000302@hitachi.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751343AbaGKN1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 09:27:09 -0400
+Date: Fri, 11 Jul 2014 18:56:26 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: linux-kernel@vger.kernel.org,
+        Virtualization List <virtualization@lists.linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
+        keescook@chromium.org, stable@vger.kernel.org
+Subject: Re: [RFC PATCH] hwrng: sysfs entry rng_seed_kernel, was: "Re: [PATCH
+ v2 1/2] hwrng: fetch randomness only after device init"
+Message-ID: <20140711132626.GB17415@grmbl.mre>
+References: <cover.1404538109.git.amit.shah@redhat.com>
+ <515a12ecc5fca5452bf0bfda4d54546d8fb5829c.1404538109.git.amit.shah@redhat.com>
+ <20140709115317.GM13433@titan.lakedaemon.net>
+ <20140709130822.GA4553@grmbl.mre>
+ <20140709131737.GO13433@titan.lakedaemon.net>
+ <20140709132524.GB4667@grmbl.mre>
+ <20140709160725.GP13433@titan.lakedaemon.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140709160725.GP13433@titan.lakedaemon.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jul 2014, Masami Hiramatsu wrote:
+On (Wed) 09 Jul 2014 [12:07:25], Jason Cooper wrote:
+> Amit, Kees,
 
-> >> I did some testing with kpatch and I found one minor issue.  The dynamically
-> >> allocated trampoline seems to confuse dump_stack() somewhat.
-> >>
-> >> I added a dump_stack() call in my ftrace_ops callback function
-> >> (kpatch_ftrace_handler) which had a filter on meminfo_proc_show().
-> > 
-> > Interesting. Are you using dwarf2 unwinder for stack dumping by any 
-> > chance? It seems to get things right here. Will look into it more 
-> > tomorrow.
+(snip)
+
+> I'm cooling to the idea of the init function for virtio-rng, and it
+> might be best just to admit that there's no way to seed the entropy pool
+> from the virtio-rng at probe time.  After all, once userspace is up, the
+> system should take advantage of /dev/hwrng for the generation of
+> long-term keys.  Either via rngd feeding /dev/random, or directly.
 > 
-> Hmm, can dwarf2 unwinder work on the trampoline method? Since the 
-> trampoline just a copy of instructions which will not have CFI(which is 
-> stored in dwarf section), I guess it may not work... Frame pointer (push 
-> bp and save sp to bp on the entry) can work anyway.
+> As for the follow-on patch you asked about, I think that's fine.  More
+> entropy can't hurt.
+> 
+> The below patch might be worth considering so that the user of a system
+> with only virtio-rng can kick the entropy pool as they see fit.  It's
+> probably not too kosher as is, but if the idea is liked, I could clean
+> it up and submit.
+> 
+> The advantage is that users don't need to have rngd installed and
+> running on the system in order to jump-start the entropy pool.
 
-That was exactly my idea and that's why I asked, thanks for confirming.
+... so a udev rule that looks for the new sysfs file, and asks the
+kernel to do its thing?
 
-I am afraid we'll have to declare dynamic trampolines incompatible with 
-drawf2 stack dumping.
+And maybe even a patch to rngd that looks for this file and does a
+similar thing?
 
--- 
-Jiri Kosina
-SUSE Labs
+There's also the option to use a delayed workqueue item, that will
+succeed if probe has finished.  This method doesn't have userspace
+dependencies.
+
+Thanks,
+
+		Amit
