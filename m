@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932278AbaGKTKV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 15:10:21 -0400
-Received: from mail.kernel.org ([198.145.19.201]:46754 "EHLO mail.kernel.org"
+	id S932300AbaGKTKx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 15:10:53 -0400
+Received: from mail.kernel.org ([198.145.19.201]:46734 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755197AbaGKTHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 15:07:23 -0400
+	id S1755175AbaGKTHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 15:07:20 -0400
 From: konrad@kernel.org
 To: xen-devel@lists.xenproject.org, david.vrabel@citrix.com,
         boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v4 3/5] xen/pciback: Include the domain id if removing the device whilst still in use
-Date: Fri, 11 Jul 2014 16:08:50 -0400
-Message-Id: <1405109332-31659-4-git-send-email-konrad@kernel.org>
+Subject: [PATCH v4 1/5] xen-pciback: Document the various parameters and attributes in SysFS
+Date: Fri, 11 Jul 2014 16:08:48 -0400
+Message-Id: <1405109332-31659-2-git-send-email-konrad@kernel.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1405109332-31659-1-git-send-email-konrad@kernel.org>
 References: <1405109332-31659-1-git-send-email-konrad@kernel.org>
@@ -22,38 +22,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-Cleanup the function a bit - also include the id of the
-domain that is using the device.
+Which hadn't been done with the initial commit.
 
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/xen/xen-pciback/pci_stub.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+v2: Dropped the parameters and one that is unlikeable.
+---
+ Documentation/ABI/testing/sysfs-driver-pciback |   25 ++++++++++++++++++++++++
+ 1 files changed, 25 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-driver-pciback
 
-diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
-index eebbb41..efcb73b 100644
---- a/drivers/xen/xen-pciback/pci_stub.c
-+++ b/drivers/xen/xen-pciback/pci_stub.c
-@@ -552,12 +552,14 @@ static void pcistub_remove(struct pci_dev *dev)
- 	spin_unlock_irqrestore(&pcistub_devices_lock, flags);
- 
- 	if (found_psdev) {
--		dev_dbg(&dev->dev, "found device to remove - in use? %p\n",
--			found_psdev->pdev);
-+		dev_dbg(&dev->dev, "found device to remove %s\n",
-+			found_psdev->pdev ? "- in-use" : "");
- 
- 		if (found_psdev->pdev) {
--			pr_warn("****** removing device %s while still in-use! ******\n",
--			       pci_name(found_psdev->dev));
-+			int domid = xen_find_device_domain_owner(dev);
+diff --git a/Documentation/ABI/testing/sysfs-driver-pciback b/Documentation/ABI/testing/sysfs-driver-pciback
+new file mode 100644
+index 0000000..e482240
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-driver-pciback
+@@ -0,0 +1,25 @@
++What:           /sys/bus/pci/drivers/pciback/quirks
++Date:           Oct 2011
++KernelVersion:  3.1
++Contact:        xen-devel@lists.xenproject.org
++Description:
++                If the permissive attribute is set, then writing a string in
++                the format of DDDD:BB:DD.F-REG:SIZE:MASK will allow the guest
++                to write and read from the PCI device. That is Domain:Bus:
++                Device.Function-Register:Size:Mask (Domain is optional).
++                For example:
++                #echo 00:19.0-E0:2:FF > /sys/bus/pci/drivers/pciback/quirks
++                will allow the guest to read and write to the configuration
++                register 0x0E.
 +
-+			pr_warn("****** removing device %s while still in-use by domain %d! ******\n",
-+			       pci_name(found_psdev->dev), domid);
- 			pr_warn("****** driver domain may still access this device's i/o resources!\n");
- 			pr_warn("****** shutdown driver domain before binding device\n");
- 			pr_warn("****** to other drivers or domains\n");
++What:           /sys/bus/pci/drivers/pciback/irq_handlers
++Date:           Oct 2011
++KernelVersion:  3.1
++Contact:        xen-devel@lists.xenproject.org
++Description:
++                A list of all of the PCI devices owned by Xen PCI back and
++                whether Xen PCI backend will acknowledge the interrupts received
++                and the amount of interrupts received. Xen PCI back acknowledges
++                said interrupts only when they are level, shared with another
++                guest, and enabled by the guest.
++
 -- 
 1.7.7.6
 
