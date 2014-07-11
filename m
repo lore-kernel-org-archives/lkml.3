@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039AbaGKPLs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 11:11:48 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:15554 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752688AbaGKPLp (ORCPT
+	id S1754231AbaGKPMp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 11:12:45 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:49799 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752613AbaGKPMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 11:11:45 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 11 Jul 2014 08:04:37 -0700
-Message-ID: <53BFFEAD.7000405@nvidia.com>
-Date: Fri, 11 Jul 2014 18:11:41 +0300
-From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 11 Jul 2014 11:12:44 -0400
+Date: Fri, 11 Jul 2014 08:12:40 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: linux-kernel@vger.kernel.org, rostedt@goodmis.org, dipankar@in.ibm.com
+Subject: Re: [PATCH] rcu: define tracepoint strings only if CONFIG_TRACING is
+ set
+Message-ID: <20140711151239.GJ16041@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1405078692-29957-1-git-send-email-ard.biesheuvel@linaro.org>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Viresh Kumar <viresh.kumar@linaro.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 12/13] cpufreq: Add cpufreq driver for Tegra124
-References: <1405028569-14253-1-git-send-email-ttynkkynen@nvidia.com> <1405028569-14253-13-git-send-email-ttynkkynen@nvidia.com> <CAKohpom9ORXFiUU4=V+CxgN0ZOFLMEhEjHiU8HsYUYDybNXgHQ@mail.gmail.com> <20140711091207.GY23218@tbergstrom-lnx.Nvidia.com> <20140711145735.GB6523@ulmo>
-In-Reply-To: <20140711145735.GB6523@ulmo>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405078692-29957-1-git-send-email-ard.biesheuvel@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14071115-7164-0000-0000-000003106BB6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/14 17:57, Thierry Reding wrote:
+On Fri, Jul 11, 2014 at 01:38:12PM +0200, Ard Biesheuvel wrote:
+> Commit f7f7bac9cb1c ("rcu: Have the RCU tracepoints use the tracepoint_string
+> infrastructure") unconditionally populates the __tracepoint_str input section,
+> but this section is not assigned an output section if CONFIG_TRACING is not set.
+> This results in the __tracepoint_str turning up in unexpected places, i.e.,
+> after _edata.
+> 
+> Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+> Cc: rostedt@goodmis.org
+> Cc: dipankar@in.ibm.com
+> Cc: paulmck@linux.vnet.ibm.com
 
->> I don't think that's going to work? The voltage scaling is handled in hw.
->
-> Do we have to handle it in hardware or can we opt to do it in software,
-> too?
->
+If you get a Reviewed-by from Steven Rostedt, I will be happy to queue
+this one.
 
-With the PLLX, voltage scaling is done entirely in SW. With the DFLL,
-it's possible to stay in open-loop mode and do it in SW, but there's
-not much point in that.
+							Thanx, Paul
 
--- 
-nvpublic
+> ---
+>  kernel/rcu/tree.c | 9 ++++++++-
+>  1 file changed, 8 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> index f1ba77363fbb..ac1984149eb5 100644
+> --- a/kernel/rcu/tree.c
+> +++ b/kernel/rcu/tree.c
+> @@ -79,9 +79,16 @@ static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
+>   * the tracing userspace tools to be able to decipher the string
+>   * address to the matching string.
+>   */
+> +#ifdef CONFIG_TRACING
+> +#define DEFINE_TPS(sname) \
+> +static const char *tp_##sname##_varname __used __tracepoint_string = sname##_varname;
+> +#else
+> +#define DEFINE_TPS(sname)
+> +#endif
+> +
+>  #define RCU_STATE_INITIALIZER(sname, sabbr, cr) \
+>  static char sname##_varname[] = #sname; \
+> -static const char *tp_##sname##_varname __used __tracepoint_string = sname##_varname; \
+> +DEFINE_TPS(sname) \
+>  struct rcu_state sname##_state = { \
+>  	.level = { &sname##_state.node[0] }, \
+>  	.call = cr, \
+> -- 
+> 1.8.3.2
+> 
+
