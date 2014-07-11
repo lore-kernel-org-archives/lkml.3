@@ -1,40 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127AbaGKSI4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 14:08:56 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:56165 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754588AbaGKSIz (ORCPT
+	id S932158AbaGKSJa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 14:09:30 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:53287 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752520AbaGKSJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 14:08:55 -0400
-X-Sasl-enc: lrWKASObGMEjZlb9xDRYrzyGhMbDmU9sMv2D98DZhdSZ 1405102134
-Date: Fri, 11 Jul 2014 11:13:21 -0700
-From: Greg Kroah-Hartman <greg@kroah.com>
-To: Andreas Noever <andreas.noever@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        julia.lawall@lip6.fr, Himangi Saraogi <himangi774@gmail.com>
-Subject: Re: [PATCH v3] thunderbolt: Use kcalloc and correct the argument to
- sizeof
-Message-ID: <20140711181321.GB25757@kroah.com>
-References: <20140708223126.GA12035@himangi-Dell>
- <CAMxnaaX6tOobPBDVbG7v-kJTvNMLYSybZWuzTqbgMdMkP50swQ@mail.gmail.com>
- <CAMxnaaXJ_eYvUwPV=-w_eZW-EChhe1eW5Q5ctru4mhWyt3ZhuQ@mail.gmail.com>
+	Fri, 11 Jul 2014 14:09:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMxnaaXJ_eYvUwPV=-w_eZW-EChhe1eW5Q5ctru4mhWyt3ZhuQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAKv+Gu-2Tgf+gvh=LPWFpkgFAVb8qe0Gdp2Va5Br19BwLzK9yw@mail.gmail.com>
+References: <1405078692-29957-1-git-send-email-ard.biesheuvel@linaro.org>
+	<20140711151239.GJ16041@linux.vnet.ibm.com>
+	<20140711113010.4ca2c8d9@gandalf.local.home>
+	<CAKv+Gu-2Tgf+gvh=LPWFpkgFAVb8qe0Gdp2Va5Br19BwLzK9yw@mail.gmail.com>
+Date: Fri, 11 Jul 2014 20:09:26 +0200
+Message-ID: <CAKv+Gu9e+8onYn_t=kHJ0eMNT=CMyMMASbvyVQxjk6XEtzE4OQ@mail.gmail.com>
+Subject: Re: [PATCH] rcu: define tracepoint strings only if CONFIG_TRACING is set
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: paulmck <paulmck@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dipankar <dipankar@in.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 07:14:23PM +0200, Andreas Noever wrote:
-> Greg, can you add this to your char-misc tree (instead of the kzalloc
-> patch, or do you need a rebased patch)?
+On 11 July 2014 17:40, Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
+> On 11 July 2014 17:30, Steven Rostedt <rostedt@goodmis.org> wrote:
+>> On Fri, 11 Jul 2014 08:12:40 -0700
+>> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+>>
+>>> On Fri, Jul 11, 2014 at 01:38:12PM +0200, Ard Biesheuvel wrote:
+>>> > Commit f7f7bac9cb1c ("rcu: Have the RCU tracepoints use the tracepoint_string
+>>> > infrastructure") unconditionally populates the __tracepoint_str input section,
+>>> > but this section is not assigned an output section if CONFIG_TRACING is not set.
+>>> > This results in the __tracepoint_str turning up in unexpected places, i.e.,
+>>> > after _edata.
+>>> >
+>>> > Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+>>> > Cc: rostedt@goodmis.org
+>>> > Cc: dipankar@in.ibm.com
+>>> > Cc: paulmck@linux.vnet.ibm.com
+>>>
+>>> If you get a Reviewed-by from Steven Rostedt, I will be happy to queue
+>>> this one.
+>>
+>> I'm fine with it, but it should add a comment.
+>>
+>>
+>>>
+>>>                                                       Thanx, Paul
+>>>
+>>> > ---
+>>> >  kernel/rcu/tree.c | 9 ++++++++-
+>>> >  1 file changed, 8 insertions(+), 1 deletion(-)
+>>> >
+>>> > diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+>>> > index f1ba77363fbb..ac1984149eb5 100644
+>>> > --- a/kernel/rcu/tree.c
+>>> > +++ b/kernel/rcu/tree.c
+>>> > @@ -79,9 +79,16 @@ static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
+>>> >   * the tracing userspace tools to be able to decipher the string
+>>> >   * address to the matching string.
+>>> >   */
+>>> > +#ifdef CONFIG_TRACING
+>>
+>> /*
+>>  * When tracing is enabled, DEFINE_TPS() will export the string to
+>>  * userspace via the tracing debugfs directory. This allows userspace
+>>  * tools to read the binary tracepoints that reference the pointer
+>>  * to the string and not the string itself.
+>>  */
+>>
+>>
 
-I need a patch on top of my char-misc tree as the kzalloc version is
-already applied there.
+Ehm, actually, a comment to that effect is already right there in the file.
+Would you still like me to add this additional comment?
 
-thanks,
-
-greg k-h
+>>> > +#define DEFINE_TPS(sname) \
+>>> > +static const char *tp_##sname##_varname __used __tracepoint_string = sname##_varname;
+>>> > +#else
+>>> > +#define DEFINE_TPS(sname)
+>>> > +#endif
+>>
+>> Also, perhaps we should call it:
+>>
+>>  DEFINE_RCU_TPS()
+>>
+>> Other than that, I'm fine with the patch.
+>>
+>> I'll review v2 ;-)
+>>
+>
+> Thanks gents, v2 coming up.
+>
+> --
+> Ard.
+>
+>
+>>> > +
+>>> >  #define RCU_STATE_INITIALIZER(sname, sabbr, cr) \
+>>> >  static char sname##_varname[] = #sname; \
+>>> > -static const char *tp_##sname##_varname __used __tracepoint_string = sname##_varname; \
+>>> > +DEFINE_TPS(sname) \
+>>> >  struct rcu_state sname##_state = { \
+>>> >     .level = { &sname##_state.node[0] }, \
+>>> >     .call = cr, \
+>>> > --
+>>> > 1.8.3.2
+>>> >
+>>
