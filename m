@@ -1,110 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239AbaGKMYW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 08:24:22 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38342 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751071AbaGKMYT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 08:24:19 -0400
-Date: Fri, 11 Jul 2014 13:24:25 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Olav Haugan <ohaugan@codeaurora.org>
-Cc: Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
+	id S1753258AbaGKM1x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 08:27:53 -0400
+Received: from guitar.tcltek.co.il ([192.115.133.116]:47787 "EHLO
+	mx.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752406AbaGKM1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 08:27:51 -0400
+Date: Fri, 11 Jul 2014 15:27:44 +0300
+From: Baruch Siach <baruch@tkos.co.il>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Harini Katakam <harinik@xilinx.com>, Pawel Moll <pawel.moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Harini Katakam <harinikatakamlinux@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
         Kumar Gala <galak@codeaurora.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        "mitchelh@codeaurora.org" <mitchelh@codeaurora.org>,
-        Dave P Martin <Dave.Martin@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Harini Katakam <harini.katakam@xilinx.com>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>
-Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
-Message-ID: <20140711122425.GD12899@arm.com>
-References: <20140624091808.GC26013@arm.com>
- <53A9BC18.2090106@codeaurora.org>
- <20140624181150.GB4067@arm.com>
- <53A9EF3A.2070704@codeaurora.org>
- <20140625091858.GG6153@arm.com>
- <53ADEEDF.7060902@codeaurora.org>
- <20140630095220.GA25779@arm.com>
- <53BC95DA.1010500@codeaurora.org>
- <20140709105441.GE9485@arm.com>
- <53BF1470.1000704@codeaurora.org>
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 1/2] gpio: Add driver for Zynq GPIO controller
+Message-ID: <20140711122744.GE3003@tarshish>
+References: <1403091577-10232-1-git-send-email-harinik@xilinx.com>
+ <5cc8b89b-20ff-4fa9-92dd-bb2f6d3512d8@BY2FFO11FD030.protection.gbl>
+ <CACRpkdb1M3-hrSKLKWz21LCJ1sMvsq5E-aqkpmVhy0NwOS5HhA@mail.gmail.com>
+ <20140707152309.GH4939@tarshish>
+ <CACRpkdY+3hy5iw=uRdmu665NWsoGacTMgjUq97219kEcfn7Dqw@mail.gmail.com>
+ <20140711062811.GC3003@tarshish>
+ <CACRpkdYi_xbixsgvF0NMVdRmxbAgDVOnq-vzYVpDkLHTL8-12A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53BF1470.1000704@codeaurora.org>
+In-Reply-To: <CACRpkdYi_xbixsgvF0NMVdRmxbAgDVOnq-vzYVpDkLHTL8-12A@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 11:32:16PM +0100, Olav Haugan wrote:
-> On 7/9/2014 3:54 AM, Will Deacon wrote:
-> > On Wed, Jul 09, 2014 at 02:07:38AM +0100, Olav Haugan wrote:
-> >> So how does an algorithm figure this out in both my examples? The
-> >> algorithm would have to know about both (all) bus masters and their
-> >> stream IDs for a specific SMMU. If the algorithm operates on the set of
-> >> stream IDs for one bus master at a time the algorithm has no way of
-> >> knowing which bits can be ignored since it doesn't know the value of the
-> >> other stream IDs for the other bus masters and thus could potentially
-> >> create a mask that could cause a stream ID to match in two different
-> >> entries.
-> > 
-> > Complete knowledge of the system topology (i.e. all bus masters) is a
-> > requirement for being able to configure the SMMU correctly if you want to
-> > guarantee that you don't have SMR aliasing issues.
+Hi Linus,
+
+On Fri, Jul 11, 2014 at 02:06:29PM +0200, Linus Walleij wrote:
+> On Fri, Jul 11, 2014 at 8:28 AM, Baruch Siach <baruch@tkos.co.il> wrote:
+> > On Tue, Jul 08, 2014 at 11:27:57AM +0200, Linus Walleij wrote:
 > 
-> So you agree that an algorithm needs to know about all the bus
-> masters/stream IDs for a specific IOMMU before it can figure out the
-> StreamID masks and how many SMRs can be allocated to a specific bus
-> master? Andreas's algorithm does not know about the other bus
-> masters/stream IDs. It operates on one bus master at a time.
-
-Right, but it can certainly be improved. There are certain things you can do
-without complete knowledge, as I mentioned previously (if you can have
-densely packed power-of-2 aligned/sized regions).
-
-> >>>> I am not familiar with Andreas's proposal. Do you have a link?
-> >>>
-> >>>   http://marc.info/?l=linux-arm-kernel&m=139110598005846&w=2
-> >>
-> >> Unless I am mistaken the algorithm works on one bus master at a time. I
-> >> don't think that will work.
-> > 
-> > IIRC, it works for densely packed SIDs on the master, so it tries to build
-> > up power-of-2 sized groups for that master then mops up the rest with
-> > individual entries.
+> >> What is the usecase here?
+> >
+> > During boot I need to know, for example, when an FPGA is ready to be
+> > programmed, and when said FPGA has finished its initialization. I also read
+> > the sate of on-board DIP switches to determine the desired boot method. I find
+> > the current sysfs interface quite convenient for these and similar tasks.
 > 
-> I ran the algorithm through a few trivial cases:
+> So given that an FPGA is a piece of hardware, it should have its firmware
+> loaded from the kernel and a kernel driver communicating with it I guess?
 > 
-> 1)
-> Stream IDs: 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28
-> Number of SMRs: 9
-> 
-> In this case the algorithm decided to set mask to 0 for all entries
-> using up 8 of the SMRs.
+> I feel the smell of a huge bundle of userspace drivers for something that
+> should be handled by the kernel.
 
-Well think about what it's doing... we don't know about SID 0x20, for
-example so there's not much it can do.
+The FPGA can be loaded using simple SPI bit-banging, for which I used the 
+userspace SPI interface. Nothing fancy, just a few hundred LoC. Kernel driver 
+along with a userspace interface to be maintained forever for this task seems 
+an overkill to me.
 
-> 2) Same Stream IDs but only 2 SMRs.
-> The algorithm gave an error saying I did not have enough SMRs.
+baruch
 
-There's a reason this didn't get merged, and it would be great if you could
-try to improve the situation ;).
-
-Will
+-- 
+     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
