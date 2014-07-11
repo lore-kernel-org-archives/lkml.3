@@ -1,133 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754884AbaGKSgJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 14:36:09 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:31887 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751280AbaGKSgH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 14:36:07 -0400
-Date: Fri, 11 Jul 2014 14:36:01 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: paulmck <paulmck@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dipankar <dipankar@in.ibm.com>
-Subject: Re: [PATCH] rcu: define tracepoint strings only if CONFIG_TRACING
- is set
-Message-ID: <20140711143601.00744c1c@gandalf.local.home>
-In-Reply-To: <CAKv+Gu9e+8onYn_t=kHJ0eMNT=CMyMMASbvyVQxjk6XEtzE4OQ@mail.gmail.com>
-References: <1405078692-29957-1-git-send-email-ard.biesheuvel@linaro.org>
-	<20140711151239.GJ16041@linux.vnet.ibm.com>
-	<20140711113010.4ca2c8d9@gandalf.local.home>
-	<CAKv+Gu-2Tgf+gvh=LPWFpkgFAVb8qe0Gdp2Va5Br19BwLzK9yw@mail.gmail.com>
-	<CAKv+Gu9e+8onYn_t=kHJ0eMNT=CMyMMASbvyVQxjk6XEtzE4OQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	id S932134AbaGKSgZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 14:36:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56451 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932092AbaGKSgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 14:36:23 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Jerome Marchand <jmarchan@redhat.com>, linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: [PATCH -mm v5 08/13] numa_maps: remove numa_maps->vma
+Date: Fri, 11 Jul 2014 14:35:44 -0400
+Message-Id: <1405103749-23506-9-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1405103749-23506-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1405103749-23506-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jul 2014 20:09:26 +0200
-Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
+pagewalk.c can handle vma in itself, so we don't have to pass vma via
+walk->private. And show_numa_map() walks pages on vma basis, so using
+walk_page_vma() is preferable.
 
-> On 11 July 2014 17:40, Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
-> > On 11 July 2014 17:30, Steven Rostedt <rostedt@goodmis.org> wrote:
-> >> On Fri, 11 Jul 2014 08:12:40 -0700
-> >> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> >>
-> >>> On Fri, Jul 11, 2014 at 01:38:12PM +0200, Ard Biesheuvel wrote:
-> >>> > Commit f7f7bac9cb1c ("rcu: Have the RCU tracepoints use the tracepoint_string
-> >>> > infrastructure") unconditionally populates the __tracepoint_str input section,
-> >>> > but this section is not assigned an output section if CONFIG_TRACING is not set.
-> >>> > This results in the __tracepoint_str turning up in unexpected places, i.e.,
-> >>> > after _edata.
-> >>> >
-> >>> > Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-> >>> > Cc: rostedt@goodmis.org
-> >>> > Cc: dipankar@in.ibm.com
-> >>> > Cc: paulmck@linux.vnet.ibm.com
-> >>>
-> >>> If you get a Reviewed-by from Steven Rostedt, I will be happy to queue
-> >>> this one.
-> >>
-> >> I'm fine with it, but it should add a comment.
-> >>
-> >>
-> >>>
-> >>>                                                       Thanx, Paul
-> >>>
-> >>> > ---
-> >>> >  kernel/rcu/tree.c | 9 ++++++++-
-> >>> >  1 file changed, 8 insertions(+), 1 deletion(-)
-> >>> >
-> >>> > diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> >>> > index f1ba77363fbb..ac1984149eb5 100644
-> >>> > --- a/kernel/rcu/tree.c
-> >>> > +++ b/kernel/rcu/tree.c
-> >>> > @@ -79,9 +79,16 @@ static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
-> >>> >   * the tracing userspace tools to be able to decipher the string
-> >>> >   * address to the matching string.
-> >>> >   */
-> >>> > +#ifdef CONFIG_TRACING
-> >>
-> >> /*
-> >>  * When tracing is enabled, DEFINE_TPS() will export the string to
-> >>  * userspace via the tracing debugfs directory. This allows userspace
-> >>  * tools to read the binary tracepoints that reference the pointer
-> >>  * to the string and not the string itself.
-> >>  */
-> >>
-> >>
-> 
-> Ehm, actually, a comment to that effect is already right there in the file.
-> Would you still like me to add this additional comment?
+ChangeLog v4:
+- remove redundant vma
 
-Heh, I surprised myself with my own documentation :-)
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ fs/proc/task_mmu.c | 29 +++++++++++++----------------
+ 1 file changed, 13 insertions(+), 16 deletions(-)
 
-No, I think the existing comment is good enough. Just rename the macro
-then.
-
-Thanks!
-
--- Steve
-
-> 
-> >>> > +#define DEFINE_TPS(sname) \
-> >>> > +static const char *tp_##sname##_varname __used __tracepoint_string = sname##_varname;
-> >>> > +#else
-> >>> > +#define DEFINE_TPS(sname)
-> >>> > +#endif
-> >>
-> >> Also, perhaps we should call it:
-> >>
-> >>  DEFINE_RCU_TPS()
-> >>
-> >> Other than that, I'm fine with the patch.
-> >>
-> >> I'll review v2 ;-)
-> >>
-> >
-> > Thanks gents, v2 coming up.
-> >
-> > --
-> > Ard.
-> >
-> >
-> >>> > +
-> >>> >  #define RCU_STATE_INITIALIZER(sname, sabbr, cr) \
-> >>> >  static char sname##_varname[] = #sname; \
-> >>> > -static const char *tp_##sname##_varname __used __tracepoint_string = sname##_varname; \
-> >>> > +DEFINE_TPS(sname) \
-> >>> >  struct rcu_state sname##_state = { \
-> >>> >     .level = { &sname##_state.node[0] }, \
-> >>> >     .call = cr, \
-> >>> > --
-> >>> > 1.8.3.2
-> >>> >
-> >>
+diff --git mmotm-2014-07-09-17-08.orig/fs/proc/task_mmu.c mmotm-2014-07-09-17-08/fs/proc/task_mmu.c
+index 8b1eb1617445..084d750f6177 100644
+--- mmotm-2014-07-09-17-08.orig/fs/proc/task_mmu.c
++++ mmotm-2014-07-09-17-08/fs/proc/task_mmu.c
+@@ -1238,7 +1238,6 @@ const struct file_operations proc_pagemap_operations = {
+ #ifdef CONFIG_NUMA
+ 
+ struct numa_maps {
+-	struct vm_area_struct *vma;
+ 	unsigned long pages;
+ 	unsigned long anon;
+ 	unsigned long active;
+@@ -1307,18 +1306,17 @@ static struct page *can_gather_numa_stats(pte_t pte, struct vm_area_struct *vma,
+ static int gather_pte_stats(pmd_t *pmd, unsigned long addr,
+ 		unsigned long end, struct mm_walk *walk)
+ {
+-	struct numa_maps *md;
++	struct numa_maps *md = walk->private;
++	struct vm_area_struct *vma = walk->vma;
+ 	spinlock_t *ptl;
+ 	pte_t *orig_pte;
+ 	pte_t *pte;
+ 
+-	md = walk->private;
+-
+-	if (pmd_trans_huge_lock(pmd, md->vma, &ptl) == 1) {
++	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+ 		pte_t huge_pte = *(pte_t *)pmd;
+ 		struct page *page;
+ 
+-		page = can_gather_numa_stats(huge_pte, md->vma, addr);
++		page = can_gather_numa_stats(huge_pte, vma, addr);
+ 		if (page)
+ 			gather_stats(page, md, pte_dirty(huge_pte),
+ 				     HPAGE_PMD_SIZE/PAGE_SIZE);
+@@ -1330,7 +1328,7 @@ static int gather_pte_stats(pmd_t *pmd, unsigned long addr,
+ 		return 0;
+ 	orig_pte = pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
+ 	do {
+-		struct page *page = can_gather_numa_stats(*pte, md->vma, addr);
++		struct page *page = can_gather_numa_stats(*pte, vma, addr);
+ 		if (!page)
+ 			continue;
+ 		gather_stats(page, md, pte_dirty(*pte), 1);
+@@ -1378,7 +1376,12 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
+ 	struct file *file = vma->vm_file;
+ 	struct task_struct *task = proc_priv->task;
+ 	struct mm_struct *mm = vma->vm_mm;
+-	struct mm_walk walk = {};
++	struct mm_walk walk = {
++		.hugetlb_entry = gather_hugetlb_stats,
++		.pmd_entry = gather_pte_stats,
++		.private = md,
++		.mm = mm,
++	};
+ 	struct mempolicy *pol;
+ 	char buffer[64];
+ 	int nid;
+@@ -1389,13 +1392,6 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
+ 	/* Ensure we start with an empty set of numa_maps statistics. */
+ 	memset(md, 0, sizeof(*md));
+ 
+-	md->vma = vma;
+-
+-	walk.hugetlb_entry = gather_hugetlb_stats;
+-	walk.pmd_entry = gather_pte_stats;
+-	walk.private = md;
+-	walk.mm = mm;
+-
+ 	pol = get_vma_policy(task, vma, vma->vm_start);
+ 	mpol_to_str(buffer, sizeof(buffer), pol);
+ 	mpol_cond_put(pol);
+@@ -1425,7 +1421,8 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
+ 	if (is_vm_hugetlb_page(vma))
+ 		seq_printf(m, " huge");
+ 
+-	walk_page_range(vma->vm_start, vma->vm_end, &walk);
++	/* mmap_sem is held by m_start */
++	walk_page_vma(vma, &walk);
+ 
+ 	if (!md->pages)
+ 		goto out;
+-- 
+1.9.3
 
