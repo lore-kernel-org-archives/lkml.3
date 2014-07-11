@@ -1,79 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239AbaGKJ3b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 05:29:31 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:35166 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751142AbaGKJ32 convert rfc822-to-8bit (ORCPT
+	id S1752411AbaGKJ3f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 05:29:35 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:51848 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752290AbaGKJ3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 05:29:28 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Olivier Sobrie'" <olivier@sobrie.be>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: David Miller <davem@davemloft.net>,
-        "j.dumon@option.com" <j.dumon@option.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/2] hso: fix deadlock when receiving bursts of data
-Thread-Topic: [PATCH 2/2] hso: fix deadlock when receiving bursts of data
-Thread-Index: AQHPnEsixGodlQaSuk2Kj0YtzGiNipuZYB6ggAADwYCAASTPgIAAEayg
-Date: Fri, 11 Jul 2014 09:28:47 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1727090C@AcuExch.aculab.com>
-References: <1404723967-24245-1-git-send-email-olivier@sobrie.be>
- <1404723967-24245-2-git-send-email-olivier@sobrie.be>
- <20140708.161633.2130069042930765600.davem@davemloft.net>
- <20140710142848.GA28056@hposo>
- <063D6719AE5E284EB5DD2968C1650D6D17270044@AcuExch.aculab.com>
- <20140710165003.0309924e@alan.etchedpixels.co.uk>
- <20140711091803.GA19663@hposo>
-In-Reply-To: <20140711091803.GA19663@hposo>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Fri, 11 Jul 2014 05:29:33 -0400
+Date: Fri, 11 Jul 2014 11:29:22 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jason Low <jason.low2@hp.com>
+Cc: torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        mingo@kernel.org, Waiman.Long@hp.com, davidlohr@hp.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, riel@redhat.com,
+        rostedt@goodmis.org, akpm@linux-foundation.org, hpa@zytor.com,
+        tim.c.chen@linux.intel.com, konrad.wilk@oracle.com, aswin@hp.com,
+        scott.norton@hp.com, chegu_vinod@hp.com
+Subject: Re: [PATCH 4/4] rwsem: Reduce the size of struct rw_semaphore
+Message-ID: <20140711092922.GG20603@laptop.programming.kicks-ass.net>
+References: <1404759019-4268-1-git-send-email-jason.low2@hp.com>
+ <1404759019-4268-5-git-send-email-jason.low2@hp.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1404759019-4268-5-git-send-email-jason.low2@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Olivier Sobrie Olivier Sobrie
-> Hi Alan and Davids,
+On Mon, Jul 07, 2014 at 11:50:19AM -0700, Jason Low wrote:
+> Recent optimistic spinning additions to rwsem provide significant performance
+> benefits on many workloads on large machines. The cost of it was increasing
+> the size of the rwsem structure by up to 128 bits.
 > 
-> On Thu, Jul 10, 2014 at 04:50:03PM +0100, One Thousand Gnomes wrote:
-> > On Thu, 10 Jul 2014 14:37:37 +0000
-> > David Laight <David.Laight@ACULAB.COM> wrote:
-> >
-> > > From: Olivier Sobrie
-> > > ...
-> > > > The function put_rxbuf_data() is called from the urb completion handler.
-> > > > It puts the data of the urb transfer in the tty buffer with
-> > > > tty_insert_flip_string_flags() and schedules a work queue in order to
-> > > > push the data to the ldisc.
-> > > > Problem is that we are in a urb completion handler so we can't wait
-> > > > until there is room in the tty buffer.
-> >
-> > The tty provides the input queue, if the queue is full then just chuck
-> > the data in the bitbucket.  hso is trying to be far too clever.
-> >
-> > If hso is fast enough that the buffering isn't sufficient on the tty side
-> > then we need to fix the tty buffer size.
+> However, now that the previous patches in this series bring the overhead of
+> struct optimistic_spin_queue to 32 bits, this patch reorders some fields in
+> struct rw_semaphore such that we can reduce the overhead of the rwsem structure
+> by 64 bits (on 64 bit systems).
 > 
-> Ok I'll adapt the patch to drop the data that can't be put in the tty
-> buffer. I test this and resend a new patch.
+> The extra overhead required for rwsem optimistic spinning would now be up
+> to 8 additional bytes instead of up to 16 bytes. Additionally, the size of
+> rwsem would now be more in line with mutexes.
+> 
+> Signed-off-by: Jason Low <jason.low2@hp.com>
+> ---
+>  include/linux/rwsem.h |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+> index 9fdcdd0..f6c54c0 100644
+> --- a/include/linux/rwsem.h
+> +++ b/include/linux/rwsem.h
+> @@ -24,15 +24,15 @@ struct rw_semaphore;
+>  /* All arch specific implementations share the same struct */
+>  struct rw_semaphore {
+>  	long count;
+> -	raw_spinlock_t wait_lock;
+>  	struct list_head wait_list;
+> +	raw_spinlock_t wait_lock;
+>  #ifdef CONFIG_SMP
+> +	struct optimistic_spin_queue osq; /* spinner MCS lock */
+>  	/*
+>  	 * Write owner. Used as a speculative check to see
+>  	 * if the owner is running on the cpu.
+>  	 */
+>  	struct task_struct *owner;
+> -	struct optimistic_spin_queue osq; /* spinner MCS lock */
+>  #endif
+>  #ifdef CONFIG_DEBUG_LOCK_ALLOC
+>  	struct lockdep_map	dep_map;
+> @@ -66,10 +66,10 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
+>  #if defined(CONFIG_SMP) && !defined(CONFIG_RWSEM_GENERIC_SPINLOCK)
+>  #define __RWSEM_INITIALIZER(name)			\
+>  	{ RWSEM_UNLOCKED_VALUE,				\
+> -	  __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),	\
+>  	  LIST_HEAD_INIT((name).wait_list),		\
+> +	  __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),	\
+> +	  { ATOMIC_INIT(OSQ_UNLOCKED_VAL) }, /* osq */	\
+>  	  NULL, /* owner */				\
+> -	  { ATOMIC_INIT(OSQ_UNLOCKED_VAL) } /* osq */   \
+>  	  __RWSEM_DEP_MAP_INIT(name) }
+>  #else
+>  #define __RWSEM_INITIALIZER(name)			\
 
-If you are going to drop data, then ideally you want to discard entire ppp
-packets. Depending on exactly how the interface works it might be that
-urb are likely to contain complete packets.
 
-So discarding entire urb might work better than discarding a few bytes.
-(But don't even think of scanning the data stream in the usb driver - except
-for experiments.)
+This gets me:
 
-	David
+../init/init_task.c:14:44: error: expected expression before ‘,’ token
 
+          { ATOMIC_INIT(OSQ_UNLOCKED_VAL) }, /* osq */  \
+-         NULL, /* owner */                             \
++         NULL /* owner */                              \
+          __RWSEM_DEP_MAP_INIT(name) }
 
-
+Makes it work again.
