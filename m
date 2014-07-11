@@ -1,191 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754945AbaGKUjO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 16:39:14 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:46545 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754923AbaGKUiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 16:38:11 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Murali Karicheri <m-karicheri2@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Mohit Kumar <mohit.kumar@st.com>,
-        Jingoo Han <jg1.han@samsung.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Pratyush Anand <pratyush.anand@st.com>,
-        Richard Zhu <r65037@freescale.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: [PATCH v4 4/6] PCI: designware: enhance dw core driver to support keystone PCI host controller
-Date: Fri, 11 Jul 2014 16:36:33 -0400
-Message-ID: <1405110995-24676-5-git-send-email-m-karicheri2@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1405110995-24676-1-git-send-email-m-karicheri2@ti.com>
-References: <1405110995-24676-1-git-send-email-m-karicheri2@ti.com>
+	id S1755362AbaGKUjY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 16:39:24 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:45026 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753900AbaGKUjU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 16:39:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20140711201012.GB18246@pd.tnic>
+References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
+	<1404925766-32253-2-git-send-email-hskinnemoen@google.com>
+	<20140709191747.GB5249@pd.tnic>
+	<CAFQmdRa5Spr0nX6qwzhDGEU9+H1_0vaCtF_NRV=p=OBDwin78A@mail.gmail.com>
+	<20140710114222.GE2970@pd.tnic>
+	<CAFQmdRZ1D4OWqkL-zpsiEjuGQaSBBmk36HqSw=q+hHNCRWZCKQ@mail.gmail.com>
+	<CA+8MBbJ+FeQKZC9oVZsvrBptaY+24rVKWUXT02ETHMMoA-omuA@mail.gmail.com>
+	<CAFQmdRY1=Yg7T15kQmiA+S0j1-xNKsF6Sze49BN7-VzbwW7V4w@mail.gmail.com>
+	<20140711153541.GD17083@pd.tnic>
+	<CAFQmdRajEjtGB4xXVzCmaUPA=qEjrzQTskJtpmD0cqKhKsEYsg@mail.gmail.com>
+	<20140711201012.GB18246@pd.tnic>
+Date: Fri, 11 Jul 2014 13:39:19 -0700
+Message-ID: <CAFQmdRbpVfNjvyOPHo7RZ+W=2FTA6fEw2hWBebKNBX8LMPYfeQ@mail.gmail.com>
+Subject: Re: [PATCH 1/6] x86-mce: Modify CMCI poll interval to adjust for
+ small check_interval values.
+From: Havard Skinnemoen <hskinnemoen@google.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Tony Luck <tony.luck@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ewout van Bekkum <ewout@google.com>,
+        linux-edac <linux-edac@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add API dw_pcie_v3_65_host_init() to support host controller initialization
-for keystone PCI driver. The keystone PCI uses v3.65 version of the DW hardware
-identified by compatibility string "dw,snps-pcie-v3.65". This allow for
-different treatment for this version of the h/w during host initialization.
-Key differences in v3.65 DW h/w are
-	1. No ATU support
-	2. Legacy and MSI irq functions are implemented in application
-	   register space
-	3. MSI interrupts are multiplexed over 8 IRQ lines to the Host side.
-So a msi irq chip is needed and the irq domain ops ptr is passed in
-dw_pcie_v3_65_host_init() to allow re-use of common MSI code in dw core.  The
-keystone PCI host controller requires a modified pci scan function to allow
-setup BAR0 for EP's access to MSI_IRQ register in application register to
-raise MSI irq.  So a ptr to pci hw ops struct is passed to the host init code.
+On Fri, Jul 11, 2014 at 1:10 PM, Borislav Petkov <bp@alien8.de> wrote:
+> I'm going to reply with multiple mails so that we can keep the things
+> separate and not let replies grow out of proportion.
+>
+> On Fri, Jul 11, 2014 at 11:56:11AM -0700, Havard Skinnemoen wrote:
+>> So a short burst of CMCIs would send us instantly into polling mode,
+>> which would probably be suboptimal if things are quiet after that.
+>> Counting is a lot more robust against this.
+>
+> Yes, but CMCI_STORM_THRESHOLD is arbitrary too. How is getting 15 CMCIs
+> per second an interrupt storm? Apparently boxes can handle couple of
+> hundred CMCIs per second just fine...
 
-keystone PCI controller re-uses the DW Core driver code wherever there is
-common functionality. So this patch makes these functions global and added
-their prototypes in pcie-designware.h to allow re-use on keystone.
+Sorry, I was being unclear. I was actually arguing the opposite:
+Getting 15 CMCIs per second is fine and shouldn't cause any switch to
+polling mode, especially if the polling will happen at 100 times per
+second. But your proposal would switch to polling if we ever see 2
+CMCIs within a period, which seems way too trigger-happy, even if the
+period is short.
 
-Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+I do agree there are already a lot of arbitrary numbers in the code.
 
-CC: Russell King <linux@arm.linux.org.uk>
-CC: Grant Likely <grant.likely@linaro.org>
-CC: Rob Herring <robh+dt@kernel.org>
-CC: Mohit Kumar <mohit.kumar@st.com>
-CC: Jingoo Han <jg1.han@samsung.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>
-CC: Pratyush Anand <pratyush.anand@st.com>
-CC: Richard Zhu <r65037@freescale.com>
-CC: Kishon Vijay Abraham I <kishon@ti.com>
-CC: Marek Vasut <marex@denx.de>
-CC: Arnd Bergmann <arnd@arndb.de>
-CC: Pawel Moll <pawel.moll@arm.com>
-CC: Mark Rutland <mark.rutland@arm.com>
-CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
-CC: Kumar Gala <galak@codeaurora.org>
-CC: Randy Dunlap <rdunlap@infradead.org>
-CC: Grant Likely <grant.likely@linaro.org>
----
- .../devicetree/bindings/pci/designware-pcie.txt    |    2 +
- drivers/pci/host/pcie-designware.c                 |   39 ++++++++++++++++++--
- drivers/pci/host/pcie-designware.h                 |    7 ++++
- 3 files changed, 44 insertions(+), 4 deletions(-)
+>> If we see two errors every 2 seconds (for example due to a bug causing
+>> us to see duplicate MCEs), we'd ping-pong back and forth between CMCI
+>> and polling mode on every error, polling 51 times per second on
+>> average. This seems a lot more expensive than just staying in CMCI
+>> mode. And we risk losing information if there are instead, say, 4
+>> errors every 2 seconds.
+>>
+>> > After a second where we haven't seen any errors, we switch back to CMCI.
+>> > check_interval relaxes back to 5 min and all gets to its normal boring
+>> > existence. Otherwise, we enter storm mode quickly again.
+>>
+>> Since the storm detection is now independent of check_interval, we
+>> don't need to place any restrictions on it right?
+>
+> Ok, so my initial storm detection was dumb, ok. Counting the way we do
+> it now is purely sucked out of thin air too.
+>
+> Instead, the criteria should probably be something like: what is the
+> number of CMCIs per second which we can process while leaving system
+> operation relatively unaffected? Anything above that number constitutes
+> a CMCI storm.
 
-diff --git a/Documentation/devicetree/bindings/pci/designware-pcie.txt b/Documentation/devicetree/bindings/pci/designware-pcie.txt
-index d0d15ee..0cb10c0 100644
---- a/Documentation/devicetree/bindings/pci/designware-pcie.txt
-+++ b/Documentation/devicetree/bindings/pci/designware-pcie.txt
-@@ -2,6 +2,8 @@
- 
- Required properties:
- - compatible: should contain "snps,dw-pcie" to identify the core.
-+  Additionally contains "dw,snps-pcie-v3.65" to identify v3.65 version of the DW
-+  hardware.
- - #address-cells: set to <3>
- - #size-cells: set to <2>
- - device_type: set to "pci"
-diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
-index c11e4de..4dcbebe 100644
---- a/drivers/pci/host/pcie-designware.c
-+++ b/drivers/pci/host/pcie-designware.c
-@@ -556,6 +556,37 @@ static int dw_pcie_msi_host_init(struct pcie_port *pp,
- 	return 0;
- }
- 
-+int __init dw_pcie_v3_65_host_init(struct pcie_port *pp, struct hw_pci *hw,
-+				   struct device_node *msi_irqc_np,
-+				   const struct irq_domain_ops *msi_irq_ops)
-+{
-+	int ret = -EINVAL;
-+
-+	/* check if compatible with v3.65 DW h/w */
-+	if (!of_device_is_compatible(pp->dev->of_node, "dw,snps-pcie-v3.65")) {
-+		dev_err(pp->dev,
-+			"PCI Controller not compatible with v3.65 DW h/w\n");
-+		goto out;
-+	}
-+	pp->version = DW_HW_V3_65;
-+
-+	/* v3.65 PCI controller is expected to provide its own PCI h/w ops */
-+	if (!hw || !msi_irq_ops) {
-+		dev_err(pp->dev,
-+			"v3.65 PCI Controllers doesn't provide %s\n",
-+			(hw == NULL) ? "PCI hw ops" : "PCI MSI irq domain ops");
-+		goto out;
-+	}
-+
-+	ret = dw_pcie_msi_host_init(pp, msi_irqc_np,  msi_irq_ops);
-+	if (ret)
-+		goto out;
-+
-+	ret = dw_pcie_common_host_init(pp, hw);
-+out:
-+	return ret;
-+}
-+
- int __init dw_pcie_host_init(struct pcie_port *pp)
- {
- 	int ret;
-@@ -763,7 +794,7 @@ static struct pci_ops dw_pcie_ops = {
- 	.write = dw_pcie_wr_conf,
- };
- 
--static int dw_pcie_setup(int nr, struct pci_sys_data *sys)
-+int dw_pcie_setup(int nr, struct pci_sys_data *sys)
- {
- 	struct pcie_port *pp;
- 
-@@ -786,7 +817,7 @@ static int dw_pcie_setup(int nr, struct pci_sys_data *sys)
- 	return 1;
- }
- 
--static struct pci_bus *dw_pcie_scan_bus(int nr, struct pci_sys_data *sys)
-+struct pci_bus *dw_pcie_scan_bus(int nr, struct pci_sys_data *sys)
- {
- 	struct pci_bus *bus;
- 	struct pcie_port *pp = sys_to_pcie(sys);
-@@ -803,7 +834,7 @@ static struct pci_bus *dw_pcie_scan_bus(int nr, struct pci_sys_data *sys)
- 	return bus;
- }
- 
--static int dw_pcie_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
-+int dw_pcie_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
- {
- 	struct pcie_port *pp = sys_to_pcie(dev->bus->sysdata);
- 	int irq;
-@@ -815,7 +846,7 @@ static int dw_pcie_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
- 	return irq;
- }
- 
--static void dw_pcie_add_bus(struct pci_bus *bus)
-+void dw_pcie_add_bus(struct pci_bus *bus)
- {
- 	if (IS_ENABLED(CONFIG_PCI_MSI)) {
- 		struct pcie_port *pp = sys_to_pcie(bus->sysdata);
-diff --git a/drivers/pci/host/pcie-designware.h b/drivers/pci/host/pcie-designware.h
-index db0260f..2681826 100644
---- a/drivers/pci/host/pcie-designware.h
-+++ b/drivers/pci/host/pcie-designware.h
-@@ -81,4 +81,11 @@ void dw_pcie_msi_init(struct pcie_port *pp);
- int dw_pcie_link_up(struct pcie_port *pp);
- void dw_pcie_setup_rc(struct pcie_port *pp);
- int dw_pcie_host_init(struct pcie_port *pp);
-+int dw_pcie_v3_65_host_init(struct pcie_port *pp, struct hw_pci *hw,
-+			   struct device_node *msi_irqc_np,
-+			   const struct irq_domain_ops *msi_irq_ops);
-+int dw_pcie_setup(int nr, struct pci_sys_data *sys);
-+struct pci_bus *dw_pcie_scan_bus(int nr, struct pci_sys_data *sys);
-+void dw_pcie_add_bus(struct pci_bus *bus);
-+int dw_pcie_map_irq(const struct pci_dev *dev, u8 slot, u8 pin);
- #endif /* _PCIE_DESIGNWARE_H */
--- 
-1.7.9.5
+That sounds good to me. But now you're talking about CMCIs per second,
+which seems to imply some form of counting right?
 
+> Now, how we'll come up with an answer to that question is a whole
+> another story...
+
+Right. If we can come up with an answer, that's great, but if we
+don't, I think we're better off exporting a nice knob and letting the
+user tune his system according to his needs.
+
+Just to throw another number out, how about doing CMCI storm polling
+at a fixed interval of 100 ms? Since check_interval is an integer
+representing a number of seconds, it can never get lower than 10x this
+number, so we won't need to restrict it any further.
+
+If we see more than X CMCIs in a second, we switch to polling. If less
+than Y out of 10 polls see an error, we switch back to CMCI.
+
+Now, we still leave 3 magic numbers to be figured out...but I think
+their range is somewhat more limited.
+
+Havard
