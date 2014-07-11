@@ -1,107 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166AbaGKOip (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 10:38:45 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:59338 "EHLO mail.mev.co.uk"
+	id S1753935AbaGKOjx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 10:39:53 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:59348 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751649AbaGKOio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 10:38:44 -0400
+	id S1752322AbaGKOjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 10:39:52 -0400
+Message-ID: <53BFF734.2050009@mev.co.uk>
+Date: Fri, 11 Jul 2014 15:39:48 +0100
 From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
 To: <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>,
         <devel@driverdev.osuosl.org>
-Cc: <gregkh@linuxfoundation.org>, <hsweeten@visionengravers.com>,
-        <abbotti@mev.co.uk>, <dcb314@hotmail.com>,
-        Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Subject: [PATCH v3] drivers/staging/comedi/drivers/ni_atmio16d.c: remove pointless condition
-Date: Fri, 11 Jul 2014 15:38:30 +0100
-Message-Id: <1405089510-23182-1-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1405089127-21646-1-git-send-email-abbotti@mev.co.uk>
-References: <1405089127-21646-1-git-send-email-abbotti@mev.co.uk>
+CC: <gregkh@linuxfoundation.org>, <hsweeten@visionengravers.com>,
+        <dcb314@hotmail.com>, Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Subject: Re: [PATCH v3] drivers/staging/comedi/drivers/ni_atmio16d.c: remove
+ pointless condition
+References: <1405089127-21646-1-git-send-email-abbotti@mev.co.uk> <1405089510-23182-1-git-send-email-abbotti@mev.co.uk>
+In-Reply-To: <1405089510-23182-1-git-send-email-abbotti@mev.co.uk>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
+ (10.0.0.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+On 2014-07-11 15:38, Ian Abbott wrote:
+> From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+>
+> From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Dammit!  Greg, do you want to sort that out or should I have another go?
 
-The issue was discovered with static analysis and has two instances in
-this file. The code looks like this
-if (x < 65536000) {
-	...
-} else if (x < 655360000) {
-	...
-} else if (x <= 0xffffffff /* 6553600000 */) {
-	...
-} else if (x <= 0xffffffff /* 65536000000 */) {
-	...
-}
-
-The meaning of this block is to select appropriate clock frequency for
-interval timer basing on "x", which is amount of time.
-
-Notes:
-1. That last condition matches previous one - that's the issue.
-2. Decimal numbers in comments don't match hex numbers in expressions.
-But in first case the numbers have same order, while in the second case
-the hex number is the same, and the decimal one is 10 times bigger.
-3. Actually type of "x" is "unsigned int", so its exact upper limit is
-not obviously known.
-4. There's no "else" block.
-
-So it makes sense to make an "else" block from last "else if" case. The
-code inside the block seems correct for such usage.
-
-[ Actually, get rid of the final "else if" case and change the
-next-to-last "else if" case to an "else" as the upper limit of "x" _is_
-known to be 0xffffffff (UINT_MAX), which is less than 6553600000 -- Ian ]
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=79871
-Reported-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
-v2: Removed final "else if" block and changed preceding "else if" block
-to "else" block as the condition is always true due to limited range of
-"unsigned int". -- Ian
-v3: Corrected subject line I messed up in v2. -- Ian
----
- drivers/staging/comedi/drivers/ni_atmio16d.c | 10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/staging/comedi/drivers/ni_atmio16d.c b/drivers/staging/comedi/drivers/ni_atmio16d.c
-index 6ad27f5..b1b4744 100644
---- a/drivers/staging/comedi/drivers/ni_atmio16d.c
-+++ b/drivers/staging/comedi/drivers/ni_atmio16d.c
-@@ -335,12 +335,9 @@ static int atmio16d_ai_cmd(struct comedi_device *dev,
- 	} else if (cmd->convert_arg < 655360000) {
- 		base_clock = CLOCK_100_KHZ;
- 		timer = cmd->convert_arg / 10000;
--	} else if (cmd->convert_arg <= 0xffffffff /* 6553600000 */) {
-+	} else /* cmd->convert_arg < 6553600000 */ {
- 		base_clock = CLOCK_10_KHZ;
- 		timer = cmd->convert_arg / 100000;
--	} else if (cmd->convert_arg <= 0xffffffff /* 65536000000 */) {
--		base_clock = CLOCK_1_KHZ;
--		timer = cmd->convert_arg / 1000000;
- 	}
- 	outw(0xFF03, dev->iobase + AM9513A_COM_REG);
- 	outw(base_clock, dev->iobase + AM9513A_DATA_REG);
-@@ -403,12 +400,9 @@ static int atmio16d_ai_cmd(struct comedi_device *dev,
- 		} else if (cmd->scan_begin_arg < 655360000) {
- 			base_clock = CLOCK_100_KHZ;
- 			timer = cmd->scan_begin_arg / 10000;
--		} else if (cmd->scan_begin_arg < 0xffffffff /* 6553600000 */) {
-+		} else /* cmd->scan_begin_arg < 6553600000 */ {
- 			base_clock = CLOCK_10_KHZ;
- 			timer = cmd->scan_begin_arg / 100000;
--		} else if (cmd->scan_begin_arg < 0xffffffff /* 65536000000 */) {
--			base_clock = CLOCK_1_KHZ;
--			timer = cmd->scan_begin_arg / 1000000;
- 		}
- 		outw(0xFF02, dev->iobase + AM9513A_COM_REG);
- 		outw(base_clock, dev->iobase + AM9513A_DATA_REG);
 -- 
-2.0.0
-
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
