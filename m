@@ -1,219 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752409AbaGKJHa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 05:07:30 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:49457 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752247AbaGKJHY (ORCPT
+	id S1752621AbaGKJJB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 05:09:01 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:59954 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752523AbaGKJI6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 05:07:24 -0400
-Date: Fri, 11 Jul 2014 10:07:18 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Stanimir Varbanov <svarbanov@mm-sol.com>
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Rob Herring <robh@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Josh Cartwright <joshc@codeaurora.org>
-Subject: Re: [RFC PATCH v2 1/5] mfd: qpnp: add support for Qualcomm QPNP PMICs
-Message-ID: <20140711090718.GA30519@lee--X1>
-References: <1404393243-7324-1-git-send-email-svarbanov@mm-sol.com>
- <1404393243-7324-2-git-send-email-svarbanov@mm-sol.com>
- <20140709143426.GC2635@lee--X1>
- <53BD5EC5.3080801@mm-sol.com>
- <20140710083654.GQ2635@lee--X1>
- <53BEB1DB.6010301@mm-sol.com>
+	Fri, 11 Jul 2014 05:08:58 -0400
+Date: Fri, 11 Jul 2014 10:08:51 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'linux-pci'" <linux-pci@vger.kernel.org>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'linaro-kernel'" <linaro-kernel@lists.linaro.org>,
+        "'Tanmay Inamdar'" <tinamdar@apm.com>,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Sinan Kaya'" <okaya@codeaurora.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Suravee Suthikulanit'" <suravee.suthikulpanit@amd.com>,
+        "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Device Tree ML'" <devicetree@vger.kernel.org>,
+        "'LAKML'" <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 8/9] pci: Add support for creating a generic
+ host_bridge from device tree
+Message-ID: <20140711090851.GL6501@e106497-lin.cambridge.arm.com>
+References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
+ <1404240214-9804-9-git-send-email-Liviu.Dudau@arm.com>
+ <004601cf9cdb$ca08f7f0$5e1ae7d0$%han@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+In-Reply-To: <004601cf9cdb$ca08f7f0$5e1ae7d0$%han@samsung.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 11 Jul 2014 09:08:52.0183 (UTC) FILETIME=[BBF55670:01CF9CE7]
+X-MC-Unique: 114071110085513401
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53BEB1DB.6010301@mm-sol.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Jul 2014, Stanimir Varbanov wrote:
-> >>>> The Qualcomm QPNP PMIC chips are components used with the
-> >>>> Snapdragon 800 series SoC family.  This driver exists
-> >>>> largely as a glue mfd component, it exists to be an owner
-> >>>> of an SPMI regmap for children devices described in
-> >>>> device tree.
-> >>>>
-> >>>> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-> >>>> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
-> >>>> ---
-> >>>>  drivers/mfd/Kconfig     |   15 ++++++
-> >>>>  drivers/mfd/Makefile    |    1 +
-> >>>>  drivers/mfd/qpnp-spmi.c |  129 +++++++++++++++++++++++++++++++++++++++++++++++
-> >>>>  3 files changed, 145 insertions(+), 0 deletions(-)
-> >>>>  create mode 100644 drivers/mfd/qpnp-spmi.c
-> >>>>
-> >>>> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> >>>> index ee8204c..258b733 100644
-> >>>> --- a/drivers/mfd/Kconfig
-> >>>> +++ b/drivers/mfd/Kconfig
-> >>>> @@ -524,6 +524,21 @@ config MFD_PM8921_CORE
-> >>>>  	  Say M here if you want to include support for PM8921 chip as a module.
-> >>>>  	  This will build a module called "pm8921-core".
-> >>>>  
-> >>>> +config MFD_QPNP_SPMI
-> >>>> +	tristate "Qualcomm QPNP SPMI PMIC"
-> >>>> +	depends on ARCH_QCOM || COMPILE_TEST
-> >>>> +	depends on OF
-> >>>> +	select MFD_CORE
-> >>>> +	select REGMAP_SPMI
-> >>>> +	help
-> >>>> +	  This enables support for the Qualcomm QPNP SPMI PMICs.
-> >>>> +	  These PMICs are currently used with the Snapdragon 800 series of
-> >>>> +	  SoCs.  Note, that this will only be useful paired with descriptions
-> >>>> +	  of the independent functions as children nodes in the device tree.
-> >>>
-> 
-> <snip>
-> 
-> >>>
-> >>>> + * This program is distributed in the hope that it will be useful,
-> >>>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> >>>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> >>>> + * GNU General Public License for more details.
-> >>>> + */
-> >>>> +#include <linux/kernel.h>
-> >>>> +#include <linux/module.h>
-> >>>> +#include <linux/spmi.h>
-> >>>> +#include <linux/regmap.h>
-> >>>> +#include <linux/of_address.h>
-> >>>> +#include <linux/slab.h>
-> >>>> +#include <linux/mfd/core.h>
-> >>>> +
-> >>>> +#define QPNP_RESOURCE_SIZE	256
-> >>>> +
-> >>>> +static const struct regmap_config qpnp_regmap_config = {
-> >>>> +	.reg_bits	= 16,
-> >>>> +	.val_bits	= 8,
-> >>>> +	.max_register	= 0xffff,
-> >>>> +};
-> >>>> +
-> >>>> +static int qpnp_index_to_resource(struct device_node *np, int index,
-> >>>> +				  struct resource *res)
-> >>>> +{
-> >>>> +	const char *name = NULL;
-> >>>> +	const __be32 *addrp;
-> >>>> +	u64 addr;
-> >>>> +
-> >>>> +	addrp = of_get_address(np, index, NULL, NULL);
-> >>>> +	if (!addrp)
-> >>>> +		return -EINVAL;
-> >>>> +
-> >>>> +	addr = of_read_number(addrp, 1);
-> >>>> +	if (addr == OF_BAD_ADDR)
-> >>>> +		return -EINVAL;
-> >>>> +
-> >>>> +	of_property_read_string_index(np, "reg-names", index, &name);
-> >>>> +
-> >>>> +	res->start = addr;
-> >>>> +	res->end = addr + QPNP_RESOURCE_SIZE - 1;
-> >>>> +	res->flags = IORESOURCE_REG;
-> >>>> +	res->name = name ? name : np->name;
-> >>>> +
-> >>>> +	return 0;
-> >>>> +}
-> >>>> +
-> >>>> +static int qpnp_add_device(struct spmi_device *root, struct device_node *child)
-> >>>> +{
-> >>>> +	struct mfd_cell cell = {};
-> >>>> +	struct resource *res, *r;
-> >>>> +	int num_resources = 0;
-> >>>> +	const char *compat;
-> >>>> +	int ret, i;
-> >>>> +
-> >>>> +	compat = of_get_property(child, "compatible", NULL);
-> >>>> +	if (!compat)
-> >>>> +		return -ENODEV;
-> >>>> +
-> >>>> +	while (of_get_address(child, num_resources, NULL, NULL))
-> >>>> +		num_resources++;
-> >>>> +
-> >>>> +	if (!num_resources)
-> >>>> +		return -ENODEV;
-> >>>> +
-> >>>> +	res = kcalloc(num_resources, sizeof(*res), GFP_KERNEL);
-> >>>> +	if (!res)
-> >>>> +		return -ENOMEM;
-> >>>> +
-> >>>> +	r = res;
-> >>>> +	for (i = 0; i < num_resources; i++, r++)
-> >>>> +		qpnp_index_to_resource(child, i, r);
-> >>>> +
-> >>>> +	cell.name = kasprintf(GFP_KERNEL, "%x.%04x.%s", root->usid,
-> >>>> +			      (u16)res[0].start, child->name);
-> >>>> +	cell.of_compatible = compat;
-> >>>> +	cell.num_resources = num_resources;
-> >>>> +	cell.resources = res;
-> >>>> +
-> >>>> +	ret = mfd_add_devices(&root->dev, PLATFORM_DEVID_NONE, &cell, 1,
-> >>>> +			      NULL, 0, NULL);
-> >>>> +
-> >>>> +	kfree(res);
-> >>>> +	kfree(cell.name);
-> >>>> +
-> >>>> +	return ret;
-> >>>> +}
-> >>>> +
-> >>>> +static int qpnp_probe(struct spmi_device *sdev)
-> >>>> +{
-> >>>> +	struct device_node *root = sdev->dev.of_node;
-> >>>> +	struct device_node *child;
-> >>>> +	struct regmap *regmap;
-> >>>> +
-> >>>> +	regmap = devm_regmap_init_spmi_ext(sdev, &qpnp_regmap_config);
-> >>>> +	if (IS_ERR(regmap))
-> >>>> +		return PTR_ERR(regmap);
-> >>>> +
-> >>>> +	for_each_available_child_of_node(root, child)
-> >>>> +		qpnp_add_device(sdev, child);
-> >>>
-> >>> This entire driver looks like a re-write of of_platform_populate().
-> >>>
-> >>> Why?
-> >>
-> >> of_platform_populate is not used because the PMIC function resources are
-> >> non-translatable. You can see that the resources are of type
-> >> IORESOURCE_REG (qpnp_index_to_resource()) not IORESOURCE_MEM or _IO.
-> >>
-> >> The whole point of this mfd driver is to parse devicetree to prepare
-> >> resources for every child and create platform device for it through
-> >> mfd_add_devices(). Then the PMIC function driver got its resources and
-> >> use them as register addresses passed to regmap. These register accesses
-> >> hits the SPMI controller which is the physical interface between PMIC's
-> >> and SoC.
+On Fri, Jul 11, 2014 at 08:43:21AM +0100, Jingoo Han wrote:
+> On Wednesday, July 02, 2014 3:44 AM, Liviu Dudau wrote:
 > > 
-> > I can't help but think that if this is required, it should be part of
-> > the core OF code, rather than doing your own thing which looks
-> > frighteningly like existing framework functionality.
+> > Several platforms use a rather generic version of parsing
+> > the device tree to find the host bridge ranges. Move the common code
+> > into the generic PCI code and use it to create a pci_host_bridge
+> > structure that can be used by arch code.
+> > 
+> > Based on early attempts by Andrew Murray to unify the code.
+> > Used powerpc and microblaze PCI code as starting point.
+> > 
+> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> > Tested-by: Tanmay Inamdar <tinamdar@apm.com>
+> > ---
+> >  drivers/of/of_pci.c       | 135 ++++++++++++++++++++++++++++++++++++++++++++++
+> >  drivers/pci/host-bridge.c |  18 +++++++
+> >  include/linux/of_pci.h    |  10 ++++
+> >  include/linux/pci.h       |   8 +++
+> >  4 files changed, 171 insertions(+)
+> > 
+> > diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
+> > index 8481996..55d8320 100644
+> > --- a/drivers/of/of_pci.c
+> > +++ b/drivers/of/of_pci.c
 > 
-> does it make sense to have a common of_mfd code for devicetree parsing?
-> Is that discussed already? I mean presently the mfd_cell resources and
-> number of resources are passed by the mfd_add_devices users. Is it
-> possible to have common code which parses devicetree sub-nodes of the
-> parent device_node and fill resources/create platform devices for them.
+> [.....]
+> 
+> > +struct pci_host_bridge *
+> > +of_create_pci_host_bridge(struct device *parent, struct pci_ops *ops, void *host_data)
+> > +{
+> > +	int err, domain, busno;
+> > +	struct resource *bus_range;
+> > +	struct pci_bus *root_bus;
+> > +	struct pci_host_bridge *bridge;
+> > +	resource_size_t io_base;
+> > +	LIST_HEAD(res);
+> > +
+> > +	bus_range = kzalloc(sizeof(*bus_range), GFP_KERNEL);
+> > +	if (!bus_range)
+> > +		return ERR_PTR(-ENOMEM);
+> > +
+> > +	domain = of_alias_get_id(parent->of_node, "pci-domain");
+> > +	if (domain == -ENODEV)
+> > +		domain = atomic_inc_return(&domain_nr);
+> > +
+> > +	err = of_pci_parse_bus_range(parent->of_node, bus_range);
+> > +	if (err) {
+> > +		dev_info(parent, "No bus range for %s, using default [0-255]\n",
+> > +			parent->of_node->full_name);
+> > +		bus_range->start = 0;
+> > +		bus_range->end = 255;
+> > +		bus_range->flags = IORESOURCE_BUS;
+> > +	}
+> > +	busno = bus_range->start;
+> > +	pci_add_resource(&res, bus_range);
+> > +
+> > +	/* now parse the rest of host bridge bus ranges */
+> > +	err = pci_host_bridge_of_get_ranges(parent->of_node, &res, &io_base);
+> > +	if (err)
+> > +		goto err_create;
+> > +
+> > +	/* then create the root bus */
+> > +	root_bus = pci_create_root_bus_in_domain(parent, domain, busno,
+> > +						ops, host_data, &res);
+> > +	if (IS_ERR(root_bus)) {
+> > +		err = PTR_ERR(root_bus);
+> > +		goto err_create;
+> > +	}
+> > +
+> > +	bridge = to_pci_host_bridge(root_bus->bridge);
+> > +	bridge->io_base = io_base;
+> 
+> Hi Liviu Dudau,
+> 
+> Would you fix the following warning?
+> 
+> drivers/of/of_pci.c: In function 'of_create_pci_host_bridge'
+> drivers/of/of_pci.c:218:18: warning: 'of_base' may be used uninitialized in this function [-Wmaybe-uninitialized]
+>   bridge->io_base = io_base;
 
-I'm not sure it does.  Normally users _either_ represent devices in
-MFD cells from within the driver _or_ populate using existing DT
-interfaces i.e. of_platform_populate().  This is the first time I've
-seen someone attempt to parse the entire MFD node structure from
-within a driver.
+Yes, I have a simple fix which is to set the initial value to zero when declaring the variable.
 
-After searching for some documentation to try and figure this out, I
-noticed that you've also missed a patch from your set:
+Best regards,
+Liviu
 
-  mfd: qpnp-spmi: document DT bindings for Qualcomm QPNP PMICs
-
-... which might help enlighten the DT guys.
+> 
+> Best regards,
+> Jingoo Han
+> 
+> [.....]
+> 
+> 
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
+
