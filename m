@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600AbaGKWFZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 18:05:25 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:53260 "EHLO comal.ext.ti.com"
+	id S1754522AbaGKWFV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 18:05:21 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:53255 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754471AbaGKWFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 18:05:22 -0400
+	id S1754471AbaGKWFS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 18:05:18 -0400
 From: Suman Anna <s-anna@ti.com>
 To: Tony Lindgren <tony@atomide.com>
 CC: Jassi Brar <jaswinder.singh@linaro.org>, Dave Gerlach <d-gerlach@ti.com>,
@@ -17,9 +17,9 @@ CC: Jassi Brar <jaswinder.singh@linaro.org>, Dave Gerlach <d-gerlach@ti.com>,
         Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>
-Subject: [PATCHv2 3/5] ARM: dts: OMAP2+: Add sub mailboxes device node information
-Date: Fri, 11 Jul 2014 17:04:10 -0500
-Message-ID: <1405116252-53612-4-git-send-email-s-anna@ti.com>
+Subject: [PATCHv2 5/5] ARM: dts: OMAP2+: Add #mbox-cells property to all mailbox nodes
+Date: Fri, 11 Jul 2014 17:04:12 -0500
+Message-ID: <1405116252-53612-6-git-send-email-s-anna@ti.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1405116252-53612-1-git-send-email-s-anna@ti.com>
 References: <1405116252-53612-1-git-send-email-s-anna@ti.com>
@@ -30,12 +30,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sub-mailbox devices are added to the Mailbox DT nodes on
-OMAP2420, OMAP2430, OMAP3, AM33xx, AM43xx, OMAP4 and OMAP5
-family of SoCs. This data represents the same mailboxes that
-used to be represented in hwmod attribute data previously.
-The node name is chosen based on the .name field of
-omap_mbox_dev_info structure used in the hwmod data.
+The '#mbox-cells' property is added to all the OMAP mailbox
+nodes. This property is mandatory with the new mailbox framework.
 
 Cc: "Benoît Cousson" <bcousson@baylibre.com>
 Cc: Rob Herring <robh+dt@kernel.org>
@@ -45,132 +41,208 @@ Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
 Cc: Kumar Gala <galak@codeaurora.org>
 Signed-off-by: Suman Anna <s-anna@ti.com>
 ---
- arch/arm/boot/dts/am33xx.dtsi   | 4 ++++
- arch/arm/boot/dts/am4372.dtsi   | 4 ++++
- arch/arm/boot/dts/omap2420.dtsi | 8 ++++++++
- arch/arm/boot/dts/omap2430.dtsi | 4 ++++
- arch/arm/boot/dts/omap3.dtsi    | 4 ++++
- arch/arm/boot/dts/omap4.dtsi    | 8 ++++++++
- arch/arm/boot/dts/omap5.dtsi    | 8 ++++++++
- 7 files changed, 40 insertions(+)
+ arch/arm/boot/dts/am33xx.dtsi   |  1 +
+ arch/arm/boot/dts/am4372.dtsi   |  1 +
+ arch/arm/boot/dts/dra7.dtsi     | 13 +++++++++++++
+ arch/arm/boot/dts/omap2420.dtsi |  1 +
+ arch/arm/boot/dts/omap2430.dtsi |  1 +
+ arch/arm/boot/dts/omap3.dtsi    |  1 +
+ arch/arm/boot/dts/omap4.dtsi    |  1 +
+ arch/arm/boot/dts/omap5.dtsi    |  1 +
+ 8 files changed, 20 insertions(+)
 
 diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index 3a0a161..e4f165a 100644
+index e4f165a..5663ff5 100644
 --- a/arch/arm/boot/dts/am33xx.dtsi
 +++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -354,6 +354,10 @@
+@@ -352,6 +352,7 @@
+ 			reg = <0x480C8000 0x200>;
+ 			interrupts = <77>;
  			ti,hwmods = "mailbox";
++			#mbox-cells = <1>;
  			ti,mbox-num-users = <4>;
  			ti,mbox-num-fifos = <8>;
-+			mbox_wkupm3: wkup_m3 {
-+				ti,mbox-tx = <0 0 0>;
-+				ti,mbox-rx = <0 0 3>;
-+			};
- 		};
- 
- 		timer1: timer@44e31000 {
+ 			mbox_wkupm3: wkup_m3 {
 diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
-index c9aee0e..3be2a87 100644
+index 3be2a87..8619519 100644
 --- a/arch/arm/boot/dts/am4372.dtsi
 +++ b/arch/arm/boot/dts/am4372.dtsi
-@@ -168,6 +168,10 @@
+@@ -166,6 +166,7 @@
+ 			reg = <0x480C8000 0x200>;
+ 			interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>;
  			ti,hwmods = "mailbox";
++			#mbox-cells = <1>;
  			ti,mbox-num-users = <4>;
  			ti,mbox-num-fifos = <8>;
-+			mbox_wkupm3: wkup_m3 {
-+				ti,mbox-tx = <0 0 0>;
-+				ti,mbox-rx = <0 0 3>;
-+			};
- 		};
- 
- 		timer1: timer@44e31000 {
+ 			mbox_wkupm3: wkup_m3 {
+diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+index 99c40d4..626137f 100644
+--- a/arch/arm/boot/dts/dra7.dtsi
++++ b/arch/arm/boot/dts/dra7.dtsi
+@@ -342,6 +342,7 @@
+ 			compatible = "ti,omap4-mailbox";
+ 			reg = <0x4a0f4000 0x200>;
+ 			ti,hwmods = "mailbox1";
++			#mbox-cells = <1>;
+ 			ti,mbox-num-users = <3>;
+ 			ti,mbox-num-fifos = <8>;
+ 			status = "disabled";
+@@ -351,6 +352,7 @@
+ 			compatible = "ti,omap4-mailbox";
+ 			reg = <0x4883a000 0x200>;
+ 			ti,hwmods = "mailbox2";
++			#mbox-cells = <1>;
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <12>;
+ 			status = "disabled";
+@@ -360,6 +362,7 @@
+ 			compatible = "ti,omap4-mailbox";
+ 			reg = <0x4883c000 0x200>;
+ 			ti,hwmods = "mailbox3";
++			#mbox-cells = <1>;
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <12>;
+ 			status = "disabled";
+@@ -369,6 +372,7 @@
+ 			compatible = "ti,omap4-mailbox";
+ 			reg = <0x4883e000 0x200>;
+ 			ti,hwmods = "mailbox4";
++			#mbox-cells = <1>;
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <12>;
+ 			status = "disabled";
+@@ -378,6 +382,7 @@
+ 			compatible = "ti,omap4-mailbox";
+ 			reg = <0x48840000 0x200>;
+ 			ti,hwmods = "mailbox5";
++			#mbox-cells = <1>;
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <12>;
+ 			status = "disabled";
+@@ -387,6 +392,7 @@
+ 			compatible = "ti,omap4-mailbox";
+ 			reg = <0x48842000 0x200>;
+ 			ti,hwmods = "mailbox6";
++			#mbox-cells = <1>;
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <12>;
+ 			status = "disabled";
+@@ -396,6 +402,7 @@
+ 			compatible = "ti,omap4-mailbox";
+ 			reg = <0x48844000 0x200>;
+ 			ti,hwmods = "mailbox7";
++			#mbox-cells = <1>;
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <12>;
+ 			status = "disabled";
+@@ -405,6 +412,7 @@
+ 			compatible = "ti,omap4-mailbox";
+ 			reg = <0x48846000 0x200>;
+ 			ti,hwmods = "mailbox8";
++			#mbox-cells = <1>;
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <12>;
+ 			status = "disabled";
+@@ -414,6 +422,7 @@
+ 			compatible = "ti,omap4-mailbox";
+ 			reg = <0x4885e000 0x200>;
+ 			ti,hwmods = "mailbox9";
++			#mbox-cells = <1>;
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <12>;
+ 			status = "disabled";
+@@ -423,6 +432,7 @@
+ 			compatible = "ti,omap4-mailbox";
+ 			reg = <0x48860000 0x200>;
+ 			ti,hwmods = "mailbox10";
++			#mbox-cells = <1>;
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <12>;
+ 			status = "disabled";
+@@ -432,6 +442,7 @@
+ 			compatible = "ti,omap4-mailbox";
+ 			reg = <0x48862000 0x200>;
+ 			ti,hwmods = "mailbox11";
++			#mbox-cells = <1>;
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <12>;
+ 			status = "disabled";
+@@ -441,6 +452,7 @@
+ 			compatible = "ti,omap4-mailbox";
+ 			reg = <0x48864000 0x200>;
+ 			ti,hwmods = "mailbox12";
++			#mbox-cells = <1>;
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <12>;
+ 			status = "disabled";
+@@ -450,6 +462,7 @@
+ 			compatible = "ti,omap4-mailbox";
+ 			reg = <0x48802000 0x200>;
+ 			ti,hwmods = "mailbox13";
++			#mbox-cells = <1>;
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <12>;
+ 			status = "disabled";
 diff --git a/arch/arm/boot/dts/omap2420.dtsi b/arch/arm/boot/dts/omap2420.dtsi
-index 6d21994..d14f16c 100644
+index d14f16c..bea6f07 100644
 --- a/arch/arm/boot/dts/omap2420.dtsi
 +++ b/arch/arm/boot/dts/omap2420.dtsi
-@@ -159,6 +159,14 @@
+@@ -157,6 +157,7 @@
+ 			interrupts = <26>, <34>;
+ 			interrupt-names = "dsp", "iva";
  			ti,hwmods = "mailbox";
++			#mbox-cells = <1>;
  			ti,mbox-num-users = <4>;
  			ti,mbox-num-fifos = <6>;
-+			mbox_dsp: dsp {
-+				ti,mbox-tx = <0 0 0>;
-+				ti,mbox-rx = <1 0 0>;
-+			};
-+			mbox_iva: iva {
-+				ti,mbox-tx = <2 1 3>;
-+				ti,mbox-rx = <3 1 3>;
-+			};
- 		};
- 
- 		timer1: timer@48028000 {
+ 			mbox_dsp: dsp {
 diff --git a/arch/arm/boot/dts/omap2430.dtsi b/arch/arm/boot/dts/omap2430.dtsi
-index aa6a354..db02be2 100644
+index db02be2..689bd08 100644
 --- a/arch/arm/boot/dts/omap2430.dtsi
 +++ b/arch/arm/boot/dts/omap2430.dtsi
-@@ -249,6 +249,10 @@
+@@ -247,6 +247,7 @@
+ 			reg = <0x48094000 0x200>;
+ 			interrupts = <26>;
  			ti,hwmods = "mailbox";
++			#mbox-cells = <1>;
  			ti,mbox-num-users = <4>;
  			ti,mbox-num-fifos = <6>;
-+			mbox_dsp: dsp {
-+				ti,mbox-tx = <0 0 0>;
-+				ti,mbox-rx = <1 0 0>;
-+			};
- 		};
- 
- 		timer1: timer@49018000 {
+ 			mbox_dsp: dsp {
 diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
-index 575a49b..b2ae8b8 100644
+index b2ae8b8..75c290f 100644
 --- a/arch/arm/boot/dts/omap3.dtsi
 +++ b/arch/arm/boot/dts/omap3.dtsi
-@@ -334,6 +334,10 @@
+@@ -332,6 +332,7 @@
+ 			ti,hwmods = "mailbox";
+ 			reg = <0x48094000 0x200>;
  			interrupts = <26>;
++			#mbox-cells = <1>;
  			ti,mbox-num-users = <2>;
  			ti,mbox-num-fifos = <2>;
-+			mbox_dsp: dsp {
-+				ti,mbox-tx = <0 0 0>;
-+				ti,mbox-rx = <1 0 0>;
-+			};
- 		};
- 
- 		mcspi1: spi@48098000 {
+ 			mbox_dsp: dsp {
 diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-index 69408b5..bc54d66 100644
+index bc54d66..d08b98a 100644
 --- a/arch/arm/boot/dts/omap4.dtsi
 +++ b/arch/arm/boot/dts/omap4.dtsi
-@@ -656,6 +656,14 @@
+@@ -654,6 +654,7 @@
+ 			reg = <0x4a0f4000 0x200>;
+ 			interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
  			ti,hwmods = "mailbox";
++			#mbox-cells = <1>;
  			ti,mbox-num-users = <3>;
  			ti,mbox-num-fifos = <8>;
-+			mbox_ipu: mbox_ipu {
-+				ti,mbox-tx = <0 0 0>;
-+				ti,mbox-rx = <1 0 0>;
-+			};
-+			mbox_dsp: mbox_dsp {
-+				ti,mbox-tx = <3 0 0>;
-+				ti,mbox-rx = <2 0 0>;
-+			};
- 		};
- 
- 		timer1: timer@4a318000 {
+ 			mbox_ipu: mbox_ipu {
 diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
-index 0e8336e..f7ec4cd 100644
+index f7ec4cd..0b8cf23 100644
 --- a/arch/arm/boot/dts/omap5.dtsi
 +++ b/arch/arm/boot/dts/omap5.dtsi
-@@ -643,6 +643,14 @@
+@@ -641,6 +641,7 @@
+ 			reg = <0x4a0f4000 0x200>;
+ 			interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
  			ti,hwmods = "mailbox";
++			#mbox-cells = <1>;
  			ti,mbox-num-users = <3>;
  			ti,mbox-num-fifos = <8>;
-+			mbox_ipu: mbox_ipu {
-+				ti,mbox-tx = <0 0 0>;
-+				ti,mbox-rx = <1 0 0>;
-+			};
-+			mbox_dsp: mbox_dsp {
-+				ti,mbox-tx = <3 0 0>;
-+				ti,mbox-rx = <2 0 0>;
-+			};
- 		};
- 
- 		timer1: timer@4ae18000 {
+ 			mbox_ipu: mbox_ipu {
 -- 
 2.0.0
 
