@@ -1,76 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833AbaGKRI6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 13:08:58 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:55185 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754626AbaGKRI4 (ORCPT
+	id S1754856AbaGKRKA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 13:10:00 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:15836 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753507AbaGKRJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 13:08:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <53C01558.3090607@nvidia.com>
-References: <1405028569-14253-1-git-send-email-ttynkkynen@nvidia.com>
-	<1405028569-14253-2-git-send-email-ttynkkynen@nvidia.com>
-	<CAL1qeaFF0ZpUFovxTuLXrBPRg2Lbf-754Z=ztD5HFZPbfnDsAw@mail.gmail.com>
-	<53C01558.3090607@nvidia.com>
-Date: Fri, 11 Jul 2014 10:08:55 -0700
-X-Google-Sender-Auth: fJgE7GoQzUbvosMdM7CIz0TNkgg
-Message-ID: <CAL1qeaHETQ7kSGNjPiwi_9WNMtr9qZp0KwjZCCxY29+_N4AcuA@mail.gmail.com>
-Subject: Re: [PATCH 01/13] clk: tegra: Add binding for the Tegra124 DFLL clocksource
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Fri, 11 Jul 2014 13:09:59 -0400
+Date: Fri, 11 Jul 2014 18:09:36 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        Jason Cooper <jason@lakedaemon.net>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Thierry Reding <thierry.reding@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: Fix preemption disable in iwmmxt_task_enable()
+Message-ID: <20140711170935.GG16321@arm.com>
+References: <20140706080845.723e9787@armhf>
+ <1405069813-9270-1-git-send-email-sebastian.hesselbarth@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405069813-9270-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 9:48 AM, Tuomas Tynkkynen <ttynkkynen@nvidia.com> wrote:
->
->
-> On 11/07/14 19:28, Andrew Bresticker wrote:
->>
->> On Thu, Jul 10, 2014 at 2:42 PM, Tuomas Tynkkynen <ttynkkynen@nvidia.com>
->> wrote:
->>>
->>> The DFLL is the main clocksource for the fast CPU cluster on Tegra124
->>> and also provides automatic CPU rail voltage scaling as well. The DFLL
->>> is a separate IP block from the usual Tegra124 clock-and-reset
->>> controller, so it gets its own node in the device tree.
->>
->>
->>> diff --git
->>> a/Documentation/devicetree/bindings/clock/nvidia,tegra124-dfll.txt
->>> b/Documentation/devicetree/bindings/clock/nvidia,tegra124-dfll.txt
->>
->>
->>> +- nvidia,pmic-voltage-table: Array of 2-tuples.  Each entry should have
->>> the
->>> +  form <register-value voltage-in-uV>, indicating the register value
->>> that
->>> +  needs to be programmed to the PMIC for changing the VDD_CPU voltage to
->>> +  the specified voltage. The table must be in ascending order by the
->>> voltage.
->>
->>
->> Instead of listing the register values for each voltage in the DT,
->> can't you use regulator_list_voltage() to create this map?
->>
->
-> I don't see a way to get the register values that way, unless we assume that
-> the mapping is linear and doesn't have holes.
+On Fri, Jul 11, 2014 at 10:10:13AM +0100, Sebastian Hesselbarth wrote:
+> commit 431a84b1a4f7d1a0085d5b91330c5053cc8e8b12
+>  ("ARM: 8034/1: Disable preemption in iwmmxt_task_enable()")
+> introduced macros {inc,dec}_preempt_count to iwmmxt_task_enable
+> to make it run with preemption disabled.
+> 
+> Unfortunately, other functions in iwmmxt.S also use concan_{save,dump,load}
+> sections located in iwmmxt_task_enable() to deal with iWMMXt coprocessor.
+> This causes an unbalanced preempt_count due to excessive dec_preempt_count
+> and destroyed return addresses in callers of concan_ labels due to a register
+> collision:
 
-Hmm... I guess if you don't assume it's linear and continuous you'd
-have to iterate over all 256 selectors.
+Indeed, I missed this part completely.
+
+> --- a/arch/arm/kernel/iwmmxt.S
+> +++ b/arch/arm/kernel/iwmmxt.S
+> @@ -94,13 +94,19 @@ ENTRY(iwmmxt_task_enable)
+>  
+>  	mrc	p15, 0, r2, c2, c0, 0
+>  	mov	r2, r2				@ cpwait
+> +	bl	concan_save
+>  
+> -	teq	r1, #0				@ test for last ownership
+> -	mov	lr, r9				@ normal exit from exception
+> -	beq	concan_load			@ no owner, skip save
+> +#ifdef CONFIG_PREEMPT_COUNT
+> +	get_thread_info r10
+> +#endif
+> +4:	dec_preempt_count r10, r3
+> +	mov	pc, r9				@ normal exit from exception
+>  
+>  concan_save:
+>  
+> +	teq	r1, #0				@ test for last ownership
+> +	beq	concan_load			@ no owner, skip save
+> +
+>  	tmrc	r2, wCon
+>  
+>  	@ CUP? wCx
+> @@ -175,10 +181,6 @@ concan_load:
+>  	tmcr	wCon, r2
+>  
+>  3:
+> -#ifdef CONFIG_PREEMPT_COUNT
+> -	get_thread_info r10
+> -#endif
+> -4:	dec_preempt_count r10, r3
+>  	mov	pc, lr
+
+It looks fine to me. One optimisation you could do is to replace a
+couple of beq 3f with moveq pc, lr.
+
+-- 
+Catalin
