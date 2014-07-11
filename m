@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016AbaGKNoV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:44:21 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56083 "EHLO
+	id S1754141AbaGKNok (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:44:40 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56160 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753749AbaGKNoR (ORCPT
+	with ESMTP id S1753734AbaGKNoi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:44:17 -0400
-Message-Id: <20140711133706.244676153@linutronix.de>
+	Fri, 11 Jul 2014 09:44:38 -0400
+Message-Id: <20140711133707.493314165@linutronix.de>
 User-Agent: quilt/0.63-1
-Date: Fri, 11 Jul 2014 13:44:16 -0000
+Date: Fri, 11 Jul 2014 13:44:37 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 12/55] timekeeper: Move tk_xtime to core code
+Subject: [patch 26/55] timekeeping: Remove ktime_get_monotonic_offset()
 References: <20140711133623.530368377@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=timekeeper-move-tk-xtime-to-core.patch
+Content-Disposition: inline;
+ filename=timekeeping-remove-ktime_get_monotonic_offset.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -26,144 +27,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No users outside of the core.
+No more users.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/timekeeper_internal.h |   18 ---------
- kernel/time/timekeeping.c           |   70 ++++++++++++++++++++++--------------
- 2 files changed, 43 insertions(+), 45 deletions(-)
+ include/linux/timekeeping.h |    1 -
+ kernel/time/timekeeping.c   |   18 ------------------
+ 2 files changed, 19 deletions(-)
 
-Index: tip/include/linux/timekeeper_internal.h
+Index: tip/include/linux/timekeeping.h
 ===================================================================
---- tip.orig/include/linux/timekeeper_internal.h
-+++ tip/include/linux/timekeeper_internal.h
-@@ -71,16 +71,6 @@ struct timekeeper {
+--- tip.orig/include/linux/timekeeping.h
++++ tip/include/linux/timekeeping.h
+@@ -108,7 +108,6 @@ enum tk_offsets {
  
- };
+ extern ktime_t ktime_get(void);
+ extern ktime_t ktime_get_with_offset(enum tk_offsets offs);
+-extern ktime_t ktime_get_monotonic_offset(void);
+ extern ktime_t ktime_mono_to_any(ktime_t tmono, enum tk_offsets offs);
  
--static inline struct timespec64 tk_xtime(struct timekeeper *tk)
--{
--	struct timespec64 ts;
--
--	ts.tv_sec = tk->xtime_sec;
--	ts.tv_nsec = (long)(tk->xtime_nsec >> tk->shift);
--	return ts;
--}
--
--
- #ifdef CONFIG_GENERIC_TIME_VSYSCALL
- 
- extern void update_vsyscall(struct timekeeper *tk);
-@@ -92,14 +82,6 @@ extern void update_vsyscall_old(struct t
- 				struct clocksource *c, u32 mult);
- extern void update_vsyscall_tz(void);
- 
--static inline void update_vsyscall(struct timekeeper *tk)
--{
--	struct timespec xt;
--
--	xt = tk_xtime(tk);
--	update_vsyscall_old(&xt, &tk->wall_to_monotonic, tk->clock, tk->mult);
--}
--
- #else
- 
- static inline void update_vsyscall(struct timekeeper *tk)
+ /**
 Index: tip/kernel/time/timekeeping.c
 ===================================================================
 --- tip.orig/kernel/time/timekeeping.c
 +++ tip/kernel/time/timekeeping.c
-@@ -51,6 +51,15 @@ static inline void tk_normalize_xtime(st
- 	}
- }
+@@ -1712,24 +1712,6 @@ ktime_t ktime_get_update_offsets_now(kti
+ #endif
  
-+static inline struct timespec64 tk_xtime(struct timekeeper *tk)
-+{
-+	struct timespec64 ts;
-+
-+	ts.tv_sec = tk->xtime_sec;
-+	ts.tv_nsec = (long)(tk->xtime_nsec >> tk->shift);
-+	return ts;
-+}
-+
- static void tk_set_xtime(struct timekeeper *tk, const struct timespec64 *ts)
- {
- 	tk->xtime_sec = ts->tv_sec;
-@@ -199,6 +208,40 @@ static inline s64 timekeeping_get_ns_raw
- 	return nsec + arch_gettimeoffset();
- }
- 
-+#ifdef CONFIG_GENERIC_TIME_VSYSCALL_OLD
-+
-+static inline void update_vsyscall(struct timekeeper *tk)
-+{
-+	struct timespec xt;
-+
-+	xt = tk_xtime(tk);
-+	update_vsyscall_old(&xt, &tk->wall_to_monotonic, tk->clock, tk->mult);
-+}
-+
-+static inline void old_vsyscall_fixup(struct timekeeper *tk)
-+{
-+	s64 remainder;
-+
-+	/*
-+	* Store only full nanoseconds into xtime_nsec after rounding
-+	* it up and add the remainder to the error difference.
-+	* XXX - This is necessary to avoid small 1ns inconsistnecies caused
-+	* by truncating the remainder in vsyscalls. However, it causes
-+	* additional work to be done in timekeeping_adjust(). Once
-+	* the vsyscall implementations are converted to use xtime_nsec
-+	* (shifted nanoseconds), and CONFIG_GENERIC_TIME_VSYSCALL_OLD
-+	* users are removed, this can be killed.
-+	*/
-+	remainder = tk->xtime_nsec & ((1ULL << tk->shift) - 1);
-+	tk->xtime_nsec -= remainder;
-+	tk->xtime_nsec += 1ULL << tk->shift;
-+	tk->ntp_error += remainder << tk->ntp_error_shift;
-+	tk->ntp_error -= (1ULL << tk->shift) << tk->ntp_error_shift;
-+}
-+#else
-+#define old_vsyscall_fixup(tk)
-+#endif
-+
- static RAW_NOTIFIER_HEAD(pvclock_gtod_chain);
- 
- static void update_pvclock_gtod(struct timekeeper *tk, bool was_set)
-@@ -1330,33 +1373,6 @@ static cycle_t logarithmic_accumulation(
- 	return offset;
- }
- 
--#ifdef CONFIG_GENERIC_TIME_VSYSCALL_OLD
--static inline void old_vsyscall_fixup(struct timekeeper *tk)
--{
--	s64 remainder;
--
--	/*
--	* Store only full nanoseconds into xtime_nsec after rounding
--	* it up and add the remainder to the error difference.
--	* XXX - This is necessary to avoid small 1ns inconsistnecies caused
--	* by truncating the remainder in vsyscalls. However, it causes
--	* additional work to be done in timekeeping_adjust(). Once
--	* the vsyscall implementations are converted to use xtime_nsec
--	* (shifted nanoseconds), and CONFIG_GENERIC_TIME_VSYSCALL_OLD
--	* users are removed, this can be killed.
--	*/
--	remainder = tk->xtime_nsec & ((1ULL << tk->shift) - 1);
--	tk->xtime_nsec -= remainder;
--	tk->xtime_nsec += 1ULL << tk->shift;
--	tk->ntp_error += remainder << tk->ntp_error_shift;
--	tk->ntp_error -= (1ULL << tk->shift) << tk->ntp_error_shift;
--}
--#else
--#define old_vsyscall_fixup(tk)
--#endif
--
--
--
  /**
-  * update_wall_time - Uses the current clocksource to increment the wall time
-  *
+- * ktime_get_monotonic_offset() - get wall_to_monotonic in ktime_t format
+- */
+-ktime_t ktime_get_monotonic_offset(void)
+-{
+-	struct timekeeper *tk = &tk_core.timekeeper;
+-	unsigned long seq;
+-	struct timespec64 wtom;
+-
+-	do {
+-		seq = read_seqcount_begin(&tk_core.seq);
+-		wtom = tk->wall_to_monotonic;
+-	} while (read_seqcount_retry(&tk_core.seq, seq));
+-
+-	return timespec64_to_ktime(wtom);
+-}
+-EXPORT_SYMBOL_GPL(ktime_get_monotonic_offset);
+-
+-/**
+  * do_adjtimex() - Accessor function to NTP __do_adjtimex function
+  */
+ int do_adjtimex(struct timex *txc)
 
 
