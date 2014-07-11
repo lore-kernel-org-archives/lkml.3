@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943AbaGKHgt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 03:36:49 -0400
-Received: from mga09.intel.com ([134.134.136.24]:37029 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752655AbaGKHgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 03:36:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,642,1400050800"; 
-   d="scan'208";a="571589795"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Eddie Wai <eddie.wai@broadcom.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
-        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: [RFC Patch V1 19/30] mm, bnx2i: Use cpu_to_mem()/numa_mem_id() to support memoryless node
-Date: Fri, 11 Jul 2014 15:37:36 +0800
-Message-Id: <1405064267-11678-20-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1753493AbaGKHl7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 03:41:59 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:46475 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752958AbaGKHgv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 03:36:51 -0400
+From: varkabhadram@gmail.com
+To: netdev@vger.kernel.org
+Cc: Thomas.Lendacky@amd.com, geert+renesas@linux-m68k.org,
+        ebiederm@xmission.com, macro@linux-mips.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        Varka Bhadram <varkab@cdac.in>
+Subject: [PATCH net-next 5/8] ethernet: amd: move pci device ids
+Date: Fri, 11 Jul 2014 13:05:07 +0530
+Message-Id: <1405064110-22579-6-git-send-email-varkabhadram@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1405064110-22579-1-git-send-email-varkabhadram@gmail.com>
+References: <1405064110-22579-1-git-send-email-varkabhadram@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CONFIG_HAVE_MEMORYLESS_NODES is enabled, cpu_to_node()/numa_node_id()
-may return a node without memory, and later cause system failure/panic
-when calling kmalloc_node() and friends with returned node id.
-So use cpu_to_mem()/numa_mem_id() instead to get the nearest node with
-memory for the/current cpu.
+From: Varka Bhadram <varkab@cdac.in>
 
-If CONFIG_HAVE_MEMORYLESS_NODES is disabled, cpu_to_mem()/numa_mem_id()
-is the same as cpu_to_node()/numa_node_id().
+Normally any device ids will be above the corresponding device driver
+structure. This patch moves the pci device ids and MODULE_DEVICE_TABLE()
+above the pci driver structure.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Signed-off-by: Varka Bhadram <varkab@cdac.in>
 ---
- drivers/scsi/bnx2i/bnx2i_init.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/amd/amd8111e.c |   16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/scsi/bnx2i/bnx2i_init.c b/drivers/scsi/bnx2i/bnx2i_init.c
-index 80c03b452d61..f67a5a63134e 100644
---- a/drivers/scsi/bnx2i/bnx2i_init.c
-+++ b/drivers/scsi/bnx2i/bnx2i_init.c
-@@ -423,7 +423,7 @@ static void bnx2i_percpu_thread_create(unsigned int cpu)
- 	p = &per_cpu(bnx2i_percpu, cpu);
+diff --git a/drivers/net/ethernet/amd/amd8111e.c b/drivers/net/ethernet/amd/amd8111e.c
+index e2fb9e2..c47019d 100644
+--- a/drivers/net/ethernet/amd/amd8111e.c
++++ b/drivers/net/ethernet/amd/amd8111e.c
+@@ -101,7 +101,6 @@ Revision History:
+ MODULE_AUTHOR("Advanced Micro Devices, Inc.");
+ MODULE_DESCRIPTION ("AMD8111 based 10/100 Ethernet Controller. Driver Version "MODULE_VERS);
+ MODULE_LICENSE("GPL");
+-MODULE_DEVICE_TABLE(pci, amd8111e_pci_tbl);
+ module_param_array(speed_duplex, int, NULL, 0);
+ MODULE_PARM_DESC(speed_duplex, "Set device speed and duplex modes, 0: Auto Negotiate, 1: 10Mbps Half Duplex, 2: 10Mbps Full Duplex, 3: 100Mbps Half Duplex, 4: 100Mbps Full Duplex");
+ module_param_array(coalesce, bool, NULL, 0);
+@@ -109,14 +108,6 @@ MODULE_PARM_DESC(coalesce, "Enable or Disable interrupt coalescing, 1: Enable, 0
+ module_param_array(dynamic_ipg, bool, NULL, 0);
+ MODULE_PARM_DESC(dynamic_ipg, "Enable or Disable dynamic IPG, 1: Enable, 0: Disable");
  
- 	thread = kthread_create_on_node(bnx2i_percpu_io_thread, (void *)p,
--					cpu_to_node(cpu),
-+					cpu_to_mem(cpu),
- 					"bnx2i_thread/%d", cpu);
- 	/* bind thread to the cpu */
- 	if (likely(!IS_ERR(thread))) {
+-static DEFINE_PCI_DEVICE_TABLE(amd8111e_pci_tbl) = {
+-
+-	{ PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD8111E_7462,
+-	 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0UL },
+-	{ 0, }
+-
+-};
+-
+ /* This function will read the PHY registers. */
+ static int amd8111e_read_phy(struct amd8111e_priv* lp, int phy_id, int reg, u32* val)
+ {
+@@ -1953,6 +1944,13 @@ static void amd8111e_remove_one(struct pci_dev *pdev)
+ 	}
+ }
+ 
++static DEFINE_PCI_DEVICE_TABLE(amd8111e_pci_tbl) = {
++	{ PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD8111E_7462,
++		PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0UL },
++	{ 0, }
++};
++MODULE_DEVICE_TABLE(pci, amd8111e_pci_tbl);
++
+ static struct pci_driver amd8111e_driver = {
+ 	.name   	= MODULE_NAME,
+ 	.id_table	= amd8111e_pci_tbl,
 -- 
-1.7.10.4
+1.7.9.5
 
