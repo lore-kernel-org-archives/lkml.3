@@ -1,34 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095AbaGKHfY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 03:35:24 -0400
-Received: from mga09.intel.com ([134.134.136.24]:36840 "EHLO mga09.intel.com"
+	id S1752314AbaGKHfq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 03:35:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:36890 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751341AbaGKHfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 03:35:20 -0400
+	id S1752190AbaGKHfi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 03:35:38 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,642,1400050800"; 
-   d="scan'208";a="571589291"
+   d="scan'208";a="571589416"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
         David Rientjes <rientjes@google.com>,
         Mike Galbraith <umgwanakikbuti@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Jens Axboe <axboe@kernel.dk>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jan Kara <jack@suse.cz>,
-        Ingo Molnar <mingo@kernel.org>, Christoph Hellwig <hch@infradead.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Roman Gushchin <klamm@yandex-team.ru>, Xie XiuQi <xiexiuqi@huawei.com>
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
 Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
         linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [RFC Patch V1 01/30] mm, kernel: Use cpu_to_mem()/numa_mem_id() to support memoryless node
-Date: Fri, 11 Jul 2014 15:37:18 +0800
-Message-Id: <1405064267-11678-2-git-send-email-jiang.liu@linux.intel.com>
+Subject: [RFC Patch V1 06/30] mm, tracing: Use cpu_to_mem()/numa_mem_id() to support memoryless node
+Date: Fri, 11 Jul 2014 15:37:23 +0800
+Message-Id: <1405064267-11678-7-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
@@ -47,78 +40,78 @@ is the same as cpu_to_node()/numa_node_id().
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- kernel/rcu/rcutorture.c |    2 +-
- kernel/smp.c            |    2 +-
- kernel/smpboot.c        |    2 +-
- kernel/taskstats.c      |    2 +-
- kernel/timer.c          |    2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
+ kernel/trace/ring_buffer.c  |   12 ++++++------
+ kernel/trace/trace_uprobe.c |    2 +-
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
-index 7fa34f86e5ba..f593762d3214 100644
---- a/kernel/rcu/rcutorture.c
-+++ b/kernel/rcu/rcutorture.c
-@@ -1209,7 +1209,7 @@ static int rcutorture_booster_init(int cpu)
- 	mutex_lock(&boost_mutex);
- 	VERBOSE_TOROUT_STRING("Creating rcu_torture_boost task");
- 	boost_tasks[cpu] = kthread_create_on_node(rcu_torture_boost, NULL,
--						  cpu_to_node(cpu),
-+						  cpu_to_mem(cpu),
- 						  "rcu_torture_boost");
- 	if (IS_ERR(boost_tasks[cpu])) {
- 		retval = PTR_ERR(boost_tasks[cpu]);
-diff --git a/kernel/smp.c b/kernel/smp.c
-index 80c33f8de14f..2f3b84aef159 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -41,7 +41,7 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 	case CPU_UP_PREPARE:
- 	case CPU_UP_PREPARE_FROZEN:
- 		if (!zalloc_cpumask_var_node(&cfd->cpumask, GFP_KERNEL,
--				cpu_to_node(cpu)))
-+				cpu_to_mem(cpu)))
- 			return notifier_from_errno(-ENOMEM);
- 		cfd->csd = alloc_percpu(struct call_single_data);
- 		if (!cfd->csd) {
-diff --git a/kernel/smpboot.c b/kernel/smpboot.c
-index eb89e1807408..9c08e68e48a9 100644
---- a/kernel/smpboot.c
-+++ b/kernel/smpboot.c
-@@ -171,7 +171,7 @@ __smpboot_create_thread(struct smp_hotplug_thread *ht, unsigned int cpu)
- 	if (tsk)
- 		return 0;
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 7c56c3d06943..38c51583f968 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -1124,13 +1124,13 @@ static int __rb_allocate_pages(int nr_pages, struct list_head *pages, int cpu)
+ 		 */
+ 		bpage = kzalloc_node(ALIGN(sizeof(*bpage), cache_line_size()),
+ 				    GFP_KERNEL | __GFP_NORETRY,
+-				    cpu_to_node(cpu));
++				    cpu_to_mem(cpu));
+ 		if (!bpage)
+ 			goto free_pages;
  
--	td = kzalloc_node(sizeof(*td), GFP_KERNEL, cpu_to_node(cpu));
-+	td = kzalloc_node(sizeof(*td), GFP_KERNEL, cpu_to_mem(cpu));
- 	if (!td)
+ 		list_add(&bpage->list, pages);
+ 
+-		page = alloc_pages_node(cpu_to_node(cpu),
++		page = alloc_pages_node(cpu_to_mem(cpu),
+ 					GFP_KERNEL | __GFP_NORETRY, 0);
+ 		if (!page)
+ 			goto free_pages;
+@@ -1183,7 +1183,7 @@ rb_allocate_cpu_buffer(struct ring_buffer *buffer, int nr_pages, int cpu)
+ 	int ret;
+ 
+ 	cpu_buffer = kzalloc_node(ALIGN(sizeof(*cpu_buffer), cache_line_size()),
+-				  GFP_KERNEL, cpu_to_node(cpu));
++				  GFP_KERNEL, cpu_to_mem(cpu));
+ 	if (!cpu_buffer)
+ 		return NULL;
+ 
+@@ -1198,14 +1198,14 @@ rb_allocate_cpu_buffer(struct ring_buffer *buffer, int nr_pages, int cpu)
+ 	init_waitqueue_head(&cpu_buffer->irq_work.waiters);
+ 
+ 	bpage = kzalloc_node(ALIGN(sizeof(*bpage), cache_line_size()),
+-			    GFP_KERNEL, cpu_to_node(cpu));
++			    GFP_KERNEL, cpu_to_mem(cpu));
+ 	if (!bpage)
+ 		goto fail_free_buffer;
+ 
+ 	rb_check_bpage(cpu_buffer, bpage);
+ 
+ 	cpu_buffer->reader_page = bpage;
+-	page = alloc_pages_node(cpu_to_node(cpu), GFP_KERNEL, 0);
++	page = alloc_pages_node(cpu_to_mem(cpu), GFP_KERNEL, 0);
+ 	if (!page)
+ 		goto fail_free_reader;
+ 	bpage->page = page_address(page);
+@@ -4378,7 +4378,7 @@ void *ring_buffer_alloc_read_page(struct ring_buffer *buffer, int cpu)
+ 	struct buffer_data_page *bpage;
+ 	struct page *page;
+ 
+-	page = alloc_pages_node(cpu_to_node(cpu),
++	page = alloc_pages_node(cpu_to_mem(cpu),
+ 				GFP_KERNEL | __GFP_NORETRY, 0);
+ 	if (!page)
+ 		return NULL;
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index 3c9b97e6b1f4..e585fb67472b 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -692,7 +692,7 @@ static int uprobe_buffer_init(void)
  		return -ENOMEM;
- 	td->cpu = cpu;
-diff --git a/kernel/taskstats.c b/kernel/taskstats.c
-index 13d2f7cd65db..cf5cba1e7fbe 100644
---- a/kernel/taskstats.c
-+++ b/kernel/taskstats.c
-@@ -304,7 +304,7 @@ static int add_del_listener(pid_t pid, const struct cpumask *mask, int isadd)
- 	if (isadd == REGISTER) {
- 		for_each_cpu(cpu, mask) {
- 			s = kmalloc_node(sizeof(struct listener),
--					GFP_KERNEL, cpu_to_node(cpu));
-+					GFP_KERNEL, cpu_to_mem(cpu));
- 			if (!s) {
- 				ret = -ENOMEM;
- 				goto cleanup;
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 3bb01a323b2a..5831a38b5681 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1546,7 +1546,7 @@ static int init_timers_cpu(int cpu)
- 			 * The APs use this path later in boot
- 			 */
- 			base = kzalloc_node(sizeof(*base), GFP_KERNEL,
--					    cpu_to_node(cpu));
-+					    cpu_to_mem(cpu));
- 			if (!base)
- 				return -ENOMEM;
  
+ 	for_each_possible_cpu(cpu) {
+-		struct page *p = alloc_pages_node(cpu_to_node(cpu),
++		struct page *p = alloc_pages_node(cpu_to_mem(cpu),
+ 						  GFP_KERNEL, 0);
+ 		if (p == NULL) {
+ 			err_cpu = cpu;
 -- 
 1.7.10.4
 
