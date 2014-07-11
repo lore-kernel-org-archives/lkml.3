@@ -1,44 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754502AbaGKNvT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 09:51:19 -0400
-Received: from qmta10.emeryville.ca.mail.comcast.net ([76.96.30.17]:45492 "EHLO
-	qmta10.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932099AbaGKNvP (ORCPT
+	id S932193AbaGKNvz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 09:51:55 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56209 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754226AbaGKNow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 09:51:15 -0400
-Date: Fri, 11 Jul 2014 08:51:10 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
+	Fri, 11 Jul 2014 09:44:52 -0400
+Message-Id: <20140711133708.263040802@linutronix.de>
+User-Agent: quilt/0.63-1
+Date: Fri, 11 Jul 2014 13:44:50 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Jianyu Zhan <nasa4836@gmail.com>, malc <av1474@comtv.ru>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Fabian Frederick <fabf@skynet.be>, Tony Luck <tony.luck@intel.com>,
-        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC Patch V1 07/30] mm: Use cpu_to_mem()/numa_mem_id() to
- support memoryless node
-In-Reply-To: <1405064267-11678-8-git-send-email-jiang.liu@linux.intel.com>
-Message-ID: <alpine.DEB.2.11.1407110850540.21073@gentwo.org>
-References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com> <1405064267-11678-8-git-send-email-jiang.liu@linux.intel.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [patch 35/55] mfd: cros_ec_spi: Use ktime_get_ns()
+References: <20140711133623.530368377@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline;
+ filename=mfd-cros-ec-spi-remove-silly-timestamp-dance.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jul 2014, Jiang Liu wrote:
+Replace the ever recurring:
+	ts = ktime_get_ts();
+	ns = timespec_to_ns(&ts);
+with
+	ns = ktime_get_ns();
 
-> If CONFIG_HAVE_MEMORYLESS_NODES is disabled, cpu_to_mem()/numa_mem_id()
-> is the same as cpu_to_node()/numa_node_id().
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+---
+ drivers/mfd/cros_ec_spi.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-Reviewed-by: Christoph Lameter <cl@linux.com>
+Index: tip/drivers/mfd/cros_ec_spi.c
+===================================================================
+--- tip.orig/drivers/mfd/cros_ec_spi.c
++++ tip/drivers/mfd/cros_ec_spi.c
+@@ -225,7 +225,6 @@ static int cros_ec_command_spi_xfer(stru
+ 	u8 *ptr;
+ 	int sum;
+ 	int ret = 0, final_ret;
+-	struct timespec ts;
+ 
+ 	/*
+ 	 * We have the shared ec_dev buffer plus we do lots of separate spi_sync
+@@ -242,8 +241,7 @@ static int cros_ec_command_spi_xfer(stru
+ 		struct timespec ts;
+ 		unsigned long delay;	/* The delay completed so far */
+ 
+-		ktime_get_ts(&ts);
+-		delay = timespec_to_ns(&ts) - ec_spi->last_transfer_ns;
++		delay = ktime_get_ns() - ec_spi->last_transfer_ns;
+ 		if (delay < EC_SPI_RECOVERY_TIME_NS)
+ 			ndelay(EC_SPI_RECOVERY_TIME_NS - delay);
+ 	}
+@@ -280,8 +278,7 @@ static int cros_ec_command_spi_xfer(stru
+ 	}
+ 
+ 	final_ret = spi_sync(ec_spi->spi, &msg);
+-	ktime_get_ts(&ts);
+-	ec_spi->last_transfer_ns = timespec_to_ns(&ts);
++	ec_spi->last_transfer_ns = ktime_get_ns();
+ 	if (!ret)
+ 		ret = final_ret;
+ 	if (ret < 0) {
+
+
