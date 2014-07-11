@@ -1,76 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752774AbaGKIvh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 04:51:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51355 "EHLO mx2.suse.de"
+	id S1752193AbaGKIzd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 04:55:33 -0400
+Received: from ofcsgdbm.dwd.de ([141.38.3.245]:59120 "EHLO ofcsgdbm.dwd.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751119AbaGKIve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 04:51:34 -0400
-Message-ID: <53BFA594.1090004@suse.cz>
-Date: Fri, 11 Jul 2014 10:51:32 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751169AbaGKIz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 04:55:28 -0400
+X-Greylist: delayed 384 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Jul 2014 04:55:28 EDT
+Date: Fri, 11 Jul 2014 08:49:01 +0000 (UTC)
+From: Holger Kiehl <Holger.Kiehl@dwd.de>
+X-X-Sender: kiehl@diagnostix.dwd.de
+To: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-netdev <linux-netdev@vger.kernel.org>
+Subject: qlcnic very high TX values, as of 3.13.x
+Message-ID: <alpine.LRH.2.11.1407110758460.20203@diagnostix.dwd.de>
+User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, akpm@linux-foundation.org,
-        davej@redhat.com, koct9i@gmail.com, lczerner@redhat.com,
-        stable@vger.kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: + shmem-fix-faulting-into-a-hole-while-its-punched-take-2.patch
- added to -mm tree
-References: <53BD67DC.9040700@oracle.com> <alpine.LSU.2.11.1407092358090.18131@eggly.anvils> <53BE8B1B.3000808@oracle.com> <53BECBA4.3010508@oracle.com> <alpine.LSU.2.11.1407101033280.18934@eggly.anvils> <53BED7F6.4090502@oracle.com> <alpine.LSU.2.11.1407101131310.19154@eggly.anvils> <53BEE345.4090203@oracle.com> <20140711082500.GB20603@laptop.programming.kicks-ass.net> <53BFA14B.4010203@suse.cz> <20140711083850.GE20603@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140711083850.GE20603@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2014 10:38 AM, Peter Zijlstra wrote:
-> On Fri, Jul 11, 2014 at 10:33:15AM +0200, Vlastimil Babka wrote:
->> Quoting Hugh from previous mail in this thread:
->>
->>>>>
->>>>> [  363.600969] INFO: task trinity-c327:9203 blocked for more than 120 seconds.
->>>>> [  363.605359]       Not tainted 3.16.0-rc4-next-20140708-sasha-00022-g94c7290-dirty #772
->>>>> [  363.609730] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->>>>> [  363.615861] trinity-c327    D 000000000000000b 13496  9203   8559 0x10000004
->>>>> [  363.620284]  ffff8800b857bce8 0000000000000002 ffffffff9dc11b10 0000000000000001
->>>>> [  363.624468]  ffff880104860000 ffff8800b857bfd8 00000000001d7740 00000000001d7740
->>>>> [  363.629118]  ffff880104863000 ffff880104860000 ffff8800b857bcd8 ffff8801eaed8868
->>>>> [  363.633879] Call Trace:
->>>>> [  363.635442]  [<ffffffff9a4dc535>] schedule+0x65/0x70
->>>>> [  363.638638]  [<ffffffff9a4dc948>] schedule_preempt_disabled+0x18/0x30
->>>>> [  363.642833]  [<ffffffff9a4df0a5>] mutex_lock_nested+0x2e5/0x550
->>>>> [  363.646599]  [<ffffffff972a4d7c>] ? shmem_fallocate+0x6c/0x350
->>>>> [  363.651319]  [<ffffffff9719b721>] ? get_parent_ip+0x11/0x50
->>>>> [  363.654683]  [<ffffffff972a4d7c>] ? shmem_fallocate+0x6c/0x350
->>>>> [  363.658264]  [<ffffffff972a4d7c>] shmem_fallocate+0x6c/0x350
->>>
->>> So it's trying to acquire i_mutex at shmem_fallocate+0x6c...
->>>
->>>>> [  363.662010]  [<ffffffff971bd96e>] ? put_lock_stats.isra.12+0xe/0x30
->>>>> [  363.665866]  [<ffffffff9730c043>] do_fallocate+0x153/0x1d0
->>>>> [  363.669381]  [<ffffffff972b472f>] SyS_madvise+0x33f/0x970
->>>>> [  363.672906]  [<ffffffff9a4e3f13>] tracesys+0xe1/0xe6
->>>>> [  363.682900] 2 locks held by trinity-c327/9203:
->>>>> [  363.684928]  #0:  (sb_writers#12){.+.+.+}, at: [<ffffffff9730c02d>] do_fallocate+0x13d/0x1d0
->>>>> [  363.715102]  #1:  (&sb->s_type->i_mutex_key#16){+.+.+.}, at: [<ffffffff972a4d7c>] shmem_fallocate+0x6c/0x350
->>>
->>> ...but it already holds i_mutex, acquired at shmem_fallocate+0x6c.
->>> Am I reading that correctly?
->>
->> The output looks like mutex #1 is already taken, but actually the process is
->> sleeping when trying to take it. It appears that the output has taken
->> mutex_acquire_nest() action into account, but doesn't distinguish if
->> lock_acquired() already happened or not.
->
-> The call trace is very clear on it that its not. I've never found this
-> to be a problem in practise. You need to engage your brain anyhow, this
-> little bit extra isn't going to make a difference or not.
+Hello,
 
-OK, but what about the case of "Showing all locks held in the system:"
-output where you don't have the stacktraces? Wouldn't it be better if that
-distinguished locks already taken and locks being taken?
+upgrading from 3.10.x to the next stable series 3.14.x I noticed that
+ifconfig reports very high TX values. Taking the qlcnic source from
+3.15.5 and compile it under 3.14.12, the problem remains. Going
+backwards always just copying the qlcnic source from the older kernels
+to the 3.14.12 tree, I noticed that the 3.12.x kernel was the last
+version that does not generate those high TX values. So the problem
+started with the qlcnic driver in 3.13.x. However, comparing 3.13.x
+and 3.14.x the numbers go higher in 3.14.x much quicker. In 3.14.x
+I get TX values in Terabytes very quickly after boot. I once even got
+Petabyte values!
 
+Hardware is the following:
+
+     HP ProLiant DL380 G7
+     2 x Intel Xeon X5690 (24 cores with hypertreading)
+     106 GByte Ram
+     1 x NC523SFP 10Gb 2-port Server Adapter Board Chip rev 0x54 (qlcnic)
+     1 x Intel Corporation 82599ES 10-Gigabit SFI/SFP+ Network Connection (ixgbe)
+
+The qlcnic and ixgbe cards are bonded together in fault-tolerance
+(active-backup) mode. And even when I switch to the Intel card, after I
+get crazy TX values on qlcnic card, the TX vaules on this card still
+go up at a very quick rate. This only stops when I reset the card
+(reload the module). Also, there is no differnce if I compile the driver
+in or use it as module. There are no strange messages in
+/var/log/messages or dmesg. Here the output with the 3.13.x driver in
+3.14.12 when system boots:
+
+    [   18.229195] QLogic 1/10 GbE Converged/Intelligent Ethernet Driver v5.3.52
+    [   18.229415] qlcnic 0000:1a:00.0: 2048KB memory map
+    [   18.854134] qlcnic 0000:1a:00.0: Default minidump capture mask 0x1f
+    [   19.602491] qlcnic 0000:1a:00.0: FW dump enabled
+    [   19.631257] qlcnic 0000:1a:00.0: Supports FW dump capability
+    [   19.667072] qlcnic 0000:1a:00.0: Driver v5.3.52, firmware v4.14.26
+    [   19.704279] qlcnic 0000:1a:00.0: Set 4 Tx rings
+    [   19.733001] qlcnic 0000:1a:00.0: Set 4 SDS rings
+    [   19.898808] qlcnic: 2c:27:d7:50:04:48: NC523SFP 10Gb 2-port Server Adapter Board Chip rev 0x54
+    [   19.949325] qlcnic 0000:1a:00.0: irq 129 for MSI/MSI-X
+    [   19.949329] qlcnic 0000:1a:00.0: irq 130 for MSI/MSI-X
+    [   19.949333] qlcnic 0000:1a:00.0: irq 131 for MSI/MSI-X
+    [   19.949336] qlcnic 0000:1a:00.0: irq 132 for MSI/MSI-X
+    [   19.949340] qlcnic 0000:1a:00.0: irq 133 for MSI/MSI-X
+    [   19.949343] qlcnic 0000:1a:00.0: irq 134 for MSI/MSI-X
+    [   19.949347] qlcnic 0000:1a:00.0: irq 135 for MSI/MSI-X
+    [   19.949350] qlcnic 0000:1a:00.0: irq 136 for MSI/MSI-X
+    [   19.949369] qlcnic 0000:1a:00.0: using msi-x interrupts
+    [   19.982782] qlcnic 0000:1a:00.0: Set 4 Tx queues
+    [   20.055099] qlcnic 0000:1a:00.0: eth2: XGbE port initialized
+    [   20.090408] qlcnic 0000:1a:00.1: 2048KB memory map
+    [   20.179836] qlcnic 0000:1a:00.1: Default minidump capture mask 0x1f
+    [   20.217848] qlcnic 0000:1a:00.1: FW dump enabled
+    [   20.246979] qlcnic 0000:1a:00.1: Supports FW dump capability
+    [   20.282318] qlcnic 0000:1a:00.1: Driver v5.3.52, firmware v4.14.26
+    [   20.320238] qlcnic 0000:1a:00.1: Set 4 Tx rings
+    [   20.350038] qlcnic 0000:1a:00.1: Set 4 SDS rings
+    [   20.429714] qlcnic 0000:1a:00.1: irq 137 for MSI/MSI-X
+    [   20.429718] qlcnic 0000:1a:00.1: irq 138 for MSI/MSI-X
+    [   20.429722] qlcnic 0000:1a:00.1: irq 139 for MSI/MSI-X
+    [   20.429726] qlcnic 0000:1a:00.1: irq 140 for MSI/MSI-X
+    [   20.429729] qlcnic 0000:1a:00.1: irq 141 for MSI/MSI-X
+    [   20.429732] qlcnic 0000:1a:00.1: irq 142 for MSI/MSI-X
+    [   20.429736] qlcnic 0000:1a:00.1: irq 143 for MSI/MSI-X
+    [   20.429739] qlcnic 0000:1a:00.1: irq 144 for MSI/MSI-X
+    [   20.429757] qlcnic 0000:1a:00.1: using msi-x interrupts
+    [   20.458895] qlcnic 0000:1a:00.1: Set 4 Tx queues
+    [   20.486907] qlcnic 0000:1a:00.1: eth3: XGbE port initialized
+
+My kernel config can be downloaded here:
+
+    ftp://ftp.dwd.de/pub/afd/test/.config
+
+Please, just ask if I need to provide more details and please CC me,
+since I am not on the list.
+
+Thanks,
+Holger
