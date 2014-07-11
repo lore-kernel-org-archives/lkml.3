@@ -1,31 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212AbaGKHhq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 03:37:46 -0400
-Received: from mga09.intel.com ([134.134.136.24]:37272 "EHLO mga09.intel.com"
+	id S1753231AbaGKHhy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 03:37:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:37329 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752171AbaGKHhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 03:37:43 -0400
+	id S1751616AbaGKHhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 03:37:51 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,642,1400050800"; 
-   d="scan'208";a="571590178"
+   d="scan'208";a="571590213"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
         David Rientjes <rientjes@google.com>,
         Mike Galbraith <umgwanakikbuti@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
-        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC Patch V1 26/30] mm, x86, perf: Use cpu_to_mem()/numa_mem_id() to support memoryless node
-Date: Fri, 11 Jul 2014 15:37:43 +0800
-Message-Id: <1405064267-11678-27-git-send-email-jiang.liu@linux.intel.com>
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Lans Zhang <jia.zhang@windriver.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Tony Luck <tony.luck@intel.com>, linux-mm@kvack.org,
+        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [RFC Patch V1 27/30] x86, numa: Kill useless code to improve code readability
+Date: Fri, 11 Jul 2014 15:37:44 +0800
+Message-Id: <1405064267-11678-28-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
@@ -33,121 +35,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CONFIG_HAVE_MEMORYLESS_NODES is enabled, cpu_to_node()/numa_node_id()
-may return a node without memory, and later cause system failure/panic
-when calling kmalloc_node() and friends with returned node id.
-So use cpu_to_mem()/numa_mem_id() instead to get the nearest node with
-memory for the/current cpu.
+According to x86 boot sequence, early_cpu_to_node() always returns
+NUMA_NO_NODE when called from numa_init(). So kill useless code
+to improve code readability.
 
-If CONFIG_HAVE_MEMORYLESS_NODES is disabled, cpu_to_mem()/numa_mem_id()
-is the same as cpu_to_node()/numa_node_id().
+Related code sequence as below:
+x86_cpu_to_node_map is set until step 2, so it is still the default
+value (NUMA_NO_NODE) when accessed at step 1.
+
+start_kernel()
+	setup_arch()
+		initmem_init()
+			x86_numa_init()
+				numa_init()
+					early_cpu_to_node()
+1)						return early_per_cpu_ptr(x86_cpu_to_node_map)[cpu];
+		acpi_boot_init();
+		sfi_init()
+		x86_dtb_init()
+			generic_processor_info()
+				early_per_cpu(x86_cpu_to_apicid, cpu) = apicid;
+		init_cpu_to_node()
+			numa_set_node(cpu, node);
+2)				per_cpu(x86_cpu_to_node_map, cpu) = node;
+
+	rest_init()
+		kernel_init()
+			smp_init()
+				native_cpu_up()
+					start_secondary()
+						numa_set_node()
+							per_cpu(x86_cpu_to_node_map, cpu) = node;
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_amd.c          |    2 +-
- arch/x86/kernel/cpu/perf_event_amd_uncore.c   |    2 +-
- arch/x86/kernel/cpu/perf_event_intel.c        |    2 +-
- arch/x86/kernel/cpu/perf_event_intel_ds.c     |    6 +++---
- arch/x86/kernel/cpu/perf_event_intel_rapl.c   |    2 +-
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |    2 +-
- 6 files changed, 8 insertions(+), 8 deletions(-)
+ arch/x86/mm/numa.c |   10 ----------
+ 1 file changed, 10 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-index beeb7cc07044..ee5120ce3e98 100644
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -347,7 +347,7 @@ static struct amd_nb *amd_alloc_nb(int cpu)
- 	struct amd_nb *nb;
- 	int i;
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index a32b706c401a..eec4f6c322bb 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -545,8 +545,6 @@ static void __init numa_init_array(void)
  
--	nb = kzalloc_node(sizeof(struct amd_nb), GFP_KERNEL, cpu_to_node(cpu));
-+	nb = kzalloc_node(sizeof(struct amd_nb), GFP_KERNEL, cpu_to_mem(cpu));
- 	if (!nb)
- 		return NULL;
+ 	rr = first_node(node_online_map);
+ 	for (i = 0; i < nr_cpu_ids; i++) {
+-		if (early_cpu_to_node(i) != NUMA_NO_NODE)
+-			continue;
+ 		numa_set_node(i, rr);
+ 		rr = next_node(rr, node_online_map);
+ 		if (rr == MAX_NUMNODES)
+@@ -633,14 +631,6 @@ static int __init numa_init(int (*init_func)(void))
+ 	if (ret < 0)
+ 		return ret;
  
-diff --git a/arch/x86/kernel/cpu/perf_event_amd_uncore.c b/arch/x86/kernel/cpu/perf_event_amd_uncore.c
-index 3bbdf4cd38b9..1a7f4129bf4c 100644
---- a/arch/x86/kernel/cpu/perf_event_amd_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd_uncore.c
-@@ -291,7 +291,7 @@ static struct pmu amd_l2_pmu = {
- static struct amd_uncore *amd_uncore_alloc(unsigned int cpu)
- {
- 	return kzalloc_node(sizeof(struct amd_uncore), GFP_KERNEL,
--			cpu_to_node(cpu));
-+			cpu_to_mem(cpu));
- }
+-	for (i = 0; i < nr_cpu_ids; i++) {
+-		int nid = early_cpu_to_node(i);
+-
+-		if (nid == NUMA_NO_NODE)
+-			continue;
+-		if (!node_online(nid))
+-			numa_clear_node(i);
+-	}
+ 	numa_init_array();
  
- static void amd_uncore_cpu_up_prepare(unsigned int cpu)
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index adb02aa62af5..4f48d1bb7608 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1957,7 +1957,7 @@ struct intel_shared_regs *allocate_shared_regs(int cpu)
- 	int i;
- 
- 	regs = kzalloc_node(sizeof(struct intel_shared_regs),
--			    GFP_KERNEL, cpu_to_node(cpu));
-+			    GFP_KERNEL, cpu_to_mem(cpu));
- 	if (regs) {
- 		/*
- 		 * initialize the locks to keep lockdep happy
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 980970cb744d..bb0327411bf1 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -250,7 +250,7 @@ static DEFINE_PER_CPU(void *, insn_buffer);
- static int alloc_pebs_buffer(int cpu)
- {
- 	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
--	int node = cpu_to_node(cpu);
-+	int node = cpu_to_mem(cpu);
- 	int max, thresh = 1; /* always use a single PEBS record */
- 	void *buffer, *ibuffer;
- 
-@@ -304,7 +304,7 @@ static void release_pebs_buffer(int cpu)
- static int alloc_bts_buffer(int cpu)
- {
- 	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
--	int node = cpu_to_node(cpu);
-+	int node = cpu_to_mem(cpu);
- 	int max, thresh;
- 	void *buffer;
- 
-@@ -341,7 +341,7 @@ static void release_bts_buffer(int cpu)
- 
- static int alloc_ds_buffer(int cpu)
- {
--	int node = cpu_to_node(cpu);
-+	int node = cpu_to_mem(cpu);
- 	struct debug_store *ds;
- 
- 	ds = kzalloc_node(sizeof(*ds), GFP_KERNEL, node);
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-index 619f7699487a..9df1ec3b505d 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-@@ -547,7 +547,7 @@ static int rapl_cpu_prepare(int cpu)
- 	if (rdmsrl_safe(MSR_RAPL_POWER_UNIT, &msr_rapl_power_unit_bits))
- 		return -1;
- 
--	pmu = kzalloc_node(sizeof(*pmu), GFP_KERNEL, cpu_to_node(cpu));
-+	pmu = kzalloc_node(sizeof(*pmu), GFP_KERNEL, cpu_to_mem(cpu));
- 	if (!pmu)
- 		return -1;
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 65bbbea38b9c..4b77ba4b4e36 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -4011,7 +4011,7 @@ static int uncore_cpu_prepare(int cpu, int phys_id)
- 			if (pmu->func_id < 0)
- 				pmu->func_id = j;
- 
--			box = uncore_alloc_box(type, cpu_to_node(cpu));
-+			box = uncore_alloc_box(type, cpu_to_mem(cpu));
- 			if (!box)
- 				return -ENOMEM;
- 
+ 	/*
 -- 
 1.7.10.4
 
