@@ -1,95 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751169AbaGKFj1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 01:39:27 -0400
-Received: from mga14.intel.com ([192.55.52.115]:50349 "EHLO mga14.intel.com"
+	id S1751359AbaGKFog (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 01:44:36 -0400
+Received: from gate.crashing.org ([63.228.1.57]:53056 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750975AbaGKFj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 01:39:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,642,1400050800"; 
-   d="scan'208";a="560318622"
-Message-ID: <53BF7818.8070506@intel.com>
-Date: Fri, 11 Jul 2014 13:37:28 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Subject: Re: [PATCH] perf/x86/uncore: fix SNB-EP/IVT Cbox filter mappings
-References: <20140630144624.GA2604@quad> <CABPqkBRBF6TXf3Q5+MvWneKrgtrjZMv3FzW6rVMygz2QvWgowg@mail.gmail.com>
-In-Reply-To: <CABPqkBRBF6TXf3Q5+MvWneKrgtrjZMv3FzW6rVMygz2QvWgowg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1751012AbaGKFof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 01:44:35 -0400
+Message-ID: <1405057463.20996.32.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Fri, 11 Jul 2014 15:44:23 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2014 03:16 AM, Stephane Eranian wrote:
-> On Mon, Jun 30, 2014 at 4:46 PM, Stephane Eranian <eranian@google.com> wrote:
->>
->> This patch fixes the SNB-EP and IVT Cbox filter mapping
->> table. The table controls which filters are supported by
->> which events. There were several mistakes in those tables
->> causing some filters to be ignored, such as NID on
->> TOR_INSERTS.
->>
->> Signed-off-by: Stephane Eranian <eranian@google.com>
-> 
-> Any comment on this patch?
+Hi Linus !
 
-sorry for the delay
+Here are a few more powerpc fixes for 3.16
 
-Reviewed-by: Yan, Zheng <zheng.z.yan@intel.com>
-> 
->> ---
->>  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 11 ++++++-----
->>  1 file changed, 6 insertions(+), 5 deletions(-)
->>
->> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
->> index 65bbbea..ae6552a 100644
->> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
->> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
->> @@ -550,16 +550,16 @@ static struct extra_reg snbep_uncore_cbox_extra_regs[] = {
->>         SNBEP_CBO_EVENT_EXTRA_REG(0x4134, 0xffff, 0x6),
->>         SNBEP_CBO_EVENT_EXTRA_REG(0x0135, 0xffff, 0x8),
->>         SNBEP_CBO_EVENT_EXTRA_REG(0x0335, 0xffff, 0x8),
->> -       SNBEP_CBO_EVENT_EXTRA_REG(0x4135, 0xffff, 0xc),
->> -       SNBEP_CBO_EVENT_EXTRA_REG(0x4335, 0xffff, 0xc),
->> +       SNBEP_CBO_EVENT_EXTRA_REG(0x4135, 0xffff, 0xa),
->> +       SNBEP_CBO_EVENT_EXTRA_REG(0x4335, 0xffff, 0xa),
->>         SNBEP_CBO_EVENT_EXTRA_REG(0x4435, 0xffff, 0x2),
->>         SNBEP_CBO_EVENT_EXTRA_REG(0x4835, 0xffff, 0x2),
->>         SNBEP_CBO_EVENT_EXTRA_REG(0x4a35, 0xffff, 0x2),
->>         SNBEP_CBO_EVENT_EXTRA_REG(0x5035, 0xffff, 0x2),
->>         SNBEP_CBO_EVENT_EXTRA_REG(0x0136, 0xffff, 0x8),
->>         SNBEP_CBO_EVENT_EXTRA_REG(0x0336, 0xffff, 0x8),
->> -       SNBEP_CBO_EVENT_EXTRA_REG(0x4136, 0xffff, 0xc),
->> -       SNBEP_CBO_EVENT_EXTRA_REG(0x4336, 0xffff, 0xc),
->> +       SNBEP_CBO_EVENT_EXTRA_REG(0x4136, 0xffff, 0xa),
->> +       SNBEP_CBO_EVENT_EXTRA_REG(0x4336, 0xffff, 0xa),
->>         SNBEP_CBO_EVENT_EXTRA_REG(0x4436, 0xffff, 0x2),
->>         SNBEP_CBO_EVENT_EXTRA_REG(0x4836, 0xffff, 0x2),
->>         SNBEP_CBO_EVENT_EXTRA_REG(0x4a36, 0xffff, 0x2),
->> @@ -1222,6 +1222,7 @@ static struct extra_reg ivt_uncore_cbox_extra_regs[] = {
->>         SNBEP_CBO_EVENT_EXTRA_REG(SNBEP_CBO_PMON_CTL_TID_EN,
->>                                   SNBEP_CBO_PMON_CTL_TID_EN, 0x1),
->>         SNBEP_CBO_EVENT_EXTRA_REG(0x1031, 0x10ff, 0x2),
->> +
->>         SNBEP_CBO_EVENT_EXTRA_REG(0x1134, 0xffff, 0x4),
->>         SNBEP_CBO_EVENT_EXTRA_REG(0x4134, 0xffff, 0xc),
->>         SNBEP_CBO_EVENT_EXTRA_REG(0x5134, 0xffff, 0xc),
->> @@ -1245,7 +1246,7 @@ static struct extra_reg ivt_uncore_cbox_extra_regs[] = {
->>         SNBEP_CBO_EVENT_EXTRA_REG(0x8335, 0xffff, 0x10),
->>         SNBEP_CBO_EVENT_EXTRA_REG(0x0136, 0xffff, 0x10),
->>         SNBEP_CBO_EVENT_EXTRA_REG(0x0336, 0xffff, 0x10),
->> -       SNBEP_CBO_EVENT_EXTRA_REG(0x2336, 0xffff, 0x10),
->> +       SNBEP_CBO_EVENT_EXTRA_REG(0x2136, 0xffff, 0x10),
->>         SNBEP_CBO_EVENT_EXTRA_REG(0x2336, 0xffff, 0x10),
->>         SNBEP_CBO_EVENT_EXTRA_REG(0x4136, 0xffff, 0x18),
->>         SNBEP_CBO_EVENT_EXTRA_REG(0x4336, 0xffff, 0x18),
->> --
->> 1.8.3.2
->>
+There's a small series of 3 patches that fix saving/restoring MMUCR2
+when using KVM without which perf goes completely bonkers in the host
+system. Another perf fix from Anton that's been rotting away in patchwork
+due to my poor eyesight, a couple of compile fixes, a little addition
+to the WSP removal by Michael (removing a bit more dead stuff) and
+a fix for an embarassing regression with our soft irq masking.
+
+Cheers,
+Ben.
+
+The following changes since commit 6663a4fa6711050036562ddfd2086edf735fae21:
+
+  powerpc: Don't skip ePAPR spin-table CPUs (2014-06-25 13:10:49 +1000)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+
+for you to fetch changes up to f56029410a13cae3652d1f34788045c40a13ffc7:
+
+  powerpc/perf: Never program book3s PMCs with values >= 0x80000000 (2014-07-11 13:50:47 +1000)
+
+----------------------------------------------------------------
+Anton Blanchard (1):
+      powerpc/perf: Never program book3s PMCs with values >= 0x80000000
+
+Guenter Roeck (1):
+      powerpc: Disable RELOCATABLE for COMPILE_TEST with PPC64
+
+Joel Stanley (3):
+      powerpc/kvm: Remove redundant save of SIER AND MMCR2
+      powerpc/perf: Add PPMU_ARCH_207S define
+      powerpc/perf: Clear MMCR2 when enabling PMU
+
+Michael Ellerman (2):
+      powerpc/cell: Fix compilation with CONFIG_COREDUMP=n
+      powerpc: Clean up MMU_FTRS_A2 and MMU_FTR_TYPE_3E
+
+Preeti U Murthy (1):
+      powerpc/powernv: Check for IRQHAPPENED before sleeping
+
+ arch/powerpc/Kconfig                         |  3 ++-
+ arch/powerpc/include/asm/mmu.h               | 10 +---------
+ arch/powerpc/include/asm/perf_event_server.h |  3 +--
+ arch/powerpc/kernel/idle_power7.S            |  2 +-
+ arch/powerpc/kvm/book3s_hv_interrupts.S      |  5 -----
+ arch/powerpc/mm/mmu_context_nohash.c         | 12 +-----------
+ arch/powerpc/perf/core-book3s.c              | 26 ++++++++++++++++++++++----
+ arch/powerpc/perf/power8-pmu.c               |  2 +-
+ arch/powerpc/platforms/cell/spu_syscalls.c   |  2 ++
+ arch/powerpc/platforms/cell/spufs/Makefile   |  3 ++-
+ arch/powerpc/platforms/cell/spufs/syscalls.c |  6 ++++--
+ 11 files changed, 37 insertions(+), 37 deletions(-)
+
 
