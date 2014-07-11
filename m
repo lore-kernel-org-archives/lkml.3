@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191AbaGKHpo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 03:45:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60935 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751885AbaGKHpm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 03:45:42 -0400
-Message-ID: <53BF95E1.3070908@redhat.com>
-Date: Fri, 11 Jul 2014 09:44:33 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
+	id S1753809AbaGKHqb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 03:46:31 -0400
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:55249 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753323AbaGKHq1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 03:46:27 -0400
+X-IronPort-AV: E=Sophos;i="5.01,642,1400050800"; 
+   d="scan'208";a="38715975"
+Message-ID: <53BF961E.10406@broadcom.com>
+Date: Fri, 11 Jul 2014 09:45:34 +0200
+From: Arend van Spriel <arend@broadcom.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Gleb Natapov <gleb@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
-CC: Tony Luck <tony.luck@intel.com>, linux-mm@kvack.org,
-        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [RFC Patch V1 25/30] mm, x86, kvm: Use cpu_to_mem()/numa_mem_id()
- to support memoryless node
-References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com> <1405064267-11678-26-git-send-email-jiang.liu@linux.intel.com>
-In-Reply-To: <1405064267-11678-26-git-send-email-jiang.liu@linux.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: Tom Gundersen <teg@jklm.no>
+CC: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Brett Rudley <brudley@broadcom.com>,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        John Linville <linville@tuxdriver.com>,
+        "Linux Wireless List" <linux-wireless@vger.kernel.org>,
+        <brcm80211-dev-list@broadcom.com>
+Subject: Re: [PATCH v7 29/33] net: brcmfmac - set name assign type
+References: <1404980258-30853-1-git-send-email-teg@jklm.no> <1404980258-30853-30-git-send-email-teg@jklm.no> <53BEF2A6.6050103@broadcom.com> <CAG-2HqVnUwPpRwRwNpMXVN4zP4k3zUvJX5E4p-roi6BKpHTgNQ@mail.gmail.com>
+In-Reply-To: <CAG-2HqVnUwPpRwRwNpMXVN4zP4k3zUvJX5E4p-roi6BKpHTgNQ@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 11/07/2014 09:37, Jiang Liu ha scritto:
-> When CONFIG_HAVE_MEMORYLESS_NODES is enabled, cpu_to_node()/numa_node_id()
-> may return a node without memory, and later cause system failure/panic
-> when calling kmalloc_node() and friends with returned node id.
-> So use cpu_to_mem()/numa_mem_id() instead to get the nearest node with
-> memory for the/current cpu.
->
-> If CONFIG_HAVE_MEMORYLESS_NODES is disabled, cpu_to_mem()/numa_mem_id()
-> is the same as cpu_to_node()/numa_node_id().
->
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> ---
->  arch/x86/kvm/vmx.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index 801332edefc3..beb7c6d5d51b 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -2964,7 +2964,7 @@ static __init int setup_vmcs_config(struct vmcs_config *vmcs_conf)
->
->  static struct vmcs *alloc_vmcs_cpu(int cpu)
->  {
-> -	int node = cpu_to_node(cpu);
-> +	int node = cpu_to_mem(cpu);
->  	struct page *pages;
->  	struct vmcs *vmcs;
->
->
+On 10-07-14 22:24, Tom Gundersen wrote:
+> On Thu, Jul 10, 2014 at 10:08 PM, Arend van Spriel <arend@broadcom.com> wrote:
+>> On 10-07-14 10:17, Tom Gundersen wrote:
+>>> The name is given by the firmware, so we assume it is predictable.
+>>
+>> How about the scenario where one would have multiple broadcom wifi
+>> devices in the system. Both driver instances would alloc_netdev with
+>> predictable but also the same ifname. Wondering whether we should ignore
+>> the firmware ifname altogether.
+> 
+> Hm, that would just fail irrespective of this patch, right? Sounds
+> like ignoring the firmware names is the right thing to do.
 
-Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+True. I realized that when starting to type my reply. I think at the
+moment we never run into the scenario that trigger this code path. Will
+make a separate patch for that. Probably on top of your changes.
+
+Regards,
+Arend
+
+> Cheers,
+> 
+> Tom
+> 
+
