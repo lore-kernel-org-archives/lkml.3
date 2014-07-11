@@ -1,139 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754427AbaGKWo3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 18:44:29 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:50702 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753139AbaGKWo0 (ORCPT
+	id S1754535AbaGKWsY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 18:48:24 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:56664 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750719AbaGKWsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 18:44:26 -0400
-Date: Fri, 11 Jul 2014 16:44:21 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: vidya sagar <sagar.tv@gmail.com>
-Cc: Vidya Sagar <vidyas@nvidia.com>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>, Krishna Thota <kthota@nvidia.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "tianyu.lan@intel.com" <tianyu.lan@intel.com>,
-        Nagananda Chumbalkar <nchumbalkar@lenovo.com>
-Subject: Re: [PATCH v1] PCI: enable ASPM configuration in PCIE POWERSAVE mode
-Message-ID: <20140711224421.GA5417@google.com>
-References: <1404198978-26593-1-git-send-email-vidyas@nvidia.com>
- <20140705185736.GD28871@google.com>
- <20140705190203.GE28871@google.com>
- <113ACA888B71994BB56E5CF3704953486D8E9DFE3C@BGMAIL02.nvidia.com>
- <CAErSpo5qSy6sEUj-Hu1_ympHUhxLBw6Cf1v_Y6bQ6XqFNmJS8Q@mail.gmail.com>
- <CAN7O0+KymyWPNnd+HDHNPTUwm8uSXa2v2fmUkHK=5NQenWK7xA@mail.gmail.com>
+	Fri, 11 Jul 2014 18:48:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAN7O0+KymyWPNnd+HDHNPTUwm8uSXa2v2fmUkHK=5NQenWK7xA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1433620.8yKm3TZIWM@sifl>
+References: <cover.1405023592.git.rgb@redhat.com>
+	<13645924.XpBzvDVILV@sifl>
+	<1405103466.2357.5.camel@flatline.rdu.redhat.com>
+	<1433620.8yKm3TZIWM@sifl>
+Date: Fri, 11 Jul 2014 15:48:22 -0700
+X-Google-Sender-Auth: LQkUwdycx-657fCZcm6_QZGHQRw
+Message-ID: <CAGXu5jKVuE34Ly3g885270gLQavyA0UdQZaV41HoNunRDPOC4A@mail.gmail.com>
+Subject: Re: [PATCH 2/3] [RFC] seccomp: give BPF x32 bit when restoring x32 filter
+From: Kees Cook <keescook@chromium.org>
+To: Paul Moore <pmoore@redhat.com>
+Cc: Eric Paris <eparis@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Richard Guy Briggs <rgb@redhat.com>, linux-audit@redhat.com,
+        LKML <linux-kernel@vger.kernel.org>, Al Viro <aviro@redhat.com>,
+        Will Drewry <wad@chromium.org>, Andy Lutomirski <luto@amacapital.net>,
+        Chris Evans <cevans@google.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Tyler Hicks <tyhicks@canonical.com>, stgraber@ubuntu.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[updated Naga's email address]
+On Fri, Jul 11, 2014 at 12:36 PM, Paul Moore <pmoore@redhat.com> wrote:
+> Anyway, getting back to the idea I mentioned earlier ... as many of you may
+> know, Kees (added to the CC line) is working on some seccomp filter
+> improvements which will result in a new seccomp syscall.  Perhaps one way
+> forward is to preserve everything as it is currently with the prctl()
+> interface, but with the new seccomp() based interface we fixup x32 and use the
+> new AUDIT_ARCH_X32 token?  It might result in a bit of ugliness in some of the
+> kernel, but I don't think it would be too bad, and I think it would address
+> both our concerns.
 
-On Wed, Jul 09, 2014 at 11:50:01PM +0530, vidya sagar wrote:
-> On Tue, Jul 8, 2014 at 2:42 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> > On Mon, Jul 7, 2014 at 12:00 PM, Vidya Sagar <vidyas@nvidia.com> wrote:
-> >>> -----Original Message-----
-> >>> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
-> >>> Sent: Sunday, July 06, 2014 12:32 AM
-> >>> To: Vidya Sagar
-> >>> Cc: nagananda.chumbalkar@hp.com; thierry.reding@gmail.com; Stephen
-> >>> Warren; Krishna Thota; linux-pci@vger.kernel.org; linux-
-> >>> kernel@vger.kernel.org; Matthew Garrett; Rafael J. Wysocki
-> >>> Subject: Re: [PATCH v1] PCI: enable ASPM configuration in PCIE POWERSAVE
-> >>> mode
-> >>>
-> >>> [+cc Rafael]
-> >>>
-> >>> On Sat, Jul 05, 2014 at 12:57:36PM -0600, Bjorn Helgaas wrote:
-> >>> > [+cc Matthew]
-> >>> >
-> >>> > On Tue, Jul 01, 2014 at 12:46:18PM +0530, Vidya Sagar wrote:
-> >>> > > commit 1a680b7c moved pcie_aspm_powersave_config_link() out of
-> >>> > > pci_raw_set_power_state() to pci_set_power_state() which would
-> >>> > > enable ASPM. But, with commit db288c9c, which re-introduced the
-> >>> > > following check
-> >>> > > ./drivers/pci/pci.c: pci_set_power_state()
-> >>> > > +   /* Check if we're already there */
-> >>> > > +   if (dev->current_state == state)
-> >>> > > +       return 0;
-> >>> > > in pci_set_power_state(), call to pcie_aspm_powersave_config_link()
-> >>> > > is never made leaving ASPM broken.
-> >>> > > Fix it by not returning from when the above condition is true,
-> >>> > > rather, jump to ASPM configuration code and exit from there eventually.
-> >>> >
-> >>> > Rafael, Matthew, any comments?  We have vacillated on this before and
-> >>> > the web is already pretty tangled.
-> >>> >
-> >> I've raised a bugzilla bug  https://bugzilla.kernel.org/show_bug.cgi?id=79621 for the same.
-> >> Scenario here is, when the driver of a particular PCIe device is loaded and when CONFIG_PCIEASPM_POWERSAVE=y, ASPM is expected to get configured by the sub system which is not happening as of today.
-> >> The reason for this behavior is the 'if' condition that checks for the device's power state and returns if it is already in D0. Ideally, it shouldn't return from there, rather proceed to configure ASPM.
-> >
-> Please find the attached files (before_aspm_patch.txt &
-> after_aspm_patch.txt) with 'dmesg' and 'lspci -vvv' info.
-> BTW, my understanding is that this issue (enabling ASPM while booting)
-> exists for all the devices which are in D0 state.
-> Please correct my understanding if it's wrong.
-> Though, enabling aspm through writing 'powersave' to
-> '/sys/module/pcie_aspm/parameters' is working fine always.
+Adding AUDIT_ARCH_X32: yes please. (On that note, the comment "/* Both
+x32 and x86_64 are considered "64-bit". */" should be changed...)
 
-I think your observation is correct: it looks like if we boot with all
-devices in D0 (which I would expect to be a very common case), we don't
-touch ASPM configuration at all.  That would mean we would just leave
-the BIOS settings alone.
+Just so I understand: currently x86_64 and x32 both present as
+AUDIT_ARCH_X86_64. The x32 syscalls are seen as in a different range
+(due to the set high bit).
 
-It seems pretty surprising that it could have been this way since
-v3.6, when db288c9c5f9d was merged, and we haven't noticed until now,
-but if most BIOSes configure ASPM themselves, maybe it's possible.
+The seccomp used in Chrome, Chrome OS, and vsftpd should all only do
+whitelisting by both arch and syscall, so adding AUDIT_ARCH_X32
+without setting __X32_SYSCALL_BIT would be totally fine (it would
+catch the arch instead of the syscall). This sounds similar to how
+libseccomp is doing things, so these should be fine.
 
-But I wonder if we can untangle ASPM from pci_set_power_state().  I
-don't think they're really related.  There are a zillion .suspend()
-and .resume() methods that call pci_set_power_state().  I doubt that
-we need to do ASPM configuration during suspend, and I'm dubious about
-resume, too.  What about a patch like the following?
+The only project I know of doing blacklisting is lxc, and Eric's
+example looks a lot like a discussion I saw with lxc and init_module.
+:) So it sounds like we can get this right there.
 
+I'd like to avoid carrying a delta on filter logic based on the prctl
+vs syscall entry. Can we find any userspace filters being used that a
+"correct" fix would break? (If so, then yes, we'll need to do this
+proposed "via prctl or via syscall?" change.)
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 63a54a340863..75fabd1f72bc 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -839,12 +839,6 @@ int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
- 
- 	if (!__pci_complete_power_transition(dev, state))
- 		error = 0;
--	/*
--	 * When aspm_policy is "powersave" this call ensures
--	 * that ASPM is configured.
--	 */
--	if (!error && dev->bus->self)
--		pcie_aspm_powersave_config_link(dev->bus->self);
- 
- 	return error;
- }
-@@ -1195,12 +1189,18 @@ int __weak pcibios_enable_device(struct pci_dev *dev, int bars)
- static int do_pci_enable_device(struct pci_dev *dev, int bars)
- {
- 	int err;
-+	struct pci_dev *bridge;
- 	u16 cmd;
- 	u8 pin;
- 
- 	err = pci_set_power_state(dev, PCI_D0);
- 	if (err < 0 && err != -EIO)
- 		return err;
-+
-+	bridge = pci_upstream_bridge(dev);
-+	if (bridge)
-+		pcie_aspm_powersave_config_link(bridge);
-+
- 	err = pcibios_enable_device(dev, bars);
- 	if (err < 0)
- 		return err;
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
