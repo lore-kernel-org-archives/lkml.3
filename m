@@ -1,351 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755078AbaGKTTb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 15:19:31 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:38969 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095AbaGKTT3 (ORCPT
+	id S1755159AbaGKTWc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 15:22:32 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:64998 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754776AbaGKTWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 15:19:29 -0400
-Date: Fri, 11 Jul 2014 15:19:24 -0400
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Oded Gabbay <oded.gabbay@gmail.com>
-Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        John Bridgman <John.Bridgman@amd.com>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>,
-        Alexey Skidanov <Alexey.Skidanov@amd.com>, Ben Goz <ben.goz@amd.com>,
-        Evgeny Pinchuk <evgeny.pinchuk@amd.com>, linux-api@vger.kernel.org
-Subject: Re: [PATCH 13/83] hsa/radeon: Add 2 new IOCTL to kfd, CREATE_QUEUE
- and DESTROY_QUEUE
-Message-ID: <20140711191921.GO1870@gmail.com>
-References: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
- <1405029027-6085-12-git-send-email-oded.gabbay@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405029027-6085-12-git-send-email-oded.gabbay@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 11 Jul 2014 15:22:31 -0400
+From: Ionut Alexa <ionut.m.alexa@gmail.com>
+To: tj@kernel.org
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ionut Alexa <johnnyalexa@yahoo.com>
+Subject: [PATCH] kernel:cgroup :fixed coding style issues
+Date: Fri, 11 Jul 2014 22:23:53 +0300
+Message-Id: <1405106633-7938-1-git-send-email-ionut.m.alexa@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 12:50:13AM +0300, Oded Gabbay wrote:
-> This patch adds 2 new IOCTL to kfd driver.
-> 
-> The first IOCTL is KFD_IOC_CREATE_QUEUE that is used by the user-mode
-> application to create a compute queue on the GPU.
-> 
-> The second IOCTL is KFD_IOC_DESTROY_QUEUE that is used by the
-> user-mode application to destroy an existing compute queue on the GPU.
-> 
-> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+From: Ionut Alexa <johnnyalexa@yahoo.com>
 
-Coding style need fixing. What is the percent argument ? What is it use
-for ?
+Fixed coding style issues.
 
-You need to check range validity of argument provided by userspace. Rules
-is never trust userspace. Especialy for things like queue_size which is
-use without never being check allowing userspace to send 0 which leads
-to broken queue size.
+Signed-off-by: Ionut Alexa <johnnyalexa@yahoo.com>
+---
+ kernel/cgroup.c |   36 ++++++++++++++++++++++--------------
+ 1 file changed, 22 insertions(+), 14 deletions(-)
 
-Also out of curiosity what kind of event happens if userspace munmap its
-ring buffer before unregistering a queue ?
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 70776ae..fb6a4fd 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -83,8 +83,8 @@
+  */
+ #ifdef CONFIG_PROVE_RCU
+ DEFINE_MUTEX(cgroup_mutex);
+-DECLARE_RWSEM(css_set_rwsem);
+ EXPORT_SYMBOL_GPL(cgroup_mutex);
++DECLARE_RWSEM(css_set_rwsem);
+ EXPORT_SYMBOL_GPL(css_set_rwsem);
+ #else
+ static DEFINE_MUTEX(cgroup_mutex);
+@@ -106,7 +106,7 @@ static DEFINE_SPINLOCK(release_agent_path_lock);
+ #define cgroup_assert_mutex_or_rcu_locked()				\
+ 	rcu_lockdep_assert(rcu_read_lock_held() ||			\
+ 			   lockdep_is_held(&cgroup_mutex),		\
+-			   "cgroup_mutex or RCU read lock required");
++			   "cgroup_mutex or RCU read lock required")
+ 
+ /*
+  * cgroup destruction makes heavy use of work items and there can be a lot
+@@ -123,15 +123,17 @@ static struct workqueue_struct *cgroup_destroy_wq;
+ static struct workqueue_struct *cgroup_pidlist_destroy_wq;
+ 
+ /* generate an array of cgroup subsystem pointers */
+-#define SUBSYS(_x) [_x ## _cgrp_id] = &_x ## _cgrp_subsys,
++#define SUBSYS(_x)							\
++		[_x ## _cgrp_id] = &_x ## _cgrp_subsys,
+ static struct cgroup_subsys *cgroup_subsys[] = {
+ #include <linux/cgroup_subsys.h>
+ };
+ #undef SUBSYS
+ 
+ /* array of cgroup subsystem names */
+-#define SUBSYS(_x) [_x ## _cgrp_id] = #_x,
+-static const char *cgroup_subsys_name[] = {
++#define SUBSYS(_x)							\
++		[_x ## _cgrp_id] = #_x,
++static const char * const cgroup_subsys_name[] = {
+ #include <linux/cgroup_subsys.h>
+ };
+ #undef SUBSYS
+@@ -1325,6 +1327,7 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
+ 			/* Must match [\w.-]+ */
+ 			for (i = 0; i < strlen(name); i++) {
+ 				char c = name[i];
++
+ 				if (isalnum(c))
+ 					continue;
+ 				if ((c == '.') || (c == '-') || (c == '_'))
+@@ -1694,7 +1697,7 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+ 
+ 		if (!percpu_ref_tryget_live(&ss->root->cgrp.self.refcnt)) {
+ 			mutex_unlock(&cgroup_mutex);
+-			msleep(10);
++			usleep_range(10000, 11000);
+ 			ret = restart_syscall();
+ 			goto out_free;
+ 		}
+@@ -1758,7 +1761,7 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+ 			mutex_unlock(&cgroup_mutex);
+ 			if (!IS_ERR_OR_NULL(pinned_sb))
+ 				deactivate_super(pinned_sb);
+-			msleep(10);
++			usleep_range(10000, 11000);
+ 			ret = restart_syscall();
+ 			goto out_free;
+ 		}
+@@ -2191,7 +2194,7 @@ static int cgroup_migrate(struct cgroup *cgrp, struct task_struct *leader,
+ 		if (list_empty(&cset->mg_dst_cset->mg_node))
+ 			list_move_tail(&cset->mg_dst_cset->mg_node,
+ 				       &tset.dst_csets);
+-	next:
++next:
+ 		if (!threadgroup)
+ 			break;
+ 	} while_each_thread(leader, task);
+@@ -2764,6 +2767,7 @@ err_undo_css:
+ 
+ 		cgroup_for_each_live_child(child, cgrp) {
+ 			struct cgroup_subsys_state *css = cgroup_css(child, ss);
++
+ 			if (css)
+ 				kill_css(css);
+ 		}
+@@ -2800,12 +2804,16 @@ static ssize_t cgroup_file_write(struct kernfs_open_file *of, char *buf,
+ 
+ 	if (cft->write_u64) {
+ 		unsigned long long v;
++
+ 		ret = kstrtoull(buf, 0, &v);
++
+ 		if (!ret)
+ 			ret = cft->write_u64(css, cft, v);
+ 	} else if (cft->write_s64) {
+ 		long long v;
++
+ 		ret = kstrtoll(buf, 0, &v);
++
+ 		if (!ret)
+ 			ret = cft->write_s64(css, cft, v);
+ 	} else {
+@@ -3954,6 +3962,7 @@ static void *cgroup_pidlist_start(struct seq_file *s, loff_t *pos)
+ 
+ 		while (index < end) {
+ 			int mid = (index + end) / 2;
++
+ 			if (cgroup_pid_fry(cgrp, l->list[mid]) == pid) {
+ 				index = mid;
+ 				break;
+@@ -4682,7 +4691,7 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss, bool early)
+ {
+ 	struct cgroup_subsys_state *css;
+ 
+-	printk(KERN_INFO "Initializing cgroup subsys %s\n", ss->name);
++	pr_info("Initializing cgroup subsys %s\n", ss->name);
+ 
+ 	mutex_lock(&cgroup_mutex);
+ 
+@@ -4736,8 +4745,8 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss, bool early)
+  */
+ int __init cgroup_init_early(void)
+ {
+-	static struct cgroup_sb_opts __initdata opts =
+-		{ .flags = CGRP_ROOT_SANE_BEHAVIOR };
++	static struct cgroup_sb_opts opts __initdata =	{
++		.flags = CGRP_ROOT_SANE_BEHAVIOR };
+ 	struct cgroup_subsys *ss;
+ 	int i;
+ 
+@@ -5195,8 +5204,7 @@ static int __init cgroup_disable(char *str)
+ 		for_each_subsys(ss, i) {
+ 			if (!strcmp(token, ss->name)) {
+ 				ss->disabled = 1;
+-				printk(KERN_INFO "Disabling %s control group"
+-					" subsystem\n", ss->name);
++				pr_info("Disabling %s control group subsystem\n", ss->name);
+ 				break;
+ 			}
+ 		}
+@@ -5350,7 +5358,7 @@ static int cgroup_css_links_read(struct seq_file *seq, void *v)
+ 			seq_printf(seq, "  task %d\n", task_pid_vnr(task));
+ 		}
+ 		continue;
+-	overflow:
++overflow:
+ 		seq_puts(seq, "  ...\n");
+ 	}
+ 	up_read(&css_set_rwsem);
+-- 
+1.7.10.4
 
-> ---
->  drivers/gpu/hsa/radeon/kfd_chardev.c  | 155 ++++++++++++++++++++++++++++++++++
->  drivers/gpu/hsa/radeon/kfd_doorbell.c |  11 +++
->  include/uapi/linux/kfd_ioctl.h        |  69 +++++++++++++++
-
-Again better to create an hsa directory for kfd_ioctl.h
-
->  3 files changed, 235 insertions(+)
->  create mode 100644 include/uapi/linux/kfd_ioctl.h
-> 
-> diff --git a/drivers/gpu/hsa/radeon/kfd_chardev.c b/drivers/gpu/hsa/radeon/kfd_chardev.c
-> index 0b5bc74..4e7d5d0 100644
-> --- a/drivers/gpu/hsa/radeon/kfd_chardev.c
-> +++ b/drivers/gpu/hsa/radeon/kfd_chardev.c
-> @@ -27,11 +27,13 @@
->  #include <linux/sched.h>
->  #include <linux/slab.h>
->  #include <linux/uaccess.h>
-> +#include <uapi/linux/kfd_ioctl.h>
->  #include "kfd_priv.h"
->  #include "kfd_scheduler.h"
->  
->  static long kfd_ioctl(struct file *, unsigned int, unsigned long);
->  static int kfd_open(struct inode *, struct file *);
-> +static int kfd_mmap(struct file *, struct vm_area_struct *);
->  
->  static const char kfd_dev_name[] = "kfd";
->  
-> @@ -108,17 +110,170 @@ kfd_open(struct inode *inode, struct file *filep)
->  	return 0;
->  }
->  
-> +static long
-> +kfd_ioctl_create_queue(struct file *filep, struct kfd_process *p, void __user *arg)
-> +{
-> +	struct kfd_ioctl_create_queue_args args;
-> +	struct kfd_dev *dev;
-> +	int err = 0;
-> +	unsigned int queue_id;
-> +	struct kfd_queue *queue;
-> +	struct kfd_process_device *pdd;
-> +
-> +	if (copy_from_user(&args, arg, sizeof(args)))
-> +		return -EFAULT;
-> +
-> +	dev = radeon_kfd_device_by_id(args.gpu_id);
-> +	if (dev == NULL)
-> +		return -EINVAL;
-> +
-> +	queue = kzalloc(
-> +		offsetof(struct kfd_queue, scheduler_queue) + dev->device_info->scheduler_class->queue_size,
-> +		GFP_KERNEL);
-> +
-> +	if (!queue)
-> +		return -ENOMEM;
-> +
-> +	queue->dev = dev;
-> +
-> +	mutex_lock(&p->mutex);
-> +
-> +	pdd = radeon_kfd_bind_process_to_device(dev, p);
-> +	if (IS_ERR(pdd) < 0) {
-> +		err = PTR_ERR(pdd);
-> +		goto err_bind_pasid;
-> +	}
-> +
-> +	pr_debug("kfd: creating queue number %d for PASID %d on GPU 0x%x\n",
-> +			pdd->queue_count,
-> +			p->pasid,
-> +			dev->id);
-> +
-> +	if (pdd->queue_count++ == 0) {
-> +		err = dev->device_info->scheduler_class->register_process(dev->scheduler, p, &pdd->scheduler_process);
-> +		if (err < 0)
-> +			goto err_register_process;
-> +	}
-> +
-> +	if (!radeon_kfd_allocate_queue_id(p, &queue_id))
-> +		goto err_allocate_queue_id;
-> +
-> +	err = dev->device_info->scheduler_class->create_queue(dev->scheduler, pdd->scheduler_process,
-> +							      &queue->scheduler_queue,
-> +							      (void __user *)args.ring_base_address,
-> +							      args.ring_size,
-> +							      (void __user *)args.read_pointer_address,
-> +							      (void __user *)args.write_pointer_address,
-> +							      radeon_kfd_queue_id_to_doorbell(dev, p, queue_id));
-> +	if (err)
-> +		goto err_create_queue;
-> +
-> +	radeon_kfd_install_queue(p, queue_id, queue);
-> +
-> +	args.queue_id = queue_id;
-> +	args.doorbell_address = (uint64_t)(uintptr_t)radeon_kfd_get_doorbell(filep, p, dev, queue_id);
-> +
-> +	if (copy_to_user(arg, &args, sizeof(args))) {
-> +		err = -EFAULT;
-> +		goto err_copy_args_out;
-> +	}
-> +
-> +	mutex_unlock(&p->mutex);
-> +
-> +	pr_debug("kfd: queue id %d was created successfully.\n"
-> +		 "     ring buffer address == 0x%016llX\n"
-> +		 "     read ptr address    == 0x%016llX\n"
-> +		 "     write ptr address   == 0x%016llX\n"
-> +		 "     doorbell address    == 0x%016llX\n",
-> +			args.queue_id,
-> +			args.ring_base_address,
-> +			args.read_pointer_address,
-> +			args.write_pointer_address,
-> +			args.doorbell_address);
-> +
-> +	return 0;
-> +
-> +err_copy_args_out:
-> +	dev->device_info->scheduler_class->destroy_queue(dev->scheduler, &queue->scheduler_queue);
-> +err_create_queue:
-> +	radeon_kfd_remove_queue(p, queue_id);
-> +err_allocate_queue_id:
-> +	if (--pdd->queue_count == 0) {
-> +		dev->device_info->scheduler_class->deregister_process(dev->scheduler, pdd->scheduler_process);
-> +		pdd->scheduler_process = NULL;
-> +	}
-> +err_register_process:
-> +err_bind_pasid:
-> +	kfree(queue);
-> +	mutex_unlock(&p->mutex);
-> +	return err;
-> +}
-> +
-> +static int
-> +kfd_ioctl_destroy_queue(struct file *filp, struct kfd_process *p, void __user *arg)
-> +{
-> +	struct kfd_ioctl_destroy_queue_args args;
-> +	struct kfd_queue *queue;
-> +	struct kfd_dev *dev;
-> +	struct kfd_process_device *pdd;
-> +
-> +	if (copy_from_user(&args, arg, sizeof(args)))
-> +		return -EFAULT;
-> +
-> +	mutex_lock(&p->mutex);
-> +
-> +	queue = radeon_kfd_get_queue(p, args.queue_id);
-> +	if (!queue) {
-> +		mutex_unlock(&p->mutex);
-> +		return -EINVAL;
-> +	}
-> +
-> +	dev = queue->dev;
-> +
-> +	pr_debug("kfd: destroying queue id %d for PASID %d\n",
-> +			args.queue_id,
-> +			p->pasid);
-> +
-> +	radeon_kfd_remove_queue(p, args.queue_id);
-> +	dev->device_info->scheduler_class->destroy_queue(dev->scheduler, &queue->scheduler_queue);
-> +
-> +	kfree(queue);
-> +
-> +	pdd = radeon_kfd_get_process_device_data(dev, p);
-> +	BUG_ON(pdd == NULL); /* Because a queue exists. */
-> +
-> +	if (--pdd->queue_count == 0) {
-> +		dev->device_info->scheduler_class->deregister_process(dev->scheduler, pdd->scheduler_process);
-> +		pdd->scheduler_process = NULL;
-> +	}
-> +
-> +	mutex_unlock(&p->mutex);
-> +	return 0;
-> +}
->  
->  static long
->  kfd_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
->  {
-> +	struct kfd_process *process;
->  	long err = -EINVAL;
->  
->  	dev_info(kfd_device,
->  		 "ioctl cmd 0x%x (#%d), arg 0x%lx\n",
->  		 cmd, _IOC_NR(cmd), arg);
->  
-> +	process = radeon_kfd_get_process(current);
-> +	if (IS_ERR(process))
-> +		return PTR_ERR(process);
-> +
->  	switch (cmd) {
-> +	case KFD_IOC_CREATE_QUEUE:
-> +		err = kfd_ioctl_create_queue(filep, process, (void __user *)arg);
-> +		break;
-> +
-> +	case KFD_IOC_DESTROY_QUEUE:
-> +		err = kfd_ioctl_destroy_queue(filep, process, (void __user *)arg);
-> +		break;
-> +
->  	default:
->  		dev_err(kfd_device,
->  			"unknown ioctl cmd 0x%x, arg 0x%lx)\n",
-> diff --git a/drivers/gpu/hsa/radeon/kfd_doorbell.c b/drivers/gpu/hsa/radeon/kfd_doorbell.c
-> index e1d8506..3de8a02 100644
-> --- a/drivers/gpu/hsa/radeon/kfd_doorbell.c
-> +++ b/drivers/gpu/hsa/radeon/kfd_doorbell.c
-> @@ -155,3 +155,14 @@ doorbell_t __user *radeon_kfd_get_doorbell(struct file *devkfd, struct kfd_proce
->  	return &pdd->doorbell_mapping[doorbell_index];
->  }
->  
-> +/*
-> + * queue_ids are in the range [0,MAX_PROCESS_QUEUES) and are mapped 1:1
-> + * to doorbells with the process's doorbell page
-> + */
-> +unsigned int radeon_kfd_queue_id_to_doorbell(struct kfd_dev *kfd, struct kfd_process *process, unsigned int queue_id)
-> +{
-> +	/* doorbell_id_offset accounts for doorbells taken by KGD.
-> +	 * pasid * doorbell_process_allocation/sizeof(doorbell_t) adjusts to the process's doorbells */
-> +	return kfd->doorbell_id_offset + process->pasid * (doorbell_process_allocation()/sizeof(doorbell_t)) + queue_id;
-> +}
-> +
-> diff --git a/include/uapi/linux/kfd_ioctl.h b/include/uapi/linux/kfd_ioctl.h
-> new file mode 100644
-> index 0000000..dcc5fe0
-> --- /dev/null
-> +++ b/include/uapi/linux/kfd_ioctl.h
-> @@ -0,0 +1,69 @@
-> +/*
-> + * Copyright 2014 Advanced Micro Devices, Inc.
-> + *
-> + * Permission is hereby granted, free of charge, to any person obtaining a
-> + * copy of this software and associated documentation files (the "Software"),
-> + * to deal in the Software without restriction, including without limitation
-> + * the rights to use, copy, modify, merge, publish, distribute, sublicense,
-> + * and/or sell copies of the Software, and to permit persons to whom the
-> + * Software is furnished to do so, subject to the following conditions:
-> + *
-> + * The above copyright notice and this permission notice shall be included in
-> + * all copies or substantial portions of the Software.
-> + *
-> + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-> + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-> + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-> + * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
-> + * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-> + * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-> + * OTHER DEALINGS IN THE SOFTWARE.
-> + */
-> +
-> +#ifndef KFD_IOCTL_H_INCLUDED
-> +#define KFD_IOCTL_H_INCLUDED
-> +
-> +#include <linux/types.h>
-> +#include <linux/ioctl.h>
-> +
-> +#define KFD_IOCTL_CURRENT_VERSION 1
-> +
-> +/* The 64-bit ABI is the authoritative version. */
-> +#pragma pack(push, 8)
-> +
-> +struct kfd_ioctl_get_version_args {
-> +	uint32_t min_supported_version;	/* from KFD */
-> +	uint32_t max_supported_version;	/* from KFD */
-> +};
-> +
-> +/* For kfd_ioctl_create_queue_args.queue_type. */
-> +#define KFD_IOC_QUEUE_TYPE_COMPUTE   0
-> +#define KFD_IOC_QUEUE_TYPE_SDMA      1
-> +
-> +struct kfd_ioctl_create_queue_args {
-> +	uint64_t ring_base_address;	/* to KFD */
-> +	uint32_t ring_size;		/* to KFD */
-> +	uint32_t gpu_id;		/* to KFD */
-> +	uint32_t queue_type;		/* to KFD */
-> +	uint32_t queue_percentage;	/* to KFD */
-> +	uint32_t queue_priority;	/* to KFD */
-> +	uint64_t write_pointer_address;	/* to KFD */
-> +	uint64_t read_pointer_address;	/* to KFD */
-> +
-> +	uint64_t doorbell_address;	/* from KFD */
-> +	uint32_t queue_id;		/* from KFD */
-> +};
-> +
-> +struct kfd_ioctl_destroy_queue_args {
-> +	uint32_t queue_id;		/* to KFD */
-> +};
-> +
-> +#define KFD_IOC_MAGIC 'K'
-> +
-> +#define KFD_IOC_GET_VERSION	_IOR(KFD_IOC_MAGIC, 1, struct kfd_ioctl_get_version_args)
-> +#define KFD_IOC_CREATE_QUEUE	_IOWR(KFD_IOC_MAGIC, 2, struct kfd_ioctl_create_queue_args)
-> +#define KFD_IOC_DESTROY_QUEUE	_IOWR(KFD_IOC_MAGIC, 3, struct kfd_ioctl_destroy_queue_args)
-> +
-> +#pragma pack(pop)
-> +
-> +#endif
-> -- 
-> 1.9.1
-> 
