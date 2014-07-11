@@ -1,158 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550AbaGKVHw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 17:07:52 -0400
-Received: from mga03.intel.com ([143.182.124.21]:38269 "EHLO mga03.intel.com"
+	id S932207AbaGKVIn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 17:08:43 -0400
+Received: from mail.efficios.com ([78.47.125.74]:58789 "EHLO mail.efficios.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752325AbaGKVFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 17:05:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,645,1400050800"; 
-   d="scan'208";a="456056343"
-From: Sudeep Dutt <sudeep.dutt@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Williams <dan.j.williams@intel.com>
-Cc: Siva Yerramreddy <yshivakrishna@gmail.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Nikhil Rao <nikhil.rao@intel.com>, Sudeep Dutt <sudeep.dutt@intel.com>,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Subject: [PATCH char-misc-next v3 6/8] misc: mic: add threaded irq support in card driver
-Date: Fri, 11 Jul 2014 14:04:24 -0700
-Message-Id: <10732a6590e424f88b39c5b712e94f1b65e60c6c.1405109402.git.sudeep.dutt@intel.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <cover.1405109401.git.sudeep.dutt@intel.com>
-References: <cover.1405109401.git.sudeep.dutt@intel.com>
-In-Reply-To: <cover.1405109401.git.sudeep.dutt@intel.com>
-References: <cover.1405109401.git.sudeep.dutt@intel.com>
+	id S1752373AbaGKVIm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 17:08:42 -0400
+Date: Fri, 11 Jul 2014 21:08:44 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: linux-kernel@vger.kernel.org
+Cc: submission@tracingsummit.org
+Message-ID: <108406797.13221.1405112924516.JavaMail.zimbra@efficios.com>
+In-Reply-To: <1637700547.13216.1405112800501.JavaMail.zimbra@efficios.com>
+Subject: =?utf-8?Q?[CFP]_Tracing_Summit_2014_Call_for_Presentat?=
+ =?utf-8?Q?ions,_October_13th,_2014,_D=C3=BCsseldorf,_Germany?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [173.246.29.13]
+X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF30 (Linux)/8.0.7_GA_6021)
+Thread-Topic: Tracing Summit 2014 Call for Presentations, October 13th, 2014, =?utf-8?Q?D=C3=BCsseldorf=2C?= Germany
+Thread-Index: V4GKTDiDly09LZ3McNoHfMnND8F18w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Siva Yerramreddy <yshivakrishna@gmail.com>
+Hi,
 
-Add threaded irq support in mic_request_card_irq which will be used
-for virtual devices added on mic bus.
+We are organizing a tracing summit in Düsseldorf, Germany, on
+October 13, 2014, at the Congress Centre Düsseldorf. This event is 
+colocated with LinuxCon Europe 2014.
+ 
+This event focuses on the tracing area, gathering people involved in
+development and end-users of tracing tools as well as trace analysis
+tools. The main target of this Tracing Summit is to provide room for
+discussion between people in the various areas that benefit from
+tracing, namely parallel, distributed and/or real-time systems, as well
+as kernel development.
 
-Reviewed-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
-Reviewed-by: Nikhil Rao <nikhil.rao@intel.com>
-Reviewed-by: Sudeep Dutt <sudeep.dutt@intel.com>
-Signed-off-by: Siva Yerramreddy <yshivakrishna@gmail.com>
----
- drivers/misc/mic/card/mic_device.c | 23 +++++++++++++----------
- drivers/misc/mic/card/mic_device.h |  5 +++--
- drivers/misc/mic/card/mic_virtio.c |  7 ++++---
- 3 files changed, 20 insertions(+), 15 deletions(-)
+If you are interested to present, please submit a proposal to
+submission@tracingsummit.org before August 31, 2014, at 23:59 EST.
+Please provide a title, abstract describing the proposed talk
+(900 characters maximum), short biography (900 characters maximum),
+and describe the targeted audience (900 characters maximum).
 
-diff --git a/drivers/misc/mic/card/mic_device.c b/drivers/misc/mic/card/mic_device.c
-index d0980ff..83819ee 100644
---- a/drivers/misc/mic/card/mic_device.c
-+++ b/drivers/misc/mic/card/mic_device.c
-@@ -83,8 +83,8 @@ static int mic_shutdown_init(void)
- 	int shutdown_db;
- 
- 	shutdown_db = mic_next_card_db();
--	shutdown_cookie = mic_request_card_irq(mic_shutdown_isr,
--			"Shutdown", mdrv, shutdown_db);
-+	shutdown_cookie = mic_request_card_irq(mic_shutdown_isr, NULL,
-+					       "Shutdown", mdrv, shutdown_db);
- 	if (IS_ERR(shutdown_cookie))
- 		rc = PTR_ERR(shutdown_cookie);
- 	else
-@@ -136,7 +136,8 @@ static void mic_dp_uninit(void)
- /**
-  * mic_request_card_irq - request an irq.
-  *
-- * @func: The callback function that handles the interrupt.
-+ * @handler: interrupt handler passed to request_threaded_irq.
-+ * @thread_fn: thread fn. passed to request_threaded_irq.
-  * @name: The ASCII name of the callee requesting the irq.
-  * @data: private data that is returned back when calling the
-  * function handler.
-@@ -149,17 +150,19 @@ static void mic_dp_uninit(void)
-  * error code.
-  *
-  */
--struct mic_irq *mic_request_card_irq(irqreturn_t (*func)(int irq, void *data),
--	const char *name, void *data, int index)
-+struct mic_irq *
-+mic_request_card_irq(irq_handler_t handler,
-+		     irq_handler_t thread_fn, const char *name,
-+		     void *data, int index)
- {
- 	int rc = 0;
- 	unsigned long cookie;
- 	struct mic_driver *mdrv = g_drv;
- 
--	rc  = request_irq(mic_db_to_irq(mdrv, index), func,
--		0, name, data);
-+	rc  = request_threaded_irq(mic_db_to_irq(mdrv, index), handler,
-+				   thread_fn, 0, name, data);
- 	if (rc) {
--		dev_err(mdrv->dev, "request_irq failed rc = %d\n", rc);
-+		dev_err(mdrv->dev, "request_threaded_irq failed rc = %d\n", rc);
- 		goto err;
- 	}
- 	mdrv->irq_info.irq_usage_count[index]++;
-@@ -172,9 +175,9 @@ err:
- /**
-  * mic_free_card_irq - free irq.
-  *
-- * @cookie: cookie obtained during a successful call to mic_request_irq
-+ * @cookie: cookie obtained during a successful call to mic_request_threaded_irq
-  * @data: private data specified by the calling function during the
-- * mic_request_irq
-+ * mic_request_threaded_irq
-  *
-  * returns: none.
-  */
-diff --git a/drivers/misc/mic/card/mic_device.h b/drivers/misc/mic/card/mic_device.h
-index 306f502..e12a0c2 100644
---- a/drivers/misc/mic/card/mic_device.h
-+++ b/drivers/misc/mic/card/mic_device.h
-@@ -30,6 +30,7 @@
- #include <linux/workqueue.h>
- #include <linux/io.h>
- #include <linux/irqreturn.h>
-+#include <linux/interrupt.h>
- 
- /**
-  * struct mic_intr_info - Contains h/w specific interrupt sources info
-@@ -116,8 +117,8 @@ mic_mmio_write(struct mic_mw *mw, u32 val, u32 offset)
- int mic_driver_init(struct mic_driver *mdrv);
- void mic_driver_uninit(struct mic_driver *mdrv);
- int mic_next_card_db(void);
--struct mic_irq *mic_request_card_irq(irqreturn_t (*func)(int irq, void *data),
--	const char *name, void *data, int intr_src);
-+struct mic_irq *mic_request_card_irq(irq_handler_t handler,
-+	irq_handler_t thread_fn, const char *name, void *data, int intr_src);
- void mic_free_card_irq(struct mic_irq *cookie, void *data);
- u32 mic_read_spad(struct mic_device *mdev, unsigned int idx);
- void mic_send_intr(struct mic_device *mdev, int doorbell);
-diff --git a/drivers/misc/mic/card/mic_virtio.c b/drivers/misc/mic/card/mic_virtio.c
-index 653799b..f14b600 100644
---- a/drivers/misc/mic/card/mic_virtio.c
-+++ b/drivers/misc/mic/card/mic_virtio.c
-@@ -417,7 +417,7 @@ static int mic_add_device(struct mic_device_desc __iomem *d,
- 
- 	virtio_db = mic_next_card_db();
- 	mvdev->virtio_cookie = mic_request_card_irq(mic_virtio_intr_handler,
--			"virtio intr", mvdev, virtio_db);
-+			NULL, "virtio intr", mvdev, virtio_db);
- 	if (IS_ERR(mvdev->virtio_cookie)) {
- 		ret = PTR_ERR(mvdev->virtio_cookie);
- 		goto kfree;
-@@ -606,8 +606,9 @@ int mic_devices_init(struct mic_driver *mdrv)
- 	mic_scan_devices(mdrv, !REMOVE_DEVICES);
- 
- 	config_db = mic_next_card_db();
--	virtio_config_cookie = mic_request_card_irq(mic_extint_handler,
--			"virtio_config_intr", mdrv, config_db);
-+	virtio_config_cookie = mic_request_card_irq(mic_extint_handler, NULL,
-+						    "virtio_config_intr", mdrv,
-+						    config_db);
- 	if (IS_ERR(virtio_config_cookie)) {
- 		rc = PTR_ERR(virtio_config_cookie);
- 		goto exit;
+We are welcoming presentations from both end users and developers, on
+topics covering, but not limited to:
+
+ * Trace collection and extraction,
+ * Trace filtering,
+ * Trace aggregation,
+ * Trace formats,
+ * Tracing multi-core systems,
+ * Trace abstraction,
+ * Trace modeling,
+ * Automated trace analysis (e.g. dependency analysis),
+ * Tracing large clusters and distributed systems,
+ * Hardware-level tracing (e.g. DSP, GPU, bare-metal),
+ * Trace visualisation,
+ * Interaction between debugging and tracing,
+ * Tracing remote control,
+ * Analysis of large trace datasets,
+ * Cloud trace collection and analysis,
+ * Integration between trace tools,
+ * Live tracing & monitoring.
+
+Those can cover recently available technologies, ongoing work, and yet
+non-existing technologies (which are compellingly interesting to
+end-users).
+
+There is a single track, containing presentations between 30 and 45
+minutes per subject with discussion. 
+
+Registration to LinuxCon Europe 2014 or CloudOpen Europe 2014 is
+required in order to register to the Tracing Summit 2014. All
+registration passes, including the new Attendee Networking Pass
+registration, will allow you to register for the Tracing Summit. The
+Tracing Summit registration access code will be provided on your
+LinuxCon/CloudOpen registration confirmation page. The Tracing Summit
+2014 has no entrance fees for LinuxCon/CouldOpen attendees.
+
+We recommend you register to either or both events before August 1st,
+2014 to benefit from early registration fees.
+
+See the Tracing Summit 2014 wiki at
+http://www.tracingsummit.org/wiki/TracingSummit2014 for details.
+
+Thank you,
+
+Dominique Toupin & Mathieu Desnoyers
+
 -- 
-1.8.2.1
-
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
