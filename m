@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753813AbaGLBfB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 21:35:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43046 "EHLO
+	id S1753390AbaGLBi6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 21:38:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43056 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752035AbaGLBe7 (ORCPT
+	with ESMTP id S1752028AbaGLBi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 21:34:59 -0400
-Date: Fri, 11 Jul 2014 18:39:27 -0700
+	Fri, 11 Jul 2014 21:38:57 -0400
+Date: Fri, 11 Jul 2014 18:43:25 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Joe Perches <joe@perches.com>
 Cc: devel@driverdev.osuosl.org,
@@ -16,7 +16,7 @@ Cc: devel@driverdev.osuosl.org,
         Dan Carpenter <dan.carpenter@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>
 Subject: Re: [PATCH] reformat_with_checkpatch: Add automation to checkpatch
-Message-ID: <20140712013927.GA30781@kroah.com>
+Message-ID: <20140712014325.GB30781@kroah.com>
 References: <1405128087.6751.12.camel@joe-AO725>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -59,90 +59,119 @@ On Fri, Jul 11, 2014 at 06:21:27PM -0700, Joe Perches wrote:
 >  scripts/reformat_with_checkpatch.sh | 141 ++++++++++++++++++++++++++++++++++++
 >  1 file changed, 141 insertions(+)
 >  create mode 100755 scripts/reformat_with_checkpatch.sh
+> 
+> diff --git a/scripts/reformat_with_checkpatch.sh b/scripts/reformat_with_checkpatch.sh
+> new file mode 100755
+> index 0000000..5415a8e
+> --- /dev/null
+> +++ b/scripts/reformat_with_checkpatch.sh
+> @@ -0,0 +1,141 @@
+> +#!/bin/bash
+> +# (c) 2014, Joe Perches <joe@perches.com>
+> +#
+> +# Automate checkpatch modifications and git commits to
+> +# neaten code that doesn't conform to CodingStyle.
+> +# Useful primarily for files in drivers/staging
+> +#
+> +# Licensed under the terms of the GNU GPL License version 2
+> +
+> +declare -ar whitespace_types=(	\
+> +    'whitespace_neatening:spacing,space_before_tab,pointer_location,trailing_whitespace,bracket_space'	\
+> +    'remove_spaces_before_tabs:space_before_tab'		\
+> +    'fix_label_positions:indented_label'		\
+> +    'align_arguments_to_parenthesis:parenthesis_alignment'	\
+> +)
+> +
+> +declare -ar changecode_types=(	\
+> +    'fix_brace_positions:open_brace,braces,else_after_brace,while_after_brace'		\
+> +    'fix_blank_lines:line_spacing'		\
+> +    'use_standard_attributes:prefer_packed,prefer_aligned'		\
+> +    'remove_unnecessary_externs:avoid_externs'		\
+> +    'update_c90_comment_style:c99_comments'		\
+> +)
+> +
+> +checkpatch_update ()
+> +{
+> +    file=$1
+> +
+> +    desc=$(echo $2 | cut -f1 -d: | sed 's/_/ /g')
+> +    types=$(echo $2 | cut -f2- -d:)
+> +
+> +    echo "file: <$file> description: <$desc> types:<$types>"
+> +
+> +    ./scripts/checkpatch.pl --file --fix-inplace --strict --types="$types" $file
+> +
+> +    checkpatch_fixes=$file.diff
+> +    git diff --stat -p --exit-code $file > $checkpatch_fixes
+> +    if [ $? == 0 ] ; then
+> +	rm -f $checkpatch_fixes
+> +	return
+> +    fi
+> +
+> +    basename=$(basename $file)
+> +    if [ "${basename##*.}" == "c" ] ; then
+> +
+> +	git checkout $file
+> +	obj="$(echo $file | sed 's/\.c$/\.o/')"
+> +	if [ -e $obj ] ; then
+> +	    rm -f $obj
+> +	fi
+> +
+> +	echo "Compiling original version..."
+> +
+> +	${CROSS_COMPILE}make $obj
+> +
+> +	${CROSS_COMPILE}objdump -D $obj | \
+> +	    sed "s/^[[:space:]]\+[0-9a-f]\+//" > $obj.old
+> +
+> +	patch -p1 < $checkpatch_fixes
+> +
+> +	echo "Compiling modified version..."
+> +
+> +	${CROSS_COMPILE}make $obj
+> +
+> +	${CROSS_COMPILE}objdump -D $obj | \
+> +	    sed "s/^[[:space:]]\+[0-9a-f]\+//" > $obj.new
+> +
+> +	echo "Comparing objects..."
+> +	diff -Nurd $obj.new $obj.old
+> +	if [ $? -ne 0 ] ; then
+> +	    echo "Object differences exist! - Verify changes before commit!"
+> +	    read -s -p "Press the 'enter' key to continue: "
+> +	else
+> +	    echo "No object differences found"
+> +	fi
+> +	rm -f $obj.old
+> +	rm -f $obj.new
+> +    fi
+> +
+> +    echo "running checkpatch on possible checkpatch fixes..."
+> +
+> +    ./scripts/checkpatch.pl --no-summary --no-signoff $checkpatch_fixes
+> +    rm -f $checkpatch_fixes
+> +
+> +    echo "Verify checkpatch output and make any necessary changes"
+> +    echo "Edit '$file' if appropriate"
+> +    read -s -p "Press the 'enter' key to continue: "
+> +
+> +    commit_log_file=$(mktemp git_commit.XXXXXX)
+> +
+> +    if [ -e $commit_log_file ] ; then
+> +	rm -f $commit_log_file
+> +    fi
+> +
+> +    if [[ $file =~ ^drivers/staging/ ]] ; then
+> +	echo -n "staging: " >> $commit_log_file
+> +    fi
+> +    echo "$(basename $(dirname $file)): checkpatch cleanup: $desc" >> $commit_log_file
 
+If I pick drivers/staging/lustre/include/linux/lnet/types.h, then I get:
 
-No --help option?
+	staging: lnet: checkpatch cleanup: whitespace neatening
 
-How do I run this thing?
+and no 'types.h' here, is that intentional?  If so, why?
 
-I ran it on a file that had no problems and got a mess, all I think due
-to something odd in checkpatch itself right now:
-
-$ ./scripts/checkpatch.pl --file  drivers/staging/lustre/include/linux/lnet/api.h 
-Useless use of greediness modifier '+' in regex; marked by <-- HERE in m/(^\+.*) {8,8}+ <-- HERE \t/ at ./scripts/checkpatch.pl line 2217.
-total: 0 errors, 0 warnings, 220 lines checked
-
-What's with that 'Useless use..." error?  perl 5.20 in use, is that the issue?
-
-Anyway, running this script on the file gave me this:
-
-$ ./reformat_with_checkpatch  drivers/staging/lustre/include/linux/lnet/api.h 
-file: <drivers/staging/lustre/include/linux/lnet/api.h> description: <whitespace neatening> types:<spacing,space_before_tab,pointer_location,trailing_whitespace,bracket_space>
-Useless use of greediness modifier '+' in regex; marked by <-- HERE in m/(^\+.*) {8,8}+ <-- HERE \t/ at ./scripts/checkpatch.pl line 2217.
-total: 0 errors, 0 warnings, 0 checks, 220 lines checked
-
-NOTE: Used message types: BRACKET_SPACE POINTER_LOCATION SPACE_BEFORE_TAB SPACING TRAILING_WHITESPACE
-
-drivers/staging/lustre/include/linux/lnet/api.h has no obvious style problems and is ready for submission.
-file: <drivers/staging/lustre/include/linux/lnet/api.h> description: <remove spaces before tabs> types:<space_before_tab>
-Useless use of greediness modifier '+' in regex; marked by <-- HERE in m/(^\+.*) {8,8}+ <-- HERE \t/ at ./scripts/checkpatch.pl line 2217.
-total: 0 errors, 0 warnings, 0 checks, 220 lines checked
-
-NOTE: Used message types: SPACE_BEFORE_TAB
-
-drivers/staging/lustre/include/linux/lnet/api.h has no obvious style problems and is ready for submission.
-file: <drivers/staging/lustre/include/linux/lnet/api.h> description: <fix label positions> types:<indented_label>
-Useless use of greediness modifier '+' in regex; marked by <-- HERE in m/(^\+.*) {8,8}+ <-- HERE \t/ at ./scripts/checkpatch.pl line 2217.
-total: 0 errors, 0 warnings, 0 checks, 220 lines checked
-
-NOTE: Used message types: INDENTED_LABEL
-
-drivers/staging/lustre/include/linux/lnet/api.h has no obvious style problems and is ready for submission.
-file: <drivers/staging/lustre/include/linux/lnet/api.h> description: <align arguments to parenthesis> types:<parenthesis_alignment>
-Useless use of greediness modifier '+' in regex; marked by <-- HERE in m/(^\+.*) {8,8}+ <-- HERE \t/ at ./scripts/checkpatch.pl line 2217.
-total: 0 errors, 0 warnings, 0 checks, 220 lines checked
-
-NOTE: Used message types: PARENTHESIS_ALIGNMENT
-
-drivers/staging/lustre/include/linux/lnet/api.h has no obvious style problems and is ready for submission.
-file: <drivers/staging/lustre/include/linux/lnet/api.h> description: <fix brace positions> types:<open_brace,braces,else_after_brace,while_after_brace>
-Useless use of greediness modifier '+' in regex; marked by <-- HERE in m/(^\+.*) {8,8}+ <-- HERE \t/ at ./scripts/checkpatch.pl line 2217.
-total: 0 errors, 0 warnings, 0 checks, 220 lines checked
-
-NOTE: Used message types: BRACES ELSE_AFTER_BRACE OPEN_BRACE WHILE_AFTER_BRACE
-
-drivers/staging/lustre/include/linux/lnet/api.h has no obvious style problems and is ready for submission.
-file: <drivers/staging/lustre/include/linux/lnet/api.h> description: <fix blank lines> types:<line_spacing>
-Useless use of greediness modifier '+' in regex; marked by <-- HERE in m/(^\+.*) {8,8}+ <-- HERE \t/ at ./scripts/checkpatch.pl line 2217.
-total: 0 errors, 0 warnings, 0 checks, 220 lines checked
-
-NOTE: Used message types: LINE_SPACING
-
-drivers/staging/lustre/include/linux/lnet/api.h has no obvious style problems and is ready for submission.
-file: <drivers/staging/lustre/include/linux/lnet/api.h> description: <use standard attributes> types:<prefer_packed,prefer_aligned>
-Useless use of greediness modifier '+' in regex; marked by <-- HERE in m/(^\+.*) {8,8}+ <-- HERE \t/ at ./scripts/checkpatch.pl line 2217.
-total: 0 errors, 0 warnings, 0 checks, 220 lines checked
-
-NOTE: Used message types: PREFER_ALIGNED PREFER_PACKED
-
-drivers/staging/lustre/include/linux/lnet/api.h has no obvious style problems and is ready for submission.
-file: <drivers/staging/lustre/include/linux/lnet/api.h> description: <remove unnecessary externs> types:<avoid_externs>
-Useless use of greediness modifier '+' in regex; marked by <-- HERE in m/(^\+.*) {8,8}+ <-- HERE \t/ at ./scripts/checkpatch.pl line 2217.
-total: 0 errors, 0 warnings, 0 checks, 220 lines checked
-
-NOTE: Used message types: AVOID_EXTERNS
-
-drivers/staging/lustre/include/linux/lnet/api.h has no obvious style problems and is ready for submission.
-file: <drivers/staging/lustre/include/linux/lnet/api.h> description: <update c90 comment style> types:<c99_comments>
-Useless use of greediness modifier '+' in regex; marked by <-- HERE in m/(^\+.*) {8,8}+ <-- HERE \t/ at ./scripts/checkpatch.pl line 2217.
-total: 0 errors, 0 warnings, 0 checks, 220 lines checked
-
-NOTE: Used message types: C99_COMMENTS
-
-drivers/staging/lustre/include/linux/lnet/api.h has no obvious style problems and is ready for submission.
-
-
-Is that expected?
+And this is fun, I'm going to let this rip on the lustre code...
 
 thanks,
 
