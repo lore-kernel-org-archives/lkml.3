@@ -1,45 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245AbaGLQ6H (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 12:58:07 -0400
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:58260 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751169AbaGLQ6E (ORCPT
+	id S1752338AbaGLRB4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 13:01:56 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:37400 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169AbaGLRBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 12:58:04 -0400
-X-Greylist: delayed 518 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Jul 2014 12:58:04 EDT
-X-Sasl-enc: 7MIiNcNf7PF/FK+id3KGyc+ZH4lvj+8SiuAo5S1G+jbg 1405183760
-Date: Sat, 12 Jul 2014 09:53:49 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Kristina =?utf-8?Q?Mart=C5=A1enko?= 
-	<kristina.martsenko@gmail.com>
-Subject: Re: linux-next: manual merge of the staging tree with the  tree
-Message-ID: <20140712165349.GC12148@kroah.com>
-References: <20140711152130.45a6978f@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140711152130.45a6978f@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 12 Jul 2014 13:01:55 -0400
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>, rostedt@goodmis.org,
+        paulmck@linux.vnet.ibm.com
+Subject: [PATCH v3] rcu: define tracepoint strings only if CONFIG_TRACING is set
+Date: Sat, 12 Jul 2014 19:01:49 +0200
+Message-Id: <1405184509-12601-1-git-send-email-ard.biesheuvel@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 03:21:30PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the staging tree got a conflict in
-> drivers/staging/dgrp/dgrp_tty.c between commit e359a4e38d22 ("tty:
-> Remove tty_hung_up_p() tests from tty drivers' open()") from the tty
-> tree and commit 19b1e7695be8 ("staging: dgrp: remove driver") from the
-> staging tree.
-> 
-> I fixed it up (by just removing the file) and can carry the fix as
-> necessary (no action is required).
+Commit f7f7bac9cb1c ("rcu: Have the RCU tracepoints use the tracepoint_string
+infrastructure") unconditionally populates the __tracepoint_str input section,
+but this section is not assigned an output section if CONFIG_TRACING is not set.
+This results in the __tracepoint_str turning up in unexpected places, i.e.,
+after _edata.
 
-That sounds fine, thanks.
+Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: rostedt@goodmis.org
+Cc: paulmck@linux.vnet.ibm.com
+---
+v3:
+- make definition of <var>_varname conditional as well
+v2:
+- s/DEFINE_TPS/DEFINE_RCU_TPS/
 
-greg k-h
+ kernel/rcu/tree.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index f1ba77363fbb..0756a4696007 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -79,9 +79,18 @@ static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
+  * the tracing userspace tools to be able to decipher the string
+  * address to the matching string.
+  */
+-#define RCU_STATE_INITIALIZER(sname, sabbr, cr) \
++#ifdef CONFIG_TRACING
++# define DEFINE_RCU_TPS(sname) \
+ static char sname##_varname[] = #sname; \
+-static const char *tp_##sname##_varname __used __tracepoint_string = sname##_varname; \
++static const char *tp_##sname##_varname __used __tracepoint_string = sname##_varname;
++# define RCU_STATE_NAME(sname) sname##_varname
++#else
++# define DEFINE_RCU_TPS(sname)
++# define RCU_STATE_NAME(sname) __stringify(sname)
++#endif
++
++#define RCU_STATE_INITIALIZER(sname, sabbr, cr) \
++DEFINE_RCU_TPS(sname) \
+ struct rcu_state sname##_state = { \
+ 	.level = { &sname##_state.node[0] }, \
+ 	.call = cr, \
+@@ -93,7 +102,7 @@ struct rcu_state sname##_state = { \
+ 	.orphan_donetail = &sname##_state.orphan_donelist, \
+ 	.barrier_mutex = __MUTEX_INITIALIZER(sname##_state.barrier_mutex), \
+ 	.onoff_mutex = __MUTEX_INITIALIZER(sname##_state.onoff_mutex), \
+-	.name = sname##_varname, \
++	.name = RCU_STATE_NAME(sname), \
+ 	.abbr = sabbr, \
+ }; \
+ DEFINE_PER_CPU(struct rcu_data, sname##_data)
+-- 
+1.8.3.2
+
