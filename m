@@ -1,145 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706AbaGLCpC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 22:45:02 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:39122 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232AbaGLCpA (ORCPT
+	id S1754820AbaGLCuZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 22:50:25 -0400
+Received: from mail-bl2lp0211.outbound.protection.outlook.com ([207.46.163.211]:13365
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752399AbaGLCuX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 22:45:00 -0400
-Message-ID: <53C0A12A.2060204@codeaurora.org>
-Date: Fri, 11 Jul 2014 19:44:58 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Fri, 11 Jul 2014 22:50:23 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: "hch@infradead.org" <hch@infradead.org>,
+        James Bottomley <jbottomley@parallels.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mkp@mkp.net" <mkp@mkp.net>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+Thread-Topic: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+Thread-Index: AQHPmwbc2vh72TcerE+9u7O+On3hT5uXbYYAgACybACAAH8bAP//jcAwgACcZoCAAaR2AIABUxnA
+Date: Sat, 12 Jul 2014 02:50:06 +0000
+Message-ID: <328b7a6174ef4dd8a54a7db5ac959834@BY2PR03MB299.namprd03.prod.outlook.com>
+References: <1404866789-26910-1-git-send-email-kys@microsoft.com>
+ <1404866812-26950-1-git-send-email-kys@microsoft.com>
+ <1404866812-26950-4-git-send-email-kys@microsoft.com>
+ <20140709084300.GD6012@infradead.org>
+ <a31a45eddb544024a7538458b98c3611@BY2PR03MB299.namprd03.prod.outlook.com>
+ <1404935792.2184.5.camel@dabdike.int.hansenpartnership.com>
+ <2f3ae589e6f149acbe4c5dd79f905971@BY2PR03MB299.namprd03.prod.outlook.com>
+ <1404944843.2184.8.camel@dabdike.int.hansenpartnership.com>
+ <20140711063216.GA20660@infradead.org>
+In-Reply-To: <20140711063216.GA20660@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.135.110.52]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:
+x-forefront-prvs: 0270ED2845
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(24454002)(189002)(199002)(51704005)(377454003)(13464003)(86362001)(83072002)(107046002)(85852003)(76576001)(81542001)(21056001)(33646001)(20776003)(76482001)(79102001)(74662001)(106356001)(54356999)(76176999)(87936001)(81342001)(19580405001)(80022001)(93886003)(101416001)(4396001)(64706001)(19580395003)(2656002)(106116001)(92566001)(50986999)(83322001)(99396002)(74316001)(31966008)(86612001)(99286002)(66066001)(77982001)(74502001)(46102001)(85306003)(95666004)(105586002)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB299;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J . Wysocki" <rjw@rjwysocki.net>,
-        Todd Poynor <toddpoynor@google.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH v2] cpufreq: Don't destroy/realloc policy/sysfs on hotplug/suspend
-References: <1404959850-11617-1-git-send-email-skannan@codeaurora.org> <1405052287-4744-1-git-send-email-skannan@codeaurora.org> <CAKohponB9feyh50p+dL5hyU1ffHAzHU59G-sYCrCm1AbHQe9hw@mail.gmail.com> <2f549e6e4871ccf2a94dd4c8872c7a0b.squirrel@www.codeaurora.org> <CAKohpokhmj1OkCRj=X+Q7eYiun8fsqD2dpEt66VKYnqo3dENVA@mail.gmail.com>
-In-Reply-To: <CAKohpokhmj1OkCRj=X+Q7eYiun8fsqD2dpEt66VKYnqo3dENVA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2014 03:52 AM, Viresh Kumar wrote:
 
-Just responding to one comment. The one about policy->cpu.
 
->
->>>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
->
->>>>   static int cpufreq_add_dev_symlink(struct cpufreq_policy *policy)
->>>>   {
->>>> -       unsigned int j;
->>>> +       unsigned int j, first_cpu = cpumask_first(policy->related_cpus);
->>>>          int ret = 0;
->>>>
->>>> -       for_each_cpu(j, policy->cpus) {
->>>> +       for_each_cpu(j, policy->related_cpus) {
->>>>                  struct device *cpu_dev;
->>>>
->>>> -               if (j == policy->cpu)
->>>> +               if (j == first_cpu)
->>>
->>> why?
->>
->> The first CPU is a cluster always own the real nodes.
->
-> What I meant was, why not use policy->cpu?
->
->>>> +static int cpufreq_add_dev_interface(struct cpufreq_policy *policy)
->>>>   {
->>>>          struct freq_attr **drv_attr;
->>>> +       struct device *dev;
->>>>          int ret = 0;
->>>>
->>>> +       dev = get_cpu_device(cpumask_first(policy->related_cpus));
->>>> +       if (!dev)
->>>> +               return -EINVAL;
->>>> +
->>>
->>> Why?
->>
->> I'm just always adding the real nodes to the first CPU in a cluster
->> independent of which CPU gets added first. Makes it easier to know which
->> ones to symlink. See comment next to policy->cpu for full context.
->
-> Yeah, and that is the order in which CPUs will boot and cpufreq_add_dev()
-> will be called. So, isn't policy->cpu the right CPU always?
+> -----Original Message-----
+> From: hch@infradead.org [mailto:hch@infradead.org]
+> Sent: Thursday, July 10, 2014 11:32 PM
+> To: James Bottomley
+> Cc: KY Srinivasan; linux-kernel@vger.kernel.org; mkp@mkp.net;
+> hch@infradead.org; devel@linuxdriverproject.org; apw@canonical.com;
+> stable@vger.kernel.org; linux-scsi@vger.kernel.org; ohering@suse.com;
+> jasowang@redhat.com
+> Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+> 
+> On Wed, Jul 09, 2014 at 10:27:24PM +0000, James Bottomley wrote:
+> > If we fix it at source, why would there be any need to filter?  That's
+> > the reason the no_write_same flag was introduced.  If we can find and
+> > fix the bug, it can go back into the stable trees as a bug fix, hence
+> > nothing should ever emit write_same(10 or 16) and additional driver
+> > code is redundant (and counter productive, since if this ever breaks
+> > again you're our best canary).
+> >
+> > This looks like it might be the problem but Martin should confirm (I
+> > think the problem comes to us from the RC16 code which unconditionally
+> > sets WS16).
+> 
+> I think the problem is a differnet one.  If we have the logical provisioning
+> EVPD it configures what method to use, but if we don't have one we simply
+> check for a max unmap blocks field, and if that's not present use WRITE
+> SAME.
+> 
+> The patch checks the no_write_same flag before doing that, for which we
+> also have to do the write_same setup before the discard setup in
+> sd_revalidate_disk.
+> 
+> Ky: does hyperv support UNMAP?  If so any idea why it doesn't set the
+> maximum unmap block count field in the EVPD?
 
-No, the "first" cpu in a cluster doesn't need to be the first one to be 
-added. An example is 2x2 cluster system where the system is booted with 
-max cpus = 2 and then cpu3 could be onlined first by userspace.
-
->
->>>> -       if (has_target()) {
->>>> +       cpus = cpumask_weight(policy->cpus);
->>>> +       policy->cpu = cpumask_first(policy->cpus);
->>>
->>> why update it at all? Also, as per your logic what if cpus == 0?
->>
->> Yeah, I didn't write it this way at first. But the governors are making
->> the assumption that policy->cpu is always an online CPU. So, they try to
->
-> Are you sure? I had a quick look and failed to see that..
->
->> queue work there and use data structs of that CPU (even if they free it in
->> the STOP event since it went offline).
->
-> So, it queues work on all policy->cpus, not policy->cpu.
-> And the data structures
-> are just allocated with a CPU number, its fine if its offline.
->
-> And where are we freeing that stuff in STOP ?
->
-> Sorry if I am really really tired and couldn't read it correctly.
-
-Yeah, it is pretty convolution. But pretty much anywhere in the gov code 
-where policy->cpu is used could cause this. The specific crash I hit was 
-in this code:
-
-static void od_dbs_timer(struct work_struct *work)
-{
-	struct od_cpu_dbs_info_s *dbs_info =
-		container_of(work, struct od_cpu_dbs_info_s, cdbs.work.work);
-	unsigned int cpu = dbs_info->cdbs.cur_policy->cpu;
-
-======= CPU is policy->cpu here.
-
-	struct od_cpu_dbs_info_s *core_dbs_info = &per_cpu(od_cpu_dbs_info,
-			cpu);
-
-======= Picks the per CPU struct of an offline CPU
-
-<snip>
-
-	mutex_lock(&core_dbs_info->cdbs.timer_mutex);
-
-======= Dies trying to lock a destroyed mutex
-
->
->> Another option is to leave policy->cpu unchanged and then fix all the
->> governors. But this patch would get even more complicated. So, we can
->> leave this as is, or fix that up in a separate patch.
->
-> Since we are simplifying it here, I think we should NOT change policy->cpu
-> at all. It will make life simple (probably).
-
-I agree, but then I would have to fix up the governors. In the interest 
-of keeping this patch small. I'll continue with what I'm doing and fix 
-it up in another patch.
-
--Saravana
-
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Windows hosts do support UNMAP and set the field in the EVPD. However, since the host
+advertises SPC-2 compliance, Linux does not even query the VPD page.
+ 
+> 
+> If we want to enable UNMAP in this case I'd prefer a blacklist entry than
+> trying UNMAP despite the device not advertising it.
+> 
+> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c index ba756b1..fbccfd2 100644
+> --- a/drivers/scsi/sd.c
+> +++ b/drivers/scsi/sd.c
+> @@ -2614,9 +2614,10 @@ static void sd_read_block_limits(struct scsi_disk
+> *sdkp)
+> 
+>  			if (sdkp->max_unmap_blocks)
+>  				sd_config_discard(sdkp, SD_LBP_UNMAP);
+> -			else
+> +			else if (!sdkp->device->no_write_same)
+>  				sd_config_discard(sdkp, SD_LBP_WS16);
+> -
+> +			else
+> +				sd_config_discard(sdkp, SD_LBP_DISABLE);
+>  		} else {	/* LBP VPD page tells us what to use */
+> 
+>  			if (sdkp->lbpu && sdkp->max_unmap_blocks) @@ -
+> 2766,6 +2767,7 @@ static int sd_revalidate_disk(struct gendisk *disk)
+>  	 */
+>  	if (sdkp->media_present) {
+>  		sd_read_capacity(sdkp, buffer);
+> +		sd_read_write_same(sdkp, buffer);
+> 
+>  		if (sd_try_extended_inquiry(sdp)) {
+>  			sd_read_block_provisioning(sdkp);
+> @@ -2776,7 +2778,6 @@ static int sd_revalidate_disk(struct gendisk *disk)
+>  		sd_read_write_protect_flag(sdkp, buffer);
+>  		sd_read_cache_type(sdkp, buffer);
+>  		sd_read_app_tag_own(sdkp, buffer);
+> -		sd_read_write_same(sdkp, buffer);
+>  	}
+> 
+>  	sdkp->first_scan = 0;
