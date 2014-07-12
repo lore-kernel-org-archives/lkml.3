@@ -1,137 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467AbaGLUdL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 16:33:11 -0400
-Received: from mail.efficios.com ([78.47.125.74]:37289 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751897AbaGLUdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 16:33:07 -0400
-Date: Sat, 12 Jul 2014 20:33:09 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Message-ID: <2088242765.13629.1405197189418.JavaMail.zimbra@efficios.com>
-In-Reply-To: <alpine.DEB.2.10.1407122145580.4357@nanos>
-References: <20140711133623.530368377@linutronix.de> <20140711133709.835700036@linutronix.de> <318411977.13587.1405176797949.JavaMail.zimbra@efficios.com> <alpine.DEB.2.10.1407122124130.4357@nanos> <alpine.DEB.2.10.1407122145580.4357@nanos>
-Subject: Re: [patch 54/55] timekeeping: Provide fast and NMI safe access to
- CLOCK_MONOTONIC[_RAW]
+	id S1753246AbaGLUmY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 16:42:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48428 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751985AbaGLUmX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jul 2014 16:42:23 -0400
+Date: Sat, 12 Jul 2014 13:46:52 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: [GIT PULL] Staging driver fixes for 3.16-rc5
+Message-ID: <20140712204652.GA20543@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF30 (Linux)/8.0.7_GA_6021)
-Thread-Topic: timekeeping: Provide fast and NMI safe access to CLOCK_MONOTONIC[_RAW]
-Thread-Index: KALxn38vhShYrhx0nRhE5cCKE8oQvA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Thomas Gleixner" <tglx@linutronix.de>
-> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> Cc: "LKML" <linux-kernel@vger.kernel.org>, "John Stultz" <john.stultz@linaro.org>, "Peter Zijlstra"
-> <peterz@infradead.org>, "Steven Rostedt" <rostedt@goodmis.org>
-> Sent: Saturday, July 12, 2014 4:04:59 PM
-> Subject: Re: [patch 54/55] timekeeping: Provide fast and NMI safe access to CLOCK_MONOTONIC[_RAW]
-> 
-> On Sat, 12 Jul 2014, Thomas Gleixner wrote:
-> > On Sat, 12 Jul 2014, Mathieu Desnoyers wrote:
-> > > I'm perhaps missing something here, but what happens with the
-> > > following scenario ?
-> > > 
-> > > Initial conditions:
-> > > 
-> > > tkf->seq = 0
-> > > tkf->base[0] and tkf->base[1] are initialized.
-> > > 
-> > > CPU 0                                      CPU 1
-> > > ------------                               ----------------
-> > > update:
-> > >   tkf->seq++
-> > >   smb_wmb()
-> > >   tkf->seq++ (reordered before update)
-> > >                                            reader:
-> > >                                            seq = tkf->seq (reads 2)
-> > >                                            smp_rmb()
-> > >                                            idx = seq & 0x01
-> > >                                            now = now(tkf->base[idx]
-> > >                                            (reads base[0])
-> > >   update(tkf->base[0], tk) (racy concurrent update)
-> > >                                            smp_rmb()
-> > >                                            while (seq != tkf->seq) (they
-> > >                                            are equal)
-> > > 
-> > > So AFAIU, we end up returning a corrupted value. Adding a
-> > > smp_wmb() between update of base[0] and increment of seq,
-> > > as well as between update of base[1] and the _following_
-> > > increment of seq (next update call) would fix this.
-> > > 
-> > > Thoughts ?
-> 
-> Second thoughts :)
-> 
-> > Well, the actual implementation does:
-> > 
-> > +       /* Force readers off to base[1] */
-> > +       raw_write_seqcount_begin(&tkf->seq);
-> 
-> i.e:
-> 	seq++;
-> 	smp_wmb();
-> 
-> > +
-> > +       /* Update base[0] */
-> > +       base->clock = clk;
-> > +       base->cycle_last = clk->cycle_last;
-> > +       base->base = tbase;
-> > +       base->shift = shift;
-> > +       base->mult = mult;
-> > +
-> > +       /* Force readers back to base[0] */
-> > +       raw_write_seqcount_end(&tkf->seq);
-> 
-> i.e:
-> 	smp_wmb();
-> 	seq++;
-> 
-> So while this orders against the update of base0, it does not prevent
-> reordering against the update of base1. So you're right, we need a
-> 
->   	smp_wmb();
-> 
-> before we start updating base1.
-> 
-> > +       /* Update base[1] */
-> > +       base++;
-> > +       base->clock = clk;
-> > +       base->cycle_last = clk->cycle_last;
-> > +       base->base = tbase;
-> > +       base->shift = shift;
-> > +       base->mult = mult;
-> 
-> So as a consequence we need another one here:
-> 
->       	smp_wmb();
-> 
-> to protect against the unlikely, but possible seq++ at the begin of
-> the update. Debatable whether this can happen without another wmb()
-> between the two calls, but yes for sanity reasons we should add it
-> until we can prove that the actual call chains prevent this.
-> 
-> Nice catch!
+The following changes since commit cd3de83f147601356395b57a8673e9c5ff1e59d1:
 
-Thanks! Yep, the barriers you propose are what appears
-to be missing,
+  Linux 3.16-rc4 (2014-07-06 12:37:51 -0700)
 
-Mathieu
+are available in the git repository at:
 
-> 
->      tglx
-> 
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.16-rc5
 
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+for you to fetch changes up to bdac8ca90e07edde8bbef5396784f7011e6e5b8d:
+
+  Merge tag 'iio-fixes-for-3.16c' of git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio into staging-linus (2014-07-08 15:43:45 -0700)
+
+----------------------------------------------------------------
+Staging / IIO fixes for 3.16-rc5
+
+Here are some IIO driver fixes for 3.16-rc5.  Nothing major, just
+resolves some minor issues that have been reported.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Greg Kroah-Hartman (1):
+      Merge tag 'iio-fixes-for-3.16c' of git://git.kernel.org/.../jic23/iio into staging-linus
+
+Jan Kardell (1):
+      iio: ti_am335x_adc: Fix: Use same step id at FIFOs both ends
+
+Peter Meerwald (1):
+      iio:tcs3472: Check for buffer enabled and locking
+
+Sachin Kamat (6):
+      iio: hid-sensor-press: Fix return values
+      iio: hid-sensor-accel-3d: Fix return values
+      iio: hid-sensor-magn-3d: Fix return values
+      iio: hid-sensor-als: Fix return values
+      iio: hid-sensor-gyro-3d: Fix return values
+      iio: hid-sensor-prox: Fix return values
+
+ drivers/iio/accel/hid-sensor-accel-3d.c       |  7 ++-----
+ drivers/iio/adc/ti_am335x_adc.c               |  2 +-
+ drivers/iio/gyro/hid-sensor-gyro-3d.c         |  7 ++-----
+ drivers/iio/light/hid-sensor-als.c            |  7 ++-----
+ drivers/iio/light/hid-sensor-prox.c           |  7 ++-----
+ drivers/iio/light/tcs3472.c                   | 11 ++++++++++-
+ drivers/iio/magnetometer/hid-sensor-magn-3d.c |  7 ++-----
+ drivers/iio/pressure/hid-sensor-press.c       |  7 ++-----
+ 8 files changed, 23 insertions(+), 32 deletions(-)
