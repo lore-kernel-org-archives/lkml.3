@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755493AbaGLCMX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 22:12:23 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:56138 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752013AbaGLCMV (ORCPT
+	id S1754133AbaGLCTD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 22:19:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43229 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752586AbaGLCTB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 22:12:21 -0400
-Date: Fri, 11 Jul 2014 19:12:17 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Graham Moore <grmoore@altera.com>
-Cc: ggrahammoore@gmail.com, David Woodhouse <dwmw2@infradead.org>,
-        ZY - marex <marex@denx.de>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Sourav Poddar <sourav.poddar@ti.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Insop Song <insop.song@gainspeed.com>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Alan Tull <atull@altera.com>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>
-Subject: Re: [PATCH V4] Add support for flag status register on Micron chips.
-Message-ID: <20140712021217.GM7537@ld-irv-0074>
-References: <1398785391-10744-1-git-send-email-grmoore@altera.com>
+	Fri, 11 Jul 2014 22:19:01 -0400
+Date: Fri, 11 Jul 2014 19:23:29 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, devel@driverdev.osuosl.org,
+        kernel-janitors <kernel-janitors@vger.kernel.org>,
+        kernelnewbies@kernelnewbies.org, LKML <linux-kernel@vger.kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [PATCH] checkpatch: Remove unnecessary + after {8,8}
+Message-ID: <20140712022329.GA29482@kroah.com>
+References: <1405128087.6751.12.camel@joe-AO725>
+ <20140712013927.GA30781@kroah.com>
+ <1405129612.6751.24.camel@joe-AO725>
+ <20140712020114.GA12301@kroah.com>
+ <20140712020520.GA18611@kroah.com>
+ <1405130970.6751.37.camel@joe-AO725>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1398785391-10744-1-git-send-email-grmoore@altera.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1405130970.6751.37.camel@joe-AO725>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Graham,
-
-On Tue, Apr 29, 2014 at 10:29:51AM -0500, Graham Moore wrote:
-> Some new Micron flash chips require reading the flag
-> status register to determine when operations have completed.
+On Fri, Jul 11, 2014 at 07:09:30PM -0700, Joe Perches wrote:
+> There's a useless "+" use that needs to be removed as perl 5.20
+> emits a "Useless use of greediness modifier '+'" message each
+> time it's hit.
 > 
-> Furthermore, chips with multi-die stacks of the 65nm 256Mb QSPI also
-> require reading the status register before reading the flag status register.
-> 
-> This patch adds support for the flag status register in the n25q512ax3 and n25q00
-> Micron QSPI flash chips.
-> 
-> Signed-off-by: Graham Moore <grmoore@altera.com>
+> Reported-by: Greg KH <gregkh@linuxfoundation.org>
+> Signed-off-by: Joe Perches <joe@perches.com>
 > ---
-> V4:
-> Do not set nor->wait_till_ready if driver has already set it.
-> V3:
-> Rebase to l2-mtd spinor branch.
-> V2:
-> Remove leading underscore in function names.
-> Remove type cast in dev_err call and use the proper format
-> specifier instead.
+> On Fri, 2014-07-11 at 19:05 -0700, Greg KH wrote:
+> > Ok, with linux-next I get the same thing:
+> 
+> Thanks Greg.
 
-Sorry for the delay... pushed to l2-mtd.git. Thanks!
+Very nice, thanks for this:
 
-Brian
+Tested-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
