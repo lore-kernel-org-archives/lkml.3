@@ -1,123 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752257AbaGLRvA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 13:51:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47659 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751452AbaGLRu5 (ORCPT
+	id S1752307AbaGLSEZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 14:04:25 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:18174 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751452AbaGLSEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 13:50:57 -0400
-Date: Sat, 12 Jul 2014 10:55:26 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Joe Perches <joe@perches.com>, devel@driverdev.osuosl.org,
-        kernel-janitors <kernel-janitors@vger.kernel.org>,
-        kernelnewbies@kernelnewbies.org, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] reformat_with_checkpatch: Add automation to checkpatch
-Message-ID: <20140712175526.GA17077@kroah.com>
-References: <1405128087.6751.12.camel@joe-AO725>
- <20140712013444.GA30368@kroah.com>
- <1405129216.6751.18.camel@joe-AO725>
- <20140712093043.GG25880@mwanda>
+	Sat, 12 Jul 2014 14:04:23 -0400
+Message-ID: <53C1788D.9080800@oracle.com>
+Date: Sat, 12 Jul 2014 14:03:57 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140712093043.GG25880@mwanda>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: paulmck@linux.vnet.ibm.com, Thomas Gleixner <tglx@linutronix.de>
+CC: Christoph Lameter <cl@gentwo.org>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: slub/debugobjects: lockup when freeing memory
+References: <53A2F406.4010109@oracle.com> <alpine.DEB.2.11.1406191001090.2785@gentwo.org> <20140619165247.GA4904@linux.vnet.ibm.com> <alpine.DEB.2.10.1406192127100.5170@nanos> <20140619202928.GG4904@linux.vnet.ibm.com> <alpine.DEB.2.10.1406192230390.5170@nanos> <20140619205307.GL4904@linux.vnet.ibm.com> <alpine.DEB.2.10.1406192331250.5170@nanos> <20140619220449.GT4904@linux.vnet.ibm.com> <alpine.DEB.2.10.1406201015440.5170@nanos> <20140620154014.GC4904@linux.vnet.ibm.com>
+In-Reply-To: <20140620154014.GC4904@linux.vnet.ibm.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 12, 2014 at 12:30:43PM +0300, Dan Carpenter wrote:
-> On Fri, Jul 11, 2014 at 06:40:16PM -0700, Joe Perches wrote:
-> > On Fri, 2014-07-11 at 18:34 -0700, Greg KH wrote:
-> > > On Fri, Jul 11, 2014 at 06:21:27PM -0700, Joe Perches wrote:
-> > > > A simple script to run checkpatch --fix for various types of
-> > > > of cleanups.
-> > > > 
-> > > > This script is useful primarily for staging.
-> > > > 
-> > > > This reformats code to a more CodingStyle conforming style,
-> > > > compiles it, verifies that the object code hasn't changed,
-> > > > and git commits it too.
-> > > 
-> > > And 'git commits' it?
-> > 
-> > The thought I had was to made it easier to
-> > submit "my first kernel patch" correctly.
-> > like that tuxradar article you wrote a few
-> > years ago.
-> > 
-> > http://www.tuxradar.com/content/newbies-guide-hacking-linux-kernel
-> > 
-> > > Heh, I should just run this myself to clean up
-> > > staging and beat everyone else to it...
-> > 
-> > At least for the whitespace noise, you could
-> > but I hope it'll encourage a few more people
-> > to try kernel patching instead.
+On 06/20/2014 11:40 AM, Paul E. McKenney wrote:
+> rcu: Export debug_init_rcu_head() and and debug_init_rcu_head()
 > 
-> I have always hate the idea of automated patches from random people
-> because I don't trust them to not be malicious so I have to review them
-> manually.  There is a story that back in the day the US government paid
-> someone to send tons of checkpatch style patches to BSD.  The guy
-> thought he was "cleaning up the code" but actually he was part of a
-> larger scheme to flood the maintainers with patches so another person
-> could slip in some malicious code.
+> Currently, call_rcu() relies on implicit allocation and initialization
+> for the debug-objects handling of RCU callbacks.  If you hammer the
+> kernel hard enough with Sasha's modified version of trinity, you can end
+> up with the sl*b allocators recursing into themselves via this implicit
+> call_rcu() allocation.
+> 
+> This commit therefore exports the debug_init_rcu_head() and
+> debug_rcu_head_free() functions, which permits the allocators to allocated
+> and pre-initialize the debug-objects information, so that there no longer
+> any need for call_rcu() to do that initialization, which in turn prevents
+> the recursion into the memory allocators.
+> 
+> Reported-by: Sasha Levin <sasha.levin@oracle.com>
+> Suggested-by: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Acked-by: Thomas Gleixner <tglx@linutronix.de>
 
-Based on some of the patches that I get sent, I wouldn't be surprised if
-that's already happening :(
+Hi Paul,
 
-> It's better if someone just ran this on all new staging code before
-> adding it to the tree.
+Oddly enough, I still see the issue in -next (I made sure that this patch
+was in the tree):
 
-I spent some time messing with this script today, and while it is "fun"
-to run, I don't think it's all that useful.
+[  393.810123] =============================================
+[  393.810123] [ INFO: possible recursive locking detected ]
+[  393.810123] 3.16.0-rc4-next-20140711-sasha-00046-g07d3099-dirty #813 Not tainted
+[  393.810123] ---------------------------------------------
+[  393.810123] trinity-c32/9762 is trying to acquire lock:
+[  393.810123] (&(&n->list_lock)->rlock){-.-...}, at: get_partial_node.isra.39 (mm/slub.c:1628)
+[  393.810123]
+[  393.810123] but task is already holding lock:
+[  393.810123] (&(&n->list_lock)->rlock){-.-...}, at: __kmem_cache_shutdown (mm/slub.c:3210 mm/slub.c:3233 mm/slub.c:3244)
+[  393.810123]
+[  393.810123] other info that might help us debug this:
+[  393.810123]  Possible unsafe locking scenario:
+[  393.810123]
+[  393.810123]        CPU0
+[  393.810123]        ----
+[  393.810123]   lock(&(&n->list_lock)->rlock);
+[  393.810123]   lock(&(&n->list_lock)->rlock);
+[  393.810123]
+[  393.810123]  *** DEADLOCK ***
+[  393.810123]
+[  393.810123]  May be due to missing lock nesting notation
+[  393.810123]
+[  393.810123] 5 locks held by trinity-c32/9762:
+[  393.810123] #0: (net_mutex){+.+.+.}, at: copy_net_ns (net/core/net_namespace.c:254)
+[  393.810123] #1: (cpu_hotplug.lock){++++++}, at: get_online_cpus (kernel/cpu.c:90)
+[  393.810123] #2: (mem_hotplug.lock){.+.+.+}, at: get_online_mems (mm/memory_hotplug.c:83)
+[  393.810123] #3: (slab_mutex){+.+.+.}, at: kmem_cache_destroy (mm/slab_common.c:344)
+[  393.810123] #4: (&(&n->list_lock)->rlock){-.-...}, at: __kmem_cache_shutdown (mm/slub.c:3210 mm/slub.c:3233 mm/slub.c:3244)
+[  393.810123]
+[  393.810123] stack backtrace:
+[  393.810123] CPU: 32 PID: 9762 Comm: trinity-c32 Not tainted 3.16.0-rc4-next-20140711-sasha-00046-g07d3099-dirty #813
+[  393.843284]  ffff880bc26730e0 0000000000000000 ffffffffb4ae7ff0 ffff880bc26a3848
+[  393.843284]  ffffffffb0e47068 ffffffffb4ae7ff0 ffff880bc26a38f0 ffffffffac258586
+[  393.843284]  ffff880bc2673e30 000000050000000a ffffffffb444dee0 ffff880bc2673e48
+[  393.843284] Call Trace:
+[  393.843284] dump_stack (lib/dump_stack.c:52)
+[  393.843284] __lock_acquire (kernel/locking/lockdep.c:1739 kernel/locking/lockdep.c:1783 kernel/locking/lockdep.c:2115 kernel/locking/lockdep.c:3182)
+[  393.843284] lock_acquire (kernel/locking/lockdep.c:3602)
+[  393.843284] ? get_partial_node.isra.39 (mm/slub.c:1628)
+[  393.843284] _raw_spin_lock (include/linux/spinlock_api_smp.h:143 kernel/locking/spinlock.c:151)
+[  393.843284] ? get_partial_node.isra.39 (mm/slub.c:1628)
+[  393.843284] get_partial_node.isra.39 (mm/slub.c:1628)
+[  393.843284] ? check_irq_usage (kernel/locking/lockdep.c:1638)
+[  393.843284] ? __slab_alloc (mm/slub.c:2307)
+[  393.843284] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+[  393.843284] __slab_alloc (mm/slub.c:1730 mm/slub.c:2208 mm/slub.c:2372)
+[  393.843284] ? __debug_object_init (lib/debugobjects.c:100 lib/debugobjects.c:312)
+[  393.843284] ? kvm_clock_read (./arch/x86/include/asm/preempt.h:90 arch/x86/kernel/kvmclock.c:86)
+[  393.843284] ? sched_clock (./arch/x86/include/asm/paravirt.h:192 arch/x86/kernel/tsc.c:304)
+[  393.843284] kmem_cache_alloc (mm/slub.c:2445 mm/slub.c:2487 mm/slub.c:2492)
+[  393.843284] ? debug_smp_processor_id (lib/smp_processor_id.c:57)
+[  393.843284] ? __debug_object_init (lib/debugobjects.c:100 lib/debugobjects.c:312)
+[  393.843284] ? check_chain_key (kernel/locking/lockdep.c:2188)
+[  393.843284] __debug_object_init (lib/debugobjects.c:100 lib/debugobjects.c:312)
+[  393.843284] ? _raw_spin_unlock_irqrestore (include/linux/spinlock_api_smp.h:160 kernel/locking/spinlock.c:191)
+[  393.843284] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+[  393.843284] debug_object_init (lib/debugobjects.c:365)
+[  393.843284] rcuhead_fixup_activate (kernel/rcu/update.c:260)
+[  393.843284] debug_object_activate (lib/debugobjects.c:280 lib/debugobjects.c:439)
+[  393.843284] ? preempt_count_sub (kernel/sched/core.c:2600)
+[  393.843284] ? slab_cpuup_callback (mm/slub.c:1484)
+[  393.843284] __call_rcu (kernel/rcu/rcu.h:76 (discriminator 8) kernel/rcu/tree.c:2665 (discriminator 8))
+[  393.843284] ? __kmem_cache_shutdown (mm/slub.c:3210 mm/slub.c:3233 mm/slub.c:3244)
+[  393.843284] call_rcu (kernel/rcu/tree_plugin.h:679)
+[  393.843284] discard_slab (mm/slub.c:1522)
+[  393.843284] __kmem_cache_shutdown (mm/slub.c:3210 mm/slub.c:3233 mm/slub.c:3244)
+[  393.843284] kmem_cache_destroy (mm/slab_common.c:350)
+[  393.843284] nf_conntrack_cleanup_net_list (net/netfilter/nf_conntrack_core.c:1569 (discriminator 3))
+[  393.843284] nf_conntrack_pernet_exit (net/netfilter/nf_conntrack_standalone.c:558)
+[  393.843284] ops_exit_list.isra.1 (net/core/net_namespace.c:135)
+[  393.843284] setup_net (net/core/net_namespace.c:180 (discriminator 3))
+[  393.843284] copy_net_ns (net/core/net_namespace.c:255)
+[  393.843284] create_new_namespaces (kernel/nsproxy.c:95)
+[  393.843284] unshare_nsproxy_namespaces (kernel/nsproxy.c:190 (discriminator 4))
+[  393.843284] SyS_unshare (kernel/fork.c:1865 kernel/fork.c:1814)
+[  393.843284] tracesys (arch/x86/kernel/entry_64.S:542)
 
-One example, before running the script:
 
-~/linux/work/staging $ ./scripts/checkpatch.pl --terse --file drivers/staging/android/binder.c | tail -n 1
-total: 0 errors, 103 warnings, 3670 lines checked
-
-After running it:
-
-~/linux/work/staging $ ./scripts/checkpatch.pl --terse --file drivers/staging/android/binder.c | tail -n 1
-total: 0 errors, 125 warnings, 3670 lines checked
-
-And that was after the script created two patches, with the resulting
-diffstat of:
-
- drivers/staging/android/binder.c |  124 +++++++++++++++++++--------------------
- 1 file changed, 62 insertions(+), 62 deletions(-)
-
-So 2 patches, 60+ lines to review, and 22 more warnings from checkpatch
-as the end result?
-
-Yes, the warnings are all due to line-length, but Joe, you shouldn't add
-a patch that causes more checkpatch warnings than before :)
-
-
-I know people have scripts like this of their own, and while it might be
-nice to "standardize" them, I am really reluctant to put this script in
-the kernel tree itself.  There's a barrier of entry to write your own
-type of script here that honestly, I like.
-
-We already have the example of someone who obviously does not know the C
-language at all, running through the kernel tree at the moment, creating
-horrible patches that are flat-out wrong and annoying maintainers with
-their result.  I've had to kill-file them for now, as it was just too
-annoying and maintainer time is what we have the least of.
-
-While I always want to see more developers get involved with kernel
-development, there should be a minimum barrier to entry.  And that
-barrier is the knowledge of the C language, and knowledge of how to edit
-a text file, and use git.  This script takes that barrier away, for
-whitespace cleanups, with not much real use overall.
-
-So, I'll keep my local copy of this script now, just to have fun with at
-times when I'm bored.  But I don't think it should be merged, as-is.
-
-thanks,
-
-greg k-h
+Thanks,
+Sasha
