@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751819AbaGLVLA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 17:11:00 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:44665 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbaGLVKj (ORCPT
+	id S1751652AbaGLVK5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 17:10:57 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:37371 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892AbaGLVKj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 12 Jul 2014 17:10:39 -0400
 From: Daniel Kiper <daniel.kiper@oracle.com>
@@ -15,46 +15,168 @@ Cc: andrew.cooper3@citrix.com, boris.ostrovsky@oracle.com,
         jbeulich@suse.com, jeremy@goop.org, konrad.wilk@oracle.com,
         matt.fleming@intel.com, mingo@redhat.com,
         stefano.stabellini@eu.citrix.com, tglx@linutronix.de
-Subject: [PATCH v2 1/2] xen: Silence compiler warnings
-Date: Sat, 12 Jul 2014 23:09:47 +0200
-Message-Id: <1405199388-5692-2-git-send-email-daniel.kiper@oracle.com>
+Subject: [PATCH v2 2/2] arch/x86/xen: Silence compiler warnings
+Date: Sat, 12 Jul 2014 23:09:48 +0200
+Message-Id: <1405199388-5692-3-git-send-email-daniel.kiper@oracle.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405199388-5692-1-git-send-email-daniel.kiper@oracle.com>
 References: <1405199388-5692-1-git-send-email-daniel.kiper@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add inline keyword to silence the following compiler
-warnings if xen_efi_probe() is not used:
+Compiler complains in the following way when x86 32-bit kernel
+with Xen support is build:
 
-  CC      arch/x86/xen/setup.o
-In file included from arch/x86/xen/xen-ops.h:7:0,
-                 from arch/x86/xen/setup.c:31:
-include/xen/xen-ops.h:43:35: warning: ‘xen_efi_probe’ defined but not used [-Wunused-function]
+  CC      arch/x86/xen/enlighten.o
+arch/x86/xen/enlighten.c: In function ‘xen_start_kernel’:
+arch/x86/xen/enlighten.c:1726:3: warning: right shift count >= width of type [enabled by default]
+
+Such line contains following EFI initialization code:
+
+boot_params.efi_info.efi_systab_hi = (__u32)(__pa(efi_systab_xen) >> 32);
+
+There is no issue if x86 64-bit kernel is build. However, 32-bit case
+generate warning (even if that code will not be executed because Xen
+does not work on 32-bit EFI platforms) due to __pa() returning unsigned long
+type which has 32-bits width. So move whole EFI initialization stuff
+to separate function and build it conditionally to avoid above mentioned
+warning on x86 32-bit architecture.
 
 Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
 ---
- include/xen/xen-ops.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+v2 - suggestions/fixes:
+   - move xen_efi_init() to separate module
+     (suggested by Konrad Rzeszutek Wilk).
+---
+ arch/x86/xen/Makefile    |    1 +
+ arch/x86/xen/efi.c       |   43 +++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/xen/enlighten.c |   15 +--------------
+ arch/x86/xen/xen-ops.h   |    8 ++++++++
+ 4 files changed, 53 insertions(+), 14 deletions(-)
+ create mode 100644 arch/x86/xen/efi.c
 
-diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
-index 771bbba..7491ee5 100644
---- a/include/xen/xen-ops.h
-+++ b/include/xen/xen-ops.h
-@@ -40,7 +40,7 @@ bool xen_running_on_version_or_later(unsigned int major, unsigned int minor);
- #ifdef CONFIG_XEN_EFI
- extern efi_system_table_t *xen_efi_probe(void);
- #else
--static efi_system_table_t __init *xen_efi_probe(void)
-+static inline efi_system_table_t __init *xen_efi_probe(void)
+diff --git a/arch/x86/xen/Makefile b/arch/x86/xen/Makefile
+index 96ab2c0..7322755 100644
+--- a/arch/x86/xen/Makefile
++++ b/arch/x86/xen/Makefile
+@@ -22,3 +22,4 @@ obj-$(CONFIG_PARAVIRT_SPINLOCKS)+= spinlock.o
+ obj-$(CONFIG_XEN_DEBUG_FS)	+= debugfs.o
+ obj-$(CONFIG_XEN_DOM0)		+= apic.o vga.o
+ obj-$(CONFIG_SWIOTLB_XEN)	+= pci-swiotlb-xen.o
++obj-$(CONFIG_XEN_EFI)		+= efi.o
+diff --git a/arch/x86/xen/efi.c b/arch/x86/xen/efi.c
+new file mode 100644
+index 0000000..a02e09e
+--- /dev/null
++++ b/arch/x86/xen/efi.c
+@@ -0,0 +1,43 @@
++/*
++ * Copyright (c) 2014 Oracle Co., Daniel Kiper
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/efi.h>
++#include <linux/init.h>
++#include <linux/string.h>
++
++#include <xen/xen-ops.h>
++
++#include <asm/setup.h>
++
++void __init xen_efi_init(void)
++{
++	efi_system_table_t *efi_systab_xen;
++
++	efi_systab_xen = xen_efi_probe();
++
++	if (efi_systab_xen == NULL)
++		return;
++
++	strncpy((char *)&boot_params.efi_info.efi_loader_signature, "Xen",
++			sizeof(boot_params.efi_info.efi_loader_signature));
++	boot_params.efi_info.efi_systab = (__u32)__pa(efi_systab_xen);
++	boot_params.efi_info.efi_systab_hi = (__u32)(__pa(efi_systab_xen) >> 32);
++
++	set_bit(EFI_BOOT, &efi.flags);
++	set_bit(EFI_PARAVIRT, &efi.flags);
++	set_bit(EFI_64BIT, &efi.flags);
++}
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index bc89647..2cd0463 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -32,7 +32,6 @@
+ #include <linux/gfp.h>
+ #include <linux/memblock.h>
+ #include <linux/edd.h>
+-#include <linux/efi.h>
+ 
+ #include <xen/xen.h>
+ #include <xen/events.h>
+@@ -1521,7 +1520,6 @@ asmlinkage __visible void __init xen_start_kernel(void)
  {
- 	return NULL;
+ 	struct physdev_set_iopl set_iopl;
+ 	int rc;
+-	efi_system_table_t *efi_systab_xen;
+ 
+ 	if (!xen_start_info)
+ 		return;
+@@ -1717,18 +1715,7 @@ asmlinkage __visible void __init xen_start_kernel(void)
+ 
+ 	xen_setup_runstate_info(0);
+ 
+-	efi_systab_xen = xen_efi_probe();
+-
+-	if (efi_systab_xen) {
+-		strncpy((char *)&boot_params.efi_info.efi_loader_signature, "Xen",
+-				sizeof(boot_params.efi_info.efi_loader_signature));
+-		boot_params.efi_info.efi_systab = (__u32)__pa(efi_systab_xen);
+-		boot_params.efi_info.efi_systab_hi = (__u32)(__pa(efi_systab_xen) >> 32);
+-
+-		set_bit(EFI_BOOT, &efi.flags);
+-		set_bit(EFI_PARAVIRT, &efi.flags);
+-		set_bit(EFI_64BIT, &efi.flags);
+-	}
++	xen_efi_init();
+ 
+ 	/* Start the world */
+ #ifdef CONFIG_X86_32
+diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+index c834d4b..75f98fe 100644
+--- a/arch/x86/xen/xen-ops.h
++++ b/arch/x86/xen/xen-ops.h
+@@ -104,6 +104,14 @@ static inline void __init xen_init_apic(void)
  }
+ #endif
+ 
++#ifdef CONFIG_XEN_EFI
++extern void xen_efi_init(void);
++#else
++static inline void __init xen_efi_init(void)
++{
++}
++#endif
++
+ /* Declare an asm function, along with symbols needed to make it
+    inlineable */
+ #define DECL_ASM(ret, name, ...)		\
 -- 
 1.7.10.4
 
