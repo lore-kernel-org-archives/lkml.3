@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474AbaGLCMJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 22:12:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43216 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752035AbaGLCMH (ORCPT
+	id S1755493AbaGLCMX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 22:12:23 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:56138 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752013AbaGLCMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 22:12:07 -0400
-Date: Fri, 11 Jul 2014 19:16:35 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org
-Subject: Re: [PATCH] serial: imx: Fix build breakage
-Message-ID: <20140712021635.GB17548@kroah.com>
-References: <20140711112108.7631911b@canb.auug.org.au>
- <1405046206-14495-1-git-send-email-peter@hurleysoftware.com>
- <20140712004248.GA24760@kroah.com>
- <53C096D0.3000005@infradead.org>
+	Fri, 11 Jul 2014 22:12:21 -0400
+Date: Fri, 11 Jul 2014 19:12:17 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Graham Moore <grmoore@altera.com>
+Cc: ggrahammoore@gmail.com, David Woodhouse <dwmw2@infradead.org>,
+        ZY - marex <marex@denx.de>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Sourav Poddar <sourav.poddar@ti.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Insop Song <insop.song@gainspeed.com>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Alan Tull <atull@altera.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>
+Subject: Re: [PATCH V4] Add support for flag status register on Micron chips.
+Message-ID: <20140712021217.GM7537@ld-irv-0074>
+References: <1398785391-10744-1-git-send-email-grmoore@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53C096D0.3000005@infradead.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1398785391-10744-1-git-send-email-grmoore@altera.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 07:00:48PM -0700, Randy Dunlap wrote:
-> On 07/11/14 17:42, Greg Kroah-Hartman wrote:
-> > On Thu, Jul 10, 2014 at 10:36:46PM -0400, Peter Hurley wrote:
-> >> Fix breakage introduced by
-> >> commit c557d392fbf5badd693ea1946a4317c87a26a716,
-> >> 'serial: Test for no tx data on tx restart'.
-> >>
-> >> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-> > 
-> > You forgot a "Reported-by:" tag.
-> > 
-> > I'll go add it...
+Hi Graham,
+
+On Tue, Apr 29, 2014 at 10:29:51AM -0500, Graham Moore wrote:
+> Some new Micron flash chips require reading the flag
+> status register to determine when operations have completed.
 > 
-> It's not clear to me that Peter forgot it.
+> Furthermore, chips with multi-die stacks of the 65nm 256Mb QSPI also
+> require reading the status register before reading the flag status register.
+> 
+> This patch adds support for the flag status register in the n25q512ax3 and n25q00
+> Micron QSPI flash chips.
+> 
+> Signed-off-by: Graham Moore <grmoore@altera.com>
+> ---
+> V4:
+> Do not set nor->wait_till_ready if driver has already set it.
+> V3:
+> Rebase to l2-mtd spinor branch.
+> V2:
+> Remove leading underscore in function names.
+> Remove type cast in dev_err call and use the proper format
+> specifier instead.
 
-Why?  Stephen pointed out the problem, in a public place, so I gave him
-credit for it.
+Sorry for the delay... pushed to l2-mtd.git. Thanks!
 
-greg k-h
+Brian
