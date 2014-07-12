@@ -1,90 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755140AbaGLA2y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 20:28:54 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:56732 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752432AbaGLA2w (ORCPT
+	id S1755321AbaGLAaM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 20:30:12 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:54045 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753139AbaGLAaK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 20:28:52 -0400
+	Fri, 11 Jul 2014 20:30:10 -0400
+Message-ID: <53C0819E.4000202@cogentembedded.com>
+Date: Sat, 12 Jul 2014 04:30:22 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20140712000404.GA16602@kroah.com>
-References: <1405059756-11983-1-git-send-email-gavin.guo@canonical.com>
-	<CA+eFSM0z5hUwCNHt9Qv15JJLXsrKfQSXCCCpPrtWYs+3d8gCvQ@mail.gmail.com>
-	<20140712000404.GA16602@kroah.com>
-Date: Sat, 12 Jul 2014 08:28:51 +0800
-Message-ID: <CA+eFSM0Vc66D0fbgh2VyqL1xnGr7=p0k-kHXfOW_0DGTP04cdA@mail.gmail.com>
-Subject: Re: [PATCH 0/1] Fixes to the USB 3.0 detection as 2.0 on AMD platform
-From: Gavin Guo <gavin.guo@canonical.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "Nyman, Mathias" <mathias.nyman@intel.com>, linux-usb@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>, YK <yk@canonical.com>,
-        Anthony Wong <anthony.wong@canonical.com>,
-        Gerald Yang <gerald.yang@canonical.com>
-Content-Type: text/plain; charset=UTF-8
+To: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, kishon@ti.com
+CC: kernel@stlinux.com
+Subject: Re: [PATCH v3+1 5/5] ARM: DT: STi: STiH416: Add DT node for MiPHY365x
+References: <1404906074-31992-1-git-send-email-lee.jones@linaro.org> <1404906074-31992-6-git-send-email-lee.jones@linaro.org> <20140711115406.GB2954@lee--X1>
+In-Reply-To: <20140711115406.GB2954@lee--X1>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Hello.
 
-On Sat, Jul 12, 2014 at 8:04 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Sat, Jul 12, 2014 at 07:32:34AM +0800, Gavin Guo wrote:
->> Hi all,
->>
->> On Fri, Jul 11, 2014 at 2:22 PM, Gavin Guo <gavin.guo@canonical.com> wrote:
->> > Hi Sarah and Mathias,
->> >
->> > As the discussion in http://comments.gmane.org/gmane.linux.usb.general/107011,
->> > I found that [AMD] FCH USB XHCI Controller [1022:7814] the USB 3.0 disk
->> > can't work in SuperSpeed after several times of hotplug. After doing some
->> > experiments and bisection, I found the bug is caused by
->> > 41e7e056cdc662f704fa9262e5c6e213b4ab45dd (USB: Allow USB 3.0 ports to be
->> > disabled.). And the bug can be fixed by not executing the
->> > hub_usb3_port_disable() function. I also found that the port status is
->> > already in RxDetect before setting the port to Disabled in
->> > hub_usb3_port_disable() function. So, there are 2 ways to fix the bug:
->> >
->> > 1) Check if the Vendor/Device id is [1022:7814] at the beginning of
->> > hub_usb3_port_disable() function. If yes, return without executing the
->> > remaining code.
->> >
->> > 2) Check if the port status is already in RxDetect, if yes, return without
->> > executing the remaining code.
->> >
->> > The second method seems more reasonable, so the patch is the implementation
->> > of the second one. But it will affect more platforms and I don't know if
->> > there'll be any negative result. Otherwise, if the first one is correct,
->> > I can reimplement a new one.
->> >
->> > I'm appreciated if you can give me some advice, or if there is any thing I missed.
->> >
->> > Thanks,
->> > Gavin
->> >
->> > Gavin Guo (1):
->> >   usb: Check if port status is equal to RxDetect
->> >
->> >  drivers/usb/core/hub.c | 19 +++++++++++++++++++
->> >  1 file changed, 19 insertions(+)
->> >
->> > --
->> > 2.0.0
->> >
->>
->> Add Greg k-h to the list.
->
-> Why?  Mathias can handle this just fine, right?
->
-> And I read all linux-usb@vger email anyway...
->
-> greg k-h
+On 07/11/2014 03:54 PM, Lee Jones wrote:
 
-I'm sorry if there is any misunderstanding. Because the code is under
-drivers/usb/core/hub.c, I found that in MAINTAINERS you are the
-maintainer of drivers/usb/*. so I think it's better to let you know
-the change.
+> The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
+> devices. It has 2 ports which it can use for either; both SATA, both
+> PCIe or one of each in any configuration.
 
-Thanks,
-Gavin Guo
+> Acked-by: Mark Rutland <mark.rutland@arm.com>
+> Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+
+> diff --git a/arch/arm/boot/dts/stih416-b2020.dts b/arch/arm/boot/dts/stih416-b2020.dts
+> index 4e2df66..c3c2ac6 100644
+> --- a/arch/arm/boot/dts/stih416-b2020.dts
+> +++ b/arch/arm/boot/dts/stih416-b2020.dts
+> @@ -12,4 +12,16 @@
+>   / {
+>   	model = "STiH416 B2020";
+>   	compatible = "st,stih416-b2020", "st,stih416";
+> +
+> +	soc {
+> +		miphy365x_phy: miphy365x@fe382000 {
+> +			phy_port0: port@fe382000 {
+
+    I don't understand why are you creating the duplicate labels; doesn't 
+'dtc' complain about them? You could instead refer to them as:
+
+&miphy365x_phy {
+};
+
+> +				st,sata-gen = <3>;
+> +			};
+> +
+> +			phy_port1: port@fe38a000 {
+> +				st,pcie-tx-pol-inv;
+> +			};
+> +		};
+> +	};
+>   };
+[...]
+> diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
+> index 84758d7..2b98a0a 100644
+> --- a/arch/arm/boot/dts/stih416.dtsi
+> +++ b/arch/arm/boot/dts/stih416.dtsi
+> @@ -9,6 +9,8 @@
+>   #include "stih41x.dtsi"
+>   #include "stih416-clock.dtsi"
+>   #include "stih416-pinctrl.dtsi"
+> +
+> +#include <dt-bindings/phy/phy-miphy365x.h>
+>   #include <dt-bindings/interrupt-controller/arm-gic.h>
+>   #include <dt-bindings/reset-controller/stih416-resets.h>
+>   / {
+> @@ -236,5 +238,25 @@
+>   			resets	= <&powerdown STIH416_KEYSCAN_POWERDOWN>,
+>   				  <&softreset STIH416_KEYSCAN_SOFTRESET>;
+>   		};
+> +
+> +		miphy365x_phy: miphy365x@fe382000 {
+
+    The ePAPR standard [1] says:
+
+The name of a node should be somewhat generic, reflecting the function of the 
+device and not its precise programming model.
+
+> +			compatible      = "st,miphy365x-phy";
+> +			st,syscfg  	= <&syscfg_rear>;
+> +			#address-cells	= <1>;
+> +			#size-cells	= <1>;
+> +			ranges;
+> +
+> +			phy_port0: port@fe382000 {
+> +				#phy-cells = <1>;
+
+    If these are PHY devices, they should be named "phy", not "port".
+
+> +				reg = <0xfe382000 0x100>, <0xfe394000 0x100>, <0x824 0x4>;
+> +				reg-names = "sata", "pcie", "syscfg";
+> +			};
+> +
+> +			phy_port1: port@fe38a000 {
+> +				#phy-cells = <1>;
+> +				reg = <0xfe38a000 0x100>, <0xfe804000 0x100>, <0x828 0x4>;
+> +				reg-names = "sata", "pcie", "syscfg";
+> +			};
+> +		};
+>   	};
+>   };
+
+WBR, Sergei
+
