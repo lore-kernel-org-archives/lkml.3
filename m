@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762AbaGLM1l (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 08:27:41 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:58984 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752420AbaGLM1g (ORCPT
+	id S1752690AbaGLMcK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 08:32:10 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:55839 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085AbaGLMcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 08:27:36 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v2 2/3] ARM: Use include/asm-generic/io.h
-Date: Sat, 12 Jul 2014 14:27:22 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1405092672-18549-1-git-send-email-thierry.reding@gmail.com> <1405092672-18549-2-git-send-email-thierry.reding@gmail.com> <20140711162422.GF16321@arm.com>
-In-Reply-To: <20140711162422.GF16321@arm.com>
+	Sat, 12 Jul 2014 08:32:05 -0400
+Message-ID: <53C12AC1.4010002@kernel.dk>
+Date: Sat, 12 Jul 2014 14:32:01 +0200
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Jiang Liu <jiang.liu@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jan Kara <jack@suse.cz>,
+        Ingo Molnar <mingo@kernel.org>, Christoph Hellwig <hch@infradead.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Roman Gushchin <klamm@yandex-team.ru>, Xie XiuQi <xiexiuqi@huawei.com>
+CC: Tony Luck <tony.luck@intel.com>, linux-mm@kvack.org,
+        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC Patch V1 01/30] mm, kernel: Use cpu_to_mem()/numa_mem_id()
+ to support memoryless node
+References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com> <1405064267-11678-2-git-send-email-jiang.liu@linux.intel.com>
+In-Reply-To: <1405064267-11678-2-git-send-email-jiang.liu@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201407121427.22668.arnd@arndb.de>
-X-Provags-ID: V02:K0:Ch42mFdAowhEjajMsm3EzdXlWrBOwbbMvd73sLQcdcM
- xj8W6u9xIF/vcWtFW3ZrWzQVykQ44y1S+hG5FOshape+HAj+xG
- C+i+UP5ngzulxzQ+LudkG/c671JCpNdUc5GELlRFF7RVnkJCwi
- onvj2SN4QEtS8mNZFYNPHjhi4WxH3iZWZmta68wmsg3uIxrw7r
- vZtX8T3w4Wtu0EqgMuJtYnJe4oAQ5ThRt4l66BnpC2kECv3vkq
- tVotq4btDOaIKC2AaLQOyVTUnP1USptqQ7juTTanlPt/RLYKqE
- VL45YyLZDGxV5ynrzGIjThaIdbJOqapSMZ/Q6QL3qXczrUi/tY
- deU8kmmGGQoK9m6HgaCk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 11 July 2014, Catalin Marinas wrote:
-> 
-> On Fri, Jul 11, 2014 at 04:31:11PM +0100, Thierry Reding wrote:
-> > diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
-> > index a78562f21aab..ef54f5c8a7ae 100644
-> > --- a/arch/arm/include/asm/io.h
-> > +++ b/arch/arm/include/asm/io.h
-> [...]
-> > -#define iowrite16be(v,p) ({ __iowmb(); __raw_writew((__force __u16)cpu_to_be16(v), p); })
-> > -#define iowrite32be(v,p) ({ __iowmb(); __raw_writel((__force __u32)cpu_to_be32(v), p); })
-> 
-> Aren't you losing the barrier semantics here? The generic iowrite*be()
-> functions call __raw_write*() directly which don't have a barrier
-> (write* accessors do).
-> 
+On 2014-07-11 09:37, Jiang Liu wrote:
+> When CONFIG_HAVE_MEMORYLESS_NODES is enabled, cpu_to_node()/numa_node_id()
+> may return a node without memory, and later cause system failure/panic
+> when calling kmalloc_node() and friends with returned node id.
+> So use cpu_to_mem()/numa_mem_id() instead to get the nearest node with
+> memory for the/current cpu.
+>
+> If CONFIG_HAVE_MEMORYLESS_NODES is disabled, cpu_to_mem()/numa_mem_id()
+> is the same as cpu_to_node()/numa_node_id().
 
-Indeed, sorry for missing this. The generic implementation still makes sense for
-include/asm-generic, but arm32 and arm64 must provide their own versions here.
+I think blk-mq requires some of the same help, as do other places in the 
+block layer. I'll take a look at that.
 
-An alternative would be to define
+As for you smp.c bits here:
 
-#define iowrite32be(v, p) iowrite32(swab32(v), p)
+Acked-by: Jens Axboe <axboe@fb.com>
 
-which is correct but can end up swapping multiple twice.
+-- 
+Jens Axboe
 
-	Arnd
