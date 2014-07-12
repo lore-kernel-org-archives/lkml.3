@@ -1,128 +1,430 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934AbaGLO0Q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 10:26:16 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:61201 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435AbaGLO0O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 10:26:14 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53C14584.3080906@roeck-us.net>
-Date: Sat, 12 Jul 2014 07:26:12 -0700
-From: Guenter Roeck <linux@roeck-us.net>
+	id S1752501AbaGLOc4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 10:32:56 -0400
+Received: from mail.kernel.org ([198.145.19.201]:39657 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751142AbaGLOcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jul 2014 10:32:53 -0400
+Message-ID: <53C14798.7070706@kernel.org>
+Date: Sat, 12 Jul 2014 15:35:04 +0100
+From: Jonathan Cameron <jic23@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Jean Delvare <jdelvare@suse.de>
-CC: Wolfram Sang <wsa@the-dreams.de>, Randy Dunlap <rdunlap@infradead.org>,
-        linux-i2c@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] i2c: stub: Add support for SMBus block commands
-References: <1404742983-27303-1-git-send-email-linux@roeck-us.net>	<20140708215453.0677d3ed@endymion.delvare>	<53BC4F15.9030608@roeck-us.net> <20140712112019.618d8a03@endymion.delvare>
-In-Reply-To: <20140712112019.618d8a03@endymion.delvare>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        =?UTF-8?B?ImVkZGllKOiUoeaeqyki?= <cf@rock-chips.com>,
+        huangtao@rock-chips.com, Peter Meerwald <pmeerw@pmeerw.net>
+Subject: Re: [PATCH v3 1/2] iio: adc: add driver for Rockchip saradc
+References: <2959154.xc8BQActsn@diego> <2482306.yDb91TH59G@diego> <2263220.rhyqmTfAiL@diego>
+In-Reply-To: <2263220.rhyqmTfAiL@diego>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2014 02:20 AM, Jean Delvare wrote:
-> Hi Guenter,
+On 09/07/14 11:22, Heiko Stübner wrote:
+> The ADC is a 3-channel signal-ended 10-bit Successive Approximation
+> Register (SAR) A/D Converter. It uses the supply and ground as its reference
+> and converts the analog input signal into 10-bit binary digital codes.
 >
-> On Tue, 08 Jul 2014 13:05:41 -0700, Guenter Roeck wrote:
->> On 07/08/2014 12:54 PM, Jean Delvare wrote:
->>> Just one thing I have been thinking about while reviewing the updated
->>> code... You decided to make the first SMBus block write select the
->>> maximum block length, and you always use that for SMBus block reads.
->>> However you accept partial writes. The fact that the order in which
->>> writes are performed has an effect on which writes are accepted is
->>> somewhat unexpected.
->>>
->>> Wouldn't it make more sense to accept all SMBus block writes,
->>> regardless of the size (as long as it is within the limits of the SMBus
->>> standard, of course)? Then the only thing left to decide is whether
->>> SMBus block reads use the maximum size or the size of the most recent
->>> SMBus block write.
->>>
->>> I suspect this would mimic the behavior of real chips better. What do
->>> you think?
->>
->> Not really sure what the expected behavior is. My original code
->> accepted all writes and returned the most recent write, including
->> the most recent write length. I thought this was untypical, and that
->> it would be more typical for the chip to return a fixed length.
->> But ultimately I don't really know, and I am fine either way.
->
-> I agree that different chips may behave differently and it is not
-> possible for i2c-stub to please everyone. However I do not think that
-> the current implementation mimics any actual chip behavior. So we might
-> as well switch to something more simple and more likely to please at
-> least one device driver:
->
-> From: Jean Delvare <jdelvare@suse.de>
-> Subject: i2c-stub: Allow the increasing SMBus block write length
->
-> This is no good reason to not allow SMBus block writes longer than the
-> first one was. Lift this limitation, this makes the code more simple.
->
-> Signed-off-by: Jean Delvare <jdelvare@suse.de>
-> Cc: Guenter Roeck <linux@roeck-us.net>
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+Very nice.  One utterly trivial comment inline that doesn't really
+bother me (made the review take a good 10 seconds longer than it
+otherwise would have done!)
+
+Ah, and as my build tests (x86_64) just finished, a build issue:
+
+drivers/iio/adc/rockchip_saradc.c:65:17: error: undefined identifier 'writel_relaxed'
+drivers/iio/adc/rockchip_saradc.c:73:25: error: undefined identifier 'writel_relaxed'
+drivers/iio/adc/rockchip_saradc.c:99:9: error: undefined identifier 'writel_relaxed'
+
+I can't immediately identify if there is a CONFIG element to indicate
+the availability of the relaxed form.  Anyone else know?
+
+I'm in two minds on whether the binding is obvous enough to take without
+a device-tree maintainer ack. I'll let it sit for a bit - perhaps
+even the standard 3 weeks (please repost with the typos fixed though)
+and see if anyone want to comment.
+
+Jonathan
 > ---
->   Documentation/i2c/i2c-stub |    5 ++---
->   drivers/i2c/i2c-stub.c     |   12 +++---------
->   2 files changed, 5 insertions(+), 12 deletions(-)
+>   changes since v2:
+> - address more comments from Peter Meerwald
+>    mainly the missing info_mask_shared_by_type element
+>   changes since v1:
+> - address comments from Peter Meerwald
 >
-> --- linux-3.16-rc4.orig/Documentation/i2c/i2c-stub	2014-07-12 09:41:26.508195718 +0200
-> +++ linux-3.16-rc4/Documentation/i2c/i2c-stub	2014-07-12 10:40:05.064578130 +0200
-> @@ -20,9 +20,8 @@ operations.  This allows for continuous
->   EEPROMs, among others.
+> drivers/iio/adc/Kconfig           |  10 ++
+>   drivers/iio/adc/Makefile          |   1 +
+>   drivers/iio/adc/rockchip_saradc.c | 314 ++++++++++++++++++++++++++++++++++++++
+>   3 files changed, 325 insertions(+)
+>   create mode 100644 drivers/iio/adc/rockchip_saradc.c
 >
->   SMBus block commands must be written to configure an SMBus command for
-> -SMBus block operations. The first SMBus block write selects the block length.
-> -Subsequent writes can be partial. Block read commands always return
-> -the number of bytes selected with the first write.
-> +SMBus block operations. Writes can be partial. Block read commands always
-> +return the number of bytes selected with the largest write so far.
+> diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
+> index a80d236..5d36bdb 100644
+> --- a/drivers/iio/adc/Kconfig
+> +++ b/drivers/iio/adc/Kconfig
+> @@ -187,6 +187,16 @@ config NAU7802
+>   	  To compile this driver as a module, choose M here: the
+>   	  module will be called nau7802.
 >
->   The typical use-case is like this:
->   	1. load this module
-> --- linux-3.16-rc4.orig/drivers/i2c/i2c-stub.c	2014-07-12 09:41:26.508195718 +0200
-> +++ linux-3.16-rc4/drivers/i2c/i2c-stub.c	2014-07-12 11:00:41.472813787 +0200
-> @@ -254,13 +254,6 @@ static s32 stub_xfer(struct i2c_adapter
->   				ret = -EINVAL;
->   				break;
->   			}
-> -			if (b && len > b->len) {
-> -				dev_dbg(&adap->dev,
-> -					"Attempt to write more data (%d) than with initial SMBus block write (%d)\n",
-> -					len, b->len);
-> -				ret = -EINVAL;
-> -				break;
-> -			}
->   			if (b == NULL) {
->   				b = stub_find_block(&adap->dev, chip, command,
->   						    true);
-> @@ -268,9 +261,10 @@ static s32 stub_xfer(struct i2c_adapter
->   					ret = -ENOMEM;
->   					break;
->   				}
-> -				/* First write sets block length */
-> -				b->len = len;
->   			}
-> +			/* Largest write sets read block length */
-> +			if (len > b->len)
-> +				b->len = len;
->   			for (i = 0; i < len; i++)
->   				b->block[i] = data->block[i + 1];
->   			/* update for byte and word commands */
->
-> Would that work for you?
->
+> +config ROCKCHIP_SARADC
+> +	tristate "Rockchip SARADC driver"
+> +	depends on ARCH_ROCKCHIP || (OF && COMPILE_TEST)
+> +	help
+> +	  Say yes here to build support for the SARADC found in SoCs from
+> +	  Rockchip.
+> +
+> +	  To compile this driver as a module, choose M here: the
+> +	  module will be called rockchip_saradc.
+> +
+>   config TI_ADC081C
+>   	tristate "Texas Instruments ADC081C021/027"
+>   	depends on I2C
+> diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
+> index 9d60f2d..8e2932d 100644
+> --- a/drivers/iio/adc/Makefile
+> +++ b/drivers/iio/adc/Makefile
+> @@ -20,6 +20,7 @@ obj-$(CONFIG_MCP320X) += mcp320x.o
+>   obj-$(CONFIG_MCP3422) += mcp3422.o
+>   obj-$(CONFIG_MEN_Z188_ADC) += men_z188_adc.o
+>   obj-$(CONFIG_NAU7802) += nau7802.o
+> +obj-$(CONFIG_ROCKCHIP_SARADC) += rockchip_saradc.o
+>   obj-$(CONFIG_TI_ADC081C) += ti-adc081c.o
+>   obj-$(CONFIG_TI_AM335X_ADC) += ti_am335x_adc.o
+>   obj-$(CONFIG_TWL4030_MADC) += twl4030-madc.o
+> diff --git a/drivers/iio/adc/rockchip_saradc.c b/drivers/iio/adc/rockchip_saradc.c
+> new file mode 100644
+> index 0000000..8fc5867
+> --- /dev/null
+> +++ b/drivers/iio/adc/rockchip_saradc.c
+> @@ -0,0 +1,314 @@
+> +/*
+> + * Rockchip Successive Approximation Register (SAR) A/D Converter
+> + * Copyright (C) 2014 ROCKCHIP, Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/io.h>
+> +#include <linux/of.h>
+> +#include <linux/clk.h>
+> +#include <linux/completion.h>
+> +#include <linux/regulator/consumer.h>
+> +#include <linux/iio/iio.h>
+> +
+> +#define SARADC_DATA			0x00
+> +#define SARADC_DATA_MASK		0x3ff
+> +
+> +#define SARADC_STAS			0x04
+> +#define SARADC_STAS_BUSY		BIT(0)
+> +
+> +#define SARADC_CTRL			0x08
+> +#define SARADC_CTRL_IRQ_STATUS		BIT(6)
+> +#define SARADC_CTRL_IRQ_ENABLE		BIT(5)
+> +#define SARADC_CTRL_POWER_CTRL		BIT(3)
+> +#define SARADC_CTRL_CHN_MASK		0x7
+> +
+> +#define SARADC_DLY_PU_SOC		0x0c
+> +#define SARADC_DLY_PU_SOC_MASK		0x3f
+> +
+> +#define SARADC_BITS			10
+> +#define SARADC_TIMEOUT			msecs_to_jiffies(100)
+> +
+> +struct rockchip_saradc {
+> +	void __iomem		*regs;
+> +	struct clk		*pclk;
+> +	struct clk		*clk;
+> +	struct completion	completion;
+> +	struct regulator	*vref;
+> +	int			vref_mv;
+> +	u16			last_val;
+> +};
+> +
+> +static int rockchip_saradc_read_raw(struct iio_dev *indio_dev,
+> +				    struct iio_chan_spec const *chan,
+> +				    int *val, int *val2, long mask)
+> +{
+> +	struct rockchip_saradc *info = iio_priv(indio_dev);
+> +
+> +	switch (mask) {
+> +	case IIO_CHAN_INFO_RAW:
+> +		mutex_lock(&indio_dev->mlock);
+> +
+> +		/* Select the channel to be used and trigger conversion */
+> +		writel_relaxed(0x08, info->regs + SARADC_DLY_PU_SOC);
+> +		writel(SARADC_CTRL_POWER_CTRL
+> +				| (chan->channel & SARADC_CTRL_CHN_MASK)
+> +				| SARADC_CTRL_IRQ_ENABLE,
+> +		       info->regs + SARADC_CTRL);
+> +
+> +		if (!wait_for_completion_timeout(&info->completion,
+> +						 SARADC_TIMEOUT)) {
+> +			writel_relaxed(0, info->regs + SARADC_CTRL);
+> +			mutex_unlock(&indio_dev->mlock);
+> +			return -ETIMEDOUT;
+> +		}
+> +
+> +		*val = info->last_val;
+> +		mutex_unlock(&indio_dev->mlock);
+> +		return IIO_VAL_INT;
+> +	case IIO_CHAN_INFO_SCALE:
+> +		*val = info->vref_mv;
+> +		*val2 = SARADC_BITS;
+> +		return IIO_VAL_FRACTIONAL_LOG2;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +}
+> +
+> +static irqreturn_t rockchip_saradc_isr(int irq, void *dev_id)
+> +{
+> +	struct rockchip_saradc *info = (struct rockchip_saradc *)dev_id;
+> +
+> +	/* Read value */
+> +	info->last_val = readl_relaxed(info->regs + SARADC_DATA);
+> +	info->last_val &= SARADC_DATA_MASK;
+> +
+> +	/* Clear irq & power down adc */
+> +	writel_relaxed(0, info->regs + SARADC_CTRL);
+> +
+> +	complete(&info->completion);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static const struct iio_info rockchip_saradc_iio_info = {
+> +	.read_raw = rockchip_saradc_read_raw,
+> +	.driver_module = THIS_MODULE,
+> +};
+> +
+> +#define ADC_CHANNEL(_index, _id) {				\
+> +	.type = IIO_VOLTAGE,					\
+> +	.indexed = 1,						\
+> +	.channel = _index,					\
+> +	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),		\
+> +	.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),	\
+> +	.datasheet_name = _id,					\
+> +}
+> +
+> +static const struct iio_chan_spec rockchip_saradc_iio_channels[] = {
+> +	ADC_CHANNEL(0, "adc0"),
+> +	ADC_CHANNEL(1, "adc1"),
+> +	ADC_CHANNEL(2, "adc2"),
+> +};
+> +
+> +static int rockchip_saradc_probe(struct platform_device *pdev)
+> +{
+> +	struct rockchip_saradc *info = NULL;
+> +	struct device_node *np = pdev->dev.of_node;
+> +	struct iio_dev *indio_dev = NULL;
+> +	struct resource	*mem;
+> +	int ret = -ENODEV;
+> +	int irq;
+> +	u32 rate;
+> +
+> +	if (!np)
+> +		return ret;
+> +
+> +	indio_dev = devm_iio_device_alloc(&pdev->dev, sizeof(*info));
+> +	if (!indio_dev) {
+> +		dev_err(&pdev->dev, "failed allocating iio device\n");
+> +		return -ENOMEM;
+> +	}
+> +	info = iio_priv(indio_dev);
+> +
+> +	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	info->regs = devm_request_and_ioremap(&pdev->dev, mem);
+> +	if (!info->regs)
+> +		return -ENOMEM;
+> +
+> +	irq = platform_get_irq(pdev, 0);
+> +	if (irq < 0) {
+> +		dev_err(&pdev->dev, "no irq resource?\n");
+> +		return irq;
+> +	}
+> +
+> +	ret = devm_request_irq(&pdev->dev, irq, rockchip_saradc_isr,
+> +			       0, dev_name(&pdev->dev), info);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "failed requesting irq %d\n", irq);
+> +		return ret;
+> +	}
+> +
+> +	init_completion(&info->completion);
+> +
+> +	info->pclk = devm_clk_get(&pdev->dev, "apb_pclk");
+> +	if (IS_ERR(info->pclk)) {
+> +		dev_err(&pdev->dev, "failed to get pclk\n");
+> +		return PTR_ERR(info->pclk);
+> +	}
+> +
+> +	info->clk = devm_clk_get(&pdev->dev, "saradc");
+> +	if (IS_ERR(info->clk)) {
+> +		dev_err(&pdev->dev, "failed to get adc clock\n");
+> +		return PTR_ERR(info->clk);
+> +	}
+> +
+> +	info->vref = devm_regulator_get(&pdev->dev, "vref");
+> +	if (IS_ERR(info->vref)) {
+> +		dev_err(&pdev->dev, "failed to get regulator, %ld\n",
+> +			PTR_ERR(info->vref));
+> +		return PTR_ERR(info->vref);
+> +	}
+> +
+> +	/* use a default of 1MHz for the converter clock */
+> +	if (of_property_read_u32(np, "clock-frequency", &rate))
+> +		rate = 1000000;
+I'd have a very slight preference of checking for an error rather
+than simply non zero (i.e. < 0).  The function is clearly
+documented as returning 0 for success however.  The only
+reason I carred is that I had to check that rather than relying
+on the tighter standard convention!
 
-Yes, sure, that works fine.
-
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-
-Thanks,
-Guenter
+> +
+> +	ret = clk_set_rate(info->clk, rate);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "failed to set adc clk rate, %d\n", ret);
+> +		return ret;
+> +	}
+> +
+> +	ret = regulator_enable(info->vref);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "failed to enable vref regulator\n");
+> +		return ret;
+> +	}
+> +
+> +	ret = regulator_get_voltage(info->vref);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "failed to get regulator voltage\n");
+> +		goto err_reg_voltage;
+> +	}
+> +	info->vref_mv = ret / 1000;
+> +
+> +	ret = clk_prepare_enable(info->pclk);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "failed to enable pclk\n");
+> +		goto err_reg_voltage;
+> +	}
+> +
+> +	ret = clk_prepare_enable(info->clk);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "failed to enable converter clock\n");
+> +		goto err_pclk;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, indio_dev);
+> +
+> +	indio_dev->name = dev_name(&pdev->dev);
+> +	indio_dev->dev.parent = &pdev->dev;
+> +	indio_dev->dev.of_node = pdev->dev.of_node;
+> +	indio_dev->info = &rockchip_saradc_iio_info;
+> +	indio_dev->modes = INDIO_DIRECT_MODE;
+> +
+> +	indio_dev->channels = rockchip_saradc_iio_channels;
+> +	indio_dev->num_channels = ARRAY_SIZE(rockchip_saradc_iio_channels);
+> +
+> +	ret = iio_device_register(indio_dev);
+> +	if (ret)
+> +		goto err_clk;
+> +
+> +	return 0;
+> +
+> +err_clk:
+> +	clk_disable_unprepare(info->clk);
+> +err_pclk:
+> +	clk_disable_unprepare(info->pclk);
+> +err_reg_voltage:
+> +	regulator_disable(info->vref);
+> +	return ret;
+> +}
+> +
+> +static int rockchip_saradc_remove(struct platform_device *pdev)
+> +{
+> +	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
+> +	struct rockchip_saradc *info = iio_priv(indio_dev);
+> +
+> +	iio_device_unregister(indio_dev);
+> +	clk_disable_unprepare(info->clk);
+> +	clk_disable_unprepare(info->pclk);
+> +	regulator_disable(info->vref);
+> +
+> +	return 0;
+> +}
+> +
+> +#ifdef CONFIG_PM_SLEEP
+> +static int rockchip_saradc_suspend(struct device *dev)
+> +{
+> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+> +	struct rockchip_saradc *info = iio_priv(indio_dev);
+> +
+> +	clk_disable_unprepare(info->clk);
+> +	clk_disable_unprepare(info->pclk);
+> +	regulator_disable(info->vref);
+> +
+> +	return 0;
+> +}
+> +
+> +static int rockchip_saradc_resume(struct device *dev)
+> +{
+> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+> +	struct rockchip_saradc *info = iio_priv(indio_dev);
+> +	int ret;
+> +
+> +	ret = regulator_enable(info->vref);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ret = clk_prepare_enable(info->pclk);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ret = clk_prepare_enable(info->clk);
+> +	if (ret)
+> +		return ret;
+> +
+> +	return ret;
+> +}
+> +#endif
+> +
+> +static SIMPLE_DEV_PM_OPS(rockchip_saradc_pm_ops,
+> +			 rockchip_saradc_suspend, rockchip_saradc_resume);
+> +
+> +static const struct of_device_id rockchip_saradc_match[] = {
+> +	{ .compatible = "rockchip,saradc" },
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, rockchip_saradc_match);
+> +
+> +static struct platform_driver rockchip_saradc_driver = {
+> +	.probe		= rockchip_saradc_probe,
+> +	.remove		= rockchip_saradc_remove,
+> +	.driver		= {
+> +		.name	= "rockchip-saradc",
+> +		.owner	= THIS_MODULE,
+> +		.of_match_table = rockchip_saradc_match,
+> +		.pm	= &rockchip_saradc_pm_ops,
+> +	},
+> +};
+> +
+> +module_platform_driver(rockchip_saradc_driver);
+>
 
