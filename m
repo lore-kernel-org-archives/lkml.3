@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842AbaGLC3z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 22:29:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43320 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752378AbaGLC3x (ORCPT
+	id S1754374AbaGLCjy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 22:39:54 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:42283 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752399AbaGLCjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 22:29:53 -0400
-Date: Fri, 11 Jul 2014 19:34:21 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: devel@driverdev.osuosl.org,
-        kernel-janitors <kernel-janitors@vger.kernel.org>,
-        kernelnewbies@kernelnewbies.org, LKML <linux-kernel@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] reformat_with_checkpatch: Add automation to checkpatch
-Message-ID: <20140712023421.GA20583@kroah.com>
-References: <1405128087.6751.12.camel@joe-AO725>
- <20140712013444.GA30368@kroah.com>
- <1405129216.6751.18.camel@joe-AO725>
+	Fri, 11 Jul 2014 22:39:53 -0400
+Message-ID: <53C09FF6.8020507@infradead.org>
+Date: Fri, 11 Jul 2014 19:39:50 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405129216.6751.18.camel@joe-AO725>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Peter Hurley <peter@hurleysoftware.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Subject: Re: [PATCH] serial: imx: Fix build breakage
+References: <20140711112108.7631911b@canb.auug.org.au> <1405046206-14495-1-git-send-email-peter@hurleysoftware.com> <20140712004248.GA24760@kroah.com> <53C096D0.3000005@infradead.org> <20140712021635.GB17548@kroah.com>
+In-Reply-To: <20140712021635.GB17548@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 06:40:16PM -0700, Joe Perches wrote:
-> On Fri, 2014-07-11 at 18:34 -0700, Greg KH wrote:
-> > On Fri, Jul 11, 2014 at 06:21:27PM -0700, Joe Perches wrote:
-> > > A simple script to run checkpatch --fix for various types of
-> > > of cleanups.
-> > > 
-> > > This script is useful primarily for staging.
-> > > 
-> > > This reformats code to a more CodingStyle conforming style,
-> > > compiles it, verifies that the object code hasn't changed,
-> > > and git commits it too.
-> > 
-> > And 'git commits' it?
+On 07/11/14 19:16, Greg Kroah-Hartman wrote:
+> On Fri, Jul 11, 2014 at 07:00:48PM -0700, Randy Dunlap wrote:
+>> On 07/11/14 17:42, Greg Kroah-Hartman wrote:
+>>> On Thu, Jul 10, 2014 at 10:36:46PM -0400, Peter Hurley wrote:
+>>>> Fix breakage introduced by
+>>>> commit c557d392fbf5badd693ea1946a4317c87a26a716,
+>>>> 'serial: Test for no tx data on tx restart'.
+>>>>
+>>>> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+>>>
+>>> You forgot a "Reported-by:" tag.
+>>>
+>>> I'll go add it...
+>>
+>> It's not clear to me that Peter forgot it.
 > 
-> The thought I had was to made it easier to
-> submit "my first kernel patch" correctly.
-> like that tuxradar article you wrote a few
-> years ago.
-> 
-> http://www.tuxradar.com/content/newbies-guide-hacking-linux-kernel
+> Why?  Stephen pointed out the problem, in a public place, so I gave him
+> credit for it.
 
-Yeah, but it's good for people to actually understand the change they
-are making, and edit it themselves.  Or at least I think so, but I know
-others don't, so I don't mind this script.
+SubmittingPatches does not give you permission to do that,
+but Stephen just did so.
 
-thanks,
 
-greg k-h
+-- 
+~Randy
