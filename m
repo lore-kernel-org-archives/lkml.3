@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607AbaGLQPV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 12:15:21 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:56081 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255AbaGLQPU (ORCPT
+	id S1753064AbaGLQQk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 12:16:40 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:43938 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752838AbaGLQQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 12:15:20 -0400
-Date: Sat, 12 Jul 2014 09:15:43 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
-        ARM Maintainers <arm@kernel.org>, Bo Shen <voice.shen@atmel.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        jiri.prchal@aksignal.cz, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: at91: at91sam9x5: add clocks for usb device
-Message-ID: <20140712161543.GA3107@quad.lixom.net>
-References: <1405096496-4139-1-git-send-email-nicolas.ferre@atmel.com>
+	Sat, 12 Jul 2014 12:16:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405096496-4139-1-git-send-email-nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFLxGvzFTeE9J-4KFUn9q1fggB_pGBHEMEPcBtDhje+uRm7yMw@mail.gmail.com>
+References: <1404866789-26910-1-git-send-email-kys@microsoft.com>
+	<1404866812-26950-1-git-send-email-kys@microsoft.com>
+	<1404866812-26950-6-git-send-email-kys@microsoft.com>
+	<20140709084415.GF6012@infradead.org>
+	<9b76360fb30745d3941b6d56bdae268f@BY2PR03MB299.namprd03.prod.outlook.com>
+	<CAFLxGvzFTeE9J-4KFUn9q1fggB_pGBHEMEPcBtDhje+uRm7yMw@mail.gmail.com>
+Date: Sat, 12 Jul 2014 18:16:36 +0200
+Message-ID: <CAFLxGvyJRr4dXEqv2KfCf30Q-kiA6=mPcKB+m4i1y79Xeoqe3A@mail.gmail.com>
+Subject: Re: [PATCH 6/8] Drivers: scsi: storvsc: Implement an abort handler
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 06:34:56PM +0200, Nicolas Ferre wrote:
-> From: Bo Shen <voice.shen@atmel.com>
-> 
-> Add clocks for usb device, or else switch to CCF, the gadget
-> won't work.
-> 
-> Reported-by: Jiri Prchal <jiri.prchal@aksignal.cz>
-> Signed-off-by: Bo Shen <voice.shen@atmel.com>
-> Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> Tested-by: Jiri Prchal <jiri.prchal@aksignal.cz>
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
-> Arnd, Olof, Kevin,
-> 
-> This fix is the only one that I have for 3.16-rc currently. Can you please
-> take it as a patch and queue it? It can go on top of already sent AT91 fixes
-> for 3.16 or a 3.16-rc4.
+On Thu, Jul 10, 2014 at 12:33 PM, Richard Weinberger
+<richard.weinberger@gmail.com> wrote:
+> On Wed, Jul 9, 2014 at 8:51 PM, KY Srinivasan <kys@microsoft.com> wrote:
+>>
+>>
+>>> -----Original Message-----
+>>> From: Christoph Hellwig [mailto:hch@infradead.org]
+>>> Sent: Wednesday, July 9, 2014 1:44 AM
+>>> To: KY Srinivasan
+>>> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+>>> ohering@suse.com; jbottomley@parallels.com; jasowang@redhat.com;
+>>> apw@canonical.com; linux-scsi@vger.kernel.org
+>>> Subject: Re: [PATCH 6/8] Drivers: scsi: storvsc: Implement an abort handler
+>>>
+>>> On Tue, Jul 08, 2014 at 05:46:50PM -0700, K. Y. Srinivasan wrote:
+>>> > Implement a simple abort handler. The host does not support "Abort";
+>>> > just ensure that all inflight I/Os have been accounted for.
+>>>
+>>> The abort handler should abort a single command, not wait for all of them.
+>>> What issue do you see that this tries to address?
+>>
+>> On Azure, we sometimes have unbounded I/O latencies and some distributions (such as SLES12) based on recent kernels are invoking
+>> the "Abort Handler". Unfortunately, our scsi emulation on the host does not support aborting a command.
+>> The issue I have seen is that the upper level scsi code attempts error recovery when the command times out and finally frees up the command.
+>> The host subsequently responds to the command that has timed out and since the memory has been freed up, we end up touching freed memory
+>> in this driver. Since the host is also doing error recovery, by just delaying the error handler in the guest until we can account for all the in-flight commands,
+>> we can get around the problem.
+>
+> I see strange issues in Azure and maybe they are related to this.
+> Some Linux machines crash in a way that no disk IO is possible (thus,
+> no SSH for me) but they still respond to
+> ping. It happens rather seldom (every few weeks).
+>
+> Do you see similar symptoms?
 
-Certainly. Appled to fixes now.
+ping?
 
-
--Olof
+-- 
+Thanks,
+//richard
