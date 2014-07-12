@@ -1,195 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451AbaGLK4M (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 06:56:12 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:57559 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767AbaGLK4I (ORCPT
+	id S1752440AbaGLLFm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 07:05:42 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:33004 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767AbaGLLFk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 06:56:08 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Dan Carpenter <dan.carpenter@oracle.com>,
-        julia.lawall@lip6.fr
-Cc: linux-kernel@vger.kernel.org, Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Subject: [PATCH v2] drivers: tty: Merge alloc_tty_struct and initialize_tty_struct
-Date: Sat, 12 Jul 2014 12:55:51 +0200
-Message-Id: <1405162551-23308-1-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1405018882-19073-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1405018882-19073-1-git-send-email-linux@rasmusvillemoes.dk>
+	Sat, 12 Jul 2014 07:05:40 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        Jason Cooper <jason@lakedaemon.net>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] ARM: Fix preemption disable in iwmmxt_task_enable()
+Date: Sat, 12 Jul 2014 13:05:30 +0200
+Message-Id: <1405163130-3927-1-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1405069813-9270-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1405069813-9270-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The two functions alloc_tty_struct and initialize_tty_struct are
-always called together. Merge them into alloc_tty_struct, updating its
-prototype and the only two callers of these functions.
+commit 431a84b1a4f7d1a0085d5b91330c5053cc8e8b12
+ ("ARM: 8034/1: Disable preemption in iwmmxt_task_enable()")
+introduced macros {inc,dec}_preempt_count to iwmmxt_task_enable
+to make it run with preemption disabled.
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Unfortunately, other functions in iwmmxt.S also use concan_{save,dump,load}
+sections located in iwmmxt_task_enable() to deal with iWMMXt coprocessor.
+This causes an unbalanced preempt_count due to excessive dec_preempt_count
+and destroyed return addresses in callers of concan_ labels due to a register
+collision:
+
+Linux version 3.16.0-rc3-00062-gd92a333-dirty (jef@armhf) (gcc version 4.8.3 (Debian 4.8.3-4) ) #5 PREEMPT Thu Jul 3 19:46:39 CEST 2014
+CPU: ARMv7 Processor [560f5815] revision 5 (ARMv7), cr=10c5387d
+CPU: PIPT / VIPT nonaliasing data cache, PIPT instruction cache
+Machine model: SolidRun CuBox
+...
+PJ4 iWMMXt v2 coprocessor enabled.
+...
+Unable to handle kernel paging request at virtual address fffffffe
+pgd = bb25c000
+[fffffffe] *pgd=3bfde821, *pte=00000000, *ppte=00000000
+Internal error: Oops: 80000007 [#1] PREEMPT ARM
+Modules linked in:
+CPU: 0 PID: 62 Comm: startpar Not tainted 3.16.0-rc3-00062-gd92a333-dirty #5
+task: bb230b80 ti: bb256000 task.ti: bb256000
+PC is at 0xfffffffe
+LR is at iwmmxt_task_copy+0x44/0x4c
+pc : [<fffffffe>]    lr : [<800130ac>]    psr: 40000033
+sp : bb257de8  ip : 00000013  fp : bb257ea4
+r10: bb256000  r9 : fffffdfe  r8 : 76e898e6
+r7 : bb257ec8  r6 : bb256000  r5 : 7ea12760  r4 : 000000a0
+r3 : ffffffff  r2 : 00000003  r1 : bb257df8  r0 : 00000000
+Flags: nZcv  IRQs on  FIQs on  Mode SVC_32  ISA Thumb  Segment user
+Control: 10c5387d  Table: 3b25c019  DAC: 00000015
+Process startpar (pid: 62, stack limit = 0xbb256248)
+
+This patch fixes the issue by moving concan_{save,dump,load} into separate
+code sections and make iwmmxt_task_enable() call them in the same way the
+other functions use concan_ symbols. The test for valid ownership is moved
+to concan_save and is safe for the other user of it, iwmmxt_task_disable().
+The register collision is also resolved by moving concan_ symbols as
+{inc,dec}_preempt_count are now local to iwmmxt_task_enable().
+
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Reported-by: Jean-Francois Moine <moinejf@free.fr>
+Fixes: 431a84b1a4f7 ("ARM: 8034/1: Disable preemption in iwmmxt_task_enable()")
 ---
-I hope this is sufficient. Thanks, Dan and Julia!
+The offending commit was intoduced past v3.15-rc1 and the corresponding fix
+should also be queued up for stable v3.15+
 
-v2: Don't cause NULL pointer dereference or use-after-free on error
-path. Just give module_put the same argument as was given to
-try_module_get.
+Changelog
+v1->v2:
+- return immediately from concan_ instead of branch to 3f, i.e. replace
+  'beq 3f' with 'moveq pc, lr' (Suggested by Catalin Marinas)
 
- drivers/tty/pty.c    | 21 ++++++++++-----------
- drivers/tty/tty_io.c | 37 +++++++++++++------------------------
- include/linux/tty.h  |  4 +---
- 3 files changed, 24 insertions(+), 38 deletions(-)
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Jean-Francois Moine <moinejf@free.fr>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arm/kernel/iwmmxt.S | 23 ++++++++++++-----------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-index 25c9bc7..9bbdb1d 100644
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -316,7 +316,7 @@ done:
-  *	pty_common_install		-	set up the pty pair
-  *	@driver: the pty driver
-  *	@tty: the tty being instantiated
-- *	@bool: legacy, true if this is BSD style
-+ *	@legacy: true if this is BSD style
-  *
-  *	Perform the initial set up for the tty/pty pair. Called from the
-  *	tty layer when the port is first opened.
-@@ -331,18 +331,17 @@ static int pty_common_install(struct tty_driver *driver, struct tty_struct *tty,
- 	int idx = tty->index;
- 	int retval = -ENOMEM;
+diff --git a/arch/arm/kernel/iwmmxt.S b/arch/arm/kernel/iwmmxt.S
+index a5599cfc43cb..2b32978ae905 100644
+--- a/arch/arm/kernel/iwmmxt.S
++++ b/arch/arm/kernel/iwmmxt.S
+@@ -94,13 +94,19 @@ ENTRY(iwmmxt_task_enable)
  
--	o_tty = alloc_tty_struct();
--	if (!o_tty)
--		goto err;
- 	ports[0] = kmalloc(sizeof **ports, GFP_KERNEL);
- 	ports[1] = kmalloc(sizeof **ports, GFP_KERNEL);
- 	if (!ports[0] || !ports[1])
--		goto err_free_tty;
-+		goto err;
- 	if (!try_module_get(driver->other->owner)) {
- 		/* This cannot in fact currently happen */
--		goto err_free_tty;
-+		goto err;
- 	}
--	initialize_tty_struct(o_tty, driver->other, idx);
-+	o_tty = alloc_tty_struct(driver->other, idx);
-+	if (!o_tty)
-+		goto err_put_module;
+ 	mrc	p15, 0, r2, c2, c0, 0
+ 	mov	r2, r2				@ cpwait
++	bl	concan_save
  
- 	if (legacy) {
- 		/* We always use new tty termios data so we can do this
-@@ -387,12 +386,12 @@ err_free_termios:
- 		tty_free_termios(tty);
- err_deinit_tty:
- 	deinitialize_tty_struct(o_tty);
--	module_put(o_tty->driver->owner);
--err_free_tty:
--	kfree(ports[0]);
--	kfree(ports[1]);
- 	free_tty_struct(o_tty);
-+err_put_module:
-+	module_put(driver->other->owner);
- err:
-+	kfree(ports[0]);
-+	kfree(ports[1]);
- 	return retval;
- }
+-	teq	r1, #0				@ test for last ownership
+-	mov	lr, r9				@ normal exit from exception
+-	beq	concan_load			@ no owner, skip save
++#ifdef CONFIG_PREEMPT_COUNT
++	get_thread_info r10
++#endif
++4:	dec_preempt_count r10, r3
++	mov	pc, r9				@ normal exit from exception
  
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 3411071..f63444d 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -157,20 +157,6 @@ static void __proc_set_tty(struct task_struct *tsk, struct tty_struct *tty);
- static void proc_set_tty(struct task_struct *tsk, struct tty_struct *tty);
+ concan_save:
  
- /**
-- *	alloc_tty_struct	-	allocate a tty object
-- *
-- *	Return a new empty tty structure. The data fields have not
-- *	been initialized in any way but has been zeroed
-- *
-- *	Locking: none
-- */
--
--struct tty_struct *alloc_tty_struct(void)
--{
--	return kzalloc(sizeof(struct tty_struct), GFP_KERNEL);
--}
--
--/**
-  *	free_tty_struct		-	free a disused tty
-  *	@tty: tty struct to free
-  *
-@@ -1455,12 +1441,11 @@ struct tty_struct *tty_init_dev(struct tty_driver *driver, int idx)
- 	if (!try_module_get(driver->owner))
- 		return ERR_PTR(-ENODEV);
- 
--	tty = alloc_tty_struct();
-+	tty = alloc_tty_struct(driver, idx);
- 	if (!tty) {
- 		retval = -ENOMEM;
- 		goto err_module_put;
- 	}
--	initialize_tty_struct(tty, driver, idx);
- 
- 	tty_lock(tty);
- 	retval = tty_driver_install_tty(driver, tty);
-@@ -3003,19 +2988,21 @@ static struct device *tty_get_device(struct tty_struct *tty)
- 
- 
- /**
-- *	initialize_tty_struct
-- *	@tty: tty to initialize
-+ *	alloc_tty_struct
-  *
-- *	This subroutine initializes a tty structure that has been newly
-- *	allocated.
-+ *	This subroutine allocates and initializes a tty structure.
-  *
-- *	Locking: none - tty in question must not be exposed at this point
-+ *	Locking: none - tty in question is not exposed at this point
-  */
- 
--void initialize_tty_struct(struct tty_struct *tty,
--		struct tty_driver *driver, int idx)
-+struct tty_struct *alloc_tty_struct(struct tty_driver *driver, int idx)
- {
--	memset(tty, 0, sizeof(struct tty_struct));
-+	struct tty_struct *tty;
++	teq	r1, #0				@ test for last ownership
++	beq	concan_load			@ no owner, skip save
 +
-+	tty = kzalloc(sizeof(*tty), GFP_KERNEL);
-+	if (!tty)
-+		return NULL;
-+
- 	kref_init(&tty->kref);
- 	tty->magic = TTY_MAGIC;
- 	tty_ldisc_init(tty);
-@@ -3039,6 +3026,8 @@ void initialize_tty_struct(struct tty_struct *tty,
- 	tty->index = idx;
- 	tty_line_name(driver, idx, tty->name);
- 	tty->dev = tty_get_device(tty);
-+
-+	return tty;
- }
+ 	tmrc	r2, wCon
  
- /**
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 1c3316a..8413294 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -477,13 +477,11 @@ extern int tty_mode_ioctl(struct tty_struct *tty, struct file *file,
- 			unsigned int cmd, unsigned long arg);
- extern int tty_perform_flush(struct tty_struct *tty, unsigned long arg);
- extern void tty_default_fops(struct file_operations *fops);
--extern struct tty_struct *alloc_tty_struct(void);
-+extern struct tty_struct *alloc_tty_struct(struct tty_driver *driver, int idx);
- extern int tty_alloc_file(struct file *file);
- extern void tty_add_file(struct tty_struct *tty, struct file *file);
- extern void tty_free_file(struct file *file);
- extern void free_tty_struct(struct tty_struct *tty);
--extern void initialize_tty_struct(struct tty_struct *tty,
--		struct tty_driver *driver, int idx);
- extern void deinitialize_tty_struct(struct tty_struct *tty);
- extern struct tty_struct *tty_init_dev(struct tty_driver *driver, int idx);
- extern int tty_release(struct inode *inode, struct file *filp);
+ 	@ CUP? wCx
+@@ -138,7 +144,7 @@ concan_dump:
+ 	wstrd	wR15, [r1, #MMX_WR15]
+ 
+ 2:	teq	r0, #0				@ anything to load?
+-	beq	3f
++	moveq	pc, lr				@ if not, return
+ 
+ concan_load:
+ 
+@@ -171,14 +177,9 @@ concan_load:
+ 	@ clear CUP/MUP (only if r1 != 0)
+ 	teq	r1, #0
+ 	mov 	r2, #0
+-	beq	3f
+-	tmcr	wCon, r2
++	moveq	pc, lr
+ 
+-3:
+-#ifdef CONFIG_PREEMPT_COUNT
+-	get_thread_info r10
+-#endif
+-4:	dec_preempt_count r10, r3
++	tmcr	wCon, r2
+ 	mov	pc, lr
+ 
+ /*
 -- 
-1.9.2
+2.0.0
 
