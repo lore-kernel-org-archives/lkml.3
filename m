@@ -1,163 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247AbaGLJaz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 05:30:55 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:34029 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037AbaGLJax (ORCPT
+	id S1752430AbaGLJcN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 05:32:13 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:31133 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752080AbaGLJcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 05:30:53 -0400
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] fb: backlight: add driver for iPAQ micro backlight
-Date: Sat, 12 Jul 2014 11:30:40 +0200
-Message-Id: <1405157440-10283-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	Sat, 12 Jul 2014 05:32:12 -0400
+Date: Sat, 12 Jul 2014 12:30:43 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Joe Perches <joe@perches.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
+        kernel-janitors <kernel-janitors@vger.kernel.org>,
+        kernelnewbies@kernelnewbies.org, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] reformat_with_checkpatch: Add automation to checkpatch
+Message-ID: <20140712093043.GG25880@mwanda>
+References: <1405128087.6751.12.camel@joe-AO725>
+ <20140712013444.GA30368@kroah.com>
+ <1405129216.6751.18.camel@joe-AO725>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405129216.6751.18.camel@joe-AO725>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a driver for the backlight controlled by the microcontroller
-on the Compaq iPAQ series of handheld computers: h3100, h3600
-and h3700.
+On Fri, Jul 11, 2014 at 06:40:16PM -0700, Joe Perches wrote:
+> On Fri, 2014-07-11 at 18:34 -0700, Greg KH wrote:
+> > On Fri, Jul 11, 2014 at 06:21:27PM -0700, Joe Perches wrote:
+> > > A simple script to run checkpatch --fix for various types of
+> > > of cleanups.
+> > > 
+> > > This script is useful primarily for staging.
+> > > 
+> > > This reformats code to a more CodingStyle conforming style,
+> > > compiles it, verifies that the object code hasn't changed,
+> > > and git commits it too.
+> > 
+> > And 'git commits' it?
+> 
+> The thought I had was to made it easier to
+> submit "my first kernel patch" correctly.
+> like that tuxradar article you wrote a few
+> years ago.
+> 
+> http://www.tuxradar.com/content/newbies-guide-hacking-linux-kernel
+> 
+> > Heh, I should just run this myself to clean up
+> > staging and beat everyone else to it...
+> 
+> At least for the whitespace noise, you could
+> but I hope it'll encourage a few more people
+> to try kernel patching instead.
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/video/backlight/Kconfig         |  9 ++++
- drivers/video/backlight/Makefile        |  1 +
- drivers/video/backlight/ipaq_micro_bl.c | 89 +++++++++++++++++++++++++++++++++
- 3 files changed, 99 insertions(+)
- create mode 100644 drivers/video/backlight/ipaq_micro_bl.c
+I have always hate the idea of automated patches from random people
+because I don't trust them to not be malicious so I have to review them
+manually.  There is a story that back in the day the US government paid
+someone to send tons of checkpatch style patches to BSD.  The guy
+thought he was "cleaning up the code" but actually he was part of a
+larger scheme to flood the maintainers with patches so another person
+could slip in some malicious code.
 
-diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
-index 5d449059a556..cc153f55d9f9 100644
---- a/drivers/video/backlight/Kconfig
-+++ b/drivers/video/backlight/Kconfig
-@@ -207,6 +207,15 @@ config BACKLIGHT_GENERIC
- 	  known as the Corgi backlight driver. If you have a Sharp Zaurus
- 	  SL-C7xx, SL-Cxx00 or SL-6000x say y.
- 
-+config BACKLIGHT_IPAQ_MICRO
-+	tristate "iPAQ microcontroller backlight driver"
-+	depends on MFD_IPAQ_MICRO
-+	default y
-+	help
-+	  Say y to enable the backlight driver for Compaq iPAQ handheld
-+	  computers. Say yes if you have one of the h3100/h3600/h3700
-+	  machines.
-+
- config BACKLIGHT_LM3533
- 	tristate "Backlight Driver for LM3533"
- 	depends on BACKLIGHT_CLASS_DEVICE
-diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
-index bb820024f346..a9ea34a39cad 100644
---- a/drivers/video/backlight/Makefile
-+++ b/drivers/video/backlight/Makefile
-@@ -36,6 +36,7 @@ obj-$(CONFIG_BACKLIGHT_GENERIC)		+= generic_bl.o
- obj-$(CONFIG_BACKLIGHT_GPIO)		+= gpio_backlight.o
- obj-$(CONFIG_BACKLIGHT_HP680)		+= hp680_bl.o
- obj-$(CONFIG_BACKLIGHT_HP700)		+= jornada720_bl.o
-+obj-$(CONFIG_BACKLIGHT_IPAQ_MICRO)	+= ipaq_micro_bl.o
- obj-$(CONFIG_BACKLIGHT_LM3533)		+= lm3533_bl.o
- obj-$(CONFIG_BACKLIGHT_LM3630A)		+= lm3630a_bl.o
- obj-$(CONFIG_BACKLIGHT_LM3639)		+= lm3639_bl.o
-diff --git a/drivers/video/backlight/ipaq_micro_bl.c b/drivers/video/backlight/ipaq_micro_bl.c
-new file mode 100644
-index 000000000000..b7ec8c453b61
---- /dev/null
-+++ b/drivers/video/backlight/ipaq_micro_bl.c
-@@ -0,0 +1,89 @@
-+/*
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * iPAQ microcontroller backlight support
-+ * Author : Linus Walleij <linus.walleij@linaro.org>
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/platform_device.h>
-+#include <linux/backlight.h>
-+#include <linux/mfd/ipaq-micro.h>
-+#include <linux/fb.h>
-+#include <linux/err.h>
-+
-+static int micro_bl_update_status(struct backlight_device *bd)
-+{
-+	struct ipaq_micro *micro = dev_get_drvdata(&bd->dev);
-+	int intensity = bd->props.brightness;
-+	struct ipaq_micro_msg msg = {
-+		.id = MSG_BACKLIGHT,
-+		.tx_len = 3,
-+	};
-+
-+	if (bd->props.power != FB_BLANK_UNBLANK)
-+		intensity = 0;
-+	if (bd->props.state & BL_CORE_FBBLANK)
-+		intensity = 0;
-+	if (bd->props.state & BL_CORE_SUSPENDED)
-+		intensity = 0;
-+
-+	msg.tx_data[0] = 0x01;
-+	msg.tx_data[1] = intensity > 0 ? 1 : 0;
-+	msg.tx_data[2] = intensity;
-+	return ipaq_micro_tx_msg_sync(micro, &msg);
-+}
-+
-+static const struct backlight_ops micro_bl_ops = {
-+	.options = BL_CORE_SUSPENDRESUME,
-+	.update_status  = micro_bl_update_status,
-+};
-+
-+static struct backlight_properties micro_bl_props = {
-+	.type = BACKLIGHT_RAW,
-+	.max_brightness = 255,
-+	.power = FB_BLANK_UNBLANK,
-+	.brightness = 64,
-+};
-+
-+static int micro_backlight_probe(struct platform_device *pdev)
-+{
-+	struct backlight_device *bd;
-+	struct ipaq_micro *micro = dev_get_drvdata(pdev->dev.parent);
-+
-+	bd = devm_backlight_device_register(
-+		&pdev->dev,
-+		"ipaq-micro-backlight",
-+		&pdev->dev,
-+		micro,
-+		&micro_bl_ops,
-+		&micro_bl_props);
-+	if (IS_ERR(bd))
-+		return PTR_ERR(bd);
-+	platform_set_drvdata(pdev, bd);
-+	backlight_update_status(bd);
-+	dev_info(&pdev->dev, "iPAQ micro backlight driver\n");
-+
-+	return 0;
-+}
-+
-+static int micro_backlight_remove(struct platform_device *pdev)
-+{
-+	return 0;
-+}
-+
-+struct platform_driver micro_backlight_device_driver = {
-+	.driver = {
-+		.name    = "ipaq-micro-backlight",
-+	},
-+	.probe   = micro_backlight_probe,
-+	.remove  = micro_backlight_remove,
-+};
-+module_platform_driver(micro_backlight_device_driver);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("driver for iPAQ Atmel micro backlight");
-+MODULE_ALIAS("platform:ipaq-micro-backlight");
--- 
-1.9.3
+It's better if someone just ran this on all new staging code before
+adding it to the tree.
+
+regards,
+dan carpenter
 
