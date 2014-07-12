@@ -1,93 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044AbaGLBju (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 21:39:50 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:38548 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753935AbaGLBjs (ORCPT
+	id S1754234AbaGLBkW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 21:40:22 -0400
+Received: from smtprelay0210.hostedemail.com ([216.40.44.210]:60420 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752809AbaGLBkU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 21:39:48 -0400
-Date: Fri, 11 Jul 2014 18:39:41 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Christoph Lameter <cl@gentwo.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, oleg@redhat.com,
-        sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 11/17] rcu: Bind grace-period kthreads to
- non-NO_HZ_FULL CPUs
-Message-ID: <20140712013941.GV16041@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1404772701-8804-11-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140708152358.GF6571@localhost.localdomain>
- <20140708154723.GN4603@linux.vnet.ibm.com>
- <20140708183846.GJ6571@localhost.localdomain>
- <alpine.DEB.2.11.1407111309150.4777@gentwo.org>
- <20140711182541.GF26045@localhost.localdomain>
- <alpine.DEB.2.11.1407111403090.5070@gentwo.org>
- <20140711191113.GI26045@localhost.localdomain>
- <20140711203513.GA10652@linux.vnet.ibm.com>
- <20140711204503.GN26045@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140711204503.GN26045@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14071201-9332-0000-0000-0000015CD2AF
+	Fri, 11 Jul 2014 21:40:20 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:967:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2525:2553:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:5007:6119:7652:7903:8531:8957:8985:9025:9388:10004:10400:10848:11232:11658:11914:12043:12114:12517:12519:12682:12740:13069:13161:13229:13311:13357:14089:14096:14097:14106:21080,0,RBL:none,CacheIP:none,Ba
+X-HE-Tag: sense99_1fc5258fc4c3e
+X-Filterd-Recvd-Size: 2085
+Message-ID: <1405129216.6751.18.camel@joe-AO725>
+Subject: Re: [PATCH] reformat_with_checkpatch: Add automation to checkpatch
+From: Joe Perches <joe@perches.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org,
+        kernel-janitors <kernel-janitors@vger.kernel.org>,
+        kernelnewbies@kernelnewbies.org, LKML <linux-kernel@vger.kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Fri, 11 Jul 2014 18:40:16 -0700
+In-Reply-To: <20140712013444.GA30368@kroah.com>
+References: <1405128087.6751.12.camel@joe-AO725>
+	 <20140712013444.GA30368@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 10:45:05PM +0200, Frederic Weisbecker wrote:
-> On Fri, Jul 11, 2014 at 01:35:13PM -0700, Paul E. McKenney wrote:
-> > On Fri, Jul 11, 2014 at 09:11:15PM +0200, Frederic Weisbecker wrote:
-> > > On Fri, Jul 11, 2014 at 02:05:08PM -0500, Christoph Lameter wrote:
-> > > > On Fri, 11 Jul 2014, Frederic Weisbecker wrote:
-> > > > 
-> > > > > > That would imply that all no-nohz processors are housekeeping? So all
-> > > > > > processors with a tick are housekeeping?
-> > > > >
-> > > > > Well, now that I think about it again, I would really like to keep housekeeping
-> > > > > to CPU 0 when nohz_full= is passed.
-> > > > 
-> > > > Yeah.
-> > > > 
-> > > > > > Could we make that set configurable? Ideally I'd like to have the ability
-> > > > > > restrict the housekeeping to one processor.
-> > > > >
-> > > > > Ah, I'm curious about your usecase. But I think we can do that. And we should.
-> > > > 
-> > > > The use case is pretty straightforward because we are trying to keep as
-> > > > much OS noise as possible off most processors. Processor 0 is the
-> > > > sacrificial lamb that will be used for all OS processing and hopefully all
-> > > > high latency operations will occur there. Processors 1-X have a tick but
-> > > > we still try to keep latencies sane. And then there is X-Y where tick is
-> > > > off.
-> > > 
-> > > Ok. I don't entirely get why you need 1-X but I can easily imagine some non-latency-critical
-> > > stuff running there.
-> > > 
-> > > Paul proposed "housekeeping=". If we ever go there, I'd rather vote for "sacrifical_lamb="
+On Fri, 2014-07-11 at 18:34 -0700, Greg KH wrote:
+> On Fri, Jul 11, 2014 at 06:21:27PM -0700, Joe Perches wrote:
+> > A simple script to run checkpatch --fix for various types of
+> > of cleanups.
 > > 
-> > Given Christoph's desire for only one housekeeping CPU, I guess the
-> > counting version makes the most sense, so that "housekeeping=N" designates
-> > the first N non-nohz CPUs in numerical order as housekeeping CPUs.
-> > If there are fewer than N non-nohz CPUs, you get a splat at boot time
-> > and your request is capped at the number of non-nohz CPUs.
+> > This script is useful primarily for staging.
 > > 
-> > Seem reasonable?
+> > This reformats code to a more CodingStyle conforming style,
+> > compiles it, verifies that the object code hasn't changed,
+> > and git commits it too.
 > 
-> I wonder if it's wouldn't be rather reasonable to affine housekeeping to all non-nohz-full CPUs
-> by default and then people who want finergrained housekeeping can affine manually kthreads from userspace.
-> 
-> That implies to bind without PF_NO_SETAFFINIT but that's easy enough to do.
+> And 'git commits' it?
 
-Works for me!
+The thought I had was to made it easier to
+submit "my first kernel patch" correctly.
+like that tuxradar article you wrote a few
+years ago.
 
-							Thanx, Paul
+http://www.tuxradar.com/content/newbies-guide-hacking-linux-kernel
+
+> Heh, I should just run this myself to clean up
+> staging and beat everyone else to it...
+
+At least for the whitespace noise, you could
+but I hope it'll encourage a few more people
+to try kernel patching instead.
+
+> I know some people already have private versions of these things, might
+> as well make it public for all to abuse :)
+
+And I hope they can improve it too as it's
+just a brainless little script.
 
