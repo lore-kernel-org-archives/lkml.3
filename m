@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754AbaGLPpN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 11:45:13 -0400
-Received: from cmta2.telus.net ([209.171.16.75]:56522 "EHLO cmta2.telus.net"
+	id S1753017AbaGLPuh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 11:50:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24219 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752209AbaGLPpL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 11:45:11 -0400
-X-Authority-Analysis: v=2.0 cv=A6SyydqG c=1 sm=2
- a=zJWegnE7BH9C0Gl4FFgQyA==:17 a=n-4vetG2bxcA:10 a=LGgl8L9ij00A:10
- a=kj9zAlcOel0A:10 a=aatUQebYAAAA:8 a=Pyq9K9CWowscuQLKlpiwfMBGOR0=:19
- a=Fp5vh2oxAAAA:20 a=7IC5b9jbIkkJtVQgXD8A:9 a=CjuIK1q_8ugA:10
- a=zJWegnE7BH9C0Gl4FFgQyA==:117
-X-Telus-Outbound-IP: 173.180.45.4
-From: "Doug Smythies" <dsmythies@telus.net>
-To: "'Stratos Karafotis'" <stratosk@semaphore.gr>, <rjw@rjwysocki.net>,
-        <viresh.kumar@linaro.org>
-Cc: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <1404147574-17422-1-git-send-email-stratosk@semaphore.gr>
-In-Reply-To: <1404147574-17422-1-git-send-email-stratosk@semaphore.gr>
-Subject: RE: [PATCH 0/2] cpufreq: ondemand: Eliminate the deadband effect
-Date: Sat, 12 Jul 2014 08:45:09 -0700
-Message-ID: <000001cf9de8$43925230$cab6f690$@net>
+	id S1751142AbaGLPuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jul 2014 11:50:35 -0400
+Date: Sat, 12 Jul 2014 11:50:25 -0400
+From: Dave Jones <davej@redhat.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: i915: reduce noise from i915_gem_shrinker_oom when no memory
+ freed.
+Message-ID: <20140712155025.GA2122@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Chris Wilson <chris@chris-wilson.co.uk>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20140711030505.GA30830@redhat.com>
+ <20140711061143.GQ8986@nuc-i3427.alporthouse.com>
+ <20140712092343.GO17271@phenom.ffwll.local>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Ac+UhLPKN2qCqxKCTDON1nL7fb/pyQJYpFJA
-Content-Language: en-ca
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140712092343.GO17271@phenom.ffwll.local>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Jul 12, 2014 at 11:23:43AM +0200, Daniel Vetter wrote:
+ > On Fri, Jul 11, 2014 at 07:11:43AM +0100, Chris Wilson wrote:
+ > > On Thu, Jul 10, 2014 at 11:05:05PM -0400, Dave Jones wrote:
+ > > > When the shrinker doesn't free any memory, don't spew over and over
+ > > > into the logs.  My fuzz tester hits this quite easily, resulting
+ > > > in dozens of instances of this printk when memory runs low, filling
+ > > > dmesg, when there's not even any graphical stuff going on, so the
+ > > > situation would never change.
+ > > 
+ > > We still want to know when we failed to free anything though.
+ > > 
+ > > if (freed || unbound || bound)
+ > > 	pr_info("Purging GPU memory...
+ > > 
+ > > should be a reasonable compromise.
+ > 
+ > Dave, would this work for you? Can you please submit it as a patch to
+ > intel-gfx?
 
-On 2014.07.30 10:00 Stratos Karafotis wrote:
+Will do when I get back on Monday.  I'm running my tests over the
+weekend, looks ok so far.
 
-> This patchset changes slightly the calculation of target frequency to
-> eliminate the deadband effect (explained in patch 2 changelog) that it
-> seems to slow down the CPU in low and medium loads.
->
-> Patch 1 introduces a new relation (RELATION_C) for the next frequency
-> selection, which chooses the closest frequency to target.
->
-> Patch 2 is the actual change to ondemand governor.
+thanks,
 
-> You may find graphs with the 'deadband' effect and benchmark results:
-> https://docs.google.com/spreadsheets/d/16kDBh5lyc6YvBnoS1hUa1t2O38z0xrWvaEj5XtJ8auw/edit#gid=2072493052
-
-I did the same benchmark tests before (without) and after (with) this patch set on my i7-2600K system.
-I added the results, which are similar to Stratos', under a new "benchmark" tab on the spreadsheet.
-
-... Doug
-
-
+	Dave
