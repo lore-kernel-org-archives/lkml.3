@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046AbaGLQms (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 12:42:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47431 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285AbaGLQmq (ORCPT
+	id S1752253AbaGLQoT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 12:44:19 -0400
+Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:34667 "EHLO
+	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751452AbaGLQoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 12:42:46 -0400
-Date: Sat, 12 Jul 2014 09:47:14 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>, Jiri Slaby <jslaby@suse.cz>,
-        julia.lawall@lip6.fr, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] drivers: tty: Merge alloc_tty_struct and
- initialize_tty_struct
-Message-ID: <20140712164714.GA12148@kroah.com>
-References: <1405018882-19073-1-git-send-email-linux@rasmusvillemoes.dk>
- <1405162551-23308-1-git-send-email-linux@rasmusvillemoes.dk>
- <20140712121613.GY23001@mwanda>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140712121613.GY23001@mwanda>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 12 Jul 2014 12:44:17 -0400
+From: Shuah Khan <shuah.kh@samsung.com>
+To: m.chehab@samsung.com, dheitmueller@kernellabs.com, olebowle@gmx.com
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] media: prevent driver device access in disconnect path
+Date: Sat, 12 Jul 2014 10:44:11 -0600
+Message-Id: <cover.1405179280.git.shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 12, 2014 at 03:16:13PM +0300, Dan Carpenter wrote:
-> On Sat, Jul 12, 2014 at 12:55:51PM +0200, Rasmus Villemoes wrote:
-> > The two functions alloc_tty_struct and initialize_tty_struct are
-> > always called together. Merge them into alloc_tty_struct, updating its
-> > prototype and the only two callers of these functions.
-> > 
-> > Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-> > ---
-> > I hope this is sufficient. Thanks, Dan and Julia!
-> 
-> Generally Greg's trees can't be rebased.  I think you need to send a fix
-> patch.
+Some fe drivers attempt to access the device for power control from
+their release routines. When release routines are called after device
+is disconnected, the attempts fail. fe drivers should avoid accessing
+the device, from their release interfaces when called from disconnect
+path. The problem is noticed in drx39xyj driver. 
 
-That is correct.  Rasmus, please just send a patch on top of my tree
-that resolves this issue.
+This patch series does the following to fix the problem:
+- exports dvb-frontend exit flag by moving it from fepriv to fe.
+- changes em28xx-dvb to update the fe exit path in its usb
+  disconnect path
+- changes drx39xyj driver to check and avoid accessing the device in
+  its release interface.
+ 
+ 
+Shuah Khan (3):
+  media: dvb-core move fe exit flag from fepriv to fe for driver access
+  media: em28xx-dvb update fe exit flag to indicate device disconnect
+  media: drx39xyj driver change to check fe exit flag from release
 
-thanks,
+ drivers/media/dvb-core/dvb_frontend.c       |   26 +++++++++++---------------
+ drivers/media/dvb-core/dvb_frontend.h       |    5 +++++
+ drivers/media/dvb-frontends/drx39xyj/drxj.c |    4 +++-
+ drivers/media/usb/em28xx/em28x-dvb.c       |    8 ++++++--
+ 4 files changed, 25 insertions(+), 18 deletions(-)
 
-greg k-h
+-- 
+1.7.10.4
+
