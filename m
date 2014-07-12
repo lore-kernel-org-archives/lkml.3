@@ -1,222 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890AbaGLHAR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 03:00:17 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:39404 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751560AbaGLHAP (ORCPT
+	id S1751855AbaGLHRt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 03:17:49 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:43475 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751616AbaGLHRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 03:00:15 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Rob Clark <robdclark@gmail.com>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v2 2/2] drm: flip-work: change drm_flip_work_init prototype
-Date: Sat, 12 Jul 2014 09:00:09 +0200
-Message-Id: <1405148409-18171-3-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1405148409-18171-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1405148409-18171-1-git-send-email-boris.brezillon@free-electrons.com>
+	Sat, 12 Jul 2014 03:17:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140711194243.GA3131@himangi-Dell>
+References: <20140711194243.GA3131@himangi-Dell>
+From: Andreas Noever <andreas.noever@gmail.com>
+Date: Sat, 12 Jul 2014 09:17:25 +0200
+Message-ID: <CAMxnaaUA3Tb2BJ0rPXQCpYm5WnjEqEHG5f0Xsns-J7DhuU4eXA@mail.gmail.com>
+Subject: Re: [PATCH] thunderbolt: Use kcalloc
+To: Himangi Saraogi <himangi774@gmail.com>,
+        Greg Kroah-Hartman <greg@kroah.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        julia.lawall@lip6.fr
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we're using lists instead of kfifo to store drm flip-work tasks
-we do not need the size parameter passed to drm_flip_work_init function
-anymore.
-Moreover this function cannot fail anymore, we can thus remove the return
-code.
+On Fri, Jul 11, 2014 at 9:42 PM, Himangi Saraogi <himangi774@gmail.com> wrote:
+> The advantage of kcalloc is, that will prevent integer overflows
+> which could result from the multiplication of number of elements
+> and size and it is also a bit nicer to read.
+>
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+> ---
+> A patch on top of my char-misc tree as the kzalloc version is
+> already applied there.
+>
+>  drivers/thunderbolt/nhi.c | 10 ++++------
+>  1 file changed, 4 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/thunderbolt/nhi.c b/drivers/thunderbolt/nhi.c
+> index ce72f31..c68fe12 100644
+> --- a/drivers/thunderbolt/nhi.c
+> +++ b/drivers/thunderbolt/nhi.c
+> @@ -569,12 +569,10 @@ static int nhi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+>                          nhi->hop_count);
+>         INIT_WORK(&nhi->interrupt_work, nhi_interrupt_work);
+>
+> -       nhi->tx_rings = devm_kzalloc(&pdev->dev,
+> -                                    nhi->hop_count * sizeof(*nhi->tx_rings),
+> -                                    GFP_KERNEL);
+> -       nhi->rx_rings = devm_kzalloc(&pdev->dev,
+> -                                    nhi->hop_count * sizeof(*nhi->rx_rings),
+> -                                    GFP_KERNEL);
+> +       nhi->tx_rings = devm_kcalloc(&pdev->dev, nhi->hop_count,
+> +                                    sizeof(*nhi->tx_rings), GFP_KERNEL);
+> +       nhi->rx_rings = devm_kcalloc(&pdev->dev, nhi->hop_count,
+> +                                    sizeof(*nhi->rx_rings), GFP_KERNEL);
+>         if (!nhi->tx_rings || !nhi->rx_rings)
+>                 return -ENOMEM;
+>
+> --
+> 1.9.1
+>
++Greg
 
-Modify drm_flip_work_init users to take account of these changes.
-
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
----
- drivers/gpu/drm/drm_flip_work.c          |  8 +-------
- drivers/gpu/drm/msm/mdp/mdp4/mdp4_crtc.c | 19 ++++---------------
- drivers/gpu/drm/msm/mdp/mdp5/mdp5_crtc.c | 16 +++-------------
- drivers/gpu/drm/omapdrm/omap_plane.c     | 14 ++------------
- drivers/gpu/drm/tilcdc/tilcdc_crtc.c     |  6 +-----
- include/drm/drm_flip_work.h              |  2 +-
- 6 files changed, 12 insertions(+), 53 deletions(-)
-
-diff --git a/drivers/gpu/drm/drm_flip_work.c b/drivers/gpu/drm/drm_flip_work.c
-index 7441aa8..2b557f2 100644
---- a/drivers/gpu/drm/drm_flip_work.c
-+++ b/drivers/gpu/drm/drm_flip_work.c
-@@ -136,16 +136,12 @@ static void flip_worker(struct work_struct *w)
- /**
-  * drm_flip_work_init - initialize flip-work
-  * @work: the flip-work to initialize
-- * @size: the max queue depth
-  * @name: debug name
-  * @func: the callback work function
-  *
-  * Initializes/allocates resources for the flip-work
-- *
-- * RETURNS:
-- * Zero on success, error code on failure.
-  */
--int drm_flip_work_init(struct drm_flip_work *work, int size,
-+void drm_flip_work_init(struct drm_flip_work *work,
- 		const char *name, drm_flip_func_t func)
- {
- 	work->name = name;
-@@ -154,8 +150,6 @@ int drm_flip_work_init(struct drm_flip_work *work, int size,
- 	work->func = func;
- 
- 	INIT_WORK(&work->worker, flip_worker);
--
--	return 0;
- }
- EXPORT_SYMBOL(drm_flip_work_init);
- 
-diff --git a/drivers/gpu/drm/msm/mdp/mdp4/mdp4_crtc.c b/drivers/gpu/drm/msm/mdp/mdp4/mdp4_crtc.c
-index 74cebb5..44d4f93 100644
---- a/drivers/gpu/drm/msm/mdp/mdp4/mdp4_crtc.c
-+++ b/drivers/gpu/drm/msm/mdp/mdp4/mdp4_crtc.c
-@@ -755,10 +755,8 @@ struct drm_crtc *mdp4_crtc_init(struct drm_device *dev,
- 	int ret;
- 
- 	mdp4_crtc = kzalloc(sizeof(*mdp4_crtc), GFP_KERNEL);
--	if (!mdp4_crtc) {
--		ret = -ENOMEM;
--		goto fail;
--	}
-+	if (!mdp4_crtc)
-+		return ERR_PTR(-ENOMEM);
- 
- 	crtc = &mdp4_crtc->base;
- 
-@@ -779,12 +777,9 @@ struct drm_crtc *mdp4_crtc_init(struct drm_device *dev,
- 
- 	spin_lock_init(&mdp4_crtc->cursor.lock);
- 
--	ret = drm_flip_work_init(&mdp4_crtc->unref_fb_work, 16,
-+	drm_flip_work_init(&mdp4_crtc->unref_fb_work,
- 			"unref fb", unref_fb_worker);
--	if (ret)
--		goto fail;
--
--	ret = drm_flip_work_init(&mdp4_crtc->unref_cursor_work, 64,
-+	drm_flip_work_init(&mdp4_crtc->unref_cursor_work,
- 			"unref cursor", unref_cursor_worker);
- 
- 	INIT_FENCE_CB(&mdp4_crtc->pageflip_cb, pageflip_cb);
-@@ -795,10 +790,4 @@ struct drm_crtc *mdp4_crtc_init(struct drm_device *dev,
- 	mdp4_plane_install_properties(mdp4_crtc->plane, &crtc->base);
- 
- 	return crtc;
--
--fail:
--	if (crtc)
--		mdp4_crtc_destroy(crtc);
--
--	return ERR_PTR(ret);
- }
-diff --git a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_crtc.c b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_crtc.c
-index ebe2e60..a0cb374 100644
---- a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_crtc.c
-+++ b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_crtc.c
-@@ -537,10 +537,8 @@ struct drm_crtc *mdp5_crtc_init(struct drm_device *dev,
- 	int ret;
- 
- 	mdp5_crtc = kzalloc(sizeof(*mdp5_crtc), GFP_KERNEL);
--	if (!mdp5_crtc) {
--		ret = -ENOMEM;
--		goto fail;
--	}
-+	if (!mdp5_crtc)
-+		return ERR_PTR(-ENOMEM);
- 
- 	crtc = &mdp5_crtc->base;
- 
-@@ -553,10 +551,8 @@ struct drm_crtc *mdp5_crtc_init(struct drm_device *dev,
- 	snprintf(mdp5_crtc->name, sizeof(mdp5_crtc->name), "%s:%d",
- 			pipe2name(mdp5_plane_pipe(plane)), id);
- 
--	ret = drm_flip_work_init(&mdp5_crtc->unref_fb_work, 16,
-+	drm_flip_work_init(&mdp5_crtc->unref_fb_work,
- 			"unref fb", unref_fb_worker);
--	if (ret)
--		goto fail;
- 
- 	INIT_FENCE_CB(&mdp5_crtc->pageflip_cb, pageflip_cb);
- 
-@@ -566,10 +562,4 @@ struct drm_crtc *mdp5_crtc_init(struct drm_device *dev,
- 	mdp5_plane_install_properties(mdp5_crtc->plane, &crtc->base);
- 
- 	return crtc;
--
--fail:
--	if (crtc)
--		mdp5_crtc_destroy(crtc);
--
--	return ERR_PTR(ret);
- }
-diff --git a/drivers/gpu/drm/omapdrm/omap_plane.c b/drivers/gpu/drm/omapdrm/omap_plane.c
-index 3cf31ee..847d1ca 100644
---- a/drivers/gpu/drm/omapdrm/omap_plane.c
-+++ b/drivers/gpu/drm/omapdrm/omap_plane.c
-@@ -397,14 +397,10 @@ struct drm_plane *omap_plane_init(struct drm_device *dev,
- 
- 	omap_plane = kzalloc(sizeof(*omap_plane), GFP_KERNEL);
- 	if (!omap_plane)
--		goto fail;
-+		return NULL;
- 
--	ret = drm_flip_work_init(&omap_plane->unpin_work, 16,
-+	drm_flip_work_init(&omap_plane->unpin_work,
- 			"unpin", unpin_worker);
--	if (ret) {
--		dev_err(dev->dev, "could not allocate unpin FIFO\n");
--		goto fail;
--	}
- 
- 	omap_plane->nformats = omap_framebuffer_get_formats(
- 			omap_plane->formats, ARRAY_SIZE(omap_plane->formats),
-@@ -446,10 +442,4 @@ struct drm_plane *omap_plane_init(struct drm_device *dev,
- 		omap_plane->info.zorder = id;
- 
- 	return plane;
--
--fail:
--	if (plane)
--		omap_plane_destroy(plane);
--
--	return NULL;
- }
-diff --git a/drivers/gpu/drm/tilcdc/tilcdc_crtc.c b/drivers/gpu/drm/tilcdc/tilcdc_crtc.c
-index d642d4a0..7d782ce 100644
---- a/drivers/gpu/drm/tilcdc/tilcdc_crtc.c
-+++ b/drivers/gpu/drm/tilcdc/tilcdc_crtc.c
-@@ -664,12 +664,8 @@ struct drm_crtc *tilcdc_crtc_create(struct drm_device *dev)
- 	tilcdc_crtc->dpms = DRM_MODE_DPMS_OFF;
- 	init_waitqueue_head(&tilcdc_crtc->frame_done_wq);
- 
--	ret = drm_flip_work_init(&tilcdc_crtc->unref_work, 16,
-+	drm_flip_work_init(&tilcdc_crtc->unref_work,
- 			"unref", unref_worker);
--	if (ret) {
--		dev_err(dev->dev, "could not allocate unref FIFO\n");
--		goto fail;
--	}
- 
- 	ret = drm_crtc_init(dev, crtc, &tilcdc_crtc_funcs);
- 	if (ret < 0)
-diff --git a/include/drm/drm_flip_work.h b/include/drm/drm_flip_work.h
-index 0a5acff..208e357 100644
---- a/include/drm/drm_flip_work.h
-+++ b/include/drm/drm_flip_work.h
-@@ -83,7 +83,7 @@ void drm_flip_work_queue_task(struct drm_flip_work *work,
- void drm_flip_work_queue(struct drm_flip_work *work, void *val);
- void drm_flip_work_commit(struct drm_flip_work *work,
- 		struct workqueue_struct *wq);
--int drm_flip_work_init(struct drm_flip_work *work, int size,
-+void drm_flip_work_init(struct drm_flip_work *work,
- 		const char *name, drm_flip_func_t func);
- void drm_flip_work_cleanup(struct drm_flip_work *work);
- 
--- 
-1.8.3.2
-
+Acked-by: Andreas Noever <andreas.noever@gmail.com>
