@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462AbaGLCLE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 22:11:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43210 "EHLO
+	id S1755474AbaGLCMJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 22:12:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43216 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754029AbaGLCLC (ORCPT
+	with ESMTP id S1752035AbaGLCMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 22:11:02 -0400
-Date: Fri, 11 Jul 2014 19:15:29 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: devel@driverdev.osuosl.org,
-        kernel-janitors <kernel-janitors@vger.kernel.org>,
-        kernelnewbies@kernelnewbies.org, LKML <linux-kernel@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] reformat_with_checkpatch: Add automation to checkpatch
-Message-ID: <20140712021529.GA17548@kroah.com>
-References: <1405128087.6751.12.camel@joe-AO725>
- <20140712015327.GA26496@kroah.com>
- <1405130244.6751.32.camel@joe-AO725>
+	Fri, 11 Jul 2014 22:12:07 -0400
+Date: Fri, 11 Jul 2014 19:16:35 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Subject: Re: [PATCH] serial: imx: Fix build breakage
+Message-ID: <20140712021635.GB17548@kroah.com>
+References: <20140711112108.7631911b@canb.auug.org.au>
+ <1405046206-14495-1-git-send-email-peter@hurleysoftware.com>
+ <20140712004248.GA24760@kroah.com>
+ <53C096D0.3000005@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1405130244.6751.32.camel@joe-AO725>
+In-Reply-To: <53C096D0.3000005@infradead.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 06:57:24PM -0700, Joe Perches wrote:
-> On Fri, 2014-07-11 at 18:53 -0700, Greg KH wrote:
-> > On Fri, Jul 11, 2014 at 06:21:27PM -0700, Joe Perches wrote:
-> > > A simple script to run checkpatch --fix for various types of
-> > > of cleanups.
-> []
-> > Anyway, try running this script on
-> > drivers/staging/lustre/lnet/lnet/acceptor.c to see how this build fails.
+On Fri, Jul 11, 2014 at 07:00:48PM -0700, Randy Dunlap wrote:
+> On 07/11/14 17:42, Greg Kroah-Hartman wrote:
+> > On Thu, Jul 10, 2014 at 10:36:46PM -0400, Peter Hurley wrote:
+> >> Fix breakage introduced by
+> >> commit c557d392fbf5badd693ea1946a4317c87a26a716,
+> >> 'serial: Test for no tx data on tx restart'.
+> >>
+> >> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> > 
+> > You forgot a "Reported-by:" tag.
+> > 
+> > I'll go add it...
 > 
-> lustre doesn't use "normal" kernel makefiles.
+> It's not clear to me that Peter forgot it.
 
-Well, it does, it just has a:
-	subdir-ccflags-y := -I$(src)/include/
-line in drivers/staging/lustre/Makefile that messes up making .o files
-in subdirectories.
-
-I'll go fix that include file mess up now to be able to remove that line
-so the the .o file building will work.
-
-thanks,
+Why?  Stephen pointed out the problem, in a public place, so I gave him
+credit for it.
 
 greg k-h
