@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157AbaGLXLF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 19:11:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14729 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751225AbaGLXK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 19:10:58 -0400
-Date: Sun, 13 Jul 2014 01:10:05 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 10/11] perf, tools, test: Add test case for alias and
- JSON parsing
-Message-ID: <20140712231005.GB29028@krava.redhat.com>
-References: <1405123165-22666-1-git-send-email-andi@firstfloor.org>
- <1405123165-22666-11-git-send-email-andi@firstfloor.org>
+	id S1752348AbaGLXYw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 19:24:52 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:36055 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751199AbaGLXYt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jul 2014 19:24:49 -0400
+From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+To: Benjamin LaHaise <bcrl@kvack.org>
+CC: Christoph Hellwig <hch@infradead.org>, Jeff Moyer <jmoyer@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        "dgilbert@interlog.com" <dgilbert@interlog.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Bart Van Assche <bvanassche@fusionio.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: scsi-mq V2
+Thread-Topic: scsi-mq V2
+Thread-Index: AQHPnHMrpCazJa2BBk+bOfxdnvD3mpuZzE1ggACP5JCAAAm1gIAAiJyAgAAI4QCAAfDxoIAALgKg
+Date: Sat, 12 Jul 2014 23:20:17 +0000
+Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958B9F2DB@G9W0745.americas.hpqcorp.net>
+References: <20140710062040.GB20146@infradead.org>
+ <94D0CD8314A33A4D9D801C0FE68B402958B96E3B@G9W0745.americas.hpqcorp.net>
+ <20140710160422.GA13728@infradead.org>
+ <20140710161438.GA30792@infradead.org>
+ <94D0CD8314A33A4D9D801C0FE68B402958B971BB@G9W0745.americas.hpqcorp.net>
+ <x497g3l10x6.fsf@segfault.boston.devel.redhat.com>
+ <94D0CD8314A33A4D9D801C0FE68B402958B9742E@G9W0745.americas.hpqcorp.net>
+ <94D0CD8314A33A4D9D801C0FE68B402958B979E6@G9W0745.americas.hpqcorp.net>
+ <20140711061441.GA29629@infradead.org>
+ <94D0CD8314A33A4D9D801C0FE68B402958B98323@G9W0745.americas.hpqcorp.net>
+ <20140711145524.GB12478@kvack.org>
+ <94D0CD8314A33A4D9D801C0FE68B402958B9969F@G9W0745.americas.hpqcorp.net>
+In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B402958B9969F@G9W0745.americas.hpqcorp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405123165-22666-11-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 04:59:24PM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Add a simple test case to perf test that runs perf download and parses
-> all the available events, including json events.
-> 
-> This needs adding an all event iterator to pmu.c
-> 
-> v2: Rename identifiers
-> v3: Only iterate cpu pmu to avoid bogus errors.
-> Move pmu iterator to extra patch
-> Acked-by: Namhyung Kim <namhyung@kernel.org>
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  tools/perf/Makefile.perf        | 1 +
->  tools/perf/tests/builtin-test.c | 4 ++++
->  tools/perf/tests/tests.h        | 1 +
->  3 files changed, 6 insertions(+)
-> 
-> diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-> index 0600425..6adb37f 100644
-> --- a/tools/perf/Makefile.perf
-> +++ b/tools/perf/Makefile.perf
-> @@ -419,6 +419,7 @@ endif
->  LIB_OBJS += $(OUTPUT)tests/code-reading.o
->  LIB_OBJS += $(OUTPUT)tests/sample-parsing.o
->  LIB_OBJS += $(OUTPUT)tests/parse-no-sample-id-all.o
-> +LIB_OBJS += $(OUTPUT)tests/aliases.o
+> I will see if that solves the problem with the scsi-mq-3 tree, or
+> at least some of the bisect trees leading up to it.
 
-missing the tests/aliases.o file
-
-  AR       libperf.a
-ar: tests/aliases.o: No such file or directory
+scsi-mq-3 is still going after 45 minutes.  I'll leave it running
+overnight.
 
 
-jirka
