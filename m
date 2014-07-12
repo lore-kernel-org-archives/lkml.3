@@ -1,108 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540AbaGLN7s (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 09:59:48 -0400
-Received: from mail.efficios.com ([78.47.125.74]:35592 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751274AbaGLN7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 09:59:45 -0400
-Date: Sat, 12 Jul 2014 13:59:45 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Message-ID: <1321708462.13569.1405173585327.JavaMail.zimbra@efficios.com>
-In-Reply-To: <alpine.DEB.2.10.1407121002540.4357@nanos>
-References: <20140711133623.530368377@linutronix.de> <20140711133709.835700036@linutronix.de> <743517199.13168.1405109080248.JavaMail.zimbra@efficios.com> <alpine.DEB.2.10.1407121002540.4357@nanos>
-Subject: Re: [patch 54/55] timekeeping: Provide fast and NMI safe access to
- CLOCK_MONOTONIC[_RAW]
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF30 (Linux)/8.0.7_GA_6021)
-Thread-Topic: timekeeping: Provide fast and NMI safe access to CLOCK_MONOTONIC[_RAW]
-Thread-Index: es16jrpIb7TTLKe8yNXEFFtdCfkkMg==
+	id S1752818AbaGLOGR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 10:06:17 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:40180 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751776AbaGLOGN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jul 2014 10:06:13 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Rob Clark <robdclark@gmail.com>
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH v3 1/2] drm: rework flip-work helpers to avoid calling func when the FIFO is full
+Date: Sat, 12 Jul 2014 16:06:07 +0200
+Message-Id: <1405173968-23869-2-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1405173968-23869-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1405173968-23869-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Thomas Gleixner" <tglx@linutronix.de>
-> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> Cc: "LKML" <linux-kernel@vger.kernel.org>, "John Stultz" <john.stultz@linaro.org>, "Peter Zijlstra"
-> <peterz@infradead.org>, "Steven Rostedt" <rostedt@goodmis.org>
-> Sent: Saturday, July 12, 2014 4:11:17 AM
-> Subject: Re: [patch 54/55] timekeeping: Provide fast and NMI safe access to CLOCK_MONOTONIC[_RAW]
-> 
-> On Fri, 11 Jul 2014, Mathieu Desnoyers wrote:
-> 
-> > ----- Original Message -----
-> > > From: "Thomas Gleixner" <tglx@linutronix.de>
-> > > To: "LKML" <linux-kernel@vger.kernel.org>
-> > > Cc: "John Stultz" <john.stultz@linaro.org>, "Peter Zijlstra"
-> > > <peterz@infradead.org>, "Steven Rostedt"
-> > > <rostedt@goodmis.org>, "Mathieu Desnoyers"
-> > > <mathieu.desnoyers@efficios.com>
-> > > Sent: Friday, July 11, 2014 9:45:19 AM
-> > > Subject: [patch 54/55] timekeeping: Provide fast and NMI safe access to
-> > > CLOCK_MONOTONIC[_RAW]
-> > > On the update side:
-> > > 
-> > >   tkf->seq++;
-> > >   smp_wmb();
-> > >   update(tkf->base[0], tk;
-> > 
-> > missing ")"
-> 
-> :)
->  
-> > Any reason why the updater wouldn't do:
-> > 
-> > tkf->seq++;
-> > smp_wmb();
-> > update(tkf->base[1 - (tkf->seq & 0x01)], tk);
-> > 
-> > instead of updating both array entries each time ?
-> 
->   base[0];   	      <- Current active
->   seq++;	      -> Makes base[1] the active one for readers
->   update(base[0]);
-> 
-> So readers are always one update cycle behind. Probably not an issue
-> most of the time, but think about fast wrapping clocksources and
-> NOHZ....
+Make use of lists instead of kfifo in order to dynamically allocate
+task entry when someone require some delayed work, and thus preventing
+drm_flip_work_queue from directly calling func instead of queuing this
+call.
+This allow drm_flip_work_queue to be safely called even within irq
+handlers.
 
-Ah, yep, got it.
+Add new helper functions to allocate a flip work task and queue it when
+needed. This prevents allocating data within irq context (which might
+impact the time spent in the irq handler).
 
-So instead of calling update() twice per update, could we do
-the following instead ?
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Reviewed-by: Rob Clark <robdclark@gmail.com>
+---
+ drivers/gpu/drm/drm_flip_work.c | 97 +++++++++++++++++++++++++++++++----------
+ include/drm/drm_flip_work.h     | 31 +++++++++----
+ 2 files changed, 96 insertions(+), 32 deletions(-)
 
-tkf->seq++;
-smp_wmb();
-update(tkf->base[0], tk);
-tkf->seq++;
-smp_wmb();
-memcpy(tkf->base[1], tkf->base[0], sizeof(tkf->base[1]);
-
-just in case "update" would happen to be expensive for
-some clock implementation.
-
-Thanks,
-
-Mathieu
-
-
-> 
-> Thanks,
-> 
-> 	tglx
-> 
-> 
-> 
-
+diff --git a/drivers/gpu/drm/drm_flip_work.c b/drivers/gpu/drm/drm_flip_work.c
+index f9c7fa3..6f4ae5b 100644
+--- a/drivers/gpu/drm/drm_flip_work.c
++++ b/drivers/gpu/drm/drm_flip_work.c
+@@ -25,6 +25,44 @@
+ #include "drm_flip_work.h"
+ 
+ /**
++ * drm_flip_work_allocate_task - allocate a flip-work task
++ * @data: data associated to the task
++ * @flags: allocator flags
++ *
++ * Allocate a drm_flip_task object and attach private data to it.
++ */
++struct drm_flip_task *drm_flip_work_allocate_task(void *data, gfp_t flags)
++{
++	struct drm_flip_task *task;
++
++	task = kzalloc(sizeof(*task), flags);
++	if (task)
++		task->data = data;
++
++	return task;
++}
++EXPORT_SYMBOL(drm_flip_work_allocate_task);
++
++/**
++ * drm_flip_work_queue_task - queue a specific task
++ * @work: the flip-work
++ * @task: the task to handle
++ *
++ * Queues task, that will later be run (passed back to drm_flip_func_t
++ * func) on a work queue after drm_flip_work_commit() is called.
++ */
++void drm_flip_work_queue_task(struct drm_flip_work *work,
++			      struct drm_flip_task *task)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&work->lock, flags);
++	list_add_tail(&task->node, &work->queued);
++	spin_unlock_irqrestore(&work->lock, flags);
++}
++EXPORT_SYMBOL(drm_flip_work_queue_task);
++
++/**
+  * drm_flip_work_queue - queue work
+  * @work: the flip-work
+  * @val: the value to queue
+@@ -34,10 +72,14 @@
+  */
+ void drm_flip_work_queue(struct drm_flip_work *work, void *val)
+ {
+-	if (kfifo_put(&work->fifo, val)) {
+-		atomic_inc(&work->pending);
++	struct drm_flip_task *task;
++
++	task = drm_flip_work_allocate_task(val,
++				drm_can_sleep() ? GFP_KERNEL : GFP_ATOMIC);
++	if (task) {
++		drm_flip_work_queue_task(work, task);
+ 	} else {
+-		DRM_ERROR("%s fifo full!\n", work->name);
++		DRM_ERROR("%s could not allocate task!\n", work->name);
+ 		work->func(work, val);
+ 	}
+ }
+@@ -56,9 +98,12 @@ EXPORT_SYMBOL(drm_flip_work_queue);
+ void drm_flip_work_commit(struct drm_flip_work *work,
+ 		struct workqueue_struct *wq)
+ {
+-	uint32_t pending = atomic_read(&work->pending);
+-	atomic_add(pending, &work->count);
+-	atomic_sub(pending, &work->pending);
++	unsigned long flags;
++
++	spin_lock_irqsave(&work->lock, flags);
++	list_splice_tail(&work->queued, &work->commited);
++	INIT_LIST_HEAD(&work->queued);
++	spin_unlock_irqrestore(&work->lock, flags);
+ 	queue_work(wq, &work->worker);
+ }
+ EXPORT_SYMBOL(drm_flip_work_commit);
+@@ -66,14 +111,26 @@ EXPORT_SYMBOL(drm_flip_work_commit);
+ static void flip_worker(struct work_struct *w)
+ {
+ 	struct drm_flip_work *work = container_of(w, struct drm_flip_work, worker);
+-	uint32_t count = atomic_read(&work->count);
+-	void *val = NULL;
++	struct list_head tasks;
++	unsigned long flags;
+ 
+-	atomic_sub(count, &work->count);
++	while (1) {
++		struct drm_flip_task *task, *tmp;
+ 
+-	while(count--)
+-		if (!WARN_ON(!kfifo_get(&work->fifo, &val)))
+-			work->func(work, val);
++		INIT_LIST_HEAD(&tasks);
++		spin_lock_irqsave(&work->lock, flags);
++		list_splice_tail(&work->commited, &tasks);
++		INIT_LIST_HEAD(&work->commited);
++		spin_unlock_irqrestore(&work->lock, flags);
++
++		if (list_empty(&tasks))
++			break;
++
++		list_for_each_entry_safe(task, tmp, &tasks, node) {
++			work->func(work, task->data);
++			kfree(task);
++		}
++	}
+ }
+ 
+ /**
+@@ -91,19 +148,12 @@ static void flip_worker(struct work_struct *w)
+ int drm_flip_work_init(struct drm_flip_work *work, int size,
+ 		const char *name, drm_flip_func_t func)
+ {
+-	int ret;
+-
+ 	work->name = name;
+-	atomic_set(&work->count, 0);
+-	atomic_set(&work->pending, 0);
++	INIT_LIST_HEAD(&work->queued);
++	INIT_LIST_HEAD(&work->commited);
++	spin_lock_init(&work->lock);
+ 	work->func = func;
+ 
+-	ret = kfifo_alloc(&work->fifo, size, GFP_KERNEL);
+-	if (ret) {
+-		DRM_ERROR("could not allocate %s fifo\n", name);
+-		return ret;
+-	}
+-
+ 	INIT_WORK(&work->worker, flip_worker);
+ 
+ 	return 0;
+@@ -118,7 +168,6 @@ EXPORT_SYMBOL(drm_flip_work_init);
+  */
+ void drm_flip_work_cleanup(struct drm_flip_work *work)
+ {
+-	WARN_ON(!kfifo_is_empty(&work->fifo));
+-	kfifo_free(&work->fifo);
++	WARN_ON(!list_empty(&work->queued) || !list_empty(&work->commited));
+ }
+ EXPORT_SYMBOL(drm_flip_work_cleanup);
+diff --git a/include/drm/drm_flip_work.h b/include/drm/drm_flip_work.h
+index 9eed34d..3fcb4c4 100644
+--- a/include/drm/drm_flip_work.h
++++ b/include/drm/drm_flip_work.h
+@@ -25,6 +25,7 @@
+ #define DRM_FLIP_WORK_H
+ 
+ #include <linux/kfifo.h>
++#include <linux/spinlock.h>
+ #include <linux/workqueue.h>
+ 
+ /**
+@@ -32,9 +33,9 @@
+  *
+  * Util to queue up work to run from work-queue context after flip/vblank.
+  * Typically this can be used to defer unref of framebuffer's, cursor
+- * bo's, etc until after vblank.  The APIs are all safe (and lockless)
+- * for up to one producer and once consumer at a time.  The single-consumer
+- * aspect is ensured by committing the queued work to a single work-queue.
++ * bo's, etc until after vblank.  The APIs are all thread-safe.
++ * Moreover, drm_flip_work_queue_task and drm_flip_work_queue can be called
++ * in atomic context.
+  */
+ 
+ struct drm_flip_work;
+@@ -51,22 +52,36 @@ struct drm_flip_work;
+ typedef void (*drm_flip_func_t)(struct drm_flip_work *work, void *val);
+ 
+ /**
++ * struct drm_flip_task - flip work task
++ * @node: list entry element
++ * @data: data to pass to work->func
++ */
++struct drm_flip_task {
++	struct list_head node;
++	void *data;
++};
++
++/**
+  * struct drm_flip_work - flip work queue
+  * @name: debug name
+- * @pending: number of queued but not committed items
+- * @count: number of committed items
+  * @func: callback fxn called for each committed item
+  * @worker: worker which calls @func
+- * @fifo: queue of committed items
++ * @queued: queued tasks
++ * @commited: commited tasks
++ * @lock: lock to access queued and commited lists
+  */
+ struct drm_flip_work {
+ 	const char *name;
+-	atomic_t pending, count;
+ 	drm_flip_func_t func;
+ 	struct work_struct worker;
+-	DECLARE_KFIFO_PTR(fifo, void *);
++	struct list_head queued;
++	struct list_head commited;
++	spinlock_t lock;
+ };
+ 
++struct drm_flip_task *drm_flip_work_allocate_task(void *data, gfp_t flags);
++void drm_flip_work_queue_task(struct drm_flip_work *work,
++			      struct drm_flip_task *task);
+ void drm_flip_work_queue(struct drm_flip_work *work, void *val);
+ void drm_flip_work_commit(struct drm_flip_work *work,
+ 		struct workqueue_struct *wq);
 -- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+1.8.3.2
+
