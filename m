@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829AbaGLTYT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 15:24:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48080 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752457AbaGLTYR (ORCPT
+	id S1752932AbaGLTZN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 15:25:13 -0400
+Received: from mail-yk0-f172.google.com ([209.85.160.172]:46359 "EHLO
+	mail-yk0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752599AbaGLTZK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 15:24:17 -0400
-Date: Sat, 12 Jul 2014 12:28:46 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: devel@driverdev.osuosl.org, kernelnewbies@kernelnewbies.org,
-        kernel-janitors <kernel-janitors@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [PATCH] reformat_with_checkpatch: Add automation to checkpatch
-Message-ID: <20140712192846.GB25649@kroah.com>
-References: <1405128087.6751.12.camel@joe-AO725>
- <20140712013444.GA30368@kroah.com>
- <1405129216.6751.18.camel@joe-AO725>
- <20140712093043.GG25880@mwanda>
- <20140712175526.GA17077@kroah.com>
- <1405189777.9132.27.camel@joe-AO725>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405189777.9132.27.camel@joe-AO725>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 12 Jul 2014 15:25:10 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+To: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 1/1] scripts/get_maintainer: increase threshold for --follow to reduce time
+Date: Sat, 12 Jul 2014 15:25:28 -0400
+Message-Id: <1405193128-6848-1-git-send-email-bobby.prani@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 12, 2014 at 11:29:37AM -0700, Joe Perches wrote:
-> On Sat, 2014-07-12 at 10:55 -0700, Greg KH wrote:
-> > Yes, the warnings are all due to line-length, but Joe, you shouldn't add
-> > a patch that causes more checkpatch warnings than before :)
-> 
-> Yeah, that was intentional though.
-> 
-> This script does a series of relatively discrete changes.
-> 
-> Lindent would more or less work, but it's _horrible_ at
-> wrapping overlong lines and merges all types of changes
-> together.
+get_maintainer tries to follow files with a matching threshold of default 50%.
+This is not really necessary as we do not change a file and move it in the same
+commit usually. Increasing the threshold to 90% should be sufficient.
 
-Oh I agree, I don't want to see Lindent, but maybe, if the patch adds
-checkpatch warnings, it should be at least "flagged" as maybe a problem?
+I encountered this on a recent commit where I was touching 12 files. Time take
+dropped from 24 sec to 12 sec after this change. It can be reduced further by
+increasing the threshold, but I think 90% is sufficient.
 
-> > While I always want to see more developers get involved with kernel
-> > development, there should be a minimum barrier to entry.  And that
-> > barrier is the knowledge of the C language, and knowledge of how to edit
-> > a text file, and use git.  This script takes that barrier away, for
-> > whitespace cleanups, with not much real use overall.
-> > 
-> > So, I'll keep my local copy of this script now, just to have fun with at
-> > times when I'm bored.  But I don't think it should be merged, as-is.
-> 
-> Dunno, I still think it's useful.
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+---
+ scripts/get_maintainer.pl | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-For you, and me, but the world?
+diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
+index d701627..bc4a69e 100755
+--- a/scripts/get_maintainer.pl
++++ b/scripts/get_maintainer.pl
+@@ -98,7 +98,7 @@ my %VCS_cmds_git = (
+     "execute_cmd" => \&git_execute_cmd,
+     "available" => '(which("git") ne "") && (-e ".git")',
+     "find_signers_cmd" =>
+-	"git log --no-color --follow --since=\$email_git_since " .
++	"git log --no-color --follow -M90 --since=\$email_git_since " .
+ 	    '--numstat --no-merges ' .
+ 	    '--format="GitCommit: %H%n' .
+ 		      'GitAuthor: %an <%ae>%n' .
+-- 
+1.9.1
 
-Would you want to be on the receiving end of this patch script?  I
-don't, and I'm willing to take almost any patch cleanup for staging
-code.  I think that says something :)
-
-> Maybe when you get new code, you might run it through a
-> script like this before committing it.
-
-I will keep it for me, like I said.
-
-thanks,
-
-greg k-h
