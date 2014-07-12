@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452AbaGLAHf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 20:07:35 -0400
-Received: from lhrrgout.huawei.com ([194.213.3.17]:59207 "EHLO
-	lhrrgout.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753773AbaGLAHe (ORCPT
+	id S1755090AbaGLAKK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 20:10:10 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:35779 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498AbaGLAKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 20:07:34 -0400
-From: Liu Hua <sdu.liu@huawei.com>
-To: <tglx@linutronix.de>, <jason@lakedaemon.net>, <nicolas.pitre@linaro.org>,
-        <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
-        <ebiederm@xmission.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <wangnan0@huawei.com>, <liuxueliu.liu@huawei.com>,
-        <peifeiyue@huawei.com>, <liusdu@huawei.com>,
-        Liu Hua <sdu.liu@huawei.com>
-Subject: [RFC PATCH 0/2] irqchip: GIC: check and clear GIC interupt active status
-Date: Fri, 11 Jul 2014 14:46:15 +0800
-Message-ID: <1405061177-43834-1-git-send-email-sdu.liu@huawei.com>
-X-Mailer: git-send-email 1.9.0
+	Fri, 11 Jul 2014 20:10:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20140711202207.GC18246@pd.tnic>
+References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
+	<1404925766-32253-2-git-send-email-hskinnemoen@google.com>
+	<20140709191747.GB5249@pd.tnic>
+	<CAFQmdRa5Spr0nX6qwzhDGEU9+H1_0vaCtF_NRV=p=OBDwin78A@mail.gmail.com>
+	<20140710114222.GE2970@pd.tnic>
+	<CAFQmdRZ1D4OWqkL-zpsiEjuGQaSBBmk36HqSw=q+hHNCRWZCKQ@mail.gmail.com>
+	<CA+8MBbJ+FeQKZC9oVZsvrBptaY+24rVKWUXT02ETHMMoA-omuA@mail.gmail.com>
+	<CAFQmdRY1=Yg7T15kQmiA+S0j1-xNKsF6Sze49BN7-VzbwW7V4w@mail.gmail.com>
+	<20140711153541.GD17083@pd.tnic>
+	<CAFQmdRajEjtGB4xXVzCmaUPA=qEjrzQTskJtpmD0cqKhKsEYsg@mail.gmail.com>
+	<20140711202207.GC18246@pd.tnic>
+Date: Fri, 11 Jul 2014 17:10:07 -0700
+Message-ID: <CAFQmdRavLe6STnBHA0iMJEPxYSFsskFha12T+0AqxV8zd1+ixA@mail.gmail.com>
+Subject: Re: [PATCH 1/6] x86-mce: Modify CMCI poll interval to adjust for
+ small check_interval values.
+From: Havard Skinnemoen <hskinnemoen@google.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Tony Luck <tony.luck@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ewout van Bekkum <ewout@google.com>,
+        linux-edac <linux-edac@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For this version of GIC codes, kernel assumes that all the interrupt
-status of GIC is inactive. So the kernel does not check this when 
-booting.
+On Fri, Jul 11, 2014 at 1:22 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Fri, Jul 11, 2014 at 11:56:11AM -0700, Havard Skinnemoen wrote:
+>> > * max number of CMCIs per second a system can sustain fine, i.e. the 100
+>> > above
+>>
+>> What's the definition of "fine"? 1% performance hit? 10%? How can we
+>> make that decision without knowing how hard the users are pushing
+>> their systems?
+>
+> Those are definitely unchartered territories we're moving into so yes,
+> answering that won't be easy.
+>
+> Let's try it: if the anount of time we spend per second in the CMCI
+> handler becomes higher than the amount of time we spend polling for that
+> same second, then we might just as well poll and save us the interrupt
+> load.
+>
+> So, for example, say for 10ms poll rate and single poll duration of
+> 2ms, if time spent in CMCI exceeds 200ms for that second, we switch to
+> polling. Hypothetical numbers, of course.
 
-This is no problem on must sitations. But when kdump is deplayed.
-And a panic occurs when a interrupt is being handled (may be PPI 
-and SPI). We have no chance to write relative bit to GICC_EOIR.
-So this interrupt remains active. And GIC will not deliver this
-type interrupt to cpu interface. And the capture kernel may 
-fail to boot becase of lacking of certain interrupt (such as timer 
-interupt).
+200ms per second means we're using 20% of that CPU. I'd say that's
+definitely too much. But I like the general approach.
 
+> Can we measure it on every system? Probably not. So we need to
+> approximate it somehow.
+>
+>>
+>> > * total polling duration during storm, i.e. the 1 second above
+>> >
+>> > and if those are chosen generously for every system out there, then we
+>> > don't need to dynamically adjust the polling interval.
+>>
+>> I'm not sure how we can be generous when there's a tradeoff involved.
+>> If we make the interval "generously low", we end up hurting
+>> performance. if we make it "generously high", we'll lose information.
+>
+> Yeah, by "generous" I meant, choose values which fit all. But I realize
+> now that this is a dumb idea. Maybe we could measure it on each system,
+> read the TSC on CMCI entry and exit and thus get an average CMCI
+> duration...
 
-I glanced over the GIC Architecture Specification, but did not 
-find a simple way to deactive state of all interrupts. For GICv1,
-I can only deal with one abnormal interrupt state one time. For 
-GICv2, I can deactive 32 one time.
+Sounds interesting. Some things that may need some more thought:
 
+1. What percentage of CPU is OK to use before we consider it a storm?
 
-So guys, Do you know a better way to do that? 
+2. How do we map that number to polling mode, where we may not see all
+the errors? If we get it wrong, we may end up bouncing at a very high
+rate.
 
+3. If we go for a fixed polling rate, how do we make sure it doesn't
+require more CPU than what we determined in (1)?
 
-Liu Hua (2):
-  irqchip: gic: introduce ICPIDR2 register interface
-  irqchip: GIC: introduce method to deactive interupts
-
- drivers/irqchip/irq-gic.c       | 57 +++++++++++++++++++++++++++++++++++++++++
- include/linux/irqchip/arm-gic.h |  1 +
- 2 files changed, 58 insertions(+)
-
--- 
-1.9.0
-
+Havard
