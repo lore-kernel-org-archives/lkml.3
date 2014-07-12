@@ -1,150 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188AbaGLIPG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 04:15:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44960 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751801AbaGLIO7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 04:14:59 -0400
-Date: Sat, 12 Jul 2014 01:18:37 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: devel@driverdev.osuosl.org,
-        kernel-janitors <kernel-janitors@vger.kernel.org>,
-        kernelnewbies@kernelnewbies.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [PATCH] reformat_with_checkpatch: Add automation to checkpatch
-Message-ID: <20140712081837.GA28704@kroah.com>
-References: <1405128087.6751.12.camel@joe-AO725>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405128087.6751.12.camel@joe-AO725>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752045AbaGLI2e (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 04:28:34 -0400
+Received: from mail.net13.info ([94.19.113.221]:57061 "EHLO mail.net13.info"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751760AbaGLI21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jul 2014 04:28:27 -0400
+X-Greylist: delayed 328 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Jul 2014 04:28:27 EDT
+From: Alexey Asemov <alex@alex-at.ru>
+To: linux-ide@vger.kernel.org
+Cc: tj@kernel.org, linux-kernel@vger.kernel.org,
+        Alexey Asemov <alex@alex-at.ru>
+Subject: [PATCH] libata: handle IDE AMNF errors in the EH path
+Date: Sat, 12 Jul 2014 12:22:53 +0400
+Message-Id: <1405153373-11108-1-git-send-email-alex@alex-at.ru>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 06:21:27PM -0700, Joe Perches wrote:
-> A simple script to run checkpatch --fix for various types of
-> of cleanups.
-> 
-> This script is useful primarily for staging.
-> 
-> This reformats code to a more CodingStyle conforming style,
-> compiles it, verifies that the object code hasn't changed,
-> and git commits it too.
-> 
-> You must have the necessary development tools, git, and a
-> recent git tree.  Ideally use Greg KH's staging-next, which
-> can be retrieved via these commands:
-> 
-> git clone git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
-> git checkout staging-next
-> 
-> To use this script try a sequence of commands like:
-> 
-> 	cd <linux_repository>
-> 	git checkout -b <your_branch>
-> 	make allyesconfig
-> 	mkdir patches
-> 	./scripts/reformat_with_checkpatch.sh drivers/staging/<dir>/*.[ch]
-> 	git format-patch --cover-letter -o patches/<your_branch> staging-next
-> 	git send-email patches/<your_branch>
+libata-eh.c should handle AMNF error condition (error byte bit 0, usually
+code 0x01) in libata-eh.c along with UNC as a media error so SCSI stack
+can handle it properly (translation code 0x01 is already present in
+libata-scsi.c) but was never passed down due to lack of handling in EH.
 
-When running this on drivers/base/bus.c, it says that the .o files are
-different, when the diffstat for what makes them different is only
-whitespace.
+https://bugzilla.kernel.org/show_bug.cgi?id=80031
 
-I did the following:
+Signed-off-by: Alexey Asemov <alex@alex-at.ru>
+---
+ drivers/ata/libata-eh.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
-$ scripts/reformat_with_checkpatch.sh drivers/base/bus.c
-
-Ignore the first set of things it tries to commit by answering N to the
-"Would you like to commit these changes".
-
-Then the second thing it tries to change in the file says that there is
-a .o file difference.
-
-Yet the diff is below, I don't see how this happens.  Is this due to
-there being some old temp file around because I did not accept the first
-set of changes?
-
-thanks,
-
-greg k-h
-
--------------
-diff:
-
- drivers/base/bus.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/base/bus.c b/drivers/base/bus.c
-index 83e910a57563..3546d02b46f0 100644
---- a/drivers/base/bus.c
-+++ b/drivers/base/bus.c
-@@ -32,7 +32,6 @@ static struct kset *system_kset;
+diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
+index 6760fc4..dad83df 100644
+--- a/drivers/ata/libata-eh.c
++++ b/drivers/ata/libata-eh.c
+@@ -1811,7 +1811,7 @@ static unsigned int ata_eh_analyze_tf(struct ata_queued_cmd *qc,
+ 	case ATA_DEV_ATA:
+ 		if (err & ATA_ICRC)
+ 			qc->err_mask |= AC_ERR_ATA_BUS;
+-		if (err & ATA_UNC)
++		if (err & (ATA_UNC | ATA_AMNF))
+ 			qc->err_mask |= AC_ERR_MEDIA;
+ 		if (err & ATA_IDNF)
+ 			qc->err_mask |= AC_ERR_INVALID;
+@@ -2556,11 +2556,12 @@ static void ata_eh_link_report(struct ata_link *link)
+ 		}
  
- #define to_drv_attr(_attr) container_of(_attr, struct driver_attribute, attr)
- 
--
- static int __must_check bus_rescan_devices_helper(struct device *dev,
- 						void *data);
- 
-@@ -128,6 +127,7 @@ static const struct sysfs_ops bus_sysfs_ops = {
- int bus_create_file(struct bus_type *bus, struct bus_attribute *attr)
- {
- 	int error;
-+
- 	if (bus_get(bus)) {
- 		error = sysfs_create_file(&bus->p->subsys.kobj, &attr->attr);
- 		bus_put(bus);
-@@ -817,6 +817,7 @@ EXPORT_SYMBOL_GPL(device_reprobe);
- struct bus_type *find_bus(char *name)
- {
- 	struct kobject *k = kset_find_obj(bus_kset, name);
-+
- 	return k ? to_bus(k) : NULL;
- }
- #endif  /*  0  */
-
---------------
-
-
-What the script complained about:
-
-Comparing objects...
---- drivers/base/bus.o.new	2014-07-12 01:16:32.984755945 -0700
-+++ drivers/base/bus.o.old	2014-07-12 01:16:31.924755967 -0700
-@@ -2449,13 +2449,13 @@
- 
- 0000000000000000 <descriptor.17493>:
- 	...
--:	bf 03 00 00 00       	mov    $0x3,%edi
-+:	be 03 00 00 00       	mov    $0x3,%esi
- :	00 00                	add    %al,(%rax)
- 	...
- 
- 0000000000000028 <descriptor.17483>:
- 	...
--:	a2 03 00 00 00 00 00 	movabs %al,0x3
-+:	a1 03 00 00 00 00 00 	movabs 0x3,%eax
- :	00 00 
- 
- 0000000000000050 <descriptor.17406>:
-@@ -2468,7 +2468,7 @@
- 
- 0000000000000078 <descriptor.17073>:
- 	...
--:	56                   	push   %rsi
-+:	57                   	push   %rdi
- :	00 00                	add    %al,(%rax)
- :	00 00                	add    %al,(%rax)
- :	00 00                	add    %al,(%rax)
-Object differences exist! - Verify changes before commit!
-
+ 		if (cmd->command != ATA_CMD_PACKET &&
+-		    (res->feature & (ATA_ICRC | ATA_UNC | ATA_IDNF |
+-				     ATA_ABORTED)))
+-			ata_dev_err(qc->dev, "error: { %s%s%s%s}\n",
++		    (res->feature & (ATA_ICRC | ATA_UNC | ATA_AMNF |
++				     ATA_IDNF | ATA_ABORTED)))
++			ata_dev_err(qc->dev, "error: { %s%s%s%s%s}\n",
+ 			  res->feature & ATA_ICRC ? "ICRC " : "",
+ 			  res->feature & ATA_UNC ? "UNC " : "",
++			  res->feature & ATA_AMNF ? "AMNF " : "",
+ 			  res->feature & ATA_IDNF ? "IDNF " : "",
+ 			  res->feature & ATA_ABORTED ? "ABRT " : "");
+ #endif
+-- 
+1.7.1
 
