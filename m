@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338AbaGLRB4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 13:01:56 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:37400 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751169AbaGLRBz (ORCPT
+	id S1752227AbaGLRVh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 13:21:37 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:58806 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326AbaGLRVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 13:01:55 -0400
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>, rostedt@goodmis.org,
-        paulmck@linux.vnet.ibm.com
-Subject: [PATCH v3] rcu: define tracepoint strings only if CONFIG_TRACING is set
-Date: Sat, 12 Jul 2014 19:01:49 +0200
-Message-Id: <1405184509-12601-1-git-send-email-ard.biesheuvel@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
+	Sat, 12 Jul 2014 13:21:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140707112000.028524371bb7e234fcf79205@linux-foundation.org>
+References: <20140630111640.GA13774@jenny-desktop>
+	<CAAfyv376J=oayov74bWdDmd+kDCwLJWAw5SMYRZGwbNP6rmEbA@mail.gmail.com>
+	<20140702031119.GA385@jenny-desktop>
+	<20140707112000.028524371bb7e234fcf79205@linux-foundation.org>
+Date: Sat, 12 Jul 2014 21:21:35 +0400
+Message-ID: <CALT56yPehFRfZu-PpPR9UeJV9b9f6azVa3QouAzwY726x-v=+g@mail.gmail.com>
+Subject: Re: Power Supply Subsystem Maintainer
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jenny Tc <jenny.tc@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Sebastian Reichel <sre@kernel.org>, Pavel Machek <pavel@ucw.cz>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Belisko Marek <marek.belisko@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit f7f7bac9cb1c ("rcu: Have the RCU tracepoints use the tracepoint_string
-infrastructure") unconditionally populates the __tracepoint_str input section,
-but this section is not assigned an output section if CONFIG_TRACING is not set.
-This results in the __tracepoint_str turning up in unexpected places, i.e.,
-after _edata.
+Hello,
 
-Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: rostedt@goodmis.org
-Cc: paulmck@linux.vnet.ibm.com
----
-v3:
-- make definition of <var>_varname conditional as well
-v2:
-- s/DEFINE_TPS/DEFINE_RCU_TPS/
+On Mon, Jul 7, 2014 at 10:20 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 2 Jul 2014 08:41:19 +0530 Jenny Tc <jenny.tc@intel.com> wrote:
+>
+>> Andrew Morton,
+>>
+>> Appreciate your help to sort out the power supply maintainer issue. The
+>> subsystem is not active after February 2014. No response from maintainer and the
+>> last commit on git://git.infradead.org/battery-2.6 was on 2014-02-01. Appreciate
+>> your help.
+>
+> Well, two weeks ago Dmitry did say that he'd been busy at work and
+> planned to pick things up again soon.
+>
+> Dmitry, could you please make a firm and realistic decision one way or
+> the other?  If it isn't truly going to happen then that's OK - these
+> things happen.  But please tell us so other arrangements can be put in
+> place if that's the way we'll be proceeding.
 
- kernel/rcu/tree.c | 15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+Well, I am sorry. I promised that I will have time for this, but it
+seems things did not go
+the way I expected. Sebastian volunteered  to pick up power/reset
+maintainership,
+so if he still is willing to work on that topic, I'll ack a patch
+transferring maintainership
+to him.
 
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index f1ba77363fbb..0756a4696007 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -79,9 +79,18 @@ static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
-  * the tracing userspace tools to be able to decipher the string
-  * address to the matching string.
-  */
--#define RCU_STATE_INITIALIZER(sname, sabbr, cr) \
-+#ifdef CONFIG_TRACING
-+# define DEFINE_RCU_TPS(sname) \
- static char sname##_varname[] = #sname; \
--static const char *tp_##sname##_varname __used __tracepoint_string = sname##_varname; \
-+static const char *tp_##sname##_varname __used __tracepoint_string = sname##_varname;
-+# define RCU_STATE_NAME(sname) sname##_varname
-+#else
-+# define DEFINE_RCU_TPS(sname)
-+# define RCU_STATE_NAME(sname) __stringify(sname)
-+#endif
-+
-+#define RCU_STATE_INITIALIZER(sname, sabbr, cr) \
-+DEFINE_RCU_TPS(sname) \
- struct rcu_state sname##_state = { \
- 	.level = { &sname##_state.node[0] }, \
- 	.call = cr, \
-@@ -93,7 +102,7 @@ struct rcu_state sname##_state = { \
- 	.orphan_donetail = &sname##_state.orphan_donelist, \
- 	.barrier_mutex = __MUTEX_INITIALIZER(sname##_state.barrier_mutex), \
- 	.onoff_mutex = __MUTEX_INITIALIZER(sname##_state.onoff_mutex), \
--	.name = sname##_varname, \
-+	.name = RCU_STATE_NAME(sname), \
- 	.abbr = sabbr, \
- }; \
- DEFINE_PER_CPU(struct rcu_data, sname##_data)
+As a side note, I'd suggest to also open a mailing list either on
+infradead.org (David, I
+made several requests, to n/a) or on vger.kernel.org.
+
 -- 
-1.8.3.2
-
+With best wishes
+Dmitry
