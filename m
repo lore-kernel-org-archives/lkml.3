@@ -1,128 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539AbaGLACl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 20:02:41 -0400
-Received: from mga02.intel.com ([134.134.136.20]:23798 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751081AbaGKX7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 19:59:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,646,1400050800"; 
-   d="scan'208";a="571973891"
-From: Andi Kleen <andi@firstfloor.org>
-To: jolsa@redhat.com
-Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org
-Subject: perf: Add support for full Intel event lists v7
-Date: Fri, 11 Jul 2014 16:59:14 -0700
-Message-Id: <1405123165-22666-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.3
+	id S932198AbaGLAGD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 20:06:03 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:62867 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754506AbaGLAGB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 20:06:01 -0400
+Date: Fri, 11 Jul 2014 20:06:15 -0400
+From: "Daniel M. Weeks" <dan@danweeks.net>
+To: Jean Delvare <jdelvare@suse.de>, Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] i2c: piix4: Continue probing for auxiliary SMBus without main
+Message-ID: <20140712000607.GA25787@turkey.danweeks.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All feedback addressed. Hopefully ready for merge now.
+Some BIOS may only allow access to the AMD auxiliary SMBus - reserving
+the main SMBus for system functions only. Probing should continue even
+if the main bus is not available so at least the auxiliary can be added.
 
-[v2: Review feedback addressed and some minor improvements]
-[v3: More review feedback addressed and handle test failures better.
-Ported to latest tip/core.]
-[v4: Addressed Namhyung's feedback]
-[v5: Rebase to latest tree. Minor description update.]
-[v6: Rebase. Add acked by from Namhyung and address feedback. Some minor
-fixes. Should be good to go now I hope. The period patch was dropped,
-as that is already handled. I added an extra patch for a --quiet argument
-for perf list]
-[v7: Address Jiri's feedback. Various changes and some patches
-were split. perf download uses curl now instead of wget.]
+Signed-off-by: Daniel M. Weeks <dan@danweeks.net>
+---
+This patch may warrant some discussion. I ran across this problem on an
+AMD Hudson board where the main SMBus is hard-wired for debugging but
+the auxiliary bus is exposed for expansion. Either purposefully or
+because the BIOS is a little broken, loading this module used to result
+in an ACPI conflict for the main bus and neither was usable. With the
+patch I'm able to use the auxiliary bus regardless of the conflict on
+the main bus. I'm not 100% convinced it's the correct fix - someone with
+more ACPI experience than me is going to need to review this.
 
-perf has high level events which are useful in many cases. However
-there are some tuning situations where low level events in the CPU
-are needed. Traditionally this required specifying the event in 
-raw form (very awkward) or using non standard frontends
-like ocperf or patching in libpfm.
+drivers/i2c/busses/i2c-piix4.c | 18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
 
-Intel CPUs can have very large event files (Haswell has ~336 core events,
-much more if you add uncore or all the offcore combinations), which is too
-large to describe through the kernel interface. It would require tying up
-significant amounts of unswappable memory for this.
+diff --git a/drivers/i2c/busses/i2c-piix4.c b/drivers/i2c/busses/i2c-piix4.c
+index a6f54ba..d4bac64 100644
+--- a/drivers/i2c/busses/i2c-piix4.c
++++ b/drivers/i2c/busses/i2c-piix4.c
+@@ -628,14 +628,16 @@ static int piix4_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 	else
+ 		retval = piix4_setup(dev, id);
+ 
+-	/* If no main SMBus found, give up */
+-	if (retval < 0)
+-		return retval;
+-
+-	/* Try to register main SMBus adapter, give up if we can't */
+-	retval = piix4_add_adapter(dev, retval, &piix4_main_adapter);
+-	if (retval < 0)
+-		return retval;
++	/* If no main SMBus found, do not give up
++	 * some BIOS purposely only expose aux bus */
++	if (retval < 0) {
++		dev_info(&dev->dev, "No main SMBus; checking auxiliary\n");
++	} else {
++		/* Try to register main SMBus adapter, give up if we can't */
++		retval = piix4_add_adapter(dev, retval, &piix4_main_adapter);
++		if (retval < 0)
++			return retval;
++	}
+ 
+ 	/* Check for auxiliary SMBus on some AMD chipsets */
+ 	retval = -ENODEV;
+-- 
+Daniel M. Weeks
 
-oprofile always had separate event list files that were maintained by 
-the CPU vendors. The oprofile events were shipped with the tool.
-The Intel events get updated regularly, for example to add references
-to the specification updates or add new events.
-
-Unfortunately oprofile usually did not keep up with these updates,
-so the events in oprofile were often out of date. In addition
-it ties up quite a bit of disk space, mostly for CPUs you don't have.
-
-This patch kit implements another mechanism that avoids these problems.
-Intel releases the event lists for CPUs in a standardized JSON format
-on a download server.
-
-I implemented an automatic downloader to get the event file for the
-current CPU.  The events are stored in ~/.cache/pmu-events.
-Then perf adds a parser that converts the JSON format into perf event
-aliases, which then can be used directly as any other perf event.
-
-The parsing is done using a simple existing JSON library.
-
-The events are still abstracted for perf, but the abstraction mechanism is
-through the downloaded file instead of through the kernel.
-
-The JSON format and perf parser has some minor Intelisms, but they
-are simple and small and optional. It's easy to extend, so it would be
-possible to use it for other CPUs too, add different pmu attributes, and
-add new download sites to the downloader tool.
-
-Currently only core events are supported, uncore may come at a later
-point. No kernel changes, all code in perf user tools only.
-
-Some of the parser files are partially shared with separate event parser
-library and are thus 2-clause BSD licensed.
-
-Patches also available from
-git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc perf/json
-
-Example output:
-
-% perf download 
-Downloading models file
-Downloading readme.txt
-Downloading events file
-% perf list
-...
-  br_inst_exec.all_branches                          [Speculative and retired
-                                                      branches]
-  br_inst_exec.all_conditional                       [Speculative and retired
-                                                      macro-conditional
-                                                      branches]
-  br_inst_exec.all_direct_jmp                        [Speculative and retired
-                                                      macro-unconditional
-                                                      branches excluding
-                                                      calls and indirects]
-... 333 more new events ...
-
-% perf stat -e br_inst_exec.all_direct_jmp true
-
- Performance counter stats for 'true':
-
-             6,817      cpu/br_inst_exec.all_direct_jmp/                                   
-
-       0.003503212 seconds time elapsed
-
-One nice feature is that a pointer to the specification update is now
-included in the description, which will hopefully clear up many problems:
-
-% perf list
-...
-  mem_load_uops_l3_hit_retired.xsnp_hit              [Retired load uops which
-                                                      data sources were L3
-                                                      and cross-core snoop
-                                                      hits in on-pkg core
-                                                      cache. Supports address
-                                                      when precise. Spec
-                                                      update: HSM26, HSM30
-                                                      (Precise event)]
-...
-
-
--Andi
