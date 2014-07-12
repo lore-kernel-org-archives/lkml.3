@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424AbaGLUnH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 16:43:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48433 "EHLO
+	id S1753485AbaGLUnd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 16:43:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48436 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752948AbaGLUnD (ORCPT
+	with ESMTP id S1752191AbaGLUna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 16:43:03 -0400
-Date: Sat, 12 Jul 2014 13:47:32 -0700
+	Sat, 12 Jul 2014 16:43:30 -0400
+Date: Sat, 12 Jul 2014 13:48:00 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: [GIT PULL] TTY/Serial fixes for 3.16-rc5
-Message-ID: <20140712204732.GA27346@kroah.com>
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PULL] USB driver fixes for 3.16-rc5
+Message-ID: <20140712204800.GA27384@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -29,37 +28,56 @@ The following changes since commit cd3de83f147601356395b57a8673e9c5ff1e59d1:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.16-rc5
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.16-rc5
 
-for you to fetch changes up to 34c4eda809e1efb16c554c07bb5df4c8ace9424e:
+for you to fetch changes up to eb82a3d846fab00c4b9ad6bbe5ade4fa5febc0af:
 
-  serial: sh-sci: Add device tree support for r8a7{778,740,3a4} and sh73a0 (2014-07-11 17:45:12 -0700)
+  phy: omap-usb2: Balance pm_runtime_enable() on probe failure and remove (2014-07-11 18:23:50 -0700)
 
 ----------------------------------------------------------------
-TTY/Serial fixes for 3.16-rc5
+USB fixes for 3.16-rc5
 
-Here are some small serial fixes that resolve some reported problems
-that started in 3.15 with some serial drivers.  And there's a new dt
-binding for a serial driver, which was all that was needed for the
-renesas serial driver.
+Here are some small USB fixes, PHY driver fixes (they ended up in this
+tree for lack of somewhere else to put them), and some new USB device
+ids.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Peter Hurley (3):
-      serial: Test for no tx data on tx restart
-      serial: arc_uart: Use uart_circ_empty() for open-coded comparison
-      serial: imx: Fix build breakage
+Andras Kovacs (1):
+      USB: cp210x: add support for Corsair usb dongle
 
-Simon Horman (1):
-      serial: sh-sci: Add device tree support for r8a7{778,740,3a4} and sh73a0
+Bernd Wachter (1):
+      usb: option: Add ID for Telewell TW-LTE 4G v2
 
- Documentation/devicetree/bindings/serial/renesas,sci-serial.txt | 7 +++++++
- drivers/tty/serial/arc_uart.c                                   | 2 +-
- drivers/tty/serial/imx.c                                        | 3 +++
- drivers/tty/serial/ip22zilog.c                                  | 2 ++
- drivers/tty/serial/m32r_sio.c                                   | 8 +++++---
- drivers/tty/serial/pmac_zilog.c                                 | 3 +++
- drivers/tty/serial/sunsab.c                                     | 3 +++
- drivers/tty/serial/sunzilog.c                                   | 2 ++
- 8 files changed, 26 insertions(+), 4 deletions(-)
+Bert Vermeulen (1):
+      USB: ftdi_sio: Add extra PID.
+
+Greg Kroah-Hartman (1):
+      Merge tag 'usb-serial-3.16-rc5' of git://git.kernel.org/.../johan/usb-serial into usb-linus
+
+Himangi Saraogi (1):
+      phy: omap-usb2: fix devm_ioremap_resource error detection code
+
+Maxime Ripard (1):
+      phy: sun4i: depend on RESET_CONTROLLER
+
+Michal Sojka (1):
+      USB: serial: ftdi_sio: Add Infineon Triboard
+
+Roger Quadros (2):
+      phy: core: Fix error path in phy_create()
+      phy: omap-usb2: Balance pm_runtime_enable() on probe failure and remove
+
+Sjoerd Simons (1):
+      drivers: phy: phy-samsung-usb2.c: Add missing MODULE_DEVICE_TABLE
+
+ drivers/phy/Kconfig               |  1 +
+ drivers/phy/phy-core.c            |  7 ++++---
+ drivers/phy/phy-omap-usb2.c       | 11 +++++++----
+ drivers/phy/phy-samsung-usb2.c    |  1 +
+ drivers/usb/serial/cp210x.c       |  1 +
+ drivers/usb/serial/ftdi_sio.c     |  5 ++++-
+ drivers/usb/serial/ftdi_sio_ids.h |  9 ++++++++-
+ drivers/usb/serial/option.c       |  2 ++
+ 8 files changed, 28 insertions(+), 9 deletions(-)
