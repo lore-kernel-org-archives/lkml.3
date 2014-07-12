@@ -1,186 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439AbaGLOqJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 10:46:09 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:54806 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752662AbaGLOoQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 10:44:16 -0400
-From: Mathias Krause <minipli@googlemail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: Joe Perches <joe@perches.com>, Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>
-Subject: [PATCH v2 2/8] printk: Provide pi_<level> / pe_<level> macros for __init / __exit code
-Date: Sat, 12 Jul 2014 16:43:26 +0200
-Message-Id: <1405176212-12175-3-git-send-email-minipli@googlemail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1405176212-12175-1-git-send-email-minipli@googlemail.com>
-References: <1405176212-12175-1-git-send-email-minipli@googlemail.com>
+	id S1752872AbaGLOxT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 10:53:19 -0400
+Received: from mail.efficios.com ([78.47.125.74]:35839 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751938AbaGLOxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jul 2014 10:53:17 -0400
+Date: Sat, 12 Jul 2014 14:53:17 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Message-ID: <318411977.13587.1405176797949.JavaMail.zimbra@efficios.com>
+In-Reply-To: <20140711133709.835700036@linutronix.de>
+References: <20140711133623.530368377@linutronix.de> <20140711133709.835700036@linutronix.de>
+Subject: Re: [patch 54/55] timekeeping: Provide fast and NMI safe access to
+ CLOCK_MONOTONIC[_RAW]
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [206.248.138.119]
+X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF30 (Linux)/8.0.7_GA_6021)
+Thread-Topic: timekeeping: Provide fast and NMI safe access to CLOCK_MONOTONIC[_RAW]
+Thread-Index: 3lvxbUWAeJJpc3FDU5Uj3AzAxyBgsQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The memory used for functions marked with __init will be released after
-initialization, albeit static data referenced by such code will not, if
-not explicitly marked this way, too. This is especially true for format
-strings used in messages printed by such code. Those are not marked and
-therefore will survive the __init cleanup -- dangling in memory without
-ever being referenced again.
+----- Original Message -----
+> From: "Thomas Gleixner" <tglx@linutronix.de>
+> To: "LKML" <linux-kernel@vger.kernel.org>
+> Cc: "John Stultz" <john.stultz@linaro.org>, "Peter Zijlstra" <peterz@infradead.org>, "Steven Rostedt"
+> <rostedt@goodmis.org>, "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> Sent: Friday, July 11, 2014 9:45:19 AM
+> Subject: [patch 54/55] timekeeping: Provide fast and NMI safe access to CLOCK_MONOTONIC[_RAW]
+> 
+> Tracers want a correlated time between the kernel instrumentation and
+> user space. We really do not want to export sched_clock() to user
+> space, so we need to provide something sensible for this.
+> 
+> Using separate data structures with an non blocking sequence count
+> based update mechanism allows us to do that. The data structure
+> required for the readout has a sequence counter and two copies of the
+> timekeeping data.
+> 
+> On the update side:
+> 
+>   tkf->seq++;
+>   smp_wmb();
+>   update(tkf->base[0], tk;
+>   tkf->seq++;
+>   smp_wmb();
+>   update(tkf->base[1], tk;
+> 
+> On the reader side:
+> 
+>   do {
+>      seq = tkf->seq;
+>      smp_rmb();
+>      idx = seq & 0x01;
+>      now = now(tkf->base[idx]);
+>      smp_rmb();
+>   } while (seq != tkf->seq)
+> 
+> So if NMI hits the update of base[0] it will use base[1] which is
+> still consistent. In case of CLOCK_MONOTONIC this can result in
+> slightly wrong timestamps (a few nanoseconds) accross an update. Not a
+> big issue for the intended use case.
 
-Ideally we would like the compiler to automatically recognise such
-constructs but it does not and it's not as simple as it might sound, as
-strings used in initialization code might latter still be used, e.g. as
-a slab cache name. Therefore we need to explicitly mark the strings we
-want to release together with the function itself.
+Hi Thomas,
 
-For a seamless integration of the necessary __init_str() / __exit_str()
-macros to mark the format strings, this patch provides new variants of
-the well known pr_<level>() macros as pi_<level>() for __init code and
-pe_<level>() for __exit code. Changing existing code should thereby be
-as simple as changing a single letter.
+I'm perhaps missing something here, but what happens with the
+following scenario ?
 
-For code that cannot be changed to use the pi_<level>() / pe_<level>()
-macros printk_init() and printk_exit() macros are provided, too.
+Initial conditions:
 
-One remark, though: We cannot provide appropriate p[ie]_debug() macros
-for the CONFIG_DYNAMIC_DEBUG case as there is (currently) no way to
-remove entries from dyndbg after initialization. But supporting that
-scenario would require more work (and code), therefore not necessarily
-justifying the memory savings.
+tkf->seq = 0
+tkf->base[0] and tkf->base[1] are initialized.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
+CPU 0                                      CPU 1
+------------                               ----------------
+update:
+  tkf->seq++
+  smb_wmb()
+  tkf->seq++ (reordered before update)
+                                           reader:
+                                           seq = tkf->seq (reads 2)
+                                           smp_rmb()
+                                           idx = seq & 0x01
+                                           now = now(tkf->base[idx]   (reads base[0])
+  update(tkf->base[0], tk) (racy concurrent update)
+                                           smp_rmb()
+                                           while (seq != tkf->seq) (they are equal)
 
----
-v2: introduce printk_init / printk_exit macros (suggested by Joe)
----
- include/linux/init.h   |    7 ++++--
- include/linux/printk.h |   59 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 64 insertions(+), 2 deletions(-)
+So AFAIU, we end up returning a corrupted value. Adding a
+smp_wmb() between update of base[0] and increment of seq,
+as well as between update of base[1] and the _following_
+increment of seq (next update call) would fix this.
 
-diff --git a/include/linux/init.h b/include/linux/init.h
-index 2c1cf10bb7..dc5691b2f3 100644
---- a/include/linux/init.h
-+++ b/include/linux/init.h
-@@ -39,14 +39,17 @@
-  * For strings used in __init / __exit functions the __init_str() /
-  * __exit_str() macros will take care of marking the strings accordingly so
-  * they can be freed, too. Otherwise the strings would resist in memory, even
-- * though they are no longer referenced.
-+ * though they are no longer referenced. They're also used to implement the
-+ * printk_init() / printk_exit() macros.
-  *
-  * Use them like this:
-  *
-  * static int __init my_setup(char *arg)
-  * {
-- *    if (!strcmp(arg, __init_str("disable")))
-+ *    if (!strcmp(arg, __init_str("disable"))) {
-+ *       printk_init("Disabled by commandline\n");
-  *       enabled = false;
-+ *   }
-  * }
-  * __setup("mydev=", my_setup);
-  */
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index 319ff7e53e..342b9e9501 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -226,6 +226,10 @@ extern asmlinkage void dump_stack(void) __cold;
-  * All of these will print unconditionally, although note that pr_debug()
-  * and other debug macros are compiled out unless either DEBUG is defined
-  * or CONFIG_DYNAMIC_DEBUG is set.
-+ *
-+ * The printk_init() and pi_<level>() macros shall be used in __init code in
-+ * favour of printk() / pr_<level>(). The printk_exit() and pe_<level>()
-+ * variants shall be used in __exit code.
-  */
- #define pr_emerg(fmt, ...) \
- 	printk(KERN_EMERG pr_fmt(fmt), ##__VA_ARGS__)
-@@ -245,13 +249,60 @@ extern asmlinkage void dump_stack(void) __cold;
- #define pr_cont(fmt, ...) \
- 	printk(KERN_CONT fmt, ##__VA_ARGS__)
- 
-+#define printk_init(fmt, ...) \
-+	printk(__init_str(fmt), ##__VA_ARGS__)
-+#define printk_exit(fmt, ...) \
-+	printk(__exit_str(fmt), ##__VA_ARGS__)
-+
-+#define pi_emerg(fmt, ...) \
-+	printk_init(KERN_EMERG pr_fmt(fmt), ##__VA_ARGS__)
-+#define pi_alert(fmt, ...) \
-+	printk_init(KERN_ALERT pr_fmt(fmt), ##__VA_ARGS__)
-+#define pi_crit(fmt, ...) \
-+	printk_init(KERN_CRIT pr_fmt(fmt), ##__VA_ARGS__)
-+#define pi_err(fmt, ...) \
-+	printk_init(KERN_ERR pr_fmt(fmt), ##__VA_ARGS__)
-+#define pi_warning(fmt, ...) \
-+	printk_init(KERN_WARNING pr_fmt(fmt), ##__VA_ARGS__)
-+#define pi_warn pi_warning
-+#define pi_notice(fmt, ...) \
-+	printk_init(KERN_NOTICE pr_fmt(fmt), ##__VA_ARGS__)
-+#define pi_info(fmt, ...) \
-+	printk_init(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
-+#define pi_cont(fmt, ...) \
-+	printk_init(KERN_CONT fmt, ##__VA_ARGS__)
-+
-+#define pe_emerg(fmt, ...) \
-+	printk_exit(KERN_EMERG pr_fmt(fmt), ##__VA_ARGS__)
-+#define pe_alert(fmt, ...) \
-+	printk_exit(KERN_ALERT pr_fmt(fmt), ##__VA_ARGS__)
-+#define pe_crit(fmt, ...) \
-+	printk_exit(KERN_CRIT pr_fmt(fmt), ##__VA_ARGS__)
-+#define pe_err(fmt, ...) \
-+	printk_exit(KERN_ERR pr_fmt(fmt), ##__VA_ARGS__)
-+#define pe_warning(fmt, ...) \
-+	printk_exit(KERN_WARNING pr_fmt(fmt), ##__VA_ARGS__)
-+#define pe_warn pe_warning
-+#define pe_notice(fmt, ...) \
-+	printk_exit(KERN_NOTICE pr_fmt(fmt), ##__VA_ARGS__)
-+#define pe_info(fmt, ...) \
-+	printk_exit(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
-+#define pe_cont(fmt, ...) \
-+	printk_exit(KERN_CONT fmt, ##__VA_ARGS__)
-+
- /* pr_devel() should produce zero code unless DEBUG is defined */
- #ifdef DEBUG
- #define pr_devel(fmt, ...) \
- 	printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-+#define pi_devel(fmt, ...) \
-+	printk_init(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-+#define pe_devel(fmt, ...) \
-+	printk_exit(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
- #else
- #define pr_devel(fmt, ...) \
- 	no_printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-+#define pi_devel pr_devel
-+#define pe_devel pr_devel
- #endif
- 
- #include <linux/dynamic_debug.h>
-@@ -261,12 +312,20 @@ extern asmlinkage void dump_stack(void) __cold;
- /* dynamic_pr_debug() uses pr_fmt() internally so we don't need it here */
- #define pr_debug(fmt, ...) \
- 	dynamic_pr_debug(fmt, ##__VA_ARGS__)
-+#define pi_debug pr_debug
-+#define pe_debug pr_debug
- #elif defined(DEBUG)
- #define pr_debug(fmt, ...) \
- 	printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-+#define pi_debug(fmt, ...) \
-+	printk_init(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-+#define pe_debug(fmt, ...) \
-+	printk_exit(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
- #else
- #define pr_debug(fmt, ...) \
- 	no_printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-+#define pi_debug pr_debug
-+#define pe_debug pr_debug
- #endif
- 
- /*
+Thoughts ?
+
+Thanks,
+
+Mathieu
+
 -- 
-1.7.10.4
-
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
