@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752119AbaGLIFd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 04:05:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44901 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752003AbaGLIFB (ORCPT
+	id S1752003AbaGLIL1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 04:11:27 -0400
+Received: from www.linutronix.de ([62.245.132.108]:60244 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751785AbaGLILV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 04:05:01 -0400
-Date: Sat, 12 Jul 2014 01:08:57 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: devel@driverdev.osuosl.org, kernelnewbies@kernelnewbies.org,
-        kernel-janitors <kernel-janitors@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [PATCH] reformat_with_checkpatch: Add automation to checkpatch
-Message-ID: <20140712080857.GA17634@kroah.com>
-References: <1405128087.6751.12.camel@joe-AO725>
- <20140712015327.GA26496@kroah.com>
- <1405130244.6751.32.camel@joe-AO725>
+	Sat, 12 Jul 2014 04:11:21 -0400
+Date: Sat, 12 Jul 2014 10:11:17 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [patch 54/55] timekeeping: Provide fast and NMI safe access to
+ CLOCK_MONOTONIC[_RAW]
+In-Reply-To: <743517199.13168.1405109080248.JavaMail.zimbra@efficios.com>
+Message-ID: <alpine.DEB.2.10.1407121002540.4357@nanos>
+References: <20140711133623.530368377@linutronix.de> <20140711133709.835700036@linutronix.de> <743517199.13168.1405109080248.JavaMail.zimbra@efficios.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405130244.6751.32.camel@joe-AO725>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 06:57:24PM -0700, Joe Perches wrote:
-> On Fri, 2014-07-11 at 18:53 -0700, Greg KH wrote:
-> > On Fri, Jul 11, 2014 at 06:21:27PM -0700, Joe Perches wrote:
-> > > A simple script to run checkpatch --fix for various types of
-> > > of cleanups.
-> []
-> > Anyway, try running this script on
-> > drivers/staging/lustre/lnet/lnet/acceptor.c to see how this build fails.
+On Fri, 11 Jul 2014, Mathieu Desnoyers wrote:
+
+> ----- Original Message -----
+> > From: "Thomas Gleixner" <tglx@linutronix.de>
+> > To: "LKML" <linux-kernel@vger.kernel.org>
+> > Cc: "John Stultz" <john.stultz@linaro.org>, "Peter Zijlstra" <peterz@infradead.org>, "Steven Rostedt"
+> > <rostedt@goodmis.org>, "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> > Sent: Friday, July 11, 2014 9:45:19 AM
+> > Subject: [patch 54/55] timekeeping: Provide fast and NMI safe access to CLOCK_MONOTONIC[_RAW]
+> > On the update side:
+> > 
+> >   tkf->seq++;
+> >   smp_wmb();
+> >   update(tkf->base[0], tk;
 > 
-> lustre doesn't use "normal" kernel makefiles.
+> missing ")"
 
-Ok, I've fixed all of the lustre Makefile crud up and checked it into my
-staging-next branch.  In doing so, it exposed just what a horrid mess
-the lustre include files are, which is good, hopefully people will
-notice and start fixing it up.
+:)
+ 
+> Any reason why the updater wouldn't do:
+> 
+> tkf->seq++;
+> smp_wmb();
+> update(tkf->base[1 - (tkf->seq & 0x01)], tk); 
+> 
+> instead of updating both array entries each time ?
 
-And with the fixes, this script now properly can build and test lustre
-files.
+  base[0];   	      <- Current active
+  seq++;	      -> Makes base[1] the active one for readers
+  update(base[0]);
 
-thanks,
+So readers are always one update cycle behind. Probably not an issue
+most of the time, but think about fast wrapping clocksources and
+NOHZ....
 
-greg k-h
+Thanks,
+
+	tglx
+
+
