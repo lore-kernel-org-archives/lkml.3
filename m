@@ -1,272 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751838AbaGLH3O (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 03:29:14 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:39465 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751616AbaGLH3N (ORCPT
+	id S1751946AbaGLHoe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 03:44:34 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:42357 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751785AbaGLHoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 03:29:13 -0400
-Date: Sat, 12 Jul 2014 09:29:05 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Rob Clark <robdclark@gmail.com>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] drm: rework flip-work helpers to avoid calling
- func when the FIFO is full
-Message-ID: <20140712092905.58756ab5@bbrezillon>
-In-Reply-To: <1405148409-18171-2-git-send-email-boris.brezillon@free-electrons.com>
-References: <1405148409-18171-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1405148409-18171-2-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 12 Jul 2014 03:44:32 -0400
+Date: Sat, 12 Jul 2014 10:44:25 +0300
+From: Gleb Natapov <gleb@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: mtosatti@redhat.com, nadav.amit@gmail.com, kvm@vger.kernel.org,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: Re: [RESEND PATCH v2 4/5] kvm: Remove ept_identity_pagetable from
+ struct kvm_arch.
+Message-ID: <20140712074425.GG4399@minantech.com>
+References: <1404824492-30095-5-git-send-email-tangchen@cn.fujitsu.com>
+ <1404871683-27293-1-git-send-email-tangchen@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404871683-27293-1-git-send-email-tangchen@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 12 Jul 2014 09:00:08 +0200
-Boris BREZILLON <boris.brezillon@free-electrons.com> wrote:
-
-> Make use of lists instead of kfifo in order to dynamically allocate
-> task entry when someone require some delayed work, and thus preventing
-> drm_flip_work_queue from directly calling func instead of queuing this
-> call.
-> This allow drm_flip_work_queue to be safely called even within irq
-> handlers.
+On Wed, Jul 09, 2014 at 10:08:03AM +0800, Tang Chen wrote:
+> kvm_arch->ept_identity_pagetable holds the ept identity pagetable page. But
+> it is never used to refer to the page at all.
 > 
-> Add new helper functions to allocate a flip work task and queue it when
-> needed. This prevents allocating data within irq context (which might
-> impact the time spent in the irq handler).
+> In vcpu initialization, it indicates two things:
+> 1. indicates if ept page is allocated
+> 2. indicates if a memory slot for identity page is initialized
 > 
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> Actually, kvm_arch->ept_identity_pagetable_done is enough to tell if the ept
+> identity pagetable is initialized. So we can remove ept_identity_pagetable.
+> 
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 > ---
->  drivers/gpu/drm/drm_flip_work.c | 96 ++++++++++++++++++++++++++++++-----------
->  include/drm/drm_flip_work.h     | 29 +++++++++----
->  2 files changed, 93 insertions(+), 32 deletions(-)
+>  arch/x86/include/asm/kvm_host.h |  1 -
+>  arch/x86/kvm/vmx.c              | 25 +++++++++++--------------
+>  2 files changed, 11 insertions(+), 15 deletions(-)
 > 
-> diff --git a/drivers/gpu/drm/drm_flip_work.c b/drivers/gpu/drm/drm_flip_work.c
-> index f9c7fa3..7441aa8 100644
-> --- a/drivers/gpu/drm/drm_flip_work.c
-> +++ b/drivers/gpu/drm/drm_flip_work.c
-> @@ -25,6 +25,44 @@
->  #include "drm_flip_work.h"
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index 4931415..62f973e 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -578,7 +578,6 @@ struct kvm_arch {
 >  
->  /**
-> + * drm_flip_work_allocate_task - allocate a flip-work task
-> + * @data: data associated to the task
-> + * @flags: allocator flags
-> + *
-> + * Allocate a drm_flip_task object and attach private data to it.
-> + */
-> +struct drm_flip_task *drm_flip_work_allocate_task(void *data, gfp_t flags)
-> +{
-> +	struct drm_flip_task *task;
-> +
-> +	task = kzalloc(sizeof(*task), flags);
-> +	if (task)
-> +		task->data = data;
-> +
-> +	return task;
-> +}
-> +EXPORT_SYMBOL(drm_flip_work_allocate_task);
-> +
-> +/**
-> + * drm_flip_work_queue_task - queue a specific task
-> + * @work: the flip-work
-> + * @task: the task to handle
-> + *
-> + * Queues task, that will later be run (passed back to drm_flip_func_t
-> + * func) on a work queue after drm_flip_work_commit() is called.
-> + */
-> +void drm_flip_work_queue_task(struct drm_flip_work *work,
-> +			      struct drm_flip_task *task)
-> +{
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&work->lock, flags);
-> +	list_add_tail(&task->node, &work->queued);
-> +	spin_unlock_irqrestore(&work->lock, flags);
-> +}
-> +EXPORT_SYMBOL(drm_flip_work_queue_task);
-> +
-> +/**
->   * drm_flip_work_queue - queue work
->   * @work: the flip-work
->   * @val: the value to queue
-> @@ -34,10 +72,14 @@
->   */
->  void drm_flip_work_queue(struct drm_flip_work *work, void *val)
+>  	gpa_t wall_clock;
+>  
+> -	struct page *ept_identity_pagetable;
+>  	bool ept_identity_pagetable_done;
+>  	gpa_t ept_identity_map_addr;
+>  
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index 0918635e..fe2e5f4 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -741,6 +741,7 @@ static void vmx_sync_pir_to_irr_dummy(struct kvm_vcpu *vcpu);
+>  static void copy_vmcs12_to_shadow(struct vcpu_vmx *vmx);
+>  static void copy_shadow_to_vmcs12(struct vcpu_vmx *vmx);
+>  static bool vmx_mpx_supported(void);
+> +static int alloc_identity_pagetable(struct kvm *kvm);
+>  
+>  static DEFINE_PER_CPU(struct vmcs *, vmxarea);
+>  static DEFINE_PER_CPU(struct vmcs *, current_vmcs);
+> @@ -3921,21 +3922,21 @@ out:
+>  
+>  static int init_rmode_identity_map(struct kvm *kvm)
 >  {
-> -	if (kfifo_put(&work->fifo, val)) {
-> -		atomic_inc(&work->pending);
-> +	struct drm_flip_task *task;
-> +
-> +	task = drm_flip_work_allocate_task(val,
-> +				drm_can_sleep() ? GFP_KERNEL : GFP_ATOMIC);
-> +	if (task) {
-> +		drm_flip_work_queue_task(work, task);
->  	} else {
-> -		DRM_ERROR("%s fifo full!\n", work->name);
-> +		DRM_ERROR("%s could not allocate task!\n", work->name);
->  		work->func(work, val);
->  	}
->  }
-> @@ -56,9 +98,12 @@ EXPORT_SYMBOL(drm_flip_work_queue);
->  void drm_flip_work_commit(struct drm_flip_work *work,
->  		struct workqueue_struct *wq)
->  {
-> -	uint32_t pending = atomic_read(&work->pending);
-> -	atomic_add(pending, &work->count);
-> -	atomic_sub(pending, &work->pending);
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&work->lock, flags);
-> +	list_splice_tail(&work->queued, &work->commited);
-> +	INIT_LIST_HEAD(&work->queued);
-> +	spin_unlock_irqrestore(&work->lock, flags);
->  	queue_work(wq, &work->worker);
->  }
->  EXPORT_SYMBOL(drm_flip_work_commit);
-> @@ -66,14 +111,26 @@ EXPORT_SYMBOL(drm_flip_work_commit);
->  static void flip_worker(struct work_struct *w)
->  {
->  	struct drm_flip_work *work = container_of(w, struct drm_flip_work, worker);
-> -	uint32_t count = atomic_read(&work->count);
-> -	void *val = NULL;
-> +	struct list_head tasks;
-> +	unsigned long flags;
+> -	int i, idx, r, ret;
+> +	int i, idx, r, ret = 0;
+>  	pfn_t identity_map_pfn;
+>  	u32 tmp;
 >  
-> -	atomic_sub(count, &work->count);
-> +	while (1) {
-> +		struct drm_flip_task *task, *tmp;
->  
-> -	while(count--)
-> -		if (!WARN_ON(!kfifo_get(&work->fifo, &val)))
-> -			work->func(work, val);
-> +		INIT_LIST_HEAD(&tasks);
-> +		spin_lock_irqsave(&work->lock, flags);
-> +		list_splice_tail(&work->commited, &tasks);
-> +		INIT_LIST_HEAD(&work->commited);
-> +		spin_unlock_irqrestore(&work->lock, flags);
-> +
-> +		if (list_empty(&tasks))
-> +			break;
-> +
-> +		list_for_each_entry_safe(task, tmp, &tasks, node) {
-> +			work->func(work, task->data);
-> +			kfree(task);
-> +		}
-> +	}
->  }
->  
->  /**
-> @@ -91,19 +148,11 @@ static void flip_worker(struct work_struct *w)
->  int drm_flip_work_init(struct drm_flip_work *work, int size,
->  		const char *name, drm_flip_func_t func)
->  {
-> -	int ret;
-> -
->  	work->name = name;
-> -	atomic_set(&work->count, 0);
-> -	atomic_set(&work->pending, 0);
-> +	INIT_LIST_HEAD(&work->queued);
-> +	INIT_LIST_HEAD(&work->commited);
-
-	spin_lock_init(&work->lock);
-
-is missing here.
-
->  	work->func = func;
->  
-> -	ret = kfifo_alloc(&work->fifo, size, GFP_KERNEL);
-> -	if (ret) {
-> -		DRM_ERROR("could not allocate %s fifo\n", name);
-> -		return ret;
+>  	if (!enable_ept)
+>  		return 1;
+> -	if (unlikely(!kvm->arch.ept_identity_pagetable)) {
+> -		printk(KERN_ERR "EPT: identity-mapping pagetable "
+> -			"haven't been allocated!\n");
+> -		return 0;
 > -	}
-> -
->  	INIT_WORK(&work->worker, flip_worker);
->  
->  	return 0;
-> @@ -118,7 +167,6 @@ EXPORT_SYMBOL(drm_flip_work_init);
->   */
->  void drm_flip_work_cleanup(struct drm_flip_work *work)
->  {
-> -	WARN_ON(!kfifo_is_empty(&work->fifo));
-> -	kfifo_free(&work->fifo);
-> +	WARN_ON(!list_empty(&work->queued) || !list_empty(&work->commited));
->  }
->  EXPORT_SYMBOL(drm_flip_work_cleanup);
-> diff --git a/include/drm/drm_flip_work.h b/include/drm/drm_flip_work.h
-> index 9eed34d..0a5acff 100644
-> --- a/include/drm/drm_flip_work.h
-> +++ b/include/drm/drm_flip_work.h
-> @@ -25,6 +25,7 @@
->  #define DRM_FLIP_WORK_H
->  
->  #include <linux/kfifo.h>
-> +#include <linux/spinlock.h>
->  #include <linux/workqueue.h>
->  
->  /**
-> @@ -32,9 +33,7 @@
->   *
->   * Util to queue up work to run from work-queue context after flip/vblank.
->   * Typically this can be used to defer unref of framebuffer's, cursor
-> - * bo's, etc until after vblank.  The APIs are all safe (and lockless)
-> - * for up to one producer and once consumer at a time.  The single-consumer
-> - * aspect is ensured by committing the queued work to a single work-queue.
-> + * bo's, etc until after vblank.  The APIs are all safe.
->   */
->  
->  struct drm_flip_work;
-> @@ -51,22 +50,36 @@ struct drm_flip_work;
->  typedef void (*drm_flip_func_t)(struct drm_flip_work *work, void *val);
->  
->  /**
-> + * struct drm_flip_task - flip work task
-> + * @node: list entry element
-> + * @data: data to pass to work->func
-> + */
-> +struct drm_flip_task {
-> +	struct list_head node;
-> +	void *data;
-> +};
+>  	if (likely(kvm->arch.ept_identity_pagetable_done))
+>  		return 1;
+> -	ret = 0;
+>  	identity_map_pfn = kvm->arch.ept_identity_map_addr >> PAGE_SHIFT;
 > +
-> +/**
->   * struct drm_flip_work - flip work queue
->   * @name: debug name
-> - * @pending: number of queued but not committed items
-> - * @count: number of committed items
->   * @func: callback fxn called for each committed item
->   * @worker: worker which calls @func
-> - * @fifo: queue of committed items
-> + * @queued: queued tasks
-> + * @commited: commited tasks
-> + * @lock: lock to access queued and commited lists
->   */
->  struct drm_flip_work {
->  	const char *name;
-> -	atomic_t pending, count;
->  	drm_flip_func_t func;
->  	struct work_struct worker;
-> -	DECLARE_KFIFO_PTR(fifo, void *);
-> +	struct list_head queued;
-> +	struct list_head commited;
-> +	spinlock_t lock;
->  };
+> +	mutex_lock(&kvm->slots_lock);
+Why move this out of alloc_identity_pagetable()?
+
+> +	r = alloc_identity_pagetable(kvm);
+> +	if (r)
+> +		goto out2;
+> +
+>  	idx = srcu_read_lock(&kvm->srcu);
+>  	r = kvm_clear_guest_page(kvm, identity_map_pfn, 0, PAGE_SIZE);
+>  	if (r < 0)
+> @@ -3953,6 +3954,9 @@ static int init_rmode_identity_map(struct kvm *kvm)
+>  	ret = 1;
+>  out:
+>  	srcu_read_unlock(&kvm->srcu, idx);
+> +
+> +out2:
+> +	mutex_unlock(&kvm->slots_lock);
+>  	return ret;
+>  }
 >  
-> +struct drm_flip_task *drm_flip_work_allocate_task(void *data, gfp_t flags);
-> +void drm_flip_work_queue_task(struct drm_flip_work *work,
-> +			      struct drm_flip_task *task);
->  void drm_flip_work_queue(struct drm_flip_work *work, void *val);
->  void drm_flip_work_commit(struct drm_flip_work *work,
->  		struct workqueue_struct *wq);
+> @@ -4006,9 +4010,6 @@ static int alloc_identity_pagetable(struct kvm *kvm)
+>  	struct kvm_userspace_memory_region kvm_userspace_mem;
+>  	int r = 0;
+>  
+> -	mutex_lock(&kvm->slots_lock);
+> -	if (kvm->arch.ept_identity_pagetable)
+> -		goto out;
+>  	kvm_userspace_mem.slot = IDENTITY_PAGETABLE_PRIVATE_MEMSLOT;
+>  	kvm_userspace_mem.flags = 0;
+>  	kvm_userspace_mem.guest_phys_addr =
+> @@ -4025,9 +4026,7 @@ static int alloc_identity_pagetable(struct kvm *kvm)
+>  		goto out;
+>  	}
+>  
+> -	kvm->arch.ept_identity_pagetable = page;
+I think we can drop gfn_to_page() above too now. Why would we need it?
 
+>  out:
+> -	mutex_unlock(&kvm->slots_lock);
+>  	return r;
+>  }
+>  
+> @@ -7583,8 +7582,6 @@ static struct kvm_vcpu *vmx_create_vcpu(struct kvm *kvm, unsigned int id)
+>  			kvm->arch.ept_identity_map_addr =
+>  				VMX_EPT_IDENTITY_PAGETABLE_ADDR;
+>  		err = -ENOMEM;
+> -		if (alloc_identity_pagetable(kvm) != 0)
+> -			goto free_vmcs;
+>  		if (!init_rmode_identity_map(kvm))
+>  			goto free_vmcs;
+>  	}
+> -- 
+> 1.8.3.1
+> 
 
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+--
+			Gleb.
