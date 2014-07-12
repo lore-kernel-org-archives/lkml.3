@@ -1,94 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752415AbaGLJZy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 05:25:54 -0400
-Received: from forward8l.mail.yandex.net ([84.201.143.141]:43581 "EHLO
-	forward8l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752241AbaGLJZx (ORCPT
+	id S1752247AbaGLJaz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 05:30:55 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:34029 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037AbaGLJax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 05:25:53 -0400
-X-Yandex-Uniq: 8134ffe6-e20f-4f52-a2d1-fa315b91317c
-Authentication-Results: smtp18.mail.yandex.net; dkim=pass header.i=@yandex.ru
-Message-ID: <53C0FF16.40902@yandex.ru>
-Date: Sat, 12 Jul 2014 13:25:42 +0400
-From: Kirill Tkhai <tkhai@yandex.ru>
-Reply-To: tkhai@yandex.ru
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Tim Chen <tim.c.chen@linux.intel.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "David S.Miller" <davem@davemloft.net>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-CC: Chandramouli Narayanan <mouli@linux.intel.com>,
-        Vinodh Gopal <vinodh.gopal@intel.com>,
-        James Guilford <james.guilford@intel.com>,
-        Wajdi Feghali <wajdi.k.feghali@intel.com>,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 6/7] sched: add function nr_running_cpu to expose number
- of tasks running on cpu
-References: <cover.1405074379.git.tim.c.chen@linux.intel.com> <1405110784.2970.655.camel@schen9-DESK>
-In-Reply-To: <1405110784.2970.655.camel@schen9-DESK>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Sat, 12 Jul 2014 05:30:53 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] fb: backlight: add driver for iPAQ micro backlight
+Date: Sat, 12 Jul 2014 11:30:40 +0200
+Message-Id: <1405157440-10283-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.07.2014 00:33, Tim Chen wrote:
-> This function will help a thread decide if it wants to to do work
-> that can be delayed, to accumulate more tasks for more efficient
-> batch processing later.
-> 
-> However, if no other tasks are running on the cpu, it can take
-> advantgae of the available cpu cycles to complete the tasks
-> for immediate processing to minimize delay, otherwise it will yield.
-> 
-> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-> ---
->  include/linux/sched.h | 1 +
->  kernel/sched/core.c   | 8 ++++++++
->  2 files changed, 9 insertions(+)
-> 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 7cb07fd..0884250 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -168,6 +168,7 @@ extern int nr_threads;
->  DECLARE_PER_CPU(unsigned long, process_counts);
->  extern int nr_processes(void);
->  extern unsigned long nr_running(void);
-> +extern unsigned long nr_running_cpu(int cpu);
->  extern unsigned long nr_iowait(void);
->  extern unsigned long nr_iowait_cpu(int cpu);
->  extern unsigned long this_cpu_load(void);
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 9cae286..d5bb8e6 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -2283,6 +2283,14 @@ unsigned long nr_running(void)
->  	return sum;
->  }
->  
-> +unsigned long nr_running_cpu(int cpu)
-> +{
-> +	if (cpumask_test_cpu(cpu, cpu_online_mask))
-> +		return cpu_rq(cpu)->nr_running;
-> +	else
-> +		return 0;
-> +}
-> +
+This adds a driver for the backlight controlled by the microcontroller
+on the Compaq iPAQ series of handheld computers: h3100, h3600
+and h3700.
 
-Offline cpu should have nr_running equal to 0. We park last
-enqueued thread (migration_thread) at the end of take_cpu_down().
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/video/backlight/Kconfig         |  9 ++++
+ drivers/video/backlight/Makefile        |  1 +
+ drivers/video/backlight/ipaq_micro_bl.c | 89 +++++++++++++++++++++++++++++++++
+ 3 files changed, 99 insertions(+)
+ create mode 100644 drivers/video/backlight/ipaq_micro_bl.c
 
-So, it's enough to return cpu_rq(cpu)->nr_running.
+diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
+index 5d449059a556..cc153f55d9f9 100644
+--- a/drivers/video/backlight/Kconfig
++++ b/drivers/video/backlight/Kconfig
+@@ -207,6 +207,15 @@ config BACKLIGHT_GENERIC
+ 	  known as the Corgi backlight driver. If you have a Sharp Zaurus
+ 	  SL-C7xx, SL-Cxx00 or SL-6000x say y.
+ 
++config BACKLIGHT_IPAQ_MICRO
++	tristate "iPAQ microcontroller backlight driver"
++	depends on MFD_IPAQ_MICRO
++	default y
++	help
++	  Say y to enable the backlight driver for Compaq iPAQ handheld
++	  computers. Say yes if you have one of the h3100/h3600/h3700
++	  machines.
++
+ config BACKLIGHT_LM3533
+ 	tristate "Backlight Driver for LM3533"
+ 	depends on BACKLIGHT_CLASS_DEVICE
+diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
+index bb820024f346..a9ea34a39cad 100644
+--- a/drivers/video/backlight/Makefile
++++ b/drivers/video/backlight/Makefile
+@@ -36,6 +36,7 @@ obj-$(CONFIG_BACKLIGHT_GENERIC)		+= generic_bl.o
+ obj-$(CONFIG_BACKLIGHT_GPIO)		+= gpio_backlight.o
+ obj-$(CONFIG_BACKLIGHT_HP680)		+= hp680_bl.o
+ obj-$(CONFIG_BACKLIGHT_HP700)		+= jornada720_bl.o
++obj-$(CONFIG_BACKLIGHT_IPAQ_MICRO)	+= ipaq_micro_bl.o
+ obj-$(CONFIG_BACKLIGHT_LM3533)		+= lm3533_bl.o
+ obj-$(CONFIG_BACKLIGHT_LM3630A)		+= lm3630a_bl.o
+ obj-$(CONFIG_BACKLIGHT_LM3639)		+= lm3639_bl.o
+diff --git a/drivers/video/backlight/ipaq_micro_bl.c b/drivers/video/backlight/ipaq_micro_bl.c
+new file mode 100644
+index 000000000000..b7ec8c453b61
+--- /dev/null
++++ b/drivers/video/backlight/ipaq_micro_bl.c
+@@ -0,0 +1,89 @@
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * iPAQ microcontroller backlight support
++ * Author : Linus Walleij <linus.walleij@linaro.org>
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/platform_device.h>
++#include <linux/backlight.h>
++#include <linux/mfd/ipaq-micro.h>
++#include <linux/fb.h>
++#include <linux/err.h>
++
++static int micro_bl_update_status(struct backlight_device *bd)
++{
++	struct ipaq_micro *micro = dev_get_drvdata(&bd->dev);
++	int intensity = bd->props.brightness;
++	struct ipaq_micro_msg msg = {
++		.id = MSG_BACKLIGHT,
++		.tx_len = 3,
++	};
++
++	if (bd->props.power != FB_BLANK_UNBLANK)
++		intensity = 0;
++	if (bd->props.state & BL_CORE_FBBLANK)
++		intensity = 0;
++	if (bd->props.state & BL_CORE_SUSPENDED)
++		intensity = 0;
++
++	msg.tx_data[0] = 0x01;
++	msg.tx_data[1] = intensity > 0 ? 1 : 0;
++	msg.tx_data[2] = intensity;
++	return ipaq_micro_tx_msg_sync(micro, &msg);
++}
++
++static const struct backlight_ops micro_bl_ops = {
++	.options = BL_CORE_SUSPENDRESUME,
++	.update_status  = micro_bl_update_status,
++};
++
++static struct backlight_properties micro_bl_props = {
++	.type = BACKLIGHT_RAW,
++	.max_brightness = 255,
++	.power = FB_BLANK_UNBLANK,
++	.brightness = 64,
++};
++
++static int micro_backlight_probe(struct platform_device *pdev)
++{
++	struct backlight_device *bd;
++	struct ipaq_micro *micro = dev_get_drvdata(pdev->dev.parent);
++
++	bd = devm_backlight_device_register(
++		&pdev->dev,
++		"ipaq-micro-backlight",
++		&pdev->dev,
++		micro,
++		&micro_bl_ops,
++		&micro_bl_props);
++	if (IS_ERR(bd))
++		return PTR_ERR(bd);
++	platform_set_drvdata(pdev, bd);
++	backlight_update_status(bd);
++	dev_info(&pdev->dev, "iPAQ micro backlight driver\n");
++
++	return 0;
++}
++
++static int micro_backlight_remove(struct platform_device *pdev)
++{
++	return 0;
++}
++
++struct platform_driver micro_backlight_device_driver = {
++	.driver = {
++		.name    = "ipaq-micro-backlight",
++	},
++	.probe   = micro_backlight_probe,
++	.remove  = micro_backlight_remove,
++};
++module_platform_driver(micro_backlight_device_driver);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("driver for iPAQ Atmel micro backlight");
++MODULE_ALIAS("platform:ipaq-micro-backlight");
+-- 
+1.9.3
 
->  unsigned long long nr_context_switches(void)
->  {
->  	int i;
-> 
-
-Thanks,
-Kirill
