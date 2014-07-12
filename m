@@ -1,83 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608AbaGLMXB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 08:23:01 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:58114 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752033AbaGLMW6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 08:22:58 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rob Clark <robdclark@gmail.com>
-Subject: Re: [PATCH v4] devicetree: Add generic IOMMU device tree bindings
-Date: Sat, 12 Jul 2014 14:22:01 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: Will Deacon <will.deacon@arm.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, Joerg Roedel <joro@8bytes.org>,
-        Olav Haugan <ohaugan@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grant Grundler <grundler@chromium.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Varun Sethi <varun.sethi@freescale.com>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        "linux-arm-msm" <linux-arm-msm@vger.kernel.org>
-References: <1404487757-18829-1-git-send-email-thierry.reding@gmail.com> <20140712093917.GD18601@arm.com> <CAF6AEGutHp+3f3iPA+jjaRkqq=5T_vytZ_ESoSqsQ4RHZ8F8yQ@mail.gmail.com>
-In-Reply-To: <CAF6AEGutHp+3f3iPA+jjaRkqq=5T_vytZ_ESoSqsQ4RHZ8F8yQ@mail.gmail.com>
+	id S1752703AbaGLM0m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 08:26:42 -0400
+Received: from mailsec112.isp.belgacom.be ([195.238.20.108]:40237 "EHLO
+	mailsec112.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750900AbaGLM0k convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jul 2014 08:26:40 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=WLgrd8mm0yoz2YSgx9XCP02+ETYFSipUtoe0uoxTB8Y= c=1 sm=2
+ a=MYYm6ajh4Z8A:10 a=IkcTkHD0fZMA:10 a=ag1SF4gXAAAA:8 a=KKAkSRfTAAAA:8
+ a=VwQbUJbxAAAA:8 a=2s-FWJaAVigkAOGe278A:9 a=QEXdDO2ut3YA:10
+ a=1TSTQ8KKaH4A:10 a=WwgC8nHKvroA:10
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArkJADsowVPD7hTU/2dsb2JhbABZgw6EHakUAQEBAQEBBps4gTcBgQ4WdYQDAQEEASNWBQsFBAIYAgIYDgICVwYTEYgpDJIanCiGf5EqF4EshE+JHTMHgneBTAWmY4hIggKBRDs
+Date: Sat, 12 Jul 2014 14:26:38 +0200 (CEST)
+From: Fabian Frederick <fabf@skynet.be>
+Reply-To: Fabian Frederick <fabf@skynet.be>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Sumit Semwal <sumit.semwal@linaro.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <408123556.600278.1405167998799.open-xchange@webmail.nmp.skynet.be>
+In-Reply-To: <20140710003428.GA22113@kroah.com>
+References: <1403901130-8156-1-git-send-email-fabf@skynet.be> <20140710003428.GA22113@kroah.com>
+Subject: Re: [PATCH 1/1] drivers/base/dma-buf.c: replace
+ dma_buf_uninit_debugfs by debugfs_remove_recursive
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201407121422.02078.arnd@arndb.de>
-X-Provags-ID: V02:K0:q9M97nt1ivjtgoArSfLKv9+ZvP/6pVJaw4wq0NhrgAD
- KX4y0UbtngsjTc3yupDBZGYMehZP31RcsXvZSoFdlKmvDer0yQ
- A/+8NfJ0rg87vxxfNCI8vadl1zGGr8Q3QKhU6OxSVOLpJZUzbP
- 8nhVECkKE04lquLz9uJx8hUJtZqmoNcp75UGI8iNK0eiLj1TND
- 7aq9tV8+mWzuF7lKYJZzoTRkRGA60OXcPtVXaFmKtuywN0BKc/
- mvoLzHUt2RhNxAsvVd6Rm6VdtFmeu1Jg1uFZfa03ld7p01l+/O
- pjbSqVNbk7jg/nTslzVBZZxzlPArIReyynmz9yRcXt2cbufE8g
- eTVOHM2tX6SjUOWYGnhw=
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+Importance: Medium
+X-Mailer: Open-Xchange Mailer v7.2.2-Rev27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 12 July 2014, Rob Clark wrote:
-> >> Was there actually a good reason for having the device link to the
-> >> iommu rather than the other way around?  How much would people hate it
-> >> if I just ignore the generic bindings and use something that works for
-> >> me instead.  I mean, it isn't exactly like there is going to be .dts
-> >> re-use across different SoC's..  and at least with current IOMMU API
-> >> some sort of of_get_named_iommu() API doesn't really make sense.
+
+
+> On 10 July 2014 at 02:34 Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> wrote:
+>
+>
+> On Fri, Jun 27, 2014 at 10:32:10PM +0200, Fabian Frederick wrote:
+> > null test before debugfs_remove_recursive is not needed so one line function
+> > dma_buf_uninit_debugfs can be removed.
 > >
-> > The thing is, if you end up ignoring the generic binding then we have two
-> > IOMMUs using the same (ARM SMMU) binding and it begs the question as to
-> > which is the more generic! I know we're keen to get this merged, but merging
-> > something that people won't use and calling it generic doesn't seem ideal
-> > either. We do, however, desperately need a generic binding.
-> 
-> yeah, ignoring the generic binding is not my first choice.  I'd rather
-> have something that works well for everyone.  But I wasn't really sure
-> if the current proposal was arbitrary, or if there are some
-> conflicting requirements between different platforms.
+> > This patch calls debugfs_remove_recursive under CONFIG_DEBUG_FS
+> >
+> > Cc: Sumit Semwal <sumit.semwal@linaro.org>
+> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > Cc: linux-media@vger.kernel.org
+> > Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> > ---
+> >
+> > This is untested.
+> >
+> >  drivers/base/dma-buf.c | 13 +++----------
+> >  1 file changed, 3 insertions(+), 10 deletions(-)
+> >
+> > diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
+> > index 840c7fa..184c0cb 100644
+> > --- a/drivers/base/dma-buf.c
+> > +++ b/drivers/base/dma-buf.c
+> > @@ -701,12 +701,6 @@ static int dma_buf_init_debugfs(void)
+> >     return err;
+> >  }
+> > 
+> > -static void dma_buf_uninit_debugfs(void)
+> > -{
+> > -   if (dma_buf_debugfs_dir)
+> > -           debugfs_remove_recursive(dma_buf_debugfs_dir);
+> > -}
+> > -
+> >  int dma_buf_debugfs_create_file(const char *name,
+> >                             int (*write)(struct seq_file *))
+> >  {
+> > @@ -722,9 +716,6 @@ static inline int dma_buf_init_debugfs(void)
+> >  {
+> >     return 0;
+> >  }
+> > -static inline void dma_buf_uninit_debugfs(void)
+> > -{
+> > -}
+> >  #endif
+> > 
+> >  static int __init dma_buf_init(void)
+> > @@ -738,6 +729,8 @@ subsys_initcall(dma_buf_init);
+> > 
+> >  static void __exit dma_buf_deinit(void)
+> >  {
+> > -   dma_buf_uninit_debugfs();
+> > +#ifdef CONFIG_DEBUG_FS
+> > +   debugfs_remove_recursive(dma_buf_debugfs_dir);
+> > +#endif
+>
+> That ifdef should not be needed at all, right?  No ifdefs should be
+> needed for debugfs code, if it is written correctly :)
+>
 
-The common case that needs to be simple is attaching one (master) device
-to an IOMMU using the shared global context for the purposes of implementing
-the dma-mapping API.
+Hello Greg,
 
-The way that Thierry's binding does that is the obvious solution to this,
-and it mirrors what we do in practically every other subsystem. I definitely
-want the SMMU to change before anybody starts using it in a real system,
-which we fortunately do not have yet.
+        Current dma_buf_init_debugfs and dma_buf_init_uninit_debugfs and
+related functions in drivers/base/dma-buf.c are only defined
+under #ifdef CONFIG_DEBUG_FS ; reason for that #ifdef in the patch.
+I'll send you a fixed version.
 
-	Arnd
+Thanks,
+Fabian
+
+> thanks,
+>
+> greg k-h
