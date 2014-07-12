@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752045AbaGLI2e (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 04:28:34 -0400
-Received: from mail.net13.info ([94.19.113.221]:57061 "EHLO mail.net13.info"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751760AbaGLI21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 04:28:27 -0400
-X-Greylist: delayed 328 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Jul 2014 04:28:27 EDT
-From: Alexey Asemov <alex@alex-at.ru>
-To: linux-ide@vger.kernel.org
-Cc: tj@kernel.org, linux-kernel@vger.kernel.org,
-        Alexey Asemov <alex@alex-at.ru>
-Subject: [PATCH] libata: handle IDE AMNF errors in the EH path
-Date: Sat, 12 Jul 2014 12:22:53 +0400
-Message-Id: <1405153373-11108-1-git-send-email-alex@alex-at.ru>
-X-Mailer: git-send-email 1.7.1
+	id S1752089AbaGLIj2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 04:39:28 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:38561 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751733AbaGLIj0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jul 2014 04:39:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFxc1FWkSzRmtRP3XhEJ1Y1p8bc3SiTShhskwjRLJkTazA@mail.gmail.com>
+References: <cover.1405095200.git.luto@amacapital.net> <a13ebdd57378120348f40cbe12d9b1705d189434.1405095200.git.luto@amacapital.net>
+ <CA+55aFxc1FWkSzRmtRP3XhEJ1Y1p8bc3SiTShhskwjRLJkTazA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sat, 12 Jul 2014 01:39:01 -0700
+Message-ID: <CALCETrUqeUJT7xGy0TERVjJUAZUCXJGdgaDWv-f5+vkkArP8ig@mail.gmail.com>
+Subject: Re: [PATCH 2/2] x86_64,signal: Remove 'fs' and 'gs' from sigcontext
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-libata-eh.c should handle AMNF error condition (error byte bit 0, usually
-code 0x01) in libata-eh.c along with UNC as a media error so SCSI stack
-can handle it properly (translation code 0x01 is already present in
-libata-scsi.c) but was never passed down due to lack of handling in EH.
+On Jul 11, 2014 7:21 PM, "Linus Torvalds" <torvalds@linux-foundation.org> wrote:
+>
+> On Fri, Jul 11, 2014 at 9:29 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> > As far as I can tell, these fields have been set to zero on save and
+> > ignored on restore since Linux was imported into git.  Rename them
+> > '__pad1' and '__pad2' to avoid confusion and to allow them to be
+> > recycled some day.
+>
+> Shouldn't we actually try to save/restore gs/fs properly? Admittedly,
+> changing them in the signal handler would be insane, but still.. See
+> our context switching code  with the whole segment selector vs base
+> save/restore code. Hmm?
 
-https://bugzilla.kernel.org/show_bug.cgi?id=80031
+This seems like it's asking for trouble.  I think wxe'd have to
+separately save the selectors and the base registers to avoid breaking
+something, especially once wrgsbase, etc are enabled.
 
-Signed-off-by: Alexey Asemov <alex@alex-at.ru>
----
- drivers/ata/libata-eh.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+Why would this be needed anyway?
 
-diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
-index 6760fc4..dad83df 100644
---- a/drivers/ata/libata-eh.c
-+++ b/drivers/ata/libata-eh.c
-@@ -1811,7 +1811,7 @@ static unsigned int ata_eh_analyze_tf(struct ata_queued_cmd *qc,
- 	case ATA_DEV_ATA:
- 		if (err & ATA_ICRC)
- 			qc->err_mask |= AC_ERR_ATA_BUS;
--		if (err & ATA_UNC)
-+		if (err & (ATA_UNC | ATA_AMNF))
- 			qc->err_mask |= AC_ERR_MEDIA;
- 		if (err & ATA_IDNF)
- 			qc->err_mask |= AC_ERR_INVALID;
-@@ -2556,11 +2556,12 @@ static void ata_eh_link_report(struct ata_link *link)
- 		}
- 
- 		if (cmd->command != ATA_CMD_PACKET &&
--		    (res->feature & (ATA_ICRC | ATA_UNC | ATA_IDNF |
--				     ATA_ABORTED)))
--			ata_dev_err(qc->dev, "error: { %s%s%s%s}\n",
-+		    (res->feature & (ATA_ICRC | ATA_UNC | ATA_AMNF |
-+				     ATA_IDNF | ATA_ABORTED)))
-+			ata_dev_err(qc->dev, "error: { %s%s%s%s%s}\n",
- 			  res->feature & ATA_ICRC ? "ICRC " : "",
- 			  res->feature & ATA_UNC ? "UNC " : "",
-+			  res->feature & ATA_AMNF ? "AMNF " : "",
- 			  res->feature & ATA_IDNF ? "IDNF " : "",
- 			  res->feature & ATA_ABORTED ? "ABRT " : "");
- #endif
--- 
-1.7.1
+Does anyone implement makecontext, etc using raise/sigreturn?  If so,
+they might be in for a surprise when their gs starts getting saved,
+too.
 
+Linus, for context, the other patch in this series saves and restores
+SS.  Without that, 64-bit sigreturn to a nondefault stack segment is
+basically impossible.  But I don't see why any other segments (besides
+CS) are needed for 64-bit sigreturn.
+
+--Andy
+
+>
+>             Linus
