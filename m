@@ -1,146 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440AbaGLLFm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 07:05:42 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:33004 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767AbaGLLFk (ORCPT
+	id S1752560AbaGLLKR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 07:10:17 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:36027 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752025AbaGLLKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 07:05:40 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        Jason Cooper <jason@lakedaemon.net>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] ARM: Fix preemption disable in iwmmxt_task_enable()
-Date: Sat, 12 Jul 2014 13:05:30 +0200
-Message-Id: <1405163130-3927-1-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1405069813-9270-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1405069813-9270-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Sat, 12 Jul 2014 07:10:13 -0400
+Date: Sat, 12 Jul 2014 12:10:04 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Paul Bolle <pebolle@tiscali.nl>, linaro-kernel@lists.linaro.org,
+        Arnd Bergmann <arnd@arndb.de>, patches@linaro.org,
+        spear-devel@list.st.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v7 0/4] arm: Fix DEBUG_LL for multi-platform kernels
+	(without PL01X)
+Message-ID: <20140712111004.GI21766@n2100.arm.linux.org.uk>
+References: <1401206421-29832-1-git-send-email-daniel.thompson@linaro.org> <1404127855-30459-1-git-send-email-daniel.thompson@linaro.org> <20140712101602.GH21766@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140712101602.GH21766@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 431a84b1a4f7d1a0085d5b91330c5053cc8e8b12
- ("ARM: 8034/1: Disable preemption in iwmmxt_task_enable()")
-introduced macros {inc,dec}_preempt_count to iwmmxt_task_enable
-to make it run with preemption disabled.
+On Sat, Jul 12, 2014 at 11:16:02AM +0100, Russell King - ARM Linux wrote:
+> On Mon, Jun 30, 2014 at 12:30:51PM +0100, Daniel Thompson wrote:
+> > This patchset removes some single-platform compatibility tricks related
+> > to DEBUG_LL and, as a result, allows multi_v7_defconfig derived builds
+> > to enable DEBUG_LL. Currently the user selected kbuild setting is
+> > ignored and the PL01X's DEBUG_LL stub is silently selected instead. This
+> > is a pain if your hardware doesn't have this cell, not least because it
+> > takes a little time to figure out that kbuild built the wrong code.
+> 
+> I don't think this is quite right, because I'm now seeing randconfig
+> finding build errors with this.  We can end up with this configuration:
+> 
+> CONFIG_DEBUG_LL=y
+> CONFIG_DEBUG_LL_UART_NONE=y
+> # CONFIG_DEBUG_ICEDCC is not set
+> # CONFIG_DEBUG_SEMIHOSTING is not set
+> # CONFIG_DEBUG_LL_UART_8250 is not set
+> # CONFIG_DEBUG_LL_UART_PL01X is not set
+> CONFIG_DEBUG_LL_INCLUDE="mach/debug-macro.S"
+> # CONFIG_DEBUG_UART_8250 is not set
+> 
+> which results in:
+> 
+> arch/arm/kernel/debug.S:24:33: fatal error: mach/debug-macro.S: No such file or directory
+> make[2]: *** [arch/arm/kernel/debug.o] Error 1
+> arch/arm/kernel/head.S:27:33: fatal error: mach/debug-macro.S: No such file or directory
+> make[2]: *** [arch/arm/kernel/head.o] Error 1
+> 
+> Full config file:
+> http://www.arm.linux.org.uk/developer/build/file.php?lid=11023
 
-Unfortunately, other functions in iwmmxt.S also use concan_{save,dump,load}
-sections located in iwmmxt_task_enable() to deal with iWMMXt coprocessor.
-This causes an unbalanced preempt_count due to excessive dec_preempt_count
-and destroyed return addresses in callers of concan_ labels due to a register
-collision:
+Note that this also breaks building versatile as an oldconfig.  I'll drop
+the patch series from my tree for the time being.
 
-Linux version 3.16.0-rc3-00062-gd92a333-dirty (jef@armhf) (gcc version 4.8.3 (Debian 4.8.3-4) ) #5 PREEMPT Thu Jul 3 19:46:39 CEST 2014
-CPU: ARMv7 Processor [560f5815] revision 5 (ARMv7), cr=10c5387d
-CPU: PIPT / VIPT nonaliasing data cache, PIPT instruction cache
-Machine model: SolidRun CuBox
-...
-PJ4 iWMMXt v2 coprocessor enabled.
-...
-Unable to handle kernel paging request at virtual address fffffffe
-pgd = bb25c000
-[fffffffe] *pgd=3bfde821, *pte=00000000, *ppte=00000000
-Internal error: Oops: 80000007 [#1] PREEMPT ARM
-Modules linked in:
-CPU: 0 PID: 62 Comm: startpar Not tainted 3.16.0-rc3-00062-gd92a333-dirty #5
-task: bb230b80 ti: bb256000 task.ti: bb256000
-PC is at 0xfffffffe
-LR is at iwmmxt_task_copy+0x44/0x4c
-pc : [<fffffffe>]    lr : [<800130ac>]    psr: 40000033
-sp : bb257de8  ip : 00000013  fp : bb257ea4
-r10: bb256000  r9 : fffffdfe  r8 : 76e898e6
-r7 : bb257ec8  r6 : bb256000  r5 : 7ea12760  r4 : 000000a0
-r3 : ffffffff  r2 : 00000003  r1 : bb257df8  r0 : 00000000
-Flags: nZcv  IRQs on  FIQs on  Mode SVC_32  ISA Thumb  Segment user
-Control: 10c5387d  Table: 3b25c019  DAC: 00000015
-Process startpar (pid: 62, stack limit = 0xbb256248)
-
-This patch fixes the issue by moving concan_{save,dump,load} into separate
-code sections and make iwmmxt_task_enable() call them in the same way the
-other functions use concan_ symbols. The test for valid ownership is moved
-to concan_save and is safe for the other user of it, iwmmxt_task_disable().
-The register collision is also resolved by moving concan_ symbols as
-{inc,dec}_preempt_count are now local to iwmmxt_task_enable().
-
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Reported-by: Jean-Francois Moine <moinejf@free.fr>
-Fixes: 431a84b1a4f7 ("ARM: 8034/1: Disable preemption in iwmmxt_task_enable()")
----
-The offending commit was intoduced past v3.15-rc1 and the corresponding fix
-should also be queued up for stable v3.15+
-
-Changelog
-v1->v2:
-- return immediately from concan_ instead of branch to 3f, i.e. replace
-  'beq 3f' with 'moveq pc, lr' (Suggested by Catalin Marinas)
-
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Jean-Francois Moine <moinejf@free.fr>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/kernel/iwmmxt.S | 23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
-
-diff --git a/arch/arm/kernel/iwmmxt.S b/arch/arm/kernel/iwmmxt.S
-index a5599cfc43cb..2b32978ae905 100644
---- a/arch/arm/kernel/iwmmxt.S
-+++ b/arch/arm/kernel/iwmmxt.S
-@@ -94,13 +94,19 @@ ENTRY(iwmmxt_task_enable)
- 
- 	mrc	p15, 0, r2, c2, c0, 0
- 	mov	r2, r2				@ cpwait
-+	bl	concan_save
- 
--	teq	r1, #0				@ test for last ownership
--	mov	lr, r9				@ normal exit from exception
--	beq	concan_load			@ no owner, skip save
-+#ifdef CONFIG_PREEMPT_COUNT
-+	get_thread_info r10
-+#endif
-+4:	dec_preempt_count r10, r3
-+	mov	pc, r9				@ normal exit from exception
- 
- concan_save:
- 
-+	teq	r1, #0				@ test for last ownership
-+	beq	concan_load			@ no owner, skip save
-+
- 	tmrc	r2, wCon
- 
- 	@ CUP? wCx
-@@ -138,7 +144,7 @@ concan_dump:
- 	wstrd	wR15, [r1, #MMX_WR15]
- 
- 2:	teq	r0, #0				@ anything to load?
--	beq	3f
-+	moveq	pc, lr				@ if not, return
- 
- concan_load:
- 
-@@ -171,14 +177,9 @@ concan_load:
- 	@ clear CUP/MUP (only if r1 != 0)
- 	teq	r1, #0
- 	mov 	r2, #0
--	beq	3f
--	tmcr	wCon, r2
-+	moveq	pc, lr
- 
--3:
--#ifdef CONFIG_PREEMPT_COUNT
--	get_thread_info r10
--#endif
--4:	dec_preempt_count r10, r3
-+	tmcr	wCon, r2
- 	mov	pc, lr
- 
- /*
 -- 
-2.0.0
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
