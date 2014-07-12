@@ -1,42 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396AbaGLAyM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 20:54:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42840 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622AbaGLAyL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 20:54:11 -0400
-Date: Fri, 11 Jul 2014 17:58:40 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Liu Ying <Ying.Liu@freescale.com>
-Cc: linux-kernel@vger.kernel.org, rmk+kernel@arm.linux.org.uk
-Subject: Re: [PATCH] drivers/base: redundant return value settings in
- try_to_bring_up_master()
-Message-ID: <20140712005840.GA10558@kroah.com>
-References: <1402993531-25244-1-git-send-email-Ying.Liu@freescale.com>
+	id S1755302AbaGLBAf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 21:00:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41303 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751416AbaGLBAe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 21:00:34 -0400
+Message-ID: <53C08876.10209@zytor.com>
+Date: Fri, 11 Jul 2014 17:59:34 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402993531-25244-1-git-send-email-Ying.Liu@freescale.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Andrey Ryabinin <a.ryabinin@samsung.com>, linux-kernel@vger.kernel.org
+CC: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
+        Alexey Preobrazhensky <preobr@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        x86@kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC/PATCH -next 00/21] Address sanitizer for kernel (kasan)
+ - dynamic memory error detector.
+References: <1404903678-8257-1-git-send-email-a.ryabinin@samsung.com>
+In-Reply-To: <1404903678-8257-1-git-send-email-a.ryabinin@samsung.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 04:25:31PM +0800, Liu Ying wrote:
-> Remove redundant return value settings 'ret = 0;' in the function
-> try_to_bring_up_master(), since it has already been set to zero.
+On 07/09/2014 04:00 AM, Andrey Ryabinin wrote:
 > 
-> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
-> ---
->  drivers/base/component.c |    2 --
->  1 file changed, 2 deletions(-)
+> Address sanitizer dedicates 1/8 of the low memory to the shadow memory and uses direct
+> mapping with a scale and offset to translate a memory address to its corresponding
+> shadow address.
+> 
+> Here is function to translate address to corresponding shadow address:
+> 
+>      unsigned long kasan_mem_to_shadow(unsigned long addr)
+>      {
+> 		return ((addr) >> KASAN_SHADOW_SCALE_SHIFT)
+>        	             + kasan_shadow_start - (PAGE_OFFSET >> KASAN_SHADOW_SCALE_SHIFT);
+>      }
+> 
+> where KASAN_SHADOW_SCALE_SHIFT = 3.
+> 
 
-This patch no longer applies to my tree, are you sure it's still needed?
+How does that work when memory is sparsely populated?
 
-If so, please refresh and resend.
+	-hpa
 
-thanks,
-
-greg k-h
