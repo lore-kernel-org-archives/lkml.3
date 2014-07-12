@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529AbaGLCA4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 22:00:56 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:39397 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029AbaGLCAy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 22:00:54 -0400
-Message-ID: <53C096D0.3000005@infradead.org>
-Date: Fri, 11 Jul 2014 19:00:48 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
+	id S1754537AbaGLCFM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 22:05:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42318 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753935AbaGLCFL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 22:05:11 -0400
+Message-ID: <53C097BC.7070909@zytor.com>
+Date: Fri, 11 Jul 2014 19:04:44 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peter Hurley <peter@hurleysoftware.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org
-Subject: Re: [PATCH] serial: imx: Fix build breakage
-References: <20140711112108.7631911b@canb.auug.org.au> <1405046206-14495-1-git-send-email-peter@hurleysoftware.com> <20140712004248.GA24760@kroah.com>
-In-Reply-To: <20140712004248.GA24760@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andy Lutomirski <luto@amacapital.net>, Andi Kleen <andi@firstfloor.org>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] x86_64,signal: Remove 'fs' and 'gs' from sigcontext
+References: <cover.1405095200.git.luto@amacapital.net> <a13ebdd57378120348f40cbe12d9b1705d189434.1405095200.git.luto@amacapital.net>
+In-Reply-To: <a13ebdd57378120348f40cbe12d9b1705d189434.1405095200.git.luto@amacapital.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/14 17:42, Greg Kroah-Hartman wrote:
-> On Thu, Jul 10, 2014 at 10:36:46PM -0400, Peter Hurley wrote:
->> Fix breakage introduced by
->> commit c557d392fbf5badd693ea1946a4317c87a26a716,
->> 'serial: Test for no tx data on tx restart'.
->>
->> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-> 
-> You forgot a "Reported-by:" tag.
-> 
-> I'll go add it...
+On 07/11/2014 09:29 AM, Andy Lutomirski wrote:
+> diff --git a/arch/x86/include/uapi/asm/sigcontext.h b/arch/x86/include/uapi/asm/sigcontext.h
+> index 076b11f..df9908b 100644
+> --- a/arch/x86/include/uapi/asm/sigcontext.h
+> +++ b/arch/x86/include/uapi/asm/sigcontext.h
+> @@ -177,8 +177,8 @@ struct sigcontext {
+>  	__u64 rip;
+>  	__u64 eflags;		/* RFLAGS */
+>  	__u16 cs;
+> -	__u16 gs;
+> -	__u16 fs;
+> +	__u16 __pad2;		/* Was called gs, but was always zero. */
+> +	__u16 __pad1;		/* Was called fs, but was always zero. */
+>  	__u16 ss;
+>  	__u64 err;
+>  	__u64 trapno;
 
-It's not clear to me that Peter forgot it.
-Someone else brought this up -- it seems to me that
-Documentation/SubmittingPatches is a little too strong about needing
-permission to use Reported-by:
+I'm just wondering if this is likely to cause compile error in existing
+code.  I guess worst case we can just revert this patch...
 
-If this patch fixes a problem reported by somebody else, consider adding a
-Reported-by: tag to credit the reporter for their contribution.  Please
-note that this tag should not be added without the reporter's permission,
-especially if the problem was not reported in a public forum.  That said,
-if we diligently credit our bug reporters, they will, hopefully, be
-inspired to help us again in the future.
+	-hpa
 
-
-Sure, if a problem was reported privately, then we need to have permission
-to use Reported-by, but if it was reported in a public forum, that should be
-implicit permission (IMHO).
-
-eh?
-
--- 
-~Randy
