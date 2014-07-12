@@ -1,370 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752507AbaGLJeA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 05:34:00 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:59218 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752152AbaGLJd4 (ORCPT
+	id S1752299AbaGLJjS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 05:39:18 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49411 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751472AbaGLJjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 05:33:56 -0400
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        linux-kernel@vger.kernel.org
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Dmitry Artamonow <mad_soft@inbox.ru>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] power: add driver for battery reading on iPaq h3xxx
-Date: Sat, 12 Jul 2014 11:33:49 +0200
-Message-Id: <1405157629-10550-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	Sat, 12 Jul 2014 05:39:13 -0400
+Date: Sat, 12 Jul 2014 10:39:17 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Rob Clark <robdclark@gmail.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
+        Joerg Roedel <joro@8bytes.org>, Olav Haugan <ohaugan@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Grundler <grundler@chromium.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Varun Sethi <varun.sethi@freescale.com>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH v4] devicetree: Add generic IOMMU device tree bindings
+Message-ID: <20140712093917.GD18601@arm.com>
+References: <1404487757-18829-1-git-send-email-thierry.reding@gmail.com>
+ <CAF6AEGv2P_Uq8CHgm1YdaUeMSNdH62ZwjLnT83Fr5GnxEAhTMw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAF6AEGv2P_Uq8CHgm1YdaUeMSNdH62ZwjLnT83Fr5GnxEAhTMw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Artamonow <mad_soft@inbox.ru>
+Hi Rob,
 
-This adds a driver for reading the battery status of the
-battery connected to the Atmel microcontroller on the
-iPAQ h3xxx series.
+On Fri, Jul 11, 2014 at 09:55:14PM +0100, Rob Clark wrote:
+> On Fri, Jul 4, 2014 at 11:29 AM, Thierry Reding
+> <thierry.reding@gmail.com> wrote:
+> > From: Thierry Reding <treding@nvidia.com>
+> ok, so I was working through this to try to convert my
+> {qcom,msm}-iommu-v0 RFC over to using these bindings.  For background,
+> I was initially using something that looked a bit more like the
+> current arm-smmu bindings:
+> 
+>         gpu {
+>             #stream-id-cells = <16>;
+>             ...
+>         };
+> 
+>         gfx3d: qcom,iommu@7c00000 {
+>             compatible = "qcom,iommu-v0";
+>             ...
+>             mmu-masters =
+>                 /* gfx3d_user: */
+>                 <&gpu 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15>,
+>                 /* gfx3d_priv: */
+>                 <&gpu 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31>;
+>         };
+> 
+>         gfx3d1: qcom,iommu@7d00000 {
+>             compatible = "qcom,iommu-v0";
+>             ...
+>             mmu-masters =
+>                 /* gfx3d_user: */
+>                 <&gpu 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15>,
+>                 /* gfx3d_priv: */
+>                 <&gpu 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31>;
+>         };
+> 
+> With my current arrangement, I have everything I need when the iommu
+> device is probed to set up each of the context banks
+> 
+> This proposal inverts that relationship.  Which forces me to do a lot
+> more (including DT parsing) on device attach.  Which I'm not a huge
+> fan of.  Ie. if I even wanted to try to implement per-process
+> pagetables for gpu without completely going behind the IOMMU API's
+> back, I would want attach/detach to be as lightweight as possible.
 
-Based on a driver from handhelds.org 2.6.21 kernel, written
-by Alessandro GARDICH.
+I think we'd have to walk the entire device-tree at IOMMU probe time in
+order to enumerate the masters, which sounds horrible... If we want to do
+clever SMR allocation on the ARM SMMU (as I've been discussing with Olav),
+we're going to need knowledge about *all* the valid Stream IDs in the system
+before we can program *any* translations.
 
-Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/power/Kconfig              |   7 +
- drivers/power/Makefile             |   1 +
- drivers/power/ipaq_micro_battery.c | 290 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 298 insertions(+)
- create mode 100644 drivers/power/ipaq_micro_battery.c
+> Was there actually a good reason for having the device link to the
+> iommu rather than the other way around?  How much would people hate it
+> if I just ignore the generic bindings and use something that works for
+> me instead.  I mean, it isn't exactly like there is going to be .dts
+> re-use across different SoC's..  and at least with current IOMMU API
+> some sort of of_get_named_iommu() API doesn't really make sense.
 
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index ba6975123071..73cfcdf28a36 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -137,6 +137,13 @@ config BATTERY_COLLIE
- 	  Say Y to enable support for the battery on the Sharp Zaurus
- 	  SL-5500 (collie) models.
- 
-+config BATTERY_IPAQ_MICRO
-+	tristate "iPAQ Atmel Micro ASIC battery driver"
-+	depends on MFD_IPAQ_MICRO
-+	help
-+	  Choose this option if you want to monitor battery status on
-+	  Compaq/HP iPAQ h3100 and h3600.
-+
- config BATTERY_WM97XX
- 	bool "WM97xx generic battery driver"
- 	depends on TOUCHSCREEN_WM97XX=y
-diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-index ee54a3e4c90a..dfa894273926 100644
---- a/drivers/power/Makefile
-+++ b/drivers/power/Makefile
-@@ -25,6 +25,7 @@ obj-$(CONFIG_BATTERY_PMU)	+= pmu_battery.o
- obj-$(CONFIG_BATTERY_OLPC)	+= olpc_battery.o
- obj-$(CONFIG_BATTERY_TOSA)	+= tosa_battery.o
- obj-$(CONFIG_BATTERY_COLLIE)	+= collie_battery.o
-+obj-$(CONFIG_BATTERY_IPAQ_MICRO) += ipaq_micro_battery.o
- obj-$(CONFIG_BATTERY_WM97XX)	+= wm97xx_battery.o
- obj-$(CONFIG_BATTERY_SBS)	+= sbs-battery.o
- obj-$(CONFIG_BATTERY_BQ27x00)	+= bq27x00_battery.o
-diff --git a/drivers/power/ipaq_micro_battery.c b/drivers/power/ipaq_micro_battery.c
-new file mode 100644
-index 000000000000..f875137e4d9c
---- /dev/null
-+++ b/drivers/power/ipaq_micro_battery.c
-@@ -0,0 +1,290 @@
-+/*
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * h3xxx atmel micro companion support, battery subdevice
-+ * based on previous kernel 2.4 version
-+ * Author : Alessandro Gardich <gremlin@gremlin.it>
-+ * Author : Linus Walleij <linus.walleij@linaro.org>
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/platform_device.h>
-+#include <linux/mfd/ipaq-micro.h>
-+#include <linux/power_supply.h>
-+#include <linux/workqueue.h>
-+
-+#define BATT_PERIOD 100000 /* 10 seconds in milliseconds */
-+
-+#define MICRO_BATT_CHEM_ALKALINE	0x01
-+#define MICRO_BATT_CHEM_NICD		0x02
-+#define MICRO_BATT_CHEM_NIMH		0x03
-+#define MICRO_BATT_CHEM_LION		0x04
-+#define MICRO_BATT_CHEM_LIPOLY		0x05
-+#define MICRO_BATT_CHEM_NOT_INSTALLED	0x06
-+#define MICRO_BATT_CHEM_UNKNOWN		0xff
-+
-+#define MICRO_BATT_STATUS_HIGH		0x01
-+#define MICRO_BATT_STATUS_LOW		0x02
-+#define MICRO_BATT_STATUS_CRITICAL	0x04
-+#define MICRO_BATT_STATUS_CHARGING	0x08
-+#define MICRO_BATT_STATUS_CHARGEMAIN	0x10
-+#define MICRO_BATT_STATUS_DEAD		0x20 /* Battery will not charge */
-+#define MICRO_BATT_STATUS_NOTINSTALLED	0x20 /* For expansion pack batteries */
-+#define MICRO_BATT_STATUS_FULL		0x40 /* Battery fully charged */
-+#define MICRO_BATT_STATUS_NOBATTERY	0x80
-+#define MICRO_BATT_STATUS_UNKNOWN	0xff
-+
-+struct micro_battery {
-+	struct ipaq_micro *micro;
-+	struct workqueue_struct *wq;
-+	struct delayed_work update;
-+	u8 ac;
-+	u8 chemistry;
-+	unsigned int voltage;
-+	u16 temperature;
-+	u8 flag;
-+};
-+
-+static void micro_battery_work(struct work_struct *work)
-+{
-+	struct micro_battery *mb = container_of(work,
-+				struct micro_battery, update.work);
-+	struct ipaq_micro_msg msg_battery = {
-+		.id = MSG_BATTERY,
-+	};
-+	struct ipaq_micro_msg msg_sensor = {
-+		.id = MSG_THERMAL_SENSOR,
-+	};
-+
-+	/* First send battery message */
-+	ipaq_micro_tx_msg_sync(mb->micro, &msg_battery);
-+	if (msg_battery.rx_len < 4)
-+		pr_info("ERROR");
-+
-+	/*
-+	 * Returned message format:
-+	 * byte 0:   0x00 = Not plugged in
-+	 *           0x01 = AC adapter plugged in
-+	 * byte 1:   chemistry
-+	 * byte 2:   voltage LSB
-+	 * byte 3:   voltage MSB
-+	 * byte 4:   flags
-+	 * byte 5-9: same for battery 2
-+	 */
-+	mb->ac = msg_battery.rx_data[0];
-+	mb->chemistry = msg_battery.rx_data[1];
-+	mb->voltage = ((((unsigned short)msg_battery.rx_data[3] << 8) +
-+			msg_battery.rx_data[2]) * 5000L) * 1000 / 1024;
-+	mb->flag = msg_battery.rx_data[4];
-+
-+	if (msg_battery.rx_len == 9)
-+		pr_debug("second battery ignored\n");
-+
-+	/* Then read the sensor */
-+	ipaq_micro_tx_msg_sync(mb->micro, &msg_sensor);
-+	mb->temperature = msg_sensor.rx_data[1] << 8 | msg_sensor.rx_data[0];
-+
-+	queue_delayed_work(mb->wq, &mb->update, msecs_to_jiffies(BATT_PERIOD));
-+}
-+
-+static int get_capacity(struct power_supply *b)
-+{
-+	struct micro_battery *mb = dev_get_drvdata(b->dev->parent);
-+
-+	switch (mb->flag & 0x07) {
-+	case MICRO_BATT_STATUS_HIGH:
-+		return 100;
-+		break;
-+	case MICRO_BATT_STATUS_LOW:
-+		return 50;
-+		break;
-+	case MICRO_BATT_STATUS_CRITICAL:
-+		return 5;
-+		break;
-+	default:
-+		break;
-+	}
-+	return 0;
-+}
-+
-+static int get_status(struct power_supply *b)
-+{
-+	struct micro_battery *mb = dev_get_drvdata(b->dev->parent);
-+
-+	if (mb->flag == MICRO_BATT_STATUS_UNKNOWN)
-+		return POWER_SUPPLY_STATUS_UNKNOWN;
-+
-+	if (mb->flag & MICRO_BATT_STATUS_FULL)
-+		return POWER_SUPPLY_STATUS_FULL;
-+
-+	if ((mb->flag & MICRO_BATT_STATUS_CHARGING) ||
-+		(mb->flag & MICRO_BATT_STATUS_CHARGEMAIN))
-+		return POWER_SUPPLY_STATUS_CHARGING;
-+
-+	return POWER_SUPPLY_STATUS_DISCHARGING;
-+}
-+
-+static int micro_batt_get_property(struct power_supply *b,
-+					enum power_supply_property psp,
-+					union power_supply_propval *val)
-+{
-+	struct micro_battery *mb = dev_get_drvdata(b->dev->parent);
-+
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_TECHNOLOGY:
-+		switch (mb->chemistry) {
-+		case MICRO_BATT_CHEM_NICD:
-+			val->intval = POWER_SUPPLY_TECHNOLOGY_NiCd;
-+			break;
-+		case MICRO_BATT_CHEM_NIMH:
-+			val->intval = POWER_SUPPLY_TECHNOLOGY_NiMH;
-+			break;
-+		case MICRO_BATT_CHEM_LION:
-+			val->intval = POWER_SUPPLY_TECHNOLOGY_LION;
-+			break;
-+		case MICRO_BATT_CHEM_LIPOLY:
-+			val->intval = POWER_SUPPLY_TECHNOLOGY_LIPO;
-+			break;
-+		default:
-+			val->intval = POWER_SUPPLY_TECHNOLOGY_UNKNOWN;
-+			break;
-+		};
-+		break;
-+	case POWER_SUPPLY_PROP_STATUS:
-+		val->intval = get_status(b);
-+		break;
-+	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
-+		val->intval = 4700000;
-+		break;
-+	case POWER_SUPPLY_PROP_CAPACITY:
-+		val->intval = get_capacity(b);
-+		break;
-+	case POWER_SUPPLY_PROP_TEMP:
-+		val->intval = mb->temperature;
-+		break;
-+	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-+		val->intval = mb->voltage;
-+		break;
-+	default:
-+		return -EINVAL;
-+	};
-+
-+	return 0;
-+}
-+
-+static int micro_ac_get_property(struct power_supply *b,
-+				 enum power_supply_property psp,
-+				 union power_supply_propval *val)
-+{
-+	struct micro_battery *mb = dev_get_drvdata(b->dev->parent);
-+
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_ONLINE:
-+		val->intval = mb->ac;
-+		break;
-+	default:
-+		return -EINVAL;
-+	};
-+
-+	return 0;
-+}
-+
-+static enum power_supply_property micro_batt_props[] = {
-+	POWER_SUPPLY_PROP_TECHNOLOGY,
-+	POWER_SUPPLY_PROP_STATUS,
-+	POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN,
-+	POWER_SUPPLY_PROP_CAPACITY,
-+	POWER_SUPPLY_PROP_TEMP,
-+	POWER_SUPPLY_PROP_VOLTAGE_NOW,
-+};
-+
-+static struct power_supply micro_battery = {
-+	.name			= "main-battery",
-+	.type			= POWER_SUPPLY_TYPE_BATTERY,
-+	.properties		= micro_batt_props,
-+	.num_properties		= ARRAY_SIZE(micro_batt_props),
-+	.get_property		= micro_batt_get_property,
-+	.use_for_apm		= 1,
-+};
-+
-+static enum power_supply_property micro_ac_props[] = {
-+	POWER_SUPPLY_PROP_ONLINE,
-+};
-+
-+static struct power_supply micro_ac = {
-+	.name			= "ac",
-+	.type			= POWER_SUPPLY_TYPE_MAINS,
-+	.properties		= micro_ac_props,
-+	.num_properties		= ARRAY_SIZE(micro_ac_props),
-+	.get_property		= micro_ac_get_property,
-+};
-+
-+static int micro_batt_probe(struct platform_device *pdev)
-+{
-+	struct micro_battery *mb;
-+
-+	mb = devm_kzalloc(&pdev->dev, sizeof(*mb), GFP_KERNEL);
-+	if (!mb)
-+		return -ENOMEM;
-+
-+	mb->micro = dev_get_drvdata(pdev->dev.parent);
-+	mb->wq = create_singlethread_workqueue("ipaq-battery-wq");
-+	INIT_DELAYED_WORK(&mb->update, micro_battery_work);
-+	platform_set_drvdata(pdev, mb);
-+	queue_delayed_work(mb->wq, &mb->update, 1);
-+	power_supply_register(&pdev->dev, &micro_battery);
-+	power_supply_register(&pdev->dev, &micro_ac);
-+
-+	dev_info(&pdev->dev, "iPAQ micro battery driver\n");
-+	return 0;
-+}
-+
-+static int micro_batt_remove(struct platform_device *pdev)
-+
-+{
-+	struct micro_battery *mb = platform_get_drvdata(pdev);
-+
-+	power_supply_unregister(&micro_ac);
-+	power_supply_unregister(&micro_battery);
-+	cancel_delayed_work_sync(&mb->update);
-+
-+	return 0;
-+}
-+
-+static int micro_batt_suspend(struct device *dev)
-+{
-+	struct micro_battery *mb = dev_get_drvdata(dev);
-+
-+	cancel_delayed_work_sync(&mb->update);
-+	return 0;
-+}
-+
-+static int micro_batt_resume(struct device *dev)
-+{
-+	struct micro_battery *mb = dev_get_drvdata(dev);
-+
-+	queue_delayed_work(mb->wq, &mb->update, msecs_to_jiffies(BATT_PERIOD));
-+	return 0;
-+}
-+
-+static const struct dev_pm_ops micro_batt_dev_pm_ops = {
-+	SET_SYSTEM_SLEEP_PM_OPS(micro_batt_suspend, micro_batt_resume)
-+};
-+
-+struct platform_driver micro_batt_device_driver = {
-+	.driver		= {
-+		.name	= "ipaq-micro-battery",
-+		.pm	= &micro_batt_dev_pm_ops,
-+	},
-+	.probe		= micro_batt_probe,
-+	.remove		= micro_batt_remove,
-+};
-+module_platform_driver(micro_batt_device_driver);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("driver for iPAQ Atmel micro battery");
-+MODULE_ALIAS("platform:battery-ipaq-micro");
--- 
-1.9.3
+The thing is, if you end up ignoring the generic binding then we have two
+IOMMUs using the same (ARM SMMU) binding and it begs the question as to
+which is the more generic! I know we're keen to get this merged, but merging
+something that people won't use and calling it generic doesn't seem ideal
+either. We do, however, desperately need a generic binding.
 
+Turning the question around; Thierry -- what are the issue in using
+something like the ARM SMMU binding (master device IDs held in the IOMMU
+node) for the nvidia IOMMU?
+
+Will
