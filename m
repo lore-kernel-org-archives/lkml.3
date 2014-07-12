@@ -1,175 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162AbaGLJAt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 05:00:49 -0400
-Received: from mail-bl2lp0204.outbound.protection.outlook.com ([207.46.163.204]:40624
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751912AbaGLJAq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 05:00:46 -0400
-X-WSS-ID: 0N8LD0K-08-B84-02
-X-M-MSG: 
-Message-ID: <53C0F921.2030909@amd.com>
-Date: Sat, 12 Jul 2014 11:00:17 +0200
-From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752197AbaGLJU1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 05:20:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37950 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751870AbaGLJUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jul 2014 05:20:24 -0400
+Date: Sat, 12 Jul 2014 11:20:19 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Randy Dunlap <rdunlap@infradead.org>,
+        linux-i2c@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] i2c: stub: Add support for SMBus block commands
+Message-ID: <20140712112019.618d8a03@endymion.delvare>
+In-Reply-To: <53BC4F15.9030608@roeck-us.net>
+References: <1404742983-27303-1-git-send-email-linux@roeck-us.net>
+	<20140708215453.0677d3ed@endymion.delvare>
+	<53BC4F15.9030608@roeck-us.net>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-To: Alex Deucher <alexdeucher@gmail.com>
-CC: Jerome Glisse <j.glisse@gmail.com>, Oded Gabbay <oded.gabbay@gmail.com>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Maling list - DRI developers 
-	<dri-devel@lists.freedesktop.org>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: Re: [PATCH 02/83] drm/radeon: reduce number of free VMIDs and pipes
- in KV
-References: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
-	<20140711160516.GC1870@gmail.com>	<53C00E6E.4040908@amd.com>
- <CADnq5_NkXJuaeMWv8HogykiH8ida17U90gO0Ec7DMRxMcLbrkA@mail.gmail.com>
-In-Reply-To: <CADnq5_NkXJuaeMWv8HogykiH8ida17U90gO0Ec7DMRxMcLbrkA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-X-Originating-IP: [10.224.155.37]
-Content-Transfer-Encoding: 8BIT
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(24454002)(377454003)(51704005)(199002)(189002)(33656002)(15975445006)(44976005)(59896001)(65956001)(99396002)(65816999)(110136001)(1411001)(54356999)(80022001)(77982001)(92726001)(83322001)(87936001)(50466002)(93886003)(107046002)(102836001)(92566001)(97736001)(23676002)(95666004)(80316001)(105586002)(81542001)(85852003)(19580405001)(74662001)(85306003)(68736004)(83072002)(85202003)(64706001)(46102001)(19580395003)(31966008)(106466001)(15202345003)(36756003)(20776003)(47776003)(85182001)(64126003)(76482001)(101416001)(50986999)(87266999)(575784001)(76176999)(79102001)(21056001)(86362001)(74502001)(81342001)(83506001)(4396001);DIR:OUT;SFP:;SCL:1;SRVR:CO1PR02MB045;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0270ED2845
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Christian.Koenig@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 11.07.2014 18:22, schrieb Alex Deucher:
-> On Fri, Jul 11, 2014 at 12:18 PM, Christian König
-> <christian.koenig@amd.com> wrote:
->> Am 11.07.2014 18:05, schrieb Jerome Glisse:
->>
->>> On Fri, Jul 11, 2014 at 12:50:02AM +0300, Oded Gabbay wrote:
->>>> To support HSA on KV, we need to limit the number of vmids and pipes
->>>> that are available for radeon's use with KV.
->>>>
->>>> This patch reserves VMIDs 8-15 for KFD (so radeon can only use VMIDs
->>>> 0-7) and also makes radeon thinks that KV has only a single MEC with a
->>>> single
->>>> pipe in it
->>>>
->>>> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
->>> Reviewed-by: Jérôme Glisse <jglisse@redhat.com>
->>
->> At least fro the VMIDs on demand allocation should be trivial to implement,
->> so I would rather prefer this instead of a fixed assignment.
-> IIRC, the way the CP hw scheduler works you have to give it a range of
-> vmids and it assigns them dynamically as queues are mapped so
-> effectively they are potentially in use once the CP scheduler is set
-> up.
+Hi Guenter,
 
-That's not what I meant. Changing it completely on the fly is nice to 
-have, but we should at least make it configurable as a module parameter.
+On Tue, 08 Jul 2014 13:05:41 -0700, Guenter Roeck wrote:
+> On 07/08/2014 12:54 PM, Jean Delvare wrote:
+> > Just one thing I have been thinking about while reviewing the updated
+> > code... You decided to make the first SMBus block write select the
+> > maximum block length, and you always use that for SMBus block reads.
+> > However you accept partial writes. The fact that the order in which
+> > writes are performed has an effect on which writes are accepted is
+> > somewhat unexpected.
+> >
+> > Wouldn't it make more sense to accept all SMBus block writes,
+> > regardless of the size (as long as it is within the limits of the SMBus
+> > standard, of course)? Then the only thing left to decide is whether
+> > SMBus block reads use the maximum size or the size of the most recent
+> > SMBus block write.
+> >
+> > I suspect this would mimic the behavior of real chips better. What do
+> > you think?
+> 
+> Not really sure what the expected behavior is. My original code
+> accepted all writes and returned the most recent write, including
+> the most recent write length. I thought this was untypical, and that
+> it would be more typical for the chip to return a fixed length.
+> But ultimately I don't really know, and I am fine either way.
 
-And even if we hardcode it we should use a define for it somewhere 
-instead of hardcoding 8 VMIDs on the KGD side and 8 VMIDs on KFD side 
-without any relation to each other.
+I agree that different chips may behave differently and it is not
+possible for i2c-stub to please everyone. However I do not think that
+the current implementation mimics any actual chip behavior. So we might
+as well switch to something more simple and more likely to please at
+least one device driver:
 
-Christian.
+From: Jean Delvare <jdelvare@suse.de>
+Subject: i2c-stub: Allow the increasing SMBus block write length
 
-> Alex
->
->
->> Christian.
->>
->>
->>>> ---
->>>>    drivers/gpu/drm/radeon/cik.c | 48
->>>> ++++++++++++++++++++++----------------------
->>>>    1 file changed, 24 insertions(+), 24 deletions(-)
->>>>
->>>> diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
->>>> index 4bfc2c0..e0c8052 100644
->>>> --- a/drivers/gpu/drm/radeon/cik.c
->>>> +++ b/drivers/gpu/drm/radeon/cik.c
->>>> @@ -4662,12 +4662,11 @@ static int cik_mec_init(struct radeon_device
->>>> *rdev)
->>>>          /*
->>>>           * KV:    2 MEC, 4 Pipes/MEC, 8 Queues/Pipe - 64 Queues total
->>>>           * CI/KB: 1 MEC, 4 Pipes/MEC, 8 Queues/Pipe - 32 Queues total
->>>> +        * Nonetheless, we assign only 1 pipe because all other pipes
->>>> will
->>>> +        * be handled by KFD
->>>>           */
->>>> -       if (rdev->family == CHIP_KAVERI)
->>>> -               rdev->mec.num_mec = 2;
->>>> -       else
->>>> -               rdev->mec.num_mec = 1;
->>>> -       rdev->mec.num_pipe = 4;
->>>> +       rdev->mec.num_mec = 1;
->>>> +       rdev->mec.num_pipe = 1;
->>>>          rdev->mec.num_queue = rdev->mec.num_mec * rdev->mec.num_pipe * 8;
->>>>          if (rdev->mec.hpd_eop_obj == NULL) {
->>>> @@ -4809,28 +4808,24 @@ static int cik_cp_compute_resume(struct
->>>> radeon_device *rdev)
->>>>          /* init the pipes */
->>>>          mutex_lock(&rdev->srbm_mutex);
->>>> -       for (i = 0; i < (rdev->mec.num_pipe * rdev->mec.num_mec); i++) {
->>>> -               int me = (i < 4) ? 1 : 2;
->>>> -               int pipe = (i < 4) ? i : (i - 4);
->>>>    -             eop_gpu_addr = rdev->mec.hpd_eop_gpu_addr + (i *
->>>> MEC_HPD_SIZE * 2);
->>>> +       eop_gpu_addr = rdev->mec.hpd_eop_gpu_addr;
->>>>    -             cik_srbm_select(rdev, me, pipe, 0, 0);
->>>> +       cik_srbm_select(rdev, 0, 0, 0, 0);
->>>>    -             /* write the EOP addr */
->>>> -               WREG32(CP_HPD_EOP_BASE_ADDR, eop_gpu_addr >> 8);
->>>> -               WREG32(CP_HPD_EOP_BASE_ADDR_HI,
->>>> upper_32_bits(eop_gpu_addr) >> 8);
->>>> +       /* write the EOP addr */
->>>> +       WREG32(CP_HPD_EOP_BASE_ADDR, eop_gpu_addr >> 8);
->>>> +       WREG32(CP_HPD_EOP_BASE_ADDR_HI, upper_32_bits(eop_gpu_addr) >>
->>>> 8);
->>>>    -             /* set the VMID assigned */
->>>> -               WREG32(CP_HPD_EOP_VMID, 0);
->>>> +       /* set the VMID assigned */
->>>> +       WREG32(CP_HPD_EOP_VMID, 0);
->>>> +
->>>> +       /* set the EOP size, register value is 2^(EOP_SIZE+1) dwords */
->>>> +       tmp = RREG32(CP_HPD_EOP_CONTROL);
->>>> +       tmp &= ~EOP_SIZE_MASK;
->>>> +       tmp |= order_base_2(MEC_HPD_SIZE / 8);
->>>> +       WREG32(CP_HPD_EOP_CONTROL, tmp);
->>>>    -             /* set the EOP size, register value is 2^(EOP_SIZE+1)
->>>> dwords */
->>>> -               tmp = RREG32(CP_HPD_EOP_CONTROL);
->>>> -               tmp &= ~EOP_SIZE_MASK;
->>>> -               tmp |= order_base_2(MEC_HPD_SIZE / 8);
->>>> -               WREG32(CP_HPD_EOP_CONTROL, tmp);
->>>> -       }
->>>> -       cik_srbm_select(rdev, 0, 0, 0, 0);
->>>>          mutex_unlock(&rdev->srbm_mutex);
->>>>          /* init the queues.  Just two for now. */
->>>> @@ -5876,8 +5871,13 @@ int cik_ib_parse(struct radeon_device *rdev,
->>>> struct radeon_ib *ib)
->>>>     */
->>>>    int cik_vm_init(struct radeon_device *rdev)
->>>>    {
->>>> -       /* number of VMs */
->>>> -       rdev->vm_manager.nvm = 16;
->>>> +       /*
->>>> +        * number of VMs
->>>> +        * VMID 0 is reserved for Graphics
->>>> +        * radeon compute will use VMIDs 1-7
->>>> +        * KFD will use VMIDs 8-15
->>>> +        */
->>>> +       rdev->vm_manager.nvm = 8;
->>>>          /* base offset of vram pages */
->>>>          if (rdev->flags & RADEON_IS_IGP) {
->>>>                  u64 tmp = RREG32(MC_VM_FB_OFFSET);
->>>> --
->>>> 1.9.1
->>>>
->> _______________________________________________
->> dri-devel mailing list
->> dri-devel@lists.freedesktop.org
->> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+This is no good reason to not allow SMBus block writes longer than the
+first one was. Lift this limitation, this makes the code more simple.
 
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Cc: Guenter Roeck <linux@roeck-us.net>
+---
+ Documentation/i2c/i2c-stub |    5 ++---
+ drivers/i2c/i2c-stub.c     |   12 +++---------
+ 2 files changed, 5 insertions(+), 12 deletions(-)
+
+--- linux-3.16-rc4.orig/Documentation/i2c/i2c-stub	2014-07-12 09:41:26.508195718 +0200
++++ linux-3.16-rc4/Documentation/i2c/i2c-stub	2014-07-12 10:40:05.064578130 +0200
+@@ -20,9 +20,8 @@ operations.  This allows for continuous
+ EEPROMs, among others.
+ 
+ SMBus block commands must be written to configure an SMBus command for
+-SMBus block operations. The first SMBus block write selects the block length.
+-Subsequent writes can be partial. Block read commands always return
+-the number of bytes selected with the first write.
++SMBus block operations. Writes can be partial. Block read commands always
++return the number of bytes selected with the largest write so far.
+ 
+ The typical use-case is like this:
+ 	1. load this module
+--- linux-3.16-rc4.orig/drivers/i2c/i2c-stub.c	2014-07-12 09:41:26.508195718 +0200
++++ linux-3.16-rc4/drivers/i2c/i2c-stub.c	2014-07-12 11:00:41.472813787 +0200
+@@ -254,13 +254,6 @@ static s32 stub_xfer(struct i2c_adapter
+ 				ret = -EINVAL;
+ 				break;
+ 			}
+-			if (b && len > b->len) {
+-				dev_dbg(&adap->dev,
+-					"Attempt to write more data (%d) than with initial SMBus block write (%d)\n",
+-					len, b->len);
+-				ret = -EINVAL;
+-				break;
+-			}
+ 			if (b == NULL) {
+ 				b = stub_find_block(&adap->dev, chip, command,
+ 						    true);
+@@ -268,9 +261,10 @@ static s32 stub_xfer(struct i2c_adapter
+ 					ret = -ENOMEM;
+ 					break;
+ 				}
+-				/* First write sets block length */
+-				b->len = len;
+ 			}
++			/* Largest write sets read block length */
++			if (len > b->len)
++				b->len = len;
+ 			for (i = 0; i < len; i++)
+ 				b->block[i] = data->block[i + 1];
+ 			/* update for byte and word commands */
+
+Would that work for you?
+
+-- 
+Jean Delvare
+SUSE L3 Support
