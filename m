@@ -1,91 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755090AbaGLAKK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 20:10:10 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:35779 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498AbaGLAKI (ORCPT
+	id S1754684AbaGLAQK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 20:16:10 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:43447 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056AbaGLAQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 20:10:08 -0400
+	Fri, 11 Jul 2014 20:16:09 -0400
+Message-Id: <201407120015.s6C0FEcq025997@userz7021.oracle.com>
+Date: Fri, 11 Jul 2014 20:14:51 -0400
+Subject: Re: [PATCH 2/2] arch/x86/xen: Silence compiler warnings
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Daniel Kiper <daniel.kiper@oracle.com>
+Cc: x86@kernel.org, Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        tglx@linutronix.de, andrew.cooper3@citrix.com,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>, david.vrabel@citrix.com,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, matt.fleming@intel.com,
+        jbeulich@suse.com, xen-devel@lists.xenproject.org, mingo@redhat.com,
+        jeremy@goop.org, ian.campbell@citrix.com
 MIME-Version: 1.0
-In-Reply-To: <20140711202207.GC18246@pd.tnic>
-References: <1404925766-32253-1-git-send-email-hskinnemoen@google.com>
-	<1404925766-32253-2-git-send-email-hskinnemoen@google.com>
-	<20140709191747.GB5249@pd.tnic>
-	<CAFQmdRa5Spr0nX6qwzhDGEU9+H1_0vaCtF_NRV=p=OBDwin78A@mail.gmail.com>
-	<20140710114222.GE2970@pd.tnic>
-	<CAFQmdRZ1D4OWqkL-zpsiEjuGQaSBBmk36HqSw=q+hHNCRWZCKQ@mail.gmail.com>
-	<CA+8MBbJ+FeQKZC9oVZsvrBptaY+24rVKWUXT02ETHMMoA-omuA@mail.gmail.com>
-	<CAFQmdRY1=Yg7T15kQmiA+S0j1-xNKsF6Sze49BN7-VzbwW7V4w@mail.gmail.com>
-	<20140711153541.GD17083@pd.tnic>
-	<CAFQmdRajEjtGB4xXVzCmaUPA=qEjrzQTskJtpmD0cqKhKsEYsg@mail.gmail.com>
-	<20140711202207.GC18246@pd.tnic>
-Date: Fri, 11 Jul 2014 17:10:07 -0700
-Message-ID: <CAFQmdRavLe6STnBHA0iMJEPxYSFsskFha12T+0AqxV8zd1+ixA@mail.gmail.com>
-Subject: Re: [PATCH 1/6] x86-mce: Modify CMCI poll interval to adjust for
- small check_interval values.
-From: Havard Skinnemoen <hskinnemoen@google.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Tony Luck <tony.luck@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ewout van Bekkum <ewout@google.com>,
-        linux-edac <linux-edac@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6C0GQwd024967
 
-On Fri, Jul 11, 2014 at 1:22 PM, Borislav Petkov <bp@alien8.de> wrote:
-> On Fri, Jul 11, 2014 at 11:56:11AM -0700, Havard Skinnemoen wrote:
->> > * max number of CMCIs per second a system can sustain fine, i.e. the 100
->> > above
->>
->> What's the definition of "fine"? 1% performance hit? 10%? How can we
->> make that decision without knowing how hard the users are pushing
->> their systems?
+
+On Jul 11, 2014 7:45 PM, Daniel Kiper <daniel.kiper@oracle.com> wrote:
 >
-> Those are definitely unchartered territories we're moving into so yes,
-> answering that won't be easy.
+> On Fri, Jul 11, 2014 at 04:32:27PM -0400, Boris Ostrovsky wrote: 
+> > On 07/11/2014 04:10 PM, Daniel Kiper wrote: 
+> > >On Fri, Jul 11, 2014 at 04:03:46PM -0400, Boris Ostrovsky wrote: 
+> > >>On 07/11/2014 03:54 PM, Daniel Kiper wrote: 
+> > >>>Compiler complains in the following way when x86 32-bit kernel 
+> > >>>with Xen support is build: 
+> > >>> 
+> > >>>Â Â  CCÂ Â Â Â Â  arch/x86/xen/enlighten.o 
+> > >>>arch/x86/xen/enlighten.c: In function â€˜xen_start_kernelâ€™: 
+> > >>>arch/x86/xen/enlighten.c:1726:3: warning: right shift count >= width of type [enabled by default] 
+> > >>> 
+> > >>>Such line contains following EFI initialization code: 
+> > >>> 
+> > >>>boot_params.efi_info.efi_systab_hi = (__u32)(__pa(efi_systab_xen) >> 32); 
+> > >>> 
+> > >>>There is no issue if x86 64-bit kernel is build. However, 32-bit case 
+> > >>>generate warning (even if that code will not be executed because Xen 
+> > >>>does not work on 32-bit EFI platforms) due to __pa() returning unsigned long 
+> > >>>type which has 32-bits width. So move whole EFI initialization stuff 
+> > >>>to separate function and build its body conditionally to avoid above 
+> > >>>mentioned warning on x86 32-bit architecture. 
+> > >>> 
+> > >>>Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com> 
+> > >>>--- 
+> > >>>Â  arch/x86/xen/enlighten.c |Â Â  35 ++++++++++++++++++++++------------- 
+> > >>>Â  1 file changed, 22 insertions(+), 13 deletions(-) 
+> > >>> 
+> > >>>diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c 
+> > >>>index bc89647..6abec74 100644 
+> > >>>--- a/arch/x86/xen/enlighten.c 
+> > >>>+++ b/arch/x86/xen/enlighten.c 
+> > >>>@@ -1516,12 +1516,32 @@ static void __init xen_pvh_early_guest_init(void) 
+> > >>>Â  #endif 
+> > >>>Â  } 
+> > >>>+static void __init xen_efi_init(void) 
+> > >>>+{ 
+> > >>>+#ifdef CONFIG_XEN_EFI 
+> > >>>+ efi_system_table_t *efi_systab_xen; 
+> > >>>+ 
+> > >>>+ efi_systab_xen = xen_efi_probe(); 
+> > >>>+ 
+> > >>>+ if (efi_systab_xen == NULL) 
+> > >>>+ return; 
+> > >>>+ 
+> > >>>+ strncpy((char *)&boot_params.efi_info.efi_loader_signature, "Xen", 
+> > >>>+ sizeof(boot_params.efi_info.efi_loader_signature)); 
+> > >>>+ boot_params.efi_info.efi_systab = (__u32)__pa(efi_systab_xen); 
+> > >>>+ boot_params.efi_info.efi_systab_hi = (__u32)(__pa(efi_systab_xen) >> 32); 
+> > >>>+ 
+> > >>>+ set_bit(EFI_BOOT, &efi.flags); 
+> > >>>+ set_bit(EFI_PARAVIRT, &efi.flags); 
+> > >>>+ set_bit(EFI_64BIT, &efi.flags); 
+> > >>>+#endif 
+> > >>>+} 
+> > >>>+ 
+> > >>>Â  /* First C function to be called on Xen boot */ 
+> > >>>Â  asmlinkage __visible void __init xen_start_kernel(void) 
+> > >>>Â  { 
+> > >>>Â  struct physdev_set_iopl set_iopl; 
+> > >>>Â  int rc; 
+> > >>>- efi_system_table_t *efi_systab_xen; 
+> > >>>Â  if (!xen_start_info) 
+> > >>>Â  return; 
+> > >>>@@ -1717,18 +1737,7 @@ asmlinkage __visible void __init xen_start_kernel(void) 
+> > >>>Â  xen_setup_runstate_info(0); 
+> > >>>- efi_systab_xen = xen_efi_probe(); 
+> > >>>- 
+> > >>>- if (efi_systab_xen) { 
+> > >>>- strncpy((char *)&boot_params.efi_info.efi_loader_signature, "Xen", 
+> > >>>- sizeof(boot_params.efi_info.efi_loader_signature)); 
+> > >>>- boot_params.efi_info.efi_systab = (__u32)__pa(efi_systab_xen); 
+> > >>>- boot_params.efi_info.efi_systab_hi = (__u32)(__pa(efi_systab_xen) >> 32); 
+> > >>>- 
+> > >>>- set_bit(EFI_BOOT, &efi.flags); 
+> > >>>- set_bit(EFI_PARAVIRT, &efi.flags); 
+> > >>>- set_bit(EFI_64BIT, &efi.flags); 
+> > >>>- } 
+> > >>>+ xen_efi_init(); 
+> > >>I'd put ifdef CONFIG_XEN_EFI around the call instead of having it 
+> > >>inside the routine. 
+> > >Well, I thought about that a bit and I prefer function like Konrad. 
+> > >Could you agree with him which solution do you (as maintainers) prefer? 
+> > > 
+> > 
+> > I am not arguing against having a separate routine. All I am saying 
+> > is that calling xen_efi_init() when CONFIG_XEN_EFI is not defined 
+> > doesn't look logical. It will also add an unnecessary call (although 
 >
-> Let's try it: if the anount of time we spend per second in the CMCI
-> handler becomes higher than the amount of time we spend polling for that
-> same second, then we might just as well poll and save us the interrupt
-> load.
+> Ahh... I misunderstood you. However, your proposal, as below: 
 >
-> So, for example, say for 10ms poll rate and single poll duration of
-> 2ms, if time spent in CMCI exceeds 200ms for that second, we switch to
-> polling. Hypothetical numbers, of course.
-
-200ms per second means we're using 20% of that CPU. I'd say that's
-definitely too much. But I like the general approach.
-
-> Can we measure it on every system? Probably not. So we need to
-> approximate it somehow.
+> #ifdef CONFIG_XEN_EFI 
+> Â  xen_efi_init(); 
+> #endif 
 >
->>
->> > * total polling duration during storm, i.e. the 1 second above
->> >
->> > and if those are chosen generously for every system out there, then we
->> > don't need to dynamically adjust the polling interval.
->>
->> I'm not sure how we can be generous when there's a tradeoff involved.
->> If we make the interval "generously low", we end up hurting
->> performance. if we make it "generously high", we'll lose information.
+> does not solve the problem because this vulnerable shift will be still 
+> visible for compiler during x86 32-bit kernel build. 
 >
-> Yeah, by "generous" I meant, choose values which fit all. But I realize
-> now that this is a dumb idea. Maybe we could measure it on each system,
-> read the TSC on CMCI entry and exit and thus get an average CMCI
-> duration...
+> > compiler may optimize it out). 
+>
+> Please loot at arch/x86/xen/enlighten.c:xen_check_mwait() and 
+> arch/x86/xen/enlighten.c:xen_boot_params_init_edd() (probably 
+> there are more stuff like that around). As I can see this is fairly 
+> common solution and probably compiler cope with it quite well. 
+>
 
-Sounds interesting. Some things that may need some more thought:
+Those are some examples of some rather bad examples.
 
-1. What percentage of CPU is OK to use before we consider it a storm?
+The way that is preferred in the Linux code is to have the ifdef in headers.
 
-2. How do we map that number to polling mode, where we may not see all
-the errors? If we get it wrong, we may end up bouncing at a very high
-rate.
+See
+http://lxr.free-electrons.com/source/arch/x86/include/asm/xen/swiotlb-xen.h
+Or
+http://lxr.free-electrons.com/source/arch/x86/include/asm/xen/pci.h
 
-3. If we go for a fixed polling rate, how do we make sure it doesn't
-require more CPU than what we determined in (1)?
+You can create a similar file there and for the 32 bit implementation just make an empty static function.
 
-Havard
+The 64 bit implementation has to be somewhere. Can it be in the Xen EFI file which is only compiled on 64 bit platforms?
+
+> Have a nice weekend, 
+>
+> Daniel 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
