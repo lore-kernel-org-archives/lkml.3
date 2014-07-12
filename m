@@ -1,80 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408AbaGLDQo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jul 2014 23:16:44 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:28571 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263AbaGLDQm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jul 2014 23:16:42 -0400
-From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-To: Joe Lawrence <joe.lawrence@stratus.com>, Joe Julian <joe@julianfamily.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Joe Maloy <joe.maloy@avagotech.com>
-Subject: RE: mpt2sas stuck installing
-Thread-Topic: mpt2sas stuck installing
-Thread-Index: AQHPl0llMSzGFpFWbUqZ0QGQ356UuZuVcFKwgALjLwCAA3a7AIAAAmqg
-Date: Sat, 12 Jul 2014 03:13:07 +0000
-Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958B9907B@G9W0745.americas.hpqcorp.net>
-References: <20140704013250.088477de@jlaw-desktop.mno.stratus.com>
- <53B649A6.60501@julianfamily.org>
- <alpine.DEB.2.02.1407072149190.10980@jlaw-desktop.mno.stratus.com>
- <53BDBB3A.5060906@julianfamily.org>
- <20140711225306.3ce78324@jlaw-desktop.mno.stratus.com>
-In-Reply-To: <20140711225306.3ce78324@jlaw-desktop.mno.stratus.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [15.201.58.25]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754795AbaGLDgQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jul 2014 23:36:16 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:51271 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751906AbaGLDgP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jul 2014 23:36:15 -0400
+Date: Fri, 11 Jul 2014 23:36:10 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Cc: <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [for-next][PATCH 04/21] ftrace: Optimize function graph to be
+ called directly
+Message-ID: <20140711233610.551c274d@gandalf.local.home>
+In-Reply-To: <53BED155.9040607@nvidia.com>
+References: <20140703160503.006976702@goodmis.org>
+	<20140703161224.062459692@goodmis.org>
+	<53BED155.9040607@nvidia.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
-> owner@vger.kernel.org] On Behalf Of Joe Lawrence
-...
-> In your crash stack trace, the scsi error handler has issued a host
-> reset, but then crashed in mpt2sas_base_get_iocstate.  Reading through
-> _scsih_shutdown, I don't believe that the mpt2sas .shutdown path takes
-> any precaution before heading down mpt2sas_base_detach to free adapter
-> resources.  The ordinary .remove path looks similar, though it does
-> call sas_remove_host before freeing resources, *then* scsi_remove_host
-> and scsi_host_put.
+On Thu, 10 Jul 2014 20:45:57 +0300
+Tuomas Tynkkynen <ttynkkynen@nvidia.com> wrote:
+> >
 > 
-> I wonder if this ordering needs to be reversed (and added to
-> _scsih_shutdown) to properly de-register from the SCSI midlayer prior
-> to removing the controller instance.
-> 
-> Regards,
-> 
-> -- Joe
+> This commit (79922b8) breaks the function graph tracer on today's -next. 
+> This is on an ARM Tegra board.
 
-Nagalakshmi was working on an mpt3sas patch for the scsi-mq tree 
-to do just that.  I don't recall if the patch has made it into the 
-scsi-mq tree yet. Apparently it's also needed for non-mq and mpt2sas.
+Can you test this patch. It makes the default operation of calling the
+function graph tracer trampoline directly being disabled. It is now up
+to the arch to define FTRACE_GRAPH_TRAMP_ADDR that can be used to call
+directly. If it is not set, the old method of calling the function
+tracer first is used.
 
-It is making this change:
->  	sas_remove_host(shost);
-> +	scsi_remove_host(shost);
->  	mpt3sas_base_detach(ioc);
->  	list_del(&ioc->list);
-> -	scsi_remove_host(shost);
->  	scsi_host_put(shost);
+I'll worked on getting arm to be called directly too. Can you test that
+patch as well? I'll reply to this email with that one.
 
-We are making a similar change in hpsa.  Doing so led to a general 
-protection fault, which unveiled that we also needed to change 
-cancel_delayed_work() calls to cancel_delayed_work_sync() to 
-ensure there are no worker functions still active after the 
-scsi_host structure is unregistered.
+Thanks!
 
+-- Steve
+
+>From 641e0d82e5be65adac6449f62d68d83012b780d9 Mon Sep 17 00:00:00 2001
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Date: Fri, 11 Jul 2014 14:39:10 -0400
+Subject: [PATCH] ftrace: Allow archs to specify if they need a separate
+ function graph trampoline
+
+Currently if an arch supports function graph tracing, the core code will
+just assign the function graph trampoline to the function graph addr that
+gets called.
+
+But as the old method for function graph tracing always calls the function
+trampoline first and that calls the function graph trampoline, some
+archs may have the function graph trampoline dependent on operations that
+were done in the function trampoline. This causes function graph tracer
+to break on those archs.
+
+Instead of having the default be to set the function graph ftrace_ops
+to the function graph trampoline, have it instead just set it to zero
+which will keep it from jumping to a trampoline that is not set up
+to be jumped directly too.
+
+Link: http://lkml.kernel.org/r/53BED155.9040607@nvidia.com
+
+Reported-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/ftrace.h | 10 ++++++++++
+ kernel/trace/ftrace.c  |  6 ++++--
+ 2 files changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 11e18fd..4807a39 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -453,6 +453,16 @@ void ftrace_modify_all_code(int command);
+ #endif
+ #endif
+ 
++/*
++ * If an arch would like functions that are only traced
++ * by the function graph tracer to jump directly to its own
++ * trampoline, then they can define FTRACE_GRAPH_TRAMP_ADDR
++ * to be that address to jump to.
++ */
++#ifndef FTRACE_GRAPH_TRAMP_ADDR
++#define FTRACE_GRAPH_TRAMP_ADDR ((unsigned long) 0)
++#endif
++
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ extern void ftrace_graph_caller(void);
+ extern int ftrace_enable_ftrace_graph_caller(void);
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 45aac1a..c52d37d 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -5366,7 +5366,8 @@ int register_ftrace_graph(trace_func_graph_ret_t retfunc,
+ 
+ #ifdef CONFIG_DYNAMIC_FTRACE
+ 	/* Optimize function graph calling (if implemented by arch) */
+-	global_ops.trampoline = FTRACE_GRAPH_ADDR;
++	if (FTRACE_GRAPH_TRAMP_ADDR)
++		global_ops.trampoline = FTRACE_GRAPH_TRAMP_ADDR;
+ #endif
+ 
+ 	ret = ftrace_startup(&global_ops, FTRACE_START_FUNC_RET);
+@@ -5390,7 +5391,8 @@ void unregister_ftrace_graph(void)
+ 	ftrace_shutdown(&global_ops, FTRACE_STOP_FUNC_RET);
+ 	global_ops.flags &= ~FTRACE_OPS_FL_STUB;
+ #ifdef CONFIG_DYNAMIC_FTRACE
+-	global_ops.trampoline = 0;
++	if (FTRACE_GRAPH_TRAMP_ADDR)
++		global_ops.trampoline = 0;
+ #endif
+ 	unregister_pm_notifier(&ftrace_suspend_notifier);
+ 	unregister_trace_sched_switch(ftrace_graph_probe_sched_switch, NULL);
+-- 
+1.8.1.4
 
