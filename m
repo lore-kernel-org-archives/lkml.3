@@ -1,119 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751901AbaGMTMk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 15:12:40 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:38273 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751549AbaGMTMI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 15:12:08 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: forest@alittletooquiet.net, gregkh@linuxfoundation.org, tvboxspy@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Cc: Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH V2 4/4] staging: vt6556: Cleanup coding style issues
-Date: Sun, 13 Jul 2014 21:11:21 +0200
-Message-Id: <1405278681-3348-4-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1405278681-3348-1-git-send-email-peter.senna@gmail.com>
-References: <1405278681-3348-1-git-send-email-peter.senna@gmail.com>
+	id S1751568AbaGMTRR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 15:17:17 -0400
+Received: from p3plex2out02.prod.phx3.secureserver.net ([184.168.131.14]:43425
+	"EHLO p3plex2out02.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751313AbaGMTRG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jul 2014 15:17:06 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Chase Southwood <chase.southwood@gmail.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 2/2] staging: comedi: addi_apci_1564: use addi_watchdog
+ module to init watchdog subdevice
+Thread-Topic: [PATCH 2/2] staging: comedi: addi_apci_1564: use addi_watchdog
+ module to init watchdog subdevice
+Thread-Index: AQHPniLjmd9jMAfz+0KWcL43PQIqp5ueYVPn
+Date: Sun, 13 Jul 2014 19:17:03 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825EF2E84@P3PWEX4MB008.ex4.secureserver.net>
+References: <1405204956-1559-1-git-send-email-chase.southwood@gmail.com>,<1405205049-1828-1-git-send-email-chase.southwood@gmail.com>
+In-Reply-To: <1405205049-1828-1-git-send-email-chase.southwood@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [24.251.30.167]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch cleanup coding style issues reported by checkpatch.
+On Saturday, July 12, 2014 3:44 PM, Chase Southwood wrote:
+> Use the addi_watchdog module to provide support for the watchdog
+> subdevice.
+>
+> Also, rearrange the subdevice init blocks so that the order makes sense.
+> Digital input/output subdevices and subdevices for DI/DO interrupt
+> support, followed by timer/counter/watchdog subdevices is the new order.
+>
+> Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
+> Cc: Ian Abbott <abbotti@mev.co.uk>
+> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+> ---
+>  drivers/staging/comedi/drivers/addi_apci_1564.c | 34 +++++++++++++++----------
+>  1 file changed, 20 insertions(+), 14 deletions(-)
 
-This patch change the following enums:
- - typedef enum __device_msg_level
- - typedef enum __DEVICE_NDIS_STATUS
+Chase,
 
-Tested by compilation only.
+You should also add the dependency for the addi watchdog module
+to the Kconfig.
 
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
----
-Cahnges from V1:
- - Sent all patches in a series
-
-Made against latest staging-next.
-
- drivers/staging/vt6656/channel.c |  5 +++--
- drivers/staging/vt6656/device.h  | 27 +++++++++++++--------------
- 2 files changed, 16 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/staging/vt6656/channel.c b/drivers/staging/vt6656/channel.c
-index fb1838e..4a53f1a 100644
---- a/drivers/staging/vt6656/channel.c
-+++ b/drivers/staging/vt6656/channel.c
-@@ -28,8 +28,9 @@
-  *
-  *
-  * Revision History:
-- *      01-18-2005      RobertYu:  remove the for loop searching in ChannelValid,
-- *                                 change ChannelRuleTab to lookup-type, reorder table items.
-+ *	01-18-2005	RobertYu:	remove the for loop searching in
-+ *					ChannelValid, change ChannelRuleTab
-+ *					to lookup-type, reorder table items.
-  *
-  *
-  */
-diff --git a/drivers/staging/vt6656/device.h b/drivers/staging/vt6656/device.h
-index 789c55d..e3acf2f 100644
---- a/drivers/staging/vt6656/device.h
-+++ b/drivers/staging/vt6656/device.h
-@@ -187,13 +187,13 @@
- 
- #define DBG_PRT(l, p, args...) { if (l <= msglevel) printk(p, ##args); }
- 
--typedef enum __device_msg_level {
-+enum {
- 	MSG_LEVEL_ERR = 0,            /* Errors causing abnormal operation */
- 	MSG_LEVEL_NOTICE = 1,         /* Errors needing user notification */
- 	MSG_LEVEL_INFO = 2,           /* Normal message. */
- 	MSG_LEVEL_VERBOSE = 3,        /* Will report all trival errors. */
- 	MSG_LEVEL_DEBUG = 4           /* Only for debug purpose. */
--} DEVICE_MSG_LEVEL, *PDEVICE_MSG_LEVEL;
-+};
- 
- #define DEVICE_INIT_COLD	0x0 /* cold init */
- #define DEVICE_INIT_RESET	0x1 /* reset init or Dx to D0 power remain */
-@@ -268,13 +268,12 @@ struct vnt_interrupt_buffer {
- 
- /*++ NDIS related */
- 
--typedef enum __DEVICE_NDIS_STATUS {
--    STATUS_SUCCESS = 0,
--    STATUS_FAILURE,
--    STATUS_RESOURCES,
--    STATUS_PENDING,
--} DEVICE_NDIS_STATUS, *PDEVICE_NDIS_STATUS;
--
-+enum {
-+	STATUS_SUCCESS = 0,
-+	STATUS_FAILURE,
-+	STATUS_RESOURCES,
-+	STATUS_PENDING,
-+};
- 
- /* flags for options */
- #define     DEVICE_FLAGS_UNPLUG          0x00000001UL
-@@ -443,11 +442,11 @@ struct vnt_private {
- 	struct ieee80211_low_level_stats low_stats;
- };
- 
--#define ADD_ONE_WITH_WRAP_AROUND(uVar, uModulo) {   \
--    if ((uVar) >= ((uModulo) - 1))                  \
--        (uVar) = 0;                                 \
--    else                                            \
--        (uVar)++;                                   \
-+#define ADD_ONE_WITH_WRAP_AROUND(uVar, uModulo) {	\
-+	if ((uVar) >= ((uModulo) - 1))			\
-+		(uVar) = 0;				\
-+	else						\
-+		(uVar)++;				\
- }
- 
- #define fMP_DISCONNECTED                    0x00000002
--- 
-1.9.3
-
+Regards,
+Hartley
