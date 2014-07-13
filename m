@@ -1,113 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129AbaGMQg2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 12:36:28 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:47150 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753837AbaGMQgU (ORCPT
+	id S1754187AbaGMQhm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 12:37:42 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:55836 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753837AbaGMQhe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 12:36:20 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: forest@alittletooquiet.net, gregkh@linuxfoundation.org, tvboxspy@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Cc: Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH] staging: vt6556: Cleanup coding style issues
-Date: Sun, 13 Jul 2014 18:36:09 +0200
-Message-Id: <1405269369-16236-1-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.9.3
+	Sun, 13 Jul 2014 12:37:34 -0400
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+From: Mike Turquette <mturquette@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+User-Agent: alot/0.3.5
+To: torvalds@linux-foundation.org
+Message-ID: <20140713163727.9850.72520@quantum>
+Subject: [GIT PULL] clk: fixes for 3.16
+Date: Sun, 13 Jul 2014 09:37:27 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch cleanup coding style issues reported by checkpatch.
+The following changes since commit 4c834452aad01531db949414f94f817a86348d59:
 
-This patch change the following enums:
- - typedef enum __device_msg_level
- - typedef enum __DEVICE_NDIS_STATUS
+  Linux 3.16-rc3 (2014-06-29 14:11:36 -0700)
 
-Tested by compilation only.
+are available in the git repository at:
 
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
----
-Made against latest staging-next.
- drivers/staging/vt6656/channel.c |  5 +++--
- drivers/staging/vt6656/device.h  | 27 +++++++++++++--------------
- 2 files changed, 16 insertions(+), 16 deletions(-)
+  git://git.linaro.org/people/mike.turquette/linux.git tags/clk-fixes-for-linus
 
-diff --git a/drivers/staging/vt6656/channel.c b/drivers/staging/vt6656/channel.c
-index fb1838e..4a53f1a 100644
---- a/drivers/staging/vt6656/channel.c
-+++ b/drivers/staging/vt6656/channel.c
-@@ -28,8 +28,9 @@
-  *
-  *
-  * Revision History:
-- *      01-18-2005      RobertYu:  remove the for loop searching in ChannelValid,
-- *                                 change ChannelRuleTab to lookup-type, reorder table items.
-+ *	01-18-2005	RobertYu:	remove the for loop searching in
-+ *					ChannelValid, change ChannelRuleTab
-+ *					to lookup-type, reorder table items.
-  *
-  *
-  */
-diff --git a/drivers/staging/vt6656/device.h b/drivers/staging/vt6656/device.h
-index 789c55d..e3acf2f 100644
---- a/drivers/staging/vt6656/device.h
-+++ b/drivers/staging/vt6656/device.h
-@@ -187,13 +187,13 @@
- 
- #define DBG_PRT(l, p, args...) { if (l <= msglevel) printk(p, ##args); }
- 
--typedef enum __device_msg_level {
-+enum {
- 	MSG_LEVEL_ERR = 0,            /* Errors causing abnormal operation */
- 	MSG_LEVEL_NOTICE = 1,         /* Errors needing user notification */
- 	MSG_LEVEL_INFO = 2,           /* Normal message. */
- 	MSG_LEVEL_VERBOSE = 3,        /* Will report all trival errors. */
- 	MSG_LEVEL_DEBUG = 4           /* Only for debug purpose. */
--} DEVICE_MSG_LEVEL, *PDEVICE_MSG_LEVEL;
-+};
- 
- #define DEVICE_INIT_COLD	0x0 /* cold init */
- #define DEVICE_INIT_RESET	0x1 /* reset init or Dx to D0 power remain */
-@@ -268,13 +268,12 @@ struct vnt_interrupt_buffer {
- 
- /*++ NDIS related */
- 
--typedef enum __DEVICE_NDIS_STATUS {
--    STATUS_SUCCESS = 0,
--    STATUS_FAILURE,
--    STATUS_RESOURCES,
--    STATUS_PENDING,
--} DEVICE_NDIS_STATUS, *PDEVICE_NDIS_STATUS;
--
-+enum {
-+	STATUS_SUCCESS = 0,
-+	STATUS_FAILURE,
-+	STATUS_RESOURCES,
-+	STATUS_PENDING,
-+};
- 
- /* flags for options */
- #define     DEVICE_FLAGS_UNPLUG          0x00000001UL
-@@ -443,11 +442,11 @@ struct vnt_private {
- 	struct ieee80211_low_level_stats low_stats;
- };
- 
--#define ADD_ONE_WITH_WRAP_AROUND(uVar, uModulo) {   \
--    if ((uVar) >= ((uModulo) - 1))                  \
--        (uVar) = 0;                                 \
--    else                                            \
--        (uVar)++;                                   \
-+#define ADD_ONE_WITH_WRAP_AROUND(uVar, uModulo) {	\
-+	if ((uVar) >= ((uModulo) - 1))			\
-+		(uVar) = 0;				\
-+	else						\
-+		(uVar)++;				\
- }
- 
- #define fMP_DISCONNECTED                    0x00000002
--- 
-1.9.3
+for you to fetch changes up to 449437778bd09b73a5e51554f7219706da08917f:
 
+  clk: spear3xx: Set proper clock parent of uart1/2 (2014-07-13 07:12:11 -0700)
+
+----------------------------------------------------------------
+This batch of fixes is for a handful of clock drivers from Allwinner,
+Samsung, ST & TI. Most of them are of the "this hardware won't work
+without this fix" variety, including patches that fix platforms that did
+not boot under certain configurations. Other fixes are the result of
+changes to the clock core introduced in 3.15 that had subtle impacts on
+the clock drivers.
+
+There are no fixes to the clock framework core in this pull request.
+
+----------------------------------------------------------------
+Charles Keepax (1):
+      clk: s3c64xx: Hookup SPI clocks correctly
+
+Dan Carpenter (1):
+      clk: ti: apll: not allocating enough data
+
+Doug Anderson (1):
+      clk: exynos5420: Remove aclk66_peric from the clock tree description
+
+Himangi Saraogi (1):
+      clk: sunxi: fix devm_ioremap_resource error detection code
+
+Julia Lawall (1):
+      clk: ti: dra7: return error code in failure case
+
+Krzysztof Kozlowski (1):
+      clk: s2mps11: Fix double free corruption during driver unbind
+
+Mike Turquette (2):
+      Merge branch 'for-v3.16-rc/ti-clk-drv' of github.com:t-kristo/linux-pm into clk-fixes-ti
+      Merge tag 'for_3.16/samsung-clk-fixes' of git://git.kernel.org/.../tfiga/samsung-clk into clk-fixes-samsung
+
+Rahul Sharma (1):
+      clk/exynos5250: fix bit number for tv sysmmu clock
+
+Roger Quadros (2):
+      clk: ti: am43x: Fix boot with CONFIG_SOC_AM33XX disabled
+      clk: ti: am43x: Fix boot with CONFIG_SOC_AM33XX disabled
+
+Stephen Boyd (1):
+      clk: qcom: HDMI source sel is 3 not 2
+
+Thomas Gleixner (2):
+      clk: spear3xx: Use proper control register offset
+      clk: spear3xx: Set proper clock parent of uart1/2
+
+Tomasz Figa (1):
+      clk: samsung: exynos4: Remove SRC_MASK_ISP gates
+
+Tomi Valkeinen (1):
+      clk: ti: set CLK_SET_RATE_NO_REPARENT for ti,mux-clock
+
+Vasily Khoruzhick (2):
+      clk: samsung: fix several typos to fix boot on s3c2410
+      clk: samsung: add more aliases for s3c24xx
+
+ drivers/clk/clk-s2mps11.c                |  7 +--
+ drivers/clk/qcom/mmcc-msm8960.c          |  2 +-
+ drivers/clk/samsung/clk-exynos4.c        | 16 ++----
+ drivers/clk/samsung/clk-exynos5250.c     |  2 +-
+ drivers/clk/samsung/clk-exynos5420.c     | 85 +++++++++++++++++++++-----------
+ drivers/clk/samsung/clk-s3c2410.c        |  9 +++-
+ drivers/clk/samsung/clk-s3c64xx.c        |  6 ++-
+ drivers/clk/spear/spear3xx_clock.c       | 16 ++++--
+ drivers/clk/sunxi/clk-sun6i-apb0-gates.c |  2 +-
+ drivers/clk/ti/apll.c                    |  8 ++-
+ drivers/clk/ti/dpll.c                    |  5 +-
+ drivers/clk/ti/mux.c                     |  2 +-
+ include/dt-bindings/clock/exynos5420.h   |  1 -
+ 13 files changed, 93 insertions(+), 68 deletions(-)
