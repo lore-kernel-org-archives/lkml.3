@@ -1,73 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380AbaGMRRC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 13:17:02 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:17121 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754155AbaGMRQy convert rfc822-to-8bit (ORCPT
+	id S1754334AbaGMRbF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 13:31:05 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:63528 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754064AbaGMRa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 13:16:54 -0400
-From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-To: Benjamin LaHaise <bcrl@kvack.org>
-CC: Christoph Hellwig <hch@infradead.org>, Jeff Moyer <jmoyer@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        "dgilbert@interlog.com" <dgilbert@interlog.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Bart Van Assche <bvanassche@fusionio.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: scsi-mq V2
-Thread-Topic: scsi-mq V2
-Thread-Index: AQHPnHMrpCazJa2BBk+bOfxdnvD3mpuZzE1ggACP5JCAAAm1gIAAiJyAgAAI4QCAAfDxoIAALgKggAEsdpA=
-Date: Sun, 13 Jul 2014 17:15:15 +0000
-Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958BA02EF@G9W0745.americas.hpqcorp.net>
-References: <20140710062040.GB20146@infradead.org>
- <94D0CD8314A33A4D9D801C0FE68B402958B96E3B@G9W0745.americas.hpqcorp.net>
- <20140710160422.GA13728@infradead.org>
- <20140710161438.GA30792@infradead.org>
- <94D0CD8314A33A4D9D801C0FE68B402958B971BB@G9W0745.americas.hpqcorp.net>
- <x497g3l10x6.fsf@segfault.boston.devel.redhat.com>
- <94D0CD8314A33A4D9D801C0FE68B402958B9742E@G9W0745.americas.hpqcorp.net>
- <94D0CD8314A33A4D9D801C0FE68B402958B979E6@G9W0745.americas.hpqcorp.net>
- <20140711061441.GA29629@infradead.org>
- <94D0CD8314A33A4D9D801C0FE68B402958B98323@G9W0745.americas.hpqcorp.net>
- <20140711145524.GB12478@kvack.org>
- <94D0CD8314A33A4D9D801C0FE68B402958B9969F@G9W0745.americas.hpqcorp.net>
- <94D0CD8314A33A4D9D801C0FE68B402958B9F2DB@G9W0745.americas.hpqcorp.net>
-In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B402958B9F2DB@G9W0745.americas.hpqcorp.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [15.201.58.27]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 13 Jul 2014 13:30:58 -0400
+Date: Sun, 13 Jul 2014 23:00:51 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] Input: ambakmi - Use managed interfaces
+Message-ID: <20140713173051.GA4299@himangi-Dell>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch introduces the use of managed interfaces like devm_clk_get,
+devm_kalloc etc. devm_ioremap_resource is used instead of
+amba_request_regions and devm_ioremap. It also does away with the functions
+to free the allocated memory in probe and remove functions. Also, some
+labels in the probe function are removed.
 
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+ drivers/input/serio/ambakmi.c | 44 ++++++++++---------------------------------
+ 1 file changed, 10 insertions(+), 34 deletions(-)
 
-> -----Original Message-----
-> From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
-> owner@vger.kernel.org] On Behalf Of Elliott, Robert (Server Storage)
-> Sent: Saturday, July 12, 2014 6:20 PM
-> To: Benjamin LaHaise
-> Cc: Christoph Hellwig; Jeff Moyer; Jens Axboe; dgilbert@interlog.com;
-> James Bottomley; Bart Van Assche; linux-scsi@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: RE: scsi-mq V2
-> 
-> > I will see if that solves the problem with the scsi-mq-3 tree, or
-> > at least some of the bisect trees leading up to it.
-> 
-> scsi-mq-3 is still going after 45 minutes.  I'll leave it running
-> overnight.
-> 
-
-That has been going strong for 18 hours, so I think that's the patch
-we need.
-
-
+diff --git a/drivers/input/serio/ambakmi.c b/drivers/input/serio/ambakmi.c
+index 8b748d9..405a175 100644
+--- a/drivers/input/serio/ambakmi.c
++++ b/drivers/input/serio/ambakmi.c
+@@ -23,6 +23,7 @@
+ #include <linux/clk.h>
+ 
+ #include <asm/io.h>
++#include <linux/io.h>
+ #include <asm/irq.h>
+ 
+ #define KMI_BASE	(kmi->base)
+@@ -112,19 +113,10 @@ static int amba_kmi_probe(struct amba_device *dev,
+ {
+ 	struct amba_kmi_port *kmi;
+ 	struct serio *io;
+-	int ret;
+-
+-	ret = amba_request_regions(dev, NULL);
+-	if (ret)
+-		return ret;
+-
+-	kmi = kzalloc(sizeof(struct amba_kmi_port), GFP_KERNEL);
+-	io = kzalloc(sizeof(struct serio), GFP_KERNEL);
+-	if (!kmi || !io) {
+-		ret = -ENOMEM;
+-		goto out;
+-	}
+ 
++	io = devm_kzalloc(&dev->dev, sizeof(struct serio), GFP_KERNEL);
++	if (!io)
++		return -ENOMEM;
+ 
+ 	io->id.type	= SERIO_8042;
+ 	io->write	= amba_kmi_write;
+@@ -135,32 +127,20 @@ static int amba_kmi_probe(struct amba_device *dev,
+ 	io->port_data	= kmi;
+ 	io->dev.parent	= &dev->dev;
+ 
++	kmi->base	= devm_ioremap_resource(&dev->dev, &dev->res);
++	if (IS_ERR(kmi->base))
++		return PTR_ERR(kmi->base);
+ 	kmi->io		= io;
+-	kmi->base	= ioremap(dev->res.start, resource_size(&dev->res));
+-	if (!kmi->base) {
+-		ret = -ENOMEM;
+-		goto out;
+-	}
+ 
+-	kmi->clk = clk_get(&dev->dev, "KMIREFCLK");
+-	if (IS_ERR(kmi->clk)) {
+-		ret = PTR_ERR(kmi->clk);
+-		goto unmap;
+-	}
++	kmi->clk = devm_clk_get(&dev->dev, "KMIREFCLK");
++	if (IS_ERR(kmi->clk))
++		return PTR_ERR(kmi->clk);
+ 
+ 	kmi->irq = dev->irq[0];
+ 	amba_set_drvdata(dev, kmi);
+ 
+ 	serio_register_port(kmi->io);
+ 	return 0;
+-
+- unmap:
+-	iounmap(kmi->base);
+- out:
+-	kfree(kmi);
+-	kfree(io);
+-	amba_release_regions(dev);
+-	return ret;
+ }
+ 
+ static int amba_kmi_remove(struct amba_device *dev)
+@@ -168,10 +148,6 @@ static int amba_kmi_remove(struct amba_device *dev)
+ 	struct amba_kmi_port *kmi = amba_get_drvdata(dev);
+ 
+ 	serio_unregister_port(kmi->io);
+-	clk_put(kmi->clk);
+-	iounmap(kmi->base);
+-	kfree(kmi);
+-	amba_release_regions(dev);
+ 	return 0;
+ }
+ 
+-- 
+1.9.1
 
