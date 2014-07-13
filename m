@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751263AbaGMS6v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 14:58:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53642 "EHLO
+	id S1751573AbaGMTAr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 15:00:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53648 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaGMS6o (ORCPT
+	with ESMTP id S1751081AbaGMTAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 14:58:44 -0400
-Date: Sun, 13 Jul 2014 12:03:14 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: forest@alittletooquiet.net, tvboxspy@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 2/2] staging: vt6556: Cleanup coding style issues
-Message-ID: <20140713190314.GA27067@kroah.com>
-References: <1405265995-6724-1-git-send-email-peter.senna@gmail.com>
- <1405265995-6724-2-git-send-email-peter.senna@gmail.com>
+	Sun, 13 Jul 2014 15:00:41 -0400
+Date: Sun, 13 Jul 2014 12:05:12 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: bergwolf@gmail.com, andreas.dilger@intel.com, standby24x7@gmail.com,
+        oleg.drokin@intel.com, Andriy_Skulysh@xyratex.com,
+        denis.pithon@gmail.com, paf@cray.com, devel@driverdev.osuosl.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers: staging: lustre: Use 'force_die' instead of
+ 'die' to avoid compiling issue
+Message-ID: <20140713190512.GA27311@kroah.com>
+References: <53C29CCF.9010008@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1405265995-6724-2-git-send-email-peter.senna@gmail.com>
+In-Reply-To: <53C29CCF.9010008@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 13, 2014 at 05:39:55PM +0200, Peter Senna Tschudin wrote:
-> This patch cleanup coding style issues reported by checkpatch.
+On Sun, Jul 13, 2014 at 10:50:55PM +0800, Chen Gang wrote:
+> Some of architectures have already defined 'die' as macro, so can not use
+> this common name as declaration in other modules, or will cause compiling
+> issue. So use more precise name 'force_die' (like 'wrap_bulk') instead of.
 > 
-> Tested by compilation only.
+> The related error (with allmodconfig under score):
 > 
-> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+>     CC [M]  drivers/staging/lustre/lustre/ptlrpc/sec.o
+>   drivers/staging/lustre/lustre/ptlrpc/sec.c: In function 'sptlrpc_cli_ctx_expire':
+>   drivers/staging/lustre/lustre/ptlrpc/sec.c:309:13: error: 'struct ptlrpc_ctx_ops' has no member named '__die'
+>     ctx->cc_ops->die(ctx, 0);
+>                ^
+>   drivers/staging/lustre/lustre/ptlrpc/sec.c: In function 'ctx_refresh_timeout':
+>   drivers/staging/lustre/lustre/ptlrpc/sec.c:594:26: error: 'struct ptlrpc_ctx_ops' has no member named '__die'
+>      req->rq_cli_ctx->cc_ops->die(req->rq_cli_ctx, 0);
+>                             ^
+>   make[5]: *** [drivers/staging/lustre/lustre/ptlrpc/sec.o] Error 1
+>   make[4]: *** [drivers/staging/lustre/lustre/ptlrpc] Error 2
+>   make[3]: *** [drivers/staging/lustre/lustre] Error 2
+>   make[2]: *** [drivers/staging/lustre] Error 2
+>   make[1]: *** [drivers/staging] Error 2
+>   make: *** [drivers] Error 2
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
 > ---
-> Based on latest staging-next.
+>  drivers/staging/lustre/lustre/include/lustre_sec.h | 2 +-
+>  drivers/staging/lustre/lustre/ptlrpc/sec.c         | 6 +++---
+>  2 files changed, 4 insertions(+), 4 deletions(-)
 
-You just sent me 4 patches, all with the same subject (but at least 2 of
-them had the order in which to apply them in, which is nice.)
-
-Please redo these such that they have a unique subject, and I can tell
-which order to apply them in, as I really have no idea about the second
-two.
+This doesn't apply to my tree, can you please refresh it against the
+staging-next branch of staging.git so that I can apply it?
 
 thanks,
 
