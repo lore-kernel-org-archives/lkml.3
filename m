@@ -1,37 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753105AbaGMJvP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 05:51:15 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:43926 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752526AbaGMJvF (ORCPT
+	id S1752961AbaGMJ7q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 05:59:46 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:43659 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752526AbaGMJ7j convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 05:51:05 -0400
-Date: Sun, 13 Jul 2014 02:51:02 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: jasowang@redhat.com, apw@canonical.com, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, ohering@suse.com,
-        jbottomley@parallels.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH V3 0/7] Drivers: scsi: storvsc: Bug fixes and improvements
-Message-ID: <20140713095102.GB19682@infradead.org>
-References: <1405183684-23928-1-git-send-email-kys@microsoft.com>
+	Sun, 13 Jul 2014 05:59:39 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1405199388-5692-3-git-send-email-daniel.kiper@oracle.com>
+References: <1405199388-5692-1-git-send-email-daniel.kiper@oracle.com> <1405199388-5692-3-git-send-email-daniel.kiper@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405183684-23928-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH v2 2/2] arch/x86/xen: Silence compiler warnings
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Sun, 13 Jul 2014 05:58:45 -0400
+To: Daniel Kiper <daniel.kiper@oracle.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, xen-devel@lists.xenproject.org
+CC: andrew.cooper3@citrix.com, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, hpa@zytor.com, ian.campbell@citrix.com,
+        jbeulich@suse.com, jeremy@goop.org, matt.fleming@intel.com,
+        mingo@redhat.com, stefano.stabellini@eu.citrix.com, tglx@linutronix.de
+Message-ID: <ba9911a0-2527-47e0-96e9-255ac68f0710@email.android.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The series looks good to me, although I'll probably put the commit
-message for the timer patch into the comment for the eh_timed_out
-handler.
+On July 12, 2014 5:09:48 PM EDT, Daniel Kiper <daniel.kiper@oracle.com> wrote:
+>Compiler complains in the following way when x86 32-bit kernel
+>with Xen support is build:
+>
+>  CC      arch/x86/xen/enlighten.o
+>arch/x86/xen/enlighten.c: In function ‘xen_start_kernel’:
+>arch/x86/xen/enlighten.c:1726:3: warning: right shift count >= width of
+>type [enabled by default]
+>
+>Such line contains following EFI initialization code:
+>
+>boot_params.efi_info.efi_systab_hi = (__u32)(__pa(efi_systab_xen) >>
+>32);
+>
+>There is no issue if x86 64-bit kernel is build. However, 32-bit case
+>generate warning (even if that code will not be executed because Xen
+>does not work on 32-bit EFI platforms) due to __pa() returning unsigned
+>long
+>type which has 32-bits width. So move whole EFI initialization stuff
+>to separate function and build it conditionally to avoid above
+>mentioned
+>warning on x86 32-bit architecture.
+>
 
-Can I get another set of reviews?  I've seen Olaf has put them into the
-SLES tree, so I'd expect he's done a review already?
+Reviewed-by: Konrad Rzeszutek Wilk <Konrad.wilk@oracle.com>
+>Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+>---
+>v2 - suggestions/fixes:
+>   - move xen_efi_init() to separate module
+>     (suggested by Konrad Rzeszutek Wilk).
+>---
+> arch/x86/xen/Makefile    |    1 +
+>arch/x86/xen/efi.c       |   43
+>+++++++++++++++++++++++++++++++++++++++++++
+> arch/x86/xen/enlighten.c |   15 +--------------
+> arch/x86/xen/xen-ops.h   |    8 ++++++++
+> 4 files changed, 53 insertions(+), 14 deletions(-)
+> create mode 100644 arch/x86/xen/efi.c
+>
+>diff --git a/arch/x86/xen/Makefile b/arch/x86/xen/Makefile
+>index 96ab2c0..7322755 100644
+>--- a/arch/x86/xen/Makefile
+>+++ b/arch/x86/xen/Makefile
+>@@ -22,3 +22,4 @@ obj-$(CONFIG_PARAVIRT_SPINLOCKS)+= spinlock.o
+> obj-$(CONFIG_XEN_DEBUG_FS)	+= debugfs.o
+> obj-$(CONFIG_XEN_DOM0)		+= apic.o vga.o
+> obj-$(CONFIG_SWIOTLB_XEN)	+= pci-swiotlb-xen.o
+>+obj-$(CONFIG_XEN_EFI)		+= efi.o
+>diff --git a/arch/x86/xen/efi.c b/arch/x86/xen/efi.c
+>new file mode 100644
+>index 0000000..a02e09e
+>--- /dev/null
+>+++ b/arch/x86/xen/efi.c
+>@@ -0,0 +1,43 @@
+>+/*
+>+ * Copyright (c) 2014 Oracle Co., Daniel Kiper
+>+ *
+>+ * This program is free software; you can redistribute it and/or
+>modify
+>+ * it under the terms of the GNU General Public License as published
+>by
+>+ * the Free Software Foundation; either version 2 of the License, or
+>+ * (at your option) any later version.
+>+ *
+>+ * This program is distributed in the hope that it will be useful,
+>+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>+ * GNU General Public License for more details.
+>+ *
+>+ * You should have received a copy of the GNU General Public License
+>along
+>+ * with this program.  If not, see <http://www.gnu.org/licenses/>.
+>+ */
+>+
+>+#include <linux/efi.h>
+>+#include <linux/init.h>
+>+#include <linux/string.h>
+>+
+>+#include <xen/xen-ops.h>
+>+
+>+#include <asm/setup.h>
+>+
+>+void __init xen_efi_init(void)
+>+{
+>+	efi_system_table_t *efi_systab_xen;
+>+
+>+	efi_systab_xen = xen_efi_probe();
+>+
+>+	if (efi_systab_xen == NULL)
+>+		return;
+>+
+>+	strncpy((char *)&boot_params.efi_info.efi_loader_signature, "Xen",
+>+			sizeof(boot_params.efi_info.efi_loader_signature));
+>+	boot_params.efi_info.efi_systab = (__u32)__pa(efi_systab_xen);
+>+	boot_params.efi_info.efi_systab_hi = (__u32)(__pa(efi_systab_xen) >>
+>32);
+>+
+>+	set_bit(EFI_BOOT, &efi.flags);
+>+	set_bit(EFI_PARAVIRT, &efi.flags);
+>+	set_bit(EFI_64BIT, &efi.flags);
+>+}
+>diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+>index bc89647..2cd0463 100644
+>--- a/arch/x86/xen/enlighten.c
+>+++ b/arch/x86/xen/enlighten.c
+>@@ -32,7 +32,6 @@
+> #include <linux/gfp.h>
+> #include <linux/memblock.h>
+> #include <linux/edd.h>
+>-#include <linux/efi.h>
+> 
+> #include <xen/xen.h>
+> #include <xen/events.h>
+>@@ -1521,7 +1520,6 @@ asmlinkage __visible void __init
+>xen_start_kernel(void)
+> {
+> 	struct physdev_set_iopl set_iopl;
+> 	int rc;
+>-	efi_system_table_t *efi_systab_xen;
+> 
+> 	if (!xen_start_info)
+> 		return;
+>@@ -1717,18 +1715,7 @@ asmlinkage __visible void __init
+>xen_start_kernel(void)
+> 
+> 	xen_setup_runstate_info(0);
+> 
+>-	efi_systab_xen = xen_efi_probe();
+>-
+>-	if (efi_systab_xen) {
+>-		strncpy((char *)&boot_params.efi_info.efi_loader_signature, "Xen",
+>-				sizeof(boot_params.efi_info.efi_loader_signature));
+>-		boot_params.efi_info.efi_systab = (__u32)__pa(efi_systab_xen);
+>-		boot_params.efi_info.efi_systab_hi = (__u32)(__pa(efi_systab_xen) >>
+>32);
+>-
+>-		set_bit(EFI_BOOT, &efi.flags);
+>-		set_bit(EFI_PARAVIRT, &efi.flags);
+>-		set_bit(EFI_64BIT, &efi.flags);
+>-	}
+>+	xen_efi_init();
+> 
+> 	/* Start the world */
+> #ifdef CONFIG_X86_32
+>diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+>index c834d4b..75f98fe 100644
+>--- a/arch/x86/xen/xen-ops.h
+>+++ b/arch/x86/xen/xen-ops.h
+>@@ -104,6 +104,14 @@ static inline void __init xen_init_apic(void)
+> }
+> #endif
+> 
+>+#ifdef CONFIG_XEN_EFI
+>+extern void xen_efi_init(void);
+>+#else
+>+static inline void __init xen_efi_init(void)
+>+{
+>+}
+>+#endif
+>+
+> /* Declare an asm function, along with symbols needed to make it
+>    inlineable */
+> #define DECL_ASM(ret, name, ...)		\
+
 
