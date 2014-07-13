@@ -1,143 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743AbaGMDCx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 23:02:53 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:36371 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786AbaGMDCr (ORCPT
+	id S1752447AbaGMDGu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 23:06:50 -0400
+Received: from smtprelay0031.hostedemail.com ([216.40.44.31]:58782 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751786AbaGMDGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 23:02:47 -0400
-Message-ID: <53C1F6D6.4020607@gmail.com>
-Date: Sun, 13 Jul 2014 11:02:46 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: a.zummo@towertech.it
-CC: rtc-linux@googlegroups.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liqin Chen <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>
-Subject: [PATCH] drivers/rtc/Kconfig: Let several drivers depend on HAS_IOMEM
- to avoid compiling issue
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 12 Jul 2014 23:06:42 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:2890:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3871:3872:3873:3874:4042:4250:4321:5007:6691:7652:8531:10004:10400:10848:11232:11658:11914:12114:12517:12519:12740:13069:13161:13227:13229:13311:13357:14096:14097:21067:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: edge73_74473d8aa9363
+X-Filterd-Recvd-Size: 2095
+Message-ID: <1405220796.9132.31.camel@joe-AO725>
+Subject: Re: [PATCH] reformat_with_checkpatch: Add automation to checkpatch
+From: Joe Perches <joe@perches.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, kernelnewbies@kernelnewbies.org,
+        kernel-janitors <kernel-janitors@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Date: Sat, 12 Jul 2014 20:06:36 -0700
+In-Reply-To: <20140712192846.GB25649@kroah.com>
+References: <1405128087.6751.12.camel@joe-AO725>
+	 <20140712013444.GA30368@kroah.com> <1405129216.6751.18.camel@joe-AO725>
+	 <20140712093043.GG25880@mwanda> <20140712175526.GA17077@kroah.com>
+	 <1405189777.9132.27.camel@joe-AO725> <20140712192846.GB25649@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some drivers need 'devm_ioremap_resource' or 'devm_ioremap' which need
-HAS_IOMEM, so let them depend on it.
+On Sat, 2014-07-12 at 12:28 -0700, Greg KH wrote:
+> On Sat, Jul 12, 2014 at 11:29:37AM -0700, Joe Perches wrote:
+> > On Sat, 2014-07-12 at 10:55 -0700, Greg KH wrote:
+> > > Yes, the warnings are all due to line-length, but Joe, you shouldn't add
+> > > a patch that causes more checkpatch warnings than before :)
+> > 
+> > Yeah, that was intentional though.
+> > 
+> > This script does a series of relatively discrete changes.
+> > 
+> > Lindent would more or less work, but it's _horrible_ at
+> > wrapping overlong lines and merges all types of changes
+> > together.
+> 
+> Oh I agree, I don't want to see Lindent, but maybe, if the patch adds
+> checkpatch warnings, it should be at least "flagged" as maybe a problem?
 
-The related error (with allmodconfig under score):
+The script I submitted does run checkpatch
+before any commit is done.
 
-    MODPOST 1365 modules
-  ERROR: "devm_ioremap_resource" [drivers/rtc/rtc-xgene.ko] undefined!
-  ERROR: "devm_ioremap_resource" [drivers/rtc/rtc-stk17ta8.ko] undefined!
-  ERROR: "devm_ioremap_resource" [drivers/rtc/rtc-ds1742.ko] undefined!
-  ERROR: "devm_ioremap_resource" [drivers/rtc/rtc-ds1553.ko] undefined!
-  ERROR: "devm_ioremap_resource" [drivers/rtc/rtc-ds1511.ko] undefined!
-  ERROR: "devm_ioremap_resource" [drivers/rtc/rtc-ds1286.ko] undefined!
-  ERROR: "devm_ioremap" [drivers/rtc/rtc-rp5c01.ko] undefined!
-  ERROR: "devm_ioremap" [drivers/rtc/rtc-msm6242.ko] undefined!
-  ERROR: "devm_ioremap" [drivers/rtc/rtc-m48t59.ko] undefined!
-  ERROR: "devm_ioremap" [drivers/rtc/rtc-m48t35.ko] undefined!
-  ERROR: "devm_ioremap" [drivers/rtc/rtc-bq4802.ko] undefined!
+> Would you want to be on the receiving end of this patch script?
 
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- drivers/rtc/Kconfig | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+You might have noticed I don't have a kernel.org
+account.
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index a672dd1..d707092 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -724,6 +724,7 @@ config RTC_DRV_DS1216
- 
- config RTC_DRV_DS1286
- 	tristate "Dallas DS1286"
-+	depends on HAS_IOMEM
- 	help
- 	  If you say yes here you get support for the Dallas DS1286 RTC chips.
- 
-@@ -735,6 +736,7 @@ config RTC_DRV_DS1302
- 
- config RTC_DRV_DS1511
- 	tristate "Dallas DS1511"
-+	depends on HAS_IOMEM
- 	help
- 	  If you say yes here you get support for the
- 	  Dallas DS1511 timekeeping/watchdog chip.
-@@ -744,6 +746,7 @@ config RTC_DRV_DS1511
- 
- config RTC_DRV_DS1553
- 	tristate "Maxim/Dallas DS1553"
-+	depends on HAS_IOMEM
- 	help
- 	  If you say yes here you get support for the
- 	  Maxim/Dallas DS1553 timekeeping chip.
-@@ -753,6 +756,7 @@ config RTC_DRV_DS1553
- 
- config RTC_DRV_DS1742
- 	tristate "Maxim/Dallas DS1742/1743"
-+	depends on HAS_IOMEM
- 	help
- 	  If you say yes here you get support for the
- 	  Maxim/Dallas DS1742/1743 timekeeping chip.
-@@ -808,6 +812,7 @@ config RTC_DRV_EFI
- 
- config RTC_DRV_STK17TA8
- 	tristate "Simtek STK17TA8"
-+	depends on HAS_IOMEM
- 	help
- 	  If you say yes here you get support for the
- 	  Simtek STK17TA8 timekeeping chip.
-@@ -826,6 +831,7 @@ config RTC_DRV_M48T86
- 
- config RTC_DRV_M48T35
- 	tristate "ST M48T35"
-+	depends on HAS_IOMEM
- 	help
- 	  If you say Y here you will get support for the
- 	  ST M48T35 RTC chip.
-@@ -835,6 +841,7 @@ config RTC_DRV_M48T35
- 
- config RTC_DRV_M48T59
- 	tristate "ST M48T59/M48T08/M48T02"
-+	depends on HAS_IOMEM
- 	help
- 	  If you say Y here you will get support for the
- 	  ST M48T59 RTC chip and compatible ST M48T08 and M48T02.
-@@ -847,6 +854,7 @@ config RTC_DRV_M48T59
- 
- config RTC_DRV_MSM6242
- 	tristate "Oki MSM6242"
-+	depends on HAS_IOMEM
- 	help
- 	  If you say yes here you get support for the Oki MSM6242
- 	  timekeeping chip. It is used in some Amiga models (e.g. A2000).
-@@ -856,6 +864,7 @@ config RTC_DRV_MSM6242
- 
- config RTC_DRV_BQ4802
- 	tristate "TI BQ4802"
-+	depends on HAS_IOMEM
- 	help
- 	  If you say Y here you will get support for the TI
- 	  BQ4802 RTC chip.
-@@ -865,6 +874,7 @@ config RTC_DRV_BQ4802
- 
- config RTC_DRV_RP5C01
- 	tristate "Ricoh RP5C01"
-+	depends on HAS_IOMEM
- 	help
- 	  If you say yes here you get support for the Ricoh RP5C01
- 	  timekeeping chip. It is used in some Amiga models (e.g. A3000
-@@ -1359,6 +1369,7 @@ config RTC_DRV_MOXART
- 
- config RTC_DRV_XGENE
- 	tristate "APM X-Gene RTC"
-+	depends on HAS_IOMEM
- 	help
- 	  If you say yes here you get support for the APM X-Gene SoC real time
- 	  clock.
--- 
-1.7.11.7
+
