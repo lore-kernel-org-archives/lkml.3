@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751971AbaGMXt1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 19:49:27 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:30997 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751661AbaGMXtS (ORCPT
+	id S1751431AbaGMXzL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 19:55:11 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:18465 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbaGMXzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 19:49:18 -0400
-X-AuditID: cbfee690-b7fb56d000003439-14-53c31afbde6d
-Message-id: <53C31AFB.8080604@samsung.com>
-Date: Mon, 14 Jul 2014 08:49:15 +0900
+	Sun, 13 Jul 2014 19:55:06 -0400
+X-AuditID: cbfee691-b7f2f6d0000040c4-2e-53c31c578420
+Message-id: <53C31C56.2060104@samsung.com>
+Date: Mon, 14 Jul 2014 08:55:02 +0900
 From: Chanwoo Choi <cw00.choi@samsung.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
  Thunderbird/17.0.2
 MIME-version: 1.0
-To: Amit Kachhap <amit.kachhap@gmail.com>
+To: Amit Kachhap <amit.kachhap@gmail.com>, edubezval@gmail.com
 Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Zhang Rui <rui.zhang@intel.com>,
         "Valentin, Eduardo" <eduardo.valentin@ti.com>,
@@ -33,38 +33,46 @@ References: <1404174799-8969-1-git-send-email-cw00.choi@samsung.com>
 In-reply-to: <CADGdYn5BWKOtZb2MLy6vT0L+HC2nfhzzYjFPmzMMcLCpEx4+dw@mail.gmail.com>
 Content-type: text/plain; charset=UTF-8
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOIsWRmVeSWpSXmKPExsWyRsSkWPe31OFgg771xha/3s1kt9g4Yz2r
-	xfwj51gt1uz/yWTRefYJs0XvgqtsFmeb3rBbXN41h83ic+8RRosZ5/cxWTx52MdmsX7GaxYH
-	Ho+ds+6yeyze85LJo2/LKkaP4ze2M3l83iQXwBrFZZOSmpNZllqkb5fAlfF27UP2gn6vimmn
-	m5gaGNdYdTFyckgImEj0/OtigbDFJC7cW8/WxcjFISSwlFHi96UmoAQHWNGeU5ogNUICixgl
-	Vj0sgKh5zSixf1YbE0iCV0BL4tG67YwgNouAqsSVaUvBbDag+P4XN9hAbFGBMImV06+wQNQL
-	SvyYfA/MFhHQlNj06ygTyFBmgT4WiUv3H4E1Cwt4Suxfs4sRYtsaRokLryaBdXAKBEts/n2A
-	GcRmFlCXmDRvEZQtL7F5zVtmiHe+skt0TXaBuEhA4tvkQ1DfyEpsOgBVIilxcMUNlgmMYrOQ
-	3DQLydRZSKYuYGRexSiaWpBcUJyUXmSiV5yYW1yal66XnJ+7iREYqaf/PZuwg/HeAetDjMlA
-	KycyS4km5wMjPa8k3tDYzMjC1MTU2Mjc0ow0YSVxXrVHSUFCAumJJanZqakFqUXxRaU5qcWH
-	GJk4OKUaGJW4m/03OThtMGadfz5b/P/sO8cZEi82SQQzGwm1Ptm2zNxLXPJSh8ZUdXe3e35v
-	lztVrmi5MOHLok2TbK/uClj84r8hy8/1mw3X312mOu3MLj6DXF0LnmkCDPylUp/N/zrsbOD/
-	nhw7o2VfsEja+a8xu7La6+8WWSoKznww5/a/Cf/Pfpjic0uJpTgj0VCLuag4EQDEbygS6gIA	AA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnleLIzCtJLcpLzFFi42I5/e+xgO5vqcPBBmtaNC1+vZvJbrFxxnpW
-	i/lHzrFarNn/k8mi8+wTZoveBVfZLM42vWG3uLxrDpvF594jjBYzzu9jsnjysI/NYv2M1ywO
-	PB47Z91l91i85yWTR9+WVYwex29sZ/L4vEkugDWqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON45
-	3tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB+hAJYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+
-	IUFwPUYGaCBhDWPG27UP2Qv6vSqmnW5iamBcY9XFyMEhIWAiseeUZhcjJ5ApJnHh3no2EFtI
-	YBGjxKqHBV2MXED2a0aJ/bPamEASvAJaEo/WbWcEsVkEVCWuTFsKZrMBxfe/uAHWLCoQJrFy
-	+hUWiHpBiR+T74HZIgKaEpt+HWUCGcos0Mcicen+I7BmYQFPif1rdjFCbFvDKHHh1SSwDk6B
-	YInNvw8wg9jMAuoSk+YtgrLlJTavecs8gVFgFpIls5CUzUJStoCReRWjaGpBckFxUnqukV5x
-	Ym5xaV66XnJ+7iZGcCJ4Jr2DcVWDxSFGAQ5GJR7eDI7DwUKsiWXFlbmHGCU4mJVEeA9fOBQs
-	xJuSWFmVWpQfX1Sak1p8iNEUGAYTmaVEk/OBSSqvJN7Q2MTMyNLI3NDCyNhcSZz3YKt1oJBA
-	emJJanZqakFqEUwfEwenVAOjwqs3Jzr2Pk7ftbW92XQh0zUm1zbe9x8KLolPffj/HF/6ZcfD
-	G2NDd5habQtqOi/c+fBFnbrMmtOxD+W0W/yWOj50ltqxy2pBjuGFV28dS7bu77HbeWO/UEHL
-	CobN4owd3s3tB00Zqrquq+r/OhXhoLV7vgSn5Cm24mmCfV4H5LheiqRvqvuvxFKckWioxVxU
-	nAgA5vp3qRoDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHIsWRmVeSWpSXmKPExsWyRsSkUDdc5nCwweffoha/3s1kt9g4Yz2r
+	xfwj51gt1uz/yWQx/8o1VovOs0+YLXoXXGWzONv0ht3i8q45bBafe48wWsw4v4/J4snDPjaL
+	9TNeszjweuycdZfdY/Gel0wefVtWMXocv7GdyePzJrkA1igum5TUnMyy1CJ9uwSujOv/nzEW
+	bPKqmNt0jbGB8YRVFyMnh4SAicTs5r2MELaYxIV769lAbCGBpYwST9sMYWpe7NwLFOcCik9n
+	lJi74TkjhPOaUeLonnvMIFW8AloS/48sB5vEIqAq0XL1LQuIzQYU3//iBthUUYEwiZXTr7BA
+	1AtK/Jh8D8wWEbCTWL7rCzvIUGaBPhaJS/cfgQ0SFvCU2L9mF9S2NYwSF15NAuvgFAiW2Pz7
+	ANhmZgF1iUnzFkHZ8hKb17xlBmmQEPjJLtG5u5EZ4iQBiW+TDwE1cwAlZCU2QfRKCEhKHFxx
+	g2UCo9gsJEfNQjJ2FpKxCxiZVzGKphYkFxQnpReZ6hUn5haX5qXrJefnbmIExu3pf88m7mC8
+	f8D6EGMy0MqJzFKiyfnAuM8riTc0NjOyMDUxNTYytzQjTVhJnDf9UVKQkEB6YklqdmpqQWpR
+	fFFpTmrxIUYmDk6pBkYni0yre5mdnNEl4q3zPpstfz/pSlK05fUTs9r25jyp9X2vbH9t6g8x
+	geUsK3h3n91h6OPvauC4a/Izhoz1p3yj5xj9Pbm/KeD7hYVzJ5kFafRU+SQtydT+uf7ut333
+	Zs9c2b4q5et5dU0e0yu2t1U2a+V22f1f88Td+ZfQscCW8xnLW5dJJzgrsRRnJBpqMRcVJwIA
+	ahq/9vECAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjleLIzCtJLcpLzFFi42I5/e+xoG64zOFgg7cvuS1+vZvJbrFxxnpW
+	i/lHzrFarNn/k8li/pVrrBadZ58wW/QuuMpmcbbpDbvF5V1z2Cw+9x5htJhxfh+TxZOHfWwW
+	62e8ZnHg9dg56y67x+I9L5k8+rasYvQ4fmM7k8fnTXIBrFENjDYZqYkpqUUKqXnJ+SmZeem2
+	St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QFcqKZQl5pQChQISi4uV9O0wTQgNcdO1
+	gGmM0PUNCYLrMTJAAwlrGDOu/3/GWLDJq2Ju0zXGBsYTVl2MnBwSAiYSL3buZYOwxSQu3FsP
+	ZHNxCAlMZ5SYu+E5I4TzmlHi6J57zCBVvAJaEv+PLGcEsVkEVCVarr5lAbHZgOL7X9wAmyQq
+	ECaxcvoVFoh6QYkfk++B2SICdhLLd31hBxnKLNDHInHp/iOwQcICnhL71+yC2raGUeLCq0lg
+	HZwCwRKbfx8A28wsoC4xad4iKFteYvOat8wTGAVmIVkyC0nZLCRlCxiZVzGKphYkFxQnpeca
+	6RUn5haX5qXrJefnbmIEp4Vn0jsYVzVYHGIU4GBU4uHN4DgcLMSaWFZcmXuIUYKDWUmE9/CF
+	Q8FCvCmJlVWpRfnxRaU5qcWHGE2BYTCRWUo0OR+YsvJK4g2NTcyMLI3MDS2MjM2VxHkPtloH
+	CgmkJ5akZqemFqQWwfQxcXBKNTAGPfovU3VaV2HpQt9Zth0HpAK/LN+iUuy4f9vbb3mW66Xt
+	EwsYP6/L9BQrKluVZPNum7Bx2KxcB1NbgX/zxL4VFzsr7jr5MMvS90qPG5vURZllean6ZYKa
+	f/ZoB72cYjBF2rzh5TnDuRe+LXSZ3MrQojqH641BimZm3g2r76dq/ognS7w876TEUpyRaKjF
+	XFScCACn+no0IQMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+Dear Eduardo,
+
+Could you please review or pick this patch?
+
+Best Regards,
+Chanwoo Choi
 
 On 07/10/2014 12:36 PM, Amit Kachhap wrote:
 > On Wed, Jul 9, 2014 at 8:30 AM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
@@ -80,12 +88,6 @@ On 07/10/2014 12:36 PM, Amit Kachhap wrote:
 > 
 > Changes look fine to me.
 > Reviewed-by: Amit Daniel Kachhap<amit.daniel@samsung.com>
-
-Thanks for your review.
-
-Best Regards,
-Chanwoo Choi
-
 > 
 >>> ---
 >>>  .../devicetree/bindings/thermal/exynos-thermal.txt |  1 +
