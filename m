@@ -1,44 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074AbaGMJqO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 05:46:14 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65277 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753276AbaGMJqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 05:46:04 -0400
-Message-ID: <53C25551.1050909@nod.at>
-Date: Sun, 13 Jul 2014 11:45:53 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753105AbaGMJvP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 05:51:15 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43926 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752526AbaGMJvF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jul 2014 05:51:05 -0400
+Date: Sun, 13 Jul 2014 02:51:02 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: jasowang@redhat.com, apw@canonical.com, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, ohering@suse.com,
+        jbottomley@parallels.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH V3 0/7] Drivers: scsi: storvsc: Bug fixes and improvements
+Message-ID: <20140713095102.GB19682@infradead.org>
+References: <1405183684-23928-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-To: Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>
-CC: Chen Gang <gang.chen.5i5j@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dmitry.torokhov@gmail.com, thierry.reding@gmail.com, jic23@kernel.org,
-        wim@iguana.be, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        kys@microsoft.com, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        teg@jklm.no, Mischa.Jonker@synopsys.com, msalter@redhat.com,
-        lars@metafoo.de, knaack.h@gmx.de, rdunlap@infradead.org,
-        linux-input@vger.kernel.org, linux-pwm@vger.kernel.org,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-watchdog@vger.kernel.org, Liqin Chen <liqin.linux@gmail.com>
-Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
- 'devm_ioremap_resource'
-References: <53C1F7DE.3060102@gmail.com>	<201407130545.23004.marex@denx.de> <CAF0htA60juBVkPo2HQKMDGcEr-wRzRVL_6JgHAa+7WVE_E8M0Q@mail.gmail.com>
-In-Reply-To: <CAF0htA60juBVkPo2HQKMDGcEr-wRzRVL_6JgHAa+7WVE_E8M0Q@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405183684-23928-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 13.07.2014 11:27, schrieb Lennox Wu:
-> As I said before, some configurations don't make sense.
+The series looks good to me, although I'll probably put the commit
+message for the timer patch into the comment for the eh_timed_out
+handler.
 
-If such a configuration can be achieved using allmod/yesconfig it has to be fixed.
-Chen's fixes seem reasonable as not all architectures support iomem.
+Can I get another set of reviews?  I've seen Olaf has put them into the
+SLES tree, so I'd expect he's done a review already?
 
-Thanks,
-//richard
