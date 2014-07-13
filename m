@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972AbaGMObG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 10:31:06 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:63268 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753932AbaGMOay (ORCPT
+	id S1753998AbaGMObW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 10:31:22 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:41041 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753763AbaGMObM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 10:30:54 -0400
+	Sun, 13 Jul 2014 10:31:12 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 06/16] staging: rtl8188eu: Remove unused function rtw_set_802_11_remove_key()
-Date: Sun, 13 Jul 2014 19:59:28 +0530
-Message-Id: <1405261778-7653-6-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 08/16] staging: rtl8188eu: Remove unused function _rtw_IOL_append_WW_cmd()
+Date: Sun, 13 Jul 2014 19:59:30 +0530
+Message-Id: <1405261778-7653-8-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405261778-7653-1-git-send-email-navin.patidar@gmail.com>
 References: <1405261778-7653-1-git-send-email-navin.patidar@gmail.com>
@@ -23,72 +23,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/core/rtw_ioctl_set.c    |   38 ---------------------
- drivers/staging/rtl8188eu/include/rtw_ioctl_set.h |    2 --
- 2 files changed, 40 deletions(-)
+ drivers/staging/rtl8188eu/core/rtw_iol.c    |   14 --------------
+ drivers/staging/rtl8188eu/include/rtw_iol.h |    2 --
+ 2 files changed, 16 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_ioctl_set.c b/drivers/staging/rtl8188eu/core/rtw_ioctl_set.c
-index 8c107f8..f4116d1 100644
---- a/drivers/staging/rtl8188eu/core/rtw_ioctl_set.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_ioctl_set.c
-@@ -591,44 +591,6 @@ exit:
- 	return ret;
+diff --git a/drivers/staging/rtl8188eu/core/rtw_iol.c b/drivers/staging/rtl8188eu/core/rtw_iol.c
+index e6fdd32..7796287 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_iol.c
++++ b/drivers/staging/rtl8188eu/core/rtw_iol.c
+@@ -113,20 +113,6 @@ int _rtw_IOL_append_WB_cmd(struct xmit_frame *xmit_frame, u16 addr, u8 value, u8
+ 	return rtw_IOL_append_cmds(xmit_frame, (u8 *)&cmd, cmd.length);
  }
  
--u8 rtw_set_802_11_remove_key(struct adapter *padapter, struct ndis_802_11_remove_key *key)
+-int _rtw_IOL_append_WW_cmd(struct xmit_frame *xmit_frame, u16 addr, u16 value, u16 mask)
 -{
--	u8 *pbssid;
--	struct sta_info *stainfo;
--	u8	bgroup = (key->KeyIndex & 0x4000000) > 0 ? false : true;
--	u8	keyIndex = (u8)key->KeyIndex & 0x03;
--	u8	ret = _SUCCESS;
+-	struct ioreg_cfg cmd = {8, IOREG_CMD_WW_REG, 0x0, 0x0, 0x0};
 -
+-	cmd.address = cpu_to_le16(addr);
+-	cmd.data = cpu_to_le32(value);
 -
--	if ((key->KeyIndex & 0xbffffffc) > 0) {
--		ret = _FAIL;
--		goto exit;
+-	if (mask != 0xFFFF) {
+-		cmd.length = 12;
+-		cmd.mask =  cpu_to_le32(mask);
 -	}
--
--	if (bgroup) {
--		/*  clear group key by index */
--
--		memset(&padapter->securitypriv.dot118021XGrpKey[keyIndex], 0, 16);
--
--		/*  \todo Send a H2C Command to Firmware for removing this Key in CAM Entry. */
--	} else {
--		pbssid = get_bssid(&padapter->mlmepriv);
--		stainfo = rtw_get_stainfo(&padapter->stapriv, pbssid);
--		if (stainfo) {
--			/*  clear key by BSSID */
--			memset(&stainfo->dot118021x_UncstKey, 0, 16);
--
--			/*  \todo Send a H2C Command to Firmware for disable this Key in CAM Entry. */
--		} else {
--			ret = _FAIL;
--			goto exit;
--		}
--	}
--exit:
--
--	return ret;
+-	return rtw_IOL_append_cmds(xmit_frame, (u8 *)&cmd, cmd.length);
 -}
 -
- /*
- * rtw_get_cur_max_rate -
- * @adapter: pointer to struct adapter structure
-diff --git a/drivers/staging/rtl8188eu/include/rtw_ioctl_set.h b/drivers/staging/rtl8188eu/include/rtw_ioctl_set.h
-index 9ec6456..a325326 100644
---- a/drivers/staging/rtl8188eu/include/rtw_ioctl_set.h
-+++ b/drivers/staging/rtl8188eu/include/rtw_ioctl_set.h
-@@ -37,8 +37,6 @@ u8 rtw_set_802_11_infrastructure_mode(struct adapter *adapter,
- 				      enum ndis_802_11_network_infra type);
- u8 rtw_set_802_11_remove_wep(struct adapter *adapter, u32 keyindex);
- u8 rtw_set_802_11_ssid(struct adapter *adapt, struct ndis_802_11_ssid *ssid);
--u8 rtw_set_802_11_remove_key(struct adapter *adapt,
--			     struct ndis_802_11_remove_key *key);
- u16 rtw_get_cur_max_rate(struct adapter *adapter);
- int rtw_set_country(struct adapter *adapter, const char *country_code);
+ int _rtw_IOL_append_WD_cmd(struct xmit_frame *xmit_frame, u16 addr, u32 value, u32 mask)
+ {
+ 	struct ioreg_cfg cmd = {8, IOREG_CMD_WD_REG, 0x0, 0x0, 0x0};
+diff --git a/drivers/staging/rtl8188eu/include/rtw_iol.h b/drivers/staging/rtl8188eu/include/rtw_iol.h
+index ec0c6cb..80bfd06 100644
+--- a/drivers/staging/rtl8188eu/include/rtw_iol.h
++++ b/drivers/staging/rtl8188eu/include/rtw_iol.h
+@@ -63,8 +63,6 @@ void read_efuse_from_txpktbuf(struct adapter *adapter, int bcnhead,
  
+ int _rtw_IOL_append_WB_cmd(struct xmit_frame *xmit_frame, u16 addr,
+ 			   u8 value, u8 mask);
+-int _rtw_IOL_append_WW_cmd(struct xmit_frame *xmit_frame, u16 addr,
+-			   u16 value, u16 mask);
+ int _rtw_IOL_append_WD_cmd(struct xmit_frame *xmit_frame, u16 addr,
+ 			   u32 value, u32 mask);
+ int _rtw_IOL_append_WRF_cmd(struct xmit_frame *xmit_frame, u8 rf_path,
 -- 
 1.7.10.4
 
