@@ -1,93 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213AbaGMVwA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 17:52:00 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:42334 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752043AbaGMVvw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 17:51:52 -0400
-Message-ID: <53C2FF4D.3020606@oracle.com>
-Date: Sun, 13 Jul 2014 17:51:09 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>
-Subject: sched, timers: use after free in __lock_task_sighand when exiting
- a process
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S1752379AbaGMVy5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 17:54:57 -0400
+Received: from hermes.sybcom.net ([213.147.0.30]:40547 "EHLO hermes.sybcom.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752043AbaGMVyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jul 2014 17:54:52 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 Jul 2014 17:54:51 EDT
+X-Spam-Check-By: hermes.sybcom.net
+From: "Joerg C. Meyer" <joerg@meyer.homedns.org>
+To: gregkh@linuxfoundation.org, chenweilong@huawei.com, davem@davemloft.net,
+        sachin.kamat@linaro.org, dingtianhong@huawei.com,
+        joerg@meyer.homedns.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: rtl8821ae: fix coding style issues in cam.c Fix all coding style error and warnings in cam.c reported by checkpatch.pl
+Date: Sun, 13 Jul 2014 23:47:57 +0200
+Message-Id: <1405288077-25513-1-git-send-email-joerg@meyer.homedns.org>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Signed-off-by: Joerg C. Meyer <joerg@meyer.homedns.org>
+---
+ drivers/staging/rtl8821ae/cam.c | 57 +++++++++++++++++++----------------------
+ 1 file changed, 27 insertions(+), 30 deletions(-)
 
-While fuzzing with trinity inside a KVM tools guest running the latest -next
-kernel with the KASAN patchset, I've stumbled on the following spew:
+diff --git a/drivers/staging/rtl8821ae/cam.c b/drivers/staging/rtl8821ae/cam.c
+index 3bc6b3d..835bc3b 100644
+--- a/drivers/staging/rtl8821ae/cam.c
++++ b/drivers/staging/rtl8821ae/cam.c
+@@ -68,12 +68,12 @@ static void rtl_cam_program_entry(struct ieee80211_hw *hw, u32 entry_no,
+ 					target_command);
+ 
+ 			RT_TRACE(COMP_SEC, DBG_LOUD,
+-				 ("WRITE %x: %x \n",
++				 ("WRITE %x: %x\n",
+ 				  rtlpriv->cfg->maps[WCAMI], target_content));
+ 			RT_TRACE(COMP_SEC, DBG_LOUD,
+ 				 ("The Key ID is %d\n", entry_no));
+ 			RT_TRACE(COMP_SEC, DBG_LOUD,
+-				 ("WRITE %x: %x \n",
++				 ("WRITE %x: %x\n",
+ 				  rtlpriv->cfg->maps[RWCAM], target_command));
+ 
+ 		} else if (entry_i == 1) {
+@@ -89,9 +89,9 @@ static void rtl_cam_program_entry(struct ieee80211_hw *hw, u32 entry_no,
+ 					target_command);
+ 
+ 			RT_TRACE(COMP_SEC, DBG_LOUD,
+-				 ("WRITE A4: %x \n", target_content));
++				 ("WRITE A4: %x\n", target_content));
+ 			RT_TRACE(COMP_SEC, DBG_LOUD,
+-				 ("WRITE A0: %x \n", target_command));
++				 ("WRITE A0: %x\n", target_command));
+ 
+ 		} else {
+ 
+@@ -109,9 +109,9 @@ static void rtl_cam_program_entry(struct ieee80211_hw *hw, u32 entry_no,
+ 			udelay(100);
+ 
+ 			RT_TRACE(COMP_SEC, DBG_LOUD,
+-				 ("WRITE A4: %x \n", target_content));
++				 ("WRITE A4: %x\n", target_content));
+ 			RT_TRACE(COMP_SEC, DBG_LOUD,
+-				 ("WRITE A0: %x \n", target_command));
++				 ("WRITE A0: %x\n", target_command));
+ 		}
+ 	}
+ 
+@@ -127,8 +127,7 @@ u8 rtl_cam_add_one_entry(struct ieee80211_hw *hw, u8 *mac_addr,
+ 	struct rtl_priv *rtlpriv = rtl_priv(hw);
+ 
+ 	RT_TRACE(COMP_SEC, DBG_DMESG,
+-		 ("EntryNo:%x, ulKeyId=%x, ulEncAlg=%x, "
+-		  "ulUseDK=%x MacAddr %pM\n",
++	("EntryNo:%x, ulKeyId=%x, ulEncAlg=%x, ulUseDK=%x MacAddr %pM\n",
+ 		  ul_entry_idx, ul_key_id, ul_enc_alg,
+ 		  ul_default_key, mac_addr));
+ 
+@@ -138,21 +137,20 @@ u8 rtl_cam_add_one_entry(struct ieee80211_hw *hw, u8 *mac_addr,
+ 		return 0;
+ 	}
+ 
+-	if (ul_default_key == 1) {
++	if (ul_default_key == 1)
+ 		us_config = CFG_VALID | ((u16) (ul_enc_alg) << 2);
+-	} else {
++	else
+ 		us_config = CFG_VALID | ((ul_enc_alg) << 2) | ul_key_id;
+-	}
+ 
+ 	rtl_cam_program_entry(hw, ul_entry_idx, mac_addr,
+ 			      (u8 *) key_content, us_config);
+ 
+-	RT_TRACE(COMP_SEC, DBG_DMESG, ("end \n"));
++	RT_TRACE(COMP_SEC, DBG_DMESG, ("end\n"));
+ 
+ 	return 1;
+ 
+ }
+-//EXPORT_SYMBOL(rtl_cam_add_one_entry);
++/* EXPORT_SYMBOL(rtl_cam_add_one_entry); */
+ 
+ int rtl_cam_delete_one_entry(struct ieee80211_hw *hw,
+ 			     u8 *mac_addr, u32 ul_key_id)
+@@ -169,14 +167,14 @@ int rtl_cam_delete_one_entry(struct ieee80211_hw *hw,
+ 	rtl_write_dword(rtlpriv, rtlpriv->cfg->maps[RWCAM], ul_command);
+ 
+ 	RT_TRACE(COMP_SEC, DBG_DMESG,
+-		 ("rtl_cam_delete_one_entry(): WRITE A4: %x \n", 0));
++		 ("rtl_cam_delete_one_entry(): WRITE A4: %x\n", 0));
+ 	RT_TRACE(COMP_SEC, DBG_DMESG,
+-		 ("rtl_cam_delete_one_entry(): WRITE A0: %x \n", ul_command));
++		 ("rtl_cam_delete_one_entry(): WRITE A0: %x\n", ul_command));
+ 
+ 	return 0;
+ 
+ }
+-//EXPORT_SYMBOL(rtl_cam_delete_one_entry);
++/* EXPORT_SYMBOL(rtl_cam_delete_one_entry); */
+ 
+ void rtl_cam_reset_all_entry(struct ieee80211_hw *hw)
+ {
+@@ -186,7 +184,7 @@ void rtl_cam_reset_all_entry(struct ieee80211_hw *hw)
+ 	ul_command = BIT(31) | BIT(30);
+ 	rtl_write_dword(rtlpriv, rtlpriv->cfg->maps[RWCAM], ul_command);
+ }
+-//EXPORT_SYMBOL(rtl_cam_reset_all_entry);
++/* EXPORT_SYMBOL(rtl_cam_reset_all_entry); */
+ 
+ void rtl_cam_mark_invalid(struct ieee80211_hw *hw, u8 uc_index)
+ {
+@@ -223,11 +221,11 @@ void rtl_cam_mark_invalid(struct ieee80211_hw *hw, u8 uc_index)
+ 	rtl_write_dword(rtlpriv, rtlpriv->cfg->maps[RWCAM], ul_command);
+ 
+ 	RT_TRACE(COMP_SEC, DBG_DMESG,
+-		 ("rtl_cam_mark_invalid(): WRITE A4: %x \n", ul_content));
++		 ("rtl_cam_mark_invalid(): WRITE A4: %x\n", ul_content));
+ 	RT_TRACE(COMP_SEC, DBG_DMESG,
+-		 ("rtl_cam_mark_invalid(): WRITE A0: %x \n", ul_command));
++		 ("rtl_cam_mark_invalid(): WRITE A0: %x\n", ul_command));
+ }
+-//EXPORT_SYMBOL(rtl_cam_mark_invalid);
++/* EXPORT_SYMBOL(rtl_cam_mark_invalid); */
+ 
+ void rtl_cam_empty_entry(struct ieee80211_hw *hw, u8 uc_index)
+ {
+@@ -273,15 +271,15 @@ void rtl_cam_empty_entry(struct ieee80211_hw *hw, u8 uc_index)
+ 		rtl_write_dword(rtlpriv, rtlpriv->cfg->maps[RWCAM], ul_command);
+ 
+ 		RT_TRACE(COMP_SEC, DBG_LOUD,
+-			 ("rtl_cam_empty_entry(): WRITE A4: %x \n",
++			 ("rtl_cam_empty_entry(): WRITE A4: %x\n",
+ 			  ul_content));
+ 		RT_TRACE(COMP_SEC, DBG_LOUD,
+-			 ("rtl_cam_empty_entry(): WRITE A0: %x \n",
++			 ("rtl_cam_empty_entry(): WRITE A0: %x\n",
+ 			  ul_command));
+ 	}
+ 
+ }
+-//EXPORT_SYMBOL(rtl_cam_empty_entry);
++/* EXPORT_SYMBOL(rtl_cam_empty_entry); */
+ 
+ u8 rtl_cam_get_free_entry(struct ieee80211_hw *hw, u8 *sta_addr)
+ {
+@@ -298,7 +296,7 @@ u8 rtl_cam_get_free_entry(struct ieee80211_hw *hw, u8 *sta_addr)
+ 	/* Does STA already exist? */
+ 	for (i = 4; i < TOTAL_CAM_ENTRY; i++) {
+ 		addr = rtlpriv->sec.hwsec_cam_sta_addr[i];
+-		if(memcmp(addr, sta_addr, ETH_ALEN) == 0)
++		if (memcmp(addr, sta_addr, ETH_ALEN) == 0)
+ 			return i;
+ 	}
+ 	/* Get a free CAM entry. */
+@@ -312,11 +310,11 @@ u8 rtl_cam_get_free_entry(struct ieee80211_hw *hw, u8 *sta_addr)
+ 			       sta_addr, ETH_ALEN);
+ 			return entry_idx;
+ 		}
+-		bitmap = bitmap >>1;
++		bitmap = bitmap>>1;
+ 	}
+ 	return TOTAL_CAM_ENTRY;
+ }
+-//EXPORT_SYMBOL(rtl_cam_get_free_entry);
++/* EXPORT_SYMBOL(rtl_cam_get_free_entry); */
+ 
+ void rtl_cam_del_entry(struct ieee80211_hw *hw, u8 *sta_addr)
+ {
+@@ -329,7 +327,7 @@ void rtl_cam_del_entry(struct ieee80211_hw *hw, u8 *sta_addr)
+ 			("sta_addr is NULL.\n"));
+ 	}
+ 
+-	if ((sta_addr[0]|sta_addr[1]|sta_addr[2]|sta_addr[3]|\
++	if ((sta_addr[0]|sta_addr[1]|sta_addr[2]|sta_addr[3]|
+ 				sta_addr[4]|sta_addr[5]) == 0) {
+ 		RT_TRACE(COMP_SEC, DBG_EMERG,
+ 			("sta_addr is 00:00:00:00:00:00.\n"));
+@@ -344,9 +342,8 @@ void rtl_cam_del_entry(struct ieee80211_hw *hw, u8 *sta_addr)
+ 			/* Remove from HW Security CAM */
+ 			memset(rtlpriv->sec.hwsec_cam_sta_addr[i], 0, ETH_ALEN);
+ 			rtlpriv->sec.hwsec_cam_bitmap &= ~(BIT(0) << i);
+-			printk("&&&&&&&&&del entry %d\n",i);
++			pr_info("&&&&&&&&&del entry %d\n", i);
+ 		}
+ 	}
+-	return;
+ }
+-//EXPORT_SYMBOL(rtl_cam_del_entry);
++/* EXPORT_SYMBOL(rtl_cam_del_entry); */
+-- 
+2.0.1
 
-[ 4838.503887] ==================================================================
-[ 4838.510906] AddressSanitizer: use after free in do_raw_spin_lock+0x157/0x240 at addr ffff8800ac3af608
-[ 4838.513433] page:ffffea0002b0ebc0 count:0 mapcount:0 mapping:          (null) index:0x0
-[ 4838.513433] page flags: 0x1fffff80008000(tail)
-[ 4838.513433] page dumped because: kasan error
-[ 4838.513433] CPU: 14 PID: 19619 Comm: trinity-c52 Tainted: G        W      3.16.0-rc4-next-20140711-sasha-00046-g07d3099-dirty #813
-[ 4838.513433]  00000000000000fb 0000000000000000 ffffea0002b0ebc0 ffff8805f2e03bc8
-[ 4838.513433]  ffffffff9ee47068 ffff8805f2e03c98 ffff8805f2e03c88 ffffffff9a426f5c
-[ 4838.513433]  ffff8805f2fe2d80 ffff8805f2fe2d90 ffff8805f2fe2d80 ffff8805f2fe2d88
-[ 4838.513433] Call Trace:
-[ 4838.513433] <IRQ> dump_stack (lib/dump_stack.c:52)
-[ 4838.513433] kasan_report_error (mm/kasan/report.c:98 mm/kasan/report.c:166)
-[ 4838.513433] __asan_load4 (mm/kasan/kasan.c:358)
-[ 4838.513433] do_raw_spin_lock (./arch/x86/include/asm/spinlock.h:108 kernel/locking/spinlock_debug.c:112 kernel/locking/spinlock_debug.c:137)
-[ 4838.513433] _raw_spin_lock (include/linux/spinlock_api_smp.h:143 kernel/locking/spinlock.c:151)
-[ 4838.513433] __lock_task_sighand (kernel/signal.c:1280)
-[ 4838.513433] run_posix_cpu_timers (kernel/time/posix-cpu-timers.c:1162)
-[ 4838.513433] update_process_times (kernel/time/timer.c:1392)
-[ 4838.513433] tick_sched_timer (kernel/time/tick-sched.c:152 kernel/time/tick-sched.c:1096)
-[ 4838.513433] __run_hrtimer (kernel/time/hrtimer.c:1272 (discriminator 3))
-[ 4838.513433] hrtimer_interrupt (kernel/time/hrtimer.c:1361)
-[ 4838.513433] local_apic_timer_interrupt (arch/x86/kernel/apic/apic.c:921)
-[ 4838.513433] smp_apic_timer_interrupt (./arch/x86/include/asm/apic.h:696 arch/x86/kernel/apic/apic.c:945)
-[ 4838.513433] apic_timer_interrupt (arch/x86/kernel/entry_64.S:1020)
-[ 4838.513433] <EOI> ? _raw_spin_unlock_irqrestore (./arch/x86/include/asm/paravirt.h:809 include/linux/spinlock_api_smp.h:160 kernel/locking/spinlock.c:191)
-[ 4838.513433] __slab_free (include/linux/spinlock.h:358 mm/slub.c:2565)
-[ 4838.513433] kmem_cache_free (mm/slub.c:2704 mm/slub.c:2714)
-[ 4838.513433] put_io_context (block/blk-ioc.c:154)
-[ 4838.513433] put_io_context_active (block/blk-ioc.c:197)
-[ 4838.513433] exit_io_context (block/blk-ioc.c:211)
-[ 4838.513433] do_exit (kernel/exit.c:801)
-[ 4838.513433] do_group_exit (./arch/x86/include/asm/current.h:14 kernel/exit.c:870)
-[ 4838.513433] get_signal_to_deliver (kernel/signal.c:2351)
-[ 4838.513433] do_signal (arch/x86/kernel/signal.c:698)
-[ 4838.513433] do_notify_resume (arch/x86/kernel/signal.c:751)
-[ 4838.513433] int_signal (arch/x86/kernel/entry_64.S:600)
-[ 4838.513433] Read of size 4 by thread T19619:
-[ 4838.513433] Memory state around the buggy address:
-[ 4838.513433]  ffff8800ac3af380: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-[ 4838.513433]  ffff8800ac3af400: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-[ 4838.513433]  ffff8800ac3af480: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-[ 4838.513433]  ffff8800ac3af500: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-[ 4838.513433]  ffff8800ac3af580: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-[ 4838.513433] >ffff8800ac3af600: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-[ 4838.513433]                       ^
-[ 4838.513433]  ffff8800ac3af680: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-[ 4838.513433]  ffff8800ac3af700: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-[ 4838.513433]  ffff8800ac3af780: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-[ 4838.513433]  ffff8800ac3af800: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
-[ 4838.513433]  ffff8800ac3af880: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
-[ 4838.513433] ==================================================================
-
-It looks like a race between an exiting process and an external access to it's
-'sighand'.
-
-
-Thanks,
-Sasha
