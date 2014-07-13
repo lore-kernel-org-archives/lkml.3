@@ -1,84 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771AbaGMGSa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 02:18:30 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:60280 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539AbaGMGSV (ORCPT
+	id S1751365AbaGMHIZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 03:08:25 -0400
+Received: from primary.scalemp.com ([174.37.253.146]:40846 "EHLO
+	primary.scalemp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774AbaGMHIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 02:18:21 -0400
+	Sun, 13 Jul 2014 03:08:18 -0400
+X-Greylist: delayed 975 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 Jul 2014 03:08:18 EDT
+Message-ID: <53C22C8A.2010406@scalemp.com>
+Date: Sun, 13 Jul 2014 09:51:54 +0300
+From: Oren Twaig <oren@scalemp.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140711150516.GR23001@mwanda>
-References: <1403129285-5038-1-git-send-email-xerofoify@gmail.com>
-	<20140619052128.GV5015@mwanda>
-	<CAPDOMVgwT2=iWAHOhgHSBY1B+KoWHQgCdK4idD2miwB=_eMs5Q@mail.gmail.com>
-	<alpine.DEB.2.10.1406210143030.5170@nanos>
-	<20140711150516.GR23001@mwanda>
-Date: Sun, 13 Jul 2014 02:18:20 -0400
-Message-ID: <CAPDOMVjNOWHwKvqJLfYJAMv8J-Mqm_+rLLJVki8YCqx1cKZrLg@mail.gmail.com>
-Subject: Re: [PATCH] Check for Null return of function of affs_bread in
- function affs_truncate
-From: Nick Krause <xerofoify@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, fabf@skynet.be,
-        kirill.shutemov@linux.intel.com, linux-fsdevel@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, David Rientjes <rientjes@google.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Andi Kleen <ak@linux.intel.com>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Richard Weinberger <richard@nod.at>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Ping: Re: [PATCH v2] x86, vsmp: Remove is_vsmp_box() from apic_is_clustered_box()
+References: <1404036068-11674-1-git-send-email-oren@scalemp.com> <53B8EDA6.5020704@scalemp.com>
+In-Reply-To: <53B8EDA6.5020704@scalemp.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - primary.scalemp.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - scalemp.com
+X-Get-Message-Sender-Via: primary.scalemp.com: authenticated_id: oren+scalemp.com/only user confirmed/virtual account not confirmed
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 11:05 AM, Dan Carpenter
-<dan.carpenter@oracle.com> wrote:
-> On Sat, Jun 21, 2014 at 01:59:15AM +0200, Thomas Gleixner wrote:
->> On Fri, 20 Jun 2014, Nick Krause wrote:
+ping
+On 07/06/2014 09:33 AM, Oren Twaig wrote:
+> Hi,
+>
+> Quick question: As I'm new at this (submitting patches), what is a reasonable
+> time to wait before ping-ing a patch ?
+>
+> Oren.
+>
+> On 06/29/2014 01:01 PM, Oren Twaig wrote:
+>> When a vSMP Foundation box is detected, the function apic_cluster_num() counts
+>> the number of APIC clusters found. If more than one found, a multi board
+>> configuration is assumed, and TSC marked as unstable. This behavior is
+>> incorrect as vSMP Foundation may use processors from single node only, attached
+>> to memory of other nodes - and such node may have more than one APIC cluster
+>> (typically any recent intel box has more than single APIC_CLUSTERID(x)).
 >>
->> > Ok that's fine I would return as if it's a NULL the other parts of the
->> > function can't continue.
->> > Nick
->> >
->> > On Thu, Jun 19, 2014 at 1:21 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
->> > > On Wed, Jun 18, 2014 at 06:08:05PM -0400, Nicholas Krause wrote:
->> > >> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
->> > >> ---
->> > >>  fs/affs/file.c | 2 ++
->> > >>  1 file changed, 2 insertions(+)
->> > >>
->> > >> diff --git a/fs/affs/file.c b/fs/affs/file.c
->> > >> index a7fe57d..f26482d 100644
->> > >> --- a/fs/affs/file.c
->> > >> +++ b/fs/affs/file.c
->> > >> @@ -923,6 +923,8 @@ affs_truncate(struct inode *inode)
->> > >>
->> > >>       while (ext_key) {
->> > >>               ext_bh = affs_bread(sb, ext_key);
->> > >> +             if (!ext_bh)
->> > >> +                     return;
->> > >
->> > > The problem is that we don't know if we should return here or break
->> > > here.  If you don't understand the code, then it's best to just leave it
->> > > alone.
+>> To fix this, we simply remove the code which detects a vSMP Foundation box and
+>> affects apic_is_clusted_box() return value. This can be done because later the
+>> kernel checks by itself if the TSC is stable using the
+>> check_tsc_sync_[source|target]() functions and marks TSC as unstable if needed.
 >>
->> Dan, what kind of attitude is that?
+>> Acked-by: Shai Fultheim <shai@scalemp.com>
+>> Signed-off-by: Oren Twaig <oren@scalemp.com>
+>> ---
+>> diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+>> index 19b0eba..c100694 100644
+>> --- a/arch/x86/include/asm/apic.h
+>> +++ b/arch/x86/include/asm/apic.h
+>> @@ -85,14 +85,6 @@ static inline bool apic_from_smp_config(void)
+>>  #include <asm/paravirt.h>
+>>  #endif
+>>
+>> -#ifdef CONFIG_X86_64
+>> -extern int is_vsmp_box(void);
+>> -#else
+>> -static inline int is_vsmp_box(void)
+>> -{
+>> -    return 0;
+>> -}
+>> -#endif
+>>  extern int setup_profiling_timer(unsigned int);
+>>
+>>  static inline void native_apic_mem_write(u32 reg, u32 v)
+>> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+>> index ad28db7..2b85bb9 100644
+>> --- a/arch/x86/kernel/apic/apic.c
+>> +++ b/arch/x86/kernel/apic/apic.c
+>> @@ -2451,51 +2451,6 @@ static void apic_pm_activate(void) { }
+>>
+>>  #ifdef CONFIG_X86_64
+>>
+>> -static int apic_cluster_num(void)
+>> -{
+>> -    int i, clusters, zeros;
+>> -    unsigned id;
+>> -    u16 *bios_cpu_apicid;
+>> -    DECLARE_BITMAP(clustermap, NUM_APIC_CLUSTERS);
+>> -
+>> -    bios_cpu_apicid = early_per_cpu_ptr(x86_bios_cpu_apicid);
+>> -    bitmap_zero(clustermap, NUM_APIC_CLUSTERS);
+>> -
+>> -    for (i = 0; i < nr_cpu_ids; i++) {
+>> -        /* are we being called early in kernel startup? */
+>> -        if (bios_cpu_apicid) {
+>> -            id = bios_cpu_apicid[i];
+>> -        } else if (i < nr_cpu_ids) {
+>> -            if (cpu_present(i))
+>> -                id = per_cpu(x86_bios_cpu_apicid, i);
+>> -            else
+>> -                continue;
+>> -        } else
+>> -            break;
+>> -
+>> -        if (id != BAD_APICID)
+>> -            __set_bit(APIC_CLUSTERID(id), clustermap);
+>> -    }
+>> -
+>> -    /* Problem:  Partially populated chassis may not have CPUs in some of
+>> -     * the APIC clusters they have been allocated.  Only present CPUs have
+>> -     * x86_bios_cpu_apicid entries, thus causing zeroes in the bitmap.
+>> -     * Since clusters are allocated sequentially, count zeros only if
+>> -     * they are bounded by ones.
+>> -     */
+>> -    clusters = 0;
+>> -    zeros = 0;
+>> -    for (i = 0; i < NUM_APIC_CLUSTERS; i++) {
+>> -        if (test_bit(i, clustermap)) {
+>> -            clusters += 1 + zeros;
+>> -            zeros = 0;
+>> -        } else
+>> -            ++zeros;
+>> -    }
+>> -
+>> -    return clusters;
+>> -}
+>> -
+>>  static int multi_checked;
+>>  static int multi;
+>>
+>> @@ -2540,20 +2495,7 @@ static void dmi_check_multi(void)
+>>  int apic_is_clustered_box(void)
+>>  {
+>>      dmi_check_multi();
+>> -    if (multi)
+>> -        return 1;
+>> -
+>> -    if (!is_vsmp_box())
+>> -        return 0;
+>> -
+>> -    /*
+>> -     * ScaleMP vSMPowered boxes have one cluster per board and TSCs are
+>> -     * not guaranteed to be synced between boards
+>> -     */
+>> -    if (apic_cluster_num() > 1)
+>> -        return 1;
+>> -
+>> -    return 0;
+>> +    return multi;
+>>  }
+>>  #endif
+>>
+>>
 >
-> I'm just catching up on email after being offline for a while.
 >
-> I apologize that my email came off ruder than intended.
->
-> I just meant that as a general rule, sometimes you should leave the
-> static checker warning there if you aren't sure what the correct fix is.
-> Even when it's a real bug, don't just guess at it, you have to be sure.
-> Otherwise you just create a more subtle bug that the static checker
-> can't detect.
->
-> regards,
-> dan carpenter
->
-Hey Dan,
-I am pretty sure this is correct as affs_bread does not check for NULL
-and I am checking
-the return of this function. If you feel this patch is wrong and would
-like me to rewrite it.
-Cheers Nick
+
+
