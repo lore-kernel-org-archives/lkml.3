@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753771AbaGMO0Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 10:26:24 -0400
-Received: from smtp-out-218.synserver.de ([212.40.185.218]:1081 "EHLO
-	smtp-out-216.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753627AbaGMO0Q (ORCPT
+	id S1753804AbaGMO23 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 10:28:29 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:48300 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752617AbaGMO2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 10:26:16 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 20591
-Message-ID: <53C296C2.30304@metafoo.de>
-Date: Sun, 13 Jul 2014 16:25:06 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Sun, 13 Jul 2014 10:28:21 -0400
+Message-ID: <53C29774.9000208@gmail.com>
+Date: Sun, 13 Jul 2014 22:28:04 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
-        Chen Gang <gang.chen.5i5j@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+To: gregkh@linuxfoundation.org
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         dmitry.torokhov@gmail.com, thierry.reding@gmail.com, jic23@kernel.org,
-        wim@iguana.be, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        kys@microsoft.com, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        teg@jklm.no, Mischa.Jonker@synopsys.com, msalter@redhat.com,
-        knaack.h@gmx.de, rdunlap@infradead.org, linux-input@vger.kernel.org,
+        wim@iguana.be, benh@kernel.crashing.org, kys@microsoft.com,
+        schwidefsky@de.ibm.com, teg@jklm.no, Mischa.Jonker@synopsys.com,
+        msalter@redhat.com, lars@metafoo.de, richard@nod.at, knaack.h@gmx.de,
+        marex@denx.de, rdunlap@infradead.org, linux-input@vger.kernel.org,
         linux-pwm@vger.kernel.org, linux-iio@vger.kernel.org,
         devel@driverdev.osuosl.org, linux-watchdog@vger.kernel.org,
-        Liqin Chen <liqin.linux@gmail.com>
+        Liqin Chen <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Guenter Roeck <linux@roeck-us.net>
 Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
  'devm_ioremap_resource'
-References: <53C1F7DE.3060102@gmail.com>	<201407130545.23004.marex@denx.de> <CAF0htA60juBVkPo2HQKMDGcEr-wRzRVL_6JgHAa+7WVE_E8M0Q@mail.gmail.com> <53C25551.1050909@nod.at> <53C288F0.3070001@metafoo.de> <53C28C4A.70907@nod.at> <53C29015.5070607@metafoo.de> <53C291C8.6050303@nod.at>
-In-Reply-To: <53C291C8.6050303@nod.at>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+References: <53C1F7DE.3060102@gmail.com> <53C1F98D.9030603@gmail.com>
+In-Reply-To: <53C1F98D.9030603@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2014 04:03 PM, Richard Weinberger wrote:
-> Am 13.07.2014 15:56, schrieb Lars-Peter Clausen:
->> On 07/13/2014 03:40 PM, Richard Weinberger wrote:
->>> Am 13.07.2014 15:26, schrieb Lars-Peter Clausen:
->>>> On 07/13/2014 11:45 AM, Richard Weinberger wrote:
->>>>> Am 13.07.2014 11:27, schrieb Lennox Wu:
->>>>>> As I said before, some configurations don't make sense.
->>>>>
->>>>> If such a configuration can be achieved using allmod/yesconfig it has to be fixed.
->>>>> Chen's fixes seem reasonable as not all architectures support iomem.
->>>>
->>>> Maybe we should stub out ioremap() and friends when COMPILE_TEST is enabled to avoid these linker errors. That's in my opinion better than turning most of the 'depends on
->>>> COMPILE_TEST' into 'depends on COMPILE_TEST && HAS_IOMEM'. The issue comes up quite a lot and it is often overlooked when adding a driver that can be build when COMPILE_TEST is
->>>> enabled.
->>>
->>> And what should this stub do?
->>> Except calling BUG()...
->>
->> return NULL;
->>
->> It's for compile testing, it's not meant to work at runtime.
->
-> Hm, I really don't like the idea of having a non-working kernel.
-> IMHO either it should build _and_ run and nothing else.
-> Greg, what do you think?
+On 07/13/2014 11:14 AM, Chen Gang wrote:
+[...]
+> And also find a compiler issue, I will try to fix it, but shall not notify
+> kernel mailing list, again. The related issue is below (it seems a kernel
+> issue, but in fact, it is a compiler's issue):
+> 
+>     CC [M]  drivers/staging/lustre/lustre/ptlrpc/sec.o
+>   drivers/staging/lustre/lustre/ptlrpc/sec.c: In function 'sptlrpc_cli_ctx_expire':
+>   drivers/staging/lustre/lustre/ptlrpc/sec.c:309:13: error: 'struct ptlrpc_ctx_ops' has no member named '__die'
+>     ctx->cc_ops->die(ctx, 0);
+>                ^
+>   drivers/staging/lustre/lustre/ptlrpc/sec.c: In function 'ctx_refresh_timeout':
+>   drivers/staging/lustre/lustre/ptlrpc/sec.c:594:26: error: 'struct ptlrpc_ctx_ops' has no member named '__die'
+>      req->rq_cli_ctx->cc_ops->die(req->rq_cli_ctx, 0);
+>                             ^
+>   make[5]: *** [drivers/staging/lustre/lustre/ptlrpc/sec.o] Error 1
+>   make[4]: *** [drivers/staging/lustre/lustre/ptlrpc] Error 2
+>   make[3]: *** [drivers/staging/lustre/lustre] Error 2
+>   make[2]: *** [drivers/staging/lustre] Error 2
+>   make[1]: *** [drivers/staging] Error 2
+>   make: *** [drivers] Error 2
+> 
 
-The kernel will still be working fine and you can run it on a system. The 
-drivers which use ioremap() or similar are probably not instantiated on a 
-system that does not provide HAS_IOMEM. But even if it was the driver should 
-handle ioremap() returning NULL gracefully and abort the driver probe. That 
-said you'll probably not run a kernel that was built with COMPILE_TEST on your 
-real hardware since it contains so many drivers that are completely useless on 
-your hardware. The idea of COMPILE_TEST is to have as much compile test 
-exposure as possible to the code that is enabled by COMPILE_TEST. Stubbing out 
-ioremap() and friends when HAS_IOMEM is not set and COMPILE_TEST is set makes 
-it easier to get there.
+Oh, sorry, after check related details, this is still a kernel issue,
+'die' is a macro which defined by most of architectures, so can not
+use this common name as a declaration in any other area.
 
-- Lars
+I shall send related patch for it.
 
+Thanks.
+-- 
+Chen Gang
+
+Open share and attitude like air water and life which God blessed
