@@ -1,104 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751560AbaGMXOs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 19:14:48 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:28324 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750975AbaGMXOm (ORCPT
+	id S1752072AbaGMXRv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 19:17:51 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:63925 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751040AbaGMXRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 19:14:42 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19+JAyP6CEF4i4QWLpZo5VWwSj0t4Tnv7k=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 2CF215AA0CA
-Date: Sun, 13 Jul 2014 19:14:31 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: suravee.suthikulpanit@amd.com
-Cc: marc.zyngier@arm.com, mark.rutland@arm.com, pawel.moll@arm.com,
-        Catalin.Marinas@arm.com, Will.Deacon@arm.com, tglx@linutronix.de,
-        Harish.Kasiviswanathan@amd.com, linux-arm-kernel@lists.infradead.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH 0/4 V3] irqchip: gic: Introduce ARM GICv2m MSI(-X)
- support
-Message-ID: <20140713231431.GM13108@titan.lakedaemon.net>
-References: <1404947104-21345-1-git-send-email-suravee.suthikulpanit@amd.com>
+	Sun, 13 Jul 2014 19:17:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404947104-21345-1-git-send-email-suravee.suthikulpanit@amd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAH2r5muwjdPopeGCOi8a7OxAm=8cFsFKsEBywz5N1NQWotni6Q@mail.gmail.com>
+References: <CAH2r5muwjdPopeGCOi8a7OxAm=8cFsFKsEBywz5N1NQWotni6Q@mail.gmail.com>
+From: Steve French <smfrench@gmail.com>
+Date: Sun, 13 Jul 2014 18:17:25 -0500
+Message-ID: <CAH2r5mtz0NJETUimTPrtdzfN23Wx7G82xGFa9NT_pLM-mCPezg@mail.gmail.com>
+Subject: Re: Additional performance data on Pavel's smb3 multi credit patch series
+To: "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
+        samba-technical <samba-technical@lists.samba.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Suravee,
+Repeating these large file copy tests with SMB3 mounts with Pavel's
+patches and trying larger wsize and rsize of 4MB (and later 5MB) did
+not seem to help performance much (over his default with the new
+patchset, 1MB).   I want to repeat these with real network adapters
+(rather than in vmware or kvm) to compare though (to see if the larger
+wsize and rsize help)
 
-On Wed, Jul 09, 2014 at 06:05:00PM -0500, suravee.suthikulpanit@amd.com wrote:
-> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> 
-> This patch set introduces support for MSI(-X) in GICv2m specification,
-> which is implemented in some variation of GIC400.
-> 
-> This depends on and has been tested with the V7 of"Add support for PCI in AArch64"
-> (https://lkml.org/lkml/2014/3/14/320).
+On Sun, Jul 13, 2014 at 2:23 PM, Steve French <smfrench@gmail.com> wrote:
+> Performance of Pavel's multicredit i/o SMB3 patches continues to look
+> good.  Additional informal performance results below comparing cifs
+> mounts with smb3 mounts (vers=3.0) with and without Pavel's patch set.
+> I plan to do additional testing with large rsize/wsize (default with
+> Pavel's code is 1MB).
+>
+> 3.16-rc4 (Ubuntu) on client.  Server is Windows 8.1.  Both VMs on same
+> host (host disk is fairly fast SSD).
+>
+> Copy to server performance increased about 20% percent
+> dd if=/dev/zero of=/mnt/targetfile bs=80M count=25
+> got similar results with or without conv=fdatasync
+>
+> 1st run copying to empty directory, 2nd run copying over targetfile,
+> (pattern repeated multiple times) averaging results
+>
+> New code (with Pavel's patches)
+> ---------------------------------------------
+> CIFS 167MB/s
+> SMB3 200MB/s
+>
+> Existing code (without his patches)
+> ------------------------------------------------
+> SMB3 166MB/s
+> CIFS 164.5MB/s
+>
+> For large file reading SMB3 performance with Pavel's patches increased
+> 76% over existing SMB3 code
+> dd of=/dev/null if=/mnt/targetfile bs=80M count=25
+> (mounting and unmounting between attempts to avoid caching effects on
+> the client)
+>
+> New code (with Pavel's patches)
+> ---------------------------------------------
+> CIFS 114MB/s
+> SMB3 216MB/s
+>
+> Existing code (without his patches)
+> ------------------------------------------------
+> SMB3 123MB/s
+> CIFS 110MB/s
+>
+> --
+> Thanks,
+>
+> Steve
 
-Grrr.  I mis-spoke against your v1 of this series.  There are more
-changes to irq-gic.c than I originally thought in this series.
 
-Additionally, we have a lot of other significant changes to that driver
-as well this cycle.  It would be really helpful if I could take patches
-1-3 through irqchip/gic.  I can Ack #4 with the Subject change, and the
-branch it lands in can depend on irqchip/gic, no problem there.
 
-My main concern is your statement above and your answer to my inquiry
-against v1.
+-- 
+Thanks,
 
-Right now, I'm only concerned about breaking the build.  Can I take 1-3?
-Or, do we need to wait until aarch64 PCI lands in mainline?
-
-If I can take them, I'll fix up the commit log of the one patch when I
-apply them.
-
-thx,
-
-Jason.
-
-> Changes in V3:
->     * Rebase to git://git.infradead.org/users/jcooper/linux.git irqchip/gic
->       (per Jason Cooper request)
->     * Misc fix/clean up per Mark Rutland comments
->     * Minor Clean up in the driver/irqchip/irq-gic-v2m.c: alloc_msi_irqs()
->     * Patch 4 is new to the series:
->         * Add ARM64-specific version arch_setup_msi_irqs() to allow support
->           for Multiple MSI.
->         * Add support for Multiple MSI for GICv2m.
-> 
-> Suravee Suthikulpanit (4):
->   irqchip: gic: Add binding probe for ARM GIC400
->   irqchip: gic: Restructuring ARM GIC code
->   irqchip: gic: Add supports for ARM GICv2m MSI(-X)
->   irqchip: gicv2m: Add support for multiple MSI for ARM64 GICv2m
-> 
->  Documentation/devicetree/bindings/arm/gic.txt |  20 +-
->  arch/arm64/Kconfig                            |   1 +
->  arch/arm64/include/asm/msi.h                  |  15 ++
->  arch/arm64/kernel/Makefile                    |   1 +
->  arch/arm64/kernel/msi.c                       |  57 +++++
->  drivers/irqchip/Kconfig                       |   7 +
->  drivers/irqchip/Makefile                      |   1 +
->  drivers/irqchip/irq-gic-v2m.c                 | 331 ++++++++++++++++++++++++++
->  drivers/irqchip/irq-gic-v2m.h                 |  13 +
->  drivers/irqchip/irq-gic.c                     |  90 ++++---
->  drivers/irqchip/irq-gic.h                     |  67 ++++++
->  11 files changed, 562 insertions(+), 41 deletions(-)
->  create mode 100644 arch/arm64/include/asm/msi.h
->  create mode 100644 arch/arm64/kernel/msi.c
->  create mode 100644 drivers/irqchip/irq-gic-v2m.c
->  create mode 100644 drivers/irqchip/irq-gic-v2m.h
->  create mode 100644 drivers/irqchip/irq-gic.h
-> 
-> -- 
-> 1.9.0
-> 
+Steve
