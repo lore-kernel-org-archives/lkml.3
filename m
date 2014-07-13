@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186AbaGNHSV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 03:18:21 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:64234 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752846AbaGNHSO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 03:18:14 -0400
-Date: Mon, 14 Jul 2014 09:18:23 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Daniel Vetter <daniel@ffwll.ch>, Jani Nikula <jani.nikula@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: drm: i915: "plane B assertion failure, should be off on pipe B
- but is still active"
-Message-ID: <20140714071823.GE15237@phenom.ffwll.local>
-Mail-Followup-To: Paul Bolle <pebolle@tiscali.nl>,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-References: <1404140703.2978.13.camel@x41>
- <87egy5h1yz.fsf@intel.com>
- <1404291203.12021.18.camel@x220>
- <1405283561.2103.9.camel@x41>
- <20140714065610.GA15237@phenom.ffwll.local>
- <1405322020.19403.0.camel@x220>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405322020.19403.0.camel@x220>
-X-Operating-System: Linux phenom 3.15.0-rc3+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753293AbaGNHSq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 03:18:46 -0400
+Received: from mga11.intel.com ([192.55.52.93]:45430 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752634AbaGNHSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 03:18:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,656,1400050800"; 
+   d="scan'208";a="569384953"
+From: Yuyang Du <yuyang.du@intel.com>
+To: mingo@redhat.com, peterz@infradead.org, linux-kernel@vger.kernel.org
+Cc: pjt@google.com, bsegall@google.com, arjan.van.de.ven@intel.com,
+        len.brown@intel.com, rafael.j.wysocki@intel.com, alan.cox@intel.com,
+        mark.gross@intel.com, fengguang.wu@intel.com,
+        Yuyang Du <yuyang.du@intel.com>
+Subject: [PATCH 0/2 v2] sched: Rewrite per entity runnable load average tracking 
+Date: Mon, 14 Jul 2014 07:15:50 +0800
+Message-Id: <1405293352-9305-1-git-send-email-yuyang.du@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 09:13:40AM +0200, Paul Bolle wrote:
-> On Mon, 2014-07-14 at 08:56 +0200, Daniel Vetter wrote:
-> > Please test the below patch, thanks.
-> > -Daniel
-> > 
-> > diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-> > index 82e7d57f0a8a..f0be855ddf45 100644
-> > --- a/drivers/gpu/drm/i915/intel_display.c
-> > +++ b/drivers/gpu/drm/i915/intel_display.c
-> > @@ -11914,6 +11914,7 @@ static void intel_sanitize_crtc(struct intel_crtc *crtc)
-> >  		 * ...  */
-> >  		plane = crtc->plane;
-> >  		crtc->plane = !plane;
-> > +		crtc->primary_enabled = true;
-> >  		dev_priv->display.crtc_disable(&crtc->base);
-> >  		crtc->plane = plane;
-> >  
-> 
-> Instead of the revert or on top of the revert?
+This patchset is really imbalanced in size.
 
-Instead of the revert as an attempt at a proper bugfix. If it doesn't work
-my theory about what's going on on your machine is all wrong ;-)
--Daniel
+The 1/2 patch is not simply resending, but for two reasons: 1) this rewrite
+does not include rq's runnable load_avg, and 2) more importantly, I want to
+reduce the size of the 2/2 patch, this is the only way I know how.
+
+The 2/2 patch is very big. Sorry for that, but as this patch is a rewrite, I can
+only do it in an all-or-nothing manner. Splitting it will not make each small one
+compile or correctly function.
+
+I'd like to thank PeterZ and Ben for their help in fixing the issues and improving
+the quality in this version. And Fengguang and his 0Day in finding compile errors
+in different configurations.
+
+v2 changes:
+
+- Batch update the tg->load_avg, making sure it is up-to-date before update_cfs_shares
+- Remove migrating task from the old CPU/cfs_rq, and do so with atomic operations
+- Retrack lod_avg of group's entities (if any), since we need it in task_h_load calc,
+  and do it along with its own cfs_rq's update
+- Fix 32bit overflow issue of cfs_rq's load_avg, now it is 64bit, should be safe
+- Change load.weight in effective_load which uses runnable load_avg consistently
+
+Yuyang Du (2):
+  sched: Remove update_rq_runnable_avg
+  sched: Rewrite per entity runnable load average tracking
+
+ include/linux/sched.h |   13 +-
+ kernel/sched/debug.c  |   32 +--
+ kernel/sched/fair.c   |  644 ++++++++++++++++++++-----------------------------
+ kernel/sched/proc.c   |    2 +-
+ kernel/sched/sched.h  |   34 +--
+ 5 files changed, 287 insertions(+), 438 deletions(-)
+
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.7.9.5
+
