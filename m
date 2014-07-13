@@ -1,226 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747AbaGMPcA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 11:32:00 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:48908 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754350AbaGMPbv (ORCPT
+	id S1754138AbaGMPa6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 11:30:58 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:64916 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754021AbaGMPal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 11:31:51 -0400
-Date: Sun, 13 Jul 2014 08:31:06 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "open list:RCUTORTURE TEST F..." <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] rcutorture: set executable bit and drop bash from
- Usage
-Message-ID: <20140713153106.GG16041@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1405122477-20834-1-git-send-email-bobby.prani@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405122477-20834-1-git-send-email-bobby.prani@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14071315-7164-0000-0000-0000031A558F
+	Sun, 13 Jul 2014 11:30:41 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Wim Van Sebroeck <wim@iguana.be>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonas Jensen <jonas.jensen@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tomasz Figa <t.figa@samsung.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH v4 1/7] kernel: Add support for restart notifier call chain
+Date: Sun, 13 Jul 2014 08:30:25 -0700
+Message-Id: <1405265431-4561-2-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405265431-4561-1-git-send-email-linux@roeck-us.net>
+References: <1405265431-4561-1-git-send-email-linux@roeck-us.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 07:47:35PM -0400, Pranith Kumar wrote:
-> This patch is on top of the previous changes.
-> 
-> Set the executable bit on test scripts config2frag.sh and kvm.sh
-> Since #!/bin/bash is set in all the scripts, drop it from the usage line as the
-> scripts can be invoked directly.
-> 
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+Various drivers implement architecture and/or device specific means
+to restart (reset) the system. Various mechanisms have been implemented
+to support those schemes. The best known mechanism is arm_pm_restart,
+which is a function pointer to be set either from platform specific code
+or from drivers. Another mechanism is to use hardware watchdogs to issue
+a reset; this mechanism is used if there is no other method available
+to reset a board or system. Two examples are alim7101_wdt, which currently
+uses the reboot notifier to trigger a reset, and moxart_wdt, which registers
+the arm_pm_restart function.
 
-Queued for 3.18 with Josh's Reviewed-by, thank you both!
+The existing mechanisms have a number of drawbacks. Typically only one scheme
+to restart the system is supported (at least if arm_pm_restart is used).
+At least in theory there can be multiple means to restart the system, some of
+which may be less desirable (for example one mechanism may only reset the CPU,
+while another may reset the entire system). Using arm_pm_restart can also be
+racy if the function pointer is set from a driver, as the driver may be in
+the process of being unloaded when arm_pm_restart is called.
+Using the reboot notifier is always racy, as it is unknown if and when
+other functions using the reboot notifier have completed execution
+by the time the watchdog fires.
 
-							Thanx, Paul
+Introduce a system restart notifier to solve the described problems.
+This notifier is expected to be called from the architecture specific
+machine_restart() function. Drivers providing system restart functionality
+(such as the watchdog drivers mentioned above) are expected to register
+with this notifier. By using the priority field in the notifier block,
+callers can control notifier execution sequence and thus ensure that the
+notifier with the optimal restart capabilities for a given system
+is called first.
 
-> ---
->  tools/testing/selftests/rcutorture/bin/config2frag.sh      | 2 +-
->  tools/testing/selftests/rcutorture/bin/configcheck.sh      | 2 +-
->  tools/testing/selftests/rcutorture/bin/configinit.sh       | 2 +-
->  tools/testing/selftests/rcutorture/bin/kvm-build.sh        | 2 +-
->  tools/testing/selftests/rcutorture/bin/kvm-recheck-lock.sh | 2 +-
->  tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh  | 2 +-
->  tools/testing/selftests/rcutorture/bin/kvm-recheck.sh      | 2 +-
->  tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh   | 2 +-
->  tools/testing/selftests/rcutorture/bin/kvm.sh              | 2 +-
->  tools/testing/selftests/rcutorture/bin/parse-build.sh      | 3 +--
->  tools/testing/selftests/rcutorture/bin/parse-console.sh    | 3 +--
->  tools/testing/selftests/rcutorture/bin/parse-torture.sh    | 3 +--
->  12 files changed, 12 insertions(+), 15 deletions(-)
->  mode change 100644 => 100755 tools/testing/selftests/rcutorture/bin/config2frag.sh
->  mode change 100644 => 100755 tools/testing/selftests/rcutorture/bin/kvm.sh
-> 
-> diff --git a/tools/testing/selftests/rcutorture/bin/config2frag.sh b/tools/testing/selftests/rcutorture/bin/config2frag.sh
-> old mode 100644
-> new mode 100755
-> index 4e394ef..56f51ae
-> --- a/tools/testing/selftests/rcutorture/bin/config2frag.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/config2frag.sh
-> @@ -1,5 +1,5 @@
->  #!/bin/bash
-> -# Usage: bash config2frag.sh < .config > configfrag
-> +# Usage: config2frag.sh < .config > configfrag
->  #
->  # Converts the "# CONFIG_XXX is not set" to "CONFIG_XXX=n" so that the
->  # resulting file becomes a legitimate Kconfig fragment.
-> diff --git a/tools/testing/selftests/rcutorture/bin/configcheck.sh b/tools/testing/selftests/rcutorture/bin/configcheck.sh
-> index 6173ed5..eee31e2 100755
-> --- a/tools/testing/selftests/rcutorture/bin/configcheck.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/configcheck.sh
-> @@ -1,5 +1,5 @@
->  #!/bin/bash
-> -# Usage: bash configcheck.sh .config .config-template
-> +# Usage: configcheck.sh .config .config-template
->  #
->  # This program is free software; you can redistribute it and/or modify
->  # it under the terms of the GNU General Public License as published by
-> diff --git a/tools/testing/selftests/rcutorture/bin/configinit.sh b/tools/testing/selftests/rcutorture/bin/configinit.sh
-> index d8f7418..15f1a17 100755
-> --- a/tools/testing/selftests/rcutorture/bin/configinit.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/configinit.sh
-> @@ -1,6 +1,6 @@
->  #!/bin/bash
->  #
-> -# bash configinit.sh config-spec-file [ build output dir ]
-> +# Usage: configinit.sh config-spec-file [ build output dir ]
->  #
->  # Create a .config file from the spec file.  Run from the kernel source tree.
->  # Exits with 0 if all went well, with 1 if all went well but the config
-> diff --git a/tools/testing/selftests/rcutorture/bin/kvm-build.sh b/tools/testing/selftests/rcutorture/bin/kvm-build.sh
-> index e4bfb91..00cb0db 100755
-> --- a/tools/testing/selftests/rcutorture/bin/kvm-build.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/kvm-build.sh
-> @@ -2,7 +2,7 @@
->  #
->  # Build a kvm-ready Linux kernel from the tree in the current directory.
->  #
-> -# Usage: bash kvm-build.sh config-template build-dir more-configs
-> +# Usage: kvm-build.sh config-template build-dir more-configs
->  #
->  # This program is free software; you can redistribute it and/or modify
->  # it under the terms of the GNU General Public License as published by
-> diff --git a/tools/testing/selftests/rcutorture/bin/kvm-recheck-lock.sh b/tools/testing/selftests/rcutorture/bin/kvm-recheck-lock.sh
-> index 30cbb63..43f7640 100755
-> --- a/tools/testing/selftests/rcutorture/bin/kvm-recheck-lock.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/kvm-recheck-lock.sh
-> @@ -2,7 +2,7 @@
->  #
->  # Analyze a given results directory for locktorture progress.
->  #
-> -# Usage: bash kvm-recheck-lock.sh resdir
-> +# Usage: kvm-recheck-lock.sh resdir
->  #
->  # This program is free software; you can redistribute it and/or modify
->  # it under the terms of the GNU General Public License as published by
-> diff --git a/tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh b/tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh
-> index 6e94a5e..d6cc07f 100755
-> --- a/tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh
-> @@ -2,7 +2,7 @@
->  #
->  # Analyze a given results directory for rcutorture progress.
->  #
-> -# Usage: bash kvm-recheck-rcu.sh resdir
-> +# Usage: kvm-recheck-rcu.sh resdir
->  #
->  # This program is free software; you can redistribute it and/or modify
->  # it under the terms of the GNU General Public License as published by
-> diff --git a/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh b/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh
-> index 3482b3f..4f5b20f 100755
-> --- a/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh
-> @@ -4,7 +4,7 @@
->  # check the build and console output for errors.  Given a directory
->  # containing results directories, this recursively checks them all.
->  #
-> -# Usage: bash kvm-recheck.sh resdir ...
-> +# Usage: kvm-recheck.sh resdir ...
->  #
->  # This program is free software; you can redistribute it and/or modify
->  # it under the terms of the GNU General Public License as published by
-> diff --git a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
-> index 5c265da..6d2f5fa 100755
-> --- a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
-> @@ -6,7 +6,7 @@
->  # Execute this in the source tree.  Do not run it as a background task
->  # because qemu does not seem to like that much.
->  #
-> -# Usage: bash kvm-test-1-run.sh config builddir resdir minutes qemu-args boot_args
-> +# Usage: kvm-test-1-run.sh config builddir resdir minutes qemu-args boot_args
->  #
->  # qemu-args defaults to "-nographic", along with arguments specifying the
->  #			number of CPUs and other options generated from
-> diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
-> old mode 100644
-> new mode 100755
-> index ff147ad..36534f9
-> --- a/tools/testing/selftests/rcutorture/bin/kvm.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
-> @@ -7,7 +7,7 @@
->  # Edit the definitions below to set the locations of the various directories,
->  # as well as the test duration.
->  #
-> -# Usage: bash kvm.sh [ options ]
-> +# Usage: kvm.sh [ options ]
->  #
->  # This program is free software; you can redistribute it and/or modify
->  # it under the terms of the GNU General Public License as published by
-> diff --git a/tools/testing/selftests/rcutorture/bin/parse-build.sh b/tools/testing/selftests/rcutorture/bin/parse-build.sh
-> index 41eeeef..499d1e5 100755
-> --- a/tools/testing/selftests/rcutorture/bin/parse-build.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/parse-build.sh
-> @@ -6,8 +6,7 @@
->  #
->  # The file must contain kernel build output.
->  #
-> -# Usage:
-> -#	bash parse-build.sh file title
-> +# Usage: parse-build.sh file title
->  #
->  # This program is free software; you can redistribute it and/or modify
->  # it under the terms of the GNU General Public License as published by
-> diff --git a/tools/testing/selftests/rcutorture/bin/parse-console.sh b/tools/testing/selftests/rcutorture/bin/parse-console.sh
-> index 2517eae..a0bde6c 100755
-> --- a/tools/testing/selftests/rcutorture/bin/parse-console.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/parse-console.sh
-> @@ -4,8 +4,7 @@
->  # The "file" is a pathname on the local system, and "title" is
->  # a text string for error-message purposes.
->  #
-> -# Usage:
-> -#	bash parse-console.sh file title
-> +# Usage: parse-console.sh file title
->  #
->  # This program is free software; you can redistribute it and/or modify
->  # it under the terms of the GNU General Public License as published by
-> diff --git a/tools/testing/selftests/rcutorture/bin/parse-torture.sh b/tools/testing/selftests/rcutorture/bin/parse-torture.sh
-> index bbec40b..e3c5f07 100755
-> --- a/tools/testing/selftests/rcutorture/bin/parse-torture.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/parse-torture.sh
-> @@ -7,8 +7,7 @@
->  # The file must contain torture output, but can be interspersed
->  # with other dmesg text, as in console-log output.
->  #
-> -# Usage:
-> -#	bash parse-torture.sh file title
-> +# Usage: parse-torture.sh file title
->  #
->  # This program is free software; you can redistribute it and/or modify
->  # it under the terms of the GNU General Public License as published by
-> -- 
-> 1.9.1
-> 
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+v4: Document and suggest values for notifier priorities
+v3: Add kernel_restart_notify wrapper function to execute notifier.
+    Improve documentation.
+    Move restart_notifier_list into kernel/reboot.c and make it static.
+v2: No change.
+
+ include/linux/reboot.h |  3 ++
+ kernel/reboot.c        | 81 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 84 insertions(+)
+
+diff --git a/include/linux/reboot.h b/include/linux/reboot.h
+index 48bf152..120db73 100644
+--- a/include/linux/reboot.h
++++ b/include/linux/reboot.h
+@@ -38,6 +38,9 @@ extern int reboot_force;
+ extern int register_reboot_notifier(struct notifier_block *);
+ extern int unregister_reboot_notifier(struct notifier_block *);
+ 
++extern int register_restart_notifier(struct notifier_block *);
++extern int unregister_restart_notifier(struct notifier_block *);
++extern void kernel_restart_notify(char *cmd);
+ 
+ /*
+  * Architecture-specific implementations of sys_reboot commands.
+diff --git a/kernel/reboot.c b/kernel/reboot.c
+index a3a9e24..1bc9bf2 100644
+--- a/kernel/reboot.c
++++ b/kernel/reboot.c
+@@ -104,6 +104,87 @@ int unregister_reboot_notifier(struct notifier_block *nb)
+ }
+ EXPORT_SYMBOL(unregister_reboot_notifier);
+ 
++/*
++ *	Notifier list for kernel code which wants to be called
++ *	to restart the system.
++ */
++static BLOCKING_NOTIFIER_HEAD(restart_notifier_list);
++
++/**
++ *	register_restart_notifier - Register function to be called to reset
++ *				    the system
++ *	@nb: Info about notifier function to be called
++ *	@nb->priority:	Notifier priority. Notifiers should follow the
++ *			following guidelines for setting priorities.
++ *			0:	Restart notifier of last resort,
++ *				with limited restart capabilities
++ *			128:	Default notifier; use if no other
++ *				notifier is expected to be available,
++ *				and/or if restart functionality is
++ *				sufficient to restart the entire system
++ *			255:	Highest priority notifier, will preempt
++ *				all other notifier functions
++ *
++ *	Registers a function with the list of functions
++ *	to be called to restart the system.
++ *
++ *	Registered functions will be called from machine_restart as last
++ *	step of the restart sequence (if the architecture specific
++ *	machine_restart function calls kernel_restart_notify - see below
++ *	for details).
++ *	Registered functions are expected to restart the system immediately.
++ *	If more than one function is registered, the notifier priority
++ *	selects which function will be called first.
++ *
++ *	Restart notifiers are expected to be registered from non-architecture
++ *	code, typically from drivers. A typical use case would be a system
++ *	where restart functionality is provided through a watchdog. Multiple
++ *	restart handlers may exist; for example, one restart handler might
++ *	restart the entire system, while another only restarts the CPU.
++ *	In such cases, the restart handler which only restarts part of the
++ *	hardware is expected to register with low priority to ensure that
++ *	it only runs if no other means to restart the system is available.
++ *
++ *	Currently always returns zero, as blocking_notifier_chain_register()
++ *	always returns zero.
++ */
++int register_restart_notifier(struct notifier_block *nb)
++{
++	return blocking_notifier_chain_register(&restart_notifier_list, nb);
++}
++EXPORT_SYMBOL(register_restart_notifier);
++
++/**
++ *	unregister_restart_notifier - Unregister previously registered
++ *				      restart notifier
++ *	@nb: Hook to be unregistered
++ *
++ *	Unregisters a previously registered restart notifier function.
++ *
++ *	Returns zero on success, or %-ENOENT on failure.
++ */
++int unregister_restart_notifier(struct notifier_block *nb)
++{
++	return blocking_notifier_chain_unregister(&restart_notifier_list, nb);
++}
++EXPORT_SYMBOL(unregister_restart_notifier);
++
++/**
++ *	kernel_restart_notify - Execute kernel restart handler call chain
++ *
++ *	Calls functions registered with register_restart_notifier.
++ *
++ *	Expected to be called from machine_restart as last step of the restart
++ *	sequence.
++ *
++ *	Restarts the system immediately if a restart notifier function has been
++ *	registered. Otherwise does nothing.
++ */
++void kernel_restart_notify(char *cmd)
++{
++	blocking_notifier_call_chain(&restart_notifier_list, reboot_mode, cmd);
++}
++
+ void migrate_to_reboot_cpu(void)
+ {
+ 	/* The boot cpu is always logical cpu 0 */
+-- 
+1.9.1
 
