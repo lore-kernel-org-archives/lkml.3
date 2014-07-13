@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279AbaGMKcZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 06:32:25 -0400
-Received: from static-209-166-131-148.expedient.com ([209.166.131.148]:44671
-	"EHLO natasha.panasas.com" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1750941AbaGMKcQ (ORCPT
+	id S1753310AbaGMKj2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 06:39:28 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:46652 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941AbaGMKjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 06:32:16 -0400
-X-Greylist: delayed 1830 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 Jul 2014 06:32:16 EDT
-Message-ID: <53C258F5.7070305@panasas.com>
-Date: Sun, 13 Jul 2014 13:01:25 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Sun, 13 Jul 2014 06:39:22 -0400
 MIME-Version: 1.0
-To: Fabian Frederick <fabf@skynet.be>, <linux-kernel@vger.kernel.org>
-CC: <osd-dev@open-osd.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/1] fs/exofs/ore_raid.c: replace count*size kzalloc by
- kcalloc
-References: <1403720063-19061-1-git-send-email-fabf@skynet.be>
-In-Reply-To: <1403720063-19061-1-git-send-email-fabf@skynet.be>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <53C08876.10209@zytor.com>
+References: <1404903678-8257-1-git-send-email-a.ryabinin@samsung.com>
+	<53C08876.10209@zytor.com>
+Date: Sun, 13 Jul 2014 14:39:21 +0400
+Message-ID: <CAPAsAGwb2sLmu0o_o-pFP5pXhMs-1sZSJbA3ji=W+JPOZRepgg@mail.gmail.com>
+Subject: Re: [RFC/PATCH -next 00/21] Address sanitizer for kernel (kasan) -
+ dynamic memory error detector.
+From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>, linux-kernel@vger.kernel.org,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Alexey Preobrazhensky <preobr@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        x86@kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2014 09:14 PM, Fabian Frederick wrote:
-> kcalloc manages count*sizeof overflow.
-> 
-> Cc: Boaz Harrosh <bharrosh@panasas.com>
-ACK-by: Boaz Harrosh <bharrosh@panasas.com>
+2014-07-12 4:59 GMT+04:00 H. Peter Anvin <hpa@zytor.com>:
+> On 07/09/2014 04:00 AM, Andrey Ryabinin wrote:
+>>
+>> Address sanitizer dedicates 1/8 of the low memory to the shadow memory and uses direct
+>> mapping with a scale and offset to translate a memory address to its corresponding
+>> shadow address.
+>>
+>> Here is function to translate address to corresponding shadow address:
+>>
+>>      unsigned long kasan_mem_to_shadow(unsigned long addr)
+>>      {
+>>               return ((addr) >> KASAN_SHADOW_SCALE_SHIFT)
+>>                            + kasan_shadow_start - (PAGE_OFFSET >> KASAN_SHADOW_SCALE_SHIFT);
+>>      }
+>>
+>> where KASAN_SHADOW_SCALE_SHIFT = 3.
+>>
+>
+> How does that work when memory is sparsely populated?
+>
 
-Do you need that I submit this through my tree?
+Sparsemem configurations currently may not work with kasan.
+I suppose I will have to move shadow area to vmalloc address space and
+make it (shadow) sparse too if needed.
 
-Thanks
-Boaz
-> Cc: osd-dev@open-osd.org
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
->  fs/exofs/ore_raid.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/fs/exofs/ore_raid.c b/fs/exofs/ore_raid.c
-> index 7f20f25..84529b8 100644
-> --- a/fs/exofs/ore_raid.c
-> +++ b/fs/exofs/ore_raid.c
-> @@ -116,7 +116,7 @@ static int _sp2d_alloc(unsigned pages_in_unit, unsigned group_width,
->  			num_a1pa = min_t(unsigned, PAGE_SIZE / sizeof__a1pa,
->  							pages_in_unit - i);
->  
-> -			__a1pa = kzalloc(num_a1pa * sizeof__a1pa, GFP_KERNEL);
-> +			__a1pa = kcalloc(num_a1pa, sizeof__a1pa, GFP_KERNEL);
->  			if (unlikely(!__a1pa)) {
->  				ORE_DBGMSG("!! Failed to _alloc_1p_arrays=%d\n",
->  					   num_a1pa);
-> 
+>         -hpa
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
+
+
+-- 
+Best regards,
+Andrey Ryabinin
