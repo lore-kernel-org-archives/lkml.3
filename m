@@ -1,66 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752365AbaGMB10 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 21:27:26 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:45558 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751631AbaGMB1X (ORCPT
+	id S1752543AbaGMBkF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 21:40:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49526 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751786AbaGMBkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 21:27:23 -0400
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Lidza Louina <lidza.louina@gmail.com>
-Cc: Mark Hounschell <markh@compro.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Jeremiah Mahler <jmmahler@gmail.com>
-Subject: [PATCH] dgnc: DGNC_VERIFY_BOARD macro in do while block
-Date: Sat, 12 Jul 2014 18:26:39 -0700
-Message-Id: <1405214799-2189-1-git-send-email-jmmahler@gmail.com>
-X-Mailer: git-send-email 2.0.1
+	Sat, 12 Jul 2014 21:40:02 -0400
+Date: Sat, 12 Jul 2014 18:44:30 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Lucas Tanure <tanure@linux.com>
+Cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [RESEND PATCH] staging: android: Clean up binder_buffer_size()
+Message-ID: <20140713014430.GA16087@kroah.com>
+References: <20140713005009.GA1926@archDesk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140713005009.GA1926@archDesk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enclose the body of the multi-statement DGNC_VERIFY_BOARD macro inside a
-do - while block as per Documentation/CodingStyle.  Fixes 1 error found
-by checkpatch.pl.
+On Sat, Jul 12, 2014 at 09:50:09PM -0300, Lucas Tanure wrote:
+> Kernel coding style. Remove useless else statement after return.
+> 
+> Signed-off-by: Lucas Tanure <tanure@linux.com>
+> ---
+>  drivers/staging/android/binder.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 
-Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
----
- drivers/staging/dgnc/dgnc_sysfs.c | 20 +++++++++++---------
- 1 file changed, 11 insertions(+), 9 deletions(-)
+What tree are you making this patch against?  Someone already has this
+patch accepted into my staging-next branch, which means that linux-next
+also should show this change in it.
 
-diff --git a/drivers/staging/dgnc/dgnc_sysfs.c b/drivers/staging/dgnc/dgnc_sysfs.c
-index 0f0e8fc..3f321bb 100644
---- a/drivers/staging/dgnc/dgnc_sysfs.c
-+++ b/drivers/staging/dgnc/dgnc_sysfs.c
-@@ -150,15 +150,17 @@ void dgnc_remove_driver_sysfiles(struct pci_driver *dgnc_driver)
- }
- 
- 
--#define DGNC_VERIFY_BOARD(p, bd)			\
--	if (!p)						\
--		return 0;				\
--							\
--	bd = dev_get_drvdata(p);			\
--	if (!bd || bd->magic != DGNC_BOARD_MAGIC)	\
--		return 0;				\
--	if (bd->state != BOARD_READY)			\
--		return 0;				\
-+#define DGNC_VERIFY_BOARD(p, bd)				\
-+	do {							\
-+		if (!p)						\
-+			return 0;				\
-+								\
-+		bd = dev_get_drvdata(p);			\
-+		if (!bd || bd->magic != DGNC_BOARD_MAGIC)	\
-+			return 0;				\
-+		if (bd->state != BOARD_READY)			\
-+			return 0;				\
-+	} while (0)
- 
- 
- 
--- 
-2.0.1
+thanks,
 
+greg k-h
