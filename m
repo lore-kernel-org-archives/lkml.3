@@ -1,91 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127AbaGMV0T (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 17:26:19 -0400
-Received: from asavdk4.altibox.net ([109.247.116.15]:34282 "EHLO
-	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751837AbaGMV0N (ORCPT
+	id S1752168AbaGMVa1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 17:30:27 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:49469 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751837AbaGMVaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 17:26:13 -0400
-Date: Sun, 13 Jul 2014 23:26:08 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Yann Droneaud <ydroneaud@opteya.com>
-Cc: linux-kbuild@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Michal Marek <mmarek@suse.cz>, David Woodhouse <dwmw2@infradead.org>,
-        Rob Landley <rob@landley.net>
-Subject: Re: [PATCHv1 2/2] Documentation/kbuild/headers_install.txt: update
- documentation
-Message-ID: <20140713212608.GB16496@ravnborg.org>
-References: <20140709204915.GB32335@ravnborg.org>
- <cover.1405246007.git.ydroneaud@opteya.com>
- <3e0d73d0ca3ead75624b552105ce8adf3d63684e.1405246009.git.ydroneaud@opteya.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3e0d73d0ca3ead75624b552105ce8adf3d63684e.1405246009.git.ydroneaud@opteya.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sun, 13 Jul 2014 17:30:21 -0400
+From: Ionut Alexa <ionut.m.alexa@gmail.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Ionut Alexa <ionut.m.alexa@gmail.com>
+Subject: [PATCH] :kernel :acct :fix coding style warnings and errors
+Date: Mon, 14 Jul 2014 00:30:51 +0300
+Message-Id: <1405287051-12717-1-git-send-email-ionut.m.alexa@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 13, 2014 at 12:15:30PM +0200, Yann Droneaud wrote:
-> Documentation in kbuild/headers_install.txt is not
-> up to date regarding:
-> - way to list the various architectures;
-> - path where the headers are installed.
-> 
-> This patch try to fix these issues.
-> 
-> Cc: Kirill A. Shutemov <kirill@shutemov.name>
-> Cc: Michal Marek <mmarek@suse.cz>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Cc: Rob Landley <rob@landley.net>
-> Cc: Sam Ravnborg <sam@ravnborg.org>
-> Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-> ---
->  Documentation/kbuild/headers_install.txt | 15 ++++++++-------
->  1 file changed, 8 insertions(+), 7 deletions(-)
-> 
-> diff --git a/Documentation/kbuild/headers_install.txt b/Documentation/kbuild/headers_install.txt
-> index 951eb9f1e040..8b6751f10dd3 100644
-> --- a/Documentation/kbuild/headers_install.txt
-> +++ b/Documentation/kbuild/headers_install.txt
-> @@ -24,23 +24,24 @@ The "make headers_install" command can be run in the top level directory of the
->  kernel source code (or using a standard out-of-tree build).  It takes two
->  optional arguments:
->  
-> -  make headers_install ARCH=i386 INSTALL_HDR_PATH=/usr/include
-> +  make headers_install ARCH=i386 INSTALL_HDR_PATH=/usr
-OK
+Fixed coding style warnings and errors.
 
->  
+Signed-off-by: Ionut Alexa <ionut.m.alexa@gmail.com>
+---
+ kernel/acct.c |   30 +++++++++++++++++-------------
+ 1 file changed, 17 insertions(+), 13 deletions(-)
 
-> to see a list of supported architectures use
->  the command:
->  
-> -  ls -d include/asm-* | sed 's/.*-//'
-> +  /bin/ls -1 arch/*/include/asm/Kbuild | sed -e 's,^arch/,,' \
-> +                                             -e 's,/include/asm/Kbuild$,,'
-This information is nor relevant these days as all architectures support exporting userspace headers.
-So drop this part of the documentation.
-cris is broken - I will send a patch to fix this.
-In reality um does not support exporting headers - but it makes no sense either.
-We do not want to do anything special just to mention that um is not included.
+diff --git a/kernel/acct.c b/kernel/acct.c
+index 808a86f..1bfdda0 100644
+--- a/kernel/acct.c
++++ b/kernel/acct.c
+@@ -141,12 +141,12 @@ static int check_free_space(struct bsd_acct_struct *acct, struct file *file)
+ 	if (acct->active) {
+ 		if (act < 0) {
+ 			acct->active = 0;
+-			printk(KERN_INFO "Process accounting paused\n");
++			pr_info("Process accounting paused\n");
+ 		}
+ 	} else {
+ 		if (act > 0) {
+ 			acct->active = 1;
+-			printk(KERN_INFO "Process accounting resumed\n");
++			pr_info("Process accounting resumed\n");
+ 		}
+ 	}
+ 
+@@ -261,6 +261,7 @@ SYSCALL_DEFINE1(acct, const char __user *, name)
+ 
+ 	if (name) {
+ 		struct filename *tmp = getname(name);
++
+ 		if (IS_ERR(tmp))
+ 			return PTR_ERR(tmp);
+ 		error = acct_on(tmp);
+@@ -376,7 +377,7 @@ static comp_t encode_comp_t(unsigned long value)
+ 	return exp;
+ }
+ 
+-#if ACCT_VERSION==1 || ACCT_VERSION==2
++#if ACCT_VERSION == 1 || ACCT_VERSION == 2
+ /*
+  * encode an u64 into a comp2_t (24 bits)
+  *
+@@ -389,7 +390,7 @@ static comp_t encode_comp_t(unsigned long value)
+ #define MANTSIZE2       20                      /* 20 bit mantissa. */
+ #define EXPSIZE2        5                       /* 5 bit base 2 exponent. */
+ #define MAXFRACT2       ((1ul << MANTSIZE2) - 1) /* Maximum fractional value. */
+-#define MAXEXP2         ((1 <<EXPSIZE2) - 1)    /* Maximum exponent. */
++#define MAXEXP2         ((1 << EXPSIZE2) - 1)    /* Maximum exponent. */
+ 
+ static comp2_t encode_comp2_t(u64 value)
+ {
+@@ -420,7 +421,7 @@ static comp2_t encode_comp2_t(u64 value)
+ }
+ #endif
+ 
+-#if ACCT_VERSION==3
++#if ACCT_VERSION == 3
+ /*
+  * encode an u64 into a 32 bit IEEE float
+  */
+@@ -429,8 +430,9 @@ static u32 encode_float(u64 value)
+ 	unsigned exp = 190;
+ 	unsigned u;
+ 
+-	if (value==0) return 0;
+-	while ((s64)value > 0){
++	if (value == 0)
++		return 0;
++	while ((s64)value > 0) {
+ 		value <<= 1;
+ 		exp--;
+ 	}
+@@ -490,16 +492,17 @@ static void do_acct_process(struct bsd_acct_struct *acct,
+ 		       + current->group_leader->start_time.tv_nsec;
+ 	/* convert nsec -> AHZ */
+ 	elapsed = nsec_to_AHZ(run_time);
+-#if ACCT_VERSION==3
++#if ACCT_VERSION == 3
+ 	ac.ac_etime = encode_float(elapsed);
+ #else
+ 	ac.ac_etime = encode_comp_t(elapsed < (unsigned long) -1l ?
+-	                       (unsigned long) elapsed : (unsigned long) -1l);
++				(unsigned long) elapsed : (unsigned long) -1l);
+ #endif
+-#if ACCT_VERSION==1 || ACCT_VERSION==2
++#if ACCT_VERSION == 1 || ACCT_VERSION == 2
+ 	{
+ 		/* new enlarged etime field */
+ 		comp2_t etime = encode_comp2_t(elapsed);
++
+ 		ac.ac_etime_hi = etime >> 16;
+ 		ac.ac_etime_lo = (u16) etime;
+ 	}
+@@ -509,15 +512,15 @@ static void do_acct_process(struct bsd_acct_struct *acct,
+ 	/* we really need to bite the bullet and change layout */
+ 	ac.ac_uid = from_kuid_munged(file->f_cred->user_ns, orig_cred->uid);
+ 	ac.ac_gid = from_kgid_munged(file->f_cred->user_ns, orig_cred->gid);
+-#if ACCT_VERSION==2
++#if ACCT_VERSION == 2
+ 	ac.ac_ahz = AHZ;
+ #endif
+-#if ACCT_VERSION==1 || ACCT_VERSION==2
++#if ACCT_VERSION == 1 || ACCT_VERSION == 2
+ 	/* backward-compatible 16 bit fields */
+ 	ac.ac_uid16 = ac.ac_uid;
+ 	ac.ac_gid16 = ac.ac_gid;
+ #endif
+-#if ACCT_VERSION==3
++#if ACCT_VERSION == 3
+ 	ac.ac_pid = task_tgid_nr_ns(current, ns);
+ 	rcu_read_lock();
+ 	ac.ac_ppid = task_tgid_nr_ns(rcu_dereference(current->real_parent), ns);
+@@ -578,6 +581,7 @@ void acct_collect(long exitcode, int group_dead)
+ 
+ 	if (group_dead && current->mm) {
+ 		struct vm_area_struct *vma;
++
+ 		down_read(&current->mm->mmap_sem);
+ 		vma = current->mm->mmap;
+ 		while (vma) {
+-- 
+1.7.10.4
 
->  The command "make headers_install_all" exports headers for all architectures
->  simultaneously.  (This is mostly of interest to distribution maintainers,
->  who create an architecture-independent tarball from the resulting include
->  directory.)
-I have seriously considered dropping the "headers_install_all" target.
-It does not make any sense as some files are optional for the individual archs
-and only pure luck will define if the relevant fiels are included or not.
-
-We would still like the "headers_check_all" feature but this is better done in
-a small shell script than as it is today where we need special handling
-to support it in Makefile.headersinst - and it adds complexity
-to the top-level Makefile which we shall avoid.
-But this is unrelated to your documentation clean-up.
-
-	Sam
