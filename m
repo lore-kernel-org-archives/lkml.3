@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118AbaGMBF7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 21:05:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2286 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751563AbaGMBFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 21:05:54 -0400
-Date: Sun, 13 Jul 2014 09:05:46 +0800
-From: Baoquan He <bhe@redhat.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        qiuxishi@huawei.com, paul.gortmaker@windriver.com
-Subject: Re: [PATCH v2] not adding modules range to kcore if it's equal to
- vmcore range
-Message-ID: <20140713010546.GA2832@dhcp-17-102.nay.redhat.com>
-References: <1405212144-2725-1-git-send-email-bhe@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405212144-2725-1-git-send-email-bhe@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752365AbaGMB10 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 21:27:26 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:45558 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751631AbaGMB1X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jul 2014 21:27:23 -0400
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Lidza Louina <lidza.louina@gmail.com>
+Cc: Mark Hounschell <markh@compro.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Jeremiah Mahler <jmmahler@gmail.com>
+Subject: [PATCH] dgnc: DGNC_VERIFY_BOARD macro in do while block
+Date: Sat, 12 Jul 2014 18:26:39 -0700
+Message-Id: <1405214799-2189-1-git-send-email-jmmahler@gmail.com>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some ARCHs modules range is eauql to vmalloc range. E.g on i686
-"#define MODULES_VADDR   VMALLOC_START"
-"#define MODULES_END     VMALLOC_END"
-This will cause 2 duplicate program segments in /proc/kcore, makes
-user confused. In this patch a judgment added to check if modules
-range is equal to vmalloc range. If yes, just skip adding the modules
-range.
+Enclose the body of the multi-statement DGNC_VERIFY_BOARD macro inside a
+do - while block as per Documentation/CodingStyle.  Fixes 1 error found
+by checkpatch.pl.
 
-Signed-off-by: Baoquan He <bhe@redhat.com>
+Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
 ---
- fs/proc/kcore.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/staging/dgnc/dgnc_sysfs.c | 20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
 
-diff --git a/fs/proc/kcore.c b/fs/proc/kcore.c
-index 39e6ef3..bf5127c 100644
---- a/fs/proc/kcore.c
-+++ b/fs/proc/kcore.c
-@@ -610,8 +610,10 @@ static void __init proc_kcore_text_init(void)
- struct kcore_list kcore_modules;
- static void __init add_modules_range(void)
- {
--	kclist_add(&kcore_modules, (void *)MODULES_VADDR,
--			MODULES_END - MODULES_VADDR, KCORE_VMALLOC);
-+	if (MODULES_VADDR != VMALLOC_START) {
-+		kclist_add(&kcore_modules, (void *)MODULES_VADDR,
-+				MODULES_END - MODULES_VADDR, KCORE_VMALLOC);
-+	}
+diff --git a/drivers/staging/dgnc/dgnc_sysfs.c b/drivers/staging/dgnc/dgnc_sysfs.c
+index 0f0e8fc..3f321bb 100644
+--- a/drivers/staging/dgnc/dgnc_sysfs.c
++++ b/drivers/staging/dgnc/dgnc_sysfs.c
+@@ -150,15 +150,17 @@ void dgnc_remove_driver_sysfiles(struct pci_driver *dgnc_driver)
  }
- #else
- static void __init add_modules_range(void)
+ 
+ 
+-#define DGNC_VERIFY_BOARD(p, bd)			\
+-	if (!p)						\
+-		return 0;				\
+-							\
+-	bd = dev_get_drvdata(p);			\
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)	\
+-		return 0;				\
+-	if (bd->state != BOARD_READY)			\
+-		return 0;				\
++#define DGNC_VERIFY_BOARD(p, bd)				\
++	do {							\
++		if (!p)						\
++			return 0;				\
++								\
++		bd = dev_get_drvdata(p);			\
++		if (!bd || bd->magic != DGNC_BOARD_MAGIC)	\
++			return 0;				\
++		if (bd->state != BOARD_READY)			\
++			return 0;				\
++	} while (0)
+ 
+ 
+ 
 -- 
-1.9.3
+2.0.1
 
