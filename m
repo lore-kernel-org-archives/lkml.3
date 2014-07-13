@@ -1,87 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983AbaGMPaW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 11:30:22 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:8420 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753860AbaGMPaS (ORCPT
+	id S1754059AbaGMPaq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 11:30:46 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:43837 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753860AbaGMPah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 11:30:18 -0400
-X-IronPort-AV: E=Sophos;i="5.00,885,1396972800"; 
-   d="scan'208";a="33207295"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH] workqueue: remove the del_timer_sync()s in maybe_create_worker()
-Date: Sun, 13 Jul 2014 23:31:19 +0800
-Message-ID: <1405265479-827-1-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.103]
+	Sun, 13 Jul 2014 11:30:37 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Wim Van Sebroeck <wim@iguana.be>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonas Jensen <jonas.jensen@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tomasz Figa <t.figa@samsung.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH v4 0/7] kernel: Add support for restart notifier call chain
+Date: Sun, 13 Jul 2014 08:30:24 -0700
+Message-Id: <1405265431-4561-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is said in the document that the timer which is being
-deleted by del_timer_sync() should not be restarted:
-  Synchronization rules: Callers must prevent restarting of
-  the timer, otherwise this function is meaningless.
+Various drivers implement architecture and/or device specific means
+to restart (reset) the system. Various mechanisms have been implemented
+to support those schemes. The best known mechanism is arm_pm_restart,
+which is a function pointer to be set either from platform specific code
+or from drivers. Another mechanism is to use hardware watchdogs to issue
+a reset; this mechanism is used if there is no other method available
+to reset a board or system. Two examples are alim7101_wdt, which currently
+uses the reboot notifier to trigger a reset, and moxart_wdt, which registers
+the arm_pm_restart function. Several other restart drivers for arm, all
+directly calling arm_pm_restart, are in the process of being integrated
+into the kernel. All those drivers would benefit from the new API.
 
-Repeating timer may cause the del_timer_sync() spin longer,
-or even spin forever in very very very very extreme condition.
+The existing mechanisms have a number of drawbacks. Typically only one scheme
+to restart the system is supported (at least if arm_pm_restart is used).
+At least in theory there can be multiple means to restart the system, some of
+which may be less desirable (for example one mechanism may only reset the CPU,
+while another may reset the entire system). Using arm_pm_restart can also be
+racy if the function pointer is set from a driver, as the driver may be in
+the process of being unloaded when arm_pm_restart is called.
+Using the reboot notifier is always racy, as it is unknown if and when
+other functions using the reboot notifier have completed execution
+by the time the watchdog fires.
 
-It is not considered a bug for me, but it disobeys the document.
+Introduce a system restart notifier to solve the described problems.
+This notifier is expected to be called from the architecture specific
+machine_restart() function. Drivers providing system restart functionality
+(such as the watchdog drivers mentioned above) are expected to register
+with this notifier. By using the priority field in the notifier block,
+callers can control notifier execution sequence and thus ensure that the
+notifier with the optimal restart capabilities for a given system
+is called first.
 
-To fix it, we need:
-  1) don't requeue the mayday timer when !need_to_create_worker()
-       it is a preparation/cleaup step for the fix. Otherwise the timer
-       will repeat forever if we only do the 2).
-  2) remove the del_timer_sync()s in maybe_create_worker()
-       Fix the problem. It is not enough if we only do the 1),
-       need_to_create_worker() would be probably true when the time
-       del_timer_sync() is called, the timer is still repeating.
+Since the first revision of this patchset, a number of separate patch
+submissions have been made which either depend on it or could make use of it.
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+http://www.spinics.net/linux/lists/arm-kernel/msg344796.html
+	registers three notifiers.
+https://lkml.org/lkml/2014/7/8/962
+	would benefit from it.
+
+Patch 1 of this series implements the notifier function. Patches 2 and 3
+implement calling the notifier chain from arm and arm64 restart code.
+
+Patch 4 modifies the restart-poweroff driver to no longer call arm_pm_restart
+directly but machine_restart. This is done to avoid calling arm_pm_restart
+from more than one place. The change makes the driver architecture independent,
+so it would be possible to drop the arm dependency from its Kconfig entry.
+
+Patch 5 and 6 convert existing restart handlers in the watchdog subsystem
+to use the restart notifier. Patch 7 unexports arm_pm_restart to ensure
+that no one gets the idea to implement a restart handler as module.
+
 ---
- kernel/workqueue.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 35974ac..593b9bc 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1866,12 +1866,12 @@ static void pool_mayday_timeout(unsigned long __pool)
- 		 */
- 		list_for_each_entry(work, &pool->worklist, entry)
- 			send_mayday(work);
-+
-+		mod_timer(&pool->mayday_timer, jiffies + MAYDAY_INTERVAL);
- 	}
- 
- 	spin_unlock(&pool->lock);
- 	spin_unlock_irq(&wq_mayday_lock);
--
--	mod_timer(&pool->mayday_timer, jiffies + MAYDAY_INTERVAL);
- }
- 
- /**
-@@ -1913,7 +1913,6 @@ restart:
- 
- 		worker = create_worker(pool);
- 		if (worker) {
--			del_timer_sync(&pool->mayday_timer);
- 			spin_lock_irq(&pool->lock);
- 			start_worker(worker);
- 			if (WARN_ON_ONCE(need_to_create_worker(pool)))
-@@ -1931,7 +1930,6 @@ restart:
- 			break;
- 	}
- 
--	del_timer_sync(&pool->mayday_timer);
- 	spin_lock_irq(&pool->lock);
- 	if (need_to_create_worker(pool))
- 		goto restart;
--- 
-1.7.7.6
-
+v4: Document restart notifier priorities
+    Select 128 as default priority for newly introduced notifiers
+    Fix checkpatch warning (line too long) in moxart patch
+v3: Drop RFC.
+    Add kernel_restart_notify wrapper function to execute notifier
+    Improve documentation.
+    Move restart_notifier_list into kernel/reboot.c and make it static.
+v2: Add patch 4.
+    Only call blocking notifier call chain if arm_pm_restart was not set.
