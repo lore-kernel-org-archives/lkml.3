@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637AbaGLXvu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 19:51:50 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:37560 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751020AbaGLXvs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 19:51:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <1404999558.16296.31.camel@iivanov-dev>
-References: <1404745893-6379-1-git-send-email-iivanov@mm-sol.com>
-	<CACRpkdYcoA-nifxojO5tZUy6dL6P2PTSGW0mVLUfqG20rOg-Nw@mail.gmail.com>
-	<1404904380.16296.17.camel@iivanov-dev>
-	<CACRpkdb25foEcNroqLyZbX93FxqAZ7=2pGo6GPWP8YdrjUS8gg@mail.gmail.com>
-	<CAJAp7Og0Cr3oY=XpT4NzKUWykxkRTq1ZRDyamW6tgohfBs3dmg@mail.gmail.com>
-	<1404999558.16296.31.camel@iivanov-dev>
-Date: Sat, 12 Jul 2014 16:51:47 -0700
-Message-ID: <CAJAp7OgR7xc=LSf9tj+XQY1Nk=dQxCxTZ6HBEdf0NsriDZF85g@mail.gmail.com>
-Subject: Re: [PATCH 0/4] New Qualcomm PMIC pin controller drivers
-From: Bjorn Andersson <bjorn@kryo.se>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1752124AbaGMAmn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 20:42:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13544 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751020AbaGMAmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jul 2014 20:42:35 -0400
+From: Baoquan He <bhe@redhat.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        qiuxishi@huawei.com, paul.gortmaker@windriver.com
+Cc: Baoquan He <bhe@redhat.com>
+Subject: [PATCH] not adding modules range to kcore if it's equal to vmcore range
+Date: Sun, 13 Jul 2014 08:42:24 +0800
+Message-Id: <1405212144-2725-1-git-send-email-bhe@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 6:39 AM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
-> On Wed, 2014-07-09 at 07:02 -0700, Bjorn Andersson wrote:
-[..]
->> Correct Ivan; we do however share the same issues related to how to do
->> interrupt handling,
->
-> Yep, but do we actually need to do interrupt handling in driver?
-> Interrupts are handled by parent device. GPIO client drivers could
-> use interrupt-controller registered by core driver?
->
+On some ARCHs modules range is eauql to vmalloc range. E.g on i686
 
-Among other things we have the volume and camera keys hooked to these
-pins, using the gpio-keys driver; so that needs to be able to convert
-a gpio to an irq.
-But I don't believe we should turn this driver into an
-interrupt-controller; as that wouldn't add any value...
+This will cause 2 duplicate program segments in /proc/kcore, makes
+user confused. In this patch a judgment added to check if modules
+range is equal to vmalloc range. If yes, just skip adding the modules
+range.
 
-Regards,
-Bjorn
+Signed-off-by: Baoquan He <bhe@redhat.com>
+---
+ fs/proc/kcore.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/fs/proc/kcore.c b/fs/proc/kcore.c
+index 39e6ef3..bf5127c 100644
+--- a/fs/proc/kcore.c
++++ b/fs/proc/kcore.c
+@@ -610,8 +610,10 @@ static void __init proc_kcore_text_init(void)
+ struct kcore_list kcore_modules;
+ static void __init add_modules_range(void)
+ {
+-	kclist_add(&kcore_modules, (void *)MODULES_VADDR,
+-			MODULES_END - MODULES_VADDR, KCORE_VMALLOC);
++	if (MODULES_VADDR != VMALLOC_START) {
++		kclist_add(&kcore_modules, (void *)MODULES_VADDR,
++				MODULES_END - MODULES_VADDR, KCORE_VMALLOC);
++	}
+ }
+ #else
+ static void __init add_modules_range(void)
+-- 
+1.9.3
+
