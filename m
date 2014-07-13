@@ -1,168 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751365AbaGMHIZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 03:08:25 -0400
-Received: from primary.scalemp.com ([174.37.253.146]:40846 "EHLO
-	primary.scalemp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774AbaGMHIS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 03:08:18 -0400
-X-Greylist: delayed 975 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 Jul 2014 03:08:18 EDT
-Message-ID: <53C22C8A.2010406@scalemp.com>
-Date: Sun, 13 Jul 2014 09:51:54 +0300
-From: Oren Twaig <oren@scalemp.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752633AbaGMHVg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 03:21:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45331 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751555AbaGMHVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jul 2014 03:21:31 -0400
+Date: Sun, 13 Jul 2014 09:21:27 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Randy Dunlap <rdunlap@infradead.org>,
+        linux-i2c@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] i2c: stub: Add support for SMBus block commands
+Message-ID: <20140713092127.4bedfa18@endymion.delvare>
+In-Reply-To: <53C14ECD.7050105@roeck-us.net>
+References: <1404742983-27303-1-git-send-email-linux@roeck-us.net>
+	<20140708215453.0677d3ed@endymion.delvare>
+	<53BC4F15.9030608@roeck-us.net>
+	<20140712112019.618d8a03@endymion.delvare>
+	<53C14ECD.7050105@roeck-us.net>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, David Rientjes <rientjes@google.com>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Andi Kleen <ak@linux.intel.com>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Richard Weinberger <richard@nod.at>
-CC: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Ping: Re: [PATCH v2] x86, vsmp: Remove is_vsmp_box() from apic_is_clustered_box()
-References: <1404036068-11674-1-git-send-email-oren@scalemp.com> <53B8EDA6.5020704@scalemp.com>
-In-Reply-To: <53B8EDA6.5020704@scalemp.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - primary.scalemp.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - scalemp.com
-X-Get-Message-Sender-Via: primary.scalemp.com: authenticated_id: oren+scalemp.com/only user confirmed/virtual account not confirmed
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping
-On 07/06/2014 09:33 AM, Oren Twaig wrote:
-> Hi,
->
-> Quick question: As I'm new at this (submitting patches), what is a reasonable
-> time to wait before ping-ing a patch ?
->
-> Oren.
->
-> On 06/29/2014 01:01 PM, Oren Twaig wrote:
->> When a vSMP Foundation box is detected, the function apic_cluster_num() counts
->> the number of APIC clusters found. If more than one found, a multi board
->> configuration is assumed, and TSC marked as unstable. This behavior is
->> incorrect as vSMP Foundation may use processors from single node only, attached
->> to memory of other nodes - and such node may have more than one APIC cluster
->> (typically any recent intel box has more than single APIC_CLUSTERID(x)).
->>
->> To fix this, we simply remove the code which detects a vSMP Foundation box and
->> affects apic_is_clusted_box() return value. This can be done because later the
->> kernel checks by itself if the TSC is stable using the
->> check_tsc_sync_[source|target]() functions and marks TSC as unstable if needed.
->>
->> Acked-by: Shai Fultheim <shai@scalemp.com>
->> Signed-off-by: Oren Twaig <oren@scalemp.com>
->> ---
->> diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
->> index 19b0eba..c100694 100644
->> --- a/arch/x86/include/asm/apic.h
->> +++ b/arch/x86/include/asm/apic.h
->> @@ -85,14 +85,6 @@ static inline bool apic_from_smp_config(void)
->>  #include <asm/paravirt.h>
->>  #endif
->>
->> -#ifdef CONFIG_X86_64
->> -extern int is_vsmp_box(void);
->> -#else
->> -static inline int is_vsmp_box(void)
->> -{
->> -    return 0;
->> -}
->> -#endif
->>  extern int setup_profiling_timer(unsigned int);
->>
->>  static inline void native_apic_mem_write(u32 reg, u32 v)
->> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
->> index ad28db7..2b85bb9 100644
->> --- a/arch/x86/kernel/apic/apic.c
->> +++ b/arch/x86/kernel/apic/apic.c
->> @@ -2451,51 +2451,6 @@ static void apic_pm_activate(void) { }
->>
->>  #ifdef CONFIG_X86_64
->>
->> -static int apic_cluster_num(void)
->> -{
->> -    int i, clusters, zeros;
->> -    unsigned id;
->> -    u16 *bios_cpu_apicid;
->> -    DECLARE_BITMAP(clustermap, NUM_APIC_CLUSTERS);
->> -
->> -    bios_cpu_apicid = early_per_cpu_ptr(x86_bios_cpu_apicid);
->> -    bitmap_zero(clustermap, NUM_APIC_CLUSTERS);
->> -
->> -    for (i = 0; i < nr_cpu_ids; i++) {
->> -        /* are we being called early in kernel startup? */
->> -        if (bios_cpu_apicid) {
->> -            id = bios_cpu_apicid[i];
->> -        } else if (i < nr_cpu_ids) {
->> -            if (cpu_present(i))
->> -                id = per_cpu(x86_bios_cpu_apicid, i);
->> -            else
->> -                continue;
->> -        } else
->> -            break;
->> -
->> -        if (id != BAD_APICID)
->> -            __set_bit(APIC_CLUSTERID(id), clustermap);
->> -    }
->> -
->> -    /* Problem:  Partially populated chassis may not have CPUs in some of
->> -     * the APIC clusters they have been allocated.  Only present CPUs have
->> -     * x86_bios_cpu_apicid entries, thus causing zeroes in the bitmap.
->> -     * Since clusters are allocated sequentially, count zeros only if
->> -     * they are bounded by ones.
->> -     */
->> -    clusters = 0;
->> -    zeros = 0;
->> -    for (i = 0; i < NUM_APIC_CLUSTERS; i++) {
->> -        if (test_bit(i, clustermap)) {
->> -            clusters += 1 + zeros;
->> -            zeros = 0;
->> -        } else
->> -            ++zeros;
->> -    }
->> -
->> -    return clusters;
->> -}
->> -
->>  static int multi_checked;
->>  static int multi;
->>
->> @@ -2540,20 +2495,7 @@ static void dmi_check_multi(void)
->>  int apic_is_clustered_box(void)
->>  {
->>      dmi_check_multi();
->> -    if (multi)
->> -        return 1;
->> -
->> -    if (!is_vsmp_box())
->> -        return 0;
->> -
->> -    /*
->> -     * ScaleMP vSMPowered boxes have one cluster per board and TSCs are
->> -     * not guaranteed to be synced between boards
->> -     */
->> -    if (apic_cluster_num() > 1)
->> -        return 1;
->> -
->> -    return 0;
->> +    return multi;
->>  }
->>  #endif
->>
->>
->
->
+Hi Guenter,
 
+On Sat, 12 Jul 2014 08:05:49 -0700, Guenter Roeck wrote:
+> Any idea how we could inject errors ? Error path testing would be quite useful.
 
+Good idea. This should probably be done with a sysfs attribute so that
+it can be turned on and off as desired. Off by default, of course. Some
+other subsystems already support error injection, you could check how
+they are doing it, do that we do not diverge needlessly.
+
+Do you think there is any value in failing with different error codes,
+or just -EIO is enough?
+
+Do you think it should fail all the time when error injection is
+enabled, or is there a value in having only a certain % of commands
+fail?
+
+-- 
+Jean Delvare
+SUSE L3 Support
