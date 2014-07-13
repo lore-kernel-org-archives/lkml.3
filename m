@@ -1,146 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751669AbaGMSnm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 14:43:42 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:33801 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751081AbaGMSnY (ORCPT
+	id S1751370AbaGMSty (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 14:49:54 -0400
+Received: from mail-bn1blp0186.outbound.protection.outlook.com ([207.46.163.186]:35524
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750954AbaGMStp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 14:43:24 -0400
-Date: Sun, 13 Jul 2014 11:42:37 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: mingo@kernel.org
-Cc: linux-kernel@vger.kernel.org, fabf@skynet.be, bobby.prani@gmail.com,
-        davidshan@tencent.com, joe@perches.com, keescook@chromium.org
-Subject: [GIT PULL rcu/next] RCU commits for 3.17
-Message-ID: <20140713184237.GA30855@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+	Sun, 13 Jul 2014 14:49:45 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: "hch@infradead.org" <hch@infradead.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+Thread-Topic: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+Thread-Index: AQHPnpon2vh72TcerE+9u7O+On3hT5ueWMnA
+Date: Sun, 13 Jul 2014 18:49:41 +0000
+Message-ID: <16476de4d4114eb18d4681132812744f@BY2PR03MB299.namprd03.prod.outlook.com>
+References: <1404866789-26910-1-git-send-email-kys@microsoft.com>
+	<1404866812-26950-1-git-send-email-kys@microsoft.com>
+	<1404866812-26950-4-git-send-email-kys@microsoft.com>
+	<20140709084300.GD6012@infradead.org>
+	<a31a45eddb544024a7538458b98c3611@BY2PR03MB299.namprd03.prod.outlook.com>
+	<1404935792.2184.5.camel@dabdike.int.hansenpartnership.com>
+	<2f3ae589e6f149acbe4c5dd79f905971@BY2PR03MB299.namprd03.prod.outlook.com>
+	<1404944843.2184.8.camel@dabdike.int.hansenpartnership.com>
+	<20140711063216.GA20660@infradead.org>
+	<328b7a6174ef4dd8a54a7db5ac959834@BY2PR03MB299.namprd03.prod.outlook.com>
+ <yq1a98d2z5x.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq1a98d2z5x.fsf@sermon.lab.mkp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.135.110.52]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:
+x-forefront-prvs: 0271483E06
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(377454003)(189002)(199002)(51704005)(13464003)(95666004)(110136001)(106356001)(76176999)(80022001)(81342001)(101416001)(74316001)(33646001)(50986999)(20776003)(2656002)(54356999)(74662001)(106116001)(86362001)(92566001)(85852003)(19580395003)(105586002)(74502001)(86612001)(76482001)(76576001)(19580405001)(46102001)(81542001)(64706001)(4396001)(87936001)(66066001)(107046002)(575784001)(99396002)(79102001)(21056001)(93886003)(83322001)(83072002)(77982001)(31966008)(85306003)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB300;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14071318-6688-0000-0000-000003431F5B
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ingo,
 
-The changes in this series include:
 
-1.	Update RCU documentation.  These were posted to LKML at
-	https://lkml.org/lkml/2014/7/7/650.
+> -----Original Message-----
+> From: Martin K. Petersen [mailto:martin.petersen@oracle.com]
+> Sent: Sunday, July 13, 2014 5:59 AM
+> To: KY Srinivasan
+> Cc: hch@infradead.org; James Bottomley; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; apw@canonical.com; stable@vger.kernel.org;
+> linux-scsi@vger.kernel.org; ohering@suse.com; jasowang@redhat.com
+> Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+> 
+> >>>>> "KY" == KY Srinivasan <kys@microsoft.com> writes:
+> 
+> KY> Windows hosts do support UNMAP and set the field in the EVPD.
+> KY> However, since the host advertises SPC-2 compliance, Linux does not
+> KY> even query the VPD page.
+> 
+> >> If we want to enable UNMAP in this case I'd prefer a blacklist entry
+> >> than trying UNMAP despite the device not advertising it.
+> 
+> I agree with that. We could do something like the patch below.
+> 
+> However, I do think it's a good idea that you guys are looking into reporting
+> SPC-3.
 
-2.	Miscellaneous fixes.  These were posted to LKML at
-	https://lkml.org/lkml/2014/7/7/678.
+Thanks Martin; this patch would address our present issues. I will get some testing done
+and report back.
 
-3.	Maintainership changes.  These were posted to LKML at
-	https://lkml.org/lkml/2014/7/7/713, with a couple of
-	additional at https://lkml.org/lkml/2014/7/3/812 and
-	https://lkml.org/lkml/2014/6/2/585.
+Regards,
 
-4.	Torture-test updates.  These were posted to LKML at
-	https://lkml.org/lkml/2014/7/7/816.
-
-5.	Callback-offloading changes.  These were posted to LKML at
-	https://lkml.org/lkml/2014/7/7/1007.
-
-All of these have been exposed to -next testing.
-These changes are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
-
-for you to fetch changes up to 1823172ab582eb54456fd1354869bb850a1196ba:
-
-  Merge branches 'doc.2014.07.08a', 'fixes.2014.07.09a', 'maintainers.2014.07.08b', 'nocbs.2014.07.07a' and 'torture.2014.07.07a' into HEAD (2014-07-09 09:16:54 -0700)
-
-----------------------------------------------------------------
-
-Fabian Frederick (1):
-      rcu: Make rcu node arrays static const char * const
-
-Joe Perches (2):
-      rcu: Update rcu torture maintainership filename patterns
-      scripts: Teach get_maintainer.pl about the new "R:" tag
-
-Kees Cook (1):
-      torture: Avoid format string leak to thead name
-
-Paul E. McKenney (23):
-      torture: Enable versions without CFcommon to function correctly
-      torture: Clean up diagnostics from --buildonly runs
-      MAINTAINERS: Add "R:" designated-reviewers tag
-      rcu: Add designated reviewers for RCU
-      rcu: Parallelize and economize NOCB kthread wakeups
-      rcu: Don't offload callbacks unless specifically requested
-      documentation: Clarify wake-up/memory-barrier relationship
-      documentation: Add acquire/release barriers to pairing rules
-      documentation: Add pointer to percpu-ref for RCU and refcount
-      rcu: Update RCU maintainership
-      rcu: Document deadlock-avoidance information for rcu_read_unlock()
-      rcu: Handle obsolete references to TINY_PREEMPT_RCU
-      signal: Explain local_irq_save() call
-      rcu: Remove redundant ACCESS_ONCE() from tick_do_timer_cpu
-      rcu: Eliminate read-modify-write ACCESS_ONCE() calls
-      rcu: Loosen __call_rcu()'s rcu_head alignment constraint
-      rcu: Allow post-unlock reference for rt_mutex
-      rcu: Simplify priority boosting by putting rt_mutex in rcu_node
-      rcu: Bind grace-period kthreads to non-NO_HZ_FULL CPUs
-      rcu: Don't use NMIs to dump other CPUs' stacks
-      rcu: Remove CONFIG_PROVE_RCU_DELAY
-      rcu: Fix __rcu_reclaim() to use true/false for bool
-      Merge branches 'doc.2014.07.08a', 'fixes.2014.07.09a', 'maintainers.2014.07.08b', 'nocbs.2014.07.07a' and 'torture.2014.07.07a' into HEAD
-
-Pranith Kumar (4):
-      documentation: Update reference, kerneltrap.org no longer works
-      rcu: Check both root and current rcu_node when setting up future grace period
-      rcu: Fix a sparse warning in rcu_initiate_boost()
-      rcu: Fix a sparse warning in rcu_report_unblock_qs_rnp()
-
-Shan Wei (1):
-      rcu: Use __this_cpu_read() instead of per_cpu_ptr()
-
- Documentation/RCU/RTFP.txt                         |   4 +-
- Documentation/RCU/rcuref.txt                       |   9 +
- Documentation/kernel-parameters.txt                |   7 +
- Documentation/memory-barriers.txt                  |  27 +-
- MAINTAINERS                                        |  18 +-
- include/linux/init_task.h                          |   9 +-
- include/linux/rcupdate.h                           |  45 ++-
- include/linux/sched.h                              |   6 -
- include/linux/tick.h                               |  20 ++
- init/Kconfig                                       |   6 +-
- kernel/rcu/rcu.h                                   |   8 +-
- kernel/rcu/srcu.c                                  |   4 +-
- kernel/rcu/tree.c                                  |  59 ++--
- kernel/rcu/tree.h                                  |  36 ++-
- kernel/rcu/tree_plugin.h                           | 301 +++++++++++++++++----
- kernel/rcu/update.c                                |   3 -
- kernel/signal.c                                    |   4 +
- kernel/time/tick-sched.c                           |  10 +
- kernel/torture.c                                   |   2 +-
- lib/Kconfig.debug                                  |  14 -
- scripts/get_maintainer.pl                          |  22 +-
- .../selftests/rcutorture/bin/kvm-recheck.sh        |   8 +-
- .../selftests/rcutorture/bin/kvm-test-1-run.sh     |   9 +-
- tools/testing/selftests/rcutorture/bin/kvm.sh      |  21 +-
- .../selftests/rcutorture/configs/rcu/TREE01        |   1 -
- .../selftests/rcutorture/configs/rcu/TREE02        |   1 -
- .../selftests/rcutorture/configs/rcu/TREE02-T      |   1 -
- .../selftests/rcutorture/configs/rcu/TREE03        |   1 -
- .../selftests/rcutorture/configs/rcu/TREE04        |   1 -
- .../selftests/rcutorture/configs/rcu/TREE05        |   1 -
- .../selftests/rcutorture/configs/rcu/TREE06        |   1 -
- .../selftests/rcutorture/configs/rcu/TREE07        |   1 -
- .../selftests/rcutorture/configs/rcu/TREE08        |   1 -
- .../selftests/rcutorture/configs/rcu/TREE08-T      |   1 -
- .../selftests/rcutorture/configs/rcu/TREE09        |   1 -
- .../configs/rcu/v0.0/P5-U-T-NH-sd-SMP-hp           |   1 -
- .../configs/rcu/v3.12/P5-U-T-NH-sd-SMP-hp          |   1 -
- .../configs/rcu/v3.3/P5-U-T-NH-sd-SMP-hp           |   1 -
- .../configs/rcu/v3.5/P5-U-T-NH-sd-SMP-hp           |   1 -
- .../selftests/rcutorture/doc/TREE_RCU-kconfig.txt  |   1 -
- 40 files changed, 491 insertions(+), 177 deletions(-)
-
+K. Y
+> 
+> 
+> SCSI: Add a blacklist flag which enables VPD page inquiries
+> 
+> Despite supporting modern SCSI features some storage devices continue to
+> claim conformance to an older version of the SPC spec. This is done for
+> compatibility with legacy operating systems.
+> 
+> Linux by default will not attempt to read VPD pages on devices that claim
+> SPC-2 or older. Introduce a blacklist flag that can be used to trigger VPD page
+> inquiries on devices that are known to support them.
+> 
+> Reported-by: KY Srinivasan <kys@microsoft.com>
+> Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+> 
+> diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c index
+> 4a6e4ba5a400..a5b1a224628a 100644
+> --- a/drivers/scsi/scsi_scan.c
+> +++ b/drivers/scsi/scsi_scan.c
+> @@ -949,7 +949,9 @@ static int scsi_add_lun(struct scsi_device *sdev,
+> unsigned char *inq_result,
+> 
+>  	sdev->eh_timeout = SCSI_DEFAULT_EH_TIMEOUT;
+> 
+> -	if (*bflags & BLIST_SKIP_VPD_PAGES)
+> +	if (*bflags & BLIST_TRY_VPD_PAGES)
+> +		sdev->try_vpd_pages = 1;
+> +	else if (*bflags & BLIST_SKIP_VPD_PAGES)
+>  		sdev->skip_vpd_pages = 1;
+> 
+>  	transport_configure_device(&sdev->sdev_gendev);
+> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c index
+> 87566b51fcf7..31d32b9077ca 100644
+> --- a/drivers/scsi/sd.c
+> +++ b/drivers/scsi/sd.c
+> @@ -2701,6 +2701,11 @@ static void sd_read_write_same(struct scsi_disk
+> *sdkp, unsigned char *buffer)
+> 
+>  static int sd_try_extended_inquiry(struct scsi_device *sdp)  {
+> +	/* Attempt VPD inquiry if the device blacklist explicitly calls
+> +	 * for it.
+> +	 */
+> +	if (sdp->try_vpd_pages)
+> +		return 1;
+>  	/*
+>  	 * Although VPD inquiries can go to SCSI-2 type devices,
+>  	 * some USB ones crash on receiving them, and the pages diff --git
+> a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h index
+> 9aa38f7b303b..f579408620f0 100644
+> --- a/include/scsi/scsi_device.h
+> +++ b/include/scsi/scsi_device.h
+> @@ -155,6 +155,7 @@ struct scsi_device {
+>  	unsigned skip_ms_page_8:1;	/* do not use MODE SENSE page 0x08
+> */
+>  	unsigned skip_ms_page_3f:1;	/* do not use MODE SENSE page 0x3f
+> */
+>  	unsigned skip_vpd_pages:1;	/* do not read VPD pages */
+> +	unsigned try_vpd_pages:1;	/* attempt to read VPD pages */
+>  	unsigned use_192_bytes_for_3f:1; /* ask for 192 bytes from page
+> 0x3f */
+>  	unsigned no_start_on_add:1;	/* do not issue start on add */
+>  	unsigned allow_restart:1; /* issue START_UNIT in error handler */
+> diff --git a/include/scsi/scsi_devinfo.h b/include/scsi/scsi_devinfo.h index
+> 8670c04e199e..1fdd6fc5492b 100644
+> --- a/include/scsi/scsi_devinfo.h
+> +++ b/include/scsi/scsi_devinfo.h
+> @@ -34,4 +34,5 @@
+>  #define BLIST_SKIP_VPD_PAGES	0x4000000 /* Ignore SBC-3 VPD pages
+> */
+>  #define BLIST_SCSI3LUN		0x8000000 /* Scan more than 256
+> LUNs
+>  					     for sequential scan */
+> +#define BLIST_TRY_VPD_PAGES	0x10000000 /* Attempt to read VPD
+> pages */
+>  #endif
