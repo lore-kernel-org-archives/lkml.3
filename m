@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116AbaGMVmH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 17:42:07 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:33182 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752043AbaGMVl6 (ORCPT
+	id S1752241AbaGMVoL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 17:44:11 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:33840 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751874AbaGMVoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 17:41:58 -0400
-Message-ID: <53C2FD24.5090506@gmail.com>
-Date: Mon, 14 Jul 2014 05:41:56 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Sun, 13 Jul 2014 17:44:03 -0400
+Message-ID: <53C2FD71.7090102@oracle.com>
+Date: Sun, 13 Jul 2014 17:43:13 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: bergwolf@gmail.com, andreas.dilger@intel.com, standby24x7@gmail.com,
-        oleg.drokin@intel.com, Andriy_Skulysh@xyratex.com,
-        denis.pithon@gmail.com, paf@cray.com, devel@driverdev.osuosl.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers: staging: lustre: Use 'force_die' instead of
- 'die' to avoid compiling issue
-References: <53C29CCF.9010008@gmail.com> <20140713190512.GA27311@kroah.com>
-In-Reply-To: <20140713190512.GA27311@kroah.com>
+To: Peter Zijlstra <peterz@infradead.org>, Hugh Dickins <hughd@google.com>
+CC: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Vlastimil Babka <vbabka@suse.cz>, akpm@linux-foundation.org,
+        davej@redhat.com, koct9i@gmail.com, lczerner@redhat.com,
+        stable@vger.kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: + shmem-fix-faulting-into-a-hole-while-its-punched-take-2.patch
+ added to -mm tree
+References: <alpine.LSU.2.11.1407092358090.18131@eggly.anvils> <53BE8B1B.3000808@oracle.com> <53BECBA4.3010508@oracle.com> <alpine.LSU.2.11.1407101033280.18934@eggly.anvils> <53BED7F6.4090502@oracle.com> <alpine.LSU.2.11.1407101131310.19154@eggly.anvils> <53BEE345.4090203@oracle.com> <20140711082500.GB20603@laptop.programming.kicks-ass.net> <53BFD708.1040305@oracle.com> <alpine.LSU.2.11.1407110745430.2054@eggly.anvils> <20140711155958.GR20603@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140711155958.GR20603@laptop.programming.kicks-ass.net>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2014 03:05 AM, Greg Kroah-Hartman wrote:
-> On Sun, Jul 13, 2014 at 10:50:55PM +0800, Chen Gang wrote:
->> Some of architectures have already defined 'die' as macro, so can not use
->> this common name as declaration in other modules, or will cause compiling
->> issue. So use more precise name 'force_die' (like 'wrap_bulk') instead of.
->>
->> The related error (with allmodconfig under score):
->>
->>     CC [M]  drivers/staging/lustre/lustre/ptlrpc/sec.o
->>   drivers/staging/lustre/lustre/ptlrpc/sec.c: In function 'sptlrpc_cli_ctx_expire':
->>   drivers/staging/lustre/lustre/ptlrpc/sec.c:309:13: error: 'struct ptlrpc_ctx_ops' has no member named '__die'
->>     ctx->cc_ops->die(ctx, 0);
->>                ^
->>   drivers/staging/lustre/lustre/ptlrpc/sec.c: In function 'ctx_refresh_timeout':
->>   drivers/staging/lustre/lustre/ptlrpc/sec.c:594:26: error: 'struct ptlrpc_ctx_ops' has no member named '__die'
->>      req->rq_cli_ctx->cc_ops->die(req->rq_cli_ctx, 0);
->>                             ^
->>   make[5]: *** [drivers/staging/lustre/lustre/ptlrpc/sec.o] Error 1
->>   make[4]: *** [drivers/staging/lustre/lustre/ptlrpc] Error 2
->>   make[3]: *** [drivers/staging/lustre/lustre] Error 2
->>   make[2]: *** [drivers/staging/lustre] Error 2
->>   make[1]: *** [drivers/staging] Error 2
->>   make: *** [drivers] Error 2
->>
->>
->> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->> ---
->>  drivers/staging/lustre/lustre/include/lustre_sec.h | 2 +-
->>  drivers/staging/lustre/lustre/ptlrpc/sec.c         | 6 +++---
->>  2 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> This doesn't apply to my tree, can you please refresh it against the
-> staging-next branch of staging.git so that I can apply it?
-> 
+On 07/11/2014 11:59 AM, Peter Zijlstra wrote:
+>>> I agree with you that "The call trace is very clear on it that its not", but
+>>> > > when you have 500 call traces you really want something better than going
+>>> > > through it one call trace at a time.
+>> > 
+>> > Points well made, and I strongly agree with Vlastimil and Sasha.
+>> > There is a world of difference between a lock wanted and a lock held,
+>> > and for the display of locks "held" to conceal that difference is unhelpful.
+>> > It just needs one greppable word to distinguish the cases.
+> So for the actual locking scenario it doesn't make a difference one way
+> or another. These threads all can/could/will acquire the lock
+> (eventually), so all their locking chains should be considered.
 
-OK, I shall go to that tree and send patch for it (I shall finish within
-2 days).
+I think that the difference here is that we're not actually debugging a locking
+issue, we're merely using lockdep to help with figuring out a non-locking
+related bug and finding it difficult because lockdep's list of "held locks"
+is really a lie :)
 
-Thanks.
--- 
-Chen Gang
 
-Open share and attitude like air water and life which God blessed
+Thanks,
+Sasha
