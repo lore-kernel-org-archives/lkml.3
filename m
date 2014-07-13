@@ -1,39 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511AbaGMLsh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 07:48:37 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:36199 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751358AbaGMLs2 (ORCPT
+	id S1753529AbaGMLth (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 07:49:37 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:62031 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358AbaGMLt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 07:48:28 -0400
-Date: Sun, 13 Jul 2014 04:48:26 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] vfs: call rename2 if exists
-Message-ID: <20140713114826.GA4800@infradead.org>
-References: <20140520092247.GJ17233@tucsk.piliscsaba.szeredi.hu>
+	Sun, 13 Jul 2014 07:49:29 -0400
+Message-ID: <53C27247.2010300@gmail.com>
+Date: Sun, 13 Jul 2014 19:49:27 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140520092247.GJ17233@tucsk.piliscsaba.szeredi.hu>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: thierry.reding@gmail.com
+CC: linux-pwm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Weinberger <richard@nod.at>,
+        Liqin Chen <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>
+Subject: [PATCH] drivers/pwm/Kconfig: Let PWM_CLPS711X depend on HAS_IOMEM
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 11:22:47AM +0200, Miklos Szeredi wrote:
-> Linus,
-> 
-> Please consider applying this patch to 3.15, so we can move forward with adding
-> RENAME_NOREPLACE support to filesystems during the next cycle.
+PWM_CLPS711X needs HAS_IOMEM, so let it depend on HAS_IOMEM.
 
-Looks like this didn't go anywhere.  Al, can you at least pick this for
-3.17?  Even better would be to just merge rename and rename2 to make
-everyones life easier..
+The related error (with allmodconfig under score):
+
+    MODPOST 1365 modules
+  ERROR: "devm_ioremap_resource" [drivers/pwm/pwm-clps711x.ko] undefined!
+
+
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ drivers/pwm/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+index 4ad7b89..2faf5ce 100644
+--- a/drivers/pwm/Kconfig
++++ b/drivers/pwm/Kconfig
+@@ -82,7 +82,7 @@ config PWM_BFIN
+ 
+ config PWM_CLPS711X
+ 	tristate "CLPS711X PWM support"
+-	depends on ARCH_CLPS711X || COMPILE_TEST
++	depends on (ARCH_CLPS711X || COMPILE_TEST) && HAS_IOMEM
+ 	help
+ 	  Generic PWM framework driver for Cirrus Logic CLPS711X.
+ 
+-- 
+1.7.11.7
