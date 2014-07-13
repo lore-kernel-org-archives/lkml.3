@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831AbaGMJIS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 05:08:18 -0400
-Received: from andre.telenet-ops.be ([195.130.132.53]:59969 "EHLO
-	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752229AbaGMJIK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 05:08:10 -0400
-Date: Sun, 13 Jul 2014 11:08:07 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [git pull] m68k updates for 3.16 (take 2)
-Message-ID: <alpine.DEB.2.02.1407131105390.7520@ayla.of.borg>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752984AbaGMJJw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 05:09:52 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52209 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752229AbaGMJJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jul 2014 05:09:44 -0400
+Message-ID: <53C24D5E.6070204@kernel.org>
+Date: Sun, 13 Jul 2014 10:11:58 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Marcus Folkesson <marcus.folkesson@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>
+CC: linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: iio: adc: ad7192: fix coding style
+References: <1405192609-24652-1-git-send-email-marcus.folkesson@gmail.com>
+In-Reply-To: <1405192609-24652-1-git-send-email-marcus.folkesson@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi Linus,
+On 12/07/14 20:16, Marcus Folkesson wrote:
+> Line over 80 characters. This is for Eudyptula Challenge.
+>
+> Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
+Sorry Marcus,
 
-The following changes since commit cd3de83f147601356395b57a8673e9c5ff1e59d1:
+There is a level of trivial cleanup below which it's not worth
+taking patches. The 80 character limit is not a hard and fast
+rule. Here, if this had been picked up during review of the original
+patch, or was fixed as a part of a more substantial series, I'd
+have no objection taking it.  On it's own it's just too small.
 
-  Linux 3.16-rc4 (2014-07-06 12:37:51 -0700)
+Jonathan
 
-are available in the git repository at:
+> ---
+>   drivers/staging/iio/adc/ad7192.c | 3 ++-
+>   1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/staging/iio/adc/ad7192.c b/drivers/staging/iio/adc/ad7192.c
+> index 83bb44b..c25c9ab 100644
+> --- a/drivers/staging/iio/adc/ad7192.c
+> +++ b/drivers/staging/iio/adc/ad7192.c
+> @@ -223,7 +223,8 @@ static int ad7192_setup(struct ad7192_state *st,
+>   	id &= AD7192_ID_MASK;
+>
+>   	if (id != st->devid)
+> -		dev_warn(&st->sd.spi->dev, "device ID query failed (0x%X)\n", id);
+> +		dev_warn(&st->sd.spi->dev,
+> +			"device ID query failed (0x%X)\n", id);
+>
+>   	switch (pdata->clock_source_sel) {
+>   	case AD7192_CLK_EXT_MCLK1_2:
+>
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
-
-for you to fetch changes up to 5bc8c7cdeb6e3d9c1b938b4029d9a22f8dc5cd9d:
-
-  m68k: Export mach_random_get_entropy to modules (2014-07-11 10:37:53 +0200)
-
-Summary:
-  - Fix for a boot regression introduced in v3.16-rc1,
-  - Fix for a built issue in -next.
-
-Thanks for pulling!
-
-----------------------------------------------------------------
-Geert Uytterhoeven (2):
-      m68k: Fix boot regression on machines with RAM at non-zero
-      m68k: Export mach_random_get_entropy to modules
-
- arch/m68k/kernel/head.S | 3 ++-
- arch/m68k/kernel/time.c | 2 ++
- 2 files changed, 4 insertions(+), 1 deletion(-)
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
