@@ -1,89 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524AbaGMFeG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 01:34:06 -0400
-Received: from smtprelay0177.hostedemail.com ([216.40.44.177]:60843 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751173AbaGMFd7 (ORCPT
+	id S1752838AbaGMGDE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 02:03:04 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:55505 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752353AbaGMGC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 01:33:59 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3353:3653:3865:3868:3871:3874:4250:4321:5007:7652:7903:9010:10004:10400:10848:11026:11232:11658:11914:12043:12296:12517:12519:12555:12740:13069:13221:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: mask61_5cbd7ed454449
-X-Filterd-Recvd-Size: 2718
-Message-ID: <1405229634.9132.38.camel@joe-AO725>
-Subject: [PATCH] checkpatch: Add for_each tests to indentation and brace
- tests
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@canonical.com>, Greg KH <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Sat, 12 Jul 2014 22:33:54 -0700
-In-Reply-To: <20140712230828.GA15827@kroah.com>
-References: <20140712230828.GA15827@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 13 Jul 2014 02:02:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <1404789011.16156.39.camel@pasglop>
+References: <1404153930-26568-1-git-send-email-linux@roeck-us.net>
+	<53BB5F9A.2060105@roeck-us.net>
+	<1404789011.16156.39.camel@pasglop>
+Date: Sun, 13 Jul 2014 02:02:59 -0400
+Message-ID: <CAPDOMVio1ha+inJRRdCebEoxSpTTg=s974FBc_B112UPFaAaMQ@mail.gmail.com>
+Subject: Re: [PATCH] powerpc: Disable RELOCATABLE for COMPILE_TEST with PPC64
+From: Nick Krause <xerofoify@gmail.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Guenter Roeck <linux@roeck-us.net>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the various for_each loop macros were not tested for
-trailing brace on the following lines and for bad indentation.
-
-Add them.
-
-Reported-by: Greg KH <gregkh@linuxfoundation.org>
-Signed-off-by: Joe Perches <joe@perches.com>
----
-On Sat, 2014-07-12 at 16:08 -0700, Greg KH wrote:
-> The following function:
-> 
-> $ cat foo.c 
-> 
-> static int foo_init(void)
-> {
-> 
-> 	list_for_each_entry(foo, &foo, list)
-> 	{
-> 		do_something_foo(foo);
-> 	}
-> 
-> 	return 0;
-> }
-> 
-> Will not be caught by checkpatch:
-> 
-> $ ./scripts/checkpatch.pl --file foo.c 
-> total: 0 errors, 0 warnings, 11 lines checked
-> 
-> foo.c has no obvious style problems and is ready for submission.
-
- scripts/checkpatch.pl | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index d5ac001..5efbf50 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2698,7 +2698,7 @@ sub process {
- 
- # if/while/etc brace do not go on next line, unless defining a do while loop,
- # or if that brace on the next line is for something else
--		if ($line =~ /(.*)\b((?:if|while|for|switch)\s*\(|do\b|else\b)/ && $line !~ /^.\s*\#/) {
-+		if ($line =~ /(.*)\b((?:if|while|for|switch|(?:[a-z_]+|)for_each[a-z_]+)\s*\(|do\b|else\b)/ && $line !~ /^.\s*\#/) {
- 			my $pre_ctx = "$1$2";
- 
- 			my ($level, @ctx) = ctx_statement_level($linenr, $realcnt, 0);
-@@ -2744,7 +2744,7 @@ sub process {
- 		}
- 
- # Check relative indent for conditionals and blocks.
--		if ($line =~ /\b(?:(?:if|while|for)\s*\(|do\b)/ && $line !~ /^.\s*#/ && $line !~ /\}\s*while\s*/) {
-+		if ($line =~ /\b(?:(?:if|while|for|(?:[a-z_]+|)for_each[a-z_]+)\s*\(|do\b)/ && $line !~ /^.\s*#/ && $line !~ /\}\s*while\s*/) {
- 			($stat, $cond, $line_nr_next, $remain_next, $off_next) =
- 				ctx_statement_block($linenr, $realcnt, 0)
- 					if (!defined $stat);
-
-
+On Mon, Jul 7, 2014 at 11:10 PM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+> On Mon, 2014-07-07 at 20:03 -0700, Guenter Roeck wrote:
+>> ping ...
+>>
+>> Ben, I know this is not perfect, but on the other side it is simple
+>> and would be easy to backport. With this in place, a complete/clean
+>> fix would not be as urgent. Any chance to get it applied ?
+>
+> Yes, that definitely helps, I'll include it as a band aid.
+>
+> Cheers,
+> Ben.
+>
+>> Nick, this doesn't fix the allyesconfig build - it still fails with
+>> relocation errors. But it does fix the allmodconfig build.
+>>
+>> Thanks,
+>> Guenter
+>>
+>> On 06/30/2014 11:45 AM, Guenter Roeck wrote:
+>> > powerpc:allmodconfig has been failing for some time with the following
+>> > error.
+>> >
+>> > arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
+>> > arch/powerpc/kernel/exceptions-64s.S:1312: Error: attempt to move .org backwards
+>> > make[1]: *** [arch/powerpc/kernel/head_64.o] Error 1
+>> >
+>> > A number of attempts to fix the problem by moving around code have been
+>> > unsuccessful and resulted in failed builds for some configurations and
+>> > the discovery of toolchain bugs.
+>> >
+>> > Fix the problem by disabling RELOCATABLE for COMPILE_TEST builds instead.
+>> > While this is less than perfect, it avoids substantial code changes
+>> > which would otherwise be necessary just to make COMPILE_TEST builds
+>> > happy and might have undesired side effects.
+>> >
+>> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+>> > ---
+>> >   arch/powerpc/Kconfig | 3 ++-
+>> >   1 file changed, 2 insertions(+), 1 deletion(-)
+>> >
+>> > diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+>> > index bd6dd6e..fefe7c8 100644
+>> > --- a/arch/powerpc/Kconfig
+>> > +++ b/arch/powerpc/Kconfig
+>> > @@ -414,7 +414,7 @@ config KEXEC
+>> >   config CRASH_DUMP
+>> >     bool "Build a kdump crash kernel"
+>> >     depends on PPC64 || 6xx || FSL_BOOKE || (44x && !SMP)
+>> > -   select RELOCATABLE if PPC64 || 44x || FSL_BOOKE
+>> > +   select RELOCATABLE if (PPC64 && !COMPILE_TEST) || 44x || FSL_BOOKE
+>> >     help
+>> >       Build a kernel suitable for use as a kdump capture kernel.
+>> >       The same kernel binary can be used as production kernel and dump
+>> > @@ -1017,6 +1017,7 @@ endmenu
+>> >   if PPC64
+>> >   config RELOCATABLE
+>> >     bool "Build a relocatable kernel"
+>> > +   depends on !COMPILE_TEST
+>> >     select NONSTATIC_KERNEL
+>> >     help
+>> >       This builds a kernel image that is capable of running anywhere
+>> >
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
+Thanks for applying the patch. Works for me too.Sorry about the late
+reply working on other build
+issues and fix me messages.
+Nick
