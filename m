@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804AbaGMO23 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 10:28:29 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:48300 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617AbaGMO2V (ORCPT
+	id S1753825AbaGMOaN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 10:30:13 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:42701 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752048AbaGMOaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 10:28:21 -0400
-Message-ID: <53C29774.9000208@gmail.com>
-Date: Sun, 13 Jul 2014 22:28:04 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
+	Sun, 13 Jul 2014 10:30:05 -0400
+From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dmitry.torokhov@gmail.com, thierry.reding@gmail.com, jic23@kernel.org,
-        wim@iguana.be, benh@kernel.crashing.org, kys@microsoft.com,
-        schwidefsky@de.ibm.com, teg@jklm.no, Mischa.Jonker@synopsys.com,
-        msalter@redhat.com, lars@metafoo.de, richard@nod.at, knaack.h@gmx.de,
-        marex@denx.de, rdunlap@infradead.org, linux-input@vger.kernel.org,
-        linux-pwm@vger.kernel.org, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-watchdog@vger.kernel.org,
-        Liqin Chen <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
- 'devm_ioremap_resource'
-References: <53C1F7DE.3060102@gmail.com> <53C1F98D.9030603@gmail.com>
-In-Reply-To: <53C1F98D.9030603@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
+Subject: [PATCH 01/16] staging: rtl8188eu: Remove unused function rtw_use_tkipkey_handler()
+Date: Sun, 13 Jul 2014 19:59:23 +0530
+Message-Id: <1405261778-7653-1-git-send-email-navin.patidar@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2014 11:14 AM, Chen Gang wrote:
-[...]
-> And also find a compiler issue, I will try to fix it, but shall not notify
-> kernel mailing list, again. The related issue is below (it seems a kernel
-> issue, but in fact, it is a compiler's issue):
-> 
->     CC [M]  drivers/staging/lustre/lustre/ptlrpc/sec.o
->   drivers/staging/lustre/lustre/ptlrpc/sec.c: In function 'sptlrpc_cli_ctx_expire':
->   drivers/staging/lustre/lustre/ptlrpc/sec.c:309:13: error: 'struct ptlrpc_ctx_ops' has no member named '__die'
->     ctx->cc_ops->die(ctx, 0);
->                ^
->   drivers/staging/lustre/lustre/ptlrpc/sec.c: In function 'ctx_refresh_timeout':
->   drivers/staging/lustre/lustre/ptlrpc/sec.c:594:26: error: 'struct ptlrpc_ctx_ops' has no member named '__die'
->      req->rq_cli_ctx->cc_ops->die(req->rq_cli_ctx, 0);
->                             ^
->   make[5]: *** [drivers/staging/lustre/lustre/ptlrpc/sec.o] Error 1
->   make[4]: *** [drivers/staging/lustre/lustre/ptlrpc] Error 2
->   make[3]: *** [drivers/staging/lustre/lustre] Error 2
->   make[2]: *** [drivers/staging/lustre] Error 2
->   make[1]: *** [drivers/staging] Error 2
->   make: *** [drivers] Error 2
-> 
+Signed-off-by: navin patidar <navin.patidar@gmail.com>
+---
+ drivers/staging/rtl8188eu/core/rtw_security.c    |   25 ----------------------
+ drivers/staging/rtl8188eu/include/rtw_security.h |    1 -
+ 2 files changed, 26 deletions(-)
 
-Oh, sorry, after check related details, this is still a kernel issue,
-'die' is a macro which defined by most of architectures, so can not
-use this common name as a declaration in any other area.
-
-I shall send related patch for it.
-
-Thanks.
+diff --git a/drivers/staging/rtl8188eu/core/rtw_security.c b/drivers/staging/rtl8188eu/core/rtw_security.c
+index d78def5..f9096a5 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_security.c
++++ b/drivers/staging/rtl8188eu/core/rtw_security.c
+@@ -1679,28 +1679,3 @@ do {									\
+ 	d##2 = TE0(s##2) ^ TE1(s##3) ^ TE2(s##0) ^ TE3(s##1) ^ rk[4 * i + 2]; \
+ 	d##3 = TE0(s##3) ^ TE1(s##0) ^ TE2(s##1) ^ TE3(s##2) ^ rk[4 * i + 3]; \
+ } while (0);
+-
+-/**
+- * omac1_aes_128 - One-Key CBC MAC (OMAC1) hash with AES-128 (aka AES-CMAC)
+- * @key: 128-bit key for the hash operation
+- * @data: Data buffer for which a MAC is determined
+- * @data_len: Length of data buffer in bytes
+- * @mac: Buffer for MAC (128 bits, i.e., 16 bytes)
+- * Returns: 0 on success, -1 on failure
+- *
+- * This is a mode for using block cipher (AES in this case) for authentication.
+- * OMAC1 was standardized with the name CMAC by NIST in a Special Publication
+- * (SP) 800-38B.
+- */
+-void rtw_use_tkipkey_handler(void *FunctionContext)
+-{
+-	struct adapter *padapter = (struct adapter *)FunctionContext;
+-
+-
+-	RT_TRACE(_module_rtl871x_security_c_, _drv_err_, ("^^^rtw_use_tkipkey_handler ^^^\n"));
+-
+-	padapter->securitypriv.busetkipkey = true;
+-
+-	RT_TRACE(_module_rtl871x_security_c_, _drv_err_, ("^^^rtw_use_tkipkey_handler padapter->securitypriv.busetkipkey=%d^^^\n", padapter->securitypriv.busetkipkey));
+-
+-}
+diff --git a/drivers/staging/rtl8188eu/include/rtw_security.h b/drivers/staging/rtl8188eu/include/rtw_security.h
+index 937cad8..66d60aa 100644
+--- a/drivers/staging/rtl8188eu/include/rtw_security.h
++++ b/drivers/staging/rtl8188eu/include/rtw_security.h
+@@ -378,6 +378,5 @@ void rtw_wep_encrypt(struct adapter *padapter, u8  *pxmitframe);
+ u32 rtw_aes_decrypt(struct adapter *padapter, u8  *precvframe);
+ u32 rtw_tkip_decrypt(struct adapter *padapter, u8  *precvframe);
+ void rtw_wep_decrypt(struct adapter *padapter, u8  *precvframe);
+-void rtw_use_tkipkey_handler(void *FunctionContext);
+ 
+ #endif	/* __RTL871X_SECURITY_H_ */
 -- 
-Chen Gang
+1.7.10.4
 
-Open share and attitude like air water and life which God blessed
