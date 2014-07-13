@@ -1,38 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961AbaGMO7N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 10:59:13 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:18898 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753833AbaGMO7I (ORCPT
+	id S1753991AbaGMO7U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 10:59:20 -0400
+Received: from mail.sigma-star.at ([95.130.255.111]:14385 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753791AbaGMO7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 10:59:08 -0400
-To: "Reddy\, Sreekanth" <Sreekanth.Reddy@avagotech.com>
-Cc: <jejb@kernel.org>, <JBottomley@Parallels.com>,
-        <linux-scsi@vger.kernel.org>, <Sathya.Prakash@avagotech.com>,
-        <Nagalakshmi.Nandigama@avagotech.com>, <linux-kernel@vger.kernel.org>,
-        <hch@infradead.org>, <martin.petersen@oracle.com>
-Subject: Re: [RESEND][PATCH 03/10][SCSI]mpt2sas: Copyright in driver sources is updated for year the 2014
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <20140625103148.GA12907@avagotech.com>
-Date: Sun, 13 Jul 2014 10:58:38 -0400
-In-Reply-To: <20140625103148.GA12907@avagotech.com> (Sreekanth Reddy's message
-	of "Wed, 25 Jun 2014 16:01:48 +0530")
-Message-ID: <yq161j1z4o1.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Sun, 13 Jul 2014 10:59:09 -0400
+From: Richard Weinberger <richard@nod.at>
+To: tony.luck@intel.com, fenghua.yu@intel.com, linux@arm.linux.org.uk
+Cc: linux-arm-kernel@lists.infradead.org, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [RFC] Remove remaining users of exec domains
+Date: Sun, 13 Jul 2014 16:58:56 +0200
+Message-Id: <1405263538-27589-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Sreekanth" == Reddy, Sreekanth <Sreekanth.Reddy@avagotech.com> writes:
+These two patches remove the last two in-tree users of exec domains.
+Both seem to be abandoned and historical.
+Russel, Tony, are you fine with that? 
 
-Sreekanth> Copyright in driver sources is updated for year the 2014.
+The plan is to get rid of exec domains at all. IOW no more register_exec_domain,
+no signal translation.
+I have a follow up series for that already in my local tree.
 
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+Thanks,
+//richard
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
+[PATCH 1/2] arm: Remove RISC OS personality
+[PATCH 2/2] ia64: Remove Linux/x86 domain support
+
+ arch/arm/kernel/arthur.c          |   94 ------------------------------------
+ arch/arm/Kconfig                  |   12 ----
+ arch/arm/configs/badge4_defconfig |    1 
+ arch/arm/kernel/Makefile          |    1 
+ arch/ia64/mm/init.c               |   25 ---------
+ 5 files changed, 133 deletions(-)
+
