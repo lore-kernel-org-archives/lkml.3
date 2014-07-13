@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175AbaGMQx1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 12:53:27 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:49823 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753903AbaGMQxS (ORCPT
+	id S1754301AbaGMQy6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 12:54:58 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:35984 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753903AbaGMQyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 12:53:18 -0400
-Message-ID: <53C2B97D.8040003@infradead.org>
-Date: Sun, 13 Jul 2014 09:53:17 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
+	Sun, 13 Jul 2014 12:54:49 -0400
+Message-ID: <53C2B9D3.6040500@semaphore.gr>
+Date: Sun, 13 Jul 2014 19:54:43 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Pranith Kumar <bobby.prani@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH 1/1] doc: fix docbook generation
-References: <53C19428.9040008@gmail.com>
-In-Reply-To: <53C19428.9040008@gmail.com>
+To: Doug Smythies <dsmythies@telus.net>, rjw@rjwysocki.net,
+        viresh.kumar@linaro.org
+CC: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] cpufreq: ondemand: Eliminate the deadband effect
+References: <1404147574-17422-1-git-send-email-stratosk@semaphore.gr> <000001cf9de8$43925230$cab6f690$@net>
+In-Reply-To: <000001cf9de8$43925230$cab6f690$@net>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/14 13:01, Pranith Kumar wrote:
-> kernel/timer.c and kernel/hrtimer.c have moved to kernel/time directory. This
-> causes docbook generation to fail. The following commit fixes it by updating the
-> references.
+Hi Doug,
+
+On 12/07/2014 06:45 μμ, Doug Smythies wrote:
 > 
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-
-Already fixed in the timers tree (Thomas applied a patch from
-Masanari Iida).
-
-Thanks.
-
-> ---
->  Documentation/DocBook/device-drivers.tmpl | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+> On 2014.07.30 10:00 Stratos Karafotis wrote:
 > 
-> diff --git a/Documentation/DocBook/device-drivers.tmpl b/Documentation/DocBook/device-drivers.tmpl
-> index dd3f278..f213058 100644
-> --- a/Documentation/DocBook/device-drivers.tmpl
-> +++ b/Documentation/DocBook/device-drivers.tmpl
-> @@ -54,7 +54,7 @@
->  !Ikernel/sched/cpupri.c
->  !Ikernel/sched/fair.c
->  !Iinclude/linux/completion.h
-> -!Ekernel/timer.c
-> +!Ekernel/time/timer.c
->       </sect1>
->       <sect1><title>Wait queues and Wake events</title>
->  !Iinclude/linux/wait.h
-> @@ -63,7 +63,7 @@
->       <sect1><title>High-resolution timers</title>
->  !Iinclude/linux/ktime.h
->  !Iinclude/linux/hrtimer.h
-> -!Ekernel/hrtimer.c
-> +!Ekernel/time/hrtimer.c
->       </sect1>
->       <sect1><title>Workqueues and Kevents</title>
->  !Ekernel/workqueue.c
+>> This patchset changes slightly the calculation of target frequency to
+>> eliminate the deadband effect (explained in patch 2 changelog) that it
+>> seems to slow down the CPU in low and medium loads.
+>>
+>> Patch 1 introduces a new relation (RELATION_C) for the next frequency
+>> selection, which chooses the closest frequency to target.
+>>
+>> Patch 2 is the actual change to ondemand governor.
 > 
+>> You may find graphs with the 'deadband' effect and benchmark results:
+>> https://docs.google.com/spreadsheets/d/16kDBh5lyc6YvBnoS1hUa1t2O38z0xrWvaEj5XtJ8auw/edit#gid=2072493052
+> 
+> I did the same benchmark tests before (without) and after (with) this patch set on my i7-2600K system.
+> I added the results, which are similar to Stratos', under a new "benchmark" tab on the spreadsheet.
 
+Thank you very much for your benchmarks!
 
--- 
-~Randy
+Stratos
