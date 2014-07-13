@@ -1,54 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529AbaGMLth (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 07:49:37 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:62031 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751358AbaGMLt3 (ORCPT
+	id S1753552AbaGMLuc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 07:50:32 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:36327 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358AbaGMLuY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 07:49:29 -0400
-Message-ID: <53C27247.2010300@gmail.com>
-Date: Sun, 13 Jul 2014 19:49:27 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Sun, 13 Jul 2014 07:50:24 -0400
+Date: Sun, 13 Jul 2014 04:50:22 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: pramod.gurav.etc@gmail.com
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs/direct-io.c: Fix compilation warning for
+ uninitialized variables
+Message-ID: <20140713115022.GA6054@infradead.org>
+References: <1404452632-10912-1-git-send-email-pramod.gurav.etc@gmail.com>
 MIME-Version: 1.0
-To: thierry.reding@gmail.com
-CC: linux-pwm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Weinberger <richard@nod.at>,
-        Liqin Chen <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>
-Subject: [PATCH] drivers/pwm/Kconfig: Let PWM_CLPS711X depend on HAS_IOMEM
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404452632-10912-1-git-send-email-pramod.gurav.etc@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PWM_CLPS711X needs HAS_IOMEM, so let it depend on HAS_IOMEM.
+Looks good to me,
 
-The related error (with allmodconfig under score):
+Reviewed-by: Christoph Hellwig <hch@lst.de>
 
-    MODPOST 1365 modules
-  ERROR: "devm_ioremap_resource" [drivers/pwm/pwm-clps711x.ko] undefined!
+Al, can you pick this up?  It's the only warnings in many of my usual
+kernel builds at the moment.
 
-
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- drivers/pwm/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index 4ad7b89..2faf5ce 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -82,7 +82,7 @@ config PWM_BFIN
- 
- config PWM_CLPS711X
- 	tristate "CLPS711X PWM support"
--	depends on ARCH_CLPS711X || COMPILE_TEST
-+	depends on (ARCH_CLPS711X || COMPILE_TEST) && HAS_IOMEM
- 	help
- 	  Generic PWM framework driver for Cirrus Logic CLPS711X.
- 
--- 
-1.7.11.7
