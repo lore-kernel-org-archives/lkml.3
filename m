@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810AbaGMPN5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 11:13:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48715 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751493AbaGMPNr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 11:13:47 -0400
-Date: Sun, 13 Jul 2014 17:13:43 +0200
-From: Jean Delvare <jdelvare@suse.de>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Randy Dunlap <rdunlap@infradead.org>,
-        linux-i2c@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] i2c: stub: Add support for SMBus block commands
-Message-ID: <20140713171343.0a4ba58d@endymion.delvare>
-In-Reply-To: <53C2A016.2070906@roeck-us.net>
-References: <1404742983-27303-1-git-send-email-linux@roeck-us.net>
-	<20140708215453.0677d3ed@endymion.delvare>
-	<53BC4F15.9030608@roeck-us.net>
-	<20140712112019.618d8a03@endymion.delvare>
-	<53C14ECD.7050105@roeck-us.net>
-	<20140713092127.4bedfa18@endymion.delvare>
-	<53C2A016.2070906@roeck-us.net>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1753845AbaGMP2h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 11:28:37 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:22534 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753297AbaGMP22 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jul 2014 11:28:28 -0400
+To: "Reddy\, Sreekanth" <Sreekanth.Reddy@avagotech.com>
+Cc: <jejb@kernel.org>, <JBottomley@Parallels.com>,
+        <linux-scsi@vger.kernel.org>, <Sathya.Prakash@avagotech.com>,
+        <Nagalakshmi.Nandigama@avagotech.com>, <linux-kernel@vger.kernel.org>,
+        <hch@infradead.org>, <martin.petersen@oracle.com>
+Subject: Re: [RESEND][PATCH 06/10][SCSI]mpt2sas: For >2TB volumes, DirectDrive support sends IO's with LBA bit 31 to IR FW instead of DirectDrive
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <20140625103418.GA12939@avagotech.com>
+Date: Sun, 13 Jul 2014 11:27:52 -0400
+In-Reply-To: <20140625103418.GA12939@avagotech.com> (Sreekanth Reddy's message
+	of "Wed, 25 Jun 2014 16:04:18 +0530")
+Message-ID: <yq1oawtxoqv.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 13 Jul 2014 08:04:54 -0700, Guenter Roeck wrote:
-> On 07/13/2014 12:21 AM, Jean Delvare wrote:
-> > Hi Guenter,
-> >
-> > On Sat, 12 Jul 2014 08:05:49 -0700, Guenter Roeck wrote:
-> >> Any idea how we could inject errors ? Error path testing would be quite useful.
-> >
-> > Good idea. This should probably be done with a sysfs attribute so that
-> > it can be turned on and off as desired. Off by default, of course. Some
-> > other subsystems already support error injection, you could check how
-> > they are doing it, do that we do not diverge needlessly.
-> >
-> > Do you think there is any value in failing with different error codes,
-> > or just -EIO is enough?
->
-> How about writing the error code to return into the attribute ?
-> Write anything negative, and it is returned as error. Write 0,
-> and the driver works as normal.
+>>>>> "Sreekanth" == Reddy, Sreekanth <Sreekanth.Reddy@avagotech.com> writes:
 
-This is smart, I like it :)
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+index 6ae109b..4a0728a 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -3865,7 +3865,8 @@ _scsih_setup_direct_io(struct MPT2SAS_ADAPTER *ioc, struct scsi_cmnd *scmd,
+ 	struct _raid_device *raid_device, Mpi2SCSIIORequest_t *mpi_request,
+ 	u16 smid)
+ {
+-	u32 v_lba, p_lba, stripe_off, stripe_unit, column, io_size;
++	u32 p_lba, stripe_off, stripe_unit, column, io_size;
++	u64 v_lba;
+ 	u32 stripe_sz, stripe_exp;
+ 	u8 num_pds, *cdb_ptr, i;
+ 	u8 cdb0 = scmd->cmnd[0];
+@@ -3882,12 +3883,17 @@ _scsih_setup_direct_io(struct MPT2SAS_ADAPTER *ioc, struct scsi_cmnd *scmd,
+ 			| cdb_ptr[5])) {
+ 			io_size = scsi_bufflen(scmd) >>
+ 			    raid_device->block_exponent;
+-			i = (cdb0 < READ_16) ? 2 : 6;
++
+ 			/* get virtual lba */
+-			v_lba = be32_to_cpu(*(__be32 *)(&cdb_ptr[i]));
++			if (cdb0 < READ_16)
++				v_lba = be32_to_cpu(*(__be32 *)(&cdb_ptr[2]));
++			else
++				v_lba = be64_to_cpu(*(__be64 *)(&cdb_ptr[2]));
 
-> > Do you think it should fail all the time when error injection is
-> > enabled, or is there a value in having only a certain % of commands
-> > fail?
->
-> For my purposes I would want it to fail reliably. We could add some fanciness,
-> though: Provide a second attribute which specifies how many operations should
-> pass before the first failure.
+Why aren't you using scsi_get_lba() instead of all this nasty CDB
+parsing?
 
-Let's start simple and just implement what you need.
++
++			i = (cdb0 < READ_16) ? 2 : 6;
+
+What about WRITE_16?  WRITE_16 > READ_16.
+
+ 			if (((u64)v_lba + (u64)io_size - 1) <=
+-			    (u32)raid_device->max_lba) {
++				raid_device->max_lba) {
+ 				stripe_sz = raid_device->stripe_sz;
+ 				stripe_exp = raid_device->stripe_exponent;
+ 				stripe_off = v_lba & (stripe_sz - 1);
+
+Also, this is not touched by the patch, but you're then doing:
+
+        (*(__be32 *)(&cdb_ptr[i])) = cpu_to_be32(p_lba);
+
+What if this is a 6-byte READ/WRITE command? You'll end up exceeding the
+size of the LBA field.
+
+What if you're using a 16-byte CDB and the target device LBA is > 2TB?
 
 -- 
-Jean Delvare
-SUSE L3 Support
+Martin K. Petersen	Oracle Linux Engineering
