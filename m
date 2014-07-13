@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316AbaGMV7q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 17:59:46 -0400
-Received: from mail-yk0-f169.google.com ([209.85.160.169]:49027 "EHLO
-	mail-yk0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752043AbaGMV7l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 17:59:41 -0400
-From: Nicolas Del Piano <ndel314@gmail.com>
-To: rjw@rjwysocki.net
-Cc: viresh.kumar@linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ezequiel@vanguardiasur.com.ar,
-        Nicolas Del Piano <ndel314@gmail.com>
-Subject: [PATCH] Cpufreq: ARM IMX6Q: Select PM_OPP
-Date: Sun, 13 Jul 2014 18:59:00 -0300
-Message-Id: <1405288740-3986-1-git-send-email-ndel314@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751128AbaGMW0H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 18:26:07 -0400
+Received: from gate.crashing.org ([63.228.1.57]:44735 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750780AbaGMW0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jul 2014 18:26:00 -0400
+Message-ID: <1405290324.20996.71.camel@pasglop>
+Subject: Re: bit fields && data tearing
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Richard Henderson <rth@twiddle.net>,
+        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Dan <opendtv@yahoo.com>
+Date: Mon, 14 Jul 2014 08:25:24 +1000
+In-Reply-To: <53C2865B.5040200@hurleysoftware.com>
+References: <20140712181328.GA8738@redhat.com>
+	 <20140712205130.GA16437@redhat.com> <1405208082.20996.54.camel@pasglop>
+	 <53C2865B.5040200@hurleysoftware.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PM_OPP is a library used by several of the existing cpufreq drivers.
-ARM IMX6Q cpufreq driver uses this library for its functionality.
-Thus, it should be selected in Kconfig.
+On Sun, 2014-07-13 at 09:15 -0400, Peter Hurley wrote:
+> 
+> I'm not sure I understand your point here, Ben.
+> 
+> Suppose that two different spinlocks are used independently to
+> protect r-m-w access to adjacent data. In Oleg's example,
+> suppose spinlock 1 is used for access to the bitfield and
+> spinlock 2 is used for access to freeze_stop.
+> 
+> What would prevent an accidental write to freeze_stop from the
+> kt_1 thread?
 
-Reported-by: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
-Signed-off-by: Nicolas Del Piano <ndel314@gmail.com>
----
- drivers/cpufreq/Kconfig.arm |    1 +
- 1 file changed, 1 insertion(+)
+My point was to be weary of bitfields in general because access
+to them is always R-M-W, never atomic and that seem to escape
+people regularily :-) (Among other problems such as endian etc...)
 
-diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
-index ebac671..8c5cf4b 100644
---- a/drivers/cpufreq/Kconfig.arm
-+++ b/drivers/cpufreq/Kconfig.arm
-@@ -104,6 +104,7 @@ config ARM_IMX6Q_CPUFREQ
- 	tristate "Freescale i.MX6 cpufreq support"
- 	depends on ARCH_MXC
- 	depends on REGULATOR_ANATOP
-+	select PM_OPP
- 	help
- 	  This adds cpufreq driver support for Freescale i.MX6 series SoCs.
- 
--- 
-1.7.9.5
+As for Oleg's example, it *should* have worked because the bitfield and
+the adjacent freeze_stop should have been accessed using load/stores
+that don't actually overlap, but the compiler bug causes the bitfield
+access to not properly use the basic type of the bitfield, but escalate
+to a full 64-bit R-M-W instead, thus incorrectly R-M-W'ing the field
+next door.
+
+Cheers,
+Ben.
+
+
+
 
