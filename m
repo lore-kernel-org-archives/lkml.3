@@ -1,62 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752447AbaGMDGu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jul 2014 23:06:50 -0400
-Received: from smtprelay0031.hostedemail.com ([216.40.44.31]:58782 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751786AbaGMDGm (ORCPT
+	id S1752843AbaGMDHD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jul 2014 23:07:03 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:33329 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142AbaGMDG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jul 2014 23:06:42 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:2890:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3871:3872:3873:3874:4042:4250:4321:5007:6691:7652:8531:10004:10400:10848:11232:11658:11914:12114:12517:12519:12740:13069:13161:13227:13229:13311:13357:14096:14097:21067:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: edge73_74473d8aa9363
-X-Filterd-Recvd-Size: 2095
-Message-ID: <1405220796.9132.31.camel@joe-AO725>
-Subject: Re: [PATCH] reformat_with_checkpatch: Add automation to checkpatch
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, kernelnewbies@kernelnewbies.org,
-        kernel-janitors <kernel-janitors@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Date: Sat, 12 Jul 2014 20:06:36 -0700
-In-Reply-To: <20140712192846.GB25649@kroah.com>
-References: <1405128087.6751.12.camel@joe-AO725>
-	 <20140712013444.GA30368@kroah.com> <1405129216.6751.18.camel@joe-AO725>
-	 <20140712093043.GG25880@mwanda> <20140712175526.GA17077@kroah.com>
-	 <1405189777.9132.27.camel@joe-AO725> <20140712192846.GB25649@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	Sat, 12 Jul 2014 23:06:56 -0400
+Message-ID: <53C1F7C4.2010901@gmail.com>
+Date: Sun, 13 Jul 2014 11:06:44 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: stefanr@s5r6.in-berlin.de
+CC: linux1394-devel@lists.sourceforge.net,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Liqin Chen <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>
+Subject: [PATCH] drivers: firewire: Let several sub-modules depend on HAS_DMA
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-07-12 at 12:28 -0700, Greg KH wrote:
-> On Sat, Jul 12, 2014 at 11:29:37AM -0700, Joe Perches wrote:
-> > On Sat, 2014-07-12 at 10:55 -0700, Greg KH wrote:
-> > > Yes, the warnings are all due to line-length, but Joe, you shouldn't add
-> > > a patch that causes more checkpatch warnings than before :)
-> > 
-> > Yeah, that was intentional though.
-> > 
-> > This script does a series of relatively discrete changes.
-> > 
-> > Lindent would more or less work, but it's _horrible_ at
-> > wrapping overlong lines and merges all types of changes
-> > together.
-> 
-> Oh I agree, I don't want to see Lindent, but maybe, if the patch adds
-> checkpatch warnings, it should be at least "flagged" as maybe a problem?
+Several sub-modules of 'firewire' need HAS_DMA, so let them depend on it.
+FIREWIRE_NET and FIREWIRE_OHCI use 'core-iso.c' which also needs HAS_DMA,
+so need 'ifdef' the related function by CONFIG_HAS_DMA in 'core-iso.c'.
 
-The script I submitted does run checkpatch
-before any commit is done.
+The related error (with allmodconfig under score):
 
-> Would you want to be on the receiving end of this patch script?
+    MODPOST 1365 modules
+  ERROR: "dma_mapping_error" [drivers/firewire/firewire-sbp2.ko] undefined!
+  ERROR: "dma_map_single" [drivers/firewire/firewire-sbp2.ko] undefined!
+  ERROR: "dma_unmap_single" [drivers/firewire/firewire-sbp2.ko] undefined!
+  ERROR: "scsi_dma_map" [drivers/firewire/firewire-sbp2.ko] undefined!
+  ERROR: "scsi_dma_unmap" [drivers/firewire/firewire-sbp2.ko] undefined!
+  ERROR: "dma_mapping_error" [drivers/firewire/firewire-core.ko] undefined!
+  ERROR: "dma_map_page" [drivers/firewire/firewire-core.ko] undefined!
+  ERROR: "dma_unmap_page" [drivers/firewire/firewire-core.ko] undefined!
 
-You might have noticed I don't have a kernel.org
-account.
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ drivers/firewire/Kconfig    |  6 +++---
+ drivers/firewire/core-iso.c | 15 +++++++++++++++
+ 2 files changed, 18 insertions(+), 3 deletions(-)
 
-
+diff --git a/drivers/firewire/Kconfig b/drivers/firewire/Kconfig
+index 4199849..fd75278 100644
+--- a/drivers/firewire/Kconfig
++++ b/drivers/firewire/Kconfig
+@@ -19,7 +19,7 @@ config FIREWIRE
+ 
+ config FIREWIRE_OHCI
+ 	tristate "OHCI-1394 controllers"
+-	depends on PCI && FIREWIRE && MMU
++	depends on PCI && FIREWIRE && MMU && HAS_DMA
+ 	help
+ 	  Enable this driver if you have a FireWire controller based
+ 	  on the OHCI specification.  For all practical purposes, this
+@@ -30,7 +30,7 @@ config FIREWIRE_OHCI
+ 
+ config FIREWIRE_SBP2
+ 	tristate "Storage devices (SBP-2 protocol)"
+-	depends on FIREWIRE && SCSI
++	depends on FIREWIRE && SCSI && HAS_DMA
+ 	help
+ 	  This option enables you to use SBP-2 devices connected to a
+ 	  FireWire bus.  SBP-2 devices include storage devices like
+@@ -45,7 +45,7 @@ config FIREWIRE_SBP2
+ 
+ config FIREWIRE_NET
+ 	tristate "IP networking over 1394"
+-	depends on FIREWIRE && INET
++	depends on FIREWIRE && INET && HAS_DMA
+ 	help
+ 	  This enables IPv4/IPv6 over IEEE 1394, providing IP connectivity
+ 	  with other implementations of RFC 2734/3146 as found on several
+diff --git a/drivers/firewire/core-iso.c b/drivers/firewire/core-iso.c
+index 38c0aa6..995f038 100644
+--- a/drivers/firewire/core-iso.c
++++ b/drivers/firewire/core-iso.c
+@@ -64,6 +64,7 @@ int fw_iso_buffer_alloc(struct fw_iso_buffer *buffer, int page_count)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_HAS_DMA
+ int fw_iso_buffer_map_dma(struct fw_iso_buffer *buffer, struct fw_card *card,
+ 			  enum dma_data_direction direction)
+ {
+@@ -86,6 +87,13 @@ int fw_iso_buffer_map_dma(struct fw_iso_buffer *buffer, struct fw_card *card,
+ 
+ 	return 0;
+ }
++#else
++int fw_iso_buffer_map_dma(struct fw_iso_buffer *buffer, struct fw_card *card,
++			  enum dma_data_direction direction)
++{
++	return -ENXIO;
++}
++#endif
+ 
+ int fw_iso_buffer_init(struct fw_iso_buffer *buffer, struct fw_card *card,
+ 		       int page_count, enum dma_data_direction direction)
+@@ -122,6 +130,7 @@ int fw_iso_buffer_map_vma(struct fw_iso_buffer *buffer,
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_HAS_DMA
+ void fw_iso_buffer_destroy(struct fw_iso_buffer *buffer,
+ 			   struct fw_card *card)
+ {
+@@ -141,6 +150,12 @@ void fw_iso_buffer_destroy(struct fw_iso_buffer *buffer,
+ 	buffer->page_count = 0;
+ 	buffer->page_count_mapped = 0;
+ }
++#else
++void fw_iso_buffer_destroy(struct fw_iso_buffer *buffer,
++			   struct fw_card *card)
++{
++}
++#endif
+ EXPORT_SYMBOL(fw_iso_buffer_destroy);
+ 
+ /* Convert DMA address to offset into virtually contiguous buffer. */
+-- 
+1.7.11.7
