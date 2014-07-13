@@ -1,55 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924AbaGMO6s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 10:58:48 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:47442 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751962AbaGMO6k (ORCPT
+	id S1753961AbaGMO7N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 10:59:13 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:18898 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833AbaGMO7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 10:58:40 -0400
+	Sun, 13 Jul 2014 10:59:08 -0400
 To: "Reddy\, Sreekanth" <Sreekanth.Reddy@avagotech.com>
 Cc: <jejb@kernel.org>, <JBottomley@Parallels.com>,
         <linux-scsi@vger.kernel.org>, <Sathya.Prakash@avagotech.com>,
         <Nagalakshmi.Nandigama@avagotech.com>, <linux-kernel@vger.kernel.org>,
         <hch@infradead.org>, <martin.petersen@oracle.com>
-Subject: Re: [RESEND][PATCH 02/10][SCSI]mpt2sas: MPI2 Rev Y (2.00.17) and Rev Z (2.00.18) specifications
+Subject: Re: [RESEND][PATCH 03/10][SCSI]mpt2sas: Copyright in driver sources is updated for year the 2014
 From: "Martin K. Petersen" <martin.petersen@oracle.com>
 Organization: Oracle Corporation
-References: <20140625103114.GA12896@avagotech.com>
-Date: Sun, 13 Jul 2014 10:58:06 -0400
-In-Reply-To: <20140625103114.GA12896@avagotech.com> (Sreekanth Reddy's message
-	of "Wed, 25 Jun 2014 16:01:14 +0530")
-Message-ID: <yq1a98dz4ox.fsf@sermon.lab.mkp.net>
+References: <20140625103148.GA12907@avagotech.com>
+Date: Sun, 13 Jul 2014 10:58:38 -0400
+In-Reply-To: <20140625103148.GA12907@avagotech.com> (Sreekanth Reddy's message
+	of "Wed, 25 Jun 2014 16:01:48 +0530")
+Message-ID: <yq161j1z4o1.fsf@sermon.lab.mkp.net>
 User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 >>>>> "Sreekanth" == Reddy, Sreekanth <Sreekanth.Reddy@avagotech.com> writes:
 
-Sreekanth> Below is the change set in MPI2 Rev Y specification and in
-Sreekanth> 2.00.17 header files
-Sreekanth> 1) Added SCSIStatusQualifier to SCSI IO Error Reply message.
-Sreekanth> 2) Added ATA Security Freeze Lock to IO Unit Page 1 Flags
-Sreekanth>    field.
-
-Sreekanth> Below is the change set in MPI2 Rev Z specification and in
-Sreekanth> 2.00.19 header files
-Sreekanth> 1) Added reserved fields to IO Unit Page 7 for future use.
-Sreekanth> 2) Added optional functionality to IOCInit Request so that
-Sreekanth>    the host may specify a separate base address for each
-Sreekanth>    Reply Descriptor Post Queue. IOC support for this is
-Sreekanth>    indicated using a new IOCCapabilities bit in the IOCFacts
-Sreekanth>    Reply.
-Sreekanth> 3) Added Toolbox Console Text Display Tool
-Sreekanth>    The host uses the Console Text Display Tool to send a
-Sreekanth>    string to IOC's Console using different console types (eg:
-Sreekanth>    UART serial terminal or Ethernet terminal).
-
-Sreekanth> The copyright in the mpi files is updated for year 2014
+Sreekanth> Copyright in driver sources is updated for year the 2014.
 
 Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
 
