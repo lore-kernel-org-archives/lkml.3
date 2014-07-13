@@ -1,68 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022AbaGMUKs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 16:10:48 -0400
-Received: from imap.thunk.org ([74.207.234.97]:60866 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751885AbaGMUKe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 16:10:34 -0400
-Date: Sun, 13 Jul 2014 16:10:18 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ext4 bug fixes for 3.16
-Message-ID: <20140713201018.GA31590@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1752074AbaGMUNZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 16:13:25 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:60046 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751747AbaGMUNV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jul 2014 16:13:21 -0400
+Message-ID: <53C2E85E.3050704@infradead.org>
+Date: Sun, 13 Jul 2014 13:13:18 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Sam Ravnborg <sam@ravnborg.org>
+CC: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Herrmann <dh.herrmann@googlemail.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [PATCH 2/6] samples: refactor Makefile
+References: <20140713183636.GA17241@ravnborg.org> <1405276974-17323-1-git-send-email-sam@ravnborg.org> <1405276974-17323-2-git-send-email-sam@ravnborg.org> <53C2DD2D.2030902@infradead.org> <20140713195236.GA8711@ravnborg.org>
+In-Reply-To: <20140713195236.GA8711@ravnborg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 16874b2cb867d3eb63ed838f2847143e11556708:
+On 07/13/14 12:52, Sam Ravnborg wrote:
+> Hi Randy - thanks for the feedback.
+> 
+> On Sun, Jul 13, 2014 at 12:25:33PM -0700, Randy Dunlap wrote:
+>> On 07/13/14 11:42, Sam Ravnborg wrote:
+>>> Use one line per module/program in Makefile.
+>>> This style is easier to read/extend.
+>>>
+>>> Introduce inverse xmas style sorting.
+>>
+>> google search couldn't tell me what that means and I cannot
+>> deduce it from the new Makefile ordering (if there is some ordering).
+>> Please explain.
+> 
+> Sort by length - with longest entry first. Like an xmas tree upside-down.
+> For entries with same lenght sort alphabetically.
+> 
+> Advocated in some places for includes and other places for local variables.
+> 
+> One recent reference is for example this:
+> http://marc.info/?l=linux-netdev&m=140510662905580&w=2
+> 
+> I will rephrase it like this:
+> 
+> # Sort entries using inverse xmas style:
+> # Longest entries first, alphabetically when legth is the same.
 
-  Merge tag 'ext4_for_linus_stable' of git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4 (2014-06-29 19:20:43 -0700)
+                                               length
 
-are available in the git repository at:
+> 
+> OK?
+
+Yes.  Thanks.
+
+> 	Sam
+> 
+> 
+> 
+>>
+>> Thanks.
+>>
+>>> This may prevent some merge conflicts in the future
+>>>
+>>> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+>>> ---
+>>>  samples/Makefile | 15 +++++++++++++--
+>>>  1 file changed, 13 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/samples/Makefile b/samples/Makefile
+>>> index 1a60c62..7c08028 100644
+>>> --- a/samples/Makefile
+>>> +++ b/samples/Makefile
+>>> @@ -1,4 +1,15 @@
+>>>  # Makefile for Linux samples code
+>>> +# Sort entries using inverse xmas style
+>>> +#
+>>> +# kernel modules
+>>> +obj-$(CONFIG_SAMPLES) += hw_breakpoint/
+>>> +obj-$(CONFIG_SAMPLES) += trace_events/
+>>> +obj-$(CONFIG_SAMPLES) += kprobes/
+>>> +obj-$(CONFIG_SAMPLES) += kobject/
+>>> +obj-$(CONFIG_SAMPLES) += kfifo/
+>>> +obj-$(CONFIG_SAMPLES) += rpmsg/
+>>> +obj-$(CONFIG_SAMPLES) += kdb/
+>>>  
+>>> -obj-$(CONFIG_SAMPLES)	+= kobject/ kprobes/ trace_events/ \
+>>> -			   hw_breakpoint/ kfifo/ kdb/ hidraw/ rpmsg/ seccomp/
+>>> +# user space programs
+>>> +obj-$(CONFIG_SAMPLES) += seccomp/
+>>> +obj-$(CONFIG_SAMPLES) += hidraw/
 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus_stable
-
-for you to fetch changes up to bf40c92635d63fcc574c52649f7cda13e0418ac1:
-
-  ext4: fix potential null pointer dereference in ext4_free_inode (2014-07-12 16:11:42 -0400)
-
-----------------------------------------------------------------
-More bug fixes for ext4 -- most importantly, a fix for a bug
-(introduced in 3.15) that can end up triggering a file system
-corruption error after a journal replay.  (It shouldn't lead to any
-actual data corruption, but it is scary and can force file systems to
-be remounted read-only, etc.)
-
-----------------------------------------------------------------
-Eric Sandeen (1):
-      ext4: disable synchronous transaction batching if max_batch_time==0
-
-Namjae Jeon (1):
-      ext4: fix potential null pointer dereference in ext4_free_inode
-
-Theodore Ts'o (5):
-      ext4: fix unjournalled bg descriptor while initializing inode bitmap
-      ext4: clarify error count warning messages
-      ext4: clarify ext4_error message in ext4_mb_generate_buddy_error()
-      ext4: revert commit which was causing fs corruption after journal replays
-      ext4: fix a potential deadlock in __ext4_es_shrink()
-
- fs/ext4/extents_status.c |  4 ++--
- fs/ext4/ialloc.c         | 16 ++++++++--------
- fs/ext4/mballoc.c        |  4 ++--
- fs/ext4/super.c          | 60 ++++++++++++++++++++++++++++--------------------------------
- fs/jbd2/transaction.c    |  5 ++++-
- 5 files changed, 44 insertions(+), 45 deletions(-)
+-- 
+~Randy
