@@ -1,167 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751191AbaGMS3t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 14:29:49 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:34324 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750896AbaGMS3m (ORCPT
+	id S1751341AbaGMSaF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 14:30:05 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:38572
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750896AbaGMS37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 14:29:42 -0400
-Date: Sun, 13 Jul 2014 11:30:06 -0700
-From: Olof Johansson <olof@lixom.net>
-To: torvalds@linux-foundation.org
-Cc: olof@lixom.net, arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ARM: SoC fixes for 3.16-rc
-Message-ID: <20140713183006.GA30422@quad.lixom.net>
+	Sun, 13 Jul 2014 14:29:59 -0400
+X-IronPort-AV: E=Sophos;i="5.01,654,1400018400"; 
+   d="scan'208";a="71264665"
+Date: Sun, 13 Jul 2014 20:29:56 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Julia Lawall <julia.lawall@lip6.fr>,
+        Himangi Saraogi <himangi774@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: ambakmi - Use managed interfaces
+In-Reply-To: <20140713182123.GM21766@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.02.1407132029080.2060@localhost6.localdomain6>
+References: <20140713173051.GA4299@himangi-Dell> <20140713175308.GL21766@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1407132010130.2060@localhost6.localdomain6> <20140713182123.GM21766@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-The following changes since commit cd3de83f147601356395b57a8673e9c5ff1e59d1:
 
-  Linux 3.16-rc4 (2014-07-06 12:37:51 -0700)
+On Sun, 13 Jul 2014, Russell King - ARM Linux wrote:
 
-are available in the git repository at:
+> On Sun, Jul 13, 2014 at 08:11:29PM +0200, Julia Lawall wrote:
+> > On Sun, 13 Jul 2014, Russell King - ARM Linux wrote:
+> > 
+> > > On Sun, Jul 13, 2014 at 11:00:51PM +0530, Himangi Saraogi wrote:
+> > > > @@ -23,6 +23,7 @@
+> > > >  #include <linux/clk.h>
+> > > >  
+> > > >  #include <asm/io.h>
+> > > > +#include <linux/io.h>
+> > > 
+> > > NAK - please include either linux/io.h _or_ asm/io.h but not both.
+> > > 
+> > > > @@ -112,19 +113,10 @@ static int amba_kmi_probe(struct amba_device *dev,
+> > > >  {
+> > > >  	struct amba_kmi_port *kmi;
+> > > >  	struct serio *io;
+> > > > -	int ret;
+> > > > -
+> > > > -	ret = amba_request_regions(dev, NULL);
+> > > > -	if (ret)
+> > > > -		return ret;
+> > > 
+> > > I'm /really/ not happy about that going.
+> > 
+> > Could you explain why?  I looked at the code several times, and I couldn't 
+> > see how it was different than request_mem_region, which is merged into 
+> > devm_ioremap_resource.
+> 
+> Check what gets used for the name of the resource.
+> 
+> Now, consider that most devices when they are registered have their
+> resource names set to the device name.
+> 
+> Then realise that devm_ioremap_resource() uses the resource name or
+> the device name again.  So, what you end up with in /proc/iomem is
+> a load of stupidity - you don't get to see there which drivers are
+> making use of the resources, only a load of duplicated information
+> about what devices are using the regions.
+> 
+> This is contary to other bus types (like PCI) where the _device_ takes
+> the non-busy parent resource, and the driver takes the busy resource
+> using the _driver_ name, not the device name.  The exception to this
+> is network drivers which have in the past used the network device
+> name.
+> 
+> Here's an example.  x86:
+> 
+>   fc000000-fc01ffff : 0000:00:19.0	<--- device name
+>     fc000000-fc01ffff : e1000e		<--- driver name
+>   fc020000-fc023fff : 0000:00:1b.0	<--- device name
+>     fc020000-fc023fff : ICH HD audio	<--- driver name
+>   fc024000-fc024fff : 0000:00:03.3
+>   fc025000-fc025fff : 0000:00:19.0	<--- device name
+>     fc025000-fc025fff : e1000e		<--- driver name
+>   fc226000-fc2267ff : 0000:00:1f.2	<--- device name
+>     fc226000-fc2267ff : ahci		<--- driver name
+> 
+> etc.  When using devm_ioremap_resource() this ends up as:
+> 
+> 02184000-021841ff : /soc/aips-bus@02100000/usb@02184000
+>   02184000-021841ff : /soc/aips-bus@02100000/usb@02184000
+> 02184200-021843ff : /soc/aips-bus@02100000/usb@02184200
+>   02184200-021843ff : /soc/aips-bus@02100000/usb@02184200
+> 
+> which is really pointless duplicating the resource name like that.  It
+> conveys no additional useful information.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
+OK, thanks very much.
 
-for you to fetch changes up to cacadb4ff969a82628d47db87b5a531be466b134:
-
-  Merge tag 'samsung-fixes-3' of git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung into fixes (2014-07-12 21:19:21 -0700)
-
-----------------------------------------------------------------
-ARM: SoC fixes for 3.16-rc
-
-This week's arm-soc fixes:
-
-- Another set of OMAP fixes
-  * Clock fixes
-  * Restart handling
-  * PHY regulators
-  * SATA hwmod data for DRA7
-  + Some trivial fixes and removal of a bit of dead code
-- Exynos fixes
-  * A bunch of clock fixes
-  * Some SMP fixes
-  * Exynos multi-core timer: register as clocksource and fix ftrace.
-  + a few other minor fixes
-
-There's also a couple more patches, and at91 fix for USB caused by common
-clock conversion, and more MAINTAINERS entries for shmobile.
-
-We're definitely switching to only regression fixes from here on out,
-we've been a little less strict than usual up until now.
-
-----------------------------------------------------------------
-Abhilash Kesavan (1):
-      ARM: EXYNOS: Fix the check for non-smp configuration
-
-Amit Daniel Kachhap (1):
-      clocksource: exynos_mct: Register the timer for stable udelay
-
-Arun Kumar K (2):
-      clk: exynos5420: Add IDs for clocks used in PD mfc
-      ARM: dts: Add clock property for mfc_pd in exynos5420
-
-Bo Shen (1):
-      ARM: at91: at91sam9x5: add clocks for usb device
-
-Doug Anderson (1):
-      clocksource: exynos_mct: Fix ftrace
-
-Enric Balletbo i Serra (1):
-      ARM: dts: Fix TI CPSW Phy mode selection on IGEP COM AQUILA.
-
-Guido Martínez (1):
-      ARM: OMAP2+: Make GPMC skip disabled devices
-
-Jaewon Kim (1):
-      ARM: dts: fix pwm-cells in pwm node for exynos4
-
-Jyri Sarha (1):
-      ARM: OMAP2+: Remove non working OMAP HDMI audio initialization
-
-Nishanth Menon (1):
-      ARM: DRA7/AM43XX: fix header definition for omap44xx_restart
-
-Olof Johansson (4):
-      Merge tag 'renesas-maintainers-for-v3.17' of git://git.kernel.org/.../horms/renesas into fixes
-      Merge tag 'samsung-fixes-2' of git://git.kernel.org/.../kgene/linux-samsung into fixes
-      Merge tag 'omap-for-v3.16/fixes-rc4' of git://git.kernel.org/.../tmlind/linux-omap into fixes
-      Merge tag 'samsung-fixes-3' of git://git.kernel.org/.../kgene/linux-samsung into fixes
-
-Peter Ujfalusi (2):
-      ARM: dts: am335x-evm: Enable the McASP FIFO for audio
-      ARM: dts: am335x-evmsk: Enable the McASP FIFO for audio
-
-Prathyush K (1):
-      ARM: EXYNOS: Add support for clock handling in power domain
-
-Rajendra Nayak (1):
-      ARM: dts: dra7xx-clocks: Fix the l3 and l4 clock rates
-
-Roger Quadros (3):
-      ARM: DRA7: hwmod: Fixup SATA hwmod
-      ARM: DRA7: hwmod: Add SYSCONFIG for usb_otg_ss
-      ARM: dts: dra7-evm: Make VDDA_1V8_PHY supply always on
-
-Sachin Kamat (1):
-      ARM: EXYNOS: Update secondary boot addr for secure mode
-
-Shawn Guo (1):
-      ARM: imx: fix shared gate clock
-
-Simon Horman (1):
-      ARM: shmobile: Add DT and defconfigs to MAINTAINERS
-
-Suman Anna (2):
-      ARM: OMAP3: PRM/CM: Add back macros used by TI DSP/Bridge driver
-      ARM: OMAP2+: create dsp device only on OMAP3 SoCs
-
-Tero Kristo (1):
-      ARM: OMAP2+: clock/dpll: fix _dpll_test_fint arithmetics overflow
-
-Tomasz Figa (1):
-      ARM: EXYNOS: Register cpuidle device only on exynos4210 and 5250
-
-Tony Lindgren (2):
-      Merge branch 'for-v3.16-rc/clk-dt-fixes' of https://github.com/t-kristo/linux-pm into fixes-rc4
-      Merge tag 'for-v3.16-rc/omap-fixes-b' of git://git.kernel.org/.../pjw/omap-pending into omap-for-v3.16/fixes
-
-Tushar Behera (1):
-      ARM: dts: Update the parent for Audss clocks in Exynos5420
-
- .../bindings/arm/exynos/power_domain.txt           | 20 +++++++
- MAINTAINERS                                        | 14 +++++
- arch/arm/boot/dts/am335x-evm.dts                   |  4 +-
- arch/arm/boot/dts/am335x-evmsk.dts                 |  4 +-
- arch/arm/boot/dts/am335x-igep0033.dtsi             |  6 +++
- arch/arm/boot/dts/at91sam9x5.dtsi                  |  2 +
- arch/arm/boot/dts/dra7-evm.dts                     |  1 +
- arch/arm/boot/dts/dra7xx-clocks.dtsi               | 10 ++--
- arch/arm/boot/dts/exynos4.dtsi                     |  2 +-
- arch/arm/boot/dts/exynos5420.dtsi                  |  5 +-
- arch/arm/mach-exynos/exynos.c                      |  8 ++-
- arch/arm/mach-exynos/firmware.c                    |  9 +++-
- arch/arm/mach-exynos/pm_domains.c                  | 61 +++++++++++++++++++++-
- arch/arm/mach-imx/clk-gate2.c                      | 31 ++++++++---
- arch/arm/mach-omap2/clkt_dpll.c                    |  2 +-
- arch/arm/mach-omap2/cm-regbits-34xx.h              |  3 ++
- arch/arm/mach-omap2/common.h                       |  3 +-
- arch/arm/mach-omap2/devices.c                      | 28 ----------
- arch/arm/mach-omap2/dsp.c                          | 10 ++++
- arch/arm/mach-omap2/gpmc.c                         |  2 +-
- arch/arm/mach-omap2/omap_hwmod_7xx_data.c          | 18 +++++--
- arch/arm/mach-omap2/prm-regbits-34xx.h             |  6 +++
- drivers/clk/samsung/clk-exynos5420.c               |  6 ++-
- drivers/clocksource/exynos_mct.c                   | 20 ++++++-
- include/dt-bindings/clock/exynos5420.h             |  2 +
- 25 files changed, 211 insertions(+), 66 deletions(-)
+julia
