@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753825AbaGMOaN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 10:30:13 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:42701 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752048AbaGMOaF (ORCPT
+	id S1753846AbaGMOaT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 10:30:19 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:38395 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753823AbaGMOaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 10:30:05 -0400
+	Sun, 13 Jul 2014 10:30:13 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 01/16] staging: rtl8188eu: Remove unused function rtw_use_tkipkey_handler()
-Date: Sun, 13 Jul 2014 19:59:23 +0530
-Message-Id: <1405261778-7653-1-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 02/16] staging: rtl8188eu: Remove function rtw_set_channel_plan()
+Date: Sun, 13 Jul 2014 19:59:24 +0530
+Message-Id: <1405261778-7653-2-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1405261778-7653-1-git-send-email-navin.patidar@gmail.com>
+References: <1405261778-7653-1-git-send-email-navin.patidar@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/core/rtw_security.c    |   25 ----------------------
- drivers/staging/rtl8188eu/include/rtw_security.h |    1 -
- 2 files changed, 26 deletions(-)
+ drivers/staging/rtl8188eu/core/rtw_ioctl_set.c    |   15 +--------------
+ drivers/staging/rtl8188eu/include/rtw_ioctl_set.h |    1 -
+ 2 files changed, 1 insertion(+), 15 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_security.c b/drivers/staging/rtl8188eu/core/rtw_security.c
-index d78def5..f9096a5 100644
---- a/drivers/staging/rtl8188eu/core/rtw_security.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_security.c
-@@ -1679,28 +1679,3 @@ do {									\
- 	d##2 = TE0(s##2) ^ TE1(s##3) ^ TE2(s##0) ^ TE3(s##1) ^ rk[4 * i + 2]; \
- 	d##3 = TE0(s##3) ^ TE1(s##0) ^ TE2(s##1) ^ TE3(s##2) ^ rk[4 * i + 3]; \
- } while (0);
--
--/**
-- * omac1_aes_128 - One-Key CBC MAC (OMAC1) hash with AES-128 (aka AES-CMAC)
-- * @key: 128-bit key for the hash operation
-- * @data: Data buffer for which a MAC is determined
-- * @data_len: Length of data buffer in bytes
-- * @mac: Buffer for MAC (128 bits, i.e., 16 bytes)
-- * Returns: 0 on success, -1 on failure
-- *
-- * This is a mode for using block cipher (AES in this case) for authentication.
-- * OMAC1 was standardized with the name CMAC by NIST in a Special Publication
-- * (SP) 800-38B.
-- */
--void rtw_use_tkipkey_handler(void *FunctionContext)
--{
--	struct adapter *padapter = (struct adapter *)FunctionContext;
--
--
--	RT_TRACE(_module_rtl871x_security_c_, _drv_err_, ("^^^rtw_use_tkipkey_handler ^^^\n"));
--
--	padapter->securitypriv.busetkipkey = true;
--
--	RT_TRACE(_module_rtl871x_security_c_, _drv_err_, ("^^^rtw_use_tkipkey_handler padapter->securitypriv.busetkipkey=%d^^^\n", padapter->securitypriv.busetkipkey));
--
--}
-diff --git a/drivers/staging/rtl8188eu/include/rtw_security.h b/drivers/staging/rtl8188eu/include/rtw_security.h
-index 937cad8..66d60aa 100644
---- a/drivers/staging/rtl8188eu/include/rtw_security.h
-+++ b/drivers/staging/rtl8188eu/include/rtw_security.h
-@@ -378,6 +378,5 @@ void rtw_wep_encrypt(struct adapter *padapter, u8  *pxmitframe);
- u32 rtw_aes_decrypt(struct adapter *padapter, u8  *precvframe);
- u32 rtw_tkip_decrypt(struct adapter *padapter, u8  *precvframe);
- void rtw_wep_decrypt(struct adapter *padapter, u8  *precvframe);
--void rtw_use_tkipkey_handler(void *FunctionContext);
+diff --git a/drivers/staging/rtl8188eu/core/rtw_ioctl_set.c b/drivers/staging/rtl8188eu/core/rtw_ioctl_set.c
+index 39932cb..5eb21cd 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_ioctl_set.c
++++ b/drivers/staging/rtl8188eu/core/rtw_ioctl_set.c
+@@ -1092,19 +1092,6 @@ int rtw_set_scan_mode(struct adapter *adapter, enum rt_scan_type scan_mode)
+ }
  
- #endif	/* __RTL871X_SECURITY_H_ */
+ /*
+-* rtw_set_channel_plan -
+-* @adapter: pointer to struct adapter structure
+-* @channel_plan:
+-*
+-* Return _SUCCESS or _FAIL
+-*/
+-int rtw_set_channel_plan(struct adapter *adapter, u8 channel_plan)
+-{
+-	/* handle by cmd_thread to sync with scan operation */
+-	return rtw_set_chplan_cmd(adapter, channel_plan, 1);
+-}
+-
+-/*
+ * rtw_set_country -
+ * @adapter: pointer to struct adapter structure
+ * @country_code: string of country code
+@@ -1130,5 +1117,5 @@ int rtw_set_country(struct adapter *adapter, const char *country_code)
+ 	else
+ 		DBG_88E("%s unknown country_code:%s\n", __func__, country_code);
+ 
+-	return rtw_set_channel_plan(adapter, channel_plan);
++	return rtw_set_chplan_cmd(adapter, channel_plan, 1);
+ }
+diff --git a/drivers/staging/rtl8188eu/include/rtw_ioctl_set.h b/drivers/staging/rtl8188eu/include/rtw_ioctl_set.h
+index 005ec17..7335147 100644
+--- a/drivers/staging/rtl8188eu/include/rtw_ioctl_set.h
++++ b/drivers/staging/rtl8188eu/include/rtw_ioctl_set.h
+@@ -43,7 +43,6 @@ u8 rtw_set_802_11_remove_key(struct adapter *adapt,
+ u8 rtw_validate_ssid(struct ndis_802_11_ssid *ssid);
+ u16 rtw_get_cur_max_rate(struct adapter *adapter);
+ int rtw_set_scan_mode(struct adapter *adapter, enum rt_scan_type scan_mode);
+-int rtw_set_channel_plan(struct adapter *adapter, u8 channel_plan);
+ int rtw_set_country(struct adapter *adapter, const char *country_code);
+ 
+ #endif
 -- 
 1.7.10.4
 
