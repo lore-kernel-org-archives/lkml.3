@@ -1,26 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516AbaGMTME (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 15:12:04 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:35261 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751040AbaGMTLz (ORCPT
+	id S1751841AbaGMTM3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 15:12:29 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:44478 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507AbaGMTME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 15:11:55 -0400
+	Sun, 13 Jul 2014 15:12:04 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
 To: forest@alittletooquiet.net, gregkh@linuxfoundation.org, tvboxspy@gmail.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         kernel-janitors@vger.kernel.org
 Cc: Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH V2 1/4] staging: vt6556: Cleanup coding style issues
-Date: Sun, 13 Jul 2014 21:11:18 +0200
-Message-Id: <1405278681-3348-1-git-send-email-peter.senna@gmail.com>
+Subject: [PATCH V2 3/4] staging: vt6556: Cleanup coding style issues
+Date: Sun, 13 Jul 2014 21:11:20 +0200
+Message-Id: <1405278681-3348-3-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1405278681-3348-1-git-send-email-peter.senna@gmail.com>
+References: <1405278681-3348-1-git-send-email-peter.senna@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This patch cleanup coding style issues reported by checkpatch.
+
+Additionally this typedef was removed from card.h:
+
+typedef enum _CARD_PHY_TYPE {
+    PHY_TYPE_AUTO = 0,
+    PHY_TYPE_11B,
+    PHY_TYPE_11G,
+    PHY_TYPE_11A
+} CARD_PHY_TYPE, *PCARD_PHY_TYPE;
 
 Tested by compilation only.
 
@@ -31,83 +42,88 @@ Cahnges from V1:
 
 Made against latest staging-next.
 
- drivers/staging/vt6656/baseband.c | 28 ++++++++++++++++------------
- 1 file changed, 16 insertions(+), 12 deletions(-)
+ drivers/staging/vt6656/card.c | 19 ++++++++-----------
+ drivers/staging/vt6656/card.h | 13 +++----------
+ 2 files changed, 11 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/staging/vt6656/baseband.c b/drivers/staging/vt6656/baseband.c
-index c1675d5..040b232 100644
---- a/drivers/staging/vt6656/baseband.c
-+++ b/drivers/staging/vt6656/baseband.c
-@@ -26,9 +26,10 @@
-  * Date: Jun. 5, 2002
-  *
-  * Functions:
-- *      vnt_get_frame_time        - Calculate data frame transmitting time
-- *      vnt_get_phy_field   - Calculate PhyLength, PhyService and Phy Signal parameter for baseband Tx
-- *      BBbVT3184Init          - VIA VT3184 baseband chip init code
-+ *	vnt_get_frame_time	- Calculate data frame transmitting time
-+ *	vnt_get_phy_field	- Calculate PhyLength, PhyService and Phy
-+ *				  Signal parameter for baseband Tx
-+ *	BBbVT3184Init		- VIA VT3184 baseband chip init code
-  *
-  * Revision History:
-  *
-@@ -86,7 +87,7 @@ static u8 vnt_vt3184_al2230[] = {
- 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  /* 0xff */
- };
+diff --git a/drivers/staging/vt6656/card.c b/drivers/staging/vt6656/card.c
+index ea06b63..f469d68 100644
+--- a/drivers/staging/vt6656/card.c
++++ b/drivers/staging/vt6656/card.c
+@@ -55,11 +55,12 @@
+ #include "key.h"
+ #include "usbpipe.h"
  
--//{{RobertYu:20060515, new BB setting for VT3226D0
-+/* {{RobertYu:20060515, new BB setting for VT3226D0 */
- static u8 vnt_vt3184_vt3226d0[] = {
- 	0x31, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00,
- 	0x70, 0x45, 0x2a, 0x76, 0x00, 0x00, 0x80, 0x00, /* 0x0f */
-@@ -122,8 +123,9 @@ static u8 vnt_vt3184_vt3226d0[] = {
- 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  /* 0xff */
- };
+-//const u16 cwRXBCNTSFOff[MAX_RATE] =
+-//{17, 34, 96, 192, 34, 23, 17, 11, 8, 5, 4, 3};
++/* const u16 cwRXBCNTSFOff[MAX_RATE] =
++   {17, 34, 96, 192, 34, 23, 17, 11, 8, 5, 4, 3}; */
  
--static const u16 awcFrameTime[MAX_RATE] =
--{10, 20, 55, 110, 24, 36, 48, 72, 96, 144, 192, 216};
-+static const u16 awcFrameTime[MAX_RATE] = {
-+	10, 20, 55, 110, 24, 36, 48, 72, 96, 144, 192, 216
+-static const u16 cwRXBCNTSFOff[MAX_RATE] =
+-{192, 96, 34, 17, 34, 23, 17, 11, 8, 5, 4, 3};
++static const u16 cwRXBCNTSFOff[MAX_RATE] = {
++	192, 96, 34, 17, 34, 23, 17, 11, 8, 5, 4, 3
 +};
  
  /*
-  * Description: Calculate data frame transmitting time
-@@ -191,9 +193,9 @@ unsigned int vnt_get_frame_time(u8 preamble_type, u8 pkt_type,
-  *      tx_rate           - Tx Rate
-  *  Out:
-  *	struct vnt_phy_field *phy
-- * 			- pointer to Phy Length field
-- *			- pointer to Phy Service field
-- * 			- pointer to Phy Signal field
-+ *		- pointer to Phy Length field
-+ *		- pointer to Phy Service field
-+ *		- pointer to Phy Signal field
-  *
-  * Return Value: none
-  *
-@@ -450,8 +452,9 @@ int BBbVT3184Init(struct vnt_private *priv)
- 		priv->ldBmThreshold[2] = 0;
- 		priv->ldBmThreshold[3] = 0;
- 		/* Fix VT3226 DFC system timing issue */
--		vnt_mac_reg_bits_on(priv, MAC_REG_SOFTPWRCTL2, SOFTPWRCTL_RFLEOPT);
--	} else if ((priv->byRFType == RF_VT3342A0)) {
-+		vnt_mac_reg_bits_on(priv, MAC_REG_SOFTPWRCTL2,
-+				    SOFTPWRCTL_RFLEOPT);
-+	} else if (priv->byRFType == RF_VT3342A0) {
- 		priv->byBBRxConf = vnt_vt3184_vt3226d0[10];
- 		length = sizeof(vnt_vt3184_vt3226d0);
- 		addr = vnt_vt3184_vt3226d0;
-@@ -467,7 +470,8 @@ int BBbVT3184Init(struct vnt_private *priv)
- 		priv->ldBmThreshold[2] = 0;
- 		priv->ldBmThreshold[3] = 0;
- 		/* Fix VT3226 DFC system timing issue */
--		vnt_mac_reg_bits_on(priv, MAC_REG_SOFTPWRCTL2, SOFTPWRCTL_RFLEOPT);
-+		vnt_mac_reg_bits_on(priv, MAC_REG_SOFTPWRCTL2,
-+				    SOFTPWRCTL_RFLEOPT);
- 	} else {
- 		return true;
+  * Description: Set NIC media channel
+@@ -477,7 +478,7 @@ void vnt_update_top_rates(struct vnt_private *priv)
  	}
+ 
+ 	priv->byTopCCKBasicRate = top_cck;
+- }
++}
+ 
+ int vnt_ofdm_min_rate(struct vnt_private *priv)
+ {
+@@ -673,9 +674,7 @@ void vnt_reset_next_tbtt(struct vnt_private *priv, u16 beacon_interval)
+ 	data[7] = (u8)(next_tbtt >> 56);
+ 
+ 	vnt_control_out(priv, MESSAGE_TYPE_SET_TSFTBTT,
+-		MESSAGE_REQUEST_TBTT, 0, 8, data);
+-
+-	return;
++			MESSAGE_REQUEST_TBTT, 0, 8, data);
+ }
+ 
+ /*
+@@ -710,11 +709,9 @@ void vnt_update_next_tbtt(struct vnt_private *priv, u64 tsf,
+ 	data[7] = (u8)(tsf >> 56);
+ 
+ 	vnt_control_out(priv, MESSAGE_TYPE_SET_TSFTBTT,
+-		MESSAGE_REQUEST_TBTT, 0, 8, data);
++			MESSAGE_REQUEST_TBTT, 0, 8, data);
+ 
+ 	dev_dbg(&priv->usb->dev, "%s TBTT: %8llx\n", __func__, tsf);
+-
+-	return;
+ }
+ 
+ /*
+diff --git a/drivers/staging/vt6656/card.h b/drivers/staging/vt6656/card.h
+index 5b7cc5a..03fc167 100644
+--- a/drivers/staging/vt6656/card.h
++++ b/drivers/staging/vt6656/card.h
+@@ -32,16 +32,9 @@
+ 
+ /* init card type */
+ 
+-typedef enum _CARD_PHY_TYPE {
+-    PHY_TYPE_AUTO = 0,
+-    PHY_TYPE_11B,
+-    PHY_TYPE_11G,
+-    PHY_TYPE_11A
+-} CARD_PHY_TYPE, *PCARD_PHY_TYPE;
+-
+-#define CB_MAX_CHANNEL_24G  14
+-#define CB_MAX_CHANNEL_5G       42 /* add channel9(5045MHz), 41==>42 */
+-#define CB_MAX_CHANNEL      (CB_MAX_CHANNEL_24G+CB_MAX_CHANNEL_5G)
++#define CB_MAX_CHANNEL_24G	14
++#define CB_MAX_CHANNEL_5G	42 /* add channel9(5045MHz), 41==>42 */
++#define CB_MAX_CHANNEL		(CB_MAX_CHANNEL_24G + CB_MAX_CHANNEL_5G)
+ 
+ struct vnt_private;
+ 
 -- 
 1.9.3
 
