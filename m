@@ -1,54 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751113AbaGMSQo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 14:16:44 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:49003 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886AbaGMSQh (ORCPT
+	id S1751229AbaGMSVg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 14:21:36 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:37558 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750921AbaGMSVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 14:16:37 -0400
+	Sun, 13 Jul 2014 14:21:30 -0400
+Date: Sun, 13 Jul 2014 19:21:23 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: Himangi Saraogi <himangi774@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: ambakmi - Use managed interfaces
+Message-ID: <20140713182123.GM21766@n2100.arm.linux.org.uk>
+References: <20140713173051.GA4299@himangi-Dell> <20140713175308.GL21766@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1407132010130.2060@localhost6.localdomain6>
 MIME-Version: 1.0
-In-Reply-To: <20140713093438.GA3115@infradead.org>
-References: <alpine.DEB.2.02.1407131105390.7520@ayla.of.borg>
-	<20140713093438.GA3115@infradead.org>
-Date: Sun, 13 Jul 2014 20:16:35 +0200
-X-Google-Sender-Auth: E4g7MlwhCh9ptbsOWqhuTvkac4Y
-Message-ID: <CAMuHMdXAaVkNTikKcSY5oOHGD=M3cYTLObXb5Hx7V0wHgSe+iA@mail.gmail.com>
-Subject: Re: [git pull] m68k updates for 3.16 (take 2)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1407132010130.2060@localhost6.localdomain6>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
+On Sun, Jul 13, 2014 at 08:11:29PM +0200, Julia Lawall wrote:
+> On Sun, 13 Jul 2014, Russell King - ARM Linux wrote:
+> 
+> > On Sun, Jul 13, 2014 at 11:00:51PM +0530, Himangi Saraogi wrote:
+> > > @@ -23,6 +23,7 @@
+> > >  #include <linux/clk.h>
+> > >  
+> > >  #include <asm/io.h>
+> > > +#include <linux/io.h>
+> > 
+> > NAK - please include either linux/io.h _or_ asm/io.h but not both.
+> > 
+> > > @@ -112,19 +113,10 @@ static int amba_kmi_probe(struct amba_device *dev,
+> > >  {
+> > >  	struct amba_kmi_port *kmi;
+> > >  	struct serio *io;
+> > > -	int ret;
+> > > -
+> > > -	ret = amba_request_regions(dev, NULL);
+> > > -	if (ret)
+> > > -		return ret;
+> > 
+> > I'm /really/ not happy about that going.
+> 
+> Could you explain why?  I looked at the code several times, and I couldn't 
+> see how it was different than request_mem_region, which is merged into 
+> devm_ioremap_resource.
 
-On Sun, Jul 13, 2014 at 11:34 AM, Christoph Hellwig <hch@infradead.org> wrote:
-> On Sun, Jul 13, 2014 at 11:08:07AM +0200, Geert Uytterhoeven wrote:
->>       m68k: Fix boot regression on machines with RAM at non-zero
->>       m68k: Export mach_random_get_entropy to modules
->
-> What modular user of random_get_entropy is this for?  Can't find one in
-> the current tree, and I don't really think this is something that should
-> be exported either.
+Check what gets used for the name of the resource.
 
-The second to last chunk of "crypto: drbg - Mix a time stamp into DRBG state"
-calls random_get_entropy(), cfr.
+Now, consider that most devices when they are registered have their
+resource names set to the device name.
 
-https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=27e4de2bd1804c24e3e517dd54026c1f60e8fe27
+Then realise that devm_ioremap_resource() uses the resource name or
+the device name again.  So, what you end up with in /proc/iomem is
+a load of stupidity - you don't get to see there which drivers are
+making use of the resources, only a load of duplicated information
+about what devices are using the regions.
 
-Gr{oetje,eeting}s,
+This is contary to other bus types (like PCI) where the _device_ takes
+the non-busy parent resource, and the driver takes the busy resource
+using the _driver_ name, not the device name.  The exception to this
+is network drivers which have in the past used the network device
+name.
 
-                        Geert
+Here's an example.  x86:
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+  fc000000-fc01ffff : 0000:00:19.0	<--- device name
+    fc000000-fc01ffff : e1000e		<--- driver name
+  fc020000-fc023fff : 0000:00:1b.0	<--- device name
+    fc020000-fc023fff : ICH HD audio	<--- driver name
+  fc024000-fc024fff : 0000:00:03.3
+  fc025000-fc025fff : 0000:00:19.0	<--- device name
+    fc025000-fc025fff : e1000e		<--- driver name
+  fc226000-fc2267ff : 0000:00:1f.2	<--- device name
+    fc226000-fc2267ff : ahci		<--- driver name
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+etc.  When using devm_ioremap_resource() this ends up as:
+
+02184000-021841ff : /soc/aips-bus@02100000/usb@02184000
+  02184000-021841ff : /soc/aips-bus@02100000/usb@02184000
+02184200-021843ff : /soc/aips-bus@02100000/usb@02184200
+  02184200-021843ff : /soc/aips-bus@02100000/usb@02184200
+
+which is really pointless duplicating the resource name like that.  It
+conveys no additional useful information.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
