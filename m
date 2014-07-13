@@ -1,96 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751081AbaGMWps (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 18:45:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54590 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750950AbaGMWpm (ORCPT
+	id S1751603AbaGMWs7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 18:48:59 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:14818 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750892AbaGMWsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 18:45:42 -0400
-Date: Sun, 13 Jul 2014 15:50:13 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: devel@driverdev.osuosl.org, oleg.drokin@intel.com, paf@cray.com,
-        andreas.dilger@intel.com, Andriy_Skulysh@xyratex.com,
-        bergwolf@gmail.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        denis.pithon@gmail.com
-Subject: Re: [PATCH] drivers: staging: lustre: Use 'force_die' instead of
- 'die' to avoid compiling issue
-Message-ID: <20140713225013.GB9681@kroah.com>
-References: <53C29CCF.9010008@gmail.com>
- <20140713190512.GA27311@kroah.com>
- <53C2FD24.5090506@gmail.com>
- <53C308A7.7080703@gmail.com>
- <53C30A60.4050901@gmail.com>
+	Sun, 13 Jul 2014 18:48:54 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1880LN3tYDy5crmr4dLVoiXJCCxudiWgTI=
+X-DKIM: OpenDKIM Filter v2.0.1 titan F16595AA041
+Date: Sun, 13 Jul 2014 18:48:31 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Shiyan <shc_work@mail.ru>, Barry Song <baohua@kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Larry Bassel <larry.bassel@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Sudeep Holla <sudeep.holla@arm.com>
+Subject: Re: [PATCH v2 02/15] ARM: pass IRQ domain to the core IRQ handler
+Message-ID: <20140713224831.GJ13108@titan.lakedaemon.net>
+References: <1404827141-30381-1-git-send-email-marc.zyngier@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53C30A60.4050901@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1404827141-30381-1-git-send-email-marc.zyngier@arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 06:38:24AM +0800, Chen Gang wrote:
-> On 07/14/2014 06:31 AM, Chen Gang wrote:
-> > On 07/14/2014 05:41 AM, Chen Gang wrote:
-> >> On 07/14/2014 03:05 AM, Greg Kroah-Hartman wrote:
-> >>> On Sun, Jul 13, 2014 at 10:50:55PM +0800, Chen Gang wrote:
-> >>>> Some of architectures have already defined 'die' as macro, so can not use
-> >>>> this common name as declaration in other modules, or will cause compiling
-> >>>> issue. So use more precise name 'force_die' (like 'wrap_bulk') instead of.
-> >>>>
-> >>>> The related error (with allmodconfig under score):
-> >>>>
-> >>>>     CC [M]  drivers/staging/lustre/lustre/ptlrpc/sec.o
-> >>>>   drivers/staging/lustre/lustre/ptlrpc/sec.c: In function 'sptlrpc_cli_ctx_expire':
-> >>>>   drivers/staging/lustre/lustre/ptlrpc/sec.c:309:13: error: 'struct ptlrpc_ctx_ops' has no member named '__die'
-> >>>>     ctx->cc_ops->die(ctx, 0);
-> >>>>                ^
-> >>>>   drivers/staging/lustre/lustre/ptlrpc/sec.c: In function 'ctx_refresh_timeout':
-> >>>>   drivers/staging/lustre/lustre/ptlrpc/sec.c:594:26: error: 'struct ptlrpc_ctx_ops' has no member named '__die'
-> >>>>      req->rq_cli_ctx->cc_ops->die(req->rq_cli_ctx, 0);
-> >>>>                             ^
-> >>>>   make[5]: *** [drivers/staging/lustre/lustre/ptlrpc/sec.o] Error 1
-> >>>>   make[4]: *** [drivers/staging/lustre/lustre/ptlrpc] Error 2
-> >>>>   make[3]: *** [drivers/staging/lustre/lustre] Error 2
-> >>>>   make[2]: *** [drivers/staging/lustre] Error 2
-> >>>>   make[1]: *** [drivers/staging] Error 2
-> >>>>   make: *** [drivers] Error 2
-> >>>>
-> >>>>
-> >>>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> >>>> ---
-> >>>>  drivers/staging/lustre/lustre/include/lustre_sec.h | 2 +-
-> >>>>  drivers/staging/lustre/lustre/ptlrpc/sec.c         | 6 +++---
-> >>>>  2 files changed, 4 insertions(+), 4 deletions(-)
-> >>>
-> >>> This doesn't apply to my tree, can you please refresh it against the
-> >>> staging-next branch of staging.git so that I can apply it?
-> >>>
-> > 
-> > 
-> > After checkout, I get the same patch, the related git link:
-> > 
-> >   "git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git".
+Marc,
+
+On Tue, Jul 08, 2014 at 02:45:40PM +0100, Marc Zyngier wrote:
+> Calling irq_find_mapping from outside a irq_{enter,exit} section is
+> unsafe and produces ugly messages if CONFIG_PROVE_RCU is enabled:
+> If coming from the idle state, the rcu_read_lock call in irq_find_mapping
+> will generate an an unpleasant warning.
 > 
-> Oh, sorry, maybe I need:
+> A solution is to add a new handle_domain_irq entry point into
+> the arm code that the interrupt controller code can call.
+> This new function takes an irq_domain, and calls into irq_find_domain
+> inside the irq_{enter,exit} block.
 > 
->   "git clone -b staging-next git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git"
+> Interrupt controllers can then be updated to use the new mechanism.
 > 
-> And I shall try again, and finish within 2 days.
+> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+> ---
+> Sending the right patch this time, with the missing includes that would
+> otherwise break the build...
+> 
+>  arch/arm/include/asm/irq.h |  2 ++
+>  arch/arm/kernel/irq.c      | 25 +++++++++++++++++++++----
+>  2 files changed, 23 insertions(+), 4 deletions(-)
 
-Yes, you need the staging-next branch.
+Please place in Russell's patch tracker,
 
-You can take your original clone of:
-	git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
+Acked-by: Jason Cooper <jason@lakedaemon.net>
 
-and then just check out the staging-next branch in it:
-	git checkout -t -b staging-next origin/staging-next
+Once it lands in a release, we'll apply the rest.  Please send me a
+gentle reminder ;-)
 
-no need to do another full clone.
+thx,
 
-thanks,
-
-greg k-h
+Jason.
