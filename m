@@ -1,75 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448AbaGMXVt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 19:21:49 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:36208 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751117AbaGMXVl (ORCPT
+	id S1752359AbaGMXYD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 19:24:03 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:60000 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500AbaGMXX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 19:21:41 -0400
+	Sun, 13 Jul 2014 19:23:58 -0400
+Message-ID: <53C31501.3080707@gmail.com>
+Date: Mon, 14 Jul 2014 07:23:45 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <CAH2r5muwjdPopeGCOi8a7OxAm=8cFsFKsEBywz5N1NQWotni6Q@mail.gmail.com>
-References: <CAH2r5muwjdPopeGCOi8a7OxAm=8cFsFKsEBywz5N1NQWotni6Q@mail.gmail.com>
-Date: Sun, 13 Jul 2014 16:21:40 -0700
-Message-ID: <CAN05THTTXU_=8rboaJfePmNDU6rNK9suMPTyXrvvnmd9CQF3Rw@mail.gmail.com>
-Subject: Re: Additional performance data on Pavel's smb3 multi credit patch series
-From: ronnie sahlberg <ronniesahlberg@gmail.com>
-To: Steve French <smfrench@gmail.com>
-Cc: "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
-        samba-technical <samba-technical@lists.samba.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: devel@driverdev.osuosl.org, oleg.drokin@intel.com, paf@cray.com,
+        andreas.dilger@intel.com, Andriy_Skulysh@xyratex.com,
+        bergwolf@gmail.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        denis.pithon@gmail.com
+Subject: Re: [PATCH] drivers: staging: lustre: Use 'force_die' instead of
+ 'die' to avoid compiling issue
+References: <53C29CCF.9010008@gmail.com> <20140713190512.GA27311@kroah.com> <53C2FD24.5090506@gmail.com> <53C308A7.7080703@gmail.com> <53C30A60.4050901@gmail.com> <20140713225013.GB9681@kroah.com>
+In-Reply-To: <20140713225013.GB9681@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Impressive!
+On 07/14/2014 06:50 AM, Greg Kroah-Hartman wrote:
+> On Mon, Jul 14, 2014 at 06:38:24AM +0800, Chen Gang wrote:
+>> On 07/14/2014 06:31 AM, Chen Gang wrote:
+>>> On 07/14/2014 05:41 AM, Chen Gang wrote:
+>>>> On 07/14/2014 03:05 AM, Greg Kroah-Hartman wrote:
+>>>>> On Sun, Jul 13, 2014 at 10:50:55PM +0800, Chen Gang wrote:
+>>>>>> Some of architectures have already defined 'die' as macro, so can not use
+>>>>>> this common name as declaration in other modules, or will cause compiling
+>>>>>> issue. So use more precise name 'force_die' (like 'wrap_bulk') instead of.
+>>>>>>
+>>>>>> The related error (with allmodconfig under score):
+>>>>>>
+>>>>>>     CC [M]  drivers/staging/lustre/lustre/ptlrpc/sec.o
+>>>>>>   drivers/staging/lustre/lustre/ptlrpc/sec.c: In function 'sptlrpc_cli_ctx_expire':
+>>>>>>   drivers/staging/lustre/lustre/ptlrpc/sec.c:309:13: error: 'struct ptlrpc_ctx_ops' has no member named '__die'
+>>>>>>     ctx->cc_ops->die(ctx, 0);
+>>>>>>                ^
+>>>>>>   drivers/staging/lustre/lustre/ptlrpc/sec.c: In function 'ctx_refresh_timeout':
+>>>>>>   drivers/staging/lustre/lustre/ptlrpc/sec.c:594:26: error: 'struct ptlrpc_ctx_ops' has no member named '__die'
+>>>>>>      req->rq_cli_ctx->cc_ops->die(req->rq_cli_ctx, 0);
+>>>>>>                             ^
+>>>>>>   make[5]: *** [drivers/staging/lustre/lustre/ptlrpc/sec.o] Error 1
+>>>>>>   make[4]: *** [drivers/staging/lustre/lustre/ptlrpc] Error 2
+>>>>>>   make[3]: *** [drivers/staging/lustre/lustre] Error 2
+>>>>>>   make[2]: *** [drivers/staging/lustre] Error 2
+>>>>>>   make[1]: *** [drivers/staging] Error 2
+>>>>>>   make: *** [drivers] Error 2
+>>>>>>
+>>>>>>
+>>>>>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>>>>>> ---
+>>>>>>  drivers/staging/lustre/lustre/include/lustre_sec.h | 2 +-
+>>>>>>  drivers/staging/lustre/lustre/ptlrpc/sec.c         | 6 +++---
+>>>>>>  2 files changed, 4 insertions(+), 4 deletions(-)
+>>>>>
+>>>>> This doesn't apply to my tree, can you please refresh it against the
+>>>>> staging-next branch of staging.git so that I can apply it?
+>>>>>
+>>>
+>>>
+>>> After checkout, I get the same patch, the related git link:
+>>>
+>>>   "git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git".
+>>
+>> Oh, sorry, maybe I need:
+>>
+>>   "git clone -b staging-next git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git"
+>>
+>> And I shall try again, and finish within 2 days.
+> 
+> Yes, you need the staging-next branch.
+> 
+> You can take your original clone of:
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
+> 
+> and then just check out the staging-next branch in it:
+> 	git checkout -t -b staging-next origin/staging-next
+> 
+> no need to do another full clone.
+> 
 
-On Sun, Jul 13, 2014 at 12:23 PM, Steve French <smfrench@gmail.com> wrote:
-> Performance of Pavel's multicredit i/o SMB3 patches continues to look
-> good.  Additional informal performance results below comparing cifs
-> mounts with smb3 mounts (vers=3.0) with and without Pavel's patch set.
-> I plan to do additional testing with large rsize/wsize (default with
-> Pavel's code is 1MB).
->
-> 3.16-rc4 (Ubuntu) on client.  Server is Windows 8.1.  Both VMs on same
-> host (host disk is fairly fast SSD).
->
-> Copy to server performance increased about 20% percent
-> dd if=/dev/zero of=/mnt/targetfile bs=80M count=25
-> got similar results with or without conv=fdatasync
->
-> 1st run copying to empty directory, 2nd run copying over targetfile,
-> (pattern repeated multiple times) averaging results
->
-> New code (with Pavel's patches)
-> ---------------------------------------------
-> CIFS 167MB/s
-> SMB3 200MB/s
->
-> Existing code (without his patches)
-> ------------------------------------------------
-> SMB3 166MB/s
-> CIFS 164.5MB/s
->
-> For large file reading SMB3 performance with Pavel's patches increased
-> 76% over existing SMB3 code
-> dd of=/dev/null if=/mnt/targetfile bs=80M count=25
-> (mounting and unmounting between attempts to avoid caching effects on
-> the client)
->
-> New code (with Pavel's patches)
-> ---------------------------------------------
-> CIFS 114MB/s
-> SMB3 216MB/s
->
-> Existing code (without his patches)
-> ------------------------------------------------
-> SMB3 123MB/s
-> CIFS 110MB/s
->
-> --
-> Thanks,
->
-> Steve
+OK, thanks. I will finish it within this night (Chinese region).
+
+Thanks.
+-- 
+Chen Gang
+
+Open share and attitude like air water and life which God blessed
