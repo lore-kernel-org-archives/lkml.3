@@ -1,72 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952AbaGMSoV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 14:44:21 -0400
-Received: from asavdk4.altibox.net ([109.247.116.15]:60661 "EHLO
-	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522AbaGMSn2 (ORCPT
+	id S1751669AbaGMSnm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 14:43:42 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:33801 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751081AbaGMSnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 14:43:28 -0400
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Herrmann <dh.herrmann@googlemail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Sam Ravnborg <sam@ravnborg.org>
-Subject: [PATCH 5/6] samples: fix warnings in uhid-example
-Date: Sun, 13 Jul 2014 20:42:53 +0200
-Message-Id: <1405276974-17323-5-git-send-email-sam@ravnborg.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1405276974-17323-1-git-send-email-sam@ravnborg.org>
-References: <20140713183636.GA17241@ravnborg.org>
- <1405276974-17323-1-git-send-email-sam@ravnborg.org>
+	Sun, 13 Jul 2014 14:43:24 -0400
+Date: Sun, 13 Jul 2014 11:42:37 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: mingo@kernel.org
+Cc: linux-kernel@vger.kernel.org, fabf@skynet.be, bobby.prani@gmail.com,
+        davidshan@tencent.com, joe@perches.com, keescook@chromium.org
+Subject: [GIT PULL rcu/next] RCU commits for 3.17
+Message-ID: <20140713184237.GA30855@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14071318-6688-0000-0000-000003431F5B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix following warnings seen when building using i686:
-uhid-example.c: In function ‘uhid_write’:
-uhid-example.c:168:4: warning: format ‘%ld’ expects argument of type ‘long int’, but argument 3 has type ‘ssize_t’ [-Wformat=]
-uhid-example.c:168:4: warning: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 4 has type ‘unsigned int’ [-Wformat=]
-uhid-example.c: In function ‘event’:
-uhid-example.c:239:4: warning: format ‘%ld’ expects argument of type ‘long int’, but argument 3 has type ‘ssize_t’ [-Wformat=]
-uhid-example.c:239:4: warning: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 4 has type ‘unsigned int’ [-Wformat=]
+Hello, Ingo,
 
-Use "%xd" for arguments of type size_t to fix the warnings.
+The changes in this series include:
 
-Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-Cc: David Herrmann <dh.herrmann@googlemail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>
----
- samples/uhid/uhid-example.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+1.	Update RCU documentation.  These were posted to LKML at
+	https://lkml.org/lkml/2014/7/7/650.
 
-diff --git a/samples/uhid/uhid-example.c b/samples/uhid/uhid-example.c
-index 7d58a4b..f25a5ef 100644
---- a/samples/uhid/uhid-example.c
-+++ b/samples/uhid/uhid-example.c
-@@ -164,7 +164,7 @@ static int uhid_write(int fd, const struct uhid_event *ev)
- 		fprintf(stderr, "Cannot write to uhid: %m\n");
- 		return -errno;
- 	} else if (ret != sizeof(*ev)) {
--		fprintf(stderr, "Wrong size written to uhid: %ld != %lu\n",
-+		fprintf(stderr, "Wrong size written to uhid: %zd != %zd\n",
- 			ret, sizeof(ev));
- 		return -EFAULT;
- 	} else {
-@@ -235,7 +235,7 @@ static int event(int fd)
- 		fprintf(stderr, "Cannot read uhid-cdev: %m\n");
- 		return -errno;
- 	} else if (ret != sizeof(ev)) {
--		fprintf(stderr, "Invalid size read from uhid-dev: %ld != %lu\n",
-+		fprintf(stderr, "Invalid size read from uhid-dev: %zd != %zd\n",
- 			ret, sizeof(ev));
- 		return -EFAULT;
- 	}
--- 
-1.9.3
+2.	Miscellaneous fixes.  These were posted to LKML at
+	https://lkml.org/lkml/2014/7/7/678.
+
+3.	Maintainership changes.  These were posted to LKML at
+	https://lkml.org/lkml/2014/7/7/713, with a couple of
+	additional at https://lkml.org/lkml/2014/7/3/812 and
+	https://lkml.org/lkml/2014/6/2/585.
+
+4.	Torture-test updates.  These were posted to LKML at
+	https://lkml.org/lkml/2014/7/7/816.
+
+5.	Callback-offloading changes.  These were posted to LKML at
+	https://lkml.org/lkml/2014/7/7/1007.
+
+All of these have been exposed to -next testing.
+These changes are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
+
+for you to fetch changes up to 1823172ab582eb54456fd1354869bb850a1196ba:
+
+  Merge branches 'doc.2014.07.08a', 'fixes.2014.07.09a', 'maintainers.2014.07.08b', 'nocbs.2014.07.07a' and 'torture.2014.07.07a' into HEAD (2014-07-09 09:16:54 -0700)
+
+----------------------------------------------------------------
+
+Fabian Frederick (1):
+      rcu: Make rcu node arrays static const char * const
+
+Joe Perches (2):
+      rcu: Update rcu torture maintainership filename patterns
+      scripts: Teach get_maintainer.pl about the new "R:" tag
+
+Kees Cook (1):
+      torture: Avoid format string leak to thead name
+
+Paul E. McKenney (23):
+      torture: Enable versions without CFcommon to function correctly
+      torture: Clean up diagnostics from --buildonly runs
+      MAINTAINERS: Add "R:" designated-reviewers tag
+      rcu: Add designated reviewers for RCU
+      rcu: Parallelize and economize NOCB kthread wakeups
+      rcu: Don't offload callbacks unless specifically requested
+      documentation: Clarify wake-up/memory-barrier relationship
+      documentation: Add acquire/release barriers to pairing rules
+      documentation: Add pointer to percpu-ref for RCU and refcount
+      rcu: Update RCU maintainership
+      rcu: Document deadlock-avoidance information for rcu_read_unlock()
+      rcu: Handle obsolete references to TINY_PREEMPT_RCU
+      signal: Explain local_irq_save() call
+      rcu: Remove redundant ACCESS_ONCE() from tick_do_timer_cpu
+      rcu: Eliminate read-modify-write ACCESS_ONCE() calls
+      rcu: Loosen __call_rcu()'s rcu_head alignment constraint
+      rcu: Allow post-unlock reference for rt_mutex
+      rcu: Simplify priority boosting by putting rt_mutex in rcu_node
+      rcu: Bind grace-period kthreads to non-NO_HZ_FULL CPUs
+      rcu: Don't use NMIs to dump other CPUs' stacks
+      rcu: Remove CONFIG_PROVE_RCU_DELAY
+      rcu: Fix __rcu_reclaim() to use true/false for bool
+      Merge branches 'doc.2014.07.08a', 'fixes.2014.07.09a', 'maintainers.2014.07.08b', 'nocbs.2014.07.07a' and 'torture.2014.07.07a' into HEAD
+
+Pranith Kumar (4):
+      documentation: Update reference, kerneltrap.org no longer works
+      rcu: Check both root and current rcu_node when setting up future grace period
+      rcu: Fix a sparse warning in rcu_initiate_boost()
+      rcu: Fix a sparse warning in rcu_report_unblock_qs_rnp()
+
+Shan Wei (1):
+      rcu: Use __this_cpu_read() instead of per_cpu_ptr()
+
+ Documentation/RCU/RTFP.txt                         |   4 +-
+ Documentation/RCU/rcuref.txt                       |   9 +
+ Documentation/kernel-parameters.txt                |   7 +
+ Documentation/memory-barriers.txt                  |  27 +-
+ MAINTAINERS                                        |  18 +-
+ include/linux/init_task.h                          |   9 +-
+ include/linux/rcupdate.h                           |  45 ++-
+ include/linux/sched.h                              |   6 -
+ include/linux/tick.h                               |  20 ++
+ init/Kconfig                                       |   6 +-
+ kernel/rcu/rcu.h                                   |   8 +-
+ kernel/rcu/srcu.c                                  |   4 +-
+ kernel/rcu/tree.c                                  |  59 ++--
+ kernel/rcu/tree.h                                  |  36 ++-
+ kernel/rcu/tree_plugin.h                           | 301 +++++++++++++++++----
+ kernel/rcu/update.c                                |   3 -
+ kernel/signal.c                                    |   4 +
+ kernel/time/tick-sched.c                           |  10 +
+ kernel/torture.c                                   |   2 +-
+ lib/Kconfig.debug                                  |  14 -
+ scripts/get_maintainer.pl                          |  22 +-
+ .../selftests/rcutorture/bin/kvm-recheck.sh        |   8 +-
+ .../selftests/rcutorture/bin/kvm-test-1-run.sh     |   9 +-
+ tools/testing/selftests/rcutorture/bin/kvm.sh      |  21 +-
+ .../selftests/rcutorture/configs/rcu/TREE01        |   1 -
+ .../selftests/rcutorture/configs/rcu/TREE02        |   1 -
+ .../selftests/rcutorture/configs/rcu/TREE02-T      |   1 -
+ .../selftests/rcutorture/configs/rcu/TREE03        |   1 -
+ .../selftests/rcutorture/configs/rcu/TREE04        |   1 -
+ .../selftests/rcutorture/configs/rcu/TREE05        |   1 -
+ .../selftests/rcutorture/configs/rcu/TREE06        |   1 -
+ .../selftests/rcutorture/configs/rcu/TREE07        |   1 -
+ .../selftests/rcutorture/configs/rcu/TREE08        |   1 -
+ .../selftests/rcutorture/configs/rcu/TREE08-T      |   1 -
+ .../selftests/rcutorture/configs/rcu/TREE09        |   1 -
+ .../configs/rcu/v0.0/P5-U-T-NH-sd-SMP-hp           |   1 -
+ .../configs/rcu/v3.12/P5-U-T-NH-sd-SMP-hp          |   1 -
+ .../configs/rcu/v3.3/P5-U-T-NH-sd-SMP-hp           |   1 -
+ .../configs/rcu/v3.5/P5-U-T-NH-sd-SMP-hp           |   1 -
+ .../selftests/rcutorture/doc/TREE_RCU-kconfig.txt  |   1 -
+ 40 files changed, 491 insertions(+), 177 deletions(-)
 
