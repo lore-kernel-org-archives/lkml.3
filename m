@@ -1,44 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870AbaGMOzV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 10:55:21 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:18477 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753673AbaGMOzP (ORCPT
+	id S1753908AbaGMOz3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 10:55:29 -0400
+Received: from mail-yk0-f176.google.com ([209.85.160.176]:39216 "EHLO
+	mail-yk0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753866AbaGMOzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 10:55:15 -0400
-To: "Reddy\, Sreekanth" <Sreekanth.Reddy@avagotech.com>
-Cc: <jejb@kernel.org>, <JBottomley@Parallels.com>,
-        <linux-scsi@vger.kernel.org>, <Sathya.Prakash@avagotech.com>,
-        <Nagalakshmi.Nandigama@avagotech.com>, <linux-kernel@vger.kernel.org>,
-        <hch@infradead.org>, <martin.petersen@oracle.com>
-Subject: Re: [RESEND][PATCH 01/10][SCSI]mpt2sas: Added driver module parameter max_msix_vectors
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <20140625103028.GA12870@avagotech.com>
-Date: Sun, 13 Jul 2014 10:54:40 -0400
-In-Reply-To: <20140625103028.GA12870@avagotech.com> (Sreekanth Reddy's message
-	of "Wed, 25 Jun 2014 16:00:28 +0530")
-Message-ID: <yq1egxpz4un.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
+	Sun, 13 Jul 2014 10:55:21 -0400
+Date: Sun, 13 Jul 2014 11:49:29 -0300
+From: Lucas Tanure <tanure@linux.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [RESEND PATCH] staging: android: Clean up binder_send_failed_reply
+Message-ID: <20140713144929.GA6656@archDesk>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Sreekanth" == Reddy, Sreekanth <Sreekanth.Reddy@avagotech.com> writes:
+Kernel coding style. Remove useless else statement after return.
 
-Sreekanth> Added driver module parameter max_msix_vectors. Using this
-Sreekanth> module parameter the maximum number of MSI-X vectors could be
-Sreekanth> set.
+Signed-off-by: Lucas Tanure <tanure@linux.com>
+---
+ drivers/staging/android/binder.c | 27 +++++++++++++--------------
+ 1 file changed, 13 insertions(+), 14 deletions(-)
 
-Sreekanth> The number of MSI-X vectors used would be the minimum of
-Sreekanth> MSI-X vectors supported by the HBA, the number of CPU cores
-Sreekanth> and the value set to max_msix_vectors module parameters.
-
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
-
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index 14714a6..67c9847 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -1210,24 +1210,23 @@ static void binder_send_failed_reply(struct binder_transaction *t,
+ 					target_thread->return_error);
+ 			}
+ 			return;
+-		} else {
+-			struct binder_transaction *next = t->from_parent;
++		}
++		struct binder_transaction *next = t->from_parent;
+ 
+-			binder_debug(BINDER_DEBUG_FAILED_TRANSACTION,
+-				     "send failed reply for transaction %d, target dead\n",
+-				     t->debug_id);
++		binder_debug(BINDER_DEBUG_FAILED_TRANSACTION,
++			"send failed reply for transaction %d, target dead\n",
++			t->debug_id);
+ 
+-			binder_pop_transaction(target_thread, t);
+-			if (next == NULL) {
+-				binder_debug(BINDER_DEBUG_DEAD_BINDER,
+-					     "reply failed, no target thread at root\n");
+-				return;
+-			}
+-			t = next;
++		binder_pop_transaction(target_thread, t);
++		if (next == NULL) {
+ 			binder_debug(BINDER_DEBUG_DEAD_BINDER,
+-				     "reply failed, no target thread -- retry %d\n",
+-				      t->debug_id);
++				     "reply failed, no target thread at root\n");
++			return;
+ 		}
++		t = next;
++		binder_debug(BINDER_DEBUG_DEAD_BINDER,
++			     "reply failed, no target thread -- retry %d\n",
++			      t->debug_id);
+ 	}
+ }
+ 
 -- 
-Martin K. Petersen	Oracle Linux Engineering
+2.0.1
+
