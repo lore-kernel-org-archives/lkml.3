@@ -1,46 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997AbaGMQMf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 12:12:35 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:62799 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753740AbaGMQM0 (ORCPT
+	id S1754080AbaGMQPA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 12:15:00 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:36970 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753740AbaGMQOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 12:12:26 -0400
-Message-ID: <53C2AFE7.5080505@gmail.com>
-Date: Sun, 13 Jul 2014 19:12:23 +0300
-From: Avi Kivity <avi.kivity@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Eric Northup <digitaleric@google.com>
-CC: KVM <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] KVM: x86 emulator: emulate MOVNTDQ
-References: <20140711175345.19079.28143.stgit@gimli.home>	 <CAG7+5M3Er0bd2pnuGjzp8z8MMBJG9bKTpsCQ_SrZASnjcwLW5A@mail.gmail.com> <1405109152.4098.99.camel@ul30vt.home> <53C04BDB.1080707@redhat.com>
-In-Reply-To: <53C04BDB.1080707@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 13 Jul 2014 12:14:51 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: forest@alittletooquiet.net, gregkh@linuxfoundation.org, tvboxspy@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Cc: Peter Senna Tschudin <peter.senna@gmail.com>
+Subject: [PATCH] staging: vt6556: Cleanup coding style issues
+Date: Sun, 13 Jul 2014 18:14:37 +0200
+Message-Id: <1405268077-8802-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch cleanup coding style issues reported by checkpatch.
 
-On 07/11/2014 11:40 PM, Paolo Bonzini wrote:
-> Il 11/07/2014 22:05, Alex Williamson ha scritto:
->> Which will return 'true' for this whether I specify Aligned or not.  If
->> the standard convention is to make it explicit, I'm happy to add the
->> extra flag, but I think we already #GP on unaligned as implemented here.
->> Thanks,
->
-> We should still specify Aligned if the corresponding AVX instruction 
-> requires an aligned operand.  ISTR that this is not the case for 
-> MOVNTDQ, so your patch is correct.  I'll check the SDM more carefully 
-> next Monday.
->
+Additionally this typedef was removed from card.h:
 
-The explicitly aligned/unaligned instructions have an A or a U to 
-indicate this (e.g. MOVDQU = explicitly unaligned, MOVDQA = explicitly 
-aligned, MOVNTDQ = default).
+typedef enum _CARD_PHY_TYPE {
+    PHY_TYPE_AUTO = 0,
+    PHY_TYPE_11B,
+    PHY_TYPE_11G,
+    PHY_TYPE_11A
+} CARD_PHY_TYPE, *PCARD_PHY_TYPE;
+
+Tested by compilation only.
+
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+---
+Done against latest staging-next.
+
+ drivers/staging/vt6656/card.c | 19 ++++++++-----------
+ drivers/staging/vt6656/card.h | 13 +++----------
+ 2 files changed, 11 insertions(+), 21 deletions(-)
+
+diff --git a/drivers/staging/vt6656/card.c b/drivers/staging/vt6656/card.c
+index ea06b63..f469d68 100644
+--- a/drivers/staging/vt6656/card.c
++++ b/drivers/staging/vt6656/card.c
+@@ -55,11 +55,12 @@
+ #include "key.h"
+ #include "usbpipe.h"
+ 
+-//const u16 cwRXBCNTSFOff[MAX_RATE] =
+-//{17, 34, 96, 192, 34, 23, 17, 11, 8, 5, 4, 3};
++/* const u16 cwRXBCNTSFOff[MAX_RATE] =
++   {17, 34, 96, 192, 34, 23, 17, 11, 8, 5, 4, 3}; */
+ 
+-static const u16 cwRXBCNTSFOff[MAX_RATE] =
+-{192, 96, 34, 17, 34, 23, 17, 11, 8, 5, 4, 3};
++static const u16 cwRXBCNTSFOff[MAX_RATE] = {
++	192, 96, 34, 17, 34, 23, 17, 11, 8, 5, 4, 3
++};
+ 
+ /*
+  * Description: Set NIC media channel
+@@ -477,7 +478,7 @@ void vnt_update_top_rates(struct vnt_private *priv)
+ 	}
+ 
+ 	priv->byTopCCKBasicRate = top_cck;
+- }
++}
+ 
+ int vnt_ofdm_min_rate(struct vnt_private *priv)
+ {
+@@ -673,9 +674,7 @@ void vnt_reset_next_tbtt(struct vnt_private *priv, u16 beacon_interval)
+ 	data[7] = (u8)(next_tbtt >> 56);
+ 
+ 	vnt_control_out(priv, MESSAGE_TYPE_SET_TSFTBTT,
+-		MESSAGE_REQUEST_TBTT, 0, 8, data);
+-
+-	return;
++			MESSAGE_REQUEST_TBTT, 0, 8, data);
+ }
+ 
+ /*
+@@ -710,11 +709,9 @@ void vnt_update_next_tbtt(struct vnt_private *priv, u64 tsf,
+ 	data[7] = (u8)(tsf >> 56);
+ 
+ 	vnt_control_out(priv, MESSAGE_TYPE_SET_TSFTBTT,
+-		MESSAGE_REQUEST_TBTT, 0, 8, data);
++			MESSAGE_REQUEST_TBTT, 0, 8, data);
+ 
+ 	dev_dbg(&priv->usb->dev, "%s TBTT: %8llx\n", __func__, tsf);
+-
+-	return;
+ }
+ 
+ /*
+diff --git a/drivers/staging/vt6656/card.h b/drivers/staging/vt6656/card.h
+index 5b7cc5a..03fc167 100644
+--- a/drivers/staging/vt6656/card.h
++++ b/drivers/staging/vt6656/card.h
+@@ -32,16 +32,9 @@
+ 
+ /* init card type */
+ 
+-typedef enum _CARD_PHY_TYPE {
+-    PHY_TYPE_AUTO = 0,
+-    PHY_TYPE_11B,
+-    PHY_TYPE_11G,
+-    PHY_TYPE_11A
+-} CARD_PHY_TYPE, *PCARD_PHY_TYPE;
+-
+-#define CB_MAX_CHANNEL_24G  14
+-#define CB_MAX_CHANNEL_5G       42 /* add channel9(5045MHz), 41==>42 */
+-#define CB_MAX_CHANNEL      (CB_MAX_CHANNEL_24G+CB_MAX_CHANNEL_5G)
++#define CB_MAX_CHANNEL_24G	14
++#define CB_MAX_CHANNEL_5G	42 /* add channel9(5045MHz), 41==>42 */
++#define CB_MAX_CHANNEL		(CB_MAX_CHANNEL_24G + CB_MAX_CHANNEL_5G)
+ 
+ struct vnt_private;
+ 
+-- 
+1.9.3
 
