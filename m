@@ -1,74 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144AbaGMJLM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 05:11:12 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:43597 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752471AbaGMJLD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 05:11:03 -0400
-Date: Sun, 13 Jul 2014 05:10:59 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: behanw@converseincode.com
-cc: anurag19aggarwal@gmail.com, catalin.marinas@arm.com, charlebm@gmail.com,
-        dave.long@linaro.org, k.khlebnikov@samsung.com, linux@arm.linux.org.uk,
-        linyongting@gmail.com, Nikolay.Borisov@arm.com, tglx@linutronix.de,
-        u.kleine-koenig@pengutronix.de, will.deacon@arm.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        rabin@rab.in, rostedt@goodmis.org, dwmw2@infradead.org
-Subject: Re: [PATCH 0/6] LLVMLinux: Patches to enable the kernel to be compiled
- with clang/LLVM
-In-Reply-To: <1404850576-2006-1-git-send-email-behanw@converseincode.com>
-Message-ID: <alpine.LFD.2.11.1407130508580.3647@knanqh.ubzr>
-References: <1404850576-2006-1-git-send-email-behanw@converseincode.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S1753232AbaGMJLZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 05:11:25 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753124AbaGMJLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jul 2014 05:11:13 -0400
+Message-ID: <53C24D21.5070202@nod.at>
+Date: Sun, 13 Jul 2014 11:10:57 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Oren Twaig <oren@scalemp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        David Rientjes <rientjes@google.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Andi Kleen <ak@linux.intel.com>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Ping: Re: [PATCH v2] x86, vsmp: Remove is_vsmp_box() from apic_is_clustered_box()
+References: <1404036068-11674-1-git-send-email-oren@scalemp.com> <53B8EDA6.5020704@scalemp.com> <53C22C8A.2010406@scalemp.com>
+In-Reply-To: <53C22C8A.2010406@scalemp.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Jul 2014, behanw@converseincode.com wrote:
+Am 13.07.2014 08:51, schrieb Oren Twaig:
+> ping
+> On 07/06/2014 09:33 AM, Oren Twaig wrote:
+>> Hi,
+>>
+>> Quick question: As I'm new at this (submitting patches), what is a reasonable
+>> time to wait before ping-ing a patch ?
+>>
+>> Oren.
 
-> From: Behan Webster <behanw@converseincode.com>
-> 
-> The LLVMLinux project aims to fully build the Linux kernel using both gcc and
-> clang (the C front end for the LLVM compiler infrastructure project). 
-> 
-> Clang only supports global named registers for non-allocatable registers like
-> the stack pointer. By centralizing the definition of current_stack_pointer, the
-> use of named registers for ARM remains largely unchanged while working for both
-> gcc and clang.
+AFACT Peter is still crawling through his mail backlog to catch up.
 
-You verified that the compiled code is identical on gcc?  If so:
-
-Acked-by: Nicolas Pitre <nico@linaro.org>
-
-> 
-> Behan Webster (6):
->   arm: LLVMLinux: Add global named register current_stack_pointer for
->     ARM
->   arm: LLVMLinux: Use current_stack_pointer to calculate pt_regs address
->   arm: LLVMLinux: Use current_stack_pointer for return_address
->   arm: LLVMLinux: Use current_stack_pointer in save_stack_trace_tsk
->   arm: LLVMLinux: Calculate current_thread_info from
->     current_stack_pointer
->   arm: LLVMLinux: Use current_stack_pointer in unwind_backtrace
-> 
->  arch/arm/include/asm/ptrace.h      | 5 ++---
->  arch/arm/include/asm/thread_info.h | 9 +++++++--
->  arch/arm/kernel/return_address.c   | 3 +--
->  arch/arm/kernel/stacktrace.c       | 4 +---
->  arch/arm/kernel/unwind.c           | 3 +--
->  5 files changed, 12 insertions(+), 12 deletions(-)
-> 
-> -- 
-> 1.9.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+Thanks,
+//richard
