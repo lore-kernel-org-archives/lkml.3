@@ -1,113 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754027AbaGNJYu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 05:24:50 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:56535 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752967AbaGNJYm (ORCPT
+	id S1752915AbaGNJ3T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 05:29:19 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:54970 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349AbaGNJ3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 05:24:42 -0400
-Date: Mon, 14 Jul 2014 11:24:35 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: Re: [PATCH 01/13] clk: tegra: Add binding for the Tegra124 DFLL
- clocksource
-Message-ID: <20140714092434.GA9755@ulmo>
-References: <1405028569-14253-1-git-send-email-ttynkkynen@nvidia.com>
- <1405028569-14253-2-git-send-email-ttynkkynen@nvidia.com>
- <CAL1qeaFF0ZpUFovxTuLXrBPRg2Lbf-754Z=ztD5HFZPbfnDsAw@mail.gmail.com>
- <53C01558.3090607@nvidia.com>
- <CAL1qeaHETQ7kSGNjPiwi_9WNMtr9qZp0KwjZCCxY29+_N4AcuA@mail.gmail.com>
- <53C01D17.2050906@nvidia.com>
- <20140714083854.GO2081@ulmo>
- <20140714091233.GC6800@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+HP7ph2BbKc20aGI"
-Content-Disposition: inline
-In-Reply-To: <20140714091233.GC6800@sirena.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 14 Jul 2014 05:29:15 -0400
+From: Ionut Alexa <ionut.m.alexa@gmail.com>
+To: arjan@linux.intel, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Ionut Alexa <ionut.m.alexa@gmail.com>
+Subject: [PATCH] kernel:async :changed printk to pr_debug to respect coding style.
+Date: Mon, 14 Jul 2014 12:29:51 +0300
+Message-Id: <1405330191-26211-1-git-send-email-ionut.m.alexa@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fixed coding style issues by replacing printk with pr_debug.
 
---+HP7ph2BbKc20aGI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Ionut Alexa <ionut.m.alexa@gmail.com>
+---
+ kernel/async.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-On Mon, Jul 14, 2014 at 10:12:33AM +0100, Mark Brown wrote:
-> On Mon, Jul 14, 2014 at 10:38:56AM +0200, Thierry Reding wrote:
-> > On Fri, Jul 11, 2014 at 08:21:27PM +0300, Tuomas Tynkkynen wrote:
->=20
-> > > I don't think we can assume that each selector maps to a concrete reg=
-ister
-> > > value, though I'm not sure. include/linux/regulator/driver.h document=
-s for
-> > > @list_voltage "Selectors range from zero to one less
-> > > regulator_desc.n_voltages." but maybe the consumer API could take dif=
-ferent
-> > > values.
->=20
-> > I don't think the regulator API makes any guarantees that the selector
-> > corresponds to a register value. Adding Mark Brown, maybe he can help
-> > figure out the best way to do this.
->=20
-> The selector value is opaque, it's entirely up to the driver to define
-> it.  If you could tell me what "this" is I might be able to advise on
-> how to do it.
+diff --git a/kernel/async.c b/kernel/async.c
+index 61f023c..c82276c 100644
+--- a/kernel/async.c
++++ b/kernel/async.c
+@@ -111,11 +111,12 @@ static void async_run_entry_fn(struct work_struct *work)
+ 	struct async_entry *entry =
+ 		container_of(work, struct async_entry, work);
+ 	unsigned long flags;
++
+ 	ktime_t uninitialized_var(calltime), delta, rettime;
+ 
+ 	/* 1) run (and print duration) */
+ 	if (initcall_debug && system_state == SYSTEM_BOOTING) {
+-		printk(KERN_DEBUG "calling  %lli_%pF @ %i\n",
++		pr_debug("calling  %lli_%pF @ %i\n",
+ 			(long long)entry->cookie,
+ 			entry->func, task_pid_nr(current));
+ 		calltime = ktime_get();
+@@ -124,7 +125,7 @@ static void async_run_entry_fn(struct work_struct *work)
+ 	if (initcall_debug && system_state == SYSTEM_BOOTING) {
+ 		rettime = ktime_get();
+ 		delta = ktime_sub(rettime, calltime);
+-		printk(KERN_DEBUG "initcall %lli_%pF returned 0 after %lld usecs\n",
++		pr_debug("initcall %lli_%pF returned 0 after %lld usecs\n",
+ 			(long long)entry->cookie,
+ 			entry->func,
+ 			(long long)ktime_to_ns(delta) >> 10);
+@@ -285,7 +286,7 @@ void async_synchronize_cookie_domain(async_cookie_t cookie, struct async_domain
+ 	ktime_t uninitialized_var(starttime), delta, endtime;
+ 
+ 	if (initcall_debug && system_state == SYSTEM_BOOTING) {
+-		printk(KERN_DEBUG "async_waiting @ %i\n", task_pid_nr(current));
++		pr_debug("async_waiting @ %i\n", task_pid_nr(current));
+ 		starttime = ktime_get();
+ 	}
+ 
+@@ -295,7 +296,7 @@ void async_synchronize_cookie_domain(async_cookie_t cookie, struct async_domain
+ 		endtime = ktime_get();
+ 		delta = ktime_sub(endtime, starttime);
+ 
+-		printk(KERN_DEBUG "async_continuing @ %i after %lli usec\n",
++		pr_debug("async_continuing @ %i after %lli usec\n",
+ 			task_pid_nr(current),
+ 			(long long)ktime_to_ns(delta) >> 10);
+ 	}
+-- 
+1.7.10.4
 
-Tegra124 (and later, also some earlier variants) have this DFLL clock
-that can program a PMIC automatically depending on the CPU frequency.
-This DT binding did propose putting this into device tree as a table of
-<frequency value> pairs where the frequency corresponds to the CPU
-frequency and the value is the register value to be programmed into the
-PMIC by the DFLL hardware (there are two additional properties to define
-the slave address and the register offset).
-
-Andrew proposed that this table could instead be built by using
-regulator_list_voltage() instead. However, due to the fact that the DFLL
-hardware needs to know the immediate value to write into a register, the
-requirement would be for a 1:1 mapping between selector and register
-value. Given that the API needs to cover the general case I don't see
-how it could practically ensure this.
-
-Thierry
-
---+HP7ph2BbKc20aGI
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTw6HSAAoJEN0jrNd/PrOhbFwP/03tePNKsD5IznjxmNgv6AMm
-uot8qEnBu6iDp29m/HYArNbmtbsmpvVPiYdmV26DkpT21YP8qokTEmvKHwKSJ9gV
-zeZlVKUXIRf04NfZLttOxWkQYIm3rx4WLlszJa4HE6i9K/bBKqrIgemffLW7aq54
-vlDYd6QMOM6fIEJUk6+tZ5LyhwVhuiNFOJWVt+onhI0bxAMU+oiHCD//z82JXNQq
-Je05gDP0KqGUtM7xjDrCH0c+pQ1OVcUK1veDAmuvSJvlR3Rlf6fLn4lKlKwSSEqj
-nHAtUdoDvqIrFj5KISWpuYkrkk4K6Kg0PQ4Ux/ojWEqoecAzKCnhIgzW2IL3tIUA
-16tq6tn6pc6CGSchljYNG0P2zxmweBROtzPL0rBSCmxT052mK1+G6RXNMGE8dpie
-U+XuXYxlweGxMVJk1OIUAg/Y2o4EBz6LUjcpmOGuB3YqeJ9qV2bD9kKQadHtYSl7
-dvt1ZFdaYA6iHrFZYJ/k1QvmNey4b5sri4vTJ7d9PDJBPL07xsljDx83nXMFoC+Y
-XI2GVaA2/pbsce5CTSzBcaWMp6ipaMrb6WrOsYO3b52VBELOZhO5ix54W2kZykTC
-3zFh6OGqZJAXfULF7nRi/Q6IC0dVuipIHCuZIRhfvEilE0sad1zszCTtFTM/HE+v
-m8SKSlf9hUiGbK7D+iHH
-=8il+
------END PGP SIGNATURE-----
-
---+HP7ph2BbKc20aGI--
