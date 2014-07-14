@@ -1,105 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194AbaGNKk0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 06:40:26 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:57909 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751450AbaGNKkT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 06:40:19 -0400
-Message-ID: <53C3B37A.8030506@linaro.org>
-Date: Mon, 14 Jul 2014 11:39:54 +0100
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754152AbaGNKnF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 06:43:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58590 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751411AbaGNKm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 06:42:59 -0400
+Date: Mon, 14 Jul 2014 12:42:55 +0200
+From: Jan Kara <jack@suse.cz>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs/udf: re-use hex_asc_upper_{hi,lo} macros
+Message-ID: <20140714104255.GE30550@quack.suse.cz>
+References: <1404909330-5955-1-git-send-email-andriy.shevchenko@linux.intel.com>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Paul Bolle <pebolle@tiscali.nl>, linaro-kernel@lists.linaro.org,
-        Arnd Bergmann <arnd@arndb.de>, patches@linaro.org,
-        spear-devel@list.st.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v7 0/4] arm: Fix DEBUG_LL for multi-platform kernels (without
- PL01X)
-References: <1401206421-29832-1-git-send-email-daniel.thompson@linaro.org> <1404127855-30459-1-git-send-email-daniel.thompson@linaro.org> <20140712101602.GH21766@n2100.arm.linux.org.uk> <20140712111004.GI21766@n2100.arm.linux.org.uk> <53C39D5F.6050901@linaro.org>
-In-Reply-To: <53C39D5F.6050901@linaro.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404909330-5955-1-git-send-email-andriy.shevchenko@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/07/14 10:05, Daniel Thompson wrote:
-> On 12/07/14 12:10, Russell King - ARM Linux wrote:
->> On Sat, Jul 12, 2014 at 11:16:02AM +0100, Russell King - ARM Linux wrote:
->>> On Mon, Jun 30, 2014 at 12:30:51PM +0100, Daniel Thompson wrote:
->>>> This patchset removes some single-platform compatibility tricks related
->>>> to DEBUG_LL and, as a result, allows multi_v7_defconfig derived builds
->>>> to enable DEBUG_LL. Currently the user selected kbuild setting is
->>>> ignored and the PL01X's DEBUG_LL stub is silently selected instead. This
->>>> is a pain if your hardware doesn't have this cell, not least because it
->>>> takes a little time to figure out that kbuild built the wrong code.
->>>
->>> I don't think this is quite right, because I'm now seeing randconfig
->>> finding build errors with this.  We can end up with this configuration:
->>>
->>> CONFIG_DEBUG_LL=y
->>> CONFIG_DEBUG_LL_UART_NONE=y
->>> # CONFIG_DEBUG_ICEDCC is not set
->>> # CONFIG_DEBUG_SEMIHOSTING is not set
->>> # CONFIG_DEBUG_LL_UART_8250 is not set
->>> # CONFIG_DEBUG_LL_UART_PL01X is not set
->>> CONFIG_DEBUG_LL_INCLUDE="mach/debug-macro.S"
->>> # CONFIG_DEBUG_UART_8250 is not set
->>>
->>> which results in:
->>>
->>> arch/arm/kernel/debug.S:24:33: fatal error: mach/debug-macro.S: No such file or directory
->>> make[2]: *** [arch/arm/kernel/debug.o] Error 1
->>> arch/arm/kernel/head.S:27:33: fatal error: mach/debug-macro.S: No such file or directory
->>> make[2]: *** [arch/arm/kernel/head.o] Error 1
->>> Full config file:
->>> http://www.arm.linux.org.uk/developer/build/file.php?lid=11023
+On Wed 09-07-14 15:35:30, Andy Shevchenko wrote:
+> This patch cleans up udf_translate_to_linux() a bit by using globally defined
+> macros instead of custom code.
 > 
-> Thanks. I will look at this.
+> We can use sprintf(buf, "%04X", ...) there as well, but this one faster.
 > 
-> Problem is that by making the build system honour the user choice we end
-> up breaking the build when the user makes a bad choice (albeit a bad
-> choice that they should not have been given in the first place).
-> 
-> I guess the best fix is to get rid of CONFIG_DEBUG_LL_UART_NONE altogether.
-> 
-> 
->> Note that this also breaks building versatile as an oldconfig.  I'll drop
->> the patch series from my tree for the time being.
-> 
-> There is a difficult problem with oldconfig.
-> 
-> Today DEBUG_LL only works on versatile defconfigs (and oldconfig
-> upgrades from there) because although CONFIG_DEBUG_LL_UART_NONE is
-> selected the build system does not honour this and behaves as though the
-> use selected CONFIG_DEBUG_LL_UART_PL01X instead.
-> 
-> Unfortunately if we fix this and remove CONFIG_DEBUG_LL_UART_NONE as
-> proposed above then the oldconfig will silently select
-> CONFIG_DEBUG_SEMIHOSTING.
-> 
-> In other words I will be able to offer a patch so that oldconfig
-> *compiles* but I don't know how to get it to preserve behaviour (or
-> whether this matters).
-> 
-> Hints about what to do would be very welcome.
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+  Thanks. I've merged the patch.
 
-Russell,
+								Honza
 
-Out of interest, would you accept the much less ambitious older version
-of this patch for the upcoming merge window:
-http://thread.gmane.org/gmane.linux.kernel/1678055
-
-The version linked above solves the problems for multi-platform kernel
-users (which were caused by SPEARr being enabled in the default
-multi-platform builds) but doesn't seek to fix things like ICEDCC and
-semihosting for the remaining single platform kernels.
-
-
-Daniel.
-
+> ---
+>  fs/udf/unicode.c | 9 ++++-----
+>  1 file changed, 4 insertions(+), 5 deletions(-)
+> 
+> diff --git a/fs/udf/unicode.c b/fs/udf/unicode.c
+> index 44b815e..afd470e 100644
+> --- a/fs/udf/unicode.c
+> +++ b/fs/udf/unicode.c
+> @@ -412,7 +412,6 @@ static int udf_translate_to_linux(uint8_t *newName, uint8_t *udfName,
+>  	int extIndex = 0, newExtIndex = 0, hasExt = 0;
+>  	unsigned short valueCRC;
+>  	uint8_t curr;
+> -	const uint8_t hexChar[] = "0123456789ABCDEF";
+>  
+>  	if (udfName[0] == '.' &&
+>  	    (udfLen == 1 || (udfLen == 2 && udfName[1] == '.'))) {
+> @@ -477,10 +476,10 @@ static int udf_translate_to_linux(uint8_t *newName, uint8_t *udfName,
+>  			newIndex = 250;
+>  		newName[newIndex++] = CRC_MARK;
+>  		valueCRC = crc_itu_t(0, fidName, fidNameLen);
+> -		newName[newIndex++] = hexChar[(valueCRC & 0xf000) >> 12];
+> -		newName[newIndex++] = hexChar[(valueCRC & 0x0f00) >> 8];
+> -		newName[newIndex++] = hexChar[(valueCRC & 0x00f0) >> 4];
+> -		newName[newIndex++] = hexChar[(valueCRC & 0x000f)];
+> +		newName[newIndex++] = hex_asc_upper_hi(valueCRC >> 8);
+> +		newName[newIndex++] = hex_asc_upper_lo(valueCRC >> 8);
+> +		newName[newIndex++] = hex_asc_upper_hi(valueCRC);
+> +		newName[newIndex++] = hex_asc_upper_lo(valueCRC);
+>  
+>  		if (hasExt) {
+>  			newName[newIndex++] = EXT_MARK;
+> -- 
+> 2.0.1
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
