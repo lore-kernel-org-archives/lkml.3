@@ -1,70 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170AbaGNGOd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 02:14:33 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:44002 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751204AbaGNGOZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 02:14:25 -0400
-Date: Mon, 14 Jul 2014 08:14:21 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Bo Shen <voice.shen@atmel.com>
-Cc: <nicolas.ferre@atmel.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] ARM: at91: at91sam9x5: correct typo error for ohci
- clock
-Message-ID: <20140714081421.5f539287@bbrezillon>
-In-Reply-To: <1405307294-17708-1-git-send-email-voice.shen@atmel.com>
-References: <1405307294-17708-1-git-send-email-voice.shen@atmel.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753083AbaGNGP1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 02:15:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55180 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751204AbaGNGPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 02:15:20 -0400
+Message-ID: <53C37575.5030808@suse.de>
+Date: Mon, 14 Jul 2014 08:15:17 +0200
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: "K. Y. Srinivasan" <kys@microsoft.com>, jasowang@redhat.com,
+        apw@canonical.com, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, ohering@suse.com,
+        jbottomley@parallels.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
+CC: stable@vger.kernel.org
+Subject: Re: [PATCH V3 1/7] Drivers: scsi: storvsc: Change the limits to reflect
+ the values on the host
+References: <1405183684-23928-1-git-send-email-kys@microsoft.com> <1405183712-23967-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1405183712-23967-1-git-send-email-kys@microsoft.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jul 2014 11:08:14 +0800
-Bo Shen <voice.shen@atmel.com> wrote:
-
-> Correct the typo error for the second "uhphs_clk".
-> 
-> Signed-off-by: Bo Shen <voice.shen@atmel.com>
-
-Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-
-sam9n12 dtsi has the same bug, I'll fix it
-
-And sorry for the mess when moving sam9n12 and sam9x5 to the CCF, I
-should have checked my clock definitions more carefully :-(.
-
-Best Regards,
-
-Bros
-
+On 07/12/2014 06:48 PM, K. Y. Srinivasan wrote:
+> Hyper-V hosts can support multiple targets and multiple channels and larger number of
+> LUNs per target. Update the code to reflect this. With this patch we can correctly
+> enumerate all the paths in a multi-path storage environment.
+>
+> In this version of the patch I have addressed comments from
+> Christoph Hellwig <hch@infradead.org>
+>
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Cc: <stable@vger.kernel.org>
 > ---
->  arch/arm/boot/dts/at91sam9x5.dtsi | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
-> index 2ebc421..727d3a4 100644
-> --- a/arch/arm/boot/dts/at91sam9x5.dtsi
-> +++ b/arch/arm/boot/dts/at91sam9x5.dtsi
-> @@ -1155,8 +1155,7 @@
->  			compatible = "atmel,at91rm9200-ohci", "usb-ohci";
->  			reg = <0x00600000 0x100000>;
->  			interrupts = <22 IRQ_TYPE_LEVEL_HIGH 2>;
-> -			clocks = <&usb>, <&uhphs_clk>, <&udphs_clk>,
-> -				 <&uhpck>;
-> +			clocks = <&usb>, <&uhphs_clk>, <&uhphs_clk>, <&uhpck>;
->  			clock-names = "usb_clk", "ohci_clk", "hclk", "uhpck";
->  			status = "disabled";
->  		};
+>   drivers/scsi/storvsc_drv.c |   47 +++++++++++++++++++++++++++++---------------
+>   1 files changed, 31 insertions(+), 16 deletions(-)
+>
+> diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+> index 9969fa1..8938b13 100644
+> --- a/drivers/scsi/storvsc_drv.c
+> +++ b/drivers/scsi/storvsc_drv.c
+> @@ -330,17 +330,17 @@ static int storvsc_timeout = 180;
+>
+>   static void storvsc_on_channel_callback(void *context);
+>
+> -/*
+> - * In Hyper-V, each port/path/target maps to 1 scsi host adapter.  In
+> - * reality, the path/target is not used (ie always set to 0) so our
+> - * scsi host adapter essentially has 1 bus with 1 target that contains
+> - * up to 256 luns.
+> - */
+> -#define STORVSC_MAX_LUNS_PER_TARGET			64
+> -#define STORVSC_MAX_TARGETS				1
+> -#define STORVSC_MAX_CHANNELS				1
+> +#define STORVSC_MAX_LUNS_PER_TARGET			255
+> +#define STORVSC_MAX_TARGETS				2
+> +#define STORVSC_MAX_CHANNELS				8
+>
+> +#define STORVSC_FC_MAX_LUNS_PER_TARGET			255
+> +#define STORVSC_FC_MAX_TARGETS				128
+> +#define STORVSC_FC_MAX_CHANNELS				8
+>
+> +#define STORVSC_IDE_MAX_LUNS_PER_TARGET			64
+> +#define STORVSC_IDE_MAX_TARGETS				1
+> +#define STORVSC_IDE_MAX_CHANNELS			1
+>
+>   struct storvsc_cmd_request {
+>   	struct list_head entry;
+Limiting max_lun to 255 will make the driver to _not_ respond to 
+LUNs higher than that; ie Well-known LUN won't work here.
+Also the SCSI stack will be using REPORT LUNS anyway since you're 
+advertising SPC-2 compliance. So your driver runs into issues if 
+Hyper-V would ever return more than 256 LUNs with the REPORT LUN 
+command or if any of the LUNs has an addressing scheme other than
+'0x00'.
+I would suggest to raise this to the technical limit (ie the largest 
+LUN which the _protocol_ supports) and let REPORT LUNS deal with the 
+actual LUNs.
 
+Cheers,
 
-
+Hannes
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
