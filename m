@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738AbaGNLhC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 07:37:02 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:45112 "EHLO
+	id S1754773AbaGNLhO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 07:37:14 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:45139 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754106AbaGNLgy (ORCPT
+	with ESMTP id S1754736AbaGNLhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 07:36:54 -0400
+	Mon, 14 Jul 2014 07:37:03 -0400
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
@@ -21,82 +21,109 @@ Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v8 00/13] Add Maxim 77802 PMIC support
-Date: Mon, 14 Jul 2014 13:35:56 +0200
-Message-Id: <1405337769-3741-1-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH v8 02/13] mfd: max77802: Add DT binding documentation
+Date: Mon, 14 Jul 2014 13:35:58 +0200
+Message-Id: <1405337769-3741-3-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.0.0.rc2
+In-Reply-To: <1405337769-3741-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1405337769-3741-1-git-send-email-javier.martinez@collabora.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series are based on drivers added by Simon Glass to the Chrome OS
-kernel and adds support for the Maxim 77802 Power Management IC, their
-regulators, clocks, RTC and i2c interface.
+Add Device Tree binding documentation for Maxim 77802 PMIC.
 
-This is a v8 of the patch-set that addresses issues pointed out in v7.
-Individual changes are added on each patch but the biggest changes are:
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+---
 
-* Patches 1-7 from v7 are not included since those were improvements to
-the max77686 mfd driver and can be applied independently. Lee Jones said
-that he is going to pick them from the posted v7 series.
+Changes since v7:
+ - Remove information about DVS since that will be added as a follow up.
 
-I've created a patchwork bundle with 1-7 from v7 to make it easy to apply:
+Changes since v6: None
 
-https://patchwork.kernel.org/bundle/javier/max77686-improvements/
+Changes since v5:
+ - Use max77686,* properties instead of max77802,* since the support is
+   now in the max77686 driver and that IP defined the properties first.
+ - Fix issues in DT binding documentation. Suggested by Andreas Farber.
 
-* The Dynamic Voltage Scaling support has been removed since that can be
-added in a follow up series and shouldn't block the minimum PMIC support.
+Changes since v4: None
 
-The patch-set has been tested on both Daisy/Snow (max77686) and Peach
-Pit (max77802) Chromebooks and it's composed of the following patches:
+Changes since v3: None
 
-[PATCH v8 01/13] mfd: max77686: Add Maxim 77802 PMIC support
-[PATCH v8 02/13] mfd: max77802: Add DT binding documentation
-[PATCH v8 03/13] regulator: Add driver for Maxim 77802 PMIC regulators
-[PATCH v8 04/13] clk: max77686: Add DT include for MAX77686 PMIC clock
-[PATCH v8 05/13] clk: Add generic driver for Maxim PMIC clocks
-[PATCH v8 06/13] clk: max77686: Convert to the generic max clock driver
-[PATCH v8 07/13] clk: max77686: Improve Maxim 77686 PMIC clocks binding
-[PATCH v8 08/13] clk: Add driver for Maxim 77802 PMIC clocks
-[PATCH v8 09/13] clk: max77802: Add DT binding documentation
-[PATCH v8 10/13] rtc: max77686: Allow the max77686 rtc to wakeup the system
-[PATCH v8 11/13] rtc: max77686: Remove dead code for SMPL and WTSR
-[PATCH v8 12/13] rtc: Add driver for Maxim 77802 PMIC Real-Time-Clock
-[PATCH v8 13/13] ARM: dts: Add max77802 to exynos5420-peach-pit and exynos5800-peach-pi
+Changes since v2:
+ - Explain better the Dynamic Voltage Scaling (DVS) support in some Buck
+   regulators and the max77802,pmic-buck-{dvs,selb}-gpios properties.
+   Suggested by Mark Brown.
+---
+ Documentation/devicetree/bindings/mfd/max77802.txt | 59 ++++++++++++++++++++++
+ 1 file changed, 59 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/max77802.txt
 
-Patch 01/13 extend the max77686 mfd driver to also support the max77802
-PMIC and patch 02/13 adds the DT binding documentation for this PMIC.
-
-Patch 03/13 adds support for the regulators found in the PMIC.
-
-Patch 04/13 to 07/13 are improvements and refactoring to the max77686 clock
-driver to avoid code duplication when adding max77802 clocks support in patch
-08/13. Patch 09/13 adds the DT binding document for the max77802 clock driver.
-
-Patches 10/13 and 11/13 are improvements to max77686 RTC driver and patch
-12/13 adds support for the RTC found in the max77802 PMIC.
-
-Finally patch 13/13 adds the required device node to the Peach Pit and Pi
-exynos5 based boards.
-
-Since there are cross-subsystems dependencies, I think that the best way to
-sort this out is if relevant maintainers ack the patches so 01/13 to 012/13
-can be merged through the mfd tree. The patches and the relevant acks are:
-
-Patch 03/13 (regulator - Mark Brown)
-Patches 04/13 to 09/13 (clk - Mike Turquette)
-Patches 10/13 to 12/13 (rtc - Alessandro Zummo)
-
-Patch 13/13 is only a DTS change so it can be picked by Kukjin Kim once the
-other patches are picked by Lee Jones.
-
-Since we are in 3.16-rc5 already, it would be great if I can get your acks
-or feedback since I was hoping this series to make it to 3.17. This is due
-other series that were already posted depend on this one.
-
-Also, the series have been reviewed and tested by Samsung folks and most of
-the patches already collected Reviewed-by and Tested-by tags.
-
-Thanks a lot and best regards,
-Javier
+diff --git a/Documentation/devicetree/bindings/mfd/max77802.txt b/Documentation/devicetree/bindings/mfd/max77802.txt
+new file mode 100644
+index 0000000..9f72b8f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/max77802.txt
+@@ -0,0 +1,59 @@
++Maxim MAX77802 multi-function device
++
++MAX77802 is a Multifunction device with PMIC, RTC and Charger on chip. It is
++interfaced to host controller using i2c interface. PMIC, Charger and RTC
++submodules are addressed using same i2c slave address.
++
++This document describes the binding for mfd device and PMIC submodule.
++
++Binding for the built-in 32k clock generator block is defined separately
++in bindings/clk/maxim,max77802.txt file.
++
++Required properties:
++- compatible : Must be "maxim,max77802";
++- reg : Specifies the i2c slave address of PMIC block.
++- interrupts : This i2c device has an IRQ line connected to the main SoC.
++- interrupt-parent : The parent interrupt controller.
++
++Optional node:
++- regulators : The regulators of max77802 have to be instantiated
++  under subnode named "regulators" using the following format.
++
++	regulator-name {
++		standard regulator constraints....
++	};
++	refer Documentation/devicetree/bindings/regulator/regulator.txt
++
++  The regulator node name should be initialized with a string
++to get matched with their hardware counterparts as follow. The valid names are:
++
++	-LDOn 	:	for LDOs, where n can lie in range 1 to 35.
++			example: LDO1, LDO2, LDO35.
++	-BUCKn 	:	for BUCKs, where n can lie in range 1 to 10.
++			example: BUCK1, BUCK5, BUCK10.
++Example:
++
++	max77802@09 {
++		compatible = "maxim,max77802";
++		interrupt-parent = <&wakeup_eint>;
++		interrupts = <26 0>;
++		reg = <0x09>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		regulators {
++			ldo11_reg: LDO11 {
++				regulator-name = "vdd_ldo11";
++				regulator-min-microvolt = <1900000>;
++				regulator-max-microvolt = <1900000>;
++				regulator-always-on;
++			};
++
++			buck1_reg: BUCK1 {
++				regulator-name = "vdd_mif";
++				regulator-min-microvolt = <950000>;
++				regulator-max-microvolt = <1300000>;
++				regulator-always-on;
++				regulator-boot-on;
++			};
++	};
+-- 
+2.0.0.rc2
 
