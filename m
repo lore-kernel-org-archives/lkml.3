@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757205AbaGNVam (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 17:30:42 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:55300 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756358AbaGNVaj (ORCPT
+	id S1757346AbaGNVat (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 17:30:49 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:60716 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757230AbaGNVao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 17:30:39 -0400
-Date: Mon, 14 Jul 2014 22:30:32 +0100
-From: Sitsofe Wheeler <sitsofe@gmail.com>
-To: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: KY Srinivasan <kys@microsoft.com>, "David S. Miller" <davem@davemloft.net>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [BISECTED][REGRESSION] Loading Hyper-V network drivers is racy
- in 3.14+ on Hyper-V 2012 R2
-Message-ID: <20140714213032.GA23639@sucs.org>
-References: <20140706201800.GA10587@sucs.org>
- <941b0055b1a94c66b3a608ae67764d11@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
- <20140707181341.GA2646@sucs.org>
- <20140711055259.GA10317@sucs.org>
- <52afbe119b1a481aa1c80f909c3a2432@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52afbe119b1a481aa1c80f909c3a2432@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 14 Jul 2014 17:30:44 -0400
+Message-ID: <1405373441.13661.33.camel@x220>
+Subject: Re: [PATCH char-misc-next 2/2] dma: Fix MIC X100 DMA Driver Kconfig
+ option
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Sudeep Dutt <sudeep.dutt@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Siva Yerramreddy <yshivakrishna@gmail.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Nikhil Rao <nikhil.rao@intel.com>,
+        Himangi Saraogi <himangi774@gmail.com>, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org
+Date: Mon, 14 Jul 2014 23:30:41 +0200
+In-Reply-To: <2eadff30dc5e9642b82f523c0398bf20109dd622.1405370827.git.sudeep.dutt@intel.com>
+References: <cover.1405370827.git.sudeep.dutt@intel.com>
+	 <2eadff30dc5e9642b82f523c0398bf20109dd622.1405370827.git.sudeep.dutt@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 14 Jul 2014 21:30:42.0513 (UTC) FILETIME=[DD6BF410:01CF9FAA]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 03:25:11PM +0000, Haiyang Zhang wrote:
+On Mon, 2014-07-14 at 14:23 -0700, Sudeep Dutt wrote:
+> Select DMA_ENGINE instead of DMAENGINE and delete the default
+> line as the default is 'n' anyways.
 > 
-> > -----Original Message-----
-> > From: Sitsofe Wheeler [mailto:sitsofe@gmail.com]
-> > Sent: Friday, July 11, 2014 1:53 AM
-> > To: Haiyang Zhang
-> > Cc: KY Srinivasan; David S. Miller; devel@linuxdriverproject.org; linux-
-> > kernel@vger.kernel.org; netdev@vger.kernel.org
-> > Subject: Re: [BISECTED][REGRESSION] Loading Hyper-V network drivers is
-> > racy in 3.14+ on Hyper-V 2012 R2
-> 
-> > Oops that should have been
-> > https://bugzilla.kernel.org/attachment.cgi?id=142351 (either way it's
-> > information linked off
-> > https://bugzilla.kernel.org/show_bug.cgi?id=78771 ).
-> 
-> Thanks for the dmesg. By looking at it, seems the netvsc driver was
-> loaded properly, and 2 NICs are up, one NIC is down (probably not set
-> to connected in HyperV manager?). Or, this dmesg wasn't the one when
-> bug happens?
+> Link: https://lkml.org/lkml/2014/7/14/90
+> Reported-by: Paul Bolle <pebolle@tiscali.nl>
+> Signed-off-by: Sudeep Dutt <sudeep.dutt@intel.com>
 
-This was a dmesg where the bug did happen and your first guess is right
-- there are 3 NICs but only the first two are connected and the last is
-set to "Not connected" in Hyper-V Manager.
+Thanks for picking this up!
 
-> Since you found the commit b679ef73edc is related to this problem,
-> could you do a simple test:
->   Reduce the receive buffer size back to 2MB, like below, then re-test
->   it, see if the problem goes away?
-> 	drivers/net/hyperv/hyperv_net.h
-> 	#define NETVSC_RECEIVE_BUFFER_SIZE		(1024*1024*2)	/* 2MB */
 
-After doing this I was able to reach over 900 reboots where the network
-connected properly.
+Paul Bolle
 
--- 
-Sitsofe | http://sucs.org/~sits/
