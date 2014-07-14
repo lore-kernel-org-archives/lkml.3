@@ -1,66 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857AbaGNDoq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 23:44:46 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:52688 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752110AbaGNDoj (ORCPT
+	id S1752729AbaGNDr7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 23:47:59 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:46129 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752110AbaGNDrx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 23:44:39 -0400
+	Sun, 13 Jul 2014 23:47:53 -0400
+From: "xiaofeng.yan" <xiaofeng.yan@huawei.com>
+To: <mingo@redhat.com>, <peterz@infradead.org>, <juri.lelli@gmail.com>,
+        <linux-kernel@vger.kernel.org>
+CC: <xiaofeng.yan2012@gmail.com>, <lizefan@huawei.com>,
+        "xiaofeng.yan" <xiaofeng.yan@huawei.com>
+Subject: [PATCH v2] sched/deadline: overrun could happen in start_hrtick_dl
+Date: Mon, 14 Jul 2014 03:30:19 +0000
+Message-ID: <1405308619-1056-1-git-send-email-xiaofeng.yan@huawei.com>
+X-Mailer: git-send-email 1.8.3.4
 MIME-Version: 1.0
-Date: Sun, 13 Jul 2014 23:44:39 -0400
-Message-ID: <CAPDOMVip8ZM2B17ax6O4mMR2iL5nRJyUcP8-sk+5nf7oHdbegQ@mail.gmail.com>
-Subject: Fix mes in arch/cris/arch-v32/kernel/kgdb.c
-From: Nick Krause <xerofoify@gmail.com>
-To: starvik@axis.com
-Cc: jesper.nilsson@axis.com, linux-cris-kernel@axis.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.241]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020207.53C352E7.005E,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2011-05-27 18:58:46
+X-Mirapoint-Loop-Id: d8784217693db850fffa2e437f75515a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the file arch/cris/arch-v32/kernel/kgdb.c , I am hitting a few fix
-mes that need to be fixed for kgdb support of this
-subsystem architecture of cris. Below this message are the lines of
-code and their respective Fix Me messages.
-When you around to it I would like to known how you would like these
-to be fixed.
-Cheers Nick
-Fix Mes
-------------
-1.   /* FIXME: Check the documentation. */ on line 22
-2. 437 /* BUFMAX defines the maximum number of characters in
-   438    inbound/outbound buffers */
-   439 /* FIXME: How do we know it's enough? */
-   440 #define BUFMAX 512
-3. 467 /* Use an internal stack in the breakpoint and interrupt
-response routines.
-   468    FIXME: How do we know the size of this stack is enough?
-  469    Global so it can be reached from assembler code. */
-4.885                 if (S & 1) {
-   886                        /* Instruction watchpoint. */
-   887                       /* FIXME: Check against, and possibly
-adjust reported EDA. */
-5. 1410
-    1411                                 if (input_buffer[1] != '\0') {
-    1412                                         /* FIXME: Doesn't
-handle address argument. */
-    1413
-gdb_cris_strcpy(output_buffer, error_message[E04]);
-    1414                                         break;
-    1415                                  }
-6.1436                                 if (input_buffer[1] != '\0') {
-   1437                                         /* FIXME: Doesn't
-handle address argument. */
-   1438
-gdb_cris_strcpy(output_buffer, error_message[E04]);
-   1439                                         break;
-   1440                                 }
-7.   1436                                 if (input_buffer[1] != '\0') {
-      1437                                         /* FIXME: Doesn't
-handle address argument. */
-      1438
-gdb_cris_strcpy(output_buffer, error_message[E04]);
-      1439                                        break;
-      1440                                 }
+It could be wrong for the precision of runtime and deadline
+when the precision is within microsecond level. For example:
+Task runtime deadline period
+ P1   200us   500us   500us
+
+This case need enbale HRTICK feature by the next command
+PC#echo "HRTICK" > /sys/kernel/debug/sched_features
+PC#trace-cmd record -e sched_switch &
+PC#./schedtool -E -t 200000:500000 -e ./test
+
+Some of runtime and deadline run with millisecond level by
+reading kernershark. Some pieces of trace.dat are as follows:
+(remove some irrelevant information)
+<idle>-0   157.603157: sched_switch: :R ==> 2481:4294967295: test
+test-2481  157.603203: sched_switch:  2481:R ==> 0:120: swapper/2
+<idle>-0   157.605657: sched_switch:  :R ==> 2481:4294967295: test
+test-2481  157.608183: sched_switch:  2481:R ==> 2483:120: trace-cmd
+trace-cmd-2483 157.609656: sched_switch:2483:R==>2481:4294967295: test
+
+We can get the runtime from the information at some point.
+runtime = 157.605657 - 157.608183
+runtime = 0.002526(2.526ms)
+The correct runtime should be less than or equal to 200us at some point.
+
+The problem is caused by a conditional judgment "delta > 10000".
+Because no hrtimer start up to control the runtime when runtime is less than 10us.
+So the process will continue to run until tick-period coming.
+
+Move the code with the limit of the least time slice
+from hrtick_start_fair() to hrtick_start() because
+EDF schedule class also need this function in start_hrtick_dl().
+
+To fix this problem, we call hrtimer_start() unconditionally in start_hrtick_dl(),
+and make sure schedule slice won't be smaller than 10us in hrtimer_start().
+
+Signed-off-by: Xiaofeng Yan <xiaofeng.yan@huawei.com>
+Reviewed-by:   Li Zefan <lizefan@huawei.com>
+---
+ kernel/sched/core.c     |    8 +++++++-
+ kernel/sched/deadline.c |    5 +----
+ kernel/sched/fair.c     |    8 --------
+ 3 files changed, 8 insertions(+), 13 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 3bdf01b..7f066c2 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -442,8 +442,14 @@ static void __hrtick_start(void *arg)
+ void hrtick_start(struct rq *rq, u64 delay)
+ {
+ 	struct hrtimer *timer = &rq->hrtick_timer;
+-	ktime_t time = ktime_add_ns(timer->base->get_time(), delay);
++	ktime_t time;
+ 
++	/*
++	 * Don't schedule slices shorter than 10000ns, that just
++	 * doesn't make sense and can cause timer DoS.
++	 */
++	s64 delta = max_t(s64, delay, 10000LL);
++	time = ktime_add_ns(timer->base->get_time(), delta);
+ 	hrtimer_set_expires(timer, time);
+ 
+ 	if (rq == this_rq()) {
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index fc4f98b1..9135771 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -997,10 +997,7 @@ static void check_preempt_curr_dl(struct rq *rq, struct task_struct *p,
+ #ifdef CONFIG_SCHED_HRTICK
+ static void start_hrtick_dl(struct rq *rq, struct task_struct *p)
+ {
+-	s64 delta = p->dl.dl_runtime - p->dl.runtime;
+-
+-	if (delta > 10000)
+-		hrtick_start(rq, p->dl.runtime);
++	hrtick_start(rq, p->dl.runtime);
+ }
+ #endif
+ 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index fea7d33..e5cfd57 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3857,14 +3857,6 @@ static void hrtick_start_fair(struct rq *rq, struct task_struct *p)
+ 				resched_task(p);
+ 			return;
+ 		}
+-
+-		/*
+-		 * Don't schedule slices shorter than 10000ns, that just
+-		 * doesn't make sense. Rely on vruntime for fairness.
+-		 */
+-		if (rq->curr != p)
+-			delta = max_t(s64, 10000LL, delta);
+-
+ 		hrtick_start(rq, delta);
+ 	}
+ }
+-- 
+1.7.9.5
+
