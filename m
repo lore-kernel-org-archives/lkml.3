@@ -1,143 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755890AbaGNO2t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 10:28:49 -0400
-Received: from mga03.intel.com ([143.182.124.21]:47292 "EHLO mga03.intel.com"
+	id S1755902AbaGNO35 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 10:29:57 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59319 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755196AbaGNO2m convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 10:28:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,658,1400050800"; 
-   d="scan'208";a="456740229"
-From: "Liang, Kan" <kan.liang@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "andi@firstfloor.org" <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: RE: [PATCH V5 1/2] perf ignore LBR and extra_regs
-Thread-Topic: [PATCH V5 1/2] perf ignore LBR and extra_regs
-Thread-Index: AQHPnG+hivFH9gFqr0Syb8Ke5/aDbZue5MOAgACz8nA=
-Date: Mon, 14 Jul 2014 14:28:36 +0000
-Message-ID: <37D7C6CF3E00A74B8858931C1DB2F077014E1D5E@SHSMSX103.ccr.corp.intel.com>
-References: <1404989984-3068-1-git-send-email-kan.liang@intel.com>
- <20140714105341.GT9918@twins.programming.kicks-ass.net>
-In-Reply-To: <20140714105341.GT9918@twins.programming.kicks-ass.net>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754890AbaGNO3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 10:29:49 -0400
+Message-ID: <53C3E905.3080806@ti.com>
+Date: Mon, 14 Jul 2014 10:28:21 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
+To: Pratyush Anand <pratyush.anand@st.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Mohit KUMAR DCG <Mohit.KUMAR@st.com>,
+        Jingoo Han <jg1.han@samsung.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Richard Zhu <r65037@freescale.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: [PATCH v4 0/6] Add Keystone PCIe controller driver
+References: <1405110995-24676-1-git-send-email-m-karicheri2@ti.com> <20140714060334.GB2930@pratyush-vbox>
+In-Reply-To: <20140714060334.GB2930@pratyush-vbox>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/14/2014 02:03 AM, Pratyush Anand wrote:
+> Oh.. I see my reply from gmail is not readable at all. (I forgot to
+> switch to plain text :( ) Please ignore last mail I am replying again
+> here.
+>
+> On Sat, Jul 12, 2014 at 04:36:29AM +0800, Murali Karicheri wrote:
+>
+> [...]
+>
+>> Murali Karicheri (6):
+>>    PCI: designware: add rd[wr]_other_conf API
+>>    PCI: designware: refactor MSI code to work with v3.65 dw hardware
+>
+> For  above two you can add my reviewed-by:
+>
+>>    PCI: designware: refactor host init code to re-use on keystone PCI
+>>    PCI: designware: enhance dw core driver to support keystone PCI host
+>
+> In stead of using version number and then changing few functions from
+> static to global , I would have used same philosophy of adding callbacks
+> wherever needed. May be maintainers can give their view, instead of patch
+> 3 and 4 I would have gone with something like this, where kc_pcie can be
+> passed through pp->plat_data.
+>
 
+Pratyush,
 
-> > diff --git a/arch/x86/kernel/cpu/perf_event.h
-> > b/arch/x86/kernel/cpu/perf_event.h
-> > index 3b2f9bd..992c678 100644
-> > --- a/arch/x86/kernel/cpu/perf_event.h
-> > +++ b/arch/x86/kernel/cpu/perf_event.h
-> > @@ -464,6 +464,12 @@ struct x86_pmu {
-> >  	 */
-> >  	struct extra_reg *extra_regs;
-> >  	unsigned int er_flags;
-> > +	/*
-> > +	 * EXTRA REG MSR can be accessed
-> > +	 * The extra registers are completely unrelated to each other.
-> > +	 * So it needs a flag for each extra register.
-> > +	 */
-> > +	bool		extra_msr_access[EXTRA_REG_MAX];
-> 
-> So why not in struct extra_reg again? You didn't give a straight answer there.
+Thanks for the response. I will look into your proposal and respond back 
+when I get a chance.
 
-I think I did in the email.
-You mentioned that there's still (only) 4 empty bytes at the tail of extra_reg itself. 
-However, the extra_reg_type may be extended in the near future.
-So that may not be a reason to move to extra_reg.
+Thanks and regards,
 
-Furthermore, if we move extra_msr_access to extra_reg, 
-I guess we have to modify all the related micros (i.e EVENT_EXTRA_REG) to initialize the new items.
-That could be a big change.
+Murali
 
-On the other side, in x86_pmu structure, there are extra_regs related items defined under the comments "Extra registers for events".
- And the bit holes are enough for current usage and future extension.
-
-So I guess  x86_pmu should be a good place to store the availability of the reg.
-
-         /* --- cacheline 6 boundary (384 bytes) --- */
-         bool                       lbr_double_abort;     /*   384     1 */
- 
-         /* XXX 7 bytes hole, try to pack */
- 
-         struct extra_reg *         extra_regs;           /*   392     8 */
-         unsigned int               er_flags;             /*   400     4 */
- 
-         /* XXX 4 bytes hole, try to pack */
- 
-         struct perf_guest_switch_msr * (*guest_get_msrs)(int *); /*   408     8 */
- 
-         /* size: 416, cachelines: 7, members: 64 */
-         /* sum members: 391, holes: 6, sum holes: 25 */
-         /* bit holes: 1, sum bit holes: 27 bits */
-         /* last cacheline: 32 bytes */
-
-> 
-> > +/*
-> > + * Under certain circumstances, access certain MSR may cause #GP.
-> > + * The function tests if the input MSR can be safely accessed.
-> > + */
-> > +static inline bool check_msr(unsigned long msr) {
-> 
-> This reads like a generic function;
-> 
-> > +	u64 val_old, val_new, val_tmp;
-> > +
-> > +	/*
-> > +	 * Read the current value, change it and read it back to see if it
-> > +	 * matches, this is needed to detect certain hardware emulators
-> > +	 * (qemu/kvm) that don't trap on the MSR access and always return
-> 0s.
-> > +	 */
-> > +	if (rdmsrl_safe(msr, &val_old))
-> > +		goto msr_fail;
-> > +	/*
-> > +	 * Only chagne it slightly,
-> > +	 * since the higher bits of some MSRs cannot be updated by wrmsrl.
-> > +	 * E.g. MSR_LBR_TOS
-> > +	 */
-> > +	val_tmp = val_old ^ 0x3UL;
-> 
-> but this is not generally true; not all MSRs can write the 2 LSB, can they? One
-> option would be to extend the function with a u64 mask.
-
-Right, the function should be easily used to check all MSRs, not just for the MSRs I tested.
-I will pass a mask as a parameter of the function.  
-
-> 
-> > +	if (wrmsrl_safe(msr, val_tmp) ||
-> > +		rdmsrl_safe(msr, &val_new))
-> > +		goto msr_fail;
-> > +
-> > +	if (val_new != val_tmp)
-> > +		goto msr_fail;
-> > +
-> > +	/* Here it's sure that the MSR can be safely accessed.
-> > +	 * Restore the old value and return.
-> > +	 */
-> > +	wrmsrl(msr, val_old);
-> > +
-> > +	return true;
-> > +
-> > +msr_fail:
-> > +	return false;
-> > +}
-> 
-> Also, by now this function is far too large to be inline and in a header.
-
-OK. I will move it to perf_event_intel.c as a static function.
+> diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
+> index 905941c..b216192 100644
+> --- a/drivers/pci/host/pcie-designware.c
+> +++ b/drivers/pci/host/pcie-designware.c
+> @@ -490,16 +490,21 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
+>          }
+>
+>          if (IS_ENABLED(CONFIG_PCI_MSI)) {
+> -               pp->irq_domain = irq_domain_add_linear(pp->dev->of_node,
+> -                                       MAX_MSI_IRQS,&msi_domain_ops,
+> -&dw_pcie_msi_chip);
+> -               if (!pp->irq_domain) {
+> -                       dev_err(pp->dev, "irq domain init failed\n");
+> -                       return -ENXIO;
+> -               }
+> +               if (!pp->ops->msi_init) {
+> +                       pp->irq_domain = irq_domain_add_linear(pp->dev->of_node,
+> +                                               MAX_MSI_IRQS,&msi_domain_ops,
+> +&dw_pcie_msi_chip);
+> +                       if (!pp->irq_domain) {
+> +                               dev_err(pp->dev, "irq domain init failed\n");
+> +                               return -ENXIO;
+> +                       }
+>
+> -               for (i = 0; i<  MAX_MSI_IRQS; i++)
+> -                       irq_create_mapping(pp->irq_domain, i);
+> +                       for (i = 0; i<  MAX_MSI_IRQS; i++)
+> +                               irq_create_mapping(pp->irq_domain, i);
+> +               } else {
+> +                       pp->ops->msi_init(pp,&msi_domain_ops,
+> +&dw_pcie_msi_chip);
+> +               }
+>          }
+>
+>          if (pp->ops->host_init)
+> @@ -759,6 +764,9 @@ static struct pci_bus *dw_pcie_scan_bus(int nr, struct pci_sys_data *sys)
+>                  BUG();
+>          }
+>
+> +       if (bus&&  pp->ops->scan_bus)
+> +               bus = pp->ops->scan_bus(pp);
+> +
+>          return bus;
+>   }
+>
+> diff --git a/drivers/pci/host/pcie-designware.h b/drivers/pci/host/pcie-designware.h
+> index 387f69e..39ce496 100644
+> --- a/drivers/pci/host/pcie-designware.h
+> +++ b/drivers/pci/host/pcie-designware.h
+> @@ -52,6 +52,7 @@ struct pcie_port {
+>          struct irq_domain       *irq_domain;
+>          unsigned long           msi_data;
+>          DECLARE_BITMAP(msi_irq_in_use, MAX_MSI_IRQS);
+> +       void                    *plat_data;
+>   };
+>
+>   struct pcie_host_ops {
+> @@ -70,6 +71,9 @@ struct pcie_host_ops {
+>          void (*msi_set_irq)(struct pcie_port *pp, int irq);
+>          void (*msi_clear_irq)(struct pcie_port *pp, int irq);
+>          u32 (*get_msi_data)(struct pcie_port *pp);
+> +       struct pci_bus *(*scan_bus)(struct pcie_port *pp);
+> +       void (*msi_init) (struct pcie_port *pp, struct irq_domain_ops *ops,
+> +                       struct msi_chip *chip);
+>   };
+>
+>   int dw_pcie_cfg_read(void __iomem *addr, int where, int size, u32 *val);
+>
+>
+> ~Pratyush
 
