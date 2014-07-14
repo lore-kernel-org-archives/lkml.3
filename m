@@ -1,242 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755652AbaGNODY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 10:03:24 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:59195 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755480AbaGNODM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 10:03:12 -0400
-Date: Mon, 14 Jul 2014 15:03:06 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Stanimir Varbanov <svarbanov@mm-sol.com>
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Rob Herring <robh@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Josh Cartwright <joshc@codeaurora.org>
-Subject: Re: [RFC PATCH v2 1/5] mfd: qpnp: add support for Qualcomm QPNP PMICs
-Message-ID: <20140714140306.GB3993@lee--X1>
-References: <1404393243-7324-1-git-send-email-svarbanov@mm-sol.com>
- <1404393243-7324-2-git-send-email-svarbanov@mm-sol.com>
- <20140709143426.GC2635@lee--X1>
- <53BD5EC5.3080801@mm-sol.com>
- <20140710083654.GQ2635@lee--X1>
- <53BEB1DB.6010301@mm-sol.com>
- <20140711090718.GA30519@lee--X1>
- <53C3DE99.4090100@mm-sol.com>
+	id S1755701AbaGNODn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 10:03:43 -0400
+Received: from [207.46.163.141] ([207.46.163.141]:35362 "EHLO
+	na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755581AbaGNODN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 10:03:13 -0400
+Date: Mon, 14 Jul 2014 22:02:24 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Stefan Agner <stefan@agner.ch>
+CC: <mkl@pengutronix.de>, <kernel@pengutronix.de>,
+        Jingchang Lu <b35083@freescale.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/4] ARM: imx: clk-vf610: fix FlexCAN clock gating
+Message-ID: <20140714140223.GI2197@dragon>
+References: <cover.1405322992.git.stefan@agner.ch>
+ <94282392d8355ac25bb998b89032c1c980d5ccce.1405322992.git.stefan@agner.ch>
+ <20140714133926.GH2197@dragon> <5a57efd52b0092ad61ff6a2b5bf68ba7@agner.ch>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53C3DE99.4090100@mm-sol.com>
+In-Reply-To: <5a57efd52b0092ad61ff6a2b5bf68ba7@agner.ch>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(51914003)(199002)(189002)(24454002)(51704005)(92566001)(92726001)(4396001)(83072002)(95666004)(80022001)(81156004)(87936001)(106466001)(85852003)(31966008)(50466002)(47776003)(20776003)(93886003)(54356999)(76176999)(50986999)(99396002)(105606002)(74662001)(6806004)(64706001)(44976005)(23726002)(79102001)(84676001)(81342001)(110136001)(57986006)(86362001)(85306003)(107046002)(33656002)(76482001)(77982001)(33716001)(26826002)(74502001)(21056001)(83322001)(97736001)(97756001)(81542001)(102836001)(83506001)(104016003)(68736004)(69596002)(46102001)(46406003);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB477;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02723F29C4
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Shawn.Guo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jul 2014, Stanimir Varbanov wrote:
-> On 07/11/2014 12:07 PM, Lee Jones wrote:
-> > On Thu, 10 Jul 2014, Stanimir Varbanov wrote:
-> >>>>>> The Qualcomm QPNP PMIC chips are components used with the
-> >>>>>> Snapdragon 800 series SoC family.  This driver exists
-> >>>>>> largely as a glue mfd component, it exists to be an owner
-> >>>>>> of an SPMI regmap for children devices described in
-> >>>>>> device tree.
-> >>>>>>
-> >>>>>> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-> >>>>>> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
-> >>>>>> ---
-> >>>>>>  drivers/mfd/Kconfig     |   15 ++++++
-> >>>>>>  drivers/mfd/Makefile    |    1 +
-> >>>>>>  drivers/mfd/qpnp-spmi.c |  129 +++++++++++++++++++++++++++++++++++++++++++++++
-> >>>>>>  3 files changed, 145 insertions(+), 0 deletions(-)
-> >>>>>>  create mode 100644 drivers/mfd/qpnp-spmi.c
-> >>>>>>
-> >>>>>> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> >>>>>> index ee8204c..258b733 100644
-> >>>>>> --- a/drivers/mfd/Kconfig
-> >>>>>> +++ b/drivers/mfd/Kconfig
-> >>>>>> @@ -524,6 +524,21 @@ config MFD_PM8921_CORE
-> >>>>>>  	  Say M here if you want to include support for PM8921 chip as a module.
-> >>>>>>  	  This will build a module called "pm8921-core".
-> >>>>>>  
-> >>>>>> +config MFD_QPNP_SPMI
-> >>>>>> +	tristate "Qualcomm QPNP SPMI PMIC"
-> >>>>>> +	depends on ARCH_QCOM || COMPILE_TEST
-> >>>>>> +	depends on OF
-> >>>>>> +	select MFD_CORE
-> >>>>>> +	select REGMAP_SPMI
-> >>>>>> +	help
-> >>>>>> +	  This enables support for the Qualcomm QPNP SPMI PMICs.
-> >>>>>> +	  These PMICs are currently used with the Snapdragon 800 series of
-> >>>>>> +	  SoCs.  Note, that this will only be useful paired with descriptions
-> >>>>>> +	  of the independent functions as children nodes in the device tree.
-> >>>>>
-> >>
-> >> <snip>
-> >>
-> >>>>>
-> >>>>>> + * This program is distributed in the hope that it will be useful,
-> >>>>>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> >>>>>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> >>>>>> + * GNU General Public License for more details.
-> >>>>>> + */
-> >>>>>> +#include <linux/kernel.h>
-> >>>>>> +#include <linux/module.h>
-> >>>>>> +#include <linux/spmi.h>
-> >>>>>> +#include <linux/regmap.h>
-> >>>>>> +#include <linux/of_address.h>
-> >>>>>> +#include <linux/slab.h>
-> >>>>>> +#include <linux/mfd/core.h>
-> >>>>>> +
-> >>>>>> +#define QPNP_RESOURCE_SIZE	256
-> >>>>>> +
-> >>>>>> +static const struct regmap_config qpnp_regmap_config = {
-> >>>>>> +	.reg_bits	= 16,
-> >>>>>> +	.val_bits	= 8,
-> >>>>>> +	.max_register	= 0xffff,
-> >>>>>> +};
-> >>>>>> +
-> >>>>>> +static int qpnp_index_to_resource(struct device_node *np, int index,
-> >>>>>> +				  struct resource *res)
-> >>>>>> +{
-> >>>>>> +	const char *name = NULL;
-> >>>>>> +	const __be32 *addrp;
-> >>>>>> +	u64 addr;
-> >>>>>> +
-> >>>>>> +	addrp = of_get_address(np, index, NULL, NULL);
-> >>>>>> +	if (!addrp)
-> >>>>>> +		return -EINVAL;
-> >>>>>> +
-> >>>>>> +	addr = of_read_number(addrp, 1);
-> >>>>>> +	if (addr == OF_BAD_ADDR)
-> >>>>>> +		return -EINVAL;
-> >>>>>> +
-> >>>>>> +	of_property_read_string_index(np, "reg-names", index, &name);
-> >>>>>> +
-> >>>>>> +	res->start = addr;
-> >>>>>> +	res->end = addr + QPNP_RESOURCE_SIZE - 1;
-> >>>>>> +	res->flags = IORESOURCE_REG;
-> >>>>>> +	res->name = name ? name : np->name;
-> >>>>>> +
-> >>>>>> +	return 0;
-> >>>>>> +}
-> >>>>>> +
-> >>>>>> +static int qpnp_add_device(struct spmi_device *root, struct device_node *child)
-> >>>>>> +{
-> >>>>>> +	struct mfd_cell cell = {};
-> >>>>>> +	struct resource *res, *r;
-> >>>>>> +	int num_resources = 0;
-> >>>>>> +	const char *compat;
-> >>>>>> +	int ret, i;
-> >>>>>> +
-> >>>>>> +	compat = of_get_property(child, "compatible", NULL);
-> >>>>>> +	if (!compat)
-> >>>>>> +		return -ENODEV;
-> >>>>>> +
-> >>>>>> +	while (of_get_address(child, num_resources, NULL, NULL))
-> >>>>>> +		num_resources++;
-> >>>>>> +
-> >>>>>> +	if (!num_resources)
-> >>>>>> +		return -ENODEV;
-> >>>>>> +
-> >>>>>> +	res = kcalloc(num_resources, sizeof(*res), GFP_KERNEL);
-> >>>>>> +	if (!res)
-> >>>>>> +		return -ENOMEM;
-> >>>>>> +
-> >>>>>> +	r = res;
-> >>>>>> +	for (i = 0; i < num_resources; i++, r++)
-> >>>>>> +		qpnp_index_to_resource(child, i, r);
-> >>>>>> +
-> >>>>>> +	cell.name = kasprintf(GFP_KERNEL, "%x.%04x.%s", root->usid,
-> >>>>>> +			      (u16)res[0].start, child->name);
-> >>>>>> +	cell.of_compatible = compat;
-> >>>>>> +	cell.num_resources = num_resources;
-> >>>>>> +	cell.resources = res;
-> >>>>>> +
-> >>>>>> +	ret = mfd_add_devices(&root->dev, PLATFORM_DEVID_NONE, &cell, 1,
-> >>>>>> +			      NULL, 0, NULL);
-> >>>>>> +
-> >>>>>> +	kfree(res);
-> >>>>>> +	kfree(cell.name);
-> >>>>>> +
-> >>>>>> +	return ret;
-> >>>>>> +}
-> >>>>>> +
-> >>>>>> +static int qpnp_probe(struct spmi_device *sdev)
-> >>>>>> +{
-> >>>>>> +	struct device_node *root = sdev->dev.of_node;
-> >>>>>> +	struct device_node *child;
-> >>>>>> +	struct regmap *regmap;
-> >>>>>> +
-> >>>>>> +	regmap = devm_regmap_init_spmi_ext(sdev, &qpnp_regmap_config);
-> >>>>>> +	if (IS_ERR(regmap))
-> >>>>>> +		return PTR_ERR(regmap);
-> >>>>>> +
-> >>>>>> +	for_each_available_child_of_node(root, child)
-> >>>>>> +		qpnp_add_device(sdev, child);
-> >>>>>
-> >>>>> This entire driver looks like a re-write of of_platform_populate().
-> >>>>>
-> >>>>> Why?
-> >>>>
-> >>>> of_platform_populate is not used because the PMIC function resources are
-> >>>> non-translatable. You can see that the resources are of type
-> >>>> IORESOURCE_REG (qpnp_index_to_resource()) not IORESOURCE_MEM or _IO.
-> >>>>
-> >>>> The whole point of this mfd driver is to parse devicetree to prepare
-> >>>> resources for every child and create platform device for it through
-> >>>> mfd_add_devices(). Then the PMIC function driver got its resources and
-> >>>> use them as register addresses passed to regmap. These register accesses
-> >>>> hits the SPMI controller which is the physical interface between PMIC's
-> >>>> and SoC.
-> >>>
-> >>> I can't help but think that if this is required, it should be part of
-> >>> the core OF code, rather than doing your own thing which looks
-> >>> frighteningly like existing framework functionality.
-> >>
-> >> does it make sense to have a common of_mfd code for devicetree parsing?
-> >> Is that discussed already? I mean presently the mfd_cell resources and
-> >> number of resources are passed by the mfd_add_devices users. Is it
-> >> possible to have common code which parses devicetree sub-nodes of the
-> >> parent device_node and fill resources/create platform devices for them.
-> > 
-> > I'm not sure it does.  Normally users _either_ represent devices in
-> > MFD cells from within the driver _or_ populate using existing DT
-> > interfaces i.e. of_platform_populate().  This is the first time I've
-> > seen someone attempt to parse the entire MFD node structure from
-> > within a driver.
+On Mon, Jul 14, 2014 at 03:55:29PM +0200, Stefan Agner wrote:
+> There are two enable (gates) bits to enable the FlexCAN clocks: the
+> first is in the divider register, the second in the clock gate register.
+> For most clocks there is a divider in between, then it looks like this:
 > 
-> Our goal is to use common mfd driver for various Qualcomm PMIC from the
-> same PMIC generation (codenamed QPNP). Presently we have good
-> abstraction of the register manipulation functions through regmap-spmi
-> layer. Using the devicetree to represent different peripherals base
-> addresses (reg property) gives us a benefit by avoiding huge header
-> files in linux/mfd and make flexible transition to new PMIC's which just
-> change the base addresses but keep the IP block the same. This way we
-> should change the devicetree binding without touch the drivers.
+> clk[VF610_CLK_ESDHC0_SEL] = imx_clk_mux("esdhc0_sel", CCM_CSCMR1, 16, 2,
+> esdhc_sels, 4);
+> clk[VF610_CLK_ESDHC0_EN] = imx_clk_gate("esdhc0_en", "esdhc0_sel",
+> CCM_CSCDR2, 28);
+> clk[VF610_CLK_ESDHC0_DIV] = imx_clk_divider("esdhc0_div", "esdhc0_en",
+> CCM_CSCDR2, 16, 4);
+> clk[VF610_CLK_ESDHC0] = imx_clk_gate2("eshc0", "esdhc0_div", CCM_CCGR7,
+> CCM_CCGRx_CGn(1));
+> 
+> However, for FlexCAN no clock selection and no divider is available,
+> hence its just a chain of an enable and gate register...
 
-I'm still not convinced that you need to write your own parser.  If
-you're concerned about not translating the reg property, use (or
-don't) the 'ranges' property accordingly.
+Ah, okay.  Thanks for the explanation.
 
-> > After searching for some documentation to try and figure this out, I
-> > noticed that you've also missed a patch from your set:
-> > 
-> >   mfd: qpnp-spmi: document DT bindings for Qualcomm QPNP PMICs
-> 
-> I sent a new version without RFC tag which includes this binding
-> document [1].
-> 
-> > 
-> > ... which might help enlighten the DT guys.
-> > 
-> 
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Shawn
