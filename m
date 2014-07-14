@@ -1,106 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756284AbaGNQPG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 12:15:06 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:53801 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755980AbaGNQPD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 12:15:03 -0400
+	id S1755855AbaGNQRQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 12:17:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35109 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755615AbaGNQRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 12:17:03 -0400
+Date: Mon, 14 Jul 2014 18:15:25 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/7] tracing: instance_rmdir() leaks
+	ftrace_event_file->filter
+Message-ID: <20140714161525.GA12633@redhat.com>
+References: <20140711190622.GA19499@redhat.com> <1405346096.1745.17.camel@leonhard>
 MIME-Version: 1.0
-In-Reply-To: <20140714160947.GB9918@twins.programming.kicks-ass.net>
-References: <1405353439-14211-1-git-send-email-jolsa@kernel.org> <20140714160947.GB9918@twins.programming.kicks-ass.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 14 Jul 2014 09:14:41 -0700
-Message-ID: <CALCETrWZChK=p2v+-ez7s04ed5POawSqGrvST24m0c1TjFMVxw@mail.gmail.com>
-Subject: Re: [PATCH] perf: Add vm_ops->name call for mmap event name retrieval
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405346096.1745.17.camel@leonhard>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 9:09 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, Jul 14, 2014 at 05:57:19PM +0200, Jiri Olsa wrote:
->> Following patch added another way to get mmap name:
->>   78d683e mm, fs: Add vm_ops->name as an alternative to arch_vma_name
+On 07/14, Namhyung Kim wrote:
 >
-> Please add to your .gitconfig:
+> > And could someone explain me why apply_subsystem_event_filter("0") clears
+> > ->filter_string first, then the whole ->filter? It seems that the only
+> > thing filter_free_subsystem_preds() should do is filter_disable(), no?
+> > IOW, why the patch below (on top of this series) is wrong?
 >
-> [core]
->         abbrev = 12
+> I also think that the original code is bit strange.  I agree with your
+> change and name of the function should be changed to something like
+> 'filter_disable_subsystem_filters' IMHO (it does nothing with preds).
+> With this change, the apply_subsystem_event_filter can simply do below:
 >
-> Also, you failed to CC the two people involved in that.
->
->> The vdso vma mapping already switch to this and we no longer
->> get vdso name via arch_vma_name function. Adding this way to
->> the perf mmap event name retrieval code.
->>
->> Caught this via perf test:
->>
->>   $ sudo ./perf test -v 7
->>    7: Validate PERF_RECORD_* events & perf_sample fields     :
->>   --- start ---
->>
->> SNIP
->>
->>   PERF_RECORD_MMAP for [vdso] missing!
->>   test child finished with 255
->>   ---- end ----
->>   Validate PERF_RECORD_* events & perf_sample fields: FAILED!
->>
->> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
->> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
->> Cc: David Ahern <dsahern@gmail.com>
->> Cc: Frederic Weisbecker <fweisbec@gmail.com>
->> Cc: Ingo Molnar <mingo@kernel.org>
->> Cc: Namhyung Kim <namhyung@kernel.org>
->> Cc: Paul Mackerras <paulus@samba.org>
->> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
->> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
->> ---
->>  kernel/events/core.c | 6 ++++++
->>  1 file changed, 6 insertions(+)
->>
->> diff --git a/kernel/events/core.c b/kernel/events/core.c
->> index 67e3b9c..4799676 100644
->> --- a/kernel/events/core.c
->> +++ b/kernel/events/core.c
->> @@ -5266,6 +5266,12 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
->>
->>               goto got_name;
->>       } else {
->> +             if (vma->vm_ops && vma->vm_ops->name) {
->> +                     name = (char *) vma->vm_ops->name(vma);
->> +                     if (name)
->> +                             goto cpy_name;
->> +             }
->> +
+> 	if (!strcmp(strstrip(filter_string), "0")) {
+> 		filter_disable_subsystem_filters(system, tr);
+> 		/* Ensure all filters are no longer used */
+> 		synchronize_sched();
+> 		filter_free_subsystem_filters(system, tr);
+> 		__free_filter(system->filter);
+> 		system->filter = NULL;
+> 		goto out_unlock;
+> 	}
 
-Looks good to me.  Sorry I missed that.
+Yes, thanks, this was my point.
 
---Andy
+And I thought that I saw the same pattern somewhere else, but can't recall
+where... Will try to recheck.
 
+Oleg.
 
-
->>               name = (char *)arch_vma_name(vma);
->>               if (name)
->>                       goto cpy_name;
->> --
->> 1.8.3.1
->>
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
