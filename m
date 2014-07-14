@@ -1,131 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755908AbaGNO50 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 10:57:26 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:36667 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755689AbaGNO5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 10:57:18 -0400
-Date: Mon, 14 Jul 2014 16:57:01 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Havard Skinnemoen <hskinnemoen@google.com>
-Cc: Tony Luck <tony.luck@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ewout van Bekkum <ewout@google.com>,
-        linux-edac <linux-edac@vger.kernel.org>
-Subject: Re: [PATCH 1/6] x86-mce: Modify CMCI poll interval to adjust for
- small check_interval values.
-Message-ID: <20140714145701.GC25115@pd.tnic>
-References: <20140709191747.GB5249@pd.tnic>
- <CAFQmdRa5Spr0nX6qwzhDGEU9+H1_0vaCtF_NRV=p=OBDwin78A@mail.gmail.com>
- <20140710114222.GE2970@pd.tnic>
- <CAFQmdRZ1D4OWqkL-zpsiEjuGQaSBBmk36HqSw=q+hHNCRWZCKQ@mail.gmail.com>
- <CA+8MBbJ+FeQKZC9oVZsvrBptaY+24rVKWUXT02ETHMMoA-omuA@mail.gmail.com>
- <CAFQmdRY1=Yg7T15kQmiA+S0j1-xNKsF6Sze49BN7-VzbwW7V4w@mail.gmail.com>
- <20140711153541.GD17083@pd.tnic>
- <CAFQmdRajEjtGB4xXVzCmaUPA=qEjrzQTskJtpmD0cqKhKsEYsg@mail.gmail.com>
- <20140711201012.GB18246@pd.tnic>
- <CAFQmdRbpVfNjvyOPHo7RZ+W=2FTA6fEw2hWBebKNBX8LMPYfeQ@mail.gmail.com>
+	id S1755935AbaGNO6p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 10:58:45 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:61506 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754847AbaGNO6f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 10:58:35 -0400
+Date: Mon, 14 Jul 2014 17:58:22 +0300
+From: Gleb Natapov <gleb@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: mtosatti@redhat.com, nadav.amit@gmail.com, kvm@vger.kernel.org,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org,
+        Jan Kiszka <jan.kiszka@web.de>
+Subject: Re: [PATCH v2 5/5] kvm, mem-hotplug: Do not pin apic access page in
+ memory.
+Message-ID: <20140714145822.GK4399@minantech.com>
+References: <1404824492-30095-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1404824492-30095-6-git-send-email-tangchen@cn.fujitsu.com>
+ <20140712080442.GH4399@minantech.com>
+ <53C38D55.2040307@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFQmdRbpVfNjvyOPHo7RZ+W=2FTA6fEw2hWBebKNBX8LMPYfeQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53C38D55.2040307@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 01:39:19PM -0700, Havard Skinnemoen wrote:
-> Sorry, I was being unclear. I was actually arguing the opposite:
-> Getting 15 CMCIs per second is fine and shouldn't cause any switch to
-> polling mode, especially if the polling will happen at 100 times per
-> second. But your proposal would switch to polling if we ever see 2
-> CMCIs within a period, which seems way too trigger-happy, even if the
-> period is short.
->
-> I do agree there are already a lot of arbitrary numbers in the code.
+CCing Jan to check my nested kvm findings below.
 
-Yes, triggerhappy is no good either.
-
-The thing is, even if we would come up with a correct number now, who's
-to say that that same number would be correct on future uarches? I like
-the idea of approximating storm entry point on each system and I, like
-you, worry about complexity. This needs to be done really conservatively
-and without rushing...
-
-Thankfully, this thread has some nice starting ideas. :)
-
-> > Instead, the criteria should probably be something like: what is the
-> > number of CMCIs per second which we can process while leaving system
-> > operation relatively unaffected? Anything above that number constitutes
-> > a CMCI storm.
+On Mon, Jul 14, 2014 at 03:57:09PM +0800, Tang Chen wrote:
+> Hi Gleb,
 > 
-> That sounds good to me. But now you're talking about CMCIs per second,
-> which seems to imply some form of counting right?
-
-<thinking out loud>
-
-Well, I was thinking of measuring the average duration of the CMCI
-interrupt handler (which basically is machine_check_poll) and then maybe
-allowing x% of that per second. Any higher count above x% switches to
-storm.
-
-So we'll probably end up counting again but CMCI_STORM_THRESHOLD will be
-determined dynamically by doing:
-
-	CMCI_STORM_THRESHOLD = (1000ms / average duration of CMCI in ms) * x%
-
-Then, making that x user-configurable would probably be fine too. It'll
-basically allow users to say what percentage of time they'd want the
-system to spend handling CMCIs before polling.
-
-And, it'll have a sane, conservative default for the majority of people
-who don't want to deal with this at all.
-
-The usual conserns about exporting stuff to userspace apply, see below.
-
-</thinking out loud>
-
-> > Now, how we'll come up with an answer to that question is a whole
-> > another story...
+> Thanks for the reply. Please see below.
 > 
-> Right. If we can come up with an answer, that's great, but if we
-> don't, I think we're better off exporting a nice knob and letting the
-> user tune his system according to his needs.
-
-Yeah, just remember that exporting all kinds of knobs means we're forced
-to support it forever. So I'm very cautious with exposing anything to
-userspace as it becomes an API and we're stuck with it.
-
-> Just to throw another number out, how about doing CMCI storm polling
-> at a fixed interval of 100 ms? Since check_interval is an integer
-> representing a number of seconds, it can never get lower than 10x this
-> number, so we won't need to restrict it any further.
-
-Yep, this is basically the approach where we do find a static number
-default for all machines out there. It could be a temporary solution ...
-
-> If we see more than X CMCIs in a second, we switch to polling. If less
-> than Y out of 10 polls see an error, we switch back to CMCI.
+> On 07/12/2014 04:04 PM, Gleb Natapov wrote:
+> >On Tue, Jul 08, 2014 at 09:01:32PM +0800, Tang Chen wrote:
+> >>apic access page is pinned in memory. As a result, it cannot be migrated/hot-removed.
+> >>Actually, it is not necessary to be pinned.
+> >>
+> >>The hpa of apic access page is stored in VMCS APIC_ACCESS_ADDR pointer. When
+> >>the page is migrated, kvm_mmu_notifier_invalidate_page() will invalidate the
+> >>corresponding ept entry. This patch introduces a new vcpu request named
+> >>KVM_REQ_APIC_PAGE_RELOAD, and makes this request to all the vcpus at this time,
+> >>and force all the vcpus exit guest, and re-enter guest till they updates the VMCS
+> >>APIC_ACCESS_ADDR pointer to the new apic access page address, and updates
+> >>kvm->arch.apic_access_page to the new page.
+> >>
+> >By default kvm Linux guest uses x2apic, so APIC_ACCESS_ADDR mechanism
+> >is not used since no MMIO access to APIC is ever done. Have you tested
+> >this with "-cpu modelname,-x2apic" qemu flag?
 > 
-> Now, we still leave 3 magic numbers to be figured out...but I think
-> their range is somewhat more limited.
+> I used the following commandline to test the patches.
+> 
+> # /usr/libexec/qemu-kvm -m 512M -hda /home/tangchen/xxx.img -enable-kvm -smp
+> 2
+> 
+That most likely uses x2apic.
 
-Makes sense.
+> And I think the guest used APIC_ACCESS_ADDR mechanism because the previous
+> patch-set has some problem which will happen when the apic page is accessed.
+> And it did happen.
+> 
+> I'll test this patch-set with "-cpu modelname,-x2apic" flag.
+> 
+Replace "modelname" with one of supported model names such as nehalem of course :)
 
-So X will always be < 10, (== 10 means we automatically switch to
-polling).
+> >
+> >>Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
+> >>---
+> >>  arch/x86/include/asm/kvm_host.h |  1 +
+> >>  arch/x86/kvm/mmu.c              | 11 +++++++++++
+> >>  arch/x86/kvm/svm.c              |  6 ++++++
+> >>  arch/x86/kvm/vmx.c              |  8 +++++++-
+> >>  arch/x86/kvm/x86.c              | 14 ++++++++++++++
+> >>  include/linux/kvm_host.h        |  2 ++
+> >>  virt/kvm/kvm_main.c             | 12 ++++++++++++
+> >>  7 files changed, 53 insertions(+), 1 deletion(-)
+> >>
+> >>diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> >>index 62f973e..9ce6bfd 100644
+> >>--- a/arch/x86/include/asm/kvm_host.h
+> >>+++ b/arch/x86/include/asm/kvm_host.h
+> >>@@ -737,6 +737,7 @@ struct kvm_x86_ops {
+> >>  	void (*hwapic_isr_update)(struct kvm *kvm, int isr);
+> >>  	void (*load_eoi_exitmap)(struct kvm_vcpu *vcpu, u64 *eoi_exit_bitmap);
+> >>  	void (*set_virtual_x2apic_mode)(struct kvm_vcpu *vcpu, bool set);
+> >>+	void (*set_apic_access_page_addr)(struct kvm *kvm, hpa_t hpa);
+> >>  	void (*deliver_posted_interrupt)(struct kvm_vcpu *vcpu, int vector);
+> >>  	void (*sync_pir_to_irr)(struct kvm_vcpu *vcpu);
+> >>  	int (*set_tss_addr)(struct kvm *kvm, unsigned int addr);
+> >>diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> >>index 9314678..551693d 100644
+> >>--- a/arch/x86/kvm/mmu.c
+> >>+++ b/arch/x86/kvm/mmu.c
+> >>@@ -3427,6 +3427,17 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
+> >>  			 level, gfn, pfn, prefault);
+> >>  	spin_unlock(&vcpu->kvm->mmu_lock);
+> >>
+> >>+	/*
+> >>+	 * apic access page could be migrated. When the guest tries to access
+> >>+	 * the apic access page, ept violation will occur, and we can use GUP
+> >>+	 * to find the new page.
+> >>+	 *
+> >>+	 * GUP will wait till the migrate entry be replaced with the new page.
+> >>+	 */
+> >>+	if (gpa == APIC_DEFAULT_PHYS_BASE)
+> >>+		vcpu->kvm->arch.apic_access_page = gfn_to_page_no_pin(vcpu->kvm,
+> >>+					APIC_DEFAULT_PHYS_BASE>>  PAGE_SHIFT);
+> >Shouldn't you make KVM_REQ_APIC_PAGE_RELOAD request here?
+> 
+> I don't think we need to make KVM_REQ_APIC_PAGE_RELOAD request here.
+> 
+> In kvm_mmu_notifier_invalidate_page() I made the request. And the handler
+> called
+> gfn_to_page_no_pin() to get the new page, which will wait till the migration
+> finished. And then updated the VMCS APIC_ACCESS_ADDR pointer. So, when the
+> vcpus
+> were forced to exit the guest mode, they would wait till the VMCS
+> APIC_ACCESS_ADDR
+> pointer was updated.
+> 
+> As a result, we don't need to make the request here.
+OK, I do not see what's the purpose of the code here then.
 
-The Y could contain a historic aspect by setting it to some value and
-decrementing it by one if we haven't seen an error and incrementing it
-if we saw an error during the last poll. It will saturate at Y errors
-and when it reaches 0, it will switch back to CMCI.
+> 
+> 
+> >
+> >>+
+> >>  	return r;
+> >>
+> >>  out_unlock:
+> >>diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+> >>index 576b525..dc76f29 100644
+> >>--- a/arch/x86/kvm/svm.c
+> >>+++ b/arch/x86/kvm/svm.c
+> >>@@ -3612,6 +3612,11 @@ static void svm_set_virtual_x2apic_mode(struct kvm_vcpu *vcpu, bool set)
+> >>  	return;
+> >>  }
+> >>
+> >>+static void svm_set_apic_access_page_addr(struct kvm *kvm, hpa_t hpa)
+> >>+{
+> >>+	return;
+> >>+}
+> >>+
+> >>  static int svm_vm_has_apicv(struct kvm *kvm)
+> >>  {
+> >>  	return 0;
+> >>@@ -4365,6 +4370,7 @@ static struct kvm_x86_ops svm_x86_ops = {
+> >>  	.enable_irq_window = enable_irq_window,
+> >>  	.update_cr8_intercept = update_cr8_intercept,
+> >>  	.set_virtual_x2apic_mode = svm_set_virtual_x2apic_mode,
+> >>+	.set_apic_access_page_addr = svm_set_apic_access_page_addr,
+> >>  	.vm_has_apicv = svm_vm_has_apicv,
+> >>  	.load_eoi_exitmap = svm_load_eoi_exitmap,
+> >>  	.hwapic_isr_update = svm_hwapic_isr_update,
+> >>diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> >>index 5532ac8..f7c6313 100644
+> >>--- a/arch/x86/kvm/vmx.c
+> >>+++ b/arch/x86/kvm/vmx.c
+> >>@@ -3992,7 +3992,7 @@ static int alloc_apic_access_page(struct kvm *kvm)
+> >>  	if (r)
+> >>  		goto out;
+> >>
+> >>-	page = gfn_to_page(kvm, APIC_DEFAULT_PHYS_BASE>>  PAGE_SHIFT);
+> >>+	page = gfn_to_page_no_pin(kvm, APIC_DEFAULT_PHYS_BASE>>  PAGE_SHIFT);
+> >>  	if (is_error_page(page)) {
+> >>  		r = -EFAULT;
+> >>  		goto out;
+> >>@@ -7073,6 +7073,11 @@ static void vmx_set_virtual_x2apic_mode(struct kvm_vcpu *vcpu, bool set)
+> >>  	vmx_set_msr_bitmap(vcpu);
+> >>  }
+> >>
+> >>+static void vmx_set_apic_access_page_addr(struct kvm *kvm, hpa_t hpa)
+> >>+{
+> >>+	vmcs_write64(APIC_ACCESS_ADDR, hpa);
+> >>+}
+> >>+
+> >>  static void vmx_hwapic_isr_update(struct kvm *kvm, int isr)
+> >>  {
+> >>  	u16 status;
+> >>@@ -8842,6 +8847,7 @@ static struct kvm_x86_ops vmx_x86_ops = {
+> >>  	.enable_irq_window = enable_irq_window,
+> >>  	.update_cr8_intercept = update_cr8_intercept,
+> >>  	.set_virtual_x2apic_mode = vmx_set_virtual_x2apic_mode,
+> >>+	.set_apic_access_page_addr = vmx_set_apic_access_page_addr,
+> >>  	.vm_has_apicv = vmx_vm_has_apicv,
+> >>  	.load_eoi_exitmap = vmx_load_eoi_exitmap,
+> >>  	.hwapic_irr_update = vmx_hwapic_irr_update,
+> >>diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> >>index ffbe557..7080eda 100644
+> >>--- a/arch/x86/kvm/x86.c
+> >>+++ b/arch/x86/kvm/x86.c
+> >>@@ -5929,6 +5929,18 @@ static void vcpu_scan_ioapic(struct kvm_vcpu *vcpu)
+> >>  	kvm_apic_update_tmr(vcpu, tmr);
+> >>  }
+> >>
+> >>+static void vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu)
+> >>+{
+> >>+	/*
+> >>+	 * When the page is being migrated, GUP will wait till the migrate
+> >>+	 * entry is replaced with the new pte entry pointing to the new page.
+> >>+	 */
+> >>+	struct page *page = gfn_to_page_no_pin(vcpu->kvm,
+> >>+					APIC_DEFAULT_PHYS_BASE>>  PAGE_SHIFT);
+> >If you do not use kvm->arch.apic_access_page to get current address why not drop it entirely?
+> >
+> 
+> I should also update kvm->arch.apic_access_page here. It is used in other
+> places
+> in kvm, so I don't think we should drop it. Will update the patch.
+What other places? The only other place I see is in nested kvm code and you can call
+gfn_to_page_no_pin() there instead of using kvm->arch.apic_access_page directly. But
+as far as I see nested kvm code cannot handle change of APIC_ACCESS_ADDR phys address.
+If APIC_ACCESS_ADDR changes during nested guest run, non nested vmcs will still have old
+physical address. One way to fix that is to set KVM_REQ_APIC_PAGE_RELOAD during nested exit.
 
-Hrrm, sounds interesting :)
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
 --
+			Gleb.
