@@ -1,80 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755705AbaGNO1P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 10:27:15 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:37581 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755284AbaGNO1J (ORCPT
+	id S1755792AbaGNO1d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 10:27:33 -0400
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:41146 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755299AbaGNO1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 10:27:09 -0400
-Date: Mon, 14 Jul 2014 15:27:03 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, ajitpal.singh@st.com, edubezval@gmail.com,
-        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
-        maxime.coquelin@st.com, patrice.chotard@st.com
-Subject: Re: [RESEND PATCH 0/6] thermal: sti: Add new Thermal driver
-Message-ID: <20140714142703.GC3993@lee--X1>
-References: <1401980819-19962-1-git-send-email-lee.jones@linaro.org>
- <20140624092309.GD13803@lee--X1>
- <20140709120823.GA32573@lee--X1>
- <1404911964.28592.4.camel@rzhang1-toshiba>
- <20140709134646.GB479@lee--X1>
- <20140714130824.GA3993@lee--X1>
- <1405347277.28592.25.camel@rzhang1-toshiba>
+	Mon, 14 Jul 2014 10:27:10 -0400
+Date: Mon, 14 Jul 2014 10:27:07 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/1 V2] workqueue: remove the del_timer_sync()s in
+ maybe_create_worker()
+Message-ID: <20140714142707.GB31610@htj.dyndns.org>
+References: <1405265479-827-1-git-send-email-laijs@cn.fujitsu.com>
+ <1405325601-12437-1-git-send-email-laijs@cn.fujitsu.com>
+ <1405325601-12437-2-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1405347277.28592.25.camel@rzhang1-toshiba>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1405325601-12437-2-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jul 2014, Zhang Rui wrote:
+Hello,
 
-> On Mon, 2014-07-14 at 14:08 +0100, Lee Jones wrote:
-> > On Wed, 09 Jul 2014, Lee Jones wrote:
-> > > On Wed, 09 Jul 2014, Zhang Rui wrote:
-> > > > On Wed, 2014-07-09 at 13:08 +0100, Lee Jones wrote:
-> > > > > On Tue, 24 Jun 2014, Lee Jones wrote:
-> > > > > 
-> > > > > > > I'm re-sending this set, as one of the maintainers' email addresses
-> > > > > > > is incorrect in the MAINTAINERS file.
-> > > > > > > 
-> > > > > > > This patchset adds full support for 2 types of Thermal Controllers
-> > > > > > > produced by STMicroelectronics.  One is a more traditional memory
-> > > > > > > mapped variant, the other is controlled solely by system configuration
-> > > > > > > registers.
-> > > > > > 
-> > > > > > Any thing from the Thermal guys? Has this set fallen through the gaps?
-> > > > > 
-> > > > > Anything at all?  It's been well over a month now.
-> > > > > 
-> > > > Well, for the soc thermal drivers, I'd prefer to take them via Eduardo,
-> > > > but as we didn't get any feedback from Eduardo, I will take them.
-> > > 
-> > > Thanks Rui.
-> > > 
-> > > So have you taken all 4 "thermal: sti: *" patches?
-> > 
-> > Have you taken these yet?
-> Not yet.
-> will do tomorrow.
-
-Perfect, thanks for the update.
-
-> >   I notice that these aren't in -next yet.
-> > 
-> > > The ARM ones should go through Maxime.
-> > 
+On Mon, Jul 14, 2014 at 04:13:21PM +0800, Lai Jiangshan wrote:
+> It is said in the document that the timer which is being
+> deleted by del_timer_sync() should not be restarted:
+>   Synchronization rules: Callers must prevent restarting of
+>   the timer, otherwise this function is meaningless.
 > 
-> 
+> Repeating timer may cause the del_timer_sync() spin longer,
+> or even spin forever in very very very very extreme condition.
+
+I'm fairly sure del_timer_sync() can delete self-requeueing timers.
+The implementation busy-waits if the queued timer is the currently
+executing one and dequeues only while the timer isn't running which
+should be able to handle self-requeueing ones just fine.  Thomas,
+del_timer_sync() can reliably delete self-requeueing ones, right?
+
+Thanks.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+tejun
