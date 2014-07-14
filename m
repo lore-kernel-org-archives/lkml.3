@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932506AbaGNViv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 17:38:51 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:57227 "EHLO smtp.outflux.net"
+	id S932491AbaGNVit (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 17:38:49 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:54414 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757249AbaGNVih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756915AbaGNVih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Jul 2014 17:38:37 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
@@ -15,9 +15,9 @@ Cc: Kees Cook <keescook@chromium.org>, Ming Lei <ming.lei@canonical.com>,
         David Howells <dhowells@redhat.com>, linux-doc@vger.kernel.org,
         linux-security-module@vger.kernel.org, linux-firmware@kernel.org,
         linux-wireless <linux-wireless@vger.kernel.org>
-Subject: [PATCH 5/7] firmware_class: extract start loading logic
-Date: Mon, 14 Jul 2014 14:38:15 -0700
-Message-Id: <1405373897-31671-6-git-send-email-keescook@chromium.org>
+Subject: [PATCH 7/7] test: add "fd" firmware loading test to selftests
+Date: Mon, 14 Jul 2014 14:38:17 -0700
+Message-Id: <1405373897-31671-8-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1405373897-31671-1-git-send-email-keescook@chromium.org>
 References: <1405373897-31671-1-git-send-email-keescook@chromium.org>
@@ -26,67 +26,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extract the logic performed when starting a new firmware load.
+This adds tests for the new "fd" interface to the firmware selftests.
 
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/base/firmware_class.c |   29 ++++++++++++++++++-----------
- 1 file changed, 18 insertions(+), 11 deletions(-)
+ tools/testing/selftests/firmware/fw_userhelper.sh |   34 ++++++++++++++++++---
+ 1 file changed, 30 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 7399bab71ced..b38cbcd6ebb1 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -604,6 +604,23 @@ static int fw_map_pages_buf(struct firmware_buf *buf)
- 	return 0;
- }
+diff --git a/tools/testing/selftests/firmware/fw_userhelper.sh b/tools/testing/selftests/firmware/fw_userhelper.sh
+index 6efbade12139..e2766613e5b5 100644
+--- a/tools/testing/selftests/firmware/fw_userhelper.sh
++++ b/tools/testing/selftests/firmware/fw_userhelper.sh
+@@ -25,6 +25,7 @@ load_fw()
+ {
+ 	local name="$1"
+ 	local file="$2"
++	local fd="$3"
  
-+/* fw_lock must be held */
-+static void fw_load_start(struct firmware_buf *fw_buf)
-+{
-+	/* discarding any previous partial load */
-+	if (!test_bit(FW_STATUS_DONE, &fw_buf->status)) {
-+		int i;
+ 	# This will block until our load (below) has finished.
+ 	echo -n "$name" >"$DIR"/trigger_request &
+@@ -40,9 +41,16 @@ load_fw()
+ 		fi
+ 	done
+ 
+-	echo 1 >"$DIR"/"$name"/loading
+-	cat "$file" >"$DIR"/"$name"/data
+-	echo 0 >"$DIR"/"$name"/loading
++	if [ -z "$fd" ]; then
++		echo 1 >"$DIR"/"$name"/loading
++		cat "$file" >"$DIR"/"$name"/data
++		echo 0 >"$DIR"/"$name"/loading
++	else
++		if ! echo "$fd" <"$file" >"$DIR"/"$name"/fd 2>/dev/null ; then
++			# If the echo fails, abort to avoid timeout.
++			echo -1 > "$DIR"/"$name"/loading
++		fi
++	fi
+ 
+ 	# Wait for request to finish.
+ 	wait
+@@ -83,7 +91,25 @@ if ! diff -q "$FW" /dev/test_firmware >/dev/null ; then
+ 	echo "$0: firmware was not loaded" >&2
+ 	exit 1
+ else
+-	echo "$0: user helper firmware loading works"
++	echo "$0: user helper firmware via 'loading' works"
++fi
 +
-+		for (i = 0; i < fw_buf->nr_pages; i++)
-+			__free_page(fw_buf->pages[i]);
-+		kfree(fw_buf->pages);
-+		fw_buf->pages = NULL;
-+		fw_buf->page_array_size = 0;
-+		fw_buf->nr_pages = 0;
-+		set_bit(FW_STATUS_LOADING, &fw_buf->status);
-+	}
-+}
++# Request a bad file descriptor, expected to fail.
++load_fw "$NAME" "$FW" 100
++if diff -q "$FW" /dev/test_firmware >/dev/null ; then
++	echo "$0: firmware was not expected to match" >&2
++	exit 1
++else
++	echo "$0: bad file descriptor correctly fails"
++fi
 +
- /**
-  * firmware_loading_store - set value in the 'loading' control file
-  * @dev: device pointer
-@@ -624,7 +641,6 @@ static ssize_t firmware_loading_store(struct device *dev,
- 	struct firmware_priv *fw_priv = to_firmware_priv(dev);
- 	struct firmware_buf *fw_buf;
- 	int loading = simple_strtol(buf, NULL, 10);
--	int i;
++# Request with the correct file descriptor.
++load_fw "$NAME" "$FW" 0
++if ! diff -q "$FW" /dev/test_firmware >/dev/null ; then
++	echo "$0: failed to load with good fd" >&2
++	exit 1
++else
++	echo "$0: user helper firmware via 'fd' works"
+ fi
  
- 	mutex_lock(&fw_lock);
- 	fw_buf = fw_priv->buf;
-@@ -633,16 +649,7 @@ static ssize_t firmware_loading_store(struct device *dev,
- 
- 	switch (loading) {
- 	case 1:
--		/* discarding any previous partial load */
--		if (!test_bit(FW_STATUS_DONE, &fw_buf->status)) {
--			for (i = 0; i < fw_buf->nr_pages; i++)
--				__free_page(fw_buf->pages[i]);
--			kfree(fw_buf->pages);
--			fw_buf->pages = NULL;
--			fw_buf->page_array_size = 0;
--			fw_buf->nr_pages = 0;
--			set_bit(FW_STATUS_LOADING, &fw_buf->status);
--		}
-+		fw_load_start(fw_buf);
- 		break;
- 	case 0:
- 		if (test_bit(FW_STATUS_LOADING, &fw_buf->status)) {
+ exit 0
 -- 
 1.7.9.5
 
