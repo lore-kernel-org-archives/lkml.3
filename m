@@ -1,102 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746AbaGNH1L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 03:27:11 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:45219 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752160AbaGNH1I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 03:27:08 -0400
+	id S1753231AbaGNHcy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 03:32:54 -0400
+Received: from mail-by2lp0244.outbound.protection.outlook.com ([207.46.163.244]:13671
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752785AbaGNHcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 03:32:46 -0400
+Date: Mon, 14 Jul 2014 15:32:35 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Stefan Agner <stefan@agner.ch>
+CC: Marc Kleine-Budde <mkl@pengutronix.de>, <wg@grandegger.com>,
+        <kernel@pengutronix.de>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-can@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] can: flexcan: add vf61x support for flexcan
+Message-ID: <20140714073234.GD2197@dragon>
+References: <1405075933-22317-1-git-send-email-stefan@agner.ch>
+ <53BFD401.8030101@pengutronix.de> <dac76ccd134f41b86f00352d10cfae4b@agner.ch>
+ <20140714060344.GB2197@dragon> <cecd42e333cdf65ad512f719125f9180@agner.ch>
 MIME-Version: 1.0
-In-Reply-To: <20140711133841.GU30458@sirena.org.uk>
-References: <1404982207-4707-1-git-send-email-harinik@xilinx.com>
-	<1404982207-4707-2-git-send-email-harinik@xilinx.com>
-	<20140711133841.GU30458@sirena.org.uk>
-Date: Mon, 14 Jul 2014 12:57:07 +0530
-Message-ID: <CAFcVEC+fO9e6d0HXC0UsY3ptNhXhD0TVFuuw3HdS5RpAUmtR8Q@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/2] spi: Add support for Zynq QSPI controller
-From: Harini Katakam <harinikatakamlinux@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        linux-spi <linux-spi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        =?UTF-8?B?TWFyZWsgVmHFoXV0?= <marex@denx.de>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jingoo Han <jg1.han@samsung.com>, Sourav Poddar <sourav.poddar@ti.com>,
-        "michals@xilinx.com" <michals@xilinx.com>,
-        Punnaiah Choudary Kalluri <punnaia@xilinx.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <cecd42e333cdf65ad512f719125f9180@agner.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(377424004)(24454002)(51704005)(189002)(199002)(21056001)(50466002)(4396001)(97756001)(81542001)(79102001)(86362001)(50986999)(76176999)(97736001)(95666004)(81342001)(54356999)(99396002)(81156004)(105606002)(64706001)(106466001)(80022001)(85306003)(20776003)(110136001)(46102001)(104016003)(57986006)(83072002)(92726001)(85852003)(92566001)(46406003)(74662001)(87936001)(74502001)(31966008)(83322001)(107046002)(77982001)(33656002)(33716001)(76482001)(44976005)(6806004)(47776003)(84676001)(23726002)(68736004)(102836001)(83506001)(69596002)(19580405001)(93886003)(26826002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB374;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02723F29C4
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Shawn.Guo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Mon, Jul 14, 2014 at 09:06:33AM +0200, Stefan Agner wrote:
+> Am 2014-07-14 08:04, schrieb Shawn Guo:
+> > On Fri, Jul 11, 2014 at 03:58:37PM +0200, Stefan Agner wrote:
+> >> >> @@ -362,7 +374,7 @@
+> >> >>
+> >> >>  			esdhc1: esdhc@400b2000 {
+> >> >>  				compatible = "fsl,imx53-esdhc";
+> >> >> -				reg = <0x400b2000 0x4000>;
+> >> >> +				reg = <0x400b2000 0x1000>;
+> >> >
+> >> > What's that doing here? :)
+> >>
+> >> That's an error I just stumbled upon.
+> > 
+> > I do not see why it's an error.  From Table 2-1. System Memory Map in
+> > i.MX53 RM, the size of ESDHC1 is 16K.
+> > 
+> > Shawn
+> 
+> Hi Shawn,
+> 
+> In the Vybrid RM memory map, 0x400B4000 is allocated to USB. 0x400B3000
+> is empty, whereas for other peripherals (e.g. FlexCAN) which use
+> multiple 0x1000 blocks, they are all explicitly stated. That is why I
+> assumed 0x1000 is correct.
 
-On Fri, Jul 11, 2014 at 7:08 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Thu, Jul 10, 2014 at 02:20:06PM +0530, Harini Katakam wrote:
->
->> This patch adds support for QSPI controller used by Zynq.
->
-> The driver looks pretty clean but there are a couple of issues below,
-> including a little bit more of the flash specifics.
->
->> +static void zynq_qspi_chipselect(struct spi_device *qspi, bool is_high)
->> +{
->> +     struct zynq_qspi *xqspi = spi_master_get_devdata(qspi->master);
->> +     u32 config_reg;
->> +
->> +     config_reg = zynq_qspi_read(xqspi, ZYNQ_QSPI_CONFIG_OFFSET);
->> +
->> +     /* Select upper/lower page before asserting CS */
->> +     if (xqspi->is_stacked) {
->> +             u32 lqspi_cfg_reg;
->
-> Like with the dual and quad mode stuff this looks very much like it's
-> specific to flash rather than something that applies to a generic SPI
-> driver.  However it does look like it's a generic SPI device which could
-> be used in other applications which makes things a bit tricky.  We don't
-> have a really good answer for this right now unfortunately, probably we
-> need some sort of special interface between the SPI and flash subsystems
-> to allow flash to use the flash specific stuff.
->
-> For use as a generic SPI device what I'd suggest is stripping out the
-> flash specifics, merging the rest of the support and then considering
-> the flash specifics separately.
+Ah, sorry.  I thought you're on i.MX53.  You're right about Vybrid, and
+it should be 0x1000.
 
-Reply in the other thread.
+> 
+> But then, the memory map within the SDHC peripheral has some registers
+> also located in 0x400B3000.
 
->
->> +/**
->> + * zynq_prepare_transfer_hardware - Prepares hardware for transfer.
->> + * @master:  Pointer to the spi_master structure which provides
->> + *           information about the controller.
->> + *
->> + * This function enables SPI master controller.
->> + *
->> + * Return:   Always 0
->> + */
->> +static int zynq_prepare_transfer_hardware(struct spi_master *master)
->> +{
->> +     struct zynq_qspi *xqspi = spi_master_get_devdata(master);
->> +
->> +     zynq_qspi_config_clock_mode(master->cur_msg->spi);
->
-> The clock mode needs to be (and is) configured per transfer so I'd
-> expect it's possible to remove this call.
->
+Really?  Which one?
 
-Yeah I understand. It can go away from here and there should be a
-prepare_message as per Lars-Peter's patches on spi-cadence.
-I'll reflect the same in this driver.
+Shawn
 
-Regards,
-Harini
+> Hence I think 0x2000 is correct. Will send
+> an updated and separated patch.
