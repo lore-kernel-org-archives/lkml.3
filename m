@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700AbaGNShB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 14:37:01 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:33720 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756492AbaGNSgw (ORCPT
+	id S1756777AbaGNShx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 14:37:53 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:37816 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756492AbaGNShs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 14:36:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAL1qeaGCLw0LSE_Oy_VteAyWLHS9D4y-U8+6Mu+cGKEUp3T3GQ@mail.gmail.com>
-References: <1404954350-26343-1-git-send-email-abrestic@chromium.org>
-	<1404954350-26343-5-git-send-email-abrestic@chromium.org>
-	<CAODwPW9FORb2jnxFi6US6CUJvJzKyUkT8cuSzkPues41hJe+Jw@mail.gmail.com>
-	<CAL1qeaGCLw0LSE_Oy_VteAyWLHS9D4y-U8+6Mu+cGKEUp3T3GQ@mail.gmail.com>
-Date: Mon, 14 Jul 2014 11:36:51 -0700
-X-Google-Sender-Auth: rv8af33A_VGk86Mo9InhIvfnaBA
-Message-ID: <CAODwPW_=aoCB3K_cFvEKvztNjo=qHXCwmY4mwXMXRaJ+gzSogw@mail.gmail.com>
-Subject: Re: [PATCH 4/4] xhci: Allow xHCI drivers to be built as separate modules
-From: Julius Werner <jwerner@chromium.org>
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: Julius Werner <jwerner@chromium.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 14 Jul 2014 14:37:48 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Mon, 14 Jul 2014 20:37:34 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
+Subject: [git pull] FireWire fix
+Message-ID: <20140714203734.1afa1021@kant>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Nope - since CONFIG_USB_XHCI_MVEBU can be 'y' or 'm' we need the ifneq
-> here (which matches against both) to ensure xhci-mvebu.o is built is
-> part of xhci-plat-hcd.o.
+Linus,
 
-Oh... does it make sense to have it tristate at all, then? Looks like
-was never really buildable as an independent module (and still won't
-be after this patch), so I bet that was just a mistake when the
-Kconfig for it was first written that should be fixed. (Ideally,
-xhci-plat.c should probably go away in favor of dwc3/host.c and
-xhci-mvebu.c implementing the wrapper to xhci_init_driver() directly,
-but that is a longer-term goal.)
+please pull from the tag "firewire-fix" at
+
+    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394.git firewire-fix
+
+to receive an IEEE 1394 (FireWire) subsystem fix:  The 1394 drivers cannot and
+are not supposed to be built on platforms which don't provide the DMA mapping API.
+(Regression since v3.16-rc1 with CONFIG_COMPILE_TEST=y on some architectures.)
+
+Geert Uytterhoeven (1):
+      firewire: IEEE 1394 (FireWire) support should depend on HAS_DMA
+
+ drivers/firewire/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+Thanks,
+-- 
+Stefan Richter
+-=====-====- -=== -===-
+http://arcgraph.de/sr/
