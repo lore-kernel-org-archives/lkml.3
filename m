@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825AbaGNSQx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 14:16:53 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37314 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756650AbaGNSQp (ORCPT
+	id S1756849AbaGNSRF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 14:17:05 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:52383 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752433AbaGNSQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 14:16:45 -0400
-Date: Mon, 14 Jul 2014 19:16:30 +0100
-From: Mark Brown <broonie@kernel.org>
-To: James Ban <james.ban.opensource@diasemi.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        Support Opensource <support.opensource@diasemi.com>,
+	Mon, 14 Jul 2014 14:16:53 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
-Message-ID: <20140714181630.GT6800@sirena.org.uk>
-References: <201407140450.s6E4oa79016771@krsrvapps-01.diasemi.com>
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 9/9] pci: Remap I/O bus resources into CPU space with pci_remap_iospace()
+Date: Mon, 14 Jul 2014 20:15:48 +0200
+Message-ID: <7345495.UDsgOtKzyQ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140714165443.GI1112@arm.com>
+References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com> <1404240214-9804-10-git-send-email-Liviu.Dudau@arm.com> <20140714165443.GI1112@arm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="k8r0khnpBuGu0wUi"
-Content-Disposition: inline
-In-Reply-To: <201407140450.s6E4oa79016771@krsrvapps-01.diasemi.com>
-X-Cookie: Above all else -- sky.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V6] regulator: DA9211 : new regulator driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:CVju6OEjRIeNVVSfvAFB7WZMXitou9/+DEgsVyWsFKS
+ 7xxZ2KWHakEwSe7OYTClRh6ER8aXAvzMwpI4FyQCDXWGRjNJ4l
+ 0eBsIT4QXjbuf3TM5bPORH+DmN17jaGPnnVDGC/MYT0obtZAwa
+ pXFyFHTZFMcsVv3eh/P66MTFdagtDC0iv19NB6QI0dBnWA1GxX
+ NX1JGVUd0V3zzvXl3Q4VmabULFYUuyNyyyqp45IdG2oC4ngjau
+ yTLKEAdPAbO2yz+dKg8BypA7ifVgu6SVgtj0VMDo8HClbTbGfn
+ acaq894UGR+lpy/zWiIOR8Yh7wPdIMPnYXTykSdDI+sMlRq8Om
+ DTaVcF7cdfpdcEEeQsxI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 14 July 2014 17:54:43 Catalin Marinas wrote:
+> On Tue, Jul 01, 2014 at 07:43:34PM +0100, Liviu Dudau wrote:
+> > Introduce a default implementation for remapping PCI bus I/O resources
+> > onto the CPU address space. Architectures with special needs may
+> > provide their own version, but most should be able to use this one.
+> [...]
+> > +/**
+> > + *   pci_remap_iospace - Remap the memory mapped I/O space
+> > + *   @res: Resource describing the I/O space
+> > + *   @phys_addr: physical address where the range will be mapped.
+> > + *
+> > + *   Remap the memory mapped I/O space described by the @res
+> > + *   into the CPU physical address space. Only architectures
+> > + *   that have memory mapped IO defined (and hence PCI_IOBASE)
+> > + *   should call this function.
+> > + */
+> > +int __weak pci_remap_iospace(const struct resource *res, phys_addr_t phys_addr)
+> > +{
+> > +     int err = -ENODEV;
+> > +
+> > +#ifdef PCI_IOBASE
+> > +     if (!(res->flags & IORESOURCE_IO))
+> > +             return -EINVAL;
+> > +
+> > +     if (res->end > IO_SPACE_LIMIT)
+> > +             return -EINVAL;
+> > +
+> > +     err = ioremap_page_range(res->start + (unsigned long)PCI_IOBASE,
+> > +                             res->end + 1 + (unsigned long)PCI_IOBASE,
+> > +                             phys_addr, __pgprot(PROT_DEVICE_nGnRE));
+> 
+> Except that PROT_DEVICE_nGnRE is arm64 only. I think that's a function
+> that should remain arch specific.
+> 
 
---k8r0khnpBuGu0wUi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+How about #defining a macro with the correct pgprot value in asm/pci.h
+or asm/pgtable.h?
+We can provide a default for that in another architecture independent
+location.
 
-On Mon, Jul 14, 2014 at 01:48:45PM +0900, James Ban wrote:
-> This is the driver for the Dialog DA9211 Multi-phase 12A DC-DC Buck
-> Converter regulator. It communicates via an I2C bus to the device.
-
-Applied, thanks.
-
---k8r0khnpBuGu0wUi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTxB57AAoJELSic+t+oim9E3UP/iHT26wf+cDYjj6Wbh6HUgHn
-ZAn9MxbgXyqZ54L7uSIFR6lZPNGBdi4ektnwP91rUDwcLErG8KKMVMhnaGgrLqBH
-JqP4dczD0gED8rl+35zAxj5QzHo+K+oP/EZZVm7uGkkE3QO1fT/06UdyRjcBwNDB
-JYFRGsgJ7Qyn9kEaHphREGxvFJyvb7mptIf1QUlcjVyp+BeMxvNH84zXESqvmFXk
-16QoK4CvrlzAe8768REgwbs9VpBC1JKP18MMO1jdagvB01RMmItlzq7y9gz13SX4
-k98UyUK99/+tvET0XhFyyDnpX/SMLNQzRbr8fTT6s/gKSfBcjCdbqt+BvZ8Pg5hJ
-43+JJ/Rp4k5scrlGFjBswx9WUpc9amtTNxF9mpHpvhC8Ug/5Yqbo2cKydFSSdGEd
-aKi2IYVAIRqLCpOkdz7hg525K83HGFXzDrBsFovqQLELPjpLOw68UG+EabBBtmTT
-sVVbiVHPTublt6uz3ADDsMurE6e3UROuC+3XCDef8G4W+y9SFAJlZSGvN8USATob
-dr3B8c+Z1Uy3cmxT6zyw5EJolUdyNdqQi6vLC/vpXzK0a66474NdAcjJ9ME3XrY3
-vV9WE9D6FXKaWk+eYoNKYuNMkApe5Lk2zjOJiHRkFYS44dsLxw362tTLjfFSW7YV
-dlYEHpIyOdNxCF8/aVly
-=wulZ
------END PGP SIGNATURE-----
-
---k8r0khnpBuGu0wUi--
+	Arnd
