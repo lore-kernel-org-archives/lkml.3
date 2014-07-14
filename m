@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603AbaGNGLE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 02:11:04 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:48891 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325AbaGNGK6 (ORCPT
+	id S1753138AbaGNGNb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 02:13:31 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:34859 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753039AbaGNGNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 02:10:58 -0400
+	Mon, 14 Jul 2014 02:13:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <1405314104-9688-1-git-send-email-xerofoify@gmail.com>
-References: <1405314104-9688-1-git-send-email-xerofoify@gmail.com>
-Date: Mon, 14 Jul 2014 11:40:58 +0530
-Message-ID: <CAKohpokxmrFz+4x+V3MeEuKgnzQoETWLA_0aZHhhE6=+MvQP1Q@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: Fix latency for cpufreq_info
+In-Reply-To: <53C0A648.9080909@codeaurora.org>
+References: <1404959850-11617-1-git-send-email-skannan@codeaurora.org>
+	<1405052287-4744-1-git-send-email-skannan@codeaurora.org>
+	<CAKohponB9feyh50p+dL5hyU1ffHAzHU59G-sYCrCm1AbHQe9hw@mail.gmail.com>
+	<53C0A648.9080909@codeaurora.org>
+Date: Mon, 14 Jul 2014 11:43:24 +0530
+Message-ID: <CAKohpokdvtPj7jg88mon+EnHRCbUF7nqFWvmkFEMVh5WRzSS5A@mail.gmail.com>
+Subject: Re: [PATCH v2] cpufreq: Don't destroy/realloc policy/sysfs on hotplug/suspend
 From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Nicholas Krause <xerofoify@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: "Rafael J . Wysocki" <rjw@rjwysocki.net>,
+        Todd Poynor <toddpoynor@google.com>,
         "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 July 2014 10:31, Nicholas Krause <xerofoify@gmail.com> wrote:
-> This fixes the latency for the cpufreq policy to 1 million nanoseconds
-> that calls the function pxa_cpu_init for the member of the structure
-> called cpuinfo.transition_latency.
+On 12 July 2014 08:36, Saravana Kannan <skannan@codeaurora.org> wrote:
+> On 07/10/2014 11:19 PM, Viresh Kumar wrote:
 >
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> ---
->  drivers/cpufreq/pxa2xx-cpufreq.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> Please make sure you take care of these issues:
+>> - suspend/resume
+>> - hotplug
+>> - module insert/remove
 >
-> diff --git a/drivers/cpufreq/pxa2xx-cpufreq.c b/drivers/cpufreq/pxa2xx-cpufreq.c
-> index e24269a..e08bb98 100644
-> --- a/drivers/cpufreq/pxa2xx-cpufreq.c
-> +++ b/drivers/cpufreq/pxa2xx-cpufreq.c
-> @@ -372,7 +372,7 @@ static int pxa_cpufreq_init(struct cpufreq_policy *policy)
->         init_sdram_rows();
+> Ok, I was just at the current code. Does cpufreq_unregister_driver() even
+> really work correctly as it stands?
 >
->         /* set default policy and cpuinfo */
-> -       policy->cpuinfo.transition_latency = 1000; /* FIXME: 1 ms, assumed */
-> +       policy->cpuinfo.transition_latency = 1000, 000;
+> It doesn't even seem to stop any of the governors/policies before it just
+> set the cpufreq_driver pointer to NULL.
+>
+> So, technically my v2 patch doesn't even make anything worse when it comes
+> to unregistering the cpufreq driver.
 
-Have you tried testing this at all? This patch wouldn't change anything.
-Still 1000 will get assigned to latency :)
+Are you really sure about this? I have tested this *myself* earlier..
 
-Get rid of the comma.
+subsys_interface_unregister() should take care of stopping/freeing governor
+stuff..
