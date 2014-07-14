@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756921AbaGNTTO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 15:19:14 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:60922 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752519AbaGNTTE (ORCPT
+	id S1754872AbaGNTTW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 15:19:22 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:62744 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756896AbaGNTTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 15:19:04 -0400
+	Mon, 14 Jul 2014 15:19:14 -0400
 From: Seth Forshee <seth.forshee@canonical.com>
 To: Miklos Szeredi <miklos@szeredi.hu>
 Cc: linux-kernel@vger.kernel.org, fuse-devel@lists.sourceforge.net,
@@ -15,99 +15,113 @@ Cc: linux-kernel@vger.kernel.org, fuse-devel@lists.sourceforge.net,
         Serge Hallyn <serge.hallyn@ubuntu.com>,
         "Michael H. Warfield" <mhw@WittsEnd.com>,
         Seth Forshee <seth.forshee@canonical.com>
-Subject: [PATCH 0/3] fuse: Allow mounts in containers
-Date: Mon, 14 Jul 2014 14:18:13 -0500
-Message-Id: <1405365496-58404-1-git-send-email-seth.forshee@canonical.com>
+Subject: [PATCH 2/3] fuse: Translate pid making a request into the server's pid namespace
+Date: Mon, 14 Jul 2014 14:18:15 -0500
+Message-Id: <1405365496-58404-3-git-send-email-seth.forshee@canonical.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405365496-58404-1-git-send-email-seth.forshee@canonical.com>
+References: <1405365496-58404-1-git-send-email-seth.forshee@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches allow unprivileged users to mount with fuse from within
-containers. The first patch is really just a bug fix and related only
-because the bug allows unprivileged users to crash the system. The
-second patch translates the pid which is making a request into the
-server's pid namespace, and the third adds user namespace support to
-fuse. This is limited only to the "fuse" fs type. fuseblk could likely
-be supported as well, but I haven't spent any time testing it, and I
-haven't really given cuse much consideration at all (though cuse ioctls
-look rather frightening).
+If the server is executing in a pid namespace then then giving it
+the global pid of the process making the request is useless.
+Translate the pid into the server's pid namespace.
 
-The server's pid and user namespaces are both assumed to be those of the
-process which calls mount. This does't necessarily have to be the same
-as those of the server, especially since fuse mounts are routinely done
-by a process other than the server. However I didn't find any way to
-ensure that we use those of the server with the information currently
-available to fuse in the kernel. If the mount is done from a different
-namespace it could result in reduced functionality, however it should
-not result in any privileges not already available to the user.
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+---
+ fs/fuse/dev.c    | 9 +++++----
+ fs/fuse/fuse_i.h | 4 ++++
+ fs/fuse/inode.c  | 2 ++
+ 3 files changed, 11 insertions(+), 4 deletions(-)
 
-In preparing these patches I spent some time considering the security
-aspects of allowing fuse mounts from containers. fuse is already
-sufficiently untrusting of input from userspace, and it has mechanisms
-to prevent several types of attacks. However some of these mechanisms
-rely on having a trusted setuid root helper (fusermount) to enforce
-policy, such as forcing certain mount options for unprivileged monts. In
-a container we can't rely on a userspace helper to enforce policy. Here
-are details about how these issues work out:
-
-* devices: fusermount forces nodev for unprivileged mounts. In these
-  patches I use the existing kernel support for forcing nodev for fuse
-  mounts from user namspaces.
-
-* set[ug]id files: fusermount also forces nosuid for unprivileged
-  mounts. In a user namespace all file uids and gids are treated as
-  being mapped into the user ns, so it's not possible to setuid to
-  anything outside the server's namespace. This means setuid can't be
-  used to gain elevated privileges, and thus the kernel doesn't need to
-  force nosuid.
-
-* mounting over files or directories: fusermount ensures that the
-  unprivileged user has write permissions to the mountpoint before
-  mounting. But since mounting is only allowed by CAP_SYS_ADMIN in the
-  user ns of the mount ns, a user cannot use a namespace to mount over
-  any files or directories unless the user already had the ability to do
-  so, or if it does so in a different mount ns. Namespaces therefore
-  don't open the door to this type of attack, and kernel enforcment is
-  not needed.
-
-* affecting behavior of other users' processes: A user could DoS other
-  users' processes if those processes accessed files or directories
-  within a fuse mount. For this reason the default behavoior of fuse is
-  that only the mount owner can access the filesystem. This can be
-  overridden with the allow_other mount option, but fusermount forbids
-  this option unless allowed by system policy in /etc/fuse.conf.
-
-  To protect against this, these patches patches change the meaning of
-  allow_other slightly, from "any user can access this filesystem" to
-  "users in the mount owner's namespace or a child namespace can access
-  this filesystem." This protects more privileged contexts while
-  maintaining the existing behavior.
-
-* {user,group}_id mount options: These are being mapped into the user
-  ns, which prevents specifying any user outside the ns. Any ids which
-  do not map to the user ns wil cause the mount to fail.
-
-That represents everything I could think of that would be possible as a
-consequence of allowing mounts from user namespaces. I also read through
-the fuse kernel code (espeically the parts handling input from
-userspace) looking for additional vectors for attack or any other
-weaknesses, but I didn't find anything. So I believe these should be all
-the changes needed to make fuse mounts from user namespaces safe, but
-please let me know if I missed anything.
-
-Thanks,
-Seth
-
-
-Seth Forshee (3):
-  fuse/dev: Fix unbalanced calls to kunmap_atomic() during splice I/O
-  fuse: Translate pid making a request into the server's pid namespace
-  fuse: Allow mounts from user namespaces
-
- fs/fuse/dev.c    | 19 +++++++++----------
- fs/fuse/dir.c    | 30 +++++++++++++++++++-----------
- fs/fuse/fuse_i.h |  8 ++++++++
- fs/fuse/inode.c  | 21 ++++++++++++++-------
- 4 files changed, 50 insertions(+), 28 deletions(-)
+diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+index 219d1e685183..db781ff6392b 100644
+--- a/fs/fuse/dev.c
++++ b/fs/fuse/dev.c
+@@ -20,6 +20,7 @@
+ #include <linux/swap.h>
+ #include <linux/splice.h>
+ #include <linux/aio.h>
++#include <linux/sched.h>
+ 
+ MODULE_ALIAS_MISCDEV(FUSE_MINOR);
+ MODULE_ALIAS("devname:fuse");
+@@ -124,11 +125,11 @@ static void __fuse_put_request(struct fuse_req *req)
+ 	atomic_dec(&req->count);
+ }
+ 
+-static void fuse_req_init_context(struct fuse_req *req)
++static void fuse_req_init_context(struct fuse_conn *fc, struct fuse_req *req)
+ {
+ 	req->in.h.uid = from_kuid_munged(&init_user_ns, current_fsuid());
+ 	req->in.h.gid = from_kgid_munged(&init_user_ns, current_fsgid());
+-	req->in.h.pid = current->pid;
++	req->in.h.pid = pid_nr_ns(task_pid(current), fc->pid_ns);
+ }
+ 
+ static bool fuse_block_alloc(struct fuse_conn *fc, bool for_background)
+@@ -168,7 +169,7 @@ static struct fuse_req *__fuse_get_req(struct fuse_conn *fc, unsigned npages,
+ 		goto out;
+ 	}
+ 
+-	fuse_req_init_context(req);
++	fuse_req_init_context(fc, req);
+ 	req->waiting = 1;
+ 	req->background = for_background;
+ 	return req;
+@@ -257,7 +258,7 @@ struct fuse_req *fuse_get_req_nofail_nopages(struct fuse_conn *fc,
+ 	if (!req)
+ 		req = get_reserved_req(fc, file);
+ 
+-	fuse_req_init_context(req);
++	fuse_req_init_context(fc, req);
+ 	req->waiting = 1;
+ 	req->background = 0;
+ 	return req;
+diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
+index e8e47a6ab518..a3ded071e2c6 100644
+--- a/fs/fuse/fuse_i.h
++++ b/fs/fuse/fuse_i.h
+@@ -22,6 +22,7 @@
+ #include <linux/rbtree.h>
+ #include <linux/poll.h>
+ #include <linux/workqueue.h>
++#include <linux/pid_namespace.h>
+ 
+ /** Max number of pages that can be used in a single read request */
+ #define FUSE_MAX_PAGES_PER_REQ 32
+@@ -386,6 +387,9 @@ struct fuse_conn {
+ 	/** The group id for this mount */
+ 	kgid_t group_id;
+ 
++	/** The pid namespace for this mount */
++	struct pid_namespace *pid_ns;
++
+ 	/** The fuse mount flags for this mount */
+ 	unsigned flags;
+ 
+diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+index 754dcf23de8a..3655152f770d 100644
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -604,6 +604,7 @@ void fuse_conn_init(struct fuse_conn *fc)
+ 	fc->initialized = 0;
+ 	fc->attr_version = 1;
+ 	get_random_bytes(&fc->scramble_key, sizeof(fc->scramble_key));
++	fc->pid_ns = get_pid_ns(task_active_pid_ns(current));
+ }
+ EXPORT_SYMBOL_GPL(fuse_conn_init);
+ 
+@@ -944,6 +945,7 @@ static void fuse_send_init(struct fuse_conn *fc, struct fuse_req *req)
+ 
+ static void fuse_free_conn(struct fuse_conn *fc)
+ {
++	put_pid_ns(fc->pid_ns);
+ 	kfree_rcu(fc, rcu);
+ }
+ 
+-- 
+1.9.1
 
