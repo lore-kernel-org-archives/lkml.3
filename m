@@ -1,47 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746AbaGNRLj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 13:11:39 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:48634 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755920AbaGNRLe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 13:11:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <53C40D83.3090501@zytor.com>
-References: <CALCETrXrVNKNQtxncfOth5OqaSOC7KygerbB-+QQb4_VKESVsA@mail.gmail.com>
- <53C40D83.3090501@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 14 Jul 2014 10:11:13 -0700
-Message-ID: <CALCETrU44CM5=hSOMQGB6eEM2g-h6y5_+-SwoMwu+-qp-Pxd7g@mail.gmail.com>
-Subject: Re: Is espfix64's double-fault thing OK on Xen?
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1756754AbaGNRMk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 13:12:40 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:42796 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755920AbaGNRMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 13:12:31 -0400
+Date: Mon, 14 Jul 2014 13:12:27 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Robert Elliot <Elliott@hp.com>
+Cc: linux-aio@kvack.org, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
+        stable@vger.kernel.org
+Subject: [PATCH] aio: protect reqs_available updates from changes in interrupt handlers
+Message-ID: <20140714171227.GC11326@kvack.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 10:04 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 07/09/2014 04:17 PM, Andy Lutomirski wrote:
->> This part in __do_double_fault looks fishy:
->>
->>     cmpl $__KERNEL_CS,CS(%rdi)
->>     jne do_double_fault
->>
->> Shouldn't that be:
->>
->>     test $3,CS(%rdi)
->>     jnz do_double_fault
->>
->
-> No, it should be fine.  The *only* case where we need to do the espfix
-> magic is when we are on __KERNEL_CS.
->
+Hello everyone,
 
-IIRC Xen has a somewhat different GDT, and at least the userspace CS
-in IA32_STAR disagrees with normal Linux.  If the kernel CS is also
-strange, then there will be an extra possible CS value here.
+Please pull the following commit (263782c1c95bbddbb022dc092fd89a36bb8d5577) 
+from git://git.kvack.org/aio-fixes.git to fix an aio bug reported by Robert 
+Elliot.
+---
+As of commit f8567a3845ac05bb28f3c1b478ef752762bd39ef it is now possible to
+have put_reqs_available() called from irq context.  While put_reqs_available()
+is per cpu, it did not protect itself from interrupts on the same CPU.  This
+lead to aio_complete() corrupting the available io requests count when run
+under a heavy O_DIRECT workloads as reported by Robert Elliott.  Fix this by
+disabling irq updates around the per cpu batch updates of reqs_available.
 
---Andy
+Many thanks to Robert and folks for testing and tracking this down.
+
+Reported-by: Robert Elliot <Elliott@hp.com>
+Tested-by: Robert Elliot <Elliott@hp.com>
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>
+Cc: stable@vger.kenel.org
+---
+ fs/aio.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/fs/aio.c b/fs/aio.c
+index 955947e..1c9c5f0 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -830,16 +830,20 @@ void exit_aio(struct mm_struct *mm)
+ static void put_reqs_available(struct kioctx *ctx, unsigned nr)
+ {
+ 	struct kioctx_cpu *kcpu;
++	unsigned long flags;
+ 
+ 	preempt_disable();
+ 	kcpu = this_cpu_ptr(ctx->cpu);
+ 
++	local_irq_save(flags);
+ 	kcpu->reqs_available += nr;
++
+ 	while (kcpu->reqs_available >= ctx->req_batch * 2) {
+ 		kcpu->reqs_available -= ctx->req_batch;
+ 		atomic_add(ctx->req_batch, &ctx->reqs_available);
+ 	}
+ 
++	local_irq_restore(flags);
+ 	preempt_enable();
+ }
+ 
+@@ -847,10 +851,12 @@ static bool get_reqs_available(struct kioctx *ctx)
+ {
+ 	struct kioctx_cpu *kcpu;
+ 	bool ret = false;
++	unsigned long flags;
+ 
+ 	preempt_disable();
+ 	kcpu = this_cpu_ptr(ctx->cpu);
+ 
++	local_irq_save(flags);
+ 	if (!kcpu->reqs_available) {
+ 		int old, avail = atomic_read(&ctx->reqs_available);
+ 
+@@ -869,6 +875,7 @@ static bool get_reqs_available(struct kioctx *ctx)
+ 	ret = true;
+ 	kcpu->reqs_available--;
+ out:
++	local_irq_restore(flags);
+ 	preempt_enable();
+ 	return ret;
+ }
+-- 
+1.8.2.1
+
+-- 
+"Thought is the essence of where you are now."
