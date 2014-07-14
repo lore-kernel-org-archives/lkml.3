@@ -1,205 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492AbaGNNM5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 09:12:57 -0400
-Received: from mx1.HRZ.Uni-Dortmund.DE ([129.217.128.51]:60706 "EHLO
-	unimail.uni-dortmund.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754683AbaGNNMw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 09:12:52 -0400
-X-Greylist: delayed 858 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Jul 2014 09:12:51 EDT
-Message-ID: <748020aaaf5c5c2924a16232313e0175.squirrel@webmail.tu-dortmund.de>
-Date: Mon, 14 Jul 2014 14:58:28 +0200
-Subject: PROBLEM: repeated remap_file_pages on tmpfs triggers bug on process
- exit
-From: "Ingo Korb" <ingo.korb@tu-dortmund.de>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.23 [SVN]
+	id S1755524AbaGNNOI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 09:14:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33394 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754746AbaGNNOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 09:14:00 -0400
+Date: Mon, 14 Jul 2014 15:13:56 +0200
+From: Jan Kara <jack@suse.cz>
+To: Chao Yu <chao2.yu@samsung.com>
+Cc: "'Jan Kara'" <jack@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] udf: avoid redundant memcpy when writing data in ICB
+Message-ID: <20140714131356.GB17279@quack.suse.cz>
+References: <000901cf9425$71219200$5364b600$@samsung.com>
+ <20140714084606.GB30550@quack.suse.cz>
+ <000601cf9f54$e44cc760$ace65620$@samsung.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed;boundary="----=_20140714145828_76456"
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000601cf9f54$e44cc760$ace65620$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------=_20140714145828_76456
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8bit
-
-Hi,
-
-repeated mapping of the same file on tmpfs using remap_file_pages
-sometimes triggers a "BUG at mm/filemap.c:202" when the process exits, log
-message below. The system is an x86_64 VirtualBox machine with 2GB of RAM
-running Debian, but it could also be reproduced on a non-virtualized
-laptop.
-
-The bug can be triggered in Linux 3.16-rc5, bisecting has located d7c17551
-as the first failing commit (mm: implement ->map_pages for shmem/tmpfs).
-
-A test program for this has been attached (I don't trust this webmailer to
-not mangle it). With the parameters set in the source code, the BUG
-message should be triggered within a small number of tries (usually the
-first or second). Changing the size of the memory map sometimes delays the
-bug ("while true; do ./remap-demo; done" should still trigger it within a
-few seconds) or avoids it completely - I don't see any patterns yet. Using
-(at least) two different mappings for the file, each of which has been
-remapped seem to be a requirement for triggering it.
-
-Implementing the same mappings using mmap() does not appear to cause any
-problems, but I assume that someone might care about this problem while
-remap_file_pages() is still in the kernel.
-
--ik
-
-
-------------[ cut here ]------------
-kernel BUG at mm/filemap.c:202!
-invalid opcode: 0000 [#1] SMP
-Modules linked in: uinput nfsd auth_rpcgss oid_registry nfs_acl nfs lockd
-fscache sunrpc ext3 jbd loop joydev hid_generic usbhid hid psmouse
-parport_pc ohci_pci ohci_hcd ehci_hcd usbcore ac i2c_piix4 pcspkr
-serio_raw evdev parport battery button processor i2c_core usb_common
-microcode thermal_sys ext4 crc16 jbd2 mbcache sr_mod cdrom sg sd_mod
-crc_t10dif crct10dif_common ata_generic e1000 ahci libahci ata_piix libata
-scsi_mod
-CPU: 3 PID: 2992 Comm: test Not tainted 3.16.0-rc5ik1 #37
-Hardware name: innotek GmbH VirtualBox, BIOS VirtualBox 12/01/2006 task:
-ffff88005a9363d0 ti: ffff880037968000 task.ti: ffff880037968000 RIP:
-0010:[<ffffffff810db4d3>]  [<ffffffff810db4d3>]
-__delete_from_page_cache+0x16f/0x1f6
-RSP: 0018:ffff88003796bba8  EFLAGS: 00010046
-RAX: 0000000000000000 RBX: ffffea00012ee220 RCX: 00000000ffffffe2
-RDX: 0000000000000018 RSI: 0000000000000018 RDI: ffff88005dbeb700
-RBP: ffff8800378d1c10 R08: ffff88005dbeb700 R09: 0000000000000013
-R10: 0000000000000013 R11: 0000000000000000 R12: 0000000000000000
-R13: 0000000000000003 R14: ffff8800378d1c18 R15: 000000000000000f
-FS:  0000000000000000(0000) GS:ffff88005d980000(0000)
-knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00007f69ad38fa30 CR3: 0000000001611000 CR4: 00000000000006e0
-Stack:
- 0000000000000002 000000000000000f ffff880059899008 ffff8800598990a8
-ffff8800378d1c10 ffffea00012ee220 ffff8800378d1c28 0000000000000000
-ffff8800378d1ac0 ffff8800374d0600 0000000000000001 ffffffff810db65b
-Call Trace:
- [<ffffffff810db65b>] ? delete_from_page_cache+0x32/0x56
- [<ffffffff810e621d>] ? truncate_inode_page+0x62/0x69
- [<ffffffff810edf29>] ? shmem_undo_range+0x13f/0x3f3
- [<ffffffff810df855>] ? get_pfnblock_flags_mask+0x1d/0x4d
- [<ffffffff810e0bcb>] ? free_hot_cold_page+0x76/0x134
- [<ffffffff810e528a>] ? release_pages+0x171/0x180
- [<ffffffff810e4aa2>] ? hpage_nr_pages+0x1b/0x1b
- [<ffffffff811418df>] ? __inode_wait_for_writeback+0x67/0xae
- [<ffffffff810ee1e8>] ? shmem_truncate_range+0xb/0x25
- [<ffffffff810ee76d>] ? shmem_evict_inode+0x4f/0xed
- [<ffffffff810ee71e>] ? shmem_file_setup+0x7/0x7
- [<ffffffff81136947>] ? evict+0xa3/0x147
- [<ffffffff81133576>] ? __dentry_kill+0x103/0x173
- [<ffffffff81133983>] ? dput+0x133/0x150
- [<ffffffff8112489d>] ? __fput+0x163/0x184
- [<ffffffff8105f10c>] ? task_work_run+0x7b/0x8f
- [<ffffffff81049c69>] ? do_exit+0x3f6/0x904
- [<ffffffff8104a282>] ? do_group_exit+0x68/0x9a
- [<ffffffff8104a2c4>] ? SyS_exit_group+0x10/0x10
- [<ffffffff8138fb69>] ? system_call_fastpath+0x16/0x1b
-Code: be 0a 00 00 00 48 89 df e8 96 5b 01 00 48 8b 03 a9 00 00 08 00 74 0d
-be 18 00 00 00 48 89 df e8 7f 5b 01 00 8b 43 18 85 c0 78 02 <0f> 0b 48 8b
-03 a8 10 74 6f 48 8b 85 88 00 00 00 f6 40 20 01 75
-RIP  [<ffffffff810db4d3>] __delete_from_page_cache+0x16f/0x1f6
- RSP <ffff88003796bba8>
----[ end trace 79ae5bd27fcedca9 ]---
-Fixing recursive fault but reboot is needed!
-BUG: Bad rss-counter state mm:ffff88005aae60c0 idx:0 val:1
-
-
-
-
-------=_20140714145828_76456
-Content-Type: text/x-csrc; name="remap-demo.c"
-Content-Transfer-Encoding: 8bit
-Content-Disposition: attachment; filename="remap-demo.c"
-
-#define _GNU_SOURCE
-#include <sys/mman.h>
-#include <sys/resource.h>
-#include <errno.h>
-#include <limits.h>
-#include <malloc.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-#define PAGE_SIZE 4096
-// NOTE: DATA=MAP2=16 seems to trigger in the first few tries
-// NOTE: 9/9 needs a loop and a few seconds to trigger
-// NOTE: DATA=9, MAP2=8 does not trigger
-#define DATA_SIZE 16
-#define MAP2_SIZE 16
-
-int shmfd;
-char shmpath[] = "/dev/shm/mmaptest-XXXXXX";
-unsigned char *map1, *map2;
-unsigned int i;
-
-int main(int argc, char *argv[]) {
-  /* create a data file on tmpfs */
-  shmfd = mkstemp(shmpath);
-  if (shmfd < 0) {
-    perror("mkstemp");
-    exit(2);
-  }
-
-  if (unlink(shmpath)) {
-    perror("unlink");
-    exit(2);
-  }
-
-  if (ftruncate(shmfd, DATA_SIZE * PAGE_SIZE)) {
-    perror("ftruncate");
-    exit(2);
-  }
-
-  /* map a single page from the file */
-  map1 = mmap(NULL, PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shmfd, 0);
-  if (map1 == MAP_FAILED) {
-    perror("mmap 1");
-    exit(2);
-  }
-
-  /* remap it to another page in the file */
-  // NOTE: Does not trigger without remapping
-  // NOTE: Does not trigger for 7, but does trigger for 8 if both sizes are 16
-  //  (DATA_SIZE-2 is sufficiently generic here)
-  if (remap_file_pages(map1, PAGE_SIZE, 0, DATA_SIZE - 2, MAP_SHARED)) {
-    perror("remap_file_pages 1");
-    exit(2);
-  }
-
-  /* create a second mapping */
-  map2 = mmap(NULL, MAP2_SIZE * PAGE_SIZE, PROT_READ | PROT_WRITE,
-              MAP_SHARED, shmfd, 0);
-  if (map2 == MAP_FAILED) {
-    perror("mmap 2");
-    exit(2);
-  }
-
-  /* map all of its pages to page 0 */
-  // NOTE: Remapping only the last page does not trigger
-  for (i = 0; i < MAP2_SIZE; i++) {
-    if (remap_file_pages(map2 + PAGE_SIZE * i, PAGE_SIZE, 0, 0, MAP_SHARED)) {
-      perror("remap_file_pages 3");
-      exit(2);
-    }
-  }
-
-  close(shmfd);
-
-  exit(0);
-}
-------=_20140714145828_76456--
-
-
+On Mon 14-07-14 19:14:39, Chao Yu wrote:
+> > -----Original Message-----
+> > From: Jan Kara [mailto:jack@suse.cz]
+> > Sent: Monday, July 14, 2014 4:46 PM
+> > To: Chao Yu
+> > Cc: jack@suse.cz; linux-kernel@vger.kernel.org
+> > Subject: Re: [PATCH] udf: avoid redundant memcpy when writing data in ICB
+> > 
+> > On Mon 30-06-14 13:37:15, Chao Yu wrote:
+> > > We have already copied the changed data of page to extent area in ICB when call
+> > > ->write_end() of adinicb aops, so we do not need to copy them another time in
+> > > ->writepage() of adinicb aops. SetPageUptodate is redundant too, so it's better
+> > > to remove these redundant codes.
+> > >
+> > > Also it looks more reasonable to set inode dirty after extent area are modified,
+> > > we'd better move mark_inode_dirty() from ->writepage() to ->write_end().
+> >   This doesn't look right. The copy is there because the page can be
+> > modified via mmap as well, not only via buffered write... So if anything,
+> 
+> You're right, I have made a mistake that I have not considered the 'mmap' case,
+> Thank you for reminding me about that. :)
+> 
+> > we may be able to remove the copy in udf_adinicb_write_end() (actually
+> > using directly simple_write_end() for that), not the one in
+> > udf_adinicb_write_begin().
+> 
+> Agreed, valid data within i_size will be copied to ICB cache when we writeback
+> the page by invoking udf_adinicb_writepage, so the copy in udf_adinicb_write_end
+> is redundant. So our patch should be modified like the following one, is this right?
+> 
+> ---
+>  fs/udf/file.c | 10 ----------
+>  1 file changed, 10 deletions(-)
+> 
+> diff --git a/fs/udf/file.c b/fs/udf/file.c
+> index d80738f..a8dc0f1 100644
+> --- a/fs/udf/file.c
+> +++ b/fs/udf/file.c
+> @@ -105,16 +105,6 @@ static int udf_adinicb_write_end(struct file *file,
+>  			loff_t pos, unsigned len, unsigned copied,
+>  			struct page *page, void *fsdata)
+>  {
+> -	struct inode *inode = mapping->host;
+> -	unsigned offset = pos & (PAGE_CACHE_SIZE - 1);
+> -	char *kaddr;
+> -	struct udf_inode_info *iinfo = UDF_I(inode);
+> -
+> -	kaddr = kmap_atomic(page);
+> -	memcpy(iinfo->i_ext.i_data + iinfo->i_lenEAttr + offset,
+> -		kaddr + offset, copied);
+> -	kunmap_atomic(kaddr);
+> -
+>  	return simple_write_end(file, mapping, pos, len, copied, page, fsdata);
+>  }
+  You can completely remove udf_adinicb_write_end() function and just use
+simple_write_end() in udf_adinicb_aops. 
+ 								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
