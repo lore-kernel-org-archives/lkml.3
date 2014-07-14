@@ -1,90 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207AbaGNPLa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 11:11:30 -0400
-Received: from asavdk4.altibox.net ([109.247.116.15]:48552 "EHLO
-	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755784AbaGNPJe (ORCPT
+	id S1756220AbaGNPLq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 11:11:46 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:20374 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755784AbaGNPLh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 11:09:34 -0400
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        Sam Ravnborg <sam@ravnborg.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Subject: [PATCH 29/38] powerpc: clean-up uapi Kbuild file
-Date: Mon, 14 Jul 2014 17:08:57 +0200
-Message-Id: <1405350546-28467-29-git-send-email-sam@ravnborg.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1405350546-28467-1-git-send-email-sam@ravnborg.org>
-References: <20140714150609.GA28358@ravnborg.org>
- <1405350546-28467-1-git-send-email-sam@ravnborg.org>
+	Mon, 14 Jul 2014 11:11:37 -0400
+Date: Mon, 14 Jul 2014 16:11:19 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Wim Van Sebroeck <wim@iguana.be>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Will Deacon <Will.Deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonas Jensen <jonas.jensen@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 5/7] watchdog: moxart: Register restart handler with
+ restart notifier
+Message-ID: <20140714151119.GG1112@arm.com>
+References: <1405265431-4561-1-git-send-email-linux@roeck-us.net>
+ <1405265431-4561-6-git-send-email-linux@roeck-us.net>
+ <20140714141904.GA1112@arm.com>
+ <53C3EC0B.7090702@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C3EC0B.7090702@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove redundant assignments.
+On Mon, Jul 14, 2014 at 03:41:15PM +0100, Guenter Roeck wrote:
+> On 07/14/2014 07:19 AM, Catalin Marinas wrote:
+> > On Sun, Jul 13, 2014 at 04:30:29PM +0100, Guenter Roeck wrote:
+> >> diff --git a/drivers/watchdog/moxart_wdt.c b/drivers/watchdog/moxart_wdt.c
+> >> index 4aa3a8a..5080b50 100644
+> >> --- a/drivers/watchdog/moxart_wdt.c
+> >> +++ b/drivers/watchdog/moxart_wdt.c
+> > [...]
+> >> -static void moxart_wdt_restart(enum reboot_mode reboot_mode, const char *cmd)
+> >> +static int moxart_restart_notify(struct notifier_block *this,
+> >> +				 unsigned long mode, void *cmd)
+> >>   {
+> >> -	writel(1, moxart_restart_ctx->base + REG_COUNT);
+> >> -	writel(0x5ab9, moxart_restart_ctx->base + REG_MODE);
+> >> -	writel(0x03, moxart_restart_ctx->base + REG_ENABLE);
+> >> +	struct moxart_wdt_dev *moxart_wdt = container_of(this,
+> >> +							 struct moxart_wdt_dev,
+> >> +							 restart_notifier);
+> >> +	writel(1, moxart_wdt->base + REG_COUNT);
+> >> +	writel(0x5ab9, moxart_wdt->base + REG_MODE);
+> >> +	writel(0x03, moxart_wdt->base + REG_ENABLE);
+> >> +
+> >> +	return NOTIFY_DONE;
+> >>   }
+> >
+> > Wondering whether NOTIFY_OK or even NOTIFY_STOP_MASK is better here.
+> 
+> Personally I would rather call all of them if more than one notifier is
+> registered to ensure that (at least) one does what it is intended to do,
+> but I am open to suggestions.
 
-Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
----
- arch/powerpc/include/uapi/asm/Kbuild | 32 --------------------------------
- 1 file changed, 32 deletions(-)
+Probably fine. I guess there won't be more than one handler registered
+in most cases anyway.
 
-diff --git a/arch/powerpc/include/uapi/asm/Kbuild b/arch/powerpc/include/uapi/asm/Kbuild
-index 7a3f795..74d14f3 100644
---- a/arch/powerpc/include/uapi/asm/Kbuild
-+++ b/arch/powerpc/include/uapi/asm/Kbuild
-@@ -1,46 +1,14 @@
- # UAPI Header export list
- include include/uapi/asm-generic/Kbuild.asm
- 
--header-y += auxvec.h
--header-y += bitsperlong.h
- header-y += bootx.h
--header-y += byteorder.h
- header-y += cputable.h
- header-y += elf.h
- header-y += epapr_hcalls.h
--header-y += errno.h
--header-y += fcntl.h
--header-y += ioctl.h
--header-y += ioctls.h
--header-y += ipcbuf.h
--header-y += kvm.h
--header-y += kvm_para.h
--header-y += mman.h
--header-y += msgbuf.h
- header-y += nvram.h
--header-y += param.h
- header-y += perf_event.h
--header-y += poll.h
--header-y += posix_types.h
- header-y += ps3fb.h
--header-y += ptrace.h
--header-y += resource.h
- header-y += seccomp.h
--header-y += sembuf.h
--header-y += setup.h
--header-y += shmbuf.h
--header-y += sigcontext.h
--header-y += siginfo.h
--header-y += signal.h
--header-y += socket.h
--header-y += sockios.h
- header-y += spu_info.h
--header-y += stat.h
--header-y += statfs.h
--header-y += swab.h
--header-y += termbits.h
--header-y += termios.h
- header-y += tm.h
--header-y += types.h
- header-y += ucontext.h
--header-y += unistd.h
 -- 
-1.9.3
-
+Catalin
