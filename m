@@ -1,93 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788AbaGNJGS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 05:06:18 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:39666 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751487AbaGNJGG (ORCPT
+	id S1753901AbaGNJGb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 05:06:31 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:53097 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752967AbaGNJGP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 05:06:06 -0400
-Message-ID: <53C39D5F.6050901@linaro.org>
-Date: Mon, 14 Jul 2014 10:05:35 +0100
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 14 Jul 2014 05:06:15 -0400
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Paul Bolle <pebolle@tiscali.nl>, linaro-kernel@lists.linaro.org,
-        Arnd Bergmann <arnd@arndb.de>, patches@linaro.org,
-        spear-devel@list.st.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v7 0/4] arm: Fix DEBUG_LL for multi-platform kernels (without
- PL01X)
-References: <1401206421-29832-1-git-send-email-daniel.thompson@linaro.org> <1404127855-30459-1-git-send-email-daniel.thompson@linaro.org> <20140712101602.GH21766@n2100.arm.linux.org.uk> <20140712111004.GI21766@n2100.arm.linux.org.uk>
-In-Reply-To: <20140712111004.GI21766@n2100.arm.linux.org.uk>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <53C39C8C.6060604@ti.com>
+References: <1404906569-28026-1-git-send-email-sachin.kamat@samsung.com>
+	<53C39B32.9060001@ti.com>
+	<CAK5sBcG+UZ86cAFKoAf4Y62yrOafpzBGd-wz=PqWJRg1g8pOFQ@mail.gmail.com>
+	<53C39C8C.6060604@ti.com>
+Date: Mon, 14 Jul 2014 14:36:13 +0530
+Message-ID: <CAK5sBcHQEBmeGP9tDKvycAHG-ocg0D_W6xFts4Wy6MQgiOTtUA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] phy: Kconfig: Re-organize Exynos USB 2.0 PHY configs
+From: Sachin Kamat <spk.linux@gmail.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: open list <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Jingoo Han <jg1.han@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/14 12:10, Russell King - ARM Linux wrote:
-> On Sat, Jul 12, 2014 at 11:16:02AM +0100, Russell King - ARM Linux wrote:
->> On Mon, Jun 30, 2014 at 12:30:51PM +0100, Daniel Thompson wrote:
->>> This patchset removes some single-platform compatibility tricks related
->>> to DEBUG_LL and, as a result, allows multi_v7_defconfig derived builds
->>> to enable DEBUG_LL. Currently the user selected kbuild setting is
->>> ignored and the PL01X's DEBUG_LL stub is silently selected instead. This
->>> is a pain if your hardware doesn't have this cell, not least because it
->>> takes a little time to figure out that kbuild built the wrong code.
+On Mon, Jul 14, 2014 at 2:32 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>
+>
+> On Monday 14 July 2014 02:29 PM, Sachin Kamat wrote:
+>> Hi,
 >>
->> I don't think this is quite right, because I'm now seeing randconfig
->> finding build errors with this.  We can end up with this configuration:
+>> On Mon, Jul 14, 2014 at 2:26 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>>> Hi,
+>>>
+>>> On Wednesday 09 July 2014 05:19 PM, Sachin Kamat wrote:
+>>>> Since the USB 2.0 PHYs are required with EHCI/OHCI USB drivers and
+>>>> USB gadget controller supported by the DWC2 gadget driver, make it
+>>>> depend on them and default to ARCH_EXYNOS as they are meant for
+>>>> Exynos platforms. Also, make the sub-drivers silent options enabling
+>>>> them based on the SoC platforms that they are meant to work with. This
+>>>> will make life easier for end users who do not have any way knowing the
+>>>> dependencies.
+>>>
+>>> There is a new Exynos PHY in town, Exynos 3250. Can you rebase your patch on
+>>> top of that?
 >>
->> CONFIG_DEBUG_LL=y
->> CONFIG_DEBUG_LL_UART_NONE=y
->> # CONFIG_DEBUG_ICEDCC is not set
->> # CONFIG_DEBUG_SEMIHOSTING is not set
->> # CONFIG_DEBUG_LL_UART_8250 is not set
->> # CONFIG_DEBUG_LL_UART_PL01X is not set
->> CONFIG_DEBUG_LL_INCLUDE="mach/debug-macro.S"
->> # CONFIG_DEBUG_UART_8250 is not set
->>
->> which results in:
->>
->> arch/arm/kernel/debug.S:24:33: fatal error: mach/debug-macro.S: No such file or directory
->> make[2]: *** [arch/arm/kernel/debug.o] Error 1
->> arch/arm/kernel/head.S:27:33: fatal error: mach/debug-macro.S: No such file or directory
->> make[2]: *** [arch/arm/kernel/head.o] Error 1
->> Full config file:
->> http://www.arm.linux.org.uk/developer/build/file.php?lid=11023
+>> Sure. But I did not see it in linux-next yet. Is it merged somewhere?
+>
+> It's in the list. I can push it to my tree if that helps.
 
-Thanks. I will look at this.
+That would be great to avoid any other conflicts.
 
-Problem is that by making the build system honour the user choice we end
-up breaking the build when the user makes a bad choice (albeit a bad
-choice that they should not have been given in the first place).
-
-I guess the best fix is to get rid of CONFIG_DEBUG_LL_UART_NONE altogether.
-
-
-> Note that this also breaks building versatile as an oldconfig.  I'll drop
-> the patch series from my tree for the time being.
-
-There is a difficult problem with oldconfig.
-
-Today DEBUG_LL only works on versatile defconfigs (and oldconfig
-upgrades from there) because although CONFIG_DEBUG_LL_UART_NONE is
-selected the build system does not honour this and behaves as though the
-use selected CONFIG_DEBUG_LL_UART_PL01X instead.
-
-Unfortunately if we fix this and remove CONFIG_DEBUG_LL_UART_NONE as
-proposed above then the oldconfig will silently select
-CONFIG_DEBUG_SEMIHOSTING.
-
-In other words I will be able to offer a patch so that oldconfig
-*compiles* but I don't know how to get it to preserve behaviour (or
-whether this matters).
-
-Hints about what to do would be very welcome.
-
-
-Daniel.
-
+-- 
+Regards,
+Sachin.
