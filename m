@@ -1,207 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753120AbaGNJVx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 05:21:53 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:33887 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204AbaGNJVo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 05:21:44 -0400
+	id S1753643AbaGNJXL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 05:23:11 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:48231 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751204AbaGNJXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 05:23:07 -0400
+Message-ID: <53C3A16B.6030801@mev.co.uk>
+Date: Mon, 14 Jul 2014 10:22:51 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <20140711133709.317078209@linutronix.de>
-References: <20140711133623.530368377@linutronix.de>
-	<20140711133709.317078209@linutronix.de>
-Date: Mon, 14 Jul 2014 11:21:43 +0200
-Message-ID: <CAKMK7uFp+WBQgE+8zBWU8Vf1weKfQ-KP9mLPHWjGqrUG9BhYNA@mail.gmail.com>
-Subject: Re: [patch 48/55] drm: i915: Use nsec based interfaces
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
+To: Chase Southwood <chase.southwood@gmail.com>, <gregkh@linuxfoundation.org>
+CC: <hsweeten@visionengravers.com>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] staging: comedi: addi_apci_1564: use addi_watchdog
+ module to init watchdog subdevice
+References: <1405204956-1559-1-git-send-email-chase.southwood@gmail.com> <1405205049-1828-1-git-send-email-chase.southwood@gmail.com>
+In-Reply-To: <1405205049-1828-1-git-send-email-chase.southwood@gmail.com>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
+ (10.0.0.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 3:45 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> No point in converting timespecs back and forth.
+On 2014-07-12 23:44, Chase Southwood wrote:
+> Use the addi_watchdog module to provide support for the watchdog
+> subdevice.
 >
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-
-I guess simplest to merge together with the new ktime_get_raw_ns.
-Acked-by: me for that.
--Daniel
-
+> Also, rearrange the subdevice init blocks so that the order makes sense.
+> Digital input/output subdevices and subdevices for DI/DO interrupt
+> support, followed by timer/counter/watchdog subdevices is the new order.
+>
+> Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
+> Cc: Ian Abbott <abbotti@mev.co.uk>
+> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
 > ---
->  drivers/gpu/drm/i915/i915_drv.h |    2 +-
->  drivers/gpu/drm/i915/i915_gem.c |   33 ++++++++++++---------------------
->  drivers/gpu/drm/i915/intel_pm.c |   12 +++++-------
->  3 files changed, 18 insertions(+), 29 deletions(-)
->
-> Index: tip/drivers/gpu/drm/i915/i915_drv.h
-> ===================================================================
-> --- tip.orig/drivers/gpu/drm/i915/i915_drv.h
-> +++ tip/drivers/gpu/drm/i915/i915_drv.h
-> @@ -931,7 +931,7 @@ struct intel_ilk_power_mgmt {
->         unsigned long last_time1;
->         unsigned long chipset_power;
->         u64 last_count2;
-> -       struct timespec last_time2;
-> +       u64 last_time2;
->         unsigned long gfx_power;
->         u8 corr;
->
-> Index: tip/drivers/gpu/drm/i915/i915_gem.c
-> ===================================================================
-> --- tip.orig/drivers/gpu/drm/i915/i915_gem.c
-> +++ tip/drivers/gpu/drm/i915/i915_gem.c
-> @@ -1149,16 +1149,16 @@ static bool can_wait_boost(struct drm_i9
->  static int __wait_seqno(struct intel_engine_cs *ring, u32 seqno,
->                         unsigned reset_counter,
->                         bool interruptible,
-> -                       struct timespec *timeout,
-> +                       s64 *timeout,
->                         struct drm_i915_file_private *file_priv)
->  {
->         struct drm_device *dev = ring->dev;
->         struct drm_i915_private *dev_priv = dev->dev_private;
->         const bool irq_test_in_progress =
->                 ACCESS_ONCE(dev_priv->gpu_error.test_irq_rings) & intel_ring_flag(ring);
-> -       struct timespec before, now;
->         DEFINE_WAIT(wait);
->         unsigned long timeout_expire;
-> +       s64 before, now;
->         int ret;
->
->         WARN(dev_priv->pm.irqs_disabled, "IRQs disabled\n");
-> @@ -1166,7 +1166,7 @@ static int __wait_seqno(struct intel_eng
->         if (i915_seqno_passed(ring->get_seqno(ring, true), seqno))
->                 return 0;
->
-> -       timeout_expire = timeout ? jiffies + timespec_to_jiffies_timeout(timeout) : 0;
-> +       timeout_expire = timeout ? jiffies + nsecs_to_jiffies((u64)timeout) : 0;
->
->         if (INTEL_INFO(dev)->gen >= 6 && can_wait_boost(file_priv)) {
->                 gen6_rps_boost(dev_priv);
-> @@ -1181,7 +1181,7 @@ static int __wait_seqno(struct intel_eng
->
->         /* Record current time in case interrupted by signal, or wedged */
->         trace_i915_gem_request_wait_begin(ring, seqno);
-> -       getrawmonotonic(&before);
-> +       before = ktime_get_raw_ns();
->         for (;;) {
->                 struct timer_list timer;
->
-> @@ -1230,7 +1230,7 @@ static int __wait_seqno(struct intel_eng
->                         destroy_timer_on_stack(&timer);
->                 }
->         }
-> -       getrawmonotonic(&now);
-> +       now = ktime_get_raw_ns();
->         trace_i915_gem_request_wait_end(ring, seqno);
->
->         if (!irq_test_in_progress)
-> @@ -1239,10 +1239,9 @@ static int __wait_seqno(struct intel_eng
->         finish_wait(&ring->irq_queue, &wait);
->
->         if (timeout) {
-> -               struct timespec sleep_time = timespec_sub(now, before);
-> -               *timeout = timespec_sub(*timeout, sleep_time);
-> -               if (!timespec_valid(timeout)) /* i.e. negative time remains */
-> -                       set_normalized_timespec(timeout, 0, 0);
-> +               s64 tres = *timeout - (now - before);
-> +
-> +               *timeout = tres < 0 ? 0 : tres;
->         }
->
->         return ret;
-> @@ -2753,16 +2752,10 @@ i915_gem_wait_ioctl(struct drm_device *d
->         struct drm_i915_gem_wait *args = data;
->         struct drm_i915_gem_object *obj;
->         struct intel_engine_cs *ring = NULL;
-> -       struct timespec timeout_stack, *timeout = NULL;
->         unsigned reset_counter;
->         u32 seqno = 0;
->         int ret = 0;
->
-> -       if (args->timeout_ns >= 0) {
-> -               timeout_stack = ns_to_timespec(args->timeout_ns);
-> -               timeout = &timeout_stack;
-> -       }
-> -
->         ret = i915_mutex_lock_interruptible(dev);
->         if (ret)
->                 return ret;
-> @@ -2787,9 +2780,9 @@ i915_gem_wait_ioctl(struct drm_device *d
->                  goto out;
->
->         /* Do this after OLR check to make sure we make forward progress polling
-> -        * on this IOCTL with a 0 timeout (like busy ioctl)
-> +        * on this IOCTL with a timeout <=0 (like busy ioctl)
->          */
-> -       if (!args->timeout_ns) {
-> +       if (args->timeout_ns <= 0) {
->                 ret = -ETIME;
->                 goto out;
->         }
-> @@ -2798,10 +2791,8 @@ i915_gem_wait_ioctl(struct drm_device *d
->         reset_counter = atomic_read(&dev_priv->gpu_error.reset_counter);
->         mutex_unlock(&dev->struct_mutex);
->
-> -       ret = __wait_seqno(ring, seqno, reset_counter, true, timeout, file->driver_priv);
-> -       if (timeout)
-> -               args->timeout_ns = timespec_to_ns(timeout);
-> -       return ret;
-> +       return __wait_seqno(ring, seqno, reset_counter, true, &args->timeout_ns,
-> +                           file->driver_priv);
->
->  out:
->         drm_gem_object_unreference(&obj->base);
-> Index: tip/drivers/gpu/drm/i915/intel_pm.c
-> ===================================================================
-> --- tip.orig/drivers/gpu/drm/i915/intel_pm.c
-> +++ tip/drivers/gpu/drm/i915/intel_pm.c
-> @@ -2993,7 +2993,7 @@ static void ironlake_enable_drps(struct
->                 I915_READ(0x112e0);
->         dev_priv->ips.last_time1 = jiffies_to_msecs(jiffies);
->         dev_priv->ips.last_count2 = I915_READ(0x112f4);
-> -       getrawmonotonic(&dev_priv->ips.last_time2);
-> +       dev_priv->ips.last_time2 = ktime_get_raw_ns();
->
->         spin_unlock_irq(&mchdev_lock);
->  }
-> @@ -4314,18 +4314,16 @@ static u16 pvid_to_extvid(struct drm_i91
->
->  static void __i915_update_gfx_val(struct drm_i915_private *dev_priv)
->  {
-> -       struct timespec now, diff1;
-> -       u64 diff;
-> -       unsigned long diffms;
-> +       u64 now, diff, diffms;
->         u32 count;
->
->         assert_spin_locked(&mchdev_lock);
->
-> -       getrawmonotonic(&now);
-> -       diff1 = timespec_sub(now, dev_priv->ips.last_time2);
-> +       now = ktime_get_raw_ns();
-> +       diffms = now - dev_priv->ips.last_time2;
-> +       do_div(diffms, NSEC_PER_MSEC);
->
->         /* Don't divide by 0 */
-> -       diffms = diff1.tv_sec * 1000 + diff1.tv_nsec / 1000000;
->         if (!diffms)
->                 return;
->
->
->
+>   drivers/staging/comedi/drivers/addi_apci_1564.c | 34 +++++++++++++++----------
+>   1 file changed, 20 insertions(+), 14 deletions(-)
 
+I don't think the subdevice order matters that much, and I prefer to 
+keep them stable, but since this driver is in such a state of flux, it 
+doesn't really matter.
 
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
