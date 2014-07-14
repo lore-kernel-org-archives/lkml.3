@@ -1,45 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777AbaGNShx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 14:37:53 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:37816 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756492AbaGNShs (ORCPT
+	id S1756269AbaGNSkq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 14:40:46 -0400
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:55962 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753087AbaGNSkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 14:37:48 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Mon, 14 Jul 2014 20:37:34 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
-Subject: [git pull] FireWire fix
-Message-ID: <20140714203734.1afa1021@kant>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 14 Jul 2014 14:40:37 -0400
+Message-ID: <1405363234.13661.12.camel@x220>
+Subject: Re: [PATCH] mach-s3c64xx: Remove all defintions not related to
+ regs-clocks
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Nicholas Krause <xerofoify@gmail.com>, ben-linux@fluff.org,
+        kgene.kim@samsung.com, linux@arm.linux.org.uk, tomasz.figa@gmail.com,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 14 Jul 2014 20:40:34 +0200
+In-Reply-To: <53C4201E.3020708@infradead.org>
+References: <1405361664-5210-1-git-send-email-xerofoify@gmail.com>
+	 <53C4201E.3020708@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 14 Jul 2014 18:40:35.0953 (UTC) FILETIME=[19D67E10:01CF9F93]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Mon, 2014-07-14 at 11:23 -0700, Randy Dunlap wrote:
+> On 07/14/14 11:14, Nicholas Krause wrote:
+> > This patch addresses the fix me message in this file that states to
+> > remove all definitions not related to reg-clocks in this header
+> > file.
+> > 
+> > Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+> > ---
+> >  arch/arm/mach-s3c64xx/include/mach/regs-clock.h | 22 +---------------------
+> >  1 file changed, 1 insertion(+), 21 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-s3c64xx/include/mach/regs-clock.h b/arch/arm/mach-s3c64xx/include/mach/regs-clock.h
+> > index 4f44aac..46e64cc 100644
+> > --- a/arch/arm/mach-s3c64xx/include/mach/regs-clock.h
+> > +++ b/arch/arm/mach-s3c64xx/include/mach/regs-clock.h
+> > @@ -15,24 +15,4 @@
+> >  #ifndef __PLAT_REGS_CLOCK_H
+> >  #define __PLAT_REGS_CLOCK_H __FILE__
+> >  
+> > -/*
+> > - * FIXME: Remove remaining definitions
+> > - */
+> > -
+> > -#define S3C_CLKREG(x)		(S3C_VA_SYS + (x))
+> > -
+> > -#define S3C_PCLK_GATE		S3C_CLKREG(0x34)
+> > -#define S3C6410_CLK_SRC2	S3C_CLKREG(0x10C)
+> > -#define S3C_MEM_SYS_CFG		S3C_CLKREG(0x120)
+> > -
+> > -/* PCLK GATE Registers */
+> > -#define S3C_CLKCON_PCLK_UART3		(1<<4)
+> > -#define S3C_CLKCON_PCLK_UART2		(1<<3)
+> > -#define S3C_CLKCON_PCLK_UART1		(1<<2)
+> > -#define S3C_CLKCON_PCLK_UART0		(1<<1)
+> > -
+> > -/* MEM_SYS_CFG */
+> > -#define MEM_SYS_CFG_INDEP_CF		0x4000
+> > -#define MEM_SYS_CFG_EBI_FIX_PRI_CFCON	0x30
+> > -
+> > -#endif /* _PLAT_REGS_CLOCK_H */
+> > +/#endif /* _PLAT_REGS_CLOCK_H */
+> 
+> I don't know about the other changes, but that last line looks like an error.
+> Did you build anything that #includes this header file?
 
-please pull from the tag "firewire-fix" at
+I just did
+    git grep -n S3C_CLKCON_PCLK_UART
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394.git firewire-fix
+It was just a guess. I did not cherry pick the defines that covers! The
+output of that command is, I think, pretty clear. 
 
-to receive an IEEE 1394 (FireWire) subsystem fix:  The 1394 drivers cannot and
-are not supposed to be built on platforms which don't provide the DMA mapping API.
-(Regression since v3.16-rc1 with CONFIG_COMPILE_TEST=y on some architectures.)
+Nicholas, I think you've been told already to stop doing what you're
+doing again here. I try not to use colorful language on the net, but
+you're really pushing me here.
 
-Geert Uytterhoeven (1):
-      firewire: IEEE 1394 (FireWire) support should depend on HAS_DMA
+Please go find something other to do than grepping the kernel tree for
+FIXMEs!
 
- drivers/firewire/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
 
-Thanks,
--- 
-Stefan Richter
--=====-====- -=== -===-
-http://arcgraph.de/sr/
+Paul Bolle
+
