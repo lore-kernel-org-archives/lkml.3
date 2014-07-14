@@ -1,82 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874AbaGNKJy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 06:09:54 -0400
-Received: from mga01.intel.com ([192.55.52.88]:30222 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754500AbaGNKGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754540AbaGNKKE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 06:10:04 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:41577 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754611AbaGNKGM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Jul 2014 06:06:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,657,1400050800"; 
-   d="scan'208";a="561434901"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 38/41] perf session: Add perf_session__deliver_synth_event()
-Date: Mon, 14 Jul 2014 13:03:02 +0300
-Message-Id: <1405332185-4050-39-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
-References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+Date: Mon, 14 Jul 2014 03:06:04 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu, linux-rt-users@vger.kernel.org
+Subject: [PATCH RFC tip/core/rcu 0/2] NOCB kthread economization patches
+Message-ID: <20140714100604.GA9905@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14071410-1344-0000-0000-000002D02C84
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a function to deliver synthesized events from
-within a session.
+Hello!
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/util/session.c | 14 ++++++++++++++
- tools/perf/util/session.h |  5 +++++
- 2 files changed, 19 insertions(+)
+This series provides a couple of patches that reduce the number of rcuo
+kthreads in cases where nr_cpu_ids is larger than the actual number of
+online CPUs.
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 708e1c1..433884c 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1066,6 +1066,20 @@ static s64 perf_session__process_user_event(struct perf_session *session,
- 	}
- }
- 
-+int perf_session__deliver_synth_event(struct perf_session *session,
-+				      union perf_event *event,
-+				      struct perf_sample *sample,
-+				      struct perf_tool *tool)
-+{
-+	events_stats__inc(&session->stats, event->header.type);
-+
-+	if (event->header.type >= PERF_RECORD_USER_TYPE_START)
-+		return perf_session__process_user_event(session, event, tool,
-+							0);
-+
-+	return perf_session_deliver_event(session, event, sample, tool, 0);
-+}
-+
- static void event_swap(union perf_event *event, bool sample_id_all)
- {
- 	perf_event__swap_op swap;
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 39327ca..86f1bb4 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -130,6 +130,11 @@ extern volatile int session_done;
- 
- #define session_done()	(*(volatile int *)(&session_done))
- 
-+int perf_session__deliver_synth_event(struct perf_session *session,
-+				      union perf_event *event,
-+				      struct perf_sample *sample,
-+				      struct perf_tool *tool);
-+
- int perf_event__process_id_index(struct perf_tool *tool,
- 				 union perf_event *event,
- 				 struct perf_session *session);
--- 
-1.8.3.2
+1.	Preparation patch that rationalizes RCU's creation of early-boot
+	kthreads.
+
+2.	Instead of creation rcuo kthreads for each possible CPU, create
+	them only for those CPUs that have come online at least once
+	since boot.
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+ b/kernel/rcu/tree.c        |    8 ++-
+ b/kernel/rcu/tree.h        |    5 +-
+ b/kernel/rcu/tree_plugin.h |  105 ++++++++++++++++++++++++++++++++++++---------
+ 3 files changed, 95 insertions(+), 23 deletions(-)
 
