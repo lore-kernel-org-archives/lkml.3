@@ -1,46 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426AbaGNG3d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 02:29:33 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:34708 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753326AbaGNG3E (ORCPT
+	id S1753479AbaGNG3y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 02:29:54 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:44147 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752865AbaGNG1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 02:29:04 -0400
-From: Nicholas Krause <xerofoify@gmail.com>
-To: rjw@rjwysocki.net
-Cc: viresh.kumar@linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] cpufreq: Fix latency for cpufreq_info
-Date: Mon, 14 Jul 2014 02:28:57 -0400
-Message-Id: <1405319337-11368-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Mon, 14 Jul 2014 02:27:52 -0400
+From: varkabhadram@gmail.com
+To: netdev@vger.kernel.org
+Cc: Thomas.Lendacky@amd.com, geert+renesas@linux-m68k.org,
+        ebiederm@xmission.com, macro@linux-mips.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        Varka Bhadram <varkab@cdac.in>
+Subject: [PATCH net-next v2 5/6] ethernet: amd: fix pci device ids
+Date: Mon, 14 Jul 2014 11:55:46 +0530
+Message-Id: <1405319147-5212-6-git-send-email-varkabhadram@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1405319147-5212-1-git-send-email-varkabhadram@gmail.com>
+References: <1405319147-5212-1-git-send-email-varkabhadram@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the latency for the cpufreq policy to 1 million nanoseconds
-that calls the function pxa_cpu_init for the member of the structure
-called cpuinfo.transition_latency.
+From: Varka Bhadram <varkab@cdac.in>
 
-Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+Normally any device ids will be above the corresponding device driver
+structure. This patch moves the pci device ids and MODULE_DEVICE_TABLE()
+above the pci driver structure.
+
+Signed-off-by: Varka Bhadram <varkab@cdac.in>
 ---
- drivers/cpufreq/pxa2xx-cpufreq.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/amd/amd8111e.c |   20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/cpufreq/pxa2xx-cpufreq.c b/drivers/cpufreq/pxa2xx-cpufreq.c
-index e24269a..e08bb98 100644
---- a/drivers/cpufreq/pxa2xx-cpufreq.c
-+++ b/drivers/cpufreq/pxa2xx-cpufreq.c
-@@ -372,7 +372,7 @@ static int pxa_cpufreq_init(struct cpufreq_policy *policy)
- 	init_sdram_rows();
+diff --git a/drivers/net/ethernet/amd/amd8111e.c b/drivers/net/ethernet/amd/amd8111e.c
+index e2fb9e2..3e41568 100644
+--- a/drivers/net/ethernet/amd/amd8111e.c
++++ b/drivers/net/ethernet/amd/amd8111e.c
+@@ -101,7 +101,6 @@ Revision History:
+ MODULE_AUTHOR("Advanced Micro Devices, Inc.");
+ MODULE_DESCRIPTION ("AMD8111 based 10/100 Ethernet Controller. Driver Version "MODULE_VERS);
+ MODULE_LICENSE("GPL");
+-MODULE_DEVICE_TABLE(pci, amd8111e_pci_tbl);
+ module_param_array(speed_duplex, int, NULL, 0);
+ MODULE_PARM_DESC(speed_duplex, "Set device speed and duplex modes, 0: Auto Negotiate, 1: 10Mbps Half Duplex, 2: 10Mbps Full Duplex, 3: 100Mbps Half Duplex, 4: 100Mbps Full Duplex");
+ module_param_array(coalesce, bool, NULL, 0);
+@@ -109,14 +108,6 @@ MODULE_PARM_DESC(coalesce, "Enable or Disable interrupt coalescing, 1: Enable, 0
+ module_param_array(dynamic_ipg, bool, NULL, 0);
+ MODULE_PARM_DESC(dynamic_ipg, "Enable or Disable dynamic IPG, 1: Enable, 0: Disable");
  
- 	/* set default policy and cpuinfo */
--	policy->cpuinfo.transition_latency = 1000; /* FIXME: 1 ms, assumed */
-+	policy->cpuinfo.transition_latency = 1000000;
+-static DEFINE_PCI_DEVICE_TABLE(amd8111e_pci_tbl) = {
+-
+-	{ PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD8111E_7462,
+-	 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0UL },
+-	{ 0, }
+-
+-};
+-
+ /* This function will read the PHY registers. */
+ static int amd8111e_read_phy(struct amd8111e_priv* lp, int phy_id, int reg, u32* val)
+ {
+@@ -1953,6 +1944,17 @@ static void amd8111e_remove_one(struct pci_dev *pdev)
+ 	}
+ }
  
- 	/* Generate pxa25x the run cpufreq_frequency_table struct */
- 	for (i = 0; i < NUM_PXA25x_RUN_FREQS; i++) {
++static const struct pci_device_id amd8111e_pci_tbl[] = {
++	{
++	 .vendor = PCI_VENDOR_ID_AMD,
++	 .device = PCI_DEVICE_ID_AMD8111E_7462,
++	},
++	{
++	 .vendor = 0,
++	}
++};
++MODULE_DEVICE_TABLE(pci, amd8111e_pci_tbl);
++
+ static struct pci_driver amd8111e_driver = {
+ 	.name   	= MODULE_NAME,
+ 	.id_table	= amd8111e_pci_tbl,
 -- 
-1.9.1
+1.7.9.5
 
