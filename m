@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721AbaGNKpR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 06:45:17 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42157 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753869AbaGNKnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 06:43:11 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <linux-kernel@vger.kernel.org>, <tony@atomide.com>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>
-CC: <kishon@ti.com>
-Subject: [RESEND PATCH 0/8] arm: dts: dra7: Add PCIe data and PCIe PHY data
-Date: Mon, 14 Jul 2014 16:12:15 +0530
-Message-ID: <1405334543-25509-1-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753953AbaGNKuD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 06:50:03 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:44498 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751411AbaGNKtz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 06:49:55 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Varka Bhadram'" <varkabhadram@gmail.com>,
+        Jongsung Kim <neidhard.kim@lge.com>,
+        "nicolas.ferre@atmel.com" <nicolas.ferre@atmel.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: RE: [PATCH 1/2] net: cadence: macb: add support for the WOL
+Thread-Topic: [PATCH 1/2] net: cadence: macb: add support for the WOL
+Thread-Index: AQHPn0zYikOaHHxc8ECwP9EkEv6OOJufYySA
+Date: Mon, 14 Jul 2014 10:49:04 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D17271AC1@AcuExch.aculab.com>
+References: <1405328538-29153-1-git-send-email-neidhard.kim@lge.com>
+ <53C3ADB9.4010309@gmail.com>
+In-Reply-To: <53C3ADB9.4010309@gmail.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[1] is split into separate series in order for individual subsystem
-Maintainers to pick up the patches. This series handles the PCIe
-dt data for DRA7.
+From: Varka Bhadram
+> On 07/14/2014 02:32 PM, Jongsung Kim wrote:
+> > This patch enables the ethtool utility to control the WOL function
+> > of the PHY connected to the GEM/MACB. (if supported)
+...
+> > +static int macb_set_wol(struct net_device *netdev, struct ethtool_wolinfo *wol)
+> > +{
+> > +	struct macb *bp = netdev_priv(netdev);
+> > +	struct phy_device *phydev = bp->phy_dev;
+> > +	int err = -ENODEV;
+> > +
+> > +	if (phydev)
+> > +		err = phy_ethtool_set_wol(phydev, wol);
+> > +
+> > +	return err;
+> > +}
+> > +
+> 
+> I think we can do in this way:
+> 
+> if (phydev)
+> 	return phy_ethtool_set_wol(phydev, wol);
+> else
+> 	return -ENODEV;
+> 
+> 
+> we can save err. What do you say ...?
 
-This series has better commit logs than the previous one modified as
-suggested by Tero.
+I would do:
+	if (!phydev)
+		return -ENODEV;
+	return phy_ethtool_set_wol(phydev, wol);
 
-[1] -> https://lkml.org/lkml/2014/5/29/258
+Although it might even be worth moving the NULL test into the function.
+(sort of depends on style and the number of callers who need to do the test.)
 
-Keerthy (2):
-  ARM: dts: dra7xx-clocks: Add divider table to optfclk_pciephy_div
-    clock
-  ARM: dts: dra7xx-clocks: Change the parent of apll_pcie_in_clk_mux to
-    dpll_pcie_ref_m2ldo_ck
+	David
 
-Kishon Vijay Abraham I (6):
-  ARM: dts: dra7xx-clocks: Add missing 32KHz clocks used for PHY
-  ARM: dts: dra7xx-clocks: rename pcie clocks to accommodate second PHY
-    instance
-  ARM: dts: dra7xx-clocks: Add missing clocks for second PCIe PHY
-    instance
-  ARM: dts: dra7: Add dt data for PCIe PHY control module
-  ARM: dts: dra7: Add dt data for PCIe PHY
-  ARM: dts: dra7: Add dt data for PCIe controller
 
- arch/arm/boot/dts/dra7.dtsi          |  127 ++++++++++++++++++++++++++++++++++
- arch/arm/boot/dts/dra7xx-clocks.dtsi |   39 ++++++++++-
- 2 files changed, 163 insertions(+), 3 deletions(-)
-
--- 
-1.7.9.5
 
