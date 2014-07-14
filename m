@@ -1,67 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919AbaGNJSp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 05:18:45 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:49280 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349AbaGNJSi convert rfc822-to-8bit (ORCPT
+	id S1753120AbaGNJVx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 05:21:53 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:33887 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204AbaGNJVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 05:18:38 -0400
-Content-Type: text/plain; charset=utf-8
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for 'devm_ioremap_resource'
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-In-Reply-To: <53C39B66.4060500@nod.at>
-Date: Mon, 14 Jul 2014 17:22:39 +0800
-Cc: Lars-Peter Clausen <lars@metafoo.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Lennox Wu <lennox.wu@gmail.com>, Chen Gang <gang.chen.5i5j@gmail.com>,
-        Marek Vasut <marex@denx.de>, Liqin Chen <liqin.linux@gmail.com>,
-        msalter@redhat.com, linux-pwm@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-watchdog@vger.kernel.org,
-        linux-input@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Mischa.Jonker@synopsys.com, jic23@kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <5A40E1FC-CA61-4AFF-B205-4BAC175AA7AC@gmail.com>
-References: <201407130545.23004.marex@denx.de> <CAF0htA60juBVkPo2HQKMDGcEr-wRzRVL_6JgHAa+7WVE_E8M0Q@mail.gmail.com> <53C25551.1050909@nod.at> <53C288F0.3070001@metafoo.de> <53C28C4A.70907@nod.at> <53C29015.5070607@metafoo.de> <53C291C8.6050303@nod.at> <53C296C2.30304@metafoo.de> <20140713192202.GA19090@kroah.com> <53C2DF12.6040507@nod.at> <20140713201753.GA29955@kroah.com> <53C39569.9020802@nod.at> <53C3994C.1010309@metafoo.de> <53C39B66.4060500@nod.at>
-To: Richard Weinberger <richard@nod.at>
-X-Mailer: Apple Mail (2.1874)
+	Mon, 14 Jul 2014 05:21:44 -0400
+MIME-Version: 1.0
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <20140711133709.317078209@linutronix.de>
+References: <20140711133623.530368377@linutronix.de>
+	<20140711133709.317078209@linutronix.de>
+Date: Mon, 14 Jul 2014 11:21:43 +0200
+Message-ID: <CAKMK7uFp+WBQgE+8zBWU8Vf1weKfQ-KP9mLPHWjGqrUG9BhYNA@mail.gmail.com>
+Subject: Re: [patch 48/55] drm: i915: Use nsec based interfaces
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 11, 2014 at 3:45 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> No point in converting timespecs back and forth.
+>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-在 2014年7月14日，下午4:57，Richard Weinberger <richard@nod.at> 写道：
+I guess simplest to merge together with the new ktime_get_raw_ns.
+Acked-by: me for that.
+-Daniel
 
-> Am 14.07.2014 10:48, schrieb Lars-Peter Clausen:
->> On 07/14/2014 10:31 AM, Richard Weinberger wrote:
->>> Am 13.07.2014 22:17, schrieb Greg Kroah-Hartman:
->>>> On Sun, Jul 13, 2014 at 09:33:38PM +0200, Richard Weinberger wrote:
->>>>> Maybe we could add COMPILE_TEST to the version string too?
->>>>> Just to detect such kernels fast in user bug reports...
->>>> 
->>>> What kind of bug report are you going to get?
->>> 
->>> User manages to enable CONFIG_FOO by selecting COMPILE_TEST and
->>> complains that it does not work. :)
->> 
->> These drivers are typically drivers for some SoC peripheral and the device will simply physically not exist on a platform that does not provide HAS_IOMEM. This is not really any
->> different from making the driver selectable via COMPILE_TEST for any other platform. To hit the issue you'd have to instantiate a device driver instance for a device that
->> physically does not exist. This will always result in a failure.
-> 
-> Okay, you have convinced me. :)
-> 
+> ---
+>  drivers/gpu/drm/i915/i915_drv.h |    2 +-
+>  drivers/gpu/drm/i915/i915_gem.c |   33 ++++++++++++---------------------
+>  drivers/gpu/drm/i915/intel_pm.c |   12 +++++-------
+>  3 files changed, 18 insertions(+), 29 deletions(-)
+>
+> Index: tip/drivers/gpu/drm/i915/i915_drv.h
+> ===================================================================
+> --- tip.orig/drivers/gpu/drm/i915/i915_drv.h
+> +++ tip/drivers/gpu/drm/i915/i915_drv.h
+> @@ -931,7 +931,7 @@ struct intel_ilk_power_mgmt {
+>         unsigned long last_time1;
+>         unsigned long chipset_power;
+>         u64 last_count2;
+> -       struct timespec last_time2;
+> +       u64 last_time2;
+>         unsigned long gfx_power;
+>         u8 corr;
+>
+> Index: tip/drivers/gpu/drm/i915/i915_gem.c
+> ===================================================================
+> --- tip.orig/drivers/gpu/drm/i915/i915_gem.c
+> +++ tip/drivers/gpu/drm/i915/i915_gem.c
+> @@ -1149,16 +1149,16 @@ static bool can_wait_boost(struct drm_i9
+>  static int __wait_seqno(struct intel_engine_cs *ring, u32 seqno,
+>                         unsigned reset_counter,
+>                         bool interruptible,
+> -                       struct timespec *timeout,
+> +                       s64 *timeout,
+>                         struct drm_i915_file_private *file_priv)
+>  {
+>         struct drm_device *dev = ring->dev;
+>         struct drm_i915_private *dev_priv = dev->dev_private;
+>         const bool irq_test_in_progress =
+>                 ACCESS_ONCE(dev_priv->gpu_error.test_irq_rings) & intel_ring_flag(ring);
+> -       struct timespec before, now;
+>         DEFINE_WAIT(wait);
+>         unsigned long timeout_expire;
+> +       s64 before, now;
+>         int ret;
+>
+>         WARN(dev_priv->pm.irqs_disabled, "IRQs disabled\n");
+> @@ -1166,7 +1166,7 @@ static int __wait_seqno(struct intel_eng
+>         if (i915_seqno_passed(ring->get_seqno(ring, true), seqno))
+>                 return 0;
+>
+> -       timeout_expire = timeout ? jiffies + timespec_to_jiffies_timeout(timeout) : 0;
+> +       timeout_expire = timeout ? jiffies + nsecs_to_jiffies((u64)timeout) : 0;
+>
+>         if (INTEL_INFO(dev)->gen >= 6 && can_wait_boost(file_priv)) {
+>                 gen6_rps_boost(dev_priv);
+> @@ -1181,7 +1181,7 @@ static int __wait_seqno(struct intel_eng
+>
+>         /* Record current time in case interrupted by signal, or wedged */
+>         trace_i915_gem_request_wait_begin(ring, seqno);
+> -       getrawmonotonic(&before);
+> +       before = ktime_get_raw_ns();
+>         for (;;) {
+>                 struct timer_list timer;
+>
+> @@ -1230,7 +1230,7 @@ static int __wait_seqno(struct intel_eng
+>                         destroy_timer_on_stack(&timer);
+>                 }
+>         }
+> -       getrawmonotonic(&now);
+> +       now = ktime_get_raw_ns();
+>         trace_i915_gem_request_wait_end(ring, seqno);
+>
+>         if (!irq_test_in_progress)
+> @@ -1239,10 +1239,9 @@ static int __wait_seqno(struct intel_eng
+>         finish_wait(&ring->irq_queue, &wait);
+>
+>         if (timeout) {
+> -               struct timespec sleep_time = timespec_sub(now, before);
+> -               *timeout = timespec_sub(*timeout, sleep_time);
+> -               if (!timespec_valid(timeout)) /* i.e. negative time remains */
+> -                       set_normalized_timespec(timeout, 0, 0);
+> +               s64 tres = *timeout - (now - before);
+> +
+> +               *timeout = tres < 0 ? 0 : tres;
+>         }
+>
+>         return ret;
+> @@ -2753,16 +2752,10 @@ i915_gem_wait_ioctl(struct drm_device *d
+>         struct drm_i915_gem_wait *args = data;
+>         struct drm_i915_gem_object *obj;
+>         struct intel_engine_cs *ring = NULL;
+> -       struct timespec timeout_stack, *timeout = NULL;
+>         unsigned reset_counter;
+>         u32 seqno = 0;
+>         int ret = 0;
+>
+> -       if (args->timeout_ns >= 0) {
+> -               timeout_stack = ns_to_timespec(args->timeout_ns);
+> -               timeout = &timeout_stack;
+> -       }
+> -
+>         ret = i915_mutex_lock_interruptible(dev);
+>         if (ret)
+>                 return ret;
+> @@ -2787,9 +2780,9 @@ i915_gem_wait_ioctl(struct drm_device *d
+>                  goto out;
+>
+>         /* Do this after OLR check to make sure we make forward progress polling
+> -        * on this IOCTL with a 0 timeout (like busy ioctl)
+> +        * on this IOCTL with a timeout <=0 (like busy ioctl)
+>          */
+> -       if (!args->timeout_ns) {
+> +       if (args->timeout_ns <= 0) {
+>                 ret = -ETIME;
+>                 goto out;
+>         }
+> @@ -2798,10 +2791,8 @@ i915_gem_wait_ioctl(struct drm_device *d
+>         reset_counter = atomic_read(&dev_priv->gpu_error.reset_counter);
+>         mutex_unlock(&dev->struct_mutex);
+>
+> -       ret = __wait_seqno(ring, seqno, reset_counter, true, timeout, file->driver_priv);
+> -       if (timeout)
+> -               args->timeout_ns = timespec_to_ns(timeout);
+> -       return ret;
+> +       return __wait_seqno(ring, seqno, reset_counter, true, &args->timeout_ns,
+> +                           file->driver_priv);
+>
+>  out:
+>         drm_gem_object_unreference(&obj->base);
+> Index: tip/drivers/gpu/drm/i915/intel_pm.c
+> ===================================================================
+> --- tip.orig/drivers/gpu/drm/i915/intel_pm.c
+> +++ tip/drivers/gpu/drm/i915/intel_pm.c
+> @@ -2993,7 +2993,7 @@ static void ironlake_enable_drps(struct
+>                 I915_READ(0x112e0);
+>         dev_priv->ips.last_time1 = jiffies_to_msecs(jiffies);
+>         dev_priv->ips.last_count2 = I915_READ(0x112f4);
+> -       getrawmonotonic(&dev_priv->ips.last_time2);
+> +       dev_priv->ips.last_time2 = ktime_get_raw_ns();
+>
+>         spin_unlock_irq(&mchdev_lock);
+>  }
+> @@ -4314,18 +4314,16 @@ static u16 pvid_to_extvid(struct drm_i91
+>
+>  static void __i915_update_gfx_val(struct drm_i915_private *dev_priv)
+>  {
+> -       struct timespec now, diff1;
+> -       u64 diff;
+> -       unsigned long diffms;
+> +       u64 now, diff, diffms;
+>         u32 count;
+>
+>         assert_spin_locked(&mchdev_lock);
+>
+> -       getrawmonotonic(&now);
+> -       diff1 = timespec_sub(now, dev_priv->ips.last_time2);
+> +       now = ktime_get_raw_ns();
+> +       diffms = now - dev_priv->ips.last_time2;
+> +       do_div(diffms, NSEC_PER_MSEC);
+>
+>         /* Don't divide by 0 */
+> -       diffms = diff1.tv_sec * 1000 + diff1.tv_nsec / 1000000;
+>         if (!diffms)
+>                 return;
+>
+>
+>
 
-OK, thank all of you, and I shall send the related patch for it. 
 
-I will try to finish it within this week.
 
-Thanks.
-—
-Chen Gang
-Open, share, and attitude like air, water, and life which God blessed.
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
