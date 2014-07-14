@@ -1,244 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757152AbaGNUDd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 16:03:33 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:23236 "EHLO
+	id S1757131AbaGNUDb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 16:03:31 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:3129 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756974AbaGNUD3 (ORCPT
+	by vger.kernel.org with ESMTP id S1756913AbaGNUD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Jul 2014 16:03:29 -0400
-Message-Id: <20140714200328.148053349@goodmis.org>
+Message-Id: <20140714200314.105504666@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Mon, 14 Jul 2014 16:03:16 -0400
+Date: Mon, 14 Jul 2014 16:03:14 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        stable-rt@vger.kernel.org
-Subject: [PATCH RT 2/3] workqueue: Prevent deadlock/stall on RT
-References: <20140714200314.105504666@goodmis.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0002-workqueue-Prevent-deadlock-stall-on-RT.patch
-X-RR-Connecting-IP: 107.14.168.118:25
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH RT 0/3] Linux 3.12.24-rt38-rc1
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12.24-rt38-rc1 stable review patch.
-If anyone has any objections, please let me know.
 
-------------------
+Dear RT Folks,
 
-From: Thomas Gleixner <tglx@linutronix.de>
+This is the RT stable review cycle of patch 3.12.24-rt38-rc1.
 
-Austin reported a XFS deadlock/stall on RT where scheduled work gets
-never exececuted and tasks are waiting for each other for ever.
+Please scream at me if I messed something up. Please test the patches too.
 
-The underlying problem is the modification of the RT code to the
-handling of workers which are about to go to sleep. In mainline a
-worker thread which goes to sleep wakes an idle worker if there is
-more work to do. This happens from the guts of the schedule()
-function. On RT this must be outside and the accessed data structures
-are not protected against scheduling due to the spinlock to rtmutex
-conversion. So the naive solution to this was to move the code outside
-of the scheduler and protect the data structures by the pool
-lock. That approach turned out to be a little naive as we cannot call
-into that code when the thread blocks on a lock, as it is not allowed
-to block on two locks in parallel. So we dont call into the worker
-wakeup magic when the worker is blocked on a lock, which causes the
-deadlock/stall observed by Austin and Mike.
+The -rc release will be uploaded to kernel.org and will be deleted when
+the final release is out. This is just a review release (or release candidate).
 
-Looking deeper into that worker code it turns out that the only
-relevant data structure which needs to be protected is the list of
-idle workers which can be woken up.
+The pre-releases will not be pushed to the git repository, only the
+final release is.
 
-So the solution is to protect the list manipulation operations with
-preempt_enable/disable pairs on RT and call unconditionally into the
-worker code even when the worker is blocked on a lock. The preemption
-protection is safe as there is nothing which can fiddle with the list
-outside of thread context.
+If all goes well, this patch will be converted to the next main release
+on 7/17/2014.
 
-Reported-and_tested-by: Austin Schuh <austin@peloton-tech.com>
-Reported-and_tested-by: Mike Galbraith <umgwanakikbuti@gmail.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Link: http://vger.kernel.org/r/alpine.DEB.2.10.1406271249510.5170@nanos
-Cc: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Enjoy,
+
+-- Steve
+
+
+To build 3.12.24-rt38-rc1 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.12.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.12.24.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.12/patch-3.12.24-rt38-rc1.patch.xz
+
+You can also build from 3.12.24-rt37 by applying the incremental patch:
+
+http://www.kernel.org/pub/linux/kernel/projects/rt/3.12/incr/patch-3.12.24-rt37-rt38-rc1.patch.xz
+
+
+Changes from 3.12.24-rt37:
+
 ---
- kernel/sched/core.c |  7 ++++--
+
+
+Steven Rostedt (1):
+      sched: Do not clear PF_NO_SETAFFINITY flag in select_fallback_rq()
+
+Steven Rostedt (Red Hat) (1):
+      Linux 3.12.24-rt38-rc1
+
+Thomas Gleixner (1):
+      workqueue: Prevent deadlock/stall on RT
+
+----
+ kernel/sched/core.c | 13 +++++-------
  kernel/workqueue.c  | 61 +++++++++++++++++++++++++++++++++++++++++------------
- 2 files changed, 53 insertions(+), 15 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 400ae9869c0e..5e741c96af15 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2645,9 +2645,8 @@ need_resched:
- 
- static inline void sched_submit_work(struct task_struct *tsk)
- {
--	if (!tsk->state || tsk_is_pi_blocked(tsk))
-+	if (!tsk->state)
- 		return;
--
- 	/*
- 	 * If a worker went to sleep, notify and ask workqueue whether
- 	 * it wants to wake up a task to maintain concurrency.
-@@ -2655,6 +2654,10 @@ static inline void sched_submit_work(struct task_struct *tsk)
- 	if (tsk->flags & PF_WQ_WORKER)
- 		wq_worker_sleeping(tsk);
- 
-+
-+	if (tsk_is_pi_blocked(tsk))
-+		return;
-+
- 	/*
- 	 * If we are going to sleep and we have plugged IO queued,
- 	 * make sure to submit it to avoid deadlocks.
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index be0ef50a2395..505b55b3c7ae 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -126,6 +126,11 @@ enum {
-  *    cpu or grabbing pool->lock is enough for read access.  If
-  *    POOL_DISASSOCIATED is set, it's identical to L.
-  *
-+ *    On RT we need the extra protection via rt_lock_idle_list() for
-+ *    the list manipulations against read access from
-+ *    wq_worker_sleeping(). All other places are nicely serialized via
-+ *    pool->lock.
-+ *
-  * MG: pool->manager_mutex and pool->lock protected.  Writes require both
-  *     locks.  Reads can happen under either lock.
-  *
-@@ -409,6 +414,31 @@ static void copy_workqueue_attrs(struct workqueue_attrs *to,
- 		if (({ assert_rcu_or_wq_mutex(wq); false; })) { }	\
- 		else
- 
-+#ifdef CONFIG_PREEMPT_RT_BASE
-+static inline void rt_lock_idle_list(struct worker_pool *pool)
-+{
-+	preempt_disable();
-+}
-+static inline void rt_unlock_idle_list(struct worker_pool *pool)
-+{
-+	preempt_enable();
-+}
-+static inline void sched_lock_idle_list(struct worker_pool *pool) { }
-+static inline void sched_unlock_idle_list(struct worker_pool *pool) { }
-+#else
-+static inline void rt_lock_idle_list(struct worker_pool *pool) { }
-+static inline void rt_unlock_idle_list(struct worker_pool *pool) { }
-+static inline void sched_lock_idle_list(struct worker_pool *pool)
-+{
-+	spin_lock_irq(&pool->lock);
-+}
-+static inline void sched_unlock_idle_list(struct worker_pool *pool)
-+{
-+	spin_unlock_irq(&pool->lock);
-+}
-+#endif
-+
-+
- #ifdef CONFIG_DEBUG_OBJECTS_WORK
- 
- static struct debug_obj_descr work_debug_descr;
-@@ -801,10 +831,16 @@ static struct worker *first_worker(struct worker_pool *pool)
-  */
- static void wake_up_worker(struct worker_pool *pool)
- {
--	struct worker *worker = first_worker(pool);
-+	struct worker *worker;
-+
-+	rt_lock_idle_list(pool);
-+
-+	worker = first_worker(pool);
- 
- 	if (likely(worker))
- 		wake_up_process(worker->task);
-+
-+	rt_unlock_idle_list(pool);
- }
- 
- /**
-@@ -832,7 +868,7 @@ void wq_worker_running(struct task_struct *task)
-  */
- void wq_worker_sleeping(struct task_struct *task)
- {
--	struct worker *next, *worker = kthread_data(task);
-+	struct worker *worker = kthread_data(task);
- 	struct worker_pool *pool;
- 
- 	/*
-@@ -849,25 +885,18 @@ void wq_worker_sleeping(struct task_struct *task)
- 		return;
- 
- 	worker->sleeping = 1;
--	spin_lock_irq(&pool->lock);
-+
- 	/*
- 	 * The counterpart of the following dec_and_test, implied mb,
- 	 * worklist not empty test sequence is in insert_work().
- 	 * Please read comment there.
--	 *
--	 * NOT_RUNNING is clear.  This means that we're bound to and
--	 * running on the local cpu w/ rq lock held and preemption
--	 * disabled, which in turn means that none else could be
--	 * manipulating idle_list, so dereferencing idle_list without pool
--	 * lock is safe.
- 	 */
- 	if (atomic_dec_and_test(&pool->nr_running) &&
- 	    !list_empty(&pool->worklist)) {
--		next = first_worker(pool);
--		if (next)
--			wake_up_process(next->task);
-+		sched_lock_idle_list(pool);
-+		wake_up_worker(pool);
-+		sched_unlock_idle_list(pool);
- 	}
--	spin_unlock_irq(&pool->lock);
- }
- 
- /**
-@@ -1571,7 +1600,9 @@ static void worker_enter_idle(struct worker *worker)
- 	worker->last_active = jiffies;
- 
- 	/* idle_list is LIFO */
-+	rt_lock_idle_list(pool);
- 	list_add(&worker->entry, &pool->idle_list);
-+	rt_unlock_idle_list(pool);
- 
- 	if (too_many_workers(pool) && !timer_pending(&pool->idle_timer))
- 		mod_timer(&pool->idle_timer, jiffies + IDLE_WORKER_TIMEOUT);
-@@ -1604,7 +1635,9 @@ static void worker_leave_idle(struct worker *worker)
- 		return;
- 	worker_clr_flags(worker, WORKER_IDLE);
- 	pool->nr_idle--;
-+	rt_lock_idle_list(pool);
- 	list_del_init(&worker->entry);
-+	rt_unlock_idle_list(pool);
- }
- 
- /**
-@@ -1849,7 +1882,9 @@ static void destroy_worker(struct worker *worker)
- 	 */
- 	get_task_struct(worker->task);
- 
-+	rt_lock_idle_list(pool);
- 	list_del_init(&worker->entry);
-+	rt_unlock_idle_list(pool);
- 	worker->flags |= WORKER_DIE;
- 
- 	idr_remove(&pool->worker_idr, worker->id);
--- 
-2.0.0
-
-
+ localversion-rt     |  2 +-
+ 3 files changed, 54 insertions(+), 22 deletions(-)
