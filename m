@@ -1,54 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095AbaGNQC3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 12:02:29 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:35494 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755880AbaGNQCW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 12:02:22 -0400
-Date: Mon, 14 Jul 2014 09:02:18 -0700
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Eli Billauer <eli.billauer@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] xillybus: place 'else' on same line as '}'
-Message-ID: <20140714160218.GA18975@hudson.localdomain>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	Eli Billauer <eli.billauer@gmail.com>, linux-kernel@vger.kernel.org
-References: <1405307220-15946-1-git-send-email-jmmahler@gmail.com>
- <53C37B67.7000203@gmail.com>
+	id S932154AbaGNQD6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 12:03:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4614 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755783AbaGNQDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 12:03:51 -0400
+Date: Mon, 14 Jul 2014 18:01:47 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>
+Subject: finish_task_switch && prev_state (Was: sched, timers: use after
+	free in __lock_task_sighand when exiting a process)
+Message-ID: <20140714160147.GA11986@redhat.com>
+References: <53C2FF4D.3020606@oracle.com> <53C31A34.8030500@oracle.com> <20140714090449.GL9918@twins.programming.kicks-ass.net> <20140714144953.GA8173@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53C37B67.7000203@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140714144953.GA8173@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eli,
+On 07/14, Oleg Nesterov wrote:
+>
+> Yes, the task itself (or, depending ob pov, scheduler) has a reference.
+> copy_process() does
+>
+> 	/*
+> 	 * One for us, one for whoever does the "release_task()" (usually
+> 	 * parent)
+> 	 */
+> 	atomic_set(&tsk->usage, 2);
+>
+> "us" actually means that put_task_struct(TASK_DEAD).
 
-On Mon, Jul 14, 2014 at 09:40:39AM +0300, Eli Billauer wrote:
-> Hi,
-> 
-> Thanks for this.
-> 
-> And since I looked at the part in Codingstyle that deals with if-else, I
-> found another few mistakes regarding braces around a single statement. The
-> rules say, it turns out, that if one of the clauses in an if-else is longer
-> than one statement, both clauses should be wrapped with braces. This rule is
-> broken in lines 162, 536 and 613 of the same file.
-> 
+Off-topic, but I do not understand the huge comment in finish_task_switch().
+Perhaps this all was true a long ago, but currently "prev could be scheduled
+on another cpu" is certainly impossible?
 
-I just looked through CodingStyle, and you are right.  If braces are
-used on one branch they should be used on all branches.
+And if it was possible we have much more problems? In particular, in this case
+we still can drop the reference twice?
 
-Interestingly, checkpatch.pl doesn't warn about these.
+I'll try to recheck, but do you see anything wrong in the patch below?
 
-> ...
+Oleg.
 
-Cheers,
--- 
-Jeremiah Mahler
-jmmahler@gmail.com
-http://github.com/jmahler
+--- x/kernel/sched/core.c
++++ x/kernel/sched/core.c
+@@ -2197,22 +2197,9 @@ static void finish_task_switch(struct rq
+ 	__releases(rq->lock)
+ {
+ 	struct mm_struct *mm = rq->prev_mm;
+-	long prev_state;
+ 
+ 	rq->prev_mm = NULL;
+ 
+-	/*
+-	 * A task struct has one reference for the use as "current".
+-	 * If a task dies, then it sets TASK_DEAD in tsk->state and calls
+-	 * schedule one last time. The schedule call will never return, and
+-	 * the scheduled task must drop that reference.
+-	 * The test for TASK_DEAD must occur while the runqueue locks are
+-	 * still held, otherwise prev could be scheduled on another cpu, die
+-	 * there before we look at prev->state, and then the reference would
+-	 * be dropped twice.
+-	 *		Manfred Spraul <manfred@colorfullife.com>
+-	 */
+-	prev_state = prev->state;
+ 	vtime_task_switch(prev);
+ 	finish_arch_switch(prev);
+ 	perf_event_task_sched_in(prev, current);
+@@ -2222,7 +2209,7 @@ static void finish_task_switch(struct rq
+ 	fire_sched_in_preempt_notifiers(current);
+ 	if (mm)
+ 		mmdrop(mm);
+-	if (unlikely(prev_state == TASK_DEAD)) {
++	if (unlikely(prev->state == TASK_DEAD)) {
+ 		if (prev->sched_class->task_dead)
+ 			prev->sched_class->task_dead(prev);
+ 
+
