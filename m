@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932095AbaGNLn7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 07:43:59 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:56015 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755106AbaGNLi5 (ORCPT
+	id S932103AbaGNLoX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 07:44:23 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:48087 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755095AbaGNLiz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 07:38:57 -0400
+	Mon, 14 Jul 2014 07:38:55 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: kvm@vger.kernel.org
-Subject: [PATCH 03/19] KVM: x86: avoid useless set of KVM_REQ_EVENT after emulation
-Date: Mon, 14 Jul 2014 13:38:27 +0200
-Message-Id: <1405337923-4776-4-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 02/19] KVM: x86: return all bits from get_interrupt_shadow
+Date: Mon, 14 Jul 2014 13:38:26 +0200
+Message-Id: <1405337923-4776-3-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1405337923-4776-1-git-send-email-pbonzini@redhat.com>
 References: <1405337923-4776-1-git-send-email-pbonzini@redhat.com>
@@ -20,118 +20,121 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Despite the provisions to emulate up to 130 consecutive instructions, in
-practice KVM will emulate just one before exiting handle_invalid_guest_state,
-because x86_emulate_instruction always sets KVM_REQ_EVENT.
+For the next patch we will need to know the full state of the
+interrupt shadow; we will then set KVM_REQ_EVENT when one bit
+is cleared.
 
-However, we only need to do this if an interrupt could be injected,
-which happens a) if an interrupt shadow bit (STI or MOV SS) has gone
-away; b) if the interrupt flag has just been set (other instructions
-than STI can set it without enabling an interrupt shadow).
+However, right now get_interrupt_shadow only returns the one
+corresponding to the emulated instruction, or an unconditional
+0 if the emulated instruction does not have an interrupt shadow.
+This is confusing and does not allow us to check for cleared
+bits as mentioned above.
 
-This cuts another 700-900 cycles from the cost of emulating an
-instruction (measured on a Sandy Bridge Xeon: 1650-2600 cycles
-before the patch on kvm-unit-tests, 925-1700 afterwards).
+Clean the callback up, and modify toggle_interruptibility to
+match the comment above the call.  As a small result, the
+call to set_interrupt_shadow will be skipped in the common
+case where int_shadow == 0 && mask == 0.
 
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- arch/x86/kvm/x86.c | 36 ++++++++++++++++++++++++++----------
- 1 file changed, 26 insertions(+), 10 deletions(-)
+ arch/x86/include/asm/kvm_host.h |  2 +-
+ arch/x86/kvm/svm.c              |  6 +++---
+ arch/x86/kvm/vmx.c              |  4 ++--
+ arch/x86/kvm/x86.c              | 10 +++++-----
+ 4 files changed, 11 insertions(+), 11 deletions(-)
 
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index af36f89fe67a..b8a4480176b9 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -717,7 +717,7 @@ struct kvm_x86_ops {
+ 	int (*handle_exit)(struct kvm_vcpu *vcpu);
+ 	void (*skip_emulated_instruction)(struct kvm_vcpu *vcpu);
+ 	void (*set_interrupt_shadow)(struct kvm_vcpu *vcpu, int mask);
+-	u32 (*get_interrupt_shadow)(struct kvm_vcpu *vcpu, int mask);
++	u32 (*get_interrupt_shadow)(struct kvm_vcpu *vcpu);
+ 	void (*patch_hypercall)(struct kvm_vcpu *vcpu,
+ 				unsigned char *hypercall_addr);
+ 	void (*set_irq)(struct kvm_vcpu *vcpu);
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index 4925a94a970a..ddf742768ecf 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -486,14 +486,14 @@ static int is_external_interrupt(u32 info)
+ 	return info == (SVM_EVTINJ_VALID | SVM_EVTINJ_TYPE_INTR);
+ }
+ 
+-static u32 svm_get_interrupt_shadow(struct kvm_vcpu *vcpu, int mask)
++static u32 svm_get_interrupt_shadow(struct kvm_vcpu *vcpu)
+ {
+ 	struct vcpu_svm *svm = to_svm(vcpu);
+ 	u32 ret = 0;
+ 
+ 	if (svm->vmcb->control.int_state & SVM_INTERRUPT_SHADOW_MASK)
+-		ret |= KVM_X86_SHADOW_INT_STI | KVM_X86_SHADOW_INT_MOV_SS;
+-	return ret & mask;
++		ret = KVM_X86_SHADOW_INT_STI | KVM_X86_SHADOW_INT_MOV_SS;
++	return ret;
+ }
+ 
+ static void svm_set_interrupt_shadow(struct kvm_vcpu *vcpu, int mask)
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 5c7bbde25bbf..0c9569b994f9 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -1943,7 +1943,7 @@ static void vmx_set_rflags(struct kvm_vcpu *vcpu, unsigned long rflags)
+ 	vmcs_writel(GUEST_RFLAGS, rflags);
+ }
+ 
+-static u32 vmx_get_interrupt_shadow(struct kvm_vcpu *vcpu, int mask)
++static u32 vmx_get_interrupt_shadow(struct kvm_vcpu *vcpu)
+ {
+ 	u32 interruptibility = vmcs_read32(GUEST_INTERRUPTIBILITY_INFO);
+ 	int ret = 0;
+@@ -1953,7 +1953,7 @@ static u32 vmx_get_interrupt_shadow(struct kvm_vcpu *vcpu, int mask)
+ 	if (interruptibility & GUEST_INTR_STATE_MOV_SS)
+ 		ret |= KVM_X86_SHADOW_INT_MOV_SS;
+ 
+-	return ret & mask;
++	return ret;
+ }
+ 
+ static void vmx_set_interrupt_shadow(struct kvm_vcpu *vcpu, int mask)
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index a56126e6bd75..cd9316786dca 100644
+index 7553530e3502..a56126e6bd75 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
-@@ -87,6 +87,7 @@ static u64 __read_mostly efer_reserved_bits = ~((u64)EFER_SCE);
+@@ -2978,9 +2978,7 @@ static void kvm_vcpu_ioctl_x86_get_vcpu_events(struct kvm_vcpu *vcpu,
+ 		vcpu->arch.interrupt.pending && !vcpu->arch.interrupt.soft;
+ 	events->interrupt.nr = vcpu->arch.interrupt.nr;
+ 	events->interrupt.soft = 0;
+-	events->interrupt.shadow =
+-		kvm_x86_ops->get_interrupt_shadow(vcpu,
+-			KVM_X86_SHADOW_INT_MOV_SS | KVM_X86_SHADOW_INT_STI);
++	events->interrupt.shadow = kvm_x86_ops->get_interrupt_shadow(vcpu);
  
- static void update_cr8_intercept(struct kvm_vcpu *vcpu);
- static void process_nmi(struct kvm_vcpu *vcpu);
-+static void __kvm_set_rflags(struct kvm_vcpu *vcpu, unsigned long rflags);
+ 	events->nmi.injected = vcpu->arch.nmi_injected;
+ 	events->nmi.pending = vcpu->arch.nmi_pending != 0;
+@@ -4860,7 +4858,7 @@ static const struct x86_emulate_ops emulate_ops = {
  
- struct kvm_x86_ops *kvm_x86_ops;
- EXPORT_SYMBOL_GPL(kvm_x86_ops);
-@@ -4868,8 +4869,11 @@ static void toggle_interruptibility(struct kvm_vcpu *vcpu, u32 mask)
- 	 */
- 	if (int_shadow & mask)
- 		mask = 0;
--	if (unlikely(int_shadow || mask))
-+	if (unlikely(int_shadow || mask)) {
- 		kvm_x86_ops->set_interrupt_shadow(vcpu, mask);
-+		if (!mask)
-+			kvm_make_request(KVM_REQ_EVENT, vcpu);
-+	}
- }
- 
- static void inject_emulated_exception(struct kvm_vcpu *vcpu)
-@@ -5095,20 +5099,18 @@ static int kvm_vcpu_check_hw_bp(unsigned long addr, u32 type, u32 dr7,
- 	return dr6;
- }
- 
--static void kvm_vcpu_check_singlestep(struct kvm_vcpu *vcpu, int *r)
-+static void kvm_vcpu_check_singlestep(struct kvm_vcpu *vcpu, unsigned long rflags, int *r)
+ static void toggle_interruptibility(struct kvm_vcpu *vcpu, u32 mask)
  {
- 	struct kvm_run *kvm_run = vcpu->run;
- 
+-	u32 int_shadow = kvm_x86_ops->get_interrupt_shadow(vcpu, mask);
++	u32 int_shadow = kvm_x86_ops->get_interrupt_shadow(vcpu);
  	/*
--	 * Use the "raw" value to see if TF was passed to the processor.
--	 * Note that the new value of the flags has not been saved yet.
-+	 * rflags is the old, "raw" value of the flags.  The new value has
-+	 * not been saved yet.
- 	 *
- 	 * This is correct even for TF set by the guest, because "the
- 	 * processor will not generate this exception after the instruction
- 	 * that sets the TF flag".
+ 	 * an sti; sti; sequence only disable interrupts for the first
+ 	 * instruction. So, if the last instruction, be it emulated or
+@@ -4868,7 +4866,9 @@ static void toggle_interruptibility(struct kvm_vcpu *vcpu, u32 mask)
+ 	 * means that the last instruction is an sti. We should not
+ 	 * leave the flag on in this case. The same goes for mov ss
  	 */
--	unsigned long rflags = kvm_x86_ops->get_rflags(vcpu);
--
- 	if (unlikely(rflags & X86_EFLAGS_TF)) {
- 		if (vcpu->guest_debug & KVM_GUESTDBG_SINGLESTEP) {
- 			kvm_run->debug.arch.dr6 = DR6_BS | DR6_FIXED_1;
-@@ -5275,13 +5277,22 @@ restart:
- 		r = EMULATE_DONE;
- 
- 	if (writeback) {
-+		unsigned long rflags = kvm_x86_ops->get_rflags(vcpu);
- 		toggle_interruptibility(vcpu, ctxt->interruptibility);
--		kvm_make_request(KVM_REQ_EVENT, vcpu);
- 		vcpu->arch.emulate_regs_need_sync_to_vcpu = false;
- 		kvm_rip_write(vcpu, ctxt->eip);
- 		if (r == EMULATE_DONE)
--			kvm_vcpu_check_singlestep(vcpu, &r);
--		kvm_set_rflags(vcpu, ctxt->eflags);
-+			kvm_vcpu_check_singlestep(vcpu, rflags, &r);
-+		__kvm_set_rflags(vcpu, ctxt->eflags);
-+
-+		/*
-+		 * For STI, interrupts are shadowed; so KVM_REQ_EVENT will
-+		 * do nothing, and it will be requested again as soon as
-+		 * the shadow expires.  But we still need to check here,
-+		 * because POPF has no interrupt shadow.
-+		 */
-+		if (unlikely((ctxt->eflags & ~rflags) & X86_EFLAGS_IF))
-+			kvm_make_request(KVM_REQ_EVENT, vcpu);
- 	} else
- 		vcpu->arch.emulate_regs_need_sync_to_vcpu = true;
- 
-@@ -7406,12 +7417,17 @@ unsigned long kvm_get_rflags(struct kvm_vcpu *vcpu)
+-	if (!(int_shadow & mask))
++	if (int_shadow & mask)
++		mask = 0;
++	if (unlikely(int_shadow || mask))
+ 		kvm_x86_ops->set_interrupt_shadow(vcpu, mask);
  }
- EXPORT_SYMBOL_GPL(kvm_get_rflags);
  
--void kvm_set_rflags(struct kvm_vcpu *vcpu, unsigned long rflags)
-+static void __kvm_set_rflags(struct kvm_vcpu *vcpu, unsigned long rflags)
- {
- 	if (vcpu->guest_debug & KVM_GUESTDBG_SINGLESTEP &&
- 	    kvm_is_linear_rip(vcpu, vcpu->arch.singlestep_rip))
- 		rflags |= X86_EFLAGS_TF;
- 	kvm_x86_ops->set_rflags(vcpu, rflags);
-+}
-+
-+void kvm_set_rflags(struct kvm_vcpu *vcpu, unsigned long rflags)
-+{
-+	__kvm_set_rflags(vcpu, rflags);
- 	kvm_make_request(KVM_REQ_EVENT, vcpu);
- }
- EXPORT_SYMBOL_GPL(kvm_set_rflags);
 -- 
 1.8.3.1
 
