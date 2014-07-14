@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046AbaGNPBf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 11:01:35 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:60491 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755690AbaGNPBQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 11:01:16 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53C3F0BA.5020201@roeck-us.net>
-Date: Mon, 14 Jul 2014 08:01:14 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Will Deacon <Will.Deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Heiko Stuebner <heiko@sntech.de>,
+	id S1756015AbaGNPBZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 11:01:25 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:57817 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755605AbaGNPBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 11:01:15 -0400
+Message-ID: <1405350049.13503.35.camel@iivanov-dev>
+Subject: Re: [PATCH 0/4] New Qualcomm PMIC pin controller drivers
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Bjorn Andersson <bjorn@kryo.se>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
         Russell King <linux@arm.linux.org.uk>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 2/7] arm64: Support restart through restart notifier
- call chain
-References: <1405265431-4561-1-git-send-email-linux@roeck-us.net> <1405265431-4561-3-git-send-email-linux@roeck-us.net> <20140714145504.GD1112@arm.com>
-In-Reply-To: <20140714145504.GD1112@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Date: Mon, 14 Jul 2014 18:00:49 +0300
+In-Reply-To: <CAJAp7OgR7xc=LSf9tj+XQY1Nk=dQxCxTZ6HBEdf0NsriDZF85g@mail.gmail.com>
+References: <1404745893-6379-1-git-send-email-iivanov@mm-sol.com>
+	 <CACRpkdYcoA-nifxojO5tZUy6dL6P2PTSGW0mVLUfqG20rOg-Nw@mail.gmail.com>
+	 <1404904380.16296.17.camel@iivanov-dev>
+	 <CACRpkdb25foEcNroqLyZbX93FxqAZ7=2pGo6GPWP8YdrjUS8gg@mail.gmail.com>
+	 <CAJAp7Og0Cr3oY=XpT4NzKUWykxkRTq1ZRDyamW6tgohfBs3dmg@mail.gmail.com>
+	 <1404999558.16296.31.camel@iivanov-dev>
+	 <CAJAp7OgR7xc=LSf9tj+XQY1Nk=dQxCxTZ6HBEdf0NsriDZF85g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2014 07:55 AM, Catalin Marinas wrote:
-> On Sun, Jul 13, 2014 at 04:30:26PM +0100, Guenter Roeck wrote:
->> diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
->> index 43b7c34..b2da6d5 100644
->> --- a/arch/arm64/kernel/process.c
->> +++ b/arch/arm64/kernel/process.c
->> @@ -174,6 +174,8 @@ void machine_restart(char *cmd)
->>   	/* Now call the architecture specific reboot code. */
->>   	if (arm_pm_restart)
->>   		arm_pm_restart(reboot_mode, cmd);
->> +	else
->> +		kernel_restart_notify(cmd);
->
-> There are couple of drivers specific to arm64, once they are converted
-> we can get rid of arm_pm_restart entirely here.
->
+On Sat, 2014-07-12 at 16:51 -0700, Bjorn Andersson wrote:
+> On Thu, Jul 10, 2014 at 6:39 AM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
+> > On Wed, 2014-07-09 at 07:02 -0700, Bjorn Andersson wrote:
+> [..]
+> >> Correct Ivan; we do however share the same issues related to how to do
+> >> interrupt handling,
+> >
+> > Yep, but do we actually need to do interrupt handling in driver?
+> > Interrupts are handled by parent device. GPIO client drivers could
+> > use interrupt-controller registered by core driver?
+> >
+> 
+> Among other things we have the volume and camera keys hooked to these
+> pins, using the gpio-keys driver; so that needs to be able to convert
+> a gpio to an irq.
+> But I don't believe we should turn this driver into an
+> interrupt-controller; as that wouldn't add any value...
 
-I thought you wanted to keep exporting arm_pm_restart. That logically implies
-that you want to have the ability to write new drivers which use it, which
-in turn implies that converting existing drivers would not make much sense.
+I agree. But I would like to avoid specifying 44 "interrupts" in
+DT files if they are known a priory in driver for specific chip.
 
-Am I missing something ?
+Only drawback that I could see is that it will be little odd for
+client drivers, which are using SPMI PMIC pinctrl driver, to specify
+4 parameters required by interrupts property.
 
-Guenter
+Regards,
+Ivan
 
