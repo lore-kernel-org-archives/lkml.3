@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755118AbaGNKMI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 06:12:08 -0400
-Received: from mga11.intel.com ([192.55.52.93]:42003 "EHLO mga11.intel.com"
+	id S1755152AbaGNKMa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 06:12:30 -0400
+Received: from mga11.intel.com ([192.55.52.93]:41997 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754114AbaGNKFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 06:05:48 -0400
+	id S1754525AbaGNKFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 06:05:39 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,657,1400050800"; 
-   d="scan'208";a="561434690"
+   d="scan'208";a="561434635"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 31/41] perf evlist: Add perf_evlist__set_tracking_event()
-Date: Mon, 14 Jul 2014 13:02:55 +0300
-Message-Id: <1405332185-4050-32-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 28/41] perf evlist: Pass mmap parameters in a struct
+Date: Mon, 14 Jul 2014 13:02:52 +0300
+Message-Id: <1405332185-4050-29-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
 References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
@@ -27,61 +27,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a function to change which event is used
-to track mmap, comm and task events.
-
-This is needed with Instruction Tracing
-because the Instruction Tracing event
-must come first but cannot be used for
-tracking because it will be disabled
-under some circumstances.
+In preparation for adding more mmap parameters, pass
+existing parameters in a struct.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/evlist.c | 20 ++++++++++++++++++++
- tools/perf/util/evlist.h |  3 +++
- 2 files changed, 23 insertions(+)
+ tools/perf/util/evlist.c | 46 ++++++++++++++++++++++++++--------------------
+ 1 file changed, 26 insertions(+), 20 deletions(-)
 
 diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 814e954..282e83e 100644
+index c51223a..814e954 100644
 --- a/tools/perf/util/evlist.c
 +++ b/tools/perf/util/evlist.c
-@@ -1250,3 +1250,23 @@ void perf_evlist__to_front(struct perf_evlist *evlist,
- 
- 	list_splice(&move, &evlist->entries);
+@@ -606,12 +606,17 @@ static int perf_evlist__alloc_mmap(struct perf_evlist *evlist)
+ 	return evlist->mmap != NULL ? 0 : -ENOMEM;
  }
-+
-+int perf_evlist__set_tracking_event(struct perf_evlist *evlist,
-+				    struct perf_evsel *tracking_evsel)
-+{
-+	struct perf_evsel *evsel;
-+
-+	if (tracking_evsel->idx == 0)
-+		return 0;
-+
-+	if (tracking_evsel->leader->nr_members > 1)
-+		return -EINVAL;
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		if (evsel->idx < tracking_evsel->idx)
-+			evsel->idx += 1;
-+	}
-+	tracking_evsel->idx = 0;
-+
-+	return 0;
-+}
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index f5173cd..657a36c 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -262,4 +262,7 @@ void perf_evlist__to_front(struct perf_evlist *evlist,
- #define evlist__for_each_safe(evlist, tmp, evsel) \
- 	__evlist__for_each_safe(&(evlist)->entries, tmp, evsel)
  
-+int perf_evlist__set_tracking_event(struct perf_evlist *evlist,
-+				    struct perf_evsel *tracking_evsel);
+-static int __perf_evlist__mmap(struct perf_evlist *evlist,
+-			       int idx, int prot, int mask, int fd)
++struct mmap_params {
++	int prot;
++	int mask;
++};
 +
- #endif /* __PERF_EVLIST_H */
++static int __perf_evlist__mmap(struct perf_evlist *evlist, int idx,
++			       struct mmap_params *mp, int fd)
+ {
+ 	evlist->mmap[idx].prev = 0;
+-	evlist->mmap[idx].mask = mask;
+-	evlist->mmap[idx].base = mmap(NULL, evlist->mmap_len, prot,
++	evlist->mmap[idx].mask = mp->mask;
++	evlist->mmap[idx].base = mmap(NULL, evlist->mmap_len, mp->prot,
+ 				      MAP_SHARED, fd, 0);
+ 	if (evlist->mmap[idx].base == MAP_FAILED) {
+ 		pr_debug2("failed to mmap perf event ring buffer, error %d\n",
+@@ -625,8 +630,8 @@ static int __perf_evlist__mmap(struct perf_evlist *evlist,
+ }
+ 
+ static int perf_evlist__mmap_per_evsel(struct perf_evlist *evlist, int idx,
+-				       int prot, int mask, int cpu, int thread,
+-				       int *output)
++				       struct mmap_params *mp, int cpu,
++				       int thread, int *output)
+ {
+ 	struct perf_evsel *evsel;
+ 
+@@ -635,8 +640,7 @@ static int perf_evlist__mmap_per_evsel(struct perf_evlist *evlist, int idx,
+ 
+ 		if (*output == -1) {
+ 			*output = fd;
+-			if (__perf_evlist__mmap(evlist, idx, prot, mask,
+-						*output) < 0)
++			if (__perf_evlist__mmap(evlist, idx, mp, *output) < 0)
+ 				return -1;
+ 		} else {
+ 			if (ioctl(fd, PERF_EVENT_IOC_SET_OUTPUT, *output) != 0)
+@@ -651,8 +655,8 @@ static int perf_evlist__mmap_per_evsel(struct perf_evlist *evlist, int idx,
+ 	return 0;
+ }
+ 
+-static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot,
+-				     int mask)
++static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist,
++				     struct mmap_params *mp)
+ {
+ 	int cpu, thread;
+ 	int nr_cpus = cpu_map__nr(evlist->cpus);
+@@ -663,8 +667,8 @@ static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot,
+ 		int output = -1;
+ 
+ 		for (thread = 0; thread < nr_threads; thread++) {
+-			if (perf_evlist__mmap_per_evsel(evlist, cpu, prot, mask,
+-							cpu, thread, &output))
++			if (perf_evlist__mmap_per_evsel(evlist, cpu, mp, cpu,
++							thread, &output))
+ 				goto out_unmap;
+ 		}
+ 	}
+@@ -677,8 +681,8 @@ out_unmap:
+ 	return -1;
+ }
+ 
+-static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot,
+-					int mask)
++static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist,
++					struct mmap_params *mp)
+ {
+ 	int thread;
+ 	int nr_threads = thread_map__nr(evlist->threads);
+@@ -687,8 +691,8 @@ static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot,
+ 	for (thread = 0; thread < nr_threads; thread++) {
+ 		int output = -1;
+ 
+-		if (perf_evlist__mmap_per_evsel(evlist, thread, prot, mask, 0,
+-						thread, &output))
++		if (perf_evlist__mmap_per_evsel(evlist, thread, mp, 0, thread,
++						&output))
+ 			goto out_unmap;
+ 	}
+ 
+@@ -793,7 +797,9 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
+ 	struct perf_evsel *evsel;
+ 	const struct cpu_map *cpus = evlist->cpus;
+ 	const struct thread_map *threads = evlist->threads;
+-	int prot = PROT_READ | (overwrite ? 0 : PROT_WRITE), mask;
++	struct mmap_params mp = {
++		.prot = PROT_READ | (overwrite ? 0 : PROT_WRITE),
++	};
+ 
+ 	if (evlist->mmap == NULL && perf_evlist__alloc_mmap(evlist) < 0)
+ 		return -ENOMEM;
+@@ -804,7 +810,7 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
+ 	evlist->overwrite = overwrite;
+ 	evlist->mmap_len = perf_evlist__mmap_size(pages);
+ 	pr_debug("mmap size %zuB\n", evlist->mmap_len);
+-	mask = evlist->mmap_len - page_size - 1;
++	mp.mask = evlist->mmap_len - page_size - 1;
+ 
+ 	evlist__for_each(evlist, evsel) {
+ 		if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
+@@ -814,9 +820,9 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
+ 	}
+ 
+ 	if (cpu_map__empty(cpus))
+-		return perf_evlist__mmap_per_thread(evlist, prot, mask);
++		return perf_evlist__mmap_per_thread(evlist, &mp);
+ 
+-	return perf_evlist__mmap_per_cpu(evlist, prot, mask);
++	return perf_evlist__mmap_per_cpu(evlist, &mp);
+ }
+ 
+ int perf_evlist__create_maps(struct perf_evlist *evlist, struct target *target)
 -- 
 1.8.3.2
 
