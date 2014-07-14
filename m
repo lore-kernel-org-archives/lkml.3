@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404AbaGNKRt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 06:17:49 -0400
-Received: from mga11.intel.com ([192.55.52.93]:40395 "EHLO mga11.intel.com"
+	id S1755391AbaGNKRi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 06:17:38 -0400
+Received: from mga11.intel.com ([192.55.52.93]:59014 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754192AbaGNKEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 06:04:47 -0400
+	id S1754212AbaGNKEv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 06:04:51 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,657,1400050800"; 
-   d="scan'208";a="561434235"
+   d="scan'208";a="561434241"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 12/41] perf tools: Fix leak of 'struct thread' on error path
-Date: Mon, 14 Jul 2014 13:02:36 +0300
-Message-Id: <1405332185-4050-13-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 13/41] perf tools: Add machine__kernel_ip()
+Date: Mon, 14 Jul 2014 13:02:37 +0300
+Message-Id: <1405332185-4050-14-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
 References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
@@ -27,48 +27,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__machine__findnew_thread() creates a 'struct thread'
-but does not free it on the error path.
+Add a function to determine if an address is in
+the kernel.  This is based on the kernel function
+kernel_ip().
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/machine.c | 4 +++-
- tools/perf/util/thread.c  | 6 ++++--
- 2 files changed, 7 insertions(+), 3 deletions(-)
+ tools/perf/util/event.c   |  6 +++---
+ tools/perf/util/machine.c | 23 +++++++++++++++++++++++
+ tools/perf/util/machine.h | 17 +++++++++++++++++
+ 3 files changed, 43 insertions(+), 3 deletions(-)
 
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 7e0e8ae..d1283cc 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -784,9 +784,9 @@ try_again:
+ 		 * "[vdso]" dso, but for now lets use the old trick of looking
+ 		 * in the whole kernel symbol list.
+ 		 */
+-		if ((long long)al->addr < 0 &&
+-		    cpumode == PERF_RECORD_MISC_USER &&
+-		    machine && mg != &machine->kmaps) {
++		if (cpumode == PERF_RECORD_MISC_USER && machine &&
++		    mg != &machine->kmaps &&
++		    machine__kernel_ip(machine, al->addr)) {
+ 			mg = &machine->kmaps;
+ 			load_map = true;
+ 			goto try_again;
 diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index c1c5ca3..18eaf31 100644
+index 18eaf31..347ac65 100644
 --- a/tools/perf/util/machine.c
 +++ b/tools/perf/util/machine.c
-@@ -349,8 +349,10 @@ static struct thread *__machine__findnew_thread(struct machine *machine,
- 		 * within thread__init_map_groups to find the thread
- 		 * leader and that would screwed the rb tree.
- 		 */
--		if (thread__init_map_groups(th, machine))
-+		if (thread__init_map_groups(th, machine)) {
-+			thread__delete(th);
- 			return NULL;
-+		}
- 	}
+@@ -29,6 +29,7 @@ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
+ 	machine->symbol_filter = NULL;
+ 	machine->id_hdr_size = 0;
+ 	machine->comm_exec = false;
++	machine->kernel_start = 0;
  
- 	return th;
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index 149e417..b9a3ee4 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -95,8 +95,10 @@ void thread__delete(struct thread *thread)
- {
- 	struct comm *comm, *tmp;
- 
--	map_groups__put(thread->mg);
--	thread->mg = NULL;
-+	if (thread->mg) {
-+		map_groups__put(thread->mg);
-+		thread->mg = NULL;
+ 	machine->root_dir = strdup(root_dir);
+ 	if (machine->root_dir == NULL)
+@@ -1474,3 +1475,25 @@ int __machine__synthesize_threads(struct machine *machine, struct perf_tool *too
+ 	/* command specified */
+ 	return 0;
+ }
++
++int machine__get_kernel_start(struct machine *machine)
++{
++	struct map *map = machine__kernel_map(machine, MAP__FUNCTION);
++	int err = 0;
++
++	/*
++	 * The only addresses above 2^63 are kernel addresses of a 64-bit
++	 * kernel.  Note that addresses are unsigned so that on a 32-bit system
++	 * all addresses including kernel addresses are less than 2^32.  In
++	 * that case (32-bit system), if the kernel mapping is unknown, all
++	 * addresses will be assumed to be in user space - see
++	 * machine__kernel_ip().
++	 */
++	machine->kernel_start = 1ULL << 63;
++	if (map) {
++		err = map__load(map, machine->symbol_filter);
++		if (map->start)
++			machine->kernel_start = map->start;
 +	}
- 	list_for_each_entry_safe(comm, tmp, &thread->comm_list, list) {
- 		list_del(&comm->list);
- 		comm__free(comm);
++	return err;
++}
+diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
+index 383c725..be97021 100644
+--- a/tools/perf/util/machine.h
++++ b/tools/perf/util/machine.h
+@@ -33,6 +33,7 @@ struct machine {
+ 	struct list_head  kernel_dsos;
+ 	struct map_groups kmaps;
+ 	struct map	  *vmlinux_maps[MAP__NR_TYPES];
++	u64		  kernel_start;
+ 	symbol_filter_t	  symbol_filter;
+ };
+ 
+@@ -42,6 +43,22 @@ struct map *machine__kernel_map(struct machine *machine, enum map_type type)
+ 	return machine->vmlinux_maps[type];
+ }
+ 
++int machine__get_kernel_start(struct machine *machine);
++
++static inline u64 machine__kernel_start(struct machine *machine)
++{
++	if (!machine->kernel_start)
++		machine__get_kernel_start(machine);
++	return machine->kernel_start;
++}
++
++static inline bool machine__kernel_ip(struct machine *machine, u64 ip)
++{
++	u64 kernel_start = machine__kernel_start(machine);
++
++	return ip >= kernel_start;
++}
++
+ struct thread *machine__find_thread(struct machine *machine, pid_t pid,
+ 				    pid_t tid);
+ struct comm *machine__thread_exec_comm(struct machine *machine,
 -- 
 1.8.3.2
 
