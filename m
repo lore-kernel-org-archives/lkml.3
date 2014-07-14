@@ -1,48 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761AbaGNDId (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 23:08:33 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.246]:14131 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752550AbaGNDIY (ORCPT
+	id S1752841AbaGNDKG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 23:10:06 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:58350 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752769AbaGNDJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 23:08:24 -0400
-From: Bo Shen <voice.shen@atmel.com>
-To: <nicolas.ferre@atmel.com>
-CC: <boris.brezillon@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Bo Shen <voice.shen@atmel.com>
-Subject: [PATCH] ARM: at91: at91sam9x5: correct typo error for ohci clock
-Date: Mon, 14 Jul 2014 11:08:14 +0800
-Message-ID: <1405307294-17708-1-git-send-email-voice.shen@atmel.com>
-X-Mailer: git-send-email 1.8.5.2
+	Sun, 13 Jul 2014 23:09:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <DC148C5AA1CEBA4E87973D432B1C2D8825EF2E84@P3PWEX4MB008.ex4.secureserver.net>
+References: <1405204956-1559-1-git-send-email-chase.southwood@gmail.com>
+	<1405205049-1828-1-git-send-email-chase.southwood@gmail.com>
+	<DC148C5AA1CEBA4E87973D432B1C2D8825EF2E84@P3PWEX4MB008.ex4.secureserver.net>
+Date: Sun, 13 Jul 2014 22:09:58 -0500
+Message-ID: <CA+jnaaUuq_+wTJFZe+oA44Y=w7xzMjS97xfySE1GS+Atwa5NLA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] staging: comedi: addi_apci_1564: use addi_watchdog
+ module to init watchdog subdevice
+From: Chase Southwood <chase.southwood@gmail.com>
+To: Hartley Sweeten <HartleyS@visionengravers.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct the typo error for the second "uhphs_clk".
+On Sun, Jul 13, 2014 at 2:17 PM, Hartley Sweeten
+<HartleyS@visionengravers.com> wrote:
+> On Saturday, July 12, 2014 3:44 PM, Chase Southwood wrote:
+>> Use the addi_watchdog module to provide support for the watchdog
+>> subdevice.
+>>
+>> Also, rearrange the subdevice init blocks so that the order makes sense.
+>> Digital input/output subdevices and subdevices for DI/DO interrupt
+>> support, followed by timer/counter/watchdog subdevices is the new order.
+>>
+>> Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
+>> Cc: Ian Abbott <abbotti@mev.co.uk>
+>> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+>> ---
+>>  drivers/staging/comedi/drivers/addi_apci_1564.c | 34 +++++++++++++++----------
+>>  1 file changed, 20 insertions(+), 14 deletions(-)
+>
+> Chase,
+>
+> You should also add the dependency for the addi watchdog module
+> to the Kconfig.
+>
 
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
----
- arch/arm/boot/dts/at91sam9x5.dtsi | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Hello, Hartley!
 
-diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
-index 2ebc421..727d3a4 100644
---- a/arch/arm/boot/dts/at91sam9x5.dtsi
-+++ b/arch/arm/boot/dts/at91sam9x5.dtsi
-@@ -1155,8 +1155,7 @@
- 			compatible = "atmel,at91rm9200-ohci", "usb-ohci";
- 			reg = <0x00600000 0x100000>;
- 			interrupts = <22 IRQ_TYPE_LEVEL_HIGH 2>;
--			clocks = <&usb>, <&uhphs_clk>, <&udphs_clk>,
--				 <&uhpck>;
-+			clocks = <&usb>, <&uhphs_clk>, <&uhphs_clk>, <&uhpck>;
- 			clock-names = "usb_clk", "ohci_clk", "hclk", "uhpck";
- 			status = "disabled";
- 		};
--- 
-1.8.5.2
+The select statement for COMEDI_ADDI_WATCHDOG was added to Kconfig for
+the addi_apci_1564 driver in commit
+8851362:
 
+From: Arnd Bergmann <arnd@arndb.de>
+Date: Tue, 3 Jun 2014 12:29:29 +0200
+Subject: [PATCH] staging: comedi: addi_apci_1564: add addi_watchdog dependency
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+Acked-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+This is because the driver has already been using
+addi_watchdog_reset() and I had forgotten to add the select to the
+Kconfig when I added that function call, so Arnd added it when a
+randconfig build error turned up later.  Sorry for the
+confusion.
+
+Thanks,
+Chase
+
+> Regards,
+> Hartley
