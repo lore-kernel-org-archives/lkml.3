@@ -1,140 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932370AbaGNTHY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 15:07:24 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35791 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932331AbaGNTHP convert rfc822-to-8bit (ORCPT
+	id S932401AbaGNTIg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 15:08:36 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59525 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752518AbaGNTI1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 15:07:15 -0400
-From: "Murphy, Dan" <dmurphy@ti.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "linux-sound@vger.kernel.org" <linux-sound@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v6] ASoC: tas2552: Support TI TAS2552 Amplifier
-Thread-Topic: [PATCH v6] ASoC: tas2552: Support TI TAS2552 Amplifier
-Thread-Index: AQHPnR8NkdNoCbyJA0aqgNzAA6CyVQ==
-Date: Mon, 14 Jul 2014 19:07:06 +0000
-Message-ID: <00FC9A978A94B7418C33AFAE8A35ED49D80B10@DFLE09.ent.ti.com>
-References: <1405093489-11897-1-git-send-email-dmurphy@ti.com>
- <20140714184321.GW6800@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.170.170.90]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 14 Jul 2014 15:08:27 -0400
+Message-ID: <53C42AA8.8010107@codeaurora.org>
+Date: Mon, 14 Jul 2014 12:08:24 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J . Wysocki" <rjw@rjwysocki.net>,
+        Todd Poynor <toddpoynor@google.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH v2] cpufreq: Don't destroy/realloc policy/sysfs on hotplug/suspend
+References: <1404959850-11617-1-git-send-email-skannan@codeaurora.org> <1405052287-4744-1-git-send-email-skannan@codeaurora.org> <CAKohponB9feyh50p+dL5hyU1ffHAzHU59G-sYCrCm1AbHQe9hw@mail.gmail.com> <2f549e6e4871ccf2a94dd4c8872c7a0b.squirrel@www.codeaurora.org> <CAKohpokhmj1OkCRj=X+Q7eYiun8fsqD2dpEt66VKYnqo3dENVA@mail.gmail.com> <53C0A12A.2060204@codeaurora.org> <CAKohpon9en_VnSx+CVydPsWBHtArvmazn0hrodrRJt9jgOa0-g@mail.gmail.com>
+In-Reply-To: <CAKohpon9en_VnSx+CVydPsWBHtArvmazn0hrodrRJt9jgOa0-g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2014 01:43 PM, Mark Brown wrote:
-> On Fri, Jul 11, 2014 at 10:44:49AM -0500, Dan Murphy wrote:
+On 07/13/2014 11:09 PM, Viresh Kumar wrote:
+> On 12 July 2014 08:14, Saravana Kannan <skannan@codeaurora.org> wrote:
 >
->> @@ -754,4 +755,8 @@ config SND_SOC_TPA6130A2
->>  	tristate "Texas Instruments TPA6130A2 headphone amplifier"
->>  	depends on I2C
->>  
->> +config SND_SOC_TAS2552
->> +	tristate "Texas Instruments TAS2552 Mono Audio amplifier"
->> +	depends on I2C
->> +
->>  endmenu
-> Keep this and Makefile sorted - since this is a proper CODEC driver it
-> should be in with the CODECs and also sorted in alphabetical order.
-
-OK.  I was trying to stay away from a conflict by adding to the
-bottom of the file.
-
+>>>> I'm just always adding the real nodes to the first CPU in a cluster
+>>>> independent of which CPU gets added first. Makes it easier to know which
+>>>> ones to symlink. See comment next to policy->cpu for full context.
+>>>
+>>>
+>>> Yeah, and that is the order in which CPUs will boot and cpufreq_add_dev()
+>>> will be called. So, isn't policy->cpu the right CPU always?
+>>
+>>
+>> No, the "first" cpu in a cluster doesn't need to be the first one to be
+>> added. An example is 2x2 cluster system where the system is booted with max
+>> cpus = 2 and then cpu3 could be onlined first by userspace.
 >
->> +static int tas2552_startup(struct snd_pcm_substream *substream,
->> +			   struct snd_soc_dai *dai)
->> +{
->> +	struct snd_soc_codec *codec = dai->codec;
->> +
->> +	pm_runtime_get_sync(codec->dev);
->> +
->> +	return 0;
->> +}
->> +
->> +static void tas2552_shutdown(struct snd_pcm_substream *substream,
->> +			   struct snd_soc_dai *dai)
->> +{
->> +	struct snd_soc_codec *codec = dai->codec;
->> +
->> +	pm_runtime_put(codec->dev);
->> +}
-> These runtime calls should be redundant, the framework should hold a
-> runtime PM reference on devices while they are active.  Does this not
-> work for you?
+> Because we are getting rid of much of the complexity now, I do not want
+> policy->cpu to keep changing. Just fix it up to the cpu for which the policy
+> gets created first. That's it. No more changes required. It doesn't matter at
+> userspace which cpu owns it as symlinks would anyway duplicate it under
+> every cpu.
 
-I will verify that the calls get called.
+I think you missed one my of comments in the email. I agree with what 
+you are saying here. I'll just do it as a separate patch to keep this 
+one simpler. I don't want to touch all the governors and other potential 
+uses of policy->cpu in this patch.
 
+>> Yeah, it is pretty convolution. But pretty much anywhere in the gov code
+>> where policy->cpu is used could cause this. The specific crash I hit was in
+>> this code:
+>>
+>> static void od_dbs_timer(struct work_struct *work)
+>> {
+>>          struct od_cpu_dbs_info_s *dbs_info =
+>>                  container_of(work, struct od_cpu_dbs_info_s,
+>> cdbs.work.work);
+>>          unsigned int cpu = dbs_info->cdbs.cur_policy->cpu;
+>>
+>> ======= CPU is policy->cpu here.
+>>
+>>          struct od_cpu_dbs_info_s *core_dbs_info = &per_cpu(od_cpu_dbs_info,
+>>                          cpu);
+>>
+>> ======= Picks the per CPU struct of an offline CPU
+>>
+>> <snip>
+>>
+>>          mutex_lock(&core_dbs_info->cdbs.timer_mutex);
+>>
+>> ======= Dies trying to lock a destroyed mutex
 >
->> +	pm_runtime_get_sync(codec->dev);
-> Check the return value here.
-
-OK
-
+> I am still not getting it. Why would we get into this if policy->cpu is fixed
+> once at boot ?
 >
->> +	snd_soc_write(codec, TAS2552_CFG_2, TAS2552_CLASSD_EN |
->> +				  TAS2552_BOOST_EN | TAS2552_APT_EN |
->> +				  TAS2552_PLL_ENABLE | TAS2552_LIM_EN);
-> The PLL is enabled all the time not via DAPM or similar (it's never
-> disabled)?
 
-Good catch.  I will make sure the PLL Is disabled in the shutdown call.
+Yeah, it definitely crashes if policy->cpu if an offline cpu. Because 
+the mutex would be uninitialized if it's stopped after boot or it would 
+never have been initialized (depending on how you fix policy->cpu at boot).
 
->
->> +static int tas2552_resume(struct snd_soc_codec *codec)
->> +{
->> +	struct tas2552_data *tas2552 = snd_soc_codec_get_drvdata(codec);
->> +	int ret;
->> +
->> +	ret = regulator_bulk_enable(ARRAY_SIZE(tas2552->supplies),
->> +				    tas2552->supplies);
->> +
->> +	if (ret != 0) {
->> +		dev_err(codec->dev, "Failed to enable supplies: %d\n",
->> +			ret);
->> +	}
->> +
->> +	pm_runtime_get_sync(codec->dev);
-> Remove these runtime PM calls from suspend and resume, they're not doing
-> what you think (and will prevent runtime PM from doing anything).  Let
-> the frameworks worry about it for now, or explicitly call the runtime
-> suspend and resume operators if and only if the device is runtime
-> active.
+Look at this snippet on the actual tree and it should be pretty evident.
 
-OK
-
->
->> +	for (i = 0; i < ARRAY_SIZE(data->supplies); i++)
->> +		data->supplies[i].supply = tas2552_supply_names[i];
->> +
->> +	ret = devm_regulator_bulk_get(dev, ARRAY_SIZE(data->supplies),
->> +				      data->supplies);
->> +	if (ret != 0)
->> +		dev_err(dev, "Failed to request supplies: %d\n", ret);
-> These supplies are mandatory (as they should be) but weren't mentioned
-> in the DT binding - please add them there.
-
-Will add
-
->
->> +static const struct i2c_device_id tas2552_id[] = {
->> +	{ "tas2552-codec", 0 },
->> +	{ }
->> +};
-> No -codec.
-
-Missed this one
+-Saravana
 
 -- 
-------------------
-Dan Murphy
-
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
