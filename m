@@ -1,112 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889AbaGNNzH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 09:55:07 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:33987 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754225AbaGNNzC (ORCPT
+	id S1755674AbaGNNzf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 09:55:35 -0400
+Received: from mail.kmu-office.ch ([178.209.48.102]:44314 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754483AbaGNNzb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 09:55:02 -0400
-Subject: Re: [PATCH 0/7] tracing: instance_rmdir() leaks
- ftrace_event_file->filter
-From: Namhyung Kim <namhyung@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20140711190622.GA19499@redhat.com>
-References: <20140711190622.GA19499@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 14 Jul 2014 22:54:56 +0900
-Message-ID: <1405346096.1745.17.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Mon, 14 Jul 2014 09:55:31 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=
+Content-Transfer-Encoding: 7bit
+Date: Mon, 14 Jul 2014 15:55:29 +0200
+From: Stefan Agner <stefan@agner.ch>
+To: Shawn Guo <shawn.guo@freescale.com>
+Cc: mkl@pengutronix.de, kernel@pengutronix.de,
+        Jingchang Lu <b35083@freescale.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/4] ARM: imx: clk-vf610: fix FlexCAN clock gating
+In-Reply-To: <20140714133926.GH2197@dragon>
+References: <cover.1405322992.git.stefan@agner.ch>
+ <94282392d8355ac25bb998b89032c1c980d5ccce.1405322992.git.stefan@agner.ch>
+ <20140714133926.GH2197@dragon>
+Message-ID: <5a57efd52b0092ad61ff6a2b5bf68ba7@agner.ch>
+User-Agent: Roundcube Webmail/1.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oleg,
+Am 2014-07-14 15:39, schrieb Shawn Guo:
+> Copy Jingchang ...
+> 
+> On Mon, Jul 14, 2014 at 09:48:29AM +0200, Stefan Agner wrote:
+>> Extend the clock control for FlexCAN with the second gate which
+>> enable the clocks in the Clock Divider (CCM_CSCDR2) register too.
+>>
+>> Signed-off-by: Stefan Agner <stefan@agner.ch>
+>> ---
+>>  arch/arm/mach-imx/clk-vf610.c | 6 ++++--
+>>  1 file changed, 4 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-imx/clk-vf610.c b/arch/arm/mach-imx/clk-vf610.c
+>> index 22dc3ee..b12b888 100644
+>> --- a/arch/arm/mach-imx/clk-vf610.c
+>> +++ b/arch/arm/mach-imx/clk-vf610.c
+>> @@ -295,8 +295,10 @@ static void __init vf610_clocks_init(struct device_node *ccm_node)
+>>
+>>  	clk[VF610_CLK_ASRC] = imx_clk_gate2("asrc", "ipg_bus", CCM_CCGR4, CCM_CCGRx_CGn(1));
+>>
+>> -	clk[VF610_CLK_FLEXCAN0] = imx_clk_gate2("flexcan0", "ipg_bus", CCM_CCGR0, CCM_CCGRx_CGn(0));
+>> -	clk[VF610_CLK_FLEXCAN1] = imx_clk_gate2("flexcan1", "ipg_bus", CCM_CCGR9, CCM_CCGRx_CGn(4));
+>> +	clk[VF610_CLK_FLEXCAN0] = imx_clk_gate("flexcan0_en", "ipg_bus", CCM_CSCDR2, 11);
+>> +	clk[VF610_CLK_FLEXCAN0] = imx_clk_gate2("flexcan0", "flexcan0_en", CCM_CCGR0, CCM_CCGRx_CGn(0));
+> 
+> I do not quite understand what "flexcan0_en" clock is and the
+> relationship between it and clock "flexcan0".  I do not think it's a
+> parent-child clock relationship.  Jingchang, do you have more info on
+> this?
+> 
+> Also when you add a new clock, you should have a new clock ID, something
+> like VF610_CLK_FLEXCAN0_EN.
 
-2014-07-11 (금), 21:06 +0200, Oleg Nesterov:
-> Hello,
-> 
-> Sorry for delay, I was distracted by other problems.
-> 
-> To remind, we discussed the potential uprobes "mix perf/ftrace" changes and
-> found some off-topic problems. Lets start with ->filter fixes/cleanups.
-> 
-> So far I didn't even try to test this series, although it looks simple except
-> perhaps the last patch. I'll try to somehow test this tomorrow, but I do not
-> really now how.
-> 
-> So please review, these patches need acks anyway.
-> 
-> As for 1/7, I added BUG_ON(file->filter) into remove_event_file_dir() before
-> kmem_cache_free() to verify that yes, the leak does exist. Perhaps this patch
-> should go to stable, or at least to v3.16.
-> 
-> --------------------------------------------------------------------------------
-> And could someone explain me why apply_subsystem_event_filter("0") clears
-> ->filter_string first, then the whole ->filter? It seems that the only
-> thing filter_free_subsystem_preds() should do is filter_disable(), no?
-> IOW, why the patch below (on top of this series) is wrong?
+There are two enable (gates) bits to enable the FlexCAN clocks: the
+first is in the divider register, the second in the clock gate register.
+For most clocks there is a divider in between, then it looks like this:
 
-I also think that the original code is bit strange.  I agree with your
-change and name of the function should be changed to something like
-'filter_disable_subsystem_filters' IMHO (it does nothing with preds).
-With this change, the apply_subsystem_event_filter can simply do below:
+clk[VF610_CLK_ESDHC0_SEL] = imx_clk_mux("esdhc0_sel", CCM_CSCMR1, 16, 2,
+esdhc_sels, 4);
+clk[VF610_CLK_ESDHC0_EN] = imx_clk_gate("esdhc0_en", "esdhc0_sel",
+CCM_CSCDR2, 28);
+clk[VF610_CLK_ESDHC0_DIV] = imx_clk_divider("esdhc0_div", "esdhc0_en",
+CCM_CSCDR2, 16, 4);
+clk[VF610_CLK_ESDHC0] = imx_clk_gate2("eshc0", "esdhc0_div", CCM_CCGR7,
+CCM_CCGRx_CGn(1));
 
-	if (!strcmp(strstrip(filter_string), "0")) {
-		filter_disable_subsystem_filters(system, tr);
-		/* Ensure all filters are no longer used */
-		synchronize_sched();
-		filter_free_subsystem_filters(system, tr);
-		__free_filter(system->filter);
-		system->filter = NULL;
-		goto out_unlock;
-	}
+However, for FlexCAN no clock selection and no divider is available,
+hence its just a chain of an enable and gate register...
 
-Thanks,
-Namhyung
+But yes, there should be two clock entries for this (I just asking
+myself how this code actually could work, afaik the boot loader don't
+touches these clocks).
 
-
-> 
-> Oleg.
-> 
-> --- x/kernel/trace/trace_events_filter.c
-> +++ x/kernel/trace/trace_events_filter.c
-> @@ -831,17 +831,6 @@ static int __alloc_preds(struct event_filter *filter, int n_preds)
->  	return 0;
->  }
->  
-> -static inline void __remove_filter(struct ftrace_event_file *file)
-> -{
-> -	struct ftrace_event_call *call = file->event_call;
-> -
-> -	filter_disable(file);
-> -	if (call->flags & TRACE_EVENT_FL_USE_CALL_FILTER)
-> -		remove_filter_string(call->filter);
-> -	else
-> -		remove_filter_string(file->filter);
-> -}
-> -
->  static void filter_free_subsystem_preds(struct event_subsystem *system,
->  					struct trace_array *tr)
->  {
-> @@ -850,7 +839,7 @@ static void filter_free_subsystem_preds(struct event_subsystem *system,
->  	list_for_each_entry(file, &tr->events, list) {
->  		if (file->system->subsystem != system)
->  			continue;
-> -		__remove_filter(file);
-> +		filter_disable(file);
->  	}
->  }
->  
-> 
+--
+Stefan
 
 
-
+> 
+> Shawn
+> 
+>> +	clk[VF610_CLK_FLEXCAN1] = imx_clk_gate("flexcan1_en", "ipg_bus", CCM_CSCDR2, 12);
+>> +	clk[VF610_CLK_FLEXCAN1] = imx_clk_gate2("flexcan1", "flexcan1_en", CCM_CCGR9, CCM_CCGRx_CGn(4));
+>>
+>>  	clk[VF610_CLK_DMAMUX0] = imx_clk_gate2("dmamux0", "platform_bus", CCM_CCGR0, CCM_CCGRx_CGn(4));
+>>  	clk[VF610_CLK_DMAMUX1] = imx_clk_gate2("dmamux1", "platform_bus", CCM_CCGR0, CCM_CCGRx_CGn(5));
+>> --
+>> 2.0.1
+>>
