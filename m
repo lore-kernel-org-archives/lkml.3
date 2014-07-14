@@ -1,187 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752606AbaGNCfB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 22:35:01 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:46223 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752466AbaGNCex (ORCPT
+	id S1752666AbaGNCiA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 22:38:00 -0400
+Received: from mail-bn1lp0144.outbound.protection.outlook.com ([207.46.163.144]:40967
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752542AbaGNChx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 22:34:53 -0400
-Message-ID: <53C341C4.1060201@hitachi.com>
-Date: Mon, 14 Jul 2014 11:34:44 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Sun, 13 Jul 2014 22:37:53 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: "hch@infradead.org" <hch@infradead.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+Thread-Topic: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+Thread-Index: AQHPnpon2vh72TcerE+9u7O+On3hT5ueWMnAgACC7zA=
+Date: Mon, 14 Jul 2014 02:37:50 +0000
+Message-ID: <ba0ec0e3d04748eab3fb26e3c4964b4d@BY2PR03MB299.namprd03.prod.outlook.com>
+References: <1404866789-26910-1-git-send-email-kys@microsoft.com>
+	<1404866812-26950-1-git-send-email-kys@microsoft.com>
+	<1404866812-26950-4-git-send-email-kys@microsoft.com>
+	<20140709084300.GD6012@infradead.org>
+	<a31a45eddb544024a7538458b98c3611@BY2PR03MB299.namprd03.prod.outlook.com>
+	<1404935792.2184.5.camel@dabdike.int.hansenpartnership.com>
+	<2f3ae589e6f149acbe4c5dd79f905971@BY2PR03MB299.namprd03.prod.outlook.com>
+	<1404944843.2184.8.camel@dabdike.int.hansenpartnership.com>
+	<20140711063216.GA20660@infradead.org>
+	<328b7a6174ef4dd8a54a7db5ac959834@BY2PR03MB299.namprd03.prod.outlook.com>
+ <yq1a98d2z5x.fsf@sermon.lab.mkp.net> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.135.110.52]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:
+x-forefront-prvs: 02723F29C4
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(189002)(199002)(51704005)(377454003)(13464003)(101416001)(99396002)(80022001)(86612001)(19580405001)(76482001)(575784001)(66066001)(106356001)(46102001)(95666004)(76576001)(50986999)(79102001)(92566001)(106116001)(21056001)(83072002)(74502001)(20776003)(74662001)(2656002)(81542001)(87936001)(99286002)(74316001)(81342001)(54356999)(105586002)(107046002)(83322001)(33646001)(85852003)(64706001)(19580395003)(86362001)(31966008)(93886003)(77982001)(4396001)(76176999)(85306003)(110136001)(108616002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB298;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Oleg Nesterov <oleg@redhat.com>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [RFC][PATCH 1/3] ftrace/x86: Add dynamic allocated trampoline
- for ftrace_ops
-References: <20140703200750.648550267@goodmis.org> <20140703202324.832135644@goodmis.org>
-In-Reply-To: <20140703202324.832135644@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/07/04 5:07), Steven Rostedt wrote:
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+
+
+> -----Original Message-----
+> From: KY Srinivasan
+> Sent: Sunday, July 13, 2014 11:50 AM
+> To: 'Martin K. Petersen'
+> Cc: hch@infradead.org; James Bottomley; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; apw@canonical.com; stable@vger.kernel.org;
+> linux-scsi@vger.kernel.org; ohering@suse.com; jasowang@redhat.com
+> Subject: RE: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
 > 
-> The current method of handling multiple function callbacks is to register
-> a list function callback that calls all the other callbacks based on
-> their hash tables and compare it to the function that the callback was
-> called on. But this is very inefficient.
 > 
-> For example, if you are tracing all functions in the kernel and then
-> add a kprobe to a function such that the kprobe uses ftrace, the
-> mcount trampoline will switch from calling the function trace callback
-> to calling the list callback that will iterate over all registered
-> ftrace_ops (in this case, the function tracer and the kprobes callback).
-> That means for every function being traced it checks the hash of the
-> ftrace_ops for function tracing and kprobes, even though the kprobes
-> is only set at a single function. The kprobes ftrace_ops is checked
-> for every function being traced!
 > 
-> Instead of calling the list function for functions that are only being
-> traced by a single callback, we can call a dynamically allocated
-> trampoline that calls the callback directly. The function graph tracer
-> already uses a direct call trampoline when it is being traced by itself
-> but it is not dynamically allocated. It's trampoline is static in the
-> kernel core. The infrastructure that called the function graph trampoline
-> can also be used to call a dynamically allocated one.
+> > -----Original Message-----
+> > From: Martin K. Petersen [mailto:martin.petersen@oracle.com]
+> > Sent: Sunday, July 13, 2014 5:59 AM
+> > To: KY Srinivasan
+> > Cc: hch@infradead.org; James Bottomley; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; apw@canonical.com;
+> > stable@vger.kernel.org; linux-scsi@vger.kernel.org; ohering@suse.com;
+> > jasowang@redhat.com
+> > Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+> >
+> > >>>>> "KY" == KY Srinivasan <kys@microsoft.com> writes:
+> >
+> > KY> Windows hosts do support UNMAP and set the field in the EVPD.
+> > KY> However, since the host advertises SPC-2 compliance, Linux does
+> > KY> not even query the VPD page.
+> >
+> > >> If we want to enable UNMAP in this case I'd prefer a blacklist
+> > >> entry than trying UNMAP despite the device not advertising it.
+> >
+> > I agree with that. We could do something like the patch below.
+> >
+> > However, I do think it's a good idea that you guys are looking into
+> > reporting SPC-3.
 > 
-> For now, only ftrace_ops that are not dynamically allocated can have
-> a trampoline. That is, users such as function tracer or stack tracer.
-> kprobes and perf allocate their ftrace_ops, and until there's a safe
-> way to free the trampoline, it can not be used. The dynamically allocated
-> ftrace_ops may, although, use the trampoline if the kernel is not
-> compiled with CONFIG_PREEMPT. But that will come later.
+> Thanks Martin; this patch would address our present issues. I will get some
+> testing done and report back.
+
+How should we force the flag (BLIST_TRY_VPD_PAGES) to be set.
+
+K. Y
 > 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  arch/x86/kernel/ftrace.c    | 157 ++++++++++++++++++++++++++++++++++++++++++--
->  arch/x86/kernel/mcount_64.S |  26 ++++++--
->  include/linux/ftrace.h      |   8 +++
->  kernel/trace/ftrace.c       |  46 ++++++++++++-
->  4 files changed, 224 insertions(+), 13 deletions(-)
+> Regards,
 > 
-> diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-> index 3386dc9aa333..fcc256a33c1d 100644
-> --- a/arch/x86/kernel/ftrace.c
-> +++ b/arch/x86/kernel/ftrace.c
-> @@ -17,9 +17,11 @@
->  #include <linux/ftrace.h>
->  #include <linux/percpu.h>
->  #include <linux/sched.h>
-> +#include <linux/slab.h>
->  #include <linux/init.h>
->  #include <linux/list.h>
->  #include <linux/module.h>
-> +#include <linux/moduleloader.h>
->  
->  #include <trace/syscall.h>
->  
-> @@ -644,12 +646,6 @@ int __init ftrace_dyn_arch_init(void)
->  {
->  	return 0;
->  }
-> -#endif
-> -
-> -#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-> -
-> -#ifdef CONFIG_DYNAMIC_FTRACE
-> -extern void ftrace_graph_call(void);
->  
->  static unsigned char *ftrace_jmp_replace(unsigned long ip, unsigned long addr)
->  {
-> @@ -665,6 +661,155 @@ static unsigned char *ftrace_jmp_replace(unsigned long ip, unsigned long addr)
->  	return calc.code;
->  }
->  
-> +/* Currently only x86_64 supports dynamic trampolines */
-> +#ifdef CONFIG_X86_64
-> +
-> +/* Defined as markers to the end of the ftrace default trampolines */
-> +extern void ftrace_caller_end(void);
-> +extern void ftrace_regs_caller_end(void);
-> +extern void ftrace_return(void);
-> +extern void ftrace_caller_op_ptr(void);
-> +extern void ftrace_regs_caller_op_ptr(void);
-> +
-> +/* movq function_trace_op(%rip), %rdx */
-> +/* 0x48 0x8b 0x15 <offset-to-ftrace_trace_op (4 bytes)> */
-> +#define OP_REF_SIZE	7
-> +
-> +/*
-> + * The ftrace_ops is passed to the function, we can pass
-> + * in the ops directly as this trampoline will only call
-> + * a function for a single ops.
-> + */
-> +union ftrace_op_code_union {
-> +	char code[OP_REF_SIZE];
-> +	struct {
-> +		char op[3];
-> +		int offset;
-> +	} __attribute__((packed));
-> +};
-> +
-> +static unsigned long create_trampoline(struct ftrace_ops *ops)
-> +{
-> +	unsigned const char *jmp;
-> +	unsigned long start_offset;
-> +	unsigned long end_offset;
-> +	unsigned long op_offset;
-> +	unsigned long offset;
-> +	unsigned long size;
-> +	unsigned long ip;
-> +	unsigned long *ptr;
-> +	void *trampoline;
-> +	unsigned const char op_ref[] = { 0x48, 0x8b, 0x15 };
-> +	union ftrace_op_code_union op_ptr;
-> +	int ret;
-> +
-> +	if (ops->flags & FTRACE_OPS_FL_SAVE_REGS) {
-> +		start_offset = (unsigned long)ftrace_regs_caller;
-> +		end_offset = (unsigned long)ftrace_regs_caller_end;
-> +		op_offset = (unsigned long)ftrace_regs_caller_op_ptr;
-> +	} else {
-> +		start_offset = (unsigned long)ftrace_caller;
-> +		end_offset = (unsigned long)ftrace_caller_end;
-> +		op_offset = (unsigned long)ftrace_caller_op_ptr;
-> +	}
-> +
-> +	size = end_offset - start_offset;
-> +
-> +	trampoline = module_alloc(size + MCOUNT_INSN_SIZE + sizeof(void *));
-
-Here, since module_alloc always allocates pages like vmalloc, this wastes most
-of the memory area in the page. (e.g. ftrace_regs_caller needs less than 0x150
-bytes on x86_64 as below)
-
-ffffffff8156ec00 T ftrace_regs_caller
-ffffffff8156eccd T ftrace_regs_call
-ffffffff8156ed44 t ftrace_restore_flags
-ffffffff8156ed50 T ftrace_graph_caller
-
-kprobes has its own insn_slot which allocates a small amount of executable memory
-for each kprobe. Perhaps, we can make a generic trampoline mechanism for both, or
-just share the insn_slot with ftrace.
-
-Thank you,
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+> K. Y
+> >
+> >
+> > SCSI: Add a blacklist flag which enables VPD page inquiries
+> >
+> > Despite supporting modern SCSI features some storage devices continue
+> > to claim conformance to an older version of the SPC spec. This is done
+> > for compatibility with legacy operating systems.
+> >
+> > Linux by default will not attempt to read VPD pages on devices that
+> > claim
+> > SPC-2 or older. Introduce a blacklist flag that can be used to trigger
+> > VPD page inquiries on devices that are known to support them.
+> >
+> > Reported-by: KY Srinivasan <kys@microsoft.com>
+> > Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+> >
+> > diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c index
+> > 4a6e4ba5a400..a5b1a224628a 100644
+> > --- a/drivers/scsi/scsi_scan.c
+> > +++ b/drivers/scsi/scsi_scan.c
+> > @@ -949,7 +949,9 @@ static int scsi_add_lun(struct scsi_device *sdev,
+> > unsigned char *inq_result,
+> >
+> >  	sdev->eh_timeout = SCSI_DEFAULT_EH_TIMEOUT;
+> >
+> > -	if (*bflags & BLIST_SKIP_VPD_PAGES)
+> > +	if (*bflags & BLIST_TRY_VPD_PAGES)
+> > +		sdev->try_vpd_pages = 1;
+> > +	else if (*bflags & BLIST_SKIP_VPD_PAGES)
+> >  		sdev->skip_vpd_pages = 1;
+> >
+> >  	transport_configure_device(&sdev->sdev_gendev);
+> > diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c index
+> > 87566b51fcf7..31d32b9077ca 100644
+> > --- a/drivers/scsi/sd.c
+> > +++ b/drivers/scsi/sd.c
+> > @@ -2701,6 +2701,11 @@ static void sd_read_write_same(struct scsi_disk
+> > *sdkp, unsigned char *buffer)
+> >
+> >  static int sd_try_extended_inquiry(struct scsi_device *sdp)  {
+> > +	/* Attempt VPD inquiry if the device blacklist explicitly calls
+> > +	 * for it.
+> > +	 */
+> > +	if (sdp->try_vpd_pages)
+> > +		return 1;
+> >  	/*
+> >  	 * Although VPD inquiries can go to SCSI-2 type devices,
+> >  	 * some USB ones crash on receiving them, and the pages diff --git
+> > a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h index
+> > 9aa38f7b303b..f579408620f0 100644
+> > --- a/include/scsi/scsi_device.h
+> > +++ b/include/scsi/scsi_device.h
+> > @@ -155,6 +155,7 @@ struct scsi_device {
+> >  	unsigned skip_ms_page_8:1;	/* do not use MODE SENSE page 0x08
+> > */
+> >  	unsigned skip_ms_page_3f:1;	/* do not use MODE SENSE page 0x3f
+> > */
+> >  	unsigned skip_vpd_pages:1;	/* do not read VPD pages */
+> > +	unsigned try_vpd_pages:1;	/* attempt to read VPD pages */
+> >  	unsigned use_192_bytes_for_3f:1; /* ask for 192 bytes from page
+> 0x3f
+> > */
+> >  	unsigned no_start_on_add:1;	/* do not issue start on add */
+> >  	unsigned allow_restart:1; /* issue START_UNIT in error handler */
+> > diff --git a/include/scsi/scsi_devinfo.h b/include/scsi/scsi_devinfo.h
+> > index 8670c04e199e..1fdd6fc5492b 100644
+> > --- a/include/scsi/scsi_devinfo.h
+> > +++ b/include/scsi/scsi_devinfo.h
+> > @@ -34,4 +34,5 @@
+> >  #define BLIST_SKIP_VPD_PAGES	0x4000000 /* Ignore SBC-3 VPD pages
+> > */
+> >  #define BLIST_SCSI3LUN		0x8000000 /* Scan more than 256
+> > LUNs
+> >  					     for sequential scan */
+> > +#define BLIST_TRY_VPD_PAGES	0x10000000 /* Attempt to read VPD
+> > pages */
+> >  #endif
