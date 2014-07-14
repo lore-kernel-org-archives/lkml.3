@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231AbaGNUEi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 16:04:38 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:7889 "EHLO
+	id S932384AbaGNUFE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 16:05:04 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:40322 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754870AbaGNUEg (ORCPT
+	by vger.kernel.org with ESMTP id S1757095AbaGNUEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 16:04:36 -0400
-Message-Id: <20140714200420.805309842@goodmis.org>
+	Mon, 14 Jul 2014 16:04:37 -0400
+Message-Id: <20140714200435.975422446@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Mon, 14 Jul 2014 16:04:20 -0400
+Date: Mon, 14 Jul 2014 16:04:23 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
@@ -17,64 +17,36 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH RT 0/3] Linux 3.10.47-rt50-rc1
-X-RR-Connecting-IP: 107.14.168.130:25
+Subject: [PATCH RT 3/3] Linux 3.10.47-rt50-rc1
+References: <20140714200420.805309842@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=0003-Linux-3.10.47-rt50-rc1.patch
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.10.47-rt50-rc1 stable review patch.
+If anyone has any objections, please let me know.
 
+------------------
 
-Dear RT Folks,
-
-This is the RT stable review cycle of patch 3.10.47-rt50-rc1.
-
-Please scream at me if I messed something up. Please test the patches too.
-
-The -rc release will be uploaded to kernel.org and will be deleted when
-the final release is out. This is just a review release (or release candidate).
-
-The pre-releases will not be pushed to the git repository, only the
-final release is.
-
-If all goes well, this patch will be converted to the next main release
-on 7/17/2014.
-
-Enjoy,
-
--- Steve
-
-
-To build 3.10.47-rt50-rc1 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.10.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.10.47.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.10/patch-3.10.47-rt50-rc1.patch.xz
-
-You can also build from 3.10.47-rt49 by applying the incremental patch:
-
-http://www.kernel.org/pub/linux/kernel/projects/rt/3.10/incr/patch-3.10.47-rt49-rt50-rc1.patch.xz
-
-
-Changes from 3.10.47-rt49:
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
 ---
+ localversion-rt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/localversion-rt b/localversion-rt
+index 4b7dca68a5b4..e8a9a36bb066 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt49
++-rt50-rc1
+-- 
+2.0.0
 
 
-Steven Rostedt (1):
-      sched: Do not clear PF_NO_SETAFFINITY flag in select_fallback_rq()
-
-Steven Rostedt (Red Hat) (1):
-      Linux 3.10.47-rt50-rc1
-
-Thomas Gleixner (1):
-      workqueue: Prevent deadlock/stall on RT
-
-----
- kernel/sched/core.c | 13 +++++-------
- kernel/workqueue.c  | 61 +++++++++++++++++++++++++++++++++++++++++------------
- localversion-rt     |  2 +-
- 3 files changed, 54 insertions(+), 22 deletions(-)
