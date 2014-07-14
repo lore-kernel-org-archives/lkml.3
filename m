@@ -1,60 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756565AbaGNPRG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 11:17:06 -0400
-Received: from asavdk4.altibox.net ([109.247.116.15]:48467 "EHLO
-	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756019AbaGNPJ1 (ORCPT
+	id S1756581AbaGNPRR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 11:17:17 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:12720 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756073AbaGNPJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Jul 2014 11:09:27 -0400
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        Sam Ravnborg <sam@ravnborg.org>, Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH 12/38] arm: clean-up uapi Kbuild file
-Date: Mon, 14 Jul 2014 17:08:40 +0200
-Message-Id: <1405350546-28467-12-git-send-email-sam@ravnborg.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1405350546-28467-1-git-send-email-sam@ravnborg.org>
-References: <20140714150609.GA28358@ravnborg.org>
- <1405350546-28467-1-git-send-email-sam@ravnborg.org>
+Date: Mon, 14 Jul 2014 16:09:09 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Wim Van Sebroeck <wim@iguana.be>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Will Deacon <Will.Deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonas Jensen <jonas.jensen@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 7/7] arm/arm64: Unexport restart handlers
+Message-ID: <20140714150909.GF1112@arm.com>
+References: <1405265431-4561-1-git-send-email-linux@roeck-us.net>
+ <1405265431-4561-8-git-send-email-linux@roeck-us.net>
+ <20140714142232.GB1112@arm.com>
+ <53C3EBAA.9050907@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C3EBAA.9050907@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove redundant assignments.
+On Mon, Jul 14, 2014 at 03:39:38PM +0100, Guenter Roeck wrote:
+> On 07/14/2014 07:22 AM, Catalin Marinas wrote:
+> > On Sun, Jul 13, 2014 at 04:30:31PM +0100, Guenter Roeck wrote:
+> >> Implementing a restart handler in a module don't make sense
+> >> as there would be no guarantee that the module is loaded when
+> >> a restart is needed. Unexport arm_pm_restart to ensure that
+> >> no one gets the idea to do it anyway.
+> >>
+> >> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> >> ---
+> >> v4: No change
+> >> v3: No change
+> >> v2: No change
+> >>
+> >>   arch/arm/kernel/process.c   | 1 -
+> >>   arch/arm64/kernel/process.c | 1 -
+> >>   2 files changed, 2 deletions(-)
+> >>
+> >> diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+> >> index 5d191e3..25c7f00 100644
+> >> --- a/arch/arm/kernel/process.c
+> >> +++ b/arch/arm/kernel/process.c
+> >> @@ -125,7 +125,6 @@ void (*pm_power_off)(void);
+> >>   EXPORT_SYMBOL(pm_power_off);
+> >>
+> >>   void (*arm_pm_restart)(enum reboot_mode reboot_mode, const char *cmd) = null_restart;
+> >> -EXPORT_SYMBOL_GPL(arm_pm_restart);
+> >
+> > Unless I miss something, how is this different from registering a
+> > restart notifier from a module (blocking_notifier_chain_register is
+> > exported)?
+> 
+> A notifier can be unregistered safely, and more than one notifier call
+> is supported. If there is more than one driver setting arm_pm_restart,
+> the first one to unregister will clear the pointer. Using the notifier
+> is cleaner and not architecture dependent. One might argue that setting
+> module external function pointers from module code isn't exactly clean
+> coding.
 
-Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-Cc: Russell King <linux@arm.linux.org.uk>
----
- arch/arm/include/uapi/asm/Kbuild | 14 --------------
- 1 file changed, 14 deletions(-)
+I agree.
 
-diff --git a/arch/arm/include/uapi/asm/Kbuild b/arch/arm/include/uapi/asm/Kbuild
-index 70a1c9d..aa17aa8 100644
---- a/arch/arm/include/uapi/asm/Kbuild
-+++ b/arch/arm/include/uapi/asm/Kbuild
-@@ -1,19 +1,5 @@
- # UAPI Header export list
- include include/uapi/asm-generic/Kbuild.asm
- 
--header-y += byteorder.h
--header-y += fcntl.h
- header-y += hwcap.h
--header-y += ioctls.h
--header-y += kvm_para.h
--header-y += mman.h
- header-y += perf_regs.h
--header-y += posix_types.h
--header-y += ptrace.h
--header-y += setup.h
--header-y += sigcontext.h
--header-y += signal.h
--header-y += stat.h
--header-y += statfs.h
--header-y += swab.h
--header-y += unistd.h
+> Anyway, this patch is not relevant for the series. If you prefer to have
+> the function exported, and keep using it for arm drivers loaded as modules,
+> be my guest, and I'll be more than happy drop it. I'll take your comment
+> as a hint _not_ to convert existing code to use the notifier after the
+> series is accepted. Cool, as I hate wasting my time.
+
+No, it's actually the opposite ;) (and I would go further and remove
+arm_pm_restart entirely for arm64).
+
 -- 
-1.9.3
-
+Catalin
