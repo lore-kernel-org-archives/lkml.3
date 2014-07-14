@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328AbaGNLjw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 07:39:52 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:53516 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755210AbaGNLjR (ORCPT
+	id S1755354AbaGNLkE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 07:40:04 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:62672 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755236AbaGNLjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 07:39:17 -0400
+	Mon, 14 Jul 2014 07:39:23 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: kvm@vger.kernel.org, Bandan Das <bsd@redhat.com>
-Subject: [PATCH 13/19] KVM: emulate: do not initialize memopp
-Date: Mon, 14 Jul 2014 13:38:37 +0200
-Message-Id: <1405337923-4776-14-git-send-email-pbonzini@redhat.com>
+Cc: kvm@vger.kernel.org
+Subject: [PATCH 16/19] KVM: emulate: avoid per-byte copying in instruction fetches
+Date: Mon, 14 Jul 2014 13:38:40 +0200
+Message-Id: <1405337923-4776-17-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1405337923-4776-1-git-send-email-pbonzini@redhat.com>
 References: <1405337923-4776-1-git-send-email-pbonzini@redhat.com>
@@ -20,75 +20,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bandan Das <bsd@redhat.com>
+We do not need a memory copying loop anymore in insn_fetch; we
+can use a byte-aligned pointer to access instruction fields directly
+from the fetch_cache.  This eliminates 50-150 cycles (corresponding to
+a 5-10% improvement in performance) from each instruction.
 
-rip_relative is only set if decode_modrm runs, and if you have ModRM
-you will also have a memopp.  We can then access memopp unconditionally.
-Note that rip_relative cannot be hoisted up to decode_modrm, or you
-break "mov $0, xyz(%rip)".
-
-Also, move typecast on "out of range value" of mem.ea to decode_modrm.
-
-Together, all these optimizations save about 50 cycles on each emulated
-instructions (4-6%).
-
-Signed-off-by: Bandan Das <bsd@redhat.com>
-[Fix immediate operands with rip-relative addressing. - Paolo]
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- arch/x86/include/asm/kvm_emulate.h | 5 +++++
- arch/x86/kvm/emulate.c             | 8 ++++----
- 2 files changed, 9 insertions(+), 4 deletions(-)
+ arch/x86/kvm/emulate.c | 46 ++++++++++++++++++++++------------------------
+ 1 file changed, 22 insertions(+), 24 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_emulate.h b/arch/x86/include/asm/kvm_emulate.h
-index 6c808408326f..fcf58cd25ebd 100644
---- a/arch/x86/include/asm/kvm_emulate.h
-+++ b/arch/x86/include/asm/kvm_emulate.h
-@@ -295,6 +295,11 @@ struct x86_emulate_ctxt {
- 	struct operand dst;
- 	int (*execute)(struct x86_emulate_ctxt *ctxt);
- 	int (*check_perm)(struct x86_emulate_ctxt *ctxt);
-+	/*
-+	 * The following six fields are cleared together,
-+	 * the rest are initialized unconditionally in x86_decode_insn
-+	 * or elsewhere
-+	 */
- 	bool rip_relative;
- 	u8 rex_prefix;
- 	u8 lock_prefix;
 diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 08badf638fb0..390400a54a9c 100644
+index ca82ec9c5ffe..02c668aca2b6 100644
 --- a/arch/x86/kvm/emulate.c
 +++ b/arch/x86/kvm/emulate.c
-@@ -1177,6 +1177,9 @@ static int decode_modrm(struct x86_emulate_ctxt *ctxt,
- 		}
- 	}
- 	op->addr.mem.ea = modrm_ea;
-+	if (ctxt->ad_bytes != 8)
-+		ctxt->memop.addr.mem.ea = (u32)ctxt->memop.addr.mem.ea;
-+
- done:
- 	return rc;
+@@ -708,7 +708,7 @@ static int segmented_read_std(struct x86_emulate_ctxt *ctxt,
+  * Prefetch the remaining bytes of the instruction without crossing page
+  * boundary if they are not in fetch_cache yet.
+  */
+-static int do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt, int op_size)
++static int __do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt, int op_size)
+ {
+ 	struct fetch_cache *fc = &ctxt->fetch;
+ 	int rc;
+@@ -740,41 +740,39 @@ static int do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt, int op_size)
+ 	return X86EMUL_CONTINUE;
  }
-@@ -4425,9 +4428,6 @@ done_prefixes:
  
- 	ctxt->memop.addr.mem.seg = ctxt->seg_override;
- 
--	if (ctxt->memop.type == OP_MEM && ctxt->ad_bytes != 8)
--		ctxt->memop.addr.mem.ea = (u32)ctxt->memop.addr.mem.ea;
+-static int do_insn_fetch(struct x86_emulate_ctxt *ctxt,
+-			 void *__dest, unsigned size)
++static __always_inline int do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt,
++					       unsigned size)
+ {
+-	struct fetch_cache *fc = &ctxt->fetch;
+-	u8 *dest = __dest;
+-	u8 *src = &fc->data[ctxt->_eip - fc->start];
 -
- 	/*
- 	 * Decode and fetch the source operand: register, memory
- 	 * or immediate.
-@@ -4448,7 +4448,7 @@ done_prefixes:
- 	rc = decode_operand(ctxt, &ctxt->dst, (ctxt->d >> DstShift) & OpMask);
+ 	/* We have to be careful about overflow! */
+-	if (unlikely(ctxt->_eip > fc->end - size)) {
+-		int rc = do_insn_fetch_bytes(ctxt, size);
+-		if (rc != X86EMUL_CONTINUE)
+-			return rc;
+-	}
+-
+-	while (size--) {
+-		*dest++ = *src++;
+-		ctxt->_eip++;
+-		continue;
+-	}
+-	return X86EMUL_CONTINUE;
++	if (unlikely(ctxt->_eip > ctxt->fetch.end - size))
++		return __do_insn_fetch_bytes(ctxt, size);
++	else
++		return X86EMUL_CONTINUE;
+ }
  
- done:
--	if (ctxt->memopp && ctxt->memopp->type == OP_MEM && ctxt->rip_relative)
-+	if (ctxt->rip_relative)
- 		ctxt->memopp->addr.mem.ea += ctxt->_eip;
+ /* Fetch next part of the instruction being emulated. */
+ #define insn_fetch(_type, _ctxt)					\
+-({	unsigned long _x;						\
+-	rc = do_insn_fetch(_ctxt, &_x, sizeof(_type));			\
++({	_type _x;							\
++	struct fetch_cache *_fc;					\
++									\
++	rc = do_insn_fetch_bytes(_ctxt, sizeof(_type));			\
+ 	if (rc != X86EMUL_CONTINUE)					\
+ 		goto done;						\
+-	(_type)_x;							\
++	_fc = &ctxt->fetch;						\
++	_x = *(_type __aligned(1) *) &_fc->data[ctxt->_eip - _fc->start]; \
++	ctxt->_eip += sizeof(_type);					\
++	_x;								\
+ })
  
- 	return (rc != X86EMUL_CONTINUE) ? EMULATION_FAILED : EMULATION_OK;
+ #define insn_fetch_arr(_arr, _size, _ctxt)				\
+-({	rc = do_insn_fetch(_ctxt, _arr, (_size));			\
++({									\
++	struct fetch_cache *_fc;					\
++	rc = do_insn_fetch_bytes(_ctxt, _size);				\
+ 	if (rc != X86EMUL_CONTINUE)					\
+ 		goto done;						\
++	_fc = &ctxt->fetch;						\
++	memcpy(_arr, &_fc->data[ctxt->_eip - _fc->start], _size);	\
++	ctxt->_eip += (_size);						\
+ })
+ 
+ /*
+@@ -4236,7 +4234,7 @@ int x86_decode_insn(struct x86_emulate_ctxt *ctxt, void *insn, int insn_len)
+ 	if (insn_len > 0)
+ 		memcpy(ctxt->fetch.data, insn, insn_len);
+ 	else {
+-		rc = do_insn_fetch_bytes(ctxt, 1);
++		rc = __do_insn_fetch_bytes(ctxt, 1);
+ 		if (rc != X86EMUL_CONTINUE)
+ 			return rc;
+ 	}
 -- 
 1.8.3.1
 
