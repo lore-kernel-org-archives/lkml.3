@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354AbaGNLkE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 07:40:04 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:62672 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755236AbaGNLjX (ORCPT
+	id S1755395AbaGNLkK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 07:40:10 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:60478 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755253AbaGNLj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 07:39:23 -0400
+	Mon, 14 Jul 2014 07:39:26 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: kvm@vger.kernel.org
-Subject: [PATCH 16/19] KVM: emulate: avoid per-byte copying in instruction fetches
-Date: Mon, 14 Jul 2014 13:38:40 +0200
-Message-Id: <1405337923-4776-17-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 18/19] KVM: x86: ensure emulator fetches do not span multiple pages
+Date: Mon, 14 Jul 2014 13:38:42 +0200
+Message-Id: <1405337923-4776-19-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1405337923-4776-1-git-send-email-pbonzini@redhat.com>
 References: <1405337923-4776-1-git-send-email-pbonzini@redhat.com>
@@ -20,100 +20,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We do not need a memory copying loop anymore in insn_fetch; we
-can use a byte-aligned pointer to access instruction fields directly
-from the fetch_cache.  This eliminates 50-150 cycles (corresponding to
-a 5-10% improvement in performance) from each instruction.
+When the CS base is not page-aligned, the linear address of the code could
+get close to the page boundary (e.g. 0x...ffe) even if the EIP value is
+not.  So we need to first linearize the address, and only then compute
+the number of valid bytes that can be fetched.
+
+This happens relatively often when executing real mode code.
 
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- arch/x86/kvm/emulate.c | 46 ++++++++++++++++++++++------------------------
- 1 file changed, 22 insertions(+), 24 deletions(-)
+ arch/x86/kvm/emulate.c | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
 diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index ca82ec9c5ffe..02c668aca2b6 100644
+index c16314807756..6a1d60956d63 100644
 --- a/arch/x86/kvm/emulate.c
 +++ b/arch/x86/kvm/emulate.c
-@@ -708,7 +708,7 @@ static int segmented_read_std(struct x86_emulate_ctxt *ctxt,
-  * Prefetch the remaining bytes of the instruction without crossing page
-  * boundary if they are not in fetch_cache yet.
-  */
--static int do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt, int op_size)
-+static int __do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt, int op_size)
+@@ -711,14 +711,18 @@ static int segmented_read_std(struct x86_emulate_ctxt *ctxt,
+ static int __do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt, int op_size)
  {
- 	struct fetch_cache *fc = &ctxt->fetch;
  	int rc;
-@@ -740,41 +740,39 @@ static int do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt, int op_size)
- 	return X86EMUL_CONTINUE;
- }
+-	int size;
++	unsigned size;
+ 	unsigned long linear;
+ 	int cur_size = ctxt->fetch.end - ctxt->fetch.data;
+ 	struct segmented_address addr = { .seg = VCPU_SREG_CS,
+ 					   .ea = ctxt->eip + cur_size };
  
--static int do_insn_fetch(struct x86_emulate_ctxt *ctxt,
--			 void *__dest, unsigned size)
-+static __always_inline int do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt,
-+					       unsigned size)
- {
--	struct fetch_cache *fc = &ctxt->fetch;
--	u8 *dest = __dest;
--	u8 *src = &fc->data[ctxt->_eip - fc->start];
--
- 	/* We have to be careful about overflow! */
--	if (unlikely(ctxt->_eip > fc->end - size)) {
--		int rc = do_insn_fetch_bytes(ctxt, size);
--		if (rc != X86EMUL_CONTINUE)
--			return rc;
--	}
--
--	while (size--) {
--		*dest++ = *src++;
--		ctxt->_eip++;
--		continue;
--	}
--	return X86EMUL_CONTINUE;
-+	if (unlikely(ctxt->_eip > ctxt->fetch.end - size))
-+		return __do_insn_fetch_bytes(ctxt, size);
-+	else
-+		return X86EMUL_CONTINUE;
- }
+-	size = min(15UL ^ cur_size,
+-		   PAGE_SIZE - offset_in_page(addr.ea));
++	size = 15UL ^ cur_size;
++	rc = __linearize(ctxt, addr, size, false, true, &linear);
++	if (unlikely(rc != X86EMUL_CONTINUE))
++		return rc;
++
++	size = min_t(unsigned, size, PAGE_SIZE - offset_in_page(linear));
  
- /* Fetch next part of the instruction being emulated. */
- #define insn_fetch(_type, _ctxt)					\
--({	unsigned long _x;						\
--	rc = do_insn_fetch(_ctxt, &_x, sizeof(_type));			\
-+({	_type _x;							\
-+	struct fetch_cache *_fc;					\
-+									\
-+	rc = do_insn_fetch_bytes(_ctxt, sizeof(_type));			\
- 	if (rc != X86EMUL_CONTINUE)					\
- 		goto done;						\
--	(_type)_x;							\
-+	_fc = &ctxt->fetch;						\
-+	_x = *(_type __aligned(1) *) &_fc->data[ctxt->_eip - _fc->start]; \
-+	ctxt->_eip += sizeof(_type);					\
-+	_x;								\
- })
- 
- #define insn_fetch_arr(_arr, _size, _ctxt)				\
--({	rc = do_insn_fetch(_ctxt, _arr, (_size));			\
-+({									\
-+	struct fetch_cache *_fc;					\
-+	rc = do_insn_fetch_bytes(_ctxt, _size);				\
- 	if (rc != X86EMUL_CONTINUE)					\
- 		goto done;						\
-+	_fc = &ctxt->fetch;						\
-+	memcpy(_arr, &_fc->data[ctxt->_eip - _fc->start], _size);	\
-+	ctxt->_eip += (_size);						\
- })
- 
- /*
-@@ -4236,7 +4234,7 @@ int x86_decode_insn(struct x86_emulate_ctxt *ctxt, void *insn, int insn_len)
- 	if (insn_len > 0)
- 		memcpy(ctxt->fetch.data, insn, insn_len);
- 	else {
--		rc = do_insn_fetch_bytes(ctxt, 1);
-+		rc = __do_insn_fetch_bytes(ctxt, 1);
- 		if (rc != X86EMUL_CONTINUE)
- 			return rc;
- 	}
+ 	/*
+ 	 * One instruction can only straddle two pages,
+@@ -728,9 +732,6 @@ static int __do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt, int op_size)
+ 	 */
+ 	if (unlikely(size < op_size))
+ 		return X86EMUL_UNHANDLEABLE;
+-	rc = __linearize(ctxt, addr, size, false, true, &linear);
+-	if (unlikely(rc != X86EMUL_CONTINUE))
+-		return rc;
+ 	rc = ctxt->ops->fetch(ctxt, linear, ctxt->fetch.end,
+ 			      size, &ctxt->exception);
+ 	if (unlikely(rc != X86EMUL_CONTINUE))
 -- 
 1.8.3.1
 
