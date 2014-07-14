@@ -1,57 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756036AbaGNOg0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 10:36:26 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:52173 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755739AbaGNOdx (ORCPT
+	id S1755896AbaGNOhz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 10:37:55 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:43642 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751682AbaGNOho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 10:33:53 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, kernel@stlinux.com, thierry.reding@gmail.com,
-        linux-pwm@vger.kernel.org, devicetree@vger.kernel.org,
-        ajitpal.singh@st.com
-Subject: [PATCH v2 04/11] ARM: stih416-b2020e: Enable PWM on the B2020 Rev-E
-Date: Mon, 14 Jul 2014 15:33:25 +0100
-Message-Id: <1405348412-7352-5-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1405348412-7352-1-git-send-email-lee.jones@linaro.org>
-References: <1405348412-7352-1-git-send-email-lee.jones@linaro.org>
+	Mon, 14 Jul 2014 10:37:44 -0400
+From: Tom Gundersen <teg@jklm.no>
+To: netdev@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        Tom Gundersen <teg@jklm.no>
+Subject: [PATCH v9 1/4] net: add name_assign_type netdev attribute
+Date: Mon, 14 Jul 2014 16:37:22 +0200
+Message-Id: <1405348645-1995-1-git-send-email-teg@jklm.no>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the infrastructure is now in place for ST's PWM controller.  This
-patch takes the final step and enables the IP on the 2020 Rev-E
-development platform.
+Based on a patch by David Herrmann.
 
-Signed-off-by: Ajit Pal Singh <ajitpal.singh@st.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+The name_assign_type attribute gives hints where the interface name of a
+given net-device comes from. These values are currently defined:
+  NET_NAME_ENUM:
+    The ifname is provided by the kernel with an enumerated
+    suffix, typically based on order of discovery. Names may
+    be reused and unpredictable.
+  NET_NAME_PREDICTABLE:
+    The ifname has been assigned by the kernel in a predictable way
+    that is guaranteed to avoid reuse and always be the same for a
+    given device. Examples include statically created devices like
+    the loopback device and names deduced from hardware properties
+    (including being given explicitly by the firmware). Names
+    depending on the order of discovery, or in any other way on the
+    existence of other devices, must not be marked as PREDICTABLE.
+  NET_NAME_USER:
+    The ifname was provided by user-space during net-device setup.
+  NET_NAME_RENAMED:
+    The net-device has been renamed from userspace. Once this type is set,
+    it cannot change again.
+  NET_NAME_UNKNOWN:
+    This is an internal placeholder to indicate that we yet haven't yet
+    categorized the name. It will not be exposed to userspace, rather
+    -EINVAL is returned.
+
+The aim of these patches is to improve user-space renaming of interfaces. As
+a general rule, userspace must rename interfaces to guarantee that names stay
+the same every time a given piece of hardware appears (at boot, or when
+attaching it). However, there are several situations where userspace should
+not perform the renaming, and that depends on both the policy of the local
+admin, but crucially also on the nature of the current interface name.
+
+If an interface was created in repsonse to a userspace request, and userspace
+already provided a name, we most probably want to leave that name alone. The
+main instance of this is wifi-P2P devices created over nl80211, which currently
+have a long-standing bug where they are getting renamed by udev. We label such
+names NET_NAME_USER.
+
+If an interface, unbeknown to us, has already been renamed from userspace, we
+most probably want to leave also that alone. This will typically happen when
+third-party plugins (for instance to udev, but the interface is generic so could
+be from anywhere) renames the interface without informing udev about it. A
+typical situation is when you switch root from an installer or an initrd to the
+real system and the new instance of udev does not know what happened before
+the switch. These types of problems have caused repeated issues in the past. To
+solve this, once an interface has been renamed, its name is labelled
+NET_NAME_RENAMED.
+
+In many cases, the kernel is actually able to name interfaces in such a
+way that there is no need for userspace to rename them. This is the case when
+the enumeration order of devices, or in fact any other (non-parent) device on
+the system, can not influence the name of the interface. Examples include
+statically created devices, or any naming schemes based on hardware properties
+of the interface. In this case the admin may prefer to use the kernel-provided
+names, and to make that possible we label such names NET_NAME_PREDICTABLE.
+We want the kernel to have tho possibilty of performing predictable interface
+naming itself (and exposing to userspace that it has), as the information
+necessary for a proper naming scheme for a certain class of devices may not
+be exposed to userspace.
+
+The case where renaming is almost certainly desired, is when the kernel has
+given the interface a name using global device enumeration based on order of
+discovery (ethX, wlanY, etc). These naming schemes are labelled NET_NAME_ENUM.
+
+Lastly, a fallback is left as NET_NAME_UNKNOWN, to indicate that a driver has
+not yet been ported. This is mostly useful as a transitionary measure, allowing
+us to label the various naming schemes bit by bit.
+
+v8: minor documentation fixes
+v9: move comment to the right commit
+
+Signed-off-by: Tom Gundersen <teg@jklm.no>
+Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+Reviewed-by: Kay Sievers <kay@vrfy.org>
 ---
- arch/arm/boot/dts/stih416-b2020e.dts | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ Documentation/ABI/testing/sysfs-class-net | 11 +++++++++++
+ include/linux/netdevice.h                 |  2 ++
+ include/uapi/linux/netdevice.h            |  6 ++++++
+ net/core/net-sysfs.c                      | 20 ++++++++++++++++++++
+ 4 files changed, 39 insertions(+)
 
-diff --git a/arch/arm/boot/dts/stih416-b2020e.dts b/arch/arm/boot/dts/stih416-b2020e.dts
-index ba0fa2c..07cbf5b 100644
---- a/arch/arm/boot/dts/stih416-b2020e.dts
-+++ b/arch/arm/boot/dts/stih416-b2020e.dts
-@@ -31,5 +31,15 @@
- 		ethernet1: dwmac@fef08000 {
- 			snps,reset-gpio = <&PIO0 7>;
- 		};
+diff --git a/Documentation/ABI/testing/sysfs-class-net b/Documentation/ABI/testing/sysfs-class-net
+index 416c5d5..d322b05 100644
+--- a/Documentation/ABI/testing/sysfs-class-net
++++ b/Documentation/ABI/testing/sysfs-class-net
+@@ -1,3 +1,14 @@
++What:		/sys/class/net/<iface>/name_assign_type
++Date:		July 2014
++KernelVersion:	3.17
++Contact:	netdev@vger.kernel.org
++Description:
++		Indicates the name assignment type. Possible values are:
++		1: enumerated by the kernel, possibly in an unpredictable way
++		2: predictably named by the kernel
++		3: named by userspace
++		4: renamed
 +
-+		/* SAS PWM Module */
-+		pwm0: pwm@fed10000 {
-+			status		= "okay";
-+		};
+ What:		/sys/class/net/<iface>/addr_assign_type
+ Date:		July 2010
+ KernelVersion:	3.2
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 66f9a04..551e187 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1379,6 +1379,8 @@ struct net_device {
+ 	struct kset		*queues_kset;
+ #endif
+ 
++	unsigned char		name_assign_type;
 +
-+		/* SBC PWM Module */
-+		pwm1: pwm@fe510000 {
-+			status		= "okay";
-+		};
- 	};
- };
+ 	bool			uc_promisc;
+ 	unsigned int		promiscuity;
+ 	unsigned int		allmulti;
+diff --git a/include/uapi/linux/netdevice.h b/include/uapi/linux/netdevice.h
+index fdfbd1c..5581854 100644
+--- a/include/uapi/linux/netdevice.h
++++ b/include/uapi/linux/netdevice.h
+@@ -37,6 +37,12 @@
+ #define INIT_NETDEV_GROUP	0
+ 
+ 
++/* interface name assignment types (sysfs name_assign_type attribute) */
++#define NET_NAME_UNKNOWN	0	/* unknown origin (not exposed to userspace) */
++#define NET_NAME_ENUM		1	/* enumerated by kernel */
++#define NET_NAME_PREDICTABLE	2	/* predictably named by the kernel */
++#define NET_NAME_USER		3	/* provided by user-space */
++#define NET_NAME_RENAMED	4	/* renamed by user-space */
+ 
+ /* Media selection options. */
+ enum {
+diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
+index 1cac29e..7752f2a 100644
+--- a/net/core/net-sysfs.c
++++ b/net/core/net-sysfs.c
+@@ -112,6 +112,25 @@ NETDEVICE_SHOW_RO(ifindex, fmt_dec);
+ NETDEVICE_SHOW_RO(type, fmt_dec);
+ NETDEVICE_SHOW_RO(link_mode, fmt_dec);
+ 
++static ssize_t format_name_assign_type(const struct net_device *net, char *buf)
++{
++	return sprintf(buf, fmt_dec, net->name_assign_type);
++}
++
++static ssize_t name_assign_type_show(struct device *dev,
++				     struct device_attribute *attr,
++				     char *buf)
++{
++	struct net_device *net = to_net_dev(dev);
++	ssize_t ret = -EINVAL;
++
++	if (net->name_assign_type != NET_NAME_UNKNOWN)
++		ret = netdev_show(dev, attr, buf, format_name_assign_type);
++
++	return ret;
++}
++static DEVICE_ATTR_RO(name_assign_type);
++
+ /* use same locking rules as GIFHWADDR ioctl's */
+ static ssize_t address_show(struct device *dev, struct device_attribute *attr,
+ 			    char *buf)
+@@ -387,6 +406,7 @@ static struct attribute *net_class_attrs[] = {
+ 	&dev_attr_dev_port.attr,
+ 	&dev_attr_iflink.attr,
+ 	&dev_attr_ifindex.attr,
++	&dev_attr_name_assign_type.attr,
+ 	&dev_attr_addr_assign_type.attr,
+ 	&dev_attr_addr_len.attr,
+ 	&dev_attr_link_mode.attr,
 -- 
-1.8.3.2
+1.9.3
 
