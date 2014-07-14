@@ -1,98 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932401AbaGNTIg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 15:08:36 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59525 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752518AbaGNTI1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 15:08:27 -0400
-Message-ID: <53C42AA8.8010107@codeaurora.org>
-Date: Mon, 14 Jul 2014 12:08:24 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J . Wysocki" <rjw@rjwysocki.net>,
-        Todd Poynor <toddpoynor@google.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH v2] cpufreq: Don't destroy/realloc policy/sysfs on hotplug/suspend
-References: <1404959850-11617-1-git-send-email-skannan@codeaurora.org> <1405052287-4744-1-git-send-email-skannan@codeaurora.org> <CAKohponB9feyh50p+dL5hyU1ffHAzHU59G-sYCrCm1AbHQe9hw@mail.gmail.com> <2f549e6e4871ccf2a94dd4c8872c7a0b.squirrel@www.codeaurora.org> <CAKohpokhmj1OkCRj=X+Q7eYiun8fsqD2dpEt66VKYnqo3dENVA@mail.gmail.com> <53C0A12A.2060204@codeaurora.org> <CAKohpon9en_VnSx+CVydPsWBHtArvmazn0hrodrRJt9jgOa0-g@mail.gmail.com>
-In-Reply-To: <CAKohpon9en_VnSx+CVydPsWBHtArvmazn0hrodrRJt9jgOa0-g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S932425AbaGNTIq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 15:08:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:4704 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932385AbaGNTIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 15:08:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,659,1400050800"; 
+   d="scan'208";a="543214411"
+Subject: Re: [PATCH v4 6/7] sched: add function nr_running_cpu to expose
+ number of tasks running on cpu
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>, "H. Peter Anvin" <hpa@zytor.com>,
+        "David S.Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Chandramouli Narayanan <mouli@linux.intel.com>,
+        Vinodh Gopal <vinodh.gopal@intel.com>,
+        James Guilford <james.guilford@intel.com>,
+        Wajdi Feghali <wajdi.k.feghali@intel.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20140714181738.GI9918@twins.programming.kicks-ass.net>
+References: <cover.1405074379.git.tim.c.chen@linux.intel.com>
+	 <1405110784.2970.655.camel@schen9-DESK>
+	 <20140714101611.GS9918@twins.programming.kicks-ass.net>
+	 <1405354214.2970.663.camel@schen9-DESK>
+	 <20140714161432.GC9918@twins.programming.kicks-ass.net>
+	 <1405357534.2970.701.camel@schen9-DESK>
+	 <20140714181738.GI9918@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Jul 2014 12:08:28 -0700
+Message-ID: <1405364908.2970.729.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2014 11:09 PM, Viresh Kumar wrote:
-> On 12 July 2014 08:14, Saravana Kannan <skannan@codeaurora.org> wrote:
->
->>>> I'm just always adding the real nodes to the first CPU in a cluster
->>>> independent of which CPU gets added first. Makes it easier to know which
->>>> ones to symlink. See comment next to policy->cpu for full context.
->>>
->>>
->>> Yeah, and that is the order in which CPUs will boot and cpufreq_add_dev()
->>> will be called. So, isn't policy->cpu the right CPU always?
->>
->>
->> No, the "first" cpu in a cluster doesn't need to be the first one to be
->> added. An example is 2x2 cluster system where the system is booted with max
->> cpus = 2 and then cpu3 could be onlined first by userspace.
->
-> Because we are getting rid of much of the complexity now, I do not want
-> policy->cpu to keep changing. Just fix it up to the cpu for which the policy
-> gets created first. That's it. No more changes required. It doesn't matter at
-> userspace which cpu owns it as symlinks would anyway duplicate it under
-> every cpu.
+On Mon, 2014-07-14 at 20:17 +0200, Peter Zijlstra wrote:
+> On Mon, Jul 14, 2014 at 10:05:34AM -0700, Tim Chen wrote:
+> > I was trying to explain why the algorithm is implemented this way
+> > because of its batching nature.
+> > 
+> > There is a whole class of async algorithm that can provide
+> > substantial speedup by doing batch processing and uses workqueue.
+> > The multi-buffer sha1 version has 2.2x speedup over existing
+> > AVX2 version, and can have even more speedup when AVX3 
+> > comes round.  Workqueue is a natural way to implement 
+> > this.  I don't think a throughput speedup of 2.2x is "crap".
+> > 
+> > We are not inventing anything new, but ask for a 
+> > very simple helper function to know if there's something else
+> > running on our cpu to help us make a better decision 
+> > of whether we should flush the batched jobs immediately.
+> > 
+> > And also asynchronous crypto interface is already used substantially
+> > in crypto and has a well established infrastructure.  
+> 
+> The crap I was talking about is that there's a metric ton of 'async'
+> interfaces all different.
 
-I think you missed one my of comments in the email. I agree with what 
-you are saying here. I'll just do it as a separate patch to keep this 
-one simpler. I don't want to touch all the governors and other potential 
-uses of policy->cpu in this patch.
+Async interfaces when used appropriately, actually speed things up
+substantially for crypto.  We actually have a case with
+ecyrptfs not using the async crypto interface, causing cpu to stall
+and slowing things down substantially with AES-NI.  And async interface
+with workqueue speed things up (30% to 35% on encryption with SSD). 
+http://marc.info/?l=ecryptfs-users&m=136520541407248 
+http://www.spinics.net/lists/ecryptfs/msg00228.html 
+ 
+> 
+> Your multi-buffer thing isn't generic either, it seems lmiited to sha1.
 
->> Yeah, it is pretty convolution. But pretty much anywhere in the gov code
->> where policy->cpu is used could cause this. The specific crash I hit was in
->> this code:
->>
->> static void od_dbs_timer(struct work_struct *work)
->> {
->>          struct od_cpu_dbs_info_s *dbs_info =
->>                  container_of(work, struct od_cpu_dbs_info_s,
->> cdbs.work.work);
->>          unsigned int cpu = dbs_info->cdbs.cur_policy->cpu;
->>
->> ======= CPU is policy->cpu here.
->>
->>          struct od_cpu_dbs_info_s *core_dbs_info = &per_cpu(od_cpu_dbs_info,
->>                          cpu);
->>
->> ======= Picks the per CPU struct of an offline CPU
->>
->> <snip>
->>
->>          mutex_lock(&core_dbs_info->cdbs.timer_mutex);
->>
->> ======= Dies trying to lock a destroyed mutex
->
-> I am still not getting it. Why would we get into this if policy->cpu is fixed
-> once at boot ?
->
+We actually have many other multi-buffer crypto algorithms already
+published for encryption and other IPSec usages.  So 
+multi-buffer algorithm is not just limited to SHA1.
+We hope to port those to the kernel crypto library eventually.
+http://www.intel.com/content/dam/www/public/us/en/documents/white-papers/fast-multi-buffer-ipsec-implementations-ia-processors-paper.pdf 
 
-Yeah, it definitely crashes if policy->cpu if an offline cpu. Because 
-the mutex would be uninitialized if it's stopped after boot or it would 
-never have been initialized (depending on how you fix policy->cpu at boot).
+> It does not reuse padata, 
+padata tries to speed things up by parallelizing jobs to *multiple*
+cpus.  Whereas multi-buffer tries to speed things up by speeding things
+up by using multiple data lanes in SIMD register in a *single* cpu.
+These two usages are complementary but not the same.
 
-Look at this snippet on the actual tree and it should be pretty evident.
+> it does not extend workqueues, 
+Why do I need to extend workqueues if the existing ones already
+meet my needs?
 
--Saravana
+> it does not
+> remove the btrfs nonsense, 
+Not much I can do about btrfs as I don't understand the issues there.
 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+> it adds yet anotehr thing.
+
+
+Thanks.
+
+Tim
+
+
+
+
