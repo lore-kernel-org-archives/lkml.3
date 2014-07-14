@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756922AbaGNTQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 15:16:27 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:61628 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756869AbaGNTQI (ORCPT
+	id S1756941AbaGNTQd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 15:16:33 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:52847 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756867AbaGNTQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Jul 2014 15:16:08 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
@@ -12,9 +12,9 @@ To: forest@alittletooquiet.net, gregkh@linuxfoundation.org, tvboxspy@gmail.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         kernel-janitors@vger.kernel.org
 Cc: Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH V4 6/6] staging: vt6556: Replace printk by pr_warn
-Date: Mon, 14 Jul 2014 21:15:33 +0200
-Message-Id: <1405365333-17170-6-git-send-email-peter.senna@gmail.com>
+Subject: [PATCH V4 5/6] staging: vt6556: Cleanup indentation on statements
+Date: Mon, 14 Jul 2014 21:15:32 +0200
+Message-Id: <1405365333-17170-5-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1405365333-17170-1-git-send-email-peter.senna@gmail.com>
 References: <1405365333-17170-1-git-send-email-peter.senna@gmail.com>
@@ -22,7 +22,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a checkpatch warning by replacing printk by pr_warn.
+Use tabs instead of spaces in a set of statements and fix lines
+over 80 chars. Reported by checkpatch.
 
 Tested by compilation only.
 
@@ -31,22 +32,75 @@ Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 Cahnges from V3:
  - Splitted the patches by change type
 
- drivers/staging/vt6656/main_usb.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/vt6656/main_usb.c | 44 ++++++++++++++++++++-------------------
+ 1 file changed, 23 insertions(+), 21 deletions(-)
 
 diff --git a/drivers/staging/vt6656/main_usb.c b/drivers/staging/vt6656/main_usb.c
-index cc0281a..64c25e2 100644
+index 553a8e9..cc0281a 100644
 --- a/drivers/staging/vt6656/main_usb.c
 +++ b/drivers/staging/vt6656/main_usb.c
-@@ -527,7 +527,7 @@ static void usb_device_reset(struct vnt_private *pDevice)
+@@ -382,38 +382,40 @@ static int device_init_registers(struct vnt_private *pDevice)
+ 	/* load vt3266 calibration parameters in EEPROM */
+ 	if (pDevice->byRFType == RF_VT3226D0) {
+ 		if ((pDevice->abyEEPROM[EEP_OFS_MAJOR_VER] == 0x1) &&
+-			(pDevice->abyEEPROM[EEP_OFS_MINOR_VER] >= 0x4)) {
++		   (pDevice->abyEEPROM[EEP_OFS_MINOR_VER] >= 0x4)) {
  
- 	status = usb_reset_device(pDevice->usb);
- 	if (status)
--            printk("usb_device_reset fail status=%d\n",status);
-+		pr_warn("usb_device_reset fail status=%d\n", status);
- }
- 
- static void device_free_int_bufs(struct vnt_private *priv)
+ 			byCalibTXIQ = pDevice->abyEEPROM[EEP_OFS_CALIB_TX_IQ];
+ 			byCalibTXDC = pDevice->abyEEPROM[EEP_OFS_CALIB_TX_DC];
+ 			byCalibRXIQ = pDevice->abyEEPROM[EEP_OFS_CALIB_RX_IQ];
+ 			if (byCalibTXIQ || byCalibTXDC || byCalibRXIQ) {
+-			/* CR255, enable TX/RX IQ and DC compensation mode */
++				/* CR255, enable TX/RX IQ and
++				   DC compensation mode */
+ 				vnt_control_out_u8(pDevice,
+-					MESSAGE_REQUEST_BBREG,
+-					0xff,
+-					0x03);
+-			/* CR251, TX I/Q Imbalance Calibration */
++						   MESSAGE_REQUEST_BBREG,
++						   0xff,
++						   0x03);
++				/* CR251, TX I/Q Imbalance Calibration */
+ 				vnt_control_out_u8(pDevice,
+-					MESSAGE_REQUEST_BBREG,
+-					0xfb,
+-					byCalibTXIQ);
+-			/* CR252, TX DC-Offset Calibration */
++						   MESSAGE_REQUEST_BBREG,
++						   0xfb,
++						   byCalibTXIQ);
++				/* CR252, TX DC-Offset Calibration */
+ 				vnt_control_out_u8(pDevice,
+-					MESSAGE_REQUEST_BBREG,
+-					0xfC,
+-					byCalibTXDC);
+-			/* CR253, RX I/Q Imbalance Calibration */
++						   MESSAGE_REQUEST_BBREG,
++						   0xfC,
++						   byCalibTXDC);
++				/* CR253, RX I/Q Imbalance Calibration */
+ 				vnt_control_out_u8(pDevice,
+-					MESSAGE_REQUEST_BBREG,
+-					0xfd,
+-					byCalibRXIQ);
++						   MESSAGE_REQUEST_BBREG,
++						   0xfd,
++						   byCalibRXIQ);
+ 			} else {
+-			/* CR255, turn off BB Calibration compensation */
++				/* CR255, turn off
++				   BB Calibration compensation */
+ 				vnt_control_out_u8(pDevice,
+-					MESSAGE_REQUEST_BBREG,
+-					0xff,
+-					0x0);
++						   MESSAGE_REQUEST_BBREG,
++						   0xff,
++						   0x0);
+ 			}
+ 		}
+ 	}
 -- 
 1.9.3
 
