@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138AbaGNM7F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 08:59:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59855 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754439AbaGNM65 (ORCPT
+	id S1755313AbaGNNBN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 09:01:13 -0400
+Received: from canardo.mork.no ([148.122.252.1]:47488 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755192AbaGNNBE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 08:58:57 -0400
-Date: Mon, 14 Jul 2014 05:58:36 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: devel@driverdev.osuosl.org, tvboxspy@gmail.com,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        forest@alittletooquiet.net
-Subject: Re: [PATCH V2 1/4] staging: vt6556: Cleanup coding style issues
-Message-ID: <20140714125836.GA6966@kroah.com>
-References: <1405278681-3348-1-git-send-email-peter.senna@gmail.com>
- <20140713193647.GA31010@kroah.com>
- <20140714085932.GA2958@hp-peter.rsr.lip6.fr>
+	Mon, 14 Jul 2014 09:01:04 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [BISECTED 3.16-rc REGREGRESSION] backlight control stopped working
+Organization: m
+Date: Mon, 14 Jul 2014 14:59:44 +0200
+Message-ID: <87pph8kse7.fsf@nemi.mork.no>
+User-Agent: Gnus/5.130011 (Ma Gnus v0.11) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140714085932.GA2958@hp-peter.rsr.lip6.fr>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 10:59:32AM +0200, Peter Senna Tschudin wrote:
-> On Sun, Jul 13, 2014 at 12:36:47PM -0700, Greg KH wrote:
-> > On Sun, Jul 13, 2014 at 09:11:18PM +0200, Peter Senna Tschudin wrote:
-> > > This patch cleanup coding style issues reported by checkpatch.
-> > > 
-> > > Tested by compilation only.
-> > > 
-> > > Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-> > > ---
-> > > Cahnges from V1:
-> > >  - Sent all patches in a series
-> > 
-> > Why did you forget the other thing that I asked you to change?
-> > 
-> > I can't take these as-is, sorry, please go back and re-read what I
-> > wrote...
-> 
-> Actually I was trying to do what you asked me on this E-mail:
-> 
-> -- // --
-> You just sent me 4 patches, all with the same subject (but at least 2 of
-> them had the order in which to apply them in, which is nice.)
-> 
-> Please redo these such that they have a unique subject, and I can tell
-> which order to apply them in, as I really have no idea about the second
-> two.
-> -- // --
-> 
-> I'm sending V3 as a single patch.
+Yes, I actually bisected this just to get
 
-That's going to get rejected as well :(
+886129a8eebebec260165741fe31421482371006 is the first bad commit
+commit 886129a8eebebec260165741fe31421482371006
+Author: Hans de Goede <hdegoede@redhat.com>
+Date:   Tue May 6 14:46:23 2014 +0200
 
-You did put them in a nice order, but you had the same subject text for
-each patch, which I told you not to do, right?
+    ACPI / video: change acpi-video brightness_switch_enabled default to 0
+    
+    acpi-video is unique in that it not only generates brightness up/down
+    keypresses, but also (sometimes) actively changes the brightness itself.
+    
+    This presents an inconsistent kernel interface to userspace, basically there
+    are 2 different scenarios, depending on the laptop model:
+    
+     1) On some laptops a brightness up/down keypress means: show a brightness osd
+     with the current brightness, iow it is a brightness has changed notification.
+    
+     2) Where as on (a lot of) other laptops it means a brightness up/down key was
+     pressed, deal with it.
+    
+    Most of the desktop environments interpret any press as in scenario 2, and
+    change the brightness up / down as a response to the key events, causing it
+    to be changed twice, once by acpi-video and once by the DE.
+    
+    With the new default for video.use_native_backlight we will be moving even
+    more laptops over to behaving as in scenario 2. Making the remaining laptops
+    even more of a weird exception. Also note that it is hard to detect scenario
+    1 properly in userspace, and AFAIK none of the DE-s deals with it.
+    
+    Therefor this commit changes the default of brightness_switch_enabled to 0
+    making its behavior consistent with all the other backlight drivers.
+    
+    Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+    Reviewed-by: Aaron Lu <aaron.lu@intel.com>
+    Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-{sigh}
+:040000 040000 5bbac8c4f3e9fd5421daf84289004c32c3217f2a 82c99a358bda6360f845b6063182d3e707ff90f0 M      Documentation
+:040000 040000 81ed56a41130bbbea980620114ff11e3bb23ee63 a9870ba1d046bde69796060304c78dfbb1d00a1f M      drivers
 
-greg k-h
+
+
+The fact that this seems to be an *intentional* breakage does not help a
+lot.  Yes, I understand that you believe the choice of default was
+incorrect for some reason.  You might even be right about that.  But
+that is still not a valid reason to break existing configurations for
+end users!  Please do not do that.
+
+Note that NO USER cares about "some laptops" or "other laptops".  They
+care about their own systems, which either
+ a) depend on the old default and therefore breaks with your change, or
+ b) have a user modified setting and therefore are unaffected by your
+    change
+
+The above commit should be reverted.  It causes breakage for end users.
+
+If you think the default was wrong, then please go back in time and fix
+it when it was introduced. Thanks.
+
+
+Bjørn
