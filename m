@@ -1,73 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223AbaGNGWD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 02:22:03 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:2471 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505AbaGNGVz (ORCPT
+	id S1751549AbaGNGXJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 02:23:09 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:64044 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791AbaGNGW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 02:21:55 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Sun, 13 Jul 2014 23:14:36 -0700
-Message-ID: <53C376FF.3060509@nvidia.com>
-Date: Mon, 14 Jul 2014 09:21:51 +0300
-From: Mikko Perttunen <mperttunen@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 14 Jul 2014 02:22:57 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Mon, 14 Jul 2014 15:28:52 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
+        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/10] mm/page_alloc: optimize and unify pageblock
+ migratetype check in free path
+Message-ID: <20140714062852.GC11317@js1304-P5Q-DELUXE>
+References: <1404460675-24456-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1404460675-24456-6-git-send-email-iamjoonsoo.kim@lge.com>
+ <53BAC1B1.4090002@suse.cz>
 MIME-Version: 1.0
-To: Hans de Goede <hdegoede@redhat.com>
-CC: Tejun Heo <tj@kernel.org>, "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: [PATCH v2 6/7] ata: Add support for the Tegra124 SATA controller
-References: <1403101406-15439-1-git-send-email-mperttunen@nvidia.com> <1403101406-15439-7-git-send-email-mperttunen@nvidia.com> <20140708132216.GA4979@htj.dyndns.org>
-In-Reply-To: <20140708132216.GA4979@htj.dyndns.org>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53BAC1B1.4090002@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans, have you been able to take a look at this?
+On Mon, Jul 07, 2014 at 05:50:09PM +0200, Vlastimil Babka wrote:
+> On 07/04/2014 09:57 AM, Joonsoo Kim wrote:
+> >Currently, when we free the page from pcp list to buddy, we check
+> >pageblock of the page in order to isolate the page on isolated
+> >pageblock. Although this could rarely happen and to check migratetype of
+> >pageblock is somewhat expensive, we check it on free fast path. I think
+> >that this is undesirable. To prevent this situation, I introduce new
+> >variable, nr_isolate_pageblock on struct zone and use it to determine
+> >if we should check pageblock migratetype. Isolation on pageblock rarely
+> >happens so we can mostly avoid this pageblock migratetype check.
+> 
+> Better, but still there's a zone flag check and maintenance. So if
+> it could be avoided, it would be better.
+> 
+> >Additionally, unify freepage counting code, because it can be done in
+> >common part, __free_one_page(). This unifying provides extra guarantee
+> >that the page on isolate pageblock don't go into non-isolate buddy list.
+> >This is similar situation describing in previous patch so refer it
+> >if you need more explanation.
+> 
+> You should make it clearer that you are solving misplacement of the
+> type "page should be placed on isolated freelist but it's not"
+> through free_one_page(), which was solved only for
+> free_pcppages_bulk() in patch 03/10. Mentioning patch 04/10 here,
+> which solves the opposite problem "page shouldn't be placed on
+> isolated freelist, but it is", only confuses the situation. Also
+> this patch undoes everything of 04/10 and moves it elsewhere, so
+> that would make it harder to git blame etc. I would reorder 04 and
+> 05.
 
-Thanks,
-Mikko
+Okay. I will clarify what I am solving in commit description and
+reorder patches appropriately.
 
-On 08/07/14 16:22, Tejun Heo wrote:
-> (cc'ing Hans)
->
-> Hans, can you please review this patch?
->
-> On Wed, Jun 18, 2014 at 05:23:25PM +0300, Mikko Perttunen wrote:
->> +#define SATA_CONFIGURATION_0				0x180
->> +#define		SATA_CONFIGURATION_EN_FPCI		BIT(0)
->
-> Let's just indent uniformly.  The new line should give enough visual
-> hint on grouping.
->
->> +struct tegra_ahci_priv {
->> +	struct platform_device *pdev;
->> +	void __iomem *sata_regs;
->> +	struct reset_control *sata_rst;
->> +	struct reset_control *sata_oob_rst;
->> +	struct reset_control *sata_cold_rst;
->> +	struct clk *sata_clk;
->> +	struct clk *sata_oob_clk;
->> +	struct clk *cml1_clk;
->> +	struct clk *plle_clk;
->> +	struct regulator_bulk_data supplies[5];
->> +	struct phy *padctl_phy;
->> +};
->
-> And please indent the declared fields uniformly too.
->
-> Except for the above nitpicks, generally looks good to me but let's
-> wait for Hans' review.
->
-> Thanks.
->
+Thanks.
+
