@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757296AbaGNUn2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 16:43:28 -0400
-Received: from mail.kernel.org ([198.145.19.201]:57079 "EHLO mail.kernel.org"
+	id S1757088AbaGNUpd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 16:45:33 -0400
+Received: from canardo.mork.no ([148.122.252.1]:53485 "EHLO canardo.mork.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756749AbaGNUnX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 16:43:23 -0400
-Date: Mon, 14 Jul 2014 17:43:10 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 12/41] perf tools: Fix leak of 'struct thread' on error
- path
-Message-ID: <20140714204310.GC18133@kernel.org>
-References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
- <1405332185-4050-13-git-send-email-adrian.hunter@intel.com>
+	id S1755638AbaGNUpa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 16:45:30 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [BISECTED 3.16-rc REGREGRESSION] backlight control stopped working
+Organization: m
+References: <87pph8kse7.fsf@nemi.mork.no> <53C3D7C3.7090505@redhat.com>
+	<CA+55aFxYYKApOC+1TQkoxSzi-zTSB8OmkU=ypvNb_Gc2+K6Hmw@mail.gmail.com>
+	<CA+55aFzHo4BEO8W0yza7g0YMgg-b=hPbk20-vpR3s==ydpmAOg@mail.gmail.com>
+Date: Mon, 14 Jul 2014 22:45:07 +0200
+In-Reply-To: <CA+55aFzHo4BEO8W0yza7g0YMgg-b=hPbk20-vpR3s==ydpmAOg@mail.gmail.com>
+	(Linus Torvalds's message of "Mon, 14 Jul 2014 09:59:51 -0700")
+Message-ID: <877g3fsm98.fsf@nemi.mork.no>
+User-Agent: Gnus/5.130011 (Ma Gnus v0.11) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405332185-4050-13-git-send-email-adrian.hunter@intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jul 14, 2014 at 01:02:36PM +0300, Adrian Hunter escreveu:
-> __machine__findnew_thread() creates a 'struct thread'
-> but does not free it on the error path.
+Linus Torvalds <torvalds@linux-foundation.org> writes:
+> On Mon, Jul 14, 2014 at 9:24 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>
+>> Bjørn, what's your setup? Is this perhaps solvable some other way?
 
-Ok, but that second one is a separate bug, i.e. its not fixing the
-described leak, please break this into two patches with separate commit
-messages.
+Just to answer that: I don't use any particular desktop environment.  I
+have acpid running to take care of the most basic power management
+stuff.  My X session is simply WindowMaker (sic) running directly from
+lightdm.  No session management or fancy policy daemons. So I don't have
+any daemon which would react on the brightness key codes.
 
-- Arnaldo
- 
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-> ---
->  tools/perf/util/machine.c | 4 +++-
->  tools/perf/util/thread.c  | 6 ++++--
->  2 files changed, 7 insertions(+), 3 deletions(-)
-> 
-> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-> index c1c5ca3..18eaf31 100644
-> --- a/tools/perf/util/machine.c
-> +++ b/tools/perf/util/machine.c
-> @@ -349,8 +349,10 @@ static struct thread *__machine__findnew_thread(struct machine *machine,
->  		 * within thread__init_map_groups to find the thread
->  		 * leader and that would screwed the rb tree.
->  		 */
-> -		if (thread__init_map_groups(th, machine))
-> +		if (thread__init_map_groups(th, machine)) {
-> +			thread__delete(th);
->  			return NULL;
-> +		}
->  	}
->  
->  	return th;
-> diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-> index 149e417..b9a3ee4 100644
-> --- a/tools/perf/util/thread.c
-> +++ b/tools/perf/util/thread.c
-> @@ -95,8 +95,10 @@ void thread__delete(struct thread *thread)
->  {
->  	struct comm *comm, *tmp;
->  
-> -	map_groups__put(thread->mg);
-> -	thread->mg = NULL;
-> +	if (thread->mg) {
-> +		map_groups__put(thread->mg);
-> +		thread->mg = NULL;
-> +	}
->  	list_for_each_entry_safe(comm, tmp, &thread->comm_list, list) {
->  		list_del(&comm->list);
->  		comm__free(comm);
-> -- 
-> 1.8.3.2
+Now, it's not that I would mind adding a daemon to handle stuff like
+brightness control. I reported this as a bug because I was a bit
+surprised by the existing behaviour breaking like that, and I thought
+that other users might be as surprised as me.  Some maybe even without
+the ability to track down the change and the setting that would restore
+the old behaviour.
+
+> For example, I wonder if we could fix the "dual brightness change"
+> problem automatically by making a new option for
+> 'brightness_switch_enabled'.
+>
+> Currently, there are two cases:
+>
+>  - enabled: do the actual brightness change _and_ send the input
+> report keycode for a brightness change
+>
+>  - disabled: just send the keycode, excpecting the desktop software to
+> handle it.
+>
+> and maybe we could have a new case (and make *that* the default):
+>
+>  - delayed: send the keycode, and set up a delayed timer (say, one
+> tenth of a second) to do the actual brightness change. And if a
+> brightness change from user mode comes in during that delay, we cancel
+> the kernel-induced pending change.
+
+That sounds like a good solution to me FWIW.
+
+
+
+Bjørn
