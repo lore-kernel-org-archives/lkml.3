@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755318AbaGNNLj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 09:11:39 -0400
-Received: from acledge1.advantech.com.tw ([61.58.41.197]:43582 "EHLO
+	id S1755455AbaGNNLy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 09:11:54 -0400
+Received: from acledge1.advantech.com.tw ([61.58.41.197]:43610 "EHLO
 	acledge1.advantech.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754683AbaGNNLd (ORCPT
+	with ESMTP id S1754683AbaGNNLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 09:11:33 -0400
-X-Greylist: delayed 970 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Jul 2014 09:11:32 EDT
+	Mon, 14 Jul 2014 09:11:48 -0400
 From: Wei-Chun Pan <weichun.pan@advantech.com.tw>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>
@@ -16,10 +15,12 @@ CC: "Louis.Lu" <Louis.Lu@advantech.com.tw>, "Neo.Lo" <neo.lo@advantech.com.tw>,
         "Kevin.Ong" <Kevin.Ong@advantech.com.tw>,
         <linux-kernel@vger.kernel.org>,
         Wei-Chun Pan <weichun.pan@advantech.com.tw>
-Subject: [PATCH 1/4] mfd: imanager2: Add defines support for IT8516/18/28
-Date: Mon, 14 Jul 2014 05:54:43 -0700
-Message-ID: <1405342486-17031-1-git-send-email-weichun.pan@advantech.com.tw>
+Subject: [PATCH 4/4] hwmon: (imanager2) Add support for IT8516/18/28
+Date: Mon, 14 Jul 2014 05:54:46 -0700
+Message-ID: <1405342486-17031-4-git-send-email-weichun.pan@advantech.com.tw>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405342486-17031-1-git-send-email-weichun.pan@advantech.com.tw>
+References: <1405342486-17031-1-git-send-email-weichun.pan@advantech.com.tw>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-StopIT: No
@@ -29,18 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Wei-Chun Pan <weichun.pan@advantech.com.tw>
 ---
- include/linux/mfd/imanager2_ec.h | 358 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 358 insertions(+)
- create mode 100644 include/linux/mfd/imanager2_ec.h
+ drivers/hwmon/Kconfig         |   5 +
+ drivers/hwmon/Makefile        |   1 +
+ drivers/hwmon/imanager2_hwm.c | 768 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 774 insertions(+)
+ create mode 100644 drivers/hwmon/imanager2_hwm.c
 
-diff --git a/include/linux/mfd/imanager2_ec.h b/include/linux/mfd/imanager2_ec.h
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index bc196f4..7524fc3 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -39,6 +39,11 @@ config HWMON_DEBUG_CHIP
+ 
+ comment "Native drivers"
+ 
++config SENSORS_IMANAGER2
++	tristate "Support for Advantech iManager2 EC H.W. Monitor"
++	select MFD_CORE
++	depends on MFD_IMANAGER2
++
+ config SENSORS_AB8500
+ 	tristate "AB8500 thermal monitoring"
+ 	depends on AB8500_GPADC && AB8500_BM
+diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+index c48f987..a2c8f07 100644
+--- a/drivers/hwmon/Makefile
++++ b/drivers/hwmon/Makefile
+@@ -146,6 +146,7 @@ obj-$(CONFIG_SENSORS_W83L785TS)	+= w83l785ts.o
+ obj-$(CONFIG_SENSORS_W83L786NG)	+= w83l786ng.o
+ obj-$(CONFIG_SENSORS_WM831X)	+= wm831x-hwmon.o
+ obj-$(CONFIG_SENSORS_WM8350)	+= wm8350-hwmon.o
++obj-$(CONFIG_SENSORS_IMANAGER2)	+= imanager2_hwm.o
+ 
+ obj-$(CONFIG_PMBUS)		+= pmbus/
+ 
+diff --git a/drivers/hwmon/imanager2_hwm.c b/drivers/hwmon/imanager2_hwm.c
 new file mode 100644
-index 0000000..bf7d70e
+index 0000000..335bffb
 --- /dev/null
-+++ b/include/linux/mfd/imanager2_ec.h
-@@ -0,0 +1,358 @@
++++ b/drivers/hwmon/imanager2_hwm.c
+@@ -0,0 +1,768 @@
 +/*
-+ * imanager2_ec.h - MFD driver defines of Advantech EC IT8516/18/28
++ * imanager2_hwm.c - HW Monitoring interface for Advantech EC IT8516/18/28
 + * Copyright (C) 2014  Richard Vidal-Dorsch <richard.dorsch@advantech.com>
 + *
 + * This program is free software: you can redistribute it and/or modify
@@ -57,346 +88,756 @@ index 0000000..bf7d70e
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
 +
-+#ifndef __IMANAGER2_EC_H__
-+#define __IMANAGER2_EC_H__
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/hwmon.h>
++#include <linux/hwmon-sysfs.h>
++#include <linux/mfd/imanager2_ec.h>
 +
-+#include <linux/mutex.h>
++#define DRV_NAME	"imanager2_hwm"
++#define DRV_VERSION	"4.0.1"
 +
-+#define EC_FLAG_IO		0
-+#define EC_FLAG_IO_MAILBOX	(1 << 0)
-+#define EC_FLAG_MAILBOX		(1 << 1)
-+
-+#define EC_MAX_DEVICE_ID_NUM	0xFF
-+#define EC_MAX_ITEM_NUM		32
-+
-+struct ec_table {
-+	u8 devid2itemnum[EC_MAX_DEVICE_ID_NUM];
-+	u8 pinnum[EC_MAX_ITEM_NUM];
-+	u8 devid[EC_MAX_ITEM_NUM];
-+};
-+
-+struct ec_version {
-+	u16 kernel_ver,
-+	    chip_code,
-+	    prj_id,
-+	    prj_ver;
-+};
-+
-+#define EC_MAX_LEN_PROJECT_NAME	8
-+
-+struct imanager2 {
-+	u16 id;
-+	u32 flag;
-+	struct mutex lock;				/* protects io */
-+	char prj_name[EC_MAX_LEN_PROJECT_NAME + 1];	/* strlen + '\0' */
-+	struct ec_version version;
-+	struct ec_table table;
-+};
-+
-+/*
-+ * Definition
-+ */
-+#define EC_TABLE_ITEM_UNUSED	0xFF
-+#define EC_TABLE_DID_NODEV	0x00
-+#define EC_TABLE_HWP_NODEV	0xFF
-+#define EC_TABLE_NOITEM		0xFF
-+
-+#define EC_ERROR		0xFF
-+
-+#define EC_RAM_BANK_SIZE	32	/* 32 bytes size for each bank. */
-+#define EC_RAM_BUFFER_SIZE	256	/* 32 bytes * 8 banks = 256 bytes */
-+
-+#define EC_SIO_CMD		0x29C
-+#define EC_SIO_DATA		0x29D
-+
-+/* Access Mailbox */
-+#define EC_IO_PORT_CMD		0x29A
-+#define EC_IO_PORT_DATA		0x299
-+
-+#define EC_IO_CMD_READ_OFFSET	0xA0
-+#define EC_IO_CMD_WRITE_OFFSET	0x50
-+
-+#define EC_ITE_PORT_OFS		0x29E
-+#define EC_ITE_PORT_DATA	0x29F
-+
-+/*
-+ * CMD - IO
-+ */
 +/* ADC */
-+#define EC_CMD_ADC_INDEX				0x15
-+#define EC_CMD_ADC_READ_LSB				0x16
-+#define EC_CMD_ADC_READ_MSB				0x1F
-+/* HW Control Table */
-+#define EC_CMD_HWCTRLTABLE_INDEX			0x20
-+#define EC_CMD_HWCTRLTABLE_GET_PIN_NUM			0x21
-+#define EC_CMD_HWCTRLTABLE_GET_DEVICE_ID		0x22
-+#define EC_CMD_HWCTRLTABLE_GET_PIN_ACTIVE_POLARITY	0x23
-+/* ACPI RAM */
-+#define EC_CMD_ACPIRAM_READ				0x80
-+#define EC_CMD_ACPIRAM_WRITE				0x81
-+/* Extend RAM */
-+#define EC_CMD_EXTRAM_READ				0x86
-+#define EC_CMD_EXTRAM_WRITE				0x87
-+/* HW RAM */
-+#define EC_CMD_HWRAM_READ				0x88
-+#define EC_CMD_HWRAM_WRITE				0x89
++#define EC_ADC_RESOLUTION_MAX	0x03FF	/* 10-bit */
++#define EC_ADC_VALUE_MAX	3000	/* max: 3000 mV or mA */
 +
-+/*
-+ * ACPI RAM Address Table
-+ */
-+/* n = 1 ~ 2 */
-+#define EC_ACPIRAM_ADDR_TEMPERATURE_BASE(n)	(0x60 + 3 * ((n) - 1))
-+#define	EC_ACPIRAM_ADDR_LOCAL_TEMPERATURE(n) \
-+	EC_ACPIRAM_ADDR_TEMPERATURE_BASE(n)
-+#define	EC_ACPIRAM_ADDR_REMOTE_TEMPERATURE(n) \
-+	(EC_ACPIRAM_ADDR_TEMPERATURE_BASE(n) + 1)
-+#define	EC_ACPIRAM_ADDR_WARNING_TEMPERATURE(n)\
-+	(EC_ACPIRAM_ADDR_TEMPERATURE_BASE(n) + 2)
++/* Thermal */
++#define EC_THERMAL_ZONE_MAX	4
 +
-+/* N = 0 ~ 2 */
-+#define EC_ACPIRAM_ADDR_FAN_SPEED_BASE(N)	(0x70 + 2 * (N))
-+
-+#define EC_ACPIRAM_ADDR_KERNEL_MAJOR_VERSION	0xF8
-+#define EC_ACPIRAM_ADDR_CHIP_VENDOR_CODE	0xFA
-+#define EC_ACPIRAM_ADDR_PROJECT_NAME_CODE	0xFC
-+#define EC_ACPIRAM_ADDR_FIRMWARE_MAJOR_VERSION	0xFE
-+
-+/*
-+ * HW RAM Address Table
-+ */
-+/* Thermal Source Control RAM 0xB0-0xC7 (N: 0 ~ 3) */
-+#define EC_HWRAM_ADDR_THERMAL_SOURCE_BASE_ADDR(N)	(0xB0 + 6 * (N))
-+#define EC_HWRAM_ADDR_THERMAL_SOURCE_SMB_CHANNEL(N) \
-+	EC_HWRAM_ADDR_THERMAL_SOURCE_BASE_ADDR(N)
-+#define EC_HWRAM_ADDR_THERMAL_SOURCE_SMB_ADDR(N) \
-+	(EC_HWRAM_ADDR_THERMAL_SOURCE_BASE_ADDR(N) + 1)
-+#define EC_HWRAM_ADDR_THERMAL_SOURCE_SMB_CMD(N)	 \
-+	(EC_HWRAM_ADDR_THERMAL_SOURCE_BASE_ADDR(N) + 2)
-+#define EC_HWRAM_ADDR_THERMAL_SOURCE_SMB_STATUS(N) \
-+	(EC_HWRAM_ADDR_THERMAL_SOURCE_BASE_ADDR(N) + 3)
-+#define EC_HWRAM_ADDR_THERMAL_SOURCE_SMB_FAN_CODE(N) \
-+	(EC_HWRAM_ADDR_THERMAL_SOURCE_BASE_ADDR(N) + 4)
-+#define EC_HWRAM_ADDR_THERMAL_SOURCE_SMB_TEMPERATURE(N) \
-+	(EC_HWRAM_ADDR_THERMAL_SOURCE_BASE_ADDR(N) + 5)
-+/* Fan Control 0xD0-0xEF (N: 0 ~ 3) */
-+#define EC_HWRAM_ADDR_FAN_BASE_ADDR(N)	(0xD0 + 0x10 * (N))
-+#define EC_HWRAM_ADDR_FAN_CODE(N)	EC_HWRAM_ADDR_FAN_BASE_ADDR(N)
-+#define EC_HWRAM_ADDR_FAN_STATUS(N)	(EC_HWRAM_ADDR_FAN_BASE_ADDR(N) + 1)
-+#define EC_HWRAM_ADDR_FAN_CONTROL(N)	(EC_HWRAM_ADDR_FAN_BASE_ADDR(N) + 2)
-+#define EC_HWRAM_ADDR_FAN_TEMP_HI(N)	(EC_HWRAM_ADDR_FAN_BASE_ADDR(N) + 3)
-+#define EC_HWRAM_ADDR_FAN_TEMP_LO(N)	(EC_HWRAM_ADDR_FAN_BASE_ADDR(N) + 4)
-+#define EC_HWRAM_ADDR_FAN_TEMP_LOSTOP(N) \
-+					(EC_HWRAM_ADDR_FAN_BASE_ADDR(N) + 5)
-+#define EC_HWRAM_ADDR_FAN_PWM_HI(N)	(EC_HWRAM_ADDR_FAN_BASE_ADDR(N) + 6)
-+#define EC_HWRAM_ADDR_FAN_PWM_LO(N)	(EC_HWRAM_ADDR_FAN_BASE_ADDR(N) + 7)
-+
-+/*
-+ * OFS - Mailbox
-+ */
-+/* Mailbox Structure */
-+#define EC_MAILBOX_OFFSET_CMD		0x00
-+#define EC_MAILBOX_OFFSET_STATUS	0x01
-+#define EC_MAILBOX_OFFSET_PARA		0x02
-+#define EC_MAILBOX_OFFSET_DAT(N)	(0x03 + (N))	/* N = 0x00 ~ 0x2C */
-+
-+/*
-+ * CMD - Mailbox
-+ */
-+/* GPIO */
-+#define EC_CMD_MAILBOX_READ_HW_PIN				0x11
-+#define EC_CMD_MAILBOX_WRITE_HW_PIN				0x12
-+/* Storage */
-+#define EC_CMD_MAILBOX_READ_EC_RAM				0x1E
-+#define EC_CMD_MAILBOX_WRITE_EC_RAM				0x1F
-+/* OTHERS */
-+#define EC_CMD_MAILBOX_READ_DYNAMIC_TABLE			0x20
-+/* Thermal Protect */
-+#define EC_CMD_MAILBOX_READ_THERMAL_SOURCE			0x42
-+#define EC_CMD_MAILBOX_WRITE_THERMAL_SOURCE			0x43
-+/* Storage */
-+#define EC_CMD_MALLBOX_CLEAR_256_BYTES_BUFFER			0xC0
-+#define EC_CMD_MALLBOX_READ_256_BYTES_BUFFER			0xC1
-+#define EC_CMD_MALLBOX_WRITE_256_BYTES_BUFFER			0xC2
-+#define EC_CMD_MALLBOX_READ_EEPROM_DATA_FROM_256_BYTES_BUFFER	0xC3
-+#define EC_CMD_MALLBOX_WRITE_256_BYTES_BUFFER_INTO_EEPROM_DATA	0xC4
-+/* General Mailbox Command */
-+#define EC_CMD_MAILBOX_GET_FIRMWARE_VERSION_AND_PROJECT_NAME	0xF0
-+#define EC_CMD_MAILBOX_CLEAR_ALL				0xFF
-+
-+/*
-+ * Status - Mailbox
-+ */
-+#define EC_MAILBOX_STATUS_FAIL		0x00
-+#define EC_MAILBOX_STATUS_SUCCESS	0x01
-+
-+/*
-+ * PARA - Mailbox
-+ */
-+/* RAM Type */
-+#define EC_RAM_BANK_ACPI	0x01
-+#define EC_RAM_BANK_HW		0x02
-+#define EC_RAM_BANK_EXT		0x03
-+#define EC_RAM_BANK_BUFFER	0x06
-+/* Dynamic Type */
-+#define EC_DYNAMIC_DEVICE_ID	0x00
-+#define EC_DYNAMIC_HW_PIN	0x01
-+#define EC_DYNAMIC_POLARITY	0x02
-+
-+/*
-+ * Functions - Mailbox
-+ */
-+/* command = 0x20 */
-+int imanager2_mbox_get_dynamic_table(u32 ecflag, u8 type, u8 *table);
-+/* command = 0x42 */
-+int imanager2_mbox_read_thermalzone(u32 ecflag, u8 zone, u8 *smbid, u8 *fanid,
-+				    u8 *buf, int *len);
-+/* command = 0xC0 */
-+int imanager2_mbox_clear_ram(u32 ecflag);
-+/* command = 0xC1 */
-+int imanager2_mbox_read_ram_across_banks(u32 ecflag, u8 *data, int len);
-+/* command = 0x1E */
-+int imanager2_mbox_read_ram(u32 ecflag, u8 bank, u8 offset, u8 *buf, u8 len);
-+/* command = 0x1F */
-+int imanager2_mbox_write_ram(u32 ecflag, u8 bank, u8 offset, u8 *buf, u8 len);
-+/* command = 0xF0 */
-+int imanager2_mbox_get_project_information(u32 ecflag, u8 *prj_name,
-+					   u16 *kernel_ver, u16 *chip_code,
-+					   u16 *prj_id, u16 *prj_ver);
-+
-+/*
-+ * Functions - basic
-+ */
-+#define IO_FLAG_OBF	(1 << 0)	/* output buffer full */
-+#define IO_FLAG_IBF	(1 << 1)	/* input buffer full  */
-+int ec_inb_after_obf1(u8 *data);
-+int ec_outb_after_ibc0(u16 port, u8 data);
-+/* ITE mailbox access */
-+int imanager2_mbox_read_data(u32 ecflag, u8 cmd, u8 para, u8 *data, int len);
-+int imanager2_mbox_write_data(u32 ecflag, u8 cmd, u8 para, u8 *data, int len);
-+/* only IO access */
-+int imanager2_mbox_io_read(u8 command, u8 offset, u8 *buf, u8 len);
-+int imanager2_mbox_io_write(u8 command, u8 offset, u8 *buf, u8 len);
-+int imanager2_mbox_io_simple_read(u8 command, u8 *value);
-+/* ITE Mailbox & IO access */
-+int imanager2_mbox_read_ram_support_io(u32 ecflag, u8 bank, u8 addr, u8 *buf,
-+				       u8 len);
-+
-+/*
-+ * Device ID
-+ */
-+enum ec_device_id {
-+	/* GPIO */
-+	altgpio0 = 0x10,	/* 0x10 */
-+	altgpio1,
-+	altgpio2,
-+	altgpio3,
-+	altgpio4,
-+	altgpio5,
-+	altgpio6,
-+	altgpio7,
-+	/* GPIO - Button */
-+	btn0,
-+	btn1,
-+	btn2,
-+	btn3,
-+	btn4,
-+	btn5,
-+	btn6,
-+	btn7,
-+	/* PWM - Fan */
-+	cpufan_2p,		/* 0x20 */
-+	cpufan_4p,
-+	sysfan1_2p,
-+	sysfan1_4p,
-+	sysfan2_2p,
-+	sysfan2_4p,
-+	/* PWM - Brightness Control */
-+	pwmbrightness,
-+	/* PWM - System Speaker */
-+	pwmbeep,
-+	/* SMBus */
-+	smboem0,
-+	smboem1,
-+	smboem2,
-+	smbeeprom,
-+	smbthermal0,
-+	smbthermal1,
-+	smbsecurityeep,
-+	i2coem,
-+	/* DAC - Speaker */
-+	dacspeaker,		/* 0x30 */
-+	/* SMBus */
-+	smbeep2k = 0x38,
-+	oemeep,
-+	oemeep2k,
-+	peci,
-+	smboem3,
-+	smblink,
-+	smbslv,
-+	/* GPIO - LED */
-+	powerled = 0x40,	/* 0x40 */
-+	batledg,
-+	oemled0,
-+	oemled1,
-+	oemled2,
-+	batledr,
-+	/* SMBus - Smart Battery */
-+	smartbat1 = 0x48,
-+	smartbat2,
-+	/* ADC */
-+	adcmosbat = 0x50,	/* 0x50 */
-+	adcmosbatx2,
-+	adcmosbatx10,
-+	adcbat,
-+	adcbatx2,
-+	adcbatx10,
-+	adc5vs0,
-+	adc5vs0x2,
-+	adc5vs0x10,
-+	adv5vs5,
-+	adv5vs5x2,
-+	adv5vs5x10,
-+	adc33vs0,
-+	adc33vs0x2,
-+	adc33vs0x10,
-+	adc33vs5,
-+	adc33vs5x2,		/* 0x60 */
-+	adc33vs5x10,
-+	adv12vs0,
-+	adv12vs0x2,
-+	adv12vs0x10,
-+	adcvcorea,
-+	adcvcoreax2,
-+	adcvcoreax10,
-+	adcvcoreb,
-+	adcvcorebx2,
-+	adcvcorebx10,
-+	adcdc,
-+	adcdcx2,
-+	adcdcx10,
-+	adcdcstby,
-+	adcdcstbyx2,
-+	adcdcstbyx10,		/* 0x70 */
-+	adcdcother,
-+	adcdcotherx2,
-+	adcdcotherx10,
-+	adccurrent,
-+	/* IRQ - Watchdog */
-+	wdirq = 0x78,
-+	/* GPIO - Watchdog */
-+	wdnmi,
-+	/* Tacho - Fan */
-+	tacho0 = 0x80,		/* 0x80 */
-+	tacho1,
-+	tacho2,
-+	/* PWM - Brightness Control */
-+	pwmbrightness2 = 0x88,
-+	/* GPIO - Backlight Control */
-+	brionoff1,
-+	brionoff2,
++enum thermaltype {
++	none,
++	sys1,
++	cpu,
++	sys3,
++	sys2,
 +};
 +
-+#endif /* __IMANAGER2_EC_H__ */
++struct ec_thermalzone {
++	u8 channel,
++	   addr,
++	   cmd,
++	   status,
++	   fancode,
++	   temp;
++};
++
++/* Tacho */
++#define EC_MAX_IO_FAN	3
++
++/* Voltage */
++struct volt_item {
++	u8 did;
++	const char *name;
++	int factor;
++	bool visible;
++};
++
++static struct volt_item ec_volt_table[] = {
++	{
++		.did = adcmosbat,
++		.name = "BAT CMOS",
++	},
++	{
++		.did = adcbat,
++		.name = "BAT",
++	},
++	{
++		.did = adc5vs0,
++		.name = "5V S0",
++	},
++	{
++		.did = adv5vs5,
++		.name = "5V S5",
++	},
++	{
++		.did = adc33vs0,
++		.name = "3V3 S0",
++	},
++	{
++		.did = adc33vs5,
++		.name = "3V3 S5",
++	},
++	{
++		.did = adv12vs0,
++		.name = "12V S0",
++	},
++	{
++		.did = adcvcorea,
++		.name = "Vcore A",
++	},
++	{
++		.did = adcvcoreb,
++		.name = "Vcore B",
++	},
++	{
++		.did = adcdc,
++		.name = "DC",
++	},
++	{
++		.did = adcdcstby,
++		.name = "DC Standby",
++	},
++	{
++		.did = adcdcother,
++		.name = "DC Other",
++	},
++};
++
++static int imanager2_volt_get_value_by_io(struct imanager2 *ec, int index,
++					  u8 *buf)
++{
++	u8 item = ec->table.devid2itemnum[ec_volt_table[index].did];
++	u8 pin = ec->table.pinnum[item];
++	u8 portnum;
++	int ret;
++
++	ret = imanager2_mbox_io_read(EC_CMD_ADC_INDEX, pin, &portnum, 1);
++	if (ret)
++		return ret;
++	if (portnum == EC_ERROR)
++		return -ENXIO;
++
++	ret = imanager2_mbox_io_simple_read(EC_CMD_ADC_READ_LSB, &buf[1]);
++	if (ret)
++		return ret;
++
++	return imanager2_mbox_io_simple_read(EC_CMD_ADC_READ_MSB, &buf[0]);
++}
++
++static int imanager2_volt_get_value(struct imanager2 *ec, int index,
++				    u32 *volt_mvolt)
++{
++	int ret;
++	u8 tmp[2];
++
++	mutex_lock(&ec->lock);
++
++	if (ec->flag & EC_FLAG_MAILBOX)
++		ret = imanager2_mbox_read_data(ec->flag,
++					       EC_CMD_MAILBOX_READ_HW_PIN,
++					       ec_volt_table[index].did,
++					       tmp, 2);
++	else
++		ret = imanager2_volt_get_value_by_io(ec, index, tmp);
++
++	mutex_unlock(&ec->lock);
++
++	if (ret)
++		return ret;
++
++	*volt_mvolt = (((tmp[0] << 8) | tmp[1]) & EC_ADC_RESOLUTION_MAX) *
++		      ec_volt_table[index].factor *
++		      DIV_ROUND_CLOSEST(EC_ADC_VALUE_MAX,
++					EC_ADC_RESOLUTION_MAX);
++
++	return 0;
++}
++
++static void imanager2_volt_init(struct imanager2 *ec)
++{
++	u8 did;
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(ec_volt_table); i++) {
++		did = ec_volt_table[i].did;
++
++		if (ec->table.devid2itemnum[did] != EC_TABLE_ITEM_UNUSED) {
++			ec_volt_table[i].factor = 1;
++			ec_volt_table[i].visible = true;
++		} else if (ec->table.devid2itemnum[did + 1] !=
++			   EC_TABLE_ITEM_UNUSED) {
++			ec_volt_table[i].did += 1;
++			ec_volt_table[i].factor = 2;
++			ec_volt_table[i].visible = true;
++		} else if (ec->table.devid2itemnum[did + 2] !=
++			   EC_TABLE_ITEM_UNUSED) {
++			ec_volt_table[i].did += 2;
++			ec_volt_table[i].factor = 10;
++			ec_volt_table[i].visible = true;
++		} else {
++			ec_volt_table[i].visible = false;
++		}
++	}
++}
++
++static ssize_t show_in(struct device *dev, struct device_attribute *dev_attr,
++		       char *buf)
++{
++	struct imanager2 *ec = dev_get_drvdata(dev);
++	u32 val;
++	int ret = imanager2_volt_get_value(ec,
++					   to_sensor_dev_attr(dev_attr)->index,
++					   &val);
++	if (ret)
++		return ret;
++
++	return sprintf(buf, "%u\n", val);
++}
++
++static ssize_t show_in_label(struct device *dev,
++			     struct device_attribute *dev_attr, char *buf)
++{
++	return sprintf(buf, "%s\n",
++		       ec_volt_table[to_sensor_dev_attr(dev_attr)->index].name);
++}
++
++static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, show_in, NULL, 0);
++static SENSOR_DEVICE_ATTR(in1_input, S_IRUGO, show_in, NULL, 1);
++static SENSOR_DEVICE_ATTR(in2_input, S_IRUGO, show_in, NULL, 2);
++static SENSOR_DEVICE_ATTR(in3_input, S_IRUGO, show_in, NULL, 3);
++static SENSOR_DEVICE_ATTR(in4_input, S_IRUGO, show_in, NULL, 4);
++static SENSOR_DEVICE_ATTR(in5_input, S_IRUGO, show_in, NULL, 5);
++static SENSOR_DEVICE_ATTR(in6_input, S_IRUGO, show_in, NULL, 6);
++static SENSOR_DEVICE_ATTR(in7_input, S_IRUGO, show_in, NULL, 7);
++static SENSOR_DEVICE_ATTR(in8_input, S_IRUGO, show_in, NULL, 8);
++static SENSOR_DEVICE_ATTR(in9_input, S_IRUGO, show_in, NULL, 9);
++static SENSOR_DEVICE_ATTR(in10_input, S_IRUGO, show_in, NULL, 10);
++static SENSOR_DEVICE_ATTR(in11_input, S_IRUGO, show_in, NULL, 11);
++
++static SENSOR_DEVICE_ATTR(in0_label, S_IRUGO, show_in_label, NULL, 0);
++static SENSOR_DEVICE_ATTR(in1_label, S_IRUGO, show_in_label, NULL, 1);
++static SENSOR_DEVICE_ATTR(in2_label, S_IRUGO, show_in_label, NULL, 2);
++static SENSOR_DEVICE_ATTR(in3_label, S_IRUGO, show_in_label, NULL, 3);
++static SENSOR_DEVICE_ATTR(in4_label, S_IRUGO, show_in_label, NULL, 4);
++static SENSOR_DEVICE_ATTR(in5_label, S_IRUGO, show_in_label, NULL, 5);
++static SENSOR_DEVICE_ATTR(in6_label, S_IRUGO, show_in_label, NULL, 6);
++static SENSOR_DEVICE_ATTR(in7_label, S_IRUGO, show_in_label, NULL, 7);
++static SENSOR_DEVICE_ATTR(in8_label, S_IRUGO, show_in_label, NULL, 8);
++static SENSOR_DEVICE_ATTR(in9_label, S_IRUGO, show_in_label, NULL, 9);
++static SENSOR_DEVICE_ATTR(in10_label, S_IRUGO, show_in_label, NULL, 10);
++static SENSOR_DEVICE_ATTR(in11_label, S_IRUGO, show_in_label, NULL, 11);
++
++static struct attribute *imanager2_volt_attrs[] = {
++	&sensor_dev_attr_in0_label.dev_attr.attr,
++	&sensor_dev_attr_in0_input.dev_attr.attr,
++
++	&sensor_dev_attr_in1_label.dev_attr.attr,
++	&sensor_dev_attr_in1_input.dev_attr.attr,
++
++	&sensor_dev_attr_in2_label.dev_attr.attr,
++	&sensor_dev_attr_in2_input.dev_attr.attr,
++
++	&sensor_dev_attr_in3_label.dev_attr.attr,
++	&sensor_dev_attr_in3_input.dev_attr.attr,
++
++	&sensor_dev_attr_in4_label.dev_attr.attr,
++	&sensor_dev_attr_in4_input.dev_attr.attr,
++
++	&sensor_dev_attr_in5_label.dev_attr.attr,
++	&sensor_dev_attr_in5_input.dev_attr.attr,
++
++	&sensor_dev_attr_in6_label.dev_attr.attr,
++	&sensor_dev_attr_in6_input.dev_attr.attr,
++
++	&sensor_dev_attr_in7_label.dev_attr.attr,
++	&sensor_dev_attr_in7_input.dev_attr.attr,
++
++	&sensor_dev_attr_in8_label.dev_attr.attr,
++	&sensor_dev_attr_in8_input.dev_attr.attr,
++
++	&sensor_dev_attr_in9_label.dev_attr.attr,
++	&sensor_dev_attr_in9_input.dev_attr.attr,
++
++	&sensor_dev_attr_in10_label.dev_attr.attr,
++	&sensor_dev_attr_in10_input.dev_attr.attr,
++
++	&sensor_dev_attr_in11_label.dev_attr.attr,
++	&sensor_dev_attr_in11_input.dev_attr.attr,
++
++	NULL
++};
++
++static umode_t imanager2_volt_mode(struct kobject *kobj, struct attribute *attr,
++				   int index)
++{
++	struct device_attribute *dev_attr;
++
++	dev_attr = container_of(attr, struct device_attribute, attr);
++	if (!ec_volt_table[to_sensor_dev_attr(dev_attr)->index].visible)
++		return 0;
++
++	return attr->mode;
++}
++
++static const struct attribute_group imanager2_volt_group = {
++	.attrs = imanager2_volt_attrs,
++	.is_visible = imanager2_volt_mode,
++};
++
++/* Current */
++struct curr_item {
++	const u8 did;
++	const char *name;
++	bool visible;
++};
++
++static struct curr_item ec_curr_table[] = {
++	{
++		.did = adccurrent,
++		.name = "IMON"
++	},
++};
++
++static int imanager2_curr_get_value(struct imanager2 *ec, int index,
++				    u32 *curr_mamp)
++{
++	int ret;
++	u8 tmp[5];
++	u16 value, factor;
++	u32 baseunit = 1;
++
++	mutex_lock(&ec->lock);
++	ret = imanager2_mbox_read_data(ec->flag, EC_CMD_MAILBOX_READ_HW_PIN,
++				       ec_curr_table[index].did, tmp,
++				       ARRAY_SIZE(tmp));
++	mutex_unlock(&ec->lock);
++
++	if (ret)
++		return ret;
++
++	value = ((tmp[0] << 8) | tmp[1]) & EC_ADC_RESOLUTION_MAX;
++	factor = (tmp[2] << 8) | tmp[3];
++
++	while (tmp[4]++)
++		baseunit *= 10;
++
++	*curr_mamp = DIV_ROUND_CLOSEST(value * baseunit * EC_ADC_VALUE_MAX,
++				       EC_ADC_RESOLUTION_MAX * factor);
++
++	return 0;
++}
++
++static void imanager2_curr_init(struct imanager2 *ec)
++{
++	u8 did;
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(ec_curr_table); i++) {
++		did = ec_curr_table[i].did;
++		if (ec->table.devid2itemnum[did] != EC_TABLE_ITEM_UNUSED)
++			ec_curr_table[i].visible = ec->flag & EC_FLAG_MAILBOX;
++		else
++			ec_curr_table[i].visible = false;
++	}
++}
++
++static ssize_t show_curr(struct device *dev, struct device_attribute *dev_attr,
++			 char *buf)
++{
++	struct imanager2 *ec = dev_get_drvdata(dev);
++	u32 val;
++	int ret = imanager2_curr_get_value(ec,
++					   to_sensor_dev_attr(dev_attr)->index,
++					   &val);
++	if (ret)
++		return ret;
++
++	return sprintf(buf, "%u\n", val);
++}
++
++static ssize_t show_curr_label(struct device *dev,
++			       struct device_attribute *dev_attr, char *buf)
++{
++	return sprintf(buf, "%s\n",
++		       ec_curr_table[to_sensor_dev_attr(dev_attr)->index].name);
++}
++
++static SENSOR_DEVICE_ATTR(curr1_input, S_IRUGO, show_curr, NULL, 0);
++static SENSOR_DEVICE_ATTR(curr1_label, S_IRUGO, show_curr_label, NULL, 0);
++
++static struct attribute *imanager2_curr_attrs[] = {
++	&sensor_dev_attr_curr1_label.dev_attr.attr,
++	&sensor_dev_attr_curr1_input.dev_attr.attr,
++
++	NULL
++};
++
++static umode_t imanager2_curr_mode(struct kobject *kobj, struct attribute *attr,
++				   int index)
++{
++	struct device_attribute *dev_attr;
++
++	dev_attr = container_of(attr, struct device_attribute, attr);
++	if (!ec_curr_table[to_sensor_dev_attr(dev_attr)->index].visible)
++		return 0;
++
++	return attr->mode;
++}
++
++static const struct attribute_group imanager2_curr_group = {
++	.attrs = imanager2_curr_attrs,
++	.is_visible = imanager2_curr_mode,
++};
++
++/* Temperature */
++struct temp_item {
++	const char *name;
++	const u8 zonetype_value;
++	u8 zonetype_acpireg;
++	bool visible;
++};
++
++static struct temp_item ec_temp_table[] = {
++	{
++		.name = "Temp SYS",
++		.zonetype_value = sys1,
++		.zonetype_acpireg = EC_ACPIRAM_ADDR_LOCAL_TEMPERATURE(1)
++	},
++	{
++		.name = "Temp CPU",
++		.zonetype_value = cpu,
++		.zonetype_acpireg = EC_ACPIRAM_ADDR_REMOTE_TEMPERATURE(1)
++	},
++	{
++		.name = "Temp SYS3",
++		.zonetype_value = sys3,
++		.zonetype_acpireg = EC_ACPIRAM_ADDR_LOCAL_TEMPERATURE(2)
++	},
++	{
++		.name = "Temp SYS2",
++		.zonetype_value = sys2,
++		.zonetype_acpireg = EC_ACPIRAM_ADDR_REMOTE_TEMPERATURE(2)
++	},
++};
++
++static int imanager2_temp_get_value(struct imanager2 *ec, int index,
++				    s32 *temp_mcelsius)
++{
++	int ret;
++	s8 tmp;
++
++	mutex_lock(&ec->lock);
++	ret = imanager2_mbox_read_ram_support_io(
++		ec->flag, EC_RAM_BANK_ACPI,
++		ec_temp_table[index].zonetype_acpireg,
++		(u8 *)&tmp, 1);
++	mutex_unlock(&ec->lock);
++
++	if (ret)
++		return ret;
++
++	*temp_mcelsius = tmp * 1000;
++
++	return 0;
++}
++
++static void imanager2_temp_init(struct imanager2 *ec)
++{
++	int i, thm, ret;
++	u8 tmltype, smbid, fanid;
++	struct ec_thermalzone zone;
++
++	for (i = 0; i < ARRAY_SIZE(ec_temp_table); i++)
++		ec_temp_table[i].visible = false;
++
++	for (thm = 0; thm < EC_THERMAL_ZONE_MAX; thm++) {
++		mutex_lock(&ec->lock);
++
++		if (ec->flag & EC_FLAG_MAILBOX) {
++			int len = sizeof(struct ec_thermalzone);
++			ret = imanager2_mbox_read_thermalzone(ec->flag, thm,
++							      &smbid, &fanid,
++							      (u8 *)&zone,
++							      &len);
++		} else {
++			ret = imanager2_mbox_io_read(
++				EC_CMD_HWRAM_READ,
++				EC_HWRAM_ADDR_THERMAL_SOURCE_SMB_STATUS(thm),
++				&zone.status, 1);
++		}
++
++		mutex_unlock(&ec->lock);
++
++		if (ret)
++			continue;
++
++		tmltype = (zone.status >> 5);
++
++		for (i = 0; i < ARRAY_SIZE(ec_temp_table); i++) {
++			if (tmltype == ec_temp_table[i].zonetype_value) {
++				ec_temp_table[i].visible = true;
++				break;
++			}
++		}
++	}
++}
++
++static ssize_t show_temp(struct device *dev, struct device_attribute *dev_attr,
++			 char *buf)
++{
++	struct imanager2 *ec = dev_get_drvdata(dev);
++	s32 val;
++	int ret = imanager2_temp_get_value(ec,
++					   to_sensor_dev_attr(dev_attr)->index,
++					   &val);
++	if (ret)
++		return ret;
++
++	return sprintf(buf, "%d\n", val);
++}
++
++static ssize_t show_temp_label(struct device *dev,
++			       struct device_attribute *dev_attr, char *buf)
++{
++	return sprintf(buf, "%s\n",
++		       ec_temp_table[to_sensor_dev_attr(dev_attr)->index].name);
++}
++
++static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, show_temp, NULL, 0);
++static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO, show_temp, NULL, 1);
++static SENSOR_DEVICE_ATTR(temp3_input, S_IRUGO, show_temp, NULL, 2);
++static SENSOR_DEVICE_ATTR(temp4_input, S_IRUGO, show_temp, NULL, 3);
++
++static SENSOR_DEVICE_ATTR(temp1_label, S_IRUGO, show_temp_label, NULL, 0);
++static SENSOR_DEVICE_ATTR(temp2_label, S_IRUGO, show_temp_label, NULL, 1);
++static SENSOR_DEVICE_ATTR(temp3_label, S_IRUGO, show_temp_label, NULL, 2);
++static SENSOR_DEVICE_ATTR(temp4_label, S_IRUGO, show_temp_label, NULL, 3);
++
++static struct attribute *imanager2_temp_attrs[] = {
++	&sensor_dev_attr_temp1_label.dev_attr.attr,
++	&sensor_dev_attr_temp1_input.dev_attr.attr,
++
++	&sensor_dev_attr_temp2_label.dev_attr.attr,
++	&sensor_dev_attr_temp2_input.dev_attr.attr,
++
++	&sensor_dev_attr_temp3_label.dev_attr.attr,
++	&sensor_dev_attr_temp3_input.dev_attr.attr,
++
++	&sensor_dev_attr_temp4_label.dev_attr.attr,
++	&sensor_dev_attr_temp4_input.dev_attr.attr,
++
++	NULL
++};
++
++static umode_t imanager2_temp_mode(struct kobject *kobj, struct attribute *attr,
++				   int index)
++{
++	struct device_attribute *dev_attr;
++
++	dev_attr = container_of(attr, struct device_attribute, attr);
++	if (!ec_temp_table[to_sensor_dev_attr(dev_attr)->index].visible)
++		return 0;
++
++	return attr->mode;
++}
++
++static const struct attribute_group imanager2_temp_group = {
++	.attrs = imanager2_temp_attrs,
++	.is_visible = imanager2_temp_mode,
++};
++
++/* Fan Speed */
++struct fan_item {
++	const u8 did;
++	const char *name;
++	u8 fspeed_acpireg;
++	bool visible;
++};
++
++static struct fan_item ec_fan_table[] = {
++	{
++		.did = tacho0,
++		.name = "Fan CPU",
++		.fspeed_acpireg = 0,
++		.visible = false
++	},
++	{
++		.did = tacho1,
++		.name = "Fan SYS",
++		.fspeed_acpireg = 0,
++		.visible = false
++	},
++	{
++		.did = tacho2,
++		.name = "Fan SYS2",
++		.fspeed_acpireg = 0,
++		.visible = false
++	},
++};
++
++static int imanager2_fan_get_value(struct imanager2 *ec, int index,
++				   u32 *speed_rpm)
++{
++	int ret;
++	u8 tmp[2];
++
++	mutex_lock(&ec->lock);
++
++	if (ec->flag & EC_FLAG_MAILBOX)
++		ret = imanager2_mbox_read_data(ec->flag,
++					       EC_CMD_MAILBOX_READ_HW_PIN,
++					       ec_fan_table[index].did, tmp, 2);
++	else
++		ret = imanager2_mbox_io_read(EC_CMD_ACPIRAM_READ,
++					     ec_fan_table[index].fspeed_acpireg,
++					     tmp, 2);
++
++	mutex_unlock(&ec->lock);
++
++	if (ret)
++		return ret;
++
++	if (tmp[0] == 0xFF && tmp[1] == 0xFF)
++		return -ENODEV;
++
++	*speed_rpm = (tmp[0] << 8) | tmp[1];
++
++	return 0;
++}
++
++#define EC_FANCTROL_SPEEDSRC_MASK	0x30
++
++static int imanager2_fan_item_init_by_io(struct imanager2 *ec, int fnum)
++{
++	int i, ret;
++	u8 tmp;
++
++	mutex_lock(&ec->lock);
++	ret = imanager2_mbox_io_read(EC_CMD_HWRAM_READ,
++				     EC_HWRAM_ADDR_FAN_CONTROL(fnum), &tmp, 1);
++	mutex_unlock(&ec->lock);
++
++	if (ret)
++		return ret;
++
++	i = ((tmp & EC_FANCTROL_SPEEDSRC_MASK) >> 4) - 1;
++	if (i < 0)
++		return -ENODEV;
++
++	/* Unnecessary set again if it has been set. */
++	if (ec_fan_table[i].visible)
++		return 0;
++
++	ec_fan_table[i].fspeed_acpireg = EC_ACPIRAM_ADDR_FAN_SPEED_BASE(i);
++	ec_fan_table[i].visible = true;
++
++	return 0;
++}
++
++static void imanager2_fan_init(struct imanager2 *ec)
++{
++	int i;
++
++	if (ec->flag & EC_FLAG_MAILBOX) {
++		for (i = 0; i < ARRAY_SIZE(ec_fan_table); i++)
++			ec_fan_table[i].visible =
++			    ec->table.devid2itemnum[ec_fan_table[i].did] !=
++			    EC_TABLE_ITEM_UNUSED;
++	} else {
++		int fnum;
++
++		for (i = 0; i < ARRAY_SIZE(ec_fan_table); i++)
++			ec_fan_table[i].visible = false;
++
++		for (fnum = 0; fnum < EC_MAX_IO_FAN; fnum++) {
++			if (imanager2_fan_item_init_by_io(ec, fnum))
++				continue;
++		}
++	}
++}
++
++static ssize_t show_fan(struct device *dev, struct device_attribute *dev_attr,
++			char *buf)
++{
++	struct imanager2 *ec = dev_get_drvdata(dev);
++	u32 val;
++	int ret = imanager2_fan_get_value(ec,
++					  to_sensor_dev_attr(dev_attr)->index,
++					  &val);
++	if (ret)
++		return ret;
++
++	return sprintf(buf, "%u\n", val);
++}
++
++static ssize_t show_fan_label(struct device *dev,
++			      struct device_attribute *dev_attr, char *buf)
++{
++	return sprintf(buf, "%s\n",
++		       ec_fan_table[to_sensor_dev_attr(dev_attr)->index].name);
++}
++
++static SENSOR_DEVICE_ATTR(fan1_input, S_IRUGO, show_fan, NULL, 0);
++static SENSOR_DEVICE_ATTR(fan2_input, S_IRUGO, show_fan, NULL, 1);
++static SENSOR_DEVICE_ATTR(fan3_input, S_IRUGO, show_fan, NULL, 2);
++
++static SENSOR_DEVICE_ATTR(fan1_label, S_IRUGO, show_fan_label, NULL, 0);
++static SENSOR_DEVICE_ATTR(fan2_label, S_IRUGO, show_fan_label, NULL, 1);
++static SENSOR_DEVICE_ATTR(fan3_label, S_IRUGO, show_fan_label, NULL, 2);
++
++static struct attribute *imanager2_fan_attrs[] = {
++	&sensor_dev_attr_fan1_label.dev_attr.attr,
++	&sensor_dev_attr_fan1_input.dev_attr.attr,
++
++	&sensor_dev_attr_fan2_label.dev_attr.attr,
++	&sensor_dev_attr_fan2_input.dev_attr.attr,
++
++	&sensor_dev_attr_fan3_label.dev_attr.attr,
++	&sensor_dev_attr_fan3_input.dev_attr.attr,
++
++	NULL
++};
++
++static umode_t imanager2_fan_mode(struct kobject *kobj, struct attribute *attr,
++				  int index)
++{
++	struct device_attribute *dev_attr;
++
++	dev_attr = container_of(attr, struct device_attribute, attr);
++	if (!ec_fan_table[to_sensor_dev_attr(dev_attr)->index].visible)
++		return 0;
++
++	return attr->mode;
++}
++
++static const struct attribute_group imanager2_fan_group = {
++	.attrs = imanager2_fan_attrs,
++	.is_visible = imanager2_fan_mode,
++};
++
++/* Module */
++static const struct attribute_group *imanager2_hwmon_groups[] = {
++	&imanager2_volt_group,
++	&imanager2_curr_group,
++	&imanager2_temp_group,
++	&imanager2_fan_group,
++	NULL
++};
++
++static int imanager2_hwmon_probe(struct platform_device *pdev)
++{
++	struct device *hwmon_dev;
++	struct imanager2 *hwmon_ec = pdev->dev.parent->platform_data;
++
++	imanager2_volt_init(hwmon_ec);
++	imanager2_curr_init(hwmon_ec);
++	imanager2_temp_init(hwmon_ec);
++	imanager2_fan_init(hwmon_ec);
++
++	hwmon_dev = devm_hwmon_device_register_with_groups(
++			&pdev->dev, "imanager2", hwmon_ec,
++			imanager2_hwmon_groups);
++
++	if (IS_ERR(hwmon_dev))
++		return PTR_ERR(hwmon_dev);
++
++	return 0;
++}
++
++static struct platform_driver imanager2_hwmon_driver = {
++	.probe = imanager2_hwmon_probe,
++	.driver = {
++			.owner = THIS_MODULE,
++			.name = DRV_NAME,
++	},
++};
++
++module_platform_driver(imanager2_hwmon_driver);
++
++MODULE_AUTHOR("Richard Vidal-Dorsch <richard.dorsch at advantech.com>");
++MODULE_DESCRIPTION("HW Monitoring interface for Advantech EC IT8516/18/28");
++MODULE_LICENSE("GPL");
++MODULE_VERSION(DRV_VERSION);
 -- 
 1.9.1
 
