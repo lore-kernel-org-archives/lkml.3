@@ -1,82 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756898AbaGNTfR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 15:35:17 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:49416 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754870AbaGNTfK (ORCPT
+	id S1756844AbaGNTjE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 15:39:04 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:58537 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754870AbaGNTjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 15:35:10 -0400
-X-CheckPoint: {53C430EB-11-2100090A-C0000000}
-Message-ID: <53C430EA.1060205@tilera.com>
-Date: Mon, 14 Jul 2014 15:35:06 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 14 Jul 2014 15:39:00 -0400
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>, Nicholas Krause <xerofoify@gmail.com>
-CC: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <akpm@linux-foundation.org>,
-        <zlu@tilera.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] title: no lookup_page for if statement
-References: <1405363782-6570-1-git-send-email-xerofoify@gmail.com> <1405364357.13661.15.camel@x220>
-In-Reply-To: <1405364357.13661.15.camel@x220>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.9.0.23]
+In-Reply-To: <20140714003105.GA1333@archDesk>
+References: <20140714003105.GA1333@archDesk>
+From: Lucas Tanure <tanure@linux.com>
+Date: Mon, 14 Jul 2014 16:38:43 -0300
+X-Google-Sender-Auth: molIJPujzqCRdWrfi7yEDj9kTII
+Message-ID: <CAJyon0szZAs1c_eXYS8-rJwParHNUxGs=CuFbDYkj5=t5gB9=w@mail.gmail.com>
+Subject: Re: [PATCH v4] staging: android: Clean up else statement from binder_send_failed_reply
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/14/2014 2:59 PM, Paul Bolle wrote:
-> On Mon, 2014-07-14 at 14:49 -0400, Nicholas Krause wrote:
->> >This patch removes the if define statement for page_lookup in order
->> >to remove a fix me of this not being defined as of yet.
->> >
->> >Signed-off-by: Nicholas Krause<xerofoify@gmail.com>
+Hi,
 
-Nicholas, you can't just enable this code; it will break the
-build, since there is no lookup_address() symbol on tile.
+This patch got accepted ?
 
-I'd like to encourage you to look for more substantive kinds of
-changes to submit to LKML.  This one and the last one (adding some
-underscores to some obsolete symbols) both have ended up costing me
-some time to look at and figure out what's actually going on, but
-for no real value.  I suspect there may be "janitor" tasks that
-are more useful if you are looking for small starting points
-(Google for "linux kernel janitors").
+Thanks
+--
+Lucas Tanure
++55 (19) 988176559
 
-That said I'm going to go ahead and check in the following change
-which actually does work, now that my attention has been drawn here.
 
-diff --git a/arch/tile/mm/fault.c b/arch/tile/mm/fault.c
-index 6c0571216a9d..7e884001ca6a 100644
---- a/arch/tile/mm/fault.c
-+++ b/arch/tile/mm/fault.c
-@@ -513,17 +513,14 @@ no_context:
-
-         bust_spinlocks(1);
-
--       /* FIXME: no lookup_address() yet */
--#ifdef SUPPORT_LOOKUP_ADDRESS
--       if (fault_num == INT_ITLB_MISS) {
--               pte_t *pte = lookup_address(address);
-+       if (fault_num == INT_ITLB_MISS && address >= PAGE_OFFSET) {
-+               pte_t *pte = virt_to_kpte(address);
-
--               if (pte && pte_present(*pte) && !pte_exec_kernel(*pte))
--                       pr_crit("kernel tried to execute"
--                              " non-executable page - exploit attempt?"
--                              " (uid: %d)\n", current->uid);
-+               if (pte && pte_present(*pte) && !pte_exec(*pte))
-+                       pr_crit("kernel tried to execute non-executable page"
-+                               " - exploit attempt? (uid: %d)\n",
-+                               from_kuid(&init_user_ns, current_uid()));
-         }
--#endif
-         if (address < PAGE_SIZE)
-                 pr_alert("Unable to handle kernel NULL pointer dereference\n");
-         else
-
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+On Sun, Jul 13, 2014 at 9:31 PM, Lucas Tanure <tanure@linux.com> wrote:
+> Kernel coding style. Remove useless else statement after return.
+> Changes from v1 and v2: Fix warning for mixed declarations and code.
+> Declaration of "struct binder_transaction *next" made outside of while.
+>
+> Changes from v3: Removed initialization to NULL for next variable.
+>
+> Signed-off-by: Lucas Tanure <tanure@linux.com>
+> ---
+>  drivers/staging/android/binder.c | 28 ++++++++++++++--------------
+>  1 file changed, 14 insertions(+), 14 deletions(-)
+>
+> diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+> index 14714a6..4f34dc0 100644
+> --- a/drivers/staging/android/binder.c
+> +++ b/drivers/staging/android/binder.c
+> @@ -1183,6 +1183,7 @@ static void binder_send_failed_reply(struct binder_transaction *t,
+>                                      uint32_t error_code)
+>  {
+>         struct binder_thread *target_thread;
+> +       struct binder_transaction *next;
+>
+>         BUG_ON(t->flags & TF_ONE_WAY);
+>         while (1) {
+> @@ -1210,24 +1211,23 @@ static void binder_send_failed_reply(struct binder_transaction *t,
+>                                         target_thread->return_error);
+>                         }
+>                         return;
+> -               } else {
+> -                       struct binder_transaction *next = t->from_parent;
+> +               }
+> +               next = t->from_parent;
+>
+> -                       binder_debug(BINDER_DEBUG_FAILED_TRANSACTION,
+> -                                    "send failed reply for transaction %d, target dead\n",
+> -                                    t->debug_id);
+> +               binder_debug(BINDER_DEBUG_FAILED_TRANSACTION,
+> +                            "send failed reply for transaction %d, target dead\n",
+> +                            t->debug_id);
+>
+> -                       binder_pop_transaction(target_thread, t);
+> -                       if (next == NULL) {
+> -                               binder_debug(BINDER_DEBUG_DEAD_BINDER,
+> -                                            "reply failed, no target thread at root\n");
+> -                               return;
+> -                       }
+> -                       t = next;
+> +               binder_pop_transaction(target_thread, t);
+> +               if (next == NULL) {
+>                         binder_debug(BINDER_DEBUG_DEAD_BINDER,
+> -                                    "reply failed, no target thread -- retry %d\n",
+> -                                     t->debug_id);
+> +                                    "reply failed, no target thread at root\n");
+> +                       return;
+>                 }
+> +               t = next;
+> +               binder_debug(BINDER_DEBUG_DEAD_BINDER,
+> +                            "reply failed, no target thread -- retry %d\n",
+> +                             t->debug_id);
+>         }
+>  }
+>
+> --
+> 2.0.1
+>
