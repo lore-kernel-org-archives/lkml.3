@@ -1,406 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753838AbaGNIxU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 04:53:20 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:22767 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752389AbaGNIxM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 04:53:12 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-f0-53c39a737275
-Message-id: <53C39A71.2020303@samsung.com>
-Date: Mon, 14 Jul 2014 10:53:05 +0200
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] regulator: s2mpxxx: Move regulator min/step voltages
- in common place
-References: <1404822480-31525-1-git-send-email-amit.daniel@samsung.com>
-In-reply-to: <1404822480-31525-1-git-send-email-amit.daniel@samsung.com>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOLMWRmVeSWpSXmKPExsVy+t/xq7rFsw4HGxw8xWXRcDXEYurDJ2wW
-	r18YWny70sFkcXnXHDaLGef3MVlcXPGFyYHdY+esu+wem1Z1snn0bVnF6PF5k1wASxSXTUpq
-	TmZZapG+XQJXxo13LYwFsworHjSuY25g7IjoYuTkkBAwkTjcf5UdwhaTuHBvPVsXIxeHkMBS
-	Rolz99pYIJzPjBJ3/pxhBaniFdCSuLGhhxnEZhFQlZj5cQsjiM0mYCyxefkSNhBbVCBC4kDf
-	M6h6QYkfk++xgNgiAvMZJVbONQGxmQWcJb4taQarFxaIl9j6pQesRkjAXeLNvGNgvZwCHhJP
-	ezsYIerNJB61rGOGsOUlNq95yzyBUWAWkhWzkJTNQlK2gJF5FaNoamlyQXFSeq6RXnFibnFp
-	Xrpecn7uJkZIYH/dwbj0mNUhRgEORiUe3gL+w8FCrIllxZW5hxglOJiVRHjD3YBCvCmJlVWp
-	RfnxRaU5qcWHGJk4OKUaGG/0zVhv2F/y/bZxU/uum4UBmw/unHeTl9PLNyH80z4nnZMXRVk/
-	9V/wvvSjxkissSZ5wZ2U9bIunSYhSScfPTm3VnzxSv7Le2vj5udt4FmoeFD06LE31WrvuCM2
-	FsvN7tAIcBCsnf54R16CIpPe7WsFAld2rGE6ypEx8avnufLKNwv//GXJEVViKc5INNRiLipO
-	BAC1QfS8SgIAAA==
+	id S1752954AbaGNI4t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 04:56:49 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56810 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750737AbaGNI4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 04:56:41 -0400
+Message-ID: <53C39B32.9060001@ti.com>
+Date: Mon, 14 Jul 2014 14:26:18 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Sachin Kamat <sachin.kamat@samsung.com>, <linux-kernel@vger.kernel.org>
+CC: <linux-samsung-soc@vger.kernel.org>, <dianders@chromium.org>,
+        <gautam.vivek@samsung.com>, <spk.linux@gmail.com>,
+        <tomasz.figa@gmail.com>, <jg1.han@samsung.com>
+Subject: Re: [PATCH v2 1/2] phy: Kconfig: Re-organize Exynos USB 2.0 PHY configs
+References: <1404906569-28026-1-git-send-email-sachin.kamat@samsung.com>
+In-Reply-To: <1404906569-28026-1-git-send-email-sachin.kamat@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.07.2014 14:27, Amit Daniel Kachhap wrote:
-> This is a cleanup patch and moves min/step voltages in a common samsung
-> header file so that they can be used by other s2mpxxx PMIC drivers. Only
-> few required macros are added currently and others can be added if needed.
->
-> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> ---
->   drivers/regulator/s2mpa01.c         | 32 ++++++++++++------------
->   drivers/regulator/s2mps11.c         | 50 ++++++++++++++++++-------------------
->   include/linux/mfd/samsung/core.h    | 21 ++++++++++++++++
->   include/linux/mfd/samsung/s2mpa01.h | 12 ---------
->   include/linux/mfd/samsung/s2mps11.h |  9 -------
->   include/linux/mfd/samsung/s2mps14.h | 10 --------
->   6 files changed, 62 insertions(+), 72 deletions(-)
->
-
 Hi,
 
-Looks good.
+On Wednesday 09 July 2014 05:19 PM, Sachin Kamat wrote:
+> Since the USB 2.0 PHYs are required with EHCI/OHCI USB drivers and
+> USB gadget controller supported by the DWC2 gadget driver, make it
+> depend on them and default to ARCH_EXYNOS as they are meant for
+> Exynos platforms. Also, make the sub-drivers silent options enabling
+> them based on the SoC platforms that they are meant to work with. This
+> will make life easier for end users who do not have any way knowing the
+> dependencies.
 
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+There is a new Exynos PHY in town, Exynos 3250. Can you rebase your patch on
+top of that?
 
-Best regards,
-Krzysztof
-
-> diff --git a/drivers/regulator/s2mpa01.c b/drivers/regulator/s2mpa01.c
-> index ee83b48..962c5f1 100644
-> --- a/drivers/regulator/s2mpa01.c
-> +++ b/drivers/regulator/s2mpa01.c
-> @@ -241,8 +241,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
->   	.ops		= &s2mpa01_ldo_ops,		\
->   	.type		= REGULATOR_VOLTAGE,		\
->   	.owner		= THIS_MODULE,			\
-> -	.min_uV		= S2MPA01_LDO_MIN,		\
-> -	.uV_step	= S2MPA01_LDO_STEP1,		\
-> +	.min_uV		= MIN_800_MV,			\
-> +	.uV_step	= STEP_50_MV,			\
->   	.n_voltages	= S2MPA01_LDO_N_VOLTAGES,	\
->   	.vsel_reg	= S2MPA01_REG_L1CTRL + num - 1,	\
->   	.vsel_mask	= S2MPA01_LDO_VSEL_MASK,	\
-> @@ -255,8 +255,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
->   	.ops		= &s2mpa01_ldo_ops,		\
->   	.type		= REGULATOR_VOLTAGE,		\
->   	.owner		= THIS_MODULE,			\
-> -	.min_uV		= S2MPA01_LDO_MIN,		\
-> -	.uV_step	= S2MPA01_LDO_STEP2,		\
-> +	.min_uV		= MIN_800_MV,			\
-> +	.uV_step	= STEP_25_MV,			\
->   	.n_voltages	= S2MPA01_LDO_N_VOLTAGES,	\
->   	.vsel_reg	= S2MPA01_REG_L1CTRL + num - 1,	\
->   	.vsel_mask	= S2MPA01_LDO_VSEL_MASK,	\
-> @@ -270,8 +270,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
->   	.ops		= &s2mpa01_buck_ops,			\
->   	.type		= REGULATOR_VOLTAGE,			\
->   	.owner		= THIS_MODULE,				\
-> -	.min_uV		= S2MPA01_BUCK_MIN1,			\
-> -	.uV_step	= S2MPA01_BUCK_STEP1,			\
-> +	.min_uV		= MIN_600_MV,				\
-> +	.uV_step	= STEP_6_25_MV,				\
->   	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
->   	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
->   	.vsel_reg	= S2MPA01_REG_B1CTRL2 + (num - 1) * 2,	\
-> @@ -286,8 +286,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
->   	.ops		= &s2mpa01_buck_ops,			\
->   	.type		= REGULATOR_VOLTAGE,			\
->   	.owner		= THIS_MODULE,				\
-> -	.min_uV		= S2MPA01_BUCK_MIN2,			\
-> -	.uV_step	= S2MPA01_BUCK_STEP1,			\
-> +	.min_uV		= MIN_800_MV,				\
-> +	.uV_step	= STEP_6_25_MV,				\
->   	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
->   	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
->   	.vsel_reg	= S2MPA01_REG_B5CTRL2,			\
-> @@ -302,8 +302,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
->   	.ops		= &s2mpa01_buck_ops,			\
->   	.type		= REGULATOR_VOLTAGE,			\
->   	.owner		= THIS_MODULE,				\
-> -	.min_uV		= S2MPA01_BUCK_MIN1,			\
-> -	.uV_step	= S2MPA01_BUCK_STEP1,			\
-> +	.min_uV		= MIN_600_MV,				\
-> +	.uV_step	= STEP_6_25_MV,				\
->   	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
->   	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
->   	.vsel_reg	= S2MPA01_REG_B6CTRL2 + (num - 6) * 2,	\
-> @@ -318,8 +318,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
->   	.ops		= &s2mpa01_buck_ops,			\
->   	.type		= REGULATOR_VOLTAGE,			\
->   	.owner		= THIS_MODULE,				\
-> -	.min_uV		= S2MPA01_BUCK_MIN2,			\
-> -	.uV_step	= S2MPA01_BUCK_STEP2,			\
-> +	.min_uV		= MIN_800_MV,				\
-> +	.uV_step	= STEP_12_5_MV,				\
->   	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
->   	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
->   	.vsel_reg	= S2MPA01_REG_B8CTRL2,			\
-> @@ -334,8 +334,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
->   	.ops		= &s2mpa01_buck_ops,			\
->   	.type		= REGULATOR_VOLTAGE,			\
->   	.owner		= THIS_MODULE,				\
-> -	.min_uV		= S2MPA01_BUCK_MIN4,			\
-> -	.uV_step	= S2MPA01_BUCK_STEP2,			\
-> +	.min_uV		= MIN_1500_MV,				\
-> +	.uV_step	= STEP_12_5_MV,				\
->   	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
->   	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
->   	.vsel_reg	= S2MPA01_REG_B9CTRL2,			\
-> @@ -350,8 +350,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
->   	.ops		= &s2mpa01_buck_ops,			\
->   	.type		= REGULATOR_VOLTAGE,			\
->   	.owner		= THIS_MODULE,				\
-> -	.min_uV		= S2MPA01_BUCK_MIN3,			\
-> -	.uV_step	= S2MPA01_BUCK_STEP2,			\
-> +	.min_uV		= MIN_1000_MV,				\
-> +	.uV_step	= STEP_12_5_MV,				\
->   	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
->   	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
->   	.vsel_reg	= S2MPA01_REG_B10CTRL2,			\
-> diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
-> index 02e2fb2..2098c3e 100644
-> --- a/drivers/regulator/s2mps11.c
-> +++ b/drivers/regulator/s2mps11.c
-> @@ -250,14 +250,14 @@ static struct regulator_ops s2mps11_buck_ops = {
->   	.set_ramp_delay		= s2mps11_set_ramp_delay,
->   };
->
-> -#define regulator_desc_s2mps11_ldo1(num)	{		\
-> +#define regulator_desc_s2mps11_ldo1(num)	{	\
->   	.name		= "LDO"#num,			\
->   	.id		= S2MPS11_LDO##num,		\
->   	.ops		= &s2mps11_ldo_ops,		\
->   	.type		= REGULATOR_VOLTAGE,		\
->   	.owner		= THIS_MODULE,			\
-> -	.min_uV		= S2MPS11_LDO_MIN,		\
-> -	.uV_step	= S2MPS11_LDO_STEP1,		\
-> +	.min_uV		= MIN_800_MV,			\
-> +	.uV_step	= STEP_50_MV,			\
->   	.n_voltages	= S2MPS11_LDO_N_VOLTAGES,	\
->   	.vsel_reg	= S2MPS11_REG_L1CTRL + num - 1,	\
->   	.vsel_mask	= S2MPS11_LDO_VSEL_MASK,	\
-> @@ -270,8 +270,8 @@ static struct regulator_ops s2mps11_buck_ops = {
->   	.ops		= &s2mps11_ldo_ops,		\
->   	.type		= REGULATOR_VOLTAGE,		\
->   	.owner		= THIS_MODULE,			\
-> -	.min_uV		= S2MPS11_LDO_MIN,		\
-> -	.uV_step	= S2MPS11_LDO_STEP2,		\
-> +	.min_uV		= MIN_800_MV,			\
-> +	.uV_step	= STEP_25_MV,			\
->   	.n_voltages	= S2MPS11_LDO_N_VOLTAGES,	\
->   	.vsel_reg	= S2MPS11_REG_L1CTRL + num - 1,	\
->   	.vsel_mask	= S2MPS11_LDO_VSEL_MASK,	\
-> @@ -285,8 +285,8 @@ static struct regulator_ops s2mps11_buck_ops = {
->   	.ops		= &s2mps11_buck_ops,			\
->   	.type		= REGULATOR_VOLTAGE,			\
->   	.owner		= THIS_MODULE,				\
-> -	.min_uV		= S2MPS11_BUCK_MIN1,			\
-> -	.uV_step	= S2MPS11_BUCK_STEP1,			\
-> +	.min_uV		= MIN_600_MV,				\
-> +	.uV_step	= STEP_6_25_MV,				\
->   	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
->   	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
->   	.vsel_reg	= S2MPS11_REG_B1CTRL2 + (num - 1) * 2,	\
-> @@ -301,8 +301,8 @@ static struct regulator_ops s2mps11_buck_ops = {
->   	.ops		= &s2mps11_buck_ops,			\
->   	.type		= REGULATOR_VOLTAGE,			\
->   	.owner		= THIS_MODULE,				\
-> -	.min_uV		= S2MPS11_BUCK_MIN1,			\
-> -	.uV_step	= S2MPS11_BUCK_STEP1,			\
-> +	.min_uV		= MIN_600_MV,				\
-> +	.uV_step	= STEP_6_25_MV,				\
->   	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
->   	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
->   	.vsel_reg	= S2MPS11_REG_B5CTRL2,			\
-> @@ -317,8 +317,8 @@ static struct regulator_ops s2mps11_buck_ops = {
->   	.ops		= &s2mps11_buck_ops,			\
->   	.type		= REGULATOR_VOLTAGE,			\
->   	.owner		= THIS_MODULE,				\
-> -	.min_uV		= S2MPS11_BUCK_MIN1,			\
-> -	.uV_step	= S2MPS11_BUCK_STEP1,			\
-> +	.min_uV		= MIN_600_MV,				\
-> +	.uV_step	= STEP_6_25_MV,				\
->   	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
->   	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
->   	.vsel_reg	= S2MPS11_REG_B6CTRL2 + (num - 6) * 2,	\
-> @@ -333,8 +333,8 @@ static struct regulator_ops s2mps11_buck_ops = {
->   	.ops		= &s2mps11_buck_ops,			\
->   	.type		= REGULATOR_VOLTAGE,			\
->   	.owner		= THIS_MODULE,				\
-> -	.min_uV		= S2MPS11_BUCK_MIN3,			\
-> -	.uV_step	= S2MPS11_BUCK_STEP3,			\
-> +	.min_uV		= MIN_3000_MV,				\
-> +	.uV_step	= STEP_25_MV,				\
->   	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
->   	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
->   	.vsel_reg	= S2MPS11_REG_B9CTRL2,			\
-> @@ -349,8 +349,8 @@ static struct regulator_ops s2mps11_buck_ops = {
->   	.ops		= &s2mps11_buck_ops,			\
->   	.type		= REGULATOR_VOLTAGE,			\
->   	.owner		= THIS_MODULE,				\
-> -	.min_uV		= S2MPS11_BUCK_MIN2,			\
-> -	.uV_step	= S2MPS11_BUCK_STEP2,			\
-> +	.min_uV		= MIN_750_MV,				\
-> +	.uV_step	= STEP_12_5_MV,				\
->   	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
->   	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
->   	.vsel_reg	= S2MPS11_REG_B10CTRL2,			\
-> @@ -473,8 +473,8 @@ static struct regulator_ops s2mps14_reg_ops = {
->   	.ops		= &s2mps14_reg_ops,		\
->   	.type		= REGULATOR_VOLTAGE,		\
->   	.owner		= THIS_MODULE,			\
-> -	.min_uV		= S2MPS14_LDO_MIN_800MV,	\
-> -	.uV_step	= S2MPS14_LDO_STEP_25MV,	\
-> +	.min_uV		= MIN_800_MV,			\
-> +	.uV_step	= STEP_25_MV,			\
->   	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
->   	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
->   	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
-> @@ -487,8 +487,8 @@ static struct regulator_ops s2mps14_reg_ops = {
->   	.ops		= &s2mps14_reg_ops,		\
->   	.type		= REGULATOR_VOLTAGE,		\
->   	.owner		= THIS_MODULE,			\
-> -	.min_uV		= S2MPS14_LDO_MIN_1800MV,	\
-> -	.uV_step	= S2MPS14_LDO_STEP_25MV,	\
-> +	.min_uV		= MIN_1800_MV,			\
-> +	.uV_step	= STEP_25_MV,			\
->   	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
->   	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
->   	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
-> @@ -501,8 +501,8 @@ static struct regulator_ops s2mps14_reg_ops = {
->   	.ops		= &s2mps14_reg_ops,		\
->   	.type		= REGULATOR_VOLTAGE,		\
->   	.owner		= THIS_MODULE,			\
-> -	.min_uV		= S2MPS14_LDO_MIN_800MV,	\
-> -	.uV_step	= S2MPS14_LDO_STEP_12_5MV,	\
-> +	.min_uV		= MIN_800_MV,			\
-> +	.uV_step	= STEP_12_5_MV,			\
->   	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
->   	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
->   	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
-> @@ -515,8 +515,8 @@ static struct regulator_ops s2mps14_reg_ops = {
->   	.ops		= &s2mps14_reg_ops,			\
->   	.type		= REGULATOR_VOLTAGE,			\
->   	.owner		= THIS_MODULE,				\
-> -	.min_uV		= S2MPS14_BUCK1235_MIN_600MV,		\
-> -	.uV_step	= S2MPS14_BUCK1235_STEP_6_25MV,		\
-> +	.min_uV		= MIN_600_MV,				\
-> +	.uV_step	= STEP_6_25_MV,				\
->   	.n_voltages	= S2MPS14_BUCK_N_VOLTAGES,		\
->   	.linear_min_sel = S2MPS14_BUCK1235_START_SEL,		\
->   	.ramp_delay	= S2MPS14_BUCK_RAMP_DELAY,		\
-> @@ -531,8 +531,8 @@ static struct regulator_ops s2mps14_reg_ops = {
->   	.ops		= &s2mps14_reg_ops,			\
->   	.type		= REGULATOR_VOLTAGE,			\
->   	.owner		= THIS_MODULE,				\
-> -	.min_uV		= S2MPS14_BUCK4_MIN_1400MV,		\
-> -	.uV_step	= S2MPS14_BUCK4_STEP_12_5MV,		\
-> +	.min_uV		= MIN_1400_MV,				\
-> +	.uV_step	= STEP_12_5_MV,				\
->   	.n_voltages	= S2MPS14_BUCK_N_VOLTAGES,		\
->   	.linear_min_sel = S2MPS14_BUCK4_START_SEL,		\
->   	.ramp_delay	= S2MPS14_BUCK_RAMP_DELAY,		\
-> diff --git a/include/linux/mfd/samsung/core.h b/include/linux/mfd/samsung/core.h
-> index 47d8424..a4118aa 100644
-> --- a/include/linux/mfd/samsung/core.h
-> +++ b/include/linux/mfd/samsung/core.h
-> @@ -14,6 +14,27 @@
->   #ifndef __LINUX_MFD_SEC_CORE_H
->   #define __LINUX_MFD_SEC_CORE_H
->
-> +/* Macros to represent minimum voltages for LDO/BUCK */
-> +#define MIN_3000_MV		3000000
-> +#define MIN_2500_MV		2500000
-> +#define MIN_2000_MV		2000000
-> +#define MIN_1800_MV		1800000
-> +#define MIN_1500_MV		1500000
-> +#define MIN_1400_MV		1400000
-> +#define MIN_1000_MV		1000000
-> +
-> +#define MIN_900_MV		900000
-> +#define MIN_850_MV		850000
-> +#define MIN_800_MV		800000
-> +#define MIN_750_MV		750000
-> +#define MIN_600_MV		600000
-> +
-> +/* Macros to represent steps for LDO/BUCK */
-> +#define STEP_50_MV		50000
-> +#define STEP_25_MV		25000
-> +#define STEP_12_5_MV		12500
-> +#define STEP_6_25_MV		6250
-> +
->   enum sec_device_type {
->   	S5M8751X,
->   	S5M8763X,
-> diff --git a/include/linux/mfd/samsung/s2mpa01.h b/include/linux/mfd/samsung/s2mpa01.h
-> index fbc63bc..2766108 100644
-> --- a/include/linux/mfd/samsung/s2mpa01.h
-> +++ b/include/linux/mfd/samsung/s2mpa01.h
-> @@ -155,18 +155,6 @@ enum s2mpa01_regulators {
->   	S2MPA01_REGULATOR_MAX,
->   };
->
-> -#define S2MPA01_BUCK_MIN1	600000
-> -#define S2MPA01_BUCK_MIN2	800000
-> -#define S2MPA01_BUCK_MIN3	1000000
-> -#define S2MPA01_BUCK_MIN4	1500000
-> -#define S2MPA01_LDO_MIN		800000
-> -
-> -#define S2MPA01_BUCK_STEP1	6250
-> -#define S2MPA01_BUCK_STEP2	12500
-> -
-> -#define S2MPA01_LDO_STEP1	50000
-> -#define S2MPA01_LDO_STEP2	25000
-> -
->   #define S2MPA01_LDO_VSEL_MASK	0x3F
->   #define S2MPA01_BUCK_VSEL_MASK	0xFF
->   #define S2MPA01_ENABLE_MASK	(0x03 << S2MPA01_ENABLE_SHIFT)
-> diff --git a/include/linux/mfd/samsung/s2mps11.h b/include/linux/mfd/samsung/s2mps11.h
-> index b3ddf98..7981a9d 100644
-> --- a/include/linux/mfd/samsung/s2mps11.h
-> +++ b/include/linux/mfd/samsung/s2mps11.h
-> @@ -171,15 +171,6 @@ enum s2mps11_regulators {
->   	S2MPS11_REGULATOR_MAX,
->   };
->
-> -#define S2MPS11_BUCK_MIN1	600000
-> -#define S2MPS11_BUCK_MIN2	750000
-> -#define S2MPS11_BUCK_MIN3	3000000
-> -#define S2MPS11_LDO_MIN	800000
-> -#define S2MPS11_BUCK_STEP1	6250
-> -#define S2MPS11_BUCK_STEP2	12500
-> -#define S2MPS11_BUCK_STEP3	25000
-> -#define S2MPS11_LDO_STEP1	50000
-> -#define S2MPS11_LDO_STEP2	25000
->   #define S2MPS11_LDO_VSEL_MASK	0x3F
->   #define S2MPS11_BUCK_VSEL_MASK	0xFF
->   #define S2MPS11_ENABLE_MASK	(0x03 << S2MPS11_ENABLE_SHIFT)
-> diff --git a/include/linux/mfd/samsung/s2mps14.h b/include/linux/mfd/samsung/s2mps14.h
-> index 900cd7a..c92f478 100644
-> --- a/include/linux/mfd/samsung/s2mps14.h
-> +++ b/include/linux/mfd/samsung/s2mps14.h
-> @@ -123,10 +123,6 @@ enum s2mps14_regulators {
->   };
->
->   /* Regulator constraints for BUCKx */
-> -#define S2MPS14_BUCK1235_MIN_600MV	600000
-> -#define S2MPS14_BUCK4_MIN_1400MV	1400000
-> -#define S2MPS14_BUCK1235_STEP_6_25MV	6250
-> -#define S2MPS14_BUCK4_STEP_12_5MV	12500
->   #define S2MPS14_BUCK1235_START_SEL	0x20
->   #define S2MPS14_BUCK4_START_SEL		0x40
->   /*
-> @@ -136,12 +132,6 @@ enum s2mps14_regulators {
->    */
->   #define S2MPS14_BUCK_RAMP_DELAY		12500
->
-> -/* Regulator constraints for different types of LDOx */
-> -#define S2MPS14_LDO_MIN_800MV		800000
-> -#define S2MPS14_LDO_MIN_1800MV		1800000
-> -#define S2MPS14_LDO_STEP_12_5MV		12500
-> -#define S2MPS14_LDO_STEP_25MV		25000
-> -
->   #define S2MPS14_LDO_VSEL_MASK		0x3F
->   #define S2MPS14_BUCK_VSEL_MASK		0xFF
->   #define S2MPS14_ENABLE_MASK		(0x03 << S2MPS14_ENABLE_SHIFT)
->
-
+Thanks
+Kishon
+> 
+> Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
+> ---
+> Changes since v1:
+> * Added dependency on DWC2 gadget driver as suggested by Tomasz Figa.
+> ---
+>  drivers/phy/Kconfig |   35 +++++++++++------------------------
+>  1 file changed, 11 insertions(+), 24 deletions(-)
+> 
+> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+> index fcdfe7c0e4a7..128f8b92b55c 100644
+> --- a/drivers/phy/Kconfig
+> +++ b/drivers/phy/Kconfig
+> @@ -123,43 +123,30 @@ config PHY_SUN4I_USB
+>  config PHY_SAMSUNG_USB2
+>  	tristate "Samsung USB 2.0 PHY driver"
+>  	depends on HAS_IOMEM
+> +	depends on USB_EHCI_EXYNOS || USB_OHCI_EXYNOS || USB_DWC2
+>  	select GENERIC_PHY
+>  	select MFD_SYSCON
+> +	default ARCH_EXYNOS
+>  	help
+>  	  Enable this to support the Samsung USB 2.0 PHY driver for Samsung
+> -	  SoCs. This driver provides the interface for USB 2.0 PHY. Support for
+> -	  particular SoCs has to be enabled in addition to this driver. Number
+> -	  and type of supported phys depends on the SoC.
+> +	  SoCs. This driver provides the interface for USB 2.0 PHY. Support
+> +	  for particular PHYs will be enabled based on the SoC type in addition
+> +	  to this driver.
+>  
+>  config PHY_EXYNOS4210_USB2
+> -	bool "Support for Exynos 4210"
+> +	bool
+>  	depends on PHY_SAMSUNG_USB2
+> -	depends on CPU_EXYNOS4210
+> -	help
+> -	  Enable USB PHY support for Exynos 4210. This option requires that
+> -	  Samsung USB 2.0 PHY driver is enabled and means that support for this
+> -	  particular SoC is compiled in the driver. In case of Exynos 4210 four
+> -	  phys are available - device, host, HSIC0 and HSIC1.
+> +	default CPU_EXYNOS4210
+>  
+>  config PHY_EXYNOS4X12_USB2
+> -	bool "Support for Exynos 4x12"
+> +	bool
+>  	depends on PHY_SAMSUNG_USB2
+> -	depends on (SOC_EXYNOS4212 || SOC_EXYNOS4412)
+> -	help
+> -	  Enable USB PHY support for Exynos 4x12. This option requires that
+> -	  Samsung USB 2.0 PHY driver is enabled and means that support for this
+> -	  particular SoC is compiled in the driver. In case of Exynos 4x12 four
+> -	  phys are available - device, host, HSIC0 and HSIC1.
+> +	default SOC_EXYNOS4212 || SOC_EXYNOS4412
+>  
+>  config PHY_EXYNOS5250_USB2
+> -	bool "Support for Exynos 5250"
+> +	bool
+>  	depends on PHY_SAMSUNG_USB2
+> -	depends on SOC_EXYNOS5250
+> -	help
+> -	  Enable USB PHY support for Exynos 5250. This option requires that
+> -	  Samsung USB 2.0 PHY driver is enabled and means that support for this
+> -	  particular SoC is compiled in the driver. In case of Exynos 5250 four
+> -	  phys are available - device, host, HSIC0 and HSIC.
+> +	default SOC_EXYNOS5250 || SOC_EXYNOS5420
+>  
+>  config PHY_EXYNOS5_USBDRD
+>  	tristate "Exynos5 SoC series USB DRD PHY driver"
+> 
