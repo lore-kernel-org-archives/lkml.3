@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754958AbaGNMja (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 08:39:30 -0400
-Received: from mail.efficios.com ([78.47.125.74]:47941 "EHLO mail.efficios.com"
+	id S1755117AbaGNMlV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 08:41:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8358 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754575AbaGNMjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 08:39:25 -0400
-Date: Mon, 14 Jul 2014 12:39:26 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Message-ID: <1154261133.13906.1405341566164.JavaMail.zimbra@efficios.com>
-In-Reply-To: <20140714094750.GO9918@twins.programming.kicks-ass.net>
-References: <20140711133623.530368377@linutronix.de> <20140711133709.835700036@linutronix.de> <20140714094750.GO9918@twins.programming.kicks-ass.net>
-Subject: Re: [patch 54/55] timekeeping: Provide fast and NMI safe access to
- CLOCK_MONOTONIC[_RAW]
+	id S1754469AbaGNMlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 08:41:16 -0400
+Message-ID: <53C3CFC1.9070800@redhat.com>
+Date: Mon, 14 Jul 2014 14:40:33 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Peter Zijlstra <peterz@infradead.org>
+CC: kan.liang@intel.com, andi@firstfloor.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH V5 1/2] perf ignore LBR and extra_regs
+References: <1404989984-3068-1-git-send-email-kan.liang@intel.com> <53C3C517.4000500@redhat.com> <20140714120922.GV9918@twins.programming.kicks-ass.net>
+In-Reply-To: <20140714120922.GV9918@twins.programming.kicks-ass.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF30 (Linux)/8.0.7_GA_6021)
-Thread-Topic: timekeeping: Provide fast and NMI safe access to CLOCK_MONOTONIC[_RAW]
-Thread-Index: BfeNE5gAcsbYb1pJr1Ukc0rO90/9Qw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Peter Zijlstra" <peterz@infradead.org>
-> To: "Thomas Gleixner" <tglx@linutronix.de>
-> Cc: "LKML" <linux-kernel@vger.kernel.org>, "John Stultz" <john.stultz@linaro.org>, "Steven Rostedt"
-> <rostedt@goodmis.org>, "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> Sent: Monday, July 14, 2014 5:47:50 AM
-> Subject: Re: [patch 54/55] timekeeping: Provide fast and NMI safe access to CLOCK_MONOTONIC[_RAW]
-> 
-> On Fri, Jul 11, 2014 at 01:45:19PM -0000, Thomas Gleixner wrote:
-> > +static struct tk_fast tk_fast_raw  ____cacheline_aligned;
-> > +static struct tk_fast tk_fast_mono ____cacheline_aligned;
-> 
-> Question to the 'trace maniacs'; why do you lot need access to mono_raw?
-> 
-> I would much prefer to limit choice here.
+Il 14/07/2014 14:09, Peter Zijlstra ha scritto:
+> On Mon, Jul 14, 2014 at 01:55:03PM +0200, Paolo Bonzini wrote:
+>> Il 10/07/2014 12:59, kan.liang@intel.com ha scritto:
+>>> From: Kan Liang <kan.liang@intel.com>
+>>>
+>>> x86, perf: Protect LBR and extra_regs against KVM lying
+>>>
+>>> With -cpu host, KVM reports LBR and extra_regs support, if the host has support.
+>>> When the guest perf driver tries to access LBR or extra_regs MSR,
+>>> it #GPs all MSR accesses,since KVM doesn't handle LBR and extra_regs support.
+>>> So check the related MSRs access right once at initialization time to avoid the error access at runtime.
+>>>
+>>> For reproducing the issue, please build the kernel with CONFIG_KVM_INTEL = y (for host kernel).
+>>> And CONFIG_PARAVIRT = n and CONFIG_KVM_GUEST = n (for guest kernel).
+>>
+>> I'm not sure this is a useful patch.
+>>
+>> This is #GP'ing just because of a limitation in the PMU; just compile the
+>> kernel with CONFIG_PARAVIRT
+>
+> How's that going to help? If you run kvm -host the VM is lying through
+> its teeth is the kernel is going to assume all those MSRs present,
+> PARAVIRT isn't going to help with this.
+>
+>> , or split the "rdmsr is always rdmsr_safe"
+>> behavior out of CONFIG_PARAVIRT and into a new Kconfig symbol.
+>
+> That's not useful either, because non of these code-paths are going to
+> check the return value.
 
-For LTTng, which I guess qualifies as bring part of the aforementioned
-trace maniacs group, we only need the "tk_fast_mono" clock. We don't
-need mono_raw.
+Hmmm, I thought rdmsr_safe was going to return zero, but it just returns 
+whatever happened to be in edx:eax which maybe should also be fixed.
 
-We can then correlate with user-space traces by using tk_fast_mono in
-kernel-space and using CLOCK_MONOTONIC in userspace.
+Kan Liang, what happens if CONFIG_PARAVIRT=y?  Do you get garbage or 
+just no events reported?
 
-Thanks,
+>> In fact there's no reason why LBR cannot be virtualized (though it does need
+>> support from the processor), and it may even be possible to support
+>> OFFCORE_RSP_X in the KVM virtual PMU.
+>
+> But its not, so something needs to be done, right?
 
-Mathieu
+A first thing that could be done, is to have a way for the kernel to 
+detect absence of LBR, for example an all-1s setting of the LBR format 
+field of IA32_PERF_CAPABILITIES.  If Intel can tell us "all 1s will 
+never be used", we can have KVM set the field that way.  The kernel then 
+should disable LBR.
 
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+Paolo
