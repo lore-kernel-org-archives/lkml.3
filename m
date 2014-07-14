@@ -1,94 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756593AbaGNSKM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 14:10:12 -0400
-Received: from p02c12o141.mxlogic.net ([208.65.145.74]:33637 "EHLO
-	p02c12o141.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754AbaGNSKI (ORCPT
+	id S1756757AbaGNSLQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 14:11:16 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:63456 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756215AbaGNSLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 14:10:08 -0400
-X-MXL-Hash: 53c41d003e8e0015-57f5950f3527ae5025c9ca1fab7351aee8dedbe3
-Date: Mon, 14 Jul 2014 14:10:00 -0400
-From: Joe Lawrence <joe.lawrence@stratus.com>
-To: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-CC: Joe Julian <joe@julianfamily.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Joe Maloy <joe.maloy@avagotech.com>
-Subject: Re: mpt2sas stuck installing
-Message-ID: <20140714141000.232d5e14@jlaw-desktop.mno.stratus.com>
-In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B402958B9907B@G9W0745.americas.hpqcorp.net>
-References: <20140704013250.088477de@jlaw-desktop.mno.stratus.com>
-	<53B649A6.60501@julianfamily.org>
-	<alpine.DEB.2.02.1407072149190.10980@jlaw-desktop.mno.stratus.com>
-	<53BDBB3A.5060906@julianfamily.org>
-	<20140711225306.3ce78324@jlaw-desktop.mno.stratus.com>
-	<94D0CD8314A33A4D9D801C0FE68B402958B9907B@G9W0745.americas.hpqcorp.net>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Mon, 14 Jul 2014 14:11:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-AnalysisOut: [v=2.1 cv=atE8CEpV c=1 sm=1 tr=0 a=o2bo05G+d1rlxuoNbFVhCw==]
-X-AnalysisOut: [:117 a=o2bo05G+d1rlxuoNbFVhCw==:17 a=_KQqW7t0BisA:10 a=BLc]
-X-AnalysisOut: [eEmwcHowA:10 a=kj9zAlcOel0A:10 a=uelBKuKpAAAA:8 a=YlVTAMxI]
-X-AnalysisOut: [AAAA:8 a=cH6R9-kdAAAA:8 a=VwQbUJbxAAAA:8 a=2SOu3le0Gyo7I5V]
-X-AnalysisOut: [UPHkA:9 a=CjuIK1q_8ugA:10 a=bt0zGP92IBIA:10]
-X-Spam: [F=0.5000000000; CM=0.500; MH=0.500(2014071411); S=0.200(2014051901)]
-X-MAIL-FROM: <joe.lawrence@stratus.com>
-X-SOURCE-IP: [134.111.1.18]
+In-Reply-To: <1404337536-11037-1-git-send-email-ddstreet@ieee.org>
+References: <1401747586-11861-1-git-send-email-ddstreet@ieee.org> <1404337536-11037-1-git-send-email-ddstreet@ieee.org>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Mon, 14 Jul 2014 14:10:42 -0400
+X-Google-Sender-Auth: Kz7HAofJIjnAvDzOS9OJUAzE0aA
+Message-ID: <CALZtONBYwm5t39z8wiEkTrFw-g=Be+ypaZo2nuFo0ob5pRXSAw@mail.gmail.com>
+Subject: Re: [PATCHv5 0/4] mm/zpool: add common api for zswap to use zbud/zsmalloc
+To: Seth Jennings <sjennings@variantweb.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Dan Streetman <ddstreet@ieee.org>, Bob Liu <bob.liu@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Weijie Yang <weijie.yang@samsung.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 12 Jul 2014 03:13:07 +0000
-"Elliott, Robert (Server Storage)" <Elliott@hp.com> wrote:
+Andrew, any thoughts on this latest version of the patch set?  Let me
+know if I missed anything or you have any other suggestions.
 
-> 
-> 
-> > -----Original Message-----
-> > From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
-> > owner@vger.kernel.org] On Behalf Of Joe Lawrence
-> ...
-> > In your crash stack trace, the scsi error handler has issued a host
-> > reset, but then crashed in mpt2sas_base_get_iocstate.  Reading through
-> > _scsih_shutdown, I don't believe that the mpt2sas .shutdown path takes
-> > any precaution before heading down mpt2sas_base_detach to free adapter
-> > resources.  The ordinary .remove path looks similar, though it does
-> > call sas_remove_host before freeing resources, *then* scsi_remove_host
-> > and scsi_host_put.
-> > 
-> > I wonder if this ordering needs to be reversed (and added to
-> > _scsih_shutdown) to properly de-register from the SCSI midlayer prior
-> > to removing the controller instance.
-> > 
-> > Regards,
-> > 
-> > -- Joe
-> 
-> Nagalakshmi was working on an mpt3sas patch for the scsi-mq tree 
-> to do just that.  I don't recall if the patch has made it into the 
-> scsi-mq tree yet. Apparently it's also needed for non-mq and mpt2sas.
-> 
-> It is making this change:
-> >  	sas_remove_host(shost);
-> > +	scsi_remove_host(shost);
-> >  	mpt3sas_base_detach(ioc);
-> >  	list_del(&ioc->list);
-> > -	scsi_remove_host(shost);
-> >  	scsi_host_put(shost);
-> 
-> We are making a similar change in hpsa.  Doing so led to a general 
-> protection fault, which unveiled that we also needed to change 
-> cancel_delayed_work() calls to cancel_delayed_work_sync() to 
-> ensure there are no worker functions still active after the 
-> scsi_host structure is unregistered.
+Seth, did you get a chance to review this and/or test it out?
 
-It looks like Sreekanth posted those patches today -- the new ordering
-seems correct, but is there any reason why _scsih_shutdown skips
-{sas,scsi}_remove_host calls?
 
-Regards,
 
--- Joe
+On Wed, Jul 2, 2014 at 5:45 PM, Dan Streetman <ddstreet@ieee.org> wrote:
+> In order to allow zswap users to choose between zbud and zsmalloc for
+> the compressed storage pool, this patch set adds a new api "zpool" that
+> provides an interface to both zbud and zsmalloc.  This does not include
+> implementing shrinking in zsmalloc, which will be sent separately.
+>
+> I believe Seth originally was using zsmalloc for swap, but there were
+> concerns about how significant the impact of shrinking zsmalloc would
+> be when zswap had to start reclaiming pages.  That still may be an
+> issue, but this at least allows users to choose themselves whether
+> they want a lower-density or higher-density compressed storage medium.
+> At least for situations where zswap reclaim is never or rarely reached,
+> it probably makes sense to use the higher density of zsmalloc.
+>
+> Note this patch set does not change zram to use zpool, although that
+> change should be possible as well.
+>
+> ---
+> Changes since v4 : https://lkml.org/lkml/2014/6/2/711
+>   -omit first patch, that removed gfp_t param from zpool_malloc()
+>   -move function doc from zpool.h to zpool.c
+>   -move module usage refcounting into patch that adds zpool
+>   -add extra refcounting to prevent driver unregister if in use
+>   -add doc clarifying concurrency usage
+>   -make zbud/zsmalloc zpool functions static
+>   -typo corrections
+>
+> Changes since v3 : https://lkml.org/lkml/2014/5/24/130
+>   -In zpool_shrink() use # pages instead of # bytes
+>   -Add reclaimed param to zpool_shrink() to indicate to caller
+>    # pages actually reclaimed
+>   -move module usage counting to zpool, from zbud/zsmalloc
+>   -update zbud_zpool_shrink() to call zbud_reclaim_page() in a
+>    loop until requested # pages have been reclaimed (or error)
+>
+> Changes since v2 : https://lkml.org/lkml/2014/5/7/927
+>   -Change zpool to use driver registration instead of hardcoding
+>    implementations
+>   -Add module use counting in zbud/zsmalloc
+>
+> Changes since v1 https://lkml.org/lkml/2014/4/19/97
+>  -remove zsmalloc shrinking
+>  -change zbud size param type from unsigned int to size_t
+>  -remove zpool fallback creation
+>  -zswap manually falls back to zbud if specified type fails
+>
+>
+> Dan Streetman (4):
+>   mm/zbud: change zbud_alloc size type to size_t
+>   mm/zpool: implement common zpool api to zbud/zsmalloc
+>   mm/zpool: zbud/zsmalloc implement zpool
+>   mm/zpool: update zswap to use zpool
+>
+>  include/linux/zbud.h  |   2 +-
+>  include/linux/zpool.h | 106 +++++++++++++++
+>  mm/Kconfig            |  43 +++---
+>  mm/Makefile           |   1 +
+>  mm/zbud.c             |  98 +++++++++++++-
+>  mm/zpool.c            | 364 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  mm/zsmalloc.c         |  84 ++++++++++++
+>  mm/zswap.c            |  75 ++++++-----
+>  8 files changed, 722 insertions(+), 51 deletions(-)
+>  create mode 100644 include/linux/zpool.h
+>  create mode 100644 mm/zpool.c
+>
+> --
+> 1.8.3.1
+>
