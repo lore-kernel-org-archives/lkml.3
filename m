@@ -1,118 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582AbaGNNPE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 09:15:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59807 "EHLO mx1.redhat.com"
+	id S1755600AbaGNNPl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 09:15:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27891 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755561AbaGNNOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 09:14:54 -0400
-Message-ID: <53C3D7C3.7090505@redhat.com>
-Date: Mon, 14 Jul 2014 15:14:43 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
-CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [BISECTED 3.16-rc REGREGRESSION] backlight control stopped working
-References: <87pph8kse7.fsf@nemi.mork.no>
-In-Reply-To: <87pph8kse7.fsf@nemi.mork.no>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1754849AbaGNNPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 09:15:32 -0400
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Vivek Goyal <vgoyal@redhat.com>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v6] mmap_vmcore: skip non-ram pages reported by hypervisors
+Date: Mon, 14 Jul 2014 15:15:16 +0200
+Message-Id: <1405343716-19495-1-git-send-email-vkuznets@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+We have a special check in read_vmcore() handler to check if the page was
+reported as ram or not by the hypervisor (pfn_is_ram()). However, when
+vmcore is read with mmap() no such check is performed. That can lead to
+unpredictable results, e.g. when running Xen PVHVM guest memcpy() after
+mmap() on /proc/vmcore will hang processing HVMMEM_mmio_dm pages creating
+enormous load in both DomU and Dom0.
 
-On 07/14/2014 02:59 PM, Bjørn Mork wrote:
-> Yes, I actually bisected this just to get
-> 
-> 886129a8eebebec260165741fe31421482371006 is the first bad commit
-> commit 886129a8eebebec260165741fe31421482371006
-> Author: Hans de Goede <hdegoede@redhat.com>
-> Date:   Tue May 6 14:46:23 2014 +0200
-> 
->     ACPI / video: change acpi-video brightness_switch_enabled default to 0
->     
->     acpi-video is unique in that it not only generates brightness up/down
->     keypresses, but also (sometimes) actively changes the brightness itself.
->     
->     This presents an inconsistent kernel interface to userspace, basically there
->     are 2 different scenarios, depending on the laptop model:
->     
->      1) On some laptops a brightness up/down keypress means: show a brightness osd
->      with the current brightness, iow it is a brightness has changed notification.
->     
->      2) Where as on (a lot of) other laptops it means a brightness up/down key was
->      pressed, deal with it.
->     
->     Most of the desktop environments interpret any press as in scenario 2, and
->     change the brightness up / down as a response to the key events, causing it
->     to be changed twice, once by acpi-video and once by the DE.
->     
->     With the new default for video.use_native_backlight we will be moving even
->     more laptops over to behaving as in scenario 2. Making the remaining laptops
->     even more of a weird exception. Also note that it is hard to detect scenario
->     1 properly in userspace, and AFAIK none of the DE-s deals with it.
->     
->     Therefor this commit changes the default of brightness_switch_enabled to 0
->     making its behavior consistent with all the other backlight drivers.
->     
->     Signed-off-by: Hans de Goede <hdegoede@redhat.com>
->     Reviewed-by: Aaron Lu <aaron.lu@intel.com>
->     Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> :040000 040000 5bbac8c4f3e9fd5421daf84289004c32c3217f2a 82c99a358bda6360f845b6063182d3e707ff90f0 M      Documentation
-> :040000 040000 81ed56a41130bbbea980620114ff11e3bb23ee63 a9870ba1d046bde69796060304c78dfbb1d00a1f M      drivers
-> 
-> 
-> 
-> The fact that this seems to be an *intentional* breakage does not help a
-> lot.  Yes, I understand that you believe the choice of default was
-> incorrect for some reason.  You might even be right about that.  But
-> that is still not a valid reason to break existing configurations for
-> end users!  Please do not do that.
+Fix the issue by mapping each non-ram page to the zero page. Keep direct
+path with remap_oldmem_pfn_range() to avoid looping through all pages on
+bare metal.
 
-This *not* a regression, it is an intended behavior change which can be
-flipped back to its old behavior with a single cmdline argument (add
-video.brightness_switch_enabled=1 to the kernel commandline).
+The issue can also be solved by overriding remap_oldmem_pfn_range() in
+xen-specific code, as remap_oldmem_pfn_range() was been designed for.
+That, however, would involve non-obvious xen code path for all x86 builds
+with CONFIG_XEN_PVHVM=y and would prevent all other hypervisor-specific
+code on x86 arch from doing the same override.
 
-Yes this may break existing configurations for some users, most likely
-users running some custom setup, who thus should be able to fix things
-by adding one more customization to there setup.
+Changes from v5:
+- make len size_t to match do_unmap() interface
 
-OTOH this will also unbreak a lot of existing setups, likely an amount
-of setups which is at least one order of magnitude bigger then the
-amount it will break.
+Changes from v4:
+- change map_size type size_t -> unsigned long
+- use prot instead of vma->vm_page_prot inside remap_oldmem_pfn_checked()
 
-Most users will be running a desktop environment which will react
-to the keypresses (which are always generated in cases where
-brightness_switch_enabled does anything) by changing the brightness
-a second time. This happens at least in gnome, kde, xfce, unity and
-probably in a few smaller desktop environments as configured ootb too.
+Changes from v3:
+- multi line comment style changes
+- minor code style changes
 
-If you've a backlight control which only has 8 steps taking 2 steps
-at a time is a bug issue, see e.g. :
+Changes from v2:
+- make remap_oldmem_pfn_checked() interface exactly match
+  remap_oldmem_pfn_range()
+- unmap mapped part inside remap_oldmem_pfn_checked() in case of failure so
+  we don't need to take care of it in mmap_vmcore()
+- create vmcore_remap_oldmem_pfn() wrapper
 
-https://bugs.launchpad.net/gnome-settings-daemon/+bug/527157
-http://askubuntu.com/questions/173921/why-does-my-thinkpad-brightness-control-skip-steps
+Changes from v1:
+- comment style changes
+- change remap_oldmem_pfn_checked() interface to closer match the
+  remap_oldmem_pfn() interface
+- preserve formal parameters within the loop, make the loop conditions
+  easier to understand
+- use my_zero_pfn() for the zero page
+- return remapped length instead of new offset
 
-TL;DR: This change really is for the better and is here to stay.
+Reviewed-by: Andrew Jones <drjones@redhat.com>
+Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+---
+ fs/proc/vmcore.c | 83 ++++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 80 insertions(+), 3 deletions(-)
 
-> Note that NO USER cares about "some laptops" or "other laptops".  They
-> care about their own systems, which either
->  a) depend on the old default and therefore breaks with your change, or
->  b) have a user modified setting and therefore are unaffected by your
->     change
+diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+index 382aa89..fa45923 100644
+--- a/fs/proc/vmcore.c
++++ b/fs/proc/vmcore.c
+@@ -328,6 +328,83 @@ static inline char *alloc_elfnotes_buf(size_t notes_sz)
+  * virtually contiguous user-space in ELF layout.
+  */
+ #ifdef CONFIG_MMU
++/*
++ * remap_oldmem_pfn_checked - do remap_oldmem_pfn_range replacing all pages
++ * reported as not being ram with the zero page.
++ *
++ * @vma: vm_area_struct describing requested mapping
++ * @from: start remapping from
++ * @pfn: page frame number to start remapping to
++ * @size: remapping size
++ * @prot: protection bits
++ *
++ * Returns zero on success, -EAGAIN on failure.
++ */
++int remap_oldmem_pfn_checked(struct vm_area_struct *vma, unsigned long from,
++			     unsigned long pfn, unsigned long size,
++			     pgprot_t prot)
++{
++	unsigned long map_size;
++	unsigned long pos_start, pos_end, pos;
++	unsigned long zeropage_pfn = my_zero_pfn(0);
++	size_t len = 0;
++
++	pos_start = pfn;
++	pos_end = pfn + (size >> PAGE_SHIFT);
++
++	for (pos = pos_start; pos < pos_end; ++pos) {
++		if (!pfn_is_ram(pos)) {
++			/*
++			 * We hit a page which is not ram. Remap the continuous
++			 * region between pos_start and pos-1 and replace
++			 * the non-ram page at pos with the zero page.
++			 */
++			if (pos > pos_start) {
++				/* Remap continuous region */
++				map_size = (pos - pos_start) << PAGE_SHIFT;
++				if (remap_oldmem_pfn_range(vma, from + len,
++							   pos_start, map_size,
++							   prot))
++					goto fail;
++				len += map_size;
++			}
++			/* Remap the zero page */
++			if (remap_oldmem_pfn_range(vma, from + len,
++						   zeropage_pfn,
++						   PAGE_SIZE, prot))
++				goto fail;
++			len += PAGE_SIZE;
++			pos_start = pos + 1;
++		}
++	}
++	if (pos > pos_start) {
++		/* Remap the rest */
++		map_size = (pos - pos_start) << PAGE_SHIFT;
++		if (remap_oldmem_pfn_range(vma, from + len, pos_start,
++					   map_size, prot))
++			goto fail;
++		len += map_size;
++	}
++	return 0;
++fail:
++	do_munmap(vma->vm_mm, from, len);
++	return -EAGAIN;
++}
++
++int vmcore_remap_oldmem_pfn(struct vm_area_struct *vma,
++			    unsigned long from, unsigned long pfn,
++			    unsigned long size, pgprot_t prot)
++{
++	/*
++	 * Check if oldmem_pfn_is_ram was registered to avoid
++	 * looping over all pages without a reason.
++	 */
++	if (oldmem_pfn_is_ram)
++		return remap_oldmem_pfn_checked(vma, from, pfn, size, prot);
++	else
++		return remap_oldmem_pfn_range(vma, from, pfn, size, prot);
++}
++
+ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+ {
+ 	size_t size = vma->vm_end - vma->vm_start;
+@@ -387,9 +464,9 @@ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+ 
+ 			tsz = min_t(size_t, m->offset + m->size - start, size);
+ 			paddr = m->paddr + start - m->offset;
+-			if (remap_oldmem_pfn_range(vma, vma->vm_start + len,
+-						   paddr >> PAGE_SHIFT, tsz,
+-						   vma->vm_page_prot))
++			if (vmcore_remap_oldmem_pfn(vma, vma->vm_start + len,
++						    paddr >> PAGE_SHIFT, tsz,
++						    vma->vm_page_prot))
+ 				goto fail;
+ 			size -= tsz;
+ 			start += tsz;
+-- 
+1.9.3
 
-This is not how it works, sometimes we *must* look at the bigger picture,
-e.g. when the Linux kernel first started advertising to acpi that it
-was "Windows 2012" (aka win8), this causes some breakage, still we went
-ahead with the change, because in the end we must advertise "Windows 2012"
-support to be able to get support for certain features from the firmware.
-
-Regards,
-
-Hans
