@@ -1,66 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932303AbaGNTGh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 15:06:37 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:35379 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754964AbaGNTG0 (ORCPT
+	id S932370AbaGNTHY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 15:07:24 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35791 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932331AbaGNTHP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 15:06:26 -0400
-Date: Mon, 14 Jul 2014 15:06:24 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/7] tracing: kill ftrace_event_call->files
-Message-ID: <20140714150624.32f49b7d@gandalf.local.home>
-In-Reply-To: <20140711190653.GA19542@redhat.com>
-References: <20140711190622.GA19499@redhat.com>
-	<20140711190653.GA19542@redhat.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 14 Jul 2014 15:07:15 -0400
+From: "Murphy, Dan" <dmurphy@ti.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "linux-sound@vger.kernel.org" <linux-sound@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v6] ASoC: tas2552: Support TI TAS2552 Amplifier
+Thread-Topic: [PATCH v6] ASoC: tas2552: Support TI TAS2552 Amplifier
+Thread-Index: AQHPnR8NkdNoCbyJA0aqgNzAA6CyVQ==
+Date: Mon, 14 Jul 2014 19:07:06 +0000
+Message-ID: <00FC9A978A94B7418C33AFAE8A35ED49D80B10@DFLE09.ent.ti.com>
+References: <1405093489-11897-1-git-send-email-dmurphy@ti.com>
+ <20140714184321.GW6800@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.90]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jul 2014 21:06:53 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
+On 07/14/2014 01:43 PM, Mark Brown wrote:
+> On Fri, Jul 11, 2014 at 10:44:49AM -0500, Dan Murphy wrote:
+>
+>> @@ -754,4 +755,8 @@ config SND_SOC_TPA6130A2
+>>  	tristate "Texas Instruments TPA6130A2 headphone amplifier"
+>>  	depends on I2C
+>>  
+>> +config SND_SOC_TAS2552
+>> +	tristate "Texas Instruments TAS2552 Mono Audio amplifier"
+>> +	depends on I2C
+>> +
+>>  endmenu
+> Keep this and Makefile sorted - since this is a proper CODEC driver it
+> should be in with the CODECs and also sorted in alphabetical order.
 
-> Remove ftrace_event_call->files. It has no users, and in fact even
-> the commit ae63b31e4d0e "tracing: Separate out trace events from
-> global variables" which added this member did not use it.
-> 
+OK.  I was trying to stay away from a conflict by adding to the
+bottom of the file.
 
-Ouch!
+>
+>> +static int tas2552_startup(struct snd_pcm_substream *substream,
+>> +			   struct snd_soc_dai *dai)
+>> +{
+>> +	struct snd_soc_codec *codec = dai->codec;
+>> +
+>> +	pm_runtime_get_sync(codec->dev);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static void tas2552_shutdown(struct snd_pcm_substream *substream,
+>> +			   struct snd_soc_dai *dai)
+>> +{
+>> +	struct snd_soc_codec *codec = dai->codec;
+>> +
+>> +	pm_runtime_put(codec->dev);
+>> +}
+> These runtime calls should be redundant, the framework should hold a
+> runtime PM reference on devices while they are active.  Does this not
+> work for you?
 
-OK, I swear I used it before I committed the change. I just stopped
-using it before I committed the change as well.
+I will verify that the calls get called.
 
--- Steve
+>
+>> +	pm_runtime_get_sync(codec->dev);
+> Check the return value here.
 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  include/linux/ftrace_event.h |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-> index f434d75..06c6faa 100644
-> --- a/include/linux/ftrace_event.h
-> +++ b/include/linux/ftrace_event.h
-> @@ -272,7 +272,6 @@ struct ftrace_event_call {
->  	struct trace_event	event;
->  	const char		*print_fmt;
->  	struct event_filter	*filter;
-> -	struct list_head	*files;
->  	void			*mod;
->  	void			*data;
->  	/*
+OK
+
+>
+>> +	snd_soc_write(codec, TAS2552_CFG_2, TAS2552_CLASSD_EN |
+>> +				  TAS2552_BOOST_EN | TAS2552_APT_EN |
+>> +				  TAS2552_PLL_ENABLE | TAS2552_LIM_EN);
+> The PLL is enabled all the time not via DAPM or similar (it's never
+> disabled)?
+
+Good catch.  I will make sure the PLL Is disabled in the shutdown call.
+
+>
+>> +static int tas2552_resume(struct snd_soc_codec *codec)
+>> +{
+>> +	struct tas2552_data *tas2552 = snd_soc_codec_get_drvdata(codec);
+>> +	int ret;
+>> +
+>> +	ret = regulator_bulk_enable(ARRAY_SIZE(tas2552->supplies),
+>> +				    tas2552->supplies);
+>> +
+>> +	if (ret != 0) {
+>> +		dev_err(codec->dev, "Failed to enable supplies: %d\n",
+>> +			ret);
+>> +	}
+>> +
+>> +	pm_runtime_get_sync(codec->dev);
+> Remove these runtime PM calls from suspend and resume, they're not doing
+> what you think (and will prevent runtime PM from doing anything).  Let
+> the frameworks worry about it for now, or explicitly call the runtime
+> suspend and resume operators if and only if the device is runtime
+> active.
+
+OK
+
+>
+>> +	for (i = 0; i < ARRAY_SIZE(data->supplies); i++)
+>> +		data->supplies[i].supply = tas2552_supply_names[i];
+>> +
+>> +	ret = devm_regulator_bulk_get(dev, ARRAY_SIZE(data->supplies),
+>> +				      data->supplies);
+>> +	if (ret != 0)
+>> +		dev_err(dev, "Failed to request supplies: %d\n", ret);
+> These supplies are mandatory (as they should be) but weren't mentioned
+> in the DT binding - please add them there.
+
+Will add
+
+>
+>> +static const struct i2c_device_id tas2552_id[] = {
+>> +	{ "tas2552-codec", 0 },
+>> +	{ }
+>> +};
+> No -codec.
+
+Missed this one
+
+-- 
+------------------
+Dan Murphy
 
