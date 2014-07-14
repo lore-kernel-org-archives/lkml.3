@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804AbaGNKQb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 06:16:31 -0400
-Received: from mga11.intel.com ([192.55.52.93]:2366 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754318AbaGNKE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 06:04:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,657,1400050800"; 
-   d="scan'208";a="561434276"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 16/41] perf script: Do not print dangling '=>' for BTS
-Date: Mon, 14 Jul 2014 13:02:40 +0300
-Message-Id: <1405332185-4050-17-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
-References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1755355AbaGNKQp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 06:16:45 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:49984 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755117AbaGNKQf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 06:16:35 -0400
+Message-ID: <53C3ADB9.4010309@gmail.com>
+Date: Mon, 14 Jul 2014 15:45:21 +0530
+From: Varka Bhadram <varkabhadram@gmail.com>
+Organization: CDAC-HYD
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Jongsung Kim <neidhard.kim@lge.com>, nicolas.ferre@atmel.com
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net
+Subject: Re: [PATCH 1/2] net: cadence: macb: add support for the WOL
+References: <1405328538-29153-1-git-send-email-neidhard.kim@lge.com>
+In-Reply-To: <1405328538-29153-1-git-send-email-neidhard.kim@lge.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using:
+On 07/14/2014 02:32 PM, Jongsung Kim wrote:
+> This patch enables the ethtool utility to control the WOL function
+> of the PHY connected to the GEM/MACB. (if supported)
+>
+> Signed-off-by: Jongsung Kim <neidhard.kim@lge.com>
+> ---
+>   drivers/net/ethernet/cadence/macb.c |   26 ++++++++++++++++++++++++++
+>   1 files changed, 26 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+> index e9daa07..7ad8909 100644
+> --- a/drivers/net/ethernet/cadence/macb.c
+> +++ b/drivers/net/ethernet/cadence/macb.c
+> @@ -1742,11 +1742,37 @@ static void macb_get_regs(struct net_device *dev, struct ethtool_regs *regs,
+>   	}
+>   }
+>   
+> +static void macb_get_wol(struct net_device *netdev, struct ethtool_wolinfo *wol)
+> +{
+> +	struct macb *bp = netdev_priv(netdev);
+> +	struct phy_device *phydev = bp->phy_dev;
+> +
+> +	wol->supported = 0;
+> +	wol->wolopts = 0;
+> +
+> +	if (phydev)
+> +		phy_ethtool_get_wol(phydev, wol);
+> +}
+> +
+> +static int macb_set_wol(struct net_device *netdev, struct ethtool_wolinfo *wol)
+> +{
+> +	struct macb *bp = netdev_priv(netdev);
+> +	struct phy_device *phydev = bp->phy_dev;
+> +	int err = -ENODEV;
+> +
+> +	if (phydev)
+> +		err = phy_ethtool_set_wol(phydev, wol);
+> +
+> +	return err;
+> +}
+> +
 
-	perf record -e branches:u -c1
-	perf script -f ip
+I think we can do in this way:
 
-lines are displayed like:
+if (phydev)
+	return phy_ethtool_set_wol(phydev, wol);
+else
+	return -ENODEV;
 
-	ffffffff813b23d5 =>
 
-Change so that the dangling '=>' does not appear.
+we can save err. What do you say ...?
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/builtin-script.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+>   const struct ethtool_ops macb_ethtool_ops = {
+>   	.get_settings		= macb_get_settings,
+>   	.set_settings		= macb_set_settings,
+>   	.get_regs_len		= macb_get_regs_len,
+>   	.get_regs		= macb_get_regs,
+> +	.get_wol		= macb_get_wol,
+> +	.set_wol		= macb_set_wol,
+>   	.get_link		= ethtool_op_get_link,
+>   	.get_ts_info		= ethtool_op_get_ts_info,
+>   };
 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 333b15e..582da97 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -446,13 +446,13 @@ static void print_sample_bts(union perf_event *event,
- 				     PERF_MAX_STACK_DEPTH);
- 	}
- 
--	printf(" => ");
--
- 	/* print branch_to information */
- 	if (PRINT_FIELD(ADDR) ||
- 	    ((evsel->attr.sample_type & PERF_SAMPLE_ADDR) &&
--	     !output[attr->type].user_set))
-+	     !output[attr->type].user_set)) {
-+		printf(" => ");
- 		print_sample_addr(event, sample, al->machine, thread, attr);
-+	}
- 
- 	if (print_srcline_last)
- 		map__fprintf_srcline(al->map, al->addr, "\n  ", stdout);
+
 -- 
-1.8.3.2
+Regards,
+Varka Bhadram.
 
