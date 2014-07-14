@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855AbaGNHLE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 03:11:04 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:60999 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751899AbaGNHKz (ORCPT
+	id S1752865AbaGNHNu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 03:13:50 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:58804 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751409AbaGNHNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 03:10:55 -0400
-MIME-Version: 1.0
-Content-Type: text/plain; charset=
+	Mon, 14 Jul 2014 03:13:43 -0400
+Message-ID: <1405322020.19403.0.camel@x220>
+Subject: Re: drm: i915: "plane B assertion failure, should be off on pipe B
+ but is still active"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Jani Nikula <jani.nikula@linux.intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Date: Mon, 14 Jul 2014 09:13:40 +0200
+In-Reply-To: <20140714065610.GA15237@phenom.ffwll.local>
+References: <1404140703.2978.13.camel@x41> <87egy5h1yz.fsf@intel.com>
+	 <1404291203.12021.18.camel@x220> <1405283561.2103.9.camel@x41>
+	 <20140714065610.GA15237@phenom.ffwll.local>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Date: Mon, 14 Jul 2014 09:10:54 +0200
-From: Stefan Agner <stefan@agner.ch>
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>, wg@grandegger.com,
-        kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
-        linux-can@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] can: flexcan: add vf61x support for flexcan
-In-Reply-To: <cecd42e333cdf65ad512f719125f9180@agner.ch>
-References: <1405075933-22317-1-git-send-email-stefan@agner.ch>
- <53BFD401.8030101@pengutronix.de>
- <dac76ccd134f41b86f00352d10cfae4b@agner.ch> <20140714060344.GB2197@dragon>
- <cecd42e333cdf65ad512f719125f9180@agner.ch>
-Message-ID: <7da069ecd355069d82cbe95adc1043f5@agner.ch>
-User-Agent: Roundcube Webmail/1.0.1
+X-OriginalArrivalTime: 14 Jul 2014 07:13:41.0430 (UTC) FILETIME=[24115D60:01CF9F33]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2014-07-14 09:06, schrieb Stefan Agner:
-> Am 2014-07-14 08:04, schrieb Shawn Guo:
->> On Fri, Jul 11, 2014 at 03:58:37PM +0200, Stefan Agner wrote:
->>> >> @@ -362,7 +374,7 @@
->>> >>
->>> >>  			esdhc1: esdhc@400b2000 {
->>> >>  				compatible = "fsl,imx53-esdhc";
->>> >> -				reg = <0x400b2000 0x4000>;
->>> >> +				reg = <0x400b2000 0x1000>;
->>> >
->>> > What's that doing here? :)
->>>
->>> That's an error I just stumbled upon.
->>
->> I do not see why it's an error.  From Table 2-1. System Memory Map in
->> i.MX53 RM, the size of ESDHC1 is 16K.
->>
->> Shawn
+On Mon, 2014-07-14 at 08:56 +0200, Daniel Vetter wrote:
+> Please test the below patch, thanks.
+> -Daniel
 > 
-> But then, the memory map within the SDHC peripheral has some registers
-> also located in 0x400B3000. Hence I think 0x2000 is correct. Will send
-> an updated and separated patch.
-> 
+> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+> index 82e7d57f0a8a..f0be855ddf45 100644
+> --- a/drivers/gpu/drm/i915/intel_display.c
+> +++ b/drivers/gpu/drm/i915/intel_display.c
+> @@ -11914,6 +11914,7 @@ static void intel_sanitize_crtc(struct intel_crtc *crtc)
+>  		 * ...  */
+>  		plane = crtc->plane;
+>  		crtc->plane = !plane;
+> +		crtc->primary_enabled = true;
+>  		dev_priv->display.crtc_disable(&crtc->base);
+>  		crtc->plane = plane;
+>  
 
-Sorry, I read this wrong. It is SDHC1 which is in the upper 0x1000 of
-the memory map.
+Instead of the revert or on top of the revert?
 
-So I would say 0x1000 is really correct, since SDHC0 is at 0x400B1000
-and SDHC1 is at 0x400B2000.
+Thanks,
 
---
-Stefan
+
+Paul Bolle
+
