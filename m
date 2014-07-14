@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757003AbaGNUF0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 16:05:26 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:7889 "EHLO
+	id S932477AbaGNUFw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 16:05:52 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:19884 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756904AbaGNUEh (ORCPT
+	by vger.kernel.org with ESMTP id S1757263AbaGNUFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 16:04:37 -0400
-Message-Id: <20140714200435.754224099@goodmis.org>
+	Mon, 14 Jul 2014 16:05:47 -0400
+Message-Id: <20140714200545.784094924@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Mon, 14 Jul 2014 16:04:22 -0400
+Date: Mon, 14 Jul 2014 16:05:37 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
@@ -19,8 +19,8 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Richard Weinberger <richard.weinberger@gmail.com>,
         stable-rt@vger.kernel.org
-Subject: [PATCH RT 2/3] workqueue: Prevent deadlock/stall on RT
-References: <20140714200420.805309842@goodmis.org>
+Subject: [PATCH RT 2/4] workqueue: Prevent deadlock/stall on RT
+References: <20140714200535.671192970@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline; filename=0002-workqueue-Prevent-deadlock-stall-on-RT.patch
@@ -30,7 +30,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10.47-rt50-rc1 stable review patch.
+3.4.97-rt121-rc1 stable review patch.
 If anyone has any objections, please let me know.
 
 ------------------
@@ -73,15 +73,15 @@ Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: stable-rt@vger.kernel.org
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/sched/core.c |  7 ++++--
- kernel/workqueue.c  | 61 +++++++++++++++++++++++++++++++++++++++++------------
- 2 files changed, 53 insertions(+), 15 deletions(-)
+ kernel/sched/core.c |  7 +++++--
+ kernel/workqueue.c  | 41 +++++++++++++++++++++++++++++++++++------
+ 2 files changed, 40 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b8acecc0600f..f7aa4ca0cedb 100644
+index 2b2863972dd1..5ba55a8b26e0 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -3217,9 +3217,8 @@ need_resched:
+@@ -3574,9 +3574,8 @@ need_resched:
  
  static inline void sched_submit_work(struct task_struct *tsk)
  {
@@ -92,8 +92,8 @@ index b8acecc0600f..f7aa4ca0cedb 100644
  	/*
  	 * If a worker went to sleep, notify and ask workqueue whether
  	 * it wants to wake up a task to maintain concurrency.
-@@ -3227,6 +3226,10 @@ static inline void sched_submit_work(struct task_struct *tsk)
- 	if (tsk->flags & PF_WQ_WORKER)
+@@ -3586,6 +3585,10 @@ static inline void sched_submit_work(struct task_struct *tsk)
+ 	if (tsk->flags & PF_WQ_WORKER && !tsk->saved_state)
  		wq_worker_sleeping(tsk);
  
 +
@@ -104,46 +104,34 @@ index b8acecc0600f..f7aa4ca0cedb 100644
  	 * If we are going to sleep and we have plugged IO queued,
  	 * make sure to submit it to avoid deadlocks.
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 318c86593597..8f080af2d863 100644
+index 4d21bfdc1637..653d7fccb762 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -125,6 +125,11 @@ enum {
-  *    cpu or grabbing pool->lock is enough for read access.  If
-  *    POOL_DISASSOCIATED is set, it's identical to L.
-  *
-+ *    On RT we need the extra protection via rt_lock_idle_list() for
-+ *    the list manipulations against read access from
-+ *    wq_worker_sleeping(). All other places are nicely serialized via
-+ *    pool->lock.
-+ *
-  * MG: pool->manager_mutex and pool->lock protected.  Writes require both
-  *     locks.  Reads can happen under either lock.
-  *
-@@ -395,6 +400,31 @@ static void copy_workqueue_attrs(struct workqueue_attrs *to,
- 		if (({ assert_rcu_or_wq_mutex(wq); false; })) { }	\
- 		else
+@@ -319,6 +319,31 @@ static inline int __next_wq_cpu(int cpu, const struct cpumask *mask,
+ 	     (cpu) < WORK_CPU_NONE;					\
+ 	     (cpu) = __next_wq_cpu((cpu), cpu_possible_mask, (wq)))
  
 +#ifdef CONFIG_PREEMPT_RT_BASE
-+static inline void rt_lock_idle_list(struct worker_pool *pool)
++static inline void rt_lock_idle_list(struct global_cwq *gcwq)
 +{
 +	preempt_disable();
 +}
-+static inline void rt_unlock_idle_list(struct worker_pool *pool)
++static inline void rt_unlock_idle_list(struct global_cwq *gcwq)
 +{
 +	preempt_enable();
 +}
-+static inline void sched_lock_idle_list(struct worker_pool *pool) { }
-+static inline void sched_unlock_idle_list(struct worker_pool *pool) { }
++static inline void sched_lock_idle_list(struct global_cwq *gcwq) { }
++static inline void sched_unlock_idle_list(struct global_cwq *gcwq) { }
 +#else
-+static inline void rt_lock_idle_list(struct worker_pool *pool) { }
-+static inline void rt_unlock_idle_list(struct worker_pool *pool) { }
-+static inline void sched_lock_idle_list(struct worker_pool *pool)
++static inline void rt_lock_idle_list(struct global_cwq *gcwq) { }
++static inline void rt_unlock_idle_list(struct global_cwq *gcwq) { }
++static inline void sched_lock_idle_list(struct global_cwq *gcwq)
 +{
-+	spin_lock_irq(&pool->lock);
++	spin_lock_irq(&gcwq->lock);
 +}
-+static inline void sched_unlock_idle_list(struct worker_pool *pool)
++static inline void sched_unlock_idle_list(struct global_cwq *gcwq)
 +{
-+	spin_unlock_irq(&pool->lock);
++	spin_unlock_irq(&gcwq->lock);
 +}
 +#endif
 +
@@ -151,93 +139,47 @@ index 318c86593597..8f080af2d863 100644
  #ifdef CONFIG_DEBUG_OBJECTS_WORK
  
  static struct debug_obj_descr work_debug_descr;
-@@ -785,10 +815,16 @@ static struct worker *first_worker(struct worker_pool *pool)
+@@ -650,10 +675,16 @@ static struct worker *first_worker(struct global_cwq *gcwq)
   */
- static void wake_up_worker(struct worker_pool *pool)
+ static void wake_up_worker(struct global_cwq *gcwq)
  {
--	struct worker *worker = first_worker(pool);
+-	struct worker *worker = first_worker(gcwq);
 +	struct worker *worker;
 +
-+	rt_lock_idle_list(pool);
++	rt_lock_idle_list(gcwq);
 +
-+	worker = first_worker(pool);
++	worker = first_worker(gcwq);
  
  	if (likely(worker))
  		wake_up_process(worker->task);
 +
-+	rt_unlock_idle_list(pool);
++	rt_unlock_idle_list(gcwq);
  }
  
  /**
-@@ -816,7 +852,7 @@ void wq_worker_running(struct task_struct *task)
-  */
- void wq_worker_sleeping(struct task_struct *task)
- {
--	struct worker *next, *worker = kthread_data(task);
-+	struct worker *worker = kthread_data(task);
- 	struct worker_pool *pool;
+@@ -696,7 +727,6 @@ void wq_worker_sleeping(struct task_struct *task)
  
- 	/*
-@@ -833,25 +869,18 @@ void wq_worker_sleeping(struct task_struct *task)
- 		return;
- 
- 	worker->sleeping = 1;
--	spin_lock_irq(&pool->lock);
-+
+ 	cpu = smp_processor_id();
+ 	gcwq = get_gcwq(cpu);
+-	spin_lock_irq(&gcwq->lock);
  	/*
  	 * The counterpart of the following dec_and_test, implied mb,
  	 * worklist not empty test sequence is in insert_work().
- 	 * Please read comment there.
--	 *
--	 * NOT_RUNNING is clear.  This means that we're bound to and
--	 * running on the local cpu w/ rq lock held and preemption
--	 * disabled, which in turn means that none else could be
--	 * manipulating idle_list, so dereferencing idle_list without pool
--	 * lock is safe.
+@@ -704,11 +734,10 @@ void wq_worker_sleeping(struct task_struct *task)
  	 */
- 	if (atomic_dec_and_test(&pool->nr_running) &&
- 	    !list_empty(&pool->worklist)) {
--		next = first_worker(pool);
--		if (next)
--			wake_up_process(next->task);
-+		sched_lock_idle_list(pool);
-+		wake_up_worker(pool);
-+		sched_unlock_idle_list(pool);
+ 	if (atomic_dec_and_test(get_gcwq_nr_running(cpu)) &&
+ 	    !list_empty(&gcwq->worklist)) {
+-		worker = first_worker(gcwq);
+-		if (worker)
+-			wake_up_process(worker->task);
++		sched_lock_idle_list(gcwq);
++		wake_up_worker(gcwq);
++		sched_unlock_idle_list(gcwq);
  	}
--	spin_unlock_irq(&pool->lock);
+-	spin_unlock_irq(&gcwq->lock);
  }
  
  /**
-@@ -1553,7 +1582,9 @@ static void worker_enter_idle(struct worker *worker)
- 	worker->last_active = jiffies;
- 
- 	/* idle_list is LIFO */
-+	rt_lock_idle_list(pool);
- 	list_add(&worker->entry, &pool->idle_list);
-+	rt_unlock_idle_list(pool);
- 
- 	if (too_many_workers(pool) && !timer_pending(&pool->idle_timer))
- 		mod_timer(&pool->idle_timer, jiffies + IDLE_WORKER_TIMEOUT);
-@@ -1586,7 +1617,9 @@ static void worker_leave_idle(struct worker *worker)
- 		return;
- 	worker_clr_flags(worker, WORKER_IDLE);
- 	pool->nr_idle--;
-+	rt_lock_idle_list(pool);
- 	list_del_init(&worker->entry);
-+	rt_unlock_idle_list(pool);
- }
- 
- /**
-@@ -1829,7 +1862,9 @@ static void destroy_worker(struct worker *worker)
- 	 */
- 	get_task_struct(worker->task);
- 
-+	rt_lock_idle_list(pool);
- 	list_del_init(&worker->entry);
-+	rt_unlock_idle_list(pool);
- 	worker->flags |= WORKER_DIE;
- 
- 	idr_remove(&pool->worker_idr, worker->id);
 -- 
 2.0.0
 
