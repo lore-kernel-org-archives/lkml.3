@@ -1,130 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344AbaGNIPh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 04:15:37 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:42909 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750943AbaGNIPc (ORCPT
+	id S1753428AbaGNISY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 04:18:24 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:57581 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750886AbaGNISP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 04:15:32 -0400
-Date: Mon, 14 Jul 2014 10:15:28 +0200
+	Mon, 14 Jul 2014 04:18:15 -0400
+Date: Mon, 14 Jul 2014 10:18:10 +0200
 From: Thierry Reding <thierry.reding@gmail.com>
-To: Mikko Perttunen <mperttunen@nvidia.com>
-Cc: Mikko Perttunen <mikko.perttunen@kapsi.fi>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Richard Weinberger <richard@nod.at>,
+        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
+        Lennox Wu <lennox.wu@gmail.com>, Chen Gang <gang.chen.5i5j@gmail.com>,
+        Marek Vasut <marex@denx.de>, Liqin Chen <liqin.linux@gmail.com>,
+        msalter@redhat.com, linux-pwm@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-watchdog@vger.kernel.org,
+        linux-input@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 5/8] of: Add Tegra124 EMC bindings
-Message-ID: <20140714081524.GI2081@ulmo>
-References: <1405088313-20048-1-git-send-email-mperttunen@nvidia.com>
- <1405088313-20048-6-git-send-email-mperttunen@nvidia.com>
- <20140711145146.GA6523@ulmo>
- <53C00A57.5070102@kapsi.fi>
- <53C38D07.4030402@nvidia.com>
+        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Mischa.Jonker@synopsys.com, jic23@kernel.org
+Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
+ 'devm_ioremap_resource'
+Message-ID: <20140714081809.GJ2081@ulmo>
+References: <53C1F7DE.3060102@gmail.com>
+ <201407130545.23004.marex@denx.de>
+ <CAF0htA60juBVkPo2HQKMDGcEr-wRzRVL_6JgHAa+7WVE_E8M0Q@mail.gmail.com>
+ <53C25551.1050909@nod.at>
+ <53C288F0.3070001@metafoo.de>
+ <53C28C4A.70907@nod.at>
+ <53C29015.5070607@metafoo.de>
+ <53C291C8.6050303@nod.at>
+ <53C296C2.30304@metafoo.de>
+ <20140713192202.GA19090@kroah.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="G3juXO9GfR42w+sw"
+	protocol="application/pgp-signature"; boundary="BOmey7/79ja+7F5w"
 Content-Disposition: inline
-In-Reply-To: <53C38D07.4030402@nvidia.com>
+In-Reply-To: <20140713192202.GA19090@kroah.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---G3juXO9GfR42w+sw
+--BOmey7/79ja+7F5w
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jul 14, 2014 at 10:55:51AM +0300, Mikko Perttunen wrote:
-> On 11/07/14 19:01, Mikko Perttunen wrote:
-> >On 07/11/2014 05:51 PM, Thierry Reding wrote:
-> >>On Fri, Jul 11, 2014 at 05:18:30PM +0300, Mikko Perttunen wrote:
-> >>>...
-> >>...
-> >
-> >In this case, all the registers that will be written are such that the
-> >MC driver will never need to write them. They are shadowed registers,
-> >meaning that all writes are stored and are only effective starting from
-> >the next time the EMC rate change state machine is activated, so writing
-> >them from anywhere except than the EMC driver would be pointless.
-> >
-> >I can find two users of these registers in downstream:
-> >1) mc.c saves and loads them on suspend/restore (I don't know why, that
-> >shouldn't do anything. They will be overridden anyway during the next
-> >EMC rate change).
-> >2) tegra12x_la.c reads MC_EMEM_ARB_MISC0 during a core_initcall to
-> >calculate a value which it then writes to a register that is also
-> >shadowed and that is part of downstream burst registers so that doesn't
-> >do anything either.
-> >
-> >The reason I implemented two ways to specify the MC register area was
-> >that this could be merged before an MC driver and retain
-> >backwards-compatibility after the MC driver arrives.
-> >
-> >If this is not acceptable, we can certainly wait for the MC driver to be
-> >merged first. (Although with the general rate of things, I hope I won't
-> >be back at school at that point..) I assume that this is blocked on the
-> >IOMMU bindings discussion? In that case, there are several options: the
-> >MC driver could have its own tables for each EMC rate or we could just
-> >make the EMC tables global (i.e. not under the EMC node). In any case,
-> >the MC driver would need to implement a function that would just write
-> >these values but be guaranteed to not do anything else, since that could
-> >cause nasty things during the EMC rate change sequence.
+On Sun, Jul 13, 2014 at 12:22:02PM -0700, Greg Kroah-Hartman wrote:
+> On Sun, Jul 13, 2014 at 04:25:06PM +0200, Lars-Peter Clausen wrote:
+> > On 07/13/2014 04:03 PM, Richard Weinberger wrote:
+> > >Am 13.07.2014 15:56, schrieb Lars-Peter Clausen:
+> > >>On 07/13/2014 03:40 PM, Richard Weinberger wrote:
+> > >>>Am 13.07.2014 15:26, schrieb Lars-Peter Clausen:
+> > >>>>On 07/13/2014 11:45 AM, Richard Weinberger wrote:
+> > >>>>>Am 13.07.2014 11:27, schrieb Lennox Wu:
+> > >>>>>>As I said before, some configurations don't make sense.
+> > >>>>>
+> > >>>>>If such a configuration can be achieved using allmod/yesconfig it =
+has to be fixed.
+> > >>>>>Chen's fixes seem reasonable as not all architectures support iome=
+m.
+> > >>>>
+> > >>>>Maybe we should stub out ioremap() and friends when COMPILE_TEST is=
+ enabled to avoid these linker errors. That's in my opinion better than tur=
+ning most of the 'depends on
+> > >>>>COMPILE_TEST' into 'depends on COMPILE_TEST && HAS_IOMEM'. The issu=
+e comes up quite a lot and it is often overlooked when adding a driver that=
+ can be build when COMPILE_TEST is
+> > >>>>enabled.
+> > >>>
+> > >>>And what should this stub do?
+> > >>>Except calling BUG()...
+> > >>
+> > >>return NULL;
+> > >>
+> > >>It's for compile testing, it's not meant to work at runtime.
+> > >
+> > >Hm, I really don't like the idea of having a non-working kernel.
+> > >IMHO either it should build _and_ run and nothing else.
+> > >Greg, what do you think?
+> >=20
+> > The kernel will still be working fine and you can run it on a system. T=
+he
+> > drivers which use ioremap() or similar are probably not instantiated on=
+ a
+> > system that does not provide HAS_IOMEM. But even if it was the driver s=
+hould
+> > handle ioremap() returning NULL gracefully and abort the driver probe. =
+That
+> > said you'll probably not run a kernel that was built with COMPILE_TEST =
+on
+> > your real hardware since it contains so many drivers that are completely
+> > useless on your hardware. The idea of COMPILE_TEST is to have as much
+> > compile test exposure as possible to the code that is enabled by
+> > COMPILE_TEST. Stubbing out ioremap() and friends when HAS_IOMEM is not =
+set
+> > and COMPILE_TEST is set makes it easier to get there.
 >=20
-> Having taken another look at the code, I don't think the MC driver could =
-do
-> anything that bad. There are also two other places where the EMC driver
-> needs to read MC registers: Inside the sequence, it reads a register but
-> discards its contents. According to comments, this acts as a memory barri=
-er,
-> probably for the preceding step that writes into MC memory. If the regist=
-er
-> writes are moved to the MC driver, it could also handle that. In another
-> place it reads the number of RAM modules from a MC register. The MC driver
-> could export this as another function.
+> I run my kernels with COMPILE_TEST enabled as I need to build test
+> things that I don't happen to use.
+>=20
+> I like the 'return NULL' option for this, it hits us all the time, might
+> as well fix it properly like this so that we don't have to deal with
+> Kconfig changes everywhere.
 
-Exporting this functionality from the MC driver is the right thing to do
-in my opinion.
+I agree. One nit, though: devm_ioremap_resource() returns an ERR_PTR()-
+encoded error code, so the dummy should probably be returning something
+like ERR_PTR(-ENOSYS) instead of NULL.
 
-> That said, I still suspect it might not be worth it to divide this between
-> two drivers.
+> Also put a big "This platform does not support IOMEM" error printk in
+> there, so that people have a chance to figure out what is going on if
+> they happen to run such a driver on a platform that can't support it.
 
-If we don't separate, then we make it easy for people to break things in
-the future. Both drivers may not be accessing the same registers now,
-but if there's no barrier in place to actively enforce this split, then
-it's only a matter of time before it gets broken. A typical way to
-ensure this is done properly is via request_resource() (called by the
-devm_ioremap_resource() function). That will fail if two drivers try to
-use the same memory region, and with good reason.
+Yes, that sounds like a very good idea and should be indication enough
+of what exactly has gone wrong.
 
 Thierry
 
---G3juXO9GfR42w+sw
+--BOmey7/79ja+7F5w
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBAgAGBQJTw5GcAAoJEN0jrNd/PrOhCZIQALFRtXCpN1vSJdh6HOtM1i2C
-ElDEF1Qev+GaZMM3T5Qr/4+3keLHINqiyynCgh0H/nyRh4G8Q4KkRaxLz7rcQ++a
-A4VMndmmA9viyx9z9+UFhpolsSI5rrdTjiYUzW1pHz92V/2yrt1VFF6vt4v3fKqY
-Ms8OesISjY8Y3JKalhqt0bO9llpo+kIiPprGABkIFGV7lSMZjiNEwQoITQUOfhsd
-iHnD0Xr+uPpBg0jXT4MBbAahcDHnsamhFZh4KIIxg3HZME8VY28kE1Ysa/ZuMkQ4
-vrh8FyBE4T8UvZij+2oOBRlVY86PmQ5F+opa3skzos/CGAf1LVZJ8hr4Pf02gFuF
-3VjNuwZiHHyRN01fn096MSwg+9aFMtVfLfzrMTyS10Nz67/BNu9MHn9L7EDR1LFE
-2tV303yo8FK0W9aEQrgnMrKPnN5PoxROU456BENPF/E4PtLbkOLRcoe4WAL/2j78
-HqADUlCvN19p4RQUsnz0s5Yl2LN+XE8b7sKEwndwjtY5+qS0YzphjuFpqleNuapO
-TLYQOhj1joxqXune25g9bCtE2Zh0uTxE1TNET0hSSqd/X/PBeLDxuaFupAtZG9Xa
-MApgFyyBV5/ANJI7Sdm6H34qcWTou44kwg501jUgYcjbmifg86Fz/vwc8370FLeQ
-+fYPykPP5QSES8VWV4F8
-=4UeU
+iQIcBAEBAgAGBQJTw5JBAAoJEN0jrNd/PrOhjqEP/2Ul93ulC/7A4lZBNo6jm7bH
+9iCLPnVC8QWk77FXi9HOB2yVjGsyYjtMApBSwj7DfYsxu/FBhOG6lXcVMIPhs2Kx
+rByJ+QQON/YRcVzDYvI7HoOqcMFxaA60A/DfRE1S4rBxPJ+THR3cEx1jIvyIvz/+
+tSNkHPvV/5qu2jq4KXX2jMaY1L9xyD7TNVV9jDjKK/qIa5d9VZ8qehfy/t/cp7sW
+jsN/XkDJCcvmPMbw+M4zHtm2MtDoZbnf32XL8geE3OjxdTY3DLJ6aHKCuKeaPx5P
+guVXbvbtHWuqP2WXPrSQV2qiPX+xgICrZirygy7hfqmvouomDT6AzdwhrQyDOZLM
+nScJYZP1PWvbh4bKTFCOymf/K36QQciZZLVl20JLAqF9SVN2ew1bv3g6YrXVNYNg
+klOQFwRQ8TLUDSsSZtj/rMpr1sB7hdtMPTHjF4m+kcvAq1g8OfAHOT4EFXRdQqjq
+c5W508a/Vffnm+uBJjiGlzT87IHHUQ1GJ22EXNmKJHEr2H7ril8yMBMzUTB4uzOJ
+z9OBk5+gmNihzMaL2HcbIEsBBH88ymozpNQOHI3P857b7Esrfwkce1S3K2TWfAdx
+bn58JkyfJlGMiRVvL4GrhIzd75yUrKU+GdplUmqzYS7bMmv1jwxC1ZQ/VmhInOG8
+sSUlOlxTRVflqAJBcp/e
+=q6Y2
 -----END PGP SIGNATURE-----
 
---G3juXO9GfR42w+sw--
+--BOmey7/79ja+7F5w--
