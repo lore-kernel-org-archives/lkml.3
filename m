@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751AbaGNDm6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 23:42:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47927 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752110AbaGNDms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 23:42:48 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: amirv@mellanox.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>
-Subject: [PATCH net] mlx4: mark napi id for gro_skb
-Date: Mon, 14 Jul 2014 11:42:44 +0800
-Message-Id: <1405309364-32258-1-git-send-email-jasowang@redhat.com>
+	id S1752857AbaGNDoq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 23:44:46 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:52688 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752110AbaGNDoj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jul 2014 23:44:39 -0400
+MIME-Version: 1.0
+Date: Sun, 13 Jul 2014 23:44:39 -0400
+Message-ID: <CAPDOMVip8ZM2B17ax6O4mMR2iL5nRJyUcP8-sk+5nf7oHdbegQ@mail.gmail.com>
+Subject: Fix mes in arch/cris/arch-v32/kernel/kgdb.c
+From: Nick Krause <xerofoify@gmail.com>
+To: starvik@axis.com
+Cc: jesper.nilsson@axis.com, linux-cris-kernel@axis.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Napi id was not marked for gro_skb, this will lead rx busy loop won't
-work correctly since they stack never try to call low latency receive
-method because of a zero socket napi id. Fix this by marking napi id
-for gro_skb.
-
-The transaction rate of 1 byte netperf tcp_rr gets about 50% increased
-(from 20531.68 to 30610.88).
-
-Cc: Amir Vadai <amirv@mellanox.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/net/ethernet/mellanox/mlx4/en_rx.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/net/ethernet/mellanox/mlx4/en_rx.c b/drivers/net/ethernet/mellanox/mlx4/en_rx.c
-index 9672417..5535862 100644
---- a/drivers/net/ethernet/mellanox/mlx4/en_rx.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_rx.c
-@@ -783,6 +783,7 @@ int mlx4_en_process_rx_cq(struct net_device *dev, struct mlx4_en_cq *cq, int bud
- 							     PKT_HASH_TYPE_L3);
- 
- 					skb_record_rx_queue(gro_skb, cq->ring);
-+					skb_mark_napi_id(gro_skb, &cq->napi);
- 
- 					if (ring->hwtstamp_rx_filter == HWTSTAMP_FILTER_ALL) {
- 						timestamp = mlx4_en_get_cqe_ts(cqe);
--- 
-1.9.1
-
+In the file arch/cris/arch-v32/kernel/kgdb.c , I am hitting a few fix
+mes that need to be fixed for kgdb support of this
+subsystem architecture of cris. Below this message are the lines of
+code and their respective Fix Me messages.
+When you around to it I would like to known how you would like these
+to be fixed.
+Cheers Nick
+Fix Mes
+------------
+1.   /* FIXME: Check the documentation. */ on line 22
+2. 437 /* BUFMAX defines the maximum number of characters in
+   438    inbound/outbound buffers */
+   439 /* FIXME: How do we know it's enough? */
+   440 #define BUFMAX 512
+3. 467 /* Use an internal stack in the breakpoint and interrupt
+response routines.
+   468    FIXME: How do we know the size of this stack is enough?
+  469    Global so it can be reached from assembler code. */
+4.885                 if (S & 1) {
+   886                        /* Instruction watchpoint. */
+   887                       /* FIXME: Check against, and possibly
+adjust reported EDA. */
+5. 1410
+    1411                                 if (input_buffer[1] != '\0') {
+    1412                                         /* FIXME: Doesn't
+handle address argument. */
+    1413
+gdb_cris_strcpy(output_buffer, error_message[E04]);
+    1414                                         break;
+    1415                                  }
+6.1436                                 if (input_buffer[1] != '\0') {
+   1437                                         /* FIXME: Doesn't
+handle address argument. */
+   1438
+gdb_cris_strcpy(output_buffer, error_message[E04]);
+   1439                                         break;
+   1440                                 }
+7.   1436                                 if (input_buffer[1] != '\0') {
+      1437                                         /* FIXME: Doesn't
+handle address argument. */
+      1438
+gdb_cris_strcpy(output_buffer, error_message[E04]);
+      1439                                        break;
+      1440                                 }
