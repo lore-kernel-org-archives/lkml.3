@@ -1,115 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117AbaGNQXM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 12:23:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53031 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755690AbaGNQXA (ORCPT
+	id S1756204AbaGNQXq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 12:23:46 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:36633 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755690AbaGNQXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 12:23:00 -0400
-Date: Mon, 14 Jul 2014 18:22:49 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>
-Subject: Re: [PATCH v3 09/12] Revert "sched: Put rq's sched_avg under
- CONFIG_FAIR_GROUP_SCHED"
-Message-ID: <20140714162249.GE9918@twins.programming.kicks-ass.net>
-References: <1404144343-18720-1-git-send-email-vincent.guittot@linaro.org>
- <1404144343-18720-10-git-send-email-vincent.guittot@linaro.org>
- <20140710131646.GB3935@laptop>
- <CAKfTPtDzxyrzVmX016VB8j_y19wcCBVB1Rj46FYngMA+Ajft6g@mail.gmail.com>
- <20140711151304.GD3935@laptop>
- <CAKfTPtCL6mta75k9eoK724wCm7S3w7E+psa1XDrxhN1YVDONPw@mail.gmail.com>
- <20140711201238.GY20603@laptop.programming.kicks-ass.net>
- <20140714125529.GN26542@e103034-lin>
- <20140714132052.GY9918@twins.programming.kicks-ass.net>
- <20140714140435.GO26542@e103034-lin>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BVXm2WAry1WzRMtx"
-Content-Disposition: inline
-In-Reply-To: <20140714140435.GO26542@e103034-lin>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 14 Jul 2014 12:23:38 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: boris.ostrovsky@oracle.com, david.vrabel@citrix.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH] xen: Introduce 'xen_nopv' to disable PV extensions for HVM guests.
+Date: Mon, 14 Jul 2014 12:23:25 -0400
+Message-Id: <1405355005-7473-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.9.3
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+By default when CONFIG_XEN and CONFIG_XEN_PVHVM kernels are
+run, they will enable the PV extensions (drivers, interrupts, timers,
+etc) - which is the best option for the majority of use cases.
 
---BVXm2WAry1WzRMtx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+However, in some cases (kexec not fully working, benchmarking)
+we want to disable Xen PV extensions. As such introduce the
+'xen_nopv' parameter that will do it.
 
-On Mon, Jul 14, 2014 at 03:04:35PM +0100, Morten Rasmussen wrote:
-> > I'm struggling to fully grasp your intent. We need DVFS like accounting
-> > for sure, and that means a current freq hook, but I'm not entirely sure
-> > how that relates to capacity.
->=20
-> We can abstract all the factors that affect current compute capacity
-> (frequency, P-states, big.LITTLE,...) in the scheduler by having
-> something like capacity_{cur,avail} to tell us how much capacity does a
-> particular cpu have in its current state. Assuming that implement scale
-> invariance for entity load tracking (we are working on that), we can
-> directly compare task utilization with compute capacity for balancing
-> decisions. For example, we can figure out how much spare capacity a cpu
-> has in its current state by simply:
->=20
-> spare_capacity(cpu) =3D capacity_avail(cpu) - \sum_{tasks(cpu)}^{t} util(=
-t)
->=20
-> If you put more than spare_capacity(cpu) worth of task utilization on
-> the cpu, you will cause the cpu (and any affected cpus) to change
-> P-state and potentially be less energy-efficient.
->=20
-> Does that make any sense?
->=20
-> Instead of dealing with frequencies directly in the scheduler code, we
-> can abstract it by just having scalable compute capacity.
+This parameter is intended only for HVM guests as the Xen PV
+guests MUST boot with PV extensions. However, even if you use
+'xen_nopv' on Xen PV guests it will be ignored.
 
-Ah, ok. Same thing then.
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+---
+[v2: s/off/xen_nopv/ per Boris Ostrovsky recommendation.]
+[v3: Add Reviewed-by]
+[v4: Clarify that this is only for HVM guests]
+---
+ Documentation/kernel-parameters.txt |  4 ++++
+ arch/x86/xen/enlighten.c            | 13 +++++++++++++
+ 2 files changed, 17 insertions(+)
 
-> > But yes, for application the tipping point is u =3D=3D 1, up until that
-> > point pure utilization makes sense, after that our runnable_avg makes
-> > more sense.
->=20
-> Agreed.
->=20
-> If you really care about latency/performance you might be interested in
-> comparing running_avg and runnable_avg even for u < 1. If the
-> running_avg/runnable_avg ratio is significantly less than one, tasks are
-> waiting on the rq to be scheduled.
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index c1b9aa8..403f927 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -3691,6 +3691,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			Disables the ticketlock slowpath using Xen PV
+ 			optimizations.
+ 
++	xen_nopv	[X86]
++			Disables the PV optimizations forcing the HVM guest to
++			run as generic HVM guest with no PV drivers.
++
+ 	xirc2ps_cs=	[NET,PCMCIA]
+ 			Format:
+ 			<irq>,<irq_mask>,<io>,<full_duplex>,<do_sound>,<lockup_hack>[,<irq2>[,<irq3>[,<irq4>]]]
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index ffb101e..eb82239 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1826,8 +1826,19 @@ static void __init xen_hvm_guest_init(void)
+ 	xen_hvm_init_mmu_ops();
+ }
+ 
++static bool xen_nopv = false;
++static __init int xen_parse_nopv(char *arg)
++{
++       xen_nopv = true;
++       return 0;
++}
++early_param("xen_nopv", xen_parse_nopv);
++
+ static uint32_t __init xen_hvm_platform(void)
+ {
++	if (xen_nopv)
++		return 0;
++
+ 	if (xen_pv_domain())
+ 		return 0;
+ 
+@@ -1836,6 +1847,8 @@ static uint32_t __init xen_hvm_platform(void)
+ 
+ bool xen_hvm_need_lapic(void)
+ {
++	if (xen_nopv)
++		return false;
+ 	if (xen_pv_domain())
+ 		return false;
+ 	if (!xen_hvm_domain())
+-- 
+1.9.3
 
-Indeed, that gives a measure of queueing.
-
---BVXm2WAry1WzRMtx
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTxAPZAAoJEHZH4aRLwOS6PQ0QAJT9jlhUeqG6w6PeiT+pgkVP
-NqsczYDvIdiRIjZgFAdIwq1Xpf+Q7EIxZ42ydo0j8vYiKVjIFBMtaAyMxDoeqe85
-yPvLVCQl2x35G7SWYBczILX7Qw1uuJOeCgtp/jvHhe9RuxZOozDdSDfjlPLavj+I
-ZLXVwEYEAsayMLZhb5ezlHOr1ewt9JhgtxSBd03hkM2KKQFb1Ipzn+QLycGWJTcs
-/Tw2V+W1BPKwNRSBC1sAS++Fq6FAQT63qgySuhj3xQ6fnKDtWcTBZQ7HAz75BuDf
-WbUhbTHV1WTJxJBy/woeCUzi4Qd4g+NgrsfXhhclZ+uARpjhnNsiFWPBeKw4r8VV
-L5Cua1qRp1YqRRAf9bGEdWRniNX+WDsMGOGJL1WW1YO2NYqLxYQaluL1bZ+6YCGY
-zs1wr7zCXA8UVs8BzNoP4lySKgRglfhgojQ496DUItF4/HwTdMkW21tU/g6AgPoZ
-TtLUdmphjhRWDDAV82Tsm1qPLFW/LvRmalD+XvFYQv+nGKtuY2j0XyPlDa3GmR9u
-ZeQYZhl4jTHkzMe42sOvovVw2rjrZQWmX1ZZjWLX6Zd2AvlcFPDEfR3OMY9MKn5A
-DeYECsCehXx6msvJyV15jyG/6uw6Y1UGROHeYexyp2zaiH/IVzpZyaoeVd7Duk8U
-eVJ2bxuXJtuR/B9tsfFH
-=OTva
------END PGP SIGNATURE-----
-
---BVXm2WAry1WzRMtx--
