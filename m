@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196AbaGNPpO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 11:45:14 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:42621 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756078AbaGNPoR (ORCPT
+	id S1756217AbaGNPpX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 11:45:23 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:46804 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756114AbaGNPoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 11:44:17 -0400
+	Mon, 14 Jul 2014 11:44:25 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH 3/6] cgroup: replace cgroup_add_cftypes() with cgroup_add_legacy_cftypes()
-Date: Mon, 14 Jul 2014 11:44:05 -0400
-Message-Id: <1405352648-4279-4-git-send-email-tj@kernel.org>
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 6/6] cgroup: initialize cgrp_dfl_root_inhibit_ss_mask from !->dfl_files test
+Date: Mon, 14 Jul 2014 11:44:08 -0400
+Message-Id: <1405352648-4279-7-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1405352648-4279-1-git-send-email-tj@kernel.org>
 References: <1405352648-4279-1-git-send-email-tj@kernel.org>
@@ -23,137 +21,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, cftypes added by cgroup_add_cftypes() are used for both the
-unified default hierarchy and legacy ones and subsystems can mark each
-file with either CFTYPE_ONLY_ON_DFL or CFTYPE_INSANE if it has to
-appear only on one of them.  This is quite hairy and error-prone.
-Also, we may end up exposing interface files to the default hierarchy
-without thinking it through.
+cgrp_dfl_root_inhibit_ss_mask determines which subsystems are not
+supported on the default hierarchy and is currently initialized
+statically and just includes the debug subsystem.  Now that there's
+cgroup_subsys->dfl_files, we can easily tell which subsystems support
+the default hierarchy or not.
 
-cgroup_subsys will grow two separate cftype addition functions and
-apply each only on the hierarchies of the matching type.  This will
-allow organizing cftypes in a lot clearer way and encourage subsystems
-to scrutinize the interface which is being exposed in the new default
-hierarchy.
-
-In preparation, this patch adds cgroup_add_legacy_cftypes() which
-currently is a simple wrapper around cgroup_add_cftypes() and replaces
-all cgroup_add_cftypes() usages with it.
-
-While at it, this patch drops a completely spurious return from
-__hugetlb_cgroup_file_init().
-
-This patch doesn't introduce any functional differences.
+Let's initialize cgrp_dfl_root_inhibit_ss_mask by testing whether
+cgroup_subsys->dfl_files is NULL.  After all, subsystems with NULL
+->dfl_files aren't useable on the default hierarchy anyway.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- block/blk-cgroup.c        | 3 ++-
- include/linux/cgroup.h    | 2 +-
- kernel/cgroup.c           | 7 ++++++-
- mm/hugetlb_cgroup.c       | 5 ++---
- mm/memcontrol.c           | 3 ++-
- net/ipv4/tcp_memcontrol.c | 2 +-
- 6 files changed, 14 insertions(+), 8 deletions(-)
+ kernel/cgroup.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 5cfbc72..2541cf0 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -1124,7 +1124,8 @@ int __init blkcg_policy_register(struct blkcg_policy *pol)
- 
- 	/* everything is in place, add intf files for the new policy */
- 	if (pol->cftypes)
--		WARN_ON(cgroup_add_cftypes(&blkio_cgrp_subsys, pol->cftypes));
-+		WARN_ON(cgroup_add_legacy_cftypes(&blkio_cgrp_subsys,
-+						  pol->cftypes));
- 	ret = 0;
- out_unlock:
- 	mutex_unlock(&blkcg_pol_mutex);
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index a6e9c2e..f5f0fee 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -590,7 +590,7 @@ static inline void pr_cont_cgroup_path(struct cgroup *cgrp)
- 
- char *task_cgroup_path(struct task_struct *task, char *buf, size_t buflen);
- 
--int cgroup_add_cftypes(struct cgroup_subsys *ss, struct cftype *cfts);
-+int cgroup_add_legacy_cftypes(struct cgroup_subsys *ss, struct cftype *cfts);
- int cgroup_rm_cftypes(struct cftype *cfts);
- 
- bool cgroup_is_descendant(struct cgroup *cgrp, struct cgroup *ancestor);
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 6496a83..c275aa4 100644
+index f41d164..f2a6795 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -3170,7 +3170,7 @@ int cgroup_rm_cftypes(struct cftype *cfts)
-  * function currently returns 0 as long as @cfts registration is successful
-  * even if some file creation attempts on existing cgroups fail.
-  */
--int cgroup_add_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
-+static int cgroup_add_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
- {
- 	int ret;
+@@ -156,11 +156,7 @@ static bool cgrp_dfl_root_visible;
+ static bool cgroup_legacy_files_on_dfl;
  
-@@ -3195,6 +3195,11 @@ int cgroup_add_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
- 	return ret;
- }
+ /* some controllers are not supported in the default hierarchy */
+-static const unsigned int cgrp_dfl_root_inhibit_ss_mask = 0
+-#ifdef CONFIG_CGROUP_DEBUG
+-	| (1 << debug_cgrp_id)
+-#endif
+-	;
++static unsigned int cgrp_dfl_root_inhibit_ss_mask;
  
-+int cgroup_add_legacy_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
-+{
-+	return cgroup_add_cftypes(ss, cfts);
-+}
+ /* The list of hierarchy roots */
+ 
+@@ -4939,6 +4935,9 @@ int __init cgroup_init(void)
+ 		if (cgroup_legacy_files_on_dfl && !ss->dfl_cftypes)
+ 			ss->dfl_cftypes = ss->legacy_cftypes;
+ 
++		if (!ss->dfl_cftypes)
++			cgrp_dfl_root_inhibit_ss_mask |= 1 << ss->id;
 +
- /**
-  * cgroup_task_count - count the number of tasks in a cgroup.
-  * @cgrp: the cgroup in question
-diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
-index 493f758..9aae6f4 100644
---- a/mm/hugetlb_cgroup.c
-+++ b/mm/hugetlb_cgroup.c
-@@ -358,9 +358,8 @@ static void __init __hugetlb_cgroup_file_init(int idx)
- 	cft = &h->cgroup_files[4];
- 	memset(cft, 0, sizeof(*cft));
- 
--	WARN_ON(cgroup_add_cftypes(&hugetlb_cgrp_subsys, h->cgroup_files));
--
--	return;
-+	WARN_ON(cgroup_add_legacy_cftypes(&hugetlb_cgrp_subsys,
-+					  h->cgroup_files));
- }
- 
- void __init hugetlb_cgroup_file_init(void)
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 8331f27..b6b3c6f 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -7065,7 +7065,8 @@ __setup("swapaccount=", enable_swap_account);
- 
- static void __init memsw_file_init(void)
- {
--	WARN_ON(cgroup_add_cftypes(&memory_cgrp_subsys, memsw_cgroup_files));
-+	WARN_ON(cgroup_add_legacy_cftypes(&memory_cgrp_subsys,
-+					  memsw_cgroup_files));
- }
- 
- static void __init enable_swap_cgroup(void)
-diff --git a/net/ipv4/tcp_memcontrol.c b/net/ipv4/tcp_memcontrol.c
-index f7a2ec3..3af5226 100644
---- a/net/ipv4/tcp_memcontrol.c
-+++ b/net/ipv4/tcp_memcontrol.c
-@@ -222,7 +222,7 @@ static struct cftype tcp_files[] = {
- 
- static int __init tcp_memcontrol_init(void)
- {
--	WARN_ON(cgroup_add_cftypes(&memory_cgrp_subsys, tcp_files));
-+	WARN_ON(cgroup_add_legacy_cftypes(&memory_cgrp_subsys, tcp_files));
- 	return 0;
- }
- __initcall(tcp_memcontrol_init);
+ 		if (ss->dfl_cftypes == ss->legacy_cftypes) {
+ 			WARN_ON(cgroup_add_cftypes(ss, ss->dfl_cftypes));
+ 		} else {
 -- 
 1.9.3
 
