@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755270AbaGNKOb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 06:14:31 -0400
-Received: from mga11.intel.com ([192.55.52.93]:41894 "EHLO mga11.intel.com"
+	id S1754495AbaGNKFd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 06:05:33 -0400
+Received: from mga11.intel.com ([192.55.52.93]:40395 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754503AbaGNKFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 06:05:34 -0400
+	id S1753761AbaGNKEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 06:04:44 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,657,1400050800"; 
-   d="scan'208";a="561434497"
+   d="scan'208";a="561434224"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 23/41] perf tools: Add dsos__hit_all()
-Date: Mon, 14 Jul 2014 13:02:47 +0300
-Message-Id: <1405332185-4050-24-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 11/41] perf tools: Fix appending a callchain from a previous sample
+Date: Mon, 14 Jul 2014 13:02:35 +0300
+Message-Id: <1405332185-4050-12-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
 References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
@@ -27,85 +27,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add ability to mark all dsos as hit.
-
-This is needed in the case of Instruction
-Tracing.  It takes so long to decode an
-Instruction Trace that it is not worth
-doing just to determine which dsos are
-hit.  A later patch takes this into use.
+hist_entry__append_callchain() must check if the sample
+has a callcahin or it will append the callchain from
+a previous sample.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/header.c | 41 +++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/header.h |  2 ++
- 2 files changed, 43 insertions(+)
+ tools/perf/util/callchain.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 893f8e2..a588a3e 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -200,6 +200,47 @@ static int write_buildid(const char *name, size_t name_len, u8 *build_id,
- 	return write_padded(fd, name, name_len + 1, len);
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index 48b6d3f..437ee09 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -626,7 +626,7 @@ int sample__resolve_callchain(struct perf_sample *sample, struct symbol **parent
+ 
+ int hist_entry__append_callchain(struct hist_entry *he, struct perf_sample *sample)
+ {
+-	if (!symbol_conf.use_callchain)
++	if (!symbol_conf.use_callchain || sample->callchain == NULL)
+ 		return 0;
+ 	return callchain_append(he->callchain, &callchain_cursor, sample->period);
  }
- 
-+static int __dsos__hit_all(struct list_head *head)
-+{
-+	struct dso *pos;
-+
-+	list_for_each_entry(pos, head, node)
-+		pos->hit = true;
-+
-+	return 0;
-+}
-+
-+static int machine__hit_all_dsos(struct machine *machine)
-+{
-+	int err;
-+
-+	err = __dsos__hit_all(&machine->kernel_dsos);
-+	if (err)
-+		return err;
-+
-+	return __dsos__hit_all(&machine->user_dsos);
-+}
-+
-+int dsos__hit_all(struct perf_session *session)
-+{
-+	struct rb_node *nd;
-+	int err;
-+
-+	err = machine__hit_all_dsos(&session->machines.host);
-+	if (err)
-+		return err;
-+
-+	for (nd = rb_first(&session->machines.guests); nd; nd = rb_next(nd)) {
-+		struct machine *pos = rb_entry(nd, struct machine, rb_node);
-+
-+		err = machine__hit_all_dsos(pos);
-+		if (err)
-+			return err;
-+	}
-+
-+	return 0;
-+}
-+
- static int __dsos__write_buildid_table(struct list_head *head,
- 				       struct machine *machine,
- 				       pid_t pid, u16 misc, int fd)
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index d08cfe4..8f5cbae 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -151,6 +151,8 @@ int perf_event__process_build_id(struct perf_tool *tool,
- 				 struct perf_session *session);
- bool is_perf_magic(u64 magic);
- 
-+int dsos__hit_all(struct perf_session *session);
-+
- /*
-  * arch specific callback
-  */
 -- 
 1.8.3.2
 
