@@ -1,180 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808AbaGNKI2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 06:08:28 -0400
-Received: from mga01.intel.com ([192.55.52.88]:30222 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754621AbaGNKGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 06:06:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,657,1400050800"; 
-   d="scan'208";a="561434925"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 39/41] perf tools: Allow TSC conversion on any arch
-Date: Mon, 14 Jul 2014 13:03:03 +0300
-Message-Id: <1405332185-4050-40-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
-References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1754827AbaGNKIl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 06:08:41 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36331 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754057AbaGNKIX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 06:08:23 -0400
+Date: Mon, 14 Jul 2014 11:08:13 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Rob Clark <robdclark@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, Joerg Roedel <joro@8bytes.org>,
+        Olav Haugan <ohaugan@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Grundler <grundler@chromium.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Varun Sethi <varun.sethi@freescale.com>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH v4] devicetree: Add generic IOMMU device tree bindings
+Message-ID: <20140714100813.GC1779@arm.com>
+References: <1404487757-18829-1-git-send-email-thierry.reding@gmail.com>
+ <20140712093917.GD18601@arm.com>
+ <CAF6AEGutHp+3f3iPA+jjaRkqq=5T_vytZ_ESoSqsQ4RHZ8F8yQ@mail.gmail.com>
+ <201407121422.02078.arnd@arndb.de>
+ <CAF6AEGs7=3UByP2DLm-uwU03wr7M14x2t-0hLX-VPJ6_eZbU3g@mail.gmail.com>
+ <20140713094341.GB23235@arm.com>
+ <20140714064452.GD2081@ulmo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140714064452.GD2081@ulmo>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is possible to record a perf.data file on
-one architecture and process it on another.
-Consequently, TSC conversion functions need
-to be moved out of the arch directory.
+Hi Thierry,
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/Makefile.perf            |  2 ++
- tools/perf/arch/x86/util/tsc.c      | 22 +---------------------
- tools/perf/arch/x86/util/tsc.h      |  3 ---
- tools/perf/tests/perf-time-to-tsc.c |  3 +--
- tools/perf/util/tsc.c               | 25 +++++++++++++++++++++++++
- tools/perf/util/tsc.h               | 11 +++++++++++
- 6 files changed, 40 insertions(+), 26 deletions(-)
- create mode 100644 tools/perf/util/tsc.c
- create mode 100644 tools/perf/util/tsc.h
+On Mon, Jul 14, 2014 at 07:44:53AM +0100, Thierry Reding wrote:
+> On Sun, Jul 13, 2014 at 10:43:41AM +0100, Will Deacon wrote:
+> > My plan for the ARM SMMU driver is:
+> > 
+> >   (1) Change ->probe() to walk the device-tree looking for all masters with
+> >       phandles back to the SMMU instance being probed
+> 
+> You and Rob mentioned this several times and I don't understand why the
+> SMMU needs to know all masters up front. Is this necessary because it
+> needs to program all registers at .probe() time and they can't be
+> reprogrammed subsequently? Or is this just some kind of optimization?
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 9670a16..abca577 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -295,6 +295,7 @@ LIB_H += util/intlist.h
- LIB_H += util/perf_regs.h
- LIB_H += util/unwind.h
- LIB_H += util/vdso.h
-+LIB_H += util/tsc.h
- LIB_H += ui/helpline.h
- LIB_H += ui/progress.h
- LIB_H += ui/util.h
-@@ -373,6 +374,7 @@ LIB_OBJS += $(OUTPUT)util/stat.o
- LIB_OBJS += $(OUTPUT)util/record.o
- LIB_OBJS += $(OUTPUT)util/srcline.o
- LIB_OBJS += $(OUTPUT)util/data.o
-+LIB_OBJS += $(OUTPUT)util/tsc.o
- 
- LIB_OBJS += $(OUTPUT)ui/setup.o
- LIB_OBJS += $(OUTPUT)ui/helpline.o
-diff --git a/tools/perf/arch/x86/util/tsc.c b/tools/perf/arch/x86/util/tsc.c
-index 40021fa..3655f24 100644
---- a/tools/perf/arch/x86/util/tsc.c
-+++ b/tools/perf/arch/x86/util/tsc.c
-@@ -6,29 +6,9 @@
- #include "../../perf.h"
- #include <linux/types.h>
- #include "../../util/debug.h"
-+#include "../../util/tsc.h"
- #include "tsc.h"
- 
--u64 perf_time_to_tsc(u64 ns, struct perf_tsc_conversion *tc)
--{
--	u64 t, quot, rem;
--
--	t = ns - tc->time_zero;
--	quot = t / tc->time_mult;
--	rem  = t % tc->time_mult;
--	return (quot << tc->time_shift) +
--	       (rem << tc->time_shift) / tc->time_mult;
--}
--
--u64 tsc_to_perf_time(u64 cyc, struct perf_tsc_conversion *tc)
--{
--	u64 quot, rem;
--
--	quot = cyc >> tc->time_shift;
--	rem  = cyc & ((1 << tc->time_shift) - 1);
--	return tc->time_zero + quot * tc->time_mult +
--	       ((rem * tc->time_mult) >> tc->time_shift);
--}
--
- int perf_read_tsc_conversion(const struct perf_event_mmap_page *pc,
- 			     struct perf_tsc_conversion *tc)
- {
-diff --git a/tools/perf/arch/x86/util/tsc.h b/tools/perf/arch/x86/util/tsc.h
-index 2affe03..2edc4d3 100644
---- a/tools/perf/arch/x86/util/tsc.h
-+++ b/tools/perf/arch/x86/util/tsc.h
-@@ -14,7 +14,4 @@ struct perf_event_mmap_page;
- int perf_read_tsc_conversion(const struct perf_event_mmap_page *pc,
- 			     struct perf_tsc_conversion *tc);
- 
--u64 perf_time_to_tsc(u64 ns, struct perf_tsc_conversion *tc);
--u64 tsc_to_perf_time(u64 cyc, struct perf_tsc_conversion *tc);
--
- #endif /* TOOLS_PERF_ARCH_X86_UTIL_TSC_H__ */
-diff --git a/tools/perf/tests/perf-time-to-tsc.c b/tools/perf/tests/perf-time-to-tsc.c
-index 3b7cd4d..0372f6e 100644
---- a/tools/perf/tests/perf-time-to-tsc.c
-+++ b/tools/perf/tests/perf-time-to-tsc.c
-@@ -8,10 +8,9 @@
- #include "evsel.h"
- #include "thread_map.h"
- #include "cpumap.h"
-+#include "tsc.h"
- #include "tests.h"
- 
--#include "../arch/x86/util/tsc.h"
--
- #define CHECK__(x) {				\
- 	while ((x) < 0) {			\
- 		pr_debug(#x " failed!\n");	\
-diff --git a/tools/perf/util/tsc.c b/tools/perf/util/tsc.c
-new file mode 100644
-index 0000000..ef4749836
---- /dev/null
-+++ b/tools/perf/util/tsc.c
-@@ -0,0 +1,25 @@
-+#include <linux/compiler.h>
-+#include <linux/types.h>
-+
-+#include "tsc.h"
-+
-+u64 perf_time_to_tsc(u64 ns, struct perf_tsc_conversion *tc)
-+{
-+	u64 t, quot, rem;
-+
-+	t = ns - tc->time_zero;
-+	quot = t / tc->time_mult;
-+	rem  = t % tc->time_mult;
-+	return (quot << tc->time_shift) +
-+	       (rem << tc->time_shift) / tc->time_mult;
-+}
-+
-+u64 tsc_to_perf_time(u64 cyc, struct perf_tsc_conversion *tc)
-+{
-+	u64 quot, rem;
-+
-+	quot = cyc >> tc->time_shift;
-+	rem  = cyc & ((1 << tc->time_shift) - 1);
-+	return tc->time_zero + quot * tc->time_mult +
-+	       ((rem * tc->time_mult) >> tc->time_shift);
-+}
-diff --git a/tools/perf/util/tsc.h b/tools/perf/util/tsc.h
-new file mode 100644
-index 0000000..4eca848
---- /dev/null
-+++ b/tools/perf/util/tsc.h
-@@ -0,0 +1,11 @@
-+#ifndef __PERF_TSC_H
-+#define __PERF_TSC_H
-+
-+#include <linux/types.h>
-+
-+#include "../arch/x86/util/tsc.h"
-+
-+u64 perf_time_to_tsc(u64 ns, struct perf_tsc_conversion *tc);
-+u64 tsc_to_perf_time(u64 cyc, struct perf_tsc_conversion *tc);
-+
-+#endif
--- 
-1.8.3.2
+It's an optimization to reduce resource usage in the IOMMU, but one that
+is *required* by certain platforms (e.g. Olav mentioned his 43-ID master
+and Calxeda had something similar).
 
+Basically, in order to perform an ->attach() for a master to a domain, we
+need complete knowledge of the system so that we can avoid accidentally
+attaching other masters to the same domain. The programming is done using
+a form of StreamID wildcarding, so at this point we would need to have
+parsed the entire DT to ensure our wildcard doesn't match other masters.
+
+> >   (2) For each master, extract the Stream IDs and add them to the internal
+> >       SMMU driver data structures (an rbtree per SMMU instance). For
+> >       hotpluggable buses, we'll need a way for the bus controller to
+> >       reserve a range of IDs -- this will likely be a later extension to
+> >       the binding.
+> > 
+> >   (3) When we get an ->add() call, warn if it's a device we haven't seen
+> >       and reject the addition.
+> 
+> It seems to me like this would be the logical place to parse stream IDs.
+
+We could do that only if we were guaranteed to have an ->add() call for
+*every* master before an ->attach() call for *any* master. I don't think
+that is necessarily true.
+
+> You could for example have a case where some device tree contains a node
+> for which no driver will ever be loaded (for example because it hasn't
+> been built-in, or the device is never used and the module is therefore
+> never loaded). That's a situation that you cannot determine by simply
+> walking the device tree in the IOMMU's .probe().
+
+Why not? If we're simply searching for phandles to the IOMMU, why does it
+matter whether a driver is bound to the master?
+
+> I've always thought about IOMMU masters much in the same way as other
+> types of resources, such as memory or interrupts. In the rest of the
+> kernel we do carefully try to postpone allocation of these resources
+> until they are required, specifically so we don't waste resources when
+> they're unused.
+
+See above, they are all required the moment anybody tries an ->attach().
+
+> That's also one of the reasons why I think associating an IOMMU with the
+> bus type is bad. Currently if an IOMMU driver thinks it should enable
+> translation for a given device, then there's no way for that device's
+> driver to opt out again. There may be reasons (performance, hardware
+> bugs, ...) for the driver to decide against using the IOMMU for
+> translation, but there's currently no way to do that if the IOMMU driver
+> disagrees.
+
+Yes, we need a way to associate an IOMMU with a bus instance, but I think
+that's a separate topic, no?
+
+Will
