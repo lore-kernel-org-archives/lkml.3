@@ -1,102 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522AbaGNWSw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 18:18:52 -0400
-Received: from exprod5og120.obsmtp.com ([64.18.0.137]:48679 "HELO
-	exprod5og120.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757429AbaGNWR4 (ORCPT
+	id S932360AbaGNWT1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 18:19:27 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:59537 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757540AbaGNWTX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 18:17:56 -0400
-From: Iyappan Subramanian <isubramanian@apm.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, devicetree@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, jcm@redhat.com, patches@apm.com,
-        Iyappan Subramanian <isubramanian@apm.com>,
-        Ravi Patel <rapatel@apm.com>, Keyur Chudgar <kchudgar@apm.com>
-Subject: [PATCH v9 3/4] dts: Add bindings for APM X-Gene SoC ethernet driver
-Date: Mon, 14 Jul 2014 15:18:04 -0700
-Message-Id: <1405376285-23008-4-git-send-email-isubramanian@apm.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405376285-23008-1-git-send-email-isubramanian@apm.com>
-References: <1405376285-23008-1-git-send-email-isubramanian@apm.com>
+	Mon, 14 Jul 2014 18:19:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <8761iztxzl.fsf@nemi.mork.no>
+References: <87pph8kse7.fsf@nemi.mork.no>
+	<53C3D7C3.7090505@redhat.com>
+	<CA+55aFxYYKApOC+1TQkoxSzi-zTSB8OmkU=ypvNb_Gc2+K6Hmw@mail.gmail.com>
+	<CA+55aFzHo4BEO8W0yza7g0YMgg-b=hPbk20-vpR3s==ydpmAOg@mail.gmail.com>
+	<877g3fsm98.fsf@nemi.mork.no>
+	<CA+55aFztNg4aFUnmqxoR-Hwva87D1TMOZ2Gyy8CVmEov9ToDQg@mail.gmail.com>
+	<8761iztxzl.fsf@nemi.mork.no>
+Date: Mon, 14 Jul 2014 15:19:22 -0700
+X-Google-Sender-Auth: KhDhCMoQ_Ucv3XiLq0xMtOw_K6I
+Message-ID: <CA+55aFzNWehvLk2izhnXg--ghOgG7SfMzpzFJcbVZg9duGdWPQ@mail.gmail.com>
+Subject: Re: [BISECTED 3.16-rc REGREGRESSION] backlight control stopped working
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds bindings for APM X-Gene SoC ethernet driver.
+On Mon, Jul 14, 2014 at 2:46 PM, Bjørn Mork <bjorn@mork.no> wrote:
+>
+> Yes, the patch works as advertised for me.  Thanks.
 
-Signed-off-by: Iyappan Subramanian <isubramanian@apm.com>
-Signed-off-by: Ravi Patel <rapatel@apm.com>
-Signed-off-by: Keyur Chudgar <kchudgar@apm.com>
----
- arch/arm64/boot/dts/apm-mustang.dts |  4 ++++
- arch/arm64/boot/dts/apm-storm.dtsi  | 30 +++++++++++++++++++++++++++---
- 2 files changed, 31 insertions(+), 3 deletions(-)
+Ok, so it should probably be tested by people who see the "move by
+two" problem too.
 
-diff --git a/arch/arm64/boot/dts/apm-mustang.dts b/arch/arm64/boot/dts/apm-mustang.dts
-index 6541962..b2f5622 100644
---- a/arch/arm64/boot/dts/apm-mustang.dts
-+++ b/arch/arm64/boot/dts/apm-mustang.dts
-@@ -28,3 +28,7 @@
- &serial0 {
- 	status = "ok";
- };
-+
-+&menet {
-+	status = "ok";
-+};
-diff --git a/arch/arm64/boot/dts/apm-storm.dtsi b/arch/arm64/boot/dts/apm-storm.dtsi
-index 40aa96c..c0aceef 100644
---- a/arch/arm64/boot/dts/apm-storm.dtsi
-+++ b/arch/arm64/boot/dts/apm-storm.dtsi
-@@ -167,14 +167,13 @@
- 				clock-output-names = "ethclk";
- 			};
- 
--			eth8clk: eth8clk {
-+			menetclk: menetclk {
- 				compatible = "apm,xgene-device-clock";
- 				#clock-cells = <1>;
- 				clocks = <&ethclk 0>;
--				clock-names = "eth8clk";
- 				reg = <0x0 0x1702C000 0x0 0x1000>;
- 				reg-names = "csr-reg";
--				clock-output-names = "eth8clk";
-+				clock-output-names = "menetclk";
- 			};
- 
- 			sataphy1clk: sataphy1clk@1f21c000 {
-@@ -397,5 +396,30 @@
- 			#clock-cells = <1>;
- 			clocks = <&rtcclk 0>;
- 		};
-+
-+		menet: ethernet@17020000 {
-+			compatible = "apm,xgene-enet";
-+			status = "disabled";
-+			reg = <0x0 0x17020000 0x0 0xd100>,
-+			      <0x0 0X17030000 0x0 0X400>,
-+			      <0x0 0X10000000 0x0 0X200>;
-+			reg-names = "enet_csr", "ring_csr", "ring_cmd";
-+			interrupts = <0x0 0x3c 0x4>;
-+			dma-coherent;
-+			clocks = <&menetclk 0>;
-+			local-mac-address = [00 01 73 00 00 01];
-+			phy-connection-type = "rgmii";
-+			phy-handle = <&menetphy>;
-+			mdio {
-+				compatible = "apm,xgene-mdio";
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				menetphy: menetphy@3 {
-+					compatible = "ethernet-phy-id001c.c915";
-+					reg = <0x3>;
-+				};
-+
-+			};
-+		};
- 	};
- };
--- 
-1.9.1
+> But this will break existing configs:
+>
+> Any setup using e.g "options video brightness_switch_enabled=Y" will
+> barf on this, won't they?
 
+Hmm. Probably. That said, that kind of breakage I think we might want
+to live with, especially if it actually ends up causing them to test
+the new default (which might just work for them).
+
+But regardless, let's make sure that patch (or something _like_ it)
+works for people who saw the reverse problem for you. Then the exact
+syntax of whatever module parameter (if any) can be a separate
+discussion.
+
+Anyway, for 3.16 I think we should just do what we used to do (ie the
+revert that Rafael apparently already has queued up), so this isn't
+necessarily critical.
+
+            Linus
