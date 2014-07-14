@@ -1,92 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900AbaGNJd0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 05:33:26 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:38029 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718AbaGNJdU (ORCPT
+	id S1754055AbaGNJfB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 05:35:01 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:3645 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718AbaGNJez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 05:33:20 -0400
-Date: Mon, 14 Jul 2014 11:33:11 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: linux-pwm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Weinberger <richard@nod.at>,
-        Liqin Chen <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>
-Subject: Re: [PATCH] drivers/pwm/Kconfig: Let PWM_CLPS711X depend on HAS_IOMEM
-Message-ID: <20140714093310.GC9755@ulmo>
-References: <53C27247.2010300@gmail.com>
- <20140714081843.GK2081@ulmo>
- <6A7CA9C8-7BC4-44BA-AE71-63BDADFF9023@gmail.com>
+	Mon, 14 Jul 2014 05:34:55 -0400
+Message-ID: <53C3A42E.40000@huawei.com>
+Date: Mon, 14 Jul 2014 17:34:38 +0800
+From: Rui Xiang <rui.xiang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MnLPg7ZWsaic7Fhd"
-Content-Disposition: inline
-In-Reply-To: <6A7CA9C8-7BC4-44BA-AE71-63BDADFF9023@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Dave Kleikamp <dave.kleikamp@oracle.com>, <linux-ext4@vger.kernel.org>
+CC: <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: testing result of loop-aio patchset on ext3
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.22.57]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Dave,
 
---MnLPg7ZWsaic7Fhd
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+We export a container image file as a block device via loop device, but we
+found it's very easy that the container rootfs gets corrupted due to power
+loss.
 
-On Mon, Jul 14, 2014 at 05:14:05PM +0800, Chen Gang wrote:
->=20
-> =E5=9C=A8 2014=E5=B9=B47=E6=9C=8814=E6=97=A5=EF=BC=8C=E4=B8=8B=E5=8D=884:=
-18=EF=BC=8CThierry Reding <thierry.reding@gmail.com> =E5=86=99=E9=81=93=EF=
-=BC=9A
->=20
-> > On Sun, Jul 13, 2014 at 07:49:27PM +0800, Chen Gang wrote:
-> >> PWM_CLPS711X needs HAS_IOMEM, so let it depend on HAS_IOMEM.
-> >>=20
-> >> The related error (with allmodconfig under score):
-> >>=20
-> >>    MODPOST 1365 modules
-> >>  ERROR: "devm_ioremap_resource" [drivers/pwm/pwm-clps711x.ko] undefine=
-d!
-> >>=20
-> >>=20
-> >> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> >> ---
-> >> drivers/pwm/Kconfig | 2 +-
-> >> 1 file changed, 1 insertion(+), 1 deletion(-)
-> >=20
-> > NAK given the discussion in the other thread.
-> >=20
-> > Thierry
->=20
-> OK, thanks, and I shall continue focusing the other thread, and send rela=
-ted patch after
-> get conclusion (hope I can finish within this week).
+Your early version of loop-aio patchset said the patchset can make loop
+mounted filesystems recoverable(lkml.org/lkml/2012/3/30/317), but we found
+it doesn't help.
 
-Great, thanks for taking care of this.
+Both the guest fs and host fs are ext3.
 
-Thierry
+The loop-aio patchset is from:
+git://github.com/kleikamp/linux-shaggy.git aio_loop
 
---MnLPg7ZWsaic7Fhd
-Content-Type: application/pgp-signature
+Steps:
+1. dd a 10G image, mkfs.ext3,
+  # dd if=/dev/zero of=./raw_image bs=1M count=10000
+  # echo y | mkfs.ext3 raw_image
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+2. losetup a loop device, mount at ./test_dir
+  # losetup /dev/loop1 raw_image
+  # mount /dev/loop1 ./test_dir
 
-iQIcBAEBAgAGBQJTw6PWAAoJEN0jrNd/PrOhZ8QQAJZ8LAcQ9FYb8xKLBroBNLTB
-3SvrnAbZTziD8b2CWyqemjxFRY6cBHN+JDf1XumyCF+hJsbQ+M4CvZyzM/MIvhQO
-IOFWaCJMFiPHmeiMGlhje45rGf5lMXv729+WHB9coX50FKs4/9L3E3b4hf0pDSFW
-PTiy5Uq3QKanP3XhmJaSSnh9ezlsDqTObZKbqSGEpBRzH0VL87NCL6xW64TZHw6R
-/VnNE4q2bzyR8PFtkDvJK6UW1kq9GlYFtXFn1DR1KnIojBj1j0SrwF+EIF8UB/3B
-AXsGmLAHxkA2OaDpVc9XbxW765+fXupGcUaxw2D9YcoYWaxJinjX35Mkk82hm2Pj
-8RU/+WE+SgFOXuwYDw1q6+TcrgOK+LuzokhkXTvmPSRspeOX/KrahQwtaowW/bmz
-FVqSUz3/xm9WSvFVOiPb1hGfrxtsC2XNjL86GJqQA/hUsQZAXEEG9RAOlV2PAL4f
-EUpM/Au9QqUlQ1ts9AyB9L4vMV1oPFohnYyWT7AcYPTuCvxkI5WqEP/en12CTnqJ
-LioBz7YOwuyjQbcym7tH1vkxbPhTwSnlVpob1i/s6JpZNgG0HZJwWYylbuk6cqjp
-IkHKjWj5vjHucUZRHH3UhOT4C3PSrU131Z6kYeHp1X99bIg2WsUZ5w/SNB6BJ0Ln
-UCFLGqFxbRtJYbf9P0OE
-=pJ5I
------END PGP SIGNATURE-----
+3. copy fs_mark into test_dir and run
+  # ./fs_mark -d ./tmp/ -s 102400000 -n 80
 
---MnLPg7ZWsaic7Fhd--
+4. during runing fs_mark, make systerm reboot indirectly.
+  # echo b > /proc/sysrq-trigger
+
+After systerm booted up, sometimes fsck reported raw_image fs has been damaged.
+
+# fsck.ext3 -n raw_image
+e2fsck 1.41.9 (22-Aug-2009)
+Warning: skipping journal recovery because doing a read-only filesystem check.
+raw_image contains a file system with errors, check forced.
+Pass 1: Checking inodes, blocks, and sizes
+Pass 2: Checking directory structure
+Pass 3: Checking directory connectivity
+Pass 4: Checking reference counts
+Pass 5: Checking group summary information
+Free blocks count wrong (2481348, counted=2480577).
+Fix? no
+Free inodes count wrong (640837, counted=640835).
+Fix? no
+raw_image: ********** WARNING: Filesystem still has errors **********
+raw_image: 11/640848 files (0.0% non-contiguous), 78652/2560000 blocks
+
+
+With a specific script, I can almost 100% reproduce this issue.
+
+And it seems the corruption can only happen when reboot happens at the
+time loop is calling vfs_fsync().
+
+Do you have any idea why the loop-aio patchset doesn't help?
+
+Thanks.
+
