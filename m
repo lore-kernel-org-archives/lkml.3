@@ -1,163 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077AbaGNJzE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 05:55:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31467 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751934AbaGNJy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 05:54:57 -0400
-Date: Mon, 14 Jul 2014 11:55:39 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH 2/2] PCI/MSI: Remove arch_msi_check_device()
-Message-ID: <20140714095538.GA15981@dhcp-26-207.brq.redhat.com>
-References: <cover.1405160163.git.agordeev@redhat.com>
- <1005232855c3af2c0c669818ee63be445389b6ad.1405160163.git.agordeev@redhat.com>
- <53C33C6D.8020103@huawei.com>
+	id S1754141AbaGNJzR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 05:55:17 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:33137 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754092AbaGNJzM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 05:55:12 -0400
+Message-ID: <53C3A8E8.4090009@gmail.com>
+Date: Mon, 14 Jul 2014 11:54:48 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53C33C6D.8020103@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tomasz Figa <t.figa@samsung.com>, linux-samsung-soc@vger.kernel.org
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>
+Subject: Re: [PATCH v2 5/6] ARM: EXYNOS: Fix suspend/resume sequences
+References: <1403618235-19353-1-git-send-email-t.figa@samsung.com> <1403697175-13476-1-git-send-email-t.figa@samsung.com>
+In-Reply-To: <1403697175-13476-1-git-send-email-t.figa@samsung.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 10:11:57AM +0800, Yijing Wang wrote:
-> >  /**
-> > - * pci_msi_check_device - check whether MSI may be enabled on a device
-> > + * msi_check_device - check whether MSI may be enabled on a device
-> >   * @dev: pointer to the pci_dev data structure of MSI device function
-> >   * @nvec: how many MSIs have been requested ?
-> > - * @type: are we checking for MSI or MSI-X ?
-> >   *
-> >   * Look at global flags, the device itself, and its parent buses
-> >   * to determine if MSI/-X are supported for the device. If MSI/-X is
-> >   * supported return 0, else return an error code.
-> >   **/
-> > -static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
-> > +static int msi_check_device(struct pci_dev *dev, int nvec)
-> >  {
-> >  	struct pci_bus *bus;
-> > -	int ret;
-> >  
-> >  	/* MSI must be globally enabled and supported by the device */
-> > -	if (!pci_msi_enable || !dev || dev->no_msi)
-> > +	if (!pci_msi_enable)
-> > +		return -EINVAL;
-> > +
-> > +	if (!dev || dev->no_msi || dev->current_state != PCI_D0)
-> >  		return -EINVAL;
-> >  
-> >  	/*
-> > @@ -846,10 +837,6 @@ static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
-> >  		if (bus->bus_flags & PCI_BUS_FLAGS_NO_MSI)
-> >  			return -EINVAL;
-> >  
-> > -	ret = arch_msi_check_device(dev, nvec, type);
-> > -	if (ret)
-> > -		return ret;
-> > -
-> 
-> Move the arch_msi_check_device() into arch_msi_setup_irq(), make we can not detect whether the device in this platform
-> supports MSI or MSI-X aeap. If we delay this, maybe we will do a lot unnecessary working for MSI/MSI-X setup.
+Hi Kukjin,
 
-A traditional approach for a function is first to make sanity check and
-then allocate resources. I do not see a reason to keep these two steps
-in separate functions: arch_msi_check_device() and arch_setup_msi_irq().
-
-Just make checks within arch_setup_msi_irq() and bail out early would be as
-cheap as it is now, but more natural and would deflate the interface.
-
-Moreover, some platforms duplicate checks in arch_msi_check_device() and
-arch_setup_msi_irq(), which does not add to readability.
-
-> Thanks!
-> Yijing.
+On 25.06.2014 13:52, Tomasz Figa wrote:
+> Due to recent consolidation of Exynos suspend and cpuidle code, some
+> parts of suspend and resume sequences are executed two times, once from
+> exynos_pm_syscore_ops and then from exynos_cpu_pm_notifier() and thus it
+> breaks suspend, at least on Exynos4-based boards.
 > 
-> >  	return 0;
-> >  }
-> >  
-> > @@ -954,13 +941,13 @@ int pci_enable_msix(struct pci_dev *dev, struct msix_entry *entries, int nvec)
-> >  	int status, nr_entries;
-> >  	int i, j;
-> >  
-> > -	if (!entries || !dev->msix_cap || dev->current_state != PCI_D0)
-> > -		return -EINVAL;
-> > -
-> > -	status = pci_msi_check_device(dev, nvec, PCI_CAP_ID_MSIX);
-> > +	status = msi_check_device(dev, nvec);
-> >  	if (status)
-> >  		return status;
-> >  
-> > +	if (!entries)
-> > +		return -EINVAL;
-> > +
-> >  	nr_entries = pci_msix_vec_count(dev);
-> >  	if (nr_entries < 0)
-> >  		return nr_entries;
-> > @@ -1085,8 +1072,9 @@ int pci_enable_msi_range(struct pci_dev *dev, int minvec, int maxvec)
-> >  	int nvec;
-> >  	int rc;
-> >  
-> > -	if (dev->current_state != PCI_D0)
-> > -		return -EINVAL;
-> > +	rc = msi_check_device(dev, minvec);
-> > +	if (rc)
-> > +		return rc;
-> >  
-> >  	WARN_ON(!!dev->msi_enabled);
-> >  
-> > @@ -1109,17 +1097,6 @@ int pci_enable_msi_range(struct pci_dev *dev, int minvec, int maxvec)
-> >  		nvec = maxvec;
-> >  
-> >  	do {
-> > -		rc = pci_msi_check_device(dev, nvec, PCI_CAP_ID_MSI);
-> > -		if (rc < 0) {
-> > -			return rc;
-> > -		} else if (rc > 0) {
-> > -			if (rc < minvec)
-> > -				return -ENOSPC;
-> > -			nvec = rc;
-> > -		}
-> > -	} while (rc);
-> > -
-> > -	do {
-> >  		rc = msi_capability_init(dev, nvec);
-> >  		if (rc < 0) {
-> >  			return rc;
-> > diff --git a/include/linux/msi.h b/include/linux/msi.h
-> > index 92a2f99..3b873bc 100644
-> > --- a/include/linux/msi.h
-> > +++ b/include/linux/msi.h
-> > @@ -59,7 +59,6 @@ int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc);
-> >  void arch_teardown_msi_irq(unsigned int irq);
-> >  int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type);
-> >  void arch_teardown_msi_irqs(struct pci_dev *dev);
-> > -int arch_msi_check_device(struct pci_dev* dev, int nvec, int type);
-> >  void arch_restore_msi_irqs(struct pci_dev *dev);
-> >  
-> >  void default_teardown_msi_irqs(struct pci_dev *dev);
-> > @@ -76,8 +75,6 @@ struct msi_chip {
-> >  	int (*setup_irq)(struct msi_chip *chip, struct pci_dev *dev,
-> >  			 struct msi_desc *desc);
-> >  	void (*teardown_irq)(struct msi_chip *chip, unsigned int irq);
-> > -	int (*check_device)(struct msi_chip *chip, struct pci_dev *dev,
-> > -			    int nvec, int type);
-> >  };
-> >  
-> >  #endif /* LINUX_MSI_H */
-> > 
+> This patch fixes the issue by removing exynos_pm_syscore_ops completely
+> and making the code rely only on CPU PM notifier.
 > 
+> Tested on Exynos4210-based Trats board.
 > 
-> -- 
-> Thanks!
-> Yijing
+> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+> ---
+>  arch/arm/mach-exynos/pm.c | 23 ++++-------------------
+>  1 file changed, 4 insertions(+), 19 deletions(-)
+> 
+> Changes since v1:
+>  - rebased onto Kukjin's fixes branch.
+> 
+> diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
+> index 202ca73..f23cc77 100644
+> --- a/arch/arm/mach-exynos/pm.c
+> +++ b/arch/arm/mach-exynos/pm.c
+> @@ -364,11 +364,6 @@ early_wakeup:
+>  	return;
+>  }
+>  
+> -static struct syscore_ops exynos_pm_syscore_ops = {
+> -	.suspend	= exynos_pm_suspend,
+> -	.resume		= exynos_pm_resume,
+> -};
+> -
+>  /*
+>   * Suspend Ops
+>   */
+> @@ -438,22 +433,13 @@ static int exynos_cpu_pm_notifier(struct notifier_block *self,
+>  
+>  	switch (cmd) {
+>  	case CPU_PM_ENTER:
+> -		if (cpu == 0) {
+> -			exynos_pm_central_suspend();
+> -			if (read_cpuid_part_number() == ARM_CPU_PART_CORTEX_A9)
+> -				exynos_cpu_save_register();
+> -		}
+> +		if (cpu == 0)
+> +			exynos_pm_suspend();
+>  		break;
+>  
+>  	case CPU_PM_EXIT:
+> -		if (cpu == 0) {
+> -			if (read_cpuid_part_number() ==
+> -					ARM_CPU_PART_CORTEX_A9) {
+> -				scu_enable(S5P_VA_SCU);
+> -				exynos_cpu_restore_register();
+> -			}
+> -			exynos_pm_central_resume();
+> -		}
+> +		if (cpu == 0)
+> +			exynos_pm_resume();
+>  		break;
+>  	}
+>  
+> @@ -478,6 +464,5 @@ void __init exynos_pm_init(void)
+>  	tmp |= ((0xFF << 8) | (0x1F << 1));
+>  	__raw_writel(tmp, S5P_WAKEUP_MASK);
+>  
+> -	register_syscore_ops(&exynos_pm_syscore_ops);
+>  	suspend_set_ops(&exynos_suspend_ops);
+>  }
 > 
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Please consider this patch for next fixes pull request. Without it
+suspend/resume is broken for Exynos4 and probably other SoCs. This patch
+just restores the sequence from before the patch moving things to PM
+notifier, so I don't think it should need any special treatment.
+
+Best regards,
+Tomasz
