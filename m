@@ -1,111 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293AbaGNJvm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 05:51:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30596 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754248AbaGNJva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 05:51:30 -0400
-Date: Mon, 14 Jul 2014 11:51:16 +0200 (CEST)
-From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
-X-X-Sender: lczerner@localhost.localdomain
-To: Rui Xiang <rui.xiang@huawei.com>
-cc: Dave Kleikamp <dave.kleikamp@oracle.com>, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: testing result of loop-aio patchset on ext3
-In-Reply-To: <53C3A42E.40000@huawei.com>
-Message-ID: <alpine.LFD.2.00.1407141142520.13527@localhost.localdomain>
-References: <53C3A42E.40000@huawei.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754347AbaGNJwF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 05:52:05 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:48737 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754180AbaGNJvP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 05:51:15 -0400
+Message-ID: <53C3A7FE.8000401@gmail.com>
+Date: Mon, 14 Jul 2014 11:50:54 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Kukjin Kim <kgene.kim@samsung.com>, "'Tomasz Figa'" <t.figa@samsung.com>,
+        linux-samsung-soc@vger.kernel.org
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "'Marek Szyprowski'" <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 2/6] ARM: EXYNOS: Fix core ID used by platsmp and hotplug
+ code
+References: <1403618235-19353-1-git-send-email-t.figa@samsung.com> <1403618235-19353-3-git-send-email-t.figa@samsung.com> <031001cf9aaf$959cf6c0$c0d6e440$@samsung.com>
+In-Reply-To: <031001cf9aaf$959cf6c0$c0d6e440$@samsung.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jul 2014, Rui Xiang wrote:
+Hi Kukjin,
 
-> Date: Mon, 14 Jul 2014 17:34:38 +0800
-> From: Rui Xiang <rui.xiang@huawei.com>
-> To: Dave Kleikamp <dave.kleikamp@oracle.com>, linux-ext4@vger.kernel.org
-> Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
->     Li Zefan <lizefan@huawei.com>
-> Subject: testing result of loop-aio patchset on ext3
+On 08.07.2014 15:21, Kukjin Kim wrote:
+> Tomasz Figa wrote:
+>>
+>> When CPU topology is specified in device tree, cpu_logical_map() does
+>> not return core ID anymore, but rather full MPIDR value. This breaks
+>> existing calculation of PMU register offsets on Exynos SoCs.
+>>
+>> This patch fixes the problem by adjusting the code to use only core ID
+>> bits of the value returned by cpu_logical_map() to allow CPU topology to
+>> be specified in device tree on Exynos SoCs.
+>>
+>> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
 > 
-> Hi Dave,
-> 
-> We export a container image file as a block device via loop device, but we
-> found it's very easy that the container rootfs gets corrupted due to power
-> loss.
-> 
-> Your early version of loop-aio patchset said the patchset can make loop
-> mounted filesystems recoverable(lkml.org/lkml/2012/3/30/317), but we found
-> it doesn't help.
-> 
-> Both the guest fs and host fs are ext3.
-> 
-> The loop-aio patchset is from:
-> git://github.com/kleikamp/linux-shaggy.git aio_loop
-> 
-> Steps:
-> 1. dd a 10G image, mkfs.ext3,
->   # dd if=/dev/zero of=./raw_image bs=1M count=10000
->   # echo y | mkfs.ext3 raw_image
-> 
-> 2. losetup a loop device, mount at ./test_dir
->   # losetup /dev/loop1 raw_image
->   # mount /dev/loop1 ./test_dir
-> 
-> 3. copy fs_mark into test_dir and run
->   # ./fs_mark -d ./tmp/ -s 102400000 -n 80
-> 
-> 4. during runing fs_mark, make systerm reboot indirectly.
->   # echo b > /proc/sysrq-trigger
-> 
-> After systerm booted up, sometimes fsck reported raw_image fs has been damaged.
-> 
-> # fsck.ext3 -n raw_image
-> e2fsck 1.41.9 (22-Aug-2009)
-> Warning: skipping journal recovery because doing a read-only filesystem check.
-> raw_image contains a file system with errors, check forced.
-> Pass 1: Checking inodes, blocks, and sizes
-> Pass 2: Checking directory structure
-> Pass 3: Checking directory connectivity
-> Pass 4: Checking reference counts
-> Pass 5: Checking group summary information
-> Free blocks count wrong (2481348, counted=2480577).
-> Fix? no
-> Free inodes count wrong (640837, counted=640835).
-> Fix? no
-> raw_image: ********** WARNING: Filesystem still has errors **********
-> raw_image: 11/640848 files (0.0% non-contiguous), 78652/2560000 blocks
+> Looks good to me, but I think we don't need this fix in 3.16 because the CPU
+> topology is not specified in DT yet...if I'm wrong, please correct me.
 
-It's not damaged, this is expected result if you're using old
-e2fsprogs which still treats this as an error.
+CPU topology is already specified in DT for Exynos3250, 5250, 5260, 5410
+and 5420/5800.
 
-It's not an error because we only update superblock summary at
-unmount time so with unclean shutdown it's likely that it does not
-match the reality, but e2fsck can and will easily fix that for you.
+This patch also fixes CPU hotplug on SoCs with more than 2 cores,
+because it removes incorrect condition check in platform_do_lowpower().
 
-Please try e2fsprogs v1.42.3 or newer.
+Please take this fix for next -rc release.
 
-Thanks!
--Lukas
-
-> 
-> 
-> With a specific script, I can almost 100% reproduce this issue.
-> 
-> And it seems the corruption can only happen when reboot happens at the
-> time loop is calling vfs_fsync().
-> 
-> Do you have any idea why the loop-aio patchset doesn't help?
-> 
-> Thanks.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Best regards,
+Tomasz
