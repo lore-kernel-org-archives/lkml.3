@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756475AbaGNRus (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 13:50:48 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:47184 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492AbaGNRum (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 13:50:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140714171755.22901059@canb.auug.org.au>
-References: <20140714171755.22901059@canb.auug.org.au>
-Date: Mon, 14 Jul 2014 13:50:40 -0400
-Message-ID: <CAPDOMViMv48o9_3tRp+AJLGy7XCM8ggPR6x9KXSfah+Xyvrjxg@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jul 14
-From: Nick Krause <xerofoify@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1756616AbaGNRwE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 13:52:04 -0400
+Received: from mga02.intel.com ([134.134.136.20]:1777 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756225AbaGNRwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 13:52:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,659,1400050800"; 
+   d="scan'208";a="572967114"
+Subject: Re: [PATCH v4 6/7] sched: add function nr_running_cpu to expose
+ number of tasks running on cpu
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: tkhai@yandex.ru
+Cc: Herbert Xu <herbert@gondor.apana.org.au>, "H. Peter Anvin" <hpa@zytor.com>,
+        "David S.Miller" <davem@davemloft.net>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Chandramouli Narayanan <mouli@linux.intel.com>,
+        Vinodh Gopal <vinodh.gopal@intel.com>,
+        James Guilford <james.guilford@intel.com>,
+        Wajdi Feghali <wajdi.k.feghali@intel.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <53C0FF16.40902@yandex.ru>
+References: <cover.1405074379.git.tim.c.chen@linux.intel.com>
+	 <1405110784.2970.655.camel@schen9-DESK>  <53C0FF16.40902@yandex.ru>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Jul 2014 10:51:31 -0700
+Message-ID: <1405360291.2970.702.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 3:17 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> Changes since 20140711:
->
-> My fixes tree is empty again.
->
-> The tty.current tree lost its build failure.
->
-> The mvebu tree gained a conflict against Linus' tree.
->
-> The akpm tree lost a few patches that turned up elsewhere.
->
-> Non-merge commits (relative to Linus' tree): 5571
->  5123 files changed, 207687 insertions(+), 256904 deletions(-)
->
-> ----------------------------------------------------------------------------
->
-> I have created today's linux-next tree at
-> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-> (patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
-> are tracking the linux-next tree using git, you should not use "git pull"
-> to do so as that will try to merge the new linux-next release with the
-> old one.  You should use "git fetch" and checkout or reset to the new
-> master.
->
-> You can see which trees have been included by looking in the Next/Trees
-> file in the source.  There are also quilt-import.log and merge.log files
-> in the Next directory.  Between each merge, the tree was built with
-> a ppc64_defconfig for powerpc and an allmodconfig for x86_64 and a
-> multi_v7_defconfig for arm. After the final fixups (if any), it is also
-> built with powerpc allnoconfig (32 and 64 bit), ppc44x_defconfig and
-> allyesconfig (this fails its final link) and i386, sparc, sparc64 and arm
-> defconfig.
->
-> Below is a summary of the state of the merge.
->
-> I am currently merging 222 trees (counting Linus' and 30 trees of patches
-> pending for Linus' tree).
->
-> Stats about the size of the tree over time can be seen at
-> http://neuling.org/linux-next-size.html .
->
-> Status of my local build tests will be at
-> http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-> advice about cross compilers/configs that work, we are always open to add
-> more builds.
->
-> Thanks to Randy Dunlap for doing many randconfig builds.  And to Paul
-> Gortmaker for triage and bug fixes.
->
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
->
-I am running your failing tests and most of them seem to succeed for me.
-I also sent you a log of these succeeding builds.
-Cheers Nick
+On Sat, 2014-07-12 at 13:25 +0400, Kirill Tkhai wrote:
+
+> >  
+> > +unsigned long nr_running_cpu(int cpu)
+> > +{
+> > +	if (cpumask_test_cpu(cpu, cpu_online_mask))
+> > +		return cpu_rq(cpu)->nr_running;
+> > +	else
+> > +		return 0;
+> > +}
+> > +
+> 
+> Offline cpu should have nr_running equal to 0. We park last
+> enqueued thread (migration_thread) at the end of take_cpu_down().
+> 
+> So, it's enough to return cpu_rq(cpu)->nr_running.
+
+Thanks.  This seems reasonable.
+
+Tim
+
