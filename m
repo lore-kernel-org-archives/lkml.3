@@ -1,91 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756163AbaGNQJE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 12:09:04 -0400
-Received: from mga09.intel.com ([134.134.136.24]:36180 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755615AbaGNQIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 12:08:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,659,1400050800"; 
-   d="scan'208";a="572902992"
-Date: Mon, 14 Jul 2014 21:35:26 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: hongbo.zhang@freescale.com
-Cc: vkoul@infradead.org, dan.j.williams@intel.com, dmaengine@vger.kernel.org,
-        leo.li@freescale.com, scottwood@freescale.com,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 0/3] DMA: Freescale: driver cleanups and enhancements
-Message-ID: <20140714160526.GL2296@intel.com>
-References: <1400659383-6555-1-git-send-email-hongbo.zhang@freescale.com>
+	id S1756191AbaGNQKK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 12:10:10 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:52733 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755615AbaGNQKC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 12:10:02 -0400
+Date: Mon, 14 Jul 2014 18:09:47 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, luto@amacapital.net,
+        hpa@linux.intel.com
+Subject: Re: [PATCH] perf: Add vm_ops->name call for mmap event name retrieval
+Message-ID: <20140714160947.GB9918@twins.programming.kicks-ass.net>
+References: <1405353439-14211-1-git-send-email-jolsa@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="M9u+pkcMrQJw6us1"
 Content-Disposition: inline
-In-Reply-To: <1400659383-6555-1-git-send-email-hongbo.zhang@freescale.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1405353439-14211-1-git-send-email-jolsa@kernel.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 04:03:00PM +0800, hongbo.zhang@freescale.com wrote:
-> From: Hongbo Zhang <hongbo.zhang@freescale.com>
-> 
-> Hi Dan,
-> Please have a look at this 3/3 as Vinod mentioned.
-> 
-> Hi Vinod Koul,
-> Please have a look at the v5 patch set.
 
-I dont see any objection, so applying all 3 with subject changed to reflect
-correct subsystem name
+--M9u+pkcMrQJw6us1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
-~Vinod
+On Mon, Jul 14, 2014 at 05:57:19PM +0200, Jiri Olsa wrote:
+> Following patch added another way to get mmap name:
+>   78d683e mm, fs: Add vm_ops->name as an alternative to arch_vma_name
 
-> 
-> v4 -> v5 changes:
->  - since previous 5 of 8 patches have been merged by Vinod, this iteration oly
->    inludes the last 3 patches of v4.
->  - patches order is changed for being reviewed and merged easier.
->  - remove the .prepare functions, and use the suspend_late and resume_early in
->    the suspend-and-resume patch.
-> 
-> v3 -> v4 changes:
->  - Fixed a typo in [2/8] commit message.
->  - There was a potential double call of list_del() when apply [4/8] only,
->    although this defect is removed again in later [6/8]. This version 
->    eliminates this problem by updating [4/8] and [6/8] slightly.
->  - Updated [8/8] to use register access method introduced by [2/8]
-> 
-> v2 -> v3 change:
-> Only add "chan->pm_state = RUNNING" for patch[8/8].
-> 
-> v1 -> v2 change:
-> The only one change is introducing a new patch[1/7] to remove the unnecessary
-> macro FSL_DMA_LD_DEBUG, thus the total patches number is 8 now (was 7)
-> 
-> v1 notes:
-> Note that patch 2~6 had beed sent out for upstream before, but were together
-> with other storage patches at that time, that was not easy for being reviewed
-> and merged, so I send them separately this time.
-> 
-> Hongbo Zhang (3):
->   DMA: Freescale: use spin_lock_bh instead of spin_lock_irqsave
->   DMA: Freescale: add suspend resume functions for DMA driver
->   DMA: Freescale: change descriptor release process for supporting
->     async_tx
-> 
->  drivers/dma/fsldma.c |  297 ++++++++++++++++++++++++++++++++++++++------------
->  drivers/dma/fsldma.h |   32 +++++-
->  2 files changed, 260 insertions(+), 69 deletions(-)
-> 
-> -- 
-> 1.7.9.5
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe dmaengine" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please add to your .gitconfig:
 
--- 
+[core]
+        abbrev =3D 12
+
+Also, you failed to CC the two people involved in that.
+
+> The vdso vma mapping already switch to this and we no longer
+> get vdso name via arch_vma_name function. Adding this way to
+> the perf mmap event name retrieval code.
+>=20
+> Caught this via perf test:
+>=20
+>   $ sudo ./perf test -v 7
+>    7: Validate PERF_RECORD_* events & perf_sample fields     :
+>   --- start ---
+>=20
+> SNIP
+>=20
+>   PERF_RECORD_MMAP for [vdso] missing!
+>   test child finished with 255
+>   ---- end ----
+>   Validate PERF_RECORD_* events & perf_sample fields: FAILED!
+>=20
+> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+> ---
+>  kernel/events/core.c | 6 ++++++
+>  1 file changed, 6 insertions(+)
+>=20
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index 67e3b9c..4799676 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -5266,6 +5266,12 @@ static void perf_event_mmap_event(struct perf_mmap=
+_event *mmap_event)
+> =20
+>  		goto got_name;
+>  	} else {
+> +		if (vma->vm_ops && vma->vm_ops->name) {
+> +			name =3D (char *) vma->vm_ops->name(vma);
+> +			if (name)
+> +				goto cpy_name;
+> +		}
+> +
+>  		name =3D (char *)arch_vma_name(vma);
+>  		if (name)
+>  			goto cpy_name;
+> --=20
+> 1.8.3.1
+>=20
+
+--M9u+pkcMrQJw6us1
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTxADLAAoJEHZH4aRLwOS6iIAP/RVeRwxhM029l23DL/uIxUml
+0cfLkFkjSRhzs7/kYZkcj1NdV0vo0J78kMVpvH5Yqw+MvooejlGwmwxYiujsFDL8
+9pkLrStgfuWpl4EXa+YN6aH0eEqgyhX3zZ9ERgUZuRPRTt6M9XnT5BFXacgkVXYX
+2H+KwqcS9Stdi8eSUoNGjXASp6qP5PJLzzFW+CVONSXMU2qv4KwWucr8F3yW/W33
+4yUlC0OHz6OasNvfWe/xYFG6x+WhmIapT/S8WVtyvZy55AAJ82D94BfLmFQf1FBD
+76OyJ7RvE+dpDBcu85VBuWDBLRxNxWmZqxvk+5AzSuZzx0kynpFzJ2YagOh2tqqg
+4Dzqc8r/xUm48kzI4G6gsSfxE5oRHGWzRSc/zCMCCleKEXeSzIeAcKWRPoVQDV7b
+G4aCaRszqylXNp+kF1jedDyqQAmN8nqWzIxZh3Tc7FFDk9C6NIAjWTk5aA8H2rFE
+FfCo0OzFAPcGDwNpUqV0ybaWnpORQdbyJFatnWnmp4YNBWpfBnFc5tJ7q5/LARJG
+72Q0zj+74rAIC4JTzJcUsN6BUnQGouCjAhN+xS//I53fNpPnMsufHrIB2WPr3NyB
+fGaqw2+xklkr3NVpxPNCZzXiHQ2z7UPcTEqhUq3N+tY47c5hkTqrlaKBOArun4lM
+WbcPVxNHKdwejwCSeSWd
+=z0/x
+-----END PGP SIGNATURE-----
+
+--M9u+pkcMrQJw6us1--
