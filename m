@@ -1,150 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056AbaGNRuG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 13:50:06 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:52433 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751148AbaGNRuA (ORCPT
+	id S1756475AbaGNRus (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 13:50:48 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:47184 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492AbaGNRum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 13:50:00 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: pramod gurav <pramod.gurav.etc@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH] cpuidle: Fix Coding style reported by checkpatch.pl
-Date: Mon, 14 Jul 2014 20:08:13 +0200
-Message-ID: <3820825.ei0ZJkn3Cj@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAMf-jSmvVL9BwkiqmS0Ep+MhZHERXsV_E8vHKdthM7hmnd9Fkg@mail.gmail.com>
-References: <1403261865-7472-1-git-send-email-pramod.gurav.etc@gmail.com> <CAMf-jSm=YK4AN9-enh_8F4DYf-JGpv_=FRYdgYTt5P_EvSsE8g@mail.gmail.com> <CAMf-jSmvVL9BwkiqmS0Ep+MhZHERXsV_E8vHKdthM7hmnd9Fkg@mail.gmail.com>
+	Mon, 14 Jul 2014 13:50:42 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20140714171755.22901059@canb.auug.org.au>
+References: <20140714171755.22901059@canb.auug.org.au>
+Date: Mon, 14 Jul 2014 13:50:40 -0400
+Message-ID: <CAPDOMViMv48o9_3tRp+AJLGy7XCM8ggPR6x9KXSfah+Xyvrjxg@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jul 14
+From: Nick Krause <xerofoify@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 14, 2014 12:40:24 PM pramod gurav wrote:
-> Hi Rafael,
-> 
-> Can we consider these changes if there are  no issues with this?
-
-Well, are you "fixing" checkpatch.pl warnings just for the sake of
-this or is there a deeper reason?
-
-Rafael
-
-
-> On Fri, Jun 20, 2014 at 4:28 PM, pramod gurav
-> <pramod.gurav.etc@gmail.com> wrote:
-> > +linux-pm
-> >
-> > On Fri, Jun 20, 2014 at 4:27 PM, Pramod Gurav
-> > <pramod.gurav.etc@gmail.com> wrote:
-> >> Fixed: ERROR: do not use assignment in if condition
-> >> Fixed: WARNING: EXPORT_SYMBOL should immediately follow its function
-> >> Fixed: WARNING: line over 80 characters in a comment
-> >>
-> >> CC: Rafael J. Wysocki <rjw@rjwysocki.net>
-> >> CC: Daniel Lezcano <daniel.lezcano@linaro.org>
-> >>
-> >> Signed-off-by: Pramod Gurav <pramod.gurav.etc@gmail.com>
-> >> ---
-> >>  drivers/cpuidle/cpuidle.c |   18 ++++++++----------
-> >>  1 file changed, 8 insertions(+), 10 deletions(-)
-> >>
-> >> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-> >> index 8236746..2c8752e 100644
-> >> --- a/drivers/cpuidle/cpuidle.c
-> >> +++ b/drivers/cpuidle/cpuidle.c
-> >> @@ -179,7 +179,9 @@ void cpuidle_reflect(struct cpuidle_device *dev, int index)
-> >>  void cpuidle_install_idle_handler(void)
-> >>  {
-> >>         if (enabled_devices) {
-> >> -               /* Make sure all changes finished before we switch to new idle */
-> >> +               /*
-> >> +                * Make sure all changes finished before we switch to new idle
-> >> +                */
-> >>                 smp_wmb();
-> >>                 initialized = 1;
-> >>         }
-> >> @@ -204,7 +206,6 @@ void cpuidle_pause_and_lock(void)
-> >>         mutex_lock(&cpuidle_lock);
-> >>         cpuidle_uninstall_idle_handler();
-> >>  }
-> >> -
-> >>  EXPORT_SYMBOL_GPL(cpuidle_pause_and_lock);
-> >>
-> >>  /**
-> >> @@ -215,7 +216,6 @@ void cpuidle_resume_and_unlock(void)
-> >>         cpuidle_install_idle_handler();
-> >>         mutex_unlock(&cpuidle_lock);
-> >>  }
-> >> -
-> >>  EXPORT_SYMBOL_GPL(cpuidle_resume_and_unlock);
-> >>
-> >>  /* Currently used in suspend/resume path to suspend cpuidle */
-> >> @@ -267,9 +267,11 @@ int cpuidle_enable_device(struct cpuidle_device *dev)
-> >>         if (ret)
-> >>                 return ret;
-> >>
-> >> -       if (cpuidle_curr_governor->enable &&
-> >> -           (ret = cpuidle_curr_governor->enable(drv, dev)))
-> >> -               goto fail_sysfs;
-> >> +       if (cpuidle_curr_governor->enable) {
-> >> +               ret = cpuidle_curr_governor->enable(drv, dev);
-> >> +               if (ret)
-> >> +                       goto fail_sysfs;
-> >> +       }
-> >>
-> >>         smp_wmb();
-> >>
-> >> @@ -283,7 +285,6 @@ fail_sysfs:
-> >>
-> >>         return ret;
-> >>  }
-> >> -
-> >>  EXPORT_SYMBOL_GPL(cpuidle_enable_device);
-> >>
-> >>  /**
-> >> @@ -311,7 +312,6 @@ void cpuidle_disable_device(struct cpuidle_device *dev)
-> >>         cpuidle_remove_device_sysfs(dev);
-> >>         enabled_devices--;
-> >>  }
-> >> -
-> >>  EXPORT_SYMBOL_GPL(cpuidle_disable_device);
-> >>
-> >>  static void __cpuidle_unregister_device(struct cpuidle_device *dev)
-> >> @@ -399,7 +399,6 @@ out_unregister:
-> >>         __cpuidle_unregister_device(dev);
-> >>         goto out_unlock;
-> >>  }
-> >> -
-> >>  EXPORT_SYMBOL_GPL(cpuidle_register_device);
-> >>
-> >>  /**
-> >> @@ -423,7 +422,6 @@ void cpuidle_unregister_device(struct cpuidle_device *dev)
-> >>
-> >>         cpuidle_resume_and_unlock();
-> >>  }
-> >> -
-> >>  EXPORT_SYMBOL_GPL(cpuidle_unregister_device);
-> >>
-> >>  /**
-> >> --
-> >> 1.7.9.5
-> >>
-> >
-> >
-> >
-> > --
-> > Thanks and Regards
-> > Pramod
-> 
-> 
-> 
-> 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+On Mon, Jul 14, 2014 at 3:17 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> Changes since 20140711:
+>
+> My fixes tree is empty again.
+>
+> The tty.current tree lost its build failure.
+>
+> The mvebu tree gained a conflict against Linus' tree.
+>
+> The akpm tree lost a few patches that turned up elsewhere.
+>
+> Non-merge commits (relative to Linus' tree): 5571
+>  5123 files changed, 207687 insertions(+), 256904 deletions(-)
+>
+> ----------------------------------------------------------------------------
+>
+> I have created today's linux-next tree at
+> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> (patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
+> are tracking the linux-next tree using git, you should not use "git pull"
+> to do so as that will try to merge the new linux-next release with the
+> old one.  You should use "git fetch" and checkout or reset to the new
+> master.
+>
+> You can see which trees have been included by looking in the Next/Trees
+> file in the source.  There are also quilt-import.log and merge.log files
+> in the Next directory.  Between each merge, the tree was built with
+> a ppc64_defconfig for powerpc and an allmodconfig for x86_64 and a
+> multi_v7_defconfig for arm. After the final fixups (if any), it is also
+> built with powerpc allnoconfig (32 and 64 bit), ppc44x_defconfig and
+> allyesconfig (this fails its final link) and i386, sparc, sparc64 and arm
+> defconfig.
+>
+> Below is a summary of the state of the merge.
+>
+> I am currently merging 222 trees (counting Linus' and 30 trees of patches
+> pending for Linus' tree).
+>
+> Stats about the size of the tree over time can be seen at
+> http://neuling.org/linux-next-size.html .
+>
+> Status of my local build tests will be at
+> http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+> advice about cross compilers/configs that work, we are always open to add
+> more builds.
+>
+> Thanks to Randy Dunlap for doing many randconfig builds.  And to Paul
+> Gortmaker for triage and bug fixes.
+>
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>
+I am running your failing tests and most of them seem to succeed for me.
+I also sent you a log of these succeeding builds.
+Cheers Nick
