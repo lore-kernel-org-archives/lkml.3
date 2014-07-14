@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757121AbaGNVRJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 17:17:09 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:55573 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756215AbaGNVRH (ORCPT
+	id S1757309AbaGNVS7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 17:18:59 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:63913 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757253AbaGNVSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 17:17:07 -0400
-X-IronPort-AV: E=Sophos;i="5.00,891,1396972800"; 
-   d="scan'208";a="33260819"
-Message-ID: <53C44915.4000405@cn.fujitsu.com>
-Date: Tue, 15 Jul 2014 05:18:13 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	Mon, 14 Jul 2014 17:18:55 -0400
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1 V2] workqueue: remove the del_timer_sync()s in maybe_create_worker()
-References: <1405265479-827-1-git-send-email-laijs@cn.fujitsu.com> <1405325601-12437-1-git-send-email-laijs@cn.fujitsu.com> <1405325601-12437-2-git-send-email-laijs@cn.fujitsu.com> <20140714142707.GB31610@htj.dyndns.org> <alpine.DEB.2.10.1407141731240.24854@nanos>
-In-Reply-To: <alpine.DEB.2.10.1407141731240.24854@nanos>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+In-Reply-To: <53C3FE0C.4080502@ti.com>
+References: <1405116252-53612-1-git-send-email-s-anna@ti.com>
+	<CAPdLdq=ZnPBQiGVbKOk8G5soP=uPYpT7mEjigpR=W1Hc4btV3g@mail.gmail.com>
+	<53C3FE0C.4080502@ti.com>
+Date: Mon, 14 Jul 2014 14:18:54 -0700
+Message-ID: <CAPdLdqnd36QQ5v9-owiSFptbdkDxyYXjfRW=PdvaXKUr3B6_pQ@mail.gmail.com>
+Subject: Re: [PATCHv2 0/5] OMAP Mailbox framework adoption & DT support
+From: Markus Mayer <markus.mayer@linaro.org>
+To: Suman Anna <s-anna@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Jassi Brar <jaswinder.singh@linaro.org>,
+        Dave Gerlach <d-gerlach@ti.com>, Pavel Machek <pavel@ucw.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-omap@vger.kernel.org,
+        Device Tree List <devicetree@vger.kernel.org>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2014 11:33 PM, Thomas Gleixner wrote:
-> On Mon, 14 Jul 2014, Tejun Heo wrote:
-> 
->> Hello,
->>
->> On Mon, Jul 14, 2014 at 04:13:21PM +0800, Lai Jiangshan wrote:
->>> It is said in the document that the timer which is being
->>> deleted by del_timer_sync() should not be restarted:
->>>   Synchronization rules: Callers must prevent restarting of
->>>   the timer, otherwise this function is meaningless.
->>>
->>> Repeating timer may cause the del_timer_sync() spin longer,
->>> or even spin forever in very very very very extreme condition.
->>
->> I'm fairly sure del_timer_sync() can delete self-requeueing timers.
->> The implementation busy-waits if the queued timer is the currently
->> executing one and dequeues only while the timer isn't running which
->> should be able to handle self-requeueing ones just fine.  Thomas,
->> del_timer_sync() can reliably delete self-requeueing ones, right?
-> 
-> Yes. 
+Hi Suman,
 
-The comments of the del_timer_sync() needs to be updated
-if I did not misunderstood?
+> There are couple of dependent preparatory series. You probably missed
+> the following in the cover letter.
+>> The series depends on the OMAP mailbox cleanup series [5] and the
+>> refreshed OMAP mailbox DT/hwmod cleanup series [2].
+>
+> As long as you pick the two dependent series, they apply fine on any of
+> the 3.16-rcs. I have posted all the series based on 3.16-rc2. Here's a
+> merged branch for your reference (not for pulling though, it has one
+> additional commit to allow me to test on OMAP2)
+> https://github.com/sumananna/mailbox/commits/submit/3.16-rc2-omap-mbox-v8-fwk-v2
+>
+> The last 2 patches in the series also depend on the mailbox framework
+> patches from Jassi to not throw any build errors if enabled.
 
-> If the timer callback is running on the other cpu, then it waits
-> for the callback to finish before checking whether the timer is
-> enqueued or not.
+That worked. Thanks for the pointer. FYI, there is a minor merge
+conflict rebasing the series onto 3.16-rc5.
 
-The syncer may be interrupted here, after it comes back, the timer
-may be running again (and maybe again and again).
+Applying: ARM: OMAP2+: Avoid mailbox legacy device creation for DT-boot
+Using index info to reconstruct a base tree...
+M arch/arm/mach-omap2/devices.c
+Falling back to patching base and 3-way merge...
+Auto-merging arch/arm/mach-omap2/devices.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/devices.c
+Failed to merge in the changes.
+Patch failed at 0029 ARM: OMAP2+: Avoid mailbox legacy device creation
+for DT-boot
 
-Current code is an acceptable ostrich algorithm, but the documents
-needs to be updated. Or re-implement it as the way as cancel_work_sync()
-which has similar but stronger semantics, it disables requeueing when
-syncing.
+That's due to this commit:
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=1d29a0722f6c38f79785c9ffb911730598de84e2
 
-
-
-> 
-> Thanks,
-> 
-> 	tglx
-> 
-> 
-> .
-> 
-
+Regards,
+-Markus
