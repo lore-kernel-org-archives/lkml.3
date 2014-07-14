@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757119AbaGNTZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 15:25:27 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45482 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756971AbaGNTZH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 15:25:07 -0400
-Date: Mon, 14 Jul 2014 12:24:53 -0700
-From: tip-bot for Borislav Petkov <tipbot@zytor.com>
-Message-ID: <tip-af0fa6f6b5851761e9fbf79eb14ba86e857b4e7b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, bp@suse.de
-In-Reply-To: <1403609105-8332-4-git-send-email-bp@alien8.de>
-References: <1403609105-8332-4-git-send-email-bp@alien8.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpufeature] x86, cpu: Kill cpu_has_mp
-Git-Commit-ID: af0fa6f6b5851761e9fbf79eb14ba86e857b4e7b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1757158AbaGNTZl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 15:25:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37341 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757128AbaGNTZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 15:25:31 -0400
+Date: Mon, 14 Jul 2014 21:23:54 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/7] tracing: change filter_free_subsystem_*() to check
+	->subsystem rather then ->name
+Message-ID: <20140714192353.GA20882@redhat.com>
+References: <20140711190622.GA19499@redhat.com> <20140711190655.GA19549@redhat.com> <20140714152029.21bd22f6@gandalf.local.home>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140714152029.21bd22f6@gandalf.local.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  af0fa6f6b5851761e9fbf79eb14ba86e857b4e7b
-Gitweb:     http://git.kernel.org/tip/af0fa6f6b5851761e9fbf79eb14ba86e857b4e7b
-Author:     Borislav Petkov <bp@suse.de>
-AuthorDate: Tue, 24 Jun 2014 13:25:05 +0200
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 14 Jul 2014 12:21:40 -0700
+On 07/14, Steven Rostedt wrote:
+>
+> On Fri, 11 Jul 2014 21:06:55 +0200
+> Oleg Nesterov <oleg@redhat.com> wrote:
+> 
+> > @@ -846,13 +846,10 @@ static void filter_free_subsystem_preds(struct event_subsystem *system,
+> >  					struct trace_array *tr)
+> >  {
+> >  	struct ftrace_event_file *file;
+> > -	struct ftrace_event_call *call;
+> >  
+> >  	list_for_each_entry(file, &tr->events, list) {
+> > -		call = file->event_call;
+> > -		if (strcmp(call->class->system, system->name) != 0)
+> > +		if (file->system->subsystem != system)
+> 
+> This is only used on one place. What about just passing in dir instead
+> of system and then do:
 
-x86, cpu: Kill cpu_has_mp
+I swear, I too thought about this ;) OK, in v2.
 
-It was used only for checking for some K7s which didn't have MP support,
-see
+Oleg.
 
-http://www.hardwaresecrets.com/article/How-to-Transform-an-Athlon-XP-into-an-Athlon-MP/24
-
-and it was unconditionally set on 64-bit for no reason. Kill it.
-
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1403609105-8332-4-git-send-email-bp@alien8.de
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/include/asm/cpufeature.h | 4 ----
- 1 file changed, 4 deletions(-)
-
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 327a061..bb9b258 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -315,7 +315,6 @@ extern const char * const x86_bug_flags[NBUGINTS*32];
- #define cpu_has_avx		boot_cpu_has(X86_FEATURE_AVX)
- #define cpu_has_avx2		boot_cpu_has(X86_FEATURE_AVX2)
- #define cpu_has_ht		boot_cpu_has(X86_FEATURE_HT)
--#define cpu_has_mp		boot_cpu_has(X86_FEATURE_MP)
- #define cpu_has_nx		boot_cpu_has(X86_FEATURE_NX)
- #define cpu_has_k6_mtrr		boot_cpu_has(X86_FEATURE_K6_MTRR)
- #define cpu_has_cyrix_arr	boot_cpu_has(X86_FEATURE_CYRIX_ARR)
-@@ -362,9 +361,6 @@ extern const char * const x86_bug_flags[NBUGINTS*32];
- #undef  cpu_has_pae
- #define cpu_has_pae		___BUG___
- 
--#undef  cpu_has_mp
--#define cpu_has_mp		1
--
- #undef  cpu_has_k6_mtrr
- #define cpu_has_k6_mtrr		0
- 
