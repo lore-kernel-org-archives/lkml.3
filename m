@@ -1,60 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901AbaGNJGb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 05:06:31 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:53097 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752967AbaGNJGP (ORCPT
+	id S1753965AbaGNJGs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 05:06:48 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:8011 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753926AbaGNJGh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 05:06:15 -0400
+	Mon, 14 Jul 2014 05:06:37 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 14 Jul 2014 01:59:17 -0700
+Message-ID: <53C39D98.9040802@nvidia.com>
+Date: Mon, 14 Jul 2014 12:06:32 +0300
+From: Mikko Perttunen <mperttunen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <53C39C8C.6060604@ti.com>
-References: <1404906569-28026-1-git-send-email-sachin.kamat@samsung.com>
-	<53C39B32.9060001@ti.com>
-	<CAK5sBcG+UZ86cAFKoAf4Y62yrOafpzBGd-wz=PqWJRg1g8pOFQ@mail.gmail.com>
-	<53C39C8C.6060604@ti.com>
-Date: Mon, 14 Jul 2014 14:36:13 +0530
-Message-ID: <CAK5sBcHQEBmeGP9tDKvycAHG-ocg0D_W6xFts4Wy6MQgiOTtUA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] phy: Kconfig: Re-organize Exynos USB 2.0 PHY configs
-From: Sachin Kamat <spk.linux@gmail.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: open list <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Jingoo Han <jg1.han@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Mikko Perttunen <mikko.perttunen@kapsi.fi>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 5/8] of: Add Tegra124 EMC bindings
+References: <1405088313-20048-1-git-send-email-mperttunen@nvidia.com> <1405088313-20048-6-git-send-email-mperttunen@nvidia.com> <20140711145146.GA6523@ulmo> <53C00A57.5070102@kapsi.fi> <53C38D07.4030402@nvidia.com> <20140714081524.GI2081@ulmo>
+In-Reply-To: <20140714081524.GI2081@ulmo>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 2:32 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+On 14/07/14 11:15, Thierry Reding wrote:
+> * PGP Signed by an unknown key
 >
->
-> On Monday 14 July 2014 02:29 PM, Sachin Kamat wrote:
->> Hi,
->>
->> On Mon, Jul 14, 2014 at 2:26 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
->>> Hi,
+> On Mon, Jul 14, 2014 at 10:55:51AM +0300, Mikko Perttunen wrote:
+>> On 11/07/14 19:01, Mikko Perttunen wrote:
+>>> On 07/11/2014 05:51 PM, Thierry Reding wrote:
+>>>> On Fri, Jul 11, 2014 at 05:18:30PM +0300, Mikko Perttunen wrote:
+>>>>> ...
+>>>> ...
 >>>
->>> On Wednesday 09 July 2014 05:19 PM, Sachin Kamat wrote:
->>>> Since the USB 2.0 PHYs are required with EHCI/OHCI USB drivers and
->>>> USB gadget controller supported by the DWC2 gadget driver, make it
->>>> depend on them and default to ARCH_EXYNOS as they are meant for
->>>> Exynos platforms. Also, make the sub-drivers silent options enabling
->>>> them based on the SoC platforms that they are meant to work with. This
->>>> will make life easier for end users who do not have any way knowing the
->>>> dependencies.
+>>> In this case, all the registers that will be written are such that the
+>>> MC driver will never need to write them. They are shadowed registers,
+>>> meaning that all writes are stored and are only effective starting from
+>>> the next time the EMC rate change state machine is activated, so writing
+>>> them from anywhere except than the EMC driver would be pointless.
 >>>
->>> There is a new Exynos PHY in town, Exynos 3250. Can you rebase your patch on
->>> top of that?
+>>> I can find two users of these registers in downstream:
+>>> 1) mc.c saves and loads them on suspend/restore (I don't know why, that
+>>> shouldn't do anything. They will be overridden anyway during the next
+>>> EMC rate change).
+>>> 2) tegra12x_la.c reads MC_EMEM_ARB_MISC0 during a core_initcall to
+>>> calculate a value which it then writes to a register that is also
+>>> shadowed and that is part of downstream burst registers so that doesn't
+>>> do anything either.
+>>>
+>>> The reason I implemented two ways to specify the MC register area was
+>>> that this could be merged before an MC driver and retain
+>>> backwards-compatibility after the MC driver arrives.
+>>>
+>>> If this is not acceptable, we can certainly wait for the MC driver to be
+>>> merged first. (Although with the general rate of things, I hope I won't
+>>> be back at school at that point..) I assume that this is blocked on the
+>>> IOMMU bindings discussion? In that case, there are several options: the
+>>> MC driver could have its own tables for each EMC rate or we could just
+>>> make the EMC tables global (i.e. not under the EMC node). In any case,
+>>> the MC driver would need to implement a function that would just write
+>>> these values but be guaranteed to not do anything else, since that could
+>>> cause nasty things during the EMC rate change sequence.
 >>
->> Sure. But I did not see it in linux-next yet. Is it merged somewhere?
+>> Having taken another look at the code, I don't think the MC driver could do
+>> anything that bad. There are also two other places where the EMC driver
+>> needs to read MC registers: Inside the sequence, it reads a register but
+>> discards its contents. According to comments, this acts as a memory barrier,
+>> probably for the preceding step that writes into MC memory. If the register
+>> writes are moved to the MC driver, it could also handle that. In another
+>> place it reads the number of RAM modules from a MC register. The MC driver
+>> could export this as another function.
 >
-> It's in the list. I can push it to my tree if that helps.
+> Exporting this functionality from the MC driver is the right thing to do
+> in my opinion.
 
-That would be great to avoid any other conflicts.
+Ok, let's do that then. Do you think I could make a bare-bones MC driver 
+to support the EMC driver before your MC driver with IOMMU/LA is ready? 
+Can the MC device tree node be stabilized yet? Of course, if things go 
+well, that concern might turn out to be unnecessary.
 
--- 
-Regards,
-Sachin.
+Thanks, Mikko.
+
+>
+>> That said, I still suspect it might not be worth it to divide this between
+>> two drivers.
+>
+> If we don't separate, then we make it easy for people to break things in
+> the future. Both drivers may not be accessing the same registers now,
+> but if there's no barrier in place to actively enforce this split, then
+> it's only a matter of time before it gets broken. A typical way to
+> ensure this is done properly is via request_resource() (called by the
+> devm_ioremap_resource() function). That will fail if two drivers try to
+> use the same memory region, and with good reason.
+>
+> Thierry
+>
+> * Unknown Key
+> * 0x7F3EB3A1
+>
