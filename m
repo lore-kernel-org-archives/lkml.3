@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756647AbaGNRPY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 13:15:24 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:43015 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755920AbaGNRPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 13:15:19 -0400
-Date: Mon, 14 Jul 2014 13:15:18 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Jeff Moyer <jmoyer@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        "dgilbert@interlog.com" <dgilbert@interlog.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Bart Van Assche <bvanassche@fusionio.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+	id S1752504AbaGNRQZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 13:16:25 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:33271 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751334AbaGNRQT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 13:16:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALCETrU44CM5=hSOMQGB6eEM2g-h6y5_+-SwoMwu+-qp-Pxd7g@mail.gmail.com>
+References: <CALCETrXrVNKNQtxncfOth5OqaSOC7KygerbB-+QQb4_VKESVsA@mail.gmail.com>
+ <53C40D83.3090501@zytor.com> <CALCETrU44CM5=hSOMQGB6eEM2g-h6y5_+-SwoMwu+-qp-Pxd7g@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 14 Jul 2014 10:15:57 -0700
+Message-ID: <CALCETrVz7a7RVLhYTrGvHkJR2dGHJbRuATOaWaXgkrSABR7YFA@mail.gmail.com>
+Subject: Re: Is espfix64's double-fault thing OK on Xen?
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: scsi-mq V2
-Message-ID: <20140714171518.GD11326@kvack.org>
-References: <94D0CD8314A33A4D9D801C0FE68B402958B971BB@G9W0745.americas.hpqcorp.net> <x497g3l10x6.fsf@segfault.boston.devel.redhat.com> <94D0CD8314A33A4D9D801C0FE68B402958B9742E@G9W0745.americas.hpqcorp.net> <94D0CD8314A33A4D9D801C0FE68B402958B979E6@G9W0745.americas.hpqcorp.net> <20140711061441.GA29629@infradead.org> <94D0CD8314A33A4D9D801C0FE68B402958B98323@G9W0745.americas.hpqcorp.net> <20140711145524.GB12478@kvack.org> <94D0CD8314A33A4D9D801C0FE68B402958B9969F@G9W0745.americas.hpqcorp.net> <94D0CD8314A33A4D9D801C0FE68B402958B9F2DB@G9W0745.americas.hpqcorp.net> <94D0CD8314A33A4D9D801C0FE68B402958BA02EF@G9W0745.americas.hpqcorp.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B402958BA02EF@G9W0745.americas.hpqcorp.net>
-User-Agent: Mutt/1.4.2.2i
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Robert,
+On Mon, Jul 14, 2014 at 10:11 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Mon, Jul 14, 2014 at 10:04 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 07/09/2014 04:17 PM, Andy Lutomirski wrote:
+>>> This part in __do_double_fault looks fishy:
+>>>
+>>>     cmpl $__KERNEL_CS,CS(%rdi)
+>>>     jne do_double_fault
+>>>
+>>> Shouldn't that be:
+>>>
+>>>     test $3,CS(%rdi)
+>>>     jnz do_double_fault
+>>>
+>>
+>> No, it should be fine.  The *only* case where we need to do the espfix
+>> magic is when we are on __KERNEL_CS.
+>>
+>
+> IIRC Xen has a somewhat different GDT, and at least the userspace CS
+> in IA32_STAR disagrees with normal Linux.  If the kernel CS is also
+> strange, then there will be an extra possible CS value here.
 
-On Sun, Jul 13, 2014 at 05:15:15PM +0000, Elliott, Robert (Server Storage) wrote:
-> > > I will see if that solves the problem with the scsi-mq-3 tree, or
-> > > at least some of the bisect trees leading up to it.
-> > 
-> > scsi-mq-3 is still going after 45 minutes.  I'll leave it running
-> > overnight.
-> > 
-> 
-> That has been going strong for 18 hours, so I think that's the patch
-> we need.
+There's FLAT_KERNEL_CS64, which is not equal to __KERNEL_CS.  If the
+espfix mechanism gets invoked with that CS, then I expect that
+something unexpected will happen.
 
-Thanks for taking the time to narrow this down.  I've applied the fix to 
-my aio-fixes tree at git://git.kvack.org/~bcrl/aio-fixes.git and fowarded 
-it on to Linus as well.
+That being said, FLAT_KERNEL_CS64 is CPL3, so my code might not be any better.
 
-		-ben
--- 
-"Thought is the essence of where you are now."
+--Andy
