@@ -1,90 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932361AbaGNRgZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 13:36:25 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:39534 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932303AbaGNRgR (ORCPT
+	id S1752659AbaGNRiR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 13:38:17 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:44197 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751148AbaGNRiF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 13:36:17 -0400
-Message-ID: <53C41511.5090204@cogentembedded.com>
-Date: Mon, 14 Jul 2014 21:36:17 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 14 Jul 2014 13:38:05 -0400
+Date: Mon, 14 Jul 2014 13:37:53 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Sander Eikelenboom <linux@eikelenboom.it>
+Cc: konrad@kernel.org, xen-devel@lists.xenproject.org,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH v4] PCI back fixes for 3.17.
+Message-ID: <20140714173753.GB12920@laptop.dumpdata.com>
+References: <1405109332-31659-1-git-send-email-konrad@kernel.org>
+ <768165707.20140714183755@eikelenboom.it>
+ <20140714172225.GA10497@laptop.dumpdata.com>
+ <652296445.20140714192923@eikelenboom.it>
 MIME-Version: 1.0
-To: varkabhadram@gmail.com, netdev@vger.kernel.org
-CC: Thomas.Lendacky@amd.com, geert+renesas@linux-m68k.org,
-        ebiederm@xmission.com, macro@linux-mips.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        Varka Bhadram <varkab@cdac.in>
-Subject: Re: [PATCH net-next v2 5/6] ethernet: amd: fix pci device ids
-References: <1405319147-5212-1-git-send-email-varkabhadram@gmail.com> <1405319147-5212-6-git-send-email-varkabhadram@gmail.com>
-In-Reply-To: <1405319147-5212-6-git-send-email-varkabhadram@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <652296445.20140714192923@eikelenboom.it>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+> >> Ad B)
+> >> 
+> >> root@dom0:~# xl pci-list router
+> >> Vdev Device
+> >> 05.0 0000:00:1b.0
+> >> 
+> >> root@dom0:~# xl pci-assignable-list
+> >> 0000:02:00.0
+> >> 
+> >> root@dom0:~# xl pci-detach router 00:1b.0
+> >> dmesg shows:
+> >> [  199.742668] pciback 0000:00:1b.0: restoring config space at offset 0x10 (was 0x4, writing 0xf7d30004)
+> >> [  199.743527] pciback 0000:00:1b.0: restoring config space at offset 0xc (was 0x0, writing 0x10)
+> >> [  199.744321] pciback 0000:00:1b.0: restoring config space at offset 0x4 (was 0x100000, writing 0x100006)
+> >> [  199.757184] xen-pciback pci-1-0: xen_pcibk_xenbus_remove freeing pdev @ 0xffff8800589fce40
+> >> [  199.758139] xen-pciback pci-1-0: xen_pcibk_disconnect pdev @ 0xffff8800589fce40
+> >> [  199.862595] xen: xen_unregister_device_domain_owner
+> >> 
+> >> xl dmesg shows:
+> >> (XEN) [2014-07-14 16:28:29] memory_map:remove: dom1 gfn=f3070 mfn=f7d30 nr=4
+> >> (XEN) [2014-07-14 16:28:29] io.c:322: d1: unbind: m_gsi=22 g_gsi=36 dev=00:00.5 intx=0
+> >> (XEN) [2014-07-14 16:28:29] io.c:390: d1 unmap: m_irq=22 dev=00:00.5 intx=0
+> >> (XEN) [2014-07-14 16:28:29] [VT-D]iommu.c:1579: d1:PCIe: unmap 0000:00:1b.0
+> >> (XEN) [2014-07-14 16:28:29] [VT-D]iommu.c:1440: d0:PCIe: map 0000:00:1b.0
+> >> 
+> >> root@dom0:~# xl pci-list router
+> >> root@dom0:~# xl pci-assignable-list
+> >> 0000:00:1b.0
+> >> 0000:02:00.0
+> >> 
+> >> root@dom0:~# xl pci-assignable-remove 00:1b.0
+> >> dmesg shows:
+> >> [  318.827415] xen: xen_unregister_device_domain_owner
+> >> [  318.828771] xen: xen_unregister_device_domain_owner: ENODEV
+> >> [  318.930869] pciback 0000:00:1b.0: restoring config space at offset 0x10 (was 0x4, writing 0xf7d30004)
+> >> [  318.933435] pciback 0000:00:1b.0: restoring config space at offset 0xc (was 0x0, writing 0x10)
+> >> [  318.935877] pciback 0000:00:1b.0: restoring config space at offset 0x4 (was 0x100000, writing 0x100006)
+> >> 
+> >> root@dom0:~# xl pci-list router
+> >> root@dom0:~# xl pci-assignable-list
+> >> 0000:02:00.0
+> >> 
+> >> 
+> 
+> > And if you do:
+> 
+> > # xl pci-detach router 02:00.0
+> 
 
-On 07/14/2014 10:25 AM, varkabhadram@gmail.com wrote:
+Err, I meant
+# xl pci-assignable-remove 02:00.0
 
-> From: Varka Bhadram <varkab@cdac.in>
+> > Do you see it being cleared from pciback? And what do you
+> > see in /sys/bus/pci/drivers/pciback ?
+> 
+> Hmm good point .. i also had the plan to look into xenstore what was in there .. 
+> but forgot .. will post both right away :-) 
 
-> Normally any device ids will be above the corresponding device driver
-> structure. This patch moves the pci device ids and MODULE_DEVICE_TABLE()
-> above the pci driver structure.
-
-> Signed-off-by: Varka Bhadram <varkab@cdac.in>
-> ---
->   drivers/net/ethernet/amd/amd8111e.c |   20 +++++++++++---------
->   1 file changed, 11 insertions(+), 9 deletions(-)
-
-> diff --git a/drivers/net/ethernet/amd/amd8111e.c b/drivers/net/ethernet/amd/amd8111e.c
-> index e2fb9e2..3e41568 100644
-> --- a/drivers/net/ethernet/amd/amd8111e.c
-> +++ b/drivers/net/ethernet/amd/amd8111e.c
-[...]
-> @@ -109,14 +108,6 @@ MODULE_PARM_DESC(coalesce, "Enable or Disable interrupt coalescing, 1: Enable, 0
->   module_param_array(dynamic_ipg, bool, NULL, 0);
->   MODULE_PARM_DESC(dynamic_ipg, "Enable or Disable dynamic IPG, 1: Enable, 0: Disable");
->
-> -static DEFINE_PCI_DEVICE_TABLE(amd8111e_pci_tbl) = {
-> -
-> -	{ PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD8111E_7462,
-> -	 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0UL },
-> -	{ 0, }
-> -
-> -};
-> -
->   /* This function will read the PHY registers. */
->   static int amd8111e_read_phy(struct amd8111e_priv* lp, int phy_id, int reg, u32* val)
->   {
-> @@ -1953,6 +1944,17 @@ static void amd8111e_remove_one(struct pci_dev *pdev)
->   	}
->   }
->
-> +static const struct pci_device_id amd8111e_pci_tbl[] = {
-> +	{
-> +	 .vendor = PCI_VENDOR_ID_AMD,
-> +	 .device = PCI_DEVICE_ID_AMD8111E_7462,
-
-    I don't that's equivalent to what was there before: PCI_ANY_ID is defined 
-as (~0), not 0.
-
-> +	},
-> +	{
-> +	 .vendor = 0,
-
-    You can completely skip the explicit initializers, the entry will be 
-init'ed with 0s anyway.
-
-> +	}
-> +};
-> +MODULE_DEVICE_TABLE(pci, amd8111e_pci_tbl);
-> +
-
-WBR, Sergei
-
+Thank you!
+> 
+> > Thanks!
+> 
+> 
