@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755642AbaGNOK1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 10:10:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33452 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754450AbaGNOKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 10:10:21 -0400
-Message-ID: <53C3E4BE.2010505@redhat.com>
-Date: Mon, 14 Jul 2014 10:10:06 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1755651AbaGNOMs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 10:12:48 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:22673 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754211AbaGNOMm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 10:12:42 -0400
+Date: Mon, 14 Jul 2014 17:12:31 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
+        tvboxspy@gmail.com, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org, forest@alittletooquiet.net
+Subject: Re: [PATCH V2 1/4] staging: vt6556: Cleanup coding style issues
+Message-ID: <20140714141231.GM25880@mwanda>
+References: <1405278681-3348-1-git-send-email-peter.senna@gmail.com>
+ <20140713193647.GA31010@kroah.com>
+ <20140714085932.GA2958@hp-peter.rsr.lip6.fr>
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        Minchan Kim <minchan.kim@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/3] mm: vmscan: remove all_unreclaimable() fix
-References: <1405344049-19868-1-git-send-email-hannes@cmpxchg.org> <1405344049-19868-3-git-send-email-hannes@cmpxchg.org>
-In-Reply-To: <1405344049-19868-3-git-send-email-hannes@cmpxchg.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140714085932.GA2958@hp-peter.rsr.lip6.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Since you're going to redo this patch anyway, I may as well give you
+the normal feedback for these kinds of patches.
 
-On 07/14/2014 09:20 AM, Johannes Weiner wrote:
-> As per Mel, use bool for reclaimability throughout and simplify
-> the reclaimability tracking in shrink_zones().
+> >From 69cd87aca39730c0578592d1296b738f7f223f29 Mon Sep 17 00:00:00 2001
+> From: Peter Senna Tschudin <peter.senna@gmail.com>
+> Date: Mon, 14 Jul 2014 10:28:42 +0200
+> Subject: [PATCH V3] staging: vt6556: Cleanup coding style issues
 > 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> This patch cleanup coding style issues reported by checkpatch.
+> 
+> This typedef, reported by checkpatch, was removed from card.h:
+> typedef enum _CARD_PHY_TYPE {
+>     PHY_TYPE_AUTO = 0,
+>     PHY_TYPE_11B,
+>     PHY_TYPE_11G,
+>     PHY_TYPE_11A
+> } CARD_PHY_TYPE, *PCARD_PHY_TYPE;
+> 
+> The following typedefs were removed, but enums were kept at device.h:
+>  - typedef enum __device_msg_level
+>  - typedef enum __DEVICE_NDIS_STATUS
+> 
 
-Acked-by: Rik van Riel <riel@redhat.com>
+Break this kind of patch into patches which fix one type of mistake per
+patch:
+patch 1: fix whitespace stuff
+patch 2: remove useless returns
+patch 3: remove typedefs
+etc.
 
+> -//{{RobertYu:20060515, new BB setting for VT3226D0
+> +/* {{RobertYu:20060515, new BB setting for VT3226D0 */
 
-- -- 
-All rights reversed
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Just delete these, because we have version control.
 
-iQEcBAEBAgAGBQJTw+S+AAoJEM553pKExN6DtvYH/RXaEx/lWC9UR5eRQ8nQy2L4
-V87wVoWPXauuIeJrGurTV28cvqUW/JXNAmnONuGdRI//9jE2vMZmVi2X5V4CnGv2
-zpMsM2MhIn7tzBKW7AlBLHBC9nUEIHpo+OA3IvCvQsgG5qWNkdWOTUv1xkiqTuuQ
-Nu7pxiNH360Dp+g2VCuFU2+nrjcKKSolsMBqEvGGP+Dh3/G5EQpQ/lQJ0/a/4q1y
-/ew0HCYRfH2/kCMKxixTtUXR7QcMw4L4AkD0fHoisRoyuVAws4QwYA4zB1FKpxgr
-XIsVPLftQc8f+++Djone+RvPaPmUOvXrf8UdbxTG5wrfBJ9aPB5AuecWqOOO22g=
-=3M3e
------END PGP SIGNATURE-----
+regards,
+dan carpenter
+
