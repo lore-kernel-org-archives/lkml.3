@@ -1,143 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902AbaGNO35 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 10:29:57 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:59319 "EHLO bear.ext.ti.com"
+	id S1755062AbaGNOdT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 10:33:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34958 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754890AbaGNO3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 10:29:49 -0400
-Message-ID: <53C3E905.3080806@ti.com>
-Date: Mon, 14 Jul 2014 10:28:21 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Pratyush Anand <pratyush.anand@st.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Mohit KUMAR DCG <Mohit.KUMAR@st.com>,
-        Jingoo Han <jg1.han@samsung.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Richard Zhu <r65037@freescale.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: Re: [PATCH v4 0/6] Add Keystone PCIe controller driver
-References: <1405110995-24676-1-git-send-email-m-karicheri2@ti.com> <20140714060334.GB2930@pratyush-vbox>
-In-Reply-To: <20140714060334.GB2930@pratyush-vbox>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751682AbaGNOdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 10:33:12 -0400
+From: Petr Mladek <pmladek@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        Petr Mladek <pmladek@suse.cz>
+Subject: [PATCH v2] ring-buffer: Race when writing and swapping cpu buffer in parallel
+Date: Mon, 14 Jul 2014 16:32:58 +0200
+Message-Id: <1405348378-10370-1-git-send-email-pmladek@suse.cz>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2014 02:03 AM, Pratyush Anand wrote:
-> Oh.. I see my reply from gmail is not readable at all. (I forgot to
-> switch to plain text :( ) Please ignore last mail I am replying again
-> here.
->
-> On Sat, Jul 12, 2014 at 04:36:29AM +0800, Murali Karicheri wrote:
->
-> [...]
->
->> Murali Karicheri (6):
->>    PCI: designware: add rd[wr]_other_conf API
->>    PCI: designware: refactor MSI code to work with v3.65 dw hardware
->
-> For  above two you can add my reviewed-by:
->
->>    PCI: designware: refactor host init code to re-use on keystone PCI
->>    PCI: designware: enhance dw core driver to support keystone PCI host
->
-> In stead of using version number and then changing few functions from
-> static to global , I would have used same philosophy of adding callbacks
-> wherever needed. May be maintainers can give their view, instead of patch
-> 3 and 4 I would have gone with something like this, where kc_pcie can be
-> passed through pp->plat_data.
->
+The trace/ring_buffer allows to swap the entire ring buffer. Everything has to
+be done lockless. I think that I have found a race when trying to understand
+the code. The problematic situation is the following:
 
-Pratyush,
+CPU 1 (write/reserve event)		CPU 2 (swap the cpu buffer)
+-------------------------------------------------------------------------
+ring_buffer_write()
+  if (cpu_buffer->record_disabled)
+  ^^^ test fails and write continues
 
-Thanks for the response. I will look into your proposal and respond back 
-when I get a chance.
+					ring_buffer_swap_cpu()
 
-Thanks and regards,
+					  inc(&cpu_buffer_a->record_disabled);
+					  inc(&cpu_buffer_b->record_disabled);
 
-Murali
+					  if (cpu_buffer_a->committing)
+					  ^^^ test fails and swap continues
+					  if (cpu_buffer_b->committing)
+					  ^^^ test fails and swap continues
 
-> diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
-> index 905941c..b216192 100644
-> --- a/drivers/pci/host/pcie-designware.c
-> +++ b/drivers/pci/host/pcie-designware.c
-> @@ -490,16 +490,21 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
->          }
->
->          if (IS_ENABLED(CONFIG_PCI_MSI)) {
-> -               pp->irq_domain = irq_domain_add_linear(pp->dev->of_node,
-> -                                       MAX_MSI_IRQS,&msi_domain_ops,
-> -&dw_pcie_msi_chip);
-> -               if (!pp->irq_domain) {
-> -                       dev_err(pp->dev, "irq domain init failed\n");
-> -                       return -ENXIO;
-> -               }
-> +               if (!pp->ops->msi_init) {
-> +                       pp->irq_domain = irq_domain_add_linear(pp->dev->of_node,
-> +                                               MAX_MSI_IRQS,&msi_domain_ops,
-> +&dw_pcie_msi_chip);
-> +                       if (!pp->irq_domain) {
-> +                               dev_err(pp->dev, "irq domain init failed\n");
-> +                               return -ENXIO;
-> +                       }
->
-> -               for (i = 0; i<  MAX_MSI_IRQS; i++)
-> -                       irq_create_mapping(pp->irq_domain, i);
-> +                       for (i = 0; i<  MAX_MSI_IRQS; i++)
-> +                               irq_create_mapping(pp->irq_domain, i);
-> +               } else {
-> +                       pp->ops->msi_init(pp,&msi_domain_ops,
-> +&dw_pcie_msi_chip);
-> +               }
->          }
->
->          if (pp->ops->host_init)
-> @@ -759,6 +764,9 @@ static struct pci_bus *dw_pcie_scan_bus(int nr, struct pci_sys_data *sys)
->                  BUG();
->          }
->
-> +       if (bus&&  pp->ops->scan_bus)
-> +               bus = pp->ops->scan_bus(pp);
-> +
->          return bus;
->   }
->
-> diff --git a/drivers/pci/host/pcie-designware.h b/drivers/pci/host/pcie-designware.h
-> index 387f69e..39ce496 100644
-> --- a/drivers/pci/host/pcie-designware.h
-> +++ b/drivers/pci/host/pcie-designware.h
-> @@ -52,6 +52,7 @@ struct pcie_port {
->          struct irq_domain       *irq_domain;
->          unsigned long           msi_data;
->          DECLARE_BITMAP(msi_irq_in_use, MAX_MSI_IRQS);
-> +       void                    *plat_data;
->   };
->
->   struct pcie_host_ops {
-> @@ -70,6 +71,9 @@ struct pcie_host_ops {
->          void (*msi_set_irq)(struct pcie_port *pp, int irq);
->          void (*msi_clear_irq)(struct pcie_port *pp, int irq);
->          u32 (*get_msi_data)(struct pcie_port *pp);
-> +       struct pci_bus *(*scan_bus)(struct pcie_port *pp);
-> +       void (*msi_init) (struct pcie_port *pp, struct irq_domain_ops *ops,
-> +                       struct msi_chip *chip);
->   };
->
->   int dw_pcie_cfg_read(void __iomem *addr, int where, int size, u32 *val);
->
->
-> ~Pratyush
+  rb_reserve_next_event()
+    rb_start_commit()
+      local_inc(&cpu_buffer->committing);
+      local_inc(&cpu_buffer->commits);
+
+    if (unlikely(ACCESS_ONCE(cpu_buffer->buffer) != buffer)) {
+    ^^^ test fails and reserve_next continues
+
+					  buffer_a->buffers[cpu] = cpu_buffer_b;
+					  buffer_b->buffers[cpu] = cpu_buffer_a;
+					  cpu_buffer_b->buffer = buffer_a;
+					  cpu_buffer_a->buffer = buffer_b;
+
+  Pheeee, reservation continues in the removed buffer.
+
+This patch solves the problem by swapping the CPU buffer on the same CPU. It
+helps to avoid memory barriers and keep both writing and swapping fast.
+
+Also it adds some comments about why the reserve and swap operations are safe.
+I hope that I have got it right :-)
+
+Changes v1 -> v2:
+	+ do the swap on the same CPU instead of using memory barriers;
+	  idea by Steven Rostedt
+
+Suggested-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Petr Mladek <pmladek@suse.cz>
+---
+ kernel/trace/ring_buffer.c | 97 +++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 74 insertions(+), 23 deletions(-)
+
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 7c56c3d06943..f86d258fce8d 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -2529,10 +2529,14 @@ rb_reserve_next_event(struct ring_buffer *buffer,
+ 
+ #ifdef CONFIG_RING_BUFFER_ALLOW_SWAP
+ 	/*
+-	 * Due to the ability to swap a cpu buffer from a buffer
+-	 * it is possible it was swapped before we committed.
+-	 * (committing stops a swap). We check for it here and
+-	 * if it happened, we have to fail the write.
++	 * The cpu buffer cannot be swapped when committing is set. But we might
++	 * have been interrupted and the swap might had happened before
++	 * the committing was set. In this case, we have to fail the write
++	 * to avoid an inconsistency with ring_buffer_unlock_commit().
++	 *
++	 * Note that the cpu buffer swapping is done on this CPU with disabled
++	 * interrupts. So, we will never be here in the middle of a swap
++	 * operation.
+ 	 */
+ 	barrier();
+ 	if (unlikely(ACCESS_ONCE(cpu_buffer->buffer) != buffer)) {
+@@ -4280,23 +4284,35 @@ int ring_buffer_empty_cpu(struct ring_buffer *buffer, int cpu)
+ EXPORT_SYMBOL_GPL(ring_buffer_empty_cpu);
+ 
+ #ifdef CONFIG_RING_BUFFER_ALLOW_SWAP
++struct ring_buffer_swap_info {
++	struct ring_buffer *buffer_a;	/* One buffer to swap with */
++	struct ring_buffer *buffer_b;	/* The other buffer to swap with */
++	int ret;			/* return value from the swap op. */
++};
++
+ /**
+- * ring_buffer_swap_cpu - swap a CPU buffer between two ring buffers
+- * @buffer_a: One buffer to swap with
+- * @buffer_b: The other buffer to swap with
++ * ring_buffer_swap_this_cpu - swap CPU buffer, related to this CPU,
++ *	between two ring buffers.
++ * @arg: arguments and return value is passed via struct ring_buffer_swap_info.
++ *	The function is called via smp_call_function_single()
+  *
+- * This function is useful for tracers that want to take a "snapshot"
+- * of a CPU buffer and has another back up buffer lying around.
+- * it is expected that the tracer handles the cpu buffer not being
+- * used at the moment.
++ * The swapping of a CPU buffer is done on the same CPU. It helps to avoid
++ * memory barriers and keep writing fast. We can't use synchronize_sched
++ * here because this function can be called in atomic context.
+  */
+-int ring_buffer_swap_cpu(struct ring_buffer *buffer_a,
+-			 struct ring_buffer *buffer_b, int cpu)
++static void ring_buffer_swap_this_cpu(void *arg)
+ {
++	struct ring_buffer_swap_info *rb_swap_info = arg;
++	struct ring_buffer *buffer_a;
++	struct ring_buffer *buffer_b;
+ 	struct ring_buffer_per_cpu *cpu_buffer_a;
+ 	struct ring_buffer_per_cpu *cpu_buffer_b;
+-	int ret = -EINVAL;
++	int cpu = smp_processor_id();
++
++	buffer_a = rb_swap_info->buffer_a;
++	buffer_b = rb_swap_info->buffer_b;
+ 
++	rb_swap_info->ret = -EINVAL;
+ 	if (!cpumask_test_cpu(cpu, buffer_a->cpumask) ||
+ 	    !cpumask_test_cpu(cpu, buffer_b->cpumask))
+ 		goto out;
+@@ -4308,7 +4324,8 @@ int ring_buffer_swap_cpu(struct ring_buffer *buffer_a,
+ 	if (cpu_buffer_a->nr_pages != cpu_buffer_b->nr_pages)
+ 		goto out;
+ 
+-	ret = -EAGAIN;
++	/* Also check if the buffers can be manipulated */
++	rb_swap_info->ret = -EAGAIN;
+ 
+ 	if (ring_buffer_flags != RB_BUFFERS_ON)
+ 		goto out;
+@@ -4326,15 +4343,19 @@ int ring_buffer_swap_cpu(struct ring_buffer *buffer_a,
+ 		goto out;
+ 
+ 	/*
+-	 * We can't do a synchronize_sched here because this
+-	 * function can be called in atomic context.
+-	 * Normally this will be called from the same CPU as cpu.
+-	 * If not it's up to the caller to protect this.
++	 * Recording has to be disabled. Otherwise, ring_buffer_lock_reserve()
++	 * and ring_buffer_unlock_commit() might operate with different
++	 * cpu buffers.
++	 *
++	 * All other operations are safe. Read gets the CPU buffer only once
++	 * and then works with it. Resize does the critical operation on the
++	 * same CPU with disabled interrupts.
+ 	 */
+ 	atomic_inc(&cpu_buffer_a->record_disabled);
+ 	atomic_inc(&cpu_buffer_b->record_disabled);
+ 
+-	ret = -EBUSY;
++	/* Bail out if we interrupted some recording */
++	rb_swap_info->ret = -EBUSY;
+ 	if (local_read(&cpu_buffer_a->committing))
+ 		goto out_dec;
+ 	if (local_read(&cpu_buffer_b->committing))
+@@ -4346,13 +4367,43 @@ int ring_buffer_swap_cpu(struct ring_buffer *buffer_a,
+ 	cpu_buffer_b->buffer = buffer_a;
+ 	cpu_buffer_a->buffer = buffer_b;
+ 
+-	ret = 0;
+-
++	rb_swap_info->ret = 0;
+ out_dec:
+ 	atomic_dec(&cpu_buffer_a->record_disabled);
+ 	atomic_dec(&cpu_buffer_b->record_disabled);
+ out:
+-	return ret;
++	return;
++}
++
++/**
++ * ring_buffer_swap_cpu - swap a CPU buffer between two ring buffers
++ * @buffer_a: One buffer to swap with
++ * @buffer_b: The other buffer to swap with
++ *
++ * This function is useful for tracers that want to take a "snapshot"
++ * of a CPU buffer and has another back up buffer lying around.
++ * It is expected that the tracer handles the cpu buffer not being
++ * used at the moment.
++ */
++int ring_buffer_swap_cpu(struct ring_buffer *buffer_a,
++			 struct ring_buffer *buffer_b, int cpu)
++{
++	struct ring_buffer_swap_info rb_swap_info = {
++		.buffer_a = buffer_a,
++		.buffer_b = buffer_b,
++	};
++	int ret;
++
++	/*
++	 * Swap the CPU buffer on the same CPU. Recording has to be fast
++	 * and and this helps to avoid memory barriers.
++	 */
++	ret = smp_call_function_single(cpu, ring_buffer_swap_this_cpu,
++				       (void *)&rb_swap_info, 1);
++	if (ret)
++		return ret;
++
++	return rb_swap_info.ret;
+ }
+ EXPORT_SYMBOL_GPL(ring_buffer_swap_cpu);
+ #endif /* CONFIG_RING_BUFFER_ALLOW_SWAP */
+-- 
+1.8.4
 
