@@ -1,84 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757048AbaGNTRo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 15:17:44 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37448 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757010AbaGNTR3 (ORCPT
+	id S1756921AbaGNTTO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 15:19:14 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:60922 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752519AbaGNTTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 15:17:29 -0400
-Date: Mon, 14 Jul 2014 20:17:11 +0100
-From: Mark Brown <broonie@kernel.org>
-To: "Murphy, Dan" <dmurphy@ti.com>
-Cc: "linux-sound@vger.kernel.org" <linux-sound@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Message-ID: <20140714191711.GI6800@sirena.org.uk>
-References: <1405093489-11897-1-git-send-email-dmurphy@ti.com>
- <20140714184321.GW6800@sirena.org.uk>
- <00FC9A978A94B7418C33AFAE8A35ED49D80B10@DFLE09.ent.ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aJFFgG5QZHt5jcrP"
-Content-Disposition: inline
-In-Reply-To: <00FC9A978A94B7418C33AFAE8A35ED49D80B10@DFLE09.ent.ti.com>
-X-Cookie: Above all else -- sky.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v6] ASoC: tas2552: Support TI TAS2552 Amplifier
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 14 Jul 2014 15:19:04 -0400
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: linux-kernel@vger.kernel.org, fuse-devel@lists.sourceforge.net,
+        lxc-devel@lists.linuxcontainers.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Michael H. Warfield" <mhw@WittsEnd.com>,
+        Seth Forshee <seth.forshee@canonical.com>
+Subject: [PATCH 0/3] fuse: Allow mounts in containers
+Date: Mon, 14 Jul 2014 14:18:13 -0500
+Message-Id: <1405365496-58404-1-git-send-email-seth.forshee@canonical.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+These patches allow unprivileged users to mount with fuse from within
+containers. The first patch is really just a bug fix and related only
+because the bug allows unprivileged users to crash the system. The
+second patch translates the pid which is making a request into the
+server's pid namespace, and the third adds user namespace support to
+fuse. This is limited only to the "fuse" fs type. fuseblk could likely
+be supported as well, but I haven't spent any time testing it, and I
+haven't really given cuse much consideration at all (though cuse ioctls
+look rather frightening).
 
---aJFFgG5QZHt5jcrP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The server's pid and user namespaces are both assumed to be those of the
+process which calls mount. This does't necessarily have to be the same
+as those of the server, especially since fuse mounts are routinely done
+by a process other than the server. However I didn't find any way to
+ensure that we use those of the server with the information currently
+available to fuse in the kernel. If the mount is done from a different
+namespace it could result in reduced functionality, however it should
+not result in any privileges not already available to the user.
 
-On Mon, Jul 14, 2014 at 07:07:06PM +0000, Murphy, Dan wrote:
-> On 07/14/2014 01:43 PM, Mark Brown wrote:
+In preparing these patches I spent some time considering the security
+aspects of allowing fuse mounts from containers. fuse is already
+sufficiently untrusting of input from userspace, and it has mechanisms
+to prevent several types of attacks. However some of these mechanisms
+rely on having a trusted setuid root helper (fusermount) to enforce
+policy, such as forcing certain mount options for unprivileged monts. In
+a container we can't rely on a userspace helper to enforce policy. Here
+are details about how these issues work out:
 
-> >> +config SND_SOC_TAS2552
-> >> +	tristate "Texas Instruments TAS2552 Mono Audio amplifier"
-> >> +	depends on I2C
-> >> +
-> >>  endmenu
+* devices: fusermount forces nodev for unprivileged mounts. In these
+  patches I use the existing kernel support for forcing nodev for fuse
+  mounts from user namspaces.
 
-> > Keep this and Makefile sorted - since this is a proper CODEC driver it
-> > should be in with the CODECs and also sorted in alphabetical order.
+* set[ug]id files: fusermount also forces nosuid for unprivileged
+  mounts. In a user namespace all file uids and gids are treated as
+  being mapped into the user ns, so it's not possible to setuid to
+  anything outside the server's namespace. This means setuid can't be
+  used to gain elevated privileges, and thus the kernel doesn't need to
+  force nosuid.
 
-> OK.  I was trying to stay away from a conflict by adding to the
-> bottom of the file.
+* mounting over files or directories: fusermount ensures that the
+  unprivileged user has write permissions to the mountpoint before
+  mounting. But since mounting is only allowed by CAP_SYS_ADMIN in the
+  user ns of the mount ns, a user cannot use a namespace to mount over
+  any files or directories unless the user already had the ability to do
+  so, or if it does so in a different mount ns. Namespaces therefore
+  don't open the door to this type of attack, and kernel enforcment is
+  not needed.
 
-The whole point is to avoid conflicts - if everyone adds at the bottom
-of the file any two adds are pretty much guaranteed to conflict either
-on application or on merge.  Sorting avoids most of these and makes any
-that do occur much clearer.
+* affecting behavior of other users' processes: A user could DoS other
+  users' processes if those processes accessed files or directories
+  within a fuse mount. For this reason the default behavoior of fuse is
+  that only the mount owner can access the filesystem. This can be
+  overridden with the allow_other mount option, but fusermount forbids
+  this option unless allowed by system policy in /etc/fuse.conf.
 
---aJFFgG5QZHt5jcrP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+  To protect against this, these patches patches change the meaning of
+  allow_other slightly, from "any user can access this filesystem" to
+  "users in the mount owner's namespace or a child namespace can access
+  this filesystem." This protects more privileged contexts while
+  maintaining the existing behavior.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+* {user,group}_id mount options: These are being mapped into the user
+  ns, which prevents specifying any user outside the ns. Any ids which
+  do not map to the user ns wil cause the mount to fail.
 
-iQIcBAEBAgAGBQJTxCy0AAoJELSic+t+oim9ZC0P/0xXUNawujyd33X24/UV5qSp
-aloiKAIzyiIrQyCudGVQT541+Kida3csZi8U+xGD5AGrxohCR44sFdcZKfmSeIWH
-C1rJcmMdTrfv3GaPgUYJ5Vlq7UK25C76JjZ0x0VIuG2Tnaz7tbIPawdbV4ResHEq
-YWi1GKgqY59tGI8KQGM2vpg8LPa7n+MUQEA6XkBMTmqX6u631XWpHzo1h0UpcZvH
-ro48VsVg1wrUXixlQozPw8wyfJDvs72L/avOqx8XmeSVuIGNAHQNisBaCE1yPzhH
-reaYLPafKra3Eb/8gBuCUqSsqgOwKElfCsZVU8qoCU+yX4rsPBo1f+idgWdp+ASZ
-biy2NyNhnTqP8hLa+iNjArxHR+axUSPQvlXMpJz6GHBDK3+SIRkrcSTLzGo4EQ5w
-5OLGfxllX1u51YnjGhf5yVoXeXee4oNftPWVxrsslWSfOehAdZ5yj9W/nskweiA+
-xWz6EGMmq3tbHXExh7ZXjeAVlfoJmCRkOBEt8/EhQUtCbH2JEICQeXFtVROOwP1r
-/rDNp/nfsl4mERZjQu0/kmAXA5VoL9K+3fBRpSybSAii3B8fpy3DinwVcIc2v0nc
-+4m7TNfzfcFJ/tqLr5DKK5iPNaqNqUAY/cJcCG2UvG3ZD7r3wvJR8GO641or3KKB
-i3XvoKw4thb1TRR2GB3F
-=g9z5
------END PGP SIGNATURE-----
+That represents everything I could think of that would be possible as a
+consequence of allowing mounts from user namespaces. I also read through
+the fuse kernel code (espeically the parts handling input from
+userspace) looking for additional vectors for attack or any other
+weaknesses, but I didn't find anything. So I believe these should be all
+the changes needed to make fuse mounts from user namespaces safe, but
+please let me know if I missed anything.
 
---aJFFgG5QZHt5jcrP--
+Thanks,
+Seth
+
+
+Seth Forshee (3):
+  fuse/dev: Fix unbalanced calls to kunmap_atomic() during splice I/O
+  fuse: Translate pid making a request into the server's pid namespace
+  fuse: Allow mounts from user namespaces
+
+ fs/fuse/dev.c    | 19 +++++++++----------
+ fs/fuse/dir.c    | 30 +++++++++++++++++++-----------
+ fs/fuse/fuse_i.h |  8 ++++++++
+ fs/fuse/inode.c  | 21 ++++++++++++++-------
+ 4 files changed, 50 insertions(+), 28 deletions(-)
+
