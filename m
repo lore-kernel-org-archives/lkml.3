@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334AbaGNVCW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 17:02:22 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:33764 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756215AbaGNVCT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 17:02:19 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH] Bluetooth: cmtp: Remove unnecessary null test
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <20140714203412.GA16532@himangi-Dell>
-Date: Mon, 14 Jul 2014 23:02:26 +0200
-Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Bluetooth mailing list 
-	<linux-bluetooth@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
+	id S1757186AbaGNVDS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 17:03:18 -0400
+Received: from smtp205.alice.it ([82.57.200.101]:32422 "EHLO smtp205.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756878AbaGNVDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 17:03:17 -0400
+Date: Mon, 14 Jul 2014 23:02:56 +0200
+From: Antonio Ospite <ao2@ao2.it>
+To: Jamie Lentin <jm@lentin.co.uk>
+Cc: Jiri Kosina <jkosina@suse.cz>, Hans de Goede <hdegoede@redhat.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 0/4] Add support for Lenovo Compact Keyboard
+Message-Id: <20140714230256.9bd2c374a5b7ce085d5064be@ao2.it>
+In-Reply-To: <1405236262-8070-1-git-send-email-jm@lentin.co.uk>
+References: <1405236262-8070-1-git-send-email-jm@lentin.co.uk>
+X-Mailer: Sylpheed 3.5.0beta1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <E909042B-4973-4601-92AD-07D948BBDA83@holtmann.org>
-References: <20140714203412.GA16532@himangi-Dell>
-To: Himangi Saraogi <himangi774@gmail.com>
-X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Himangi,
+On Sun, 13 Jul 2014 08:24:18 +0100
+Jamie Lentin <jm@lentin.co.uk> wrote:
 
-> This patch removes the null test on ctrl. ctrl is initialized at the
-> beginning of the function to &session->ctrl. Since session is
-> dereferenced prior to the null test, session must be a valid pointer,
-> and &session->ctrl cannot be null.
+> This patchset follows on from my previous attempts to add support for
+> these keyboards from Lenovo.
+[...] 
+
+Hi Jamie,
+
+in the next (and last) iteration add some context to the short commit
+message, e.g. by adding a prefix:
+
+HID: lenovo: ...
+
+following the scheme of previous commits in the history.
+
+> Cheers,
 > 
-> The following Coccinelle script is used for detecting the change:
-> 
-> @r@
-> expression e,f;
-> identifier g,y;
-> statement S1,S2;
-> @@
-> 
-> *e = &f->g
-> <+...
-> f->y
-> ...+>
-> *if (e != NULL || ...)
-> S1 else S2
-> 
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
-> ---
-> net/bluetooth/cmtp/capi.c | 6 ------
-> 1 file changed, 6 deletions(-)
+> Jamie Lentin (4):
+>   Rename hid-lenovo-tpkbd to hid-lenovo
+>   Make all base functions switch depending on product ID
+>   Style fixes
+>   Add support for Compact (Bluetooth|USB) keyboard with Trackpoint
 
-patch has been applied to bluetooth-next tree.
+Maybe rename Bluetooth to BT if this becomes too long with the prefix.
 
-Regards
+Thanks,
+   Antonio 
 
-Marcel
+-- 
+Antonio Ospite
+http://ao2.it
 
+A: Because it messes up the order in which people normally read text.
+   See http://en.wikipedia.org/wiki/Posting_style
+Q: Why is top-posting such a bad thing?
