@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757419AbaGNVrS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 17:47:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60242 "EHLO mx1.redhat.com"
+	id S1757474AbaGNVsL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 17:48:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27898 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756387AbaGNVrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 17:47:13 -0400
+	id S1757391AbaGNVrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 17:47:16 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
@@ -15,17 +15,25 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 3/5] perf tools: Factor eprintf to allow different debug variables
-Date: Mon, 14 Jul 2014 23:46:49 +0200
-Message-Id: <1405374411-29012-4-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 4/5] perf tools: Add --debug optionto set debug variable
+Date: Mon, 14 Jul 2014 23:46:50 +0200
+Message-Id: <1405374411-29012-5-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1405374411-29012-1-git-send-email-jolsa@kernel.org>
 References: <1405374411-29012-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This way we can easily reuse current debug functions for
-another debug variables other than verbose.
+Adding --debug option as a way to setup debug variables.
+Starting with support for verbose, more will come.
+
+It's possible to use it now with report command:
+  $ perf --debug verbose   ...
+  $ perf --debug verbose=2 ...
+
+I'll need this support to add separated debug variable
+for ordered events change in order to separate debug
+output out of standard verbose stream.
 
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -37,109 +45,149 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/debug.c  | 12 ++++++------
- tools/perf/util/debug.h  | 12 ++++++------
- tools/perf/util/python.c |  4 ++--
- 3 files changed, 14 insertions(+), 14 deletions(-)
+ tools/perf/Documentation/perf-report.txt |  6 +++++
+ tools/perf/Documentation/perf.txt        | 10 +++++++-
+ tools/perf/perf.c                        | 13 +++++++++-
+ tools/perf/util/debug.c                  | 44 ++++++++++++++++++++++++++++++++
+ tools/perf/util/debug.h                  |  2 ++
+ 5 files changed, 73 insertions(+), 2 deletions(-)
 
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index d2b59af62bc0..53b6ad8e4d4d 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -25,6 +25,12 @@ OPTIONS
+ --verbose::
+         Be more verbose. (show symbol address, etc)
+ 
++--debug::
++        Setup debug variable (just verbose for now) in value
++        range (0, 10). Use like:
++           --debug verbose   # sets verbose = 1
++           --debug verbose=2 # sets verbose = 2
++
+ -n::
+ --show-nr-samples::
+ 	Show the number of samples for each symbol
+diff --git a/tools/perf/Documentation/perf.txt b/tools/perf/Documentation/perf.txt
+index 0eeb247dc7d2..c75a42822c53 100644
+--- a/tools/perf/Documentation/perf.txt
++++ b/tools/perf/Documentation/perf.txt
+@@ -8,7 +8,15 @@ perf - Performance analysis tools for Linux
+ SYNOPSIS
+ --------
+ [verse]
+-'perf' [--version] [--help] COMMAND [ARGS]
++'perf' [--version] [--debug variable[=VALUE]] [--help] COMMAND [ARGS]
++
++OPTIONS
++-------
++--debug::
++	Setup debug variable (just verbose for now) in value
++	range (0, 10). Use like:
++	  --debug verbose   # sets verbose = 1
++	  --debug verbose=2 # sets verbose = 2
+ 
+ DESCRIPTION
+ -----------
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 95c58fc15284..eed3fb2a3af0 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -13,11 +13,12 @@
+ #include "util/quote.h"
+ #include "util/run-command.h"
+ #include "util/parse-events.h"
++#include "util/debug.h"
+ #include <api/fs/debugfs.h>
+ #include <pthread.h>
+ 
+ const char perf_usage_string[] =
+-	"perf [--version] [--help] COMMAND [ARGS]";
++	"perf [--version] [--debug variable[=VALUE]] [--help] COMMAND [ARGS]";
+ 
+ const char perf_more_info_string[] =
+ 	"See 'perf help COMMAND' for more information on a specific command.";
+@@ -212,6 +213,16 @@ static int handle_options(const char ***argv, int *argc, int *envchanged)
+ 				printf("%s ", p->cmd);
+ 			}
+ 			exit(0);
++		} else if (!strcmp(cmd, "--debug")) {
++			if (*argc < 2) {
++				fprintf(stderr, "No variable specified for --debug.\n");
++				usage(perf_usage_string);
++			}
++			if (perf_debug_option((*argv)[1]))
++				usage(perf_usage_string);
++
++			(*argv)++;
++			(*argc)--;
+ 		} else {
+ 			fprintf(stderr, "Unknown option: %s\n", cmd);
+ 			usage(perf_usage_string);
 diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
-index 299b55586502..c208d6f56e63 100644
+index c208d6f56e63..71d419362634 100644
 --- a/tools/perf/util/debug.c
 +++ b/tools/perf/util/debug.c
-@@ -16,11 +16,11 @@
- int verbose;
- bool dump_trace = false, quiet = false;
- 
--static int _eprintf(int level, const char *fmt, va_list args)
-+static int _eprintf(int level, int var, const char *fmt, va_list args)
- {
- 	int ret = 0;
- 
--	if (verbose >= level) {
-+	if (var >= level) {
- 		if (use_browser >= 1)
- 			ui_helpline__vshow(fmt, args);
- 		else
-@@ -30,13 +30,13 @@ static int _eprintf(int level, const char *fmt, va_list args)
- 	return ret;
+@@ -105,3 +105,47 @@ void trace_event(union perf_event *event)
+ 	}
+ 	printf(".\n");
  }
- 
--int eprintf(int level, const char *fmt, ...)
-+int eprintf(int level, int var, const char *fmt, ...)
- {
- 	va_list args;
- 	int ret;
- 
- 	va_start(args, fmt);
--	ret = _eprintf(level, fmt, args);
-+	ret = _eprintf(level, var, fmt, args);
- 	va_end(args);
- 
- 	return ret;
-@@ -51,9 +51,9 @@ void pr_stat(const char *fmt, ...)
- 	va_list args;
- 
- 	va_start(args, fmt);
--	_eprintf(1, fmt, args);
-+	_eprintf(1, verbose, fmt, args);
- 	va_end(args);
--	eprintf(1, "\n");
-+	eprintf(1, verbose, "\n");
- }
- 
- int dump_printf(const char *fmt, ...)
++
++static struct debug_variable {
++	const char *name;
++	int *ptr;
++} debug_variables[] = {
++	{ .name = "verbose", .ptr = &verbose },
++	{ .name = NULL, }
++};
++
++int perf_debug_option(const char *str)
++{
++	struct debug_variable *var = &debug_variables[0];
++	char *vstr, *s = strdup(str);
++	int v = 1;
++
++	vstr = strchr(s, '=');
++	if (vstr)
++		*vstr++ = 0;
++
++	while (var->name) {
++		if (!strcmp(s, var->name))
++			break;
++		var++;
++	}
++
++	if (!var->name) {
++		pr_err("Unknown debug variable name '%s'\n", s);
++		free(s);
++		return -1;
++	}
++
++	if (vstr) {
++		v = atoi(vstr);
++		/*
++		 * Allow only values in range (0, 10),
++		 * otherwise set 0.
++		 */
++		v = (v < 0) || (v > 10) ? 0 : v;
++	}
++
++	*var->ptr = v;
++	free(s);
++	return 0;
++}
 diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
-index 8a8ceb3ccde9..1cb808123242 100644
+index 1cb808123242..89fb6b0f7ab2 100644
 --- a/tools/perf/util/debug.h
 +++ b/tools/perf/util/debug.h
-@@ -16,15 +16,15 @@ extern bool quiet, dump_trace;
- #endif
+@@ -39,4 +39,6 @@ void pr_stat(const char *fmt, ...);
  
- #define pr_err(fmt, ...) \
--	eprintf(0, pr_fmt(fmt), ##__VA_ARGS__)
-+	eprintf(0, verbose, pr_fmt(fmt), ##__VA_ARGS__)
- #define pr_warning(fmt, ...) \
--	eprintf(0, pr_fmt(fmt), ##__VA_ARGS__)
-+	eprintf(0, verbose, pr_fmt(fmt), ##__VA_ARGS__)
- #define pr_info(fmt, ...) \
--	eprintf(0, pr_fmt(fmt), ##__VA_ARGS__)
-+	eprintf(0, verbose, pr_fmt(fmt), ##__VA_ARGS__)
- #define pr_debug(fmt, ...) \
--	eprintf(1, pr_fmt(fmt), ##__VA_ARGS__)
-+	eprintf(1, verbose, pr_fmt(fmt), ##__VA_ARGS__)
- #define pr_debugN(n, fmt, ...) \
--	eprintf(n, pr_fmt(fmt), ##__VA_ARGS__)
-+	eprintf(n, verbose, pr_fmt(fmt), ##__VA_ARGS__)
- #define pr_debug2(fmt, ...) pr_debugN(2, pr_fmt(fmt), ##__VA_ARGS__)
- #define pr_debug3(fmt, ...) pr_debugN(3, pr_fmt(fmt), ##__VA_ARGS__)
- #define pr_debug4(fmt, ...) pr_debugN(4, pr_fmt(fmt), ##__VA_ARGS__)
-@@ -37,6 +37,6 @@ int ui__warning(const char *format, ...) __attribute__((format(printf, 1, 2)));
+ int eprintf(int level, int var, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
  
- void pr_stat(const char *fmt, ...);
- 
--int eprintf(int level, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
-+int eprintf(int level, int var, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
- 
++int perf_debug_option(const char *str);
++
  #endif	/* __PERF_DEBUG_H */
-diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
-index 122669c18ff4..12aa9b0d0ba1 100644
---- a/tools/perf/util/python.c
-+++ b/tools/perf/util/python.c
-@@ -14,12 +14,12 @@
-  */
- int verbose;
- 
--int eprintf(int level, const char *fmt, ...)
-+int eprintf(int level, int var, const char *fmt, ...)
- {
- 	va_list args;
- 	int ret = 0;
- 
--	if (verbose >= level) {
-+	if (var >= level) {
- 		va_start(args, fmt);
- 		ret = vfprintf(stderr, fmt, args);
- 		va_end(args);
 -- 
 1.8.3.1
 
