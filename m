@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427AbaGNLkl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 07:40:41 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:39232 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755240AbaGNLjZ (ORCPT
+	id S1755453AbaGNLlP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 07:41:15 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:46443 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755228AbaGNLjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 07:39:25 -0400
+	Mon, 14 Jul 2014 07:39:21 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: kvm@vger.kernel.org
-Subject: [PATCH 17/19] KVM: emulate: put pointers in the fetch_cache
-Date: Mon, 14 Jul 2014 13:38:41 +0200
-Message-Id: <1405337923-4776-18-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 15/19] KVM: emulate: avoid repeated calls to do_insn_fetch_bytes
+Date: Mon, 14 Jul 2014 13:38:39 +0200
+Message-Id: <1405337923-4776-16-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1405337923-4776-1-git-send-email-pbonzini@redhat.com>
 References: <1405337923-4776-1-git-send-email-pbonzini@redhat.com>
@@ -20,140 +20,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This simplifies the code a bit, especially the overflow checks.
+do_insn_fetch_bytes will only be called once in a given insn_fetch and
+insn_fetch_arr, because in fact it will only be called at most twice
+for any instruction and the first call is explicit in x86_decode_insn.
+This observation lets us hoist the call out of the memory copying loop.
+It does not buy performance, because most fetches are one byte long
+anyway, but it prepares for the next patch.
+
+The overflow check is tricky, but correct.  Because do_insn_fetch_bytes
+has already been called once, we know that fc->end is at least 15.  So
+it is okay to subtract the number of bytes we want to read.
 
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- arch/x86/include/asm/kvm_emulate.h |  4 ++--
- arch/x86/kvm/emulate.c             | 34 +++++++++++++++-------------------
- arch/x86/kvm/trace.h               |  6 +++---
- 3 files changed, 20 insertions(+), 24 deletions(-)
+ arch/x86/kvm/emulate.c | 26 +++++++++++++++++---------
+ 1 file changed, 17 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_emulate.h b/arch/x86/include/asm/kvm_emulate.h
-index fcf58cd25ebd..eb181178fe0b 100644
---- a/arch/x86/include/asm/kvm_emulate.h
-+++ b/arch/x86/include/asm/kvm_emulate.h
-@@ -242,8 +242,8 @@ struct operand {
- 
- struct fetch_cache {
- 	u8 data[15];
--	unsigned long start;
--	unsigned long end;
-+	u8 *ptr;
-+	u8 *end;
- };
- 
- struct read_cache {
 diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 02c668aca2b6..c16314807756 100644
+index ea188a338afb..ca82ec9c5ffe 100644
 --- a/arch/x86/kvm/emulate.c
 +++ b/arch/x86/kvm/emulate.c
-@@ -710,16 +710,15 @@ static int segmented_read_std(struct x86_emulate_ctxt *ctxt,
+@@ -708,7 +708,7 @@ static int segmented_read_std(struct x86_emulate_ctxt *ctxt,
+  * Prefetch the remaining bytes of the instruction without crossing page
+  * boundary if they are not in fetch_cache yet.
   */
- static int __do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt, int op_size)
+-static int do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt)
++static int do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt, int op_size)
  {
--	struct fetch_cache *fc = &ctxt->fetch;
+ 	struct fetch_cache *fc = &ctxt->fetch;
  	int rc;
--	int size, cur_size;
-+	int size;
- 	unsigned long linear;
--
-+	int cur_size = ctxt->fetch.end - ctxt->fetch.data;
- 	struct segmented_address addr = { .seg = VCPU_SREG_CS,
--					  .ea  = fc->end };
--	cur_size = fc->end - fc->start;
--	size = min(15UL - cur_size,
--		   PAGE_SIZE - offset_in_page(fc->end));
-+					   .ea = ctxt->eip + cur_size };
+@@ -720,7 +720,14 @@ static int do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt)
+ 	cur_size = fc->end - fc->start;
+ 	size = min(15UL - cur_size,
+ 		   PAGE_SIZE - offset_in_page(fc->end));
+-	if (unlikely(size == 0))
 +
-+	size = min(15UL ^ cur_size,
-+		   PAGE_SIZE - offset_in_page(addr.ea));
- 
- 	/*
- 	 * One instruction can only straddle two pages,
-@@ -732,19 +731,18 @@ static int __do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt, int op_size)
++	/*
++	 * One instruction can only straddle two pages,
++	 * and one has been loaded at the beginning of
++	 * x86_decode_insn.  So, if not enough bytes
++	 * still, we must have hit the 15-byte boundary.
++	 */
++	if (unlikely(size < op_size))
+ 		return X86EMUL_UNHANDLEABLE;
  	rc = __linearize(ctxt, addr, size, false, true, &linear);
  	if (unlikely(rc != X86EMUL_CONTINUE))
- 		return rc;
--	rc = ctxt->ops->fetch(ctxt, linear, fc->data + cur_size,
-+	rc = ctxt->ops->fetch(ctxt, linear, ctxt->fetch.end,
- 			      size, &ctxt->exception);
- 	if (unlikely(rc != X86EMUL_CONTINUE))
- 		return rc;
--	fc->end += size;
-+	ctxt->fetch.end += size;
- 	return X86EMUL_CONTINUE;
- }
- 
- static __always_inline int do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt,
- 					       unsigned size)
+@@ -736,17 +743,18 @@ static int do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt)
+ static int do_insn_fetch(struct x86_emulate_ctxt *ctxt,
+ 			 void *__dest, unsigned size)
  {
--	/* We have to be careful about overflow! */
--	if (unlikely(ctxt->_eip > ctxt->fetch.end - size))
-+	if (unlikely(ctxt->fetch.end - ctxt->fetch.ptr < size))
- 		return __do_insn_fetch_bytes(ctxt, size);
- 	else
- 		return X86EMUL_CONTINUE;
-@@ -753,26 +751,24 @@ static __always_inline int do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt,
- /* Fetch next part of the instruction being emulated. */
- #define insn_fetch(_type, _ctxt)					\
- ({	_type _x;							\
--	struct fetch_cache *_fc;					\
- 									\
- 	rc = do_insn_fetch_bytes(_ctxt, sizeof(_type));			\
- 	if (rc != X86EMUL_CONTINUE)					\
- 		goto done;						\
--	_fc = &ctxt->fetch;						\
--	_x = *(_type __aligned(1) *) &_fc->data[ctxt->_eip - _fc->start]; \
- 	ctxt->_eip += sizeof(_type);					\
-+	_x = *(_type __aligned(1) *) ctxt->fetch.ptr;			\
-+	ctxt->fetch.ptr += sizeof(_type);				\
- 	_x;								\
- })
+-	int rc;
+ 	struct fetch_cache *fc = &ctxt->fetch;
+ 	u8 *dest = __dest;
+ 	u8 *src = &fc->data[ctxt->_eip - fc->start];
  
- #define insn_fetch_arr(_arr, _size, _ctxt)				\
- ({									\
--	struct fetch_cache *_fc;					\
- 	rc = do_insn_fetch_bytes(_ctxt, _size);				\
- 	if (rc != X86EMUL_CONTINUE)					\
- 		goto done;						\
--	_fc = &ctxt->fetch;						\
--	memcpy(_arr, &_fc->data[ctxt->_eip - _fc->start], _size);	\
- 	ctxt->_eip += (_size);						\
-+	memcpy(_arr, ctxt->fetch.ptr, _size);				\
-+	ctxt->fetch.ptr += (_size);					\
- })
- 
- /*
-@@ -4228,8 +4224,8 @@ int x86_decode_insn(struct x86_emulate_ctxt *ctxt, void *insn, int insn_len)
- 	ctxt->memop.type = OP_NONE;
- 	ctxt->memopp = NULL;
- 	ctxt->_eip = ctxt->eip;
--	ctxt->fetch.start = ctxt->_eip;
--	ctxt->fetch.end = ctxt->fetch.start + insn_len;
-+	ctxt->fetch.ptr = ctxt->fetch.data;
-+	ctxt->fetch.end = ctxt->fetch.data + insn_len;
- 	ctxt->opcode_len = 1;
++	/* We have to be careful about overflow! */
++	if (unlikely(ctxt->_eip > fc->end - size)) {
++		int rc = do_insn_fetch_bytes(ctxt, size);
++		if (rc != X86EMUL_CONTINUE)
++			return rc;
++	}
++
+ 	while (size--) {
+-		if (unlikely(ctxt->_eip == fc->end)) {
+-			rc = do_insn_fetch_bytes(ctxt);
+-			if (rc != X86EMUL_CONTINUE)
+-				return rc;
+-		}
+ 		*dest++ = *src++;
+ 		ctxt->_eip++;
+ 		continue;
+@@ -4228,7 +4236,7 @@ int x86_decode_insn(struct x86_emulate_ctxt *ctxt, void *insn, int insn_len)
  	if (insn_len > 0)
  		memcpy(ctxt->fetch.data, insn, insn_len);
-diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
-index 33574c95220d..e850a7d332be 100644
---- a/arch/x86/kvm/trace.h
-+++ b/arch/x86/kvm/trace.h
-@@ -721,10 +721,10 @@ TRACE_EVENT(kvm_emulate_insn,
- 		),
- 
- 	TP_fast_assign(
--		__entry->rip = vcpu->arch.emulate_ctxt.fetch.start;
- 		__entry->csbase = kvm_x86_ops->get_segment_base(vcpu, VCPU_SREG_CS);
--		__entry->len = vcpu->arch.emulate_ctxt._eip
--			       - vcpu->arch.emulate_ctxt.fetch.start;
-+		__entry->len = vcpu->arch.emulate_ctxt.fetch.ptr
-+			       - vcpu->arch.emulate_ctxt.fetch.data;
-+		__entry->rip = vcpu->arch.emulate_ctxt._eip - __entry->len;
- 		memcpy(__entry->insn,
- 		       vcpu->arch.emulate_ctxt.fetch.data,
- 		       15);
+ 	else {
+-		rc = do_insn_fetch_bytes(ctxt);
++		rc = do_insn_fetch_bytes(ctxt, 1);
+ 		if (rc != X86EMUL_CONTINUE)
+ 			return rc;
+ 	}
 -- 
 1.8.3.1
 
