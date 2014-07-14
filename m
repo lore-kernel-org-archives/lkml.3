@@ -1,75 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755117AbaGNMlV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 08:41:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8358 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754469AbaGNMlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 08:41:16 -0400
-Message-ID: <53C3CFC1.9070800@redhat.com>
-Date: Mon, 14 Jul 2014 14:40:33 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755218AbaGNMlx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 08:41:53 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43345 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754564AbaGNMlr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 08:41:47 -0400
+Date: Mon, 14 Jul 2014 05:41:31 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Matias Bj??rling <m@bjorling.me>
+Cc: willy@linux.intel.com, keith.busch@intel.com, sbradshaw@micron.com,
+        axboe@fb.com, tom.leiming@gmail.com, hch@infradead.org,
+        rlnelson@google.com, linux-kernel@vger.kernel.org,
+        linux-nvme@lists.infradead.org
+Subject: Re: [PATCH v10] NVMe: Convert to blk-mq
+Message-ID: <20140714124131.GA311@infradead.org>
+References: <1404226382-7179-1-git-send-email-m@bjorling.me>
+ <1404226382-7179-2-git-send-email-m@bjorling.me>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: kan.liang@intel.com, andi@firstfloor.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH V5 1/2] perf ignore LBR and extra_regs
-References: <1404989984-3068-1-git-send-email-kan.liang@intel.com> <53C3C517.4000500@redhat.com> <20140714120922.GV9918@twins.programming.kicks-ass.net>
-In-Reply-To: <20140714120922.GV9918@twins.programming.kicks-ass.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404226382-7179-2-git-send-email-m@bjorling.me>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 14/07/2014 14:09, Peter Zijlstra ha scritto:
-> On Mon, Jul 14, 2014 at 01:55:03PM +0200, Paolo Bonzini wrote:
->> Il 10/07/2014 12:59, kan.liang@intel.com ha scritto:
->>> From: Kan Liang <kan.liang@intel.com>
->>>
->>> x86, perf: Protect LBR and extra_regs against KVM lying
->>>
->>> With -cpu host, KVM reports LBR and extra_regs support, if the host has support.
->>> When the guest perf driver tries to access LBR or extra_regs MSR,
->>> it #GPs all MSR accesses,since KVM doesn't handle LBR and extra_regs support.
->>> So check the related MSRs access right once at initialization time to avoid the error access at runtime.
->>>
->>> For reproducing the issue, please build the kernel with CONFIG_KVM_INTEL = y (for host kernel).
->>> And CONFIG_PARAVIRT = n and CONFIG_KVM_GUEST = n (for guest kernel).
->>
->> I'm not sure this is a useful patch.
->>
->> This is #GP'ing just because of a limitation in the PMU; just compile the
->> kernel with CONFIG_PARAVIRT
->
-> How's that going to help? If you run kvm -host the VM is lying through
-> its teeth is the kernel is going to assume all those MSRs present,
-> PARAVIRT isn't going to help with this.
->
->> , or split the "rdmsr is always rdmsr_safe"
->> behavior out of CONFIG_PARAVIRT and into a new Kconfig symbol.
->
-> That's not useful either, because non of these code-paths are going to
-> check the return value.
+> +static int nvme_init_hctx(struct blk_mq_hw_ctx *hctx, void *data,
+> +			  unsigned int hctx_idx)
+> +	struct nvme_queue *nvmeq = dev->queues[
+> +					(hctx_idx % dev->queue_count) + 1];
+> +
+> +	/* nvmeq queues are shared between namespaces. We assume here that
+> +	 * blk-mq map the tags so they match up with the nvme queue tags */
+> +	if (!nvmeq->hctx)
+> +		nvmeq->hctx = hctx;
+> +	else
+> +		WARN_ON(nvmeq->hctx->tags != hctx->tags);
 
-Hmmm, I thought rdmsr_safe was going to return zero, but it just returns 
-whatever happened to be in edx:eax which maybe should also be fixed.
 
-Kan Liang, what happens if CONFIG_PARAVIRT=y?  Do you get garbage or 
-just no events reported?
+This wrong to me, as you're overwriting the value of nvmeq->hctx for each
+new requeust_queue.  But nothing but ->tagsis ever used from nvmeq->hctx,
+so you shold rather set up nvmeq->tags in nvme_dev_add.
 
->> In fact there's no reason why LBR cannot be virtualized (though it does need
->> support from the processor), and it may even be possible to support
->> OFFCORE_RSP_X in the KVM virtual PMU.
->
-> But its not, so something needs to be done, right?
+> +static int nvme_init_request(void *data, struct request *req,
+> +				unsigned int hctx_idx, unsigned int rq_idx,
+> +				unsigned int numa_node)
+> +{
+> +	struct nvme_dev *dev = data;
+> +	struct nvme_cmd_info *cmd = blk_mq_rq_to_pdu(req);
+> +	struct nvme_queue *nvmeq = dev->queues[hctx_idx + 1];
+> +
+> +	WARN_ON(!nvmeq);
+> +	cmd->nvmeq = nvmeq;
 
-A first thing that could be done, is to have a way for the kernel to 
-detect absence of LBR, for example an all-1s setting of the LBR format 
-field of IA32_PERF_CAPABILITIES.  If Intel can tell us "all 1s will 
-never be used", we can have KVM set the field that way.  The kernel then 
-should disable LBR.
+Shouldn't this fail instead of the warn_on?
 
-Paolo
+> +static int nvme_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
+>  {
+> +	struct nvme_ns *ns = hctx->queue->queuedata;
+> +	struct nvme_queue *nvmeq = hctx->driver_data;
+> +	struct nvme_cmd_info *cmd = blk_mq_rq_to_pdu(req);
+>  	struct nvme_iod *iod;
+> +	enum dma_data_direction dma_dir;
+> +	int psegs = req->nr_phys_segments;
+> +	int result = BLK_MQ_RQ_QUEUE_BUSY;
+> +	/*
+> +	 * Requeued IO has already been prepped
+> +	 */
+> +	iod = req->special;
+> +	if (iod)
+> +		goto submit_iod;
+>  
+> +	iod = nvme_alloc_iod(psegs, blk_rq_bytes(req), GFP_ATOMIC);
+>  	if (!iod)
+> +		return result;
+
+So there's still a memory allocation for each request here.  Any reason
+this can't be preallocated at least for reasonable sized I/O?
+
+No need for GFP_ATOMIC here either, and you probably need a mempool to
+guarantee forward progress.
+
+> +	if (req->cmd_flags & REQ_DISCARD) {
+>  		void *range;
+>  		/*
+>  		 * We reuse the small pool to allocate the 16-byte range here
+> @@ -752,33 +602,53 @@ static int nvme_submit_bio_queue(struct nvme_queue *nvmeq, struct nvme_ns *ns,
+>  		range = dma_pool_alloc(nvmeq->dev->prp_small_pool,
+>  						GFP_ATOMIC,
+>  						&iod->first_dma);
+> +		if (!range)
+> +			goto finish_cmd;
+>  		iod_list(iod)[0] = (__le64 *)range;
+>  		iod->npages = 0;
+>  	} else if (psegs) {
+> +		dma_dir = rq_data_dir(req) ? DMA_TO_DEVICE : DMA_FROM_DEVICE;
+> +
+> +		sg_init_table(iod->sg, psegs);
+> +		iod->nents = blk_rq_map_sg(req->q, req, iod->sg);
+> +		if (!iod->nents) {
+> +			result = BLK_MQ_RQ_QUEUE_ERROR;
+> +			goto finish_cmd;
+>  		}
+> +
+> +		if (!dma_map_sg(nvmeq->q_dmadev, iod->sg, iod->nents, dma_dir))
+> +			goto finish_cmd;
+> +
+> +		if (blk_rq_bytes(req) != nvme_setup_prps(nvmeq->dev, iod,
+> +						blk_rq_bytes(req), GFP_ATOMIC))
+> +			goto finish_cmd;
+> +	}
+
+Would be nice to factor these two into helpers, that could also avoid
+the submid_iod goto..
+
+> +
+> +	if (req->cmd_flags & REQ_DISCARD) {
+> +		nvme_submit_discard(nvmeq, ns, req, iod);
+> +		goto queued;
+> +	}
+> +
+> +	if (req->cmd_flags & REQ_FLUSH) {
+> +		nvme_submit_flush(nvmeq, ns, req->tag);
+> +		goto queued;
+>  	}
+> -	return 0;
+>  
+> +	nvme_submit_iod(nvmeq, iod, ns);
+> + queued:
+
+A simple
+
+	if (req->cmd_flags & REQ_DISCARD)
+		nvme_submit_discard(nvmeq, ns, req, iod);
+	else if if (req->cmd_flags & REQ_FLUSH)
+		nvme_submit_flush(nvmeq, ns, req->tag);
+	else
+		nvme_submit_iod(nvmeq, iod, ns);
+
+seems preferable here.
+
+> +static void nvme_cancel_queue_ios(void *data, unsigned long *tag_map)
+>  {
+> +	struct nvme_queue *nvmeq = data;
+> +	struct blk_mq_hw_ctx *hctx = nvmeq->hctx;
+> +	unsigned int tag = 0;
+>  
+> +	tag = 0;
+> +	do {
+> +		struct request *req;
+>  		void *ctx;
+>  		nvme_completion_fn fn;
+> +		struct nvme_cmd_info *cmd;
+>  		static struct nvme_completion cqe = {
+>  			.status = cpu_to_le16(NVME_SC_ABORT_REQ << 1),
+>  		};
+> +		int qdepth = nvmeq == nvmeq->dev->queues[0] ?
+> +					nvmeq->dev->admin_tagset.queue_depth :
+> +					nvmeq->dev->tagset.queue_depth;
+>  
+> +		/* zero'd bits are free tags */
+> +		tag = find_next_zero_bit(tag_map, qdepth, tag);
+> +		if (tag >= qdepth)
+> +			break;
+> +
+> +		req = blk_mq_tag_to_rq(hctx->tags, tag++);
+> +		cmd = blk_mq_rq_to_pdu(req);
+
+Seems like blk-mq would make your life easier by exporting an iterator
+that goes over each in-use request instead of the current
+blk_mq_tag_busy_iter prototype.  blk_mq_timeout_check would also be able
+to make use of that, so maybe that would be a good preparatory patch?
+
+> +static enum blk_eh_timer_return nvme_timeout(struct request *req)
+>  {
+> +	struct nvme_cmd_info *cmd = blk_mq_rq_to_pdu(req);
+> +	struct nvme_queue *nvmeq = cmd->nvmeq;
+>  
+> +	dev_warn(nvmeq->q_dmadev, "Timeout I/O %d QID %d\n", req->tag,
+> +							nvmeq->qid);
+> +	if (nvmeq->dev->initialized)
+> +		nvme_abort_req(req);
+>  
+> +	return BLK_EH_RESET_TIMER;
+> +}
+
+Aborting a request but then resetting the timer looks wrong to me.
+
+If that's indeed the intended behavior please add a comment explaining
+it.
+
+> +
+> +static int nvme_alloc_admin_tags(struct nvme_dev *dev)
+> +{
+> +	if (!dev->admin_q) {
+
+When would it be non-NULL?  Seems like the resume case might be the
+case, but I suspect the code could be restructured to avoid even calling
+nvme_alloc_admin_tags for that case.
+
+> +static void nvme_free_admin_tags(struct nvme_dev *dev)
+> +{
+> +	if (dev->admin_q)
+> +		blk_mq_free_tag_set(&dev->admin_tagset);
+> +}
+
+When would this be called with the admin queue not initialized?
+
+> +static void nvme_dev_remove_admin(struct nvme_dev *dev)
+> +{
+> +	if (dev->admin_q && !blk_queue_dying(dev->admin_q))
+> +		blk_cleanup_queue(dev->admin_q);
+> +}
+
+Same here.
+
