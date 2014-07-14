@@ -1,57 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932226AbaGNOzn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 10:55:43 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:60613 "EHLO bear.ext.ti.com"
+	id S932251AbaGNOz4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 10:55:56 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60623 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932202AbaGNOzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 10:55:35 -0400
+	id S932225AbaGNOzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 10:55:43 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
         <linux-pci@vger.kernel.org>, <jg1.han@samsung.com>,
         <bhelgaas@google.com>, <mohit.kumar@st.com>,
         <linux-kernel@vger.kernel.org>
 CC: <kishon@ti.com>, <grant.likely@linaro.org>
-Subject: [PATCH v2 0/4] dra7: Add PCIe support
-Date: Mon, 14 Jul 2014 20:25:01 +0530
-Message-ID: <1405349705-31400-1-git-send-email-kishon@ti.com>
+Subject: [PATCH v2 3/4] Documentation: pci: ti: Add dt binding documentation for PCIe in DRA7xx
+Date: Mon, 14 Jul 2014 20:25:04 +0530
+Message-ID: <1405349705-31400-4-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1405349705-31400-1-git-send-email-kishon@ti.com>
+References: <1405349705-31400-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes from v1:
-* fixed dw_pcie_prog_viewport_io_outbound() to use untranslated address
-* split dra7xx patch into driver part and documentation part
+Added dt binding documentation of PCIe in DRA7xx.
 
-[1] is split into separate series in order for individual subsystem
-Maintainers to pick up the patches. This series handles the PCIe
-support for DRA7.
-
-Rebased to pci -next.
-
-[1] -> https://lkml.org/lkml/2014/5/29/258
-
-Kishon Vijay Abraham I (4):
-  PCI: designware: Configuration space should be specified in 'reg'
-  PCI: designware: use untranslated address while programming ATU
-  Documentation: pci: ti: Add dt binding documentation for PCIe in
-    DRA7xx
-  PCI: host: pcie-dra7xx: add support for pcie-dra7xx controller
-
- .../devicetree/bindings/pci/designware-pcie.txt    |    4 +
- Documentation/devicetree/bindings/pci/ti-pci.txt   |   59 +++
- drivers/pci/host/Kconfig                           |   10 +
- drivers/pci/host/Makefile                          |    1 +
- drivers/pci/host/pci-dra7xx.c                      |  458 ++++++++++++++++++++
- drivers/pci/host/pcie-designware.c                 |   72 ++-
- drivers/pci/host/pcie-designware.h                 |    4 +
- 7 files changed, 592 insertions(+), 16 deletions(-)
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ Documentation/devicetree/bindings/pci/ti-pci.txt |   59 ++++++++++++++++++++++
+ 1 file changed, 59 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/pci/ti-pci.txt
- create mode 100644 drivers/pci/host/pci-dra7xx.c
 
+diff --git a/Documentation/devicetree/bindings/pci/ti-pci.txt b/Documentation/devicetree/bindings/pci/ti-pci.txt
+new file mode 100644
+index 0000000..3d21791
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pci/ti-pci.txt
+@@ -0,0 +1,59 @@
++TI PCI Controllers
++
++PCIe Designware Controller
++ - compatible: Should be "ti,dra7-pcie""
++ - reg : Two register ranges as listed in the reg-names property
++ - reg-names : The first entry must be "ti-conf" for the TI specific registers
++	       The second entry must be "rc-dbics" for the designware pcie
++	       registers
++	       The third entry must be "config" for the PCIe configuration space
++ - phys : list of PHY specifiers (used by generic PHY framework)
++ - phy-names : must be "pcie-phy0", "pcie-phy1", "pcie-phyN".. based on the
++	       number of PHYs as specified in *phys* property.
++ - ti,hwmods : Name of the hwmod associated to the pcie, "pcie<X>",
++	       where <X> is the instance number of the pcie from the HW spec.
++ - interrupts : Two interrupt entries must be specified. The first one is for
++		main interrupt line and the second for MSI interrupt line.
++ - #address-cells,
++   #size-cells,
++   #interrupt-cells,
++   device_type,
++   ranges,
++   num-lanes,
++   interrupt-map-mask,
++   interrupt-map : as specified in ../designware-pcie.txt
++
++Example:
++axi {
++	compatible = "simple-bus";
++	#size-cells = <1>;
++	#address-cells = <1>;
++	ranges = <0x51000000 0x51000000 0x3000
++		  0x0	     0x20000000 0x10000000>;
++	pcie@51000000 {
++		compatible = "ti,dra7-pcie";
++		reg = <0x51000000 0x2000>, <0x51002000 0x14c>, <0x1000 0x2000>;
++		reg-names = "rc_dbics", "ti_conf", "config";
++		interrupts = <0 232 0x4>, <0 233 0x4>;
++		#address-cells = <3>;
++		#size-cells = <2>;
++		device_type = "pci";
++		ranges = <0x81000000 0 0          0x03000 0 0x00010000
++			  0x82000000 0 0x20013000 0x13000 0 0xffed000>;
++		#interrupt-cells = <1>;
++		num-lanes = <1>;
++		ti,hwmods = "pcie1";
++		phys = <&pcie1_phy>;
++		phy-names = "pcie-phy0";
++		interrupt-map-mask = <0 0 0 7>;
++		interrupt-map = <0 0 0 1 &pcie_intc 1>,
++				<0 0 0 2 &pcie_intc 2>,
++				<0 0 0 3 &pcie_intc 3>,
++				<0 0 0 4 &pcie_intc 4>;
++		pcie_intc: interrupt-controller {
++			interrupt-controller;
++			#address-cells = <0>;
++			#interrupt-cells = <1>;
++		};
++	};
++};
 -- 
 1.7.9.5
 
