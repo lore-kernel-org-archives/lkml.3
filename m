@@ -1,223 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873AbaGNKPP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 06:15:15 -0400
-Received: from mout.gmx.net ([212.227.17.22]:52576 "EHLO mout.gmx.net"
+	id S1754848AbaGNKO4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 06:14:56 -0400
+Received: from mga11.intel.com ([192.55.52.93]:41917 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754370AbaGNKPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 06:15:02 -0400
-MIME-Version: 1.0
-Message-ID: <trinity-8afac813-e5e0-4845-8438-a0531b1b8782-1405332896965@3capp-gmx-bs13>
-From: "Helge Deller" <deller@gmx.de>
-To: "Richard Weinberger" <richard@nod.at>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>
-Subject: Aw: [PATCH 15/43] parisc: Use get_signal() signal_setup_done()
-Content-Type: text/plain; charset=UTF-8
-Date: Mon, 14 Jul 2014 12:14:57 +0200
-Importance: normal
-Sensitivity: Normal
-In-Reply-To: <1405324541-29911-16-git-send-email-richard@nod.at>
-References: <1405324541-29911-1-git-send-email-richard@nod.at>,
- <1405324541-29911-16-git-send-email-richard@nod.at>
-X-UI-Message-Type: mail
-X-Priority: 3
-X-Provags-ID: V03:K0:IjXquGiarXOcRdqId0bBGywZuE3c2/43jb0Cnl2nzss
- q9H5SJvE0MZWwtL2NfRix8lcfweBURUPrrD0gWWSGXeoUorqHo
- nZtQnaV2Qj1/c4GfY5rBpUSJ/5OExCN0JsUGUbJmf0BPsO3iOQ
- nFIJfirZuEqtzj+Voj6L4IhaYYWsuUalGxNFM2uwp4Fid69krA
- G5OmGkH4X7ONOxJyO81pohsxCUyWdIIiSEqCl8hBEqlm8hmIg4
- rZBju0wjkFCrmFXrrOcJVmpva18aNxsTPJbcQiKCDzFUMH8DJe EeL9/4=
+	id S1753761AbaGNKFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 06:05:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,657,1400050800"; 
+   d="scan'208";a="561434482"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 22/41] perf tools: Add perf_pmu__scan_file()
+Date: Mon, 14 Jul 2014 13:02:46 +0300
+Message-Id: <1405332185-4050-23-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
+References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
+Add a function to scan a sysfs file within the pmu device
+directory.
 
-nice work!
-I pulled your tree and tested your patch series on parisc.
-Everything seems OK.
+This will be used to read capability values from the PMU
+'caps' subdirectory.
 
-Regarding the changes to the parisc arch, you can add my
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/pmu.c | 37 +++++++++++++++++++++++++++++++++++++
+ tools/perf/util/pmu.h |  3 +++
+ 2 files changed, 40 insertions(+)
 
-Acked-by: Helge Deller <deller@gmx.de>
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 11ec977..348d1d2 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -3,6 +3,7 @@
+ #include <unistd.h>
+ #include <stdio.h>
+ #include <stdbool.h>
++#include <stdarg.h>
+ #include <dirent.h>
+ #include <api/fs/fs.h>
+ #include <locale.h>
+@@ -804,3 +805,39 @@ bool pmu_have_event(const char *pname, const char *name)
+ 	}
+ 	return false;
+ }
++
++static FILE *perf_pmu__open_file(struct perf_pmu *pmu, const char *name)
++{
++	struct stat st;
++	char path[PATH_MAX];
++	const char *sysfs;
++
++	sysfs = sysfs__mountpoint();
++	if (!sysfs)
++		return NULL;
++
++	snprintf(path, PATH_MAX,
++		 "%s" EVENT_SOURCE_DEVICE_PATH "%s/%s", sysfs, pmu->name, name);
++
++	if (stat(path, &st) < 0)
++		return NULL;
++
++	return fopen(path, "r");
++}
++
++int perf_pmu__scan_file(struct perf_pmu *pmu, const char *name, const char *fmt,
++			...)
++{
++	va_list args;
++	FILE *file;
++	int ret = EOF;
++
++	va_start(args, fmt);
++	file = perf_pmu__open_file(pmu, name);
++	if (file) {
++		ret = vfscanf(file, fmt, args);
++		fclose(file);
++	}
++	va_end(args);
++	return ret;
++}
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index 281d5b1..c35f578 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -49,6 +49,9 @@ struct perf_pmu *perf_pmu__scan(struct perf_pmu *pmu);
+ void print_pmu_events(const char *event_glob, bool name_only);
+ bool pmu_have_event(const char *pname, const char *name);
+ 
++int perf_pmu__scan_file(struct perf_pmu *pmu, const char *name, const char *fmt,
++			...) __attribute__((format(scanf, 3, 4)));
++
+ int perf_pmu__test(void);
+ 
+ struct perf_event_attr *perf_pmu__get_default_config(struct perf_pmu *pmu);
+-- 
+1.8.3.2
 
-Thanks!
-Helge
-
-> Betreff: [PATCH 15/43] parisc: Use get_signal() signal_setup_done()
->
-> Use the more generic functions get_signal() signal_setup_done()
-> for signal delivery.
-> 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->  arch/parisc/kernel/signal.c | 58 +++++++++++++++++++--------------------------
->  1 file changed, 24 insertions(+), 34 deletions(-)
-> 
-> diff --git a/arch/parisc/kernel/signal.c b/arch/parisc/kernel/signal.c
-> index 1cba8f2..012d4fa 100644
-> --- a/arch/parisc/kernel/signal.c
-> +++ b/arch/parisc/kernel/signal.c
-> @@ -227,8 +227,8 @@ setup_sigcontext(struct sigcontext __user *sc, struct pt_regs *regs, int in_sysc
->  }
->  
->  static long
-> -setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
-> -	       sigset_t *set, struct pt_regs *regs, int in_syscall)
-> +setup_rt_frame(struct ksignal *ksig, sigset_t *set, struct pt_regs *regs,
-> +	       int in_syscall)
->  {
->  	struct rt_sigframe __user *frame;
->  	unsigned long rp, usp;
-> @@ -241,10 +241,10 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
->  	
->  	usp = (regs->gr[30] & ~(0x01UL));
->  	/*FIXME: frame_size parameter is unused, remove it. */
-> -	frame = get_sigframe(ka, usp, sizeof(*frame));
-> +	frame = get_sigframe(&ksig->ka, usp, sizeof(*frame));
->  
->  	DBG(1,"SETUP_RT_FRAME: START\n");
-> -	DBG(1,"setup_rt_frame: frame %p info %p\n", frame, info);
-> +	DBG(1,"setup_rt_frame: frame %p info %p\n", frame, ksig->info);
->  
->  	
->  #ifdef CONFIG_64BIT
-> @@ -253,7 +253,7 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
->  	
->  	if (is_compat_task()) {
->  		DBG(1,"setup_rt_frame: frame->info = 0x%p\n", &compat_frame->info);
-> -		err |= copy_siginfo_to_user32(&compat_frame->info, info);
-> +		err |= copy_siginfo_to_user32(&compat_frame->info, &ksig->info);
->  		err |= __compat_save_altstack( &compat_frame->uc.uc_stack, regs->gr[30]);
->  		DBG(1,"setup_rt_frame: frame->uc = 0x%p\n", &compat_frame->uc);
->  		DBG(1,"setup_rt_frame: frame->uc.uc_mcontext = 0x%p\n", &compat_frame->uc.uc_mcontext);
-> @@ -265,7 +265,7 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
->  #endif
->  	{	
->  		DBG(1,"setup_rt_frame: frame->info = 0x%p\n", &frame->info);
-> -		err |= copy_siginfo_to_user(&frame->info, info);
-> +		err |= copy_siginfo_to_user(&frame->info, &ksig->info);
->  		err |= __save_altstack(&frame->uc.uc_stack, regs->gr[30]);
->  		DBG(1,"setup_rt_frame: frame->uc = 0x%p\n", &frame->uc);
->  		DBG(1,"setup_rt_frame: frame->uc.uc_mcontext = 0x%p\n", &frame->uc.uc_mcontext);
-> @@ -275,7 +275,7 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
->  	}
->  	
->  	if (err)
-> -		goto give_sigsegv;
-> +		return -EFAULT;
->  
->  	/* Set up to return from userspace.  If provided, use a stub
->  	   already in userspace. The first words of tramp are used to
-> @@ -312,9 +312,9 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
->  	rp = (unsigned long) &frame->tramp[SIGRESTARTBLOCK_TRAMP];
->  
->  	if (err)
-> -		goto give_sigsegv;
-> +		return -EFAULT;
->  
-> -	haddr = A(ka->sa.sa_handler);
-> +	haddr = A(ksig->ka.sa.sa_handler);
->  	/* The sa_handler may be a pointer to a function descriptor */
->  #ifdef CONFIG_64BIT
->  	if (is_compat_task()) {
-> @@ -326,7 +326,7 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
->  			err = __copy_from_user(&fdesc, ufdesc, sizeof(fdesc));
->  
->  			if (err)
-> -				goto give_sigsegv;
-> +				return -EFAULT;
->  
->  			haddr = fdesc.addr;
->  			regs->gr[19] = fdesc.gp;
-> @@ -339,7 +339,7 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
->  		err = __copy_from_user(&fdesc, ufdesc, sizeof(fdesc));
->  		
->  		if (err)
-> -			goto give_sigsegv;
-> +			return -EFAULT;
->  		
->  		haddr = fdesc.addr;
->  		regs->gr[19] = fdesc.gp;
-> @@ -386,7 +386,7 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
->  	}
->  
->  	regs->gr[2]  = rp;                /* userland return pointer */
-> -	regs->gr[26] = sig;               /* signal number */
-> +	regs->gr[26] = ksig->sig;               /* signal number */
->  	
->  #ifdef CONFIG_64BIT
->  	if (is_compat_task()) {
-> @@ -410,11 +410,6 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
->  	       current->comm, current->pid, frame, regs->gr[30],
->  	       regs->iaoq[0], regs->iaoq[1], rp);
->  
-> -	return 1;
-> -
-> -give_sigsegv:
-> -	DBG(1,"setup_rt_frame: sending SIGSEGV\n");
-> -	force_sigsegv(sig, current);
->  	return 0;
->  }
->  
-> @@ -423,20 +418,19 @@ give_sigsegv:
->   */	
->  
->  static void
-> -handle_signal(unsigned long sig, siginfo_t *info, struct k_sigaction *ka,
-> -		struct pt_regs *regs, int in_syscall)
-> +handle_signal(struct ksignal *ksig, struct pt_regs *regs, int in_syscall)
->  {
-> +	int ret;
->  	sigset_t *oldset = sigmask_to_save();
-> +
->  	DBG(1,"handle_signal: sig=%ld, ka=%p, info=%p, oldset=%p, regs=%p\n",
-> -	       sig, ka, info, oldset, regs);
-> +	       ksig->sig, ksig->ka, ksig->info, oldset, regs);
->  	
->  	/* Set up the stack frame */
-> -	if (!setup_rt_frame(sig, ka, info, oldset, regs, in_syscall))
-> -		return;
-> +	ret = setup_rt_frame(ksig, oldset, regs, in_syscall);
->  
-> -	signal_delivered(sig, info, ka, regs, 
-> -		test_thread_flag(TIF_SINGLESTEP) ||
-> -		test_thread_flag(TIF_BLOCKSTEP));
-> +	signal_setup_done(ret, ksig, test_thread_flag(TIF_SINGLESTEP) ||
-> +			  test_thread_flag(TIF_BLOCKSTEP));
->  
->  	DBG(1,KERN_DEBUG "do_signal: Exit (success), regs->gr[28] = %ld\n",
->  		regs->gr[28]);
-> @@ -544,22 +538,18 @@ insert_restart_trampoline(struct pt_regs *regs)
->  asmlinkage void
->  do_signal(struct pt_regs *regs, long in_syscall)
->  {
-> -	siginfo_t info;
-> -	struct k_sigaction ka;
-> -	int signr;
-> +	struct ksignal ksig;
->  
->  	DBG(1,"\ndo_signal: regs=0x%p, sr7 %#lx, in_syscall=%d\n",
->  	       regs, regs->sr[7], in_syscall);
->  
-> -	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
-> -	DBG(3,"do_signal: signr = %d, regs->gr[28] = %ld\n", signr, regs->gr[28]); 
-> -	
-> -	if (signr > 0) {
-> +	if (get_signal(&ksig)) {
-> +		DBG(3,"do_signal: signr = %d, regs->gr[28] = %ld\n", signr, regs->gr[28]);
->  		/* Restart a system call if necessary. */
->  		if (in_syscall)
-> -			syscall_restart(regs, &ka);
-> +			syscall_restart(regs, &ksig.ka);
->  
-> -		handle_signal(signr, &info, &ka, regs, in_syscall);
-> +		handle_signal(&ksig, regs, in_syscall);
->  		return;
->  	}
->  
-> -- 
-> 2.0.1
-> 
-> 
