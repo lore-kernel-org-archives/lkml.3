@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757215AbaGNUEO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 16:04:14 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:38775 "EHLO
+	id S932232AbaGNUEl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 16:04:41 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:24160 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756963AbaGNUDa (ORCPT
+	by vger.kernel.org with ESMTP id S1756358AbaGNUEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 16:03:30 -0400
-Message-Id: <20140714200327.940146767@goodmis.org>
+	Mon, 14 Jul 2014 16:04:36 -0400
+Message-Id: <20140714200435.542430985@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Mon, 14 Jul 2014 16:03:15 -0400
+Date: Mon, 14 Jul 2014 16:04:21 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
@@ -20,7 +20,7 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         stable-rt@vger.kernel.org, Clark Williams <williams@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>
 Subject: [PATCH RT 1/3] sched: Do not clear PF_NO_SETAFFINITY flag in select_fallback_rq()
-References: <20140714200314.105504666@goodmis.org>
+References: <20140714200420.805309842@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline; filename=0001-sched-Do-not-clear-PF_NO_SETAFFINITY-flag-in-select_.patch
@@ -30,7 +30,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12.24-rt38-rc1 stable review patch.
+3.10.47-rt50-rc1 stable review patch.
 If anyone has any objections, please let me know.
 
 ------------------
@@ -65,7 +65,7 @@ Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
  1 file changed, 6 deletions(-)
 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index f6f3b3d72578..400ae9869c0e 100644
+index a060a092e92b..b8acecc0600f 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
 @@ -1289,12 +1289,6 @@ out:
