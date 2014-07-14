@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757457AbaGNXCz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 19:02:55 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:53253 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756749AbaGNXCu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 19:02:50 -0400
-X-Sasl-enc: 8avtEqAAKSsD36knAWlBTTz9J+Tzo2cOUleMSug2C2tq 1405378969
-Date: Mon, 14 Jul 2014 20:02:43 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org,
-        ibm-acpi-devel@lists.sourceforge.net, ibm-acpi@hmh.eng.br,
-        matthew.garrett@nebula.com
-Subject: Re: [PATCH] drivers/platform/x86/thinkpad_acpi.c: don't test
- unsigned int for negativity
-Message-ID: <20140714230243.GD5939@khazad-dum.debian.net>
-References: <1405378581-12146-1-git-send-email-andrey.krieger.utkin@gmail.com>
+	id S1757534AbaGNXIw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 19:08:52 -0400
+Received: from imp01.mtu.ru ([62.5.255.10]:37000 "EHLO imp01.mtu.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757191AbaGNXIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 19:08:51 -0400
+X-Spam-Flag: NO
+Message-ID: <53C4623F.5090901@pavlinux.ru>
+Date: Tue, 15 Jul 2014 03:05:35 +0400
+From: Pavel Vasilyev <pavel@pavlinux.ru>
+Reply-To: pavel@pavlinux.ru
+Organization: Pavlinux. Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405378581-12146-1-git-send-email-andrey.krieger.utkin@gmail.com>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: Re: [PATCH RT 0/4] Linux 3.2.60-rt89-rc1
+References: <20140714200634.590977709@goodmis.org>
+In-Reply-To: <20140714200634.590977709@goodmis.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jul 2014, Andrey Utkin wrote:
-> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=80231
-> Reported-by: David Binderman <dcb314@hotmail.com>
-> Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+15.07.2014 00:06, Steven Rostedt пишет:
+> Dear RT Folks,
+>
+> This is the RT stable review cycle of patch 3.2.60-rt89-rc1.
 
-Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Actually 3.2.61
 
-> ---
->  drivers/platform/x86/thinkpad_acpi.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
-> index d82f196..4d59b09 100644
-> --- a/drivers/platform/x86/thinkpad_acpi.c
-> +++ b/drivers/platform/x86/thinkpad_acpi.c
-> @@ -6144,7 +6144,7 @@ static int brightness_set(unsigned int value)
->  {
->  	int res;
->  
-> -	if (value > bright_maxlvl || value < 0)
-> +	if (value > bright_maxlvl)
->  		return -EINVAL;
->  
->  	vdbg_printk(TPACPI_DBG_BRGHT,
+kernel/irq/manage.c
+kernel/rtmutex.c
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+This files FUZZED :(
