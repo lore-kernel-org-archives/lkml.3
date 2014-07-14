@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558AbaGNKnn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 06:43:43 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:60781 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754494AbaGNKnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 06:43:33 -0400
+	id S1754517AbaGNKng (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 06:43:36 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:39069 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754468AbaGNKn2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 06:43:28 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <linux-kernel@vger.kernel.org>, <tony@atomide.com>,
         <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-omap@vger.kernel.org>
-CC: <kishon@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Tero Kristo <t-kristo@ti.com>, Paul Walmsley <paul@pwsan.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>
-Subject: [RESEND PATCH 5/8] ARM: dts: dra7xx-clocks: Add missing clocks for second PCIe PHY instance
-Date: Mon, 14 Jul 2014 16:12:20 +0530
-Message-ID: <1405334543-25509-6-git-send-email-kishon@ti.com>
+CC: <kishon@ti.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: [RESEND PATCH 6/8] ARM: dts: dra7: Add dt data for PCIe PHY control module
+Date: Mon, 14 Jul 2014 16:12:21 +0530
+Message-ID: <1405334543-25509-7-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1405334543-25509-1-git-send-email-kishon@ti.com>
 References: <1405334543-25509-1-git-send-email-kishon@ti.com>
@@ -26,12 +26,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added missing clocks used by second instance of PCIe PHY.
-The documention for this nodes can be found @ ../bindings/clock/ti/gate.txt.
+Added dt data for PCIe PHY control module used by PCIe PHY.
+The documention for this node can be found @ ../bindings/phy/ti-phy.txt
 
-Cc: Rajendra Nayak <rnayak@ti.com>
-Cc: Tero Kristo <t-kristo@ti.com>
-Cc: Paul Walmsley <paul@pwsan.com>
 Cc: Tony Lindgren <tony@atomide.com>
 Cc: Rob Herring <robh+dt@kernel.org>
 Cc: Pawel Moll <pawel.moll@arm.com>
@@ -39,58 +36,37 @@ Cc: Mark Rutland <mark.rutland@arm.com>
 Cc: Kumar Gala <galak@codeaurora.org>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- arch/arm/boot/dts/dra7xx-clocks.dtsi |   24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ arch/arm/boot/dts/dra7.dtsi |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
-diff --git a/arch/arm/boot/dts/dra7xx-clocks.dtsi b/arch/arm/boot/dts/dra7xx-clocks.dtsi
-index fe5db55..b48f18b 100644
---- a/arch/arm/boot/dts/dra7xx-clocks.dtsi
-+++ b/arch/arm/boot/dts/dra7xx-clocks.dtsi
-@@ -1173,6 +1173,14 @@
- 		ti,bit-shift = <8>;
- 	};
+diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+index 961be6b..e4999e4 100644
+--- a/arch/arm/boot/dts/dra7.dtsi
++++ b/arch/arm/boot/dts/dra7.dtsi
+@@ -828,6 +828,23 @@
+ 			ti,hwmods = "sata";
+ 		};
  
-+	optfclk_pciephy2_32khz: optfclk_pciephy2_32khz@4a0093b8 {
-+		compatible = "ti,gate-clock";
-+		clocks = <&sys_32k_ck>;
-+		#clock-cells = <0>;
-+		reg = <0x13b8>;
-+		ti,bit-shift = <8>;
-+	};
++		omap_control_pcie1phy: control-phy@0x4a003c40 {
++			compatible = "ti,control-phy-pcie";
++			reg = <0x4a003c40 0x4>, <0x4a003c14 0x4>, <0x4a003c34 0x4>;
++			reg-names = "power", "control_sma", "pcie_pcs";
++			clocks = <&sys_clkin1>;
++			clock-names = "sysclk";
++		};
 +
- 	optfclk_pciephy_div: optfclk_pciephy_div@4a00821c {
- 		compatible = "ti,divider-clock";
- 		clocks = <&apll_pcie_ck>;
-@@ -1191,6 +1199,14 @@
- 		ti,bit-shift = <9>;
- 	};
- 
-+	optfclk_pciephy2_clk: optfclk_pciephy2_clk@4a0093b8 {
-+		compatible = "ti,gate-clock";
-+		clocks = <&apll_pcie_ck>;
-+		#clock-cells = <0>;
-+		reg = <0x13b8>;
-+		ti,bit-shift = <9>;
-+	};
++		omap_control_pcie2phy: control-pcie@0x4a003c44 {
++			compatible = "ti,control-phy-pcie";
++			reg = <0x4a003c44 0x4>, <0x4a003c14 0x4>, <0x4a003c34 0x4>;
++			reg-names = "power", "control_sma", "pcie_pcs";
++			clocks = <&sys_clkin1>;
++			clock-names = "sysclk";
++			status = "disabled";
++		};
 +
- 	optfclk_pciephy1_div_clk: optfclk_pciephy1_div_clk@4a0093b0 {
- 		compatible = "ti,gate-clock";
- 		clocks = <&optfclk_pciephy_div>;
-@@ -1199,6 +1215,14 @@
- 		ti,bit-shift = <10>;
- 	};
- 
-+	optfclk_pciephy2_div_clk: optfclk_pciephy2_div_clk@4a0093b8 {
-+		compatible = "ti,gate-clock";
-+		clocks = <&optfclk_pciephy_div>;
-+		#clock-cells = <0>;
-+		reg = <0x13b8>;
-+		ti,bit-shift = <10>;
-+	};
-+
- 	apll_pcie_clkvcoldo: apll_pcie_clkvcoldo {
- 		#clock-cells = <0>;
- 		compatible = "fixed-factor-clock";
+ 		omap_control_usb2phy1: control-phy@4a002300 {
+ 			compatible = "ti,control-phy-usb2";
+ 			reg = <0x4a002300 0x4>;
 -- 
 1.7.9.5
 
