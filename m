@@ -1,93 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756269AbaGNSkq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 14:40:46 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:55962 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753087AbaGNSkh (ORCPT
+	id S932217AbaGNSnS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 14:43:18 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:50344 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754232AbaGNSnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 14:40:37 -0400
-Message-ID: <1405363234.13661.12.camel@x220>
-Subject: Re: [PATCH] mach-s3c64xx: Remove all defintions not related to
- regs-clocks
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Nicholas Krause <xerofoify@gmail.com>, ben-linux@fluff.org,
-        kgene.kim@samsung.com, linux@arm.linux.org.uk, tomasz.figa@gmail.com,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 14 Jul 2014 20:40:34 +0200
-In-Reply-To: <53C4201E.3020708@infradead.org>
-References: <1405361664-5210-1-git-send-email-xerofoify@gmail.com>
-	 <53C4201E.3020708@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 14 Jul 2014 18:40:35.0953 (UTC) FILETIME=[19D67E10:01CF9F93]
-X-RcptDomain: vger.kernel.org
+	Mon, 14 Jul 2014 14:43:06 -0400
+Date: Mon, 14 Jul 2014 20:43:02 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 12/13] mm: memcontrol: rewrite charge API
+Message-ID: <20140714184302.GA2094@dhcp22.suse.cz>
+References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
+ <1403124045-24361-13-git-send-email-hannes@cmpxchg.org>
+ <20140714150446.GD30713@dhcp22.suse.cz>
+ <20140714171324.GQ29639@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140714171324.GQ29639@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-07-14 at 11:23 -0700, Randy Dunlap wrote:
-> On 07/14/14 11:14, Nicholas Krause wrote:
-> > This patch addresses the fix me message in this file that states to
-> > remove all definitions not related to reg-clocks in this header
-> > file.
+On Mon 14-07-14 13:13:24, Johannes Weiner wrote:
+> On Mon, Jul 14, 2014 at 05:04:46PM +0200, Michal Hocko wrote:
+> > Hi,
+> > I've finally manage to untagle myself from internal stuff...
 > > 
-> > Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> > ---
-> >  arch/arm/mach-s3c64xx/include/mach/regs-clock.h | 22 +---------------------
-> >  1 file changed, 1 insertion(+), 21 deletions(-)
+> > On Wed 18-06-14 16:40:44, Johannes Weiner wrote:
+> > > The memcg charge API charges pages before they are rmapped - i.e. have
+> > > an actual "type" - and so every callsite needs its own set of charge
+> > > and uncharge functions to know what type is being operated on.  Worse,
+> > > uncharge has to happen from a context that is still type-specific,
+> > > rather than at the end of the page's lifetime with exclusive access,
+> > > and so requires a lot of synchronization.
+> > > 
+> > > Rewrite the charge API to provide a generic set of try_charge(),
+> > > commit_charge() and cancel_charge() transaction operations, much like
+> > > what's currently done for swap-in:
+> > > 
+> > >   mem_cgroup_try_charge() attempts to reserve a charge, reclaiming
+> > >   pages from the memcg if necessary.
+> > > 
+> > >   mem_cgroup_commit_charge() commits the page to the charge once it
+> > >   has a valid page->mapping and PageAnon() reliably tells the type.
+> > > 
+> > >   mem_cgroup_cancel_charge() aborts the transaction.
+> > > 
+> > > This reduces the charge API and enables subsequent patches to
+> > > drastically simplify uncharging.
+> > > 
+> > > As pages need to be committed after rmap is established but before
+> > > they are added to the LRU, page_add_new_anon_rmap() must stop doing
+> > > LRU additions again.  Revive lru_cache_add_active_or_unevictable().
 > > 
-> > diff --git a/arch/arm/mach-s3c64xx/include/mach/regs-clock.h b/arch/arm/mach-s3c64xx/include/mach/regs-clock.h
-> > index 4f44aac..46e64cc 100644
-> > --- a/arch/arm/mach-s3c64xx/include/mach/regs-clock.h
-> > +++ b/arch/arm/mach-s3c64xx/include/mach/regs-clock.h
-> > @@ -15,24 +15,4 @@
-> >  #ifndef __PLAT_REGS_CLOCK_H
-> >  #define __PLAT_REGS_CLOCK_H __FILE__
-> >  
-> > -/*
-> > - * FIXME: Remove remaining definitions
-> > - */
-> > -
-> > -#define S3C_CLKREG(x)		(S3C_VA_SYS + (x))
-> > -
-> > -#define S3C_PCLK_GATE		S3C_CLKREG(0x34)
-> > -#define S3C6410_CLK_SRC2	S3C_CLKREG(0x10C)
-> > -#define S3C_MEM_SYS_CFG		S3C_CLKREG(0x120)
-> > -
-> > -/* PCLK GATE Registers */
-> > -#define S3C_CLKCON_PCLK_UART3		(1<<4)
-> > -#define S3C_CLKCON_PCLK_UART2		(1<<3)
-> > -#define S3C_CLKCON_PCLK_UART1		(1<<2)
-> > -#define S3C_CLKCON_PCLK_UART0		(1<<1)
-> > -
-> > -/* MEM_SYS_CFG */
-> > -#define MEM_SYS_CFG_INDEP_CF		0x4000
-> > -#define MEM_SYS_CFG_EBI_FIX_PRI_CFCON	0x30
-> > -
-> > -#endif /* _PLAT_REGS_CLOCK_H */
-> > +/#endif /* _PLAT_REGS_CLOCK_H */
+> > I think it would make more sense to do
+> > lru_cache_add_active_or_unevictable in a separate patch for easier
+> > review. Too late, though...
+> > 
+> > Few comments bellow
+> > > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > 
+> > The patch looks correct but the code is quite tricky so I hope I didn't
+> > miss anything.
+> > 
+> > Acked-by: Michal Hocko <mhocko@suse.cz>
 > 
-> I don't know about the other changes, but that last line looks like an error.
-> Did you build anything that #includes this header file?
+> Thanks!
+> 
+> > > @@ -54,28 +54,11 @@ struct mem_cgroup_reclaim_cookie {
+> > >  };
+> > >  
+> > >  #ifdef CONFIG_MEMCG
+> > > -/*
+> > > - * All "charge" functions with gfp_mask should use GFP_KERNEL or
+> > > - * (gfp_mask & GFP_RECLAIM_MASK). In current implementatin, memcg doesn't
+> > > - * alloc memory but reclaims memory from all available zones. So, "where I want
+> > > - * memory from" bits of gfp_mask has no meaning. So any bits of that field is
+> > > - * available but adding a rule is better. charge functions' gfp_mask should
+> > > - * be set to GFP_KERNEL or gfp_mask & GFP_RECLAIM_MASK for avoiding ambiguous
+> > > - * codes.
+> > > - * (Of course, if memcg does memory allocation in future, GFP_KERNEL is sane.)
+> > > - */
+> > 
+> > I think we should slightly modify the comment but the primary idea
+> > should stay there. What about the following?
+> > /*
+> >  * Although memcg charge functions do not allocate any memory they are
+> >  * still getting GFP mask to control the reclaim process (therefore
+> >  * gfp_mask & GFP_RECLAIM_MASK is expected).
+> >  * GFP_KERNEL should be used for the general charge path without any
+> >  * constraints for the reclaim
+> >  * __GFP_WAIT should be cleared for atomic contexts
+> >  * __GFP_NORETRY should be set for charges which might fail rather than
+> >  * spend too much time reclaiming
+> >  * __GFP_NOFAIL should be set for charges which cannot fail.
+> >  */
+> 
+> What *is* the primary idea here?
+> 
+> Taking any kind of gfp mask and interpreting the bits that pertain to
+> you is done in a lot of places already, and there really is no need to
+> duplicate the documentation and risk it getting stale and misleading.
 
-I just did
-    git grep -n S3C_CLKCON_PCLK_UART
+The idea was to document which flags do we care about as not all of them
+are implemented. On the other hand I do agree that stale doc is worse
+than no doc.
 
-It was just a guess. I did not cherry pick the defines that covers! The
-output of that command is, I think, pretty clear. 
-
-Nicholas, I think you've been told already to stop doing what you're
-doing again here. I try not to use colorful language on the net, but
-you're really pushing me here.
-
-Please go find something other to do than grepping the kernel tree for
-FIXMEs!
-
-
-Paul Bolle
-
+[...]
+-- 
+Michal Hocko
+SUSE Labs
