@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756344AbaGNRSB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 13:18:01 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:43766 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752513AbaGNRRx (ORCPT
+	id S1754800AbaGNRVG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 13:21:06 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:39174 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717AbaGNRUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 13:17:53 -0400
+	Mon, 14 Jul 2014 13:20:53 -0400
 MIME-Version: 1.0
-In-Reply-To: <53BBDEE6.1080800@hitachi.com>
-References: <1404276081.7254.1.camel@concordia>
-	<20140702070029.14689.18485.stgit@kbuild-fedora.novalocal>
-	<53BBDEE6.1080800@hitachi.com>
-Date: Mon, 14 Jul 2014 10:17:52 -0700
-Message-ID: <CA+8MBbJH3EfiGctxLpXScGEtvBNXkNVYEnyahihnCie1FgO+9Q@mail.gmail.com>
-Subject: Re: [PATCH v5 2/2] [BUGFIX] kprobes: Fix "Failed to find blacklist"
- error on ia64 and ppc64
-From: Tony Luck <tony.luck@gmail.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-tip-commits@vger.kernel.org,
-        Michael Ellerman <mpe@ellerman.id.au>, akataria@vmware.com,
-        anil.s.keshavamurthy@intel.com,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
-        Thomas Gleixner <tglx@linutronix.de>, Kevin Hao <haokexin@gmail.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, rdunlap@infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>
+In-Reply-To: <CAODwPW9FORb2jnxFi6US6CUJvJzKyUkT8cuSzkPues41hJe+Jw@mail.gmail.com>
+References: <1404954350-26343-1-git-send-email-abrestic@chromium.org>
+	<1404954350-26343-5-git-send-email-abrestic@chromium.org>
+	<CAODwPW9FORb2jnxFi6US6CUJvJzKyUkT8cuSzkPues41hJe+Jw@mail.gmail.com>
+Date: Mon, 14 Jul 2014 10:20:52 -0700
+X-Google-Sender-Auth: H-VY0acQSK5KpALwO2hhB8Ex79k
+Message-ID: <CAL1qeaGCLw0LSE_Oy_VteAyWLHS9D4y-U8+6Mu+cGKEUp3T3GQ@mail.gmail.com>
+Subject: Re: [PATCH 4/4] xhci: Allow xHCI drivers to be built as separate modules
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Julius Werner <jwerner@chromium.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 8, 2014 at 5:07 AM, Masami Hiramatsu
-<masami.hiramatsu.pt@hitachi.com> wrote:
-> Ping?
+On Thu, Jul 10, 2014 at 11:34 AM, Julius Werner <jwerner@chromium.org> wrote:
+>> diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
+>> index af89a90..bafba71 100644
+>> --- a/drivers/usb/host/Makefile
+>> +++ b/drivers/usb/host/Makefile
+>> @@ -15,19 +15,19 @@ fhci-$(CONFIG_FHCI_DEBUG) += fhci-dbg.o
+>>  xhci-hcd-y := xhci.o xhci-mem.o
+>>  xhci-hcd-y += xhci-ring.o xhci-hub.o xhci-dbg.o
+>>  xhci-hcd-y += xhci-trace.o
+>> -xhci-hcd-$(CONFIG_PCI) += xhci-pci.o
+>>
+>> -ifneq ($(CONFIG_USB_XHCI_PLATFORM), )
+>> -       xhci-hcd-y              += xhci-plat.o
+>> +xhci-plat-hcd-y := xhci-plat.o
+>>  ifneq ($(CONFIG_USB_XHCI_MVEBU), )
+>> -       xhci-hcd-y              += xhci-mvebu.o
+>> -endif
 >
-> This patch can be applied without 1/2, and will fix ia64/ppc64 problem.
+> nit: Can do this even simpler now, just
+> "xhci-plat-hcd-$(CONFIG_USB_XHCI_MVEBU) += xhci-mvebu.o" without the
+> ifneq.
 
-Is somebody going to push this upstream? Another week has gone by,
-we are at -rc5, and I'm still seeing the
-
-  Failed to find blacklist a00000010133b150
-
-messages on ia64.
-
--Tony
+Nope - since CONFIG_USB_XHCI_MVEBU can be 'y' or 'm' we need the ifneq
+here (which matches against both) to ensure xhci-mvebu.o is built is
+part of xhci-plat-hcd.o.
