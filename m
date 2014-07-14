@@ -1,106 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752314AbaGNB3l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 21:29:41 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:42856 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751661AbaGNB3g (ORCPT
+	id S1752454AbaGNBfi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 21:35:38 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:36689 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751691AbaGNBfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 21:29:36 -0400
-Message-ID: <53C33275.1000900@linux.vnet.ibm.com>
-Date: Mon, 14 Jul 2014 09:29:25 +0800
-From: Michael wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Sun, 13 Jul 2014 21:35:30 -0400
+Message-ID: <53C333D9.4030907@hitachi.com>
+Date: Mon, 14 Jul 2014 10:35:21 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>, Mike Galbraith <umgwanakikbuti@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Alex Shi <alex.shi@linaro.org>, Paul Turner <pjt@google.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched: select 'idle' cfs_rq per task-group to prevent
- tg-internal imbalance
-References: <53A11A89.5000602@linux.vnet.ibm.com> <20140623094251.GS19860@laptop.programming.kicks-ass.net> <53A8F1DE.2060908@linux.vnet.ibm.com> <20140701082020.GL6758@twins.programming.kicks-ass.net> <53B273A2.5050500@linux.vnet.ibm.com> <53B41B7E.8020009@redhat.com> <1404359462.5137.72.camel@marge.simpson.net> <53C00CC1.1030401@redhat.com>
-In-Reply-To: <53C00CC1.1030401@redhat.com>
+To: Josh Poimboeuf <jpoimboe@redhat.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Oleg Nesterov <oleg@redhat.com>, Seth Jennings <sjenning@redhat.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [RFC][PATCH 0/3] ftrace: Add dynamically allocated trampolines
+References: <20140703200750.648550267@goodmis.org> <20140710213620.GA19858@treble.redhat.com> <alpine.LNX.2.00.1407102342050.8779@pobox.suse.cz> <53BF4B5A.3000302@hitachi.com> <alpine.LNX.2.00.1407111523270.8779@pobox.suse.cz> <20140711142928.GA13037@treble.redhat.com>
+In-Reply-To: <20140711142928.GA13037@treble.redhat.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14071401-5564-0000-0000-00000F09AED3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2014 12:11 AM, Rik van Riel wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-[snip]
->>
->> That's full wake balance.. if that was cheap,
->> select_idle_sibling() would not exist.
+(2014/07/11 23:29), Josh Poimboeuf wrote:
+[...]
 > 
-> Full wake balance iterates over all the groups in the system,
-> select_idle_sibling only over one LLC domain.
-
-Furthermore, balance will calculate the load and do comparison, which
-cost many cycles, while select_idle_sibling() just check idle status.
-
+>>From 951d2aec17885a62905df6b910dc705d99c63993 Mon Sep 17 00:00:00 2001
+> From: Josh Poimboeuf <jpoimboe@redhat.com>
+> Date: Fri, 11 Jul 2014 08:58:33 -0500
+> Subject: [PATCH] x86/dumpstack: fix stack traces for generated code
 > 
-> If no CPU in the LLC domain is idle, select_idle_sibling will
-> iterate over all of them.  
+> If a function in the stack trace is dynamically generated, for example an
+> ftrace dynamically generated trampoline, print_context_stack() gets confused
+> and ends up showing all the following addresses as unreliable:
+> 
+>   [  934.546013]  [<ffffffff81700312>] dump_stack+0x45/0x56
+>   [  934.546020]  [<ffffffff8125f5b0>] ? meminfo_proc_open+0x30/0x30
+>   [  934.546027]  [<ffffffffa080a494>] kpatch_ftrace_handler+0x14/0xf0 [kpatch]
+>   [  934.546058]  [<ffffffff812143ae>] ? seq_read+0x2de/0x3b0
+>   [  934.546062]  [<ffffffff812143ae>] ? seq_read+0x2de/0x3b0
+>   [  934.546067]  [<ffffffff8125f5b5>] ? meminfo_proc_show+0x5/0x5e0
+>   [  934.546071]  [<ffffffff8125f5b5>] ? meminfo_proc_show+0x5/0x5e0
+>   [  934.546075]  [<ffffffff8121423a>] ? seq_read+0x16a/0x3b0
+>   [  934.546081]  [<ffffffff8125768d>] ? proc_reg_read+0x3d/0x80
+>   [  934.546088]  [<ffffffff811f0668>] ? vfs_read+0x98/0x170
+>   [  934.546093]  [<ffffffff811f1345>] ? SyS_read+0x55/0xd0
+>   [  934.546099]  [<ffffffff81707969>] ? system_call_fastpath+0x16/0x1b
+> 
+> Once it encounters an address which is not in the kernel's text area, it gets
+> confused and stops updating the frame pointer.
 
-Just the first cpu of groups, for example the cpu0:
+Right, this uses a module_alloc to get a memory for trampline, but
+it just allocates a page in executable vmalloc area. We need a hack
+in __kernel_text_address if we really want to use that.
 
-sd1:
-	tg0			tg1
-	cpu0	cpu1		cpu2	cpu3
-sd0:
-	tg0	tg1
-	cpu0	cpu1
+> The __kernel_text_address() check isn't needed when determining whether an
+> address is reliable.  It's only needed when deciding whether to print an
+> unreliable address.
 
-The thing we'll check is:
-
-sd1:
-	idle_cpu(0)	//busy
-	idle_cpu(2)	//busy
-sd0:
-	idle_cpu(0)	//busy
-
-That's really cheap compared with balance path...
-
-During this iteration, which the
-> code already does, it should be possible to identify the least
-> loaded of the CPUs and pick that one.
-
-That will make select_idle_sibling() more close to balance path(just the
-start domain lower), IMHO this seems like not such a good idea... what
-we gain doesn't worth the overhead.
-
-But if we have testing show this modify could benefit most of the
-workloads (I don't think so but who knows...), then we'll have the
-reason to add some load comparison logical inside that quick path ;-)
-
-Regards,
-Michael Wang
+Yeah, I guess that is for the case that the frame pointer is broken.
 
 > 
-> - -- 
-> All rights reversed
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v1
-> Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+> Here's the same stack trace with this patch:
 > 
-> iQEcBAEBAgAGBQJTwAzBAAoJEM553pKExN6DlrEH/RKQPdAdMFK/pxZ/2f9TCXFK
-> Vq25LWZeJQhNOrH3Q6VzTTfAG06O8+Bjxfb+SR6BOHCtD4kCBqaBdwVVUDXC+MbK
-> NdBa3GtCT3ahvguiYLPEHL1vugND2yzHUgnr9EhUgk6zhnLxfvhIIJj7uv+ZRsri
-> o8DsLrIG1jqDGVbbu5ssZ37w6cldoFBw0FAHcVAquoM2SP+/MuatW1SCkRP31IVL
-> q0dssP1CD0Nkecz+S6WSI59c0Wt0c73oWNg/q41a/kha7RI1J5VF5yNFacq/uL0g
-> Xxyb0mOiJarqMtzuq5ItlOiTry+BpqY1jFhN5ZhFjt9mtvpTR1C/tcXpOw77y0Y=
-> =BEJk
-> -----END PGP SIGNATURE-----
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>   [ 1314.612287]  [<ffffffff81700312>] dump_stack+0x45/0x56
+>   [ 1314.612290]  [<ffffffff8125f5b0>] ? meminfo_proc_open+0x30/0x30
+>   [ 1314.612293]  [<ffffffffa080a494>] kpatch_ftrace_handler+0x14/0xf0 [kpatch]
+>   [ 1314.612306]  [<ffffffffa00160c4>] 0xffffffffa00160c3
+
+Here, this still has a wrong entry. Maybe the trampline doesn't setup
+frame pointer (bp) correctly.
+
+Thank you,
+
+>   [ 1314.612309]  [<ffffffff812143ae>] ? seq_read+0x2de/0x3b0
+>   [ 1314.612311]  [<ffffffff812143ae>] ? seq_read+0x2de/0x3b0
+>   [ 1314.612312]  [<ffffffff8125f5b5>] ? meminfo_proc_show+0x5/0x5e0
+>   [ 1314.612314]  [<ffffffff8125f5b5>] ? meminfo_proc_show+0x5/0x5e0
+>   [ 1314.612315]  [<ffffffff8121423a>] ? seq_read+0x16a/0x3b0
+>   [ 1314.612318]  [<ffffffff8125768d>] proc_reg_read+0x3d/0x80
+>   [ 1314.612320]  [<ffffffff811f0668>] vfs_read+0x98/0x170
+>   [ 1314.612322]  [<ffffffff811f1345>] SyS_read+0x55/0xd0
+>   [ 1314.612324]  [<ffffffff81707969>] system_call_fastpath+0x16/0x1b
+> ---
+>  arch/x86/kernel/dumpstack.c | 15 +++++++--------
+>  1 file changed, 7 insertions(+), 8 deletions(-)
 > 
+> diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+> index b74ebc7..db0a33c 100644
+> --- a/arch/x86/kernel/dumpstack.c
+> +++ b/arch/x86/kernel/dumpstack.c
+> @@ -102,14 +102,13 @@ print_context_stack(struct thread_info *tinfo,
+>  		unsigned long addr;
+>  
+>  		addr = *stack;
+> -		if (__kernel_text_address(addr)) {
+> -			if ((unsigned long) stack == bp + sizeof(long)) {
+> -				ops->address(data, addr, 1);
+> -				frame = frame->next_frame;
+> -				bp = (unsigned long) frame;
+> -			} else {
+> -				ops->address(data, addr, 0);
+> -			}
+> +		if ((unsigned long) stack == bp + sizeof(long)) {
+> +			ops->address(data, addr, 1);
+> +			frame = frame->next_frame;
+> +			bp = (unsigned long) frame;
+> +			print_ftrace_graph_addr(addr, data, ops, tinfo, graph);
+> +		} else if (__kernel_text_address(addr)) {
+> +			ops->address(data, addr, 0);
+>  			print_ftrace_graph_addr(addr, data, ops, tinfo, graph);
+>  		}
+>  		stack++;
+> 
+
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
