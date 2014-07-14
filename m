@@ -1,44 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753168AbaGNIlF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 04:41:05 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:55237 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745AbaGNIlA (ORCPT
+	id S1753672AbaGNIlT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 04:41:19 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:32837 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753280AbaGNIlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 04:41:00 -0400
+	Mon, 14 Jul 2014 04:41:08 -0400
 From: varkabhadram@gmail.com
 To: netdev@vger.kernel.org
 Cc: Thomas.Lendacky@amd.com, geert+renesas@linux-m68k.org,
         ebiederm@xmission.com, macro@linux-mips.org,
         linux-kernel@vger.kernel.org, davem@davemloft.net,
         Varka Bhadram <varkab@cdac.in>
-Subject: [PATCH net-next v3 0/6] cleanup for AMD8111E ethernet driver
-Date: Mon, 14 Jul 2014 14:09:03 +0530
-Message-Id: <1405327149-6554-1-git-send-email-varkabhadram@gmail.com>
+Subject: [PATCH net-next v3 2/6] ethernet: amd: use devm_ioremap()
+Date: Mon, 14 Jul 2014 14:09:05 +0530
+Message-Id: <1405327149-6554-3-git-send-email-varkabhadram@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1405327149-6554-1-git-send-email-varkabhadram@gmail.com>
+References: <1405327149-6554-1-git-send-email-varkabhadram@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Varka Bhadram <varkab@cdac.in>
 
-This series cleanup for AMD8111E ethernet driver
+This patch replace ioremap() with the devm_ioremap() so that
+the resource will be freed automatically with the probe failed.
 
-v1: fix checkpatch warnings.
-v2: added new line in debug messages
+Signed-off-by: Varka Bhadram <varkab@cdac.in>
+---
+ drivers/net/ethernet/amd/amd8111e.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-Varka Bhadram (6):
-  ethernet: amd: move amd111e_remove_one after probe
-  ethernet: amd: use devm_ioremap()
-  ethernet: amd: dynamic debug fixes
-  ethernet: amd: fix comment styles
-  ethernet: amd: fix pci device ids
-  ethernet: amd: fix 'foo* bar'
-
- drivers/net/ethernet/amd/amd8111e.c |  363 +++++++++++++++++------------------
- 1 file changed, 176 insertions(+), 187 deletions(-)
-
+diff --git a/drivers/net/ethernet/amd/amd8111e.c b/drivers/net/ethernet/amd/amd8111e.c
+index ddd09e8..433107c 100644
+--- a/drivers/net/ethernet/amd/amd8111e.c
++++ b/drivers/net/ethernet/amd/amd8111e.c
+@@ -1866,7 +1866,7 @@ static int amd8111e_probe_one(struct pci_dev *pdev,
+ 
+ 	spin_lock_init(&lp->lock);
+ 
+-	lp->mmio = ioremap(reg_addr, reg_len);
++	lp->mmio = devm_ioremap(&pdev->dev, reg_addr, reg_len);
+ 	if (!lp->mmio) {
+ 		printk(KERN_ERR "amd8111e: Cannot map device registers, "
+ 		       "exiting\n");
+@@ -1913,7 +1913,7 @@ static int amd8111e_probe_one(struct pci_dev *pdev,
+ 	if (err) {
+ 		printk(KERN_ERR "amd8111e: Cannot register net device, "
+ 		       "exiting.\n");
+-		goto err_iounmap;
++		goto err_free_dev;
+ 	}
+ 
+ 	pci_set_drvdata(pdev, dev);
+@@ -1943,8 +1943,6 @@ static int amd8111e_probe_one(struct pci_dev *pdev,
+ 		printk(KERN_INFO "%s: Couldn't detect MII PHY, assuming address 0x01\n",
+ 		       dev->name);
+     	return 0;
+-err_iounmap:
+-	iounmap(lp->mmio);
+ 
+ err_free_dev:
+ 	free_netdev(dev);
+@@ -1964,7 +1962,6 @@ static void amd8111e_remove_one(struct pci_dev *pdev)
+ 
+ 	if (dev) {
+ 		unregister_netdev(dev);
+-		iounmap(((struct amd8111e_priv *)netdev_priv(dev))->mmio);
+ 		free_netdev(dev);
+ 		pci_release_regions(pdev);
+ 		pci_disable_device(pdev);
 -- 
 1.7.9.5
 
