@@ -1,71 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755838AbaGNOvz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 10:51:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27606 "EHLO mx1.redhat.com"
+	id S1755871AbaGNOwL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 10:52:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36312 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755622AbaGNOvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 10:51:48 -0400
-Date: Mon, 14 Jul 2014 16:51:30 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
+	id S1755622AbaGNOv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 10:51:57 -0400
+Date: Mon, 14 Jul 2014 16:49:53 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 4/4] perf tools: Add --debug optionto set debug variable
-Message-ID: <20140714145130.GG17761@krava.redhat.com>
-References: <1405202188-5029-1-git-send-email-jolsa@kernel.org>
- <1405202188-5029-5-git-send-email-jolsa@kernel.org>
- <87egxo2xat.fsf@sejong.aot.lge.com>
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>
+Subject: Re: sched, timers: use after free in __lock_task_sighand when
+	exiting a process
+Message-ID: <20140714144953.GA8173@redhat.com>
+References: <53C2FF4D.3020606@oracle.com> <53C31A34.8030500@oracle.com> <20140714090449.GL9918@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87egxo2xat.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140714090449.GL9918@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 04:51:06PM +0900, Namhyung Kim wrote:
-> Hi Jiri,
-> 
-> On Sat, 12 Jul 2014 23:56:28 +0200, Jiri Olsa wrote:
-> > Adding --debug option as a way to setup debug variables.
-> > Starting with support for verbose, more will come.
+On 07/14, Peter Zijlstra wrote:
+>
+> On Sun, Jul 13, 2014 at 07:45:56PM -0400, Sasha Levin wrote:
 > >
-> > It's possible to use it now with report command:
-> >   $ perf report --debug verbose
-> >   $ perf report --debug verbose=2
-> >
-> > I'll need this support to add separated debug variable
-> > for ordered events change in order to separate debug
-> > output out of standard verbose stream.
-> 
-> Hmm.. okay.  I think there'll be more users for this.
-> 
-> 
-> >
-> > Also removing unneeded getopt.h includes.
-> 
-> I guess Arnaldo wants to see it as a separate change ;-)
+> > [  876.319044] ==================================================================
+> > [  876.319044] AddressSanitizer: use after free in do_raw_spin_unlock+0x4b/0x1a0 at addr ffff8803e48cec18
+> > [  876.319044] page:ffffea000f923380 count:0 mapcount:0 mapping:          (null) index:0x0
+> > [  876.319044] page flags: 0x2fffff80008000(tail)
+> > [  876.319044] page dumped because: kasan error
+> > [  876.319044] CPU: 26 PID: 8749 Comm: trinity-watchdo Tainted: G        W      3.16.0-rc4-next-20140711-sasha-00046-g07d3099-dirty #817
+> > [  876.319044]  00000000000000fb 0000000000000000 ffffea000f923380 ffff8805c417fc70
+> > [  876.319044]  ffffffff9de47068 ffff8805c417fd40 ffff8805c417fd30 ffffffff99426f5c
+> > [  876.319044]  0000000000000010 0000000000000000 ffff8805c417fc9d 66666620000000a8
+> > [  876.319044] Call Trace:
+> > [  876.319044] dump_stack (lib/dump_stack.c:52)
+> > [  876.319044] kasan_report_error (mm/kasan/report.c:98 mm/kasan/report.c:166)
+> > [  876.319044] __asan_load8 (mm/kasan/kasan.c:364)
+> > [  876.319044] do_raw_spin_unlock (./arch/x86/include/asm/current.h:14 kernel/locking/spinlock_debug.c:99 kernel/locking/spinlock_debug.c:158)
+> > [  876.319044] _raw_spin_unlock (include/linux/spinlock_api_smp.h:152 kernel/locking/spinlock.c:183)
+> > [  876.319044] __lock_task_sighand (include/linux/rcupdate.h:858 kernel/signal.c:1285)
+> > [  876.319044] do_send_sig_info (kernel/signal.c:1191)
+> > [  876.319044] group_send_sig_info (kernel/signal.c:1304)
+> > [  876.319044] kill_pid_info (kernel/signal.c:1339)
+> > [  876.319044] SYSC_kill (kernel/signal.c:1423 kernel/signal.c:2900)
 
-maybe ;-) I hit an issue with this by adding #include "parse-options.h"
-into debug.h ... we have a some name clashes with getopt.h
+Looks like a false alarm at first glance...
 
-> 
-> 
-> > +static struct variables_t {
-> > +	const char *name;
-> > +	int *ptr;
-> > +} variables[] = {
-> 
-> This is a too general name.  How about debug_variable or debug_domain?
+> Oleg, what guarantees the RCU free of task-struct and sighand?
 
-debug_variable sounds good to me, will change
+> The only RCU I can find is delayed_put_task_struct() but that's not
+> often used.
 
-thanks,
-jirka
+Yes, usually the code uses put_task_struct(). delayed_put_task_struct()
+acts almost as "if (dec_and_test(usage)) kfree_rcu(), but allows to use
+get_task_struct() if you observe this task under rcu_read_lock().
+
+Say,
+	rcu_read_lock();
+	task = find_task_by_vpid(...);
+	if (task)
+		get_task_struct(task);
+	rcu_read_unlock();
+
+If release_task() used dec_and_test + kfree_rcu, the code above could
+not work.
+
+> TASK_DEAD etc. use regular put_task_struct() and that
+> doesn't seem to involve RCU.
+
+Yes, the task itself (or, depending ob pov, scheduler) has a reference.
+copy_process() does
+
+	/*
+	 * One for us, one for whoever does the "release_task()" (usually
+	 * parent)
+	 */
+	atomic_set(&tsk->usage, 2);
+
+"us" actually means that put_task_struct(TASK_DEAD).
+
+As for ->sighand, note that sighand_cachep is SLAB_DESTROY_BY_RCU. So this
+memory is RCU free in a sense that it can't be returned to system, but it
+can be reused by another task. This is fine, lock_task_sighand() rechecks
+sighand == task->sighand under ->siglock.
+
+So perhaps this tool misinterprets kmem_cache_free(sighand_cachep) as use
+after free?
+
+We are going to add some comments into lock_task_sighand(). And cleanup it,
+it can look much simpler.
+
+Oleg.
+
