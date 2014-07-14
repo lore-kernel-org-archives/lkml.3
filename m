@@ -1,61 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229AbaGNUGX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 16:06:23 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:34608 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756975AbaGNUGQ (ORCPT
+	id S932456AbaGNUFs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 16:05:48 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:10540 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757261AbaGNUFq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 16:06:16 -0400
-Date: Mon, 14 Jul 2014 13:06:12 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-Cc: Borislav Petkov <bp@alien8.de>, clemens@ladisch.de, jdelvare@suse.de,
-        rdunlap@infradead.org, bhelgaas@google.com, lm-sensors@lm-sensors.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH] hwmon, k10temp: Add support for AMD F15h M60h processor
-Message-ID: <20140714200612.GA29123@roeck-us.net>
-References: <1405369388-12729-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
- <20140714195128.GA25124@pd.tnic>
- <53C4368E.9090103@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53C4368E.9090103@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 14 Jul 2014 16:05:46 -0400
+Message-Id: <20140714200535.671192970@goodmis.org>
+User-Agent: quilt/0.63-1
+Date: Mon, 14 Jul 2014 16:05:35 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH RT 0/4] Linux 3.4.97-rt121-rc1
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 02:59:10PM -0500, Aravind Gopalakrishnan wrote:
-> On 7/14/2014 2:51 PM, Borislav Petkov wrote:
-> >On Mon, Jul 14, 2014 at 03:23:08PM -0500, Aravind Gopalakrishnan wrote:
-> >>@@ -211,6 +228,7 @@ static const struct pci_device_id k10temp_id_table[] = {
-> >>  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F3) },
-> >>  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M10H_F3) },
-> >>  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F3) },
-> >>+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M60H_NB_F3) },
-> >>  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
-> >>  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_M30H_NB_F3) },
-> >>  	{}
-> >>diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-> >>index 7fa3173..3c8e328 100644
-> >>--- a/include/linux/pci_ids.h
-> >>+++ b/include/linux/pci_ids.h
-> >>@@ -520,6 +520,7 @@
-> >>  #define PCI_DEVICE_ID_AMD_15H_M10H_F3	0x1403
-> >>  #define PCI_DEVICE_ID_AMD_15H_M30H_NB_F3 0x141d
-> >>  #define PCI_DEVICE_ID_AMD_15H_M30H_NB_F4 0x141e
-> >>+#define PCI_DEVICE_ID_AMD_15H_M60H_NB_F3 0x1573
-> >I'm assuming this is used somewhere else besides k10temp.c?
-> >
-> 
-> Yeah, will most likely need to add EDAC bits. But that is something
-> I can't test now.
-> 
-Sorry, I can not add this to a common file unless it is used elsewhere.
-I would suggest to add it locally for now. It can be moved to the
-common file once it is used elsewhere.
 
-Guenter
+Dear RT Folks,
+
+This is the RT stable review cycle of patch 3.4.97-rt121-rc1.
+
+Please scream at me if I messed something up. Please test the patches too.
+
+The -rc release will be uploaded to kernel.org and will be deleted when
+the final release is out. This is just a review release (or release candidate).
+
+The pre-releases will not be pushed to the git repository, only the
+final release is.
+
+If all goes well, this patch will be converted to the next main release
+on 7/17/2014.
+
+Enjoy,
+
+-- Steve
+
+
+To build 3.4.97-rt121-rc1 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.97.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.97-rt121-rc1.patch.xz
+
+You can also build from 3.4.97-rt120 by applying the incremental patch:
+
+http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/incr/patch-3.4.97-rt120-rt121-rc1.patch.xz
+
+
+Changes from 3.4.97-rt120:
+
+---
+
+
+Steven Rostedt (1):
+      sched: Do not clear PF_NO_SETAFFINITY flag in select_fallback_rq()
+
+Steven Rostedt (Red Hat) (1):
+      Linux 3.4.97-rt121-rc1
+
+Thomas Gleixner (1):
+      workqueue: Prevent deadlock/stall on RT
+
+Zhao Hongjiang (1):
+      hrtimer:fix the miss of hrtimer_peek_ahead_timers in nort code
+
+----
+ kernel/hrtimer.c    |  6 +++++-
+ kernel/sched/core.c | 13 +++++--------
+ kernel/workqueue.c  | 41 +++++++++++++++++++++++++++++++++++------
+ localversion-rt     |  2 +-
+ 4 files changed, 46 insertions(+), 16 deletions(-)
