@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757369AbaGNUHG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 16:07:06 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:20696 "EHLO
+	id S1757356AbaGNUHE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 16:07:04 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:11618 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757002AbaGNUGz (ORCPT
+	by vger.kernel.org with ESMTP id S1757028AbaGNUGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 16:06:55 -0400
-Message-Id: <20140714200652.239622566@goodmis.org>
+	Mon, 14 Jul 2014 16:06:53 -0400
+Message-Id: <20140714200652.530444427@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Mon, 14 Jul 2014 16:06:36 -0400
+Date: Mon, 14 Jul 2014 16:06:37 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
@@ -17,14 +17,14 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        stable-rt@vger.kernel.org
-Subject: [PATCH RT 2/4] workqueue: Prevent deadlock/stall on RT
+        Zhao Hongjiang <zhaohongjiang@huawei.com>,
+        Weng Meiling <wengmeiling.weng@huawei.com>
+Subject: [PATCH RT 3/4] hrtimer:fix the miss of hrtimer_peek_ahead_timers in nort code
 References: <20140714200634.590977709@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0002-workqueue-Prevent-deadlock-stall-on-RT.patch
-X-RR-Connecting-IP: 107.14.168.130:25
+Content-Disposition: inline; filename=0003-hrtimer-fix-the-miss-of-hrtimer_peek_ahead_timers-in.patch
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -35,161 +35,91 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Zhao Hongjiang <zhaohongjiang@huawei.com>
 
-Austin reported a XFS deadlock/stall on RT where scheduled work gets
-never exececuted and tasks are waiting for each other for ever.
+When we run the test "taskset -c 1 stress -m 1 --vm-bytes 50M" and
+"taskset -c 1 cyclictest -t 1 -p 80 -n -m -v" with rt closed 3.4.26-rt38 kernel,
+the cyclictest's result is anomalous as follow:
+       0:     278:       1
+       0:     279:       2
+       0:     280:      17
+       0:     281:    1657
+       0:     282:    1680
+       0:     283:    4678
+       0:     284:    7026
+       0:     285:    6678
+       0:     286:    9677
+       0:     287:   12678
+       0:     288:   13090
+       0:     289:   14678
+       0:     290:   17677
+       0:     291:   20155
+       0:     292:   19678
+       0:     293:   22679
+       0:     294:   25676
+       0:     295:   26218
+       0:     296:   27679
+       0:     297:   30677
+       0:     298:   33283
+       0:     299:   32677
+       0:     300:   35676
+and the result is increase continuously forever. We find that the patch
+("hrtimer: fixup hrtimer callback changes for preempt-rt") has missed
+hrtimer_peek_ahead_timers() in hrtimer_rt_run_pending() fuction in nort
+code. We fix this and the test result isn't increase continuously as same
+as the result with nort 3.4.26 kernel as follow:
+       0:     636:       8
+       0:     637:       7
+       0:     638:       8
+       0:     639:       9
+       0:     640:       7
+       0:     641:       9
+       0:     642:       8
+       0:     643:       8
+       0:     644:       8
+       0:     645:      32
+       0:     646:    8683
+       0:     647:    7760
+       0:     648:    6784
+       0:     649:    5797
+       0:     650:    4810
+       0:     651:    3823
+       0:     652:    2836
+       0:     653:    1849
+       0:     654:     862
+       0:     655:       7
+       0:     656:       7
+       0:     657:       7
+       0:     658:       6
+       0:     659:       8
+       0:     660:       7
 
-The underlying problem is the modification of the RT code to the
-handling of workers which are about to go to sleep. In mainline a
-worker thread which goes to sleep wakes an idle worker if there is
-more work to do. This happens from the guts of the schedule()
-function. On RT this must be outside and the accessed data structures
-are not protected against scheduling due to the spinlock to rtmutex
-conversion. So the naive solution to this was to move the code outside
-of the scheduler and protect the data structures by the pool
-lock. That approach turned out to be a little naive as we cannot call
-into that code when the thread blocks on a lock, as it is not allowed
-to block on two locks in parallel. So we dont call into the worker
-wakeup magic when the worker is blocked on a lock, which causes the
-deadlock/stall observed by Austin and Mike.
-
-Looking deeper into that worker code it turns out that the only
-relevant data structure which needs to be protected is the list of
-idle workers which can be woken up.
-
-So the solution is to protect the list manipulation operations with
-preempt_enable/disable pairs on RT and call unconditionally into the
-worker code even when the worker is blocked on a lock. The preemption
-protection is safe as there is nothing which can fiddle with the list
-outside of thread context.
-
-Reported-and_tested-by: Austin Schuh <austin@peloton-tech.com>
-Reported-and_tested-by: Mike Galbraith <umgwanakikbuti@gmail.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Link: http://vger.kernel.org/r/alpine.DEB.2.10.1406271249510.5170@nanos
-Cc: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
+Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+[PG: direct cherry pick of b236e408 from v3.6-rt]
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/sched.c     | 10 +++++-----
- kernel/workqueue.c | 41 +++++++++++++++++++++++++++++++++++------
- 2 files changed, 40 insertions(+), 11 deletions(-)
+ kernel/hrtimer.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index b0e67590ba62..7fb61d32d771 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -4795,9 +4795,8 @@ need_resched:
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 2bd88f06a6d0..928473aa0aec 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1452,7 +1452,11 @@ static int hrtimer_rt_defer(struct hrtimer *timer)
  
- static inline void sched_submit_work(struct task_struct *tsk)
- {
--	if (!tsk->state || tsk_is_pi_blocked(tsk))
-+	if (!tsk->state)
- 		return;
--
- 	/*
- 	 * If a worker went to sleep, notify and ask workqueue whether
- 	 * it wants to wake up a task to maintain concurrency.
-@@ -4807,6 +4806,10 @@ static inline void sched_submit_work(struct task_struct *tsk)
- 	if (tsk->flags & PF_WQ_WORKER && !tsk->saved_state)
- 		wq_worker_sleeping(tsk);
+ #else
  
-+
-+	if (tsk_is_pi_blocked(tsk))
-+		return;
-+
- 	/*
- 	 * If we are going to sleep and we have plugged IO queued,
- 	 * make sure to submit it to avoid deadlocks.
-@@ -4817,9 +4820,6 @@ static inline void sched_submit_work(struct task_struct *tsk)
- 
- static inline void sched_update_worker(struct task_struct *tsk)
- {
--	if (tsk_is_pi_blocked(tsk))
--		return;
--
- 	if (tsk->flags & PF_WQ_WORKER)
- 		wq_worker_running(tsk);
- }
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 62ebed73dfa2..505b50dff3b5 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -319,6 +319,31 @@ static inline int __next_wq_cpu(int cpu, const struct cpumask *mask,
- 	     (cpu) < WORK_CPU_NONE;					\
- 	     (cpu) = __next_wq_cpu((cpu), cpu_possible_mask, (wq)))
- 
-+#ifdef CONFIG_PREEMPT_RT_BASE
-+static inline void rt_lock_idle_list(struct global_cwq *gcwq)
+-static inline void hrtimer_rt_run_pending(void) { }
++static inline void hrtimer_rt_run_pending(void)
 +{
-+	preempt_disable();
++	hrtimer_peek_ahead_timers();
 +}
-+static inline void rt_unlock_idle_list(struct global_cwq *gcwq)
-+{
-+	preempt_enable();
-+}
-+static inline void sched_lock_idle_list(struct global_cwq *gcwq) { }
-+static inline void sched_unlock_idle_list(struct global_cwq *gcwq) { }
-+#else
-+static inline void rt_lock_idle_list(struct global_cwq *gcwq) { }
-+static inline void rt_unlock_idle_list(struct global_cwq *gcwq) { }
-+static inline void sched_lock_idle_list(struct global_cwq *gcwq)
-+{
-+	spin_lock_irq(&gcwq->lock);
-+}
-+static inline void sched_unlock_idle_list(struct global_cwq *gcwq)
-+{
-+	spin_unlock_irq(&gcwq->lock);
-+}
-+#endif
 +
-+
- #ifdef CONFIG_DEBUG_OBJECTS_WORK
+ static inline int hrtimer_rt_defer(struct hrtimer *timer) { return 0; }
  
- static struct debug_obj_descr work_debug_descr;
-@@ -655,10 +680,16 @@ static struct worker *first_worker(struct global_cwq *gcwq)
-  */
- static void wake_up_worker(struct global_cwq *gcwq)
- {
--	struct worker *worker = first_worker(gcwq);
-+	struct worker *worker;
-+
-+	rt_lock_idle_list(gcwq);
-+
-+	worker = first_worker(gcwq);
- 
- 	if (likely(worker))
- 		wake_up_process(worker->task);
-+
-+	rt_unlock_idle_list(gcwq);
- }
- 
- /**
-@@ -701,7 +732,6 @@ void wq_worker_sleeping(struct task_struct *task)
- 
- 	cpu = smp_processor_id();
- 	gcwq = get_gcwq(cpu);
--	spin_lock_irq(&gcwq->lock);
- 	/*
- 	 * The counterpart of the following dec_and_test, implied mb,
- 	 * worklist not empty test sequence is in insert_work().
-@@ -709,11 +739,10 @@ void wq_worker_sleeping(struct task_struct *task)
- 	 */
- 	if (atomic_dec_and_test(get_gcwq_nr_running(cpu)) &&
- 	    !list_empty(&gcwq->worklist)) {
--		worker = first_worker(gcwq);
--		if (worker)
--			wake_up_process(worker->task);
-+		sched_lock_idle_list(gcwq);
-+		wake_up_worker(gcwq);
-+		sched_unlock_idle_list(gcwq);
- 	}
--	spin_unlock_irq(&gcwq->lock);
- }
- 
- /**
+ #endif
 -- 
 2.0.0
 
