@@ -1,86 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313AbaGNNBN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 09:01:13 -0400
-Received: from canardo.mork.no ([148.122.252.1]:47488 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755192AbaGNNBE convert rfc822-to-8bit (ORCPT
+	id S1755420AbaGNNC7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 09:02:59 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:36982 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754422AbaGNNCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 09:01:04 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [BISECTED 3.16-rc REGREGRESSION] backlight control stopped working
-Organization: m
-Date: Mon, 14 Jul 2014 14:59:44 +0200
-Message-ID: <87pph8kse7.fsf@nemi.mork.no>
-User-Agent: Gnus/5.130011 (Ma Gnus v0.11) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 14 Jul 2014 09:02:52 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-03-53c3d4f945c5
+Message-id: <53C3D4F8.9060001@samsung.com>
+Date: Mon, 14 Jul 2014 15:02:48 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Haojian Zhuang <haojian.zhuang@linaro.org>, linux@arm.linux.org.uk,
+        will.deacon@arm.com, andreas.herrmann@calxeda.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: mm: fix the boundary checking on bitmaps
+References: <1404959313-15198-1-git-send-email-haojian.zhuang@linaro.org>
+In-reply-to: <1404959313-15198-1-git-send-email-haojian.zhuang@linaro.org>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPLMWRmVeSWpSXmKPExsVy+t/xa7o/rxwONvi3WtZi8ZEYi8vnDjNa
+	bHp8jdXi8q45bBa3L/NavPx4gsWBzWPNvDWMHi3NPWweCz5fYfe4c20Pm8fmJfUenzfJBbBF
+	cdmkpOZklqUW6dslcGU8WLGWqWC5QMWWhmlsDYytvF2MnBwSAiYS+85+Y4SwxSQu3FvP1sXI
+	xSEksJRRovPSGUYI5xOjxNJ9a5lBqngFtCSOPf7C0sXIwcEioCrRtw1sEJuAoUTX2y42EFtU
+	IEbiTO9nqHJBiR+T77GAzBEROMgosXDjBrBtwgJOEqeb1oDZQgKeEvvW7WYFsTkFvCT+N9wC
+	izMLmEk8alnHDGHLS2xe85Z5AiP/LCRzZyEpm4WkbAEj8ypG0dTS5ILipPRcQ73ixNzi0rx0
+	veT83E2MkED+soNx8TGrQ4wCHIxKPLwVYoeDhVgTy4orcw8xSnAwK4nwnj4KFOJNSaysSi3K
+	jy8qzUktPsTIxMEp1cC4UDbF5J+bVeHJy0FTvi3SnbUl+aBxUZ8xo1s/2//GCpcDgmsD1/90
+	PpD2a43XEvvpMp0Vsx8Vi9290Ca06Z3Edrldy3ZJPp/x0lBq6a6yH2srTZprL28V5D6vMUlz
+	sVQFc/XMO68Lv32aJPXW5ahYrn312f1W79KeuUVPXSjscP73U5lzvgKBSizFGYmGWsxFxYkA
+	A0NzmEICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, I actually bisected this just to get
+Hello,
 
-886129a8eebebec260165741fe31421482371006 is the first bad commit
-commit 886129a8eebebec260165741fe31421482371006
-Author: Hans de Goede <hdegoede@redhat.com>
-Date:   Tue May 6 14:46:23 2014 +0200
+On 2014-07-10 04:28, Haojian Zhuang wrote:
+> The issue of boundary checking on bitmaps is introduced by this commit
+> in below.
+>
+> commit 4d852ef8c2544ce21ae41414099a7504c61164a0
+> Author: Andreas Herrmann <andreas.herrmann@calxeda.com>
+> Date:   Tue Feb 25 13:09:53 2014 +0100
+>
+>      arm: dma-mapping: Add support to extend DMA IOMMU mappings
+>
+> Multiple bitmaps were introduced as extension. If it needs to extend
+> a bitmap, it still check whether the allocation exceeding the total
+> size, not current bitmap size. So change the condition from
+> mapping->bits to PAGE_SIZE.
+>
+> Signed-off-by: Haojian Zhuang <haojian.zhuang@linaro.org>
 
-    ACPI / video: change acpi-video brightness_switch_enabled default to 0
-    
-    acpi-video is unique in that it not only generates brightness up/down
-    keypresses, but also (sometimes) actively changes the brightness itself.
-    
-    This presents an inconsistent kernel interface to userspace, basically there
-    are 2 different scenarios, depending on the laptop model:
-    
-     1) On some laptops a brightness up/down keypress means: show a brightness osd
-     with the current brightness, iow it is a brightness has changed notification.
-    
-     2) Where as on (a lot of) other laptops it means a brightness up/down key was
-     pressed, deal with it.
-    
-    Most of the desktop environments interpret any press as in scenario 2, and
-    change the brightness up / down as a response to the key events, causing it
-    to be changed twice, once by acpi-video and once by the DE.
-    
-    With the new default for video.use_native_backlight we will be moving even
-    more laptops over to behaving as in scenario 2. Making the remaining laptops
-    even more of a weird exception. Also note that it is hard to detect scenario
-    1 properly in userspace, and AFAIK none of the DE-s deals with it.
-    
-    Therefor this commit changes the default of brightness_switch_enabled to 0
-    making its behavior consistent with all the other backlight drivers.
-    
-    Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-    Reviewed-by: Aaron Lu <aaron.lu@intel.com>
-    Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+NACK, this patch is not correct. mapping->bits contains the correct size of
+a single bitmap, see the beginning of arm_iommu_create_mapping() function.
 
-:040000 040000 5bbac8c4f3e9fd5421daf84289004c32c3217f2a 82c99a358bda6360f845b6063182d3e707ff90f0 M      Documentation
-:040000 040000 81ed56a41130bbbea980620114ff11e3bb23ee63 a9870ba1d046bde69796060304c78dfbb1d00a1f M      drivers
+> ---
+>   arch/arm/mm/dma-mapping.c | 8 ++++----
+>   1 file changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+> index 4c88935..d7da5c3 100644
+> --- a/arch/arm/mm/dma-mapping.c
+> +++ b/arch/arm/mm/dma-mapping.c
+> @@ -1089,9 +1089,9 @@ static inline dma_addr_t __alloc_iova(struct dma_iommu_mapping *mapping,
+>   	spin_lock_irqsave(&mapping->lock, flags);
+>   	for (i = 0; i < mapping->nr_bitmaps; i++) {
+>   		start = bitmap_find_next_zero_area(mapping->bitmaps[i],
+> -				mapping->bits, 0, count, align);
+> +				PAGE_SIZE, 0, count, align);
+>   
+> -		if (start > mapping->bits)
+> +		if (start > PAGE_SIZE)
+>   			continue;
+>   
+>   		bitmap_set(mapping->bitmaps[i], start, count);
+> @@ -1110,9 +1110,9 @@ static inline dma_addr_t __alloc_iova(struct dma_iommu_mapping *mapping,
+>   		}
+>   
+>   		start = bitmap_find_next_zero_area(mapping->bitmaps[i],
+> -				mapping->bits, 0, count, align);
+> +				PAGE_SIZE, 0, count, align);
+>   
+> -		if (start > mapping->bits) {
+> +		if (start > PAGE_SIZE) {
+>   			spin_unlock_irqrestore(&mapping->lock, flags);
+>   			return DMA_ERROR_CODE;
+>   		}
 
+Best regards
+-- 
+Marek Szyprowski, PhD
+Samsung R&D Institute Poland
 
-
-The fact that this seems to be an *intentional* breakage does not help a
-lot.  Yes, I understand that you believe the choice of default was
-incorrect for some reason.  You might even be right about that.  But
-that is still not a valid reason to break existing configurations for
-end users!  Please do not do that.
-
-Note that NO USER cares about "some laptops" or "other laptops".  They
-care about their own systems, which either
- a) depend on the old default and therefore breaks with your change, or
- b) have a user modified setting and therefore are unaffected by your
-    change
-
-The above commit should be reverted.  It causes breakage for end users.
-
-If you think the default was wrong, then please go back in time and fix
-it when it was introduced. Thanks.
-
-
-Bjørn
