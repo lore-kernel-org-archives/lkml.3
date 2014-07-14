@@ -1,421 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757282AbaGNUmA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 16:42:00 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:44908 "EHLO gloria.sntech.de"
+	id S1757296AbaGNUn2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 16:43:28 -0400
+Received: from mail.kernel.org ([198.145.19.201]:57079 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756838AbaGNUl4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 16:41:56 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Peter Meerwald <pmeerw@pmeerw.net>, Hartmut Knaack <knaack.h@gmx.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        =?utf-8?B?ZWRkaWUo6JSh5p6rKQ==?= <cf@rock-chips.com>,
-        huangtao@rock-chips.com
-Subject: [PATCH v5 1/2] iio: adc: add driver for Rockchip saradc
-Date: Mon, 14 Jul 2014 22:43:16 +0200
-Message-ID: <2386463.CW7L8vIufx@diego>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <3234956.d4q5ZB3IB8@diego>
-References: <3234956.d4q5ZB3IB8@diego>
+	id S1756749AbaGNUnX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 16:43:23 -0400
+Date: Mon, 14 Jul 2014 17:43:10 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 12/41] perf tools: Fix leak of 'struct thread' on error
+ path
+Message-ID: <20140714204310.GC18133@kernel.org>
+References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
+ <1405332185-4050-13-git-send-email-adrian.hunter@intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405332185-4050-13-git-send-email-adrian.hunter@intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ADC is a 3-channel signal-ended 10-bit Successive Approximation
-Register (SAR) A/D Converter. It uses the supply and ground as its reference
-and converts the analog input signal into 10-bit binary digital codes.
+Em Mon, Jul 14, 2014 at 01:02:36PM +0300, Adrian Hunter escreveu:
+> __machine__findnew_thread() creates a 'struct thread'
+> but does not free it on the error path.
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
----
-changes since v4:
-- address comments from Hartmut Knaack
-  - explain the DLY_PU_SOC value
-  - determine regulator voltage in IIO_CHAN_INFO_SCALE
-  - return ENODEV directly in the !np case
-changes since v3:
-- address comments from Jonathan Cameron
-  - explicitly check for negative values in error checks
-  - change Kconfig depends to ARCH_ROCKCHIP || (ARM && COMPILE_TEST)
-    to prevent issues due to undefined writel_relaxed functions
-    The previous check for OF was unecessary, as the only used function
-    is of_property_read_u32, for which a stub is defined for the !OF case.
-changes since v2:
-- address more comments from Peter Meerwald
-  mainly the missing info_mask_shared_by_type element
-changes since v1:
-- address comments from Peter Meerwald
+Ok, but that second one is a separate bug, i.e. its not fixing the
+described leak, please break this into two patches with separate commit
+messages.
 
- drivers/iio/adc/Kconfig           |  10 ++
- drivers/iio/adc/Makefile          |   1 +
- drivers/iio/adc/rockchip_saradc.c | 316 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 327 insertions(+)
- create mode 100644 drivers/iio/adc/rockchip_saradc.c
-
-diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
-index a80d236..01c6ed6 100644
---- a/drivers/iio/adc/Kconfig
-+++ b/drivers/iio/adc/Kconfig
-@@ -187,6 +187,16 @@ config NAU7802
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called nau7802.
+- Arnaldo
  
-+config ROCKCHIP_SARADC
-+	tristate "Rockchip SARADC driver"
-+	depends on ARCH_ROCKCHIP || (ARM && COMPILE_TEST)
-+	help
-+	  Say yes here to build support for the SARADC found in SoCs from
-+	  Rockchip.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called rockchip_saradc.
-+
- config TI_ADC081C
- 	tristate "Texas Instruments ADC081C021/027"
- 	depends on I2C
-diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
-index 9d60f2d..8e2932d 100644
---- a/drivers/iio/adc/Makefile
-+++ b/drivers/iio/adc/Makefile
-@@ -20,6 +20,7 @@ obj-$(CONFIG_MCP320X) += mcp320x.o
- obj-$(CONFIG_MCP3422) += mcp3422.o
- obj-$(CONFIG_MEN_Z188_ADC) += men_z188_adc.o
- obj-$(CONFIG_NAU7802) += nau7802.o
-+obj-$(CONFIG_ROCKCHIP_SARADC) += rockchip_saradc.o
- obj-$(CONFIG_TI_ADC081C) += ti-adc081c.o
- obj-$(CONFIG_TI_AM335X_ADC) += ti_am335x_adc.o
- obj-$(CONFIG_TWL4030_MADC) += twl4030-madc.o
-diff --git a/drivers/iio/adc/rockchip_saradc.c b/drivers/iio/adc/rockchip_saradc.c
-new file mode 100644
-index 0000000..9fa5653
---- /dev/null
-+++ b/drivers/iio/adc/rockchip_saradc.c
-@@ -0,0 +1,316 @@
-+/*
-+ * Rockchip Successive Approximation Register (SAR) A/D Converter
-+ * Copyright (C) 2014 ROCKCHIP, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/interrupt.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/clk.h>
-+#include <linux/completion.h>
-+#include <linux/regulator/consumer.h>
-+#include <linux/iio/iio.h>
-+
-+#define SARADC_DATA			0x00
-+#define SARADC_DATA_MASK		0x3ff
-+
-+#define SARADC_STAS			0x04
-+#define SARADC_STAS_BUSY		BIT(0)
-+
-+#define SARADC_CTRL			0x08
-+#define SARADC_CTRL_IRQ_STATUS		BIT(6)
-+#define SARADC_CTRL_IRQ_ENABLE		BIT(5)
-+#define SARADC_CTRL_POWER_CTRL		BIT(3)
-+#define SARADC_CTRL_CHN_MASK		0x7
-+
-+#define SARADC_DLY_PU_SOC		0x0c
-+#define SARADC_DLY_PU_SOC_MASK		0x3f
-+
-+#define SARADC_BITS			10
-+#define SARADC_TIMEOUT			msecs_to_jiffies(100)
-+
-+struct rockchip_saradc {
-+	void __iomem		*regs;
-+	struct clk		*pclk;
-+	struct clk		*clk;
-+	struct completion	completion;
-+	struct regulator	*vref;
-+	u16			last_val;
-+};
-+
-+static int rockchip_saradc_read_raw(struct iio_dev *indio_dev,
-+				    struct iio_chan_spec const *chan,
-+				    int *val, int *val2, long mask)
-+{
-+	struct rockchip_saradc *info = iio_priv(indio_dev);
-+	int ret;
-+
-+	switch (mask) {
-+	case IIO_CHAN_INFO_RAW:
-+		mutex_lock(&indio_dev->mlock);
-+
-+		/* 8 clock periods as delay between power up and start cmd */
-+		writel_relaxed(8, info->regs + SARADC_DLY_PU_SOC);
-+
-+		/* Select the channel to be used and trigger conversion */
-+		writel(SARADC_CTRL_POWER_CTRL
-+				| (chan->channel & SARADC_CTRL_CHN_MASK)
-+				| SARADC_CTRL_IRQ_ENABLE,
-+		       info->regs + SARADC_CTRL);
-+
-+		if (!wait_for_completion_timeout(&info->completion,
-+						 SARADC_TIMEOUT)) {
-+			writel_relaxed(0, info->regs + SARADC_CTRL);
-+			mutex_unlock(&indio_dev->mlock);
-+			return -ETIMEDOUT;
-+		}
-+
-+		*val = info->last_val;
-+		mutex_unlock(&indio_dev->mlock);
-+		return IIO_VAL_INT;
-+	case IIO_CHAN_INFO_SCALE:
-+		ret = regulator_get_voltage(info->vref);
-+		if (ret < 0) {
-+			dev_err(&indio_dev->dev, "failed to get voltage\n");
-+			return ret;
-+		}
-+
-+		*val = ret / 1000;
-+		*val2 = SARADC_BITS;
-+		return IIO_VAL_FRACTIONAL_LOG2;
-+	default:
-+		return -EINVAL;
-+	}
-+}
-+
-+static irqreturn_t rockchip_saradc_isr(int irq, void *dev_id)
-+{
-+	struct rockchip_saradc *info = (struct rockchip_saradc *)dev_id;
-+
-+	/* Read value */
-+	info->last_val = readl_relaxed(info->regs + SARADC_DATA);
-+	info->last_val &= SARADC_DATA_MASK;
-+
-+	/* Clear irq & power down adc */
-+	writel_relaxed(0, info->regs + SARADC_CTRL);
-+
-+	complete(&info->completion);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static const struct iio_info rockchip_saradc_iio_info = {
-+	.read_raw = rockchip_saradc_read_raw,
-+	.driver_module = THIS_MODULE,
-+};
-+
-+#define ADC_CHANNEL(_index, _id) {				\
-+	.type = IIO_VOLTAGE,					\
-+	.indexed = 1,						\
-+	.channel = _index,					\
-+	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),		\
-+	.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),	\
-+	.datasheet_name = _id,					\
-+}
-+
-+static const struct iio_chan_spec rockchip_saradc_iio_channels[] = {
-+	ADC_CHANNEL(0, "adc0"),
-+	ADC_CHANNEL(1, "adc1"),
-+	ADC_CHANNEL(2, "adc2"),
-+};
-+
-+static int rockchip_saradc_probe(struct platform_device *pdev)
-+{
-+	struct rockchip_saradc *info = NULL;
-+	struct device_node *np = pdev->dev.of_node;
-+	struct iio_dev *indio_dev = NULL;
-+	struct resource	*mem;
-+	int ret;
-+	int irq;
-+	u32 rate;
-+
-+	if (!np)
-+		return -ENODEV;
-+
-+	indio_dev = devm_iio_device_alloc(&pdev->dev, sizeof(*info));
-+	if (!indio_dev) {
-+		dev_err(&pdev->dev, "failed allocating iio device\n");
-+		return -ENOMEM;
-+	}
-+	info = iio_priv(indio_dev);
-+
-+	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	info->regs = devm_request_and_ioremap(&pdev->dev, mem);
-+	if (!info->regs)
-+		return -ENOMEM;
-+
-+	irq = platform_get_irq(pdev, 0);
-+	if (irq < 0) {
-+		dev_err(&pdev->dev, "no irq resource?\n");
-+		return irq;
-+	}
-+
-+	ret = devm_request_irq(&pdev->dev, irq, rockchip_saradc_isr,
-+			       0, dev_name(&pdev->dev), info);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed requesting irq %d\n", irq);
-+		return ret;
-+	}
-+
-+	init_completion(&info->completion);
-+
-+	info->pclk = devm_clk_get(&pdev->dev, "apb_pclk");
-+	if (IS_ERR(info->pclk)) {
-+		dev_err(&pdev->dev, "failed to get pclk\n");
-+		return PTR_ERR(info->pclk);
-+	}
-+
-+	info->clk = devm_clk_get(&pdev->dev, "saradc");
-+	if (IS_ERR(info->clk)) {
-+		dev_err(&pdev->dev, "failed to get adc clock\n");
-+		return PTR_ERR(info->clk);
-+	}
-+
-+	info->vref = devm_regulator_get(&pdev->dev, "vref");
-+	if (IS_ERR(info->vref)) {
-+		dev_err(&pdev->dev, "failed to get regulator, %ld\n",
-+			PTR_ERR(info->vref));
-+		return PTR_ERR(info->vref);
-+	}
-+
-+	/* use a default of 1MHz for the converter clock */
-+	ret = of_property_read_u32(np, "clock-frequency", &rate);
-+	if (ret < 0)
-+		rate = 1000000;
-+
-+	ret = clk_set_rate(info->clk, rate);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to set adc clk rate, %d\n", ret);
-+		return ret;
-+	}
-+
-+	ret = regulator_enable(info->vref);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to enable vref regulator\n");
-+		return ret;
-+	}
-+
-+	ret = clk_prepare_enable(info->pclk);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to enable pclk\n");
-+		goto err_reg_voltage;
-+	}
-+
-+	ret = clk_prepare_enable(info->clk);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to enable converter clock\n");
-+		goto err_pclk;
-+	}
-+
-+	platform_set_drvdata(pdev, indio_dev);
-+
-+	indio_dev->name = dev_name(&pdev->dev);
-+	indio_dev->dev.parent = &pdev->dev;
-+	indio_dev->dev.of_node = pdev->dev.of_node;
-+	indio_dev->info = &rockchip_saradc_iio_info;
-+	indio_dev->modes = INDIO_DIRECT_MODE;
-+
-+	indio_dev->channels = rockchip_saradc_iio_channels;
-+	indio_dev->num_channels = ARRAY_SIZE(rockchip_saradc_iio_channels);
-+
-+	ret = iio_device_register(indio_dev);
-+	if (ret)
-+		goto err_clk;
-+
-+	return 0;
-+
-+err_clk:
-+	clk_disable_unprepare(info->clk);
-+err_pclk:
-+	clk_disable_unprepare(info->pclk);
-+err_reg_voltage:
-+	regulator_disable(info->vref);
-+	return ret;
-+}
-+
-+static int rockchip_saradc_remove(struct platform_device *pdev)
-+{
-+	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
-+	struct rockchip_saradc *info = iio_priv(indio_dev);
-+
-+	iio_device_unregister(indio_dev);
-+	clk_disable_unprepare(info->clk);
-+	clk_disable_unprepare(info->pclk);
-+	regulator_disable(info->vref);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int rockchip_saradc_suspend(struct device *dev)
-+{
-+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-+	struct rockchip_saradc *info = iio_priv(indio_dev);
-+
-+	clk_disable_unprepare(info->clk);
-+	clk_disable_unprepare(info->pclk);
-+	regulator_disable(info->vref);
-+
-+	return 0;
-+}
-+
-+static int rockchip_saradc_resume(struct device *dev)
-+{
-+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-+	struct rockchip_saradc *info = iio_priv(indio_dev);
-+	int ret;
-+
-+	ret = regulator_enable(info->vref);
-+	if (ret)
-+		return ret;
-+
-+	ret = clk_prepare_enable(info->pclk);
-+	if (ret)
-+		return ret;
-+
-+	ret = clk_prepare_enable(info->clk);
-+	if (ret)
-+		return ret;
-+
-+	return ret;
-+}
-+#endif
-+
-+static SIMPLE_DEV_PM_OPS(rockchip_saradc_pm_ops,
-+			 rockchip_saradc_suspend, rockchip_saradc_resume);
-+
-+static const struct of_device_id rockchip_saradc_match[] = {
-+	{ .compatible = "rockchip,saradc" },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, rockchip_saradc_match);
-+
-+static struct platform_driver rockchip_saradc_driver = {
-+	.probe		= rockchip_saradc_probe,
-+	.remove		= rockchip_saradc_remove,
-+	.driver		= {
-+		.name	= "rockchip-saradc",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = rockchip_saradc_match,
-+		.pm	= &rockchip_saradc_pm_ops,
-+	},
-+};
-+
-+module_platform_driver(rockchip_saradc_driver);
--- 
-1.9.0
-
-
+> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+> ---
+>  tools/perf/util/machine.c | 4 +++-
+>  tools/perf/util/thread.c  | 6 ++++--
+>  2 files changed, 7 insertions(+), 3 deletions(-)
+> 
+> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+> index c1c5ca3..18eaf31 100644
+> --- a/tools/perf/util/machine.c
+> +++ b/tools/perf/util/machine.c
+> @@ -349,8 +349,10 @@ static struct thread *__machine__findnew_thread(struct machine *machine,
+>  		 * within thread__init_map_groups to find the thread
+>  		 * leader and that would screwed the rb tree.
+>  		 */
+> -		if (thread__init_map_groups(th, machine))
+> +		if (thread__init_map_groups(th, machine)) {
+> +			thread__delete(th);
+>  			return NULL;
+> +		}
+>  	}
+>  
+>  	return th;
+> diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+> index 149e417..b9a3ee4 100644
+> --- a/tools/perf/util/thread.c
+> +++ b/tools/perf/util/thread.c
+> @@ -95,8 +95,10 @@ void thread__delete(struct thread *thread)
+>  {
+>  	struct comm *comm, *tmp;
+>  
+> -	map_groups__put(thread->mg);
+> -	thread->mg = NULL;
+> +	if (thread->mg) {
+> +		map_groups__put(thread->mg);
+> +		thread->mg = NULL;
+> +	}
+>  	list_for_each_entry_safe(comm, tmp, &thread->comm_list, list) {
+>  		list_del(&comm->list);
+>  		comm__free(comm);
+> -- 
+> 1.8.3.2
