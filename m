@@ -1,110 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932141AbaGNLos (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 07:44:48 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:45221 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754541AbaGNLh3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 07:37:29 -0400
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v8 10/13] rtc: max77686: Allow the max77686 rtc to wakeup the system
-Date: Mon, 14 Jul 2014 13:36:06 +0200
-Message-Id: <1405337769-3741-11-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <1405337769-3741-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1405337769-3741-1-git-send-email-javier.martinez@collabora.co.uk>
+	id S932164AbaGNLpA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 07:45:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17956 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755095AbaGNLoe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 07:44:34 -0400
+Date: Mon, 14 Jul 2014 13:43:59 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH 2/5] perf: Destroy event's children on task exit
+Message-ID: <20140714114359.GA17761@krava.redhat.com>
+References: <1405079782-8139-1-git-send-email-jolsa@kernel.org>
+ <1405079782-8139-3-git-send-email-jolsa@kernel.org>
+ <20140714111833.GU19379@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140714111833.GU19379@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Doug Anderson <dianders@chromium.org>
+On Mon, Jul 14, 2014 at 01:18:33PM +0200, Peter Zijlstra wrote:
+> On Fri, Jul 11, 2014 at 01:56:19PM +0200, Jiri Olsa wrote:
+> > From: Jiri Olsa <jolsa@redhat.com>
+> > 
+> > When task exits we close:
+> >   1) all events that are installed in task
+> >   2) all events owned by task (via file descriptor)
+> > 
+> > But we don't close children events of 2) events. Those children
+> > events stay until the child task exits and are useless with the
+> > parent being gone, because we have no way to get to values any
+> > more.
+> > 
+> > Plus if the event stays installed in task even with the owner task
+> > gone, it runs the perf callback any time the task forks, for no
+> > real reason.
+> > 
+> > Closing all children events events when the owner task of the
+> > parent event is closed.
+> 
+> Do we need this for the other patches, or is this an unrelated change? 
 
-The max77686 includes an RTC that keeps power during suspend.  It's
-convenient to be able to use it as a wakeup source.
+if we dont do it, the event stays installed without owner and
+perf fork callback will be called and fail on permission checking
+(because of owner == NULL) ... so yes, I think it's needed
 
-NOTE: due to wakeup ordering problems this patch alone doesn't work so
-well on exynos5250-snow.  You also need something that brings the i2c
-bus up before the max77686 wakeup runs.
-
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
-
-Changes since v6: None
-
-Changes since v5:
- - Fix $SUBJECT since the patch does not actually touch the mfd subsys.
-   Suggested by Lee Jones.
-
-Changes since v4: None
-
-Changes since v3:
- - Keep the note that this patch needs another change due wakeup
-   ordering problems.
----
- drivers/rtc/rtc-max77686.c | 28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
-
-diff --git a/drivers/rtc/rtc-max77686.c b/drivers/rtc/rtc-max77686.c
-index d20a7f0..c1c6055 100644
---- a/drivers/rtc/rtc-max77686.c
-+++ b/drivers/rtc/rtc-max77686.c
-@@ -583,6 +583,33 @@ static void max77686_rtc_shutdown(struct platform_device *pdev)
- #endif /* MAX77686_RTC_WTSR_SMPL */
- }
- 
-+#ifdef CONFIG_PM_SLEEP
-+static int max77686_rtc_suspend(struct device *dev)
-+{
-+	if (device_may_wakeup(dev)) {
-+		struct max77686_rtc_info *info = dev_get_drvdata(dev);
-+
-+		return enable_irq_wake(info->virq);
-+	}
-+
-+	return 0;
-+}
-+
-+static int max77686_rtc_resume(struct device *dev)
-+{
-+	if (device_may_wakeup(dev)) {
-+		struct max77686_rtc_info *info = dev_get_drvdata(dev);
-+
-+		return disable_irq_wake(info->virq);
-+	}
-+
-+	return 0;
-+}
-+#endif
-+
-+static SIMPLE_DEV_PM_OPS(max77686_rtc_pm_ops,
-+			 max77686_rtc_suspend, max77686_rtc_resume);
-+
- static const struct platform_device_id rtc_id[] = {
- 	{ "max77686-rtc", 0 },
- 	{},
-@@ -592,6 +619,7 @@ static struct platform_driver max77686_rtc_driver = {
- 	.driver		= {
- 		.name	= "max77686-rtc",
- 		.owner	= THIS_MODULE,
-+		.pm	= &max77686_rtc_pm_ops,
- 	},
- 	.probe		= max77686_rtc_probe,
- 	.shutdown	= max77686_rtc_shutdown,
--- 
-2.0.0.rc2
-
+jirka
