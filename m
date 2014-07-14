@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757167AbaGNVnC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 17:43:02 -0400
-Received: from www.linutronix.de ([62.245.132.108]:42563 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756358AbaGNVm7 (ORCPT
+	id S1757293AbaGNVqk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 17:46:40 -0400
+Received: from canardo.mork.no ([148.122.252.1]:54339 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756890AbaGNVqi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 17:42:59 -0400
-Date: Mon, 14 Jul 2014 23:42:53 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1 V2] workqueue: remove the del_timer_sync()s in
- maybe_create_worker()
-In-Reply-To: <53C44915.4000405@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.10.1407142340170.24854@nanos>
-References: <1405265479-827-1-git-send-email-laijs@cn.fujitsu.com> <1405325601-12437-1-git-send-email-laijs@cn.fujitsu.com> <1405325601-12437-2-git-send-email-laijs@cn.fujitsu.com> <20140714142707.GB31610@htj.dyndns.org> <alpine.DEB.2.10.1407141731240.24854@nanos>
- <53C44915.4000405@cn.fujitsu.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Mon, 14 Jul 2014 17:46:38 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [BISECTED 3.16-rc REGREGRESSION] backlight control stopped working
+Organization: m
+References: <87pph8kse7.fsf@nemi.mork.no> <53C3D7C3.7090505@redhat.com>
+	<CA+55aFxYYKApOC+1TQkoxSzi-zTSB8OmkU=ypvNb_Gc2+K6Hmw@mail.gmail.com>
+	<CA+55aFzHo4BEO8W0yza7g0YMgg-b=hPbk20-vpR3s==ydpmAOg@mail.gmail.com>
+	<877g3fsm98.fsf@nemi.mork.no>
+	<CA+55aFztNg4aFUnmqxoR-Hwva87D1TMOZ2Gyy8CVmEov9ToDQg@mail.gmail.com>
+Date: Mon, 14 Jul 2014 23:46:22 +0200
+In-Reply-To: <CA+55aFztNg4aFUnmqxoR-Hwva87D1TMOZ2Gyy8CVmEov9ToDQg@mail.gmail.com>
+	(Linus Torvalds's message of "Mon, 14 Jul 2014 13:49:10 -0700")
+Message-ID: <8761iztxzl.fsf@nemi.mork.no>
+User-Agent: Gnus/5.130011 (Ma Gnus v0.11) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jul 2014, Lai Jiangshan wrote:
-> On 07/14/2014 11:33 PM, Thomas Gleixner wrote:
-> > On Mon, 14 Jul 2014, Tejun Heo wrote:
-> > 
-> >> Hello,
-> >>
-> >> On Mon, Jul 14, 2014 at 04:13:21PM +0800, Lai Jiangshan wrote:
-> >>> It is said in the document that the timer which is being
-> >>> deleted by del_timer_sync() should not be restarted:
-> >>>   Synchronization rules: Callers must prevent restarting of
-> >>>   the timer, otherwise this function is meaningless.
-> >>>
-> >>> Repeating timer may cause the del_timer_sync() spin longer,
-> >>> or even spin forever in very very very very extreme condition.
-> >>
-> >> I'm fairly sure del_timer_sync() can delete self-requeueing timers.
-> >> The implementation busy-waits if the queued timer is the currently
-> >> executing one and dequeues only while the timer isn't running which
-> >> should be able to handle self-requeueing ones just fine.  Thomas,
-> >> del_timer_sync() can reliably delete self-requeueing ones, right?
-> > 
-> > Yes. 
-> 
-> The comments of the del_timer_sync() needs to be updated
-> if I did not misunderstood?
-> 
-> > If the timer callback is running on the other cpu, then it waits
-> > for the callback to finish before checking whether the timer is
-> > enqueued or not.
-> 
-> The syncer may be interrupted here, after it comes back, the timer
-> may be running again (and maybe again and again).
+Linus Torvalds <torvalds@linux-foundation.org> writes:
+> On Mon, Jul 14, 2014 at 1:45 PM, Bjørn Mork <bjorn@mork.no> wrote:
+>>> brightness change from user mode comes in during that delay, we cancel
+>>> the kernel-induced pending change.
+>>
+>> That sounds like a good solution to me FWIW.
+>
+> Try the patch. It *might* work. I'm not saying it will, but it seemed
+> to at least compile for me.
 
-No. The del_timer_sync() code holds the base lock with interrupts
-disabled. So it can't be interrupted.
+Yes, the patch works as advertised for me.  Thanks.
 
-Thanks,
+But this will break existing configs:
 
-	tglx
+> --- a/drivers/acpi/video.c
+> +++ b/drivers/acpi/video.c
+> @@ -68,8 +68,8 @@ MODULE_AUTHOR("Bruno Ducrot");
+>  MODULE_DESCRIPTION("ACPI Video Driver");
+>  MODULE_LICENSE("GPL");
+>  
+> -static bool brightness_switch_enabled;
+> -module_param(brightness_switch_enabled, bool, 0644);
+> +static int brightness_switch_enabled = -1;
+> +module_param(brightness_switch_enabled, int, 0644);
+>  
+>  /*
+>   * By default, we don't allow duplicate ACPI video bus devices
 
+Any setup using e.g "options video brightness_switch_enabled=Y" will
+barf on this, won't they?
+
+
+Bjørn
 
