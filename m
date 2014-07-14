@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704AbaGNRxH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 13:53:07 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:37609 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756631AbaGNRw5 (ORCPT
+	id S1754989AbaGNRxm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 13:53:42 -0400
+Received: from cassarossa.samfundet.no ([193.35.52.29]:50701 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752861AbaGNRxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 13:52:57 -0400
+	Mon, 14 Jul 2014 13:53:33 -0400
+Date: Mon, 14 Jul 2014 19:53:27 +0200
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>
+Subject: Re: [PATCH 14/38] avr32: clean-up uapi Kbuild file
+Message-ID: <20140714175327.GB28953@samfundet.no>
+References: <20140714150609.GA28358@ravnborg.org>
+ <1405350546-28467-1-git-send-email-sam@ravnborg.org>
+ <1405350546-28467-14-git-send-email-sam@ravnborg.org>
 MIME-Version: 1.0
-In-Reply-To: <87a98c2wvu.fsf@sejong.aot.lge.com>
-References: <1404857759-25105-1-git-send-email-eranian@google.com>
-	<1404857759-25105-5-git-send-email-eranian@google.com>
-	<87a98c2wvu.fsf@sejong.aot.lge.com>
-Date: Mon, 14 Jul 2014 19:52:57 +0200
-Message-ID: <CABPqkBQA5PG5DwV-cjZrf1JTtj_UC_tE6vdsoEyA+TQWSRejQQ@mail.gmail.com>
-Subject: Re: [PATCH 4/4] perf record: add new -I option to sample interrupted
- machine state
-From: Stephane Eranian <eranian@google.com>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405350546-28467-14-git-send-email-sam@ravnborg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 10:00 AM, Namhyung Kim <namhyung@gmail.com> wrote:
-> Hi Stephane,
->
-> On Wed,  9 Jul 2014 00:15:59 +0200, Stephane Eranian wrote:
->> Add -I option to capture machine state registers at interrupt.
->
-> You need to add it in the Documentation too.
->
-I added it for v2.
+Around Mon 14 Jul 2014 17:08:42 +0200 or thereabout, Sam Ravnborg wrote:
+> Remove redundant assignments.
+> 
 
-> Thanks,
-> Namhyung
->
->
->>
->> Use perf report -D to display the sampled register values
->> in each sample.
->>
->> Signed-off-by: Stephane Eranian <eranian@google.com>
->> ---
->>  tools/perf/builtin-record.c | 2 ++
->>  1 file changed, 2 insertions(+)
->>
->> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
->> index 378b85b..17c45f8 100644
->> --- a/tools/perf/builtin-record.c
->> +++ b/tools/perf/builtin-record.c
->> @@ -876,6 +876,8 @@ const struct option record_options[] = {
->>                   "sample transaction flags (special events only)"),
->>       OPT_BOOLEAN(0, "per-thread", &record.opts.target.per_thread,
->>                   "use per-thread mmaps"),
->> +     OPT_BOOLEAN('I', "sample-intr-regs", &record.opts.sample_intr_regs,
->> +                 "Sample machine register on interrupt"),
->>       OPT_END()
->>  };
+Fantastic, reducing code is the best patches.
+
+> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+> Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+> Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+
+> ---
+>  arch/avr32/include/uapi/asm/Kbuild | 21 ++-------------------
+>  1 file changed, 2 insertions(+), 19 deletions(-)
+> 
+> diff --git a/arch/avr32/include/uapi/asm/Kbuild b/arch/avr32/include/uapi/asm/Kbuild
+> index 08d8a3d..6e33c08 100644
+> --- a/arch/avr32/include/uapi/asm/Kbuild
+> +++ b/arch/avr32/include/uapi/asm/Kbuild
+> @@ -1,26 +1,9 @@
+>  # UAPI Header export list
+>  include include/uapi/asm-generic/Kbuild.asm
+>  
+> -header-y += auxvec.h
+> -header-y += byteorder.h
+>  header-y += cachectl.h
+> -header-y += msgbuf.h
+> -header-y += param.h
+> -header-y += posix_types.h
+> -header-y += ptrace.h
+> -header-y += sembuf.h
+> -header-y += setup.h
+> -header-y += shmbuf.h
+> -header-y += sigcontext.h
+> -header-y += signal.h
+> -header-y += socket.h
+> -header-y += sockios.h
+> -header-y += stat.h
+> -header-y += swab.h
+> -header-y += termbits.h
+> -header-y += termios.h
+> -header-y += types.h
+> -header-y += unistd.h
+> +
+> +# Wrappers from asm-generic
+>  generic-y += bitsperlong.h
+>  generic-y += errno.h
+>  generic-y += fcntl.h
+-- 
+mvh
+Hans-Christian Egtvedt
