@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800AbaGNRVG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 13:21:06 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:39174 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717AbaGNRUx (ORCPT
+	id S1756489AbaGNRVi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 13:21:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33450 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492AbaGNRVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 13:20:53 -0400
+	Mon, 14 Jul 2014 13:21:31 -0400
+Date: Mon, 14 Jul 2014 10:26:02 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
+        Malcolm Priestley <tvboxspy@gmail.com>,
+        kernel-janitors@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Forest Bond <forest@alittletooquiet.net>
+Subject: Re: [PATCH V2 1/4] staging: vt6556: Cleanup coding style issues
+Message-ID: <20140714172602.GB9870@kroah.com>
+References: <1405278681-3348-1-git-send-email-peter.senna@gmail.com>
+ <20140713193647.GA31010@kroah.com>
+ <20140714085932.GA2958@hp-peter.rsr.lip6.fr>
+ <20140714141231.GM25880@mwanda>
+ <CA+MoWDpQBQYqZ2ZLM3-17cfQQ0LjMcv702ZxVv10M5Wd895rJg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAODwPW9FORb2jnxFi6US6CUJvJzKyUkT8cuSzkPues41hJe+Jw@mail.gmail.com>
-References: <1404954350-26343-1-git-send-email-abrestic@chromium.org>
-	<1404954350-26343-5-git-send-email-abrestic@chromium.org>
-	<CAODwPW9FORb2jnxFi6US6CUJvJzKyUkT8cuSzkPues41hJe+Jw@mail.gmail.com>
-Date: Mon, 14 Jul 2014 10:20:52 -0700
-X-Google-Sender-Auth: H-VY0acQSK5KpALwO2hhB8Ex79k
-Message-ID: <CAL1qeaGCLw0LSE_Oy_VteAyWLHS9D4y-U8+6Mu+cGKEUp3T3GQ@mail.gmail.com>
-Subject: Re: [PATCH 4/4] xhci: Allow xHCI drivers to be built as separate modules
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Julius Werner <jwerner@chromium.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+MoWDpQBQYqZ2ZLM3-17cfQQ0LjMcv702ZxVv10M5Wd895rJg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 11:34 AM, Julius Werner <jwerner@chromium.org> wrote:
->> diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
->> index af89a90..bafba71 100644
->> --- a/drivers/usb/host/Makefile
->> +++ b/drivers/usb/host/Makefile
->> @@ -15,19 +15,19 @@ fhci-$(CONFIG_FHCI_DEBUG) += fhci-dbg.o
->>  xhci-hcd-y := xhci.o xhci-mem.o
->>  xhci-hcd-y += xhci-ring.o xhci-hub.o xhci-dbg.o
->>  xhci-hcd-y += xhci-trace.o
->> -xhci-hcd-$(CONFIG_PCI) += xhci-pci.o
->>
->> -ifneq ($(CONFIG_USB_XHCI_PLATFORM), )
->> -       xhci-hcd-y              += xhci-plat.o
->> +xhci-plat-hcd-y := xhci-plat.o
->>  ifneq ($(CONFIG_USB_XHCI_MVEBU), )
->> -       xhci-hcd-y              += xhci-mvebu.o
->> -endif
->
-> nit: Can do this even simpler now, just
-> "xhci-plat-hcd-$(CONFIG_USB_XHCI_MVEBU) += xhci-mvebu.o" without the
-> ifneq.
+On Mon, Jul 14, 2014 at 07:01:37PM +0200, Peter Senna Tschudin wrote:
+> <note>
+> I'm not trying to push my changes over the rules. I'm trying to
+> understand the problem, to avoid creating similar noise in the future.
+> </note>
+> 
+> Now I understand that the problem with the series of 4 patches is that
+> the subject is the same on the 4 patches. Having the same subject in 4
+> patches is not good. I got this one.
+> 
+> But I have no clue why joining 4 cleanup patches into 1 is bad. The
+> patches are all for the same driver, are all silencing checkpatch
+> warnings, and even the typedef stuff was reported by checkpatch. The
+> commit message of the single patch describes it all. If the subject of
+> the series is the problem, why not make a single patch instead of a
+> series of similar patches? It made sense from my perspective. So what
+> is the problem in re-submit 4 similar patches as a single patch?
 
-Nope - since CONFIG_USB_XHCI_MVEBU can be 'y' or 'm' we need the ifneq
-here (which matches against both) to ensure xhci-mvebu.o is built is
-part of xhci-plat-hcd.o.
+Because it is _much_ harder to review a patch that way.  I get a few
+hundred patches a week to review.  If you only do one thing per patch,
+it is trivial to review, and you don't have to pick through a patch to
+determine if all of it is correct based on a larger patch, that does
+multiple things.
+
+Also, the rule for a kernel patch is "do only one thing".  If you do:
+	- remove typedef
+	- fix space layout
+for a single file, that really is 2 different things, yet you could
+claim they are both "coding style cleanups".  Reviewing both of these at
+the same time, together, makes it much harder to do.
+
+Remember, for the kernel, we waste individual developer's time, at the
+expense of reviewer's time, as we have far more developers than
+reviewers.
+
+Hope this helps explain things more.
+
+greg k-h
