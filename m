@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757130AbaGNUeY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 16:34:24 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:39702 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757034AbaGNUeW (ORCPT
+	id S1757219AbaGNUep (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 16:34:45 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:56737 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757191AbaGNUeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 16:34:22 -0400
-Date: Tue, 15 Jul 2014 02:04:13 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] Bluetooth: cmtp: Remove unnecessary null test
-Message-ID: <20140714203412.GA16532@himangi-Dell>
+	Mon, 14 Jul 2014 16:34:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CALCETrVXgA9a2f7VwnCYW4_XB+JAPRSR8xsuH_ZYbA82=ZozRw@mail.gmail.com>
+References: <1405017631-27346-1-git-send-email-keescook@chromium.org>
+	<20140711164931.GA18473@redhat.com>
+	<CAGXu5jK-x0=Rr7kX2a=b4Z8ueA77uwmhNZZAayG8cwmNOKa8Ug@mail.gmail.com>
+	<CALCETrVXgA9a2f7VwnCYW4_XB+JAPRSR8xsuH_ZYbA82=ZozRw@mail.gmail.com>
+Date: Mon, 14 Jul 2014 13:34:36 -0700
+X-Google-Sender-Auth: L2LwMaN6y4oQ9mLh4H0z5d9XniM
+Message-ID: <CAGXu5j+A0GodNCnjqpYQXC2HL+S08_yP5H_n_v51VpE4UnnK7A@mail.gmail.com>
+Subject: Re: [PATCH v10 0/11] seccomp: add thread sync ability
+From: Kees Cook <keescook@chromium.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the null test on ctrl. ctrl is initialized at the
-beginning of the function to &session->ctrl. Since session is
-dereferenced prior to the null test, session must be a valid pointer,
-and &session->ctrl cannot be null.
+On Mon, Jul 14, 2014 at 12:04 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Fri, Jul 11, 2014 at 10:55 AM, Kees Cook <keescook@chromium.org> wrote:
+>> On Fri, Jul 11, 2014 at 9:49 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>>> On 07/10, Kees Cook wrote:
+>>>>
+>>>> This adds the ability for threads to request seccomp filter
+>>>> synchronization across their thread group (at filter attach time).
+>>>> For example, for Chrome to make sure graphic driver threads are fully
+>>>> confined after seccomp filters have been attached.
+>>>>
+>>>> To support this, locking on seccomp changes via thread-group-shared
+>>>> sighand lock is introduced, along with refactoring of no_new_privs. Races
+>>>> with thread creation are handled via delayed duplication of the seccomp
+>>>> task struct field and cred_guard_mutex.
+>>>>
+>>>> This includes a new syscall (instead of adding a new prctl option),
+>>>> as suggested by Andy Lutomirski and Michael Kerrisk.
+>>>
+>>> I do not not see any problems in this version,
+>>
+>> Awesome! Thank you for all the reviews. :) If Andy and Michael are
+>> happy with this too, I think this is in good shape. \o/
+>
+> I think I'm happy with it.  Is it in git somewhere for easy perusal?
+> I have a cold, so my reviewing ability is a bit off, but I want to
+> take a look at the final version, and git is a little easier than
+> email for this.
 
-The following Coccinelle script is used for detecting the change:
+Yes, absolutely:
+https://git.kernel.org/cgit/linux/kernel/git/kees/linux.git/log/?h=seccomp-tsync
 
-@r@
-expression e,f;
-identifier g,y;
-statement S1,S2;
-@@
+Thanks for looking it over, and I hope you feel better soon!
 
-*e = &f->g
-<+...
- f->y
- ...+>
-*if (e != NULL || ...)
- S1 else S2
+-Kees
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- net/bluetooth/cmtp/capi.c | 6 ------
- 1 file changed, 6 deletions(-)
-
-diff --git a/net/bluetooth/cmtp/capi.c b/net/bluetooth/cmtp/capi.c
-index cd75e4d..1ca8a87 100644
---- a/net/bluetooth/cmtp/capi.c
-+++ b/net/bluetooth/cmtp/capi.c
-@@ -362,12 +362,6 @@ void cmtp_recv_capimsg(struct cmtp_session *session, struct sk_buff *skb)
- 		CAPIMSG_SETCONTROL(skb->data, contr);
- 	}
- 
--	if (!ctrl) {
--		BT_ERR("Can't find controller %d for message", session->num);
--		kfree_skb(skb);
--		return;
--	}
--
- 	capi_ctr_handle_message(ctrl, appl, skb);
- }
- 
 -- 
-1.9.1
-
+Kees Cook
+Chrome OS Security
