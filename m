@@ -1,137 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755873AbaGNO2N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 10:28:13 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:32776 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755836AbaGNO2B (ORCPT
+	id S1755890AbaGNO2t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 10:28:49 -0400
+Received: from mga03.intel.com ([143.182.124.21]:47292 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755196AbaGNO2m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 10:28:01 -0400
-Message-ID: <53C3E975.60900@oracle.com>
-Date: Mon, 14 Jul 2014 10:30:13 -0400
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 14 Jul 2014 10:28:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,658,1400050800"; 
+   d="scan'208";a="456740229"
+From: "Liang, Kan" <kan.liang@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "andi@firstfloor.org" <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: RE: [PATCH V5 1/2] perf ignore LBR and extra_regs
+Thread-Topic: [PATCH V5 1/2] perf ignore LBR and extra_regs
+Thread-Index: AQHPnG+hivFH9gFqr0Syb8Ke5/aDbZue5MOAgACz8nA=
+Date: Mon, 14 Jul 2014 14:28:36 +0000
+Message-ID: <37D7C6CF3E00A74B8858931C1DB2F077014E1D5E@SHSMSX103.ccr.corp.intel.com>
+References: <1404989984-3068-1-git-send-email-kan.liang@intel.com>
+ <20140714105341.GT9918@twins.programming.kicks-ass.net>
+In-Reply-To: <20140714105341.GT9918@twins.programming.kicks-ass.net>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: konrad@kernel.org, xen-devel@lists.xenproject.org, david.vrabel@citrix.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 2/5] xen/pciback: Don't deadlock when unbinding.
-References: <1405109332-31659-1-git-send-email-konrad@kernel.org> <1405109332-31659-3-git-send-email-konrad@kernel.org> <53C04D81.3010002@oracle.com> <20140711210201.GC25233@laptop.dumpdata.com> <20140714141328.GA5112@laptop.dumpdata.com>
-In-Reply-To: <20140714141328.GA5112@laptop.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2014 10:13 AM, Konrad Rzeszutek Wilk wrote:
-> On Fri, Jul 11, 2014 at 05:02:01PM -0400, Konrad Rzeszutek Wilk wrote:
->>>> --- a/drivers/xen/xen-pciback/pci_stub.c
->>>> +++ b/drivers/xen/xen-pciback/pci_stub.c
->>>> @@ -250,6 +250,8 @@ struct pci_dev *pcistub_get_pci_dev(struct xen_pcibk_device *pdev,
->>>>    *  - 'echo BDF > unbind' with a guest still using it. See pcistub_remove
->>>>    *
->>>>    *  As such we have to be careful.
->>>> + *
->>>> + *  To make this easier, the caller has to hold the device lock.
->>> Should we assert that the lock is being held?
->> Yes of course we should. Thank you!
-> How about this:
->
->  From 388a03c598218dac8bfeb6c5bf3992e0d1e37d1e Mon Sep 17 00:00:00 2001
-> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Date: Tue, 8 Jul 2014 11:12:02 -0400
-> Subject: [PATCH] xen/pciback: Don't deadlock when unbinding.
->
-> As commit 0a9fd0152929db372ff61b0d6c280fdd34ae8bdb
-> 'xen/pciback: Document the entry points for 'pcistub_put_pci_dev''
-> explained there are four entry points in this function.
-> Two of them are when the user fiddles in the SysFS to
-> unbind a device which might be in use by a guest or not.
->
-> Both 'unbind' states will cause a deadlock as the the PCI lock has
-> already been taken, which then pci_device_reset tries to take.
->
-> We can simplify this by requiring that all callers of
-> pcistub_put_pci_dev MUST hold the device lock. And then
-> we can just call the lockless version of pci_device_reset.
->
-> To make it even simpler we will modify xen_pcibk_release_pci_dev
-> to quality whether it should take a lock or not - as it ends
-> up calling xen_pcibk_release_pci_dev and needs to hold the lock.
->
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
-> [v2: Per David Vrabel's suggestion - use lockless version of reset]
-> [v3: Per Boris suggestion add assertion mechanism]
-> ---
->   drivers/xen/xen-pciback/passthrough.c |  9 +++++++--
->   drivers/xen/xen-pciback/pci_stub.c    | 12 ++++++------
->   drivers/xen/xen-pciback/pciback.h     |  7 ++++---
->   drivers/xen/xen-pciback/vpci.c        |  9 +++++++--
->   drivers/xen/xen-pciback/xenbus.c      |  2 +-
->   5 files changed, 25 insertions(+), 14 deletions(-)
->
-> diff --git a/drivers/xen/xen-pciback/passthrough.c b/drivers/xen/xen-pciback/passthrough.c
-> index 828dddc..d0c3fb4 100644
-> --- a/drivers/xen/xen-pciback/passthrough.c
-> +++ b/drivers/xen/xen-pciback/passthrough.c
-> @@ -69,7 +69,7 @@ static int __xen_pcibk_add_pci_dev(struct xen_pcibk_device *pdev,
->   }
->   
->   static void __xen_pcibk_release_pci_dev(struct xen_pcibk_device *pdev,
-> -					struct pci_dev *dev)
-> +					struct pci_dev *dev, bool lock)
->   {
->   	struct passthrough_dev_data *dev_data = pdev->pci_dev_data;
->   	struct pci_dev_entry *dev_entry, *t;
-> @@ -87,8 +87,13 @@ static void __xen_pcibk_release_pci_dev(struct xen_pcibk_device *pdev,
->   
->   	mutex_unlock(&dev_data->lock);
->   
-> -	if (found_dev)
-> +	if (found_dev) {
-> +		if (lock)
-> +			device_lock(&found_dev->dev);
->   		pcistub_put_pci_dev(found_dev);
-> +		if (lock)
-> +			device_unlock(&found_dev->dev);
-> +	}
->   }
->   
->   static int __xen_pcibk_init_devices(struct xen_pcibk_device *pdev)
-> diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
-> index d57a173..8293fbb 100644
-> --- a/drivers/xen/xen-pciback/pci_stub.c
-> +++ b/drivers/xen/xen-pciback/pci_stub.c
-> @@ -250,6 +250,8 @@ struct pci_dev *pcistub_get_pci_dev(struct xen_pcibk_device *pdev,
->    *  - 'echo BDF > unbind' with a guest still using it. See pcistub_remove
->    *
->    *  As such we have to be careful.
-> + *
-> + *  To make this easier, the caller has to hold the device lock.
->    */
->   void pcistub_put_pci_dev(struct pci_dev *dev)
->   {
-> @@ -276,11 +278,8 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
->   	/* Cleanup our device
->   	 * (so it's ready for the next domain)
->   	 */
-> -
-> -	/* This is OK - we are running from workqueue context
-> -	 * and want to inhibit the user from fiddling with 'reset'
-> -	 */
-> -	pci_reset_function(dev);
-> +	lockdep_assert_held(&dev->dev.mutex);
-> +	__pci_reset_function_locked(dev);
->   	pci_restore_state(dev);
 
-Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 
-(Although I wonder about the fact that we are exposing the mutex which 
-is typically hidden by device_lock()/unlock() inlines. Have you 
-considered adding something like is_device_locked() to device.h?)
+> > diff --git a/arch/x86/kernel/cpu/perf_event.h
+> > b/arch/x86/kernel/cpu/perf_event.h
+> > index 3b2f9bd..992c678 100644
+> > --- a/arch/x86/kernel/cpu/perf_event.h
+> > +++ b/arch/x86/kernel/cpu/perf_event.h
+> > @@ -464,6 +464,12 @@ struct x86_pmu {
+> >  	 */
+> >  	struct extra_reg *extra_regs;
+> >  	unsigned int er_flags;
+> > +	/*
+> > +	 * EXTRA REG MSR can be accessed
+> > +	 * The extra registers are completely unrelated to each other.
+> > +	 * So it needs a flag for each extra register.
+> > +	 */
+> > +	bool		extra_msr_access[EXTRA_REG_MAX];
+> 
+> So why not in struct extra_reg again? You didn't give a straight answer there.
 
--boris
+I think I did in the email.
+You mentioned that there's still (only) 4 empty bytes at the tail of extra_reg itself. 
+However, the extra_reg_type may be extended in the near future.
+So that may not be a reason to move to extra_reg.
+
+Furthermore, if we move extra_msr_access to extra_reg, 
+I guess we have to modify all the related micros (i.e EVENT_EXTRA_REG) to initialize the new items.
+That could be a big change.
+
+On the other side, in x86_pmu structure, there are extra_regs related items defined under the comments "Extra registers for events".
+ And the bit holes are enough for current usage and future extension.
+
+So I guess  x86_pmu should be a good place to store the availability of the reg.
+
+         /* --- cacheline 6 boundary (384 bytes) --- */
+         bool                       lbr_double_abort;     /*   384     1 */
+ 
+         /* XXX 7 bytes hole, try to pack */
+ 
+         struct extra_reg *         extra_regs;           /*   392     8 */
+         unsigned int               er_flags;             /*   400     4 */
+ 
+         /* XXX 4 bytes hole, try to pack */
+ 
+         struct perf_guest_switch_msr * (*guest_get_msrs)(int *); /*   408     8 */
+ 
+         /* size: 416, cachelines: 7, members: 64 */
+         /* sum members: 391, holes: 6, sum holes: 25 */
+         /* bit holes: 1, sum bit holes: 27 bits */
+         /* last cacheline: 32 bytes */
+
+> 
+> > +/*
+> > + * Under certain circumstances, access certain MSR may cause #GP.
+> > + * The function tests if the input MSR can be safely accessed.
+> > + */
+> > +static inline bool check_msr(unsigned long msr) {
+> 
+> This reads like a generic function;
+> 
+> > +	u64 val_old, val_new, val_tmp;
+> > +
+> > +	/*
+> > +	 * Read the current value, change it and read it back to see if it
+> > +	 * matches, this is needed to detect certain hardware emulators
+> > +	 * (qemu/kvm) that don't trap on the MSR access and always return
+> 0s.
+> > +	 */
+> > +	if (rdmsrl_safe(msr, &val_old))
+> > +		goto msr_fail;
+> > +	/*
+> > +	 * Only chagne it slightly,
+> > +	 * since the higher bits of some MSRs cannot be updated by wrmsrl.
+> > +	 * E.g. MSR_LBR_TOS
+> > +	 */
+> > +	val_tmp = val_old ^ 0x3UL;
+> 
+> but this is not generally true; not all MSRs can write the 2 LSB, can they? One
+> option would be to extend the function with a u64 mask.
+
+Right, the function should be easily used to check all MSRs, not just for the MSRs I tested.
+I will pass a mask as a parameter of the function.  
+
+> 
+> > +	if (wrmsrl_safe(msr, val_tmp) ||
+> > +		rdmsrl_safe(msr, &val_new))
+> > +		goto msr_fail;
+> > +
+> > +	if (val_new != val_tmp)
+> > +		goto msr_fail;
+> > +
+> > +	/* Here it's sure that the MSR can be safely accessed.
+> > +	 * Restore the old value and return.
+> > +	 */
+> > +	wrmsrl(msr, val_old);
+> > +
+> > +	return true;
+> > +
+> > +msr_fail:
+> > +	return false;
+> > +}
+> 
+> Also, by now this function is far too large to be inline and in a header.
+
+OK. I will move it to perf_event_intel.c as a static function.
 
