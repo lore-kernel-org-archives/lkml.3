@@ -1,82 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756110AbaGNPoW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 11:44:22 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:49205 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755944AbaGNPoM (ORCPT
+	id S1756140AbaGNPoh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 11:44:37 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:61405 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755828AbaGNPoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 11:44:12 -0400
+	Mon, 14 Jul 2014 11:44:14 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHSET v2 cgroup/for-3.17] cgroup: distinguish the default and legacy hierarchies when handling cftypes
-Date: Mon, 14 Jul 2014 11:44:02 -0400
-Message-Id: <1405352648-4279-1-git-send-email-tj@kernel.org>
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Jet Chen <jet.chen@intel.com>
+Subject: [PATCH 1/6] cgroup: split cgroup_base_files[] into cgroup_{dfl|legacy}_base_files[]
+Date: Mon, 14 Jul 2014 11:44:03 -0400
+Message-Id: <1405352648-4279-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1405352648-4279-1-git-send-email-tj@kernel.org>
+References: <1405352648-4279-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Currently cgroup_base_files[] contains the cgroup core interface files
+for both legacy and default hierarchies with each file tagged with
+CFTYPE_INSANE and CFTYPE_ONLY_ON_DFL.  This is difficult to read.
 
-This is v2 of dfl_files patchset.  Changes from the last version [1]
-are
+Let's separate it out to two separate tables, cgroup_dfl_base_files[]
+and cgroup_legacy_base_files[], and use the appropriate one in
+cgroup_mkdir() depending on the hierarchy type.  This makes tagging
+each file unnecessary.
 
-* Rebased on top of cgroup/for-3.17.
+This patch doesn't introduce any behavior changes.
 
-* 0004 updated so that CFTYPE_ONLY_ON_DFL and CFTYPE_INSANE are
-  cleared when cfts are removed as suggested by Li.
+v2: cgroup_dfl_base_files[] was missing the termination entry
+    triggering WARN in cgroup_init_cftypes() for 0day kernel testing
+    robot.  Fixed.
 
-Until now, cftype arrays carried files for both the default and legacy
-hierarchies and the files which needed to be used on only one of them
-were flagged with either CFTYPE_ONLY_ON_DFL or CFTYPE_INSANE.  This
-gets confusing very quickly and we may end up exposing interface files
-to the default hierarchy without thinking it through.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Jet Chen <jet.chen@intel.com>
+---
+ kernel/cgroup.c | 76 ++++++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 48 insertions(+), 28 deletions(-)
 
-This patchset makes cgroup core provide separate sets of interfaces
-for cftype handling so that the cftypes for the default and legacy
-hierarchies are clearly distinguished.  This makes all the existing
-subsystem interface files legacy-only by default and all subsystems
-will have no interface file created when enabled on the default
-hierarchy.  Each subsystem should explicitly review and compose the
-interface for the default hierarchy.
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 28f7d47..7e5fee5 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -180,7 +180,8 @@ static u64 css_serial_nr_next = 1;
+  */
+ static int need_forkexit_callback __read_mostly;
+ 
+-static struct cftype cgroup_base_files[];
++static struct cftype cgroup_dfl_base_files[];
++static struct cftype cgroup_legacy_base_files[];
+ 
+ static void cgroup_put(struct cgroup *cgrp);
+ static int rebind_subsystems(struct cgroup_root *dst_root,
+@@ -1614,6 +1615,7 @@ static int cgroup_setup_root(struct cgroup_root *root, unsigned int ss_mask)
+ {
+ 	LIST_HEAD(tmp_links);
+ 	struct cgroup *root_cgrp = &root->cgrp;
++	struct cftype *base_files;
+ 	struct css_set *cset;
+ 	int i, ret;
+ 
+@@ -1651,7 +1653,12 @@ static int cgroup_setup_root(struct cgroup_root *root, unsigned int ss_mask)
+ 	}
+ 	root_cgrp->kn = root->kf_root->kn;
+ 
+-	ret = cgroup_addrm_files(root_cgrp, cgroup_base_files, true);
++	if (root == &cgrp_dfl_root)
++		base_files = cgroup_dfl_base_files;
++	else
++		base_files = cgroup_legacy_base_files;
++
++	ret = cgroup_addrm_files(root_cgrp, base_files, true);
+ 	if (ret)
+ 		goto destroy_root;
+ 
+@@ -4095,7 +4102,8 @@ static int cgroup_clone_children_write(struct cgroup_subsys_state *css,
+ 	return 0;
+ }
+ 
+-static struct cftype cgroup_base_files[] = {
++/* cgroup core interface files for the default hierarchy */
++static struct cftype cgroup_dfl_base_files[] = {
+ 	{
+ 		.name = "cgroup.procs",
+ 		.seq_start = cgroup_pidlist_start,
+@@ -4107,46 +4115,52 @@ static struct cftype cgroup_base_files[] = {
+ 		.mode = S_IRUGO | S_IWUSR,
+ 	},
+ 	{
+-		.name = "cgroup.clone_children",
+-		.flags = CFTYPE_INSANE,
+-		.read_u64 = cgroup_clone_children_read,
+-		.write_u64 = cgroup_clone_children_write,
+-	},
+-	{
+-		.name = "cgroup.sane_behavior",
+-		.flags = CFTYPE_INSANE | CFTYPE_ONLY_ON_ROOT,
+-		.seq_show = cgroup_sane_behavior_show,
+-	},
+-	{
+ 		.name = "cgroup.controllers",
+-		.flags = CFTYPE_ONLY_ON_DFL | CFTYPE_ONLY_ON_ROOT,
++		.flags = CFTYPE_ONLY_ON_ROOT,
+ 		.seq_show = cgroup_root_controllers_show,
+ 	},
+ 	{
+ 		.name = "cgroup.controllers",
+-		.flags = CFTYPE_ONLY_ON_DFL | CFTYPE_NOT_ON_ROOT,
++		.flags = CFTYPE_NOT_ON_ROOT,
+ 		.seq_show = cgroup_controllers_show,
+ 	},
+ 	{
+ 		.name = "cgroup.subtree_control",
+-		.flags = CFTYPE_ONLY_ON_DFL,
+ 		.seq_show = cgroup_subtree_control_show,
+ 		.write = cgroup_subtree_control_write,
+ 	},
+ 	{
+ 		.name = "cgroup.populated",
+-		.flags = CFTYPE_ONLY_ON_DFL | CFTYPE_NOT_ON_ROOT,
++		.flags = CFTYPE_NOT_ON_ROOT,
+ 		.seq_show = cgroup_populated_show,
+ 	},
++	{ }	/* terminate */
++};
+ 
+-	/*
+-	 * Historical crazy stuff.  These don't have "cgroup."  prefix and
+-	 * don't exist if sane_behavior.  If you're depending on these, be
+-	 * prepared to be burned.
+-	 */
++/* cgroup core interface files for the legacy hierarchies */
++static struct cftype cgroup_legacy_base_files[] = {
++	{
++		.name = "cgroup.procs",
++		.seq_start = cgroup_pidlist_start,
++		.seq_next = cgroup_pidlist_next,
++		.seq_stop = cgroup_pidlist_stop,
++		.seq_show = cgroup_pidlist_show,
++		.private = CGROUP_FILE_PROCS,
++		.write = cgroup_procs_write,
++		.mode = S_IRUGO | S_IWUSR,
++	},
++	{
++		.name = "cgroup.clone_children",
++		.read_u64 = cgroup_clone_children_read,
++		.write_u64 = cgroup_clone_children_write,
++	},
++	{
++		.name = "cgroup.sane_behavior",
++		.flags = CFTYPE_ONLY_ON_ROOT,
++		.seq_show = cgroup_sane_behavior_show,
++	},
+ 	{
+ 		.name = "tasks",
+-		.flags = CFTYPE_INSANE,		/* use "procs" instead */
+ 		.seq_start = cgroup_pidlist_start,
+ 		.seq_next = cgroup_pidlist_next,
+ 		.seq_stop = cgroup_pidlist_stop,
+@@ -4157,13 +4171,12 @@ static struct cftype cgroup_base_files[] = {
+ 	},
+ 	{
+ 		.name = "notify_on_release",
+-		.flags = CFTYPE_INSANE,
+ 		.read_u64 = cgroup_read_notify_on_release,
+ 		.write_u64 = cgroup_write_notify_on_release,
+ 	},
+ 	{
+ 		.name = "release_agent",
+-		.flags = CFTYPE_INSANE | CFTYPE_ONLY_ON_ROOT,
++		.flags = CFTYPE_ONLY_ON_ROOT,
+ 		.seq_show = cgroup_release_agent_show,
+ 		.write = cgroup_release_agent_write,
+ 		.max_write_len = PATH_MAX - 1,
+@@ -4444,6 +4457,7 @@ static int cgroup_mkdir(struct kernfs_node *parent_kn, const char *name,
+ 	struct cgroup_root *root;
+ 	struct cgroup_subsys *ss;
+ 	struct kernfs_node *kn;
++	struct cftype *base_files;
+ 	int ssid, ret;
+ 
+ 	parent = cgroup_kn_lock_live(parent_kn);
+@@ -4514,7 +4528,12 @@ static int cgroup_mkdir(struct kernfs_node *parent_kn, const char *name,
+ 	if (ret)
+ 		goto out_destroy;
+ 
+-	ret = cgroup_addrm_files(cgrp, cgroup_base_files, true);
++	if (cgroup_on_dfl(cgrp))
++		base_files = cgroup_dfl_base_files;
++	else
++		base_files = cgroup_legacy_base_files;
++
++	ret = cgroup_addrm_files(cgrp, base_files, true);
+ 	if (ret)
+ 		goto out_destroy;
+ 
+@@ -4836,7 +4855,8 @@ int __init cgroup_init(void)
+ 	unsigned long key;
+ 	int ssid, err;
+ 
+-	BUG_ON(cgroup_init_cftypes(NULL, cgroup_base_files));
++	BUG_ON(cgroup_init_cftypes(NULL, cgroup_dfl_base_files));
++	BUG_ON(cgroup_init_cftypes(NULL, cgroup_legacy_base_files));
+ 
+ 	mutex_lock(&cgroup_mutex);
+ 
+-- 
+1.9.3
 
-This patchset contains the following six patches.
-
- 0001-cgroup-split-cgroup_base_files-into-cgroup_-dfl-lega.patch
- 0002-cgroup-rename-cgroup_subsys-base_cftypes-to-legacy_c.patch
- 0003-cgroup-replace-cgroup_add_cftypes-with-cgroup_add_le.patch
- 0004-cgroup-distinguish-the-default-and-legacy-hierarchie.patch
- 0005-cgroup-make-CFTYPE_ONLY_ON_DFL-and-CFTYPE_NO_-intern.patch
- 0006-cgroup-initialize-cgrp_dfl_root_inhibit_ss_mask-from.patch
-
-This patchset is on top of afd1a8b3e0bc ("cpuset: export effective
-masks to userspace")
-
-and available in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-dfl_files-v2
-
-diffstat follows.  Thanks.
-
- Documentation/cgroups/unified-hierarchy.txt |   18 ++-
- block/blk-cgroup.c                          |    5
- include/linux/cgroup.h                      |   17 ++
- kernel/cgroup.c                             |  160 +++++++++++++++++++++-------
- kernel/cgroup_freezer.c                     |    2
- kernel/cpuset.c                             |    2
- kernel/sched/core.c                         |    2
- kernel/sched/cpuacct.c                      |    2
- mm/hugetlb_cgroup.c                         |    5
- mm/memcontrol.c                             |    6 -
- net/core/netclassid_cgroup.c                |    2
- net/core/netprio_cgroup.c                   |    2
- net/ipv4/tcp_memcontrol.c                   |    2
- security/device_cgroup.c                    |    2
- 14 files changed, 160 insertions(+), 67 deletions(-)
-
---
-tejun
-
-[1] http://lkml.kernel.org/g/1404345055-8196-1-git-send-email-tj@kernel.org
