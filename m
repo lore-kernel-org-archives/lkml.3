@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893AbaGNLhk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 07:37:40 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:45160 "EHLO
+	id S1754976AbaGNLhz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 07:37:55 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:45212 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754228AbaGNLhJ (ORCPT
+	with ESMTP id S1754830AbaGNLh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 07:37:09 -0400
+	Mon, 14 Jul 2014 07:37:26 -0400
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
@@ -21,9 +21,9 @@ Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v8 04/13] clk: max77686: Add DT include for MAX77686 PMIC clock
-Date: Mon, 14 Jul 2014 13:36:00 +0200
-Message-Id: <1405337769-3741-5-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH v8 09/13] clk: max77802: Add DT binding documentation
+Date: Mon, 14 Jul 2014 13:36:05 +0200
+Message-Id: <1405337769-3741-10-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1405337769-3741-1-git-send-email-javier.martinez@collabora.co.uk>
 References: <1405337769-3741-1-git-send-email-javier.martinez@collabora.co.uk>
@@ -31,78 +31,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a dt-binding include for Maxim 77686
-PMIC clock IDs that can be used by both the max77686
-clock driver and Device Tree source files.
+Add Device Tree binding documentation for the clocks
+outputs in the Maxim 77802 Power Management IC.
 
 Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Reviewed-by: Mike Turquette <mturquette@linaro.org>
 ---
 
 Changes since v6: None
 
 Changes since v5:
- - Improve wording in commit message. Suggested by Andreas Farber.
+ - Fix typo error in DT binding. Suggested by Andreas Farber.
+ - Add "clock-output-names" as an optional property since now is supported.
 
 Changes since v4: None
 
 Changes since v3:
- - Keep the note that this patch needs another change due wakeup
-   ordering problems.
----
- drivers/clk/clk-max77686.c                 |  7 +------
- include/dt-bindings/clock/maxim,max77686.h | 23 +++++++++++++++++++++++
- 2 files changed, 24 insertions(+), 6 deletions(-)
- create mode 100644 include/dt-bindings/clock/maxim,max77686.h
+ - Don't use the same clock driver name in clock-names since it's a consumer
+   concept and most probably will be different. Suggested by Doug Anderson.
 
-diff --git a/drivers/clk/clk-max77686.c b/drivers/clk/clk-max77686.c
-index 3d7e8dd..185b611 100644
---- a/drivers/clk/clk-max77686.c
-+++ b/drivers/clk/clk-max77686.c
-@@ -30,12 +30,7 @@
- #include <linux/mutex.h>
- #include <linux/clkdev.h>
- 
--enum {
--	MAX77686_CLK_AP = 0,
--	MAX77686_CLK_CP,
--	MAX77686_CLK_PMIC,
--	MAX77686_CLKS_NUM,
--};
-+#include <dt-bindings/clock/maxim,max77686.h>
- 
- struct max77686_clk {
- 	struct max77686_dev *iodev;
-diff --git a/include/dt-bindings/clock/maxim,max77686.h b/include/dt-bindings/clock/maxim,max77686.h
+Changes since v2:
+ - Split the DT binding documentation in a separate patch.
+---
+ .../devicetree/bindings/clock/maxim,max77802.txt   | 44 ++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/maxim,max77802.txt
+
+diff --git a/Documentation/devicetree/bindings/clock/maxim,max77802.txt b/Documentation/devicetree/bindings/clock/maxim,max77802.txt
 new file mode 100644
-index 0000000..7b28b09
+index 0000000..c6dc783
 --- /dev/null
-+++ b/include/dt-bindings/clock/maxim,max77686.h
-@@ -0,0 +1,23 @@
-+/*
-+ * Copyright (C) 2014 Google, Inc
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Device Tree binding constants clocks for the Maxim 77686 PMIC.
-+ */
++++ b/Documentation/devicetree/bindings/clock/maxim,max77802.txt
+@@ -0,0 +1,44 @@
++Binding for Maxim MAX77802 32k clock generator block
 +
-+#ifndef _DT_BINDINGS_CLOCK_MAXIM_MAX77686_CLOCK_H
-+#define _DT_BINDINGS_CLOCK_MAXIM_MAX77686_CLOCK_H
++This is a part of device tree bindings of MAX77802 multi-function device.
++More information can be found in bindings/mfd/max77802.txt file.
 +
-+/* Fixed rate clocks. */
++The MAX77802 contains two 32.768khz clock outputs that can be controlled
++(gated/ungated) over I2C.
 +
-+#define MAX77686_CLK_AP		0
-+#define MAX77686_CLK_CP		1
-+#define MAX77686_CLK_PMIC	2
++Following properties should be present in main device node of the MFD chip.
 +
-+/* Total number of clocks. */
-+#define MAX77686_CLKS_NUM		(MAX77686_CLK_PMIC + 1)
++Required properties:
++- #clock-cells: From common clock binding; shall be set to 1.
 +
-+#endif /* _DT_BINDINGS_CLOCK_MAXIM_MAX77686_CLOCK_H */
++Optional properties:
++- clock-output-names: From common clock binding.
++
++Each clock is assigned an identifier and client nodes can use this identifier
++to specify the clock which they consume. Following indices are allowed:
++     - 0: 32khz_ap clock,
++     - 1: 32khz_cp clock.
++
++Clocks are defined as preprocessor macros in dt-bindings/clock/maxim,max77802.h
++header and can be used in device tree sources.
++
++Example: Node of the MFD chip
++
++	max77802: max77802@09 {
++		compatible = "maxim,max77802";
++		interrupt-parent = <&wakeup_eint>;
++		interrupts = <26 0>;
++		reg = <0x09>;
++		#clock-cells = <1>;
++
++		/* ... */
++	};
++
++Example: Clock consumer node
++
++	foo@0 {
++		compatible = "bar,foo";
++		/* ... */
++		clock-names = "my-clock";
++		clocks = <&max77802 MAX77802_CLK_32K_AP>;
++	};
 -- 
 2.0.0.rc2
 
