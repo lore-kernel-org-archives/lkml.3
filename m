@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756980AbaGNUdm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 16:33:42 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:57673 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756050AbaGNUdk (ORCPT
+	id S1757130AbaGNUeY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 16:34:24 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:39702 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757034AbaGNUeW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 16:33:40 -0400
-Date: Mon, 14 Jul 2014 13:33:36 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-        Borislav Petkov <bp@alien8.de>, jdelvare@suse.de,
-        rdunlap@infradead.org, bhelgaas@google.com, lm-sensors@lm-sensors.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH] hwmon, k10temp: Add support for AMD F15h M60h processor
-Message-ID: <20140714203336.GA30926@roeck-us.net>
-References: <1405369388-12729-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
- <20140714195128.GA25124@pd.tnic>
- <53C43BDF.2070403@ladisch.de>
+	Mon, 14 Jul 2014 16:34:22 -0400
+Date: Tue, 15 Jul 2014 02:04:13 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] Bluetooth: cmtp: Remove unnecessary null test
+Message-ID: <20140714203412.GA16532@himangi-Dell>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53C43BDF.2070403@ladisch.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 10:21:51PM +0200, Clemens Ladisch wrote:
-> Borislav Petkov wrote:
-> > On Mon, Jul 14, 2014 at 03:23:08PM -0500, Aravind Gopalakrishnan wrote:
-> >> +	if (boot_cpu_data.x86 == 0x15 && boot_cpu_data.x86_model == 0x60) {
-> >> +		pci_bus_write_config_dword(pdev->bus, PCI_DEVFN(0, 0),
-> >> +					   NB_SMU_IND_ADDR, IND_ADDR_OFFSET);
-> >> +		pci_bus_read_config_dword(pdev->bus, PCI_DEVFN(0, 0),
-> >> +					  NB_SMU_IND_DATA, &regval);
-> 
-> How do you prevent races with any other code that accesses some indirect
-> register?
-> 
-I just wanted to ask exactly the same question. I think this will need
-locking.
+This patch removes the null test on ctrl. ctrl is initialized at the
+beginning of the function to &session->ctrl. Since session is
+dereferenced prior to the null test, session must be a valid pointer,
+and &session->ctrl cannot be null.
 
-> >> +
-> >> +	} else
-> >> +		pci_read_config_dword(pdev, REG_REPORTED_TEMPERATURE, &regval);
-> 
-> Why the empty line?  Also, use braces in both branches.
-> 
-Agreed. Too bad the respective checkpatch warning was moved to --strict.
+The following Coccinelle script is used for detecting the change:
 
-Guenter
+@r@
+expression e,f;
+identifier g,y;
+statement S1,S2;
+@@
+
+*e = &f->g
+<+...
+ f->y
+ ...+>
+*if (e != NULL || ...)
+ S1 else S2
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+ net/bluetooth/cmtp/capi.c | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/net/bluetooth/cmtp/capi.c b/net/bluetooth/cmtp/capi.c
+index cd75e4d..1ca8a87 100644
+--- a/net/bluetooth/cmtp/capi.c
++++ b/net/bluetooth/cmtp/capi.c
+@@ -362,12 +362,6 @@ void cmtp_recv_capimsg(struct cmtp_session *session, struct sk_buff *skb)
+ 		CAPIMSG_SETCONTROL(skb->data, contr);
+ 	}
+ 
+-	if (!ctrl) {
+-		BT_ERR("Can't find controller %d for message", session->num);
+-		kfree_skb(skb);
+-		return;
+-	}
+-
+ 	capi_ctr_handle_message(ctrl, appl, skb);
+ }
+ 
+-- 
+1.9.1
+
