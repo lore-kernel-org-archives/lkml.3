@@ -1,93 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757272AbaGNV5s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 17:57:48 -0400
-Received: from www.linutronix.de ([62.245.132.108]:42631 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724AbaGNV5q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 17:57:46 -0400
-Date: Mon, 14 Jul 2014 23:57:42 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: [ANNOUNCE] 3.14.12-rt9
-Message-ID: <alpine.DEB.2.10.1407142242270.24854@nanos>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1757235AbaGNWBx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 18:01:53 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:45455 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750724AbaGNWBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 18:01:51 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: suravee.suthikulpanit@amd.com, jason@lakedaemon.net
+Cc: linux-arm-kernel@lists.infradead.org, marc.zyngier@arm.com,
+        mark.rutland@arm.com, devicetree@vger.kernel.org, pawel.moll@arm.com,
+        linux-doc@vger.kernel.org, Catalin.Marinas@arm.com,
+        Harish.Kasiviswanathan@amd.com, linux-kernel@vger.kernel.org,
+        Will.Deacon@arm.com,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
+        linux-pci@vger.kernel.org, tglx@linutronix.de
+Subject: [PATCH] irqchip: gic: Add binding probe for ARM GIC400
+Date: Tue, 15 Jul 2014 00:03:03 +0200
+Message-ID: <2621565.f5eISveXXJ@diego>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <2932284.F1eaAf8ArJ@diego>
+References: <1404947104-21345-1-git-send-email-suravee.suthikulpanit@amd.com> <1404947104-21345-2-git-send-email-suravee.suthikulpanit@amd.com> <2932284.F1eaAf8ArJ@diego>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear RT Folks,
+From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
 
-I'm pleased to announce the 3.14.12-rt9 release. 3.14.10-rt8 is a not
-announced update to 3.14.12 without any RT changes.
+Commit 3ab72f9156bb "dt-bindings: add GIC-400 binding" added the
+"arm,gic-400" compatible string, but the corresponding IRQCHIP_DECLARE
+was never added to the gic driver.
 
-Changes since 3.14.12-rt8:
+Therefore add the missing irqchip declaration for it.
 
-   * Bring back the interrupt randomness hunk which got dropped due
-     an unresolved reject. Thanks to Ben Hutchings for spotting that!
+Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
 
-<politics>
-
-Thanks a lot for all the supportive mails on- and offlist!
-
-  The most intriguing idea so far was to jump on the momentum of the
-  most hilarious crowd funding nonsense:
-
-    https://www.kickstarter.com/projects/324283889/potato-salad
-
-  So in consequence we might turn RT into a crowdfunded nonsense
-  project which serves the purpose of controlling the potato-salad
-  machine to make sure that Zack Danger Brown can deliver all the
-  potato salad people have pledged for.
-
-</politics>
-
-Thanks,
-
-      Thomas
-
+Removed additional empty line and adapted commit message to mark it
+as fixing an issue.
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
 ---
-The delta patch against 3.14.12-rt8 is appended below and can be found
-here:
+As I really need this, I took the liberty of adapting the patch accordingly
+to make it apply on top of the current irqchip/for-next (or urgent) and
+explicitly state the fixed issue. Hope that is ok
 
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.14/incr/patch-3.14.10-rt8-rt9.patch.xz
+ drivers/irqchip/irq-gic.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-The RT patch against 3.14.12 can be found here:
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index 9d26643..6ff28b4 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -1020,6 +1020,7 @@ gic_of_init(struct device_node *node, struct device_node *parent)
+ 	gic_cnt++;
+ 	return 0;
+ }
++IRQCHIP_DECLARE(gic_400, "arm,gic-400", gic_of_init);
+ IRQCHIP_DECLARE(cortex_a15_gic, "arm,cortex-a15-gic", gic_of_init);
+ IRQCHIP_DECLARE(cortex_a9_gic, "arm,cortex-a9-gic", gic_of_init);
+ IRQCHIP_DECLARE(cortex_a7_gic, "arm,cortex-a7-gic", gic_of_init);
+-- 
+1.9.0
 
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.14/patch-3.14.12-rt9.patch.xz
 
-The split quilt queue is available at:
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.14/patches-3.14.12-rt9.tar.xz
-
-Index: linux-stable/kernel/irq/manage.c
-===================================================================
---- linux-stable.orig/kernel/irq/manage.c
-+++ linux-stable/kernel/irq/manage.c
-@@ -942,6 +942,12 @@ static int irq_thread(void *data)
- 		if (action_ret == IRQ_HANDLED)
- 			atomic_inc(&desc->threads_handled);
- 
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+		migrate_disable();
-+		add_interrupt_randomness(action->irq, 0,
-+				 desc->random_ip ^ (unsigned long) action);
-+		migrate_enable();
-+#endif
- 		wake_threads_waitq(desc);
- 	}
- 
-Index: linux-stable/localversion-rt
-===================================================================
---- linux-stable.orig/localversion-rt
-+++ linux-stable/localversion-rt
-@@ -1 +1 @@
---rt8
-+-rt9
