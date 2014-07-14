@@ -1,177 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799AbaGNEEm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 00:04:42 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:65116 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750721AbaGNEEZ (ORCPT
+	id S1751139AbaGNEJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 00:09:59 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:61464 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731AbaGNEJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 00:04:25 -0400
-X-IronPort-AV: E=Sophos;i="5.00,886,1396972800"; 
-   d="scan'208";a="33221101"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 1/1 V2] workqueue: unfold start_worker() into create_worker()
-Date: Mon, 14 Jul 2014 12:05:07 +0800
-Message-ID: <1405310716-12270-2-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1405310716-12270-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1405008074-11031-1-git-send-email-laijs@cn.fujitsu.com>
- <1405310716-12270-1-git-send-email-laijs@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.103]
+	Mon, 14 Jul 2014 00:09:49 -0400
+X-AuditID: cbfee690-b7fb56d000003439-ff-53c3580b6fd6
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+To: "'Kukjin Kim'" <kgene.kim@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        naushad@samsung.com, t.figa@samsung.com, joshi@samsung.com,
+        vikas.sajjan@samsung.com, chow.kim@samsung.com
+References: <1404705056-11965-1-git-send-email-pankaj.dubey@samsung.com>
+ <1404705056-11965-3-git-send-email-pankaj.dubey@samsung.com>
+ <53BB25B7.6000500@samsung.com> <000801cf9a7f$3896e150$a9c4a3f0$@samsung.com>
+ <026701cf9c43$98b20860$ca161920$@samsung.com>
+In-reply-to: <026701cf9c43$98b20860$ca161920$@samsung.com>
+Subject: RE: [PATCH v6 2/6] ARM: EXYNOS: Move cpufreq and cpuidle device
+ registration to init_machine
+Date: Mon, 14 Jul 2014 09:40:59 +0530
+Message-id: <000301cf9f19$9fff2110$dffd6330$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQEaU7Q6At8rMhsBv/R1lp0UktfiQgLFxINjAml4XUMBgODIYgL0EKJknLxoYnA=
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDIsWRmVeSWpSXmKPExsWyRsSkTpc74nCwwatzhhbLJt1ls/i+6wu7
+	Re+Cq2wWmx5fY7W4vGsOm8WM8/uYLG5f5rX4dPQ/q8X6Ga9ZLG4+287kwOXR0tzD5rF5Sb1H
+	35ZVjB6fN8kFsERx2aSk5mSWpRbp2yVwZdz7e4+5YJ54xe5Nb1gbGJuEuhg5OSQETCT+LnrN
+	BmGLSVy4tx7I5uIQEljKKNE4uYMNpmjfqgPMEIlFjBJ9J7vZIZy/jBJ3ryxnAqliE9CVePJ+
+	LjOILSKgIfF09xFGkCJmgc+MEosm7meE6Ghjknh4fAsLSBWngJVEz5dlYB3CAukSJ5adZQSx
+	WQRUJaYtOQFkc3DwClhKLL4hCxLmFRCU+DH5Hlgrs4CWxPqdx5kgbHmJzWveMkOcqiCx4+xr
+	Rogj/CSuT5vMDFEjLjHpwUOwqyUEfrJL7DgynRlil4DEt8mHWEB2SQjISmw6ADVHUuLgihss
+	ExglZiFZPQvJ6llIVs9CsmIBI8sqRtHUguSC4qT0IhO94sTc4tK8dL3k/NxNjMCYPv3v2YQd
+	jPcOWB9iTAZaP5FZSjQ5H5gS8kriDY3NjCxMTUyNjcwtzUgTVhLnVXuUFCQkkJ5YkpqdmlqQ
+	WhRfVJqTWnyIkYmDU6qBUVfra37S7UMzJU3ljt168mDrtZcsgScOteg2MxgYaPfv0ZA1+a3L
+	5F8bPn1Vj9lrSZWygpSlB3uOV3eZGi6d3K2junrvvBlf3ixnsDC+MFuEq7WqxWqWoBjTPvaM
+	/rVSype0ttmlfejNTxJ66KTjeeHwPHH524uFuLgtTvfsfb5IMtinSl9AiaU4I9FQi7moOBEA
+	X9mt4P8CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jAV3uiMPBBtO2a1osm3SXzeL7ri/s
+	Fr0LrrJZbHp8jdXi8q45bBYzzu9jsrh9mdfi09H/rBbrZ7xmsbj5bDuTA5dHS3MPm8fmJfUe
+	fVtWMXp83iQXwBLVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk
+	4hOg65aZA3SPkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwhjHj3t97zAXz
+	xCt2b3rD2sDYJNTFyMkhIWAisW/VAWYIW0ziwr31bF2MXBxCAosYJfpOdrNDOH8ZJe5eWc4E
+	UsUmoCvx5P1csA4RAQ2Jp7uPMIIUMQt8ZpRYNHE/I0RHG5PEw+NbWECqOAWsJHq+LAPrEBZI
+	lzix7CwjiM0ioCoxbckJIJuDg1fAUmLxDVmQMK+AoMSPyffAWpkFtCTW7zzOBGHLS2xe8xbq
+	VAWJHWdfM0Ic4SdxfdpkZogacYlJDx6yT2AUmoVk1Cwko2YhGTULScsCRpZVjKKpBckFxUnp
+	uYZ6xYm5xaV56XrJ+bmbGMEJ45nUDsaVDRaHGAU4GJV4eDM4DgcLsSaWFVfmHmKU4GBWEuEN
+	dwMK8aYkVlalFuXHF5XmpBYfYjQFenQis5Rocj4wmeWVxBsam5ibGptamliYmFkqifMeaLUO
+	FBJITyxJzU5NLUgtgulj4uCUamA8nPvz6YdtB0IW3JhxIDn+4x0LsTVr50j/WZFq2sN1UVb8
+	qXDp1u8daj+udOtVc/KpLpjZcD7o/F2xVyFTs364RXu0nvJ8u+edtGRo/1Fd/stay8LNFp6e
+	u1JrwmQjkd3S75rm29ixt8ecLttWeLpR5jELRwzj+iPvc74e+3hp71FPgRZOlkw7JZbijERD
+	Leai4kQAcXtuBi4DAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simply unfold the code of start_worker() into create_worker() and
-remove the original start_worker() and create_and_start_worker().
+Hi Kukjin,
 
-The only trade-off is the introduced overhead that the pool->lock
-is released and re-grabbed after the newly worker is started.
-The overhead is acceptable since the manager is slow path.
+On Thursday, July 10, 2014 7:04 PM, Kukjin wrote:
+> Pankaj Dubey wrote:
+> >
+> > Hi Kukjin,
+> >
+> Hi,
+> 
+> > >
+> > > On 07/07/14 12:50, Pankaj Dubey wrote:
+> > > > As exynos_cpuidle_init and exynos_cpufreq_init function have just
+> > > > one lines of code for registering platform devices. We can move
+> > > > these lines to exynos_dt_machine_init and delete
+> > > > exynos_cpuidle_init and exynos_cpufreq_init function. This will
+> > > > help in reducing lines of code in exynos.c, making it more cleaner.
+> > > >
+> > > > Suggested-by: Tomasz Figa<t.figa@samsung.com>
+> > > > Signed-off-by: Pankaj Dubey<pankaj.dubey@samsung.com>
+> > > > Reviewed-by: Tomasz Figa<t.figa@samsung.com>
+> > > > ---
+> > > >   arch/arm/mach-exynos/exynos.c |   20 ++++----------------
+> > > >   1 file changed, 4 insertions(+), 16 deletions(-)
+> > > >
+> > > > diff --git a/arch/arm/mach-exynos/exynos.c
+> > > > b/arch/arm/mach-exynos/exynos.c index ff60b4c..47170eb 100644
+> > > > --- a/arch/arm/mach-exynos/exynos.c
+> > > > +++ b/arch/arm/mach-exynos/exynos.c
+> > > > @@ -171,19 +171,6 @@ static struct platform_device exynos_cpuidle =
+{
+> > > >   	.id                = -1,
+> > > >   };
+> > > >
+> > > > -void __init exynos_cpuidle_init(void) -{
+> > > > -	if (soc_is_exynos5440())
+> > > > -		return;
+> > > > -
+> > > > -	platform_device_register(&exynos_cpuidle);
+> > > > -}
+> > > > -
+> > > > -void __init exynos_cpufreq_init(void) -{
+> > > > -	platform_device_register_simple("exynos-cpufreq", -1, NULL,
+0);
+> > > > -}
+> > > > -
+> > > >   void __iomem *sysram_base_addr;
+> > > >   void __iomem *sysram_ns_base_addr;
+> > > >
+> > > > @@ -300,10 +287,11 @@ static void __init
+exynos_dt_machine_init(void)
+> > > >   	if (!IS_ENABLED(CONFIG_SMP))
+> > > >   		exynos_sysram_init();
+> > > >
+> > > > -	if (!of_machine_is_compatible("samsung,exynos5420"))
+> > > > -		exynos_cpuidle_init();
+> > > > +	if (!of_machine_is_compatible("samsung,exynos5420") ||
+> > > > +
+!of_machine_is_compatible("samsung,exynos5440"))
+> > > > +		platform_device_register(&exynos_cpuidle);
+> > > >
+> > > > -	exynos_cpufreq_init();
+> > > > +	platform_device_register_simple("exynos-cpufreq", -1, NULL,
+0);
+> > > >
+> > > >   	of_platform_populate(NULL, of_default_bus_match_table, NULL,
+> NULL);
+> > > >   }
+> > >
+> > > This cannot be applied in my tree now....
+> > >
+> >
+> > May I know what the issue is? As I am able to rebase this patch on
+> > today's kgene/for-next and could not see any merge conflict.
+> > If you think I need to respin this patch please let me know.
+> >
+> 
+> Pankaj, I found this is based on cpuidle related branch in my tree, BTW
+this
+> has a dependency with following so please respin your patch once I take
+the
+> patch in my tree maybe tonight.
+> 
+> https://lkml.org/lkml/2014/6/24/286
+> 
 
-And because this new locking behavior, the newly created worker
-may grab the lock earlier than the manager and go to process
-work items. In this case, the need_to_create_worker() may be
-true as expected and the manager goes to restart without complaint.
+Thanks. I have respinned this after resolving merge conflict. 
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- kernel/workqueue.c |   69 ++++++++++------------------------------------------
- 1 files changed, 13 insertions(+), 56 deletions(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 2b3c12c..5b68527 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1553,7 +1553,7 @@ static void worker_enter_idle(struct worker *worker)
- 			 (worker->hentry.next || worker->hentry.pprev)))
- 		return;
- 
--	/* can't use worker_set_flags(), also called from start_worker() */
-+	/* can't use worker_set_flags(), also called from create_worker() */
- 	worker->flags |= WORKER_IDLE;
- 	pool->nr_idle++;
- 	worker->last_active = jiffies;
-@@ -1674,8 +1674,7 @@ static void worker_detach_from_pool(struct worker *worker,
-  * create_worker - create a new workqueue worker
-  * @pool: pool the new worker will belong to
-  *
-- * Create a new worker which is attached to @pool.  The new worker must be
-- * started by start_worker().
-+ * Create and start a new worker which is attached to @pool.
-  *
-  * CONTEXT:
-  * Might sleep.  Does GFP_KERNEL allocations.
-@@ -1720,6 +1719,13 @@ static struct worker *create_worker(struct worker_pool *pool)
- 	/* successful, attach the worker to the pool */
- 	worker_attach_to_pool(worker, pool);
- 
-+	/* start the newly created worker */
-+	spin_lock_irq(&pool->lock);
-+	worker->pool->nr_workers++;
-+	worker_enter_idle(worker);
-+	wake_up_process(worker->task);
-+	spin_unlock_irq(&pool->lock);
-+
- 	return worker;
- 
- fail:
-@@ -1730,44 +1736,6 @@ fail:
- }
- 
- /**
-- * start_worker - start a newly created worker
-- * @worker: worker to start
-- *
-- * Make the pool aware of @worker and start it.
-- *
-- * CONTEXT:
-- * spin_lock_irq(pool->lock).
-- */
--static void start_worker(struct worker *worker)
--{
--	worker->pool->nr_workers++;
--	worker_enter_idle(worker);
--	wake_up_process(worker->task);
--}
--
--/**
-- * create_and_start_worker - create and start a worker for a pool
-- * @pool: the target pool
-- *
-- * Grab the managership of @pool and create and start a new worker for it.
-- *
-- * Return: 0 on success. A negative error code otherwise.
-- */
--static int create_and_start_worker(struct worker_pool *pool)
--{
--	struct worker *worker;
--
--	worker = create_worker(pool);
--	if (worker) {
--		spin_lock_irq(&pool->lock);
--		start_worker(worker);
--		spin_unlock_irq(&pool->lock);
--	}
--
--	return worker ? 0 : -ENOMEM;
--}
--
--/**
-  * destroy_worker - destroy a workqueue worker
-  * @worker: worker to be destroyed
-  *
-@@ -1905,18 +1873,7 @@ restart:
- 	mod_timer(&pool->mayday_timer, jiffies + MAYDAY_INITIAL_TIMEOUT);
- 
- 	while (true) {
--		struct worker *worker;
--
--		worker = create_worker(pool);
--		if (worker) {
--			spin_lock_irq(&pool->lock);
--			start_worker(worker);
--			if (WARN_ON_ONCE(need_to_create_worker(pool)))
--				goto restart;
--			return true;
--		}
--
--		if (!need_to_create_worker(pool))
-+		if (create_worker(pool) || !need_to_create_worker(pool))
- 			break;
- 
- 		schedule_timeout_interruptible(CREATE_COOLDOWN);
-@@ -3543,7 +3500,7 @@ static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
- 		goto fail;
- 
- 	/* create and start the initial worker */
--	if (create_and_start_worker(pool) < 0)
-+	if (!create_worker(pool))
- 		goto fail;
- 
- 	/* install */
-@@ -4617,7 +4574,7 @@ static int workqueue_cpu_up_callback(struct notifier_block *nfb,
- 		for_each_cpu_worker_pool(pool, cpu) {
- 			if (pool->nr_workers)
- 				continue;
--			if (create_and_start_worker(pool) < 0)
-+			if (!create_worker(pool))
- 				return NOTIFY_BAD;
- 		}
- 		break;
-@@ -4917,7 +4874,7 @@ static int __init init_workqueues(void)
- 
- 		for_each_cpu_worker_pool(pool, cpu) {
- 			pool->flags &= ~POOL_DISASSOCIATED;
--			BUG_ON(create_and_start_worker(pool) < 0);
-+			BUG_ON(!create_worker(pool));
- 		}
- 	}
- 
--- 
-1.7.4.4
+Thanks,
+Pankaj Dubey
+
+> Thanks,
+> Kukjin
 
