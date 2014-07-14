@@ -1,86 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754992AbaGNMO7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 08:14:59 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56366 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754862AbaGNMOl (ORCPT
+	id S1755075AbaGNMPo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 08:15:44 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:50731 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754207AbaGNMPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 08:14:41 -0400
-Message-ID: <53C39052.7040400@pengutronix.de>
-Date: Mon, 14 Jul 2014 10:09:54 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Mon, 14 Jul 2014 08:15:38 -0400
+Date: Mon, 14 Jul 2014 14:15:25 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Chen LinX <linx.z.chen@intel.com>
+Cc: paulus@samba.org, mingo@redhat.com, acme@ghostprotocols.net,
+        linux-kernel@vger.kernel.org, yanmin_zhang@linux.intel.com,
+        Yanmin Zhang <yanmin.zhang@intel.com>
+Subject: Re: [PATCH] perf: Don't enable the perf_event without in
+ PERF_ATTACH_CONTEXT status
+Message-ID: <20140714121525.GX19379@twins.programming.kicks-ass.net>
+References: <1404358598-19186-1-git-send-email-linx.z.chen@intel.com>
 MIME-Version: 1.0
-To: Stefan Agner <stefan@agner.ch>, shawn.guo@freescale.com
-CC: kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/4] ARM: vf610: add FlexCAN support
-References: <cover.1405322992.git.stefan@agner.ch>
-In-Reply-To: <cover.1405322992.git.stefan@agner.ch>
-X-Enigmail-Version: 1.6
 Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="Q58wVAQl8kOQJqEpSQh4Qw0UaTlVQO0cl"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	protocol="application/pgp-signature"; boundary="04bHF1C/QcYMF4Q7"
+Content-Disposition: inline
+In-Reply-To: <1404358598-19186-1-git-send-email-linx.z.chen@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---Q58wVAQl8kOQJqEpSQh4Qw0UaTlVQO0cl
-Content-Type: text/plain; charset=UTF-8
+
+--04bHF1C/QcYMF4Q7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On 07/14/2014 09:48 AM, Stefan Agner wrote:
-> This series adds support for Vybrid (aka vf610) to the FlexCAN
-> controller and extends the device tree accordingly.
+On Thu, Jul 03, 2014 at 11:36:38AM +0800, Chen LinX wrote:
+> From: "Chen LinX" <linx.z.chen@intel.com>
 >=20
-> Changes in v2:
-> - Split out patch (seperate dt, clocks and driver changes)
-> - Use spaces for hardware feature flags table
-> - Remove drive-by change of esdhc register length
-> - Added related fix which enables clock in berr_counter
+> when do cpu hotplug test and run below perf test together, pmu may access=
+ freed perf_event
 >=20
-> Stefan Agner (4):
->   ARM: dts: vf610: add FlexCAN node
->   ARM: imx: clk-vf610: fix FlexCAN clock gating
->   can: flexcan: switch on clocks before accessing ecr register
->   can: flexcan: add vf610 support for FlexCAN
+> while true;
+> do
+> perf record -a -g -f sleep 10
+> rm perf.*
+> done
 >=20
->  arch/arm/boot/dts/vf610.dtsi  | 23 +++++++++++
->  arch/arm/mach-imx/clk-vf610.c |  6 ++-
->  drivers/net/can/flexcan.c     | 89 +++++++++++++++++++++++++++++++++++=
-+++-----
->  3 files changed, 106 insertions(+), 12 deletions(-)
+> the scenario is that when cpu offline firstly, the 'perf_cpu_notify' will=
+ disable event on the
+> pmu and remove it from the context list. after cpu online, the perf app m=
+ay enable the event
+> that without linked in context list again. when cpu offine the second tim=
+e, the 'perf_cpu_notify'
+> can't disable event on the pmu as the event doesn't link to context list.=
+ the perf app may free
+> this event later(the free procedure try to disable event on the pmu but a=
+s the cpu is offline,
+> the 'cpu_function_call(event->cpu, __perf_remove_from_context, event)' is=
+ failed). then after
+> cpu online again, pmu will access freed perf_event and hit panic.
 
-Shawn, what's the best way to upstream this? With your Ack, I can take
-everything via linux-can-next.
+What?
 
-Marc
+(also, teach your MUA to wrap text at 78 chars)
 
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---Q58wVAQl8kOQJqEpSQh4Qw0UaTlVQO0cl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+--04bHF1C/QcYMF4Q7
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iEYEARECAAYFAlPDkFIACgkQjTAFq1RaXHOcdQCbBXloG3KL7l7b9IZj1dNjm3nr
-XGYAnRu6IIyC3DQcwMv8eD/AmHeNmgE9
-=Zyob
+iQIcBAEBAgAGBQJTw8ndAAoJEHZH4aRLwOS6utoP+wch9djdWvd7w0LVdSDiCfXG
+T1QTN4/6lyo/4ADb7o9Z15LLl+UVzXHSzU+q6sg1EOMh+d6jcUP04HK29zxHUxCX
+js20lJvlNuOUpYMQ+XFMKkJDVvPjLDqZpMJJ4/giXj80TwhxkPYWwNbAhajfkuEt
+LxzW+x5iCC/3lTHBqYvGriZyaIOjXdh94BpJ9KTgaVT5G+6YXZ7L87KzL0wf5NaF
+KwZZjdUoovbBZi5zPIrmmx3/8BLWC1jp5QGHSgYCToVQTDOjCHYtKcrAE0Xy+scu
+kdlA/2W5zTO4aOESSj3WOfQBxct6r59U6ScHgBl1oFQarw2FVOPyXwlte2gRO9J+
+Rs6KjNQtOsdrd8l6vOQ/7KTLFA85GpeIXyFVUL4t9d81EFBZBRz55Nan6zusswHx
+g82q16XPbVd65IMvVyWNEBpeP/kutRmSCOQGQt71KwoiAplynzKRXcGFdLyG8i+f
+2cMu7DU0p4cxA6SQEtpAV1ML5s8gb0zuNGpc4CadHspe1k86vwjljsQ4KPNkhXf0
+qsFEB5G6n0Pti10i/OcRVK/9/hRs6UvQvIGjXQyRlfElkL7d/ghug6BGLWEJ4jv0
+fpnleWzge4t3WS6FNZ34xP6aWTEYaY4j54eQLiTqeJeYlppGZbB/ew7bnxkp75Pr
+qakoVScUJXaJ5nBQxFmK
+=anWb
 -----END PGP SIGNATURE-----
 
---Q58wVAQl8kOQJqEpSQh4Qw0UaTlVQO0cl--
+--04bHF1C/QcYMF4Q7--
