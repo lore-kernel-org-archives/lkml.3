@@ -1,140 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897AbaGNEgu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 00:36:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25630 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751783AbaGNEgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 00:36:12 -0400
-From: Amit Shah <amit.shah@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
-        keescook@chromium.org, jason@lakedaemon.net,
-        Amit Shah <amit.shah@redhat.com>
-Subject: [RFC PATCH 1/3] hw_random: allow RNG devices to give early randomness after a delay
-Date: Mon, 14 Jul 2014 10:05:19 +0530
-Message-Id: <685be569a29015d3ee56cc3f782d81cae06d52b9.1405277045.git.amit.shah@redhat.com>
-In-Reply-To: <cover.1405277045.git.amit.shah@redhat.com>
-References: <cover.1405277045.git.amit.shah@redhat.com>
-In-Reply-To: <cover.1405277045.git.amit.shah@redhat.com>
-References: <cover.1405277045.git.amit.shah@redhat.com>
+	id S1752517AbaGNElm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 00:41:42 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:59226 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898AbaGNElf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 00:41:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140710013456.GB6480@localhost.localdomain>
+References: <cover.1404888801.git.viresh.kumar@linaro.org>
+	<alpine.DEB.2.10.1407092321130.4357@nanos>
+	<20140710013456.GB6480@localhost.localdomain>
+Date: Mon, 14 Jul 2014 10:11:35 +0530
+Message-ID: <CAKohpokECgtn_ZFYv-LEv8F2yqwVOgKcu6oNc_Zg9mm9-4BTow@mail.gmail.com>
+Subject: Re: [RFC 0/7] hrtimer: drop active hrtimer checks after adding it
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@redhat.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some RNG devices may not be ready to give early randomness at probe()
-time, and hence lose out on the opportunity to contribute to system
-randomness at boot- or device hotplug- time.
+Hi Thomas,
 
-This commit schedules a delayed work item for such devices, and fetches
-early randomness after a delay.  Currently the delay is 500ms, which is
-enough for the lone device that needs such treatment: virtio-rng.
+On 10 July 2014 07:04, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Wed, Jul 09, 2014 at 11:30:41PM +0200, Thomas Gleixner wrote:
+>> On Wed, 9 Jul 2014, Viresh Kumar wrote:
+>>
+>> So your patch series drops active hrtimer checks after adding it,
+>> according to your subject line.
+>>
+>> Quite useeul to drop something after adding it, right?
 
-CC: Kees Cook <keescook@chromium.org>
-CC: Jason Cooper <jason@lakedaemon.net>
-CC: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
----
- drivers/char/hw_random/core.c | 20 +++++++++++++++++++-
- include/linux/hw_random.h     |  8 ++++++++
- 2 files changed, 27 insertions(+), 1 deletion(-)
+I meant "hrtimer" by "it". Will fix it in case this patchset is still required.
 
-diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-index c4419ea..2a765fd 100644
---- a/drivers/char/hw_random/core.c
-+++ b/drivers/char/hw_random/core.c
-@@ -63,7 +63,7 @@ static size_t rng_buffer_size(void)
- 	return SMP_CACHE_BYTES < 32 ? 32 : SMP_CACHE_BYTES;
- }
- 
--static void add_early_randomness(struct hwrng *rng)
-+static void get_early_randomness(struct hwrng *rng)
- {
- 	unsigned char bytes[16];
- 	int bytes_read;
-@@ -79,6 +79,21 @@ static void add_early_randomness(struct hwrng *rng)
- 		add_device_randomness(bytes, bytes_read);
- }
- 
-+static void sched_init_random(struct work_struct *work)
-+{
-+	struct hwrng *rng = container_of(work, struct hwrng, dwork.work);
-+
-+	get_early_randomness(rng);
-+}
-+
-+static void add_early_randomness(struct hwrng *rng)
-+{
-+	if (!(rng->flags & HWRNG_DELAY_READ_AT_INIT))
-+		return get_early_randomness(rng);
-+
-+	schedule_delayed_work(&rng->dwork, msecs_to_jiffies(500));
-+}
-+
- static inline int hwrng_init(struct hwrng *rng)
- {
- 	if (rng->init) {
-@@ -351,6 +366,7 @@ int hwrng_register(struct hwrng *rng)
- 			goto out_unlock;
- 	}
- 
-+	INIT_DELAYED_WORK(&rng->dwork, sched_init_random);
- 	old_rng = current_rng;
- 	if (!old_rng) {
- 		err = hwrng_init(rng);
-@@ -362,6 +378,7 @@ int hwrng_register(struct hwrng *rng)
- 	if (!old_rng) {
- 		err = register_miscdev();
- 		if (err) {
-+			cancel_delayed_work_sync(&rng->dwork);
- 			hwrng_cleanup(rng);
- 			current_rng = NULL;
- 			goto out_unlock;
-@@ -395,6 +412,7 @@ void hwrng_unregister(struct hwrng *rng)
- 	mutex_lock(&rng_mutex);
- 
- 	list_del(&rng->list);
-+	cancel_delayed_work_sync(&rng->dwork);
- 	if (current_rng == rng) {
- 		hwrng_cleanup(rng);
- 		if (list_empty(&rng_list)) {
-diff --git a/include/linux/hw_random.h b/include/linux/hw_random.h
-index b4b0eef..8f7370d 100644
---- a/include/linux/hw_random.h
-+++ b/include/linux/hw_random.h
-@@ -14,6 +14,11 @@
- 
- #include <linux/types.h>
- #include <linux/list.h>
-+#include <linux/workqueue.h>
-+
-+#define HWRNG_DELAY_READ_AT_INIT BIT(0)	/* Schedule delayed work to fetch
-+					 * initial randomness instead of doing
-+					 * it at ->init()-time */
- 
- /**
-  * struct hwrng - Hardware Random Number Generator driver
-@@ -28,6 +33,7 @@
-  *			Must not be NULL.    *OBSOLETE*
-  * @read:		New API. drivers can fill up to max bytes of data
-  *			into the buffer. The buffer is aligned for any type.
-+ * @flags:		Per-device flags.
-  * @priv:		Private data, for use by the RNG driver.
-  */
- struct hwrng {
-@@ -37,9 +43,11 @@ struct hwrng {
- 	int (*data_present)(struct hwrng *rng, int wait);
- 	int (*data_read)(struct hwrng *rng, u32 *data);
- 	int (*read)(struct hwrng *rng, void *data, size_t max, bool wait);
-+	unsigned int flags;
- 	unsigned long priv;
- 
- 	/* internal. */
-+	struct delayed_work dwork;
- 	struct list_head list;
- };
- 
--- 
-1.9.3
+>> > As hrtimer_start*() never fails, hrtimer_active() is guaranteed to return '1'.
+>> > So, there is no point calling hrtimer_active().
+>>
+>> Wrong as usual.
 
+I cross-checked this with Frederic and Preeti before reaching out to
+you, to make sure its not 'obviously stupid'. And still couldn't get it
+right. :(
+
+>> It's a common pattern that short timeouts are given which lead to
+>> immediate expiry so the extra round through schedule is even more
+>> pointless than the extra check.
+
+Just wanted to confirm it again, you are talking about CPU being
+interrupted by clockevent device's interrupt right after hrtimer_start*()
+returns and before calling hrtimer_active()?
+
+> It may be a common pattern but it's not obvious at all as is in the code
+> except for timers gurus.
+>
+> It looks like error handling while it's actually an optimization.
+>
+> Also what about this pattern when it's used in interrupt or interrupt-disabled code?
+> In this case the handler is not going to fire right away, unless it's enqueued
+> on another CPU for unpinned timers.
+>
+> For example this code in tick_nohz_stop_sched_tick():
+>
+>           hrtimer_start(&ts->sched_timer, expires, HRTIMER_MODE_ABS_PINNED);
+>           /* Check, if the timer was already in the past */
+>           if (hrtimer_active(&ts->sched_timer))
+>                  goto out;
+>
+> It's not clear what this is handling. Concurrent immediate callback expiration from another CPU?
+> But the timer is pinned local so it can't execute right away between hrtimer_start() and hrtimer_active()
+> check...
+
+Actually I was concerned about other cases as well.
+
+- Timeouts
+
+I do agree that an extra check is better than an extra round of schedule().
+But this is already achieved without calling hrtimer_active(), isn't it?
+
+All these timeout hrtimers have hrtimer_wakeup() as there handler (as
+these are initialized with: hrtimer_init_sleeper()).
+
+And on expiration hrtimer_wakeup() does this:  t->task = NULL;
+
+So would this extra call to hrtimer_active() make any difference?
+
+- Process-context: sched changes
+
+I am not sure if scheduler routines: start_bandwidth_timer() and
+start_dl_timer() would get called *only* with interrupts disabled.
+
+But, it doesn't look obvious that the optimization Thomas mentioned
+earlier is relevant here as well. These might be added here for error
+checking.
+
+I might be wrong here as I don't have any understanding of this code
+and so sorry in advance.
+
+
+Note: My tree is monitored by kbuild-bot and these changes are under
+testing for over a week now. And I haven't received any reports of the
+WARN() firing in __hrtimer_start_range_ns().. Probably these short
+timeouts aren't getting hit at all by bot's tests.
+
+--
+viresh
