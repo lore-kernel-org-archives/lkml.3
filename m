@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756101AbaGNPaG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 11:30:06 -0400
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:39292 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755633AbaGNP34 (ORCPT
+	id S1755929AbaGNPdX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 11:33:23 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40518 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754890AbaGNPdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 11:29:56 -0400
+	Mon, 14 Jul 2014 11:33:15 -0400
+Date: Mon, 14 Jul 2014 17:33:06 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Tejun Heo <tj@kernel.org>
+cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1 V2] workqueue: remove the del_timer_sync()s in
+ maybe_create_worker()
+In-Reply-To: <20140714142707.GB31610@htj.dyndns.org>
+Message-ID: <alpine.DEB.2.10.1407141731240.24854@nanos>
+References: <1405265479-827-1-git-send-email-laijs@cn.fujitsu.com> <1405325601-12437-1-git-send-email-laijs@cn.fujitsu.com> <1405325601-12437-2-git-send-email-laijs@cn.fujitsu.com> <20140714142707.GB31610@htj.dyndns.org>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1405334329-25271-1-git-send-email-thierry.reding@gmail.com>
-References: <1405334329-25271-1-git-send-email-thierry.reding@gmail.com>
-From: Steve French <smfrench@gmail.com>
-Date: Mon, 14 Jul 2014 10:29:35 -0500
-Message-ID: <CAH2r5mucVFOYuVxL=qU+T_uMJAdO8dyXvVFJms-reo_H546S2A@mail.gmail.com>
-Subject: Re: [PATCH] fs/cifs: Fix build warnings
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Steve French <sfrench@samba.org>, Sachin Prabhu <sprabhu@redhat.com>,
-        "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't see this build warning, and I do see these functions used
-outside the CONFIG_CIFS_WEAK_PW_HASH - are you using current
-linux-next (or equivalently cifs-2.6.git for-next branch)There were
-some updates to fs/cifs late last week.
+On Mon, 14 Jul 2014, Tejun Heo wrote:
 
-On Mon, Jul 14, 2014 at 5:38 AM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
-> From: Thierry Reding <treding@nvidia.com>
->
-> The sess_alloc_buffer(), sess_free_buffer(), sess_establish_session()
-> and sess_sendreceive() functions are only used by sess_auth_lanman(),
-> therefore should be guarded by the same #ifdef to prevent the following
-> compiler warnings:
->
->         fs/cifs/sess.c:542:1: warning: 'sess_alloc_buffer' defined but not used [-Wunused-function]
->          sess_alloc_buffer(struct sess_data *sess_data, int wct)
->          ^
->         fs/cifs/sess.c:580:1: warning: 'sess_free_buffer' defined but not used [-Wunused-function]
->          sess_free_buffer(struct sess_data *sess_data)
->          ^
->         fs/cifs/sess.c:589:1: warning: 'sess_establish_session' defined but not used [-Wunused-function]
->          sess_establish_session(struct sess_data *sess_data)
->          ^
->         fs/cifs/sess.c:621:1: warning: 'sess_sendreceive' defined but not used [-Wunused-function]
->          sess_sendreceive(struct sess_data *sess_data)
->          ^
->
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
-> ---
->  fs/cifs/sess.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/fs/cifs/sess.c b/fs/cifs/sess.c
-> index db6ecdf0974c..5fb7606b81ef 100644
-> --- a/fs/cifs/sess.c
-> +++ b/fs/cifs/sess.c
-> @@ -538,6 +538,7 @@ struct sess_data {
->         struct kvec iov[3];
->  };
->
-> +#ifdef CONFIG_CIFS_WEAK_PW_HASH
->  static int
->  sess_alloc_buffer(struct sess_data *sess_data, int wct)
->  {
-> @@ -644,7 +645,6 @@ sess_sendreceive(struct sess_data *sess_data)
->   * in proc/fs/cifs or via mount parm.  Unfortunately this is
->   * needed for old Win (e.g. Win95), some obscure NAS and OS/2
->   */
-> -#ifdef CONFIG_CIFS_WEAK_PW_HASH
->  static void
->  sess_auth_lanman(struct sess_data *sess_data)
->  {
-> --
-> 2.0.1
->
+> Hello,
+> 
+> On Mon, Jul 14, 2014 at 04:13:21PM +0800, Lai Jiangshan wrote:
+> > It is said in the document that the timer which is being
+> > deleted by del_timer_sync() should not be restarted:
+> >   Synchronization rules: Callers must prevent restarting of
+> >   the timer, otherwise this function is meaningless.
+> > 
+> > Repeating timer may cause the del_timer_sync() spin longer,
+> > or even spin forever in very very very very extreme condition.
+> 
+> I'm fairly sure del_timer_sync() can delete self-requeueing timers.
+> The implementation busy-waits if the queued timer is the currently
+> executing one and dequeues only while the timer isn't running which
+> should be able to handle self-requeueing ones just fine.  Thomas,
+> del_timer_sync() can reliably delete self-requeueing ones, right?
 
+Yes. If the timer callback is running on the other cpu, then it waits
+for the callback to finish before checking whether the timer is
+enqueued or not.
 
-
--- 
 Thanks,
 
-Steve
+	tglx
+
+
