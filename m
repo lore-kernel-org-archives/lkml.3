@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590AbaGNJCf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 05:02:35 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:35456 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984AbaGNJC3 (ORCPT
+	id S1753891AbaGNJCw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 05:02:52 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:60642 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753684AbaGNJCh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 05:02:29 -0400
-Message-ID: <53C39C8C.6060604@ti.com>
-Date: Mon, 14 Jul 2014 14:32:04 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Sachin Kamat <spk.linux@gmail.com>
-CC: open list <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Jingoo Han <jg1.han@samsung.com>
-Subject: Re: [PATCH v2 1/2] phy: Kconfig: Re-organize Exynos USB 2.0 PHY configs
-References: <1404906569-28026-1-git-send-email-sachin.kamat@samsung.com>	<53C39B32.9060001@ti.com> <CAK5sBcG+UZ86cAFKoAf4Y62yrOafpzBGd-wz=PqWJRg1g8pOFQ@mail.gmail.com>
-In-Reply-To: <CAK5sBcG+UZ86cAFKoAf4Y62yrOafpzBGd-wz=PqWJRg1g8pOFQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Jul 2014 05:02:37 -0400
+X-Original-SENDERIP: 10.178.37.74
+X-Original-MAILFROM: neidhard.kim@lge.com
+From: Jongsung Kim <neidhard.kim@lge.com>
+To: nicolas.ferre@atmel.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
+        Jongsung Kim <neidhard.kim@lge.com>
+Subject: [PATCH 1/2] net: cadence: macb: add support for the WOL
+Date: Mon, 14 Jul 2014 18:02:18 +0900
+Message-Id: <1405328538-29153-1-git-send-email-neidhard.kim@lge.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch enables the ethtool utility to control the WOL function
+of the PHY connected to the GEM/MACB. (if supported)
 
+Signed-off-by: Jongsung Kim <neidhard.kim@lge.com>
+---
+ drivers/net/ethernet/cadence/macb.c |   26 ++++++++++++++++++++++++++
+ 1 files changed, 26 insertions(+), 0 deletions(-)
 
-On Monday 14 July 2014 02:29 PM, Sachin Kamat wrote:
-> Hi,
-> 
-> On Mon, Jul 14, 2014 at 2:26 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
->> Hi,
->>
->> On Wednesday 09 July 2014 05:19 PM, Sachin Kamat wrote:
->>> Since the USB 2.0 PHYs are required with EHCI/OHCI USB drivers and
->>> USB gadget controller supported by the DWC2 gadget driver, make it
->>> depend on them and default to ARCH_EXYNOS as they are meant for
->>> Exynos platforms. Also, make the sub-drivers silent options enabling
->>> them based on the SoC platforms that they are meant to work with. This
->>> will make life easier for end users who do not have any way knowing the
->>> dependencies.
->>
->> There is a new Exynos PHY in town, Exynos 3250. Can you rebase your patch on
->> top of that?
-> 
-> Sure. But I did not see it in linux-next yet. Is it merged somewhere?
+diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+index e9daa07..7ad8909 100644
+--- a/drivers/net/ethernet/cadence/macb.c
++++ b/drivers/net/ethernet/cadence/macb.c
+@@ -1742,11 +1742,37 @@ static void macb_get_regs(struct net_device *dev, struct ethtool_regs *regs,
+ 	}
+ }
+ 
++static void macb_get_wol(struct net_device *netdev, struct ethtool_wolinfo *wol)
++{
++	struct macb *bp = netdev_priv(netdev);
++	struct phy_device *phydev = bp->phy_dev;
++
++	wol->supported = 0;
++	wol->wolopts = 0;
++
++	if (phydev)
++		phy_ethtool_get_wol(phydev, wol);
++}
++
++static int macb_set_wol(struct net_device *netdev, struct ethtool_wolinfo *wol)
++{
++	struct macb *bp = netdev_priv(netdev);
++	struct phy_device *phydev = bp->phy_dev;
++	int err = -ENODEV;
++
++	if (phydev)
++		err = phy_ethtool_set_wol(phydev, wol);
++
++	return err;
++}
++
+ const struct ethtool_ops macb_ethtool_ops = {
+ 	.get_settings		= macb_get_settings,
+ 	.set_settings		= macb_set_settings,
+ 	.get_regs_len		= macb_get_regs_len,
+ 	.get_regs		= macb_get_regs,
++	.get_wol		= macb_get_wol,
++	.set_wol		= macb_set_wol,
+ 	.get_link		= ethtool_op_get_link,
+ 	.get_ts_info		= ethtool_op_get_ts_info,
+ };
+-- 
+1.7.1
 
-It's in the list. I can push it to my tree if that helps.
-
--Kishon
-> 
