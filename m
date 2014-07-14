@@ -1,174 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755600AbaGNNPl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 09:15:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27891 "EHLO mx1.redhat.com"
+	id S1755432AbaGNNVF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 09:21:05 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:33880 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754849AbaGNNPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 09:15:32 -0400
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Vivek Goyal <vgoyal@redhat.com>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v6] mmap_vmcore: skip non-ram pages reported by hypervisors
-Date: Mon, 14 Jul 2014 15:15:16 +0200
-Message-Id: <1405343716-19495-1-git-send-email-vkuznets@redhat.com>
+	id S1755018AbaGNNVC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 09:21:02 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [patch 1/3] mm: vmscan: rework compaction-ready signaling in direct reclaim fix
+Date: Mon, 14 Jul 2014 09:20:47 -0400
+Message-Id: <1405344049-19868-2-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1405344049-19868-1-git-send-email-hannes@cmpxchg.org>
+References: <1405344049-19868-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have a special check in read_vmcore() handler to check if the page was
-reported as ram or not by the hypervisor (pfn_is_ram()). However, when
-vmcore is read with mmap() no such check is performed. That can lead to
-unpredictable results, e.g. when running Xen PVHVM guest memcpy() after
-mmap() on /proc/vmcore will hang processing HVMMEM_mmio_dm pages creating
-enormous load in both DomU and Dom0.
+As per Mel, replace out label with breaks from the loop.
 
-Fix the issue by mapping each non-ram page to the zero page. Keep direct
-path with remap_oldmem_pfn_range() to avoid looping through all pages on
-bare metal.
-
-The issue can also be solved by overriding remap_oldmem_pfn_range() in
-xen-specific code, as remap_oldmem_pfn_range() was been designed for.
-That, however, would involve non-obvious xen code path for all x86 builds
-with CONFIG_XEN_PVHVM=y and would prevent all other hypervisor-specific
-code on x86 arch from doing the same override.
-
-Changes from v5:
-- make len size_t to match do_unmap() interface
-
-Changes from v4:
-- change map_size type size_t -> unsigned long
-- use prot instead of vma->vm_page_prot inside remap_oldmem_pfn_checked()
-
-Changes from v3:
-- multi line comment style changes
-- minor code style changes
-
-Changes from v2:
-- make remap_oldmem_pfn_checked() interface exactly match
-  remap_oldmem_pfn_range()
-- unmap mapped part inside remap_oldmem_pfn_checked() in case of failure so
-  we don't need to take care of it in mmap_vmcore()
-- create vmcore_remap_oldmem_pfn() wrapper
-
-Changes from v1:
-- comment style changes
-- change remap_oldmem_pfn_checked() interface to closer match the
-  remap_oldmem_pfn() interface
-- preserve formal parameters within the loop, make the loop conditions
-  easier to understand
-- use my_zero_pfn() for the zero page
-- return remapped length instead of new offset
-
-Reviewed-by: Andrew Jones <drjones@redhat.com>
-Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- fs/proc/vmcore.c | 83 ++++++++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 80 insertions(+), 3 deletions(-)
+ mm/vmscan.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-index 382aa89..fa45923 100644
---- a/fs/proc/vmcore.c
-+++ b/fs/proc/vmcore.c
-@@ -328,6 +328,83 @@ static inline char *alloc_elfnotes_buf(size_t notes_sz)
-  * virtually contiguous user-space in ELF layout.
-  */
- #ifdef CONFIG_MMU
-+/*
-+ * remap_oldmem_pfn_checked - do remap_oldmem_pfn_range replacing all pages
-+ * reported as not being ram with the zero page.
-+ *
-+ * @vma: vm_area_struct describing requested mapping
-+ * @from: start remapping from
-+ * @pfn: page frame number to start remapping to
-+ * @size: remapping size
-+ * @prot: protection bits
-+ *
-+ * Returns zero on success, -EAGAIN on failure.
-+ */
-+int remap_oldmem_pfn_checked(struct vm_area_struct *vma, unsigned long from,
-+			     unsigned long pfn, unsigned long size,
-+			     pgprot_t prot)
-+{
-+	unsigned long map_size;
-+	unsigned long pos_start, pos_end, pos;
-+	unsigned long zeropage_pfn = my_zero_pfn(0);
-+	size_t len = 0;
-+
-+	pos_start = pfn;
-+	pos_end = pfn + (size >> PAGE_SHIFT);
-+
-+	for (pos = pos_start; pos < pos_end; ++pos) {
-+		if (!pfn_is_ram(pos)) {
-+			/*
-+			 * We hit a page which is not ram. Remap the continuous
-+			 * region between pos_start and pos-1 and replace
-+			 * the non-ram page at pos with the zero page.
-+			 */
-+			if (pos > pos_start) {
-+				/* Remap continuous region */
-+				map_size = (pos - pos_start) << PAGE_SHIFT;
-+				if (remap_oldmem_pfn_range(vma, from + len,
-+							   pos_start, map_size,
-+							   prot))
-+					goto fail;
-+				len += map_size;
-+			}
-+			/* Remap the zero page */
-+			if (remap_oldmem_pfn_range(vma, from + len,
-+						   zeropage_pfn,
-+						   PAGE_SIZE, prot))
-+				goto fail;
-+			len += PAGE_SIZE;
-+			pos_start = pos + 1;
-+		}
-+	}
-+	if (pos > pos_start) {
-+		/* Remap the rest */
-+		map_size = (pos - pos_start) << PAGE_SHIFT;
-+		if (remap_oldmem_pfn_range(vma, from + len, pos_start,
-+					   map_size, prot))
-+			goto fail;
-+		len += map_size;
-+	}
-+	return 0;
-+fail:
-+	do_munmap(vma->vm_mm, from, len);
-+	return -EAGAIN;
-+}
-+
-+int vmcore_remap_oldmem_pfn(struct vm_area_struct *vma,
-+			    unsigned long from, unsigned long pfn,
-+			    unsigned long size, pgprot_t prot)
-+{
-+	/*
-+	 * Check if oldmem_pfn_is_ram was registered to avoid
-+	 * looping over all pages without a reason.
-+	 */
-+	if (oldmem_pfn_is_ram)
-+		return remap_oldmem_pfn_checked(vma, from, pfn, size, prot);
-+	else
-+		return remap_oldmem_pfn_range(vma, from, pfn, size, prot);
-+}
-+
- static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
- {
- 	size_t size = vma->vm_end - vma->vm_start;
-@@ -387,9 +464,9 @@ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 35747a75bf08..6f43df4a5253 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2496,10 +2496,10 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
  
- 			tsz = min_t(size_t, m->offset + m->size - start, size);
- 			paddr = m->paddr + start - m->offset;
--			if (remap_oldmem_pfn_range(vma, vma->vm_start + len,
--						   paddr >> PAGE_SHIFT, tsz,
--						   vma->vm_page_prot))
-+			if (vmcore_remap_oldmem_pfn(vma, vma->vm_start + len,
-+						    paddr >> PAGE_SHIFT, tsz,
-+						    vma->vm_page_prot))
- 				goto fail;
- 			size -= tsz;
- 			start += tsz;
+ 		total_scanned += sc->nr_scanned;
+ 		if (sc->nr_reclaimed >= sc->nr_to_reclaim)
+-			goto out;
++			break;
+ 
+ 		if (sc->compaction_ready)
+-			goto out;
++			break;
+ 
+ 		/*
+ 		 * If we're getting trouble reclaiming, start doing
+@@ -2523,7 +2523,6 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 		}
+ 	} while (--sc->priority >= 0);
+ 
+-out:
+ 	delayacct_freepages_end();
+ 
+ 	if (sc->nr_reclaimed)
 -- 
-1.9.3
+2.0.0
 
