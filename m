@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932194AbaGNOzb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 10:55:31 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:17270 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753497AbaGNOzV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 10:55:21 -0400
-Date: Mon, 14 Jul 2014 15:55:04 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Will Deacon <Will.Deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 2/7] arm64: Support restart through restart notifier
- call chain
-Message-ID: <20140714145504.GD1112@arm.com>
-References: <1405265431-4561-1-git-send-email-linux@roeck-us.net>
- <1405265431-4561-3-git-send-email-linux@roeck-us.net>
+	id S932226AbaGNOzn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 10:55:43 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60613 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932202AbaGNOzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 10:55:35 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, <jg1.han@samsung.com>,
+        <bhelgaas@google.com>, <mohit.kumar@st.com>,
+        <linux-kernel@vger.kernel.org>
+CC: <kishon@ti.com>, <grant.likely@linaro.org>
+Subject: [PATCH v2 0/4] dra7: Add PCIe support
+Date: Mon, 14 Jul 2014 20:25:01 +0530
+Message-ID: <1405349705-31400-1-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405265431-4561-3-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 13, 2014 at 04:30:26PM +0100, Guenter Roeck wrote:
-> diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
-> index 43b7c34..b2da6d5 100644
-> --- a/arch/arm64/kernel/process.c
-> +++ b/arch/arm64/kernel/process.c
-> @@ -174,6 +174,8 @@ void machine_restart(char *cmd)
->  	/* Now call the architecture specific reboot code. */
->  	if (arm_pm_restart)
->  		arm_pm_restart(reboot_mode, cmd);
-> +	else
-> +		kernel_restart_notify(cmd);
+Changes from v1:
+* fixed dw_pcie_prog_viewport_io_outbound() to use untranslated address
+* split dra7xx patch into driver part and documentation part
 
-There are couple of drivers specific to arm64, once they are converted
-we can get rid of arm_pm_restart entirely here.
+[1] is split into separate series in order for individual subsystem
+Maintainers to pick up the patches. This series handles the PCIe
+support for DRA7.
+
+Rebased to pci -next.
+
+[1] -> https://lkml.org/lkml/2014/5/29/258
+
+Kishon Vijay Abraham I (4):
+  PCI: designware: Configuration space should be specified in 'reg'
+  PCI: designware: use untranslated address while programming ATU
+  Documentation: pci: ti: Add dt binding documentation for PCIe in
+    DRA7xx
+  PCI: host: pcie-dra7xx: add support for pcie-dra7xx controller
+
+ .../devicetree/bindings/pci/designware-pcie.txt    |    4 +
+ Documentation/devicetree/bindings/pci/ti-pci.txt   |   59 +++
+ drivers/pci/host/Kconfig                           |   10 +
+ drivers/pci/host/Makefile                          |    1 +
+ drivers/pci/host/pci-dra7xx.c                      |  458 ++++++++++++++++++++
+ drivers/pci/host/pcie-designware.c                 |   72 ++-
+ drivers/pci/host/pcie-designware.h                 |    4 +
+ 7 files changed, 592 insertions(+), 16 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pci/ti-pci.txt
+ create mode 100644 drivers/pci/host/pci-dra7xx.c
 
 -- 
-Catalin
+1.7.9.5
+
