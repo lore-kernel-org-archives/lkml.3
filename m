@@ -1,90 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757324AbaGNWGs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 18:06:48 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:24183 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757061AbaGNWGq (ORCPT
+	id S1757386AbaGNWIk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 18:08:40 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:36187 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757000AbaGNWIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 18:06:46 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnkKAOdTxFN5LG3lPGdsb2JhbABZDoMAUoJ7qXEMAQEBAQEBBpUsgVuFZgGBEBcEAQEBATg1hAQBBTocMwgDGAklDwUlAwcaARKIQQ7IfRiFY4dAgheEQwWbDYtYi0lUKy8BAQ
-Date: Tue, 15 Jul 2014 08:06:33 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Dmitry Monakhov <dmonakhov@openvz.org>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        "'Christoph Hellwig'" <hch@infradead.org>,
-        "'linux-ext4'" <linux-ext4@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Luk?? Czerner'" <lczerner@redhat.com>,
-        "'Brian Foster'" <bfoster@redhat.com>,
-        "'Ashish Sangwan'" <a.sangwan@samsung.com>, xfs@oss.sgi.com
-Subject: Re: [PATCH 2/3] xfs: Add support IOC_MOV_DATA ioctl
-Message-ID: <20140714220633.GV4453@dastard>
-References: <003f01cf9aa4$1e9e5240$5bdaf6c0$@samsung.com>
- <20140708121500.GA518@infradead.org>
- <001801cf9b3f$ad786ff0$08694fd0$@samsung.com>
- <87ha2jsy6p.fsf@openvz.org>
- <20140714212539.GH8935@thunk.org>
+	Mon, 14 Jul 2014 18:08:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140714212539.GH8935@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140714192451.GC5803@tassilo.jf.intel.com>
+References: <1405123285-23544-1-git-send-email-andi@firstfloor.org>
+	<1405123285-23544-2-git-send-email-andi@firstfloor.org>
+	<CABPqkBScNfoK4a9BZkZxB-gAj3Ew2f7Ox3351YKWVt7cN-1EEw@mail.gmail.com>
+	<20140714192451.GC5803@tassilo.jf.intel.com>
+Date: Tue, 15 Jul 2014 00:08:37 +0200
+Message-ID: <CABPqkBS=PB9tp78Y12ZRG9KLjd=DLY=3yrXeRdqCbZ4gnsdJ7A@mail.gmail.com>
+Subject: Re: [PATCH 2/2] perf, x86: Don't mark DataLA addresses as store
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 05:25:39PM -0400, Theodore Ts'o wrote:
-> On Mon, Jul 14, 2014 at 08:27:26PM +0400, Dmitry Monakhov wrote:
-> > Actually they are differ. EXT4_IOC_MOVE_EXT copy data inside kernel,
-> > but XFS_IOC_SWAPEXT live this job to userpsace see:
-> > http://oss.sgi.com/cgi-bin/gitweb.cgi?p=xfs/cmds/xfsprogs.git;a=blob;f=fsr/xfs_fsr.c packfile
-> > And I'll vote to make EXT4_IOC_MOVE_EXT deprecated, and implement EXT4_IOC_SWAPEXT
-> > as XFS does that.
-> > Ted, Lukas what do you think about that?
-> 
-> The reason why EXT4_IOC_MOVE_EXT moves the data via the cache is to
-> avoid being subject to races if the file happens to mmap'ed and being
-> actively modified at the time of the defrag operation.  
-> 
-> I'm not sure how XFS handles that case, but if it's not somehow
-> locking the file against mmap's before it starts the userspace copy,
-> it would seem to me to be fairly dangerous in terms of prevent
-> potential data loss in this scenario.  Unless they are doing some
-> especially clever?
+Andi,
 
-Yes, we're being clever:
+On Mon, Jul 14, 2014 at 9:24 PM, Andi Kleen <ak@linux.intel.com> wrote:
+>> You could do better if you tagged the event during setup as load vs. store.
+>> And then you could simply propagate the flag to the data source struct.
+>
+> This would require listing all PEBS events in the table again.
+> The whole point of the other patch was to get rid of that.
+>
+> Besides it wouldn't work for a range of events (like UOPS_RETIRED.ALL)
+>
+I have a problem with this patch.
 
-	a) we can snapshot the inode directly with bulkstat and then
-	feed that as a cookie back into the swap extent ioctl, hence
-	detect any change made to the inode since the snapshot was
-	taken; 
+It makes: perf mem -t store rec record OP_NA for the store.
+It was recording OP_STORE before.
 
-	b) we do invisible IO to copy the data (i.e. doesn't update
-	timestamps on the files); and
+I think we need to keep LD/ST info. This is useful for analysis
+especially if we collect loads/stores simultaneously.
 
-	c) the swap ext ioctl aborts if the file is mmapped() at the
-	time we do the extent swap.
-
-Basically, if there is any inconsistency or trouble, we abort the
-swap without doing anything and leave userspace to clean up.
-
-As it is, we'll be looking to replace the swapext call with this new
-move ioctl because we can do a lot more with it and avoids
-implementation wrinkles like having to check and handle different
-sized data and inode forks, and having to change the owner field in
-every bmap btree block after the swap has occurred.
-
-FWIW, what we ideally need for these sorts of defrag programs is
-per-file freezing. i.e. we freeze the file to be defragged, then do
-the copy in userspace, swap/move the copied range and then unfreeze
-it once complete.  That guarantees that the file is not modified in
-any way while userspace is doing the defrag...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Was working before for the mem-loads, mem-stores events.
