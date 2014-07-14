@@ -1,152 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757995AbaGODRY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 23:17:24 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53695 "EHLO mga09.intel.com"
+	id S1758020AbaGODRv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 23:17:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:59361 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757702AbaGODO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 23:14:58 -0400
+	id S1757655AbaGODOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 23:14:53 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,662,1400050800"; 
-   d="scan'208";a="573181493"
-From: Lv Zheng <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>
-Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
-Subject: [PATCH v2 05/10] ACPI/EC: Add reference counting for query handlers.
-Date: Tue, 15 Jul 2014 11:14:53 +0800
-Message-Id: <7013684a670d8d916a4f61a33cdf90a22f885fb6.1405391679.git.lv.zheng@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1405391678.git.lv.zheng@intel.com>
-References: <cover.1403060601.git.lv.zheng@intel.com> <cover.1405391678.git.lv.zheng@intel.com>
+   d="scan'208";a="561822734"
+From: kan.liang@intel.com
+To: peterz@infradead.org
+Cc: andi@firstfloor.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Kan Liang <kan.liang@intel.com>
+Subject: [PATCH V6 1/2] perf ignore LBR and extra_rsp
+Date: Mon, 14 Jul 2014 12:25:56 -0700
+Message-Id: <1405365957-20202-1-git-send-email-kan.liang@intel.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds reference counting for query handlers in order to eliminate
-kmalloc()/kfree() usage.
+From: Kan Liang <kan.liang@intel.com>
 
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Tested-by: Steffen Weber <steffen.weber@gmail.com>
+x86, perf: Protect LBR and extra_regs against KVM lying
+
+With -cpu host, KVM reports LBR and extra_regs support, if the host has
+support.
+When the guest perf driver tries to access LBR or extra_regs MSR,
+it #GPs all MSR accesses,since KVM doesn't handle LBR and extra_regs support.
+So check the related MSRs access right once at initialization time to avoid
+the error access at runtime.
+
+For reproducing the issue, please build the kernel with CONFIG_KVM_INTEL = y
+(for host kernel).
+And CONFIG_PARAVIRT = n and CONFIG_KVM_GUEST = n (for guest kernel).
+Start the guest with -cpu host.
+Run perf record with --branch-any or --branch-filter in guest to trigger LBR
+Run perf stat offcore events (E.g. LLC-loads/LLC-load-misses ...) in guest to
+trigger offcore_rsp #GP
+
+Signed-off-by: Kan Liang <kan.liang@intel.com>
+
 ---
- drivers/acpi/ec.c |   46 ++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 36 insertions(+), 10 deletions(-)
+V2: Move the check code to initialization time.
+V3: Add flag for each extra register.
+    Check all LBR MSRs at initialization time.
+V4: Remove lbr_msr_access.
+    For LBR msr, simply set lbr_nr to 0 if check_msr failed.
+    Disable all extra msrs in creation places if check_msr failed.
+V5: Fix check_msr broken
+    Don't check any more MSRs after the first fail
+    Return error when checking fail to stop creating the event
+    Remove the checking code path which never get
+V6: Move extra_msr_access to struct extra_reg
+    Modify and move check_msr function to perf_event_intel.c
+    Other minor code changes
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index d4c07b9..cf83872 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -105,6 +105,7 @@ struct acpi_ec_query_handler {
- 	acpi_handle handle;
- 	void *data;
- 	u8 query_bit;
-+	struct kref kref;
+ arch/x86/kernel/cpu/perf_event.c              |  3 ++
+ arch/x86/kernel/cpu/perf_event.h              | 20 ++++----
+ arch/x86/kernel/cpu/perf_event_intel.c        | 66 ++++++++++++++++++++++++++-
+ arch/x86/kernel/cpu/perf_event_intel_uncore.h |  4 +-
+ 4 files changed, 81 insertions(+), 12 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 2bdfbff..2879ecd 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -118,6 +118,9 @@ static int x86_pmu_extra_regs(u64 config, struct perf_event *event)
+ 			continue;
+ 		if (event->attr.config1 & ~er->valid_mask)
+ 			return -EINVAL;
++		/* Check if the extra msrs can be safely accessed*/
++		if (!er->extra_msr_access)
++			return -ENXIO;
+ 
+ 		reg->idx = er->idx;
+ 		reg->config = event->attr.config1;
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 3b2f9bd..2e613b2 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -295,22 +295,24 @@ struct extra_reg {
+ 	u64			config_mask;
+ 	u64			valid_mask;
+ 	int			idx;  /* per_xxx->regs[] reg index */
++	bool			extra_msr_access;
  };
  
- struct transaction {
-@@ -119,6 +120,10 @@ struct transaction {
- 	u8 flags;
- };
- 
-+static struct acpi_ec_query_handler *
-+acpi_ec_get_query_handler(struct acpi_ec_query_handler *handler);
-+static void acpi_ec_put_query_handler(struct acpi_ec_query_handler *handler);
-+
- struct acpi_ec *boot_ec, *first_ec;
- EXPORT_SYMBOL(first_ec);
- 
-@@ -590,6 +595,26 @@ static int acpi_ec_query_unlocked(struct acpi_ec *ec, u8 * data)
- /* --------------------------------------------------------------------------
-                                 Event Management
-    -------------------------------------------------------------------------- */
-+static struct acpi_ec_query_handler *
-+acpi_ec_get_query_handler(struct acpi_ec_query_handler *handler)
-+{
-+	if (handler)
-+		kref_get(&handler->kref);
-+	return handler;
-+}
-+
-+static void acpi_ec_query_handler_release(struct kref *kref)
-+{
-+	struct acpi_ec_query_handler *handler =
-+		container_of(kref, struct acpi_ec_query_handler, kref);
-+	kfree(handler);
-+}
-+
-+static void acpi_ec_put_query_handler(struct acpi_ec_query_handler *handler)
-+{
-+	kref_put(&handler->kref, acpi_ec_query_handler_release);
-+}
-+
- int acpi_ec_add_query_handler(struct acpi_ec *ec, u8 query_bit,
- 			      acpi_handle handle, acpi_ec_query_func func,
- 			      void *data)
-@@ -604,6 +629,7 @@ int acpi_ec_add_query_handler(struct acpi_ec *ec, u8 query_bit,
- 	handler->func = func;
- 	handler->data = data;
- 	mutex_lock(&ec->mutex);
-+	kref_init(&handler->kref);
- 	list_add(&handler->node, &ec->list);
- 	mutex_unlock(&ec->mutex);
- 	return 0;
-@@ -614,14 +640,17 @@ EXPORT_SYMBOL_GPL(acpi_ec_add_query_handler);
- void acpi_ec_remove_query_handler(struct acpi_ec *ec, u8 query_bit)
- {
- 	struct acpi_ec_query_handler *handler, *tmp;
-+	LIST_HEAD(free_list);
- 	mutex_lock(&ec->mutex);
- 	list_for_each_entry_safe(handler, tmp, &ec->list, node) {
- 		if (query_bit == handler->query_bit) {
--			list_del(&handler->node);
--			kfree(handler);
-+			list_del_init(&handler->node);
-+			list_add(&handler->node, &free_list);
- 		}
+-#define EVENT_EXTRA_REG(e, ms, m, vm, i) {	\
+-	.event = (e),		\
+-	.msr = (ms),		\
+-	.config_mask = (m),	\
+-	.valid_mask = (vm),	\
+-	.idx = EXTRA_REG_##i,	\
++#define EVENT_EXTRA_REG(e, ms, m, vm, i, a) {	\
++	.event = (e),			\
++	.msr = (ms),			\
++	.config_mask = (m),		\
++	.valid_mask = (vm),		\
++	.idx = EXTRA_REG_##i,		\
++	.extra_msr_access = (a),	\
  	}
- 	mutex_unlock(&ec->mutex);
-+	list_for_each_entry(handler, &free_list, node)
-+		acpi_ec_put_query_handler(handler);
+ 
+ #define INTEL_EVENT_EXTRA_REG(event, msr, vm, idx)	\
+-	EVENT_EXTRA_REG(event, msr, ARCH_PERFMON_EVENTSEL_EVENT, vm, idx)
++	EVENT_EXTRA_REG(event, msr, ARCH_PERFMON_EVENTSEL_EVENT, vm, idx, true)
+ 
+ #define INTEL_UEVENT_EXTRA_REG(event, msr, vm, idx) \
+ 	EVENT_EXTRA_REG(event, msr, ARCH_PERFMON_EVENTSEL_EVENT | \
+-			ARCH_PERFMON_EVENTSEL_UMASK, vm, idx)
++			ARCH_PERFMON_EVENTSEL_UMASK, vm, idx, true)
+ 
+ #define INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG(c) \
+ 	INTEL_UEVENT_EXTRA_REG(c, \
+@@ -318,7 +320,7 @@ struct extra_reg {
+ 			       0xffff, \
+ 			       LDLAT)
+ 
+-#define EVENT_EXTRA_END EVENT_EXTRA_REG(0, 0, 0, 0, RSP_0)
++#define EVENT_EXTRA_END EVENT_EXTRA_REG(0, 0, 0, 0, RSP_0, false)
+ 
+ union perf_capabilities {
+ 	struct {
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index adb02aa..9c234d1 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2173,6 +2173,40 @@ static void intel_snb_check_microcode(void)
+ 	}
  }
  
- EXPORT_SYMBOL_GPL(acpi_ec_remove_query_handler);
-@@ -637,14 +666,14 @@ static void acpi_ec_run(void *cxt)
- 	else if (handler->handle)
- 		acpi_evaluate_object(handler->handle, NULL, NULL, NULL);
- 	pr_debug("stop query execution\n");
--	kfree(handler);
-+	acpi_ec_put_query_handler(handler);
- }
- 
- static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data)
++/*
++ * Under certain circumstances, access certain MSR may cause #GP.
++ * The function tests if the input MSR can be safely accessed.
++ */
++static bool check_msr(unsigned long msr, u64 mask)
++{
++	u64 val_old, val_new, val_tmp;
++
++	/*
++	 * Read the current value, change it and read it back to see if it
++	 * matches, this is needed to detect certain hardware emulators
++	 * (qemu/kvm) that don't trap on the MSR access and always return 0s.
++	 */
++	if (rdmsrl_safe(msr, &val_old))
++		return false;
++	/*
++	 * Only chagne the bits which can be updated by wrmsrl.
++	 */
++	val_tmp = val_old ^ mask;
++	if (wrmsrl_safe(msr, val_tmp) ||
++	rdmsrl_safe(msr, &val_new))
++		return false;
++
++	if (val_new != val_tmp)
++		return false;
++
++	/* Here it's sure that the MSR can be safely accessed.
++	 * Restore the old value and return.
++	 */
++	wrmsrl(msr, val_old);
++
++	return true;
++}
++
+ static __init void intel_sandybridge_quirk(void)
  {
- 	u8 value = 0;
- 	int status;
--	struct acpi_ec_query_handler *handler, *copy;
-+	struct acpi_ec_query_handler *handler;
+ 	x86_pmu.check_microcode = intel_snb_check_microcode;
+@@ -2262,7 +2296,8 @@ __init int intel_pmu_init(void)
+ 	union cpuid10_ebx ebx;
+ 	struct event_constraint *c;
+ 	unsigned int unused;
+-	int version;
++	int version, i;
++	struct extra_reg *er;
  
- 	status = acpi_ec_query_unlocked(ec, &value);
- 	if (data)
-@@ -655,15 +684,12 @@ static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data)
- 	list_for_each_entry(handler, &ec->list, node) {
- 		if (value == handler->query_bit) {
- 			/* have custom handler for this bit */
--			copy = kmalloc(sizeof(*handler), GFP_KERNEL);
--			if (!copy)
--				return -ENOMEM;
--			memcpy(copy, handler, sizeof(*copy));
-+			handler = acpi_ec_get_query_handler(handler);
- 			pr_debug("push query execution (0x%2x) on queue\n",
- 				value);
--			return acpi_os_execute((copy->func) ?
-+			return acpi_os_execute((handler->func) ?
- 				OSL_NOTIFY_HANDLER : OSL_GPE_HANDLER,
--				acpi_ec_run, copy);
-+				acpi_ec_run, handler);
+ 	if (!cpu_has(&boot_cpu_data, X86_FEATURE_ARCH_PERFMON)) {
+ 		switch (boot_cpu_data.x86) {
+@@ -2565,6 +2600,35 @@ __init int intel_pmu_init(void)
  		}
  	}
- 	return 0;
+ 
++	/*
++	 * Access LBR MSR may cause #GP under certain circumstances.
++	 * E.g. KVM doesn't support LBR MSR
++	 * Check all LBT MSR here.
++	 * Disable LBR access if any LBR MSRs can not be accessed.
++	 */
++	if (x86_pmu.lbr_nr && !check_msr(x86_pmu.lbr_tos, 0x3UL))
++		x86_pmu.lbr_nr = 0;
++	for (i = 0; i < x86_pmu.lbr_nr; i++) {
++		if (!(check_msr(x86_pmu.lbr_from + i, 0xffffUL) &&
++		      check_msr(x86_pmu.lbr_to + i, 0xffffUL)))
++			x86_pmu.lbr_nr = 0;
++	}
++	/*
++	 * Access extra MSR may cause #GP under certain circumstances.
++	 * E.g. KVM doesn't support offcore event
++	 * Check all extra_regs here.
++	 */
++	if (x86_pmu.extra_regs) {
++		for (er = x86_pmu.extra_regs; er->msr; er++) {
++			er->extra_msr_access =
++				check_msr(er->msr, 0x1ffUL);
++			/* Disable LBR select mapping */
++			if ((er->idx == EXTRA_REG_LBR) &&
++			!er->extra_msr_access)
++				x86_pmu.lbr_sel_map = NULL;
++		}
++	}
++
+ 	/* Support full width counters using alternative MSR range */
+ 	if (x86_pmu.intel_cap.full_width_write) {
+ 		x86_pmu.max_period = x86_pmu.cntval_mask;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+index 90236f0..d860e26 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+@@ -366,11 +366,11 @@
+ 				NHMEX_M_PMON_CTL_FLAG_MODE)
+ #define MBOX_INC_SEL_EXTAR_REG(c, r) \
+ 		EVENT_EXTRA_REG(MBOX_INC_SEL(c), NHMEX_M0_MSR_PMU_##r, \
+-				MBOX_INC_SEL_MASK, (u64)-1, NHMEX_M_##r)
++				MBOX_INC_SEL_MASK, (u64)-1, NHMEX_M_##r, true)
+ #define MBOX_SET_FLAG_SEL_EXTRA_REG(c, r) \
+ 		EVENT_EXTRA_REG(MBOX_SET_FLAG_SEL(c), NHMEX_M0_MSR_PMU_##r, \
+ 				MBOX_SET_FLAG_SEL_MASK, \
+-				(u64)-1, NHMEX_M_##r)
++				(u64)-1, NHMEX_M_##r, true)
+ 
+ /* NHM-EX Rbox */
+ #define NHMEX_R_MSR_GLOBAL_CTL			0xe00
 -- 
-1.7.10
+1.8.3.1
 
