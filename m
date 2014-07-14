@@ -1,72 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755400AbaGNOCL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 10:02:11 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:39395 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754541AbaGNOCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 10:02:00 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: suravee.suthikulpanit@amd.com, jason@lakedaemon.net
-Cc: linux-arm-kernel@lists.infradead.org, marc.zyngier@arm.com,
-        mark.rutland@arm.com, devicetree@vger.kernel.org, pawel.moll@arm.com,
-        linux-doc@vger.kernel.org, Catalin.Marinas@arm.com,
-        Harish.Kasiviswanathan@amd.com, linux-kernel@vger.kernel.org,
-        Will.Deacon@arm.com,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        linux-pci@vger.kernel.org, tglx@linutronix.de
-Subject: Re: [PATCH 1/4 V3] irqchip: gic: Add binding probe for ARM GIC400
-Date: Mon, 14 Jul 2014 16:03:15 +0200
-Message-ID: <2932284.F1eaAf8ArJ@diego>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1404947104-21345-2-git-send-email-suravee.suthikulpanit@amd.com>
-References: <1404947104-21345-1-git-send-email-suravee.suthikulpanit@amd.com> <1404947104-21345-2-git-send-email-suravee.suthikulpanit@amd.com>
+	id S1755618AbaGNODR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 10:03:17 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:51970 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755147AbaGNODF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 10:03:05 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <20140714125836.GA6966@kroah.com>
+References: <1405278681-3348-1-git-send-email-peter.senna@gmail.com>
+	<20140713193647.GA31010@kroah.com>
+	<20140714085932.GA2958@hp-peter.rsr.lip6.fr>
+	<20140714125836.GA6966@kroah.com>
+Date: Mon, 14 Jul 2014 16:03:03 +0200
+Message-ID: <CA+MoWDr2Th5ykjTQqjySJ3UYhJLLFoRCbaOGYt2_edrUORgazw@mail.gmail.com>
+Subject: Re: [PATCH V2 1/4] staging: vt6556: Cleanup coding style issues
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, Malcolm Priestley <tvboxspy@gmail.com>,
+        kernel-janitors@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Forest Bond <forest@alittletooquiet.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 9. Juli 2014, 18:05:01 schrieb suravee.suthikulpanit@amd.com:
-> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> 
-> Add new Irqchip declaration for GIC400. This was mentioned in
-> gic binding documentation, but there is not code to support it.
-> 
-> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+On Mon, Jul 14, 2014 at 2:58 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Mon, Jul 14, 2014 at 10:59:32AM +0200, Peter Senna Tschudin wrote:
+>> On Sun, Jul 13, 2014 at 12:36:47PM -0700, Greg KH wrote:
+>> > On Sun, Jul 13, 2014 at 09:11:18PM +0200, Peter Senna Tschudin wrote:
+>> > > This patch cleanup coding style issues reported by checkpatch.
+>> > >
+>> > > Tested by compilation only.
+>> > >
+>> > > Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+>> > > ---
+>> > > Cahnges from V1:
+>> > >  - Sent all patches in a series
+>> >
+>> > Why did you forget the other thing that I asked you to change?
+>> >
+>> > I can't take these as-is, sorry, please go back and re-read what I
+>> > wrote...
+>>
+>> Actually I was trying to do what you asked me on this E-mail:
+>>
+>> -- // --
+>> You just sent me 4 patches, all with the same subject (but at least 2 of
+>> them had the order in which to apply them in, which is nice.)
+>>
+>> Please redo these such that they have a unique subject, and I can tell
+>> which order to apply them in, as I really have no idea about the second
+>> two.
+>> -- // --
+>>
+>> I'm sending V3 as a single patch.
+>
+> That's going to get rejected as well :(
+>
+> You did put them in a nice order, but you had the same subject text for
+> each patch, which I told you not to do, right?
+>
+> {sigh}
+The noise was caused by my poor English language skills. When you wrote:
 
-The Rockchip RK3288 also contains a GIC400, so I would be very happy if 
-someone could pick up this one patch independently of the rest.
+"Please redo these such that they have a unique subject, and I can tell
+which order to apply them in, as I really have no idea about the second
+two."
 
-But in light of Matthias' cortex-a7-gic patch from last week, this one might 
-need an update.
+I understood:
+ 1 - redo these patches
+ 2 - such as they have a unique subject
+ 3 - in a way Greg can tell in which order to apply them
 
+I just understood what you wanted today. Sorry for that.
 
-> ---
->  drivers/irqchip/irq-gic.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> index 508b815..ac8f7ea 100644
-> --- a/drivers/irqchip/irq-gic.c
-> +++ b/drivers/irqchip/irq-gic.c
-> @@ -1020,6 +1020,8 @@ gic_of_init(struct device_node *node, struct
-> device_node *parent) gic_cnt++;
->  	return 0;
->  }
-> +
-
-also it looks like the omission of the blank line in the original file is 
-intentional, so I'd guess it shouldn't be added here.
+But, there is a plain text attachment on my previous E-mail with the
+V3 of the patch set. The V3 is a single patch instead of 4 patches, is
+that ok? Should I resend in a new thread?
 
 
-> +IRQCHIP_DECLARE(arm_gic_400, "arm,gic-400", gic_of_init);
->  IRQCHIP_DECLARE(cortex_a15_gic, "arm,cortex-a15-gic", gic_of_init);
->  IRQCHIP_DECLARE(cortex_a9_gic, "arm,cortex-a9-gic", gic_of_init);
->  IRQCHIP_DECLARE(msm_8660_qgic, "qcom,msm-8660-qgic", gic_of_init);
+>
+> greg k-h
 
 
-Thanks
-Heiko
 
+-- 
+Peter
