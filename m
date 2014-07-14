@@ -1,447 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188AbaGNKxP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 06:53:15 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:37188 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222AbaGNKxE (ORCPT
+	id S1754318AbaGNKyB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 06:54:01 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:52272 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753222AbaGNKxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 06:53:04 -0400
+	Mon, 14 Jul 2014 06:53:51 -0400
+Date: Mon, 14 Jul 2014 12:53:41 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: kan.liang@intel.com
+Cc: andi@firstfloor.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH V5 1/2] perf ignore LBR and extra_regs
+Message-ID: <20140714105341.GT9918@twins.programming.kicks-ass.net>
+References: <1404989984-3068-1-git-send-email-kan.liang@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1403546409-10860-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1403546409-10860-1-git-send-email-srinivas.kandagatla@linaro.org>
-Date: Mon, 14 Jul 2014 16:23:02 +0530
-Message-ID: <CA+neC=NeWKH3TyfXra9QujVofmXDZDDEz3o1xEgQnYqSu2HOzA@mail.gmail.com>
-Subject: Re: [PATCH] phy: qcom: Add driver for QCOM APQ8064 SATA PHY
-From: kiran padwal <kiran.padwal21@gmail.com>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-ide@vger.kernel.org,
-        Sujit Reddy Thumma <sthumma@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="eHrxbAcqt/LxKPZN"
+Content-Disposition: inline
+In-Reply-To: <1404989984-3068-1-git-send-email-kan.liang@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tested-by: kiran.padwal@smartplayin.com
 
-On Mon, Jun 23, 2014 at 11:30 PM, Srinivas Kandagatla
-<srinivas.kandagatla@linaro.org> wrote:
-> Add a PHY driver for uses with AHCI based SATA controller driver on the
-> APQ8064 family of SoCs.
->
-> This patch is a forward port plus separating PHY code of SATA driver
-> from Qualcomm's v3.4 andriod kernel.
->
-> Tested on IFC6410 board.
->
-> CC: Sujit Reddy Thumma <sthumma@codeaurora.org>
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+--eHrxbAcqt/LxKPZN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Thu, Jul 10, 2014 at 03:59:43AM -0700, kan.liang@intel.com wrote:
+> From: Kan Liang <kan.liang@intel.com>
+>=20
+> x86, perf: Protect LBR and extra_regs against KVM lying
+>=20
+> With -cpu host, KVM reports LBR and extra_regs support, if the host has s=
+upport.
+> When the guest perf driver tries to access LBR or extra_regs MSR,
+> it #GPs all MSR accesses,since KVM doesn't handle LBR and extra_regs supp=
+ort.
+> So check the related MSRs access right once at initialization time to avo=
+id the error access at runtime.
+>=20
+> For reproducing the issue, please build the kernel with CONFIG_KVM_INTEL =
+=3D y (for host kernel).
+> And CONFIG_PARAVIRT =3D n and CONFIG_KVM_GUEST =3D n (for guest kernel).
+> Start the guest with -cpu host.
+> Run perf record with --branch-any or --branch-filter in guest to trigger =
+LBR #GP.
+> Run perf stat offcore events (E.g. LLC-loads/LLC-load-misses ...) in gues=
+t to trigger offcore_rsp #GP
+
+This is still not properly wrapped at 78 chars.
+
+> Signed-off-by: Kan Liang <kan.liang@intel.com>
+>=20
+> V2: Move the check code to initialization time.
+> V3: Add flag for each extra register.
+>     Check all LBR MSRs at initialization time.
+> V4: Remove lbr_msr_access. For LBR msr, simply set lbr_nr to 0 if check_m=
+sr failed.
+>     Disable all extra msrs in creation places if check_msr failed.
+> V5: Fix check_msr broken
+>     Don't check any more MSRs after the first fail
+>     Return error when checking fail to stop creating the event
+>     Remove the checking code path which never get
+
+These things should go below the --- so they get thrown away when
+applying the patch, its of no relevance once applied.
+
 > ---
->  drivers/phy/Kconfig                 |   7 +
->  drivers/phy/Makefile                |   1 +
->  drivers/phy/phy-qcom-apq8064-sata.c | 358 ++++++++++++++++++++++++++++++++++++
->  3 files changed, 366 insertions(+)
->  create mode 100644 drivers/phy/phy-qcom-apq8064-sata.c
->
-> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-> index b7b6bce..39083c7 100644
-> --- a/drivers/phy/Kconfig
-> +++ b/drivers/phy/Kconfig
-> @@ -178,6 +178,13 @@ config PHY_XGENE
->         help
->           This option enables support for APM X-Gene SoC multi-purpose PHY.
->
-> +config PHY_QCOM_APQ8064_SATA
-> +       tristate "Qualcomm APQ8064 SATA SerDes/PHY driver"
-> +       depends on ARCH_QCOM
-> +       depends on HAS_IOMEM
-> +       depends on OF
-> +       select GENERIC_PHY
-> +
->  config PHY_QCOM_IPQ806X_SATA
->         tristate "Qualcomm IPQ806x SATA SerDes/PHY driver"
->         depends on ARCH_QCOM
-> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-> index d950317..8782088 100644
-> --- a/drivers/phy/Makefile
-> +++ b/drivers/phy/Makefile
-> @@ -20,4 +20,5 @@ phy-exynos-usb2-$(CONFIG_PHY_EXYNOS4X12_USB2) += phy-exynos4x12-usb2.o
->  phy-exynos-usb2-$(CONFIG_PHY_EXYNOS5250_USB2)  += phy-exynos5250-usb2.o
->  obj-$(CONFIG_PHY_EXYNOS5_USBDRD)       += phy-exynos5-usbdrd.o
->  obj-$(CONFIG_PHY_XGENE)                        += phy-xgene.o
-> +obj-$(CONFIG_PHY_QCOM_APQ8064_SATA)    += phy-qcom-apq8064-sata.o
->  obj-$(CONFIG_PHY_QCOM_IPQ806X_SATA)    += phy-qcom-ipq806x-sata.o
-> diff --git a/drivers/phy/phy-qcom-apq8064-sata.c b/drivers/phy/phy-qcom-apq8064-sata.c
-> new file mode 100644
-> index 0000000..e9e59e2
-> --- /dev/null
-> +++ b/drivers/phy/phy-qcom-apq8064-sata.c
-> @@ -0,0 +1,358 @@
+>  arch/x86/kernel/cpu/perf_event.c       |  3 +++
+>  arch/x86/kernel/cpu/perf_event.h       | 45 ++++++++++++++++++++++++++++=
+++++++
+>  arch/x86/kernel/cpu/perf_event_intel.c | 38 +++++++++++++++++++++++++++-
+>  3 files changed, 85 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_=
+event.c
+> index 2bdfbff..a7c5e4b 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -118,6 +118,9 @@ static int x86_pmu_extra_regs(u64 config, struct perf=
+_event *event)
+>  			continue;
+>  		if (event->attr.config1 & ~er->valid_mask)
+>  			return -EINVAL;
+> +		/* Check if the extra msrs can be safely accessed*/
+> +		if (!x86_pmu.extra_msr_access[er->idx])
+> +			return -EFAULT;
+
+This is not a correct usage of -EFAULT. Event creation did not fail
+because we took a fault dereferencing a user provided pointer. Possibly
+ENXIO is appropriate.
+
+>  		reg->idx =3D er->idx;
+>  		reg->config =3D event->attr.config1;
+> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_=
+event.h
+> index 3b2f9bd..992c678 100644
+> --- a/arch/x86/kernel/cpu/perf_event.h
+> +++ b/arch/x86/kernel/cpu/perf_event.h
+> @@ -464,6 +464,12 @@ struct x86_pmu {
+>  	 */
+>  	struct extra_reg *extra_regs;
+>  	unsigned int er_flags;
+> +	/*
+> +	 * EXTRA REG MSR can be accessed
+> +	 * The extra registers are completely unrelated to each other.
+> +	 * So it needs a flag for each extra register.
+> +	 */
+> +	bool		extra_msr_access[EXTRA_REG_MAX];
+
+So why not in struct extra_reg again? You didn't give a straight answer
+there.
+
 > +/*
-> + * Copyright (c) 2014, The Linux Foundation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
+> + * Under certain circumstances, access certain MSR may cause #GP.
+> + * The function tests if the input MSR can be safely accessed.
 > + */
-> +
-> +#include <linux/io.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/time.h>
-> +#include <linux/delay.h>
-> +#include <linux/clk.h>
-> +#include <linux/slab.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/phy/phy.h>
-> +
-> +/* PHY registers */
-> +#define UNIPHY_PLL_REFCLK_CFG          0x000
-> +#define UNIPHY_PLL_POSTDIV1_CFG                0x004
-> +#define UNIPHY_PLL_CHGPUMP_CFG         0x008
-> +#define UNIPHY_PLL_VCOLPF_CFG          0x00C
-> +#define UNIPHY_PLL_VREG_CFG            0x010
-> +#define UNIPHY_PLL_PWRGEN_CFG          0x014
-> +#define UNIPHY_PLL_DMUX_CFG            0x018
-> +#define UNIPHY_PLL_AMUX_CFG            0x01C
-> +#define UNIPHY_PLL_GLB_CFG             0x020
-> +#define UNIPHY_PLL_POSTDIV2_CFG                0x024
-> +#define UNIPHY_PLL_POSTDIV3_CFG                0x028
-> +#define UNIPHY_PLL_LPFR_CFG            0x02C
-> +#define UNIPHY_PLL_LPFC1_CFG           0x030
-> +#define UNIPHY_PLL_LPFC2_CFG           0x034
-> +#define UNIPHY_PLL_SDM_CFG0            0x038
-> +#define UNIPHY_PLL_SDM_CFG1            0x03C
-> +#define UNIPHY_PLL_SDM_CFG2            0x040
-> +#define UNIPHY_PLL_SDM_CFG3            0x044
-> +#define UNIPHY_PLL_SDM_CFG4            0x048
-> +#define UNIPHY_PLL_SSC_CFG0            0x04C
-> +#define UNIPHY_PLL_SSC_CFG1            0x050
-> +#define UNIPHY_PLL_SSC_CFG2            0x054
-> +#define UNIPHY_PLL_SSC_CFG3            0x058
-> +#define UNIPHY_PLL_LKDET_CFG0          0x05C
-> +#define UNIPHY_PLL_LKDET_CFG1          0x060
-> +#define UNIPHY_PLL_LKDET_CFG2          0x064
-> +#define UNIPHY_PLL_TEST_CFG            0x068
-> +#define UNIPHY_PLL_CAL_CFG0            0x06C
-> +#define UNIPHY_PLL_CAL_CFG1            0x070
-> +#define UNIPHY_PLL_CAL_CFG2            0x074
-> +#define UNIPHY_PLL_CAL_CFG3            0x078
-> +#define UNIPHY_PLL_CAL_CFG4            0x07C
-> +#define UNIPHY_PLL_CAL_CFG5            0x080
-> +#define UNIPHY_PLL_CAL_CFG6            0x084
-> +#define UNIPHY_PLL_CAL_CFG7            0x088
-> +#define UNIPHY_PLL_CAL_CFG8            0x08C
-> +#define UNIPHY_PLL_CAL_CFG9            0x090
-> +#define UNIPHY_PLL_CAL_CFG10           0x094
-> +#define UNIPHY_PLL_CAL_CFG11           0x098
-> +#define UNIPHY_PLL_EFUSE_CFG           0x09C
-> +#define UNIPHY_PLL_DEBUG_BUS_SEL       0x0A0
-> +#define UNIPHY_PLL_CTRL_42             0x0A4
-> +#define UNIPHY_PLL_CTRL_43             0x0A8
-> +#define UNIPHY_PLL_CTRL_44             0x0AC
-> +#define UNIPHY_PLL_CTRL_45             0x0B0
-> +#define UNIPHY_PLL_CTRL_46             0x0B4
-> +#define UNIPHY_PLL_CTRL_47             0x0B8
-> +#define UNIPHY_PLL_CTRL_48             0x0BC
-> +#define UNIPHY_PLL_STATUS              0x0C0
-> +#define UNIPHY_PLL_DEBUG_BUS0          0x0C4
-> +#define UNIPHY_PLL_DEBUG_BUS1          0x0C8
-> +#define UNIPHY_PLL_DEBUG_BUS2          0x0CC
-> +#define UNIPHY_PLL_DEBUG_BUS3          0x0D0
-> +#define UNIPHY_PLL_CTRL_54             0x0D4
-> +
-> +#define SATA_PHY_SER_CTRL              0x100
-> +#define SATA_PHY_TX_DRIV_CTRL0         0x104
-> +#define SATA_PHY_TX_DRIV_CTRL1         0x108
-> +#define SATA_PHY_TX_DRIV_CTRL2         0x10C
-> +#define SATA_PHY_TX_DRIV_CTRL3         0x110
-> +#define SATA_PHY_TX_IMCAL0             0x11C
-> +#define SATA_PHY_TX_IMCAL1             0x120
-> +#define SATA_PHY_TX_IMCAL2             0x124
-> +#define SATA_PHY_RX_IMCAL0             0x128
-> +#define SATA_PHY_RX_IMCAL1             0x12C
-> +#define SATA_PHY_RX_IMCAL2             0x130
-> +#define SATA_PHY_RX_TERM               0x134
-> +#define SATA_PHY_EQUAL                 0x13C
-> +#define SATA_PHY_OOB_TERM              0x144
-> +#define SATA_PHY_CDR_CTRL0             0x148
-> +#define SATA_PHY_CDR_CTRL1             0x14C
-> +#define SATA_PHY_CDR_CTRL2             0x150
-> +#define SATA_PHY_CDR_CTRL3             0x154
-> +#define SATA_PHY_CDR_CTRL4             0x158
-> +#define SATA_PHY_FA_LOAD0              0x15C
-> +#define SATA_PHY_FA_LOAD1              0x160
-> +#define SATA_PHY_PI_CTRL0              0x168
-> +#define SATA_PHY_PI_CTRL1              0x16C
-> +#define SATA_PHY_AD_TPA_CTRL           0x178
-> +#define SATA_PHY_REFCLK_CTRL           0x17C
-> +#define SATA_PHY_POW_DWN_CTRL0         0x180
-> +#define SATA_PHY_POW_DWN_CTRL1         0x184
-> +#define SATA_PHY_TX_DATA_CTRL          0x188
-> +#define SATA_PHY_BIST_GEN0             0x18C
-> +#define SATA_PHY_BIST_GEN1             0x190
-> +#define SATA_PHY_BIST_GEN2             0x194
-> +#define SATA_PHY_BIST_GEN3             0x198
-> +#define SATA_PHY_LBK_CTRL              0x19C
-> +#define SATA_PHY_TEST_DEBUG_CTRL       0x1A0
-> +#define SATA_PHY_ALIGNP                        0x1A4
-> +#define SATA_PHY_PRBS_CFG0             0x1A8
-> +#define SATA_PHY_PRBS_CFG1             0x1AC
-> +#define SATA_PHY_PRBS_CFG2             0x1B0
-> +#define SATA_PHY_PRBS_CFG3             0x1B4
-> +#define SATA_PHY_CHAN_COMP_CHK_CNT     0x1B8
-> +#define SATA_PHY_RESET_CTRL            0x1BC
-> +#define SATA_PHY_RX_CLR                        0x1C0
-> +#define SATA_PHY_RX_EBUF_CTRL          0x1C4
-> +#define SATA_PHY_ID0                   0x1C8
-> +#define SATA_PHY_ID1                   0x1CC
-> +#define SATA_PHY_ID2                   0x1D0
-> +#define SATA_PHY_ID3                   0x1D4
-> +#define SATA_PHY_RX_CHK_ERR_CNT0       0x1D8
-> +#define SATA_PHY_RX_CHK_ERR_CNT1       0x1DC
-> +#define SATA_PHY_RX_CHK_STAT           0x1E0
-> +#define SATA_PHY_TX_IMCAL_STAT         0x1E4
-> +#define SATA_PHY_RX_IMCAL_STAT         0x1E8
-> +#define SATA_PHY_RX_EBUF_STAT          0x1EC
-> +#define SATA_PHY_DEBUG_BUS_STAT0       0x1F0
-> +#define SATA_PHY_DEBUG_BUS_STAT1       0x1F4
-> +#define SATA_PHY_DEBUG_BUS_STAT2       0x1F8
-> +#define SATA_PHY_DEBUG_BUS_STAT3       0x1FC
-> +
-> +#define UNIPHY_PLL_LOCK                BIT(0)
-> +#define SATA_PHY_TX_CAL                BIT(0)
-> +#define SATA_PHY_RX_CAL                BIT(0)
-> +
-> +/* default timeout set to 1 sec */
-> +#define TIMEOUT_MS             10000
-> +
-> +struct qcom_apq8064_sata_phy {
-> +       void __iomem *mmio;
-> +       struct clk *cfg_clk;
-> +       struct device *dev;
-> +};
-> +
-> +/* Helper function to do poll and timeout */
-> +static int read_poll_timeout(void __iomem *addr, u32 mask)
+> +static inline bool check_msr(unsigned long msr)
 > +{
-> +       unsigned long timeout = jiffies + msecs_to_jiffies(TIMEOUT_MS);
-> +       u32 val;
+
+This reads like a generic function;
+
+> +	u64 val_old, val_new, val_tmp;
 > +
-> +       do {
-> +               cpu_relax();
-> +               val = readl_relaxed(addr);
-> +               if (val & mask)
-> +                       break;
-> +       } while (!time_after(jiffies, timeout));
+> +	/*
+> +	 * Read the current value, change it and read it back to see if it
+> +	 * matches, this is needed to detect certain hardware emulators
+> +	 * (qemu/kvm) that don't trap on the MSR access and always return 0s.
+> +	 */
+> +	if (rdmsrl_safe(msr, &val_old))
+> +		goto msr_fail;
+> +	/*
+> +	 * Only chagne it slightly,
+> +	 * since the higher bits of some MSRs cannot be updated by wrmsrl.
+> +	 * E.g. MSR_LBR_TOS
+> +	 */
+> +	val_tmp =3D val_old ^ 0x3UL;
+
+but this is not generally true; not all MSRs can write the 2 LSB, can
+they? One option would be to extend the function with a u64 mask.
+
+> +	if (wrmsrl_safe(msr, val_tmp) ||
+> +		rdmsrl_safe(msr, &val_new))
+> +		goto msr_fail;
 > +
-> +       return (val & mask) ? 0 : -ETIMEDOUT;
+> +	if (val_new !=3D val_tmp)
+> +		goto msr_fail;
+> +
+> +	/* Here it's sure that the MSR can be safely accessed.
+> +	 * Restore the old value and return.
+> +	 */
+> +	wrmsrl(msr, val_old);
+> +
+> +	return true;
+> +
+> +msr_fail:
+> +	return false;
 > +}
-> +
-> +static int qcom_apq8064_sata_phy_init(struct phy *generic_phy)
-> +{
-> +       struct qcom_apq8064_sata_phy *phy = phy_get_drvdata(generic_phy);
-> +       void __iomem *base = phy->mmio;
-> +       int ret = 0;
-> +
-> +       /* SATA phy initialization */
-> +       writel_relaxed(0x01, base + SATA_PHY_SER_CTRL);
-> +       writel_relaxed(0xB1, base + SATA_PHY_POW_DWN_CTRL0);
-> +       /* Make sure the power down happens before power up */
-> +       mb();
-> +       usleep_range(10, 60);
-> +
-> +       writel_relaxed(0x01, base + SATA_PHY_POW_DWN_CTRL0);
-> +       writel_relaxed(0x3E, base + SATA_PHY_POW_DWN_CTRL1);
-> +       writel_relaxed(0x01, base + SATA_PHY_RX_IMCAL0);
-> +       writel_relaxed(0x01, base + SATA_PHY_TX_IMCAL0);
-> +       writel_relaxed(0x02, base + SATA_PHY_TX_IMCAL2);
-> +
-> +       /* Write UNIPHYPLL registers to configure PLL */
-> +       writel_relaxed(0x04, base + UNIPHY_PLL_REFCLK_CFG);
-> +       writel_relaxed(0x00, base + UNIPHY_PLL_PWRGEN_CFG);
-> +
-> +       writel_relaxed(0x0A, base + UNIPHY_PLL_CAL_CFG0);
-> +       writel_relaxed(0xF3, base + UNIPHY_PLL_CAL_CFG8);
-> +       writel_relaxed(0x01, base + UNIPHY_PLL_CAL_CFG9);
-> +       writel_relaxed(0xED, base + UNIPHY_PLL_CAL_CFG10);
-> +       writel_relaxed(0x02, base + UNIPHY_PLL_CAL_CFG11);
-> +
-> +       writel_relaxed(0x36, base + UNIPHY_PLL_SDM_CFG0);
-> +       writel_relaxed(0x0D, base + UNIPHY_PLL_SDM_CFG1);
-> +       writel_relaxed(0xA3, base + UNIPHY_PLL_SDM_CFG2);
-> +       writel_relaxed(0xF0, base + UNIPHY_PLL_SDM_CFG3);
-> +       writel_relaxed(0x00, base + UNIPHY_PLL_SDM_CFG4);
-> +
-> +       writel_relaxed(0x19, base + UNIPHY_PLL_SSC_CFG0);
-> +       writel_relaxed(0xE1, base + UNIPHY_PLL_SSC_CFG1);
-> +       writel_relaxed(0x00, base + UNIPHY_PLL_SSC_CFG2);
-> +       writel_relaxed(0x11, base + UNIPHY_PLL_SSC_CFG3);
-> +
-> +       writel_relaxed(0x04, base + UNIPHY_PLL_LKDET_CFG0);
-> +       writel_relaxed(0xFF, base + UNIPHY_PLL_LKDET_CFG1);
-> +
-> +       writel_relaxed(0x02, base + UNIPHY_PLL_GLB_CFG);
-> +       /* make sure global config LDO power down happens before power up */
-> +       mb();
-> +
-> +       writel_relaxed(0x03, base + UNIPHY_PLL_GLB_CFG);
-> +       writel_relaxed(0x05, base + UNIPHY_PLL_LKDET_CFG2);
-> +
-> +       /* PLL Lock wait */
-> +       ret = read_poll_timeout(base + UNIPHY_PLL_STATUS, UNIPHY_PLL_LOCK);
-> +       if (ret) {
-> +               dev_err(phy->dev, "poll timeout UNIPHY_PLL_STATUS\n");
-> +               return ret;
-> +       }
-> +
-> +       /* TX Calibration */
-> +       ret = read_poll_timeout(base + SATA_PHY_TX_IMCAL_STAT, SATA_PHY_TX_CAL);
-> +       if (ret) {
-> +               dev_err(phy->dev, "poll timeout SATA_PHY_TX_IMCAL_STAT\n");
-> +               return ret;
-> +       }
-> +
-> +       /* RX Calibration */
-> +       ret = read_poll_timeout(base + SATA_PHY_RX_IMCAL_STAT, SATA_PHY_RX_CAL);
-> +       if (ret) {
-> +               dev_err(phy->dev, "poll timeout SATA_PHY_RX_IMCAL_STAT\n");
-> +               return ret;
-> +       }
-> +
-> +       /* SATA phy calibrated succesfully, power up to functional mode */
-> +       writel_relaxed(0x3E, base + SATA_PHY_POW_DWN_CTRL1);
-> +       writel_relaxed(0x01, base + SATA_PHY_RX_IMCAL0);
-> +       writel_relaxed(0x01, base + SATA_PHY_TX_IMCAL0);
-> +
-> +       writel_relaxed(0x00, base + SATA_PHY_POW_DWN_CTRL1);
-> +       writel_relaxed(0x59, base + SATA_PHY_CDR_CTRL0);
-> +       writel_relaxed(0x04, base + SATA_PHY_CDR_CTRL1);
-> +       writel_relaxed(0x00, base + SATA_PHY_CDR_CTRL2);
-> +       writel_relaxed(0x00, base + SATA_PHY_PI_CTRL0);
-> +       writel_relaxed(0x00, base + SATA_PHY_CDR_CTRL3);
-> +       writel_relaxed(0x01, base + SATA_PHY_POW_DWN_CTRL0);
-> +
-> +       writel_relaxed(0x11, base + SATA_PHY_TX_DATA_CTRL);
-> +       writel_relaxed(0x43, base + SATA_PHY_ALIGNP);
-> +       writel_relaxed(0x04, base + SATA_PHY_OOB_TERM);
-> +
-> +       writel_relaxed(0x01, base + SATA_PHY_EQUAL);
-> +       writel_relaxed(0x09, base + SATA_PHY_TX_DRIV_CTRL0);
-> +       writel_relaxed(0x09, base + SATA_PHY_TX_DRIV_CTRL1);
-> +
-> +       return 0;
-> +}
-> +
-> +static int qcom_apq8064_sata_phy_exit(struct phy *generic_phy)
-> +{
-> +       struct qcom_apq8064_sata_phy *phy = phy_get_drvdata(generic_phy);
-> +       void __iomem *base = phy->mmio;
-> +
-> +       /* Power down PHY */
-> +       writel_relaxed(0xF8, base + SATA_PHY_POW_DWN_CTRL0);
-> +       writel_relaxed(0xFE, base + SATA_PHY_POW_DWN_CTRL1);
-> +
-> +       /* Power down PLL block */
-> +       writel_relaxed(0x00, base + UNIPHY_PLL_GLB_CFG);
-> +
-> +       return 0;
-> +}
-> +
-> +static struct phy_ops qcom_apq8064_sata_phy_ops = {
-> +       .init           = qcom_apq8064_sata_phy_init,
-> +       .exit           = qcom_apq8064_sata_phy_exit,
-> +       .owner          = THIS_MODULE,
-> +};
-> +
-> +static int qcom_apq8064_sata_phy_probe(struct platform_device *pdev)
-> +{
-> +       struct qcom_apq8064_sata_phy *phy;
-> +       struct device *dev = &pdev->dev;
-> +       struct resource *res;
-> +       struct phy_provider *phy_provider;
-> +       struct phy *generic_phy;
-> +       int ret;
-> +
-> +       phy = devm_kzalloc(dev, sizeof(*phy), GFP_KERNEL);
-> +       if (!phy)
-> +               return -ENOMEM;
-> +
-> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +       phy->mmio = devm_ioremap_resource(dev, res);
-> +       if (IS_ERR(phy->mmio))
-> +               return PTR_ERR(phy->mmio);
-> +
-> +       generic_phy = devm_phy_create(dev, &qcom_apq8064_sata_phy_ops, NULL);
-> +       if (IS_ERR(generic_phy)) {
-> +               dev_err(dev, "%s: failed to create phy\n", __func__);
-> +               return PTR_ERR(generic_phy);
-> +       }
-> +
-> +       phy->dev = dev;
-> +       phy_set_drvdata(generic_phy, phy);
-> +
-> +       phy->cfg_clk = devm_clk_get(dev, "cfg");
-> +       if (IS_ERR(phy->cfg_clk)) {
-> +               dev_err(dev, "Failed to get sata cfg clock\n");
-> +               return PTR_ERR(phy->cfg_clk);
-> +       }
-> +
-> +       ret = clk_prepare_enable(phy->cfg_clk);
-> +       if (ret)
-> +               return ret;
-> +
-> +       phy_provider = devm_of_phy_provider_register(dev, of_phy_simple_xlate);
-> +       if (IS_ERR(phy_provider)) {
-> +               clk_disable_unprepare(phy->cfg_clk);
-> +               dev_err(dev, "%s: failed to register phy\n", __func__);
-> +               return PTR_ERR(phy_provider);
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +static int qcom_apq8064_sata_phy_remove(struct platform_device *pdev)
-> +{
-> +       struct qcom_apq8064_sata_phy *phy = platform_get_drvdata(pdev);
-> +
-> +       clk_disable_unprepare(phy->cfg_clk);
-> +
-> +       return 0;
-> +}
-> +
-> +static const struct of_device_id qcom_apq8064_sata_phy_of_match[] = {
-> +       { .compatible = "qcom,apq8064-sata-phy" },
-> +       { },
-> +};
-> +MODULE_DEVICE_TABLE(of, qcom_apq8064_sata_phy_of_match);
-> +
-> +static struct platform_driver qcom_apq8064_sata_phy_driver = {
-> +       .probe  = qcom_apq8064_sata_phy_probe,
-> +       .remove = qcom_apq8064_sata_phy_remove,
-> +       .driver = {
-> +               .name   = "qcom-apq8064-sata-phy",
-> +               .owner  = THIS_MODULE,
-> +               .of_match_table = qcom_apq8064_sata_phy_of_match,
-> +       }
-> +};
-> +module_platform_driver(qcom_apq8064_sata_phy_driver);
-> +
-> +MODULE_DESCRIPTION("QCOM apq8064 SATA PHY driver");
-> +MODULE_LICENSE("GPL v2");
-> --
-> 1.9.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+Also, by now this function is far too large to be inline and in a
+header.
+
+> +	/*
+> +	 * Access LBR MSR may cause #GP under certain circumstances.
+> +	 * E.g. KVM doesn't support LBR MSR
+> +	 * Check all LBT MSR here.
+> +	 * Disable LBR access if any LBR MSRs can not be accessed.
+> +	 */
+> +	if (x86_pmu.lbr_nr) {
+> +		if (check_msr(x86_pmu.lbr_tos)) {
+> +			for (i =3D 0; i < x86_pmu.lbr_nr; i++) {
+> +				if (!(check_msr(x86_pmu.lbr_from + i) &&
+> +				      check_msr(x86_pmu.lbr_to + i))) {
+> +					x86_pmu.lbr_nr =3D 0;
+> +					break;
+> +				}
+> +			}
+> +		} else
+> +			x86_pmu.lbr_nr =3D 0;
+
+That's needlessly complex and indented.
+
+	if (x86_pmu.lbr_nr && !check_msr(x86_pmu.lbr_tos)
+		x86_pmu.lbr_nr =3D 0;
+
+	for (i =3D 0; i < x86_pmu.lbr_nr; i++) {
+		if (!(check_msr(x86_pmu.lbr_from + i) &&
+		      check_msr(x86_pmu.lbr_to   + i)))
+			x86_pmu.lbr_nr =3D 0;
+	}
+
+You don't need to wrap the for loop in a lbr_nr test and you don't need
+a break to terminate. Once you set lbr_nr =3D 0, the for loop will
+terminate on its own. If it was already 0 it would've never started.
+
+
+--eHrxbAcqt/LxKPZN
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTw7a1AAoJEHZH4aRLwOS6RDQP/RFVFbJ1IwX5YMj1cfeP1aVL
+lV30TpUz+tB6ncsYLRbau9gTjoPp4y+P1mo1/T9n9BZY8qySzs7CyQDcL7ckaySh
+7pM5olJI1M++YDX29sGeM+kntR9bBglZmzghdDlr+Jb9VN7oaWclQUucfLJZ1v6j
+ChhBOikmz+d8Rh4dp1fWGSMdnfoR1wFTTAgRtwb1zhb0lEu5Hgvq4387DqQFk2hq
+Pu5AdOV/Wh0KzTQpmBm4Mzc6YRnBVLMqMNEWvJG2/RCzzaWQT1xr84AAqlmUZtmj
+9Qe1S1Vj5J0XS1DlUHiyjER/NDmoCUJjPc22J33mQFHxKJMBqvyPFIv8RNxoi+8n
+7Y1S+y694YAKm4KnIacTEYDD4S1rReUqvOu8oHpT/wRqvbH5s+TzbaGbDddn9GeU
+L5jX5myYtqvccaT9SiffFTi4OuiLa2SjLFl66GwQLEnjmm/eAAQPWPqLJ53lwFqN
+dghk8t9oZHrHE5GsY2NJaD8wcRCcJvYfWqt9VH0vwoAQsnvAfyoWfOqz8Nj/hXhq
+dmPEDh0gonHvPTavrZj6dbr+Pufkrxe7f8s3zO1IgOXolbPHjY/rCSA+ZnNUpku4
+10po6vWsZW7JfFKGJkgiIHUiBnRS17mbYGJliT9mIKlGxL9GEeGFcKTFGoM6vAQQ
+7JgMl8WGQW+GX6MLAZtX
+=4Y/X
+-----END PGP SIGNATURE-----
+
+--eHrxbAcqt/LxKPZN--
