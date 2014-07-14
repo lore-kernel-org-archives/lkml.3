@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756830AbaGNS7T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 14:59:19 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:56376 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756810AbaGNS7J (ORCPT
+	id S1756880AbaGNS7t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 14:59:49 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37418 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756810AbaGNS7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 14:59:09 -0400
+	Mon, 14 Jul 2014 14:59:22 -0400
+Date: Mon, 14 Jul 2014 19:59:05 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: Laurent Pinchart <Laurent.pinchart@ideasonboard.com>,
+        linux-spi@vger.kernel.org, dmaengine@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20140714185905.GF6800@sirena.org.uk>
+References: <1405094802-14401-1-git-send-email-geert+renesas@glider.be>
+ <1405094802-14401-2-git-send-email-geert+renesas@glider.be>
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jK-x0=Rr7kX2a=b4Z8ueA77uwmhNZZAayG8cwmNOKa8Ug@mail.gmail.com>
-References: <1405017631-27346-1-git-send-email-keescook@chromium.org>
-	<20140711164931.GA18473@redhat.com>
-	<CAGXu5jK-x0=Rr7kX2a=b4Z8ueA77uwmhNZZAayG8cwmNOKa8Ug@mail.gmail.com>
-Date: Mon, 14 Jul 2014 11:59:08 -0700
-X-Google-Sender-Auth: zs_UTEa_Y_JdKgssJCB-nUIhbeM
-Message-ID: <CAGXu5jJJsiTxxn5UijkBz7jpWgqg01BS=Zc0WbHXbs0vH_xPMQ@mail.gmail.com>
-Subject: Re: [PATCH v10 0/11] seccomp: add thread sync ability
-From: Kees Cook <keescook@chromium.org>
-To: James Morris <james.l.morris@oracle.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="f6nK9RR+X1IX2pXa"
+Content-Disposition: inline
+In-Reply-To: <1405094802-14401-2-git-send-email-geert+renesas@glider.be>
+X-Cookie: Above all else -- sky.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] spi: sh-msiof: Fix leaking of unused DMA descriptors
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
 
-Is this series something you would carry in the security-next tree?
-That has traditionally been where seccomp features have landed in the
-past.
+--f6nK9RR+X1IX2pXa
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--Kees
+On Fri, Jul 11, 2014 at 06:06:42PM +0200, Geert Uytterhoeven wrote:
+> If dmaengine_prep_slave_sg() or dmaengine_submit() fail, we may leak
+> unused DMA descriptors.
 
+Same here, this doesn't apply either.
 
-On Fri, Jul 11, 2014 at 10:55 AM, Kees Cook <keescook@chromium.org> wrote:
-> On Fri, Jul 11, 2014 at 9:49 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->> On 07/10, Kees Cook wrote:
->>>
->>> This adds the ability for threads to request seccomp filter
->>> synchronization across their thread group (at filter attach time).
->>> For example, for Chrome to make sure graphic driver threads are fully
->>> confined after seccomp filters have been attached.
->>>
->>> To support this, locking on seccomp changes via thread-group-shared
->>> sighand lock is introduced, along with refactoring of no_new_privs. Races
->>> with thread creation are handled via delayed duplication of the seccomp
->>> task struct field and cred_guard_mutex.
->>>
->>> This includes a new syscall (instead of adding a new prctl option),
->>> as suggested by Andy Lutomirski and Michael Kerrisk.
->>
->> I do not not see any problems in this version,
->
-> Awesome! Thank you for all the reviews. :) If Andy and Michael are
-> happy with this too, I think this is in good shape. \o/
->
-> -Kees
->
->>
->> Reviewed-by: Oleg Nesterov <oleg@redhat.com>
->>
->
->
->
-> --
-> Kees Cook
-> Chrome OS Security
+--f6nK9RR+X1IX2pXa
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAEBAgAGBQJTxCh1AAoJELSic+t+oim9pzUP/ivBi4h7u2tDtwgePJRXxXCd
+WhYf7fViJXEWoy23nO8AbXOMy8y+TW1R+tSk3UMN+uBhuv4Rscul68HnEUXr36PN
+Qyx7m6PEY0tphQPdLdxf7oqAbJJgeIMvp+tQP4AkoTAVlRWzztO8Qtql29mowHP7
+YvakqGTcIZC7N24q5GKvNKpVeuuS2gBXDE9v1a/LDaY6bE6GJp32cwo5sYd/cd3W
+CBmLzD+oyeA/fS5JiI0JbQb5nl+Za+Y62niPZH2YbBdsJCe2rmURyePII++o3r0w
+dSbUx2uPPVwCm4yqnhWv3ML+zcVMR3Dd19uqlGh9WS0JSLRS4T1T0FzdLpl4F4jJ
+2DVKqsgcr9tT1ocG2zOVPqWw1ilACWET4ZRFhZNeLEjekKaT/BjpCZYmiXYfvi90
+l38Z6GGdbEqVcGGmwWmjLrk5wmoEvRf5K8f+6++EpKok6RW7GRG4gdHuud2gIV3q
+Va+5WAFN+7YqRc4OeHxUPF+c94qJ7ei6yYWmBvxo008/9ZtiblCdYfJEPo0sBBDW
+eWyrVimJcFOZDhKfVDFvNH/7A2eoghrlGriKKilMbwj6KtxLHnrPsKaTQTbtHTQN
+GONM10c9qqKh2undyxSCFWe/+9sJqYz3lJlL/VRE9Pf2iSvNNeOoWTNitRn76svZ
+QgjVmffGcd7VAtnRVJHW
+=a9Uk
+-----END PGP SIGNATURE-----
 
--- 
-Kees Cook
-Chrome OS Security
+--f6nK9RR+X1IX2pXa--
