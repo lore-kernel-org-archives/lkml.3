@@ -1,307 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928AbaGNTu6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 15:50:58 -0400
-Received: from vserver.eikelenboom.it ([84.200.39.61]:50528 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755579AbaGNTuw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 15:50:52 -0400
-Date: Mon, 14 Jul 2014 21:50:47 +0200
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <1892007703.20140714215047@eikelenboom.it>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, konrad@kernel.org
-CC: boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
-Subject: Re: [Xen-devel] [PATCH v4] PCI back fixes for 3.17.
-In-Reply-To: <1499016487.20140714210129@eikelenboom.it>
-References: <1405109332-31659-1-git-send-email-konrad@kernel.org> <768165707.20140714183755@eikelenboom.it> <20140714172225.GA10497@laptop.dumpdata.com> <652296445.20140714192923@eikelenboom.it> <20140714173753.GB12920@laptop.dumpdata.com> <9210423415.20140714194304@eikelenboom.it> <20140714174525.GD12920@laptop.dumpdata.com> <1332864311.20140714202433@eikelenboom.it> <20140714184547.GA18896@laptop.dumpdata.com> <1499016487.20140714210129@eikelenboom.it>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1756954AbaGNTvH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 15:51:07 -0400
+Received: from mga09.intel.com ([134.134.136.24]:11022 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756902AbaGNTuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 15:50:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,659,1400050800"; 
+   d="scan'208";a="543227683"
+Subject: Re: [PATCH v4 6/7] sched: add function nr_running_cpu to expose
+ number of tasks running on cpu
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>, "H. Peter Anvin" <hpa@zytor.com>,
+        "David S.Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Chandramouli Narayanan <mouli@linux.intel.com>,
+        Vinodh Gopal <vinodh.gopal@intel.com>,
+        James Guilford <james.guilford@intel.com>,
+        Wajdi Feghali <wajdi.k.feghali@intel.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20140714191504.GO9918@twins.programming.kicks-ass.net>
+References: <cover.1405074379.git.tim.c.chen@linux.intel.com>
+	 <1405110784.2970.655.camel@schen9-DESK>
+	 <20140714101611.GS9918@twins.programming.kicks-ass.net>
+	 <1405354214.2970.663.camel@schen9-DESK>
+	 <20140714161432.GC9918@twins.programming.kicks-ass.net>
+	 <1405357534.2970.701.camel@schen9-DESK>
+	 <20140714181738.GI9918@twins.programming.kicks-ass.net>
+	 <1405364908.2970.729.camel@schen9-DESK>
+	 <20140714191504.GO9918@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Jul 2014 12:50:50 -0700
+Message-ID: <1405367450.2970.750.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2014-07-14 at 21:15 +0200, Peter Zijlstra wrote:
+> On Mon, Jul 14, 2014 at 12:08:28PM -0700, Tim Chen wrote:
+> > On Mon, 2014-07-14 at 20:17 +0200, Peter Zijlstra wrote:
+> 
+> > > Your multi-buffer thing isn't generic either, it seems lmiited to sha1.
+> > 
+> > We actually have many other multi-buffer crypto algorithms already
+> > published for encryption and other IPSec usages.  So 
+> > multi-buffer algorithm is not just limited to SHA1.
+> > We hope to port those to the kernel crypto library eventually.
+> > http://www.intel.com/content/dam/www/public/us/en/documents/white-papers/fast-multi-buffer-ipsec-implementations-ia-processors-paper.pdf 
+> 
+> That's all nice and such; but the code as I've seen in these patches is
+> very much sha1 specific. The mb part isn't separated out.
 
-Monday, July 14, 2014, 9:01:29 PM, you wrote:
+There is a generic multi-buffer infrastructure portion that manages
+pulling and queuing jobs on the crypto workqueue, and it is separated out
+in patch 1 of the patchset.  The other portions are algorithm specific that defines
+algorithm specific data structure and  does the crypto computation 
+for a particular algorithm, mostly in
+assemblies and C glue code.  The infrastructure code is 
+meant to be reused for other similar 
+multi-buffer algorithms.
 
+> 
+> > > It does not reuse padata, 
+> > padata tries to speed things up by parallelizing jobs to *multiple*
+> > cpus.  Whereas multi-buffer tries to speed things up by speeding things
+> > up by using multiple data lanes in SIMD register in a *single* cpu.
+> > These two usages are complementary but not the same.
+> 
+> And if its single cpu, wth do you need that nr_running thing for another
+> cpu for?
 
-> Monday, July 14, 2014, 8:45:47 PM, you wrote:
+We use nr_running_cpu to check whether there are other tasks running on
+the *current* cpu, (not for another cpu), to decide if we should flush
+and compute crypto jobs accumulated.  If there's nobody else running,
+we can take advantage of available cpu cycles on the cpu we are running 
+on to do computation on the existing jobs in a SIMD mannner. 
+Waiting a bit longer may accumulate more jobs to process in parallel
+in a single SIMD instruction, but will have more delay.  
 
->> On Mon, Jul 14, 2014 at 08:24:33PM +0200, Sander Eikelenboom wrote:
->>> 
->>> Monday, July 14, 2014, 7:45:25 PM, you wrote:
->>> 
->>> > On Mon, Jul 14, 2014 at 07:43:04PM +0200, Sander Eikelenboom wrote:
->>> >> 
->>> >> Monday, July 14, 2014, 7:37:53 PM, you wrote:
->>> >> 
->>> >> >> >> Ad B)
->>> >> >> >> 
->>> >> >> >> root@dom0:~# xl pci-list router
->>> >> >> >> Vdev Device
->>> >> >> >> 05.0 0000:00:1b.0
->>> >> >> >> 
->>> >> >> >> root@dom0:~# xl pci-assignable-list
->>> >> >> >> 0000:02:00.0
->>> >> >> >> 
->>> >> >> >> root@dom0:~# xl pci-detach router 00:1b.0
->>> >> >> >> dmesg shows:
->>> >> >> >> [  199.742668] pciback 0000:00:1b.0: restoring config space at offset 0x10 (was 0x4, writing 0xf7d30004)
->>> >> >> >> [  199.743527] pciback 0000:00:1b.0: restoring config space at offset 0xc (was 0x0, writing 0x10)
->>> >> >> >> [  199.744321] pciback 0000:00:1b.0: restoring config space at offset 0x4 (was 0x100000, writing 0x100006)
->>> >> >> >> [  199.757184] xen-pciback pci-1-0: xen_pcibk_xenbus_remove freeing pdev @ 0xffff8800589fce40
->>> >> >> >> [  199.758139] xen-pciback pci-1-0: xen_pcibk_disconnect pdev @ 0xffff8800589fce40
->>> >> >> >> [  199.862595] xen: xen_unregister_device_domain_owner
->>> >> >> >> 
->>> >> >> >> xl dmesg shows:
->>> >> >> >> (XEN) [2014-07-14 16:28:29] memory_map:remove: dom1 gfn=f3070 mfn=f7d30 nr=4
->>> >> >> >> (XEN) [2014-07-14 16:28:29] io.c:322: d1: unbind: m_gsi=22 g_gsi=36 dev=00:00.5 intx=0
->>> >> >> >> (XEN) [2014-07-14 16:28:29] io.c:390: d1 unmap: m_irq=22 dev=00:00.5 intx=0
->>> >> >> >> (XEN) [2014-07-14 16:28:29] [VT-D]iommu.c:1579: d1:PCIe: unmap 0000:00:1b.0
->>> >> >> >> (XEN) [2014-07-14 16:28:29] [VT-D]iommu.c:1440: d0:PCIe: map 0000:00:1b.0
->>> >> >> >> 
->>> >> >> >> root@dom0:~# xl pci-list router
->>> >> >> >> root@dom0:~# xl pci-assignable-list
->>> >> >> >> 0000:00:1b.0
->>> >> >> >> 0000:02:00.0
->>> >> >> >> 
->>> >> >> >> root@dom0:~# xl pci-assignable-remove 00:1b.0
->>> >> >> >> dmesg shows:
->>> >> >> >> [  318.827415] xen: xen_unregister_device_domain_owner
->>> >> >> >> [  318.828771] xen: xen_unregister_device_domain_owner: ENODEV
->>> >> >> >> [  318.930869] pciback 0000:00:1b.0: restoring config space at offset 0x10 (was 0x4, writing 0xf7d30004)
->>> >> >> >> [  318.933435] pciback 0000:00:1b.0: restoring config space at offset 0xc (was 0x0, writing 0x10)
->>> >> >> >> [  318.935877] pciback 0000:00:1b.0: restoring config space at offset 0x4 (was 0x100000, writing 0x100006)
->>> >> >> >> 
->>> >> >> >> root@dom0:~# xl pci-list router
->>> >> >> >> root@dom0:~# xl pci-assignable-list
->>> >> >> >> 0000:02:00.0
->>> >> >> >> 
->>> >> >> >> 
->>> >> >> 
->>> >> >> > And if you do:
->>> >> >> 
->>> >> >> > # xl pci-detach router 02:00.0
->>> >> >> 
->>> >> 
->>> >> > Err, I meant
->>> >> > # xl pci-assignable-remove 02:00.0
->>> >> 
->>> >> Ah ok .. so that is:
->>> >> remove a device from pciback that has never been assigned to any guest .. 
->>> >> 
->>> >> will also give that a go .. although that probably won't be a problem. 
->>> 
->>> > Right. So I think it all works as expected? That is if you have
->>> > two PCI devices assigned to a guest and want to re-use them you
->>> > have to do the 'pci-detach' twice and then follow that with
->>> >  'pci-assignable-remove' twice as well?
->>> 
->>> Well except that's not what i want :-) .. that's about the same as shutting down 
->>> the guest .. and indeed that works :-)
->>> 
->>> What i want to do is to remove just *one* device and leave the other one in the guest.
->>> 
->>> The one that i remove .. i would like to be able to remove it from being 
->>> assignable .. (rebind it in dom0) and/or assign it to another guest.
+> 
+> Also, this difference wasn't clear to me.
+> 
+> I still loathe all the async work, because it makes a mockery of
+> accounting etc.. but that's a story for another day I suppose :-(
+> 
+> 
 
->> Aha
->>> 
->>> And that fails because pciback still thinks the guest owns the device ..
->>> while libxl thinks it doesn't (outcome of xl pci-assignable-list).
+Thanks.
 
->> Oh
->>> 
->>> When doing the:
->>> 
->>> # xl pci-assignable-list
->>> 0000:02:00.0
->>> # xl pci-assignable-remove 02:00.0
->>> dmesg shows:               
->>> [  443.292951] xen: xen_unregister_device_domain_owner
->>> [  443.294308] xen: xen_unregister_device_domain_owner: ENODEV
->>> [  443.398827] pciback 0000:02:00.0: restoring config space at offset 0x3c (was 0x100, writing 0x104)
->>> [  443.400797] pciback 0000:02:00.0: restoring config space at offset 0x10 (was 0x4, writing 0xf7c00004)
->>> [  443.401713] pciback 0000:02:00.0: restoring config space at offset 0x4 (was 0x100000, writing 0x100006)
->>> 
->>> which i think is what is expected ..
-
->> Right.
-
->>> 
->>> 
->>> Hmm  /sys/bus/pci/drivers/pciback  doesn't shed much light, because in the state 
->>> just after a xl pci-detach, the device is still registred by pciback (from dom0's 
->>> view) which is correct, what is wrong is that pciback still seems to think that 
->>> it is in turn still owned by the guest. That doesn't get reflected in the info 
->>> available in the /sys dir.
-
->> Oh
->>> 
->>> Ok over to xen-store ... 
-
->> I think I had a patch for that in libxl. It was the order of operations it was
->> doing - it did the 'unbind' first and then it did the XenBus operations.
-
->>> 
->>> first a diff between the booted guest with two devices passed through and the 
->>> state after the "xl pci-detach router 00:1b.0"
->>> 
->>> root@creanuc:~# diff -U10 xs-before-detach-first.txt xs-after-detach-first.txt
->>> --- xs-before-detach-first.txt  2014-07-14 19:56:23.233576000 +0200
->>> +++ xs-after-detach-first.txt   2014-07-14 20:00:00.053576000 +0200
->>> @@ -185,35 +185,29 @@
->>>         feature-rx-flip = "0"
->>>         feature-split-event-channels = "1"
->>>         multi-queue-max-queues = "4"
->>>         hotplug-status = "connected"
->>>      pci = ""
->>>       1 = ""
->>>        0 = ""
->>>         frontend = "/local/domain/1/device/pci/0"
->>>         frontend-id = "1"
->>>         online = "1"
->>> -       state = "3"
->>> +       state = "7"
->>>         domain = "router"
->>>         key-0 = "0000:02:00.0"
->>>         dev-0 = "0000:02:00.0"
->>>         vdevfn-0 = "28"
->>>         opts-0 = "msitranslate=0,power_mgmt=0,permissive=0"
->>>         state-0 = "3"
->>> -       key-1 = "0000:00:1b.0"
->>> -       dev-1 = "0000:00:1b.0"
->>> -       vdevfn-1 = "30"
->>> -       opts-1 = "msitranslate=0,power_mgmt=0,permissive=0"
->>> -       state-1 = "3"
->>> -       num_devs = "2"
->>> +       num_devs = "1"
->>>         vdev-0 = "0000:00:00.00"
->>> -       vdev-1 = "0000:00:01.00"
->>>         root-0 = "0000:00"
->>>         root_num = "1"
->>>    1 = ""
->>>     vm = "/vm/a102d97e-8388-414e-97e5-cc394656c47d"
->>>     name = "router"
->>>     cpu = ""
->>>      0 = ""
->>>       availability = "online"
->>>      1 = ""
->>>       availability = "online"
->>> 
->>> It seems ok, perhaps apart from the general pci state going from 3 to 7 ?
->>> Haven't looked up the exact states, but since only one domain is removes i would 
->>> still expect it to be 3 ?
-
->> 7 is Reconfiguring which is what it should move to (to update the XenBus).
-
-> Ok, but that should than be acknowledged somewhere by someone i suppose .. and 
-> not stay in that state ?
-
->>> 
->>> 
->>> Now a diff before and after the "xl pci-assignable-remove 00:1b.0"
->>> diff xs-after-detach-first.txt xs-after-pci-assignable-remove-first.txt is 
->>> empty, as expected since this is a pciback only thing now involving any guest.
->>> 
->>> 
->>> And now the last diff, between the state before and after the "xl pci-detach 
->>> 02:00.0" removing the last pci device from the guest.
->>> 
->>> root@creanuc:~# diff -U5 xs-after-pci-assignable-remove-first.txt xs-after-pci-detach-second.txt
->>> --- xs-after-pci-assignable-remove-first.txt    2014-07-14 20:00:45.161576000 +0200
->>> +++ xs-after-pci-detach-second.txt      2014-07-14 20:01:20.177576000 +0200
->>> @@ -184,27 +184,10 @@
->>>         feature-rx-copy = "1"
->>>         feature-rx-flip = "0"
->>>         feature-split-event-channels = "1"
->>>         multi-queue-max-queues = "4"
->>>         hotplug-status = "connected"
->>> -    pci = ""
->>> -     1 = ""
->>> -      0 = ""
->>> -       frontend = "/local/domain/1/device/pci/0"
->>> -       frontend-id = "1"
->>> -       online = "1"
->>> -       state = "7"
->>> -       domain = "router"
->>> -       key-0 = "0000:02:00.0"
->>> -       dev-0 = "0000:02:00.0"
->>> -       vdevfn-0 = "28"
->>> -       opts-0 = "msitranslate=0,power_mgmt=0,permissive=0"
->>> -       state-0 = "3"
->>> -       num_devs = "1"
->>> -       vdev-0 = "0000:00:00.00"
->>> -       root-0 = "0000:00"
->>> -       root_num = "1"
->>>    1 = ""
->>>     vm = "/vm/a102d97e-8388-414e-97e5-cc394656c47d"
->>>     name = "router"
->>>     cpu = ""
->>>      0 = ""
->>> @@ -249,15 +232,10 @@
->>>        event-channel-rx = "25"
->>>        request-rx-copy = "1"
->>>        feature-rx-notify = "1"
->>>        feature-sg = "1"
->>>        feature-gso-tcpv4 = "1"
->>> -    pci = ""
->>> -     0 = ""
->>> -      backend = "/local/domain/0/backend/pci/1/0"
->>> -      backend-id = "0"
->>> -      state = "1"
->>>     control = ""
->>>      shutdown = ""
->>>      platform-feature-multiprocessor-suspend = "1"
->>>      platform-feature-xs_reset_watches = "1"
->>>     hvmloader = ""
->>> 
->>> That seems ok.
->>> 
->>> So apart from that perhaps incorrect general pci state change, the info in 
->>> xenstore seems to be OK.
->>> 
->>> So it does seem to be a lack of pciback receiving a confirm from libxl / qemu that the 
->>> device is indeed removed from the guest for the final deregistring of the 
->>> ownership.
->>> 
->>> Because after a pci-detach the pci device is:
->>> - removed from xen-store as attached to the guest
->>> - the iommu has assigned/mapped it back to dom0
->>> - xl pci-assignable-list shows it as assignable again
->>> 
->>> So only pciback is the only one left out of the party :-)
->>> Couldn't it be somehow tied to the iommu events, since it should be in sync with that i suppose ?
-
-
->> Let me find out what is up with this. Once the device
->> is de-assigned from a guest (even if forcefully) it should
->> be possible to assign it to another.
-
-> Yes .. at least for the rebinding to dom0 case, because the 
-> pci-assignable-remove seems to do it forcefully now. But i haven't tried what it 
-> does when reassigning to another guest (if it forcefully swaps ownership then, 
-> since the pci-assignable-remove isn't involved then).
-
-> Will give the xen patch a try.
-
-The patch doesn't make a difference.
-
->>> 
->>> --
->>> Sander
->>> 
->>> BTW, i don't see the "do_flr" anywhere in /sys/*/pciback/ ?
-
->> We been having a lengthy discussion about this and David is out
->> on vacation so will have to wait until he is back.
-
->>> 
-
-
+Tim
 
 
