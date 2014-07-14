@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269AbaGNG2W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 02:28:22 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:43081 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753167AbaGNG2H (ORCPT
+	id S1752993AbaGNG15 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 02:27:57 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:46428 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752746AbaGNG1l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 02:28:07 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Mon, 14 Jul 2014 15:34:02 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
-        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 08/10] mm/page_alloc: use get_onbuddy_migratetype() to
- get buddy list type
-Message-ID: <20140714063401.GD11317@js1304-P5Q-DELUXE>
-References: <1404460675-24456-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1404460675-24456-9-git-send-email-iamjoonsoo.kim@lge.com>
- <53BAC37D.3060703@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53BAC37D.3060703@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 14 Jul 2014 02:27:41 -0400
+From: varkabhadram@gmail.com
+To: netdev@vger.kernel.org
+Cc: Thomas.Lendacky@amd.com, geert+renesas@linux-m68k.org,
+        ebiederm@xmission.com, macro@linux-mips.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        Varka Bhadram <varkab@cdac.in>
+Subject: [PATCH net-next v2 2/6] ethernet: amd: use devm_ioremap()
+Date: Mon, 14 Jul 2014 11:55:43 +0530
+Message-Id: <1405319147-5212-3-git-send-email-varkabhadram@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1405319147-5212-1-git-send-email-varkabhadram@gmail.com>
+References: <1405319147-5212-1-git-send-email-varkabhadram@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 07, 2014 at 05:57:49PM +0200, Vlastimil Babka wrote:
-> On 07/04/2014 09:57 AM, Joonsoo Kim wrote:
-> >When isolating free page, what we want to know is which list
-> >the page is linked. If it is linked in isolate migratetype buddy list,
-> >we can skip watermark check and freepage counting. And if it is linked
-> >in CMA migratetype buddy list, we need to fixup freepage counting. For
-> >this purpose, get_onbuddy_migratetype() is more fit and cheap than
-> >get_pageblock_migratetype(). So use it.
-> 
-> Hm but you made get_onbuddy_migratetype() work only with
-> CONFIG_MEMORY_ISOLATION. And __isolate_free_page is (despite the
-> name) not at all limited to CONFIG_MEMORY_ISOLATION.
+From: Varka Bhadram <varkab@cdac.in>
 
-get_onbuddy_migratetype() is only used for determining whether this
-page is on isolate buddy list or not. So if !CONFIG_MEMORY_ISOLATION,
-default value of get_onbuddy_migratetype() makes things correct.
+This patch replace ioremap() with the devm_ioremap() so that
+the resource will be freed automatically with the probe failed.
 
-But, I should write some code comment.
+Signed-off-by: Varka Bhadram <varkab@cdac.in>
+---
+ drivers/net/ethernet/amd/amd8111e.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-Thanks.
+diff --git a/drivers/net/ethernet/amd/amd8111e.c b/drivers/net/ethernet/amd/amd8111e.c
+index ddd09e8..433107c 100644
+--- a/drivers/net/ethernet/amd/amd8111e.c
++++ b/drivers/net/ethernet/amd/amd8111e.c
+@@ -1866,7 +1866,7 @@ static int amd8111e_probe_one(struct pci_dev *pdev,
+ 
+ 	spin_lock_init(&lp->lock);
+ 
+-	lp->mmio = ioremap(reg_addr, reg_len);
++	lp->mmio = devm_ioremap(&pdev->dev, reg_addr, reg_len);
+ 	if (!lp->mmio) {
+ 		printk(KERN_ERR "amd8111e: Cannot map device registers, "
+ 		       "exiting\n");
+@@ -1913,7 +1913,7 @@ static int amd8111e_probe_one(struct pci_dev *pdev,
+ 	if (err) {
+ 		printk(KERN_ERR "amd8111e: Cannot register net device, "
+ 		       "exiting.\n");
+-		goto err_iounmap;
++		goto err_free_dev;
+ 	}
+ 
+ 	pci_set_drvdata(pdev, dev);
+@@ -1943,8 +1943,6 @@ static int amd8111e_probe_one(struct pci_dev *pdev,
+ 		printk(KERN_INFO "%s: Couldn't detect MII PHY, assuming address 0x01\n",
+ 		       dev->name);
+     	return 0;
+-err_iounmap:
+-	iounmap(lp->mmio);
+ 
+ err_free_dev:
+ 	free_netdev(dev);
+@@ -1964,7 +1962,6 @@ static void amd8111e_remove_one(struct pci_dev *pdev)
+ 
+ 	if (dev) {
+ 		unregister_netdev(dev);
+-		iounmap(((struct amd8111e_priv *)netdev_priv(dev))->mmio);
+ 		free_netdev(dev);
+ 		pci_release_regions(pdev);
+ 		pci_disable_device(pdev);
+-- 
+1.7.9.5
+
