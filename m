@@ -1,285 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756312AbaGNQnS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 12:43:18 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54568 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755819AbaGNQnK (ORCPT
+	id S1756184AbaGNQrs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 12:47:48 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:51833 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755690AbaGNQrm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 12:43:10 -0400
-Message-ID: <53C4136D.5070108@ti.com>
-Date: Mon, 14 Jul 2014 20:29:17 +0300
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: <santosh.shilimkar@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, <linux-gpio@vger.kernel.org>
-CC: <ivan.khoronzhuk@ti.com>, <m-karicheri2@ti.com>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpio: keystone: add dsp gpio controller driver
-References: <1405351707-12142-1-git-send-email-grygorii.strashko@ti.com>
-In-Reply-To: <1405351707-12142-1-git-send-email-grygorii.strashko@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Mon, 14 Jul 2014 12:47:42 -0400
+Message-ID: <1405356460.2066.5.camel@x41>
+Subject: Re: drm: i915: "plane B assertion failure, should be off on pipe B
+ but is still active"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Jani Nikula <jani.nikula@linux.intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Date: Mon, 14 Jul 2014 18:47:40 +0200
+In-Reply-To: <20140714071823.GE15237@phenom.ffwll.local>
+References: <1404140703.2978.13.camel@x41> <87egy5h1yz.fsf@intel.com>
+	 <1404291203.12021.18.camel@x220> <1405283561.2103.9.camel@x41>
+	 <20140714065610.GA15237@phenom.ffwll.local> <1405322020.19403.0.camel@x220>
+	 <20140714071823.GE15237@phenom.ffwll.local>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 14 Jul 2014 16:47:40.0552 (UTC) FILETIME=[53625880:01CF9F83]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Daniel Vetter schreef op ma 14-07-2014 om 09:18 [+0200]:
+> On Mon, Jul 14, 2014 at 09:13:40AM +0200, Paul Bolle wrote:
+> > On Mon, 2014-07-14 at 08:56 +0200, Daniel Vetter wrote:
+> > > diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+> > > index 82e7d57f0a8a..f0be855ddf45 100644
+> > > --- a/drivers/gpu/drm/i915/intel_display.c
+> > > +++ b/drivers/gpu/drm/i915/intel_display.c
+> > > @@ -11914,6 +11914,7 @@ static void intel_sanitize_crtc(struct intel_crtc *crtc)
+> > >  		 * ...  */
+> > >  		plane = crtc->plane;
+> > >  		crtc->plane = !plane;
+> > > +		crtc->primary_enabled = true;
+> > >  		dev_priv->display.crtc_disable(&crtc->base);
+> > >  		crtc->plane = plane;
+> > >  
+> > 
+> > Instead of the revert or on top of the revert?
+> 
+> Instead of the revert as an attempt at a proper bugfix. If it doesn't work
+> my theory about what's going on on your machine is all wrong ;-)
 
-On 07/14/2014 06:28 PM, Grygorii Strashko wrote:
-> From: Murali Karicheri <m-karicheri2@ti.com>
->
+v3.16-rc5 with that "attempt at a proper bugfix" applied doesn't show
+the WARNING anymore.
 
-I'm sorry for the mess. I've sent wrong patch version.
-Ignore it, please.
+Please note that I didn't actually bother to test whether v3.16-rc5 by
+itself, somehow, fixed things. I guess that's rather unlikely. But if
+you'd like to be sure I'll even build and boot v3.16-rc5 without your
+attempt at a bugfix.
 
-> On Keystone SOCs, ARM host can send interrupts to DSP cores using the
-> DSP GPIO controller IP. Each DSP GPIO controller provides 28 IRQ signals for
-> each DSP core. This is one of the component used by the IPC mechanism used
-> on Keystone SOCs.
->
-> Keystone 2 DSP GPIO controller has specific features:
-> - each GPIO can be configured only as output pin;
-> - setting GPIO value to 1 causes IRQ generation on target DSP core;
-> - reading pin value returns 0 - if IRQ was handled or 1 - IRQ is still
->    pending.
->
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-> ---
->   .../devicetree/bindings/gpio/gpio-keystone.txt     |   43 ++++++
->   drivers/gpio/Kconfig                               |    8 ++
->   drivers/gpio/Makefile                              |    1 +
->   drivers/gpio/gpio-keystone.c                       |  138 ++++++++++++++++++++
->   4 files changed, 190 insertions(+)
->   create mode 100644 Documentation/devicetree/bindings/gpio/gpio-keystone.txt
->   create mode 100644 drivers/gpio/gpio-keystone.c
->
-> diff --git a/Documentation/devicetree/bindings/gpio/gpio-keystone.txt b/Documentation/devicetree/bindings/gpio/gpio-keystone.txt
-> new file mode 100644
-> index 0000000..cdda018
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/gpio/gpio-keystone.txt
-> @@ -0,0 +1,43 @@
-> +Keystone 2 DSP GPIO controller bindings
-> +
-> +HOST OS userland running on ARM can send interrupts to DSP cores using
-> +the DSP GPIO controller IP. It provides 28 IRQ signals per each DSP core.
-> +This is one of the component used by the IPC mechanism used on Keystone SOCs.
-> +
-> +For example TCI6638K2K SoC has 12 DSP GPIO controllers:
-> + - 8 for C66x CorePacx CPUs 0-7
-> +
-> +Keystone 2 DSP GPIO controller has specific features:
-> +- each GPIO can be configured only as output pin;
-> +- setting GPIO value to 1 causes IRQ generation on target DSP core;
-> +- reading pin value returns 0 - if IRQ was handled or 1 - IRQ is still
-> +  pending.
-> +
-> +Required Properties:
-> +- compatible: should be "ti,keystone-gpio"
-> +
-> +- ti,syscon-dev:	phandle/offset pair. The phandle to syscon used to
-> +			access device state control registers and the offset
-> +			in order to use block of device's specific registers.
-> +
-> +- gpio-controller : Marks the device node as a gpio controller.
-> +
-> +- #gpio-cells : Should be one.
-> +				See gpio.txt in this directory for a of the cells format
-> +
-> +Please refer to gpio.txt in this directory for details of the common GPIO
-> +bindings used by client devices.
-> +
-> +Example:
-> +	kgpio0: keystone_gpio@02620240 {
-> +		compatible = "ti,keystone-gpio";
-> +		ti,syscon-dev = <&devctrl 0x240>;
-> +		gpio-controller;
-> +		#gpio-cells = <2>;
-> +	};
-> +
-> +	dsp0: dsp0 {
-> +		compatible = "linux,rproc-user";
-> +		...
-> +		kick-gpio = <&kgpio0 27>;
-> +	};
-> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-> index 4a1b511..7566283 100644
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
-> @@ -158,6 +158,14 @@ config GPIO_EP93XX
->   	depends on ARCH_EP93XX
->   	select GPIO_GENERIC
->
-> +config GPIO_KEYSTONE
-> +	tristate "Keystone DSP GPIO support"
-> +	depends on ARCH_KEYSTONE
-> +	help
-> +	  Say yes here to support the DSP GPIO driver for Keystone 2. This defines
-> +	  up to 28 GPIOs per each Remote (DSP) core. This is used to send
-> +	  signals from ARM to the Remote (DSP) core.
-> +
->   config GPIO_ZEVIO
->   	bool "LSI ZEVIO SoC memory mapped GPIOs"
->   	depends on ARM && OF_GPIO
-> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-> index d10f6a9..520bb2a 100644
-> --- a/drivers/gpio/Makefile
-> +++ b/drivers/gpio/Makefile
-> @@ -34,6 +34,7 @@ obj-$(CONFIG_GPIO_IOP)		+= gpio-iop.o
->   obj-$(CONFIG_GPIO_IT8761E)	+= gpio-it8761e.o
->   obj-$(CONFIG_GPIO_JANZ_TTL)	+= gpio-janz-ttl.o
->   obj-$(CONFIG_GPIO_KEMPLD)	+= gpio-kempld.o
-> +obj-$(CONFIG_GPIO_KEYSTONE)	+= gpio-keystone.o
->   obj-$(CONFIG_ARCH_KS8695)	+= gpio-ks8695.o
->   obj-$(CONFIG_GPIO_INTEL_MID)	+= gpio-intel-mid.o
->   obj-$(CONFIG_GPIO_LP3943)	+= gpio-lp3943.o
-> diff --git a/drivers/gpio/gpio-keystone.c b/drivers/gpio/gpio-keystone.c
-> new file mode 100644
-> index 0000000..9ff3bf6
-> --- /dev/null
-> +++ b/drivers/gpio/gpio-keystone.c
-> @@ -0,0 +1,138 @@
-> +/*
-> + * Keystone 2 DSP GPIO support.
-> + *
-> + * Copyright (C) 2014 Texas Instruments, Inc.
-> + * Author: Murali Karicheri <m-karicheri2@ti.com>
-> + *	   Grygorii Strashko <grygorii.strashko@ti.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +#include <linux/module.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/gpio.h>
-> +#include <linux/mfd/syscon.h>
-> +#include <linux/regmap.h>
-> +
-> +/* 28 bits in IPCGRx are treated as GPIO pins to generate interrupt */
-> +#define GPIOS_PER_BANK		28
-> +#define GPIO_OFFSET		4
-> +
-> +struct keystone_gpio_bank {
-> +	struct gpio_chip	 chip;
-> +	struct device		*dev;
-> +	struct regmap		*devctrl_regs;
-> +	u32			devctrl_offset;
-> +};
-> +#define chip_to_bank(c) \
-> +	container_of(c, struct keystone_gpio_bank, chip)
-> +
-> +static int keystone_gpio_direction_out(struct gpio_chip *c, unsigned ofs, int val)
-> +{
-> +	return 0;
-> +}
-> +
-> +static int keystone_gpio_get(struct gpio_chip *c, unsigned ofs)
-> +{
-> +	struct keystone_gpio_bank *bank = chip_to_bank(c);
-> +	int bit = ofs + GPIO_OFFSET;
-> +	int ret;
-> +	u32 val = 0;
-> +
-> +	ret = regmap_read(bank->devctrl_regs, bank->devctrl_offset, &val);
-> +	if (ret < 0)
-> +		dev_dbg(bank->dev, "gpio read failed ret(%d)\n", ret);
-> +
-> +	return (val >> bit) & 1;
-> +}
-> +
-> +static void keystone_gpio_set(struct gpio_chip *c, unsigned ofs, int val)
-> +{
-> +	struct keystone_gpio_bank *bank = chip_to_bank(c);
-> +	int bit = ofs + GPIO_OFFSET;
-> +	int ret;
-> +
-> +	if (!val)
-> +		return;
-> +
-> +	ret = regmap_write(bank->devctrl_regs, bank->devctrl_offset,
-> +			   BIT(bit) | 1);
-> +	if (ret < 0)
-> +		dev_dbg(bank->dev, "gpio write failed ret(%d)\n", ret);
-> +}
-> +
-> +static int keystone_gpio_probe(struct platform_device *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct device_node *np = dev->of_node;
-> +	struct keystone_gpio_bank *bank;
-> +	int ret = 0;
-> +
-> +	bank = devm_kzalloc(&pdev->dev, sizeof(*bank), GFP_KERNEL);
-> +	if (!bank)
-> +		return -ENOMEM;
-> +
-> +	bank->devctrl_regs =
-> +		syscon_regmap_lookup_by_phandle(np, "ti,syscon-dev");
-> +	if (IS_ERR(bank->devctrl_regs))
-> +		return PTR_ERR(bank->devctrl_regs);
-> +
-> +	ret = of_property_read_u32_index(np, "ti,syscon-dev", 1,
-> +					 &bank->devctrl_offset);
-> +	if (ret) {
-> +		dev_err(dev, "couldn't read the devctrl_offset offset!\n");
-> +		return ret;
-> +	}
-> +
-> +	bank->dev			= dev;
-> +#ifdef CONFIG_OF_GPIO
-> +	bank->chip.of_node		= of_node_get(np);
-> +#endif
-> +	bank->chip.label		= dev_name(dev);
-> +	bank->chip.get			= keystone_gpio_get;
-> +	bank->chip.set			= keystone_gpio_set;
-> +	bank->chip.direction_output	= keystone_gpio_direction_out;
-> +	bank->chip.base			= -1;
-> +	bank->chip.ngpio		= GPIOS_PER_BANK;
-> +
-> +	platform_set_drvdata(pdev, bank);
-> +
-> +	ret = gpiochip_add(&bank->chip);
-> +	if (ret) {
-> +		dev_err(dev, "gpio chip registration failed ret(%d)\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	dev_info(bank->dev, "registered %d gpios\n", bank->chip.ngpio);
-> +	return ret;
-> +}
-> +
-> +static int keystone_gpio_remove(struct platform_device *pdev)
-> +{
-> +	struct keystone_gpio_bank *bank = platform_get_drvdata(pdev);
-> +
-> +	return gpiochip_remove(&bank->chip);
-> +}
-> +
-> +static const struct of_device_id keystone_gpio_dt_ids[] = {
-> +	{ .compatible = "ti,keystone-gpio", },
-> +	{ },
-> +};
-> +
-> +static struct platform_driver keystone_gpio_driver = {
-> +	.probe		= keystone_gpio_probe,
-> +	.remove		= keystone_gpio_remove,
-> +	.driver		= {
-> +		.name	= "keystone-gpio",
-> +		.owner	= THIS_MODULE,
-> +		.of_match_table = keystone_gpio_dt_ids,
-> +	},
-> +};
-> +
-> +module_platform_driver(keystone_gpio_driver);
-> +
-> +MODULE_AUTHOR("Texas Instruments");
-> +MODULE_AUTHOR("Murali Karicheri <m-karicheri2@ti.com>");
-> +MODULE_DESCRIPTION("Texas Instruments Keystone 2 DSP GPIO");
-> +MODULE_LICENSE("GPL v2");
->
+Thanks!
+
+
+Paul Bolle
 
