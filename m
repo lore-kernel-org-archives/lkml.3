@@ -1,253 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209AbaGNJvQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 05:51:16 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:48474 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754148AbaGNJvE (ORCPT
+	id S1754233AbaGNJvZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 05:51:25 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:45152 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752347AbaGNJvL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 05:51:04 -0400
+	Mon, 14 Jul 2014 05:51:11 -0400
+Date: Mon, 14 Jul 2014 11:51:06 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 2/4] ARM: tegra: Add resets & has-utmi-pad-registers
+ flag to all USB PHYs
+Message-ID: <20140714095105.GA9870@ulmo>
+References: <1404436179-10745-1-git-send-email-ttynkkynen@nvidia.com>
+ <1404436179-10745-3-git-send-email-ttynkkynen@nvidia.com>
+ <53BEAD70.5010504@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <1404834869-23049-2-git-send-email-svarbanov@mm-sol.com>
-References: <1404834869-23049-1-git-send-email-svarbanov@mm-sol.com>
-	<1404834869-23049-2-git-send-email-svarbanov@mm-sol.com>
-Date: Mon, 14 Jul 2014 15:21:00 +0530
-Message-ID: <CAMf-jSmjZrM-1gigMh9SrX7pAc13exX=Z+MxHk+ksiz3TUAfPQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mfd: qpnp-spmi: add support for Qualcomm QPNP PMICs
-From: pramod gurav <pramod.gurav.etc@gmail.com>
-To: Stanimir Varbanov <svarbanov@mm-sol.com>
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Josh Cartwright <joshc@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="r5Pyd7+fXNt84Ff3"
+Content-Disposition: inline
+In-Reply-To: <53BEAD70.5010504@nvidia.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 8, 2014 at 9:24 PM, Stanimir Varbanov <svarbanov@mm-sol.com> wrote:
-> From: Josh Cartwright <joshc@codeaurora.org>
->
-> The Qualcomm QPNP PMIC chips are components used with the
-> Snapdragon 800 series SoC family.  This driver exists
-> largely as a glue mfd component, it exists to be an owner
-> of an SPMI regmap for children devices described in
-> device tree.
->
-> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
-> ---
->  drivers/mfd/Kconfig     |   15 +++++
->  drivers/mfd/Makefile    |    1 +
->  drivers/mfd/qpnp-spmi.c |  145 +++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 161 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/mfd/qpnp-spmi.c
->
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index ee8204c..258b733 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -524,6 +524,21 @@ config MFD_PM8921_CORE
->           Say M here if you want to include support for PM8921 chip as a module.
->           This will build a module called "pm8921-core".
->
-> +config MFD_QPNP_SPMI
-> +       tristate "Qualcomm QPNP SPMI PMIC"
-> +       depends on ARCH_QCOM || COMPILE_TEST
-> +       depends on OF
-> +       select MFD_CORE
-> +       select REGMAP_SPMI
-> +       help
-> +         This enables support for the Qualcomm QPNP SPMI PMICs.
-> +         These PMICs are currently used with the Snapdragon 800 series of
-> +         SoCs.  Note, that this will only be useful paired with descriptions
-> +         of the independent functions as children nodes in the device tree.
-> +
-> +         Say M here if you want to include support for the QPNP SPMI PMIC
-> +         series as a module.  The module will be called "qpnp-spmi".
-> +
->  config MFD_RDC321X
->         tristate "RDC R-321x southbridge"
->         select MFD_CORE
-> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> index 8afedba..31833d7 100644
-> --- a/drivers/mfd/Makefile
-> +++ b/drivers/mfd/Makefile
-> @@ -153,6 +153,7 @@ obj-$(CONFIG_MFD_SI476X_CORE)       += si476x-core.o
->  obj-$(CONFIG_MFD_CS5535)       += cs5535-mfd.o
->  obj-$(CONFIG_MFD_OMAP_USB_HOST)        += omap-usb-host.o omap-usb-tll.o
->  obj-$(CONFIG_MFD_PM8921_CORE)  += pm8921-core.o ssbi.o
-> +obj-$(CONFIG_MFD_QPNP_SPMI)    += qpnp-spmi.o
->  obj-$(CONFIG_TPS65911_COMPARATOR)      += tps65911-comparator.o
->  obj-$(CONFIG_MFD_TPS65090)     += tps65090.o
->  obj-$(CONFIG_MFD_AAT2870_CORE) += aat2870-core.o
-> diff --git a/drivers/mfd/qpnp-spmi.c b/drivers/mfd/qpnp-spmi.c
-> new file mode 100644
-> index 0000000..01eac64
-> --- /dev/null
-> +++ b/drivers/mfd/qpnp-spmi.c
-> @@ -0,0 +1,145 @@
-> +/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/spmi.h>
-> +#include <linux/regmap.h>
-> +#include <linux/of_address.h>
-> +#include <linux/slab.h>
-> +#include <linux/mfd/core.h>
-> +
-> +#define QPNP_RESOURCE_SIZE     256
-> +
-> +static const struct regmap_config qpnp_regmap_config = {
-> +       .reg_bits       = 16,
-> +       .val_bits       = 8,
-> +       .max_register   = 0xffff,
-> +};
-> +
-> +static int qpnp_index_to_resource(struct device_node *np, int index,
-> +                                 struct resource *res)
-> +{
-> +       const char *name = NULL;
-> +       const __be32 *addrp;
-> +       u64 addr;
-> +
-> +       addrp = of_get_address(np, index, NULL, NULL);
-> +       if (!addrp)
-> +               return -EINVAL;
-> +
-> +       addr = of_read_number(addrp, 1);
-> +       if (addr == OF_BAD_ADDR)
-> +               return -EINVAL;
-> +
-> +       of_property_read_string_index(np, "reg-names", index, &name);
-> +
-> +       res->start = addr;
-> +       res->end = addr + QPNP_RESOURCE_SIZE - 1;
-> +       res->flags = IORESOURCE_REG;
-> +       res->name = name ? name : np->name;
-> +
-> +       return 0;
-> +}
-> +
-> +static int qpnp_add_device(struct spmi_device *root, struct device_node *child)
-> +{
-> +       struct mfd_cell cell = {};
-> +       struct resource *res, *r;
-> +       int num_resources = 0;
-> +       const char *compat;
-> +       int ret, i;
-> +
-> +       compat = of_get_property(child, "compatible", NULL);
-> +       if (!compat)
-> +               return -ENODEV;
-> +
-> +       while (of_get_address(child, num_resources, NULL, NULL))
-> +               num_resources++;
-> +
-> +       if (!num_resources)
-> +               return -ENODEV;
-> +
-> +       res = kcalloc(num_resources, sizeof(*res), GFP_KERNEL);
-> +       if (!res)
-> +               return -ENOMEM;
-> +
-> +       r = res;
-> +       for (i = 0; i < num_resources; i++, r++) {
-> +               ret = qpnp_index_to_resource(child, i, r);
-> +               if (ret)
-> +                       goto out;
-> +       }
-> +
-> +       cell.of_compatible = compat;
-> +       cell.num_resources = num_resources;
-> +       cell.resources = res;
-> +       cell.name = kasprintf(GFP_KERNEL, "%x.%04x.%s", root->usid,
-> +                             (u16)res[0].start, child->name);
-> +       if (!cell.name) {
-> +               ret = -ENOMEM;
-> +               goto out;
-> +       }
-> +
-> +       ret = mfd_add_devices(&root->dev, PLATFORM_DEVID_NONE, &cell, 1, NULL,
-> +                             0, NULL);
-> +
-> +       kfree(cell.name);
-> +out:
-> +       kfree(res);
-> +       return ret;
-> +}
-> +
-> +static int qpnp_probe(struct spmi_device *sdev)
-> +{
-> +       struct device_node *root = sdev->dev.of_node;
-> +       struct device_node *child;
-> +       struct regmap *regmap;
-> +       int ret;
-> +
-> +       regmap = devm_regmap_init_spmi_ext(sdev, &qpnp_regmap_config);
-> +       if (IS_ERR(regmap))
-> +               return PTR_ERR(regmap);
-> +
-> +       for_each_available_child_of_node(root, child) {
-> +               ret = qpnp_add_device(sdev, child);
-> +               if (ret)
-> +                       return ret;
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +static void qpnp_remove(struct spmi_device *sdev)
-> +{
-> +       mfd_remove_devices(&sdev->dev);
-> +}
-> +
-> +static const struct of_device_id qpnp_id_table[] = {
-> +       { .compatible = "qcom,qpnp-spmi", },
-Looks like a extra comma here before closing curly bracket.
 
-> +       { },
-> +};
-> +MODULE_DEVICE_TABLE(of, qpnp_id_table);
-> +
-> +static struct spmi_driver qpnp_driver = {
-> +       .probe = qpnp_probe,
-> +       .remove = qpnp_remove,
-> +       .driver = {
-> +               .name = "qpnp-spmi",
-> +               .of_match_table = qpnp_id_table,
-> +       },
-> +};
-> +module_spmi_driver(qpnp_driver);
-> +
-> +MODULE_DESCRIPTION("QPNP PMIC SPMI driver");
-> +MODULE_ALIAS("platform:" KBUILD_MODNAME);
-> +MODULE_AUTHOR("The Linux Foundation");
-> +MODULE_LICENSE("GPL v2");
-> --
-> 1.7.0.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+--r5Pyd7+fXNt84Ff3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Thu, Jul 10, 2014 at 06:12:48PM +0300, Tuomas Tynkkynen wrote:
+> Thierry,
+>=20
+> Since Stephen's on a vacation, I'd like to double-check with you that the=
+ DT
+> changes looks good. Greg has applied these to the USB tree today.
 
+Yes, looks sane to me. Not sure how much people will like to see the DTS
+changes go in through the USB tree, but I don't see a lot of potential
+for conflicts, so chances are nobody will notice anyway.
 
--- 
-Thanks and Regards
-Pramod
+Thierry
+
+--r5Pyd7+fXNt84Ff3
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTw6gJAAoJEN0jrNd/PrOhGZYQAIWAWjQKLY6zmitSDSIQ3YFr
+CEdHCnI1/VVaVNLRLtUM7e/qRvY34W9mrY4wIi3u8SbwbiVKURjuZpbsc+bc0TC5
+ykdTgi9/AnLbddqVVupzrZrYbi7+T1r/F++J3eGLHnPAl1ckwO0gc8DJ4NInMlEM
+4+jCpvMCFxeL58HOqhDfTmocQojJpUz0IvRv2SmjStehgMIIDBEQuL4Mqbzp00eV
+jPPQ+TN7GmiCIHjm6KJxy9C4brP5YBYwdmXXIgqmkQN7AmXCVCGHG8Ebh55x3Tbg
+5vQ0KljngDRjXm9OWmX1hgZYTZ+eYZl5ceMw2/pCVr30PHjYxDtM7Yg6ZhYsOQ6F
+8vPxYe73um8uXAs+7HNWQRce9GZc+FwegW+NizBqszUqfkL12ZAtB7Szds6mVa56
+LXyAsKYJ30y1aico6CUlcm1P/UDpY2IA2Qg/BVattfdmKtaGR8FAaSljppKCFCOk
+DuynaPLtFkwlnBklXVgK9xxIPZ2E+QCBASKpHCfaVdRidDpa6Ca/0NKBmT98NfrM
+bNqGF6ALhIWwZUSXS++MUyL/C6aeu286f7SwM3pz3iaJtsc9EvoSc/FHNV7cOpY1
+i3PFyCLMlis73MjlnHGXeCIzux5X34vPvusqNboFDE4yyox0w4iBRYnFXEbLAkmS
+bCzBIuyIcRVCPHbPn4O3
+=WvrZ
+-----END PGP SIGNATURE-----
+
+--r5Pyd7+fXNt84Ff3--
