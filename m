@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766AbaGNRzA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 13:55:00 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:35625 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602AbaGNRyx (ORCPT
+	id S1756418AbaGNR6n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 13:58:43 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:62024 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751334AbaGNR6h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 13:54:53 -0400
+	Mon, 14 Jul 2014 13:58:37 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jenny Tc <jenny.tc@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sebastian Reichel <sre@kernel.org>, Pavel Machek <pavel@ucw.cz>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Belisko Marek <marek.belisko@gmail.com>
+Subject: Re: Power Supply Subsystem Maintainer
+Date: Mon, 14 Jul 2014 20:16:50 +0200
+Message-ID: <1575662.I3Mx6rb0oJ@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CALT56yPehFRfZu-PpPR9UeJV9b9f6azVa3QouAzwY726x-v=+g@mail.gmail.com>
+References: <20140630111640.GA13774@jenny-desktop> <20140707112000.028524371bb7e234fcf79205@linux-foundation.org> <CALT56yPehFRfZu-PpPR9UeJV9b9f6azVa3QouAzwY726x-v=+g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140711082512.GC31646@krava.redhat.com>
-References: <1404857759-25105-1-git-send-email-eranian@google.com>
-	<1404857759-25105-4-git-send-email-eranian@google.com>
-	<20140711082512.GC31646@krava.redhat.com>
-Date: Mon, 14 Jul 2014 19:54:53 +0200
-Message-ID: <CABPqkBSVF3S=Yy6_Lq2DtvXkLLgckuRXYeo1Xaqs1fmU3G3kkA@mail.gmail.com>
-Subject: Re: [PATCH 3/4] perf tools: add core support for sampling intr
- machine state regs
-From: Stephane Eranian <eranian@google.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 10:25 AM, Jiri Olsa <jolsa@redhat.com> wrote:
-> On Wed, Jul 09, 2014 at 12:15:58AM +0200, Stephane Eranian wrote:
->> Add the infrastructure to setup, collect and report the interrupt
->> machine state regs which can be captured by the kernel.
->>
->
-> SNIP
->
->> index 8606175..00e45d1 100644
->> --- a/tools/perf/util/evsel.c
->> +++ b/tools/perf/util/evsel.c
->> @@ -626,6 +626,11 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
->>       if (opts->call_graph_enabled)
->>               perf_evsel__config_callgraph(evsel, opts);
->>
->> +     if (opts->sample_intr_regs) {
->> +             attr->sample_regs_intr = PERF_REGS_MASK;
->> +             perf_evsel__set_sample_bit(evsel, REGS_INTR);
->> +     }
->> +
->>       if (target__has_cpu(&opts->target))
->>               perf_evsel__set_sample_bit(evsel, CPU);
->>
->> @@ -979,6 +984,7 @@ static size_t perf_event_attr__fprintf(struct perf_event_attr *attr, FILE *fp)
->>       ret += PRINT_ATTR_X64(branch_sample_type);
->>       ret += PRINT_ATTR_X64(sample_regs_user);
->>       ret += PRINT_ATTR_U32(sample_stack_user);
->> +     ret += PRINT_ATTR_X64(sample_regs_intr);
->>
->>       ret += fprintf(fp, "%.60s\n", graph_dotted_line);
->>
->> @@ -1468,6 +1474,23 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
->>               array++;
->>       }
->>
->> +     data->intr_regs.abi = PERF_SAMPLE_REGS_ABI_NONE;
->
-> not necessary, data is zeroed in the top
->
-Don't like that too much. You are using an enum. So why not explicitly
-initialize instead of relying on ABI_NONE = 0.
+On Saturday, July 12, 2014 09:21:35 PM Dmitry Eremin-Solenikov wrote:
+> Hello,
+> 
+> On Mon, Jul 7, 2014 at 10:20 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> > On Wed, 2 Jul 2014 08:41:19 +0530 Jenny Tc <jenny.tc@intel.com> wrote:
+> >
+> >> Andrew Morton,
+> >>
+> >> Appreciate your help to sort out the power supply maintainer issue. The
+> >> subsystem is not active after February 2014. No response from maintainer and the
+> >> last commit on git://git.infradead.org/battery-2.6 was on 2014-02-01. Appreciate
+> >> your help.
+> >
+> > Well, two weeks ago Dmitry did say that he'd been busy at work and
+> > planned to pick things up again soon.
+> >
+> > Dmitry, could you please make a firm and realistic decision one way or
+> > the other?  If it isn't truly going to happen then that's OK - these
+> > things happen.  But please tell us so other arrangements can be put in
+> > place if that's the way we'll be proceeding.
+> 
+> Well, I am sorry. I promised that I will have time for this, but it
+> seems things did not go
+> the way I expected. Sebastian volunteered  to pick up power/reset
+> maintainership,
+> so if he still is willing to work on that topic, I'll ack a patch
+> transferring maintainership
+> to him.
+> 
+> As a side note, I'd suggest to also open a mailing list either on
+> infradead.org (David, I
+> made several requests, to n/a) or on vger.kernel.org.
+
+linu-pm can be used for that I suppose?
+
+Rafael
+
