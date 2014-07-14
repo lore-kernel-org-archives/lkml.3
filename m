@@ -1,70 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932448AbaGNWYY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 18:24:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41580 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757418AbaGNWYX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 18:24:23 -0400
-Date: Tue, 15 Jul 2014 00:24:19 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        James Morris <james.l.morris@oracle.com>,
-        David Howells <dhowells@redhat.com>, linux-doc@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-firmware@kernel.org,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Subject: Re: [PATCH 3/7] security: introduce kernel_fw_from_file hook
-Message-ID: <20140714222419.GC10393@wotan.suse.de>
-References: <1405373897-31671-1-git-send-email-keescook@chromium.org> <1405373897-31671-4-git-send-email-keescook@chromium.org>
+	id S1757466AbaGNWZV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 18:25:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47123 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756734AbaGNWZT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 18:25:19 -0400
+Date: Mon, 14 Jul 2014 15:25:07 -0700
+From: tip-bot for Boris Ostrovsky <tipbot@zytor.com>
+Message-ID: <tip-8762e5092828c4dc0f49da5a47a644c670df77f3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        stable@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        stable@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1404926298-5565-1-git-send-email-boris.ostrovsky@oracle.com>
+References: <1404926298-5565-1-git-send-email-boris.ostrovsky@oracle.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/espfix/xen:
+  Fix allocation of pages for paravirt page tables
+Git-Commit-ID: 8762e5092828c4dc0f49da5a47a644c670df77f3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1405373897-31671-4-git-send-email-keescook@chromium.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 02:38:13PM -0700, Kees Cook wrote:
-> +int security_kernel_fw_from_file(struct file *file, char *buf, size_t size)
-> +{
-> +	return security_ops->kernel_fw_from_file(file, buf, size);
-> +}
-> +EXPORT_SYMBOL_GPL(security_kernel_fw_from_file);
+Commit-ID:  8762e5092828c4dc0f49da5a47a644c670df77f3
+Gitweb:     http://git.kernel.org/tip/8762e5092828c4dc0f49da5a47a644c670df77f3
+Author:     Boris Ostrovsky <boris.ostrovsky@oracle.com>
+AuthorDate: Wed, 9 Jul 2014 13:18:18 -0400
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Mon, 14 Jul 2014 13:47:32 -0700
 
-I have a use case in mind already (CRDA) whereby a non-driver but a core part of
-the kernel would like to use the request_firmware_direct() API and leave
-it optional to that part of the kernel if or not a digital signature check
-is required since this is already an optional feature. Since LSM would be
-used for the digital signatures it it'd be good if we allowed drivers and
-the kernel to specify whether or not a the LSM signature hook does indeed
-need to be used.
+x86/espfix/xen: Fix allocation of pages for paravirt page tables
 
-Additionally there may be different signature requirements on the file, one
-might be willing to *require* a digital signature check even if say dm-verity
-was used, one use case here is wanting the to require as part of the
-specification a one to one mapping of file --> signature. That may be a
-bit paranoid... but its certainly a possibility. This could be addressed by
-allowing a user to express whether one security mechanism is sufficient
-for an expected one, or if one is definitely required. One example here
-could be the ability for a driver / kernel to express that dm-verity would
-not suffice for a request_firmware_direct() call. I'm not saying that I
-*know* this use case exists, am just saying I can expect it and do consider
-it subjective to assume we'd agree on possible security intersections.
+init_espfix_ap() is currently off by one level when informing hypervisor
+that allocated pages will be used for ministacks' page tables.
 
-I see this also adds a hook for fw itself, meanwhile we already had one for
-modules. The request_firmware() API is already used on other areas of the
-kernel for non-firmware files, it can be used to load optional CPU microcode
-upgrade, EEPROM optional override files, and in the wireless case I'd like to
-see if we could replace CRDA by using the same APIs / mechanisms as well to
-avoid having to deal with complexities on parsers with CFG80211_INTERNAL_REGDB.
-Besides nomenclature fuzz as usage of request_firmware() API grows it occurs to
-me that perhaps these hooks could be generalized at the kobject granularity
-level. That should make it easier to scale and consider these LSM hooks for any
-type of other object in the kernel in the future. kobjects may be overkill
-though, unless we could enable the option to have have these hooks only
-optional for certain type of kobjects.
+The most immediate effect of this on a PV guest is that if
+'stack_page = __get_free_page()' returns a non-zeroed-out page the hypervisor
+will refuse to use it for a page table (which it shouldn't be anyway). This will
+result in warnings by both Xen and Linux.
 
-  Luis
+More importantly, a subsequent write to that page (again, by a PV guest) is
+likely to result in fatal page fault.
+
+Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Link: http://lkml.kernel.org/r/1404926298-5565-1-git-send-email-boris.ostrovsky@oracle.com
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: <stable@vger.kernel.org>
+---
+ arch/x86/kernel/espfix_64.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/kernel/espfix_64.c b/arch/x86/kernel/espfix_64.c
+index 6afbb16..94d857f 100644
+--- a/arch/x86/kernel/espfix_64.c
++++ b/arch/x86/kernel/espfix_64.c
+@@ -175,7 +175,7 @@ void init_espfix_ap(void)
+ 	if (!pud_present(pud)) {
+ 		pmd_p = (pmd_t *)__get_free_page(PGALLOC_GFP);
+ 		pud = __pud(__pa(pmd_p) | (PGTABLE_PROT & ptemask));
+-		paravirt_alloc_pud(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
++		paravirt_alloc_pmd(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
+ 		for (n = 0; n < ESPFIX_PUD_CLONES; n++)
+ 			set_pud(&pud_p[n], pud);
+ 	}
+@@ -185,7 +185,7 @@ void init_espfix_ap(void)
+ 	if (!pmd_present(pmd)) {
+ 		pte_p = (pte_t *)__get_free_page(PGALLOC_GFP);
+ 		pmd = __pmd(__pa(pte_p) | (PGTABLE_PROT & ptemask));
+-		paravirt_alloc_pmd(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
++		paravirt_alloc_pte(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
+ 		for (n = 0; n < ESPFIX_PMD_CLONES; n++)
+ 			set_pmd(&pmd_p[n], pmd);
+ 	}
+@@ -193,7 +193,6 @@ void init_espfix_ap(void)
+ 	pte_p = pte_offset_kernel(&pmd, addr);
+ 	stack_page = (void *)__get_free_page(GFP_KERNEL);
+ 	pte = __pte(__pa(stack_page) | (__PAGE_KERNEL_RO & ptemask));
+-	paravirt_alloc_pte(&init_mm, __pa(stack_page) >> PAGE_SHIFT);
+ 	for (n = 0; n < ESPFIX_PTE_CLONES; n++)
+ 		set_pte(&pte_p[n*PTE_STRIDE], pte);
+ 
