@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757008AbaGNUim (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 16:38:42 -0400
-Received: from mail.kernel.org ([198.145.19.201]:56865 "EHLO mail.kernel.org"
+	id S1757255AbaGNUk1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 16:40:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47535 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756749AbaGNUik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 16:38:40 -0400
-Date: Mon, 14 Jul 2014 17:38:35 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 08/41] perf tools: Fix missing label symbols
-Message-ID: <20140714203835.GB18133@kernel.org>
-References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
- <1405332185-4050-9-git-send-email-adrian.hunter@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405332185-4050-9-git-send-email-adrian.hunter@intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756827AbaGNUkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 16:40:24 -0400
+Message-ID: <1405370408.25580.13.camel@deneb.redhat.com>
+Subject: Re: [PATCH 16/38] c6x: clean-up uapi Kbuild file
+From: Mark Salter <msalter@redhat.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        Aurelien Jacquiot <a-jacquiot@ti.com>
+Date: Mon, 14 Jul 2014 16:40:08 -0400
+In-Reply-To: <1405350546-28467-16-git-send-email-sam@ravnborg.org>
+References: <20140714150609.GA28358@ravnborg.org>
+	 <1405350546-28467-1-git-send-email-sam@ravnborg.org>
+	 <1405350546-28467-16-git-send-email-sam@ravnborg.org>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jul 14, 2014 at 01:02:32PM +0300, Adrian Hunter escreveu:
-> label symbols are missing because elf_sec__is_a() fails
-> to find the section because the section strings do not
-> match the section headers because the sections headers
-> are from the 'runtime' object and the sections strings
-> are from the 'symbol source' object.
+On Mon, 2014-07-14 at 17:08 +0200, Sam Ravnborg wrote:
+> Remove redundant assignments.
+> Also drop kvm_para.h wrapper as it is never referenced from c6x code.
 > 
-> Fix by getting the section strings from the 'runtime'
-> object so that they match the section headers.
-
-Would be great to have a 'perf test' entry that fail when looking for
-those 'label symbols', i.e. looking for one such symbol in vmlinux that
-we know is always there, in some written in stone area of the kernel,
-where this label vanishing is unlikely to happen.
-
-Can you elaborate on the case that fails? So that I can test it here,
-and then after the fix, check that it indeed fixes the problem? I may
-well write that test myself and insert it in my branch just before this
-one.
-
-- Arnaldo
- 
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+> Cc: Mark Salter <msalter@redhat.com>
+> Cc: Aurelien Jacquiot <a-jacquiot@ti.com>
 > ---
->  tools/perf/util/symbol-elf.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+
+Acked-by: Mark Salter <msalter@redhat.com>
+
+>  arch/c6x/include/uapi/asm/Kbuild | 10 ----------
+>  1 file changed, 10 deletions(-)
 > 
-> diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-> index 6864661..8c96817 100644
-> --- a/tools/perf/util/symbol-elf.c
-> +++ b/tools/perf/util/symbol-elf.c
-> @@ -732,7 +732,7 @@ int dso__load_sym(struct dso *dso, struct map *map,
->  	if (symstrs == NULL)
->  		goto out_elf_end;
->  
-> -	sec_strndx = elf_getscn(elf, ehdr.e_shstrndx);
-> +	sec_strndx = elf_getscn(runtime_ss->elf, runtime_ss->ehdr.e_shstrndx);
->  	if (sec_strndx == NULL)
->  		goto out_elf_end;
->  
-> -- 
-> 1.8.3.2
+> diff --git a/arch/c6x/include/uapi/asm/Kbuild b/arch/c6x/include/uapi/asm/Kbuild
+> index e9bc2b2..b15bf6b 100644
+> --- a/arch/c6x/include/uapi/asm/Kbuild
+> +++ b/arch/c6x/include/uapi/asm/Kbuild
+> @@ -1,12 +1,2 @@
+>  # UAPI Header export list
+>  include include/uapi/asm-generic/Kbuild.asm
+> -
+> -generic-y += kvm_para.h
+> -
+> -header-y += byteorder.h
+> -header-y += kvm_para.h
+> -header-y += ptrace.h
+> -header-y += setup.h
+> -header-y += sigcontext.h
+> -header-y += swab.h
+> -header-y += unistd.h
+
+
