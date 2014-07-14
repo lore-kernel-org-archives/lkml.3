@@ -1,81 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755894AbaGNPey (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 11:34:54 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:37594 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754890AbaGNPeq (ORCPT
+	id S1756054AbaGNPfU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 11:35:20 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:58366 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755900AbaGNPfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 11:34:46 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-47-53c3f88b9f90
-Message-id: <53C3F88A.8080005@samsung.com>
-Date: Mon, 14 Jul 2014 17:34:34 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Tushar Behera <tushar.b@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        mturquette@linaro.org, t.figa@samsung.com, trblinux@gmail.com
-Subject: Re: [PATCH V2 3/3] clk: exynos-audss: Use samsung clock APIs to
- register/unregister clocks
-References: <1405080036-6651-1-git-send-email-tushar.b@samsung.com>
- <1405080036-6651-4-git-send-email-tushar.b@samsung.com>
-In-reply-to: <1405080036-6651-4-git-send-email-tushar.b@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t/xa7rdPw4HGxxeZGPRu+Aqm8Wmx9dY
-	LS7vmsNmMeP8PiaLpxMuslmsn/GaxWLD5N3sFje2f2Vx4PDYOesuu8eda3vYPDYvqffo27KK
-	0ePzJrkA1igum5TUnMyy1CJ9uwSujB9Hl7AVHOCq6O5bx97A+ICji5GDQ0LAROLhHMYuRk4g
-	U0ziwr31bF2MXBxCAksZJc6fWcgO4XxilDjWuoMJpIFXQEvi3T1zkAYWAVWJljuf2EFsNgFD
-	id6jfWCDRAUiJA70PWMFsXkFBCV+TL7HAmKLCGhIXF2wH8xmFjjMKLFnTQWILSyQKrH79g02
-	EFtIoFZi6qTzYDWcAi4SU47fY4ao15HY3zqNDcKWl9i85i3zBEaBWUhWzEJSNgtJ2QJG5lWM
-	oqmlyQXFSem5RnrFibnFpXnpesn5uZsYIaH+dQfj0mNWhxgFOBiVeHgL+A8HC7EmlhVX5h5i
-	lOBgVhLhPfoBKMSbklhZlVqUH19UmpNafIiRiYNTqoExWIivPst2ddWZ3LelKlPX8m+WLZY8
-	1ruJqejSDAuz6LIFCxcL+2ktO1QZWTBTLunT+eeMSy88XdO6ZN/y3e1/AvO/f7kpfK5M1aH4
-	qJSfXt7H8wFGrZqf6pILuW6eE5t/TL37n/e/wLnRk1i/9B9xPsi56liwB0P1G+nHs1Vv/ZuX
-	ZH21I6JGiaU4I9FQi7moOBEANQJ+/1MCAAA=
+	Mon, 14 Jul 2014 11:35:16 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>, Michal Marek <mmarek@suse.cz>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [RFC PATCH 0/38] clean-up uapi + asm-generic Kbuild files
+Date: Mon, 14 Jul 2014 17:34:59 +0200
+Message-ID: <8199537.GiECsdyhzt@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140714150609.GA28358@ravnborg.org>
+References: <20140714150609.GA28358@ravnborg.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:5P7vr+DuS8ShrBEub8vCqg107v54+cTpnrxuCz9fkD0
+ W2v5gL4aR1LASiomLjzowdjQgP6GutCXDnt+teI+Me0W8bhoow
+ Mw9YPqdgdKSdvNqZ4KogiUnq7zkOgqyl/ePfdoALXr6/byJZn4
+ zP5wd0arkcx+1LsG8h/Ohaw7ah+Ot3RIZI66zy/FZZHT7G1OHD
+ +G0IzbZfAyU5yXrXc/fcPWsgK9kOvZUW/dEbuc9mqaN3GuLtGP
+ u1g062M53RyXMDL01TSJe8EJR2VIaCrDwr0m5L3ktrMLYypFrs
+ iAn1Frzr/R4lvB74B0OKpAS7hEG6v0KyymEvm65tYpLhnVrMB4
+ hhKzLcaEnw3nNMCt+qRM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/14 14:00, Tushar Behera wrote:
-> @@ -103,17 +140,11 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
->  		return PTR_ERR(reg_base);
->  	}
->  
-> -	clk_table = devm_kzalloc(&pdev->dev,
-> -				sizeof(struct clk *) * EXYNOS_AUDSS_MAX_CLKS,
-> -				GFP_KERNEL);
-> -	if (!clk_table)
-> +	ctx = samsung_clk_init(pdev->dev.of_node, reg_base, nr_clks);
+On Monday 14 July 2014 17:06:09 Sam Ravnborg wrote:
+> 
+> What tree is the best for this stuff?
+> I would suggest to go via the asm-generic tree that Arnd has.
+> But it also touches a lot of architectures so Andrews -mm or
+> kbuild#misc could be used.
 
-There is an issue here that this registers the clk provider before all
-its clocks are registered with the clk core. Therefore it introduces
-a race condition.
+I rarely have anything to send for the asm-generic tree, usually I
+rely on things getting merged the other way round, through whoever
+has an interest in changing asm-generic.
 
-Please have a look at patch [1], you may want to rebase this series
-onto that patch.
-
-> +	samsung_clk_register_div(ctx, exynos_audss_div_clks,
-> +				ARRAY_SIZE(exynos_audss_div_clks));
-[...]
-> +	samsung_clk_register_gate(ctx, exynos_audss_gate_clks,
-> +				ARRAY_SIZE(exynos_audss_gate_clks));
-[...]
-> -	ret = of_clk_add_provider(pdev->dev.of_node, of_clk_src_onecell_get,
-> -					&clk_data);
-> -	if (ret) {
-> -		dev_err(&pdev->dev, "failed to add clock provider\n");
-> -		goto unregister;
-> +		samsung_clk_register_gate(ctx, exynos5420_audss_gate_clks,
-> +					ARRAY_SIZE(exynos5420_audss_gate_clks));
->  	}
-
-[1]
-https://git.kernel.org/cgit/linux/kernel/git/tfiga/samsung-clk.git/commit/?h=samsung-clk-next&id=d5e136a21b2028fb1f45143ea7112d5869bfc6c7
-
---
-Regards,
-Sylwester
+	Arnd
