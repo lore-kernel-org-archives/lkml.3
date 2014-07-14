@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287AbaGNMsY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 08:48:24 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51890 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755130AbaGNMsV (ORCPT
+	id S1755199AbaGNMuP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 08:50:15 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:34424 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754439AbaGNMuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 08:48:21 -0400
-Date: Mon, 14 Jul 2014 14:48:12 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: kan.liang@intel.com, andi@firstfloor.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH V5 1/2] perf ignore LBR and extra_regs
-Message-ID: <20140714124812.GW9918@twins.programming.kicks-ass.net>
-References: <1404989984-3068-1-git-send-email-kan.liang@intel.com>
- <53C3C517.4000500@redhat.com>
- <20140714120922.GV9918@twins.programming.kicks-ass.net>
- <53C3CFC1.9070800@redhat.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="y5yQnZmVlpWlTeDv"
-Content-Disposition: inline
-In-Reply-To: <53C3CFC1.9070800@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 14 Jul 2014 08:50:10 -0400
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, kishon@ti.com, kgene.kim@samsung.com,
+        mathias.nyman@intel.com, jwerner@chromium.org,
+        sergei.shtylyov@cogentembedded.com, heikki.krogerus@linux.intel.com,
+        pratyush.anand@st.com, Vivek Gautam <gautam.vivek@samsung.com>
+Subject: [PATCH v3 0/4] Fine tune USB 3.0 PHY on exynos5420
+Date: Mon, 14 Jul 2014 18:19:54 +0530
+Message-Id: <1405342198-3870-1-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This series is based on Heikki's patches for simpliefied phy lookup table:
+[PATCHv2 0/6] phy: simplified phy lookup [1], applied against 'next' branch
+of Kishon's linux-phy tree.
 
---y5yQnZmVlpWlTeDv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Changes since v2:
+1) Removed any check for DWC3 in xhci-plat for getting usb2-phy and usb3-phy,
+   in order to make it more generic.
+2) Moved the phy_calibration calls to core/hcd.c to enable a more generic
+   solution for issues of calibrating the PHYs.
 
-On Mon, Jul 14, 2014 at 02:40:33PM +0200, Paolo Bonzini wrote:
-> Hmmm, I thought rdmsr_safe was going to return zero, but it just returns
-> whatever happened to be in edx:eax which maybe should also be fixed.
->=20
-> Kan Liang, what happens if CONFIG_PARAVIRT=3Dy?  Do you get garbage or ju=
-st no
-> events reported?
+Changes since v1:
+1) Using 'gen_phy' member of 'hcd' instead of declaring more variables
+   to hold phys.
+2) Added a check for compatible match for 'Synopsys-dwc3' controller,
+   since the 'gen_phy' member of 'hcd' already gets the 'usb' PHY
+   in core/hcd.c; but XHCI on Synopsys-dwc3 doesn't need that,
+   instead two separate PHYs for UTMI+ and PIPE3 for the two HCDs
+   (main hcd and shared hcd).
+3) Restructured the code in 'xhci_plat_setup()' and 'xhci_plat_resume()'
+   to use hcd->gen_phy directly. Also added the check for Synopsys's DWC3
+   controller while trying to calibrate the PHY.
 
-Either way; its not functioning according to 'spec'. Therefore we should
-'disable' things.
+Explanation for the need of this patch-series:
+"The DWC3-exynos eXtensible host controller present on Exynos5420/5800
+SoCs is quirky. The PHY serving this controller operates at High-Speed
+by default, so it detects even Super-speed devices as high-speed ones.
+Certain PHY parameters like Tx LOS levels and Boost levels need to be
+calibrated further post initialization of xHCI controller, to get
+SuperSpeed operations working."
 
-> >>In fact there's no reason why LBR cannot be virtualized (though it does=
- need
-> >>support from the processor), and it may even be possible to support
-> >>OFFCORE_RSP_X in the KVM virtual PMU.
-> >
-> >But its not, so something needs to be done, right?
->=20
-> A first thing that could be done, is to have a way for the kernel to dete=
-ct
-> absence of LBR
+[1] https://lkml.org/lkml/2014/6/5/358
 
-Which is exactly what this patch does, no?
+Vivek Gautam (4):
+  phy: Add provision for calibrating phy.
+  usb: host: xhci-plat: Get PHYs for xhci's hcds
+  usb: hcd: Caibrate PHY post hcd reset
+  phy: exynos5-usbdrd: Calibrate LOS levels for exynos5420/5800
 
-> , for example an all-1s setting of the LBR format field of
-> IA32_PERF_CAPABILITIES.  If Intel can tell us "all 1s will never be used",
-> we can have KVM set the field that way.  The kernel then should disable L=
-BR.
+ drivers/phy/phy-core.c           |   36 ++++++++
+ drivers/phy/phy-exynos5-usbdrd.c |  169 ++++++++++++++++++++++++++++++++++++++
+ drivers/usb/core/hcd.c           |   22 +++++
+ drivers/usb/host/xhci-plat.c     |   17 ++++
+ include/linux/phy/phy.h          |    8 ++
+ 5 files changed, 252 insertions(+)
 
-So what's wrong with testing if the MSRs that provide LBR actually work
-or not? That doesn't require any magic co-operation of the host/vm
-machinery and is therefore far more robust.
+-- 
+1.7.10.4
 
---y5yQnZmVlpWlTeDv
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTw9GMAAoJEHZH4aRLwOS6MCAP/AzkJVyfjN9+hNpa+U1KjUQL
-c/X5cOHd5ULB1s6Ti+PJW94X84BTeaftEYBIG2+L06h5lMFQgKJLVnFclHlaXizj
-PYxYL2zXwd1+ghe9yM8BtUqYUKyHpc5QGuVWuztopW/jA4wImv2wQ25GMAspNR9U
-z8P6B8Z8YT/OHrQebQMbmIPqh00Bz+5uUPwBBZzPHZ+9b7bWOuy9ODoI2qQiz7XR
-YM8Hvm63WlhDUX9ea8en/1Y7NHC7C3XiMPJIlqpuTMDCIsgAMBWCu9eFp9icNoHm
-zUTjpuEdDBNfm7Hcv/DQdJ9DWORM4PMyrAYBJGs+g4qN6mPfjzkoI7oBWwqRj8wi
-CNzamWLDtVN0nygfMpDcDju5A9l8GmIYVhjAX45kdDiqMcTt1leArp0dnRV/W2hK
-UKKB4PcMJomAelTPUFNFtTiLvfvqDBcXh/CWNbflZS8NoW4MMUHgqbhGkyw1vg3Q
-nc5D/yogDkCIKygxxjpmARC2OhQr/vgvphHMMNOI5wSiesqysRQybHMHzXiVevSF
-F8JT73fUi4gPfl+txsiUn189/7w9oyNwt+ClzdkRjdwbxi34SPY5Q3nOHzayd/+j
-swv13ZxTSGCMPK0Euz6li90CirzlftGogs4TxojV/3PcQNukEC5NCquvQ9m8MFXn
-67/m8ViQeRlUWfNhQWEI
-=77Wt
------END PGP SIGNATURE-----
-
---y5yQnZmVlpWlTeDv--
