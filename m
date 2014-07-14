@@ -1,126 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242AbaGNIGb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 04:06:31 -0400
-Received: from relay.parallels.com ([195.214.232.42]:48289 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753095AbaGNIGP (ORCPT
+	id S1753315AbaGNIHe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 04:07:34 -0400
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:55618 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751934AbaGNIH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 04:06:15 -0400
-Message-ID: <53C38F69.4070304@parallels.com>
-Date: Mon, 14 Jul 2014 12:06:01 +0400
-From: Maxim Patlasov <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <riel@redhat.com>, <linux-kernel@vger.kernel.org>, <mhocko@suse.cz>,
-        <linux-mm@kvack.org>, <kosaki.motohiro@jp.fujitsu.com>,
-        <fengguang.wu@intel.com>, <jweiner@redhat.com>
-Subject: Re: [PATCH] mm/page-writeback.c: fix divide by zero in bdi_dirty_limits
-References: <20140711081656.15654.19946.stgit@localhost.localdomain> <20140711152732.de78603744cd861497eca5dc@linux-foundation.org>
-In-Reply-To: <20140711152732.de78603744cd861497eca5dc@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Mon, 14 Jul 2014 04:07:26 -0400
+Message-ID: <1405325243.8281.7.camel@x220>
+Subject: Re: [PATCH char-misc-next v3 3/8] dma: MIC X100 DMA Driver
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Siva Yerramreddy <yshivakrishna@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Nikhil Rao <nikhil.rao@intel.com>, Sudeep Dutt <sudeep.dutt@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org
+Date: Mon, 14 Jul 2014 10:07:23 +0200
+In-Reply-To: <5ece7b7320491521bbfc167517a50d2620ccc276.1405109402.git.sudeep.dutt@intel.com>
+References: <cover.1405109401.git.sudeep.dutt@intel.com>
+	 <5ece7b7320491521bbfc167517a50d2620ccc276.1405109402.git.sudeep.dutt@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.22.200]
+X-OriginalArrivalTime: 14 Jul 2014 08:07:24.0133 (UTC) FILETIME=[A4F2D150:01CF9F3A]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+On Fri, 2014-07-11 at 14:04 -0700, Sudeep Dutt wrote:
+> From: Siva Yerramreddy <yshivakrishna@gmail.com>
+> 
+> This patch implements DMA Engine API for DMA controller on MIC X100
+> Coprocessors. DMA h/w is shared between host and card s/w.
+> Channels 0 to 3 are used by host and 4 to 7 are used by card.
+> Since the DMA device doesn't show up as PCIe device, a virtual bus called mic
+> bus is created and virtual devices are added on that bus to follow device model.
+> Allowed dma transfer directions are host to card, card to host and card to card.
+> 
+> Reviewed-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
+> Reviewed-by: Nikhil Rao <nikhil.rao@intel.com>
+> Reviewed-by: Sudeep Dutt <sudeep.dutt@intel.com>
+> Signed-off-by: Siva Yerramreddy <yshivakrishna@gmail.com>
+> ---
+>  drivers/dma/Kconfig        |  19 ++
+>  drivers/dma/Makefile       |   1 +
+>  drivers/dma/mic_x100_dma.c | 774 +++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/dma/mic_x100_dma.h | 286 +++++++++++++++++
+>  4 files changed, 1080 insertions(+)
+>  create mode 100644 drivers/dma/mic_x100_dma.c
+>  create mode 100644 drivers/dma/mic_x100_dma.h
 
-On 07/12/2014 02:27 AM, Andrew Morton wrote:
-> On Fri, 11 Jul 2014 12:18:27 +0400 Maxim Patlasov <MPatlasov@parallels.com> wrote:
->
->> Under memory pressure, it is possible for dirty_thresh, calculated by
->> global_dirty_limits() in balance_dirty_pages(), to equal zero.
-> Under what circumstances?  Really small values of vm_dirty_bytes?
+This patch was first included in linux-next in next-20140714.
 
-No, I used default settings:
+> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+> index 1eca7b9..7c8b8c4 100644
+> --- a/drivers/dma/Kconfig
+> +++ b/drivers/dma/Kconfig
+> @@ -33,6 +33,25 @@ if DMADEVICES
+>  
+>  comment "DMA Devices"
+>  
+> +config INTEL_MIC_X100_DMA
+> +	tristate "Intel MIC X100 DMA Driver"
+> +	depends on 64BIT && X86 && INTEL_MIC_BUS
+> +	select DMAENGINE
 
-vm_dirty_bytes = 0;
-dirty_background_bytes = 0;
-vm_dirty_ratio = 20;
-dirty_background_ratio = 10;
+You probably meant
+         select DMA_ENGINE
 
-and a simple program like main() { while(1) { p = malloc(4096); mlock(p, 
-4096); } }. Of course, this triggers oom eventually, but immediately 
-before oom, the system is under hard memory pressure.
+> +	default N
 
->
->> Then, if
->> strictlimit is true, bdi_dirty_limits() tries to resolve the proportion:
->>
->>    bdi_bg_thresh : bdi_thresh = background_thresh : dirty_thresh
->>
->> by dividing by zero.
->>
->> ...
->>
->> --- a/mm/page-writeback.c
->> +++ b/mm/page-writeback.c
->> @@ -1306,9 +1306,9 @@ static inline void bdi_dirty_limits(struct backing_dev_info *bdi,
->>   	*bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
->>   
->>   	if (bdi_bg_thresh)
->> -		*bdi_bg_thresh = div_u64((u64)*bdi_thresh *
->> -					 background_thresh,
->> -					 dirty_thresh);
->> +		*bdi_bg_thresh = dirty_thresh ? div_u64((u64)*bdi_thresh *
->> +							background_thresh,
->> +							dirty_thresh) : 0;
-> This introduces a peculiar discontinuity:
->
-> if dirty_thresh==3, treat it as 3
-> if dirty_thresh==2, treat it as 2
-> if dirty_thresh==1, treat it as 1
-> if dirty_thresh==0, treat it as infinity
+That should have been "default n". As (lowercase) "n" is the default
+anyhow, that line might as well be dropped.
 
-No, the patch doesn't treat dirty_thresh==0 as infinity. In fact, in 
-that case we have equation: x : 0 = 0 : 0, and the patch resolves it as 
-x=0. Here is the reasoning:
+> +	help
+> +	  This enables DMA support for the Intel Many Integrated Core
+> +	  (MIC) family of PCIe form factor coprocessor X100 devices that
+> +	  run a 64 bit Linux OS. This driver will be used by both MIC
+> +	  host and card drivers.
+> +
+> +	  If you are building host kernel with a MIC device or a card
+> +	  kernel for a MIC device, then say M (recommended) or Y, else
+> +	  say N. If unsure say N.
+> +
+> +	  More information about the Intel MIC family as well as the Linux
+> +	  OS and tools for MIC to use with this driver are available from
+> +	  <http://software.intel.com/en-us/mic-developer>.
+> +
+>  config INTEL_MID_DMAC
+>  	tristate "Intel MID DMA support for Peripheral DMA controllers"
+>  	depends on PCI && X86
 
-1. A bdi counter is always a fraction of global one. Hence bdi_thresh is 
-always not greater than dirty_thresh. So far as dirty_thresh is equal to 
-zero, bdi_thresh is equal to zero too.
-2. bdi_bg_thresh must be not greater than bdi_thresh because we want to 
-start background process earlier than throttling it. So far as 
-bdi_thresh is equal to zero, bdi_bg_thresh must be zero too.
+Should I submit the trivial, but untested, patch to fix this or do you
+prefer to do that yourself?
 
 
->
-> Would it not make more sense to change global_dirty_limits() to convert
-> 0 to 1?  With an appropriate comment, obviously.
->
->
-> Or maybe the fix lies elsewhere.  Please do tell us how this zero comes
-> about.
->
+Paul Bolle
 
-Firstly let me explain where available_memory equal to one came from. 
-global_dirty_limits() calculates it by calling 
-global_dirtyable_memory(). The latter takes into consideration three 
-global counters and a global reserve. In my case corresponding values were:
-
-NR_INACTIVE_FILE = 0
-NR_ACTIVE_FILE = 0
-NR_FREE_PAGES = 7006
-dirty_balance_reserve = 7959.
-
-Consequently, "x" in global_dirtyable_memory() was equal to zero, and 
-the function returned one. Now global_dirty_limits() assigns 
-available_memory to one and calculates "dirty" as a fraction of 
-available_memory:
-
-     dirty = (vm_dirty_ratio * available_memory) / 100;
-
-So far as vm_drity_ratio is lesser than 100 (it is 20 by default), dirty 
-is calculated as zero.
-
-As for your question about conversion 0 to 1, I think that bdi_thresh = 
-dirty_thresh = 0 makes natural sense: we are under strong memory 
-pressure, please always start background writeback and throttle process 
-(even if actual number of dirty pages is low). So other parts of 
-balance_dirty_pages machinery must handle zero thresholds properly.
-
-Thanks,
-Maxim
