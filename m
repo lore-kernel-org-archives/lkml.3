@@ -1,52 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709AbaGNIW0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 04:22:26 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:41921 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974AbaGNIWT (ORCPT
+	id S1753224AbaGNIWn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 04:22:43 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:50839 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752879AbaGNIW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 04:22:19 -0400
-Message-ID: <53C392F1.7090904@gmail.com>
-Date: Mon, 14 Jul 2014 13:51:05 +0530
-From: Varka Bhadram <varkabhadram@gmail.com>
-Organization: CDAC-HYD
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 14 Jul 2014 04:22:28 -0400
+Date: Mon, 14 Jul 2014 11:22:15 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Lucas Tanure <tanure@linux.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: android: Clean up binder_send_failed_reply
+Message-ID: <20140714082215.GI25880@mwanda>
+References: <20140713140834.GA5387@archDesk>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: netdev@vger.kernel.org, Thomas.Lendacky@amd.com,
-        geert+renesas@linux-m68k.org, ebiederm@xmission.com,
-        macro@linux-mips.org, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, Varka Bhadram <varkab@cdac.in>
-Subject: Re: [PATCH net-next v2 3/6] ethernet: amd: dynamic debug fixes
-References: <1405319147-5212-1-git-send-email-varkabhadram@gmail.com>	 <1405319147-5212-4-git-send-email-varkabhadram@gmail.com> <1405325166.9132.40.camel@joe-AO725>
-In-Reply-To: <1405325166.9132.40.camel@joe-AO725>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140713140834.GA5387@archDesk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2014 01:36 PM, Joe Perches wrote:
-> On Mon, 2014-07-14 at 11:55 +0530, varkabhadram@gmail.com wrote:
->> From: Varka Bhadram <varkab@cdac.in>
-> []
->> diff --git a/drivers/net/ethernet/amd/amd8111e.c b/drivers/net/ethernet/amd/amd8111e.c
-> []
->> @@ -501,8 +501,7 @@ static int amd8111e_restart(struct net_device *dev)
->>   
->>   	/* Enable interrupt coalesce */
->>   	if(lp->options & OPTION_INTR_COAL_ENABLE){
->> -		printk(KERN_INFO "%s: Interrupt Coalescing Enabled.\n",
->> -								dev->name);
->> +		netdev_info(dev, "Interrupt Coalescing Enabled");
-> This needs a terminating newlines.
->
->
-OOOps.... I will fix it.
+On Sun, Jul 13, 2014 at 11:08:34AM -0300, Lucas Tanure wrote:
+> Kernel coding style. Remove useless else statement after return.
+> 
 
+You introduce a GCC warning.
 
--- 
-Regards,
-Varka Bhadram.
+drivers/staging/android/binder.c: In function ‘binder_send_failed_reply’:
+drivers/staging/android/binder.c:1217:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+
+regards,
+dan carpenter
 
