@@ -1,99 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754982AbaGNKK7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 06:10:59 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37991 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754326AbaGNKKd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 06:10:33 -0400
-Message-ID: <53C3AC94.5050904@ti.com>
-Date: Mon, 14 Jul 2014 13:10:28 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Tero Kristo <t-kristo@ti.com>, Mike Turquette <mturquette@linaro.org>
-CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clk: ti: clk-7xx: Correct ABE DPLL configuration
-References: <1396446525-20302-1-git-send-email-peter.ujfalusi@ti.com> <533C1AC2.1000307@ti.com> <533CFFB3.9070201@ti.com> <5358D534.2070205@ti.com> <535927DF.90404@ti.com> <5368E604.4040107@ti.com>
-In-Reply-To: <5368E604.4040107@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+	id S1755011AbaGNKLR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 06:11:17 -0400
+Received: from mga11.intel.com ([192.55.52.93]:42042 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754591AbaGNKGG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 06:06:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,657,1400050800"; 
+   d="scan'208";a="561434848"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 36/41] perf pmu: Let pmu's with no events show up on perf list
+Date: Mon, 14 Jul 2014 13:03:00 +0300
+Message-Id: <1405332185-4050-37-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
+References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2014 04:39 PM, Peter Ujfalusi wrote:
->>> Tero: can I have your ack for this patch or do you have further concerns?
->>
->> Yea looks good to me, except for the fact that there is some work on getting
->> default rate/parent support through DT. I would like a comment from Mike about
->> the estimate when this can get in, and whether we should merge intermediate
->> solutions still like this.
->>
->> Anyway, you can consider this patch acked by me, I'll let Mike to decide what
->> to do with it though.
-> 
-> Do you have anything against this patch? Since right now there is no other
-> ways to fix the ABE DPLL for dra7 it would be great if we could have this in
-> till we have the final solution. Also I'd like to point out that the original
-> frequency the ABE DPLL was not correct and renders the audio to be not usable
-> on the platform.
+perf list only lists PMUs with events.  Add a
+flag to cause a PMU to be also listed separately.
 
-Mike: can we have this patch still pushed for 3.16? I can resend it right away
-if you  lost the original patch.
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/pmu.c | 13 +++++++++++--
+ tools/perf/util/pmu.h |  1 +
+ 2 files changed, 12 insertions(+), 2 deletions(-)
 
-Thanks,
-Péter
-
-
-> 
->>>>
->>>>>
->>>>> -Tero
->>>>>
->>>>>>
->>>>>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
->>>>>> ---
->>>>>>    drivers/clk/ti/clk-7xx.c | 7 ++++++-
->>>>>>    1 file changed, 6 insertions(+), 1 deletion(-)
->>>>>>
->>>>>> diff --git a/drivers/clk/ti/clk-7xx.c b/drivers/clk/ti/clk-7xx.c
->>>>>> index f7e40734c819..19a55bf407dd 100644
->>>>>> --- a/drivers/clk/ti/clk-7xx.c
->>>>>> +++ b/drivers/clk/ti/clk-7xx.c
->>>>>> @@ -16,7 +16,7 @@
->>>>>>    #include <linux/clkdev.h>
->>>>>>    #include <linux/clk/ti.h>
->>>>>>
->>>>>> -#define DRA7_DPLL_ABE_DEFFREQ                361267200
->>>>>> +#define DRA7_DPLL_ABE_DEFFREQ                180633600
->>>>>>    #define DRA7_DPLL_GMAC_DEFFREQ                1000000000
->>>>>>
->>>>>>
->>>>>> @@ -322,6 +322,11 @@ int __init dra7xx_dt_clk_init(void)
->>>>>>        if (rc)
->>>>>>            pr_err("%s: failed to configure ABE DPLL!\n", __func__);
->>>>>>
->>>>>> +    dpll_ck = clk_get_sys(NULL, "dpll_abe_m2x2_ck");
->>>>>> +    rc = clk_set_rate(dpll_ck, DRA7_DPLL_ABE_DEFFREQ * 2);
->>>>>> +    if (rc)
->>>>>> +        pr_err("%s: failed to configure ABE DPLL m2x2!\n", __func__);
->>>>>> +
->>>>>>        dpll_ck = clk_get_sys(NULL, "dpll_gmac_ck");
->>>>>>        rc = clk_set_rate(dpll_ck, DRA7_DPLL_GMAC_DEFFREQ);
->>>>>>        if (rc)
->>>>>>
->>>>>
->>>>
->>>>
->>>
->>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 348d1d2..ba300d9 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -749,15 +749,18 @@ void print_pmu_events(const char *event_glob, bool name_only)
+ 
+ 	pmu = NULL;
+ 	len = 0;
+-	while ((pmu = perf_pmu__scan(pmu)) != NULL)
++	while ((pmu = perf_pmu__scan(pmu)) != NULL) {
+ 		list_for_each_entry(alias, &pmu->aliases, list)
+ 			len++;
++		if (pmu->selectable)
++			len++;
++	}
+ 	aliases = malloc(sizeof(char *) * len);
+ 	if (!aliases)
+ 		return;
+ 	pmu = NULL;
+ 	j = 0;
+-	while ((pmu = perf_pmu__scan(pmu)) != NULL)
++	while ((pmu = perf_pmu__scan(pmu)) != NULL) {
+ 		list_for_each_entry(alias, &pmu->aliases, list) {
+ 			char *name = format_alias(buf, sizeof(buf), pmu, alias);
+ 			bool is_cpu = !strcmp(pmu->name, "cpu");
+@@ -774,6 +777,12 @@ void print_pmu_events(const char *event_glob, bool name_only)
+ 			aliases[j] = strdup(aliases[j]);
+ 			j++;
+ 		}
++		if (pmu->selectable) {
++			scnprintf(buf, sizeof(buf), "%s//", pmu->name);
++			aliases[j] = strdup(buf);
++			j++;
++		}
++	}
+ 	len = j;
+ 	qsort(aliases, len, sizeof(char *), cmp_string);
+ 	for (j = 0; j < len; j++) {
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index c35f578..8c999b3 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -18,6 +18,7 @@ struct perf_event_attr;
+ struct perf_pmu {
+ 	char *name;
+ 	__u32 type;
++	bool selectable;
+ 	struct perf_event_attr *default_config;
+ 	struct cpu_map *cpus;
+ 	struct list_head format;
+-- 
+1.8.3.2
 
