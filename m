@@ -1,106 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752400AbaGNIK6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 04:10:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48157 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750797AbaGNIKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 04:10:51 -0400
-Date: Mon, 14 Jul 2014 10:10:37 +0200 (CEST)
-From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
-X-X-Sender: lczerner@localhost.localdomain
-To: linux-mmc@vger.kernel.org
-cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        chris@printf.net
-Subject: Re: [PATCH] mmc: Do not advertise secure discard if it is
- blacklisted
-In-Reply-To: <1403090287-10673-1-git-send-email-lczerner@redhat.com>
-Message-ID: <alpine.LFD.2.00.1407141008180.13527@localhost.localdomain>
-References: <1403090287-10673-1-git-send-email-lczerner@redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752787AbaGNIMX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 04:12:23 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:43077 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750886AbaGNIMS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 04:12:18 -0400
+X-IronPort-AV: E=Sophos;i="5.00,887,1396972800"; 
+   d="scan'208";a="33229590"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [PATCH 0/1 V2] workqueue: a tiny fix for the mayday timer
+Date: Mon, 14 Jul 2014 16:13:20 +0800
+Message-ID: <1405325601-12437-1-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1405265479-827-1-git-send-email-laijs@cn.fujitsu.com>
+References: <1405265479-827-1-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Jun 2014, Lukas Czerner wrote:
+Hi, TJ
 
-> Date: Wed, 18 Jun 2014 13:18:07 +0200
-> From: Lukas Czerner <lczerner@redhat.com>
-> To: linux-mmc@vger.kernel.org
-> Cc: linux-fsdevel@vger.kernel.org, chris@printf.net,
->     Lukas Czerner <lczerner@redhat.com>
-> Subject: [PATCH] mmc: Do not advertise secure discard if it is blacklisted
-> 
-> Currently when the device secure discard implementation is
-> blacklisted (MMC_QUIRK_SEC_ERASE_TRIM_BROKEN quirk is set)
-> instead of secure discard we're going to do normal discard,
-> which is wrong.
-> 
-> When the secure discard is known to be broken we should just
-> disallow it entirely and not advertise this functionality to
-> the user. Fix it.
-> 
-> Also move mmc_fixup_device() in from of mmc_blk_alloc() so we
-> can get quirks set before we attempt to set queue information.
+The del_timer_sync()s for the mayday timer in maybe_create_worker()
+do not meet the requirement of the document of the del_timer_sync().
 
-Where should I send it to get noticed ? It's sitting here for a
-month now.
+V1 patch incorrectly stops the timer when !need_to_create_worker(),
+but no one can restart it when needed. In V2, we stops the
+timer only when manager is not working.
 
-Thanks!
--Lukas
+Sorry for the incorrect V1 due to a general excuse: World-Cup-2014.
 
-> 
-> Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-> ---
->  drivers/mmc/card/block.c | 6 +++---
->  drivers/mmc/core/core.c  | 3 ++-
->  2 files changed, 5 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-> index 452782b..ede41f0 100644
-> --- a/drivers/mmc/card/block.c
-> +++ b/drivers/mmc/card/block.c
-> @@ -2028,8 +2028,7 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
->  		/* complete ongoing async transfer before issuing discard */
->  		if (card->host->areq)
->  			mmc_blk_issue_rw_rq(mq, NULL);
-> -		if (req->cmd_flags & REQ_SECURE &&
-> -			!(card->quirks & MMC_QUIRK_SEC_ERASE_TRIM_BROKEN))
-> +		if (req->cmd_flags & REQ_SECURE)
->  			ret = mmc_blk_issue_secdiscard_rq(mq, req);
->  		else
->  			ret = mmc_blk_issue_discard_rq(mq, req);
-> @@ -2432,6 +2431,8 @@ static int mmc_blk_probe(struct mmc_card *card)
->  	if (!(card->csd.cmdclass & CCC_BLOCK_READ))
->  		return -ENODEV;
->  
-> +	mmc_fixup_device(card, blk_fixups);
-> +
->  	md = mmc_blk_alloc(card);
->  	if (IS_ERR(md))
->  		return PTR_ERR(md);
-> @@ -2446,7 +2447,6 @@ static int mmc_blk_probe(struct mmc_card *card)
->  		goto out;
->  
->  	mmc_set_drvdata(card, md);
-> -	mmc_fixup_device(card, blk_fixups);
->  
->  	if (mmc_add_disk(md))
->  		goto out;
-> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-> index 7dc0c85..d03a080 100644
-> --- a/drivers/mmc/core/core.c
-> +++ b/drivers/mmc/core/core.c
-> @@ -2102,7 +2102,8 @@ EXPORT_SYMBOL(mmc_can_sanitize);
->  
->  int mmc_can_secure_erase_trim(struct mmc_card *card)
->  {
-> -	if (card->ext_csd.sec_feature_support & EXT_CSD_SEC_ER_EN)
-> +	if ((card->ext_csd.sec_feature_support & EXT_CSD_SEC_ER_EN) &&
-> +	    !(card->quirks & MMC_QUIRK_SEC_ERASE_TRIM_BROKEN))
->  		return 1;
->  	return 0;
->  }
-> 
+Another patch "[PATCH 1/1 V2] workqueue: unfold start_worker() into create_worker()"
+depends on this patch. That patch still coincides with this patch even
+this patch is updated.
+
+Thanks,
+Lai
+
+Lai Jiangshan (1):
+  workqueue: remove the del_timer_sync()s in maybe_create_worker()
+
+ kernel/workqueue.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
+
+-- 
+1.7.4.4
+
