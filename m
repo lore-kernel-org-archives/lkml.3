@@ -1,120 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932217AbaGNSnS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 14:43:18 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:50344 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754232AbaGNSnG (ORCPT
+	id S932319AbaGNSnp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 14:43:45 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37351 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756548AbaGNSnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 14:43:06 -0400
-Date: Mon, 14 Jul 2014 20:43:02 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 12/13] mm: memcontrol: rewrite charge API
-Message-ID: <20140714184302.GA2094@dhcp22.suse.cz>
-References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
- <1403124045-24361-13-git-send-email-hannes@cmpxchg.org>
- <20140714150446.GD30713@dhcp22.suse.cz>
- <20140714171324.GQ29639@cmpxchg.org>
+	Mon, 14 Jul 2014 14:43:39 -0400
+Date: Mon, 14 Jul 2014 19:43:21 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Dan Murphy <dmurphy@ti.com>
+Cc: linux-sound@vger.kernel.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, devicetree@vger.kernel.org
+Message-ID: <20140714184321.GW6800@sirena.org.uk>
+References: <1405093489-11897-1-git-send-email-dmurphy@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RMorpr61ug7CvG36"
 Content-Disposition: inline
-In-Reply-To: <20140714171324.GQ29639@cmpxchg.org>
+In-Reply-To: <1405093489-11897-1-git-send-email-dmurphy@ti.com>
+X-Cookie: Above all else -- sky.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v6] ASoC: tas2552: Support TI TAS2552 Amplifier
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 14-07-14 13:13:24, Johannes Weiner wrote:
-> On Mon, Jul 14, 2014 at 05:04:46PM +0200, Michal Hocko wrote:
-> > Hi,
-> > I've finally manage to untagle myself from internal stuff...
-> > 
-> > On Wed 18-06-14 16:40:44, Johannes Weiner wrote:
-> > > The memcg charge API charges pages before they are rmapped - i.e. have
-> > > an actual "type" - and so every callsite needs its own set of charge
-> > > and uncharge functions to know what type is being operated on.  Worse,
-> > > uncharge has to happen from a context that is still type-specific,
-> > > rather than at the end of the page's lifetime with exclusive access,
-> > > and so requires a lot of synchronization.
-> > > 
-> > > Rewrite the charge API to provide a generic set of try_charge(),
-> > > commit_charge() and cancel_charge() transaction operations, much like
-> > > what's currently done for swap-in:
-> > > 
-> > >   mem_cgroup_try_charge() attempts to reserve a charge, reclaiming
-> > >   pages from the memcg if necessary.
-> > > 
-> > >   mem_cgroup_commit_charge() commits the page to the charge once it
-> > >   has a valid page->mapping and PageAnon() reliably tells the type.
-> > > 
-> > >   mem_cgroup_cancel_charge() aborts the transaction.
-> > > 
-> > > This reduces the charge API and enables subsequent patches to
-> > > drastically simplify uncharging.
-> > > 
-> > > As pages need to be committed after rmap is established but before
-> > > they are added to the LRU, page_add_new_anon_rmap() must stop doing
-> > > LRU additions again.  Revive lru_cache_add_active_or_unevictable().
-> > 
-> > I think it would make more sense to do
-> > lru_cache_add_active_or_unevictable in a separate patch for easier
-> > review. Too late, though...
-> > 
-> > Few comments bellow
-> > > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > 
-> > The patch looks correct but the code is quite tricky so I hope I didn't
-> > miss anything.
-> > 
-> > Acked-by: Michal Hocko <mhocko@suse.cz>
-> 
-> Thanks!
-> 
-> > > @@ -54,28 +54,11 @@ struct mem_cgroup_reclaim_cookie {
-> > >  };
-> > >  
-> > >  #ifdef CONFIG_MEMCG
-> > > -/*
-> > > - * All "charge" functions with gfp_mask should use GFP_KERNEL or
-> > > - * (gfp_mask & GFP_RECLAIM_MASK). In current implementatin, memcg doesn't
-> > > - * alloc memory but reclaims memory from all available zones. So, "where I want
-> > > - * memory from" bits of gfp_mask has no meaning. So any bits of that field is
-> > > - * available but adding a rule is better. charge functions' gfp_mask should
-> > > - * be set to GFP_KERNEL or gfp_mask & GFP_RECLAIM_MASK for avoiding ambiguous
-> > > - * codes.
-> > > - * (Of course, if memcg does memory allocation in future, GFP_KERNEL is sane.)
-> > > - */
-> > 
-> > I think we should slightly modify the comment but the primary idea
-> > should stay there. What about the following?
-> > /*
-> >  * Although memcg charge functions do not allocate any memory they are
-> >  * still getting GFP mask to control the reclaim process (therefore
-> >  * gfp_mask & GFP_RECLAIM_MASK is expected).
-> >  * GFP_KERNEL should be used for the general charge path without any
-> >  * constraints for the reclaim
-> >  * __GFP_WAIT should be cleared for atomic contexts
-> >  * __GFP_NORETRY should be set for charges which might fail rather than
-> >  * spend too much time reclaiming
-> >  * __GFP_NOFAIL should be set for charges which cannot fail.
-> >  */
-> 
-> What *is* the primary idea here?
-> 
-> Taking any kind of gfp mask and interpreting the bits that pertain to
-> you is done in a lot of places already, and there really is no need to
-> duplicate the documentation and risk it getting stale and misleading.
 
-The idea was to document which flags do we care about as not all of them
-are implemented. On the other hand I do agree that stale doc is worse
-than no doc.
+--RMorpr61ug7CvG36
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[...]
--- 
-Michal Hocko
-SUSE Labs
+On Fri, Jul 11, 2014 at 10:44:49AM -0500, Dan Murphy wrote:
+
+> @@ -754,4 +755,8 @@ config SND_SOC_TPA6130A2
+>  	tristate "Texas Instruments TPA6130A2 headphone amplifier"
+>  	depends on I2C
+> =20
+> +config SND_SOC_TAS2552
+> +	tristate "Texas Instruments TAS2552 Mono Audio amplifier"
+> +	depends on I2C
+> +
+>  endmenu
+
+Keep this and Makefile sorted - since this is a proper CODEC driver it
+should be in with the CODECs and also sorted in alphabetical order.
+
+> +static int tas2552_startup(struct snd_pcm_substream *substream,
+> +			   struct snd_soc_dai *dai)
+> +{
+> +	struct snd_soc_codec *codec =3D dai->codec;
+> +
+> +	pm_runtime_get_sync(codec->dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static void tas2552_shutdown(struct snd_pcm_substream *substream,
+> +			   struct snd_soc_dai *dai)
+> +{
+> +	struct snd_soc_codec *codec =3D dai->codec;
+> +
+> +	pm_runtime_put(codec->dev);
+> +}
+
+These runtime calls should be redundant, the framework should hold a
+runtime PM reference on devices while they are active.  Does this not
+work for you?
+
+> +	pm_runtime_get_sync(codec->dev);
+
+Check the return value here.
+
+> +	snd_soc_write(codec, TAS2552_CFG_2, TAS2552_CLASSD_EN |
+> +				  TAS2552_BOOST_EN | TAS2552_APT_EN |
+> +				  TAS2552_PLL_ENABLE | TAS2552_LIM_EN);
+
+The PLL is enabled all the time not via DAPM or similar (it's never
+disabled)?
+
+> +static int tas2552_resume(struct snd_soc_codec *codec)
+> +{
+> +	struct tas2552_data *tas2552 =3D snd_soc_codec_get_drvdata(codec);
+> +	int ret;
+> +
+> +	ret =3D regulator_bulk_enable(ARRAY_SIZE(tas2552->supplies),
+> +				    tas2552->supplies);
+> +
+> +	if (ret !=3D 0) {
+> +		dev_err(codec->dev, "Failed to enable supplies: %d\n",
+> +			ret);
+> +	}
+> +
+> +	pm_runtime_get_sync(codec->dev);
+
+Remove these runtime PM calls from suspend and resume, they're not doing
+what you think (and will prevent runtime PM from doing anything).  Let
+the frameworks worry about it for now, or explicitly call the runtime
+suspend and resume operators if and only if the device is runtime
+active.
+
+> +	for (i =3D 0; i < ARRAY_SIZE(data->supplies); i++)
+> +		data->supplies[i].supply =3D tas2552_supply_names[i];
+> +
+> +	ret =3D devm_regulator_bulk_get(dev, ARRAY_SIZE(data->supplies),
+> +				      data->supplies);
+> +	if (ret !=3D 0)
+> +		dev_err(dev, "Failed to request supplies: %d\n", ret);
+
+These supplies are mandatory (as they should be) but weren't mentioned
+in the DT binding - please add them there.
+
+> +static const struct i2c_device_id tas2552_id[] =3D {
+> +	{ "tas2552-codec", 0 },
+> +	{ }
+> +};
+
+No -codec.
+
+--RMorpr61ug7CvG36
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTxCTGAAoJELSic+t+oim9nAgQAIrmTZMVO2kaoAnVjddXToCa
+9BDz7g38s+Fvv4xOyEVbfmb3S5nznqYQuWjVouRo6iFJH/O/mvsIffZVA4GqiyrF
+s2c6GTxgcnHewShoQLtVy9WMnhGIxCMb8fYzSHmU9Ml099HsknVSX9pJNZdn4UBD
+NyY8Iw2vihTAs+G+aZYqu80/O1ByqsF0no2qi8qgduBLg7NbQyOXPAE1mKkWUOkl
+P/sOtcnfr7sujjMIHC5e9/5DgrfrOwq2TzfaR9/yBP4wr+mq/ole3heisNdHHiPy
+wD+0Bemum/EiBT6RO3osJVvSc+jxsirH6Gz79wSX5xX0PAAebegsZe9/S4OM8lVP
+w732Qgftnog/+89/n5py5pz6LH2LV+Z96uqEAOpEa8ZQ8yk3EVpZYeTKZs4c7uK2
+BlreWhS/xp3NtCsU7BsuVgmK0RVcjjYUkWAKznWz38azFRSpIjrJhPNQee9OaBv8
+0RDVK6Sd8MtkNDo6oEEEGiXye76huK76lvteDsVXqRGDhH8Hlt59MRFw60W2FQih
+ZdUAwckYanRVjGJLWHkxzWpF00/P3bTqUy2F1r04B77+NLnz54+cIAAuj3I0yHcY
+DES5g6yGeqTHeAcGG3dr0eqGmV382F3V3Os9GgAbTvEHLAI/3XKH6udBulcIpQ3h
+rcf3baw4MIicb91j4b63
+=HxrG
+-----END PGP SIGNATURE-----
+
+--RMorpr61ug7CvG36--
