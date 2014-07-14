@@ -1,127 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757412AbaGNVd6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 17:33:58 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:52570 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757207AbaGNVd4 (ORCPT
+	id S1757328AbaGNVfo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 17:35:44 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:41654 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755545AbaGNVfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 17:33:56 -0400
+	Mon, 14 Jul 2014 17:35:39 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5j+or7=2a2sb93Y=z65gFQNKu1G8eQnNQOf1qgUhnyWR8A@mail.gmail.com>
-References: <1404245874-350-1-git-send-email-linville@tuxdriver.com>
- <20140702001936.GQ27687@wotan.suse.de> <20140702143003.GA13564@tuxdriver.com>
- <CAB=NE6U3PMsatwcczO6hrfe+2z3mN9n9zcX0tgy5iTbCRNRcmw@mail.gmail.com> <CAGXu5j+or7=2a2sb93Y=z65gFQNKu1G8eQnNQOf1qgUhnyWR8A@mail.gmail.com>
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-Date: Mon, 14 Jul 2014 14:33:33 -0700
-X-Google-Sender-Auth: 9zp6D4HxMwYLhQ6jBSZD1ERPOCM
-Message-ID: <CAB=NE6VUXd7LUPLoWAG_YObDE-LC5BijUm9jnhiOoft2x7cWZQ@mail.gmail.com>
-Subject: Re: [PATCH] wireless: fixup genregdb.awk for remove of antenna gain
- from wireless-regdb
-To: Kees Cook <keescook@chromium.org>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Janusz Dziedzic <janusz.dziedzic@tieto.com>,
-        Ming Lei <ming.lei@canonical.com>, Takashi Iwai <tiwai@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>, linux-firmware@kernel.org
+In-Reply-To: <CALCETrU9dmM+bsQYwULjiqw5+erKsu5yUmHJDGYUW1wpcdp-5Q@mail.gmail.com>
+References: <CALCETrXrVNKNQtxncfOth5OqaSOC7KygerbB-+QQb4_VKESVsA@mail.gmail.com>
+ <53C40D83.3090501@zytor.com> <CALCETrU44CM5=hSOMQGB6eEM2g-h6y5_+-SwoMwu+-qp-Pxd7g@mail.gmail.com>
+ <CALCETrVz7a7RVLhYTrGvHkJR2dGHJbRuATOaWaXgkrSABR7YFA@mail.gmail.com> <CALCETrU9dmM+bsQYwULjiqw5+erKsu5yUmHJDGYUW1wpcdp-5Q@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 14 Jul 2014 14:35:17 -0700
+Message-ID: <CALCETrWG-dQL8ipJ8cO3wfbYKA=mAv3CS4-1JFwmBXF3pUbAwg@mail.gmail.com>
+Subject: Re: Is espfix64's double-fault thing OK on Xen?
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 2:13 PM, Kees Cook <keescook@chromium.org> wrote:
-> On Mon, Jul 14, 2014 at 2:08 PM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
->> On Wed, Jul 2, 2014 at 7:30 AM, John W. Linville <linville@tuxdriver.com> wrote:
->>> On Wed, Jul 02, 2014 at 02:19:36AM +0200, Luis R. Rodriguez wrote:
->>>> On Tue, Jul 01, 2014 at 04:17:54PM -0400, John W. Linville wrote:
->>>> > Since "wireless-regdb: remove antenna gain" was merged in the
->>>> > wireless-regdb tree, this script has been incompatible with the
->>>> > 'official' regulatory database.  Let's fix it up.
->>>> >
->>>> > Signed-off-by: John W. Linville <linville@tuxdriver.com>
->>>> > ---
->>>> > I think the dfs_cac stuff is still broken, since it does not account
->>>> > for the starting offset of the flags.
->>>>
->>>> Indeed, but that also breaks other stuff too, because the DFS CAC stuff
->>>> is optional it means the flags can now start at different locations, it
->>>> also means that we need to distinguish a flag from a CAC.
->>>>
->>>> Here's a complex example we should test for as an example now:
->>>>
->>>> country US: DFS-FCC
->>>>       (2400 - 2450 @ 40), (100 mW)
->>>>       (2450 - 2500 @ 0), (100 mW), DFS, AUTO-BW
->>>>       (5170 - 5250 @ 80), (100 mW), DFS, AUTO-BW, NO-OUTDOOR
->>>>       (5250 - 5330 @ 0), (20), (60000), DFS, AUTO-BW
->>>>       (5735 - 5835 @ 80), (30)
->>>>       (57240 - 63720 @ 2160), (40)
->>>>
->>>> The changes below seem to address it. I think awk is too fragile to
->>>
->>> Your patch looks almost exactly like what I was thinkg to do.
->>
->> OK I'll resend and update the Kconfig entry to ensure folks are aware
->> of the issues discussed and our resolution on requiring folks deal
->> with issue on the awk parser.
->>
->>>> scale well and keep us sane. A C parser exists but right now it
->>>> ignores the DFS CAC. Having a parser is nice as it allows us to
->>>> modify the db.txt on the fly, however parser still requires a bit
->>>> of an update in code. If we wanted to avoid the parser all together
->>>> we could just merge a CRDA reader at build time and require a
->>>> a regulatory.bin file for reading instead of the db.txt. If we
->>>> had support for that then its really only one step further from
->>>> having full CRDA functionality upstream on the kernel, ie letting
->>>> us read the file at run time rather than just build time. If we
->>>> are to follow the steps from udev with its firmware loader helper
->>>> we might as well merge CRDA upstream, in fact we could just use
->>>> request_firmware_direct() for the reader, what remains questionable
->>>> to me is the signing stuff, but if we already have support module
->>>> signing checks it doesn't seem far fetched to be able to have
->>>> request firmware verify a signature on a file, which probably
->>>> ain't such a bad idea anyway. If we did this we'd have two options:
->>>>
->>>> 1) regulatory.bin reader at build time to build the static regulatory domains
->>>> 2) the same reader code can use request the file at run time via
->>>>    request_firmware_direct() and if we added signature verification
->>>>    it can replace CRDA
->>>>
->>>> We'd eliminate the ASCII representation completely from the build picture
->>>> and peg a regulatory.bin firmware to each kernel then. Thoughts?
->>>
->>> I'll have to digest this -- needs some more discussion, for sure.
->>
->> Some more on this. I stumbled upon Takashi Iwai's November 2012
->> firmware_class Takashi Iwai's signature check series [0] [1]. His
->> second iteration didn't get merged but there weren't any particular
->> NACKs on the threads -- upon following up with him it would seem the
->> way to move this forward though is to integrate this somehow with Kees
->> Cook's work on LSM. I have yet to do that but at least by looking at
+On Mon, Jul 14, 2014 at 2:31 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> I'm now rather confused.
 >
-> I've got LSM hooks built to check incoming firmware. It should be
-> trivial to add signature checks to that. For Chrome OS, that would be
-> redundant since we use dm-verity to check file contents. All Chrome OS
-> needs to know is where the firmware came from. Here's the current
-> tree:
+> On Xen 64-bit, AFAICS, syscall handlers run with CS = 0xe033.  I think
+> that Xen is somehow fixing up traps that came from "kernel" mode to
+> show CS = 0xe030, which is an impossible selector value (unless that
+> segment is conforming) to keep user_mode_vm happy.
 >
-> https://git.kernel.org/cgit/linux/kernel/git/kees/linux.git/log/?h=fw-restrict
+> I'm running this test:
+>
+> https://gitorious.org/linux-test-utils/linux-clock-tests/source/1e13516a41416a7282f43c83097c9dfe4619344b:sigreturn.c
+>
+> It requires a kernel with my SS sigcontext change; otherwise it
+> doesn't do anything.
+>
+> Without Xen, it works reliably.  On Xen, it seems to OOPS some
+> fraction of the time.  It gets a null pointer dereference here:
+>
+>     movq %rax,(0*8)(%rdi)    /* RAX */
+>
+> It looks like:
+>
+> [    0.565752] BUG: unable to handle kernel NULL pointer dereference
+> at           (null)
+> [    0.566706] IP: [<ffffffff81775493>] irq_return_ldt+0x11/0x5c
+> [    0.566706] PGD 4eb40067 PUD 4eb38067 PMD 0
+> [    0.566706] Oops: 0002 [#1] SMP
+> [    0.566706] Modules linked in:
+> [    0.566706] CPU: 1 PID: 81 Comm: sigreturn Not tainted 3.16.0-rc4+ #47
+> [    0.566706] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> [    0.566706] task: ffff88004e8aa180 ti: ffff88004eb68000 task.ti:
+> ffff88004eb68000
+> [    0.566706] RIP: e030:[<ffffffff81775493>]  [<ffffffff81775493>]
+> irq_return_ldt+0x11/0x5c
+> [    0.566706] RSP: e02b:ffff88004eb6bfc8  EFLAGS: 00010002
+> [    0.566706] RAX: 0000000000000000 RBX: 0000000000000000 RCX: ffffffffffffffff
+> [    0.566706] RDX: 000000000000000a RSI: 0000000000000051 RDI: 0000000000000000
+> [    0.566706] RBP: 00000000006d3018 R08: 0000000000000000 R09: 0000000000000000
+> [    0.566706] R10: 0000000000000008 R11: 0000000000000202 R12: 0000000000000000
+> [    0.566706] R13: 0000000000000001 R14: 000000000040eec0 R15: 0000000000000000
+> [    0.566706] FS:  0000000000000000(0063) GS:ffff880056300000(0000)
+> knlGS:0000000000000000
+> [    0.566706] CS:  e033 DS: 000f ES: 000f CR0: 0000000080050033
+> [    0.566706] CR2: 0000000000000000 CR3: 000000004eb3c000 CR4: 0000000000042660
+> [    0.566706] Stack:
+> [    0.566706]  0000000000000051 0000000000000000 0000000000000000
+> 0000000000000007
+> [    0.566706]  0000000000000202 8badf00d5aad0000 000000000000000f
+> [    0.566706] Call Trace:
+> [    0.566706] Code: 44 24 20 04 75 14 e9 9d 5a 89 ff 90 66 66 66 2e
+> 0f 1f 84 00 00 00 00 00 48 cf 50 57 66 66 90 66 66 90 65 48 8b 3c 25
+> 00 b0 00 00 <48> 89 07 48 8b 44 24 10 48 89 47 08 48 8b 44 24 18 48 89
+> 47 10
+> [    0.566706] RIP  [<ffffffff81775493>] irq_return_ldt+0x11/0x5c
+> [    0.566706]  RSP <ffff88004eb6bfc8>
+> [    0.566706] CR2: 0000000000000000
+> [    0.566706] ---[ end trace a62b7f28ce379a48 ]---
+>
+> When it doesn't OOPS, it segfaults.  I don't know why.  I suspect that
+> Xen either has a bug in modify_ldt, sigreturn, or iret when returning
+> to a CS that lives in the LDT.
 
-Awesome! Base do a quick glance it seems Android also uses this,
-dm-verity [0] uses public keys as well so it would indeed also provide
-authenticity / integrity checks which would indeed make firmware
-signature checks redundant, the only requirement however is you'd
-require the checks on the partition, and I do suspect not all
-distributions will want to go down this path. If we can extend the LSM
-hooks to give the option for signatures on firmware we'd enable
-distributions to pick and choose a strategy. Can we let LSM hooks then
-figure out if a digital signature is superfluous if dm-verity is being
-used ? I suspect there may be some cases where a module / part of the
-kernel may want to *force* the presence of a signature check but I
-don't think that this is a requirement for all use cases.
+Presumably the problem is here:
 
-[0] https://source.android.com/devices/tech/security/dm-verity.html
+ENTRY(xen_iret)
+    pushq $0
+1:    jmp hypercall_iret
+ENDPATCH(xen_iret)
 
-  Luis
+This seems rather unlikely to work on the espfix stack.
+
+Maybe espfix64 should be disabled when running on Xen and Xen should
+implement its own espfix64 in the hypervisor.
+
+--Andy
+
+>
+>
+> --Andy
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
