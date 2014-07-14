@@ -1,62 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752210AbaGNBNP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 21:13:15 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:37822 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493AbaGNBNK (ORCPT
+	id S1752314AbaGNB3l (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 21:29:41 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:42856 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751661AbaGNB3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 21:13:10 -0400
-From: microcai@fedoraproject.org
-To: linux-usb@vger.kernel.org
-Cc: jkosina@suse.cz, linux-kernel@vger.kernel.org,
-        microcai <microcaicai@gmail.com>
-Subject: [PATCH] add quirks for 0x04d9:0xa096 hid keyborad device
-Date: Mon, 14 Jul 2014 09:13:32 +0800
-Message-Id: <1405300412-31346-1-git-send-email-microcai@fedoraproject.org>
-X-Mailer: git-send-email 2.0.0
+	Sun, 13 Jul 2014 21:29:36 -0400
+Message-ID: <53C33275.1000900@linux.vnet.ibm.com>
+Date: Mon, 14 Jul 2014 09:29:25 +0800
+From: Michael wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Rik van Riel <riel@redhat.com>, Mike Galbraith <umgwanakikbuti@gmail.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Alex Shi <alex.shi@linaro.org>, Paul Turner <pjt@google.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched: select 'idle' cfs_rq per task-group to prevent
+ tg-internal imbalance
+References: <53A11A89.5000602@linux.vnet.ibm.com> <20140623094251.GS19860@laptop.programming.kicks-ass.net> <53A8F1DE.2060908@linux.vnet.ibm.com> <20140701082020.GL6758@twins.programming.kicks-ass.net> <53B273A2.5050500@linux.vnet.ibm.com> <53B41B7E.8020009@redhat.com> <1404359462.5137.72.camel@marge.simpson.net> <53C00CC1.1030401@redhat.com>
+In-Reply-To: <53C00CC1.1030401@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14071401-5564-0000-0000-00000F09AED3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: microcai <microcaicai@gmail.com>
+On 07/12/2014 12:11 AM, Rik van Riel wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+[snip]
+>>
+>> That's full wake balance.. if that was cheap,
+>> select_idle_sibling() would not exist.
+> 
+> Full wake balance iterates over all the groups in the system,
+> select_idle_sibling only over one LLC domain.
 
-I am using a USB keyborad that give me
-"usb_submit_urb(ctrl) failed: -1" error when I plugin it.
-and I need to wait for 10s for this device to be ready.
+Furthermore, balance will calculate the load and do comparison, which
+cost many cycles, while select_idle_sibling() just check idle status.
 
-by adding this quirks, the usb keyborad is usable right after plugin
+> 
+> If no CPU in the LLC domain is idle, select_idle_sibling will
+> iterate over all of them.  
 
-Signed-off-by: Wangzhao Cai <microcaicai@gmail.com>
----
- drivers/hid/hid-ids.h           | 1 +
- drivers/hid/usbhid/hid-quirks.c | 1 +
- 2 files changed, 2 insertions(+)
+Just the first cpu of groups, for example the cpu0:
 
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 34bb220..bda276b 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -477,6 +477,7 @@
- #define USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A070	0xa070
- #define USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A072	0xa072
- #define USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A081	0xa081
-+#define USB_DEVICE_ID_HOLTEK_ALT_KEYBOARD_A096	0xa096
- 
- #define USB_VENDOR_ID_IMATION		0x0718
- #define USB_DEVICE_ID_DISC_STAKKA	0xd000
-diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-index 8e4ddb3..da22a5e 100644
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -120,6 +120,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_HD, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_QUAD_HD, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_TP_V103, HID_QUIRK_NO_INIT_REPORTS },
-+	{ USB_VENDOR_ID_HOLTEK_ALT, USB_DEVICE_ID_HOLTEK_ALT_KEYBOARD_A096, HID_QUIRK_NO_INIT_INPUT_REPORTS },
- 
- 	{ 0, 0 }
- };
--- 
-2.0.0
+sd1:
+	tg0			tg1
+	cpu0	cpu1		cpu2	cpu3
+sd0:
+	tg0	tg1
+	cpu0	cpu1
+
+The thing we'll check is:
+
+sd1:
+	idle_cpu(0)	//busy
+	idle_cpu(2)	//busy
+sd0:
+	idle_cpu(0)	//busy
+
+That's really cheap compared with balance path...
+
+During this iteration, which the
+> code already does, it should be possible to identify the least
+> loaded of the CPUs and pick that one.
+
+That will make select_idle_sibling() more close to balance path(just the
+start domain lower), IMHO this seems like not such a good idea... what
+we gain doesn't worth the overhead.
+
+But if we have testing show this modify could benefit most of the
+workloads (I don't think so but who knows...), then we'll have the
+reason to add some load comparison logical inside that quick path ;-)
+
+Regards,
+Michael Wang
+
+> 
+> - -- 
+> All rights reversed
+> -----BEGIN PGP SIGNATURE-----
+> Version: GnuPG v1
+> Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+> 
+> iQEcBAEBAgAGBQJTwAzBAAoJEM553pKExN6DlrEH/RKQPdAdMFK/pxZ/2f9TCXFK
+> Vq25LWZeJQhNOrH3Q6VzTTfAG06O8+Bjxfb+SR6BOHCtD4kCBqaBdwVVUDXC+MbK
+> NdBa3GtCT3ahvguiYLPEHL1vugND2yzHUgnr9EhUgk6zhnLxfvhIIJj7uv+ZRsri
+> o8DsLrIG1jqDGVbbu5ssZ37w6cldoFBw0FAHcVAquoM2SP+/MuatW1SCkRP31IVL
+> q0dssP1CD0Nkecz+S6WSI59c0Wt0c73oWNg/q41a/kha7RI1J5VF5yNFacq/uL0g
+> Xxyb0mOiJarqMtzuq5ItlOiTry+BpqY1jFhN5ZhFjt9mtvpTR1C/tcXpOw77y0Y=
+> =BEJk
+> -----END PGP SIGNATURE-----
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
