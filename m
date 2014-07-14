@@ -1,98 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756954AbaGNTvH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 15:51:07 -0400
-Received: from mga09.intel.com ([134.134.136.24]:11022 "EHLO mga09.intel.com"
+	id S1757026AbaGNTvy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 15:51:54 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:48638 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756902AbaGNTuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 15:50:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,659,1400050800"; 
-   d="scan'208";a="543227683"
-Subject: Re: [PATCH v4 6/7] sched: add function nr_running_cpu to expose
- number of tasks running on cpu
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>, "H. Peter Anvin" <hpa@zytor.com>,
-        "David S.Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Chandramouli Narayanan <mouli@linux.intel.com>,
-        Vinodh Gopal <vinodh.gopal@intel.com>,
-        James Guilford <james.guilford@intel.com>,
-        Wajdi Feghali <wajdi.k.feghali@intel.com>,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20140714191504.GO9918@twins.programming.kicks-ass.net>
-References: <cover.1405074379.git.tim.c.chen@linux.intel.com>
-	 <1405110784.2970.655.camel@schen9-DESK>
-	 <20140714101611.GS9918@twins.programming.kicks-ass.net>
-	 <1405354214.2970.663.camel@schen9-DESK>
-	 <20140714161432.GC9918@twins.programming.kicks-ass.net>
-	 <1405357534.2970.701.camel@schen9-DESK>
-	 <20140714181738.GI9918@twins.programming.kicks-ass.net>
-	 <1405364908.2970.729.camel@schen9-DESK>
-	 <20140714191504.GO9918@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 14 Jul 2014 12:50:50 -0700
-Message-ID: <1405367450.2970.750.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1756173AbaGNTvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 15:51:44 -0400
+Date: Mon, 14 Jul 2014 21:51:28 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+Cc: clemens@ladisch.de, jdelvare@suse.de, linux@roeck-us.net,
+        rdunlap@infradead.org, bhelgaas@google.com, lm-sensors@lm-sensors.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH] hwmon, k10temp: Add support for AMD F15h M60h processor
+Message-ID: <20140714195128.GA25124@pd.tnic>
+References: <1405369388-12729-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1405369388-12729-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-07-14 at 21:15 +0200, Peter Zijlstra wrote:
-> On Mon, Jul 14, 2014 at 12:08:28PM -0700, Tim Chen wrote:
-> > On Mon, 2014-07-14 at 20:17 +0200, Peter Zijlstra wrote:
+On Mon, Jul 14, 2014 at 03:23:08PM -0500, Aravind Gopalakrishnan wrote:
+> This patch adds temperature monitoring support for F15h M60h processor.
+>  - Add new pci device id for the relevant processor
+>  - The functionality of REG_REPORTED_TEMPERATURE is moved to
+>    D0F0xBC_xD820_0CA4 [Reported Temperature Control]
+>    - So, use this to get CUR_TEMP value
+>  - Add Kconfig, Doc entries to indicate support for this processor.
 > 
-> > > Your multi-buffer thing isn't generic either, it seems lmiited to sha1.
-> > 
-> > We actually have many other multi-buffer crypto algorithms already
-> > published for encryption and other IPSec usages.  So 
-> > multi-buffer algorithm is not just limited to SHA1.
-> > We hope to port those to the kernel crypto library eventually.
-> > http://www.intel.com/content/dam/www/public/us/en/documents/white-papers/fast-multi-buffer-ipsec-implementations-ia-processors-paper.pdf 
+> Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+> ---
+>  Documentation/hwmon/k10temp |  2 +-
+>  drivers/hwmon/Kconfig       |  4 ++--
+>  drivers/hwmon/k10temp.c     | 22 ++++++++++++++++++++--
+>  include/linux/pci_ids.h     |  1 +
+>  4 files changed, 24 insertions(+), 5 deletions(-)
 > 
-> That's all nice and such; but the code as I've seen in these patches is
-> very much sha1 specific. The mb part isn't separated out.
+> diff --git a/Documentation/hwmon/k10temp b/Documentation/hwmon/k10temp
+> index ee6d30e..254d2f5 100644
+> --- a/Documentation/hwmon/k10temp
+> +++ b/Documentation/hwmon/k10temp
+> @@ -11,7 +11,7 @@ Supported chips:
+>    Socket S1G2: Athlon (X2), Sempron (X2), Turion X2 (Ultra)
+>  * AMD Family 12h processors: "Llano" (E2/A4/A6/A8-Series)
+>  * AMD Family 14h processors: "Brazos" (C/E/G/Z-Series)
+> -* AMD Family 15h processors: "Bulldozer" (FX-Series), "Trinity", "Kaveri"
+> +* AMD Family 15h processors: "Bulldozer" (FX-Series), "Trinity", "Kaveri", "Carrizo"
+>  * AMD Family 16h processors: "Kabini", "Mullins"
+>  
+>    Prefix: 'k10temp'
+> diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+> index 02d3d85..57ba400 100644
+> --- a/drivers/hwmon/Kconfig
+> +++ b/drivers/hwmon/Kconfig
+> @@ -280,8 +280,8 @@ config SENSORS_K10TEMP
+>  	  If you say yes here you get support for the temperature
+>  	  sensor(s) inside your CPU. Supported are later revisions of
+>  	  the AMD Family 10h and all revisions of the AMD Family 11h,
+> -	  12h (Llano), 14h (Brazos), 15h (Bulldozer/Trinity/Kaveri) and
+> -	  16h (Kabini/Mullins) microarchitectures.
+> +	  12h (Llano), 14h (Brazos), 15h (Bulldozer/Trinity/Kaveri/Carrizo)
+> +	  and 16h (Kabini/Mullins) microarchitectures.
+>  
+>  	  This driver can also be built as a module.  If so, the module
+>  	  will be called k10temp.
+> diff --git a/drivers/hwmon/k10temp.c b/drivers/hwmon/k10temp.c
+> index f7b46f6..5da872f 100644
+> --- a/drivers/hwmon/k10temp.c
+> +++ b/drivers/hwmon/k10temp.c
+> @@ -51,13 +51,30 @@ MODULE_PARM_DESC(force, "force loading on processors with erratum 319");
+>  #define REG_NORTHBRIDGE_CAPABILITIES	0xe8
+>  #define  NB_CAP_HTC			0x00000400
+>  
+> +/*
+> + * For F15h M60h, functionality of REG_REPORTED_TEMPERATURE
+> + * has been moved to D0F0xBC_xD820_0CA4 [Reported Temperature
+> + * Control]
+> + */
+> +#define NB_SMU_IND_ADDR			0xb8
+> +#define NB_SMU_IND_DATA			0xbc
+> +#define IND_ADDR_OFFSET			0xd8200ca4
+> +
+>  static ssize_t show_temp(struct device *dev,
+>  			 struct device_attribute *attr, char *buf)
+>  {
+>  	u32 regval;
+> +	struct pci_dev *pdev = to_pci_dev(dev);
+> +
+> +	if (boot_cpu_data.x86 == 0x15 && boot_cpu_data.x86_model == 0x60) {
+> +		pci_bus_write_config_dword(pdev->bus, PCI_DEVFN(0, 0),
+> +					   NB_SMU_IND_ADDR, IND_ADDR_OFFSET);
+> +		pci_bus_read_config_dword(pdev->bus, PCI_DEVFN(0, 0),
+> +					  NB_SMU_IND_DATA, &regval);
+> +
+> +	} else
+> +		pci_read_config_dword(pdev, REG_REPORTED_TEMPERATURE, &regval);
+>  
+> -	pci_read_config_dword(to_pci_dev(dev),
+> -			      REG_REPORTED_TEMPERATURE, &regval);
+>  	return sprintf(buf, "%u\n", (regval >> 21) * 125);
+>  }
+>  
+> @@ -211,6 +228,7 @@ static const struct pci_device_id k10temp_id_table[] = {
+>  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F3) },
+>  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M10H_F3) },
+>  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F3) },
+> +	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M60H_NB_F3) },
+>  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
+>  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_M30H_NB_F3) },
+>  	{}
+> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+> index 7fa3173..3c8e328 100644
+> --- a/include/linux/pci_ids.h
+> +++ b/include/linux/pci_ids.h
+> @@ -520,6 +520,7 @@
+>  #define PCI_DEVICE_ID_AMD_15H_M10H_F3	0x1403
+>  #define PCI_DEVICE_ID_AMD_15H_M30H_NB_F3 0x141d
+>  #define PCI_DEVICE_ID_AMD_15H_M30H_NB_F4 0x141e
+> +#define PCI_DEVICE_ID_AMD_15H_M60H_NB_F3 0x1573
 
-There is a generic multi-buffer infrastructure portion that manages
-pulling and queuing jobs on the crypto workqueue, and it is separated out
-in patch 1 of the patchset.  The other portions are algorithm specific that defines
-algorithm specific data structure and  does the crypto computation 
-for a particular algorithm, mostly in
-assemblies and C glue code.  The infrastructure code is 
-meant to be reused for other similar 
-multi-buffer algorithms.
+I'm assuming this is used somewhere else besides k10temp.c?
 
-> 
-> > > It does not reuse padata, 
-> > padata tries to speed things up by parallelizing jobs to *multiple*
-> > cpus.  Whereas multi-buffer tries to speed things up by speeding things
-> > up by using multiple data lanes in SIMD register in a *single* cpu.
-> > These two usages are complementary but not the same.
-> 
-> And if its single cpu, wth do you need that nr_running thing for another
-> cpu for?
+-- 
+Regards/Gruss,
+    Boris.
 
-We use nr_running_cpu to check whether there are other tasks running on
-the *current* cpu, (not for another cpu), to decide if we should flush
-and compute crypto jobs accumulated.  If there's nobody else running,
-we can take advantage of available cpu cycles on the cpu we are running 
-on to do computation on the existing jobs in a SIMD mannner. 
-Waiting a bit longer may accumulate more jobs to process in parallel
-in a single SIMD instruction, but will have more delay.  
-
-> 
-> Also, this difference wasn't clear to me.
-> 
-> I still loathe all the async work, because it makes a mockery of
-> accounting etc.. but that's a story for another day I suppose :-(
-> 
-> 
-
-Thanks.
-
-Tim
-
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
