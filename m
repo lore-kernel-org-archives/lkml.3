@@ -1,430 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756883AbaGNTsN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 15:48:13 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:33809 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755579AbaGNTsD (ORCPT
+	id S1756928AbaGNTu6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 15:50:58 -0400
+Received: from vserver.eikelenboom.it ([84.200.39.61]:50528 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755579AbaGNTuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 15:48:03 -0400
-Date: Mon, 14 Jul 2014 12:46:21 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>, Minchan Kim <minchan.kim@gmail.com>,
-        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/3] mm: vmscan: clean up struct scan_control
-In-Reply-To: <1405344049-19868-4-git-send-email-hannes@cmpxchg.org>
-Message-ID: <alpine.LSU.2.11.1407141240200.17669@eggly.anvils>
-References: <1405344049-19868-1-git-send-email-hannes@cmpxchg.org> <1405344049-19868-4-git-send-email-hannes@cmpxchg.org>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Mon, 14 Jul 2014 15:50:52 -0400
+Date: Mon, 14 Jul 2014 21:50:47 +0200
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <1892007703.20140714215047@eikelenboom.it>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, konrad@kernel.org
+CC: boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
+Subject: Re: [Xen-devel] [PATCH v4] PCI back fixes for 3.17.
+In-Reply-To: <1499016487.20140714210129@eikelenboom.it>
+References: <1405109332-31659-1-git-send-email-konrad@kernel.org> <768165707.20140714183755@eikelenboom.it> <20140714172225.GA10497@laptop.dumpdata.com> <652296445.20140714192923@eikelenboom.it> <20140714173753.GB12920@laptop.dumpdata.com> <9210423415.20140714194304@eikelenboom.it> <20140714174525.GD12920@laptop.dumpdata.com> <1332864311.20140714202433@eikelenboom.it> <20140714184547.GA18896@laptop.dumpdata.com> <1499016487.20140714210129@eikelenboom.it>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jul 2014, Johannes Weiner wrote:
 
-> Reorder the members by input and output, then turn the individual
-> integers for may_writepage, may_unmap, may_swap, compaction_ready,
-> hibernation_mode into flags that fit into a single integer.
-> 
-> Stack delta: +72/-296 -224                   old     new   delta
-> kswapd                                       104     176     +72
-> try_to_free_pages                             80      56     -24
-> try_to_free_mem_cgroup_pages                  80      56     -24
-> shrink_all_memory                             88      64     -24
-> reclaim_clean_pages_from_list                168     144     -24
-> mem_cgroup_shrink_node_zone                  104      80     -24
-> __zone_reclaim                               176     152     -24
-> balance_pgdat                                152       -    -152
-> 
->    text    data     bss     dec     hex filename
->   38151    5641      16   43808    ab20 mm/vmscan.o.old
->   38047    5641      16   43704    aab8 mm/vmscan.o
-> 
-> Suggested-by: Mel Gorman <mgorman@suse.de>
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  mm/vmscan.c | 158 ++++++++++++++++++++++++++++++------------------------------
->  1 file changed, 78 insertions(+), 80 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index c28b8981e56a..73d8e69ff3eb 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -58,36 +58,28 @@
->  #define CREATE_TRACE_POINTS
->  #include <trace/events/vmscan.h>
->  
-> -struct scan_control {
-> -	/* Incremented by the number of inactive pages that were scanned */
-> -	unsigned long nr_scanned;
-> -
-> -	/* Number of pages freed so far during a call to shrink_zones() */
-> -	unsigned long nr_reclaimed;
-> -
-> -	/* One of the zones is ready for compaction */
-> -	int compaction_ready;
-> +/* Scan control flags */
-> +#define MAY_WRITEPAGE		0x1
-> +#define MAY_UNMAP		0x2
-> +#define MAY_SWAP		0x4
-> +#define MAY_SKIP_CONGESTION	0x8
-> +#define COMPACTION_READY	0x10
->  
-> +struct scan_control {
->  	/* How many pages shrink_list() should reclaim */
->  	unsigned long nr_to_reclaim;
->  
-> -	unsigned long hibernation_mode;
-> -
->  	/* This context's GFP mask */
->  	gfp_t gfp_mask;
->  
-> -	int may_writepage;
-> -
-> -	/* Can mapped pages be reclaimed? */
-> -	int may_unmap;
-> -
-> -	/* Can pages be swapped as part of reclaim? */
-> -	int may_swap;
-> -
-> +	/* Allocation order */
->  	int order;
->  
-> -	/* Scan (total_size >> priority) pages at once */
-> -	int priority;
-> +	/*
-> +	 * Nodemask of nodes allowed by the caller. If NULL, all nodes
-> +	 * are scanned.
-> +	 */
-> +	nodemask_t	*nodemask;
->  
->  	/*
->  	 * The memory cgroup that hit its limit and as a result is the
-> @@ -95,11 +87,17 @@ struct scan_control {
->  	 */
->  	struct mem_cgroup *target_mem_cgroup;
->  
-> -	/*
-> -	 * Nodemask of nodes allowed by the caller. If NULL, all nodes
-> -	 * are scanned.
-> -	 */
-> -	nodemask_t	*nodemask;
-> +	/* Scan (total_size >> priority) pages at once */
-> +	int priority;
-> +
-> +	/* Scan control flags; see above */
-> +	unsigned int flags;
+Monday, July 14, 2014, 9:01:29 PM, you wrote:
 
-This seems to result in a fair amount of unnecessary churn:
-why not just put may_writepage etc into an unsigned int bitfield,
-then you get the saving without changing all the rest of the code.
 
-Hugh
+> Monday, July 14, 2014, 8:45:47 PM, you wrote:
 
-> +
-> +	/* Incremented by the number of inactive pages that were scanned */
-> +	unsigned long nr_scanned;
-> +
-> +	/* Number of pages freed so far during a call to shrink_zones() */
-> +	unsigned long nr_reclaimed;
->  };
->  
->  #define lru_to_page(_head) (list_entry((_head)->prev, struct page, lru))
-> @@ -840,7 +838,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  		if (unlikely(!page_evictable(page)))
->  			goto cull_mlocked;
->  
-> -		if (!sc->may_unmap && page_mapped(page))
-> +		if (!(sc->flags & MAY_UNMAP) && page_mapped(page))
->  			goto keep_locked;
->  
->  		/* Double the slab pressure for mapped and swapcache pages */
-> @@ -1014,7 +1012,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  				goto keep_locked;
->  			if (!may_enter_fs)
->  				goto keep_locked;
-> -			if (!sc->may_writepage)
-> +			if (!(sc->flags & MAY_WRITEPAGE))
->  				goto keep_locked;
->  
->  			/* Page is dirty, try to write it out here */
-> @@ -1146,7 +1144,7 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
->  	struct scan_control sc = {
->  		.gfp_mask = GFP_KERNEL,
->  		.priority = DEF_PRIORITY,
-> -		.may_unmap = 1,
-> +		.flags = MAY_UNMAP,
->  	};
->  	unsigned long ret, dummy1, dummy2, dummy3, dummy4, dummy5;
->  	struct page *page, *next;
-> @@ -1489,9 +1487,9 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
->  
->  	lru_add_drain();
->  
-> -	if (!sc->may_unmap)
-> +	if (!(sc->flags & MAY_UNMAP))
->  		isolate_mode |= ISOLATE_UNMAPPED;
-> -	if (!sc->may_writepage)
-> +	if (!(sc->flags & MAY_WRITEPAGE))
->  		isolate_mode |= ISOLATE_CLEAN;
->  
->  	spin_lock_irq(&zone->lru_lock);
-> @@ -1593,7 +1591,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
->  	 * is congested. Allow kswapd to continue until it starts encountering
->  	 * unqueued dirty pages or cycling through the LRU too quickly.
->  	 */
-> -	if (!sc->hibernation_mode && !current_is_kswapd() &&
-> +	if (!(sc->flags & MAY_SKIP_CONGESTION) && !current_is_kswapd() &&
->  	    current_may_throttle())
->  		wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
->  
-> @@ -1683,9 +1681,9 @@ static void shrink_active_list(unsigned long nr_to_scan,
->  
->  	lru_add_drain();
->  
-> -	if (!sc->may_unmap)
-> +	if (!(sc->flags & MAY_UNMAP))
->  		isolate_mode |= ISOLATE_UNMAPPED;
-> -	if (!sc->may_writepage)
-> +	if (!(sc->flags & MAY_WRITEPAGE))
->  		isolate_mode |= ISOLATE_CLEAN;
->  
->  	spin_lock_irq(&zone->lru_lock);
-> @@ -1897,7 +1895,7 @@ static void get_scan_count(struct lruvec *lruvec, int swappiness,
->  		force_scan = true;
->  
->  	/* If we have no swap space, do not bother scanning anon pages. */
-> -	if (!sc->may_swap || (get_nr_swap_pages() <= 0)) {
-> +	if (!(sc->flags & MAY_SWAP) || (get_nr_swap_pages() <= 0)) {
->  		scan_balance = SCAN_FILE;
->  		goto out;
->  	}
-> @@ -2406,7 +2404,7 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
->  			    sc->order > PAGE_ALLOC_COSTLY_ORDER &&
->  			    zonelist_zone_idx(z) <= requested_highidx &&
->  			    compaction_ready(zone, sc->order)) {
-> -				sc->compaction_ready = true;
-> +				sc->flags |= COMPACTION_READY;
->  				continue;
->  			}
->  
-> @@ -2496,7 +2494,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
->  		if (sc->nr_reclaimed >= sc->nr_to_reclaim)
->  			break;
->  
-> -		if (sc->compaction_ready)
-> +		if (sc->flags & COMPACTION_READY)
->  			break;
->  
->  		/*
-> @@ -2504,7 +2502,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
->  		 * writepage even in laptop mode.
->  		 */
->  		if (sc->priority < DEF_PRIORITY - 2)
-> -			sc->may_writepage = 1;
-> +			sc->flags |= MAY_WRITEPAGE;
->  
->  		/*
->  		 * Try to write back as many pages as we just scanned.  This
-> @@ -2517,7 +2515,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
->  		if (total_scanned > writeback_threshold) {
->  			wakeup_flusher_threads(laptop_mode ? 0 : total_scanned,
->  						WB_REASON_TRY_TO_FREE_PAGES);
-> -			sc->may_writepage = 1;
-> +			sc->flags |= MAY_WRITEPAGE;
->  		}
->  	} while (--sc->priority >= 0);
->  
-> @@ -2527,7 +2525,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
->  		return sc->nr_reclaimed;
->  
->  	/* Aborted reclaim to try compaction? don't OOM, then */
-> -	if (sc->compaction_ready)
-> +	if (sc->flags & COMPACTION_READY)
->  		return 1;
->  
->  	/* Any of the zones still reclaimable?  Don't OOM. */
-> @@ -2668,17 +2666,17 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
->  {
->  	unsigned long nr_reclaimed;
->  	struct scan_control sc = {
-> -		.gfp_mask = (gfp_mask = memalloc_noio_flags(gfp_mask)),
-> -		.may_writepage = !laptop_mode,
->  		.nr_to_reclaim = SWAP_CLUSTER_MAX,
-> -		.may_unmap = 1,
-> -		.may_swap = 1,
-> +		.gfp_mask = (gfp_mask = memalloc_noio_flags(gfp_mask)),
->  		.order = order,
-> -		.priority = DEF_PRIORITY,
-> -		.target_mem_cgroup = NULL,
->  		.nodemask = nodemask,
-> +		.priority = DEF_PRIORITY,
-> +		.flags = MAY_UNMAP | MAY_SWAP,
->  	};
->  
-> +	if (!laptop_mode)
-> +		sc.flags |= MAY_WRITEPAGE;
-> +
->  	/*
->  	 * Do not enter reclaim if fatal signal was delivered while throttled.
->  	 * 1 is returned so that the page allocator does not OOM kill at this
-> @@ -2688,7 +2686,7 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
->  		return 1;
->  
->  	trace_mm_vmscan_direct_reclaim_begin(order,
-> -				sc.may_writepage,
-> +				sc.flags & MAY_WRITEPAGE,
->  				gfp_mask);
->  
->  	nr_reclaimed = do_try_to_free_pages(zonelist, &sc);
-> @@ -2706,23 +2704,22 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *memcg,
->  						unsigned long *nr_scanned)
->  {
->  	struct scan_control sc = {
-> -		.nr_scanned = 0,
->  		.nr_to_reclaim = SWAP_CLUSTER_MAX,
-> -		.may_writepage = !laptop_mode,
-> -		.may_unmap = 1,
-> -		.may_swap = !noswap,
-> -		.order = 0,
-> -		.priority = 0,
-> +		.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
-> +		            (GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK),
->  		.target_mem_cgroup = memcg,
-> +		.flags = MAY_UNMAP,
->  	};
->  	struct lruvec *lruvec = mem_cgroup_zone_lruvec(zone, memcg);
->  	int swappiness = mem_cgroup_swappiness(memcg);
->  
-> -	sc.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
-> -			(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK);
-> +	if (!laptop_mode)
-> +		sc.flags |= MAY_WRITEPAGE;
-> +	if (!noswap)
-> +		sc.flags |= MAY_SWAP;
->  
->  	trace_mm_vmscan_memcg_softlimit_reclaim_begin(sc.order,
-> -						      sc.may_writepage,
-> +						      sc.flags & MAY_WRITEPAGE,
->  						      sc.gfp_mask);
->  
->  	/*
-> @@ -2748,18 +2745,19 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
->  	unsigned long nr_reclaimed;
->  	int nid;
->  	struct scan_control sc = {
-> -		.may_writepage = !laptop_mode,
-> -		.may_unmap = 1,
-> -		.may_swap = !noswap,
->  		.nr_to_reclaim = SWAP_CLUSTER_MAX,
-> -		.order = 0,
-> -		.priority = DEF_PRIORITY,
-> -		.target_mem_cgroup = memcg,
-> -		.nodemask = NULL, /* we don't care the placement */
->  		.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
-> -				(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK),
-> +		            (GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK),
-> +		.target_mem_cgroup = memcg,
-> +		.priority = DEF_PRIORITY,
-> +		.flags = MAY_UNMAP,
->  	};
->  
-> +	if (!laptop_mode)
-> +		sc.flags |= MAY_WRITEPAGE;
-> +	if (!noswap)
-> +		sc.flags |= MAY_SWAP;
-> +
->  	/*
->  	 * Unlike direct reclaim via alloc_pages(), memcg's reclaim doesn't
->  	 * take care of from where we get pages. So the node where we start the
-> @@ -2770,7 +2768,7 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
->  	zonelist = NODE_DATA(nid)->node_zonelists;
->  
->  	trace_mm_vmscan_memcg_reclaim_begin(0,
-> -					    sc.may_writepage,
-> +					    sc.flags & MAY_WRITEPAGE,
->  					    sc.gfp_mask);
->  
->  	nr_reclaimed = do_try_to_free_pages(zonelist, &sc);
-> @@ -3015,15 +3013,15 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->  	unsigned long nr_soft_scanned;
->  	struct scan_control sc = {
->  		.gfp_mask = GFP_KERNEL,
-> -		.priority = DEF_PRIORITY,
-> -		.may_unmap = 1,
-> -		.may_swap = 1,
-> -		.may_writepage = !laptop_mode,
->  		.order = order,
-> -		.target_mem_cgroup = NULL,
-> +		.priority = DEF_PRIORITY,
-> +		.flags = MAY_UNMAP | MAY_SWAP,
->  	};
->  	count_vm_event(PAGEOUTRUN);
->  
-> +	if (!laptop_mode)
-> +		sc.flags |= MAY_WRITEPAGE;
-> +
->  	do {
->  		unsigned long lru_pages = 0;
->  		unsigned long nr_attempted = 0;
-> @@ -3104,7 +3102,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->  		 * even in laptop mode.
->  		 */
->  		if (sc.priority < DEF_PRIORITY - 2)
-> -			sc.may_writepage = 1;
-> +			sc.flags |= MAY_WRITEPAGE;
->  
->  		/*
->  		 * Now scan the zone in the dma->highmem direction, stopping
-> @@ -3401,14 +3399,11 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
->  {
->  	struct reclaim_state reclaim_state;
->  	struct scan_control sc = {
-> -		.gfp_mask = GFP_HIGHUSER_MOVABLE,
-> -		.may_swap = 1,
-> -		.may_unmap = 1,
-> -		.may_writepage = 1,
->  		.nr_to_reclaim = nr_to_reclaim,
-> -		.hibernation_mode = 1,
-> -		.order = 0,
-> +		.gfp_mask = GFP_HIGHUSER_MOVABLE,
->  		.priority = DEF_PRIORITY,
-> +		.flags = MAY_WRITEPAGE | MAY_UNMAP | MAY_SWAP |
-> +		         MAY_SKIP_CONGESTION,
->  	};
->  	struct zonelist *zonelist = node_zonelist(numa_node_id(), sc.gfp_mask);
->  	struct task_struct *p = current;
-> @@ -3588,19 +3583,22 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
->  	struct task_struct *p = current;
->  	struct reclaim_state reclaim_state;
->  	struct scan_control sc = {
-> -		.may_writepage = !!(zone_reclaim_mode & RECLAIM_WRITE),
-> -		.may_unmap = !!(zone_reclaim_mode & RECLAIM_SWAP),
-> -		.may_swap = 1,
->  		.nr_to_reclaim = max(nr_pages, SWAP_CLUSTER_MAX),
->  		.gfp_mask = (gfp_mask = memalloc_noio_flags(gfp_mask)),
->  		.order = order,
->  		.priority = ZONE_RECLAIM_PRIORITY,
-> +		.flags = MAY_SWAP,
->  	};
->  	struct shrink_control shrink = {
->  		.gfp_mask = sc.gfp_mask,
->  	};
->  	unsigned long nr_slab_pages0, nr_slab_pages1;
->  
-> +	if (zone_reclaim_mode & RECLAIM_WRITE)
-> +		sc.flags |= MAY_WRITEPAGE;
-> +	if (zone_reclaim_mode & RECLAIM_SWAP)
-> +		sc.flags |= MAY_UNMAP;
-> +
->  	cond_resched();
->  	/*
->  	 * We need to be able to allocate from the reserves for RECLAIM_SWAP
-> -- 
-> 2.0.0
+>> On Mon, Jul 14, 2014 at 08:24:33PM +0200, Sander Eikelenboom wrote:
+>>> 
+>>> Monday, July 14, 2014, 7:45:25 PM, you wrote:
+>>> 
+>>> > On Mon, Jul 14, 2014 at 07:43:04PM +0200, Sander Eikelenboom wrote:
+>>> >> 
+>>> >> Monday, July 14, 2014, 7:37:53 PM, you wrote:
+>>> >> 
+>>> >> >> >> Ad B)
+>>> >> >> >> 
+>>> >> >> >> root@dom0:~# xl pci-list router
+>>> >> >> >> Vdev Device
+>>> >> >> >> 05.0 0000:00:1b.0
+>>> >> >> >> 
+>>> >> >> >> root@dom0:~# xl pci-assignable-list
+>>> >> >> >> 0000:02:00.0
+>>> >> >> >> 
+>>> >> >> >> root@dom0:~# xl pci-detach router 00:1b.0
+>>> >> >> >> dmesg shows:
+>>> >> >> >> [  199.742668] pciback 0000:00:1b.0: restoring config space at offset 0x10 (was 0x4, writing 0xf7d30004)
+>>> >> >> >> [  199.743527] pciback 0000:00:1b.0: restoring config space at offset 0xc (was 0x0, writing 0x10)
+>>> >> >> >> [  199.744321] pciback 0000:00:1b.0: restoring config space at offset 0x4 (was 0x100000, writing 0x100006)
+>>> >> >> >> [  199.757184] xen-pciback pci-1-0: xen_pcibk_xenbus_remove freeing pdev @ 0xffff8800589fce40
+>>> >> >> >> [  199.758139] xen-pciback pci-1-0: xen_pcibk_disconnect pdev @ 0xffff8800589fce40
+>>> >> >> >> [  199.862595] xen: xen_unregister_device_domain_owner
+>>> >> >> >> 
+>>> >> >> >> xl dmesg shows:
+>>> >> >> >> (XEN) [2014-07-14 16:28:29] memory_map:remove: dom1 gfn=f3070 mfn=f7d30 nr=4
+>>> >> >> >> (XEN) [2014-07-14 16:28:29] io.c:322: d1: unbind: m_gsi=22 g_gsi=36 dev=00:00.5 intx=0
+>>> >> >> >> (XEN) [2014-07-14 16:28:29] io.c:390: d1 unmap: m_irq=22 dev=00:00.5 intx=0
+>>> >> >> >> (XEN) [2014-07-14 16:28:29] [VT-D]iommu.c:1579: d1:PCIe: unmap 0000:00:1b.0
+>>> >> >> >> (XEN) [2014-07-14 16:28:29] [VT-D]iommu.c:1440: d0:PCIe: map 0000:00:1b.0
+>>> >> >> >> 
+>>> >> >> >> root@dom0:~# xl pci-list router
+>>> >> >> >> root@dom0:~# xl pci-assignable-list
+>>> >> >> >> 0000:00:1b.0
+>>> >> >> >> 0000:02:00.0
+>>> >> >> >> 
+>>> >> >> >> root@dom0:~# xl pci-assignable-remove 00:1b.0
+>>> >> >> >> dmesg shows:
+>>> >> >> >> [  318.827415] xen: xen_unregister_device_domain_owner
+>>> >> >> >> [  318.828771] xen: xen_unregister_device_domain_owner: ENODEV
+>>> >> >> >> [  318.930869] pciback 0000:00:1b.0: restoring config space at offset 0x10 (was 0x4, writing 0xf7d30004)
+>>> >> >> >> [  318.933435] pciback 0000:00:1b.0: restoring config space at offset 0xc (was 0x0, writing 0x10)
+>>> >> >> >> [  318.935877] pciback 0000:00:1b.0: restoring config space at offset 0x4 (was 0x100000, writing 0x100006)
+>>> >> >> >> 
+>>> >> >> >> root@dom0:~# xl pci-list router
+>>> >> >> >> root@dom0:~# xl pci-assignable-list
+>>> >> >> >> 0000:02:00.0
+>>> >> >> >> 
+>>> >> >> >> 
+>>> >> >> 
+>>> >> >> > And if you do:
+>>> >> >> 
+>>> >> >> > # xl pci-detach router 02:00.0
+>>> >> >> 
+>>> >> 
+>>> >> > Err, I meant
+>>> >> > # xl pci-assignable-remove 02:00.0
+>>> >> 
+>>> >> Ah ok .. so that is:
+>>> >> remove a device from pciback that has never been assigned to any guest .. 
+>>> >> 
+>>> >> will also give that a go .. although that probably won't be a problem. 
+>>> 
+>>> > Right. So I think it all works as expected? That is if you have
+>>> > two PCI devices assigned to a guest and want to re-use them you
+>>> > have to do the 'pci-detach' twice and then follow that with
+>>> >  'pci-assignable-remove' twice as well?
+>>> 
+>>> Well except that's not what i want :-) .. that's about the same as shutting down 
+>>> the guest .. and indeed that works :-)
+>>> 
+>>> What i want to do is to remove just *one* device and leave the other one in the guest.
+>>> 
+>>> The one that i remove .. i would like to be able to remove it from being 
+>>> assignable .. (rebind it in dom0) and/or assign it to another guest.
+
+>> Aha
+>>> 
+>>> And that fails because pciback still thinks the guest owns the device ..
+>>> while libxl thinks it doesn't (outcome of xl pci-assignable-list).
+
+>> Oh
+>>> 
+>>> When doing the:
+>>> 
+>>> # xl pci-assignable-list
+>>> 0000:02:00.0
+>>> # xl pci-assignable-remove 02:00.0
+>>> dmesg shows:               
+>>> [  443.292951] xen: xen_unregister_device_domain_owner
+>>> [  443.294308] xen: xen_unregister_device_domain_owner: ENODEV
+>>> [  443.398827] pciback 0000:02:00.0: restoring config space at offset 0x3c (was 0x100, writing 0x104)
+>>> [  443.400797] pciback 0000:02:00.0: restoring config space at offset 0x10 (was 0x4, writing 0xf7c00004)
+>>> [  443.401713] pciback 0000:02:00.0: restoring config space at offset 0x4 (was 0x100000, writing 0x100006)
+>>> 
+>>> which i think is what is expected ..
+
+>> Right.
+
+>>> 
+>>> 
+>>> Hmm  /sys/bus/pci/drivers/pciback  doesn't shed much light, because in the state 
+>>> just after a xl pci-detach, the device is still registred by pciback (from dom0's 
+>>> view) which is correct, what is wrong is that pciback still seems to think that 
+>>> it is in turn still owned by the guest. That doesn't get reflected in the info 
+>>> available in the /sys dir.
+
+>> Oh
+>>> 
+>>> Ok over to xen-store ... 
+
+>> I think I had a patch for that in libxl. It was the order of operations it was
+>> doing - it did the 'unbind' first and then it did the XenBus operations.
+
+>>> 
+>>> first a diff between the booted guest with two devices passed through and the 
+>>> state after the "xl pci-detach router 00:1b.0"
+>>> 
+>>> root@creanuc:~# diff -U10 xs-before-detach-first.txt xs-after-detach-first.txt
+>>> --- xs-before-detach-first.txt  2014-07-14 19:56:23.233576000 +0200
+>>> +++ xs-after-detach-first.txt   2014-07-14 20:00:00.053576000 +0200
+>>> @@ -185,35 +185,29 @@
+>>>         feature-rx-flip = "0"
+>>>         feature-split-event-channels = "1"
+>>>         multi-queue-max-queues = "4"
+>>>         hotplug-status = "connected"
+>>>      pci = ""
+>>>       1 = ""
+>>>        0 = ""
+>>>         frontend = "/local/domain/1/device/pci/0"
+>>>         frontend-id = "1"
+>>>         online = "1"
+>>> -       state = "3"
+>>> +       state = "7"
+>>>         domain = "router"
+>>>         key-0 = "0000:02:00.0"
+>>>         dev-0 = "0000:02:00.0"
+>>>         vdevfn-0 = "28"
+>>>         opts-0 = "msitranslate=0,power_mgmt=0,permissive=0"
+>>>         state-0 = "3"
+>>> -       key-1 = "0000:00:1b.0"
+>>> -       dev-1 = "0000:00:1b.0"
+>>> -       vdevfn-1 = "30"
+>>> -       opts-1 = "msitranslate=0,power_mgmt=0,permissive=0"
+>>> -       state-1 = "3"
+>>> -       num_devs = "2"
+>>> +       num_devs = "1"
+>>>         vdev-0 = "0000:00:00.00"
+>>> -       vdev-1 = "0000:00:01.00"
+>>>         root-0 = "0000:00"
+>>>         root_num = "1"
+>>>    1 = ""
+>>>     vm = "/vm/a102d97e-8388-414e-97e5-cc394656c47d"
+>>>     name = "router"
+>>>     cpu = ""
+>>>      0 = ""
+>>>       availability = "online"
+>>>      1 = ""
+>>>       availability = "online"
+>>> 
+>>> It seems ok, perhaps apart from the general pci state going from 3 to 7 ?
+>>> Haven't looked up the exact states, but since only one domain is removes i would 
+>>> still expect it to be 3 ?
+
+>> 7 is Reconfiguring which is what it should move to (to update the XenBus).
+
+> Ok, but that should than be acknowledged somewhere by someone i suppose .. and 
+> not stay in that state ?
+
+>>> 
+>>> 
+>>> Now a diff before and after the "xl pci-assignable-remove 00:1b.0"
+>>> diff xs-after-detach-first.txt xs-after-pci-assignable-remove-first.txt is 
+>>> empty, as expected since this is a pciback only thing now involving any guest.
+>>> 
+>>> 
+>>> And now the last diff, between the state before and after the "xl pci-detach 
+>>> 02:00.0" removing the last pci device from the guest.
+>>> 
+>>> root@creanuc:~# diff -U5 xs-after-pci-assignable-remove-first.txt xs-after-pci-detach-second.txt
+>>> --- xs-after-pci-assignable-remove-first.txt    2014-07-14 20:00:45.161576000 +0200
+>>> +++ xs-after-pci-detach-second.txt      2014-07-14 20:01:20.177576000 +0200
+>>> @@ -184,27 +184,10 @@
+>>>         feature-rx-copy = "1"
+>>>         feature-rx-flip = "0"
+>>>         feature-split-event-channels = "1"
+>>>         multi-queue-max-queues = "4"
+>>>         hotplug-status = "connected"
+>>> -    pci = ""
+>>> -     1 = ""
+>>> -      0 = ""
+>>> -       frontend = "/local/domain/1/device/pci/0"
+>>> -       frontend-id = "1"
+>>> -       online = "1"
+>>> -       state = "7"
+>>> -       domain = "router"
+>>> -       key-0 = "0000:02:00.0"
+>>> -       dev-0 = "0000:02:00.0"
+>>> -       vdevfn-0 = "28"
+>>> -       opts-0 = "msitranslate=0,power_mgmt=0,permissive=0"
+>>> -       state-0 = "3"
+>>> -       num_devs = "1"
+>>> -       vdev-0 = "0000:00:00.00"
+>>> -       root-0 = "0000:00"
+>>> -       root_num = "1"
+>>>    1 = ""
+>>>     vm = "/vm/a102d97e-8388-414e-97e5-cc394656c47d"
+>>>     name = "router"
+>>>     cpu = ""
+>>>      0 = ""
+>>> @@ -249,15 +232,10 @@
+>>>        event-channel-rx = "25"
+>>>        request-rx-copy = "1"
+>>>        feature-rx-notify = "1"
+>>>        feature-sg = "1"
+>>>        feature-gso-tcpv4 = "1"
+>>> -    pci = ""
+>>> -     0 = ""
+>>> -      backend = "/local/domain/0/backend/pci/1/0"
+>>> -      backend-id = "0"
+>>> -      state = "1"
+>>>     control = ""
+>>>      shutdown = ""
+>>>      platform-feature-multiprocessor-suspend = "1"
+>>>      platform-feature-xs_reset_watches = "1"
+>>>     hvmloader = ""
+>>> 
+>>> That seems ok.
+>>> 
+>>> So apart from that perhaps incorrect general pci state change, the info in 
+>>> xenstore seems to be OK.
+>>> 
+>>> So it does seem to be a lack of pciback receiving a confirm from libxl / qemu that the 
+>>> device is indeed removed from the guest for the final deregistring of the 
+>>> ownership.
+>>> 
+>>> Because after a pci-detach the pci device is:
+>>> - removed from xen-store as attached to the guest
+>>> - the iommu has assigned/mapped it back to dom0
+>>> - xl pci-assignable-list shows it as assignable again
+>>> 
+>>> So only pciback is the only one left out of the party :-)
+>>> Couldn't it be somehow tied to the iommu events, since it should be in sync with that i suppose ?
+
+
+>> Let me find out what is up with this. Once the device
+>> is de-assigned from a guest (even if forcefully) it should
+>> be possible to assign it to another.
+
+> Yes .. at least for the rebinding to dom0 case, because the 
+> pci-assignable-remove seems to do it forcefully now. But i haven't tried what it 
+> does when reassigning to another guest (if it forcefully swaps ownership then, 
+> since the pci-assignable-remove isn't involved then).
+
+> Will give the xen patch a try.
+
+The patch doesn't make a difference.
+
+>>> 
+>>> --
+>>> Sander
+>>> 
+>>> BTW, i don't see the "do_flr" anywhere in /sys/*/pciback/ ?
+
+>> We been having a lengthy discussion about this and David is out
+>> on vacation so will have to wait until he is back.
+
+>>> 
+
+
+
+
