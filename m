@@ -1,105 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993AbaGNJLK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 05:11:10 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:52871 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752111AbaGNJLD (ORCPT
+	id S1754031AbaGNJL0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 05:11:26 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:52685 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593AbaGNJLM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 05:11:03 -0400
-Date: Mon, 14 Jul 2014 11:10:58 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH v2 1/3] asm-generic/io.h: Implement generic
- {read,write}s*()
-Message-ID: <20140714091057.GP2081@ulmo>
-References: <1405092672-18549-1-git-send-email-thierry.reding@gmail.com>
- <53C05E4A.2030708@codeaurora.org>
+	Mon, 14 Jul 2014 05:11:12 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qSHHer9gQ0dtepKr"
-Content-Disposition: inline
-In-Reply-To: <53C05E4A.2030708@codeaurora.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53C39E56.5070805@ti.com>
+References: <1404906569-28026-1-git-send-email-sachin.kamat@samsung.com>
+	<53C39B32.9060001@ti.com>
+	<CAK5sBcG+UZ86cAFKoAf4Y62yrOafpzBGd-wz=PqWJRg1g8pOFQ@mail.gmail.com>
+	<53C39C8C.6060604@ti.com>
+	<CAK5sBcHQEBmeGP9tDKvycAHG-ocg0D_W6xFts4Wy6MQgiOTtUA@mail.gmail.com>
+	<53C39E56.5070805@ti.com>
+Date: Mon, 14 Jul 2014 14:41:10 +0530
+Message-ID: <CAK5sBcG-Hewk+MB+BWxOttsUz67XCQXhJq=hACk9Qp548P-H3g@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] phy: Kconfig: Re-organize Exynos USB 2.0 PHY configs
+From: Sachin Kamat <spk.linux@gmail.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: open list <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Jingoo Han <jg1.han@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 14, 2014 at 2:39 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>
+>
+> On Monday 14 July 2014 02:36 PM, Sachin Kamat wrote:
+>> On Mon, Jul 14, 2014 at 2:32 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>>>
+>>>
+>>> On Monday 14 July 2014 02:29 PM, Sachin Kamat wrote:
+>>>> Hi,
+>>>>
+>>>> On Mon, Jul 14, 2014 at 2:26 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>>>>> Hi,
+>>>>>
+>>>>> On Wednesday 09 July 2014 05:19 PM, Sachin Kamat wrote:
+>>>>>> Since the USB 2.0 PHYs are required with EHCI/OHCI USB drivers and
+>>>>>> USB gadget controller supported by the DWC2 gadget driver, make it
+>>>>>> depend on them and default to ARCH_EXYNOS as they are meant for
+>>>>>> Exynos platforms. Also, make the sub-drivers silent options enabling
+>>>>>> them based on the SoC platforms that they are meant to work with. This
+>>>>>> will make life easier for end users who do not have any way knowing the
+>>>>>> dependencies.
+>>>>>
+>>>>> There is a new Exynos PHY in town, Exynos 3250. Can you rebase your patch on
+>>>>> top of that?
+>>>>
+>>>> Sure. But I did not see it in linux-next yet. Is it merged somewhere?
+>>>
+>>> It's in the list. I can push it to my tree if that helps.
+>>
+>> That would be great to avoid any other conflicts.
+>
+> pushed to git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git
+> next. You can use it to rebase your patch.
 
---qSHHer9gQ0dtepKr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks. I will re-spin on top of it.
 
-On Fri, Jul 11, 2014 at 02:59:38PM -0700, Stephen Boyd wrote:
-> On 07/11/14 08:31, Thierry Reding wrote:
-> > From: Thierry Reding <treding@nvidia.com>
-> >
-> > This patch implements generic versions of readsb(), readsw(), readsl(),
-> > readsq(), writesb(), writesw(), writesl() and writesq(). Variants of
-> > these string functions for I/O accesses (ins*() and outs*() as well as
-> > ioread*_rep() and iowrite*_rep()) are now implemented in terms of the
-> > new functions.
-> >
-> > While at it, also make sure that any of the functions provided as
-> > fallback for architectures that don't override them can't be overridden
-> > subsequently.
-> >
-> > This is compile- and runtime-tested on 32-bit and 64-bit ARM and compile
-> > tested on Microblaze, s390, SPARC and Xtensa. For ARC, Blackfin, Metag,
-> > OpenRISC, Score and Unicore32 which also use asm-generic/io.h I couldn't
-> > find or build a cross-compiler that would run on my system. But by code
-> > inspection they shouldn't break with this patch.
-> >
-> > Signed-off-by: Thierry Reding <treding@nvidia.com>
->=20
-> There isn't any mention of why we're doing this in the commit text. It
-> looks like patch 2 and 3 sort of mention why.
->=20
-> I also wonder if it could be explained how this about turn is desired,
-> given that patch b2656a138ab7 (asm-generic: io: remove {read,write}
-> string functions, 2012-10-17) did the complete opposite. Can you please
-> explain?
-
-The reason behind this was that people have been told to migrate towards
-using io{read,write}{8,16,32}_rep() because {read,write}s{b,w,l}() are
-not as "portable". The only reason why the aren't portable is because no
-generic versions of them existed. That's what this series originally
-started out as.
-
-Also, it's somewhat backwards (and inconsistent) to go through the io*()
-functions when it's known up front that the device will always only be
-memory-mapped and never I/O mapped. So with these patches going forward,
-people should be using either {read,write}{,s}{b,w,l}() *or* their
-io{read,write}{8,16,32}{,_rep}() counterparts, not mixing them.
-
-Thierry
-
---qSHHer9gQ0dtepKr
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTw56hAAoJEN0jrNd/PrOhddUP/2HJZ6+7D6xGrNZJPdkmR6U1
-AI6tUVRDowELJEK4ZMRMKroFRIg6+jUKB/oHPcbYXJdnSuk1CvZImemUexPlJlK/
-VLy4BY5jHXds4hP+bte/VSmkRYRDwIjMMMzQN1Ar2M+ejFgdsuBOSdzB0zgMhsH2
-5SeLvx6B9AtfTx3oi2/Spo5L0iW8uL7H3nhbGPP1jnoDKOc6feFvPfPpi8hrGvvd
-lqpzi7dr/u/XFhDRAZMZThcpAehPhWyU2pBE9YGm5TO9kL1RyJTgZf7hpoTUBpb4
-4FwpQTAe+OoyjfNp6huyhSJitZkrCMWTx+XmrS3vj7ty3To5F8CHO6GANYd10WW5
-glpw+MNUk4IRljiSZzj/RFeCD5SEsx1nNdYRnN6IPJ/WpHIeP6NhrobPcCtG5G6/
-3Q9Td1Xb/On8cQmLJxDo6jEzBtl4O6xdNG8Fg0OC0EXW0ywbwFhJDsZG0Tg6V8eJ
-/wbh0hmCqm8E1bxENmDwqi8s8y+k1zuTQpyql8z5mFR4MCNdISJ8EfHwxJJEWwGo
-7rXYntrLOdE0ZXV9O/pXppnUVqWI+A7SHCmZI/FtJkKsr6g/dV57Fc/z+kzyVWNK
-Xy+G/wkx1XZmFtlRpxAK+HSD89G5D+QJzn4LJVMzNsnduy+x2wQapYL5EfWcrbfx
-AnkOqX2mZDDfkx8Gk0kT
-=r4DG
------END PGP SIGNATURE-----
-
---qSHHer9gQ0dtepKr--
+-- 
+Regards,
+Sachin.
