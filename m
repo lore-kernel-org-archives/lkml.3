@@ -1,82 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753681AbaGNImu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 04:42:50 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:44764 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752915AbaGNIlE (ORCPT
+	id S1753560AbaGNIoS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 04:44:18 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:34432 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940AbaGNIoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 04:41:04 -0400
-From: varkabhadram@gmail.com
-To: netdev@vger.kernel.org
-Cc: Thomas.Lendacky@amd.com, geert+renesas@linux-m68k.org,
-        ebiederm@xmission.com, macro@linux-mips.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        Varka Bhadram <varkab@cdac.in>
-Subject: [PATCH net-next v3 1/6] ethernet: amd: move amd111e_remove_one after probe
-Date: Mon, 14 Jul 2014 14:09:04 +0530
-Message-Id: <1405327149-6554-2-git-send-email-varkabhadram@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1405327149-6554-1-git-send-email-varkabhadram@gmail.com>
-References: <1405327149-6554-1-git-send-email-varkabhadram@gmail.com>
+	Mon, 14 Jul 2014 04:44:10 -0400
+Date: Mon, 14 Jul 2014 11:43:59 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Lucas Tanure <tanure@linux.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] staging: android: Clean up else statement from
+ binder_send_failed_reply
+Message-ID: <20140714084358.GJ25880@mwanda>
+References: <20140713232513.GA15486@archDesk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140713232513.GA15486@archDesk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Varka Bhadram <varkab@cdac.in>
+On Sun, Jul 13, 2014 at 08:25:13PM -0300, Lucas Tanure wrote:
+> Kernel coding style. Remove useless else statement after return.
+> Changes from v1 and v2: Fix warning for mixed declarations and code.
+> Declaration of "struct binder_transaction *next" made outside of while,
+> and initialized with NULL. 
 
-This patch moves the remove functionalities after the probe
-so that we can see the registered and released resources properly.
-Every driver follows the same concept.
+Don't initialize it at all.  It just disables GCC's builtin warning
+for using unitialized variables.
 
-Signed-off-by: Varka Bhadram <varkab@cdac.in>
----
- drivers/net/ethernet/amd/amd8111e.c |   25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/net/ethernet/amd/amd8111e.c b/drivers/net/ethernet/amd/amd8111e.c
-index 068dc7c..ddd09e8 100644
---- a/drivers/net/ethernet/amd/amd8111e.c
-+++ b/drivers/net/ethernet/amd/amd8111e.c
-@@ -1701,18 +1701,6 @@ static int amd8111e_resume(struct pci_dev *pci_dev)
- 	return 0;
- }
- 
--
--static void amd8111e_remove_one(struct pci_dev *pdev)
--{
--	struct net_device *dev = pci_get_drvdata(pdev);
--	if (dev) {
--		unregister_netdev(dev);
--		iounmap(((struct amd8111e_priv *)netdev_priv(dev))->mmio);
--		free_netdev(dev);
--		pci_release_regions(pdev);
--		pci_disable_device(pdev);
--	}
--}
- static void amd8111e_config_ipg(struct net_device* dev)
- {
- 	struct amd8111e_priv *lp = netdev_priv(dev);
-@@ -1970,6 +1958,19 @@ err_disable_pdev:
- 
- }
- 
-+static void amd8111e_remove_one(struct pci_dev *pdev)
-+{
-+	struct net_device *dev = pci_get_drvdata(pdev);
-+
-+	if (dev) {
-+		unregister_netdev(dev);
-+		iounmap(((struct amd8111e_priv *)netdev_priv(dev))->mmio);
-+		free_netdev(dev);
-+		pci_release_regions(pdev);
-+		pci_disable_device(pdev);
-+	}
-+}
-+
- static struct pci_driver amd8111e_driver = {
- 	.name   	= MODULE_NAME,
- 	.id_table	= amd8111e_pci_tbl,
--- 
-1.7.9.5
+regards,
+dan carpenter
 
