@@ -1,323 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932114AbaGNN0f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 09:26:35 -0400
-Received: from mail-yk0-f169.google.com ([209.85.160.169]:34366 "EHLO
-	mail-yk0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754850AbaGNN02 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 09:26:28 -0400
-Message-ID: <53C3DA88.8060004@gmail.com>
-Date: Mon, 14 Jul 2014 09:26:32 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S932137AbaGNN1C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 09:27:02 -0400
+Received: from void.printf.net ([89.145.121.20]:36401 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754686AbaGNN0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 09:26:53 -0400
+From: Chris Ball <chris@printf.net>
+To: "Fu\, Zhonghui" <zhonghui.fu@linux.intel.com>
+Cc: Jaehoon Chung <jh80.chung@samsung.com>, ulf.hansson@linaro.org,
+        tgih.jun@samsung.com, aaron.lu@intel.com, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jackey.shen@amd.com,
+        gregkh@linuxfoundation.org
+Subject: Re: One bug of SDHCI driver
+References: <53B249A4.2040404@linux.intel.com>
+	<53B57B23.4020607@linux.intel.com> <53B61403.7040602@samsung.com>
+	<53B968EB.60401@linux.intel.com> <53BC164E.4040900@linux.intel.com>
+Date: Mon, 14 Jul 2014 14:26:36 +0100
+In-Reply-To: <53BC164E.4040900@linux.intel.com> (Zhonghui Fu's message of
+	"Wed, 09 Jul 2014 00:03:26 +0800")
+Message-ID: <86zjgcjckz.fsf@void.printf.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Josh Triplett <josh@freedesktop.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Iulia Manda <iulia.manda21@gmail.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] rcutorture: fixes for printing message buffer
-References: <1405110617-16498-1-git-send-email-bobby.prani@gmail.com> <1405111021.2796.23.camel@joe-AO725>
-In-Reply-To: <1405111021.2796.23.camel@joe-AO725>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2014 04:37 PM, Joe Perches wrote:
-> On Fri, 2014-07-11 at 16:30 -0400, Pranith Kumar wrote:
->> Use snprintf() instead of sprintf() for writing to the message buffer.
->> Also use vmalloc() for the allocation of the message buffer. Since pr_alert() is
->> limited to print LOG_LINE_MAX characters at a time, we print the buffer in a
->> loop one line at a time.
->>
->> I tested this using the parse-torture.sh script as follows:
-> 
-> Did you see the patch I sent you?
-> https://lkml.org/lkml/2014/6/20/604
-> 
-> It doesn't need a vmalloc.
-> What is wrong with that approach?
-> 
-> 
+Hi Zhonghui,
 
-Hi Paul,
+On Tue, Jul 08 2014, Fu, Zhonghui wrote:
+> Why add "mmc->caps2 |= MMC_CAP2_SDIO_IRQ_NOTHREAD;" ?  How to fix this bug?
+>
+> Could you please give out some idea about this bug?
 
-Please find an alternative patch as suggested by Joe.
+Jaehoon already gave you a patch to fix this bug.  Here it is again in
+proper patch form.  Please can you test it and let us know whether it
+fixes the crash?  Thanks.
 
 
->From 0a3050d5ac910cb5f488e0a0dfe44cde06af1259 Mon Sep 17 00:00:00 2001
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Mon, 14 Jul 2014 09:16:15 -0400
-Subject: [PATCH 1/1] rcu: Use pr_alert/pr_cont for printing logs
+From: Chris Ball <chris@printf.net>
+Subject: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process() on sdio thread
 
-User pr_alert/pr_cont for printing the logs from rcutorture module directly
-instead of writing it to a buffer and then printing it. This allows us from not
-having to allocate such buffers. Also remove a resulting empty function.
+781e989cf59 ("mmc: sdhci: convert to new SDIO IRQ handling") and
+bf3b5ec66bd ("mmc: sdio_irq: rework sdio irq handling") disabled
+the use of our own custom threaded IRQ handler, but left in an
+unconditional wake_up_process() on that handler at resume-time.
 
-I tested this using the parse-torture.sh script as follows:
-
-$ dmesg | grep torture > log.txt
-$ bash parse-torture.sh log.txt test
-$
-
-There were no warnings which means that parsing went fine.
-
-Signed-off-by: Joe Percesh <joe@perches.com>
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+Reported-by: Fu, Zhonghui <zhonghui.fu@linux.intel.com>
+[Patch suggested by Jaehoon Chung]
+Signed-off-by: Chris Ball <chris@printf.net>
 ---
- include/linux/torture.h |   2 +-
- kernel/rcu/rcutorture.c | 127 +++++++++++++++++++++---------------------------
- kernel/torture.c        |  16 +++---
- 3 files changed, 64 insertions(+), 81 deletions(-)
+ drivers/mmc/core/sdio.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/torture.h b/include/linux/torture.h
-index 5ca58fc..fec46f8 100644
---- a/include/linux/torture.h
-+++ b/include/linux/torture.h
-@@ -51,7 +51,7 @@
- 
- /* Definitions for online/offline exerciser. */
- int torture_onoff_init(long ooholdoff, long oointerval);
--char *torture_onoff_stats(char *page);
-+void torture_onoff_stats(void);
- bool torture_onoff_failures(void);
- 
- /* Low-rider random number generator. */
-diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
-index 5ec0452..3e35f1b 100644
---- a/kernel/rcu/rcutorture.c
-+++ b/kernel/rcu/rcutorture.c
-@@ -242,7 +242,7 @@ struct rcu_torture_ops {
- 	void (*call)(struct rcu_head *head, void (*func)(struct rcu_head *rcu));
- 	void (*cb_barrier)(void);
- 	void (*fqs)(void);
--	void (*stats)(char *page);
-+	void (*stats)(void);
- 	int irq_capable;
- 	int can_boost;
- 	const char *name;
-@@ -525,21 +525,21 @@ static void srcu_torture_barrier(void)
- 	srcu_barrier(&srcu_ctl);
- }
- 
--static void srcu_torture_stats(char *page)
-+static void srcu_torture_stats(void)
- {
- 	int cpu;
- 	int idx = srcu_ctl.completed & 0x1;
- 
--	page += sprintf(page, "%s%s per-CPU(idx=%d):",
--		       torture_type, TORTURE_FLAG, idx);
-+	pr_alert("%s%s per-CPU(idx=%d):",
-+		 torture_type, TORTURE_FLAG, idx);
- 	for_each_possible_cpu(cpu) {
- 		long c0, c1;
- 
- 		c0 = (long)per_cpu_ptr(srcu_ctl.per_cpu_ref, cpu)->c[!idx];
- 		c1 = (long)per_cpu_ptr(srcu_ctl.per_cpu_ref, cpu)->c[idx];
--		page += sprintf(page, " %d(%ld,%ld)", cpu, c0, c1);
-+		pr_cont(" %d(%ld,%ld)", cpu, c0, c1);
+diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
+index e636d9e..2a128e2 100644
+--- a/drivers/mmc/core/sdio.c
++++ b/drivers/mmc/core/sdio.c
+@@ -992,7 +992,8 @@ static int mmc_sdio_resume(struct mmc_host *host)
+ 		}
  	}
--	sprintf(page, "\n");
-+	pr_cont("\n");
- }
  
- static void srcu_torture_synchronize_expedited(void)
-@@ -1031,10 +1031,15 @@ rcu_torture_reader(void *arg)
- }
- 
- /*
-- * Create an RCU-torture statistics message in the specified buffer.
-+ * Print torture statistics.  Caller must ensure that there is only
-+ * one call to this function at a given time!!!  This is normally
-+ * accomplished by relying on the module system to only have one copy
-+ * of the module loaded, and then by giving the rcu_torture_stats
-+ * kthread full control (or the init/cleanup functions when rcu_torture_stats
-+ * thread is not running).
-  */
- static void
--rcu_torture_printk(char *page)
-+rcu_torture_stats_print(void)
- {
- 	int cpu;
- 	int i;
-@@ -1052,55 +1057,60 @@ rcu_torture_printk(char *page)
- 		if (pipesummary[i] != 0)
- 			break;
- 	}
--	page += sprintf(page, "%s%s ", torture_type, TORTURE_FLAG);
--	page += sprintf(page,
--		       "rtc: %p ver: %lu tfle: %d rta: %d rtaf: %d rtf: %d ",
--		       rcu_torture_current,
--		       rcu_torture_current_version,
--		       list_empty(&rcu_torture_freelist),
--		       atomic_read(&n_rcu_torture_alloc),
--		       atomic_read(&n_rcu_torture_alloc_fail),
--		       atomic_read(&n_rcu_torture_free));
--	page += sprintf(page, "rtmbe: %d rtbke: %ld rtbre: %ld ",
--		       atomic_read(&n_rcu_torture_mberror),
--		       n_rcu_torture_boost_ktrerror,
--		       n_rcu_torture_boost_rterror);
--	page += sprintf(page, "rtbf: %ld rtb: %ld nt: %ld ",
--		       n_rcu_torture_boost_failure,
--		       n_rcu_torture_boosts,
--		       n_rcu_torture_timers);
--	page = torture_onoff_stats(page);
--	page += sprintf(page, "barrier: %ld/%ld:%ld",
--		       n_barrier_successes,
--		       n_barrier_attempts,
--		       n_rcu_torture_barrier_error);
--	page += sprintf(page, "\n%s%s ", torture_type, TORTURE_FLAG);
-+
-+	pr_alert("%s%s ", torture_type, TORTURE_FLAG);
-+	pr_cont("rtc: %p ver: %lu tfle: %d rta: %d rtaf: %d rtf: %d ",
-+		rcu_torture_current,
-+		rcu_torture_current_version,
-+		list_empty(&rcu_torture_freelist),
-+		atomic_read(&n_rcu_torture_alloc),
-+		atomic_read(&n_rcu_torture_alloc_fail),
-+		atomic_read(&n_rcu_torture_free));
-+	pr_cont("rtmbe: %d rtbke: %ld rtbre: %ld ",
-+		atomic_read(&n_rcu_torture_mberror),
-+		n_rcu_torture_boost_ktrerror,
-+		n_rcu_torture_boost_rterror);
-+	pr_cont("rtbf: %ld rtb: %ld nt: %ld ",
-+		n_rcu_torture_boost_failure,
-+		n_rcu_torture_boosts,
-+		n_rcu_torture_timers);
-+	torture_onoff_stats();
-+	pr_cont("barrier: %ld/%ld:%ld\n",
-+		n_barrier_successes,
-+		n_barrier_attempts,
-+		n_rcu_torture_barrier_error);
-+
-+	pr_alert("%s%s ", torture_type, TORTURE_FLAG);
- 	if (atomic_read(&n_rcu_torture_mberror) != 0 ||
- 	    n_rcu_torture_barrier_error != 0 ||
- 	    n_rcu_torture_boost_ktrerror != 0 ||
- 	    n_rcu_torture_boost_rterror != 0 ||
- 	    n_rcu_torture_boost_failure != 0 ||
- 	    i > 1) {
--		page += sprintf(page, "!!! ");
-+		pr_cont("%s", "!!! ");
- 		atomic_inc(&n_rcu_torture_error);
- 		WARN_ON_ONCE(1);
- 	}
--	page += sprintf(page, "Reader Pipe: ");
-+	pr_cont("Reader Pipe: ");
- 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++)
--		page += sprintf(page, " %ld", pipesummary[i]);
--	page += sprintf(page, "\n%s%s ", torture_type, TORTURE_FLAG);
--	page += sprintf(page, "Reader Batch: ");
-+		pr_cont(" %ld", pipesummary[i]);
-+	pr_cont("\n");
-+
-+	pr_alert("%s%s ", torture_type, TORTURE_FLAG);
-+	pr_cont("Reader Batch: ");
- 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++)
--		page += sprintf(page, " %ld", batchsummary[i]);
--	page += sprintf(page, "\n%s%s ", torture_type, TORTURE_FLAG);
--	page += sprintf(page, "Free-Block Circulation: ");
-+		pr_cont(" %ld", batchsummary[i]);
-+	pr_cont("\n");
-+
-+	pr_alert("%s%s ", torture_type, TORTURE_FLAG);
-+	pr_cont("Free-Block Circulation: ");
- 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++) {
--		page += sprintf(page, " %d",
--			       atomic_read(&rcu_torture_wcount[i]));
-+		pr_cont(" %d", atomic_read(&rcu_torture_wcount[i]));
- 	}
--	page += sprintf(page, "\n");
-+	pr_cont("\n");
-+
- 	if (cur_ops->stats)
--		cur_ops->stats(page);
-+		cur_ops->stats();
- 	if (rtcv_snap == rcu_torture_current_version &&
- 	    rcu_torture_current != NULL) {
- 		int __maybe_unused flags;
-@@ -1109,10 +1119,9 @@ rcu_torture_printk(char *page)
- 
- 		rcutorture_get_gp_data(cur_ops->ttype,
- 				       &flags, &gpnum, &completed);
--		page += sprintf(page,
--				"??? Writer stall state %d g%lu c%lu f%#x\n",
--				rcu_torture_writer_state,
--				gpnum, completed, flags);
-+		pr_alert("??? Writer stall state %d g%lu c%lu f%#x\n",
-+			 rcu_torture_writer_state,
-+			 gpnum, completed, flags);
- 		show_rcu_gp_kthreads();
- 		rcutorture_trace_dump();
- 	}
-@@ -1120,30 +1129,6 @@ rcu_torture_printk(char *page)
- }
- 
- /*
-- * Print torture statistics.  Caller must ensure that there is only
-- * one call to this function at a given time!!!  This is normally
-- * accomplished by relying on the module system to only have one copy
-- * of the module loaded, and then by giving the rcu_torture_stats
-- * kthread full control (or the init/cleanup functions when rcu_torture_stats
-- * thread is not running).
-- */
--static void
--rcu_torture_stats_print(void)
--{
--	int size = nr_cpu_ids * 200 + 8192;
--	char *buf;
--
--	buf = kmalloc(size, GFP_KERNEL);
--	if (!buf) {
--		pr_err("rcu-torture: Out of memory, need: %d", size);
--		return;
--	}
--	rcu_torture_printk(buf);
--	pr_alert("%s", buf);
--	kfree(buf);
--}
--
--/*
-  * Periodically prints torture statistics, if periodic statistics printing
-  * was specified via the stat_interval module parameter.
-  */
-diff --git a/kernel/torture.c b/kernel/torture.c
-index d600af2..ede8b25 100644
---- a/kernel/torture.c
-+++ b/kernel/torture.c
-@@ -211,18 +211,16 @@ EXPORT_SYMBOL_GPL(torture_onoff_cleanup);
- /*
-  * Print online/offline testing statistics.
-  */
--char *torture_onoff_stats(char *page)
-+void torture_onoff_stats(void)
- {
- #ifdef CONFIG_HOTPLUG_CPU
--	page += sprintf(page,
--		       "onoff: %ld/%ld:%ld/%ld %d,%d:%d,%d %lu:%lu (HZ=%d) ",
--		       n_online_successes, n_online_attempts,
--		       n_offline_successes, n_offline_attempts,
--		       min_online, max_online,
--		       min_offline, max_offline,
--		       sum_online, sum_offline, HZ);
-+	pr_cont("onoff: %ld/%ld:%ld/%ld %d,%d:%d,%d %lu:%lu (HZ=%d) ",
-+		n_online_successes, n_online_attempts,
-+		n_offline_successes, n_offline_attempts,
-+		min_online, max_online,
-+		min_offline, max_offline,
-+		sum_online, sum_offline, HZ);
- #endif /* #ifdef CONFIG_HOTPLUG_CPU */
--	return page;
- }
- EXPORT_SYMBOL_GPL(torture_onoff_stats);
+-	if (!err && host->sdio_irqs)
++	if (!err && host->sdio_irqs &&
++	    !(host->quirks & MMC_CAP2_SDIO_IRQ_NOTHREAD))
+ 		wake_up_process(host->sdio_irq_thread);
+ 	mmc_release_host(host);
  
 -- 
-2.0.1
-
+Chris Ball   <http://printf.net/>
