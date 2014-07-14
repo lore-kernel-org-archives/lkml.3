@@ -1,37 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538AbaGNRDJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 13:03:09 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:21442 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755965AbaGNRDE (ORCPT
+	id S932175AbaGNRDX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 13:03:23 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:4334 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756275AbaGNRDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 13:03:04 -0400
-Date: Mon, 14 Jul 2014 18:02:49 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH 13/38] arm64: clean-up uapi Kbuild file
-Message-ID: <20140714170249.GJ1112@arm.com>
-References: <20140714150609.GA28358@ravnborg.org>
- <1405350546-28467-1-git-send-email-sam@ravnborg.org>
- <1405350546-28467-13-git-send-email-sam@ravnborg.org>
+	Mon, 14 Jul 2014 13:03:07 -0400
+Date: Mon, 14 Jul 2014 13:03:02 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH v3] rcu: define tracepoint strings only if
+ CONFIG_TRACING is set
+Message-ID: <20140714130302.59644d42@gandalf.local.home>
+In-Reply-To: <1405184509-12601-1-git-send-email-ard.biesheuvel@linaro.org>
+References: <1405184509-12601-1-git-send-email-ard.biesheuvel@linaro.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405350546-28467-13-git-send-email-sam@ravnborg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 04:08:41PM +0100, Sam Ravnborg wrote:
-> Remove redundant assignments.
-> 
-> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Will Deacon <will.deacon@arm.com>
+On Sat, 12 Jul 2014 19:01:49 +0200
+Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+> Commit f7f7bac9cb1c ("rcu: Have the RCU tracepoints use the tracepoint_string
+> infrastructure") unconditionally populates the __tracepoint_str input section,
+> but this section is not assigned an output section if CONFIG_TRACING is not set.
+> This results in the __tracepoint_str turning up in unexpected places, i.e.,
+> after _edata.
+> 
+> Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+> Cc: rostedt@goodmis.org
+> Cc: paulmck@linux.vnet.ibm.com
+> ---
+> v3:
+> - make definition of <var>_varname conditional as well
+> v2:
+> - s/DEFINE_TPS/DEFINE_RCU_TPS/
+> 
+>  kernel/rcu/tree.c | 15 ++++++++++++---
+>  1 file changed, 12 insertions(+), 3 deletions(-)
+> 
+
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
+
+> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> index f1ba77363fbb..0756a4696007 100644
+> --- a/kernel/rcu/tree.c
+> +++ b/kernel/rcu/tree.c
+> @@ -79,9 +79,18 @@ static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
+>   * the tracing userspace tools to be able to decipher the string
+>   * address to the matching string.
+>   */
+> -#define RCU_STATE_INITIALIZER(sname, sabbr, cr) \
+> +#ifdef CONFIG_TRACING
+> +# define DEFINE_RCU_TPS(sname) \
+>  static char sname##_varname[] = #sname; \
+> -static const char *tp_##sname##_varname __used __tracepoint_string = sname##_varname; \
+> +static const char *tp_##sname##_varname __used __tracepoint_string = sname##_varname;
+> +# define RCU_STATE_NAME(sname) sname##_varname
+> +#else
+> +# define DEFINE_RCU_TPS(sname)
+> +# define RCU_STATE_NAME(sname) __stringify(sname)
+> +#endif
+> +
+> +#define RCU_STATE_INITIALIZER(sname, sabbr, cr) \
+> +DEFINE_RCU_TPS(sname) \
+>  struct rcu_state sname##_state = { \
+>  	.level = { &sname##_state.node[0] }, \
+>  	.call = cr, \
+> @@ -93,7 +102,7 @@ struct rcu_state sname##_state = { \
+>  	.orphan_donetail = &sname##_state.orphan_donelist, \
+>  	.barrier_mutex = __MUTEX_INITIALIZER(sname##_state.barrier_mutex), \
+>  	.onoff_mutex = __MUTEX_INITIALIZER(sname##_state.onoff_mutex), \
+> -	.name = sname##_varname, \
+> +	.name = RCU_STATE_NAME(sname), \
+>  	.abbr = sabbr, \
+>  }; \
+>  DEFINE_PER_CPU(struct rcu_data, sname##_data)
+
