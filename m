@@ -1,185 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789AbaGNOGj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 10:06:39 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:48336 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755673AbaGNOG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 10:06:27 -0400
-Date: Mon, 14 Jul 2014 16:06:10 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-Cc: dougthompson@xmission.com, m.chehab@samsung.com,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] EDAC, MCE_AMD: Add MCE decoding for F15h M60h
-Message-ID: <20140714140610.GB25115@pd.tnic>
-References: <1405098795-4678-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+	id S1754621AbaGNOJU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 10:09:20 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53021 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754450AbaGNOJN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 10:09:13 -0400
+Message-ID: <53C3E480.9050509@pengutronix.de>
+Date: Mon, 14 Jul 2014 16:09:04 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1405098795-4678-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Stefan Agner <stefan@agner.ch>
+CC: shawn.guo@freescale.com, kernel@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/4] can: flexcan: add vf610 support for FlexCAN
+References: <cover.1405322992.git.stefan@agner.ch> <3b047f9eb64ef01a958d83706af8f7e973358420.1405322992.git.stefan@agner.ch> <53C38FD9.8070403@pengutronix.de> <5b42e19c9741a0b54420ade131f84408@agner.ch>
+In-Reply-To: <5b42e19c9741a0b54420ade131f84408@agner.ch>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="RsDh3gfSSlDMq3q3tChvg3qj3osDcVfBT"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 12:13:15PM -0500, Aravind Gopalakrishnan wrote:
-> Add decoding logic for new Fam15h model 60h.
-> 
-> Tested using mce_amd_inj module and works fine.
-> 
-> Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-> ---
->  drivers/edac/mce_amd.c | 59 ++++++++++++++++++++++++++++++++++++++++++++++----
->  1 file changed, 55 insertions(+), 4 deletions(-)
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--RsDh3gfSSlDMq3q3tChvg3qj3osDcVfBT
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Ok, I simplified it a bit, those switch-case(s) with a single case
-statement are not as readable as a simple if-else. I'd appreciate it if
-you ran it to check whether it still decodes fine before I apply it.
+On 07/14/2014 03:37 PM, Stefan Agner wrote:
+> Am 2014-07-14 10:07, schrieb Marc Kleine-Budde:
+> <snip>
+>>> +	/*
+>>> +	 * On Vybrid, disable memory error detection interrupts
+>>> +	 * and freeze mode.
+>>> +	 * This also works around errata e5295 which generates
+>>> +	 * false positive memory errors and put the device in
+>>> +	 * freeze mode.
+>>> +	 */
+>>> +	if (priv->devtype_data->features & FLEXCAN_HAS_MECR_FEATURES) {
+>>> +		/*
+>>> +		 * Follow the protocol as described in "Detection
+>>> +		 * and Correction of Memory Errors" to write to
+>>> +		 * MECR register
+>>> +		 */
+>>
+>>
+>> One nitpick regarding the comment. In driver/net, the preferred
+>> multi-line comment style is
+>>
+>=20
+> Just a few lines above that one, another multi-line comment is written
+> with the empty line at start... With this changed to the net comment
+> style, we would end up in a mixed style... What do you think?
 
-Thanks.
+Okay, keep the commenting style of the driver.
 
----
-From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-Subject: [PATCH] EDAC, MCE, AMD: Add MCE decoding for F15h M60h
-Date:	Fri, 11 Jul 2014 12:13:15 -0500
-Message-ID: <1405098795-4678-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
-X-Mailer: git-send-email 1.8.1.2
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=utf-8
-Status: RO
+Marc
 
-Add decoding logic for new Fam15h model 60h.
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
-Tested using mce_amd_inj module and works fine.
 
-Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-Link: http://lkml.kernel.org/r/1405098795-4678-1-git-send-email-Aravind.Gopalakrishnan@amd.com
-[ Boris: simplify a bit. ]
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- drivers/edac/mce_amd.c | 59 ++++++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 55 insertions(+), 4 deletions(-)
+--RsDh3gfSSlDMq3q3tChvg3qj3osDcVfBT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Index: linux/drivers/edac/mce_amd.c
-===================================================================
---- linux.orig/drivers/edac/mce_amd.c	2014-07-14 15:37:55.997137526 +0200
-+++ linux/drivers/edac/mce_amd.c	2014-07-14 15:55:01.081151137 +0200
-@@ -78,7 +78,8 @@ static const char * const f15h_mc1_mce_d
- 	"uop queue",
- 	"insn buffer",
- 	"predecode buffer",
--	"fetch address FIFO"
-+	"fetch address FIFO",
-+	"dispatch uop queue"
- };
- 
- static const char * const f15h_mc2_mce_desc[] = {
-@@ -267,6 +268,12 @@ static bool f15h_mc0_mce(u16 ec, u8 xec)
- 			pr_cont("System Read Data Error.\n");
- 		else
- 			pr_cont(" Internal error condition type %d.\n", xec);
-+	} else if (INT_ERROR(ec)) {
-+		if (xec <= 0x1f)
-+			pr_cont("Hardware Assert.\n");
-+		else
-+			ret = false;
-+
- 	} else
- 		ret = false;
- 
-@@ -373,7 +380,7 @@ static bool f15h_mc1_mce(u16 ec, u8 xec)
- 		pr_cont("%s.\n", f15h_mc1_mce_desc[xec-4]);
- 		break;
- 
--	case 0x11 ... 0x14:
-+	case 0x11 ... 0x15:
- 		pr_cont("Decoder %s parity error.\n", f15h_mc1_mce_desc[xec-4]);
- 		break;
- 
-@@ -397,10 +404,20 @@ static void decode_mc1_mce(struct mce *m
- 		bool k8 = (boot_cpu_data.x86 == 0xf && (m->status & BIT_64(58)));
- 
- 		pr_cont("during %s.\n", (k8 ? "system linefill" : "NB data read"));
-+	} else if (INT_ERROR(ec)) {
-+		if (xec <= 0x3f)
-+			pr_cont("Hardware Assert.\n");
-+		else
-+			goto wrong_mc1_mce;
- 	} else if (fam_ops->mc1_mce(ec, xec))
- 		;
- 	else
--		pr_emerg(HW_ERR "Corrupted MC1 MCE info?\n");
-+		goto wrong_mc1_mce;
-+
-+	return;
-+
-+wrong_mc1_mce:
-+	pr_emerg(HW_ERR "Corrupted MC1 MCE info?\n");
- }
- 
- static bool k8_mc2_mce(u16 ec, u8 xec)
-@@ -468,6 +485,11 @@ static bool f15h_mc2_mce(u16 ec, u8 xec)
- 		default:
- 			ret = false;
- 		}
-+	} else if (INT_ERROR(ec)) {
-+		if (xec <= 0x3f)
-+			pr_cont("Hardware Assert.\n");
-+		else
-+			ret = false;
- 	}
- 
- 	return ret;
-@@ -615,6 +637,7 @@ static void decode_mc4_mce(struct mce *m
- static void decode_mc5_mce(struct mce *m)
- {
- 	struct cpuinfo_x86 *c = &boot_cpu_data;
-+	u16 ec = EC(m->status);
- 	u8 xec = XEC(m->status, xec_mask);
- 
- 	if (c->x86 == 0xf || c->x86 == 0x11)
-@@ -622,6 +645,14 @@ static void decode_mc5_mce(struct mce *m
- 
- 	pr_emerg(HW_ERR "MC5 Error: ");
- 
-+	if (INT_ERROR(ec)) {
-+		if (xec <= 0x1f) {
-+			pr_cont("Hardware Assert.\n");
-+			return;
-+		} else
-+			goto wrong_mc5_mce;
-+	}
-+
- 	if (xec == 0x0 || xec == 0xc)
- 		pr_cont("%s.\n", mc5_mce_desc[xec]);
- 	else if (xec <= 0xd)
-@@ -642,6 +673,10 @@ static void decode_mc6_mce(struct mce *m
- 	pr_emerg(HW_ERR "MC6 Error: ");
- 
- 	switch (xec) {
-+	case 0x0:
-+		pr_cont("Hardware Assertion");
-+		break;
-+
- 	case 0x1:
- 		pr_cont("Free List");
- 		break;
-@@ -857,7 +892,8 @@ static int __init mce_amd_init(void)
- 		break;
- 
- 	case 0x15:
--		xec_mask = 0x1f;
-+		xec_mask = c->x86_model == 0x60 ? 0x3f : 0x1f;
-+
- 		fam_ops->mc0_mce = f15h_mc0_mce;
- 		fam_ops->mc1_mce = f15h_mc1_mce;
- 		fam_ops->mc2_mce = f15h_mc2_mce;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
 
--- 
-Regards/Gruss,
-    Boris.
+iEYEARECAAYFAlPD5IAACgkQjTAFq1RaXHMY5gCfeUbTin+poDkUmRCsvu/o4IfJ
+/egAoI0S5pF3bJ5s04/YPaol2N6kWmkZ
+=MyXP
+-----END PGP SIGNATURE-----
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+--RsDh3gfSSlDMq3q3tChvg3qj3osDcVfBT--
