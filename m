@@ -1,139 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757351AbaGNVUO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 17:20:14 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:40349 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756896AbaGNVUM (ORCPT
+	id S1757377AbaGNVUk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 17:20:40 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:37981 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756997AbaGNVUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 17:20:12 -0400
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: johannes@sipsolutions.net
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        john@x109.net, chaitanya.mgit@gmail.com, linville@tuxdriver.com,
-        gregkh@linuxfoundation.org, tiwai@suse.de, keescook@chromium.org,
-        nbd@openwrt.org, "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: [PATCH] wireless: fixup genregdb.awk for remove of antenna gain from wireless-regd
-Date: Mon, 14 Jul 2014 14:19:49 -0700
-Message-Id: <1405372789-24733-1-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 1.9.1
+	Mon, 14 Jul 2014 17:20:38 -0400
+Message-ID: <53C449A3.2010404@codeaurora.org>
+Date: Mon, 14 Jul 2014 14:20:35 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: Linus Walleij <linus.walleij@linaro.org>, Bjorn Andersson <bjorn@kryo.se>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 2/3] pinctrl: Device tree bindings for Qualcomm pm8xxx
+ gpio block
+References: <1404782785-1824-1-git-send-email-bjorn.andersson@sonymobile.com>  <1404782785-1824-3-git-send-email-bjorn.andersson@sonymobile.com>  <CACRpkdZ2hekBGe1-9GV-amqi50heghWhXJ9raW7P_Nif_Ci88g@mail.gmail.com>  <CAJAp7OghZoTXutxw7hAsq1XA_wAhOXDNFO0tz8u9ceQ1fD9W1w@mail.gmail.com>  <CACRpkdai=q3nmPk5OWQWn_UMdXmqcbFXJ90rxREBG9k6gdy88Q@mail.gmail.com>  <53C095EA.90000@codeaurora.org> <1405346335.13503.25.camel@iivanov-dev>
+In-Reply-To: <1405346335.13503.25.camel@iivanov-dev>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+On 07/14/14 06:58, Ivan T. Ivanov wrote:
+> On Fri, 2014-07-11 at 18:56 -0700, Stephen Boyd wrote:
+>> On 07/10/14 02:53, Linus Walleij wrote:
+>>> On Wed, Jul 9, 2014 at 11:18 PM, Bjorn Andersson <bjorn@kryo.se> wrote:
+>>>> On Wed, Jul 9, 2014 at 1:53 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>>>>> On Tue, Jul 8, 2014 at 3:26 AM, Bjorn Andersson
+>>>>> <bjorn.andersson@sonymobile.com> wrote:
+>>>>>
+>>>>> +- function:
+>>>>> +       Usage: optional
+>>>>> +       Value type: <string>
+>>>>> +       Definition: Specify the alternative function to be configured for the
+>>>>> +                   specified pins.  Valid values are:
+>>>>> +                       "normal",
+>>>>> +                       "paired",
+>>>>> +                       "func1",
+>>>>> +                       "func2",
+>>>>> +                       "dtest1",
+>>>>> +                       "dtest2",
+>>>>> +                       "dtest3",
+>>>>> +                       "dtest4"
+>>>>> These are a bit ambigous, why doesn't the driver present functions that
+>>>>> are more specific than "func1", "func2"? Or "dtest1"?
+>>>> I agree, unfortunately I have only seen traces of the actual function matrix;
+>>>> for pm8xxx I have no documentation and for pm8x41 they are only listed as
+>>>> func[1-2] and dtest[1-4].
+>>>>
+>>>> Maybe if someone at Qualcomm could release such a list we could provide a
+>>>> proper table instead.
+>>> I guess Stephen Boyd can help us. (?)
+>> Ok. "normal" is pretty much gpio mode, i.e. don't mux anything. "paired"
+>> is where we take the output of the gpio next to it and loop it back into
+>> this gpio (and vice versa). So gpio1 is paired with gpio2, gpio 3 is
+>> paired with gpio 4, etc. This allows us to make level translators by
+>> choosing different supply voltages for the paired gpios. "func1" and
+>> "func2" are used for muxing things internally. "dtest" is used to mux
+>> specific things out for testing purposes, not really used in any
+>> end-products but still useful while debugging. I can provide the
+>> function to pin mapping if necessary. There are lots of pmics.
+> Thank you Stephen. If understand it right, this is more like option for
+> the pin when it is GPIO. Next generation of PMIC's have support for pin
+> acting like analog-input/output and current sink.
 
-Since "wireless-regdb: remove antenna gain" was merged in the
-wireless-regdb tree, the awk script parser has been incompatible
-with the 'official' regulatory database.  This fixes that up.
-Without this change the max EIRP is set to 0 making 802.11 devices
-useless.
+Isn't this document only for the gpios? I think you're talking about the
+MPPs, which also exist on these generation of pmics. We should probably
+avoid mixing the two (gpios and mpps) in one binding because they're
+really different hardware.
 
-The fragile nature of the awk parser must be replaced, but ideas
-over how to do that in the most scalable way are being reviewed.
-In the meantime update the documentation for CFG80211_INTERNAL_REGDB
-so folks are aware of expectations for now.
+>  So I will like
+> to keep "function" property for selecting one of the above functions.
+> Choosing between "normal", "paired"... options in QPNP pinctrl driver
+> is supported trough passing values, defined in DT header file, to
+> "output-high" property. Please don't kill me :-).
 
-Reported-by: John Walker <john@x109.net>
-Reported-by: Krishna Chaitanya <chaitanya.mgit@gmail.com>
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
----
+Overloading output-high to choose the MPP mode doesn't seem to follow
+the generic pinconfig binding. Does output-high even take a value? Why
+can't we use the function property?
 
-!!! Note !!!
+>> BTW, I see that power-source has made a comeback. What are the units? 
+> Documentation states it is "a custom format" :-).
+>
+>
 
-This means older kernels that upgrade wireless-regdb and use
-CFG80211_INTERNAL_REGDB are bust too and they should then merge
-the latest updates to the awk script if they want to synch the
-wireless-regdb files with the kernel builds. The affected Linux
-distributions would be the users of CFG80211_INTERNAL_REGDB which
-should consists of OpenWrt which is reported to have this fixed
-already and mobile platforms.
+Ah, I was looking in the binding document. It looks like the code
+comment around PIN_CONFIG_POWER_SOURCE says custom format. It's
+concerning though. From what I can tell commit 5b81d55c4ccf (pinctrl:
+remove bindings for pinconf options needing more thought, 2013-06-25)
+removed this option along with slew-rate because they specifically
+didn't have any units associated with them. But then slew-rate came back
+in commit 8ba3f4d00078 (pinctrl: Adds slew-rate, input-enable/disable,
+2013-12-11) even though it didn't have units and then power-source came
+back without units too. Linus, what's going on?
 
-We are looking at a way to not have to deal with parsers all together
-at build time, for that discussion see:
-
-https://lkml.org/lkml/2014/7/14/706
-
- net/wireless/Kconfig      |  6 ++++++
- net/wireless/genregdb.awk | 35 ++++++++++++++++++++++-------------
- 2 files changed, 28 insertions(+), 13 deletions(-)
-
-diff --git a/net/wireless/Kconfig b/net/wireless/Kconfig
-index 405f3c4..29c8675 100644
---- a/net/wireless/Kconfig
-+++ b/net/wireless/Kconfig
-@@ -162,6 +162,12 @@ config CFG80211_INTERNAL_REGDB
- 	  and includes code to query that database.  This is an alternative
- 	  to using CRDA for defining regulatory rules for the kernel.
- 
-+	  Using this option requires some parsing of the db.txt at build time,
-+	  the parser will be upkept with the latest wireless-regdb updates but
-+	  older wireless-regdb formats will be ignored. The parser may later
-+	  be replaced to avoid issues with conflicts on versions of
-+	  wireless-regdb.
-+
- 	  For details see:
- 
- 	  http://wireless.kernel.org/en/developers/Regulatory
-diff --git a/net/wireless/genregdb.awk b/net/wireless/genregdb.awk
-index 40c37fc..baf2426 100644
---- a/net/wireless/genregdb.awk
-+++ b/net/wireless/genregdb.awk
-@@ -51,32 +51,41 @@ function parse_country_head() {
- 
- function parse_reg_rule()
- {
-+	flag_starts_at = 7
-+
- 	start = $1
- 	sub(/\(/, "", start)
- 	end = $3
- 	bw = $5
- 	sub(/\),/, "", bw)
--	gain = $6
--	sub(/\(/, "", gain)
--	sub(/,/, "", gain)
--	power = $7
--	sub(/\)/, "", power)
--	sub(/,/, "", power)
-+	gain = 0
-+	power = $6
- 	# power might be in mW...
--	units = $8
-+	units = $7
-+	dfs_cac = 0
-+
-+	sub(/\(/, "", power)
-+	sub(/\),/, "", power)
-+	sub(/\),/, "", units)
- 	sub(/\)/, "", units)
--	sub(/,/, "", units)
--	dfs_cac = $9
-+
- 	if (units == "mW") {
-+		flag_starts_at = 8
- 		power = 10 * log(power)/log(10)
-+		if ($8 ~ /[[:digit:]]/) {
-+			flag_starts_at = 9
-+			dfs_cac = $8
-+		}
- 	} else {
--		dfs_cac = $8
-+		if ($7 ~ /[[:digit:]]/) {
-+			flag_starts_at = 8
-+			dfs_cac = $7
-+		}
- 	}
--	sub(/,/, "", dfs_cac)
- 	sub(/\(/, "", dfs_cac)
--	sub(/\)/, "", dfs_cac)
-+	sub(/\),/, "", dfs_cac)
- 	flagstr = ""
--	for (i=8; i<=NF; i++)
-+	for (i=flag_starts_at; i<=NF; i++)
- 		flagstr = flagstr $i
- 	split(flagstr, flagarray, ",")
- 	flags = ""
 -- 
-2.0.1
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
