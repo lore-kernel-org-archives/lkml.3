@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755496AbaGNLmt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 07:42:49 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:63037 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754598AbaGNLjG (ORCPT
+	id S1755512AbaGNLnD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 07:43:03 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:49972 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755147AbaGNLjD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 07:39:06 -0400
+	Mon, 14 Jul 2014 07:39:03 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: kvm@vger.kernel.org
-Subject: [PATCH 07/19] KVM: emulate: simplify writeback
-Date: Mon, 14 Jul 2014 13:38:31 +0200
-Message-Id: <1405337923-4776-8-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 06/19] KVM: emulate: speed up emulated moves
+Date: Mon, 14 Jul 2014 13:38:30 +0200
+Message-Id: <1405337923-4776-7-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1405337923-4776-1-git-send-email-pbonzini@redhat.com>
 References: <1405337923-4776-1-git-send-email-pbonzini@redhat.com>
@@ -20,65 +20,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "if/return" checks are useless, because we return X86EMUL_CONTINUE
-anyway if we do not return.
+We can just blindly move all 16 bytes of ctxt->src's value to ctxt->dst.
+write_register_operand will take care of writing only the lower bytes.
 
-Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
+Avoiding a call to memcpy (the compiler optimizes it out) gains about
+200 cycles on kvm-unit-tests for register-to-register moves, and makes
+them about as fast as arithmetic instructions.
+
+We could perhaps get a larger speedup by moving all instructions _except_
+moves out of x86_emulate_insn, removing opcode_len, and replacing the
+switch statement with an inlined em_mov.
+
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- arch/x86/kvm/emulate.c | 28 +++++++++++-----------------
- 1 file changed, 11 insertions(+), 17 deletions(-)
+ arch/x86/include/asm/kvm_emulate.h | 2 +-
+ arch/x86/kvm/emulate.c             | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/arch/x86/include/asm/kvm_emulate.h b/arch/x86/include/asm/kvm_emulate.h
+index 0e0151c13b2c..432447370044 100644
+--- a/arch/x86/include/asm/kvm_emulate.h
++++ b/arch/x86/include/asm/kvm_emulate.h
+@@ -233,7 +233,7 @@ struct operand {
+ 	union {
+ 		unsigned long val;
+ 		u64 val64;
+-		char valptr[sizeof(unsigned long) + 2];
++		char valptr[sizeof(sse128_t)];
+ 		sse128_t vec_val;
+ 		u64 mm_val;
+ 		void *data;
 diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 27f677ef703e..32d3da82da2e 100644
+index ea56dae3e67c..27f677ef703e 100644
 --- a/arch/x86/kvm/emulate.c
 +++ b/arch/x86/kvm/emulate.c
-@@ -1588,34 +1588,28 @@ static void write_register_operand(struct operand *op)
+@@ -2990,7 +2990,7 @@ static int em_rdpmc(struct x86_emulate_ctxt *ctxt)
  
- static int writeback(struct x86_emulate_ctxt *ctxt, struct operand *op)
+ static int em_mov(struct x86_emulate_ctxt *ctxt)
  {
--	int rc;
--
- 	switch (op->type) {
- 	case OP_REG:
- 		write_register_operand(op);
- 		break;
- 	case OP_MEM:
- 		if (ctxt->lock_prefix)
--			rc = segmented_cmpxchg(ctxt,
-+			return segmented_cmpxchg(ctxt,
-+						 op->addr.mem,
-+						 &op->orig_val,
-+						 &op->val,
-+						 op->bytes);
-+		else
-+			return segmented_write(ctxt,
- 					       op->addr.mem,
--					       &op->orig_val,
- 					       &op->val,
- 					       op->bytes);
--		else
--			rc = segmented_write(ctxt,
--					     op->addr.mem,
--					     &op->val,
--					     op->bytes);
--		if (rc != X86EMUL_CONTINUE)
--			return rc;
- 		break;
- 	case OP_MEM_STR:
--		rc = segmented_write(ctxt,
--				op->addr.mem,
--				op->data,
--				op->bytes * op->count);
--		if (rc != X86EMUL_CONTINUE)
--			return rc;
-+		return segmented_write(ctxt,
-+				       op->addr.mem,
-+				       op->data,
-+				       op->bytes * op->count);
- 		break;
- 	case OP_XMM:
- 		write_sse_reg(ctxt, &op->vec_val, op->addr.xmm);
+-	memcpy(ctxt->dst.valptr, ctxt->src.valptr, ctxt->op_bytes);
++	memcpy(ctxt->dst.valptr, ctxt->src.valptr, sizeof(ctxt->src.valptr));
+ 	return X86EMUL_CONTINUE;
+ }
+ 
 -- 
 1.8.3.1
 
