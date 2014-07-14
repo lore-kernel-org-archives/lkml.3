@@ -1,105 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756368AbaGNS4Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 14:56:25 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:33038 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752433AbaGNS4R (ORCPT
+	id S1756803AbaGNS6x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 14:58:53 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37414 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754872AbaGNS6o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 14:56:17 -0400
+	Mon, 14 Jul 2014 14:58:44 -0400
+Date: Mon, 14 Jul 2014 19:58:30 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: Laurent Pinchart <Laurent.pinchart@ideasonboard.com>,
+        linux-spi@vger.kernel.org, dmaengine@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20140714185830.GE6800@sirena.org.uk>
+References: <1405094802-14401-1-git-send-email-geert+renesas@glider.be>
 MIME-Version: 1.0
-In-Reply-To: <53C4254A.3040900@infradead.org>
-References: <1405361664-5210-1-git-send-email-xerofoify@gmail.com>
-	<53C4201E.3020708@infradead.org>
-	<1405363234.13661.12.camel@x220>
-	<53C4254A.3040900@infradead.org>
-Date: Mon, 14 Jul 2014 14:56:17 -0400
-Message-ID: <CAPDOMVhUiMehj6U5GbukhWiTQ9FObvqphKZv4qzHieH_FsBh5A@mail.gmail.com>
-Subject: Re: [PATCH] mach-s3c64xx: Remove all defintions not related to regs-clocks
-From: Nick Krause <xerofoify@gmail.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Paul Bolle <pebolle@tiscali.nl>, ben-linux <ben-linux@fluff.org>,
-        "kgene.kim" <kgene.kim@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "tomasz.figa" <tomasz.figa@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="oSWi0jal9INzEBQ4"
+Content-Disposition: inline
+In-Reply-To: <1405094802-14401-1-git-send-email-geert+renesas@glider.be>
+X-Cookie: Above all else -- sky.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] spi: rspi: Fix leaking of unused DMA descriptors
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 2:45 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
-> On 07/14/14 11:40, Paul Bolle wrote:
->> On Mon, 2014-07-14 at 11:23 -0700, Randy Dunlap wrote:
->>> On 07/14/14 11:14, Nicholas Krause wrote:
->>>> This patch addresses the fix me message in this file that states to
->>>> remove all definitions not related to reg-clocks in this header
->>>> file.
->>>>
->>>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
->>>> ---
->>>>  arch/arm/mach-s3c64xx/include/mach/regs-clock.h | 22 +---------------------
->>>>  1 file changed, 1 insertion(+), 21 deletions(-)
->>>>
->>>> diff --git a/arch/arm/mach-s3c64xx/include/mach/regs-cloclinux-kernel@vger.kernel.orgk.h b/arch/arm/mach-s3c64xx/include/mach/regs-clock.h
->>>> index 4f44aac..46e64cc 100644
->>>> --- a/arch/arm/mach-s3c64xx/include/mach/regs-clock.h
->>>> +++ b/arch/arm/mach-s3c64xx/include/mach/regs-clock.h
->>>> @@ -15,24 +15,4 @@
->>>>  #ifndef __PLAT_REGS_CLOCK_H
->>>>  #define __PLAT_REGS_CLOCK_H __FILE__
->>>>
->>>> -/*
->>>> - * FIXME: Remove remaining definitions
->>>> - */
->>>> -
->>>> -#define S3C_CLKREG(x)              (S3C_VA_SYS + (x))
->>>> -
->>>> -#define S3C_PCLK_GATE              S3C_CLKREG(0x34)
->>>> -#define S3C6410_CLK_SRC2   S3C_CLKREG(0x10C)
->>>> -#define S3C_MEM_SYS_CFG            S3C_CLKREG(0x120)
->>>> -
->>>> -/* PCLK GATE Registers */
->>>> -#define S3C_CLKCON_PCLK_UART3              (1<<4)
->>>> -#define S3C_CLKCON_PCLK_UART2              (1<<3)
->>>> -#define S3C_CLKCON_PCLK_UART1              (1<<2)
->>>> -#define S3C_CLKCON_PCLK_UART0              (1<<1)
->>>> -
->>>> -/* MEM_SYS_CFG */
->>>> -#define MEM_SYS_CFG_INDEP_CF               0x4000
->>>> -#define MEM_SYS_CFG_EBI_FIX_PRI_CFCON      0x30
->>>> -
->>>> -#endif /* _PLAT_REGS_CLOCK_H */
->>>> +/#endif /* _PLAT_REGS_CLOCK_H */
->>>
->>> I don't know about the other changes, but that last line looks like an error.
->>> Did you build anything that #includes this header file?
->>
->> I just did
->>     git grep -n S3C_CLKCON_PCLK_UART
->>
->> It was just a guess. I did not cherry pick the defines that covers! The
->> output of that command is, I think, pretty clear.
->>
->> Nicholas, I think you've been told already to stop doing what you're
->> doing again here. I try not to use colorful language on the net, but
->> you're really pushing me here.
->>
->> Please go find something other to do than grepping the kernel tree for
->> FIXMEs!
->linux-kernel@vger.kernel.org
-> Yes.
->
-> FIXMEs are not a suggested starting point for kernel beginners.
-> If they were easy to fix, they would already be fixed or most likely
-> would never have been introduced.
->
->
-> --
-> ~Randy
-Randy,
-My mistake I didn't check the tree for files linking to these definitions.
-I will be more careful ,next time.
-Niclk
+
+--oSWi0jal9INzEBQ4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Fri, Jul 11, 2014 at 06:06:41PM +0200, Geert Uytterhoeven wrote:
+> If dmaengine_prep_slave_sg() or dmaengine_submit() fail, we may leak
+> unused DMA descriptors.
+
+This doesn't apply, I guess it may depend on some of your other DMA
+related patches but it's not immediately obvious and it's not been sent
+as part of a series.  Can you please check and/or clarify?
+
+--oSWi0jal9INzEBQ4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTxChTAAoJELSic+t+oim9g7EQAJeYMuasQqoVvgP1S8Z2xupD
+nvaMENfzBMTpl7vUQqUQvQhc7focMqUmRh1xI7CpiptNcjRF7Dli2n87AnXBAk9R
+1FpggZ7PEy7Q58ey+LkgEJyj53XRWcqc6LhybYzqJfjxUXnInZr3Eu5nUwrImNGL
+faKVpIHzMD3f9FVkOkT5YMM/k3ZfS2QKCP067MLF89UN4Ppka12bKbMAJN3d95U1
+6GrZ0ctqBuSAPqfyvz0mRp1TX02knUexH56aCXx1bccPfyiNCjDMW4MH2ctSVchJ
+BcLQhCtC4lb1/61VFo4PfUUX5t3MY2yt0Z8sQwJPcvrHezSk0wxP9hjNWZBTi6Pm
+fyDK2b3a79uoanwUttJubfNwC1eImv3hiyPD7ke5SpbprnNhinYOq4BN2Ru69V2j
+TR5DopUoIeNCoUi7BGPUK1/c1hZVtDsxgDxm43e7sZg0nTIcVDlC/rqRd2KlwDc/
+GrK3UWk0fJJLh3yndyhdcPBuqFcU5eJKjmgbmt/wRb0XJg5iq0rjnIzuHAcoEr5C
+zVIenZOCHOrxIkvrVR9CgmtLXGplg73vMN28xZdJB+9ZEbXhXCr3nYRLpBsIHbIz
+6shIolz9T81idMKV1PIN8Lu11ZkCZdH8I3NgKrhe3J8LX8EHffOnT4pIAXoy7ZVN
+Fe9CLKeUnb+7AmfDXANd
+=hKt0
+-----END PGP SIGNATURE-----
+
+--oSWi0jal9INzEBQ4--
