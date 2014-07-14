@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402AbaGNLki (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 07:40:38 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:39755 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755255AbaGNLj3 (ORCPT
+	id S1755427AbaGNLkl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 07:40:41 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:39232 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755240AbaGNLjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 07:39:29 -0400
+	Mon, 14 Jul 2014 07:39:25 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: kvm@vger.kernel.org
-Subject: [PATCH 19/19] KVM: x86: use kvm_read_guest_page for emulator accesses
-Date: Mon, 14 Jul 2014 13:38:43 +0200
-Message-Id: <1405337923-4776-20-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 17/19] KVM: emulate: put pointers in the fetch_cache
+Date: Mon, 14 Jul 2014 13:38:41 +0200
+Message-Id: <1405337923-4776-18-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1405337923-4776-1-git-send-email-pbonzini@redhat.com>
 References: <1405337923-4776-1-git-send-email-pbonzini@redhat.com>
@@ -20,64 +20,141 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Emulator accesses are always done a page at a time, either by the emulator
-itself (for fetches) or because we need to query the MMU for address
-translations.  Speed up these accesses by using kvm_read_guest_page
-and, in the case of fetches, by inlining kvm_read_guest_virt_helper and
-dropping the loop around kvm_read_guest_page.
-
-This final tweak saves 30-100 more clock cycles (4-10%), bringing the
-count (as measured by kvm-unit-tests) down to 720-1100 clock cycles on
-a Sandy Bridge Xeon host, compared to 2300-3200 before the whole series
-and 925-1700 after the first two low-hanging fruit changes.
+This simplifies the code a bit, especially the overflow checks.
 
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- arch/x86/kvm/x86.c | 23 +++++++++++++++++++----
- 1 file changed, 19 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/kvm_emulate.h |  4 ++--
+ arch/x86/kvm/emulate.c             | 34 +++++++++++++++-------------------
+ arch/x86/kvm/trace.h               |  6 +++---
+ 3 files changed, 20 insertions(+), 24 deletions(-)
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 905edf8557e7..f750b69ca443 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -4085,7 +4085,8 @@ static int kvm_read_guest_virt_helper(gva_t addr, void *val, unsigned int bytes,
+diff --git a/arch/x86/include/asm/kvm_emulate.h b/arch/x86/include/asm/kvm_emulate.h
+index fcf58cd25ebd..eb181178fe0b 100644
+--- a/arch/x86/include/asm/kvm_emulate.h
++++ b/arch/x86/include/asm/kvm_emulate.h
+@@ -242,8 +242,8 @@ struct operand {
  
- 		if (gpa == UNMAPPED_GVA)
- 			return X86EMUL_PROPAGATE_FAULT;
--		ret = kvm_read_guest(vcpu->kvm, gpa, data, toread);
-+		ret = kvm_read_guest_page(vcpu->kvm, gpa >> PAGE_SHIFT, data,
-+					  offset, toread);
- 		if (ret < 0) {
- 			r = X86EMUL_IO_NEEDED;
- 			goto out;
-@@ -4106,10 +4107,24 @@ static int kvm_fetch_guest_virt(struct x86_emulate_ctxt *ctxt,
+ struct fetch_cache {
+ 	u8 data[15];
+-	unsigned long start;
+-	unsigned long end;
++	u8 *ptr;
++	u8 *end;
+ };
+ 
+ struct read_cache {
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index 02c668aca2b6..c16314807756 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -710,16 +710,15 @@ static int segmented_read_std(struct x86_emulate_ctxt *ctxt,
+  */
+ static int __do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt, int op_size)
  {
- 	struct kvm_vcpu *vcpu = emul_to_vcpu(ctxt);
- 	u32 access = (kvm_x86_ops->get_cpl(vcpu) == 3) ? PFERR_USER_MASK : 0;
-+	unsigned offset;
-+	int ret;
+-	struct fetch_cache *fc = &ctxt->fetch;
+ 	int rc;
+-	int size, cur_size;
++	int size;
+ 	unsigned long linear;
+-
++	int cur_size = ctxt->fetch.end - ctxt->fetch.data;
+ 	struct segmented_address addr = { .seg = VCPU_SREG_CS,
+-					  .ea  = fc->end };
+-	cur_size = fc->end - fc->start;
+-	size = min(15UL - cur_size,
+-		   PAGE_SIZE - offset_in_page(fc->end));
++					   .ea = ctxt->eip + cur_size };
++
++	size = min(15UL ^ cur_size,
++		   PAGE_SIZE - offset_in_page(addr.ea));
  
--	return kvm_read_guest_virt_helper(addr, val, bytes, vcpu,
--					  access | PFERR_FETCH_MASK,
--					  exception);
-+	/* Inline kvm_read_guest_virt_helper for speed.  */
-+	gpa_t gpa = vcpu->arch.walk_mmu->gva_to_gpa(vcpu, addr, access|PFERR_FETCH_MASK,
-+						    exception);
-+	if (unlikely(gpa == UNMAPPED_GVA))
-+		return X86EMUL_PROPAGATE_FAULT;
-+
-+	offset = addr & (PAGE_SIZE-1);
-+	if (WARN_ON(offset + bytes > PAGE_SIZE))
-+		bytes = (unsigned)PAGE_SIZE - offset;
-+	ret = kvm_read_guest_page(vcpu->kvm, gpa >> PAGE_SHIFT, val,
-+				  offset, bytes);
-+	if (unlikely(ret < 0))
-+		return X86EMUL_IO_NEEDED;
-+
-+	return X86EMUL_CONTINUE;
+ 	/*
+ 	 * One instruction can only straddle two pages,
+@@ -732,19 +731,18 @@ static int __do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt, int op_size)
+ 	rc = __linearize(ctxt, addr, size, false, true, &linear);
+ 	if (unlikely(rc != X86EMUL_CONTINUE))
+ 		return rc;
+-	rc = ctxt->ops->fetch(ctxt, linear, fc->data + cur_size,
++	rc = ctxt->ops->fetch(ctxt, linear, ctxt->fetch.end,
+ 			      size, &ctxt->exception);
+ 	if (unlikely(rc != X86EMUL_CONTINUE))
+ 		return rc;
+-	fc->end += size;
++	ctxt->fetch.end += size;
+ 	return X86EMUL_CONTINUE;
  }
  
- int kvm_read_guest_virt(struct x86_emulate_ctxt *ctxt,
+ static __always_inline int do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt,
+ 					       unsigned size)
+ {
+-	/* We have to be careful about overflow! */
+-	if (unlikely(ctxt->_eip > ctxt->fetch.end - size))
++	if (unlikely(ctxt->fetch.end - ctxt->fetch.ptr < size))
+ 		return __do_insn_fetch_bytes(ctxt, size);
+ 	else
+ 		return X86EMUL_CONTINUE;
+@@ -753,26 +751,24 @@ static __always_inline int do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt,
+ /* Fetch next part of the instruction being emulated. */
+ #define insn_fetch(_type, _ctxt)					\
+ ({	_type _x;							\
+-	struct fetch_cache *_fc;					\
+ 									\
+ 	rc = do_insn_fetch_bytes(_ctxt, sizeof(_type));			\
+ 	if (rc != X86EMUL_CONTINUE)					\
+ 		goto done;						\
+-	_fc = &ctxt->fetch;						\
+-	_x = *(_type __aligned(1) *) &_fc->data[ctxt->_eip - _fc->start]; \
+ 	ctxt->_eip += sizeof(_type);					\
++	_x = *(_type __aligned(1) *) ctxt->fetch.ptr;			\
++	ctxt->fetch.ptr += sizeof(_type);				\
+ 	_x;								\
+ })
+ 
+ #define insn_fetch_arr(_arr, _size, _ctxt)				\
+ ({									\
+-	struct fetch_cache *_fc;					\
+ 	rc = do_insn_fetch_bytes(_ctxt, _size);				\
+ 	if (rc != X86EMUL_CONTINUE)					\
+ 		goto done;						\
+-	_fc = &ctxt->fetch;						\
+-	memcpy(_arr, &_fc->data[ctxt->_eip - _fc->start], _size);	\
+ 	ctxt->_eip += (_size);						\
++	memcpy(_arr, ctxt->fetch.ptr, _size);				\
++	ctxt->fetch.ptr += (_size);					\
+ })
+ 
+ /*
+@@ -4228,8 +4224,8 @@ int x86_decode_insn(struct x86_emulate_ctxt *ctxt, void *insn, int insn_len)
+ 	ctxt->memop.type = OP_NONE;
+ 	ctxt->memopp = NULL;
+ 	ctxt->_eip = ctxt->eip;
+-	ctxt->fetch.start = ctxt->_eip;
+-	ctxt->fetch.end = ctxt->fetch.start + insn_len;
++	ctxt->fetch.ptr = ctxt->fetch.data;
++	ctxt->fetch.end = ctxt->fetch.data + insn_len;
+ 	ctxt->opcode_len = 1;
+ 	if (insn_len > 0)
+ 		memcpy(ctxt->fetch.data, insn, insn_len);
+diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
+index 33574c95220d..e850a7d332be 100644
+--- a/arch/x86/kvm/trace.h
++++ b/arch/x86/kvm/trace.h
+@@ -721,10 +721,10 @@ TRACE_EVENT(kvm_emulate_insn,
+ 		),
+ 
+ 	TP_fast_assign(
+-		__entry->rip = vcpu->arch.emulate_ctxt.fetch.start;
+ 		__entry->csbase = kvm_x86_ops->get_segment_base(vcpu, VCPU_SREG_CS);
+-		__entry->len = vcpu->arch.emulate_ctxt._eip
+-			       - vcpu->arch.emulate_ctxt.fetch.start;
++		__entry->len = vcpu->arch.emulate_ctxt.fetch.ptr
++			       - vcpu->arch.emulate_ctxt.fetch.data;
++		__entry->rip = vcpu->arch.emulate_ctxt._eip - __entry->len;
+ 		memcpy(__entry->insn,
+ 		       vcpu->arch.emulate_ctxt.fetch.data,
+ 		       15);
 -- 
 1.8.3.1
+
 
