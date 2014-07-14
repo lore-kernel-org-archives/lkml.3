@@ -1,102 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757393AbaGNUWY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 16:22:24 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:40709 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757084AbaGNUUy (ORCPT
+	id S1757415AbaGNUWs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 16:22:48 -0400
+Received: from dehamd003.servertools24.de ([31.47.254.18]:50382 "EHLO
+	dehamd003.servertools24.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757078AbaGNUWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 16:20:54 -0400
-From: Marek Belisko <marek@goldelico.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, bcousson@baylibre.com, tony@atomide.com
-Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        hns@goldelico.com, Marek Belisko <marek@goldelico.com>
-Subject: [PATCH 3/5] arm: dts: Add gta04a3 model
-Date: Mon, 14 Jul 2014 22:20:26 +0200
-Message-Id: <1405369228-27197-4-git-send-email-marek@goldelico.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405369228-27197-1-git-send-email-marek@goldelico.com>
-References: <1405369228-27197-1-git-send-email-marek@goldelico.com>
+	Mon, 14 Jul 2014 16:22:44 -0400
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+Message-ID: <53C43BDF.2070403@ladisch.de>
+Date: Mon, 14 Jul 2014 22:21:51 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+CC: Borislav Petkov <bp@alien8.de>, jdelvare@suse.de, linux@roeck-us.net,
+        rdunlap@infradead.org, bhelgaas@google.com, lm-sensors@lm-sensors.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH] hwmon, k10temp: Add support for AMD F15h M60h processor
+References: <1405369388-12729-1-git-send-email-Aravind.Gopalakrishnan@amd.com> <20140714195128.GA25124@pd.tnic>
+In-Reply-To: <20140714195128.GA25124@pd.tnic>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Marek Belisko <marek@goldelico.com>
----
- arch/arm/boot/dts/Makefile          |  1 +
- arch/arm/boot/dts/omap3-gta04a3.dts | 48 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 49 insertions(+)
- create mode 100644 arch/arm/boot/dts/omap3-gta04a3.dts
+Borislav Petkov wrote:
+> On Mon, Jul 14, 2014 at 03:23:08PM -0500, Aravind Gopalakrishnan wrote:
+>> +	if (boot_cpu_data.x86 == 0x15 && boot_cpu_data.x86_model == 0x60) {
+>> +		pci_bus_write_config_dword(pdev->bus, PCI_DEVFN(0, 0),
+>> +					   NB_SMU_IND_ADDR, IND_ADDR_OFFSET);
+>> +		pci_bus_read_config_dword(pdev->bus, PCI_DEVFN(0, 0),
+>> +					  NB_SMU_IND_DATA, &regval);
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 9be9edc..05aa484 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -279,6 +279,7 @@ dtb-$(CONFIG_ARCH_OMAP3) += am3517-craneboard.dtb \
- 	omap3-devkit8000.dtb \
- 	omap3-evm.dtb \
- 	omap3-evm-37xx.dtb \
-+	omap3-gta04a3.dtb \
- 	omap3-gta04a4.dtb \
- 	omap3-igep0020.dtb \
- 	omap3-igep0030.dtb \
-diff --git a/arch/arm/boot/dts/omap3-gta04a3.dts b/arch/arm/boot/dts/omap3-gta04a3.dts
-new file mode 100644
-index 0000000..3099a89
---- /dev/null
-+++ b/arch/arm/boot/dts/omap3-gta04a3.dts
-@@ -0,0 +1,48 @@
-+/*
-+ * Copyright (C) 2014 H. Nikolaus Schaller <hns@goldelico.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include "omap3-gta04.dtsi"
-+
-+/ {
-+	model = "Goldelico GTA04A3";
-+};
-+
-+&i2c2 {
-+
-+	/* alternate accelerometer that might be installed on some GTA04A3 boards */
-+	lis302@1d {
-+		compatible = "st,lis331dlh", "st,lis3lv02d";
-+		reg = <0x1d>;
-+		interrupt-parent = <&gpio3>;
-+		interrupts = <18 (IRQ_TYPE_LEVEL_HIGH | IRQ_TYPE_EDGE_RISING)>;
-+		Vdd-supply = <&vaux2>;
-+		Vdd_IO-supply = <&vaux2>;
-+
-+		st,click-single-x;
-+		st,click-single-y;
-+		st,click-single-z;
-+		st,click-thresh-x = <8>;
-+		st,click-thresh-y = <8>;
-+		st,click-thresh-z = <10>;
-+		st,click-click-time-limit = <9>;
-+		st,click-latency = <50>;
-+		st,irq1-click;
-+		st,wakeup-x-lo;
-+		st,wakeup-x-hi;
-+		st,wakeup-y-lo;
-+		st,wakeup-y-hi;
-+		st,wakeup-z-lo;
-+		st,wakeup-z-hi;
-+		st,min-limit-x = <32>;
-+		st,min-limit-y = <3>;
-+		st,min-limit-z = <3>;
-+		st,max-limit-x = <3>;
-+		st,max-limit-y = <32>;
-+		st,max-limit-z = <32>;
-+	};
-+};
--- 
-1.9.1
+How do you prevent races with any other code that accesses some indirect
+register?
 
+>> +
+>> +	} else
+>> +		pci_read_config_dword(pdev, REG_REPORTED_TEMPERATURE, &regval);
+
+Why the empty line?  Also, use braces in both branches.
+
+
+Regards,
+Clemens
