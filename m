@@ -1,126 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040AbaGNF4D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 01:56:03 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:7427 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752573AbaGNFz4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 01:55:56 -0400
-From: "Li, Zhen-Hua" <zhen-hual@hp.com>
-To: <gregkh@linuxfoundation.org>, <jslaby@suse.cz>,
-        <linux-kernel@vger.kernel.org>
-Cc: "Li, Zhen-Hua" <zhen-hual@hp.com>
-Subject: [PATCH 1/1] driver/tty: Fix a warning in check_tty_count
-Date: Mon, 14 Jul 2014 13:54:17 +0800
-Message-Id: <1405317257-5491-1-git-send-email-zhen-hual@hp.com>
-X-Mailer: git-send-email 2.0.0-rc0
+	id S1753025AbaGNGEQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 02:04:16 -0400
+Received: from mail-bn1blp0184.outbound.protection.outlook.com ([207.46.163.184]:19305
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752717AbaGNGEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 02:04:12 -0400
+Date: Mon, 14 Jul 2014 14:04:01 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Stefan Agner <stefan@agner.ch>
+CC: Marc Kleine-Budde <mkl@pengutronix.de>, <wg@grandegger.com>,
+        <kernel@pengutronix.de>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-can@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] can: flexcan: add vf61x support for flexcan
+Message-ID: <20140714060344.GB2197@dragon>
+References: <1405075933-22317-1-git-send-email-stefan@agner.ch>
+ <53BFD401.8030101@pengutronix.de> <dac76ccd134f41b86f00352d10cfae4b@agner.ch>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <dac76ccd134f41b86f00352d10cfae4b@agner.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(979002)(6009001)(189002)(199002)(57704003)(51704005)(24454002)(83506001)(107046002)(81342001)(77982001)(21056001)(33716001)(76482001)(20776003)(80022001)(97736001)(64706001)(104016003)(81542001)(47776003)(33656002)(50466002)(74502001)(105606002)(4396001)(83072002)(86362001)(57986006)(26826002)(110136001)(87936001)(6806004)(97756001)(19580405001)(69596002)(85852003)(106466001)(102836001)(95666004)(92726001)(92566001)(81156004)(23726002)(54356999)(76176999)(84676001)(31966008)(74662001)(50986999)(46406003)(83322001)(46102001)(68736004)(99396002)(79102001)(85306003)(44976005)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB381;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02723F29C4
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Shawn.Guo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When there are to many open/close on a tty device in the same time,
-there may be a warning like:
-  Warning: dev (ttyS0) tty->count(4) != #fd's(3) in tty_release_dev
+On Fri, Jul 11, 2014 at 03:58:37PM +0200, Stefan Agner wrote:
+> >> @@ -362,7 +374,7 @@
+> >>
+> >>  			esdhc1: esdhc@400b2000 {
+> >>  				compatible = "fsl,imx53-esdhc";
+> >> -				reg = <0x400b2000 0x4000>;
+> >> +				reg = <0x400b2000 0x1000>;
+> > 
+> > What's that doing here? :)
+> 
+> That's an error I just stumbled upon.
 
-That's because tty->count and files in tty->tty_files are not synchronized
-in time.
-So I add a lock to avoid this.
+I do not see why it's an error.  From Table 2-1. System Memory Map in
+i.MX53 RM, the size of ESDHC1 is 16K.
 
-Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
----
- drivers/tty/tty_io.c | 13 +++++++++----
- include/linux/tty.h  |  1 +
- 2 files changed, 10 insertions(+), 4 deletions(-)
+Shawn
 
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 3411071..9283fc2 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -297,6 +297,7 @@ static int check_tty_count(struct tty_struct *tty, const char *routine)
- 	struct list_head *p;
- 	int count = 0;
- 
-+	spin_lock(&tty->count_lock);
- 	spin_lock(&tty_files_lock);
- 	list_for_each(p, &tty->tty_files) {
- 		count++;
-@@ -310,8 +311,10 @@ static int check_tty_count(struct tty_struct *tty, const char *routine)
- 		printk(KERN_WARNING "Warning: dev (%s) tty->count(%d) "
- 				    "!= #fd's(%d) in %s\n",
- 		       tty->name, tty->count, count, routine);
-+		spin_unlock(&tty->count_lock);
- 		return count;
- 	}
-+	spin_unlock(&tty->count_lock);
- #endif
- 	return 0;
- }
-@@ -1337,7 +1340,6 @@ int tty_standard_install(struct tty_driver *driver, struct tty_struct *tty)
- 		return ret;
- 
- 	tty_driver_kref_get(driver);
--	tty->count++;
- 	driver->ttys[tty->index] = tty;
- 	return 0;
- }
-@@ -1408,7 +1410,6 @@ static int tty_reopen(struct tty_struct *tty)
- 
- 		tty->link->count++;
- 	}
--	tty->count++;
- 
- 	WARN_ON(!tty->ldisc);
- 
-@@ -1796,6 +1797,7 @@ int tty_release(struct inode *inode, struct file *filp)
- 	 * We must *not* drop the tty_mutex until we ensure that a further
- 	 * entry into tty_open can not pick up this tty.
- 	 */
-+	spin_lock(&tty->count_lock);
- 	if (pty_master) {
- 		if (--o_tty->count < 0) {
- 			printk(KERN_WARNING "%s: bad pty slave count (%d) for %s\n",
-@@ -1819,7 +1821,7 @@ int tty_release(struct inode *inode, struct file *filp)
- 	 *    something that needs to be handled for hangups.
- 	 */
- 	tty_del_file(filp);
--
-+	spin_unlock(&tty->count_lock);
- 	/*
- 	 * Perform some housekeeping before deciding whether to return.
- 	 *
-@@ -2046,8 +2048,10 @@ retry_open:
- 		retval = PTR_ERR(tty);
- 		goto err_file;
- 	}
--
-+	spin_lock(&tty->count_lock);
-+	tty->count++;
- 	tty_add_file(tty, filp);
-+	spin_unlock(&tty->count_lock);
- 
- 	check_tty_count(tty, __func__);
- 	if (tty->driver->type == TTY_DRIVER_TYPE_PTY &&
-@@ -3031,6 +3035,7 @@ void initialize_tty_struct(struct tty_struct *tty,
- 	INIT_WORK(&tty->hangup_work, do_tty_hangup);
- 	mutex_init(&tty->atomic_write_lock);
- 	spin_lock_init(&tty->ctrl_lock);
-+	spin_lock_init(&tty->count_lock);
- 	INIT_LIST_HEAD(&tty->tty_files);
- 	INIT_WORK(&tty->SAK_work, do_SAK_work);
- 
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 1c3316a..2959300 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -284,6 +284,7 @@ struct tty_struct {
- 	/* If the tty has a pending do_SAK, queue it here - akpm */
- 	struct work_struct SAK_work;
- 	struct tty_port *port;
-+	spinlock_t count_lock;
- };
- 
- /* Each of a tty's open files has private_data pointing to tty_file_private */
--- 
-2.0.0-rc0
-
+> I know it's not related but it's
+> such a small change... Do I need to make a separate patch for that or
+> can I include it in the FlexCAN dt commit?
