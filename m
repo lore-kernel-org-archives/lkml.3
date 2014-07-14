@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757459AbaGNWk1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 18:40:27 -0400
-Received: from na01-sn2-obe.ptr.o365filtering.com ([157.55.158.26]:39124 "EHLO
-	na01-sn2-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756749AbaGNWkW convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 18:40:22 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Sitsofe Wheeler <sitsofe@gmail.com>
-CC: KY Srinivasan <kys@microsoft.com>, "David S. Miller" <davem@davemloft.net>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: [BISECTED][REGRESSION] Loading Hyper-V network drivers is racy
- in 3.14+ on Hyper-V 2012 R2
-Thread-Topic: [BISECTED][REGRESSION] Loading Hyper-V network drivers is racy
- in 3.14+ on Hyper-V 2012 R2
-Thread-Index: AQHPmVd2lonpWupwu0Spl7Lqc9fFbZuU0/7ggACNCICABXpggIAAJvuQgAWV9wD//5q4EA==
-Date: Mon, 14 Jul 2014 22:39:48 +0000
-Message-ID: <8b68f48141a045f784c10f9c081cd51f@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-References: <20140706201800.GA10587@sucs.org>
- <941b0055b1a94c66b3a608ae67764d11@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
- <20140707181341.GA2646@sucs.org> <20140711055259.GA10317@sucs.org>
- <52afbe119b1a481aa1c80f909c3a2432@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
- <20140714213032.GA23639@sucs.org>
-In-Reply-To: <20140714213032.GA23639@sucs.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757541AbaGNWm3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 18:42:29 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:31973 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757021AbaGNWm0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 18:42:26 -0400
+Date: Mon, 14 Jul 2014 23:41:59 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Joel Schopp <joel.schopp@amd.com>
+Cc: Timur Tabi <timur@codeaurora.org>, Jungseok Lee <jungseoklee85@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "steve.capper@linaro.org" <steve.capper@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "ilho215.lee@samsung.com" <ilho215.lee@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "barami97@gmail.com" <barami97@gmail.com>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        Christoffer Dall <christoffer.dall@linaro.org>
+Subject: Re: [PATCH v6 2/7] arm64: Introduce VA_BITS and translation level
+ options
+Message-ID: <20140714224159.GA9829@arm.com>
+References: <000101cf6dc6$3b93d510$b2bb7f30$@samsung.com>
+ <CAOZdJXWCu-zHuQoAUdiieqsKqCfG9BsZariFqQP=NCgQP-zpNA@mail.gmail.com>
+ <53C43FE3.1050008@amd.com>
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.159.99;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(164054003)(377454003)(199002)(189002)(24454002)(51704005)(51914003)(13464003)(50466002)(46406003)(74502001)(68736004)(97736001)(92566001)(19580395003)(79102001)(6806004)(2656002)(21056001)(81342001)(2009001)(97756001)(4396001)(93886003)(80022001)(81542001)(74662001)(66066001)(44976005)(20776003)(47776003)(84676001)(46102001)(33646001)(77096999)(54356999)(76176999)(106466001)(106116001)(50986999)(110136001)(76482001)(85852003)(31966008)(64706001)(77982001)(83322001)(19580405001)(83072002)(99396002)(1411001)(87936001)(86612001)(107046002)(23726002)(108616002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:CH1SR01MB599;H:hybrid.exchange.microsoft.com;FPR:;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02723F29C4
-X-OriginatorOrg: msft.ccsctp.net
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C43FE3.1050008@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Sitsofe Wheeler [mailto:sitsofe@gmail.com]
-> Sent: Monday, July 14, 2014 5:31 PM
-> To: Haiyang Zhang
-> Cc: KY Srinivasan; David S. Miller; devel@linuxdriverproject.org; linux-
-> kernel@vger.kernel.org; netdev@vger.kernel.org
-> Subject: Re: [BISECTED][REGRESSION] Loading Hyper-V network drivers is
-> racy in 3.14+ on Hyper-V 2012 R2
+On Mon, Jul 14, 2014 at 09:38:59PM +0100, Joel Schopp wrote:
+> I agree that these patches would be very useful.  I just rebased my fix
+> for a VTTBR_BADDR_MASK bug on one of these patches that could be pulled
+> out independently.  See
+> https://lists.cs.columbia.edu/pipermail/kvmarm/2014-July/010480.html
 > 
-> On Fri, Jul 11, 2014 at 03:25:11PM +0000, Haiyang Zhang wrote:
-> > Since you found the commit b679ef73edc is related to this problem,
-> > could you do a simple test:
-> >   Reduce the receive buffer size back to 2MB, like below, then re-test
-> >   it, see if the problem goes away?
-> > 	drivers/net/hyperv/hyperv_net.h
-> > 	#define NETVSC_RECEIVE_BUFFER_SIZE		(1024*1024*2)	/* 2MB
-> */
-> 
-> After doing this I was able to reach over 900 reboots where the network
-> connected properly.
+> The original author Jungseok Lee is no longer available to work on
+> future versions of these patches.  I was thinking that if they didn't
+> get picked up as they are that with the original author's blessing I
+> would pick them up and keep them forward ported/resubmitted.  I have an
+> SOC to test them on.
 
-Thanks for the tests! I will make a patch that can automatically retry
-smaller memory allocs when memory is insufficient.
+The patches are pretty good. I'll give them a try tomorrow and if there
+isn't something fundamental missing I'll consider taking them for 3.17.
 
-Thanks,
-- Haiyang
-
+-- 
+Catalin
