@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025AbaGNGEQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 02:04:16 -0400
-Received: from mail-bn1blp0184.outbound.protection.outlook.com ([207.46.163.184]:19305
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752717AbaGNGEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 02:04:12 -0400
-Date: Mon, 14 Jul 2014 14:04:01 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Stefan Agner <stefan@agner.ch>
-CC: Marc Kleine-Budde <mkl@pengutronix.de>, <wg@grandegger.com>,
-        <kernel@pengutronix.de>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-can@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] can: flexcan: add vf61x support for flexcan
-Message-ID: <20140714060344.GB2197@dragon>
-References: <1405075933-22317-1-git-send-email-stefan@agner.ch>
- <53BFD401.8030101@pengutronix.de> <dac76ccd134f41b86f00352d10cfae4b@agner.ch>
+	id S1751018AbaGNGFU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 02:05:20 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:37811 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937AbaGNGFM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 02:05:12 -0400
+Date: Mon, 14 Jul 2014 08:05:09 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        Andrzej Hajda <a.hajda@samsung.com>,
+        Terje Bergstrom <tbergstrom@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 4/4] ARM: tegra: roth: add display DT node
+Message-ID: <20140714060508.GA2081@ulmo>
+References: <1404822734-8603-1-git-send-email-acourbot@nvidia.com>
+ <1404822734-8603-5-git-send-email-acourbot@nvidia.com>
+ <20140711131421.GD10827@ulmo>
+ <CAAVeFuKMU3vpDoog-k3X82OZn1VR5iRMpwo5LSeX7cPMOqfXVg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6TrnltStXW4iwmi0"
 Content-Disposition: inline
-In-Reply-To: <dac76ccd134f41b86f00352d10cfae4b@agner.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(979002)(6009001)(189002)(199002)(57704003)(51704005)(24454002)(83506001)(107046002)(81342001)(77982001)(21056001)(33716001)(76482001)(20776003)(80022001)(97736001)(64706001)(104016003)(81542001)(47776003)(33656002)(50466002)(74502001)(105606002)(4396001)(83072002)(86362001)(57986006)(26826002)(110136001)(87936001)(6806004)(97756001)(19580405001)(69596002)(85852003)(106466001)(102836001)(95666004)(92726001)(92566001)(81156004)(23726002)(54356999)(76176999)(84676001)(31966008)(74662001)(50986999)(46406003)(83322001)(46102001)(68736004)(99396002)(79102001)(85306003)(44976005)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB381;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02723F29C4
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Shawn.Guo@freescale.com; 
-X-OriginatorOrg: freescale.com
+In-Reply-To: <CAAVeFuKMU3vpDoog-k3X82OZn1VR5iRMpwo5LSeX7cPMOqfXVg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 03:58:37PM +0200, Stefan Agner wrote:
-> >> @@ -362,7 +374,7 @@
+
+--6TrnltStXW4iwmi0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Sun, Jul 13, 2014 at 11:37:14AM +0900, Alexandre Courbot wrote:
+> On Fri, Jul 11, 2014 at 10:14 PM, Thierry Reding
+> <thierry.reding@gmail.com> wrote:
+> > On Tue, Jul 08, 2014 at 09:32:14PM +0900, Alexandre Courbot wrote:
+> >> Tegra DSI support has been fixed to support continuous clock behavior =
+that
+> >> the panel used on SHIELD requires, so finally add its device tree node
+> >> since it is functional.
 > >>
-> >>  			esdhc1: esdhc@400b2000 {
-> >>  				compatible = "fsl,imx53-esdhc";
-> >> -				reg = <0x400b2000 0x4000>;
-> >> +				reg = <0x400b2000 0x1000>;
-> > 
-> > What's that doing here? :)
-> 
-> That's an error I just stumbled upon.
+> >> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> >> ---
+> >>  arch/arm/boot/dts/tegra114-roth.dts | 22 +++++++++++++++++++---
+> >>  1 file changed, 19 insertions(+), 3 deletions(-)
+> >
+> > I've applied this to Tegra's for-3.17/dt branch. Thanks.
+>=20
+> Thanks - how about the other patches of the series? Ideally this one
+> should be applied last.
 
-I do not see why it's an error.  From Table 2-1. System Memory Map in
-i.MX53 RM, the size of ESDHC1 is 16K.
+Those will go into separate trees and I haven't gotten to those yet.
+I'll probably apply them later today.
 
-Shawn
+Thierry
 
-> I know it's not related but it's
-> such a small change... Do I need to make a separate patch for that or
-> can I include it in the FlexCAN dt commit?
+--6TrnltStXW4iwmi0
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTw3MUAAoJEN0jrNd/PrOhs+8P/R71NN/w/x8f5TVbiQ5t5l7z
+s1qs+h8YRjF7k6cBG73X7l/e/7fhhn0Yq9IfaX/bGYF5YcmKEYd65orm8dOqrpcs
+c6qgCiaXr4bl+5jXt3PKHC8ehXI7SnO/pQh3DDvtHVMOuEgvq3Kg1t4JZ2Cz+WRn
+MAe72bZlj40Ue+bXXa93kr0hTna1H2XAQGd87V/bjcOBmRE84ZAb/OHODbw35QDm
+Gc7BE9gAfrqdDtvW9YntVW3CUmpvZlzZAYXqAeZTh2tE2QrDHpchOwTKbgVQM1VU
+z/j5vMqgh3Pilv1B2dzaX4GyNDIon3C2D/f7AqxP1ch5jfUk+e73yyhqjn4aPGhY
+29x0sYcvTQ8eNuXBmjtDsgXvKBx0LUMlx/w4Xae7QmUQrJJ97h8gJ6b6snwpoaEc
+ujq2mo+TALuFBU+VtLwbAB28upkgfW1es2VbERg1OdcvqLGzoOHbqGohSRGLf6Yg
+ASBm8aWr4uFLGFLugDF9H8f5kbypA5WKBA+Up1wKWs6Wh2TOAlhqtNePps2daSL4
+1q9CVT25chLS9I+m5Re7EURqlnRVvRkqUim3ctgXfQOFn7vnqhNtxFcH3a9Ijk80
+KqGlPxfZW7+Ap+tXoTGLS7cLwivB+FIee/dd1sxjh1VInBC1HMEli+NOydTsgDaf
+aNPoC8QaJgYW9zIHjwD8
+=0jhA
+-----END PGP SIGNATURE-----
+
+--6TrnltStXW4iwmi0--
