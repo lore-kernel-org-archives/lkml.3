@@ -1,111 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752954AbaGNI4t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 04:56:49 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:56810 "EHLO comal.ext.ti.com"
+	id S1753546AbaGNI5V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 04:57:21 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65277 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750737AbaGNI4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 04:56:41 -0400
-Message-ID: <53C39B32.9060001@ti.com>
-Date: Mon, 14 Jul 2014 14:26:18 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753260AbaGNI5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 04:57:14 -0400
+Message-ID: <53C39B66.4060500@nod.at>
+Date: Mon, 14 Jul 2014 10:57:10 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Sachin Kamat <sachin.kamat@samsung.com>, <linux-kernel@vger.kernel.org>
-CC: <linux-samsung-soc@vger.kernel.org>, <dianders@chromium.org>,
-        <gautam.vivek@samsung.com>, <spk.linux@gmail.com>,
-        <tomasz.figa@gmail.com>, <jg1.han@samsung.com>
-Subject: Re: [PATCH v2 1/2] phy: Kconfig: Re-organize Exynos USB 2.0 PHY configs
-References: <1404906569-28026-1-git-send-email-sachin.kamat@samsung.com>
-In-Reply-To: <1404906569-28026-1-git-send-email-sachin.kamat@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Lars-Peter Clausen <lars@metafoo.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
+        thierry.reding@gmail.com, Lennox Wu <lennox.wu@gmail.com>,
+        Chen Gang <gang.chen.5i5j@gmail.com>, Marek Vasut <marex@denx.de>,
+        Liqin Chen <liqin.linux@gmail.com>, msalter@redhat.com,
+        linux-pwm@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-watchdog@vger.kernel.org, linux-input@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Mischa.Jonker@synopsys.com, jic23@kernel.org
+Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
+ 'devm_ioremap_resource'
+References: <201407130545.23004.marex@denx.de> <CAF0htA60juBVkPo2HQKMDGcEr-wRzRVL_6JgHAa+7WVE_E8M0Q@mail.gmail.com> <53C25551.1050909@nod.at> <53C288F0.3070001@metafoo.de> <53C28C4A.70907@nod.at> <53C29015.5070607@metafoo.de> <53C291C8.6050303@nod.at> <53C296C2.30304@metafoo.de> <20140713192202.GA19090@kroah.com> <53C2DF12.6040507@nod.at> <20140713201753.GA29955@kroah.com> <53C39569.9020802@nod.at> <53C3994C.1010309@metafoo.de>
+In-Reply-To: <53C3994C.1010309@metafoo.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wednesday 09 July 2014 05:19 PM, Sachin Kamat wrote:
-> Since the USB 2.0 PHYs are required with EHCI/OHCI USB drivers and
-> USB gadget controller supported by the DWC2 gadget driver, make it
-> depend on them and default to ARCH_EXYNOS as they are meant for
-> Exynos platforms. Also, make the sub-drivers silent options enabling
-> them based on the SoC platforms that they are meant to work with. This
-> will make life easier for end users who do not have any way knowing the
-> dependencies.
-
-There is a new Exynos PHY in town, Exynos 3250. Can you rebase your patch on
-top of that?
-
-Thanks
-Kishon
+Am 14.07.2014 10:48, schrieb Lars-Peter Clausen:
+> On 07/14/2014 10:31 AM, Richard Weinberger wrote:
+>> Am 13.07.2014 22:17, schrieb Greg Kroah-Hartman:
+>>> On Sun, Jul 13, 2014 at 09:33:38PM +0200, Richard Weinberger wrote:
+>>>> Maybe we could add COMPILE_TEST to the version string too?
+>>>> Just to detect such kernels fast in user bug reports...
+>>>
+>>> What kind of bug report are you going to get?
+>>
+>> User manages to enable CONFIG_FOO by selecting COMPILE_TEST and
+>> complains that it does not work. :)
 > 
-> Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
-> ---
-> Changes since v1:
-> * Added dependency on DWC2 gadget driver as suggested by Tomasz Figa.
-> ---
->  drivers/phy/Kconfig |   35 +++++++++++------------------------
->  1 file changed, 11 insertions(+), 24 deletions(-)
-> 
-> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-> index fcdfe7c0e4a7..128f8b92b55c 100644
-> --- a/drivers/phy/Kconfig
-> +++ b/drivers/phy/Kconfig
-> @@ -123,43 +123,30 @@ config PHY_SUN4I_USB
->  config PHY_SAMSUNG_USB2
->  	tristate "Samsung USB 2.0 PHY driver"
->  	depends on HAS_IOMEM
-> +	depends on USB_EHCI_EXYNOS || USB_OHCI_EXYNOS || USB_DWC2
->  	select GENERIC_PHY
->  	select MFD_SYSCON
-> +	default ARCH_EXYNOS
->  	help
->  	  Enable this to support the Samsung USB 2.0 PHY driver for Samsung
-> -	  SoCs. This driver provides the interface for USB 2.0 PHY. Support for
-> -	  particular SoCs has to be enabled in addition to this driver. Number
-> -	  and type of supported phys depends on the SoC.
-> +	  SoCs. This driver provides the interface for USB 2.0 PHY. Support
-> +	  for particular PHYs will be enabled based on the SoC type in addition
-> +	  to this driver.
->  
->  config PHY_EXYNOS4210_USB2
-> -	bool "Support for Exynos 4210"
-> +	bool
->  	depends on PHY_SAMSUNG_USB2
-> -	depends on CPU_EXYNOS4210
-> -	help
-> -	  Enable USB PHY support for Exynos 4210. This option requires that
-> -	  Samsung USB 2.0 PHY driver is enabled and means that support for this
-> -	  particular SoC is compiled in the driver. In case of Exynos 4210 four
-> -	  phys are available - device, host, HSIC0 and HSIC1.
-> +	default CPU_EXYNOS4210
->  
->  config PHY_EXYNOS4X12_USB2
-> -	bool "Support for Exynos 4x12"
-> +	bool
->  	depends on PHY_SAMSUNG_USB2
-> -	depends on (SOC_EXYNOS4212 || SOC_EXYNOS4412)
-> -	help
-> -	  Enable USB PHY support for Exynos 4x12. This option requires that
-> -	  Samsung USB 2.0 PHY driver is enabled and means that support for this
-> -	  particular SoC is compiled in the driver. In case of Exynos 4x12 four
-> -	  phys are available - device, host, HSIC0 and HSIC1.
-> +	default SOC_EXYNOS4212 || SOC_EXYNOS4412
->  
->  config PHY_EXYNOS5250_USB2
-> -	bool "Support for Exynos 5250"
-> +	bool
->  	depends on PHY_SAMSUNG_USB2
-> -	depends on SOC_EXYNOS5250
-> -	help
-> -	  Enable USB PHY support for Exynos 5250. This option requires that
-> -	  Samsung USB 2.0 PHY driver is enabled and means that support for this
-> -	  particular SoC is compiled in the driver. In case of Exynos 5250 four
-> -	  phys are available - device, host, HSIC0 and HSIC.
-> +	default SOC_EXYNOS5250 || SOC_EXYNOS5420
->  
->  config PHY_EXYNOS5_USBDRD
->  	tristate "Exynos5 SoC series USB DRD PHY driver"
-> 
+> These drivers are typically drivers for some SoC peripheral and the device will simply physically not exist on a platform that does not provide HAS_IOMEM. This is not really any
+> different from making the driver selectable via COMPILE_TEST for any other platform. To hit the issue you'd have to instantiate a device driver instance for a device that
+> physically does not exist. This will always result in a failure.
+
+Okay, you have convinced me. :)
+
+Thanks,
+//richard
