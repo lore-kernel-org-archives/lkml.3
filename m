@@ -1,81 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753265AbaGNHt0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 03:49:26 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:33929 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252AbaGNHsk (ORCPT
+	id S1753321AbaGNHvN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 03:51:13 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:55145 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750950AbaGNHvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 03:48:40 -0400
-From: Stefan Agner <stefan@agner.ch>
-To: shawn.guo@freescale.com, mkl@pengutronix.de
-Cc: kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, stefan@agner.ch
-Subject: [PATCH v2 1/4] ARM: dts: vf610: add FlexCAN node
-Date: Mon, 14 Jul 2014 09:48:28 +0200
-Message-Id: <2be5a3885653a02dc07bf96ce086fddd71285f5a.1405322992.git.stefan@agner.ch>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <cover.1405322992.git.stefan@agner.ch>
-References: <cover.1405322992.git.stefan@agner.ch>
+	Mon, 14 Jul 2014 03:51:10 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 4/4] perf tools: Add --debug optionto set debug variable
+References: <1405202188-5029-1-git-send-email-jolsa@kernel.org>
+	<1405202188-5029-5-git-send-email-jolsa@kernel.org>
+Date: Mon, 14 Jul 2014 16:51:06 +0900
+In-Reply-To: <1405202188-5029-5-git-send-email-jolsa@kernel.org> (Jiri Olsa's
+	message of "Sat, 12 Jul 2014 23:56:28 +0200")
+Message-ID: <87egxo2xat.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add FlexCAN node for the two FlexCAN IP instances in Vybrid.
+Hi Jiri,
 
-Signed-off-by: Stefan Agner <stefan@agner.ch>
----
- arch/arm/boot/dts/vf610.dtsi | 23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
+On Sat, 12 Jul 2014 23:56:28 +0200, Jiri Olsa wrote:
+> Adding --debug option as a way to setup debug variables.
+> Starting with support for verbose, more will come.
+>
+> It's possible to use it now with report command:
+>   $ perf report --debug verbose
+>   $ perf report --debug verbose=2
+>
+> I'll need this support to add separated debug variable
+> for ordered events change in order to separate debug
+> output out of standard verbose stream.
 
-diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
-index 3fb127a..9404853 100644
---- a/arch/arm/boot/dts/vf610.dtsi
-+++ b/arch/arm/boot/dts/vf610.dtsi
-@@ -14,6 +14,8 @@
- 
- / {
- 	aliases {
-+		can0 = &can0;
-+		can1 = &can1;
- 		serial0 = &uart0;
- 		serial1 = &uart1;
- 		serial2 = &uart2;
-@@ -103,6 +105,16 @@
- 					<&clks VF610_CLK_DMAMUX1>;
- 			};
- 
-+			can0: flexcan@40020000 {
-+				compatible = "fsl,vf610-flexcan";
-+				reg = <0x40020000 0x4000>;
-+				interrupts = <0 58 IRQ_TYPE_LEVEL_HIGH>;
-+				clocks = <&clks VF610_CLK_FLEXCAN0>,
-+					 <&clks VF610_CLK_FLEXCAN0>;
-+				clock-names = "ipg", "per";
-+				status = "disabled";
-+			};
-+
- 			uart0: serial@40027000 {
- 				compatible = "fsl,vf610-lpuart";
- 				reg = <0x40027000 0x1000>;
-@@ -414,6 +426,17 @@
- 				clock-names = "nfc";
- 				status = "disabled";
- 			};
-+
-+			can1: flexcan@400d4000 {
-+				compatible = "fsl,vf610-flexcan";
-+				reg = <0x400d4000 0x4000>;
-+				interrupts = <0 59 IRQ_TYPE_LEVEL_HIGH>;
-+				clocks = <&clks VF610_CLK_FLEXCAN1>,
-+					 <&clks VF610_CLK_FLEXCAN1>;
-+				clock-names = "ipg", "per";
-+				status = "disabled";
-+			};
-+
- 		};
- 	};
- };
--- 
-2.0.1
+Hmm.. okay.  I think there'll be more users for this.
 
+
+>
+> Also removing unneeded getopt.h includes.
+
+I guess Arnaldo wants to see it as a separate change ;-)
+
+
+> +static struct variables_t {
+> +	const char *name;
+> +	int *ptr;
+> +} variables[] = {
+
+This is a too general name.  How about debug_variable or debug_domain?
+
+Thanks,
+Namhyung
+
+
+> +	{ .name = "verbose", .ptr = &verbose },
+> +	{ .name = NULL, }
+> +};
+> +
+> +int perf_debug_option(const struct option *opt __maybe_unused, const char *str,
+> +		      int unset __maybe_unused)
+> +{
+> +	struct variables_t *var = &variables[0];
+> +	char *vstr, *s = strdup(str);
+> +	int v = 1;
+> +
+> +	vstr = strchr(s, '=');
+> +	if (vstr)
+> +		*vstr++ = 0;
+> +
+> +	while (var->name) {
+> +		if (!strcmp(s, var->name))
+> +			break;
+> +		var++;
+> +	}
+> +
+> +	if (!var->name) {
+> +		pr_err("Unknown debug variable name '%s'\n", s);
+> +		free(s);
+> +		return -1;
+> +	}
+> +
+> +	if (vstr) {
+> +		v = atoi(vstr);
+> +		/*
+> +		 * Allow only values in range (0, 10),
+> +		 * otherwise set 0.
+> +		 */
+> +		v = (v < 0) || (v > 10) ? 0 : v;
+> +	}
+> +
+> +	*var->ptr = v;
+> +	free(s);
+> +	return 0;
+> +}
+> diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
+> index 1cb8081..295fee5 100644
+> --- a/tools/perf/util/debug.h
+> +++ b/tools/perf/util/debug.h
+> @@ -7,6 +7,7 @@
+>  #include "../ui/helpline.h"
+>  #include "../ui/progress.h"
+>  #include "../ui/util.h"
+> +#include "parse-options.h"
+>  
+>  extern int verbose;
+>  extern bool quiet, dump_trace;
+> @@ -39,4 +40,6 @@ void pr_stat(const char *fmt, ...);
+>  
+>  int eprintf(int level, int var, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
+>  
+> +int perf_debug_option(const struct option *opt, const char *str, int unset);
+> +
+>  #endif	/* __PERF_DEBUG_H */
+> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+> index 98e3047..dca9145 100644
+> --- a/tools/perf/util/probe-finder.c
+> +++ b/tools/perf/util/probe-finder.c
+> @@ -26,7 +26,6 @@
+>  #include <errno.h>
+>  #include <stdio.h>
+>  #include <unistd.h>
+> -#include <getopt.h>
+>  #include <stdlib.h>
+>  #include <string.h>
+>  #include <stdarg.h>
+> diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
+> index ea3fd7f..54d9e9b 100644
+> --- a/tools/perf/util/trace-event-read.c
+> +++ b/tools/perf/util/trace-event-read.c
+> @@ -22,7 +22,6 @@
+>  #include <stdio.h>
+>  #include <stdlib.h>
+>  #include <string.h>
+> -#include <getopt.h>
+>  #include <stdarg.h>
+>  #include <sys/types.h>
+>  #include <sys/stat.h>
