@@ -1,132 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729AbaGNDr7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 23:47:59 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:46129 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752110AbaGNDrx (ORCPT
+	id S1750878AbaGNEBm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 00:01:42 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:12546 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703AbaGNEBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 23:47:53 -0400
-From: "xiaofeng.yan" <xiaofeng.yan@huawei.com>
-To: <mingo@redhat.com>, <peterz@infradead.org>, <juri.lelli@gmail.com>,
-        <linux-kernel@vger.kernel.org>
-CC: <xiaofeng.yan2012@gmail.com>, <lizefan@huawei.com>,
-        "xiaofeng.yan" <xiaofeng.yan@huawei.com>
-Subject: [PATCH v2] sched/deadline: overrun could happen in start_hrtick_dl
-Date: Mon, 14 Jul 2014 03:30:19 +0000
-Message-ID: <1405308619-1056-1-git-send-email-xiaofeng.yan@huawei.com>
-X-Mailer: git-send-email 1.8.3.4
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.241]
+	Mon, 14 Jul 2014 00:01:33 -0400
+X-AuditID: cbfee68e-b7fb96d000004bfc-f5-53c3561bac89
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, t.figa@samsung.com,
+        vikas.sajjan@samsung.com, joshi@samsung.com, naushad@samsung.com,
+        thomas.ab@samsung.com, chow.kim@samsung.com,
+        Pankaj Dubey <pankaj.dubey@samsung.com>
+Subject: [RESPIN PATCH v6] ARM: EXYNOS: Move cpufreq and cpuidle device
+ registration to init_machine
+Date: Mon, 14 Jul 2014 09:28:43 +0530
+Message-id: <1405310323-3195-1-git-send-email-pankaj.dubey@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsWyRsSkRlc67HCwwYQL7BbLJt1ls/i+6wu7
+	Re+Cq2wWmx5fY7W4vGsOm8WM8/uYLG5f5rX4dPQ/q8WirUAV62e8ZrHoWMZocfPZdiYHHo+W
+	5h42j81L6j36tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoErY8L0K0wFi/grzt+6xtjA+Ieni5GT
+	Q0LARGLi+vOsELaYxIV769lAbCGBpYwSa84qwtSceniUvYuRCyg+nVHi/prnjBDOBCaJ/8sf
+	MINUsQnoSjx5PxfMFhHIlui/vZoFpIhZ4DGjxJuVRxlBEsICaRKrmr6yg9gsAqoSvUf3gjXw
+	CrhLLJ/8GegMDqB1ChJzJtmA9EoITGeXeD93DQtEvYDEt8mHWCBqZCU2HWCGuE5S4uCKGywT
+	GAUXMDKsYhRNLUguKE5KLzLSK07MLS7NS9dLzs/dxAgM7NP/nvXtYLx5wPoQYzLQuInMUqLJ
+	+cDIyCuJNzQ2M7IwNTE1NjK3NCNNWEmcd9HDpCAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFIN
+	jDVijKb/3QM/aJgvOdMqdi9lLv85h7Xam8POLv1vcVet2i3hHdemDrULhyarC85OXaoWxcZy
+	Ld7laCDP6ivX3tfc3/jZVU2toLj8YP3SpfY/OAq19svJsF4RYmHV9toyz0p1i9Lmgxfun5AV
+	u+aQ/7/33uyjW6//vhJolbr96UR3fb0OltXWSUosxRmJhlrMRcWJACyZGa+CAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPIsWRmVeSWpSXmKPExsVy+t9jQV2psMPBBot+WFksm3SXzeL7ri/s
+	Fr0LrrJZbHp8jdXi8q45bBYzzu9jsrh9mdfi09H/rBaLtgJVrJ/xmsWiYxmjxc1n25kceDxa
+	mnvYPDYvqffo27KK0ePzJrkAlqgGRpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtz
+	JYW8xNxUWyUXnwBdt8wcoMOUFMoSc0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYQ1
+	jBkTpl9hKljEX3H+1jXGBsY/PF2MnBwSAiYSpx4eZYewxSQu3FvP1sXIxSEkMJ1R4v6a54wQ
+	zgQmif/LHzCDVLEJ6Eo8eT8XzBYRyJbov72aBaSIWeAxo8SblUcZQRLCAmkSq5q+go1lEVCV
+	6D26F6yBV8BdYvnkz6xdjBxA6xQk5kyymcDIvYCRYRWjaGpBckFxUnqukV5xYm5xaV66XnJ+
+	7iZGcOQ8k97BuKrB4hCjAAejEg9vBsfhYCHWxLLiytxDjBIczEoivOFuQCHelMTKqtSi/Pii
+	0pzU4kOMpkDLJzJLiSbnA6M6ryTe0NjE3NTY1NLEwsTMUkmc92CrdaCQQHpiSWp2ampBahFM
+	HxMHp1QDo6RIuvb7CE+fEtvZ7S/ONx86UuLneTjsT/GjNKXd8To9d/5NdTvQe2YFy7eyUJ4C
+	1QWfQnYnXUrRS3QOPh/2kzXGxbXw0zS2BF2zXQyRrpMetjrP5OaROX1K88zyxyd3e7/utpdc
+	cGiuclXb6S1/d3dm8ZV3Lb5hZPKpxD7A/uxjufK1zMruSizFGYmGWsxFxYkAHE4jWbICAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020207.53C352E7.005E,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: d8784217693db850fffa2e437f75515a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It could be wrong for the precision of runtime and deadline
-when the precision is within microsecond level. For example:
-Task runtime deadline period
- P1   200us   500us   500us
+As exynos_cpuidle_init and exynos_cpufreq_init function have just one lines
+of code for registering platform devices. We can move these lines to
+exynos_dt_machine_init and delete exynos_cpuidle_init and exynos_cpufreq_init
+function. This will help in reducing lines of code in exynos.c, making it
+more cleaner.
 
-This case need enbale HRTICK feature by the next command
-PC#echo "HRTICK" > /sys/kernel/debug/sched_features
-PC#trace-cmd record -e sched_switch &
-PC#./schedtool -E -t 200000:500000 -e ./test
-
-Some of runtime and deadline run with millisecond level by
-reading kernershark. Some pieces of trace.dat are as follows:
-(remove some irrelevant information)
-<idle>-0   157.603157: sched_switch: :R ==> 2481:4294967295: test
-test-2481  157.603203: sched_switch:  2481:R ==> 0:120: swapper/2
-<idle>-0   157.605657: sched_switch:  :R ==> 2481:4294967295: test
-test-2481  157.608183: sched_switch:  2481:R ==> 2483:120: trace-cmd
-trace-cmd-2483 157.609656: sched_switch:2483:R==>2481:4294967295: test
-
-We can get the runtime from the information at some point.
-runtime = 157.605657 - 157.608183
-runtime = 0.002526(2.526ms)
-The correct runtime should be less than or equal to 200us at some point.
-
-The problem is caused by a conditional judgment "delta > 10000".
-Because no hrtimer start up to control the runtime when runtime is less than 10us.
-So the process will continue to run until tick-period coming.
-
-Move the code with the limit of the least time slice
-from hrtick_start_fair() to hrtick_start() because
-EDF schedule class also need this function in start_hrtick_dl().
-
-To fix this problem, we call hrtimer_start() unconditionally in start_hrtick_dl(),
-and make sure schedule slice won't be smaller than 10us in hrtimer_start().
-
-Signed-off-by: Xiaofeng Yan <xiaofeng.yan@huawei.com>
-Reviewed-by:   Li Zefan <lizefan@huawei.com>
+Suggested-by: Tomasz Figa <t.figa@samsung.com>
+Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 ---
- kernel/sched/core.c     |    8 +++++++-
- kernel/sched/deadline.c |    5 +----
- kernel/sched/fair.c     |    8 --------
- 3 files changed, 8 insertions(+), 13 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 3bdf01b..7f066c2 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -442,8 +442,14 @@ static void __hrtick_start(void *arg)
- void hrtick_start(struct rq *rq, u64 delay)
- {
- 	struct hrtimer *timer = &rq->hrtick_timer;
--	ktime_t time = ktime_add_ns(timer->base->get_time(), delay);
-+	ktime_t time;
+This patch is part of exynos-cleanup series v6 [1]. Just respinning after
+resolving merge conflicts on latest kgene/for-next.
+
+[1]: https://lkml.org/lkml/2014/7/10/338
+
+
+ arch/arm/mach-exynos/exynos.c |   18 ++++--------------
+ 1 file changed, 4 insertions(+), 14 deletions(-)
+
+diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
+index 2a43a17..99dc5aa 100644
+--- a/arch/arm/mach-exynos/exynos.c
++++ b/arch/arm/mach-exynos/exynos.c
+@@ -175,17 +175,6 @@ static struct platform_device exynos_cpuidle = {
+ 	.id                = -1,
+ };
  
-+	/*
-+	 * Don't schedule slices shorter than 10000ns, that just
-+	 * doesn't make sense and can cause timer DoS.
-+	 */
-+	s64 delta = max_t(s64, delay, 10000LL);
-+	time = ktime_add_ns(timer->base->get_time(), delta);
- 	hrtimer_set_expires(timer, time);
+-void __init exynos_cpuidle_init(void)
+-{
+-	if (soc_is_exynos4210() || soc_is_exynos5250())
+-		platform_device_register(&exynos_cpuidle);
+-}
+-
+-void __init exynos_cpufreq_init(void)
+-{
+-	platform_device_register_simple("exynos-cpufreq", -1, NULL, 0);
+-}
+-
+ void __iomem *sysram_base_addr;
+ void __iomem *sysram_ns_base_addr;
  
- 	if (rq == this_rq()) {
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index fc4f98b1..9135771 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -997,10 +997,7 @@ static void check_preempt_curr_dl(struct rq *rq, struct task_struct *p,
- #ifdef CONFIG_SCHED_HRTICK
- static void start_hrtick_dl(struct rq *rq, struct task_struct *p)
- {
--	s64 delta = p->dl.dl_runtime - p->dl.runtime;
--
--	if (delta > 10000)
--		hrtick_start(rq, p->dl.runtime);
-+	hrtick_start(rq, p->dl.runtime);
- }
- #endif
+@@ -335,10 +324,11 @@ static void __init exynos_dt_machine_init(void)
+ 	if (!IS_ENABLED(CONFIG_SMP))
+ 		exynos_sysram_init();
  
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index fea7d33..e5cfd57 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3857,14 +3857,6 @@ static void hrtick_start_fair(struct rq *rq, struct task_struct *p)
- 				resched_task(p);
- 			return;
- 		}
--
--		/*
--		 * Don't schedule slices shorter than 10000ns, that just
--		 * doesn't make sense. Rely on vruntime for fairness.
--		 */
--		if (rq->curr != p)
--			delta = max_t(s64, 10000LL, delta);
--
- 		hrtick_start(rq, delta);
- 	}
+-	if (!of_machine_is_compatible("samsung,exynos5420"))
+-		exynos_cpuidle_init();
++	if (of_machine_is_compatible("samsung,exynos4210") ||
++			of_machine_is_compatible("samsung,exynos5250"))
++		platform_device_register(&exynos_cpuidle);
+ 
+-	exynos_cpufreq_init();
++	platform_device_register_simple("exynos-cpufreq", -1, NULL, 0);
+ 
+ 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
  }
 -- 
 1.7.9.5
