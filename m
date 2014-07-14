@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753860AbaGNIse (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 04:48:34 -0400
-Received: from smtp-out-079.synserver.de ([212.40.185.79]:1116 "EHLO
-	smtp-out-074.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753653AbaGNIsP (ORCPT
+	id S1753499AbaGNIsr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 04:48:47 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:65374 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753841AbaGNIse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 04:48:15 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 26817
-Message-ID: <53C3994C.1010309@metafoo.de>
-Date: Mon, 14 Jul 2014 10:48:12 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
-MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
-        thierry.reding@gmail.com, Lennox Wu <lennox.wu@gmail.com>,
-        Chen Gang <gang.chen.5i5j@gmail.com>, Marek Vasut <marex@denx.de>,
-        Liqin Chen <liqin.linux@gmail.com>, msalter@redhat.com,
-        linux-pwm@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-watchdog@vger.kernel.org, linux-input@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Mischa.Jonker@synopsys.com, jic23@kernel.org
-Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
- 'devm_ioremap_resource'
-References: <201407130545.23004.marex@denx.de> <CAF0htA60juBVkPo2HQKMDGcEr-wRzRVL_6JgHAa+7WVE_E8M0Q@mail.gmail.com> <53C25551.1050909@nod.at> <53C288F0.3070001@metafoo.de> <53C28C4A.70907@nod.at> <53C29015.5070607@metafoo.de> <53C291C8.6050303@nod.at> <53C296C2.30304@metafoo.de> <20140713192202.GA19090@kroah.com> <53C2DF12.6040507@nod.at> <20140713201753.GA29955@kroah.com> <53C39569.9020802@nod.at>
-In-Reply-To: <53C39569.9020802@nod.at>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Jul 2014 04:48:34 -0400
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-ide@vger.kernel.org,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Subject: [PATCH v3 0/2] phy: qcom: Add driver for QCOM APQ8064 SATA PHY
+Date: Mon, 14 Jul 2014 09:47:44 +0100
+Message-Id: <1405327664-27439-1-git-send-email-srinivas.kandagatla@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404903807-26032-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1404903807-26032-1-git-send-email-srinivas.kandagatla@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2014 10:31 AM, Richard Weinberger wrote:
-> Am 13.07.2014 22:17, schrieb Greg Kroah-Hartman:
->> On Sun, Jul 13, 2014 at 09:33:38PM +0200, Richard Weinberger wrote:
->>> Maybe we could add COMPILE_TEST to the version string too?
->>> Just to detect such kernels fast in user bug reports...
->>
->> What kind of bug report are you going to get?
->
-> User manages to enable CONFIG_FOO by selecting COMPILE_TEST and
-> complains that it does not work. :)
+Hi Kishon,
 
-These drivers are typically drivers for some SoC peripheral and the device 
-will simply physically not exist on a platform that does not provide 
-HAS_IOMEM. This is not really any different from making the driver 
-selectable via COMPILE_TEST for any other platform. To hit the issue you'd 
-have to instantiate a device driver instance for a device that physically 
-does not exist. This will always result in a failure.
+First patch in this series adds support to the APQ8064 SATA PHY.
+Second patch updates the existing Kumar gala's device tree PHY bindings
+with APQ8064 soc specific compatible.
 
-- Lars
+Eventhough there are two seperate drivers for both IPQ and APQ SOCs,
+the bindings are exactly same, so I did not create new bindings document.
+
+Could you please pick these patches for v3.17.
+
+Changes since v2:
+	- added usleep_range in poll timeout as discussed
+		with Bartlomiej Zolnierkiewicz.
+	- Added missing pdev_set_drvdata spotted by 
+		Bartlomiej Zolnierkiewicz
+
+Changes since v1:
+	- included DT bindings in the series.
+
+Thanks,
+srini
+
+Srinivas Kandagatla (2):
+  phy: qcom: Add driver for QCOM APQ8064 SATA PHY
+  phy: qcom: Update APQ8064 PHY device tree bindings
+
+ Documentation/devicetree/bindings/phy/qcom-phy.txt |   3 +-
+ drivers/phy/Kconfig                                |   7 +
+ drivers/phy/Makefile                               |   1 +
+ drivers/phy/phy-qcom-apq8064-sata.c                | 288 +++++++++++++++++++++
+ 4 files changed, 298 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/phy/phy-qcom-apq8064-sata.c
+
+-- 
+1.9.1
 
