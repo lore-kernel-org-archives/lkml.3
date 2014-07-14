@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757209AbaGNUsz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 16:48:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35063 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756734AbaGNUsw (ORCPT
+	id S1757281AbaGNUtN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 16:49:13 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:35839 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757117AbaGNUtL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 16:48:52 -0400
-Date: Mon, 14 Jul 2014 13:48:51 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vaibhav Shinde <v.bhav.shinde@gmail.com>
-Cc: tj@kernel.org, linux-kernel@vger.kernel.org, oleg@redhat.com,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: task's thread_info print in kernel oops
-Message-Id: <20140714134851.718deef4a2b43c9a360ab237@linux-foundation.org>
-In-Reply-To: <CAB5gott47+n7r_XUgxQHfxtc5zG78Ecn_xSQ4jp3fj9Ryd8QoQ@mail.gmail.com>
-References: <CAB5gott47+n7r_XUgxQHfxtc5zG78Ecn_xSQ4jp3fj9Ryd8QoQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Jul 2014 16:49:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <877g3fsm98.fsf@nemi.mork.no>
+References: <87pph8kse7.fsf@nemi.mork.no>
+	<53C3D7C3.7090505@redhat.com>
+	<CA+55aFxYYKApOC+1TQkoxSzi-zTSB8OmkU=ypvNb_Gc2+K6Hmw@mail.gmail.com>
+	<CA+55aFzHo4BEO8W0yza7g0YMgg-b=hPbk20-vpR3s==ydpmAOg@mail.gmail.com>
+	<877g3fsm98.fsf@nemi.mork.no>
+Date: Mon, 14 Jul 2014 13:49:10 -0700
+X-Google-Sender-Auth: ouq80A5k-5EEVuNeklWU39baX28
+Message-ID: <CA+55aFztNg4aFUnmqxoR-Hwva87D1TMOZ2Gyy8CVmEov9ToDQg@mail.gmail.com>
+Subject: Re: [BISECTED 3.16-rc REGREGRESSION] backlight control stopped working
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jul 2014 00:46:55 +0530 Vaibhav Shinde <v.bhav.shinde@gmail.com> wrote:
+On Mon, Jul 14, 2014 at 1:45 PM, Bjørn Mork <bjorn@mork.no> wrote:
+>> brightness change from user mode comes in during that delay, we cancel
+>> the kernel-induced pending change.
+>
+> That sounds like a good solution to me FWIW.
 
-> Dear All,
-> 
-> 
-> During the kernel oops i observed the below debug message which shows the
-> address of task's thread_info struct
-> 
-> task: ffff880468e61a80 ti: ffff88026bc86000 task.ti: ffff88026bc86000
-> 
-> ti: <current_thread_info()>
-> task.ti <task_thread_info(current)
-> 
-> As per my understanding, both the function calls will return the address of
-> thread_info() struct of the current task,
-> so it would be always the same.
-> 
-> If so, could we apply the below change ?
-> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-> index b4e8500..904aeef 100644
-> --- a/kernel/printk/printk.c
-> +++ b/kernel/printk/printk.c
-> @@ -2902,9 +2902,8 @@ void show_regs_print_info(const char *log_lvl)
->  {
->         dump_stack_print_info(log_lvl);
-> 
-> -       printk("%stask: %p ti: %p task.ti: %p\n",
-> -              log_lvl, current, current_thread_info(),
-> -              task_thread_info(current));
-> +       printk("%stask: %p ti: %p\n",
-> +              log_lvl, current, current_thread_info());
->  }
+Try the patch. It *might* work. I'm not saying it will, but it seemed
+to at least compile for me.
 
-ia64 defines __HAVE_THREAD_FUNCTIONS and implements a custom
-task_thread_info().  Whether the resulting output is useful I cannot
-say...
-
-
+           Linus
