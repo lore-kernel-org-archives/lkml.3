@@ -1,68 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651AbaGNOMs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 10:12:48 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:22673 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754211AbaGNOMm (ORCPT
+	id S1755683AbaGNONg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 10:13:36 -0400
+Received: from webmail2.sr-online.de ([213.147.7.111]:59603 "EHLO
+	webmail2.sr-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754596AbaGNON1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 10:12:42 -0400
-Date: Mon, 14 Jul 2014 17:12:31 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
-        tvboxspy@gmail.com, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org, forest@alittletooquiet.net
-Subject: Re: [PATCH V2 1/4] staging: vt6556: Cleanup coding style issues
-Message-ID: <20140714141231.GM25880@mwanda>
-References: <1405278681-3348-1-git-send-email-peter.senna@gmail.com>
- <20140713193647.GA31010@kroah.com>
- <20140714085932.GA2958@hp-peter.rsr.lip6.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140714085932.GA2958@hp-peter.rsr.lip6.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Mon, 14 Jul 2014 10:13:27 -0400
+From: "Joerg C. Meyer" <joerg@meyer.homedns.org>
+To: gregkh@linuxfoundation.org, dingtianhong@huawei.com,
+        chenweilong@huawei.com, sachin.kamat@linaro.org, davem@davemloft.net
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        "Joerg C. Meyer" <joerg@meyer.homedns.org>
+Subject: [PATCH] Staging: rtl8821ae: fix comment coding style issue in cam.c
+Date: Mon, 14 Jul 2014 16:13:25 +0200
+Message-Id: <1405347205-3364-1-git-send-email-joerg@meyer.homedns.org>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since you're going to redo this patch anyway, I may as well give you
-the normal feedback for these kinds of patches.
+This is a patch to the cam.c file that removes some obsolete C99 style comments
 
-> >From 69cd87aca39730c0578592d1296b738f7f223f29 Mon Sep 17 00:00:00 2001
-> From: Peter Senna Tschudin <peter.senna@gmail.com>
-> Date: Mon, 14 Jul 2014 10:28:42 +0200
-> Subject: [PATCH V3] staging: vt6556: Cleanup coding style issues
-> 
-> This patch cleanup coding style issues reported by checkpatch.
-> 
-> This typedef, reported by checkpatch, was removed from card.h:
-> typedef enum _CARD_PHY_TYPE {
->     PHY_TYPE_AUTO = 0,
->     PHY_TYPE_11B,
->     PHY_TYPE_11G,
->     PHY_TYPE_11A
-> } CARD_PHY_TYPE, *PCARD_PHY_TYPE;
-> 
-> The following typedefs were removed, but enums were kept at device.h:
->  - typedef enum __device_msg_level
->  - typedef enum __DEVICE_NDIS_STATUS
-> 
+Signed-off-by: Joerg C. Meyer <joerg@meyer.homedns.org>
 
-Break this kind of patch into patches which fix one type of mistake per
-patch:
-patch 1: fix whitespace stuff
-patch 2: remove useless returns
-patch 3: remove typedefs
-etc.
+---
+ drivers/staging/rtl8821ae/cam.c | 7 -------
+ 1 file changed, 7 deletions(-)
 
-> -//{{RobertYu:20060515, new BB setting for VT3226D0
-> +/* {{RobertYu:20060515, new BB setting for VT3226D0 */
-
-Just delete these, because we have version control.
-
-regards,
-dan carpenter
+diff --git a/drivers/staging/rtl8821ae/cam.c b/drivers/staging/rtl8821ae/cam.c
+index 3bc6b3d..6185ea4 100644
+--- a/drivers/staging/rtl8821ae/cam.c
++++ b/drivers/staging/rtl8821ae/cam.c
+@@ -152,7 +152,6 @@ u8 rtl_cam_add_one_entry(struct ieee80211_hw *hw, u8 *mac_addr,
+ 	return 1;
+ 
+ }
+-//EXPORT_SYMBOL(rtl_cam_add_one_entry);
+ 
+ int rtl_cam_delete_one_entry(struct ieee80211_hw *hw,
+ 			     u8 *mac_addr, u32 ul_key_id)
+@@ -176,7 +175,6 @@ int rtl_cam_delete_one_entry(struct ieee80211_hw *hw,
+ 	return 0;
+ 
+ }
+-//EXPORT_SYMBOL(rtl_cam_delete_one_entry);
+ 
+ void rtl_cam_reset_all_entry(struct ieee80211_hw *hw)
+ {
+@@ -186,7 +184,6 @@ void rtl_cam_reset_all_entry(struct ieee80211_hw *hw)
+ 	ul_command = BIT(31) | BIT(30);
+ 	rtl_write_dword(rtlpriv, rtlpriv->cfg->maps[RWCAM], ul_command);
+ }
+-//EXPORT_SYMBOL(rtl_cam_reset_all_entry);
+ 
+ void rtl_cam_mark_invalid(struct ieee80211_hw *hw, u8 uc_index)
+ {
+@@ -227,7 +224,6 @@ void rtl_cam_mark_invalid(struct ieee80211_hw *hw, u8 uc_index)
+ 	RT_TRACE(COMP_SEC, DBG_DMESG,
+ 		 ("rtl_cam_mark_invalid(): WRITE A0: %x \n", ul_command));
+ }
+-//EXPORT_SYMBOL(rtl_cam_mark_invalid);
+ 
+ void rtl_cam_empty_entry(struct ieee80211_hw *hw, u8 uc_index)
+ {
+@@ -281,7 +277,6 @@ void rtl_cam_empty_entry(struct ieee80211_hw *hw, u8 uc_index)
+ 	}
+ 
+ }
+-//EXPORT_SYMBOL(rtl_cam_empty_entry);
+ 
+ u8 rtl_cam_get_free_entry(struct ieee80211_hw *hw, u8 *sta_addr)
+ {
+@@ -316,7 +311,6 @@ u8 rtl_cam_get_free_entry(struct ieee80211_hw *hw, u8 *sta_addr)
+ 	}
+ 	return TOTAL_CAM_ENTRY;
+ }
+-//EXPORT_SYMBOL(rtl_cam_get_free_entry);
+ 
+ void rtl_cam_del_entry(struct ieee80211_hw *hw, u8 *sta_addr)
+ {
+@@ -349,4 +343,3 @@ void rtl_cam_del_entry(struct ieee80211_hw *hw, u8 *sta_addr)
+ 	}
+ 	return;
+ }
+-//EXPORT_SYMBOL(rtl_cam_del_entry);
+-- 
+2.0.1
 
