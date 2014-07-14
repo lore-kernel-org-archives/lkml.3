@@ -1,227 +1,723 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767AbaGNKHO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 06:07:14 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:40970 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754637AbaGNKGz (ORCPT
+	id S1754776AbaGNKHk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 06:07:40 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:65036 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754722AbaGNKG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 06:06:55 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu, linux-rt-users@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 2/2] rcu: Create rcuo kthreads only for onlined CPUs
-Date: Mon, 14 Jul 2014 03:06:44 -0700
-Message-Id: <1405332404-10094-2-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1405332404-10094-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20140714100604.GA9905@linux.vnet.ibm.com>
- <1405332404-10094-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14071410-9332-0000-0000-000001602735
+	Mon, 14 Jul 2014 06:06:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <1403654783-7176-4-git-send-email-sboyd@codeaurora.org>
+References: <1403654783-7176-1-git-send-email-sboyd@codeaurora.org>
+	<1403654783-7176-4-git-send-email-sboyd@codeaurora.org>
+Date: Mon, 14 Jul 2014 15:36:53 +0530
+Message-ID: <CAMf-jSmRo_Rh2gBJOk1W6Y35Bv-U=nhYbT9ngs1ax2k78Rhr=w@mail.gmail.com>
+Subject: Re: [RFC/PATCH 03/12] clk: qcom: Add support for muxes, dividers, and
+ mux dividers
+From: pramod gurav <pramod.gurav.etc@gmail.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        Saravana Kannan <skannan@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Hi Stephen,
 
-RCU currently uses for_each_possible_cpu() to spawn rcuo kthreads,
-which can result in more rcuo kthreads than one would expect, for
-example, derRichard reported 64 CPUs worth of rcuo kthreads on an
-8-CPU image.  This commit therefore creates rcuo kthreads only for
-those CPUs that actually come online.
+On Wed, Jun 25, 2014 at 5:36 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> The Krait CPU clocks are made up of muxes and dividers with a
+> handful of sources. Add a set of clk_ops that allow us to
+> configure these clocks so we can support CPU frequency scaling on
+> Krait CPUs.
+>
+> Based on code originally written by Saravana Kannan.
+>
+> Cc: Saravana Kannan <skannan@codeaurora.org>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  drivers/clk/qcom/Makefile           |   1 +
+>  drivers/clk/qcom/clk-generic.c      | 405 ++++++++++++++++++++++++++++++++++++
+>  include/linux/clk/msm-clk-generic.h | 208 ++++++++++++++++++
+>  3 files changed, 614 insertions(+)
+>  create mode 100644 drivers/clk/qcom/clk-generic.c
+>  create mode 100644 include/linux/clk/msm-clk-generic.h
+>
+> diff --git a/drivers/clk/qcom/Makefile b/drivers/clk/qcom/Makefile
+> index 689e05bf4f95..8684ff004be6 100644
+> --- a/drivers/clk/qcom/Makefile
+> +++ b/drivers/clk/qcom/Makefile
+> @@ -6,6 +6,7 @@ clk-qcom-y += clk-pll.o
+>  clk-qcom-y += clk-rcg.o
+>  clk-qcom-y += clk-rcg2.o
+>  clk-qcom-y += clk-branch.o
+> +clk-qcom-y += clk-generic.o
+>  clk-qcom-y += reset.o
+>
+>  obj-$(CONFIG_MSM_GCC_8660) += gcc-msm8660.o
+> diff --git a/drivers/clk/qcom/clk-generic.c b/drivers/clk/qcom/clk-generic.c
+> new file mode 100644
+> index 000000000000..a0d778ba7394
+> --- /dev/null
+> +++ b/drivers/clk/qcom/clk-generic.c
+> @@ -0,0 +1,405 @@
+> +/*
+> + * Copyright (c) 2014, The Linux Foundation. All rights reserved.
+> + *
+> + * This software is licensed under the terms of the GNU General Public
+> + * License version 2, as published by the Free Software Foundation, and
+> + * may be copied, distributed, and modified under those terms.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/export.h>
+> +#include <linux/bug.h>
+> +#include <linux/err.h>
+> +#include <linux/clk-provider.h>
+> +#include <linux/clk/msm-clk-generic.h>
+> +
+> +
+> +/* ==================== Mux clock ==================== */
+> +
+> +static int mux_set_parent(struct clk_hw *hw, u8 sel)
+> +{
+> +       struct mux_clk *mux = to_mux_clk(hw);
+> +
+> +       if (mux->parent_map)
+> +               sel = mux->parent_map[sel];
+> +
+> +       return mux->ops->set_mux_sel(mux, sel);
+> +}
+> +
+> +static u8 mux_get_parent(struct clk_hw *hw)
+> +{
+> +       struct mux_clk *mux = to_mux_clk(hw);
+> +       int num_parents = __clk_get_num_parents(hw->clk);
+> +       int i;
+> +       u8 sel;
+> +
+> +       sel = mux->ops->get_mux_sel(mux);
+> +       if (mux->parent_map) {
+> +               for (i = 0; i < num_parents; i++)
+> +                       if (sel == mux->parent_map[i])
+> +                               return i;
+> +               WARN(1, "Can't find parent\n");
+> +               return -EINVAL;
+> +       }
+> +
+> +       return sel;
+> +}
+> +
+> +static int mux_enable(struct clk_hw *hw)
+> +{
+> +       struct mux_clk *mux = to_mux_clk(hw);
 
-Reported-by: derRichard
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/rcu/tree.c        |  4 ++-
- kernel/rcu/tree.h        |  4 ++-
- kernel/rcu/tree_plugin.h | 93 ++++++++++++++++++++++++++++++++++++++++++------
- 3 files changed, 88 insertions(+), 13 deletions(-)
+Missing a blank line after declarations.
 
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index eecdbe20a08e..a1abaa8abd49 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -3444,6 +3444,7 @@ static int rcu_cpu_notify(struct notifier_block *self,
- 	case CPU_UP_PREPARE_FROZEN:
- 		rcu_prepare_cpu(cpu);
- 		rcu_prepare_kthreads(cpu);
-+		rcu_spawn_all_nocb_kthreads(cpu);
- 		break;
- 	case CPU_ONLINE:
- 	case CPU_DOWN_FAILED:
-@@ -3508,8 +3509,8 @@ static int __init rcu_spawn_gp_kthread(void)
- 		raw_spin_lock_irqsave(&rnp->lock, flags);
- 		rsp->gp_kthread = t;
- 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
--		rcu_spawn_nocb_kthreads(rsp);
- 	}
-+	rcu_spawn_nocb_kthreads();
- 	rcu_spawn_boost_kthreads();
- 	return 0;
- }
-@@ -3643,6 +3644,7 @@ static void __init rcu_init_one(struct rcu_state *rsp,
- 		rcu_boot_init_percpu_data(i, rsp);
- 	}
- 	list_add(&rsp->flavors, &rcu_struct_flavors);
-+	rcu_organize_nocb_kthreads(rsp);
- }
- 
- /*
-diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
-index bd7b63da9a8c..f703ea8b7836 100644
---- a/kernel/rcu/tree.h
-+++ b/kernel/rcu/tree.h
-@@ -593,7 +593,9 @@ static bool rcu_nocb_adopt_orphan_cbs(struct rcu_state *rsp,
- static bool rcu_nocb_need_deferred_wakeup(struct rcu_data *rdp);
- static void do_nocb_deferred_wakeup(struct rcu_data *rdp);
- static void rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp);
--static void rcu_spawn_nocb_kthreads(struct rcu_state *rsp);
-+static void rcu_spawn_all_nocb_kthreads(int cpu);
-+static void __init rcu_spawn_nocb_kthreads(void);
-+static void __init rcu_organize_nocb_kthreads(struct rcu_state *rsp);
- static void __maybe_unused rcu_kick_nohz_cpu(int cpu);
- static bool init_nocb_callback_list(struct rcu_data *rdp);
- static void rcu_sysidle_enter(struct rcu_dynticks *rdtp, int irq);
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index f5314cc20750..cedb020f1f90 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -2455,15 +2455,85 @@ static void __init rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp)
- 	rdp->nocb_follower_tail = &rdp->nocb_follower_head;
- }
- 
-+/*
-+ * If the specified CPU is a no-CBs CPU that does not already have its
-+ * rcuo kthread for the specified RCU flavor, spawn it.  If the CPUs are
-+ * brought online out of order, this can require require re-organizing
-+ * the leader-follower relationships.
-+ */
-+static void rcu_spawn_one_nocb_kthread(struct rcu_state *rsp, int cpu)
-+{
-+	struct rcu_data *rdp;
-+	struct rcu_data *rdp_last;
-+	struct rcu_data *rdp_old_leader;
-+	struct rcu_data *rdp_spawn = per_cpu_ptr(rsp->rda, cpu);
-+	struct task_struct *t;
-+
-+	/*
-+	 * If this isn't a no-CBs CPU or if it already has an rcuo kthread,
-+	 * then nothing to do.
-+	 */
-+	if (!rcu_is_nocb_cpu(cpu) || rdp_spawn->nocb_kthread)
-+		return;
-+
-+	/* If we didn't spawn the leader first, reorganize! */
-+	rdp_old_leader = rdp_spawn->nocb_leader;
-+	if (rdp_old_leader != rdp_spawn && !rdp_old_leader->nocb_kthread) {
-+		rdp_last = NULL;
-+		rdp = rdp_old_leader;
-+		do {
-+			rdp->nocb_leader = rdp_spawn;
-+			if (rdp_last && rdp != rdp_spawn)
-+				rdp_last->nocb_next_follower = rdp;
-+			rdp_last = rdp;
-+			rdp = rdp->nocb_next_follower;
-+			rdp_last->nocb_next_follower = NULL;
-+		} while (rdp);
-+		rdp_spawn->nocb_next_follower = rdp_old_leader;
-+	}
-+
-+	/* Spawn the kthread for this CPU and RCU flavor. */
-+	t = kthread_run(rcu_nocb_kthread, rdp_spawn,
-+			"rcuo%c/%d", rsp->abbr, cpu);
-+	BUG_ON(IS_ERR(t));
-+	ACCESS_ONCE(rdp_spawn->nocb_kthread) = t;
-+}
-+
-+/*
-+ * If the specified CPU is a no-CBs CPU that does not already have its
-+ * rcuo kthreads, spawn them.
-+ */
-+static void rcu_spawn_all_nocb_kthreads(int cpu)
-+{
-+	struct rcu_state *rsp;
-+
-+	if (rcu_scheduler_fully_active)
-+		for_each_rcu_flavor(rsp)
-+			rcu_spawn_one_nocb_kthread(rsp, cpu);
-+}
-+
-+/*
-+ * Once the scheduler is running, spawn rcuo kthreads for all online
-+ * no-CBs CPUs.  This assumes that the early_initcall()s happen before
-+ * non-boot CPUs come online -- if this changes, we will need to add
-+ * some mutual exclusion.
-+ */
-+static void __init rcu_spawn_nocb_kthreads(void)
-+{
-+	int cpu;
-+
-+	for_each_online_cpu(cpu)
-+		rcu_spawn_all_nocb_kthreads(cpu);
-+}
-+
- /* How many follower CPU IDs per leader?  Default of -1 for sqrt(nr_cpu_ids). */
- static int rcu_nocb_leader_stride = -1;
- module_param(rcu_nocb_leader_stride, int, 0444);
- 
- /*
-- * Create a kthread for each RCU flavor for each no-CBs CPU.
-- * Also initialize leader-follower relationships.
-+ * Initialize leader-follower relationships for all no-CBs CPU.
-  */
--static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
-+static void __init rcu_organize_nocb_kthreads(struct rcu_state *rsp)
- {
- 	int cpu;
- 	int ls = rcu_nocb_leader_stride;
-@@ -2471,7 +2541,6 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
- 	struct rcu_data *rdp;
- 	struct rcu_data *rdp_leader = NULL;  /* Suppress misguided gcc warn. */
- 	struct rcu_data *rdp_prev = NULL;
--	struct task_struct *t;
- 
- 	if (rcu_nocb_mask == NULL)
- 		return;
-@@ -2500,12 +2569,6 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
- 			rdp_prev->nocb_next_follower = rdp;
- 		}
- 		rdp_prev = rdp;
--
--		/* Spawn the kthread for this CPU. */
--		t = kthread_run(rcu_nocb_kthread, rdp,
--				"rcuo%c/%d", rsp->abbr, cpu);
--		BUG_ON(IS_ERR(t));
--		ACCESS_ONCE(rdp->nocb_kthread) = t;
- 	}
- }
- 
-@@ -2559,7 +2622,15 @@ static void do_nocb_deferred_wakeup(struct rcu_data *rdp)
- {
- }
- 
--static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
-+static void rcu_spawn_all_nocb_kthreads(int cpu)
-+{
-+}
-+
-+static void __init rcu_spawn_nocb_kthreads(void)
-+{
-+}
-+
-+static void __init rcu_organize_nocb_kthreads(struct rcu_state *rsp)
- {
- }
- 
+> +       if (mux->ops->enable)
+> +               return mux->ops->enable(mux);
+> +       return 0;
+> +}
+> +
+> +static void mux_disable(struct clk_hw *hw)
+> +{
+> +       struct mux_clk *mux = to_mux_clk(hw);
+
+Same here.
+
+> +       if (mux->ops->disable)
+> +               return mux->ops->disable(mux);
+> +}
+> +
+> +static struct clk *mux_get_safe_parent(struct clk_hw *hw)
+> +{
+> +       int i;
+> +       struct mux_clk *mux = to_mux_clk(hw);
+> +       int num_parents = __clk_get_num_parents(hw->clk);
+> +
+> +       if (!mux->has_safe_parent)
+> +               return NULL;
+> +
+> +       i = mux->safe_sel;
+> +       if (mux->parent_map)
+> +               for (i = 0; i < num_parents; i++)
+> +                       if (mux->safe_sel == mux->parent_map[i])
+> +                               break;
+> +
+> +       return clk_get_parent_by_index(hw->clk, i);
+> +}
+> +
+> +const struct clk_ops clk_ops_gen_mux = {
+> +       .enable = mux_enable,
+> +       .disable = mux_disable,
+> +       .set_parent = mux_set_parent,
+> +       .get_parent = mux_get_parent,
+> +       .determine_rate = __clk_mux_determine_rate,
+> +       .get_safe_parent = mux_get_safe_parent,
+> +};
+> +EXPORT_SYMBOL_GPL(clk_ops_gen_mux);
+> +
+> +/* ==================== Divider clock ==================== */
+> +
+> +static long __div_round_rate(struct div_data *data, unsigned long rate,
+> +       struct clk *parent, unsigned int *best_div, unsigned long *best_prate,
+> +       bool set_parent)
+> +{
+> +       unsigned int div, min_div, max_div, _best_div = 1;
+> +       unsigned long prate, _best_prate = 0, rrate = 0, req_prate, actual_rate;
+> +       unsigned int numer;
+> +
+> +       rate = max(rate, 1UL);
+> +
+> +       min_div = max(data->min_div, 1U);
+> +       max_div = min(data->max_div, (unsigned int) (ULONG_MAX / rate));
+> +
+> +       /*
+> +        * div values are doubled for half dividers.
+> +        * Adjust for that by picking a numer of 2.
+> +        */
+> +       numer = data->is_half_divider ? 2 : 1;
+> +
+> +       if (!set_parent) {
+> +               prate = *best_prate * numer;
+> +               div = DIV_ROUND_UP(prate, rate);
+> +               div = clamp(1U, div, max_div);
+> +               if (best_div)
+> +                       *best_div = div;
+> +               return mult_frac(*best_prate, numer, div);
+> +       }
+> +
+> +       for (div = min_div; div <= max_div; div++) {
+> +               req_prate = mult_frac(rate, div, numer);
+> +               prate = __clk_round_rate(parent, req_prate);
+> +               if (IS_ERR_VALUE(prate))
+> +                       break;
+> +
+> +               actual_rate = mult_frac(prate, numer, div);
+> +               if (is_better_rate(rate, rrate, actual_rate)) {
+> +                       rrate = actual_rate;
+> +                       _best_div = div;
+> +                       _best_prate = prate;
+> +               }
+> +
+> +               /*
+> +                * Trying higher dividers is only going to ask the parent for
+> +                * a higher rate. If it can't even output a rate higher than
+> +                * the one we request for this divider, the parent is not
+> +                * going to be able to output an even higher rate required
+> +                * for a higher divider. So, stop trying higher dividers.
+> +                */
+> +               if (actual_rate < rate)
+> +                       break;
+> +
+> +               if (rrate <= rate)
+> +                       break;
+> +       }
+> +
+> +       if (!rrate)
+> +               return -EINVAL;
+> +       if (best_div)
+> +               *best_div = _best_div;
+> +       if (best_prate)
+> +               *best_prate = _best_prate;
+> +
+> +       return rrate;
+> +}
+> +
+> +static long div_round_rate(struct clk_hw *hw, unsigned long rate,
+> +                          unsigned long *parent_rate)
+> +{
+> +       struct div_clk *d = to_div_clk(hw);
+> +       bool set_parent = __clk_get_flags(hw->clk) & CLK_SET_RATE_PARENT;
+> +
+> +       return __div_round_rate(&d->data, rate, __clk_get_parent(hw->clk),
+> +                               NULL, parent_rate, set_parent);
+> +}
+> +
+> +static int div_set_rate(struct clk_hw *hw, unsigned long rate, unsigned long
+> +                       parent_rate)
+> +{
+> +       struct div_clk *d = to_div_clk(hw);
+> +       int div, rc = 0;
+> +       struct div_data *data = &d->data;
+> +
+> +       div = parent_rate / rate;
+> +       if (div != data->div)
+> +               rc = d->ops->set_div(d, div);
+> +       data->div = div;
+> +
+> +       return rc;
+> +}
+> +
+> +static int div_enable(struct clk_hw *hw)
+> +{
+> +       struct div_clk *d = to_div_clk(hw);
+
+Missing a black line here.
+
+> +       if (d->ops && d->ops->enable)
+> +               return d->ops->enable(d);
+> +       return 0;
+> +}
+> +
+> +static void div_disable(struct clk_hw *hw)
+> +{
+> +       struct div_clk *d = to_div_clk(hw);
+
+Here as well.
+
+> +       if (d->ops && d->ops->disable)
+> +               return d->ops->disable(d);
+> +}
+> +
+> +static unsigned long div_recalc_rate(struct clk_hw *hw, unsigned long prate)
+> +{
+> +       struct div_clk *d = to_div_clk(hw);
+> +       unsigned int div = d->data.div;
+> +
+> +       if (d->ops && d->ops->get_div)
+> +               div = max(d->ops->get_div(d), 1);
+> +       div = max(div, 1U);
+> +
+> +       if (!d->ops || !d->ops->set_div)
+> +               d->data.min_div = d->data.max_div = div;
+> +       d->data.div = div;
+> +
+> +       return prate / div;
+> +}
+> +
+> +const struct clk_ops clk_ops_div = {
+> +       .enable = div_enable,
+> +       .disable = div_disable,
+> +       .round_rate = div_round_rate,
+> +       .set_rate = div_set_rate,
+> +       .recalc_rate = div_recalc_rate,
+> +};
+> +EXPORT_SYMBOL_GPL(clk_ops_div);
+> +
+> +/* ==================== Mux_div clock ==================== */
+> +
+> +static int mux_div_clk_enable(struct clk_hw *hw)
+> +{
+> +       struct mux_div_clk *md = to_mux_div_clk(hw);
+> +
+> +       if (md->ops->enable)
+> +               return md->ops->enable(md);
+> +       return 0;
+> +}
+> +
+> +static void mux_div_clk_disable(struct clk_hw *hw)
+> +{
+> +       struct mux_div_clk *md = to_mux_div_clk(hw);
+> +
+> +       if (md->ops->disable)
+> +               return md->ops->disable(md);
+> +}
+> +
+> +static long __mux_div_round_rate(struct clk_hw *hw, unsigned long rate,
+> +       struct clk **best_parent, int *best_div, unsigned long *best_prate)
+> +{
+> +       struct mux_div_clk *md = to_mux_div_clk(hw);
+> +       unsigned int i;
+> +       unsigned long rrate, best = 0, _best_div = 0, _best_prate = 0;
+> +       struct clk *_best_parent = 0;
+> +       int num_parents = __clk_get_num_parents(hw->clk);
+> +       bool set_parent = __clk_get_flags(hw->clk) & CLK_SET_RATE_PARENT;
+> +
+> +       for (i = 0; i < num_parents; i++) {
+> +               int div;
+> +               unsigned long prate;
+> +               struct clk *p = clk_get_parent_by_index(hw->clk, i);
+> +
+> +               rrate = __div_round_rate(&md->data, rate, p, &div, &prate,
+> +                               set_parent);
+> +
+> +               if (is_better_rate(rate, best, rrate)) {
+> +                       best = rrate;
+> +                       _best_div = div;
+> +                       _best_prate = prate;
+> +                       _best_parent = p;
+> +               }
+> +
+> +               if (rate <= rrate)
+> +                       break;
+> +       }
+> +
+> +       if (best_div)
+> +               *best_div = _best_div;
+> +       if (best_prate)
+> +               *best_prate = _best_prate;
+> +       if (best_parent)
+> +               *best_parent = _best_parent;
+> +
+> +       if (best)
+> +               return best;
+> +       return -EINVAL;
+> +}
+> +
+> +static long mux_div_clk_round_rate(struct clk_hw *hw, unsigned long rate,
+> +                                  unsigned long *parent_rate)
+> +{
+> +       return __mux_div_round_rate(hw, rate, NULL, NULL, parent_rate);
+> +}
+> +
+> +/* requires enable lock to be held */
+> +static int __set_src_div(struct mux_div_clk *md, u8 src_sel, u32 div)
+> +{
+> +       int rc;
+> +
+> +       rc = md->ops->set_src_div(md, src_sel, div);
+> +       if (!rc) {
+> +               md->data.div = div;
+> +               md->src_sel = src_sel;
+> +       }
+> +
+> +       return rc;
+> +}
+> +
+> +/* Must be called after handoff to ensure parent clock rates are initialized */
+> +static int safe_parent_init_once(struct clk_hw *hw)
+> +{
+> +       unsigned long rrate;
+> +       u32 best_div;
+> +       struct clk *best_parent;
+> +       struct mux_div_clk *md = to_mux_div_clk(hw);
+> +
+> +       if (IS_ERR(md->safe_parent))
+> +               return -EINVAL;
+> +       if (!md->safe_freq || md->safe_parent)
+> +               return 0;
+> +
+> +       rrate = __mux_div_round_rate(hw, md->safe_freq, &best_parent,
+> +                       &best_div, NULL);
+> +
+> +       if (rrate == md->safe_freq) {
+> +               md->safe_div = best_div;
+> +               md->safe_parent = best_parent;
+> +       } else {
+> +               md->safe_parent = ERR_PTR(-EINVAL);
+> +               return -EINVAL;
+> +       }
+> +       return 0;
+> +}
+> +
+> +static int
+> +__mux_div_clk_set_rate_and_parent(struct clk_hw *hw, u8 index, u32 div)
+> +{
+> +       struct mux_div_clk *md = to_mux_div_clk(hw);
+> +       int rc;
+> +
+> +       rc = safe_parent_init_once(hw);
+> +       if (rc)
+> +               return rc;
+> +
+> +       return __set_src_div(md, index, div);
+> +}
+> +
+> +static int mux_div_clk_set_rate_and_parent(struct clk_hw *hw,
+> +               unsigned long rate, unsigned long parent_rate, u8 index)
+> +{
+> +       return __mux_div_clk_set_rate_and_parent(hw, index, parent_rate / rate);
+> +}
+> +
+> +static int mux_div_clk_set_rate(struct clk_hw *hw,
+> +               unsigned long rate, unsigned long parent_rate)
+> +{
+> +       struct mux_div_clk *md = to_mux_div_clk(hw);
+
+Missing a blank line.
+
+> +       return __mux_div_clk_set_rate_and_parent(hw, md->src_sel,
+> +                       parent_rate / rate);
+> +}
+> +
+> +static int mux_div_clk_set_parent(struct clk_hw *hw, u8 index)
+> +{
+> +       struct mux_div_clk *md = to_mux_div_clk(hw);
+
+Same here.
+
+> +       return __mux_div_clk_set_rate_and_parent(hw, md->parent_map[index],
+> +                       md->data.div);
+> +}
+> +
+> +static u8 mux_div_clk_get_parent(struct clk_hw *hw)
+> +{
+> +       struct mux_div_clk *md = to_mux_div_clk(hw);
+> +       int num_parents = __clk_get_num_parents(hw->clk);
+> +       u32 i, div, sel;
+> +
+> +       md->ops->get_src_div(md, &sel, &div);
+> +       md->src_sel = sel;
+> +
+> +       for (i = 0; i < num_parents; i++)
+> +               if (sel == md->parent_map[i])
+> +                       return i;
+> +       WARN(1, "Can't find parent\n");
+> +       return -EINVAL;
+> +}
+> +
+> +static unsigned long
+> +mux_div_clk_recalc_rate(struct clk_hw *hw, unsigned long prate)
+> +{
+> +       struct mux_div_clk *md = to_mux_div_clk(hw);
+> +       u32 div, sel;
+> +
+> +       md->ops->get_src_div(md, &sel, &div);
+> +
+> +       return prate / div;
+> +}
+> +
+> +const struct clk_ops clk_ops_mux_div_clk = {
+> +       .enable = mux_div_clk_enable,
+> +       .disable = mux_div_clk_disable,
+> +       .set_rate_and_parent = mux_div_clk_set_rate_and_parent,
+> +       .set_rate = mux_div_clk_set_rate,
+> +       .set_parent = mux_div_clk_set_parent,
+> +       .round_rate = mux_div_clk_round_rate,
+> +       .get_parent = mux_div_clk_get_parent,
+> +       .recalc_rate = mux_div_clk_recalc_rate,
+> +};
+> +EXPORT_SYMBOL_GPL(clk_ops_mux_div_clk);
+> diff --git a/include/linux/clk/msm-clk-generic.h b/include/linux/clk/msm-clk-generic.h
+> new file mode 100644
+> index 000000000000..cee38636fe0f
+> --- /dev/null
+> +++ b/include/linux/clk/msm-clk-generic.h
+> @@ -0,0 +1,208 @@
+> +/*
+> + * Copyright (c) 2014, The Linux Foundation. All rights reserved.
+> + *
+> + * This software is licensed under the terms of the GNU General Public
+> + * License version 2, as published by the Free Software Foundation, and
+> + * may be copied, distributed, and modified under those terms.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#ifndef __QCOM_CLK_GENERIC_H__
+> +#define __QCOM_CLK_GENERIC_H__
+> +
+> +#include <linux/err.h>
+> +#include <linux/clk-provider.h>
+> +
+> +static inline bool is_better_rate(unsigned long req, unsigned long best,
+> +                                 unsigned long new)
+> +{
+> +       if (IS_ERR_VALUE(new))
+> +               return false;
+> +
+> +       return (req <= new && new < best) || (best < req && best < new);
+> +}
+> +
+> +/* ==================== Mux clock ==================== */
+> +
+> +struct mux_clk;
+> +
+> +struct clk_mux_ops {
+> +       int (*set_mux_sel)(struct mux_clk *clk, int sel);
+> +       int (*get_mux_sel)(struct mux_clk *clk);
+> +
+> +       /* Optional */
+> +       bool (*is_enabled)(struct mux_clk *clk);
+> +       int (*enable)(struct mux_clk *clk);
+> +       void (*disable)(struct mux_clk *clk);
+> +};
+> +
+> +struct mux_clk {
+> +       /* Parents in decreasing order of preference for obtaining rates. */
+> +       u8              *parent_map;
+
+Checkpatch fails here with "no space before tabs".
+
+> +       bool            has_safe_parent;
+> +       u8              safe_sel;
+> +       const struct clk_mux_ops *ops;
+> +
+> +       /* Fields not used by helper function. */
+> +       void __iomem    *base;
+Same here.
+
+> +       u32             offset;
+> +       u32             en_offset;
+> +       int             en_reg;
+> +       u32             mask;
+> +       u32             shift;
+> +       u32             en_mask;
+> +       void            *priv;
+> +
+> +       struct clk_hw   hw;
+> +};
+> +
+> +static inline struct mux_clk *to_mux_clk(struct clk_hw *hw)
+> +{
+> +       return container_of(hw, struct mux_clk, hw);
+> +}
+> +
+> +extern const struct clk_ops clk_ops_gen_mux;
+> +
+> +/* ==================== Divider clock ==================== */
+> +
+> +struct div_clk;
+> +
+> +struct clk_div_ops {
+> +       int (*set_div)(struct div_clk *clk, int div);
+> +       int (*get_div)(struct div_clk *clk);
+> +       bool (*is_enabled)(struct div_clk *clk);
+> +       int (*enable)(struct div_clk *clk);
+> +       void (*disable)(struct div_clk *clk);
+> +};
+> +
+> +struct div_data {
+> +       unsigned int div;
+> +       unsigned int min_div;
+> +       unsigned int max_div;
+> +       /*
+> +        * Indicate whether this divider clock supports half-interger divider.
+> +        * If it is, all the min_div and max_div have been doubled. It means
+> +        * they are 2*N.
+> +        */
+> +       bool is_half_divider;
+> +};
+> +
+> +struct div_clk {
+> +       struct div_data data;
+> +
+> +       /* Optional */
+> +       const struct clk_div_ops *ops;
+> +
+> +       /* Fields not used by helper function. */
+> +       void __iomem    *base;
+Same here.
+> +       u32             offset;
+> +       u32             mask;
+> +       u32             shift;
+> +       u32             en_mask;
+> +       void            *priv;
+> +       struct clk_hw   hw;
+> +};
+> +
+> +static inline struct div_clk *to_div_clk(struct clk_hw *hw)
+> +{
+> +       return container_of(hw, struct div_clk, hw);
+> +}
+> +
+> +extern const struct clk_ops clk_ops_div;
+> +
+> +#define DEFINE_FIXED_DIV_CLK(clk_name, _div, _parent) \
+> +static struct div_clk clk_name = {     \
+> +       .data = {                               \
+> +               .max_div = _div,                \
+> +               .min_div = _div,                \
+> +               .div = _div,                    \
+> +       },                                      \
+> +       .hw.init = &(struct clk_init_data){ \
+> +               .parent_names = (const char *[]){ _parent }, \
+> +               .num_parents = 1,               \
+> +               .name = #clk_name,              \
+> +               .ops = &clk_ops_div,            \
+> +               .flags = CLK_SET_RATE_PARENT,   \
+> +       }                                       \
+> +}
+> +
+> +/* ==================== Mux Div clock ==================== */
+> +
+> +struct mux_div_clk;
+> +
+> +/*
+> + * struct mux_div_ops
+> + * the enable and disable ops are optional.
+> + */
+> +
+> +struct mux_div_ops {
+> +       int (*set_src_div)(struct mux_div_clk *, u32 src_sel, u32 div);
+> +       void (*get_src_div)(struct mux_div_clk *, u32 *src_sel, u32 *div);
+> +       int (*enable)(struct mux_div_clk *);
+> +       void (*disable)(struct mux_div_clk *);
+> +       bool (*is_enabled)(struct mux_div_clk *);
+> +};
+> +
+> +/*
+> + * struct mux_div_clk - combined mux/divider clock
+> + * @priv
+> +               parameters needed by ops
+> + * @safe_freq
+> +               when switching rates from A to B, the mux div clock will
+> +               instead switch from A -> safe_freq -> B. This allows the
+> +               mux_div clock to change rates while enabled, even if this
+> +               behavior is not supported by the parent clocks.
+> +
+> +               If changing the rate of parent A also causes the rate of
+> +               parent B to change, then safe_freq must be defined.
+> +
+> +               safe_freq is expected to have a source clock which is always
+> +               on and runs at only one rate.
+> + * @parents
+> +               list of parents and mux indicies
+> + * @ops
+> +               function pointers for hw specific operations
+> + * @src_sel
+> +               the mux index which will be used if the clock is enabled.
+> + */
+> +
+> +struct mux_div_clk {
+> +       /* Required parameters */
+> +       const struct mux_div_ops        *ops;
+> +       struct div_data                 data;
+> +       u8                              *parent_map;
+> +
+> +       struct clk_hw                   hw;
+> +
+> +       /* Internal */
+> +       u32                             src_sel;
+> +
+> +       /* Optional parameters */
+> +       void                            *priv;
+> +       void __iomem                    *base;
+> +       u32                             div_mask;
+> +       u32                             div_offset;
+> +       u32                             div_shift;
+> +       u32                             src_mask;
+> +       u32                             src_offset;
+> +       u32                             src_shift;
+> +       u32                             en_mask;
+> +       u32                             en_offset;
+> +
+> +       u32                             safe_div;
+> +       struct clk                      *safe_parent;
+> +       unsigned long                   safe_freq;
+> +};
+> +
+> +static inline struct mux_div_clk *to_mux_div_clk(struct clk_hw *hw)
+> +{
+> +       return container_of(hw, struct mux_div_clk, hw);
+> +}
+> +
+> +extern const struct clk_ops clk_ops_mux_div_clk;
+> +
+> +#endif
+> --
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
 -- 
-1.8.1.5
-
+Thanks and Regards
+Pramod
