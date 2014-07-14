@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650AbaGNPIX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 11:08:23 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:57569 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755947AbaGNPIC (ORCPT
+	id S1756018AbaGNPIi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 11:08:38 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:59074 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755944AbaGNPIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 11:08:02 -0400
-Date: Mon, 14 Jul 2014 16:07:33 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Will Deacon <Will.Deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 2/7] arm64: Support restart through restart notifier
- call chain
-Message-ID: <20140714150733.GE1112@arm.com>
-References: <1405265431-4561-1-git-send-email-linux@roeck-us.net>
- <1405265431-4561-3-git-send-email-linux@roeck-us.net>
- <20140714145504.GD1112@arm.com>
- <53C3F0BA.5020201@roeck-us.net>
+	Mon, 14 Jul 2014 11:08:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53C3F0BA.5020201@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1404241875-29164-1-git-send-email-agrover@redhat.com>
+References: <1404241875-29164-1-git-send-email-agrover@redhat.com>
+Date: Mon, 14 Jul 2014 17:08:30 +0200
+Message-ID: <CAJSP0QVa_e+sDHGqdFskfgGHYudz3+3i-NPMtiheWKfDqSQ_Tw@mail.gmail.com>
+Subject: Re: [RFC 0/2] target: userspace pass-through backend
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: Andy Grover <agrover@redhat.com>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>, shli@kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 04:01:14PM +0100, Guenter Roeck wrote:
-> On 07/14/2014 07:55 AM, Catalin Marinas wrote:
-> > On Sun, Jul 13, 2014 at 04:30:26PM +0100, Guenter Roeck wrote:
-> >> diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
-> >> index 43b7c34..b2da6d5 100644
-> >> --- a/arch/arm64/kernel/process.c
-> >> +++ b/arch/arm64/kernel/process.c
-> >> @@ -174,6 +174,8 @@ void machine_restart(char *cmd)
-> >>   	/* Now call the architecture specific reboot code. */
-> >>   	if (arm_pm_restart)
-> >>   		arm_pm_restart(reboot_mode, cmd);
-> >> +	else
-> >> +		kernel_restart_notify(cmd);
-> >
-> > There are couple of drivers specific to arm64, once they are converted
-> > we can get rid of arm_pm_restart entirely here.
-> 
-> I thought you wanted to keep exporting arm_pm_restart.
+On Tue, Jul 1, 2014 at 9:11 PM, Andy Grover <agrover@redhat.com> wrote:
+> Shaohua Li wrote an initial implementation of this, late last year[1].
+> Starting from that, I started working on some alternate implementation
+> choices, and ended up with something rather different.
+>
+> Please take a look and let me know what you think. Patch 1 is a
+> design and overview doc, and patch 2 is the actual code, along with
+> implementation rationale.
+>
+> Thanks -- Andy
+>
+> [1] http://thread.gmane.org/gmane.linux.scsi.target.devel/5044
+>
+> Andy Grover (2):
+>   target: Add documentation on the target userspace pass-through driver
+>   target: Add a user-passthrough backstore
+>
+>  Documentation/target/tcmu-design.txt   |  210 +++++++
+>  drivers/target/Kconfig                 |    5 +
+>  drivers/target/Makefile                |    1 +
+>  drivers/target/target_core_transport.c |    4 +
+>  drivers/target/target_core_user.c      | 1078 ++++++++++++++++++++++++++++++++
+>  drivers/target/target_core_user.h      |  126 ++++
+>  6 files changed, 1424 insertions(+)
+>  create mode 100644 Documentation/target/tcmu-design.txt
+>  create mode 100644 drivers/target/target_core_user.c
+>  create mode 100644 drivers/target/target_core_user.h
 
-No, I just thought you don't want the restart mechanism implemented in
-modules but the notifier registration still allows that, so I didn't
-fully get the reasoning. But I agree on the race aspect.
+Hi Andy,
+Just wanted to let you know that a userspace backstore would
+potentially be useful for QEMU.  QEMU supports a number of disk image
+formats (VMDK, VHDX, qcow2, and more).  Make these available as SCSI
+LUNs on the host or to remote SCSI initiators is cool.
 
-> That logically implies
-> that you want to have the ability to write new drivers which use it, which
-> in turn implies that converting existing drivers would not make much sense.
+We currently have a tool called qemu-nbd that exports disk images
+using the Network Block Device protocol.  Your userspace backstore
+provides other options like iSCSI target or loopback access on the
+host.
 
-If the new handler registration mechanism gives the functionality, I
-don't see why we should keep arm_pm_restart around (for arm64 it's
-easier since there aren't many drivers setting it).
+I took a quick look at the patch and imagine it's not hard to hook up
+to QEMU.  Looks promising!
 
--- 
-Catalin
+Stefan
