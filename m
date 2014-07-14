@@ -1,107 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756757AbaGNSLQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 14:11:16 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:63456 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756215AbaGNSLE (ORCPT
+	id S1756764AbaGNSMi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 14:12:38 -0400
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:45754 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479AbaGNSMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 14:11:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <1404337536-11037-1-git-send-email-ddstreet@ieee.org>
-References: <1401747586-11861-1-git-send-email-ddstreet@ieee.org> <1404337536-11037-1-git-send-email-ddstreet@ieee.org>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Mon, 14 Jul 2014 14:10:42 -0400
-X-Google-Sender-Auth: Kz7HAofJIjnAvDzOS9OJUAzE0aA
-Message-ID: <CALZtONBYwm5t39z8wiEkTrFw-g=Be+ypaZo2nuFo0ob5pRXSAw@mail.gmail.com>
-Subject: Re: [PATCHv5 0/4] mm/zpool: add common api for zswap to use zbud/zsmalloc
-To: Seth Jennings <sjennings@variantweb.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Dan Streetman <ddstreet@ieee.org>, Bob Liu <bob.liu@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Weijie Yang <weijie.yang@samsung.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 14 Jul 2014 14:12:30 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+To: Randy Dunlap <rdunlap@infradead.org>,
+        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 1/1] doc: cpu-hotplug.txt: Minor grammar fix
+Date: Mon, 14 Jul 2014 14:12:51 -0400
+Message-Id: <1405361572-8277-1-git-send-email-bobby.prani@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew, any thoughts on this latest version of the patch set?  Let me
-know if I missed anything or you have any other suggestions.
+fix minor grammar in sentence
 
-Seth, did you get a chance to review this and/or test it out?
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+---
+ Documentation/cpu-hotplug.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/Documentation/cpu-hotplug.txt b/Documentation/cpu-hotplug.txt
+index a0b005d..2ec86f6 100644
+--- a/Documentation/cpu-hotplug.txt
++++ b/Documentation/cpu-hotplug.txt
+@@ -383,7 +383,7 @@ A: The following are what is required for CPU hotplug infrastructure to work
+                           dead routine is called to be sure positively.
+ 
+ Q: I need to ensure that a particular cpu is not removed when there is some
+-   work specific to this cpu is in progress.
++   work specific to this cpu in progress.
+ A: There are two ways.  If your code can be run in interrupt context, use
+    smp_call_function_single(), otherwise use work_on_cpu().  Note that
+    work_on_cpu() is slow, and can fail due to out of memory:
+-- 
+1.9.1
 
-
-On Wed, Jul 2, 2014 at 5:45 PM, Dan Streetman <ddstreet@ieee.org> wrote:
-> In order to allow zswap users to choose between zbud and zsmalloc for
-> the compressed storage pool, this patch set adds a new api "zpool" that
-> provides an interface to both zbud and zsmalloc.  This does not include
-> implementing shrinking in zsmalloc, which will be sent separately.
->
-> I believe Seth originally was using zsmalloc for swap, but there were
-> concerns about how significant the impact of shrinking zsmalloc would
-> be when zswap had to start reclaiming pages.  That still may be an
-> issue, but this at least allows users to choose themselves whether
-> they want a lower-density or higher-density compressed storage medium.
-> At least for situations where zswap reclaim is never or rarely reached,
-> it probably makes sense to use the higher density of zsmalloc.
->
-> Note this patch set does not change zram to use zpool, although that
-> change should be possible as well.
->
-> ---
-> Changes since v4 : https://lkml.org/lkml/2014/6/2/711
->   -omit first patch, that removed gfp_t param from zpool_malloc()
->   -move function doc from zpool.h to zpool.c
->   -move module usage refcounting into patch that adds zpool
->   -add extra refcounting to prevent driver unregister if in use
->   -add doc clarifying concurrency usage
->   -make zbud/zsmalloc zpool functions static
->   -typo corrections
->
-> Changes since v3 : https://lkml.org/lkml/2014/5/24/130
->   -In zpool_shrink() use # pages instead of # bytes
->   -Add reclaimed param to zpool_shrink() to indicate to caller
->    # pages actually reclaimed
->   -move module usage counting to zpool, from zbud/zsmalloc
->   -update zbud_zpool_shrink() to call zbud_reclaim_page() in a
->    loop until requested # pages have been reclaimed (or error)
->
-> Changes since v2 : https://lkml.org/lkml/2014/5/7/927
->   -Change zpool to use driver registration instead of hardcoding
->    implementations
->   -Add module use counting in zbud/zsmalloc
->
-> Changes since v1 https://lkml.org/lkml/2014/4/19/97
->  -remove zsmalloc shrinking
->  -change zbud size param type from unsigned int to size_t
->  -remove zpool fallback creation
->  -zswap manually falls back to zbud if specified type fails
->
->
-> Dan Streetman (4):
->   mm/zbud: change zbud_alloc size type to size_t
->   mm/zpool: implement common zpool api to zbud/zsmalloc
->   mm/zpool: zbud/zsmalloc implement zpool
->   mm/zpool: update zswap to use zpool
->
->  include/linux/zbud.h  |   2 +-
->  include/linux/zpool.h | 106 +++++++++++++++
->  mm/Kconfig            |  43 +++---
->  mm/Makefile           |   1 +
->  mm/zbud.c             |  98 +++++++++++++-
->  mm/zpool.c            | 364 ++++++++++++++++++++++++++++++++++++++++++++++++++
->  mm/zsmalloc.c         |  84 ++++++++++++
->  mm/zswap.c            |  75 ++++++-----
->  8 files changed, 722 insertions(+), 51 deletions(-)
->  create mode 100644 include/linux/zpool.h
->  create mode 100644 mm/zpool.c
->
-> --
-> 1.8.3.1
->
