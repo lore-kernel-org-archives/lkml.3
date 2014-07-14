@@ -1,49 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157AbaGNIGS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 04:06:18 -0400
-Received: from smtprelay0097.hostedemail.com ([216.40.44.97]:59071 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750943AbaGNIGL (ORCPT
+	id S1753242AbaGNIGb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 04:06:31 -0400
+Received: from relay.parallels.com ([195.214.232.42]:48289 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753095AbaGNIGP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 04:06:11 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 10,1,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:196:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1566:1593:1594:1622:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:2904:3138:3139:3140:3141:3142:3622:3870:3876:4321:5007:7514:7576:7652:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12296:12438:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: rub64_18823344ec617
-X-Filterd-Recvd-Size: 1570
-Message-ID: <1405325166.9132.40.camel@joe-AO725>
-Subject: Re: [PATCH net-next v2 3/6] ethernet: amd: dynamic debug fixes
-From: Joe Perches <joe@perches.com>
-To: varkabhadram@gmail.com
-Cc: netdev@vger.kernel.org, Thomas.Lendacky@amd.com,
-        geert+renesas@linux-m68k.org, ebiederm@xmission.com,
-        macro@linux-mips.org, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, Varka Bhadram <varkab@cdac.in>
-Date: Mon, 14 Jul 2014 01:06:06 -0700
-In-Reply-To: <1405319147-5212-4-git-send-email-varkabhadram@gmail.com>
-References: <1405319147-5212-1-git-send-email-varkabhadram@gmail.com>
-	 <1405319147-5212-4-git-send-email-varkabhadram@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	Mon, 14 Jul 2014 04:06:15 -0400
+Message-ID: <53C38F69.4070304@parallels.com>
+Date: Mon, 14 Jul 2014 12:06:01 +0400
+From: Maxim Patlasov <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <riel@redhat.com>, <linux-kernel@vger.kernel.org>, <mhocko@suse.cz>,
+        <linux-mm@kvack.org>, <kosaki.motohiro@jp.fujitsu.com>,
+        <fengguang.wu@intel.com>, <jweiner@redhat.com>
+Subject: Re: [PATCH] mm/page-writeback.c: fix divide by zero in bdi_dirty_limits
+References: <20140711081656.15654.19946.stgit@localhost.localdomain> <20140711152732.de78603744cd861497eca5dc@linux-foundation.org>
+In-Reply-To: <20140711152732.de78603744cd861497eca5dc@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.22.200]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-07-14 at 11:55 +0530, varkabhadram@gmail.com wrote:
-> From: Varka Bhadram <varkab@cdac.in>
-[]
-> diff --git a/drivers/net/ethernet/amd/amd8111e.c b/drivers/net/ethernet/amd/amd8111e.c
-[]
-> @@ -501,8 +501,7 @@ static int amd8111e_restart(struct net_device *dev)
->  
->  	/* Enable interrupt coalesce */
->  	if(lp->options & OPTION_INTR_COAL_ENABLE){
-> -		printk(KERN_INFO "%s: Interrupt Coalescing Enabled.\n",
-> -								dev->name);
-> +		netdev_info(dev, "Interrupt Coalescing Enabled");
+Hi Andrew,
 
-This needs a terminating newlines.
+On 07/12/2014 02:27 AM, Andrew Morton wrote:
+> On Fri, 11 Jul 2014 12:18:27 +0400 Maxim Patlasov <MPatlasov@parallels.com> wrote:
+>
+>> Under memory pressure, it is possible for dirty_thresh, calculated by
+>> global_dirty_limits() in balance_dirty_pages(), to equal zero.
+> Under what circumstances?  Really small values of vm_dirty_bytes?
+
+No, I used default settings:
+
+vm_dirty_bytes = 0;
+dirty_background_bytes = 0;
+vm_dirty_ratio = 20;
+dirty_background_ratio = 10;
+
+and a simple program like main() { while(1) { p = malloc(4096); mlock(p, 
+4096); } }. Of course, this triggers oom eventually, but immediately 
+before oom, the system is under hard memory pressure.
+
+>
+>> Then, if
+>> strictlimit is true, bdi_dirty_limits() tries to resolve the proportion:
+>>
+>>    bdi_bg_thresh : bdi_thresh = background_thresh : dirty_thresh
+>>
+>> by dividing by zero.
+>>
+>> ...
+>>
+>> --- a/mm/page-writeback.c
+>> +++ b/mm/page-writeback.c
+>> @@ -1306,9 +1306,9 @@ static inline void bdi_dirty_limits(struct backing_dev_info *bdi,
+>>   	*bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
+>>   
+>>   	if (bdi_bg_thresh)
+>> -		*bdi_bg_thresh = div_u64((u64)*bdi_thresh *
+>> -					 background_thresh,
+>> -					 dirty_thresh);
+>> +		*bdi_bg_thresh = dirty_thresh ? div_u64((u64)*bdi_thresh *
+>> +							background_thresh,
+>> +							dirty_thresh) : 0;
+> This introduces a peculiar discontinuity:
+>
+> if dirty_thresh==3, treat it as 3
+> if dirty_thresh==2, treat it as 2
+> if dirty_thresh==1, treat it as 1
+> if dirty_thresh==0, treat it as infinity
+
+No, the patch doesn't treat dirty_thresh==0 as infinity. In fact, in 
+that case we have equation: x : 0 = 0 : 0, and the patch resolves it as 
+x=0. Here is the reasoning:
+
+1. A bdi counter is always a fraction of global one. Hence bdi_thresh is 
+always not greater than dirty_thresh. So far as dirty_thresh is equal to 
+zero, bdi_thresh is equal to zero too.
+2. bdi_bg_thresh must be not greater than bdi_thresh because we want to 
+start background process earlier than throttling it. So far as 
+bdi_thresh is equal to zero, bdi_bg_thresh must be zero too.
 
 
+>
+> Would it not make more sense to change global_dirty_limits() to convert
+> 0 to 1?  With an appropriate comment, obviously.
+>
+>
+> Or maybe the fix lies elsewhere.  Please do tell us how this zero comes
+> about.
+>
+
+Firstly let me explain where available_memory equal to one came from. 
+global_dirty_limits() calculates it by calling 
+global_dirtyable_memory(). The latter takes into consideration three 
+global counters and a global reserve. In my case corresponding values were:
+
+NR_INACTIVE_FILE = 0
+NR_ACTIVE_FILE = 0
+NR_FREE_PAGES = 7006
+dirty_balance_reserve = 7959.
+
+Consequently, "x" in global_dirtyable_memory() was equal to zero, and 
+the function returned one. Now global_dirty_limits() assigns 
+available_memory to one and calculates "dirty" as a fraction of 
+available_memory:
+
+     dirty = (vm_dirty_ratio * available_memory) / 100;
+
+So far as vm_drity_ratio is lesser than 100 (it is 20 by default), dirty 
+is calculated as zero.
+
+As for your question about conversion 0 to 1, I think that bdi_thresh = 
+dirty_thresh = 0 makes natural sense: we are under strong memory 
+pressure, please always start background writeback and throttle process 
+(even if actual number of dirty pages is low). So other parts of 
+balance_dirty_pages machinery must handle zero thresholds properly.
+
+Thanks,
+Maxim
