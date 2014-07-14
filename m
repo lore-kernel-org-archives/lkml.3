@@ -1,58 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966AbaGNPlh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 11:41:37 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:37718 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755823AbaGNPl2 (ORCPT
+	id S1756014AbaGNPnG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 11:43:06 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:46620 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754890AbaGNPnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 11:41:28 -0400
+	Mon, 14 Jul 2014 11:43:00 -0400
+Date: Mon, 14 Jul 2014 11:42:45 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: konrad@kernel.org, xen-devel@lists.xenproject.org, david.vrabel@citrix.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 2/5] xen/pciback: Don't deadlock when unbinding.
+Message-ID: <20140714154245.GA6989@laptop.dumpdata.com>
+References: <1405109332-31659-1-git-send-email-konrad@kernel.org>
+ <1405109332-31659-3-git-send-email-konrad@kernel.org>
+ <53C04D81.3010002@oracle.com>
+ <20140711210201.GC25233@laptop.dumpdata.com>
+ <20140714141328.GA5112@laptop.dumpdata.com>
+ <53C3E975.60900@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <1404926274-18411-1-git-send-email-b.zolnierkie@samsung.com>
-References: <1404926274-18411-1-git-send-email-b.zolnierkie@samsung.com>
-Date: Mon, 14 Jul 2014 16:41:25 +0100
-Message-ID: <CAD8Lp46mp-tHcwGpFd0YHRDE4pKWDoPpUvu-Y0QzxSi-jnYtWg@mail.gmail.com>
-Subject: Re: [PATCH v3 0/4] ARM: EXYNOS: cpuidle: fix AFTR mode on boards with
- secure firmware enabled
-From: Daniel Drake <drake@endlessm.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C3E975.60900@oracle.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bartlomiej,
+On Mon, Jul 14, 2014 at 10:30:13AM -0400, Boris Ostrovsky wrote:
+> On 07/14/2014 10:13 AM, Konrad Rzeszutek Wilk wrote:
+> >On Fri, Jul 11, 2014 at 05:02:01PM -0400, Konrad Rzeszutek Wilk wrote:
+> >>>>--- a/drivers/xen/xen-pciback/pci_stub.c
+> >>>>+++ b/drivers/xen/xen-pciback/pci_stub.c
+> >>>>@@ -250,6 +250,8 @@ struct pci_dev *pcistub_get_pci_dev(struct xen_pcibk_device *pdev,
+> >>>>   *  - 'echo BDF > unbind' with a guest still using it. See pcistub_remove
+> >>>>   *
+> >>>>   *  As such we have to be careful.
+> >>>>+ *
+> >>>>+ *  To make this easier, the caller has to hold the device lock.
+> >>>Should we assert that the lock is being held?
+> >>Yes of course we should. Thank you!
+> >How about this:
+> >
+> > From 388a03c598218dac8bfeb6c5bf3992e0d1e37d1e Mon Sep 17 00:00:00 2001
+> >From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> >Date: Tue, 8 Jul 2014 11:12:02 -0400
+> >Subject: [PATCH] xen/pciback: Don't deadlock when unbinding.
+> >
+> >As commit 0a9fd0152929db372ff61b0d6c280fdd34ae8bdb
+> >'xen/pciback: Document the entry points for 'pcistub_put_pci_dev''
+> >explained there are four entry points in this function.
+> >Two of them are when the user fiddles in the SysFS to
+> >unbind a device which might be in use by a guest or not.
+> >
+> >Both 'unbind' states will cause a deadlock as the the PCI lock has
+> >already been taken, which then pci_device_reset tries to take.
+> >
+> >We can simplify this by requiring that all callers of
+> >pcistub_put_pci_dev MUST hold the device lock. And then
+> >we can just call the lockless version of pci_device_reset.
+> >
+> >To make it even simpler we will modify xen_pcibk_release_pci_dev
+> >to quality whether it should take a lock or not - as it ends
+> >up calling xen_pcibk_release_pci_dev and needs to hold the lock.
+> >
+> >Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> >---
+> >[v2: Per David Vrabel's suggestion - use lockless version of reset]
+> >[v3: Per Boris suggestion add assertion mechanism]
+> >---
+> >  drivers/xen/xen-pciback/passthrough.c |  9 +++++++--
+> >  drivers/xen/xen-pciback/pci_stub.c    | 12 ++++++------
+> >  drivers/xen/xen-pciback/pciback.h     |  7 ++++---
+> >  drivers/xen/xen-pciback/vpci.c        |  9 +++++++--
+> >  drivers/xen/xen-pciback/xenbus.c      |  2 +-
+> >  5 files changed, 25 insertions(+), 14 deletions(-)
+> >
+> >diff --git a/drivers/xen/xen-pciback/passthrough.c b/drivers/xen/xen-pciback/passthrough.c
+> >index 828dddc..d0c3fb4 100644
+> >--- a/drivers/xen/xen-pciback/passthrough.c
+> >+++ b/drivers/xen/xen-pciback/passthrough.c
+> >@@ -69,7 +69,7 @@ static int __xen_pcibk_add_pci_dev(struct xen_pcibk_device *pdev,
+> >  }
+> >  static void __xen_pcibk_release_pci_dev(struct xen_pcibk_device *pdev,
+> >-					struct pci_dev *dev)
+> >+					struct pci_dev *dev, bool lock)
+> >  {
+> >  	struct passthrough_dev_data *dev_data = pdev->pci_dev_data;
+> >  	struct pci_dev_entry *dev_entry, *t;
+> >@@ -87,8 +87,13 @@ static void __xen_pcibk_release_pci_dev(struct xen_pcibk_device *pdev,
+> >  	mutex_unlock(&dev_data->lock);
+> >-	if (found_dev)
+> >+	if (found_dev) {
+> >+		if (lock)
+> >+			device_lock(&found_dev->dev);
+> >  		pcistub_put_pci_dev(found_dev);
+> >+		if (lock)
+> >+			device_unlock(&found_dev->dev);
+> >+	}
+> >  }
+> >  static int __xen_pcibk_init_devices(struct xen_pcibk_device *pdev)
+> >diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
+> >index d57a173..8293fbb 100644
+> >--- a/drivers/xen/xen-pciback/pci_stub.c
+> >+++ b/drivers/xen/xen-pciback/pci_stub.c
+> >@@ -250,6 +250,8 @@ struct pci_dev *pcistub_get_pci_dev(struct xen_pcibk_device *pdev,
+> >   *  - 'echo BDF > unbind' with a guest still using it. See pcistub_remove
+> >   *
+> >   *  As such we have to be careful.
+> >+ *
+> >+ *  To make this easier, the caller has to hold the device lock.
+> >   */
+> >  void pcistub_put_pci_dev(struct pci_dev *dev)
+> >  {
+> >@@ -276,11 +278,8 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+> >  	/* Cleanup our device
+> >  	 * (so it's ready for the next domain)
+> >  	 */
+> >-
+> >-	/* This is OK - we are running from workqueue context
+> >-	 * and want to inhibit the user from fiddling with 'reset'
+> >-	 */
+> >-	pci_reset_function(dev);
+> >+	lockdep_assert_held(&dev->dev.mutex);
+> >+	__pci_reset_function_locked(dev);
+> >  	pci_restore_state(dev);
+> 
+> Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> 
+> (Although I wonder about the fact that we are exposing the mutex which is
+> typically hidden by device_lock()/unlock() inlines. Have you considered
+> adding something like is_device_locked() to device.h?)
 
-On Wed, Jul 9, 2014 at 6:17 PM, Bartlomiej Zolnierkiewicz
-<b.zolnierkie@samsung.com> wrote:
-> This patch series adds support for AFTR idle mode on boards with
-> secure firmware enabled and allows EXYNOS cpuidle driver usage on
-> Exynos4x12 SoCs.
->
-> It has been tested on Trats2 board (using Exynos4412 SoC with secure
-> firmware enabled) on which AFTR mode reduces power consumption by ~12%
-> when EXYNOS cpuidle driver is enabled (in both cases the default
-> exynos_defconfig config is used and CPU1-3 are offlined).
+I did, but this is a bug-fix (which can be backported to stable) so I thought
+it would not be nice - as that is more of an API change.
 
-Thanks for this, I have tested it on ODROID-U2.
+Instead I split it up and there is another patch that makes it
+an 'device_lock_assert' function.
 
-I don't have any equipment to measure the power usage, but after
-offlining CPUs 1,2,3 via sysfs "online" file, a printk I added
-confirms that the system is going to enter aftr mode, and system
-stability seems as good as ever.
+And thanks to your idea - I did find two instances where we did
+call without a mutex held.
 
-Is there any automatic way that the cpus should be offlined, or is the
-intention that it must be done "by hand" like this?
-
-Thanks,
-Daniel
+Reposting shortly (will retain your Reviewed-by - please scream if you
+prefer that I drop it).
