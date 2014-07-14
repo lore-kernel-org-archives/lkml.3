@@ -1,236 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753569AbaGNHeT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 03:34:19 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:29175 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752724AbaGNHdn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 03:33:43 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-7c-53c387c92def
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-mm-sig@lists.linaro.org, devicetree@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Nishanth Peethambaran <nishanth.p@gmail.com>,
-        Marc <marc.ceeeee@gmail.com>, Josh Cartwright <joshc@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Paul Mackerras <paulus@samba.org>,
-        Jon Medhurst <tixy@linaro.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        "Aneesh Kumar K.V." <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v2 4/4] drivers: dma-contiguous: add initialization from device
- tree
-Date: Mon, 14 Jul 2014 09:12:46 +0200
-Message-id: <1405321966-28184-5-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.9.2
-In-reply-to: <1405321966-28184-1-git-send-email-m.szyprowski@samsung.com>
-References: <1405321966-28184-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNLMWRmVeSWpSXmKPExsVy+t/xq7on2w8HGzzdq2wxZ/0aNovHr+ex
-	WPyddIzd4kNTK7PF+2U9jBbzj5xjtTjwZwejxcruZjaLneveMVqcbXrDbrG9cwa7xZcrD5ks
-	Nj2+xmpxedccNou1R+6yW2x4eZDJYsHxFlaLP9PlLNYcWcxu8Xf7JhaL9TNes1gsnH+f3eLl
-	xxMsDuIea+atYfT4/WsSo8flvl4mj52z7rJ79LxpYfXoenuFyePOtT1sHidm/GbxeHBoM4vH
-	5iX1Hrf/PWb2WPfnFZNH/18Dj7m7+hg9+rasYvT4vEkuQCCKyyYlNSezLLVI3y6BK+N9wwSW
-	gpP6FdMePGRpYGxR72Lk5JAQMJH40PSbDcIWk7hwbz2QzcUhJLCUUeJLx3QWCKePSWJbbws7
-	SBWbgKFE19susA4RATeJf+sOgXUwCyxgkzj6/wcjSEJYIEzi4JMtzCA2i4CqxKVV7WDNvAIe
-	EtfmXGKFWCcn8f/lCiYQm1PAU2Lj5G9gcSGgmsP79jBOYORdwMiwilE0tTS5oDgpPddQrzgx
-	t7g0L10vOT93EyMkwr7sYFx8zOoQowAHoxIPb4XY4WAh1sSy4srcQ4wSHMxKIrzhbkAh3pTE
-	yqrUovz4otKc1OJDjEwcnFINjFUlQSq1n0NuO3KcPcEm671UqPJdxo6tv/9OnWr9OyTswk+J
-	SK3sZx0t67S+GpS/O/yqrXCqQCHLVoF/e76aHd93SLDD42KAxZ7u9RuWPe9U9dY+pvR/y4wv
-	X1QCvZItHLf+id2YuW1WcUP/A85PyXGHeKeExZ6qT3tTuKiu2DuAs9chaceqpUosxRmJhlrM
-	RcWJADLVCvGOAgAA
+	id S1753621AbaGNHe1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 03:34:27 -0400
+Received: from mail-bl2lp0203.outbound.protection.outlook.com ([207.46.163.203]:55179
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753260AbaGNHeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 03:34:13 -0400
+X-WSS-ID: 0N8OYCD-08-121-02
+X-M-MSG: 
+From: "Gabbay, Oded" <Oded.Gabbay@amd.com>
+To: "airlied@gmail.com" <airlied@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "j.glisse@gmail.com" <j.glisse@gmail.com>,
+        "Bridgman, John" <John.Bridgman@amd.com>,
+        "Deucher, Alexander" <Alexander.Deucher@amd.com>,
+        "Lewycky, Andrew" <Andrew.Lewycky@amd.com>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "Pinchuk, Evgeny" <Evgeny.Pinchuk@amd.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "Skidanov, Alexey" <Alexey.Skidanov@amd.com>,
+        "airlied@linux.ie" <airlied@linux.ie>,
+        "oded.gabbay@gmail.com" <oded.gabbay@gmail.com>,
+        "Goz, Ben" <Ben.Goz@amd.com>
+Subject: Re: [PATCH 13/83] hsa/radeon: Add 2 new IOCTL to kfd, CREATE_QUEUE
+ and DESTROY_QUEUE
+Thread-Topic: [PATCH 13/83] hsa/radeon: Add 2 new IOCTL to kfd, CREATE_QUEUE
+ and DESTROY_QUEUE
+Thread-Index: AQHPnIkn6UkKy1BEJ0yOPolV0iv0PJubrBWAgAPJyYA=
+Date: Mon, 14 Jul 2014 07:33:47 +0000
+Message-ID: <019CCE693E457142B37B791721487FD9180B19A2@storexdag03.amd.com>
+References: <1405029027-6085-1-git-send-email-oded.gabbay@amd.com>
+	 <1405029027-6085-12-git-send-email-oded.gabbay@amd.com>
+	 <CAPM=9tyV8PBreHHSsMKo8dRiGvVWHR+LLPcNE2dVpoYkftpv2Q@mail.gmail.com>
+In-Reply-To: <CAPM=9tyV8PBreHHSsMKo8dRiGvVWHR+LLPcNE2dVpoYkftpv2Q@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.0.84]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <224E3B53863AAD4899AE8405C68F7DEC@amd.com>
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(377424004)(51704005)(199002)(189002)(24454002)(164054003)(54356999)(50466002)(76176999)(2656002)(95666004)(106116001)(64706001)(80022001)(46102001)(84676001)(44976005)(83322001)(107046002)(2351001)(87936001)(79102001)(47776003)(81542001)(92566001)(106466001)(97736001)(68736004)(77982001)(92726001)(85852003)(105586002)(20776003)(50986999)(86362001)(81342001)(99396002)(83072002)(55846006)(110136001)(31966008)(85306003)(74662001)(74502001)(21056001)(53416004)(76482001)(33656002)(1411001)(101416001)(23676002)(4396001)(77096002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR02MB033;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02723F29C4
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Oded.Gabbay@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6E7YcNY002174
 
-Add a function to create CMA region from previously reserved memory
-and add support for handling 'shared-dma-pool' reserved-memory device
-tree nodes.
-
-Based on previous code provided by Josh Cartwright <joshc@codeaurora.org>
-
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
----
- drivers/base/dma-contiguous.c | 60 +++++++++++++++++++++++++++++++++++++++++
- include/linux/cma.h           |  3 +++
- mm/cma.c                      | 62 +++++++++++++++++++++++++++++++++++--------
- 3 files changed, 114 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
-index 6606abdf880c..0e480146fe05 100644
---- a/drivers/base/dma-contiguous.c
-+++ b/drivers/base/dma-contiguous.c
-@@ -211,3 +211,63 @@ bool dma_release_from_contiguous(struct device *dev, struct page *pages,
- {
- 	return cma_release(dev_get_cma_area(dev), pages, count);
- }
-+
-+/*
-+ * Support for reserved memory regions defined in device tree
-+ */
-+#ifdef CONFIG_OF_RESERVED_MEM
-+#include <linux/of.h>
-+#include <linux/of_fdt.h>
-+#include <linux/of_reserved_mem.h>
-+
-+#undef pr_fmt
-+#define pr_fmt(fmt) fmt
-+
-+static void rmem_cma_device_init(struct reserved_mem *rmem, struct device *dev)
-+{
-+	struct cma *cma = rmem->priv;
-+	dev_set_cma_area(dev, cma);
-+}
-+
-+static const struct reserved_mem_ops rmem_cma_ops = {
-+	.device_init	= rmem_cma_device_init,
-+};
-+
-+static int __init rmem_cma_setup(struct reserved_mem *rmem)
-+{
-+	phys_addr_t align = PAGE_SIZE << max(MAX_ORDER - 1, pageblock_order);
-+	phys_addr_t mask = align - 1;
-+	unsigned long node = rmem->fdt_node;
-+	struct cma *cma;
-+	int err;
-+
-+	if (!of_get_flat_dt_prop(node, "reusable", NULL) ||
-+	    of_get_flat_dt_prop(node, "no-map", NULL))
-+		return -EINVAL;
-+
-+	if ((rmem->base & mask) || (rmem->size & mask)) {
-+		pr_err("Reserved memory: incorrect alignment of CMA region\n");
-+		return -EINVAL;
-+	}
-+
-+	err = cma_init_reserved_mem(rmem->base, rmem->size, 0, &cma);
-+	if (err) {
-+		pr_err("Reserved memory: unable to setup CMA region\n");
-+		return err;
-+	}
-+	/* Architecture specific contiguous memory fixup. */
-+	dma_contiguous_early_fixup(rmem->base, rmem->size);
-+
-+	if (of_get_flat_dt_prop(node, "linux,cma-default", NULL))
-+		dma_contiguous_set_default(cma);
-+
-+	rmem->ops = &rmem_cma_ops;
-+	rmem->priv = cma;
-+
-+	pr_info("Reserved memory: created CMA memory pool at %pa, size %ld MiB\n",
-+		&rmem->base, (unsigned long)rmem->size / SZ_1M);
-+
-+	return 0;
-+}
-+RESERVEDMEM_OF_DECLARE(cma, "shared-dma-pool", rmem_cma_setup);
-+#endif
-diff --git a/include/linux/cma.h b/include/linux/cma.h
-index 32cab7a425f9..9a18a2b1934c 100644
---- a/include/linux/cma.h
-+++ b/include/linux/cma.h
-@@ -16,6 +16,9 @@ extern int __init cma_declare_contiguous(phys_addr_t size,
- 			phys_addr_t base, phys_addr_t limit,
- 			phys_addr_t alignment, unsigned int order_per_bit,
- 			bool fixed, struct cma **res_cma);
-+extern int cma_init_reserved_mem(phys_addr_t size,
-+					phys_addr_t base, int order_per_bit,
-+					struct cma **res_cma);
- extern struct page *cma_alloc(struct cma *cma, int count, unsigned int align);
- extern bool cma_release(struct cma *cma, struct page *pages, int count);
- #endif
-diff --git a/mm/cma.c b/mm/cma.c
-index 4b251b037e1b..b3d8b925ad34 100644
---- a/mm/cma.c
-+++ b/mm/cma.c
-@@ -140,6 +140,54 @@ static int __init cma_init_reserved_areas(void)
- core_initcall(cma_init_reserved_areas);
- 
- /**
-+ * cma_init_reserved_mem() - create custom contiguous area from reserved memory
-+ * @base: Base address of the reserved area
-+ * @size: Size of the reserved area (in bytes),
-+ * @order_per_bit: Order of pages represented by one bit on bitmap.
-+ * @res_cma: Pointer to store the created cma region.
-+ *
-+ * This function creates custom contiguous area from already reserved memory.
-+ */
-+int __init cma_init_reserved_mem(phys_addr_t base, phys_addr_t size,
-+				 int order_per_bit, struct cma **res_cma)
-+{
-+	struct cma *cma;
-+	phys_addr_t alignment;
-+
-+	/* Sanity checks */
-+	if (cma_area_count == ARRAY_SIZE(cma_areas)) {
-+		pr_err("Not enough slots for CMA reserved regions!\n");
-+		return -ENOSPC;
-+	}
-+
-+	if (!size || !memblock_is_region_reserved(base, size))
-+		return -EINVAL;
-+
-+	/* ensure minimal alignment requied by mm core */
-+	alignment = PAGE_SIZE << max(MAX_ORDER - 1, pageblock_order);
-+
-+	/* alignment should be aligned with order_per_bit */
-+	if (!IS_ALIGNED(alignment >> PAGE_SHIFT, 1 << order_per_bit))
-+		return -EINVAL;
-+
-+	if (ALIGN(base, alignment) != base || ALIGN(size, alignment) != size)
-+		return -EINVAL;
-+
-+	/*
-+	 * Each reserved area must be initialised later, when more kernel
-+	 * subsystems (like slab allocator) are available.
-+	 */
-+	cma = &cma_areas[cma_area_count];
-+	cma->base_pfn = PFN_DOWN(base);
-+	cma->count = size >> PAGE_SHIFT;
-+	cma->order_per_bit = order_per_bit;
-+	*res_cma = cma;
-+	cma_area_count++;
-+
-+	return 0;
-+}
-+
-+/**
-  * cma_declare_contiguous() - reserve custom contiguous area
-  * @base: Base address of the reserved area optional, use 0 for any
-  * @size: Size of the reserved area (in bytes),
-@@ -162,7 +210,6 @@ int __init cma_declare_contiguous(phys_addr_t base,
- 			phys_addr_t alignment, unsigned int order_per_bit,
- 			bool fixed, struct cma **res_cma)
- {
--	struct cma *cma;
- 	int ret = 0;
- 
- 	pr_debug("%s(size %lx, base %08lx, limit %08lx alignment %08lx)\n",
-@@ -214,16 +261,9 @@ int __init cma_declare_contiguous(phys_addr_t base,
- 		}
- 	}
- 
--	/*
--	 * Each reserved area must be initialised later, when more kernel
--	 * subsystems (like slab allocator) are available.
--	 */
--	cma = &cma_areas[cma_area_count];
--	cma->base_pfn = PFN_DOWN(base);
--	cma->count = size >> PAGE_SHIFT;
--	cma->order_per_bit = order_per_bit;
--	*res_cma = cma;
--	cma_area_count++;
-+	ret = cma_init_reserved_mem(base, size, order_per_bit, res_cma);
-+	if (ret)
-+		goto err;
- 
- 	pr_info("Reserved %ld MiB at %08lx\n", (unsigned long)size / SZ_1M,
- 		(unsigned long)base);
--- 
-1.9.2
-
+On Sat, 2014-07-12 at 07:42 +1000, Dave Airlie wrote:
+> >  +/* The 64-bit ABI is the authoritative version. */
+> >  +#pragma pack(push, 8)
+> >  +
+>  
+> Don't do this, pad and align things explicitly in structs.
+>  
+> >  +struct kfd_ioctl_create_queue_args {
+> >  +       uint64_t ring_base_address;     /* to KFD */
+> >  +       uint32_t ring_size;             /* to KFD */
+> >  +       uint32_t gpu_id;                /* to KFD */
+> >  +       uint32_t queue_type;            /* to KFD */
+> >  +       uint32_t queue_percentage;      /* to KFD */
+> >  +       uint32_t queue_priority;        /* to KFD */
+> >  +       uint64_t write_pointer_address; /* to KFD */
+> >  +       uint64_t read_pointer_address;  /* to KFD */
+> >  +
+> >  +       uint64_t doorbell_address;      /* from KFD */
+> >  +       uint32_t queue_id;              /* from KFD */
+> >  +};
+> >  +
+>  
+> maybe put all the uint64_t at the start, or add explicit padding.
+>  
+> Dave.
+Thanks, will be fixed.
+        OdedˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
