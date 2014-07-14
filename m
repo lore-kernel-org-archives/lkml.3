@@ -1,62 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689AbaGNCOt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jul 2014 22:14:49 -0400
-Received: from mail-bn1blp0188.outbound.protection.outlook.com ([207.46.163.188]:47874
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752194AbaGNCOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jul 2014 22:14:43 -0400
-Message-ID: <53C33DC7.1020500@freescale.com>
-Date: Mon, 14 Jul 2014 10:17:43 +0800
-From: Liu Ying <Ying.Liu@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752558AbaGNCTI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jul 2014 22:19:08 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:43581 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752194AbaGNCTF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jul 2014 22:19:05 -0400
+X-AuditID: 85900ec0-d452db9000001514-81-53c33e156775
+Message-ID: <53C33E15.7080504@hitachi.com>
+Date: Mon, 14 Jul 2014 11:19:01 +0900
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
 MIME-Version: 1.0
 To: Greg KH <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>, <rmk+kernel@arm.linux.org.uk>
-Subject: Re: [PATCH] drivers/base: redundant return value settings in try_to_bring_up_master()
-References: <1402993531-25244-1-git-send-email-Ying.Liu@freescale.com>
- <20140712005840.GA10558@kroah.com>
-In-Reply-To: <20140712005840.GA10558@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Stephen Warren <swarren@nvidia.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        linux-serial@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Aaron Sierra <asierra@xes-inc.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Re: [PATCH V8 2/2] serial/uart/8250: Add tunable RX interrupt
+ trigger I/F of FIFO buffers
+References: <20140530061617.21929.25777.stgit@yunodevel> <20140530061622.21929.82083.stgit@yunodevel> <20140710002837.GA5429@kroah.com> <20140710153157.57902972@alan.etchedpixels.co.uk> <20140710231637.GB9423@kroah.com> <20140712212237.GA7891@kroah.com>
+In-Reply-To: <20140712212237.GA7891@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(479174003)(377454003)(24454002)(199002)(189002)(51704005)(15975445006)(79102001)(59896001)(36756003)(46102001)(19580395003)(64126003)(83506001)(23756003)(83322001)(92726001)(106466001)(80022001)(92566001)(85852003)(65956001)(86362001)(83072002)(102836001)(76176999)(74502001)(104016003)(65806001)(110136001)(81542001)(87936001)(19580405001)(85306003)(80316001)(4396001)(20776003)(26826002)(65816999)(47776003)(81342001)(97736001)(105606002)(74662001)(21056001)(44976005)(76482001)(50986999)(6806004)(68736004)(87266999)(99396002)(77982001)(31966008)(64706001)(107046002)(95666004)(54356999)(50466002)(33656002)(84676001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB378;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02723F29C4
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Ying.Liu@freescale.com; 
-X-OriginatorOrg: freescale.com
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2014 08:58 AM, Greg KH wrote:
-> On Tue, Jun 17, 2014 at 04:25:31PM +0800, Liu Ying wrote:
->> Remove redundant return value settings 'ret = 0;' in the function
->> try_to_bring_up_master(), since it has already been set to zero.
+(2014/07/13 6:22), Greg KH wrote:
+> On Thu, Jul 10, 2014 at 04:16:37PM -0700, Greg Kroah-Hartman wrote:
+>> On Thu, Jul 10, 2014 at 03:31:57PM +0100, One Thousand Gnomes wrote:
+>>>> I really don't like the way that the tty core has been changed to handle
+>>>> multiple attribute groups, as I feel tty drivers shouldn't be creating
+>>>> "special" sysfs files, depending on what driver is bound to them.
+>>>
+>>> The intent isn't that it is "special" but that it can be propogated to
+>>> others as and when they wish to provide it.
+>>>
+>>>> Usually we have handled this using tools like 'stty' and ioctls, right?
+>>>> Surely there is an ioctl to control the interrupt level, right?  Hasn't
+>>>> this been covered before somehow?
+>>>
+>>> No, and the direction when this started was to use sysfs as we have also
+>>> been moving all the other attributes towards sysfs and has been since
+>>> 2012.
+>>>
+>>> TTY devices do have lots of strange attributes and right now many of them
+>>> are only programmable by using device tree and rebooting.
 >>
->> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
->> ---
->>   drivers/base/component.c |    2 --
->>   1 file changed, 2 deletions(-)
+>> Ok.  Hm, there has to be a better way to do the group sysfs file
+>> handling...
+>>
+>> Let me work on this tomorrow and see what I can come up with.  We should
+>> be able to use the is_visable() attribute to create/notcreate the
+>> attribute where needed...
 >
-> This patch no longer applies to my tree, are you sure it's still needed?
-
-It is no longer needed, because Russell's patch[1] on your tree changed 
-this piece of code.
-
-[1] 
-https://git.kernel.org/cgit/linux/kernel/git/gregkh/driver-core.git/commit/drivers/base/component.c?h=driver-core-next&id=c334940ea26cb58f5514dcbb225a3f397b2684ad
-
-Regards,
-
-Liu Ying
-
+> Ok, how about this patch instead of your first one?
 >
-> If so, please refresh and resend.
->
-> thanks,
->
-> greg k-h
->
+> It creates a new port attribute, attr_group, which you should be able to
+> set in the 8250 driver if you device needs it.  Then the serial core
+> will handle the dynamic group creation, without relying on a "magic"
+> number of groups.  Very close to your patch, but now it's dynamic, and
+> no fixed array, and no crazy casting in the
+> tty_port_register_device_attr() call.
+
+Thank you very much for your patch.
+I'll use it as 1st patch in next version.
+
+> I have not tested this, only test built the code.
+
+OK, I'll test it.
+
+> If it works for you, can you redo your second patch, and then send both
+> of these back to me so that I can apply them?
+
+Sure.
+
+Thank you,
+Yoshihiro YUNOMAE
+
+-- 
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
+
+
