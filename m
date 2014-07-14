@@ -1,484 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673AbaGNKVw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 06:21:52 -0400
-Received: from smtp205.alice.it ([82.57.200.101]:9217 "EHLO smtp205.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753305AbaGNKVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 06:21:42 -0400
-Date: Mon, 14 Jul 2014 12:21:26 +0200
-From: Antonio Ospite <ao2@ao2.it>
-To: Jamie Lentin <jm@lentin.co.uk>
-Cc: Jiri Kosina <jkosina@suse.cz>, Hans de Goede <hdegoede@redhat.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 4/4] Add support for Compact (Bluetooth|USB) keyboard
- with Trackpoint
-Message-Id: <20140714122126.659608839f1cf296d77e1734@ao2.it>
-In-Reply-To: <1405236262-8070-5-git-send-email-jm@lentin.co.uk>
-References: <1405236262-8070-1-git-send-email-jm@lentin.co.uk>
-	<1405236262-8070-5-git-send-email-jm@lentin.co.uk>
-X-Mailer: Sylpheed 3.5.0beta1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754916AbaGNKWe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 06:22:34 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36737 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753305AbaGNKW0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 06:22:26 -0400
+Date: Mon, 14 Jul 2014 11:22:03 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Message-ID: <20140714102203.GD6800@sirena.org.uk>
+References: <1405028569-14253-1-git-send-email-ttynkkynen@nvidia.com>
+ <1405028569-14253-2-git-send-email-ttynkkynen@nvidia.com>
+ <CAL1qeaFF0ZpUFovxTuLXrBPRg2Lbf-754Z=ztD5HFZPbfnDsAw@mail.gmail.com>
+ <53C01558.3090607@nvidia.com>
+ <CAL1qeaHETQ7kSGNjPiwi_9WNMtr9qZp0KwjZCCxY29+_N4AcuA@mail.gmail.com>
+ <53C01D17.2050906@nvidia.com>
+ <20140714083854.GO2081@ulmo>
+ <20140714091233.GC6800@sirena.org.uk>
+ <20140714092434.GA9755@ulmo>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="HWvPVVuAAfuRc6SZ"
+Content-Disposition: inline
+In-Reply-To: <20140714092434.GA9755@ulmo>
+X-Cookie: Above all else -- sky.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 01/13] clk: tegra: Add binding for the Tegra124 DFLL
+ clocksource
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 13 Jul 2014 08:24:22 +0100
-Jamie Lentin <jm@lentin.co.uk> wrote:
 
-> Signed-off-by: Jamie Lentin <jm@lentin.co.uk>
+--HWvPVVuAAfuRc6SZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Almost there, I swear :)
+On Mon, Jul 14, 2014 at 11:24:35AM +0200, Thierry Reding wrote:
+> On Mon, Jul 14, 2014 at 10:12:33AM +0100, Mark Brown wrote:
 
-> ---
->  Documentation/ABI/testing/sysfs-driver-hid-lenovo |  12 ++
->  drivers/hid/Kconfig                               |   2 +
->  drivers/hid/hid-core.c                            |   2 +
->  drivers/hid/hid-ids.h                             |   2 +
->  drivers/hid/hid-lenovo.c                          | 203 ++++++++++++++++++++++
->  include/linux/hid.h                               |   1 +
->  6 files changed, 222 insertions(+)
-> 
-> diff --git a/Documentation/ABI/testing/sysfs-driver-hid-lenovo b/Documentation/ABI/testing/sysfs-driver-hid-lenovo
-> index 57b92cb..53a0725 100644
-> --- a/Documentation/ABI/testing/sysfs-driver-hid-lenovo
-> +++ b/Documentation/ABI/testing/sysfs-driver-hid-lenovo
-> @@ -4,18 +4,21 @@ Contact:	linux-input@vger.kernel.org
->  Description:	This controls if mouse clicks should be generated if the trackpoint is quickly pressed. How fast this press has to be
->  		is being controlled by press_speed.
->  		Values are 0 or 1.
-> +		Applies to Thinkpad USB Keyboard with TrackPoint.
->  
->  What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/dragging
->  Date:		July 2011
->  Contact:	linux-input@vger.kernel.org
->  Description:	If this setting is enabled, it is possible to do dragging by pressing the trackpoint. This requires press_to_select to be enabled.
->  		Values are 0 or 1.
-> +		Applies to Thinkpad USB Keyboard with TrackPoint.
->  
->  What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/release_to_select
->  Date:		July 2011
->  Contact:	linux-input@vger.kernel.org
->  Description:	For details regarding this setting please refer to http://www.pc.ibm.com/ww/healthycomputing/trkpntb.html
->  		Values are 0 or 1.
-> +		Applies to Thinkpad USB Keyboard with TrackPoint.
->  
->  What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/select_right
->  Date:		July 2011
-> @@ -23,16 +26,25 @@ Contact:	linux-input@vger.kernel.org
->  Description:	This setting controls if the mouse click events generated by pressing the trackpoint (if press_to_select is enabled) generate
->  		a left or right mouse button click.
->  		Values are 0 or 1.
-> +		Applies to Thinkpad USB Keyboard with TrackPoint.
->  
->  What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/sensitivity
->  Date:		July 2011
->  Contact:	linux-input@vger.kernel.org
->  Description:	This file contains the trackpoint sensitivity.
->  		Values are decimal integers from 1 (lowest sensitivity) to 255 (highest sensitivity).
-> +		Applies to Thinkpad USB Keyboard with TrackPoint.
->  
->  What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/press_speed
->  Date:		July 2011
->  Contact:	linux-input@vger.kernel.org
->  Description:	This setting controls how fast the trackpoint needs to be pressed to generate a mouse click if press_to_select is enabled.
->  		Values are decimal integers from 1 (slowest) to 255 (fastest).
-> +		Applies to Thinkpad USB Keyboard with TrackPoint.
->  
-> +What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/fn_lock
-> +Date:		July 2014
-> +Contact:	linux-input@vger.kernel.org
-> +Description:	This setting controls whether Fn Lock is enabled on the keyboard (i.e. if F1 is Mute or F1)
-> +		Values are 0 or 1
-> +		Applies to ThinkPad Compact (USB|Bluetooth) Keyboard with TrackPoint.
-> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-> index 9b7acfc..1e19292 100644
-> --- a/drivers/hid/Kconfig
-> +++ b/drivers/hid/Kconfig
-> @@ -343,6 +343,8 @@ config HID_LENOVO
->  	Thinkpad standalone keyboards, e.g:
->  	- ThinkPad USB Keyboard with TrackPoint (supports extra LEDs and trackpoint
->  	  configuration)
-> +	- ThinkPad Compact Bluetooth Keyboard with TrackPoint (supports Fn keys)
-> +	- ThinkPad Compact USB Keyboard with TrackPoint (supports Fn keys)
->  
->  config HID_LOGITECH
->  	tristate "Logitech devices" if EXPERT
-> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index 55841bd..81b3bb6 100644
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -1798,6 +1798,8 @@ static const struct hid_device_id hid_have_special_driver[] = {
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_LCPOWER, USB_DEVICE_ID_LCPOWER_LC1000 ) },
->  #if IS_ENABLED(CONFIG_HID_LENOVO)
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_LENOVO, USB_DEVICE_ID_LENOVO_TPKBD) },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_LENOVO, USB_DEVICE_ID_LENOVO_CUSBKBD) },
-> +	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_LENOVO, USB_DEVICE_ID_LENOVO_CBTKBD) },
->  #endif
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_MX3000_RECEIVER) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_S510_RECEIVER) },
-> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-> index 6d00bb9..d2e2a96 100644
-> --- a/drivers/hid/hid-ids.h
-> +++ b/drivers/hid/hid-ids.h
-> @@ -560,6 +560,8 @@
->  
->  #define USB_VENDOR_ID_LENOVO		0x17ef
->  #define USB_DEVICE_ID_LENOVO_TPKBD	0x6009
-> +#define USB_DEVICE_ID_LENOVO_CUSBKBD	0x6047
-> +#define USB_DEVICE_ID_LENOVO_CBTKBD	0x6048
->  
->  #define USB_VENDOR_ID_LG		0x1fd2
->  #define USB_DEVICE_ID_LG_MULTITOUCH	0x0064
-> diff --git a/drivers/hid/hid-lenovo.c b/drivers/hid/hid-lenovo.c
-> index a1a693c..46c5db0 100644
-> --- a/drivers/hid/hid-lenovo.c
-> +++ b/drivers/hid/hid-lenovo.c
-> @@ -1,8 +1,11 @@
->  /*
->   *  HID driver for Lenovo:
->   *  - ThinkPad USB Keyboard with TrackPoint (tpkbd)
-> + *  - ThinkPad Compact Bluetooth Keyboard with TrackPoint (cptkbd)
-> + *  - ThinkPad Compact USB Keyboard with TrackPoint (cptkbd)
->   *
->   *  Copyright (c) 2012 Bernhard Seibold
-> + *  Copyright (c) 2014 Jamie Lentin <jm@lentin.co.uk>
->   */
->  
->  /*
-> @@ -33,6 +36,10 @@ struct lenovo_drvdata_tpkbd {
->  	int press_speed;
->  };
->  
-> +struct lenovo_drvdata_cptkbd {
-> +	bool fn_lock;
-> +};
-> +
->  #define map_key_clear(c) hid_map_usage_clear(hi, usage, bit, max, EV_KEY, (c))
->  
->  static int lenovo_input_mapping_tpkbd(struct hid_device *hdev,
-> @@ -48,6 +55,49 @@ static int lenovo_input_mapping_tpkbd(struct hid_device *hdev,
->  	return 0;
->  }
->  
-> +static int lenovo_input_mapping_cptkbd(struct hid_device *hdev,
-> +		struct hid_input *hi, struct hid_field *field,
-> +		struct hid_usage *usage, unsigned long **bit, int *max)
-> +{
-> +	/* HID_UP_LNVENDOR = USB, HID_UP_MSVENDOR = BT */
-> +	if ((usage->hid & HID_USAGE_PAGE) == HID_UP_MSVENDOR ||
-> +	    (usage->hid & HID_USAGE_PAGE) == HID_UP_LNVENDOR) {
-> +		set_bit(EV_REP, hi->input->evbit);
-> +		switch (usage->hid & HID_USAGE) {
-> +		case 0x00f1: /* Fn-F4: Mic mute */
-> +			map_key_clear(KEY_MICMUTE);
-> +			return 1;
-> +		case 0x00f2: /* Fn-F5: Brightness down */
-> +			map_key_clear(KEY_BRIGHTNESSDOWN);
-> +			return 1;
-> +		case 0x00f3: /* Fn-F6: Brightness up */
-> +			map_key_clear(KEY_BRIGHTNESSUP);
-> +			return 1;
-> +		case 0x00f4: /* Fn-F7: External display (projector) */
-> +			map_key_clear(KEY_SWITCHVIDEOMODE);
-> +			return 1;
-> +		case 0x00f5: /* Fn-F8: Wireless */
-> +			map_key_clear(KEY_WLAN);
-> +			return 1;
-> +		case 0x00f6: /* Fn-F9: Control panel */
-> +			map_key_clear(KEY_CONFIG);
-> +			return 1;
-> +		case 0x00f8: /* Fn-F11: View open applications (3 boxes) */
-> +			map_key_clear(KEY_SCALE);
-> +			return 1;
-> +		case 0x00fa: /* Fn-Esc: Fn-lock toggle */
-> +			map_key_clear(KEY_FN_ESC);
-> +			return 1;
-> +		case 0x00fb: /* Fn-F12: Open My computer (6 boxes) USB-only */
-> +			/* NB: This mapping is invented in raw_event below */
-> +			map_key_clear(KEY_FILE);
-> +			return 1;
-> +		}
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->  static int lenovo_input_mapping(struct hid_device *hdev,
->  		struct hid_input *hi, struct hid_field *field,
->  		struct hid_usage *usage, unsigned long **bit, int *max)
-> @@ -56,6 +106,10 @@ static int lenovo_input_mapping(struct hid_device *hdev,
->  	case USB_DEVICE_ID_LENOVO_TPKBD:
->  		return lenovo_input_mapping_tpkbd(hdev, hi, field,
->  							usage, bit, max);
-> +	case USB_DEVICE_ID_LENOVO_CUSBKBD:
-> +	case USB_DEVICE_ID_LENOVO_CBTKBD:
-> +		return lenovo_input_mapping_cptkbd(hdev, hi, field,
-> +							usage, bit, max);
->  	}
->  
->  	return 0;
-> @@ -63,6 +117,100 @@ static int lenovo_input_mapping(struct hid_device *hdev,
->  
->  #undef map_key_clear
->  
-> +/* Send a config command to the keyboard */
-> +static int lenovo_send_cmd_cptkbd(struct hid_device *hdev,
-> +			unsigned char byte2, unsigned char byte3)
-> +{
-> +	int ret;
-> +	unsigned char buf[] = {0x18, byte2, byte3};
-> +
-> +	switch (hdev->product) {
-> +	case USB_DEVICE_ID_LENOVO_CUSBKBD:
-> +		ret = hid_hw_raw_request(hdev, 0x13, buf, sizeof(buf),
-> +					HID_FEATURE_REPORT, HID_REQ_SET_REPORT);
-> +		break;
-> +	case USB_DEVICE_ID_LENOVO_CBTKBD:
-> +		ret = hid_hw_output_report(hdev, buf, sizeof(buf));
-> +		break;
-> +	default:
-> +		ret = -EINVAL;
->
+> > The selector value is opaque, it's entirely up to the driver to define
+> > it.  If you could tell me what "this" is I might be able to advise on
+> > how to do it.
 
-Add an explicit break? For regularity.
+> Tegra124 (and later, also some earlier variants) have this DFLL clock
+> that can program a PMIC automatically depending on the CPU frequency.
+> This DT binding did propose putting this into device tree as a table of
+> <frequency value> pairs where the frequency corresponds to the CPU
+> frequency and the value is the register value to be programmed into the
+> PMIC by the DFLL hardware (there are two additional properties to define
+> the slave address and the register offset).
 
-> +	}
-> +
-> +	return ret < 0 ? ret : 0; /* BT returns 0, USB returns sizeof(buf) */
-> +}
+> Andrew proposed that this table could instead be built by using
+> regulator_list_voltage() instead. However, due to the fact that the DFLL
+> hardware needs to know the immediate value to write into a register, the
+> requirement would be for a 1:1 mapping between selector and register
+> value. Given that the API needs to cover the general case I don't see
+> how it could practically ensure this.
 
-Alternatively you could just return 'ret' and check for < 0 in the
-callers, leaving the comment and adding "On Success ...".
+Well, if you're going to do that you've already created a private API
+between the regulator driver and the device since you're assuming that
+the device is controlled only by register writes to a single register
+bitfield which isn't always the case.
 
-BTW, you never actually propagate the negative error codes.
+As with all these things it would also be better to extend the regulator
+API so that users like this can discover the register address and so on
+too rather than having to replicate that information in the device tree.
+No sense in having to specify this information multiple times.
 
-I you don't want this function to just return bool (e.g. return (ret >=
-0)), at least print the returned error code in the messages after the
-callers.
+--HWvPVVuAAfuRc6SZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> +
-> +static void lenovo_features_set_cptkbd(struct hid_device *hdev)
-> +{
-> +	struct lenovo_drvdata_cptkbd *tpcsc = hid_get_drvdata(hdev);
-> +
-> +	if (lenovo_send_cmd_cptkbd(hdev, 0x05, tpcsc->fn_lock ? 0x01 : 0x00))
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Try to avoid function calls in conditions.
+iQIcBAEBAgAGBQJTw69IAAoJELSic+t+oim9vYsP/1rNXCyp6jnrPpqyXMbjGQ+Z
+SQf3wtuArwhkqPZ0OB25wt249Va9HE5s/0Wgl/MzvU7fLgZLlSOTztpLJqlD9Yej
+0u3S36G0PZSGhbtqtaFHNyRyr7JA40N+Ca889AK/RoEuCLce09imSvGRoqqtAnt9
+Rm3uGvgqPQ5gU9DKO386wea1gmgt47rbydzu1E6sRhe87eAtnnMUqnldQZZ/LITW
+S+rhR5W5rKXDrb7OEJ3NEtbofXIZ73OM9lKdlsr6wvXqo+jBu6MDgBBe4WCNYLWz
+ZmwSBg2zXcH+e5z3mSKdL41+W/d/66EgdiMjX/BOFqmCXFk0pw196eQlYI2DrqjA
+qRbce2y3pesVx0dv2pgWkWSUSKOK8zUGHdDr9ahcbMxMHpLj42X+0BIbLmP1vZw9
+gk13yx1oKiQmpekmNV46X1LP825xV3OiywdGf2XOeMtq0tKtRs1CH0gifFMO0PVL
+1aWINFAdCSwrNL8JCIK2IbU3ciFOgMPqU/rFlDWddizp4LJNv1BSRosBU4mfrB1r
+6JKHX1PHzZlAhdamXNbvmj0Phha0iwI5GnEOB8U/+rfXOHpLZApC33QPwsSEx9oj
+c0hhKrugQ2Xh1JGMMiFpTIAE+yeN+9J00hF7m8ZiQxtms7yKTGAfSjg3Ib3cjxUC
+2hx4wLmeuCxdbz0lkoYz
+=dVQS
+-----END PGP SIGNATURE-----
 
-> +		hid_err(hdev, "Fn-lock setting failed\n");
-
-Print 'ret' if lenovo_send_cmd_cptkbd() returns the negative error
-codes.
-
-> +}
-> +
-> +static ssize_t attr_fn_lock_show_cptkbd(struct device *dev,
-> +		struct device_attribute *attr,
-> +		char *buf)
-> +{
-> +	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-> +	struct lenovo_drvdata_cptkbd *tpcsc = hid_get_drvdata(hdev);
-> +
-> +	return snprintf(buf, PAGE_SIZE, "%u\n", tpcsc->fn_lock);
-> +}
-> +
-> +static ssize_t attr_fn_lock_store_cptkbd(struct device *dev,
-> +		struct device_attribute *attr,
-> +		const char *buf,
-> +		size_t count)
-> +{
-> +	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-> +	struct lenovo_drvdata_cptkbd *tpcsc = hid_get_drvdata(hdev);
-> +	int value;
-> +
-> +	if (kstrtoint(buf, 10, &value))
-
-Function called in condition; however this is consistent with the other
-invocation of kstrtoint() in the file, so you can leave it as it is as
-an exception to the general rule.
-
-> +		return -EINVAL;
-> +	if (value < 0 || value > 1)
-> +		return -EINVAL;
-> +
-> +	tpcsc->fn_lock = !!value;
-> +	lenovo_features_set_cptkbd(hdev);
-> +
-> +	return count;
-> +}
-> +
-> +static struct device_attribute dev_attr_fn_lock_cptkbd =
-> +	__ATTR(fn_lock, S_IWUSR | S_IRUGO,
-> +			attr_fn_lock_show_cptkbd,
-> +			attr_fn_lock_store_cptkbd);
-> +
-> +static struct attribute *lenovo_attributes_cptkbd[] = {
-> +	&dev_attr_fn_lock_cptkbd.attr,
-> +	NULL
-> +};
-> +
-> +static const struct attribute_group lenovo_attr_group_cptkbd = {
-> +	.attrs = lenovo_attributes_cptkbd,
-> +};
-> +
-> +static int lenovo_raw_event(struct hid_device *hdev,
-> +			struct hid_report *report, u8 *data, int size)
-> +{
-> +	/*
-> +	 * Compact USB keyboard's Fn-F12 report holds down many other keys, and
-> +	 * its own key is outside the usage page range. Remove extra
-> +	 * keypresses and remap to inside usage page.
-> +	 */
-> +	if (unlikely(hdev->product == USB_DEVICE_ID_LENOVO_CUSBKBD
-> +			&& size == 3
-> +			&& data[0] == 0x15
-> +			&& data[1] == 0x94
-> +			&& data[2] == 0x01)) {
-> +		data[1] = 0x0;
-> +		data[2] = 0x4;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->  static int lenovo_features_set_tpkbd(struct hid_device *hdev)
->  {
->  	struct hid_report *report;
-> @@ -415,6 +563,44 @@ static int lenovo_probe_tpkbd(struct hid_device *hdev)
->  	return 0;
->  }
->  
-> +static int lenovo_probe_cptkbd(struct hid_device *hdev)
-> +{
-> +	int ret;
-> +	struct lenovo_drvdata_cptkbd *tpcsc;
-> +
-> +	tpcsc = devm_kzalloc(&hdev->dev, sizeof(*tpcsc), GFP_KERNEL);
-> +	if (tpcsc == NULL) {
-> +		hid_err(hdev, "can't alloc keyboard descriptor\n");
-> +		return -ENOMEM;
-> +	}
-> +	hid_set_drvdata(hdev, tpcsc);
-> +
-> +	/* All the custom action happens on the mouse device for USB */
-> +	if (hdev->product == USB_DEVICE_ID_LENOVO_CUSBKBD
-> +			&& hdev->type != HID_TYPE_USBMOUSE) {
-> +		hid_dbg(hdev, "Ignoring keyboard half of device\n");
-> +		return 0;
-> +	}
-
-Maybe you can anticipate this check and avoid allocation in this case?
-Not a big deal anyway.
-
-> +
-> +	/*
-> +	 * Tell the keyboard a driver understands it, and turn F7, F9, F11 into
-> +	 * regular keys
-> +	 */
-> +	ret = lenovo_send_cmd_cptkbd(hdev, 0x01, 0x03);
-> +	if (ret)
-> +		hid_warn(hdev, "Failed to switch F7/9/11 into regular keys\n");
-
-Print 'ret' here.
-
-> +
-> +	/* Turn Fn-Lock on by default */
-> +	tpcsc->fn_lock = 1;
-
-tpcsc->fn_lock = true;
-
-> +	lenovo_features_set_cptkbd(hdev);
-> +
-> +	if (sysfs_create_group(&hdev->dev.kobj,
-> +				&lenovo_attr_group_cptkbd))
-
-Function called in condition.
-
-> +		hid_warn(hdev, "Could not create sysfs group\n");
-> +
-> +	return 0;
-> +}
-> +
->  static int lenovo_probe(struct hid_device *hdev,
->  		const struct hid_device_id *id)
->  {
-> @@ -436,6 +622,10 @@ static int lenovo_probe(struct hid_device *hdev,
->  	case USB_DEVICE_ID_LENOVO_TPKBD:
->  		ret = lenovo_probe_tpkbd(hdev);
->  		break;
-> +	case USB_DEVICE_ID_LENOVO_CUSBKBD:
-> +	case USB_DEVICE_ID_LENOVO_CBTKBD:
-> +		ret = lenovo_probe_cptkbd(hdev);
-> +		break;
->  	}
->  	if (ret)
->  		goto err_hid;
-> @@ -463,12 +653,22 @@ static void lenovo_remove_tpkbd(struct hid_device *hdev)
->  	hid_set_drvdata(hdev, NULL);
->  }
->  
-> +static void lenovo_remove_cptkbd(struct hid_device *hdev)
-> +{
-> +	sysfs_remove_group(&hdev->dev.kobj,
-> +			&lenovo_attr_group_cptkbd);
-> +}
-> +
->  static void lenovo_remove(struct hid_device *hdev)
->  {
->  	switch (hdev->product) {
->  	case USB_DEVICE_ID_LENOVO_TPKBD:
->  		lenovo_remove_tpkbd(hdev);
->  		break;
-> +	case USB_DEVICE_ID_LENOVO_CUSBKBD:
-> +	case USB_DEVICE_ID_LENOVO_CBTKBD:
-> +		lenovo_remove_cptkbd(hdev);
-> +		break;
->  	}
->  
->  	hid_hw_stop(hdev);
-> @@ -476,6 +676,8 @@ static void lenovo_remove(struct hid_device *hdev)
->  
->  static const struct hid_device_id lenovo_devices[] = {
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_LENOVO, USB_DEVICE_ID_LENOVO_TPKBD) },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_LENOVO, USB_DEVICE_ID_LENOVO_CUSBKBD) },
-> +	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_LENOVO, USB_DEVICE_ID_LENOVO_CBTKBD) },
->  	{ }
->  };
->  
-> @@ -487,6 +689,7 @@ static struct hid_driver lenovo_driver = {
->  	.input_mapping = lenovo_input_mapping,
->  	.probe = lenovo_probe,
->  	.remove = lenovo_remove,
-> +	.raw_event = lenovo_raw_event,
->  };
->  module_hid_driver(lenovo_driver);
->  
-> diff --git a/include/linux/hid.h b/include/linux/hid.h
-> index 77632cf..fca74f1 100644
-> --- a/include/linux/hid.h
-> +++ b/include/linux/hid.h
-> @@ -167,6 +167,7 @@ struct hid_item {
->  #define HID_UP_MSVENDOR		0xff000000
->  #define HID_UP_CUSTOM		0x00ff0000
->  #define HID_UP_LOGIVENDOR	0xffbc0000
-> +#define HID_UP_LNVENDOR		0xffa00000
->  #define HID_UP_SENSOR		0x00200000
->  
->  #define HID_USAGE		0x0000ffff
-> -- 
-> 2.0.0
-> 
-
-
--- 
-Antonio Ospite
-http://ao2.it
-
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
+--HWvPVVuAAfuRc6SZ--
