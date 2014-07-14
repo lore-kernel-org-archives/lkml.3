@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055AbaGNJfB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 05:35:01 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:3645 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718AbaGNJez (ORCPT
+	id S1753368AbaGNJkR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 05:40:17 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:25586 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349AbaGNJkM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 05:34:55 -0400
-Message-ID: <53C3A42E.40000@huawei.com>
-Date: Mon, 14 Jul 2014 17:34:38 +0800
-From: Rui Xiang <rui.xiang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Dave Kleikamp <dave.kleikamp@oracle.com>, <linux-ext4@vger.kernel.org>
-CC: <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: testing result of loop-aio patchset on ext3
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.22.57]
-X-CFilter-Loop: Reflected
+	Mon, 14 Jul 2014 05:40:12 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-be-53c3a579fc12
+Message-id: <53C3A430.9090508@samsung.com>
+Date: Mon, 14 Jul 2014 13:34:40 +0400
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <sasha.levin@oracle.com>
+Cc: Ingo Molnar <mingo@kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: sched, timers: use after free in __lock_task_sighand when exiting
+ a process
+References: <53C2FF4D.3020606@oracle.com> <53C31A34.8030500@oracle.com>
+ <20140714090449.GL9918@twins.programming.kicks-ass.net>
+In-reply-to: <20140714090449.GL9918@twins.programming.kicks-ass.net>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsVy+t/xK7qVSw8HGyzq07XYcr2JyWLm624m
+	izO/dS0u75rDZrH63ylGi637WxktjvceYLJYfOQ2s8XmTVOZHTg9ds66y+6xeYWWx6ZVnWwe
+	d67tYfN4d+4cu8fHp7dYPN7vu8rm8XmTXABHFJdNSmpOZllqkb5dAldG472VTAU3mCu+tr5i
+	amD8xdTFyMkhIWAisaajkwXCFpO4cG89WxcjF4eQwFJGiel935ghnGYmiYnb9oBV8QpoSXx/
+	/owVxGYRUJV48PIvO4jNJqAn8W/WdjYQW1QgQuJAH0QNr4CgxI/J98B6RQT8Jf7cewK2mRlk
+	6M0pqSC2sECUxKnVJ8B6hQQaGSWu3vcBsTkFXCT+nGpjh6jXkdjfOo0NwpaX2LzmLfMERoFZ
+	SFbMQlI2C0nZAkbmVYyiqaXJBcVJ6bmGesWJucWleel6yfm5mxghUfFlB+PiY1aHGAU4GJV4
+	eCvEDgcLsSaWFVfmHmKU4GBWEuE9Ox8oxJuSWFmVWpQfX1Sak1p8iJGJg1OqgbGpYlf41in/
+	eRj2Myw1tVuxoNImPdZqUuSry/P6lXsm7X71MzAvbc4Ul0n3l+wSSXwTtDfl+OGi5PVxP68+
+	qUwynPyV8cN7ZaYtHgwsVXM7nG0rdj0rzOVnrTxouvK+zJqfd5aYmxfc8+OcrTh5qticG8VB
+	lr4Lt6QvcZvakj9B/bGA+sTXJ54osRRnJBpqMRcVJwIAOFmBMGgCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+On 07/14/14 13:04, Peter Zijlstra wrote:
+> On Sun, Jul 13, 2014 at 07:45:56PM -0400, Sasha Levin wrote:
+>> On 07/13/2014 05:51 PM, Sasha Levin wrote:
+>>> Hi all,
+>>>
+>>> While fuzzing with trinity inside a KVM tools guest running the latest -next
+>>> kernel with the KASAN patchset, I've stumbled on the following spew:
+> 
+> WTH is a KASAN?
+> 
 
-We export a container image file as a block device via loop device, but we
-found it's very easy that the container rootfs gets corrupted due to power
-loss.
-
-Your early version of loop-aio patchset said the patchset can make loop
-mounted filesystems recoverable(lkml.org/lkml/2012/3/30/317), but we found
-it doesn't help.
-
-Both the guest fs and host fs are ext3.
-
-The loop-aio patchset is from:
-git://github.com/kleikamp/linux-shaggy.git aio_loop
-
-Steps:
-1. dd a 10G image, mkfs.ext3,
-  # dd if=/dev/zero of=./raw_image bs=1M count=10000
-  # echo y | mkfs.ext3 raw_image
-
-2. losetup a loop device, mount at ./test_dir
-  # losetup /dev/loop1 raw_image
-  # mount /dev/loop1 ./test_dir
-
-3. copy fs_mark into test_dir and run
-  # ./fs_mark -d ./tmp/ -s 102400000 -n 80
-
-4. during runing fs_mark, make systerm reboot indirectly.
-  # echo b > /proc/sysrq-trigger
-
-After systerm booted up, sometimes fsck reported raw_image fs has been damaged.
-
-# fsck.ext3 -n raw_image
-e2fsck 1.41.9 (22-Aug-2009)
-Warning: skipping journal recovery because doing a read-only filesystem check.
-raw_image contains a file system with errors, check forced.
-Pass 1: Checking inodes, blocks, and sizes
-Pass 2: Checking directory structure
-Pass 3: Checking directory connectivity
-Pass 4: Checking reference counts
-Pass 5: Checking group summary information
-Free blocks count wrong (2481348, counted=2480577).
-Fix? no
-Free inodes count wrong (640837, counted=640835).
-Fix? no
-raw_image: ********** WARNING: Filesystem still has errors **********
-raw_image: 11/640848 files (0.0% non-contiguous), 78652/2560000 blocks
-
-
-With a specific script, I can almost 100% reproduce this issue.
-
-And it seems the corruption can only happen when reboot happens at the
-time loop is calling vfs_fsync().
-
-Do you have any idea why the loop-aio patchset doesn't help?
-
-Thanks.
+It's dynamic memory checker, detects use after free, out of bounds accesses - https://lkml.org/lkml/2014/7/9/990
 
