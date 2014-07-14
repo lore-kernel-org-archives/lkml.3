@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288AbaGNRgO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 13:36:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33664 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932230AbaGNRgK (ORCPT
+	id S932361AbaGNRgZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 13:36:25 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:39534 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932303AbaGNRgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 13:36:10 -0400
-Date: Mon, 14 Jul 2014 10:40:42 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com
-Subject: Re: [PATCH v5] Fixes to Xen pciback for 3.17.
-Message-ID: <20140714174042.GB6166@kroah.com>
-References: <1405354736-7358-1-git-send-email-konrad.wilk@oracle.com>
+	Mon, 14 Jul 2014 13:36:17 -0400
+Message-ID: <53C41511.5090204@cogentembedded.com>
+Date: Mon, 14 Jul 2014 21:36:17 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405354736-7358-1-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: varkabhadram@gmail.com, netdev@vger.kernel.org
+CC: Thomas.Lendacky@amd.com, geert+renesas@linux-m68k.org,
+        ebiederm@xmission.com, macro@linux-mips.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        Varka Bhadram <varkab@cdac.in>
+Subject: Re: [PATCH net-next v2 5/6] ethernet: amd: fix pci device ids
+References: <1405319147-5212-1-git-send-email-varkabhadram@gmail.com> <1405319147-5212-6-git-send-email-varkabhadram@gmail.com>
+In-Reply-To: <1405319147-5212-6-git-send-email-varkabhadram@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 12:18:50PM -0400, Konrad Rzeszutek Wilk wrote:
-> Greg: goto GHK
-> 
-> This is v5 version of patches to fix some issues in Xen PCIback.
-> 
-> One of the issues Xen PCI back has that patch:
-> 
-> is fixing is that a deadlock can happen if the PCI device is
-> assigned to a guest and we try to 'unbind' it from Xen 'pciback' driver.
-> The issue is rather simple - the SysFS mechanism for the 'unbind' path
-> takes a device lock and the code in Xen PCI uses the pci_reset_function
-> which also takes the same lock. Solution is to use the lock-less version
-> and mandate that callers of said function in Xen pciback take the lock.
-> Easy enough.
-> 
-> GHK:
-> To guard against this happening in the future we also add an assert in the
-> form of lockdep assertion. That is OK except that it looks ugly as we take
-> it straight from the 'struct device' instead of using an appropriate macro.
-> See:
-> 
-> +       lockdep_assert_held(&dev->dev.mutex);
-> 
-> (in [PATCH v5 2/6] xen/pciback: Don't deadlock when unbinding).
-> 
-> The patch: [PATCH v5 3/6] driver core: Provide an wrapper around the mutex
-> to do.
-> 
-> introduces a nice wrapper so it is bit cleaner. Greg, if you are OK with
-> it could you kindly Ack it as I would prefer to put this patchset
-> via the Xen tree. It would look now as:
-> 
-> -       lockdep_assert_held(&dev->dev.mutex);
-> +       device_lock_assert(&dev->dev);
-> 
-> I can also squash it in "[PATCH v5 2/6] xen/pciback: Don't deadlock when
->  unbinding." but since that one is going through the stable tree I wasn't
-> sure whether you (Greg KH) would be OK with that.
+Hello.
 
-You have my ack now, and feel free to squash it into patch 2/6 if you
-want, I don't mind having that in the stable trees.
+On 07/14/2014 10:25 AM, varkabhadram@gmail.com wrote:
 
-thanks,
+> From: Varka Bhadram <varkab@cdac.in>
 
-greg k-h
+> Normally any device ids will be above the corresponding device driver
+> structure. This patch moves the pci device ids and MODULE_DEVICE_TABLE()
+> above the pci driver structure.
+
+> Signed-off-by: Varka Bhadram <varkab@cdac.in>
+> ---
+>   drivers/net/ethernet/amd/amd8111e.c |   20 +++++++++++---------
+>   1 file changed, 11 insertions(+), 9 deletions(-)
+
+> diff --git a/drivers/net/ethernet/amd/amd8111e.c b/drivers/net/ethernet/amd/amd8111e.c
+> index e2fb9e2..3e41568 100644
+> --- a/drivers/net/ethernet/amd/amd8111e.c
+> +++ b/drivers/net/ethernet/amd/amd8111e.c
+[...]
+> @@ -109,14 +108,6 @@ MODULE_PARM_DESC(coalesce, "Enable or Disable interrupt coalescing, 1: Enable, 0
+>   module_param_array(dynamic_ipg, bool, NULL, 0);
+>   MODULE_PARM_DESC(dynamic_ipg, "Enable or Disable dynamic IPG, 1: Enable, 0: Disable");
+>
+> -static DEFINE_PCI_DEVICE_TABLE(amd8111e_pci_tbl) = {
+> -
+> -	{ PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD8111E_7462,
+> -	 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0UL },
+> -	{ 0, }
+> -
+> -};
+> -
+>   /* This function will read the PHY registers. */
+>   static int amd8111e_read_phy(struct amd8111e_priv* lp, int phy_id, int reg, u32* val)
+>   {
+> @@ -1953,6 +1944,17 @@ static void amd8111e_remove_one(struct pci_dev *pdev)
+>   	}
+>   }
+>
+> +static const struct pci_device_id amd8111e_pci_tbl[] = {
+> +	{
+> +	 .vendor = PCI_VENDOR_ID_AMD,
+> +	 .device = PCI_DEVICE_ID_AMD8111E_7462,
+
+    I don't that's equivalent to what was there before: PCI_ANY_ID is defined 
+as (~0), not 0.
+
+> +	},
+> +	{
+> +	 .vendor = 0,
+
+    You can completely skip the explicit initializers, the entry will be 
+init'ed with 0s anyway.
+
+> +	}
+> +};
+> +MODULE_DEVICE_TABLE(pci, amd8111e_pci_tbl);
+> +
+
+WBR, Sergei
+
