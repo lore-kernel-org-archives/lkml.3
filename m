@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755045AbaGNKLg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 06:11:36 -0400
-Received: from mga11.intel.com ([192.55.52.93]:42021 "EHLO mga11.intel.com"
+	id S1755118AbaGNKMI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 06:12:08 -0400
+Received: from mga11.intel.com ([192.55.52.93]:42003 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752252AbaGNKFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 06:05:55 -0400
+	id S1754114AbaGNKFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 06:05:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,657,1400050800"; 
-   d="scan'208";a="561434741"
+   d="scan'208";a="561434690"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 33/41] perf evsel: Add 'immediate' option
-Date: Mon, 14 Jul 2014 13:02:57 +0300
-Message-Id: <1405332185-4050-34-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 31/41] perf evlist: Add perf_evlist__set_tracking_event()
+Date: Mon, 14 Jul 2014 13:02:55 +0300
+Message-Id: <1405332185-4050-32-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
 References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
@@ -27,50 +27,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an option to cause a selected event
-to be enabled immediately when configured
-by perf_evsel__config().
+Add a function to change which event is used
+to track mmap, comm and task events.
 
-This is needed when using the sched_switch
-tracepoint to follow object code execution.
-By having sched_switch enabled immediately
-the first sched_switch event precedes
-the start of other tracing.
+This is needed with Instruction Tracing
+because the Instruction Tracing event
+must come first but cannot be used for
+tracking because it will be disabled
+under some circumstances.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/evsel.c | 5 +++++
- tools/perf/util/evsel.h | 1 +
- 2 files changed, 6 insertions(+)
+ tools/perf/util/evlist.c | 20 ++++++++++++++++++++
+ tools/perf/util/evlist.h |  3 +++
+ 2 files changed, 23 insertions(+)
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 40626e5..90f58cd 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -681,6 +681,11 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
- 	if (target__none(&opts->target) && perf_evsel__is_group_leader(evsel) &&
- 		!opts->initial_delay)
- 		attr->enable_on_exec = 1;
-+
-+	if (evsel->immediate) {
-+		attr->disabled = 0;
-+		attr->enable_on_exec = 0;
-+	}
- }
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 814e954..282e83e 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -1250,3 +1250,23 @@ void perf_evlist__to_front(struct perf_evlist *evlist,
  
- int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 8dfec05..d7f93ce 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -84,6 +84,7 @@ struct perf_evsel {
- 	bool 			supported;
- 	bool 			needs_swap;
- 	bool			no_aux_samples;
-+	bool			immediate;
- 	/* parse modifier helper */
- 	int			exclude_GH;
- 	int			nr_members;
+ 	list_splice(&move, &evlist->entries);
+ }
++
++int perf_evlist__set_tracking_event(struct perf_evlist *evlist,
++				    struct perf_evsel *tracking_evsel)
++{
++	struct perf_evsel *evsel;
++
++	if (tracking_evsel->idx == 0)
++		return 0;
++
++	if (tracking_evsel->leader->nr_members > 1)
++		return -EINVAL;
++
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		if (evsel->idx < tracking_evsel->idx)
++			evsel->idx += 1;
++	}
++	tracking_evsel->idx = 0;
++
++	return 0;
++}
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index f5173cd..657a36c 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -262,4 +262,7 @@ void perf_evlist__to_front(struct perf_evlist *evlist,
+ #define evlist__for_each_safe(evlist, tmp, evsel) \
+ 	__evlist__for_each_safe(&(evlist)->entries, tmp, evsel)
+ 
++int perf_evlist__set_tracking_event(struct perf_evlist *evlist,
++				    struct perf_evsel *tracking_evsel);
++
+ #endif /* __PERF_EVLIST_H */
 -- 
 1.8.3.2
 
