@@ -1,843 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755455AbaGNNLy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 09:11:54 -0400
-Received: from acledge1.advantech.com.tw ([61.58.41.197]:43610 "EHLO
-	acledge1.advantech.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754683AbaGNNLs (ORCPT
+	id S1755492AbaGNNM5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 09:12:57 -0400
+Received: from mx1.HRZ.Uni-Dortmund.DE ([129.217.128.51]:60706 "EHLO
+	unimail.uni-dortmund.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754683AbaGNNMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 09:11:48 -0400
-From: Wei-Chun Pan <weichun.pan@advantech.com.tw>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>
-CC: "Louis.Lu" <Louis.Lu@advantech.com.tw>, "Neo.Lo" <neo.lo@advantech.com.tw>,
-        "Hank.Peng" <Hank.Peng@advantech.com.tw>,
-        "Kevin.Ong" <Kevin.Ong@advantech.com.tw>,
-        <linux-kernel@vger.kernel.org>,
-        Wei-Chun Pan <weichun.pan@advantech.com.tw>
-Subject: [PATCH 4/4] hwmon: (imanager2) Add support for IT8516/18/28
-Date: Mon, 14 Jul 2014 05:54:46 -0700
-Message-ID: <1405342486-17031-4-git-send-email-weichun.pan@advantech.com.tw>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405342486-17031-1-git-send-email-weichun.pan@advantech.com.tw>
-References: <1405342486-17031-1-git-send-email-weichun.pan@advantech.com.tw>
+	Mon, 14 Jul 2014 09:12:52 -0400
+X-Greylist: delayed 858 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Jul 2014 09:12:51 EDT
+Message-ID: <748020aaaf5c5c2924a16232313e0175.squirrel@webmail.tu-dortmund.de>
+Date: Mon, 14 Jul 2014 14:58:28 +0200
+Subject: PROBLEM: repeated remap_file_pages on tmpfs triggers bug on process
+ exit
+From: "Ingo Korb" <ingo.korb@tu-dortmund.de>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.23 [SVN]
 MIME-Version: 1.0
-Content-Type: text/plain
-X-StopIT: No
+Content-Type: multipart/mixed;boundary="----=_20140714145828_76456"
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Wei-Chun Pan <weichun.pan@advantech.com.tw>
----
- drivers/hwmon/Kconfig         |   5 +
- drivers/hwmon/Makefile        |   1 +
- drivers/hwmon/imanager2_hwm.c | 768 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 774 insertions(+)
- create mode 100644 drivers/hwmon/imanager2_hwm.c
+------=_20140714145828_76456
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
 
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index bc196f4..7524fc3 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -39,6 +39,11 @@ config HWMON_DEBUG_CHIP
- 
- comment "Native drivers"
- 
-+config SENSORS_IMANAGER2
-+	tristate "Support for Advantech iManager2 EC H.W. Monitor"
-+	select MFD_CORE
-+	depends on MFD_IMANAGER2
-+
- config SENSORS_AB8500
- 	tristate "AB8500 thermal monitoring"
- 	depends on AB8500_GPADC && AB8500_BM
-diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index c48f987..a2c8f07 100644
---- a/drivers/hwmon/Makefile
-+++ b/drivers/hwmon/Makefile
-@@ -146,6 +146,7 @@ obj-$(CONFIG_SENSORS_W83L785TS)	+= w83l785ts.o
- obj-$(CONFIG_SENSORS_W83L786NG)	+= w83l786ng.o
- obj-$(CONFIG_SENSORS_WM831X)	+= wm831x-hwmon.o
- obj-$(CONFIG_SENSORS_WM8350)	+= wm8350-hwmon.o
-+obj-$(CONFIG_SENSORS_IMANAGER2)	+= imanager2_hwm.o
- 
- obj-$(CONFIG_PMBUS)		+= pmbus/
- 
-diff --git a/drivers/hwmon/imanager2_hwm.c b/drivers/hwmon/imanager2_hwm.c
-new file mode 100644
-index 0000000..335bffb
---- /dev/null
-+++ b/drivers/hwmon/imanager2_hwm.c
-@@ -0,0 +1,768 @@
-+/*
-+ * imanager2_hwm.c - HW Monitoring interface for Advantech EC IT8516/18/28
-+ * Copyright (C) 2014  Richard Vidal-Dorsch <richard.dorsch@advantech.com>
-+ *
-+ * This program is free software: you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, either version 3 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/hwmon.h>
-+#include <linux/hwmon-sysfs.h>
-+#include <linux/mfd/imanager2_ec.h>
-+
-+#define DRV_NAME	"imanager2_hwm"
-+#define DRV_VERSION	"4.0.1"
-+
-+/* ADC */
-+#define EC_ADC_RESOLUTION_MAX	0x03FF	/* 10-bit */
-+#define EC_ADC_VALUE_MAX	3000	/* max: 3000 mV or mA */
-+
-+/* Thermal */
-+#define EC_THERMAL_ZONE_MAX	4
-+
-+enum thermaltype {
-+	none,
-+	sys1,
-+	cpu,
-+	sys3,
-+	sys2,
-+};
-+
-+struct ec_thermalzone {
-+	u8 channel,
-+	   addr,
-+	   cmd,
-+	   status,
-+	   fancode,
-+	   temp;
-+};
-+
-+/* Tacho */
-+#define EC_MAX_IO_FAN	3
-+
-+/* Voltage */
-+struct volt_item {
-+	u8 did;
-+	const char *name;
-+	int factor;
-+	bool visible;
-+};
-+
-+static struct volt_item ec_volt_table[] = {
-+	{
-+		.did = adcmosbat,
-+		.name = "BAT CMOS",
-+	},
-+	{
-+		.did = adcbat,
-+		.name = "BAT",
-+	},
-+	{
-+		.did = adc5vs0,
-+		.name = "5V S0",
-+	},
-+	{
-+		.did = adv5vs5,
-+		.name = "5V S5",
-+	},
-+	{
-+		.did = adc33vs0,
-+		.name = "3V3 S0",
-+	},
-+	{
-+		.did = adc33vs5,
-+		.name = "3V3 S5",
-+	},
-+	{
-+		.did = adv12vs0,
-+		.name = "12V S0",
-+	},
-+	{
-+		.did = adcvcorea,
-+		.name = "Vcore A",
-+	},
-+	{
-+		.did = adcvcoreb,
-+		.name = "Vcore B",
-+	},
-+	{
-+		.did = adcdc,
-+		.name = "DC",
-+	},
-+	{
-+		.did = adcdcstby,
-+		.name = "DC Standby",
-+	},
-+	{
-+		.did = adcdcother,
-+		.name = "DC Other",
-+	},
-+};
-+
-+static int imanager2_volt_get_value_by_io(struct imanager2 *ec, int index,
-+					  u8 *buf)
-+{
-+	u8 item = ec->table.devid2itemnum[ec_volt_table[index].did];
-+	u8 pin = ec->table.pinnum[item];
-+	u8 portnum;
-+	int ret;
-+
-+	ret = imanager2_mbox_io_read(EC_CMD_ADC_INDEX, pin, &portnum, 1);
-+	if (ret)
-+		return ret;
-+	if (portnum == EC_ERROR)
-+		return -ENXIO;
-+
-+	ret = imanager2_mbox_io_simple_read(EC_CMD_ADC_READ_LSB, &buf[1]);
-+	if (ret)
-+		return ret;
-+
-+	return imanager2_mbox_io_simple_read(EC_CMD_ADC_READ_MSB, &buf[0]);
-+}
-+
-+static int imanager2_volt_get_value(struct imanager2 *ec, int index,
-+				    u32 *volt_mvolt)
-+{
-+	int ret;
-+	u8 tmp[2];
-+
-+	mutex_lock(&ec->lock);
-+
-+	if (ec->flag & EC_FLAG_MAILBOX)
-+		ret = imanager2_mbox_read_data(ec->flag,
-+					       EC_CMD_MAILBOX_READ_HW_PIN,
-+					       ec_volt_table[index].did,
-+					       tmp, 2);
-+	else
-+		ret = imanager2_volt_get_value_by_io(ec, index, tmp);
-+
-+	mutex_unlock(&ec->lock);
-+
-+	if (ret)
-+		return ret;
-+
-+	*volt_mvolt = (((tmp[0] << 8) | tmp[1]) & EC_ADC_RESOLUTION_MAX) *
-+		      ec_volt_table[index].factor *
-+		      DIV_ROUND_CLOSEST(EC_ADC_VALUE_MAX,
-+					EC_ADC_RESOLUTION_MAX);
-+
-+	return 0;
-+}
-+
-+static void imanager2_volt_init(struct imanager2 *ec)
-+{
-+	u8 did;
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(ec_volt_table); i++) {
-+		did = ec_volt_table[i].did;
-+
-+		if (ec->table.devid2itemnum[did] != EC_TABLE_ITEM_UNUSED) {
-+			ec_volt_table[i].factor = 1;
-+			ec_volt_table[i].visible = true;
-+		} else if (ec->table.devid2itemnum[did + 1] !=
-+			   EC_TABLE_ITEM_UNUSED) {
-+			ec_volt_table[i].did += 1;
-+			ec_volt_table[i].factor = 2;
-+			ec_volt_table[i].visible = true;
-+		} else if (ec->table.devid2itemnum[did + 2] !=
-+			   EC_TABLE_ITEM_UNUSED) {
-+			ec_volt_table[i].did += 2;
-+			ec_volt_table[i].factor = 10;
-+			ec_volt_table[i].visible = true;
-+		} else {
-+			ec_volt_table[i].visible = false;
-+		}
-+	}
-+}
-+
-+static ssize_t show_in(struct device *dev, struct device_attribute *dev_attr,
-+		       char *buf)
-+{
-+	struct imanager2 *ec = dev_get_drvdata(dev);
-+	u32 val;
-+	int ret = imanager2_volt_get_value(ec,
-+					   to_sensor_dev_attr(dev_attr)->index,
-+					   &val);
-+	if (ret)
-+		return ret;
-+
-+	return sprintf(buf, "%u\n", val);
-+}
-+
-+static ssize_t show_in_label(struct device *dev,
-+			     struct device_attribute *dev_attr, char *buf)
-+{
-+	return sprintf(buf, "%s\n",
-+		       ec_volt_table[to_sensor_dev_attr(dev_attr)->index].name);
-+}
-+
-+static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, show_in, NULL, 0);
-+static SENSOR_DEVICE_ATTR(in1_input, S_IRUGO, show_in, NULL, 1);
-+static SENSOR_DEVICE_ATTR(in2_input, S_IRUGO, show_in, NULL, 2);
-+static SENSOR_DEVICE_ATTR(in3_input, S_IRUGO, show_in, NULL, 3);
-+static SENSOR_DEVICE_ATTR(in4_input, S_IRUGO, show_in, NULL, 4);
-+static SENSOR_DEVICE_ATTR(in5_input, S_IRUGO, show_in, NULL, 5);
-+static SENSOR_DEVICE_ATTR(in6_input, S_IRUGO, show_in, NULL, 6);
-+static SENSOR_DEVICE_ATTR(in7_input, S_IRUGO, show_in, NULL, 7);
-+static SENSOR_DEVICE_ATTR(in8_input, S_IRUGO, show_in, NULL, 8);
-+static SENSOR_DEVICE_ATTR(in9_input, S_IRUGO, show_in, NULL, 9);
-+static SENSOR_DEVICE_ATTR(in10_input, S_IRUGO, show_in, NULL, 10);
-+static SENSOR_DEVICE_ATTR(in11_input, S_IRUGO, show_in, NULL, 11);
-+
-+static SENSOR_DEVICE_ATTR(in0_label, S_IRUGO, show_in_label, NULL, 0);
-+static SENSOR_DEVICE_ATTR(in1_label, S_IRUGO, show_in_label, NULL, 1);
-+static SENSOR_DEVICE_ATTR(in2_label, S_IRUGO, show_in_label, NULL, 2);
-+static SENSOR_DEVICE_ATTR(in3_label, S_IRUGO, show_in_label, NULL, 3);
-+static SENSOR_DEVICE_ATTR(in4_label, S_IRUGO, show_in_label, NULL, 4);
-+static SENSOR_DEVICE_ATTR(in5_label, S_IRUGO, show_in_label, NULL, 5);
-+static SENSOR_DEVICE_ATTR(in6_label, S_IRUGO, show_in_label, NULL, 6);
-+static SENSOR_DEVICE_ATTR(in7_label, S_IRUGO, show_in_label, NULL, 7);
-+static SENSOR_DEVICE_ATTR(in8_label, S_IRUGO, show_in_label, NULL, 8);
-+static SENSOR_DEVICE_ATTR(in9_label, S_IRUGO, show_in_label, NULL, 9);
-+static SENSOR_DEVICE_ATTR(in10_label, S_IRUGO, show_in_label, NULL, 10);
-+static SENSOR_DEVICE_ATTR(in11_label, S_IRUGO, show_in_label, NULL, 11);
-+
-+static struct attribute *imanager2_volt_attrs[] = {
-+	&sensor_dev_attr_in0_label.dev_attr.attr,
-+	&sensor_dev_attr_in0_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_in1_label.dev_attr.attr,
-+	&sensor_dev_attr_in1_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_in2_label.dev_attr.attr,
-+	&sensor_dev_attr_in2_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_in3_label.dev_attr.attr,
-+	&sensor_dev_attr_in3_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_in4_label.dev_attr.attr,
-+	&sensor_dev_attr_in4_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_in5_label.dev_attr.attr,
-+	&sensor_dev_attr_in5_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_in6_label.dev_attr.attr,
-+	&sensor_dev_attr_in6_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_in7_label.dev_attr.attr,
-+	&sensor_dev_attr_in7_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_in8_label.dev_attr.attr,
-+	&sensor_dev_attr_in8_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_in9_label.dev_attr.attr,
-+	&sensor_dev_attr_in9_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_in10_label.dev_attr.attr,
-+	&sensor_dev_attr_in10_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_in11_label.dev_attr.attr,
-+	&sensor_dev_attr_in11_input.dev_attr.attr,
-+
-+	NULL
-+};
-+
-+static umode_t imanager2_volt_mode(struct kobject *kobj, struct attribute *attr,
-+				   int index)
-+{
-+	struct device_attribute *dev_attr;
-+
-+	dev_attr = container_of(attr, struct device_attribute, attr);
-+	if (!ec_volt_table[to_sensor_dev_attr(dev_attr)->index].visible)
-+		return 0;
-+
-+	return attr->mode;
-+}
-+
-+static const struct attribute_group imanager2_volt_group = {
-+	.attrs = imanager2_volt_attrs,
-+	.is_visible = imanager2_volt_mode,
-+};
-+
-+/* Current */
-+struct curr_item {
-+	const u8 did;
-+	const char *name;
-+	bool visible;
-+};
-+
-+static struct curr_item ec_curr_table[] = {
-+	{
-+		.did = adccurrent,
-+		.name = "IMON"
-+	},
-+};
-+
-+static int imanager2_curr_get_value(struct imanager2 *ec, int index,
-+				    u32 *curr_mamp)
-+{
-+	int ret;
-+	u8 tmp[5];
-+	u16 value, factor;
-+	u32 baseunit = 1;
-+
-+	mutex_lock(&ec->lock);
-+	ret = imanager2_mbox_read_data(ec->flag, EC_CMD_MAILBOX_READ_HW_PIN,
-+				       ec_curr_table[index].did, tmp,
-+				       ARRAY_SIZE(tmp));
-+	mutex_unlock(&ec->lock);
-+
-+	if (ret)
-+		return ret;
-+
-+	value = ((tmp[0] << 8) | tmp[1]) & EC_ADC_RESOLUTION_MAX;
-+	factor = (tmp[2] << 8) | tmp[3];
-+
-+	while (tmp[4]++)
-+		baseunit *= 10;
-+
-+	*curr_mamp = DIV_ROUND_CLOSEST(value * baseunit * EC_ADC_VALUE_MAX,
-+				       EC_ADC_RESOLUTION_MAX * factor);
-+
-+	return 0;
-+}
-+
-+static void imanager2_curr_init(struct imanager2 *ec)
-+{
-+	u8 did;
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(ec_curr_table); i++) {
-+		did = ec_curr_table[i].did;
-+		if (ec->table.devid2itemnum[did] != EC_TABLE_ITEM_UNUSED)
-+			ec_curr_table[i].visible = ec->flag & EC_FLAG_MAILBOX;
-+		else
-+			ec_curr_table[i].visible = false;
-+	}
-+}
-+
-+static ssize_t show_curr(struct device *dev, struct device_attribute *dev_attr,
-+			 char *buf)
-+{
-+	struct imanager2 *ec = dev_get_drvdata(dev);
-+	u32 val;
-+	int ret = imanager2_curr_get_value(ec,
-+					   to_sensor_dev_attr(dev_attr)->index,
-+					   &val);
-+	if (ret)
-+		return ret;
-+
-+	return sprintf(buf, "%u\n", val);
-+}
-+
-+static ssize_t show_curr_label(struct device *dev,
-+			       struct device_attribute *dev_attr, char *buf)
-+{
-+	return sprintf(buf, "%s\n",
-+		       ec_curr_table[to_sensor_dev_attr(dev_attr)->index].name);
-+}
-+
-+static SENSOR_DEVICE_ATTR(curr1_input, S_IRUGO, show_curr, NULL, 0);
-+static SENSOR_DEVICE_ATTR(curr1_label, S_IRUGO, show_curr_label, NULL, 0);
-+
-+static struct attribute *imanager2_curr_attrs[] = {
-+	&sensor_dev_attr_curr1_label.dev_attr.attr,
-+	&sensor_dev_attr_curr1_input.dev_attr.attr,
-+
-+	NULL
-+};
-+
-+static umode_t imanager2_curr_mode(struct kobject *kobj, struct attribute *attr,
-+				   int index)
-+{
-+	struct device_attribute *dev_attr;
-+
-+	dev_attr = container_of(attr, struct device_attribute, attr);
-+	if (!ec_curr_table[to_sensor_dev_attr(dev_attr)->index].visible)
-+		return 0;
-+
-+	return attr->mode;
-+}
-+
-+static const struct attribute_group imanager2_curr_group = {
-+	.attrs = imanager2_curr_attrs,
-+	.is_visible = imanager2_curr_mode,
-+};
-+
-+/* Temperature */
-+struct temp_item {
-+	const char *name;
-+	const u8 zonetype_value;
-+	u8 zonetype_acpireg;
-+	bool visible;
-+};
-+
-+static struct temp_item ec_temp_table[] = {
-+	{
-+		.name = "Temp SYS",
-+		.zonetype_value = sys1,
-+		.zonetype_acpireg = EC_ACPIRAM_ADDR_LOCAL_TEMPERATURE(1)
-+	},
-+	{
-+		.name = "Temp CPU",
-+		.zonetype_value = cpu,
-+		.zonetype_acpireg = EC_ACPIRAM_ADDR_REMOTE_TEMPERATURE(1)
-+	},
-+	{
-+		.name = "Temp SYS3",
-+		.zonetype_value = sys3,
-+		.zonetype_acpireg = EC_ACPIRAM_ADDR_LOCAL_TEMPERATURE(2)
-+	},
-+	{
-+		.name = "Temp SYS2",
-+		.zonetype_value = sys2,
-+		.zonetype_acpireg = EC_ACPIRAM_ADDR_REMOTE_TEMPERATURE(2)
-+	},
-+};
-+
-+static int imanager2_temp_get_value(struct imanager2 *ec, int index,
-+				    s32 *temp_mcelsius)
-+{
-+	int ret;
-+	s8 tmp;
-+
-+	mutex_lock(&ec->lock);
-+	ret = imanager2_mbox_read_ram_support_io(
-+		ec->flag, EC_RAM_BANK_ACPI,
-+		ec_temp_table[index].zonetype_acpireg,
-+		(u8 *)&tmp, 1);
-+	mutex_unlock(&ec->lock);
-+
-+	if (ret)
-+		return ret;
-+
-+	*temp_mcelsius = tmp * 1000;
-+
-+	return 0;
-+}
-+
-+static void imanager2_temp_init(struct imanager2 *ec)
-+{
-+	int i, thm, ret;
-+	u8 tmltype, smbid, fanid;
-+	struct ec_thermalzone zone;
-+
-+	for (i = 0; i < ARRAY_SIZE(ec_temp_table); i++)
-+		ec_temp_table[i].visible = false;
-+
-+	for (thm = 0; thm < EC_THERMAL_ZONE_MAX; thm++) {
-+		mutex_lock(&ec->lock);
-+
-+		if (ec->flag & EC_FLAG_MAILBOX) {
-+			int len = sizeof(struct ec_thermalzone);
-+			ret = imanager2_mbox_read_thermalzone(ec->flag, thm,
-+							      &smbid, &fanid,
-+							      (u8 *)&zone,
-+							      &len);
-+		} else {
-+			ret = imanager2_mbox_io_read(
-+				EC_CMD_HWRAM_READ,
-+				EC_HWRAM_ADDR_THERMAL_SOURCE_SMB_STATUS(thm),
-+				&zone.status, 1);
-+		}
-+
-+		mutex_unlock(&ec->lock);
-+
-+		if (ret)
-+			continue;
-+
-+		tmltype = (zone.status >> 5);
-+
-+		for (i = 0; i < ARRAY_SIZE(ec_temp_table); i++) {
-+			if (tmltype == ec_temp_table[i].zonetype_value) {
-+				ec_temp_table[i].visible = true;
-+				break;
-+			}
-+		}
-+	}
-+}
-+
-+static ssize_t show_temp(struct device *dev, struct device_attribute *dev_attr,
-+			 char *buf)
-+{
-+	struct imanager2 *ec = dev_get_drvdata(dev);
-+	s32 val;
-+	int ret = imanager2_temp_get_value(ec,
-+					   to_sensor_dev_attr(dev_attr)->index,
-+					   &val);
-+	if (ret)
-+		return ret;
-+
-+	return sprintf(buf, "%d\n", val);
-+}
-+
-+static ssize_t show_temp_label(struct device *dev,
-+			       struct device_attribute *dev_attr, char *buf)
-+{
-+	return sprintf(buf, "%s\n",
-+		       ec_temp_table[to_sensor_dev_attr(dev_attr)->index].name);
-+}
-+
-+static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, show_temp, NULL, 0);
-+static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO, show_temp, NULL, 1);
-+static SENSOR_DEVICE_ATTR(temp3_input, S_IRUGO, show_temp, NULL, 2);
-+static SENSOR_DEVICE_ATTR(temp4_input, S_IRUGO, show_temp, NULL, 3);
-+
-+static SENSOR_DEVICE_ATTR(temp1_label, S_IRUGO, show_temp_label, NULL, 0);
-+static SENSOR_DEVICE_ATTR(temp2_label, S_IRUGO, show_temp_label, NULL, 1);
-+static SENSOR_DEVICE_ATTR(temp3_label, S_IRUGO, show_temp_label, NULL, 2);
-+static SENSOR_DEVICE_ATTR(temp4_label, S_IRUGO, show_temp_label, NULL, 3);
-+
-+static struct attribute *imanager2_temp_attrs[] = {
-+	&sensor_dev_attr_temp1_label.dev_attr.attr,
-+	&sensor_dev_attr_temp1_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_temp2_label.dev_attr.attr,
-+	&sensor_dev_attr_temp2_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_temp3_label.dev_attr.attr,
-+	&sensor_dev_attr_temp3_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_temp4_label.dev_attr.attr,
-+	&sensor_dev_attr_temp4_input.dev_attr.attr,
-+
-+	NULL
-+};
-+
-+static umode_t imanager2_temp_mode(struct kobject *kobj, struct attribute *attr,
-+				   int index)
-+{
-+	struct device_attribute *dev_attr;
-+
-+	dev_attr = container_of(attr, struct device_attribute, attr);
-+	if (!ec_temp_table[to_sensor_dev_attr(dev_attr)->index].visible)
-+		return 0;
-+
-+	return attr->mode;
-+}
-+
-+static const struct attribute_group imanager2_temp_group = {
-+	.attrs = imanager2_temp_attrs,
-+	.is_visible = imanager2_temp_mode,
-+};
-+
-+/* Fan Speed */
-+struct fan_item {
-+	const u8 did;
-+	const char *name;
-+	u8 fspeed_acpireg;
-+	bool visible;
-+};
-+
-+static struct fan_item ec_fan_table[] = {
-+	{
-+		.did = tacho0,
-+		.name = "Fan CPU",
-+		.fspeed_acpireg = 0,
-+		.visible = false
-+	},
-+	{
-+		.did = tacho1,
-+		.name = "Fan SYS",
-+		.fspeed_acpireg = 0,
-+		.visible = false
-+	},
-+	{
-+		.did = tacho2,
-+		.name = "Fan SYS2",
-+		.fspeed_acpireg = 0,
-+		.visible = false
-+	},
-+};
-+
-+static int imanager2_fan_get_value(struct imanager2 *ec, int index,
-+				   u32 *speed_rpm)
-+{
-+	int ret;
-+	u8 tmp[2];
-+
-+	mutex_lock(&ec->lock);
-+
-+	if (ec->flag & EC_FLAG_MAILBOX)
-+		ret = imanager2_mbox_read_data(ec->flag,
-+					       EC_CMD_MAILBOX_READ_HW_PIN,
-+					       ec_fan_table[index].did, tmp, 2);
-+	else
-+		ret = imanager2_mbox_io_read(EC_CMD_ACPIRAM_READ,
-+					     ec_fan_table[index].fspeed_acpireg,
-+					     tmp, 2);
-+
-+	mutex_unlock(&ec->lock);
-+
-+	if (ret)
-+		return ret;
-+
-+	if (tmp[0] == 0xFF && tmp[1] == 0xFF)
-+		return -ENODEV;
-+
-+	*speed_rpm = (tmp[0] << 8) | tmp[1];
-+
-+	return 0;
-+}
-+
-+#define EC_FANCTROL_SPEEDSRC_MASK	0x30
-+
-+static int imanager2_fan_item_init_by_io(struct imanager2 *ec, int fnum)
-+{
-+	int i, ret;
-+	u8 tmp;
-+
-+	mutex_lock(&ec->lock);
-+	ret = imanager2_mbox_io_read(EC_CMD_HWRAM_READ,
-+				     EC_HWRAM_ADDR_FAN_CONTROL(fnum), &tmp, 1);
-+	mutex_unlock(&ec->lock);
-+
-+	if (ret)
-+		return ret;
-+
-+	i = ((tmp & EC_FANCTROL_SPEEDSRC_MASK) >> 4) - 1;
-+	if (i < 0)
-+		return -ENODEV;
-+
-+	/* Unnecessary set again if it has been set. */
-+	if (ec_fan_table[i].visible)
-+		return 0;
-+
-+	ec_fan_table[i].fspeed_acpireg = EC_ACPIRAM_ADDR_FAN_SPEED_BASE(i);
-+	ec_fan_table[i].visible = true;
-+
-+	return 0;
-+}
-+
-+static void imanager2_fan_init(struct imanager2 *ec)
-+{
-+	int i;
-+
-+	if (ec->flag & EC_FLAG_MAILBOX) {
-+		for (i = 0; i < ARRAY_SIZE(ec_fan_table); i++)
-+			ec_fan_table[i].visible =
-+			    ec->table.devid2itemnum[ec_fan_table[i].did] !=
-+			    EC_TABLE_ITEM_UNUSED;
-+	} else {
-+		int fnum;
-+
-+		for (i = 0; i < ARRAY_SIZE(ec_fan_table); i++)
-+			ec_fan_table[i].visible = false;
-+
-+		for (fnum = 0; fnum < EC_MAX_IO_FAN; fnum++) {
-+			if (imanager2_fan_item_init_by_io(ec, fnum))
-+				continue;
-+		}
-+	}
-+}
-+
-+static ssize_t show_fan(struct device *dev, struct device_attribute *dev_attr,
-+			char *buf)
-+{
-+	struct imanager2 *ec = dev_get_drvdata(dev);
-+	u32 val;
-+	int ret = imanager2_fan_get_value(ec,
-+					  to_sensor_dev_attr(dev_attr)->index,
-+					  &val);
-+	if (ret)
-+		return ret;
-+
-+	return sprintf(buf, "%u\n", val);
-+}
-+
-+static ssize_t show_fan_label(struct device *dev,
-+			      struct device_attribute *dev_attr, char *buf)
-+{
-+	return sprintf(buf, "%s\n",
-+		       ec_fan_table[to_sensor_dev_attr(dev_attr)->index].name);
-+}
-+
-+static SENSOR_DEVICE_ATTR(fan1_input, S_IRUGO, show_fan, NULL, 0);
-+static SENSOR_DEVICE_ATTR(fan2_input, S_IRUGO, show_fan, NULL, 1);
-+static SENSOR_DEVICE_ATTR(fan3_input, S_IRUGO, show_fan, NULL, 2);
-+
-+static SENSOR_DEVICE_ATTR(fan1_label, S_IRUGO, show_fan_label, NULL, 0);
-+static SENSOR_DEVICE_ATTR(fan2_label, S_IRUGO, show_fan_label, NULL, 1);
-+static SENSOR_DEVICE_ATTR(fan3_label, S_IRUGO, show_fan_label, NULL, 2);
-+
-+static struct attribute *imanager2_fan_attrs[] = {
-+	&sensor_dev_attr_fan1_label.dev_attr.attr,
-+	&sensor_dev_attr_fan1_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_fan2_label.dev_attr.attr,
-+	&sensor_dev_attr_fan2_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_fan3_label.dev_attr.attr,
-+	&sensor_dev_attr_fan3_input.dev_attr.attr,
-+
-+	NULL
-+};
-+
-+static umode_t imanager2_fan_mode(struct kobject *kobj, struct attribute *attr,
-+				  int index)
-+{
-+	struct device_attribute *dev_attr;
-+
-+	dev_attr = container_of(attr, struct device_attribute, attr);
-+	if (!ec_fan_table[to_sensor_dev_attr(dev_attr)->index].visible)
-+		return 0;
-+
-+	return attr->mode;
-+}
-+
-+static const struct attribute_group imanager2_fan_group = {
-+	.attrs = imanager2_fan_attrs,
-+	.is_visible = imanager2_fan_mode,
-+};
-+
-+/* Module */
-+static const struct attribute_group *imanager2_hwmon_groups[] = {
-+	&imanager2_volt_group,
-+	&imanager2_curr_group,
-+	&imanager2_temp_group,
-+	&imanager2_fan_group,
-+	NULL
-+};
-+
-+static int imanager2_hwmon_probe(struct platform_device *pdev)
-+{
-+	struct device *hwmon_dev;
-+	struct imanager2 *hwmon_ec = pdev->dev.parent->platform_data;
-+
-+	imanager2_volt_init(hwmon_ec);
-+	imanager2_curr_init(hwmon_ec);
-+	imanager2_temp_init(hwmon_ec);
-+	imanager2_fan_init(hwmon_ec);
-+
-+	hwmon_dev = devm_hwmon_device_register_with_groups(
-+			&pdev->dev, "imanager2", hwmon_ec,
-+			imanager2_hwmon_groups);
-+
-+	if (IS_ERR(hwmon_dev))
-+		return PTR_ERR(hwmon_dev);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver imanager2_hwmon_driver = {
-+	.probe = imanager2_hwmon_probe,
-+	.driver = {
-+			.owner = THIS_MODULE,
-+			.name = DRV_NAME,
-+	},
-+};
-+
-+module_platform_driver(imanager2_hwmon_driver);
-+
-+MODULE_AUTHOR("Richard Vidal-Dorsch <richard.dorsch at advantech.com>");
-+MODULE_DESCRIPTION("HW Monitoring interface for Advantech EC IT8516/18/28");
-+MODULE_LICENSE("GPL");
-+MODULE_VERSION(DRV_VERSION);
--- 
-1.9.1
+Hi,
+
+repeated mapping of the same file on tmpfs using remap_file_pages
+sometimes triggers a "BUG at mm/filemap.c:202" when the process exits, log
+message below. The system is an x86_64 VirtualBox machine with 2GB of RAM
+running Debian, but it could also be reproduced on a non-virtualized
+laptop.
+
+The bug can be triggered in Linux 3.16-rc5, bisecting has located d7c17551
+as the first failing commit (mm: implement ->map_pages for shmem/tmpfs).
+
+A test program for this has been attached (I don't trust this webmailer to
+not mangle it). With the parameters set in the source code, the BUG
+message should be triggered within a small number of tries (usually the
+first or second). Changing the size of the memory map sometimes delays the
+bug ("while true; do ./remap-demo; done" should still trigger it within a
+few seconds) or avoids it completely - I don't see any patterns yet. Using
+(at least) two different mappings for the file, each of which has been
+remapped seem to be a requirement for triggering it.
+
+Implementing the same mappings using mmap() does not appear to cause any
+problems, but I assume that someone might care about this problem while
+remap_file_pages() is still in the kernel.
+
+-ik
+
+
+------------[ cut here ]------------
+kernel BUG at mm/filemap.c:202!
+invalid opcode: 0000 [#1] SMP
+Modules linked in: uinput nfsd auth_rpcgss oid_registry nfs_acl nfs lockd
+fscache sunrpc ext3 jbd loop joydev hid_generic usbhid hid psmouse
+parport_pc ohci_pci ohci_hcd ehci_hcd usbcore ac i2c_piix4 pcspkr
+serio_raw evdev parport battery button processor i2c_core usb_common
+microcode thermal_sys ext4 crc16 jbd2 mbcache sr_mod cdrom sg sd_mod
+crc_t10dif crct10dif_common ata_generic e1000 ahci libahci ata_piix libata
+scsi_mod
+CPU: 3 PID: 2992 Comm: test Not tainted 3.16.0-rc5ik1 #37
+Hardware name: innotek GmbH VirtualBox, BIOS VirtualBox 12/01/2006 task:
+ffff88005a9363d0 ti: ffff880037968000 task.ti: ffff880037968000 RIP:
+0010:[<ffffffff810db4d3>]  [<ffffffff810db4d3>]
+__delete_from_page_cache+0x16f/0x1f6
+RSP: 0018:ffff88003796bba8  EFLAGS: 00010046
+RAX: 0000000000000000 RBX: ffffea00012ee220 RCX: 00000000ffffffe2
+RDX: 0000000000000018 RSI: 0000000000000018 RDI: ffff88005dbeb700
+RBP: ffff8800378d1c10 R08: ffff88005dbeb700 R09: 0000000000000013
+R10: 0000000000000013 R11: 0000000000000000 R12: 0000000000000000
+R13: 0000000000000003 R14: ffff8800378d1c18 R15: 000000000000000f
+FS:  0000000000000000(0000) GS:ffff88005d980000(0000)
+knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00007f69ad38fa30 CR3: 0000000001611000 CR4: 00000000000006e0
+Stack:
+ 0000000000000002 000000000000000f ffff880059899008 ffff8800598990a8
+ffff8800378d1c10 ffffea00012ee220 ffff8800378d1c28 0000000000000000
+ffff8800378d1ac0 ffff8800374d0600 0000000000000001 ffffffff810db65b
+Call Trace:
+ [<ffffffff810db65b>] ? delete_from_page_cache+0x32/0x56
+ [<ffffffff810e621d>] ? truncate_inode_page+0x62/0x69
+ [<ffffffff810edf29>] ? shmem_undo_range+0x13f/0x3f3
+ [<ffffffff810df855>] ? get_pfnblock_flags_mask+0x1d/0x4d
+ [<ffffffff810e0bcb>] ? free_hot_cold_page+0x76/0x134
+ [<ffffffff810e528a>] ? release_pages+0x171/0x180
+ [<ffffffff810e4aa2>] ? hpage_nr_pages+0x1b/0x1b
+ [<ffffffff811418df>] ? __inode_wait_for_writeback+0x67/0xae
+ [<ffffffff810ee1e8>] ? shmem_truncate_range+0xb/0x25
+ [<ffffffff810ee76d>] ? shmem_evict_inode+0x4f/0xed
+ [<ffffffff810ee71e>] ? shmem_file_setup+0x7/0x7
+ [<ffffffff81136947>] ? evict+0xa3/0x147
+ [<ffffffff81133576>] ? __dentry_kill+0x103/0x173
+ [<ffffffff81133983>] ? dput+0x133/0x150
+ [<ffffffff8112489d>] ? __fput+0x163/0x184
+ [<ffffffff8105f10c>] ? task_work_run+0x7b/0x8f
+ [<ffffffff81049c69>] ? do_exit+0x3f6/0x904
+ [<ffffffff8104a282>] ? do_group_exit+0x68/0x9a
+ [<ffffffff8104a2c4>] ? SyS_exit_group+0x10/0x10
+ [<ffffffff8138fb69>] ? system_call_fastpath+0x16/0x1b
+Code: be 0a 00 00 00 48 89 df e8 96 5b 01 00 48 8b 03 a9 00 00 08 00 74 0d
+be 18 00 00 00 48 89 df e8 7f 5b 01 00 8b 43 18 85 c0 78 02 <0f> 0b 48 8b
+03 a8 10 74 6f 48 8b 85 88 00 00 00 f6 40 20 01 75
+RIP  [<ffffffff810db4d3>] __delete_from_page_cache+0x16f/0x1f6
+ RSP <ffff88003796bba8>
+---[ end trace 79ae5bd27fcedca9 ]---
+Fixing recursive fault but reboot is needed!
+BUG: Bad rss-counter state mm:ffff88005aae60c0 idx:0 val:1
+
+
+
+
+------=_20140714145828_76456
+Content-Type: text/x-csrc; name="remap-demo.c"
+Content-Transfer-Encoding: 8bit
+Content-Disposition: attachment; filename="remap-demo.c"
+
+#define _GNU_SOURCE
+#include <sys/mman.h>
+#include <sys/resource.h>
+#include <errno.h>
+#include <limits.h>
+#include <malloc.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#define PAGE_SIZE 4096
+// NOTE: DATA=MAP2=16 seems to trigger in the first few tries
+// NOTE: 9/9 needs a loop and a few seconds to trigger
+// NOTE: DATA=9, MAP2=8 does not trigger
+#define DATA_SIZE 16
+#define MAP2_SIZE 16
+
+int shmfd;
+char shmpath[] = "/dev/shm/mmaptest-XXXXXX";
+unsigned char *map1, *map2;
+unsigned int i;
+
+int main(int argc, char *argv[]) {
+  /* create a data file on tmpfs */
+  shmfd = mkstemp(shmpath);
+  if (shmfd < 0) {
+    perror("mkstemp");
+    exit(2);
+  }
+
+  if (unlink(shmpath)) {
+    perror("unlink");
+    exit(2);
+  }
+
+  if (ftruncate(shmfd, DATA_SIZE * PAGE_SIZE)) {
+    perror("ftruncate");
+    exit(2);
+  }
+
+  /* map a single page from the file */
+  map1 = mmap(NULL, PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shmfd, 0);
+  if (map1 == MAP_FAILED) {
+    perror("mmap 1");
+    exit(2);
+  }
+
+  /* remap it to another page in the file */
+  // NOTE: Does not trigger without remapping
+  // NOTE: Does not trigger for 7, but does trigger for 8 if both sizes are 16
+  //  (DATA_SIZE-2 is sufficiently generic here)
+  if (remap_file_pages(map1, PAGE_SIZE, 0, DATA_SIZE - 2, MAP_SHARED)) {
+    perror("remap_file_pages 1");
+    exit(2);
+  }
+
+  /* create a second mapping */
+  map2 = mmap(NULL, MAP2_SIZE * PAGE_SIZE, PROT_READ | PROT_WRITE,
+              MAP_SHARED, shmfd, 0);
+  if (map2 == MAP_FAILED) {
+    perror("mmap 2");
+    exit(2);
+  }
+
+  /* map all of its pages to page 0 */
+  // NOTE: Remapping only the last page does not trigger
+  for (i = 0; i < MAP2_SIZE; i++) {
+    if (remap_file_pages(map2 + PAGE_SIZE * i, PAGE_SIZE, 0, 0, MAP_SHARED)) {
+      perror("remap_file_pages 3");
+      exit(2);
+    }
+  }
+
+  close(shmfd);
+
+  exit(0);
+}
+------=_20140714145828_76456--
+
 
