@@ -1,117 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932311AbaGNO4a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 10:56:30 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:42556 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932234AbaGNOzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 10:55:51 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <jg1.han@samsung.com>,
-        <bhelgaas@google.com>, <mohit.kumar@st.com>,
-        <linux-kernel@vger.kernel.org>
-CC: <kishon@ti.com>, <grant.likely@linaro.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Marek Vasut <marex@denx.de>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v2 1/4] PCI: designware: Configuration space should be specified in 'reg'
-Date: Mon, 14 Jul 2014 20:25:02 +0530
-Message-ID: <1405349705-31400-2-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1405349705-31400-1-git-send-email-kishon@ti.com>
-References: <1405349705-31400-1-git-send-email-kishon@ti.com>
+	id S932326AbaGNO4h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 10:56:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60445 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932254AbaGNO4E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 10:56:04 -0400
+Date: Mon, 14 Jul 2014 07:55:43 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Felipe Balbi <balbi@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCHv2 5/6] base: platform: name the device already during
+ allocation
+Message-ID: <20140714145543.GB11477@kroah.com>
+References: <1401972778-5880-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <1401972778-5880-6-git-send-email-heikki.krogerus@linux.intel.com>
+ <53C3767A.9000203@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C3767A.9000203@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The configuration address space has so far been specified in *ranges*,
-however it should be specified in *reg* making it a platform MEM resource.
-Hence used 'platform_get_resource_*' API to get configuration address
-space in the designware driver.
+On Mon, Jul 14, 2014 at 11:49:38AM +0530, Kishon Vijay Abraham I wrote:
+> Greg,
+> 
+> On Thursday 05 June 2014 06:22 PM, Heikki Krogerus wrote:
+> > This allows resources such as GPIOs and clocks, which can be
+> > matched based on the device name when requested, to be
+> > assigned even when PLATFORM_DEVID_AUTO is used.
+> 
+> Any comments on this patch?
 
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Marek Vasut <marex@denx.de>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-Acked-by: Mohit Kumar <mohit.kumar@st.com>
-Acked-by: Jingoo Han <jg1.han@samsung.com>
----
- .../devicetree/bindings/pci/designware-pcie.txt    |    4 ++++
- drivers/pci/host/pcie-designware.c                 |   17 +++++++++++++++--
- 2 files changed, 19 insertions(+), 2 deletions(-)
+I thought I rejected it in the past, don't have my email archives
+around at the moment, sorry.
 
-diff --git a/Documentation/devicetree/bindings/pci/designware-pcie.txt b/Documentation/devicetree/bindings/pci/designware-pcie.txt
-index d0d15ee..ed0d9b9 100644
---- a/Documentation/devicetree/bindings/pci/designware-pcie.txt
-+++ b/Documentation/devicetree/bindings/pci/designware-pcie.txt
-@@ -2,6 +2,10 @@
- 
- Required properties:
- - compatible: should contain "snps,dw-pcie" to identify the core.
-+- reg: Should contain the configuration address space.
-+- reg-names: Must be "config" for the PCIe configuration space.
-+    (The old way of getting the configuration address space from "ranges"
-+    is deprecated and should be avoided.)
- - #address-cells: set to <3>
- - #size-cells: set to <2>
- - device_type: set to "pci"
-diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
-index 1eaf4df..0b7b455 100644
---- a/drivers/pci/host/pcie-designware.c
-+++ b/drivers/pci/host/pcie-designware.c
-@@ -20,6 +20,7 @@
- #include <linux/of_pci.h>
- #include <linux/pci.h>
- #include <linux/pci_regs.h>
-+#include <linux/platform_device.h>
- #include <linux/types.h>
- 
- #include "pcie-designware.h"
-@@ -396,11 +397,23 @@ static const struct irq_domain_ops msi_domain_ops = {
- int __init dw_pcie_host_init(struct pcie_port *pp)
- {
- 	struct device_node *np = pp->dev->of_node;
-+	struct platform_device *pdev = to_platform_device(pp->dev);
- 	struct of_pci_range range;
- 	struct of_pci_range_parser parser;
-+	struct resource *cfg_res;
- 	u32 val;
- 	int i;
- 
-+	cfg_res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "config");
-+	if (cfg_res) {
-+		pp->config.cfg0_size = resource_size(cfg_res)/2;
-+		pp->config.cfg1_size = resource_size(cfg_res)/2;
-+		pp->cfg0_base = cfg_res->start;
-+		pp->cfg1_base = cfg_res->start + pp->config.cfg0_size;
-+	} else {
-+		dev_err(pp->dev, "missing *config* reg space\n");
-+	}
-+
- 	if (of_pci_range_parser_init(&parser, np)) {
- 		dev_err(pp->dev, "missing ranges property\n");
- 		return -EINVAL;
-@@ -433,6 +446,8 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
- 			of_pci_range_to_resource(&range, np, &pp->cfg);
- 			pp->config.cfg0_size = resource_size(&pp->cfg)/2;
- 			pp->config.cfg1_size = resource_size(&pp->cfg)/2;
-+			pp->cfg0_base = pp->cfg.start;
-+			pp->cfg1_base = pp->cfg.start + pp->config.cfg0_size;
- 		}
- 	}
- 
-@@ -445,8 +460,6 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
- 		}
- 	}
- 
--	pp->cfg0_base = pp->cfg.start;
--	pp->cfg1_base = pp->cfg.start + pp->config.cfg0_size;
- 	pp->mem_base = pp->mem.start;
- 
- 	pp->va_cfg0_base = devm_ioremap(pp->dev, pp->cfg0_base,
--- 
-1.7.9.5
 
+> > Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > ---
+> >  drivers/base/platform.c | 77 ++++++++++++++++++++++++++++++-------------------
+> >  1 file changed, 47 insertions(+), 30 deletions(-)
+> > 
+> > diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+> > index 9e9227e..e856bc4 100644
+> > --- a/drivers/base/platform.c
+> > +++ b/drivers/base/platform.c
+> > @@ -177,11 +177,45 @@ struct platform_object {
+> >   */
+> >  void platform_device_put(struct platform_device *pdev)
+> >  {
+> > -	if (pdev)
+> > -		put_device(&pdev->dev);
+> > +	if (!pdev)
+> > +		return;
+> > +
+> > +	if (pdev->id_auto) {
+> > +		ida_simple_remove(&platform_devid_ida, pdev->id);
+> > +		pdev->id = PLATFORM_DEVID_AUTO;
+> > +	}
+> > +
+> > +	put_device(&pdev->dev);
+> >  }
+> >  EXPORT_SYMBOL_GPL(platform_device_put);
+
+Why would a single call to this function remove an id?  That seems
+really wrong, you should be able to call get and put on a device
+numerous times, only the "last" reference should cause the device to be
+cleaned up.
+
+Shouldn't this be in the release function instead?
+
+thanks,
+
+greg k-h
