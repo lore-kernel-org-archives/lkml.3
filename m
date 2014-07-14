@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728AbaGNOS4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 10:18:56 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:45038 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754564AbaGNOSs (ORCPT
+	id S1755762AbaGNOTk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 10:19:40 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:14591 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754506AbaGNOTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 10:18:48 -0400
-Subject: Re: [RFC][PATCH 0/3] ftrace: Add dynamically allocated trampolines
-From: Namhyung Kim <namhyung@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
+	Mon, 14 Jul 2014 10:19:32 -0400
+Date: Mon, 14 Jul 2014 15:19:04 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Wim Van Sebroeck <wim@iguana.be>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Will Deacon <Will.Deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonas Jensen <jonas.jensen@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Oleg Nesterov <oleg@redhat.com>,
-        Seth Jennings <sjenning@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-In-Reply-To: <53C39250.20200@hitachi.com>
-References: <20140703200750.648550267@goodmis.org>
-	 <20140710213620.GA19858@treble.redhat.com>
-	 <alpine.LNX.2.00.1407102342050.8779@pobox.suse.cz>
-	 <53BF4B5A.3000302@hitachi.com>
-	 <alpine.LNX.2.00.1407111523270.8779@pobox.suse.cz>
-	 <20140711142928.GA13037@treble.redhat.com> <53C333D9.4030907@hitachi.com>
-	 <87ion02yx3.fsf@sejong.aot.lge.com>  <53C39250.20200@hitachi.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 14 Jul 2014 23:18:41 +0900
-Message-ID: <1405347521.1745.37.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 5/7] watchdog: moxart: Register restart handler with
+ restart notifier
+Message-ID: <20140714141904.GA1112@arm.com>
+References: <1405265431-4561-1-git-send-email-linux@roeck-us.net>
+ <1405265431-4561-6-git-send-email-linux@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405265431-4561-6-git-send-email-linux@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-07-14 (월), 17:18 +0900, Masami Hiramatsu:
-> (2014/07/14 16:16), Namhyung Kim wrote:
-> > Hi Masami,
-> > 
-> > On Mon, 14 Jul 2014 10:35:21 +0900, Masami Hiramatsu wrote:
-> >> (2014/07/11 23:29), Josh Poimboeuf wrote:
-> >>> Here's the same stack trace with this patch:
-> >>>
-> >>>   [ 1314.612287]  [<ffffffff81700312>] dump_stack+0x45/0x56
-> >>>   [ 1314.612290]  [<ffffffff8125f5b0>] ? meminfo_proc_open+0x30/0x30
-> >>>   [ 1314.612293]  [<ffffffffa080a494>] kpatch_ftrace_handler+0x14/0xf0 [kpatch]
-> >>>   [ 1314.612306]  [<ffffffffa00160c4>] 0xffffffffa00160c3
-> >>
-> >> Here, this still has a wrong entry. Maybe the trampline doesn't setup
-> >> frame pointer (bp) correctly.
-> > 
-> > Hmm.. are you saying about the hex address above?  I guess it's a valid
-> > entry in the (dynamic) trampoline, but has no symbol..
-> 
-> Ah, indeed. (BTW, why is it one less than the address ...? printk's spec?)
+On Sun, Jul 13, 2014 at 04:30:29PM +0100, Guenter Roeck wrote:
+> diff --git a/drivers/watchdog/moxart_wdt.c b/drivers/watchdog/moxart_wdt.c
+> index 4aa3a8a..5080b50 100644
+> --- a/drivers/watchdog/moxart_wdt.c
+> +++ b/drivers/watchdog/moxart_wdt.c
+[...]
+> -static void moxart_wdt_restart(enum reboot_mode reboot_mode, const char *cmd)
+> +static int moxart_restart_notify(struct notifier_block *this,
+> +				 unsigned long mode, void *cmd)
+>  {
+> -	writel(1, moxart_restart_ctx->base + REG_COUNT);
+> -	writel(0x5ab9, moxart_restart_ctx->base + REG_MODE);
+> -	writel(0x03, moxart_restart_ctx->base + REG_ENABLE);
+> +	struct moxart_wdt_dev *moxart_wdt = container_of(this,
+> +							 struct moxart_wdt_dev,
+> +							 restart_notifier);
+> +	writel(1, moxart_wdt->base + REG_COUNT);
+> +	writel(0x5ab9, moxart_wdt->base + REG_MODE);
+> +	writel(0x03, moxart_wdt->base + REG_ENABLE);
+> +
+> +	return NOTIFY_DONE;
+>  }
 
-Argh, it seems like a bug in printk's %pB format processing.. :-/
+Wondering whether NOTIFY_OK or even NOTIFY_STOP_MASK is better here.
 
-It subtract 1 from the address for stacktrace.  Please see the commit
-0f77a8d37825 ("vsprintf: Introduce %pB format specifier") and
-71f9e59800e5 ("x86, dumpstack: Use %pB format specifier for stack
-trace") for details.  But it should restore the original address when it
-failed to find a symbol for that address.
-
-I'll send a fix soon.
-
-Thanks,
-Namhyung
-
-
+-- 
+Catalin
