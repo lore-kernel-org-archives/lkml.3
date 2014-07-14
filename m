@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757276AbaGNUF5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 16:05:57 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:10540 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757265AbaGNUFr (ORCPT
+	id S1757229AbaGNUGX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 16:06:23 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:34608 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756975AbaGNUGQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 16:05:47 -0400
-Message-Id: <20140714200545.576509660@goodmis.org>
-User-Agent: quilt/0.63-1
-Date: Mon, 14 Jul 2014 16:05:36 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        stable-rt@vger.kernel.org, Clark Williams <williams@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH RT 1/4] sched: Do not clear PF_NO_SETAFFINITY flag in select_fallback_rq()
-References: <20140714200535.671192970@goodmis.org>
+	Mon, 14 Jul 2014 16:06:16 -0400
+Date: Mon, 14 Jul 2014 13:06:12 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+Cc: Borislav Petkov <bp@alien8.de>, clemens@ladisch.de, jdelvare@suse.de,
+        rdunlap@infradead.org, bhelgaas@google.com, lm-sensors@lm-sensors.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH] hwmon, k10temp: Add support for AMD F15h M60h processor
+Message-ID: <20140714200612.GA29123@roeck-us.net>
+References: <1405369388-12729-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+ <20140714195128.GA25124@pd.tnic>
+ <53C4368E.9090103@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0001-sched-Do-not-clear-PF_NO_SETAFFINITY-flag-in-select_.patch
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C4368E.9090103@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4.97-rt121-rc1 stable review patch.
-If anyone has any objections, please let me know.
+On Mon, Jul 14, 2014 at 02:59:10PM -0500, Aravind Gopalakrishnan wrote:
+> On 7/14/2014 2:51 PM, Borislav Petkov wrote:
+> >On Mon, Jul 14, 2014 at 03:23:08PM -0500, Aravind Gopalakrishnan wrote:
+> >>@@ -211,6 +228,7 @@ static const struct pci_device_id k10temp_id_table[] = {
+> >>  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F3) },
+> >>  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M10H_F3) },
+> >>  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F3) },
+> >>+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M60H_NB_F3) },
+> >>  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
+> >>  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_M30H_NB_F3) },
+> >>  	{}
+> >>diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+> >>index 7fa3173..3c8e328 100644
+> >>--- a/include/linux/pci_ids.h
+> >>+++ b/include/linux/pci_ids.h
+> >>@@ -520,6 +520,7 @@
+> >>  #define PCI_DEVICE_ID_AMD_15H_M10H_F3	0x1403
+> >>  #define PCI_DEVICE_ID_AMD_15H_M30H_NB_F3 0x141d
+> >>  #define PCI_DEVICE_ID_AMD_15H_M30H_NB_F4 0x141e
+> >>+#define PCI_DEVICE_ID_AMD_15H_M60H_NB_F3 0x1573
+> >I'm assuming this is used somewhere else besides k10temp.c?
+> >
+> 
+> Yeah, will most likely need to add EDAC bits. But that is something
+> I can't test now.
+> 
+Sorry, I can not add this to a common file unless it is used elsewhere.
+I would suggest to add it locally for now. It can be moved to the
+common file once it is used elsewhere.
 
-------------------
-
-From: Steven Rostedt <rostedt@goodmis.org>
-
-I talked with Peter Zijlstra about this, and he told me that the clearing
-of the PF_NO_SETAFFINITY flag was to deal with the optimization of
-migrate_disable/enable() that ignores tasks that have that flag set. But
-that optimization was removed when I did a rework of the cpu hotplug code.
-
-I found that ignoring tasks that had that flag set would cause those tasks
-to not sync with the hotplug code and cause the kernel to crash. Thus it
-needed to not treat them special and those tasks had to go though the same
-work as tasks without that flag set.
-
-Now that those tasks are not treated special, there's no reason to clear the
-flag.
-
-May still need to be tested as the migrate_me() code does not ignore those
-flags.
-
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Clark Williams <williams@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140701111444.0cfebaa1@gandalf.local.home
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/sched/core.c | 6 ------
- 1 file changed, 6 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 1199054adb2e..2b2863972dd1 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1325,12 +1325,6 @@ out:
- 		}
- 	}
- 
--	/*
--	 * Clear PF_THREAD_BOUND, otherwise we wreckage
--	 * migrate_disable/enable. See optimization for
--	 * PF_THREAD_BOUND tasks there.
--	 */
--	p->flags &= ~PF_THREAD_BOUND;
- 	return dest_cpu;
- }
- 
--- 
-2.0.0
-
-
+Guenter
