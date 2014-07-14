@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830AbaGNKEX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 06:04:23 -0400
+	id S1754093AbaGNKEc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 06:04:32 -0400
 Received: from mga01.intel.com ([192.55.52.88]:29926 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752091AbaGNKEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 06:04:14 -0400
+	id S1752252AbaGNKEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 06:04:15 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,657,1400050800"; 
-   d="scan'208";a="561434069"
+   d="scan'208";a="561434071"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,123 +16,150 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 00/41] perf tools: Preparation for call graph from Intel BTS
-Date: Mon, 14 Jul 2014 13:02:24 +0300
-Message-Id: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 01/41] perf tools: Fix the value used for unknown pids
+Date: Mon, 14 Jul 2014 13:02:25 +0300
+Message-Id: <1405332185-4050-2-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
+References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
 Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+The value used for unknown pids cannot be zero
+because that is used by the "idle" task.
+Use -1 instead.  Also handle the unknown pid
+case when creating map groups.
 
-As we discussed here:
+Note that, threads with an unknown pid should not
+occur because fork (or synthesized) events precede
+the thread's existence.
 
-	http://marc.info/?l=linux-kernel&m=140509286032125&w=4
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/builtin-sched.c | 12 ++++++------
+ tools/perf/util/machine.c  |  6 +++---
+ tools/perf/util/session.c  |  5 +++--
+ tools/perf/util/thread.c   |  2 +-
+ 4 files changed, 13 insertions(+), 12 deletions(-)
 
-here are a selection of patches based on tip/perf/core.
-
-They can also be found here:
-
-	http://git.infradead.org/users/ahunter/linux-perf.git/shortlog/refs/heads/for-acme
-
-
-Adrian Hunter (41):
-      perf tools: Fix the value used for unknown pids
-      perf tools: Fix map groups of threads with unknown pids
-      perf script: Display PERF_RECORD_MISC_COMM_EXEC flag
-      perf record: Select comm_exec flag if supported
-      perf tools: Identify which comms are from exec
-      perf tools: Add machine__thread_exec_comm()
-      perf tools: Fix missing kernel map load
-      perf tools: Fix missing label symbols
-      perf tools: Fix missing GNU IFUNC symbols
-      perf inject: Fix build id injection
-      perf tools: Fix appending a callchain from a previous sample
-      perf tools: Fix leak of 'struct thread' on error path
-      perf tools: Add machine__kernel_ip()
-      perf buildid-cache: Apply force option to copying kcore
-      perf script: Improve srcline display for BTS
-      perf script: Do not print dangling '=>' for BTS
-      perf tools: Record whether a dso is 64-bit
-      perf tools: Record whether a dso has data
-      perf tools: Do not attempt to read data from kallsyms
-      perf tools: Let a user specify a PMU event without any config terms
-      perf tools: Let default config be defined for a PMU
-      perf tools: Add perf_pmu__scan_file()
-      perf tools: Add dsos__hit_all()
-      perf tools: Add cpu to struct thread
-      perf tools: Add ability to record the current tid for each cpu
-      perf tools: Add ability to iterate over a dso's symbols
-      perf session: Flag if the event stream is entirely in memory
-      perf evlist: Pass mmap parameters in a struct
-      perf tools: Add feature test for __sync_val_compare_and_swap
-      perf tools: Add option macro OPT_CALLBACK_OPTARG
-      perf evlist: Add perf_evlist__set_tracking_event()
-      perf evsel: Add 'no_aux_samples' option
-      perf evsel: Add 'immediate' option
-      perf evlist: Add 'system_wide' option
-      perf tools: Add id index
-      perf pmu: Let pmu's with no events show up on perf list
-      perf session: Add ability to skip 4GiB or more
-      perf session: Add perf_session__deliver_synth_event()
-      perf tools: Allow TSC conversion on any arch
-      perf tools: Move rdtsc() function
-      perf evlist: Add perf_evlist__enable_event_idx()
-
- tools/perf/Makefile.perf                           |   2 +
- tools/perf/arch/x86/util/tsc.c                     |  31 ++--
- tools/perf/arch/x86/util/tsc.h                     |   3 -
- tools/perf/builtin-buildid-cache.c                 |   8 +-
- tools/perf/builtin-inject.c                        |   4 +
- tools/perf/builtin-sched.c                         |  12 +-
- tools/perf/builtin-script.c                        |  26 ++-
- tools/perf/config/Makefile                         |   6 +
- tools/perf/config/feature-checks/Makefile          |   4 +
- tools/perf/config/feature-checks/test-all.c        |   5 +
- .../feature-checks/test-sync-compare-and-swap.c    |  14 ++
- tools/perf/tests/perf-time-to-tsc.c                |  12 +-
- tools/perf/tests/pmu.c                             |   2 +-
- tools/perf/util/callchain.c                        |   2 +-
- tools/perf/util/comm.c                             |   7 +-
- tools/perf/util/comm.h                             |   6 +-
- tools/perf/util/dso.c                              |   6 +-
- tools/perf/util/dso.h                              |   2 +
- tools/perf/util/event.c                            |  17 +-
- tools/perf/util/event.h                            |  15 ++
- tools/perf/util/evlist.c                           | 184 +++++++++++++++----
- tools/perf/util/evlist.h                           |   5 +
- tools/perf/util/evsel.c                            |  45 ++++-
- tools/perf/util/evsel.h                            |   6 +
- tools/perf/util/header.c                           |  41 +++++
- tools/perf/util/header.h                           |   2 +
- tools/perf/util/machine.c                          | 127 +++++++++++++-
- tools/perf/util/machine.h                          |  26 +++
- tools/perf/util/map.c                              |  14 ++
- tools/perf/util/map.h                              |   1 +
- tools/perf/util/parse-events.c                     |  13 +-
- tools/perf/util/parse-events.y                     |  10 ++
- tools/perf/util/parse-options.h                    |   5 +
- tools/perf/util/pmu.c                              |  92 ++++++++--
- tools/perf/util/pmu.h                              |  13 +-
- tools/perf/util/record.c                           |  18 +-
- tools/perf/util/session.c                          | 194 +++++++++++++++++++--
- tools/perf/util/session.h                          |  18 ++
- tools/perf/util/symbol-elf.c                       |   8 +-
- tools/perf/util/symbol-minimal.c                   |  22 +++
- tools/perf/util/symbol.c                           |  20 ++-
- tools/perf/util/symbol.h                           |   4 +
- tools/perf/util/thread.c                           |  68 +++++++-
- tools/perf/util/thread.h                           |  12 +-
- tools/perf/util/tool.h                             |   3 +-
- tools/perf/util/tsc.c                              |  30 ++++
- tools/perf/util/tsc.h                              |  12 ++
- 47 files changed, 1020 insertions(+), 157 deletions(-)
- create mode 100644 tools/perf/config/feature-checks/test-sync-compare-and-swap.c
- create mode 100644 tools/perf/util/tsc.c
- create mode 100644 tools/perf/util/tsc.h
-
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index c38d06c..b7f555a 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -935,8 +935,8 @@ static int latency_switch_event(struct perf_sched *sched,
+ 		return -1;
+ 	}
  
- Regards
- Adrian
+-	sched_out = machine__findnew_thread(machine, 0, prev_pid);
+-	sched_in = machine__findnew_thread(machine, 0, next_pid);
++	sched_out = machine__findnew_thread(machine, -1, prev_pid);
++	sched_in = machine__findnew_thread(machine, -1, next_pid);
+ 
+ 	out_events = thread_atoms_search(&sched->atom_root, sched_out, &sched->cmp_pid);
+ 	if (!out_events) {
+@@ -979,7 +979,7 @@ static int latency_runtime_event(struct perf_sched *sched,
+ {
+ 	const u32 pid	   = perf_evsel__intval(evsel, sample, "pid");
+ 	const u64 runtime  = perf_evsel__intval(evsel, sample, "runtime");
+-	struct thread *thread = machine__findnew_thread(machine, 0, pid);
++	struct thread *thread = machine__findnew_thread(machine, -1, pid);
+ 	struct work_atoms *atoms = thread_atoms_search(&sched->atom_root, thread, &sched->cmp_pid);
+ 	u64 timestamp = sample->time;
+ 	int cpu = sample->cpu;
+@@ -1012,7 +1012,7 @@ static int latency_wakeup_event(struct perf_sched *sched,
+ 	struct thread *wakee;
+ 	u64 timestamp = sample->time;
+ 
+-	wakee = machine__findnew_thread(machine, 0, pid);
++	wakee = machine__findnew_thread(machine, -1, pid);
+ 	atoms = thread_atoms_search(&sched->atom_root, wakee, &sched->cmp_pid);
+ 	if (!atoms) {
+ 		if (thread_atoms_insert(sched, wakee))
+@@ -1072,7 +1072,7 @@ static int latency_migrate_task_event(struct perf_sched *sched,
+ 	if (sched->profile_cpu == -1)
+ 		return 0;
+ 
+-	migrant = machine__findnew_thread(machine, 0, pid);
++	migrant = machine__findnew_thread(machine, -1, pid);
+ 	atoms = thread_atoms_search(&sched->atom_root, migrant, &sched->cmp_pid);
+ 	if (!atoms) {
+ 		if (thread_atoms_insert(sched, migrant))
+@@ -1290,7 +1290,7 @@ static int map_switch_event(struct perf_sched *sched, struct perf_evsel *evsel,
+ 		return -1;
+ 	}
+ 
+-	sched_in = machine__findnew_thread(machine, 0, next_pid);
++	sched_in = machine__findnew_thread(machine, -1, next_pid);
+ 
+ 	sched->curr_thread[this_cpu] = sched_in;
+ 
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index e9b943a..5b80877 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -34,7 +34,7 @@ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
+ 		return -ENOMEM;
+ 
+ 	if (pid != HOST_KERNEL_ID) {
+-		struct thread *thread = machine__findnew_thread(machine, 0,
++		struct thread *thread = machine__findnew_thread(machine, -1,
+ 								pid);
+ 		char comm[64];
+ 
+@@ -286,7 +286,7 @@ static struct thread *__machine__findnew_thread(struct machine *machine,
+ 	 * the full rbtree:
+ 	 */
+ 	if (machine->last_match && machine->last_match->tid == tid) {
+-		if (pid && pid != machine->last_match->pid_)
++		if (pid != -1 && pid != machine->last_match->pid_)
+ 			machine->last_match->pid_ = pid;
+ 		return machine->last_match;
+ 	}
+@@ -297,7 +297,7 @@ static struct thread *__machine__findnew_thread(struct machine *machine,
+ 
+ 		if (th->tid == tid) {
+ 			machine->last_match = th;
+-			if (pid && pid != th->pid_)
++			if (pid != -1 && pid != th->pid_)
+ 				th->pid_ = pid;
+ 			return th;
+ 		}
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 64a186e..c2f4ca9 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1083,13 +1083,14 @@ void perf_event_header__bswap(struct perf_event_header *hdr)
+ 
+ struct thread *perf_session__findnew(struct perf_session *session, pid_t pid)
+ {
+-	return machine__findnew_thread(&session->machines.host, 0, pid);
++	return machine__findnew_thread(&session->machines.host, -1, pid);
+ }
+ 
+ static struct thread *perf_session__register_idle_thread(struct perf_session *session)
+ {
+-	struct thread *thread = perf_session__findnew(session, 0);
++	struct thread *thread;
+ 
++	thread = machine__findnew_thread(&session->machines.host, 0, 0);
+ 	if (thread == NULL || thread__set_comm(thread, "swapper", 0)) {
+ 		pr_err("problem inserting idle task.\n");
+ 		thread = NULL;
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index 2fde0d5..7a32f44 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -13,7 +13,7 @@ int thread__init_map_groups(struct thread *thread, struct machine *machine)
+ 	struct thread *leader;
+ 	pid_t pid = thread->pid_;
+ 
+-	if (pid == thread->tid) {
++	if (pid == thread->tid || pid == -1) {
+ 		thread->mg = map_groups__new();
+ 	} else {
+ 		leader = machine__findnew_thread(machine, pid, pid);
+-- 
+1.8.3.2
+
