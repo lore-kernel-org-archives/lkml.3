@@ -1,71 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756425AbaGNRY1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 13:24:27 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37175 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751175AbaGNRYU (ORCPT
+	id S1755830AbaGNR1R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 13:27:17 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:54998 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921AbaGNR1K convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 13:24:20 -0400
-Date: Mon, 14 Jul 2014 18:23:55 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Kosina <trivial@kernel.org>, linux-spi@vger.kernel.org
-Message-ID: <20140714172355.GA16531@sirena.org.uk>
-References: <1405095208-14642-1-git-send-email-geert+renesas@glider.be>
- <1405095208-14642-3-git-send-email-geert+renesas@glider.be>
+	Mon, 14 Jul 2014 13:27:10 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "chenhanxiao\@cn.fujitsu.com" <chenhanxiao@cn.fujitsu.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        "'Daniel P. Berrange \(berrange\@redhat.com\)'" <berrange@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "containers\@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <5871495633F38949900D2BF2DC04883E562293@G08CNEXMBPEKD02.g08.fujitsu.local>
+	<20140711142806.GA26441@mail.hallyn.com>
+	<87ha2nyi3y.fsf@x220.int.ebiederm.org>
+	<5871495633F38949900D2BF2DC04883E5632BD@G08CNEXMBPEKD02.g08.fujitsu.local>
+Date: Mon, 14 Jul 2014 10:23:32 -0700
+In-Reply-To: <5871495633F38949900D2BF2DC04883E5632BD@G08CNEXMBPEKD02.g08.fujitsu.local>
+	(chenhanxiao@cn.fujitsu.com's message of "Mon, 14 Jul 2014 09:32:39
+	+0000")
+Message-ID: <878unvvoq3.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ikeVEW9yuYc//A+q"
-Content-Disposition: inline
-In-Reply-To: <1405095208-14642-3-git-send-email-geert+renesas@glider.be>
-X-Cookie: Vote anarchist.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 trivial 3/6] spi: topcliff-pch: Update error messages
- for dmaengine_prep_slave_sg() API
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-AID: U2FsdGVkX19mmAiajnn/uopEjGCMKKYih0cQRvGXG5A=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.3 TooManyTo_001 Multiple "To" Header Recipients 2x (uncommon)
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4989]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;"chenhanxiao\@cn.fujitsu.com" <chenhanxiao@cn.fujitsu.com>
+X-Spam-Relay-Country: 
+Subject: Re: Could not mount sysfs when enable userns but disable netns
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+"chenhanxiao@cn.fujitsu.com" <chenhanxiao@cn.fujitsu.com> writes:
 
---ikeVEW9yuYc//A+q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+>> -----Original Message-----
+>> From: Eric W. Biederman [mailto:ebiederm@xmission.com]
+>> Sent: Saturday, July 12, 2014 12:29 AM
+>> To: Serge E. Hallyn
+>> Cc: Chen, Hanxiao/陈 晗霄; Serge Hallyn (serge.hallyn@ubuntu.com); Greg
+>> Kroah-Hartman; containers@lists.linux-foundation.org;
+>> linux-kernel@vger.kernel.org
+>> Subject: Re: Could not mount sysfs when enable userns but disable netns
+>> 
+>> "Serge E. Hallyn" <serge@hallyn.com> writes:
+>> 
+>> > Quoting chenhanxiao@cn.fujitsu.com (chenhanxiao@cn.fujitsu.com):
+>> >> Hello,
+>> >>
+>> >> How to reproduce:
+>> >> 1. Prepare a container, enable userns and disable netns
+>> >> 2. use libvirt-lxc to start a container
+>> >> 3. libvirt could not mount sysfs then failed to start.
+>> >>
+>> >> Then I found that
+>> >> commit 7dc5dbc879bd0779924b5132a48b731a0bc04a1e says:
+>> >> "Don't allow mounting sysfs unless the caller has CAP_SYS_ADMIN rights
+>> >> over the net namespace."
+>> >>
+>> >> But why should we check sysfs mouont permission over net namespace?
+>> >> We've already checked CAP_SYS_ADMIN though.
+>> 
+>> We already checked capable(CAP_SYS_ADMIN) and it failed.
+>
+> But on my machine, capable(CAP_SYS_ADMIN) passed
+> but failed in kobj_ns_current_may_mount.
 
-On Fri, Jul 11, 2014 at 06:13:25PM +0200, Geert Uytterhoeven wrote:
-> Commit 16052827d98fbc13c31ebad560af4bd53e2b4dd5 ("dmaengine/dma_slave:
-> introduce inline wrappers") changed the code to use the new API, but forgot
-> to update the error messages.
+No.  capable(CAP_SYS_ADMIN) did not pass.
+fs_fully_visible did passed.
 
-I seem to be missing a lot of patches in this series and the cover
-letter, what's going on with regard to dependencies and so on?
+There is a significant distinction.  If capable(CAP_SYS_ADMIN) had
+passed kobj_ns_current_may_mount (which is a fancy way of saying
+ns_capable(net->user_ns, CAP_SYS_ADMIN)) would also have passed.
 
---ikeVEW9yuYc//A+q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> I added some printks in sysfs_mount:
+>         if (!(flags & MS_KERNMOUNT)) {
+> -               if (!capable(CAP_SYS_ADMIN) && !fs_fully_visible(fs_type))
+> +               if (!capable(CAP_SYS_ADMIN) && !fs_fully_visible(fs_type)) {
+> +                       printk(KERN_WARNING "Failed in capable\n");
+>                         return ERR_PTR(-EPERM);
+> +                }
+>  
+> -               if (!kobj_ns_current_may_mount(KOBJ_NS_TYPE_NET))
+> +               if (!kobj_ns_current_may_mount(KOBJ_NS_TYPE_NET)) {
+> +                       printk(KERN_WARNING "Failed in kobj_ns_current_may_mount\n");
+>                         return ERR_PTR(-EPERM);
+> +                }
+>
+> And found: 
+> Jul 14 09:55:26 localhost systemd: Starting Container lxc-chx.
+> Jul 14 09:55:26 localhost systemd-machined: New machine lxc-chx.
+> Jul 14 09:55:26 localhost systemd: Started Container lxc-chx.
+> Jul 14 09:55:26 localhost kernel: [  784.044709] Failed in kobj_ns_current_may_mount
+> Jul 14 09:55:26 localhost systemd-machined: Machine lxc-chx terminated.
+>
+>> 
+>> >> What the relationship between sysfs and net namespace,
+>> >> or this check is a little redundant?
+>> 
+>> You want a bind mount not a new fresh mount.
+>> 
+>
+> Yes, we need to modify libvirt's codes to deal with sysfs
+> when enable userns but disable netns.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Please go for it.  I don't have any insignt into libvirt so I can't help
+you there.
 
-iQIcBAEBAgAGBQJTxBIoAAoJELSic+t+oim9CwkQAIID5k7n/YReXQJ52QGpJH6Z
-seMIbt6/DEKjpJeRd5UpP3Sn8ItIlX0EI/CeCT2OOQM064EoWawv6I9vR9yUIS3u
-HdQSyXGyQ1BEP/DLX+0arvOm+Q8AZYxbKtLUQ5scHPTpMMwEOc7jfe+KOtgP8d+S
-76Q07PrZu5qhf6U0E8KIUZbnNN+Gh4JY6ebj1vHd5eCxP987fDEcQdh0A4GxdoHV
-GY3vBo1owffnIfpjePQnF3H6hEVg41O/FtSdrCgybdaGql1pI7vf3zj/ARi3/uan
-io3AvKpAQU5unIFxS9JaWFBNRRqrvjXw0mzQnyVGuunCjI01vKqEjAbIz34Dn5/P
-nl4PhkSzAFZMV1Yx09NFFFPpAJFsosG1PhZr+z/FoRtNqoSfepxtBzkaqwSxZiwL
-MB02g1PngCk2h7/tXCZfXy1Ak2D8XvGiYk9gkzjdIGSa8hbviM1LJ+bleqDdV80s
-OCkpXAK5ssM0NQxjNTPNK8tEnNGShXdyodM5hRcxxMGAjqImWo/h4/CKDr5c8nYl
-KXG7sbGJJGrKD0f2PFPkctoxC/Eujns1sOh2GkxrhHAddxDPeGVNBprFCV0Q1ium
-LfiTCMDi0Jcn+i9v0BAA+gB7OP8dPVj6z3qunmBHplaZzeDBu8TXmSiKLd6uFEkF
-zFA8FjXXlOpklzN8U58r
-=Dd7Q
------END PGP SIGNATURE-----
-
---ikeVEW9yuYc//A+q--
+Eric
