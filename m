@@ -1,70 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640AbaGNTKb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 15:10:31 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59739 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754271AbaGNTKX (ORCPT
+	id S932442AbaGNTKl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 15:10:41 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:46004 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756183AbaGNTK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 15:10:23 -0400
-Message-ID: <53C42B1D.8070301@codeaurora.org>
-Date: Mon, 14 Jul 2014 12:10:21 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Mon, 14 Jul 2014 15:10:27 -0400
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J . Wysocki" <rjw@rjwysocki.net>,
-        Todd Poynor <toddpoynor@google.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH v2] cpufreq: Don't destroy/realloc policy/sysfs on hotplug/suspend
-References: <1404959850-11617-1-git-send-email-skannan@codeaurora.org> <1405052287-4744-1-git-send-email-skannan@codeaurora.org> <CAKohponB9feyh50p+dL5hyU1ffHAzHU59G-sYCrCm1AbHQe9hw@mail.gmail.com> <53C0A648.9080909@codeaurora.org> <CAKohpokdvtPj7jg88mon+EnHRCbUF7nqFWvmkFEMVh5WRzSS5A@mail.gmail.com>
-In-Reply-To: <CAKohpokdvtPj7jg88mon+EnHRCbUF7nqFWvmkFEMVh5WRzSS5A@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1405364357.13661.15.camel@x220>
+References: <1405363782-6570-1-git-send-email-xerofoify@gmail.com>
+	<1405364357.13661.15.camel@x220>
+Date: Mon, 14 Jul 2014 15:10:26 -0400
+Message-ID: <CAPDOMVhqfuESf4eUqKsWAp4zNyeGsfMhSC-11CQYVaUHbtKOuA@mail.gmail.com>
+Subject: Re: [PATCH] title: no lookup_page for if statement
+From: Nick Krause <xerofoify@gmail.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Chris Metcalf <cmetcalf@tilera.com>, hannes <hannes@cmpxchg.org>,
+        mhocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        zlu <zlu@tilera.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2014 11:13 PM, Viresh Kumar wrote:
-> On 12 July 2014 08:36, Saravana Kannan <skannan@codeaurora.org> wrote:
->> On 07/10/2014 11:19 PM, Viresh Kumar wrote:
+On Mon, Jul 14, 2014 at 2:59 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> On Mon, 2014-07-14 at 14:49 -0400, Nicholas Krause wrote:
+>> This patch removes the if define statement for page_lookup in order
+>> to remove a fix me of this not being defined as of yet.
 >>
->>>
->>> Please make sure you take care of these issues:
->>> - suspend/resume
->>> - hotplug
->>> - module insert/remove
+>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>> ---
+>>  0001-title-no-lookup_page-for-if-statement.patch | 37 ++++++++++++++++++++++++
+>>  1 file changed, 37 insertions(+)
+>>  create mode 100644 0001-title-no-lookup_page-for-if-statement.patch
 >>
->> Ok, I was just at the current code. Does cpufreq_unregister_driver() even
->> really work correctly as it stands?
->>
->> It doesn't even seem to stop any of the governors/policies before it just
->> set the cpufreq_driver pointer to NULL.
->>
->> So, technically my v2 patch doesn't even make anything worse when it comes
->> to unregistering the cpufreq driver.
+>> diff --git a/0001-title-no-lookup_page-for-if-statement.patch b/0001-title-no-lookup_page-for-if-statement.patch
+>> new file mode 100644
+>> index 0000000..f11c12e
+>> --- /dev/null
+>> +++ b/0001-title-no-lookup_page-for-if-statement.patch
+>> @@ -0,0 +1,37 @@
+>> +From 23c4afac6742d5df1d083ab6335a0a69f38c76b0 Mon Sep 17 00:00:00 2001
+>> +From: Nicholas Krause <xerofoify@gmail.com>
+>> +Date: Mon, 14 Jul 2014 14:39:02 -0400
+>> +Subject: [PATCH] title: no lookup_page for if statement
+>> +
+>> +This patch removes the if define statement for page_lookup in order
+>> +to remove a fix me of this not being defined as of yet.
+>> +
+>> +Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>> +---
+>> + arch/tile/mm/fault.c | 3 ---
+>> + 1 file changed, 3 deletions(-)
+>> +
+>> +diff --git a/arch/tile/mm/fault.c b/arch/tile/mm/fault.c
+>> +index 6c05712..2297bf7 100644
+>> +--- a/arch/tile/mm/fault.c
+>> ++++ b/arch/tile/mm/fault.c
+>> +@@ -513,8 +513,6 @@ no_context:
+>> +
+>> +     bust_spinlocks(1);
+>> +
+>> +-    /* FIXME: no lookup_address() yet */
+>> +-#ifdef SUPPORT_LOOKUP_ADDRESS
 >
-> Are you really sure about this? I have tested this *myself* earlier..
+> Nicholas, stop! Just stop.
 >
-> subsys_interface_unregister() should take care of stopping/freeing governor
-> stuff..
+>> +     if (fault_num == INT_ITLB_MISS) {
+>> +             pte_t *pte = lookup_address(address);
+>> +
+>> +@@ -523,7 +521,6 @@ no_context:
+>> +                            " non-executable page - exploit attempt?"
+>> +                            " (uid: %d)\n", current->uid);
+>> +     }
+>> +-#endif
+>> +     if (address < PAGE_SIZE)
+>> +             pr_alert("Unable to handle kernel NULL pointer dereference\n");
+>> +     else
+>> +--
+>> +1.9.1
+>> +
+>
+> For those not yet familiar with this train wreck, please do
+>     git grep SUPPORT_LOOKUP_ADDRESS
+>
+>
+> Paul Bolle
 >
 
-I was asking this question based on looking at the code. Didn't actually 
-try it -- sent it just before being done for the day. I didn't know 
-about the subsys_interface_unregister() coming into play here. I'll take 
-a look.
-
-Thanks for the pointer.
-
--Saravana
-
-
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Very well , I will not work on this any longer as I seem to be just
+screwing it up.
+Cheers Nick
