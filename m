@@ -1,69 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756803AbaGNS6x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 14:58:53 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37414 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754872AbaGNS6o (ORCPT
+	id S1756859AbaGNS7Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 14:59:24 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:58162 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756831AbaGNS7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 14:58:44 -0400
-Date: Mon, 14 Jul 2014 19:58:30 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: Laurent Pinchart <Laurent.pinchart@ideasonboard.com>,
-        linux-spi@vger.kernel.org, dmaengine@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20140714185830.GE6800@sirena.org.uk>
-References: <1405094802-14401-1-git-send-email-geert+renesas@glider.be>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oSWi0jal9INzEBQ4"
-Content-Disposition: inline
-In-Reply-To: <1405094802-14401-1-git-send-email-geert+renesas@glider.be>
-X-Cookie: Above all else -- sky.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] spi: rspi: Fix leaking of unused DMA descriptors
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 14 Jul 2014 14:59:20 -0400
+Message-ID: <1405364357.13661.15.camel@x220>
+Subject: Re: [PATCH] title: no lookup_page for if statement
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Nicholas Krause <xerofoify@gmail.com>
+Cc: cmetcalf@tilera.com, hannes@cmpxchg.org, mhocko@suse.cz,
+        akpm@linux-foundation.org, zlu@tilera.com,
+        linux-kernel@vger.kernel.org
+Date: Mon, 14 Jul 2014 20:59:17 +0200
+In-Reply-To: <1405363782-6570-1-git-send-email-xerofoify@gmail.com>
+References: <1405363782-6570-1-git-send-email-xerofoify@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 14 Jul 2014 18:59:18.0230 (UTC) FILETIME=[B6C45F60:01CF9F95]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2014-07-14 at 14:49 -0400, Nicholas Krause wrote:
+> This patch removes the if define statement for page_lookup in order
+> to remove a fix me of this not being defined as of yet.
+> 
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+> ---
+>  0001-title-no-lookup_page-for-if-statement.patch | 37 ++++++++++++++++++++++++
+>  1 file changed, 37 insertions(+)
+>  create mode 100644 0001-title-no-lookup_page-for-if-statement.patch
+> 
+> diff --git a/0001-title-no-lookup_page-for-if-statement.patch b/0001-title-no-lookup_page-for-if-statement.patch
+> new file mode 100644
+> index 0000000..f11c12e
+> --- /dev/null
+> +++ b/0001-title-no-lookup_page-for-if-statement.patch
+> @@ -0,0 +1,37 @@
+> +From 23c4afac6742d5df1d083ab6335a0a69f38c76b0 Mon Sep 17 00:00:00 2001
+> +From: Nicholas Krause <xerofoify@gmail.com>
+> +Date: Mon, 14 Jul 2014 14:39:02 -0400
+> +Subject: [PATCH] title: no lookup_page for if statement
+> +
+> +This patch removes the if define statement for page_lookup in order
+> +to remove a fix me of this not being defined as of yet.
+> +
+> +Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+> +---
+> + arch/tile/mm/fault.c | 3 ---
+> + 1 file changed, 3 deletions(-)
+> +
+> +diff --git a/arch/tile/mm/fault.c b/arch/tile/mm/fault.c
+> +index 6c05712..2297bf7 100644
+> +--- a/arch/tile/mm/fault.c
+> ++++ b/arch/tile/mm/fault.c
+> +@@ -513,8 +513,6 @@ no_context:
+> + 
+> + 	bust_spinlocks(1);
+> + 
+> +-	/* FIXME: no lookup_address() yet */
+> +-#ifdef SUPPORT_LOOKUP_ADDRESS
 
---oSWi0jal9INzEBQ4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Nicholas, stop! Just stop.
 
-On Fri, Jul 11, 2014 at 06:06:41PM +0200, Geert Uytterhoeven wrote:
-> If dmaengine_prep_slave_sg() or dmaengine_submit() fail, we may leak
-> unused DMA descriptors.
+> + 	if (fault_num == INT_ITLB_MISS) {
+> + 		pte_t *pte = lookup_address(address);
+> + 
+> +@@ -523,7 +521,6 @@ no_context:
+> + 			       " non-executable page - exploit attempt?"
+> + 			       " (uid: %d)\n", current->uid);
+> + 	}
+> +-#endif
+> + 	if (address < PAGE_SIZE)
+> + 		pr_alert("Unable to handle kernel NULL pointer dereference\n");
+> + 	else
+> +-- 
+> +1.9.1
+> +
 
-This doesn't apply, I guess it may depend on some of your other DMA
-related patches but it's not immediately obvious and it's not been sent
-as part of a series.  Can you please check and/or clarify?
+For those not yet familiar with this train wreck, please do
+    git grep SUPPORT_LOOKUP_ADDRESS
 
---oSWi0jal9INzEBQ4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Paul Bolle
 
-iQIcBAEBAgAGBQJTxChTAAoJELSic+t+oim9g7EQAJeYMuasQqoVvgP1S8Z2xupD
-nvaMENfzBMTpl7vUQqUQvQhc7focMqUmRh1xI7CpiptNcjRF7Dli2n87AnXBAk9R
-1FpggZ7PEy7Q58ey+LkgEJyj53XRWcqc6LhybYzqJfjxUXnInZr3Eu5nUwrImNGL
-faKVpIHzMD3f9FVkOkT5YMM/k3ZfS2QKCP067MLF89UN4Ppka12bKbMAJN3d95U1
-6GrZ0ctqBuSAPqfyvz0mRp1TX02knUexH56aCXx1bccPfyiNCjDMW4MH2ctSVchJ
-BcLQhCtC4lb1/61VFo4PfUUX5t3MY2yt0Z8sQwJPcvrHezSk0wxP9hjNWZBTi6Pm
-fyDK2b3a79uoanwUttJubfNwC1eImv3hiyPD7ke5SpbprnNhinYOq4BN2Ru69V2j
-TR5DopUoIeNCoUi7BGPUK1/c1hZVtDsxgDxm43e7sZg0nTIcVDlC/rqRd2KlwDc/
-GrK3UWk0fJJLh3yndyhdcPBuqFcU5eJKjmgbmt/wRb0XJg5iq0rjnIzuHAcoEr5C
-zVIenZOCHOrxIkvrVR9CgmtLXGplg73vMN28xZdJB+9ZEbXhXCr3nYRLpBsIHbIz
-6shIolz9T81idMKV1PIN8Lu11ZkCZdH8I3NgKrhe3J8LX8EHffOnT4pIAXoy7ZVN
-Fe9CLKeUnb+7AmfDXANd
-=hKt0
------END PGP SIGNATURE-----
-
---oSWi0jal9INzEBQ4--
