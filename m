@@ -1,129 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754372AbaGNKJU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 06:09:20 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:59273 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753800AbaGNKIy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 06:08:54 -0400
-From: Olivier Sobrie <olivier@sobrie.be>
-To: linux-usb@vger.kernel.org, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Olivier Sobrie <olivier@sobrie.be>,
-        David Miller <davem@davemloft.net>,
-        David Laight <David.Laight@ACULAB.COM>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Dan Williams <dcbw@redhat.com>, Jan Dumon <j.dumon@option.com>
-Subject: [PATCH v2 2/2] hso: fix deadlock when receiving bursts of data
-Date: Mon, 14 Jul 2014 12:08:50 +0200
-Message-Id: <1405332530-2507-2-git-send-email-olivier@sobrie.be>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1405332530-2507-1-git-send-email-olivier@sobrie.be>
-References: <1405332530-2507-1-git-send-email-olivier@sobrie.be>
+	id S1754874AbaGNKJy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 06:09:54 -0400
+Received: from mga01.intel.com ([192.55.52.88]:30222 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754500AbaGNKGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 06:06:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,657,1400050800"; 
+   d="scan'208";a="561434901"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 38/41] perf session: Add perf_session__deliver_synth_event()
+Date: Mon, 14 Jul 2014 13:03:02 +0300
+Message-Id: <1405332185-4050-39-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
+References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the module sends bursts of data, sometimes a deadlock happens in
-the hso driver when the tty buffer doesn't get the chance to be flushed
-quickly enough.
+Add a function to deliver synthesized events from
+within a session.
 
-Remove the endless while loop in function put_rxbuf_data() which is
-called by the urb completion handler.
-If there isn't enough room in the tty buffer, discards all the data
-received in the URB.
-
-Cc: David Miller <davem@davemloft.net>
-Cc: David Laight <David.Laight@ACULAB.COM>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Dan Williams <dcbw@redhat.com>
-Cc: Jan Dumon <j.dumon@option.com>
-Signed-off-by: Olivier Sobrie <olivier@sobrie.be>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
-Changes in v2:
- - remove the unthrottle timer added in the previous patch version
- - drop entire rx urb data if there is not enough space in tty buffer
- - remove variable curr_rx_urb_offset from hso_serial structure
+ tools/perf/util/session.c | 14 ++++++++++++++
+ tools/perf/util/session.h |  5 +++++
+ 2 files changed, 19 insertions(+)
 
- drivers/net/usb/hso.c |   38 +++++++++++++++++---------------------
- 1 file changed, 17 insertions(+), 21 deletions(-)
-
-diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
-index 9ca2b41..a4272ed 100644
---- a/drivers/net/usb/hso.c
-+++ b/drivers/net/usb/hso.c
-@@ -258,7 +258,6 @@ struct hso_serial {
- 	 * so as not to drop characters on the floor.
- 	 */
- 	int  curr_rx_urb_idx;
--	u16  curr_rx_urb_offset;
- 	u8   rx_urb_filled[MAX_RX_URBS];
- 	struct tasklet_struct unthrottle_tasklet;
- };
-@@ -2001,8 +2000,7 @@ static void ctrl_callback(struct urb *urb)
- static int put_rxbuf_data(struct urb *urb, struct hso_serial *serial)
- {
- 	struct tty_struct *tty;
--	int write_length_remaining = 0;
--	int curr_write_len;
-+	int count;
- 
- 	/* Sanity check */
- 	if (urb == NULL || serial == NULL) {
-@@ -2012,29 +2010,28 @@ static int put_rxbuf_data(struct urb *urb, struct hso_serial *serial)
- 
- 	tty = tty_port_tty_get(&serial->port);
- 
-+	if (tty && test_bit(TTY_THROTTLED, &tty->flags)) {
-+		tty_kref_put(tty);
-+		return -1;
-+	}
-+
- 	/* Push data to tty */
--	write_length_remaining = urb->actual_length -
--		serial->curr_rx_urb_offset;
- 	D1("data to push to tty");
--	while (write_length_remaining) {
--		if (tty && test_bit(TTY_THROTTLED, &tty->flags)) {
--			tty_kref_put(tty);
--			return -1;
--		}
--		curr_write_len = tty_insert_flip_string(&serial->port,
--			urb->transfer_buffer + serial->curr_rx_urb_offset,
--			write_length_remaining);
--		serial->curr_rx_urb_offset += curr_write_len;
--		write_length_remaining -= curr_write_len;
-+	count = tty_buffer_request_room(&serial->port, urb->actual_length);
-+	if (count >= urb->actual_length) {
-+		tty_insert_flip_string(&serial->port, urb->transfer_buffer,
-+				       urb->actual_length);
- 		tty_flip_buffer_push(&serial->port);
-+	} else {
-+		dev_warn(&serial->parent->usb->dev,
-+			 "dropping data, %d bytes lost\n", urb->actual_length);
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 708e1c1..433884c 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1066,6 +1066,20 @@ static s64 perf_session__process_user_event(struct perf_session *session,
  	}
-+
- 	tty_kref_put(tty);
- 
--	if (write_length_remaining == 0) {
--		serial->curr_rx_urb_offset = 0;
--		serial->rx_urb_filled[hso_urb_to_index(serial, urb)] = 0;
--	}
--	return write_length_remaining;
-+	serial->rx_urb_filled[hso_urb_to_index(serial, urb)] = 0;
-+
-+	return 0;
  }
  
++int perf_session__deliver_synth_event(struct perf_session *session,
++				      union perf_event *event,
++				      struct perf_sample *sample,
++				      struct perf_tool *tool)
++{
++	events_stats__inc(&session->stats, event->header.type);
++
++	if (event->header.type >= PERF_RECORD_USER_TYPE_START)
++		return perf_session__process_user_event(session, event, tool,
++							0);
++
++	return perf_session_deliver_event(session, event, sample, tool, 0);
++}
++
+ static void event_swap(union perf_event *event, bool sample_id_all)
+ {
+ 	perf_event__swap_op swap;
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 39327ca..86f1bb4 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -130,6 +130,11 @@ extern volatile int session_done;
  
-@@ -2205,7 +2202,6 @@ static int hso_stop_serial_device(struct hso_device *hso_dev)
- 		}
- 	}
- 	serial->curr_rx_urb_idx = 0;
--	serial->curr_rx_urb_offset = 0;
+ #define session_done()	(*(volatile int *)(&session_done))
  
- 	if (serial->tx_urb)
- 		usb_kill_urb(serial->tx_urb);
++int perf_session__deliver_synth_event(struct perf_session *session,
++				      union perf_event *event,
++				      struct perf_sample *sample,
++				      struct perf_tool *tool);
++
+ int perf_event__process_id_index(struct perf_tool *tool,
+ 				 union perf_event *event,
+ 				 struct perf_session *session);
 -- 
-1.7.9.5
+1.8.3.2
 
