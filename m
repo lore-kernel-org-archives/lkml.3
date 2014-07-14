@@ -1,141 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932103AbaGNLoX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 07:44:23 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:48087 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755095AbaGNLiz (ORCPT
+	id S932117AbaGNLoi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 07:44:38 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:45233 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754846AbaGNLhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 07:38:55 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: kvm@vger.kernel.org
-Subject: [PATCH 02/19] KVM: x86: return all bits from get_interrupt_shadow
-Date: Mon, 14 Jul 2014 13:38:26 +0200
-Message-Id: <1405337923-4776-3-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1405337923-4776-1-git-send-email-pbonzini@redhat.com>
-References: <1405337923-4776-1-git-send-email-pbonzini@redhat.com>
+	Mon, 14 Jul 2014 07:37:32 -0400
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH v8 11/13] rtc: max77686: Remove dead code for SMPL and WTSR.
+Date: Mon, 14 Jul 2014 13:36:07 +0200
+Message-Id: <1405337769-3741-12-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.0.0.rc2
+In-Reply-To: <1405337769-3741-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1405337769-3741-1-git-send-email-javier.martinez@collabora.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the next patch we will need to know the full state of the
-interrupt shadow; we will then set KVM_REQ_EVENT when one bit
-is cleared.
+The MAX77686 RTC chip has two features called SMPL (Sudden Momentary
+Power Loss) and WTSR (Watchdog Timeout and Software Resets).
+Support for these features seems to be implemented in the driver but
+compilation is disabled using a C pre-processor conditional.
 
-However, right now get_interrupt_shadow only returns the one
-corresponding to the emulated instruction, or an unconditional
-0 if the emulated instruction does not have an interrupt shadow.
-This is confusing and does not allow us to check for cleared
-bits as mentioned above.
+This code has been disabled since the driver was original merged in
+commit fca1dd03 ("rtc: max77686: add Maxim 77686 driver").
 
-Clean the callback up, and modify toggle_interruptibility to
-match the comment above the call.  As a small result, the
-call to set_interrupt_shadow will be skipped in the common
-case where int_shadow == 0 && mask == 0.
+So, since this code has never been built, let's just remove it.
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- arch/x86/include/asm/kvm_host.h |  2 +-
- arch/x86/kvm/svm.c              |  6 +++---
- arch/x86/kvm/vmx.c              |  4 ++--
- arch/x86/kvm/x86.c              | 10 +++++-----
- 4 files changed, 11 insertions(+), 11 deletions(-)
+ drivers/rtc/rtc-max77686.c | 101 ---------------------------------------------
+ 1 file changed, 101 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index af36f89fe67a..b8a4480176b9 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -717,7 +717,7 @@ struct kvm_x86_ops {
- 	int (*handle_exit)(struct kvm_vcpu *vcpu);
- 	void (*skip_emulated_instruction)(struct kvm_vcpu *vcpu);
- 	void (*set_interrupt_shadow)(struct kvm_vcpu *vcpu, int mask);
--	u32 (*get_interrupt_shadow)(struct kvm_vcpu *vcpu, int mask);
-+	u32 (*get_interrupt_shadow)(struct kvm_vcpu *vcpu);
- 	void (*patch_hypercall)(struct kvm_vcpu *vcpu,
- 				unsigned char *hypercall_addr);
- 	void (*set_irq)(struct kvm_vcpu *vcpu);
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index 4925a94a970a..ddf742768ecf 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -486,14 +486,14 @@ static int is_external_interrupt(u32 info)
- 	return info == (SVM_EVTINJ_VALID | SVM_EVTINJ_TYPE_INTR);
- }
+diff --git a/drivers/rtc/rtc-max77686.c b/drivers/rtc/rtc-max77686.c
+index c1c6055..7bb5433 100644
+--- a/drivers/rtc/rtc-max77686.c
++++ b/drivers/rtc/rtc-max77686.c
+@@ -32,15 +32,6 @@
+ #define RTC_UDR_MASK			(1 << RTC_UDR_SHIFT)
+ #define RTC_RBUDR_SHIFT			4
+ #define RTC_RBUDR_MASK			(1 << RTC_RBUDR_SHIFT)
+-/* WTSR and SMPL Register */
+-#define WTSRT_SHIFT			0
+-#define SMPLT_SHIFT			2
+-#define WTSR_EN_SHIFT			6
+-#define SMPL_EN_SHIFT			7
+-#define WTSRT_MASK			(3 << WTSRT_SHIFT)
+-#define SMPLT_MASK			(3 << SMPLT_SHIFT)
+-#define WTSR_EN_MASK			(1 << WTSR_EN_SHIFT)
+-#define SMPL_EN_MASK			(1 << SMPL_EN_SHIFT)
+ /* RTC Hour register */
+ #define HOUR_PM_SHIFT			6
+ #define HOUR_PM_MASK			(1 << HOUR_PM_SHIFT)
+@@ -49,7 +40,6 @@
+ #define ALARM_ENABLE_MASK		(1 << ALARM_ENABLE_SHIFT)
  
--static u32 svm_get_interrupt_shadow(struct kvm_vcpu *vcpu, int mask)
-+static u32 svm_get_interrupt_shadow(struct kvm_vcpu *vcpu)
+ #define MAX77686_RTC_UPDATE_DELAY	16
+-#undef MAX77686_RTC_WTSR_SMPL
+ 
+ enum {
+ 	RTC_SEC = 0,
+@@ -412,64 +402,6 @@ static const struct rtc_class_ops max77686_rtc_ops = {
+ 	.alarm_irq_enable = max77686_rtc_alarm_irq_enable,
+ };
+ 
+-#ifdef MAX77686_RTC_WTSR_SMPL
+-static void max77686_rtc_enable_wtsr(struct max77686_rtc_info *info, bool enable)
+-{
+-	int ret;
+-	unsigned int val, mask;
+-
+-	if (enable)
+-		val = (1 << WTSR_EN_SHIFT) | (3 << WTSRT_SHIFT);
+-	else
+-		val = 0;
+-
+-	mask = WTSR_EN_MASK | WTSRT_MASK;
+-
+-	dev_info(info->dev, "%s: %s WTSR\n", __func__,
+-			enable ? "enable" : "disable");
+-
+-	ret = regmap_update_bits(info->max77686->rtc_regmap,
+-				 MAX77686_WTSR_SMPL_CNTL, mask, val);
+-	if (ret < 0) {
+-		dev_err(info->dev, "%s: fail to update WTSR reg(%d)\n",
+-				__func__, ret);
+-		return;
+-	}
+-
+-	max77686_rtc_update(info, MAX77686_RTC_WRITE);
+-}
+-
+-static void max77686_rtc_enable_smpl(struct max77686_rtc_info *info, bool enable)
+-{
+-	int ret;
+-	unsigned int val, mask;
+-
+-	if (enable)
+-		val = (1 << SMPL_EN_SHIFT) | (0 << SMPLT_SHIFT);
+-	else
+-		val = 0;
+-
+-	mask = SMPL_EN_MASK | SMPLT_MASK;
+-
+-	dev_info(info->dev, "%s: %s SMPL\n", __func__,
+-			enable ? "enable" : "disable");
+-
+-	ret = regmap_update_bits(info->max77686->rtc_regmap,
+-				 MAX77686_WTSR_SMPL_CNTL, mask, val);
+-	if (ret < 0) {
+-		dev_err(info->dev, "%s: fail to update SMPL reg(%d)\n",
+-				__func__, ret);
+-		return;
+-	}
+-
+-	max77686_rtc_update(info, MAX77686_RTC_WRITE);
+-
+-	val = 0;
+-	regmap_read(info->max77686->rtc_regmap, MAX77686_WTSR_SMPL_CNTL, &val);
+-	dev_info(info->dev, "%s: WTSR_SMPL(0x%02x)\n", __func__, val);
+-}
+-#endif /* MAX77686_RTC_WTSR_SMPL */
+-
+ static int max77686_rtc_init_reg(struct max77686_rtc_info *info)
  {
- 	struct vcpu_svm *svm = to_svm(vcpu);
- 	u32 ret = 0;
+ 	u8 data[2];
+@@ -519,11 +451,6 @@ static int max77686_rtc_probe(struct platform_device *pdev)
+ 		goto err_rtc;
+ 	}
  
- 	if (svm->vmcb->control.int_state & SVM_INTERRUPT_SHADOW_MASK)
--		ret |= KVM_X86_SHADOW_INT_STI | KVM_X86_SHADOW_INT_MOV_SS;
--	return ret & mask;
-+		ret = KVM_X86_SHADOW_INT_STI | KVM_X86_SHADOW_INT_MOV_SS;
-+	return ret;
+-#ifdef MAX77686_RTC_WTSR_SMPL
+-	max77686_rtc_enable_wtsr(info, true);
+-	max77686_rtc_enable_smpl(info, true);
+-#endif
+-
+ 	device_init_wakeup(&pdev->dev, 1);
+ 
+ 	info->rtc_dev = devm_rtc_device_register(&pdev->dev, "max77686-rtc",
+@@ -556,33 +483,6 @@ err_rtc:
+ 	return ret;
  }
  
- static void svm_set_interrupt_shadow(struct kvm_vcpu *vcpu, int mask)
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 5c7bbde25bbf..0c9569b994f9 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -1943,7 +1943,7 @@ static void vmx_set_rflags(struct kvm_vcpu *vcpu, unsigned long rflags)
- 	vmcs_writel(GUEST_RFLAGS, rflags);
- }
- 
--static u32 vmx_get_interrupt_shadow(struct kvm_vcpu *vcpu, int mask)
-+static u32 vmx_get_interrupt_shadow(struct kvm_vcpu *vcpu)
+-static void max77686_rtc_shutdown(struct platform_device *pdev)
+-{
+-#ifdef MAX77686_RTC_WTSR_SMPL
+-	struct max77686_rtc_info *info = platform_get_drvdata(pdev);
+-	int i;
+-	u8 val = 0;
+-
+-	for (i = 0; i < 3; i++) {
+-		max77686_rtc_enable_wtsr(info, false);
+-		regmap_read(info->max77686->rtc_regmap, MAX77686_WTSR_SMPL_CNTL, &val);
+-		dev_info(info->dev, "%s: WTSR_SMPL reg(0x%02x)\n", __func__,
+-				val);
+-		if (val & WTSR_EN_MASK) {
+-			dev_emerg(info->dev, "%s: fail to disable WTSR\n",
+-					__func__);
+-		} else {
+-			dev_info(info->dev, "%s: success to disable WTSR\n",
+-					__func__);
+-			break;
+-		}
+-	}
+-
+-	/* Disable SMPL when power off */
+-	max77686_rtc_enable_smpl(info, false);
+-#endif /* MAX77686_RTC_WTSR_SMPL */
+-}
+-
+ #ifdef CONFIG_PM_SLEEP
+ static int max77686_rtc_suspend(struct device *dev)
  {
- 	u32 interruptibility = vmcs_read32(GUEST_INTERRUPTIBILITY_INFO);
- 	int ret = 0;
-@@ -1953,7 +1953,7 @@ static u32 vmx_get_interrupt_shadow(struct kvm_vcpu *vcpu, int mask)
- 	if (interruptibility & GUEST_INTR_STATE_MOV_SS)
- 		ret |= KVM_X86_SHADOW_INT_MOV_SS;
- 
--	return ret & mask;
-+	return ret;
- }
- 
- static void vmx_set_interrupt_shadow(struct kvm_vcpu *vcpu, int mask)
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 7553530e3502..a56126e6bd75 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -2978,9 +2978,7 @@ static void kvm_vcpu_ioctl_x86_get_vcpu_events(struct kvm_vcpu *vcpu,
- 		vcpu->arch.interrupt.pending && !vcpu->arch.interrupt.soft;
- 	events->interrupt.nr = vcpu->arch.interrupt.nr;
- 	events->interrupt.soft = 0;
--	events->interrupt.shadow =
--		kvm_x86_ops->get_interrupt_shadow(vcpu,
--			KVM_X86_SHADOW_INT_MOV_SS | KVM_X86_SHADOW_INT_STI);
-+	events->interrupt.shadow = kvm_x86_ops->get_interrupt_shadow(vcpu);
- 
- 	events->nmi.injected = vcpu->arch.nmi_injected;
- 	events->nmi.pending = vcpu->arch.nmi_pending != 0;
-@@ -4860,7 +4858,7 @@ static const struct x86_emulate_ops emulate_ops = {
- 
- static void toggle_interruptibility(struct kvm_vcpu *vcpu, u32 mask)
- {
--	u32 int_shadow = kvm_x86_ops->get_interrupt_shadow(vcpu, mask);
-+	u32 int_shadow = kvm_x86_ops->get_interrupt_shadow(vcpu);
- 	/*
- 	 * an sti; sti; sequence only disable interrupts for the first
- 	 * instruction. So, if the last instruction, be it emulated or
-@@ -4868,7 +4866,9 @@ static void toggle_interruptibility(struct kvm_vcpu *vcpu, u32 mask)
- 	 * means that the last instruction is an sti. We should not
- 	 * leave the flag on in this case. The same goes for mov ss
- 	 */
--	if (!(int_shadow & mask))
-+	if (int_shadow & mask)
-+		mask = 0;
-+	if (unlikely(int_shadow || mask))
- 		kvm_x86_ops->set_interrupt_shadow(vcpu, mask);
- }
+@@ -622,7 +522,6 @@ static struct platform_driver max77686_rtc_driver = {
+ 		.pm	= &max77686_rtc_pm_ops,
+ 	},
+ 	.probe		= max77686_rtc_probe,
+-	.shutdown	= max77686_rtc_shutdown,
+ 	.id_table	= rtc_id,
+ };
  
 -- 
-1.8.3.1
-
+2.0.0.rc2
 
