@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756820AbaGNTEe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 15:04:34 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:14615 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752490AbaGNTE1 (ORCPT
+	id S1756794AbaGNTFE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 15:05:04 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:64756 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754847AbaGNTEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 15:04:27 -0400
-Date: Mon, 14 Jul 2014 15:04:25 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/7] tracing/uprobes: kill the dead
- TRACE_EVENT_FL_USE_CALL_FILTER logic
-Message-ID: <20140714150425.1c8ea54c@gandalf.local.home>
-In-Reply-To: <20140711190650.GA19537@redhat.com>
-References: <20140711190622.GA19499@redhat.com>
-	<20140711190650.GA19537@redhat.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 14 Jul 2014 15:04:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+In-Reply-To: <CAGXu5jK-x0=Rr7kX2a=b4Z8ueA77uwmhNZZAayG8cwmNOKa8Ug@mail.gmail.com>
+References: <1405017631-27346-1-git-send-email-keescook@chromium.org>
+ <20140711164931.GA18473@redhat.com> <CAGXu5jK-x0=Rr7kX2a=b4Z8ueA77uwmhNZZAayG8cwmNOKa8Ug@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 14 Jul 2014 12:04:33 -0700
+Message-ID: <CALCETrVXgA9a2f7VwnCYW4_XB+JAPRSR8xsuH_ZYbA82=ZozRw@mail.gmail.com>
+Subject: Re: [PATCH v10 0/11] seccomp: add thread sync ability
+To: Kees Cook <keescook@chromium.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jul 2014 21:06:50 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
+On Fri, Jul 11, 2014 at 10:55 AM, Kees Cook <keescook@chromium.org> wrote:
+> On Fri, Jul 11, 2014 at 9:49 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> On 07/10, Kees Cook wrote:
+>>>
+>>> This adds the ability for threads to request seccomp filter
+>>> synchronization across their thread group (at filter attach time).
+>>> For example, for Chrome to make sure graphic driver threads are fully
+>>> confined after seccomp filters have been attached.
+>>>
+>>> To support this, locking on seccomp changes via thread-group-shared
+>>> sighand lock is introduced, along with refactoring of no_new_privs. Races
+>>> with thread creation are handled via delayed duplication of the seccomp
+>>> task struct field and cred_guard_mutex.
+>>>
+>>> This includes a new syscall (instead of adding a new prctl option),
+>>> as suggested by Andy Lutomirski and Michael Kerrisk.
+>>
+>> I do not not see any problems in this version,
+>
+> Awesome! Thank you for all the reviews. :) If Andy and Michael are
+> happy with this too, I think this is in good shape. \o/
 
-> alloc_trace_uprobe() sets TRACE_EVENT_FL_USE_CALL_FILTER for unknown
-> reason and this is simply wrong. 
+I think I'm happy with it.  Is it in git somewhere for easy perusal?
+I have a cold, so my reviewing ability is a bit off, but I want to
+take a look at the final version, and git is a little easier than
+email for this.
 
-The reason is not unknown. The reason is "cut and paste".
-
--- Steve
-
-> Fortunately this has no effect because
-> register_uprobe_event() clears call->flags after that.
-> 
-> Kill both. This trace_uprobe was kzalloc'ed and we realy on this fact
-> anyway.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/trace/trace_uprobe.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-> index 3c9b97e..33ff6a2 100644
-> --- a/kernel/trace/trace_uprobe.c
-> +++ b/kernel/trace/trace_uprobe.c
-> @@ -265,7 +265,6 @@ alloc_trace_uprobe(const char *group, const char *event, int nargs, bool is_ret)
->  	if (is_ret)
->  		tu->consumer.ret_handler = uretprobe_dispatcher;
->  	init_trace_uprobe_filter(&tu->filter);
-> -	tu->tp.call.flags |= TRACE_EVENT_FL_USE_CALL_FILTER;
->  	return tu;
->  
->  error:
-> @@ -1292,7 +1291,7 @@ static int register_uprobe_event(struct trace_uprobe *tu)
->  		kfree(call->print_fmt);
->  		return -ENODEV;
->  	}
-> -	call->flags = 0;
-> +
->  	call->class->reg = trace_uprobe_register;
->  	call->data = tu;
->  	ret = trace_add_event_call(call);
-
+--Andy
