@@ -1,82 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379AbaGNJ6X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 05:58:23 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:49058 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446AbaGNJ6R (ORCPT
+	id S1754413AbaGNJ6p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 05:58:45 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36146 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752347AbaGNJ6i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 05:58:17 -0400
-Date: Mon, 14 Jul 2014 11:58:02 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: sched, timers: use after free in __lock_task_sighand when
- exiting a process
-Message-ID: <20140714095802.GQ9918@twins.programming.kicks-ass.net>
-References: <53C2FF4D.3020606@oracle.com>
- <53C31A34.8030500@oracle.com>
- <20140714090449.GL9918@twins.programming.kicks-ass.net>
- <53C3A430.9090508@samsung.com>
+	Mon, 14 Jul 2014 05:58:38 -0400
+Date: Mon, 14 Jul 2014 10:57:47 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Liu hua <sdu.liu@huawei.com>
+Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "wangnan0@huawei.com" <wangnan0@huawei.com>,
+        "liuxueliu.liu@huawei.com" <liuxueliu.liu@huawei.com>,
+        "peifeiyue@huawei.com" <peifeiyue@huawei.com>,
+        "liusdu@126.com" <liusdu@126.com>, Marc Zyngier <Marc.Zyngier@arm.com>
+Subject: Re: [RFC PATCH 0/2] irqchip: GIC: check and clear GIC interupt
+ active status
+Message-ID: <20140714095747.GB1779@arm.com>
+References: <1405061177-43834-1-git-send-email-sdu.liu@huawei.com>
+ <20140711123507.GE12899@arm.com>
+ <53C34CF2.5050209@huawei.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ccJhwVfaC+fHwTsl"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53C3A430.9090508@samsung.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <53C34CF2.5050209@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 14, 2014 at 04:22:26AM +0100, Liu hua wrote:
+> On 2014/7/11 20:35, Will Deacon wrote:
+> > On Fri, Jul 11, 2014 at 07:46:15AM +0100, Liu Hua wrote:
+> >> So guys, Do you know a better way to do that? 
+> > What happens if, in the crash kernel, you disable the CPU interfaces
+> > (GICC_CTLR.ENABLE) then disable the distributor (GICD_CTLR.ENABLE) before
+> > enabling everything again in the reverse order? Is that enough to cause the
+> > GIC to drop any active states? It's not clear to me from a quick look at
+> > the TRM.
+> > 
+> 
+> I did what you said at the beginning of "gic_dist_init". The active states
+> remained (panic in local timer interrupt (PPI))and the kernel failed to boot,
+> Did I do that at wrong place?
+> 
+> -------------------
+> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+> index b6b0a81..94d6352 100644
+> --- a/drivers/irqchip/irq-gic.c
+> +++ b/drivers/irqchip/irq-gic.c
+> @@ -454,6 +455,7 @@ static void __init gic_dist_init(struct gic_chip_data *gic)
+>         void __iomem *base = gic_data_dist_base(gic);
+>         void __iomem *cpu_base = gic_data_cpu_base(gic);
+> 
+> + writel_relaxed(0, base + GIC_CPU_CTRL);
+>         writel_relaxed(0, base + GIC_DIST_CTRL);
+> 
+>         /*
+> ------------------------
+> 
+> As shown in GIC Architecture Specification manual,I think that the GICC_CTLR.ENABLE
+> and GICD_CTLR.ENABLE only control the delivering of the interrupt, not the active
+> states.
+> 
+> As GIC manual says "For every read of a valid Interrupt ID from the GICC_IAR, the
+> connected processor must perform a matching write to the GICC_EOIR". So we should
+> find a way to drop the active states when booting, if we do not remain these active
+> states by design.
 
---ccJhwVfaC+fHwTsl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Understood, my suggestion above was a speculative effort to see what the
+hardware would do. Something along the lines of what you've done in your
+patch makes sense to me, but we'll need to wait for Marc's input (he's on
+holiday at the moment).
 
-On Mon, Jul 14, 2014 at 01:34:40PM +0400, Andrey Ryabinin wrote:
-> On 07/14/14 13:04, Peter Zijlstra wrote:
-> > On Sun, Jul 13, 2014 at 07:45:56PM -0400, Sasha Levin wrote:
-> >> On 07/13/2014 05:51 PM, Sasha Levin wrote:
-> >>> Hi all,
-> >>>
-> >>> While fuzzing with trinity inside a KVM tools guest running the lates=
-t -next
-> >>> kernel with the KASAN patchset, I've stumbled on the following spew:
-> >=20
-> > WTH is a KASAN?
-> >=20
->=20
-> It's dynamic memory checker, detects use after free, out of bounds access=
-es - https://lkml.org/lkml/2014/7/9/990
-
-How is it better/different from the existing use after free stuff? That
-email fails to tell me.
-
---ccJhwVfaC+fHwTsl
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTw6mqAAoJEHZH4aRLwOS6K8UP/1vgxkNRs+5iCip+ey3OClfy
-oD9yhnvLW/Xm0dOw1ZTO/i4LX1l5CkXaUKUcn+3UM07QTyLbEV/Njadi/UwX4qgR
-uZfWxJpQ0U7fPWF3zmYVFP8nkmKq8m3wrTlRLrw7ZtO3pr2jg5BS3xwHni1WmyJc
-/u4FT9amiBQwt6K1cirHi46xXcmzPDY1K7MoC8TKBfAxdU902SnzuDuTnPlqvI1F
-LtdJ0jaSrYbnGMwZM9Z4WJvPxgeaC8IHaXSz8qnbNtQCmErNEz+2v2AzTG5mPO4w
-NOCfEKFzVLRcXxI7XyC9hlh5dlqZsYjwj8+cMvbNiEojDnFrMsXVTAZfk/ZL7cwh
-HSMjwYrczCwe2sI7XK9Kz7N7K2W/LohBuxRIwISjv6TneL2vCz4YEI/SOpVnbiqe
-tOFUtFbKakUSSexIKE7ldvsfjMHm6lNp1LPWVlcmjQprSB83DXCePLSe8h5ANKt4
-NKNvGgEFaNQbXFJ2UJeQKpwChg6tvRfvfvECfo201NsgI5azIOJJ5DpzU59TXP9Z
-p3XScGlWVnJnylIkHr+KewO4EJykXKCJRx+873+i5bQq70MsRLj7m/HQ3F3k0Lro
-cIucJVnOWNpFQNcSYuYBZWsfrCuXgBrU4+fouuJW4KFhnuS8Z2nj+/PdQs0JMH5L
-UniLRXG+AGRvwawLzDAL
-=LoqN
------END PGP SIGNATURE-----
-
---ccJhwVfaC+fHwTsl--
+Will
