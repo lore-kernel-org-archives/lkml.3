@@ -1,47 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757386AbaGNWIk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 18:08:40 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:36187 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757000AbaGNWIi (ORCPT
+	id S1757423AbaGNWIv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 18:08:51 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:36195 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724AbaGNWIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 18:08:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140714192451.GC5803@tassilo.jf.intel.com>
-References: <1405123285-23544-1-git-send-email-andi@firstfloor.org>
-	<1405123285-23544-2-git-send-email-andi@firstfloor.org>
-	<CABPqkBScNfoK4a9BZkZxB-gAj3Ew2f7Ox3351YKWVt7cN-1EEw@mail.gmail.com>
-	<20140714192451.GC5803@tassilo.jf.intel.com>
-Date: Tue, 15 Jul 2014 00:08:37 +0200
-Message-ID: <CABPqkBS=PB9tp78Y12ZRG9KLjd=DLY=3yrXeRdqCbZ4gnsdJ7A@mail.gmail.com>
-Subject: Re: [PATCH 2/2] perf, x86: Don't mark DataLA addresses as store
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 14 Jul 2014 18:08:48 -0400
+Date: Mon, 14 Jul 2014 15:08:47 -0700 (PDT)
+Message-Id: <20140714.150847.1399242734159771901.davem@davemloft.net>
+To: sasha.levin@oracle.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davej@redhat.com,
+        a.ryabinin@samsung.com
+Subject: Re: net: socket: NULL ptr deref in sendmsg
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <53C2FF3D.4030201@oracle.com>
+References: <53C2FF3D.4030201@oracle.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 14 Jul 2014 15:08:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi,
+From: Sasha Levin <sasha.levin@oracle.com>
+Date: Sun, 13 Jul 2014 17:50:53 -0400
 
-On Mon, Jul 14, 2014 at 9:24 PM, Andi Kleen <ak@linux.intel.com> wrote:
->> You could do better if you tagged the event during setup as load vs. store.
->> And then you could simply propagate the flag to the data source struct.
->
-> This would require listing all PEBS events in the table again.
-> The whole point of the other patch was to get rid of that.
->
-> Besides it wouldn't work for a range of events (like UOPS_RETIRED.ALL)
->
-I have a problem with this patch.
+> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> kernel with the KASAN patchset, I've stumbled on the following spew:
+ ...
+> It's similar to another variation:
+ ...
+> I've tried debugging it, but I don't see a code path that could lead to that.
 
-It makes: perf mem -t store rec record OP_NA for the store.
-It was recording OP_STORE before.
-
-I think we need to keep LD/ST info. This is useful for analysis
-especially if we collect loads/stores simultaneously.
-
-Was working before for the mem-loads, mem-stores events.
+Both of these cases involve working with pointers declared with
+DECLARE_SOCKADDR, maybe that somehow confuses ASAN code generation?
