@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757454AbaGNVrX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 17:47:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55036 "EHLO mx1.redhat.com"
+	id S1757437AbaGNVrV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 17:47:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37305 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757330AbaGNVrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 17:47:08 -0400
+	id S1757320AbaGNVrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 17:47:11 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
@@ -15,22 +15,18 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 1/5] perf tools: Remove verbose from functions prototypes
-Date: Mon, 14 Jul 2014 23:46:47 +0200
-Message-Id: <1405374411-29012-2-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 2/5] perf tools: Move pr_* debug macros into debug object
+Date: Mon, 14 Jul 2014 23:46:48 +0200
+Message-Id: <1405374411-29012-3-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1405374411-29012-1-git-send-email-jolsa@kernel.org>
 References: <1405374411-29012-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And use verbose as an global object in following fuunctions:
-  __map_groups__fprintf_maps
-  __map_groups__fprintf_removed_maps
-  map_groups__fprintf_maps
-  map_groups__fprintf
-
-Also making map_groups__fprintf_maps static.
+Moving pr_* debug macros to have it with in same object as
+debug variables, becase we will change them to use verbose
+variable in next patch.
 
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -42,152 +38,350 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/ui/stdio/hist.c |  2 +-
- tools/perf/util/map.c      | 24 ++++++++++++------------
- tools/perf/util/map.h      |  9 ++++-----
- tools/perf/util/thread.c   |  4 ++--
- 4 files changed, 19 insertions(+), 20 deletions(-)
+ tools/perf/arch/x86/tests/dwarf-unwind.c            |  1 +
+ tools/perf/arch/x86/util/unwind-libunwind.c         |  1 +
+ tools/perf/builtin-evlist.c                         |  1 +
+ tools/perf/builtin-help.c                           |  1 +
+ tools/perf/builtin-timechart.c                      |  1 +
+ tools/perf/tests/dso-data.c                         |  1 +
+ tools/perf/tests/evsel-roundtrip-name.c             |  1 +
+ tools/perf/tests/evsel-tp-sched.c                   |  1 +
+ tools/perf/tests/open-syscall-tp-fields.c           |  1 +
+ tools/perf/tests/parse-events.c                     |  1 +
+ tools/perf/tests/parse-no-sample-id-all.c           |  1 +
+ tools/perf/tests/sample-parsing.c                   |  1 +
+ tools/perf/tests/thread-mg-share.c                  |  1 +
+ tools/perf/util/data.c                              |  1 +
+ tools/perf/util/debug.h                             | 20 ++++++++++++++++++++
+ tools/perf/util/include/linux/kernel.h              | 21 ---------------------
+ tools/perf/util/pstack.c                            |  1 +
+ .../perf/util/scripting-engines/trace-event-perl.c  |  1 +
+ tools/perf/util/trace-event-info.c                  |  1 +
+ tools/perf/util/trace-event-read.c                  |  1 +
+ tools/perf/util/unwind-libunwind.c                  |  1 +
+ tools/perf/util/util.c                              |  1 +
+ tools/perf/util/vdso.c                              |  1 +
+ 23 files changed, 41 insertions(+), 21 deletions(-)
 
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 90122abd3721..40af0acb4fe9 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -479,7 +479,7 @@ print_entries:
+diff --git a/tools/perf/arch/x86/tests/dwarf-unwind.c b/tools/perf/arch/x86/tests/dwarf-unwind.c
+index 9f89f899ccc7..d8bbf7ad1681 100644
+--- a/tools/perf/arch/x86/tests/dwarf-unwind.c
++++ b/tools/perf/arch/x86/tests/dwarf-unwind.c
+@@ -3,6 +3,7 @@
+ #include "thread.h"
+ #include "map.h"
+ #include "event.h"
++#include "debug.h"
+ #include "tests/tests.h"
  
- 		if (h->ms.map == NULL && verbose > 1) {
- 			__map_groups__fprintf_maps(h->thread->mg,
--						   MAP__FUNCTION, verbose, fp);
-+						   MAP__FUNCTION, fp);
- 			fprintf(fp, "%.10s end\n", graph_dotted_line);
- 		}
- 	}
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 25c571f4cba6..49f5f37e0fe3 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -12,6 +12,7 @@
- #include "vdso.h"
- #include "build-id.h"
+ #define STACK_SIZE 8192
+diff --git a/tools/perf/arch/x86/util/unwind-libunwind.c b/tools/perf/arch/x86/util/unwind-libunwind.c
+index 3261f68c6a7c..db25e93d989c 100644
+--- a/tools/perf/arch/x86/util/unwind-libunwind.c
++++ b/tools/perf/arch/x86/util/unwind-libunwind.c
+@@ -3,6 +3,7 @@
+ #include <libunwind.h>
+ #include "perf_regs.h"
+ #include "../../util/unwind.h"
++#include "../../util/debug.h"
+ 
+ #ifdef HAVE_ARCH_X86_64_SUPPORT
+ int libunwind__arch_reg_id(int regnum)
+diff --git a/tools/perf/builtin-evlist.c b/tools/perf/builtin-evlist.c
+index c99e0de7e54a..66e12f55c052 100644
+--- a/tools/perf/builtin-evlist.c
++++ b/tools/perf/builtin-evlist.c
+@@ -15,6 +15,7 @@
+ #include "util/parse-options.h"
+ #include "util/session.h"
+ #include "util/data.h"
++#include "util/debug.h"
+ 
+ static int __cmd_evlist(const char *file_name, struct perf_attr_details *details)
+ {
+diff --git a/tools/perf/builtin-help.c b/tools/perf/builtin-help.c
+index 178b88ae3d2f..0384d930480b 100644
+--- a/tools/perf/builtin-help.c
++++ b/tools/perf/builtin-help.c
+@@ -11,6 +11,7 @@
+ #include "util/parse-options.h"
+ #include "util/run-command.h"
+ #include "util/help.h"
++#include "util/debug.h"
+ 
+ static struct man_viewer_list {
+ 	struct man_viewer_list *next;
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index 04c9c53becad..2f1a5220c090 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -37,6 +37,7 @@
+ #include "util/svghelper.h"
+ #include "util/tool.h"
+ #include "util/data.h"
++#include "util/debug.h"
+ 
+ #define SUPPORT_OLD_POWER_EVENTS 1
+ #define PWR_EVENT_EXIT -1
+diff --git a/tools/perf/tests/dso-data.c b/tools/perf/tests/dso-data.c
+index 630808cd7cc2..caaf37f079b1 100644
+--- a/tools/perf/tests/dso-data.c
++++ b/tools/perf/tests/dso-data.c
+@@ -10,6 +10,7 @@
+ #include "machine.h"
+ #include "symbol.h"
+ #include "tests.h"
++#include "debug.h"
+ 
+ static char *test_file(int size)
+ {
+diff --git a/tools/perf/tests/evsel-roundtrip-name.c b/tools/perf/tests/evsel-roundtrip-name.c
+index 465cdbc345cf..b8d8341b383e 100644
+--- a/tools/perf/tests/evsel-roundtrip-name.c
++++ b/tools/perf/tests/evsel-roundtrip-name.c
+@@ -2,6 +2,7 @@
+ #include "evsel.h"
+ #include "parse-events.h"
+ #include "tests.h"
++#include "debug.h"
+ 
+ static int perf_evsel__roundtrip_cache_name_test(void)
+ {
+diff --git a/tools/perf/tests/evsel-tp-sched.c b/tools/perf/tests/evsel-tp-sched.c
+index 35d7fdb2328d..52162425c969 100644
+--- a/tools/perf/tests/evsel-tp-sched.c
++++ b/tools/perf/tests/evsel-tp-sched.c
+@@ -1,6 +1,7 @@
+ #include <traceevent/event-parse.h>
+ #include "evsel.h"
+ #include "tests.h"
++#include "debug.h"
+ 
+ static int perf_evsel__test_field(struct perf_evsel *evsel, const char *name,
+ 				  int size, bool should_be_signed)
+diff --git a/tools/perf/tests/open-syscall-tp-fields.c b/tools/perf/tests/open-syscall-tp-fields.c
+index c505ef2af245..0785b64ffd6c 100644
+--- a/tools/perf/tests/open-syscall-tp-fields.c
++++ b/tools/perf/tests/open-syscall-tp-fields.c
+@@ -3,6 +3,7 @@
+ #include "evsel.h"
+ #include "thread_map.h"
+ #include "tests.h"
++#include "debug.h"
+ 
+ int test__syscall_open_tp_fields(void)
+ {
+diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
+index deba66955f8c..5941927a4b7f 100644
+--- a/tools/perf/tests/parse-events.c
++++ b/tools/perf/tests/parse-events.c
+@@ -5,6 +5,7 @@
+ #include <api/fs/fs.h>
+ #include <api/fs/debugfs.h>
+ #include "tests.h"
++#include "debug.h"
+ #include <linux/hw_breakpoint.h>
+ 
+ #define PERF_TP_SAMPLE_TYPE (PERF_SAMPLE_RAW | PERF_SAMPLE_TIME | \
+diff --git a/tools/perf/tests/parse-no-sample-id-all.c b/tools/perf/tests/parse-no-sample-id-all.c
+index 905019f9b740..2c63ea658541 100644
+--- a/tools/perf/tests/parse-no-sample-id-all.c
++++ b/tools/perf/tests/parse-no-sample-id-all.c
+@@ -7,6 +7,7 @@
+ #include "evlist.h"
+ #include "header.h"
  #include "util.h"
 +#include "debug.h"
- #include <linux/string.h>
  
- const char *map_type__name[MAP__NR_TYPES] = {
-@@ -554,8 +555,8 @@ int map_groups__find_ams(struct addr_map_symbol *ams, symbol_filter_t filter)
- 	return ams->sym ? 0 : -1;
- }
- 
--size_t __map_groups__fprintf_maps(struct map_groups *mg,
--				  enum map_type type, int verbose, FILE *fp)
-+size_t __map_groups__fprintf_maps(struct map_groups *mg, enum map_type type,
-+				  FILE *fp)
+ static int process_event(struct perf_evlist **pevlist, union perf_event *event)
  {
- 	size_t printed = fprintf(fp, "%s:\n", map_type__name[type]);
- 	struct rb_node *nd;
-@@ -573,17 +574,16 @@ size_t __map_groups__fprintf_maps(struct map_groups *mg,
- 	return printed;
- }
+diff --git a/tools/perf/tests/sample-parsing.c b/tools/perf/tests/sample-parsing.c
+index 7ae8d17db3d9..ca292f9a4ae2 100644
+--- a/tools/perf/tests/sample-parsing.c
++++ b/tools/perf/tests/sample-parsing.c
+@@ -4,6 +4,7 @@
+ #include "util.h"
+ #include "event.h"
+ #include "evsel.h"
++#include "debug.h"
  
--size_t map_groups__fprintf_maps(struct map_groups *mg, int verbose, FILE *fp)
-+static size_t map_groups__fprintf_maps(struct map_groups *mg, FILE *fp)
+ #include "tests.h"
+ 
+diff --git a/tools/perf/tests/thread-mg-share.c b/tools/perf/tests/thread-mg-share.c
+index 2b2e0dbe114f..b028499dd3cf 100644
+--- a/tools/perf/tests/thread-mg-share.c
++++ b/tools/perf/tests/thread-mg-share.c
+@@ -2,6 +2,7 @@
+ #include "machine.h"
+ #include "thread.h"
+ #include "map.h"
++#include "debug.h"
+ 
+ int test__thread_mg_share(void)
  {
- 	size_t printed = 0, i;
- 	for (i = 0; i < MAP__NR_TYPES; ++i)
--		printed += __map_groups__fprintf_maps(mg, i, verbose, fp);
-+		printed += __map_groups__fprintf_maps(mg, i, fp);
- 	return printed;
- }
+diff --git a/tools/perf/util/data.c b/tools/perf/util/data.c
+index 55de44ecebef..34cc8fe8852b 100644
+--- a/tools/perf/util/data.c
++++ b/tools/perf/util/data.c
+@@ -7,6 +7,7 @@
  
- static size_t __map_groups__fprintf_removed_maps(struct map_groups *mg,
--						 enum map_type type,
--						 int verbose, FILE *fp)
-+						 enum map_type type, FILE *fp)
+ #include "data.h"
+ #include "util.h"
++#include "debug.h"
+ 
+ static bool check_pipe(struct perf_data_file *file)
  {
- 	struct map *pos;
- 	size_t printed = 0;
-@@ -600,23 +600,23 @@ static size_t __map_groups__fprintf_removed_maps(struct map_groups *mg,
+diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
+index 443694c36b03..8a8ceb3ccde9 100644
+--- a/tools/perf/util/debug.h
++++ b/tools/perf/util/debug.h
+@@ -11,6 +11,24 @@
+ extern int verbose;
+ extern bool quiet, dump_trace;
+ 
++#ifndef pr_fmt
++#define pr_fmt(fmt) fmt
++#endif
++
++#define pr_err(fmt, ...) \
++	eprintf(0, pr_fmt(fmt), ##__VA_ARGS__)
++#define pr_warning(fmt, ...) \
++	eprintf(0, pr_fmt(fmt), ##__VA_ARGS__)
++#define pr_info(fmt, ...) \
++	eprintf(0, pr_fmt(fmt), ##__VA_ARGS__)
++#define pr_debug(fmt, ...) \
++	eprintf(1, pr_fmt(fmt), ##__VA_ARGS__)
++#define pr_debugN(n, fmt, ...) \
++	eprintf(n, pr_fmt(fmt), ##__VA_ARGS__)
++#define pr_debug2(fmt, ...) pr_debugN(2, pr_fmt(fmt), ##__VA_ARGS__)
++#define pr_debug3(fmt, ...) pr_debugN(3, pr_fmt(fmt), ##__VA_ARGS__)
++#define pr_debug4(fmt, ...) pr_debugN(4, pr_fmt(fmt), ##__VA_ARGS__)
++
+ int dump_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+ void trace_event(union perf_event *event);
+ 
+@@ -19,4 +37,6 @@ int ui__warning(const char *format, ...) __attribute__((format(printf, 1, 2)));
+ 
+ void pr_stat(const char *fmt, ...);
+ 
++int eprintf(int level, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
++
+ #endif	/* __PERF_DEBUG_H */
+diff --git a/tools/perf/util/include/linux/kernel.h b/tools/perf/util/include/linux/kernel.h
+index 9844c31b7c2b..09e8e7aea7c6 100644
+--- a/tools/perf/util/include/linux/kernel.h
++++ b/tools/perf/util/include/linux/kernel.h
+@@ -94,27 +94,6 @@ static inline int scnprintf(char * buf, size_t size, const char * fmt, ...)
+ 	return (i >= ssize) ? (ssize - 1) : i;
  }
  
- static size_t map_groups__fprintf_removed_maps(struct map_groups *mg,
--					       int verbose, FILE *fp)
-+					       FILE *fp)
- {
- 	size_t printed = 0, i;
- 	for (i = 0; i < MAP__NR_TYPES; ++i)
--		printed += __map_groups__fprintf_removed_maps(mg, i, verbose, fp);
-+		printed += __map_groups__fprintf_removed_maps(mg, i, fp);
- 	return printed;
- }
+-int eprintf(int level,
+-	    const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+-
+-#ifndef pr_fmt
+-#define pr_fmt(fmt) fmt
+-#endif
+-
+-#define pr_err(fmt, ...) \
+-	eprintf(0, pr_fmt(fmt), ##__VA_ARGS__)
+-#define pr_warning(fmt, ...) \
+-	eprintf(0, pr_fmt(fmt), ##__VA_ARGS__)
+-#define pr_info(fmt, ...) \
+-	eprintf(0, pr_fmt(fmt), ##__VA_ARGS__)
+-#define pr_debug(fmt, ...) \
+-	eprintf(1, pr_fmt(fmt), ##__VA_ARGS__)
+-#define pr_debugN(n, fmt, ...) \
+-	eprintf(n, pr_fmt(fmt), ##__VA_ARGS__)
+-#define pr_debug2(fmt, ...) pr_debugN(2, pr_fmt(fmt), ##__VA_ARGS__)
+-#define pr_debug3(fmt, ...) pr_debugN(3, pr_fmt(fmt), ##__VA_ARGS__)
+-#define pr_debug4(fmt, ...) pr_debugN(4, pr_fmt(fmt), ##__VA_ARGS__)
+-
+ /*
+  * This looks more complex than it should be. But we need to
+  * get the type for the ~ right in round_down (it needs to be
+diff --git a/tools/perf/util/pstack.c b/tools/perf/util/pstack.c
+index daa17aeb6c63..a126e6cc6e73 100644
+--- a/tools/perf/util/pstack.c
++++ b/tools/perf/util/pstack.c
+@@ -6,6 +6,7 @@
  
--size_t map_groups__fprintf(struct map_groups *mg, int verbose, FILE *fp)
-+size_t map_groups__fprintf(struct map_groups *mg, FILE *fp)
- {
--	size_t printed = map_groups__fprintf_maps(mg, verbose, fp);
-+	size_t printed = map_groups__fprintf_maps(mg, fp);
- 	printed += fprintf(fp, "Removed maps:\n");
--	return printed + map_groups__fprintf_removed_maps(mg, verbose, fp);
-+	return printed + map_groups__fprintf_removed_maps(mg, fp);
- }
+ #include "util.h"
+ #include "pstack.h"
++#include "debug.h"
+ #include <linux/kernel.h>
+ #include <stdlib.h>
  
- int map_groups__fixup_overlappings(struct map_groups *mg, struct map *map,
--				   int verbose, FILE *fp)
-+				   FILE *fp)
- {
- 	struct rb_root *root = &mg->maps[map->type];
- 	struct rb_node *next = rb_first(root);
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index 7758c72522ef..b57d49a6fef3 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -141,8 +141,8 @@ void map__fixup_end(struct map *map);
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index af7da565a750..b2dba9c0a3a1 100644
+--- a/tools/perf/util/scripting-engines/trace-event-perl.c
++++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+@@ -34,6 +34,7 @@
+ #include "../event.h"
+ #include "../trace-event.h"
+ #include "../evsel.h"
++#include "../debug.h"
  
- void map__reloc_vmlinux(struct map *map);
+ void boot_Perf__Trace__Context(pTHX_ CV *cv);
+ void boot_DynaLoader(pTHX_ CV *cv);
+diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+index 7e6fcfe8b438..a92d2437f3ee 100644
+--- a/tools/perf/util/trace-event-info.c
++++ b/tools/perf/util/trace-event-info.c
+@@ -40,6 +40,7 @@
+ #include "trace-event.h"
+ #include <api/fs/debugfs.h>
+ #include "evsel.h"
++#include "debug.h"
  
--size_t __map_groups__fprintf_maps(struct map_groups *mg,
--				  enum map_type type, int verbose, FILE *fp);
-+size_t __map_groups__fprintf_maps(struct map_groups *mg, enum map_type type,
-+				  FILE *fp);
- void maps__insert(struct rb_root *maps, struct map *map);
- void maps__remove(struct rb_root *maps, struct map *map);
- struct map *maps__find(struct rb_root *maps, u64 addr);
-@@ -152,8 +152,7 @@ void map_groups__init(struct map_groups *mg);
- void map_groups__exit(struct map_groups *mg);
- int map_groups__clone(struct map_groups *mg,
- 		      struct map_groups *parent, enum map_type type);
--size_t map_groups__fprintf(struct map_groups *mg, int verbose, FILE *fp);
--size_t map_groups__fprintf_maps(struct map_groups *mg, int verbose, FILE *fp);
-+size_t map_groups__fprintf(struct map_groups *mg, FILE *fp);
+ #define VERSION "0.5"
  
- int maps__set_kallsyms_ref_reloc_sym(struct map **maps, const char *symbol_name,
- 				     u64 addr);
-@@ -210,7 +209,7 @@ struct symbol *map_groups__find_function_by_name(struct map_groups *mg,
- }
+diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
+index e113e180c48f..ea3fd7fc6f5c 100644
+--- a/tools/perf/util/trace-event-read.c
++++ b/tools/perf/util/trace-event-read.c
+@@ -36,6 +36,7 @@
+ #include "../perf.h"
+ #include "util.h"
+ #include "trace-event.h"
++#include "debug.h"
  
- int map_groups__fixup_overlappings(struct map_groups *mg, struct map *map,
--				   int verbose, FILE *fp);
-+				   FILE *fp);
+ static int input_fd;
  
- struct map *map_groups__find_by_name(struct map_groups *mg,
- 				     enum map_type type, const char *name);
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index 2fde0d5e40b5..200f499293ca 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -127,12 +127,12 @@ int thread__comm_len(struct thread *thread)
- size_t thread__fprintf(struct thread *thread, FILE *fp)
- {
- 	return fprintf(fp, "Thread %d %s\n", thread->tid, thread__comm_str(thread)) +
--	       map_groups__fprintf(thread->mg, verbose, fp);
-+	       map_groups__fprintf(thread->mg, fp);
- }
+diff --git a/tools/perf/util/unwind-libunwind.c b/tools/perf/util/unwind-libunwind.c
+index 25578b98f5c5..92b56db52471 100644
+--- a/tools/perf/util/unwind-libunwind.c
++++ b/tools/perf/util/unwind-libunwind.c
+@@ -30,6 +30,7 @@
+ #include "unwind.h"
+ #include "symbol.h"
+ #include "util.h"
++#include "debug.h"
  
- void thread__insert_map(struct thread *thread, struct map *map)
- {
--	map_groups__fixup_overlappings(thread->mg, map, verbose, stderr);
-+	map_groups__fixup_overlappings(thread->mg, map, stderr);
- 	map_groups__insert(thread->mg, map);
- }
+ extern int
+ UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 95aefa78bb07..7d9a1e97ce8c 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -1,5 +1,6 @@
+ #include "../perf.h"
+ #include "util.h"
++#include "debug.h"
+ #include <api/fs/fs.h>
+ #include <sys/mman.h>
+ #ifdef HAVE_BACKTRACE_SUPPORT
+diff --git a/tools/perf/util/vdso.c b/tools/perf/util/vdso.c
+index 0ddb3b8a89ec..290582452da3 100644
+--- a/tools/perf/util/vdso.c
++++ b/tools/perf/util/vdso.c
+@@ -12,6 +12,7 @@
+ #include "util.h"
+ #include "symbol.h"
+ #include "linux/string.h"
++#include "debug.h"
  
+ static bool vdso_found;
+ static char vdso_file[] = "/tmp/perf-vdso.so-XXXXXX";
 -- 
 1.8.3.1
 
