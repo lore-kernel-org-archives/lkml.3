@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756625AbaGNRW6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 13:22:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37554 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754271AbaGNRWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 13:22:41 -0400
-Date: Mon, 14 Jul 2014 19:22:25 +0200
-From: Borislav Petkov <bp@suse.de>
-To: Stuart Hayes <stuart.w.hayes@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, tglx@linutronix.de, mingo@redhat.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org, matt.fleming@intel.com,
-        bp@suse.de
-Subject: Re: [PATCH] x86: Configure NX support earlier in setup_arch
-Message-ID: <20140714172225.GE25120@pd.tnic>
-References: <53B4B627.8060903@gmail.com>
- <53BC7210.1000305@gmail.com>
- <53BC72D8.4090705@zytor.com>
- <53BDE4BD.50605@gmail.com>
+	id S932157AbaGNRXn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 13:23:43 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:50322 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751334AbaGNRXe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 13:23:34 -0400
+Message-ID: <53C41213.6020102@codeaurora.org>
+Date: Mon, 14 Jul 2014 10:23:31 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <53BDE4BD.50605@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH v2 1/3] asm-generic/io.h: Implement generic {read,write}s*()
+References: <1405092672-18549-1-git-send-email-thierry.reding@gmail.com> <53C05E4A.2030708@codeaurora.org> <20140714091057.GP2081@ulmo>
+In-Reply-To: <20140714091057.GP2081@ulmo>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 07:56:29PM -0500, Stuart Hayes wrote:
-> Well... I got this issue because a co-worker tripped over it. He had
-> NX disabled in BIOS for some reason, and found that linux wouldn't
-> boot--it hung right after grub2. I guess it took a while to figure out
-> that it was the fact that NX was disabled that caused linux not to
-> come up--and that could happen to other people. I don't know of any
-> real-world scenarios in which someone would actually prefer to run a
-> recent linux kernel with NX disabled, though.
+On 07/14/14 02:10, Thierry Reding wrote:
+> The reason behind this was that people have been told to migrate towards
+> using io{read,write}{8,16,32}_rep() because {read,write}s{b,w,l}() are
+> not as "portable". The only reason why the aren't portable is because no
+> generic versions of them existed. That's what this series originally
+> started out as.
 >
-> It looks like some of the other boot paths into the kernel
-> automatically clear the XD_DISABLE bit in the MISC_ENABLE MSR in the
-> CPU (in verify_cpu), but that doesn't happen when grub2 jumps to
-> startup_64 in arch/x86/boot/compressed/head_64.S. I guess instead
-> of this patch, I could try to make a patch that turns NX back on
-> (somewhere in startup_64), but since the kernel already supports NX
-> being disabled, so I thought maybe just fixing that would be better. I
-> didn't like seeing the kernel just die without giving any indication
-> of what the problem is.
+> Also, it's somewhat backwards (and inconsistent) to go through the io*()
+> functions when it's known up front that the device will always only be
+> memory-mapped and never I/O mapped. So with these patches going forward,
+> people should be using either {read,write}{,s}{b,w,l}() *or* their
+> io{read,write}{8,16,32}{,_rep}() counterparts, not mixing them.
+>
 
-Well, hpa and I were talking about this briefly and this NX disabling
-in the BIOS is probably for some broken legacy applications/OSes. Linux
-enables NX unconditionally very early because disabling it is a very bad
-idea anyway, security-wise.
-
-So, if this is just a random trip over of a co-worker and doesn't have
-any sensible use case, I'd rather leave it as is an don't fix it at all.
+Thanks. Can we please have this explanation in the commit text?
 
 -- 
-Regards/Gruss,
-    Boris.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-Sent from a fat crate under my desk. Formatting is fine.
---
