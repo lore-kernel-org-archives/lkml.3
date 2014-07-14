@@ -1,219 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885AbaGNPE4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 11:04:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35497 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755412AbaGNPEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 11:04:48 -0400
-Date: Mon, 14 Jul 2014 17:04:46 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 12/13] mm: memcontrol: rewrite charge API
-Message-ID: <20140714150446.GD30713@dhcp22.suse.cz>
-References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
- <1403124045-24361-13-git-send-email-hannes@cmpxchg.org>
+	id S1755912AbaGNPGZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 11:06:25 -0400
+Received: from asavdk3.altibox.net ([109.247.116.14]:43925 "EHLO
+	asavdk3.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755192AbaGNPGQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 11:06:16 -0400
+Date: Mon, 14 Jul 2014 17:06:09 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: lkml <linux-kernel@vger.kernel.org>,
+        linux-arch <linux-arch@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King <linux@arm.linux.org.uk>, Michal Marek <mmarek@suse.cz>,
+        David Howells <dhowells@redhat.com>, Sam Ravnborg <sam@ravnborg.org>
+Subject: [RFC PATCH 0/38] clean-up uapi + asm-generic Kbuild files
+Message-ID: <20140714150609.GA28358@ravnborg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403124045-24361-13-git-send-email-hannes@cmpxchg.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-I've finally manage to untagle myself from internal stuff...
+While working one another patch-set I noticed some stray Kbuild files.
+And then when I started to dig into this it somehow got out
+of control and I ended up with the following set of patches.
 
-On Wed 18-06-14 16:40:44, Johannes Weiner wrote:
-> The memcg charge API charges pages before they are rmapped - i.e. have
-> an actual "type" - and so every callsite needs its own set of charge
-> and uncharge functions to know what type is being operated on.  Worse,
-> uncharge has to happen from a context that is still type-specific,
-> rather than at the end of the page's lifetime with exclusive access,
-> and so requires a lot of synchronization.
-> 
-> Rewrite the charge API to provide a generic set of try_charge(),
-> commit_charge() and cancel_charge() transaction operations, much like
-> what's currently done for swap-in:
-> 
->   mem_cgroup_try_charge() attempts to reserve a charge, reclaiming
->   pages from the memcg if necessary.
-> 
->   mem_cgroup_commit_charge() commits the page to the charge once it
->   has a valid page->mapping and PageAnon() reliably tells the type.
-> 
->   mem_cgroup_cancel_charge() aborts the transaction.
-> 
-> This reduces the charge API and enables subsequent patches to
-> drastically simplify uncharging.
-> 
-> As pages need to be committed after rmap is established but before
-> they are added to the LRU, page_add_new_anon_rmap() must stop doing
-> LRU additions again.  Revive lru_cache_add_active_or_unevictable().
+Almost 600 lines chopped of the kernel - which is nice.
+But even better is that the Kbuild files for uapi + asm-generic
+has become simpler to grok after the clean-up.
 
-I think it would make more sense to do
-lru_cache_add_active_or_unevictable in a separate patch for easier
-review. Too late, though...
+The patch-set contains the following major items:
 
-Few comments bellow
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+o Fix headers_install for cris - this was trivial to fix
+  after uapi support was added.
 
-The patch looks correct but the code is quite tricky so I hope I didn't
-miss anything.
+o Drop a few unused Kbuild files.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+o Drop obsolete support for non uapi files in Makefile.headersinst
 
-> ---
->  Documentation/cgroups/memcg_test.txt |  32 +--
->  include/linux/memcontrol.h           |  53 ++---
->  include/linux/swap.h                 |   3 +
->  kernel/events/uprobes.c              |   1 +
->  mm/filemap.c                         |   9 +-
->  mm/huge_memory.c                     |  57 +++--
->  mm/memcontrol.c                      | 407 ++++++++++++++---------------------
->  mm/memory.c                          |  41 ++--
->  mm/rmap.c                            |  19 --
->  mm/shmem.c                           |  24 ++-
->  mm/swap.c                            |  34 +++
->  mm/swapfile.c                        |  14 +-
->  12 files changed, 314 insertions(+), 380 deletions(-)
-> 
-[...]
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index eb65d29516ca..1a9a096858e0 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -54,28 +54,11 @@ struct mem_cgroup_reclaim_cookie {
->  };
->  
->  #ifdef CONFIG_MEMCG
-> -/*
-> - * All "charge" functions with gfp_mask should use GFP_KERNEL or
-> - * (gfp_mask & GFP_RECLAIM_MASK). In current implementatin, memcg doesn't
-> - * alloc memory but reclaims memory from all available zones. So, "where I want
-> - * memory from" bits of gfp_mask has no meaning. So any bits of that field is
-> - * available but adding a rule is better. charge functions' gfp_mask should
-> - * be set to GFP_KERNEL or gfp_mask & GFP_RECLAIM_MASK for avoiding ambiguous
-> - * codes.
-> - * (Of course, if memcg does memory allocation in future, GFP_KERNEL is sane.)
-> - */
+o Perform a long overdue clean-up of the uapi files.
+ The files contained a lot of redundant assignments.
 
-I think we should slightly modify the comment but the primary idea
-should stay there. What about the following?
-/*
- * Although memcg charge functions do not allocate any memory they are
- * still getting GFP mask to control the reclaim process (therefore
- * gfp_mask & GFP_RECLAIM_MASK is expected).
- * GFP_KERNEL should be used for the general charge path without any
- * constraints for the reclaim
- * __GFP_WAIT should be cleared for atomic contexts
- * __GFP_NORETRY should be set for charges which might fail rather than
- * spend too much time reclaiming
- * __GFP_NOFAIL should be set for charges which cannot fail.
- */
+o The last patch introduces include/asm-generic/Kbuild.generic
+  This file shall list all asm-generic files that are used by all architectures.
+  This makes it much simpler to add a new common asm-generic file.
 
-> -
-> -extern int mem_cgroup_charge_anon(struct page *page, struct mm_struct *mm,
-> -				gfp_t gfp_mask);
-> -/* for swap handling */
-> -extern int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
-> -		struct page *page, gfp_t mask, struct mem_cgroup **memcgp);
-> -extern void mem_cgroup_commit_charge_swapin(struct page *page,
-> -					struct mem_cgroup *memcg);
-> -extern void mem_cgroup_cancel_charge_swapin(struct mem_cgroup *memcg);
-> -
-> -extern int mem_cgroup_charge_file(struct page *page, struct mm_struct *mm,
-> -					gfp_t gfp_mask);
-> +int mem_cgroup_try_charge(struct page *page, struct mm_struct *mm,
-> +			  gfp_t gfp_mask, struct mem_cgroup **memcgp);
-> +void mem_cgroup_commit_charge(struct page *page, struct mem_cgroup *memcg,
-> +			      bool lrucare);
-> +void mem_cgroup_cancel_charge(struct page *page, struct mem_cgroup *memcg);
->  
->  struct lruvec *mem_cgroup_zone_lruvec(struct zone *, struct mem_cgroup *);
->  struct lruvec *mem_cgroup_page_lruvec(struct page *, struct zone *);
+The patch was broken up in many smaller peices as I wanted to keep the clean-up
+patches separate for each architecture to make it easier for arch maintainers to
+review/ack their part.
 
-[...]
+The clean-up patches rely on one of the former patches so they shall
+be applied as one serie.
+It was done on top of -rc4.
 
-> @@ -948,6 +951,7 @@ static int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
->  					struct page *page,
->  					unsigned long haddr)
->  {
-> +	struct mem_cgroup *memcg;
->  	spinlock_t *ptl;
->  	pgtable_t pgtable;
->  	pmd_t _pmd;
-> @@ -968,20 +972,21 @@ static int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
->  					       __GFP_OTHER_NODE,
->  					       vma, address, page_to_nid(page));
->  		if (unlikely(!pages[i] ||
-> -			     mem_cgroup_charge_anon(pages[i], mm,
-> -						       GFP_KERNEL))) {
-> +			     mem_cgroup_try_charge(pages[i], mm, GFP_KERNEL,
-> +						   &memcg))) {
->  			if (pages[i])
->  				put_page(pages[i]);
-> -			mem_cgroup_uncharge_start();
->  			while (--i >= 0) {
-> -				mem_cgroup_uncharge_page(pages[i]);
-> +				memcg = (void *)page_private(pages[i]);
+What tree is the best for this stuff?
+I would suggest to go via the asm-generic tree that Arnd has.
+But it also touches a lot of architectures so Andrews -mm or
+kbuild#misc could be used.
 
-Hmm, OK the memcg couldn't go away even if mm owner has left it because
-the charge is already there and the page is not on LRU so the
-mem_cgroup_css_free will wait until we uncharge it or put to LRU.
+The patch-set touches all architectues so I could not copy
+all arch maintainers on the mail. Thus I rely on them to read linux-arch.
 
-> +				set_page_private(pages[i], 0);
-> +				mem_cgroup_cancel_charge(pages[i], memcg);
->  				put_page(pages[i]);
->  			}
-> -			mem_cgroup_uncharge_end();
->  			kfree(pages);
->  			ret |= VM_FAULT_OOM;
->  			goto out;
->  		}
+	Sam
 
-		/*
-		 * Pages might end up charged to a different memcgs
-		 * because the mm owner might move while we are allocating
-		 * them. Abuse ->private field to store the charged
-		 * memcg until we know whether to commit or cancel the
-		 * charge.
-		 */
-> +		set_page_private(pages[i], (unsigned long)memcg);
->  	}
->  
->  	for (i = 0; i < HPAGE_PMD_NR; i++) {
 
-[...]
+Sam Ravnborg (38):
+      cris: fix headers_install
+      openrisc: drop ucontext from list exported headers
+      hexagon: drop ucontext from list exported headers
+      score: drop irrelevant assignment from Kbuild file
+      tile: clean up Kbuild files
+      x86: clean-up Kbuild file - drop unused assignments
+      Delete unused Kbuild files in include/*
+      kbuild: drop support for non uapi Kbuild files in headers_install
+      uapi: check for optional files which are generated
+      uapi: drop obsolete logic for generated headers
+      alpha: clean-up uapi Kbuild file
+      arm: clean-up uapi Kbuild file
+      arm64: clean-up uapi Kbuild file
+      avr32: clean-up uapi Kbuild file
+      blackfin: clean-up uapi Kbuild file
+      c6x: clean-up uapi Kbuild file
+      cris: clean-up uapi Kbuild file
+      frv: clean-up uapi Kbuild file
+      hexagon: clean-up uapi Kbuild file
+      ia64: clean-up uapi Kbuild file
+      m32r: clean-up uapi Kbuild file
+      m68k: clean-up uapi Kbuild file
+      metag: clean-up uapi Kbuild file
+      microblaze: clean-up uapi Kbuild file
+      mips: clean-up uapi Kbuild file
+      mn10300: clean-up uapi Kbuild file
+      openrisc: clean-up uapi Kbuild file
+      parisc: clean-up uapi Kbuild file
+      powerpc: clean-up uapi Kbuild file
+      s390: clean-up uapi Kbuild file
+      score: clean-up uapi Kbuild file
+      sh: clean-up uapi Kbuild file
+      sparc: clean-up uapi Kbuild file
+      tile: clean-up uapi Kbuild file
+      unicore32: clean-up uapi Kbuild file
+      x86: clean-up uapi Kbuild file
+      xtensa: clean-up uapi Kbuild file
+      asm-generic: introduc Kbuild.generic
 
-> +/**
-> + * mem_cgroup_commit_charge - commit a page charge
-> + * @page: page to charge
-> + * @memcg: memcg to charge the page to
-> + * @lrucare: page might be on LRU already
-> + *
-> + * Finalize a charge transaction started by mem_cgroup_try_charge(),
-> + * after page->mapping has been set up.  This must happen atomically
-> + * as part of the page instantiation, i.e. under the page table lock
-> + * for anonymous pages, under the page lock for page and swap cache.
-> + *
-> + * In addition, the page must not be on the LRU during the commit, to
-> + * prevent racing with task migration.  If it might be, use @lrucare.
-> + *
-> + * Use mem_cgroup_cancel_charge() to cancel the transaction instead.
-> + */
-> +void mem_cgroup_commit_charge(struct page *page, struct mem_cgroup *memcg,
-> +			      bool lrucare)
-
-I think we should be explicit that this is only required for LRU pages.
-kmem doesn't have to finalize the transaction.
-
-[...]
--- 
-Michal Hocko
-SUSE Labs
+ Documentation/kbuild/makefiles.txt      |  4 ++--
+ arch/alpha/include/asm/Kbuild           |  4 ++--
+ arch/alpha/include/uapi/asm/Kbuild      | 32 ---------------------------
+ arch/arc/include/asm/Kbuild             |  4 +++-
+ arch/arm/include/asm/Kbuild             |  4 ++--
+ arch/arm/include/uapi/asm/Kbuild        | 14 ------------
+ arch/arm64/include/asm/Kbuild           |  4 ++--
+ arch/arm64/include/uapi/asm/Kbuild      | 16 --------------
+ arch/avr32/include/asm/Kbuild           |  3 ++-
+ arch/avr32/include/uapi/asm/Kbuild      | 21 ++----------------
+ arch/blackfin/include/asm/Kbuild        |  3 ++-
+ arch/blackfin/include/uapi/asm/Kbuild   | 13 -----------
+ arch/c6x/include/asm/Kbuild             |  3 ++-
+ arch/c6x/include/uapi/asm/Kbuild        | 10 ---------
+ arch/cris/include/asm/Kbuild            |  7 ++----
+ arch/cris/include/uapi/asm/Kbuild       | 35 +++---------------------------
+ arch/frv/include/asm/Kbuild             |  3 ++-
+ arch/frv/include/uapi/asm/Kbuild        | 31 ---------------------------
+ arch/hexagon/include/asm/Kbuild         |  5 ++---
+ arch/hexagon/include/uapi/asm/Kbuild    | 10 ---------
+ arch/ia64/include/asm/Kbuild            |  3 ++-
+ arch/ia64/include/uapi/asm/Kbuild       | 36 +++----------------------------
+ arch/m32r/include/asm/Kbuild            |  3 ++-
+ arch/m32r/include/uapi/asm/Kbuild       | 31 ---------------------------
+ arch/m68k/include/asm/Kbuild            |  4 +++-
+ arch/m68k/include/uapi/asm/Kbuild       | 33 +++++++++-------------------
+ arch/metag/include/asm/Kbuild           |  4 +++-
+ arch/metag/include/uapi/asm/Kbuild      |  7 +-----
+ arch/microblaze/include/asm/Kbuild      |  3 ++-
+ arch/microblaze/include/uapi/asm/Kbuild | 34 +++--------------------------
+ arch/mips/include/asm/Kbuild            |  5 +++--
+ arch/mips/include/uapi/asm/Kbuild       | 38 ++++++---------------------------
+ arch/mn10300/include/asm/Kbuild         |  3 ++-
+ arch/mn10300/include/uapi/asm/Kbuild    | 32 ---------------------------
+ arch/openrisc/include/asm/Kbuild        |  5 ++---
+ arch/openrisc/include/uapi/asm/Kbuild   |  6 ------
+ arch/parisc/include/asm/Kbuild          |  3 ++-
+ arch/parisc/include/uapi/asm/Kbuild     | 30 +++-----------------------
+ arch/powerpc/include/asm/Kbuild         |  3 ++-
+ arch/powerpc/include/uapi/asm/Kbuild    | 32 ---------------------------
+ arch/s390/include/asm/Kbuild            |  4 ++--
+ arch/s390/include/uapi/asm/Kbuild       | 31 ---------------------------
+ arch/score/include/asm/Kbuild           |  6 ++----
+ arch/score/include/uapi/asm/Kbuild      | 32 ---------------------------
+ arch/sh/include/asm/Kbuild              |  3 ++-
+ arch/sh/include/uapi/asm/Kbuild         | 12 -----------
+ arch/sparc/include/asm/Kbuild           |  5 ++---
+ arch/sparc/include/uapi/asm/Kbuild      | 30 --------------------------
+ arch/tile/include/arch/Kbuild           |  1 -
+ arch/tile/include/asm/Kbuild            |  5 ++---
+ arch/tile/include/uapi/asm/Kbuild       | 14 +-----------
+ arch/um/include/asm/Kbuild              |  4 +++-
+ arch/unicore32/include/asm/Kbuild       |  3 ++-
+ arch/unicore32/include/uapi/asm/Kbuild  |  7 +-----
+ arch/x86/include/asm/Kbuild             |  8 ++-----
+ arch/x86/include/uapi/asm/Kbuild        | 34 +----------------------------
+ arch/xtensa/include/asm/Kbuild          |  4 +++-
+ arch/xtensa/include/uapi/asm/Kbuild     | 23 --------------------
+ include/Kbuild                          |  2 --
+ include/asm-generic/Kbuild.generic      |  6 ++++++
+ include/scsi/fc/Kbuild                  |  0
+ include/uapi/asm-generic/Kbuild.asm     |  2 +-
+ include/video/Kbuild                    |  0
+ scripts/Makefile.headersinst            | 22 ++-----------------
+ scripts/headers.sh                      |  2 --
+ 65 files changed, 109 insertions(+), 692 deletions(-)
