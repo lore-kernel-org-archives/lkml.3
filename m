@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757219AbaGNUep (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 16:34:45 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:56737 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757191AbaGNUeh (ORCPT
+	id S1757234AbaGNUhT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 16:37:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35025 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755638AbaGNUhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 16:34:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALCETrVXgA9a2f7VwnCYW4_XB+JAPRSR8xsuH_ZYbA82=ZozRw@mail.gmail.com>
-References: <1405017631-27346-1-git-send-email-keescook@chromium.org>
-	<20140711164931.GA18473@redhat.com>
-	<CAGXu5jK-x0=Rr7kX2a=b4Z8ueA77uwmhNZZAayG8cwmNOKa8Ug@mail.gmail.com>
-	<CALCETrVXgA9a2f7VwnCYW4_XB+JAPRSR8xsuH_ZYbA82=ZozRw@mail.gmail.com>
-Date: Mon, 14 Jul 2014 13:34:36 -0700
-X-Google-Sender-Auth: L2LwMaN6y4oQ9mLh4H0z5d9XniM
-Message-ID: <CAGXu5j+A0GodNCnjqpYQXC2HL+S08_yP5H_n_v51VpE4UnnK7A@mail.gmail.com>
-Subject: Re: [PATCH v10 0/11] seccomp: add thread sync ability
-From: Kees Cook <keescook@chromium.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 14 Jul 2014 16:37:16 -0400
+Date: Mon, 14 Jul 2014 13:37:14 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>, Gioh Kim <gioh.kim@lge.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?Q?=EC=9D=B4=EA=B1=B4=ED=98=B8?= <gunho.lee@lge.com>,
+        Gi-Oh Kim <gurugio@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH] [RFC] CMA: clear buffer-head lru before page migration
+Message-Id: <20140714133714.343ff0be6ea2bae651dc6f57@linux-foundation.org>
+In-Reply-To: <20140714070225.GE11317@js1304-P5Q-DELUXE>
+References: <53B664E5.5060102@lge.com>
+	<20140707155252.15e81dff6683393ba3590478@linux-foundation.org>
+	<xa1tpphf4x3s.fsf@mina86.com>
+	<20140714070225.GE11317@js1304-P5Q-DELUXE>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 12:04 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Fri, Jul 11, 2014 at 10:55 AM, Kees Cook <keescook@chromium.org> wrote:
->> On Fri, Jul 11, 2014 at 9:49 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->>> On 07/10, Kees Cook wrote:
->>>>
->>>> This adds the ability for threads to request seccomp filter
->>>> synchronization across their thread group (at filter attach time).
->>>> For example, for Chrome to make sure graphic driver threads are fully
->>>> confined after seccomp filters have been attached.
->>>>
->>>> To support this, locking on seccomp changes via thread-group-shared
->>>> sighand lock is introduced, along with refactoring of no_new_privs. Races
->>>> with thread creation are handled via delayed duplication of the seccomp
->>>> task struct field and cred_guard_mutex.
->>>>
->>>> This includes a new syscall (instead of adding a new prctl option),
->>>> as suggested by Andy Lutomirski and Michael Kerrisk.
->>>
->>> I do not not see any problems in this version,
->>
->> Awesome! Thank you for all the reviews. :) If Andy and Michael are
->> happy with this too, I think this is in good shape. \o/
->
-> I think I'm happy with it.  Is it in git somewhere for easy perusal?
-> I have a cold, so my reviewing ability is a bit off, but I want to
-> take a look at the final version, and git is a little easier than
-> email for this.
+On Mon, 14 Jul 2014 16:02:25 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
 
-Yes, absolutely:
-https://git.kernel.org/cgit/linux/kernel/git/kees/linux.git/log/?h=seccomp-tsync
+> On Tue, Jul 08, 2014 at 06:46:31PM +0200, Michal Nazarewicz wrote:
+> > On Mon, Jul 07 2014, Andrew Morton <akpm@linux-foundation.org> wrote:
+> > > What I proposed is that CMA call invalidate_bh_lrus() right at the
+> > > outset.  Something along the lines of
+> > >
+> > > --- a/mm/page_alloc.c~a
+> > > +++ a/mm/page_alloc.c
+> > > @@ -6329,6 +6329,14 @@ int alloc_contig_range(unsigned long sta
+> > >  	};
+> > >  	INIT_LIST_HEAD(&cc.migratepages);
+> > >  
+> > > +#ifdef CONFIG_CMA
+> > > +	/*
+> > > +	 * Comment goes here
+> > > +	 */
+> > > +	if (migratetype == MIGRATE_CMA)
+> > > +		invalidate_bh_lrus();
+> > > +#endif
+> > > +
+> > 
+> > This seems reasonable, except I think it should go after
+> > start_isolate_page_range call because otherwise there's no guarantee
+> > that someone won't grab those pages back.
+> > 
+> > Also to avoid the #ifdef perhaps we want this as well:
+> 
+> I think that we just want to remove ifdef CONFIG_CMA on above code
+> snippet, because invalidate_bh_lrus() would also help user of
+> alloc_contig_range() with MIGRATE_MOVABLE.
 
-Thanks for looking it over, and I hope you feel better soon!
+That's what I believe also.  I pinged Mel and Johannes off-list and Mel
+said "I hit it, the invalidation cost wasn't worth it for a THP alloc".
 
--Kees
+So hm.  I do think it's worth additional investigation but some careful
+testing would be needed to demonstrate that it's worthwhile.  If the
+invalidation cost is hurting then perhaps additional logic will be
+needed to perform the invalidation only as a last-resort thing.
 
--- 
-Kees Cook
-Chrome OS Security
+
