@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504AbaGNRQZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 13:16:25 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:33271 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334AbaGNRQT (ORCPT
+	id S1756344AbaGNRSB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 13:18:01 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:43766 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752513AbaGNRRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 13:16:19 -0400
+	Mon, 14 Jul 2014 13:17:53 -0400
 MIME-Version: 1.0
-In-Reply-To: <CALCETrU44CM5=hSOMQGB6eEM2g-h6y5_+-SwoMwu+-qp-Pxd7g@mail.gmail.com>
-References: <CALCETrXrVNKNQtxncfOth5OqaSOC7KygerbB-+QQb4_VKESVsA@mail.gmail.com>
- <53C40D83.3090501@zytor.com> <CALCETrU44CM5=hSOMQGB6eEM2g-h6y5_+-SwoMwu+-qp-Pxd7g@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 14 Jul 2014 10:15:57 -0700
-Message-ID: <CALCETrVz7a7RVLhYTrGvHkJR2dGHJbRuATOaWaXgkrSABR7YFA@mail.gmail.com>
-Subject: Re: Is espfix64's double-fault thing OK on Xen?
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <53BBDEE6.1080800@hitachi.com>
+References: <1404276081.7254.1.camel@concordia>
+	<20140702070029.14689.18485.stgit@kbuild-fedora.novalocal>
+	<53BBDEE6.1080800@hitachi.com>
+Date: Mon, 14 Jul 2014 10:17:52 -0700
+Message-ID: <CA+8MBbJH3EfiGctxLpXScGEtvBNXkNVYEnyahihnCie1FgO+9Q@mail.gmail.com>
+Subject: Re: [PATCH v5 2/2] [BUGFIX] kprobes: Fix "Failed to find blacklist"
+ error on ia64 and ppc64
+From: Tony Luck <tony.luck@gmail.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-tip-commits@vger.kernel.org,
+        Michael Ellerman <mpe@ellerman.id.au>, akataria@vmware.com,
+        anil.s.keshavamurthy@intel.com,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
+        Thomas Gleixner <tglx@linutronix.de>, Kevin Hao <haokexin@gmail.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 10:11 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Mon, Jul 14, 2014 at 10:04 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 07/09/2014 04:17 PM, Andy Lutomirski wrote:
->>> This part in __do_double_fault looks fishy:
->>>
->>>     cmpl $__KERNEL_CS,CS(%rdi)
->>>     jne do_double_fault
->>>
->>> Shouldn't that be:
->>>
->>>     test $3,CS(%rdi)
->>>     jnz do_double_fault
->>>
->>
->> No, it should be fine.  The *only* case where we need to do the espfix
->> magic is when we are on __KERNEL_CS.
->>
+On Tue, Jul 8, 2014 at 5:07 AM, Masami Hiramatsu
+<masami.hiramatsu.pt@hitachi.com> wrote:
+> Ping?
 >
-> IIRC Xen has a somewhat different GDT, and at least the userspace CS
-> in IA32_STAR disagrees with normal Linux.  If the kernel CS is also
-> strange, then there will be an extra possible CS value here.
+> This patch can be applied without 1/2, and will fix ia64/ppc64 problem.
 
-There's FLAT_KERNEL_CS64, which is not equal to __KERNEL_CS.  If the
-espfix mechanism gets invoked with that CS, then I expect that
-something unexpected will happen.
+Is somebody going to push this upstream? Another week has gone by,
+we are at -rc5, and I'm still seeing the
 
-That being said, FLAT_KERNEL_CS64 is CPL3, so my code might not be any better.
+  Failed to find blacklist a00000010133b150
 
---Andy
+messages on ia64.
+
+-Tony
