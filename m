@@ -1,77 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754373AbaGNJww (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 05:52:52 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:41316 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752561AbaGNJwn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 05:52:43 -0400
-Message-ID: <53C3A855.5040002@gmail.com>
-Date: Mon, 14 Jul 2014 11:52:21 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754077AbaGNJzE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 05:55:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31467 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751934AbaGNJy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 05:54:57 -0400
+Date: Mon, 14 Jul 2014 11:55:39 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 2/2] PCI/MSI: Remove arch_msi_check_device()
+Message-ID: <20140714095538.GA15981@dhcp-26-207.brq.redhat.com>
+References: <cover.1405160163.git.agordeev@redhat.com>
+ <1005232855c3af2c0c669818ee63be445389b6ad.1405160163.git.agordeev@redhat.com>
+ <53C33C6D.8020103@huawei.com>
 MIME-Version: 1.0
-To: Kukjin Kim <kgene.kim@samsung.com>
-CC: Tomasz Figa <t.figa@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Daniel Drake <drake@endlessm.com>
-Subject: Re: [PATCH v2 4/6] ARM: SAMSUNG: Restore Samsung PM Debug functionality
-References: <1403618235-19353-5-git-send-email-t.figa@samsung.com> <1403696634-12779-1-git-send-email-t.figa@samsung.com>
-In-Reply-To: <1403696634-12779-1-git-send-email-t.figa@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C33C6D.8020103@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kukjin,
-
-On 25.06.2014 13:43, Tomasz Figa wrote:
-> Due to recently merged patches and previous merge conflicts, the Samsung
-> PM Debug functionality no longer can be enabled. This patch fixes
-> incorrect dependency of SAMSUNG_PM_DEBUG on an integer symbol and adds
-> missing header inclusion.
+On Mon, Jul 14, 2014 at 10:11:57AM +0800, Yijing Wang wrote:
+> >  /**
+> > - * pci_msi_check_device - check whether MSI may be enabled on a device
+> > + * msi_check_device - check whether MSI may be enabled on a device
+> >   * @dev: pointer to the pci_dev data structure of MSI device function
+> >   * @nvec: how many MSIs have been requested ?
+> > - * @type: are we checking for MSI or MSI-X ?
+> >   *
+> >   * Look at global flags, the device itself, and its parent buses
+> >   * to determine if MSI/-X are supported for the device. If MSI/-X is
+> >   * supported return 0, else return an error code.
+> >   **/
+> > -static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
+> > +static int msi_check_device(struct pci_dev *dev, int nvec)
+> >  {
+> >  	struct pci_bus *bus;
+> > -	int ret;
+> >  
+> >  	/* MSI must be globally enabled and supported by the device */
+> > -	if (!pci_msi_enable || !dev || dev->no_msi)
+> > +	if (!pci_msi_enable)
+> > +		return -EINVAL;
+> > +
+> > +	if (!dev || dev->no_msi || dev->current_state != PCI_D0)
+> >  		return -EINVAL;
+> >  
+> >  	/*
+> > @@ -846,10 +837,6 @@ static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
+> >  		if (bus->bus_flags & PCI_BUS_FLAGS_NO_MSI)
+> >  			return -EINVAL;
+> >  
+> > -	ret = arch_msi_check_device(dev, nvec, type);
+> > -	if (ret)
+> > -		return ret;
+> > -
 > 
-> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-> ---
->  arch/arm/plat-samsung/Kconfig    | 5 +++--
->  arch/arm/plat-samsung/pm-debug.c | 1 +
->  2 files changed, 4 insertions(+), 2 deletions(-)
+> Move the arch_msi_check_device() into arch_msi_setup_irq(), make we can not detect whether the device in this platform
+> supports MSI or MSI-X aeap. If we delay this, maybe we will do a lot unnecessary working for MSI/MSI-X setup.
+
+A traditional approach for a function is first to make sanity check and
+then allocate resources. I do not see a reason to keep these two steps
+in separate functions: arch_msi_check_device() and arch_setup_msi_irq().
+
+Just make checks within arch_setup_msi_irq() and bail out early would be as
+cheap as it is now, but more natural and would deflate the interface.
+
+Moreover, some platforms duplicate checks in arch_msi_check_device() and
+arch_setup_msi_irq(), which does not add to readability.
+
+> Thanks!
+> Yijing.
 > 
-> diff --git a/arch/arm/plat-samsung/Kconfig b/arch/arm/plat-samsung/Kconfig
-> index 301b892..ad9515f 100644
-> --- a/arch/arm/plat-samsung/Kconfig
-> +++ b/arch/arm/plat-samsung/Kconfig
-> @@ -413,8 +413,9 @@ config S5P_DEV_MFC
->  comment "Power management"
->  
->  config SAMSUNG_PM_DEBUG
-> -	bool "S3C2410 PM Suspend debug"
-> -	depends on PM && DEBUG_KERNEL && DEBUG_S3C_UART
-> +	bool "Samsung PM Suspend debug"
-> +	depends on PM && DEBUG_KERNEL
-> +	depends on DEBUG_EXYNOS_UART || DEBUG_S3C24XX_UART || DEBUG_S3C2410_UART
->  	help
->  	  Say Y here if you want verbose debugging from the PM Suspend and
->  	  Resume code. See <file:Documentation/arm/Samsung-S3C24XX/Suspend.txt>
-> diff --git a/arch/arm/plat-samsung/pm-debug.c b/arch/arm/plat-samsung/pm-debug.c
-> index 8f19f66..3960960 100644
-> --- a/arch/arm/plat-samsung/pm-debug.c
-> +++ b/arch/arm/plat-samsung/pm-debug.c
-> @@ -14,6 +14,7 @@
->   */
->  
->  #include <linux/serial_core.h>
-> +#include <linux/serial_s3c.h>
->  #include <linux/io.h>
->  
->  #include <asm/mach/map.h>
+> >  	return 0;
+> >  }
+> >  
+> > @@ -954,13 +941,13 @@ int pci_enable_msix(struct pci_dev *dev, struct msix_entry *entries, int nvec)
+> >  	int status, nr_entries;
+> >  	int i, j;
+> >  
+> > -	if (!entries || !dev->msix_cap || dev->current_state != PCI_D0)
+> > -		return -EINVAL;
+> > -
+> > -	status = pci_msi_check_device(dev, nvec, PCI_CAP_ID_MSIX);
+> > +	status = msi_check_device(dev, nvec);
+> >  	if (status)
+> >  		return status;
+> >  
+> > +	if (!entries)
+> > +		return -EINVAL;
+> > +
+> >  	nr_entries = pci_msix_vec_count(dev);
+> >  	if (nr_entries < 0)
+> >  		return nr_entries;
+> > @@ -1085,8 +1072,9 @@ int pci_enable_msi_range(struct pci_dev *dev, int minvec, int maxvec)
+> >  	int nvec;
+> >  	int rc;
+> >  
+> > -	if (dev->current_state != PCI_D0)
+> > -		return -EINVAL;
+> > +	rc = msi_check_device(dev, minvec);
+> > +	if (rc)
+> > +		return rc;
+> >  
+> >  	WARN_ON(!!dev->msi_enabled);
+> >  
+> > @@ -1109,17 +1097,6 @@ int pci_enable_msi_range(struct pci_dev *dev, int minvec, int maxvec)
+> >  		nvec = maxvec;
+> >  
+> >  	do {
+> > -		rc = pci_msi_check_device(dev, nvec, PCI_CAP_ID_MSI);
+> > -		if (rc < 0) {
+> > -			return rc;
+> > -		} else if (rc > 0) {
+> > -			if (rc < minvec)
+> > -				return -ENOSPC;
+> > -			nvec = rc;
+> > -		}
+> > -	} while (rc);
+> > -
+> > -	do {
+> >  		rc = msi_capability_init(dev, nvec);
+> >  		if (rc < 0) {
+> >  			return rc;
+> > diff --git a/include/linux/msi.h b/include/linux/msi.h
+> > index 92a2f99..3b873bc 100644
+> > --- a/include/linux/msi.h
+> > +++ b/include/linux/msi.h
+> > @@ -59,7 +59,6 @@ int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc);
+> >  void arch_teardown_msi_irq(unsigned int irq);
+> >  int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type);
+> >  void arch_teardown_msi_irqs(struct pci_dev *dev);
+> > -int arch_msi_check_device(struct pci_dev* dev, int nvec, int type);
+> >  void arch_restore_msi_irqs(struct pci_dev *dev);
+> >  
+> >  void default_teardown_msi_irqs(struct pci_dev *dev);
+> > @@ -76,8 +75,6 @@ struct msi_chip {
+> >  	int (*setup_irq)(struct msi_chip *chip, struct pci_dev *dev,
+> >  			 struct msi_desc *desc);
+> >  	void (*teardown_irq)(struct msi_chip *chip, unsigned int irq);
+> > -	int (*check_device)(struct msi_chip *chip, struct pci_dev *dev,
+> > -			    int nvec, int type);
+> >  };
+> >  
+> >  #endif /* LINUX_MSI_H */
+> > 
+> 
+> 
+> -- 
+> Thanks!
+> Yijing
 > 
 
-Please consider this patch for next fixes pull request.
-
-Best regards,
-Tomasz
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
