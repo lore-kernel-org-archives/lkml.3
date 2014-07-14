@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769AbaGNHGn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 03:06:43 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:60884 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751364AbaGNHGe (ORCPT
+	id S1752976AbaGNHHW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 03:07:22 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:39868 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751364AbaGNHHR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 03:06:34 -0400
+	Mon, 14 Jul 2014 03:07:17 -0400
+Date: Mon, 14 Jul 2014 08:07:10 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [patch 35/55] mfd: cros_ec_spi: Use ktime_get_ns()
+Message-ID: <20140714070710.GH2954@lee--X1>
+References: <20140711133623.530368377@linutronix.de>
+ <20140711133708.263040802@linutronix.de>
+ <20140711145212.GG2954@lee--X1>
+ <alpine.DEB.2.10.1407122134470.4357@nanos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=
-Content-Transfer-Encoding: 7bit
-Date: Mon, 14 Jul 2014 09:06:33 +0200
-From: Stefan Agner <stefan@agner.ch>
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>, wg@grandegger.com,
-        kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
-        linux-can@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] can: flexcan: add vf61x support for flexcan
-In-Reply-To: <20140714060344.GB2197@dragon>
-References: <1405075933-22317-1-git-send-email-stefan@agner.ch>
- <53BFD401.8030101@pengutronix.de>
- <dac76ccd134f41b86f00352d10cfae4b@agner.ch> <20140714060344.GB2197@dragon>
-Message-ID: <cecd42e333cdf65ad512f719125f9180@agner.ch>
-User-Agent: Roundcube Webmail/1.0.1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.DEB.2.10.1407122134470.4357@nanos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2014-07-14 08:04, schrieb Shawn Guo:
-> On Fri, Jul 11, 2014 at 03:58:37PM +0200, Stefan Agner wrote:
->> >> @@ -362,7 +374,7 @@
->> >>
->> >>  			esdhc1: esdhc@400b2000 {
->> >>  				compatible = "fsl,imx53-esdhc";
->> >> -				reg = <0x400b2000 0x4000>;
->> >> +				reg = <0x400b2000 0x1000>;
->> >
->> > What's that doing here? :)
->>
->> That's an error I just stumbled upon.
+On Sat, 12 Jul 2014, Thomas Gleixner wrote:
+> On Fri, 11 Jul 2014, Lee Jones wrote:
 > 
-> I do not see why it's an error.  From Table 2-1. System Memory Map in
-> i.MX53 RM, the size of ESDHC1 is 16K.
+> > > Replace the ever recurring:
+> > > 	ts = ktime_get_ts();
+> > > 	ns = timespec_to_ns(&ts);
+> > > with
+> > > 	ns = ktime_get_ns();
+> > > 
+> > > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> > > Cc: Samuel Ortiz <sameo@linux.intel.com>
+> > 
+> > Only Sam?  How old is your version of MAINTAINERS?
 > 
-> Shawn
+> Hmm. I use get_maintainers.pl and manually edit it afterwards. Seems
+> that I killed one extra line :)
+>  
+> > Sam hasn't actively maintained MFD for over a year now.
+> > 
+> > Patch applied though, thanks.
+> 
+> ktime_get_ns() is not upstream yet, it's part of the series I posted :)
+> 
+> If you ack it, i'll carry it and also remove the now unused variable
+> ts before applying it.
 
-Hi Shawn,
+Very well.  Patch looks good to me:
 
-In the Vybrid RM memory map, 0x400B4000 is allocated to USB. 0x400B3000
-is empty, whereas for other peripherals (e.g. FlexCAN) which use
-multiple 0x1000 blocks, they are all explicitly stated. That is why I
-assumed 0x1000 is correct.
+  Acked-by: Lee Jones <lee.jones@linaro.org>
 
-But then, the memory map within the SDHC peripheral has some registers
-also located in 0x400B3000. Hence I think 0x2000 is correct. Will send
-an updated and separated patch.
-
---
-Stefan
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
