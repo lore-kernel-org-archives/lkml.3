@@ -1,95 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755823AbaGNSex (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 14:34:53 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53513 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752442AbaGNSeo (ORCPT
+	id S1756376AbaGNSf7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 14:35:59 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:35338 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752442AbaGNSfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 14:34:44 -0400
-Message-ID: <53C422BD.3070608@infradead.org>
-Date: Mon, 14 Jul 2014 11:34:37 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 14 Jul 2014 14:35:51 -0400
+Date: Mon, 14 Jul 2014 14:35:43 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/7] tracing: instance_rmdir() leaks
+ ftrace_event_file->filter
+Message-ID: <20140714143543.0dc505ea@gandalf.local.home>
+In-Reply-To: <20140711190638.GA19517@redhat.com>
+References: <20140711190622.GA19499@redhat.com>
+	<20140711190638.GA19517@redhat.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Nicholas Krause <xerofoify@gmail.com>, ben-linux@fluff.org
-CC: kgene.kim@samsung.com, linux@arm.linux.org.uk, tomasz.figa@gmail.com,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mach-s3c64xx: Remove all defintions not related to regs-clocks
-References: <1405361664-5210-1-git-send-email-xerofoify@gmail.com>
-In-Reply-To: <1405361664-5210-1-git-send-email-xerofoify@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/14 11:14, Nicholas Krause wrote:
-> This patch addresses the fix me message in this file that states to
-> remove all definitions not related to reg-clocks in this header
-> file.
+On Fri, 11 Jul 2014 21:06:38 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
+
+> instance_rmdir() path destroys the event files but forgets to free
+> file->filter. Change remove_event_file_dir() to free_event_filter().
 > 
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 > ---
->  arch/arm/mach-s3c64xx/include/mach/regs-clock.h | 22 +---------------------
->  1 file changed, 1 insertion(+), 21 deletions(-)
+>  kernel/trace/trace_events.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
 > 
-> diff --git a/arch/arm/mach-s3c64xx/include/mach/regs-clock.h b/arch/arm/mach-s3c64xx/include/mach/regs-clock.h
-> index 4f44aac..46e64cc 100644
-> --- a/arch/arm/mach-s3c64xx/include/mach/regs-clock.h
-> +++ b/arch/arm/mach-s3c64xx/include/mach/regs-clock.h
-> @@ -15,24 +15,4 @@
->  #ifndef __PLAT_REGS_CLOCK_H
->  #define __PLAT_REGS_CLOCK_H __FILE__
+> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+> index fdb2271..735608e 100644
+> --- a/kernel/trace/trace_events.c
+> +++ b/kernel/trace/trace_events.c
+> @@ -470,6 +470,7 @@ static void remove_event_file_dir(struct ftrace_event_file *file)
 >  
-> -/*
-> - * FIXME: Remove remaining definitions
-> - */
-> -
-> -#define S3C_CLKREG(x)		(S3C_VA_SYS + (x))
-> -
-> -#define S3C_PCLK_GATE		S3C_CLKREG(0x34)
+>  	list_del(&file->list);
+>  	remove_subsystem(file->system);
+> +	free_event_filter(file->filter);
+>  	kmem_cache_free(file_cachep, file);
+>  }
+>  
 
-There is another header file that uses the #define S3C_PCLK_GATE above.
-Deleting it here should be causing a problem here:
+Thanks, looks like this goes back to 3.11. I'll start testing this and
+get it out for stable as well.
 
-./arch/arm/mach-s3c64xx/include/mach/pm-core.h:24:	u32 tmp = __raw_readl(S3
-C_PCLK_GATE);
-./arch/arm/mach-s3c64xx/include/mach/pm-core.h:37:	__raw_writel(tmp, S3C_PC
-LK_GATE);
-
-Please check things like this in advance.
-
-> -#define S3C6410_CLK_SRC2	S3C_CLKREG(0x10C)
-> -#define S3C_MEM_SYS_CFG		S3C_CLKREG(0x120)
-> -
-> -/* PCLK GATE Registers */
-> -#define S3C_CLKCON_PCLK_UART3		(1<<4)
-
-used by pm-core.h
-
-> -#define S3C_CLKCON_PCLK_UART2		(1<<3)
-
-used by pm-core.h
-
-> -#define S3C_CLKCON_PCLK_UART1		(1<<2)
-
-used by pm-core.h
-
-> -#define S3C_CLKCON_PCLK_UART0		(1<<1)
-
-used by pm-core.h
-
-> -
-> -/* MEM_SYS_CFG */
-> -#define MEM_SYS_CFG_INDEP_CF		0x4000
-> -#define MEM_SYS_CFG_EBI_FIX_PRI_CFCON	0x30
-> -
-> -#endif /* _PLAT_REGS_CLOCK_H */
-> +/#endif /* _PLAT_REGS_CLOCK_H */
-> 
-
-
--- 
-~Randy
+-- Steve
