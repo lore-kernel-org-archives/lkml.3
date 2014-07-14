@@ -1,90 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755683AbaGNONg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 10:13:36 -0400
-Received: from webmail2.sr-online.de ([213.147.7.111]:59603 "EHLO
-	webmail2.sr-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754596AbaGNON1 (ORCPT
+	id S1755716AbaGNONs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 10:13:48 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:31411 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755694AbaGNONj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 10:13:27 -0400
-From: "Joerg C. Meyer" <joerg@meyer.homedns.org>
-To: gregkh@linuxfoundation.org, dingtianhong@huawei.com,
-        chenweilong@huawei.com, sachin.kamat@linaro.org, davem@davemloft.net
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        "Joerg C. Meyer" <joerg@meyer.homedns.org>
-Subject: [PATCH] Staging: rtl8821ae: fix comment coding style issue in cam.c
-Date: Mon, 14 Jul 2014 16:13:25 +0200
-Message-Id: <1405347205-3364-1-git-send-email-joerg@meyer.homedns.org>
-X-Mailer: git-send-email 2.0.1
+	Mon, 14 Jul 2014 10:13:39 -0400
+Date: Mon, 14 Jul 2014 10:13:28 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: konrad@kernel.org, xen-devel@lists.xenproject.org, david.vrabel@citrix.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 2/5] xen/pciback: Don't deadlock when unbinding.
+Message-ID: <20140714141328.GA5112@laptop.dumpdata.com>
+References: <1405109332-31659-1-git-send-email-konrad@kernel.org>
+ <1405109332-31659-3-git-send-email-konrad@kernel.org>
+ <53C04D81.3010002@oracle.com>
+ <20140711210201.GC25233@laptop.dumpdata.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140711210201.GC25233@laptop.dumpdata.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the cam.c file that removes some obsolete C99 style comments
+On Fri, Jul 11, 2014 at 05:02:01PM -0400, Konrad Rzeszutek Wilk wrote:
+> > >--- a/drivers/xen/xen-pciback/pci_stub.c
+> > >+++ b/drivers/xen/xen-pciback/pci_stub.c
+> > >@@ -250,6 +250,8 @@ struct pci_dev *pcistub_get_pci_dev(struct xen_pcibk_device *pdev,
+> > >   *  - 'echo BDF > unbind' with a guest still using it. See pcistub_remove
+> > >   *
+> > >   *  As such we have to be careful.
+> > >+ *
+> > >+ *  To make this easier, the caller has to hold the device lock.
+> > 
+> > Should we assert that the lock is being held?
+> 
+> Yes of course we should. Thank you!
 
-Signed-off-by: Joerg C. Meyer <joerg@meyer.homedns.org>
+How about this:
 
+>From 388a03c598218dac8bfeb6c5bf3992e0d1e37d1e Mon Sep 17 00:00:00 2001
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Tue, 8 Jul 2014 11:12:02 -0400
+Subject: [PATCH] xen/pciback: Don't deadlock when unbinding.
+
+As commit 0a9fd0152929db372ff61b0d6c280fdd34ae8bdb
+'xen/pciback: Document the entry points for 'pcistub_put_pci_dev''
+explained there are four entry points in this function.
+Two of them are when the user fiddles in the SysFS to
+unbind a device which might be in use by a guest or not.
+
+Both 'unbind' states will cause a deadlock as the the PCI lock has
+already been taken, which then pci_device_reset tries to take.
+
+We can simplify this by requiring that all callers of
+pcistub_put_pci_dev MUST hold the device lock. And then
+we can just call the lockless version of pci_device_reset.
+
+To make it even simpler we will modify xen_pcibk_release_pci_dev
+to quality whether it should take a lock or not - as it ends
+up calling xen_pcibk_release_pci_dev and needs to hold the lock.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/staging/rtl8821ae/cam.c | 7 -------
- 1 file changed, 7 deletions(-)
+[v2: Per David Vrabel's suggestion - use lockless version of reset]
+[v3: Per Boris suggestion add assertion mechanism]
+---
+ drivers/xen/xen-pciback/passthrough.c |  9 +++++++--
+ drivers/xen/xen-pciback/pci_stub.c    | 12 ++++++------
+ drivers/xen/xen-pciback/pciback.h     |  7 ++++---
+ drivers/xen/xen-pciback/vpci.c        |  9 +++++++--
+ drivers/xen/xen-pciback/xenbus.c      |  2 +-
+ 5 files changed, 25 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/staging/rtl8821ae/cam.c b/drivers/staging/rtl8821ae/cam.c
-index 3bc6b3d..6185ea4 100644
---- a/drivers/staging/rtl8821ae/cam.c
-+++ b/drivers/staging/rtl8821ae/cam.c
-@@ -152,7 +152,6 @@ u8 rtl_cam_add_one_entry(struct ieee80211_hw *hw, u8 *mac_addr,
- 	return 1;
- 
+diff --git a/drivers/xen/xen-pciback/passthrough.c b/drivers/xen/xen-pciback/passthrough.c
+index 828dddc..d0c3fb4 100644
+--- a/drivers/xen/xen-pciback/passthrough.c
++++ b/drivers/xen/xen-pciback/passthrough.c
+@@ -69,7 +69,7 @@ static int __xen_pcibk_add_pci_dev(struct xen_pcibk_device *pdev,
  }
--//EXPORT_SYMBOL(rtl_cam_add_one_entry);
  
- int rtl_cam_delete_one_entry(struct ieee80211_hw *hw,
- 			     u8 *mac_addr, u32 ul_key_id)
-@@ -176,7 +175,6 @@ int rtl_cam_delete_one_entry(struct ieee80211_hw *hw,
- 	return 0;
- 
- }
--//EXPORT_SYMBOL(rtl_cam_delete_one_entry);
- 
- void rtl_cam_reset_all_entry(struct ieee80211_hw *hw)
+ static void __xen_pcibk_release_pci_dev(struct xen_pcibk_device *pdev,
+-					struct pci_dev *dev)
++					struct pci_dev *dev, bool lock)
  {
-@@ -186,7 +184,6 @@ void rtl_cam_reset_all_entry(struct ieee80211_hw *hw)
- 	ul_command = BIT(31) | BIT(30);
- 	rtl_write_dword(rtlpriv, rtlpriv->cfg->maps[RWCAM], ul_command);
- }
--//EXPORT_SYMBOL(rtl_cam_reset_all_entry);
+ 	struct passthrough_dev_data *dev_data = pdev->pci_dev_data;
+ 	struct pci_dev_entry *dev_entry, *t;
+@@ -87,8 +87,13 @@ static void __xen_pcibk_release_pci_dev(struct xen_pcibk_device *pdev,
  
- void rtl_cam_mark_invalid(struct ieee80211_hw *hw, u8 uc_index)
+ 	mutex_unlock(&dev_data->lock);
+ 
+-	if (found_dev)
++	if (found_dev) {
++		if (lock)
++			device_lock(&found_dev->dev);
+ 		pcistub_put_pci_dev(found_dev);
++		if (lock)
++			device_unlock(&found_dev->dev);
++	}
+ }
+ 
+ static int __xen_pcibk_init_devices(struct xen_pcibk_device *pdev)
+diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
+index d57a173..8293fbb 100644
+--- a/drivers/xen/xen-pciback/pci_stub.c
++++ b/drivers/xen/xen-pciback/pci_stub.c
+@@ -250,6 +250,8 @@ struct pci_dev *pcistub_get_pci_dev(struct xen_pcibk_device *pdev,
+  *  - 'echo BDF > unbind' with a guest still using it. See pcistub_remove
+  *
+  *  As such we have to be careful.
++ *
++ *  To make this easier, the caller has to hold the device lock.
+  */
+ void pcistub_put_pci_dev(struct pci_dev *dev)
  {
-@@ -227,7 +224,6 @@ void rtl_cam_mark_invalid(struct ieee80211_hw *hw, u8 uc_index)
- 	RT_TRACE(COMP_SEC, DBG_DMESG,
- 		 ("rtl_cam_mark_invalid(): WRITE A0: %x \n", ul_command));
- }
--//EXPORT_SYMBOL(rtl_cam_mark_invalid);
+@@ -276,11 +278,8 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+ 	/* Cleanup our device
+ 	 * (so it's ready for the next domain)
+ 	 */
+-
+-	/* This is OK - we are running from workqueue context
+-	 * and want to inhibit the user from fiddling with 'reset'
+-	 */
+-	pci_reset_function(dev);
++	lockdep_assert_held(&dev->dev.mutex);
++	__pci_reset_function_locked(dev);
+ 	pci_restore_state(dev);
  
- void rtl_cam_empty_entry(struct ieee80211_hw *hw, u8 uc_index)
+ 	/* This disables the device. */
+@@ -567,7 +566,8 @@ static void pcistub_remove(struct pci_dev *dev)
+ 			/* N.B. This ends up calling pcistub_put_pci_dev which ends up
+ 			 * doing the FLR. */
+ 			xen_pcibk_release_pci_dev(found_psdev->pdev,
+-						found_psdev->dev);
++						found_psdev->dev,
++						false /* caller holds  the lock. */);
+ 		}
+ 
+ 		spin_lock_irqsave(&pcistub_devices_lock, flags);
+diff --git a/drivers/xen/xen-pciback/pciback.h b/drivers/xen/xen-pciback/pciback.h
+index f72af87..58e38d5 100644
+--- a/drivers/xen/xen-pciback/pciback.h
++++ b/drivers/xen/xen-pciback/pciback.h
+@@ -99,7 +99,8 @@ struct xen_pcibk_backend {
+ 		    unsigned int *domain, unsigned int *bus,
+ 		    unsigned int *devfn);
+ 	int (*publish)(struct xen_pcibk_device *pdev, publish_pci_root_cb cb);
+-	void (*release)(struct xen_pcibk_device *pdev, struct pci_dev *dev);
++	void (*release)(struct xen_pcibk_device *pdev, struct pci_dev *dev,
++                        bool lock);
+ 	int (*add)(struct xen_pcibk_device *pdev, struct pci_dev *dev,
+ 		   int devid, publish_pci_dev_cb publish_cb);
+ 	struct pci_dev *(*get)(struct xen_pcibk_device *pdev,
+@@ -122,10 +123,10 @@ static inline int xen_pcibk_add_pci_dev(struct xen_pcibk_device *pdev,
+ }
+ 
+ static inline void xen_pcibk_release_pci_dev(struct xen_pcibk_device *pdev,
+-					     struct pci_dev *dev)
++					     struct pci_dev *dev, bool lock)
  {
-@@ -281,7 +277,6 @@ void rtl_cam_empty_entry(struct ieee80211_hw *hw, u8 uc_index)
- 	}
- 
+ 	if (xen_pcibk_backend && xen_pcibk_backend->release)
+-		return xen_pcibk_backend->release(pdev, dev);
++		return xen_pcibk_backend->release(pdev, dev, lock);
  }
--//EXPORT_SYMBOL(rtl_cam_empty_entry);
  
- u8 rtl_cam_get_free_entry(struct ieee80211_hw *hw, u8 *sta_addr)
+ static inline struct pci_dev *
+diff --git a/drivers/xen/xen-pciback/vpci.c b/drivers/xen/xen-pciback/vpci.c
+index 51afff9..2fdfcb9 100644
+--- a/drivers/xen/xen-pciback/vpci.c
++++ b/drivers/xen/xen-pciback/vpci.c
+@@ -145,7 +145,7 @@ out:
+ }
+ 
+ static void __xen_pcibk_release_pci_dev(struct xen_pcibk_device *pdev,
+-					struct pci_dev *dev)
++					struct pci_dev *dev, bool lock)
  {
-@@ -316,7 +311,6 @@ u8 rtl_cam_get_free_entry(struct ieee80211_hw *hw, u8 *sta_addr)
- 	}
- 	return TOTAL_CAM_ENTRY;
- }
--//EXPORT_SYMBOL(rtl_cam_get_free_entry);
+ 	int slot;
+ 	struct vpci_dev_data *vpci_dev = pdev->pci_dev_data;
+@@ -169,8 +169,13 @@ static void __xen_pcibk_release_pci_dev(struct xen_pcibk_device *pdev,
+ out:
+ 	mutex_unlock(&vpci_dev->lock);
  
- void rtl_cam_del_entry(struct ieee80211_hw *hw, u8 *sta_addr)
- {
-@@ -349,4 +343,3 @@ void rtl_cam_del_entry(struct ieee80211_hw *hw, u8 *sta_addr)
- 	}
- 	return;
+-	if (found_dev)
++	if (found_dev) {
++		if (lock)
++			device_lock(&found_dev->dev);
+ 		pcistub_put_pci_dev(found_dev);
++		if (lock)
++			device_unlock(&found_dev->dev);
++	}
  }
--//EXPORT_SYMBOL(rtl_cam_del_entry);
+ 
+ static int __xen_pcibk_init_devices(struct xen_pcibk_device *pdev)
+diff --git a/drivers/xen/xen-pciback/xenbus.c b/drivers/xen/xen-pciback/xenbus.c
+index 4a7e6e0..b3318fd 100644
+--- a/drivers/xen/xen-pciback/xenbus.c
++++ b/drivers/xen/xen-pciback/xenbus.c
+@@ -290,7 +290,7 @@ static int xen_pcibk_remove_device(struct xen_pcibk_device *pdev,
+ 
+ 	/* N.B. This ends up calling pcistub_put_pci_dev which ends up
+ 	 * doing the FLR. */
+-	xen_pcibk_release_pci_dev(pdev, dev);
++	xen_pcibk_release_pci_dev(pdev, dev, true /* use the lock. */);
+ 
+ out:
+ 	return err;
 -- 
-2.0.1
+1.9.3
 
