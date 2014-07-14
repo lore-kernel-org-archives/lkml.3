@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755855AbaGNQRQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 12:17:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35109 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755615AbaGNQRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 12:17:03 -0400
-Date: Mon, 14 Jul 2014 18:15:25 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] tracing: instance_rmdir() leaks
-	ftrace_event_file->filter
-Message-ID: <20140714161525.GA12633@redhat.com>
-References: <20140711190622.GA19499@redhat.com> <1405346096.1745.17.camel@leonhard>
+	id S1756325AbaGNQRc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 12:17:32 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:53142 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755615AbaGNQRZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 12:17:25 -0400
+Date: Mon, 14 Jul 2014 18:17:13 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Jiri Olsa <jolsa@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH] perf: Add vm_ops->name call for mmap event name retrieval
+Message-ID: <20140714161713.GD9918@twins.programming.kicks-ass.net>
+References: <1405353439-14211-1-git-send-email-jolsa@kernel.org>
+ <20140714160947.GB9918@twins.programming.kicks-ass.net>
+ <CALCETrWZChK=p2v+-ez7s04ed5POawSqGrvST24m0c1TjFMVxw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Ar8KwLu88Tj76bHi"
 Content-Disposition: inline
-In-Reply-To: <1405346096.1745.17.camel@leonhard>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CALCETrWZChK=p2v+-ez7s04ed5POawSqGrvST24m0c1TjFMVxw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14, Namhyung Kim wrote:
->
-> > And could someone explain me why apply_subsystem_event_filter("0") clears
-> > ->filter_string first, then the whole ->filter? It seems that the only
-> > thing filter_free_subsystem_preds() should do is filter_disable(), no?
-> > IOW, why the patch below (on top of this series) is wrong?
->
-> I also think that the original code is bit strange.  I agree with your
-> change and name of the function should be changed to something like
-> 'filter_disable_subsystem_filters' IMHO (it does nothing with preds).
-> With this change, the apply_subsystem_event_filter can simply do below:
->
-> 	if (!strcmp(strstrip(filter_string), "0")) {
-> 		filter_disable_subsystem_filters(system, tr);
-> 		/* Ensure all filters are no longer used */
-> 		synchronize_sched();
-> 		filter_free_subsystem_filters(system, tr);
-> 		__free_filter(system->filter);
-> 		system->filter = NULL;
-> 		goto out_unlock;
-> 	}
 
-Yes, thanks, this was my point.
+--Ar8KwLu88Tj76bHi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-And I thought that I saw the same pattern somewhere else, but can't recall
-where... Will try to recheck.
+On Mon, Jul 14, 2014 at 09:14:41AM -0700, Andy Lutomirski wrote:
+> Looks good to me.  Sorry I missed that.
+>=20
 
-Oleg.
+Can I make that an Acked-by?
 
+--Ar8KwLu88Tj76bHi
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTxAKIAAoJEHZH4aRLwOS6dYoP/A6GP2TIavNaC6cIF+BCdAiI
+ojS1tPOxr78fWgYOe1T0/XBGZxvKSY46RQhMHazw3qltDvekI8mpcqOfTUA9KsQj
+tuDqqDBpa7wVCeMYGVmpjjsmACfg+omoYaHiFK02G6JdNhKqn4hxNB+TA0UKd+mr
+zfU3b/haZ0ks76Lo11SADjLTSDn/DwAIcVCBwFU6piYJWaPNXEP2Egn+mZr8mDWM
++1pXsJ+kZX2f9aXmcu99ISK+BvnAS1LtSlnBl1dnNO1ICh/GHzL1yUf0pC91bV95
+avxuTPtgbDHnPX7ZlcXy/HFYoukMks4f4izE/r3nzLfs4USqvTDxYCWgbe7luK7T
+30RZgTcNEOmumTIZ44OdP3w/NyjxbMaTLm7fei2VnO4bES2AiJFgsrEb0pWKg6PP
+wq8lO+vidT+OuSeC/XjeYX0gnjDc0UGCcVMB82q2bNbffrSEkMj5Ka2ujmeJochi
+rlcLvghASoO/BknWDjCCbnUIUYiNEoCdAxnv1I9Ei2gtiLdq+95vNKGGNWgC5c5x
+LUAO9VbbkityXPWOaUSsiEQIotC6dOBxkPSo54HA5hPe4NCBWMdCFDYgQdcX49U8
+PJngDoyVv9u+1eprrr/bWFNvW8Teze+6FzaHYc40iM0Bytk9KC0G2FdejGGlMT5f
+IFL4BEOmruL7F/lUVqTU
+=hWLs
+-----END PGP SIGNATURE-----
+
+--Ar8KwLu88Tj76bHi--
