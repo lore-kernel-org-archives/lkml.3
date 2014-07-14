@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495AbaGNKFd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 06:05:33 -0400
-Received: from mga11.intel.com ([192.55.52.93]:40395 "EHLO mga11.intel.com"
+	id S1755296AbaGNKO6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 06:14:58 -0400
+Received: from mga11.intel.com ([192.55.52.93]:41894 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753761AbaGNKEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 06:04:44 -0400
+	id S1754489AbaGNKFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 06:05:33 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,657,1400050800"; 
-   d="scan'208";a="561434224"
+   d="scan'208";a="561434376"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 11/41] perf tools: Fix appending a callchain from a previous sample
-Date: Mon, 14 Jul 2014 13:02:35 +0300
-Message-Id: <1405332185-4050-12-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 19/41] perf tools: Do not attempt to read data from kallsyms
+Date: Mon, 14 Jul 2014 13:02:43 +0300
+Message-Id: <1405332185-4050-20-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
 References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
@@ -27,28 +27,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hist_entry__append_callchain() must check if the sample
-has a callcahin or it will append the callchain from
-a previous sample.
+Record kallsyms binary type so that tools will not
+attempt to read binary data from it.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/callchain.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/util/symbol.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 48b6d3f..437ee09 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -626,7 +626,7 @@ int sample__resolve_callchain(struct perf_sample *sample, struct symbol **parent
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index be7b0df..21b2e45 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1663,6 +1663,7 @@ do_kallsyms:
+ 	free(kallsyms_allocated_filename);
  
- int hist_entry__append_callchain(struct hist_entry *he, struct perf_sample *sample)
- {
--	if (!symbol_conf.use_callchain)
-+	if (!symbol_conf.use_callchain || sample->callchain == NULL)
- 		return 0;
- 	return callchain_append(he->callchain, &callchain_cursor, sample->period);
- }
+ 	if (err > 0 && !dso__is_kcore(dso)) {
++		dso->binary_type = DSO_BINARY_TYPE__KALLSYMS;
+ 		dso__set_long_name(dso, "[kernel.kallsyms]", false);
+ 		map__fixup_start(map);
+ 		map__fixup_end(map);
+@@ -1710,6 +1711,7 @@ static int dso__load_guest_kernel_sym(struct dso *dso, struct map *map,
+ 	if (err > 0)
+ 		pr_debug("Using %s for symbols\n", kallsyms_filename);
+ 	if (err > 0 && !dso__is_kcore(dso)) {
++		dso->binary_type = DSO_BINARY_TYPE__GUEST_KALLSYMS;
+ 		machine__mmap_name(machine, path, sizeof(path));
+ 		dso__set_long_name(dso, strdup(path), true);
+ 		map__fixup_start(map);
 -- 
 1.8.3.2
 
