@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508AbaGNJKG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 05:10:06 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:49784 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204AbaGNJKB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 05:10:01 -0400
-Content-Type: text/plain; charset=utf-8
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCH] drivers/pwm/Kconfig: Let PWM_CLPS711X depend on HAS_IOMEM
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-In-Reply-To: <20140714081843.GK2081@ulmo>
-Date: Mon, 14 Jul 2014 17:14:05 +0800
-Cc: Chen Gang <gang.chen.5i5j@gmail.com>, linux-pwm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Weinberger <richard@nod.at>,
-        Liqin Chen <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <6A7CA9C8-7BC4-44BA-AE71-63BDADFF9023@gmail.com>
-References: <53C27247.2010300@gmail.com> <20140714081843.GK2081@ulmo>
-To: Thierry Reding <thierry.reding@gmail.com>
-X-Mailer: Apple Mail (2.1874)
+	id S1753857AbaGNJKQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 05:10:16 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:48134 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753181AbaGNJKE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 05:10:04 -0400
+Message-ID: <53C39E56.5070805@ti.com>
+Date: Mon, 14 Jul 2014 14:39:42 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Sachin Kamat <spk.linux@gmail.com>
+CC: open list <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Jingoo Han <jg1.han@samsung.com>
+Subject: Re: [PATCH v2 1/2] phy: Kconfig: Re-organize Exynos USB 2.0 PHY configs
+References: <1404906569-28026-1-git-send-email-sachin.kamat@samsung.com>	<53C39B32.9060001@ti.com>	<CAK5sBcG+UZ86cAFKoAf4Y62yrOafpzBGd-wz=PqWJRg1g8pOFQ@mail.gmail.com>	<53C39C8C.6060604@ti.com> <CAK5sBcHQEBmeGP9tDKvycAHG-ocg0D_W6xFts4Wy6MQgiOTtUA@mail.gmail.com>
+In-Reply-To: <CAK5sBcHQEBmeGP9tDKvycAHG-ocg0D_W6xFts4Wy6MQgiOTtUA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-在 2014年7月14日，下午4:18，Thierry Reding <thierry.reding@gmail.com> 写道：
 
-> On Sun, Jul 13, 2014 at 07:49:27PM +0800, Chen Gang wrote:
->> PWM_CLPS711X needs HAS_IOMEM, so let it depend on HAS_IOMEM.
->> 
->> The related error (with allmodconfig under score):
->> 
->>    MODPOST 1365 modules
->>  ERROR: "devm_ioremap_resource" [drivers/pwm/pwm-clps711x.ko] undefined!
->> 
->> 
->> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->> ---
->> drivers/pwm/Kconfig | 2 +-
->> 1 file changed, 1 insertion(+), 1 deletion(-)
+On Monday 14 July 2014 02:36 PM, Sachin Kamat wrote:
+> On Mon, Jul 14, 2014 at 2:32 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>>
+>>
+>> On Monday 14 July 2014 02:29 PM, Sachin Kamat wrote:
+>>> Hi,
+>>>
+>>> On Mon, Jul 14, 2014 at 2:26 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>>>> Hi,
+>>>>
+>>>> On Wednesday 09 July 2014 05:19 PM, Sachin Kamat wrote:
+>>>>> Since the USB 2.0 PHYs are required with EHCI/OHCI USB drivers and
+>>>>> USB gadget controller supported by the DWC2 gadget driver, make it
+>>>>> depend on them and default to ARCH_EXYNOS as they are meant for
+>>>>> Exynos platforms. Also, make the sub-drivers silent options enabling
+>>>>> them based on the SoC platforms that they are meant to work with. This
+>>>>> will make life easier for end users who do not have any way knowing the
+>>>>> dependencies.
+>>>>
+>>>> There is a new Exynos PHY in town, Exynos 3250. Can you rebase your patch on
+>>>> top of that?
+>>>
+>>> Sure. But I did not see it in linux-next yet. Is it merged somewhere?
+>>
+>> It's in the list. I can push it to my tree if that helps.
 > 
-> NAK given the discussion in the other thread.
-> 
-> Thierry
+> That would be great to avoid any other conflicts.
 
-OK, thanks, and I shall continue focusing the other thread, and send related patch after
-get conclusion (hope I can finish within this week).
+pushed to git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git
+next. You can use it to rebase your patch.
 
 Thanks
-—
-Chen Gang
-Open share, and attitude like air water, and life which God blessed.
+Kishon
