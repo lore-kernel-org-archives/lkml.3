@@ -1,73 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756572AbaGNSWU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 14:22:20 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37323 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602AbaGNSWF (ORCPT
+	id S1756795AbaGNSWg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 14:22:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44872 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602AbaGNSW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 14:22:05 -0400
-Date: Mon, 14 Jul 2014 19:21:52 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: Laurent Pinchart <Laurent.pinchart@ideasonboard.com>,
-        linux-spi@vger.kernel.org, dmaengine@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20140714182152.GU6800@sirena.org.uk>
-References: <1405094477-14192-1-git-send-email-geert+renesas@glider.be>
+	Mon, 14 Jul 2014 14:22:28 -0400
+Date: Mon, 14 Jul 2014 11:22:10 -0700
+From: tip-bot for Jiang Liu <tipbot@zytor.com>
+Message-ID: <tip-a4355e6749113d424cd15852c73e22c1ef1bb004@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, jiang.liu@linux.intel.com,
+        hpa@zytor.com, mingo@kernel.org, yinghai@kernel.org,
+        david.a.cohen@linux.intel.com, tony.luck@intel.com, tglx@linutronix.de,
+        feng.tang@intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, jiang.liu@linux.intel.com,
+        mingo@redhat.com, linux-kernel@vger.kernel.org, yinghai@kernel.org,
+        david.a.cohen@linux.intel.com, tony.luck@intel.com, tglx@linutronix.de,
+        feng.tang@intel.com
+In-Reply-To: <1403490643-26187-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1403490643-26187-1-git-send-email-jiang.liu@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] x86: intel-mid: Use the new io_apic interfaces
+Git-Commit-ID: a4355e6749113d424cd15852c73e22c1ef1bb004
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ULJ2Z7kCM1hyNsWd"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1405094477-14192-1-git-send-email-geert+renesas@glider.be>
-X-Cookie: Above all else -- sky.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 1/2] spi: rspi: Handle dmaengine_prep_slave_sg()
- failures gracefully
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  a4355e6749113d424cd15852c73e22c1ef1bb004
+Gitweb:     http://git.kernel.org/tip/a4355e6749113d424cd15852c73e22c1ef1bb004
+Author:     Jiang Liu <jiang.liu@linux.intel.com>
+AuthorDate: Mon, 23 Jun 2014 10:30:35 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 14 Jul 2014 20:17:09 +0200
 
---ULJ2Z7kCM1hyNsWd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+x86: intel-mid: Use the new io_apic interfaces
 
-On Fri, Jul 11, 2014 at 06:01:16PM +0200, Geert Uytterhoeven wrote:
+Commit 9f354b0252b8 "x86, irq: Clean up unused IOAPIC interface" kills
+interface io_apic_set_pci_routing(), so change arch/x86/platform/
+intel-mid/device_libs/platform_wdt.c to use new interfaces.
 
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> ---
-> v2:
->   - Add Acked-by
+Due to hardware resource restriction, this patch only passes compilation
+without functional tests.
 
-Please don't ever resend things to add Acked-by - this just adds to
-noise and mail volume.
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Acked-by: David Cohen <david.a.cohen@linux.intel.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Tang Feng <feng.tang@intel.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Link: http://lkml.kernel.org/r/1403490643-26187-1-git-send-email-jiang.liu@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ .../platform/intel-mid/device_libs/platform_wdt.c  | 22 ++++++----------------
+ 1 file changed, 6 insertions(+), 16 deletions(-)
 
---ULJ2Z7kCM1hyNsWd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTxB+9AAoJELSic+t+oim9DWcP/iof3Dva3BaAM1RrRrR2eWsA
-UpUQOzYi8xUXoPT/w3z+JzEnSTiAVi0942sgWpPOZ5YOtY2D61NECI1BO+YO2MHe
-r2dXEoT57TtLLBwHOwncsyXNwGCYgIcUPeQG3m3ibcIkRpwUfJWDFxZkZG2VBPTD
-I8usfje3Iops3RGm2MQWQ5I4bj/RhYLJjmZ4KXBeRU/XMuiXWjJ6ldq2c561GvZd
-2YtN4le0DI5pEu8k9pL9pb3FZKvQCLzxeHW/niSPdwW1v3mClHClSbNZboyCr9dS
-Mxn9I/1R5a3Fr+MoUmVVBkmTXc76T1i6irzr9OWtOCh4txfQWnljosKfZ7/jS54s
-1kLUBklkO2PuV/EaTCqj/hctebkDCKHBTK+iScmLqS7RTfJQ6t6BLE1xO+sldRSQ
-BcpU5TYjDV3YLDyBRW9Q7u0lrfmqYbfTzNbTwPZ5die+Xj9ssrIDbqd/DYcyXynn
-CzMvP0sZ7FmZs+O2PdFzN9ooTS+wLj/nMKk1aXxZPAzNaepjqNvaEJwcbEcbNNmc
-5glXVN9WdMuvItGRfMZhiNVcwIhWekjznYlAyEeGfBr9c5xz8IJ3l+OvxF+EDMWM
-/oV9L0qMFp03dA76NP49P3Cj1K7/6+VHDPZGt2TmRenGYOQbNdrFPGjj2UpD/QZX
-teVHJTa1scrWYRGG+gxj
-=PFeY
------END PGP SIGNATURE-----
-
---ULJ2Z7kCM1hyNsWd--
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_wdt.c b/arch/x86/platform/intel-mid/device_libs/platform_wdt.c
+index 973cf3b..0b283d4 100644
+--- a/arch/x86/platform/intel-mid/device_libs/platform_wdt.c
++++ b/arch/x86/platform/intel-mid/device_libs/platform_wdt.c
+@@ -26,28 +26,18 @@ static struct platform_device wdt_dev = {
+ 
+ static int tangier_probe(struct platform_device *pdev)
+ {
+-	int ioapic;
+-	int irq;
++	int gsi;
+ 	struct intel_mid_wdt_pdata *pdata = pdev->dev.platform_data;
+-	struct io_apic_irq_attr irq_attr = { 0 };
+ 
+ 	if (!pdata)
+ 		return -EINVAL;
+ 
+-	irq = pdata->irq;
+-	ioapic = mp_find_ioapic(irq);
+-	if (ioapic >= 0) {
+-		int ret;
+-		irq_attr.ioapic = ioapic;
+-		irq_attr.ioapic_pin = irq;
+-		irq_attr.trigger = 1;
+-		/* irq_attr.polarity = 0; -> Active high */
+-		ret = io_apic_set_pci_routing(NULL, irq, &irq_attr);
+-		if (ret)
+-			return ret;
+-	} else {
++	/* IOAPIC builds identity mapping between GSI and IRQ on MID */
++	gsi = pdata->irq;
++	if (mp_set_gsi_attr(gsi, 1, 0, cpu_to_node(0)) ||
++	    mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC) <= 0) {
+ 		dev_warn(&pdev->dev, "cannot find interrupt %d in ioapic\n",
+-			 irq);
++			 gsi);
+ 		return -EINVAL;
+ 	}
+ 
