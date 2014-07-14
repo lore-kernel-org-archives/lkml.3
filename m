@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722AbaGNXdx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 19:33:53 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:65329 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143AbaGNXdu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 19:33:50 -0400
-Date: Mon, 14 Jul 2014 16:33:47 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-cc: Stephane Eranian <eranian@google.com>, x86@kernel.org,
+	id S1753523AbaGNXwR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 19:52:17 -0400
+Received: from mga02.intel.com ([134.134.136.20]:13932 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752255AbaGNXwQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 19:52:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,661,1400050800"; 
+   d="scan'208";a="573117369"
+Subject: Re: [PATCH v4 6/7] sched: add function nr_running_cpu to expose
+ number of tasks running on cpu
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Tadeusz Struk <tadeusz.struk@intel.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>, "H. Peter Anvin" <hpa@zytor.com>,
+        "David S.Miller" <davem@davemloft.net>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Chandramouli Narayanan <mouli@linux.intel.com>,
+        Vinodh Gopal <vinodh.gopal@intel.com>,
+        James Guilford <james.guilford@intel.com>,
+        Wajdi Feghali <wajdi.k.feghali@intel.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>, linux-crypto@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [patch] x86, perf: avoid spamming kernel log for bts buffer
- failure
-In-Reply-To: <alpine.DEB.2.02.1406301600460.26302@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1407141633190.4920@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1406301600460.26302@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <53C1447D.1010809@intel.com>
+References: <cover.1405074379.git.tim.c.chen@linux.intel.com>
+	 <1405110784.2970.655.camel@schen9-DESK>  <53C1447D.1010809@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Jul 2014 16:51:21 -0700
+Message-ID: <1405381881.2970.751.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Jun 2014, David Rientjes wrote:
+On Sat, 2014-07-12 at 07:21 -0700, Tadeusz Struk wrote:
+> On 07/11/2014 01:33 PM, Tim Chen wrote:
+> > +unsigned long nr_running_cpu(int cpu)
+> > +{
+> > +	if (cpumask_test_cpu(cpu, cpu_online_mask))
+> > +		return cpu_rq(cpu)->nr_running;
+> > +	else
+> > +		return 0;
+> > +}
+> > +
+> EXPORT_SYMBOL?
 
-> It's unnecessary to excessively spam the kernel log anytime the BTS buffer 
-> cannot be allocated, so make this allocation __GFP_NOWARN.
-> 
-> The user probably will want to at least find some artifact that the 
-> allocation has failed in the past, probably due to fragmentation because 
-> of its large size, when it's not allocated at bootstrap.  Thus, add a 
-> WARN_ONCE() so something is left behind for them to understand why perf 
-> commnads that require PEBS is not working properly.
-> 
-> Signed-off-by: David Rientjes <rientjes@google.com>
+Yes, thanks.
 
-Peter, would you like to ack this?  Trying to get this merged in time for 
-the next merge window.
+Tim
 
-> ---
->  arch/x86/kernel/cpu/perf_event_intel_ds.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> @@ -311,9 +311,11 @@ static int alloc_bts_buffer(int cpu)
->  	if (!x86_pmu.bts)
->  		return 0;
->  
-> -	buffer = kzalloc_node(BTS_BUFFER_SIZE, GFP_KERNEL, node);
-> -	if (unlikely(!buffer))
-> +	buffer = kzalloc_node(BTS_BUFFER_SIZE, GFP_KERNEL | __GFP_NOWARN, node);
-> +	if (unlikely(!buffer)) {
-> +		WARN_ONCE(1, "%s: BTS buffer allocation failure\n", __func__);
->  		return -ENOMEM;
-> +	}
->  
->  	max = BTS_BUFFER_SIZE / BTS_RECORD_SIZE;
->  	thresh = max / 16;
