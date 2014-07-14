@@ -1,100 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756754AbaGNRMk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 13:12:40 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:42796 "EHLO kanga.kvack.org"
+	id S1756656AbaGNRNp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 13:13:45 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:50696 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755920AbaGNRMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 13:12:31 -0400
-Date: Mon, 14 Jul 2014 13:12:27 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Robert Elliot <Elliott@hp.com>
-Cc: linux-aio@kvack.org, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
-        stable@vger.kernel.org
-Subject: [PATCH] aio: protect reqs_available updates from changes in interrupt handlers
-Message-ID: <20140714171227.GC11326@kvack.org>
-Mime-Version: 1.0
+	id S1755920AbaGNRNh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 13:13:37 -0400
+Date: Mon, 14 Jul 2014 13:13:24 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 12/13] mm: memcontrol: rewrite charge API
+Message-ID: <20140714171324.GQ29639@cmpxchg.org>
+References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
+ <1403124045-24361-13-git-send-email-hannes@cmpxchg.org>
+ <20140714150446.GD30713@dhcp22.suse.cz>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20140714150446.GD30713@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everyone,
+On Mon, Jul 14, 2014 at 05:04:46PM +0200, Michal Hocko wrote:
+> Hi,
+> I've finally manage to untagle myself from internal stuff...
+> 
+> On Wed 18-06-14 16:40:44, Johannes Weiner wrote:
+> > The memcg charge API charges pages before they are rmapped - i.e. have
+> > an actual "type" - and so every callsite needs its own set of charge
+> > and uncharge functions to know what type is being operated on.  Worse,
+> > uncharge has to happen from a context that is still type-specific,
+> > rather than at the end of the page's lifetime with exclusive access,
+> > and so requires a lot of synchronization.
+> > 
+> > Rewrite the charge API to provide a generic set of try_charge(),
+> > commit_charge() and cancel_charge() transaction operations, much like
+> > what's currently done for swap-in:
+> > 
+> >   mem_cgroup_try_charge() attempts to reserve a charge, reclaiming
+> >   pages from the memcg if necessary.
+> > 
+> >   mem_cgroup_commit_charge() commits the page to the charge once it
+> >   has a valid page->mapping and PageAnon() reliably tells the type.
+> > 
+> >   mem_cgroup_cancel_charge() aborts the transaction.
+> > 
+> > This reduces the charge API and enables subsequent patches to
+> > drastically simplify uncharging.
+> > 
+> > As pages need to be committed after rmap is established but before
+> > they are added to the LRU, page_add_new_anon_rmap() must stop doing
+> > LRU additions again.  Revive lru_cache_add_active_or_unevictable().
+> 
+> I think it would make more sense to do
+> lru_cache_add_active_or_unevictable in a separate patch for easier
+> review. Too late, though...
+> 
+> Few comments bellow
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> 
+> The patch looks correct but the code is quite tricky so I hope I didn't
+> miss anything.
+> 
+> Acked-by: Michal Hocko <mhocko@suse.cz>
 
-Please pull the following commit (263782c1c95bbddbb022dc092fd89a36bb8d5577) 
-from git://git.kvack.org/aio-fixes.git to fix an aio bug reported by Robert 
-Elliot.
----
-As of commit f8567a3845ac05bb28f3c1b478ef752762bd39ef it is now possible to
-have put_reqs_available() called from irq context.  While put_reqs_available()
-is per cpu, it did not protect itself from interrupts on the same CPU.  This
-lead to aio_complete() corrupting the available io requests count when run
-under a heavy O_DIRECT workloads as reported by Robert Elliott.  Fix this by
-disabling irq updates around the per cpu batch updates of reqs_available.
+Thanks!
 
-Many thanks to Robert and folks for testing and tracking this down.
+> > @@ -54,28 +54,11 @@ struct mem_cgroup_reclaim_cookie {
+> >  };
+> >  
+> >  #ifdef CONFIG_MEMCG
+> > -/*
+> > - * All "charge" functions with gfp_mask should use GFP_KERNEL or
+> > - * (gfp_mask & GFP_RECLAIM_MASK). In current implementatin, memcg doesn't
+> > - * alloc memory but reclaims memory from all available zones. So, "where I want
+> > - * memory from" bits of gfp_mask has no meaning. So any bits of that field is
+> > - * available but adding a rule is better. charge functions' gfp_mask should
+> > - * be set to GFP_KERNEL or gfp_mask & GFP_RECLAIM_MASK for avoiding ambiguous
+> > - * codes.
+> > - * (Of course, if memcg does memory allocation in future, GFP_KERNEL is sane.)
+> > - */
+> 
+> I think we should slightly modify the comment but the primary idea
+> should stay there. What about the following?
+> /*
+>  * Although memcg charge functions do not allocate any memory they are
+>  * still getting GFP mask to control the reclaim process (therefore
+>  * gfp_mask & GFP_RECLAIM_MASK is expected).
+>  * GFP_KERNEL should be used for the general charge path without any
+>  * constraints for the reclaim
+>  * __GFP_WAIT should be cleared for atomic contexts
+>  * __GFP_NORETRY should be set for charges which might fail rather than
+>  * spend too much time reclaiming
+>  * __GFP_NOFAIL should be set for charges which cannot fail.
+>  */
 
-Reported-by: Robert Elliot <Elliott@hp.com>
-Tested-by: Robert Elliot <Elliott@hp.com>
-Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>
-Cc: stable@vger.kenel.org
----
- fs/aio.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+What *is* the primary idea here?
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 955947e..1c9c5f0 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -830,16 +830,20 @@ void exit_aio(struct mm_struct *mm)
- static void put_reqs_available(struct kioctx *ctx, unsigned nr)
- {
- 	struct kioctx_cpu *kcpu;
-+	unsigned long flags;
- 
- 	preempt_disable();
- 	kcpu = this_cpu_ptr(ctx->cpu);
- 
-+	local_irq_save(flags);
- 	kcpu->reqs_available += nr;
-+
- 	while (kcpu->reqs_available >= ctx->req_batch * 2) {
- 		kcpu->reqs_available -= ctx->req_batch;
- 		atomic_add(ctx->req_batch, &ctx->reqs_available);
- 	}
- 
-+	local_irq_restore(flags);
- 	preempt_enable();
- }
- 
-@@ -847,10 +851,12 @@ static bool get_reqs_available(struct kioctx *ctx)
- {
- 	struct kioctx_cpu *kcpu;
- 	bool ret = false;
-+	unsigned long flags;
- 
- 	preempt_disable();
- 	kcpu = this_cpu_ptr(ctx->cpu);
- 
-+	local_irq_save(flags);
- 	if (!kcpu->reqs_available) {
- 		int old, avail = atomic_read(&ctx->reqs_available);
- 
-@@ -869,6 +875,7 @@ static bool get_reqs_available(struct kioctx *ctx)
- 	ret = true;
- 	kcpu->reqs_available--;
- out:
-+	local_irq_restore(flags);
- 	preempt_enable();
- 	return ret;
- }
--- 
-1.8.2.1
+Taking any kind of gfp mask and interpreting the bits that pertain to
+you is done in a lot of places already, and there really is no need to
+duplicate the documentation and risk it getting stale and misleading.
 
--- 
-"Thought is the essence of where you are now."
+> > @@ -948,6 +951,7 @@ static int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
+> >  					struct page *page,
+> >  					unsigned long haddr)
+> >  {
+> > +	struct mem_cgroup *memcg;
+> >  	spinlock_t *ptl;
+> >  	pgtable_t pgtable;
+> >  	pmd_t _pmd;
+> > @@ -968,20 +972,21 @@ static int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
+> >  					       __GFP_OTHER_NODE,
+> >  					       vma, address, page_to_nid(page));
+> >  		if (unlikely(!pages[i] ||
+> > -			     mem_cgroup_charge_anon(pages[i], mm,
+> > -						       GFP_KERNEL))) {
+> > +			     mem_cgroup_try_charge(pages[i], mm, GFP_KERNEL,
+> > +						   &memcg))) {
+> >  			if (pages[i])
+> >  				put_page(pages[i]);
+> > -			mem_cgroup_uncharge_start();
+> >  			while (--i >= 0) {
+> > -				mem_cgroup_uncharge_page(pages[i]);
+> > +				memcg = (void *)page_private(pages[i]);
+> 
+> Hmm, OK the memcg couldn't go away even if mm owner has left it because
+> the charge is already there and the page is not on LRU so the
+> mem_cgroup_css_free will wait until we uncharge it or put to LRU.
+
+Yep, res_counter charges have always pinned the memcg.  We already
+used this exact protocol and relied on the same lifetime rules for
+swapin charging.
+
+> > +/**
+> > + * mem_cgroup_commit_charge - commit a page charge
+> > + * @page: page to charge
+> > + * @memcg: memcg to charge the page to
+> > + * @lrucare: page might be on LRU already
+> > + *
+> > + * Finalize a charge transaction started by mem_cgroup_try_charge(),
+> > + * after page->mapping has been set up.  This must happen atomically
+> > + * as part of the page instantiation, i.e. under the page table lock
+> > + * for anonymous pages, under the page lock for page and swap cache.
+> > + *
+> > + * In addition, the page must not be on the LRU during the commit, to
+> > + * prevent racing with task migration.  If it might be, use @lrucare.
+> > + *
+> > + * Use mem_cgroup_cancel_charge() to cancel the transaction instead.
+> > + */
+> > +void mem_cgroup_commit_charge(struct page *page, struct mem_cgroup *memcg,
+> > +			      bool lrucare)
+> 
+> I think we should be explicit that this is only required for LRU pages.
+> kmem doesn't have to finalize the transaction.
+
+The function itself only applies to user/LRU pages.  kmem has its own
+separate API for charge/commit/cancel/uncharge.
