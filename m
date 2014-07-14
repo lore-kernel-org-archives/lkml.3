@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756325AbaGNQRc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 12:17:32 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:53142 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755615AbaGNQRZ (ORCPT
+	id S932130AbaGNQTN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 12:19:13 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:42999 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755822AbaGNQTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 12:17:25 -0400
-Date: Mon, 14 Jul 2014 18:17:13 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Jiri Olsa <jolsa@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH] perf: Add vm_ops->name call for mmap event name retrieval
-Message-ID: <20140714161713.GD9918@twins.programming.kicks-ass.net>
-References: <1405353439-14211-1-git-send-email-jolsa@kernel.org>
- <20140714160947.GB9918@twins.programming.kicks-ass.net>
- <CALCETrWZChK=p2v+-ez7s04ed5POawSqGrvST24m0c1TjFMVxw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Ar8KwLu88Tj76bHi"
-Content-Disposition: inline
-In-Reply-To: <CALCETrWZChK=p2v+-ez7s04ed5POawSqGrvST24m0c1TjFMVxw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 14 Jul 2014 12:19:07 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: gregkh@linuxfoundation.org, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH v5 1/6] xen-pciback: Document the various parameters and attributes in SysFS
+Date: Mon, 14 Jul 2014 12:18:51 -0400
+Message-Id: <1405354736-7358-2-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1405354736-7358-1-git-send-email-konrad.wilk@oracle.com>
+References: <1405354736-7358-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Which hadn't been done with the initial commit.
 
---Ar8KwLu88Tj76bHi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+v2: Dropped the parameters and one that is unlikeable.
+---
+ Documentation/ABI/testing/sysfs-driver-pciback | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-driver-pciback
 
-On Mon, Jul 14, 2014 at 09:14:41AM -0700, Andy Lutomirski wrote:
-> Looks good to me.  Sorry I missed that.
->=20
+diff --git a/Documentation/ABI/testing/sysfs-driver-pciback b/Documentation/ABI/testing/sysfs-driver-pciback
+new file mode 100644
+index 0000000..cdc8340
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-driver-pciback
+@@ -0,0 +1,25 @@
++What:           /sys/bus/pci/drivers/pciback/quirks
++Date:           Oct 2011
++KernelVersion:  3.1
++Contact:        xen-devel@lists.xenproject.org
++Description:
++                If the permissive attribute is set, then writing a string in
++                the format of DDDD:BB:DD.F-REG:SIZE:MASK will allow the guest
++                to write and read from the PCI device. That is Domain:Bus:
++                Device.Function-Register:Size:Mask (Domain is optional).
++                For example:
++                #echo 00:19.0-E0:2:FF > /sys/bus/pci/drivers/pciback/quirks
++                will allow the guest to read and write to the configuration
++                register 0x0E.
++
++What:           /sys/bus/pci/drivers/pciback/irq_handlers
++Date:           Oct 2011
++KernelVersion:  3.1
++Contact:        xen-devel@lists.xenproject.org
++Description:
++                A list of all of the PCI devices owned by Xen PCI back and
++                whether Xen PCI backend will acknowledge the interrupts received
++                and the amount of interrupts received. Xen PCI back acknowledges
++                said interrupts only when they are level, shared with another
++                guest, and enabled by the guest.
++
+-- 
+1.9.3
 
-Can I make that an Acked-by?
-
---Ar8KwLu88Tj76bHi
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTxAKIAAoJEHZH4aRLwOS6dYoP/A6GP2TIavNaC6cIF+BCdAiI
-ojS1tPOxr78fWgYOe1T0/XBGZxvKSY46RQhMHazw3qltDvekI8mpcqOfTUA9KsQj
-tuDqqDBpa7wVCeMYGVmpjjsmACfg+omoYaHiFK02G6JdNhKqn4hxNB+TA0UKd+mr
-zfU3b/haZ0ks76Lo11SADjLTSDn/DwAIcVCBwFU6piYJWaPNXEP2Egn+mZr8mDWM
-+1pXsJ+kZX2f9aXmcu99ISK+BvnAS1LtSlnBl1dnNO1ICh/GHzL1yUf0pC91bV95
-avxuTPtgbDHnPX7ZlcXy/HFYoukMks4f4izE/r3nzLfs4USqvTDxYCWgbe7luK7T
-30RZgTcNEOmumTIZ44OdP3w/NyjxbMaTLm7fei2VnO4bES2AiJFgsrEb0pWKg6PP
-wq8lO+vidT+OuSeC/XjeYX0gnjDc0UGCcVMB82q2bNbffrSEkMj5Ka2ujmeJochi
-rlcLvghASoO/BknWDjCCbnUIUYiNEoCdAxnv1I9Ei2gtiLdq+95vNKGGNWgC5c5x
-LUAO9VbbkityXPWOaUSsiEQIotC6dOBxkPSo54HA5hPe4NCBWMdCFDYgQdcX49U8
-PJngDoyVv9u+1eprrr/bWFNvW8Teze+6FzaHYc40iM0Bytk9KC0G2FdejGGlMT5f
-IFL4BEOmruL7F/lUVqTU
-=hWLs
------END PGP SIGNATURE-----
-
---Ar8KwLu88Tj76bHi--
