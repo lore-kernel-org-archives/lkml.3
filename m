@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230AbaGNIbw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 04:31:52 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750750AbaGNIbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 04:31:43 -0400
-Message-ID: <53C39569.9020802@nod.at>
-Date: Mon, 14 Jul 2014 10:31:37 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753887AbaGNIcF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 04:32:05 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50820 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750AbaGNIbz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 04:31:55 -0400
+Date: Mon, 14 Jul 2014 10:31:46 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>
+Subject: Re: [patch 51/55] clocksource: Make delta calculation a function
+Message-ID: <20140714083146.GJ9918@twins.programming.kicks-ass.net>
+References: <20140711133623.530368377@linutronix.de>
+ <20140711133709.584242982@linutronix.de>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Lars-Peter Clausen <lars@metafoo.de>, dmitry.torokhov@gmail.com,
-        linux-iio@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
-        thierry.reding@gmail.com, Lennox Wu <lennox.wu@gmail.com>,
-        Chen Gang <gang.chen.5i5j@gmail.com>, Marek Vasut <marex@denx.de>,
-        Liqin Chen <liqin.linux@gmail.com>, msalter@redhat.com,
-        linux-pwm@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-watchdog@vger.kernel.org, linux-input@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Mischa.Jonker@synopsys.com, jic23@kernel.org
-Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
- 'devm_ioremap_resource'
-References: <201407130545.23004.marex@denx.de> <CAF0htA60juBVkPo2HQKMDGcEr-wRzRVL_6JgHAa+7WVE_E8M0Q@mail.gmail.com> <53C25551.1050909@nod.at> <53C288F0.3070001@metafoo.de> <53C28C4A.70907@nod.at> <53C29015.5070607@metafoo.de> <53C291C8.6050303@nod.at> <53C296C2.30304@metafoo.de> <20140713192202.GA19090@kroah.com> <53C2DF12.6040507@nod.at> <20140713201753.GA29955@kroah.com>
-In-Reply-To: <20140713201753.GA29955@kroah.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zYo4Elh1vtcYNvbq"
+Content-Disposition: inline
+In-Reply-To: <20140711133709.584242982@linutronix.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 13.07.2014 22:17, schrieb Greg Kroah-Hartman:
-> On Sun, Jul 13, 2014 at 09:33:38PM +0200, Richard Weinberger wrote:
->> Maybe we could add COMPILE_TEST to the version string too?
->> Just to detect such kernels fast in user bug reports...
-> 
-> What kind of bug report are you going to get?
 
-User manages to enable CONFIG_FOO by selecting COMPILE_TEST and
-complains that it does not work. :)
+--zYo4Elh1vtcYNvbq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks,
-//richard
+On Fri, Jul 11, 2014 at 01:45:15PM -0000, Thomas Gleixner wrote:
+> +static inline cycle_t clocksource_delta(cycle_t now, cycle_t last, cycle_t mask)
+> +{
+> +	return (now -last) & mask;
+> +}
+
+Inconsistent whitespace there.
+
+--zYo4Elh1vtcYNvbq
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTw5VtAAoJEHZH4aRLwOS6DlgP/RpQst/kJ97O1eKbuRojR56L
+RbqPpV/yoT6vuWtT7k39rnpc/mFk97cJPyuf0LbQ2XH3m6/ys6lFmpnz1+2S9gN9
+zSItwjr8ycA1ciX4NvqhLh66zvqjhvFgQxSNrECc/lfBYI5bvCGEpXqRF8rTRcyD
+Hn5D76J71qfm3yZIj0ddIysRhcFaFi+WfioCGD9YN7dhdoi3s5oHDYHavpmd+aKK
+26cMC8IRJJvoK9xw1kIOa1/wN/x5h0Ufr8oZnfuqZufVwNVA5vxNfZZOKGEdPIwk
+zbc4NaLhvdVK5IgeY26wMZBiMXvvZxJ5tedRV/y8p/RkvOGr6cMQywwWHrP1oy3b
+j7VETullYJzGklIu9L5UEJaQnnDG+OakfUJ+EAubsFik/BqPk239NQbDY5m7B7+g
+ZQ5cGGg8BLa4MYDKHzSxgwGRq2F5JH6jKgpDw+vPWkRvUsC7k1C8hpBPOqUnQTTo
+WkC0I2WQLkEnn603NKG5c+VE4xAo89KUV6KpDto6BJrd9dJAEDyn+t0sfAtxcR7m
+CPZZgymneinXqnThNYlnaIYWpciRjn3ehc7Kah1isgR7klF4PstNU4uqHRTbrX+Z
+G4PvrFxp6aoVGNtkBq1srWR7ejxGLw6ym9MDfpbgYNb7iT7zEnH1HZjCxTobEARV
+u5hvvkNPvW6cV+M49BJn
+=i0U1
+-----END PGP SIGNATURE-----
+
+--zYo4Elh1vtcYNvbq--
