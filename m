@@ -1,331 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756390AbaGNQj7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 12:39:59 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:49148 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756114AbaGNQjt (ORCPT
+	id S1756312AbaGNQnS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 12:43:18 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54568 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755819AbaGNQnK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 12:39:49 -0400
-Date: Mon, 14 Jul 2014 17:39:22 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 6/9] pci: Introduce a domain number for
- pci_host_bridge.
-Message-ID: <20140714163922.GH1112@arm.com>
-References: <20140708005954.GC22939@google.com>
- <20140708104655.GC6501@e106497-lin.cambridge.arm.com>
- <CAErSpo75ovmGoeSHKJN0nckGDy-0gpn8kLPfHQ79CtcXxhPydw@mail.gmail.com>
- <20140708224847.GC4980@e106497-lin.cambridge.arm.com>
- <CAErSpo5rBt0iF2HGeDD-UH6_sPCoC647VCw0Q1v_0Rdpvcir-w@mail.gmail.com>
- <20140710094758.GA6501@e106497-lin.cambridge.arm.com>
- <CAErSpo5ZNCY31NztT0cLFbRVsBZqMsZ0LbTFNOTQCZUU3F7qJA@mail.gmail.com>
- <20140711141115.GB16321@arm.com>
- <CAErSpo7C8qzmdp+XgVi2ysXj_NcgvVY7RVfBZ2PHimLzrzANMQ@mail.gmail.com>
- <20140711180151.GH16321@arm.com>
+	Mon, 14 Jul 2014 12:43:10 -0400
+Message-ID: <53C4136D.5070108@ti.com>
+Date: Mon, 14 Jul 2014 20:29:17 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140711180151.GH16321@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <santosh.shilimkar@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, <linux-gpio@vger.kernel.org>
+CC: <ivan.khoronzhuk@ti.com>, <m-karicheri2@ti.com>,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] gpio: keystone: add dsp gpio controller driver
+References: <1405351707-12142-1-git-send-email-grygorii.strashko@ti.com>
+In-Reply-To: <1405351707-12142-1-git-send-email-grygorii.strashko@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 07:02:06PM +0100, Catalin Marinas wrote:
-> On Fri, Jul 11, 2014 at 06:02:56PM +0100, Bjorn Helgaas wrote:
-> > On Fri, Jul 11, 2014 at 8:11 AM, Catalin Marinas
-> > <catalin.marinas@arm.com> wrote:
-> > > On Thu, Jul 10, 2014 at 11:36:10PM +0100, Bjorn Helgaas wrote:
-> > >> Most of the rest of the v7 discussion was about "Introduce a domain
-> > >> number for pci_host_bridge."  I think we should add arm64 using the
-> > >> existing pci_scan_root_bus() and keep the domain number in the arm64
-> > >> sysdata structure like every other arch does.  Isn't that feasible?
-> > >> We can worry about domain unification later.
-> > >
-> > > I think that's what we were trying to avoid, adding an arm64-specific
-> > > pci_sys_data structure (and arm64-specific API). IIUC, avoiding this
-> > > would allow the host controller drivers to use the sysdata pointer for
-> > > their own private data structures.
-> > >
-> > > Also since you can specify the domain number via DT (and in Liviu's
-> > > v8 patches read by of_create_pci_host_bridge), I think it would make
-> > > sense to have it stored in some generic data structures (e.g.
-> > > pci_host_bridge) rather than in an arm64 private sysdata.
-> > 
-> > It would definitely be nice to keep the domain in a generic data
-> > structure rather than an arm64-specific one.  But every other arch
-> > keeps it in an arch-specific structure today, and I think following
-> > that existing pattern is the quickest way forward.
-> 
-> In this case we end up with an arm64-specific struct pci_sys_data and I
-> assume some API that takes care of this data structure to populate the
-> domain nr.
-> 
-> In Liviu's implementation, of_create_pci_host_bridge() is called by the
-> host controller driver directly and reads the domain_nr from the DT. It
-> also gets a void *host_data which it stores as sysdata in the pci_bus
-> structure (but that's specific to the host controller driver rather than
-> arm64). Since sysdata is opaque to of_create_pci_host_bridge(), it
-> cannot set the domain_nr.
+Hi,
 
-Some more thinking, so I guess we could get away without changing the
-API. On top of Liviu's tree here:
+On 07/14/2014 06:28 PM, Grygorii Strashko wrote:
+> From: Murali Karicheri <m-karicheri2@ti.com>
+>
 
-http://linux-arm.org/git?p=linux-ld.git;a=shortlog;h=refs/heads/for-upstream/pci_v8
+I'm sorry for the mess. I've sent wrong patch version.
+Ignore it, please.
 
-I reverted "pci: Introduce a domain number for pci_host_bridge.":
+> On Keystone SOCs, ARM host can send interrupts to DSP cores using the
+> DSP GPIO controller IP. Each DSP GPIO controller provides 28 IRQ signals for
+> each DSP core. This is one of the component used by the IPC mechanism used
+> on Keystone SOCs.
+>
+> Keystone 2 DSP GPIO controller has specific features:
+> - each GPIO can be configured only as output pin;
+> - setting GPIO value to 1 causes IRQ generation on target DSP core;
+> - reading pin value returns 0 - if IRQ was handled or 1 - IRQ is still
+>    pending.
+>
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> ---
+>   .../devicetree/bindings/gpio/gpio-keystone.txt     |   43 ++++++
+>   drivers/gpio/Kconfig                               |    8 ++
+>   drivers/gpio/Makefile                              |    1 +
+>   drivers/gpio/gpio-keystone.c                       |  138 ++++++++++++++++++++
+>   4 files changed, 190 insertions(+)
+>   create mode 100644 Documentation/devicetree/bindings/gpio/gpio-keystone.txt
+>   create mode 100644 drivers/gpio/gpio-keystone.c
+>
+> diff --git a/Documentation/devicetree/bindings/gpio/gpio-keystone.txt b/Documentation/devicetree/bindings/gpio/gpio-keystone.txt
+> new file mode 100644
+> index 0000000..cdda018
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/gpio/gpio-keystone.txt
+> @@ -0,0 +1,43 @@
+> +Keystone 2 DSP GPIO controller bindings
+> +
+> +HOST OS userland running on ARM can send interrupts to DSP cores using
+> +the DSP GPIO controller IP. It provides 28 IRQ signals per each DSP core.
+> +This is one of the component used by the IPC mechanism used on Keystone SOCs.
+> +
+> +For example TCI6638K2K SoC has 12 DSP GPIO controllers:
+> + - 8 for C66x CorePacx CPUs 0-7
+> +
+> +Keystone 2 DSP GPIO controller has specific features:
+> +- each GPIO can be configured only as output pin;
+> +- setting GPIO value to 1 causes IRQ generation on target DSP core;
+> +- reading pin value returns 0 - if IRQ was handled or 1 - IRQ is still
+> +  pending.
+> +
+> +Required Properties:
+> +- compatible: should be "ti,keystone-gpio"
+> +
+> +- ti,syscon-dev:	phandle/offset pair. The phandle to syscon used to
+> +			access device state control registers and the offset
+> +			in order to use block of device's specific registers.
+> +
+> +- gpio-controller : Marks the device node as a gpio controller.
+> +
+> +- #gpio-cells : Should be one.
+> +				See gpio.txt in this directory for a of the cells format
+> +
+> +Please refer to gpio.txt in this directory for details of the common GPIO
+> +bindings used by client devices.
+> +
+> +Example:
+> +	kgpio0: keystone_gpio@02620240 {
+> +		compatible = "ti,keystone-gpio";
+> +		ti,syscon-dev = <&devctrl 0x240>;
+> +		gpio-controller;
+> +		#gpio-cells = <2>;
+> +	};
+> +
+> +	dsp0: dsp0 {
+> +		compatible = "linux,rproc-user";
+> +		...
+> +		kick-gpio = <&kgpio0 27>;
+> +	};
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index 4a1b511..7566283 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -158,6 +158,14 @@ config GPIO_EP93XX
+>   	depends on ARCH_EP93XX
+>   	select GPIO_GENERIC
+>
+> +config GPIO_KEYSTONE
+> +	tristate "Keystone DSP GPIO support"
+> +	depends on ARCH_KEYSTONE
+> +	help
+> +	  Say yes here to support the DSP GPIO driver for Keystone 2. This defines
+> +	  up to 28 GPIOs per each Remote (DSP) core. This is used to send
+> +	  signals from ARM to the Remote (DSP) core.
+> +
+>   config GPIO_ZEVIO
+>   	bool "LSI ZEVIO SoC memory mapped GPIOs"
+>   	depends on ARM && OF_GPIO
+> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+> index d10f6a9..520bb2a 100644
+> --- a/drivers/gpio/Makefile
+> +++ b/drivers/gpio/Makefile
+> @@ -34,6 +34,7 @@ obj-$(CONFIG_GPIO_IOP)		+= gpio-iop.o
+>   obj-$(CONFIG_GPIO_IT8761E)	+= gpio-it8761e.o
+>   obj-$(CONFIG_GPIO_JANZ_TTL)	+= gpio-janz-ttl.o
+>   obj-$(CONFIG_GPIO_KEMPLD)	+= gpio-kempld.o
+> +obj-$(CONFIG_GPIO_KEYSTONE)	+= gpio-keystone.o
+>   obj-$(CONFIG_ARCH_KS8695)	+= gpio-ks8695.o
+>   obj-$(CONFIG_GPIO_INTEL_MID)	+= gpio-intel-mid.o
+>   obj-$(CONFIG_GPIO_LP3943)	+= gpio-lp3943.o
+> diff --git a/drivers/gpio/gpio-keystone.c b/drivers/gpio/gpio-keystone.c
+> new file mode 100644
+> index 0000000..9ff3bf6
+> --- /dev/null
+> +++ b/drivers/gpio/gpio-keystone.c
+> @@ -0,0 +1,138 @@
+> +/*
+> + * Keystone 2 DSP GPIO support.
+> + *
+> + * Copyright (C) 2014 Texas Instruments, Inc.
+> + * Author: Murali Karicheri <m-karicheri2@ti.com>
+> + *	   Grygorii Strashko <grygorii.strashko@ti.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +#include <linux/module.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/gpio.h>
+> +#include <linux/mfd/syscon.h>
+> +#include <linux/regmap.h>
+> +
+> +/* 28 bits in IPCGRx are treated as GPIO pins to generate interrupt */
+> +#define GPIOS_PER_BANK		28
+> +#define GPIO_OFFSET		4
+> +
+> +struct keystone_gpio_bank {
+> +	struct gpio_chip	 chip;
+> +	struct device		*dev;
+> +	struct regmap		*devctrl_regs;
+> +	u32			devctrl_offset;
+> +};
+> +#define chip_to_bank(c) \
+> +	container_of(c, struct keystone_gpio_bank, chip)
+> +
+> +static int keystone_gpio_direction_out(struct gpio_chip *c, unsigned ofs, int val)
+> +{
+> +	return 0;
+> +}
+> +
+> +static int keystone_gpio_get(struct gpio_chip *c, unsigned ofs)
+> +{
+> +	struct keystone_gpio_bank *bank = chip_to_bank(c);
+> +	int bit = ofs + GPIO_OFFSET;
+> +	int ret;
+> +	u32 val = 0;
+> +
+> +	ret = regmap_read(bank->devctrl_regs, bank->devctrl_offset, &val);
+> +	if (ret < 0)
+> +		dev_dbg(bank->dev, "gpio read failed ret(%d)\n", ret);
+> +
+> +	return (val >> bit) & 1;
+> +}
+> +
+> +static void keystone_gpio_set(struct gpio_chip *c, unsigned ofs, int val)
+> +{
+> +	struct keystone_gpio_bank *bank = chip_to_bank(c);
+> +	int bit = ofs + GPIO_OFFSET;
+> +	int ret;
+> +
+> +	if (!val)
+> +		return;
+> +
+> +	ret = regmap_write(bank->devctrl_regs, bank->devctrl_offset,
+> +			   BIT(bit) | 1);
+> +	if (ret < 0)
+> +		dev_dbg(bank->dev, "gpio write failed ret(%d)\n", ret);
+> +}
+> +
+> +static int keystone_gpio_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct device_node *np = dev->of_node;
+> +	struct keystone_gpio_bank *bank;
+> +	int ret = 0;
+> +
+> +	bank = devm_kzalloc(&pdev->dev, sizeof(*bank), GFP_KERNEL);
+> +	if (!bank)
+> +		return -ENOMEM;
+> +
+> +	bank->devctrl_regs =
+> +		syscon_regmap_lookup_by_phandle(np, "ti,syscon-dev");
+> +	if (IS_ERR(bank->devctrl_regs))
+> +		return PTR_ERR(bank->devctrl_regs);
+> +
+> +	ret = of_property_read_u32_index(np, "ti,syscon-dev", 1,
+> +					 &bank->devctrl_offset);
+> +	if (ret) {
+> +		dev_err(dev, "couldn't read the devctrl_offset offset!\n");
+> +		return ret;
+> +	}
+> +
+> +	bank->dev			= dev;
+> +#ifdef CONFIG_OF_GPIO
+> +	bank->chip.of_node		= of_node_get(np);
+> +#endif
+> +	bank->chip.label		= dev_name(dev);
+> +	bank->chip.get			= keystone_gpio_get;
+> +	bank->chip.set			= keystone_gpio_set;
+> +	bank->chip.direction_output	= keystone_gpio_direction_out;
+> +	bank->chip.base			= -1;
+> +	bank->chip.ngpio		= GPIOS_PER_BANK;
+> +
+> +	platform_set_drvdata(pdev, bank);
+> +
+> +	ret = gpiochip_add(&bank->chip);
+> +	if (ret) {
+> +		dev_err(dev, "gpio chip registration failed ret(%d)\n", ret);
+> +		return ret;
+> +	}
+> +
+> +	dev_info(bank->dev, "registered %d gpios\n", bank->chip.ngpio);
+> +	return ret;
+> +}
+> +
+> +static int keystone_gpio_remove(struct platform_device *pdev)
+> +{
+> +	struct keystone_gpio_bank *bank = platform_get_drvdata(pdev);
+> +
+> +	return gpiochip_remove(&bank->chip);
+> +}
+> +
+> +static const struct of_device_id keystone_gpio_dt_ids[] = {
+> +	{ .compatible = "ti,keystone-gpio", },
+> +	{ },
+> +};
+> +
+> +static struct platform_driver keystone_gpio_driver = {
+> +	.probe		= keystone_gpio_probe,
+> +	.remove		= keystone_gpio_remove,
+> +	.driver		= {
+> +		.name	= "keystone-gpio",
+> +		.owner	= THIS_MODULE,
+> +		.of_match_table = keystone_gpio_dt_ids,
+> +	},
+> +};
+> +
+> +module_platform_driver(keystone_gpio_driver);
+> +
+> +MODULE_AUTHOR("Texas Instruments");
+> +MODULE_AUTHOR("Murali Karicheri <m-karicheri2@ti.com>");
+> +MODULE_DESCRIPTION("Texas Instruments Keystone 2 DSP GPIO");
+> +MODULE_LICENSE("GPL v2");
+>
 
-http://linux-arm.org/git?p=linux-ld.git;a=commitdiff;h=b44e1c7d6b01c436f6f55662a1414e925161c9ca
-
-and added this patch on top (if you agree with the idea, we can split it
-nicely in arm64, OF and PCI specific parts). What we get is the
-domain_nr in a generic structure and free the sysdata pointer for the
-host controller driver.
-
-----------------8<----------------------------------------
->From b32606aa3997fc8a45014a64f99e921eef4872b0 Mon Sep 17 00:00:00 2001
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Mon, 14 Jul 2014 17:20:01 +0100
-Subject: [PATCH] pci: Add support for generic domain_nr in pci_bus
-
-This patch adds domain_nr in struct pci_bus if
-CONFIG_PCI_DOMAINS_GENERIC is enabled. The default implementation for
-pci_domain_nr() simply returns bus->domain_nr. For the root bus, the
-core PCI code calls pci_set_domain_nr(bus, parent_device) while the
-child buses inherit the domain nr of the parent bus.
-
-This patch also adds an of_pci_set_domain_nr() implementation which
-parses the device tree for the "pci-domain" property or sets domain_nr
-to the next available value (this function could also be implemented
-entirely in arm64).
-
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
----
- arch/arm64/Kconfig           |  3 +++
- arch/arm64/include/asm/pci.h | 10 ----------
- arch/arm64/kernel/pci.c      |  5 +++++
- drivers/of/of_pci.c          | 20 +++++++++++++-------
- drivers/pci/probe.c          | 11 ++++++++---
- include/linux/of_pci.h       |  5 +++++
- include/linux/pci.h          | 15 +++++++++++++++
- 7 files changed, 49 insertions(+), 20 deletions(-)
-
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 48ed631adde2..2c884f7453ba 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -160,6 +160,9 @@ config PCI
- config PCI_DOMAINS
- 	def_bool PCI
- 
-+config PCI_DOMAINS_GENERIC
-+	def_bool PCI
-+
- config PCI_SYSCALL
- 	def_bool PCI
- 
-diff --git a/arch/arm64/include/asm/pci.h b/arch/arm64/include/asm/pci.h
-index 3f7856e92d66..4f091a5135b7 100644
---- a/arch/arm64/include/asm/pci.h
-+++ b/arch/arm64/include/asm/pci.h
-@@ -29,16 +29,6 @@ struct pci_host_bridge *find_pci_host_bridge(struct pci_bus *bus);
- extern int isa_dma_bridge_buggy;
- 
- #ifdef CONFIG_PCI
--static inline int pci_domain_nr(struct pci_bus *bus)
--{
--	struct pci_host_bridge *bridge = find_pci_host_bridge(bus);
--
--	if (bridge)
--		return bridge->domain_nr;
--
--	return 0;
--}
--
- static inline int pci_proc_domain(struct pci_bus *bus)
- {
- 	return 1;
-diff --git a/arch/arm64/kernel/pci.c b/arch/arm64/kernel/pci.c
-index 955d6d1cb011..d5ed1afb0d88 100644
---- a/arch/arm64/kernel/pci.c
-+++ b/arch/arm64/kernel/pci.c
-@@ -36,3 +36,8 @@ resource_size_t pcibios_align_resource(void *data, const struct resource *res,
- {
- 	return res->start;
- }
-+
-+void pci_set_domain_nr(struct pci_bus *bus, struct device *parent)
-+{
-+	of_pci_set_domain_nr(bus, parent);
-+}
-diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
-index e81402af5cde..54f06b748bf1 100644
---- a/drivers/of/of_pci.c
-+++ b/drivers/of/of_pci.c
-@@ -175,7 +175,7 @@ static atomic_t domain_nr = ATOMIC_INIT(-1);
- struct pci_host_bridge *
- of_create_pci_host_bridge(struct device *parent, struct pci_ops *ops, void *host_data)
- {
--	int err, domain, busno;
-+	int err, busno;
- 	struct resource *bus_range;
- 	struct pci_bus *root_bus;
- 	struct pci_host_bridge *bridge;
-@@ -186,10 +186,6 @@ of_create_pci_host_bridge(struct device *parent, struct pci_ops *ops, void *host
- 	if (!bus_range)
- 		return ERR_PTR(-ENOMEM);
- 
--	domain = of_alias_get_id(parent->of_node, "pci-domain");
--	if (domain == -ENODEV)
--		domain = atomic_inc_return(&domain_nr);
--
- 	err = of_pci_parse_bus_range(parent->of_node, bus_range);
- 	if (err) {
- 		dev_info(parent, "No bus range for %s, using default [0-255]\n",
-@@ -207,8 +203,7 @@ of_create_pci_host_bridge(struct device *parent, struct pci_ops *ops, void *host
- 		goto err_create;
- 
- 	/* then create the root bus */
--	root_bus = pci_create_root_bus_in_domain(parent, domain, busno,
--						ops, host_data, &res);
-+	root_bus = pci_create_root_bus(parent, busno, ops, host_data, &res);
- 	if (IS_ERR(root_bus)) {
- 		err = PTR_ERR(root_bus);
- 		goto err_create;
-@@ -225,6 +220,17 @@ err_create:
- }
- EXPORT_SYMBOL_GPL(of_create_pci_host_bridge);
- 
-+void of_pci_set_domain_nr(struct pci_bus *bus, struct device *parent)
-+{
-+	int domain;
-+
-+	domain = of_alias_get_id(parent->of_node, "pci-domain");
-+	if (domain == -ENODEV)
-+		domain = atomic_inc_return(&domain_nr);
-+
-+	bus->domain_nr = domain;
-+}
-+
- #ifdef CONFIG_PCI_MSI
- 
- static LIST_HEAD(of_pci_msi_chip_list);
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 2c9266237edc..aa30a9e8915d 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -485,7 +485,7 @@ void pci_read_bridge_bases(struct pci_bus *child)
- 	}
- }
- 
--static struct pci_bus *pci_alloc_bus(void)
-+static struct pci_bus *pci_alloc_bus(struct pci_bus *parent)
- {
- 	struct pci_bus *b;
- 
-@@ -500,6 +500,10 @@ static struct pci_bus *pci_alloc_bus(void)
- 	INIT_LIST_HEAD(&b->resources);
- 	b->max_bus_speed = PCI_SPEED_UNKNOWN;
- 	b->cur_bus_speed = PCI_SPEED_UNKNOWN;
-+#ifdef CONFIG_PCI_DOMAINS_GENERIC
-+	if (parent)
-+		b->domain_nr = parent->domain_nr;
-+#endif
- 	return b;
- }
- 
-@@ -670,7 +674,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
- 	/*
- 	 * Allocate a new bus, and inherit stuff from the parent..
- 	 */
--	child = pci_alloc_bus();
-+	child = pci_alloc_bus(parent);
- 	if (!child)
- 		return NULL;
- 
-@@ -1767,13 +1771,14 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 	bridge->dev.parent = parent;
- 	bridge->dev.release = pci_release_host_bridge_dev;
- 
--	b = pci_alloc_bus();
-+	b = pci_alloc_bus(NULL);
- 	if (!b)
- 		goto err_out;
- 
- 	b->sysdata = sysdata;
- 	b->ops = ops;
- 	b->number = b->busn_res.start = bus;
-+	pci_set_domain_nr(b, parent);
- 	b2 = pci_find_bus(pci_domain_nr(b), bus);
- 	if (b2) {
- 		/* If we already got to this bus through a different bridge, ignore it */
-diff --git a/include/linux/of_pci.h b/include/linux/of_pci.h
-index 71e36d091db2..af16ac40c7a2 100644
---- a/include/linux/of_pci.h
-+++ b/include/linux/of_pci.h
-@@ -17,6 +17,7 @@ int of_irq_parse_and_map_pci(const struct pci_dev *dev, u8 slot, u8 pin);
- int of_pci_parse_bus_range(struct device_node *node, struct resource *res);
- struct pci_host_bridge *of_create_pci_host_bridge(struct device *parent,
- 					struct pci_ops *ops, void *host_data);
-+void of_pci_set_domain_nr(struct pci_bus *bus, struct device *parent);
- 
- #else
- static inline int of_irq_parse_pci(const struct pci_dev *pdev, struct of_phandle_args *out_irq)
-@@ -53,6 +54,10 @@ of_create_pci_host_bridge(struct device *parent, struct pci_ops *ops,
- {
- 	return NULL;
- }
-+
-+static inline void of_pci_set_domain_nr(struct pci_bus *bus, struct device *parent)
-+{
-+}
- #endif
- 
- #if defined(CONFIG_OF) && defined(CONFIG_PCI_MSI)
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index d32b4ed1f411..9113f62c5038 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -457,6 +457,9 @@ struct pci_bus {
- 	unsigned char	primary;	/* number of primary bridge */
- 	unsigned char	max_bus_speed;	/* enum pci_bus_speed */
- 	unsigned char	cur_bus_speed;	/* enum pci_bus_speed */
-+#ifdef CONFIG_PCI_DOMAINS_GENERIC
-+	int		domain_nr;
-+#endif
- 
- 	char		name[48];
- 
-@@ -1292,6 +1295,18 @@ static inline int pci_domain_nr(struct pci_bus *bus) { return 0; }
- static inline int pci_proc_domain(struct pci_bus *bus) { return 0; }
- #endif /* CONFIG_PCI_DOMAINS */
- 
-+#ifdef CONFIG_PCI_DOMAINS_GENERIC
-+static inline int pci_domain_nr(struct pci_bus *bus)
-+{
-+	return bus->domain_nr;
-+}
-+extern void pci_set_domain_nr(struct pci_bus *bus, struct device *parent);
-+#else
-+static inline void pci_set_domain_nr(struct pci_bus *bus, struct device *parent)
-+{
-+}
-+#endif
-+
- /* some architectures require additional setup to direct VGA traffic */
- typedef int (*arch_set_vga_state_t)(struct pci_dev *pdev, bool decode,
- 		      unsigned int command_bits, u32 flags);
