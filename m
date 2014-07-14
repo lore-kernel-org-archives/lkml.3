@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374AbaGNMuX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 08:50:23 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:47472 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755225AbaGNMuP (ORCPT
+	id S1755424AbaGNMue (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 08:50:34 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:50837 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755225AbaGNMuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 08:50:15 -0400
+	Mon, 14 Jul 2014 08:50:25 -0400
 From: Vivek Gautam <gautam.vivek@samsung.com>
 To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         mathias.nyman@intel.com, jwerner@chromium.org,
         sergei.shtylyov@cogentembedded.com, heikki.krogerus@linux.intel.com,
         pratyush.anand@st.com, Vivek Gautam <gautam.vivek@samsung.com>
-Subject: [PATCH v3 1/4] phy: Add provision for calibrating phy.
-Date: Mon, 14 Jul 2014 18:19:55 +0530
-Message-Id: <1405342198-3870-2-git-send-email-gautam.vivek@samsung.com>
+Subject: [PATCH v3 3/4] usb: hcd: Caibrate PHY post hcd reset
+Date: Mon, 14 Jul 2014 18:19:57 +0530
+Message-Id: <1405342198-3870-4-git-send-email-gautam.vivek@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405342198-3870-1-git-send-email-gautam.vivek@samsung.com>
 References: <1405342198-3870-1-git-send-email-gautam.vivek@samsung.com>
@@ -24,104 +24,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some PHY controllers may need to calibrate certain
-PHY settings after initialization of the controller and
-sometimes even after initializing the PHY-consumer too.
-Add support for the same in order to let consumers do so in need.
+Some quirky PHYs may require to be calibrated post the
+hcd initialization.
+The USB 3.0 DRD PHY on Exynos5420/5800 systems, coming along
+with Synopsys's DWC3 controller, is one such PHY which needs
+to be calibrated post xhci's reset at initialization time and
+at resume time, to get the controller work at SuperSpeed.
+So facilitating the HCDs to calibrate the PHY.
 
-Signed-off-by: vivek Gautam <gautam.vivek@samsung.com>
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
 ---
- drivers/phy/phy-core.c  |   36 ++++++++++++++++++++++++++++++++++++
- include/linux/phy/phy.h |    8 ++++++++
- 2 files changed, 44 insertions(+)
+ drivers/usb/core/hcd.c |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
-diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-index 0f35f7e..7c5f6cc 100644
---- a/drivers/phy/phy-core.c
-+++ b/drivers/phy/phy-core.c
-@@ -376,6 +376,42 @@ int phy_power_off(struct phy *phy)
- EXPORT_SYMBOL_GPL(phy_power_off);
+diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+index 2841149..a344b76 100644
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -2206,6 +2206,7 @@ int hcd_bus_resume(struct usb_device *rhdev, pm_message_t msg)
+ 	struct usb_hcd	*hcd = container_of(rhdev->bus, struct usb_hcd, self);
+ 	int		status;
+ 	int		old_state = hcd->state;
++	int		ret;
  
- /**
-+ * phy_calibrate - calibrate a phy post initialization
-+ * @phy: Pointer to 'phy' from consumer
-+ *
-+ * For certain PHYs, it may be needed to calibrate few phy parameters
-+ * post initialization. The need to calibrate may arise after the
-+ * initialization of consumer itself, in order to prevent further any
-+ * loss of phy settings post consumer-initialization.
-+ *	example: USB 3.0 DRD PHY on Exynos5420/5800 systems is one such
-+ *	phy which needs calibration after the host controller reset
-+ *	has happened.
-+ */
-+int phy_calibrate(struct phy *phy)
-+{
-+	int ret = -ENOTSUPP;
+ 	dev_dbg(&rhdev->dev, "usb %sresume\n",
+ 			(PMSG_IS_AUTO(msg) ? "auto-" : ""));
+@@ -2220,6 +2221,17 @@ int hcd_bus_resume(struct usb_device *rhdev, pm_message_t msg)
+ 
+ 	hcd->state = HC_STATE_RESUMING;
+ 	status = hcd->driver->bus_resume(hcd);
 +
-+	if (!phy)
-+		return 0;
-+
-+	mutex_lock(&phy->mutex);
-+	if (phy->ops->calibrate) {
-+		ret =  phy->ops->calibrate(phy);
-+		if (ret < 0) {
-+			dev_err(&phy->dev,
-+				"phy calibration failed --> %d\n", ret);
-+			goto out;
++	/* calibrate the phy here */
++	if (!IS_ERR(hcd->gen_phy)) {
++		ret = phy_calibrate(hcd->gen_phy);
++		if (ret < 0 && ret != -ENOTSUPP) {
++			dev_err(hcd->self.controller,
++				"failed to calibrate USB PHY\n");
++			return ret;
 +		}
 +	}
 +
-+out:
-+	mutex_unlock(&phy->mutex);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(phy_calibrate);
-+
-+/**
-  * _of_phy_get() - lookup and obtain a reference to a phy by phandle
-  * @np: device_node for which to get the phy
-  * @index: the index of the phy
-diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
-index 5a537a5..b7f33ee 100644
---- a/include/linux/phy/phy.h
-+++ b/include/linux/phy/phy.h
-@@ -27,6 +27,7 @@ struct phy;
-  * @exit: operation to be performed while exiting
-  * @power_on: powering on the phy
-  * @power_off: powering off the phy
-+ * @calibrate: calibrate the phy post init
-  * @owner: the module owner containing the ops
-  */
- struct phy_ops {
-@@ -34,6 +35,7 @@ struct phy_ops {
- 	int	(*exit)(struct phy *phy);
- 	int	(*power_on)(struct phy *phy);
- 	int	(*power_off)(struct phy *phy);
-+	int	(*calibrate)(struct phy *phy);
- 	struct module *owner;
- };
+ 	clear_bit(HCD_FLAG_WAKEUP_PENDING, &hcd->flags);
+ 	if (status == 0) {
+ 		struct usb_device *udev;
+@@ -2742,6 +2754,16 @@ int usb_add_hcd(struct usb_hcd *hcd,
+ 	}
+ 	hcd->rh_pollable = 1;
  
-@@ -124,6 +126,7 @@ int phy_init(struct phy *phy);
- int phy_exit(struct phy *phy);
- int phy_power_on(struct phy *phy);
- int phy_power_off(struct phy *phy);
-+int phy_calibrate(struct phy *phy);
- static inline int phy_get_bus_width(struct phy *phy)
- {
- 	return phy->attrs.bus_width;
-@@ -227,6 +230,11 @@ static inline int phy_power_off(struct phy *phy)
- 	return -ENOSYS;
- }
- 
-+static inline int phy_calibrate(struct phy *phy)
-+{
-+	return -ENOSYS;
-+}
++	/* calibrate the phy here */
++	if (!IS_ERR(hcd->gen_phy)) {
++		retval = phy_calibrate(hcd->gen_phy);
++		if (retval < 0 && retval != -ENOTSUPP) {
++			dev_err(hcd->self.controller,
++				"failed to calibrate USB PHY\n");
++			return retval;
++		}
++	}
 +
- static inline int phy_get_bus_width(struct phy *phy)
- {
- 	return -ENOSYS;
+ 	/* NOTE: root hub and controller capabilities may not be the same */
+ 	if (device_can_wakeup(hcd->self.controller)
+ 			&& device_can_wakeup(&hcd->self.root_hub->dev))
 -- 
 1.7.10.4
 
