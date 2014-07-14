@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756376AbaGNSf7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 14:35:59 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:35338 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752442AbaGNSfv (ORCPT
+	id S1756700AbaGNShB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 14:37:01 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:33720 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756492AbaGNSgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 14:35:51 -0400
-Date: Mon, 14 Jul 2014 14:35:43 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] tracing: instance_rmdir() leaks
- ftrace_event_file->filter
-Message-ID: <20140714143543.0dc505ea@gandalf.local.home>
-In-Reply-To: <20140711190638.GA19517@redhat.com>
-References: <20140711190622.GA19499@redhat.com>
-	<20140711190638.GA19517@redhat.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 14 Jul 2014 14:36:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+In-Reply-To: <CAL1qeaGCLw0LSE_Oy_VteAyWLHS9D4y-U8+6Mu+cGKEUp3T3GQ@mail.gmail.com>
+References: <1404954350-26343-1-git-send-email-abrestic@chromium.org>
+	<1404954350-26343-5-git-send-email-abrestic@chromium.org>
+	<CAODwPW9FORb2jnxFi6US6CUJvJzKyUkT8cuSzkPues41hJe+Jw@mail.gmail.com>
+	<CAL1qeaGCLw0LSE_Oy_VteAyWLHS9D4y-U8+6Mu+cGKEUp3T3GQ@mail.gmail.com>
+Date: Mon, 14 Jul 2014 11:36:51 -0700
+X-Google-Sender-Auth: rv8af33A_VGk86Mo9InhIvfnaBA
+Message-ID: <CAODwPW_=aoCB3K_cFvEKvztNjo=qHXCwmY4mwXMXRaJ+gzSogw@mail.gmail.com>
+Subject: Re: [PATCH 4/4] xhci: Allow xHCI drivers to be built as separate modules
+From: Julius Werner <jwerner@chromium.org>
+To: Andrew Bresticker <abrestic@chromium.org>
+Cc: Julius Werner <jwerner@chromium.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jul 2014 21:06:38 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
+> Nope - since CONFIG_USB_XHCI_MVEBU can be 'y' or 'm' we need the ifneq
+> here (which matches against both) to ensure xhci-mvebu.o is built is
+> part of xhci-plat-hcd.o.
 
-> instance_rmdir() path destroys the event files but forgets to free
-> file->filter. Change remove_event_file_dir() to free_event_filter().
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/trace/trace_events.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-> index fdb2271..735608e 100644
-> --- a/kernel/trace/trace_events.c
-> +++ b/kernel/trace/trace_events.c
-> @@ -470,6 +470,7 @@ static void remove_event_file_dir(struct ftrace_event_file *file)
->  
->  	list_del(&file->list);
->  	remove_subsystem(file->system);
-> +	free_event_filter(file->filter);
->  	kmem_cache_free(file_cachep, file);
->  }
->  
-
-Thanks, looks like this goes back to 3.11. I'll start testing this and
-get it out for stable as well.
-
--- Steve
+Oh... does it make sense to have it tristate at all, then? Looks like
+was never really buildable as an independent module (and still won't
+be after this patch), so I bet that was just a mistake when the
+Kconfig for it was first written that should be fixed. (Ideally,
+xhci-plat.c should probably go away in favor of dwc3/host.c and
+xhci-mvebu.c implementing the wrapper to xhci_init_driver() directly,
+but that is a longer-term goal.)
