@@ -1,65 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062AbaGNJsO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 05:48:14 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:39800 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752602AbaGNJsE (ORCPT
+	id S1754103AbaGNJtX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 05:49:23 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50879 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753305AbaGNJtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 05:48:04 -0400
-Date: Mon, 14 Jul 2014 11:47:50 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [patch 54/55] timekeeping: Provide fast and NMI safe access to
- CLOCK_MONOTONIC[_RAW]
-Message-ID: <20140714094750.GO9918@twins.programming.kicks-ass.net>
-References: <20140711133623.530368377@linutronix.de>
- <20140711133709.835700036@linutronix.de>
+	Mon, 14 Jul 2014 05:49:16 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219
+Message-ID: <53C3A782.9030109@jp.fujitsu.com>
+Date: Mon, 14 Jul 2014 18:48:50 +0900
+From: "HATAYAMA, Daisuke" <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+wSiqF7c0ySQ2tNi"
-Content-Disposition: inline
-In-Reply-To: <20140711133709.835700036@linutronix.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Vitaly Kuznetsov <vkuznets@redhat.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Vivek Goyal <vgoyal@redhat.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5] mmap_vmcore: skip non-ram pages reported by hypervisors
+References: <1405329417-3996-1-git-send-email-vkuznets@redhat.com>
+In-Reply-To: <1405329417-3996-1-git-send-email-vkuznets@redhat.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---+wSiqF7c0ySQ2tNi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Fri, Jul 11, 2014 at 01:45:19PM -0000, Thomas Gleixner wrote:
-> +static struct tk_fast tk_fast_raw  ____cacheline_aligned;
-> +static struct tk_fast tk_fast_mono ____cacheline_aligned;
+(2014/07/14 18:16), Vitaly Kuznetsov wrote:
+> We have a special check in read_vmcore() handler to check if the page was
+> reported as ram or not by the hypervisor (pfn_is_ram()). However, when
+> vmcore is read with mmap() no such check is performed. That can lead to
+> unpredictable results, e.g. when running Xen PVHVM guest memcpy() after
+> mmap() on /proc/vmcore will hang processing HVMMEM_mmio_dm pages creating
+> enormous load in both DomU and Dom0.
+> 
+> Fix the issue by mapping each non-ram page to the zero page. Keep direct
+> path with remap_oldmem_pfn_range() to avoid looping through all pages on
+> bare metal.
+> 
+> The issue can also be solved by overriding remap_oldmem_pfn_range() in
+> xen-specific code, as remap_oldmem_pfn_range() was been designed for.
+> That, however, would involve non-obvious xen code path for all x86 builds
+> with CONFIG_XEN_PVHVM=y and would prevent all other hypervisor-specific
+> code on x86 arch from doing the same override.
+> 
+> Changes from v4:
+> - change map_size type size_t -> unsigned long
+> - use prot instead of vma->vm_page_prot inside remap_oldmem_pfn_checked()
+> 
+> Changes from v3:
+> - multi line comment style changes
+> - minor code style changes
+> 
+> Changes from v2:
+> - make remap_oldmem_pfn_checked() interface exactly match
+>    remap_oldmem_pfn_range()
+> - unmap mapped part inside remap_oldmem_pfn_checked() in case of failure so
+>    we don't need to take care of it in mmap_vmcore()
+> - create vmcore_remap_oldmem_pfn() wrapper
+> 
+> Changes from v1:
+> - comment style changes
+> - change remap_oldmem_pfn_checked() interface to closer match the
+>    remap_oldmem_pfn() interface
+> - preserve formal parameters within the loop, make the loop conditions
+>    easier to understand
+> - use my_zero_pfn() for the zero page
+> - return remapped length instead of new offset
+> 
+> Reviewed-by: Andrew Jones <drjones@redhat.com>
+> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+> ---
+>   fs/proc/vmcore.c | 83 ++++++++++++++++++++++++++++++++++++++++++++++++++++++--
+>   1 file changed, 80 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+> index 382aa89..1f77f35 100644
+> --- a/fs/proc/vmcore.c
+> +++ b/fs/proc/vmcore.c
+> @@ -328,6 +328,83 @@ static inline char *alloc_elfnotes_buf(size_t notes_sz)
+>    * virtually contiguous user-space in ELF layout.
+>    */
+>   #ifdef CONFIG_MMU
+> +/*
+> + * remap_oldmem_pfn_checked - do remap_oldmem_pfn_range replacing all pages
+> + * reported as not being ram with the zero page.
+> + *
+> + * @vma: vm_area_struct describing requested mapping
+> + * @from: start remapping from
+> + * @pfn: page frame number to start remapping to
+> + * @size: remapping size
+> + * @prot: protection bits
+> + *
+> + * Returns zero on success, -EAGAIN on failure.
+> + */
+> +int remap_oldmem_pfn_checked(struct vm_area_struct *vma, unsigned long from,
+> +			     unsigned long pfn, unsigned long size,
+> +			     pgprot_t prot)
+> +{
+> +	unsigned long map_size;
+> +	unsigned long pos_start, pos_end, pos;
+> +	unsigned long zeropage_pfn = my_zero_pfn(0);
+> +	u64 len = 0;
 
-Question to the 'trace maniacs'; why do you lot need access to mono_raw?
+Sorry, I missed this yesterday. This should also be fixed as size_t or unsigned long.
 
-I would much prefer to limit choice here.
+Does 32-bit compiler warn about this at the call of do_munmap() below due to difference of bit length of the two types?
 
---+wSiqF7c0ySQ2tNi
-Content-Type: application/pgp-signature
+> +
+> +	pos_start = pfn;
+> +	pos_end = pfn + (size >> PAGE_SHIFT);
+> +
+> +	for (pos = pos_start; pos < pos_end; ++pos) {
+> +		if (!pfn_is_ram(pos)) {
+> +			/*
+> +			 * We hit a page which is not ram. Remap the continuous
+> +			 * region between pos_start and pos-1 and replace
+> +			 * the non-ram page at pos with the zero page.
+> +			 */
+> +			if (pos > pos_start) {
+> +				/* Remap continuous region */
+> +				map_size = (pos - pos_start) << PAGE_SHIFT;
+> +				if (remap_oldmem_pfn_range(vma, from + len,
+> +							   pos_start, map_size,
+> +							   prot))
+> +					goto fail;
+> +				len += map_size;
+> +			}
+> +			/* Remap the zero page */
+> +			if (remap_oldmem_pfn_range(vma, from + len,
+> +						   zeropage_pfn,
+> +						   PAGE_SIZE, prot))
+> +				goto fail;
+> +			len += PAGE_SIZE;
+> +			pos_start = pos + 1;
+> +		}
+> +	}
+> +	if (pos > pos_start) {
+> +		/* Remap the rest */
+> +		map_size = (pos - pos_start) << PAGE_SHIFT;
+> +		if (remap_oldmem_pfn_range(vma, from + len, pos_start,
+> +					   map_size, prot))
+> +			goto fail;
+> +		len += map_size;
+> +	}
+> +	return 0;
+> +fail:
+> +	do_munmap(vma->vm_mm, from, len);
+> +	return -EAGAIN;
+> +}
+> +
+> +int vmcore_remap_oldmem_pfn(struct vm_area_struct *vma,
+> +			    unsigned long from, unsigned long pfn,
+> +			    unsigned long size, pgprot_t prot)
+> +{
+> +	/*
+> +	 * Check if oldmem_pfn_is_ram was registered to avoid
+> +	 * looping over all pages without a reason.
+> +	 */
+> +	if (oldmem_pfn_is_ram)
+> +		return remap_oldmem_pfn_checked(vma, from, pfn, size, prot);
+> +	else
+> +		return remap_oldmem_pfn_range(vma, from, pfn, size, prot);
+> +}
+> +
+>   static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+>   {
+>   	size_t size = vma->vm_end - vma->vm_start;
+> @@ -387,9 +464,9 @@ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+>   
+>   			tsz = min_t(size_t, m->offset + m->size - start, size);
+>   			paddr = m->paddr + start - m->offset;
+> -			if (remap_oldmem_pfn_range(vma, vma->vm_start + len,
+> -						   paddr >> PAGE_SHIFT, tsz,
+> -						   vma->vm_page_prot))
+> +			if (vmcore_remap_oldmem_pfn(vma, vma->vm_start + len,
+> +						    paddr >> PAGE_SHIFT, tsz,
+> +						    vma->vm_page_prot))
+>   				goto fail;
+>   			size -= tsz;
+>   			start += tsz;
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+-- 
+Thanks.
+HATAYAMA, Daisuke
 
-iQIcBAEBAgAGBQJTw6dFAAoJEHZH4aRLwOS6brAP/2/fhXlb/7DB4gapVTDx2m7X
-S6Vw6KQJASglEkJTRKEij9se+5y2i19qq2RNh0Q6RoFsHK4do1sne48BNp0cO8Kd
-4z4c5jNQCpCzbrMgFtH3Lv6RvHm464GzbZXWTFRcUcPC3rGB+ULwsLGNBkO5PBA0
-YF/+JzCYvYL5isDtniibfq8Pi0Y7u3Nrbdk8uU5oYBvyn09vzcsCXHTybK/rC+Lb
-5/xyG1+VPeVg2rwUgt7xkFJdwB51I/pYVbvgfRv9REjO3/6PPlzyqFkVuKS/oe+b
-M+72ogTjcyZt0R/59uliAFfovoiCdtTKtIqO4Oe+p2X+yPk8U3/7OyyyzaPCht1q
-hOVPkmB2Xy5FhvyOPDB5YPYTl0FrDP7GpXDhCx8XMZM/IHBEO5UjR1dmIlMSBZAn
-yKQgDEPPmPYbbBLuOOkv9fnryop4pcY9d52I1tvQUbCe0HXT/h5yCd9saahyxDUV
-Z5m+GYY1OUjZUoFhRB0qz0ZpQ1/uasH8/R0pCLkavHsaXOp1V32ybASoHomsIeM2
-KrfGriPg/TzzE3IA2n5362VYYYgd4ZT8mvhha5C5CaBfbGT8sFqhBOAQlsqJa1Hn
-yto+JHNQay1XWHg7fWHDDe8nLqzawTMHBg6oWNKl0RtM5IQynL5n8PhZo8EsPNSK
-gypr+Ic6HDInNUO3JW74
-=aA0D
------END PGP SIGNATURE-----
-
---+wSiqF7c0ySQ2tNi--
