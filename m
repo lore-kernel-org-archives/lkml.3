@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754472AbaGNKF0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 06:05:26 -0400
+	id S1754411AbaGNKFi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 06:05:38 -0400
 Received: from mga11.intel.com ([192.55.52.93]:40395 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752252AbaGNKEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 06:04:34 -0400
+	id S1754153AbaGNKEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 06:04:42 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,657,1400050800"; 
-   d="scan'208";a="561434196"
+   d="scan'208";a="561434215"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 08/41] perf tools: Fix missing label symbols
-Date: Mon, 14 Jul 2014 13:02:32 +0300
-Message-Id: <1405332185-4050-9-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 10/41] perf inject: Fix build id injection
+Date: Mon, 14 Jul 2014 13:02:34 +0300
+Message-Id: <1405332185-4050-11-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
 References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
@@ -27,33 +27,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-label symbols are missing because elf_sec__is_a() fails
-to find the section because the section strings do not
-match the section headers because the sections headers
-are from the 'runtime' object and the sections strings
-are from the 'symbol source' object.
-
-Fix by getting the section strings from the 'runtime'
-object so that they match the section headers.
+Build Ids won't be injected unless the build id
+feature flag is set.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/symbol-elf.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/builtin-inject.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 6864661..8c96817 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -732,7 +732,7 @@ int dso__load_sym(struct dso *dso, struct map *map,
- 	if (symstrs == NULL)
- 		goto out_elf_end;
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index 16c7c11..cf6a605 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -389,6 +389,9 @@ static int __cmd_inject(struct perf_inject *inject)
+ 	ret = perf_session__process_events(session, &inject->tool);
  
--	sec_strndx = elf_getscn(elf, ehdr.e_shstrndx);
-+	sec_strndx = elf_getscn(runtime_ss->elf, runtime_ss->ehdr.e_shstrndx);
- 	if (sec_strndx == NULL)
- 		goto out_elf_end;
- 
+ 	if (!file_out->is_pipe) {
++		if (inject->build_ids)
++			perf_header__set_feat(&session->header,
++					      HEADER_BUILD_ID);
+ 		session->header.data_size = inject->bytes_written;
+ 		perf_session__write_header(session, session->evlist, file_out->fd, true);
+ 	}
 -- 
 1.8.3.2
 
