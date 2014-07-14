@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757415AbaGNUWs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 16:22:48 -0400
-Received: from dehamd003.servertools24.de ([31.47.254.18]:50382 "EHLO
-	dehamd003.servertools24.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757078AbaGNUWo (ORCPT
+	id S1757016AbaGNUZn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 16:25:43 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:28759 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754870AbaGNUZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 16:22:44 -0400
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-Message-ID: <53C43BDF.2070403@ladisch.de>
-Date: Mon, 14 Jul 2014 22:21:51 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 14 Jul 2014 16:25:41 -0400
+Date: Mon, 14 Jul 2014 16:25:31 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Sander Eikelenboom <linux@eikelenboom.it>
+Cc: konrad@kernel.org, xen-devel@lists.xenproject.org,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH v4] PCI back fixes for 3.17.
+Message-ID: <20140714202531.GA24877@laptop.dumpdata.com>
+References: <20140714173753.GB12920@laptop.dumpdata.com>
+ <9210423415.20140714194304@eikelenboom.it>
+ <20140714174525.GD12920@laptop.dumpdata.com>
+ <1332864311.20140714202433@eikelenboom.it>
+ <20140714184547.GA18896@laptop.dumpdata.com>
+ <1499016487.20140714210129@eikelenboom.it>
+ <20140714195405.GA20567@laptop.dumpdata.com>
+ <6110472183.20140714221618@eikelenboom.it>
+ <20140714201817.GD23791@laptop.dumpdata.com>
+ <1174271881.20140714222152@eikelenboom.it>
 MIME-Version: 1.0
-To: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-CC: Borislav Petkov <bp@alien8.de>, jdelvare@suse.de, linux@roeck-us.net,
-        rdunlap@infradead.org, bhelgaas@google.com, lm-sensors@lm-sensors.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH] hwmon, k10temp: Add support for AMD F15h M60h processor
-References: <1405369388-12729-1-git-send-email-Aravind.Gopalakrishnan@amd.com> <20140714195128.GA25124@pd.tnic>
-In-Reply-To: <20140714195128.GA25124@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1174271881.20140714222152@eikelenboom.it>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Borislav Petkov wrote:
-> On Mon, Jul 14, 2014 at 03:23:08PM -0500, Aravind Gopalakrishnan wrote:
->> +	if (boot_cpu_data.x86 == 0x15 && boot_cpu_data.x86_model == 0x60) {
->> +		pci_bus_write_config_dword(pdev->bus, PCI_DEVFN(0, 0),
->> +					   NB_SMU_IND_ADDR, IND_ADDR_OFFSET);
->> +		pci_bus_read_config_dword(pdev->bus, PCI_DEVFN(0, 0),
->> +					  NB_SMU_IND_DATA, &regval);
+> >> > Thank you for reporting it and helping me with the XenStore output to
+> >> > narrow down the culprit!
+> >> 
+> >> The thing i don't understand then is:
+> >> How is it different for the last (or all ) device(s) ?
+> >> (since the last device (or removing all devices) before doing the 
+> >> assignable-remove doesn't trigger the warning)
+> >> 
+> >> Or does the complete removal of the pci-part of the tree in xenstore trigger something ?
+> 
+> > Yup. It removes the whole 'pci' directory in XenStore which triggers
+> > in Xen pciback the code to deal with that.
+> So that essentially needs to be changed to watch the individual devices in the 
+> xenstore tree instead of the whole pci stuff.
 
-How do you prevent races with any other code that accesses some indirect
-register?
+Correct. Thought instead of watching it will just compare with what it
+had assigned to a guest and what it currently has exposed in XenStore. And
+then whatever is not on the list (exposed in XenStore) is going to be reaped.
 
->> +
->> +	} else
->> +		pci_read_config_dword(pdev, REG_REPORTED_TEMPERATURE, &regval);
+> Then it all makes sense :-)  
 
-Why the empty line?  Also, use braces in both branches.
-
-
-Regards,
-Clemens
+Until you find another bug :-)
+> 
+> >> You know if you got a patch cooked up, i'm more than happy to test !
+> 
+> > Hehe!
+> >> 
+> >> --
+> >> Sander
+> >> 
+> 
+> 
