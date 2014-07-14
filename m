@@ -1,100 +1,312 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756796AbaGNTPV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 15:15:21 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53704 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755857AbaGNTPP (ORCPT
+	id S1756874AbaGNTQI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 15:16:08 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:38237 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754271AbaGNTQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 15:15:15 -0400
-Date: Mon, 14 Jul 2014 21:15:04 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>, "H. Peter Anvin" <hpa@zytor.com>,
-        "David S.Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Chandramouli Narayanan <mouli@linux.intel.com>,
-        Vinodh Gopal <vinodh.gopal@intel.com>,
-        James Guilford <james.guilford@intel.com>,
-        Wajdi Feghali <wajdi.k.feghali@intel.com>,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 6/7] sched: add function nr_running_cpu to expose
- number of tasks running on cpu
-Message-ID: <20140714191504.GO9918@twins.programming.kicks-ass.net>
-References: <cover.1405074379.git.tim.c.chen@linux.intel.com>
- <1405110784.2970.655.camel@schen9-DESK>
- <20140714101611.GS9918@twins.programming.kicks-ass.net>
- <1405354214.2970.663.camel@schen9-DESK>
- <20140714161432.GC9918@twins.programming.kicks-ass.net>
- <1405357534.2970.701.camel@schen9-DESK>
- <20140714181738.GI9918@twins.programming.kicks-ass.net>
- <1405364908.2970.729.camel@schen9-DESK>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XZq0mbLCR4KNTYFe"
-Content-Disposition: inline
-In-Reply-To: <1405364908.2970.729.camel@schen9-DESK>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 14 Jul 2014 15:16:01 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: forest@alittletooquiet.net, gregkh@linuxfoundation.org, tvboxspy@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Cc: Peter Senna Tschudin <peter.senna@gmail.com>
+Subject: [PATCH V4 1/6] staging: vt6556: Cleanup trivial coding style issues
+Date: Mon, 14 Jul 2014 21:15:28 +0200
+Message-Id: <1405365333-17170-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch cleans up the following checkpatch issues:
+ - tabs instead of spaces on the beginning of a line
+ - use correct /* */ comment style
+ - put { and } on the correct places
+ - line over 80 chars
+ - indentation style for multi-line calls / comments
+ - space after semicolon ,
+ - new line after declaration
 
---XZq0mbLCR4KNTYFe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Tested by compilation only.
 
-On Mon, Jul 14, 2014 at 12:08:28PM -0700, Tim Chen wrote:
-> On Mon, 2014-07-14 at 20:17 +0200, Peter Zijlstra wrote:
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+---
+Cahnges from V3:
+ - Splitted the patches by change type
 
-> > Your multi-buffer thing isn't generic either, it seems lmiited to sha1.
->=20
-> We actually have many other multi-buffer crypto algorithms already
-> published for encryption and other IPSec usages.  So=20
-> multi-buffer algorithm is not just limited to SHA1.
-> We hope to port those to the kernel crypto library eventually.
-> http://www.intel.com/content/dam/www/public/us/en/documents/white-papers/=
-fast-multi-buffer-ipsec-implementations-ia-processors-paper.pdf=20
+ drivers/staging/vt6656/baseband.c | 23 ++++++++-------
+ drivers/staging/vt6656/card.c     | 13 +++++----
+ drivers/staging/vt6656/card.h     |  6 ++--
+ drivers/staging/vt6656/channel.c  |  5 ++--
+ drivers/staging/vt6656/device.h   | 10 +++----
+ drivers/staging/vt6656/main_usb.c | 59 ++++++++++++++++++++-------------------
+ 6 files changed, 61 insertions(+), 55 deletions(-)
 
-That's all nice and such; but the code as I've seen in these patches is
-very much sha1 specific. The mb part isn't separated out.
+diff --git a/drivers/staging/vt6656/baseband.c b/drivers/staging/vt6656/baseband.c
+index c1675d5..8678b41 100644
+--- a/drivers/staging/vt6656/baseband.c
++++ b/drivers/staging/vt6656/baseband.c
+@@ -26,9 +26,10 @@
+  * Date: Jun. 5, 2002
+  *
+  * Functions:
+- *      vnt_get_frame_time        - Calculate data frame transmitting time
+- *      vnt_get_phy_field   - Calculate PhyLength, PhyService and Phy Signal parameter for baseband Tx
+- *      BBbVT3184Init          - VIA VT3184 baseband chip init code
++ *	vnt_get_frame_time	- Calculate data frame transmitting time
++ *	vnt_get_phy_field	- Calculate PhyLength, PhyService and Phy
++ *				  Signal parameter for baseband Tx
++ *	BBbVT3184Init		- VIA VT3184 baseband chip init code
+  *
+  * Revision History:
+  *
+@@ -86,7 +87,7 @@ static u8 vnt_vt3184_al2230[] = {
+ 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  /* 0xff */
+ };
+ 
+-//{{RobertYu:20060515, new BB setting for VT3226D0
++/* {{RobertYu:20060515, new BB setting for VT3226D0 */
+ static u8 vnt_vt3184_vt3226d0[] = {
+ 	0x31, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00,
+ 	0x70, 0x45, 0x2a, 0x76, 0x00, 0x00, 0x80, 0x00, /* 0x0f */
+@@ -122,8 +123,9 @@ static u8 vnt_vt3184_vt3226d0[] = {
+ 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  /* 0xff */
+ };
+ 
+-static const u16 awcFrameTime[MAX_RATE] =
+-{10, 20, 55, 110, 24, 36, 48, 72, 96, 144, 192, 216};
++static const u16 awcFrameTime[MAX_RATE] = {
++	10, 20, 55, 110, 24, 36, 48, 72, 96, 144, 192, 216
++};
+ 
+ /*
+  * Description: Calculate data frame transmitting time
+@@ -191,9 +193,9 @@ unsigned int vnt_get_frame_time(u8 preamble_type, u8 pkt_type,
+  *      tx_rate           - Tx Rate
+  *  Out:
+  *	struct vnt_phy_field *phy
+- * 			- pointer to Phy Length field
+- *			- pointer to Phy Service field
+- * 			- pointer to Phy Signal field
++ *		- pointer to Phy Length field
++ *		- pointer to Phy Service field
++ *		- pointer to Phy Signal field
+  *
+  * Return Value: none
+  *
+@@ -467,7 +469,8 @@ int BBbVT3184Init(struct vnt_private *priv)
+ 		priv->ldBmThreshold[2] = 0;
+ 		priv->ldBmThreshold[3] = 0;
+ 		/* Fix VT3226 DFC system timing issue */
+-		vnt_mac_reg_bits_on(priv, MAC_REG_SOFTPWRCTL2, SOFTPWRCTL_RFLEOPT);
++		vnt_mac_reg_bits_on(priv, MAC_REG_SOFTPWRCTL2,
++				    SOFTPWRCTL_RFLEOPT);
+ 	} else {
+ 		return true;
+ 	}
+diff --git a/drivers/staging/vt6656/card.c b/drivers/staging/vt6656/card.c
+index ea06b63..37cd96b 100644
+--- a/drivers/staging/vt6656/card.c
++++ b/drivers/staging/vt6656/card.c
+@@ -55,11 +55,12 @@
+ #include "key.h"
+ #include "usbpipe.h"
+ 
+-//const u16 cwRXBCNTSFOff[MAX_RATE] =
+-//{17, 34, 96, 192, 34, 23, 17, 11, 8, 5, 4, 3};
++/* const u16 cwRXBCNTSFOff[MAX_RATE] =
++   {17, 34, 96, 192, 34, 23, 17, 11, 8, 5, 4, 3}; */
+ 
+-static const u16 cwRXBCNTSFOff[MAX_RATE] =
+-{192, 96, 34, 17, 34, 23, 17, 11, 8, 5, 4, 3};
++static const u16 cwRXBCNTSFOff[MAX_RATE] = {
++	192, 96, 34, 17, 34, 23, 17, 11, 8, 5, 4, 3
++};
+ 
+ /*
+  * Description: Set NIC media channel
+@@ -477,7 +478,7 @@ void vnt_update_top_rates(struct vnt_private *priv)
+ 	}
+ 
+ 	priv->byTopCCKBasicRate = top_cck;
+- }
++}
+ 
+ int vnt_ofdm_min_rate(struct vnt_private *priv)
+ {
+@@ -710,7 +711,7 @@ void vnt_update_next_tbtt(struct vnt_private *priv, u64 tsf,
+ 	data[7] = (u8)(tsf >> 56);
+ 
+ 	vnt_control_out(priv, MESSAGE_TYPE_SET_TSFTBTT,
+-		MESSAGE_REQUEST_TBTT, 0, 8, data);
++			MESSAGE_REQUEST_TBTT, 0, 8, data);
+ 
+ 	dev_dbg(&priv->usb->dev, "%s TBTT: %8llx\n", __func__, tsf);
+ 
+diff --git a/drivers/staging/vt6656/card.h b/drivers/staging/vt6656/card.h
+index 5b7cc5a..80fcd53 100644
+--- a/drivers/staging/vt6656/card.h
++++ b/drivers/staging/vt6656/card.h
+@@ -39,9 +39,9 @@ typedef enum _CARD_PHY_TYPE {
+     PHY_TYPE_11A
+ } CARD_PHY_TYPE, *PCARD_PHY_TYPE;
+ 
+-#define CB_MAX_CHANNEL_24G  14
+-#define CB_MAX_CHANNEL_5G       42 /* add channel9(5045MHz), 41==>42 */
+-#define CB_MAX_CHANNEL      (CB_MAX_CHANNEL_24G+CB_MAX_CHANNEL_5G)
++#define CB_MAX_CHANNEL_24G	14
++#define CB_MAX_CHANNEL_5G	42 /* add channel9(5045MHz), 41==>42 */
++#define CB_MAX_CHANNEL		(CB_MAX_CHANNEL_24G + CB_MAX_CHANNEL_5G)
+ 
+ struct vnt_private;
+ 
+diff --git a/drivers/staging/vt6656/channel.c b/drivers/staging/vt6656/channel.c
+index fb1838e..4a53f1a 100644
+--- a/drivers/staging/vt6656/channel.c
++++ b/drivers/staging/vt6656/channel.c
+@@ -28,8 +28,9 @@
+  *
+  *
+  * Revision History:
+- *      01-18-2005      RobertYu:  remove the for loop searching in ChannelValid,
+- *                                 change ChannelRuleTab to lookup-type, reorder table items.
++ *	01-18-2005	RobertYu:	remove the for loop searching in
++ *					ChannelValid, change ChannelRuleTab
++ *					to lookup-type, reorder table items.
+  *
+  *
+  */
+diff --git a/drivers/staging/vt6656/device.h b/drivers/staging/vt6656/device.h
+index 789c55d..50a6749 100644
+--- a/drivers/staging/vt6656/device.h
++++ b/drivers/staging/vt6656/device.h
+@@ -443,11 +443,11 @@ struct vnt_private {
+ 	struct ieee80211_low_level_stats low_stats;
+ };
+ 
+-#define ADD_ONE_WITH_WRAP_AROUND(uVar, uModulo) {   \
+-    if ((uVar) >= ((uModulo) - 1))                  \
+-        (uVar) = 0;                                 \
+-    else                                            \
+-        (uVar)++;                                   \
++#define ADD_ONE_WITH_WRAP_AROUND(uVar, uModulo) {	\
++	if ((uVar) >= ((uModulo) - 1))			\
++		(uVar) = 0;				\
++	else						\
++		(uVar)++;				\
+ }
+ 
+ #define fMP_DISCONNECTED                    0x00000002
+diff --git a/drivers/staging/vt6656/main_usb.c b/drivers/staging/vt6656/main_usb.c
+index 4cdf29e..8e05f04 100644
+--- a/drivers/staging/vt6656/main_usb.c
++++ b/drivers/staging/vt6656/main_usb.c
+@@ -62,7 +62,7 @@
+ #include "int.h"
+ 
+ /* static int msglevel = MSG_LEVEL_DEBUG; */
+-static int          msglevel                =MSG_LEVEL_INFO;
++static int msglevel = MSG_LEVEL_INFO;
+ 
+ /*
+  * define module options
+@@ -75,18 +75,18 @@ MODULE_AUTHOR(DRIVER_AUTHOR);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION(DEVICE_FULL_DRV_NAM);
+ 
+-#define DEVICE_PARAM(N,D) \
+-        static int N[MAX_UINTS]=OPTION_DEFAULT;\
+-        module_param_array(N, int, NULL, 0);\
+-        MODULE_PARM_DESC(N, D);
++#define DEVICE_PARAM(N, D)				\
++	static int N[MAX_UINTS] = OPTION_DEFAULT;	\
++	module_param_array(N, int, NULL, 0);		\
++	MODULE_PARM_DESC(N, D)
+ 
+-#define RX_DESC_DEF0     64
+-DEVICE_PARAM(RxDescriptors0,"Number of receive usb desc buffer");
++#define RX_DESC_DEF0 64
++DEVICE_PARAM(RxDescriptors0, "Number of receive usb desc buffer");
+ 
+-#define TX_DESC_DEF0     64
+-DEVICE_PARAM(TxDescriptors0,"Number of transmit usb desc buffer");
++#define TX_DESC_DEF0 64
++DEVICE_PARAM(TxDescriptors0, "Number of transmit usb desc buffer");
+ 
+-#define CHANNEL_DEF     6
++#define CHANNEL_DEF 6
+ DEVICE_PARAM(Channel, "Channel number");
+ 
+ /* PreambleType[] is the preamble length used for transmit.
+@@ -177,13 +177,12 @@ static struct usb_device_id vt6656_table[] = {
+ /* frequency list (map channels to frequencies) */
+ /*
+ static const long frequency_list[] = {
+-    2412, 2417, 2422, 2427, 2432, 2437, 2442, 2447, 2452, 2457, 2462, 2467, 2472, 2484,
+-    4915, 4920, 4925, 4935, 4940, 4945, 4960, 4980,
+-    5035, 5040, 5045, 5055, 5060, 5080, 5170, 5180, 5190, 5200, 5210, 5220, 5230, 5240,
+-    5260, 5280, 5300, 5320, 5500, 5520, 5540, 5560, 5580, 5600, 5620, 5640, 5660, 5680,
+-    5700, 5745, 5765, 5785, 5805, 5825
+-	};
+-
++	2412, 2417, 2422, 2427, 2432, 2437, 2442, 2447, 2452, 2457, 2462, 2467,
++	2472, 2484, 4915, 4920, 4925, 4935, 4940, 4945, 4960, 4980, 5035, 5040,
++	5045, 5055, 5060, 5080, 5170, 5180, 5190, 5200, 5210, 5220, 5230, 5240,
++	5260, 5280, 5300, 5320, 5500, 5520, 5540, 5560, 5580, 5600, 5620, 5640,
++	5660, 5680, 5700, 5745, 5765, 5785, 5805, 5825
++};
+ */
+ 
+ static int vt6656_probe(struct usb_interface *intf,
+@@ -206,16 +205,16 @@ static void usb_device_reset(struct vnt_private *pDevice);
+ 
+ static void
+ device_set_options(struct vnt_private *pDevice) {
+-    pDevice->cbTD = TX_DESC_DEF0;
+-    pDevice->cbRD = RX_DESC_DEF0;
+-    pDevice->byShortRetryLimit = SHORT_RETRY_DEF;
+-    pDevice->byLongRetryLimit = LONG_RETRY_DEF;
+-    pDevice->op_mode = NL80211_IFTYPE_UNSPECIFIED;
+-    pDevice->byBBType = BBP_TYPE_DEF;
+-    pDevice->byPacketType = pDevice->byBBType;
+-    pDevice->byAutoFBCtrl = AUTO_FB_0;
+-    pDevice->byPreambleType = 0;
+-    pDevice->bExistSWNetAddr = false;
++	pDevice->cbTD = TX_DESC_DEF0;
++	pDevice->cbRD = RX_DESC_DEF0;
++	pDevice->byShortRetryLimit = SHORT_RETRY_DEF;
++	pDevice->byLongRetryLimit = LONG_RETRY_DEF;
++	pDevice->op_mode = NL80211_IFTYPE_UNSPECIFIED;
++	pDevice->byBBType = BBP_TYPE_DEF;
++	pDevice->byPacketType = pDevice->byBBType;
++	pDevice->byAutoFBCtrl = AUTO_FB_0;
++	pDevice->byPreambleType = 0;
++	pDevice->bExistSWNetAddr = false;
+ }
+ 
+ /*
+@@ -526,8 +525,9 @@ static void device_free_rx_bufs(struct vnt_private *priv)
+ 
+ static void usb_device_reset(struct vnt_private *pDevice)
+ {
+- int status;
+- status = usb_reset_device(pDevice->usb);
++	int status;
++
++	status = usb_reset_device(pDevice->usb);
+ 	if (status)
+             printk("usb_device_reset fail status=%d\n",status);
+ 	return ;
+@@ -836,6 +836,7 @@ static void vnt_bss_info_changed(struct ieee80211_hw *hw,
+ 		u32 changed)
+ {
+ 	struct vnt_private *priv = hw->priv;
++
+ 	priv->current_aid = conf->aid;
+ 
+ 	if (changed & BSS_CHANGED_BSSID)
+-- 
+1.9.3
 
-> > It does not reuse padata,=20
-> padata tries to speed things up by parallelizing jobs to *multiple*
-> cpus.  Whereas multi-buffer tries to speed things up by speeding things
-> up by using multiple data lanes in SIMD register in a *single* cpu.
-> These two usages are complementary but not the same.
-
-And if its single cpu, wth do you need that nr_running thing for another
-cpu for?
-
-Also, this difference wasn't clear to me.
-
-I still loathe all the async work, because it makes a mockery of
-accounting etc.. but that's a story for another day I suppose :-(
-
-
-
---XZq0mbLCR4KNTYFe
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTxCw4AAoJEHZH4aRLwOS6TY4P/AklVJoTWm/aJpCS6h4zP3fX
-a0Bt8E5dDKVvc6km38vZEHvdrSSdi4JC2IksbGSLB5MPMVwxbtQqQ32Tz8w6BKOu
-W/mAIOACmApufx9url5VWgEGDjehoqIh2zcCbik5P9bG17fVU7w/IdOalstu0+KP
-s28LgiIR+iMxaNDVfHt4lus2JFXI0lRg2KlgqEv1sX36kjmqApZkAPRlFW1M4zlr
-Go9XZe6ANN46f4ffe123D7VGAl0DJmXMRf1kFvyRP4V88W2COIYxsnwnEcEYTGFB
-gWH05NufrQgNvSC8jhCktZlHx7yuDUrc1+v4IKM76uGSFyTIsbee+YpiLzJRd/Pu
-BcPlVf3UvxM3bfgCPoYUNiGgTXVGfaPGScL1yZSuAWmckvEKm2Xn2n1VyPjXxOuK
-NyGGwwjXcO0hw0oP/dqzmcrECLBsmnNoUVtz0WB0GPG5NEXS9WVJpihRlLoyt1zT
-2lh4Y//ZhHMfCPoFccwfzWMQ32vZUzreyaPTYfp+OEAaakUPDF16Y3CMHvSFVyjd
-EYtW6+QHUQ7TnIQ02egHl2bLQ7g+heaFhsFl0DbqdrN/yoCJ4k9wu9Dg/54fosba
-FkpCqZlmdSzbMOygEwsGab054nR71DyxdhdXp4dzolKpozWkXCecof94C5fMmQnO
-3aWLkTYlJK+7wi807Sxx
-=6dIe
------END PGP SIGNATURE-----
-
---XZq0mbLCR4KNTYFe--
