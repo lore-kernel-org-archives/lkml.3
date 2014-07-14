@@ -1,75 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753231AbaGNHcy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 03:32:54 -0400
-Received: from mail-by2lp0244.outbound.protection.outlook.com ([207.46.163.244]:13671
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752785AbaGNHcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 03:32:46 -0400
-Date: Mon, 14 Jul 2014 15:32:35 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Stefan Agner <stefan@agner.ch>
-CC: Marc Kleine-Budde <mkl@pengutronix.de>, <wg@grandegger.com>,
-        <kernel@pengutronix.de>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-can@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] can: flexcan: add vf61x support for flexcan
-Message-ID: <20140714073234.GD2197@dragon>
-References: <1405075933-22317-1-git-send-email-stefan@agner.ch>
- <53BFD401.8030101@pengutronix.de> <dac76ccd134f41b86f00352d10cfae4b@agner.ch>
- <20140714060344.GB2197@dragon> <cecd42e333cdf65ad512f719125f9180@agner.ch>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <cecd42e333cdf65ad512f719125f9180@agner.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(377424004)(24454002)(51704005)(189002)(199002)(21056001)(50466002)(4396001)(97756001)(81542001)(79102001)(86362001)(50986999)(76176999)(97736001)(95666004)(81342001)(54356999)(99396002)(81156004)(105606002)(64706001)(106466001)(80022001)(85306003)(20776003)(110136001)(46102001)(104016003)(57986006)(83072002)(92726001)(85852003)(92566001)(46406003)(74662001)(87936001)(74502001)(31966008)(83322001)(107046002)(77982001)(33656002)(33716001)(76482001)(44976005)(6806004)(47776003)(84676001)(23726002)(68736004)(102836001)(83506001)(69596002)(19580405001)(93886003)(26826002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB374;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02723F29C4
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Shawn.Guo@freescale.com; 
-X-OriginatorOrg: freescale.com
+	id S1753324AbaGNHdh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 03:33:37 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:50335 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752724AbaGNHd3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 03:33:29 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-6f-53c387c5bc9b
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-mm-sig@lists.linaro.org, devicetree@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Nishanth Peethambaran <nishanth.p@gmail.com>,
+        Marc <marc.ceeeee@gmail.com>, Josh Cartwright <joshc@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Paul Mackerras <paulus@samba.org>,
+        Jon Medhurst <tixy@linaro.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        "Aneesh Kumar K.V." <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH v2 0/4] CMA & device tree, once again
+Date: Mon, 14 Jul 2014 09:12:42 +0200
+Message-id: <1405321966-28184-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.9.2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrILMWRmVeSWpSXmKPExsVy+t/xq7rH2g8HG1w2sZizfg2bxePX81gs
+	/k46xm7xoamV2eL9sh5Gi/lHzrFaHPizg9FiZXczm8XOde8YLc42vWG32N45g93iy5WHTBab
+	Hl9jtbi8aw6bxdojd9ktNrw8yGSx4HgLq8Wf6XIWa44sZrf4u30Ti8X6Ga9ZLBbOv89u8fLj
+	CRYHcY8189Ywevz+NYnR43JfL5PHzll32T163rSwenS9vcLkcefaHjaPEzN+s3g8OLSZxWPz
+	knqP2/8eM3us+/OKyaP/r4HH3F19jB59W1YxenzeJBcgEMVlk5Kak1mWWqRvl8CV8X/aNfaC
+	nbIVTc2P2RsYmyS6GDk5JARMJI63vWGHsMUkLtxbz9bFyMUhJLCUUaLz0gUop49J4u2aGUwg
+	VWwChhJdb7vYQGwRATeJf+sOgRUxCyxgkzj6/wcjSEJYwFTiybwWsLEsAqoSP7Y+BGrm4OAV
+	8JDoeGoOsU1O4v/LFUwTGLkXMDKsYhRNLU0uKE5KzzXUK07MLS7NS9dLzs/dxAiJli87GBcf
+	szrEKMDBqMTDWyF2OFiINbGsuDL3EKMEB7OSCG+4G1CINyWxsiq1KD++qDQntfgQIxMHp1QD
+	Y5/E1U2ifusb/8Vkbu1xY74iXjeZ/2gBx2tmwweJPyT562Yfk96xbZkem7v+1DlV85wsVu+5
+	PK3Afd16061Tq9g/NPAtSvgnfG7emv23pulNFXR2rZOf/eqa9hzO7pKfcWLvTPRN3Tb/DVa+
+	wT4302TH6ZfzZZ+nue81WMR2gWU/P58eR1DifiWW4oxEQy3mouJEAEv/8LF0AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 09:06:33AM +0200, Stefan Agner wrote:
-> Am 2014-07-14 08:04, schrieb Shawn Guo:
-> > On Fri, Jul 11, 2014 at 03:58:37PM +0200, Stefan Agner wrote:
-> >> >> @@ -362,7 +374,7 @@
-> >> >>
-> >> >>  			esdhc1: esdhc@400b2000 {
-> >> >>  				compatible = "fsl,imx53-esdhc";
-> >> >> -				reg = <0x400b2000 0x4000>;
-> >> >> +				reg = <0x400b2000 0x1000>;
-> >> >
-> >> > What's that doing here? :)
-> >>
-> >> That's an error I just stumbled upon.
-> > 
-> > I do not see why it's an error.  From Table 2-1. System Memory Map in
-> > i.MX53 RM, the size of ESDHC1 is 16K.
-> > 
-> > Shawn
-> 
-> Hi Shawn,
-> 
-> In the Vybrid RM memory map, 0x400B4000 is allocated to USB. 0x400B3000
-> is empty, whereas for other peripherals (e.g. FlexCAN) which use
-> multiple 0x1000 blocks, they are all explicitly stated. That is why I
-> assumed 0x1000 is correct.
+Hello,
 
-Ah, sorry.  I thought you're on i.MX53.  You're right about Vybrid, and
-it should be 0x1000.
+This is one more respin of the patches which add support for creating
+reserved memory regions defined in device tree. The last attempt
+(http://lists.linaro.org/pipermail/linaro-mm-sig/2014-February/003738.html)
+ended in merging only half of the code, so right now we have complete
+documentation merged and only basic code, which implements a half of it
+is written in the documentation. Although the merged patches allow to
+reserve memory, there is no way of using it for devices and drivers.
 
-> 
-> But then, the memory map within the SDHC peripheral has some registers
-> also located in 0x400B3000.
+This situation makes CMA rather useless, as the main architecture (ARM),
+which used it, has been converted from board-file based system
+initialization to device tree. Thus there is no place to use direct
+calls to dma_declare_contiguous() and some new solution, which bases on
+device tree, is urgently needed.
 
-Really?  Which one?
+This patch series fixes this issue. It provides two, already widely
+discussed and already present in the kernel, drivers for reserved
+memory: first based on DMA-coherent allocator, second using Contiguous
+Memory Allocator. The first one nicely implements typical 'carved out'
+reserved memory way of allocating contiguous buffers in a kernel-style
+way. The memory is used exclusively by devices assigned to the given
+memory region. The second one allows to reuse reserved memory for
+movable kernel pages (like disk buffers, anonymous memory) and migrates
+it out when device to allocates contiguous memory buffer. Both driver
+provides memory buffers via standard dma-mapping API.
 
-Shawn
+The patches have been rebased on top of latest CMA and mm changes merged
+to akmp kernel tree.
 
-> Hence I think 0x2000 is correct. Will send
-> an updated and separated patch.
+To define a 64MiB CMA region following node is needed:
+
+multimedia_reserved: multimedia_mem_region {
+	compatible = "shared-dma-pool";
+	reusable;
+	size = <0x4000000>;
+	alignment = <0x400000>;
+};
+
+Similarly, one can define 64MiB region with DMA coherent memory:
+
+multimedia_reserved: multimedia_mem_region {
+	compatible = "shared-dma-pool";
+	no-map;
+	size = <0x4000000>;
+	alignment = <0x400000>;
+};
+
+Then the defined region can be assigned to devices:
+
+scaler: scaler@12500000 {
+	memory-region = <&multimedia_reserved>;
+	/* ... */
+};
+codec: codec@12600000 {
+	memory-region = <&multimedia_reserved>;
+	/* ... */
+};
+
+Best regards
+Marek Szyprowski
+Samsung R&D Institute Poland
+
+Changes since v1:
+(http://www.spinics.net/lists/arm-kernel/msg343702.html)
+- fixed possible memory leak in case of reserved memory allocation failure
+  (thanks to Joonsoo Kim)
+
+Changes since the version posted in '[PATCH v6 00/11] reserved-memory 
+regions/CMA in devicetree, again' thread 
+http://lists.linaro.org/pipermail/linaro-mm-sig/2014-February/003738.html:
+- rebased on top of '[PATCH v3 -next 0/9] CMA: generalize CMA reserved
+area management code' patch series on v3.16-rc3
+- improved dma-coherent driver, now it correctly handles assigning more
+than one device to the given memory region
+
+
+Patch summary:
+
+Marek Szyprowski (4):
+  drivers: of: add automated assignment of reserved regions to client
+    devices
+  drivers: of: initialize and assign reserved memory to newly created
+    devices
+  drivers: dma-coherent: add initialization from device tree
+  drivers: dma-contiguous: add initialization from device tree
+
+ drivers/base/dma-coherent.c     | 40 +++++++++++++++++++++++
+ drivers/base/dma-contiguous.c   | 60 +++++++++++++++++++++++++++++++++++
+ drivers/of/of_reserved_mem.c    | 70 +++++++++++++++++++++++++++++++++++++++++
+ drivers/of/platform.c           |  7 +++++
+ include/linux/cma.h             |  3 ++
+ include/linux/of_reserved_mem.h |  7 +++++
+ mm/cma.c                        | 62 +++++++++++++++++++++++++++++-------
+ 7 files changed, 238 insertions(+), 11 deletions(-)
+
+-- 
+1.9.2
+
