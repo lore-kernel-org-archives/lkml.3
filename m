@@ -1,216 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716AbaGNONs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 10:13:48 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:31411 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755694AbaGNONj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 10:13:39 -0400
-Date: Mon, 14 Jul 2014 10:13:28 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: konrad@kernel.org, xen-devel@lists.xenproject.org, david.vrabel@citrix.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 2/5] xen/pciback: Don't deadlock when unbinding.
-Message-ID: <20140714141328.GA5112@laptop.dumpdata.com>
-References: <1405109332-31659-1-git-send-email-konrad@kernel.org>
- <1405109332-31659-3-git-send-email-konrad@kernel.org>
- <53C04D81.3010002@oracle.com>
- <20140711210201.GC25233@laptop.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140711210201.GC25233@laptop.dumpdata.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1755738AbaGNOOx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 10:14:53 -0400
+Received: from mga01.intel.com ([192.55.52.88]:8596 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754534AbaGNOOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 10:14:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,658,1400050800"; 
+   d="scan'208";a="561516161"
+Message-ID: <1405347277.28592.25.camel@rzhang1-toshiba>
+Subject: Re: [RESEND PATCH 0/6] thermal: sti: Add new Thermal driver
+From: Zhang Rui <rui.zhang@intel.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, ajitpal.singh@st.com, edubezval@gmail.com,
+        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
+        maxime.coquelin@st.com, patrice.chotard@st.com
+Date: Mon, 14 Jul 2014 22:14:37 +0800
+In-Reply-To: <20140714130824.GA3993@lee--X1>
+References: <1401980819-19962-1-git-send-email-lee.jones@linaro.org>
+	 <20140624092309.GD13803@lee--X1> <20140709120823.GA32573@lee--X1>
+	 <1404911964.28592.4.camel@rzhang1-toshiba> <20140709134646.GB479@lee--X1>
+	 <20140714130824.GA3993@lee--X1>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 05:02:01PM -0400, Konrad Rzeszutek Wilk wrote:
-> > >--- a/drivers/xen/xen-pciback/pci_stub.c
-> > >+++ b/drivers/xen/xen-pciback/pci_stub.c
-> > >@@ -250,6 +250,8 @@ struct pci_dev *pcistub_get_pci_dev(struct xen_pcibk_device *pdev,
-> > >   *  - 'echo BDF > unbind' with a guest still using it. See pcistub_remove
-> > >   *
-> > >   *  As such we have to be careful.
-> > >+ *
-> > >+ *  To make this easier, the caller has to hold the device lock.
+On Mon, 2014-07-14 at 14:08 +0100, Lee Jones wrote:
+> On Wed, 09 Jul 2014, Lee Jones wrote:
+> > On Wed, 09 Jul 2014, Zhang Rui wrote:
+> > > On Wed, 2014-07-09 at 13:08 +0100, Lee Jones wrote:
+> > > > On Tue, 24 Jun 2014, Lee Jones wrote:
+> > > > 
+> > > > > > I'm re-sending this set, as one of the maintainers' email addresses
+> > > > > > is incorrect in the MAINTAINERS file.
+> > > > > > 
+> > > > > > This patchset adds full support for 2 types of Thermal Controllers
+> > > > > > produced by STMicroelectronics.  One is a more traditional memory
+> > > > > > mapped variant, the other is controlled solely by system configuration
+> > > > > > registers.
+> > > > > 
+> > > > > Any thing from the Thermal guys? Has this set fallen through the gaps?
+> > > > 
+> > > > Anything at all?  It's been well over a month now.
+> > > > 
+> > > Well, for the soc thermal drivers, I'd prefer to take them via Eduardo,
+> > > but as we didn't get any feedback from Eduardo, I will take them.
 > > 
-> > Should we assert that the lock is being held?
+> > Thanks Rui.
+> > 
+> > So have you taken all 4 "thermal: sti: *" patches?
 > 
-> Yes of course we should. Thank you!
+> Have you taken these yet?
+Not yet.
+will do tomorrow.
 
-How about this:
+thanks,
+rui
+>   I notice that these aren't in -next yet.
+> 
+> > The ARM ones should go through Maxime.
+> 
 
->From 388a03c598218dac8bfeb6c5bf3992e0d1e37d1e Mon Sep 17 00:00:00 2001
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Tue, 8 Jul 2014 11:12:02 -0400
-Subject: [PATCH] xen/pciback: Don't deadlock when unbinding.
-
-As commit 0a9fd0152929db372ff61b0d6c280fdd34ae8bdb
-'xen/pciback: Document the entry points for 'pcistub_put_pci_dev''
-explained there are four entry points in this function.
-Two of them are when the user fiddles in the SysFS to
-unbind a device which might be in use by a guest or not.
-
-Both 'unbind' states will cause a deadlock as the the PCI lock has
-already been taken, which then pci_device_reset tries to take.
-
-We can simplify this by requiring that all callers of
-pcistub_put_pci_dev MUST hold the device lock. And then
-we can just call the lockless version of pci_device_reset.
-
-To make it even simpler we will modify xen_pcibk_release_pci_dev
-to quality whether it should take a lock or not - as it ends
-up calling xen_pcibk_release_pci_dev and needs to hold the lock.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
-[v2: Per David Vrabel's suggestion - use lockless version of reset]
-[v3: Per Boris suggestion add assertion mechanism]
----
- drivers/xen/xen-pciback/passthrough.c |  9 +++++++--
- drivers/xen/xen-pciback/pci_stub.c    | 12 ++++++------
- drivers/xen/xen-pciback/pciback.h     |  7 ++++---
- drivers/xen/xen-pciback/vpci.c        |  9 +++++++--
- drivers/xen/xen-pciback/xenbus.c      |  2 +-
- 5 files changed, 25 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/xen/xen-pciback/passthrough.c b/drivers/xen/xen-pciback/passthrough.c
-index 828dddc..d0c3fb4 100644
---- a/drivers/xen/xen-pciback/passthrough.c
-+++ b/drivers/xen/xen-pciback/passthrough.c
-@@ -69,7 +69,7 @@ static int __xen_pcibk_add_pci_dev(struct xen_pcibk_device *pdev,
- }
- 
- static void __xen_pcibk_release_pci_dev(struct xen_pcibk_device *pdev,
--					struct pci_dev *dev)
-+					struct pci_dev *dev, bool lock)
- {
- 	struct passthrough_dev_data *dev_data = pdev->pci_dev_data;
- 	struct pci_dev_entry *dev_entry, *t;
-@@ -87,8 +87,13 @@ static void __xen_pcibk_release_pci_dev(struct xen_pcibk_device *pdev,
- 
- 	mutex_unlock(&dev_data->lock);
- 
--	if (found_dev)
-+	if (found_dev) {
-+		if (lock)
-+			device_lock(&found_dev->dev);
- 		pcistub_put_pci_dev(found_dev);
-+		if (lock)
-+			device_unlock(&found_dev->dev);
-+	}
- }
- 
- static int __xen_pcibk_init_devices(struct xen_pcibk_device *pdev)
-diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
-index d57a173..8293fbb 100644
---- a/drivers/xen/xen-pciback/pci_stub.c
-+++ b/drivers/xen/xen-pciback/pci_stub.c
-@@ -250,6 +250,8 @@ struct pci_dev *pcistub_get_pci_dev(struct xen_pcibk_device *pdev,
-  *  - 'echo BDF > unbind' with a guest still using it. See pcistub_remove
-  *
-  *  As such we have to be careful.
-+ *
-+ *  To make this easier, the caller has to hold the device lock.
-  */
- void pcistub_put_pci_dev(struct pci_dev *dev)
- {
-@@ -276,11 +278,8 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
- 	/* Cleanup our device
- 	 * (so it's ready for the next domain)
- 	 */
--
--	/* This is OK - we are running from workqueue context
--	 * and want to inhibit the user from fiddling with 'reset'
--	 */
--	pci_reset_function(dev);
-+	lockdep_assert_held(&dev->dev.mutex);
-+	__pci_reset_function_locked(dev);
- 	pci_restore_state(dev);
- 
- 	/* This disables the device. */
-@@ -567,7 +566,8 @@ static void pcistub_remove(struct pci_dev *dev)
- 			/* N.B. This ends up calling pcistub_put_pci_dev which ends up
- 			 * doing the FLR. */
- 			xen_pcibk_release_pci_dev(found_psdev->pdev,
--						found_psdev->dev);
-+						found_psdev->dev,
-+						false /* caller holds  the lock. */);
- 		}
- 
- 		spin_lock_irqsave(&pcistub_devices_lock, flags);
-diff --git a/drivers/xen/xen-pciback/pciback.h b/drivers/xen/xen-pciback/pciback.h
-index f72af87..58e38d5 100644
---- a/drivers/xen/xen-pciback/pciback.h
-+++ b/drivers/xen/xen-pciback/pciback.h
-@@ -99,7 +99,8 @@ struct xen_pcibk_backend {
- 		    unsigned int *domain, unsigned int *bus,
- 		    unsigned int *devfn);
- 	int (*publish)(struct xen_pcibk_device *pdev, publish_pci_root_cb cb);
--	void (*release)(struct xen_pcibk_device *pdev, struct pci_dev *dev);
-+	void (*release)(struct xen_pcibk_device *pdev, struct pci_dev *dev,
-+                        bool lock);
- 	int (*add)(struct xen_pcibk_device *pdev, struct pci_dev *dev,
- 		   int devid, publish_pci_dev_cb publish_cb);
- 	struct pci_dev *(*get)(struct xen_pcibk_device *pdev,
-@@ -122,10 +123,10 @@ static inline int xen_pcibk_add_pci_dev(struct xen_pcibk_device *pdev,
- }
- 
- static inline void xen_pcibk_release_pci_dev(struct xen_pcibk_device *pdev,
--					     struct pci_dev *dev)
-+					     struct pci_dev *dev, bool lock)
- {
- 	if (xen_pcibk_backend && xen_pcibk_backend->release)
--		return xen_pcibk_backend->release(pdev, dev);
-+		return xen_pcibk_backend->release(pdev, dev, lock);
- }
- 
- static inline struct pci_dev *
-diff --git a/drivers/xen/xen-pciback/vpci.c b/drivers/xen/xen-pciback/vpci.c
-index 51afff9..2fdfcb9 100644
---- a/drivers/xen/xen-pciback/vpci.c
-+++ b/drivers/xen/xen-pciback/vpci.c
-@@ -145,7 +145,7 @@ out:
- }
- 
- static void __xen_pcibk_release_pci_dev(struct xen_pcibk_device *pdev,
--					struct pci_dev *dev)
-+					struct pci_dev *dev, bool lock)
- {
- 	int slot;
- 	struct vpci_dev_data *vpci_dev = pdev->pci_dev_data;
-@@ -169,8 +169,13 @@ static void __xen_pcibk_release_pci_dev(struct xen_pcibk_device *pdev,
- out:
- 	mutex_unlock(&vpci_dev->lock);
- 
--	if (found_dev)
-+	if (found_dev) {
-+		if (lock)
-+			device_lock(&found_dev->dev);
- 		pcistub_put_pci_dev(found_dev);
-+		if (lock)
-+			device_unlock(&found_dev->dev);
-+	}
- }
- 
- static int __xen_pcibk_init_devices(struct xen_pcibk_device *pdev)
-diff --git a/drivers/xen/xen-pciback/xenbus.c b/drivers/xen/xen-pciback/xenbus.c
-index 4a7e6e0..b3318fd 100644
---- a/drivers/xen/xen-pciback/xenbus.c
-+++ b/drivers/xen/xen-pciback/xenbus.c
-@@ -290,7 +290,7 @@ static int xen_pcibk_remove_device(struct xen_pcibk_device *pdev,
- 
- 	/* N.B. This ends up calling pcistub_put_pci_dev which ends up
- 	 * doing the FLR. */
--	xen_pcibk_release_pci_dev(pdev, dev);
-+	xen_pcibk_release_pci_dev(pdev, dev, true /* use the lock. */);
- 
- out:
- 	return err;
--- 
-1.9.3
 
