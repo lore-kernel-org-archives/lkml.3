@@ -1,88 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932602AbaGOJKM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 05:10:12 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:42274 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932512AbaGOJKH (ORCPT
+	id S932624AbaGOJK3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 05:10:29 -0400
+Received: from g5t1626.atlanta.hp.com ([15.192.137.9]:57568 "EHLO
+	g5t1626.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932512AbaGOJKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 05:10:07 -0400
-Date: Tue, 15 Jul 2014 10:09:40 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 9/9] pci: Remap I/O bus resources into CPU space with
- pci_remap_iospace()
-Message-ID: <20140715090939.GA18203@arm.com>
-References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
- <1404240214-9804-10-git-send-email-Liviu.Dudau@arm.com>
- <20140714165443.GI1112@arm.com>
- <7345495.UDsgOtKzyQ@wuerfel>
+	Tue, 15 Jul 2014 05:10:25 -0400
+X-Greylist: delayed 98081 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Jul 2014 05:10:25 EDT
+Message-ID: <53C4EFA8.3080308@hp.com>
+Date: Tue, 15 Jul 2014 17:08:56 +0800
+From: "Li, ZhenHua" <zhen-hual@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7345495.UDsgOtKzyQ@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: gregkh@linuxfoundation.org, jslaby@suse.cz, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] driver/tty: Fix a warning in check_tty_count
+References: <1405317257-5491-1-git-send-email-zhen-hual@hp.com> <53C3CC4E.9010000@hurleysoftware.com>
+In-Reply-To: <53C3CC4E.9010000@hurleysoftware.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 07:15:48PM +0100, Arnd Bergmann wrote:
-> On Monday 14 July 2014 17:54:43 Catalin Marinas wrote:
-> > On Tue, Jul 01, 2014 at 07:43:34PM +0100, Liviu Dudau wrote:
-> > > Introduce a default implementation for remapping PCI bus I/O resources
-> > > onto the CPU address space. Architectures with special needs may
-> > > provide their own version, but most should be able to use this one.
-> > [...]
-> > > +/**
-> > > + *   pci_remap_iospace - Remap the memory mapped I/O space
-> > > + *   @res: Resource describing the I/O space
-> > > + *   @phys_addr: physical address where the range will be mapped.
-> > > + *
-> > > + *   Remap the memory mapped I/O space described by the @res
-> > > + *   into the CPU physical address space. Only architectures
-> > > + *   that have memory mapped IO defined (and hence PCI_IOBASE)
-> > > + *   should call this function.
-> > > + */
-> > > +int __weak pci_remap_iospace(const struct resource *res, phys_addr_t phys_addr)
-> > > +{
-> > > +     int err = -ENODEV;
-> > > +
-> > > +#ifdef PCI_IOBASE
-> > > +     if (!(res->flags & IORESOURCE_IO))
-> > > +             return -EINVAL;
-> > > +
-> > > +     if (res->end > IO_SPACE_LIMIT)
-> > > +             return -EINVAL;
-> > > +
-> > > +     err = ioremap_page_range(res->start + (unsigned long)PCI_IOBASE,
-> > > +                             res->end + 1 + (unsigned long)PCI_IOBASE,
-> > > +                             phys_addr, __pgprot(PROT_DEVICE_nGnRE));
-> > 
-> > Except that PROT_DEVICE_nGnRE is arm64 only. I think that's a function
-> > that should remain arch specific.
-> > 
-> 
-> How about #defining a macro with the correct pgprot value in asm/pci.h
-> or asm/pgtable.h?
-> We can provide a default for that in another architecture independent
-> location.
+Hi Peter,
 
-That should work. We already have pgprot_noncached/writecombine in
-asm-generic/pgtable.h which all architectures seem to include. The
-default can be pgprot_noncached and we would invoke it as
-pgprot_device(PAGE_KERNEL).
+This bug  was founded in RHEL 6, kernel version 2.6.32.
 
--- 
-Catalin
+But I also checked the file tty_io.c in  latest kernel, not all the code 
+protected by tty_lock(tty).
+
+For example,  in function tty_del_file,
+
+     if (--tty->count < 0) {
+     }
+and
+     tty_del_file(filp);
+are not surrounded by tty_lock(tty).
+
+So I think the new lock is necessary.
+
+Thanks
+Zhenhua
+
+On 07/14/2014 08:25 PM, Peter Hurley wrote:
+> Hi Zhen-Hua,
+>
+> On 07/14/2014 01:54 AM, Li, Zhen-Hua wrote:
+>> When there are to many open/close on a tty device in the same time,
+>> there may be a warning like:
+>>    Warning: dev (ttyS0) tty->count(4) != #fd's(3) in tty_release_dev
+>>
+>> That's because tty->count and files in tty->tty_files are not 
+>> synchronized
+>> in time.
+>> So I add a lock to avoid this.
+>
+> Every place you added the count_lock spinlock is already protected
+> by tty_lock(tty), so the count is out of sync for some other reason.
+>
+> What kernel version are you having this problem on and what are the
+> circumstances?
+>
+> Regards,
+> Peter Hurley
+>
+>
+>> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+>> ---
+>>   drivers/tty/tty_io.c | 13 +++++++++----
+>>   include/linux/tty.h  |  1 +
+>>   2 files changed, 10 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+>> index 3411071..9283fc2 100644
+>> --- a/drivers/tty/tty_io.c
+>> +++ b/drivers/tty/tty_io.c
+>> @@ -297,6 +297,7 @@ static int check_tty_count(struct tty_struct 
+>> *tty, const char *routine)
+>>       struct list_head *p;
+>>       int count = 0;
+>>
+>> +    spin_lock(&tty->count_lock);
+>>       spin_lock(&tty_files_lock);
+>>       list_for_each(p, &tty->tty_files) {
+>>           count++;
+>> @@ -310,8 +311,10 @@ static int check_tty_count(struct tty_struct 
+>> *tty, const char *routine)
+>>           printk(KERN_WARNING "Warning: dev (%s) tty->count(%d) "
+>>                       "!= #fd's(%d) in %s\n",
+>>                  tty->name, tty->count, count, routine);
+>> +        spin_unlock(&tty->count_lock);
+>>           return count;
+>>       }
+>> +    spin_unlock(&tty->count_lock);
+>>   #endif
+>>       return 0;
+>>   }
+>> @@ -1337,7 +1340,6 @@ int tty_standard_install(struct tty_driver 
+>> *driver, struct tty_struct *tty)
+>>           return ret;
+>>
+>>       tty_driver_kref_get(driver);
+>> -    tty->count++;
+>>       driver->ttys[tty->index] = tty;
+>>       return 0;
+>>   }
+>> @@ -1408,7 +1410,6 @@ static int tty_reopen(struct tty_struct *tty)
+>>
+>>           tty->link->count++;
+>>       }
+>> -    tty->count++;
+>>
+>>       WARN_ON(!tty->ldisc);
+>>
+>> @@ -1796,6 +1797,7 @@ int tty_release(struct inode *inode, struct 
+>> file *filp)
+>>        * We must *not* drop the tty_mutex until we ensure that a further
+>>        * entry into tty_open can not pick up this tty.
+>>        */
+>> +    spin_lock(&tty->count_lock);
+>>       if (pty_master) {
+>>           if (--o_tty->count < 0) {
+>>               printk(KERN_WARNING "%s: bad pty slave count (%d) for 
+>> %s\n",
+>> @@ -1819,7 +1821,7 @@ int tty_release(struct inode *inode, struct 
+>> file *filp)
+>>        *    something that needs to be handled for hangups.
+>>        */
+>>       tty_del_file(filp);
+>> -
+>> +    spin_unlock(&tty->count_lock);
+>>       /*
+>>        * Perform some housekeeping before deciding whether to return.
+>>        *
+>> @@ -2046,8 +2048,10 @@ retry_open:
+>>           retval = PTR_ERR(tty);
+>>           goto err_file;
+>>       }
+>> -
+>> +    spin_lock(&tty->count_lock);
+>> +    tty->count++;
+>>       tty_add_file(tty, filp);
+>> +    spin_unlock(&tty->count_lock);
+>>
+>>       check_tty_count(tty, __func__);
+>>       if (tty->driver->type == TTY_DRIVER_TYPE_PTY &&
+>> @@ -3031,6 +3035,7 @@ void initialize_tty_struct(struct tty_struct *tty,
+>>       INIT_WORK(&tty->hangup_work, do_tty_hangup);
+>>       mutex_init(&tty->atomic_write_lock);
+>>       spin_lock_init(&tty->ctrl_lock);
+>> +    spin_lock_init(&tty->count_lock);
+>>       INIT_LIST_HEAD(&tty->tty_files);
+>>       INIT_WORK(&tty->SAK_work, do_SAK_work);
+>>
+>> diff --git a/include/linux/tty.h b/include/linux/tty.h
+>> index 1c3316a..2959300 100644
+>> --- a/include/linux/tty.h
+>> +++ b/include/linux/tty.h
+>> @@ -284,6 +284,7 @@ struct tty_struct {
+>>       /* If the tty has a pending do_SAK, queue it here - akpm */
+>>       struct work_struct SAK_work;
+>>       struct tty_port *port;
+>> +    spinlock_t count_lock;
+>>   };
+>>
+>>   /* Each of a tty's open files has private_data pointing to 
+>> tty_file_private */
+>>
+>
+
