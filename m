@@ -1,124 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963AbaGOQFi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 12:05:38 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:33626 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467AbaGOQFf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 12:05:35 -0400
-X-IronPort-AV: E=Sophos;i="5.01,666,1400025600"; 
-   d="scan'208";a="153048836"
-Message-ID: <1405439692.1749.10.camel@hamster.uk.xensource.com>
-Subject: Re: [Xen-devel] xen: Fix possible page fault in fifo events
-From: Frediano Ziglio <frediano.ziglio@citrix.com>
-To: Andrew Cooper <andrew.cooper3@citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        xen-devel <xen-devel@lists.xenproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Tue, 15 Jul 2014 16:54:52 +0100
-In-Reply-To: <53C53B9A.6070608@citrix.com>
-References: <1405432129.1749.5.camel@hamster.uk.xensource.com>
-	 <53C53B9A.6070608@citrix.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
+	id S1751941AbaGOQHM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 12:07:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56096 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751308AbaGOQHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 12:07:08 -0400
+Message-ID: <53C551A8.2040400@suse.cz>
+Date: Tue, 15 Jul 2014 18:07:04 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
+To: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>
+CC: Sasha Levin <sasha.levin@oracle.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Michel Lespinasse <walken@google.com>,
+        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] shmem: fix faulting into a hole, not taking i_mutex
+References: <alpine.LSU.2.11.1407150247540.2584@eggly.anvils> <alpine.LSU.2.11.1407150329250.2584@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.11.1407150329250.2584@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-15 at 15:32 +0100, Andrew Cooper wrote:
-> On 15/07/14 14:48, Frediano Ziglio wrote:
-> > sync_test_bit function require a long* read access to pointer.
-> > This is a problem if the you are using last entry in the page causing
-> > an access to next page. If this page is not readable you get a memory
-> > access failure (page fault).
-> > All other x64 bit functions access memory using 32 bit operations.
-> > For processors different than x64 long aligned operations are used.
-> >
-> > Signed-off-by: Frediano Ziglio <frediano.ziglio@citrix.com>
-> 
-> The core issue is that the Linux bitops primitives are inconsistent. 
-> They all use unsigned long pointers to refer to memory; the purely C
-> primitives then make memory accesses at the native width of an unsigned
-> long, while the assembly optimised primitives use 32bit accesses (either
-> explicitly with an 'l' asm suffix, or implicitly as the default operand
-> width is 32bit without a REX prefix in x86_64).
-> 
+On 07/15/2014 12:31 PM, Hugh Dickins wrote:
+> f00cdc6df7d7 ("shmem: fix faulting into a hole while it's punched") was
+> buggy: Sasha sent a lockdep report to remind us that grabbing i_mutex in
+> the fault path is a no-no (write syscall may already hold i_mutex while
+> faulting user buffer).
+>
+> We tried a completely different approach (see following patch) but that
+> proved inadequate: good enough for a rational workload, but not good
+> enough against trinity - which forks off so many mappings of the object
+> that contention on i_mmap_mutex while hole-puncher holds i_mutex builds
+> into serious starvation when concurrent faults force the puncher to fall
+> back to single-page unmap_mapping_range() searches of the i_mmap tree.
+>
+> So return to the original umbrella approach, but keep away from i_mutex
+> this time.  We really don't want to bloat every shmem inode with a new
+> mutex or completion, just to protect this unlikely case from trinity.
+> So extend the original with wait_queue_head on stack at the hole-punch
+> end, and wait_queue item on the stack at the fault end.
 
-I think that on Linux they use long pointers just to state that you
-should use aligned long pointers. The problem came from the fact that in
-events_fifo.c we use to handle 32 bit numbers.
-There are some nasty macros to handle ARM case where the alignment (on
-Linux) must be enforced.
-I think that the macros/functions was though to be used for bitmaps
-structures, not to handle bit in some integer numbers.
+Hi, thanks a lot, I will definitely test it soon, although my reproducer 
+is rather limited - it already works fine with the current kernel. 
+Trinity will be more useful here. But there's something that caught my 
+eye so I though I would raise the concern now.
 
-> Xen suffers from a similar mess of primitives, but all its C primitives
-> use unsigned int pointers rather than unsigned long, meaning that they
-> still generate 32bit memory accesses when compiled as 64bit.  This means
-> the Xen side of the event fifo code is safe, but by luck rather than
-> good guidance.
-> 
+> @@ -760,7 +760,7 @@ static int shmem_writepage(struct page *
+>   			spin_lock(&inode->i_lock);
+>   			shmem_falloc = inode->i_private;
 
-Yes, on Xen are all (even ARM) 32 bit safe. However you could have the
-same issue if you try to use 16 bit integers.
+Without ACCESS_ONCE, can shmem_falloc potentially become an alias on 
+inode->i_private and later become re-read outside of the lock?
 
-> In this case, an event_word_t is strictly a 32bit quantity, and should
-> never be accessed with a 64bit memory access.  This in turn would fix
-> the alignment issues which affected arm64, and this pagefault because
-> the 4 bytes we didn't care about were in a non-present page.
-> 
-> However, there doesn't appear to be a systematic way of enforcing a
-> specific memory access width given the existing primitives.
-> 
-> ~Andrew
-> 
+>   			if (shmem_falloc &&
+> -			    !shmem_falloc->mode &&
+> +			    !shmem_falloc->waitq &&
+>   			    index >= shmem_falloc->start &&
+>   			    index < shmem_falloc->next)
+>   				shmem_falloc->nr_unswapped++;
+> @@ -1248,38 +1248,58 @@ static int shmem_fault(struct vm_area_st
+>   	 * Trinity finds that probing a hole which tmpfs is punching can
+>   	 * prevent the hole-punch from ever completing: which in turn
+>   	 * locks writers out with its hold on i_mutex.  So refrain from
+> -	 * faulting pages into the hole while it's being punched, and
+> -	 * wait on i_mutex to be released if vmf->flags permits.
+> +	 * faulting pages into the hole while it's being punched.  Although
+> +	 * shmem_undo_range() does remove the additions, it may be unable to
+> +	 * keep up, as each new page needs its own unmap_mapping_range() call,
+> +	 * and the i_mmap tree grows ever slower to scan if new vmas are added.
+> +	 *
+> +	 * It does not matter if we sometimes reach this check just before the
+> +	 * hole-punch begins, so that one fault then races with the punch:
+> +	 * we just need to make racing faults a rare case.
+> +	 *
+> +	 * The implementation below would be much simpler if we just used a
+> +	 * standard mutex or completion: but we cannot take i_mutex in fault,
+> +	 * and bloating every shmem inode for this unlikely case would be sad.
+>   	 */
+>   	if (unlikely(inode->i_private)) {
+>   		struct shmem_falloc *shmem_falloc;
+>
+>   		spin_lock(&inode->i_lock);
+>   		shmem_falloc = inode->i_private;
 
-Frediano
+Same here.
 
-> > ---
-> >  drivers/xen/events/events_fifo.c | 9 +++++++--
-> >  1 file changed, 7 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/xen/events/events_fifo.c b/drivers/xen/events/events_fifo.c
-> > index d302639..af4672d 100644
-> > --- a/drivers/xen/events/events_fifo.c
-> > +++ b/drivers/xen/events/events_fifo.c
-> > @@ -168,6 +168,11 @@ static int evtchn_fifo_setup(struct irq_info *info)
-> >  	return ret;
-> >  }
-> >  
-> > +static __always_inline int test_fifo_bit(int nr, event_word_t *word)
-> > +{
-> > +	return (ACCESS_ONCE(*word) & (((event_word_t) 1) << nr)) != 0;
-> > +}
-> > +
-> >  static void evtchn_fifo_bind_to_cpu(struct irq_info *info, unsigned cpu)
-> >  {
-> >  	/* no-op */
-> > @@ -188,7 +193,7 @@ static void evtchn_fifo_set_pending(unsigned port)
-> >  static bool evtchn_fifo_is_pending(unsigned port)
-> >  {
-> >  	event_word_t *word = event_word_from_port(port);
-> > -	return sync_test_bit(EVTCHN_FIFO_BIT(PENDING, word), BM(word));
-> > +	return test_fifo_bit(EVTCHN_FIFO_PENDING, word);
-> >  }
-> >  
-> >  static bool evtchn_fifo_test_and_set_mask(unsigned port)
-> > @@ -206,7 +211,7 @@ static void evtchn_fifo_mask(unsigned port)
-> >  static bool evtchn_fifo_is_masked(unsigned port)
-> >  {
-> >  	event_word_t *word = event_word_from_port(port);
-> > -	return sync_test_bit(EVTCHN_FIFO_BIT(MASKED, word), BM(word));
-> > +	return test_fifo_bit(EVTCHN_FIFO_MASKED, word);
-> >  }
-> >  /*
-> >   * Clear MASKED, spinning if BUSY is set.
-> 
+> -		if (!shmem_falloc ||
+> -		    shmem_falloc->mode != FALLOC_FL_PUNCH_HOLE ||
+> -		    vmf->pgoff < shmem_falloc->start ||
+> -		    vmf->pgoff >= shmem_falloc->next)
+> -			shmem_falloc = NULL;
+> -		spin_unlock(&inode->i_lock);
+> -		/*
+> -		 * i_lock has protected us from taking shmem_falloc seriously
+> -		 * once return from shmem_fallocate() went back up that stack.
+> -		 * i_lock does not serialize with i_mutex at all, but it does
+> -		 * not matter if sometimes we wait unnecessarily, or sometimes
+> -		 * miss out on waiting: we just need to make those cases rare.
+> -		 */
+> -		if (shmem_falloc) {
+> +		if (shmem_falloc &&
+> +		    shmem_falloc->waitq &&
 
+Here it's operating outside of lock.
+
+> +		    vmf->pgoff >= shmem_falloc->start &&
+> +		    vmf->pgoff < shmem_falloc->next) {
+> +			wait_queue_head_t *shmem_falloc_waitq;
+> +			DEFINE_WAIT(shmem_fault_wait);
+> +
+> +			ret = VM_FAULT_NOPAGE;
+>   			if ((vmf->flags & FAULT_FLAG_ALLOW_RETRY) &&
+>   			   !(vmf->flags & FAULT_FLAG_RETRY_NOWAIT)) {
+> +				/* It's polite to up mmap_sem if we can */
+>   				up_read(&vma->vm_mm->mmap_sem);
+> -				mutex_lock(&inode->i_mutex);
+> -				mutex_unlock(&inode->i_mutex);
+> -				return VM_FAULT_RETRY;
+> +				ret = VM_FAULT_RETRY;
+>   			}
+> -			/* cond_resched? Leave that to GUP or return to user */
+> -			return VM_FAULT_NOPAGE;
+> +
+> +			shmem_falloc_waitq = shmem_falloc->waitq;
+> +			prepare_to_wait(shmem_falloc_waitq, &shmem_fault_wait,
+> +					TASK_KILLABLE);
+> +			spin_unlock(&inode->i_lock);
+> +			schedule();
+> +
+> +			/*
+> +			 * shmem_falloc_waitq points into the shmem_fallocate()
+> +			 * stack of the hole-punching task: shmem_falloc_waitq
+> +			 * is usually invalid by the time we reach here, but
+> +			 * finish_wait() does not dereference it in that case;
+> +			 * though i_lock needed lest racing with wake_up_all().
+> +			 */
+> +			spin_lock(&inode->i_lock);
+> +			finish_wait(shmem_falloc_waitq, &shmem_fault_wait);
+> +			spin_unlock(&inode->i_lock);
+> +			return ret;
+>   		}
+> +		spin_unlock(&inode->i_lock);
+>   	}
+>
+>   	error = shmem_getpage(inode, vmf->pgoff, &vmf->page, SGP_CACHE, &ret);
 
