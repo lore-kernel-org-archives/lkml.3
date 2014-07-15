@@ -1,63 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918AbaGOQSI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 12:18:08 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:49819 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753815AbaGOQSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 12:18:05 -0400
-Date: Tue, 15 Jul 2014 18:18:02 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "Chen, Gong" <gong.chen@linux.intel.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andreas Noever <andreas.noever@gmail.com>
-Subject: Re: linux-next: manual merge of the char-misc tree with the ia64 tree
-Message-ID: <20140715161802.GB4775@pd.tnic>
-References: <20140715164349.5807b892@canb.auug.org.au>
- <20140715134458.GB17795@kroah.com>
- <20140715134920.GC17795@kroah.com>
- <3908561D78D1C84285E8C5FCA982C28F3285CF7A@ORSMSX114.amr.corp.intel.com>
- <20140715153613.GA4775@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F3285D02E@ORSMSX114.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F3285D02E@ORSMSX114.amr.corp.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752469AbaGOQXQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 12:23:16 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:50655 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750722AbaGOQXM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 12:23:12 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [RFC PATCH] x86_64,entry,xen: Do not invoke espfix64 on Xen
+Date: Tue, 15 Jul 2014 09:23:07 -0700
+Message-Id: <08bf951548224b92c0316c93cf0064d90e392578.1405441297.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 03:57:42PM +0000, Luck, Tony wrote:
-> Oops - not quite. We moved creation of the EDAC trace point into
-> drivers/ras/ras.c and edac is not x86 specific.
->
-> We also create the PCIe AER tracepoint there too - PCIe is not x86
-> specific.
+This moves the espfix64 logic into native_iret.  To make this work,
+it gets rid of the native patch for INTERRUPT_RETURN:
+INTERRUPT_RETURN on native kernels is now 'jmp native_iret'.
 
-Right, but AFAIK, only x86 uses those. And frankly, we don't know
-whether other arches would have interest in those or would like to grow
-their own.
+This changes the 16-bit SS behavior on Xen from OOPSing to leaking
+some bits of the Xen hypervisor's RSP (I think).
 
-So, I don't have an idea whether we want to make the whole RAS stuff
-arch-specific or we have to talk about it or we have to leave us that
-option open and so on...
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
 
-It is hard to say.
+I just pushed this to kernel.org, so the kbuild robot should be pounding
+on it soon.  It passes all my tests on bare metal, and it fails them
+without crashing on Xen.
 
-One example to mud the situation even more :-):
+It's not exactly beautiful, but I think it's an improvement.
 
-The APEI stuff is apparently being used by arm now too, but without the
-NMI which is x86-specific. Carving that whole thing out took a bit of
-work but it got done.
+ arch/x86/include/asm/irqflags.h     |  2 +-
+ arch/x86/kernel/entry_64.S          | 28 ++++++++++------------------
+ arch/x86/kernel/paravirt_patch_64.c |  2 --
+ 3 files changed, 11 insertions(+), 21 deletions(-)
 
+diff --git a/arch/x86/include/asm/irqflags.h b/arch/x86/include/asm/irqflags.h
+index bba3cf8..0a8b519 100644
+--- a/arch/x86/include/asm/irqflags.h
++++ b/arch/x86/include/asm/irqflags.h
+@@ -129,7 +129,7 @@ static inline notrace unsigned long arch_local_irq_save(void)
+ 
+ #define PARAVIRT_ADJUST_EXCEPTION_FRAME	/*  */
+ 
+-#define INTERRUPT_RETURN	iretq
++#define INTERRUPT_RETURN	jmp native_iret
+ #define USERGS_SYSRET64				\
+ 	swapgs;					\
+ 	sysretq;
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index b25ca96..c844f08 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -830,27 +830,24 @@ restore_args:
+ 	RESTORE_ARGS 1,8,1
+ 
+ irq_return:
++	INTERRUPT_RETURN
++
++ENTRY(native_iret)
+ 	/*
+ 	 * Are we returning to a stack segment from the LDT?  Note: in
+ 	 * 64-bit mode SS:RSP on the exception stack is always valid.
+ 	 */
+ #ifdef CONFIG_X86_ESPFIX64
+ 	testb $4,(SS-RIP)(%rsp)
+-	jnz irq_return_ldt
++	jnz native_irq_return_ldt
+ #endif
+ 
+-irq_return_iret:
+-	INTERRUPT_RETURN
+-	_ASM_EXTABLE(irq_return_iret, bad_iret)
+-
+-#ifdef CONFIG_PARAVIRT
+-ENTRY(native_iret)
++native_irq_return_iret:
+ 	iretq
+-	_ASM_EXTABLE(native_iret, bad_iret)
+-#endif
++	_ASM_EXTABLE(native_irq_return_iret, bad_iret)
+ 
+ #ifdef CONFIG_X86_ESPFIX64
+-irq_return_ldt:
++native_irq_return_ldt:
+ 	pushq_cfi %rax
+ 	pushq_cfi %rdi
+ 	SWAPGS
+@@ -872,7 +869,7 @@ irq_return_ldt:
+ 	SWAPGS
+ 	movq %rax,%rsp
+ 	popq_cfi %rax
+-	jmp irq_return_iret
++	jmp native_irq_return_iret
+ #endif
+ 
+ 	.section .fixup,"ax"
+@@ -956,13 +953,8 @@ __do_double_fault:
+ 	cmpl $__KERNEL_CS,CS(%rdi)
+ 	jne do_double_fault
+ 	movq RIP(%rdi),%rax
+-	cmpq $irq_return_iret,%rax
+-#ifdef CONFIG_PARAVIRT
+-	je 1f
+-	cmpq $native_iret,%rax
+-#endif
++	cmpq $native_irq_return_iret,%rax
+ 	jne do_double_fault		/* This shouldn't happen... */
+-1:
+ 	movq PER_CPU_VAR(kernel_stack),%rax
+ 	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
+ 	movq %rax,RSP(%rdi)
+@@ -1428,7 +1420,7 @@ error_sti:
+  */
+ error_kernelspace:
+ 	incl %ebx
+-	leaq irq_return_iret(%rip),%rcx
++	leaq native_irq_return_iret(%rip),%rcx
+ 	cmpq %rcx,RIP+8(%rsp)
+ 	je error_swapgs
+ 	movl %ecx,%eax	/* zero extend */
+diff --git a/arch/x86/kernel/paravirt_patch_64.c b/arch/x86/kernel/paravirt_patch_64.c
+index 3f08f34..a1da673 100644
+--- a/arch/x86/kernel/paravirt_patch_64.c
++++ b/arch/x86/kernel/paravirt_patch_64.c
+@@ -6,7 +6,6 @@ DEF_NATIVE(pv_irq_ops, irq_disable, "cli");
+ DEF_NATIVE(pv_irq_ops, irq_enable, "sti");
+ DEF_NATIVE(pv_irq_ops, restore_fl, "pushq %rdi; popfq");
+ DEF_NATIVE(pv_irq_ops, save_fl, "pushfq; popq %rax");
+-DEF_NATIVE(pv_cpu_ops, iret, "iretq");
+ DEF_NATIVE(pv_mmu_ops, read_cr2, "movq %cr2, %rax");
+ DEF_NATIVE(pv_mmu_ops, read_cr3, "movq %cr3, %rax");
+ DEF_NATIVE(pv_mmu_ops, write_cr3, "movq %rdi, %cr3");
+@@ -50,7 +49,6 @@ unsigned native_patch(u8 type, u16 clobbers, void *ibuf,
+ 		PATCH_SITE(pv_irq_ops, save_fl);
+ 		PATCH_SITE(pv_irq_ops, irq_enable);
+ 		PATCH_SITE(pv_irq_ops, irq_disable);
+-		PATCH_SITE(pv_cpu_ops, iret);
+ 		PATCH_SITE(pv_cpu_ops, irq_enable_sysexit);
+ 		PATCH_SITE(pv_cpu_ops, usergs_sysret32);
+ 		PATCH_SITE(pv_cpu_ops, usergs_sysret64);
 -- 
-Regards/Gruss,
-    Boris.
+1.9.3
 
-Sent from a fat crate under my desk. Formatting is fine.
---
