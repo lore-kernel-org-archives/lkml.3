@@ -1,94 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535AbaGOOSI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 10:18:08 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:50089 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317AbaGOOSG (ORCPT
+	id S1752805AbaGOOUt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 10:20:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7301 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751027AbaGOOUp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 10:18:06 -0400
-Message-ID: <53B95102.3030001@gmail.com>
-Date: Sun, 06 Jul 2014 21:37:06 +0800
-From: vv <zhengdi05@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 15 Jul 2014 10:20:45 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CAFLxGvw_fnG1KTVXrcZxHZzKPnG5DA117VmcZBvw3EYgXw-DVw@mail.gmail.com>
+References: <CAFLxGvw_fnG1KTVXrcZxHZzKPnG5DA117VmcZBvw3EYgXw-DVw@mail.gmail.com> <1405413956-2772-1-git-send-email-lftan@altera.com> <4213.1405430178@warthog.procyon.org.uk>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: dhowells@redhat.com, Ley Foon Tan <lftan@altera.com>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        LeyFoon Tan <lftan.linux@gmail.com>, cltang@codesourcery.com
+Subject: Re: [PATCH v2 00/29] nios2 Linux kernel port
 MIME-Version: 1.0
-CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        m.chehab@samsung.com, zhengdi05@gmail.com
-Subject: [PATCH]staging: media: lirc_parallel.c: fix coding style
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <20543.1405434031.1@warthog.procyon.org.uk>
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 15 Jul 2014 15:20:31 +0100
+Message-ID: <20544.1405434031@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 9d2c680fb573985588d33e31379d50ef3fb6e2fd Mon Sep 17 00:00:00 2001
-From: Zheng Di <zhengdi05@gmail.com>
-Date: Sun, 6 Jul 2014 20:41:53 +0800
-Subject: [PATCH] staging: media: lirc_parallel.c: fix coding style
+Richard Weinberger <richard.weinberger@gmail.com> wrote:
 
-This patch fix checkpatch:
-WARNING: else is not generally useful after a break or return
-WARNING: line over 80 characters
+> Having it on https://www.kernel.org/pub/tools/crosstool/ would be also nice.
 
-Signed-off-by: Zheng Di <zhengdi05@gmail.com>
----
- drivers/staging/media/lirc/lirc_parallel.c |   32
-++++++++++++++--------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+Does the Fedora cross-compiler suite fit with your set?  All the fedora
+cross-compilers are build from a single pair of SRPMS into a slew of binary
+RPMs and none of the resulting RPMs are relocatable (they all end up in /usr).
 
-diff --git a/drivers/staging/media/lirc/lirc_parallel.c
-b/drivers/staging/media/lirc/lirc_parallel.c
-index 1394f02..d7eb2a4 100644
---- a/drivers/staging/media/lirc/lirc_parallel.c
-+++ b/drivers/staging/media/lirc/lirc_parallel.c
-@@ -169,23 +169,23 @@ static unsigned int init_lirc_timer(void)
-            newtimer = (1000000*count)/timeelapsed;
-            pr_info("%u Hz timer detected\n", newtimer);
-            return newtimer;
--       }  else {
--           newtimer = (1000000*count)/timeelapsed;
--           if (abs(newtimer - default_timer) > default_timer/10) {
--               /* bad timer */
--               pr_notice("bad timer: %u Hz\n", newtimer);
--               pr_notice("using default timer: %u Hz\n",
--                     default_timer);
--               return default_timer;
--           } else {
--               pr_info("%u Hz timer detected\n", newtimer);
--               return newtimer; /* use detected value */
--           }
-        }
--   } else {
--       pr_notice("no timer detected\n");
--       return 0;
-+
-+       newtimer = (1000000*count)/timeelapsed;
-+       if (abs(newtimer - default_timer) > default_timer/10) {
-+           /* bad timer */
-+           pr_notice("bad timer: %u Hz\n", newtimer);
-+           pr_notice("using default timer: %u Hz\n",
-+                 default_timer);
-+           return default_timer;
-+       }
-+
-+       pr_info("%u Hz timer detected\n", newtimer);
-+       return newtimer; /* use detected value */
-    }
-+
-+   pr_notice("no timer detected\n");
-+   return 0;
- }
+The easiest way to install them is:
 
- static int lirc_claim(void)
-@@ -661,7 +661,7 @@ static int __init lirc_parallel_init(void)
-        goto exit_device_put;
-    }
-    ppdevice = parport_register_device(pport, LIRC_DRIVER_NAME,
--                      pf, kf, lirc_lirc_irq_handler, 0, NULL);
-+                  pf, kf, lirc_lirc_irq_handler, 0, NULL);
-    parport_put_port(pport);
-    if (ppdevice == NULL) {
-        pr_notice("parport_register_device() failed\n");
--- 
-1.7.9.5
+	yum install gcc-\*-linux-gnu
+
+For reference, the current rawhide SRPMs can be found here:
+
+	https://dl.fedoraproject.org/pub/fedora/linux/development/rawhide/source/SRPMS/c/cross-binutils-2.24-4.fc21.src.rpm
+	https://dl.fedoraproject.org/pub/fedora/linux/development/rawhide/source/SRPMS/c/cross-gcc-4.9.0-3.fc21.src.rpm
+
+I haven't yet pushed the NIOS2 arch changes (I'm waiting on a fix to allow me
+to build libgcc for Cris).
+
+I haven't applied any of your patches, though I do apply the same patches that
+are applied to the core Fedora binutils and gcc.  Note that this URL linked to
+on your page:
+
+	https://www.kernel.org/pub/tools/crosstool/patches/
+
+does not seem to exist.
+
+The compilers that I have managed to produce and install on my system are:
+
+	gcc-aarch64-linux-gnu
+	gcc-alpha-linux-gnu
+	gcc-arm-linux-gnu
+	gcc-avr32-linux-gnu
+	gcc-bfin-linux-gnu
+	gcc-c6x-linux-gnu
+	gcc-cris-linux-gnu
+	gcc-frv-linux-gnu
+	gcc-h8300-linux-gnu
+	gcc-hppa-linux-gnu
+	gcc-hppa64-linux-gnu
+	gcc-ia64-linux-gnu
+	gcc-m32r-linux-gnu
+	gcc-m68k-linux-gnu
+	gcc-microblaze-linux-gnu
+	gcc-mips64-linux-gnu
+	gcc-mn10300-linux-gnu
+	gcc-nios2-linux-gnu
+	gcc-powerpc64-linux-gnu
+	gcc-ppc64-linux-gnu
+	gcc-s390x-linux-gnu
+	gcc-sh-linux-gnu
+	gcc-sh64-linux-gnu
+	gcc-sparc64-linux-gnu
+	gcc-tile-linux-gnu
+	gcc-x86_64-linux-gnu
+	gcc-xtensa-linux-gnu
+
+All but cris, nios2, sh, sh64 and tile have a collection of libgcc built.
+
+I don't build i386, mips, powerpc, s390, sh4 and sparc as these are covered by
+the ones I do build.
+
+gcc doesn't support Metag or Openrisc, it considers Score obsolete and
+Hexagon and Unicore32 don't seem to have suitable binutils support.
+
+David
