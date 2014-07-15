@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933799AbaGOXOA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:14:00 -0400
+	id S965438AbaGOXpA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:45:00 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:45024 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932930AbaGOXNe (ORCPT
+	with ESMTP id S933770AbaGOXN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:34 -0400
+	Tue, 15 Jul 2014 19:13:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Li Zefan <lizefan@huawei.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.14 10/66] cpuset,mempolicy: fix sleeping function called from invalid context
-Date: Tue, 15 Jul 2014 16:17:04 -0700
-Message-Id: <20140715231702.538107463@linuxfoundation.org>
+        Aaron Lu <aaron.lu@intel.com>, Zhang Rui <rui.zhang@intel.com>
+Subject: [PATCH 3.15 15/84] thermal: hwmon: Make the check for critical temp valid consistent
+Date: Tue, 15 Jul 2014 16:17:12 -0700
+Message-Id: <20140715231713.656981767@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
-References: <20140715231702.156040999@linuxfoundation.org>
+In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
+References: <20140715231713.193785557@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,104 +24,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+From: Aaron Lu <aaron.lu@intel.com>
 
-commit 391acf970d21219a2a5446282d3b20eace0c0d7a upstream.
+commit e8db5d6736a712a3e2280c0e31f4b301d85172d8 upstream.
 
-When runing with the kernel(3.15-rc7+), the follow bug occurs:
-[ 9969.258987] BUG: sleeping function called from invalid context at kernel/locking/mutex.c:586
-[ 9969.359906] in_atomic(): 1, irqs_disabled(): 0, pid: 160655, name: python
-[ 9969.441175] INFO: lockdep is turned off.
-[ 9969.488184] CPU: 26 PID: 160655 Comm: python Tainted: G       A      3.15.0-rc7+ #85
-[ 9969.581032] Hardware name: FUJITSU-SV PRIMEQUEST 1800E/SB, BIOS PRIMEQUEST 1000 Series BIOS Version 1.39 11/16/2012
-[ 9969.706052]  ffffffff81a20e60 ffff8803e941fbd0 ffffffff8162f523 ffff8803e941fd18
-[ 9969.795323]  ffff8803e941fbe0 ffffffff8109995a ffff8803e941fc58 ffffffff81633e6c
-[ 9969.884710]  ffffffff811ba5dc ffff880405c6b480 ffff88041fdd90a0 0000000000002000
-[ 9969.974071] Call Trace:
-[ 9970.003403]  [<ffffffff8162f523>] dump_stack+0x4d/0x66
-[ 9970.065074]  [<ffffffff8109995a>] __might_sleep+0xfa/0x130
-[ 9970.130743]  [<ffffffff81633e6c>] mutex_lock_nested+0x3c/0x4f0
-[ 9970.200638]  [<ffffffff811ba5dc>] ? kmem_cache_alloc+0x1bc/0x210
-[ 9970.272610]  [<ffffffff81105807>] cpuset_mems_allowed+0x27/0x140
-[ 9970.344584]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
-[ 9970.409282]  [<ffffffff811b1385>] __mpol_dup+0xe5/0x150
-[ 9970.471897]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
-[ 9970.536585]  [<ffffffff81068c86>] ? copy_process.part.23+0x606/0x1d40
-[ 9970.613763]  [<ffffffff810bf28d>] ? trace_hardirqs_on+0xd/0x10
-[ 9970.683660]  [<ffffffff810ddddf>] ? monotonic_to_bootbased+0x2f/0x50
-[ 9970.759795]  [<ffffffff81068cf0>] copy_process.part.23+0x670/0x1d40
-[ 9970.834885]  [<ffffffff8106a598>] do_fork+0xd8/0x380
-[ 9970.894375]  [<ffffffff81110e4c>] ? __audit_syscall_entry+0x9c/0xf0
-[ 9970.969470]  [<ffffffff8106a8c6>] SyS_clone+0x16/0x20
-[ 9971.030011]  [<ffffffff81642009>] stub_clone+0x69/0x90
-[ 9971.091573]  [<ffffffff81641c29>] ? system_call_fastpath+0x16/0x1b
+On 05/21/2014 04:22 PM, Aaron Lu wrote:
+> On 05/21/2014 01:57 PM, Kui Zhang wrote:
+>> Hello,
+>>
+>> I get following error when rmmod thermal.
+>>
+>> rmmod  thermal
+>> Killed
 
-The cause is that cpuset_mems_allowed() try to take
-mutex_lock(&callback_mutex) under the rcu_read_lock(which was hold in
-__mpol_dup()). And in cpuset_mems_allowed(), the access to cpuset is
-under rcu_read_lock, so in __mpol_dup, we can reduce the rcu_read_lock
-protection region to protect the access to cpuset only in
-current_cpuset_is_being_rebound(). So that we can avoid this bug.
+While dealing with this problem, I found another problem that also
+results in a kernel crash on thermal module removal:
 
-This patch is a temporary solution that just addresses the bug
-mentioned above, can not fix the long-standing issue about cpuset.mems
-rebinding on fork():
+From: Aaron Lu <aaron.lu@intel.com>
+Date: Wed, 21 May 2014 16:05:38 +0800
+Subject: [PATCH 3.15 15/84] thermal: hwmon: Make the check for critical temp valid consistent
 
-"When the forker's task_struct is duplicated (which includes
- ->mems_allowed) and it races with an update to cpuset_being_rebound
- in update_tasks_nodemask() then the task's mems_allowed doesn't get
- updated. And the child task's mems_allowed can be wrong if the
- cpuset's nodemask changes before the child has been added to the
- cgroup's tasklist."
+We used the tz->ops->get_crit_temp && !tz->ops->get_crit_temp(tz, temp)
+to decide if we need to create the temp_crit attribute file but we just
+check if tz->ops->get_crit_temp exists to decide if we need to remove
+that attribute file. Some ACPI thermal zone doesn't have a valid critical
+trip point and that would result in removing a non-existent device file
+on thermal module unload.
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Acked-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/cpuset.c |    8 +++++++-
- mm/mempolicy.c  |    2 --
- 2 files changed, 7 insertions(+), 3 deletions(-)
+ drivers/thermal/thermal_hwmon.c |   33 ++++++++++++++++++---------------
+ 1 file changed, 18 insertions(+), 15 deletions(-)
 
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1236,7 +1236,13 @@ done:
+--- a/drivers/thermal/thermal_hwmon.c
++++ b/drivers/thermal/thermal_hwmon.c
+@@ -140,6 +140,12 @@ thermal_hwmon_lookup_temp(const struct t
+ 	return NULL;
+ }
  
- int current_cpuset_is_being_rebound(void)
++static bool thermal_zone_crit_temp_valid(struct thermal_zone_device *tz)
++{
++	unsigned long temp;
++	return tz->ops->get_crit_temp && !tz->ops->get_crit_temp(tz, &temp);
++}
++
+ int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
  {
--	return task_cs(current) == cpuset_being_rebound;
-+	int ret;
-+
-+	rcu_read_lock();
-+	ret = task_cs(current) == cpuset_being_rebound;
-+	rcu_read_unlock();
-+
-+	return ret;
- }
+ 	struct thermal_hwmon_device *hwmon;
+@@ -189,21 +195,18 @@ int thermal_add_hwmon_sysfs(struct therm
+ 	if (result)
+ 		goto free_temp_mem;
  
- static int update_relax_domain_level(struct cpuset *cs, s64 val)
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2170,7 +2170,6 @@ struct mempolicy *__mpol_dup(struct memp
- 	} else
- 		*new = *old;
- 
--	rcu_read_lock();
- 	if (current_cpuset_is_being_rebound()) {
- 		nodemask_t mems = cpuset_mems_allowed(current);
- 		if (new->flags & MPOL_F_REBINDING)
-@@ -2178,7 +2177,6 @@ struct mempolicy *__mpol_dup(struct memp
- 		else
- 			mpol_rebind_policy(new, &mems, MPOL_REBIND_ONCE);
+-	if (tz->ops->get_crit_temp) {
+-		unsigned long temperature;
+-		if (!tz->ops->get_crit_temp(tz, &temperature)) {
+-			snprintf(temp->temp_crit.name,
+-				 sizeof(temp->temp_crit.name),
++	if (thermal_zone_crit_temp_valid(tz)) {
++		snprintf(temp->temp_crit.name,
++				sizeof(temp->temp_crit.name),
+ 				"temp%d_crit", hwmon->count);
+-			temp->temp_crit.attr.attr.name = temp->temp_crit.name;
+-			temp->temp_crit.attr.attr.mode = 0444;
+-			temp->temp_crit.attr.show = temp_crit_show;
+-			sysfs_attr_init(&temp->temp_crit.attr.attr);
+-			result = device_create_file(hwmon->device,
+-						    &temp->temp_crit.attr);
+-			if (result)
+-				goto unregister_input;
+-		}
++		temp->temp_crit.attr.attr.name = temp->temp_crit.name;
++		temp->temp_crit.attr.attr.mode = 0444;
++		temp->temp_crit.attr.show = temp_crit_show;
++		sysfs_attr_init(&temp->temp_crit.attr.attr);
++		result = device_create_file(hwmon->device,
++					    &temp->temp_crit.attr);
++		if (result)
++			goto unregister_input;
  	}
--	rcu_read_unlock();
- 	atomic_set(&new->refcnt, 1);
- 	return new;
- }
+ 
+ 	mutex_lock(&thermal_hwmon_list_lock);
+@@ -250,7 +253,7 @@ void thermal_remove_hwmon_sysfs(struct t
+ 	}
+ 
+ 	device_remove_file(hwmon->device, &temp->temp_input.attr);
+-	if (tz->ops->get_crit_temp)
++	if (thermal_zone_crit_temp_valid(tz))
+ 		device_remove_file(hwmon->device, &temp->temp_crit.attr);
+ 
+ 	mutex_lock(&thermal_hwmon_list_lock);
 
 
