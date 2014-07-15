@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759538AbaGOVhz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:37:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54686 "EHLO
+	id S1759771AbaGOWAh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 18:00:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54747 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933913AbaGOVho (ORCPT
+	with ESMTP id S1759534AbaGOVh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:37:44 -0400
+	Tue, 15 Jul 2014 17:37:56 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Vcelak <jv@fcelda.cz>, Antti Palosaari <crope@iki.fi>,
+Cc: Takashi Iwai <tiwai@suse.de>, Hans Verkuil <hans.verkuil@cisco.com>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 029/198] [media] rtl28xxu: add USB ID for Genius TVGo DVB-T03
-Date: Tue, 15 Jul 2014 14:28:19 -0700
-Message-Id: <1405459868-15089-30-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 049/198] [media] ivtv: Fix Oops when no firmware is loaded
+Date: Tue, 15 Jul 2014 14:28:39 -0700
+Message-Id: <1405459868-15089-50-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -28,35 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Vcelak <jv@fcelda.cz>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit ac298ccdde4fe9b0a966e548a232ff4e8a6b8a31 upstream.
+commit deb29e90221a6d4417aa67be971613c353180331 upstream.
 
-0458:707f KYE Systems Corp. (Mouse Systems) TVGo DVB-T03 [RTL2832]
+When ivtv PCM device is accessed at the state where no firmware is
+loaded, it oopses like:
 
-The USB dongle uses RTL2832U demodulator and FC0012 tuner.
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000050
+  IP: [<ffffffffa049a881>] try_mailbox.isra.0+0x11/0x50 [ivtv]
+  Call Trace:
+    [<ffffffffa049aa20>] ivtv_api_call+0x160/0x6b0 [ivtv]
+    [<ffffffffa049af86>] ivtv_api+0x16/0x40 [ivtv]
+    [<ffffffffa049b10c>] ivtv_vapi+0xac/0xc0 [ivtv]
+    [<ffffffffa049d40d>] ivtv_start_v4l2_encode_stream+0x19d/0x630 [ivtv]
+    [<ffffffffa0530653>] snd_ivtv_pcm_capture_open+0x173/0x1c0 [ivtv_alsa]
+    [<ffffffffa04526f1>] snd_pcm_open_substream+0x51/0x100 [snd_pcm]
+    [<ffffffffa0452853>] snd_pcm_open+0xb3/0x260 [snd_pcm]
+    [<ffffffffa0452a37>] snd_pcm_capture_open+0x37/0x50 [snd_pcm]
+    [<ffffffffa033f557>] snd_open+0xa7/0x1e0 [snd]
+    [<ffffffff8118a628>] chrdev_open+0x88/0x1d0
+    [<ffffffff811840be>] do_dentry_open+0x1de/0x270
+    [<ffffffff81193a73>] do_last+0x1c3/0xec0
+    [<ffffffff81194826>] path_openat+0xb6/0x670
+    [<ffffffff81195b65>] do_filp_open+0x35/0x80
+    [<ffffffff81185449>] do_sys_open+0x129/0x210
+    [<ffffffff815b782d>] system_call_fastpath+0x1a/0x1f
 
-Signed-off-by: Jan Vcelak <jv@fcelda.cz>
-Signed-off-by: Antti Palosaari <crope@iki.fi>
+This patch adds the check of firmware at PCM open callback like other
+open callbacks of this driver.
+
+Bugzilla: https://apibugzilla.novell.com/show_bug.cgi?id=875440
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/media/usb/dvb-usb-v2/rtl28xxu.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/media/pci/ivtv/ivtv-alsa-pcm.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-index ecca036..70dd3c8 100644
---- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-+++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-@@ -1427,6 +1427,8 @@ static const struct usb_device_id rtl28xxu_id_table[] = {
- 		&rtl2832u_props, "Leadtek WinFast DTV Dongle mini", NULL) },
- 	{ DVB_USB_DEVICE(USB_VID_GTEK, USB_PID_CPYTO_REDI_PC50A,
- 		&rtl2832u_props, "Crypto ReDi PC 50 A", NULL) },
-+	{ DVB_USB_DEVICE(USB_VID_KYE, 0x707f,
-+		&rtl2832u_props, "Genius TVGo DVB-T03", NULL) },
+diff --git a/drivers/media/pci/ivtv/ivtv-alsa-pcm.c b/drivers/media/pci/ivtv/ivtv-alsa-pcm.c
+index e1863db..7a9b98b 100644
+--- a/drivers/media/pci/ivtv/ivtv-alsa-pcm.c
++++ b/drivers/media/pci/ivtv/ivtv-alsa-pcm.c
+@@ -159,6 +159,12 @@ static int snd_ivtv_pcm_capture_open(struct snd_pcm_substream *substream)
  
- 	{ DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
- 		&rtl2832u_props, "Astrometa DVB-T2", NULL) },
+ 	/* Instruct the CX2341[56] to start sending packets */
+ 	snd_ivtv_lock(itvsc);
++
++	if (ivtv_init_on_first_open(itv)) {
++		snd_ivtv_unlock(itvsc);
++		return -ENXIO;
++	}
++
+ 	s = &itv->streams[IVTV_ENC_STREAM_TYPE_PCM];
+ 
+ 	v4l2_fh_init(&item.fh, s->vdev);
 -- 
 1.9.1
 
