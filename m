@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759904AbaGOX3J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:29:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45588 "EHLO
+	id S1760179AbaGOX35 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:29:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45635 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760062AbaGOXOW (ORCPT
+	with ESMTP id S1758716AbaGOXOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:22 -0400
+	Tue, 15 Jul 2014 19:14:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 3.15 77/84] Revert "x86-64, modify_ldt: Make support for 16-bit segments a runtime option"
-Date: Tue, 15 Jul 2014 16:18:14 -0700
-Message-Id: <20140715231715.488307972@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>
+Subject: [PATCH 3.15 48/84] PCI: Fix unaligned access in AF transaction pending test
+Date: Tue, 15 Jul 2014 16:17:45 -0700
+Message-Id: <20140715231714.651394351@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -28,64 +31,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@zytor.com>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-commit 7ed6fb9b5a5510e4ef78ab27419184741169978a upstream.
+commit d066c946a866268c14a120b33e7226e899981998 upstream.
 
-This reverts commit fa81511bb0bbb2b1aace3695ce869da9762624ff in
-preparation of merging in the proper fix (espfix64).
+pci_wait_for_pending() uses word access, so we shouldn't be passing
+an offset that is only byte aligned.  Use the control register offset
+instead, shifting the mask to match.
 
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Fixes: d0b4cc4e3270 ("PCI: Wrong register used to check pending traffic")
+Fixes: 157e876ffe0b ("PCI: Add pci_wait_for_pending() (refactor pci_wait_for_pending_transaction())
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/ldt.c        |    4 +---
- arch/x86/vdso/vdso32-setup.c |    8 --------
- 2 files changed, 1 insertion(+), 11 deletions(-)
+ drivers/pci/pci.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/ldt.c
-+++ b/arch/x86/kernel/ldt.c
-@@ -20,8 +20,6 @@
- #include <asm/mmu_context.h>
- #include <asm/syscalls.h>
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -3109,8 +3109,13 @@ static int pci_af_flr(struct pci_dev *de
+ 	if (probe)
+ 		return 0;
  
--int sysctl_ldt16 = 0;
--
- #ifdef CONFIG_SMP
- static void flush_ldt(void *current_mm)
- {
-@@ -236,7 +234,7 @@ static int write_ldt(void __user *ptr, u
- 	 * IRET leaking the high bits of the kernel stack address.
- 	 */
- #ifdef CONFIG_X86_64
--	if (!ldt_info.seg_32bit && !sysctl_ldt16) {
-+	if (!ldt_info.seg_32bit) {
- 		error = -EINVAL;
- 		goto out_unlock;
- 	}
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -39,7 +39,6 @@
- #ifdef CONFIG_X86_64
- #define vdso_enabled			sysctl_vsyscall32
- #define arch_setup_additional_pages	syscall32_setup_pages
--extern int sysctl_ldt16;
- #endif
+-	/* Wait for Transaction Pending bit clean */
+-	if (pci_wait_for_pending(dev, pos + PCI_AF_STATUS, PCI_AF_STATUS_TP))
++	/*
++	 * Wait for Transaction Pending bit to clear.  A word-aligned test
++	 * is used, so we use the conrol offset rather than status and shift
++	 * the test bit to match.
++	 */
++	if (pci_wait_for_pending(dev, pos + PCI_AF_CTRL,
++				 PCI_AF_STATUS_TP << 8))
+ 		goto clear;
  
- /*
-@@ -250,13 +249,6 @@ static struct ctl_table abi_table2[] = {
- 		.maxlen		= sizeof(int),
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec
--	},
--	{
--		.procname	= "ldt16",
--		.data		= &sysctl_ldt16,
--		.maxlen		= sizeof(int),
--		.mode		= 0644,
--		.proc_handler	= proc_dointvec
- 	},
- 	{}
- };
+ 	dev_err(&dev->dev, "transaction is not cleared; "
 
 
