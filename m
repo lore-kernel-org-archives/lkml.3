@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760867AbaGOX53 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:57:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45004 "EHLO
+	id S1760918AbaGOX6T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:58:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45024 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760010AbaGOXNo (ORCPT
+	with ESMTP id S1759998AbaGOXNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:13:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kardell <jan.kardell@telliq.com>,
-        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.14 05/66] iio: ti_am335x_adc: Fix: Use same step id at FIFOs both ends
-Date: Tue, 15 Jul 2014 16:16:59 -0700
-Message-Id: <20140715231702.349648354@linuxfoundation.org>
+        Rob Clark <robdclark@gmail.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH 3.14 35/66] clk: qcom: HDMI source sel is 3 not 2
+Date: Tue, 15 Jul 2014 16:17:29 -0700
+Message-Id: <20140715231703.642607497@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
 References: <20140715231702.156040999@linuxfoundation.org>
@@ -30,34 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kardell <jan.kardell@telliq.com>
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-commit baa3c65298c089a9014b4e523a14ec2885cca1bc upstream.
+commit c556bcddc78096caeb46dbe3ad0314dd951f1665 upstream.
 
-Since AI lines could be selected at will (linux-3.11) the sending
-and receiving ends of the FIFO does not agree about what step is used
-for a line. It only works if the last lines are used, like 5,6,7,
-and fails if ie 2,4,6 is selected in DT.
+The HDMI PLL input to the tv mux is supposed to be 3, not 2. Fix
+the code so that we can properly select the HDMI PLL.
 
-Signed-off-by: Jan Kardell <jan.kardell@telliq.com>
-Tested-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Fixes: 6d00b56fe "clk: qcom: Add support for MSM8960's multimedia clock controller (MMCC)"
+Reported-by: Rob Clark <robdclark@gmail.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/adc/ti_am335x_adc.c |    2 +-
+ drivers/clk/qcom/mmcc-msm8960.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/iio/adc/ti_am335x_adc.c
-+++ b/drivers/iio/adc/ti_am335x_adc.c
-@@ -375,7 +375,7 @@ static int tiadc_read_raw(struct iio_dev
- 			return -EAGAIN;
- 		}
- 	}
--	map_val = chan->channel + TOTAL_CHANNELS;
-+	map_val = adc_dev->channel_step[chan->scan_index];
+--- a/drivers/clk/qcom/mmcc-msm8960.c
++++ b/drivers/clk/qcom/mmcc-msm8960.c
+@@ -1208,7 +1208,7 @@ static struct clk_branch rot_clk = {
  
- 	/*
- 	 * We check the complete FIFO. We programmed just one entry but in case
+ static u8 mmcc_pxo_hdmi_map[] = {
+ 	[P_PXO]		= 0,
+-	[P_HDMI_PLL]	= 2,
++	[P_HDMI_PLL]	= 3,
+ };
+ 
+ static const char *mmcc_pxo_hdmi[] = {
 
 
