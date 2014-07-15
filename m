@@ -1,75 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423AbaGOOY3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 10:24:29 -0400
-Received: from mail.kernel.org ([198.145.19.201]:60656 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753347AbaGOOY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 10:24:26 -0400
-Date: Tue, 15 Jul 2014 11:24:21 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 24/41] perf tools: Add cpu to struct thread
-Message-ID: <20140715142421.GD3301@kernel.org>
-References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
- <1405332185-4050-25-git-send-email-adrian.hunter@intel.com>
+	id S1753530AbaGOOYv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 10:24:51 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:49550 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752463AbaGOOYs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 10:24:48 -0400
+Date: Tue, 15 Jul 2014 10:24:46 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Gavin Guo <gavin.guo@canonical.com>
+cc: sarah.a.sharp@linux.intel.com, <mathias.nyman@intel.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <yk@canonical.com>, <anthony.wong@canonical.com>,
+        <gerald.yang@canonical.com>
+Subject: Re: [PATCH 1/1] usb: Check if port status is equal to RxDetect
+In-Reply-To: <1405059756-11983-2-git-send-email-gavin.guo@canonical.com>
+Message-ID: <Pine.LNX.4.44L0.1407151020060.1206-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405332185-4050-25-git-send-email-adrian.hunter@intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jul 14, 2014 at 01:02:48PM +0300, Adrian Hunter escreveu:
-> Tools may wish to track on which cpu a thread
-> is running.  Add 'cpu' to struct thread for
-> that purpose.
-> 
-> This will be used to determine the cpu when
-> decoding a per-thread Instruction Trace.
+On Fri, 11 Jul 2014, Gavin Guo wrote:
 
-Humm, is this the last cpu we got some event telling the cpu was running
-on? Continuing looking at the patches...
+> When using USB 3.0 pen drive with the [AMD] FCH USB XHCI Controller
+> [1022:7814], the second hotplugging will experience the USB 3.0 pen
+> drive is recognized as high-speed device. After bisecting the kernel,
+> I found the commit number 41e7e056cdc662f704fa9262e5c6e213b4ab45dd
+> (USB: Allow USB 3.0 ports to be disabled.) causes the bug. After doing
+> some experiments, the bug can be fixed by avoiding executing the function
+> hub_usb3_port_disable(). Because the port status with [AMD] FCH USB
+> XHCI Controlleris [1022:7814] is already in RxDetect
+> (I tried printing out the port status before setting to Disabled state),
+> it's reasonable to check the port status before really executing
+> hub_usb3_port_disable().
 
-- Arnaldo
- 
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+This seems like a race.  Even if the port isn't in RxDetect when you 
+check it, it could switch to RxDetect before the kernel sets it to 
+Disabled.
+
+But maybe this is the best we can do.
+
+> Fixes: 41e7e056cdc6 (USB: Allow USB 3.0 ports to be disabled.)
+> Signed-off-by: Gavin Guo <gavin.guo@canonical.com>
 > ---
->  tools/perf/util/thread.c | 1 +
->  tools/perf/util/thread.h | 1 +
->  2 files changed, 2 insertions(+)
+>  drivers/usb/core/hub.c | 19 +++++++++++++++++++
+>  1 file changed, 19 insertions(+)
 > 
-> diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-> index b9a3ee4..2f8c0c1 100644
-> --- a/tools/perf/util/thread.c
-> +++ b/tools/perf/util/thread.c
-> @@ -69,6 +69,7 @@ struct thread *thread__new(pid_t pid, pid_t tid)
->  		thread->pid_ = pid;
->  		thread->tid = tid;
->  		thread->ppid = -1;
-> +		thread->cpu = -1;
->  		INIT_LIST_HEAD(&thread->comm_list);
+> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+> index 21b99b4..e02ab62 100644
+> --- a/drivers/usb/core/hub.c
+> +++ b/drivers/usb/core/hub.c
+> @@ -889,6 +889,25 @@ static int hub_usb3_port_disable(struct usb_hub *hub, int port1)
+>  	if (!hub_is_superspeed(hub->hdev))
+>  		return -EINVAL;
 >  
->  		comm_str = malloc(32);
-> diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-> index b4269af..e4920ff 100644
-> --- a/tools/perf/util/thread.h
-> +++ b/tools/perf/util/thread.h
-> @@ -17,6 +17,7 @@ struct thread {
->  	pid_t			pid_; /* Not all tools update this */
->  	pid_t			tid;
->  	pid_t			ppid;
-> +	int			cpu;
->  	char			shortname[3];
->  	bool			comm_set;
->  	bool			dead; /* if set thread has exited */
-> -- 
-> 1.8.3.2
+> +	ret = hub_port_status(hub, port1, &portstatus, &portchange);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	/*
+> +	 * USB controller Advanced Micro Devices,
+> +	 * Inc. [AMD] FCH USB XHCI Controller [1022:7814] will have spurious result
+> +	 * making the following usb 3.0 device hotplugging route to the 2.0 root hub
+> +	 * and recognized as high-speed device if we set the usb 3.0 port link state
+> +	 *  to Disabled. Since it's already in USB_SS_PORT_LS_RX_DETECT state, we
+> +	 *  check the state here to avoid the bug.
+> +	 */
+
+Comments should not extend beyond column 80.  And there should be only 
+one space, not two, after the '*' in the 6th and 7th lines.
+
+> +	if ((portstatus & USB_PORT_STAT_LINK_STATE) ==
+> +				USB_SS_PORT_LS_RX_DETECT) {
+> +		dev_dbg(&hub->ports[port1 - 1]->dev,
+> +			 "The link state is already in USB_SS_PORT_LS_RX_DETECT\n");
+
+This message does not explain what has happened.  It should say
+something like "Not disabling port; link state is RxDetect".
+
+> +		return ret;
+> +	}
+> +
+>  	ret = hub_set_port_link_state(hub, port1, USB_SS_PORT_LS_SS_DISABLED);
+>  	if (ret)
+>  		return ret;
+
+Alan Stern
+
