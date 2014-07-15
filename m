@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932746AbaGORWi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 13:22:38 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:48934 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751576AbaGORWc (ORCPT
+	id S932784AbaGORWo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 13:22:44 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:48181 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751576AbaGORWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 13:22:32 -0400
+	Tue, 15 Jul 2014 13:22:41 -0400
 From: Sam Asadi <asadi.samuel@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Himangi Saraogi <himangi774@gmail.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
+        Sachin Kamat <sachin.kamat@samsung.com>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Jonathan Cameron <jic23@kernel.org>,
         sam-the-6 <asadi.samuel@gmail.com>
-Subject: [PATCH 72/94] phy: omap-usb2: fix devm_ioremap_resource error detection code
-Date: Tue, 15 Jul 2014 20:01:27 +0300
-Message-Id: <1405443709-15288-72-git-send-email-asadi.samuel@gmail.com>
+Subject: [PATCH 25/94] iio: hid-sensor-press: Fix return values
+Date: Tue, 15 Jul 2014 20:00:40 +0300
+Message-Id: <1405443709-15288-25-git-send-email-asadi.samuel@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
 References: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
@@ -23,48 +24,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Himangi Saraogi <himangi774@gmail.com>
+From: Sachin Kamat <sachin.kamat@samsung.com>
 
-devm_ioremap_resource returns an ERR_PTR value, not NULL, on failure.
+IIO_CHAN_INFO_SAMP_FREQ and IIO_CHAN_INFO_HYSTERESIS cases ignored
+the actual return values (which could be -EINVAL) and instead
+returned IIO_VAL_INT_PLUS_MICRO always. Return the actual value
+obtained from the functions. Both functions return IIO_VAL_INT_PLUS_MICRO
+upon success.
 
-A simplified version of the semantic match that finds this problem is as
-follows:
+Agreed with by Srinivas.
 
-// <smpl>
-@@
-expression e,e1;
-statement S;
-@@
-
-*e = devm_ioremap_resource(...);
-if (!e1) S
-
-// </smpl>
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
+Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: sam-the-6 <asadi.samuel@gmail.com>
 ---
- drivers/phy/phy-omap-usb2.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/iio/pressure/hid-sensor-press.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
-index 7007c11..2063d54 100644
---- a/drivers/phy/phy-omap-usb2.c
-+++ b/drivers/phy/phy-omap-usb2.c
-@@ -233,8 +233,8 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 	if (phy_data->flags & OMAP_USB2_CALIBRATE_FALSE_DISCONNECT) {
- 		res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 		phy->phy_base = devm_ioremap_resource(&pdev->dev, res);
--		if (!phy->phy_base)
--			return -ENOMEM;
-+		if (IS_ERR(phy->phy_base))
-+			return PTR_ERR(phy->phy_base);
- 		phy->flags |= OMAP_USB2_CALIBRATE_FALSE_DISCONNECT;
- 	}
+diff --git a/drivers/iio/pressure/hid-sensor-press.c b/drivers/iio/pressure/hid-sensor-press.c
+index 1cd190c..2c0d2a4 100644
+--- a/drivers/iio/pressure/hid-sensor-press.c
++++ b/drivers/iio/pressure/hid-sensor-press.c
+@@ -78,7 +78,6 @@ static int press_read_raw(struct iio_dev *indio_dev,
+ 	struct press_state *press_state = iio_priv(indio_dev);
+ 	int report_id = -1;
+ 	u32 address;
+-	int ret;
+ 	int ret_type;
+ 	s32 poll_value;
  
+@@ -128,14 +127,12 @@ static int press_read_raw(struct iio_dev *indio_dev,
+ 		ret_type = IIO_VAL_INT;
+ 		break;
+ 	case IIO_CHAN_INFO_SAMP_FREQ:
+-		ret = hid_sensor_read_samp_freq_value(
++		ret_type = hid_sensor_read_samp_freq_value(
+ 				&press_state->common_attributes, val, val2);
+-		ret_type = IIO_VAL_INT_PLUS_MICRO;
+ 		break;
+ 	case IIO_CHAN_INFO_HYSTERESIS:
+-		ret = hid_sensor_read_raw_hyst_value(
++		ret_type = hid_sensor_read_raw_hyst_value(
+ 				&press_state->common_attributes, val, val2);
+-		ret_type = IIO_VAL_INT_PLUS_MICRO;
+ 		break;
+ 	default:
+ 		ret_type = -EINVAL;
 -- 
 1.7.10.4
 
