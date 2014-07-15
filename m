@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759945AbaGOWGN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 18:06:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54528 "EHLO
+	id S1759908AbaGOWGL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 18:06:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54530 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759425AbaGOVgb (ORCPT
+	with ESMTP id S1759433AbaGOVgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 17:36:31 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 134/198] ALSA: hda - Add quirk for external mic on Lifebook U904
-Date: Tue, 15 Jul 2014 14:30:04 -0700
-Message-Id: <1405459868-15089-135-git-send-email-kamal@canonical.com>
+Cc: Mike Frysinger <vapier@gentoo.org>, "H.J. Lu" <hjl.tools@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 025/198] x86, x32: Use compat shims for io_{setup,submit}
+Date: Tue, 15 Jul 2014 14:28:15 -0700
+Message-Id: <1405459868-15089-26-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,58 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Mike Frysinger <vapier@gentoo.org>
 
-commit 2041d56464a067461d7cc21734a0f024587ed2ff upstream.
+commit 7fd44dacdd803c0bbf38bf478d51d280902bb0f1 upstream.
 
-According to the bug reporter (Данило Шеган), the external mic
-starts to work and has proper jack detection if only pin 0x19
-is marked properly as an external headset mic.
+The io_setup takes a pointer to a context id of type aio_context_t.
+This in turn is typed to a __kernel_ulong_t.  We could tweak the
+exported headers to define this as a 64bit quantity for specific
+ABIs, but since we already have a 32bit compat shim for the x86 ABI,
+let's just re-use that logic.  The libaio package is also written to
+expect this as a pointer type, so a compat shim would simplify that.
 
-AlsaInfo at https://bugs.launchpad.net/ubuntu/+source/pulseaudio/+bug/1328587/+attachment/4128991/+files/AlsaInfo.txt
+The io_submit func operates on an array of pointers to iocb structs.
+Padding out the array to be 64bit aligned is a huge pain, so convert
+it over to the existing compat shim too.
 
-BugLink: https://bugs.launchpad.net/bugs/1328587
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+We don't convert io_getevents to the compat func as its only purpose
+is to handle the timespec struct, and the x32 ABI uses 64bit times.
+
+With this change, the libaio package can now pass its testsuite when
+built for the x32 ABI.
+
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+Link: http://lkml.kernel.org/r/1399250595-5005-1-git-send-email-vapier@gentoo.org
+Cc: H.J. Lu <hjl.tools@gmail.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/x86/syscalls/syscall_64.tbl | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index d370e43..d44229b 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -3958,6 +3958,7 @@ enum {
- 	ALC269_FIXUP_HEADSET_MIC,
- 	ALC269_FIXUP_QUANTA_MUTE,
- 	ALC269_FIXUP_LIFEBOOK,
-+	ALC269_FIXUP_LIFEBOOK_EXTMIC,
- 	ALC269_FIXUP_AMIC,
- 	ALC269_FIXUP_DMIC,
- 	ALC269VB_FIXUP_AMIC,
-@@ -4081,6 +4082,13 @@ static const struct hda_fixup alc269_fixups[] = {
- 		.chained = true,
- 		.chain_id = ALC269_FIXUP_QUANTA_MUTE
- 	},
-+	[ALC269_FIXUP_LIFEBOOK_EXTMIC] = {
-+		.type = HDA_FIXUP_PINS,
-+		.v.pins = (const struct hda_pintbl[]) {
-+			{ 0x19, 0x01a1903c }, /* headset mic, with jack detect */
-+			{ }
-+		},
-+	},
- 	[ALC269_FIXUP_AMIC] = {
- 		.type = HDA_FIXUP_PINS,
- 		.v.pins = (const struct hda_pintbl[]) {
-@@ -4442,6 +4450,7 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x104d, 0x9084, "Sony VAIO", ALC275_FIXUP_SONY_HWEQ),
- 	SND_PCI_QUIRK_VENDOR(0x104d, "Sony VAIO", ALC269_FIXUP_SONY_VAIO),
- 	SND_PCI_QUIRK(0x10cf, 0x1475, "Lifebook", ALC269_FIXUP_LIFEBOOK),
-+	SND_PCI_QUIRK(0x10cf, 0x1845, "Lifebook U904", ALC269_FIXUP_LIFEBOOK_EXTMIC),
- 	SND_PCI_QUIRK(0x17aa, 0x20f2, "Thinkpad SL410/510", ALC269_FIXUP_SKU_IGNORE),
- 	SND_PCI_QUIRK(0x17aa, 0x215e, "Thinkpad L512", ALC269_FIXUP_SKU_IGNORE),
- 	SND_PCI_QUIRK(0x17aa, 0x21b8, "Thinkpad Edge 14", ALC269_FIXUP_SKU_IGNORE),
+diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
+index 38ae65d..63a8993 100644
+--- a/arch/x86/syscalls/syscall_64.tbl
++++ b/arch/x86/syscalls/syscall_64.tbl
+@@ -212,10 +212,10 @@
+ 203	common	sched_setaffinity	sys_sched_setaffinity
+ 204	common	sched_getaffinity	sys_sched_getaffinity
+ 205	64	set_thread_area
+-206	common	io_setup		sys_io_setup
++206	64	io_setup		sys_io_setup
+ 207	common	io_destroy		sys_io_destroy
+ 208	common	io_getevents		sys_io_getevents
+-209	common	io_submit		sys_io_submit
++209	64	io_submit		sys_io_submit
+ 210	common	io_cancel		sys_io_cancel
+ 211	64	get_thread_area
+ 212	common	lookup_dcookie		sys_lookup_dcookie
+@@ -356,3 +356,5 @@
+ 540	x32	process_vm_writev	compat_sys_process_vm_writev
+ 541	x32	setsockopt		compat_sys_setsockopt
+ 542	x32	getsockopt		compat_sys_getsockopt
++543	x32	io_setup		compat_sys_io_setup
++544	x32	io_submit		compat_sys_io_submit
 -- 
 1.9.1
 
