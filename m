@@ -1,45 +1,334 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758937AbaGOMln (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 08:41:43 -0400
-Received: from mail-bn1lp0139.outbound.protection.outlook.com ([207.46.163.139]:29170
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758652AbaGOMlk convert rfc822-to-8bit (ORCPT
+	id S1758947AbaGOMp6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 08:45:58 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:63365 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758643AbaGOMpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 08:41:40 -0400
-From: "Satterwhite, Theresa" <ThSatterwhite@stanfordchildrens.org>
-To: "info@webprt.org" <info@webprt.org>
-Subject: =?iso-8859-1?Q?Mensaje_Buz=F3n?=
-Thread-Topic: =?iso-8859-1?Q?Mensaje_Buz=F3n?=
-Thread-Index: Ac+gKPXlDfau8CqVQ6yc583iLm0fxQ==
-Date: Tue, 15 Jul 2014 12:40:59 +0000
-Message-ID: <75A71ACEECCED94081A2723D11FFEBDA469B4A28@LPPTCPMXMBX01.LPCH.NET>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.230.3.242]
-x-ems-proccessed: 
-x-ems-stamp: 8FWWjgLIpiLEWdj5mUiJaw==
-Content-Type: text/plain; charset="iso-8859-1"
+	Tue, 15 Jul 2014 08:45:55 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:160.109.123.155;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(199002)(189002)(85714005)(81342001)(45126002)(74662001)(87936001)(74502001)(101416001)(15202345003)(110136001)(83072002)(4396001)(2656002)(104016003)(107046002)(33656002)(107886001)(229853001)(2351001)(20776003)(97736001)(92566001)(64706001)(47776003)(92726001)(44976005)(85852003)(84676001)(15975445006)(68736004)(69596002)(54356999)(31966008)(106466001)(19580395003)(99396002)(50986999)(86362001)(50466002)(224313004)(63266004)(21056001)(76482001)(81156004)(80022001)(566704002)(83322001)(46102001)(55846006)(95666004)(79102001)(85306003)(81542001)(105586002)(23756003)(224303003)(77982001)(80792004);DIR:OUT;SFP:;SCL:1;SRVR:CO1PR06MB173;H:lpchp-ironport1.lpch.org;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 027367F73D
-Authentication-Results: spf=none (sender IP is 160.109.123.155)
- smtp.mailfrom=ThSatterwhite@stanfordchildrens.org; 
-X-OriginatorOrg: stanfordchildrens.org
+In-Reply-To: <1405369228-27197-2-git-send-email-marek@goldelico.com>
+References: <1405369228-27197-1-git-send-email-marek@goldelico.com>
+	<1405369228-27197-2-git-send-email-marek@goldelico.com>
+Date: Tue, 15 Jul 2014 14:45:53 +0200
+Message-ID: <CAGhQ9Vx1gm9=vda9dUVYR25JK4VSUe9Qk5_xc_bo9ZPLFCtExA@mail.gmail.com>
+Subject: Re: [PATCH 1/5] arm: dts: omap3-gta04: Add missing nodes to fully
+ describe gta04 board
+From: Joachim Eastwood <manabian@gmail.com>
+To: Marek Belisko <marek@goldelico.com>
+Cc: robh+dt@kernel.org, Pawel Moll <pawel.moll@arm.com>, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>, devicetree@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>, hns@goldelico.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Su cuenta de Outlook Web Access / App ha superado su límite de almacenamiento. Usted no será capaz de recibir o enviar mensajes. Con el fin de restaurar la cuenta por favor clickhere: http://mweebserv.edicy.co/en y al acceso a su información de webmail requerida.
+Hi Marek,
 
-Gracias.
-Servicio de seguridad de TI de escritorio 2014
+You seem to add some DT nodes for hw that doesn't have drivers in
+mainline. I think you should leave those out until the driver itself
+is upstream and the bindings for it is documented.
 
-CONFIDENTIALITY NOTICE: This communication and any attachments may contain confidential or privileged information for the use by the designated recipient(s) named above.   If you are not the intended recipient, you are hereby notified that you have received this communication in error and that any review, disclosure, dissemination, distribution or copying of it or the attachments is strictly prohibited.  If you have received this communication in error, please contact the sender  and destroy all copies of the communication and attachments.  Thank you. MSG:104-123
+On 14 July 2014 22:20, Marek Belisko <marek@goldelico.com> wrote:
+> Signed-off-by: Marek Belisko <marek@goldelico.com>
+> Signed-off-by: H. Nikolaus Schaller <hns@goldelico.com>
+> ---
+>  arch/arm/boot/dts/omap3-gta04.dts | 443 +++++++++++++++++++++++++++++++++++---
+>  1 file changed, 412 insertions(+), 31 deletions(-)
+>
+> diff --git a/arch/arm/boot/dts/omap3-gta04.dts b/arch/arm/boot/dts/omap3-gta04.dts
+> index 215513b..bd6a71d 100644
+> --- a/arch/arm/boot/dts/omap3-gta04.dts
+> +++ b/arch/arm/boot/dts/omap3-gta04.dts
+> @@ -12,7 +12,7 @@
+>  #include "omap36xx.dtsi"
+>
+>  / {
+> -       model = "OMAP3 GTA04";
+> +       model = "Goldelico GTA04";
+>         compatible = "ti,omap3-gta04", "ti,omap36xx", "ti,omap3";
+>
+>         cpus {
+> @@ -26,6 +26,11 @@
+>                 reg = <0x80000000 0x20000000>; /* 512 MB */
+>         };
+>
+> +       aliases {
+> +               display0 = &lcd;
+> +               display1 = &tv0;
+> +       };
+> +
+>         gpio-keys {
+>                 compatible = "gpio-keys";
+>
+> @@ -37,15 +42,78 @@
+>                 };
+>         };
+>
+> +       gpio-keys-wwan-wakeup {
+> +               compatible = "gpio-keys";
+> +
+> +               wwan_wakeup_button: wwan-wakeup-button {
+> +                       label = "3G_WOE";
+> +                       linux,code = <240>;
+> +                       gpios = <&gpio1 10 GPIO_ACTIVE_HIGH>;
+> +                       gpio-key,wakeup;
+> +               };
+> +       };
+> +
+> +       hsusb2_phy: hsusb2_phy {
+> +               compatible = "usb-nop-xceiv";
+> +               reset-gpios = <&gpio6 14 GPIO_ACTIVE_LOW>; /* gpio_174 = reset for USB3322 */
+> +       };
+> +
+> +       antenna-detect {
+> +               compatible = "linux,extcon-gpio";
+> +               label = "gps_antenna";
+> +               gpios = <&gpio5 16 0>; /* gpio_144 */
+> +               debounce-delay-ms = <10>;
+> +               irq-flags = <IRQ_TYPE_EDGE_BOTH>;
+> +               state-on = "external";
+> +               state-off = "internal";
+> +       };
+> +
+>         sound {
+>                 compatible = "ti,omap-twl4030";
+>                 ti,model = "gta04";
+>
+>                 ti,mcbsp = <&mcbsp2>;
+>                 ti,codec = <&twl_audio>;
+> +
+> +               ti,mcbsp-voice = <&mcbsp4>;
+> +       };
+> +
+> +       sound_card {
+> +               compatible = "goldelico,gta04-audio";
+> +               gta04,cpu-dai = <&mcbsp2>;
+> +       };
+> +
+> +       gtm601_codec: voice_codec {
+> +               compatible = "gtm601-codec";
+> +       };
+> +
+> +       sound_voice {
+> +               compatible = "goldelico,gta04-voice";
+> +               gta04,cpu-dai = <&mcbsp4>;
+> +               gta04,codec = <&gtm601_codec>;
+>         };
+>
+> -       spi_lcd {
+> +       w2cbw003_codec: headset_codec {
+> +               compatible = "w2cbw003-codec";
+> +       };
+> +
+> +       sound_headset {
+> +               compatible = "goldelico,gta04-headset";
+> +               gta04,cpu-dai = <&mcbsp3>;
+> +               gta04,codec = <&w2cbw003_codec>;
+> +       };
+> +
+> +       sound_fm {
+> +               compatible = "goldelico,gta04-fm";
+> +               gta04,cpu-dai = <&mcbsp1>;
+> +               gta04,codec = <&si4721_codec>;
+> +       };
+> +
+> +       madc-hwmon {
+> +               compatible = "ti,twl4030-madc-hwmon";
+> +       };
+> +
+> +       spi_lcd: spi_lcd {
+>                 compatible = "spi-gpio";
+>                 #address-cells = <0x1>;
+>                 #size-cells = <0x0>;
+> @@ -75,7 +143,7 @@
+>                 };
+>         };
+>
+> -       battery {
+> +       madc_battery: battery {
+>                 compatible = "ti,twl4030-madc-battery";
+>                 capacity = <1200000>;
+>                 charging-calibration-data = <4200 100
+> @@ -100,6 +168,83 @@
+>                                    "ichg",
+>                                    "vbat";
+>         };
+> +
+> +       backlight {
+> +               compatible = "pwm-backlight";
+> +               pwms = <&pwm 0 2000000>;
+> +               brightness-levels = <0 11 20 30 40 50 60 70 80 90 100>;
+> +               default-brightness-level = <10>;
+> +               pinctrl-names = "default";
+> +               pintcrl-0 = <&backlight_pins>;
+> +               power-supply = <&power>;
+> +       };
+> +
+> +       pwm: omap_pwm {
+> +               compatible = "ti,omap-pwm";
+> +               timers = <&timer11>;
+> +               #pwm-cells = <2>;
+> +       };
 
+The omap-pwm driver is not yet upstream and thus the bindings are not final.
+
+> +       /* should be a PWM */
+> +       power: fixed_regulator@0 {
+> +              compatible = "regulator-fixed";
+> +              regulator-name = "bl-enable";
+> +              regulator-boot-on;
+> +              regulator-always-on;
+> +              regulator-min-microvolt = "1000000";
+> +              regulator-max-microvolt = "1000000";
+> +              gpio = <&gpio2 25 0>;    /* GPT11/PWM */
+> +              enable-active-high;
+> +       };
+> +
+> +       tv0: connector@1 {
+> +               compatible = "svideo-connector";
+> +               label = "tv";
+> +
+> +               port {
+> +                       tv_connector_in: endpoint {
+> +                               remote-endpoint = <&venc_out>;
+> +                       };
+> +               };
+> +       };
+> +
+> +       tv_amp: opa362 {
+> +               compatible = "ti,opa362";
+> +               gpio = <&gpio1 23 0>;   /* GPIO to enable video out amplifier */
+> +       };
+
+Driver for a OPAMP?
+
+> +       /* presents a single gpio to be plumbed to uart1 dts */
+> +       bt_en: w2cbw003 {
+> +               compatible = "wi2wi,w2cbw003";
+> +               gpio-controller;
+> +               #gpio-cells = <2>;
+> +
+> +               vdd-supply = <&vaux4>;
+> +       };
+> +
+> +       /* presents a single gpio to be plumbed to uart2 dts */
+> +       gps_en: w2sg0004 {
+> +               compatible = "wi2wi,w2sg0004";
+> +               gpio-controller;
+> +               #gpio-cells = <2>;
+> +
+> +               lna-supply = <&vsim>;   /* LNA regulator */
+> +               on-off-gpio = <&gpio5 17 0>;    /* gpio_145: trigger for turning on/off w2sg0004 */
+> +               rx-gpio = <&gpio5 19 0>;        /* gpio_147: RX */
+> +               rx-on-mux = < (PIN_INPUT_PULLUP | MUX_MODE0) >;
+> +               rx-off-mux = < (PIN_INPUT_PULLUP | MUX_MODE4) >;
+> +       };
+> +
+> +       /* control modem power through rfkill */
+> +       modem_en: modem {
+> +               compatible = "option,gtm601";
+> +               gpio-controller;
+> +               #gpio-cells = <2>;
+> +
+> +               usb-port = <&hsusb2_phy>;
+> +               on-off-gpio = <&gpio6 26 0>;    /* gpio_186: trigger to power on modem */
+> +               on-indicator-gpio = <0>;
+> +       };
+>  };
+
+I don't think any of the above devices have documented bindings so I
+don't think it is a good idea to add the nodes now.
+
+>  &omap3_pmx_core {
+> @@ -168,11 +313,72 @@
+>                 >;
+>         };
+>
+> +       backlight_pins: backlight_pins_pimnux {
+> +               pinctrl-single,pins = <0x8a MUX_MODE4>;
+> +       };
+> +
+> +       hsusb2_pins: pinmux_hsusb2_pins {
+> +               pinctrl-single,pins = <
+> +                       OMAP3_CORE1_IOPAD(0x21d4, PIN_INPUT_PULLDOWN | MUX_MODE3)       /* mcspi1_cs3.hsusb2_data2 */
+> +                       OMAP3_CORE1_IOPAD(0x21d6, PIN_INPUT_PULLDOWN | MUX_MODE3)       /* mcspi2_clk.hsusb2_data7 */
+> +                       OMAP3_CORE1_IOPAD(0x21d8, PIN_INPUT_PULLDOWN | MUX_MODE3)       /* mcspi2_simo.hsusb2_data4 */
+> +                       OMAP3_CORE1_IOPAD(0x21da, PIN_INPUT_PULLDOWN | MUX_MODE3)       /* mcspi2_somi.hsusb2_data5 */
+> +                       OMAP3_CORE1_IOPAD(0x21dc, PIN_INPUT_PULLDOWN | MUX_MODE3)       /* mcspi2_cs0.hsusb2_data6 */
+> +                       OMAP3_CORE1_IOPAD(0x21de, PIN_INPUT_PULLDOWN | MUX_MODE3)       /* mcspi2_cs1.hsusb2_data3 */
+> +               >;
+> +       };
+> +
+> +       i2c1_pins: pinmux_i2c1_pins {
+> +               pinctrl-single,pins = <
+> +                       0x18a (PIN_INPUT_PULLUP | MUX_MODE0)   /* i2c1_scl.i2c1_scl */
+> +                       0x18c (PIN_INPUT_PULLUP | MUX_MODE0)   /* i2c1_sda.i2c1_sda */
+> +               >;
+> +       };
+> +
+> +       i2c2_pins: pinmux_i2c2_pins {
+> +               pinctrl-single,pins = <
+> +                       0x18e (PIN_INPUT_PULLUP | MUX_MODE0)   /* i2c2_scl.i2c2_scl */
+> +                       0x190 (PIN_INPUT_PULLUP | MUX_MODE0)   /* i2c2_sda.i2c2_sda */
+> +               >;
+> +       };
+> +
+> +       i2c3_pins: pinmux_i2c3_pins {
+> +               pinctrl-single,pins = <
+> +                       0x192 (PIN_INPUT_PULLUP | MUX_MODE0)   /* i2c3_scl.i2c3_scl */
+> +                       0x194 (PIN_INPUT_PULLUP | MUX_MODE0)   /* i2c3_sda.i2c3_sda */
+> +               >;
+> +       };
+
+Any reason why you don't use OMAP_IOPAD macro for the I2C pins?
+
+> +
+> +       bma180_pins: pinmux_bma180_pins {
+> +               pinctrl-single,pins = <
+> +                       OMAP3_CORE1_IOPAD(0x213a, PIN_INPUT_PULLUP | MUX_MODE4)   /* gpio_115 */
+> +               >;
+> +       };
+> +};
+> +
+> +&omap3_pmx_core2 {
+> +       pinctrl-names = "default";
+> +       pinctrl-0 = <
+> +                       &hsusb2_2_pins
+> +       >;
+> +
+> +       hsusb2_2_pins: pinmux_hsusb2_2_pins {
+> +               pinctrl-single,pins = <
+> +                       OMAP3630_CORE2_IOPAD(0x25f0, PIN_OUTPUT | MUX_MODE3)            /* etk_d10.hsusb2_clk */
+> +                       OMAP3630_CORE2_IOPAD(0x25f2, PIN_OUTPUT | MUX_MODE3)            /* etk_d11.hsusb2_stp */
+> +                       OMAP3630_CORE2_IOPAD(0x25f4, PIN_INPUT_PULLDOWN | MUX_MODE3)    /* etk_d12.hsusb2_dir */
+> +                       OMAP3630_CORE2_IOPAD(0x25f6, PIN_INPUT_PULLDOWN | MUX_MODE3)    /* etk_d13.hsusb2_nxt */
+> +                       OMAP3630_CORE2_IOPAD(0x25f8, PIN_INPUT_PULLDOWN | MUX_MODE3)    /* etk_d14.hsusb2_data0 */
+> +                       OMAP3630_CORE2_IOPAD(0x25fa, PIN_INPUT_PULLDOWN | MUX_MODE3)    /* etk_d15.hsusb2_data1 */
+> +               >;
+> +       };
+> +
+>         spi_gpio_pins: spi_gpio_pinmux {
+> -               pinctrl-single,pins = <0x5a8 (PIN_OUTPUT | MUX_MODE4) /* clk */
+> -                       0x5b6 (PIN_OUTPUT | MUX_MODE4) /* cs */
+> -                       0x5b8 (PIN_OUTPUT | MUX_MODE4) /* tx */
+> -                       0x5b4 (PIN_INPUT | MUX_MODE4) /* rx */
+> +               pinctrl-single,pins = <
+> +                       OMAP3630_CORE2_IOPAD(0x25d8, PIN_OUTPUT | MUX_MODE4) /* clk */
+> +                       OMAP3630_CORE2_IOPAD(0x25e6, PIN_OUTPUT | MUX_MODE4) /* cs */
+> +                       OMAP3630_CORE2_IOPAD(0x25e8, PIN_OUTPUT | MUX_MODE4) /* tx */
+> +                       OMAP3630_CORE2_IOPAD(0x25e4, PIN_INPUT | MUX_MODE4) /* rx */
+>                 >;
+>         };
+>  };
+
+regards,
+Joachim Eastwood
