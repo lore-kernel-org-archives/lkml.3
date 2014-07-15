@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758170AbaGOJTM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 05:19:12 -0400
-Received: from asavdk4.altibox.net ([109.247.116.15]:32938 "EHLO
-	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753497AbaGOJTJ (ORCPT
+	id S1758173AbaGOJUb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 05:20:31 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:43128 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757894AbaGOJU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 05:19:09 -0400
-Date: Tue, 15 Jul 2014 11:19:03 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 07/38] Delete unused Kbuild files in include/*
-Message-ID: <20140715091902.GA3290@ravnborg.org>
-References: <20140714150609.GA28358@ravnborg.org>
- <1405350546-28467-1-git-send-email-sam@ravnborg.org>
- <1405350546-28467-7-git-send-email-sam@ravnborg.org>
- <53C4EF1B.2050506@imgtec.com>
+	Tue, 15 Jul 2014 05:20:28 -0400
+Date: Tue, 15 Jul 2014 18:19:11 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: lidza.louina@gmail.com, markh@compro.net
+Cc: markh@compro.net, daeseok.youn@gmail.com, gregkh@linuxfoundation.org,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 8/8 V2] staging: dgap: fix memory leak in dgap_parsefile()
+Message-ID: <20140715091911.GA19104@devel.8.8.4.4>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53C4EF1B.2050506@imgtec.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 10:06:35AM +0100, James Hogan wrote:
-> On 14/07/14 16:08, Sam Ravnborg wrote:
-> > The following files are not used - and they serve no purpose.
-> > Delete them.
-> > 
-> > Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-> > Cc: David Howells <dhowells@redhat.com>
-> > ---
-> >  include/Kbuild         | 2 --
-> >  include/scsi/fc/Kbuild | 0
-> >  include/video/Kbuild   | 0
-> >  3 files changed, 2 deletions(-)
-> >  delete mode 100644 include/Kbuild
-> >  delete mode 100644 include/scsi/fc/Kbuild
-> >  delete mode 100644 include/video/Kbuild
-> 
-> include/asm-generic/Kbuild.asm could go too since it isn't included
-> anywhere.
+The p->u.board.status is allocated and set a string as
+"No" once within allocating a node of BNODE type.
+But it also set again with kstrdup() in case of "STATUS"
+or "ID". So just free this buffer and allocate again with
+kstrdup().
 
-Good catch. I recall that I was wondering what the purpose of the file
-was but forgot about it again.
-Will delete in in v2 of this patch-set.
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+V2: just use kfree for buffers which assigned to newly value
+    and then allocate again properly.
 
-	Sam
+ drivers/staging/dgap/dgap.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+index e4ea68b..76503fe 100644
+--- a/drivers/staging/dgap/dgap.c
++++ b/drivers/staging/dgap/dgap.c
+@@ -6599,6 +6599,8 @@ static int dgap_parsefile(char **in)
+ 				pr_err("parse: unexpected end of file\n");
+ 				return -1;
+ 			}
++
++			kfree(p->u.board.status);
+ 			p->u.board.status = kstrdup(s, GFP_KERNEL);
+ 			break;
+ 
+@@ -6649,6 +6651,7 @@ static int dgap_parsefile(char **in)
+ 				return -1;
+ 			}
+ 
++			kfree(p->u.board.status);
+ 			p->u.board.status = kstrdup(s, GFP_KERNEL);
+ 
+ 			if (p->type == CNODE) {
+-- 
+1.7.1
+
