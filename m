@@ -1,69 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758854AbaGOLkK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 07:40:10 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:43580 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758493AbaGOLkH (ORCPT
+	id S1758755AbaGOLmi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 07:42:38 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:42773 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758450AbaGOLmg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 07:40:07 -0400
-Date: Tue, 15 Jul 2014 13:39:57 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, acme@infradead.org,
-        eranian@google.com, andi@firstfloor.org
-Subject: Re: [PATCH v2 1/7] perf, core: introduce pmu context switch callback
-Message-ID: <20140715113957.GD9918@twins.programming.kicks-ass.net>
-References: <1405414739-31455-1-git-send-email-zheng.z.yan@intel.com>
- <1405414739-31455-2-git-send-email-zheng.z.yan@intel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OxpcHoRZqvs6WvX3"
-Content-Disposition: inline
-In-Reply-To: <1405414739-31455-2-git-send-email-zheng.z.yan@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 15 Jul 2014 07:42:36 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH v2] Bluetooth: BCSP fails to ACK re-transmitted frames from the peer
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <1405417294-24832-1-git-send-email-jiada_wang@mentor.com>
+Date: Tue, 15 Jul 2014 13:42:42 +0200
+Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        Linux Bluetooth mailing list 
+	<linux-bluetooth@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dean_Jenkins@mentor.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <B8E404C6-6A75-41E8-9506-0B05AA4C56D6@holtmann.org>
+References: <1405417294-24832-1-git-send-email-jiada_wang@mentor.com>
+To: Jiada Wang <jiada_wang@mentor.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Jiada,
 
---OxpcHoRZqvs6WvX3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Tue, Jul 15, 2014 at 04:58:53PM +0800, Yan, Zheng wrote:
-> +void perf_sched_cb_disable(struct pmu *pmu)
-> +{
-> +	this_cpu_dec(perf_sched_cb_usages);
-> +}
+> Send an ACK frame with the current txack value in response to
+> every received reliable frame unless a TX reliable frame is being
+> sent. This modification allows re-transmitted frames from the remote
+> peer to be acknowledged rather than ignored. It means that the remote
+> peer knows which frame number to start re-transmitting from.
+> 
+> Without this modification, the recovery time to a missing frame
+> from the remote peer was unnecessarily being extended because the
+> headers of the out of order reliable frames were being discarded rather
+> than being processed. The frame headers of received frames will
+> indicate whether the local peer's transmissions have been
+> acknowledged by the remote peer. Therefore, the local peer may
+> unnecessarily re-transmit despite the remote peer already indicating
+> that the frame had been acknowledged in out of order reliable frame.
+> 
+> Signed-off-by: Dean Jenkins <djenkins@mvista.com>
+> Signed-off-by: Jiada Wang <jiada_wang@mentor.com>
+> ---
+> drivers/bluetooth/hci_bcsp.c | 94 ++++++++++++++++++++++++++++----------------
+> 1 file changed, 60 insertions(+), 34 deletions(-)
+> 
+> diff --git a/drivers/bluetooth/hci_bcsp.c b/drivers/bluetooth/hci_bcsp.c
+> index 21cc45b..0f4664d 100644
+> --- a/drivers/bluetooth/hci_bcsp.c
+> +++ b/drivers/bluetooth/hci_bcsp.c
+> @@ -478,13 +478,29 @@ static inline void bcsp_unslip_one_byte(struct bcsp_struct *bcsp, unsigned char
+> static void bcsp_complete_rx_pkt(struct hci_uart *hu)
+> {
+> 	struct bcsp_struct *bcsp = hu->priv;
+> -	int pass_up;
+> +	int pass_up = 0;
+> 
+> 	if (bcsp->rx_skb->data[0] & 0x80) {	/* reliable pkt */
+> 		BT_DBG("Received seqno %u from card", bcsp->rxseq_txack);
+> -		bcsp->rxseq_txack++;
+> -		bcsp->rxseq_txack %= 0x8;
+> -		bcsp->txack_req    = 1;
 > +
-> +void perf_sched_cb_enable(struct pmu *pmu)
-> +{
-> +	this_cpu_inc(perf_sched_cb_usages);
-> +}
+> +		/* check the rx sequence number is as expected */
+> +		if ((bcsp->rx_skb->data[0] & 0x07) == bcsp->rxseq_txack) {
+> +			bcsp->rxseq_txack++;
+> +			bcsp->rxseq_txack %= 0x8;
+> +		} else {
+> +			/*
+> +			 * handle re-transmitted packet or
+> +			 * when packet was missed
+> +			 */
 
-Still wrong names, they do not enable/disable. Enable/disable is a
-strictly boolean thing, this is counting.
+Comment style is wrong.
 
---OxpcHoRZqvs6WvX3
-Content-Type: application/pgp-signature
+	/* aaa
+	 * bbb
+	 */
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> +			BT_ERR ("Out-of-order packet arrived, got %u expected %u",
+> +				bcsp->rx_skb->data[0] & 0x07, bcsp->rxseq_txack);
 
-iQIcBAEBAgAGBQJTxRMNAAoJEHZH4aRLwOS6++EP/jNrSNvkR24ojpne5AuDDmVT
-1u74qSZ6s6O30vU1B+gLGjtfzf5yr1s8FxzQlKwYYO8hfvkJvpy1sAedq6gUb6CO
-dHmfVeOdaLoQB2SpScDdAw094xBwFOYUPUWviUW8TSL6stnFe6jm2COSDe7tEQLv
-uwY+pjOkULK5f25YyDJZLiVuSTyN48A37iWRjnEwpBVWepU5hzpdb5HA+qHtQRAe
-Ajr/llXyLOJMUOY6BbRVfCrdqqqtu2ooxSao9u7Aw1bwDWflNrpd8xsyT7J9LKi1
-GHdkw9F6K/HUR+1CD8jtaPVeDtMU8/VdiBHQEBqvuSZAFGtLN0F5GRZHVU4WyrYT
-yBKH4P2Qe2Jl3YXvg4jbpWeWru9nE+C6cPknERBvG14F4OYMBvPCB3WX7cfSssAk
-ILYe/99FvaI5J0yrPqiPPHSvEuaQoQN2bj+bpEGbayvqdtcLJ1TM7PYV24IRPLxu
-czdXjrfhhQtqdT8AjORcb+iSeSz/ZzgrbNi8PlGVAywsTsDoMwAptQFwY8xVyKAO
-+r5xLqXu4WxuSsR6M+GWnZRiJqYT0Sq/kc1sFilE0AFsZ8A4ao26f6QTerllb/B0
-qLra0dkgnkOh2pA9gjCbwM85qoGWt5gdPKJNcqSSUaEc0cSucSfR9aKgs1OG2iHX
-JlP+u04qP9VuQy+C54qJ
-=DTnn
------END PGP SIGNATURE-----
+It is BT_ERR(" and not BT_ERR (".
 
---OxpcHoRZqvs6WvX3--
+> +
+> +			/* do not process out-of-order packet payload */
+> +			pass_up = 2;
+> +		}
+> +
+> +		/* send current txack value to all recieved reliable packets */
+> +		bcsp->txack_req = 1;
+> 
+> 		/* If needed, transmit an ack pkt */
+> 		hci_uart_tx_wakeup(hu);
+> @@ -493,26 +509,36 @@ static void bcsp_complete_rx_pkt(struct hci_uart *hu)
+> 	bcsp->rxack = (bcsp->rx_skb->data[0] >> 3) & 0x07;
+> 	BT_DBG("Request for pkt %u from card", bcsp->rxack);
+> 
+> +	/*
+> +	 * handle recieved ACK indications,
+> +	 * including those from out-of-order packets
+> +	 */
+
+Same here. Please fix comment style.
+
+> 	bcsp_pkt_cull(bcsp);
+> -	if ((bcsp->rx_skb->data[1] & 0x0f) == 6 &&
+> -			bcsp->rx_skb->data[0] & 0x80) {
+> -		bt_cb(bcsp->rx_skb)->pkt_type = HCI_ACLDATA_PKT;
+> -		pass_up = 1;
+> -	} else if ((bcsp->rx_skb->data[1] & 0x0f) == 5 &&
+> -			bcsp->rx_skb->data[0] & 0x80) {
+> -		bt_cb(bcsp->rx_skb)->pkt_type = HCI_EVENT_PKT;
+> -		pass_up = 1;
+> -	} else if ((bcsp->rx_skb->data[1] & 0x0f) == 7) {
+> -		bt_cb(bcsp->rx_skb)->pkt_type = HCI_SCODATA_PKT;
+> -		pass_up = 1;
+> -	} else if ((bcsp->rx_skb->data[1] & 0x0f) == 1 &&
+> -			!(bcsp->rx_skb->data[0] & 0x80)) {
+> -		bcsp_handle_le_pkt(hu);
+> -		pass_up = 0;
+> -	} else
+> -		pass_up = 0;
+> -
+> -	if (!pass_up) {
+> +
+> +	if (pass_up != 2) {
+> +		if ((bcsp->rx_skb->data[1] & 0x0f) == 6 &&
+> +				bcsp->rx_skb->data[0] & 0x80) {
+
+Fix indentation here.
+
+> +			bt_cb(bcsp->rx_skb)->pkt_type = HCI_ACLDATA_PKT;
+> +			pass_up = 1;
+> +		} else if ((bcsp->rx_skb->data[1] & 0x0f) == 5 &&
+> +				bcsp->rx_skb->data[0] & 0x80) {
+
+And here.
+
+> +			bt_cb(bcsp->rx_skb)->pkt_type = HCI_EVENT_PKT;
+> +			pass_up = 1;
+> +		} else if ((bcsp->rx_skb->data[1] & 0x0f) == 7) {
+> +			bt_cb(bcsp->rx_skb)->pkt_type = HCI_SCODATA_PKT;
+> +			pass_up = 1;
+> +		} else if ((bcsp->rx_skb->data[1] & 0x0f) == 1 &&
+> +				!(bcsp->rx_skb->data[0] & 0x80)) {
+
+Same here.
+
+> +			bcsp_handle_le_pkt(hu);
+> +			pass_up = 0;
+> +		} else {
+> +			pass_up = 0;
+> +		}
+> +	}
+> +
+> +	switch (pass_up) {
+> +	case 0:
+> +	{
+> 		struct hci_event_hdr hdr;
+> 		u8 desc = (bcsp->rx_skb->data[1] & 0x0f);
+
+In general I do not prefer using { } in case statements. Please declare the variables where they are needed or use if else.
+
+> 
+> @@ -537,11 +563,21 @@ static void bcsp_complete_rx_pkt(struct hci_uart *hu)
+> 			}
+> 		} else
+> 			kfree_skb(bcsp->rx_skb);
+> -	} else {
+> +		break;
+> +	}
+> +	case 1:
+> 		/* Pull out BCSP hdr */
+> 		skb_pull(bcsp->rx_skb, 4);
+> 
+> 		hci_recv_frame(hu->hdev, bcsp->rx_skb);
+> +		break;
+> +	default:
+> +		/*
+> +		 * ignore packet payload of already ACKed re-transmitted
+> +		 * packets or when a packet was missed in the BCSP window
+> +		 */
+
+Fix up comment style.
+
+> +		kfree_skb(bcsp->rx_skb);
+> +		break;
+> 	}
+> 
+> 	bcsp->rx_state = BCSP_W4_PKT_DELIMITER;
+> @@ -587,16 +623,6 @@ static int bcsp_recv(struct hci_uart *hu, void *data, int count)
+> 				bcsp->rx_count = 0;
+> 				continue;
+> 			}
+> -			if (bcsp->rx_skb->data[0] & 0x80	/* reliable pkt */
+> -			    		&& (bcsp->rx_skb->data[0] & 0x07) != bcsp->rxseq_txack) {
+> -				BT_ERR ("Out-of-order packet arrived, got %u expected %u",
+> -					bcsp->rx_skb->data[0] & 0x07, bcsp->rxseq_txack);
+> -
+> -				kfree_skb(bcsp->rx_skb);
+> -				bcsp->rx_state = BCSP_W4_PKT_DELIMITER;
+> -				bcsp->rx_count = 0;
+> -				continue;
+> -			}
+> 			bcsp->rx_state = BCSP_W4_DATA;
+> 			bcsp->rx_count = (bcsp->rx_skb->data[1] >> 4) + 
+> 					(bcsp->rx_skb->data[2] << 4);	/* May be 0 */
+
+Regards
+
+Marcel
+
