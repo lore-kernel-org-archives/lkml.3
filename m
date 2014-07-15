@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964971AbaGOVoE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:44:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55086 "EHLO
+	id S964986AbaGOVoG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:44:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55087 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934059AbaGOVjW (ORCPT
+	with ESMTP id S934058AbaGOVjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:39:22 -0400
+	Tue, 15 Jul 2014 17:39:21 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Yann Droneaud <ydroneaud@opteya.com>,
+Cc: Dennis Dalessandro <dennis.dalessandro@intel.com>,
         Roland Dreier <roland@purestorage.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 060/198] IB/mlx5: add missing padding at end of struct mlx5_ib_create_srq
-Date: Tue, 15 Jul 2014 14:28:50 -0700
-Message-Id: <1405459868-15089-61-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 062/198] IB/ipath: Translate legacy diagpkt into newer extended diagpkt
+Date: Tue, 15 Jul 2014 14:28:52 -0700
+Message-Id: <1405459868-15089-63-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -28,121 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yann Droneaud <ydroneaud@opteya.com>
+From: Dennis Dalessandro <dennis.dalessandro@intel.com>
 
-commit 43bc889380c2ad9aa230eccc03a15cc52cf710d4 upstream.
+commit 7e6d3e5c70f13874fb06e6b67696ed90ce79bd48 upstream.
 
-The i386 ABI disagrees with most other ABIs regarding alignment of
-data type larger than 4 bytes: on most ABIs a padding must be added at
-end of the structures, while it is not required on i386.
+This patch addresses an issue where the legacy diagpacket is sent in
+from the user, but the driver operates on only the extended
+diagpkt. This patch specifically initializes the extended diagpkt
+based on the legacy packet.
 
-So for most ABIs struct mlx5_ib_create_srq gets implicitly padded to be
-aligned on a 8 bytes multiple, while for i386, such padding is not
-added.
-
-Tool pahole could be used to find such implicit padding:
-
-  $ pahole --anon_include \
-           --nested_anon_include \
-           --recursive \
-           --class_name mlx5_ib_create_srq \
-           drivers/infiniband/hw/mlx5/mlx5_ib.o
-
-Then, structure layout can be compared between i386 and x86_64:
-
-  +++ obj-i386/drivers/infiniband/hw/mlx5/mlx5_ib.o.pahole.txt    2014-03-28 11:43:07.386413682 +0100
-  --- obj-x86_64/drivers/infiniband/hw/mlx5/mlx5_ib.o.pahole.txt  2014-03-27 13:06:17.788472721 +0100
-  @@ -69,7 +68,6 @@ struct mlx5_ib_create_srq {
-          __u64                      db_addr;              /*     8     8 */
-          __u32                      flags;                /*    16     4 */
-
-  -       /* size: 20, cachelines: 1, members: 3 */
-  -       /* last cacheline: 20 bytes */
-  +       /* size: 24, cachelines: 1, members: 3 */
-  +       /* padding: 4 */
-  +       /* last cacheline: 24 bytes */
-   };
-
-ABI disagreement will make an x86_64 kernel try to read past
-the buffer provided by an i386 binary.
-
-When boundary check will be implemented, the x86_64 kernel will
-refuse to read past the i386 userspace provided buffer and the
-uverb will fail.
-
-Anyway, if the structure lay in memory on a page boundary and
-next page is not mapped, ib_copy_from_udata() will fail and the
-uverb will fail.
-
-This patch makes create_srq_user() takes care of the input
-data size to handle the case where no padding was provided.
-
-This way, x86_64 kernel will be able to handle struct mlx5_ib_create_srq
-as sent by unpatched and patched i386 libmlx5.
-
-Link: http://marc.info/?i=cover.1399309513.git.ydroneaud@opteya.com
-Fixes: e126ba97dba9e ("mlx5: Add driver for Mellanox Connect-IB adapter")
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Reported-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Reviewed-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
 Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/infiniband/hw/mlx5/srq.c  | 14 +++++++++++++-
- drivers/infiniband/hw/mlx5/user.h |  1 +
- 2 files changed, 14 insertions(+), 1 deletion(-)
+ drivers/infiniband/hw/ipath/ipath_diag.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/infiniband/hw/mlx5/srq.c b/drivers/infiniband/hw/mlx5/srq.c
-index 210b3ea..384af6d 100644
---- a/drivers/infiniband/hw/mlx5/srq.c
-+++ b/drivers/infiniband/hw/mlx5/srq.c
-@@ -35,6 +35,7 @@
- #include <linux/mlx5/srq.h>
- #include <linux/slab.h>
- #include <rdma/ib_umem.h>
-+#include <rdma/ib_user_verbs.h>
- 
- #include "mlx5_ib.h"
- #include "user.h"
-@@ -78,16 +79,27 @@ static int create_srq_user(struct ib_pd *pd, struct mlx5_ib_srq *srq,
- {
- 	struct mlx5_ib_dev *dev = to_mdev(pd->device);
- 	struct mlx5_ib_create_srq ucmd;
-+	size_t ucmdlen;
- 	int err;
- 	int npages;
- 	int page_shift;
- 	int ncont;
- 	u32 offset;
- 
--	if (ib_copy_from_udata(&ucmd, udata, sizeof(ucmd))) {
-+	ucmdlen =
-+		(udata->inlen - sizeof(struct ib_uverbs_cmd_hdr) <
-+		 sizeof(ucmd)) ? (sizeof(ucmd) -
-+				  sizeof(ucmd.reserved)) : sizeof(ucmd);
-+
-+	if (ib_copy_from_udata(&ucmd, udata, ucmdlen)) {
- 		mlx5_ib_dbg(dev, "failed copy udata\n");
- 		return -EFAULT;
- 	}
-+
-+	if (ucmdlen == sizeof(ucmd) &&
-+	    ucmd.reserved != 0)
-+		return -EINVAL;
-+
- 	srq->wq_sig = !!(ucmd.flags & MLX5_SRQ_FLAG_SIGNATURE);
- 
- 	srq->umem = ib_umem_get(pd->uobject->context, ucmd.buf_addr, buf_size,
-diff --git a/drivers/infiniband/hw/mlx5/user.h b/drivers/infiniband/hw/mlx5/user.h
-index e7da977..84fea5d 100644
---- a/drivers/infiniband/hw/mlx5/user.h
-+++ b/drivers/infiniband/hw/mlx5/user.h
-@@ -100,6 +100,7 @@ struct mlx5_ib_create_srq {
- 	__u64	buf_addr;
- 	__u64	db_addr;
- 	__u32	flags;
-+	__u32	reserved; /* explicit padding (optional on i386) */
- };
- 
- struct mlx5_ib_create_srq_resp {
+diff --git a/drivers/infiniband/hw/ipath/ipath_diag.c b/drivers/infiniband/hw/ipath/ipath_diag.c
+index e2f9a51..45802e9 100644
+--- a/drivers/infiniband/hw/ipath/ipath_diag.c
++++ b/drivers/infiniband/hw/ipath/ipath_diag.c
+@@ -346,6 +346,10 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
+ 			ret = -EFAULT;
+ 			goto bail;
+ 		}
++		dp.len = odp.len;
++		dp.unit = odp.unit;
++		dp.data = odp.data;
++		dp.pbc_wd = 0;
+ 	} else {
+ 		ret = -EINVAL;
+ 		goto bail;
 -- 
 1.9.1
 
