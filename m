@@ -1,157 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758558AbaGOKOe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 06:14:34 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:52312 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758357AbaGOKOb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 06:14:31 -0400
-Date: Tue, 15 Jul 2014 12:14:18 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, acme@infradead.org,
-        eranian@google.com, andi@firstfloor.org
-Subject: Re: [PATCH v2 3/7] perf, x86: use the PEBS auto reload mechanism
- when possible
-Message-ID: <20140715101418.GZ9918@twins.programming.kicks-ass.net>
-References: <1405414739-31455-1-git-send-email-zheng.z.yan@intel.com>
- <1405414739-31455-4-git-send-email-zheng.z.yan@intel.com>
+	id S1758624AbaGOKP1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 06:15:27 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:51082 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758082AbaGOKPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 06:15:24 -0400
+Message-ID: <53C4FF1B.3080409@mev.co.uk>
+Date: Tue, 15 Jul 2014 11:14:51 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Fh+fyCUbzktHKe74"
-Content-Disposition: inline
-In-Reply-To: <1405414739-31455-4-git-send-email-zheng.z.yan@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Chase Southwood <chase.southwood@gmail.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        <hsweeten@visionengravers.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] staging: comedi: addi_apci_1564: use addi_watchdog
+ module to init watchdog subdevice
+References: <1405204956-1559-1-git-send-email-chase.southwood@gmail.com>	<1405205049-1828-1-git-send-email-chase.southwood@gmail.com>	<53C3A16B.6030801@mev.co.uk> <CA+jnaaVm9_S1=aVCoq_corBvUHDDz2LC3zSLD_D2PsSbGy_avg@mail.gmail.com>
+In-Reply-To: <CA+jnaaVm9_S1=aVCoq_corBvUHDDz2LC3zSLD_D2PsSbGy_avg@mail.gmail.com>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
+ (10.0.0.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2014-07-15 05:00, Chase Southwood wrote:
+> On Mon, Jul 14, 2014 at 4:22 AM, Ian Abbott <abbotti@mev.co.uk> wrote:
+>> On 2014-07-12 23:44, Chase Southwood wrote:
+>>>
+>>> Use the addi_watchdog module to provide support for the watchdog
+>>> subdevice.
+>>>
+>>> Also, rearrange the subdevice init blocks so that the order makes sense.
+>>> Digital input/output subdevices and subdevices for DI/DO interrupt
+>>> support, followed by timer/counter/watchdog subdevices is the new order.
+>>>
+>>> Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
+>>> Cc: Ian Abbott <abbotti@mev.co.uk>
+>>> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+>>> ---
+>>>    drivers/staging/comedi/drivers/addi_apci_1564.c | 34
+>>> +++++++++++++++----------
+>>>    1 file changed, 20 insertions(+), 14 deletions(-)
+>>
+>>
+>> I don't think the subdevice order matters that much, and I prefer to keep
+>> them stable, but since this driver is in such a state of flux, it doesn't
+>> really matter.
+>>
+>
+> Hi Ian!
+> Quick question here about this.  First off, duly noted that grouping
+> subdevices by function isn't necessary and I won't shuffle them around
+> like this in the future.  Second, the reason I stuck the watchdog at
+> the end is because it causes an early return if addi_watchdog_init()
+> returns an error and it seemed  appropriate at the end so it doesn't
+> prevent the initialization of any other subdevices if that call should
+> fail.  Now I realize that it is very unlikely that that call fails,
+> but in any case should I put future subdevice inits above the watchdog
+> for the same reason (so they aren't at risk of not getting
+> initialized), or does that count for subdevice order not being stable
+> and you would prefer them all to go at the end?
 
---Fh+fyCUbzktHKe74
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Since you return an error from the auto_attach handler 
+apci1564_auto_attach() when addi_watchdog_init() fails, it makes little 
+difference what order the subdevices are initialized in.  The error from 
+auto_attach handler causes the comedi core to call the detach handler 
+apci1564_detach() and tear everything down.  Ultimately, 
+comedi_pci_auto_attach() will return an error back to the PCI probe 
+function apci1564_pci_probe(), which will propagate it to the PCI subsystem.
 
-On Tue, Jul 15, 2014 at 04:58:55PM +0800, Yan, Zheng wrote:
-> When a fixed period is specified, this patch make perf use the PEBS
-> auto reload mechanism. This makes normal profiling faster, because
-> it avoids one costly MSR write in the PMI handler.
->=20
-> Signef-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-> ---
->  arch/x86/kernel/cpu/perf_event.c          | 15 +++++++++------
->  arch/x86/kernel/cpu/perf_event_intel_ds.c |  7 +++++++
->  include/linux/perf_event.h                |  1 +
->  3 files changed, 17 insertions(+), 6 deletions(-)
->=20
-> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_=
-event.c
-> index 8868e9b..ae723c8 100644
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -979,13 +979,16 @@ int x86_perf_event_set_period(struct perf_event *ev=
-ent)
-> =20
->  	per_cpu(pmc_prev_left[idx], smp_processor_id()) =3D left;
-> =20
-> -	/*
-> -	 * The hw event starts counting from this event offset,
-> -	 * mark it to be able to extra future deltas:
-> -	 */
-> -	local64_set(&hwc->prev_count, (u64)-left);
-> +	if (!hwc->autoreload ||
-> +	    local64_read(&hwc->prev_count) !=3D (u64)-left) {
+In general, if adding a new subdevice, either add it to the end or 
+replace an "unused" subdevice.
 
-Do you really need that line break? I suspect it comes it at or below 80
-if you concat.
-
-> +		/*
-> +		 * The hw event starts counting from this event offset,
-> +		 * mark it to be able to extra future deltas:
-> +		 */
-> +		local64_set(&hwc->prev_count, (u64)-left);
-> =20
-> -	wrmsrl(hwc->event_base, (u64)(-left) & x86_pmu.cntval_mask);
-> +		wrmsrl(hwc->event_base, (u64)(-left) & x86_pmu.cntval_mask);
-> +	}
-> =20
->  	/*
->  	 * Due to erratum on certan cpu we need
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/=
-cpu/perf_event_intel_ds.c
-> index 980970c..1db4ce5 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> @@ -714,6 +714,7 @@ void intel_pmu_pebs_enable(struct perf_event *event)
->  	struct hw_perf_event *hwc =3D &event->hw;
-> =20
->  	hwc->config &=3D ~ARCH_PERFMON_EVENTSEL_INT;
-> +	hwc->autoreload =3D !event->attr.freq;
-> =20
->  	cpuc->pebs_enabled |=3D 1ULL << hwc->idx;
-> =20
-> @@ -721,6 +722,11 @@ void intel_pmu_pebs_enable(struct perf_event *event)
->  		cpuc->pebs_enabled |=3D 1ULL << (hwc->idx + 32);
->  	else if (event->hw.flags & PERF_X86_EVENT_PEBS_ST)
->  		cpuc->pebs_enabled |=3D 1ULL << 63;
-> +
-> +	/* Use auto-reload if possible to save a MSR write in the PMI */
-> +	if (hwc->autoreload)
-> +		ds->pebs_event_reset[hwc->idx] =3D
-> +			(u64)-hwc->sample_period & x86_pmu.cntval_mask;
-
-The rule is to add { } for any multi-line block, not the strict single
-stmt as per the C language.
-
->  }
-> =20
->  void intel_pmu_pebs_disable(struct perf_event *event)
-> @@ -739,6 +745,7 @@ void intel_pmu_pebs_disable(struct perf_event *event)
->  		wrmsrl(MSR_IA32_PEBS_ENABLE, cpuc->pebs_enabled);
-> =20
->  	hwc->config |=3D ARCH_PERFMON_EVENTSEL_INT;
-> +	hwc->autoreload =3D false;
->  }
-> =20
->  void intel_pmu_pebs_enable_all(void)
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index 5d665e8..37a2b70 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -149,6 +149,7 @@ struct hw_perf_event {
-> =20
->  	u64				freq_time_stamp;
->  	u64				freq_count_stamp;
-> +	bool				autoreload;
-
-No, that's not the right place. If you'd looked at the structure you'd
-have seen that this is the place for generic members, ones that apply to
-all events, this is PEBS only, PEBS is limited to hardware events,
-there's a section for that.
-
-When you've found that, you'll note we have a flags field in there,
-there's spare bits in there, use one.
-
---Fh+fyCUbzktHKe74
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTxP76AAoJEHZH4aRLwOS6uxEQAK8GIL0Agos59KoviMmfmPFe
-r6/nrz+PvMByVKQMzBIz03172kZCACBlF4VpUAETob5QDuWAISCDdpGF4mM/lxW+
-RfQgFul7A8MLO5fA1XGdWAELA/c+v95CYgB4dw/eguKuIto4Lz+GLRgfVima/X2M
-A7zF0OXwVY2TpG+TJ79rYFLdpF0bd84wPlHRVNIFBg0bHDO8YX1c1tyfkLbCFzu/
-Yqr8prPN27xWtFJ1YXt67fq7IulBDT8v6IRCSBynae3q+V0HuNLiGJE9CP6+yQYh
-7jKmtWtpRgzUDcirTtiRAp6EPIA4VjczN30OO7LqUpyFEeXSKGLuz1ykq8C++y6k
-I6oLxCBfBiG5HtHvXc8z+Qe9lHcbwLAsnaSHxMdIfOL/q7TcQoawKRTZTm9pkrIV
-09faRXFy0FOoqpupVFaYQOL9KHSmj4qkA9XJinC27OruJJMB/F5/59gq/BNp4iO1
-vqND00E7edTWtG3y3bw5HzFxWL0K6gDHxlhoCmFDlETE9ApF46l+RfOqdso8Vb9b
-it8oYbvKaD7ASvolwk8YnqwX2WA/82kPcC4AXuQCK0XSVqNd/NYiCQ8TjioDCSjQ
-95xLOq9iFbsdL3U8REvQC9dhdjsjuS3hsQuHKGR3lSdSOfWj1Sb07WrFdQpmr1Ho
-/5AVL9O6/WRpE5pQW1Kr
-=octD
------END PGP SIGNATURE-----
-
---Fh+fyCUbzktHKe74--
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
