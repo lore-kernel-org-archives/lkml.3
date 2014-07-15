@@ -1,49 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547AbaGOVUc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:20:32 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51310 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765AbaGOVU3 (ORCPT
+	id S1755755AbaGOVXx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:23:53 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:41689 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015AbaGOVXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:20:29 -0400
-Date: Tue, 15 Jul 2014 23:20:25 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrey Vagin <avagin@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vladimir Davydov <vdavydov@parallels.com>
-Subject: Re: [patch 0/4] timerfd c/r support, v4
-In-Reply-To: <20140715211800.GM23835@moon>
-Message-ID: <alpine.DEB.2.10.1407152319590.24854@nanos>
-References: <20140623185431.396309193@openvz.org> <20140630194354.GB2305@moon> <20140715135445.GJ23835@moon> <alpine.DEB.2.10.1407151811050.24854@nanos> <20140715162501.GK23835@moon> <alpine.DEB.2.10.1407152306430.24854@nanos> <20140715211413.GL23835@moon>
- <alpine.DEB.2.10.1407152315350.24854@nanos> <20140715211800.GM23835@moon>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 15 Jul 2014 17:23:48 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: forest@alittletooquiet.net, gregkh@linuxfoundation.org, tvboxspy@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Cc: Peter Senna Tschudin <peter.senna@gmail.com>
+Subject: [PATCH V5 1/4] staging: vt6556: Cleanup coding style: #define
+Date: Tue, 15 Jul 2014 23:23:24 +0200
+Message-Id: <1405459407-9311-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch cleanup coding style issues on #defines.
 
+Tested by compilation only.
 
-On Wed, 16 Jul 2014, Cyrill Gorcunov wrote:
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+---
+Changes from V4:
+ - Splitted [PATCH V4 1/6] in 4 smaller patches
 
-> On Tue, Jul 15, 2014 at 11:16:23PM +0200, Thomas Gleixner wrote:
-> > > 
-> > > Maybe it's because of new -rc? Letme check...
-> > 
-> > No, it's because its against an older version of your patches which
-> > lack the #ifdef PROC_FS around the show function ....
-> 
-> Crap. Sorry. Thomas, I'm fetching -rc5 now, I suppose better will
-> be if I rebase the whole series and resend. Sounds good?
+ drivers/staging/vt6656/card.h     |  6 +++---
+ drivers/staging/vt6656/device.h   | 10 +++++-----
+ drivers/staging/vt6656/main_usb.c | 18 +++++++++---------
+ 3 files changed, 17 insertions(+), 17 deletions(-)
 
-No rebase necessary. 1&2 apply fine. It's home made wreckage :)
+diff --git a/drivers/staging/vt6656/card.h b/drivers/staging/vt6656/card.h
+index 5b7cc5a..80fcd53 100644
+--- a/drivers/staging/vt6656/card.h
++++ b/drivers/staging/vt6656/card.h
+@@ -39,9 +39,9 @@ typedef enum _CARD_PHY_TYPE {
+     PHY_TYPE_11A
+ } CARD_PHY_TYPE, *PCARD_PHY_TYPE;
  
+-#define CB_MAX_CHANNEL_24G  14
+-#define CB_MAX_CHANNEL_5G       42 /* add channel9(5045MHz), 41==>42 */
+-#define CB_MAX_CHANNEL      (CB_MAX_CHANNEL_24G+CB_MAX_CHANNEL_5G)
++#define CB_MAX_CHANNEL_24G	14
++#define CB_MAX_CHANNEL_5G	42 /* add channel9(5045MHz), 41==>42 */
++#define CB_MAX_CHANNEL		(CB_MAX_CHANNEL_24G + CB_MAX_CHANNEL_5G)
+ 
+ struct vnt_private;
+ 
+diff --git a/drivers/staging/vt6656/device.h b/drivers/staging/vt6656/device.h
+index 436f109..b7b3131 100644
+--- a/drivers/staging/vt6656/device.h
++++ b/drivers/staging/vt6656/device.h
+@@ -441,11 +441,11 @@ struct vnt_private {
+ 	struct ieee80211_low_level_stats low_stats;
+ };
+ 
+-#define ADD_ONE_WITH_WRAP_AROUND(uVar, uModulo) {   \
+-    if ((uVar) >= ((uModulo) - 1))                  \
+-        (uVar) = 0;                                 \
+-    else                                            \
+-        (uVar)++;                                   \
++#define ADD_ONE_WITH_WRAP_AROUND(uVar, uModulo) {	\
++	if ((uVar) >= ((uModulo) - 1))			\
++		(uVar) = 0;				\
++	else						\
++		(uVar)++;				\
+ }
+ 
+ #define fMP_DISCONNECTED                    0x00000002
+diff --git a/drivers/staging/vt6656/main_usb.c b/drivers/staging/vt6656/main_usb.c
+index dffd0c7..95a87ef 100644
+--- a/drivers/staging/vt6656/main_usb.c
++++ b/drivers/staging/vt6656/main_usb.c
+@@ -75,18 +75,18 @@ MODULE_AUTHOR(DRIVER_AUTHOR);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION(DEVICE_FULL_DRV_NAM);
+ 
+-#define DEVICE_PARAM(N,D) \
+-        static int N[MAX_UINTS]=OPTION_DEFAULT;\
+-        module_param_array(N, int, NULL, 0);\
+-        MODULE_PARM_DESC(N, D);
++#define DEVICE_PARAM(N, D)				\
++	static int N[MAX_UINTS] = OPTION_DEFAULT;	\
++	module_param_array(N, int, NULL, 0);		\
++	MODULE_PARM_DESC(N, D)
+ 
+-#define RX_DESC_DEF0     64
+-DEVICE_PARAM(RxDescriptors0,"Number of receive usb desc buffer");
++#define RX_DESC_DEF0 64
++DEVICE_PARAM(RxDescriptors0, "Number of receive usb desc buffer");
+ 
+-#define TX_DESC_DEF0     64
+-DEVICE_PARAM(TxDescriptors0,"Number of transmit usb desc buffer");
++#define TX_DESC_DEF0 64
++DEVICE_PARAM(TxDescriptors0, "Number of transmit usb desc buffer");
+ 
+-#define CHANNEL_DEF     6
++#define CHANNEL_DEF 6
+ DEVICE_PARAM(Channel, "Channel number");
+ 
+ /* PreambleType[] is the preamble length used for transmit.
+-- 
+1.9.3
+
