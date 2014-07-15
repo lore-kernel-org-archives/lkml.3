@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932886AbaGOVc7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:32:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54066 "EHLO
+	id S1760238AbaGOWWK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 18:22:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54071 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759202AbaGOVcx (ORCPT
+	with ESMTP id S1759300AbaGOVc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:32:53 -0400
+	Tue, 15 Jul 2014 17:32:56 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mario Kleiner <mario.kleiner.de@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 117/198] drm/nouveau/kms/nv04-nv40: fix pageflip events via special case.
-Date: Tue, 15 Jul 2014 14:29:47 -0700
-Message-Id: <1405459868-15089-118-git-send-email-kamal@canonical.com>
+Cc: Alex Elder <elder@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 100/198] rbd: use reference counts for image requests
+Date: Tue, 15 Jul 2014 14:29:30 -0700
+Message-Id: <1405459868-15089-101-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -27,53 +26,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mario Kleiner <mario.kleiner.de@gmail.com>
+From: Alex Elder <elder@linaro.org>
 
-commit af4870e406126b7ac0ae7c7ce5751f25ebe60f28 upstream.
+commit 0f2d5be792b0466b06797f637cfbb0f64dbb408c upstream.
 
-Cards with nv04 display engine can't reliably use vblank
-counts and timestamps computed via drm_handle_vblank(), as
-the function gets invoked after sending the pageflip events.
+Each image request contains a reference count, but to date it has
+not actually been used.  (I think this was just an oversight.) A
+recent report involving rbd failing an assertion shed light on why
+and where we need to use these reference counts.
 
-Fix this by defaulting to the old crtcid = -1 fallback path
-on <= NV-50 cards, and only using the precise path on NV-50
-and later.
+Every OSD request associated with an object request uses
+rbd_osd_req_callback() as its callback function.  That function will
+call a helper function (dependent on the type of OSD request) that
+will set the object request's "done" flag if the object request if
+appropriate.  If that "done" flag is set, the object request is
+passed to rbd_obj_request_complete().
 
-Signed-off-by: Mario Kleiner <mario.kleiner.de@gmail.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+In rbd_obj_request_complete(), requests are processed in sequential
+order.  So if an object request completes before one of its
+predecessors in the image request, the completion is deferred.
+Otherwise, if it's a completing object's "turn" to be completed, it
+is passed to rbd_img_obj_end_request(), which records the result of
+the operation, accumulates transferred bytes, and so on.  Next, the
+successor to this request is checked and if it is marked "done",
+(deferred) completion processing is performed on that request, and
+so on.  If the last object request in an image request is completed,
+rbd_img_request_complete() is called, which (typically) destroys
+the image request.
+
+There is a race here, however.  The instant an object request is
+marked "done" it can be provided (by a thread handling completion of
+one of its predecessor operations) to rbd_img_obj_end_request(),
+which (for the last request) can then lead to the image request
+getting torn down.  And this can happen *before* that object has
+itself entered rbd_img_obj_end_request().  As a result, once it
+*does* enter that function, the image request (and even the object
+request itself) may have been freed and become invalid.
+
+All that's necessary to avoid this is to properly count references
+to the image requests.  We tear down an image request's object
+requests all at once--only when the entire image request has
+completed.  So there's no need for an image request to count
+references for its object requests.  However, we don't want an
+image request to go away until the last of its object requests
+has passed through rbd_img_obj_callback().  In other words,
+we don't want rbd_img_request_complete() to necessarily
+result in the image request being destroyed, because it may
+get called before we've finished processing on all of its
+object requests.
+
+So the fix is to add a reference to an image request for
+each of its object requests.  The reference can be viewed
+as representing an object request that has not yet finished
+its call to rbd_img_obj_callback().  That is emphasized by
+getting the reference right after assigning that as the image
+object's callback function.  The corresponding release of that
+reference is done at the end of rbd_img_obj_callback(), which
+every image object request passes through exactly once.
+
+Signed-off-by: Alex Elder <elder@linaro.org>
+Reviewed-by: Ilya Dryomov <ilya.dryomov@inktank.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/nouveau/nouveau_display.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ drivers/block/rbd.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_display.c b/drivers/gpu/drm/nouveau/nouveau_display.c
-index a0b2b87..cdaee13 100644
---- a/drivers/gpu/drm/nouveau/nouveau_display.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_display.c
-@@ -692,6 +692,7 @@ nouveau_finish_page_flip(struct nouveau_channel *chan,
- 	struct drm_device *dev = drm->dev;
- 	struct nouveau_page_flip_state *s;
- 	unsigned long flags;
-+	int crtcid = -1;
+diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
+index cb1db29..7e37f90 100644
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -1395,6 +1395,13 @@ static void rbd_obj_request_put(struct rbd_obj_request *obj_request)
+ 	kref_put(&obj_request->kref, rbd_obj_request_destroy);
+ }
  
- 	spin_lock_irqsave(&dev->event_lock, flags);
- 
-@@ -702,8 +703,13 @@ nouveau_finish_page_flip(struct nouveau_channel *chan,
- 	}
- 
- 	s = list_first_entry(&fctx->flip, struct nouveau_page_flip_state, head);
--	if (s->event)
--		drm_send_vblank_event(dev, s->crtc, s->event);
-+	if (s->event) {
-+		/* Vblank timestamps/counts are only correct on >= NV-50 */
-+		if (nv_device(drm->device)->card_type >= NV_50)
-+			crtcid = s->crtc;
++static void rbd_img_request_get(struct rbd_img_request *img_request)
++{
++	dout("%s: img %p (was %d)\n", __func__, img_request,
++	     atomic_read(&img_request->kref.refcount));
++	kref_get(&img_request->kref);
++}
 +
-+		drm_send_vblank_event(dev, crtcid, s->event);
-+	}
+ static bool img_request_child_test(struct rbd_img_request *img_request);
+ static void rbd_parent_request_destroy(struct kref *kref);
+ static void rbd_img_request_destroy(struct kref *kref);
+@@ -2148,6 +2155,7 @@ static void rbd_img_obj_callback(struct rbd_obj_request *obj_request)
+ 	img_request->next_completion = which;
+ out:
+ 	spin_unlock_irq(&img_request->completion_lock);
++	rbd_img_request_put(img_request);
  
- 	list_del(&s->head);
- 	if (ps)
+ 	if (!more)
+ 		rbd_img_request_complete(img_request);
+@@ -2244,6 +2252,7 @@ static int rbd_img_request_fill(struct rbd_img_request *img_request,
+ 			goto out_partial;
+ 		obj_request->osd_req = osd_req;
+ 		obj_request->callback = rbd_img_obj_callback;
++		rbd_img_request_get(img_request);
+ 
+ 		osd_req_op_extent_init(osd_req, 0, opcode, offset, length,
+ 						0, 0);
 -- 
 1.9.1
 
