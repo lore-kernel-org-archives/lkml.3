@@ -1,162 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758000AbaGOSEz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 14:04:55 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:35602 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754964AbaGOSEv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 14:04:51 -0400
-Date: Tue, 15 Jul 2014 14:04:46 -0400
-From: Jerome Glisse <j.glisse@gmail.com>
-To: "Bridgman, John" <John.Bridgman@amd.com>
-Cc: Dave Airlie <airlied@gmail.com>,
-        Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>,
-        "Lewycky, Andrew" <Andrew.Lewycky@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "Deucher, Alexander" <Alexander.Deucher@amd.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH 00/83] AMD HSA kernel driver
-Message-ID: <20140715180445.GB3421@gmail.com>
-References: <20140711211850.GU1870@gmail.com>
- <019CCE693E457142B37B791721487FD9180A193B@storexdag01.amd.com>
- <20140713035535.GB5301@gmail.com>
- <D89D60253BB73A4E8C62F9FD18A939CA0103C0EB@storexdag02.amd.com>
- <20140713164901.GB10624@gmail.com>
- <53C396D3.9000600@vodafone.de>
- <CAPM=9txM=0Rd8sP56X1v2sXhAYiRJDoz-j8+N0wXpam-+kYJ8Q@mail.gmail.com>
- <D89D60253BB73A4E8C62F9FD18A939CA01050131@storexdag02.amd.com>
- <20140715173704.GA3421@gmail.com>
- <D89D60253BB73A4E8C62F9FD18A939CA01050211@storexdag02.amd.com>
+	id S932688AbaGOSGF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 14:06:05 -0400
+Received: from mga02.intel.com ([134.134.136.20]:37764 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757662AbaGOSGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 14:06:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,667,1400050800"; 
+   d="scan'208";a="573571138"
+Message-ID: <53C56D55.5020303@intel.com>
+Date: Tue, 15 Jul 2014 21:05:09 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <D89D60253BB73A4E8C62F9FD18A939CA01050211@storexdag02.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 34/41] perf evlist: Add 'system_wide' option
+References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com> <1405332185-4050-35-git-send-email-adrian.hunter@intel.com> <20140715150320.GE3301@kernel.org>
+In-Reply-To: <20140715150320.GE3301@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 05:53:32PM +0000, Bridgman, John wrote:
-> >From: Jerome Glisse [mailto:j.glisse@gmail.com]
-> >Sent: Tuesday, July 15, 2014 1:37 PM
-> >To: Bridgman, John
-> >Cc: Dave Airlie; Christian König; Lewycky, Andrew; linux-
-> >kernel@vger.kernel.org; dri-devel@lists.freedesktop.org; Deucher,
-> >Alexander; akpm@linux-foundation.org
-> >Subject: Re: [PATCH 00/83] AMD HSA kernel driver
-> >
-> >On Tue, Jul 15, 2014 at 05:06:56PM +0000, Bridgman, John wrote:
-> >> >From: Dave Airlie [mailto:airlied@gmail.com]
-> >> >Sent: Tuesday, July 15, 2014 12:35 AM
-> >> >To: Christian König
-> >> >Cc: Jerome Glisse; Bridgman, John; Lewycky, Andrew; linux-
-> >> >kernel@vger.kernel.org; dri-devel@lists.freedesktop.org; Deucher,
-> >> >Alexander; akpm@linux-foundation.org
-> >> >Subject: Re: [PATCH 00/83] AMD HSA kernel driver
-> >> >
-> >> >On 14 July 2014 18:37, Christian König <deathsimple@vodafone.de> wrote:
-> >> >>> I vote for HSA module that expose ioctl and is an intermediary
-> >> >>> with the kernel driver that handle the hardware. This gives a
-> >> >>> single point for HSA hardware and yes this enforce things for any
-> >> >>> hardware
-> >> >manufacturer.
-> >> >>> I am more than happy to tell them that this is it and nothing else
-> >> >>> if they want to get upstream.
-> >> >>
-> >> >> I think we should still discuss this single point of entry a bit more.
-> >> >>
-> >> >> Just to make it clear the plan is to expose all physical HSA
-> >> >> capable devices through a single /dev/hsa device node to userspace.
-> >> >
-> >> >This is why we don't design kernel interfaces in secret foundations,
-> >> >and expect anyone to like them.
-> >>
-> >> Understood and agree. In this case though this isn't a cross-vendor
-> >> interface designed by a secret committee, it's supposed to be more of
-> >> an inoffensive little single-vendor interface designed *for* a secret
-> >> committee. I'm hoping that's better ;)
-> >>
-> >> >
-> >> >So before we go any further, how is this stuff planned to work for
-> >> >multiple GPUs/accelerators?
-> >>
-> >> Three classes of "multiple" :
-> >>
-> >> 1. Single CPU with IOMMUv2 and multiple GPUs:
-> >>
-> >> - all devices accessible via /dev/kfd
-> >> - topology information identifies CPU + GPUs, each has "node ID" at
-> >> top of userspace API, "global ID" at user/kernel interface  (don't
-> >> think we've implemented CPU part yet though)
-> >> - userspace builds snapshot from sysfs info & exposes to HSAIL
-> >> runtime, which in turn exposes the "standard" API
-> >
-> >This is why i do not like the sysfs approach, it would be lot nicer to have
-> >device file per provider and thus hsail can listen on device file event and
-> >discover if hardware is vanishing or appearing. Periodicaly going over sysfs
-> >files is not the right way to do that.
-> 
-> Agree that wouldn't be good. There's an event mechanism still to come - mostly
-> for communicating fences and shader interrupts back to userspace, but also used
-> for "device change" notifications, so no polling of sysfs.
-> 
+On 15/07/2014 6:03 p.m., Arnaldo Carvalho de Melo wrote:
+> Em Mon, Jul 14, 2014 at 01:02:58PM +0300, Adrian Hunter escreveu:
+>> Add an option to cause a selected event
+>> to be opened always without a pid when
+>> configured by perf_evsel__config().
+>>
+>> This is needed when using the sched_switch
+>> tracepoint to follow object code execution.
+>> sched_switch occurs before the task
+>> switch and so it cannot record it in a
+>> context limited to that task.  Note
+>> that also means that sched_switch is
+>> useless when capturing data per-thread,
+>> as is the 'context-switches' software
+>> event for the same reason.
+>
+> clever, but humm, need to be judicious when allocating things like the
+> pollfd, I think, more below...
+>
+> ... after going thru the whole patch, its not clear how pollfd usage
+> takes into account the fact that some of the evsels don't have
+> thread_map->nr entries, but just one, will continue reading...
+>
+>> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+>> ---
+>>   tools/perf/util/evlist.c | 45 +++++++++++++++++++++++++++++++++++++--------
+>>   tools/perf/util/evsel.c  | 31 ++++++++++++++++++++++++++-----
+>>   tools/perf/util/evsel.h  |  1 +
+>>   3 files changed, 64 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+>> index 282e83e..c295b7b 100644
+>> --- a/tools/perf/util/evlist.c
+>> +++ b/tools/perf/util/evlist.c
+>> @@ -265,17 +265,27 @@ int perf_evlist__add_newtp(struct perf_evlist *evlist,
+>>   	return 0;
+>>   }
+>>
+>> +static int perf_evlist__nr_threads(struct perf_evlist *evlist,
+>> +				   struct perf_evsel *evsel)
+>> +{
+>> +	if (evsel->system_wide)
+>> +		return 1;
+>> +	else
+>> +		return thread_map__nr(evlist->threads);
+>> +}
+>> +
+>>   void perf_evlist__disable(struct perf_evlist *evlist)
+>>   {
+>>   	int cpu, thread;
+>>   	struct perf_evsel *pos;
+>>   	int nr_cpus = cpu_map__nr(evlist->cpus);
+>> -	int nr_threads = thread_map__nr(evlist->threads);
+>> +	int nr_threads;
+>>
+>>   	for (cpu = 0; cpu < nr_cpus; cpu++) {
+>>   		evlist__for_each(evlist, pos) {
+>>   			if (!perf_evsel__is_group_leader(pos) || !pos->fd)
+>>   				continue;
+>> +			nr_threads = perf_evlist__nr_threads(evlist, pos);
+>>   			for (thread = 0; thread < nr_threads; thread++)
+>>   				ioctl(FD(pos, cpu, thread),
+>>   				      PERF_EVENT_IOC_DISABLE, 0);
+>> @@ -288,12 +298,13 @@ void perf_evlist__enable(struct perf_evlist *evlist)
+>>   	int cpu, thread;
+>>   	struct perf_evsel *pos;
+>>   	int nr_cpus = cpu_map__nr(evlist->cpus);
+>> -	int nr_threads = thread_map__nr(evlist->threads);
+>> +	int nr_threads;
+>>
+>>   	for (cpu = 0; cpu < nr_cpus; cpu++) {
+>>   		evlist__for_each(evlist, pos) {
+>>   			if (!perf_evsel__is_group_leader(pos) || !pos->fd)
+>>   				continue;
+>> +			nr_threads = perf_evlist__nr_threads(evlist, pos);
+>>   			for (thread = 0; thread < nr_threads; thread++)
+>>   				ioctl(FD(pos, cpu, thread),
+>>   				      PERF_EVENT_IOC_ENABLE, 0);
+>> @@ -305,12 +316,14 @@ int perf_evlist__disable_event(struct perf_evlist *evlist,
+>>   			       struct perf_evsel *evsel)
+>>   {
+>>   	int cpu, thread, err;
+>> +	int nr_cpus = cpu_map__nr(evlist->cpus);
+>> +	int nr_threads = perf_evlist__nr_threads(evlist, evsel);
+>>
+>>   	if (!evsel->fd)
+>>   		return 0;
+>>
+>> -	for (cpu = 0; cpu < evlist->cpus->nr; cpu++) {
+>> -		for (thread = 0; thread < evlist->threads->nr; thread++) {
+>> +	for (cpu = 0; cpu < nr_cpus; cpu++) {
+>> +		for (thread = 0; thread < nr_threads; thread++) {
+>>   			err = ioctl(FD(evsel, cpu, thread),
+>>   				    PERF_EVENT_IOC_DISABLE, 0);
+>>   			if (err)
+>> @@ -324,12 +337,14 @@ int perf_evlist__enable_event(struct perf_evlist *evlist,
+>>   			      struct perf_evsel *evsel)
+>>   {
+>>   	int cpu, thread, err;
+>> +	int nr_cpus = cpu_map__nr(evlist->cpus);
+>> +	int nr_threads = perf_evlist__nr_threads(evlist, evsel);
+>>
+>>   	if (!evsel->fd)
+>>   		return -EINVAL;
+>>
+>> -	for (cpu = 0; cpu < evlist->cpus->nr; cpu++) {
+>> -		for (thread = 0; thread < evlist->threads->nr; thread++) {
+>> +	for (cpu = 0; cpu < nr_cpus; cpu++) {
+>> +		for (thread = 0; thread < nr_threads; thread++) {
+>>   			err = ioctl(FD(evsel, cpu, thread),
+>>   				    PERF_EVENT_IOC_ENABLE, 0);
+>>   			if (err)
+>
+> All the above seems ok, the threads (x axis) array is flat when syswide, ok.
+>
+>> @@ -343,7 +358,16 @@ static int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
+>>   {
+>>   	int nr_cpus = cpu_map__nr(evlist->cpus);
+>>   	int nr_threads = thread_map__nr(evlist->threads);
+>> -	int nfds = nr_cpus * nr_threads * evlist->nr_entries;
+>> +	int nfds = 0;
+>> +	struct perf_evsel *evsel;
+>> +
+>> +	list_for_each_entry(evsel, &evlist->entries, node) {
+>> +		if (evsel->system_wide)
+>> +			nfds += nr_cpus;
+>> +		else
+>> +			nfds += nr_cpus * nr_threads;
+>> +	}
+>
+> But here looks tricky, will look how the evlist->pollfd is used...
+>
+>> +
+>>   	evlist->pollfd = malloc(sizeof(struct pollfd) * nfds);
+>>   	return evlist->pollfd != NULL ? 0 : -ENOMEM;
+>>   }
+>> @@ -636,7 +660,12 @@ static int perf_evlist__mmap_per_evsel(struct perf_evlist *evlist, int idx,
+>>   	struct perf_evsel *evsel;
+>>
+>>   	evlist__for_each(evlist, evsel) {
+>> -		int fd = FD(evsel, cpu, thread);
+>> +		int fd;
+>> +
+>> +		if (evsel->system_wide && thread)
+>> +			continue;
+>
+> Discard after thread 0, i.e. the first, ok.
+>
+>> +
+>> +		fd = FD(evsel, cpu, thread);
+>>
+>>   		if (*output == -1) {
+>>   			*output = fd;
+>> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+>> index 90f58cd..7540b5f 100644
+>> --- a/tools/perf/util/evsel.c
+>> +++ b/tools/perf/util/evsel.c
+>> @@ -691,6 +691,10 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
+>>   int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
+>>   {
+>>   	int cpu, thread;
+>> +
+>> +	if (evsel->system_wide)
+>> +		nthreads = 1;
+>
+> flatten it, ok
+>
+>> +
+>>   	evsel->fd = xyarray__new(ncpus, nthreads, sizeof(int));
+>>
+>>   	if (evsel->fd) {
+>> @@ -709,6 +713,9 @@ static int perf_evsel__run_ioctl(struct perf_evsel *evsel, int ncpus, int nthrea
+>>   {
+>>   	int cpu, thread;
+>>
+>> +	if (evsel->system_wide)
+>> +		nthreads = 1;
+>> +
+>
+> Ditto.
+>
+>>   	for (cpu = 0; cpu < ncpus; cpu++) {
+>>   		for (thread = 0; thread < nthreads; thread++) {
+>>   			int fd = FD(evsel, cpu, thread),
+>> @@ -739,6 +746,9 @@ int perf_evsel__enable(struct perf_evsel *evsel, int ncpus, int nthreads)
+>>
+>>   int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads)
+>>   {
+>> +	if (evsel->system_wide)
+>> +		nthreads = 1;
+>> +
+>>   	evsel->sample_id = xyarray__new(ncpus, nthreads, sizeof(struct perf_sample_id));
+>
+> These are per evsel, so can be flattened when we get to it,
+> evlist->pollfd is per evlist, so mixes syswide with !syswide,  that is why I'm scratching my head at this
+> point...
 
-My point being, do not use sysfs, use /dev/hsa/device* and have hsail listen on
-file event on /dev/hsa/ directory. The hsail would be inform of new device and
-of device that are unloaded. It would do a first pass to open each device file
-and get there capabilities through standardize ioctl.
+pollfd is not a 2-dimensional array.  It is just a 1-dimensional array.
+So it just needs to be the right length.
 
-Thought maybe sysfs is ok given than cpu numa is expose through sysfs
-
-> >
-> >> - kfd sets up ATC aperture so GPUs can access system RAM via IOMMUv2
-> >> (fast for APU, relatively less so for dGPU over PCIE)
-> >> - to-be-added memory operations allow allocation & residency control
-> >> (within existing gfx driver limits) of buffers in VRAM & carved-out
-> >> system RAM
-> >> - queue operations specify a node ID to userspace library, which
-> >> translates to "global ID" before calling kfd
-> >>
-> >> 2. Multiple CPUs connected via fabric (eg HyperTransport) each with 0 or
-> >more GPUs:
-> >>
-> >> - topology information exposes CPUs & GPUs, along with affinity info
-> >> showing what is connected to what
-> >> - everything else works as in (1) above
-> >>
-> >
-> >This is suppose to be part of HSA ? This is lot broader than i thought.
-> 
-> Yes although it can be skipped on most systems. We figured that topology
-> needed to cover everything that would be handled by a single OS image, so
-> in a NUMA system it would need to cover all the CPUs. I think that is still
-> the right scope, do you agree ?
-
-I think it is a idea to duplicate cpu. I would rather have each device
-give its afinity against each cpu and for cpu just keep the existing
-kernel api that expose this through sysfs iirc.
-
-> 
-> >
-> >> 3. Multiple CPUs not connected via fabric (eg a blade server) each
-> >> with 0 or more GPUs
-> >>
-> >> - no attempt to cover this with HSA topology, each CPU and associated
-> >> GPUs is accessed independently via separate /dev/kfd instances
-> >>
-> >> >
-> >> >Do we have a userspace to exercise this interface so we can see how
-> >> >such a thing would look?
-> >>
-> >> Yes -- initial IP review done, legal stuff done, sanitizing WIP,
-> >> hoping for final approval this week
-> >>
-> >> There's a separate test harness to exercise the userspace lib calls,
-> >> haven't started IP review or sanitizing for that but legal stuff is
-> >> done
-> >>
-> >> >
-> >> >Dave.
+>
+>>   	if (evsel->sample_id == NULL)
+>>   		return -ENOMEM;
+>> @@ -783,6 +793,9 @@ void perf_evsel__close_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
+>>   {
+>>   	int cpu, thread;
+>>
+>> +	if (evsel->system_wide)
+>> +		nthreads = 1;
+>> +
+>>   	for (cpu = 0; cpu < ncpus; cpu++)
+>>   		for (thread = 0; thread < nthreads; ++thread) {
+>>   			close(FD(evsel, cpu, thread));
+>> @@ -871,6 +884,9 @@ int __perf_evsel__read(struct perf_evsel *evsel,
+>>   	int cpu, thread;
+>>   	struct perf_counts_values *aggr = &evsel->counts->aggr, count;
+>>
+>> +	if (evsel->system_wide)
+>> +		nthreads = 1;
+>> +
+>>   	aggr->val = aggr->ena = aggr->run = 0;
+>>
+>>   	for (cpu = 0; cpu < ncpus; cpu++) {
+>> @@ -993,13 +1009,18 @@ static size_t perf_event_attr__fprintf(struct perf_event_attr *attr, FILE *fp)
+>>   static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+>>   			      struct thread_map *threads)
+>>   {
+>> -	int cpu, thread;
+>> +	int cpu, thread, nthreads;
+>>   	unsigned long flags = 0;
+>>   	int pid = -1, err;
+>>   	enum { NO_CHANGE, SET_TO_MAX, INCREASED_MAX } set_rlimit = NO_CHANGE;
+>>
+>> +	if (evsel->system_wide)
+>> +		nthreads = 1;
+>> +	else
+>> +		nthreads = threads->nr;
+>> +
+>>   	if (evsel->fd == NULL &&
+>> -	    perf_evsel__alloc_fd(evsel, cpus->nr, threads->nr) < 0)
+>> +	    perf_evsel__alloc_fd(evsel, cpus->nr, nthreads) < 0)
+>>   		return -ENOMEM;
+>>
+>>   	if (evsel->cgrp) {
+>> @@ -1021,10 +1042,10 @@ retry_sample_id:
+>>
+>>   	for (cpu = 0; cpu < cpus->nr; cpu++) {
+>>
+>> -		for (thread = 0; thread < threads->nr; thread++) {
+>> +		for (thread = 0; thread < nthreads; thread++) {
+>>   			int group_fd;
+>>
+>> -			if (!evsel->cgrp)
+>> +			if (!evsel->cgrp && !evsel->system_wide)
+>>   				pid = threads->map[thread];
+>>
+>>   			group_fd = get_group_fd(evsel, cpu, thread);
+>> @@ -1094,7 +1115,7 @@ out_close:
+>>   			close(FD(evsel, cpu, thread));
+>>   			FD(evsel, cpu, thread) = -1;
+>>   		}
+>> -		thread = threads->nr;
+>> +		thread = nthreads;
+>>   	} while (--cpu >= 0);
+>>   	return err;
+>>   }
+>> diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+>> index d7f93ce..dbb2a0d 100644
+>> --- a/tools/perf/util/evsel.h
+>> +++ b/tools/perf/util/evsel.h
+>> @@ -85,6 +85,7 @@ struct perf_evsel {
+>>   	bool 			needs_swap;
+>>   	bool			no_aux_samples;
+>>   	bool			immediate;
+>> +	bool			system_wide;
+>>   	/* parse modifier helper */
+>>   	int			exclude_GH;
+>>   	int			nr_members;
+>> --
+>> 1.8.3.2
