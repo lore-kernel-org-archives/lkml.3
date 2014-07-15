@@ -1,104 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239AbaGON6A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 09:58:00 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38973 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317AbaGON55 (ORCPT
+	id S1752811AbaGON6Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 09:58:25 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:35058 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960AbaGON6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 09:57:57 -0400
-Message-ID: <53C5335A.8000000@pengutronix.de>
-Date: Tue, 15 Jul 2014 15:57:46 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Tue, 15 Jul 2014 09:58:23 -0400
+Message-ID: <d51dceebf7efa42ae225a36cce24a9fd.squirrel@www.codeaurora.org>
+In-Reply-To: <CADsdr6MCnqCwt8623sB=rpuip4cw7LysT1_1KYzBc7yOahcmZA@mail.gmail.com>
+References: <1404743641-16847-1-git-send-email-sviau@codeaurora.org>
+    <1404743641-16847-2-git-send-email-sviau@codeaurora.org>
+    <CADsdr6MCnqCwt8623sB=rpuip4cw7LysT1_1KYzBc7yOahcmZA@mail.gmail.com>
+Date: Tue, 15 Jul 2014 08:58:22 -0500
+Subject: Re: [PATCH] drm/msm/mdp5: add support for MDP5 v1.3
+From: =?iso-8859-1?Q?=22St=E9phane_Viau=22?= <sviau@codeaurora.org>
+To: "divya ojha" <odivya77@gmail.com>
+Cc: "Stephane Viau" <sviau@codeaurora.org>, dri-devel@lists.freedesktop.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        robdclark@gmail.com
+User-Agent: SquirrelMail/1.4.22-4.el6
 MIME-Version: 1.0
-To: =?UTF-8?B?TG90aGFyIFdhw59tYW5u?= <LW@KARO-electronics.de>,
-        Stefan Agner <stefan@agner.ch>
-CC: shawn.guo@freescale.com, linux-arm-kernel@lists.infradead.org,
-        kernel@pengutronix.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 3/4] can: flexcan: switch on clocks before accessing
- ecr register
-References: <cover.1405428166.git.stefan@agner.ch>	<c80f9d2ec80d01088e51be61a4e7845cbfe58f6a.1405428166.git.stefan@agner.ch> <20140715155426.3c03f0d8@ipc1.ka-ro>
-In-Reply-To: <20140715155426.3c03f0d8@ipc1.ka-ro>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="gQlpRQJivDdsb50FwnCKnb94kx9WBgf73"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---gQlpRQJivDdsb50FwnCKnb94kx9WBgf73
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-On 07/15/2014 03:54 PM, Lothar Wa=C3=9Fmann wrote:
-> Hi,
->=20
-> Stefan Agner wrote:
->> Reported-by: Ashutosh Singh <ashuleapyear@gmail.com>
->> Suggested-by: Marc Kleine-Budde <mkl@pengutronix.de>
->> [stefan@agner.ch: added return check for clk_enable_prepare]
+> Hi Stephane,
+>
+> On Mon, Jul 7, 2014 at 8:04 PM, Stephane Viau <sviau@codeaurora.org>
+> wrote:
 >>
->> Signed-off-by: Stefan Agner <stefan@agner.ch>
->> ---
->>  drivers/net/can/flexcan.c | 18 ++++++++++++++++--
->>  1 file changed, 16 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
->> index f425ec2..89745aa 100644
->> --- a/drivers/net/can/flexcan.c
->> +++ b/drivers/net/can/flexcan.c
->> @@ -383,12 +383,26 @@ static int flexcan_get_berr_counter(const struct=
- net_device *dev,
->>  {
->>  	const struct flexcan_priv *priv =3D netdev_priv(dev);
->>  	struct flexcan_regs __iomem *regs =3D priv->base;
->> -	u32 reg =3D flexcan_read(&regs->ecr);
->> +	u32 reg, err;
->> +
->> +	err =3D clk_prepare_enable(priv->clk_ipg);
->> +	if (err)
->> +		return err;
->> +
->> +	err =3D clk_prepare_enable(priv->clk_per);
->> +	if (err)
->> +		goto out_disable_ipg;
->> +
->> +	reg =3D flexcan_read(&regs->ecr);
->> =20
-> flexcan_get_berr_counter() may be called from interrupt context and
-> thus must not call any functions that can sleep.
-> Compiling the driver with CONFIG_DEBUG_ATOMIC_SLEEP would catch this!
+>> MDP5 has several functional blocks (ie: VIG/RGB pipes, LMs, ...).
+>> From one revision to another, these blocks' base addresses might
+>> change due to the number of instances present in the MDP5 hw.
+> ..
+>> -static inline uint32_t REG_MDP5_PIPE(enum mdp5_pipe i0) { return
+>> 0x00001200 + 0x400*i0; }
+>> +static inline uint32_t __offset_PIPE(enum mdp5_pipe idx)
+>> +{
+>
+> ERROR: switch and case should be at the same indent
 
-It's called from the NAPI softirq. I'll prepare a patch.
+Note that this file is generated through Envytools>rnn>headergen2 tool.
+https://github.com/freedreno/envytools/blob/master/rnn/headergen2.c#L246
+does indent the "case" statement one more time than the "switch" line.
+If I modify this code, all switch/case statements will get modified in the
+generated file, and that's not really what I want to do; I only want to
+add a the few lines of code needed for MDP5 v1.3 support.
+By the way, a lot of checkpatch warnings/errors are already present for
+these generated files.
 
-Marc
+Thanks,
+Stéphane.
 
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+>
+>> +       switch (idx) {
+>> +               case SSPP_VIG0: return (mdp5_cfg->pipe_vig.base[0]);
+>> +               case SSPP_VIG1: return (mdp5_cfg->pipe_vig.base[1]);
+>> +               case SSPP_VIG2: return (mdp5_cfg->pipe_vig.base[2]);
+> ..
+>> -static inline uint32_t REG_MDP5_LM(uint32_t i0) { return 0x00003200 +
+>> 0x400*i0; }
+>> +static inline uint32_t __offset_LM(uint32_t idx)
+>> +{
+>
+> ERROR: switch and case should be at the same indent
+>
+>> +       switch (idx) {
+>> +               case 0: return (mdp5_cfg->lm.base[0]);
+>> +               case 1: return (mdp5_cfg->lm.base[1]);
+>> +               case 2: return (mdp5_cfg->lm.base[2]);
+> ..
+>
+>> -static inline uint32_t REG_MDP5_DSPP(uint32_t i0) { return 0x00004600 +
+>> 0x400*i0; }
+>> +static inline uint32_t __offset_DSPP(uint32_t idx)
+>> +{
+>
+> ERROR: switch and case should be at the same indent
+>
+>> +       switch (idx) {
+>> +               case 0: return (mdp5_cfg->dspp.base[0]);
+>> +               case 1: return (mdp5_cfg->dspp.base[1]);
+>> +               case 2: return (mdp5_cfg->dspp.base[2]);
+>> +               case 3: return (mdp5_cfg->dspp.base[3]);
+> ..
+>> -static inline uint32_t REG_MDP5_INTF(uint32_t i0) { return 0x00012500 +
+>> 0x200*i0; }
+>> +static inline uint32_t __offset_INTF(uint32_t idx)
+>> +{
+>
+> ERROR: switch and case should be at the same indent
+>
+>> +       switch (idx) {
+>> +               case 0: return (mdp5_cfg->intf.base[0]);
+>> +               case 1: return (mdp5_cfg->intf.base[1]);
+>> +               case 2: return (mdp5_cfg->intf.base[2]);
+> ..
+>> -static inline uint32_t REG_MDP5_AD(uint32_t i0) { return 0x00013100 +
+>> 0x200*i0; }
+>> +static inline uint32_t __offset_AD(uint32_t idx)
+>> +{
+>
+> ERROR: switch and case should be at the same indent
+>
+>> +       switch (idx) {
+>> +               case 0: return (mdp5_cfg->ad.base[0]);
+>> +               case 1: return (mdp5_cfg->ad.base[1]);
+>> +               default: return INVALID_IDX(idx);
+>> +       }
+>> +}
+> ..
+>>  }
+>> --
+>> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
+>> Forum,
+>> hosted by The Linux Foundation
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm"
+> in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
 
---gQlpRQJivDdsb50FwnCKnb94kx9WBgf73
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iEYEARECAAYFAlPFM1oACgkQjTAFq1RaXHPTYwCdEg/o1Jzknjj3JZtF02gvb7/I
-k1kAoIQ7DpBU31w9Mnyf9idyzUY4Rua1
-=9YI7
------END PGP SIGNATURE-----
-
---gQlpRQJivDdsb50FwnCKnb94kx9WBgf73--
