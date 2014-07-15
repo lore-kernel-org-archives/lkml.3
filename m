@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964904AbaGOVoi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:44:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55069 "EHLO
+	id S965003AbaGOVpB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:45:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55063 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759064AbaGOVjS (ORCPT
+	with ESMTP id S934054AbaGOVjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:39:18 -0400
+	Tue, 15 Jul 2014 17:39:15 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Don Zickus <dzickus@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Johan Hedberg <johan.hedberg@intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 178/198] kernel/watchdog.c: remove preemption restrictions when restarting lockup detector
-Date: Tue, 15 Jul 2014 14:30:48 -0700
-Message-Id: <1405459868-15089-179-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 163/198] Bluetooth: Fix SSP acceptor just-works confirmation without MITM
+Date: Tue, 15 Jul 2014 14:30:33 -0700
+Message-Id: <1405459868-15089-164-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -28,77 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Don Zickus <dzickus@redhat.com>
+From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit bde92cf455a03a91badb7046855592d8c008e929 upstream.
+commit ba15a58b179ed76a7e887177f2b06de12c58ec8f upstream.
 
-Peter Wu noticed the following splat on his machine when updating
-/proc/sys/kernel/watchdog_thresh:
+>From the Bluetooth Core Specification 4.1 page 1958:
 
-  BUG: sleeping function called from invalid context at mm/slub.c:965
-  in_atomic(): 1, irqs_disabled(): 0, pid: 1, name: init
-  3 locks held by init/1:
-   #0:  (sb_writers#3){.+.+.+}, at: [<ffffffff8117b663>] vfs_write+0x143/0x180
-   #1:  (watchdog_proc_mutex){+.+.+.}, at: [<ffffffff810e02d3>] proc_dowatchdog+0x33/0x110
-   #2:  (cpu_hotplug.lock){.+.+.+}, at: [<ffffffff810589c2>] get_online_cpus+0x32/0x80
-  Preemption disabled at:[<ffffffff810e0384>] proc_dowatchdog+0xe4/0x110
+"if both devices have set the Authentication_Requirements parameter to
+one of the MITM Protection Not Required options, authentication stage 1
+shall function as if both devices set their IO capabilities to
+DisplayOnly (e.g., Numeric comparison with automatic confirmation on
+both devices)"
 
-  CPU: 0 PID: 1 Comm: init Not tainted 3.16.0-rc1-testing #34
-  Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
-  Call Trace:
-    dump_stack+0x4e/0x7a
-    __might_sleep+0x11d/0x190
-    kmem_cache_alloc_trace+0x4e/0x1e0
-    perf_event_alloc+0x55/0x440
-    perf_event_create_kernel_counter+0x26/0xe0
-    watchdog_nmi_enable+0x75/0x140
-    update_timers_all_cpus+0x53/0xa0
-    proc_dowatchdog+0xe4/0x110
-    proc_sys_call_handler+0xb3/0xc0
-    proc_sys_write+0x14/0x20
-    vfs_write+0xad/0x180
-    SyS_write+0x49/0xb0
-    system_call_fastpath+0x16/0x1b
-  NMI watchdog: disabled (cpu0): hardware events not enabled
+So far our implementation has done user confirmation for all just-works
+cases regardless of the MITM requirements, however following the
+specification to the word means that we should not be doing confirmation
+when neither side has the MITM flag set.
 
-What happened is after updating the watchdog_thresh, the lockup detector
-is restarted to utilize the new value.  Part of this process involved
-disabling preemption.  Once preemption was disabled, perf tried to
-allocate a new event (as part of the restart).  This caused the above
-BUG_ON as you can't sleep with preemption disabled.
-
-The preemption restriction seemed agressive as we are not doing anything
-on that particular cpu, but with all the online cpus (which are
-protected by the get_online_cpus lock).  Remove the restriction and the
-BUG_ON goes away.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Reported-by: Peter Wu <peter@lekensteyn.nl>
-Tested-by: Peter Wu <peter@lekensteyn.nl>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Tested-by: Szymon Janc <szymon.janc@tieto.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/watchdog.c | 2 --
- 1 file changed, 2 deletions(-)
+ net/bluetooth/hci_event.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 4431610..c9b6f01 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -524,10 +524,8 @@ static void update_timers_all_cpus(void)
- 	int cpu;
+diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
+index e70a426..aeda116 100644
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -3183,8 +3183,11 @@ static void hci_user_confirm_request_evt(struct hci_dev *hdev,
  
- 	get_online_cpus();
--	preempt_disable();
- 	for_each_online_cpu(cpu)
- 		update_timers(cpu);
--	preempt_enable();
- 	put_online_cpus();
- }
- 
+ 		/* If we're not the initiators request authorization to
+ 		 * proceed from user space (mgmt_user_confirm with
+-		 * confirm_hint set to 1). */
+-		if (!test_bit(HCI_CONN_AUTH_PEND, &conn->flags)) {
++		 * confirm_hint set to 1). The exception is if neither
++		 * side had MITM in which case we do auto-accept.
++		 */
++		if (!test_bit(HCI_CONN_AUTH_PEND, &conn->flags) &&
++		    (loc_mitm || rem_mitm)) {
+ 			BT_DBG("Confirming auto-accept as acceptor");
+ 			confirm_hint = 1;
+ 			goto confirm;
 -- 
 1.9.1
 
