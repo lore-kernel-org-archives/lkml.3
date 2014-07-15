@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934432AbaGPAF2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:05:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44998 "EHLO
+	id S934454AbaGPAFc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:05:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44995 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933068AbaGOXNf (ORCPT
+	with ESMTP id S932982AbaGOXNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:35 -0400
+	Tue, 15 Jul 2014 19:13:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aaron Lu <aaron.lu@intel.com>, Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH 3.14 13/66] thermal: hwmon: Make the check for critical temp valid consistent
-Date: Tue, 15 Jul 2014 16:17:07 -0700
-Message-Id: <20140715231702.682804942@linuxfoundation.org>
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.14 11/66] workqueue: zero cpumask of wq_numa_possible_cpumask on init
+Date: Tue, 15 Jul 2014 16:17:05 -0700
+Message-Id: <20140715231702.585842404@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
 References: <20140715231702.156040999@linuxfoundation.org>
@@ -28,97 +29,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaron Lu <aaron.lu@intel.com>
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-commit e8db5d6736a712a3e2280c0e31f4b301d85172d8 upstream.
+commit 5a6024f1604eef119cf3a6fa413fe0261a81a8f3 upstream.
 
-On 05/21/2014 04:22 PM, Aaron Lu wrote:
-> On 05/21/2014 01:57 PM, Kui Zhang wrote:
->> Hello,
->>
->> I get following error when rmmod thermal.
->>
->> rmmod  thermal
->> Killed
+When hot-adding and onlining CPU, kernel panic occurs, showing following
+call trace.
 
-While dealing with this problem, I found another problem that also
-results in a kernel crash on thermal module removal:
+  BUG: unable to handle kernel paging request at 0000000000001d08
+  IP: [<ffffffff8114acfd>] __alloc_pages_nodemask+0x9d/0xb10
+  PGD 0
+  Oops: 0000 [#1] SMP
+  ...
+  Call Trace:
+   [<ffffffff812b8745>] ? cpumask_next_and+0x35/0x50
+   [<ffffffff810a3283>] ? find_busiest_group+0x113/0x8f0
+   [<ffffffff81193bc9>] ? deactivate_slab+0x349/0x3c0
+   [<ffffffff811926f1>] new_slab+0x91/0x300
+   [<ffffffff815de95a>] __slab_alloc+0x2bb/0x482
+   [<ffffffff8105bc1c>] ? copy_process.part.25+0xfc/0x14c0
+   [<ffffffff810a3c78>] ? load_balance+0x218/0x890
+   [<ffffffff8101a679>] ? sched_clock+0x9/0x10
+   [<ffffffff81105ba9>] ? trace_clock_local+0x9/0x10
+   [<ffffffff81193d1c>] kmem_cache_alloc_node+0x8c/0x200
+   [<ffffffff8105bc1c>] copy_process.part.25+0xfc/0x14c0
+   [<ffffffff81114d0d>] ? trace_buffer_unlock_commit+0x4d/0x60
+   [<ffffffff81085a80>] ? kthread_create_on_node+0x140/0x140
+   [<ffffffff8105d0ec>] do_fork+0xbc/0x360
+   [<ffffffff8105d3b6>] kernel_thread+0x26/0x30
+   [<ffffffff81086652>] kthreadd+0x2c2/0x300
+   [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
+   [<ffffffff815f20ec>] ret_from_fork+0x7c/0xb0
+   [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
 
-From: Aaron Lu <aaron.lu@intel.com>
-Date: Wed, 21 May 2014 16:05:38 +0800
-Subject: [PATCH 3.14 13/66] thermal: hwmon: Make the check for critical temp valid consistent
+In my investigation, I found the root cause is wq_numa_possible_cpumask.
+All entries of wq_numa_possible_cpumask is allocated by
+alloc_cpumask_var_node(). And these entries are used without initializing.
+So these entries have wrong value.
 
-We used the tz->ops->get_crit_temp && !tz->ops->get_crit_temp(tz, temp)
-to decide if we need to create the temp_crit attribute file but we just
-check if tz->ops->get_crit_temp exists to decide if we need to remove
-that attribute file. Some ACPI thermal zone doesn't have a valid critical
-trip point and that would result in removing a non-existent device file
-on thermal module unload.
+When hot-adding and onlining CPU, wq_update_unbound_numa() is called.
+wq_update_unbound_numa() calls alloc_unbound_pwq(). And alloc_unbound_pwq()
+calls get_unbound_pool(). In get_unbound_pool(), worker_pool->node is set
+as follow:
 
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+3592         /* if cpumask is contained inside a NUMA node, we belong to that node */
+3593         if (wq_numa_enabled) {
+3594                 for_each_node(node) {
+3595                         if (cpumask_subset(pool->attrs->cpumask,
+3596                                            wq_numa_possible_cpumask[node])) {
+3597                                 pool->node = node;
+3598                                 break;
+3599                         }
+3600                 }
+3601         }
+
+But wq_numa_possible_cpumask[node] does not have correct cpumask. So, wrong
+node is selected. As a result, kernel panic occurs.
+
+By this patch, all entries of wq_numa_possible_cpumask are allocated by
+zalloc_cpumask_var_node to initialize them. And the panic disappeared.
+
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Fixes: bce903809ab3 ("workqueue: add wq_numa_tbl_len and wq_numa_possible_cpumask[]")
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/thermal/thermal_hwmon.c |   33 ++++++++++++++++++---------------
- 1 file changed, 18 insertions(+), 15 deletions(-)
+ kernel/workqueue.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/thermal/thermal_hwmon.c
-+++ b/drivers/thermal/thermal_hwmon.c
-@@ -140,6 +140,12 @@ thermal_hwmon_lookup_temp(const struct t
- 	return NULL;
- }
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -5027,7 +5027,7 @@ static void __init wq_numa_init(void)
+ 	BUG_ON(!tbl);
  
-+static bool thermal_zone_crit_temp_valid(struct thermal_zone_device *tz)
-+{
-+	unsigned long temp;
-+	return tz->ops->get_crit_temp && !tz->ops->get_crit_temp(tz, &temp);
-+}
-+
- int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
- {
- 	struct thermal_hwmon_device *hwmon;
-@@ -189,21 +195,18 @@ int thermal_add_hwmon_sysfs(struct therm
- 	if (result)
- 		goto free_temp_mem;
+ 	for_each_node(node)
+-		BUG_ON(!alloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
++		BUG_ON(!zalloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
+ 				node_online(node) ? node : NUMA_NO_NODE));
  
--	if (tz->ops->get_crit_temp) {
--		unsigned long temperature;
--		if (!tz->ops->get_crit_temp(tz, &temperature)) {
--			snprintf(temp->temp_crit.name,
--				 sizeof(temp->temp_crit.name),
-+	if (thermal_zone_crit_temp_valid(tz)) {
-+		snprintf(temp->temp_crit.name,
-+				sizeof(temp->temp_crit.name),
- 				"temp%d_crit", hwmon->count);
--			temp->temp_crit.attr.attr.name = temp->temp_crit.name;
--			temp->temp_crit.attr.attr.mode = 0444;
--			temp->temp_crit.attr.show = temp_crit_show;
--			sysfs_attr_init(&temp->temp_crit.attr.attr);
--			result = device_create_file(hwmon->device,
--						    &temp->temp_crit.attr);
--			if (result)
--				goto unregister_input;
--		}
-+		temp->temp_crit.attr.attr.name = temp->temp_crit.name;
-+		temp->temp_crit.attr.attr.mode = 0444;
-+		temp->temp_crit.attr.show = temp_crit_show;
-+		sysfs_attr_init(&temp->temp_crit.attr.attr);
-+		result = device_create_file(hwmon->device,
-+					    &temp->temp_crit.attr);
-+		if (result)
-+			goto unregister_input;
- 	}
- 
- 	mutex_lock(&thermal_hwmon_list_lock);
-@@ -250,7 +253,7 @@ void thermal_remove_hwmon_sysfs(struct t
- 	}
- 
- 	device_remove_file(hwmon->device, &temp->temp_input.attr);
--	if (tz->ops->get_crit_temp)
-+	if (thermal_zone_crit_temp_valid(tz))
- 		device_remove_file(hwmon->device, &temp->temp_crit.attr);
- 
- 	mutex_lock(&thermal_hwmon_list_lock);
+ 	for_each_possible_cpu(cpu) {
 
 
