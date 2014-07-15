@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759791AbaGPATE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:19:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44929 "EHLO
+	id S1030296AbaGPATB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:19:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44907 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759380AbaGOXNK (ORCPT
+	with ESMTP id S1759386AbaGOXNK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:13:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>
-Subject: [PATCH 3.4 14/22] rtmutex: Plug slow unlock race
-Date: Tue, 15 Jul 2014 16:17:19 -0700
-Message-Id: <20140715231622.540202454@linuxfoundation.org>
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 3.4 15/22] Revert "x86-64, modify_ldt: Make support for 16-bit segments a runtime option"
+Date: Tue, 15 Jul 2014 16:17:20 -0700
+Message-Id: <20140715231622.597610521@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231622.121816073@linuxfoundation.org>
 References: <20140715231622.121816073@linuxfoundation.org>
@@ -31,238 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: "H. Peter Anvin" <hpa@zytor.com>
 
-commit 27e35715df54cbc4f2d044f681802ae30479e7fb upstream.
+commit 7ed6fb9b5a5510e4ef78ab27419184741169978a upstream.
 
-When the rtmutex fast path is enabled the slow unlock function can
-create the following situation:
+This reverts commit fa81511bb0bbb2b1aace3695ce869da9762624ff in
+preparation of merging in the proper fix (espfix64).
 
-spin_lock(foo->m->wait_lock);
-foo->m->owner = NULL;
-	    			rt_mutex_lock(foo->m); <-- fast path
-				free = atomic_dec_and_test(foo->refcnt);
-				rt_mutex_unlock(foo->m); <-- fast path
-				if (free)
-				   kfree(foo);
-
-spin_unlock(foo->m->wait_lock); <--- Use after free.
-
-Plug the race by changing the slow unlock to the following scheme:
-
-     while (!rt_mutex_has_waiters(m)) {
-     	    /* Clear the waiters bit in m->owner */
-	    clear_rt_mutex_waiters(m);
-      	    owner = rt_mutex_owner(m);
-      	    spin_unlock(m->wait_lock);
-      	    if (cmpxchg(m->owner, owner, 0) == owner)
-      	       return;
-      	    spin_lock(m->wait_lock);
-     }
-
-So in case of a new waiter incoming while the owner tries the slow
-path unlock we have two situations:
-
- unlock(wait_lock);
-					lock(wait_lock);
- cmpxchg(p, owner, 0) == owner
- 	    	   			mark_rt_mutex_waiters(lock);
-	 				acquire(lock);
-
-Or:
-
- unlock(wait_lock);
-					lock(wait_lock);
-	 				mark_rt_mutex_waiters(lock);
- cmpxchg(p, owner, 0) != owner
-					enqueue_waiter();
-					unlock(wait_lock);
- lock(wait_lock);
- wakeup_next waiter();
- unlock(wait_lock);
-					lock(wait_lock);
-					acquire(lock);
-
-If the fast path is disabled, then the simple
-
-   m->owner = NULL;
-   unlock(m->wait_lock);
-
-is sufficient as all access to m->owner is serialized via
-m->wait_lock;
-
-Also document and clarify the wakeup_next_waiter function as suggested
-by Oleg Nesterov.
-
-Reported-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140611183852.937945560@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Mike Galbraith <umgwanakikbuti@gmail.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/rtmutex.c |  115 ++++++++++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 109 insertions(+), 6 deletions(-)
+ arch/x86/kernel/ldt.c        |    4 +---
+ arch/x86/vdso/vdso32-setup.c |    8 --------
+ 2 files changed, 1 insertion(+), 11 deletions(-)
 
---- a/kernel/rtmutex.c
-+++ b/kernel/rtmutex.c
-@@ -81,6 +81,47 @@ static inline void mark_rt_mutex_waiters
- 		owner = *p;
- 	} while (cmpxchg(p, owner, owner | RT_MUTEX_HAS_WAITERS) != owner);
- }
-+
-+/*
-+ * Safe fastpath aware unlock:
-+ * 1) Clear the waiters bit
-+ * 2) Drop lock->wait_lock
-+ * 3) Try to unlock the lock with cmpxchg
-+ */
-+static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock)
-+	__releases(lock->wait_lock)
-+{
-+	struct task_struct *owner = rt_mutex_owner(lock);
-+
-+	clear_rt_mutex_waiters(lock);
-+	raw_spin_unlock(&lock->wait_lock);
-+	/*
-+	 * If a new waiter comes in between the unlock and the cmpxchg
-+	 * we have two situations:
-+	 *
-+	 * unlock(wait_lock);
-+	 *					lock(wait_lock);
-+	 * cmpxchg(p, owner, 0) == owner
-+	 *					mark_rt_mutex_waiters(lock);
-+	 *					acquire(lock);
-+	 * or:
-+	 *
-+	 * unlock(wait_lock);
-+	 *					lock(wait_lock);
-+	 *					mark_rt_mutex_waiters(lock);
-+	 *
-+	 * cmpxchg(p, owner, 0) != owner
-+	 *					enqueue_waiter();
-+	 *					unlock(wait_lock);
-+	 * lock(wait_lock);
-+	 * wake waiter();
-+	 * unlock(wait_lock);
-+	 *					lock(wait_lock);
-+	 *					acquire(lock);
-+	 */
-+	return rt_mutex_cmpxchg(lock, owner, NULL);
-+}
-+
- #else
- # define rt_mutex_cmpxchg(l,c,n)	(0)
- static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
-@@ -88,6 +129,17 @@ static inline void mark_rt_mutex_waiters
- 	lock->owner = (struct task_struct *)
- 			((unsigned long)lock->owner | RT_MUTEX_HAS_WAITERS);
- }
-+
-+/*
-+ * Simple slow path only version: lock->owner is protected by lock->wait_lock.
-+ */
-+static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock)
-+	__releases(lock->wait_lock)
-+{
-+	lock->owner = NULL;
-+	raw_spin_unlock(&lock->wait_lock);
-+	return true;
-+}
+--- a/arch/x86/kernel/ldt.c
++++ b/arch/x86/kernel/ldt.c
+@@ -20,8 +20,6 @@
+ #include <asm/mmu_context.h>
+ #include <asm/syscalls.h>
+ 
+-int sysctl_ldt16 = 0;
+-
+ #ifdef CONFIG_SMP
+ static void flush_ldt(void *current_mm)
+ {
+@@ -236,7 +234,7 @@ static int write_ldt(void __user *ptr, u
+ 	 * IRET leaking the high bits of the kernel stack address.
+ 	 */
+ #ifdef CONFIG_X86_64
+-	if (!ldt_info.seg_32bit && !sysctl_ldt16) {
++	if (!ldt_info.seg_32bit) {
+ 		error = -EINVAL;
+ 		goto out_unlock;
+ 	}
+--- a/arch/x86/vdso/vdso32-setup.c
++++ b/arch/x86/vdso/vdso32-setup.c
+@@ -41,7 +41,6 @@ enum {
+ #ifdef CONFIG_X86_64
+ #define vdso_enabled			sysctl_vsyscall32
+ #define arch_setup_additional_pages	syscall32_setup_pages
+-extern int sysctl_ldt16;
  #endif
  
  /*
-@@ -519,7 +571,8 @@ static int task_blocks_on_rt_mutex(struc
- /*
-  * Wake up the next waiter on the lock.
-  *
-- * Remove the top waiter from the current tasks waiter list and wake it up.
-+ * Remove the top waiter from the current tasks pi waiter list and
-+ * wake it up.
-  *
-  * Called with lock->wait_lock held.
-  */
-@@ -540,10 +593,23 @@ static void wakeup_next_waiter(struct rt
- 	 */
- 	plist_del(&waiter->pi_list_entry, &current->pi_waiters);
- 
--	rt_mutex_set_owner(lock, NULL);
-+	/*
-+	 * As we are waking up the top waiter, and the waiter stays
-+	 * queued on the lock until it gets the lock, this lock
-+	 * obviously has waiters. Just set the bit here and this has
-+	 * the added benefit of forcing all new tasks into the
-+	 * slow path making sure no task of lower priority than
-+	 * the top waiter can steal this lock.
-+	 */
-+	lock->owner = (void *) RT_MUTEX_HAS_WAITERS;
- 
- 	raw_spin_unlock_irqrestore(&current->pi_lock, flags);
- 
-+	/*
-+	 * It's safe to dereference waiter as it cannot go away as
-+	 * long as we hold lock->wait_lock. The waiter task needs to
-+	 * acquire it in order to dequeue the waiter.
-+	 */
- 	wake_up_process(waiter->task);
- }
- 
-@@ -796,12 +862,49 @@ rt_mutex_slowunlock(struct rt_mutex *loc
- 
- 	rt_mutex_deadlock_account_unlock(current);
- 
--	if (!rt_mutex_has_waiters(lock)) {
--		lock->owner = NULL;
--		raw_spin_unlock(&lock->wait_lock);
--		return;
-+	/*
-+	 * We must be careful here if the fast path is enabled. If we
-+	 * have no waiters queued we cannot set owner to NULL here
-+	 * because of:
-+	 *
-+	 * foo->lock->owner = NULL;
-+	 *			rtmutex_lock(foo->lock);   <- fast path
-+	 *			free = atomic_dec_and_test(foo->refcnt);
-+	 *			rtmutex_unlock(foo->lock); <- fast path
-+	 *			if (free)
-+	 *				kfree(foo);
-+	 * raw_spin_unlock(foo->lock->wait_lock);
-+	 *
-+	 * So for the fastpath enabled kernel:
-+	 *
-+	 * Nothing can set the waiters bit as long as we hold
-+	 * lock->wait_lock. So we do the following sequence:
-+	 *
-+	 *	owner = rt_mutex_owner(lock);
-+	 *	clear_rt_mutex_waiters(lock);
-+	 *	raw_spin_unlock(&lock->wait_lock);
-+	 *	if (cmpxchg(&lock->owner, owner, 0) == owner)
-+	 *		return;
-+	 *	goto retry;
-+	 *
-+	 * The fastpath disabled variant is simple as all access to
-+	 * lock->owner is serialized by lock->wait_lock:
-+	 *
-+	 *	lock->owner = NULL;
-+	 *	raw_spin_unlock(&lock->wait_lock);
-+	 */
-+	while (!rt_mutex_has_waiters(lock)) {
-+		/* Drops lock->wait_lock ! */
-+		if (unlock_rt_mutex_safe(lock) == true)
-+			return;
-+		/* Relock the rtmutex and try again */
-+		raw_spin_lock(&lock->wait_lock);
- 	}
- 
-+	/*
-+	 * The wakeup next waiter path does not suffer from the above
-+	 * race. See the comments there.
-+	 */
- 	wakeup_next_waiter(lock);
- 
- 	raw_spin_unlock(&lock->wait_lock);
+@@ -380,13 +379,6 @@ static ctl_table abi_table2[] = {
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec
+-	},
+-	{
+-		.procname	= "ldt16",
+-		.data		= &sysctl_ldt16,
+-		.maxlen		= sizeof(int),
+-		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
+ 	},
+ 	{}
+ };
 
 
