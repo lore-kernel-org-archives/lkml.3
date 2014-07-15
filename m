@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933765AbaGOVfK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:35:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54292 "EHLO
+	id S933799AbaGOVfU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:35:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54316 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933725AbaGOVfF (ORCPT
+	with ESMTP id S933763AbaGOVfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:35:05 -0400
+	Tue, 15 Jul 2014 17:35:10 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nicholas Bellinger <nab@linux-iscsi.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 197/198] iscsi-target: Avoid rejecting incorrect ITT for Data-Out
-Date: Tue, 15 Jul 2014 14:31:07 -0700
-Message-Id: <1405459868-15089-198-git-send-email-kamal@canonical.com>
+Cc: Steve French <smfrench@gmail.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 183/198] [CIFS] fix mount failure with broken pathnames when smb3 mount with mapchars option
+Date: Tue, 15 Jul 2014 14:30:53 -0700
+Message-Id: <1405459868-15089-184-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -27,40 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Steve French <smfrench@gmail.com>
 
-commit 97c99b47ac58bacb7c09e1f47d5d184434f6b06a upstream.
+commit ce36d9ab3bab06b7b5522f5c8b68fac231b76ffb upstream.
 
-This patch changes iscsit_check_dataout_hdr() to dump the incoming
-Data-Out payload when the received ITT is not associated with a
-WRITE, instead of calling iscsit_reject_cmd() for the non WRITE
-ITT descriptor.
+When we SMB3 mounted with mapchars (to allow reserved characters : \ / > < * ?
+via the Unicode Windows to POSIX remap range) empty paths
+(eg when we open "" to query the root of the SMB3 directory on mount) were not
+null terminated so we sent garbarge as a path name on empty paths which caused
+SMB2/SMB2.1/SMB3 mounts to fail when mapchars was specified.  mapchars is
+particularly important since Unix Extensions for SMB3 are not supported (yet)
 
-This addresses a bug where an initiator sending an Data-Out for
-an ITT associated with a READ would end up generating a reject
-for the READ, eventually resulting in list corruption.
-
-Reported-by: Santosh Kulkarni <santosh.kulkarni@calsoftinc.com>
-Reported-by: Arshad Hussain <arshad.hussain@calsoftinc.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Steve French <smfrench@gmail.com>
+Reviewed-by: David Disseldorp <ddiss@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/target/iscsi/iscsi_target.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/cifs/cifs_unicode.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
-index 711dff4..6c727b9 100644
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -1289,7 +1289,7 @@ iscsit_check_dataout_hdr(struct iscsi_conn *conn, unsigned char *buf,
- 	if (cmd->data_direction != DMA_TO_DEVICE) {
- 		pr_err("Command ITT: 0x%08x received DataOUT for a"
- 			" NON-WRITE command.\n", cmd->init_task_tag);
--		return iscsit_reject_cmd(cmd, ISCSI_REASON_PROTOCOL_ERROR, buf);
-+		return iscsit_dump_data_payload(conn, payload_length, 1);
+diff --git a/fs/cifs/cifs_unicode.c b/fs/cifs/cifs_unicode.c
+index 0227b45..15e9505 100644
+--- a/fs/cifs/cifs_unicode.c
++++ b/fs/cifs/cifs_unicode.c
+@@ -290,7 +290,8 @@ int
+ cifsConvertToUTF16(__le16 *target, const char *source, int srclen,
+ 		 const struct nls_table *cp, int mapChars)
+ {
+-	int i, j, charlen;
++	int i, charlen;
++	int j = 0;
+ 	char src_char;
+ 	__le16 dst_char;
+ 	wchar_t tmp;
+@@ -298,12 +299,11 @@ cifsConvertToUTF16(__le16 *target, const char *source, int srclen,
+ 	if (!mapChars)
+ 		return cifs_strtoUTF16(target, source, PATH_MAX, cp);
+ 
+-	for (i = 0, j = 0; i < srclen; j++) {
++	for (i = 0; i < srclen; j++) {
+ 		src_char = source[i];
+ 		charlen = 1;
+ 		switch (src_char) {
+ 		case 0:
+-			put_unaligned(0, &target[j]);
+ 			goto ctoUTF16_out;
+ 		case ':':
+ 			dst_char = cpu_to_le16(UNI_COLON);
+@@ -350,6 +350,7 @@ cifsConvertToUTF16(__le16 *target, const char *source, int srclen,
  	}
- 	se_cmd = &cmd->se_cmd;
- 	iscsit_mod_dataout_timer(cmd);
+ 
+ ctoUTF16_out:
++	put_unaligned(0, &target[j]); /* Null terminate target unicode string */
+ 	return j;
+ }
+ 
 -- 
 1.9.1
 
