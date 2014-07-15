@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758805AbaGOVhA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:37:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54575 "EHLO
+	id S933863AbaGOVhQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:37:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54596 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759408AbaGOVgy (ORCPT
+	with ESMTP id S1758797AbaGOVhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:36:54 -0400
+	Tue, 15 Jul 2014 17:37:11 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alessandro Miceli <angelofsky1980@gmail.com>,
-        Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 031/198] [media] rtl28xxu: add [1b80:d39d] Sveon STV20
-Date: Tue, 15 Jul 2014 14:28:21 -0700
-Message-Id: <1405459868-15089-32-git-send-email-kamal@canonical.com>
+Cc: Scott Teel <scott.teel@hp.com>, Joe Handzik <joseph.t.handzik@hp.com>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        Christoph Hellwig <hch@lst.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 035/198] hpsa: add new Smart Array PCI IDs (May 2014)
+Date: Tue, 15 Jul 2014 14:28:25 -0700
+Message-Id: <1405459868-15089-36-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -29,46 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alessandro Miceli <angelofsky1980@gmail.com>
+From: Joe Handzik <joseph.t.handzik@hp.com>
 
-commit f27f5b0ee4967babfb8b03511f5e76b79d781014 upstream.
+commit 3b7a45e5ba85dc79c7714edd9eee9aaed730cd6b upstream.
 
-Added Sveon STV20 device based on Realtek RTL2832U and FC0012 tuner
-
-Signed-off-by: Alessandro Miceli <angelofsky1980@gmail.com>
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Scott Teel <scott.teel@hp.com>
+Signed-off-by: Joe Handzik <joseph.t.handzik@hp.com>
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/media/dvb-core/dvb-usb-ids.h    | 1 +
- drivers/media/usb/dvb-usb-v2/rtl28xxu.c | 2 ++
- 2 files changed, 3 insertions(+)
+ drivers/scsi/hpsa.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/drivers/media/dvb-core/dvb-usb-ids.h b/drivers/media/dvb-core/dvb-usb-ids.h
-index 7e0f619..4cfb962 100644
---- a/drivers/media/dvb-core/dvb-usb-ids.h
-+++ b/drivers/media/dvb-core/dvb-usb-ids.h
-@@ -359,6 +359,7 @@
- #define USB_PID_FRIIO_WHITE				0x0001
- #define USB_PID_TVWAY_PLUS				0x0002
- #define USB_PID_SVEON_STV20				0xe39d
-+#define USB_PID_SVEON_STV20_RTL2832U			0xd39d
- #define USB_PID_SVEON_STV22				0xe401
- #define USB_PID_SVEON_STV22_IT9137			0xe411
- #define USB_PID_AZUREWAVE_AZ6027			0x3275
-diff --git a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-index 1bb3030..42e91ea 100644
---- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-+++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-@@ -1431,6 +1431,8 @@ static const struct usb_device_id rtl28xxu_id_table[] = {
- 		&rtl2832u_props, "Genius TVGo DVB-T03", NULL) },
- 	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, 0xd395,
- 		&rtl2832u_props, "Peak DVB-T USB", NULL) },
-+	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, USB_PID_SVEON_STV20_RTL2832U,
-+		&rtl2832u_props, "Sveon STV20", NULL) },
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 20a5e6e..ad034ab 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -117,9 +117,15 @@ static const struct pci_device_id hpsa_pci_device_id[] = {
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C3},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C4},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C5},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C6},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C7},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C8},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C9},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21CA},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21CB},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21CC},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21CD},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21CE},
+ 	{PCI_VENDOR_ID_HP,     PCI_ANY_ID,	PCI_ANY_ID, PCI_ANY_ID,
+ 		PCI_CLASS_STORAGE_RAID << 8, 0xffff << 8, 0},
+ 	{0,}
+@@ -163,9 +169,15 @@ static struct board_type products[] = {
+ 	{0x21C3103C, "Smart Array", &SA5_access},
+ 	{0x21C4103C, "Smart Array", &SA5_access},
+ 	{0x21C5103C, "Smart Array", &SA5_access},
++	{0x21C6103C, "Smart Array", &SA5_access},
+ 	{0x21C7103C, "Smart Array", &SA5_access},
+ 	{0x21C8103C, "Smart Array", &SA5_access},
+ 	{0x21C9103C, "Smart Array", &SA5_access},
++	{0x21CA103C, "Smart Array", &SA5_access},
++	{0x21CB103C, "Smart Array", &SA5_access},
++	{0x21CC103C, "Smart Array", &SA5_access},
++	{0x21CD103C, "Smart Array", &SA5_access},
++	{0x21CE103C, "Smart Array", &SA5_access},
+ 	{0xFFFF103C, "Unknown Smart Array", &SA5_access},
+ };
  
- 	{ DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
- 		&rtl2832u_props, "Astrometa DVB-T2", NULL) },
 -- 
 1.9.1
 
